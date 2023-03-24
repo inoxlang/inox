@@ -12,7 +12,7 @@ An archive with a Linux binary and some examples is available in release assets,
   ```
   sudo cp inox /usr/local/bin/inox
   ```
-- copy the `ide` folder where yout want
+- copy the `ide` folder where you want
 
 
 To get started go [here](./docs/getting-started.md).\
