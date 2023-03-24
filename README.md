@@ -4,7 +4,15 @@
 
 # Installation
 
-An archive with a Linux binary and some examples is available in release assets, if you want to compile the language yourself go [here](#compile-from-source).\
+An archive with a Linux binary and some examples is available in release assets, if you want to compile the language yourself go [here](#compile-from-source).
+
+- uncompress the archive
+- copy `startup.ix` into to your HOME directory and modify `/home/user` at the top to the path to your homedir.
+- copy the `inox` binary to `/usr/local/bin`
+  ```
+  sudo cp inox /usr/local/bin/inox
+  ```
+
 ⚠️ The language is not production ready yet.
 
 # Features
