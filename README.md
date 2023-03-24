@@ -4,7 +4,7 @@
 
 # Installation
 
-A Linux binary is available in release assets, if you want to compile the language yourself go [here](#compile-from-source).\
+An archive with a Linux binary and some examples is available in release assets, if you want to compile the language yourself go [here](#compile-from-source).\
 ⚠️ The language is not production ready yet.
 
 # Features
@@ -110,19 +110,9 @@ TODO: explain
 
 ## Compile from source
 
-Inox is only supported on Linux for now, support for MacOS is planned.
-
-<!--
-```
-go install github.com/inox-project/inox/cmd/inox@v0.1.0
-```
--->
-
-Follow the instructions on the next section to learn how to use Inox !
-
-## Usage
-
-
+- clone this repository
+- `cd` into the directory
+- run `go build cmd/inox/inox.go`
 
 
 
