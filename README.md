@@ -79,7 +79,7 @@ After this phase it no longer needs some permissions so it can drop them.
 <img src="./docs/img/drop-perms.png"></img>
 
 
-## DoS prevention
+## DoS mitigation
 
 ### Limitations (WIP)
 
