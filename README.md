@@ -12,6 +12,7 @@ An archive with a Linux binary and some examples is available in release assets,
   ```
   sudo cp inox /usr/local/bin/inox
   ```
+- copy the `ide` folder where yout want
 
 ⚠️ The language is not production ready yet.
 
