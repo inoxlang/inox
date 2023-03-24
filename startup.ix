@@ -1,5 +1,7 @@
 const(
     HOME = %/home/user/...
+    LOCALHOST_8080 = https://localhost:8080
+    LOCALHOST_1200 = https://localhost:1200
 )
 
 manifest {
@@ -11,7 +13,8 @@ manifest {
             %/...
             %https://**
             http://example.com
-            https://localhost:8080
+            $$LOCALHOST_8080
+            $$LOCALHOST_1200
             $$HOME
             %/tmp/mydb/...
             tcp: ://example.com:80
@@ -41,7 +44,8 @@ manifest {
         },
         create: {
             %https://**
-            https://localhost:8080
+            $$LOCALHOST_8080
+            $$LOCALHOST_1200
             $$HOME
             %/tmp/mydb/...
             routines: {}
@@ -52,27 +56,30 @@ manifest {
         update: {
             globals: "*"
             %https://**
-            https://localhost:8080
+            $$LOCALHOST_8080
+            $$LOCALHOST_1200
             $$HOME
         }
         delete: {
             %https://**
-            https://localhost:8080
+            $$LOCALHOST_8080
+            $$LOCALHOST_1200
             $$HOME
         }
         provide: {
             %https://**
-            https://localhost:8080
+            $$LOCALHOST_8080
+            $$LOCALHOST_1200
             https://localhost:4444
         }
     }
     limits: {
-        "fs/read": 1MB/s
-        "fs/write": 1MB/s
+        "fs/read": 100MB/s
+        "fs/write": 100MB/s
         "fs/total-new-file": 100000
-        "fs/new-file": 10x/s
+        "fs/new-file": 100x/s
 
-        "http/request": 1x/s
+        "http/request": 100x/s
     }
 }
 
