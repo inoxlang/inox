@@ -259,7 +259,7 @@ func getHomedirStartupScriptPath() string {
 	home, err := os.UserHomeDir()
 	if err == nil && home != "" {
 		pth := path.Join(home, SHELL_STARTUP_SCRIPT_NAME)
-		info, err := os.Stat(startupScriptPath)
+		info, err := os.Stat(pth)
 		if err == nil && info.Mode().IsRegular() {
 			startupScriptPath = pth
 		}
