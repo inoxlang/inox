@@ -1,0 +1,14 @@
+manifest {
+    limits: {
+        "execution/total-time": 1s
+    }
+}
+
+sleep 1s
+print "1"
+
+sleep 100ms
+print "1.1"
+
+sleep 100ms
+print "1.2"

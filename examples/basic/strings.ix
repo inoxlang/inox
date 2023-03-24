@@ -1,0 +1,15 @@
+manifest {}
+
+for string in [
+    "quoted strings are\nJSON strings", 
+
+    `multiline
+    quoted
+    string`,
+
+    unquoted-strings/are\:limited, 
+    -, 
+    --,
+] {
+    print $string
+}

@@ -1,0 +1,9 @@
+manifest {
+    permissions: {
+        read: {
+            cli-args: true
+        }
+    }
+}
+
+print $$args

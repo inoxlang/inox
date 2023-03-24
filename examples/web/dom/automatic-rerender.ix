@@ -1,0 +1,11 @@
+manifest { }
+
+counter = { c: 1 }
+
+
+node = dom.auto(counter)
+print html.str_render(node)
+
+counter.c += 1
+sleep(100ms)
+print html.str_render(node)

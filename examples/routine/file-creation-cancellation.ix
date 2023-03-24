@@ -1,0 +1,37 @@
+const (
+    FILEPATH = ./a.txt
+)
+
+manifest {
+    permissions: {
+        read: IWD_PREFIX
+        create: {
+            $$IWD_PREFIX
+            routines: {}
+        }
+    }
+}
+
+routine = go {
+    globals: .{create, FILEPATH}
+    allow: {
+        create: { 
+            $$IWD_PREFIX
+        }
+    }
+} do {
+    return create!(FILEPATH "hello")
+} 
+
+routine.cancel()
+sleep 500ms
+
+# there should be an error since we cancelled the creation of the file
+assign content err = fs.read(FILEPATH)
+
+if err? {
+    print "error:" $err
+} else {
+    print "no error"
+}
+

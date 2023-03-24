@@ -1,0 +1,752 @@
+package internal
+
+import (
+	"errors"
+	"fmt"
+	"log"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
+	parse "github.com/inox-project/inox/internal/parse"
+	"github.com/inox-project/inox/internal/utils"
+)
+
+var (
+	//the initial working dir is the working dir at the start of the program execution.
+	INITIAL_WORKING_DIR_PATH         Path
+	INITIAL_WORKING_DIR_PATH_PATTERN PathPattern
+)
+
+func SetInitialWorkingDir() {
+	wd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
+	INITIAL_WORKING_DIR_PATH = Path(wd)
+	if !INITIAL_WORKING_DIR_PATH.IsDirPath() {
+		INITIAL_WORKING_DIR_PATH += "/"
+	}
+
+	INITIAL_WORKING_DIR_PATH_PATTERN = PathPattern(INITIAL_WORKING_DIR_PATH + "...")
+}
+
+// A Manifest contains most of the user-defined metadata about a Module.
+type Manifest struct {
+	RequiredPermissions []Permission
+	Limitations         []Limitation
+	HostResolutions     map[Host]Value
+}
+
+func NewEmptyManifest() *Manifest {
+	return &Manifest{}
+}
+
+func (m *Manifest) RequiresPermission(perm Permission) bool {
+	for _, requiredPerm := range m.RequiredPermissions {
+		if requiredPerm.Includes(perm) {
+			return true
+		}
+	}
+	return false
+}
+
+func (m *Manifest) ArePermsGranted(grantedPerms []Permission, forbiddenPermissions []Permission) (b bool, missingPermissions []Permission) {
+	for _, forbiddenPerm := range forbiddenPermissions {
+		if m.RequiresPermission(forbiddenPerm) {
+			missingPermissions = append(missingPermissions, forbiddenPerm)
+		}
+	}
+	for _, requiredPerm := range m.RequiredPermissions {
+		ok := false
+		for _, grantedPerm := range grantedPerms {
+			if grantedPerm.Includes(requiredPerm) {
+				ok = true
+				break
+			}
+		}
+		if !ok {
+			missingPermissions = append(missingPermissions, requiredPerm)
+		}
+	}
+
+	return len(missingPermissions) == 0, missingPermissions
+}
+
+// EvaluatePermissionListingObjectNode evaluates the object literal listing permissions in a permission drop statement.
+func EvaluatePermissionListingObjectNode(n *parse.ObjectLiteral, config ManifestEvaluationConfig) (*Object, error) {
+
+	var state *TreeWalkState
+
+	{
+		var checkErr []error
+		checkPermissionListingObject(n, func(n parse.Node, msg string) {
+			checkErr = append(checkErr, errors.New(msg))
+		})
+		if len(checkErr) != 0 {
+			return nil, combineErrors(checkErr...)
+		}
+	}
+
+	//we create a temporary state to evaluate some parts of the permissions
+	if config.RunningState == nil {
+		ctx := NewContext(ContextConfig{Permissions: []Permission{GlobalVarPermission{ReadPerm, "*"}}})
+		state = NewTreeWalkState(ctx, getGlobalsAccessibleFromManifest().EntryMap())
+
+		if config.GlobalConsts != nil {
+			for _, decl := range config.GlobalConsts.Declarations {
+				state.SetGlobal(decl.Left.Name, utils.Must(TreeWalkEval(decl.Right, state)), GlobalConst)
+			}
+		}
+
+	} else {
+		state = config.RunningState
+	}
+
+	v, err := TreeWalkEval(n, state)
+	if err == nil {
+		return v.(*Object), nil
+	}
+
+	return nil, err
+}
+
+type CustomPermissionTypeHandler func(kind PermissionKind, name string, value Value) (perms []Permission, handled bool, err error)
+
+type manifestObjectConfig struct {
+	defaultLimitations    []Limitation
+	addDefaultPermissions bool
+	handleCustomType      CustomPermissionTypeHandler //optional
+}
+
+// createManifest gets permissions and limitations by evaluating an object literal.
+// Custom permissions are handled by config.HandleCustomType
+func createManifest(object *Object, config manifestObjectConfig) (*Manifest, error) {
+
+	var perms []Permission
+	permListing := NewObject()
+	limitations := make([]Limitation, 0)
+	hostResolutions := make(map[Host]Value, 0)
+	defaultLimitationsToNotSet := make(map[string]bool)
+	specifiedGlobalPermKinds := map[PermissionKind]bool{}
+
+	for k, v := range object.EntryMap() {
+		switch k {
+		case "limits":
+			l, err := getLimitations(v, defaultLimitationsToNotSet)
+			if err != nil {
+				return nil, err
+			}
+			limitations = append(limitations, l...)
+		case "host_resolution":
+			resolutions, err := getHostResolutions(v)
+			if err != nil {
+				return nil, err
+			}
+			hostResolutions = resolutions
+		case "permissions":
+			listing, ok := v.(*Object)
+			if !ok {
+				return nil, fmt.Errorf("invalid manifest, the 'permissions' section should have a value of type object")
+			}
+			permListing = listing
+		default:
+			return nil, fmt.Errorf("invalid manifest, unknown section '%s'", k)
+		}
+	}
+
+	//add default limitations
+	for _, limitation := range config.defaultLimitations {
+		if defaultLimitationsToNotSet[limitation.Name] {
+			continue
+		}
+		limitations = append(limitations, limitation)
+	}
+
+	perms, err := getPermissionsFromListing(permListing, specifiedGlobalPermKinds, config.handleCustomType, config.addDefaultPermissions)
+	if err != nil {
+		return nil, fmt.Errorf("invalid manifest: %w", err)
+	}
+
+	return &Manifest{
+		RequiredPermissions: perms,
+		Limitations:         limitations,
+		HostResolutions:     hostResolutions,
+	}, nil
+}
+
+func getPermissionsFromListing(
+	permDescriptions *Object, specifiedGlobalPermKinds map[PermissionKind]bool,
+	handleCustomType CustomPermissionTypeHandler, addDefaultPermissions bool,
+) ([]Permission, error) {
+	perms := make([]Permission, 0)
+
+	if specifiedGlobalPermKinds == nil {
+		specifiedGlobalPermKinds = make(map[PermissionKind]bool)
+	}
+
+	for propName, propValue := range permDescriptions.EntryMap() {
+		permKind, ok := PermissionKindFromString(propName)
+
+		if ok {
+			p, err := getSingleKindPermissions(permKind, propValue, specifiedGlobalPermKinds, handleCustomType)
+			if err != nil {
+				return nil, err
+			}
+			perms = append(perms, p...)
+		} else {
+			return nil, fmt.Errorf("invalid permission kind: %s", propName)
+		}
+	}
+
+	if addDefaultPermissions {
+		// for some permission kinds if no permissions are specified for globals we add a default lax permission
+		for _, kind := range []PermissionKind{ReadPerm, UsePerm, CreatePerm} {
+			if !specifiedGlobalPermKinds[kind] {
+				perms = append(perms, GlobalVarPermission{kind, "*"})
+			}
+		}
+	}
+
+	return perms, nil
+}
+
+func getLimitations(desc Value, defaultLimitationsToNotSet map[string]bool) ([]Limitation, error) {
+	var limitations []Limitation
+	ctx := NewContext(ContextConfig{})
+
+	limitObj, isObj := desc.(*Object)
+	if !isObj {
+		return nil, fmt.Errorf("invalid manifest, description of limits should be an object")
+	}
+
+	//add limits
+
+	for limitName, limitPropValue := range limitObj.EntryMap() {
+
+		var limitation Limitation
+		defaultLimitationsToNotSet[limitName] = true
+
+		switch v := limitPropValue.(type) {
+		case Rate:
+			limitation = Limitation{Name: limitName}
+
+			switch r := v.(type) {
+			case ByteRate:
+				limitation.Kind = ByteRateLimitation
+				limitation.Value = int64(r)
+			case SimpleRate:
+				limitation.Kind = SimpleRateLimitation
+				limitation.Value = int64(r)
+			default:
+				return nil, fmt.Errorf("not a valid rate type %T", r)
+			}
+
+		case Int:
+			limitation = Limitation{
+				Name:  limitName,
+				Kind:  TotalLimitation,
+				Value: int64(v),
+			}
+		case Duration:
+			limitation = Limitation{
+				Name:  limitName,
+				Kind:  TotalLimitation,
+				Value: int64(v),
+			}
+		default:
+			return nil, fmt.Errorf("invalid manifest, invalid value %s for a limit", GetRepresentation(v, ctx))
+		}
+
+		registeredKind, registeredMinimum, ok := LimRegistry.getLimitationInfo(limitName)
+		if !ok {
+			return nil, fmt.Errorf("invalid manifest, limits: '%s' is not a registered limitation", limitName)
+		}
+		if limitation.Kind != registeredKind {
+			return nil, fmt.Errorf("invalid manifest, limits: value of '%s' has not a valid type", limitName)
+		}
+		if registeredMinimum > 0 && limitation.Value < registeredMinimum {
+			return nil, fmt.Errorf("invalid manifest, limits: value for limitation '%s' is too low, minimum is %d", limitName, registeredMinimum)
+		}
+
+		limitations = append(limitations, limitation)
+	}
+
+	//check & postprocess limits
+
+	for i, l := range limitations {
+		switch l.Name {
+		case EXECUTION_TOTAL_LIMIT_NAME:
+			if l.Value == 0 {
+				log.Panicf("invalid manifest, limits: %s should have a total value\n", EXECUTION_TOTAL_LIMIT_NAME)
+			}
+			l.DecrementFn = func(lastDecrementTime time.Time) int64 {
+				v := TOKEN_BUCKET_CAPACITY_SCALE * time.Since(lastDecrementTime)
+				return v.Nanoseconds()
+			}
+		}
+		limitations[i] = l
+	}
+
+	return limitations, nil
+}
+
+func getHostResolutions(desc Value) (map[Host]Value, error) {
+
+	resolutions := make(map[Host]Value)
+
+	dict, ok := desc.(*Dictionary)
+	if !ok {
+		return nil, fmt.Errorf("invalid manifest, description of host_resolution should be an object")
+	}
+
+	for k, v := range dict.Entries {
+		host, ok := dict.Keys[k].(Host)
+		if !ok {
+			return nil, fmt.Errorf("invalid manifest, keys of of host_resolution should be hosts")
+		}
+		// resource, ok := v.(ResourceName)
+		// if !ok {
+		// 	return nil, fmt.Errorf("invalid manifest, values of of host_resolution should be resource names")
+		// }
+
+		resolutions[host] = v
+	}
+
+	return resolutions, nil
+}
+
+func getSingleKindPermissions(
+	permKind PermissionKind, desc Value, specifiedGlobalPermKinds map[PermissionKind]bool,
+	handleCustomType CustomPermissionTypeHandler,
+) ([]Permission, error) {
+
+	name := permKind.String()
+
+	var perms []Permission
+
+	var list []Value
+	switch v := desc.(type) {
+	case *List:
+		list = v.GetOrBuildElements(nil)
+	case *Object:
+		for propKey, propVal := range v.EntryMap() {
+
+			if _, err := strconv.Atoi(propKey); err == nil {
+				list = append(list, propVal)
+			} else if propKey != IMPLICIT_KEY_LEN_KEY {
+				typeName := propKey
+
+				var p []Permission
+				var err error
+
+				switch typeName {
+				case "dns":
+					p, err = getDnsPermissions(permKind, propVal)
+				case "tcp":
+					p, err = getRawTcpPermissions(permKind, propVal)
+				case "globals":
+					p, err = getGlobalVarPerms(permKind, propVal, specifiedGlobalPermKinds)
+				case "env":
+					p, err = getEnvVarPermissions(permKind, propVal)
+				case "routines":
+					switch propVal.(type) {
+					case *Object:
+						perms = append(perms, RoutinePermission{permKind})
+					default:
+						return nil, errors.New("invalid permission, 'routines' should be followed by an object literal")
+					}
+				case "commands":
+					if permKind != UsePerm {
+						return nil, errors.New("permission 'commands' should be required in the 'use' section of permission")
+					}
+
+					newPerms, err := getCommandPermissions(propVal)
+					if err != nil {
+						return nil, err
+					}
+					perms = append(perms, newPerms...)
+				case "values":
+					if permKind != SeePerm {
+						if permKind != ReadPerm {
+							return nil, fmt.Errorf("invalid manifest, invalid permissions: 'values' is only defined for 'see'")
+						}
+					}
+
+					newPerms, err := getVisibilityPerms(propVal)
+					if err != nil {
+						return nil, err
+					}
+					perms = append(perms, newPerms...)
+				default:
+					if handleCustomType != nil {
+						customPerms, handled, err := handleCustomType(permKind, typeName, propVal)
+						if handled {
+							if err != nil {
+								return nil, fmt.Errorf("invalid manifest, cannot infer '%s' permission '%s': %s", name, typeName, err.Error())
+							}
+							perms = append(perms, customPerms...)
+							break
+						}
+					}
+
+					return nil, fmt.Errorf("invalid manifest, cannot infer '%s' permission '%s'", name, typeName)
+				}
+
+				if err != nil {
+					return nil, err
+				}
+				perms = append(perms, p...)
+			}
+		}
+	default:
+		list = []Value{v}
+	}
+
+	for _, e := range list {
+
+		switch v := e.(type) {
+		case URL:
+			switch v.Scheme() {
+			case "wss", "ws":
+				perms = append(perms, WebsocketPermission{
+					Kind_:    permKind,
+					Endpoint: v,
+				})
+			case "http", "https":
+				perms = append(perms, HttpPermission{
+					Kind_:  permKind,
+					Entity: v,
+				})
+			default:
+				return nil, fmt.Errorf("invalid manifest, URL has a valid but unsupported scheme '%s'", v.Scheme())
+			}
+
+		case URLPattern:
+			perms = append(perms, HttpPermission{
+				Kind_:  permKind,
+				Entity: v,
+			})
+		case Host:
+			switch v.Scheme() {
+			case "wss", "ws":
+				perms = append(perms, WebsocketPermission{
+					Kind_:    permKind,
+					Endpoint: v,
+				})
+			case "http", "https":
+				perms = append(perms, HttpPermission{
+					Kind_:  permKind,
+					Entity: v,
+				})
+			default:
+				return nil, fmt.Errorf("invalid manifest, Host %s has a valid scheme '%s' that makes no sense here", v, v.Scheme())
+			}
+		case HostPattern:
+			switch v.Scheme() {
+			case "http", "https":
+				perms = append(perms, HttpPermission{
+					Kind_:  permKind,
+					Entity: v,
+				})
+			default:
+				return nil, fmt.Errorf("invalid manifest, HostPattern %s has a valid scheme '%s' that makes no sense here", v, v.Scheme())
+			}
+		case Path:
+			perms = append(perms, FilesystemPermission{
+				Kind_:  permKind,
+				Entity: v,
+			})
+			if !v.IsAbsolute() {
+				return nil, fmt.Errorf("invalid manifest, only absolute paths are accepted: %s", v)
+			}
+		case PathPattern:
+			perms = append(perms, FilesystemPermission{
+				Kind_:  permKind,
+				Entity: v,
+			})
+			if !v.isAbsolute() {
+				return nil, fmt.Errorf("invalid manifest, only absolute path patterns are accepted: %s", v)
+			}
+		default:
+			return nil, fmt.Errorf("invalid manifest, cannot infer permission, value is a(n) %T", v)
+		}
+	}
+
+	return perms, nil
+}
+
+// getDnsPermissions gets a list DNSPermission from an AST node
+func getDnsPermissions(permKind PermissionKind, desc Value) ([]Permission, error) {
+	var perms []Permission
+
+	if permKind != ReadPerm {
+		return nil, fmt.Errorf("invalid manifest, 'dns' is only defined for 'read'")
+	}
+	dnsReqNodes := make([]Value, 0)
+
+	switch v := desc.(type) {
+	case *List:
+		dnsReqNodes = append(dnsReqNodes, v.GetOrBuildElements(nil)...)
+	default:
+		dnsReqNodes = append(dnsReqNodes, v)
+	}
+
+	for _, dnsReqNode := range dnsReqNodes {
+		var domain WrappedString
+
+		switch simpleVal := dnsReqNode.(type) {
+		case Host:
+			if simpleVal.HasScheme() {
+				return nil, fmt.Errorf("invalid manifest, 'dns' host should have no scheme")
+			}
+			domain = simpleVal
+		case HostPattern:
+			if simpleVal.HasScheme() {
+				return nil, fmt.Errorf("invalid manifest, 'dns' host pattern should have no scheme")
+			}
+			domain = simpleVal
+		default:
+			return nil, fmt.Errorf("invalid manifest, 'dns' should be followed by a (or a list of) host or host pattern literals, not %T", simpleVal)
+		}
+
+		perms = append(perms, DNSPermission{
+			Kind_:  permKind,
+			Domain: domain,
+		})
+	}
+
+	return perms, nil
+}
+
+// getRawTcpPermissions gets a list RawTcpPermission from an AST node
+func getRawTcpPermissions(permKind PermissionKind, desc Value) ([]Permission, error) {
+	var perms []Permission
+	tcpRequirementNodes := make([]Value, 0)
+
+	switch v := desc.(type) {
+	case *List:
+		tcpRequirementNodes = append(tcpRequirementNodes, v.GetOrBuildElements(nil)...)
+	default:
+		tcpRequirementNodes = append(tcpRequirementNodes, v)
+	}
+
+	for _, dnsReqNode := range tcpRequirementNodes {
+		var domain WrappedString
+
+		switch simpleVal := dnsReqNode.(type) {
+		case Host:
+			if simpleVal.HasScheme() {
+				return nil, errors.New("invalid manifest, 'tcp' host literals should have no scheme")
+			}
+			domain = simpleVal
+		case HostPattern:
+			if simpleVal.HasScheme() {
+				return nil, errors.New("invalid manifest, 'tcp' host pattern literals should have no scheme")
+			}
+			domain = simpleVal
+		default:
+			return nil, fmt.Errorf("invalid manifest, 'tcp' should be followed by a (or a list of) host or host pattern literals, not %T", simpleVal)
+		}
+
+		perms = append(perms, RawTcpPermission{
+			Kind_:  permKind,
+			Domain: domain,
+		})
+	}
+
+	return perms, nil
+}
+
+func getGlobalVarPerms(permKind PermissionKind, desc Value, specifiedGlobalPermKinds map[PermissionKind]bool) ([]Permission, error) {
+
+	var perms []Permission
+	globalReqNodes := make([]Value, 0)
+
+	switch v := desc.(type) {
+	case *List:
+		globalReqNodes = append(globalReqNodes, v.GetOrBuildElements(nil)...)
+	default:
+		globalReqNodes = append(globalReqNodes, v)
+	}
+
+	for _, gn := range globalReqNodes {
+		nameOrAny, ok := gn.(Str)
+		if !ok { //TODO: + check with regex
+			return nil, errors.New("invalid manifest, 'globals' should be followed by a (or a list of) variable name(s) or a star *")
+		}
+
+		specifiedGlobalPermKinds[permKind] = true
+
+		perms = append(perms, GlobalVarPermission{
+			Kind_: permKind,
+			Name:  string(nameOrAny),
+		})
+	}
+
+	return perms, nil
+}
+
+// getEnvVarPermissions gets a list EnvVarPermission from an AST node
+func getEnvVarPermissions(permKind PermissionKind, desc Value) ([]Permission, error) {
+	var perms []Permission
+	envReqNodes := make([]Value, 0)
+
+	switch v := desc.(type) {
+	case *List:
+		envReqNodes = append(envReqNodes, v.GetOrBuildElements(nil)...)
+	default:
+		envReqNodes = append(envReqNodes, v)
+	}
+
+	for _, n := range envReqNodes {
+		nameOrAny, ok := n.(Str)
+		if !ok { //TODO: + check with regex
+			log.Panicln("invalid manifest, 'globals' should be followed by a (or a list of) variable name(s) or a start *")
+		}
+
+		perms = append(perms, EnvVarPermission{
+			Kind_: permKind,
+			Name:  string(nameOrAny),
+		})
+	}
+
+	return perms, nil
+}
+
+// getCommandPermissions gets a list of CommandPermission from an AST node
+func getCommandPermissions(n Value) ([]Permission, error) {
+
+	const ERR_PREFIX = "invalid manifest, use: commands: "
+	const ERR = ERR_PREFIX + "a command (or subcommand) name should be followed by object literals with the next subcommands as keys (or empty)"
+
+	var perms []Permission
+
+	topObject, ok := n.(*Object)
+	if !ok {
+		return nil, errors.New(ERR)
+	}
+
+	for name, propValue := range topObject.EntryMap() {
+
+		if IsIndexKey(name) {
+			return nil, errors.New(ERR_PREFIX + "implicit/index keys are not allowed")
+		}
+
+		var cmdNameKey = name
+		var cmdName WrappedString
+		if strings.HasPrefix(cmdNameKey, "./") || strings.HasPrefix(cmdNameKey, "/") || strings.HasPrefix(cmdNameKey, "%") {
+
+			const PATH_ERR = ERR_PREFIX + "command starting with / or ./ should be valid paths"
+
+			chunk, err := parse.ParseChunk(cmdNameKey, "")
+			if err != nil || len(chunk.Statements) != 1 {
+				return nil, errors.New(PATH_ERR)
+			}
+			switch pth := chunk.Statements[0].(type) {
+			case *parse.AbsolutePathLiteral:
+				cmdName = Path(pth.Value)
+			case *parse.RelativePathLiteral:
+				cmdName = Path(pth.Value)
+			case *parse.AbsolutePathPatternLiteral:
+				cmdName = PathPattern(pth.Value)
+			case *parse.RelativePathPatternLiteral:
+				cmdName = PathPattern(pth.Value)
+			default:
+				return nil, errors.New(PATH_ERR)
+			}
+		} else {
+			cmdName = Str(cmdNameKey)
+		}
+
+		cmdDesc, ok := propValue.(*Object)
+		if !ok {
+			return nil, errors.New(ERR)
+		}
+
+		if len(cmdDesc.keys) == 0 {
+			cmdPerm := CommandPermission{
+				CommandName: cmdName,
+			}
+			perms = append(perms, cmdPerm)
+			continue
+		}
+
+		for subcmdName, cmdDescPropVal := range cmdDesc.EntryMap() {
+
+			if _, err := strconv.Atoi(subcmdName); err == nil {
+				return nil, errors.New(ERR_PREFIX + "implicit keys are not allowed")
+			}
+
+			subCmdDesc, ok := cmdDescPropVal.(*Object)
+			if !ok {
+				return nil, errors.New(ERR)
+			}
+
+			if len(subCmdDesc.keys) == 0 {
+				subcommandPerm := CommandPermission{
+					CommandName:         cmdName,
+					SubcommandNameChain: []string{subcmdName},
+				}
+				perms = append(perms, subcommandPerm)
+				continue
+			}
+
+			for deepSubCmdName, subCmdDescPropVal := range subCmdDesc.EntryMap() {
+
+				if _, err := strconv.Atoi(deepSubCmdName); err == nil {
+					return nil, errors.New(ERR)
+				}
+
+				deepSubCmdDesc, ok := subCmdDescPropVal.(*Object)
+				if !ok {
+					return nil, errors.New(ERR)
+				}
+
+				if len(deepSubCmdDesc.keys) == 0 {
+					subcommandPerm := CommandPermission{
+						CommandName:         cmdName,
+						SubcommandNameChain: []string{subcmdName, deepSubCmdName},
+					}
+					perms = append(perms, subcommandPerm)
+					continue
+				}
+
+				return nil, errors.New(ERR_PREFIX + "the subcommand chain has a maximum length of 2")
+			}
+		}
+	}
+
+	return perms, nil
+}
+
+func getVisibilityPerms(desc Value) ([]Permission, error) {
+	var perms []Permission
+	values := make([]Value, 0)
+
+	switch v := desc.(type) {
+	case *List:
+		values = append(values, v.GetOrBuildElements(nil)...)
+	default:
+		values = append(values, v)
+	}
+
+	for _, val := range values {
+		patt, ok := val.(Pattern)
+		if !ok {
+			return nil, fmt.Errorf("invalid value in visibility section, .values should be a pattern or a list of patterns")
+		}
+		perms = append(perms, ValueVisibilityPermission{Pattern: patt})
+	}
+
+	return perms, nil
+}
+
+func getGlobalsAccessibleFromManifest() *Object {
+	return objFrom(ValMap{
+		"IWD":        INITIAL_WORKING_DIR_PATH,
+		"IWD_PREFIX": INITIAL_WORKING_DIR_PATH_PATTERN,
+	})
+}

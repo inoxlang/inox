@@ -1,0 +1,18 @@
+manifest {
+    permissions: {
+        create: IWD_PREFIX
+        read: IWD_PREFIX
+    }
+    limits: {
+        "fs/write": 100MB/s
+        "fs/read": 100MB/s
+    }
+}
+
+
+#  $$kv = open-store!(./db.json)
+
+#  kv.set("a", 1.0)
+#  kv.set("b", "hello")
+
+#  print kv.get("b")

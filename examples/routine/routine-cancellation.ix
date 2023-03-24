@@ -1,0 +1,23 @@
+manifest {
+    permissions: {
+        create: {
+            routines: {}
+        }
+    }
+}
+
+routine = go {
+    globals: .{print, sleep}
+    allow: {}
+} do {
+
+    for i in (1..10) {
+        print "(routine)" $i
+        sleep 100ms
+    }
+
+}
+
+sleep 100ms
+routine.cancel()
+sleep 100ms

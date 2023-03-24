@@ -1,0 +1,24 @@
+manifest {
+    permissions: {
+        read: {
+            $$IWD_PREFIX
+            %https://localhost:8080/...
+        }
+        provide: https://localhost:8080
+        create: {
+            routines: {}
+        }
+    }
+}
+
+
+# dynamic imports are relative to the module's file
+routine = dynimport!(./return_1.ix, {}, {})
+print "result of ./return_1.ix:" routine.wait_result!()
+
+
+# URL import
+server = http.FileServer!(https://localhost:8080 ./examples/import/)
+routine = dynimport!(https://localhost:8080/return_1.ix, {}, {}, --insecure)
+print "result of https://localhost:8080/return_1.ix:" routine.wait_result!()
+server.close() 

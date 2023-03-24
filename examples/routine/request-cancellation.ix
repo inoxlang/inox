@@ -1,0 +1,46 @@
+const (
+    HOST = https://localhost:8080
+    URL = https://localhost:8080/
+)
+
+manifest {
+    permissions: {
+        read: URL
+        provide: HOST
+        create: {
+            routines: {}
+        }
+    }
+}
+
+# if you run this example you should not get "request received" because the routine is cancelled before the request is sent
+
+
+# server creation
+fn handle(rw %http.resp_writer, r %http.req){
+    print "request received"
+
+    match r.path {
+        / {
+            rw.writeJSON({"body": true})
+        }
+    }
+}
+
+server = http.Server!(HOST, handle )
+
+# -----------------------------------------
+
+routine = go {
+    globals: .{read, URL}
+    allow: {
+        read: URL
+    }
+} do {
+    return read!(URL)
+} 
+
+routine.cancel()
+sleep 500ms
+print "<<<end>>>"
+

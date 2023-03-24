@@ -1,0 +1,14 @@
+manifest {}
+
+username = "foo"
+
+# path patterns
+print "/home/foo match /home/...:" (/home/foo match %/home/...)
+print "/home/foo match /home/*:" (/home/foo match %/home/*)
+print "/home/foo/ match %/*:" (/home/foo/ match %/*)
+
+# path pattern expressions allow you to safely create patterns, username cannot contain '..', '/' or a globbing symbol
+print "/home/foo match %/home/{$username}:" (/home/foo match %/home/{username})
+
+# named segment path patterns allow you to retrieve a segment of the matched path (see the match statement examples)
+print "/home/foo match %/home/{:username}:" (/home/foo match %/home/{:username})

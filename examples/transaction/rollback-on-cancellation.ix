@@ -1,0 +1,14 @@
+manifest {
+    permissions: {
+        create: IWD_PREFIX
+    }
+}
+
+# start a new transaction in the current context
+tx = start_tx()
+
+fs.mkfile ./file.txt
+sleep 2s
+
+# when the execution is cancelled for whatever reason the transaction is automatically rollbacked
+cancel_exec()

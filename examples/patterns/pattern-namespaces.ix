@@ -1,0 +1,12 @@
+manifest {}
+
+
+# a pattern namespace definition is created by assigning an object or a record to a pattern namespace identifier
+
+%mynamespace. = #{
+    user: %{name: %str}  
+    post: %{title: %str}  
+}
+
+print(%mynamespace.user)
+print(%mynamespace.post)

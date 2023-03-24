@@ -1,0 +1,10 @@
+manifest {
+    permissions: {
+        create: https://jsonplaceholder.typicode.com/posts
+    }
+}
+
+res = http.post!(https://jsonplaceholder.typicode.com/posts, {name: "Foo"})
+body = tostr(res.body.readAll!())
+
+print $body

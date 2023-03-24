@@ -1,0 +1,4 @@
+manifest { }
+
+date = now()
+print html.str_render(dom.auto(date))

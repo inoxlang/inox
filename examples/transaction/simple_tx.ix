@@ -1,0 +1,15 @@
+manifest {
+    permissions: {
+        create: IWD_PREFIX
+    }
+}
+
+# start a new transaction in the current context
+tx = start_tx()
+
+# within a transaction (most) side effects will only happen when the transition is commited.
+fs.mkfile ./file.txt
+sleep 2s
+
+# effects are applied
+tx.commit()

@@ -1,0 +1,12 @@
+manifest {}
+
+# insecure hashing functions
+print "md5 hash =" insecure.md5("string")
+print "sha1 hash =" insecure.sha1("string")
+
+# insecure.mkpath allows to create paths without the restrictions on path expressions
+print "path =" insecure.mkpath(["./a", /.., "/eee"])
+
+# insecure.mkpurl allows to create URLs without the restrictions on URL expressions
+print "url =" insecure.mkurl(["https://", "google", ".com", "/index.html?q=hello"])
+

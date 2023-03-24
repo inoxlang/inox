@@ -1,0 +1,239 @@
+package internal
+
+import (
+	"strings"
+	"testing"
+
+	parse "github.com/inox-project/inox/internal/parse"
+	"github.com/inox-project/inox/internal/utils"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestURLPattern(t *testing.T) {
+	assert.False(t, URLPattern("https://localhost:443/ab/...").Test(nil, URL("https://localhost:443/ab")))
+	assert.True(t, URLPattern("https://localhost:443/ab/...").Test(nil, URL("https://localhost:443/ab/c")))
+	assert.True(t, URLPattern("https://localhost:443/ab/...").Test(nil, URL("https://localhost:443/ab/c?q=a")))
+
+	assert.False(t, URLPattern("https://localhost:443/...").Test(nil, URL("wss://localhost:443/")))
+	assert.True(t, URLPattern("wss://localhost:443/...").Test(nil, URL("wss://localhost:443/")))
+}
+
+func TestPathPatternTest(t *testing.T) {
+	assert.True(t, PathPattern("/*").Test(nil, Path("/")))
+	assert.True(t, PathPattern("/*").Test(nil, Path("/e")))
+	assert.False(t, PathPattern("/*").Test(nil, Path("/e/")))
+	assert.False(t, PathPattern("/*").Test(nil, Path("/e/e")))
+}
+
+func TestHostPatternTest(t *testing.T) {
+	assert.True(t, HostPattern("https://*.com").Test(nil, Host("https://a.com")))
+	assert.True(t, HostPattern("https://a*.com").Test(nil, Host("https://a.com")))
+	assert.True(t, HostPattern("https://a*.com").Test(nil, Host("https://ab.com")))
+	assert.False(t, HostPattern("https://*.com").Test(nil, Host("https://sub.a.com")))
+	assert.True(t, HostPattern("https://**.com").Test(nil, Host("https://sub.a.com")))
+	assert.True(t, HostPattern("https://a.*").Test(nil, Host("https://a.com")))
+	assert.False(t, HostPattern("https://sub.*").Test(nil, Host("https://sub.a.com")))
+	assert.True(t, HostPattern("https://sub.**").Test(nil, Host("https://sub.a.com")))
+	assert.False(t, HostPattern("https://*.com").Test(nil, Host("://a.com")))
+	assert.False(t, HostPattern("://*.com").Test(nil, Host("https://a.com")))
+	assert.False(t, HostPattern("://*.com:8080").Test(nil, Host("https://a.com")))
+	assert.True(t, HostPattern("://*.com").Test(nil, Host("://a.com")))
+
+	assert.False(t, HostPattern("https://*.com").Test(nil, Host("ws://a.com")))
+	assert.True(t, HostPattern("ws://*.com").Test(nil, Host("ws://a.com")))
+}
+
+func TestNamedSegmentPathPatternTest(t *testing.T) {
+
+	res := parseEval(t, `%/home/{:username}`)
+	patt := res.(*NamedSegmentPathPattern)
+
+	for _, testCase := range []struct {
+		ok   bool
+		path Path
+	}{
+		{false, "/home"},
+		{false, "/home/"},
+		{true, "/home/user"},
+		{false, "/home/user/"},
+		{false, "/home/user/e"},
+	} {
+		t.Run(string(testCase.path), func(t *testing.T) {
+			assert.Equal(t, testCase.ok, patt.Test(nil, testCase.path))
+		})
+	}
+}
+
+func TestNamedSegmentPathPatternMatchGroups(t *testing.T) {
+	res1 := parseEval(t, `%/home/{:username}`)
+	patt1 := res1.(*NamedSegmentPathPattern)
+
+	for _, testCase := range []struct {
+		groups map[string]Value
+		path   Path
+	}{
+		{nil, "/home"},
+		{nil, "/home/"},
+		{map[string]Value{"0": Path("/home/user"), "username": Str("user")}, "/home/user"},
+		{nil, "/home/user/"},
+		{nil, "/home/user/e"},
+	} {
+		t.Run(string(testCase.path), func(t *testing.T) {
+			groups, ok, err := patt1.MatchGroups(nil, testCase.path)
+			assert.NoError(t, err)
+
+			if ok != (testCase.groups != nil) {
+				assert.FailNow(t, "invalid match")
+			}
+			assert.Equal(t, testCase.groups, groups)
+		})
+
+	}
+
+	res2 := parseEval(t, `%/home/{:username}/`)
+	patt2 := res2.(*NamedSegmentPathPattern)
+
+	for _, testCase := range []struct {
+		groups map[string]Value
+		path   Path
+	}{
+		{nil, "/home"},
+		{nil, "/home/"},
+		{nil, "/home/user"},
+		{map[string]Value{"0": Path("/home/user/"), "username": Str("user")}, "/home/user/"},
+		{nil, "/home/user/e"},
+	} {
+		t.Run("pattern ends with slash, "+string(testCase.path), func(t *testing.T) {
+			groups, ok, err := patt2.MatchGroups(nil, testCase.path)
+			assert.NoError(t, err)
+
+			if ok != (testCase.groups != nil) {
+				assert.FailNow(t, "invalid match")
+			}
+			assert.Equal(t, testCase.groups, groups)
+		})
+
+	}
+}
+
+func TestRepeatedPatternElementRandom(t *testing.T) {
+
+	t.Run("2 ocurrences of constant string", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+
+		patt := RepeatedPatternElement{
+			regexp:            nil,
+			ocurrenceModifier: parse.ExactOcurrence,
+			exactCount:        2,
+			element:           &ExactValuePattern{value: Str("a")},
+		}
+
+		for i := 0; i < 5; i++ {
+			assert.Equal(t, Str("aa"), patt.Random(ctx).(Str))
+		}
+	})
+
+	t.Run("optional ocurrence of constant string", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+
+		patt := RepeatedPatternElement{
+			regexp:            nil,
+			ocurrenceModifier: parse.OptionalOcurrence,
+			element:           &ExactValuePattern{value: Str("a")},
+		}
+
+		for i := 0; i < 5; i++ {
+			s := patt.Random(ctx).(Str)
+			assert.Equal(t, Str(strings.Repeat("a", len(s))), s)
+		}
+	})
+
+	t.Run("zero or more ocurrences of constant string", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+
+		patt := RepeatedPatternElement{
+			regexp:            nil,
+			ocurrenceModifier: parse.ZeroOrMoreOcurrence,
+			element:           &ExactValuePattern{value: Str("a")},
+		}
+
+		for i := 0; i < 5; i++ {
+			s := patt.Random(ctx).(Str)
+			length := len(s)
+
+			assert.Equal(t, Str(strings.Repeat("a", length)), s)
+		}
+	})
+
+	t.Run("at least one ocurrence of constant string", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+
+		patt := RepeatedPatternElement{
+			regexp:            nil,
+			ocurrenceModifier: parse.ZeroOrMoreOcurrence,
+			element:           &ExactValuePattern{value: Str("a")},
+		}
+
+		for i := 0; i < 5; i++ {
+			s := patt.Random(ctx).(Str)
+			length := len(s)
+
+			assert.Equal(t, Str(strings.Repeat("a", length)), s)
+		}
+	})
+}
+
+func TestSequenceStringPatternRandom(t *testing.T) {
+	ctx := NewContext(ContextConfig{})
+
+	patt1 := SequenceStringPattern{
+		regexp: nil,
+		node:   nil,
+		elements: []StringPattern{
+			&ExactValuePattern{value: Str("a")},
+			&ExactValuePattern{value: Str("b")},
+		},
+	}
+
+	assert.Equal(t, Str("ab"), patt1.Random(ctx))
+}
+
+func TestUnionStringPatternRandom(t *testing.T) {
+	ctx := NewContext(ContextConfig{})
+
+	patt1 := UnionStringPattern{
+		regexp: nil,
+		node:   nil,
+		cases: []StringPattern{
+			&ExactValuePattern{value: Str("a")},
+			&ExactValuePattern{value: Str("b")},
+		},
+	}
+
+	for i := 0; i < 5; i++ {
+		s := patt1.Random(ctx).(Str)
+		assert.True(t, s == "a" || s == "b")
+	}
+
+}
+
+// parseEval is a utility function that parses the input string and then evalutes the parsed module.
+func parseEval(t *testing.T, s string) Value {
+
+	chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+		NameString: "test",
+		CodeString: s,
+	}))
+
+	mod, err := parse.ParseChunk(s, "")
+	assert.NoError(t, err)
+	_, err = StaticCheck(StaticCheckInput{
+		Node:  mod,
+		Chunk: chunk,
+	})
+	assert.NoError(t, err)
+
+	res, err := TreeWalkEval(mod, NewTreeWalkState(NewDefaultTestContext()))
+	assert.NoError(t, err)
+	return res
+}

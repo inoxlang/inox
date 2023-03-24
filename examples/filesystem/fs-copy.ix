@@ -1,0 +1,20 @@
+manifest {
+    permissions: {
+        read: IWD_PREFIX,
+        create: IWD_PREFIX
+        delete: IWD_PREFIX
+    }
+}
+
+fs.rm ./a.txt 
+fs.rm ./b.txt 
+
+fs.mkfile ./a.txt "hello"
+fs.cp ./a.txt ./b.txt
+print read!(./b.txt)
+
+err = fs.cp(./a.txt ./b.txt)
+if err? {
+    print "error:" $err
+}
+

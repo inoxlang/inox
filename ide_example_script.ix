@@ -1,0 +1,18 @@
+
+manifest {  
+    permissions: {}  
+}    
+ 
+var a %int = "a"
+
+fn f(arg %int?){
+    if arg? {
+        print (1 + arg)
+    } else {
+        (1 + arg)
+    }
+}
+
+f("a")
+f(1)
+

@@ -1,0 +1,13 @@
+manifest {
+    permissions: {
+        use: {
+            commands: {
+                "%/bin/...": {} 
+                echo: {}
+            }
+        }
+    }
+}
+
+print ex!(#echo "hello 1 !")
+print ex!(/bin/echo "hello 2 !")

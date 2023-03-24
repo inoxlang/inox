@@ -1,0 +1,63 @@
+package internal
+
+import (
+	"encoding/json"
+	"errors"
+
+	"github.com/inox-project/inox/internal/utils"
+)
+
+var (
+	parsers = map[Mimetype]StatelessParser{}
+	_       = []StatelessParser{&jsonParser{}}
+)
+
+func init() {
+	RegisterParser(JSON_CTYPE, &jsonParser{})
+	RegisterParser(IXON_CTYPE, &inoxReprParser{})
+}
+
+type StatelessParser interface {
+	Validate(ctx *Context, s string) bool
+	Parse(ctx *Context, s string) (Value, error)
+}
+
+func RegisterParser(mime Mimetype, p StatelessParser) {
+	if _, ok := parsers[mime]; ok {
+		panic(errors.New("a parser is already registered for mime " + string(mime)))
+	}
+	parsers[mime] = p
+}
+
+func GetParser(mime Mimetype) (StatelessParser, bool) {
+	p, ok := parsers[mime]
+	return p, ok
+}
+
+type jsonParser struct {
+}
+
+func (p *jsonParser) Validate(ctx *Context, s string) bool {
+	return json.Valid(utils.StringAsBytes(s))
+
+}
+func (p *jsonParser) Parse(ctx *Context, s string) (Value, error) {
+	var jsonVal any
+	err := json.Unmarshal(utils.StringAsBytes(s), &jsonVal)
+	if err != nil {
+		return nil, err
+	}
+	return ConvertJSONValToInoxVal(ctx, jsonVal, false), nil
+}
+
+type inoxReprParser struct {
+}
+
+func (p *inoxReprParser) Validate(ctx *Context, s string) bool {
+	_, err := ParseRepr(ctx, utils.StringAsBytes(s))
+	return err == nil
+
+}
+func (p *inoxReprParser) Parse(ctx *Context, s string) (Value, error) {
+	return ParseRepr(ctx, utils.StringAsBytes(s))
+}

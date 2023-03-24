@@ -1,0 +1,25 @@
+# all constants are declared in an (optional) const (..) section at the top of the file
+const (
+    A = 1
+    HOST = https://example.com
+)
+
+# only global constants can be used in the manifest, variables cannot be used
+manifest {
+    permissions: {
+        read: HOST 
+    }
+}
+
+a = 1
+print $a
+$a = 2 # same 
+print $a
+
+$$myglobal = 100
+print $$myglobal
+
+
+b = 1
+b += 2
+print $b

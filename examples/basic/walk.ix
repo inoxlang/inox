@@ -1,0 +1,49 @@
+manifest {
+    permissions: {
+        read: IWD_PREFIX
+        create: IWD_PREFIX
+        delete: IWD_PREFIX
+    }
+}
+
+# the walk statement walks a directory, the entries are read in the lexicographic order, symlinks are not followed
+
+delete ./tempdir/
+fs.mkdir ./tempdir/ :{
+    ./a.txt: ""
+    ./b/: :{
+        ./c.txt: ""
+    }
+}
+
+
+print "simple walk:"
+walk ./tempdir/ entry {
+    print $entry.path
+}
+
+# the prune statement stops the walk of the current subdirectory
+print "\nprune if dir is b:"
+walk ./tempdir/ entry {
+    if (entry.name == "b") {
+        prune
+    }
+    print $entry.path
+}
+
+# the break statement stops the walk (like break in a for statement)
+print "\nbreak after the starting node:"
+walk ./tempdir/ entry {
+    print $entry.path
+    if entry.isWalkStart {
+        break
+    }
+}
+
+# the continue statement continues the walk (like continue in a for statement)
+print "\ncontinue statement"
+walk ./tempdir/ entry {
+    print "before continue: " $entry.path
+    continue
+    print "after continue: " $entry.path
+}

@@ -1,0 +1,5 @@
+manifest {}
+
+list = [2, 3]
+
+printvals [1, ...list]

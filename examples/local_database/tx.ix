@@ -1,0 +1,26 @@
+manifest {
+    permissions: {
+        create: %/tmp/mydb/...
+        read: %/tmp/mydb/...
+        write: %/tmp/mydb/...
+        delete: %/tmp/mydb/
+    }
+
+    host_resolution: :{
+        ldb://main : /tmp/mydb/
+    }
+}
+
+delete /tmp/mydb/
+
+db = localdb.open!(ldb://main)
+db.set(/a, 0)
+
+tx = start_tx()
+db.set(/a, 1000)
+tx.rollback()
+
+assign v ok = db.get(/a)
+print "value for key a: " $v 
+
+db.close()

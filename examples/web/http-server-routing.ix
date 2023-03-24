@@ -1,0 +1,24 @@
+manifest {
+    permissions: {
+        read: %https://localhost:8080/...
+        provide: https://localhost:8080
+    }
+}
+
+
+fn handle(rw %http.resp_writer, r %http.req){
+    rw.writeJSON({ aa: 1 })
+}
+
+server = http.Server!(https://localhost:8080, Mapping {
+    /a => "a"
+    %/... => handle
+})
+
+body = http.getbody!(https://localhost:8080/a, {--insecure})
+print tostr(body)
+
+body = http.getbody!(https://localhost:8080/, {--insecure})
+print tostr(body)
+
+server.close()

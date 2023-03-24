@@ -1,0 +1,77 @@
+package internal
+
+import (
+	symbolic "github.com/inox-project/inox/internal/core/symbolic"
+)
+
+var _ = []symbolic.Iterable{&Stack{}}
+
+type Stack struct {
+	symbolic.UnassignablePropsMixin
+	_ int
+}
+
+func (*Stack) Test(v symbolic.SymbolicValue) bool {
+	_, ok := v.(*Stack)
+	return ok
+}
+
+func (Stack) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
+	return &Stack{}
+}
+
+func (s *Stack) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
+	switch name {
+	case "push":
+		return symbolic.WrapGoMethod(s.Push), true
+	case "pop":
+		return symbolic.WrapGoMethod(s.Pop), true
+	case "peek":
+		return symbolic.WrapGoMethod(s.Peek), true
+	}
+	return &symbolic.GoFunction{}, false
+}
+
+func (s *Stack) Prop(name string) symbolic.SymbolicValue {
+	return symbolic.GetGoMethodOrPanic(name, s)
+}
+
+func (*Stack) PropertyNames() []string {
+	return []string{"push", "pop", "peek"}
+}
+
+func (*Stack) Push(ctx *symbolic.Context, elems ...symbolic.SymbolicValue) {
+
+}
+
+func (*Stack) Pop(ctx *symbolic.Context) {
+
+}
+
+func (*Stack) Peek(ctx *symbolic.Context) symbolic.SymbolicValue {
+	return &symbolic.Any{}
+}
+
+func (*Stack) Widen() (symbolic.SymbolicValue, bool) {
+	return nil, false
+}
+
+func (*Stack) IsWidenable() bool {
+	return false
+}
+
+func (*Stack) String() string {
+	return "set"
+}
+
+func (*Stack) IteratorElementKey() symbolic.SymbolicValue {
+	return &symbolic.Any{}
+}
+
+func (*Stack) IteratorElementValue() symbolic.SymbolicValue {
+	return &symbolic.Any{}
+}
+
+func (*Stack) WidestOfType() symbolic.SymbolicValue {
+	return &Stack{}
+}

@@ -1,0 +1,60 @@
+manifest {}
+
+# functions are declared in the global scope
+fn hello(name, end){
+    print "hello" $name $end
+    return 0
+}
+
+# function expression
+func = fn(){
+    print "hello"
+}
+
+# ------ Calling functions ------
+
+# functions can be called with parenthesis or with a command-like syntax
+func()
+hello("foo", "!")
+hello "bar" "!"
+
+
+# ------ 'Must' calls ------
+
+# 'must' call are special calls that cause a panic if there is an error.
+# Go functions are considered to return an error if the last return value is a non-nil error.
+# Inox functions are considered to return an error if the return value is a List which last element is an error.
+# note: Inox functions always return a single value.
+
+# syntaxes for 'must' calls:
+# f
+# f!()
+
+fn f(){
+    return [1, Error("expected failure !!")]
+}
+
+assign res err = f() # the list is destructured
+print "res =" $res "err =" $err
+
+
+# ------ Parameter and return types ------
+
+# type of a is "any"
+fn myfunc(a, b %int) %int {
+    assert (a match %int)
+
+    return (a + b)
+}
+
+print "myfunc(1, 2): " myfunc(1, 2)
+# this would cause an error:
+# print "myfunc(1, true): " myfunc(1, true)
+
+
+# if no return type is specified, it is inferred on each call
+fn identity(x){
+    return x
+}
+
+print "identity(1) + 2: " (identity(1) + 2)

@@ -1,0 +1,44 @@
+package internal
+
+type FileInfo struct {
+	Name    Str
+	AbsPath Path
+	Size    Int
+	Mode    FileMode
+	ModTime Date
+	IsDir   Bool
+}
+
+func (i FileInfo) GetGoMethod(name string) (*GoFunction, bool) {
+	return &GoFunction{}, false
+}
+
+func (i FileInfo) Prop(ctx *Context, name string) Value {
+	switch name {
+	case "name":
+		return i.Name
+	case "absPath":
+		return i.AbsPath
+	case "size":
+		return i.Size
+	case "mode":
+		return i.Mode
+	case "modTime":
+		return i.ModTime
+	case "isDir":
+		return i.IsDir
+	}
+	method, ok := i.GetGoMethod(name)
+	if !ok {
+		panic(FormatErrPropertyDoesNotExist(name, i))
+	}
+	return method
+}
+
+func (FileInfo) SetProp(ctx *Context, name string, value Value) error {
+	return ErrCannotSetProp
+}
+
+func (FileInfo) PropertyNames(ctx *Context) []string {
+	return []string{"name", "absPath", "size", "mode", "modTime", "isDir"}
+}

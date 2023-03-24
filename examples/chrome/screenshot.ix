@@ -1,0 +1,22 @@
+manifest {
+    permissions: {
+        create: IWD_PREFIX
+        delete: IWD_PREFIX
+    }
+
+    limits: {
+        "fs/write": 100MB/s
+    }
+
+}
+
+h = chrome.Handle!()
+
+h.nav https://go.dev/
+h.click ".Header-menuItem"
+bytes = h.screenshot!(".Hero-gridContainer")
+h.close()
+
+# save the screenshot
+fs.rm ./img.png 
+fs.mkfile ./img.png $bytes

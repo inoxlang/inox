@@ -1,0 +1,50 @@
+const (
+    WS_HOST = wss://localhost:8080
+    WS_URL = wss://localhost:8080/
+)
+
+manifest {
+    permissions: {
+        read:  WS_URL
+        write: WS_URL
+        provide: {
+            (WS_HOST)
+            https://localhost:8080
+        }
+    }
+    limits: {
+        "ws/simul-connection": 1
+    }
+}
+
+# server
+
+$$ws_server = ws.Server!()
+
+fn handle(rw %http.resp_writer, r %http.req){
+    conn = ws_server.upgrade!(rw, r)
+
+    # echo
+    msg = conn.readJSON!()
+    conn.sendJSON(msg)
+}
+
+server = http.Server!(https://localhost:8080, handle)
+
+# client
+conn = ws.connect!(WS_URL, --insecure)
+conn.sendJSON!({data: "hello"})
+assign msg err = conn.readJSON()
+
+if err? {
+    print $err
+} else {
+    print "message from server:" 
+    printvals $msg
+}
+
+# this line will fail because the number of simultaneous connections is 1
+# other_conn = ws.connect!($$WS_URL)
+
+conn.close()
+server.close()

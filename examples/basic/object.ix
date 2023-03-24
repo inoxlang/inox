@@ -1,0 +1,22 @@
+manifest {}
+
+object = {  
+    # properties are separated by a comma or newline
+    count: 0, duration: 100ms
+
+    a: 1
+    "b": 2
+
+    # implicit-key properties, implicit keys start at "0"
+    1
+    ("b")
+}
+
+print(object)
+print(object.b)
+print($object.{a, b}) # extraction expression
+
+
+# implicit-key properties can be accessed with an index expression
+# index expressions only accept integer indexes, there is no coercion
+print(object[0]) # "a"

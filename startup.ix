@@ -1,0 +1,93 @@
+const(
+    HOME = %/home/user/...
+)
+
+manifest {
+    host_resolution: :{
+        ldb://mydb : /tmp/mydb/
+    }
+    permissions: {
+        read: {
+            %/...
+            %https://**
+            http://example.com
+            https://localhost:8080
+            $$HOME
+            %/tmp/mydb/...
+            tcp: ://example.com:80
+            env: "*"
+        }
+        use: {
+            %https://**
+            commands: {
+                echo: {}
+                "go": {
+                    help: {
+                        build: {} 
+                        run: {}
+                    }
+                    test: {}
+                }
+                git: {
+                    log: {}
+                    push: {}
+                    status: {}
+                }
+                less: {}
+                grep: {}
+                find:{}
+                cat: {} # TODO: fix
+            }
+        },
+        create: {
+            %https://**
+            https://localhost:8080
+            $$HOME
+            %/tmp/mydb/...
+            routines: {}
+        }
+        write: {
+            %/tmp/mydb/...
+        }
+        update: {
+            globals: "*"
+            %https://**
+            https://localhost:8080
+            %/home/user/...
+        }
+        delete: {
+            %https://**
+            https://localhost:8080
+            $$HOME
+        }
+        provide: {
+            %https://**
+            https://localhost:8080
+            https://localhost:4444
+        }
+    }
+    limits: {
+        "fs/read": 1MB/s
+        "fs/write": 1MB/s
+        "fs/total-new-file": 100000
+        "fs/new-file": 10x/s
+
+        "http/request": 1x/s
+    }
+}
+
+@loc = https://localhost
+
+
+return {
+    builtin-commands: [#cd, #pwd, #whoami, #hostname, #clear]
+    trusted-commands: [#echo, #go, #git, #less, #grep, #cat]
+    prompt: [
+        [@(whoami())  #bright-black #black]
+        ["@" #bright-black #black]
+        [@(hostname())  #bright-black #black]
+        ":"
+        [@(pwd())  #bright-blue #blue]
+        "> "
+    ]
+}

@@ -1,0 +1,10 @@
+manifest {
+    permissions: {
+        read: IWD_PREFIX
+    }
+    limits: {
+        "fs/read": 1MB/s
+    }
+}
+
+print tostr(fs.read!(./examples/filesystem/fs-read.ix))

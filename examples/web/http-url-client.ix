@@ -1,0 +1,34 @@
+const (
+    DOMAIN = https://localhost:8081
+    URL = https://localhost:8081/
+)
+
+manifest {
+    permissions: {
+        read: [URL, IWD_PREFIX]
+        create: IWD_PREFIX
+        provide: DOMAIN
+    }
+   
+}
+
+
+fn handle(rw %http.resp_writer, r %http.req){
+    match r.path {
+        / {
+            rw.setCookie({
+                name: "a"
+                value: "1"
+            })
+        }
+       
+    }
+}
+
+client = http.Client{ save-cookies: true, insecure: true }
+set_client_for_url(URL, client)
+
+server = http.Server!(DOMAIN, handle)
+http.get!(URL, {--insecure}) # client is automatically used
+
+server.close()

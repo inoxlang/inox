@@ -1,0 +1,23 @@
+name: Go
+
+on:
+  release:
+    types: [created]
+permissions: write-all
+
+jobs:
+  release-linux-amd64:
+    name: release linux/amd64
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: GraphR00t/go-release-action@v1.37
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        goos: linux
+        goarch: amd64
+        project_path: "./cmd/inox"
+        binary_name: "inox"
+        extra_files: LICENSE README.md docs examples
+        md5sum: false
+        sha256sum: true

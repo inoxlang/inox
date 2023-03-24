@@ -1,0 +1,644 @@
+package internal
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	pseudorand "math/rand"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
+	core "github.com/inox-project/inox/internal/core"
+	_html "github.com/inox-project/inox/internal/globals/html"
+	"github.com/inox-project/inox/internal/utils"
+	"golang.org/x/net/html"
+)
+
+const (
+	CHANGE_WATCH_TIMEOUT = 10 * time.Millisecond
+	NODE_WATCHER_PERIOD  = time.Millisecond
+
+	FORWARDED_EVENTS_KEY     = "forwarded-events"
+	LISTENED_EVENTS_ATTR_KEY = "data-listened-events"
+	JOBS_KEY                 = "jobs"
+	MODEL_KEY                = "model"
+	ON_CLICK_TOGGLE_KEY      = "on-click-toggle"
+
+	FORWARDER_ID_DATA_ATTR     = "data-forwarder-id"
+	FORWARDER_ID_BITSIZE       = 32
+	FORWARDER_ID_ENCODING_BASE = 16
+	ID_BITSIZE                 = 32
+	ID_ENCODING_BASE           = 16
+
+	S_NODE_ALREADY_HAS_A_PARENT                    = "node that already has a parent"
+	S_NODE_ALREADY_HAS_SIBLINGS                    = "node that already has siblings"
+	S_CHILDREN_ALREADY_PROVIDED_WITH_CHILDREN_PROP = "children already provided with .children"
+)
+
+var (
+	ErrRenderFailureModelNotRenderable       = errors.New("failed to render node: model is not renderable")
+	ErrRenderFailureModelNotRenderableToHTML = errors.New("failed to render node: model is not renderable to HTML")
+
+	NODE_PROPNAMES = []string{"firstChild", "data"}
+
+	_ = []core.GoValue{&Node{}}
+	_ = []core.PotentiallySharable{&Node{}}
+	_ = []core.Watchable{&Node{}}
+)
+
+type Node struct {
+	core.NoReprMixin
+	core.NotClonableMixin
+
+	lock sync.Mutex
+
+	isStatic bool
+	html     *_html.HTMLNode
+	view     *View
+
+	children []*Node
+	parent   *Node
+
+	// state
+	forwardedEvents              []string
+	listenedEvents               []string
+	forwarderId                  uint64
+	jobs                         []*core.LifetimeJob
+	model                        core.Value
+	modelChangeWatcher           core.Watcher
+	modelReaction                modelReaction
+	modelReactionData            core.Value
+	renderingConfigChangeWatcher core.Watcher // auto rendering
+	userRenderingConfig          core.Value
+	watchers                     *core.ValueWatchers
+	mutationCallbacks            *core.MutationCallbacks
+}
+
+func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *Node {
+	var jobs []*core.LifetimeJob
+	var forwardedEvents []string
+	var listenedEvents []string
+	var model core.Value = core.Nil
+	var children []*Node
+	var modelReaction modelReaction
+	var modelReactionData core.Value
+
+	htmlNodeDesc := core.ValMap{}
+
+	addChild := func(v core.Value) {
+		var child *Node
+		var html *_html.HTMLNode
+
+		switch val := v.(type) {
+		case core.StringLike:
+			html = _html.CreateTextNode(val)
+			child = NewStaticNode(html)
+		case *_html.HTMLNode:
+			child = NewStaticNode(val)
+		case *Node:
+			if val.view != nil {
+				panic(errors.New("failed to create DOM node: one of the children nodes already has an associated view"))
+			}
+			child = val
+		default:
+			child = NewAutoNode(ctx, val)
+		}
+		html = child.html
+		htmlNodeDesc[strconv.Itoa(len(children))] = html
+		children = append(children, child)
+	}
+
+	it := desc.Iterator(ctx, core.IteratorConfiguration{})
+
+	//first iteration: non-index keys
+	for it.Next(ctx) {
+		k := string(it.Key(ctx).(core.Str))
+		if core.IsIndexKey(k) {
+			continue
+		}
+
+		v := it.Value(ctx)
+		switch k {
+		case _html.CHILDREN_KEY:
+			iterable, ok := v.(core.Iterable)
+			if !ok {
+				panic(core.FmtPropOfArgXShouldBeOfTypeY(_html.CHILDREN_KEY, "description", "iterable", v))
+			}
+			it := iterable.Iterator(ctx, core.IteratorConfiguration{})
+			for it.Next(ctx) {
+				elem := it.Value(ctx)
+
+				child, ok := elem.(*_html.HTMLNode)
+				if ok {
+					if child.HasParent() {
+						panic(core.FmtUnexpectedElementInPropIterable("children", S_NODE_ALREADY_HAS_A_PARENT))
+					}
+
+					if child.HasPrevSibling() || child.HasNextSibling() {
+						panic(core.FmtUnexpectedElementInPropIterable("children", S_NODE_ALREADY_HAS_SIBLINGS))
+					}
+				}
+
+				addChild(elem)
+			}
+		case JOBS_KEY:
+			iterable, ok := v.(core.Iterable)
+			if !ok {
+				panic(core.FmtPropOfArgXShouldBeOfTypeY(JOBS_KEY, "description", "iterable", v))
+			}
+			it := iterable.Iterator(ctx, core.IteratorConfiguration{})
+			for it.Next(ctx) {
+				elem := it.Value(ctx)
+				job, ok := elem.(*core.LifetimeJob)
+				if !ok {
+					panic(core.FmtUnexpectedElementInPropIterableShowVal(elem, JOBS_KEY))
+				}
+				jobs = append(jobs, job)
+			}
+		case _html.CLASS_KEY:
+			htmlNodeDesc[k] = v
+		case MODEL_KEY:
+			model = v
+		case FORWARDED_EVENTS_KEY:
+			iterable, ok := v.(core.Iterable)
+			if !ok {
+				panic(core.FmtPropOfArgXShouldBeOfTypeY(FORWARDED_EVENTS_KEY, "description", "iterable", v))
+			}
+			it := iterable.Iterator(ctx, core.IteratorConfiguration{})
+			for it.Next(ctx) {
+				elem := it.Value(ctx)
+				ident, ok := elem.(core.Identifier)
+				if !ok {
+					panic(core.FmtUnexpectedElementInPropIterableShowVal(elem, FORWARDED_EVENTS_KEY))
+				}
+				forwardedEvents = append(forwardedEvents, string(ident))
+			}
+		case ON_CLICK_TOGGLE_KEY:
+			propName, ok := v.(core.PropertyName)
+			if !ok {
+				panic(core.FmtPropOfArgXShouldBeOfTypeY(ON_CLICK_TOGGLE_KEY, "description", "property-name", v))
+			}
+			modelReaction = toggleOnClick
+			modelReactionData = propName
+
+			listenedEvents = append(listenedEvents, "click")
+		default:
+			panic(core.FmtUnexpectedPropInArgX(k, "description"))
+		}
+	}
+
+	listenedEvents = append(listenedEvents, forwardedEvents...)
+	childrenAlreadyProvided := len(children) != 0
+	length := desc.Len()
+
+	//second iteration: get children at index keys
+	if length > 0 {
+		for i := 0; i < int(length); i++ {
+			k := strconv.Itoa(i)
+			v := desc.Prop(ctx, k)
+
+			if childrenAlreadyProvided {
+				panic(core.FmtUnexpectedElementAtIndeKeyXofArg(k, "description", S_CHILDREN_ALREADY_PROVIDED_WITH_CHILDREN_PROP))
+			}
+
+			childNode, ok := v.(*_html.HTMLNode)
+			if ok {
+				if childNode.HasParent() {
+					panic(core.FmtUnexpectedElementAtIndeKeyXofArg(k, "description", S_NODE_ALREADY_HAS_A_PARENT))
+				}
+
+				if childNode.HasPrevSibling() || childNode.HasNextSibling() {
+					panic(core.FmtUnexpectedElementAtIndeKeyXofArg(k, "description", S_NODE_ALREADY_HAS_SIBLINGS))
+				}
+			}
+
+			addChild(v)
+		}
+	}
+
+	htmlNode := _html.NewNode(ctx, tag, core.NewObjectFromMap(htmlNodeDesc, ctx))
+
+	node := &Node{
+		html: htmlNode,
+
+		model:             model,
+		modelReaction:     modelReaction,
+		modelReactionData: modelReactionData,
+
+		jobs:            jobs,
+		children:        children,
+		forwardedEvents: forwardedEvents,
+		listenedEvents:  listenedEvents,
+		forwarderId:     0,
+	}
+
+	for _, child := range children {
+		child.parent = node
+	}
+
+	// add attributes & id
+	{
+		if len(listenedEvents) > 0 {
+			htmlNode.SetAttribute(ctx, html.Attribute{
+				Key: LISTENED_EVENTS_ATTR_KEY,
+				Val: strings.Join(listenedEvents, ","),
+			})
+
+			for node.forwarderId == 0 {
+				node.forwarderId = pseudorand.Uint64() >> (64 - FORWARDER_ID_BITSIZE)
+			}
+
+			forwarderId := strconv.FormatInt(int64(node.forwarderId), ID_ENCODING_BASE)
+			htmlNode.SetAttribute(ctx, html.Attribute{Key: FORWARDER_ID_DATA_ATTR, Val: forwarderId})
+		}
+
+		node.html.Walk(func(n _html.HTMLNode) error {
+			if !n.HasId() {
+				id := pseudorand.Uint64() >> (64 - ID_BITSIZE)
+				idStr := strconv.FormatInt(int64(id), ID_ENCODING_BASE)
+				n.SetId(ctx, core.Str(idStr))
+			}
+			return nil
+		})
+	}
+
+	return node
+}
+
+func NewStaticNode(n *_html.HTMLNode) *Node {
+	return &Node{
+		html:     n,
+		model:    core.Nil,
+		isStatic: true,
+	}
+}
+
+func NewAutoNode(ctx *core.Context, model core.Value, additionalArgs ...core.Value) *Node {
+	node := &Node{model: model}
+
+	if watchable, ok := model.(core.Watchable); ok {
+		node.modelChangeWatcher = watchable.Watcher(ctx, core.WatcherConfiguration{
+			Filter: core.MUTATION_PATTERN,
+			Depth:  core.ShallowWatching,
+		})
+	}
+
+	if len(additionalArgs) != 0 {
+		node.userRenderingConfig = additionalArgs[0]
+		if watchable, ok := node.userRenderingConfig.(core.Watchable); ok {
+			node.renderingConfigChangeWatcher = watchable.Watcher(ctx, core.WatcherConfiguration{
+				Filter: core.MUTATION_PATTERN,
+				Depth:  core.IntermediateDepthWatching,
+			})
+		}
+	}
+
+	node.modelRender(ctx)
+	node.startUpdateGoroutine(ctx)
+	return node
+}
+
+type modelReaction int
+
+const (
+	toggleOnClick modelReaction = iota + 1
+)
+
+func (n *Node) setView(v *View) {
+	n.lock.Lock()
+	defer n.lock.Unlock()
+
+	n.view = v
+	for _, child := range n.children {
+		child.setView(v)
+	}
+}
+
+func (n *Node) hasView() bool {
+	n.lock.Lock()
+	defer n.lock.Unlock()
+
+	return n.view != nil
+}
+
+func (n *Node) modelRender(ctx *core.Context) {
+	n.lock.Lock()
+	defer n.lock.Unlock()
+
+	var parsed *_html.HTMLNode
+
+	unwrapped := core.Unwrap(ctx, n.model)
+	renderable, ok := unwrapped.(core.Renderable)
+
+	if _, isNil := unwrapped.(core.NilT); isNil {
+		parsed = _html.CreateSpanElem(core.Str(""))
+		goto update
+	}
+
+	if !ok {
+		panic(ErrRenderFailureModelNotRenderable)
+	}
+
+	//render to HTML
+	{
+		var userRenderingConfig = n.userRenderingConfig
+		if dyn, ok := n.userRenderingConfig.(*core.DynamicValue); ok {
+			userRenderingConfig = dyn.Resolve(ctx)
+		}
+
+		renderingInput := core.RenderingInput{Mime: core.HTML_CTYPE, OptionalUserConfig: userRenderingConfig}
+
+		if !renderable.IsRecursivelyRenderable(ctx, renderingInput) {
+			panic(fmt.Errorf("%w: renderable type: %T", ErrRenderFailureModelNotRenderableToHTML, renderable))
+		}
+
+		buf := bytes.NewBuffer(nil)
+		_, err := renderable.Render(ctx, buf, renderingInput)
+		if err != nil {
+			panic(err)
+		}
+
+		parsed, err = _html.ParseSingleNodeHTML(buf.String())
+		if err != nil {
+			parsed = _html.CreateSpanElem(core.Str("???"))
+		}
+	}
+
+update:
+	// update with new HTML
+
+	if n.html == nil { // first render
+		n.html = parsed
+	} else {
+		prevHTML := n.html
+		n.html = parsed
+
+		//update parent
+		if n.parent != nil {
+			n.parent.replaceChildHTML(ctx, prevHTML, n)
+		}
+
+		//inform watchers & microtasks about the update
+
+		mutation := core.NewUnspecifiedMutation(core.ShallowWatching, "")
+
+		n.watchers.InformAboutAsync(ctx, mutation, core.ShallowWatching, true)
+		n.mutationCallbacks.CallMicrotasks(ctx, mutation)
+	}
+}
+
+func (n *Node) replaceChildHTML(ctx *core.Context, prevHTML *_html.HTMLNode, child *Node) {
+	n.lock.Lock()
+	defer func() {
+		n.lock.Unlock()
+
+		if n.parent != nil {
+			//TODO: inform parent ?
+		}
+	}()
+
+	n.html.ReplaceChildHTML(ctx, prevHTML, child.html)
+	//inform watchers & microtasks about the update
+
+	mutation := core.NewUnspecifiedMutation(core.ShallowWatching, "")
+
+	n.watchers.InformAboutAsync(ctx, mutation, core.ShallowWatching, true)
+	n.mutationCallbacks.CallMicrotasks(ctx, mutation)
+}
+
+func (n *Node) startUpdateGoroutine(ctx *core.Context) {
+	listenToModelWatcher := n.modelChangeWatcher != nil && !n.modelChangeWatcher.IsStopped()
+	listenToConfigWatcher := n.renderingConfigChangeWatcher != nil && !n.renderingConfigChangeWatcher.IsStopped()
+
+	if !listenToModelWatcher && !listenToConfigWatcher {
+		return
+	}
+
+	//TODO: do watching & rerender in parent node if node is "small"
+
+	go func() {
+		defer func() {
+			//cleanup
+			if n.modelChangeWatcher != nil {
+				n.modelChangeWatcher.Stop()
+			}
+			if n.renderingConfigChangeWatcher != nil {
+				n.renderingConfigChangeWatcher.Stop()
+			}
+
+			n.watchers.StopAll()
+		}()
+
+		var watcher core.Watcher
+		var nextWatcher core.Watcher
+
+		switch {
+		case listenToModelWatcher && listenToConfigWatcher:
+			watcher = n.modelChangeWatcher
+			nextWatcher = n.renderingConfigChangeWatcher
+		case listenToModelWatcher:
+			watcher = n.modelChangeWatcher
+		case listenToConfigWatcher:
+			watcher = n.renderingConfigChangeWatcher
+		default:
+			panic(core.ErrUnreachable)
+		}
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+
+			// change what value is watched
+			if nextWatcher != nil {
+				watcher, nextWatcher = nextWatcher, watcher
+			}
+
+			_, err := watcher.WaitNext(ctx, nil, CHANGE_WATCH_TIMEOUT)
+			if errors.Is(err, core.ErrStoppedWatcher) || errors.Is(err, context.Canceled) {
+				return
+			}
+
+			if errors.Is(err, core.ErrWatchTimeout) { // continue waiting for changes
+				continue
+			}
+
+			if err == nil {
+				n.modelRender(ctx)
+			}
+		}
+	}()
+
+}
+
+func (n *Node) Watcher(ctx *core.Context, config core.WatcherConfiguration) core.Watcher {
+	if config.Depth >= core.IntermediateDepthWatching {
+		panic(core.ErrIntermediateDepthWatchingNotSupported)
+	}
+
+	n.lock.Lock()
+	defer n.lock.Unlock()
+
+	watcher := core.NewPeriodicWatcher(config, NODE_WATCHER_PERIOD)
+
+	if n.watchers == nil {
+		n.watchers = core.NewValueWatchers()
+	}
+
+	n.watchers.Add(watcher)
+
+	_, err := n.onMutationNoLock(ctx, func(ctx *core.Context, mutation core.Mutation) (registerAgain bool) {
+		if watcher.IsStopped() {
+			registerAgain = false
+			return
+		}
+
+		registerAgain = true
+
+		if !config.Filter.Test(ctx, mutation) {
+			return
+		}
+
+		watcher.InformAboutAsync(ctx, core.NewUnspecifiedMutation(core.ShallowWatching, config.Path))
+		return
+	}, core.MutationWatchingConfiguration{Depth: core.ShallowWatching})
+
+	if err != nil {
+		panic(err)
+	}
+
+	return watcher
+}
+
+func (n *Node) onMutationNoLock(ctx *core.Context, microtask core.MutationCallbackMicrotask, config core.MutationWatchingConfiguration) (core.CallbackHandle, error) {
+	if config.Depth >= core.IntermediateDepthWatching {
+		panic(core.ErrIntermediateDepthWatchingNotSupported)
+	}
+
+	if n.mutationCallbacks == nil {
+		n.mutationCallbacks = core.NewMutationCallbackMicrotasks()
+	}
+
+	return n.mutationCallbacks.AddMicrotask(microtask, config), nil
+}
+
+func (n *Node) OnMutation(ctx *core.Context, microtask core.MutationCallbackMicrotask, config core.MutationWatchingConfiguration) (core.CallbackHandle, error) {
+	n.lock.Lock()
+	defer n.lock.Unlock()
+
+	return n.onMutationNoLock(ctx, microtask, config)
+}
+
+func (node *Node) RemoveMutationCallbackMicrotasks(ctx *core.Context) {
+	node.mutationCallbacks.RemoveMicrotasks()
+}
+
+func (node *Node) RemoveMutationCallback(ctx *core.Context, handle core.CallbackHandle) {
+	node.mutationCallbacks.RemoveMicrotask(handle)
+}
+
+func (n *Node) IsSharable(originState *core.GlobalState) bool {
+	return true
+}
+
+func (n *Node) Share(originState *core.GlobalState) {
+
+}
+
+func (n *Node) IsShared() bool {
+	return true
+}
+
+func (n *Node) ForceLock() {
+
+}
+
+func (n *Node) ForceUnlock() {
+
+}
+
+func (n *Node) Prop(ctx *core.Context, name string) core.Value {
+	switch name {
+	case "firstChild":
+		if len(n.children) == 0 {
+			return core.Nil
+		}
+		return n.children[0] //NewStaticNode(_html.NewHTMLNode(n.html.Node.FirstChild))
+	case "data":
+		return core.Str(n.html.Data())
+	default:
+		method, ok := n.GetGoMethod(name)
+		if !ok {
+			panic(core.FormatErrPropertyDoesNotExist(name, n))
+		}
+		return method
+	}
+}
+
+func (*Node) SetProp(ctx *core.Context, name string, value core.Value) error {
+	return core.ErrCannotSetProp
+}
+
+func (n *Node) GetGoMethod(name string) (*core.GoFunction, bool) {
+	return nil, false
+}
+
+func (n *Node) PropertyNames(ctx *core.Context) []string {
+	return NODE_PROPNAMES
+}
+
+func (n *Node) IsRecursivelyRenderable(ctx *core.Context, input core.RenderingInput) bool {
+	return input.Mime == core.HTML_CTYPE
+}
+
+func (n *Node) Render(ctx *core.Context, w io.Writer, config core.RenderingInput) (int, error) {
+	n.lock.Lock()
+	defer n.lock.Unlock()
+	return n.html.Render(ctx, w, config)
+}
+
+func (n *Node) SendDOMEventToForwader(ctx *core.Context, forwarderId uint64, eventData *core.Record, t time.Time) {
+	if forwarderId == 0 { // invalid id
+		return
+	}
+
+	if n.forwarderId == forwarderId {
+		// forward event to model
+		eventType, ok := eventData.Prop(ctx, "type").(core.Str)
+		if ok {
+			if utils.SliceContains(n.forwardedEvents, string(eventType)) {
+				receiver, ok := n.model.(core.MessageReceiver)
+				if ok {
+					logger := ctx.Logger()
+					logger.Println("forward", eventType, "dom event to model")
+					err := receiver.ReceiveMessage(ctx, core.NewMessage(core.NewEvent(eventData, core.Date(t)), nil))
+					if err != nil {
+						logger.Println(err)
+					}
+				}
+			} else if utils.SliceContains(n.listenedEvents, string(eventType)) {
+				switch n.modelReaction {
+				case toggleOnClick:
+					propName := string(n.modelReactionData.(core.PropertyName))
+					iprops, ok := n.model.(core.IProps)
+					if ok {
+						val, ok := iprops.Prop(ctx, propName).(core.Bool)
+						if ok {
+							iprops.SetProp(ctx, propName, !val)
+						}
+					}
+				}
+			}
+		}
+	} else {
+		for _, child := range n.children {
+			child.SendDOMEventToForwader(ctx, forwarderId, eventData, t)
+		}
+	}
+}

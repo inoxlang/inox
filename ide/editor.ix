@@ -1,0 +1,335 @@
+%set-edited-file = %rec(%{
+    ide-action: #set-edited-file, 
+    path: %path, 
+    ...
+})
+
+$$editor = {
+    file %path: ./ide_example_script.ix
+    mod %inox.module: inox.parse_in_memory_module!("", "manifest{}")
+
+    runes %runes: Runes("")
+    history %value-history?: nil
+
+    code-errors: #[]%error[]
+    internal-errors: #[]%error[]
+
+    view: fn() => dom.div{
+        dom.ul{
+            class: "editor__action-bar"
+            children: [dom.li{
+                class: "run-button"
+                model: self
+                forwarded-events: [#click] 
+
+                ("run "), dyncall(fn(path) => tostr(path), self.<file)
+
+                tostr("") # dirty fix to force capture of 'tostr' global
+            }]
+        }
+
+        dom.ul{
+           class: "editor__internal-errors"
+           children: map(self.<internal-errors, fn(err) => dom.div{ err.text })
+        }
+
+        dom.auto(self.<mod.main_chunk_node, {
+            errors: self.<code-errors
+        })
+
+        model: self
+        forwarded-events: [#click, #keydown, #cut, #paste] 
+    }
+
+    lifetimejob #handle-events {
+        manifest {
+            permissions: {
+                read: %/...
+                create: %/...
+                update: %/...
+                delete: %/...
+            }
+        }
+
+        if !fs.exists(self.file) {
+            fs.mkfile self.file
+        }
+
+        self.init()
+
+        for msg in watch_received_messages(self) {
+            print $msg
+            data = msg.data
+
+            print "event !" 
+            match data {
+                %dom.click-event {
+                    switch data.value.forwarderClass {
+                        "run-button" {
+                            sendval #{ide-action: #run-script, path: self.file} to supersys
+                        }
+                    }
+                }
+                %dom.keydown-event {
+                    self.handle_key(data)
+                }
+
+                %dom.cut-event, %dom.paste-event {
+                    self.handle_cut_paste(data)
+                }
+
+                %set-edited-file {
+                    print "path =" data.path
+                    if (data.path.extension == ".ix") {
+                        self.file = data.path
+                        self.init()
+                    }
+                }
+            }
+        }
+    }
+
+
+    init: fn(){
+        self.runes = Runes(read!(self.file, --raw))
+        self.history = record_shallow_changes(self.<runes, 10)
+        self.update_module_data()
+    }
+
+    handle_key: fn(event %dom.keydown-event){
+        keydown = event.value
+
+        selection = self.get_selection_data(event)
+
+        cursor_position = selection.cursor_position
+        anchor_offset = selection.anchor_offset
+        focus_offset = selection.focus_offset
+        range = selection.range
+    
+        if (cursor_position < 0) {
+            return
+        }
+
+        switch keydown.key {
+            "Backspace" {
+                if ((cursor_position == 0) or (cursor_position > len(self.runes))){
+                    print "cannot remove cursor_position" {cursor_position: cursor_position, len: len(self.runes)}
+                    return
+                }
+
+                if range? {
+                    print "remove range !" $range
+                    self.runes.remove_position_range(range)
+                    self.update_file()
+                } else {
+                    if keydown.ctrlKey {
+                        token = self.mod.main_chunk_node.token_at_position((cursor_position - 1))
+                        if token? {
+                            print "token =" $token
+                            for i in (1 .. anchor_offset){
+                                print "remove !" (cursor_position - i)
+                                self.runes.remove_position((cursor_position - i))
+                            }
+                            self.update_file()
+                        }
+                    } else {
+                        self.runes.remove_position((cursor_position - 1))
+                        self.update_file()
+                    }
+                }
+                
+                return
+            }
+            "Delete" {
+                if range? {
+                    return
+                }
+
+                if (keydown.ctrlKey or (cursor_position == 0)){
+                    return
+                }
+
+                self.runes.remove_position(cursor_position)
+                self.update_file()
+                return
+            }
+            "Enter" {
+                if (keydown.ctrlKey or range?) {
+                    return
+                }
+
+                print "insert newline"
+                self.runes.insert('\n', cursor_position)
+                self.update_file()
+                return
+            }
+            "Tab" {
+                if (keydown.ctrlKey or range?) {
+                    return
+                }
+
+                self.runes.insert(Runes("    "), cursor_position)
+                self.update_file()
+                return
+            }
+        }
+
+        if keydown.ctrlKey {
+            switch keydown.key {
+                "z" {
+                    # history = self.history # TODO: fix
+                    var history %value-history? = self.history
+
+                    if history? {
+                        history.forget_last()
+                        last_value = history.last_value
+                        assert (last_value match %runes)
+                        self.runes = last_value
+                        self.update_file()
+                    }
+                    return
+                }
+            }
+        }
+
+        if (keydown.ctrlKey or (len(keydown.key) != 1)) {
+            return
+        }
+
+        # new rune
+
+        rune = torune(keydown.key[0])
+        if (cursor_position <= len(self.runes)) {
+            self.runes.insert(rune, cursor_position)
+        }
+
+        self.update_file()
+
+        # print $event.value --> FIX
+        #  assign mod err = inox.parse_chunk(tostr(self.runes))
+        #  if mod? {
+        #      self.mod = mod
+        #  }
+    }
+
+
+    handle_cut_paste: fn(event %event){
+        match event {
+            %dom.cut-event {
+                selection = self.get_selection_data(event)
+
+                if selection.range? {
+                    print "remove range !" selection.range
+                    self.runes.remove_position_range(selection.range)
+                    self.update_file()
+                }
+            }
+            %dom.paste-event {
+                selection = self.get_selection_data(event)
+
+                self.runes.insert(Runes(event.value.text), selection.cursor_position)
+                self.update_file()
+            }
+        }
+    }
+
+    get_selection_data: fn(event %event){
+        value = event.value
+
+        cursor_position = -1
+        anchor_offset = -1
+        focus_offset = -1
+        var range %int-range? = nil
+
+        match value {
+            %rec(%{
+                anchorOffset: %str
+                focusOffset: %str
+                anchorElemData: %rec(%{span: %str, ...})
+                focusElemData: %rec(%{span: %str, ...})
+                ...
+            }) {
+
+                anchor_offset = parse!(value.anchorOffset, %int)
+                focus_offset = parse!(value.focusOffset, %int)
+
+                anchor_elem_span = split!(value.anchorElemData.span, ",", %int)
+                focus_elem_span = split!(value.focusElemData.span, ",", %int)
+
+                cursor_position = (anchor_elem_span[0] + anchor_offset)
+
+                # print $anchor_elem_span $focus_elem_span
+                # print "cursor position =" $cursor_position
+
+                # range
+                if ((anchor_elem_span != focus_elem_span) or (anchor_offset != focus_offset)) {
+                    range_end = (focus_elem_span[0] + focus_offset)
+                    range_start = -1
+
+                    if (cursor_position < range_end) {
+                        range_start = cursor_position
+                        range_end -= 1
+                    } else {
+                        range_start = range_end
+
+                        # increment start by one if we are deleting runes at the start of the line (ignore newline token)
+                        token = self.mod.main_chunk_node.token_at_position(range_start)
+                        if token? {
+                            if (token.type == "NEWLINE") {
+                                range_start += 1
+                            }
+                        }
+
+                        range_end = (cursor_position - 1)
+                    }
+
+                    range = (range_start .. range_end)
+                }
+            }
+        }
+
+        return {
+            cursor_position: cursor_position,
+            anchor_offset: anchor_offset,
+            focus_offset: focus_offset,
+            range: range
+        }
+    }
+
+    update_file: fn(){
+        if !fs.exists(self.file) {
+            fs.mkfile self.file
+        }
+
+        update self.file replace tostr(self.runes)
+        self.update_module_data()
+    }
+
+    update_module_data: fn(){
+        if !fs.exists(self.file) {
+            fs.mkfile self.file
+        }
+
+        assign mod state errors err = inox.prepare_local_script(self.file)
+
+        if mod? {
+            print "update module"
+            self.mod = mod
+
+            permission_error = errors.permission_error
+
+            if permission_error? {
+                self.internal-errors = #[]%error[permission_error] # TODO: fix: error is not shown 
+            } else {
+                self.internal-errors = #[]%error[]
+            }
+        } else {
+            self.internal-errors = #[err]
+        }
+       
+        self.code-errors = concat errors.parsing_errors errors.static_check_errors errors.symbolic_check_errors
+    }
+
+}
+
+

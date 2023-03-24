@@ -1,0 +1,30 @@
+const (
+    DOMAIN = https://jsonplaceholder.typicode.com
+)
+
+manifest {
+    permissions: {
+        read: DOMAIN
+        create: {
+            routines: {}
+        }
+    }
+}
+
+req_group = RoutineGroup()
+
+for (1 .. 2) {
+    go {
+        group: req_group 
+        globals: .{read, DOMAIN}
+        allow: {
+            read: DOMAIN
+            use: {globals: "*"}
+        }
+    } do {
+        return read!(https://jsonplaceholder.typicode.com/posts/1)
+    } 
+}
+
+results = req_group.wait_results!()
+print $results

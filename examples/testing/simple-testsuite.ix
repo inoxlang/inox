@@ -1,0 +1,14 @@
+manifest {
+    permissions: {
+        create: {
+            routines: {}
+        }
+    }
+}
+
+testsuite {
+    testcase {
+        assert (1 == 2)
+    }
+}
+

@@ -1,0 +1,19 @@
+manifest {
+    permissions: {
+        create: IWD_PREFIX
+    }
+}
+
+
+fs.mkdir ./dir_a/
+
+
+dir_content = :{
+    ./subdir_1/: [./empty_file]
+    ./subdir_2/ : :{  
+        ./file : "foo"
+    }
+    ./file : "bar"
+}
+
+fs.mkdir ./dir_b/ $dir_content

@@ -1,0 +1,11 @@
+manifest {
+    permissions: {
+        read: https://jsonplaceholder.typicode.com/posts/1
+    }
+}
+
+res = http.get!(https://jsonplaceholder.typicode.com/posts/1)
+json = tostr(res.body.readAll!())
+
+print $json
+

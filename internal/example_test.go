@@ -1,0 +1,190 @@
+package internal
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+
+	core "github.com/inox-project/inox/internal/core"
+	globals "github.com/inox-project/inox/internal/globals"
+	_fs "github.com/inox-project/inox/internal/globals/fs"
+
+	"github.com/inox-project/inox/internal/utils"
+)
+
+const (
+	DEFAULT_TEST_TIMEMOUT_DURATION = 10 * time.Second
+	CHROME_EXAMPLE_FOLDER          = "chrome/"
+)
+
+var (
+	TIMING_OUT_EXAMPLES = []string{
+		"events.ix",
+	}
+	CANCELLED_TOP_CTX_EXAMPLES = []string{
+		"execution-time.ix", "rollback-on-cancellation.ix",
+	}
+	FALSE_ASSERTION_EXAMPLES = []string{
+		"simple-testsuite.ix",
+	}
+
+	RUN_BROWSER_AUTOMATION_EXAMPLES = os.Getenv("RUN_BROWSER_AUTOMATION_EXAMPLES") == "true"
+)
+
+// TestExamples tests the scripts located in ./examples/ .
+func TestExamples(t *testing.T) {
+
+	//we set the working directory to the project's root
+	dir, _ := os.Getwd()
+
+	defer os.Chdir(dir)
+	os.Chdir("..")
+	core.SetInitialWorkingDir()
+
+	//uncomment the following lines to test a given script
+	// testExample(t, "./test.ix", true, true, 1000*time.Second)
+	// return
+
+	t.Run("tree-walk", func(t *testing.T) {
+		testExamples(t, false, false)
+	})
+
+	if !testing.Short() {
+		t.Run("bytecode", func(t *testing.T) {
+			testExamples(t, true, true)
+		})
+	}
+
+	t.Run("optimized bytecode", func(t *testing.T) {
+		testExamples(t, true, true)
+	})
+}
+
+func testExamples(t *testing.T, useBytecode, optimizeBytecode bool) {
+
+	const exampleFolder = "./examples"
+	var exampleFilePaths []string
+
+	filepath.Walk(exampleFolder, func(path string, info fs.FileInfo, err error) error {
+		if info.Mode().IsRegular() && strings.HasSuffix(path, ".ix") {
+			exampleFilePaths = append(exampleFilePaths, path)
+		}
+		return nil
+	})
+
+	for _, fpath := range exampleFilePaths {
+		testName := strings.ReplaceAll(fpath, "/", "--")
+
+		t.Run(testName, func(t *testing.T) {
+			testExample(t, fpath, useBytecode, optimizeBytecode, DEFAULT_TEST_TIMEMOUT_DURATION)
+		})
+	}
+
+}
+
+func testExample(t *testing.T, fpath string, useBytecode, optimizeBytecode bool, testTimeout time.Duration) {
+
+	if strings.Contains(fpath, CHROME_EXAMPLE_FOLDER) && !RUN_BROWSER_AUTOMATION_EXAMPLES {
+		t.Skip()
+	}
+
+	tempDir := t.TempDir()
+
+	//we copy the examples in test directory and we set the WD to this directory
+
+	err := _fs.Copy(core.NewContext(core.ContextConfig{
+		Permissions: []core.Permission{
+			core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern("/...")},
+			core.FilesystemPermission{Kind_: core.CreatePerm, Entity: core.PathPattern("/...")},
+			core.FilesystemPermission{Kind_: core.WritePerm, Entity: core.PathPattern("/...")},
+		},
+		Limitations: []core.Limitation{
+			{
+				Name:  _fs.FS_READ_LIMIT_NAME,
+				Kind:  core.ByteRateLimitation,
+				Value: 100_000_000,
+			},
+			{
+				Name:  _fs.FS_WRITE_LIMIT_NAME,
+				Kind:  core.ByteRateLimitation,
+				Value: 100_000_000,
+			},
+		},
+	}), core.Path("./examples/"), core.Path(filepath.Join(tempDir, "./examples/")+"/"))
+	if !assert.NoError(t, err) {
+		return
+	}
+
+	dir, _ := os.Getwd()
+
+	defer os.Chdir(dir)
+	os.Chdir(tempDir)
+	core.SetInitialWorkingDir()
+
+	done := make(chan int)
+	filename := filepath.Base(fpath)
+
+	go func() {
+		defer func() {
+			if v := recover(); v != nil {
+				panic(fmt.Errorf("(example %s) %s", fpath, v))
+			}
+		}()
+
+		parsingCompilationContext := core.NewContext(core.ContextConfig{
+			Permissions: []core.Permission{core.CreateFsReadPerm(core.PathPattern("/..."))},
+		})
+		core.NewGlobalState(parsingCompilationContext)
+
+		_, _, _, err := globals.RunLocalScript(globals.RunScriptArgs{
+			Fpath:                     fpath,
+			UseBytecode:               useBytecode,
+			OptimizeBytecode:          optimizeBytecode,
+			ParsingCompilationContext: parsingCompilationContext,
+			Out:                       io.Discard,
+			//Out:              os.Stdout, // &utils.TestWriter{T: t},
+		})
+
+		if utils.SliceContains(CANCELLED_TOP_CTX_EXAMPLES, filename) {
+			assert.Error(t, err)
+			assert.ErrorIs(t, err, context.Canceled)
+		} else if utils.SliceContains(FALSE_ASSERTION_EXAMPLES, filename) {
+			assert.Error(t, err)
+
+			e := errors.Unwrap(err)
+			for {
+				unwrapped := errors.Unwrap(e)
+				if unwrapped == nil {
+					break
+				}
+				e = unwrapped
+			}
+
+			assert.IsType(t, &core.AssertionError{}, e)
+		} else {
+			assert.NoError(t, err)
+		}
+		done <- 0
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		if utils.SliceContains(TIMING_OUT_EXAMPLES, filename) {
+			assert.FailNow(t, "example should have timed out")
+		}
+	case <-time.After(testTimeout):
+		if !utils.SliceContains(TIMING_OUT_EXAMPLES, filename) {
+			assert.FailNow(t, "timeout")
+		}
+	}
+}

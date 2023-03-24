@@ -1,0 +1,5 @@
+manifest {}
+
+# modules can return any value
+
+return 1

@@ -1,0 +1,113 @@
+#  %tree-item = %{
+#      name: %str
+#      ...
+#  }
+
+#  %folder = %{
+#      ...%tree-item
+#      kind: "folder"
+#      path: %path
+#  }
+
+#  %file = %{
+#      ...%tree-item
+#      kind: "file"
+#      path: %path
+#  }
+
+fn build_tree_item_view(node %tree.node){
+    data = node.data
+    assert (data match %fs.tree-data-item)
+    path = data.path
+    path_rel_to_parent = data.path_rel_to_parent
+    is_dir = path.ends_with_slash
+
+    (ctx_data) # dirty fix to force capture of 'ctx_data' global
+
+    model = {
+        path: path
+        is-dir: is_dir
+        show-children: false
+        on received %dom.click-event fn(event %dom.click-event){
+            if !self.is-dir {
+                sendval #{ide-action: #set-edited-file, path: self.path} to ctx_data(#ide)
+            }
+        }
+    }
+
+    return dom.li{
+        model: model
+        class: "tree-item"
+        forwarded-events: (if is_dir [] else [#click])
+
+        tostr(path.name)
+
+        (if is_dir dom.ul{
+            class: "tree-item__children"
+            children: map(node.<children, build_tree_item_view)
+        } else nil)
+
+        # on-click-toggle: .show-children
+        #  dynif(model.<show-children,
+        #      dom.ul{
+        #          class: "tree-item__children"
+        #          children: map(node.children, build_tree_item_view)
+        #      },
+        #      nil
+        #  )
+    }
+}
+
+fn create_dynamic_tree(){
+    tree = Tree(
+        fs.get_tree_data(./)
+
+        lifetimejob #tree-update for %tree {
+            manifest {
+                permissions: {read: %/...}
+                limits: {"fs/read": 100MB/s}
+            }
+
+            # TODO: fix 
+            evs = EventSource!(%./examples/project/...)
+            create_event_pattern = %event(%rec(%{create_op: true, path: %path}))
+            
+            for %(create_event_pattern) event in evs {
+                dir_node = find!(%tree.node(event.value.path.dir) self)
+                append(dir_node, event.value.path)
+                yield
+            }
+        }
+    )
+
+    return tree
+}
+
+$$explorer = {
+    tree: create_dynamic_tree()
+    view: fn() {
+
+        return dom.div{
+            class: "explorer__tree"
+            dom.ul{
+                children: map(self.tree.root.children, build_tree_item_view)
+            }
+        }
+    }
+
+    lifetimejob #handle-events {
+        for msg in watch_received_messages(self) {
+            event = msg.data
+
+
+            match event {
+                %dom.click-event {
+                    print "send !"
+                  
+                }
+            }
+        }
+    }
+}
+
+add_ctx_data(#explorer, explorer)

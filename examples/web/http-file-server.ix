@@ -1,0 +1,16 @@
+manifest {
+    permissions: {
+        read: {
+            https://localhost:8080/
+        }
+        provide: https://localhost:8080
+    }
+}
+
+server = http.FileServer!(https://localhost:8080, ./examples/static/)
+
+body = http.getbody!(https://localhost:8080/, {--insecure})
+print "response :"
+print tostr(body)
+
+server.close() # you can replace this line with $server.WaitClosed() to keep the server running

@@ -1,0 +1,5 @@
+manifest {}
+
+for date in [now(), 2020y-CET, 2020y-10mt-5d-5h-4m-CET] {
+    print repr(date)
+}

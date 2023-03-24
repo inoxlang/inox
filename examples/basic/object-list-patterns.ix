@@ -1,0 +1,20 @@
+manifest {}
+
+# object patterns:
+print "{} match %{}:" ({} match %{})
+print "{a:1} match %{}:" ({a: 1} match %{})
+print "{a:1} match %{...}:" ({a: 1} match %{...})
+print "{a:1} match %{a:1, ...}:" ({a: 1} match %{a:1, ...})
+print "{a:1, b:2} match %{a:1, ...}:" ({a: 1, b: 2} match %{a:1, ...})
+
+
+# list patterns:
+print "[1] match %[1]:" ([1] match %[1])
+print "[] match %[1]:" ([] match %[1])
+# a "general" element pattern can be put after the closing bracket, (note: the syntax will be simplified in the future)
+print "[] match %[]%int:" ([] match %[]%int) 
+print "[1] match %[]%int:" ([1] match %[]%int) 
+print "[true] match %[]%int:" ([true] match %[]%int) 
+
+
+

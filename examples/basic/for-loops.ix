@@ -1,0 +1,14 @@
+manifest {}
+
+for index, element in ["a", "b"] {
+    print $index $element
+}
+
+for element in ["a", "b"] {
+    print $element
+}
+
+# for <iterable> will iterate over <iterable>
+for (1 .. 2){
+    print "(range) one iteration"
+}

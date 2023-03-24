@@ -1,0 +1,10 @@
+manifest {
+    permissions: {
+        read: IWD_PREFIX
+    }
+}
+
+
+names = | fs.ls %./*.go | map $ .{name}
+
+print topjson(names)

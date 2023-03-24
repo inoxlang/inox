@@ -1,0 +1,143 @@
+:root {
+    --stringlike-literal-color: rgba(255, 166, 106);
+    --numberlike-literal-color: rgb(61, 223, 61);
+    --pattern-name-color: rgb(83, 214, 188);
+    --pattern-value-color: rgb(226, 97, 97);
+    --varlike-color: rgba(184, 253, 255);
+    --callee-color: rgb(223, 223, 137);
+    --decl-fn-color: var(--callee-color);
+    --prop-color: rgb(105, 188, 221);
+    --constant-color: rgba(74, 140, 240);
+
+    --control-keyword-color: rgb(235, 126, 226);
+    --other-keyword-color: rgb(86, 156, 214);
+    --bad-token-color: rgb(255, 46, 46);
+    --error-underlining-color: rgb(255, 46, 46);
+
+    --comment-color: rgb(106, 153, 85);
+}
+
+.token.in-error {
+    text-decoration: underline var(--error-underlining-color);
+    text-underline-offset: 2px;
+}
+
+[data-type=int-literal],
+[data-type=float-literal],
+[data-type=quantity-literal],
+[data-type=rate-literal],
+[data-type=byte-slice-literal],
+[data-type=date-literal] {
+    color: var(--numberlike-literal-color);
+}
+
+[data-type=identifier-literal],
+[data-type=local-varname],
+[data-type=global-varname],
+[data-type=at-host-literal] {
+    color: var(--varlike-color);
+}
+
+[data-tmeta^=callee] {
+    color: var(--callee-color);
+}
+
+[data-tmeta^=prop] {
+    color: var(--prop-color);
+}
+
+[data-tmeta^=fn] {
+    color: var(--decl-fn-color);
+}
+
+
+[data-type=boolean-literal],
+[data-type=unambiguous-identifier-literal] {
+    color: var(--constant-color);
+}
+
+[data-type=quoted-string-literal],
+[data-type=unquoted-string-literal],
+[data-type=multiline-string-literal],
+[data-type=rune-literal],
+[data-type=scheme-literal],
+[data-type=host-literal],
+[data-type=url-literal],
+[data-type=relative-path-literal],
+[data-type=absolute-path-literal],
+[data-type=path-slice],
+[data-type=str-template-slice],
+[data-type=backquote],
+[data-type=query-param-question-mark],
+[data-type=query-param-key-equal],
+[data-type=query-param-sep],
+[data-type=query-param-slice] {
+    color: var(--stringlike-literal-color);
+}
+
+
+[data-type=pattern-identifier-literal],
+[data-type=pattern-namespace-identifier-literal],
+[data-type=percent-str],
+[data-type=str-template-interp-type] {
+    color: var(--pattern-name-color);
+}
+
+[data-type=absolute-path-pattern-literal],
+[data-type=relative-path-pattern-literal],
+[data-type=path-pattern-slice],
+[data-type=http-host-pattern-literal],
+[data-type=regex-literal],
+[data-type=percent-symbol] {
+    color: var(--pattern-value-color);
+}
+
+[data-type=if-keyword], 
+[data-type=else-keyword],
+[data-type=for-keyword], 
+[data-type=break-keyword], 
+[data-type=continue-keyword], 
+[data-type=walk-keyword], 
+[data-type=prune-keyword], 
+[data-type=switch-keyword], 
+[data-type=match-keyword], 
+[data-type=go-keyword], 
+[data-type=do-keyword], 
+[data-type=in-keyword],
+[data-type=return-keyword],
+[data-type=yield-keyword],
+[data-type=assert-keyword],
+[data-type=comp-keyword],
+[data-type=testsuite-keyword],
+[data-type=testcase-keyword],
+[data-type=lifetimejob-keyword] {
+    color: var(--control-keyword-color);
+}
+
+[data-type=manifest-keyword], 
+[data-type=var-keyword], 
+[data-type=const-keyword], 
+[data-type=assign-keyword], 
+[data-type=drop-perms-keyword], 
+[data-type=import-keyword], 
+[data-type=fn-keyword],
+[data-type=self-keyword], 
+[data-type=supersys-keyword], 
+[data-type=mapping-keyword], 
+[data-type=udata-keyword], 
+[data-type=synchronized-keyword],
+[data-type=allow-keyword],
+[data-type=concat-keyword] {
+    color: var(--other-keyword-color);
+}
+
+
+[data-type=unexpected-char],
+[data-type=invalid-url-lit],
+[data-type=invalid-interp-slice] {
+    color: var(--bad-token-color);
+}
+
+[data-type=comment] {
+    color: var(--comment-color);
+}

@@ -1,0 +1,31 @@
+manifest {
+    permissions: {
+        read: {
+            https://localhost:8080
+            /home/...
+        }
+        provide: https://localhost:8080
+    }
+}
+
+fn handle(rw %http.resp_writer, r %http.req){
+    path = r.path
+
+    match path {
+        %/* {
+            err = http.servefile(rw, r, ./examples/static/{path})
+            if err? {
+                print $err
+                rw.writeStatus(404)
+            }
+        }
+    }
+}
+
+server = http.Server!(https://localhost:8080, handle)
+
+options = { --insecure }
+body = http.getbody!(https://localhost:8080/index.js, options)
+print tostr(body)
+
+server.close()

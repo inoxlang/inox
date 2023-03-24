@@ -1,0 +1,12 @@
+manifest {}
+
+users = [
+    { name: "Foo"} 
+    { name: "Bar"}
+]
+
+
+names = map!(users, .name)
+names = filter!(names, @($ == "Foo"))
+
+print $names

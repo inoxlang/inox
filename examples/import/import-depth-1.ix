@@ -1,0 +1,15 @@
+manifest {
+    permissions: {
+        read: IWD_PREFIX
+        create: {
+            routines: {}
+        }
+    }
+}
+
+
+import result ./return_1.ix {}
+print "result of imported module :" $$result
+
+assert (result match %int)
+return (1 + result)

@@ -1,0 +1,10 @@
+manifest {
+    permissions: {
+        read: https://example.com/
+    }
+}
+
+htm = read!(https://example.com/)
+
+h1s = html.find!("h1" $htm)
+print $h1s[0].firstChild.data

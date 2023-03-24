@@ -1,0 +1,13 @@
+const (
+    DIR_PATH = /tmp/mydir/
+)
+
+manifest {
+    permissions: {
+        create: DIR_PATH
+        delete: DIR_PATH
+    }
+}
+
+fs.mkdir $$DIR_PATH
+fs.rm $$DIR_PATH

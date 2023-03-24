@@ -1,0 +1,23 @@
+manifest {
+    permissions: {
+        read: IWD_PREFIX
+        create: {
+            routines: {}
+        }
+    }
+}
+
+import result ./import-depth-2.ix {
+    arguments: {print: print, IWD_PREFIX: IWD_PREFIX}
+    allow: {
+        read: IWD_PREFIX
+        create: {
+            routines: {}
+        }
+    }
+}
+
+print "result of imported module :" $$result
+
+assert (result match %int)
+return (1 + result)

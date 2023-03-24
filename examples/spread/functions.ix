@@ -1,0 +1,8 @@
+manifest {}
+
+
+fn f(first, ...args){
+    print ...$args # $args is a List
+}
+
+f 1 2 3

@@ -1,0 +1,26 @@
+manifest {
+    permissions: {
+        read: {
+            https://localhost:8080/
+        }
+        provide: https://localhost:8080
+    }
+}
+
+
+fn handle(rw %http.resp_writer, r %http.req){
+    print "access to http from handler:" (http != nil)
+
+    match r.path {
+        / {
+            rw.writeJSON({ a: 1 })
+        }
+    }
+}
+
+
+server = http.Server!(https://localhost:8080, handle)
+body = http.getbody!(https://localhost:8080/ {--insecure})
+print tostr(body)
+
+server.close()

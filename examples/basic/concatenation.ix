@@ -1,0 +1,6 @@
+manifest {}
+
+# TODO: explanation
+
+print (concat "a" "b") 
+print (concat 0x[00] 0x[11])

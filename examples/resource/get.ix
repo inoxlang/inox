@@ -1,0 +1,30 @@
+manifest {
+    permissions: {
+        read: %https://localhost:8080/...
+        provide: https://localhost:8080
+    }
+}
+
+
+%user = %{name: %str, ...}
+
+fn handle(rw %http.resp_writer, r %http.req){
+
+    match r.path {
+        /users/1 {
+            if (r.method == "GET") {
+                rw.writeIXON({ name: "foo" })
+            }
+        }
+    }
+}
+
+server = http.Server!(https://localhost:8080, handle)
+
+# get the resource
+user = get!(https://localhost:8080/users/1, {--insecure})
+assert (user match %user)
+
+print $user # metaproperty _url_ is set
+
+server.close()

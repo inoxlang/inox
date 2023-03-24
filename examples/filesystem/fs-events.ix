@@ -1,0 +1,13 @@
+manifest {
+    permissions: {
+        read: IWD_PREFIX
+    }
+}
+
+
+evs = EventSource!(%./examples/...)
+
+#  for event in evs {
+#      print "event:" $event
+#  }
+

@@ -1,0 +1,144 @@
+package internal
+
+import (
+	"errors"
+	"fmt"
+	"time"
+
+	symbolic "github.com/inox-project/inox/internal/core/symbolic"
+)
+
+var (
+	_                     = []MessageReceiver{&Object{}}
+	ErrMutableMessageData = errors.New("impossible to create a Message with mutable data")
+
+	MSG_PROPNAMES = []string{"data"}
+)
+
+func init() {
+	RegisterSymbolicGoFunction(SendVal, func(ctx *symbolic.Context, v symbolic.SymbolicValue, r symbolic.MessageReceiver, s symbolic.SymbolicValue) *symbolic.Error {
+		return nil
+	})
+}
+
+type MessageReceiver interface {
+	Value
+	ReceiveMessage(ctx *Context, msg Message) error
+}
+
+// A Message is an immutable package around an immutable piece of data sent by a sender to a MessageReceiver, Message implements Value.
+type Message struct {
+	data         Value // immutable value
+	sender       Value
+	sendindgDate Date
+
+	NoReprMixin
+	NotClonableMixin
+}
+
+func (m Message) Data() Value {
+	return m.data
+}
+
+func NewMessage(data Value, sender Value) Message {
+	if data.IsMutable() {
+		panic(ErrMutableMessageData)
+	}
+	return Message{data: data, sender: sender, sendindgDate: Date(time.Now())}
+}
+
+func (m Message) Prop(ctx *Context, name string) Value {
+	switch name {
+	case "data":
+		return m.data
+	}
+	panic(FormatErrPropertyDoesNotExist(name, m))
+}
+
+func (Message) SetProp(ctx *Context, name string, value Value) error {
+	return ErrCannotSetProp
+}
+
+func (Message) PropertyNames(ctx *Context) []string {
+	return MSG_PROPNAMES
+}
+
+type SynchronousMessageHandler struct {
+	pattern Pattern
+	handler *InoxFunction
+
+	NoReprMixin
+	NotClonableMixin
+}
+
+func NewSynchronousMessageHandler(ctx *Context, fn *InoxFunction, pattern Pattern) *SynchronousMessageHandler {
+	if !fn.IsSharable(fn.originState) {
+		panic(errors.New("map iterable: only sharable functions are allowed"))
+	}
+	fn.Share(ctx.GetClosestState())
+
+	return &SynchronousMessageHandler{
+		handler: fn,
+		pattern: pattern,
+	}
+}
+
+func (h *SynchronousMessageHandler) Pattern() Pattern {
+	return h.pattern
+}
+
+func (h *SynchronousMessageHandler) Prop(ctx *Context, name string) Value {
+	switch name {
+	}
+	panic(FormatErrPropertyDoesNotExist(name, h))
+}
+
+func (*SynchronousMessageHandler) SetProp(ctx *Context, name string, value Value) error {
+	return ErrCannotSetProp
+}
+
+func (*SynchronousMessageHandler) PropertyNames(ctx *Context) []string {
+	return nil
+}
+
+type SynchronousMessageHandlers struct {
+	list []*SynchronousMessageHandler
+}
+
+func NewSynchronousMessageHandlers(handlers ...*SynchronousMessageHandler) *SynchronousMessageHandlers {
+	return &SynchronousMessageHandlers{list: handlers}
+}
+
+func (handlers *SynchronousMessageHandlers) CallHandlers(ctx *Context, msg Message, self Value) error {
+	if handlers == nil {
+		return nil
+	}
+	for _, h := range handlers.list {
+		if h.Pattern().Test(ctx, msg.Data()) {
+			_, err := h.handler.Call(ctx.GetClosestState(), self, []Value{msg.Data()})
+			if err != nil {
+				return fmt.Errorf("one of the message handler returned an error: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+// receivers
+
+func (obj *Object) ReceiveMessage(ctx *Context, msg Message) error {
+	state := ctx.GetClosestState()
+	obj.Lock(state)
+	defer obj.Unlock(state)
+
+	if err := obj.messageHandlers.CallHandlers(ctx, msg, obj); err != nil {
+		return err
+	}
+
+	obj.watchers.InformAboutAsync(ctx, msg, ShallowWatching, false)
+	return nil
+}
+
+func SendVal(ctx *Context, value Value, r MessageReceiver, sender Value) error {
+	return r.ReceiveMessage(ctx, Message{data: value, sender: sender})
+}
