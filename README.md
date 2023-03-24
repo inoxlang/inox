@@ -14,6 +14,8 @@ An archive with a Linux binary and some examples is available in release assets,
   ```
 - copy the `ide` folder where yout want
 
+
+To get started go [here](./docs/getting-started.md).\
 ⚠️ The language is not production ready yet.
 
 # Features
