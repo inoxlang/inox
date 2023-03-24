@@ -21,4 +21,4 @@ This will start an IDE on https://localhost:1200, it is not very stable so feel 
 
 The basics of the language are explained in this [file](./language-basics.md).\
 You can also explore the `examples/` folder and start with scripts in `examples/basic`.\
-After you learned the basics you can go in the `docs/features` folder an pick the feature you want !
+After you learned the basics you can go in the `docs/features` folder and pick the feature you want to explore !
