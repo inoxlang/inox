@@ -1,5 +1,5 @@
 const (
-    HOST = https://localhost:8080
+    HOST = https://localhost:1200
 )
 
 manifest {
@@ -11,7 +11,7 @@ manifest {
         }
         read: [%/..., %https://**]
         update: [%/..., %https://**]
-        provide: [%/..., %https://**, %https://**:8080]
+        provide: [%/..., %https://**, %https://**:1200]
         delete: [%/..., %https://**]
     }
     limits: {
