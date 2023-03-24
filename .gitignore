@@ -1,0 +1,7 @@
+.debug.txt
+
+*.pem
+*.cert
+*.key
+
+.vscode/
