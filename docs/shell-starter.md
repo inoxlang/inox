@@ -1,4 +1,4 @@
-# Shell
+# REPL
 
 Launch the shell with the ``shell`` subcommand:
 ```
@@ -8,12 +8,13 @@ inox shell
 Before starting the shell ``inox`` will execute ``$HOME/startup.ix`` and grant the required permissions by the script to the shell.\
 No additional permissions will be granted. You can copy the file named ``startup.ix`` in this repository and modify it.
 
-## Execute Inox scripts
+## Execute Inox scripts from the REPL
 
-``
+```
 run ./myscript.ix
-``
+```
 
+⚠️ Paths always start with `./, ../ or /` , if you type `run myscript.ix` it won't work.\
 ⚠️ The script will be potentially granted all the permissions of the shell !
 
 ## Execute commands
