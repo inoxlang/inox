@@ -1,5 +1,7 @@
 # Inox
 
+<img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4"></img>
+
 🛡️ Inox is a programming language for writing secure scripts and web apps, it is dynamically typed and has optional type annotations.
 
 # Installation
