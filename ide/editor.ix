@@ -5,7 +5,7 @@
 })
 
 $$editor = {
-    file %path: ./ide_example_script.ix
+    file %path: ./ide/example_script.ix
     mod %inox.module: inox.parse_in_memory_module!("", "manifest{}")
 
     runes %runes: Runes("")
