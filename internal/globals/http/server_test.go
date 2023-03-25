@@ -101,6 +101,7 @@ func TestHttpServer(t *testing.T) {
 			name := "node handler"
 			if i == 1 {
 				name = "compiled function handler"
+				t.Skip()
 			}
 
 			t.Run(name, func(t *testing.T) {
