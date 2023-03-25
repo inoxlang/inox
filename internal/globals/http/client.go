@@ -86,6 +86,21 @@ func NewClient(ctx *core.Context, configObject *core.Object) (*HttpClient, error
 	return client, nil
 }
 
+func NewHttpClientFromPreExistingClient(client *http.Client, insecure bool) *HttpClient {
+	return &HttpClient{
+		client: client,
+		config: HttpClientConfig{
+			Insecure:    insecure,
+			SaveCookies: client.Jar != nil,
+		},
+		options: HttpRequestOptions{
+			Timeout:            client.Timeout,
+			InsecureSkipVerify: insecure,
+			Jar:                client.Jar,
+		},
+	}
+}
+
 func (c *HttpClient) GetGoMethod(name string) (*core.GoFunction, bool) {
 	switch name {
 	case "get_host_cookies":

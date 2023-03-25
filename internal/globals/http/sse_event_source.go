@@ -60,15 +60,23 @@ type ServerSentEventSource struct {
 func NewEventSource(ctx *core.Context, resourceNameOrPattern core.Value) (*ServerSentEventSource, error) {
 	url := resourceNameOrPattern.(core.URL)
 
-	evs := &ServerSentEventSource{
-		url: url,
-		httpClient: &http.Client{
+	client, err := ctx.GetProtolClient(url)
+	var httpClient *http.Client
+	if err != nil {
+		httpClient = &http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{
 					InsecureSkipVerify: true,
 				},
 			},
-		}, //TODO: get http client from context
+		}
+	} else {
+		httpClient = client.(*HttpClient).client
+	}
+
+	evs := &ServerSentEventSource{
+		url:                      url,
+		httpClient:               httpClient,
 		additionalRequestHeaders: make(map[string]string),
 		maxBufferSize:            MAX_SSE_CLIENT_BUFFER_SIZE,
 		reconnectStrategy:        backoff.NewExponentialBackOff(),

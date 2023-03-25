@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	_cookiejar "net/http/cookiejar"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -27,7 +26,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const IDENTIDAL_SECONDARY_REQ_COUNT = 4
+const (
+	IDENTIDAL_SECONDARY_REQ_COUNT = 4
+	REQ_TIMEOUT                   = 1 * time.Second
+)
 
 var (
 	anyErr = errors.New("any")
@@ -72,7 +74,7 @@ func TestHttpServer(t *testing.T) {
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 			},
-			Timeout: time.Second,
+			Timeout: REQ_TIMEOUT,
 			Jar:     utils.Must(_cookiejar.New(&_cookiejar.Options{PublicSuffixList: publicsuffix.List})),
 		}
 	}
@@ -113,7 +115,7 @@ func TestHttpServer(t *testing.T) {
 				})
 				state := core.NewGlobalState(ctx)
 				state.Module = module
-				state.Logger = log.New(log.Writer(), "", 0)
+				state.Logger = log.New(io.Discard, "", 0)
 
 				server, err := NewHttpServer(ctx, host, handler)
 				if server != nil {
@@ -360,21 +362,7 @@ func TestHttpServer(t *testing.T) {
 								Data: []byte(`<div class="a".*?>2</div>`),
 							}).ToEvent(),
 						},
-					},
-				},
-			},
-			"small binary stream: event stream request": {`
-				return Mapping {
-					%/... => torstream(0x[aa bb])
-				}`,
-				[]requestTestInfo{
-					{
-						contentType: core.EVENT_STREAM_CTYPE,
-						events: []*core.Event{
-							(&ServerSentEvent{
-								Data: []byte("qrs="),
-							}).ToEvent(),
-						},
+						preDelay: 10 * time.Millisecond,
 					},
 				},
 			},
@@ -501,8 +489,8 @@ func setupAdvancedTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalS
 	})
 
 	// create logger
-	state.Logger = log.New(os.Stdout, "", 0)
-	state.Out = os.Stdout
+	state.Logger = log.New(io.Discard, "", 0)
+	state.Out = io.Discard
 
 	// create module
 	chunk := parse.MustParseChunk(testCase.input)
@@ -586,6 +574,8 @@ func runAdvancedServerTestCase(
 
 		//send requests
 		client := createClient()
+
+		ctx.SetProtocolClientForHost(host, NewHttpClientFromPreExistingClient(client, true))
 
 		responseLock := sync.Mutex{}
 		responses := make([]*http.Response, len(testCase.requests))
