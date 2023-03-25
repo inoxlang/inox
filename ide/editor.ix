@@ -33,9 +33,10 @@ $$editor = {
            children: map(self.<internal-errors, fn(err) => dom.div{ err.text })
         }
 
-        dom.auto(self.<mod.main_chunk_node, {
-            errors: self.<code-errors
-        })
+        dom.auto{
+            model: self.<mod.main_chunk_node
+            config: { errors: self.<code-errors }
+        }
 
         model: self
         forwarded-events: [#click, #keydown, #cut, #paste] 

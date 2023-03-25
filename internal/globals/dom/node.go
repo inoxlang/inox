@@ -12,8 +12,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/inox-project/inox/internal/commonfmt"
 	core "github.com/inox-project/inox/internal/core"
+	symbolic "github.com/inox-project/inox/internal/core/symbolic"
+	_dom_symbolic "github.com/inox-project/inox/internal/globals/dom/symbolic"
+
 	_html "github.com/inox-project/inox/internal/globals/html"
+
 	"github.com/inox-project/inox/internal/utils"
 	"golang.org/x/net/html"
 )
@@ -22,11 +27,12 @@ const (
 	CHANGE_WATCH_TIMEOUT = 10 * time.Millisecond
 	NODE_WATCHER_PERIOD  = time.Millisecond
 
-	FORWARDED_EVENTS_KEY     = "forwarded-events"
-	LISTENED_EVENTS_ATTR_KEY = "data-listened-events"
-	JOBS_KEY                 = "jobs"
-	MODEL_KEY                = "model"
-	ON_CLICK_TOGGLE_KEY      = "on-click-toggle"
+	FORWARDED_EVENTS_KEY      = "forwarded-events"
+	LISTENED_EVENTS_ATTR_KEY  = "data-listened-events"
+	JOBS_KEY                  = "jobs"
+	MODEL_KEY                 = "model"
+	USER_RENDERING_CONFIG_KEY = "config"
+	ON_CLICK_TOGGLE_KEY       = "on-click-toggle"
 
 	FORWARDER_ID_DATA_ATTR     = "data-forwarder-id"
 	FORWARDER_ID_BITSIZE       = 32
@@ -42,6 +48,7 @@ const (
 var (
 	ErrRenderFailureModelNotRenderable       = errors.New("failed to render node: model is not renderable")
 	ErrRenderFailureModelNotRenderableToHTML = errors.New("failed to render node: model is not renderable to HTML")
+	ErrSeveralModelsProvided                 = errors.New("several models have been provided, a single implicit argument is expected OR a .model property")
 
 	NODE_PROPNAMES = []string{"firstChild", "data"}
 
@@ -49,6 +56,65 @@ var (
 	_ = []core.PotentiallySharable{&Node{}}
 	_ = []core.Watchable{&Node{}}
 )
+
+func init() {
+	symbolicElement := func(ctx *symbolic.Context, tag *symbolic.String, desc *symbolic.Object) *_dom_symbolic.Node {
+		var model symbolic.SymbolicValue = symbolic.Nil
+		desc.ForEachEntry(func(k string, v symbolic.SymbolicValue) error {
+			switch k {
+			case MODEL_KEY:
+				model = v
+			}
+			return nil
+		})
+		return _dom_symbolic.NewDomNode(model)
+	}
+
+	// register symbolic version of Go functions
+	core.RegisterSymbolicGoFunctions([]any{
+		NewNode, symbolicElement,
+		NewAutoNode, func(ctx *symbolic.Context, desc *symbolic.Object) *_dom_symbolic.Node {
+			var model symbolic.SymbolicValue
+			var err bool
+			desc.ForEachEntry(func(k string, v symbolic.SymbolicValue) error {
+				switch {
+				case core.IsIndexKey(k) || k == MODEL_KEY:
+					if model != nil {
+						err = true
+						return nil
+					}
+					model = v
+				case k == USER_RENDERING_CONFIG_KEY:
+				case k == _html.CLASS_KEY:
+					if _, ok := v.(symbolic.StringLike); !ok {
+						ctx.AddSymbolicGoFunctionError(commonfmt.FmtInvalidValueForPropXOfArgY(k, "description", "a string was expected").Error())
+					}
+				default:
+					ctx.AddSymbolicGoFunctionError(commonfmt.FmtUnexpectedPropInArgX(k, "description").Error())
+				}
+				return nil
+			})
+
+			if err {
+				ctx.AddSymbolicGoFunctionError(ErrSeveralModelsProvided.Error())
+			}
+			if model == nil {
+				ctx.AddSymbolicGoFunctionError("missing model argument")
+				model = symbolic.ANY
+			}
+
+			return _dom_symbolic.NewDomNode(model)
+		},
+	})
+
+	specifcTagFactory := func(ctx *symbolic.Context, desc *symbolic.Object) *_dom_symbolic.Node {
+		return symbolicElement(ctx, &symbolic.String{}, desc)
+	}
+
+	for _, fn := range []any{_a, _div, _ul, _ol, _li, _span, _svg, _h1, _h2, _h3, _h4} {
+		core.RegisterSymbolicGoFunction(fn, specifcTagFactory)
+	}
+}
 
 type Node struct {
 	core.NoReprMixin
@@ -64,18 +130,21 @@ type Node struct {
 	parent   *Node
 
 	// state
-	forwardedEvents              []string
-	listenedEvents               []string
-	forwarderId                  uint64
-	jobs                         []*core.LifetimeJob
-	model                        core.Value
-	modelChangeWatcher           core.Watcher
-	modelReaction                modelReaction
-	modelReactionData            core.Value
-	renderingConfigChangeWatcher core.Watcher // auto rendering
+	forwardedEvents    []string
+	listenedEvents     []string
+	forwarderId        uint64
+	jobs               []*core.LifetimeJob
+	model              core.Value
+	modelChangeWatcher core.Watcher
+	modelReaction      modelReaction
+	modelReactionData  core.Value
+	watchers           *core.ValueWatchers
+	mutationCallbacks  *core.MutationCallbacks
+
+	// auto rendering
+	renderingConfigChangeWatcher core.Watcher
 	userRenderingConfig          core.Value
-	watchers                     *core.ValueWatchers
-	mutationCallbacks            *core.MutationCallbacks
+	additionalClass              string
 }
 
 func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *Node {
@@ -105,7 +174,7 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *Node {
 			}
 			child = val
 		default:
-			child = NewAutoNode(ctx, val)
+			child = NewAutoNode(ctx, core.NewObjectFromMap(core.ValMap{"0": val}, ctx))
 		}
 		html = child.html
 		htmlNodeDesc[strconv.Itoa(len(children))] = html
@@ -187,7 +256,7 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *Node {
 
 			listenedEvents = append(listenedEvents, "click")
 		default:
-			panic(core.FmtUnexpectedPropInArgX(k, "description"))
+			panic(commonfmt.FmtUnexpectedPropInArgX(k, "description"))
 		}
 	}
 
@@ -277,24 +346,41 @@ func NewStaticNode(n *_html.HTMLNode) *Node {
 	}
 }
 
-func NewAutoNode(ctx *core.Context, model core.Value, additionalArgs ...core.Value) *Node {
-	node := &Node{model: model}
+func NewAutoNode(ctx *core.Context, desc *core.Object) *Node {
+	node := &Node{}
 
-	if watchable, ok := model.(core.Watchable); ok {
+	desc.ForEachEntry(func(k string, v core.Value) error {
+		switch {
+		case core.IsIndexKey(k) || k == MODEL_KEY:
+			if node.model != nil {
+				panic(ErrSeveralModelsProvided)
+			}
+			node.model = v
+		case k == USER_RENDERING_CONFIG_KEY:
+			node.userRenderingConfig = v
+			if watchable, ok := node.userRenderingConfig.(core.Watchable); ok {
+				node.renderingConfigChangeWatcher = watchable.Watcher(ctx, core.WatcherConfiguration{
+					Filter: core.MUTATION_PATTERN,
+					Depth:  core.IntermediateDepthWatching,
+				})
+			}
+		case k == _html.CLASS_KEY:
+			node.additionalClass = v.(core.StringLike).GetOrBuildString()
+		default:
+			panic(commonfmt.FmtUnexpectedPropInArgX(k, "description"))
+		}
+
+		return nil
+	})
+	if node.model == nil {
+		panic(errors.New("missing model argument"))
+	}
+
+	if watchable, ok := node.model.(core.Watchable); ok {
 		node.modelChangeWatcher = watchable.Watcher(ctx, core.WatcherConfiguration{
 			Filter: core.MUTATION_PATTERN,
 			Depth:  core.ShallowWatching,
 		})
-	}
-
-	if len(additionalArgs) != 0 {
-		node.userRenderingConfig = additionalArgs[0]
-		if watchable, ok := node.userRenderingConfig.(core.Watchable); ok {
-			node.renderingConfigChangeWatcher = watchable.Watcher(ctx, core.WatcherConfiguration{
-				Filter: core.MUTATION_PATTERN,
-				Depth:  core.IntermediateDepthWatching,
-			})
-		}
 	}
 
 	node.modelRender(ctx)

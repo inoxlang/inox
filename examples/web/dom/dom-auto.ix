@@ -1,4 +1,4 @@
 manifest { }
 
 date = now()
-print html.str_render(dom.auto(date))
+print html.str_render(dom.auto{model: date})

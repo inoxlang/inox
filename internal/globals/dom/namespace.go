@@ -2,8 +2,6 @@ package internal
 
 import (
 	core "github.com/inox-project/inox/internal/core"
-	symbolic "github.com/inox-project/inox/internal/core/symbolic"
-	_dom_symbolic "github.com/inox-project/inox/internal/globals/dom/symbolic"
 )
 
 func init() {
@@ -71,37 +69,6 @@ func init() {
 			),
 		},
 	})
-
-	symbolicElement := func(ctx *symbolic.Context, tag *symbolic.String, desc *symbolic.Object) *_dom_symbolic.Node {
-		var model symbolic.SymbolicValue = symbolic.Nil
-		desc.ForEachEntry(func(k string, v symbolic.SymbolicValue) error {
-			switch k {
-			case MODEL_KEY:
-				model = v
-			}
-			return nil
-		})
-		return _dom_symbolic.NewDomNode(model)
-	}
-
-	// register symbolic version of Go functions
-	core.RegisterSymbolicGoFunctions([]any{
-		NewNode, symbolicElement,
-		NewAutoNode, func(ctx *symbolic.Context, model symbolic.SymbolicValue, args ...symbolic.SymbolicValue) *_dom_symbolic.Node {
-			if len(args) > 1 {
-				ctx.AddSymbolicGoFunctionError("at most two arguments were expected")
-			}
-			return _dom_symbolic.NewDomNode(model)
-		},
-	})
-
-	specifcTagFactory := func(ctx *symbolic.Context, desc *symbolic.Object) *_dom_symbolic.Node {
-		return symbolicElement(ctx, &symbolic.String{}, desc)
-	}
-
-	for _, fn := range []any{_a, _div, _ul, _ol, _li, _span, _svg, _h1, _h2, _h3, _h4} {
-		core.RegisterSymbolicGoFunction(fn, specifcTagFactory)
-	}
 
 }
 

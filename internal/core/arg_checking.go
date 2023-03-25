@@ -34,20 +34,12 @@ func FmtErrInvalidOptionName(name string) error {
 	return fmt.Errorf("invalid option name '%s'", name)
 }
 
-func FmtUnexpectedPropInArgX(propName string, argName string) error {
-	return fmt.Errorf("unexpected property .%s in %s argument", propName, argName)
-}
-
 func FmtMissingPropInArgX(propName string, argName string) error {
 	return fmt.Errorf("missing property .%s in %s argument", propName, argName)
 }
 
 func FmtPropOfArgXShouldBeOfTypeY(propName string, argName string, typename string, value Value) error {
 	return fmt.Errorf("property .%s of %s argument should be of type %s but is %s", propName, argName, typename, Stringify(value, nil))
-}
-
-func FmtInvalidValueForPropXOfArgY(propName string, argName string, msg string) error {
-	return fmt.Errorf("invalid value for property .%s of %s argument: %s", propName, argName, msg)
 }
 
 func FmtPropOfArgXShouldBeY(propName string, argName string, info string) error {

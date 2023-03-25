@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/inox-project/inox/internal/commonfmt"
 	core "github.com/inox-project/inox/internal/core"
 	_dom "github.com/inox-project/inox/internal/globals/dom"
 
@@ -152,7 +153,7 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 					}
 					_server.defaultCSP = csp
 				default:
-					return nil, core.FmtUnexpectedPropInArgX(propKey, HANDLING_ARG_NAME)
+					return nil, commonfmt.FmtUnexpectedPropInArgX(propKey, HANDLING_ARG_NAME)
 				}
 			}
 

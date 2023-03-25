@@ -5,6 +5,7 @@ import (
 	"io"
 	"path/filepath"
 
+	"github.com/inox-project/inox/internal/commonfmt"
 	core "github.com/inox-project/inox/internal/core"
 	symbolic "github.com/inox-project/inox/internal/core/symbolic"
 	parse "github.com/inox-project/inox/internal/parse"
@@ -156,7 +157,7 @@ func _run_local_script(ctx *core.Context, src core.Path, config *core.Object) (c
 		case "out":
 			writable, ok := v.(core.Writable)
 			if !ok {
-				return core.FmtInvalidValueForPropXOfArgY("out", "config", "a writable is expected")
+				return commonfmt.FmtInvalidValueForPropXOfArgY("out", "config", "a writable is expected")
 			}
 			out = writable.Writer()
 		}

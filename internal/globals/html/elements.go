@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strconv"
 
+	"github.com/inox-project/inox/internal/commonfmt"
 	core "github.com/inox-project/inox/internal/core"
 	_html_symbolic "github.com/inox-project/inox/internal/globals/html/symbolic"
 	"golang.org/x/net/html"
@@ -157,7 +158,7 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *HTMLNode {
 				jobs = append(jobs, job)
 			}
 		default:
-			panic(core.FmtUnexpectedPropInArgX(k, "description"))
+			panic(commonfmt.FmtUnexpectedPropInArgX(k, "description"))
 		}
 	}
 

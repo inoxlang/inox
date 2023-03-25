@@ -3,7 +3,7 @@ manifest { }
 counter = { c: 1 }
 
 
-node = dom.auto(counter)
+node = dom.auto{model: counter}
 print html.str_render(node)
 
 counter.c += 1

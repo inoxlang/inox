@@ -45,7 +45,7 @@ func TestViewWatcher(t *testing.T) {
 		dynVal, _ := core.NewDynamicMemberValue(ctx, obj, "name")
 
 		node := NewNode(ctx, core.Str("div"), core.NewObjectFromMap(core.ValMap{
-			"0": NewAutoNode(ctx, dynVal),
+			"0": NewAutoNode(ctx, core.NewObjectFromMap(core.ValMap{"model": dynVal}, ctx)),
 		}, ctx))
 
 		view := NewView(ctx, "/", obj, node)

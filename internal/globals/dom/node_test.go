@@ -121,7 +121,7 @@ func TestNewAutoNode(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{})
 		core.NewGlobalState(ctx)
 
-		result := NewAutoNode(ctx, core.True)
+		result := NewAutoNode(ctx, core.NewObjectFromMap(core.ValMap{"model": core.True}, ctx))
 
 		assert.Equal(t, &Node{
 			html:  _html.CreateTextNode(core.Str("true")),
@@ -135,7 +135,7 @@ func TestNewAutoNode(t *testing.T) {
 
 		config := core.NewDateFormat(time.RFC822)
 		date, _ := time.Parse(time.RFC822, time.RFC822)
-		result := NewAutoNode(ctx, core.Date(date), config)
+		result := NewAutoNode(ctx, core.NewObjectFromMap(core.ValMap{"model": core.Date(date), "config": config}, ctx))
 
 		dateString := time.RFC822
 
@@ -153,7 +153,7 @@ func TestNewAutoNode(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{})
 		core.NewGlobalState(ctx)
 
-		result := NewAutoNode(ctx, core.NewWrappedValueList())
+		result := NewAutoNode(ctx, core.NewObjectFromMap(core.ValMap{"model": core.NewWrappedValueList()}, ctx))
 
 		assert.Equal(t, "<ul></ul>", string(_html.RenderToString(ctx, result)))
 	})
@@ -166,7 +166,7 @@ func TestNewAutoNode(t *testing.T) {
 		cond, _ := core.NewDynamicMemberValue(ctx, obj, "cond")
 		model := core.NewDynamicIf(ctx, cond, core.True, core.False)
 
-		result := NewAutoNode(ctx, model)
+		result := NewAutoNode(ctx, core.NewObjectFromMap(core.ValMap{"model": model}, ctx))
 
 		assert.Equal(t, "true", string(_html.RenderToString(ctx, result)))
 		obj.SetProp(ctx, "cond", core.False)
@@ -184,7 +184,7 @@ func TestNewAutoNode(t *testing.T) {
 			cond, _ := core.NewDynamicMemberValue(ctx, obj, "cond")
 			model := core.NewDynamicIf(ctx, cond, core.True, core.Nil)
 
-			result := NewAutoNode(ctx, model)
+			result := NewAutoNode(ctx, core.NewObjectFromMap(core.ValMap{"model": model}, ctx))
 
 			assert.Equal(t, "true", string(_html.RenderToString(ctx, result)))
 			obj.SetProp(ctx, "cond", core.False)
@@ -201,7 +201,7 @@ func TestNewAutoNode(t *testing.T) {
 			childNode := NewStaticNode(_html.CreateSpanElem(core.Str("a")))
 			model := core.NewDynamicIf(ctx, cond, core.Nil, childNode)
 
-			result := NewAutoNode(ctx, model)
+			result := NewAutoNode(ctx, core.NewObjectFromMap(core.ValMap{"model": model}, ctx))
 
 			assert.Equal(t, "<span></span>", string(_html.RenderToString(ctx, result)))
 			obj.SetProp(ctx, "cond", core.False)
@@ -214,13 +214,13 @@ func TestNewAutoNode(t *testing.T) {
 			core.NewGlobalState(ctx)
 
 			childNodeModel := core.NewWrappedValueList()
-			childNode := NewAutoNode(ctx, childNodeModel)
+			childNode := NewAutoNode(ctx, core.NewObjectFromMap(core.ValMap{"model": childNodeModel}, ctx))
 
 			obj := core.NewObjectFromMap(core.ValMap{"cond": core.True}, ctx)
 			cond, _ := core.NewDynamicMemberValue(ctx, obj, "cond")
 			model := core.NewDynamicIf(ctx, cond, core.Nil, childNode)
 
-			result := NewAutoNode(ctx, model)
+			result := NewAutoNode(ctx, core.NewObjectFromMap(core.ValMap{"model": model}, ctx))
 
 			assert.Equal(t, "<span></span>", string(_html.RenderToString(ctx, result)))
 			obj.SetProp(ctx, "cond", core.False)
@@ -267,7 +267,7 @@ func TestNodeWatcher(t *testing.T) {
 		dynVal, _ := core.NewDynamicMemberValue(ctx, obj, "name")
 
 		node := NewNode(ctx, core.Str("div"), core.NewObjectFromMap(core.ValMap{
-			"0": NewAutoNode(ctx, dynVal),
+			"0": NewAutoNode(ctx, core.NewObjectFromMap(core.ValMap{"model": dynVal}, ctx)),
 		}, ctx))
 
 		watcher := node.Watcher(ctx, core.WatcherConfiguration{Filter: core.MUTATION_PATTERN})
@@ -292,7 +292,7 @@ func TestNodeWatcher(t *testing.T) {
 		obj := core.NewObjectFromMap(core.ValMap{"config": core.NewDateFormat(time.RFC850)}, ctx)
 		dynConfig, _ := core.NewDynamicMemberValue(ctx, obj, "config")
 
-		node := NewAutoNode(ctx, model, dynConfig)
+		node := NewAutoNode(ctx, core.NewObjectFromMap(core.ValMap{"model": model, "config": dynConfig}, ctx))
 
 		watcher := node.Watcher(ctx, core.WatcherConfiguration{Filter: core.MUTATION_PATTERN})
 		go func() {

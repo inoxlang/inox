@@ -5,6 +5,7 @@ import (
 
 	"io"
 
+	"github.com/inox-project/inox/internal/commonfmt"
 	core "github.com/inox-project/inox/internal/core"
 	symbolic "github.com/inox-project/inox/internal/core/symbolic"
 	symbolic_shell "github.com/inox-project/inox/internal/globals/shell/symbolic"
@@ -59,7 +60,7 @@ func NewShell(ctx *core.Context, configObj *core.Object) (*shell, error) {
 				if ident == "default" {
 					globals = nil
 				} else {
-					return nil, core.FmtInvalidValueForPropXOfArgY(key, CONFIG_ARGNAME, "only valid identifier value is #default")
+					return nil, commonfmt.FmtInvalidValueForPropXOfArgY(key, CONFIG_ARGNAME, "only valid identifier value is #default")
 				}
 			} else {
 				return nil, core.FmtPropOfArgXShouldBeOfTypeY(key, CONFIG_ARGNAME, "object", value)
@@ -77,7 +78,7 @@ func NewShell(ctx *core.Context, configObj *core.Object) (*shell, error) {
 				return nil, core.FmtPropOfArgXShouldBeOfTypeY(key, CONFIG_ARGNAME, "color", value)
 			}
 		default:
-			return nil, core.FmtUnexpectedPropInArgX(key, CONFIG_ARGNAME)
+			return nil, commonfmt.FmtUnexpectedPropInArgX(key, CONFIG_ARGNAME)
 		}
 	}
 
