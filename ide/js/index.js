@@ -1,5 +1,6 @@
 const 
     cursorUpdateWaitTimeMillis = 20,
+    EDITOR_WRAPPER_ID = "#editor-wrapper",
     CODE_CHUNK_LINES_DOTCLASS = ".code-chunk__lines",
     CODE_ERROR_DOTCLASS = ".code-chunk__error",
     TOKEN_DOTCLASS = ".token",
@@ -101,7 +102,6 @@ function createEditorView(){
         
                 hideTooltip()
             })
-
         },
         preHandlers:  {
             'keydown':  (event, data) => {
@@ -357,10 +357,16 @@ function createEditorView(){
 }
 
 
+
+function getEditableUnordererdList(){
+    let ul = editor.element.querySelector(CODE_CHUNK_LINES_DOTCLASS);
+    assertHTMLelement(ul)
+    return /** @type {HTMLElement} */ (ul)
+}
+
 /** @param {number} position */
 function findLineOfPosition(position){
-    let lines = editor.element.querySelector(CODE_CHUNK_LINES_DOTCLASS);
-    assertHTMLelement(lines)
+    let lines = getEditableUnordererdList()
     let lineList = Array.from(lines.children).filter(isHTMLElement)
 
     for(let line of lineList){
@@ -376,8 +382,7 @@ function findLineOfPosition(position){
  * @param {number} spanEnd 
  */
 function findLinesOfSpan(spanStart, spanEnd){
-    let lines = editor.element.querySelector(CODE_CHUNK_LINES_DOTCLASS);
-    assertHTMLelement(lines)
+    let lines = getEditableUnordererdList()
     let lineList = Array.from(lines.children).filter(isHTMLElement)
 
 
@@ -475,8 +480,7 @@ function getSortedTokensOfLine(line){
 
 
 function getAllTokens(){
-    let lines = editor.element.querySelector(CODE_CHUNK_LINES_DOTCLASS);
-    assertHTMLelement(lines)
+    let lines = getEditableUnordererdList()
     let lineList = Array.from(lines.children).filter(isHTMLElement)
 
     return lineList.map(line => getSortedTokensOfLine(line)).reduce((allTokens, lineTokens) => allTokens.concat(lineTokens), [])
@@ -550,6 +554,20 @@ function setCursorAtToken(newPosition, tokens){
 
         tokenFound = true;
         
+        let editorWrapper = document.body.querySelector(EDITOR_WRAPPER_ID)
+        assertHTMLelement(editorWrapper)
+
+        let line = token.parentElement
+        assertHTMLelement(line)
+        let {bottom: editorBottom} = editorWrapper.getBoundingClientRect()
+        let {height: lineHeight, top: lineTop, bottom: lineBottom} = line.getBoundingClientRect()
+
+        if(lineTop - lineHeight < 0){
+            editorWrapper.scrollTop += lineTop
+        } else if(lineBottom + lineHeight > editorBottom) {
+            editorWrapper.scrollTop += (lineBottom + lineHeight - editorBottom)
+        } 
+
         updateCursorPosition(child, newOffset)
     })
 }

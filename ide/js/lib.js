@@ -470,3 +470,17 @@ function patchBinaryData(url, data){
 
 }
 
+
+
+/**
+ * @param {HTMLElement} element 
+ * @param {HTMLElement} container 
+ */
+function isElementVisibleInContainer(element, container) {
+    let { bottom: elemBotton, height: elemHeight, top: elemTop } = element.getBoundingClientRect()
+    let containerRect = container.getBoundingClientRect()
+
+    return elemTop <= containerRect.top ? 
+        containerRect.top - elemTop <= elemHeight : 
+        elemBotton - containerRect.bottom <= elemHeight
+};
