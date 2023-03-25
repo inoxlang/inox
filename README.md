@@ -39,7 +39,7 @@ create a checked string all the interpolations must be explicitly typed.\
 
 ### Required permissions 
 
-Inox features a granular permission system that restricts what a module is allowed to do, here is a few examples of permissions:
+Inox features a fine-grained permission system that restricts what a module is allowed to do, here is a few examples of permissions:
 - access to the filesystem (read, create, update, write, delete)
 - access to the network (several distinct permissions)
     - HTTP (read, create, update, delete, listen)
