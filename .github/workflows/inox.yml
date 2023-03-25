@@ -1,6 +1,7 @@
 name: Inox
 
 on:
+  push:
   release:
     types: [created]
 permissions: write-all
