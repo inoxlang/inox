@@ -111,7 +111,16 @@ TODO: explain
 
 ## Transactions & Effects (WIP)
 
-TODO: explain
+Inox allows you to attach a transaction to the current execution context (think SQL transactions).
+When a side effect happens it is recorded in the transaction. If the execution is cancelled for whatever reason the transaction is automatically rollbacked and 'reversible' effects are reversed. (A 'mode' that causes side effects to only be committed if the transaction succeed is also planned)
+
+```
+tx = start_tx()
+
+fs.mkfile ./file.txt # <-- effect !
+
+cancel_exec()
+```
 
 ## Concurrency
 
