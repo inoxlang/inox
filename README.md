@@ -3,7 +3,7 @@
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4"></img>
 
 🛡️ Inox is a programming language for writing secure scripts and web apps, it is dynamically typed and has optional type annotations.
-It allows to easily write [concurrent code](#concurrency) and to exchange [messages](##communication) between objects.
+It allows to easily write [concurrent code](#concurrency) and to exchange [messages](./README.md#communication) between objects.
 
 # Installation
 
