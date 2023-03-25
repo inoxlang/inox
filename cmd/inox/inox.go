@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"path"
 	"path/filepath"
 	"strings"
 	"syscall"
 
+	"github.com/inox-project/inox/internal/config"
 	core "github.com/inox-project/inox/internal/core"
 	globals "github.com/inox-project/inox/internal/globals"
 	_http "github.com/inox-project/inox/internal/globals/http"
@@ -29,10 +29,6 @@ const (
 		"\teval - evaluate a single statement\n\n" +
 		"The run command:\n" +
 		"\trun <script path> [passed arguments]\n"
-
-	SHELL_STARTUP_SCRIPT_NAME                   = "startup.ix"
-	SHELL_STARTUP_SCRIPT_NAME_NOT_FOUND_MESSAGE = "no startup file found in homedir and none was specified (-c <file>). " +
-		"You can fix this by copying the " + SHELL_STARTUP_SCRIPT_NAME + " file from Inox's Github repository to your home directory."
 )
 
 func main() {
@@ -132,21 +128,20 @@ func _main(args []string) {
 
 		case "shell":
 			shellFlags := flag.NewFlagSet("shell", flag.ExitOnError)
-			startupScriptPath := getHomedirStartupScriptPath()
+			startupScriptPath, err := config.GetStartupScriptPath()
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
 
 			shellFlags.StringVar(&startupScriptPath, "c", startupScriptPath, "startup script path")
 
 			commandArgs := args[2:] // get arguments after 'shell' subcommand
 			moveFlagsStart(commandArgs)
 
-			err := shellFlags.Parse(commandArgs)
+			err = shellFlags.Parse(commandArgs)
 			if err != nil {
 				fmt.Println(err)
-				return
-			}
-
-			if startupScriptPath == "" {
-				fmt.Println(SHELL_STARTUP_SCRIPT_NAME_NOT_FOUND_MESSAGE)
 				return
 			}
 
@@ -162,11 +157,15 @@ func _main(args []string) {
 
 			_sh.StartShell(state, config)
 		case "eval":
-			evalFlags := flag.NewFlagSet("eval", flag.ExitOnError)
-			startupScriptPath := getHomedirStartupScriptPath()
-
 			if len(args) == 2 {
 				fmt.Println("missing code string")
+				return
+			}
+
+			evalFlags := flag.NewFlagSet("eval", flag.ExitOnError)
+			startupScriptPath, err := config.GetStartupScriptPath()
+			if err != nil {
+				fmt.Println(err)
 				return
 			}
 
@@ -175,18 +174,13 @@ func _main(args []string) {
 			commandArgs := args[2:] // get arguments after 'eval' subcommand
 			moveFlagsStart(commandArgs)
 
-			err := evalFlags.Parse(commandArgs)
+			err = evalFlags.Parse(commandArgs)
 			if err != nil {
 				fmt.Println(err)
 				return
 			}
 
 			command := evalFlags.Arg(0)
-
-			if startupScriptPath == "" {
-				fmt.Println(SHELL_STARTUP_SCRIPT_NAME_NOT_FOUND_MESSAGE)
-				return
-			}
 
 			if strings.TrimSpace(command) == "" {
 				fmt.Println("empty command")
@@ -252,19 +246,6 @@ func moveFlagsStart(args []string) {
 			index++
 		}
 	}
-}
-
-func getHomedirStartupScriptPath() string {
-	startupScriptPath := ""
-	home, err := os.UserHomeDir()
-	if err == nil && home != "" {
-		pth := path.Join(home, SHELL_STARTUP_SCRIPT_NAME)
-		info, err := os.Stat(pth)
-		if err == nil && info.Mode().IsRegular() {
-			startupScriptPath = pth
-		}
-	}
-	return startupScriptPath
 }
 
 func runStartupScript(startupScriptPath string) (*core.Object, *core.GlobalState) {

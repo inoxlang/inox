@@ -5,8 +5,8 @@ Launch the shell with the ``shell`` subcommand:
 inox shell
 ```
 
-Before starting the shell ``inox`` will execute ``$HOME/startup.ix`` and grant the required permissions by the script to the shell.\
-No additional permissions will be granted. You can copy the file named ``startup.ix`` in this repository and modify it.
+Before starting the shell ``inox`` will execute the startup script found in `.config/inox` (or XDG_CONFIG_HOME) and grant the required permissions by the script to the shell.\
+No additional permissions will be granted. You can modify the startup script in `.config/inox` if you need more permissions.
 
 ## Execute Inox scripts from the REPL
 
@@ -24,7 +24,7 @@ ex echo "hello"   # 'ex echo hello' will not work
 ex go help
 ```
 
-NOTE: Almost no commands are allowed by default, edit your ``startup.ix`` file to allow more commands (and subcommands).
+NOTE: Almost no commands are allowed by default, edit your startup script in `.config/inox` to allow more commands (and subcommands).
 
 
 ## Read, Create, Update, Delete, Provide resources

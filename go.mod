@@ -28,6 +28,7 @@ require (
 )
 
 require (
+	github.com/adrg/xdg v0.4.0 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/aws/aws-sdk-go v1.44.174 // indirect
 	github.com/bits-and-blooms/bitset v1.5.0 // indirect
