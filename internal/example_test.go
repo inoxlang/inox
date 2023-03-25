@@ -46,8 +46,14 @@ func TestExamples(t *testing.T) {
 	core.SetInitialWorkingDir()
 
 	//uncomment the following lines to test a given script
-	// testExample(t, "./test.ix", true, true, 1000*time.Second)
-	// return
+	// testExample(t, exampleTestConfig{
+	// fpath:            "./ide/ide.ix",
+	// useBytecode:      true,
+	// optimizeBytecode: true,
+	// testTimeout:      1000 * time.Second,
+	// runInTempDir:     false,
+	// })
+	//return
 
 	t.Run("tree-walk", func(t *testing.T) {
 		testExamples(t, false, false)
@@ -80,14 +86,34 @@ func testExamples(t *testing.T, useBytecode, optimizeBytecode bool) {
 		testName := strings.ReplaceAll(fpath, "/", "--")
 
 		t.Run(testName, func(t *testing.T) {
-			testExample(t, fpath, useBytecode, optimizeBytecode, DEFAULT_TEST_TIMEMOUT_DURATION)
+			testExample(t, exampleTestConfig{
+				fpath:            fpath,
+				useBytecode:      useBytecode,
+				optimizeBytecode: optimizeBytecode,
+				testTimeout:      DEFAULT_TEST_TIMEMOUT_DURATION,
+				runInTempDir:     true,
+			})
+
 		})
 	}
 
 }
 
-func testExample(t *testing.T, fpath string, useBytecode, optimizeBytecode bool, testTimeout time.Duration) {
-	tempDir := t.TempDir()
+type exampleTestConfig struct {
+	fpath                         string
+	useBytecode, optimizeBytecode bool
+	testTimeout                   time.Duration
+	runInTempDir                  bool
+}
+
+func testExample(t *testing.T, config exampleTestConfig) {
+
+	fpath := config.fpath
+	useBytecode := config.useBytecode
+	optimizeBytecode := config.optimizeBytecode
+	testTimeout := config.testTimeout
+	runInTempDir := config.runInTempDir
+
 	filename := filepath.Base(fpath)
 
 	if strings.Contains(fpath, CHROME_EXAMPLE_FOLDER) && !RUN_BROWSER_AUTOMATION_EXAMPLES ||
@@ -95,36 +121,40 @@ func testExample(t *testing.T, fpath string, useBytecode, optimizeBytecode bool,
 		t.Skip()
 	}
 
-	//we copy the examples in test directory and we set the WD to this directory
+	if runInTempDir {
+		tempDir := t.TempDir()
 
-	err := _fs.Copy(core.NewContext(core.ContextConfig{
-		Permissions: []core.Permission{
-			core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern("/...")},
-			core.FilesystemPermission{Kind_: core.CreatePerm, Entity: core.PathPattern("/...")},
-			core.FilesystemPermission{Kind_: core.WritePerm, Entity: core.PathPattern("/...")},
-		},
-		Limitations: []core.Limitation{
-			{
-				Name:  _fs.FS_READ_LIMIT_NAME,
-				Kind:  core.ByteRateLimitation,
-				Value: 100_000_000,
+		//we copy the examples in test directory and we set the WD to this directory
+
+		err := _fs.Copy(core.NewContext(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern("/...")},
+				core.FilesystemPermission{Kind_: core.CreatePerm, Entity: core.PathPattern("/...")},
+				core.FilesystemPermission{Kind_: core.WritePerm, Entity: core.PathPattern("/...")},
 			},
-			{
-				Name:  _fs.FS_WRITE_LIMIT_NAME,
-				Kind:  core.ByteRateLimitation,
-				Value: 100_000_000,
+			Limitations: []core.Limitation{
+				{
+					Name:  _fs.FS_READ_LIMIT_NAME,
+					Kind:  core.ByteRateLimitation,
+					Value: 100_000_000,
+				},
+				{
+					Name:  _fs.FS_WRITE_LIMIT_NAME,
+					Kind:  core.ByteRateLimitation,
+					Value: 100_000_000,
+				},
 			},
-		},
-	}), core.Path("./examples/"), core.Path(filepath.Join(tempDir, "./examples/")+"/"))
-	if !assert.NoError(t, err) {
-		return
+		}), core.Path("./examples/"), core.Path(filepath.Join(tempDir, "./examples/")+"/"))
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		dir, _ := os.Getwd()
+
+		defer os.Chdir(dir)
+		os.Chdir(tempDir)
+		core.SetInitialWorkingDir()
 	}
-
-	dir, _ := os.Getwd()
-
-	defer os.Chdir(dir)
-	os.Chdir(tempDir)
-	core.SetInitialWorkingDir()
 
 	done := make(chan int)
 
