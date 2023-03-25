@@ -158,6 +158,8 @@ body {
     display: flex;
     flex-direction: column;
     row-gap: 0.25em;
+    
+    --line-count-digits: 3;
 }
 
 .code-chunk__lines > li {
@@ -171,7 +173,7 @@ body {
     color: var(--line-number-color);
     text-align: end;
     margin-right: 10px;
-    width: 20px;
+    width: calc(var(--line-count-digits) * 10px);
 }
 
 .code-chunk__lines > li > .token[data-type=newline]:only-child {
