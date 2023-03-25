@@ -98,6 +98,20 @@ func (s Str) Render(ctx *Context, w io.Writer, config RenderingInput) (int, erro
 	}
 }
 
+func (s *RuneSlice) IsRecursivelyRenderable(ctx *Context, input RenderingInput) bool {
+	return true
+}
+
+func (s *RuneSlice) Render(ctx *Context, w io.Writer, config RenderingInput) (int, error) {
+	switch config.Mime {
+	case HTML_CTYPE:
+		escaped := html.EscapeString(string(s.elements))
+		return w.Write([]byte("<span>" + escaped + "</span>"))
+	default:
+		return 0, formatErrUnsupportedRenderingMime(config.Mime)
+	}
+}
+
 func (n Int) IsRecursivelyRenderable(ctx *Context, input RenderingInput) bool {
 	return true
 }
