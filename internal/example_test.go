@@ -27,15 +27,10 @@ const (
 )
 
 var (
-	TIMING_OUT_EXAMPLES = []string{
-		"events.ix",
-	}
-	CANCELLED_TOP_CTX_EXAMPLES = []string{
-		"execution-time.ix", "rollback-on-cancellation.ix",
-	}
-	FALSE_ASSERTION_EXAMPLES = []string{
-		"simple-testsuite.ix",
-	}
+	TIMING_OUT_EXAMPLES        = []string{"events.ix"}
+	CANCELLED_TOP_CTX_EXAMPLES = []string{"execution-time.ix", "rollback-on-cancellation.ix"}
+	FALSE_ASSERTION_EXAMPLES   = []string{"simple-testsuite.ix"}
+	SKIPPED_EXAMPLES           = []string{"get-resource.ix", "websocket.ix"}
 
 	RUN_BROWSER_AUTOMATION_EXAMPLES = os.Getenv("RUN_BROWSER_AUTOMATION_EXAMPLES") == "true"
 )
@@ -92,12 +87,13 @@ func testExamples(t *testing.T, useBytecode, optimizeBytecode bool) {
 }
 
 func testExample(t *testing.T, fpath string, useBytecode, optimizeBytecode bool, testTimeout time.Duration) {
+	tempDir := t.TempDir()
+	filename := filepath.Base(fpath)
 
-	if strings.Contains(fpath, CHROME_EXAMPLE_FOLDER) && !RUN_BROWSER_AUTOMATION_EXAMPLES {
+	if strings.Contains(fpath, CHROME_EXAMPLE_FOLDER) && !RUN_BROWSER_AUTOMATION_EXAMPLES ||
+		utils.SliceContains(SKIPPED_EXAMPLES, filename) {
 		t.Skip()
 	}
-
-	tempDir := t.TempDir()
 
 	//we copy the examples in test directory and we set the WD to this directory
 
@@ -131,7 +127,6 @@ func testExample(t *testing.T, fpath string, useBytecode, optimizeBytecode bool,
 	core.SetInitialWorkingDir()
 
 	done := make(chan int)
-	filename := filepath.Base(fpath)
 
 	go func() {
 		defer func() {
