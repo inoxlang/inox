@@ -14,6 +14,7 @@ var (
 	ErrCannotCreateDynamicMemberMissingProperty                 = errors.New("cannot create dynamic member: property is missing")
 	ErrCannotCreateDynamicMapInvocationValueInDynValNotIterable = errors.New("cannot create dynamic map invocation: value in passed dynamic value is not iterable")
 	ErrCannotCreateIfCondNotBoolean                             = errors.New("cannot create dynamic if: condition value is not a boolean")
+	ErrDynCallNonFunctionCalee                                  = errors.New("callee in dynamic call value is not a function")
 	ErrUnknownDynamicOp                                         = errors.New("unknown dynamic operation")
 )
 
@@ -22,7 +23,13 @@ func init() {
 		NewDynamicIf, func(ctx *symbolic.Context, cond *symbolic.DynamicValue, consequent, alternate symbolic.SymbolicValue) *symbolic.DynamicValue {
 			return symbolic.NewDynamicValue(symbolic.NewMultivalue(consequent, alternate))
 		},
-		NewDynamicCall, func(ctx *symbolic.Context, callee *symbolic.InoxFunction, args ...symbolic.SymbolicValue) *symbolic.DynamicValue {
+		NewDynamicCall, func(ctx *symbolic.Context, callee symbolic.SymbolicValue, args ...symbolic.SymbolicValue) *symbolic.DynamicValue {
+			switch callee.(type) {
+			case *symbolic.InoxFunction, *symbolic.GoFunction:
+			default:
+				ctx.AddSymbolicGoFunctionError("callee should be a function")
+			}
+
 			return symbolic.NewDynamicValue(symbolic.ANY)
 		},
 	})
@@ -272,7 +279,7 @@ func NewDynamicIf(ctx *Context, condition *DynamicValue, consequent Value, alter
 }
 
 // TODO: restrict callee to functions without side effects
-func NewDynamicCall(ctx *Context, callee *InoxFunction, args ...Value) *DynamicValue {
+func NewDynamicCall(ctx *Context, callee Value, args ...Value) *DynamicValue {
 
 	actualArgs := make([]Value, len(args))
 
@@ -281,7 +288,16 @@ func NewDynamicCall(ctx *Context, callee *InoxFunction, args ...Value) *DynamicV
 		for i, arg := range args {
 			actualArgs[i] = Unwrap(ctx, arg)
 		}
-		return callee.Call(state, nil, actualArgs)
+
+		switch c := callee.(type) {
+		case *InoxFunction:
+			return c.Call(state, nil, actualArgs)
+		case *GoFunction:
+			args := utils.MapSlice(actualArgs, func(arg Value) any { return arg })
+			return c.Call(args, state, nil, false, true)
+		default:
+			panic(ErrDynCallNonFunctionCalee)
+		}
 	}
 
 	firstCallResult, err := call(ctx)
