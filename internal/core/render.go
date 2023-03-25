@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html"
 	"io"
+	"math"
 	"runtime/debug"
 	"sort"
 	"strconv"
@@ -380,8 +381,12 @@ func (node AstNode) Render(ctx *Context, w io.Writer, config RenderingInput) (n 
 
 	}
 
+	lineCountDigits := int(math.Ceil(math.Log10(float64(len(lineSpans)))))
+
 	// print opening tag for line list
-	if _, err := bw.WriteString("<ul contenteditable spellcheck='false' class='code-chunk__lines'>"); err != nil {
+	if _, err := bw.WriteStrings(
+		"<ul contenteditable spellcheck='false' class='code-chunk__lines' style='--line-count-digits:", strconv.Itoa(lineCountDigits), "'>",
+	); err != nil {
 		finalErr = err
 		return
 	}
