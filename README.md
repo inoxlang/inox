@@ -3,7 +3,7 @@
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4"></img>
 
 🛡️ Inox is a programming language for writing secure scripts and web apps, it is dynamically typed and has optional type annotations.
-It allows to easily write concurrent code and to exchange messages between objects.
+It allows to easily write [concurrent code](#concurrency) and to exchange [messages](##communication) between objects.
 
 # Installation
 
@@ -148,11 +148,11 @@ object = {
 }
 ```
 
-## Object Communication
+## Communication
 
 In Inox objects can communicate in several different ways.
 
-### Message sending to parent object (super system)
+### Message sending
 
 The `sendval` construct allows an object to send message to another object.
 
