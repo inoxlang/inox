@@ -140,17 +140,38 @@ Lifetime jobs are coroutines linked to an object.
 
 ```
 object = {
-  lifetimejob #handle-events {
+  lifetimejob #handle-messages {
     for msg in watch_received_messages(self){
       # handle messages
     }
   }
 }
-
 ```
 
-
 ## Object Communication
+
+In Inox objects can communicate in several different ways.
+
+### Message sending to parent object (super system)
+
+The `sendval` construct allows an object to send message to another object.
+
+```
+object = {
+  inner: {
+    method: fn(){
+      # supersys is a keyword that designates the parent object here 
+      sendval "hello" to supersys
+    }
+  }
+  
+  lifetimejob #handle-messages {
+    for msg in watch_received_messages(self){
+      print(msg) # "hello"
+    }
+   }
+}
+```
 
 TODO: explain
 
