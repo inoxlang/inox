@@ -3,6 +3,7 @@
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4"></img>
 
 🛡️ Inox is a programming language for writing secure scripts and web apps, it is dynamically typed and has optional type annotations.
+It allows to easily write concurrent code and to exchange messages between objects.
 
 # Installation
 
@@ -114,7 +115,31 @@ TODO: explain
 
 ## Concurrency
 
-TODO: explain
+### Coroutines (Goroutines)
+
+```
+coroutine = go {globals: .{print}} do {
+  print("hello from goroutine !")
+}
+
+result = coroutine.wait_result!()
+```
+
+### Lifetime jobs
+
+Lifetime jobs are coroutines linked to an object.
+
+```
+object = {
+  lifetimejob #handle-events {
+    for msg in watch_received_messages(self){
+      # handle messages
+    }
+  }
+}
+
+```
+
 
 ## Object Communication
 
