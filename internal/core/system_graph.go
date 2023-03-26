@@ -12,24 +12,30 @@ import (
 var (
 	ErrValueAlreadyInSysGraph = errors.New("value already in a system graph")
 	ErrValueNotInSysGraph     = errors.New("value is not part of system graph")
-	ErrNilSysGraphPointer     = errors.New("system graph pointer is nil")
 )
 
 // A SystemGraph represents relations & events between values.
 type SystemGraph struct {
-	eventLog       []SystemGraphEvent
-	ptrToNode      map[uintptr]*SystemGraphNode
-	availableNodes []*SystemGraphNode
+	nodes *SystemGraphNodes
 
-	lock sync.Mutex
+	eventLogLock sync.Mutex
+	eventLog     []SystemGraphEvent
 }
 
 func NewSystemGraph() *SystemGraph {
 	g := &SystemGraph{
-		ptrToNode: make(map[uintptr]*SystemGraphNode),
+		nodes: &SystemGraphNodes{
+			ptrToNode: make(map[uintptr]*SystemGraphNode),
+		},
 	}
 
 	return g
+}
+
+type SystemGraphNodes struct {
+	lock           sync.Mutex
+	ptrToNode      map[uintptr]*SystemGraphNode
+	availableNodes []*SystemGraphNode
 }
 
 type SystemGraphNode struct {
@@ -63,8 +69,8 @@ func (g *SystemGraph) Ptr() SystemGraphPointer {
 }
 
 func (g *SystemGraph) AddNode(value SystemGraphNodeValue) {
-	g.lock.Lock()
-	defer g.lock.Unlock()
+	g.nodes.lock.Lock()
+	defer g.nodes.lock.Unlock()
 
 	reflectVal := reflect.ValueOf(value)
 	if reflectVal.Kind() != reflect.Pointer {
@@ -72,25 +78,25 @@ func (g *SystemGraph) AddNode(value SystemGraphNodeValue) {
 	}
 	ptr := reflectVal.Pointer()
 
-	_, alreadyAdded := g.ptrToNode[ptr]
+	_, alreadyAdded := g.nodes.ptrToNode[ptr]
 	if alreadyAdded {
 		return
 	}
 
 	runtime.SetFinalizer(value, func(v SystemGraphNodeValue) {
-		g.lock.Lock()
-		defer g.lock.Unlock()
+		g.nodes.lock.Lock()
+		defer g.nodes.lock.Unlock()
 		ptr := reflect.ValueOf(v).Pointer()
-		node, ok := g.ptrToNode[ptr]
+		node, ok := g.nodes.ptrToNode[ptr]
 		if ok {
 			node.valuePtr = 0
 			node.version = 0
 			node.name = ""
 			node.edgesFrom = node.edgesFrom[:0]
 			node.available = true
-			delete(g.ptrToNode, ptr)
+			delete(g.nodes.ptrToNode, ptr)
 
-			g.availableNodes = append(g.availableNodes, node)
+			g.nodes.availableNodes = append(g.nodes.availableNodes, node)
 		}
 	})
 
@@ -98,9 +104,9 @@ func (g *SystemGraph) AddNode(value SystemGraphNodeValue) {
 
 	var node *SystemGraphNode
 
-	if len(g.availableNodes) > 0 { // reuse a previous node
-		node = g.availableNodes[len(g.availableNodes)-1]
-		g.availableNodes = g.availableNodes[:len(g.availableNodes)-1]
+	if len(g.nodes.availableNodes) > 0 { // reuse a previous node
+		node = g.nodes.availableNodes[len(g.nodes.availableNodes)-1]
+		g.nodes.availableNodes = g.nodes.availableNodes[:len(g.nodes.availableNodes)-1]
 	} else {
 		node = &SystemGraphNode{}
 	}
@@ -110,19 +116,22 @@ func (g *SystemGraph) AddNode(value SystemGraphNodeValue) {
 		name:     reflectVal.Elem().Type().Name(),
 	}
 
-	g.ptrToNode[ptr] = node
+	g.nodes.ptrToNode[ptr] = node
 }
 
 func (g *SystemGraph) AddEvent(text string, v SystemGraphNodeValue) {
-	g.lock.Lock()
-	defer g.lock.Unlock()
-
 	ptr := reflect.ValueOf(v).Pointer()
 
-	node, ok := g.ptrToNode[ptr]
+	g.nodes.lock.Lock()
+	node, ok := g.nodes.ptrToNode[ptr]
+	g.nodes.lock.Unlock()
+
 	if !ok {
 		panic(ErrValueNotInSysGraph)
 	}
+
+	g.eventLogLock.Lock()
+	defer g.eventLogLock.Unlock()
 
 	g.eventLog = append(g.eventLog, SystemGraphEvent{
 		node0: node,
@@ -145,7 +154,7 @@ func (p *SystemGraphPointer) Set(ptr SystemGraphPointer) {
 
 func (p *SystemGraphPointer) AddEvent(text string, v SystemGraphNodeValue) {
 	if uintptr(p.ptr) == 0 {
-		panic(ErrNilSysGraphPointer)
+		return
 	}
 	p.Graph().AddEvent(text, v)
 }
