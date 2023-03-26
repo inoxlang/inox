@@ -515,3 +515,15 @@ func (*ValueHistory) IsMutable() bool {
 func (*SynchronousMessageHandler) IsMutable() bool {
 	return true
 }
+
+func (*SystemGraph) IsMutable() bool {
+	return true
+}
+
+func (*SystemGraphNodes) IsMutable() bool {
+	return true
+}
+
+func (*SystemGraphNode) IsMutable() bool {
+	return true
+}

@@ -12,6 +12,12 @@ import (
 var (
 	ErrValueAlreadyInSysGraph = errors.New("value already in a system graph")
 	ErrValueNotInSysGraph     = errors.New("value is not part of system graph")
+
+	SYSTEM_GRAPH_PROPNAMES = []string{"nodes"}
+
+	_ = []IProps{(*SystemGraph)(nil)}
+	_ = []Indexable{(*SystemGraphNodes)(nil)}
+	_ = []Iterable{(*SystemGraphNodes)(nil)}
 )
 
 // A SystemGraph represents relations & events between values.
@@ -20,6 +26,9 @@ type SystemGraph struct {
 
 	eventLogLock sync.Mutex
 	eventLog     []SystemGraphEvent
+
+	NoReprMixin
+	NotClonableMixin
 }
 
 func NewSystemGraph() *SystemGraph {
@@ -32,18 +41,16 @@ func NewSystemGraph() *SystemGraph {
 	return g
 }
 
-type SystemGraphNodes struct {
-	lock           sync.Mutex
-	ptrToNode      map[uintptr]*SystemGraphNode
-	availableNodes []*SystemGraphNode
-}
-
 type SystemGraphNode struct {
 	valuePtr  uintptr
 	name      string
+	index     int
 	edgesFrom []SystemGraphEdge
 	available bool
 	version   uint64
+
+	NoReprMixin
+	NotClonableMixin
 }
 
 type SystemGraphEdge struct {
@@ -96,6 +103,11 @@ func (g *SystemGraph) AddNode(value SystemGraphNodeValue) {
 			node.available = true
 			delete(g.nodes.ptrToNode, ptr)
 
+			if node.index < len(g.nodes.list)-1 {
+				copy(g.nodes.list[node.index:], g.nodes.list[node.index+1:])
+			}
+			node.index = -1
+			g.nodes.list = g.nodes.list[:len(g.nodes.list)-1]
 			g.nodes.availableNodes = append(g.nodes.availableNodes, node)
 		}
 	})
@@ -113,9 +125,11 @@ func (g *SystemGraph) AddNode(value SystemGraphNodeValue) {
 
 	*node = SystemGraphNode{
 		valuePtr: ptr,
+		index:    len(g.nodes.list),
 		name:     reflectVal.Elem().Type().Name(),
 	}
 
+	g.nodes.list = append(g.nodes.list, node)
 	g.nodes.ptrToNode[ptr] = node
 }
 
@@ -159,7 +173,43 @@ func (p *SystemGraphPointer) AddEvent(text string, v SystemGraphNodeValue) {
 	p.Graph().AddEvent(text, v)
 }
 
-//
+func (g *SystemGraph) Prop(ctx *Context, name string) Value {
+	switch name {
+	case "nodes":
+		return g.nodes
+	}
+	panic(FormatErrPropertyDoesNotExist(name, g))
+}
+
+func (*SystemGraph) SetProp(ctx *Context, name string, value Value) error {
+	return ErrCannotSetProp
+}
+
+func (*SystemGraph) PropertyNames(ctx *Context) []string {
+	return SYSTEM_GRAPH_PROPNAMES
+}
+
+type SystemGraphNodes struct {
+	lock           sync.Mutex
+	list           []*SystemGraphNode
+	ptrToNode      map[uintptr]*SystemGraphNode
+	availableNodes []*SystemGraphNode //TODO: replace with a bitset
+
+	NoReprMixin
+	NotClonableMixin
+}
+
+func (n *SystemGraphNodes) At(ctx *Context, i int) Value {
+	n.lock.Lock()
+	defer n.lock.Unlock()
+	return n.list[i]
+}
+
+func (n *SystemGraphNodes) Len() int {
+	n.lock.Lock()
+	defer n.lock.Unlock()
+	return len(n.list)
+}
 
 func (obj *Object) ProposeSystemGraph(g *SystemGraph) {
 	ptr := g.Ptr()

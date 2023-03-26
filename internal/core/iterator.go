@@ -1480,6 +1480,14 @@ func (dyn *DynamicValue) Iterator(ctx *Context, config IteratorConfiguration) It
 	return dyn.Resolve(ctx).(Iterable).Iterator(ctx, config)
 }
 
+func (n *SystemGraphNodes) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
+	return config.CreateIterator(&indexableIterator{
+		i:   -1,
+		len: n.Len(),
+		val: n,
+	})
+}
+
 func IterateAll(ctx *Context, it Iterator) [][2]Value {
 	entries := make([][2]Value, 0)
 

@@ -2298,3 +2298,15 @@ func (h *ValueHistory) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth
 func (h *SynchronousMessageHandler) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
 	return fmt.Fprintf(w, "%T(...)", h)
 }
+
+func (g *SystemGraph) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+	return fmt.Fprintf(w, "%T(...)", g)
+}
+
+func (n *SystemGraphNodes) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+	return fmt.Fprintf(w, "%T(...)", n)
+}
+
+func (n *SystemGraphNode) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+	return fmt.Fprintf(w, "%T(...)", n)
+}

@@ -1091,3 +1091,15 @@ func (h *ValueHistory) ToSymbolicValue(wide bool, encountered map[uintptr]symbol
 func (h *SynchronousMessageHandler) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	return symbolic.NewMessageHandler(), nil
 }
+
+func (g *SystemGraph) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	return symbolic.ANY_SYSTEM_GRAPH, nil
+}
+
+func (n *SystemGraphNodes) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	return symbolic.ANY_SYSTEM_GRAPH_NODES, nil
+}
+
+func (n *SystemGraphNode) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	return symbolic.ANY_SYSTEM_GRAPH_NODE, nil
+}

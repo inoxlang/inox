@@ -1711,3 +1711,21 @@ func (h *SynchronousMessageHandler) Equal(ctx *Context, other Value, alreadyComp
 
 	return ok && h == otherHandler
 }
+
+func (g *SystemGraph) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	other, ok := other.(*SystemGraph)
+
+	return ok && g == other
+}
+
+func (n *SystemGraphNodes) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	other, ok := other.(*SystemGraphNodes)
+
+	return ok && n == other
+}
+
+func (g *SystemGraphNode) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	other, ok := other.(*SystemGraphNode)
+
+	return ok && g == other
+}
