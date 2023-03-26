@@ -727,6 +727,39 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		}
 	})
 
+	t.Run("global variable definition", func(t *testing.T) {
+
+		t.Run("simple value", func(t *testing.T) {
+			code := `$$a = 1; return a`
+			state := NewGlobalState(NewDefaultTestContext())
+
+			res, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Equal(t, Int(1), res)
+		})
+
+		t.Run("watchable", func(t *testing.T) {
+			code := `$$a = {}; return a`
+			state := NewGlobalState(NewDefaultTestContext())
+			state.InitSystemGraph()
+
+			res, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.IsType(t, (*Object)(nil), res)
+
+			//check that the global variable's value has a node in the system graph
+			if !assert.Equal(t, state.SystemGraph.nodes.Len(), 1) {
+				return
+			}
+			node := state.SystemGraph.nodes.At(state.Ctx, 0).(*SystemGraphNode)
+			assert.Equal(t, "a", node.name)
+		})
+	})
+
 	t.Run("local variable declaration", func(t *testing.T) {
 
 		testCases := []struct {

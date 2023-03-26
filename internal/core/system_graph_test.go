@@ -15,7 +15,7 @@ func TestObjectGraph(t *testing.T) {
 		graph := NewSystemGraph()
 
 		object := NewObject()
-		object.ProposeSystemGraph(graph)
+		object.ProposeSystemGraph(graph, "")
 		assert.Equal(t, 1, graph.nodes.Len())
 		assert.NotNil(t, graph.nodes.At(ctx, 0))
 

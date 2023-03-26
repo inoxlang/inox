@@ -12,6 +12,7 @@ import (
 var (
 	ErrValueAlreadyInSysGraph = errors.New("value already in a system graph")
 	ErrValueNotInSysGraph     = errors.New("value is not part of system graph")
+	ErrValueNotPointer        = errors.New("value is not a pointer")
 
 	SYSTEM_GRAPH_PROPNAMES = []string{"nodes"}
 
@@ -44,6 +45,7 @@ func NewSystemGraph() *SystemGraph {
 type SystemGraphNode struct {
 	valuePtr  uintptr
 	name      string
+	typeName  string
 	index     int
 	edgesFrom []SystemGraphEdge
 	available bool
@@ -68,20 +70,20 @@ type SystemGraphEvent struct {
 
 type SystemGraphNodeValue interface {
 	Watchable
-	ProposeSystemGraph(g *SystemGraph)
+	ProposeSystemGraph(g *SystemGraph, propoposedName string)
 }
 
 func (g *SystemGraph) Ptr() SystemGraphPointer {
 	return SystemGraphPointer{ptr: unsafe.Pointer(g)}
 }
 
-func (g *SystemGraph) AddNode(value SystemGraphNodeValue) {
+func (g *SystemGraph) AddNode(value SystemGraphNodeValue, name string) {
 	g.nodes.lock.Lock()
 	defer g.nodes.lock.Unlock()
 
 	reflectVal := reflect.ValueOf(value)
 	if reflectVal.Kind() != reflect.Pointer {
-		panic(fmt.Errorf("failed to add node to system graph, following value is not a pointer: %#v", value))
+		panic(fmt.Errorf("failed to add node to system graph: %w: %#v", ErrValueNotPointer, value))
 	}
 	ptr := reflectVal.Pointer()
 
@@ -98,6 +100,7 @@ func (g *SystemGraph) AddNode(value SystemGraphNodeValue) {
 		if ok {
 			node.valuePtr = 0
 			node.version = 0
+			node.typeName = ""
 			node.name = ""
 			node.edgesFrom = node.edgesFrom[:0]
 			node.available = true
@@ -125,8 +128,9 @@ func (g *SystemGraph) AddNode(value SystemGraphNodeValue) {
 
 	*node = SystemGraphNode{
 		valuePtr: ptr,
+		name:     name,
+		typeName: reflectVal.Elem().Type().Name(),
 		index:    len(g.nodes.list),
-		name:     reflectVal.Elem().Type().Name(),
 	}
 
 	g.nodes.list = append(g.nodes.list, node)
@@ -211,9 +215,9 @@ func (n *SystemGraphNodes) Len() int {
 	return len(n.list)
 }
 
-func (obj *Object) ProposeSystemGraph(g *SystemGraph) {
+func (obj *Object) ProposeSystemGraph(g *SystemGraph, proposedName string) {
 	ptr := g.Ptr()
 	obj.sysgraph.Set(ptr)
 
-	g.AddNode(obj)
+	g.AddNode(obj, proposedName)
 }

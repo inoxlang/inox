@@ -17,12 +17,13 @@ var (
 
 // A GlobalState represents the global state for the evaluation of a single module or the shell's loop.
 type GlobalState struct {
-	Ctx     *Context
-	Module  *Module         //nil for the shell's state
-	Globals GlobalVariables //global variables
-	Routine *Routine        //not nil if running in a routine
-	Out     io.Writer       //nil by default
-	Logger  *log.Logger     //nil by default
+	Ctx         *Context
+	Module      *Module         //nil in some cases (shell, mapping entry's state), TODO: check for usage
+	Globals     GlobalVariables //global variables
+	Routine     *Routine        //not nil if running in a routine
+	SystemGraph *SystemGraph
+	Out         io.Writer   //nil by default
+	Logger      *log.Logger //nil by default
 
 	StaticCheckData *StaticCheckData
 	SymbolicData    *SymbolicData
@@ -51,6 +52,19 @@ func NewGlobalState(ctx *Context, args ...map[string]Value) *GlobalState {
 	}
 
 	return state
+}
+
+func (g *GlobalState) InitSystemGraph() {
+	if g.SystemGraph != nil {
+		return
+	}
+	g.SystemGraph = NewSystemGraph()
+}
+
+func (g *GlobalState) ProposeSystemGraph(v SystemGraphNodeValue, optionalName string) {
+	if g.SystemGraph != nil {
+		v.ProposeSystemGraph(g.SystemGraph, optionalName)
+	}
 }
 
 func (g *GlobalState) GetGoMethod(name string) (*GoFunction, bool) {

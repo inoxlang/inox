@@ -64,7 +64,7 @@ func (state *TreeWalkState) popChunk() {
 	state.chunkStack = state.chunkStack[:len(state.chunkStack)-1]
 }
 
-func (state TreeWalkState) SetGlobal(name string, value Value, constness GlobalConstness) (ok bool) {
+func (state *TreeWalkState) SetGlobal(name string, value Value, constness GlobalConstness) (ok bool) {
 	if state.constantVars[name] {
 		return false
 	}
@@ -74,14 +74,19 @@ func (state TreeWalkState) SetGlobal(name string, value Value, constness GlobalC
 	if constness == GlobalConst {
 		state.constantVars[name] = true
 	}
+
+	if watchable, ok := value.(SystemGraphNodeValue); ok {
+		state.Global.ProposeSystemGraph(watchable, name)
+	}
+
 	return true
 }
 
-func (state TreeWalkState) HasGlobal(name string) bool {
+func (state *TreeWalkState) HasGlobal(name string) bool {
 	return state.Global.Globals.Has(name)
 }
 
-func (state TreeWalkState) Get(name string) (Value, bool) {
+func (state *TreeWalkState) Get(name string) (Value, bool) {
 	for i := len(state.LocalScopeStack) - 1; i >= 0; i-- {
 		if v, ok := state.LocalScopeStack[i][name]; ok {
 			return v, true
@@ -91,7 +96,7 @@ func (state TreeWalkState) Get(name string) (Value, bool) {
 	return val, val != nil
 }
 
-func (state TreeWalkState) CurrentLocalScope() map[string]Value {
+func (state *TreeWalkState) CurrentLocalScope() map[string]Value {
 	if len(state.LocalScopeStack) == 0 {
 		return nil
 	}

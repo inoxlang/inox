@@ -610,7 +610,13 @@ func (v *VM) run() {
 			v.sp--
 			globalNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
 			globalName := v.constants[globalNameIndex].(Str)
-			v.global.Globals.Set(string(globalName), v.stack[v.sp])
+
+			val := v.stack[v.sp]
+			v.global.Globals.Set(string(globalName), val)
+
+			if watchable, ok := val.(SystemGraphNodeValue); ok {
+				v.global.ProposeSystemGraph(watchable, string(globalName))
+			}
 		case OpSetMember:
 			v.ip += 2
 			v.sp--

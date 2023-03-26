@@ -217,6 +217,7 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 	}
 
 	out := state.Out
+	state.InitSystemGraph()
 
 	defer state.Ctx.Cancel()
 
