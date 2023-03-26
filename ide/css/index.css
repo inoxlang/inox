@@ -176,6 +176,10 @@ body {
     width: calc(var(--line-count-digits) * 10px);
 }
 
+.code-chunk__lines > li.current::before {
+    filter: brightness(2);
+}
+
 .code-chunk__lines > li > .token[data-type=newline]:only-child {
     letter-spacing: -0.5em;
 }

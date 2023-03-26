@@ -10,7 +10,9 @@ const
     LINE_ELEMENT_SELECTOR = 'li[data-span]',
     NEWLINE_TOKEN_TYPE = 'newline',
     TREE_ITEM_DOTCLASS = '.tree-item',
-    TREE_ITEM_CHILDREN_DOTCLASS = '.tree-item__children'
+    TREE_ITEM_CHILDREN_DOTCLASS = '.tree-item__children',
+    CURRENT_LINE_DOTCLASS = '.current'
+
 
 
 /** @type {View} */
@@ -266,6 +268,23 @@ function createEditorView(){
 
                 return "send-event"
             },
+            'click': (event, data) => {
+                Array.from(getLines()).forEach(line => {
+                    line.classList.remove(CURRENT_LINE_DOTCLASS.slice(1))
+                })
+                getEditableUnordererdList()
+                if(event.target && isHTMLElement(event.target) && event.target.closest(CODE_CHUNK_LINES_DOTCLASS) && event.target.tagName == 'LI'){
+                    assertHTMLelement(event.target.parentElement)
+                    event.target.classList.add(CURRENT_LINE_DOTCLASS.slice(1))
+                } else {
+                    let token = findTokenWithMouseEvent(event)
+                    if(token && token.parentElement){
+                        token.parentElement.classList.add(CURRENT_LINE_DOTCLASS.slice(1))
+                    }
+                }
+                
+                return 'send-event'
+            },
             'cut': (event, data) => {
                 // get text
 
@@ -362,6 +381,10 @@ function getEditableUnordererdList(){
     let ul = editor.element.querySelector(CODE_CHUNK_LINES_DOTCLASS);
     assertHTMLelement(ul)
     return /** @type {HTMLElement} */ (ul)
+}
+
+function getLines(){
+   return getEditableUnordererdList().children
 }
 
 /** @param {number} position */
