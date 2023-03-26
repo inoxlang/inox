@@ -66,3 +66,10 @@ func (d *DynamicValue) IteratorElementValue() SymbolicValue {
 func (d *DynamicValue) WatcherElement() SymbolicValue {
 	return ANY
 }
+
+func (d *DynamicValue) TakeInMemorySnapshot() (*Snapshot, error) {
+	if v, ok := d.val.(InMemorySnapshotable); ok {
+		return v.TakeInMemorySnapshot()
+	}
+	return nil, ErrFailedToSnapshot
+}

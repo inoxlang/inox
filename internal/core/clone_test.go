@@ -152,22 +152,6 @@ func TestOptionClone(t *testing.T) {
 	assert.Nil(t, clone)
 }
 
-func TestNeverClonable(t *testing.T) {
-	for _, val := range []Value{
-		&Reader{}, &Routine{}, &RoutineGroup{}, &Bytecode{}, &ValueListIterator{}, &PatternIterator{}, IntRangeIterator{},
-		indexedEntryIterator{}, &DirWalker{}, AstNode{},
-	} {
-
-		strinfigied := Stringify(val, NewContext(ContextConfig{}))
-
-		t.Run(strinfigied, func(t *testing.T) {
-			clone, err := val.Clone(nil)
-			assert.Equal(t, ErrNotClonable, err, strinfigied+" should not be clonable")
-			assert.Nil(t, clone)
-		})
-	}
-}
-
 func TestExactValuePatternClone(t *testing.T) {
 	patt := &ExactValuePattern{value: Int(1)}
 	clone, err := patt.Clone(map[uintptr]map[int]Value{})

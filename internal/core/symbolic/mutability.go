@@ -505,6 +505,14 @@ func (*ValueHistory) IsMutable() bool {
 	return true
 }
 
+func (*Snapshot) IsMutable() bool {
+	return false
+}
+
+func (*AnyInMemorySnapshotable) IsMutable() bool {
+	return true
+}
+
 func (*SynchronousMessageHandler) IsMutable() bool {
 	return true
 }

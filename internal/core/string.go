@@ -288,9 +288,10 @@ func (CheckedString) SetProp(ctx *Context, name string, value Value) error {
 
 type RuneSlice struct {
 	elements     []rune
+	frozen       bool
 	constraintId ConstraintId
 
-	lock              sync.Mutex
+	lock              sync.Mutex // exclusive access for initializing .watchers & .mutationCallbacks
 	watchers          *ValueWatchers
 	mutationCallbacks *MutationCallbacks
 }
@@ -304,6 +305,10 @@ func (slice *RuneSlice) ElementsDoNotModify() []rune {
 }
 
 func (slice *RuneSlice) set(ctx *Context, i int, v Value) {
+	if slice.frozen {
+		panic(ErrAttemptToMutateFrozenValue)
+	}
+
 	slice.elements[i] = rune(v.(Rune))
 
 	mutation := NewSetElemAtIndexMutation(ctx, i, v, ShallowWatching, Path("/"+strconv.Itoa(i)))
@@ -313,6 +318,10 @@ func (slice *RuneSlice) set(ctx *Context, i int, v Value) {
 }
 
 func (slice *RuneSlice) setSlice(ctx *Context, start, end int, v Value) {
+	if slice.frozen {
+		panic(ErrAttemptToMutateFrozenValue)
+	}
+
 	i := start
 
 	for _, e := range v.(*RuneSlice).elements {
@@ -339,6 +348,10 @@ func (s *RuneSlice) slice(start, end int) Sequence {
 }
 
 func (s *RuneSlice) insertElement(ctx *Context, v Value, i Int) {
+	if s.frozen {
+		panic(ErrAttemptToMutateFrozenValue)
+	}
+
 	r := v.(Rune)
 
 	s.elements = append(s.elements, 0)
@@ -352,6 +365,10 @@ func (s *RuneSlice) insertElement(ctx *Context, v Value, i Int) {
 }
 
 func (s *RuneSlice) removePosition(ctx *Context, i Int) {
+	if s.frozen {
+		panic(ErrAttemptToMutateFrozenValue)
+	}
+
 	if int(i) > len(s.elements) || i < 0 {
 		panic(ErrIndexOutOfRange)
 	}
@@ -370,6 +387,10 @@ func (s *RuneSlice) removePosition(ctx *Context, i Int) {
 }
 
 func (s *RuneSlice) removePositionRange(ctx *Context, r IntRange) {
+	if s.frozen {
+		panic(ErrAttemptToMutateFrozenValue)
+	}
+
 	start := int(r.KnownStart())
 	end := int(r.InclusiveEnd())
 
@@ -392,6 +413,10 @@ func (s *RuneSlice) removePositionRange(ctx *Context, r IntRange) {
 }
 
 func (s *RuneSlice) insertSequence(ctx *Context, seq Sequence, i Int) {
+	if s.frozen {
+		panic(ErrAttemptToMutateFrozenValue)
+	}
+
 	//TODO: lock sequence
 	seqLen := seq.Len()
 	if seqLen == 0 {
@@ -413,6 +438,10 @@ func (s *RuneSlice) insertSequence(ctx *Context, seq Sequence, i Int) {
 }
 
 func (s *RuneSlice) appendSequence(ctx *Context, seq Sequence) {
+	if s.frozen {
+		panic(ErrAttemptToMutateFrozenValue)
+	}
+
 	panic(ErrNotImplementedYet)
 }
 

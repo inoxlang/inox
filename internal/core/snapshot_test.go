@@ -16,7 +16,7 @@ func TestTakeSnapshotOfSimpleValue(t *testing.T) {
 
 		r := NewRoutineGroup(ctx)
 
-		snap, err := TakeSnapshotOfSimpleValue(ctx, r)
+		snap, err := TakeSnapshot(ctx, r, false)
 		assert.Error(t, err)
 		assert.Nil(t, snap)
 	})
@@ -27,7 +27,7 @@ func TestTakeSnapshotOfSimpleValue(t *testing.T) {
 
 		obj := NewObjectFromMap(nil, ctx)
 
-		snap, err := TakeSnapshotOfSimpleValue(ctx, obj)
+		snap, err := TakeSnapshot(ctx, obj, false)
 		assert.NoError(t, err)
 		assert.NotNil(t, snap)
 	})
@@ -42,7 +42,7 @@ func TestSnapshot(t *testing.T) {
 
 			obj := NewObjectFromMap(nil, ctx)
 
-			snap := utils.Must(TakeSnapshotOfSimpleValue(ctx, obj))
+			snap := utils.Must(TakeSnapshot(ctx, obj, false))
 			mutation := NewAddPropMutation(ctx, "a", Int(1), ShallowWatching, "")
 
 			newSnap, err := snap.WithChangeApplied(ctx, NewChange(mutation, Date(time.Now())))

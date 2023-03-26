@@ -51,6 +51,7 @@ var (
 	WATCHABLE_INTERFACE_TYPE           = reflect.TypeOf((*Watchable)(nil)).Elem()
 	STR_PATTERN_ELEMENT_INTERFACE_TYPE = reflect.TypeOf((*StringPatternElement)(nil)).Elem()
 	FORMAT_INTERFACE_TYPE              = reflect.TypeOf((*Format)(nil)).Elem()
+	IN_MEM_SNAPSHOTABLE                = reflect.TypeOf((*InMemorySnapshotable)(nil)).Elem()
 
 	ANY_READABLE = &AnyReadable{}
 )
@@ -3214,7 +3215,7 @@ func converReflectValToSymbolicValue(r reflect.Value) (SymbolicValue, error) {
 	switch t {
 	case SYMBOLIC_VALUE_INTERFACE_TYPE, ITERABLE_INTERFACE_TYPE, RESOURCE_NAME_INTERFACE_TYPE, READABLE_INTERFACE_TYPE,
 		STREAMABLE_INTERFACE_TYPE, WATCHABLE_INTERFACE_TYPE, VALUE_RECEIVER_INTERFACE_TYPE, PROTOCOL_CLIENT_INTERFACE_TYPE,
-		STR_PATTERN_ELEMENT_INTERFACE_TYPE, INTEGRAL_INTERFACE_TYPE, FORMAT_INTERFACE_TYPE:
+		STR_PATTERN_ELEMENT_INTERFACE_TYPE, INTEGRAL_INTERFACE_TYPE, FORMAT_INTERFACE_TYPE, IN_MEM_SNAPSHOTABLE:
 		return r.Interface().(SymbolicValue), nil
 	}
 
@@ -3263,6 +3264,8 @@ func converTypeToSymbolicValue(t reflect.Type) (SymbolicValue, error) {
 		return ANY_INTEGRAL, nil
 	case FORMAT_INTERFACE_TYPE:
 		return ANY_FORMAT, nil
+	case IN_MEM_SNAPSHOTABLE:
+		return ANY_IN_MEM_SNAPSHOTABLE, nil
 	}
 
 	return nil, err

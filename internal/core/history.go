@@ -13,7 +13,7 @@ var (
 )
 
 func init() {
-	RegisterSymbolicGoFunction(RecordShallowChanges, func(ctx *symbolic.Context, v symbolic.Watchable, maxLength *symbolic.Int) *symbolic.ValueHistory {
+	RegisterSymbolicGoFunction(RecordShallowChanges, func(ctx *symbolic.Context, v symbolic.InMemorySnapshotable, maxLength *symbolic.Int) *symbolic.ValueHistory {
 		return symbolic.NewValueHistory()
 	})
 }
@@ -30,7 +30,7 @@ type ValueHistory struct {
 	NoReprMixin
 }
 
-func RecordShallowChanges(ctx *Context, v Watchable, maxHistoryLength Int) *ValueHistory {
+func RecordShallowChanges(ctx *Context, v InMemorySnapshotable, maxHistoryLength Int) *ValueHistory {
 	current := v
 
 	history := &ValueHistory{
@@ -57,12 +57,12 @@ func RecordShallowChanges(ctx *Context, v Watchable, maxHistoryLength Int) *Valu
 	}
 
 	if dyn, ok := v.(*DynamicValue); ok {
-		current = dyn.Resolve(ctx).(Watchable)
+		current = dyn.Resolve(ctx).(InMemorySnapshotable)
 
 		dyn.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
 			registerAgain = true
 
-			newVal := dyn.Resolve(ctx).(Watchable)
+			newVal := dyn.Resolve(ctx).(InMemorySnapshotable)
 			if current != newVal {
 				if handle.Valid() {
 					current.RemoveMutationCallback(ctx, handle)
@@ -75,7 +75,7 @@ func RecordShallowChanges(ctx *Context, v Watchable, maxHistoryLength Int) *Valu
 		}, MutationWatchingConfiguration{Depth: ShallowWatching})
 	}
 
-	history.startValue = utils.Must(TakeSnapshotOfSimpleValue(ctx, current))
+	history.startValue = utils.Must(TakeSnapshot(ctx, current, false))
 	registerMutationCallback(ctx)
 
 	return history
@@ -235,3 +235,5 @@ func (*ValueHistory) SetProp(ctx *Context, name string, value Value) error {
 func (*ValueHistory) PropertyNames(ctx *Context) []string {
 	return VALUE_HISTORY_PROPNAMES
 }
+
+// -------------------------------

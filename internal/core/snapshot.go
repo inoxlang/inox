@@ -1,27 +1,69 @@
 package internal
 
 import (
+	"errors"
 	"fmt"
 	"time"
 )
 
+var (
+	ErrFailedToSnapshot           = errors.New("failed to snapshot value")
+	ErrAttemptToMutateFrozenValue = errors.New("attempt to mutate a frozen value")
+)
+
+// Snapshot holds either the serialized representation of a Value or a in-memory FROZEN value.
 type Snapshot struct {
-	date Date
-	repr ValueRepresentation
+	date     Date
+	repr     ValueRepresentation
+	inMemory Value
 }
 
 func (s *Snapshot) Date() Date {
 	return s.date
 }
 
-func TakeSnapshotOfSimpleValue(ctx *Context, v Value) (*Snapshot, error) {
+// implementations of InMemorySnapshotable are Watchables that can take an in-memory snapshot of themselves in a few milliseconds or less.
+// the values in snapshots should be FROZEN and should NOT be connected to other live objects, they should be be able to be mutated again
+// after being unfreezed.
+type InMemorySnapshotable interface {
+	Watchable
+	TakeInMemorySnapshot(ctx *Context) (*Snapshot, error)
+	IsFrozen() bool
+	// TODO: Unfreeze(ctx *Context) error
+}
+
+func TakeSnapshot(ctx *Context, v Value, mustBeSerialized bool) (*Snapshot, error) {
+	now := Date(time.Now())
+	if !v.IsMutable() {
+		return &Snapshot{date: now, inMemory: v}, nil
+	}
+
+	var snapshotableErr error
+	if snapshotable, ok := v.(InMemorySnapshotable); ok && !mustBeSerialized {
+		snapshot, err := snapshotable.TakeInMemorySnapshot(ctx)
+		if err != nil {
+			val, ok := snapshot.inMemory.(InMemorySnapshotable)
+			if !ok {
+				return nil, fmt.Errorf("InMemorySnapshotable returned a snapshot containing a value that does not implement InMemorySnapshotable: type is: %T", snapshot.inMemory)
+			}
+			if !val.IsFrozen() {
+				return nil, fmt.Errorf("InMemorySnapshotable returned a snapshot containing a value that is not frozen: type is: %T", val)
+			}
+			return snapshot, nil
+		}
+		snapshotableErr = err
+	}
+
 	repr, err := GetRepresentationWithConfig(v, &ReprConfig{allVisible: true}, ctx)
 	if err != nil {
+		if snapshotableErr != nil {
+			err = fmt.Errorf("%w AND value was an InMemorySnapshotable that returned this error when snapshoted: %w", err, snapshotableErr)
+		}
 		return nil, fmt.Errorf("failed to take snapshot of value of type %T: %w", v, err)
 	}
 	return &Snapshot{
-		date: Date(time.Now()),
 		repr: repr,
+		date: now,
 	}, nil
 }
 
@@ -59,4 +101,31 @@ func (s *Snapshot) WithChangeApplied(ctx *Context, c Change) (*Snapshot, error) 
 		date: c.date,
 		repr: repr,
 	}, nil
+}
+
+//
+
+func (s *RuneSlice) TakeInMemorySnapshot(ctx *Context) (*Snapshot, error) {
+	sliceClone, _ := s.Clone(nil)
+	sliceClone.(*RuneSlice).frozen = true
+
+	return &Snapshot{
+		date:     Date(time.Now()),
+		inMemory: sliceClone,
+	}, nil
+}
+
+func (d *RuneSlice) IsFrozen() bool {
+	return d.frozen
+}
+
+func (d *DynamicValue) TakeInMemorySnapshot(ctx *Context) (*Snapshot, error) {
+	if v, ok := d.Resolve(ctx).(InMemorySnapshotable); ok {
+		return v.TakeInMemorySnapshot(ctx)
+	}
+	return nil, fmt.Errorf("%w: value to which dynamic value resolve is not an in memory snapshotable", ErrFailedToSnapshot)
+}
+
+func (d *DynamicValue) IsFrozen() bool {
+	return false
 }
