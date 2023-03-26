@@ -250,6 +250,9 @@ func init() {
 		_ctx_data, func(ctx *symbolic.Context, name *symbolic.Identifier) symbolic.SymbolicValue {
 			return symbolic.ANY
 		},
+		_get_system_graph, func(ctx *symbolic.Context) (*symbolic.SystemGraph, *symbolic.Bool) {
+			return symbolic.ANY_SYSTEM_GRAPH, symbolic.ANY_BOOL
+		},
 	})
 
 }

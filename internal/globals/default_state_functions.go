@@ -388,3 +388,8 @@ func _add_ctx_data(ctx *core.Context, name core.Identifier, value core.Value) {
 func _ctx_data(ctx *core.Context, name core.Identifier) core.Value {
 	return ctx.ResolveUserData(name)
 }
+
+func _get_system_graph(ctx *core.Context) (*core.SystemGraph, core.Bool) {
+	g := ctx.GetClosestState().SystemGraph
+	return g, g != nil
+}
