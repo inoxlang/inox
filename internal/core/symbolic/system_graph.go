@@ -8,7 +8,7 @@ var (
 	ANY_SYSTEM_GRAPH_NODE  = NewSystemGraphNode()
 	SYSTEM_GRAPH_PROPNAMES = []string{"nodes"}
 
-	_ = []Iterable{(*SystemGraphNodes)(nil)}
+	_ = []Indexable{(*SystemGraphNodes)(nil)}
 )
 
 // An SystemGraph represents a symbolic SystemGraph.
@@ -96,6 +96,22 @@ func (d *SystemGraphNodes) IteratorElementKey() SymbolicValue {
 }
 func (d *SystemGraphNodes) IteratorElementValue() SymbolicValue {
 	return ANY_SYSTEM_GRAPH_NODE
+}
+
+func (d *SystemGraphNodes) element() SymbolicValue {
+	return ANY_SYSTEM_GRAPH_NODE
+}
+
+func (d *SystemGraphNodes) elementAt(i int) SymbolicValue {
+	return ANY_SYSTEM_GRAPH_NODE
+}
+
+func (d *SystemGraphNodes) knownLen() int {
+	return -1
+}
+
+func (d *SystemGraphNodes) HasKnownLen() bool {
+	return false
 }
 
 func (d *SystemGraphNodes) String() string {
