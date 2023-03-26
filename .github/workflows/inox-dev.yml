@@ -20,7 +20,7 @@ jobs:
           assets: "*"
 
   release-dev-linux-amd64:
-    name: release linux/amd64
+    name: release dev linux/amd64
     needs: cleanup-prev-dev-assets
     runs-on: ubuntu-latest
     steps:
