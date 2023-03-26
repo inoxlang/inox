@@ -17,6 +17,7 @@ var (
 	SYSTEM_GRAPH_PROPNAMES      = []string{"nodes"}
 	SYSTEM_GRAPH_NODE_PROPNAMES = []string{"name", "type_name"}
 
+	_ = []PotentiallySharable{(*SystemGraph)(nil), (*SystemGraphNodes)(nil)}
 	_ = []IProps{(*SystemGraph)(nil), (*SystemGraphNode)(nil)}
 	_ = []Indexable{(*SystemGraphNodes)(nil)}
 	_ = []Iterable{(*SystemGraphNodes)(nil)}
@@ -181,6 +182,26 @@ func (*SystemGraph) PropertyNames(ctx *Context) []string {
 	return SYSTEM_GRAPH_PROPNAMES
 }
 
+func (g *SystemGraph) IsSharable(originState *GlobalState) bool {
+	return true
+}
+
+func (g *SystemGraph) Share(originState *GlobalState) {
+
+}
+
+func (g *SystemGraph) IsShared() bool {
+	return true
+}
+
+func (g *SystemGraph) ForceLock() {
+
+}
+
+func (g *SystemGraph) ForceUnlock() {
+
+}
+
 type SystemGraphNodes struct {
 	lock           sync.Mutex
 	list           []*SystemGraphNode
@@ -194,6 +215,12 @@ type SystemGraphNodes struct {
 func (n *SystemGraphNodes) At(ctx *Context, i int) Value {
 	n.lock.Lock()
 	defer n.lock.Unlock()
+
+	// temporary, TODO: change
+	if i >= len(n.list) {
+		return Nil
+	}
+
 	return n.list[i]
 }
 
@@ -201,6 +228,26 @@ func (n *SystemGraphNodes) Len() int {
 	n.lock.Lock()
 	defer n.lock.Unlock()
 	return len(n.list)
+}
+
+func (n *SystemGraphNodes) IsSharable(originState *GlobalState) bool {
+	return true
+}
+
+func (n *SystemGraphNodes) Share(originState *GlobalState) {
+
+}
+
+func (n *SystemGraphNodes) IsShared() bool {
+	return true
+}
+
+func (n *SystemGraphNodes) ForceLock() {
+
+}
+
+func (n *SystemGraphNodes) ForceUnlock() {
+
 }
 
 type SystemGraphNode struct {
@@ -232,6 +279,28 @@ func (*SystemGraphNode) SetProp(ctx *Context, name string, value Value) error {
 
 func (*SystemGraphNode) PropertyNames(ctx *Context) []string {
 	return SYSTEM_GRAPH_NODE_PROPNAMES
+}
+
+//TODO: lock
+
+func (n *SystemGraphNode) IsSharable(originState *GlobalState) bool {
+	return true
+}
+
+func (n *SystemGraphNode) Share(originState *GlobalState) {
+
+}
+
+func (n *SystemGraphNode) IsShared() bool {
+	return true
+}
+
+func (n *SystemGraphNode) ForceLock() {
+
+}
+
+func (n *SystemGraphNode) ForceUnlock() {
+
 }
 
 //

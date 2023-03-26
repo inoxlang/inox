@@ -12,7 +12,7 @@ type PotentiallySharable interface {
 	SymbolicValue
 	IsSharable() bool
 	// Share should be equivalent to concrete PotentiallySharable.Share, the only difference is that
-	// it should NOT modified the value and should instead return a copy of the value but shared.
+	// it should NOT modify the value and should instead return a copy of the value but shared.
 	Share(originState *State) PotentiallySharable
 	IsShared() bool
 }

@@ -10,6 +10,7 @@ var (
 	SYSTEM_GRAPH_NODE_PROPNAMES = []string{"name", "type_name"}
 
 	_ = []Indexable{(*SystemGraphNodes)(nil)}
+	_ = []PotentiallySharable{(*SystemGraph)(nil), (*SystemGraphNodes)(nil), (*SystemGraphNode)(nil)}
 )
 
 // An SystemGraph represents a symbolic SystemGraph.
@@ -38,31 +39,43 @@ func (g *SystemGraph) Prop(memberName string) SymbolicValue {
 	panic(FormatErrPropertyDoesNotExist(memberName, g))
 }
 
-func (d *SystemGraph) SetProp(name string, value SymbolicValue) (IProps, error) {
-	return nil, errors.New(FmtCannotAssignPropertyOf(d))
+func (g *SystemGraph) SetProp(name string, value SymbolicValue) (IProps, error) {
+	return nil, errors.New(FmtCannotAssignPropertyOf(g))
 }
 
-func (d *SystemGraph) WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error) {
-	return nil, errors.New(FmtCannotAssignPropertyOf(d))
+func (g *SystemGraph) WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error) {
+	return nil, errors.New(FmtCannotAssignPropertyOf(g))
 }
 
-func (d *SystemGraph) PropertyNames() []string {
+func (g *SystemGraph) PropertyNames() []string {
 	return SYSTEM_GRAPH_PROPNAMES
 }
 
-func (d *SystemGraph) Widen() (SymbolicValue, bool) {
+func (g *SystemGraph) IsSharable() bool {
+	return true
+}
+
+func (g *SystemGraph) Share(originState *State) PotentiallySharable {
+	return g
+}
+
+func (g *SystemGraph) IsShared() bool {
+	return true
+}
+
+func (g *SystemGraph) Widen() (SymbolicValue, bool) {
 	return nil, false
 }
 
-func (d *SystemGraph) IsWidenable() bool {
+func (g *SystemGraph) IsWidenable() bool {
 	return false
 }
 
-func (d *SystemGraph) String() string {
+func (g *SystemGraph) String() string {
 	return "system-graph"
 }
 
-func (d *SystemGraph) WidestOfType() SymbolicValue {
+func (g *SystemGraph) WidestOfType() SymbolicValue {
 	return ANY_SYSTEM_GRAPH
 }
 
@@ -82,6 +95,18 @@ func (g *SystemGraphNodes) Test(v SymbolicValue) bool {
 	}
 	_ = other
 	return false
+}
+
+func (n *SystemGraphNodes) IsSharable() bool {
+	return true
+}
+
+func (n *SystemGraphNodes) Share(originState *State) PotentiallySharable {
+	return n
+}
+
+func (n *SystemGraphNodes) IsShared() bool {
+	return true
 }
 
 func (d *SystemGraphNodes) Widen() (SymbolicValue, bool) {
@@ -159,6 +184,18 @@ func (n *SystemGraphNode) WithExistingPropReplaced(name string, value SymbolicVa
 
 func (n *SystemGraphNode) PropertyNames() []string {
 	return SYSTEM_GRAPH_NODE_PROPNAMES
+}
+
+func (n *SystemGraphNode) IsSharable() bool {
+	return true
+}
+
+func (n *SystemGraphNode) Share(originState *State) PotentiallySharable {
+	return n
+}
+
+func (n *SystemGraphNode) IsShared() bool {
+	return true
 }
 
 func (n *SystemGraphNode) Widen() (SymbolicValue, bool) {
