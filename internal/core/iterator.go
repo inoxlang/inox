@@ -209,6 +209,36 @@ func (it *KeyValueFilteredIterator) Value(ctx *Context) Value {
 	return it.currentValue
 }
 
+// fixedLengthSliceIterator iterates over an immutable slice.
+type fixedLengthSliceIterator[T Value] struct {
+	NoReprMixin
+	NotClonableMixin
+
+	i        int
+	elements []T
+}
+
+func (it *fixedLengthSliceIterator[T]) HasNext(*Context) bool {
+	return it.i < len(it.elements)
+}
+
+func (it *fixedLengthSliceIterator[T]) Next(ctx *Context) bool {
+	if !it.HasNext(ctx) {
+		return false
+	}
+
+	it.i++
+	return true
+}
+
+func (it *fixedLengthSliceIterator[T]) Key(*Context) Value {
+	return Int(it.i - 1)
+}
+
+func (it *fixedLengthSliceIterator[T]) Value(ctx *Context) Value {
+	return it.elements[it.i]
+}
+
 type indexableIterator struct {
 	NoReprMixin
 	NotClonableMixin
@@ -1481,10 +1511,9 @@ func (dyn *DynamicValue) Iterator(ctx *Context, config IteratorConfiguration) It
 }
 
 func (n *SystemGraphNodes) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
-	return config.CreateIterator(&indexableIterator{
-		i:   -1,
-		len: n.Len(),
-		val: n,
+	return config.CreateIterator(&fixedLengthSliceIterator[*SystemGraphNode]{
+		i:        -1,
+		elements: n.GetSnapshotOfNodeList(),
 	})
 }
 

@@ -322,6 +322,10 @@ func (it indexableIterator) IsMutable() bool {
 	return true
 }
 
+func (it fixedLengthSliceIterator[T]) IsMutable() bool {
+	return true
+}
+
 func (it IntRangeIterator) IsMutable() bool {
 	return true
 }

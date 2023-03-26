@@ -1239,6 +1239,15 @@ func (it *indexableIterator) Equal(ctx *Context, other Value, alreadyCompared ma
 	return it == otherIterator
 }
 
+func (it *fixedLengthSliceIterator[T]) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherIterator, ok := other.(*fixedLengthSliceIterator[T])
+	if !ok {
+		return false
+	}
+
+	return it == otherIterator
+}
+
 func (it IntRangeIterator) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	otherIterator, ok := other.(IntRangeIterator)
 	if !ok {
@@ -1266,8 +1275,8 @@ func (it *PatternIterator) Equal(ctx *Context, other Value, alreadyCompared map[
 	return it == otherIterator
 }
 
-func (it indexedEntryIterator) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherIterator, ok := other.(indexedEntryIterator)
+func (it *indexedEntryIterator) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherIterator, ok := other.(*indexedEntryIterator)
 	if !ok {
 		return false
 	}
