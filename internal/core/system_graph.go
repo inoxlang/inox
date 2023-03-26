@@ -14,9 +14,10 @@ var (
 	ErrValueNotInSysGraph     = errors.New("value is not part of system graph")
 	ErrValueNotPointer        = errors.New("value is not a pointer")
 
-	SYSTEM_GRAPH_PROPNAMES = []string{"nodes"}
+	SYSTEM_GRAPH_PROPNAMES      = []string{"nodes"}
+	SYSTEM_GRAPH_NODE_PROPNAMES = []string{"name", "type_name"}
 
-	_ = []IProps{(*SystemGraph)(nil)}
+	_ = []IProps{(*SystemGraph)(nil), (*SystemGraphNode)(nil)}
 	_ = []Indexable{(*SystemGraphNodes)(nil)}
 	_ = []Iterable{(*SystemGraphNodes)(nil)}
 )
@@ -40,19 +41,6 @@ func NewSystemGraph() *SystemGraph {
 	}
 
 	return g
-}
-
-type SystemGraphNode struct {
-	valuePtr  uintptr
-	name      string
-	typeName  string
-	index     int
-	edgesFrom []SystemGraphEdge
-	available bool
-	version   uint64
-
-	NoReprMixin
-	NotClonableMixin
 }
 
 type SystemGraphEdge struct {
@@ -214,6 +202,39 @@ func (n *SystemGraphNodes) Len() int {
 	defer n.lock.Unlock()
 	return len(n.list)
 }
+
+type SystemGraphNode struct {
+	valuePtr  uintptr
+	name      string
+	typeName  string
+	index     int
+	edgesFrom []SystemGraphEdge
+	available bool
+	version   uint64
+
+	NoReprMixin
+	NotClonableMixin
+}
+
+func (n *SystemGraphNode) Prop(ctx *Context, name string) Value {
+	switch name {
+	case "name":
+		return Str(n.name)
+	case "type_name":
+		return Str(n.typeName)
+	}
+	panic(FormatErrPropertyDoesNotExist(name, n))
+}
+
+func (*SystemGraphNode) SetProp(ctx *Context, name string, value Value) error {
+	return ErrCannotSetProp
+}
+
+func (*SystemGraphNode) PropertyNames(ctx *Context) []string {
+	return SYSTEM_GRAPH_NODE_PROPNAMES
+}
+
+//
 
 func (obj *Object) ProposeSystemGraph(g *SystemGraph, proposedName string) {
 	ptr := g.Ptr()

@@ -3,10 +3,11 @@ package internal
 import "errors"
 
 var (
-	ANY_SYSTEM_GRAPH       = NewSystemGraph()
-	ANY_SYSTEM_GRAPH_NODES = NewSystemGraphNodes()
-	ANY_SYSTEM_GRAPH_NODE  = NewSystemGraphNode()
-	SYSTEM_GRAPH_PROPNAMES = []string{"nodes"}
+	ANY_SYSTEM_GRAPH            = NewSystemGraph()
+	ANY_SYSTEM_GRAPH_NODES      = NewSystemGraphNodes()
+	ANY_SYSTEM_GRAPH_NODE       = NewSystemGraphNode()
+	SYSTEM_GRAPH_PROPNAMES      = []string{"nodes"}
+	SYSTEM_GRAPH_NODE_PROPNAMES = []string{"name", "type_name"}
 
 	_ = []Indexable{(*SystemGraphNodes)(nil)}
 )
@@ -131,7 +132,7 @@ func NewSystemGraphNode() *SystemGraphNode {
 	return &SystemGraphNode{}
 }
 
-func (g *SystemGraphNode) Test(v SymbolicValue) bool {
+func (n *SystemGraphNode) Test(v SymbolicValue) bool {
 	other, ok := v.(*SystemGraphNode)
 	if ok {
 		return true
@@ -140,18 +141,38 @@ func (g *SystemGraphNode) Test(v SymbolicValue) bool {
 	return false
 }
 
-func (d *SystemGraphNode) Widen() (SymbolicValue, bool) {
+func (n *SystemGraphNode) Prop(memberName string) SymbolicValue {
+	switch memberName {
+	case "name", "type_name":
+		return ANY_STR
+	}
+	panic(FormatErrPropertyDoesNotExist(memberName, n))
+}
+
+func (n *SystemGraphNode) SetProp(name string, value SymbolicValue) (IProps, error) {
+	return nil, errors.New(FmtCannotAssignPropertyOf(n))
+}
+
+func (n *SystemGraphNode) WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error) {
+	return nil, errors.New(FmtCannotAssignPropertyOf(n))
+}
+
+func (n *SystemGraphNode) PropertyNames() []string {
+	return SYSTEM_GRAPH_NODE_PROPNAMES
+}
+
+func (n *SystemGraphNode) Widen() (SymbolicValue, bool) {
 	return nil, false
 }
 
-func (d *SystemGraphNode) IsWidenable() bool {
+func (n *SystemGraphNode) IsWidenable() bool {
 	return false
 }
 
-func (d *SystemGraphNode) String() string {
+func (n *SystemGraphNode) String() string {
 	return "system-graph-node"
 }
 
-func (d *SystemGraphNode) WidestOfType() SymbolicValue {
+func (n *SystemGraphNode) WidestOfType() SymbolicValue {
 	return ANY_SYSTEM_GRAPH_NODE
 }
