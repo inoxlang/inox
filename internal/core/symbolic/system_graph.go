@@ -9,7 +9,7 @@ var (
 	SYSTEM_GRAPH_PROPNAMES      = []string{"nodes"}
 	SYSTEM_GRAPH_NODE_PROPNAMES = []string{"name", "type_name"}
 
-	_ = []Indexable{(*SystemGraphNodes)(nil)}
+	_ = []Iterable{(*SystemGraphNodes)(nil)}
 	_ = []PotentiallySharable{(*SystemGraph)(nil), (*SystemGraphNodes)(nil), (*SystemGraphNode)(nil)}
 )
 
@@ -122,22 +122,6 @@ func (d *SystemGraphNodes) IteratorElementKey() SymbolicValue {
 }
 func (d *SystemGraphNodes) IteratorElementValue() SymbolicValue {
 	return ANY_SYSTEM_GRAPH_NODE
-}
-
-func (d *SystemGraphNodes) element() SymbolicValue {
-	return ANY_SYSTEM_GRAPH_NODE
-}
-
-func (d *SystemGraphNodes) elementAt(i int) SymbolicValue {
-	return ANY_SYSTEM_GRAPH_NODE
-}
-
-func (d *SystemGraphNodes) knownLen() int {
-	return -1
-}
-
-func (d *SystemGraphNodes) HasKnownLen() bool {
-	return false
 }
 
 func (d *SystemGraphNodes) String() string {

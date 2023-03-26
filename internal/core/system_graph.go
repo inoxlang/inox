@@ -19,7 +19,6 @@ var (
 
 	_ = []PotentiallySharable{(*SystemGraph)(nil), (*SystemGraphNodes)(nil)}
 	_ = []IProps{(*SystemGraph)(nil), (*SystemGraphNode)(nil)}
-	_ = []Indexable{(*SystemGraphNodes)(nil)}
 	_ = []Iterable{(*SystemGraphNodes)(nil)}
 )
 
@@ -93,12 +92,8 @@ func (g *SystemGraph) AddNode(value SystemGraphNodeValue, name string) {
 			node.name = ""
 			node.edgesFrom = node.edgesFrom[:0]
 			node.available = true
-			delete(g.nodes.ptrToNode, ptr)
+			//note: we don't change the index
 
-			if node.index < len(g.nodes.list)-1 {
-				copy(g.nodes.list[node.index:], g.nodes.list[node.index+1:])
-			}
-			node.index = -1
 			g.nodes.list = g.nodes.list[:len(g.nodes.list)-1]
 			g.nodes.availableNodes = append(g.nodes.availableNodes, node)
 		}
@@ -110,9 +105,11 @@ func (g *SystemGraph) AddNode(value SystemGraphNodeValue, name string) {
 
 	if len(g.nodes.availableNodes) > 0 { // reuse a previous node
 		node = g.nodes.availableNodes[len(g.nodes.availableNodes)-1]
+		node.available = false
 		g.nodes.availableNodes = g.nodes.availableNodes[:len(g.nodes.availableNodes)-1]
 	} else {
-		node = &SystemGraphNode{}
+		node = new(SystemGraphNode)
+		g.nodes.list = append(g.nodes.list, node)
 	}
 
 	*node = SystemGraphNode{
@@ -122,7 +119,6 @@ func (g *SystemGraph) AddNode(value SystemGraphNodeValue, name string) {
 		index:    len(g.nodes.list),
 	}
 
-	g.nodes.list = append(g.nodes.list, node)
 	g.nodes.ptrToNode[ptr] = node
 }
 
@@ -210,24 +206,6 @@ type SystemGraphNodes struct {
 
 	NoReprMixin
 	NotClonableMixin
-}
-
-func (n *SystemGraphNodes) At(ctx *Context, i int) Value {
-	n.lock.Lock()
-	defer n.lock.Unlock()
-
-	// temporary, TODO: change
-	if i >= len(n.list) {
-		return Nil
-	}
-
-	return n.list[i]
-}
-
-func (n *SystemGraphNodes) Len() int {
-	n.lock.Lock()
-	defer n.lock.Unlock()
-	return len(n.list)
 }
 
 func (n *SystemGraphNodes) IsSharable(originState *GlobalState) bool {
