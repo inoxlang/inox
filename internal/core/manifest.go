@@ -358,6 +358,13 @@ func getSingleKindPermissions(
 					default:
 						return nil, errors.New("invalid permission, 'routines' should be followed by an object literal")
 					}
+				case "system-graph":
+					switch propVal.(type) {
+					case *Object:
+						perms = append(perms, SystemGraphAccessPermission{permKind})
+					default:
+						return nil, errors.New("invalid permission, 'system-graph' should be followed by an object literal")
+					}
 				case "commands":
 					if permKind != UsePerm {
 						return nil, errors.New("permission 'commands' should be required in the 'use' section of permission")

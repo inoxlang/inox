@@ -445,3 +445,20 @@ func (perm ValueVisibilityPermission) Includes(otherPerm Permission) bool {
 
 	return perm.Pattern.Equal(nil, otherVisibilityPerm.Pattern, map[uintptr]uintptr{}, 0)
 }
+
+type SystemGraphAccessPermission struct {
+	Kind_ PermissionKind
+}
+
+func (perm SystemGraphAccessPermission) Kind() PermissionKind {
+	return perm.Kind_
+}
+
+func (perm SystemGraphAccessPermission) String() string {
+	return fmt.Sprintf("[%s system graph]", perm.Kind_.String())
+}
+
+func (perm SystemGraphAccessPermission) Includes(otherPerm Permission) bool {
+	otherSysGraphPerm, ok := otherPerm.(SystemGraphAccessPermission)
+	return ok && perm.Kind() == otherSysGraphPerm.Kind()
+}
