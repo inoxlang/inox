@@ -30,9 +30,9 @@ type Mutation struct {
 	NoReprMixin
 
 	Kind                    MutationKind
-	Complete                bool // true if the Mutation contains all the data necessary to be applied
-	SpecificMutationVersion int8
-	SpecificMutationKind    SpecificMutationKind
+	Complete                bool                    // true if the Mutation contains all the data necessary to be applied
+	SpecificMutationVersion SpecificMutationVersion // set only if specific mutation
+	SpecificMutationKind    SpecificMutationKind    // set only if specific mutation
 
 	Data               []byte
 	DataElementLengths [4]int32
@@ -40,6 +40,7 @@ type Mutation struct {
 	Depth              WatchingDepth
 }
 
+type SpecificMutationVersion int8
 type SpecificMutationKind int8
 
 type SpecificMutationAcceptor interface {
@@ -58,18 +59,24 @@ func WriteSingleRepresentation(ctx *Context, v Value) ([]byte, [4]int32, error) 
 	return buf.Bytes(), [4]int32{int32(buf.Len())}, nil
 }
 
-func WriteTwoConcatenatedRepresentations(ctx *Context, v1 Value, v2 Value) ([]byte, [4]int32, error) {
+func WriteConcatenatedRepresentations(ctx *Context, values ...Value) ([]byte, [4]int32, error) {
 	buf := bytes.NewBuffer(nil)
 	config := &ReprConfig{allVisible: true}
-	if err := WriteRepresentation(buf, v1, config, ctx); err != nil {
-		return nil, [4]int32{}, err
+
+	var sizes [4]int32
+
+	for i, val := range values {
+		prevBufSize := buf.Len()
+
+		if err := WriteRepresentation(buf, val, config, ctx); err != nil {
+			return nil, [4]int32{}, err
+		}
+
+		elemSize := buf.Len() - prevBufSize
+		sizes[i] = int32(elemSize)
 	}
-	size1 := buf.Len()
-	if err := WriteRepresentation(buf, v2, config, ctx); err != nil {
-		return nil, [4]int32{}, err
-	}
-	size2 := buf.Len() - size1
-	return buf.Bytes(), [4]int32{int32(size1), int32(size2)}, nil
+
+	return buf.Bytes(), sizes, nil
 }
 
 func NewUnspecifiedMutation(depth WatchingDepth, path Path) Mutation {
@@ -82,7 +89,7 @@ func NewUnspecifiedMutation(depth WatchingDepth, path Path) Mutation {
 }
 
 func NewAddPropMutation(ctx *Context, name string, value Value, depth WatchingDepth, path Path) Mutation {
-	data, sizes, err := WriteTwoConcatenatedRepresentations(ctx, Str(name), value)
+	data, sizes, err := WriteConcatenatedRepresentations(ctx, Str(name), value)
 
 	return Mutation{
 		Kind:               AddProp,
@@ -95,7 +102,7 @@ func NewAddPropMutation(ctx *Context, name string, value Value, depth WatchingDe
 }
 
 func NewUpdatePropMutation(ctx *Context, name string, newValue Value, depth WatchingDepth, path Path) Mutation {
-	data, sizes, err := WriteTwoConcatenatedRepresentations(ctx, Str(name), newValue)
+	data, sizes, err := WriteConcatenatedRepresentations(ctx, Str(name), newValue)
 
 	return Mutation{
 		Kind:               UpdateProp,
@@ -109,7 +116,7 @@ func NewUpdatePropMutation(ctx *Context, name string, newValue Value, depth Watc
 }
 
 func NewSetElemAtIndexMutation(ctx *Context, index int, elem Value, depth WatchingDepth, path Path) Mutation {
-	data, sizes, err := WriteTwoConcatenatedRepresentations(ctx, Int(index), elem)
+	data, sizes, err := WriteConcatenatedRepresentations(ctx, Int(index), elem)
 
 	return Mutation{
 		Kind:               SetElemAtIndex,
@@ -122,7 +129,7 @@ func NewSetElemAtIndexMutation(ctx *Context, index int, elem Value, depth Watchi
 }
 
 func NewInsertElemAtIndexMutation(ctx *Context, index int, elem Value, depth WatchingDepth, path Path) Mutation {
-	data, sizes, err := WriteTwoConcatenatedRepresentations(ctx, Int(index), elem)
+	data, sizes, err := WriteConcatenatedRepresentations(ctx, Int(index), elem)
 
 	return Mutation{
 		Kind:               InsertElemAtIndex,
@@ -135,7 +142,7 @@ func NewInsertElemAtIndexMutation(ctx *Context, index int, elem Value, depth Wat
 }
 
 func NewInsertSequenceAtIndexMutation(ctx *Context, index int, seq Sequence, depth WatchingDepth, path Path) Mutation {
-	data, sizes, err := WriteTwoConcatenatedRepresentations(ctx, Int(index), seq)
+	data, sizes, err := WriteConcatenatedRepresentations(ctx, Int(index), seq)
 
 	return Mutation{
 		Kind:               InsertElemAtIndex,
@@ -170,6 +177,28 @@ func NewRemovePositionRangeMutation(ctx *Context, intRange IntRange, depth Watch
 		DataElementLengths: sizes,
 		Depth:              depth,
 		Path:               path,
+	}
+}
+
+type SpecificMutationMetadata struct {
+	Version SpecificMutationVersion
+	Kind    SpecificMutationKind
+	Depth   WatchingDepth
+	Path    Path
+}
+
+func NewSpecificMutation(ctx *Context, meta SpecificMutationMetadata, values ...Value) Mutation {
+	data, sizes, err := WriteConcatenatedRepresentations(ctx, values...)
+
+	return Mutation{
+		Kind:                    SpecificMutation,
+		SpecificMutationVersion: meta.Version,
+		SpecificMutationKind:    meta.Kind,
+		Complete:                err == nil,
+		Data:                    data,
+		DataElementLengths:      sizes,
+		Depth:                   meta.Depth,
+		Path:                    meta.Path,
 	}
 }
 
@@ -730,23 +759,23 @@ func (g *SystemGraph) RemoveMutationCallbackMicrotasks(ctx *Context) {
 	g.mutationCallbacks.RemoveMicrotasks()
 }
 
-func (g *SystemGraph) ApplySpecificMutation(ctx *Context, m Mutation) error {
+// func (g *SystemGraph) ApplySpecificMutation(ctx *Context, m Mutation) error {
 
-	if m.SpecificMutationVersion != 1 {
-		return ErrNotSupportedSpecificMutation
-	}
+// 	if m.SpecificMutationVersion != 1 {
+// 		return ErrNotSupportedSpecificMutation
+// 	}
 
-	switch m.SpecificMutationKind {
-	case SG_AddNode:
-		g.nodes.lock.Lock()
-		defer g.nodes.lock.Unlock()
+// 	switch m.SpecificMutationKind {
+// 	case SG_AddNode:
+// 		g.nodes.lock.Lock()
+// 		defer g.nodes.lock.Unlock()
 
-		if g.isFrozen {
-			return ErrAttemptToMutateFrozenValue
-		}
-		return nil
-	default:
-		panic(ErrUnreachable)
-	}
+// 		if g.isFrozen {
+// 			return ErrAttemptToMutateFrozenValue
+// 		}
+// 		return nil
+// 	default:
+// 		panic(ErrUnreachable)
+// 	}
 
-}
+// }
