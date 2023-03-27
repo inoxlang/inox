@@ -219,7 +219,7 @@ type immutableSliceIterator[T Value] struct {
 }
 
 func (it *immutableSliceIterator[T]) HasNext(*Context) bool {
-	return it.i < len(it.elements)
+	return it.i < len(it.elements)-1
 }
 
 func (it *immutableSliceIterator[T]) Next(ctx *Context) bool {
@@ -232,7 +232,7 @@ func (it *immutableSliceIterator[T]) Next(ctx *Context) bool {
 }
 
 func (it *immutableSliceIterator[T]) Key(*Context) Value {
-	return Int(it.i - 1)
+	return Int(it.i)
 }
 
 func (it *immutableSliceIterator[T]) Value(ctx *Context) Value {
@@ -249,7 +249,7 @@ type indexableIterator struct {
 }
 
 func (it *indexableIterator) HasNext(*Context) bool {
-	return it.i < it.len
+	return it.i < it.len-1
 }
 
 func (it *indexableIterator) Next(ctx *Context) bool {
@@ -262,7 +262,7 @@ func (it *indexableIterator) Next(ctx *Context) bool {
 }
 
 func (it *indexableIterator) Key(*Context) Value {
-	return Int(it.i - 1)
+	return Int(it.i)
 }
 
 func (it *indexableIterator) Value(ctx *Context) Value {

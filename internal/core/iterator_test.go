@@ -7,6 +7,79 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestByteSliceIteration(t *testing.T) {
+
+	t.Run("single byte", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		slice := NewByteSlice([]byte{'a'}, true, "")
+		it := slice.Iterator(ctx, IteratorConfiguration{})
+
+		//next
+		assert.True(t, it.HasNext(ctx))
+		assert.True(t, it.Next(ctx))
+		assert.Equal(t, Int(0), it.Key(ctx))
+		assert.Equal(t, Byte('a'), it.Value(ctx))
+
+		assert.False(t, it.HasNext(ctx))
+		assert.False(t, it.Next(ctx))
+	})
+
+	t.Run("two bytes", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		slice := NewByteSlice([]byte{'a', 'b'}, true, "")
+		it := slice.Iterator(ctx, IteratorConfiguration{})
+
+		//next
+		assert.True(t, it.HasNext(ctx))
+		assert.True(t, it.Next(ctx))
+		assert.Equal(t, Int(0), it.Key(ctx))
+		assert.Equal(t, Byte('a'), it.Value(ctx))
+
+		//next
+		assert.True(t, it.HasNext(ctx))
+		assert.True(t, it.Next(ctx))
+		assert.Equal(t, Int(1), it.Key(ctx))
+		assert.Equal(t, Byte('b'), it.Value(ctx))
+
+		assert.False(t, it.HasNext(ctx))
+		assert.False(t, it.Next(ctx))
+	})
+
+	t.Run("three elements", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		slice := NewByteSlice([]byte{'a', 'b', 'c'}, true, "")
+		it := slice.Iterator(ctx, IteratorConfiguration{})
+
+		//next
+		assert.True(t, it.HasNext(ctx))
+		assert.True(t, it.Next(ctx))
+		assert.Equal(t, Int(0), it.Key(ctx))
+		assert.Equal(t, Byte('a'), it.Value(ctx))
+
+		//next
+		assert.True(t, it.HasNext(ctx))
+		assert.True(t, it.Next(ctx))
+		assert.Equal(t, Int(1), it.Key(ctx))
+		assert.Equal(t, Byte('b'), it.Value(ctx))
+
+		//next
+		assert.True(t, it.HasNext(ctx))
+		assert.True(t, it.Next(ctx))
+		assert.Equal(t, Int(2), it.Key(ctx))
+		assert.Equal(t, Byte('c'), it.Value(ctx))
+
+		assert.False(t, it.HasNext(ctx))
+		assert.False(t, it.Next(ctx))
+	})
+
+}
+
 func TestObjectIteration(t *testing.T) {
 
 	t.Run("no properties", func(t *testing.T) {
