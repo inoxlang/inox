@@ -22,8 +22,13 @@ func init() {
 }
 
 type MessageReceiver interface {
-	Value
+	SystemGraphNodeValue
 	ReceiveMessage(ctx *Context, msg Message) error
+}
+
+func SendVal(ctx *Context, value Value, r MessageReceiver, sender Value) error {
+	r.AddSystemGraphEvent(ctx, "reception of a message")
+	return r.ReceiveMessage(ctx, Message{data: value, sender: sender})
 }
 
 // A Message is an immutable package around an immutable piece of data sent by a sender to a MessageReceiver, Message implements Value.
@@ -137,8 +142,4 @@ func (obj *Object) ReceiveMessage(ctx *Context, msg Message) error {
 
 	obj.watchers.InformAboutAsync(ctx, msg, ShallowWatching, false)
 	return nil
-}
-
-func SendVal(ctx *Context, value Value, r MessageReceiver, sender Value) error {
-	return r.ReceiveMessage(ctx, Message{data: value, sender: sender})
 }

@@ -2241,7 +2241,9 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		if receiver, ok := v.(MessageReceiver); ok {
-			return Nil, receiver.ReceiveMessage(state.Global.Ctx, NewMessage(value, state.self))
+			if err := SendVal(state.Global.Ctx, value, receiver, state.self); err != nil {
+				return nil, err
+			}
 		}
 
 		return Nil, nil

@@ -1836,7 +1836,7 @@ func (v *VM) run() {
 			}
 
 			if ok {
-				if err := receiver.ReceiveMessage(v.global.Ctx, NewMessage(value, v.curFrame.self)); err != nil {
+				if err := SendVal(v.global.Ctx, value, receiver, v.curFrame.self); err != nil {
 					v.err = err
 					return
 				}

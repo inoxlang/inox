@@ -68,6 +68,8 @@ type SystemGraphEvent struct {
 type SystemGraphNodeValue interface {
 	Watchable
 	ProposeSystemGraph(ctx *Context, g *SystemGraph, propoposedName string)
+	SystemGraph() *SystemGraph
+	AddSystemGraphEvent(ctx *Context, text string)
 }
 
 func (g *SystemGraph) Ptr() SystemGraphPointer {
@@ -324,4 +326,12 @@ func (obj *Object) ProposeSystemGraph(ctx *Context, g *SystemGraph, proposedName
 	obj.sysgraph.Set(ptr)
 
 	g.AddNode(ctx, obj, proposedName)
+}
+
+func (obj *Object) SystemGraph() *SystemGraph {
+	return obj.sysgraph.Graph()
+}
+
+func (obj *Object) AddSystemGraphEvent(ctx *Context, text string) {
+	obj.sysgraph.AddEvent(ctx, text, obj)
 }
