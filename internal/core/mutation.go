@@ -14,6 +14,7 @@ var (
 	MUTATION_KIND_NAMES = []string{"unspecified-mutation", "add-prop", "update-prop", "insert-elem-at-index", "set-elem-at-index"}
 
 	ErrCannotApplyIncompleteMutation = errors.New("cannot apply an incomplete mutation")
+	ErrNotSupportedSpecificMutation  = errors.New("not supported specific mutation")
 	_                                = []Value{Mutation{}}
 
 	mutationCallbackPool = utils.Must(NewArrayPool[mutationCallback](100_000, 10))
@@ -28,12 +29,24 @@ type Mutation struct {
 	NotClonableMixin
 	NoReprMixin
 
-	Kind     MutationKind
-	Complete bool   // true if the Mutation contains all the data necessary to be applied
-	Data0    []byte //immutable
-	Data1    []byte //immutable
-	Path     Path   // can be empty
-	Depth    WatchingDepth
+	Kind                    MutationKind
+	Complete                bool // true if the Mutation contains all the data necessary to be applied
+	SpecificMutationVersion int8
+	SpecificMutationKind    SpecificMutationKind
+
+	Data0 []byte //immutable
+	Data1 []byte //immutable
+	Path  Path   // can be empty
+	Depth WatchingDepth
+}
+
+type SpecificMutationKind int8
+
+type SpecificMutationAcceptor interface {
+	Value
+	// ApplySpecificMutation should apply the mutation to the Value, ErrNotSupportedSpecificMutation should be returned
+	// if it's not possible.
+	ApplySpecificMutation(ctx *Context, m Mutation) error
 }
 
 func NewUnspecifiedMutation(depth WatchingDepth, path Path) Mutation {
@@ -224,6 +237,8 @@ func (m Mutation) ApplyTo(ctx *Context, v Value) error {
 		v.(MutableLengthSequence).removePosition(ctx, Int(m.AffectedIndex()))
 	case RemovePositionRange:
 		v.(MutableLengthSequence).removePositionRange(ctx, m.AffectedRange(ctx))
+	case SpecificMutation:
+		return v.(SpecificMutationAcceptor).ApplySpecificMutation(ctx, m)
 	default:
 		panic(ErrUnreachable)
 	}
@@ -241,6 +256,7 @@ const (
 	InsertSequenceAtIndex
 	RemovePosition
 	RemovePositionRange
+	SpecificMutation
 )
 
 func (k MutationKind) String() string {
