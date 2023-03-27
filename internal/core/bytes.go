@@ -20,6 +20,7 @@ type WrappedBytes interface {
 // A BytesLike represents an abstract byte slice, it should behave exactly like a regular ByteSlice and have the same pseudo properties.
 type BytesLike interface {
 	MutableSequence
+	Iterable
 	GetOrBuildBytes() *ByteSlice
 	Mutable() bool
 }

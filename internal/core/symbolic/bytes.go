@@ -22,6 +22,7 @@ type WrappedBytes interface {
 // A BytesLike represents a symbolic BytesLike.
 type BytesLike interface {
 	MutableSequence
+	Iterable
 	GetOrBuildBytes() *ByteSlice
 }
 
@@ -45,6 +46,14 @@ func (s *ByteSlice) IsWidenable() bool {
 
 func (s *ByteSlice) String() string {
 	return "byte-slice"
+}
+
+func (s *ByteSlice) IteratorElementKey() SymbolicValue {
+	return ANY_INT
+}
+
+func (s *ByteSlice) IteratorElementValue() SymbolicValue {
+	return ANY_BYTE
 }
 
 func (s *ByteSlice) HasKnownLen() bool {
@@ -141,6 +150,14 @@ func (b *AnyBytesLike) Test(v SymbolicValue) bool {
 	return ok
 }
 
+func (b *AnyBytesLike) IteratorElementKey() SymbolicValue {
+	return ANY_INT
+}
+
+func (b *AnyBytesLike) IteratorElementValue() SymbolicValue {
+	return ANY_BYTE
+}
+
 func (b *AnyBytesLike) set(i *Int, v SymbolicValue) {
 
 }
@@ -205,6 +222,14 @@ type BytesConcatenation struct {
 func (c *BytesConcatenation) Test(v SymbolicValue) bool {
 	_, ok := v.(*BytesConcatenation)
 	return ok
+}
+
+func (c *BytesConcatenation) IteratorElementKey() SymbolicValue {
+	return ANY_INT
+}
+
+func (c *BytesConcatenation) IteratorElementValue() SymbolicValue {
+	return ANY_BYTE
 }
 
 func (c *BytesConcatenation) set(i *Int, v SymbolicValue) {
