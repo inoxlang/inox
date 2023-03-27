@@ -17,7 +17,7 @@ An archive with a Linux binary and some examples is available in [release assets
 - copy the `ide` folder where you want
 
 
-To get started go [here](./docs/getting-started.md).\
+[Get started](./docs/getting-started.md).\
 ⚠️ The language is not production ready yet.
 
 # Features
@@ -68,7 +68,7 @@ In imports the importing module specifies the permissions it grants to the impor
 
 <img src="./docs/img/malicious-lib.png"></img>
 
-If the imported module ask more permissions than granted are error is thrown:\
+If the imported module ask more permissions than granted an error is thrown:\
 `import: some permissions in the imported module's manifest are not granted: [read path(s) /...] `
 
 ### Dropping permissions
