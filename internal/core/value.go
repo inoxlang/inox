@@ -19,6 +19,7 @@ const (
 
 // Value is the interface implemented by all values accessible to Inox code.
 type Value interface {
+	// IsMutable should return true if the value is definitively mutable and false if it is definitively immutable.
 	IsMutable() bool
 
 	Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool

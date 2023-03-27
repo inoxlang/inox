@@ -1931,7 +1931,7 @@ func (it *indexableIterator) PrettyPrint(w io.Writer, config *PrettyPrintConfig,
 	return fmt.Fprintf(w, "%#v", it)
 }
 
-func (it *fixedLengthSliceIterator[T]) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+func (it *immutableSliceIterator[T]) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
 	return fmt.Fprintf(w, "%#v", it)
 }
 

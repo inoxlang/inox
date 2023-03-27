@@ -752,10 +752,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.IsType(t, (*Object)(nil), res)
 
 			//check that the global variable's value has a node in the system graph
-			if !assert.Equal(t, state.SystemGraph.nodes.Len(), 1) {
+			if !assert.Len(t, state.SystemGraph.nodes.list, 1) {
 				return
 			}
-			node := state.SystemGraph.nodes.At(state.Ctx, 0).(*SystemGraphNode)
+			node := state.SystemGraph.nodes.list[0]
 			assert.Equal(t, "a", node.name)
 		})
 	})

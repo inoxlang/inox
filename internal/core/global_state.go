@@ -63,7 +63,7 @@ func (g *GlobalState) InitSystemGraph() {
 
 func (g *GlobalState) ProposeSystemGraph(v SystemGraphNodeValue, optionalName string) {
 	if g.SystemGraph != nil {
-		v.ProposeSystemGraph(g.SystemGraph, optionalName)
+		v.ProposeSystemGraph(g.Ctx, g.SystemGraph, optionalName)
 	}
 }
 

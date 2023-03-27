@@ -32,7 +32,7 @@ type Mutation struct {
 	Complete bool   // true if the Mutation contains all the data necessary to be applied
 	Data0    []byte //immutable
 	Data1    []byte //immutable
-	Path     Path
+	Path     Path   // can be empty
 	Depth    WatchingDepth
 }
 
@@ -218,12 +218,12 @@ func (m Mutation) ApplyTo(ctx *Context, v Value) error {
 		v.(MutableLengthSequence).set(ctx, m.AffectedIndex(), m.Element(ctx))
 	case InsertElemAtIndex:
 		v.(MutableLengthSequence).insertElement(ctx, m.Element(ctx), Int(m.AffectedIndex()))
+	case InsertSequenceAtIndex:
+		v.(MutableLengthSequence).insertSequence(ctx, m.Sequence(ctx), Int(m.AffectedIndex()))
 	case RemovePosition:
 		v.(MutableLengthSequence).removePosition(ctx, Int(m.AffectedIndex()))
 	case RemovePositionRange:
 		v.(MutableLengthSequence).removePositionRange(ctx, m.AffectedRange(ctx))
-	case InsertSequenceAtIndex:
-		v.(MutableLengthSequence).insertSequence(ctx, m.Sequence(ctx), Int(m.AffectedIndex()))
 	default:
 		panic(ErrUnreachable)
 	}
@@ -609,6 +609,10 @@ func (dyn *DynamicValue) OnMutation(ctx *Context, microtask MutationCallbackMicr
 		config.Depth = DeepWatching
 	}
 
+	if dyn.mutationCallbacks == nil {
+		dyn.mutationCallbacks = NewMutationCallbackMicrotasks()
+	}
+
 	handle := dyn.mutationCallbacks.AddMicrotask(microtask, config)
 
 	return handle, nil
@@ -630,4 +634,39 @@ func (dyn *DynamicValue) RemoveMutationCallback(ctx *Context, handle CallbackHan
 	defer dyn.lock.Unlock()
 
 	dyn.mutationCallbacks.RemoveMicrotask(handle)
+}
+
+func (g *SystemGraph) OnMutation(ctx *Context, microtask MutationCallbackMicrotask, config MutationWatchingConfiguration) (CallbackHandle, error) {
+	g.nodes.lock.Lock()
+	defer g.nodes.lock.Unlock()
+
+	if config.Depth == UnspecifiedWatchingDepth {
+		config.Depth = ShallowWatching
+	}
+
+	if g.mutationCallbacks == nil {
+		g.mutationCallbacks = NewMutationCallbackMicrotasks()
+	}
+
+	handle := g.mutationCallbacks.AddMicrotask(microtask, config)
+
+	return handle, nil
+}
+
+func (g *SystemGraph) RemoveMutationCallback(ctx *Context, handle CallbackHandle) {
+	g.nodes.lock.Lock()
+	defer g.nodes.lock.Unlock()
+
+	if g.mutationCallbacks == nil {
+		return
+	}
+
+	g.mutationCallbacks.RemoveMicrotasks()
+}
+
+func (g *SystemGraph) RemoveMutationCallbackMicrotasks(ctx *Context) {
+	g.nodes.lock.Lock()
+	defer g.nodes.lock.Unlock()
+
+	g.mutationCallbacks.RemoveMicrotasks()
 }

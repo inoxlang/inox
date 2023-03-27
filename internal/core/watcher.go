@@ -461,3 +461,11 @@ func (dyn *DynamicValue) Watcher(ctx *Context, config WatcherConfiguration) Watc
 
 	return watcher
 }
+
+func (*SystemGraph) Watcher(ctx *Context, config WatcherConfiguration) Watcher {
+	if config.Depth == UnspecifiedWatchingDepth {
+		config.Depth = ShallowWatching
+	}
+
+	panic(ErrNotImplementedYet)
+}

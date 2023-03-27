@@ -784,7 +784,7 @@ func (it *indexableIterator) ToSymbolicValue(wide bool, encountered map[uintptr]
 	return &symbolic.Iterator{}, nil
 }
 
-func (it *fixedLengthSliceIterator[T]) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (it *immutableSliceIterator[T]) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	return &symbolic.Iterator{}, nil
 }
 

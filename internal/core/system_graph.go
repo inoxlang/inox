@@ -24,20 +24,24 @@ var (
 
 // A SystemGraph represents relations & events between values.
 type SystemGraph struct {
-	nodes *SystemGraphNodes
+	isFrozen bool
+	nodes    *SystemGraphNodes
 
 	eventLogLock sync.Mutex
 	eventLog     []SystemGraphEvent
+
+	mutationCallbacks *MutationCallbacks
 
 	NoReprMixin
 	NotClonableMixin
 }
 
 func NewSystemGraph() *SystemGraph {
-	g := &SystemGraph{
-		nodes: &SystemGraphNodes{
-			ptrToNode: make(map[uintptr]*SystemGraphNode),
-		},
+	g := &SystemGraph{}
+
+	g.nodes = &SystemGraphNodes{
+		graph:     g,
+		ptrToNode: make(map[uintptr]*SystemGraphNode),
 	}
 
 	return g
@@ -52,22 +56,26 @@ type SystemGraphEdgeKind uint8
 
 type SystemGraphEvent struct {
 	node0, node1 *SystemGraphNode
-	otherNodes   []SystemGraphNode
+	otherNodes   []*SystemGraphNode
 	text         string
 }
 
 type SystemGraphNodeValue interface {
 	Watchable
-	ProposeSystemGraph(g *SystemGraph, propoposedName string)
+	ProposeSystemGraph(ctx *Context, g *SystemGraph, propoposedName string)
 }
 
 func (g *SystemGraph) Ptr() SystemGraphPointer {
 	return SystemGraphPointer{ptr: unsafe.Pointer(g)}
 }
 
-func (g *SystemGraph) AddNode(value SystemGraphNodeValue, name string) {
+func (g *SystemGraph) AddNode(ctx *Context, value SystemGraphNodeValue, name string) {
 	g.nodes.lock.Lock()
 	defer g.nodes.lock.Unlock()
+
+	if g.isFrozen {
+		panic(ErrAttemptToMutateFrozenValue)
+	}
 
 	reflectVal := reflect.ValueOf(value)
 	if reflectVal.Kind() != reflect.Pointer {
@@ -94,7 +102,6 @@ func (g *SystemGraph) AddNode(value SystemGraphNodeValue, name string) {
 			node.available = true
 			//note: we don't change the index
 
-			g.nodes.list = g.nodes.list[:len(g.nodes.list)-1]
 			g.nodes.availableNodes = append(g.nodes.availableNodes, node)
 		}
 	})
@@ -120,12 +127,17 @@ func (g *SystemGraph) AddNode(value SystemGraphNodeValue, name string) {
 	}
 
 	g.nodes.ptrToNode[ptr] = node
+	g.mutationCallbacks.CallMicrotasks(ctx, NewUnspecifiedMutation(ShallowWatching, ""))
 }
 
-func (g *SystemGraph) AddEvent(text string, v SystemGraphNodeValue) {
+func (g *SystemGraph) AddEvent(ctx *Context, text string, v SystemGraphNodeValue) {
 	ptr := reflect.ValueOf(v).Pointer()
 
 	g.nodes.lock.Lock()
+	if g.isFrozen {
+		panic(ErrAttemptToMutateFrozenValue)
+	}
+
 	node, ok := g.nodes.ptrToNode[ptr]
 	g.nodes.lock.Unlock()
 
@@ -140,6 +152,7 @@ func (g *SystemGraph) AddEvent(text string, v SystemGraphNodeValue) {
 		node0: node,
 		text:  text,
 	})
+	g.mutationCallbacks.CallMicrotasks(ctx, NewUnspecifiedMutation(ShallowWatching, ""))
 }
 
 type SystemGraphPointer struct{ ptr unsafe.Pointer }
@@ -155,11 +168,11 @@ func (p *SystemGraphPointer) Set(ptr SystemGraphPointer) {
 	p.ptr = ptr.ptr
 }
 
-func (p *SystemGraphPointer) AddEvent(text string, v SystemGraphNodeValue) {
+func (p *SystemGraphPointer) AddEvent(ctx *Context, text string, v SystemGraphNodeValue) {
 	if uintptr(p.ptr) == 0 {
 		return
 	}
-	p.Graph().AddEvent(text, v)
+	p.Graph().AddEvent(ctx, text, v)
 }
 
 func (g *SystemGraph) Prop(ctx *Context, name string) Value {
@@ -203,6 +216,7 @@ type SystemGraphNodes struct {
 	list           []*SystemGraphNode
 	ptrToNode      map[uintptr]*SystemGraphNode
 	availableNodes []*SystemGraphNode //TODO: replace with a bitset
+	graph          *SystemGraph
 
 	NoReprMixin
 	NotClonableMixin
@@ -283,9 +297,9 @@ func (n *SystemGraphNode) ForceUnlock() {
 
 //
 
-func (obj *Object) ProposeSystemGraph(g *SystemGraph, proposedName string) {
+func (obj *Object) ProposeSystemGraph(ctx *Context, g *SystemGraph, proposedName string) {
 	ptr := g.Ptr()
 	obj.sysgraph.Set(ptr)
 
-	g.AddNode(obj, proposedName)
+	g.AddNode(ctx, obj, proposedName)
 }

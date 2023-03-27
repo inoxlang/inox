@@ -4,11 +4,15 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/inox-project/inox/internal/utils"
 )
 
 var (
 	ErrFailedToSnapshot           = errors.New("failed to snapshot value")
 	ErrAttemptToMutateFrozenValue = errors.New("attempt to mutate a frozen value")
+
+	_ = []InMemorySnapshotable{(*RuneSlice)(nil), (*SystemGraph)(nil), (*DynamicValue)(nil)}
 )
 
 // Snapshot holds either the serialized representation of a Value or a in-memory FROZEN value.
@@ -128,4 +132,77 @@ func (d *DynamicValue) TakeInMemorySnapshot(ctx *Context) (*Snapshot, error) {
 
 func (d *DynamicValue) IsFrozen() bool {
 	return false
+}
+
+func (g *SystemGraph) takeSnapshot(ctx *Context) *SystemGraph {
+	g.eventLogLock.Lock()
+	defer g.eventLogLock.Unlock()
+
+	g.nodes.lock.Lock()
+	defer g.nodes.lock.Unlock()
+
+	newNodes := &SystemGraphNodes{
+		list: utils.CopySlice(g.nodes.list),
+	}
+
+	origToCopy := make(map[*SystemGraphNode]*SystemGraphNode, len(newNodes.list))
+	for i, origNode := range g.nodes.list {
+		nodeCopy := *origNode
+		if nodeCopy.edgesFrom != nil {
+			nodeCopy.edgesFrom = utils.CopySlice(nodeCopy.edgesFrom)
+		}
+		newNodes.list[i] = &nodeCopy
+		origToCopy[origNode] = &nodeCopy
+	}
+
+	for _, nodeCopy := range newNodes.list {
+		for i, edge := range nodeCopy.edgesFrom {
+			edge.to = origToCopy[edge.to]
+			nodeCopy.edgesFrom[i] = edge
+		}
+	}
+
+	newNodes.availableNodes = make([]*SystemGraphNode, len(g.nodes.availableNodes))
+	for i, availableNode := range newNodes.availableNodes {
+		newNodes.availableNodes[i] = origToCopy[availableNode]
+	}
+
+	newNodes.ptrToNode = make(map[uintptr]*SystemGraphNode, len(g.nodes.ptrToNode))
+	for k, v := range g.nodes.ptrToNode {
+		newNodes.ptrToNode[k] = origToCopy[v]
+	}
+
+	eventLogCopy := make([]SystemGraphEvent, len(g.eventLog))
+	for eventIndex, origEvent := range g.eventLog {
+		var eventCopy SystemGraphEvent
+		eventCopy.node0 = origToCopy[origEvent.node0]
+		eventCopy.node1 = origToCopy[origEvent.node1]
+		if origEvent.otherNodes != nil {
+			eventCopy.otherNodes = utils.CopySlice(origEvent.otherNodes)
+			for i, origNode := range origEvent.otherNodes {
+				eventCopy.otherNodes[i] = origToCopy[origNode]
+			}
+		}
+		eventLogCopy[eventIndex] = eventCopy
+	}
+
+	newGraph := &SystemGraph{
+		nodes:    newNodes,
+		eventLog: eventLogCopy,
+	}
+	newGraph.nodes.graph = newGraph
+	return newGraph
+}
+
+func (g *SystemGraph) TakeInMemorySnapshot(ctx *Context) (*Snapshot, error) {
+	return &Snapshot{
+		inMemory: g.takeSnapshot(ctx),
+		date:     Date(time.Now()),
+	}, nil
+}
+
+func (g *SystemGraph) IsFrozen() bool {
+	g.nodes.lock.Lock()
+	defer g.nodes.lock.Unlock()
+	return g.isFrozen
 }

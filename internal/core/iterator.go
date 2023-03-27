@@ -209,8 +209,8 @@ func (it *KeyValueFilteredIterator) Value(ctx *Context) Value {
 	return it.currentValue
 }
 
-// fixedLengthSliceIterator iterates over an immutable slice.
-type fixedLengthSliceIterator[T Value] struct {
+// immutableSliceIterator iterates over an immutable slice.
+type immutableSliceIterator[T Value] struct {
 	NoReprMixin
 	NotClonableMixin
 
@@ -218,11 +218,11 @@ type fixedLengthSliceIterator[T Value] struct {
 	elements []T
 }
 
-func (it *fixedLengthSliceIterator[T]) HasNext(*Context) bool {
+func (it *immutableSliceIterator[T]) HasNext(*Context) bool {
 	return it.i < len(it.elements)
 }
 
-func (it *fixedLengthSliceIterator[T]) Next(ctx *Context) bool {
+func (it *immutableSliceIterator[T]) Next(ctx *Context) bool {
 	if !it.HasNext(ctx) {
 		return false
 	}
@@ -231,11 +231,11 @@ func (it *fixedLengthSliceIterator[T]) Next(ctx *Context) bool {
 	return true
 }
 
-func (it *fixedLengthSliceIterator[T]) Key(*Context) Value {
+func (it *immutableSliceIterator[T]) Key(*Context) Value {
 	return Int(it.i - 1)
 }
 
-func (it *fixedLengthSliceIterator[T]) Value(ctx *Context) Value {
+func (it *immutableSliceIterator[T]) Value(ctx *Context) Value {
 	return it.elements[it.i]
 }
 
@@ -1511,9 +1511,11 @@ func (dyn *DynamicValue) Iterator(ctx *Context, config IteratorConfiguration) It
 }
 
 func (n *SystemGraphNodes) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
-	return config.CreateIterator(&fixedLengthSliceIterator[*SystemGraphNode]{
+	graph := n.graph.takeSnapshot(ctx)
+
+	return config.CreateIterator(&immutableSliceIterator[*SystemGraphNode]{
 		i:        -1,
-		elements: n.GetSnapshotOfNodeList(),
+		elements: graph.nodes.list,
 	})
 }
 

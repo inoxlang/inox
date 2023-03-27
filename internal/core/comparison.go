@@ -1239,8 +1239,8 @@ func (it *indexableIterator) Equal(ctx *Context, other Value, alreadyCompared ma
 	return it == otherIterator
 }
 
-func (it *fixedLengthSliceIterator[T]) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherIterator, ok := other.(*fixedLengthSliceIterator[T])
+func (it *immutableSliceIterator[T]) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherIterator, ok := other.(*immutableSliceIterator[T])
 	if !ok {
 		return false
 	}
