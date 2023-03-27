@@ -9,6 +9,11 @@ import (
 	"unsafe"
 )
 
+const (
+	SG_AddNode SpecificMutationKind = iota + 1
+	SG_AddEvent
+)
+
 var (
 	ErrValueAlreadyInSysGraph = errors.New("value already in a system graph")
 	ErrValueNotInSysGraph     = errors.New("value is not part of system graph")
@@ -106,6 +111,10 @@ func (g *SystemGraph) AddNode(ctx *Context, value SystemGraphNodeValue, name str
 		}
 	})
 
+	g.addNodeNoLock(ctx, ptr, name, reflectVal.Elem().Type().Name())
+}
+
+func (g *SystemGraph) addNodeNoLock(ctx *Context, ptr uintptr, name string, typename string) {
 	// create the node
 
 	var node *SystemGraphNode
@@ -122,12 +131,18 @@ func (g *SystemGraph) AddNode(ctx *Context, value SystemGraphNodeValue, name str
 	*node = SystemGraphNode{
 		valuePtr: ptr,
 		name:     name,
-		typeName: reflectVal.Elem().Type().Name(),
+		typeName: typename,
 		index:    len(g.nodes.list),
 	}
 
 	g.nodes.ptrToNode[ptr] = node
-	g.mutationCallbacks.CallMicrotasks(ctx, NewUnspecifiedMutation(ShallowWatching, ""))
+	specificMutation := NewSpecificMutation(ctx, SpecificMutationMetadata{
+		Version: 1,
+		Kind:    SG_AddNode,
+		Depth:   ShallowWatching,
+	}, Str(node.name), Str(node.typeName), Int(node.valuePtr))
+
+	g.mutationCallbacks.CallMicrotasks(ctx, specificMutation)
 }
 
 func (g *SystemGraph) AddEvent(ctx *Context, text string, v SystemGraphNodeValue) {
@@ -152,7 +167,14 @@ func (g *SystemGraph) AddEvent(ctx *Context, text string, v SystemGraphNodeValue
 		node0: node,
 		text:  text,
 	})
-	g.mutationCallbacks.CallMicrotasks(ctx, NewUnspecifiedMutation(ShallowWatching, ""))
+
+	specificMutation := NewSpecificMutation(ctx, SpecificMutationMetadata{
+		Version: 1,
+		Kind:    SG_AddEvent,
+		Depth:   ShallowWatching,
+	}, Int(node.valuePtr), Str(text))
+
+	g.mutationCallbacks.CallMicrotasks(ctx, specificMutation)
 }
 
 type SystemGraphPointer struct{ ptr unsafe.Pointer }

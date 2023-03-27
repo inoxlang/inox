@@ -621,7 +621,13 @@ func TestSystemGraphOnMutation(t *testing.T) {
 			}
 			called = true
 
-			assert.Equal(t, NewUnspecifiedMutation(ShallowWatching, ""), mutation)
+			expectedMutation := NewSpecificMutation(ctx, SpecificMutationMetadata{
+				Version: 1,
+				Kind:    SG_AddNode,
+				Depth:   ShallowWatching,
+			}, Str("a"), Str("Object"), Int(graph.nodes.list[0].valuePtr))
+
+			assert.Equal(t, expectedMutation, mutation)
 			return
 		}, MutationWatchingConfiguration{Depth: ShallowWatching})
 
@@ -646,7 +652,13 @@ func TestSystemGraphOnMutation(t *testing.T) {
 			}
 			called = true
 
-			assert.Equal(t, NewUnspecifiedMutation(ShallowWatching, ""), mutation)
+			expectedMutation := NewSpecificMutation(ctx, SpecificMutationMetadata{
+				Version: 1,
+				Kind:    SG_AddEvent,
+				Depth:   ShallowWatching,
+			}, Int(graph.nodes.list[0].valuePtr), Str("event"))
+
+			assert.Equal(t, expectedMutation, mutation)
 			return
 		}, MutationWatchingConfiguration{Depth: ShallowWatching})
 
