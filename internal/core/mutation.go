@@ -1,9 +1,9 @@
 package internal
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -34,10 +34,10 @@ type Mutation struct {
 	SpecificMutationVersion int8
 	SpecificMutationKind    SpecificMutationKind
 
-	Data0 []byte //immutable
-	Data1 []byte //immutable
-	Path  Path   // can be empty
-	Depth WatchingDepth
+	Data               []byte
+	DataElementLengths [4]int32
+	Path               Path // can be empty
+	Depth              WatchingDepth
 }
 
 type SpecificMutationKind int8
@@ -47,6 +47,29 @@ type SpecificMutationAcceptor interface {
 	// ApplySpecificMutation should apply the mutation to the Value, ErrNotSupportedSpecificMutation should be returned
 	// if it's not possible.
 	ApplySpecificMutation(ctx *Context, m Mutation) error
+}
+
+func WriteSingleRepresentation(ctx *Context, v Value) ([]byte, [4]int32, error) {
+	buf := bytes.NewBuffer(nil)
+	config := &ReprConfig{allVisible: true}
+	if err := WriteRepresentation(buf, v, config, ctx); err != nil {
+		return nil, [4]int32{}, err
+	}
+	return buf.Bytes(), [4]int32{int32(buf.Len())}, nil
+}
+
+func WriteTwoConcatenatedRepresentations(ctx *Context, v1 Value, v2 Value) ([]byte, [4]int32, error) {
+	buf := bytes.NewBuffer(nil)
+	config := &ReprConfig{allVisible: true}
+	if err := WriteRepresentation(buf, v1, config, ctx); err != nil {
+		return nil, [4]int32{}, err
+	}
+	size1 := buf.Len()
+	if err := WriteRepresentation(buf, v2, config, ctx); err != nil {
+		return nil, [4]int32{}, err
+	}
+	size2 := buf.Len() - size1
+	return buf.Bytes(), [4]int32{int32(size1), int32(size2)}, nil
 }
 
 func NewUnspecifiedMutation(depth WatchingDepth, path Path) Mutation {
@@ -59,88 +82,94 @@ func NewUnspecifiedMutation(depth WatchingDepth, path Path) Mutation {
 }
 
 func NewAddPropMutation(ctx *Context, name string, value Value, depth WatchingDepth, path Path) Mutation {
-	valueRepr, err := GetRepresentationWithConfig(value, &ReprConfig{allVisible: true}, ctx)
+	data, sizes, err := WriteTwoConcatenatedRepresentations(ctx, Str(name), value)
 
 	return Mutation{
-		Kind:     AddProp,
-		Complete: err == nil,
-		Data0:    utils.StringAsBytes(name),
-		Data1:    valueRepr,
-		Depth:    depth,
-		Path:     path,
+		Kind:               AddProp,
+		Complete:           err == nil,
+		Data:               data,
+		DataElementLengths: sizes,
+		Depth:              depth,
+		Path:               path,
 	}
 }
 
 func NewUpdatePropMutation(ctx *Context, name string, newValue Value, depth WatchingDepth, path Path) Mutation {
-	valueRepr, err := GetRepresentationWithConfig(newValue, &ReprConfig{allVisible: true}, ctx)
+	data, sizes, err := WriteTwoConcatenatedRepresentations(ctx, Str(name), newValue)
 
 	return Mutation{
-		Kind:     UpdateProp,
-		Complete: err == nil,
-		Data0:    utils.StringAsBytes(name),
-		Depth:    depth,
-		Data1:    valueRepr,
+		Kind:               UpdateProp,
+		Complete:           err == nil,
+		Data:               data,
+		DataElementLengths: sizes,
+		Depth:              depth,
 		//TODO: Data1
 		Path: path,
 	}
 }
 
 func NewSetElemAtIndexMutation(ctx *Context, index int, elem Value, depth WatchingDepth, path Path) Mutation {
-	elemRepr, err := GetRepresentationWithConfig(elem, &ReprConfig{allVisible: true}, ctx)
+	data, sizes, err := WriteTwoConcatenatedRepresentations(ctx, Int(index), elem)
 
 	return Mutation{
-		Kind:     SetElemAtIndex,
-		Complete: err == nil,
-		Data0:    []byte(strconv.FormatInt(int64(index), 10)),
-		Data1:    elemRepr,
-		Depth:    depth,
-		Path:     path,
+		Kind:               SetElemAtIndex,
+		Complete:           err == nil,
+		Data:               data,
+		DataElementLengths: sizes,
+		Depth:              depth,
+		Path:               path,
 	}
 }
 
 func NewInsertElemAtIndexMutation(ctx *Context, index int, elem Value, depth WatchingDepth, path Path) Mutation {
-	elemRepr, err := GetRepresentationWithConfig(elem, &ReprConfig{allVisible: true}, ctx)
+	data, sizes, err := WriteTwoConcatenatedRepresentations(ctx, Int(index), elem)
 
 	return Mutation{
-		Kind:     InsertElemAtIndex,
-		Complete: err == nil,
-		Data0:    []byte(strconv.FormatInt(int64(index), 10)),
-		Data1:    elemRepr,
-		Depth:    depth,
-		Path:     path,
+		Kind:               InsertElemAtIndex,
+		Complete:           err == nil,
+		Data:               data,
+		DataElementLengths: sizes,
+		Depth:              depth,
+		Path:               path,
 	}
 }
 
 func NewInsertSequenceAtIndexMutation(ctx *Context, index int, seq Sequence, depth WatchingDepth, path Path) Mutation {
-	seqRepr, err := GetRepresentationWithConfig(seq, &ReprConfig{allVisible: true}, ctx)
+	data, sizes, err := WriteTwoConcatenatedRepresentations(ctx, Int(index), seq)
 
 	return Mutation{
-		Kind:     InsertElemAtIndex,
-		Complete: err == nil,
-		Data0:    []byte(strconv.FormatInt(int64(index), 10)),
-		Data1:    seqRepr,
-		Depth:    depth,
-		Path:     path,
+		Kind:               InsertElemAtIndex,
+		Complete:           err == nil,
+		Data:               data,
+		DataElementLengths: sizes,
+		Depth:              depth,
+		Path:               path,
 	}
 }
 
-func NewRemovePositionMutation(index int, depth WatchingDepth, path Path) Mutation {
+func NewRemovePositionMutation(ctx *Context, index int, depth WatchingDepth, path Path) Mutation {
+	data, sizes, err := WriteSingleRepresentation(ctx, Int(index))
+
 	return Mutation{
-		Kind:     RemovePosition,
-		Complete: true,
-		Data0:    []byte(strconv.FormatInt(int64(index), 10)),
-		Depth:    depth,
-		Path:     path,
+		Kind:               RemovePosition,
+		Complete:           err == nil,
+		Data:               data,
+		DataElementLengths: sizes,
+		Depth:              depth,
+		Path:               path,
 	}
 }
 
 func NewRemovePositionRangeMutation(ctx *Context, intRange IntRange, depth WatchingDepth, path Path) Mutation {
+	data, sizes, err := WriteSingleRepresentation(ctx, intRange)
+
 	return Mutation{
-		Kind:     RemovePositionRange,
-		Complete: true,
-		Data0:    MustGetRepresentationWithConfig(intRange, &ReprConfig{allVisible: true}, ctx),
-		Depth:    depth,
-		Path:     path,
+		Kind:               RemovePositionRange,
+		Complete:           err == nil,
+		Data:               data,
+		DataElementLengths: sizes,
+		Depth:              depth,
+		Path:               path,
 	}
 }
 
@@ -158,24 +187,38 @@ func (m Mutation) Relocalized(parent Path) Mutation {
 	return new
 }
 
-func (m Mutation) AffectedProperty() string {
+func (m Mutation) DataElem(ctx *Context, index int) Value {
+	if index >= 4 || index < 0 {
+		panic(ErrUnreachable)
+	}
+	length := m.DataElementLengths[index]
+	start := int32(0)
+	for i := 0; i < index; i++ {
+		start += m.DataElementLengths[i]
+	}
+
+	b := m.Data[start : start+length]
+	v, err := ParseRepr(ctx, b)
+	//TODO: cache result (evict quickly)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+func (m Mutation) AffectedProperty(ctx *Context) string {
 	switch m.Kind {
 	case AddProp, UpdateProp:
-		return string(Str(utils.BytesAsString(m.Data0)))
+		return string(m.DataElem(ctx, 0).(Str))
 	default:
 		panic(ErrUnreachable)
 	}
 }
 
-func (m Mutation) AffectedIndex() int {
+func (m Mutation) AffectedIndex(ctx *Context) Int {
 	switch m.Kind {
 	case InsertElemAtIndex, SetElemAtIndex, InsertSequenceAtIndex, RemovePosition:
-		//TODO: rework
-		index, err := strconv.Atoi(utils.BytesAsString(m.Data0))
-		if err != nil {
-			panic(err)
-		}
-		return index
+		return m.DataElem(ctx, 0).(Int)
 	default:
 		panic(ErrUnreachable)
 	}
@@ -184,7 +227,7 @@ func (m Mutation) AffectedIndex() int {
 func (m Mutation) AffectedRange(ctx *Context) IntRange {
 	switch m.Kind {
 	case InsertElemAtIndex, SetElemAtIndex, InsertSequenceAtIndex, RemovePosition:
-		return utils.Must(ParseRepr(ctx, m.Data0)).(IntRange)
+		return m.DataElem(ctx, 0).(IntRange)
 	default:
 		panic(ErrUnreachable)
 	}
@@ -193,7 +236,7 @@ func (m Mutation) AffectedRange(ctx *Context) IntRange {
 func (m Mutation) PropValue(ctx *Context) Value {
 	switch m.Kind {
 	case AddProp, UpdateProp:
-		return utils.Must(ParseRepr(ctx, m.Data1))
+		return m.DataElem(ctx, 1)
 	default:
 		panic(ErrUnreachable)
 	}
@@ -202,7 +245,7 @@ func (m Mutation) PropValue(ctx *Context) Value {
 func (m Mutation) Element(ctx *Context) Value {
 	switch m.Kind {
 	case InsertElemAtIndex, SetElemAtIndex:
-		return utils.Must(ParseRepr(ctx, m.Data1))
+		return m.DataElem(ctx, 1)
 	default:
 		panic(ErrUnreachable)
 	}
@@ -211,7 +254,7 @@ func (m Mutation) Element(ctx *Context) Value {
 func (m Mutation) Sequence(ctx *Context) Sequence {
 	switch m.Kind {
 	case InsertSequenceAtIndex:
-		return utils.Must(ParseRepr(ctx, m.Data1)).(Sequence)
+		return m.DataElem(ctx, 1).(Sequence)
 	default:
 		panic(ErrUnreachable)
 	}
@@ -224,17 +267,17 @@ func (m Mutation) ApplyTo(ctx *Context, v Value) error {
 	switch m.Kind {
 	case AddProp:
 		//TODO: check that property does not exist + add it in a same atomic operation
-		v.(IProps).SetProp(ctx, m.AffectedProperty(), m.PropValue(ctx))
+		v.(IProps).SetProp(ctx, m.AffectedProperty(ctx), m.PropValue(ctx))
 	case UpdateProp:
-		v.(IProps).SetProp(ctx, m.AffectedProperty(), m.PropValue(ctx))
+		v.(IProps).SetProp(ctx, m.AffectedProperty(ctx), m.PropValue(ctx))
 	case SetElemAtIndex:
-		v.(MutableLengthSequence).set(ctx, m.AffectedIndex(), m.Element(ctx))
+		v.(MutableLengthSequence).set(ctx, int(m.AffectedIndex(ctx)), m.Element(ctx))
 	case InsertElemAtIndex:
-		v.(MutableLengthSequence).insertElement(ctx, m.Element(ctx), Int(m.AffectedIndex()))
+		v.(MutableLengthSequence).insertElement(ctx, m.Element(ctx), Int(m.AffectedIndex(ctx)))
 	case InsertSequenceAtIndex:
-		v.(MutableLengthSequence).insertSequence(ctx, m.Sequence(ctx), Int(m.AffectedIndex()))
+		v.(MutableLengthSequence).insertSequence(ctx, m.Sequence(ctx), Int(m.AffectedIndex(ctx)))
 	case RemovePosition:
-		v.(MutableLengthSequence).removePosition(ctx, Int(m.AffectedIndex()))
+		v.(MutableLengthSequence).removePosition(ctx, Int(m.AffectedIndex(ctx)))
 	case RemovePositionRange:
 		v.(MutableLengthSequence).removePositionRange(ctx, m.AffectedRange(ctx))
 	case SpecificMutation:
@@ -685,4 +728,25 @@ func (g *SystemGraph) RemoveMutationCallbackMicrotasks(ctx *Context) {
 	defer g.nodes.lock.Unlock()
 
 	g.mutationCallbacks.RemoveMicrotasks()
+}
+
+func (g *SystemGraph) ApplySpecificMutation(ctx *Context, m Mutation) error {
+
+	if m.SpecificMutationVersion != 1 {
+		return ErrNotSupportedSpecificMutation
+	}
+
+	switch m.SpecificMutationKind {
+	case SG_AddNode:
+		g.nodes.lock.Lock()
+		defer g.nodes.lock.Unlock()
+
+		if g.isFrozen {
+			return ErrAttemptToMutateFrozenValue
+		}
+		return nil
+	default:
+		panic(ErrUnreachable)
+	}
+
 }

@@ -380,7 +380,7 @@ func (s *RuneSlice) removePosition(ctx *Context, i Int) {
 		s.elements = s.elements[:len(s.elements)-1]
 	}
 
-	mutation := NewRemovePositionMutation(int(i), ShallowWatching, Path("/"+strconv.Itoa(int(i))))
+	mutation := NewRemovePositionMutation(ctx, int(i), ShallowWatching, Path("/"+strconv.Itoa(int(i))))
 
 	s.mutationCallbacks.CallMicrotasks(ctx, mutation)
 	s.watchers.InformAboutAsync(ctx, mutation, ShallowWatching, true)

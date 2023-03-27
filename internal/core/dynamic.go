@@ -144,7 +144,7 @@ func NewDynamicMemberValue(ctx *Context, object Value, memberName string) (*Dyna
 
 			switch mutation.Kind {
 			case AddProp, UpdateProp:
-				if mutation.AffectedProperty() == memberName {
+				if mutation.AffectedProperty(ctx) == memberName {
 					dyn.mutationCallbacks.CallMicrotasks(ctx, NewUnspecifiedMutation(ShallowWatching, ""))
 				}
 			}

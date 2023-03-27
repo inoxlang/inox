@@ -1595,21 +1595,10 @@ func (m Mutation) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]u
 		return false
 	}
 
-	if m.Kind != otherMutation.Kind ||
-		((m.Data0 == nil) != (otherMutation.Data0 == nil)) ||
-		((m.Data1 == nil) != (otherMutation.Data1 == nil)) {
-		return false
-	}
-
-	if m.Data0 != nil && !bytes.Equal(m.Data0, otherMutation.Data0) {
-		return false
-	}
-
-	if m.Data1 != nil && !bytes.Equal(m.Data1, otherMutation.Data1) {
-		return false
-	}
-
-	return true
+	return m.Kind == otherMutation.Kind &&
+		m.Complete == otherMutation.Complete &&
+		m.DataElementLengths == otherMutation.DataElementLengths &&
+		bytes.Equal(m.Data, otherMutation.Data)
 }
 
 func (w *joinedWatchers) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {

@@ -42,6 +42,15 @@ func GetRepresentationWithConfig(v Value, config *ReprConfig, ctx *Context) (Val
 	return buff.Bytes(), nil
 }
 
+func WriteRepresentation(w io.Writer, v Value, config *ReprConfig, ctx *Context) error {
+	encountered := map[uintptr]int{}
+	err := v.WriteRepresentation(ctx, w, encountered, config)
+	if err != nil {
+		return fmt.Errorf("failed to write representation: %w", err)
+	}
+	return nil
+}
+
 type ReprConfig struct {
 	allVisible bool
 }
