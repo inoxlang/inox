@@ -20,7 +20,7 @@ var (
 	ErrValueNotPointer        = errors.New("value is not a pointer")
 
 	SYSTEM_GRAPH_PROPNAMES      = []string{"nodes"}
-	SYSTEM_GRAPH_NODE_PROPNAMES = []string{"name", "type_name"}
+	SYSTEM_GRAPH_NODE_PROPNAMES = []string{"name", "type_name", "value_id"}
 
 	_ = []PotentiallySharable{(*SystemGraph)(nil), (*SystemGraphNodes)(nil)}
 	_ = []IProps{(*SystemGraph)(nil), (*SystemGraphNode)(nil)}
@@ -285,6 +285,8 @@ func (n *SystemGraphNode) Prop(ctx *Context, name string) Value {
 		return Str(n.name)
 	case "type_name":
 		return Str(n.typeName)
+	case "value_id":
+		return Int(n.valuePtr)
 	}
 	panic(FormatErrPropertyDoesNotExist(name, n))
 }

@@ -7,7 +7,7 @@ var (
 	ANY_SYSTEM_GRAPH_NODES      = NewSystemGraphNodes()
 	ANY_SYSTEM_GRAPH_NODE       = NewSystemGraphNode()
 	SYSTEM_GRAPH_PROPNAMES      = []string{"nodes"}
-	SYSTEM_GRAPH_NODE_PROPNAMES = []string{"name", "type_name"}
+	SYSTEM_GRAPH_NODE_PROPNAMES = []string{"name", "type_name", "value_id"}
 
 	_ = []Iterable{(*SystemGraphNodes)(nil)}
 	_ = []PotentiallySharable{(*SystemGraph)(nil), (*SystemGraphNodes)(nil), (*SystemGraphNode)(nil)}
@@ -154,6 +154,8 @@ func (n *SystemGraphNode) Prop(memberName string) SymbolicValue {
 	switch memberName {
 	case "name", "type_name":
 		return ANY_STR
+	case "value_id":
+		return ANY_INT
 	}
 	panic(FormatErrPropertyDoesNotExist(memberName, n))
 }
