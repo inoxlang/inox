@@ -116,9 +116,11 @@ When a side effect happens it is recorded in the transaction. If the execution i
 ```
 tx = start_tx()
 
-fs.mkfile ./file.txt # <-- effect !
+# effect
+fs.mkfile ./file.txt 
 
-cancel_exec()
+# rollback transaction --> delete ./file.txt
+cancel_exec() 
 ```
 
 ## Concurrency
