@@ -6,21 +6,22 @@ var (
 		&HostPattern{}, &URLPattern{}, &CheckedString{},
 	}
 
-	_ = []BytesLike{
-		&ByteSlice{}, &BytesConcatenation{},
-	}
+	_ = []BytesLike{&AnyBytesLike{}, &ByteSlice{}, &BytesConcatenation{}}
 
 	ANY_BYTES_LIKE = &AnyBytesLike{}
+	ANY_BYTE_SLICE = &ByteSlice{}
+	ANY_BYTE       = &Byte{}
 )
 
 // An WrappedBytes represents a symbolic WrappedBytes.
 type WrappedBytes interface {
+	Iterable
 	underylingBytes() *ByteSlice //TODO: change return type ? --> it isn't equivalent to concrete version
 }
 
 // A BytesLike represents a symbolic BytesLike.
 type BytesLike interface {
-	SymbolicValue
+	MutableSequence
 	GetOrBuildBytes() *ByteSlice
 }
 
@@ -55,15 +56,15 @@ func (s *ByteSlice) knownLen() int {
 }
 
 func (s *ByteSlice) element() SymbolicValue {
-	return &Byte{}
+	return ANY_BYTE
 }
 
 func (*ByteSlice) elementAt(i int) SymbolicValue {
-	return &Byte{}
+	return ANY_BYTE
 }
 
 func (s *ByteSlice) WidestOfType() SymbolicValue {
-	return &ByteSlice{}
+	return ANY_BYTE_SLICE
 }
 
 func (s *ByteSlice) Reader() *Reader {
@@ -75,12 +76,13 @@ func (s *ByteSlice) GetOrBuildBytes() *ByteSlice {
 }
 
 func (s *ByteSlice) slice(start, end *Int) Sequence {
-	return &ByteSlice{}
+	return ANY_BYTE_SLICE
 }
 
 func (s *ByteSlice) set(i *Int, v SymbolicValue) {
 
 }
+
 func (s *ByteSlice) setSlice(start, end *Int, v SymbolicValue) {
 
 }
@@ -122,7 +124,7 @@ func (b *Byte) String() string {
 }
 
 func (b *Byte) WidestOfType() SymbolicValue {
-	return &Byte{}
+	return ANY_BYTE
 }
 
 func (b *Byte) Int64() (n *Int, signed bool) {
@@ -139,6 +141,34 @@ func (b *AnyBytesLike) Test(v SymbolicValue) bool {
 	return ok
 }
 
+func (b *AnyBytesLike) set(i *Int, v SymbolicValue) {
+
+}
+
+func (b *AnyBytesLike) HasKnownLen() bool {
+	return false
+}
+
+func (b *AnyBytesLike) knownLen() int {
+	return -1
+}
+
+func (b *AnyBytesLike) element() SymbolicValue {
+	return ANY_BYTE
+}
+
+func (b *AnyBytesLike) elementAt(i int) SymbolicValue {
+	return ANY_BYTE
+}
+
+func (b *AnyBytesLike) slice(start, end *Int) Sequence {
+	return ANY_BYTE_SLICE
+}
+
+func (c *AnyBytesLike) setSlice(start, end *Int, v SymbolicValue) {
+
+}
+
 func (b *AnyBytesLike) Widen() (SymbolicValue, bool) {
 	return nil, false
 }
@@ -151,24 +181,12 @@ func (b *AnyBytesLike) String() string {
 	return "bytes-like"
 }
 
-func (b *AnyBytesLike) HasKnownLen() bool {
-	return false
-}
-
-func (b *AnyBytesLike) knownLen() int {
-	return -1
-}
-
-func (b *AnyBytesLike) element() SymbolicValue {
-	return &Byte{}
-}
-
 // func (b *AnyBytesLike) GetOrBuildString() *String {
 // 	return &String{}
 // }
 
 func (b *AnyBytesLike) GetOrBuildBytes() *ByteSlice {
-	return &ByteSlice{}
+	return ANY_BYTE_SLICE
 }
 
 func (b *AnyBytesLike) WidestOfType() SymbolicValue {
@@ -189,6 +207,34 @@ func (c *BytesConcatenation) Test(v SymbolicValue) bool {
 	return ok
 }
 
+func (c *BytesConcatenation) set(i *Int, v SymbolicValue) {
+
+}
+
+func (c *BytesConcatenation) setSlice(start, end *Int, v SymbolicValue) {
+
+}
+
+func (c *BytesConcatenation) HasKnownLen() bool {
+	return false
+}
+
+func (s *BytesConcatenation) knownLen() int {
+	return -1
+}
+
+func (s *BytesConcatenation) element() SymbolicValue {
+	return ANY_BYTE
+}
+
+func (*BytesConcatenation) elementAt(i int) SymbolicValue {
+	return ANY_BYTE
+}
+
+func (c *BytesConcatenation) slice(start, end *Int) Sequence {
+	return ANY_BYTE_SLICE
+}
+
 func (c *BytesConcatenation) Widen() (SymbolicValue, bool) {
 	return nil, false
 }
@@ -199,18 +245,6 @@ func (c *BytesConcatenation) IsWidenable() bool {
 
 func (c *BytesConcatenation) String() string {
 	return "bytes-concatenation"
-}
-
-func (c *BytesConcatenation) HasKnownLen() bool {
-	return false
-}
-
-func (c *BytesConcatenation) knownLen() int {
-	return -1
-}
-
-func (c *BytesConcatenation) element() SymbolicValue {
-	return &Rune{}
 }
 
 // func (c *BytesConcatenation) GetOrBuildString() *String {
@@ -226,5 +260,5 @@ func (c *BytesConcatenation) Reader() *Reader {
 }
 
 func (c *BytesConcatenation) GetOrBuildBytes() *ByteSlice {
-	return &ByteSlice{}
+	return ANY_BYTE_SLICE
 }
