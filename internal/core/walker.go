@@ -79,6 +79,9 @@ func WalkDir(walkedDirPath Path, fn func(path Path, d fs.DirEntry, err error) er
 func GetWalkEntries(walkedDirPath Path) (entries [][]fs.DirEntry, paths [][]string) {
 
 	filepath.WalkDir(string(walkedDirPath), func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			panic(err)
+		}
 		if d.IsDir() {
 			if path[len(path)-1] != '/' {
 				path += "/"
@@ -111,6 +114,10 @@ func GetDirTreeData(walkedDirPath Path) *UData {
 	}
 
 	WalkDir(walkedDirPath, func(path Path, d fs.DirEntry, err error) error {
+		if err != nil {
+			panic(err)
+		}
+
 		relativePath := Path("./" + d.Name())
 
 		if d.IsDir() {
