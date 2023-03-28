@@ -3,11 +3,14 @@ package internal
 import "errors"
 
 var (
-	ANY_SYSTEM_GRAPH            = NewSystemGraph()
-	ANY_SYSTEM_GRAPH_NODES      = NewSystemGraphNodes()
-	ANY_SYSTEM_GRAPH_NODE       = NewSystemGraphNode()
-	SYSTEM_GRAPH_PROPNAMES      = []string{"nodes"}
-	SYSTEM_GRAPH_NODE_PROPNAMES = []string{"name", "type_name", "value_id"}
+	ANY_SYSTEM_GRAPH             = NewSystemGraph()
+	ANY_SYSTEM_GRAPH_NODES       = NewSystemGraphNodes()
+	ANY_SYSTEM_GRAPH_NODE        = NewSystemGraphNode()
+	ANY_SYSTEM_GRAPH_EVENT       = NewSystemGraphEvent()
+	SYS_GRAPH_EVENT_TUPLE        = NewTupleOf(ANY_SYSTEM_GRAPH_EVENT)
+	SYSTEM_GRAPH_PROPNAMES       = []string{"nodes", "events"}
+	SYSTEM_GRAPH_EVENT_PROPNAMES = []string{"text"}
+	SYSTEM_GRAPH_NODE_PROPNAMES  = []string{"name", "type_name", "value_id"}
 
 	_ = []Iterable{(*SystemGraphNodes)(nil)}
 	_ = []PotentiallySharable{(*SystemGraph)(nil), (*SystemGraphNodes)(nil), (*SystemGraphNode)(nil)}
@@ -35,6 +38,8 @@ func (g *SystemGraph) Prop(memberName string) SymbolicValue {
 	switch memberName {
 	case "nodes":
 		return ANY_SYSTEM_GRAPH_NODES
+	case "events":
+		return SYS_GRAPH_EVENT_TUPLE
 	}
 	panic(FormatErrPropertyDoesNotExist(memberName, g))
 }
@@ -198,4 +203,70 @@ func (n *SystemGraphNode) String() string {
 
 func (n *SystemGraphNode) WidestOfType() SymbolicValue {
 	return ANY_SYSTEM_GRAPH_NODE
+}
+
+// An SystemGraphEvent represents a symbolic SystemGraphEvent.
+type SystemGraphEvent struct {
+	_ int
+}
+
+func NewSystemGraphEvent() *SystemGraphEvent {
+	return &SystemGraphEvent{}
+}
+
+func (n *SystemGraphEvent) Test(v SymbolicValue) bool {
+	other, ok := v.(*SystemGraphEvent)
+	if ok {
+		return true
+	}
+	_ = other
+	return false
+}
+
+func (n *SystemGraphEvent) Prop(memberName string) SymbolicValue {
+	switch memberName {
+	case "text":
+		return ANY_STR
+	}
+	panic(FormatErrPropertyDoesNotExist(memberName, n))
+}
+
+func (n *SystemGraphEvent) SetProp(name string, value SymbolicValue) (IProps, error) {
+	return nil, errors.New(FmtCannotAssignPropertyOf(n))
+}
+
+func (n *SystemGraphEvent) WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error) {
+	return nil, errors.New(FmtCannotAssignPropertyOf(n))
+}
+
+func (n *SystemGraphEvent) PropertyNames() []string {
+	return SYSTEM_GRAPH_NODE_PROPNAMES
+}
+
+func (n *SystemGraphEvent) IsSharable() bool {
+	return true
+}
+
+func (n *SystemGraphEvent) Share(originState *State) PotentiallySharable {
+	return n
+}
+
+func (n *SystemGraphEvent) IsShared() bool {
+	return true
+}
+
+func (n *SystemGraphEvent) Widen() (SymbolicValue, bool) {
+	return nil, false
+}
+
+func (n *SystemGraphEvent) IsWidenable() bool {
+	return false
+}
+
+func (n *SystemGraphEvent) String() string {
+	return "system-graph-event"
+}
+
+func (n *SystemGraphEvent) WidestOfType() SymbolicValue {
+	return ANY_SYSTEM_GRAPH_EVENT
 }

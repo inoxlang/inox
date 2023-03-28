@@ -1717,13 +1717,19 @@ func (g *SystemGraph) Equal(ctx *Context, other Value, alreadyCompared map[uintp
 }
 
 func (n *SystemGraphNodes) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	other, ok := other.(*SystemGraphNodes)
+	otherNodes, ok := other.(*SystemGraphNodes)
 
-	return ok && n == other
+	return ok && n == otherNodes
 }
 
 func (g *SystemGraphNode) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	other, ok := other.(*SystemGraphNode)
+	otherGraph, ok := other.(*SystemGraphNode)
 
-	return ok && g == other
+	return ok && g == otherGraph
+}
+
+func (e SystemGraphEvent) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherEvent, ok := other.(SystemGraphEvent)
+
+	return ok && e == otherEvent
 }

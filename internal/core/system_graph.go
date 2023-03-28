@@ -19,8 +19,9 @@ var (
 	ErrValueNotInSysGraph     = errors.New("value is not part of system graph")
 	ErrValueNotPointer        = errors.New("value is not a pointer")
 
-	SYSTEM_GRAPH_PROPNAMES      = []string{"nodes"}
-	SYSTEM_GRAPH_NODE_PROPNAMES = []string{"name", "type_name", "value_id"}
+	SYSTEM_GRAPH_PROPNAMES       = []string{"nodes", "events"}
+	SYSTEM_GRAPH_EVENT_PROPNAMES = []string{"text"}
+	SYSTEM_GRAPH_NODE_PROPNAMES  = []string{"name", "type_name", "value_id"}
 
 	_ = []PotentiallySharable{(*SystemGraph)(nil), (*SystemGraphNodes)(nil)}
 	_ = []IProps{(*SystemGraph)(nil), (*SystemGraphNode)(nil)}
@@ -29,13 +30,14 @@ var (
 
 // A SystemGraph represents relations & events between values.
 type SystemGraph struct {
-	isFrozen bool
-	nodes    *SystemGraphNodes
+	nodes *SystemGraphNodes
 
 	eventLogLock sync.Mutex
 	eventLog     []SystemGraphEvent
 
 	mutationCallbacks *MutationCallbacks
+	isFrozen          bool         // SystemGraph should not supported unfreezing
+	lastSnapshot      *SystemGraph // discarded when there is a mutation
 
 	NoReprMixin
 	NotClonableMixin
@@ -59,10 +61,30 @@ type SystemGraphEdge struct {
 
 type SystemGraphEdgeKind uint8
 
+// A SystemGraphEvent is an immutable value representing an event in an node or between two nodes.
 type SystemGraphEvent struct {
-	node0, node1 *SystemGraphNode
-	otherNodes   []*SystemGraphNode
+	node0, node1 uintptr
 	text         string
+	date         Date
+
+	NotClonableMixin
+	NoReprMixin
+}
+
+func (e SystemGraphEvent) Prop(ctx *Context, name string) Value {
+	switch name {
+	case "text":
+		return Str(e.text)
+	}
+	panic(FormatErrPropertyDoesNotExist(name, e))
+}
+
+func (SystemGraphEvent) SetProp(ctx *Context, name string, value Value) error {
+	return ErrCannotSetProp
+}
+
+func (SystemGraphEvent) PropertyNames(ctx *Context) []string {
+	return SYSTEM_GRAPH_EVENT_PROPNAMES
 }
 
 type SystemGraphNodeValue interface {
@@ -119,6 +141,8 @@ func (g *SystemGraph) AddNode(ctx *Context, value SystemGraphNodeValue, name str
 func (g *SystemGraph) addNodeNoLock(ctx *Context, ptr uintptr, name string, typename string) {
 	// create the node
 
+	g.lastSnapshot = nil
+
 	var node *SystemGraphNode
 
 	if len(g.nodes.availableNodes) > 0 { // reuse a previous node
@@ -155,6 +179,8 @@ func (g *SystemGraph) AddEvent(ctx *Context, text string, v SystemGraphNodeValue
 		panic(ErrAttemptToMutateFrozenValue)
 	}
 
+	g.lastSnapshot = nil
+
 	node, ok := g.nodes.ptrToNode[ptr]
 	g.nodes.lock.Unlock()
 
@@ -166,8 +192,8 @@ func (g *SystemGraph) AddEvent(ctx *Context, text string, v SystemGraphNodeValue
 	defer g.eventLogLock.Unlock()
 
 	g.eventLog = append(g.eventLog, SystemGraphEvent{
-		node0: node,
-		text:  text,
+		node0: ptr,
+		text:  "(" + node.name + ") " + text,
 	})
 
 	specificMutation := NewSpecificMutation(ctx, SpecificMutationMetadata{
@@ -203,6 +229,16 @@ func (g *SystemGraph) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "nodes":
 		return g.nodes
+	case "events":
+		g.eventLogLock.Lock()
+		defer g.eventLogLock.Unlock()
+
+		//TODO: refactor
+		events := make([]Value, len(g.eventLog))
+		for i, e := range g.eventLog {
+			events[i] = e
+		}
+		return NewTuple(events)
 	}
 	panic(FormatErrPropertyDoesNotExist(name, g))
 }

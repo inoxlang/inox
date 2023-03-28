@@ -531,3 +531,7 @@ func (*SystemGraphNodes) IsMutable() bool {
 func (*SystemGraphNode) IsMutable() bool {
 	return true
 }
+
+func (SystemGraphEvent) IsMutable() bool {
+	return false
+}

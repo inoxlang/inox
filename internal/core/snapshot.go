@@ -172,25 +172,14 @@ func (g *SystemGraph) takeSnapshot(ctx *Context) *SystemGraph {
 		newNodes.ptrToNode[k] = origToCopy[v]
 	}
 
-	eventLogCopy := make([]SystemGraphEvent, len(g.eventLog))
-	for eventIndex, origEvent := range g.eventLog {
-		var eventCopy SystemGraphEvent
-		eventCopy.node0 = origToCopy[origEvent.node0]
-		eventCopy.node1 = origToCopy[origEvent.node1]
-		if origEvent.otherNodes != nil {
-			eventCopy.otherNodes = utils.CopySlice(origEvent.otherNodes)
-			for i, origNode := range origEvent.otherNodes {
-				eventCopy.otherNodes[i] = origToCopy[origNode]
-			}
-		}
-		eventLogCopy[eventIndex] = eventCopy
-	}
-
 	newGraph := &SystemGraph{
 		nodes:    newNodes,
-		eventLog: eventLogCopy,
+		eventLog: utils.CopySlice(g.eventLog),
 	}
 	newGraph.nodes.graph = newGraph
+
+	g.lastSnapshot = newGraph
+
 	return newGraph
 }
 

@@ -1107,3 +1107,7 @@ func (n *SystemGraphNodes) ToSymbolicValue(wide bool, encountered map[uintptr]sy
 func (n *SystemGraphNode) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	return symbolic.ANY_SYSTEM_GRAPH_NODE, nil
 }
+
+func (e SystemGraphEvent) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	return symbolic.ANY_SYSTEM_GRAPH_EVENT, nil
+}
