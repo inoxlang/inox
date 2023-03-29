@@ -323,7 +323,7 @@ loop:
 				rw.WriteContentType(core.HTML_CTYPE)
 				rw.AddHeader(state.Ctx, _dom.CSP_HEADER_NAME, core.Str(server.defaultCSP.String()))
 
-				_, err := v.Render(state.Ctx, rw.BodyWriter(), renderingConfig)
+				_, err := core.Render(state.Ctx, rw.BodyWriter(), v, renderingConfig)
 				if err != nil {
 					logger.Println(err.Error())
 				}

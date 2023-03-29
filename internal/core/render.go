@@ -78,6 +78,7 @@ func (m NotRenderableMixin) Render(ctx *Context, w io.Writer, config RenderingIn
 	return 0, ErrNotRenderable
 }
 
+// Renders renders the renderable with a custom renderer if registered, otherwise it calls renderable.Render.
 func Render(ctx *Context, w io.Writer, renderable Renderable, config RenderingInput) (int, error) {
 	customRenderFn, ok := customRenderers[reflect.TypeOf(renderable)]
 	if ok {
