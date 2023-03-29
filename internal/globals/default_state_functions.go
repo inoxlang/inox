@@ -390,6 +390,14 @@ func _ctx_data(ctx *core.Context, name core.Identifier) core.Value {
 }
 
 func _get_system_graph(ctx *core.Context) (*core.SystemGraph, core.Bool) {
+	perm := core.SystemGraphAccessPermission{
+		Kind_: core.ReadPerm,
+	}
+
+	if err := ctx.CheckHasPermission(perm); err != nil {
+		panic(err)
+	}
+
 	g := ctx.GetClosestState().SystemGraph
 	return g, g != nil
 }
