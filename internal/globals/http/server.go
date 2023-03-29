@@ -34,6 +34,10 @@ const (
 	HANDLING_DESC_DEFAULT_CSP_KEY = "default-csp"
 )
 
+var (
+	ErrHandlerNotSharable = errors.New("handler is not sharable")
+)
+
 // NewHttpServer returns an HttpServer with unitialized .state & .logger
 func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 	var (
@@ -77,7 +81,7 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 			}
 
 			if !v.IsSharable(_server.state) {
-				return nil, errors.New("handler is not sharable")
+				return nil, ErrHandlerNotSharable
 			}
 			v.Share(_server.state)
 			userProvidedHandler = v
@@ -87,7 +91,7 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 				return nil, core.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
 			}
 			if !v.IsSharable(_server.state) {
-				return nil, errors.New("handler is not sharable")
+				return nil, ErrHandlerNotSharable
 			}
 			v.Share(_server.state)
 			userProvidedHandler = v
@@ -97,7 +101,7 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 				return nil, core.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
 			}
 			if !v.IsSharable(_server.state) {
-				return nil, errors.New("handler is not sharable")
+				return nil, ErrHandlerNotSharable
 			}
 			v.Share(_server.state)
 
