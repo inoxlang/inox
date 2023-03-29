@@ -1,7 +1,9 @@
 package internal
 
 import (
+	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/inox-project/inox/internal/commonfmt"
@@ -31,6 +33,7 @@ type ValueHistory struct {
 	start      Date
 
 	lock                  sync.Mutex
+	shared                atomic.Bool
 	maxItemCount          int
 	renderCurrentToHTMLFn *InoxFunction // can be nil
 
@@ -231,15 +234,26 @@ func (h *ValueHistory) indexAtOrBeforeMoment(d Date) (int, bool) {
 }
 
 func (h *ValueHistory) IsSharable(originState *GlobalState) (bool, string) {
-	return true, ""
+	if h.renderCurrentToHTMLFn == nil {
+		return true, ""
+	}
+	ok, expl := h.renderCurrentToHTMLFn.IsSharable(originState)
+	if ok {
+		return true, ""
+	}
+	return false, fmt.Sprintf("value history is not sharable because rendering fn is not sharable: %s", expl)
 }
 
 func (h *ValueHistory) Share(originState *GlobalState) {
-
+	if h.shared.CompareAndSwap(false, true) {
+		if h.renderCurrentToHTMLFn != nil {
+			h.renderCurrentToHTMLFn.Share(originState)
+		}
+	}
 }
 
 func (h *ValueHistory) IsShared() bool {
-	return true
+	return h.shared.Load()
 }
 
 func (h *ValueHistory) ForceLock() {
