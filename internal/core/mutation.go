@@ -759,23 +759,46 @@ func (g *SystemGraph) RemoveMutationCallbackMicrotasks(ctx *Context) {
 	g.mutationCallbacks.RemoveMicrotasks()
 }
 
-// func (g *SystemGraph) ApplySpecificMutation(ctx *Context, m Mutation) error {
+func (g *SystemGraph) ApplySpecificMutation(ctx *Context, m Mutation) error {
 
-// 	if m.SpecificMutationVersion != 1 {
-// 		return ErrNotSupportedSpecificMutation
-// 	}
+	if m.SpecificMutationVersion != 1 {
+		return ErrNotSupportedSpecificMutation
+	}
 
-// 	switch m.SpecificMutationKind {
-// 	case SG_AddNode:
-// 		g.nodes.lock.Lock()
-// 		defer g.nodes.lock.Unlock()
+	switch m.SpecificMutationKind {
+	case SG_AddEvent:
+		g.nodes.lock.Lock()
+		defer g.nodes.lock.Unlock()
 
-// 		if g.isFrozen {
-// 			return ErrAttemptToMutateFrozenValue
-// 		}
-// 		return nil
-// 	default:
-// 		panic(ErrUnreachable)
-// 	}
+		if g.isFrozen {
+			return ErrAttemptToMutateFrozenValue
+		}
 
-// }
+		g.eventLogLock.Lock()
+		defer g.eventLogLock.Unlock()
+
+		ptr := uintptr(m.DataElem(ctx, 0).(Int))
+		text := string(m.DataElem(ctx, 1).(Str))
+		g.addEventNoLock(ptr, text)
+
+	case SG_AddNode:
+		g.nodes.lock.Lock()
+		defer g.nodes.lock.Unlock()
+
+		if g.isFrozen {
+			return ErrAttemptToMutateFrozenValue
+		}
+
+		name := m.DataElem(ctx, 0).(Str)
+		typename := m.DataElem(ctx, 1).(Str)
+		valuePtr := m.DataElem(ctx, 2).(Int)
+
+		g.addNodeNoLock(ctx, uintptr(valuePtr), string(name), string(typename))
+	default:
+		panic(ErrUnreachable)
+	}
+
+	g.mutationCallbacks.CallMicrotasks(ctx, m)
+	return nil
+
+}

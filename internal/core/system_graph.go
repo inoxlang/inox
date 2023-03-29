@@ -135,10 +135,18 @@ func (g *SystemGraph) AddNode(ctx *Context, value SystemGraphNodeValue, name str
 		}
 	})
 
-	g.addNodeNoLock(ctx, ptr, name, reflectVal.Elem().Type().Name())
+	n := g.addNodeNoLock(ctx, ptr, name, reflectVal.Elem().Type().Name())
+
+	specificMutation := NewSpecificMutation(ctx, SpecificMutationMetadata{
+		Version: 1,
+		Kind:    SG_AddNode,
+		Depth:   ShallowWatching,
+	}, Str(n.name), Str(n.typeName), Int(n.valuePtr))
+
+	g.mutationCallbacks.CallMicrotasks(ctx, specificMutation)
 }
 
-func (g *SystemGraph) addNodeNoLock(ctx *Context, ptr uintptr, name string, typename string) {
+func (g *SystemGraph) addNodeNoLock(ctx *Context, ptr uintptr, name string, typename string) *SystemGraphNode {
 	// create the node
 
 	g.lastSnapshot = nil
@@ -162,13 +170,7 @@ func (g *SystemGraph) addNodeNoLock(ctx *Context, ptr uintptr, name string, type
 	}
 
 	g.nodes.ptrToNode[ptr] = node
-	specificMutation := NewSpecificMutation(ctx, SpecificMutationMetadata{
-		Version: 1,
-		Kind:    SG_AddNode,
-		Depth:   ShallowWatching,
-	}, Str(node.name), Str(node.typeName), Int(node.valuePtr))
-
-	g.mutationCallbacks.CallMicrotasks(ctx, specificMutation)
+	return node
 }
 
 func (g *SystemGraph) AddEvent(ctx *Context, text string, v SystemGraphNodeValue) {
@@ -178,8 +180,6 @@ func (g *SystemGraph) AddEvent(ctx *Context, text string, v SystemGraphNodeValue
 	if g.isFrozen {
 		panic(ErrAttemptToMutateFrozenValue)
 	}
-
-	g.lastSnapshot = nil
 
 	node, ok := g.nodes.ptrToNode[ptr]
 	g.nodes.lock.Unlock()
@@ -191,10 +191,7 @@ func (g *SystemGraph) AddEvent(ctx *Context, text string, v SystemGraphNodeValue
 	g.eventLogLock.Lock()
 	defer g.eventLogLock.Unlock()
 
-	g.eventLog = append(g.eventLog, SystemGraphEvent{
-		node0: ptr,
-		text:  "(" + node.name + ") " + text,
-	})
+	g.addEventNoLock(node.valuePtr, text)
 
 	specificMutation := NewSpecificMutation(ctx, SpecificMutationMetadata{
 		Version: 1,
@@ -203,6 +200,15 @@ func (g *SystemGraph) AddEvent(ctx *Context, text string, v SystemGraphNodeValue
 	}, Int(node.valuePtr), Str(text))
 
 	g.mutationCallbacks.CallMicrotasks(ctx, specificMutation)
+}
+
+func (g *SystemGraph) addEventNoLock(nodeValuePtr uintptr, text string) {
+	g.lastSnapshot = nil
+
+	g.eventLog = append(g.eventLog, SystemGraphEvent{
+		node0: nodeValuePtr,
+		text:  text,
+	})
 }
 
 type SystemGraphPointer struct{ ptr unsafe.Pointer }
