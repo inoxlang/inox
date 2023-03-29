@@ -80,8 +80,8 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 				return nil, core.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
 			}
 
-			if !v.IsSharable(_server.state) {
-				return nil, ErrHandlerNotSharable
+			if ok, expl := v.IsSharable(_server.state); !ok {
+				return nil, fmt.Errorf("%w: %s", ErrHandlerNotSharable, expl)
 			}
 			v.Share(_server.state)
 			userProvidedHandler = v
@@ -90,8 +90,8 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 			if handlerValProvided {
 				return nil, core.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
 			}
-			if !v.IsSharable(_server.state) {
-				return nil, ErrHandlerNotSharable
+			if ok, expl := v.IsSharable(_server.state); !ok {
+				return nil, fmt.Errorf("%w: %s", ErrHandlerNotSharable, expl)
 			}
 			v.Share(_server.state)
 			userProvidedHandler = v
@@ -100,8 +100,8 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 			if handlerValProvided {
 				return nil, core.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
 			}
-			if !v.IsSharable(_server.state) {
-				return nil, ErrHandlerNotSharable
+			if ok, expl := v.IsSharable(_server.state); !ok {
+				return nil, fmt.Errorf("%w: %s", ErrHandlerNotSharable, expl)
 			}
 			v.Share(_server.state)
 
@@ -130,7 +130,7 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 							return nil, core.FmtUnexpectedElementInPropIterableOfArgX(HANDLING_DESC_MIDDLEWARES_KEY, HANDLING_ARG_NAME, s)
 						}
 
-						if psharable, ok := e.(core.PotentiallySharable); ok && psharable.IsSharable(_server.state) {
+						if psharable, ok := e.(core.PotentiallySharable); ok && utils.Ret0(psharable.IsSharable(_server.state)) {
 							psharable.Share(_server.state)
 						} else {
 							s := fmt.Sprintf("%s is not sharable", core.Stringify(e, ctx))
@@ -143,7 +143,7 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 						return nil, core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, HANDLING_DESC_ROUTING_KEY, HANDLING_ARG_NAME)
 					}
 
-					if psharable, ok := propVal.(core.PotentiallySharable); ok && psharable.IsSharable(_server.state) {
+					if psharable, ok := propVal.(core.PotentiallySharable); ok && utils.Ret0(psharable.IsSharable(_server.state)) {
 						psharable.Share(_server.state)
 					} else {
 						return nil, core.FmtPropOfArgXShouldBeY(HANDLING_DESC_ROUTING_KEY, HANDLING_ARG_NAME, "sharable")

@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"errors"
 	"fmt"
 
 	symbolic "github.com/inox-project/inox/internal/core/symbolic"
@@ -73,8 +72,8 @@ func Map(ctx *Context, iterable Iterable, mapper Value) *List {
 	case *InoxFunction:
 		state := ctx.GetClosestState()
 
-		if !m.IsSharable(m.originState) {
-			panic(errors.New("map iterable: only sharable functions are allowed"))
+		if ok, expl := m.IsSharable(m.originState); !ok {
+			panic(fmt.Errorf("map iterable: only sharable functions are allowed: %s", expl))
 		}
 		m.Share(state)
 

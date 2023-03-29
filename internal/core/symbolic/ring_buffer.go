@@ -65,8 +65,8 @@ func (r *RingBuffer) WidestOfType() SymbolicValue {
 	return &RingBuffer{}
 }
 
-func (r *RingBuffer) IsSharable() bool {
-	return true
+func (r *RingBuffer) IsSharable() (bool, string) {
+	return true, ""
 }
 
 func (r *RingBuffer) Share(originState *State) PotentiallySharable {

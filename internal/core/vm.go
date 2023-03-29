@@ -1872,7 +1872,7 @@ func (v *VM) run() {
 					continue
 				}
 				potentiallySharable := val.(PotentiallySharable)
-				if !potentiallySharable.IsSharable(v.global) {
+				if !utils.Ret0(potentiallySharable.IsSharable(v.global)) {
 					v.err = ErrCannotLockUnsharableValue
 					return
 				}

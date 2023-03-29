@@ -1234,8 +1234,8 @@ func (sh *shell) printFgTaskResult() {
 
 // implementation of core.Value for shell
 
-func (sh *shell) IsSharable(originState *core.GlobalState) bool {
-	return true
+func (sh *shell) IsSharable(originState *core.GlobalState) (bool, string) {
+	return true, ""
 }
 
 func (sh *shell) Share(originState *core.GlobalState) {

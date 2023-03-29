@@ -672,7 +672,7 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, err)
 
 			assert.Equal(t, map[*parse.MappingExpression]*MappingStaticData{
-				parse.FindNode(n, (*parse.MappingExpression)(nil), nil): {capturedGlobals: []string{"g"}},
+				parse.FindNode(n, (*parse.MappingExpression)(nil), nil): {referencedGlobals: []string{"g"}},
 			}, data.mappingData)
 		})
 
@@ -741,7 +741,7 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, err)
 
 			assert.Equal(t, map[*parse.MappingExpression]*MappingStaticData{
-				parse.FindNode(n, (*parse.MappingExpression)(nil), nil): {capturedGlobals: []string{"g"}},
+				parse.FindNode(n, (*parse.MappingExpression)(nil), nil): {referencedGlobals: []string{"g"}},
 			}, data.mappingData)
 		})
 	})

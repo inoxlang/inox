@@ -48,9 +48,9 @@ func (fn *InoxFunction) Test(v SymbolicValue) bool {
 	return utils.SamePointer(fn.node, other.node)
 }
 
-func (fn *InoxFunction) IsSharable() bool {
-	//TODO: only sharable if sharable captured locals ?
-	return true
+func (fn *InoxFunction) IsSharable() (bool, string) {
+	//TODO: reconciliate with concrete version
+	return true, ""
 }
 
 func (fn *InoxFunction) Share(originState *State) PotentiallySharable {
@@ -136,10 +136,12 @@ func (fn *GoFunction) Test(v SymbolicValue) bool {
 	return utils.SamePointer(fn.fn, other.fn)
 }
 
-func (fn *GoFunction) IsSharable() bool {
-	// sync with symbolic
+func (fn *GoFunction) IsSharable() (bool, string) {
 	// TODO: consider allowing methods & closures
-	return fn.kind == GoFunc
+	if fn.kind == GoFunc {
+		return true, ""
+	}
+	return false, "Go function is not sharable because it's a Go method or Go closure"
 }
 
 func (fn *GoFunction) Share(originState *State) PotentiallySharable {

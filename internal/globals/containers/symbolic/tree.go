@@ -91,11 +91,12 @@ func (r *Tree) WidestOfType() symbolic.SymbolicValue {
 	return ANY_TREE
 }
 
-func (t *Tree) IsSharable() bool {
+func (t *Tree) IsSharable() (bool, string) {
 	if t.shared {
-		return true
+		return true, ""
 	}
-	return true
+	// ?
+	return true, ""
 }
 
 func (t *Tree) Share(originState *symbolic.State) symbolic.PotentiallySharable {
@@ -152,7 +153,7 @@ func (*TreeNode) PropertyNames() []string {
 
 func (n *TreeNode) AddChild(ctx *symbolic.Context, data symbolic.SymbolicValue) {
 	if n.tree.shared {
-		if !symbolic.IsSharable(data) {
+		if ok, _ := symbolic.IsSharable(data); !ok {
 			ctx.AddSymbolicGoFunctionError(symbolic.ErrCannotAddNonSharableToSharedContainer.Error())
 		}
 	}
@@ -247,11 +248,12 @@ func (p *TreeNodePattern) WidestOfType() symbolic.SymbolicValue {
 	}
 }
 
-func (n *TreeNode) IsSharable() bool {
+func (n *TreeNode) IsSharable() (bool, string) {
 	if n.tree.shared {
-		return true
+		return true, ""
 	}
-	return true
+	// ?
+	return true, ""
 }
 
 func (t *TreeNode) Share(originState *symbolic.State) symbolic.PotentiallySharable {

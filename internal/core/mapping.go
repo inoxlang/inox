@@ -2,6 +2,7 @@ package internal
 
 import (
 	"errors"
+	"fmt"
 	"sync/atomic"
 
 	parse "github.com/inox-project/inox/internal/parse"
@@ -239,27 +240,27 @@ func (m *Mapping) Compute(ctx *Context, key Value) Value {
 	return Nil
 }
 
-func (m *Mapping) IsSharable(originState *GlobalState) bool {
+func (m *Mapping) IsSharable(originState *GlobalState) (bool, string) {
 	if !m.staticCheck {
-		return false
+		return false, fmt.Sprintf("mapping is not sharable because static data is missing")
 	}
-	if m.staticData != nil && len(m.staticData.capturedGlobals) > 0 {
+	if m.staticData != nil && len(m.staticData.referencedGlobals) > 0 {
 		staticData := m.staticData
-		for _, name := range staticData.capturedGlobals {
-			if !IsSharable(originState.Globals.Get(name), originState) { // TODO: fix: globals could change after call to .IsSharable()
-				return false
+		for _, name := range staticData.referencedGlobals {
+			if ok, expl := IsSharable(originState.Globals.Get(name), originState); !ok { // TODO: fix: globals could change after call to .IsSharable()
+				return false, fmt.Sprintf("mapping is not sharable because referenced global %s is not sharable: %s", name, expl)
 			}
 		}
 	}
-	return true
+	return true, ""
 }
 
 func (m *Mapping) Share(originState *GlobalState) {
 	if m.shared.CompareAndSwap(false, true) {
-		if m.staticData != nil && len(m.staticData.capturedGlobals) > 0 {
+		if m.staticData != nil && len(m.staticData.referencedGlobals) > 0 {
 			staticData := m.staticData
-			m.capturedGlobals = make(map[string]Value, len(staticData.capturedGlobals))
-			for _, name := range staticData.capturedGlobals {
+			m.capturedGlobals = make(map[string]Value, len(staticData.referencedGlobals))
+			for _, name := range staticData.referencedGlobals {
 				val := originState.Globals.Get(name)
 				val, err := ShareOrClone(val, originState)
 				if err != nil {

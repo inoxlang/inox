@@ -791,7 +791,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 
 			potentiallySharable := val.(PotentiallySharable)
-			if !potentiallySharable.IsSharable(state.Global) {
+			if !utils.Ret0(potentiallySharable.IsSharable(state.Global)) {
 				return nil, ErrCannotLockUnsharableValue
 			}
 

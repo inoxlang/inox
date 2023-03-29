@@ -876,8 +876,8 @@ func (ctx *Context) AddUserData(name Identifier, value Value) {
 		panic(ErrDoubleUserDataDefinition)
 	}
 
-	if !IsSharable(value, ctx.getClosestStateNoLock()) {
-		panic(ErrNotSharableUserDataValue)
+	if ok, expl := IsSharable(value, ctx.getClosestStateNoLock()); !ok {
+		panic(fmt.Errorf("%w: %s", ErrNotSharableUserDataValue, expl))
 	}
 	ctx.userData[name] = value
 }

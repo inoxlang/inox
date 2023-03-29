@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/inox-project/inox/internal/commonfmt"
 	parse "github.com/inox-project/inox/internal/parse"
 	"github.com/inox-project/inox/internal/utils"
 )
@@ -183,16 +184,17 @@ func (obj *Object) LifetimeJobs() *ValueLifetimeJobs {
 	return obj.jobs
 }
 
-func (obj *Object) IsSharable(originState *GlobalState) bool {
+func (obj *Object) IsSharable(originState *GlobalState) (bool, string) {
 	if obj.lock.IsValueShared() {
-		return true
+		return true, ""
 	}
-	for _, v := range obj.values {
-		if !IsSharable(v, originState) {
-			return false
+	for i, v := range obj.values {
+		k := obj.keys[i]
+		if ok, expl := IsSharable(v, originState); !ok {
+			return false, commonfmt.FmtNotSharableBecausePropertyNotSharable(k, expl)
 		}
 	}
-	return true
+	return true, ""
 }
 
 func (obj *Object) Share(originState *GlobalState) {

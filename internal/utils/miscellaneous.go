@@ -12,6 +12,10 @@ func Must[T any](obj T, err error) T {
 	return obj
 }
 
+func Ret0[A, B any](a A, b B) A {
+	return a
+}
+
 func SamePointer(a, b interface{}) bool {
 	return reflect.ValueOf(a).Pointer() == reflect.ValueOf(b).Pointer()
 }

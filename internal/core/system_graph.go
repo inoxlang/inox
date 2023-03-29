@@ -257,8 +257,8 @@ func (*SystemGraph) PropertyNames(ctx *Context) []string {
 	return SYSTEM_GRAPH_PROPNAMES
 }
 
-func (g *SystemGraph) IsSharable(originState *GlobalState) bool {
-	return true
+func (g *SystemGraph) IsSharable(originState *GlobalState) (bool, string) {
+	return true, ""
 }
 
 func (g *SystemGraph) Share(originState *GlobalState) {
@@ -288,8 +288,8 @@ type SystemGraphNodes struct {
 	NotClonableMixin
 }
 
-func (n *SystemGraphNodes) IsSharable(originState *GlobalState) bool {
-	return true
+func (n *SystemGraphNodes) IsSharable(originState *GlobalState) (bool, string) {
+	return true, ""
 }
 
 func (n *SystemGraphNodes) Share(originState *GlobalState) {
@@ -343,8 +343,8 @@ func (*SystemGraphNode) PropertyNames(ctx *Context) []string {
 
 //TODO: lock
 
-func (n *SystemGraphNode) IsSharable(originState *GlobalState) bool {
-	return true
+func (n *SystemGraphNode) IsSharable(originState *GlobalState) (bool, string) {
+	return true, ""
 }
 
 func (n *SystemGraphNode) Share(originState *GlobalState) {

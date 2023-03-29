@@ -2812,7 +2812,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						testCase.checkResult(t, res, state)
 					} else {
 						expected := testCase.result
-						if testCase.isShared && IsSharable(expected, state) {
+						if testCase.isShared && utils.Ret0(IsSharable(expected, state)) {
 							expected = Share(expected.(PotentiallySharable), state)
 						}
 						assert.Equal(t, expected, res)
@@ -2844,7 +2844,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 							testCase.checkResult(t, res, state)
 						} else {
 							expected := testCase.result
-							if testCase.isShared && IsSharable(expected, state) {
+							if testCase.isShared && utils.Ret0(IsSharable(expected, state)) {
 								expected = Share(expected.(PotentiallySharable), state)
 							}
 							assert.Equal(t, expected, res)
@@ -4076,7 +4076,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.False(t, res.(*Mapping).IsSharable(state))
+			assert.False(t, utils.Ret0(res.(*Mapping).IsSharable(state)))
 		})
 
 		t.Run("should be sharable if all of the captured globals are sharable", func(t *testing.T) {
@@ -4096,7 +4096,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.True(t, res.(*Mapping).IsSharable(state))
+			assert.True(t, utils.Ret0(res.(*Mapping).IsSharable(state)))
 		})
 
 	})
@@ -5120,7 +5120,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	t.Run("map fn", func(t *testing.T) {
 		t.Run("recursive map calls", func(t *testing.T) {
 			code := `
-				fn rec(list){
+				fn rec(list %iterable){
 					return map(list, rec)
 				}
 
@@ -5129,8 +5129,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"map": WrapGoMethod(Map),
 			})
+			state.Ctx.AddNamedPattern("iterable", ITERABLE_PATTERN)
 
-			res, err := Eval(code, state, false)
+			res, err := Eval(code, state, true)
 			assert.NoError(t, err)
 			assert.EqualValues(t, NewWrappedValueList(
 				NewWrappedValueList(NewWrappedValueListFrom([]Value{}), NewWrappedValueListFrom([]Value{})),
@@ -5140,7 +5141,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("recursive map calls witin a function called in isolation", func(t *testing.T) {
 			code := `
-				fn rec(list){
+				fn rec(list %iterable){
 					return map(list, rec)
 				}
 
@@ -5153,8 +5154,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"map": WrapGoMethod(Map),
 			})
+			state.Ctx.AddNamedPattern("iterable", ITERABLE_PATTERN)
 
-			val, err := Eval(code, state, false)
+			val, err := Eval(code, state, true)
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -5173,7 +5175,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("recursive map calls witin a method called in isolation", func(t *testing.T) {
 			code := `
-				fn rec(list){
+				fn rec(list %iterable){
 					return map(list, rec)
 				}
 
@@ -5188,8 +5190,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"map": WrapGoMethod(Map),
 			})
+			state.Ctx.AddNamedPattern("iterable", ITERABLE_PATTERN)
 
-			val, err := Eval(code, state, false)
+			val, err := Eval(code, state, true)
 			if !assert.NoError(t, err) {
 				return
 			}

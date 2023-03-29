@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/inox-project/inox/internal/commonfmt"
 	parse "github.com/inox-project/inox/internal/parse"
 	"github.com/inox-project/inox/internal/utils"
 )
@@ -656,16 +657,16 @@ func (obj *Object) Test(v SymbolicValue) bool {
 	return true
 }
 
-func (obj *Object) IsSharable() bool {
+func (obj *Object) IsSharable() (bool, string) {
 	if obj.shared {
-		return true
+		return true, ""
 	}
-	for _, v := range obj.entries {
-		if !IsSharable(v) {
-			return false
+	for k, v := range obj.entries {
+		if ok, expl := IsSharable(v); !ok {
+			return false, commonfmt.FmtNotSharableBecausePropertyNotSharable(k, expl)
 		}
 	}
-	return true
+	return true, ""
 }
 
 func (obj *Object) Share(originState *State) PotentiallySharable {

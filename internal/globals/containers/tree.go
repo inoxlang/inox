@@ -2,6 +2,7 @@ package internal
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 
 	core "github.com/inox-project/inox/internal/core"
@@ -125,8 +126,8 @@ func NewTree(ctx *core.Context, udata *core.UData, args ...core.Value) *Tree {
 	state := ctx.GetClosestState()
 
 	if hasLifetimeJobs {
-		if !tree.IsSharable(state) {
-			panic(errors.New("cannot make tree sharable: it contains non sharable values"))
+		if ok, expl := tree.IsSharable(state); !ok {
+			panic(errors.New(expl))
 		}
 		tree.Share(state)
 		jobs := core.NewValueLifetimeJobs(tree, jobs)
@@ -149,22 +150,25 @@ func (t *Tree) walk(ctx *core.Context, fn func(n *TreeNode) (continue_ bool)) {
 	}
 }
 
-func (t *Tree) IsSharable(originState *core.GlobalState) bool {
+func (t *Tree) IsSharable(originState *core.GlobalState) (bool, string) {
 	if t.lock.IsValueShared() {
-		return true
+		return true, ""
 	}
 
 	ok := true
 
 	t.walk(originState.Ctx, func(n *TreeNode) bool {
-		if !core.IsSharable(n.data, originState) {
+		if sharable, _ := core.IsSharable(n.data, originState); !sharable {
 			ok = false
 			return false
 		}
 		return true
 	})
 
-	return ok
+	if ok {
+		return true, ""
+	}
+	return false, fmt.Sprintf("tree is not sharable because of it's element is not sharable")
 }
 
 func (t *Tree) Share(originState *core.GlobalState) {
@@ -236,7 +240,7 @@ func (n *TreeNode) AddChild(ctx *core.Context, childData core.Value) {
 	n.tree.Lock(state)
 	defer n.tree.Unlock(state)
 
-	if !core.IsSharable(childData, state) {
+	if !utils.Ret0(core.IsSharable(childData, state)) {
 		panic(core.ErrCannotAddNonSharableToSharedContainer)
 	}
 
@@ -300,8 +304,8 @@ func (*TreeNode) PropertyNames(ctx *core.Context) []string {
 	return TREE_NODE_PROPNAMES
 }
 
-func (n *TreeNode) IsSharable(originState *core.GlobalState) bool {
-	return n.tree.IsShared()
+func (n *TreeNode) IsSharable(originState *core.GlobalState) (bool, string) {
+	return n.tree.IsShared(), ""
 }
 
 func (n *TreeNode) Share(originState *core.GlobalState) {

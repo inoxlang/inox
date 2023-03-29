@@ -759,7 +759,7 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 				continue
 			}
 
-			if potentiallySharable, ok := val.(PotentiallySharable); !ok || !potentiallySharable.IsSharable() {
+			if potentiallySharable, ok := val.(PotentiallySharable); !ok || !utils.Ret0(potentiallySharable.IsSharable()) {
 				state.addError(makeSymbolicEvalError(node, state, fmtSynchronizedValueShouldBeASharableValueOrImmutableNot(val)))
 			}
 		}

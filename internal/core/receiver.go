@@ -77,8 +77,8 @@ type SynchronousMessageHandler struct {
 }
 
 func NewSynchronousMessageHandler(ctx *Context, fn *InoxFunction, pattern Pattern) *SynchronousMessageHandler {
-	if !fn.IsSharable(fn.originState) {
-		panic(errors.New("map iterable: only sharable functions are allowed"))
+	if ok, expl := fn.IsSharable(fn.originState); !ok {
+		panic(fmt.Errorf("map iterable: only sharable functions are allowed: %s", expl))
 	}
 	fn.Share(ctx.GetClosestState())
 

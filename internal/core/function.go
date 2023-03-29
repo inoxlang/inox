@@ -63,10 +63,19 @@ func (fn *InoxFunction) Call(globalState *GlobalState, self Value, args []Value)
 	}
 }
 
-func (fn *InoxFunction) IsSharable(originState *GlobalState) bool {
+func (fn *InoxFunction) IsSharable(originState *GlobalState) (bool, string) {
 	//TODO: only sharable if sharable captured locals ?
 
-	return fn.staticData == nil || !fn.staticData.assignGlobal
+	if fn.staticData == nil {
+		return true, ""
+		//TODO: return false, "function is not sharable because static data is missing"
+	}
+
+	if fn.staticData.assignGlobal {
+		return false, "function is not sharable because it assigns a global"
+	}
+
+	return true, ""
 }
 
 func (fn *InoxFunction) Share(originState *GlobalState) {
@@ -144,10 +153,13 @@ func (fn *GoFunction) Kind() GoFunctionKind {
 	return fn.kind
 }
 
-func (fn *GoFunction) IsSharable(originState *GlobalState) bool {
+func (fn *GoFunction) IsSharable(originState *GlobalState) (bool, string) {
 	// sync with symbolic
 	// TODO: consider allowing methods & closures (this would probably require a lock for calls)
-	return fn.kind == GoFunc
+	if fn.kind == GoFunc {
+		return true, ""
+	}
+	return false, "Go function is not sharable because it's a Go method or Go closure"
 }
 
 func (fn *GoFunction) Share(originState *GlobalState) {

@@ -1808,7 +1808,7 @@ type FunctionStaticData struct {
 }
 
 type MappingStaticData struct {
-	capturedGlobals []string
+	referencedGlobals []string
 }
 
 func (data *StaticCheckData) addFnCapturedGlobal(fnExpr *parse.FunctionExpression, name string, optionalInfo *globalVarInfo) {
@@ -1843,8 +1843,8 @@ func (data *StaticCheckData) addMappingCapturedGlobal(expr *parse.MappingExpress
 		data.mappingData[expr] = mappingData
 	}
 
-	if !utils.SliceContains(mappingData.capturedGlobals, name) {
-		mappingData.capturedGlobals = append(mappingData.capturedGlobals, name)
+	if !utils.SliceContains(mappingData.referencedGlobals, name) {
+		mappingData.referencedGlobals = append(mappingData.referencedGlobals, name)
 	}
 }
 

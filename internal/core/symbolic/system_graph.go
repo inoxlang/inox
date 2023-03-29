@@ -65,8 +65,8 @@ func (g *SystemGraph) PropertyNames() []string {
 	return SYSTEM_GRAPH_PROPNAMES
 }
 
-func (g *SystemGraph) IsSharable() bool {
-	return true
+func (g *SystemGraph) IsSharable() (bool, string) {
+	return true, ""
 }
 
 func (g *SystemGraph) Share(originState *State) PotentiallySharable {
@@ -111,8 +111,8 @@ func (g *SystemGraphNodes) Test(v SymbolicValue) bool {
 	return false
 }
 
-func (n *SystemGraphNodes) IsSharable() bool {
-	return true
+func (n *SystemGraphNodes) IsSharable() (bool, string) {
+	return true, ""
 }
 
 func (n *SystemGraphNodes) Share(originState *State) PotentiallySharable {
@@ -186,8 +186,8 @@ func (n *SystemGraphNode) PropertyNames() []string {
 	return SYSTEM_GRAPH_NODE_PROPNAMES
 }
 
-func (n *SystemGraphNode) IsSharable() bool {
-	return true
+func (n *SystemGraphNode) IsSharable() (bool, string) {
+	return true, ""
 }
 
 func (n *SystemGraphNode) Share(originState *State) PotentiallySharable {
@@ -252,8 +252,8 @@ func (n *SystemGraphEvent) PropertyNames() []string {
 	return SYSTEM_GRAPH_NODE_PROPNAMES
 }
 
-func (n *SystemGraphEvent) IsSharable() bool {
-	return true
+func (n *SystemGraphEvent) IsSharable() (bool, string) {
+	return true, ""
 }
 
 func (n *SystemGraphEvent) Share(originState *State) PotentiallySharable {

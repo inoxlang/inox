@@ -304,8 +304,8 @@ func (*RingBuffer) SetProp(ctx *Context, name string, value Value) error {
 	return ErrCannotSetProp
 }
 
-func (r *RingBuffer) IsSharable(originState *GlobalState) bool {
-	return true
+func (r *RingBuffer) IsSharable(originState *GlobalState) (bool, string) {
+	return true, ""
 }
 
 func (r *RingBuffer) Share(originState *GlobalState) {
