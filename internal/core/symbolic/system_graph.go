@@ -3,14 +3,17 @@ package internal
 import "errors"
 
 var (
-	ANY_SYSTEM_GRAPH             = NewSystemGraph()
-	ANY_SYSTEM_GRAPH_NODES       = NewSystemGraphNodes()
-	ANY_SYSTEM_GRAPH_NODE        = NewSystemGraphNode()
-	ANY_SYSTEM_GRAPH_EVENT       = NewSystemGraphEvent()
+	ANY_SYSTEM_GRAPH       = NewSystemGraph()
+	ANY_SYSTEM_GRAPH_NODES = NewSystemGraphNodes()
+	ANY_SYSTEM_GRAPH_NODE  = NewSystemGraphNode()
+	ANY_SYSTEM_GRAPH_EVENT = NewSystemGraphEvent()
+	ANY_SYSTEM_GRAPH_EDGE  = NewSystemGraphEdge()
+
 	SYS_GRAPH_EVENT_TUPLE        = NewTupleOf(ANY_SYSTEM_GRAPH_EVENT)
 	SYSTEM_GRAPH_PROPNAMES       = []string{"nodes", "events"}
 	SYSTEM_GRAPH_EVENT_PROPNAMES = []string{"text"}
 	SYSTEM_GRAPH_NODE_PROPNAMES  = []string{"name", "type_name", "value_id"}
+	SYSTEM_GRAP_EDGE_PROPNAMES   = []string{"text", "to"}
 
 	_ = []InMemorySnapshotable{(*SystemGraph)(nil)}
 	_ = []Iterable{(*SystemGraphNodes)(nil)}
@@ -278,4 +281,72 @@ func (n *SystemGraphEvent) String() string {
 
 func (n *SystemGraphEvent) WidestOfType() SymbolicValue {
 	return ANY_SYSTEM_GRAPH_EVENT
+}
+
+// A SystemGraphEdge represents a symbolic SystemGraphEdge.
+type SystemGraphEdge struct {
+	_ int
+}
+
+func NewSystemGraphEdge() *SystemGraphEdge {
+	return &SystemGraphEdge{}
+}
+
+func (e *SystemGraphEdge) Test(v SymbolicValue) bool {
+	other, ok := v.(*SystemGraphEdge)
+	if ok {
+		return true
+	}
+	_ = other
+	return false
+}
+
+func (e *SystemGraphEdge) Prop(memberName string) SymbolicValue {
+	switch memberName {
+	case "text":
+		return ANY_STR
+	case "to":
+		return ANY_INT
+	}
+	panic(FormatErrPropertyDoesNotExist(memberName, e))
+}
+
+func (e *SystemGraphEdge) SetProp(name string, value SymbolicValue) (IProps, error) {
+	return nil, errors.New(FmtCannotAssignPropertyOf(e))
+}
+
+func (e *SystemGraphEdge) WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error) {
+	return nil, errors.New(FmtCannotAssignPropertyOf(e))
+}
+
+func (e *SystemGraphEdge) PropertyNames() []string {
+	return SYSTEM_GRAP_EDGE_PROPNAMES
+}
+
+func (e *SystemGraphEdge) IsSharable() (bool, string) {
+	return true, ""
+}
+
+func (e *SystemGraphEdge) Share(originState *State) PotentiallySharable {
+	return e
+}
+
+func (e *SystemGraphEdge) IsShared() bool {
+	return true
+}
+
+func (e *SystemGraphEdge) Widen() (SymbolicValue, bool) {
+	return nil, false
+}
+
+func (e *SystemGraphEdge) IsWidenable() bool {
+	return false
+}
+
+func (e *SystemGraphEdge) String() string {
+	return "system-graph-edge"
+}
+
+func (e *SystemGraphEdge) WidestOfType() SymbolicValue {
+	return ANY_SYSTEM_GRAPH_EDGE
 }

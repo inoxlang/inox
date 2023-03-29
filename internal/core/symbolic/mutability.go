@@ -532,3 +532,7 @@ func (*SystemGraphNode) IsMutable() bool {
 func (*SystemGraphEvent) IsMutable() bool {
 	return false
 }
+
+func (*SystemGraphEdge) IsMutable() bool {
+	return false
+}

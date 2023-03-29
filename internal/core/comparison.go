@@ -1733,3 +1733,9 @@ func (e SystemGraphEvent) Equal(ctx *Context, other Value, alreadyCompared map[u
 
 	return ok && e == otherEvent
 }
+
+func (e SystemGraphEdge) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherEdge, ok := other.(SystemGraphEdge)
+
+	return ok && e == otherEdge
+}

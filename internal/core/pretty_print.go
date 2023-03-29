@@ -2318,3 +2318,7 @@ func (n *SystemGraphNode) PrettyPrint(w io.Writer, config *PrettyPrintConfig, de
 func (e SystemGraphEvent) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
 	return fmt.Fprintf(w, "%T(...)", e)
 }
+
+func (e SystemGraphEdge) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+	return fmt.Fprintf(w, "%T(...)", e)
+}

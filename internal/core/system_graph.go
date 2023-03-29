@@ -21,6 +21,7 @@ var (
 
 	SYSTEM_GRAPH_PROPNAMES       = []string{"nodes", "events"}
 	SYSTEM_GRAPH_EVENT_PROPNAMES = []string{"text"}
+	SYSTEM_GRAP_EDGE_PROPNAMES   = []string{"to", "text"}
 	SYSTEM_GRAPH_NODE_PROPNAMES  = []string{"name", "type_name", "value_id"}
 
 	_ = []PotentiallySharable{(*SystemGraph)(nil), (*SystemGraphNodes)(nil)}
@@ -56,8 +57,44 @@ func NewSystemGraph() *SystemGraph {
 
 type SystemGraphEdge struct {
 	text string
-	to   *SystemGraphNode
+	to   uintptr
+	kind SystemGraphEdgeKind
+
+	NoReprMixin
+	NotClonableMixin
 }
+
+func (e *SystemGraphEdge) Prop(ctx *Context, name string) Value {
+	switch name {
+	case "to":
+		return Int(e.to)
+	case "text":
+		return Str(e.text)
+	}
+	panic(FormatErrPropertyDoesNotExist(name, e))
+}
+
+func (*SystemGraphEdge) SetProp(ctx *Context, name string, value Value) error {
+	return ErrCannotSetProp
+}
+
+func (*SystemGraphEdge) PropertyNames(ctx *Context) []string {
+	return SYSTEM_GRAP_EDGE_PROPNAMES
+}
+
+func (e *SystemGraphEdge) IsSharable(originState *GlobalState) (bool, string) {
+	return true, ""
+}
+
+func (e *SystemGraphEdge) Share(originState *GlobalState) {}
+
+func (e *SystemGraphEdge) IsShared() bool {
+	return true
+}
+
+func (e *SystemGraphEdge) ForceLock() {}
+
+func (e *SystemGraphEdge) ForceUnlock() {}
 
 type SystemGraphEdgeKind uint8
 

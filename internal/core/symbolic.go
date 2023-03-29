@@ -1111,3 +1111,7 @@ func (n *SystemGraphNode) ToSymbolicValue(wide bool, encountered map[uintptr]sym
 func (e SystemGraphEvent) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	return symbolic.ANY_SYSTEM_GRAPH_EVENT, nil
 }
+
+func (e SystemGraphEdge) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	return symbolic.ANY_SYSTEM_GRAPH_EDGE, nil
+}
