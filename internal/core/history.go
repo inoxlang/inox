@@ -30,9 +30,9 @@ type ValueHistory struct {
 	changes    []Change
 	start      Date
 
-	lock         sync.Mutex
-	maxItemCount int
-	renderFn     *InoxFunction // can be nil
+	lock                  sync.Mutex
+	maxItemCount          int
+	renderCurrentToHTMLFn *InoxFunction // can be nil
 
 	NotClonableMixin
 	NoReprMixin
@@ -49,7 +49,7 @@ func NewValueHistory(ctx *Context, v InMemorySnapshotable, config *Object) *Valu
 		case "max-length":
 			history.maxItemCount = int(v.(Int))
 		case "render":
-			history.renderFn = v.(*InoxFunction)
+			history.renderCurrentToHTMLFn = v.(*InoxFunction)
 		default:
 			panic(commonfmt.FmtUnexpectedPropInArgX(k, "config"))
 		}
@@ -99,6 +99,10 @@ func NewValueHistory(ctx *Context, v InMemorySnapshotable, config *Object) *Valu
 	registerMutationCallback(ctx)
 
 	return history
+}
+
+func (h *ValueHistory) RenderCurrentToHTMLFn() *InoxFunction {
+	return h.renderCurrentToHTMLFn
 }
 
 func (h *ValueHistory) AddChange(ctx *Context, c Change) {

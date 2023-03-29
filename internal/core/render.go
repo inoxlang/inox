@@ -7,6 +7,7 @@ import (
 	"html"
 	"io"
 	"math"
+	"reflect"
 	"runtime/debug"
 	"sort"
 	"strconv"
@@ -18,8 +19,13 @@ import (
 )
 
 var (
-	ErrNotRenderable          = errors.New("value is not renderable")
-	ErrInvalidRenderingConfig = errors.New("invalid rendering configuration")
+	customRenderers = map[reflect.Type]RenderingFn{}
+)
+
+var (
+	ErrNotRenderable                  = errors.New("value is not renderable")
+	ErrInvalidRenderingConfig         = errors.New("invalid rendering configuration")
+	ErrNotRenderableUseCustomRenderer = fmt.Errorf("%w: use a custom renderer", ErrNotRenderable)
 
 	LIST_OPENING_TAG = []byte{'<', 'u', 'l', '>'}
 	LIST_CLOSING_TAG = []byte{'<', '/', 'u', 'l', '>'}
@@ -33,13 +39,27 @@ var (
 	S_TRUE  = []byte{'t', 'r', 'u', 'e'}
 	S_FALSE = []byte{'f', 'a', 'l', 's', 'e'}
 
-	_ = []Renderable{Bool(true), Int(0), Str(""), &List{}, &Object{}}
+	_ = []Renderable{Bool(true), Int(0), Str(""), &List{}, &Object{}, &ValueHistory{}}
 )
 
+// A renderable is a Value that can be rendered to at least one MIME type.
 type Renderable interface {
 	Value
 	IsRecursivelyRenderable(ctx *Context, config RenderingInput) bool
 	Render(ctx *Context, w io.Writer, config RenderingInput) (int, error)
+
+	// possible issues: value is changed by other goroutine after call to IsRecursivelyRenderable
+}
+
+type RenderingFn func(ctx *Context, w io.Writer, renderable Renderable, config RenderingInput) (int, error)
+
+// RegisterRenderer register a custom rendering function for a given type,
+// this function should ONLY be called during the initialization phase (calls to init()) since it is not protected by a lock
+func RegisterRenderer(t reflect.Type, fn RenderingFn) {
+	if _, ok := customRenderers[t]; ok {
+		panic(fmt.Errorf("custom renderer already provided for type %s", t.Name()))
+	}
+	customRenderers[t] = fn
 }
 
 type RenderingInput struct {
@@ -56,6 +76,15 @@ func (m NotRenderableMixin) IsRecursivelyRenderable(ctx *Context, input Renderin
 
 func (m NotRenderableMixin) Render(ctx *Context, w io.Writer, config RenderingInput) (int, error) {
 	return 0, ErrNotRenderable
+}
+
+func Render(ctx *Context, w io.Writer, renderable Renderable, config RenderingInput) (int, error) {
+	customRenderFn, ok := customRenderers[reflect.TypeOf(renderable)]
+	if ok {
+		return customRenderFn(ctx, w, renderable, config)
+	}
+
+	return renderable.Render(ctx, w, config)
 }
 
 func render(ctx *Context, v Renderable, mime Mimetype) string {
@@ -500,6 +529,14 @@ func (node AstNode) Render(ctx *Context, w io.Writer, config RenderingInput) (n 
 	}
 
 	return 0, nil
+}
+
+func (h *ValueHistory) IsRecursivelyRenderable(ctx *Context, input RenderingInput) bool {
+	return true
+}
+
+func (h *ValueHistory) Render(ctx *Context, w io.Writer, config RenderingInput) (int, error) {
+	return 0, ErrNotRenderableUseCustomRenderer
 }
 
 func formatErrUnsupportedRenderingMime(mime Mimetype) error {
