@@ -112,8 +112,8 @@ func init() {
 			return &symbolic.ByteSlice{}, nil
 		},
 
-		_tostr, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) *symbolic.String {
-			return &symbolic.String{}
+		_tostr, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) symbolic.StringLike {
+			return symbolic.ANY_STR_LIKE
 		},
 		_torune, func(ctx *symbolic.Context, arg symbolic.Integral) *symbolic.Rune {
 			return &symbolic.Rune{}

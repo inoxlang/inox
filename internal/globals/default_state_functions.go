@@ -128,9 +128,11 @@ func _typeof(ctx *core.Context, arg core.Value) core.Type {
 	return core.Type{Type: t}
 }
 
-func _tostr(ctx *core.Context, arg core.Value) core.Str {
+func _tostr(ctx *core.Context, arg core.Value) core.StringLike {
 	switch a := arg.(type) {
-	case core.Str:
+	case core.Integral:
+		return core.Str(core.Stringify(a, ctx))
+	case core.StringLike:
 		return a
 	case *core.ByteSlice:
 		return core.Str(a.Bytes)
