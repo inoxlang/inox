@@ -91,4 +91,4 @@ server = http.Server!(HOST, {
     }
 })
 
-server.waitClosed()
+server.wait_closed()
