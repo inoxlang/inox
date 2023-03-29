@@ -4,8 +4,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/inox-project/inox/internal/commonfmt"
 	symbolic "github.com/inox-project/inox/internal/core/symbolic"
 	"github.com/inox-project/inox/internal/utils"
+)
+
+const (
+	DEFAULT_MAX_HISTORY_LEN = 5
 )
 
 var (
@@ -13,7 +18,8 @@ var (
 )
 
 func init() {
-	RegisterSymbolicGoFunction(RecordShallowChanges, func(ctx *symbolic.Context, v symbolic.InMemorySnapshotable, maxLength *symbolic.Int) *symbolic.ValueHistory {
+	RegisterSymbolicGoFunction(NewValueHistory, func(ctx *symbolic.Context, v symbolic.InMemorySnapshotable, config *symbolic.Object) *symbolic.ValueHistory {
+		//TODO: check config
 		return symbolic.NewValueHistory()
 	})
 }
@@ -26,16 +32,30 @@ type ValueHistory struct {
 
 	lock         sync.Mutex
 	maxItemCount int
+	viewFn       *InoxFunction // can be nil
+
 	NotClonableMixin
 	NoReprMixin
 }
 
-func RecordShallowChanges(ctx *Context, v InMemorySnapshotable, maxHistoryLength Int) *ValueHistory {
+func NewValueHistory(ctx *Context, v InMemorySnapshotable, config *Object) *ValueHistory {
 	current := v
-
 	history := &ValueHistory{
-		maxItemCount: int(maxHistoryLength),
+		maxItemCount: DEFAULT_MAX_HISTORY_LEN,
 	}
+
+	config.ForEachEntry(func(k string, v Value) error {
+		switch k {
+		case "max-length":
+			history.maxItemCount = int(v.(Int))
+		case "view":
+			history.viewFn = v.(*InoxFunction)
+		default:
+			panic(commonfmt.FmtUnexpectedPropInArgX(k, "config"))
+		}
+
+		return nil
+	})
 
 	var handle CallbackHandle
 

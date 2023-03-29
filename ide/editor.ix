@@ -93,7 +93,7 @@ $$editor = {
 
     init: fn(){
         self.runes = Runes(read!(self.file, --raw))
-        self.history = record_shallow_changes(self.<runes, 10)
+        self.history = ValueHistory(self.<runes, {max-length: 10})
         self.update_module_data()
     }
 

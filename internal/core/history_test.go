@@ -11,9 +11,12 @@ func TestValueHistory(t *testing.T) {
 
 	t.Run("", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
 		val := NewRuneSlice(nil)
 
-		history := RecordShallowChanges(ctx, val, 3)
+		history := NewValueHistory(ctx, val, NewObjectFromMap(ValMap{
+			"max-length": Int(3),
+		}, ctx))
 
 		// we make a first change
 		timeBeforeFirstChange := time.Now()

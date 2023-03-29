@@ -121,7 +121,7 @@ func NewDefaultGlobalState(ctx *core.Context, out io.Writer) *core.GlobalState {
 
 		// watch
 		"watch_received_messages": core.ValOf(core.WatchReceivedMessages),
-		"record_shallow_changes":  core.WrapGoFunction(core.RecordShallowChanges),
+		"ValueHistory":            core.WrapGoFunction(core.NewValueHistory),
 		"dynif":                   core.WrapGoFunction(core.NewDynamicIf),
 		"dyncall":                 core.WrapGoFunction(core.NewDynamicCall),
 		"get_system_graph":        core.WrapGoFunction(_get_system_graph),
