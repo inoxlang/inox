@@ -11,7 +11,7 @@ const SYNC_CHAN_SIZE = 100
 var (
 	_ = []PotentiallySharable{
 		&Object{}, &InoxFunction{}, &GoFunction{}, &Mapping{},
-		&RingBuffer{},
+		&RingBuffer{}, &ValueHistory{},
 	}
 )
 
