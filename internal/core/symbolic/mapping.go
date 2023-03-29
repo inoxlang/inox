@@ -1,12 +1,15 @@
 package internal
 
-import "errors"
+import (
+	"errors"
+)
 
 //TODO: implement PotentiallySharable interface
 
 // A Mapping represents a symbolic Mapping.
 type Mapping struct {
-	_ int
+	shared bool
+	_      int
 }
 
 func (m *Mapping) Test(v SymbolicValue) bool {
@@ -37,6 +40,24 @@ func (m *Mapping) IteratorElementKey() SymbolicValue {
 
 func (m *Mapping) IteratorElementValue() SymbolicValue {
 	return ANY
+}
+
+func (m *Mapping) IsSharable() (bool, string) {
+	//TODO: reconcilate with concrete version
+	return true, ""
+}
+
+func (m *Mapping) Share(originState *State) PotentiallySharable {
+	if m.shared {
+		return m
+	}
+	return &Mapping{
+		shared: true,
+	}
+}
+
+func (m *Mapping) IsShared() bool {
+	return m.shared
 }
 
 func (m *Mapping) GetGoMethod(name string) (*GoFunction, bool) {

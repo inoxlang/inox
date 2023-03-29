@@ -7,7 +7,10 @@ import (
 )
 
 var (
-	_ = []PotentiallySharable{&Object{}, &InoxFunction{}, &GoFunction{}, &RingBuffer{}}
+	_ = []PotentiallySharable{
+		&Object{}, &InoxFunction{}, &GoFunction{}, &RingBuffer{},
+		&Mapping{},
+	}
 )
 
 type PotentiallySharable interface {
