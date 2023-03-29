@@ -12,6 +12,7 @@ var (
 	SYSTEM_GRAPH_EVENT_PROPNAMES = []string{"text"}
 	SYSTEM_GRAPH_NODE_PROPNAMES  = []string{"name", "type_name", "value_id"}
 
+	_ = []InMemorySnapshotable{(*SystemGraph)(nil)}
 	_ = []Iterable{(*SystemGraphNodes)(nil)}
 	_ = []PotentiallySharable{(*SystemGraph)(nil), (*SystemGraphNodes)(nil), (*SystemGraphNode)(nil)}
 )
@@ -32,6 +33,14 @@ func (g *SystemGraph) Test(v SymbolicValue) bool {
 	}
 	_ = other
 	return false
+}
+
+func (g *SystemGraph) TakeInMemorySnapshot() (*Snapshot, error) {
+	return ANY_SNAPSHOT, nil
+}
+
+func (g *SystemGraph) WatcherElement() SymbolicValue {
+	return ANY
 }
 
 func (g *SystemGraph) Prop(memberName string) SymbolicValue {
