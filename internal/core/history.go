@@ -226,6 +226,26 @@ func (h *ValueHistory) indexAtOrBeforeMoment(d Date) (int, bool) {
 	return -1, false
 }
 
+func (h *ValueHistory) IsSharable(originState *GlobalState) (bool, string) {
+	return true, ""
+}
+
+func (h *ValueHistory) Share(originState *GlobalState) {
+
+}
+
+func (h *ValueHistory) IsShared() bool {
+	return true
+}
+
+func (h *ValueHistory) ForceLock() {
+
+}
+
+func (h *ValueHistory) ForceUnlock() {
+
+}
+
 func (h *ValueHistory) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
 	case "value_at":

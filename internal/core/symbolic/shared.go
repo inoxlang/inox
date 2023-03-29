@@ -9,7 +9,7 @@ import (
 var (
 	_ = []PotentiallySharable{
 		&Object{}, &InoxFunction{}, &GoFunction{}, &RingBuffer{},
-		&Mapping{},
+		&Mapping{}, &ValueHistory{},
 	}
 )
 

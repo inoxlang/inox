@@ -17,7 +17,7 @@ func NewValueHistory() *ValueHistory {
 	return &ValueHistory{}
 }
 
-func (r *ValueHistory) Test(v SymbolicValue) bool {
+func (h *ValueHistory) Test(v SymbolicValue) bool {
 	switch v.(type) {
 	case *ValueHistory:
 		return true
@@ -26,28 +26,40 @@ func (r *ValueHistory) Test(v SymbolicValue) bool {
 	}
 }
 
-func (r *ValueHistory) WidestOfType() SymbolicValue {
+func (h *ValueHistory) WidestOfType() SymbolicValue {
 	return &ValueHistory{}
 }
 
-func (r *ValueHistory) GetGoMethod(name string) (*GoFunction, bool) {
+func (h *ValueHistory) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
 	case "value_at":
-		return WrapGoMethod(r.ValueAt), true
+		return WrapGoMethod(h.ValueAt), true
 	case "forget_last":
-		return WrapGoMethod(r.ForgetLast), true
+		return WrapGoMethod(h.ForgetLast), true
 	}
 	return nil, false
 }
 
-func (r *ValueHistory) Prop(name string) SymbolicValue {
+func (h *ValueHistory) IsSharable() (bool, string) {
+	return true, ""
+}
+
+func (h *ValueHistory) Share(originState *State) PotentiallySharable {
+	return h
+}
+
+func (h *ValueHistory) IsShared() bool {
+	return true
+}
+
+func (h *ValueHistory) Prop(name string) SymbolicValue {
 	switch name {
 	case "last_value":
 		return ANY
 	}
-	method, ok := r.GetGoMethod(name)
+	method, ok := h.GetGoMethod(name)
 	if !ok {
-		panic(FormatErrPropertyDoesNotExist(name, r))
+		panic(FormatErrPropertyDoesNotExist(name, h))
 	}
 	return method
 }
@@ -68,10 +80,10 @@ func (h *ValueHistory) String() string {
 	return "value-history"
 }
 
-func (ValueHistory *ValueHistory) ValueAt(ctx *Context, d *Date) SymbolicValue {
+func (h *ValueHistory) ValueAt(ctx *Context, d *Date) SymbolicValue {
 	return ANY
 }
 
-func (ValueHistory *ValueHistory) ForgetLast(ctx *Context) {
+func (h *ValueHistory) ForgetLast(ctx *Context) {
 
 }
