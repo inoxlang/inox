@@ -85,7 +85,7 @@ fn create_dynamic_tree(){
 
 $$explorer = {
     tree: create_dynamic_tree()
-    view: fn() {
+    render: fn() {
 
         return dom.div{
             class: "explorer__tree"

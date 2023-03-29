@@ -284,7 +284,7 @@ func TestHttpServer(t *testing.T) {
 			},
 			"HTML for model": {`
 				$$model = {
-					view: fn() => dom.div{class:"a"}
+					render: fn() => dom.div{class:"a"}
 				}
 				return Mapping {
 					/ => "hello"
@@ -304,7 +304,7 @@ func TestHttpServer(t *testing.T) {
 				$$model = {
 					count: 1
 					sleep: sleep
-					view: fn() => dom.div{class:"a", self.<count}
+					render: fn() => dom.div{class:"a", self.<count}
 
 					lifetimejob #increment {
 						self.sleep(100ms)
@@ -325,7 +325,7 @@ func TestHttpServer(t *testing.T) {
 				$$model = {
 					count: 1
 					sleep: sleep
-					view: fn() => 1
+					render: fn() => 1
 				}
 
 				return Mapping {
@@ -342,7 +342,7 @@ func TestHttpServer(t *testing.T) {
 				$$model = {
 					count: 1
 					sleep: sleep
-					view: fn() => dom.div{class:"a", self.<count}
+					render: fn() => dom.div{class:"a", self.<count}
 
 					lifetimejob #increment {
 						self.sleep(100ms)

@@ -32,7 +32,7 @@ type ValueHistory struct {
 
 	lock         sync.Mutex
 	maxItemCount int
-	viewFn       *InoxFunction // can be nil
+	renderFn     *InoxFunction // can be nil
 
 	NotClonableMixin
 	NoReprMixin
@@ -48,8 +48,8 @@ func NewValueHistory(ctx *Context, v InMemorySnapshotable, config *Object) *Valu
 		switch k {
 		case "max-length":
 			history.maxItemCount = int(v.(Int))
-		case "view":
-			history.viewFn = v.(*InoxFunction)
+		case "render":
+			history.renderFn = v.(*InoxFunction)
 		default:
 			panic(commonfmt.FmtUnexpectedPropInArgX(k, "config"))
 		}

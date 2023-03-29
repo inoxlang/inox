@@ -14,7 +14,7 @@ $$editor = {
     code-errors: #[]%error[]
     internal-errors: #[]%error[]
 
-    view: fn() => dom.div{
+    render: fn() => dom.div{
         dom.ul{
             class: "editor__action-bar"
             children: [dom.li{

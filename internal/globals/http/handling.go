@@ -432,16 +432,16 @@ func getOrCreateView(model *core.Object, args handlingArguments) (view *_dom.Vie
 	state := args.state
 	logger := args.logger
 
-	viewFn := model.Prop(state.Ctx, "view")
+	renderFn := model.Prop(state.Ctx, "render")
 
 	sessionView, found, set := req.Session.GetOrSetView(state.Ctx, req.Path, func() *_dom.View {
 
-		if viewFn == nil {
+		if renderFn == nil {
 			rw.writeStatus(http.StatusNotFound)
 			return nil
 		}
 
-		fn, ok := viewFn.(*core.InoxFunction)
+		fn, ok := renderFn.(*core.InoxFunction)
 		if !ok {
 			rw.writeStatus(http.StatusNotFound)
 			return nil
