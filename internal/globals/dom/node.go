@@ -75,7 +75,7 @@ func init() {
 
 			switch r := result.(type) {
 			case *_html.HTMLNode:
-				return r.Render(ctx, w, core.RenderingInput{})
+				return r.Render(ctx, w, core.RenderingInput{Mime: config.Mime})
 			default:
 				return 0, fmt.Errorf("failed to render value history: rendering of last value in history returned a value of type %T", r)
 			}
