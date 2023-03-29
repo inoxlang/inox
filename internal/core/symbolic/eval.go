@@ -40,6 +40,7 @@ var (
 	MUTABLE_SEQUENCE_INTERFACE_TYPE = reflect.TypeOf((*MutableSequence)(nil)).Elem()
 	INTEGRAL_INTERFACE_TYPE         = reflect.TypeOf((*Integral)(nil)).Elem()
 	WRITABLE_INTERFACE_TYPE         = reflect.TypeOf((*Writable)(nil)).Elem()
+	STRLIKE_INTERFACE_TYPE          = reflect.TypeOf((*StringLike)(nil)).Elem()
 
 	IPROPS_INTERFACE_TYPE              = reflect.TypeOf((*IProps)(nil)).Elem()
 	PROTOCOL_CLIENT_INTERFACE_TYPE     = reflect.TypeOf((*ProtocolClient)(nil)).Elem()
@@ -3215,7 +3216,8 @@ func converReflectValToSymbolicValue(r reflect.Value) (SymbolicValue, error) {
 	switch t {
 	case SYMBOLIC_VALUE_INTERFACE_TYPE, ITERABLE_INTERFACE_TYPE, RESOURCE_NAME_INTERFACE_TYPE, READABLE_INTERFACE_TYPE,
 		STREAMABLE_INTERFACE_TYPE, WATCHABLE_INTERFACE_TYPE, VALUE_RECEIVER_INTERFACE_TYPE, PROTOCOL_CLIENT_INTERFACE_TYPE,
-		STR_PATTERN_ELEMENT_INTERFACE_TYPE, INTEGRAL_INTERFACE_TYPE, FORMAT_INTERFACE_TYPE, IN_MEM_SNAPSHOTABLE:
+		STR_PATTERN_ELEMENT_INTERFACE_TYPE, INTEGRAL_INTERFACE_TYPE, FORMAT_INTERFACE_TYPE, IN_MEM_SNAPSHOTABLE,
+		STRLIKE_INTERFACE_TYPE:
 		return r.Interface().(SymbolicValue), nil
 	}
 
@@ -3266,6 +3268,8 @@ func converTypeToSymbolicValue(t reflect.Type) (SymbolicValue, error) {
 		return ANY_FORMAT, nil
 	case IN_MEM_SNAPSHOTABLE:
 		return ANY_IN_MEM_SNAPSHOTABLE, nil
+	case STRLIKE_INTERFACE_TYPE:
+		return ANY_STR_LIKE, nil
 	}
 
 	return nil, err
