@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	pseudorand "math/rand"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -58,6 +59,31 @@ var (
 )
 
 func init() {
+
+	// register the renderer for ValueHistory
+
+	core.RegisterRenderer(
+		reflect.TypeOf((*core.ValueHistory)(nil)),
+		func(ctx *core.Context, w io.Writer, renderable core.Renderable, config core.RenderingInput) (int, error) {
+			history := renderable.(*core.ValueHistory)
+			fn := history.RenderCurrentToHTMLFn()
+			lastValue := history.LastValue(ctx)
+			result, err := fn.Call(ctx.GetClosestState(), nil, []core.Value{lastValue})
+			if err != nil {
+				return 0, fmt.Errorf("failed to render value history: rendering of last value in history: %w", err)
+			}
+
+			switch r := result.(type) {
+			case *_html.HTMLNode:
+				return r.Render(ctx, w, core.RenderingInput{})
+			default:
+				return 0, fmt.Errorf("failed to render value history: rendering of last value in history returned a value of type %T", r)
+			}
+		},
+	)
+
+	// register symbolic version of Go functions
+
 	symbolicElement := func(ctx *symbolic.Context, tag *symbolic.String, desc *symbolic.Object) *_dom_symbolic.Node {
 		var model symbolic.SymbolicValue = symbolic.Nil
 		desc.ForEachEntry(func(k string, v symbolic.SymbolicValue) error {
