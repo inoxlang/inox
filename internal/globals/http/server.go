@@ -430,7 +430,7 @@ func (serv *HttpServer) getOrCreateStream(id string) (*multiSubscriptionSSEStrea
 
 func (serv *HttpServer) GetGoMethod(name string) (*core.GoFunction, bool) {
 	switch name {
-	case "waitClosed":
+	case "wait_closed":
 		return core.WrapGoMethod(serv.WaitClosed), true
 	case "close":
 		return core.WrapGoMethod(serv.Close), true
@@ -451,7 +451,7 @@ func (*HttpServer) SetProp(ctx *core.Context, name string, value core.Value) err
 }
 
 func (*HttpServer) PropertyNames(ctx *core.Context) []string {
-	return []string{"waitClosed", "close"}
+	return []string{"wait_closed", "close"}
 }
 
 func (serv *HttpServer) WaitClosed(ctx *core.Context) {

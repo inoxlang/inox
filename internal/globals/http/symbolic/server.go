@@ -18,8 +18,8 @@ func (r HttpServer) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.Sy
 
 func (serv *HttpServer) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
-	case "waitClosed":
-		return symbolic.WrapGoMethod(serv.waitClosed), true
+	case "wait_closed":
+		return symbolic.WrapGoMethod(serv.wait_closed), true
 	case "close":
 		return symbolic.WrapGoMethod(serv.close), true
 	}
@@ -31,10 +31,10 @@ func (s *HttpServer) Prop(name string) symbolic.SymbolicValue {
 }
 
 func (*HttpServer) PropertyNames() []string {
-	return []string{"waitClosed", "close"}
+	return []string{"wait_closed", "close"}
 }
 
-func (serv *HttpServer) waitClosed(ctx *symbolic.Context) {
+func (serv *HttpServer) wait_closed(ctx *symbolic.Context) {
 }
 
 func (serv *HttpServer) close(ctx *symbolic.Context) {
