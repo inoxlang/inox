@@ -462,6 +462,11 @@ var (
 		Name:          "value-history",
 		SymbolicValue: symbolic.ANY_VALUE_HISTORY,
 	}
+	SYSGRAPH_PATTERN = &TypePattern{
+		Type:          SYSGRAPH_TYPE,
+		Name:          "sysgraph",
+		SymbolicValue: symbolic.ANY_SYSTEM_GRAPH,
+	}
 
 	DEFAULT_NAMED_PATTERNS = map[string]Pattern{
 		"ident":          IDENT_PATTERN,
@@ -513,6 +518,7 @@ var (
 		"error":         ERROR_PATTERN,
 		"int-range":     INT_RANGE_PATTERN,
 		"value-history": VALUE_HISTORY_PATTERN,
+		"sysgraph":      SYSGRAPH_PATTERN,
 	}
 
 	DEFAULT_PATTERN_NAMESPACES = map[string]*PatternNamespace{

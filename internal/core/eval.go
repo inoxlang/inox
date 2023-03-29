@@ -76,6 +76,7 @@ var (
 	ERROR_TYPE              = reflect.TypeOf(Error{})
 	INT_RANGE_TYPE          = reflect.TypeOf(IntRange{})
 	VALUE_HISTORY_TYPE      = reflect.TypeOf(&ValueHistory{})
+	SYSGRAPH_TYPE           = reflect.TypeOf(&SystemGraph{})
 )
 
 var REMOVED_SINGLE_EXPR_ROUTINE_PERMS = []Permission{
