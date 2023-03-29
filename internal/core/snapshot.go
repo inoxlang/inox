@@ -19,7 +19,7 @@ var (
 type Snapshot struct {
 	date     Date
 	repr     ValueRepresentation
-	inMemory Value
+	inMemory Value //value should be either an InMemorySnapshotable or an immutable
 }
 
 func (s *Snapshot) Date() Date {
@@ -33,7 +33,7 @@ type InMemorySnapshotable interface {
 	Watchable
 	TakeInMemorySnapshot(ctx *Context) (*Snapshot, error)
 	IsFrozen() bool
-	// TODO: Unfreeze(ctx *Context) error
+	Unfreeze(ctx *Context) error
 }
 
 func TakeSnapshot(ctx *Context, v Value, mustBeSerialized bool) (*Snapshot, error) {
@@ -45,7 +45,7 @@ func TakeSnapshot(ctx *Context, v Value, mustBeSerialized bool) (*Snapshot, erro
 	var snapshotableErr error
 	if snapshotable, ok := v.(InMemorySnapshotable); ok && !mustBeSerialized {
 		snapshot, err := snapshotable.TakeInMemorySnapshot(ctx)
-		if err != nil {
+		if err == nil {
 			val, ok := snapshot.inMemory.(InMemorySnapshotable)
 			if !ok {
 				return nil, fmt.Errorf("InMemorySnapshotable returned a snapshot containing a value that does not implement InMemorySnapshotable: type is: %T", snapshot.inMemory)
@@ -72,6 +72,17 @@ func TakeSnapshot(ctx *Context, v Value, mustBeSerialized bool) (*Snapshot, erro
 }
 
 func (s *Snapshot) InstantiateValue(ctx *Context) (Value, error) {
+	if s.inMemory != nil {
+		if s.inMemory.IsMutable() {
+			snapshotable := s.inMemory.(InMemorySnapshotable)
+
+			// TODO: refactor, *Snapshot is not necessary  here
+			snap, _ := snapshotable.TakeInMemorySnapshot(ctx)
+			snap.inMemory.(InMemorySnapshotable).Unfreeze(ctx)
+			return snap.inMemory, nil
+		}
+		return s.inMemory, nil
+	}
 	v, err := ParseRepr(ctx, s.repr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to instantiate snapshot's value: %w", err)
@@ -96,6 +107,13 @@ func (s *Snapshot) WithChangeApplied(ctx *Context, c Change) (*Snapshot, error) 
 		return nil, err
 	}
 
+	if snapshotable, ok := v.(InMemorySnapshotable); ok {
+		return &Snapshot{
+			date:     c.date,
+			inMemory: snapshotable,
+		}, nil
+	}
+
 	repr, err := GetRepresentationWithConfig(v, &ReprConfig{allVisible: true}, ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to take snapshot of value: %w", err)
@@ -109,8 +127,8 @@ func (s *Snapshot) WithChangeApplied(ctx *Context, c Change) (*Snapshot, error) 
 
 //
 
-func (s *RuneSlice) TakeInMemorySnapshot(ctx *Context) (*Snapshot, error) {
-	sliceClone, _ := s.Clone(nil)
+func (r *RuneSlice) TakeInMemorySnapshot(ctx *Context) (*Snapshot, error) {
+	sliceClone, _ := r.Clone(nil)
 	sliceClone.(*RuneSlice).frozen = true
 
 	return &Snapshot{
@@ -119,8 +137,13 @@ func (s *RuneSlice) TakeInMemorySnapshot(ctx *Context) (*Snapshot, error) {
 	}, nil
 }
 
-func (d *RuneSlice) IsFrozen() bool {
-	return d.frozen
+func (r *RuneSlice) IsFrozen() bool {
+	return r.frozen
+}
+
+func (r *RuneSlice) Unfreeze(ctx *Context) error {
+	r.frozen = false
+	return nil
 }
 
 func (d *DynamicValue) TakeInMemorySnapshot(ctx *Context) (*Snapshot, error) {
@@ -132,6 +155,10 @@ func (d *DynamicValue) TakeInMemorySnapshot(ctx *Context) (*Snapshot, error) {
 
 func (d *DynamicValue) IsFrozen() bool {
 	return false
+}
+
+func (d *DynamicValue) Unfreeze(ctx *Context) error {
+	return nil
 }
 
 func (g *SystemGraph) takeSnapshot(ctx *Context) *SystemGraph {
@@ -173,6 +200,7 @@ func (g *SystemGraph) takeSnapshot(ctx *Context) *SystemGraph {
 	}
 
 	newGraph := &SystemGraph{
+		isFrozen: true,
 		nodes:    newNodes,
 		eventLog: utils.CopySlice(g.eventLog),
 	}
@@ -194,4 +222,11 @@ func (g *SystemGraph) IsFrozen() bool {
 	g.nodes.lock.Lock()
 	defer g.nodes.lock.Unlock()
 	return g.isFrozen
+}
+
+func (g *SystemGraph) Unfreeze(ctx *Context) error {
+	g.nodes.lock.Lock()
+	defer g.nodes.lock.Unlock()
+	g.isFrozen = false
+	return nil
 }
