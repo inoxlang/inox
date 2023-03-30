@@ -19,55 +19,19 @@ type Walkable interface {
 type Walker interface {
 	Iterator
 	Prune(*Context)
+	NodeMeta(*Context) WalkableNodeMeta
 }
 
-// DirWalker is a Walker, it iterates over a list of known entries.
-type DirWalker struct {
-	NoReprMixin
-	NotClonableMixin
-
-	i, j                  int
-	entries               [][]fs.DirEntry
-	paths                 [][]string
-	addDotSlashPathPrefix bool
-	walkedDirPath         Path
-	skippedDirPath        string
-	currentEntry          fs.DirEntry
-	currentPath           string
-	skipped               bool
+type WalkableNodeMeta struct {
+	ancestors  []Value
+	parentEdge Value
 }
 
-// NewDirWalker walks a directory and creates a DirWalker with the entries.
-func NewDirWalker(walkedDirPath Path) *DirWalker {
-	entries, paths := GetWalkEntries(walkedDirPath)
-
-	walker := &DirWalker{
-		i:                     0,
-		j:                     -1,
-		entries:               entries,
-		paths:                 paths,
-		addDotSlashPathPrefix: walkedDirPath.IsRelative(),
-		walkedDirPath:         walkedDirPath,
+func NewWalkableNodeMeta(ancestors []Value, parentEdge Value) *WalkableNodeMeta {
+	return &WalkableNodeMeta{
+		ancestors:  ancestors,
+		parentEdge: parentEdge,
 	}
-
-	return walker
-}
-
-func WalkDir(walkedDirPath Path, fn func(path Path, d fs.DirEntry, err error) error) {
-	pathPrefix := ""
-
-	if walkedDirPath.IsRelative() {
-		pathPrefix = "./"
-	}
-
-	filepath.WalkDir(string(walkedDirPath), func(path string, d fs.DirEntry, err error) error {
-		if d.IsDir() {
-			if path[len(path)-1] != '/' {
-				path += "/"
-			}
-		}
-		return fn(Path(pathPrefix+path), d, err)
-	})
 }
 
 // GetWalkEntries walks a directory and returns all encountered entries and their paths in two 2D arrays.
@@ -155,6 +119,55 @@ func GetDirTreeData(walkedDirPath Path) *UData {
 	return udata
 }
 
+// DirWalker is a Walker, it iterates over a list of known entries.
+type DirWalker struct {
+	NoReprMixin
+	NotClonableMixin
+
+	i, j                  int
+	entries               [][]fs.DirEntry
+	paths                 [][]string
+	addDotSlashPathPrefix bool
+	walkedDirPath         Path
+	skippedDirPath        string
+	currentEntry          fs.DirEntry
+	currentPath           string
+	skipped               bool
+}
+
+// NewDirWalker walks a directory and creates a DirWalker with the entries.
+func NewDirWalker(walkedDirPath Path) *DirWalker {
+	entries, paths := GetWalkEntries(walkedDirPath)
+
+	walker := &DirWalker{
+		i:                     0,
+		j:                     -1,
+		entries:               entries,
+		paths:                 paths,
+		addDotSlashPathPrefix: walkedDirPath.IsRelative(),
+		walkedDirPath:         walkedDirPath,
+	}
+
+	return walker
+}
+
+func WalkDir(walkedDirPath Path, fn func(path Path, d fs.DirEntry, err error) error) {
+	pathPrefix := ""
+
+	if walkedDirPath.IsRelative() {
+		pathPrefix = "./"
+	}
+
+	filepath.WalkDir(string(walkedDirPath), func(path string, d fs.DirEntry, err error) error {
+		if d.IsDir() {
+			if path[len(path)-1] != '/' {
+				path += "/"
+			}
+		}
+		return fn(Path(pathPrefix+path), d, err)
+	})
+}
+
 func (it *DirWalker) HasNext(ctx *Context) bool {
 	ok := it.i < len(it.entries)-1 || (it.i == len(it.entries)-1 && it.j < len(it.entries[it.i])-1)
 	if !ok {
@@ -220,6 +233,10 @@ func (it *DirWalker) Value(*Context) Value {
 		panic("no value")
 	}
 	return CreateDirEntry(it.currentPath, string(it.walkedDirPath), it.addDotSlashPathPrefix, it.currentEntry)
+}
+
+func (it *DirWalker) NodeMeta(*Context) WalkableNodeMeta {
+	panic(ErrNotImplementedYet)
 }
 
 func (p Path) Walker(ctx *Context) (Walker, error) {

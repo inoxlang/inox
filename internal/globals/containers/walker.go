@@ -2,6 +2,10 @@ package internal
 
 import core "github.com/inox-project/inox/internal/core"
 
+var (
+	_ = []core.Walkable{(*Graph)(nil)}
+)
+
 type GraphWalker struct {
 	core.NoReprMixin
 	hasNext func(*GraphWalker, *core.Context) bool
@@ -33,6 +37,10 @@ func (wk *GraphWalker) Key(ctx *core.Context) core.Value {
 
 func (wk *GraphWalker) Value(ctx *core.Context) core.Value {
 	return wk.value(wk, ctx)
+}
+
+func (wk *GraphWalker) NodeMeta(*core.Context) core.WalkableNodeMeta {
+	panic(core.ErrNotImplementedYet)
 }
 
 func newEmptyGraphWalker() *GraphWalker {

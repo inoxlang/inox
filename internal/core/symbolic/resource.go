@@ -83,6 +83,10 @@ func (s *Path) WalkerElement() SymbolicValue {
 	return WALK_ELEM
 }
 
+func (s *Path) NodeMeta() SymbolicValue {
+	return ANY
+}
+
 func (s *Path) WidestOfType() SymbolicValue {
 	return &Path{}
 }

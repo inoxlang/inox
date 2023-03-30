@@ -80,6 +80,10 @@ func (r *Graph) WalkerElement() symbolic.SymbolicValue {
 	return &GraphNode{}
 }
 
+func (r *Graph) NodeMeta() symbolic.SymbolicValue {
+	return symbolic.ANY
+}
+
 func (r *Graph) WidestOfType() symbolic.SymbolicValue {
 	return &Graph{}
 }

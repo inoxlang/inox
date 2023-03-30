@@ -4,6 +4,7 @@ package internal
 type Walkable interface {
 	SymbolicValue
 	WalkerElement() SymbolicValue
+	WalkerNodeMeta() SymbolicValue
 }
 
 // An AnyWalkable represents a symbolic Walkable we do not know the concrete type.
