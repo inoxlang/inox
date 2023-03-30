@@ -2,7 +2,6 @@ package internal
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -11,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/inox-project/inox/internal/commonfmt"
@@ -27,6 +27,7 @@ import (
 const (
 	CHANGE_WATCH_TIMEOUT = 10 * time.Millisecond
 	NODE_WATCHER_PERIOD  = time.Millisecond
+	RENDERING_GOROUTINE_TICK_INTERVAL
 
 	FORWARDED_EVENTS_KEY      = "forwarded-events"
 	LISTENED_EVENTS_ATTR_KEY  = "data-listened-events"
@@ -53,12 +54,17 @@ var (
 
 	NODE_PROPNAMES = []string{"firstChild", "data"}
 
+	renderingGoroutineStarted atomic.Bool
+	renderingTaskQueue        = make(chan renderingTask, 100)
+	taskCancellation          = make(chan struct{})
+
 	_ = []core.GoValue{&Node{}}
 	_ = []core.PotentiallySharable{&Node{}}
 	_ = []core.Watchable{&Node{}}
 )
 
 func init() {
+	startRenderingGoroutine()
 
 	// register the renderer for ValueHistory
 
@@ -96,7 +102,6 @@ func init() {
 		return _dom_symbolic.NewDomNode(model)
 	}
 
-	// register symbolic version of Go functions
 	core.RegisterSymbolicGoFunctions([]any{
 		NewNode, symbolicElement,
 		NewAutoNode, func(ctx *symbolic.Context, desc *symbolic.Object) *_dom_symbolic.Node {
@@ -142,35 +147,45 @@ func init() {
 	}
 }
 
+type NodeKind int8
+
+const (
+	DefaultNodeKind NodeKind = iota
+	AutoNode
+	StaticNode
+)
+
 type Node struct {
 	core.NoReprMixin
 	core.NotClonableMixin
 
 	lock sync.Mutex
 
-	isStatic bool
-	html     *_html.HTMLNode
-	view     *View
+	kind           NodeKind
+	html           *_html.HTMLNode
+	originalDesc   _html.NodeDescription //only set for node of default kind
+	view           *View
+	attachedToView atomic.Bool
 
 	children []*Node
 	parent   *Node
 
 	// state
-	forwardedEvents    []string
-	listenedEvents     []string
-	forwarderId        uint64
-	jobs               []*core.LifetimeJob
-	model              core.Value
-	modelChangeWatcher core.Watcher
-	modelReaction      modelReaction
-	modelReactionData  core.Value
-	watchers           *core.ValueWatchers
-	mutationCallbacks  *core.MutationCallbacks
+	forwardedEvents   []string
+	listenedEvents    []string
+	forwarderId       uint64
+	jobs              []*core.LifetimeJob
+	model             core.Value
+	modelReaction     modelReaction
+	modelReactionData core.Value
+	watchers          *core.ValueWatchers
+	mutationCallbacks *core.MutationCallbacks
 
 	// auto rendering
-	renderingConfigChangeWatcher core.Watcher
-	userRenderingConfig          core.Value
-	additionalClass              string
+	lastDomNode               *Node
+	lastDomNodeChangeCallback core.CallbackHandle
+	userRenderingConfig       core.Value
+	additionalClass           string
 }
 
 func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *Node {
@@ -179,10 +194,11 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *Node {
 	var listenedEvents []string
 	var model core.Value = core.Nil
 	var children []*Node
+	var htmlChildren []*_html.HTMLNode
+
 	var modelReaction modelReaction
 	var modelReactionData core.Value
-
-	htmlNodeDesc := core.ValMap{}
+	var class string
 
 	addChild := func(v core.Value) {
 		var child *Node
@@ -203,7 +219,10 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *Node {
 			child = NewAutoNode(ctx, core.NewObjectFromMap(core.ValMap{"0": val}, ctx))
 		}
 		html = child.html
-		htmlNodeDesc[strconv.Itoa(len(children))] = html
+		if html == nil {
+			html = _html.CreateSpanElem(core.Str("[lazy]"))
+		}
+		htmlChildren = append(htmlChildren, html)
 		children = append(children, child)
 	}
 
@@ -255,7 +274,7 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *Node {
 				jobs = append(jobs, job)
 			}
 		case _html.CLASS_KEY:
-			htmlNodeDesc[k] = v
+			class = v.(core.StringLike).GetOrBuildString()
 		case MODEL_KEY:
 			model = v
 		case FORWARDED_EVENTS_KEY:
@@ -315,10 +334,15 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *Node {
 		}
 	}
 
-	htmlNode := _html.NewNode(ctx, tag, core.NewObjectFromMap(htmlNodeDesc, ctx))
+	htmlDesc := _html.NodeDescription{
+		Tag:      string(tag),
+		Children: htmlChildren,
+		Class:    class,
+	}
 
 	node := &Node{
-		html: htmlNode,
+		kind:         DefaultNodeKind,
+		originalDesc: htmlDesc,
 
 		model:             model,
 		modelReaction:     modelReaction,
@@ -331,49 +355,19 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *Node {
 		forwarderId:     0,
 	}
 
-	for _, child := range children {
-		child.parent = node
-	}
-
-	// add attributes & id
-	{
-		if len(listenedEvents) > 0 {
-			htmlNode.SetAttribute(ctx, html.Attribute{
-				Key: LISTENED_EVENTS_ATTR_KEY,
-				Val: strings.Join(listenedEvents, ","),
-			})
-
-			for node.forwarderId == 0 {
-				node.forwarderId = pseudorand.Uint64() >> (64 - FORWARDER_ID_BITSIZE)
-			}
-
-			forwarderId := strconv.FormatInt(int64(node.forwarderId), ID_ENCODING_BASE)
-			htmlNode.SetAttribute(ctx, html.Attribute{Key: FORWARDER_ID_DATA_ATTR, Val: forwarderId})
-		}
-
-		node.html.Walk(func(n _html.HTMLNode) error {
-			if !n.HasId() {
-				id := pseudorand.Uint64() >> (64 - ID_BITSIZE)
-				idStr := strconv.FormatInt(int64(id), ID_ENCODING_BASE)
-				n.SetId(ctx, core.Str(idStr))
-			}
-			return nil
-		})
-	}
-
 	return node
 }
 
 func NewStaticNode(n *_html.HTMLNode) *Node {
 	return &Node{
-		html:     n,
-		model:    core.Nil,
-		isStatic: true,
+		html:  n,
+		model: core.Nil,
+		kind:  StaticNode,
 	}
 }
 
 func NewAutoNode(ctx *core.Context, desc *core.Object) *Node {
-	node := &Node{}
+	node := &Node{kind: AutoNode}
 
 	desc.ForEachEntry(func(k string, v core.Value) error {
 		switch {
@@ -385,10 +379,11 @@ func NewAutoNode(ctx *core.Context, desc *core.Object) *Node {
 		case k == USER_RENDERING_CONFIG_KEY:
 			node.userRenderingConfig = v
 			if watchable, ok := node.userRenderingConfig.(core.Watchable); ok {
-				node.renderingConfigChangeWatcher = watchable.Watcher(ctx, core.WatcherConfiguration{
-					Filter: core.MUTATION_PATTERN,
-					Depth:  core.IntermediateDepthWatching,
-				})
+				watchable.OnMutation(ctx, func(ctx *core.Context, mutation core.Mutation) (registerAgain bool) {
+					registerAgain = true
+					node.addModelRenderTask()
+					return
+				}, core.MutationWatchingConfiguration{Depth: core.IntermediateDepthWatching})
 			}
 		case k == _html.CLASS_KEY:
 			node.additionalClass = v.(core.StringLike).GetOrBuildString()
@@ -398,20 +393,70 @@ func NewAutoNode(ctx *core.Context, desc *core.Object) *Node {
 
 		return nil
 	})
+
 	if node.model == nil {
 		panic(errors.New("missing model argument"))
 	}
 
 	if watchable, ok := node.model.(core.Watchable); ok {
-		node.modelChangeWatcher = watchable.Watcher(ctx, core.WatcherConfiguration{
-			Filter: core.MUTATION_PATTERN,
-			Depth:  core.ShallowWatching,
-		})
+		watchable.OnMutation(ctx, func(ctx *core.Context, mutation core.Mutation) (registerAgain bool) {
+			registerAgain = true
+			node.addModelRenderTask()
+			return
+		}, core.MutationWatchingConfiguration{Depth: core.ShallowWatching})
 	}
 
-	node.modelRender(ctx)
-	node.startUpdateGoroutine(ctx)
 	return node
+}
+
+func (n *Node) initHTMLNode(ctx *core.Context) {
+	if n.html != nil {
+		return //aready initialized
+	}
+
+	switch n.kind {
+	case DefaultNodeKind:
+		desc := n.originalDesc
+
+		for i, child := range n.children {
+			child.lock.Lock()
+			child.initHTMLNode(ctx)
+			child.parent = n
+			desc.Children[i] = child.html
+			child.lock.Unlock()
+		}
+
+		n.html = _html.NewNodeFromGoDescription(desc)
+
+		// add attributes & id
+		{
+			if len(n.listenedEvents) > 0 {
+				n.html.SetAttribute(ctx, html.Attribute{
+					Key: LISTENED_EVENTS_ATTR_KEY,
+					Val: strings.Join(n.listenedEvents, ","),
+				})
+
+				for n.forwarderId == 0 {
+					n.forwarderId = pseudorand.Uint64() >> (64 - FORWARDER_ID_BITSIZE)
+				}
+
+				forwarderId := strconv.FormatInt(int64(n.forwarderId), ID_ENCODING_BASE)
+				n.html.SetAttribute(ctx, html.Attribute{Key: FORWARDER_ID_DATA_ATTR, Val: forwarderId})
+			}
+
+			n.html.Walk(func(n _html.HTMLNode) error {
+				if !n.HasId() {
+					id := pseudorand.Uint64() >> (64 - ID_BITSIZE)
+					idStr := strconv.FormatInt(int64(id), ID_ENCODING_BASE)
+					n.SetId(ctx, core.Str(idStr))
+				}
+				return nil
+			})
+		}
+	case AutoNode:
+		n.modelRenderNoLock(ctx)
+	}
+
 }
 
 type modelReaction int
@@ -420,14 +465,37 @@ const (
 	toggleOnClick modelReaction = iota + 1
 )
 
-func (n *Node) setView(v *View) {
+func (n *Node) attachToView(ctx *core.Context, v *View) {
 	n.lock.Lock()
 	defer n.lock.Unlock()
 
-	n.view = v
-	for _, child := range n.children {
-		child.setView(v)
+	if n.view == v {
+		return
 	}
+	if n.view != nil {
+		panic(errors.New("node is already attached to another view"))
+	}
+
+	n.attachedToView.Store(true)
+	n.view = v
+
+	for _, child := range n.children {
+		child.attachToView(ctx, v)
+	}
+
+}
+
+func (n *Node) detachFromView() {
+	n.lock.Lock()
+	defer n.lock.Unlock()
+
+	n.view = nil
+	n.attachedToView.Store(false)
+
+	for _, child := range n.children {
+		child.detachFromView()
+	}
+
 }
 
 func (n *Node) hasView() bool {
@@ -437,10 +505,27 @@ func (n *Node) hasView() bool {
 	return n.view != nil
 }
 
+func (n *Node) addModelRenderTask() {
+	if n.view == nil {
+		return
+	}
+	view := n.view
+	addRenderingTask(renderingTask{
+		node: n,
+		fn: func() {
+			n.modelRender(view.ctx)
+		},
+	})
+}
+
 func (n *Node) modelRender(ctx *core.Context) {
 	n.lock.Lock()
 	defer n.lock.Unlock()
 
+	n.modelRenderNoLock(ctx)
+}
+
+func (n *Node) modelRenderNoLock(ctx *core.Context) {
 	var parsed *_html.HTMLNode
 
 	unwrapped := core.Unwrap(ctx, n.model)
@@ -453,6 +538,24 @@ func (n *Node) modelRender(ctx *core.Context) {
 
 	if !ok {
 		panic(ErrRenderFailureModelNotRenderable)
+	}
+
+	// if the model is a node we attach it to the view and we listen for changes
+	if domNode, ok := renderable.(*Node); ok {
+		_, err := domNode.OnMutation(ctx, func(ctx *core.Context, mutation core.Mutation) (registerAgain bool) {
+			if n.lastDomNode != domNode { // fix (data race)
+				//domNode.detachFromView() //TODO: fix (this causes issues)
+				return false
+			}
+			n.addModelRenderTask()
+			registerAgain = true
+			return
+		}, core.MutationWatchingConfiguration{Depth: core.ShallowWatching})
+		if err != nil {
+			panic(err)
+		}
+		n.lastDomNode = domNode
+		domNode.attachToView(ctx, n.view)
 	}
 
 	//render to HTML
@@ -478,6 +581,10 @@ func (n *Node) modelRender(ctx *core.Context) {
 		if err != nil {
 			parsed = _html.CreateSpanElem(core.Str("???"))
 		}
+	}
+
+	if n.additionalClass != "" {
+		parsed.AppendToAttribute(ctx, html.Attribute{Key: "class", Val: n.additionalClass})
 	}
 
 update:
@@ -522,71 +629,55 @@ func (n *Node) replaceChildHTML(ctx *core.Context, prevHTML *_html.HTMLNode, chi
 	n.mutationCallbacks.CallMicrotasks(ctx, mutation)
 }
 
-func (n *Node) startUpdateGoroutine(ctx *core.Context) {
-	listenToModelWatcher := n.modelChangeWatcher != nil && !n.modelChangeWatcher.IsStopped()
-	listenToConfigWatcher := n.renderingConfigChangeWatcher != nil && !n.renderingConfigChangeWatcher.IsStopped()
+func (n *Node) Render(ctx *core.Context, w io.Writer, config core.RenderingInput) (int, error) {
+	n.lock.Lock()
+	defer n.lock.Unlock()
 
-	if !listenToModelWatcher && !listenToConfigWatcher {
+	if n.html == nil {
+		n.initHTMLNode(ctx)
+	}
+
+	return n.html.Render(ctx, w, config)
+}
+
+func (n *Node) SendDOMEventToForwader(ctx *core.Context, forwarderId uint64, eventData *core.Record, t time.Time) {
+	if forwarderId == 0 { // invalid id
 		return
 	}
 
-	//TODO: do watching & rerender in parent node if node is "small"
-
-	go func() {
-		defer func() {
-			//cleanup
-			if n.modelChangeWatcher != nil {
-				n.modelChangeWatcher.Stop()
-			}
-			if n.renderingConfigChangeWatcher != nil {
-				n.renderingConfigChangeWatcher.Stop()
-			}
-
-			n.watchers.StopAll()
-		}()
-
-		var watcher core.Watcher
-		var nextWatcher core.Watcher
-
-		switch {
-		case listenToModelWatcher && listenToConfigWatcher:
-			watcher = n.modelChangeWatcher
-			nextWatcher = n.renderingConfigChangeWatcher
-		case listenToModelWatcher:
-			watcher = n.modelChangeWatcher
-		case listenToConfigWatcher:
-			watcher = n.renderingConfigChangeWatcher
-		default:
-			panic(core.ErrUnreachable)
-		}
-
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-			}
-
-			// change what value is watched
-			if nextWatcher != nil {
-				watcher, nextWatcher = nextWatcher, watcher
-			}
-
-			_, err := watcher.WaitNext(ctx, nil, CHANGE_WATCH_TIMEOUT)
-			if errors.Is(err, core.ErrStoppedWatcher) || errors.Is(err, context.Canceled) {
-				return
-			}
-
-			if errors.Is(err, core.ErrWatchTimeout) { // continue waiting for changes
-				continue
-			}
-
-			if err == nil {
-				n.modelRender(ctx)
+	if n.forwarderId == forwarderId {
+		// forward event to model
+		eventType, ok := eventData.Prop(ctx, "type").(core.Str)
+		if ok {
+			if utils.SliceContains(n.forwardedEvents, string(eventType)) {
+				receiver, ok := n.model.(core.MessageReceiver)
+				if ok {
+					logger := ctx.Logger()
+					logger.Println("forward", eventType, "dom event to model")
+					err := receiver.ReceiveMessage(ctx, core.NewMessage(core.NewEvent(eventData, core.Date(t)), nil))
+					if err != nil {
+						logger.Println(err)
+					}
+				}
+			} else if utils.SliceContains(n.listenedEvents, string(eventType)) {
+				switch n.modelReaction {
+				case toggleOnClick:
+					propName := string(n.modelReactionData.(core.PropertyName))
+					iprops, ok := n.model.(core.IProps)
+					if ok {
+						val, ok := iprops.Prop(ctx, propName).(core.Bool)
+						if ok {
+							iprops.SetProp(ctx, propName, !val)
+						}
+					}
+				}
 			}
 		}
-	}()
-
+	} else {
+		for _, child := range n.children {
+			child.SendDOMEventToForwader(ctx, forwarderId, eventData, t)
+		}
+	}
 }
 
 func (n *Node) Watcher(ctx *core.Context, config core.WatcherConfiguration) core.Watcher {
@@ -655,8 +746,8 @@ func (node *Node) RemoveMutationCallback(ctx *core.Context, handle core.Callback
 	node.mutationCallbacks.RemoveMicrotask(handle)
 }
 
-func (n *Node) IsSharable(originState *core.GlobalState) bool {
-	return true
+func (n *Node) IsSharable(originState *core.GlobalState) (bool, string) {
+	return true, ""
 }
 
 func (n *Node) Share(originState *core.GlobalState) {
@@ -709,48 +800,58 @@ func (n *Node) IsRecursivelyRenderable(ctx *core.Context, input core.RenderingIn
 	return input.Mime == core.HTML_CTYPE
 }
 
-func (n *Node) Render(ctx *core.Context, w io.Writer, config core.RenderingInput) (int, error) {
-	n.lock.Lock()
-	defer n.lock.Unlock()
-	return n.html.Render(ctx, w, config)
+type renderingTask struct {
+	fn           func()
+	node         *Node
+	creationDate time.Time
 }
 
-func (n *Node) SendDOMEventToForwader(ctx *core.Context, forwarderId uint64, eventData *core.Record, t time.Time) {
-	if forwarderId == 0 { // invalid id
+func addRenderingTask(t renderingTask) {
+	t.creationDate = time.Now()
+	renderingTaskQueue <- t
+}
+
+func startRenderingGoroutine() {
+	if !renderingGoroutineStarted.CompareAndSwap(false, true) {
 		return
 	}
 
-	if n.forwarderId == forwarderId {
-		// forward event to model
-		eventType, ok := eventData.Prop(ctx, "type").(core.Str)
-		if ok {
-			if utils.SliceContains(n.forwardedEvents, string(eventType)) {
-				receiver, ok := n.model.(core.MessageReceiver)
-				if ok {
-					logger := ctx.Logger()
-					logger.Println("forward", eventType, "dom event to model")
-					err := receiver.ReceiveMessage(ctx, core.NewMessage(core.NewEvent(eventData, core.Date(t)), nil))
-					if err != nil {
-						logger.Println(err)
-					}
+	// TODO: scale to N queues & N rendering routines
+
+	go func() {
+		lastRenderingTimes := map[*Node]time.Time{}
+
+		for {
+			select {
+			case <-taskCancellation:
+				for len(renderingTaskQueue) > 0 {
+					<-renderingTaskQueue
 				}
-			} else if utils.SliceContains(n.listenedEvents, string(eventType)) {
-				switch n.modelReaction {
-				case toggleOnClick:
-					propName := string(n.modelReactionData.(core.PropertyName))
-					iprops, ok := n.model.(core.IProps)
-					if ok {
-						val, ok := iprops.Prop(ctx, propName).(core.Bool)
-						if ok {
-							iprops.SetProp(ctx, propName, !val)
-						}
-					}
+			case task := <-renderingTaskQueue:
+
+				// if the node is no long attached to a view de don't need to render it
+				if !task.node.attachedToView.Load() {
+					delete(lastRenderingTimes, task.node)
+					continue
 				}
+
+				// if a rendering was submited before the the last rendering time we ignore it
+				if lastRenderingTime, ok := lastRenderingTimes[task.node]; ok && task.creationDate.Before(lastRenderingTime) {
+					fmt.Println("ignore old rendering task")
+					continue
+				}
+
+				lastRenderingTimes[task.node] = time.Now()
+
+				func() {
+					defer func() {
+						err := recover()
+						_ = err
+					}()
+					task.fn()
+				}()
 			}
 		}
-	} else {
-		for _, child := range n.children {
-			child.SendDOMEventToForwader(ctx, forwarderId, eventData, t)
-		}
-	}
+
+	}()
 }

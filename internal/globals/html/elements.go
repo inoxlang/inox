@@ -15,7 +15,6 @@ import (
 const (
 	CLASS_KEY    = "class"
 	CHILDREN_KEY = "children"
-	JOBS_KEY     = "jobs"
 	MODEL_KEY    = "model"
 
 	S_NODE_ALREADY_HAS_A_PARENT                    = "node that already has a parent"
@@ -78,12 +77,6 @@ func _h4(ctx *core.Context, desc *core.Object) *HTMLNode {
 func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *HTMLNode {
 	var class string
 	var children []*HTMLNode
-	var jobs []*core.LifetimeJob
-	dataAtom := atom.Lookup([]byte(tag))
-
-	if dataAtom == 0 {
-		panic(fmt.Errorf("provided tag '%s' is invalid", tag))
-	}
 
 	it := desc.Iterator(ctx, core.IteratorConfiguration{})
 
@@ -143,20 +136,6 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *HTMLNode {
 
 				addChild(child)
 			}
-		case JOBS_KEY:
-			iterable, ok := v.(core.Iterable)
-			if !ok {
-				panic(core.FmtPropOfArgXShouldBeOfTypeY(JOBS_KEY, "description", "iterable", v))
-			}
-			it := iterable.Iterator(ctx, core.IteratorConfiguration{})
-			for it.Next(ctx) {
-				elem := it.Value(ctx)
-				job, ok := elem.(*core.LifetimeJob)
-				if !ok {
-					panic(core.FmtUnexpectedElementInPropIterableShowVal(elem, JOBS_KEY))
-				}
-				jobs = append(jobs, job)
-			}
 		default:
 			panic(commonfmt.FmtUnexpectedPropInArgX(k, "description"))
 		}
@@ -198,7 +177,27 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *HTMLNode {
 		}
 	}
 
+	return NewNodeFromGoDescription(NodeDescription{
+		Tag:      string(tag),
+		Class:    class,
+		Children: children,
+	})
+}
+
+type NodeDescription struct {
+	Tag      string
+	Children []*HTMLNode
+	Class    string
+}
+
+func NewNodeFromGoDescription(desc NodeDescription) *HTMLNode {
 	//TODO: merge text nodes that are siblings
+
+	dataAtom := atom.Lookup([]byte(desc.Tag))
+
+	if dataAtom == 0 {
+		panic(fmt.Errorf("provided tag '%s' is invalid", desc.Tag))
+	}
 
 	node := &HTMLNode{
 		node: &html.Node{
@@ -209,22 +208,22 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *HTMLNode {
 	}
 
 	// set parent & siblings of all children
-	for i, child := range children {
+	for i, child := range desc.Children {
 		child.node.Parent = node.node
-		if i != len(children)-1 {
-			nextSibliging := children[i+1]
+		if i != len(desc.Children)-1 {
+			nextSibliging := desc.Children[i+1]
 			nextSibliging.node.PrevSibling = child.node
 			child.node.NextSibling = nextSibliging.node
 		}
 	}
 
-	if class != "" {
-		node.node.Attr = append(node.node.Attr, html.Attribute{Key: "class", Val: class})
+	if desc.Class != "" {
+		node.node.Attr = append(node.node.Attr, html.Attribute{Key: "class", Val: desc.Class})
 	}
 
-	if len(children) > 0 {
-		node.node.FirstChild = children[0].node
-		node.node.LastChild = children[len(children)-1].node
+	if len(desc.Children) > 0 {
+		node.node.FirstChild = desc.Children[0].node
+		node.node.LastChild = desc.Children[len(desc.Children)-1].node
 	}
 
 	return node

@@ -20,6 +20,7 @@ func TestViewWatcher(t *testing.T) {
 		node := NewNode(ctx, core.Str("div"), core.NewObjectFromMap(core.ValMap{
 			"0": dynVal,
 		}, ctx))
+		node.initHTMLNode(ctx)
 
 		view := NewView(ctx, "/", obj, node)
 
@@ -47,6 +48,7 @@ func TestViewWatcher(t *testing.T) {
 		node := NewNode(ctx, core.Str("div"), core.NewObjectFromMap(core.ValMap{
 			"0": NewAutoNode(ctx, core.NewObjectFromMap(core.ValMap{"model": dynVal}, ctx)),
 		}, ctx))
+		node.initHTMLNode(ctx)
 
 		view := NewView(ctx, "/", obj, node)
 

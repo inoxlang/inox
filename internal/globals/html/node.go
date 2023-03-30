@@ -175,6 +175,24 @@ func (n *HTMLNode) SetAttribute(ctx *core.Context, newAttr html.Attribute) {
 	n.node.Attr = append(n.node.Attr, newAttr)
 }
 
+func (n *HTMLNode) AppendToAttribute(ctx *core.Context, newAttr html.Attribute) {
+	n.DiscardCache()
+
+	if n.cloneOnWrite {
+		n.cloneOnWrite = false
+		n.replaceByClone()
+	}
+
+	for _, attr := range n.node.Attr {
+		if attr.Key == newAttr.Key {
+			attr.Val = attr.Val + newAttr.Val
+			return
+		}
+	}
+
+	n.node.Attr = append(n.node.Attr, newAttr)
+}
+
 func (n *HTMLNode) SetId(ctx *core.Context, id core.Str) {
 	n.SetAttribute(ctx, html.Attribute{Key: "id", Val: string(id)})
 }

@@ -23,18 +23,20 @@ type View struct {
 
 	lock     sync.Mutex
 	watchers []*core.PeriodicWatcher
+	ctx      *core.Context
 }
 
 func NewView(ctx *core.Context, resource core.Path, model *core.Object, domNode *Node) *View {
 	if domNode.hasView() {
-		panic(errors.New("failed to create new view: dom node already has an associated view"))
+		panic(errors.New("failed to create new render: dom node already has an associated view"))
 	}
 	view := &View{
 		resource: resource,
 		model:    model,
 		domNode:  domNode,
+		ctx:      ctx,
 	}
-	domNode.setView(view)
+	domNode.attachToView(ctx, view)
 
 	view.nodeWatcher = domNode.Watcher(ctx, core.WatcherConfiguration{Filter: core.MUTATION_PATTERN})
 	view.startUpdateGoroutine(ctx)
@@ -43,6 +45,10 @@ func NewView(ctx *core.Context, resource core.Path, model *core.Object, domNode 
 
 func (v *View) Node() *Node {
 	return v.domNode
+}
+
+func (v *View) Context() *core.Context {
+	return v.ctx
 }
 
 func (v *View) ModelIs(ctx *core.Context, val *core.Object) bool {
@@ -66,6 +72,7 @@ func (v *View) startUpdateGoroutine(ctx *core.Context) {
 		for {
 			select {
 			case <-ctx.Done():
+				v.domNode.detachFromView()
 				return
 			default:
 			}
