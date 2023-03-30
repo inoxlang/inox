@@ -1,6 +1,6 @@
 # Inox
 
-<img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4"></img>
+<img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
 
 🛡️ Inox is a programming language for writing secure scripts and web apps, it is dynamically typed and has optional type annotations.
 It allows to easily write [concurrent code](#concurrency) and to exchange [messages](./README.md#communication) between objects.
@@ -25,12 +25,14 @@ An archive with a Linux binary and some examples is available in [release assets
 ## Injection Prevention
 
 In Inox interpolations are always restricted in order to prevent injections.
-When you dynamically create URLs the interpolations are restricted based on where the interpolation is located (path, query).\
-<img src="./docs/img/url-injection.png"></img>
+When you dynamically create URLs the interpolations are restricted based on where the interpolation is located (path, query).
+
+<img src="./docs/img/url-injection.png" alt='screenshot of an Inox shell with three lines, first line: path="/data?admin=true", second line: public_data=read!(https://private-service{path}?admin=false, third line: URL expression: result of a path interpolation should not contain any of the following substrings: "..", "\" , "*", "?"'></img>
 
 Checked strings are strings that are validated against a pattern. When you dynamically
-create a checked string all the interpolations must be explicitly typed.\
-<img src="./docs/img/query-injection.png"></img>
+create a checked string all the interpolations must be explicitly typed.
+
+<img src="./docs/img/query-injection.png" alt='screenshot of an Inox shell with three lines, first line: id = "1 or 1=1", second line query=%sql.query`SELECT * FROM users WHERE id = {{int:id}}`, third line: runtime check error: 0 or 1=1 does not match %sql.int'></img>
 
 
 
@@ -53,6 +55,19 @@ Inox modules always start with a manifest that describes the required permission
 
 <img src="./docs/img/fs-malicious-input.png"></img>
 
+<!-- code that appear on the image
+manifest {
+  permissions: {
+    read: %/tmp/...
+  }
+}
+
+malicious_user_input = /home/
+....
+print(fs.ls!(malicious_user_input))
+
+-->
+
 When a forbidden operation is performed the module panics with an error:\
 `core: error: not allowed, missing permission: [read path(s) /home/]`
 
@@ -64,9 +79,37 @@ In imports the importing module specifies the permissions it grants to the impor
 
 <img src="./docs/img/malicious-lib-importer.png"></img>
 
+<!-- code that appear on the image
+manifest {
+  permissions: {
+    read: %/...
+    create: {routines: {}}
+  }
+}
+
+import lib ./malicious-lib.ix {
+  arguments: {fs: fs}
+  allow: {
+    read: %/tmp/...
+  }
+}
+
+-->
+
 `./malicious-lib.ix`
 
 <img src="./docs/img/malicious-lib.png"></img>
+
+<!-- code that appear on the image
+manifest {
+  permissions: {
+    read: %/...
+  }
+}
+
+data = fs.read!(/etc/passwd)
+
+-->
 
 If the imported module ask more permissions than granted an error is thrown:\
 `import: some permissions in the imported module's manifest are not granted: [read path(s) /...] `
@@ -78,6 +121,11 @@ After this phase it no longer needs some permissions so it can drop them.
 
 <img src="./docs/img/drop-perms.png"></img>
 
+<!-- code that appear on the image
+drop-perms {
+  read: %https://**
+}
+-->
 
 ## DoS mitigation
 
