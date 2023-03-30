@@ -1216,6 +1216,7 @@ func (ForStatement) Kind() NodeKind {
 type WalkStatement struct {
 	NodeBase
 	Walked     Node
+	MetaIdent  *IdentifierLiteral
 	EntryIdent *IdentifierLiteral
 	Body       *Block
 }
@@ -2259,6 +2260,7 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		walk(n.Body, node, ancestorChain, fn, afterFn)
 	case *WalkStatement:
 		walk(n.Walked, node, ancestorChain, fn, afterFn)
+		walk(n.MetaIdent, node, ancestorChain, fn, afterFn)
 		walk(n.EntryIdent, node, ancestorChain, fn, afterFn)
 		walk(n.Body, node, ancestorChain, fn, afterFn)
 	case *ReturnStatement:

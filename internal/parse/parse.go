@@ -7451,7 +7451,7 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 
 func (p *parser) parseWalkStatement(walkIdent *IdentifierLiteral) *WalkStatement {
 	var parsingErr *ParsingError
-	var entryIdent *IdentifierLiteral
+	var metaIdent, entryIdent *IdentifierLiteral
 	p.eatSpace()
 
 	walked, isMissingExpr := p.parseExpression()
@@ -7484,6 +7484,35 @@ func (p *parser) parseWalkStatement(walkIdent *IdentifierLiteral) *WalkStatement
 	}
 
 	p.eatSpace()
+
+	// if the parsed identifier is instead the meta variable identifier we try to parse the entry variable identifier
+	if p.i < p.len && p.s[p.i] == ',' {
+		tokens = append(tokens, Token{Type: COMMA, Span: NodeSpan{p.i, p.i + 1}})
+		p.i++
+		metaIdent = entryIdent
+		entryIdent = nil
+		p.eatSpace()
+
+		// missing entry identifier
+		if p.i >= p.len || p.s[p.i] == '{' {
+			parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_WALK_STMT_MISSING_ENTRY_IDENTIFIER}
+		} else {
+			e, _ := p.parseExpression()
+			if entryIdent, ok = e.(*IdentifierLiteral); !ok {
+				return &WalkStatement{
+					NodeBase: NodeBase{
+						Span:            NodeSpan{walkIdent.Span.Start, e.Base().Span.End},
+						Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_WALK_STMT_MISSING_ENTRY_VARIABLE_NAME},
+						ValuelessTokens: tokens,
+					},
+					MetaIdent: metaIdent,
+					Walked:    walked,
+				}
+			}
+			p.eatSpace()
+		}
+	}
+
 	var blk *Block
 	var end int32
 
@@ -7502,6 +7531,7 @@ func (p *parser) parseWalkStatement(walkIdent *IdentifierLiteral) *WalkStatement
 			ValuelessTokens: tokens,
 		},
 		Walked:     walked,
+		MetaIdent:  metaIdent,
 		EntryIdent: entryIdent,
 		Body:       blk,
 	}

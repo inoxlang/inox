@@ -10454,42 +10454,86 @@ func TestParse(t *testing.T) {
 
 	})
 
-	t.Run("empty walk statement", func(t *testing.T) {
-		n := MustParseChunk("walk ./ entry { }")
-		assert.EqualValues(t, &Chunk{
-			NodeBase: NodeBase{NodeSpan{0, 17}, nil, nil},
-			Statements: []Node{
-				&WalkStatement{
-					NodeBase: NodeBase{
-						NodeSpan{0, 17},
-						nil,
-						[]Token{
-							{Type: WALK_KEYWORD, Span: NodeSpan{0, 4}},
-						},
-					},
-					Walked: &RelativePathLiteral{
-						NodeBase: NodeBase{NodeSpan{5, 7}, nil, nil},
-						Raw:      "./",
-						Value:    "./",
-					},
-					EntryIdent: &IdentifierLiteral{
-						NodeBase: NodeBase{NodeSpan{8, 13}, nil, nil},
-						Name:     "entry",
-					},
-					Body: &Block{
+	t.Run("walk statement", func(t *testing.T) {
+
+		t.Run("empty", func(t *testing.T) {
+			n := MustParseChunk("walk ./ entry { }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 17}, nil, nil},
+				Statements: []Node{
+					&WalkStatement{
 						NodeBase: NodeBase{
-							NodeSpan{14, 17},
+							NodeSpan{0, 17},
 							nil,
-							[]Token{
-								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{14, 15}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{16, 17}},
-							},
+							[]Token{{Type: WALK_KEYWORD, Span: NodeSpan{0, 4}}},
 						},
-						Statements: nil,
+						Walked: &RelativePathLiteral{
+							NodeBase: NodeBase{NodeSpan{5, 7}, nil, nil},
+							Raw:      "./",
+							Value:    "./",
+						},
+						EntryIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{8, 13}, nil, nil},
+							Name:     "entry",
+						},
+						Body: &Block{
+							NodeBase: NodeBase{
+								NodeSpan{14, 17},
+								nil,
+								[]Token{
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{14, 15}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{16, 17}},
+								},
+							},
+							Statements: nil,
+						},
 					},
 				},
-			},
-		}, n)
+			}, n)
+		})
+
+		t.Run("meta & entry variable identifiers", func(t *testing.T) {
+			n := MustParseChunk("walk ./ meta, entry { }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 23}, nil, nil},
+				Statements: []Node{
+					&WalkStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 23},
+							nil,
+							[]Token{
+								{Type: WALK_KEYWORD, Span: NodeSpan{0, 4}},
+								{Type: COMMA, Span: NodeSpan{12, 13}},
+							},
+						},
+						Walked: &RelativePathLiteral{
+							NodeBase: NodeBase{NodeSpan{5, 7}, nil, nil},
+							Raw:      "./",
+							Value:    "./",
+						},
+						MetaIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{8, 12}, nil, nil},
+							Name:     "meta",
+						},
+						EntryIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{14, 19}, nil, nil},
+							Name:     "entry",
+						},
+						Body: &Block{
+							NodeBase: NodeBase{
+								NodeSpan{20, 23},
+								nil,
+								[]Token{
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{20, 21}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{22, 23}},
+								},
+							},
+							Statements: nil,
+						},
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("unary expression", func(t *testing.T) {
