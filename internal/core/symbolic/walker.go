@@ -1,5 +1,9 @@
 package internal
 
+var (
+	_ = []Walkable{(*Path)(nil)}
+)
+
 // An Walkable represents a symbolic Walkable.
 type Walkable interface {
 	SymbolicValue

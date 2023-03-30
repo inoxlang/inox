@@ -87,7 +87,7 @@ func (t *Tree) WalkerElement() symbolic.SymbolicValue {
 	return t.treeNode
 }
 
-func (t *Tree) NodeMeta() symbolic.SymbolicValue {
+func (t *Tree) WalkerNodeMeta() symbolic.SymbolicValue {
 	return symbolic.ANY
 }
 

@@ -1481,20 +1481,25 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 		if err != nil {
 			return nil, err
 		}
-		entryName := n.EntryIdent.Name
 
 		walkable, ok := walkedValue.(Walkable)
 
-		var entry SymbolicValue
+		var nodeMeta, entry SymbolicValue
 
 		if ok {
 			entry = walkable.WalkerElement()
+			nodeMeta = walkable.WalkerNodeMeta()
 		} else {
 			state.addError(makeSymbolicEvalError(node, state, fmtXisNotWalkable(walkedValue)))
 			entry = ANY
+			nodeMeta = ANY
 		}
 
-		state.setLocal(entryName, entry, nil)
+		state.setLocal(n.EntryIdent.Name, entry, nil)
+
+		if n.MetaIdent != nil {
+			state.setLocal(n.MetaIdent.Name, nodeMeta, nil)
+		}
 
 		_, blkErr := symbolicEval(n.Body, state)
 		if blkErr != nil {

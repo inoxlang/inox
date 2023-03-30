@@ -83,7 +83,7 @@ func (s *Path) WalkerElement() SymbolicValue {
 	return WALK_ELEM
 }
 
-func (s *Path) NodeMeta() SymbolicValue {
+func (s *Path) WalkerNodeMeta() SymbolicValue {
 	return ANY
 }
 

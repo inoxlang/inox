@@ -94,6 +94,14 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewList(&Int{}), res)
 		})
 
+		t.Run("two elements of different type", func(t *testing.T) {
+			n, state := makeStateAndChunk(`[1, "a'"]`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, NewList(ANY_INT, ANY_STR), res)
+		})
+
 		t.Run("type annotation and element of invalid type", func(t *testing.T) {
 			n, state := makeStateAndChunk("[]%int[true]")
 			res, err := symbolicEval(n, state)
@@ -2630,6 +2638,19 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
 			assert.Equal(t, WALK_ELEM, res)
+		})
+
+		t.Run("meta", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				walk ./ meta, entry {
+					return [meta, entry]
+				}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, NewList(ANY, WALK_ELEM), res)
 		})
 	})
 
