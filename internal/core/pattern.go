@@ -467,6 +467,11 @@ var (
 		Name:          "sysgraph",
 		SymbolicValue: symbolic.ANY_SYSTEM_GRAPH,
 	}
+	SYSGRAPH_NODE_PATTERN = &TypePattern{
+		Type:          SYSGRAPH_NODE_TYPE,
+		Name:          "sysgraph.node",
+		SymbolicValue: symbolic.ANY_SYSTEM_GRAPH_NODE,
+	}
 
 	DEFAULT_NAMED_PATTERNS = map[string]Pattern{
 		"ident":          IDENT_PATTERN,
@@ -534,6 +539,11 @@ var (
 				"rfc822":    NewDateFormat(time.RFC822),
 				"date-only": NewDateFormat(time.DateOnly),
 				"time-only": NewDateFormat(time.TimeOnly),
+			},
+		},
+		"sysgraph": {
+			Patterns: map[string]Pattern{
+				"node": SYSGRAPH_NODE_PATTERN,
 			},
 		},
 	}

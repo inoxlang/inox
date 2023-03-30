@@ -9,10 +9,12 @@ var (
 	ANY_SYSTEM_GRAPH_EVENT = NewSystemGraphEvent()
 	ANY_SYSTEM_GRAPH_EDGE  = NewSystemGraphEdge()
 
-	SYS_GRAPH_EVENT_TUPLE        = NewTupleOf(ANY_SYSTEM_GRAPH_EVENT)
+	SYS_GRAPH_EVENT_TUPLE = NewTupleOf(ANY_SYSTEM_GRAPH_EVENT)
+	SYS_GRAPH_EDGE_TUPLE  = NewTupleOf(ANY_SYSTEM_GRAPH_EDGE)
+
 	SYSTEM_GRAPH_PROPNAMES       = []string{"nodes", "events"}
 	SYSTEM_GRAPH_EVENT_PROPNAMES = []string{"text"}
-	SYSTEM_GRAPH_NODE_PROPNAMES  = []string{"name", "type_name", "value_id"}
+	SYSTEM_GRAPH_NODE_PROPNAMES  = []string{"name", "type_name", "value_id", "edges"}
 	SYSTEM_GRAP_EDGE_PROPNAMES   = []string{"text", "to"}
 
 	_ = []InMemorySnapshotable{(*SystemGraph)(nil)}
@@ -52,6 +54,7 @@ func (g *SystemGraph) Prop(memberName string) SymbolicValue {
 		return ANY_SYSTEM_GRAPH_NODES
 	case "events":
 		return SYS_GRAPH_EVENT_TUPLE
+
 	}
 	panic(FormatErrPropertyDoesNotExist(memberName, g))
 }
@@ -173,6 +176,8 @@ func (n *SystemGraphNode) Prop(memberName string) SymbolicValue {
 		return ANY_STR
 	case "value_id":
 		return ANY_INT
+	case "edges":
+		return SYS_GRAPH_EDGE_TUPLE
 	}
 	panic(FormatErrPropertyDoesNotExist(memberName, n))
 }
@@ -321,18 +326,6 @@ func (e *SystemGraphEdge) WithExistingPropReplaced(name string, value SymbolicVa
 
 func (e *SystemGraphEdge) PropertyNames() []string {
 	return SYSTEM_GRAP_EDGE_PROPNAMES
-}
-
-func (e *SystemGraphEdge) IsSharable() (bool, string) {
-	return true, ""
-}
-
-func (e *SystemGraphEdge) Share(originState *State) PotentiallySharable {
-	return e
-}
-
-func (e *SystemGraphEdge) IsShared() bool {
-	return true
 }
 
 func (e *SystemGraphEdge) Widen() (SymbolicValue, bool) {

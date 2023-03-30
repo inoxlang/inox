@@ -22,7 +22,7 @@ var (
 	SYSTEM_GRAPH_PROPNAMES       = []string{"nodes", "events"}
 	SYSTEM_GRAPH_EVENT_PROPNAMES = []string{"text"}
 	SYSTEM_GRAP_EDGE_PROPNAMES   = []string{"to", "text"}
-	SYSTEM_GRAPH_NODE_PROPNAMES  = []string{"name", "type_name", "value_id"}
+	SYSTEM_GRAPH_NODE_PROPNAMES  = []string{"name", "type_name", "value_id", "edges"}
 
 	_ = []PotentiallySharable{(*SystemGraph)(nil), (*SystemGraphNodes)(nil)}
 	_ = []IProps{(*SystemGraph)(nil), (*SystemGraphNode)(nil)}
@@ -64,7 +64,7 @@ type SystemGraphEdge struct {
 	NotClonableMixin
 }
 
-func (e *SystemGraphEdge) Prop(ctx *Context, name string) Value {
+func (e SystemGraphEdge) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "to":
 		return Int(e.to)
@@ -74,29 +74,23 @@ func (e *SystemGraphEdge) Prop(ctx *Context, name string) Value {
 	panic(FormatErrPropertyDoesNotExist(name, e))
 }
 
-func (*SystemGraphEdge) SetProp(ctx *Context, name string, value Value) error {
+func (SystemGraphEdge) SetProp(ctx *Context, name string, value Value) error {
 	return ErrCannotSetProp
 }
 
-func (*SystemGraphEdge) PropertyNames(ctx *Context) []string {
+func (SystemGraphEdge) PropertyNames(ctx *Context) []string {
 	return SYSTEM_GRAP_EDGE_PROPNAMES
 }
 
-func (e *SystemGraphEdge) IsSharable(originState *GlobalState) (bool, string) {
+func (e SystemGraphEdge) IsSharable(originState *GlobalState) (bool, string) {
 	return true, ""
 }
 
-func (e *SystemGraphEdge) Share(originState *GlobalState) {}
-
-func (e *SystemGraphEdge) IsShared() bool {
-	return true
-}
-
-func (e *SystemGraphEdge) ForceLock() {}
-
-func (e *SystemGraphEdge) ForceUnlock() {}
-
 type SystemGraphEdgeKind uint8
+
+const (
+	EdgeChild SystemGraphEdgeKind = iota + 1
+)
 
 // A SystemGraphEvent is an immutable value representing an event in an node or between two nodes.
 type SystemGraphEvent struct {
@@ -126,7 +120,7 @@ func (SystemGraphEvent) PropertyNames(ctx *Context) []string {
 
 type SystemGraphNodeValue interface {
 	Watchable
-	ProposeSystemGraph(ctx *Context, g *SystemGraph, propoposedName string)
+	ProposeSystemGraph(ctx *Context, g *SystemGraph, propoposedName string, optionalParent SystemGraphNodeValue)
 	SystemGraph() *SystemGraph
 	AddSystemGraphEvent(ctx *Context, text string)
 }
@@ -143,6 +137,62 @@ func (g *SystemGraph) AddNode(ctx *Context, value SystemGraphNodeValue, name str
 		panic(ErrAttemptToMutateFrozenValue)
 	}
 
+	n := g.addNode(ctx, value, name)
+	if n == nil {
+		return
+	}
+
+	specificMutation := NewSpecificMutation(ctx, SpecificMutationMetadata{
+		Version: 1,
+		Kind:    SG_AddNode,
+		Depth:   ShallowWatching,
+	}, Str(n.name), Str(n.typeName), Int(n.valuePtr), Int(0))
+
+	g.mutationCallbacks.CallMicrotasks(ctx, specificMutation)
+}
+
+// AddChildNode is like AddNode but it also adds an edge from the parent value's node to the newly created node.
+func (g *SystemGraph) AddChildNode(ctx *Context, parent SystemGraphNodeValue, value SystemGraphNodeValue, name, edgeText string) {
+	g.nodes.lock.Lock()
+	defer g.nodes.lock.Unlock()
+
+	if g.isFrozen {
+		panic(ErrAttemptToMutateFrozenValue)
+	}
+
+	parentReflectVal := reflect.ValueOf(parent)
+	parentPtr := parentReflectVal.Pointer()
+	parentNode, ok := g.nodes.ptrToNode[parentPtr]
+	if !ok {
+		panic(ErrValueNotInSysGraph)
+	}
+
+	childNode := g.addNode(ctx, value, name)
+	if childNode == nil {
+		return
+	}
+
+	g.addEdgeToParentNoLock(edgeText, childNode, parentNode)
+
+	specificMutation := NewSpecificMutation(ctx, SpecificMutationMetadata{
+		Version: 1,
+		Kind:    SG_AddNode,
+		Depth:   ShallowWatching,
+	}, Str(childNode.name), Str(childNode.typeName), Int(childNode.valuePtr), Int(parentNode.valuePtr), Str(edgeText))
+
+	g.mutationCallbacks.CallMicrotasks(ctx, specificMutation)
+}
+
+func (g *SystemGraph) addEdgeToParentNoLock(edgeText string, childNode *SystemGraphNode, parentNode *SystemGraphNode) {
+	edge := SystemGraphEdge{
+		text: edgeText,
+		to:   childNode.valuePtr,
+		kind: EdgeChild,
+	}
+	parentNode.edgesFrom = append(parentNode.edgesFrom, edge)
+}
+
+func (g *SystemGraph) addNode(ctx *Context, value SystemGraphNodeValue, name string) *SystemGraphNode {
 	reflectVal := reflect.ValueOf(value)
 	if reflectVal.Kind() != reflect.Pointer {
 		panic(fmt.Errorf("failed to add node to system graph: %w: %#v", ErrValueNotPointer, value))
@@ -151,7 +201,7 @@ func (g *SystemGraph) AddNode(ctx *Context, value SystemGraphNodeValue, name str
 
 	_, alreadyAdded := g.nodes.ptrToNode[ptr]
 	if alreadyAdded {
-		return
+		return nil
 	}
 
 	runtime.SetFinalizer(value, func(v SystemGraphNodeValue) {
@@ -166,21 +216,12 @@ func (g *SystemGraph) AddNode(ctx *Context, value SystemGraphNodeValue, name str
 			node.name = ""
 			node.edgesFrom = node.edgesFrom[:0]
 			node.available = true
-			//note: we don't change the index
 
 			g.nodes.availableNodes = append(g.nodes.availableNodes, node)
 		}
 	})
 
-	n := g.addNodeNoLock(ctx, ptr, name, reflectVal.Elem().Type().Name())
-
-	specificMutation := NewSpecificMutation(ctx, SpecificMutationMetadata{
-		Version: 1,
-		Kind:    SG_AddNode,
-		Depth:   ShallowWatching,
-	}, Str(n.name), Str(n.typeName), Int(n.valuePtr))
-
-	g.mutationCallbacks.CallMicrotasks(ctx, specificMutation)
+	return g.addNodeNoLock(ctx, ptr, name, reflectVal.Elem().Type().Name())
 }
 
 func (g *SystemGraph) addNodeNoLock(ctx *Context, ptr uintptr, name string, typename string) *SystemGraphNode {
@@ -366,6 +407,12 @@ func (n *SystemGraphNode) Prop(ctx *Context, name string) Value {
 		return Str(n.typeName)
 	case "value_id":
 		return Int(n.valuePtr)
+	case "edges":
+		values := make([]Value, len(n.edgesFrom))
+		for i, e := range n.edgesFrom {
+			values[i] = e
+		}
+		return NewTuple(values)
 	}
 	panic(FormatErrPropertyDoesNotExist(name, n))
 }
@@ -400,13 +447,34 @@ func (n *SystemGraphNode) ForceUnlock() {
 
 }
 
-//
+func (obj *Object) ProposeSystemGraph(ctx *Context, g *SystemGraph, proposedName string, optionalParent SystemGraphNodeValue) {
+	state := ctx.GetClosestState()
 
-func (obj *Object) ProposeSystemGraph(ctx *Context, g *SystemGraph, proposedName string) {
+	obj.lock.Lock(state, obj)
+	defer obj.lock.Unlock(state, obj)
+
 	ptr := g.Ptr()
 	obj.sysgraph.Set(ptr)
 
-	g.AddNode(ctx, obj, proposedName)
+	if optionalParent == nil {
+		g.AddNode(ctx, obj, proposedName)
+	} else {
+		g.AddChildNode(ctx, optionalParent, obj, proposedName, "child of")
+	}
+
+	for _, part := range obj.systemParts {
+
+		key := ""
+		for i, k := range obj.keys {
+			v := obj.values[i]
+			if Same(part, v) {
+				key = k
+				break
+			}
+		}
+
+		part.ProposeSystemGraph(ctx, g, key, obj)
+	}
 }
 
 func (obj *Object) SystemGraph() *SystemGraph {

@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"reflect"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -612,6 +613,7 @@ func TestSystemGraphOnMutation(t *testing.T) {
 
 		graph := NewSystemGraph()
 		obj := NewObject()
+		objPtr := reflect.ValueOf(obj).Pointer()
 		called := false
 
 		graph.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
@@ -625,13 +627,48 @@ func TestSystemGraphOnMutation(t *testing.T) {
 				Version: 1,
 				Kind:    SG_AddNode,
 				Depth:   ShallowWatching,
-			}, Str("a"), Str("Object"), Int(graph.nodes.list[0].valuePtr))
+			}, Str("a"), Str("Object"), Int(objPtr), Int(0))
 
 			assert.Equal(t, expectedMutation, mutation)
 			return
 		}, MutationWatchingConfiguration{Depth: ShallowWatching})
 
 		graph.AddNode(ctx, obj, "a")
+		assert.True(t, called)
+	})
+
+	t.Run("microtask should be called when a child node is added", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		graph := NewSystemGraph()
+		obj := NewObject()
+
+		graph.AddNode(ctx, obj, "a")
+		parentPtr := reflect.ValueOf(obj).Pointer()
+		child := NewObject()
+		childPtr := reflect.ValueOf(child).Pointer()
+
+		called := false
+		graph.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			registerAgain = true
+			if called {
+				t.Fatal("microtask should be called once")
+			}
+			called = true
+
+			expectedMutation := NewSpecificMutation(ctx, SpecificMutationMetadata{
+				Version: 1,
+				Kind:    SG_AddNode,
+				Depth:   ShallowWatching,
+			}, Str(".inner"), Str("Object"), Int(childPtr), Int(parentPtr), Str("child"))
+
+			assert.Equal(t, expectedMutation, mutation)
+			return
+		}, MutationWatchingConfiguration{Depth: ShallowWatching})
+
+		graph.AddChildNode(ctx, obj, child, ".inner", "child")
+
 		assert.True(t, called)
 	})
 

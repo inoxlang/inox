@@ -112,7 +112,7 @@ func (obj *Object) initPartList(ctx *Context) {
 		}
 	}
 
-	// if the object has no lifetime jobs it is not considered as a system
+	// if the object has no lifetime jobs it is not considered a system
 	if !hasLifetimeJobs {
 		return
 	}

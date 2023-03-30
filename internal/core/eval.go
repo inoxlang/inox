@@ -77,6 +77,8 @@ var (
 	INT_RANGE_TYPE          = reflect.TypeOf(IntRange{})
 	VALUE_HISTORY_TYPE      = reflect.TypeOf(&ValueHistory{})
 	SYSGRAPH_TYPE           = reflect.TypeOf(&SystemGraph{})
+	SYSGRAPH_NODE_TYPE      = reflect.TypeOf(&SystemGraphNode{})
+	SYSGRAPH_EDGE_TYPE      = reflect.TypeOf(SystemGraphEdge{})
 )
 
 var REMOVED_SINGLE_EXPR_ROUTINE_PERMS = []Permission{

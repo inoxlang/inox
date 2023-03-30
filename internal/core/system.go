@@ -16,7 +16,7 @@ type PotentialSystem interface {
 }
 
 type SystemPart interface {
-	Value
+	SystemGraphNodeValue
 	AttachToSystem(s PotentialSystem) error
 	DetachFromSystem() error
 	System() (PotentialSystem, error)

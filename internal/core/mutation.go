@@ -35,7 +35,7 @@ type Mutation struct {
 	SpecificMutationKind    SpecificMutationKind    // set only if specific mutation
 
 	Data               []byte
-	DataElementLengths [4]int32
+	DataElementLengths [6]int32
 	Path               Path // can be empty
 	Depth              WatchingDepth
 }
@@ -50,26 +50,30 @@ type SpecificMutationAcceptor interface {
 	ApplySpecificMutation(ctx *Context, m Mutation) error
 }
 
-func WriteSingleRepresentation(ctx *Context, v Value) ([]byte, [4]int32, error) {
+func WriteSingleRepresentation(ctx *Context, v Value) ([]byte, [6]int32, error) {
 	buf := bytes.NewBuffer(nil)
 	config := &ReprConfig{allVisible: true}
 	if err := WriteRepresentation(buf, v, config, ctx); err != nil {
-		return nil, [4]int32{}, err
+		return nil, [6]int32{}, err
 	}
-	return buf.Bytes(), [4]int32{int32(buf.Len())}, nil
+	return buf.Bytes(), [6]int32{int32(buf.Len())}, nil
 }
 
-func WriteConcatenatedRepresentations(ctx *Context, values ...Value) ([]byte, [4]int32, error) {
+func WriteConcatenatedRepresentations(ctx *Context, values ...Value) ([]byte, [6]int32, error) {
 	buf := bytes.NewBuffer(nil)
 	config := &ReprConfig{allVisible: true}
 
-	var sizes [4]int32
+	var sizes [6]int32
+
+	if len(values) > len(sizes) {
+		panic(fmt.Errorf("too many representations to write: %d", len(values)))
+	}
 
 	for i, val := range values {
 		prevBufSize := buf.Len()
 
 		if err := WriteRepresentation(buf, val, config, ctx); err != nil {
-			return nil, [4]int32{}, err
+			return nil, [6]int32{}, err
 		}
 
 		elemSize := buf.Len() - prevBufSize
@@ -792,8 +796,19 @@ func (g *SystemGraph) ApplySpecificMutation(ctx *Context, m Mutation) error {
 		name := m.DataElem(ctx, 0).(Str)
 		typename := m.DataElem(ctx, 1).(Str)
 		valuePtr := m.DataElem(ctx, 2).(Int)
+		parentPtr := m.DataElem(ctx, 3).(Int)
 
-		g.addNodeNoLock(ctx, uintptr(valuePtr), string(name), string(typename))
+		childNode := g.addNodeNoLock(ctx, uintptr(valuePtr), string(name), string(typename))
+
+		if parentPtr > 0 {
+			edgeText := m.DataElem(ctx, 4).(Str)
+
+			parentNode, ok := g.nodes.ptrToNode[uintptr(parentPtr)]
+			if !ok {
+				panic(fmt.Errorf("parent node does not exist"))
+			}
+			g.addEdgeToParentNoLock(string(edgeText), childNode, parentNode)
+		}
 	default:
 		panic(ErrUnreachable)
 	}

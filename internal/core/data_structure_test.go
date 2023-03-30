@@ -11,22 +11,6 @@ import (
 
 func TestObject(t *testing.T) {
 
-	createLifetimeJob := func(t *testing.T, state *GlobalState, code string) *LifetimeJob {
-		jobMod := &Module{
-			ModuleKind: LifetimeJobModule,
-			MainChunk: parse.NewParsedChunk(parse.MustParseChunk(code), parse.InMemorySource{
-				NameString: "test",
-				CodeString: code,
-			}),
-		}
-
-		job, err := NewLifetimeJob(Identifier("job"), nil, jobMod, state)
-		if !assert.NoError(t, err) {
-			return nil
-		}
-		return job
-	}
-
 	t.Run("lifetime jobs", func(t *testing.T) {
 		// the operation duration depends on the time required to pause a job, that depends on the routine's interpreter.
 		MAX_OPERATION_DURATION := 500 * time.Microsecond
@@ -54,7 +38,7 @@ func TestObject(t *testing.T) {
 			}
 
 			for i, jobCode := range jobCodes {
-				job := createLifetimeJob(t, state, jobCode)
+				job := createTestLifetimeJob(t, state, jobCode)
 				if job == nil {
 					return nil, nil
 				}
@@ -162,7 +146,7 @@ func TestObject(t *testing.T) {
 			part := NewObject()
 			system := NewObjectFromMap(ValMap{
 				"part": part,
-				"0":    createLifetimeJob(t, state, ""),
+				"0":    createTestLifetimeJob(t, state, ""),
 			}, ctx)
 
 			assert.Equal(t, []SystemPart{part}, system.systemParts)
@@ -176,7 +160,7 @@ func TestObject(t *testing.T) {
 			part := NewObject()
 			system := NewObjectFromMap(ValMap{
 				"part": part,
-				"0":    createLifetimeJob(t, state, ""),
+				"0":    createTestLifetimeJob(t, state, ""),
 			}, ctx)
 
 			newPart := NewObject()

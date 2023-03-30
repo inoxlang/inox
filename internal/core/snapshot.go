@@ -182,13 +182,6 @@ func (g *SystemGraph) takeSnapshot(ctx *Context) *SystemGraph {
 		origToCopy[origNode] = &nodeCopy
 	}
 
-	for _, nodeCopy := range newNodes.list {
-		for i, edge := range nodeCopy.edgesFrom {
-			edge.to = origToCopy[edge.to]
-			nodeCopy.edgesFrom[i] = edge
-		}
-	}
-
 	newNodes.availableNodes = make([]*SystemGraphNode, len(g.nodes.availableNodes))
 	for i, availableNode := range newNodes.availableNodes {
 		newNodes.availableNodes[i] = origToCopy[availableNode]
