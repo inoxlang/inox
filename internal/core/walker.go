@@ -27,8 +27,8 @@ type WalkableNodeMeta struct {
 	parentEdge Value
 }
 
-func NewWalkableNodeMeta(ancestors []Value, parentEdge Value) *WalkableNodeMeta {
-	return &WalkableNodeMeta{
+func NewWalkableNodeMeta(ancestors []Value, parentEdge Value) WalkableNodeMeta {
+	return WalkableNodeMeta{
 		ancestors:  ancestors,
 		parentEdge: parentEdge,
 	}
@@ -124,7 +124,8 @@ type DirWalker struct {
 	NoReprMixin
 	NotClonableMixin
 
-	i, j                  int
+	dirIndex              int
+	entryIndex            int
 	entries               [][]fs.DirEntry
 	paths                 [][]string
 	addDotSlashPathPrefix bool
@@ -133,6 +134,7 @@ type DirWalker struct {
 	currentEntry          fs.DirEntry
 	currentPath           string
 	skipped               bool
+	ancestors             []string // dir paths
 }
 
 // NewDirWalker walks a directory and creates a DirWalker with the entries.
@@ -140,8 +142,8 @@ func NewDirWalker(walkedDirPath Path) *DirWalker {
 	entries, paths := GetWalkEntries(walkedDirPath)
 
 	walker := &DirWalker{
-		i:                     0,
-		j:                     -1,
+		dirIndex:              0,
+		entryIndex:            -1,
 		entries:               entries,
 		paths:                 paths,
 		addDotSlashPathPrefix: walkedDirPath.IsRelative(),
@@ -169,27 +171,27 @@ func WalkDir(walkedDirPath Path, fn func(path Path, d fs.DirEntry, err error) er
 }
 
 func (it *DirWalker) HasNext(ctx *Context) bool {
-	ok := it.i < len(it.entries)-1 || (it.i == len(it.entries)-1 && it.j < len(it.entries[it.i])-1)
+	ok := it.dirIndex < len(it.entries)-1 || (it.dirIndex == len(it.entries)-1 && it.entryIndex < len(it.entries[it.dirIndex])-1)
 	if !ok {
 		return false
 	}
-	nextI := it.i
-	nextJ := it.j + 1
+	nextDirIndex := it.dirIndex
+	nextEntryIndex := it.entryIndex + 1
 
-	if nextJ >= len(it.entries[it.i]) {
-		nextI++
-		nextJ = 0
+	if nextEntryIndex >= len(it.entries[it.dirIndex]) {
+		nextDirIndex++
+		nextEntryIndex = 0
 	}
 
-	nextEntry := it.entries[nextI][nextJ]
-	nextPath := it.paths[nextI][nextJ]
+	nextEntry := it.entries[nextDirIndex][nextEntryIndex]
+	nextPath := it.paths[nextDirIndex][nextEntryIndex]
 	if nextEntry.IsDir() && nextPath[len(nextPath)-1] != '/' {
 		nextPath += "/"
 	}
 
 	if it.skippedDirPath != "" && strings.HasPrefix(nextPath, it.skippedDirPath) {
-		it.i++
-		it.j = 0
+		it.dirIndex++
+		it.entryIndex = 0
 		it.skipped = true
 		return it.HasNext(ctx)
 	}
@@ -202,22 +204,22 @@ func (it *DirWalker) Next(ctx *Context) bool {
 	}
 
 	if !it.skipped {
-		it.j++
-		if it.j >= len(it.entries[it.i]) {
-			it.i++
-			it.j = 0
+		it.entryIndex++
+		if it.entryIndex >= len(it.entries[it.dirIndex]) {
+			it.dirIndex++
+			it.entryIndex = 0
 		}
 	}
 
-	it.currentEntry = it.entries[it.i][it.j]
-	it.currentPath = it.paths[it.i][it.j]
+	it.currentEntry = it.entries[it.dirIndex][it.entryIndex]
+	it.currentPath = it.paths[it.dirIndex][it.entryIndex]
 	it.skipped = false
 	it.skippedDirPath = ""
 	return true
 }
 
 func (it *DirWalker) Prune(ctx *Context) {
-	it.skippedDirPath = it.paths[it.i][0]
+	it.skippedDirPath = it.paths[it.dirIndex][0]
 
 	if it.skippedDirPath != "" && it.skippedDirPath[len(it.skippedDirPath)-1] != '/' {
 		it.skippedDirPath += "/"
@@ -236,7 +238,21 @@ func (it *DirWalker) Value(*Context) Value {
 }
 
 func (it *DirWalker) NodeMeta(*Context) WalkableNodeMeta {
-	panic(ErrNotImplementedYet)
+	currentDirPath := it.paths[it.dirIndex][0]
+
+	var ancestorPaths []Value
+
+	for i := 0; i < it.dirIndex; i++ {
+		ancestorPath := it.paths[i][0]
+
+		// it's okay to use HasPrefix because the dir paths should always end with '/' so
+		// we should never encounter the case of "/home/u" being a prefix of /home/user/dir
+		if strings.HasPrefix(currentDirPath, ancestorPath) {
+			ancestorPaths = append(ancestorPaths, Path(ancestorPath))
+		}
+	}
+
+	return NewWalkableNodeMeta(ancestorPaths, Nil)
 }
 
 func (p Path) Walker(ctx *Context) (Walker, error) {
