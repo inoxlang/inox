@@ -27,14 +27,24 @@ An archive with a Linux binary and some examples is available in [release assets
 In Inox interpolations are always restricted in order to prevent injections.
 When you dynamically create URLs the interpolations are restricted based on where the interpolation is located (path, query).
 
-<img src="./docs/img/url-injection.png" alt='screenshot of an Inox shell with three lines, first line: path="/data?admin=true", second line: public_data=read!(https://private-service{path}?admin=false, third line: URL expression: result of a path interpolation should not contain any of the following substrings: "..", "\" , "*", "?"'></img>
+<img src="./docs/img/url-injection.png"></img>
+
+<!-- code that appear in the image
+> path="/data?admin=true"
+> public_data=read!(https://private-service{path}?admin=false
+URL expression: result of a path interpolation should not contain any of the following substrings: "..", "\" , "*", "?"'>
+-->
 
 Checked strings are strings that are validated against a pattern. When you dynamically
 create a checked string all the interpolations must be explicitly typed.
 
-<img src="./docs/img/query-injection.png" alt='screenshot of an Inox shell with three lines, first line: id = "1 or 1=1", second line query=%sql.query`SELECT * FROM users WHERE id = {{int:id}}`, third line: runtime check error: 0 or 1=1 does not match %sql.int'></img>
+<img src="./docs/img/query-injection.png"></img>
 
-
+<!-- code that appear in the image
+> id = "1 or 1=1"
+> query=%sql.query`SELECT * FROM users WHERE id = {{int:id}}`
+runtime check error: 0 or 1=1 does not match %sql.int
+-->
 
 ## Permission system
 
