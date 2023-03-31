@@ -63,3 +63,25 @@ func TestObjectGraph(t *testing.T) {
 	})
 
 }
+
+func TestSystemGraph(t *testing.T) {
+	ctx := NewContext(ContextConfig{})
+	NewGlobalState(ctx)
+
+	val1 := NewObject()
+	val2 := NewObject()
+	graph := NewSystemGraph()
+
+	graph.AddNode(ctx, val1, "a")
+	graph.AddWatchedNode(ctx, val1, val2, "")
+
+	if !assert.Len(t, graph.nodes.list, 2) {
+		return
+	}
+	assert.NotNil(t, graph.nodes.list[0])
+	assert.NotNil(t, graph.nodes.list[1])
+
+	node := graph.nodes.list[0]
+	assert.Len(t, node.edgesFrom, 1)
+	assert.Equal(t, EdgeWatched, node.edgesFrom[0].kind)
+}

@@ -802,12 +802,13 @@ func (g *SystemGraph) ApplySpecificMutation(ctx *Context, m Mutation) error {
 
 		if parentPtr > 0 {
 			edgeText := m.DataElem(ctx, 4).(Str)
+			edgeKind := m.DataElem(ctx, 4).(Int)
 
 			parentNode, ok := g.nodes.ptrToNode[uintptr(parentPtr)]
 			if !ok {
 				panic(fmt.Errorf("parent node does not exist"))
 			}
-			g.addEdgeToParentNoLock(string(edgeText), childNode, parentNode)
+			g.addEdgeToParentNoLock(string(edgeText), childNode, parentNode, SystemGraphEdgeKind(edgeKind))
 		}
 	default:
 		panic(ErrUnreachable)

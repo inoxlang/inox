@@ -94,6 +94,7 @@ type SystemGraphEdgeKind uint8
 
 const (
 	EdgeChild SystemGraphEdgeKind = iota + 1
+	EdgeWatched
 )
 
 // A SystemGraphEvent is an immutable value representing an event in an node or between two nodes.
@@ -155,8 +156,7 @@ func (g *SystemGraph) AddNode(ctx *Context, value SystemGraphNodeValue, name str
 	g.mutationCallbacks.CallMicrotasks(ctx, specificMutation)
 }
 
-// AddChildNode is like AddNode but it also adds an edge from the parent value's node to the newly created node.
-func (g *SystemGraph) AddChildNode(ctx *Context, parent SystemGraphNodeValue, value SystemGraphNodeValue, name string) {
+func (g *SystemGraph) addChildNode(ctx *Context, parent SystemGraphNodeValue, value SystemGraphNodeValue, name string, edgeKind SystemGraphEdgeKind) {
 	g.nodes.lock.Lock()
 	defer g.nodes.lock.Unlock()
 
@@ -178,24 +178,35 @@ func (g *SystemGraph) AddChildNode(ctx *Context, parent SystemGraphNodeValue, va
 
 	edgeText := DEFAULT_EDGE_TO_CHILD_TEXT
 
-	g.addEdgeToParentNoLock(edgeText, childNode, parentNode)
+	g.addEdgeToParentNoLock(edgeText, childNode, parentNode, edgeKind)
 
 	specificMutation := NewSpecificMutation(ctx, SpecificMutationMetadata{
 		Version: 1,
 		Kind:    SG_AddNode,
 		Depth:   ShallowWatching,
-	}, Str(childNode.name), Str(childNode.typeName), Int(childNode.valuePtr), Int(parentNode.valuePtr), Str(edgeText))
+	}, Str(childNode.name), Str(childNode.typeName), Int(childNode.valuePtr), Int(parentNode.valuePtr), Str(edgeText), Int(edgeKind))
 
 	g.mutationCallbacks.CallMicrotasks(ctx, specificMutation)
 }
 
-func (g *SystemGraph) addEdgeToParentNoLock(edgeText string, childNode *SystemGraphNode, parentNode *SystemGraphNode) {
+// AddChildNode is like AddNode but it also adds an edge of kind EdgeChild from the parent value's node to the newly created node
+func (g *SystemGraph) AddChildNode(ctx *Context, parent SystemGraphNodeValue, value SystemGraphNodeValue, name string) {
+	g.addChildNode(ctx, parent, value, name, EdgeChild)
+}
+
+// AddWatcheddNode is like AddChildNode but the kind of the newly created edge is EdgeWatched
+func (g *SystemGraph) AddWatchedNode(ctx *Context, watchingVal SystemGraphNodeValue, watchedValue SystemGraphNodeValue, name string) {
+	g.addChildNode(ctx, watchingVal, watchedValue, name, EdgeWatched)
+}
+
+func (g *SystemGraph) addEdgeToParentNoLock(edgeText string, childNode *SystemGraphNode, parentNode *SystemGraphNode, kind SystemGraphEdgeKind) SystemGraphEdge {
 	edge := SystemGraphEdge{
 		text: edgeText,
 		to:   childNode.valuePtr,
-		kind: EdgeChild,
+		kind: kind,
 	}
 	parentNode.edgesFrom = append(parentNode.edgesFrom, edge)
+	return edge
 }
 
 func (g *SystemGraph) addNode(ctx *Context, value SystemGraphNodeValue, name string) *SystemGraphNode {
