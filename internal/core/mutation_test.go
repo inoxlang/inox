@@ -661,13 +661,13 @@ func TestSystemGraphOnMutation(t *testing.T) {
 				Version: 1,
 				Kind:    SG_AddNode,
 				Depth:   ShallowWatching,
-			}, Str(".inner"), Str("Object"), Int(childPtr), Int(parentPtr), Str("child"))
+			}, Str(".inner"), Str("Object"), Int(childPtr), Int(parentPtr), Str(DEFAULT_EDGE_TO_CHILD_TEXT))
 
 			assert.Equal(t, expectedMutation, mutation)
 			return
 		}, MutationWatchingConfiguration{Depth: ShallowWatching})
 
-		graph.AddChildNode(ctx, obj, child, ".inner", "child")
+		graph.AddChildNode(ctx, obj, child, ".inner")
 
 		assert.True(t, called)
 	})

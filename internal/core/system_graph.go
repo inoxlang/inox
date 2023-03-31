@@ -14,6 +14,10 @@ const (
 	SG_AddEvent
 )
 
+const (
+	DEFAULT_EDGE_TO_CHILD_TEXT = "parent of"
+)
+
 var (
 	ErrValueAlreadyInSysGraph = errors.New("value already in a system graph")
 	ErrValueNotInSysGraph     = errors.New("value is not part of system graph")
@@ -152,7 +156,7 @@ func (g *SystemGraph) AddNode(ctx *Context, value SystemGraphNodeValue, name str
 }
 
 // AddChildNode is like AddNode but it also adds an edge from the parent value's node to the newly created node.
-func (g *SystemGraph) AddChildNode(ctx *Context, parent SystemGraphNodeValue, value SystemGraphNodeValue, name, edgeText string) {
+func (g *SystemGraph) AddChildNode(ctx *Context, parent SystemGraphNodeValue, value SystemGraphNodeValue, name string) {
 	g.nodes.lock.Lock()
 	defer g.nodes.lock.Unlock()
 
@@ -171,6 +175,8 @@ func (g *SystemGraph) AddChildNode(ctx *Context, parent SystemGraphNodeValue, va
 	if childNode == nil {
 		return
 	}
+
+	edgeText := DEFAULT_EDGE_TO_CHILD_TEXT
 
 	g.addEdgeToParentNoLock(edgeText, childNode, parentNode)
 
@@ -459,7 +465,7 @@ func (obj *Object) ProposeSystemGraph(ctx *Context, g *SystemGraph, proposedName
 	if optionalParent == nil {
 		g.AddNode(ctx, obj, proposedName)
 	} else {
-		g.AddChildNode(ctx, optionalParent, obj, proposedName, "child of")
+		g.AddChildNode(ctx, optionalParent, obj, proposedName)
 	}
 
 	for _, part := range obj.systemParts {
