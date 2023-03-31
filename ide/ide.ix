@@ -9,7 +9,11 @@ manifest {
             routines: {}
             %https://**
         }
-        read: [%/..., %https://**]
+        read: {
+            %/...
+            %https://**
+            system-graph: {}
+        }
         update: [%/..., %https://**]
         provide: [%/..., %https://**, %https://**:1200]
         delete: [%/..., %https://**]
@@ -68,12 +72,50 @@ $$ide = {
 
 add_ctx_data(#ide, ide)
 
+assign graph ok = get_system_graph()
+
+if !ok {
+    return "failed to get system graph"
+}
+
+$$graph_history = ValueHistory(graph, {
+    max-length: 10
+    render: fn(graph %sysgraph) => html.div{
+        tostr("")
+        html.div{
+            ("nodes:")
+            html.ul{
+                children: map(graph.nodes, fn(node %sysgraph.node) => html.div{
+                    html.span{node.name}, 
+                    (" "), 
+                    html.span{tostr(node.value_id)}
+                    html.ul{
+                        children: map(node.edges, fn(edge) => html.div{
+                            edge.text, 
+                            (" "), tostr(edge.to)
+                        })
+                    }
+                })
+            }
+        }
+        html.div{
+            ("events: ")
+            html.ul{
+                children: map(graph.events, fn(event) => html.div{
+                    html.span{event.text}
+                })
+            }
+        }
+    }
+})
+
 server = http.Server!(HOST, {
     routing: Mapping {
         /explorer => explorer
         /editor => ide.editor
         /shell => ide.shell
         /output => ide.output
+        /graph => graph_history
 
         # static
         path %/*.css => read!(./ide/css/{path.rel_equiv}, --raw)
