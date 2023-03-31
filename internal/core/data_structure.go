@@ -956,6 +956,28 @@ type UDataHiearchyEntry struct {
 	Children []UDataHiearchyEntry
 }
 
+func (d *UData) getEntryAtIndexes(indexesAfterRoot ...int32) (UDataHiearchyEntry, bool) {
+
+	if len(indexesAfterRoot) == 0 {
+		return UDataHiearchyEntry{}, false
+	}
+
+	firstIndex := int(indexesAfterRoot[0])
+	if firstIndex >= len(d.HiearchyEntries) {
+		return UDataHiearchyEntry{}, false
+	}
+
+	entry := d.HiearchyEntries[firstIndex]
+
+	for _, index := range indexesAfterRoot[1:] {
+		if int(index) >= len(entry.Children) {
+			return UDataHiearchyEntry{}, false
+		}
+		entry = entry.Children[index]
+	}
+	return entry, true
+}
+
 func (d *UData) WalkEntriesDF(fn func(e UDataHiearchyEntry, index int, ancestorChain *[]UDataHiearchyEntry) error) error {
 	var ancestorChain []UDataHiearchyEntry
 	for i, child := range d.HiearchyEntries {
