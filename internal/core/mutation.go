@@ -221,7 +221,7 @@ func (m Mutation) Relocalized(parent Path) Mutation {
 }
 
 func (m Mutation) DataElem(ctx *Context, index int) Value {
-	if index >= 4 || index < 0 {
+	if index >= 6 || index < 0 {
 		panic(ErrUnreachable)
 	}
 	length := m.DataElementLengths[index]
@@ -802,7 +802,7 @@ func (g *SystemGraph) ApplySpecificMutation(ctx *Context, m Mutation) error {
 
 		if parentPtr > 0 {
 			edgeText := m.DataElem(ctx, 4).(Str)
-			edgeKind := m.DataElem(ctx, 4).(Int)
+			edgeKind := m.DataElem(ctx, 5).(Int)
 
 			parentNode, ok := g.nodes.ptrToNode[uintptr(parentPtr)]
 			if !ok {
