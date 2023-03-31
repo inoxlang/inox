@@ -39,7 +39,7 @@ func NewView(ctx *core.Context, resource core.Path, model *core.Object, domNode 
 	domNode.attachToView(ctx, view)
 
 	view.nodeWatcher = domNode.Watcher(ctx, core.WatcherConfiguration{Filter: core.MUTATION_PATTERN})
-	view.startUpdateGoroutine(ctx)
+	view.startUpdateGoroutine(ctx) // possible issues if the context'state state is accessed within the goroutine
 	return view
 }
 

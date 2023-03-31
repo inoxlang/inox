@@ -58,9 +58,10 @@ var (
 	renderingTaskQueue        = make(chan renderingTask, 100)
 	taskCancellation          = make(chan struct{})
 
-	_ = []core.GoValue{&Node{}}
-	_ = []core.PotentiallySharable{&Node{}}
-	_ = []core.Watchable{&Node{}}
+	_ = []core.GoValue{(*Node)(nil)}
+	_ = []core.PotentiallySharable{(*Node)(nil)}
+	_ = []core.Watchable{(*Node)(nil)}
+	_ = []core.SystemGraphNodeValue{(*Node)(nil)}
 )
 
 func init() {
@@ -180,6 +181,7 @@ type Node struct {
 	modelReactionData core.Value
 	watchers          *core.ValueWatchers
 	mutationCallbacks *core.MutationCallbacks
+	sysgraph          core.SystemGraphPointer
 
 	// auto rendering
 	lastDomNode               *Node
@@ -678,6 +680,33 @@ func (n *Node) SendDOMEventToForwader(ctx *core.Context, forwarderId uint64, eve
 			child.SendDOMEventToForwader(ctx, forwarderId, eventData, t)
 		}
 	}
+}
+
+func (n *Node) ProposeSystemGraph(ctx *core.Context, g *core.SystemGraph, proposedName string, optionalParent core.SystemGraphNodeValue) {
+	n.lock.Lock()
+	defer n.lock.Unlock()
+
+	if !n.sysgraph.Set(g.Ptr()) {
+		return
+	}
+
+	if optionalParent == nil {
+		g.AddNode(ctx, n, proposedName)
+	} else {
+		g.AddChildNode(ctx, optionalParent, n, proposedName)
+	}
+
+	for i, child := range n.children {
+		child.ProposeSystemGraph(ctx, g, strconv.Itoa(i), n)
+	}
+}
+
+func (n *Node) SystemGraph() *core.SystemGraph {
+	return n.sysgraph.Graph()
+}
+
+func (n *Node) AddSystemGraphEvent(ctx *core.Context, text string) {
+	n.sysgraph.AddEvent(ctx, text, n)
 }
 
 func (n *Node) Watcher(ctx *core.Context, config core.WatcherConfiguration) core.Watcher {
