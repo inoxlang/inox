@@ -228,6 +228,7 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 		handlerGlobalState.Logger = _server.state.Logger
 		handlerGlobalState.Out = _server.state.Out
 		handlerGlobalState.Module = _server.state.Module
+		handlerGlobalState.SystemGraph = _server.state.SystemGraph
 
 		//
 

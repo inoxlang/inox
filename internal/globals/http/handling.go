@@ -2,6 +2,7 @@ package internal
 
 import (
 	"encoding/json"
+	"fmt"
 	"html"
 	"log"
 	"net/http"
@@ -457,6 +458,7 @@ func getOrCreateView(model *core.Object, args handlingArguments) (view *_dom.Vie
 			switch h := html.(type) {
 			case *_dom.Node:
 				view = _dom.NewView(state.Ctx, req.Path, model, h)
+				state.ProposeSystemGraph(h, fmt.Sprintf("root node for view of %s", req.Path))
 				viewOk = true
 				state.Ctx.PromoteToLongLived()
 				return view
