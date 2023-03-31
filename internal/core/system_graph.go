@@ -312,11 +312,13 @@ func (p *SystemGraphPointer) Graph() *SystemGraph {
 	return (*SystemGraph)(unsafe.Pointer(p.ptr))
 }
 
-func (p *SystemGraphPointer) Set(ptr SystemGraphPointer) {
+func (p *SystemGraphPointer) Set(ptr SystemGraphPointer) bool {
 	if uintptr(p.ptr) != 0 {
-		panic(ErrValueAlreadyInSysGraph)
+		return false
+		//panic(ErrValueAlreadyInSysGraph)
 	}
 	p.ptr = ptr.ptr
+	return true
 }
 
 func (p *SystemGraphPointer) AddEvent(ctx *Context, text string, v SystemGraphNodeValue) {
@@ -471,7 +473,9 @@ func (obj *Object) ProposeSystemGraph(ctx *Context, g *SystemGraph, proposedName
 	defer obj.lock.Unlock(state, obj)
 
 	ptr := g.Ptr()
-	obj.sysgraph.Set(ptr)
+	if !obj.sysgraph.Set(ptr) {
+		return
+	}
 
 	if optionalParent == nil {
 		g.AddNode(ctx, obj, proposedName)
