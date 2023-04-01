@@ -3020,7 +3020,7 @@ func symbolicMemb(value SymbolicValue, name string, node parse.Node, state *Stat
 			//}
 
 			closest, distance, found := utils.FindClosestString(nil, iprops.PropertyNames(), name, MAX_STRING_SUGGESTION_DIFF)
-			if !found || (len(closest) == MAX_STRING_SUGGESTION_DIFF && distance >= MAX_STRING_SUGGESTION_DIFF-1) {
+			if !found || (len(closest) >= MAX_STRING_SUGGESTION_DIFF && distance >= MAX_STRING_SUGGESTION_DIFF-1) {
 				closest = ""
 			}
 
