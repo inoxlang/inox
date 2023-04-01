@@ -15,7 +15,8 @@ const (
 )
 
 const (
-	DEFAULT_EDGE_TO_CHILD_TEXT = "parent of"
+	DEFAULT_EDGE_TO_CHILD_TEXT    = "parent of"
+	DEFAULT_EDGE_TO_WATCHED_CHILD = "watching"
 )
 
 var (
@@ -176,7 +177,15 @@ func (g *SystemGraph) addChildNode(ctx *Context, parent SystemGraphNodeValue, va
 		return
 	}
 
-	edgeText := DEFAULT_EDGE_TO_CHILD_TEXT
+	var edgeText string
+	switch edgeKind {
+	case EdgeChild:
+		edgeText = DEFAULT_EDGE_TO_CHILD_TEXT
+	case EdgeWatched:
+		edgeText = DEFAULT_EDGE_TO_WATCHED_CHILD
+	default:
+		panic(ErrUnreachable)
+	}
 
 	g.addEdgeToParentNoLock(edgeText, childNode, parentNode, edgeKind)
 
