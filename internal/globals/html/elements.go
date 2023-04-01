@@ -110,11 +110,14 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *HTMLNode {
 			}
 			class = string(s)
 		case ID_KEY:
-			s, ok := v.(core.Str)
-			if !ok {
-				panic(core.FmtPropOfArgXShouldBeOfTypeY(ID_KEY, "description", "string", v))
+			switch idVal := v.(type) {
+			case core.Str:
+				id = string(idVal)
+			case core.Int:
+				id = strconv.Itoa(int(idVal))
+			default:
+				panic(core.FmtPropOfArgXShouldBeOfTypeY(ID_KEY, "description", "string or int", v))
 			}
-			id = string(s)
 		case CHILDREN_KEY:
 			iterable, ok := v.(core.Iterable)
 			if !ok {
