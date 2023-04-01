@@ -10,13 +10,19 @@ import (
 )
 
 const (
+	// This mutation adds a single node + an optional edge
 	SG_AddNode SpecificMutationKind = iota + 1
+
+	// This mutation adds a single edge
+	SG_AddEdge
+
+	// This mutation adds a single event
 	SG_AddEvent
 )
 
 const (
-	DEFAULT_EDGE_TO_CHILD_TEXT    = "parent of"
-	DEFAULT_EDGE_TO_WATCHED_CHILD = "watching"
+	DEFAULT_EDGE_TO_CHILD_TEXT         = "parent of"
+	DEFAULT_EDGE_TO_WATCHED_CHILD_TEXT = "watching"
 )
 
 var (
@@ -98,6 +104,19 @@ const (
 	EdgeWatched
 )
 
+func (k SystemGraphEdgeKind) DefaultText() string {
+	var edgeText string
+	switch k {
+	case EdgeChild:
+		edgeText = DEFAULT_EDGE_TO_CHILD_TEXT
+	case EdgeWatched:
+		edgeText = DEFAULT_EDGE_TO_WATCHED_CHILD_TEXT
+	default:
+		panic(ErrUnreachable)
+	}
+	return edgeText
+}
+
 // A SystemGraphEvent is an immutable value representing an event in an node or between two nodes.
 type SystemGraphEvent struct {
 	node0, node1 uintptr
@@ -157,10 +176,17 @@ func (g *SystemGraph) AddNode(ctx *Context, value SystemGraphNodeValue, name str
 	g.mutationCallbacks.CallMicrotasks(ctx, specificMutation)
 }
 
-func (g *SystemGraph) addChildNode(ctx *Context, parent SystemGraphNodeValue, value SystemGraphNodeValue, name string, edgeKind SystemGraphEdgeKind) {
+func (g *SystemGraph) addNodeWithEdges(ctx *Context, source SystemGraphNodeValue, value SystemGraphNodeValue, name string, edgeKind SystemGraphEdgeKind) {
 	g.nodes.lock.Lock()
 	defer g.nodes.lock.Unlock()
 
+	g.addNodeWithEdgesNoLock(ctx, source, value, name, edgeKind)
+}
+
+func (g *SystemGraph) addNodeWithEdgesNoLock(
+	ctx *Context, parent SystemGraphNodeValue, value SystemGraphNodeValue, name string, edgeKind SystemGraphEdgeKind,
+	additionalEdgeKinds ...SystemGraphEdgeKind,
+) (pNode *SystemGraphNode, cNode *SystemGraphNode) {
 	if g.isFrozen {
 		panic(ErrAttemptToMutateFrozenValue)
 	}
@@ -177,38 +203,76 @@ func (g *SystemGraph) addChildNode(ctx *Context, parent SystemGraphNodeValue, va
 		return
 	}
 
-	var edgeText string
-	switch edgeKind {
-	case EdgeChild:
-		edgeText = DEFAULT_EDGE_TO_CHILD_TEXT
-	case EdgeWatched:
-		edgeText = DEFAULT_EDGE_TO_WATCHED_CHILD
-	default:
-		panic(ErrUnreachable)
-	}
+	edgeText := edgeKind.DefaultText()
+	g.addEdgeNoLock(edgeText, childNode, parentNode, edgeKind)
 
-	g.addEdgeToParentNoLock(edgeText, childNode, parentNode, edgeKind)
-
-	specificMutation := NewSpecificMutation(ctx, SpecificMutationMetadata{
+	mutationMetaData := SpecificMutationMetadata{
 		Version: 1,
 		Kind:    SG_AddNode,
 		Depth:   ShallowWatching,
-	}, Str(childNode.name), Str(childNode.typeName), Int(childNode.valuePtr), Int(parentNode.valuePtr), Str(edgeText), Int(edgeKind))
+	}
+	var specificMutation Mutation
+
+	if len(additionalEdgeKinds) == 0 {
+		specificMutation =
+			NewSpecificMutation(
+				ctx, mutationMetaData, Str(childNode.name), Str(childNode.typeName),
+				Int(childNode.valuePtr), Int(parentNode.valuePtr), Str(edgeText), Int(edgeKind))
+	} else {
+		tupleElements := make([]Value, 2+2*len(additionalEdgeKinds))
+		tupleElements[0] = Str(edgeText)
+		tupleElements[1] = Int(edgeKind)
+
+		for i, additionalEdgeKind := range additionalEdgeKinds {
+			edgeText := additionalEdgeKind.DefaultText()
+			g.addEdgeNoLock(edgeText, childNode, parentNode, additionalEdgeKind)
+			tupleElements[2+i] = Str(edgeText)
+			tupleElements[2+i+1] = Int(additionalEdgeKind)
+		}
+
+		specificMutation =
+			NewSpecificMutation(
+				ctx, mutationMetaData, Str(childNode.name), Str(childNode.typeName),
+				Int(childNode.valuePtr), Int(parentNode.valuePtr), NewTuple(tupleElements))
+	}
 
 	g.mutationCallbacks.CallMicrotasks(ctx, specificMutation)
+	return parentNode, childNode
 }
 
 // AddChildNode is like AddNode but it also adds an edge of kind EdgeChild from the parent value's node to the newly created node
-func (g *SystemGraph) AddChildNode(ctx *Context, parent SystemGraphNodeValue, value SystemGraphNodeValue, name string) {
-	g.addChildNode(ctx, parent, value, name, EdgeChild)
+func (g *SystemGraph) AddChildNode(ctx *Context, parent SystemGraphNodeValue, value SystemGraphNodeValue, name string, additionalEdgeKinds ...SystemGraphEdgeKind) {
+
+	for _, kind := range additionalEdgeKinds {
+		if kind == EdgeChild {
+			panic(errors.New("failed to add child node: additional edge kind is EdgeChild"))
+		}
+	}
+
+	g.nodes.lock.Lock()
+	defer g.nodes.lock.Unlock()
+
+	g.addNodeWithEdgesNoLock(ctx, parent, value, name, EdgeChild, additionalEdgeKinds...)
 }
 
 // AddWatcheddNode is like AddChildNode but the kind of the newly created edge is EdgeWatched
 func (g *SystemGraph) AddWatchedNode(ctx *Context, watchingVal SystemGraphNodeValue, watchedValue SystemGraphNodeValue, name string) {
-	g.addChildNode(ctx, watchingVal, watchedValue, name, EdgeWatched)
+	g.addNodeWithEdges(ctx, watchingVal, watchedValue, name, EdgeWatched)
 }
 
-func (g *SystemGraph) addEdgeToParentNoLock(edgeText string, childNode *SystemGraphNode, parentNode *SystemGraphNode, kind SystemGraphEdgeKind) SystemGraphEdge {
+func (g *SystemGraph) addEdgeWithMutationNoLock(ctx *Context, fromNode, toNode *SystemGraphNode, kind SystemGraphEdgeKind, edgeText string) {
+	g.addEdgeNoLock(edgeText, toNode, fromNode, kind)
+
+	specificMutation := NewSpecificMutation(ctx, SpecificMutationMetadata{
+		Version: 1,
+		Kind:    SG_AddEdge,
+		Depth:   ShallowWatching,
+	}, Int(fromNode.valuePtr), Int(toNode.valuePtr), Str(edgeText), Int(kind))
+
+	g.mutationCallbacks.CallMicrotasks(ctx, specificMutation)
+}
+
+func (g *SystemGraph) addEdgeNoLock(edgeText string, childNode *SystemGraphNode, parentNode *SystemGraphNode, kind SystemGraphEdgeKind) SystemGraphEdge {
 	edge := SystemGraphEdge{
 		text: edgeText,
 		to:   childNode.valuePtr,

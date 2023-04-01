@@ -672,6 +672,44 @@ func TestSystemGraphOnMutation(t *testing.T) {
 		assert.True(t, called)
 	})
 
+	t.Run("microtask should be called when a child node is added with an additional edge kind", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		graph := NewSystemGraph()
+		obj := NewObject()
+
+		graph.AddNode(ctx, obj, "a")
+		parentPtr := reflect.ValueOf(obj).Pointer()
+		child := NewObject()
+		childPtr := reflect.ValueOf(child).Pointer()
+
+		called := false
+		graph.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			registerAgain = true
+			if called {
+				t.Fatal("microtask should be called once")
+			}
+			called = true
+
+			expectedMutation := NewSpecificMutation(ctx, SpecificMutationMetadata{
+				Version: 1,
+				Kind:    SG_AddNode,
+				Depth:   ShallowWatching,
+			}, Str(".inner"), Str("Object"), Int(childPtr), Int(parentPtr), NewTuple([]Value{
+				Str(DEFAULT_EDGE_TO_CHILD_TEXT), Int(EdgeChild), //first edge
+				Str(DEFAULT_EDGE_TO_WATCHED_CHILD_TEXT), Int(EdgeWatched), //second edge
+			}))
+
+			assert.Equal(t, expectedMutation, mutation)
+			return
+		}, MutationWatchingConfiguration{Depth: ShallowWatching})
+
+		graph.AddChildNode(ctx, obj, child, ".inner", EdgeWatched)
+
+		assert.True(t, called)
+	})
+
 	t.Run("microtask should be called when a watched node is added", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
@@ -697,7 +735,7 @@ func TestSystemGraphOnMutation(t *testing.T) {
 				Version: 1,
 				Kind:    SG_AddNode,
 				Depth:   ShallowWatching,
-			}, Str(""), Str("Object"), Int(watchedValPtr), Int(watchingValPtr), Str(DEFAULT_EDGE_TO_CHILD_TEXT), Int(EdgeWatched))
+			}, Str(""), Str("Object"), Int(watchedValPtr), Int(watchingValPtr), Str(DEFAULT_EDGE_TO_WATCHED_CHILD_TEXT), Int(EdgeWatched))
 
 			assert.Equal(t, expectedMutation, mutation)
 			return

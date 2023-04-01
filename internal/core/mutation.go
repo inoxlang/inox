@@ -801,15 +801,50 @@ func (g *SystemGraph) ApplySpecificMutation(ctx *Context, m Mutation) error {
 		childNode := g.addNodeNoLock(ctx, uintptr(valuePtr), string(name), string(typename))
 
 		if parentPtr > 0 {
-			edgeText := m.DataElem(ctx, 4).(Str)
-			edgeKind := m.DataElem(ctx, 5).(Int)
-
 			parentNode, ok := g.nodes.ptrToNode[uintptr(parentPtr)]
 			if !ok {
 				panic(fmt.Errorf("parent node does not exist"))
 			}
-			g.addEdgeToParentNoLock(string(edgeText), childNode, parentNode, SystemGraphEdgeKind(edgeKind))
+
+			edgeTextOrEdgeTuple := m.DataElem(ctx, 4)
+			switch textOrTuple := edgeTextOrEdgeTuple.(type) {
+			case Str:
+				edgeKind := m.DataElem(ctx, 5).(Int)
+				g.addEdgeNoLock(string(textOrTuple), childNode, parentNode, SystemGraphEdgeKind(edgeKind))
+			case *Tuple:
+				for i := 0; i < len(textOrTuple.elements); i += 2 {
+					edgeText := textOrTuple.elements[i].(Str)
+					edgeKind := textOrTuple.elements[i+1].(Int)
+					g.addEdgeNoLock(string(edgeText), childNode, parentNode, SystemGraphEdgeKind(edgeKind))
+				}
+			}
+
 		}
+	case SG_AddEdge:
+		g.nodes.lock.Lock()
+		defer g.nodes.lock.Unlock()
+
+		if g.isFrozen {
+			return ErrAttemptToMutateFrozenValue
+		}
+
+		edgeSourcePtr := m.DataElem(ctx, 0).(Int)
+		edgeTargetPtr := m.DataElem(ctx, 1).(Int)
+		edgeText := m.DataElem(ctx, 2).(Str)
+		edgeKind := m.DataElem(ctx, 3).(Int)
+
+		sourceNode, ok := g.nodes.ptrToNode[uintptr(edgeSourcePtr)]
+		if !ok {
+			panic(fmt.Errorf("edge's source node does not exist"))
+		}
+
+		targetNode, ok := g.nodes.ptrToNode[uintptr(edgeTargetPtr)]
+		if !ok {
+			panic(fmt.Errorf("edge's parent node does not exist"))
+		}
+
+		g.addEdgeWithMutationNoLock(ctx, sourceNode, targetNode, SystemGraphEdgeKind(edgeKind), string(edgeText))
+		_ = edgeText
 	default:
 		panic(ErrUnreachable)
 	}
