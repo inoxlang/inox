@@ -88,8 +88,8 @@ a {
     padding-left: 10px;
 }
 
-.sysgraph-node {
-    padding: 3px;
+.sysgraph-node, .sysgraph-event {
+    padding: 5px;
     margin: 3px;
     border: var(--thin-border);
     border-radius: 5px;
@@ -102,4 +102,8 @@ a {
 .title {
     font-size: 24px;
     font-weight: 600;
+}
+
+.sysgraph__events {
+    width: max-content;
 }

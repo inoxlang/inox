@@ -118,7 +118,8 @@ $$graph_history = ValueHistory(graph, {
             }
             html.ul{
                 children: map(graph.events, fn(event) => html.div{
-                    html.span{event.text}
+                    class: "sysgraph-event"
+                    html.span{event.text, class: "sysgraph-event__text"}
                 })
             }
         }
