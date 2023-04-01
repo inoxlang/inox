@@ -1,5 +1,5 @@
 
-manifest {  
+eeemanifest {  
     permissions: {}  
 }    
  
@@ -12,7 +12,8 @@ fn f(arg %int?){
         (1 + arg)
     }
 }
-
+ee
 f("a")
-f(1)
-
+fe(1eeeeeeeeeee)
+eee
+eeeeeee

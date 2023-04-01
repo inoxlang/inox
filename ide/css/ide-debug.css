@@ -1,0 +1,63 @@
+/* RESET */
+
+*, *:before, *:after {
+    box-sizing: inherit;
+}
+
+body, h1, h2, h3, h4, h5, h6, p, ol, ul {
+    margin: 0;
+    padding: 0;
+    font-weight: normal;
+}
+
+ol, ul {
+    list-style: none;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+html {
+    box-sizing: border-box;
+    background-color:rgb(19, 19, 19);
+    height: 100%;
+    overflow: hidden;
+    color: rgb(204, 202, 202);
+    font-size: 14px;
+}
+
+body {
+    height: 100%;
+    overflow: hidden;
+}
+
+@font-face {
+    font-family: 'Droid Sans Mono';
+    src: url('droidsansmono.woff2') format('woff2'),
+         url('droidsansmono.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+
+#main {
+    height: 100%;
+    overflow: hidden;
+}
+
+#graph-wrapper {
+    padding: 5px;
+    height: 100%;
+    width: 100%;
+}
+
+#graph-wrapper > *, #graph-wrapper .sysgraph__nodes {
+    height: 100%;
+}
+
+#graph-wrapper .sysgraph__nodes > ul {
+    height: 100%;
+    overflow-y: scroll;
+}

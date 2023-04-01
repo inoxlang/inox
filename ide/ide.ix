@@ -83,6 +83,7 @@ $$graph_history = ValueHistory(graph, {
     render: fn(graph %sysgraph) => html.div{
         tostr("")
         html.div{
+            class: "sysgraph__nodes"
             ("nodes:")
             html.ul{
                 children: map(graph.nodes, fn(node %sysgraph.node) => html.div{
@@ -121,10 +122,10 @@ server = http.Server!(HOST, {
         path %/*.css => read!(./ide/css/{path.rel_equiv}, --raw)
         path %/*.woff => read!(./ide/fonts/{path.rel_equiv}, --raw)
         path %/*.woff2 => read!(./ide/fonts/{path.rel_equiv}, --raw)
-        /index.js => read!(./ide/js/index.js, --raw)
-        /lib.js => read!(./ide/js/lib.js, --raw)
-        /xterm.js => read!(./ide/js/xterm.js, --raw)
+        path %/*.js => read!(./ide/js/{path.rel_equiv}, --raw)
+
         / => read!(./ide/index.html, --raw)
+        /ide-debug => read!(./ide/ide-debug.html, --raw)
 
         %/... => #notfound
     }
