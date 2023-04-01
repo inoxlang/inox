@@ -30,6 +30,10 @@ const (
 	GlobalConst
 )
 
+const (
+	MAX_STRING_SUGGESTION_DIFF = 3
+)
+
 var (
 	CTX_PTR_TYPE                    = reflect.TypeOf((*Context)(nil))
 	ERROR_TYPE                      = reflect.TypeOf((*Error)(nil))
@@ -3011,9 +3015,16 @@ func symbolicMemb(value SymbolicValue, name string, node parse.Node, state *Stat
 		e := recover()
 		if e != nil {
 			//TODO: add log
+
 			//if err, ok := e.(error); ok && strings.Contains(err.Error(), "nil pointer") {
 			//}
-			state.addError(makeSymbolicEvalError(node, state, fmtPropOfSymbolicDoesNotExist(name, value)))
+
+			closest, distance, found := utils.FindClosestString(nil, iprops.PropertyNames(), name, MAX_STRING_SUGGESTION_DIFF)
+			if !found || (len(closest) == MAX_STRING_SUGGESTION_DIFF && distance >= MAX_STRING_SUGGESTION_DIFF-1) {
+				closest = ""
+			}
+
+			state.addError(makeSymbolicEvalError(node, state, fmtPropOfSymbolicDoesNotExist(name, value, closest)))
 			result = ANY
 		}
 	}()

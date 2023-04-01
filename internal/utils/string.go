@@ -1,7 +1,12 @@
 package utils
 
 import (
+	"context"
+	"math"
 	"strings"
+	"time"
+
+	"github.com/texttheater/golang-levenshtein/levenshtein"
 )
 
 func AddCarriageReturnAfterNewlines(s string) string {
@@ -42,6 +47,78 @@ func FindLongestCommonPrefix(strs []string) string {
 	}
 
 	return string(prefix)
+}
+
+type ClosestSearch[T any] struct {
+	MaxDifferences           int
+	Target                   T
+	GetSourceI               func(i int) (source T, ok bool)
+	OptionalFilter           func(source T, target T) bool
+	ComputeLevenshteinMatrix func(source T, target T) [][]int
+	Context                  context.Context
+}
+
+func FindClosest[T any](search ClosestSearch[T]) (sourceIndex int, minDistance int) {
+	i := 0
+	minDistance = math.MaxInt
+
+	lastContextCheck := time.Now()
+
+	for {
+		src, ok := search.GetSourceI(i)
+		if !ok {
+			break
+		}
+
+		matrix := search.ComputeLevenshteinMatrix(src, search.Target)
+		distance := levenshtein.DistanceForMatrix(matrix)
+
+		if distance < minDistance {
+			minDistance = distance
+			sourceIndex = i
+		}
+
+		i++
+
+		now := time.Now()
+
+		if search.Context != nil && now.Sub(lastContextCheck) > time.Millisecond {
+			select {
+			case <-search.Context.Done():
+				panic(search.Context.Err())
+			default:
+			}
+			lastContextCheck = now
+		}
+	}
+
+	return
+}
+
+func FindClosestString(ctx context.Context, candidates []string, v string, maxDifferences int) (string, int, bool) {
+	index, distance := FindClosest(ClosestSearch[[]rune]{
+		Context:        ctx,
+		MaxDifferences: maxDifferences,
+		Target:         []rune(v),
+		GetSourceI: func(i int) (sourceIndex []rune, ok bool) {
+			if i >= len(candidates) {
+				return nil, false
+			}
+			return []rune(candidates[i]), true
+		},
+		ComputeLevenshteinMatrix: func(source, target []rune) [][]int {
+			return levenshtein.MatrixForStrings(source, target, levenshtein.Options{
+				InsCost: 1,
+				DelCost: 1,
+				SubCost: 1,
+				Matches: levenshtein.IdenticalRunes,
+			})
+		},
+	})
+	if index >= 0 {
+		return candidates[index], distance, true
+	}
+	return "", -1, false
 }
 
 // FindDoubleLineSequence returns the index of a double line sequence (see further), and the sequence's length in bytes.

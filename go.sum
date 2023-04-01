@@ -230,6 +230,8 @@ github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.8.0 h1:pSgiaMZlXftHpm5L7V1+rVB+AZJydKsMxsQBIJw4PKk=
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
+github.com/texttheater/golang-levenshtein v1.0.2-0.20211007163542-3d00ed831923 h1:cTOyRI/rwuv5Vtuh4zbhjIntTURMh9eX/spEurPVgTw=
+github.com/texttheater/golang-levenshtein v1.0.2-0.20211007163542-3d00ed831923/go.mod h1:PYAKrbF5sAiq9wd+H82hs7gNaen0CplQ9uvm6+enD/8=
 github.com/thomasjungblut/go-sstables v1.3.1 h1:kO6+DBmt1j1yuJF+PFrjpStRfGD2IpAUODfQf0Oyx+g=
 github.com/thomasjungblut/go-sstables v1.3.1/go.mod h1:GPvTd3BppjsyplqSLbp96D5kJZvV+VU7WdJ+bKgvAQU=
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=

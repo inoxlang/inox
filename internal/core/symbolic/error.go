@@ -231,8 +231,11 @@ func fmtInterpolationIsNotStringBut(v SymbolicValue) string {
 	return fmt.Sprintf("result of interpolation expression should be a string but is a(n) %s", v.String())
 }
 
-func fmtPropOfSymbolicDoesNotExist(name string, v SymbolicValue) string {
-	return fmt.Sprintf("property .%s does not exist in %s (%T)", name, v.String(), v)
+func fmtPropOfSymbolicDoesNotExist(name string, v SymbolicValue, suggestion string) string {
+	if suggestion != "" {
+		suggestion = " maybe you meant ." + suggestion
+	}
+	return fmt.Sprintf("property .%s does not exist in %s (%T)%s", name, v.String(), v, suggestion)
 }
 
 func fmtPatternSpreadInObjectPatternShouldBeAnObjectPatternNot(v SymbolicValue) string {
