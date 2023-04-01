@@ -58,7 +58,6 @@ a {
 
 #main {
     height: 100%;
-    overflow: hidden;
 }
 
 #graph-wrapper {
@@ -67,16 +66,15 @@ a {
     width: 100%;
 }
 
-#graph-wrapper > *, #graph-wrapper .sysgraph__nodes {
+.sysgraph {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
     height: 100%;
+    width: 100%;
 }
 
-.sysgraph__nodes > ul {
-    height: 100%;
-    overflow-y: scroll;
-}
-
-.sysgraph__nodes > ul {
+.sysgraph__nodes {
     height: 100%;
     overflow-y: scroll;
     padding-left: 10px;
