@@ -21,10 +21,8 @@ img {
 
 html {
     box-sizing: border-box;
-    background-color:rgb(19, 19, 19);
     height: 100%;
     overflow: hidden;
-    color: rgb(204, 202, 202);
     font-size: 14px;
 }
 
@@ -32,6 +30,8 @@ body {
     height: 100%;
     overflow: hidden;
 }
+
+/* ---------------- */
 
 @font-face {
     font-family: 'Droid Sans Mono';
@@ -41,6 +41,20 @@ body {
     font-style: normal;
 }
 
+:root {
+    --bg-color: rgb(19, 19, 19);
+    --text-color:  rgb(204, 202, 202);
+    --anchor-color: hsl(0, 0%, calc(100% - (2 * (100% - luminance(currentColor))))); 
+}
+
+html {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+a {
+    color: var(--anchor-color);
+}
 
 #main {
     height: 100%;
