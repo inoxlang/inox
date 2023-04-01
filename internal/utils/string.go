@@ -59,12 +59,14 @@ type ClosestSearch[T any] struct {
 }
 
 func FindClosest[T any](search ClosestSearch[T]) (sourceIndex int, minDistance int) {
-	i := 0
+	i := -1
+	sourceIndex = -1
 	minDistance = math.MaxInt
 
 	lastContextCheck := time.Now()
 
 	for {
+		i++
 		src, ok := search.GetSourceI(i)
 		if !ok {
 			break
@@ -77,8 +79,6 @@ func FindClosest[T any](search ClosestSearch[T]) (sourceIndex int, minDistance i
 			minDistance = distance
 			sourceIndex = i
 		}
-
-		i++
 
 		now := time.Now()
 
