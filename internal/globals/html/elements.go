@@ -14,6 +14,7 @@ import (
 
 const (
 	CLASS_KEY    = "class"
+	ID_KEY       = "id"
 	CHILDREN_KEY = "children"
 	MODEL_KEY    = "model"
 
@@ -75,7 +76,7 @@ func _h4(ctx *core.Context, desc *core.Object) *HTMLNode {
 }
 
 func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *HTMLNode {
-	var class string
+	var class, id string
 	var children []*HTMLNode
 
 	it := desc.Iterator(ctx, core.IteratorConfiguration{})
@@ -108,6 +109,12 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *HTMLNode {
 				panic(core.FmtPropOfArgXShouldBeOfTypeY(CLASS_KEY, "description", "string", v))
 			}
 			class = string(s)
+		case ID_KEY:
+			s, ok := v.(core.Str)
+			if !ok {
+				panic(core.FmtPropOfArgXShouldBeOfTypeY(ID_KEY, "description", "string", v))
+			}
+			id = string(s)
 		case CHILDREN_KEY:
 			iterable, ok := v.(core.Iterable)
 			if !ok {
@@ -181,6 +188,7 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *HTMLNode {
 		Tag:      string(tag),
 		Class:    class,
 		Children: children,
+		Id:       id,
 	})
 }
 
@@ -188,6 +196,7 @@ type NodeDescription struct {
 	Tag      string
 	Children []*HTMLNode
 	Class    string
+	Id       string
 }
 
 func NewNodeFromGoDescription(desc NodeDescription) *HTMLNode {
@@ -219,6 +228,10 @@ func NewNodeFromGoDescription(desc NodeDescription) *HTMLNode {
 
 	if desc.Class != "" {
 		node.node.Attr = append(node.node.Attr, html.Attribute{Key: "class", Val: desc.Class})
+	}
+
+	if desc.Id != "" {
+		node.node.Attr = append(node.node.Attr, html.Attribute{Key: "id", Val: desc.Id})
 	}
 
 	if len(desc.Children) > 0 {
