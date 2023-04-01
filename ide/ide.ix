@@ -86,14 +86,18 @@ $$graph_history = ValueHistory(graph, {
         tostr("")
         html.div{
             class: "sysgraph__nodes"
-            ("nodes:")
+            html.span{
+                class: "title"
+                ("Nodes")
+            }
             html.ul{
                 children: map(graph.nodes, fn(node %sysgraph.node) => html.div{
                     id: node.value_id
+                    class: "sysgraph-node"
 
                     html.span{node.name}, 
                     (" "), 
-                    html.span{node.type_name}, 
+                    html.span{node.type_name, class: "sysgraph-node__typename"}, 
                     (" "), 
                     html.span{tostr(node.value_id)}
                     html.ul{
@@ -108,7 +112,10 @@ $$graph_history = ValueHistory(graph, {
         }
         html.div{
             class: "sysgraph__events"
-            ("events: ")
+            html.span{
+                class: "title"
+                ("Events")
+            }
             html.ul{
                 children: map(graph.events, fn(event) => html.div{
                     html.span{event.text}

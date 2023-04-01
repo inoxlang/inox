@@ -45,16 +45,20 @@ body {
     --bg-color: rgb(19, 19, 19);
     --text-color:  rgb(204, 202, 202);
     --anchor-color: hsl(0, 0%, calc(100% - (2 * (100% - luminance(currentColor))))); 
+    --thin-border: 1px solid rgb(63, 63, 63);
+    --typename-color: rgb(83, 214, 188);
 }
 
 html {
     background-color: var(--bg-color);
     color: var(--text-color);
+    font-family: 'Droid Sans Mono';
 }
 
 a {
     color: var(--anchor-color);
 }
+
 
 #main {
     height: 100%;
@@ -82,4 +86,20 @@ a {
 
 .sysgraph-node__edges {
     padding-left: 10px;
+}
+
+.sysgraph-node {
+    padding: 3px;
+    margin: 3px;
+    border: var(--thin-border);
+    border-radius: 5px;
+}
+
+.sysgraph-node__typename {
+    color: var(--typename-color);
+}
+
+.title {
+    font-size: 24px;
+    font-weight: 600;
 }
