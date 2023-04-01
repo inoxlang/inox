@@ -693,7 +693,7 @@ func (n *Node) ProposeSystemGraph(ctx *core.Context, g *core.SystemGraph, propos
 	if optionalParent == nil {
 		g.AddNode(ctx, n, proposedName)
 	} else {
-		g.AddChildNode(ctx, optionalParent, n, proposedName)
+		g.AddChildNode(ctx, optionalParent, n, proposedName, core.EdgeWatched)
 	}
 
 	for i, child := range n.children {
