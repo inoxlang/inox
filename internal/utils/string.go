@@ -8,6 +8,13 @@ func AddCarriageReturnAfterNewlines(s string) string {
 	return strings.ReplaceAll(s, "\n", "\n\r")
 }
 
+func MinMaxPossibleRuneCount(byteCount int) (int, int) {
+	minPossibleRuneCount := byteCount / 4 //4 is the maximum number of bytes for a single character in UTF-8
+	maxPossibleRuneCount := byteCount
+
+	return minPossibleRuneCount, maxPossibleRuneCount
+}
+
 func FindLongestCommonPrefix(strs []string) string {
 	if len(strs) == 0 {
 		return ""

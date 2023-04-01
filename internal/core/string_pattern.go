@@ -1358,10 +1358,9 @@ func getNewEffectiveLenRange(args []Value, originalRange IntRange) (intRange Int
 func checkMatchedStringLen(s StringLike, patt StringPattern) bool {
 	lenRange := patt.EffectiveLengthRange()
 
-	minPossibleRuneCount := int64(s.ByteLen() / 4) //4 is the maximum number of bytes for a single character in UTF-8
-	maxPossibleRuneCount := int64(s.ByteLen())
+	minPossibleRuneCount, maxPossibleRuneCount := utils.MinMaxPossibleRuneCount(s.ByteLen())
 
-	if minPossibleRuneCount > lenRange.InclusiveEnd() || maxPossibleRuneCount < lenRange.Start {
+	if int64(minPossibleRuneCount) > lenRange.InclusiveEnd() || int64(maxPossibleRuneCount) < lenRange.Start {
 		return false
 	}
 
