@@ -91,6 +91,7 @@ $$graph_history = ValueHistory(graph, {
                     (" "), 
                     html.span{tostr(node.value_id)}
                     html.ul{
+                        class: "sysgraph-node__edges"
                         children: map(node.edges, fn(edge) => html.div{
                             edge.text, 
                             (" "), tostr(edge.to)

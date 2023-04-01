@@ -57,7 +57,17 @@ body {
     height: 100%;
 }
 
-#graph-wrapper .sysgraph__nodes > ul {
+.sysgraph__nodes > ul {
     height: 100%;
     overflow-y: scroll;
+}
+
+.sysgraph__nodes > ul {
+    height: 100%;
+    overflow-y: scroll;
+    padding-left: 10px;
+}
+
+.sysgraph-node__edges {
+    padding-left: 10px;
 }
