@@ -20,11 +20,12 @@ import (
 )
 
 const (
-	DEFAULT_HTTP_SERVER_READ_TIMEOUT     = 8 * time.Second
-	DEFAULT_HTTP_SERVER_WRITE_TIMEOUT    = 12 * time.Second
-	DEFAULT_HTTP_SERVER_MAX_HEADER_BYTES = 1 << 12
-	DEFAULT_HTTP_SERVER_TX_TIMEOUT       = 20 * time.Second
-	SSE_STREAM_WRITE_TIMEOUT             = 500 * time.Second
+	DEFAULT_HTTP_SERVER_READ_HEADER_TIMEOUT = 3 * time.Second
+	DEFAULT_HTTP_SERVER_READ_TIMEOUT        = DEFAULT_HTTP_SERVER_READ_HEADER_TIMEOUT + 8*time.Second
+	DEFAULT_HTTP_SERVER_WRITE_TIMEOUT       = 2 * (DEFAULT_HTTP_SERVER_READ_TIMEOUT - DEFAULT_HTTP_SERVER_READ_HEADER_TIMEOUT)
+	DEFAULT_HTTP_SERVER_MAX_HEADER_BYTES    = 1 << 12
+	DEFAULT_HTTP_SERVER_TX_TIMEOUT          = 20 * time.Second
+	SSE_STREAM_WRITE_TIMEOUT                = 500 * time.Second
 
 	HTTP_SERVER_STARTING_WAIT_TIME        = 5 * time.Millisecond
 	HTTP_SERVER_GRACEFUL_SHUTDOWN_TIMEOUT = 5 * time.Second
@@ -384,11 +385,12 @@ func makeHttpServer(addr string, handler http.Handler, certFilePath string, keyF
 	}
 
 	server := &http.Server{
-		Addr:           addr,
-		Handler:        handler,
-		ReadTimeout:    DEFAULT_HTTP_SERVER_READ_TIMEOUT,
-		WriteTimeout:   DEFAULT_HTTP_SERVER_WRITE_TIMEOUT,
-		MaxHeaderBytes: DEFAULT_HTTP_SERVER_MAX_HEADER_BYTES,
+		Addr:              addr,
+		Handler:           handler,
+		ReadHeaderTimeout: DEFAULT_HTTP_SERVER_READ_HEADER_TIMEOUT,
+		ReadTimeout:       DEFAULT_HTTP_SERVER_READ_TIMEOUT,
+		WriteTimeout:      DEFAULT_HTTP_SERVER_WRITE_TIMEOUT,
+		MaxHeaderBytes:    DEFAULT_HTTP_SERVER_MAX_HEADER_BYTES,
 	}
 
 	return server, CERT_FILEPATH, CERT_KEY_FILEPATH, nil
