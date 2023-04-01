@@ -39,7 +39,7 @@ func FmtMissingPropInArgX(propName string, argName string) error {
 }
 
 func FmtPropOfArgXShouldBeOfTypeY(propName string, argName string, typename string, value Value) error {
-	return fmt.Errorf("property .%s of %s argument should be of type %s but is %s", propName, argName, typename, Stringify(value, nil))
+	return fmt.Errorf("property .%s of %s argument should be of type %s but is a value of type %T: %s", propName, argName, typename, value, Stringify(value, nil))
 }
 
 func FmtPropOfArgXShouldBeY(propName string, argName string, info string) error {

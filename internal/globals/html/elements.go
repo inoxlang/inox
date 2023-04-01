@@ -13,10 +13,11 @@ import (
 )
 
 const (
-	CLASS_KEY    = "class"
-	ID_KEY       = "id"
-	CHILDREN_KEY = "children"
-	MODEL_KEY    = "model"
+	CLASS_KEY       = "class"
+	ID_KEY          = "id"
+	CHILDREN_KEY    = "children"
+	ANCHOR_HREF_KEY = "href"
+	MODEL_KEY       = "model"
 
 	S_NODE_ALREADY_HAS_A_PARENT                    = "node that already has a parent"
 	S_NODE_ALREADY_HAS_SIBLINGS                    = "node that already has siblings"
@@ -30,6 +31,34 @@ var (
 		SymbolicValue: _html_symbolic.NewHTMLNode(),
 	}
 )
+
+var tagnameToSpecificDescPropHandler = map[string]map[string]func(value core.Value, node *HTMLNode){
+	"a": {
+		ANCHOR_HREF_KEY: func(value core.Value, node *HTMLNode) {
+			var href string
+			switch val := value.(type) {
+			case core.StringLike:
+				s := val.GetOrBuildString()
+				if s == "" {
+					panic(commonfmt.FmtInvalidValueForPropXOfArgY(ANCHOR_HREF_KEY, "description", "empty string"))
+				}
+				if s[0] == '#' {
+					href = s
+				} else {
+					href = "#" + s
+				}
+			case core.Path:
+				href = val.UnderlyingString()
+			case core.URL:
+				href = val.UnderlyingString()
+			default:
+				panic(core.FmtPropOfArgXShouldBeOfTypeY(ANCHOR_HREF_KEY, "description", "string or path or URL", val))
+			}
+
+			node.node.Attr = append(node.node.Attr, html.Attribute{Key: "href", Val: href})
+		},
+	},
+}
 
 func _a(ctx *core.Context, desc *core.Object) *HTMLNode {
 	return NewNode(ctx, "a", desc)
@@ -75,7 +104,7 @@ func _h4(ctx *core.Context, desc *core.Object) *HTMLNode {
 	return NewNode(ctx, "h4", desc)
 }
 
-func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *HTMLNode {
+func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) (finalNode *HTMLNode) {
 	var class, id string
 	var children []*HTMLNode
 
@@ -147,6 +176,19 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *HTMLNode {
 				addChild(child)
 			}
 		default:
+			// handle description property specific to the node's tag
+
+			handlers, ok := tagnameToSpecificDescPropHandler[string(tag)]
+			if ok {
+				if handler, ok := handlers[k]; ok {
+					defer func() {
+						if finalNode != nil {
+							handler(v, finalNode)
+						}
+					}()
+					continue
+				}
+			}
 			panic(commonfmt.FmtUnexpectedPropInArgX(k, "description"))
 		}
 	}
