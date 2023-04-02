@@ -32,6 +32,7 @@ require (
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/aws/aws-sdk-go v1.44.174 // indirect
 	github.com/bits-and-blooms/bitset v1.5.0 // indirect
+	github.com/buger/jsonparser v1.1.2-0.20220418200129-61b32cfdfa0f // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/chromedp/cdproto v0.0.0-20220924210414-0e3390be1777 // indirect

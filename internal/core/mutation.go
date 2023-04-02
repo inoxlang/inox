@@ -11,11 +11,24 @@ import (
 )
 
 var (
-	MUTATION_KIND_NAMES = []string{"unspecified-mutation", "add-prop", "update-prop", "insert-elem-at-index", "set-elem-at-index"}
+	MUTATION_KIND_NAMES = [...]string{
+		UnspecifiedMutation:   "unspecified-mutation",
+		AddProp:               "add-prop",
+		UpdateProp:            "update-prop",
+		InsertElemAtIndex:     "insert-elem-at-index",
+		SetElemAtIndex:        "set-elem-at-index",
+		InsertSequenceAtIndex: "insert-seq-at-index",
+		RemovePosition:        "remove-pos",
+		RemovePositionRange:   "remove-pos-range",
+		SpecificMutation:      "specific-mutation",
+	}
 
 	ErrCannotApplyIncompleteMutation = errors.New("cannot apply an incomplete mutation")
 	ErrNotSupportedSpecificMutation  = errors.New("not supported specific mutation")
-	_                                = []Value{Mutation{}}
+	ErrEmptyMutationPrefixSymbol     = errors.New("empty mutation prefix symbol")
+	ErrInvalidMutationPrefixSymbol   = errors.New("invalid mutation prefix symbol")
+
+	_ = []Value{Mutation{}}
 
 	mutationCallbackPool = utils.Must(NewArrayPool[mutationCallback](100_000, 10))
 )
