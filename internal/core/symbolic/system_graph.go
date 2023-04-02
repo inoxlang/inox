@@ -13,7 +13,7 @@ var (
 	SYS_GRAPH_EDGE_TUPLE  = NewTupleOf(ANY_SYSTEM_GRAPH_EDGE)
 
 	SYSTEM_GRAPH_PROPNAMES       = []string{"nodes", "events"}
-	SYSTEM_GRAPH_EVENT_PROPNAMES = []string{"text"}
+	SYSTEM_GRAPH_EVENT_PROPNAMES = []string{"text", "value0_id"}
 	SYSTEM_GRAPH_NODE_PROPNAMES  = []string{"name", "type_name", "value_id", "edges"}
 	SYSTEM_GRAP_EDGE_PROPNAMES   = []string{"text", "to"}
 
@@ -244,6 +244,8 @@ func (n *SystemGraphEvent) Prop(memberName string) SymbolicValue {
 	switch memberName {
 	case "text":
 		return ANY_STR
+	case "value0_id":
+		return ANY_INT
 	}
 	panic(FormatErrPropertyDoesNotExist(memberName, n))
 }
@@ -257,7 +259,7 @@ func (n *SystemGraphEvent) WithExistingPropReplaced(name string, value SymbolicV
 }
 
 func (n *SystemGraphEvent) PropertyNames() []string {
-	return SYSTEM_GRAPH_NODE_PROPNAMES
+	return SYSTEM_GRAPH_EVENT_PROPNAMES
 }
 
 func (n *SystemGraphEvent) IsSharable() (bool, string) {

@@ -31,7 +31,7 @@ var (
 	ErrValueNotPointer        = errors.New("value is not a pointer")
 
 	SYSTEM_GRAPH_PROPNAMES       = []string{"nodes", "events"}
-	SYSTEM_GRAPH_EVENT_PROPNAMES = []string{"text"}
+	SYSTEM_GRAPH_EVENT_PROPNAMES = []string{"text", "value0_id"}
 	SYSTEM_GRAP_EDGE_PROPNAMES   = []string{"to", "text"}
 	SYSTEM_GRAPH_NODE_PROPNAMES  = []string{"name", "type_name", "value_id", "edges"}
 
@@ -119,9 +119,9 @@ func (k SystemGraphEdgeKind) DefaultText() string {
 
 // A SystemGraphEvent is an immutable value representing an event in an node or between two nodes.
 type SystemGraphEvent struct {
-	node0, node1 uintptr
-	text         string
-	date         Date
+	value0Ptr, value1Ptr uintptr
+	text                 string
+	date                 Date
 
 	NotClonableMixin
 	NoReprMixin
@@ -131,6 +131,8 @@ func (e SystemGraphEvent) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "text":
 		return Str(e.text)
+	case "value0_id":
+		return Int(e.value0Ptr)
 	}
 	panic(FormatErrPropertyDoesNotExist(name, e))
 }
@@ -374,8 +376,8 @@ func (g *SystemGraph) addEventNoLock(nodeValuePtr uintptr, text string) {
 	g.lastSnapshot = nil
 
 	g.eventLog = append(g.eventLog, SystemGraphEvent{
-		node0: nodeValuePtr,
-		text:  text,
+		value0Ptr: nodeValuePtr,
+		text:      text,
 	})
 }
 
