@@ -169,6 +169,9 @@ func TestPrint(t *testing.T) {
 		"udata { 0 { }",
 		"udata { 0 { ",
 		"udata { 0 ",
+		"udata { 0 {}, }",
+		"udata { 0 {}, 1}",
+		"udata { 0 {1, 2}, 3}",
 		//spawn expression
 		"go {} do",
 		"go {} do {}",

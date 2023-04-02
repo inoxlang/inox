@@ -13599,6 +13599,64 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
+		t.Run("two entries separated by a comma", func(t *testing.T) {
+			n := MustParseChunk("udata 0 { 0 {}, 1 {} }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 22}, nil, nil},
+				Statements: []Node{
+					&UDataLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 22},
+							nil,
+							[]Token{
+								{Type: UDATA_KEYWORD, Span: NodeSpan{0, 5}},
+								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
+								{Type: COMMA, Span: NodeSpan{14, 15}},
+								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{21, 22}},
+							},
+						},
+						Root: &IntLiteral{
+							NodeBase: NodeBase{NodeSpan{6, 7}, nil, nil},
+							Raw:      "0",
+							Value:    0,
+						},
+						Children: []*UDataEntry{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{10, 14},
+									nil,
+									[]Token{
+										{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{12, 13}},
+										{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{13, 14}},
+									},
+								},
+								Value: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{10, 11}, nil, nil},
+									Raw:      "0",
+									Value:    0,
+								},
+							},
+							{
+								NodeBase: NodeBase{
+									NodeSpan{16, 20},
+									nil,
+									[]Token{
+										{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{18, 19}},
+										{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{19, 20}},
+									},
+								},
+								Value: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{16, 17}, nil, nil},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("two entries without braces", func(t *testing.T) {
 			n := MustParseChunk("udata 0 { 0 1 }")
 			assert.EqualValues(t, &Chunk{

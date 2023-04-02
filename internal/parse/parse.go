@@ -6254,7 +6254,7 @@ func (p *parser) parseUdataLiteral(udataIdent Node) *UDataLiteral {
 	valuelessTokens = append(valuelessTokens, Token{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 
 	p.i++
-	p.eatSpaceNewlineComment(&valuelessTokens)
+	p.eatSpaceNewlineCommaComment(&valuelessTokens)
 	var children []*UDataEntry
 
 	for p.i < p.len && p.s[p.i] != '}' { //
@@ -6272,7 +6272,7 @@ func (p *parser) parseUdataLiteral(udataIdent Node) *UDataLiteral {
 			}
 		}
 
-		p.eatSpaceNewlineComment(&valuelessTokens)
+		p.eatSpaceNewlineCommaComment(&valuelessTokens)
 	}
 
 	var parsingErr *ParsingError
@@ -6296,6 +6296,7 @@ func (p *parser) parseUdataLiteral(udataIdent Node) *UDataLiteral {
 
 func (p *parser) parseTreeStructureEntry() (entry *UDataEntry, cont bool) {
 	start := p.i
+
 	node, isMissingExpr := p.parseExpression()
 	p.eatSpace()
 
@@ -6355,7 +6356,7 @@ func (p *parser) parseTreeStructureEntry() (entry *UDataEntry, cont bool) {
 			}, false
 		}
 
-		p.eatSpaceNewlineComment(&valuelessTokens)
+		p.eatSpaceNewlineCommaComment(&valuelessTokens)
 	}
 
 	var parsingErr *ParsingError
