@@ -10,7 +10,7 @@ var (
 
 var (
 	ErrFailedToSnapshot = errors.New("failed to snapshot")
-	_                   = []InMemorySnapshotable{(*DynamicValue)(nil), (*AnyInMemorySnapshotable)(nil)}
+	_                   = []InMemorySnapshotable{(*RuneSlice)(nil), (*DynamicValue)(nil), (*AnyInMemorySnapshotable)(nil)}
 )
 
 type InMemorySnapshotable interface {

@@ -16,7 +16,7 @@ const (
 )
 
 var (
-	VALUE_HISTORY_PROPNAMES = []string{"value_at", "forget_last", "last_value"}
+	VALUE_HISTORY_PROPNAMES = []string{"value_at", "forget_last", "last-value", "selected-date", "value-at-selection"}
 )
 
 func init() {
@@ -31,6 +31,9 @@ type ValueHistory struct {
 	startValue *Snapshot
 	changes    []Change
 	start      Date
+
+	selectedDate      Date
+	providedSelection bool // if no date is provided the selected date is the current date
 
 	lock                  sync.Mutex
 	shared                atomic.Bool
@@ -159,6 +162,21 @@ func (h *ValueHistory) LastValue(ctx *Context) Value {
 	return v
 }
 
+func (h *ValueHistory) SelectDate(ctx *Context, d Date) {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+
+	h.selectedDate = d
+	h.providedSelection = true
+}
+
+func (h *ValueHistory) ValueAtSelection(ctx *Context) Value {
+	if h.providedSelection {
+		return h.ValueAt(ctx, h.selectedDate)
+	}
+	return Nil
+}
+
 func (h *ValueHistory) ForgetChangesBeforeDate(ctx *Context, d Date) {
 	h.lock.Lock()
 	defer h.lock.Unlock()
@@ -276,8 +294,17 @@ func (h *ValueHistory) GetGoMethod(name string) (*GoFunction, bool) {
 
 func (h *ValueHistory) Prop(ctx *Context, name string) Value {
 	switch name {
-	case "last_value":
+	case "last-value":
 		return h.LastValue(ctx)
+	case "value-at-selection":
+		return h.ValueAtSelection(ctx)
+	case "selected-date":
+		h.lock.Lock()
+		defer h.lock.Unlock()
+		if h.providedSelection {
+			return h.selectedDate
+		}
+		return Nil
 	}
 	method, ok := h.GetGoMethod(name)
 	if !ok {
@@ -286,7 +313,16 @@ func (h *ValueHistory) Prop(ctx *Context, name string) Value {
 	return method
 }
 
-func (*ValueHistory) SetProp(ctx *Context, name string, value Value) error {
+func (h *ValueHistory) SetProp(ctx *Context, name string, value Value) error {
+	switch name {
+	case "selected-date":
+		date, ok := value.(Date)
+		if !ok {
+			return commonfmt.FmtFailedToSetPropXAcceptXButZProvided(name, "date", fmt.Sprintf("%T", value))
+		}
+		h.SelectDate(ctx, date)
+		return nil
+	}
 	return ErrCannotSetProp
 }
 

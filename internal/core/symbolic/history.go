@@ -1,7 +1,13 @@
 package internal
 
+import (
+	"errors"
+
+	"github.com/inox-project/inox/internal/commonfmt"
+)
+
 var (
-	VALUE_HISTORY_PROPNAMES = []string{"value_at", "forget_last", "last_value"}
+	VALUE_HISTORY_PROPNAMES = []string{"value_at", "forget_last", "last-value", "selected-date", "value-at-selection"}
 
 	ANY_VALUE_HISTORY = &ValueHistory{}
 )
@@ -54,7 +60,7 @@ func (h *ValueHistory) IsShared() bool {
 
 func (h *ValueHistory) Prop(name string) SymbolicValue {
 	switch name {
-	case "last_value":
+	case "last-value", "value-at-selection", "selected-date":
 		return ANY
 	}
 	method, ok := h.GetGoMethod(name)
@@ -62,6 +68,22 @@ func (h *ValueHistory) Prop(name string) SymbolicValue {
 		panic(FormatErrPropertyDoesNotExist(name, h))
 	}
 	return method
+}
+
+func (h *ValueHistory) SetProp(name string, value SymbolicValue) (IProps, error) {
+	switch name {
+	case "selected-date":
+		_, ok := value.(*Date)
+		if !ok {
+			return nil, commonfmt.FmtFailedToSetPropXAcceptXButZProvided(name, "date", value.String())
+		}
+		return h, nil
+	}
+	return nil, errors.New("unassignable properties")
+}
+
+func (h *ValueHistory) WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error) {
+	return h.SetProp(name, value)
 }
 
 func (*ValueHistory) PropertyNames() []string {
