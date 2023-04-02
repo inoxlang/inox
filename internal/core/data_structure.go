@@ -352,7 +352,6 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 
 			obj.sortProps()
 
-			//TODO: add value
 			mutation := NewUpdatePropMutation(ctx, name, value, ShallowWatching, Path("/"+name))
 
 			obj.sysgraph.AddEvent(ctx, "prop updated: "+name, obj)
@@ -395,7 +394,6 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 
 	//inform watchers & microtasks about the update
 
-	//TODO: add value
 	mutation := NewAddPropMutation(ctx, name, value, ShallowWatching, Path("/"+name))
 	obj.sysgraph.AddEvent(ctx, "new prop: "+name, obj)
 
