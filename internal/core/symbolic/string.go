@@ -287,6 +287,10 @@ func (s *RuneSlice) appendSequence(seq Sequence) *Error {
 	return nil
 }
 
+func (s *RuneSlice) TakeInMemorySnapshot() (*Snapshot, error) {
+	return ANY_SNAPSHOT, nil
+}
+
 func (s *RuneSlice) PropertyNames() []string {
 	return RUNE_SLICE_PROPNAMES
 }
