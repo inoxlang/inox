@@ -828,7 +828,7 @@ func TestUdataRepresentation(t *testing.T) {
 			},
 		}
 		assert.True(t, udata.HasRepresentation(map[uintptr]int{}, nil))
-		expectedRepr := `udata 1{2 3}`
+		expectedRepr := `udata 1{2,3}`
 		repr := getRepr(t, udata, reprTestCtx)
 		assert.Equal(t, expectedRepr, repr)
 		node := assertParseExpression(t, expectedRepr)
@@ -856,7 +856,7 @@ func TestUdataRepresentation(t *testing.T) {
 			},
 		}
 		assert.True(t, udata.HasRepresentation(map[uintptr]int{}, nil))
-		expectedRepr := `udata 1{2 3{4}}`
+		expectedRepr := `udata 1{2,3{4}}`
 		assert.Equal(t, expectedRepr, getRepr(t, udata, reprTestCtx))
 		node := assertParseExpression(t, expectedRepr)
 

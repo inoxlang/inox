@@ -1442,7 +1442,7 @@ func (udata *UData) WriteRepresentation(ctx *Context, w io.Writer, encountered m
 
 	for _, entry := range udata.HiearchyEntries {
 		if !first {
-			w.Write([]byte{' '})
+			w.Write([]byte{','})
 		}
 		first = false
 
@@ -1487,7 +1487,7 @@ func (entry UDataHiearchyEntry) WriteRepresentation(ctx *Context, w io.Writer, e
 		w.Write([]byte{'{'})
 		for _, child := range entry.Children {
 			if !first {
-				w.Write([]byte{' '})
+				w.Write([]byte{','})
 			}
 			first = false
 
@@ -1499,7 +1499,6 @@ func (entry UDataHiearchyEntry) WriteRepresentation(ctx *Context, w io.Writer, e
 		}
 		w.Write([]byte{'}'})
 	}
-
 	return nil
 }
 

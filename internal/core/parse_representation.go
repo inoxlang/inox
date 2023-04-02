@@ -46,10 +46,11 @@ const (
 	rstateUdata
 	rstateUdataAfterRoot
 	rstateUdataOpeningBrace
-	rstateUdataBody
+	rstateUdataBodyComma
 	rstateUdataClosingBrace
 	rstateUdataHiearchyEntryOpeningBrace
-	rstateUdataHiearchyEntryBody
+	rstateUdataHiearchyEntryBodyComma
+	rstateUdataHiearchyEntryAfterVal
 	rstateUdataHiearchyEntryClosingBrace
 
 	rstatePropertyName
@@ -194,7 +195,6 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 		compoundValueStack       [stackHeight]Value
 		objectKeyStack           [stackHeight]string
 		dictKeyStack             [stackHeight]Value
-		hieararchyEntryChildren  [stackHeight][]Value
 		hieararchyEntryHasBraces [stackHeight]bool
 		byteSliceDigits          []byte
 		quantityValues           []float64
@@ -572,46 +572,6 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 		}
 	}
 
-	pushUdataHiearchyEntryIfNecessary := func(i int) int {
-
-		if stackIndex >= 0 && stack[stackIndex] == UdataHiearchyEntryVal {
-			entry := compoundValueStack[stackIndex].(UDataHiearchyEntry)
-
-			if entry.Value == nil {
-				val, ind, ok := getVal(i)
-				if ind >= 0 {
-					return ind
-				}
-				if ok { //we store the previous entry
-					entry.Value = val
-					stack[stackIndex] = NoVal
-					hieararchyEntryHasBraces[stackIndex] = false
-					stackIndex--
-
-					if stack[stackIndex] == UdataVal {
-						udata := compoundValueStack[stackIndex].(*UData)
-						udata.HiearchyEntries = append(udata.HiearchyEntries, entry)
-						state = rstateUdataBody
-					} else {
-						hieararchyEntryChildren[stackIndex] = append(hieararchyEntryChildren[stackIndex], entry)
-						state = rstateUdataHiearchyEntryBody
-					}
-				}
-			}
-		}
-
-		switch state {
-		case rstateUdataOpeningBrace, rstateUdataHiearchyEntryOpeningBrace, rstateUdataBody, rstateUdataHiearchyEntryBody,
-			rstateUdataHiearchyEntryClosingBrace:
-			//we create a new entry
-			stackIndex++
-			stack[stackIndex] = UdataHiearchyEntryVal
-			compoundValueStack[stackIndex] = UDataHiearchyEntry{}
-			hieararchyEntryHasBraces[stackIndex] = false
-		}
-		return -1
-	}
-
 	for i, c = range b {
 
 		//handle comments, strings & paths separately because they accept a wide range of characters
@@ -737,12 +697,8 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				rstateDictOpeningBrace, rstateDictColon,
 				rstateListOpeningBracket, rstateListComma,
 				rstateTupleOpeningBracket, rstateTupleComma,
-				rstateUdata, rstateUdataOpeningBrace, rstateUdataBody,
-				rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBody, rstateUdataHiearchyEntryClosingBrace:
-
-				if ind := pushUdataHiearchyEntryIfNecessary(i); ind >= 0 {
-					return nil, ind
-				}
+				rstateUdata, rstateUdataOpeningBrace, rstateUdataBodyComma,
+				rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBodyComma, rstateUdataHiearchyEntryClosingBrace:
 
 				if atomEndIndex >= 0 {
 					return nil, atomEndIndex
@@ -800,10 +756,6 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				rstateListOpeningBracket, rstateListComma,
 				rstateTupleOpeningBracket, rstateTupleComma:
 
-				if ind := pushUdataHiearchyEntryIfNecessary(i); ind >= 0 {
-					return nil, ind
-				}
-
 				if atomEndIndex >= 0 {
 					return nil, atomEndIndex
 				}
@@ -837,11 +789,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				rstateDictOpeningBrace, rstateDictColon,
 				rstateListOpeningBracket, rstateListComma,
 				rstateTupleOpeningBracket, rstateTupleComma,
-				rstateUdata, rstateUdataOpeningBrace, rstateUdataBody, rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBody:
-
-				if ind := pushUdataHiearchyEntryIfNecessary(i); ind >= 0 {
-					return nil, ind
-				}
+				rstateUdata, rstateUdataOpeningBrace, rstateUdataBodyComma, rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBodyComma:
 
 				if atomEndIndex >= 0 {
 					return nil, atomEndIndex
@@ -870,11 +818,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				rstateDictOpeningBrace, rstateDictColon,
 				rstateListOpeningBracket, rstateListComma,
 				rstateTupleOpeningBracket, rstateTupleComma,
-				rstateUdata, rstateUdataOpeningBrace, rstateUdataBody, rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBody:
-
-				if ind := pushUdataHiearchyEntryIfNecessary(i); ind >= 0 {
-					return nil, ind
-				}
+				rstateUdata, rstateUdataOpeningBrace, rstateUdataBodyComma, rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBodyComma:
 
 				if atomEndIndex >= 0 {
 					return nil, atomEndIndex
@@ -910,11 +854,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				rstateDictOpeningBrace, rstateDictColon,
 				rstateListOpeningBracket, rstateListComma,
 				rstateTupleOpeningBracket, rstateTupleComma,
-				rstateUdata, rstateUdataOpeningBrace, rstateUdataBody, rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBody:
-
-				if ind := pushUdataHiearchyEntryIfNecessary(i); ind >= 0 {
-					return nil, ind
-				}
+				rstateUdata, rstateUdataOpeningBrace, rstateUdataBodyComma, rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBodyComma:
 
 				if atomEndIndex >= 0 {
 					return nil, atomEndIndex
@@ -961,12 +901,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				rstateDictOpeningBrace, rstateDictColon,
 				rstateListOpeningBracket, rstateListComma,
 				rstateTupleOpeningBracket, rstateTupleComma,
-				rstateUdata, rstateUdataOpeningBrace, rstateUdataBody, rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBody:
-
-				if ind := pushUdataHiearchyEntryIfNecessary(i); ind >= 0 {
-					return nil, ind
-				}
-
+				rstateUdata, rstateUdataOpeningBrace, rstateUdataBodyComma, rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBodyComma:
 				if atomEndIndex >= 0 {
 					return nil, atomEndIndex
 				}
@@ -1012,11 +947,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				rstateDictOpeningBrace, rstateDictColon,
 				rstateListOpeningBracket, rstateListComma,
 				rstateTupleOpeningBracket, rstateTupleComma,
-				rstateUdataOpeningBrace, rstateUdataBody, rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBody:
-
-				if ind := pushUdataHiearchyEntryIfNecessary(i); ind >= 0 {
-					return nil, ind
-				}
+				rstateUdataOpeningBrace, rstateUdataBodyComma, rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBodyComma:
 
 				state = rstateObjOpeningBrace
 				stackIndex++
@@ -1044,30 +975,32 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				compoundValueStack[stackIndex] = &Record{}
 			case rstateUdata, rstateUdataAfterRoot:
 				state = rstateUdataOpeningBrace
+
+				//set current value as a hiearchy entry
+				stackIndex++
+				stack[stackIndex] = UdataHiearchyEntryVal
+				compoundValueStack[stackIndex] = &UDataHiearchyEntry{}
+				hieararchyEntryHasBraces[stackIndex] = false
 			default:
 				switch stack[stackIndex] {
-				case UdataVal:
-					val, index, ok := getVal(i)
-					if index > 0 {
-						return nil, index
+				case UdataHiearchyEntryVal:
+					if state != rstateUdataHiearchyEntryAfterVal {
+						val, index, ok := getVal(i)
+						if index > 0 || !ok {
+							return nil, index
+						}
+						entry := compoundValueStack[stackIndex].(*UDataHiearchyEntry)
+						entry.Value = val
 					}
 
-					if ok {
-						hieararchyEntryChildren[stackIndex] = append(hieararchyEntryChildren[stackIndex], val)
-					}
-					state = rstateUdataOpeningBrace
-				case UdataHiearchyEntryVal:
-					val, index, ok := getVal(i)
-					if index > 0 {
-						return nil, index
-					}
-					if ok {
-						entry := compoundValueStack[stackIndex].(UDataHiearchyEntry)
-						entry.Value = val
-						compoundValueStack[stackIndex] = entry
-					}
 					state = rstateUdataHiearchyEntryOpeningBrace
 					hieararchyEntryHasBraces[stackIndex] = true
+
+					//set current value as a hiearchy entry
+					stackIndex++
+					stack[stackIndex] = UdataHiearchyEntryVal
+					compoundValueStack[stackIndex] = &UDataHiearchyEntry{}
+					hieararchyEntryHasBraces[stackIndex] = false
 				default:
 					return nil, i
 				}
@@ -1075,22 +1008,6 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 		case '}':
 			if state == rstateString {
 				continue
-			}
-
-			var entryWithoutBraces UDataHiearchyEntry
-
-			if stackIndex >= 0 && stack[stackIndex] == UdataHiearchyEntryVal && !hieararchyEntryHasBraces[stackIndex] {
-				entryWithoutBraces = compoundValueStack[stackIndex].(UDataHiearchyEntry)
-				if val, errIndex, ok := getVal(i); ok {
-					if errIndex >= 0 {
-						return nil, errIndex
-					}
-
-					entryWithoutBraces.Value = val
-				}
-				stack[stackIndex] = NoVal
-				hieararchyEntryChildren[stackIndex] = hieararchyEntryChildren[stackIndex][:0]
-				stackIndex--
 			}
 
 			switch stack[stackIndex] {
@@ -1210,69 +1127,74 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				stackIndex--
 				state = rstateKeyListClosingBrace
 
-			case UdataVal:
-				switch state {
-				case rstateUdataOpeningBrace:
-				default:
-					compoundValue := compoundValueStack[stackIndex].(*UData)
+			case UdataHiearchyEntryVal: // end of hiearchy entry body or its parent
+				entry := compoundValueStack[stackIndex].(*UDataHiearchyEntry)
 
-					if entryWithoutBraces.Value != nil {
-						compoundValue.HiearchyEntries = append(compoundValue.HiearchyEntries, entryWithoutBraces)
-					} else if val, errIndex, ok := getVal(i); ok {
-						if errIndex >= 0 {
-							return nil, errIndex
-						}
+				if !hieararchyEntryHasBraces[stackIndex] { // end of parent
+					if entry.Value == nil {
+						if val, errIndex, ok := getVal(i); ok {
+							if errIndex >= 0 {
+								return nil, errIndex
+							}
 
-						entry, ok := val.(UDataHiearchyEntry)
-						if ok {
-							compoundValue.HiearchyEntries = append(compoundValue.HiearchyEntries, entry)
-						} else {
-							compoundValue.HiearchyEntries = append(compoundValue.HiearchyEntries, UDataHiearchyEntry{
-								Value: val,
-							})
+							entry.Value = val
 						}
 					}
-				}
 
-				lastCompoundValue = compoundValueStack[stackIndex]
-				stack[stackIndex] = NoVal
-				stackIndex--
-				state = rstateUdataClosingBrace
+					// pop child
+					compoundValueStack[stackIndex] = nil
+					hieararchyEntryHasBraces[stackIndex] = false
+					stack[stackIndex] = NoVal
+					stackIndex--
 
-			case UdataHiearchyEntryVal:
+					parentIndex := stackIndex
 
-				entry := compoundValueStack[stackIndex].(UDataHiearchyEntry)
-
-				if entryWithoutBraces.Value != nil {
-					hieararchyEntryChildren[stackIndex] = append(hieararchyEntryChildren[stackIndex], entryWithoutBraces)
-				} else if val, errIndex, ok := getVal(i); ok {
-					if errIndex >= 0 {
-						return nil, errIndex
-					}
-
-					hieararchyEntryChildren[stackIndex] = append(hieararchyEntryChildren[stackIndex], val)
-				}
-
-				if len(hieararchyEntryChildren) > 0 {
-					entry.Children = make([]UDataHiearchyEntry, len(hieararchyEntryChildren[stackIndex]))
-
-					for i, child := range hieararchyEntryChildren[stackIndex] {
-						switch v := child.(type) {
-						case UDataHiearchyEntry:
-							entry.Children[i] = v
-						default:
-							entry.Children[i] = UDataHiearchyEntry{Value: v}
+					switch p := compoundValueStack[parentIndex].(type) {
+					case *UData:
+						if entry.Value != nil {
+							p.HiearchyEntries = append(p.HiearchyEntries, *entry)
 						}
+						state = rstateUdataClosingBrace
+
+						//pop parent
+						lastCompoundValue = p
+						compoundValueStack[parentIndex] = nil
+						hieararchyEntryHasBraces[stackIndex] = false
+						stack[stackIndex] = NoVal
+						stackIndex--
+
+					case *UDataHiearchyEntry:
+						if entry.Value != nil {
+							p.Children = append(p.Children, *entry)
+						}
+						state = rstateUdataHiearchyEntryClosingBrace
+
+						//add parent to grand parent + reset parent
+
+						switch grandParent := compoundValueStack[parentIndex-1].(type) {
+						case *UData:
+							grandParent.HiearchyEntries = append(grandParent.HiearchyEntries, *p)
+						case *UDataHiearchyEntry:
+							grandParent.Children = append(grandParent.Children, *p)
+							state = rstateUdataHiearchyEntryClosingBrace
+						}
+
+						*p = UDataHiearchyEntry{}
+						hieararchyEntryHasBraces[parentIndex] = false
 					}
+
+				} else { //end of entry's body
+					switch p := compoundValueStack[stackIndex-1].(type) {
+					case *UData:
+						p.HiearchyEntries = append(p.HiearchyEntries, *entry)
+					case *UDataHiearchyEntry:
+						p.Children = append(p.Children, *entry)
+					}
+
+					state = rstateUdataHiearchyEntryClosingBrace
+					*entry = UDataHiearchyEntry{} //reset
+					hieararchyEntryHasBraces[stackIndex] = false
 				}
-
-				compoundValueStack[stackIndex] = entry
-
-				lastCompoundValue = compoundValueStack[stackIndex]
-				hieararchyEntryChildren[stackIndex] = hieararchyEntryChildren[stackIndex][:0]
-				stack[stackIndex] = NoVal
-				stackIndex--
-				state = rstateUdataHiearchyEntryClosingBrace
 			default:
 				return nil, i
 			}
@@ -1291,7 +1213,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				rstateListOpeningBracket, rstateListComma,
 				rstateTupleOpeningBracket, rstateTupleComma:
 				state = rstateColon
-			case rstateUdataOpeningBrace, rstateUdataBody:
+			case rstateUdataOpeningBrace, rstateUdataBodyComma:
 				return nil, i
 			case rstateIdentLike:
 
@@ -1420,7 +1342,11 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 		case ',':
 			switch state {
 			case rstateHostLike, rstateURLPatternNoPostSchemeSlash,
-				rstateObjectComma, rstateRecordComma, rstateDictComma, rstateListComma, rstateTupleComma, rstateKeyListComma:
+				rstateObjectComma, rstateRecordComma, rstateDictComma, rstateListComma, rstateTupleComma, rstateKeyListComma,
+				rstateUdataBodyComma, rstateUdataHiearchyEntryBodyComma:
+				continue
+			case rstateUdataHiearchyEntryClosingBrace:
+				state = rstateUdataHiearchyEntryBodyComma
 				continue
 			}
 
@@ -1492,18 +1418,34 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				}
 				state = rstateListComma
 				continue
-			case TupleVal:
-				if val, errIndex, ok := getVal(i); ok {
-					if errIndex >= 0 {
-						return nil, errIndex
-					}
-					tuple := compoundValueStack[stackIndex].(*Tuple)
+			case UdataHiearchyEntryVal:
+				entry := compoundValueStack[stackIndex].(*UDataHiearchyEntry)
 
-					tuple.elements = append(tuple.elements, val)
-					state = rstateTupleComma
-					continue
+				if entry.Value == nil {
+					if val, errIndex, ok := getVal(i); ok {
+						if errIndex >= 0 {
+							return nil, errIndex
+						}
+
+						entry.Value = val
+					}
 				}
-				state = rstateTupleComma
+
+				switch p := compoundValueStack[stackIndex-1].(type) {
+				case *UData:
+					if entry.Value != nil {
+						p.HiearchyEntries = append(p.HiearchyEntries, *entry)
+					}
+					state = rstateUdataBodyComma
+				case *UDataHiearchyEntry:
+					if entry.Value != nil {
+						p.Children = append(p.Children, *entry)
+					}
+					state = rstateUdataHiearchyEntryBodyComma
+				}
+
+				*entry = UDataHiearchyEntry{} //reset
+				hieararchyEntryHasBraces[stackIndex] = false
 				continue
 			case KLstVal:
 				_state := state
@@ -1539,11 +1481,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				rstateDictOpeningBrace, rstateDictColon,
 				rstateListOpeningBracket, rstateListComma,
 				rstateTupleOpeningBracket, rstateTupleComma,
-				rstateUdata, rstateUdataOpeningBrace, rstateUdataBody, rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBody:
-
-				if ind := pushUdataHiearchyEntryIfNecessary(i); ind >= 0 {
-					return nil, ind
-				}
+				rstateUdata, rstateUdataOpeningBrace, rstateUdataBodyComma, rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBodyComma:
 
 				state = rstateListOpeningBracket
 				stackIndex++
@@ -1553,9 +1491,6 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 			case rstate0x:
 				state = rstateByteSliceBytes
 			case rstateHash:
-				if ind := pushUdataHiearchyEntryIfNecessary(i); ind >= 0 {
-					return nil, ind
-				}
 
 				atomStartIndex = -1
 				state = rstateTupleOpeningBracket
@@ -1615,6 +1550,8 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				rstateSingleDash, rstateDoubleDash,
 				rstateFloatDot, rstateFloatE:
 				return nil, i
+			case rstateUdataHiearchyEntryAfterVal:
+				continue
 			default:
 				if atomStartIndex >= 0 && atomEndIndex < 0 {
 					atomEndIndex = i
@@ -1636,47 +1573,19 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 							}
 							goto after
 						}
-					}
-
-					if stack[stackIndex] == UdataHiearchyEntryVal && !hieararchyEntryHasBraces[stackIndex] {
-						entryWithoutBraces := compoundValueStack[stackIndex].(UDataHiearchyEntry)
-						if val, errIndex, ok := getVal(i); ok {
-							if errIndex >= 0 {
-								return nil, errIndex
+					} else if stack[stackIndex] == UdataHiearchyEntryVal {
+						entry := compoundValueStack[stackIndex].(*UDataHiearchyEntry)
+						if entry.Value == nil {
+							val, ind, ok := getVal(i)
+							if ind >= 0 {
+								return nil, ind
 							}
-
-							entryWithoutBraces.Value = val
-
-							stack[stackIndex] = NoVal
-							hieararchyEntryChildren[stackIndex] = hieararchyEntryChildren[stackIndex][:0]
-							stackIndex--
-
-							switch stack[stackIndex] {
-							case UdataVal:
-								compoundValue := compoundValueStack[stackIndex].(*UData)
-								compoundValue.HiearchyEntries = append(compoundValue.HiearchyEntries, entryWithoutBraces)
-								state = rstateUdataBody
-							case UdataHiearchyEntryVal:
-								entry := compoundValueStack[stackIndex].(UDataHiearchyEntry)
-								hieararchyEntryChildren[stackIndex] = append(hieararchyEntryChildren[stackIndex], entryWithoutBraces)
-								compoundValueStack[stackIndex] = entry
-								state = rstateUdataHiearchyEntryBody
+							if !ok {
+								goto after
 							}
-						}
-					} else if entry, ok := lastCompoundValue.(UDataHiearchyEntry); ok &&
-						(stack[stackIndex] == UdataVal || stack[stackIndex] == UdataHiearchyEntryVal) {
-						lastCompoundValue = nil
-
-						switch stack[stackIndex] {
-						case UdataVal:
-							compoundValue := compoundValueStack[stackIndex].(*UData)
-							compoundValue.HiearchyEntries = append(compoundValue.HiearchyEntries, entry)
-							state = rstateUdataBody
-						case UdataHiearchyEntryVal:
-							entry := compoundValueStack[stackIndex].(UDataHiearchyEntry)
-							hieararchyEntryChildren[stackIndex] = append(hieararchyEntryChildren[stackIndex], entry)
-							compoundValueStack[stackIndex] = entry
-							state = rstateUdataHiearchyEntryBody
+							entry.Value = val
+							state = rstateUdataHiearchyEntryAfterVal
+							continue
 						}
 					}
 				}
@@ -1688,59 +1597,11 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 			case rstateObjectColon, rstateRecordColon, rstateDictColon:
 				return nil, i
 			case rstateObjectComma, rstateRecordComma, rstateDictComma, rstateListComma, rstateTupleComma, rstateKeyListComma,
-				rstateUdataOpeningBrace, rstateUdataBody, rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBody:
+				rstateUdataOpeningBrace, rstateUdataBodyComma, rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBodyComma:
 			default:
-				if stackIndex >= 0 {
-					if stack[stackIndex] == UdataHiearchyEntryVal && !hieararchyEntryHasBraces[stackIndex] {
-						entryWithoutBraces := compoundValueStack[stackIndex].(UDataHiearchyEntry)
-						if val, errIndex, ok := getVal(i); ok {
-							if errIndex >= 0 {
-								return nil, errIndex
-							}
-
-							entryWithoutBraces.Value = val
-
-							stack[stackIndex] = NoVal
-							hieararchyEntryChildren[stackIndex] = hieararchyEntryChildren[stackIndex][:0]
-							stackIndex--
-
-							switch stack[stackIndex] {
-							case UdataVal:
-								compoundValue := compoundValueStack[stackIndex].(*UData)
-								compoundValue.HiearchyEntries = append(compoundValue.HiearchyEntries, entryWithoutBraces)
-								state = rstateUdataBody
-							case UdataHiearchyEntryVal:
-								entry := compoundValueStack[stackIndex].(UDataHiearchyEntry)
-								hieararchyEntryChildren[stackIndex] = append(hieararchyEntryChildren[stackIndex], entryWithoutBraces)
-								compoundValueStack[stackIndex] = entry
-								state = rstateUdataHiearchyEntryBody
-							}
-						}
-						goto newline_handling_end
-					} else if entry, ok := lastCompoundValue.(UDataHiearchyEntry); ok &&
-						(stack[stackIndex] == UdataVal || stack[stackIndex] == UdataHiearchyEntryVal) {
-						lastCompoundValue = nil
-
-						switch stack[stackIndex] {
-						case UdataVal:
-							compoundValue := compoundValueStack[stackIndex].(*UData)
-							compoundValue.HiearchyEntries = append(compoundValue.HiearchyEntries, entry)
-							state = rstateUdataBody
-						case UdataHiearchyEntryVal:
-							entry := compoundValueStack[stackIndex].(UDataHiearchyEntry)
-							hieararchyEntryChildren[stackIndex] = append(hieararchyEntryChildren[stackIndex], entry)
-							compoundValueStack[stackIndex] = entry
-							state = rstateUdataHiearchyEntryBody
-						}
-						goto newline_handling_end
-					}
-				}
-
 				if atomStartIndex >= 0 {
 					return nil, i
 				}
-
-			newline_handling_end:
 			}
 		case '\'':
 			switch state {
@@ -1761,9 +1622,6 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				state = rstateClosingSimpleQuote
 				atomEndIndex = i + 1
 			default:
-				if ind := pushUdataHiearchyEntryIfNecessary(i); ind >= 0 {
-					return nil, ind
-				}
 
 				if atomEndIndex >= 0 {
 					return nil, atomEndIndex
@@ -1785,9 +1643,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 					atomEndIndex = i + 1
 				}
 			default:
-				if ind := pushUdataHiearchyEntryIfNecessary(i); ind >= 0 {
-					return nil, ind
-				} else if state == rstateIdentLike {
+				if state == rstateIdentLike {
 					ident := b[atomStartIndex:i]
 					atomEndIndex = -1
 					atomStartIndex = -1
@@ -1875,11 +1731,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 					rstateListOpeningBracket, rstateListComma,
 					rstateTupleOpeningBracket, rstateTupleComma,
 					rstateKeyListOpeningBrace, rstateKeyListComma,
-					rstateUdata, rstateUdataOpeningBrace, rstateUdataBody, rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBody:
-
-					if ind := pushUdataHiearchyEntryIfNecessary(i); ind >= 0 {
-						return nil, ind
-					}
+					rstateUdata, rstateUdataOpeningBrace, rstateUdataBodyComma, rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBodyComma:
 
 					if atomStartIndex >= 0 {
 						return nil, i
@@ -1901,11 +1753,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 					rstateRecordColon, rstateRecordOpeningBrace, rstateRecordComma,
 					rstateDictOpeningBrace, rstateDictColon,
 					rstateKeyListOpeningBrace, rstateKeyListComma,
-					rstateUdata, rstateUdataOpeningBrace, rstateUdataBody, rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBody:
-
-					if ind := pushUdataHiearchyEntryIfNecessary(i); ind >= 0 {
-						return nil, ind
-					}
+					rstateUdata, rstateUdataOpeningBrace, rstateUdataBodyComma, rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBodyComma:
 
 					if atomEndIndex >= 0 {
 						return nil, atomEndIndex
