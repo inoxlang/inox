@@ -183,7 +183,7 @@ $$editor = {
 
                     if history? {
                         history.forget_last()
-                        last_value = history.last_value
+                        last_value = history.last-value
                         assert (last_value match %runes)
                         self.runes = last_value
                         self.update_file()
