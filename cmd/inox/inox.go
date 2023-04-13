@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -146,7 +147,7 @@ func _main(args []string) {
 			})
 			core.NewGlobalState(compilationCtx)
 
-			_, _, err := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
+			state, mod, err := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
 				Fpath:                     fpath,
 				PassedArgs:                []string{},
 				ParsingCompilationContext: compilationCtx,
@@ -155,19 +156,31 @@ func _main(args []string) {
 			})
 
 			if err != nil {
-				var assertionErr *core.AssertionError
-				var errString string
 
-				prettyPrintConfig := _sh.GetPrintingConfig().PrettyPrintConfig().WithContext(compilationCtx) // TODO: use another context?
-
-				if errors.As(err, &assertionErr) {
-					errString = assertionErr.PrettySPrint(prettyPrintConfig)
-				} else {
-					errString = utils.StripANSISequences(err.Error())
+				errorRecord := map[string]any{
+					"parsingErrors":       []any{},
+					"staticCheckErrors":   []any{},
+					"symbolicCheckErrors": []any{},
 				}
-				errString = utils.AddCarriageReturnAfterNewlines(errString)
 
-				fmt.Print(errString, "\n\r")
+				if err != nil && state == nil && mod == nil {
+					goto end
+				}
+
+				{
+					i := -1
+					errorRecord["parsingErrors"] = utils.MapSlice(mod.ParsingErrors, func(err core.Error) any {
+						i++
+						return map[string]any{
+							"text":     err.Text(),
+							"location": mod.ParsingErrorPositions[i],
+						}
+					})
+				}
+
+			end:
+
+				fmt.Printf("%s\n\r", utils.Must(json.Marshal(errorRecord)))
 			} else {
 				fmt.Println("no errors")
 			}

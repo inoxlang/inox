@@ -111,10 +111,10 @@ func (chunk *ParsedChunk) GetSourcePosition(span NodeSpan) SourcePosition {
 }
 
 type SourcePosition struct {
-	SourceName string
-	Line       int32
-	Column     int32
-	Span       NodeSpan
+	SourceName string   `json:"sourceName"`
+	Line       int32    `json:"line"`
+	Column     int32    `json:"column"`
+	Span       NodeSpan `json:"span"`
 }
 
 func (pos SourcePosition) String() string {
