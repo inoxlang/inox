@@ -23,6 +23,10 @@ func NewSymbolicData() *SymbolicData {
 }
 
 func (data *SymbolicData) SetNodeValue(node parse.Node, v SymbolicValue) {
+	if data == nil {
+		return
+	}
+
 	_, ok := data.nodeMap[node]
 	if ok {
 		//data.nodeMap[node] = ANY

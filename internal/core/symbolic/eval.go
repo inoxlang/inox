@@ -363,6 +363,7 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 			}
 
 			state.setLocal(name, right, static)
+			state.symbolicData.SetNodeValue(decl.Left, right)
 		}
 		return nil, nil
 	case *parse.Assignment:
@@ -402,6 +403,7 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 			} else {
 				state.setLocal(name, right, nil)
 			}
+			state.symbolicData.SetNodeValue(lhs, right)
 		case *parse.IdentifierLiteral:
 			name := lhs.Name
 
@@ -420,6 +422,7 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 			} else {
 				state.setLocal(name, right, nil)
 			}
+			state.symbolicData.SetNodeValue(lhs, right)
 		case *parse.GlobalVariable:
 			name := lhs.Name
 
@@ -443,6 +446,8 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 			} else {
 				state.setGlobal(name, right, GlobalVar)
 			}
+
+			state.symbolicData.SetNodeValue(lhs, right)
 		case *parse.MemberExpression:
 			object, err := symbolicEval(lhs.Left, state)
 			if err != nil {
@@ -644,10 +649,11 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 				name := var_.(*parse.IdentifierLiteral).Name
 
 				if state.hasLocal(name) {
-					state.updateLocal(name, ANY, n)
+					state.symbolicData.SetNodeValue(var_, ANY)
 				} else {
 					state.setLocal(name, ANY, nil)
 				}
+				state.symbolicData.SetNodeValue(var_, ANY)
 			}
 		} else {
 			if list.HasKnownLen() && list.knownLen() < 2 {
@@ -663,6 +669,7 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 				} else {
 					state.setLocal(name, val, nil)
 				}
+				state.symbolicData.SetNodeValue(var_, val)
 			}
 		}
 
@@ -909,15 +916,18 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 				}
 
 				keyVarname := e.KeyVar.(*parse.IdentifierLiteral).Name
+				keyVal := key
 				if patt, ok := key.(Pattern); ok {
-					fork.setLocal(keyVarname, patt.SymbolicValue(), nil)
-				} else {
-					fork.setLocal(keyVarname, key, nil)
+					keyVal = patt.SymbolicValue()
 				}
+				fork.setLocal(keyVarname, keyVal, nil)
+				state.symbolicData.SetNodeValue(e.KeyVar, keyVal)
 
 				if e.GroupMatchingVariable != nil {
 					matchingVarName := e.GroupMatchingVariable.(*parse.IdentifierLiteral).Name
-					fork.setLocal(matchingVarName, NewAnyObject(), nil)
+					anyObj := NewAnyObject()
+					fork.setLocal(matchingVarName, anyObj, nil)
+					state.symbolicData.SetNodeValue(e.GroupMatchingVariable, anyObj)
 				}
 
 				_, err = symbolicEval(e.ValueComputation, fork)
@@ -1159,6 +1169,7 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 				}
 
 				obj.initNewProp(key, propVal, static)
+				state.symbolicData.SetNodeValue(p.Key, propVal)
 			}
 			state.unsetNextSelf()
 			if restoreNextSelf {
@@ -1566,7 +1577,9 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 					} else {
 						ok, groups := groupPattern.MatchGroups(discriminant)
 						if ok {
-							blockStateFork.setLocal(variable.Name, NewObject(groups, nil), nil)
+							groupsObj := NewObject(groups, nil)
+							blockStateFork.setLocal(variable.Name, groupsObj, nil)
+							state.symbolicData.SetNodeValue(variable, groupsObj)
 
 							_, err := symbolicEval(matchCase.Block, blockStateFork)
 							if err != nil {
@@ -1796,6 +1809,7 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 			}
 
 			stateFork.setLocal(name, paramValue, paramType)
+			state.symbolicData.SetNodeValue(p.Var, paramValue)
 		}
 
 		//declare captured locals
@@ -1917,11 +1931,14 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 			}
 
 			stateFork.setLocal(name, paramType, nil)
+			state.symbolicData.SetNodeValue(p.Var, paramType)
 		}
 
 		if n.IsVariadic {
 			variadicParam := n.VariadicParameter()
-			stateFork.setLocal(variadicParam.Var.Name, &List{generalElement: ANY}, nil)
+			paramValue := &List{generalElement: ANY}
+			stateFork.setLocal(variadicParam.Var.Name, paramValue, nil)
+			state.symbolicData.SetNodeValue(variadicParam.Var, paramValue)
 		}
 
 		//-----------------------------
