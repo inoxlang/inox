@@ -2016,16 +2016,27 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 			return nil, err
 		}
 
-		return symbolicMemb(left, n.PropertyName.Name, n, state), nil
+		val := symbolicMemb(left, n.PropertyName.Name, n, state)
+		state.symbolicData.SetNodeValue(n.PropertyName, val)
+
+		return val, nil
 	case *parse.IdentifierMemberExpression:
 		v, err := symbolicEval(n.Left, state)
 		if err != nil {
 			return nil, err
 		}
 
-		for _, idents := range n.PropertyNames {
-			v = symbolicMemb(v, idents.Name, n, state)
+		var prevIdent *parse.IdentifierLiteral
+		for _, ident := range n.PropertyNames {
+			if prevIdent != nil {
+				state.symbolicData.SetNodeValue(prevIdent, v)
+			}
+			v = symbolicMemb(v, ident.Name, n, state)
+			prevIdent = ident
 		}
+
+		state.symbolicData.SetNodeValue(prevIdent, v)
+
 		return v, nil
 	case *parse.DynamicMemberExpression:
 		left, err := symbolicEval(n.Left, state)
