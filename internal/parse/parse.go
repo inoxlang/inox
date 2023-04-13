@@ -53,12 +53,18 @@ var (
 // parses a file module, resultErr is either a non-syntax error or an aggregation of syntax errors (*ParsingErrorAggregation).
 // result and resultErr can be both non-nil at the same time because syntax errors are also stored in nodes.
 func ParseChunk(str string, fpath string) (result *Chunk, resultErr error) {
+	_, result, resultErr = ParseChunk2(str, fpath)
+	return
+}
+
+func ParseChunk2(str string, fpath string) (runes []rune, result *Chunk, resultErr error) {
 
 	if int32(len(str)) > MAX_MODULE_BYTE_LEN {
-		return nil, &ParsingError{UnspecifiedParsingError, fmt.Sprintf("module'p.s code is too long (%d bytes)", len(str))}
+		return nil, nil, &ParsingError{UnspecifiedParsingError, fmt.Sprintf("module'p.s code is too long (%d bytes)", len(str))}
 	}
 
-	p := newParser([]rune(str))
+	runes = []rune(str)
+	p := newParser(runes)
 
 	defer func() {
 		v := recover()
@@ -123,7 +129,8 @@ func ParseChunk(str string, fpath string) (result *Chunk, resultErr error) {
 
 	}()
 
-	return p.parseChunk()
+	result, resultErr = p.parseChunk()
+	return
 }
 
 // a parser parses a single Inox module, it can recover from errors

@@ -9,10 +9,19 @@ import (
 type ParsedChunk struct {
 	Node   *Chunk
 	Source ChunkSource
+	runes  []rune
 }
 
 func (c ParsedChunk) Name() string {
 	return c.Source.Name()
+}
+
+func (c *ParsedChunk) getRunes() []rune {
+	runes := c.runes
+	if c.Source.Code() != "" && len(runes) == 0 {
+		c.runes = []rune(c.Source.Code())
+	}
+	return runes
 }
 
 type ChunkSource interface {
@@ -50,7 +59,7 @@ func (s InMemorySource) Code() string {
 }
 
 func ParseChunkSource(src ChunkSource) (*ParsedChunk, error) {
-	chunk, err := ParseChunk(src.Code(), src.Name())
+	runes, chunk, err := ParseChunk2(src.Code(), src.Name())
 
 	if chunk == nil {
 		return nil, err
@@ -59,6 +68,7 @@ func ParseChunkSource(src ChunkSource) (*ParsedChunk, error) {
 	return &ParsedChunk{
 		Node:   chunk,
 		Source: src,
+		runes:  runes,
 	}, err
 }
 
@@ -89,10 +99,10 @@ func (chunk *ParsedChunk) GetSpanLineColumn(span NodeSpan) (int32, int32) {
 	col := int32(1)
 	i := 0
 
-	code := chunk.Source.Code()
+	runes := chunk.getRunes()
 
-	for i < int(span.Start) && i < len(code) {
-		if code[i] == '\n' {
+	for i < int(span.Start) && i < len(runes) {
+		if runes[i] == '\n' {
 			line++
 			col = 1
 		} else {
@@ -105,9 +115,52 @@ func (chunk *ParsedChunk) GetSpanLineColumn(span NodeSpan) (int32, int32) {
 	return line, col
 }
 
+func (chunk *ParsedChunk) GetLineColumnSingeCharSpan(line, column int32) NodeSpan {
+	i := int32(0)
+	runes := chunk.getRunes()
+	length := len32(runes)
+
+	line -= 1
+
+	for i < length && line > 0 {
+		if runes[i] == '\n' {
+			line--
+		}
+		i++
+	}
+
+	pos := i + column
+
+	return NodeSpan{
+		Start: pos,
+		End:   pos + 1,
+	}
+}
+
 func (chunk *ParsedChunk) GetSourcePosition(span NodeSpan) SourcePosition {
 	l, c := chunk.GetSpanLineColumn(span)
 	return SourcePosition{SourceName: chunk.Name(), Line: l, Column: c, Span: span}
+}
+
+func (chunk *ParsedChunk) GetNodeAtSpan(target NodeSpan) (foundNode Node, ok bool) {
+
+	Walk(chunk.Node, func(node, _, _ Node, _ []Node, _ bool) (TraversalAction, error) {
+		span := node.Base().Span
+
+		//if the cursor is not in the node's span we don't check the descendants of the node
+		if span.Start > target.End || span.End < target.Start {
+			return Prune, nil
+		}
+
+		if foundNode == nil || node.Base().IncludedIn(foundNode) {
+			foundNode = node
+			ok = true
+		}
+
+		return Continue, nil
+	}, nil)
+
+	return
 }
 
 type SourcePosition struct {

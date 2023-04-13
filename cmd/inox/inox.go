@@ -17,6 +17,7 @@ import (
 	globals "github.com/inox-project/inox/internal/globals"
 	_http "github.com/inox-project/inox/internal/globals/http"
 	_sh "github.com/inox-project/inox/internal/globals/shell"
+	vscode "github.com/inox-project/inox/internal/vscode"
 
 	parse "github.com/inox-project/inox/internal/parse"
 	"github.com/inox-project/inox/internal/utils"
@@ -29,9 +30,12 @@ const (
 		"\trun - run a script\n" +
 		"\tcheck - check a script\n" +
 		"\tshell - start the shell\n" +
-		"\teval - evaluate a single statement\n\n" +
+		"\teval - evaluate a single statement\n" +
+		"\tvsc\n\n" +
 		"The run command:\n" +
 		"\trun <script path> [passed arguments]\n"
+
+	INVALID_INPUT_STATUS = 1
 )
 
 func main() {
@@ -41,8 +45,9 @@ func main() {
 func _main(args []string) {
 	switch len(args) {
 	case 1:
-		fmt.Println("missing command")
+		fmt.Fprintf(os.Stderr, "missing command\n")
 		fmt.Print(HELP)
+		os.Exit(INVALID_INPUT_STATUS)
 	default:
 		switch args[1] {
 		case "help":
@@ -52,7 +57,8 @@ func _main(args []string) {
 			//read and check arguments
 
 			if len(args) == 2 {
-				fmt.Println("missing script path")
+				fmt.Fprintf(os.Stderr, "missing script path\n")
+				os.Exit(INVALID_INPUT_STATUS)
 				return
 			}
 
@@ -82,22 +88,15 @@ func _main(args []string) {
 			}
 
 			if fpath == "" {
-				fmt.Println("missing script path")
+				fmt.Fprintf(os.Stderr, "missing script path\n")
+				os.Exit(INVALID_INPUT_STATUS)
 				return
 			}
 
 			//run script
 
-			dir := filepath.Dir(fpath)
-			dir, _ = filepath.Abs(dir)
-			dir = core.AppendTrailingSlashIfNotPresent(dir)
-
-			compilationCtx := core.NewContext(core.ContextConfig{
-				Permissions: []core.Permission{
-					core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern(dir + "...")},
-				},
-			})
-			core.NewGlobalState(compilationCtx)
+			dir := getScriptDir(fpath)
+			compilationCtx := createCompilationCtx(dir)
 
 			res, _, _, err := globals.RunLocalScript(globals.RunScriptArgs{
 				Fpath:                     fpath,
@@ -129,28 +128,47 @@ func _main(args []string) {
 				}
 			}
 		case "check":
-
 			if len(args) == 2 {
-				fmt.Println("missing script path")
+				fmt.Fprintf(os.Stderr, "missing script path\n")
+				os.Exit(INVALID_INPUT_STATUS)
 				return
 			}
 
 			fpath := args[2]
+			dir := getScriptDir(fpath)
 
-			dir := filepath.Dir(fpath)
-			dir, _ = filepath.Abs(dir)
-			dir = core.AppendTrailingSlashIfNotPresent(dir)
-
-			compilationCtx := core.NewContext(core.ContextConfig{
-				Permissions: []core.Permission{
-					core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern(dir + "...")},
-				},
-			})
-			core.NewGlobalState(compilationCtx)
+			compilationCtx := createCompilationCtx(dir)
 
 			data := globals.GetCheckData(fpath, compilationCtx, os.Stdout)
 			fmt.Printf("%s\n\r", utils.Must(json.Marshal(data)))
 
+		case "vsc":
+			if len(args) <= 2 {
+				fmt.Fprintf(os.Stderr, "missing command for vsc subcommand")
+				os.Exit(INVALID_INPUT_STATUS)
+				return
+			}
+
+			subCommand := args[2]
+
+			if len(args) <= 3 {
+				fmt.Fprintf(os.Stderr, "missing script path\n")
+				os.Exit(INVALID_INPUT_STATUS)
+				return
+			}
+
+			fpath := args[3]
+			dir := getScriptDir(fpath)
+
+			if len(args) <= 4 {
+				fmt.Fprintf(os.Stderr, "missing JSON data")
+				os.Exit(INVALID_INPUT_STATUS)
+				return
+			}
+
+			json := args[4]
+
+			vscode.HandleVscCommand(fpath, dir, subCommand, json)
 		case "shell":
 			shellFlags := flag.NewFlagSet("shell", flag.ExitOnError)
 			startupScriptPath, err := config.GetStartupScriptPath()
@@ -183,7 +201,8 @@ func _main(args []string) {
 			_sh.StartShell(state, config)
 		case "eval":
 			if len(args) == 2 {
-				fmt.Println("missing code string")
+				fmt.Fprintf(os.Stderr, "missing code string")
+				os.Exit(INVALID_INPUT_STATUS)
 				return
 			}
 
@@ -209,6 +228,7 @@ func _main(args []string) {
 
 			if strings.TrimSpace(command) == "" {
 				fmt.Println("empty command")
+				os.Exit(INVALID_INPUT_STATUS)
 				return
 			}
 
@@ -251,7 +271,8 @@ func _main(args []string) {
 				}
 			}
 		default:
-			fmt.Printf("unknown command '%s'\n", args[1])
+			fmt.Fprintf(os.Stderr, "unknown command '%s'\n", args[1])
+			os.Exit(INVALID_INPUT_STATUS)
 			return
 		}
 	}
@@ -335,4 +356,21 @@ func runStartupScript(startupScriptPath string) (*core.Object, *core.GlobalState
 	} else {
 		return object, state
 	}
+}
+
+func createCompilationCtx(dir string) *core.Context {
+	compilationCtx := core.NewContext(core.ContextConfig{
+		Permissions: []core.Permission{
+			core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern(dir + "...")},
+		},
+	})
+	core.NewGlobalState(compilationCtx)
+	return compilationCtx
+}
+
+func getScriptDir(fpath string) string {
+	dir := filepath.Dir(fpath)
+	dir, _ = filepath.Abs(dir)
+	dir = core.AppendTrailingSlashIfNotPresent(dir)
+	return dir
 }
