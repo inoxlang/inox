@@ -25,7 +25,7 @@ func HandleVscCommand(fpath string, dir string, subCommand string, jsonData stri
 
 	switch subCommand {
 	case "get-hover-data":
-		const NO_DATA = `{"data": null}`
+		const NO_DATA = `{}`
 
 		var hoverRange HoverRange
 		if err := json.Unmarshal(utils.StringAsBytes(jsonData), &hoverRange); err != nil {
@@ -63,7 +63,10 @@ func HandleVscCommand(fpath string, dir string, subCommand string, jsonData stri
 			return
 		}
 
-		fmt.Printf(`{"data": {"text":"%s"}}`+"\n", val.String())
+		data := HoverData{Text: val.String()}
+		dataJSON := utils.Must(json.Marshal(data))
+
+		fmt.Println(utils.BytesAsString(dataJSON))
 		return
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command `%s` for vsc subcommand\n", subCommand)
@@ -74,4 +77,8 @@ func HandleVscCommand(fpath string, dir string, subCommand string, jsonData stri
 type HoverRange [2]struct {
 	Line   int32 //starts at 1
 	Column int32 //start at 1
+}
+
+type HoverData struct {
+	Text string `json:"text"`
 }
