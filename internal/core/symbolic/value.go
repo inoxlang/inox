@@ -103,7 +103,7 @@ func (a *NilT) IsWidenable() bool {
 }
 
 func (a *NilT) String() string {
-	return "%nil"
+	return "nil"
 }
 
 func (a *NilT) WidestOfType() SymbolicValue {
