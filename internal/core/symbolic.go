@@ -117,7 +117,7 @@ func (d *SymbolicData) ErrorTuple() *Tuple {
 	if d.errorsPropSet.CompareAndSwap(false, true) {
 		errors := make([]Value, len(d.SymbolicData.Errors()))
 		for i, err := range d.SymbolicData.Errors() {
-			data := createRecordFromSourcePositionStack(err.Location())
+			data := createRecordFromSourcePositionStack(err.Location)
 			errors[i] = NewError(err, data)
 		}
 		d.errorsProp = NewTuple(errors)

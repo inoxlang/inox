@@ -19,8 +19,8 @@ type Node interface {
 }
 
 type NodeSpan struct {
-	Start int32
-	End   int32 //exclusive
+	Start int32 `json:"start"`
+	End   int32 `json:"end"` //exclusive
 }
 
 // NodeBase implements Node interface

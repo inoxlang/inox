@@ -1,9 +1,10 @@
 .debug.txt
+__debug*
 
 *.pem
 *.cert
 *.key
 
 .vscode/
-inox
-test.ix
+/test.ix
+

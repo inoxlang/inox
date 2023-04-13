@@ -135,26 +135,26 @@ type propertyInfo struct {
 }
 
 type StaticCheckError struct {
-	msg        string
-	locatedMsg string
-	location   parse.SourcePositionStack
+	Message        string
+	LocatedMessage string
+	Location       parse.SourcePositionStack
 }
 
 func NewStaticCheckError(s string, location parse.SourcePositionStack) *StaticCheckError {
 	return &StaticCheckError{
-		msg:        CHECK_ERR_PREFIX + s,
-		locatedMsg: CHECK_ERR_PREFIX + location.String() + s,
-		location:   location,
+		Message:        CHECK_ERR_PREFIX + s,
+		LocatedMessage: CHECK_ERR_PREFIX + location.String() + s,
+		Location:       location,
 	}
 }
 
 func (err StaticCheckError) Error() string {
-	return err.locatedMsg
+	return err.LocatedMessage
 }
 
 func (err StaticCheckError) Err() Error {
 	//TODO: cache (thread safe)
-	return NewError(err, createRecordFromSourcePositionStack(err.location))
+	return NewError(err, createRecordFromSourcePositionStack(err.Location))
 
 }
 

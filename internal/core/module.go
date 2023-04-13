@@ -329,6 +329,12 @@ func ParseLocalModule(config LocalModuleParsingConfig) (*Module, error) {
 	if code.Node.Manifest == nil {
 		err := NewError(fmt.Errorf("missing manifest in module "+fpath), Path(fpath))
 		mod.ParsingErrors = append(mod.ParsingErrors, err)
+		mod.ParsingErrorPositions = append(mod.ParsingErrorPositions, parse.SourcePosition{
+			SourceName: fpath,
+			Line:       1,
+			Column:     1,
+			Span:       parse.NodeSpan{Start: 0, End: 1},
+		})
 	}
 
 	// parse included files

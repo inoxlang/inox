@@ -13,6 +13,8 @@ import (
 
 	"github.com/inox-project/inox/internal/config"
 	core "github.com/inox-project/inox/internal/core"
+	symbolic "github.com/inox-project/inox/internal/core/symbolic"
+
 	globals "github.com/inox-project/inox/internal/globals"
 	_http "github.com/inox-project/inox/internal/globals/http"
 	_sh "github.com/inox-project/inox/internal/globals/shell"
@@ -169,11 +171,33 @@ func _main(args []string) {
 
 				{
 					i := -1
+
+					fmt.Fprintln(os.Stderr, len(mod.ParsingErrors), len(mod.ParsingErrorPositions))
 					errorRecord["parsingErrors"] = utils.MapSlice(mod.ParsingErrors, func(err core.Error) any {
 						i++
 						return map[string]any{
 							"text":     err.Text(),
 							"location": mod.ParsingErrorPositions[i],
+						}
+					})
+				}
+
+				if state != nil && state.StaticCheckData != nil {
+					i := -1
+					errorRecord["staticCheckErrors"] = utils.MapSlice(state.StaticCheckData.Errors(), func(err *core.StaticCheckError) any {
+						i++
+						return map[string]any{
+							"text":     err.Message,
+							"location": err.Location[0],
+						}
+					})
+					i = -1
+
+					errorRecord["symbolicCheckErrors"] = utils.MapSlice(state.SymbolicData.Errors(), func(err symbolic.SymbolicEvaluationError) any {
+						i++
+						return map[string]any{
+							"text":     err.Message,
+							"location": err.Location[0],
 						}
 					})
 				}

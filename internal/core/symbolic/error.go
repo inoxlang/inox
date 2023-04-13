@@ -38,17 +38,13 @@ var (
 )
 
 type SymbolicEvaluationError struct {
-	msg        string
-	locatedMsg string
-	location   parse.SourcePositionStack
+	Message        string
+	LocatedMessage string
+	Location       parse.SourcePositionStack
 }
 
 func (err SymbolicEvaluationError) Error() string {
-	return err.locatedMsg
-}
-
-func (err SymbolicEvaluationError) Location() parse.SourcePositionStack {
-	return err.location
+	return err.LocatedMessage
 }
 
 func fmtCannotCallNode(node parse.Node) string {
