@@ -2,12 +2,14 @@ package internal
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 
 	core "github.com/inox-project/inox/internal/core"
 	symbolic "github.com/inox-project/inox/internal/core/symbolic"
+	"github.com/inox-project/inox/internal/utils"
 )
 
 type ScriptPreparationArgs struct {
@@ -240,4 +242,72 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 
 	res, err := core.TreeWalkEval(state.Module.MainChunk.Node, core.NewTreeWalkStateWithGlobal(state))
 	return res, state, mod, err
+}
+
+// GetCheckData returns a map that can be safely marshaled to JSON, the data has the following structure:
+//
+//	{
+//		parsingErrors: [ ..., {text: <string>, location: <parse.SourcePosition>}, ... ]
+//		staticCheckErrors: [ ..., {text: <string>, location: <parse.SourcePosition>}, ... ]
+//		symbolicCheckErrors: [ ..., {text: <string>, location: <parse.SourcePosition>}, ... ]
+//	}
+func GetCheckData(fpath string, compilationCtx *core.Context, out io.Writer) map[string]any {
+	state, mod, err := PrepareLocalScript(ScriptPreparationArgs{
+		Fpath:                     fpath,
+		PassedArgs:                []string{},
+		ParsingCompilationContext: compilationCtx,
+		ParentContext:             nil,
+		Out:                       out,
+	})
+
+	data := map[string]any{
+		"parsingErrors":       []any{},
+		"staticCheckErrors":   []any{},
+		"symbolicCheckErrors": []any{},
+	}
+
+	if err == nil {
+		return data
+	}
+
+	if err != nil && state == nil && mod == nil {
+		goto end
+	}
+
+	{
+		i := -1
+
+		fmt.Fprintln(os.Stderr, len(mod.ParsingErrors), len(mod.ParsingErrorPositions))
+		data["parsingErrors"] = utils.MapSlice(mod.ParsingErrors, func(err core.Error) any {
+			i++
+			return map[string]any{
+				"text":     err.Text(),
+				"location": mod.ParsingErrorPositions[i],
+			}
+		})
+	}
+
+	if state != nil && state.StaticCheckData != nil {
+		i := -1
+		data["staticCheckErrors"] = utils.MapSlice(state.StaticCheckData.Errors(), func(err *core.StaticCheckError) any {
+			i++
+			return map[string]any{
+				"text":     err.Message,
+				"location": err.Location[0],
+			}
+		})
+		i = -1
+
+		data["symbolicCheckErrors"] = utils.MapSlice(state.SymbolicData.Errors(), func(err symbolic.SymbolicEvaluationError) any {
+			i++
+			return map[string]any{
+				"text":     err.Message,
+				"location": err.Location[0],
+			}
+		})
+	}
+
+end:
+
+	return data
 }

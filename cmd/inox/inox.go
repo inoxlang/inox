@@ -13,7 +13,6 @@ import (
 
 	"github.com/inox-project/inox/internal/config"
 	core "github.com/inox-project/inox/internal/core"
-	symbolic "github.com/inox-project/inox/internal/core/symbolic"
 
 	globals "github.com/inox-project/inox/internal/globals"
 	_http "github.com/inox-project/inox/internal/globals/http"
@@ -149,65 +148,8 @@ func _main(args []string) {
 			})
 			core.NewGlobalState(compilationCtx)
 
-			state, mod, err := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
-				Fpath:                     fpath,
-				PassedArgs:                []string{},
-				ParsingCompilationContext: compilationCtx,
-				ParentContext:             nil,
-				Out:                       os.Stdout,
-			})
-
-			if err != nil {
-
-				errorRecord := map[string]any{
-					"parsingErrors":       []any{},
-					"staticCheckErrors":   []any{},
-					"symbolicCheckErrors": []any{},
-				}
-
-				if err != nil && state == nil && mod == nil {
-					goto end
-				}
-
-				{
-					i := -1
-
-					fmt.Fprintln(os.Stderr, len(mod.ParsingErrors), len(mod.ParsingErrorPositions))
-					errorRecord["parsingErrors"] = utils.MapSlice(mod.ParsingErrors, func(err core.Error) any {
-						i++
-						return map[string]any{
-							"text":     err.Text(),
-							"location": mod.ParsingErrorPositions[i],
-						}
-					})
-				}
-
-				if state != nil && state.StaticCheckData != nil {
-					i := -1
-					errorRecord["staticCheckErrors"] = utils.MapSlice(state.StaticCheckData.Errors(), func(err *core.StaticCheckError) any {
-						i++
-						return map[string]any{
-							"text":     err.Message,
-							"location": err.Location[0],
-						}
-					})
-					i = -1
-
-					errorRecord["symbolicCheckErrors"] = utils.MapSlice(state.SymbolicData.Errors(), func(err symbolic.SymbolicEvaluationError) any {
-						i++
-						return map[string]any{
-							"text":     err.Message,
-							"location": err.Location[0],
-						}
-					})
-				}
-
-			end:
-
-				fmt.Printf("%s\n\r", utils.Must(json.Marshal(errorRecord)))
-			} else {
-				fmt.Println("no errors")
-			}
+			data := globals.GetCheckData(fpath, compilationCtx, os.Stdout)
+			fmt.Printf("%s\n\r", utils.Must(json.Marshal(data)))
 
 		case "shell":
 			shellFlags := flag.NewFlagSet("shell", flag.ExitOnError)
