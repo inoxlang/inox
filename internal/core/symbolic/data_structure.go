@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/inox-project/inox/internal/commonfmt"
-	parse "github.com/inox-project/inox/internal/parse"
 	"github.com/inox-project/inox/internal/utils"
 )
 
@@ -457,6 +456,13 @@ func NewAnyDictionary() *Dictionary {
 	return &Dictionary{}
 }
 
+func NewDictionary(entries map[string]SymbolicValue, keys map[string]SymbolicValue) *Dictionary {
+	return &Dictionary{
+		Entries: entries,
+		Keys:    keys,
+	}
+}
+
 func (dict *Dictionary) Test(v SymbolicValue) bool {
 	otherDict, ok := v.(*Dictionary)
 	if !ok {
@@ -477,22 +483,6 @@ func (dict *Dictionary) Test(v SymbolicValue) bool {
 		}
 	}
 	return true
-}
-
-func (dict *Dictionary) set(keyRepr string, value SymbolicValue) {
-	if dict.Entries == nil {
-		dict.Entries = make(map[string]SymbolicValue, 1)
-		dict.Keys = make(map[string]SymbolicValue)
-	}
-	dict.Entries[keyRepr] = value
-
-	node, ok := parse.ParseExpression(keyRepr)
-	if !ok {
-		panic(fmt.Errorf("invalid key representation '%s'", keyRepr))
-	}
-	//TODO: refactor
-	key, _ := symbolicEval(node, newSymbolicState(NewSymbolicContext(), nil))
-	dict.Keys[keyRepr] = key
 }
 
 func (dict *Dictionary) hasKey(keyRepr string) bool {

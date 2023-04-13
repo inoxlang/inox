@@ -1348,12 +1348,8 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 
 		return NewTupleOf(ANY), nil
 	case *parse.DictionaryLiteral:
-		dict := &Dictionary{}
-
-		if len(n.Entries) > 0 {
-			dict.Entries = make(map[string]SymbolicValue)
-			dict.Keys = make(map[string]SymbolicValue)
-		}
+		entries := make(map[string]SymbolicValue)
+		keys := make(map[string]SymbolicValue)
 
 		for _, entry := range n.Entries {
 			keyRepr := parse.SPrint(entry.Key, parse.PrintConfig{TrimStart: true})
@@ -1363,9 +1359,19 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 				return nil, err
 			}
 
-			dict.set(keyRepr, v)
+			entries[keyRepr] = v
+
+			node, ok := parse.ParseExpression(keyRepr)
+			if !ok {
+				panic(fmt.Errorf("invalid key representation '%s'", keyRepr))
+			}
+			//TODO: refactor
+			key, _ := symbolicEval(node, newSymbolicState(NewSymbolicContext(), nil))
+			keys[keyRepr] = key
+			state.symbolicData.SetNodeValue(entry.Key, key)
 		}
-		return dict, nil
+
+		return NewDictionary(entries, keys), nil
 	case *parse.IfStatement:
 		test, err := symbolicEval(n.Test, state)
 		if err != nil {
