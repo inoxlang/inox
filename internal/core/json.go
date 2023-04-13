@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+
+	"github.com/buger/jsonparser"
 )
 
 func ToJSON(ctx *Context, v Value) Str {
@@ -134,4 +136,24 @@ func MarshalIndentJsonNoHTMLEspace(v any, prefix, indent string) ([]byte, error)
 	return marshalJsonNoHTMLEspace(v, func(encoder *json.Encoder) {
 		encoder.SetIndent(prefix, indent)
 	})
+}
+
+//
+
+func NewMutationFromJSON(data []byte) (Mutation, error) {
+	var mutation Mutation
+
+	err := jsonparser.ObjectEach(data, func(key, value []byte, dataType jsonparser.ValueType, offset int) error {
+		if len(key) == 0 {
+			return ErrEmptyMutationPrefixSymbol
+		}
+
+		panic("!")
+	})
+
+	if err != nil {
+		return Mutation{}, fmt.Errorf("failed to create mutation from json: %w", err)
+	}
+
+	return mutation, nil
 }
