@@ -26,7 +26,7 @@ func (d *StaticCheckData) IsWidenable() bool {
 }
 
 func (d *StaticCheckData) String() string {
-	return "static-check-data"
+	return "%static-check-data"
 }
 
 func (m *StaticCheckData) WidestOfType() SymbolicValue {

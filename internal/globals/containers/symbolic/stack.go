@@ -61,7 +61,7 @@ func (*Stack) IsWidenable() bool {
 }
 
 func (*Stack) String() string {
-	return "set"
+	return "%set"
 }
 
 func (*Stack) IteratorElementKey() symbolic.SymbolicValue {

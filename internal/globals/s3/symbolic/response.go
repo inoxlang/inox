@@ -42,7 +42,7 @@ func (a *GetObjectResponse) IsWidenable() bool {
 }
 
 func (r *GetObjectResponse) String() string {
-	return "get-object-response"
+	return "%get-object-response"
 }
 
 func (r *GetObjectResponse) WidestOfType() symbolic.SymbolicValue {
@@ -89,7 +89,7 @@ func (a *PutObjectResponse) IsWidenable() bool {
 }
 
 func (r *PutObjectResponse) String() string {
-	return "put-object-response"
+	return "%put-object-response"
 }
 
 func (r *PutObjectResponse) WidestOfType() symbolic.SymbolicValue {
@@ -136,7 +136,7 @@ func (a *GetBucketPolicyResponse) IsWidenable() bool {
 }
 
 func (r *GetBucketPolicyResponse) String() string {
-	return "get-bucket-policy-response"
+	return "%get-bucket-policy-response"
 }
 
 func (r *GetBucketPolicyResponse) WidestOfType() symbolic.SymbolicValue {

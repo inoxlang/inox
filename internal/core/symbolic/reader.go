@@ -33,7 +33,7 @@ func (r *AnyReadable) IsWidenable() bool {
 }
 
 func (r *AnyReadable) String() string {
-	return "readable"
+	return "%readable"
 }
 
 func (r *AnyReadable) Reader() *Reader {
@@ -103,7 +103,7 @@ func (r *Reader) IsWidenable() bool {
 }
 
 func (r *Reader) String() string {
-	return "reader"
+	return "%reader"
 }
 
 func (r *Reader) WidestOfType() SymbolicValue {

@@ -24,7 +24,7 @@ func (a *Mutation) IsWidenable() bool {
 }
 
 func (r *Mutation) String() string {
-	return "mutation"
+	return "%mutation"
 }
 
 func (r *Mutation) WidestOfType() SymbolicValue {

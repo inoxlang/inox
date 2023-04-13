@@ -30,7 +30,7 @@ func (a *AnyProtocolClient) IsWidenable() bool {
 }
 
 func (r *AnyProtocolClient) String() string {
-	return "protocol-client"
+	return "%protocol-client"
 }
 
 func (r *AnyProtocolClient) WidestOfType() SymbolicValue {

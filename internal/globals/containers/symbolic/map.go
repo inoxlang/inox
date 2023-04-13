@@ -67,7 +67,7 @@ func (a *Map) IsWidenable() bool {
 }
 
 func (*Map) String() string {
-	return "set"
+	return "%map"
 }
 
 func (m *Map) IteratorElementKey() symbolic.SymbolicValue {

@@ -33,7 +33,7 @@ func (r *AnyWritable) IsWidenable() bool {
 }
 
 func (r *AnyWritable) String() string {
-	return "Writable"
+	return "%writable"
 }
 
 func (r *AnyWritable) Writer() *Writer {
@@ -101,7 +101,7 @@ func (*Writer) IsWidenable() bool {
 }
 
 func (*Writer) String() string {
-	return "writer"
+	return "%writer"
 }
 
 func (*Writer) WidestOfType() SymbolicValue {

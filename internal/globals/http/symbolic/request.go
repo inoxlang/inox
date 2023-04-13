@@ -55,7 +55,7 @@ func (a *HttpRequest) IsWidenable() bool {
 }
 
 func (r *HttpRequest) String() string {
-	return "http-request"
+	return "%http.req"
 }
 
 func (r *HttpRequest) WidestOfType() symbolic.SymbolicValue {

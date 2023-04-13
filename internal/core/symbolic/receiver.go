@@ -37,7 +37,7 @@ func (m *Message) IsWidenable() bool {
 }
 
 func (m *Message) String() string {
-	return "message"
+	return "%message"
 }
 
 func (m *Message) WidestOfType() SymbolicValue {
@@ -80,7 +80,7 @@ func (r *AnyMessageReceiver) IsWidenable() bool {
 }
 
 func (r *AnyMessageReceiver) String() string {
-	return "message-receiver"
+	return "%message-receiver"
 }
 
 func (r *AnyMessageReceiver) WidestOfType() SymbolicValue {
@@ -116,7 +116,7 @@ func (l *SynchronousMessageHandler) IsWidenable() bool {
 }
 
 func (l *SynchronousMessageHandler) String() string {
-	return "reception-handler"
+	return "%reception-handler"
 }
 
 func (l *SynchronousMessageHandler) WidestOfType() SymbolicValue {

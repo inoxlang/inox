@@ -68,7 +68,7 @@ func (r *Routine) IsWidenable() bool {
 }
 
 func (r *Routine) String() string {
-	return "routine"
+	return "%routine"
 }
 
 // A RoutineGroup represents a symbolic RoutineGroup.
@@ -129,7 +129,7 @@ func (g *RoutineGroup) IsWidenable() bool {
 }
 
 func (g *RoutineGroup) String() string {
-	return "routine-group"
+	return "%routine-group"
 }
 
 func (g *RoutineGroup) WidestOfType() SymbolicValue {
@@ -194,5 +194,5 @@ func (r *ExecutedStep) IsWidenable() bool {
 }
 
 func (r *ExecutedStep) String() string {
-	return "executed-step"
+	return "%executed-step"
 }

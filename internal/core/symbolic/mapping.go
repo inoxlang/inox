@@ -27,7 +27,7 @@ func (m *Mapping) IsWidenable() bool {
 }
 
 func (m *Mapping) String() string {
-	return "mapping"
+	return "%mapping"
 }
 
 func (m *Mapping) WidestOfType() SymbolicValue {

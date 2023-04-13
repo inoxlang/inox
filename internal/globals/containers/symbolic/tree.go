@@ -72,7 +72,7 @@ func (t *Tree) IsWidenable() bool {
 }
 
 func (t *Tree) String() string {
-	return "tree"
+	return "%tree"
 }
 
 func (t *Tree) IteratorElementKey() symbolic.SymbolicValue {
@@ -180,7 +180,7 @@ func (a *TreeNode) IsWidenable() bool {
 }
 
 func (r *TreeNode) String() string {
-	return "tree-node"
+	return "%tree-node"
 }
 
 func (r *TreeNode) WidestOfType() symbolic.SymbolicValue {
@@ -243,7 +243,7 @@ func (p *TreeNodePattern) IteratorElementValue() symbolic.SymbolicValue {
 }
 
 func (p *TreeNodePattern) String() string {
-	return "tree-node-pattern"
+	return "%tree-node-pattern"
 }
 
 func (p *TreeNodePattern) WidestOfType() symbolic.SymbolicValue {

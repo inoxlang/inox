@@ -42,7 +42,7 @@ func (a *ObjectInfo) IsWidenable() bool {
 }
 
 func (r *ObjectInfo) String() string {
-	return "object-info"
+	return "%object-info"
 }
 
 func (r *ObjectInfo) WidestOfType() symbolic.SymbolicValue {

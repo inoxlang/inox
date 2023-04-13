@@ -60,5 +60,5 @@ func (r *DataChunk) IsWidenable() bool {
 }
 
 func (r *DataChunk) String() string {
-	return "chunk"
+	return "%chunk"
 }

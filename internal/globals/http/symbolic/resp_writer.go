@@ -63,7 +63,7 @@ func (a *HttpResponseWriter) IsWidenable() bool {
 }
 
 func (r *HttpResponseWriter) String() string {
-	return "http-response-writer"
+	return "%http-response-writer"
 }
 
 func (r *HttpResponseWriter) WidestOfType() symbolic.SymbolicValue {

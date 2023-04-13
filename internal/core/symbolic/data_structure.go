@@ -125,7 +125,7 @@ func (a *List) String() string {
 		buff := bytes.NewBufferString("[")
 		for i, elem := range a.elements {
 			if i > 0 {
-				buff.WriteRune(',')
+				buff.WriteString(", ")
 			}
 			buff.WriteString(elem.String())
 		}
@@ -312,7 +312,7 @@ func (t *Tuple) String() string {
 		buff := bytes.NewBufferString("#[")
 		for i, elem := range t.elements {
 			if i > 0 {
-				buff.WriteRune(',')
+				buff.WriteString(", ")
 			}
 			buff.WriteString(elem.String())
 		}
@@ -570,17 +570,17 @@ func (dict *Dictionary) String() string {
 		i := 0
 		for k, pattern := range dict.Entries {
 			if i > 0 {
-				buff.WriteRune(',')
+				buff.WriteString(", ")
 			}
 			buff.WriteString(k)
-			buff.WriteRune(':')
+			buff.WriteString(": ")
 			buff.WriteString(pattern.String())
 			i++
 		}
 		buff.WriteRune('}')
 		return buff.String()
 	}
-	return "dictionary"
+	return "%dictionary"
 }
 
 func (d *Dictionary) WidestOfType() SymbolicValue {
@@ -885,10 +885,10 @@ func (obj *Object) String() string {
 		i := 0
 		for k, pattern := range obj.entries {
 			if i > 0 {
-				buff.WriteRune(',')
+				buff.WriteString(", ")
 			}
 			buff.WriteString(k)
-			buff.WriteRune(':')
+			buff.WriteString(": ")
 			buff.WriteString(pattern.String())
 			i++
 		}
@@ -1056,10 +1056,10 @@ func (rec *Record) String() string {
 		i := 0
 		for k, pattern := range rec.entries {
 			if i > 0 {
-				buff.WriteRune(',')
+				buff.WriteString(", ")
 			}
 			buff.WriteString(k)
-			buff.WriteRune(':')
+			buff.WriteString(": ")
 			buff.WriteString(pattern.String())
 			i++
 		}
@@ -1096,7 +1096,7 @@ func (a *AnyIndexable) IsWidenable() bool {
 }
 
 func (r *AnyIndexable) String() string {
-	return "indexable"
+	return "%indexable"
 }
 
 func (r *AnyIndexable) WidestOfType() SymbolicValue {

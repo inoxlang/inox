@@ -55,7 +55,7 @@ func (a *Ranking) IsWidenable() bool {
 }
 
 func (r *Ranking) String() string {
-	return "ranking"
+	return "%ranking"
 }
 
 func (r *Ranking) IteratorElementKey() symbolic.SymbolicValue {
@@ -109,7 +109,7 @@ func (a *Rank) IsWidenable() bool {
 }
 
 func (r *Rank) String() string {
-	return "rank"
+	return "%rank"
 }
 
 func (r *Rank) IteratorElementKey() symbolic.SymbolicValue {

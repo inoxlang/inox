@@ -58,7 +58,7 @@ func (r *RingBuffer) IsWidenable() bool {
 }
 
 func (r *RingBuffer) String() string {
-	return "ring-buffer"
+	return "%ring-buffer"
 }
 
 func (r *RingBuffer) WidestOfType() SymbolicValue {

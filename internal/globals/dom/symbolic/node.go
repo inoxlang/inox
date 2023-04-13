@@ -56,7 +56,7 @@ func (r *Node) IsWidenable() bool {
 }
 
 func (r *Node) String() string {
-	return "dom-node"
+	return "%dom-node"
 }
 
 func (r *Node) WidestOfType() symbolic.SymbolicValue {

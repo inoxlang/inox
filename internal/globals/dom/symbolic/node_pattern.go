@@ -64,7 +64,7 @@ func (p *NodePattern) StringPattern() (symbolic.StringPatternElement, bool) {
 }
 
 func (r *NodePattern) String() string {
-	return "dom-node-pattern"
+	return "%dom-node-pattern"
 }
 
 func (r *NodePattern) WidestOfType() symbolic.SymbolicValue {

@@ -66,7 +66,7 @@ func (s *EventSource) IsWidenable() bool {
 }
 
 func (s *EventSource) String() string {
-	return "event-source"
+	return "%event-source"
 }
 
 func (s *EventSource) IteratorElementKey() SymbolicValue {
@@ -122,7 +122,7 @@ func (r *Event) IsWidenable() bool {
 }
 
 func (r *Event) String() string {
-	return "event"
+	return "%event"
 }
 
 func (r *Event) WidestOfType() SymbolicValue {

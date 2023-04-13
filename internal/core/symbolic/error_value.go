@@ -33,7 +33,7 @@ func (e *Error) IsWidenable() bool {
 }
 
 func (e *Error) String() string {
-	return "error"
+	return "%error"
 }
 
 func (e *Error) WidestOfType() SymbolicValue {

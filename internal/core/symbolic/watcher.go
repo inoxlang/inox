@@ -33,7 +33,7 @@ func (a *AnyWatchable) IsWidenable() bool {
 }
 
 func (r *AnyWatchable) String() string {
-	return "watchable"
+	return "%watchable"
 }
 
 func (r *AnyWatchable) WidestOfType() SymbolicValue {
@@ -77,7 +77,7 @@ func (r *Watcher) IsWidenable() bool {
 }
 
 func (r *Watcher) String() string {
-	return "watcher"
+	return "%watcher"
 }
 
 func (r *Watcher) WatcherElement() SymbolicValue {

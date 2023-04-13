@@ -64,5 +64,5 @@ func (r *GlobalState) IsWidenable() bool {
 }
 
 func (r *GlobalState) String() string {
-	return "global-state"
+	return "%global-state"
 }

@@ -49,7 +49,7 @@ func (a *HttpServer) IsWidenable() bool {
 }
 
 func (r *HttpServer) String() string {
-	return "http-server"
+	return "%http-server"
 }
 
 func (r *HttpServer) WidestOfType() symbolic.SymbolicValue {

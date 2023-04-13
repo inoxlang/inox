@@ -68,7 +68,7 @@ func (a *File) IsWidenable() bool {
 }
 
 func (r *File) String() string {
-	return "file"
+	return "%file"
 }
 
 func (r *File) WidestOfType() SymbolicValue {

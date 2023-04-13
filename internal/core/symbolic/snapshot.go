@@ -39,7 +39,7 @@ func (m *Snapshot) IsWidenable() bool {
 }
 
 func (m *Snapshot) String() string {
-	return "snapshot"
+	return "%snapshot"
 }
 
 func (m *Snapshot) WidestOfType() SymbolicValue {
@@ -80,7 +80,7 @@ func (s *AnyInMemorySnapshotable) IsWidenable() bool {
 }
 
 func (s *AnyInMemorySnapshotable) String() string {
-	return "in-memory-snapshotable"
+	return "%in-memory-snapshotable"
 }
 
 func (s *AnyInMemorySnapshotable) WidestOfType() SymbolicValue {

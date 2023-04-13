@@ -63,7 +63,7 @@ func (r *HTMLNode) IsWidenable() bool {
 }
 
 func (r *HTMLNode) String() string {
-	return "html-node"
+	return "%html-node"
 }
 
 func (r *HTMLNode) WidestOfType() symbolic.SymbolicValue {

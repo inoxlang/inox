@@ -48,7 +48,7 @@ func (a *HttpResponse) IsWidenable() bool {
 }
 
 func (r *HttpResponse) String() string {
-	return "http-response"
+	return "%http-response"
 }
 
 func (r *HttpResponse) WidestOfType() symbolic.SymbolicValue {

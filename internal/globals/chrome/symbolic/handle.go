@@ -29,7 +29,7 @@ func (a *Handle) IsWidenable() bool {
 }
 
 func (r *Handle) String() string {
-	return "browser-handle"
+	return "%browser-handle"
 }
 
 func (r *Handle) WidestOfType() symbolic.SymbolicValue {

@@ -73,7 +73,7 @@ func (a *Any) IsWidenable() bool {
 }
 
 func (a *Any) String() string {
-	return "any"
+	return "%any"
 }
 
 func (a *Any) WidestOfType() SymbolicValue {
@@ -103,7 +103,7 @@ func (a *NilT) IsWidenable() bool {
 }
 
 func (a *NilT) String() string {
-	return "nil"
+	return "%nil"
 }
 
 func (a *NilT) WidestOfType() SymbolicValue {
@@ -129,7 +129,7 @@ func (a *Bool) IsWidenable() bool {
 }
 
 func (a *Bool) String() string {
-	return "boolean"
+	return "%boolean"
 }
 
 func (a *Bool) WidestOfType() SymbolicValue {
@@ -156,7 +156,7 @@ func (s *EmailAddress) IsWidenable() bool {
 }
 
 func (s *EmailAddress) String() string {
-	return "email-address"
+	return "%email-address"
 }
 
 func (s *EmailAddress) PropertyNames() []string {
@@ -208,9 +208,9 @@ func (i *Identifier) IsWidenable() bool {
 
 func (i *Identifier) String() string {
 	if i.name == "" {
-		return "identifier"
+		return "%identifier"
 	}
-	return fmt.Sprintf("identifier(#%s)", i.name)
+	return fmt.Sprintf("#%s", i.name)
 }
 
 func (s *Identifier) underylingString() *String {
@@ -247,9 +247,9 @@ func (p *PropertyName) IsWidenable() bool {
 
 func (p *PropertyName) String() string {
 	if p.name == "" {
-		return "property-name"
+		return "%property-name"
 	}
-	return fmt.Sprintf("property-name(#%s)", p.name)
+	return fmt.Sprintf("%%property-name(#%s)", p.name)
 }
 
 func (s *PropertyName) underylingString() *String {
@@ -279,7 +279,7 @@ func (a *Mimetype) IsWidenable() bool {
 }
 
 func (p *Mimetype) String() string {
-	return "mimetype"
+	return "%mimetype"
 }
 
 func (s *Mimetype) WidestOfType() SymbolicValue {
@@ -298,7 +298,7 @@ func NewOption(name string) *Option {
 
 func (o *Option) Name() (string, bool) {
 	if o.name == "" {
-		return "", false
+		return "%", false
 	}
 	return o.name, true
 }
@@ -324,9 +324,9 @@ func (o *Option) Widen() (SymbolicValue, bool) {
 
 func (o *Option) String() string {
 	if !o.IsWidenable() {
-		return "option"
+		return "%option"
 	}
-	return "--" + o.name + "(...)"
+	return "%--" + o.name + "(...)"
 }
 
 func (o *Option) WidestOfType() SymbolicValue {
@@ -352,7 +352,7 @@ func (a *Date) Widen() (SymbolicValue, bool) {
 }
 
 func (a *Date) String() string {
-	return "date"
+	return "%date"
 }
 
 func (a *Date) WidestOfType() SymbolicValue {
@@ -379,7 +379,7 @@ func (a *Duration) Widen() (SymbolicValue, bool) {
 }
 
 func (a *Duration) String() string {
-	return "duration"
+	return "%duration"
 }
 
 func (a *Duration) WidestOfType() SymbolicValue {
@@ -406,7 +406,7 @@ func (a *FileMode) Widen() (SymbolicValue, bool) {
 }
 
 func (a *FileMode) String() string {
-	return "filemode"
+	return "%filemode"
 }
 
 func (a *FileMode) WidestOfType() SymbolicValue {
@@ -433,7 +433,7 @@ func (a *FileInfo) Widen() (SymbolicValue, bool) {
 }
 
 func (a *FileInfo) String() string {
-	return "file-info"
+	return "%file-info"
 }
 
 func (a *FileInfo) WidestOfType() SymbolicValue {
@@ -474,9 +474,9 @@ func (b *Type) IsWidenable() bool {
 
 func (b *Type) String() string {
 	if b.Type == nil {
-		return "t"
+		return "%t"
 	}
-	return fmt.Sprintf("type(%v)", b.Type)
+	return fmt.Sprintf("%%type(%v)", b.Type)
 }
 
 func (t *Type) WidestOfType() SymbolicValue {
@@ -549,7 +549,7 @@ func (r *Function) IsWidenable() bool {
 }
 
 func (r *Function) String() string {
-	return "function"
+	return "%function"
 }
 
 func (r *Function) WidestOfType() SymbolicValue {
@@ -593,9 +593,9 @@ func (b *Bytecode) IsWidenable() bool {
 
 func (b *Bytecode) String() string {
 	if b.Bytecode == nil {
-		return "bytecode"
+		return "%bytecode"
 	}
-	return fmt.Sprintf("bytecode(%v)", b.Bytecode)
+	return fmt.Sprintf("%%bytecode(%v)", b.Bytecode)
 }
 
 func (b *Bytecode) WidestOfType() SymbolicValue {
@@ -621,7 +621,7 @@ func (s *QuantityRange) IsWidenable() bool {
 }
 
 func (r *QuantityRange) String() string {
-	return "quantity-range"
+	return "%quantity-range"
 }
 
 func (r *QuantityRange) WidestOfType() SymbolicValue {
@@ -648,7 +648,7 @@ func (s *IntRange) IsWidenable() bool {
 }
 
 func (r *IntRange) String() string {
-	return "int-range"
+	return "%int-range"
 }
 
 func (r *IntRange) knownLen() int {
@@ -699,7 +699,7 @@ func (s *RuneRange) IsWidenable() bool {
 }
 
 func (r *RuneRange) String() string {
-	return "rune-range"
+	return "%rune-range"
 }
 
 func (r *RuneRange) knownLen() int {
@@ -747,7 +747,7 @@ func (a *ByteCount) IsWidenable() bool {
 }
 
 func (r *ByteCount) String() string {
-	return "byte-count"
+	return "%byte-count"
 }
 
 func (r *ByteCount) WidestOfType() SymbolicValue {
@@ -777,7 +777,7 @@ func (a *ByteRate) IsWidenable() bool {
 }
 
 func (r *ByteRate) String() string {
-	return "byte-rate"
+	return "%byte-rate"
 }
 
 func (r *ByteRate) WidestOfType() SymbolicValue {
@@ -804,7 +804,7 @@ func (a *LineCount) IsWidenable() bool {
 }
 
 func (r *LineCount) String() string {
-	return "line-count"
+	return "%line-count"
 }
 
 func (r *LineCount) WidestOfType() SymbolicValue {
@@ -831,7 +831,7 @@ func (a *RuneCount) IsWidenable() bool {
 }
 
 func (r *RuneCount) String() string {
-	return "rune-count"
+	return "%rune-count"
 }
 
 func (r *RuneCount) WidestOfType() SymbolicValue {
@@ -859,7 +859,7 @@ func (a *SimpleRate) IsWidenable() bool {
 }
 
 func (r *SimpleRate) String() string {
-	return "simple-rate"
+	return "%simple-rate"
 }
 
 func (r *SimpleRate) WidestOfType() SymbolicValue {
@@ -893,7 +893,7 @@ func (r *AnyResourceName) IsWidenable() bool {
 }
 
 func (r *AnyResourceName) String() string {
-	return "resource-name"
+	return "%resource-name"
 }
 
 func (r *AnyResourceName) underylingString() *String {
@@ -930,7 +930,7 @@ func (a *Port) IsWidenable() bool {
 }
 
 func (i *Port) String() string {
-	return "port"
+	return "%port"
 }
 
 func (i *Port) WidestOfType() SymbolicValue {
@@ -956,7 +956,7 @@ func (a *UData) IsWidenable() bool {
 }
 
 func (i *UData) String() string {
-	return "udata"
+	return "%udata"
 }
 
 func (i *UData) WidestOfType() SymbolicValue {
@@ -982,7 +982,7 @@ func (a *UDataHiearchyEntry) IsWidenable() bool {
 }
 
 func (i *UDataHiearchyEntry) String() string {
-	return "udata-hiearchy-entry"
+	return "%udata-hiearchy-entry"
 }
 
 func (i *UDataHiearchyEntry) WidestOfType() SymbolicValue {

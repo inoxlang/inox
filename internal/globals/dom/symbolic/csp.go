@@ -38,7 +38,7 @@ func (r *ContentSecurityPolicy) IsWidenable() bool {
 }
 
 func (r *ContentSecurityPolicy) String() string {
-	return "content-security-policy"
+	return "%content-security-policy"
 }
 
 func (r *ContentSecurityPolicy) WidestOfType() symbolic.SymbolicValue {

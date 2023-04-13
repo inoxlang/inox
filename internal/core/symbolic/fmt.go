@@ -34,7 +34,7 @@ func (p *AnyFormat) IsWidenable() bool {
 }
 
 func (p *AnyFormat) String() string {
-	return "format"
+	return "%format"
 }
 
 func (p *AnyFormat) HasUnderylingPattern() bool {

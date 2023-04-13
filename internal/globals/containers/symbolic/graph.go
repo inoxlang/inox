@@ -65,7 +65,7 @@ func (a *Graph) IsWidenable() bool {
 }
 
 func (r *Graph) String() string {
-	return "graph"
+	return "%graph"
 }
 
 func (g *Graph) IteratorElementKey() symbolic.SymbolicValue {
@@ -132,7 +132,7 @@ func (a *GraphNode) IsWidenable() bool {
 }
 
 func (r *GraphNode) String() string {
-	return "graph-node"
+	return "%graph-node"
 }
 
 func (r *GraphNode) WidestOfType() symbolic.SymbolicValue {

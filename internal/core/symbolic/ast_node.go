@@ -50,9 +50,9 @@ func (n *AstNode) IsWidenable() bool {
 
 func (n *AstNode) String() string {
 	if n.Node == nil {
-		return "ast-node"
+		return "%ast-node"
 	}
-	return fmt.Sprintf("ast-node(%T)", n.Node)
+	return fmt.Sprintf("%%ast-node(%T)", n.Node)
 }
 
 func (n *AstNode) WidestOfType() SymbolicValue {
@@ -99,7 +99,7 @@ func (t *Token) IsWidenable() bool {
 }
 
 func (t *Token) String() string {
-	return "ast-token"
+	return "%ast-token"
 }
 
 func (t *Token) WidestOfType() SymbolicValue {

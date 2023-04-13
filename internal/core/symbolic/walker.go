@@ -31,7 +31,7 @@ func (a *AnyWalkable) IsWidenable() bool {
 }
 
 func (r *AnyWalkable) String() string {
-	return "walkable"
+	return "%walkable"
 }
 
 func (r *AnyWalkable) WidestOfType() SymbolicValue {
@@ -62,7 +62,7 @@ func (a *Walker) IsWidenable() bool {
 }
 
 func (r *Walker) String() string {
-	return "walker"
+	return "%walker"
 }
 
 func (r *Walker) WidestOfType() SymbolicValue {

@@ -33,7 +33,7 @@ func (a *Path) IsWidenable() bool {
 }
 
 func (a *Path) String() string {
-	return "path"
+	return "%path"
 }
 
 func (p *Path) ResourceName() *String {
@@ -111,7 +111,7 @@ func (u *URL) IsWidenable() bool {
 }
 
 func (u *URL) String() string {
-	return "url"
+	return "%url"
 }
 
 func (u *URL) underylingString() *String {
@@ -164,7 +164,7 @@ func (s *Scheme) IsWidenable() bool {
 }
 
 func (s *Scheme) String() string {
-	return "scheme"
+	return "%scheme"
 }
 
 func (s *Scheme) underylingString() *String {
@@ -197,7 +197,7 @@ func (s *Host) IsWidenable() bool {
 }
 
 func (s *Host) String() string {
-	return "host"
+	return "%host"
 }
 
 func (h *Host) ResourceName() *String {

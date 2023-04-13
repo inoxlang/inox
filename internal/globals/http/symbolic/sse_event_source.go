@@ -44,7 +44,7 @@ func (a *ServerSentEventSource) IsWidenable() bool {
 }
 
 func (r *ServerSentEventSource) String() string {
-	return "event-source"
+	return "%event-source"
 }
 
 func (r *ServerSentEventSource) WidestOfType() symbolic.SymbolicValue {

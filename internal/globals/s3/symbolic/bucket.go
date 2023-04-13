@@ -37,7 +37,7 @@ func (a *Bucket) IsWidenable() bool {
 }
 
 func (r *Bucket) String() string {
-	return "s3-bucket"
+	return "%s3-bucket"
 }
 
 func (r *Bucket) WidestOfType() symbolic.SymbolicValue {

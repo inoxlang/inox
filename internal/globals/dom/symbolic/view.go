@@ -30,7 +30,7 @@ func (r *View) IsWidenable() bool {
 }
 
 func (r *View) String() string {
-	return "dom-view"
+	return "%dom-view"
 }
 
 func (r *View) WidestOfType() symbolic.SymbolicValue {

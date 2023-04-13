@@ -38,5 +38,5 @@ func (r *Color) IsWidenable() bool {
 }
 
 func (r *Color) String() string {
-	return "color"
+	return "%color"
 }

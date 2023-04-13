@@ -64,7 +64,7 @@ func (d *SymbolicData) IsWidenable() bool {
 }
 
 func (d *SymbolicData) String() string {
-	return "symbolic-data"
+	return "%symbolic-data"
 }
 
 func (m *SymbolicData) WidestOfType() SymbolicValue {

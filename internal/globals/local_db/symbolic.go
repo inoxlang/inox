@@ -75,7 +75,7 @@ func (a *SymbolicLocalDatabase) IsWidenable() bool {
 }
 
 func (r *SymbolicLocalDatabase) String() string {
-	return "local-database"
+	return "%local-database"
 }
 
 func (kvs *SymbolicLocalDatabase) WidestOfType() SymbolicValue {

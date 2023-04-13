@@ -80,9 +80,9 @@ func (fn *InoxFunction) IsWidenable() bool {
 
 func (fn *InoxFunction) String() string {
 	if fn.node == nil {
-		return "inox-function"
+		return "%inox-function"
 	}
-	return fmt.Sprintf("inox-function(%v)", fn.node)
+	return fmt.Sprintf("%%inox-function(%v)", fn.node)
 }
 
 func (fn *InoxFunction) WidestOfType() SymbolicValue {
@@ -171,9 +171,9 @@ func (fn *GoFunction) IsWidenable() bool {
 
 func (fn *GoFunction) String() string {
 	if fn.fn == nil {
-		return "go-function"
+		return "%go-function"
 	}
-	return fmt.Sprintf("go-function(%v)", fn.fn)
+	return fmt.Sprintf("%%go-function(%v)", fn.fn)
 }
 
 func (fn *GoFunction) WidestOfType() SymbolicValue {

@@ -54,7 +54,7 @@ func (j *LifetimeJob) IsWidenable() bool {
 
 func (r *LifetimeJob) String() string {
 	if isAny(r.subjectPattern) {
-		return "lifetime-job"
+		return "%lifetime-job"
 	}
-	return fmt.Sprintf("lifetime-job(%s)", r.subjectPattern.SymbolicValue())
+	return fmt.Sprintf("%%lifetime-job(%s)", r.subjectPattern.SymbolicValue())
 }

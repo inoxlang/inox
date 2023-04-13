@@ -32,7 +32,7 @@ func (a *AnyStreamSource) IsWidenable() bool {
 }
 
 func (r *AnyStreamSource) String() string {
-	return "stream-source"
+	return "%stream-source"
 }
 
 func (r *AnyStreamSource) WidestOfType() SymbolicValue {
@@ -81,7 +81,7 @@ func (r *ReadableStream) IsWidenable() bool {
 }
 
 func (r *ReadableStream) String() string {
-	return "readable-stream"
+	return "%readable-stream"
 }
 
 func (r *ReadableStream) StreamElement() SymbolicValue {

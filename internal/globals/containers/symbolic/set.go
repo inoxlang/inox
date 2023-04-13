@@ -55,7 +55,7 @@ func (*Set) IsWidenable() bool {
 }
 
 func (*Set) String() string {
-	return "set"
+	return "%set"
 }
 
 func (*Set) IteratorElementKey() symbolic.SymbolicValue {

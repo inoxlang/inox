@@ -48,7 +48,7 @@ func (d *DynamicValue) IsWidenable() bool {
 }
 
 func (d *DynamicValue) String() string {
-	return "dyn"
+	return "%dyn"
 }
 
 func (d *DynamicValue) WidestOfType() SymbolicValue {

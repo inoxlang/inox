@@ -52,7 +52,7 @@ func (r *RandomnessSource) IsWidenable() bool {
 }
 
 func (r *RandomnessSource) String() string {
-	return "random-source"
+	return "%random-source"
 }
 
 func (r *RandomnessSource) WidestOfType() SymbolicValue {

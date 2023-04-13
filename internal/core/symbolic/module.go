@@ -60,7 +60,7 @@ func (m *Module) IsWidenable() bool {
 }
 
 func (m *Module) String() string {
-	return "module"
+	return "%module"
 }
 
 func (m *Module) WidestOfType() SymbolicValue {

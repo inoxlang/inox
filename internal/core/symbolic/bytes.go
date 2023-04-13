@@ -45,7 +45,7 @@ func (s *ByteSlice) IsWidenable() bool {
 }
 
 func (s *ByteSlice) String() string {
-	return "byte-slice"
+	return "%byte-slice"
 }
 
 func (s *ByteSlice) IteratorElementKey() SymbolicValue {
@@ -129,7 +129,7 @@ func (b *Byte) IsWidenable() bool {
 }
 
 func (b *Byte) String() string {
-	return "byte"
+	return "%byte"
 }
 
 func (b *Byte) WidestOfType() SymbolicValue {
@@ -195,7 +195,7 @@ func (b *AnyBytesLike) IsWidenable() bool {
 }
 
 func (b *AnyBytesLike) String() string {
-	return "bytes-like"
+	return "%bytes-like"
 }
 
 // func (b *AnyBytesLike) GetOrBuildString() *String {
@@ -269,7 +269,7 @@ func (c *BytesConcatenation) IsWidenable() bool {
 }
 
 func (c *BytesConcatenation) String() string {
-	return "bytes-concatenation"
+	return "%bytes-concatenation"
 }
 
 // func (c *BytesConcatenation) GetOrBuildString() *String {

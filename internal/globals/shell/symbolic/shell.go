@@ -77,5 +77,5 @@ func (r *Shell) IsMutable() bool {
 }
 
 func (r *Shell) String() string {
-	return "inox-shell"
+	return "%inox-shell"
 }

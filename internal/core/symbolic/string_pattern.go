@@ -26,7 +26,7 @@ func (p *AnyStringPatternElement) IsWidenable() bool {
 }
 
 func (p *AnyStringPatternElement) String() string {
-	return "string-pattern"
+	return "%string-pattern"
 }
 
 func (p *AnyStringPatternElement) HasUnderylingPattern() bool {
@@ -87,7 +87,7 @@ func (p *SequenceStringPattern) IsWidenable() bool {
 }
 
 func (p *SequenceStringPattern) String() string {
-	return "sequence-string-pattern"
+	return "%sequence-string-pattern"
 }
 
 func (p *SequenceStringPattern) HasUnderylingPattern() bool {
@@ -156,7 +156,7 @@ func (p *ParserBasedPattern) IsWidenable() bool {
 }
 
 func (p *ParserBasedPattern) String() string {
-	return "parser-based-pattern"
+	return "%parser-based-pattern"
 }
 
 func (p *ParserBasedPattern) HasUnderylingPattern() bool {

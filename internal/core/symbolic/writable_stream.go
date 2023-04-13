@@ -81,7 +81,7 @@ func (r *WritableStream) IsWidenable() bool {
 }
 
 func (r *WritableStream) String() string {
-	return "writable-stream"
+	return "%writable-stream"
 }
 
 func (r *WritableStream) WritableStreamElement() SymbolicValue {

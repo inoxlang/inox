@@ -99,7 +99,7 @@ func (h *ValueHistory) IsWidenable() bool {
 }
 
 func (h *ValueHistory) String() string {
-	return "value-history"
+	return "%value-history"
 }
 
 func (h *ValueHistory) ValueAt(ctx *Context, d *Date) SymbolicValue {

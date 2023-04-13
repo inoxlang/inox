@@ -31,7 +31,7 @@ func (a *AnyIterable) IsWidenable() bool {
 }
 
 func (r *AnyIterable) String() string {
-	return "iterable"
+	return "%iterable"
 }
 
 func (r *AnyIterable) WidestOfType() SymbolicValue {
@@ -75,7 +75,7 @@ func (r *Iterator) IsWidenable() bool {
 }
 
 func (r *Iterator) String() string {
-	return "iterator"
+	return "%iterator"
 }
 
 func (r *Iterator) IteratorElementKey() SymbolicValue {

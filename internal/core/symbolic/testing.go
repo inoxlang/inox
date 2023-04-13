@@ -52,7 +52,7 @@ func (s *TestSuite) IsWidenable() bool {
 }
 
 func (s *TestSuite) String() string {
-	return "test-suite"
+	return "%test-suite"
 }
 
 // A TestCase represents a symbolic TestCase.
@@ -99,5 +99,5 @@ func (s *TestCase) IsWidenable() bool {
 }
 
 func (s *TestCase) String() string {
-	return "test-case"
+	return "%test-case"
 }

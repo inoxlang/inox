@@ -92,7 +92,7 @@ func (g *SystemGraph) IsWidenable() bool {
 }
 
 func (g *SystemGraph) String() string {
-	return "system-graph"
+	return "%system-graph"
 }
 
 func (g *SystemGraph) WidestOfType() SymbolicValue {
@@ -145,7 +145,7 @@ func (d *SystemGraphNodes) IteratorElementValue() SymbolicValue {
 }
 
 func (d *SystemGraphNodes) String() string {
-	return "system-graph-nodes"
+	return "%system-graph-nodes"
 }
 
 func (d *SystemGraphNodes) WidestOfType() SymbolicValue {
@@ -215,7 +215,7 @@ func (n *SystemGraphNode) IsWidenable() bool {
 }
 
 func (n *SystemGraphNode) String() string {
-	return "system-graph-node"
+	return "%system-graph-node"
 }
 
 func (n *SystemGraphNode) WidestOfType() SymbolicValue {
@@ -283,7 +283,7 @@ func (n *SystemGraphEvent) IsWidenable() bool {
 }
 
 func (n *SystemGraphEvent) String() string {
-	return "system-graph-event"
+	return "%system-graph-event"
 }
 
 func (n *SystemGraphEvent) WidestOfType() SymbolicValue {
@@ -339,7 +339,7 @@ func (e *SystemGraphEdge) IsWidenable() bool {
 }
 
 func (e *SystemGraphEdge) String() string {
-	return "system-graph-edge"
+	return "%system-graph-edge"
 }
 
 func (e *SystemGraphEdge) WidestOfType() SymbolicValue {

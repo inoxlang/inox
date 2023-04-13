@@ -49,7 +49,7 @@ func (a *Thread) IsWidenable() bool {
 }
 
 func (*Thread) String() string {
-	return "set"
+	return "%thread"
 }
 
 func (t *Thread) IteratorElementKey() symbolic.SymbolicValue {

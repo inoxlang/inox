@@ -51,7 +51,7 @@ func (a *String) IsWidenable() bool {
 }
 
 func (s *String) String() string {
-	return "string"
+	return "%string"
 }
 
 func (s *String) HasKnownLen() bool {
@@ -146,7 +146,7 @@ func (a *Rune) IsWidenable() bool {
 }
 
 func (r *Rune) String() string {
-	return "rune"
+	return "%rune"
 }
 
 func (r *Rune) WidestOfType() SymbolicValue {
@@ -189,7 +189,7 @@ func (a *CheckedString) IsWidenable() bool {
 }
 
 func (s *CheckedString) String() string {
-	return "checked-string"
+	return "%checked-string"
 }
 
 func (p *CheckedString) PropertyNames() []string {
@@ -233,7 +233,7 @@ func (s *RuneSlice) IsWidenable() bool {
 }
 
 func (s *RuneSlice) String() string {
-	return "rune-slice"
+	return "%rune-slice"
 }
 
 func (s *RuneSlice) HasKnownLen() bool {
@@ -340,7 +340,7 @@ func (c *StringConcatenation) IsWidenable() bool {
 }
 
 func (c *StringConcatenation) String() string {
-	return "string-concatenation"
+	return "%string-concatenation"
 }
 
 func (c *StringConcatenation) HasKnownLen() bool {
@@ -422,7 +422,7 @@ func (s *AnyStringLike) IsWidenable() bool {
 }
 
 func (s *AnyStringLike) String() string {
-	return "string-like"
+	return "%string-like"
 }
 
 func (s *AnyStringLike) element() SymbolicValue {

@@ -60,7 +60,7 @@ func (tx *Transaction) IsWidenable() bool {
 }
 
 func (tx *Transaction) String() string {
-	return "transaction"
+	return "%transaction"
 }
 
 func (tx *Transaction) WidestOfType() SymbolicValue {

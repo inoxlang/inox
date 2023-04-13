@@ -38,7 +38,7 @@ func (a *Publication) IsWidenable() bool {
 }
 
 func (r *Publication) String() string {
-	return "publication"
+	return "%publication"
 }
 
 func (r *Publication) WidestOfType() SymbolicValue {
@@ -74,7 +74,7 @@ func (a *Subscription) IsWidenable() bool {
 }
 
 func (r *Subscription) String() string {
-	return "subscription"
+	return "%subscription"
 }
 
 func (r *Subscription) WidestOfType() SymbolicValue {
@@ -101,7 +101,7 @@ func (a *AnySubscriber) IsWidenable() bool {
 }
 
 func (r *AnySubscriber) String() string {
-	return "subscriber"
+	return "%subscriber"
 }
 
 func (r *AnySubscriber) WidestOfType() SymbolicValue {

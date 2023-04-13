@@ -55,7 +55,7 @@ func (i *Int) IsWidenable() bool {
 }
 
 func (i *Int) String() string {
-	return "int"
+	return "%int"
 }
 
 func (i *Int) WidestOfType() SymbolicValue {

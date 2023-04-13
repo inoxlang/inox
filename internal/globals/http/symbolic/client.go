@@ -51,7 +51,7 @@ func (c *HttpClient) IsWidenable() bool {
 }
 
 func (c *HttpClient) String() string {
-	return "http-client"
+	return "%http-client"
 }
 
 func (c *HttpClient) WidestOfType() symbolic.SymbolicValue {

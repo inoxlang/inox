@@ -61,7 +61,7 @@ func (*Queue) IsWidenable() bool {
 }
 
 func (*Queue) String() string {
-	return "set"
+	return "%queue"
 }
 
 func (*Queue) IteratorElementKey() symbolic.SymbolicValue {

@@ -84,7 +84,7 @@ func (p *AnyPattern) IsWidenable() bool {
 }
 
 func (p *AnyPattern) String() string {
-	return "pattern"
+	return "%pattern"
 }
 
 func (p *AnyPattern) HasUnderylingPattern() bool {
@@ -136,7 +136,7 @@ func (p *PathPattern) IsWidenable() bool {
 }
 
 func (p *PathPattern) String() string {
-	return "path-pattern"
+	return "%path-pattern"
 }
 
 func (p *PathPattern) HasUnderylingPattern() bool {
@@ -204,7 +204,7 @@ func (p *URLPattern) IsWidenable() bool {
 }
 
 func (p *URLPattern) String() string {
-	return "url-pattern"
+	return "%url-pattern"
 }
 
 func (p *URLPattern) HasUnderylingPattern() bool {
@@ -272,7 +272,7 @@ func (p *HostPattern) IsWidenable() bool {
 }
 
 func (p *HostPattern) String() string {
-	return "host-pattern"
+	return "%host-pattern"
 }
 
 func (p *HostPattern) HasUnderylingPattern() bool {
@@ -341,9 +341,9 @@ func (p *NamedSegmentPathPattern) Test(v SymbolicValue) bool {
 
 func (p *NamedSegmentPathPattern) String() string {
 	if p.node == nil {
-		return "named-segment-path-pattern"
+		return "%named-segment-path-pattern"
 	}
-	return fmt.Sprintf("named-segment-path-pattern(%p)", p.node)
+	return fmt.Sprintf("%%named-segment-path-pattern(%p)", p.node)
 }
 
 func (p *NamedSegmentPathPattern) Widen() (SymbolicValue, bool) {
@@ -446,7 +446,7 @@ func (p *ExactValuePattern) IsWidenable() bool {
 }
 
 func (p *ExactValuePattern) String() string {
-	return fmt.Sprintf("exact-value-pattern(%s)", p.value.String())
+	return fmt.Sprintf("%%exact-value-pattern(%s)", p.value.String())
 }
 
 func (p *ExactValuePattern) HasUnderylingPattern() bool {
@@ -496,7 +496,7 @@ func (p *RegexPattern) IsWidenable() bool {
 }
 
 func (p *RegexPattern) String() string {
-	return "regex-pattern"
+	return "%%regex-pattern"
 }
 
 func (p *RegexPattern) HasUnderylingPattern() bool {
@@ -644,10 +644,10 @@ func (p *ObjectPattern) String() string {
 		i := 0
 		for k, pattern := range p.Entries {
 			if i > 0 {
-				buff.WriteRune(',')
+				buff.WriteString(", ")
 			}
 			buff.WriteString(k)
-			buff.WriteRune(':')
+			buff.WriteString(": ")
 			buff.WriteString(pattern.String())
 			i++
 		}
@@ -812,7 +812,7 @@ func (p *RecordPattern) IsWidenable() bool {
 
 func (p *RecordPattern) String() string {
 	if p.Entries != nil {
-		buff := bytes.NewBufferString("%record(%{")
+		buff := bytes.NewBufferString("%record-pattern(%{")
 		i := 0
 		for k, pattern := range p.Entries {
 			if i > 0 {
@@ -829,7 +829,7 @@ func (p *RecordPattern) String() string {
 		buff.WriteString("})")
 		return buff.String()
 	}
-	return "record-pattern"
+	return "%record-pattern"
 }
 
 func (p *RecordPattern) HasUnderylingPattern() bool {
@@ -975,7 +975,7 @@ func (p *ListPattern) String() string {
 		buff := bytes.NewBufferString("%[")
 		for i, elem := range p.elements {
 			if i > 0 {
-				buff.WriteRune(',')
+				buff.WriteString(", ")
 			}
 			buff.WriteString(elem.SymbolicValue().String())
 		}
@@ -1126,17 +1126,17 @@ func (p *TuplePattern) IsWidenable() bool {
 
 func (p *TuplePattern) String() string {
 	if p.elements != nil {
-		buff := bytes.NewBufferString("%tuple([")
+		buff := bytes.NewBufferString("%tuple-pattern([")
 		for i, elem := range p.elements {
 			if i > 0 {
-				buff.WriteRune(',')
+				buff.WriteString(", ")
 			}
 			buff.WriteString(elem.SymbolicValue().String())
 		}
 		buff.WriteString("])")
 		return buff.String()
 	}
-	return "%tuple(" + p.generalElement.SymbolicValue().String() + ")"
+	return "%tuple-pattern(" + p.generalElement.SymbolicValue().String() + ")"
 }
 
 func (p *TuplePattern) HasUnderylingPattern() bool {
@@ -1409,7 +1409,7 @@ func (p *OptionPattern) IsWidenable() bool {
 }
 
 func (p *OptionPattern) String() string {
-	return "option-pattern"
+	return "%option-pattern"
 }
 
 func (p *OptionPattern) HasUnderylingPattern() bool {
@@ -1502,7 +1502,7 @@ func (p *TypePattern) IsWidenable() bool {
 }
 
 func (p *TypePattern) String() string {
-	return fmt.Sprintf("type-pattern(%s)", p.val.String())
+	return fmt.Sprintf("%%type-pattern(%s)", p.val.String())
 }
 
 func (p *TypePattern) HasUnderylingPattern() bool {
@@ -1563,7 +1563,7 @@ func (p *DifferencePattern) IsWidenable() bool {
 }
 
 func (p *DifferencePattern) String() string {
-	return fmt.Sprintf("difference-pattern(%s \\ %s)", p.Base.String(), p.Removed.String())
+	return fmt.Sprintf("%%difference-pattern(%s \\ %s)", p.Base.String(), p.Removed.String())
 }
 
 func (p *DifferencePattern) HasUnderylingPattern() bool {
@@ -1761,9 +1761,9 @@ func (p *FunctionPattern) StringPattern() (StringPatternElement, bool) {
 
 func (fn *FunctionPattern) String() string {
 	if fn.Node == nil {
-		return "function-pattern"
+		return "%function-pattern"
 	}
-	return fmt.Sprintf("function-pattern(%v)", fn.Node)
+	return fmt.Sprintf("%%function-pattern(%v)", fn.Node)
 }
 
 func (fn *FunctionPattern) WidestOfType() SymbolicValue {
@@ -1791,7 +1791,7 @@ func (p *IntRangePattern) IsWidenable() bool {
 }
 
 func (p *IntRangePattern) String() string {
-	return "int-range-pattern"
+	return "%int-range-pattern"
 }
 
 func (p *IntRangePattern) HasUnderylingPattern() bool {
