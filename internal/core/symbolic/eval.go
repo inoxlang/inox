@@ -1481,9 +1481,11 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 
 		if n.KeyIndexIdent != nil {
 			state.setLocal(kVarname, keyType, nil)
+			state.symbolicData.SetNodeValue(n.KeyIndexIdent, keyType)
 		}
 		if n.ValueElemIdent != nil {
 			state.setLocal(eVarname, valueType, nil)
+			state.symbolicData.SetNodeValue(n.ValueElemIdent, valueType)
 		}
 
 		_, err = symbolicEval(n.Body, state)
@@ -1511,9 +1513,11 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 		}
 
 		state.setLocal(n.EntryIdent.Name, entry, nil)
+		state.symbolicData.SetNodeValue(n.EntryIdent, entry)
 
 		if n.MetaIdent != nil {
 			state.setLocal(n.MetaIdent.Name, nodeMeta, nil)
+			state.symbolicData.SetNodeValue(n.MetaIdent, nodeMeta)
 		}
 
 		_, blkErr := symbolicEval(n.Body, state)
