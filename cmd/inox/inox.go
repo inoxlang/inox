@@ -25,6 +25,7 @@ import (
 const (
 	HELP = "Usage:\n\t<command> [arguments]\n\nThe commands are:\n" +
 		"\trun - run a script\n" +
+		"\tcheck - check a script\n" +
 		"\tshell - start the shell\n" +
 		"\teval - evaluate a single statement\n\n" +
 		"The run command:\n" +
@@ -124,6 +125,51 @@ func _main(args []string) {
 				if list, ok := res.(*core.List); (!ok && res != nil) || list.Len() != 0 {
 					fmt.Printf("%#v\n\r", res)
 				}
+			}
+		case "check":
+
+			if len(args) == 2 {
+				fmt.Println("missing script path")
+				return
+			}
+
+			fpath := args[2]
+
+			dir := filepath.Dir(fpath)
+			dir, _ = filepath.Abs(dir)
+			dir = core.AppendTrailingSlashIfNotPresent(dir)
+
+			compilationCtx := core.NewContext(core.ContextConfig{
+				Permissions: []core.Permission{
+					core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern(dir + "...")},
+				},
+			})
+			core.NewGlobalState(compilationCtx)
+
+			_, _, err := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
+				Fpath:                     fpath,
+				PassedArgs:                []string{},
+				ParsingCompilationContext: compilationCtx,
+				ParentContext:             nil,
+				Out:                       os.Stdout,
+			})
+
+			if err != nil {
+				var assertionErr *core.AssertionError
+				var errString string
+
+				prettyPrintConfig := _sh.GetPrintingConfig().PrettyPrintConfig().WithContext(compilationCtx) // TODO: use another context?
+
+				if errors.As(err, &assertionErr) {
+					errString = assertionErr.PrettySPrint(prettyPrintConfig)
+				} else {
+					errString = utils.StripANSISequences(err.Error())
+				}
+				errString = utils.AddCarriageReturnAfterNewlines(errString)
+
+				fmt.Print(errString, "\n\r")
+			} else {
+				fmt.Println("no errors")
 			}
 
 		case "shell":
