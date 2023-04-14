@@ -10,7 +10,7 @@ import (
 	"github.com/inox-project/inox/internal/utils"
 
 	globals "github.com/inox-project/inox/internal/globals"
-	suggestion "github.com/inox-project/inox/internal/globals/suggestion"
+	compl "github.com/inox-project/inox/internal/globals/completion"
 
 	_ "net/http/pprof"
 )
@@ -87,8 +87,8 @@ func HandleVscCommand(fpath string, dir string, subCommand string, jsonData stri
 		chunk := mod.MainChunk
 		pos := chunk.GetLineColumnPosition(lineCol.Line, lineCol.Column)
 
-		suggestions := suggestion.FindSuggestions(core.NewTreeWalkStateWithGlobal(state), chunk.Node, int(pos))
-		data := CompletionData{Completions: utils.EmptySliceIfNil(suggestions)}
+		completions := compl.FindCompletions(core.NewTreeWalkStateWithGlobal(state), chunk.Node, int(pos))
+		data := CompletionData{Completions: utils.EmptySliceIfNil(completions)}
 		dataJSON := utils.Must(json.Marshal(data))
 
 		fmt.Println(utils.BytesAsString(dataJSON))
@@ -111,5 +111,5 @@ type HoverData struct {
 }
 
 type CompletionData struct {
-	Completions []suggestion.Suggestion `json:"completions"`
+	Completions []compl.Completion `json:"completions"`
 }

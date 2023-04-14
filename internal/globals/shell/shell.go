@@ -26,7 +26,7 @@ import (
 	symbolic "github.com/inox-project/inox/internal/core/symbolic"
 	symbolic_shell "github.com/inox-project/inox/internal/globals/shell/symbolic"
 
-	sug "github.com/inox-project/inox/internal/globals/suggestion"
+	compl "github.com/inox-project/inox/internal/globals/completion"
 	"github.com/inox-project/inox/internal/utils"
 
 	parse "github.com/inox-project/inox/internal/parse"
@@ -119,8 +119,8 @@ type shell struct {
 
 	//previous input info
 	prevInputLineCount      int
-	prevSuggestionLineCount int
-	prevSuggestionCount     int
+	prevCompletionLineCount int
+	prevCompletionCount     int
 	prevRowIndex            int
 
 	//
@@ -161,8 +161,8 @@ func newShell(config REPLConfiguration, state *core.GlobalState, in io.ReadWrite
 		//previous input
 
 		prevInputLineCount:      1,
-		prevSuggestionLineCount: 0,
-		prevSuggestionCount:     0,
+		prevCompletionLineCount: 0,
+		prevCompletionCount:     0,
 		prevRowIndex:            -1,
 
 		//
@@ -232,7 +232,7 @@ func (sh *shell) getCursorIndex() int {
 }
 
 // moves the cursor at the start of the prompt, prints the prompt and the input with colorizations and then moves the cursor at the right place
-func (sh *shell) printPromptAndInput(inputGotReplaced bool, suggestions []string) {
+func (sh *shell) printPromptAndInput(inputGotReplaced bool, completions []string) {
 	//we use a buffer to output most of the prompt+input in a single print, that reduces flickering on some terminals.
 	buff := bytes.NewBuffer(nil)
 	clearLine(buff)
@@ -265,29 +265,29 @@ func (sh *shell) printPromptAndInput(inputGotReplaced bool, suggestions []string
 
 	fmt.Fprint(sh.out, buff.String())
 
-	//print suggestions
+	//print completions
 
-	suggestionString := strings.Join(suggestions, " ")
-	suggestionLineCount := 1 + strings.Count(suggestionString, "\n") + utf8.RuneCountInString(suggestionString)/sh.termWidth
+	completionString := strings.Join(completions, " ")
+	completionLineCount := 1 + strings.Count(completionString, "\n") + utf8.RuneCountInString(completionString)/sh.termWidth
 
-	if len(suggestions) != 0 || sh.prevSuggestionCount != 0 {
+	if len(completions) != 0 || sh.prevCompletionCount != 0 {
 		sh.moveCursorLineStart()
 
-		fmt.Fprintf(sh.out, "\n\r%s", suggestionString)
+		fmt.Fprintf(sh.out, "\n\r%s", completionString)
 
-		if len(suggestions) == 0 {
+		if len(completions) == 0 {
 			clearLine(sh.out)
 		}
 
-		//if the new suggestions are shorter than the previous ones we clear the additional lines of the previous suggestions
-		if sh.prevSuggestionLineCount > suggestionLineCount {
-			moveCursorDown(sh.out, sh.prevSuggestionLineCount-suggestionLineCount)
-			clearLines(sh.out, sh.prevSuggestionLineCount-suggestionLineCount)
+		//if the new completions are shorter than the previous ones we clear the additional lines of the previous completions
+		if sh.prevCompletionLineCount > completionLineCount {
+			moveCursorDown(sh.out, sh.prevCompletionLineCount-completionLineCount)
+			clearLines(sh.out, sh.prevCompletionLineCount-completionLineCount)
 		}
 
-		moveCursorUp(sh.out, suggestionLineCount)
-		sh.prevSuggestionLineCount = suggestionLineCount
-		sh.prevSuggestionCount = len(suggestions)
+		moveCursorUp(sh.out, completionLineCount)
+		sh.prevCompletionLineCount = completionLineCount
+		sh.prevCompletionCount = len(completions)
 	}
 
 	//move cursor
@@ -955,39 +955,39 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 		var (
 			chunk, _    = parse.ParseChunk(string(sh.input), "")
 			cursorIndex = sh.getCursorIndex()
-			suggestions = sug.FindSuggestions(sh.state, chunk, cursorIndex)
+			completions = compl.FindCompletions(sh.state, chunk, cursorIndex)
 
 			replacement       string
 			replacedSpan      parse.NodeSpan
-			suggestionStrings []string
+			completionStrings []string
 			newCharCount      int
 		)
 
-		switch len(suggestions) {
+		switch len(completions) {
 		case 0:
 			//do nothing
 			return
 		case 1:
-			//do a replacement and do not print suggestions
-			replacement = suggestions[0].Value
-			replacedSpan = suggestions[0].Span
+			//do a replacement and do not print completions
+			replacement = completions[0].Value
+			replacedSpan = completions[0].Span
 		default:
-			var suggestionValues []string //used to find longest common prefix
-			var span = suggestions[0].Span
+			var completionValues []string //used to find longest common prefix
+			var span = completions[0].Span
 			addPrefix := true
 
-			for _, sug := range suggestions {
-				suggestionValues = append(suggestionValues, sug.Value)
-				suggestionStrings = append(suggestionStrings, sug.ShownString)
+			for _, sug := range completions {
+				completionValues = append(completionValues, sug.Value)
+				completionStrings = append(completionStrings, sug.ShownString)
 				if sug.Span != span {
 					addPrefix = false
 				}
 			}
 
-			sort.Strings(suggestionStrings)
+			sort.Strings(completionStrings)
 
 			if addPrefix {
-				prefix := utils.FindLongestCommonPrefix(suggestionValues)
+				prefix := utils.FindLongestCommonPrefix(completionValues)
 				if prefix != "" {
 					replacement = prefix
 					replacedSpan = span
@@ -1007,7 +1007,7 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 			saveCursorPosition(sh.out)
 		}
 
-		sh.printPromptAndInput(false, suggestionStrings)
+		sh.printPromptAndInput(false, completionStrings)
 
 		if replacement != "" {
 			restoreCursorPosition(sh.out)

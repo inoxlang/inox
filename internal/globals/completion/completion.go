@@ -15,7 +15,7 @@ import (
 	parse "github.com/inox-project/inox/internal/parse"
 )
 
-type Suggestion struct {
+type Completion struct {
 	ShownString string         `json:"shownString"`
 	Value       string         `json:"value"`
 	Span        parse.NodeSpan `json:"span"`
@@ -25,9 +25,9 @@ var (
 	CONTEXT_INDEPENDENT_STMT_STARTING_KEYWORDS = []string{"if", "drop-perms", "for", "assign", "switch", "match", "return", "assert"}
 )
 
-func FindSuggestions(state *core.TreeWalkState, chunk *parse.Chunk, cursorIndex int) []Suggestion {
+func FindCompletions(state *core.TreeWalkState, chunk *parse.Chunk, cursorIndex int) []Completion {
 
-	var suggestions []Suggestion
+	var completions []Completion
 	var nodeAtCursor parse.Node
 	var _parent parse.Node
 	var deepestCall *parse.CallExpression
@@ -83,7 +83,7 @@ func FindSuggestions(state *core.TreeWalkState, chunk *parse.Chunk, cursorIndex 
 		for name := range state.Global.Ctx.GetNamedPatterns() {
 			if strings.HasPrefix(name, n.Name) {
 				s := "%" + name
-				suggestions = append(suggestions, Suggestion{
+				completions = append(completions, Completion{
 					ShownString: s,
 					Value:       s,
 				})
@@ -92,7 +92,7 @@ func FindSuggestions(state *core.TreeWalkState, chunk *parse.Chunk, cursorIndex 
 		for name := range state.Global.Ctx.GetPatternNamespaces() {
 			if strings.HasPrefix(name, n.Name) {
 				s := "%" + name + "."
-				suggestions = append(suggestions, Suggestion{
+				completions = append(completions, Completion{
 					ShownString: s,
 					Value:       s,
 				})
@@ -106,7 +106,7 @@ func FindSuggestions(state *core.TreeWalkState, chunk *parse.Chunk, cursorIndex 
 		for patternName := range namespace.Patterns {
 			s := "%" + n.Name + "." + patternName
 
-			suggestions = append(suggestions, Suggestion{
+			completions = append(completions, Completion{
 				ShownString: s,
 				Value:       s,
 			})
@@ -120,7 +120,7 @@ func FindSuggestions(state *core.TreeWalkState, chunk *parse.Chunk, cursorIndex 
 			if strings.HasPrefix(patternName, n.MemberName.Name) {
 				s := "%" + n.Namespace.Name + "." + patternName
 
-				suggestions = append(suggestions, Suggestion{
+				completions = append(completions, Completion{
 					ShownString: s,
 					Value:       s,
 				})
@@ -129,7 +129,7 @@ func FindSuggestions(state *core.TreeWalkState, chunk *parse.Chunk, cursorIndex 
 	case *parse.Variable:
 		for name := range state.CurrentLocalScope() {
 			if strings.HasPrefix(name, n.Name) {
-				suggestions = append(suggestions, Suggestion{
+				completions = append(completions, Completion{
 					ShownString: name,
 					Value:       "$" + name,
 				})
@@ -138,47 +138,47 @@ func FindSuggestions(state *core.TreeWalkState, chunk *parse.Chunk, cursorIndex 
 	case *parse.GlobalVariable:
 		state.Global.Globals.Foreach(func(name string, _ core.Value) {
 			if strings.HasPrefix(name, n.Name) {
-				suggestions = append(suggestions, Suggestion{
+				completions = append(completions, Completion{
 					ShownString: name,
 					Value:       "$$" + name,
 				})
 			}
 		})
 	case *parse.IdentifierLiteral:
-		suggestions = handleIdentifierAndKeywordSuggestions(n, deepestCall, _ancestorChain, state)
+		completions = handleIdentifierAndKeywordCompletions(n, deepestCall, _ancestorChain, state)
 	case *parse.IdentifierMemberExpression:
-		suggestions = handleIdentifierMemberSuggestions(n, state)
+		completions = handleIdentifierMemberCompletions(n, state)
 	case *parse.MemberExpression:
-		suggestions = handleMemberExpressionSuggestions(n, state)
+		completions = handleMemberExpressionCompletions(n, state)
 	case *parse.CallExpression: //if a call is the deepest node at cursor it means we are not in an argument
-		suggestions = handleNewCallArgumentSuggestions(n, cursorIndex, state)
+		completions = handleNewCallArgumentCompletions(n, cursorIndex, state)
 	case *parse.RelativePathLiteral:
-		suggestions = findPathSuggestions(state.Global.Ctx, n.Raw)
+		completions = findPathCompletions(state.Global.Ctx, n.Raw)
 	case *parse.AbsolutePathLiteral:
-		suggestions = findPathSuggestions(state.Global.Ctx, n.Raw)
+		completions = findPathCompletions(state.Global.Ctx, n.Raw)
 	case *parse.URLLiteral:
-		suggestions = findURLSuggestions(state.Global.Ctx, core.URL(n.Value), _parent)
+		completions = findURLCompletions(state.Global.Ctx, core.URL(n.Value), _parent)
 	case *parse.HostLiteral:
-		suggestions = findHostSuggestions(state.Global.Ctx, n.Value, _parent)
+		completions = findHostCompletions(state.Global.Ctx, n.Value, _parent)
 	case *parse.SchemeLiteral:
-		suggestions = findHostSuggestions(state.Global.Ctx, n.Name, _parent)
+		completions = findHostCompletions(state.Global.Ctx, n.Name, _parent)
 	}
 
-	for i, suggestion := range suggestions {
-		if suggestion.Span == (parse.NodeSpan{}) {
-			suggestion.Span = nodeAtCursor.Base().Span
+	for i, completion := range completions {
+		if completion.Span == (parse.NodeSpan{}) {
+			completion.Span = nodeAtCursor.Base().Span
 		}
-		suggestions[i] = suggestion
+		completions[i] = completion
 	}
 
-	return suggestions
+	return completions
 }
 
-func handleIdentifierAndKeywordSuggestions(ident *parse.IdentifierLiteral, deepestCall *parse.CallExpression, ancestors []parse.Node, state *core.TreeWalkState) []Suggestion {
+func handleIdentifierAndKeywordCompletions(ident *parse.IdentifierLiteral, deepestCall *parse.CallExpression, ancestors []parse.Node, state *core.TreeWalkState) []Completion {
 
-	var suggestions []Suggestion
+	var completions []Completion
 
-	if deepestCall != nil { //subcommand suggestions
+	if deepestCall != nil { //subcommand completions
 		argIndex := -1
 
 		for i, arg := range deepestCall.Arguments {
@@ -203,7 +203,7 @@ func handleIdentifierAndKeywordSuggestions(ident *parse.IdentifierLiteral, deepe
 				subcommandIdentChain = append(subcommandIdentChain, idnt)
 			}
 
-			suggestionSet := make(map[Suggestion]bool)
+			completionSet := make(map[Completion]bool)
 
 			for _, perm := range state.Global.Ctx.GetGrantedPermissions() {
 				cmdPerm, ok := perm.(core.CommandPermission)
@@ -216,13 +216,13 @@ func handleIdentifierAndKeywordSuggestions(ident *parse.IdentifierLiteral, deepe
 				}
 
 				subcommandName := cmdPerm.SubcommandNameChain[argIndex]
-				suggestion := Suggestion{
+				completion := Completion{
 					ShownString: subcommandName,
 					Value:       subcommandName,
 				}
-				if !suggestionSet[suggestion] {
-					suggestions = append(suggestions, suggestion)
-					suggestionSet[suggestion] = true
+				if !completionSet[completion] {
+					completions = append(completions, completion)
+					completionSet[completion] = true
 				}
 			}
 		}
@@ -232,7 +232,7 @@ func handleIdentifierAndKeywordSuggestions(ident *parse.IdentifierLiteral, deepe
 
 	state.Global.Globals.Foreach(func(name string, _ core.Value) {
 		if strings.HasPrefix(name, ident.Name) {
-			suggestions = append(suggestions, Suggestion{
+			completions = append(completions, Completion{
 				ShownString: name,
 				Value:       name,
 			})
@@ -241,7 +241,7 @@ func handleIdentifierAndKeywordSuggestions(ident *parse.IdentifierLiteral, deepe
 
 	for name := range state.CurrentLocalScope() {
 		if strings.HasPrefix(name, ident.Name) {
-			suggestions = append(suggestions, Suggestion{
+			completions = append(completions, Completion{
 				ShownString: name,
 				Value:       name,
 			})
@@ -263,7 +263,7 @@ func handleIdentifierAndKeywordSuggestions(ident *parse.IdentifierLiteral, deepe
 			case *parse.Block:
 				for _, keyword := range []string{"break", "continue"} {
 					if strings.HasPrefix(keyword, ident.Name) {
-						suggestions = append(suggestions, Suggestion{
+						completions = append(completions, Completion{
 							ShownString: keyword,
 							Value:       keyword,
 						})
@@ -275,7 +275,7 @@ func handleIdentifierAndKeywordSuggestions(ident *parse.IdentifierLiteral, deepe
 			switch parent.(type) {
 			case *parse.Block:
 				if strings.HasPrefix("prune", ident.Name) {
-					suggestions = append(suggestions, Suggestion{
+					completions = append(completions, Completion{
 						ShownString: "prune",
 						Value:       "prune",
 					})
@@ -291,7 +291,7 @@ func handleIdentifierAndKeywordSuggestions(ident *parse.IdentifierLiteral, deepe
 		if strings.HasPrefix(keyword, ident.Name) {
 			switch parent.(type) {
 			case *parse.Block, *parse.InitializationBlock, *parse.EmbeddedModule, *parse.Chunk:
-				suggestions = append(suggestions, Suggestion{
+				completions = append(completions, Completion{
 					ShownString: keyword,
 					Value:       keyword,
 				})
@@ -303,17 +303,17 @@ func handleIdentifierAndKeywordSuggestions(ident *parse.IdentifierLiteral, deepe
 
 	for _, keyword := range []string{"udata", "Mapping", "concat"} {
 		if strings.HasPrefix(keyword, ident.Name) {
-			suggestions = append(suggestions, Suggestion{
+			completions = append(completions, Completion{
 				ShownString: keyword,
 				Value:       keyword,
 			})
 		}
 	}
 
-	return suggestions
+	return completions
 }
 
-func handleIdentifierMemberSuggestions(n *parse.IdentifierMemberExpression, state *core.TreeWalkState) []Suggestion {
+func handleIdentifierMemberCompletions(n *parse.IdentifierMemberExpression, state *core.TreeWalkState) []Completion {
 
 	curr, ok := state.Get(n.Left.Name)
 	if !ok {
@@ -353,7 +353,7 @@ func handleIdentifierMemberSuggestions(n *parse.IdentifierMemberExpression, stat
 	return suggestPropertyNames(s, curr, n.PropertyNames, state.Global)
 }
 
-func handleMemberExpressionSuggestions(n *parse.MemberExpression, state *core.TreeWalkState) []Suggestion {
+func handleMemberExpressionCompletions(n *parse.MemberExpression, state *core.TreeWalkState) []Completion {
 	ok := true
 	buff := bytes.NewBufferString("")
 
@@ -415,8 +415,8 @@ loop:
 	return suggestPropertyNames(buff.String(), curr, exprPropertyNames, state.Global)
 }
 
-func suggestPropertyNames(s string, curr interface{}, exprPropertyNames []*parse.IdentifierLiteral, state *core.GlobalState) []Suggestion {
-	var suggestions []Suggestion
+func suggestPropertyNames(s string, curr interface{}, exprPropertyNames []*parse.IdentifierLiteral, state *core.GlobalState) []Completion {
+	var completions []Completion
 	var propNames []string
 
 	//we get all property names
@@ -431,7 +431,7 @@ func suggestPropertyNames(s string, curr interface{}, exprPropertyNames []*parse
 		//we suggest all property names
 
 		for _, propName := range propNames {
-			suggestions = append(suggestions, Suggestion{
+			completions = append(completions, Completion{
 				ShownString: s + "." + propName,
 				Value:       s + "." + propName,
 			})
@@ -447,17 +447,17 @@ func suggestPropertyNames(s string, curr interface{}, exprPropertyNames []*parse
 				continue
 			}
 
-			suggestions = append(suggestions, Suggestion{
+			completions = append(completions, Completion{
 				ShownString: s + "." + propName,
 				Value:       s + "." + propName,
 			})
 		}
 	}
-	return suggestions
+	return completions
 }
 
-func handleNewCallArgumentSuggestions(n *parse.CallExpression, cursorIndex int, state *core.TreeWalkState) []Suggestion {
-	var suggestions []Suggestion
+func handleNewCallArgumentCompletions(n *parse.CallExpression, cursorIndex int, state *core.TreeWalkState) []Completion {
+	var completions []Completion
 	calleeIdent, ok := n.Callee.(*parse.IdentifierLiteral)
 	if !ok {
 		return nil
@@ -472,7 +472,7 @@ func handleNewCallArgumentSuggestions(n *parse.CallExpression, cursorIndex int, 
 		subcommandIdentChain = append(subcommandIdentChain, idnt)
 	}
 
-	suggestionSet := make(map[Suggestion]bool)
+	completionSet := make(map[Completion]bool)
 
 top_loop:
 	for _, perm := range state.Global.Ctx.GetGrantedPermissions() {
@@ -486,14 +486,14 @@ top_loop:
 
 		if len(subcommandIdentChain) == 0 {
 			name := cmdPerm.SubcommandNameChain[0]
-			suggestion := Suggestion{
+			completion := Completion{
 				ShownString: name,
 				Value:       name,
 				Span:        parse.NodeSpan{Start: int32(cursorIndex), End: int32(cursorIndex + 1)},
 			}
-			if !suggestionSet[suggestion] {
-				suggestions = append(suggestions, suggestion)
-				suggestionSet[suggestion] = true
+			if !completionSet[completion] {
+				completions = append(completions, completion)
+				completionSet[completion] = true
 			}
 			continue
 		}
@@ -518,21 +518,21 @@ top_loop:
 			}
 		}
 		subcommandName := cmdPerm.SubcommandNameChain[holeIndex]
-		suggestion := Suggestion{
+		completion := Completion{
 			ShownString: subcommandName,
 			Value:       subcommandName,
 			Span:        parse.NodeSpan{Start: int32(cursorIndex), End: int32(cursorIndex + 1)},
 		}
-		if !suggestionSet[suggestion] {
-			suggestions = append(suggestions, suggestion)
-			suggestionSet[suggestion] = true
+		if !completionSet[completion] {
+			completions = append(completions, completion)
+			completionSet[completion] = true
 		}
 	}
-	return suggestions
+	return completions
 }
 
-func findPathSuggestions(ctx *core.Context, pth string) []Suggestion {
-	var suggestions []Suggestion
+func findPathCompletions(ctx *core.Context, pth string) []Completion {
+	var completions []Completion
 
 	dir := path.Dir(pth)
 	base := path.Base(pth)
@@ -560,18 +560,18 @@ func findPathSuggestions(ctx *core.Context, pth string) []Suggestion {
 				pth += "/"
 			}
 
-			suggestions = append(suggestions, Suggestion{
+			completions = append(completions, Completion{
 				ShownString: name,
 				Value:       pth,
 			})
 		}
 	}
 
-	return suggestions
+	return completions
 }
 
-func findURLSuggestions(ctx *core.Context, u core.URL, parent parse.Node) []Suggestion {
-	var suggestions []Suggestion
+func findURLCompletions(ctx *core.Context, u core.URL, parent parse.Node) []Completion {
+	var completions []Completion
 
 	urlString := string(u)
 
@@ -595,7 +595,7 @@ func findURLSuggestions(ctx *core.Context, u core.URL, parent parse.Node) []Sugg
 						val += "/"
 					}
 
-					suggestions = append(suggestions, Suggestion{
+					completions = append(completions, Completion{
 						ShownString: obj.Key,
 						Value:       val,
 					})
@@ -604,18 +604,18 @@ func findURLSuggestions(ctx *core.Context, u core.URL, parent parse.Node) []Sugg
 		}
 	}
 
-	return suggestions
+	return completions
 }
 
-func findHostSuggestions(ctx *core.Context, prefix string, parent parse.Node) []Suggestion {
-	var suggestions []Suggestion
+func findHostCompletions(ctx *core.Context, prefix string, parent parse.Node) []Completion {
+	var completions []Completion
 
 	allData := ctx.GetAllHostResolutionData()
 
 	for host := range allData {
 		hostStr := string(host)
 		if strings.HasPrefix(hostStr, prefix) {
-			suggestions = append(suggestions, Suggestion{
+			completions = append(completions, Completion{
 				ShownString: hostStr,
 				Value:       hostStr,
 			})
@@ -629,7 +629,7 @@ func findHostSuggestions(ctx *core.Context, prefix string, parent parse.Node) []
 
 		if ok && utils.SliceContains(schemes, scheme) && len(realHost) > 0 && strings.HasPrefix("localhost", realHost) {
 			s := strings.Replace(prefix, realHost, "localhost", 1)
-			suggestions = append(suggestions, Suggestion{
+			completions = append(completions, Completion{
 				ShownString: s,
 				Value:       s,
 			})
@@ -637,5 +637,5 @@ func findHostSuggestions(ctx *core.Context, prefix string, parent parse.Node) []
 
 	}
 
-	return suggestions
+	return completions
 }
