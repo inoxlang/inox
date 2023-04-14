@@ -143,7 +143,13 @@ func (chunk *ParsedChunk) GetLineColumnPosition(line, column int32) int32 {
 
 func (chunk *ParsedChunk) GetSourcePosition(span NodeSpan) SourcePositionRange {
 	l, c := chunk.GetSpanLineColumn(span)
-	return SourcePositionRange{SourceName: chunk.Name(), StartLine: l, StartColumn: c, Span: span}
+
+	return SourcePositionRange{
+		SourceName:  chunk.Name(),
+		StartLine:   l,
+		StartColumn: c,
+		Span:        span,
+	}
 }
 
 func (chunk *ParsedChunk) GetNodeAtSpan(target NodeSpan) (foundNode Node, ok bool) {
@@ -168,10 +174,10 @@ func (chunk *ParsedChunk) GetNodeAtSpan(target NodeSpan) (foundNode Node, ok boo
 }
 
 type SourcePositionRange struct {
-	SourceName string   `json:"sourceName"`
-	StartLine       int32    `json:"line"`
-	StartColumn     int32    `json:"column"`
-	Span       NodeSpan `json:"span"`
+	SourceName  string   `json:"sourceName"`
+	StartLine   int32    `json:"line"`
+	StartColumn int32    `json:"column"`
+	Span        NodeSpan `json:"span"`
 }
 
 func (pos SourcePositionRange) String() string {

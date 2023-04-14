@@ -87,7 +87,7 @@ func HandleVscCommand(fpath string, dir string, subCommand string, jsonData stri
 		chunk := mod.MainChunk
 		pos := chunk.GetLineColumnPosition(lineCol.Line, lineCol.Column)
 
-		completions := compl.FindCompletions(core.NewTreeWalkStateWithGlobal(state), chunk.Node, int(pos))
+		completions := compl.FindCompletions(core.NewTreeWalkStateWithGlobal(state), chunk, int(pos))
 		data := CompletionData{Completions: utils.EmptySliceIfNil(completions)}
 		dataJSON := utils.Must(json.Marshal(data))
 

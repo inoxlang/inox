@@ -953,7 +953,10 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 		}
 
 		var (
-			chunk, _    = parse.ParseChunk(string(sh.input), "")
+			chunk, _ = parse.ParseChunkSource(parse.InMemorySource{
+				NameString: "shell-input",
+				CodeString: string(sh.input),
+			})
 			cursorIndex = sh.getCursorIndex()
 			completions = compl.FindCompletions(sh.state, chunk, cursorIndex)
 
@@ -970,16 +973,16 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 		case 1:
 			//do a replacement and do not print completions
 			replacement = completions[0].Value
-			replacedSpan = completions[0].Span
+			replacedSpan = completions[0].ReplacedRange.Span
 		default:
 			var completionValues []string //used to find longest common prefix
-			var span = completions[0].Span
+			var span = completions[0].ReplacedRange.Span
 			addPrefix := true
 
-			for _, sug := range completions {
-				completionValues = append(completionValues, sug.Value)
-				completionStrings = append(completionStrings, sug.ShownString)
-				if sug.Span != span {
+			for _, completion := range completions {
+				completionValues = append(completionValues, completion.Value)
+				completionStrings = append(completionStrings, completion.ShownString)
+				if completion.ReplacedRange.Span != span {
 					addPrefix = false
 				}
 			}

@@ -16,16 +16,16 @@ import (
 )
 
 type Completion struct {
-	ShownString string         `json:"shownString"`
-	Value       string         `json:"value"`
-	Span        parse.NodeSpan `json:"span"`
+	ShownString   string                    `json:"shownString"`
+	Value         string                    `json:"value"`
+	ReplacedRange parse.SourcePositionRange `json:"replacedRange"`
 }
 
 var (
 	CONTEXT_INDEPENDENT_STMT_STARTING_KEYWORDS = []string{"if", "drop-perms", "for", "assign", "switch", "match", "return", "assert"}
 )
 
-func FindCompletions(state *core.TreeWalkState, chunk *parse.Chunk, cursorIndex int) []Completion {
+func FindCompletions(state *core.TreeWalkState, chunk *parse.ParsedChunk, cursorIndex int) []Completion {
 
 	var completions []Completion
 	var nodeAtCursor parse.Node
@@ -35,7 +35,7 @@ func FindCompletions(state *core.TreeWalkState, chunk *parse.Chunk, cursorIndex 
 
 	//TODO: move following logic to parse package
 
-	parse.Walk(chunk, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, _ bool) (parse.TraversalAction, error) {
+	parse.Walk(chunk.Node, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, _ bool) (parse.TraversalAction, error) {
 		span := node.Base().Span
 
 		//if the cursor is not in the node's span we don't check the descendants of the node
@@ -151,7 +151,7 @@ func FindCompletions(state *core.TreeWalkState, chunk *parse.Chunk, cursorIndex 
 	case *parse.MemberExpression:
 		completions = handleMemberExpressionCompletions(n, state)
 	case *parse.CallExpression: //if a call is the deepest node at cursor it means we are not in an argument
-		completions = handleNewCallArgumentCompletions(n, cursorIndex, state)
+		completions = handleNewCallArgumentCompletions(n, cursorIndex, state, chunk)
 	case *parse.RelativePathLiteral:
 		completions = findPathCompletions(state.Global.Ctx, n.Raw)
 	case *parse.AbsolutePathLiteral:
@@ -165,8 +165,9 @@ func FindCompletions(state *core.TreeWalkState, chunk *parse.Chunk, cursorIndex 
 	}
 
 	for i, completion := range completions {
-		if completion.Span == (parse.NodeSpan{}) {
-			completion.Span = nodeAtCursor.Base().Span
+		if completion.ReplacedRange.Span == (parse.NodeSpan{}) {
+			span := nodeAtCursor.Base().Span
+			completion.ReplacedRange = chunk.GetSourcePosition(span)
 		}
 		completions[i] = completion
 	}
@@ -456,7 +457,7 @@ func suggestPropertyNames(s string, curr interface{}, exprPropertyNames []*parse
 	return completions
 }
 
-func handleNewCallArgumentCompletions(n *parse.CallExpression, cursorIndex int, state *core.TreeWalkState) []Completion {
+func handleNewCallArgumentCompletions(n *parse.CallExpression, cursorIndex int, state *core.TreeWalkState, chunk *parse.ParsedChunk) []Completion {
 	var completions []Completion
 	calleeIdent, ok := n.Callee.(*parse.IdentifierLiteral)
 	if !ok {
@@ -486,10 +487,12 @@ top_loop:
 
 		if len(subcommandIdentChain) == 0 {
 			name := cmdPerm.SubcommandNameChain[0]
+			span := parse.NodeSpan{Start: int32(cursorIndex), End: int32(cursorIndex + 1)}
+
 			completion := Completion{
-				ShownString: name,
-				Value:       name,
-				Span:        parse.NodeSpan{Start: int32(cursorIndex), End: int32(cursorIndex + 1)},
+				ShownString:   name,
+				Value:         name,
+				ReplacedRange: chunk.GetSourcePosition(span),
 			}
 			if !completionSet[completion] {
 				completions = append(completions, completion)
@@ -518,10 +521,12 @@ top_loop:
 			}
 		}
 		subcommandName := cmdPerm.SubcommandNameChain[holeIndex]
+		span := parse.NodeSpan{Start: int32(cursorIndex), End: int32(cursorIndex + 1)}
+
 		completion := Completion{
-			ShownString: subcommandName,
-			Value:       subcommandName,
-			Span:        parse.NodeSpan{Start: int32(cursorIndex), End: int32(cursorIndex + 1)},
+			ShownString:   subcommandName,
+			Value:         subcommandName,
+			ReplacedRange: chunk.GetSourcePosition(span),
 		}
 		if !completionSet[completion] {
 			completions = append(completions, completion)

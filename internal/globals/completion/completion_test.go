@@ -30,14 +30,35 @@ func TestFindCompletions(t *testing.T) {
 		core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern(dir + "/...")},
 	}
 
+	findCompletions := func(state *core.TreeWalkState, chunk *parse.ParsedChunk, cursorIndex int) []Completion {
+		completions := FindCompletions(state, chunk, cursorIndex)
+		//in order to simplify tess we remove all information in replaced ranges except the node span
+		for i, compl := range completions {
+			completions[i].ReplacedRange = parse.SourcePositionRange{
+				SourceName:  "",
+				StartLine:   0,
+				StartColumn: 0,
+				Span:        compl.ReplacedRange.Span,
+			}
+		}
+		return completions
+	}
+
+	parseChunkSource := func(s, name string) (*parse.ParsedChunk, error) {
+		return parse.ParseChunkSource(parse.InMemorySource{
+			NameString: "test",
+			CodeString: s,
+		})
+	}
+
 	t.Run("identifier member expression", func(t *testing.T) {
 		t.Run("suggest object property: object has no property", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}), map[string]core.Value{
 				"obj": core.NewObject(),
 			})
-			chunk, _ := parse.ParseChunk("obj.", "")
+			chunk, _ := parseChunkSource("obj.", "")
 
-			completions := FindCompletions(state, chunk, 4)
+			completions := findCompletions(state, chunk, 4)
 			assert.Empty(t, completions)
 		})
 
@@ -45,11 +66,11 @@ func TestFindCompletions(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
 			obj := core.NewObjectFromMap(core.ValMap{"name": core.Str("foo")}, state.Global.Ctx)
 			state.SetGlobal("obj", obj, core.GlobalConst)
-			chunk, _ := parse.ParseChunk("obj.", "")
+			chunk, _ := parseChunkSource("obj.", "")
 
-			completions := FindCompletions(state, chunk, 4)
+			completions := findCompletions(state, chunk, 4)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "obj.name", Value: "obj.name", Span: parse.NodeSpan{Start: 0, End: 4}},
+				{ShownString: "obj.name", Value: "obj.name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 4}}},
 			}, completions)
 		})
 
@@ -57,11 +78,11 @@ func TestFindCompletions(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
 			obj := core.NewObjectFromMap(core.ValMap{"name": core.Str("foo")}, state.Global.Ctx)
 			state.SetGlobal("obj", obj, core.GlobalConst)
-			chunk, _ := parse.ParseChunk("obj.n", "")
+			chunk, _ := parseChunkSource("obj.n", "")
 
-			completions := FindCompletions(state, chunk, 5)
+			completions := findCompletions(state, chunk, 5)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "obj.name", Value: "obj.name", Span: parse.NodeSpan{Start: 0, End: 5}},
+				{ShownString: "obj.name", Value: "obj.name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 5}}},
 			}, completions)
 		})
 
@@ -69,11 +90,11 @@ func TestFindCompletions(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}), map[string]core.Value{
 				"struct": core.ValOf(core.FileInfo{Name: "foo"}),
 			})
-			chunk, _ := parse.ParseChunk("struct.n", "")
+			chunk, _ := parseChunkSource("struct.n", "")
 
-			completions := FindCompletions(state, chunk, 8)
+			completions := findCompletions(state, chunk, 8)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "struct.name", Value: "struct.name", Span: parse.NodeSpan{Start: 0, End: 8}},
+				{ShownString: "struct.name", Value: "struct.name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 8}}},
 			}, completions)
 		})
 
@@ -81,11 +102,11 @@ func TestFindCompletions(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}), map[string]core.Value{
 				"struct": core.ValOf(&core.Routine{}),
 			})
-			chunk, _ := parse.ParseChunk("struct.c", "")
+			chunk, _ := parseChunkSource("struct.c", "")
 
-			completions := FindCompletions(state, chunk, 8)
+			completions := findCompletions(state, chunk, 8)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "struct.cancel", Value: "struct.cancel", Span: parse.NodeSpan{Start: 0, End: 8}},
+				{ShownString: "struct.cancel", Value: "struct.cancel", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 8}}},
 			}, completions)
 		})
 	})
@@ -95,11 +116,11 @@ func TestFindCompletions(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
 			obj := core.NewObjectFromMap(core.ValMap{"name": core.Str("foo")}, state.Global.Ctx)
 			state.SetGlobal("obj", obj, core.GlobalConst)
-			chunk, _ := parse.ParseChunk("$$obj.", "")
+			chunk, _ := parseChunkSource("$$obj.", "")
 
-			completions := FindCompletions(state, chunk, 6)
+			completions := findCompletions(state, chunk, 6)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "$$obj.name", Value: "$$obj.name", Span: parse.NodeSpan{Start: 0, End: 6}},
+				{ShownString: "$$obj.name", Value: "$$obj.name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 6}}},
 			}, completions)
 		})
 
@@ -107,11 +128,11 @@ func TestFindCompletions(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
 			obj := core.NewObjectFromMap(core.ValMap{"name": core.Str("foo")}, state.Global.Ctx)
 			state.SetGlobal("obj", obj, core.GlobalConst)
-			chunk, _ := parse.ParseChunk("$$obj.n", "")
+			chunk, _ := parseChunkSource("$$obj.n", "")
 
-			completions := FindCompletions(state, chunk, 7)
+			completions := findCompletions(state, chunk, 7)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "$$obj.name", Value: "$$obj.name", Span: parse.NodeSpan{Start: 0, End: 7}},
+				{ShownString: "$$obj.name", Value: "$$obj.name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 7}}},
 			}, completions)
 		})
 
@@ -122,11 +143,11 @@ func TestFindCompletions(t *testing.T) {
 			}, state.Global.Ctx)
 			state.SetGlobal("obj", obj, core.GlobalConst)
 
-			chunk, _ := parse.ParseChunk("$$obj.object.", "")
+			chunk, _ := parseChunkSource("$$obj.object.", "")
 
-			completions := FindCompletions(state, chunk, 13)
+			completions := findCompletions(state, chunk, 13)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "$$obj.object.name", Value: "$$obj.object.name", Span: parse.NodeSpan{Start: 0, End: 13}},
+				{ShownString: "$$obj.object.name", Value: "$$obj.object.name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 13}}},
 			}, completions)
 		})
 
@@ -137,52 +158,52 @@ func TestFindCompletions(t *testing.T) {
 			//TODO: implement
 			t.Skip()
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
-			chunk := parse.MustParseChunk("cmd ")
+			chunk := utils.Must(parseChunkSource("cmd ", ""))
 
-			completions := FindCompletions(state, chunk, 4)
+			completions := findCompletions(state, chunk, 4)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "help", Value: "help", Span: parse.NodeSpan{Start: 4, End: 5}},
+				{ShownString: "help", Value: "help", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 4, End: 5}}},
 			}, completions)
 		})
 
 		t.Run("depth 1", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
-			chunk := parse.MustParseChunk("cmd help ")
+			chunk := utils.Must(parseChunkSource("cmd help ", ""))
 
-			completions := FindCompletions(state, chunk, 9)
+			completions := findCompletions(state, chunk, 9)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "build", Value: "build", Span: parse.NodeSpan{Start: 9, End: 10}},
-				{ShownString: "run", Value: "run", Span: parse.NodeSpan{Start: 9, End: 10}},
+				{ShownString: "build", Value: "build", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 9, End: 10}}},
+				{ShownString: "run", Value: "run", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 9, End: 10}}},
 			}, completions)
 		})
 
 		t.Run("depth 0, subcommand of depth 1 is present ", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
-			chunk := parse.MustParseChunk("cmd  build")
+			chunk := utils.Must(parseChunkSource("cmd  build", ""))
 
-			completions := FindCompletions(state, chunk, 4)
+			completions := findCompletions(state, chunk, 4)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "help", Value: "help", Span: parse.NodeSpan{Start: 4, End: 5}},
+				{ShownString: "help", Value: "help", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 4, End: 5}}},
 			}, completions)
 		})
 
 		t.Run("suggest subcommand from subcommand prefix : depth 0", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
-			chunk := parse.MustParseChunk("cmd h")
+			chunk := utils.Must(parseChunkSource("cmd h", ""))
 
-			completions := FindCompletions(state, chunk, 5)
+			completions := findCompletions(state, chunk, 5)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "help", Value: "help", Span: parse.NodeSpan{Start: 4, End: 5}},
+				{ShownString: "help", Value: "help", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 4, End: 5}}},
 			}, completions)
 		})
 
 		t.Run("suggest subcommand from subcommand prefix : depth 1", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
-			chunk := parse.MustParseChunk("cmd help b")
+			chunk := utils.Must(parseChunkSource("cmd help b", ""))
 
-			completions := FindCompletions(state, chunk, 10)
+			completions := findCompletions(state, chunk, 10)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "build", Value: "build", Span: parse.NodeSpan{Start: 9, End: 10}},
+				{ShownString: "build", Value: "build", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 9, End: 10}}},
 			}, completions)
 		})
 
@@ -192,12 +213,24 @@ func TestFindCompletions(t *testing.T) {
 		state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
 
 		code := dir + "/f"
-		chunk, _ := parse.ParseChunk(code, "")
+		chunk, _ := parseChunkSource(code, "")
 
-		completions := FindCompletions(state, chunk, len(code))
+		completions := findCompletions(state, chunk, len(code))
 		assert.EqualValues(t, []Completion{
-			{ShownString: "file1.txt", Value: dir + "/file1.txt", Span: parse.NodeSpan{Start: 0, End: int32(len(code))}},
-			{ShownString: "file2.txt", Value: dir + "/file2.txt", Span: parse.NodeSpan{Start: 0, End: int32(len(code))}},
+			{
+				ShownString: "file1.txt",
+				Value:       dir + "/file1.txt",
+				ReplacedRange: parse.SourcePositionRange{
+					Span: parse.NodeSpan{Start: 0, End: int32(len(code))},
+				},
+			},
+			{
+				ShownString: "file2.txt",
+				Value:       dir + "/file2.txt",
+				ReplacedRange: parse.SourcePositionRange{
+					Span: parse.NodeSpan{Start: 0, End: int32(len(code))},
+				},
+			},
 		}, completions)
 	})
 
@@ -206,12 +239,24 @@ func TestFindCompletions(t *testing.T) {
 
 		reldir, _ := filepath.Rel(wd, dir)
 		code := reldir + "/f"
-		chunk, _ := parse.ParseChunk(code, "")
+		chunk, _ := parseChunkSource(code, "")
 
-		completions := FindCompletions(state, chunk, len(code))
+		completions := findCompletions(state, chunk, len(code))
 		assert.EqualValues(t, []Completion{
-			{ShownString: "file1.txt", Value: reldir + "/file1.txt", Span: parse.NodeSpan{Start: 0, End: int32(len(code))}},
-			{ShownString: "file2.txt", Value: reldir + "/file2.txt", Span: parse.NodeSpan{Start: 0, End: int32(len(code))}},
+			{
+				ShownString: "file1.txt",
+				Value:       reldir + "/file1.txt",
+				ReplacedRange: parse.SourcePositionRange{
+					Span: parse.NodeSpan{Start: 0, End: int32(len(code))},
+				},
+			},
+			{
+				ShownString: "file2.txt",
+				Value:       reldir + "/file2.txt",
+				ReplacedRange: parse.SourcePositionRange{
+					Span: parse.NodeSpan{Start: 0, End: int32(len(code))},
+				},
+			},
 		}, completions)
 	})
 
@@ -219,21 +264,21 @@ func TestFindCompletions(t *testing.T) {
 
 		t.Run("in for statement's block", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
-			chunk, _ := parse.ParseChunk("for []{b}", "")
+			chunk, _ := parseChunkSource("for []{b}", "")
 
-			completions := FindCompletions(state, chunk, 8)
+			completions := findCompletions(state, chunk, 8)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "break", Value: "break", Span: parse.NodeSpan{Start: 7, End: 8}},
+				{ShownString: "break", Value: "break", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 7, End: 8}}},
 			}, completions)
 		})
 
 		t.Run("in if's block within a for statement", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
-			chunk, _ := parse.ParseChunk("for []{if true {b}}", "")
+			chunk, _ := parseChunkSource("for []{if true {b}}", "")
 
-			completions := FindCompletions(state, chunk, 17)
+			completions := findCompletions(state, chunk, 17)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "break", Value: "break", Span: parse.NodeSpan{Start: 16, End: 17}},
+				{ShownString: "break", Value: "break", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 16, End: 17}}},
 			}, completions)
 		})
 
@@ -243,21 +288,21 @@ func TestFindCompletions(t *testing.T) {
 
 		t.Run("in for statement's block", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
-			chunk, _ := parse.ParseChunk("for []{cont}", "")
+			chunk, _ := parseChunkSource("for []{cont}", "")
 
-			completions := FindCompletions(state, chunk, 11)
+			completions := findCompletions(state, chunk, 11)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "continue", Value: "continue", Span: parse.NodeSpan{Start: 7, End: 11}},
+				{ShownString: "continue", Value: "continue", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 7, End: 11}}},
 			}, completions)
 		})
 
 		t.Run("in if's block within a for statement", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
-			chunk, _ := parse.ParseChunk("for []{if true {cont}}", "")
+			chunk, _ := parseChunkSource("for []{if true {cont}}", "")
 
-			completions := FindCompletions(state, chunk, 20)
+			completions := findCompletions(state, chunk, 20)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "continue", Value: "continue", Span: parse.NodeSpan{Start: 16, End: 20}},
+				{ShownString: "continue", Value: "continue", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 16, End: 20}}},
 			}, completions)
 		})
 
@@ -267,21 +312,21 @@ func TestFindCompletions(t *testing.T) {
 
 		t.Run("in walk statement's block", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
-			chunk, _ := parse.ParseChunk("walk ./ e {p}", "")
+			chunk, _ := parseChunkSource("walk ./ e {p}", "")
 
-			completions := FindCompletions(state, chunk, 12)
+			completions := findCompletions(state, chunk, 12)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "prune", Value: "prune", Span: parse.NodeSpan{Start: 11, End: 12}},
+				{ShownString: "prune", Value: "prune", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 11, End: 12}}},
 			}, completions)
 		})
 
 		t.Run("in for statement's block within a walk statement", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
-			chunk, _ := parse.ParseChunk("walk ./ e {for []{p}}", "")
+			chunk, _ := parseChunkSource("walk ./ e {for []{p}}", "")
 
-			completions := FindCompletions(state, chunk, 19)
+			completions := findCompletions(state, chunk, 19)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "prune", Value: "prune", Span: parse.NodeSpan{Start: 18, End: 19}},
+				{ShownString: "prune", Value: "prune", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 18, End: 19}}},
 			}, completions)
 		})
 
@@ -293,14 +338,14 @@ func TestFindCompletions(t *testing.T) {
 			t.Run(keyword, func(t *testing.T) {
 				t.Run("in top module", func(t *testing.T) {
 					state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
-					chunk, _ := parse.ParseChunk(string(keyword[0]), "")
+					chunk, _ := parseChunkSource(string(keyword[0]), "")
 
-					completions := FindCompletions(state, chunk, 1)
+					completions := findCompletions(state, chunk, 1)
 					//we remove other keyword completions
 					completions = utils.FilterSlice(completions, func(s Completion) bool { return s.Value == keyword })
 
 					assert.EqualValues(t, []Completion{
-						{ShownString: keyword, Value: keyword, Span: parse.NodeSpan{Start: 0, End: 1}},
+						{ShownString: keyword, Value: keyword, ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 1}}},
 					}, completions)
 				})
 			})
@@ -311,21 +356,21 @@ func TestFindCompletions(t *testing.T) {
 
 		t.Run("in top level module", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
-			chunk, _ := parse.ParseChunk("u", "")
+			chunk, _ := parseChunkSource("u", "")
 
-			completions := FindCompletions(state, chunk, 1)
+			completions := findCompletions(state, chunk, 1)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "udata", Value: "udata", Span: parse.NodeSpan{Start: 0, End: 1}},
+				{ShownString: "udata", Value: "udata", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 1}}},
 			}, completions)
 		})
 
 		t.Run("in call", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
-			chunk, _ := parse.ParseChunk("f(u)", "")
+			chunk, _ := parseChunkSource("f(u)", "")
 
-			completions := FindCompletions(state, chunk, 3)
+			completions := findCompletions(state, chunk, 3)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "udata", Value: "udata", Span: parse.NodeSpan{Start: 2, End: 3}},
+				{ShownString: "udata", Value: "udata", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 2, End: 3}}},
 			}, completions)
 		})
 
@@ -335,21 +380,21 @@ func TestFindCompletions(t *testing.T) {
 
 		t.Run("in top level module", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
-			chunk, _ := parse.ParseChunk("M", "")
+			chunk, _ := parseChunkSource("M", "")
 
-			completions := FindCompletions(state, chunk, 1)
+			completions := findCompletions(state, chunk, 1)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "Mapping", Value: "Mapping", Span: parse.NodeSpan{Start: 0, End: 1}},
+				{ShownString: "Mapping", Value: "Mapping", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 1}}},
 			}, completions)
 		})
 
 		t.Run("in call", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
-			chunk, _ := parse.ParseChunk("f(M)", "")
+			chunk, _ := parseChunkSource("f(M)", "")
 
-			completions := FindCompletions(state, chunk, 3)
+			completions := findCompletions(state, chunk, 3)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "Mapping", Value: "Mapping", Span: parse.NodeSpan{Start: 2, End: 3}},
+				{ShownString: "Mapping", Value: "Mapping", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 2, End: 3}}},
 			}, completions)
 		})
 
@@ -359,21 +404,21 @@ func TestFindCompletions(t *testing.T) {
 
 		t.Run("in top level module", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
-			chunk, _ := parse.ParseChunk("c", "")
+			chunk, _ := parseChunkSource("c", "")
 
-			completions := FindCompletions(state, chunk, 1)
+			completions := findCompletions(state, chunk, 1)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "concat", Value: "concat", Span: parse.NodeSpan{Start: 0, End: 1}},
+				{ShownString: "concat", Value: "concat", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 1}}},
 			}, completions)
 		})
 
 		t.Run("in call", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
-			chunk, _ := parse.ParseChunk("f(c)", "")
+			chunk, _ := parseChunkSource("f(c)", "")
 
-			completions := FindCompletions(state, chunk, 3)
+			completions := findCompletions(state, chunk, 3)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "concat", Value: "concat", Span: parse.NodeSpan{Start: 2, End: 3}},
+				{ShownString: "concat", Value: "concat", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 2, End: 3}}},
 			}, completions)
 		})
 
