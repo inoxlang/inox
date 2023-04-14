@@ -1579,55 +1579,16 @@ func (checker *checker) postCheckSingleNode(node, parent, scopeNode parse.Node, 
 }
 
 func checkManifestObject(objLit *parse.ObjectLiteral, onError func(n parse.Node, msg string)) {
-
-	const REQ_SPREAD_ERR = "invalid manifest, objects & lists in manifest cannot contain spread elements"
-
 	parse.Walk(objLit, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 		switch n := node.(type) {
 		case *parse.ObjectLiteral:
 			if len(n.SpreadElements) != 0 {
-				onError(n, REQ_SPREAD_ERR)
+				onError(n, NO_SPREAD_IN_MANIFEST)
 			}
 		case *parse.ListLiteral:
 			if n.HasSpreadElements() {
-				onError(n, REQ_SPREAD_ERR)
+				onError(n, NO_SPREAD_IN_MANIFEST)
 			}
-		case *parse.DictionaryLiteral, *parse.DictionaryEntry, *parse.ObjectProperty, parse.SimpleValueLiteral, *parse.GlobalVariable:
-		default:
-			onError(n,
-				fmt.Sprintf("invalid manifest: invalid node %T, only variables, simple values, objects, lists & dictionaries are allowed", n),
-			)
-		}
-
-		return parse.Continue, nil
-	}, nil)
-
-	for _, p := range objLit.Properties {
-		if !p.HasImplicitKey() && p.Name() == "permissions" {
-			checkPermissionListingObject(p.Value.(*parse.ObjectLiteral), onError)
-		}
-	}
-
-}
-
-func checkPermissionListingObject(objLit *parse.ObjectLiteral, onError func(n parse.Node, msg string)) {
-	const SPREAD_ERR = "invalid permission listing, objects & lists in manifest cannot contain spread elements"
-
-	parse.Walk(objLit, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
-		switch n := node.(type) {
-		case *parse.ObjectLiteral:
-			if len(n.SpreadElements) != 0 {
-				onError(n, SPREAD_ERR)
-			}
-		case *parse.ListLiteral:
-			if n.HasSpreadElements() {
-				onError(n, SPREAD_ERR)
-			}
-		case *parse.DictionaryLiteral, *parse.DictionaryEntry, *parse.ObjectProperty, parse.SimpleValueLiteral, *parse.GlobalVariable:
-		default:
-			onError(n,
-				fmt.Sprintf("invalid permission listing: invalid node %T, only variables, simple values, objects, lists & dictionaries are allowed", n),
-			)
 		}
 
 		return parse.Continue, nil
@@ -1635,7 +1596,79 @@ func checkPermissionListingObject(objLit *parse.ObjectLiteral, onError func(n pa
 
 	for _, p := range objLit.Properties {
 		if p.HasImplicitKey() {
-			onError(p, "implicit key properties are not allowed in permission listing")
+			onError(p, IMPLICIT_KEY_PROPS_NOT_ALLOWED_IN_MANIFEST)
+			continue
+		}
+
+		switch p.Name() {
+		case "permissions":
+			if obj, ok := p.Value.(*parse.ObjectLiteral); ok {
+				checkPermissionListingObject(obj, onError)
+			} else {
+				onError(p, PERMS_SECTION_SHOULD_BE_AN_OBJECT)
+			}
+		case "host_resolution":
+			dict, ok := p.Value.(*parse.DictionaryLiteral)
+			if !ok {
+				onError(p, HOST_RESOL_SECTION_SHOULD_BE_A_DICT)
+				continue
+			}
+
+			parse.Walk(dict, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
+				if node == dict {
+					return parse.Continue, nil
+				}
+
+				switch n := node.(type) {
+				case *parse.DictionaryEntry, parse.SimpleValueLiteral, *parse.GlobalVariable:
+				default:
+					onError(n, fmtForbiddenNodeInHostResolutionSection(n))
+				}
+
+				return parse.Continue, nil
+			}, nil)
+
+		case "limits":
+			obj, ok := p.Value.(*parse.ObjectLiteral)
+
+			if !ok {
+				onError(p, LIMITS_SECTION_SHOULD_BE_AN_OBJECT)
+				continue
+			}
+
+			parse.Walk(obj, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
+				if node == obj {
+					return parse.Continue, nil
+				}
+
+				switch n := node.(type) {
+				case *parse.ObjectProperty, parse.SimpleValueLiteral, *parse.GlobalVariable:
+				default:
+					onError(n, fmtForbiddenNodeInLimitsSection(n))
+				}
+
+				return parse.Continue, nil
+			}, nil)
+		}
+	}
+
+}
+
+func checkPermissionListingObject(objLit *parse.ObjectLiteral, onError func(n parse.Node, msg string)) {
+	parse.Walk(objLit, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
+		switch n := node.(type) {
+		case *parse.ObjectLiteral, *parse.ListLiteral, *parse.DictionaryLiteral, *parse.DictionaryEntry, *parse.ObjectProperty,
+			parse.SimpleValueLiteral, *parse.GlobalVariable:
+		default:
+			onError(n, fmtForbiddenNodeInPermListing(n))
+		}
+
+		return parse.Continue, nil
+	}, nil)
+
+	for _, p := range objLit.Properties {
+		if p.HasImplicitKey() {
+			onError(p, IMPLICIT_KEY_PROPS_NOT_ALLOWED_IN_PERMS_SECTION)
 			continue
 		}
 

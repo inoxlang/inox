@@ -9,6 +9,13 @@ import (
 
 const (
 	//manifest
+	NO_SPREAD_IN_MANIFEST                           = "objects & lists in the manifest cannot contain spread elements"
+	IMPLICIT_KEY_PROPS_NOT_ALLOWED_IN_MANIFEST      = "implicit key properties are not allowed in the manifest object"
+	PERMS_SECTION_SHOULD_BE_AN_OBJECT               = "the 'permissions' section of the manifest should be an object"
+	IMPLICIT_KEY_PROPS_NOT_ALLOWED_IN_PERMS_SECTION = "implicit key properties are not allowed in the 'permissions' section"
+
+	LIMITS_SECTION_SHOULD_BE_AN_OBJECT  = "the 'limits' section of the manifest should be an object"
+	HOST_RESOL_SECTION_SHOULD_BE_A_DICT = "the 'host_resolution' section of the manifest should be a dictionary"
 
 	INVALID_RATE     = "invalid rate"
 	INVALID_QUANTITY = "invalid quantity"
@@ -53,6 +60,18 @@ const (
 
 func fmtNotValidPermissionKindName(name string) string {
 	return fmt.Sprintf("'%s' is not a valid permission kind, valid permissions are %s", name, strings.Join(PERMISSION_KIND_STRINGS, ", "))
+}
+
+func fmtForbiddenNodeInPermListing(n parse.Node) string {
+	return fmt.Sprintf("invalid permission listing: invalid node %T, only variables, simple values, objects, lists & dictionaries are allowed", n)
+}
+
+func fmtForbiddenNodeInLimitsSection(n parse.Node) string {
+	return fmt.Sprintf("invalid limits: invalid node %T, only variables and simple literals are allowed", n)
+}
+
+func fmtForbiddenNodeInHostResolutionSection(n parse.Node) string {
+	return fmt.Sprintf("invalid host resolution description: invalid node %T, only variables and simple literals are allowed", n)
 }
 
 func fmtFollowingNodeTypeNotAllowedInAssertions(n parse.Node) string {
