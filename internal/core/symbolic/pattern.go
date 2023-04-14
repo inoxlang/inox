@@ -1657,8 +1657,8 @@ func (p *OptionalPattern) WidestOfType() SymbolicValue {
 
 type FunctionPattern struct {
 	NotCallablePatternMixin
-	Node       *parse.FunctionPatternExpression //if nil, any function is matched
-	ReturnType SymbolicValue
+	node       *parse.FunctionPatternExpression //if nil, any function is matched
+	returnType SymbolicValue
 }
 
 func (fn *FunctionPattern) Test(v SymbolicValue) bool {
@@ -1666,26 +1666,26 @@ func (fn *FunctionPattern) Test(v SymbolicValue) bool {
 	if !ok {
 		return false
 	}
-	if fn.Node == nil {
+	if fn.node == nil {
 		return true
 	}
 
-	if other.Node == nil {
+	if other.node == nil {
 		return false
 	}
 
-	return utils.SamePointer(fn.Node, other.Node)
+	return utils.SamePointer(fn.node, other.node)
 }
 
 func (pattern *FunctionPattern) TestValue(v SymbolicValue) bool {
 	switch fn := v.(type) {
 	case *Function:
-		if pattern.Node == nil {
+		if pattern.node == nil {
 			return true
 		}
 		return pattern.Test(fn.pattern)
 	case *GoFunction:
-		if pattern.Node == nil {
+		if pattern.node == nil {
 			return true
 		}
 
@@ -1696,7 +1696,7 @@ func (pattern *FunctionPattern) TestValue(v SymbolicValue) bool {
 		panic(errors.New("testing a go function against a function pattern is not supported yet"))
 
 	case *InoxFunction:
-		if pattern.Node == nil {
+		if pattern.node == nil {
 			return true
 		}
 
@@ -1705,11 +1705,11 @@ func (pattern *FunctionPattern) TestValue(v SymbolicValue) bool {
 			return false
 		}
 
-		if len(fnExpr.Parameters) != len(pattern.Node.Parameters) || fnExpr.NonVariadicParamCount() != pattern.Node.NonVariadicParamCount() {
+		if len(fnExpr.Parameters) != len(pattern.node.Parameters) || fnExpr.NonVariadicParamCount() != pattern.node.NonVariadicParamCount() {
 			return false
 		}
 
-		for i, param := range pattern.Node.Parameters {
+		for i, param := range pattern.node.Parameters {
 			actualParam := fnExpr.Parameters[i]
 
 			if (param.Type == nil) != (actualParam.Type == nil) {
@@ -1721,7 +1721,7 @@ func (pattern *FunctionPattern) TestValue(v SymbolicValue) bool {
 			}
 		}
 
-		return pattern.ReturnType.Test(fn.returnType)
+		return pattern.returnType.Test(fn.returnType)
 	default:
 		return false
 	}
@@ -1732,14 +1732,14 @@ func (fn *FunctionPattern) HasUnderylingPattern() bool {
 }
 
 func (fn *FunctionPattern) Widen() (SymbolicValue, bool) {
-	if fn.Node == nil {
+	if fn.node == nil {
 		return nil, false
 	}
 	return &FunctionPattern{}, true
 }
 
 func (fn *FunctionPattern) IsWidenable() bool {
-	return fn.Node != nil
+	return fn.node != nil
 }
 
 func (p *FunctionPattern) IteratorElementKey() SymbolicValue {
@@ -1760,10 +1760,10 @@ func (p *FunctionPattern) StringPattern() (StringPatternElement, bool) {
 }
 
 func (fn *FunctionPattern) String() string {
-	if fn.Node == nil {
+	if fn.node == nil {
 		return "%function-pattern"
 	}
-	return fmt.Sprintf("%%function-pattern(%v)", fn.Node)
+	return fmt.Sprintf("%%function-pattern(%v)", fn.node)
 }
 
 func (fn *FunctionPattern) WidestOfType() SymbolicValue {

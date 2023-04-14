@@ -2017,8 +2017,8 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 		}
 
 		return &FunctionPattern{
-			Node:       n,
-			ReturnType: storedReturnType,
+			node:       n,
+			returnType: storedReturnType,
 		}, nil
 	case *parse.PatternConversionExpression:
 		v, err := symbolicEval(n.Value, state)
@@ -2814,7 +2814,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			fn.SignatureInformation()
 	} else {
 		nonVariadicParamCount, parameters, variadicParam, returnType, isBodyExpression =
-			callee.(*Function).pattern.Node.SignatureInformation()
+			callee.(*Function).pattern.node.SignatureInformation()
 	}
 
 	isVariadic = variadicParam != nil

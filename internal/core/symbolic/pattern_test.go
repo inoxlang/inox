@@ -1349,7 +1349,7 @@ func TestFunctionPattern(t *testing.T) {
 
 			assert.True(t, anyFnPatt.Test(anyFnPatt))
 			assert.True(t, anyFnPatt.Test(&FunctionPattern{
-				Node: &parse.FunctionPatternExpression{},
+				node: &parse.FunctionPatternExpression{},
 			}))
 			assert.False(t, anyFnPatt.Test(&Int{}))
 			assert.False(t, anyFnPatt.Test(&String{}))
@@ -1409,10 +1409,10 @@ func TestFunctionPattern(t *testing.T) {
 
 				assert.True(t, fnPatt.Test(fnPatt))
 				assert.True(t, fnPatt.Test(&FunctionPattern{
-					Node: node.(*parse.FunctionPatternExpression),
+					node: node.(*parse.FunctionPatternExpression),
 				}))
 				assert.False(t, fnPatt.Test(&FunctionPattern{
-					Node: &parse.FunctionPatternExpression{},
+					node: &parse.FunctionPatternExpression{},
 				}))
 				assert.False(t, fnPatt.Test(anyFnPatt))
 				assert.False(t, fnPatt.Test(&Int{}))

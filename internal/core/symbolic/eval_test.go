@@ -1298,8 +1298,8 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, &FunctionPattern{
-				Node:       fnPatt,
-				ReturnType: Nil,
+				node:       fnPatt,
+				returnType: Nil,
 			}, res)
 		})
 
@@ -1311,8 +1311,8 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, &FunctionPattern{
-				Node:       fnPatt,
-				ReturnType: Nil,
+				node:       fnPatt,
+				returnType: Nil,
 			}, res)
 		})
 
@@ -1330,8 +1330,8 @@ func TestSymbolicEval(t *testing.T) {
 				makeSymbolicEvalError(fnPatt, state, MISSING_RETURN_IN_FUNCTION_PATT),
 			}, state.errors)
 			assert.Equal(t, &FunctionPattern{
-				Node:       fnPatt,
-				ReturnType: &Int{},
+				node:       fnPatt,
+				returnType: &Int{},
 			}, res)
 		})
 
@@ -1351,8 +1351,8 @@ func TestSymbolicEval(t *testing.T) {
 				makeSymbolicEvalError(innerReturnStmt, state, fmtInvalidReturnValue(&String{}, &Int{})),
 			}, state.errors)
 			assert.Equal(t, &FunctionPattern{
-				Node:       fnPatt,
-				ReturnType: &Int{},
+				node:       fnPatt,
+				returnType: &Int{},
 			}, res)
 		})
 
@@ -2223,14 +2223,16 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 
 			fnExpr := n.Statements[0].(*parse.FunctionDeclaration).Function
+			fnPatt := n.Statements[0].(*parse.FunctionDeclaration).Function.Parameters[0].Type
+
 			expectedFn := &InoxFunction{
 				node: fnExpr,
 				parameters: []SymbolicValue{
-					&InoxFunction{
-						node:           fnExpr,
-						parameters:     []SymbolicValue{},
-						parameterNames: []string{"func"},
-						returnType:     &Int{},
+					&Function{
+						pattern: &FunctionPattern{
+							node:       fnPatt.(*parse.FunctionPatternExpression),
+							returnType: ANY_INT,
+						},
 					},
 				},
 				parameterNames: []string{"func"},
