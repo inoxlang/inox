@@ -1049,7 +1049,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(leftOperand, state, fmtLeftOperandOfBinaryShouldBe(parse.Add, "int or float", "string")),
+				makeSymbolicEvalError(leftOperand, state, fmtLeftOperandOfBinaryShouldBe(parse.Add, "int or float", "%string")),
 			}, state.errors)
 			assert.Equal(t, &Int{}, res)
 		})
@@ -1062,7 +1062,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(expr, state, fmtLeftOperandOfBinaryShouldBe(parse.Substrof, "string-like", "int")),
+				makeSymbolicEvalError(expr, state, fmtLeftOperandOfBinaryShouldBe(parse.Substrof, "string-like", "%int")),
 			}, state.errors)
 			assert.Equal(t, &Bool{}, res)
 		})
@@ -1075,7 +1075,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(expr, state, fmtRightOperandOfBinaryShouldBe(parse.Substrof, "string-like", "int")),
+				makeSymbolicEvalError(expr, state, fmtRightOperandOfBinaryShouldBe(parse.Substrof, "string-like", "%int")),
 			}, state.errors)
 			assert.Equal(t, &Bool{}, res)
 		})
@@ -1847,7 +1847,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(call, state, FUNCS_CALLED_RECU_SHOULD_HAVE_RET_TYPE),
-				makeSymbolicEvalError(call, state, fmtRightOperandOfBinaryShouldBe(parse.Mul, "int", "any")),
+				makeSymbolicEvalError(call, state, fmtRightOperandOfBinaryShouldBe(parse.Mul, "int", "%any")),
 			}, state.errors)
 			assert.Equal(t, &Int{}, res)
 		})
@@ -3212,7 +3212,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(binExpr.Right, state, fmtRightOperandOfBinaryShouldBe(parse.Add, "int", "boolean")),
+				makeSymbolicEvalError(binExpr.Right, state, fmtRightOperandOfBinaryShouldBe(parse.Add, "int", "%boolean")),
 			}, state.errors)
 			assert.Equal(t, &TestSuite{}, res)
 		})
@@ -3238,7 +3238,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(binExpr.Right, state, fmtRightOperandOfBinaryShouldBe(parse.Add, "int", "boolean")),
+				makeSymbolicEvalError(binExpr.Right, state, fmtRightOperandOfBinaryShouldBe(parse.Add, "int", "%boolean")),
 			}, state.errors)
 			assert.Equal(t, &TestCase{}, res)
 		})
@@ -3282,7 +3282,7 @@ func TestSymbolicEval(t *testing.T) {
 			_, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(binExpr.Right, state, fmtRightOperandOfBinaryShouldBe(parse.Add, "int", "boolean")),
+				makeSymbolicEvalError(binExpr.Right, state, fmtRightOperandOfBinaryShouldBe(parse.Add, "int", "%boolean")),
 			}, state.errors)
 		})
 
@@ -3305,7 +3305,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(binExpr.Right, state, fmtRightOperandOfBinaryShouldBe(parse.Add, "int", "boolean")),
+				makeSymbolicEvalError(binExpr.Right, state, fmtRightOperandOfBinaryShouldBe(parse.Add, "int", "%boolean")),
 			}, state.errors)
 			assert.Equal(t, &LifetimeJob{subjectPattern: state.ctx.ResolveNamedPattern("list")}, res)
 		})
@@ -3410,7 +3410,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(binExpr.Right, state, fmtRightOperandOfBinaryShouldBe(parse.Add, "int", "string")),
+				makeSymbolicEvalError(binExpr.Right, state, fmtRightOperandOfBinaryShouldBe(parse.Add, "int", "%string")),
 			}, state.errors)
 			assert.IsType(t, &Routine{}, res)
 		})
