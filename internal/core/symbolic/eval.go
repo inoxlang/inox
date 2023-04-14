@@ -2641,49 +2641,18 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		self   *Object
 	)
 	//we first get the callee
+
 	switch c := calleeNode.(type) {
-	case *parse.IdentifierLiteral:
-		callee, err = symbolicEval(c, state)
+	case *parse.IdentifierLiteral, *parse.IdentifierMemberExpression, *parse.Variable, *parse.MemberExpression:
+		callee, err = symbolicEval(callNode.Callee, state)
 		if err != nil {
 			return nil, err
 		}
-	case *parse.IdentifierMemberExpression:
-		v, err := symbolicEval(c.Left, state)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, idents := range c.PropertyNames {
-			if obj, ok := v.(*Object); ok {
-				self = obj
-			}
-			v = symbolicMemb(v, idents.Name, c, state)
-		}
-		callee = v
-	case *parse.Variable:
-		callee, err = symbolicEval(calleeNode, state)
-		if err != nil {
-			return nil, err
-		}
-	case *parse.MemberExpression:
-		left, err := symbolicEval(c.Left, state)
-		if err != nil {
-			return nil, err
-		}
-
-		if obj, ok := left.(*Object); ok {
-			self = obj
-		}
-
-		callee = symbolicMemb(left, c.PropertyName.Name, c, state)
+		state.symbolicData.SetNodeValue(callNode.Callee, callee)
 	case *parse.FunctionDeclaration, *parse.FunctionExpression:
 		callee = &AstNode{Node: c}
 	default:
 		return nil, fmt.Errorf("(symbolic) cannot call a(n) %T", c)
-	}
-
-	if callee == nil {
-		return nil, fmt.Errorf("(symbolic) cannot call nil %#v", calleeNode)
 	}
 
 	var extState *State
