@@ -22,6 +22,10 @@ func NewSymbolicData() *SymbolicData {
 	}
 }
 
+func (data *SymbolicData) IsEmpty() bool {
+	return len(data.nodeMap) == 0 && len(data.errors) == 0
+}
+
 func (data *SymbolicData) SetNodeValue(node parse.Node, v SymbolicValue) {
 	if data == nil {
 		return

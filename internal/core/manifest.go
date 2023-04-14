@@ -213,6 +213,13 @@ func getPermissionsFromListing(
 	return perms, nil
 }
 
+func GetDefaultGlobalVarPermissions() (perms []Permission) {
+	for _, kind := range []PermissionKind{ReadPerm, UsePerm, CreatePerm} {
+		perms = append(perms, GlobalVarPermission{kind, "*"})
+	}
+	return
+}
+
 func getLimitations(desc Value, defaultLimitationsToNotSet map[string]bool) ([]Limitation, error) {
 	var limitations []Limitation
 	ctx := NewContext(ContextConfig{})

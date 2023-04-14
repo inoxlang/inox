@@ -41,9 +41,9 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 
 	// parse module
 
-	absPath, err := filepath.Abs(args.Fpath)
-	if err != nil {
-		return nil, nil, err
+	absPath, pathErr := filepath.Abs(args.Fpath)
+	if pathErr != nil {
+		return nil, nil, pathErr
 	}
 
 	args.Fpath = absPath
@@ -72,7 +72,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	var manifest *core.Manifest
 	var manifestErr error
 
-	if parsingErr == nil {
+	if mod != nil {
 		manifest, manifestErr = mod.EvalManifest(core.ManifestEvaluationConfig{
 			GlobalConsts:          mod.MainChunk.Node.GlobalConstantDeclarations,
 			DefaultLimitations:    DEFAULT_LIMITATIONS,
@@ -137,7 +137,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	state.StaticCheckData = staticCheckData
 
 	if staticCheckErr != nil && staticCheckData == nil {
-		finalErr = err
+		finalErr = staticCheckErr
 		return
 	}
 
@@ -156,7 +156,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 
 		symbolicCtx, err_ := state.Ctx.ToSymbolicValue()
 		if err_ != nil {
-			return nil, nil, err
+			return nil, nil, err_
 		}
 
 		symbolicData, err_ := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
@@ -170,18 +170,20 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			state.SymbolicData.AddData(symbolicData)
 		}
 
-		err = err_
+		if err_ != nil {
+			finalErr = err_
+		}
 	}
 
-	if err == nil && manifestErr != nil {
-		err = manifestErr
+	if finalErr == nil && manifestErr != nil {
+		finalErr = manifestErr
 	}
 
-	if err == nil && staticCheckErr != nil {
-		err = staticCheckErr
+	if finalErr == nil && staticCheckErr != nil {
+		finalErr = staticCheckErr
 	}
 
-	return state, mod, err
+	return state, mod, finalErr
 }
 
 type RunScriptArgs struct {
@@ -271,7 +273,7 @@ func GetCheckData(fpath string, compilationCtx *core.Context, out io.Writer) map
 	}
 
 	if err != nil && state == nil && mod == nil {
-		goto end
+		return data
 	}
 
 	{
@@ -306,8 +308,6 @@ func GetCheckData(fpath string, compilationCtx *core.Context, out io.Writer) map
 			}
 		})
 	}
-
-end:
 
 	return data
 }
