@@ -2153,7 +2153,7 @@ func (user testMutableGoValue) GetGoMethod(name string) (*GoFunction, bool) {
 	case "getNameNoCtx":
 		return &GoFunction{fn: user.GetNameNoCtx}, true
 	default:
-		return &GoFunction{}, false
+		return nil, false
 	}
 }
 

@@ -1416,7 +1416,7 @@ func (it *EventSourceIterator) Value(*Context) Value {
 }
 
 func (it *EventSourceIterator) GetGoMethod(name string) (*GoFunction, bool) {
-	return &GoFunction{}, false
+	return nil, false
 }
 
 func (it *EventSourceIterator) Prop(ctx *Context, name string) Value {

@@ -29,7 +29,7 @@ func (j *LifetimeJob) WidestOfType() SymbolicValue {
 func (j *LifetimeJob) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
 	}
-	return &GoFunction{}, false
+	return nil, false
 }
 
 func (j *LifetimeJob) Prop(name string) SymbolicValue {

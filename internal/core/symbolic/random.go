@@ -40,7 +40,7 @@ func (r *RandomnessSource) PropertyNames() []string {
 }
 
 func (r *RandomnessSource) GetGoMethod(name string) (*GoFunction, bool) {
-	return &GoFunction{}, false
+	return nil, false
 }
 
 func (r *RandomnessSource) Widen() (SymbolicValue, bool) {

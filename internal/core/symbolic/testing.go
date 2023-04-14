@@ -28,7 +28,7 @@ func (s *TestSuite) GetGoMethod(name string) (*GoFunction, bool) {
 	case "run":
 		return &GoFunction{fn: s.Run}, true
 	}
-	return &GoFunction{}, false
+	return nil, false
 }
 
 func (s *TestSuite) Prop(name string) SymbolicValue {
@@ -75,7 +75,7 @@ func (s *TestCase) WidestOfType() SymbolicValue {
 }
 
 func (s *TestCase) GetGoMethod(name string) (*GoFunction, bool) {
-	return &GoFunction{}, false
+	return nil, false
 }
 
 func (s *TestCase) Prop(name string) SymbolicValue {

@@ -81,7 +81,7 @@ func (w *Writer) GetGoMethod(name string) (*GoFunction, bool) {
 	case "write":
 		return &GoFunction{fn: w.write}, true
 	}
-	return &GoFunction{}, false
+	return nil, false
 }
 
 func (Writer *Writer) Writer() *Writer {

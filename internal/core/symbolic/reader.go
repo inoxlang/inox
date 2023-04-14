@@ -83,7 +83,7 @@ func (reader *Reader) GetGoMethod(name string) (*GoFunction, bool) {
 	case "readAll":
 		return &GoFunction{fn: reader.ReadAll}, true
 	}
-	return &GoFunction{}, false
+	return nil, false
 }
 
 func (reader *Reader) Reader() *Reader {

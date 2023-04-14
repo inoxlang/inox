@@ -48,7 +48,7 @@ func (tx *Transaction) GetGoMethod(name string) (*GoFunction, bool) {
 	case "rollback":
 		return &GoFunction{fn: tx.Rollback}, true
 	}
-	return &GoFunction{}, false
+	return nil, false
 }
 
 func (tx *Transaction) Widen() (SymbolicValue, bool) {

@@ -31,7 +31,7 @@ func (s *EventSource) GetGoMethod(name string) (*GoFunction, bool) {
 	case "close":
 		return &GoFunction{fn: s.Close}, true
 	}
-	return &GoFunction{}, false
+	return nil, false
 }
 
 func (s *EventSource) Prop(name string) SymbolicValue {

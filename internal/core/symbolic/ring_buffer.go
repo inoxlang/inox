@@ -38,7 +38,7 @@ func (RingBuffer *RingBuffer) GetGoMethod(name string) (*GoFunction, bool) {
 			return &ByteSlice{}, nil
 		}), true
 	}
-	return &GoFunction{}, false
+	return nil, false
 }
 
 func (RingBuffer *RingBuffer) RingBuffer() *RingBuffer {

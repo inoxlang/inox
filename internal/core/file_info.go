@@ -10,7 +10,7 @@ type FileInfo struct {
 }
 
 func (i FileInfo) GetGoMethod(name string) (*GoFunction, bool) {
-	return &GoFunction{}, false
+	return nil, false
 }
 
 func (i FileInfo) Prop(ctx *Context, name string) Value {
