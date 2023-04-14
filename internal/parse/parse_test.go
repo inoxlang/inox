@@ -1494,7 +1494,7 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
-		t.Run("unterminated", func(t *testing.T) {
+		t.Run("missing property name: followed by EOF", func(t *testing.T) {
 			n, err := ParseChunk("$a.", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -1511,6 +1511,65 @@ func TestParse(t *testing.T) {
 							Name:     "a",
 						},
 						PropertyName: nil,
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing property name: followed by identifier on next line", func(t *testing.T) {
+			n, err := ParseChunk("$a.\nb", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					NodeSpan{0, 5},
+					nil,
+					[]Token{{Type: NEWLINE, Span: NodeSpan{3, 4}}},
+				},
+				Statements: []Node{
+					&MemberExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 3},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_MEMB_OR_INDEX_EXPR},
+							[]Token{{Type: DOT, Span: NodeSpan{2, 3}}},
+						},
+						Left: &Variable{
+							NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+							Name:     "a",
+						},
+						PropertyName: nil,
+					},
+					&IdentifierLiteral{
+						NodeBase: NodeBase{NodeSpan{4, 5}, nil, nil},
+						Name:     "b",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing property name: followed by closing delim", func(t *testing.T) {
+			n, err := ParseChunk("$a.]", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
+				Statements: []Node{
+					&MemberExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 3},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_MEMB_OR_INDEX_EXPR},
+							[]Token{{Type: DOT, Span: NodeSpan{2, 3}}},
+						},
+						Left: &Variable{
+							NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+							Name:     "a",
+						},
+						PropertyName: nil,
+					},
+					&UnknownNode{
+						NodeBase: NodeBase{
+							NodeSpan{3, 4},
+							&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInBlockOrModule(']')},
+							[]Token{{Type: UNEXPECTED_CHAR, Raw: "]", Span: NodeSpan{3, 4}}},
+						},
 					},
 				},
 			}, n)
@@ -2018,7 +2077,7 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
-		t.Run("with missing last property name", func(t *testing.T) {
+		t.Run("missing last property name: followed by EOF", func(t *testing.T) {
 			n, err := ParseChunk("http.", "")
 
 			assert.Error(t, err)
@@ -2028,7 +2087,7 @@ func TestParse(t *testing.T) {
 					&IdentifierMemberExpression{
 						NodeBase: NodeBase{
 							NodeSpan{0, 5},
-							&ParsingError{UnspecifiedParsingError, "unterminated identifier member expression"},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_IDENT_MEMB_EXPR},
 							[]Token{{Type: DOT, Span: NodeSpan{4, 5}}},
 						},
 						Left: &IdentifierLiteral{
@@ -2036,6 +2095,67 @@ func TestParse(t *testing.T) {
 							Name:     "http",
 						},
 						PropertyNames: nil,
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing last property name, followed by an identifier on the next line", func(t *testing.T) {
+			n, err := ParseChunk("http.\na", "")
+
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					NodeSpan{0, 7},
+					nil,
+					[]Token{{Type: NEWLINE, Span: NodeSpan{5, 6}}},
+				},
+				Statements: []Node{
+					&IdentifierMemberExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 5},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_IDENT_MEMB_EXPR},
+							[]Token{{Type: DOT, Span: NodeSpan{4, 5}}},
+						},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
+							Name:     "http",
+						},
+						PropertyNames: nil,
+					},
+					&IdentifierLiteral{
+						NodeBase: NodeBase{NodeSpan{6, 7}, nil, nil},
+						Name:     "a",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing last property name, followed by a closing delimiter", func(t *testing.T) {
+			n, err := ParseChunk("http.]", "")
+
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
+				Statements: []Node{
+					&IdentifierMemberExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 5},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_IDENT_MEMB_EXPR},
+							[]Token{{Type: DOT, Span: NodeSpan{4, 5}}},
+						},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
+							Name:     "http",
+						},
+						PropertyNames: nil,
+					},
+					&UnknownNode{
+						NodeBase: NodeBase{
+							NodeSpan{5, 6},
+							&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInBlockOrModule(']')},
+							[]Token{{Type: UNEXPECTED_CHAR, Raw: "]", Span: NodeSpan{5, 6}}},
+						},
 					},
 				},
 			}, n)

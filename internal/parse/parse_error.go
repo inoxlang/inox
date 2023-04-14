@@ -98,7 +98,6 @@ const (
 	UNTERMINATED_UNION_MISSING_CLOSING_PAREN                   = "unterminated union: missing closing ')'"
 	UNTERMINATED_KEY_LIST_MISSING_BRACE                        = "unterminated key list, missing closing brace '}'"
 	KEY_LIST_CAN_ONLY_CONTAIN_IDENTS                           = "a key list can only contain identifiers"
-	UNTERMINATED_MEMB_EXPR                                     = "unterminated identifier member expression"
 	INVALID_SCHEME_LIT_MISSING_SCHEME                          = "invalid scheme literal: '://' should be preceded by a scheme"
 	INVALID_HOST_LIT                                           = "invalid host literal"
 	URL_PATT_LITS_WITH_QUERY_PART_NOT_SUPPORTED_YET            = "URL pattern literals with a query part are not supported yet"
@@ -170,6 +169,7 @@ const (
 	UNTERMINATED_BIN_EXPR_MISSING_PAREN                       = "unterminated binary expression: missing closing parenthesis"
 
 	UNTERMINATED_MEMB_OR_INDEX_EXPR                          = "unterminated member/index expression"
+	UNTERMINATED_IDENT_MEMB_EXPR                             = "unterminated identifier member expression"
 	UNTERMINATED_DYN_MEMB_OR_INDEX_EXPR                      = "unterminated dynamic member/index expression"
 	UNTERMINATED_INDEX_OR_SLICE_EXPR                         = "unterminated index/slice expression"
 	INVALID_SLICE_EXPR_SINGLE_COLON                          = "invalid slice expression, a single colon should be present"

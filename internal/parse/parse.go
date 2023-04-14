@@ -2079,11 +2079,11 @@ func (p *parser) parseIdentStartingExpression() Node {
 		for {
 			nameStart := p.i
 
-			if p.i >= p.len {
+			if p.i >= p.len || isUnpairedOrIsClosingDelim(p.s[p.i]) {
 				base := memberExpr.BasePtr()
+				base.Span.End = p.i
 
-				base.Span.End = p.len
-				base.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_MEMB_EXPR}
+				base.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_IDENT_MEMB_EXPR}
 				base.ValuelessTokens = append(base.ValuelessTokens, Token{Type: DOT, Span: NodeSpan{p.i - 1, p.i}})
 				return memberExpr
 			}
@@ -5328,11 +5328,12 @@ loop:
 		switch {
 		//member expressions, index/slice expressions, extraction expression
 		case p.s[p.i] == '[' || p.s[p.i] == '.':
+			dot := p.s[p.i] == '.'
 			p.i++
 
 			start := p.i
 
-			if p.i >= p.len {
+			if p.i >= p.len || (isUnpairedOrIsClosingDelim(p.s[p.i]) && (dot || (p.s[p.i] != ':' && p.s[p.i] != ']'))) {
 				//unterminated member expression
 				if p.s[p.i-1] == '.' {
 
