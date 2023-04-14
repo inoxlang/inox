@@ -31,7 +31,8 @@ const (
 		"\tcheck - check a script\n" +
 		"\tshell - start the shell\n" +
 		"\teval - evaluate a single statement\n" +
-		"\tvsc\n\n" +
+		"\te - alias for eval\n" +
+		"\tvsc - commands used by vscode\n\n" +
 		"The run command:\n" +
 		"\trun <script path> [passed arguments]\n"
 
@@ -199,7 +200,7 @@ func _main(args []string) {
 			//start the shell
 
 			_sh.StartShell(state, config)
-		case "eval":
+		case "eval", "e":
 			if len(args) == 2 {
 				fmt.Fprintf(os.Stderr, "missing code string")
 				os.Exit(INVALID_INPUT_STATUS)
