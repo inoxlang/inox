@@ -1803,8 +1803,13 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 			defer stateFork.unsetSelf()
 		}
 
-		params := make([]SymbolicValue, len(n.Parameters))
-		paramNames := make([]string, len(n.Parameters))
+		var params []SymbolicValue
+		var paramNames []string
+
+		if len(n.Parameters) > 0 {
+			params = make([]SymbolicValue, len(n.Parameters))
+			paramNames = make([]string, len(n.Parameters))
+		}
 
 		//declare arguments
 		for i, p := range n.Parameters[:n.NonVariadicParamCount()] {
