@@ -187,9 +187,51 @@ func (fn *GoFunction) IsWidenable() bool {
 
 func (fn *GoFunction) String() string {
 	if fn.fn == nil {
-		return "%go-function"
+		return "%fn[[go]]"
 	}
-	return fmt.Sprintf("%%go-function(%v)", fn.fn)
+
+	fnValType := reflect.TypeOf(fn.fn)
+
+	isfirstArgCtx := fnValType.NumIn() > 0 && CTX_PTR_TYPE.AssignableTo(fnValType.In(0))
+	isVariadic := fnValType.IsVariadic()
+
+	start := 0
+	if isfirstArgCtx {
+		start++
+	}
+
+	buf := bytes.NewBufferString("(go)%fn(")
+	for i := start; i < fnValType.NumIn(); i++ {
+		if i != start {
+			buf.WriteString(", ")
+		}
+
+		reflectParamType := fnValType.In(i)
+
+		if i == fnValType.NumIn()-1 && isVariadic {
+			buf.WriteString("...%[]")
+
+			param, err := converTypeToSymbolicValue(reflectParamType.Elem())
+			if err != nil {
+				buf.WriteString("???" + err.Error())
+			} else {
+				buf.WriteString(param.String())
+			}
+
+		} else {
+			param, err := converTypeToSymbolicValue(reflectParamType)
+			if err != nil {
+				buf.WriteString("???" + err.Error())
+			} else {
+				buf.WriteString(param.String())
+			}
+		}
+
+	}
+
+	buf.WriteByte(')')
+
+	return buf.String()
 }
 
 func (fn *GoFunction) WidestOfType() SymbolicValue {

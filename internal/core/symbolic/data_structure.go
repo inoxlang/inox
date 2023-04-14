@@ -885,7 +885,7 @@ func (obj *Object) String() string {
 		buff.WriteRune('}')
 		return buff.String()
 	}
-	return "object"
+	return "%object"
 }
 
 func (o *Object) WidestOfType() SymbolicValue {
