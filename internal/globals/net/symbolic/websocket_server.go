@@ -26,7 +26,7 @@ func (s *WebsocketServer) GetGoMethod(name string) (*symbolic.GoFunction, bool) 
 	case "close":
 		return symbolic.WrapGoMethod(s.Close), true
 	}
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (s *WebsocketServer) Prop(name string) symbolic.SymbolicValue {

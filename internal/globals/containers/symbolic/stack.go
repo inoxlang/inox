@@ -29,7 +29,7 @@ func (s *Stack) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	case "peek":
 		return symbolic.WrapGoMethod(s.Peek), true
 	}
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (s *Stack) Prop(name string) symbolic.SymbolicValue {

@@ -41,7 +41,7 @@ func (r *Shell) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	case "stop":
 		return symbolic.WrapGoClosure(func(ctx *symbolic.Context) {}), true
 	}
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (r *Shell) Prop(name string) symbolic.SymbolicValue {

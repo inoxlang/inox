@@ -47,7 +47,7 @@ func (n *HTMLNode) Prop(name string) symbolic.SymbolicValue {
 }
 
 func (n *HTMLNode) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (n *HTMLNode) PropertyNames() []string {

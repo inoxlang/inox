@@ -17,7 +17,7 @@ func (r GetObjectResponse) Clone(clones map[uintptr]symbolic.SymbolicValue) symb
 }
 
 func (resp *GetObjectResponse) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (resp *GetObjectResponse) Prop(name string) symbolic.SymbolicValue {
@@ -64,7 +64,7 @@ func (r PutObjectResponse) Clone(clones map[uintptr]symbolic.SymbolicValue) symb
 }
 
 func (resp *PutObjectResponse) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (resp *PutObjectResponse) Prop(name string) symbolic.SymbolicValue {
@@ -111,7 +111,7 @@ func (r GetBucketPolicyResponse) Clone(clones map[uintptr]symbolic.SymbolicValue
 }
 
 func (resp *GetBucketPolicyResponse) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (resp *GetBucketPolicyResponse) Prop(name string) symbolic.SymbolicValue {

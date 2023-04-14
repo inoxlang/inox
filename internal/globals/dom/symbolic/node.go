@@ -40,7 +40,7 @@ func (n *Node) Prop(name string) symbolic.SymbolicValue {
 }
 
 func (n *Node) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (n *Node) PropertyNames() []string {

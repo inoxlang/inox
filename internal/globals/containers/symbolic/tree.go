@@ -136,7 +136,7 @@ func (r *TreeNode) Test(v symbolic.SymbolicValue) bool {
 func (f *TreeNode) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
 	}
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (t *TreeNode) Prop(name string) symbolic.SymbolicValue {

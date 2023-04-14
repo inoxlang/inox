@@ -29,7 +29,7 @@ func (q *Queue) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	case "peek":
 		return symbolic.WrapGoMethod(q.Peek), true
 	}
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (q *Queue) Prop(name string) symbolic.SymbolicValue {

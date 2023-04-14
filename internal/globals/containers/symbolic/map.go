@@ -31,7 +31,7 @@ func (m *Map) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	case "get":
 		return symbolic.WrapGoMethod(m.Get), true
 	}
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (m *Map) Prop(name string) symbolic.SymbolicValue {

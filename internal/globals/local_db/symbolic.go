@@ -63,7 +63,7 @@ func (ldb *SymbolicLocalDatabase) GetGoMethod(name string) (*symbolic.GoFunction
 	case "close":
 		return symbolic.WrapGoMethod(ldb.Close), true
 	}
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (ldb *SymbolicLocalDatabase) PropertyNames() []string {

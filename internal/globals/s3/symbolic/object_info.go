@@ -17,7 +17,7 @@ func (r ObjectInfo) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.Sy
 }
 
 func (resp *ObjectInfo) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (resp *ObjectInfo) Prop(name string) symbolic.SymbolicValue {

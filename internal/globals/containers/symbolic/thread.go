@@ -25,7 +25,7 @@ func (t *Thread) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	case "push":
 		return symbolic.WrapGoMethod(t.Push), true
 	}
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (t *Thread) Prop(name string) symbolic.SymbolicValue {

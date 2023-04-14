@@ -29,7 +29,7 @@ func (f *Graph) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	case "connect":
 		return symbolic.WrapGoMethod(f.Connect), true
 	}
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (g *Graph) Prop(name string) symbolic.SymbolicValue {
@@ -104,7 +104,7 @@ func (r GraphNode) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.Sym
 func (f *GraphNode) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
 	}
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (n *GraphNode) Prop(name string) symbolic.SymbolicValue {

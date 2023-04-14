@@ -27,7 +27,7 @@ func (conn *TcpConn) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	case "close":
 		return symbolic.WrapGoMethod(conn.close), true
 	}
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (conn *TcpConn) Prop(name string) symbolic.SymbolicValue {

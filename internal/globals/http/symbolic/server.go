@@ -23,7 +23,7 @@ func (serv *HttpServer) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	case "close":
 		return symbolic.WrapGoMethod(serv.close), true
 	}
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (s *HttpServer) Prop(name string) symbolic.SymbolicValue {

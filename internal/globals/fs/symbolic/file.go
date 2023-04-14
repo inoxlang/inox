@@ -29,7 +29,7 @@ func (f *File) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	case "info":
 		return symbolic.WrapGoMethod(f.info), true
 	}
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (f *File) Prop(name string) SymbolicValue {

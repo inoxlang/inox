@@ -82,7 +82,7 @@ func (h *Handle) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	case "close":
 		return symbolic.WrapGoMethod(h.Close), true
 	}
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (h *Handle) PropertyNames() []string {

@@ -39,7 +39,7 @@ func (resp *HttpResponseWriter) GetGoMethod(name string) (*symbolic.GoFunction, 
 	case "addHeader":
 		return symbolic.WrapGoMethod(resp.AddHeader), true
 	default:
-		return &symbolic.GoFunction{}, false
+		return nil, false
 	}
 }
 

@@ -27,7 +27,7 @@ func (r *Ranking) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	case "remove":
 		return symbolic.WrapGoMethod(r.Remove), true
 	}
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (r *Ranking) Prop(name string) symbolic.SymbolicValue {
@@ -85,7 +85,7 @@ func (r *Rank) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.Symboli
 }
 
 func (r *Rank) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (r *Rank) Prop(name string) symbolic.SymbolicValue {

@@ -27,7 +27,7 @@ func (s *Set) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	case "remove":
 		return symbolic.WrapGoMethod(s.Remove), true
 	}
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (s *Set) Prop(name string) symbolic.SymbolicValue {

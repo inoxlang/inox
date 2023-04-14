@@ -17,7 +17,7 @@ func (r HttpResponse) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.
 }
 
 func (resp *HttpResponse) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (resp *HttpResponse) Prop(name string) symbolic.SymbolicValue {

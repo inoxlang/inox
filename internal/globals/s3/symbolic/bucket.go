@@ -17,7 +17,7 @@ func (r Bucket) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.Symbol
 }
 
 func (serv *Bucket) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (b *Bucket) Prop(name string) symbolic.SymbolicValue {

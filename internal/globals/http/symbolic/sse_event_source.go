@@ -21,7 +21,7 @@ func (serv *ServerSentEventSource) GetGoMethod(name string) (*symbolic.GoFunctio
 	case "close":
 		return symbolic.WrapGoMethod(serv.close), true
 	}
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (s *ServerSentEventSource) Prop(name string) symbolic.SymbolicValue {

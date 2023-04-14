@@ -27,7 +27,7 @@ func (c *HttpClient) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	case "get_host_cookies":
 		return symbolic.WrapGoMethod(c.GetHostCookies), true
 	}
-	return &symbolic.GoFunction{}, false
+	return nil, false
 }
 
 func (c *HttpClient) Prop(name string) symbolic.SymbolicValue {
