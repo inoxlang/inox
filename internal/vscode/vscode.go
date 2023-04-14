@@ -10,6 +10,7 @@ import (
 	"github.com/inox-project/inox/internal/utils"
 
 	globals "github.com/inox-project/inox/internal/globals"
+	suggestion "github.com/inox-project/inox/internal/globals/suggestion"
 
 	_ "net/http/pprof"
 )
@@ -68,17 +69,47 @@ func HandleVscCommand(fpath string, dir string, subCommand string, jsonData stri
 
 		fmt.Println(utils.BytesAsString(dataJSON))
 		return
+	case "get-completions":
+		var lineCol LineColumn
+		if err := json.Unmarshal(utils.StringAsBytes(jsonData), &lineCol); err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		state, mod, _ := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
+			Fpath:                     fpath,
+			PassedArgs:                []string{},
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             nil,
+			Out:                       os.Stdout,
+		})
+
+		chunk := mod.MainChunk
+		pos := chunk.GetLineColumnPosition(lineCol.Line, lineCol.Column)
+
+		suggestions := suggestion.FindSuggestions(core.NewTreeWalkStateWithGlobal(state), chunk.Node, int(pos))
+		data := CompletionData{Completions: utils.EmptySliceIfNil(suggestions)}
+		dataJSON := utils.Must(json.Marshal(data))
+
+		fmt.Println(utils.BytesAsString(dataJSON))
+		return
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command `%s` for vsc subcommand\n", subCommand)
 		os.Exit(1)
 	}
 }
 
-type HoverRange [2]struct {
+type LineColumn struct {
 	Line   int32 //starts at 1
 	Column int32 //start at 1
 }
 
+type HoverRange [2]LineColumn
+
 type HoverData struct {
 	Text string `json:"text"`
+}
+
+type CompletionData struct {
+	Completions []suggestion.Suggestion `json:"completions"`
 }

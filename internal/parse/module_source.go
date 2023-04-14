@@ -116,6 +116,14 @@ func (chunk *ParsedChunk) GetSpanLineColumn(span NodeSpan) (int32, int32) {
 }
 
 func (chunk *ParsedChunk) GetLineColumnSingeCharSpan(line, column int32) NodeSpan {
+	pos := chunk.GetLineColumnPosition(line, column)
+	return NodeSpan{
+		Start: pos,
+		End:   pos + 1,
+	}
+}
+
+func (chunk *ParsedChunk) GetLineColumnPosition(line, column int32) int32 {
 	i := int32(0)
 	runes := chunk.getRunes()
 	length := len32(runes)
@@ -129,12 +137,8 @@ func (chunk *ParsedChunk) GetLineColumnSingeCharSpan(line, column int32) NodeSpa
 		i++
 	}
 
-	pos := i + column
-
-	return NodeSpan{
-		Start: pos,
-		End:   pos + 1,
-	}
+	pos := i + column - 1
+	return pos
 }
 
 func (chunk *ParsedChunk) GetSourcePosition(span NodeSpan) SourcePosition {

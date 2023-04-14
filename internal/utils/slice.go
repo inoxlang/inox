@@ -56,6 +56,13 @@ func FilterSlice[T any](s []T, filter func(e T) bool) []T {
 	return result
 }
 
+func EmptySliceIfNil[T any](slice []T) []T {
+	if slice == nil {
+		return make([]T, 0)
+	}
+	return slice
+}
+
 func BytesAsString(b []byte) string {
 	if len(b) == 0 {
 		return ""

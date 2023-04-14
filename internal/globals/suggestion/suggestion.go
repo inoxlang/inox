@@ -16,9 +16,9 @@ import (
 )
 
 type Suggestion struct {
-	ShownString string
-	Value       string
-	Span        parse.NodeSpan
+	ShownString string         `json:"shownString"`
+	Value       string         `json:"value"`
+	Span        parse.NodeSpan `json:"span"`
 }
 
 var (
