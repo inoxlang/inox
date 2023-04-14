@@ -7,4 +7,5 @@ __debug*
 
 .vscode/
 /test.ix
+/inox
 
