@@ -1803,8 +1803,11 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 			defer stateFork.unsetSelf()
 		}
 
+		params := make([]SymbolicValue, len(n.Parameters))
+		paramNames := make([]string, len(n.Parameters))
+
 		//declare arguments
-		for _, p := range n.Parameters[:n.NonVariadicParamCount()] {
+		for i, p := range n.Parameters[:n.NonVariadicParamCount()] {
 			name := p.Var.Name
 			var paramValue SymbolicValue = ANY
 			var paramType Pattern
@@ -1820,6 +1823,8 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 
 			stateFork.setLocal(name, paramValue, paramType)
 			state.symbolicData.SetNodeValue(p.Var, paramValue)
+			params[i] = paramValue
+			paramNames[i] = name
 		}
 
 		//declare captured locals
@@ -1900,6 +1905,8 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 
 		return &InoxFunction{
 			node:           n,
+			parameters:     params,
+			parameterNames: paramNames,
 			returnType:     storedReturnType,
 			capturedLocals: capturedLocals,
 		}, nil

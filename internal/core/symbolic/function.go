@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"bytes"
 	"fmt"
 	"reflect"
 	"runtime"
@@ -13,6 +14,8 @@ import (
 // TODO: keep in sync with concrete InoxFunction
 type InoxFunction struct {
 	node           parse.Node //if nil, any function is matched
+	parameters     []SymbolicValue
+	parameterNames []string
 	returnType     SymbolicValue
 	capturedLocals map[string]SymbolicValue
 	originState    *State
@@ -80,9 +83,22 @@ func (fn *InoxFunction) IsWidenable() bool {
 
 func (fn *InoxFunction) String() string {
 	if fn.node == nil {
-		return "%inox-function"
+		return "%fn"
 	}
-	return fmt.Sprintf("%%inox-function(%v)", fn.node)
+
+	buff := bytes.NewBufferString("%fn(")
+
+	for i, param := range fn.parameters {
+		if i != 0 {
+			buff.WriteString(", ")
+		}
+		buff.WriteString(fn.parameterNames[i])
+		buff.WriteByte(' ')
+		buff.WriteString(param.String())
+	}
+
+	buff.WriteString(")")
+	return buff.String()
 }
 
 func (fn *InoxFunction) WidestOfType() SymbolicValue {
