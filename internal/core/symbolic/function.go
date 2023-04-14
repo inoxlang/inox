@@ -97,7 +97,9 @@ func (fn *InoxFunction) String() string {
 		buff.WriteString(param.String())
 	}
 
-	buff.WriteString(")")
+	buff.WriteString(") ")
+	buff.WriteString(fn.returnType.String())
+
 	return buff.String()
 }
 
@@ -229,7 +231,30 @@ func (fn *GoFunction) String() string {
 
 	}
 
-	buf.WriteByte(')')
+	buf.WriteString(") ")
+
+	if fnValType.NumOut() > 1 {
+		buf.WriteString("[")
+	}
+
+	for i := 0; i < fnValType.NumOut(); i++ {
+		if i != 0 {
+			buf.WriteString(", ")
+		}
+
+		reflectReturnType := fnValType.Out(i)
+
+		ret, err := converTypeToSymbolicValue(reflectReturnType)
+		if err != nil {
+			buf.WriteString("???" + err.Error())
+		} else {
+			buf.WriteString(ret.String())
+		}
+	}
+
+	if fnValType.NumOut() > 1 {
+		buf.WriteString("]")
+	}
 
 	return buf.String()
 }
