@@ -9757,6 +9757,29 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
+		t.Run("missing block after if", func(t *testing.T) {
+			n, err := ParseChunk("if true", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
+				Statements: []Node{
+					&IfStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 7},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_IF_STMT_MISSING_BLOCK},
+							[]Token{
+								{Type: IF_KEYWORD, Span: NodeSpan{0, 2}},
+							},
+						},
+						Test: &BooleanLiteral{
+							NodeBase: NodeBase{NodeSpan{3, 7}, nil, nil},
+							Value:    true,
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("multiline", func(t *testing.T) {
 			n := MustParseChunk("if true { \n }")
 			assert.EqualValues(t, &Chunk{

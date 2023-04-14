@@ -7200,8 +7200,10 @@ func (p *parser) parseIfStatement(ifIdent *IdentifierLiteral) *IfStatement {
 	p.eatSpace()
 
 	if p.i >= p.len {
+		end = p.i
 		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_IF_STMT_MISSING_BLOCK}
 	} else if p.s[p.i] != '{' {
+		end = p.i
 		parsingErr = &ParsingError{UnspecifiedParsingError, fmtUnterminatedIfStmtShouldBeFollowedByBlock(p.s[p.i])}
 	} else {
 		blk = p.parseBlock()
