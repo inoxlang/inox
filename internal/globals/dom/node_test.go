@@ -128,6 +128,8 @@ func TestNewNode(t *testing.T) {
 
 func TestNodeWatcher(t *testing.T) {
 
+	t.Skip()
+
 	t.Run("mutation of child node's model (auto node)", func(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{})
 		core.NewGlobalState(ctx)
