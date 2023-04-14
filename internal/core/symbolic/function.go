@@ -186,7 +186,7 @@ type goFunctionCallInput struct {
 	hasSpreadArg      bool
 	state, extState   *State
 	isExt, must       bool
-	callNode          parse.Node
+	callNode          *parse.CallExpression
 }
 
 func (goFunc *GoFunction) Call(input goFunctionCallInput) (SymbolicValue, error) {
@@ -258,12 +258,12 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (SymbolicValue, error)
 	}
 
 	//check arguments
-	for i := 0; i < nonVariadicParamCount; i++ {
-		if i == 0 && isfirstArgCtx {
+	for paramIndex := 0; paramIndex < nonVariadicParamCount; paramIndex++ {
+		if paramIndex == 0 && isfirstArgCtx {
 			continue
 		}
 
-		reflectParamType := fnValType.In(i)
+		reflectParamType := fnValType.In(paramIndex)
 		param, err := converTypeToSymbolicValue(reflectParamType)
 		if err != nil {
 			s := fmt.Sprintf("cannot convert one of a Go function parameter (type %s.%s) (function name: %s): %s",
@@ -276,8 +276,8 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (SymbolicValue, error)
 		}
 
 		var arg SymbolicValue
-		if i < len(args) {
-			arg = args[i].(SymbolicValue)
+		if paramIndex < len(args) {
+			arg = args[paramIndex].(SymbolicValue)
 
 			// if extVal, ok := arg.(*SharedValue); ok {
 			// 	arg = extVal.value
@@ -289,15 +289,18 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (SymbolicValue, error)
 			}
 
 			if !param.Test(widenedArg) {
-				position := i
+				position := paramIndex
+
 				if isfirstArgCtx {
 					position -= 1
 				}
 
-				state.addError(makeSymbolicEvalError(callNode, state, FmtInvalidArg(position, arg, param)))
-				args[i] = param //if argument does not match we use the symbolic parameter value as argument
+				argNode := callNode.Arguments[position]
+
+				state.addError(makeSymbolicEvalError(argNode, state, FmtInvalidArg(position, arg, param)))
+				args[paramIndex] = param //if argument does not match we use the symbolic parameter value as argument
 			} else {
-				args[i] = widenedArg
+				args[paramIndex] = widenedArg
 			}
 		} else { //if not enough arguments
 			args = append(args, param)

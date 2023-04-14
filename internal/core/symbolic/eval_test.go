@@ -1953,7 +1953,7 @@ func TestSymbolicEval(t *testing.T) {
 				return f("a")
 			`)
 
-			call := n.Statements[0].(*parse.ReturnStatement).Expr
+			argNode := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.CallExpression).Arguments[0]
 
 			goFunc := &GoFunction{
 				fn: func(*Context, *Int) *Int {
@@ -1965,7 +1965,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(call, state, FmtInvalidArg(0, &String{}, &Int{})),
+				makeSymbolicEvalError(argNode, state, FmtInvalidArg(0, &String{}, &Int{})),
 			}, state.errors)
 			assert.Equal(t, &Int{}, res)
 		})
