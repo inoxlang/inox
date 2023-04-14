@@ -189,13 +189,13 @@ func (v *VM) run() {
 			}
 
 			//add location to error message
-			sourcePos := v.curFrame.fn.GetSourcePosition(ip)
+			sourcePos := v.curFrame.fn.GetSourcePositionRange(ip)
 			if sourcePos.SourceName != "" {
 				v.err = fmt.Errorf("%s %w", sourcePos, v.err)
 				for v.framesIndex > 1 {
 					v.framesIndex--
 					v.curFrame = &v.frames[v.framesIndex-1]
-					sourcePos = v.curFrame.fn.GetSourcePosition(v.curFrame.ip - 1)
+					sourcePos = v.curFrame.fn.GetSourcePositionRange(v.curFrame.ip - 1)
 					v.err = fmt.Errorf("%s %w", sourcePos, v.err)
 				}
 			}

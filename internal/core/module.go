@@ -36,7 +36,7 @@ type Module struct {
 	ManifestTemplate           *parse.Manifest
 	Bytecode                   *Bytecode
 	ParsingErrors              []Error
-	ParsingErrorPositions      []parse.SourcePosition
+	ParsingErrorPositions      []parse.SourcePositionRange
 
 	//.errors property accessible from scripts
 	errorsPropSet atomic.Bool
@@ -223,7 +223,7 @@ func ParseInMemoryModule(codeString Str, config InMemoryModuleParsingConfig) (*M
 		}
 
 		mod.ParsingErrors = make([]Error, len(errorAggregation.Errors))
-		mod.ParsingErrorPositions = make([]parse.SourcePosition, len(errorAggregation.Errors))
+		mod.ParsingErrorPositions = make([]parse.SourcePositionRange, len(errorAggregation.Errors))
 
 		for i, err := range errorAggregation.Errors {
 			pos := errorAggregation.ErrorPositions[i]
@@ -316,7 +316,7 @@ func ParseLocalModule(config LocalModuleParsingConfig) (*Module, error) {
 		}
 
 		mod.ParsingErrors = make([]Error, len(errorAggregation.Errors))
-		mod.ParsingErrorPositions = make([]parse.SourcePosition, len(errorAggregation.Errors))
+		mod.ParsingErrorPositions = make([]parse.SourcePositionRange, len(errorAggregation.Errors))
 
 		for i, err := range errorAggregation.Errors {
 			pos := errorAggregation.ErrorPositions[i]
@@ -329,11 +329,11 @@ func ParseLocalModule(config LocalModuleParsingConfig) (*Module, error) {
 	if code.Node.Manifest == nil {
 		err := NewError(fmt.Errorf("missing manifest in module "+fpath), Path(fpath))
 		mod.ParsingErrors = append(mod.ParsingErrors, err)
-		mod.ParsingErrorPositions = append(mod.ParsingErrorPositions, parse.SourcePosition{
-			SourceName: fpath,
-			Line:       1,
-			Column:     1,
-			Span:       parse.NodeSpan{Start: 0, End: 1},
+		mod.ParsingErrorPositions = append(mod.ParsingErrorPositions, parse.SourcePositionRange{
+			SourceName:  fpath,
+			StartLine:   1,
+			StartColumn: 1,
+			Span:        parse.NodeSpan{Start: 0, End: 1},
 		})
 	}
 
@@ -369,7 +369,7 @@ type IncludedChunk struct {
 	*parse.ParsedChunk
 	IncludedChunkForest   []*IncludedChunk
 	ParsingErrors         []Error
-	ParsingErrorPositions []parse.SourcePosition
+	ParsingErrorPositions []parse.SourcePositionRange
 }
 
 type LocalSecondaryChunkParsingConfig struct {
@@ -440,7 +440,7 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 		}
 
 		includedChunk.ParsingErrors = make([]Error, len(errorAggregation.Errors))
-		includedChunk.ParsingErrorPositions = make([]parse.SourcePosition, len(errorAggregation.Errors))
+		includedChunk.ParsingErrorPositions = make([]parse.SourcePositionRange, len(errorAggregation.Errors))
 
 		for i, err := range errorAggregation.Errors {
 			pos := errorAggregation.ErrorPositions[i]
@@ -483,10 +483,10 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 	return includedChunk, nil
 }
 
-func createRecordFromSourcePosition(pos parse.SourcePosition) *Record {
+func createRecordFromSourcePosition(pos parse.SourcePositionRange) *Record {
 	rec := NewRecordFromKeyValLists(
 		SOURCE_POS_RECORD_PROPNAMES,
-		[]Value{Str(pos.SourceName), Int(pos.Line), Int(pos.Column), Int(pos.Span.Start), Int(pos.Span.End)},
+		[]Value{Str(pos.SourceName), Int(pos.StartLine), Int(pos.StartColumn), Int(pos.Span.Start), Int(pos.Span.End)},
 	)
 	return rec
 }

@@ -1708,7 +1708,7 @@ func combineErrors(errs ...error) error {
 }
 
 // combineParsingErrorValues combines errors into a single error with a multiline message.
-func combineParsingErrorValues(errs []Error, positions []parse.SourcePosition) error {
+func combineParsingErrorValues(errs []Error, positions []parse.SourcePositionRange) error {
 
 	if len(errs) == 0 {
 		return nil

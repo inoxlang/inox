@@ -65,14 +65,14 @@ type CompiledFunction struct {
 	Bytecode     *Bytecode //bytecode containing the function
 }
 
-func (fn *CompiledFunction) GetSourcePosition(ip int) parse.SourcePosition {
+func (fn *CompiledFunction) GetSourcePositionRange(ip int) parse.SourcePositionRange {
 	info := fn.SourceMap[ip]
 	if info.chunk == nil {
-		return parse.SourcePosition{
-			SourceName: "??",
-			Line:       1,
-			Column:     1,
-			Span:       parse.NodeSpan{Start: 0, End: 1},
+		return parse.SourcePositionRange{
+			SourceName:  "??",
+			StartLine:   1,
+			StartColumn: 1,
+			Span:        parse.NodeSpan{Start: 0, End: 1},
 		}
 	}
 	return info.chunk.GetSourcePosition(info.span)

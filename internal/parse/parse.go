@@ -114,11 +114,11 @@ func ParseChunk2(str string, fpath string) (runes []rune, result *Chunk, resultE
 				}
 
 				aggregation.Errors = append(aggregation.Errors, parsingErr)
-				aggregation.ErrorPositions = append(aggregation.ErrorPositions, SourcePosition{
-					SourceName: fpath,
-					Line:       line,
-					Column:     col,
-					Span:       nodeBase.Span,
+				aggregation.ErrorPositions = append(aggregation.ErrorPositions, SourcePositionRange{
+					SourceName:  fpath,
+					StartLine:   line,
+					StartColumn: col,
+					Span:        nodeBase.Span,
 				})
 
 				aggregation.message = fmt.Sprintf("%s\n%s:%d:%d: %s", aggregation.message, fpath, line, col, parsingErr.message)

@@ -28,7 +28,7 @@ type ParsingErrorKind int
 type ParsingErrorAggregation struct {
 	message        string
 	Errors         []*ParsingError
-	ErrorPositions []SourcePosition
+	ErrorPositions []SourcePositionRange
 }
 
 func (err ParsingErrorAggregation) Error() string {

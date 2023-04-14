@@ -35,7 +35,7 @@ func TestParse(t *testing.T) {
 
 			aggregation := err.(*ParsingErrorAggregation)
 			assert.Equal(t, []*ParsingError{{UnspecifiedParsingError, UNTERMINATED_IDENTIFIER_LIT}}, aggregation.Errors)
-			assert.Equal(t, []SourcePosition{{Line: 1, Column: 1, Span: NodeSpan{0, 1}}}, aggregation.ErrorPositions)
+			assert.Equal(t, []SourcePositionRange{{StartLine: 1, StartColumn: 1, Span: NodeSpan{0, 1}}}, aggregation.ErrorPositions)
 		})
 
 		t.Run("shebang", func(t *testing.T) {

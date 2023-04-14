@@ -141,9 +141,9 @@ func (chunk *ParsedChunk) GetLineColumnPosition(line, column int32) int32 {
 	return pos
 }
 
-func (chunk *ParsedChunk) GetSourcePosition(span NodeSpan) SourcePosition {
+func (chunk *ParsedChunk) GetSourcePosition(span NodeSpan) SourcePositionRange {
 	l, c := chunk.GetSpanLineColumn(span)
-	return SourcePosition{SourceName: chunk.Name(), Line: l, Column: c, Span: span}
+	return SourcePositionRange{SourceName: chunk.Name(), StartLine: l, StartColumn: c, Span: span}
 }
 
 func (chunk *ParsedChunk) GetNodeAtSpan(target NodeSpan) (foundNode Node, ok bool) {
@@ -167,18 +167,18 @@ func (chunk *ParsedChunk) GetNodeAtSpan(target NodeSpan) (foundNode Node, ok boo
 	return
 }
 
-type SourcePosition struct {
+type SourcePositionRange struct {
 	SourceName string   `json:"sourceName"`
-	Line       int32    `json:"line"`
-	Column     int32    `json:"column"`
+	StartLine       int32    `json:"line"`
+	StartColumn     int32    `json:"column"`
 	Span       NodeSpan `json:"span"`
 }
 
-func (pos SourcePosition) String() string {
-	return fmt.Sprintf("%s:%d:%d:", pos.SourceName, pos.Line, pos.Column)
+func (pos SourcePositionRange) String() string {
+	return fmt.Sprintf("%s:%d:%d:", pos.SourceName, pos.StartLine, pos.StartColumn)
 }
 
-type SourcePositionStack []SourcePosition
+type SourcePositionStack []SourcePositionRange
 
 func (stack SourcePositionStack) String() string {
 	buff := bytes.NewBuffer(nil)

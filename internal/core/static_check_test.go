@@ -1468,15 +1468,15 @@ func TestCheck(t *testing.T) {
 
 			expectedErr := combineErrors(
 				NewStaticCheckError(fmtVarIsNotDeclared("b"), parse.SourcePositionStack{
-					parse.SourcePosition{
-						SourceName: mod.MainChunk.Name(),
-						Line:       3,
-						Column:     5,
+					parse.SourcePositionRange{
+						SourceName:  mod.MainChunk.Name(),
+						StartLine:   3,
+						StartColumn: 5,
 					},
-					parse.SourcePosition{
-						SourceName: mod.FlattenedIncludedChunkList[0].ParsedChunk.Name(),
-						Line:       1,
-						Column:     5,
+					parse.SourcePositionRange{
+						SourceName:  mod.FlattenedIncludedChunkList[0].ParsedChunk.Name(),
+						StartLine:   1,
+						StartColumn: 5,
 					},
 				}),
 			)
@@ -1502,10 +1502,10 @@ func TestCheck(t *testing.T) {
 
 			expectedErr := combineErrors(
 				NewStaticCheckError(fmtCannotShadowGlobalVariable("a"), parse.SourcePositionStack{
-					parse.SourcePosition{
-						SourceName: mod.MainChunk.Name(),
-						Line:       4,
-						Column:     5,
+					parse.SourcePositionRange{
+						SourceName:  mod.MainChunk.Name(),
+						StartLine:   4,
+						StartColumn: 5,
 					},
 				}),
 			)
