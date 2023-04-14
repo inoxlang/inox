@@ -21,7 +21,7 @@ func (c *ParsedChunk) getRunes() []rune {
 	if c.Source.Code() != "" && len(runes) == 0 {
 		c.runes = []rune(c.Source.Code())
 	}
-	return runes
+	return c.runes
 }
 
 type ChunkSource interface {
