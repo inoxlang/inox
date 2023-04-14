@@ -2,11 +2,14 @@ package internal
 
 import (
 	"fmt"
+	"strings"
 
 	parse "github.com/inox-project/inox/internal/parse"
 )
 
 const (
+	//manifest
+
 	INVALID_RATE     = "invalid rate"
 	INVALID_QUANTITY = "invalid quantity"
 
@@ -47,6 +50,10 @@ const (
 	VAL_SHOULD_BE_DICT_LIT                         = "value should be a dictionary literal"
 	INVALID_VISIBILITY_DESC_KEY                    = "invalid key for visibility description"
 )
+
+func fmtNotValidPermissionKindName(name string) string {
+	return fmt.Sprintf("'%s' is not a valid permission kind, valid permissions are %s", name, strings.Join(PERMISSION_KIND_STRINGS, ", "))
+}
 
 func fmtFollowingNodeTypeNotAllowedInAssertions(n parse.Node) string {
 	return fmt.Sprintf("following node type is not allowed in assertion: %T", n)

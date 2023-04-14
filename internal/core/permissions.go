@@ -43,6 +43,11 @@ func PermissionKindFromString(s string) (PermissionKind, bool) {
 	return 0, false
 }
 
+func isPermissionKindName(s string) bool {
+	_, ok := PermissionKindFromString(s)
+	return ok
+}
+
 // A Permission carries a kind and can include narrower permissions, for example
 // (read http://**) includes (read https://example.com).
 type Permission interface {

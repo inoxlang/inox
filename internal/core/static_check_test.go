@@ -1431,6 +1431,27 @@ func TestCheck(t *testing.T) {
 		})
 	})
 
+	t.Run("manifest", func(t *testing.T) {
+		t.Run("invalid permission kind in manifest", func(t *testing.T) {
+			n, src := parseCode(`
+				manifest {
+					permissions: {
+						Read: %/...
+					}
+				}
+			`)
+			key := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, unique bool) bool {
+				return n.Name == "Read"
+			})
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := combineErrors(
+				makeError(key, src, fmtNotValidPermissionKindName("Read")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+	})
+
 	t.Run("inclusion import statement", func(t *testing.T) {
 		t.Run("single included file with no dependecies", func(t *testing.T) {
 			moduleName := "mymod.ix"

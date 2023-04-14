@@ -1554,10 +1554,7 @@ func (checker *checker) postCheckSingleNode(node, parent, scopeNode parse.Node, 
 		//manifest
 
 		switch p := parent.(type) {
-		case *parse.Chunk:
-			if p.Manifest == nil || p.Manifest.Object != node {
-				break
-			}
+		case *parse.Manifest:
 			checkManifestObject(n, func(n parse.Node, msg string) {
 				checker.addError(n, msg)
 			})
@@ -1605,10 +1602,15 @@ func checkManifestObject(objLit *parse.ObjectLiteral, onError func(n parse.Node,
 		return parse.Continue, nil
 	}, nil)
 
+	for _, p := range objLit.Properties {
+		if !p.HasImplicitKey() && p.Name() == "permissions" {
+			checkPermissionListingObject(p.Value.(*parse.ObjectLiteral), onError)
+		}
+	}
+
 }
 
 func checkPermissionListingObject(objLit *parse.ObjectLiteral, onError func(n parse.Node, msg string)) {
-
 	const SPREAD_ERR = "invalid permission listing, objects & lists in manifest cannot contain spread elements"
 
 	parse.Walk(objLit, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
@@ -1631,6 +1633,16 @@ func checkPermissionListingObject(objLit *parse.ObjectLiteral, onError func(n pa
 		return parse.Continue, nil
 	}, nil)
 
+	for _, p := range objLit.Properties {
+		if p.HasImplicitKey() {
+			onError(p, "implicit key properties are not allowed in permission listing")
+			continue
+		}
+
+		if !isPermissionKindName(p.Name()) {
+			onError(p.Key, fmtNotValidPermissionKindName(p.Name()))
+		}
+	}
 }
 
 func checkVisibilityInitializationBlock(propInfo *propertyInfo, block *parse.InitializationBlock, onError func(n parse.Node, msg string)) {
