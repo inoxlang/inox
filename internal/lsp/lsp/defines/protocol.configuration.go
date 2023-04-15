@@ -1,6 +1,6 @@
 package defines
 
-//---- Get Configuration request ----
+// ---- Get Configuration request ----
 type ConfigurationClientCapabilities struct {
 
 	// The workspace client capabilities

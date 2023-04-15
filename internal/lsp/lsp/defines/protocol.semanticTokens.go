@@ -139,7 +139,7 @@ type SemanticTokensWorkspaceClientCapabilities struct {
 	RefreshSupport *bool `json:"refreshSupport,omitempty"`
 }
 
-//------- 'textDocument/semanticTokens' -----
+// ------- 'textDocument/semanticTokens' -----
 type TokenFormat string
 
 const (

@@ -1,6 +1,6 @@
 package defines
 
-//---- Client capability ----
+// ---- Client capability ----
 type DocumentColorClientCapabilities struct {
 
 	// Whether implementation supports dynamic registration. If this is set to `true`

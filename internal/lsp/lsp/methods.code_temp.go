@@ -4,7 +4,6 @@ const structItemTemp = `	on%s func(ctx context.Context, req *%s) (*%s, %s)`
 
 const noRespStructItemTemp = `	on%s func(ctx context.Context, req *%s) %s`
 
-
 const structTemp = `
 type Methods struct {
     Opt Options
@@ -48,7 +47,6 @@ const noRespBuiltinTemp = `
 	return nil, e
 `
 const noBuiltinTemp = `    return nil, nil`
-
 
 const noRespJsonrpcHandlerTemp = `
 func (m *Methods) %s(ctx context.Context, req interface{}) (interface{}, error) {
