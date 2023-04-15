@@ -263,7 +263,7 @@ func (m *Methods) didOpenTextDocumentMethodInfo() *jsonrpc.MethodInfo {
 		return nil
 	}	
     return &jsonrpc.MethodInfo{
-		Name: "didOpenTextDocument",
+		Name: "textDocument/didOpen",
 		NewRequest: func() interface{} {
 			return &defines.DidOpenTextDocumentParams{}
 		},

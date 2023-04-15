@@ -64,7 +64,7 @@ func StartLSPServer() {
 	server.OnHover(func(ctx context.Context, req *defines.HoverParams) (result *defines.Hover, err error) {
 		logs.Println(req)
 
-		fpath := getFilePath(req.TextDocument)
+		fpath := getFilePath(req.TextDocument.Uri)
 		line := int32(req.Position.Line + 1)
 		column := int32(req.Position.Character + 1)
 
@@ -107,7 +107,7 @@ func StartLSPServer() {
 		logs.Println(req)
 		textKind := defines.CompletionItemKindText
 
-		fpath := getFilePath(req.TextDocument)
+		fpath := getFilePath(req.TextDocument.Uri)
 		line := int32(req.Position.Line + 1)
 		column := int32(req.Position.Character + 1)
 
@@ -139,85 +139,12 @@ func StartLSPServer() {
 
 	server.OnDidSaveTextDocument(func(ctx context.Context, req *defines.DidSaveTextDocumentParams) (err error) {
 		session := jsonrpc.GetSession(ctx)
-		errSeverity := defines.DiagnosticSeverityError
-		fpath := getFilePath(req.TextDocument)
+		return notifyDiagnostics(session, req.TextDocument.Uri, compilationCtx)
+	})
 
-		state, mod, err := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
-			Fpath:                     fpath,
-			PassedArgs:                []string{},
-			ParsingCompilationContext: compilationCtx,
-			ParentContext:             nil,
-			Out:                       io.Discard,
-		})
-
-		//we need the diagnostics list to be present in the notification so diagnostics should not be nil
-		diagnostics := make([]defines.Diagnostic, 0)
-
-		if err == nil {
-			logs.Println("no errors")
-			return nil
-		}
-
-		if err != nil && state == nil && mod == nil {
-			logs.Println("err", err)
-			return nil
-		}
-
-		{
-			i := -1
-			parsingDiagnostics := utils.MapSlice(mod.ParsingErrors, func(err core.Error) defines.Diagnostic {
-				i++
-
-				return defines.Diagnostic{
-					Message:  err.Text(),
-					Severity: &errSeverity,
-					Range:    rangeToLspRange(mod.ParsingErrorPositions[i]),
-				}
-			})
-
-			diagnostics = append(diagnostics, parsingDiagnostics...)
-		}
-
-		if state != nil && state.StaticCheckData != nil {
-			i := -1
-			staticCheckDiagnostics := utils.MapSlice(state.StaticCheckData.Errors(), func(err *core.StaticCheckError) defines.Diagnostic {
-				i++
-
-				return defines.Diagnostic{
-					Message:  err.Message,
-					Severity: &errSeverity,
-					Range:    rangeToLspRange(err.Location[0]),
-				}
-			})
-
-			diagnostics = append(diagnostics, staticCheckDiagnostics...)
-
-			i = -1
-			symbolicCheckDiagnostics := utils.MapSlice(state.SymbolicData.Errors(), func(err symbolic.SymbolicEvaluationError) defines.Diagnostic {
-				i++
-
-				return defines.Diagnostic{
-					Message:  err.Message,
-					Severity: &errSeverity,
-					Range:    rangeToLspRange(err.Location[0]),
-				}
-			})
-
-			diagnostics = append(diagnostics, symbolicCheckDiagnostics...)
-		}
-
-		session.Notify(jsonrpc.NotificationMessage{
-			BaseMessage: jsonrpc.BaseMessage{
-				Jsonrpc: "2.0",
-			},
-			Method: "textDocument/publishDiagnostics",
-			Params: utils.Must(json.Marshal(defines.PublishDiagnosticsParams{
-				Uri:         req.TextDocument.Uri,
-				Diagnostics: diagnostics,
-			})),
-		})
-
-		return nil
+	server.OnDidOpenTextDocument(func(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err error) {
+		session := jsonrpc.GetSession(ctx)
+		return notifyDiagnostics(session, req.TextDocument.Uri, compilationCtx)
 	})
 
 	server.OnInitialize(func(ctx context.Context, req *defines.InitializeParams) (result *defines.InitializeResult, err *defines.InitializeError) {
@@ -232,8 +159,90 @@ func StartLSPServer() {
 	server.Run()
 }
 
-func getFilePath(doc defines.TextDocumentIdentifier) string {
-	return utils.Must(url.Parse(string(doc.Uri))).Path
+func getFilePath(uri defines.DocumentUri) string {
+	return utils.Must(url.Parse(string(uri))).Path
+}
+
+func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, compilationCtx *core.Context) error {
+	fpath := getFilePath(docURI)
+
+	errSeverity := defines.DiagnosticSeverityError
+	state, mod, err := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
+		Fpath:                     fpath,
+		PassedArgs:                []string{},
+		ParsingCompilationContext: compilationCtx,
+		ParentContext:             nil,
+		Out:                       io.Discard,
+	})
+
+	//we need the diagnostics list to be present in the notification so diagnostics should not be nil
+	diagnostics := make([]defines.Diagnostic, 0)
+
+	if err == nil {
+		logs.Println("no errors")
+		return nil
+	}
+
+	if err != nil && state == nil && mod == nil {
+		logs.Println("err", err)
+		return nil
+	}
+
+	{
+		i := -1
+		parsingDiagnostics := utils.MapSlice(mod.ParsingErrors, func(err core.Error) defines.Diagnostic {
+			i++
+
+			return defines.Diagnostic{
+				Message:  err.Text(),
+				Severity: &errSeverity,
+				Range:    rangeToLspRange(mod.ParsingErrorPositions[i]),
+			}
+		})
+
+		diagnostics = append(diagnostics, parsingDiagnostics...)
+	}
+
+	if state != nil && state.StaticCheckData != nil {
+		i := -1
+		staticCheckDiagnostics := utils.MapSlice(state.StaticCheckData.Errors(), func(err *core.StaticCheckError) defines.Diagnostic {
+			i++
+
+			return defines.Diagnostic{
+				Message:  err.Message,
+				Severity: &errSeverity,
+				Range:    rangeToLspRange(err.Location[0]),
+			}
+		})
+
+		diagnostics = append(diagnostics, staticCheckDiagnostics...)
+
+		i = -1
+		symbolicCheckDiagnostics := utils.MapSlice(state.SymbolicData.Errors(), func(err symbolic.SymbolicEvaluationError) defines.Diagnostic {
+			i++
+
+			return defines.Diagnostic{
+				Message:  err.Message,
+				Severity: &errSeverity,
+				Range:    rangeToLspRange(err.Location[0]),
+			}
+		})
+
+		diagnostics = append(diagnostics, symbolicCheckDiagnostics...)
+	}
+
+	session.Notify(jsonrpc.NotificationMessage{
+		BaseMessage: jsonrpc.BaseMessage{
+			Jsonrpc: "2.0",
+		},
+		Method: "textDocument/publishDiagnostics",
+		Params: utils.Must(json.Marshal(defines.PublishDiagnosticsParams{
+			Uri:         docURI,
+			Diagnostics: diagnostics,
+		})),
+	})
+
+	return nil
 }
 
 func rangeToLspRange(r parse.SourcePositionRange) defines.Range {

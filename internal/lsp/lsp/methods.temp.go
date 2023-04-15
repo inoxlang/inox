@@ -43,8 +43,9 @@ var methods = []method{
 		Args: defines.DidChangeWatchedFilesParams{},
 	},
 	{
-		Name: "DidOpenTextDocument",
-		Args: defines.DidOpenTextDocumentParams{},
+		Name:         "DidOpenTextDocument",
+		RegisterName: "textDocument/didOpen",
+		Args:         defines.DidOpenTextDocumentParams{},
 	},
 	{
 		Name: "DidChangeTextDocument",
