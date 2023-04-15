@@ -18,9 +18,11 @@ import (
 	compl "github.com/inox-project/inox/internal/globals/completion"
 
 	_ "net/http/pprof"
+	"net/url"
 )
 
 func StartLSPServer() {
+
 	f, err := os.OpenFile(".debug.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o600)
 	if err != nil {
 		log.Panicln(err)
@@ -29,14 +31,70 @@ func StartLSPServer() {
 	logger := log.New(f, "", 0)
 	logs.Init(logger)
 
+	defer func() {
+		e := recover()
+
+		if e != nil {
+			logs.Println(e)
+		}
+
+		f.Close()
+	}()
+
 	server := lsp.NewServer(&lsp.Options{
 		CompletionProvider: &defines.CompletionOptions{
 			TriggerCharacters: &[]string{"."},
 		},
 	})
+
+	compilationCtx := core.NewContext(core.ContextConfig{
+		Permissions: []core.Permission{
+			//TODO: change path pattern
+			core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern("/...")},
+		},
+	})
+	core.NewGlobalState(compilationCtx)
+
 	server.OnHover(func(ctx context.Context, req *defines.HoverParams) (result *defines.Hover, err error) {
 		logs.Println(req)
-		return &defines.Hover{Contents: defines.MarkupContent{Kind: defines.MarkupKindPlainText, Value: "hello world"}}, nil
+
+		fpath := utils.Must(url.Parse(string(req.TextDocument.Uri))).Path
+		line := req.Position.Line + 1
+		column := req.Position.Character + 1
+
+		state, mod, _ := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
+			Fpath:                     fpath,
+			PassedArgs:                []string{},
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             nil,
+			Out:                       os.Stdout,
+		})
+
+		if state == nil || state.SymbolicData == nil {
+			logs.Println("no data")
+			return &defines.Hover{}, nil
+		}
+
+		span := mod.MainChunk.GetLineColumnSingeCharSpan(int32(line), int32(column))
+		foundNode, ok := mod.MainChunk.GetNodeAtSpan(span)
+
+		if !ok || foundNode == nil {
+			logs.Println("no data")
+			return &defines.Hover{}, nil
+		}
+
+		val, ok := state.SymbolicData.GetNodeValue(foundNode)
+		if !ok {
+			logs.Println("no data")
+			return &defines.Hover{}, nil
+		}
+
+		return &defines.Hover{
+			Contents: defines.MarkupContent{
+				Kind:  defines.MarkupKindPlainText,
+				Value: val.String(),
+			},
+		}, nil
 	})
 
 	var hello = "Hello"
@@ -58,7 +116,8 @@ func HandleVscCommand(fpath string, dir string, subCommand string, jsonData stri
 
 	compilationCtx := core.NewContext(core.ContextConfig{
 		Permissions: []core.Permission{
-			core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern(dir + "...")},
+			//TODO: change path pattern
+			core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern("/...")},
 		},
 	})
 	core.NewGlobalState(compilationCtx)
@@ -72,41 +131,6 @@ func HandleVscCommand(fpath string, dir string, subCommand string, jsonData stri
 			fmt.Println(err)
 			return
 		}
-
-		state, mod, _ := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
-			Fpath:                     fpath,
-			PassedArgs:                []string{},
-			ParsingCompilationContext: compilationCtx,
-			ParentContext:             nil,
-			Out:                       os.Stdout,
-		})
-
-		if state == nil || state.SymbolicData == nil {
-			fmt.Println(NO_DATA)
-			return
-		}
-
-		line := hoverRange[0].Line
-		column := hoverRange[0].Column
-
-		span := mod.MainChunk.GetLineColumnSingeCharSpan(line, column)
-		foundNode, ok := mod.MainChunk.GetNodeAtSpan(span)
-
-		if !ok || foundNode == nil {
-			fmt.Println(NO_DATA)
-			return
-		}
-
-		val, ok := state.SymbolicData.GetNodeValue(foundNode)
-		if !ok {
-			fmt.Println(NO_DATA)
-			return
-		}
-
-		data := HoverData{Text: val.String()}
-		dataJSON := utils.Must(json.Marshal(data))
-
-		fmt.Println(utils.BytesAsString(dataJSON))
 		return
 	case "get-completions":
 		var lineCol LineColumn
@@ -144,10 +168,6 @@ type LineColumn struct {
 }
 
 type HoverRange [2]LineColumn
-
-type HoverData struct {
-	Text string `json:"text"`
-}
 
 type CompletionData struct {
 	Completions []compl.Completion `json:"completions"`
