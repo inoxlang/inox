@@ -97,8 +97,9 @@ func StartLSPServer() {
 
 		return &defines.Hover{
 			Contents: defines.MarkupContent{
-				Kind:  defines.MarkupKindPlainText,
-				Value: val.String(),
+				Kind: defines.MarkupKindMarkdown,
+				Value: "```inox\n" +
+					val.String() + "\n```",
 			},
 		}, nil
 	})
