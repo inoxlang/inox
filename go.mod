@@ -28,6 +28,7 @@ require (
 )
 
 require (
+	github.com/TobiasYin/go-lsp v0.0.0-20220223105953-c4c503a4442e // indirect
 	github.com/adrg/xdg v0.4.0 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/aws/aws-sdk-go v1.44.174 // indirect

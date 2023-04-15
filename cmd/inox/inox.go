@@ -17,7 +17,7 @@ import (
 	globals "github.com/inox-project/inox/internal/globals"
 	_http "github.com/inox-project/inox/internal/globals/http"
 	_sh "github.com/inox-project/inox/internal/globals/shell"
-	vscode "github.com/inox-project/inox/internal/vscode"
+	lsp "github.com/inox-project/inox/internal/lsp"
 
 	parse "github.com/inox-project/inox/internal/parse"
 	"github.com/inox-project/inox/internal/utils"
@@ -32,7 +32,7 @@ const (
 		"\tshell - start the shell\n" +
 		"\teval - evaluate a single statement\n" +
 		"\te - alias for eval\n" +
-		"\tvsc - commands used by vscode\n\n" +
+		"\tlsp - start the language server (LSP)\n\n" +
 		"The run command:\n" +
 		"\trun <script path> [passed arguments]\n"
 
@@ -143,33 +143,33 @@ func _main(args []string) {
 			data := globals.GetCheckData(fpath, compilationCtx, os.Stdout)
 			fmt.Printf("%s\n\r", utils.Must(json.Marshal(data)))
 
-		case "vsc":
-			if len(args) <= 2 {
-				fmt.Fprintf(os.Stderr, "missing command for vsc subcommand")
-				os.Exit(INVALID_INPUT_STATUS)
-				return
-			}
+		case "lsp":
+			// if len(args) <= 2 {
+			// 	fmt.Fprintf(os.Stderr, "missing command for vsc subcommand")
+			// 	os.Exit(INVALID_INPUT_STATUS)
+			// 	return
+			// }
 
-			subCommand := args[2]
+			// subCommand := args[2]
 
-			if len(args) <= 3 {
-				fmt.Fprintf(os.Stderr, "missing script path\n")
-				os.Exit(INVALID_INPUT_STATUS)
-				return
-			}
+			// if len(args) <= 3 {
+			// 	fmt.Fprintf(os.Stderr, "missing script path\n")
+			// 	os.Exit(INVALID_INPUT_STATUS)
+			// 	return
+			// }
 
-			fpath := args[3]
-			dir := getScriptDir(fpath)
+			// fpath := args[3]
+			// dir := getScriptDir(fpath)
 
-			if len(args) <= 4 {
-				fmt.Fprintf(os.Stderr, "missing JSON data")
-				os.Exit(INVALID_INPUT_STATUS)
-				return
-			}
+			// if len(args) <= 4 {
+			// 	fmt.Fprintf(os.Stderr, "missing JSON data")
+			// 	os.Exit(INVALID_INPUT_STATUS)
+			// 	return
+			// }
 
-			json := args[4]
+			// json := args[4]
 
-			vscode.HandleVscCommand(fpath, dir, subCommand, json)
+			lsp.StartLSPServer()
 		case "shell":
 			shellFlags := flag.NewFlagSet("shell", flag.ExitOnError)
 			startupScriptPath, err := config.GetStartupScriptPath()

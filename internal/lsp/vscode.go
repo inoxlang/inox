@@ -1,10 +1,15 @@
 package internal
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 
+	"github.com/TobiasYin/go-lsp/logs"
+	"github.com/TobiasYin/go-lsp/lsp"
+	"github.com/TobiasYin/go-lsp/lsp/defines"
 	core "github.com/inox-project/inox/internal/core"
 
 	"github.com/inox-project/inox/internal/utils"
@@ -14,6 +19,40 @@ import (
 
 	_ "net/http/pprof"
 )
+
+func StartLSPServer() {
+	f, err := os.OpenFile(".debug.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o600)
+	if err != nil {
+		log.Panicln(err)
+	}
+
+	logger := log.New(f, "", 0)
+	logs.Init(logger)
+
+	server := lsp.NewServer(&lsp.Options{
+		CompletionProvider: &defines.CompletionOptions{
+			TriggerCharacters: &[]string{"."},
+		},
+	})
+	server.OnHover(func(ctx context.Context, req *defines.HoverParams) (result *defines.Hover, err error) {
+		logs.Println(req)
+		return &defines.Hover{Contents: defines.MarkupContent{Kind: defines.MarkupKindPlainText, Value: "hello world"}}, nil
+	})
+
+	var hello = "Hello"
+
+	server.OnCompletion(func(ctx context.Context, req *defines.CompletionParams) (result *[]defines.CompletionItem, err error) {
+		logs.Println(req)
+		d := defines.CompletionItemKindText
+		return &[]defines.CompletionItem{{
+			Label:      "code",
+			Kind:       &d,
+			InsertText: &hello,
+		}}, nil
+	})
+
+	server.Run()
+}
 
 func HandleVscCommand(fpath string, dir string, subCommand string, jsonData string) {
 
