@@ -59,8 +59,9 @@ var methods = []method{
 		Args: defines.WillSaveTextDocumentParams{},
 	},
 	{
-		Name: "DidSaveTextDocument",
-		Args: defines.DidSaveTextDocumentParams{},
+		Name:         "DidSaveTextDocument",
+		RegisterName: "textDocument/didSave",
+		Args:         defines.DidSaveTextDocumentParams{},
 	},
 	{
 		Name:          "ExecuteCommand",

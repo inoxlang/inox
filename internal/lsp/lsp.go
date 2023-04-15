@@ -2,12 +2,15 @@ package internal
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"os"
 
 	core "github.com/inox-project/inox/internal/core"
+	"github.com/inox-project/inox/internal/lsp/jsonrpc"
 	"github.com/inox-project/inox/internal/lsp/logs"
 	"github.com/inox-project/inox/internal/lsp/lsp"
+
 	"github.com/inox-project/inox/internal/lsp/lsp/defines"
 
 	"github.com/inox-project/inox/internal/utils"
@@ -43,6 +46,7 @@ func StartLSPServer() {
 		CompletionProvider: &defines.CompletionOptions{
 			TriggerCharacters: &[]string{"."},
 		},
+		TextDocumentSync: defines.TextDocumentSyncKindFull,
 	})
 
 	compilationCtx := core.NewContext(core.ContextConfig{
@@ -137,8 +141,39 @@ func StartLSPServer() {
 				InsertText: &completion.Value,
 			}
 		})
-
 		return &lspCompletions, nil
+	})
+
+	server.OnDidSaveTextDocument(func(ctx context.Context, req *defines.DidSaveTextDocumentParams) (err error) {
+		session := jsonrpc.GetSession(ctx)
+		errSeverity := defines.DiagnosticSeverityError
+
+		session.Notify(jsonrpc.NotificationMessage{
+			BaseMessage: jsonrpc.BaseMessage{
+				Jsonrpc: "2.0",
+			},
+			Method: "textDocument/publishDiagnostics",
+			Params: utils.Must(json.Marshal(defines.PublishDiagnosticsParams{
+				Uri: req.TextDocument.Uri,
+				Diagnostics: []defines.Diagnostic{
+					{
+						Severity: &errSeverity,
+						Message:  "error",
+					},
+				},
+			})),
+		})
+
+		return nil
+	})
+
+	server.OnInitialize(func(ctx context.Context, req *defines.InitializeParams) (result *defines.InitializeResult, err *defines.InitializeError) {
+		logs.Println("initialized")
+		s := &defines.InitializeResult{}
+		s.Capabilities.HoverProvider = true
+		s.Capabilities.WorkspaceSymbolProvider = true
+		s.Capabilities.TextDocumentSync = defines.TextDocumentSyncKindFull
+		return s, nil
 	})
 
 	server.Run()

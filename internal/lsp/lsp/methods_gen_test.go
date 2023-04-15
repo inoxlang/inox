@@ -118,11 +118,10 @@ func generateOneNoResp(name, regName, args, error, code string, withBuiltin bool
 }
 
 func TestMethodsGen(t *testing.T) {
-	t.Skip()
 	//todo: fix
 	res := generate(methods)
 
-	err := ioutil.WriteFile("/Users/tobias/projects/go-lsp/lsp/methods_gen.go", []byte(res), 0777)
+	err := ioutil.WriteFile("./methods_gen.go", []byte(res), 0777)
 	if err != nil {
 		panic(err)
 	}
@@ -224,6 +223,16 @@ func generate(items []method) string {
 		}
 	}
 	pkg := "// code gen by methods_gen_test.go, do not edit!\npackage lsp\n"
+
+	pkg += `
+	import (
+		"context"
+	
+		"github.com/inox-project/inox/internal/lsp/jsonrpc"
+		"github.com/inox-project/inox/internal/lsp/lsp/defines"
+	)
+	`
+
 	code1 := strings.Join(codeBlock1, "\n")
 	code2 := strings.Join(codeBlock2, "\n")
 	code3 := strings.Join(codeBlock3, "\n")

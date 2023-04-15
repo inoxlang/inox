@@ -161,7 +161,7 @@ func (s *Session) readRequest() (RequestMessage, error) {
 	return req, nil
 }
 
-func getSession(ctx context.Context) *Session {
+func GetSession(ctx context.Context) *Session {
 	val := ctx.Value(sessionKey)
 	if isNil(val) {
 		return nil
@@ -223,6 +223,7 @@ func (s *Session) execute(mtdInfo MethodInfo, req RequestMessage, args interface
 func (s *Session) handlerRequest(req RequestMessage) error {
 	mtd := req.Method
 	mtdInfo, ok := s.server.methods[mtd]
+
 	if !ok {
 		return MethodNotFound
 	}
@@ -243,6 +244,26 @@ func (s *Session) write(resp ResponseMessage) error {
 		return err
 	}
 	logs.Printf("Response: [%v] res: [%v]\n", resp.ID, string(res))
+	totalLen := len(res)
+	err = s.mustWrite([]byte(fmt.Sprintf("Content-Length: %d\r\n\r\n", totalLen)))
+	if err != nil {
+		return err
+	}
+	err = s.mustWrite(res)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Session) Notify(notif NotificationMessage) error {
+	s.writeLock.Lock()
+	defer s.writeLock.Unlock()
+	res, err := jsoniter.Marshal(notif)
+	if err != nil {
+		return err
+	}
+	logs.Printf("Notification: [%v]\n", string(res))
 	totalLen := len(res)
 	err = s.mustWrite([]byte(fmt.Sprintf("Content-Length: %d\r\n\r\n", totalLen)))
 	if err != nil {
