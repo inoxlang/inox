@@ -5,10 +5,10 @@ import (
 	"log"
 	"os"
 
-	"github.com/TobiasYin/go-lsp/logs"
-	"github.com/TobiasYin/go-lsp/lsp"
-	"github.com/TobiasYin/go-lsp/lsp/defines"
 	core "github.com/inox-project/inox/internal/core"
+	"github.com/inox-project/inox/internal/lsp/logs"
+	"github.com/inox-project/inox/internal/lsp/lsp"
+	"github.com/inox-project/inox/internal/lsp/lsp/defines"
 
 	"github.com/inox-project/inox/internal/utils"
 

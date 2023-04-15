@@ -4,13 +4,17 @@ go 1.20
 
 require (
 	github.com/PuerkitoBio/goquery v1.8.0
+	github.com/adrg/xdg v0.4.0
 	github.com/aohorodnyk/mimeheader v0.0.6
+	github.com/bits-and-blooms/bitset v1.5.0
+	github.com/buger/jsonparser v1.1.2-0.20220418200129-61b32cfdfa0f
 	github.com/chromedp/chromedp v0.8.6
 	github.com/dgraph-io/badger/v3 v3.2103.4
 	github.com/emirpasic/gods v1.18.1
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/johannesboyne/gofakes3 v0.0.0-20230104192229-1065b17a924f
+	github.com/json-iterator/go v1.1.12
 	github.com/miekg/dns v1.1.50
 	github.com/minio/minio-go/v7 v7.0.46
 	github.com/muesli/cancelreader v0.2.2
@@ -18,6 +22,7 @@ require (
 	github.com/orcaman/concurrent-map/v2 v2.0.1
 	github.com/pingcap/tidb/parser v0.0.0-20230218053904-79558c08ad9e
 	github.com/stretchr/testify v1.8.0
+	github.com/texttheater/golang-levenshtein v1.0.2-0.20211007163542-3d00ed831923
 	github.com/thomasjungblut/go-sstables v1.3.1
 	golang.org/x/crypto v0.2.0
 	golang.org/x/exp v0.0.0-20221114191408-850992195362
@@ -28,12 +33,8 @@ require (
 )
 
 require (
-	github.com/TobiasYin/go-lsp v0.0.0-20220223105953-c4c503a4442e // indirect
-	github.com/adrg/xdg v0.4.0 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/aws/aws-sdk-go v1.44.174 // indirect
-	github.com/bits-and-blooms/bitset v1.5.0 // indirect
-	github.com/buger/jsonparser v1.1.2-0.20220418200129-61b32cfdfa0f // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/chromedp/cdproto v0.0.0-20220924210414-0e3390be1777 // indirect
@@ -53,7 +54,6 @@ require (
 	github.com/google/flatbuffers v1.12.1 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
-	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/klauspost/cpuid/v2 v2.1.0 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
@@ -77,7 +77,6 @@ require (
 	github.com/ryszard/goskiplist v0.0.0-20150312221310-2dfbae5fcf46 // indirect
 	github.com/shabbyrobe/gocovmerge v0.0.0-20180507124511-f6ea450bfb63 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
-	github.com/texttheater/golang-levenshtein v1.0.2-0.20211007163542-3d00ed831923 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
