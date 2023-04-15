@@ -181,15 +181,16 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, com
 
 	if err == nil {
 		logs.Println("no errors")
-		return nil
+		goto send_diagnostics
 	}
 
 	if err != nil && state == nil && mod == nil {
 		logs.Println("err", err)
-		return nil
+		goto send_diagnostics
 	}
 
 	{
+
 		i := -1
 		parsingDiagnostics := utils.MapSlice(mod.ParsingErrors, func(err core.Error) defines.Diagnostic {
 			i++
@@ -202,36 +203,37 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, com
 		})
 
 		diagnostics = append(diagnostics, parsingDiagnostics...)
+
+		if state != nil && state.StaticCheckData != nil {
+			i := -1
+			staticCheckDiagnostics := utils.MapSlice(state.StaticCheckData.Errors(), func(err *core.StaticCheckError) defines.Diagnostic {
+				i++
+
+				return defines.Diagnostic{
+					Message:  err.Message,
+					Severity: &errSeverity,
+					Range:    rangeToLspRange(err.Location[0]),
+				}
+			})
+
+			diagnostics = append(diagnostics, staticCheckDiagnostics...)
+
+			i = -1
+			symbolicCheckDiagnostics := utils.MapSlice(state.SymbolicData.Errors(), func(err symbolic.SymbolicEvaluationError) defines.Diagnostic {
+				i++
+
+				return defines.Diagnostic{
+					Message:  err.Message,
+					Severity: &errSeverity,
+					Range:    rangeToLspRange(err.Location[0]),
+				}
+			})
+
+			diagnostics = append(diagnostics, symbolicCheckDiagnostics...)
+		}
 	}
 
-	if state != nil && state.StaticCheckData != nil {
-		i := -1
-		staticCheckDiagnostics := utils.MapSlice(state.StaticCheckData.Errors(), func(err *core.StaticCheckError) defines.Diagnostic {
-			i++
-
-			return defines.Diagnostic{
-				Message:  err.Message,
-				Severity: &errSeverity,
-				Range:    rangeToLspRange(err.Location[0]),
-			}
-		})
-
-		diagnostics = append(diagnostics, staticCheckDiagnostics...)
-
-		i = -1
-		symbolicCheckDiagnostics := utils.MapSlice(state.SymbolicData.Errors(), func(err symbolic.SymbolicEvaluationError) defines.Diagnostic {
-			i++
-
-			return defines.Diagnostic{
-				Message:  err.Message,
-				Severity: &errSeverity,
-				Range:    rangeToLspRange(err.Location[0]),
-			}
-		})
-
-		diagnostics = append(diagnostics, symbolicCheckDiagnostics...)
-	}
-
+send_diagnostics:
 	session.Notify(jsonrpc.NotificationMessage{
 		BaseMessage: jsonrpc.BaseMessage{
 			Jsonrpc: "2.0",
