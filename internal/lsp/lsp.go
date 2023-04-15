@@ -2,8 +2,6 @@ package internal
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 
@@ -58,9 +56,9 @@ func StartLSPServer() {
 	server.OnHover(func(ctx context.Context, req *defines.HoverParams) (result *defines.Hover, err error) {
 		logs.Println(req)
 
-		fpath := utils.Must(url.Parse(string(req.TextDocument.Uri))).Path
-		line := req.Position.Line + 1
-		column := req.Position.Character + 1
+		fpath := getFilePath(req.TextDocument)
+		line := int32(req.Position.Line + 1)
+		column := int32(req.Position.Character + 1)
 
 		state, mod, _ := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
 			Fpath:                     fpath,
@@ -75,7 +73,7 @@ func StartLSPServer() {
 			return &defines.Hover{}, nil
 		}
 
-		span := mod.MainChunk.GetLineColumnSingeCharSpan(int32(line), int32(column))
+		span := mod.MainChunk.GetLineColumnSingeCharSpan(line, column)
 		foundNode, ok := mod.MainChunk.GetNodeAtSpan(span)
 
 		if !ok || foundNode == nil {
@@ -97,47 +95,13 @@ func StartLSPServer() {
 		}, nil
 	})
 
-	var hello = "Hello"
-
 	server.OnCompletion(func(ctx context.Context, req *defines.CompletionParams) (result *[]defines.CompletionItem, err error) {
 		logs.Println(req)
-		d := defines.CompletionItemKindText
-		return &[]defines.CompletionItem{{
-			Label:      "code",
-			Kind:       &d,
-			InsertText: &hello,
-		}}, nil
-	})
+		textKind := defines.CompletionItemKindText
 
-	server.Run()
-}
-
-func HandleVscCommand(fpath string, dir string, subCommand string, jsonData string) {
-
-	compilationCtx := core.NewContext(core.ContextConfig{
-		Permissions: []core.Permission{
-			//TODO: change path pattern
-			core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern("/...")},
-		},
-	})
-	core.NewGlobalState(compilationCtx)
-
-	switch subCommand {
-	case "get-hover-data":
-		const NO_DATA = `{}`
-
-		var hoverRange HoverRange
-		if err := json.Unmarshal(utils.StringAsBytes(jsonData), &hoverRange); err != nil {
-			fmt.Println(err)
-			return
-		}
-		return
-	case "get-completions":
-		var lineCol LineColumn
-		if err := json.Unmarshal(utils.StringAsBytes(jsonData), &lineCol); err != nil {
-			fmt.Println(err)
-			return
-		}
+		fpath := getFilePath(req.TextDocument)
+		line := int32(req.Position.Line + 1)
+		column := int32(req.Position.Character + 1)
 
 		state, mod, _ := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
 			Fpath:                     fpath,
@@ -148,27 +112,38 @@ func HandleVscCommand(fpath string, dir string, subCommand string, jsonData stri
 		})
 
 		chunk := mod.MainChunk
-		pos := chunk.GetLineColumnPosition(lineCol.Line, lineCol.Column)
+		pos := chunk.GetLineColumnPosition(line, column)
 
 		completions := compl.FindCompletions(core.NewTreeWalkStateWithGlobal(state), chunk, int(pos))
-		data := CompletionData{Completions: utils.EmptySliceIfNil(completions)}
-		dataJSON := utils.Must(json.Marshal(data))
 
-		fmt.Println(utils.BytesAsString(dataJSON))
-		return
-	default:
-		fmt.Fprintf(os.Stderr, "unknown command `%s` for vsc subcommand\n", subCommand)
-		os.Exit(1)
-	}
+		lspCompletions := utils.MapSlice(completions, func(completion compl.Completion) defines.CompletionItem {
+			range_ := completion.ReplacedRange
+
+			return defines.CompletionItem{
+				Label: completion.Value,
+				Kind:  &textKind,
+				TextEdit: defines.TextEdit{
+					Range: defines.Range{
+						Start: defines.Position{
+							Line:      uint(range_.StartLine) - 1,
+							Character: uint(range_.StartColumn - 1),
+						},
+						End: defines.Position{
+							Line:      uint(range_.StartLine) - 1,
+							Character: uint(range_.StartColumn - 1 + range_.Span.End - range_.Span.Start),
+						},
+					},
+				},
+				InsertText: &completion.Value,
+			}
+		})
+
+		return &lspCompletions, nil
+	})
+
+	server.Run()
 }
 
-type LineColumn struct {
-	Line   int32 //starts at 1
-	Column int32 //start at 1
-}
-
-type HoverRange [2]LineColumn
-
-type CompletionData struct {
-	Completions []compl.Completion `json:"completions"`
+func getFilePath(doc defines.TextDocumentIdentifier) string {
+	return utils.Must(url.Parse(string(doc.Uri))).Path
 }
