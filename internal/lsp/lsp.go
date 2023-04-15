@@ -7,20 +7,20 @@ import (
 	"log"
 	"os"
 
-	core "github.com/inox-project/inox/internal/core"
-	symbolic "github.com/inox-project/inox/internal/core/symbolic"
-	parse "github.com/inox-project/inox/internal/parse"
+	core "github.com/inoxlang/inox/internal/core"
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	parse "github.com/inoxlang/inox/internal/parse"
 
-	"github.com/inox-project/inox/internal/lsp/jsonrpc"
-	"github.com/inox-project/inox/internal/lsp/logs"
-	"github.com/inox-project/inox/internal/lsp/lsp"
+	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
+	"github.com/inoxlang/inox/internal/lsp/logs"
+	"github.com/inoxlang/inox/internal/lsp/lsp"
 
-	"github.com/inox-project/inox/internal/lsp/lsp/defines"
+	"github.com/inoxlang/inox/internal/lsp/lsp/defines"
 
-	"github.com/inox-project/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils"
 
-	globals "github.com/inox-project/inox/internal/globals"
-	compl "github.com/inox-project/inox/internal/globals/completion"
+	globals "github.com/inoxlang/inox/internal/globals"
+	compl "github.com/inoxlang/inox/internal/globals/completion"
 
 	_ "net/http/pprof"
 	"net/url"

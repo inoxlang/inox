@@ -4,8 +4,8 @@ package lsp
 import (
 	"context"
 
-	"github.com/inox-project/inox/internal/lsp/jsonrpc"
-	"github.com/inox-project/inox/internal/lsp/lsp/defines"
+	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
+	"github.com/inoxlang/inox/internal/lsp/lsp/defines"
 )
 
 type Methods struct {

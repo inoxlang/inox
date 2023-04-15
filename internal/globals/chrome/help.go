@@ -1,6 +1,6 @@
 package internal
 
-import help "github.com/inox-project/inox/internal/globals/help"
+import help "github.com/inoxlang/inox/internal/globals/help"
 
 func registerHelp() {
 	help.RegisterHelps([]help.TopicHelp{

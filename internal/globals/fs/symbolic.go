@@ -1,8 +1,8 @@
 package internal
 
 import (
-	symbolic "github.com/inox-project/inox/internal/core/symbolic"
-	fs_symbolic "github.com/inox-project/inox/internal/globals/fs/symbolic"
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	fs_symbolic "github.com/inoxlang/inox/internal/globals/fs/symbolic"
 )
 
 func (f *File) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {

@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	core "github.com/inox-project/inox/internal/core"
+	core "github.com/inoxlang/inox/internal/core"
 )
 
 const EVENT_CHAN_SIZE = 100

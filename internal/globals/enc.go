@@ -4,7 +4,7 @@ import (
 	"encoding/base64"
 	"io/ioutil"
 
-	core "github.com/inox-project/inox/internal/core"
+	core "github.com/inoxlang/inox/internal/core"
 )
 
 // encodeBase64 encodes to base 64 the bytes read from a readable.

@@ -1,7 +1,7 @@
 package internal
 
 import (
-	core "github.com/inox-project/inox/internal/core"
+	core "github.com/inoxlang/inox/internal/core"
 
 	_ "github.com/pingcap/tidb/parser/test_driver"
 )

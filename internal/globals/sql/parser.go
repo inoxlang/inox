@@ -3,7 +3,7 @@ package internal
 import (
 	"strings"
 
-	core "github.com/inox-project/inox/internal/core"
+	core "github.com/inoxlang/inox/internal/core"
 
 	"github.com/pingcap/tidb/parser"
 	"github.com/pingcap/tidb/parser/ast"

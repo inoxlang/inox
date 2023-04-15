@@ -4,7 +4,7 @@ import (
 	"os"
 	"strings"
 
-	core "github.com/inox-project/inox/internal/core"
+	core "github.com/inoxlang/inox/internal/core"
 )
 
 // envHas returns (True, nil) if the environment variable with the provided name exists, a permission is required.

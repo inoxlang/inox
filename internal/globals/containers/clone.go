@@ -1,6 +1,6 @@
 package internal
 
-import core "github.com/inox-project/inox/internal/core"
+import core "github.com/inoxlang/inox/internal/core"
 
 func (s *Set) Clone(clones map[uintptr]map[int]core.Value) (core.Value, error) {
 	return nil, core.ErrNotClonable

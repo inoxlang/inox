@@ -3,7 +3,7 @@ package internal
 import (
 	"io"
 
-	core "github.com/inox-project/inox/internal/core"
+	core "github.com/inoxlang/inox/internal/core"
 	"github.com/johannesboyne/gofakes3"
 	"github.com/minio/minio-go/v7"
 )

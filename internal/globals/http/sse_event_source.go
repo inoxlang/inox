@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	core "github.com/inox-project/inox/internal/core"
-	"github.com/inox-project/inox/internal/utils"
+	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/utils"
 	"gopkg.in/cenkalti/backoff.v1"
 )
 

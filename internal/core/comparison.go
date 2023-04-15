@@ -5,7 +5,7 @@ import (
 	"errors"
 	"reflect"
 
-	"github.com/inox-project/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 // this file contains the implementation of Value.Equal for core types.

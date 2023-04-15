@@ -1,10 +1,10 @@
 package internal
 
 import (
-	core "github.com/inox-project/inox/internal/core"
-	symbolic "github.com/inox-project/inox/internal/core/symbolic"
+	core "github.com/inoxlang/inox/internal/core"
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 
-	"github.com/inox-project/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var optionalHostPattern = symbolic.NewOptionalPattern(

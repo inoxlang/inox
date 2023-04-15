@@ -5,10 +5,10 @@ import (
 
 	"io"
 
-	"github.com/inox-project/inox/internal/commonfmt"
-	core "github.com/inox-project/inox/internal/core"
-	symbolic "github.com/inox-project/inox/internal/core/symbolic"
-	symbolic_shell "github.com/inox-project/inox/internal/globals/shell/symbolic"
+	"github.com/inoxlang/inox/internal/commonfmt"
+	core "github.com/inoxlang/inox/internal/core"
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	symbolic_shell "github.com/inoxlang/inox/internal/globals/shell/symbolic"
 	//EXTERNAL
 )
 

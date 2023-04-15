@@ -21,15 +21,15 @@ import (
 	"time"
 	"unicode/utf8"
 
-	core "github.com/inox-project/inox/internal/core"
+	core "github.com/inoxlang/inox/internal/core"
 
-	symbolic "github.com/inox-project/inox/internal/core/symbolic"
-	symbolic_shell "github.com/inox-project/inox/internal/globals/shell/symbolic"
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	symbolic_shell "github.com/inoxlang/inox/internal/globals/shell/symbolic"
 
-	compl "github.com/inox-project/inox/internal/globals/completion"
-	"github.com/inox-project/inox/internal/utils"
+	compl "github.com/inoxlang/inox/internal/globals/completion"
+	"github.com/inoxlang/inox/internal/utils"
 
-	parse "github.com/inox-project/inox/internal/parse"
+	parse "github.com/inoxlang/inox/internal/parse"
 
 	//EXTERNAL
 

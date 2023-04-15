@@ -11,16 +11,16 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/inox-project/inox/internal/config"
-	core "github.com/inox-project/inox/internal/core"
+	"github.com/inoxlang/inox/internal/config"
+	core "github.com/inoxlang/inox/internal/core"
 
-	globals "github.com/inox-project/inox/internal/globals"
-	_http "github.com/inox-project/inox/internal/globals/http"
-	_sh "github.com/inox-project/inox/internal/globals/shell"
-	lsp "github.com/inox-project/inox/internal/lsp"
+	globals "github.com/inoxlang/inox/internal/globals"
+	_http "github.com/inoxlang/inox/internal/globals/http"
+	_sh "github.com/inoxlang/inox/internal/globals/shell"
+	lsp "github.com/inoxlang/inox/internal/lsp"
 
-	parse "github.com/inox-project/inox/internal/parse"
-	"github.com/inox-project/inox/internal/utils"
+	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 
 	_ "net/http/pprof"
 )

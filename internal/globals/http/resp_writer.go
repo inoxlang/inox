@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"github.com/aohorodnyk/mimeheader"
-	core "github.com/inox-project/inox/internal/core"
+	core "github.com/inoxlang/inox/internal/core"
 )
 
 var (

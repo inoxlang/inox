@@ -3,9 +3,9 @@ package internal
 import (
 	"os"
 
-	core "github.com/inox-project/inox/internal/core"
-	symbolic "github.com/inox-project/inox/internal/core/symbolic"
-	parse "github.com/inox-project/inox/internal/parse"
+	core "github.com/inoxlang/inox/internal/core"
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	parse "github.com/inoxlang/inox/internal/parse"
 )
 
 func init() {

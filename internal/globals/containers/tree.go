@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"reflect"
 
-	core "github.com/inox-project/inox/internal/core"
-	symbolic "github.com/inox-project/inox/internal/core/symbolic"
-	coll_symbolic "github.com/inox-project/inox/internal/globals/containers/symbolic"
-	"github.com/inox-project/inox/internal/utils"
+	core "github.com/inoxlang/inox/internal/core"
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (

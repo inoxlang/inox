@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"time"
 
-	core "github.com/inox-project/inox/internal/core"
+	core "github.com/inoxlang/inox/internal/core"
 )
 
 // execute executes a command in non-interactive mode and returns its combined stderr & stdout.

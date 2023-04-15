@@ -3,7 +3,7 @@ package internal
 import (
 	"time"
 
-	core "github.com/inox-project/inox/internal/core"
+	core "github.com/inoxlang/inox/internal/core"
 )
 
 type Thread struct {

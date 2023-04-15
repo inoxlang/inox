@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"reflect"
 
-	core "github.com/inox-project/inox/internal/core"
-	symbolic "github.com/inox-project/inox/internal/core/symbolic"
-	_dom_symbolic "github.com/inox-project/inox/internal/globals/dom/symbolic"
+	core "github.com/inoxlang/inox/internal/core"
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	_dom_symbolic "github.com/inoxlang/inox/internal/globals/dom/symbolic"
 )
 
 var (

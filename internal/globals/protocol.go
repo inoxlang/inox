@@ -1,6 +1,6 @@
 package internal
 
-import core "github.com/inox-project/inox/internal/core"
+import core "github.com/inoxlang/inox/internal/core"
 
 func setClientForURL(ctx *core.Context, u core.URL, client core.ProtocolClient) error {
 	return ctx.SetProtocolClientForURL(u, client)

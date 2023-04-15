@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	parse "github.com/inox-project/inox/internal/parse"
-	"github.com/inox-project/inox/internal/utils"
+	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 

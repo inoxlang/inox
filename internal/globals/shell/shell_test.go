@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	core "github.com/inox-project/inox/internal/core"
+	core "github.com/inoxlang/inox/internal/core"
 	"github.com/muesli/termenv"
 	"github.com/stretchr/testify/assert"
 )

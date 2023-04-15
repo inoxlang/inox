@@ -11,9 +11,9 @@ import (
 	"strings"
 	"sync"
 
-	core "github.com/inox-project/inox/internal/core"
-	parse "github.com/inox-project/inox/internal/parse"
-	"github.com/inox-project/inox/internal/utils"
+	core "github.com/inoxlang/inox/internal/core"
+	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (

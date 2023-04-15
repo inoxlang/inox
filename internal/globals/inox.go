@@ -5,10 +5,10 @@ import (
 	"io"
 	"path/filepath"
 
-	"github.com/inox-project/inox/internal/commonfmt"
-	core "github.com/inox-project/inox/internal/core"
-	symbolic "github.com/inox-project/inox/internal/core/symbolic"
-	parse "github.com/inox-project/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/commonfmt"
+	core "github.com/inoxlang/inox/internal/core"
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	parse "github.com/inoxlang/inox/internal/parse"
 )
 
 var (

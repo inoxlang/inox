@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	parse "github.com/inox-project/inox/internal/parse"
+	parse "github.com/inoxlang/inox/internal/parse"
 )
 
 type Mapping struct {

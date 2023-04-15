@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/inox-project/inox/internal/commonfmt"
-	"github.com/inox-project/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/commonfmt"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (

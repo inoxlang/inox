@@ -5,8 +5,8 @@ import (
 	"io"
 	"log"
 
-	symbolic "github.com/inox-project/inox/internal/core/symbolic"
-	"github.com/inox-project/inox/internal/utils"
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (

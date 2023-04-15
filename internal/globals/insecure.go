@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/url"
 
-	core "github.com/inox-project/inox/internal/core"
-	parse "github.com/inox-project/inox/internal/parse"
+	core "github.com/inoxlang/inox/internal/core"
+	parse "github.com/inoxlang/inox/internal/parse"
 )
 
 func _sha1(_ *core.Context, arg core.Readable) *core.ByteSlice {

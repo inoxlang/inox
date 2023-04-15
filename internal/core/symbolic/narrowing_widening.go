@@ -1,6 +1,6 @@
 package internal
 
-import "github.com/inox-project/inox/internal/utils"
+import "github.com/inoxlang/inox/internal/utils"
 
 // widenOrAny returns the widened value of the passed value, if widening is not possible any is returned.
 func widenOrAny(value SymbolicValue) SymbolicValue {

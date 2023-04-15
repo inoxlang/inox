@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	parse "github.com/inox-project/inox/internal/parse"
+	parse "github.com/inoxlang/inox/internal/parse"
 )
 
 const (

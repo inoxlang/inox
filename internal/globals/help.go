@@ -1,8 +1,8 @@
 package internal
 
 import (
-	core "github.com/inox-project/inox/internal/core"
-	help "github.com/inox-project/inox/internal/globals/help"
+	core "github.com/inoxlang/inox/internal/core"
+	help "github.com/inoxlang/inox/internal/globals/help"
 )
 
 func registerHelp() {

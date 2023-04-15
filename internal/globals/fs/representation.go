@@ -3,7 +3,7 @@ package internal
 import (
 	"io"
 
-	core "github.com/inox-project/inox/internal/core"
+	core "github.com/inoxlang/inox/internal/core"
 )
 
 func (*File) HasRepresentation(encountered map[uintptr]int, config *core.ReprConfig) bool {

@@ -9,9 +9,9 @@ import (
 	"errors"
 	"fmt"
 
-	core "github.com/inox-project/inox/internal/core"
-	symbolic "github.com/inox-project/inox/internal/core/symbolic"
-	help "github.com/inox-project/inox/internal/globals/help"
+	core "github.com/inoxlang/inox/internal/core"
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	help "github.com/inoxlang/inox/internal/globals/help"
 	"golang.org/x/crypto/bcrypt"
 )
 

@@ -1,8 +1,8 @@
 package internal
 
 import (
-	symbolic "github.com/inox-project/inox/internal/core/symbolic"
-	chrome_symbolic "github.com/inox-project/inox/internal/globals/chrome/symbolic"
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	chrome_symbolic "github.com/inoxlang/inox/internal/globals/chrome/symbolic"
 )
 
 func init() {

@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	core "github.com/inox-project/inox/internal/core"
-	_http "github.com/inox-project/inox/internal/globals/http"
+	core "github.com/inoxlang/inox/internal/core"
+	_http "github.com/inoxlang/inox/internal/globals/http"
 )
 
 const (

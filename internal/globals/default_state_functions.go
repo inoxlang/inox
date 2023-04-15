@@ -10,11 +10,11 @@ import (
 	"time"
 	"unicode"
 
-	core "github.com/inox-project/inox/internal/core"
-	_inoxsh "github.com/inox-project/inox/internal/globals/shell"
-	parse "github.com/inox-project/inox/internal/parse"
+	core "github.com/inoxlang/inox/internal/core"
+	_inoxsh "github.com/inoxlang/inox/internal/globals/shell"
+	parse "github.com/inoxlang/inox/internal/parse"
 
-	"github.com/inox-project/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 func _get_current_tx(ctx *core.Context) *core.Transaction {

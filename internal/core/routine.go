@@ -8,9 +8,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	symbolic "github.com/inox-project/inox/internal/core/symbolic"
-	parse "github.com/inox-project/inox/internal/parse"
-	"github.com/inox-project/inox/internal/utils"
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const ROUTINE_POST_YIELD_PAUSE = time.Microsecond

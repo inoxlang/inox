@@ -1,9 +1,9 @@
 package internal
 
 import (
-	core "github.com/inox-project/inox/internal/core"
-	symbolic "github.com/inox-project/inox/internal/core/symbolic"
-	s3_symbolic "github.com/inox-project/inox/internal/globals/s3/symbolic"
+	core "github.com/inoxlang/inox/internal/core"
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	s3_symbolic "github.com/inoxlang/inox/internal/globals/s3/symbolic"
 )
 
 func init() {

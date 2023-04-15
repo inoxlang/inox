@@ -4,7 +4,7 @@ import (
 	"errors"
 	"reflect"
 
-	parse "github.com/inox-project/inox/internal/parse"
+	parse "github.com/inoxlang/inox/internal/parse"
 )
 
 var (

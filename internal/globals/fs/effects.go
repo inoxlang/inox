@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	core "github.com/inox-project/inox/internal/core"
+	core "github.com/inoxlang/inox/internal/core"
 )
 
 var _ = []core.Effect{&CreateFile{}, &CreateDir{}, &RemoveFile{}}

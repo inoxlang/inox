@@ -8,10 +8,10 @@ import (
 	"reflect"
 	"time"
 
-	core "github.com/inox-project/inox/internal/core"
-	_fs "github.com/inox-project/inox/internal/globals/fs"
-	_http "github.com/inox-project/inox/internal/globals/http"
-	"github.com/inox-project/inox/internal/utils"
+	core "github.com/inoxlang/inox/internal/core"
+	_fs "github.com/inoxlang/inox/internal/globals/fs"
+	_http "github.com/inoxlang/inox/internal/globals/http"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (

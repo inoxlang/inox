@@ -1,6 +1,6 @@
 package internal
 
-import symbolic "github.com/inox-project/inox/internal/core/symbolic"
+import symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 
 type ServerSentEventSource struct {
 	symbolic.UnassignablePropsMixin

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/inox-project/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (

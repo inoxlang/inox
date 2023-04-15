@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/inox-project/inox/internal/commonfmt"
-	parse "github.com/inox-project/inox/internal/parse"
-	"github.com/inox-project/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/commonfmt"
+	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (

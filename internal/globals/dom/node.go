@@ -13,14 +13,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/inox-project/inox/internal/commonfmt"
-	core "github.com/inox-project/inox/internal/core"
-	symbolic "github.com/inox-project/inox/internal/core/symbolic"
-	_dom_symbolic "github.com/inox-project/inox/internal/globals/dom/symbolic"
+	"github.com/inoxlang/inox/internal/commonfmt"
+	core "github.com/inoxlang/inox/internal/core"
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	_dom_symbolic "github.com/inoxlang/inox/internal/globals/dom/symbolic"
 
-	_html "github.com/inox-project/inox/internal/globals/html"
+	_html "github.com/inoxlang/inox/internal/globals/html"
 
-	"github.com/inox-project/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/net/html"
 )
 

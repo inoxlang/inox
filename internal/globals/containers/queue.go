@@ -2,7 +2,7 @@ package internal
 
 import (
 	"github.com/emirpasic/gods/queues/arrayqueue"
-	core "github.com/inox-project/inox/internal/core"
+	core "github.com/inoxlang/inox/internal/core"
 )
 
 func NewQueue(ctx *core.Context, elements core.Iterable) *Queue {

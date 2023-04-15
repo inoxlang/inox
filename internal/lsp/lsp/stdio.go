@@ -4,7 +4,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/inox-project/inox/internal/lsp/jsonrpc"
+	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
 )
 
 type stdioReaderWriter struct {

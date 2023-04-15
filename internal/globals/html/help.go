@@ -3,7 +3,7 @@ package internal
 import (
 	"strconv"
 
-	help "github.com/inox-project/inox/internal/globals/help"
+	help "github.com/inoxlang/inox/internal/globals/help"
 )
 
 func registerHelp() {

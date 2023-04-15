@@ -9,8 +9,8 @@ import (
 	"sort"
 	"strconv"
 
-	parse "github.com/inox-project/inox/internal/parse"
-	"github.com/inox-project/inox/internal/utils"
+	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 	"gonum.org/v1/gonum/graph/simple"
 )
 

@@ -1,8 +1,8 @@
 package internal
 
 import (
-	symbolic "github.com/inox-project/inox/internal/core/symbolic"
-	s3_symbolic "github.com/inox-project/inox/internal/globals/s3/symbolic"
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	s3_symbolic "github.com/inoxlang/inox/internal/globals/s3/symbolic"
 )
 
 func (b *Bucket) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {

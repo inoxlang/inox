@@ -4,8 +4,8 @@ import (
 	"regexp"
 	"testing"
 
-	internal "github.com/inox-project/inox/internal/parse"
-	"github.com/inox-project/inox/internal/utils"
+	internal "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 

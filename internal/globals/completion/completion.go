@@ -7,12 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	core "github.com/inox-project/inox/internal/core"
-	_fs "github.com/inox-project/inox/internal/globals/fs"
-	_s3 "github.com/inox-project/inox/internal/globals/s3"
-	"github.com/inox-project/inox/internal/utils"
+	core "github.com/inoxlang/inox/internal/core"
+	_fs "github.com/inoxlang/inox/internal/globals/fs"
+	_s3 "github.com/inoxlang/inox/internal/globals/s3"
+	"github.com/inoxlang/inox/internal/utils"
 
-	parse "github.com/inox-project/inox/internal/parse"
+	parse "github.com/inoxlang/inox/internal/parse"
 )
 
 type Completion struct {

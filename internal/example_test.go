@@ -14,11 +14,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	core "github.com/inox-project/inox/internal/core"
-	globals "github.com/inox-project/inox/internal/globals"
-	_fs "github.com/inox-project/inox/internal/globals/fs"
+	core "github.com/inoxlang/inox/internal/core"
+	globals "github.com/inoxlang/inox/internal/globals"
+	_fs "github.com/inoxlang/inox/internal/globals/fs"
 
-	"github.com/inox-project/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (

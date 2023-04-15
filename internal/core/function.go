@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"sync/atomic"
 
-	symbolic "github.com/inox-project/inox/internal/core/symbolic"
-	parse "github.com/inox-project/inox/internal/parse"
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	parse "github.com/inoxlang/inox/internal/parse"
 )
 
 type InoxFunction struct {

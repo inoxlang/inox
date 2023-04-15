@@ -6,9 +6,9 @@ import (
 	"sync"
 
 	badger "github.com/dgraph-io/badger/v3"
-	core "github.com/inox-project/inox/internal/core"
-	internal "github.com/inox-project/inox/internal/core"
-	symbolic "github.com/inox-project/inox/internal/core/symbolic"
+	core "github.com/inoxlang/inox/internal/core"
+	internal "github.com/inoxlang/inox/internal/core"
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 )
 
 var (

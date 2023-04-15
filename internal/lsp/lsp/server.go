@@ -5,8 +5,8 @@ import (
 	"net"
 	"reflect"
 
-	"github.com/inox-project/inox/internal/lsp/jsonrpc"
-	"github.com/inox-project/inox/internal/lsp/logs"
+	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
+	"github.com/inoxlang/inox/internal/lsp/logs"
 )
 
 type Server struct {

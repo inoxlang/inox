@@ -1,7 +1,7 @@
 package internal
 
 import (
-	net_symbolic "github.com/inox-project/inox/internal/globals/net/symbolic"
+	net_symbolic "github.com/inoxlang/inox/internal/globals/net/symbolic"
 )
 
 func init() {

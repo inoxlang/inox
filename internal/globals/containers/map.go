@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	core "github.com/inox-project/inox/internal/core"
+	core "github.com/inoxlang/inox/internal/core"
 )
 
 var (

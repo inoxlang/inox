@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/inox-project/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 type PrintConfig struct {

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	parse "github.com/inox-project/inox/internal/parse"
+	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -3,7 +3,7 @@ package internal
 import (
 	"errors"
 
-	symbolic "github.com/inox-project/inox/internal/core/symbolic"
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 )
 
 type Handle struct {

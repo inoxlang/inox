@@ -15,14 +15,14 @@ import (
 	"testing"
 	"time"
 
-	core "github.com/inox-project/inox/internal/core"
-	_dom "github.com/inox-project/inox/internal/globals/dom"
-	_html "github.com/inox-project/inox/internal/globals/html"
+	core "github.com/inoxlang/inox/internal/core"
+	_dom "github.com/inoxlang/inox/internal/globals/dom"
+	_html "github.com/inoxlang/inox/internal/globals/html"
 	"golang.org/x/net/publicsuffix"
 
-	parse "github.com/inox-project/inox/internal/parse"
+	parse "github.com/inoxlang/inox/internal/parse"
 
-	"github.com/inox-project/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 

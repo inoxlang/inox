@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	badger "github.com/dgraph-io/badger/v3"
-	core "github.com/inox-project/inox/internal/core"
+	core "github.com/inoxlang/inox/internal/core"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	parse "github.com/inox-project/inox/internal/parse"
-	"github.com/inox-project/inox/internal/utils"
+	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 func ParseRepr(ctx *Context, b []byte) (Value, error) {

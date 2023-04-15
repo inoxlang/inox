@@ -1,4 +1,4 @@
-module github.com/inox-project/inox
+module github.com/inoxlang/inox
 
 go 1.20
 

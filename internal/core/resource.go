@@ -12,8 +12,8 @@ import (
 	"strings"
 	"sync"
 
-	parse "github.com/inox-project/inox/internal/parse"
-	"github.com/inox-project/inox/internal/utils"
+	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 	cmap "github.com/orcaman/concurrent-map/v2"
 )
 

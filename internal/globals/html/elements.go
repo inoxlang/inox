@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/inox-project/inox/internal/commonfmt"
-	core "github.com/inox-project/inox/internal/core"
-	_html_symbolic "github.com/inox-project/inox/internal/globals/html/symbolic"
+	"github.com/inoxlang/inox/internal/commonfmt"
+	core "github.com/inoxlang/inox/internal/core"
+	_html_symbolic "github.com/inoxlang/inox/internal/globals/html/symbolic"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 )

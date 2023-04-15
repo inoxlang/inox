@@ -5,7 +5,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/inox-project/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 // A Writable is a Value we can write bytes to thanks to a Writer.

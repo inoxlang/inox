@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	core "github.com/inox-project/inox/internal/core"
-	_html "github.com/inox-project/inox/internal/globals/html"
-	parse "github.com/inox-project/inox/internal/parse"
+	core "github.com/inoxlang/inox/internal/core"
+	_html "github.com/inoxlang/inox/internal/globals/html"
+	parse "github.com/inoxlang/inox/internal/parse"
 
-	"github.com/inox-project/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils"
 
 	"github.com/stretchr/testify/assert"
 )

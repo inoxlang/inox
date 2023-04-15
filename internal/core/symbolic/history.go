@@ -3,7 +3,7 @@ package internal
 import (
 	"errors"
 
-	"github.com/inox-project/inox/internal/commonfmt"
+	"github.com/inoxlang/inox/internal/commonfmt"
 )
 
 var (

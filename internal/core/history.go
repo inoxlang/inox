@@ -6,9 +6,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/inox-project/inox/internal/commonfmt"
-	symbolic "github.com/inox-project/inox/internal/core/symbolic"
-	"github.com/inox-project/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/commonfmt"
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (

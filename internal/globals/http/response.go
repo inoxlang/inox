@@ -4,7 +4,7 @@ import (
 	"io"
 	"net/http"
 
-	core "github.com/inox-project/inox/internal/core"
+	core "github.com/inoxlang/inox/internal/core"
 )
 
 type HttpResponse struct {

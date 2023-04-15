@@ -3,7 +3,7 @@ package internal
 import (
 	"errors"
 
-	"github.com/inox-project/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const SYNC_CHAN_SIZE = 100

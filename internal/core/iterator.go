@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	aq "github.com/emirpasic/gods/queues/arrayqueue"
-	"github.com/inox-project/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var _ = []Iterable{

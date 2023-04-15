@@ -3,8 +3,8 @@ package internal
 import (
 	"errors"
 
-	parse "github.com/inox-project/inox/internal/parse"
-	"github.com/inox-project/inox/internal/utils"
+	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 // State is the state of a symbolic evaluation.

@@ -1,8 +1,8 @@
 package internal
 
 import (
-	symbolic "github.com/inox-project/inox/internal/core/symbolic"
-	http_symbolic "github.com/inox-project/inox/internal/globals/http/symbolic"
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	http_symbolic "github.com/inoxlang/inox/internal/globals/http/symbolic"
 )
 
 func (serv *HttpServer) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {

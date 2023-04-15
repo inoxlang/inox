@@ -1,6 +1,6 @@
 package internal
 
-import core "github.com/inox-project/inox/internal/core"
+import core "github.com/inoxlang/inox/internal/core"
 
 func (n *Node) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	otherNode, ok := other.(*Node)

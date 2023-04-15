@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"sync/atomic"
 
-	symbolic "github.com/inox-project/inox/internal/core/symbolic"
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 )
 
 // this file contains the implementation of Value.ToSymbolicValue for core types and does some initialization.

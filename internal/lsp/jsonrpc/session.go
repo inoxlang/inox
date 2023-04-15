@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/inox-project/inox/internal/lsp/logs"
+	"github.com/inoxlang/inox/internal/lsp/logs"
 	jsoniter "github.com/json-iterator/go"
 )
 

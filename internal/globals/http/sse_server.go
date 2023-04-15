@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	core "github.com/inox-project/inox/internal/core"
-	"github.com/inox-project/inox/internal/utils"
+	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const DEFAULT_EVENT_STREAM_BUFFER_SIZE = 200

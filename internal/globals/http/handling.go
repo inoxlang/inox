@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	core "github.com/inox-project/inox/internal/core"
-	_dom "github.com/inox-project/inox/internal/globals/dom"
+	core "github.com/inoxlang/inox/internal/core"
+	_dom "github.com/inoxlang/inox/internal/globals/dom"
 )
 
 const (

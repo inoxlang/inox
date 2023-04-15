@@ -1,8 +1,8 @@
 package internal
 
 import (
-	core "github.com/inox-project/inox/internal/core"
-	_http "github.com/inox-project/inox/internal/globals/http"
+	core "github.com/inoxlang/inox/internal/core"
+	_http "github.com/inoxlang/inox/internal/globals/http"
 )
 
 func _serve(ctx *core.Context, resource core.ResourceName, args ...core.Value) error {
