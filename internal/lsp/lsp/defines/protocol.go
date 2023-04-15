@@ -600,7 +600,7 @@ type InitializeError struct {
 	Retry bool `json:"retry,omitempty"`
 }
 
-//---- Configuration notification ----
+// ---- Configuration notification ----
 type DidChangeConfigurationClientCapabilities struct {
 
 	// Did change configuration notification supports dynamic registration.
@@ -682,7 +682,7 @@ type LogMessageParams struct {
 	Message string `json:"message,omitempty"`
 }
 
-//---- Text document notifications ----
+// ---- Text document notifications ----
 type TextDocumentSyncClientCapabilities struct {
 
 	// Whether text document synchronization supports dynamic registration.
@@ -826,7 +826,7 @@ type WillSaveTextDocumentParams struct {
 	Reason TextDocumentSaveReason `json:"reason,omitempty"`
 }
 
-//---- File eventing ----
+// ---- File eventing ----
 type DidChangeWatchedFilesClientCapabilities struct {
 
 	// Did change watched files notification supports dynamic registration. Please note
@@ -933,7 +933,7 @@ type PublishDiagnosticsParams struct {
 	Version *int `json:"version,omitempty"`
 
 	// An array of diagnostic information items.
-	Diagnostics []Diagnostic `json:"diagnostics,omitempty"`
+	Diagnostics []Diagnostic `json:"diagnostics"`
 }
 
 /**
@@ -1015,7 +1015,7 @@ type CompletionRegistrationOptions struct {
 	CompletionOptions
 }
 
-//---- Hover Support -------------------------------
+// ---- Hover Support -------------------------------
 type HoverClientCapabilities struct {
 
 	// Whether hover supports dynamic registration.
@@ -1817,7 +1817,7 @@ type ExecuteCommandRegistrationOptions struct {
 	ExecuteCommandOptions
 }
 
-//---- Apply Edit request ----------------------------------------
+// ---- Apply Edit request ----------------------------------------
 type WorkspaceEditClientCapabilities struct {
 
 	// The client supports versioned document changes in `WorkspaceEdit`s
@@ -2666,7 +2666,7 @@ const (
 	DocumentOnTypeFormattingRequestType DocumentOnTypeFormattingRequest = "new ProtocolRequestType<DocumentOnTypeFormattingParams, TextEdit[] | null, never, void, DocumentOnTypeFormattingRegistrationOptions>(method)"
 )
 
-//---- Rename ----------------------------------------------
+// ---- Rename ----------------------------------------------
 type PrepareSupportDefaultBehavior int
 
 var prepareSupportDefaultBehaviorStringMap = map[PrepareSupportDefaultBehavior]string{

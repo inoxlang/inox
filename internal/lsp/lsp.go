@@ -3,10 +3,14 @@ package internal
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"log"
 	"os"
 
 	core "github.com/inox-project/inox/internal/core"
+	symbolic "github.com/inox-project/inox/internal/core/symbolic"
+	parse "github.com/inox-project/inox/internal/parse"
+
 	"github.com/inox-project/inox/internal/lsp/jsonrpc"
 	"github.com/inox-project/inox/internal/lsp/logs"
 	"github.com/inox-project/inox/internal/lsp/lsp"
@@ -121,22 +125,11 @@ func StartLSPServer() {
 		completions := compl.FindCompletions(core.NewTreeWalkStateWithGlobal(state), chunk, int(pos))
 
 		lspCompletions := utils.MapSlice(completions, func(completion compl.Completion) defines.CompletionItem {
-			range_ := completion.ReplacedRange
-
 			return defines.CompletionItem{
 				Label: completion.Value,
 				Kind:  &textKind,
 				TextEdit: defines.TextEdit{
-					Range: defines.Range{
-						Start: defines.Position{
-							Line:      uint(range_.StartLine) - 1,
-							Character: uint(range_.StartColumn - 1),
-						},
-						End: defines.Position{
-							Line:      uint(range_.StartLine) - 1,
-							Character: uint(range_.StartColumn - 1 + range_.Span.End - range_.Span.Start),
-						},
-					},
+					Range: rangeToLspRange(completion.ReplacedRange),
 				},
 				InsertText: &completion.Value,
 			}
@@ -147,6 +140,71 @@ func StartLSPServer() {
 	server.OnDidSaveTextDocument(func(ctx context.Context, req *defines.DidSaveTextDocumentParams) (err error) {
 		session := jsonrpc.GetSession(ctx)
 		errSeverity := defines.DiagnosticSeverityError
+		fpath := getFilePath(req.TextDocument)
+
+		state, mod, err := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
+			Fpath:                     fpath,
+			PassedArgs:                []string{},
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             nil,
+			Out:                       io.Discard,
+		})
+
+		//we need the diagnostics list to be present in the notification so diagnostics should not be nil
+		diagnostics := make([]defines.Diagnostic, 0)
+
+		if err == nil {
+			logs.Println("no errors")
+			return nil
+		}
+
+		if err != nil && state == nil && mod == nil {
+			logs.Println("err", err)
+			return nil
+		}
+
+		{
+			i := -1
+			parsingDiagnostics := utils.MapSlice(mod.ParsingErrors, func(err core.Error) defines.Diagnostic {
+				i++
+
+				return defines.Diagnostic{
+					Message:  err.Text(),
+					Severity: &errSeverity,
+					Range:    rangeToLspRange(mod.ParsingErrorPositions[i]),
+				}
+			})
+
+			diagnostics = append(diagnostics, parsingDiagnostics...)
+		}
+
+		if state != nil && state.StaticCheckData != nil {
+			i := -1
+			staticCheckDiagnostics := utils.MapSlice(state.StaticCheckData.Errors(), func(err *core.StaticCheckError) defines.Diagnostic {
+				i++
+
+				return defines.Diagnostic{
+					Message:  err.Message,
+					Severity: &errSeverity,
+					Range:    rangeToLspRange(err.Location[0]),
+				}
+			})
+
+			diagnostics = append(diagnostics, staticCheckDiagnostics...)
+
+			i = -1
+			symbolicCheckDiagnostics := utils.MapSlice(state.SymbolicData.Errors(), func(err symbolic.SymbolicEvaluationError) defines.Diagnostic {
+				i++
+
+				return defines.Diagnostic{
+					Message:  err.Message,
+					Severity: &errSeverity,
+					Range:    rangeToLspRange(err.Location[0]),
+				}
+			})
+
+			diagnostics = append(diagnostics, symbolicCheckDiagnostics...)
+		}
 
 		session.Notify(jsonrpc.NotificationMessage{
 			BaseMessage: jsonrpc.BaseMessage{
@@ -154,13 +212,8 @@ func StartLSPServer() {
 			},
 			Method: "textDocument/publishDiagnostics",
 			Params: utils.Must(json.Marshal(defines.PublishDiagnosticsParams{
-				Uri: req.TextDocument.Uri,
-				Diagnostics: []defines.Diagnostic{
-					{
-						Severity: &errSeverity,
-						Message:  "error",
-					},
-				},
+				Uri:         req.TextDocument.Uri,
+				Diagnostics: diagnostics,
 			})),
 		})
 
@@ -181,4 +234,17 @@ func StartLSPServer() {
 
 func getFilePath(doc defines.TextDocumentIdentifier) string {
 	return utils.Must(url.Parse(string(doc.Uri))).Path
+}
+
+func rangeToLspRange(r parse.SourcePositionRange) defines.Range {
+	return defines.Range{
+		Start: defines.Position{
+			Line:      uint(r.StartLine) - 1,
+			Character: uint(r.StartColumn - 1),
+		},
+		End: defines.Position{
+			Line:      uint(r.StartLine) - 1,
+			Character: uint(r.StartColumn - 1 + r.Span.End - r.Span.Start),
+		},
+	}
 }
