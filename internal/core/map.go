@@ -43,7 +43,7 @@ func Map(ctx *Context, iterable Iterable, mapper Value) *List {
 		it := iterable.Iterator(ctx, IteratorConfiguration{})
 		for it.Next(ctx) {
 			res := NewObject()
-			element := it.Value(ctx).(*Object)
+			element := it.Value(ctx).(IProps)
 
 			for _, name := range m {
 				res.SetProp(ctx, name, element.Prop(ctx, name))
@@ -54,7 +54,7 @@ func Map(ctx *Context, iterable Iterable, mapper Value) *List {
 	case PropertyName:
 		it := iterable.Iterator(ctx, IteratorConfiguration{})
 		for it.Next(ctx) {
-			element := it.Value(ctx).(*Object)
+			element := it.Value(ctx).(IProps)
 			result.elements = append(result.elements, element.Prop(ctx, string(m)))
 		}
 	case *GoFunction:
