@@ -1662,7 +1662,7 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 
 				switch n.Operator {
 				case parse.Add, parse.Sub, parse.Mul, parse.Div:
-					return &Int{}, nil
+					return ANY_INT, nil
 				default:
 					return &Bool{}, nil
 				}
@@ -1673,21 +1673,29 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 				}
 				switch n.Operator {
 				case parse.Add, parse.Sub, parse.Mul, parse.Div:
-					return &Float{}, nil
+					return ANY_FLOAT, nil
 				default:
 					return &Bool{}, nil
 				}
 			} else {
 				state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "int or float", left.String())))
 
+				var arithmeticReturnVal SymbolicValue
 				switch right.(type) {
 				case *Int:
-					return &Int{}, nil
+					arithmeticReturnVal = ANY_INT
 				case *Float:
-					return &Float{}, nil
+					arithmeticReturnVal = ANY_FLOAT
 				default:
 					state.addError(makeSymbolicEvalError(n.Left, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "int or float", right.String())))
-					return ANY, nil
+					arithmeticReturnVal = ANY
+				}
+
+				switch n.Operator {
+				case parse.Add, parse.Sub, parse.Mul, parse.Div:
+					return arithmeticReturnVal, nil
+				default:
+					return &Bool{}, nil
 				}
 			}
 

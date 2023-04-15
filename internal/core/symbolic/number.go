@@ -4,6 +4,7 @@ var (
 	_            = []Integral{&Int{}, &Byte{}, &AnyIntegral{}}
 	ANY_INTEGRAL = &AnyIntegral{}
 	ANY_INT      = &Int{}
+	ANY_FLOAT    = &Float{}
 )
 
 type Integral interface {

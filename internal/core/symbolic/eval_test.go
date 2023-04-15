@@ -1061,6 +1061,45 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &Int{}, res)
 		})
 
+		t.Run("<: left operand is a string", func(t *testing.T) {
+			n, state := makeStateAndChunk(`("a" < 1)`)
+			res, err := symbolicEval(n, state)
+
+			leftOperand := n.Statements[0].(*parse.BinaryExpression).Left
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(leftOperand, state, fmtLeftOperandOfBinaryShouldBe(parse.LessThan, "int or float", "%string")),
+			}, state.errors)
+			assert.Equal(t, &Bool{}, res)
+		})
+
+		t.Run("+: right operand is a string", func(t *testing.T) {
+			n, state := makeStateAndChunk(`(1 + "a")`)
+			res, err := symbolicEval(n, state)
+
+			rightOperand := n.Statements[0].(*parse.BinaryExpression).Right
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(rightOperand, state, fmtRightOperandOfBinaryShouldBe(parse.Add, "int", "%string")),
+			}, state.errors)
+			assert.Equal(t, &Int{}, res)
+		})
+
+		t.Run("<: Right operand is a string", func(t *testing.T) {
+			n, state := makeStateAndChunk(`(1 < "a")`)
+			res, err := symbolicEval(n, state)
+
+			RightOperand := n.Statements[0].(*parse.BinaryExpression).Right
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(RightOperand, state, fmtRightOperandOfBinaryShouldBe(parse.LessThan, "int", "%string")),
+			}, state.errors)
+			assert.Equal(t, &Bool{}, res)
+		})
+
 		t.Run("substrof: left operand is an int", func(t *testing.T) {
 			n, state := makeStateAndChunk(`(1 substrof "1")`)
 			res, err := symbolicEval(n, state)
