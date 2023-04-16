@@ -83,10 +83,10 @@ func (fn *InoxFunction) IsWidenable() bool {
 
 func (fn *InoxFunction) String() string {
 	if fn.node == nil {
-		return "%fn"
+		return "fn"
 	}
 
-	buff := bytes.NewBufferString("%fn(")
+	buff := bytes.NewBufferString("fn(")
 
 	for i, param := range fn.parameters {
 		if i != 0 {
@@ -189,7 +189,7 @@ func (fn *GoFunction) IsWidenable() bool {
 
 func (fn *GoFunction) String() string {
 	if fn.fn == nil {
-		return "%fn"
+		return "fn"
 	}
 
 	fnValType := reflect.TypeOf(fn.fn)
@@ -202,7 +202,7 @@ func (fn *GoFunction) String() string {
 		start++
 	}
 
-	buf := bytes.NewBufferString("%fn(")
+	buf := bytes.NewBufferString("fn(")
 	for i := start; i < fnValType.NumIn(); i++ {
 		if i != start {
 			buf.WriteString(", ")
