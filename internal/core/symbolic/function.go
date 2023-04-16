@@ -189,7 +189,7 @@ func (fn *GoFunction) IsWidenable() bool {
 
 func (fn *GoFunction) String() string {
 	if fn.fn == nil {
-		return "%fn[[go]]"
+		return "%fn"
 	}
 
 	fnValType := reflect.TypeOf(fn.fn)
@@ -202,7 +202,7 @@ func (fn *GoFunction) String() string {
 		start++
 	}
 
-	buf := bytes.NewBufferString("(go)%fn(")
+	buf := bytes.NewBufferString("%fn(")
 	for i := start; i < fnValType.NumIn(); i++ {
 		if i != start {
 			buf.WriteString(", ")
