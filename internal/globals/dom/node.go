@@ -52,7 +52,7 @@ var (
 	ErrRenderFailureModelNotRenderableToHTML = errors.New("failed to render node: model is not renderable to HTML")
 	ErrSeveralModelsProvided                 = errors.New("several models have been provided, a single implicit argument is expected OR a .model property")
 
-	NODE_PROPNAMES = []string{"firstChild", "data"}
+	NODE_PROPNAMES = []string{"first-child", "data"}
 
 	renderingGoroutineStarted atomic.Bool
 	renderingTaskQueue        = make(chan renderingTask, 100)
@@ -797,7 +797,7 @@ func (n *Node) ForceUnlock() {
 
 func (n *Node) Prop(ctx *core.Context, name string) core.Value {
 	switch name {
-	case "firstChild":
+	case "first-child":
 		if len(n.children) == 0 {
 			return core.Nil
 		}

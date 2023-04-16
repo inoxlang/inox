@@ -33,7 +33,7 @@ func (n *HTMLNode) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.Sym
 
 func (n *HTMLNode) Prop(name string) symbolic.SymbolicValue {
 	switch name {
-	case "firstChild":
+	case "first-child":
 		return NewHTMLNode()
 	case "data":
 		return &symbolic.String{}
@@ -51,7 +51,7 @@ func (n *HTMLNode) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 }
 
 func (n *HTMLNode) PropertyNames() []string {
-	return []string{"firstChild", "data"}
+	return []string{"first-child", "data"}
 }
 
 func (r *HTMLNode) Widen() (symbolic.SymbolicValue, bool) {

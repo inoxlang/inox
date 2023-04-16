@@ -24,7 +24,7 @@ func (n *Node) Test(v symbolic.SymbolicValue) bool {
 
 func (n *Node) Prop(name string) symbolic.SymbolicValue {
 	switch name {
-	case "firstChild":
+	case "first-child":
 		return NewDomNode(symbolic.Nil)
 	case "data":
 		return &symbolic.String{}
@@ -44,7 +44,7 @@ func (n *Node) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 }
 
 func (n *Node) PropertyNames() []string {
-	return []string{"firstChild", "data", "model"}
+	return []string{"first-child", "data", "model"}
 }
 
 func (r *Node) Widen() (symbolic.SymbolicValue, bool) {

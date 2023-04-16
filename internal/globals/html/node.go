@@ -20,7 +20,7 @@ func NewHTMLNode(n *html.Node) *HTMLNode {
 
 func (n *HTMLNode) Prop(ctx *core.Context, name string) core.Value {
 	switch name {
-	case "firstChild":
+	case "first-child":
 		return &HTMLNode{node: n.node.FirstChild}
 	case "data":
 		return core.Str(n.node.Data)
@@ -42,7 +42,7 @@ func (n *HTMLNode) GetGoMethod(name string) (*core.GoFunction, bool) {
 }
 
 func (n *HTMLNode) PropertyNames(ctx *core.Context) []string {
-	return []string{"firstChild", "data"}
+	return []string{"first-child", "data"}
 }
 
 func (n *HTMLNode) IsRecursivelyRenderable(ctx *core.Context, input core.RenderingInput) bool {
