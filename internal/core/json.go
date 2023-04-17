@@ -50,6 +50,8 @@ func ToJSONVal(ctx *Context, v Value) interface{} {
 
 func ConvertJSONValToInoxVal(ctx *Context, v any, immutable bool) Value {
 	switch val := v.(type) {
+	case nil:
+		return Nil
 	case map[string]any:
 		if immutable {
 			valMap := ValMap{}
