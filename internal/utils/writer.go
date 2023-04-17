@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"io"
 	"testing"
 )
 
@@ -19,4 +20,13 @@ type FnWriter struct {
 
 func (writer FnWriter) Write(p []byte) (n int, err error) {
 	return writer.fn(p)
+}
+
+func WriteMany[W io.Writer](w W, slices ...[]byte) error {
+	for _, s := range slices {
+		if _, err := w.Write(s); err != nil {
+			return err
+		}
+	}
+	return nil
 }

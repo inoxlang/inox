@@ -1,12 +1,13 @@
 package internal
 
 import (
+	"bufio"
 	"fmt"
-	"io"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
-func (n *HTMLNode) PrettyPrint(w io.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", n)
+func (n *HTMLNode) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", n))
 }

@@ -1,16 +1,30 @@
 package internal
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io"
 	"sort"
 	"strconv"
+	"strings"
 
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/muesli/termenv"
 )
+
+const PRETTY_PRINT_BUFF_WRITER_SIZE = 100
+
+var LF_CR = []byte{'\n', '\r'}
+var DASH_DASH = []byte{'-', '-'}
+var SHARP_OPENING_PAREN = []byte{'#', '('}
+var COLON_SPACE = []byte{':', ' '}
+var COMMA_SPACE = []byte{',', ' '}
+var CLOSING_BRACKET_CLOSING_PAREN = []byte{']', ')'}
+var CLOSING_CURLY_BRACKET_CLOSING_PAREN = []byte{'}', ')'}
+var THREE_DOTS = []byte{'.', '.', '.'}
+var DOT_OPENING_CURLY_BRACKET = []byte{'.', '{'}
 
 type PrettyPrintColors struct {
 	ControlKeyword, OtherKeyword, PatternLiteral, StringLiteral, PathLiteral, IdentifierLiteral,
@@ -91,8 +105,10 @@ var (
 
 // Stringify calls PrettyPrint on the passed value
 func Stringify(v Value, ctx *Context) string {
-	buff := bytes.Buffer{}
-	_, err := v.PrettyPrint(&buff, &PrettyPrintConfig{
+	buff := &bytes.Buffer{}
+	w := bufio.NewWriterSize(buff, PRETTY_PRINT_BUFF_WRITER_SIZE)
+
+	err := PrettyPrint(v, w, &PrettyPrintConfig{
 		MaxDepth: 7,
 		Colorize: false,
 		Compact:  true,
@@ -103,7 +119,29 @@ func Stringify(v Value, ctx *Context) string {
 		panic(err)
 	}
 
+	w.Flush()
 	return buff.String()
+}
+
+func PrettyPrint(v Value, w io.Writer, config *PrettyPrintConfig, depth, parentIndentCount int) (err error) {
+	buffered, ok := w.(*bufio.Writer)
+	if !ok {
+		buffered = bufio.NewWriterSize(w, PRETTY_PRINT_BUFF_WRITER_SIZE)
+	}
+
+	defer func() {
+		e := recover()
+		switch v := e.(type) {
+		case error:
+			err = v
+		default:
+			err = fmt.Errorf("panic: %#v", e)
+		case nil:
+		}
+	}()
+
+	v.PrettyPrint(buffered, config, depth, parentIndentCount)
+	return buffered.Flush()
 }
 
 type ColorizationInfo struct {
@@ -411,278 +449,190 @@ func PrintColorizedChunk(w io.Writer, chunk *parse.Chunk, code []rune, lightMode
 	}
 }
 
-func (n AstNode) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", n)
+func (n AstNode) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", n))
 }
 
-func (t Token) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", t)
+func (t Token) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", t))
 }
 
-func (Nil NilT) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+func (Nil NilT) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
-		var totalN int
 		for _, b := range [][]byte{config.Colors.Constant, {'n', 'i', 'l'}, ANSI_RESET_SEQUENCE} {
-			n, err := w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write(b))
 		}
-		return totalN, nil
 	} else {
-		return w.Write([]byte{'n', 'i', 'l'})
+		utils.Must(w.Write([]byte{'n', 'i', 'l'}))
 	}
 }
 
-func (err Error) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "(%T)%s", err.goError, err.goError.Error())
+func (err Error) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "(%T)%s", err.goError, err.goError.Error()))
 }
 
-func (boolean Bool) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+func (boolean Bool) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	var b = []byte{'f', 'a', 'l', 's', 'e'}
 	if boolean {
 		b = []byte{'t', 'r', 'u', 'e'}
 	}
 
 	if config.Colorize {
-		var totalN int
-
 		for _, b := range [][]byte{config.Colors.Constant, b, ANSI_RESET_SEQUENCE} {
-			n, err := w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write(b))
 		}
-		return totalN, nil
+	} else {
+		utils.Must(w.Write(b))
 	}
-
-	return w.Write(b)
 }
 
-func (r Rune) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	totalN := 0
-	var err error
+func (r Rune) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	if config.Colorize {
+		utils.Must(w.Write(config.Colors.StringLiteral))
+	}
+
+	utils.Must(w.Write(r.reprBytes()))
 
 	if config.Colorize {
-		totalN, err = w.Write(config.Colors.StringLiteral)
-		if err != nil {
-			return totalN, err
-		}
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+	}
+}
+
+func (b Byte) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", b))
+}
+
+func (i Int) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	if config.Colorize {
+		utils.Must(w.Write(config.Colors.NumberLiteral))
 	}
 
-	n, err := w.Write(r.reprBytes())
-
-	totalN += n
-	if err != nil {
-		return totalN, err
-	}
+	s := strconv.FormatInt(int64(i), 10)
+	utils.Must(w.Write(utils.StringAsBytes(s)))
 
 	if config.Colorize {
-		n, err = w.Write(ANSI_RESET_SEQUENCE)
-		totalN += n
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 	}
-
-	return totalN, err
 }
 
-func (b Byte) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", b)
-}
-
-func (i Int) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	var b []byte
-	b = strconv.AppendInt(b, int64(i), 10)
-
+func (f Float) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
-		var totalN int
-		for _, b := range [][]byte{config.Colors.NumberLiteral, b, ANSI_RESET_SEQUENCE} {
-			n, err := w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
-		}
-		return totalN, nil
+		utils.Must(w.Write(config.Colors.NumberLiteral))
 	}
 
-	return w.Write(b)
-}
+	s := strconv.FormatFloat(float64(f), 'f', -1, 64)
+	utils.Must(w.Write(utils.StringAsBytes(s)))
 
-func (f Float) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	var b []byte
-	b = strconv.AppendFloat(b, float64(f), 'f', -1, 64)
-
-	if !bytes.Contains(b, []byte{'.'}) {
-		b = append(b, '.', '0')
+	if !strings.Contains(s, ".") {
+		utils.Must(w.Write(utils.StringAsBytes(".0")))
 	}
 
 	if config.Colorize {
-		var totalN int
-		for _, b := range [][]byte{config.Colors.NumberLiteral, b, ANSI_RESET_SEQUENCE} {
-			n, err := w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
-		}
-		return totalN, nil
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 	}
-
-	return w.Write(b)
 }
 
-func (s Str) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+func (s Str) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	if depth == 0 && config.PrintDecodedTopLevelStrings {
-		return w.Write([]byte(utils.StripANSISequences(string(s))))
+		utils.Must(w.Write([]byte(utils.StripANSISequences(string(s)))))
+		return
 	}
 
-	jsonStr, err := MarshalJsonNoHTMLEspace(string(s))
-	if err != nil {
-		return 0, err
+	if config.Colorize {
+		utils.Must(w.Write(config.Colors.StringLiteral))
 	}
+
+	jsonStr := utils.Must(MarshalJsonNoHTMLEspace(string(s)))
 
 	if depth > config.MaxDepth && len(jsonStr) > 3 {
 		//TODO: fix cut
-		jsonStr = jsonStr[:3]
-		jsonStr = append(jsonStr, '.', '.', '.', '"')
+		utils.Must(w.Write(jsonStr[:3]))
+		utils.Must(w.Write(utils.StringAsBytes("...\"")))
+	} else {
+		utils.Must(w.Write(jsonStr))
 	}
 
 	if config.Colorize {
-		var totalN int
-		for _, b := range [][]byte{config.Colors.StringLiteral, jsonStr, ANSI_RESET_SEQUENCE} {
-			n, err := w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
-		}
-		return totalN, nil
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 	}
-
-	return w.Write(jsonStr)
 }
 
-func (obj *Object) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+func (obj *Object) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	closestState := config.Context.GetClosestState()
 	obj.Lock(closestState)
 	defer obj.Unlock(closestState)
 	//TODO: prevent modification of the object while this function is running
 
 	if depth > config.MaxDepth && len(obj.keys) > 0 {
-		return w.Write([]byte{'{', '(', '.', '.', '.', ')', '}'})
+		utils.Must(w.Write(utils.StringAsBytes("{(...)}")))
+		return
 	}
 
 	indentCount := parentIndentCount + 1
 	indent := bytes.Repeat(config.Indent, indentCount)
 
-	var n int
-	totalN, err := w.Write([]byte{'{'})
-	if err != nil {
-		return totalN, err
-	}
+	utils.PanicIfErr(w.WriteByte('{'))
 
 	for i, k := range obj.keys {
 
 		if !config.Compact {
-			b := []byte{'\n', '\r'}
-			b = append(b, indent...)
-
-			n, err = w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write(LF_CR))
+			utils.Must(w.Write(indent))
 		}
 
 		if config.Colorize {
-			n, err = w.Write(config.Colors.IdentifierLiteral)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write(config.Colors.IdentifierLiteral))
+
 		}
 
-		n, err = w.Write(utils.Must(MarshalJsonNoHTMLEspace(k)))
-		totalN += n
-		if err != nil {
-			return totalN, err
-		}
+		utils.Must(w.Write(utils.Must(MarshalJsonNoHTMLEspace(k))))
 
 		if config.Colorize {
-			n, err = w.Write(ANSI_RESET_SEQUENCE)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+
 		}
 
 		//colon
-		n, err = w.Write([]byte{':', ' '})
-		totalN += n
-		if err != nil {
-			return totalN, err
-		}
+		utils.Must(w.Write(COLON_SPACE))
 
 		//value
 		v := obj.values[i]
-		n, err = v.PrettyPrint(w, config, depth+1, indentCount)
-		totalN += n
-		if err != nil {
-			return totalN, err
-		}
+		v.PrettyPrint(w, config, depth+1, indentCount)
 
 		//comma & indent
 		isLastEntry := i == len(obj.keys)-1
 
 		if !isLastEntry {
-			n, err = w.Write([]byte{',', ' '})
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write(COMMA_SPACE))
 		}
 	}
 
-	var end []byte
 	if !config.Compact && len(obj.keys) > 0 {
-		end = append(end, '\n', '\r')
+		utils.Must(w.Write(LF_CR))
 	}
-	end = append(end, bytes.Repeat(config.Indent, depth)...)
-	end = append(end, '}')
 
-	n, err = w.Write(end)
-	totalN += n
-	return totalN, err
+	utils.WriteMany(w, bytes.Repeat(config.Indent, depth), []byte{'}'})
 }
 
-func (rec Record) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+func (rec Record) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	obj := objFrom(rec.EntryMap())
-	totalN, err := w.Write([]byte{'#'})
-	if err != nil {
-		return totalN, err
-	}
+	utils.PanicIfErr(w.WriteByte('#'))
 
-	n, err := obj.PrettyPrint(w, config, depth, parentIndentCount)
-	return totalN + n, err
+	obj.PrettyPrint(w, config, depth, parentIndentCount)
 }
 
-func (dict *Dictionary) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+func (dict *Dictionary) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	//TODO: prevent modification of the dictionary while this function is running
 
 	if depth > config.MaxDepth && len(dict.Entries) > 0 {
-		return w.Write([]byte{':', '{', '(', '.', '.', '.', ')', '}'})
+		utils.Must(w.Write(utils.StringAsBytes(":{(...)}")))
+		return
 	}
 
 	indentCount := parentIndentCount + 1
 	indent := bytes.Repeat(config.Indent, indentCount)
 
-	var n int
-	totalN, err := w.Write([]byte{':', '{'})
-	if err != nil {
-		return totalN, err
-	}
+	utils.Must(w.Write(utils.StringAsBytes(":{")))
 
 	var keys []string
 	for k := range dict.Entries {
@@ -693,133 +643,80 @@ func (dict *Dictionary) PrettyPrint(w io.Writer, config *PrettyPrintConfig, dept
 
 	for i, k := range keys {
 		if !config.Compact {
-
-			b := []byte{'\n', '\r'}
-			b = append(b, indent...)
-
-			n, err = w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write(LF_CR))
+			utils.Must(w.Write(indent))
 		}
-
-		var n int
-		var err error
 
 		//key
 		if config.Colorize {
-			n, err = w.Write(config.Colors.StringLiteral)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write(config.Colors.StringLiteral))
+
 		}
-		n, err = w.Write([]byte(k))
-		totalN += n
-		if err != nil {
-			return totalN, err
-		}
+		utils.Must(w.Write(utils.StringAsBytes(k)))
 
 		if config.Colorize {
-			n, err = w.Write(ANSI_RESET_SEQUENCE)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 		}
 
 		//colon
-		n, err = w.Write([]byte{':', ' '})
-		totalN += n
-		if err != nil {
-			return totalN, err
-		}
+		utils.Must(w.Write(COLON_SPACE))
 
 		//value
 		v := dict.Entries[k]
 
-		n, err = v.PrettyPrint(w, config, depth+1, indentCount)
-		totalN += n
-		if err != nil {
-			return totalN, err
-		}
+		v.PrettyPrint(w, config, depth+1, indentCount)
 
 		//comma & indent
 		isLastEntry := i == len(keys)-1
 
 		if !isLastEntry {
-			n, err = w.Write([]byte{',', ' '})
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write([]byte{',', ' '}))
+
 		}
 
 	}
 
-	var end []byte
-
 	if !config.Compact && len(keys) > 0 {
-		end = append(end, '\n', '\r')
+		utils.Must(w.Write(LF_CR))
 	}
-	end = append(end, bytes.Repeat(config.Indent, depth)...)
-	end = append(end, '}')
-
-	n, err = w.Write(end)
-	totalN += n
-	return totalN, err
+	utils.Must(w.Write(bytes.Repeat(config.Indent, depth)))
+	utils.PanicIfErr(w.WriteByte(']'))
 }
 
-func (list KeyList) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+func (list KeyList) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	//TODO: prevent modification of the key list while this function is running
 
 	if depth > config.MaxDepth && len(list) > 0 {
-		return w.Write([]byte{'.', '{', '(', '.', '.', '.', ')', '}'})
+		utils.Must(w.Write(utils.StringAsBytes(".{(...)]}")))
+		return
 	}
 
-	totalN, err := w.Write([]byte{'.', '{'})
-	if err != nil {
-		return totalN, err
-	}
+	utils.Must(w.Write(DOT_OPENING_CURLY_BRACKET))
 
 	first := true
 
 	for _, k := range list {
 		if !first {
-			n, err := w.Write([]byte{',', ' '})
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write(COMMA_SPACE))
 		}
 		first = false
 
-		n, err := w.Write([]byte(k))
-		totalN += n
-		if err != nil {
-			return totalN, err
-		}
+		utils.Must(w.Write([]byte(k)))
 	}
 
-	n, err := w.Write([]byte{'}'})
-	totalN += n
-	return totalN, err
+	utils.PanicIfErr(w.WriteByte(']'))
 }
 
-func PrettyPrintList(list underylingList, w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+func PrettyPrintList(list underylingList, w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	//TODO: prevent modification of the list while this function is running
 	length := list.Len()
 
 	if depth > config.MaxDepth && length > 0 {
-		return w.Write([]byte{'[', '(', '.', '.', '.', ')', ']'})
+		utils.Must(w.Write(utils.StringAsBytes("[(...)]")))
+		return
 	}
 
-	var n int
-	totalN, err := w.Write([]byte{'['})
-	if err != nil {
-		return totalN, err
-	}
+	utils.PanicIfErr(w.WriteByte('['))
 
 	indentCount := parentIndentCount + 1
 	indent := bytes.Repeat(config.Indent, indentCount)
@@ -829,48 +726,33 @@ func PrettyPrintList(list underylingList, w io.Writer, config *PrettyPrintConfig
 		v := list.At(config.Context, i)
 
 		if !config.Compact {
-
-			b := []byte{'\n', '\r'}
-			b = append(b, indent...)
+			utils.Must(w.Write(LF_CR))
+			utils.Must(w.Write(indent))
 
 			//index
 			if printIndices {
 				if config.Colorize {
-					b = append(b, config.Colors.Index...)
+					utils.Must(w.Write(config.Colors.Index))
 				}
 				if i < 10 {
-					b = append(b, ' ')
+					utils.PanicIfErr(w.WriteByte(' '))
 				}
-				b = append(b, strconv.FormatInt(int64(i), 10)...)
-				b = append(b, ':', ' ')
+				utils.Must(w.Write(utils.StringAsBytes(strconv.FormatInt(int64(i), 10))))
+				utils.Must(w.Write(COLON_SPACE))
 				if config.Colorize {
-					b = append(b, ANSI_RESET_SEQUENCE...)
+					utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 				}
-			}
-
-			n, err = w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
 			}
 		}
 
 		//element
-		n, err := v.PrettyPrint(w, config, depth+1, indentCount)
-		totalN += n
-		if err != nil {
-			return totalN, err
-		}
+		v.PrettyPrint(w, config, depth+1, indentCount)
 
 		//comma & indent
 		isLastEntry := i == length-1
 
 		if !isLastEntry {
-			n, err = w.Write([]byte{',', ' '})
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write(COMMA_SPACE))
 		}
 
 	}
@@ -882,639 +764,437 @@ func PrettyPrintList(list underylingList, w io.Writer, config *PrettyPrintConfig
 	end = append(end, bytes.Repeat(config.Indent, depth)...)
 	end = append(end, ']')
 
-	n, err = w.Write(end)
-	totalN += n
-	return totalN, err
+	utils.Must(w.Write(end))
+
 }
 
-func (list *List) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return list.underylingList.PrettyPrint(w, config, depth, parentIndentCount)
+func (list *List) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	list.underylingList.PrettyPrint(w, config, depth, parentIndentCount)
 }
 
-func (list *ValueList) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return PrettyPrintList(list, w, config, depth, parentIndentCount)
+func (list *ValueList) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	PrettyPrintList(list, w, config, depth, parentIndentCount)
 }
 
-func (list *IntList) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return PrettyPrintList(list, w, config, depth, parentIndentCount)
+func (list *IntList) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	PrettyPrintList(list, w, config, depth, parentIndentCount)
 }
 
-func (tuple Tuple) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+func (tuple Tuple) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	lst := &List{underylingList: &ValueList{elements: tuple.elements}}
-	totalN, err := w.Write([]byte{'#'})
-	if err != nil {
-		return totalN, err
-	}
-	n, err := lst.PrettyPrint(w, config, depth, parentIndentCount)
-	return totalN + n, err
+	utils.Must(w.Write([]byte{'#'}))
+
+	lst.PrettyPrint(w, config, depth, parentIndentCount)
 }
 
-func (slice *RuneSlice) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", slice)
+func (slice *RuneSlice) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", slice))
 }
 
-func (slice *ByteSlice) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+func (slice *ByteSlice) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	var bytes []byte
+
 	if depth > config.MaxDepth && len(slice.Bytes) > 2 {
 		//TODO: fix cut
 		bytes = []byte("0x[...]")
 		if !config.Colorize {
-			return w.Write(bytes)
+			utils.Must(w.Write(bytes))
+			return
 		}
 	}
 
 	if config.Colorize {
-		var totalN int
 		for _, b := range [][]byte{config.Colors.StringLiteral, bytes, ANSI_RESET_SEQUENCE} {
 			if b == nil {
-				n, err := slice.write(w)
-				totalN += n
-				if err != nil {
-					return totalN, err
-				}
+				utils.Must(slice.write(w))
 			} else {
-				n, err := w.Write(b)
-				totalN += n
-				if err != nil {
-					return totalN, err
-				}
+				utils.Must(w.Write(b))
 			}
 		}
-		return totalN, nil
+
+	} else {
+		utils.Must(slice.write(w))
 	}
-
-	return slice.write(w)
 }
 
-func (v *GoFunction) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", v)
+func (v *GoFunction) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", v))
 }
 
-func (opt Option) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	totalN := 0
-	var n int
-	var err error
-
-	namePart := make([]byte, 3+len(opt.Name))
-
+func (opt Option) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
-		namePart = append(namePart, config.Colors.StringLiteral...)
+		utils.Must(w.Write(config.Colors.StringLiteral))
 	}
 
 	if len(opt.Name) <= 1 {
-		namePart = append(namePart, '-')
+		utils.PanicIfErr(w.WriteByte('-'))
 	} else {
-		namePart = append(namePart, '-', '-')
+		utils.Must(w.Write(DASH_DASH))
 	}
 
-	namePart = append(namePart, opt.Name...)
-	namePart = append(namePart, '=')
-	namePart = append(namePart, ANSI_RESET_SEQUENCE...)
-	n, err = w.Write(namePart)
-	totalN += n
-
-	if err != nil {
-		return totalN, err
-	}
+	utils.Must(w.Write(utils.StringAsBytes(opt.Name)))
+	utils.PanicIfErr(w.WriteByte('='))
+	utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 
 	if depth > config.MaxDepth {
-		n, err = w.Write([]byte{'(', '.', '.', '.', ')'})
+		utils.Must(w.Write(utils.StringAsBytes("(...)")))
 	} else {
-		n, err = opt.Value.PrettyPrint(w, config, depth+1, 0)
+		opt.Value.PrettyPrint(w, config, depth+1, 0)
 	}
-
-	totalN += n
-	return totalN, err
 }
 
-func (pth Path) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	b := []byte(GetRepresentation(pth, config.Context))
+func (pth Path) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	if config.Colorize {
+		utils.Must(w.Write(config.Colors.PathLiteral))
+	}
+
+	utils.PanicIfErr(pth.WriteRepresentation(config.Context, w, nil, &ReprConfig{allVisible: true}))
 
 	if config.Colorize {
-		var totalN int
-		for _, b := range [][]byte{config.Colors.PathLiteral, b, ANSI_RESET_SEQUENCE} {
-			n, err := w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
-		}
-		return totalN, nil
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 	}
-
-	return w.Write(b)
 }
 
-func (patt PathPattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	b := []byte(GetRepresentation(patt, config.Context))
+func (patt PathPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	if config.Colorize {
+		utils.Must(w.Write(config.Colors.PatternLiteral))
+	}
+
+	utils.PanicIfErr(patt.WriteRepresentation(config.Context, w, nil, &ReprConfig{allVisible: true}))
 
 	if config.Colorize {
-		var totalN int
-		for _, b := range [][]byte{config.Colors.PatternLiteral, b, ANSI_RESET_SEQUENCE} {
-			n, err := w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
-		}
-		return totalN, nil
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 	}
-
-	return w.Write(b)
 }
 
-func (u URL) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	b := []byte(GetRepresentation(u, config.Context))
+func (u URL) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	if config.Colorize {
+		utils.Must(w.Write(config.Colors.PathLiteral))
+	}
+
+	utils.PanicIfErr(u.WriteRepresentation(config.Context, w, nil, &ReprConfig{allVisible: true}))
 
 	if config.Colorize {
-		var totalN int
-		for _, b := range [][]byte{config.Colors.PathLiteral, b, ANSI_RESET_SEQUENCE} {
-			n, err := w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
-		}
-		return totalN, nil
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 	}
-
-	return w.Write(b)
 }
 
-func (scheme Scheme) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	b := []byte(GetRepresentation(scheme, config.Context))
+func (scheme Scheme) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	if config.Colorize {
+		utils.Must(w.Write(config.Colors.PathLiteral))
+	}
+
+	utils.PanicIfErr(scheme.WriteRepresentation(config.Context, w, nil, &ReprConfig{allVisible: true}))
 
 	if config.Colorize {
-		var totalN int
-		for _, b := range [][]byte{config.Colors.PathLiteral, b, ANSI_RESET_SEQUENCE} {
-			n, err := w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
-		}
-		return totalN, nil
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 	}
-
-	return w.Write(b)
 }
 
-func (host Host) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	b := []byte(GetRepresentation(host, config.Context))
+func (host Host) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	if config.Colorize {
+		utils.Must(w.Write(config.Colors.PathLiteral))
+	}
+
+	utils.PanicIfErr(host.WriteRepresentation(config.Context, w, nil, &ReprConfig{allVisible: true}))
 
 	if config.Colorize {
-		var totalN int
-		for _, b := range [][]byte{config.Colors.PathLiteral, b, ANSI_RESET_SEQUENCE} {
-			n, err := w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
-		}
-		return totalN, nil
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 	}
-
-	return w.Write(b)
 }
 
-func (patt HostPattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	b := []byte(GetRepresentation(patt, config.Context))
+func (patt HostPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	if config.Colorize {
+		utils.Must(w.Write(config.Colors.PatternLiteral))
+	}
+
+	utils.PanicIfErr(patt.WriteRepresentation(config.Context, w, nil, &ReprConfig{allVisible: true}))
 
 	if config.Colorize {
-		var totalN int
-		for _, b := range [][]byte{config.Colors.PatternLiteral, b, ANSI_RESET_SEQUENCE} {
-			n, err := w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
-		}
-		return totalN, nil
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 	}
-
-	return w.Write(b)
 }
 
-func (addr EmailAddress) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	b := []byte(GetRepresentation(addr, config.Context))
+func (addr EmailAddress) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	if config.Colorize {
+		utils.Must(w.Write(config.Colors.PathLiteral))
+	}
+
+	utils.PanicIfErr(addr.WriteRepresentation(config.Context, w, nil, &ReprConfig{allVisible: true}))
 
 	if config.Colorize {
-		var totalN int
-		for _, b := range [][]byte{config.Colors.PathLiteral, b, ANSI_RESET_SEQUENCE} {
-			n, err := w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
-		}
-		return totalN, nil
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 	}
-
-	return w.Write(b)
 }
 
-func (patt URLPattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	b := []byte(GetRepresentation(patt, config.Context))
+func (patt URLPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	if config.Colorize {
+		utils.Must(w.Write(config.Colors.PatternLiteral))
+	}
+
+	utils.PanicIfErr(patt.WriteRepresentation(config.Context, w, nil, &ReprConfig{allVisible: true}))
 
 	if config.Colorize {
-		var totalN int
-		for _, b := range [][]byte{config.Colors.PatternLiteral, b, ANSI_RESET_SEQUENCE} {
-			n, err := w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
-		}
-		return totalN, nil
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 	}
-
-	return w.Write(b)
 }
 
-func (i Identifier) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	b := []byte{'#', '('}
-	b = append(b, i...)
-	b = append(b, ')')
+func (i Identifier) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	if config.Colorize {
+		utils.Must(w.Write(config.Colors.Constant))
+	}
+
+	utils.Must(w.Write(SHARP_OPENING_PAREN))
+	utils.Must(w.Write(utils.StringAsBytes(i)))
+	utils.PanicIfErr(w.WriteByte((')')))
 
 	if config.Colorize {
-		var totalN int
-		for _, b := range [][]byte{config.Colors.Constant, b, ANSI_RESET_SEQUENCE} {
-			n, err := w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
-		}
-		return totalN, nil
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 	}
-
-	return w.Write(b)
 }
 
-func (p PropertyName) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	b := []byte{'.'}
-	b = append(b, p...)
+func (p PropertyName) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	if config.Colorize {
+		utils.Must(w.Write(config.Colors.Constant))
+	}
+
+	utils.PanicIfErr(w.WriteByte('.'))
+	utils.Must(w.Write(utils.StringAsBytes(p)))
 
 	if config.Colorize {
-		var totalN int
-		for _, b := range [][]byte{config.Colors.Constant, b, ANSI_RESET_SEQUENCE} {
-			n, err := w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
-		}
-		return totalN, nil
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 	}
-
-	return w.Write(b)
 }
 
-func (str CheckedString) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	patt := []byte{'%'}
-	patt = append(patt, str.matchingPatternName...)
+func (str CheckedString) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	if config.Colorize {
+		utils.Must(w.Write(config.Colors.PatternIdentifier))
+	}
 
-	s := []byte{'`'}
+	utils.PanicIfErr(w.WriteByte('%'))
+	utils.Must(w.Write(utils.StringAsBytes(str.matchingPatternName)))
+
+	if config.Colorize {
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+		utils.Must(w.Write(config.Colors.StringLiteral))
+	}
+
+	utils.PanicIfErr(w.WriteByte('`'))
+
 	jsonStr, _ := MarshalJsonNoHTMLEspace(str.str)
-	s = append(s, jsonStr[1:len(jsonStr)-1]...)
-	s = append(s, '`')
+	utils.Must(w.Write(jsonStr[1 : len(jsonStr)-1]))
+	utils.PanicIfErr(w.WriteByte('`'))
 
 	if config.Colorize {
-		var totalN int
-		for _, b := range [][]byte{
-			config.Colors.PatternIdentifier, patt, ANSI_RESET_SEQUENCE, config.Colors.StringLiteral, s, ANSI_RESET_SEQUENCE,
-		} {
-			n, err := w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
-		}
-		return totalN, nil
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 	}
-
-	totalN, err := w.Write(patt)
-	if err != nil {
-		return totalN, err
-	}
-	n, err := w.Write(s)
-	totalN += n
-	return totalN, err
 }
 
-func (count ByteCount) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+func (count ByteCount) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
-		var (
-			totalN, n int
-			err       error
-		)
-		for _, b := range [][]byte{config.Colors.NumberLiteral, nil, ANSI_RESET_SEQUENCE} {
-			if b == nil {
-				n, err = count.write(w)
-			} else {
-				n, err = w.Write(b)
-			}
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
-		}
-		return totalN, nil
+		utils.Must(w.Write(config.Colors.NumberLiteral))
 	}
-	return count.write(w)
-}
 
-func (count LineCount) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+	utils.Must(count.write(w))
+
 	if config.Colorize {
-		var (
-			totalN, n int
-			err       error
-		)
-		for _, b := range [][]byte{config.Colors.NumberLiteral, nil, ANSI_RESET_SEQUENCE} {
-			if b == nil {
-				n, err = count.write(w)
-			} else {
-				n, err = w.Write(b)
-			}
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
-		}
-		return totalN, nil
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 	}
-
-	return count.write(w)
 }
 
-func (count RuneCount) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+func (count LineCount) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
-		var (
-			totalN, n int
-			err       error
-		)
-		for _, b := range [][]byte{config.Colors.NumberLiteral, nil, ANSI_RESET_SEQUENCE} {
-			if b == nil {
-				n, err = count.write(w)
-			} else {
-				n, err = w.Write(b)
-			}
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
-		}
-		return totalN, nil
+		utils.Must(w.Write(config.Colors.NumberLiteral))
 	}
 
-	return count.write(w)
-}
+	utils.Must(count.write(w))
 
-func (rate ByteRate) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
 	if config.Colorize {
-		var (
-			totalN, n int
-			err       error
-		)
-		for _, b := range [][]byte{config.Colors.NumberLiteral, nil, ANSI_RESET_SEQUENCE} {
-			if b == nil {
-				n, err = rate.write(w)
-			} else {
-				n, err = w.Write(b)
-			}
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
-		}
-		return totalN, nil
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 	}
-
-	return rate.write(w)
 }
 
-func (rate SimpleRate) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+func (count RuneCount) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
-		var (
-			totalN, n int
-			err       error
-		)
-		for _, b := range [][]byte{config.Colors.NumberLiteral, nil, ANSI_RESET_SEQUENCE} {
-			if b == nil {
-				n, err = rate.write(w)
-			} else {
-				n, err = w.Write(b)
-			}
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
-		}
-		return totalN, nil
+		utils.Must(w.Write(config.Colors.NumberLiteral))
 	}
 
-	return rate.write(w)
-}
+	utils.Must(count.write(w))
 
-func (d Duration) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
 	if config.Colorize {
-		var (
-			totalN, n int
-			err       error
-		)
-		for _, b := range [][]byte{config.Colors.NumberLiteral, nil, ANSI_RESET_SEQUENCE} {
-			if b == nil {
-				n, err = d.write(w)
-			} else {
-				n, err = w.Write(b)
-			}
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
-		}
-		return totalN, nil
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 	}
-
-	return d.write(w)
 }
 
-func (d Date) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return d.write(w)
-}
-
-func (m FileMode) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", m)
-}
-
-func (r RuneRange) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+func (rate ByteRate) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
-		var (
-			totalN, n int
-			err       error
-		)
-		for _, b := range [][]byte{config.Colors.NumberLiteral, nil, ANSI_RESET_SEQUENCE} {
-			if b == nil {
-				n, err = r.write(w)
-			} else {
-				n, err = w.Write(b)
-			}
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
-		}
-		return totalN, nil
+		utils.Must(w.Write(config.Colors.NumberLiteral))
 	}
 
-	return r.write(w)
+	utils.Must(rate.write(w))
+
+	if config.Colorize {
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+	}
 }
 
-func (r QuantityRange) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+func (rate SimpleRate) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	if config.Colorize {
+		utils.Must(w.Write(config.Colors.NumberLiteral))
+	}
+
+	utils.Must(rate.write(w))
+
+	if config.Colorize {
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+	}
+}
+
+func (d Duration) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	if config.Colorize {
+		utils.Must(w.Write(config.Colors.NumberLiteral))
+	}
+
+	utils.Must(d.write(w))
+
+	if config.Colorize {
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+	}
+}
+
+func (d Date) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(d.write(w))
+}
+
+func (m FileMode) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", m))
+}
+
+func (r RuneRange) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	if config.Colorize {
+		utils.Must(w.Write(config.Colors.NumberLiteral))
+	}
+
+	utils.Must(r.write(w))
+
+	if config.Colorize {
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+	}
+}
+
+func (r QuantityRange) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	reprConfig := &ReprConfig{}
 
 	if r.HasRepresentation(nil, reprConfig) {
 		if config.Colorize {
-			var (
-				totalN, n int
-				err       error
-			)
-			for _, b := range [][]byte{config.Colors.NumberLiteral, nil, ANSI_RESET_SEQUENCE} {
-				if b == nil {
-					buff := &bytes.Buffer{}
-					if err := r.WriteRepresentation(config.Context, buff, nil, reprConfig); err != nil {
-						return buff.Len(), err
-					}
-					n, err = w.Write(buff.Bytes())
-				} else {
-					n, err = w.Write(b)
-				}
-				totalN += n
-				if err != nil {
-					return totalN, err
-				}
-			}
-			return totalN, nil
+			utils.Must(w.Write(config.Colors.NumberLiteral))
 		}
-	}
 
-	return fmt.Fprintf(w, "%#v", r)
+		utils.PanicIfErr(r.WriteRepresentation(config.Context, w, nil, reprConfig))
+
+		if config.Colorize {
+			utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+		}
+
+	} else {
+		utils.Must(fmt.Fprintf(w, "%#v", r))
+	}
 }
 
-func (r IntRange) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+func (r IntRange) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
-		var (
-			totalN, n int
-			err       error
-		)
-		for _, b := range [][]byte{config.Colors.NumberLiteral, nil, ANSI_RESET_SEQUENCE} {
-			if b == nil {
-				n, err = r.write(w)
-			} else {
-				n, err = w.Write(b)
-			}
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
-		}
-		return totalN, nil
+		utils.Must(w.Write(config.Colors.NumberLiteral))
 	}
 
-	return r.write(w)
+	utils.Must(r.write(w))
+
+	if config.Colorize {
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+	}
 }
 
 //patterns
 
-func (pattern ExactValuePattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", pattern)
+func (pattern ExactValuePattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", pattern))
 }
 
-func (pattern TypePattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	var b = []byte{'%'}
-	b = append(b, pattern.Name...)
+func (pattern TypePattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	if config.Colorize {
+		utils.Must(w.Write(config.Colors.PatternIdentifier))
+	}
+
+	utils.PanicIfErr(w.WriteByte('%'))
+	utils.Must(w.Write(utils.StringAsBytes(pattern.Name)))
 
 	if config.Colorize {
-		var totalN int
-		for _, b := range [][]byte{config.Colors.PatternIdentifier, b, ANSI_RESET_SEQUENCE} {
-			n, err := w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
-		}
-		return totalN, nil
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 	}
-
-	return w.Write(b)
 }
 
-func (pattern *DifferencePattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", pattern)
+func (pattern *DifferencePattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", pattern))
 }
 
-func (pattern *OptionalPattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", pattern)
+func (pattern *OptionalPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", pattern))
 }
 
-func (pattern *FunctionPattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", pattern)
+func (pattern *FunctionPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", pattern))
 }
 
-func (patt *RegexPattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", patt)
+func (patt *RegexPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", patt))
 }
 
-func (patt *UnionPattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", patt)
+func (patt *UnionPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", patt))
 }
 
-func (patt *IntersectionPattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", patt)
+func (patt *IntersectionPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", patt))
 }
 
-func (patt *SequenceStringPattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", patt)
+func (patt *SequenceStringPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", patt))
 }
 
-func (patt *UnionStringPattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", patt)
+func (patt *UnionStringPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", patt))
 }
 
-func (patt *RuneRangeStringPattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", patt)
+func (patt *RuneRangeStringPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", patt))
 }
 
-func (patt *IntRangePattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", patt)
+func (patt *IntRangePattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", patt))
 }
 
-func (patt *DynamicStringPatternElement) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", patt)
+func (patt *DynamicStringPatternElement) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", patt))
 }
 
-func (patt *RepeatedPatternElement) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", patt)
+func (patt *RepeatedPatternElement) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", patt))
 }
 
-func (patt *NamedSegmentPathPattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", patt)
+func (patt *NamedSegmentPathPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", patt))
 }
 
-func (patt ObjectPattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+func (patt ObjectPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 
 	if depth > config.MaxDepth && len(patt.entryPatterns) > 0 {
-		return w.Write([]byte{'%', '{', '(', '.', '.', '.', ')', '}'})
+		utils.Must(w.Write(utils.StringAsBytes("%{(...)}")))
+		return
 	}
 
 	indentCount := parentIndentCount + 1
 	indent := bytes.Repeat(config.Indent, indentCount)
 
-	var n int
-	totalN, err := w.Write([]byte{'%', '{'})
-	if err != nil {
-		return totalN, err
-	}
+	utils.Must(w.Write([]byte{'%', '{'}))
 
 	var keys []string
 	for k := range patt.entryPatterns {
@@ -1526,110 +1206,65 @@ func (patt ObjectPattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, de
 	for i, k := range keys {
 
 		if !config.Compact {
-			b := []byte{'\n', '\r'}
-			b = append(b, indent...)
-
-			n, err = w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write(LF_CR))
+			utils.Must(w.Write(indent))
 		}
 
 		if config.Colorize {
-			n, err = w.Write(config.Colors.IdentifierLiteral)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write(config.Colors.IdentifierLiteral))
 		}
 
-		n, err = w.Write(utils.Must(MarshalJsonNoHTMLEspace(k)))
-		totalN += n
-		if err != nil {
-			return totalN, err
-		}
+		utils.Must(w.Write(utils.Must(MarshalJsonNoHTMLEspace(k))))
 
 		if config.Colorize {
-			n, err = w.Write(ANSI_RESET_SEQUENCE)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 		}
 
 		//colon
-		n, err = w.Write([]byte{':', ' '})
-		totalN += n
-		if err != nil {
-			return totalN, err
-		}
+		utils.Must(w.Write(COLON_SPACE))
 
 		//value
 		v := patt.entryPatterns[k]
-		n, err = v.PrettyPrint(w, config, depth+1, indentCount)
-		totalN += n
-		if err != nil {
-			return totalN, err
-		}
+		v.PrettyPrint(w, config, depth+1, indentCount)
 
 		//comma & indent
 		isLastEntry := i == len(keys)-1
 
 		if !isLastEntry || patt.inexact {
-			n, err = w.Write([]byte{',', ' '})
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write(COLON_SPACE))
 		}
 	}
 
 	if patt.inexact {
 		if !config.Compact {
-			b := []byte{'\n', '\r'}
-			b = append(b, indent...)
-
-			n, err = w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write(LF_CR))
+			utils.Must(w.Write(indent))
 		}
 
-		n, err = w.Write([]byte{'.', '.', '.'})
-		totalN += n
-		if err != nil {
-			return totalN, err
-		}
+		utils.Must(w.Write(THREE_DOTS))
 	}
 
-	var end []byte
 	if !config.Compact && len(keys) > 0 {
-		end = append(end, '\n', '\r')
+		utils.Must(w.Write(LF_CR))
 	}
-	end = append(end, bytes.Repeat(config.Indent, depth)...)
-	end = append(end, '}')
 
-	n, err = w.Write(end)
-	totalN += n
-	return totalN, err
+	utils.Must(w.Write(bytes.Repeat(config.Indent, depth)))
+	if err := w.WriteByte('}'); err != nil {
+		panic(err)
+	}
 }
 
-func (patt *RecordPattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+func (patt *RecordPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 
 	if depth > config.MaxDepth && len(patt.entryPatterns) > 0 {
-		return w.Write([]byte{'r', 'e', 'c', 'o', 'r', 'd', '(', '%', '{', '(', '.', '.', '.', ')', '}'})
+		utils.Must(w.Write(utils.StringAsBytes("record(%{(...)})")))
+		return
 	}
 
 	indentCount := parentIndentCount + 1
 	indent := bytes.Repeat(config.Indent, indentCount)
 
-	var n int
-	totalN, err := w.Write([]byte{'r', 'e', 'c', 'o', 'r', 'd', '(', '%', '{'})
-	if err != nil {
-		return totalN, err
-	}
+	utils.Must(w.Write(utils.StringAsBytes("record(%{")))
 
 	var keys []string
 	for k := range patt.entryPatterns {
@@ -1641,102 +1276,59 @@ func (patt *RecordPattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, d
 	for i, k := range keys {
 
 		if !config.Compact {
-			b := []byte{'\n', '\r'}
-			b = append(b, indent...)
-
-			n, err = w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write(LF_CR))
+			utils.Must(w.Write(indent))
 		}
 
 		if config.Colorize {
-			n, err = w.Write(config.Colors.IdentifierLiteral)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write(config.Colors.IdentifierLiteral))
 		}
 
-		n, err = w.Write(utils.Must(MarshalJsonNoHTMLEspace(k)))
-		totalN += n
-		if err != nil {
-			return totalN, err
-		}
+		utils.Must(w.Write(utils.Must(MarshalJsonNoHTMLEspace(k))))
 
 		if config.Colorize {
-			n, err = w.Write(ANSI_RESET_SEQUENCE)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 		}
 
 		//colon
-		n, err = w.Write([]byte{':', ' '})
-		totalN += n
-		if err != nil {
-			return totalN, err
-		}
+		utils.Must(w.Write(COLON_SPACE))
 
 		//value
 		v := patt.entryPatterns[k]
-		n, err = v.PrettyPrint(w, config, depth+1, indentCount)
-		totalN += n
-		if err != nil {
-			return totalN, err
-		}
+		v.PrettyPrint(w, config, depth+1, indentCount)
 
 		//comma & indent
 		isLastEntry := i == len(keys)-1
 
 		if !isLastEntry || patt.inexact {
-			n, err = w.Write([]byte{',', ' '})
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write(COMMA_SPACE))
+
 		}
 	}
 
 	if patt.inexact {
 		if !config.Compact {
-			b := []byte{'\n', '\r'}
-			b = append(b, indent...)
-
-			n, err = w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write(LF_CR))
+			utils.Must(w.Write(indent))
 		}
 
-		n, err = w.Write([]byte{'.', '.', '.'})
-		totalN += n
-		if err != nil {
-			return totalN, err
-		}
+		utils.Must(w.Write(THREE_DOTS))
 	}
 
-	var end []byte
 	if !config.Compact && len(keys) > 0 {
-		end = append(end, '\n', '\r')
+		utils.Must(w.Write(LF_CR))
 	}
-	end = append(end, bytes.Repeat(config.Indent, depth)...)
-	end = append(end, '}', ')')
 
-	n, err = w.Write(end)
-	totalN += n
-	return totalN, err
+	utils.Must(w.Write(bytes.Repeat(config.Indent, depth)))
+	utils.Must(w.Write(CLOSING_CURLY_BRACKET_CLOSING_PAREN))
 }
 
 func prettyPrintListPattern(
-	w io.Writer, tuplePattern bool,
+	w *bufio.Writer, tuplePattern bool,
 	generalElementPattern Pattern, elementPatterns []Pattern,
 	config *PrettyPrintConfig, depth int, parentIndentCount int,
 
-) (int, error) {
+) {
 
 	if generalElementPattern != nil {
 		b := utils.StringAsBytes("%[]")
@@ -1745,27 +1337,13 @@ func prettyPrintListPattern(
 			b = utils.StringAsBytes("%tuple(")
 		}
 
-		var n int
-		totalN, err := w.Write(b)
-		if err != nil {
-			return totalN, err
-		}
-		n, err = generalElementPattern.PrettyPrint(w, config, depth, parentIndentCount)
-		totalN += n
+		utils.Must(w.Write(b))
 
-		if err != nil {
-			return totalN, err
-		}
+		generalElementPattern.PrettyPrint(w, config, depth, parentIndentCount)
 
 		if tuplePattern {
-			n, err := w.Write(utils.StringAsBytes(")"))
-			if err != nil {
-				return totalN, err
-			}
-			totalN += n
+			utils.Must(w.Write(utils.StringAsBytes(")")))
 		}
-
-		return totalN, err
 	}
 
 	if depth > config.MaxDepth && len(elementPatterns) > 0 {
@@ -1774,18 +1352,15 @@ func prettyPrintListPattern(
 			b = utils.StringAsBytes("%tuple(...)")
 		}
 
-		return w.Write(b)
+		utils.Must(w.Write(b))
+		return
 	}
 
-	var n int
 	start := utils.StringAsBytes("%[")
 	if tuplePattern {
 		start = utils.StringAsBytes("%tuple(%[")
 	}
-	totalN, err := w.Write(start)
-	if err != nil {
-		return totalN, err
-	}
+	utils.Must(w.Write(start))
 
 	indentCount := parentIndentCount + 1
 	indent := bytes.Repeat(config.Indent, indentCount)
@@ -1794,531 +1369,426 @@ func prettyPrintListPattern(
 	for i, v := range elementPatterns {
 
 		if !config.Compact {
-
-			b := []byte{'\n', '\r'}
-			b = append(b, indent...)
+			utils.Must(w.Write(LF_CR))
+			utils.Must(w.Write(indent))
 
 			//index
 			if printIndices {
 				if config.Colorize {
-					b = append(b, config.Colors.Index...)
+					utils.Must(w.Write(config.Colors.Index))
 				}
 				if i < 10 {
-					b = append(b, ' ')
+					utils.PanicIfErr(w.WriteByte(' '))
 				}
-				b = append(b, strconv.FormatInt(int64(i), 10)...)
-				b = append(b, ':', ' ')
-				if config.Colorize {
-					b = append(b, ANSI_RESET_SEQUENCE...)
-				}
-			}
+				utils.Must(w.Write(utils.StringAsBytes(strconv.FormatInt(int64(i), 10))))
+				utils.Must(w.Write(config.Colors.Index))
+				utils.Must(w.Write(COLON_SPACE))
 
-			n, err = w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
+				if config.Colorize {
+					utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+				}
 			}
 		}
 
 		//element
-		n, err := v.PrettyPrint(w, config, depth+1, indentCount)
-		totalN += n
-		if err != nil {
-			return totalN, err
-		}
+		v.PrettyPrint(w, config, depth+1, indentCount)
 
 		//comma & indent
 		isLastEntry := i == len(elementPatterns)-1
 
 		if !isLastEntry {
-			n, err = w.Write([]byte{',', ' '})
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write(COMMA_SPACE))
 		}
 
 	}
 
-	var end []byte
 	if !config.Compact && len(elementPatterns) > 0 {
-		end = append(end, '\n', '\r')
+		utils.Must(w.Write(LF_CR))
 	}
-	end = append(end, bytes.Repeat(config.Indent, depth)...)
+
+	utils.Must(w.Write(bytes.Repeat(config.Indent, depth)))
 	if tuplePattern {
-		end = append(end, "])"...)
+		utils.Must(w.Write(CLOSING_BRACKET_CLOSING_PAREN))
 	} else {
-		end = append(end, "]"...)
+		utils.PanicIfErr(w.WriteByte(']'))
 	}
-
-	n, err = w.Write(end)
-	totalN += n
-	return totalN, err
 }
 
-func (patt ListPattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return prettyPrintListPattern(w, false, patt.generalElementPattern, patt.elementPatterns, config, depth, parentIndentCount)
+func (patt ListPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	prettyPrintListPattern(w, false, patt.generalElementPattern, patt.elementPatterns, config, depth, parentIndentCount)
 }
 
-func (patt TuplePattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return prettyPrintListPattern(w, true, patt.generalElementPattern, patt.elementPatterns, config, depth, parentIndentCount)
+func (patt TuplePattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	prettyPrintListPattern(w, true, patt.generalElementPattern, patt.elementPatterns, config, depth, parentIndentCount)
 }
 
-func (patt OptionPattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", patt)
+func (patt OptionPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", patt))
 }
 
-func (patt *EventPattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", patt)
+func (patt *EventPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", patt))
 }
 
-func (patt *MutationPattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", patt)
+func (patt *MutationPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", patt))
 }
 
-func (patt *ParserBasedPattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", patt)
+func (patt *ParserBasedPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", patt))
 }
 
-func (patt *IntRangeStringPattern) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", patt)
+func (patt *IntRangeStringPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", patt))
 }
 
-func (reader *Reader) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", reader)
+func (reader *Reader) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", reader))
 }
 
-func (writer *Writer) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", writer)
+func (writer *Writer) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", writer))
 }
 
-func (mt Mimetype) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", mt)
+func (mt Mimetype) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", mt))
 }
-func (i FileInfo) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", i)
-}
-
-func (r *Routine) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", r)
+func (i FileInfo) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", i))
 }
 
-func (g *RoutineGroup) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", g)
+func (r *Routine) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", r))
 }
 
-func (g *InoxFunction) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", g)
+func (g *RoutineGroup) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", g))
 }
 
-func (b *Bytecode) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", b)
+func (g *InoxFunction) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", g))
 }
 
-func (it *KeyFilteredIterator) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", it)
+func (b *Bytecode) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", b))
 }
 
-func (it *ValueFilteredIterator) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", it)
+func (it *KeyFilteredIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", it))
 }
 
-func (it *KeyValueFilteredIterator) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", it)
+func (it *ValueFilteredIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", it))
 }
 
-func (it *indexableIterator) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", it)
+func (it *KeyValueFilteredIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", it))
 }
 
-func (it *immutableSliceIterator[T]) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", it)
+func (it *indexableIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", it))
 }
 
-func (it IntRangeIterator) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", it)
+func (it *immutableSliceIterator[T]) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", it))
 }
 
-func (it RuneRangeIterator) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", it)
+func (it IntRangeIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", it))
 }
 
-func (it *PatternIterator) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", it)
+func (it RuneRangeIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", it))
 }
 
-func (it indexedEntryIterator) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", it)
+func (it *PatternIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", it))
 }
 
-func (it *IpropsIterator) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", it)
+func (it indexedEntryIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", it))
 }
 
-func (it *EventSourceIterator) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", it)
+func (it *IpropsIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", it))
 }
 
-func (it *DirWalker) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", it)
+func (it *EventSourceIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", it))
 }
 
-func (it *ValueListIterator) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", it)
+func (it *DirWalker) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", it))
 }
 
-func (it *IntListIterator) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", it)
+func (it *ValueListIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", it))
 }
 
-func (it *TupleIterator) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", it)
+func (it *IntListIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", it))
 }
 
-func (t Type) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return w.Write([]byte(t.Name()))
+func (it *TupleIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", it))
 }
 
-func (tx *Transaction) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", tx)
+func (t Type) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write([]byte(t.Name())))
 }
 
-func (r *RandomnessSource) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", r)
+func (tx *Transaction) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", tx))
 }
 
-func (m *Mapping) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", m)
+func (r *RandomnessSource) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", r))
 }
 
-func (ns *PatternNamespace) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", ns)
+func (m *Mapping) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", m))
 }
 
-func (port Port) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+func (ns *PatternNamespace) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", ns))
+}
+
+func (port Port) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	repr := port.repr(false)
 	if config.Colorize {
-		var (
-			totalN, n int
-			err       error
-		)
 		for _, b := range [][]byte{config.Colors.NumberLiteral, repr, ANSI_RESET_SEQUENCE} {
-			n, err = w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write(b))
 		}
-		return totalN, nil
+	} else {
+		utils.Must(w.Write(repr))
 	}
 
-	return w.Write(repr)
 }
 
-func (u *UData) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-
-	var (
-		totalN int
-		err    error
-	)
+func (u *UData) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 
 	if config.Colorize {
-		for _, b := range [][]byte{config.Colors.OtherKeyword, {'u', 'd', 'a', 't', 'a'}, ANSI_RESET_SEQUENCE} {
-			n, err := w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+		for _, b := range [][]byte{config.Colors.OtherKeyword, utils.StringAsBytes("udata"), ANSI_RESET_SEQUENCE} {
+			utils.Must(w.Write(b))
 		}
 	}
 
 	if depth > config.MaxDepth {
-		n, err := w.Write([]byte{'(', '.', '.', '.', ')', '}'})
-		totalN += n
-		return totalN, err
+		utils.Must(w.Write([]byte{'(', '.', '.', '.', ')', '}'}))
+		return
 	}
 
 	indentCount := parentIndentCount + 1
 	indent := bytes.Repeat(config.Indent, indentCount)
 
-	n, err := w.Write([]byte{' '})
-	totalN += n
-
-	if err != nil {
-		return totalN, err
-	}
+	utils.PanicIfErr(w.WriteByte(' '))
 
 	if u.Root != nil {
-		n, err = u.Root.PrettyPrint(w, config, depth+1, indentCount)
-		totalN += n
-		if err != nil {
-			return totalN, err
-		}
-		n, err = w.Write([]byte{' ', '{'})
-		totalN += n
-		if err != nil {
-			return totalN, err
-		}
+		u.Root.PrettyPrint(w, config, depth+1, indentCount)
+		utils.Must(w.Write([]byte{' ', '{'}))
 	} else {
-		n, err = w.Write([]byte{'{'})
-		totalN += n
-		if err != nil {
-			return totalN, err
-		}
+		utils.PanicIfErr(w.WriteByte('{'))
 	}
 
 	for _, entry := range u.HiearchyEntries {
 
 		if !config.Compact {
-			b := []byte{'\n', '\r'}
-			b = append(b, indent...)
-
-			n, err = w.Write(b)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write(LF_CR))
+			utils.Must(w.Write(indent))
 		}
 
 		if config.Colorize {
-			n, err = w.Write(config.Colors.IdentifierLiteral)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			utils.Must(w.Write(config.Colors.IdentifierLiteral))
 		}
 
-		n, err = entry.PrettyPrint(w, config, depth+1, indentCount)
-		totalN += n
-		if err != nil {
-			return totalN, err
-		}
+		entry.PrettyPrint(w, config, depth+1, indentCount)
 	}
 
-	var end []byte
 	if !config.Compact && len(u.HiearchyEntries) > 0 {
-		end = append(end, '\n', '\r')
+		utils.Must(w.Write(LF_CR))
 	}
-	end = append(end, bytes.Repeat(config.Indent, depth)...)
-	end = append(end, '}')
-
-	n, err = w.Write(end)
-	totalN += n
-	return totalN, err
+	utils.Must(w.Write(bytes.Repeat(config.Indent, depth)))
+	utils.PanicIfErr(w.WriteByte('}'))
 }
 
-func (e UDataHiearchyEntry) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+func (e UDataHiearchyEntry) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	indentCount := parentIndentCount + 1
 	indent := bytes.Repeat(config.Indent, indentCount)
 
-	totalN, err := e.Value.PrettyPrint(w, config, depth+1, indentCount)
-	if err != nil {
-		return totalN, err
-	}
+	e.Value.PrettyPrint(w, config, depth+1, indentCount)
 
 	if len(e.Children) > 0 {
-		n, err := w.Write([]byte{' ', '{'})
-		totalN += n
-		if err != nil {
-			return totalN, err
-		}
+		utils.Must(w.Write([]byte{' ', '{'}))
 
 		for _, entry := range e.Children {
 
 			if !config.Compact {
-				b := []byte{'\n', '\r'}
-				b = append(b, indent...)
-
-				n, err = w.Write(b)
-				totalN += n
-				if err != nil {
-					return totalN, err
-				}
+				utils.Must(w.Write(LF_CR))
+				utils.Must(w.Write(indent))
 			}
 
 			if config.Colorize {
-				n, err = w.Write(config.Colors.IdentifierLiteral)
-				totalN += n
-				if err != nil {
-					return totalN, err
-				}
+				utils.Must(w.Write(config.Colors.IdentifierLiteral))
 			}
 
-			n, err = entry.PrettyPrint(w, config, depth+1, indentCount)
-			totalN += n
-			if err != nil {
-				return totalN, err
-			}
+			entry.PrettyPrint(w, config, depth+1, indentCount)
 		}
 
-		var end []byte
 		if !config.Compact && len(e.Children) > 0 {
-			end = append(end, '\n', '\r')
+			utils.Must(w.Write(LF_CR))
 		}
-		end = append(end, bytes.Repeat(config.Indent, depth)...)
-		end = append(end, '}')
 
-		n, err = w.Write(end)
-		totalN += n
-		return totalN, err
+		utils.Must(w.Write(bytes.Repeat(config.Indent, depth)))
+		utils.PanicIfErr(w.WriteByte('}'))
 	}
-	return totalN, nil
 
 }
 
-func (c *StringConcatenation) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+func (c *StringConcatenation) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	//TODO: improve implementation
 
-	return Str(c.GetOrBuildString()).PrettyPrint(w, config, depth, parentIndentCount)
+	Str(c.GetOrBuildString()).PrettyPrint(w, config, depth, parentIndentCount)
 }
 
-func (c *BytesConcatenation) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
+func (c *BytesConcatenation) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	//TODO: improve implementation
 
-	return c.GetOrBuildBytes().PrettyPrint(w, config, depth, parentIndentCount)
+	c.GetOrBuildBytes().PrettyPrint(w, config, depth, parentIndentCount)
 }
 
-func (s *TestSuite) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", s)
+func (s *TestSuite) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", s))
 }
 
-func (c *TestCase) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", c)
+func (c *TestCase) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", c))
 }
 
-func (d *DynamicValue) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	totalN, err := w.Write([]byte{'d', 'y', 'n', '('})
-	if err != nil {
-		return totalN, err
-	}
+func (d *DynamicValue) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write([]byte{'d', 'y', 'n', '('}))
 
-	n, err := d.Resolve(config.Context).PrettyPrint(w, config, depth+1, parentIndentCount)
-	totalN += n
-	if err != nil {
-		return totalN, err
-	}
+	d.Resolve(config.Context).PrettyPrint(w, config, depth+1, parentIndentCount)
 
-	n, err = w.Write([]byte{')'})
-	totalN += n
-	return totalN, err
+	utils.Must(w.Write([]byte{')'}))
+
 }
 
-func (e *Event) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", e)
+func (e *Event) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", e))
 }
 
-func (s *ExecutedStep) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", s)
+func (s *ExecutedStep) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", s))
 }
 
-func (j *LifetimeJob) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", j)
+func (j *LifetimeJob) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", j))
 }
 
-func (watcher *GenericWatcher) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", watcher)
+func (watcher *GenericWatcher) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", watcher))
 }
 
-func (watcher *PeriodicWatcher) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", watcher)
+func (watcher *PeriodicWatcher) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", watcher))
 }
 
-func (m Mutation) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", m)
+func (m Mutation) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", m))
 }
 
-func (watcher *joinedWatchers) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", watcher)
+func (watcher *joinedWatchers) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", watcher))
 }
 
-func (watcher stoppedWatcher) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", watcher)
+func (watcher stoppedWatcher) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", watcher))
 }
 
-func (s *wrappedWatcherStream) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", s)
+func (s *wrappedWatcherStream) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", s))
 }
 
-func (s *ElementsStream) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", s)
+func (s *ElementsStream) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", s))
 }
 
-func (s *ReadableByteStream) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", s)
+func (s *ReadableByteStream) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", s))
 }
 
-func (s *WritableByteStream) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", s)
+func (s *WritableByteStream) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", s))
 }
 
-func (s *ConfluenceStream) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", s)
+func (s *ConfluenceStream) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", s))
 }
 
-func (c Color) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", c)
+func (c Color) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", c))
 }
 
-func (r *RingBuffer) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%T(...)", r)
+func (r *RingBuffer) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%T(...)", r))
 }
 
-func (c *DataChunk) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%T(...)", c)
+func (c *DataChunk) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%T(...)", c))
 }
 
-func (d *StaticCheckData) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%T(...)", d)
+func (d *StaticCheckData) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%T(...)", d))
 }
 
-func (d *SymbolicData) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%T(...)", d)
+func (d *SymbolicData) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%T(...)", d))
 }
 
-func (m *Module) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%T(...)", m)
+func (m *Module) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%T(...)", m))
 }
 
-func (s *GlobalState) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%T(...)", s)
+func (s *GlobalState) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%T(...)", s))
 }
 
-func (m Message) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%T(...)", m)
+func (m Message) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%T(...)", m))
 }
 
-func (s *Subscription) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%T(...)", s)
+func (s *Subscription) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%T(...)", s))
 }
 
-func (p *Publication) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%T(...)", p)
+func (p *Publication) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%T(...)", p))
 }
 
-func (h *ValueHistory) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%T(...)", h)
+func (h *ValueHistory) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%T(...)", h))
 }
 
-func (h *SynchronousMessageHandler) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%T(...)", h)
+func (h *SynchronousMessageHandler) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%T(...)", h))
 }
 
-func (g *SystemGraph) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%T(...)", g)
+func (g *SystemGraph) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%T(...)", g))
 }
 
-func (n *SystemGraphNodes) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%T(...)", n)
+func (n *SystemGraphNodes) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%T(...)", n))
 }
 
-func (n *SystemGraphNode) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%T(...)", n)
+func (n *SystemGraphNode) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%T(...)", n))
 }
 
-func (e SystemGraphEvent) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%T(...)", e)
+func (e SystemGraphEvent) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%T(...)", e))
 }
 
-func (e SystemGraphEdge) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%T(...)", e)
+func (e SystemGraphEdge) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%T(...)", e))
 }

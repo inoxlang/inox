@@ -1215,7 +1215,7 @@ func (sh *shell) printFgTaskResult() {
 
 	switch r := result.(type) {
 	default:
-		r.PrettyPrint(sh.out, prettyPrintConfig, 0, 0)
+		core.PrettyPrint(r, sh.out, prettyPrintConfig, 0, 0)
 		sh.out.Write([]byte{'\n'})
 	case nil, core.NilT:
 		return
@@ -1228,7 +1228,7 @@ func (sh *shell) printFgTaskResult() {
 			fmt.Fprint(sh.out, utils.AddCarriageReturnAfterNewlines(s))
 			return
 		} else {
-			r.PrettyPrint(sh.out, prettyPrintConfig, 0, 0)
+			core.PrettyPrint(r, sh.out, prettyPrintConfig, 0, 0)
 			sh.out.Write([]byte{'\n'})
 		}
 
@@ -1374,8 +1374,8 @@ func (*shell) PropertyNames(ctx *core.Context) []string {
 	return SHELL_PROPNAMES
 }
 
-func (sh *shell) PrettyPrint(w io.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", sh)
+func (sh *shell) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", sh))
 }
 
 func (sh *shell) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {

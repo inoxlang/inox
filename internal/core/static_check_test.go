@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"strings"
@@ -2138,8 +2139,8 @@ func (v testMutableGoValue) WriteJSONRepresentation(ctx *Context, w io.Writer, e
 	return err
 }
 
-func (r testMutableGoValue) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", r)
+func (r testMutableGoValue) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", r))
 }
 
 func (v testMutableGoValue) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {

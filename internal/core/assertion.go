@@ -1,11 +1,13 @@
 package internal
 
 import (
+	"bufio"
 	"bytes"
-	"io"
 
 	parse "github.com/inoxlang/inox/internal/parse"
 )
+
+const ASSERTION_BUFF_WRITER_SIZE = 100
 
 type AssertionError struct {
 	msg  string
@@ -18,17 +20,21 @@ func (err AssertionError) Error() string {
 	}
 
 	buf := bytes.NewBufferString(err.msg)
-	err.writeExplanation(buf, &PrettyPrintConfig{
+	w := bufio.NewWriterSize(buf, ASSERTION_BUFF_WRITER_SIZE)
+
+	err.writeExplanation(w, &PrettyPrintConfig{
 		MaxDepth: 10,
 		Colorize: false,
 		Colors:   &DEFAULT_LIGHTMODE_PRINT_COLORS,
 		Compact:  false,
 		Indent:   []byte{' ', ' '},
 	})
+
+	w.Flush()
 	return buf.String()
 }
 
-func (err AssertionError) writeExplanation(w io.Writer, config *PrettyPrintConfig) {
+func (err AssertionError) writeExplanation(w *bufio.Writer, config *PrettyPrintConfig) {
 	expr := err.data.assertionStatement.Expr
 
 	switch node := expr.(type) {
@@ -46,14 +52,16 @@ func (err AssertionError) writeExplanation(w io.Writer, config *PrettyPrintConfi
 	}
 }
 
-func (err AssertionError) PrettyPrint(w io.Writer, config *PrettyPrintConfig) {
+func (err AssertionError) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig) {
 	w.Write([]byte(err.msg))
 	err.writeExplanation(w, config)
 }
 
 func (err AssertionError) PrettySPrint(config *PrettyPrintConfig) string {
 	buf := bytes.NewBuffer(nil)
-	err.PrettyPrint(buf, config)
+	w := bufio.NewWriterSize(buf, ASSERTION_BUFF_WRITER_SIZE)
+
+	err.PrettyPrint(w, config)
 	return buf.String()
 }
 

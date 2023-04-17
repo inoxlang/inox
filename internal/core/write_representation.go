@@ -161,7 +161,7 @@ func (r Rune) reprBytes() []byte {
 	case '\\':
 		b = QUOTED_ASLASH_RUNE
 	default:
-		b = []byte(fmt.Sprintf("'%c'", r))
+		b = utils.StringAsBytes(fmt.Sprintf("'%c'", r))
 	}
 
 	return b
@@ -195,7 +195,7 @@ func (Float) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) 
 
 func (f Float) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
 	s := strconv.FormatFloat(float64(f), 'f', -1, 64)
-	if _, err := w.Write([]byte(s)); err != nil {
+	if _, err := w.Write(utils.StringAsBytes(s)); err != nil {
 		return err
 	}
 	if !strings.Contains(s, ".") {
@@ -447,7 +447,7 @@ func (list KeyList) WriteRepresentation(ctx *Context, w io.Writer, encountered m
 			}
 		}
 		first = false
-		_, err := w.Write([]byte(v))
+		_, err := w.Write(utils.StringAsBytes(v))
 		if err != nil {
 			return err
 		}
@@ -632,7 +632,7 @@ func (opt Option) WriteRepresentation(ctx *Context, w io.Writer, encountered map
 		}
 	}
 
-	_, err := w.Write([]byte(opt.Name))
+	_, err := w.Write(utils.StringAsBytes(opt.Name))
 	if err != nil {
 		return err
 	}
@@ -669,7 +669,7 @@ func (pth Path) WriteRepresentation(ctx *Context, w io.Writer, encountered map[u
 		b = append(b, pth[i+1:]...)
 		b = append(b, '`')
 	} else {
-		b = []byte(pth)
+		b = utils.StringAsBytes(pth)
 	}
 	_, err := w.Write(b)
 	return err
@@ -708,7 +708,7 @@ func (URL) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bo
 }
 
 func (u URL) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write([]byte(u))
+	_, err := w.Write(utils.StringAsBytes(u))
 	return err
 }
 
@@ -717,7 +717,7 @@ func (Host) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) b
 }
 
 func (host Host) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write([]byte(host))
+	_, err := w.Write(utils.StringAsBytes(host))
 	return err
 }
 
@@ -726,7 +726,7 @@ func (Scheme) HasRepresentation(encountered map[uintptr]int, config *ReprConfig)
 }
 
 func (scheme Scheme) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write([]byte(scheme + "://"))
+	_, err := w.Write(utils.StringAsBytes(scheme + "://"))
 	return err
 }
 
@@ -747,7 +747,7 @@ func (EmailAddress) HasRepresentation(encountered map[uintptr]int, config *ReprC
 }
 
 func (addr EmailAddress) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write([]byte(addr))
+	_, err := w.Write(utils.StringAsBytes(addr))
 	return err
 }
 
@@ -772,7 +772,7 @@ func (i Identifier) WriteRepresentation(ctx *Context, w io.Writer, encountered m
 	if err != nil {
 		return err
 	}
-	_, err = w.Write([]byte(i))
+	_, err = w.Write(utils.StringAsBytes(i))
 	if err != nil {
 		return err
 	}
@@ -788,7 +788,7 @@ func (p PropertyName) WriteRepresentation(ctx *Context, w io.Writer, encountered
 	if err != nil {
 		return err
 	}
-	_, err = w.Write([]byte(p))
+	_, err = w.Write(utils.StringAsBytes(p))
 	if err != nil {
 		return err
 	}
@@ -804,7 +804,7 @@ func (str CheckedString) WriteRepresentation(ctx *Context, w io.Writer, encounte
 	if err != nil {
 		return err
 	}
-	_, err = w.Write([]byte(str.matchingPatternName))
+	_, err = w.Write(utils.StringAsBytes(str.matchingPatternName))
 	if err != nil {
 		return err
 	}
@@ -953,7 +953,7 @@ func (Duration) HasRepresentation(encountered map[uintptr]int, config *ReprConfi
 
 func (d Duration) write(w io.Writer) (int, error) {
 	if d == 0 {
-		return w.Write([]byte("0s"))
+		return w.Write(utils.StringAsBytes("0s"))
 	}
 
 	v := time.Duration(d)
@@ -1115,7 +1115,7 @@ func (pattern TypePattern) WriteRepresentation(ctx *Context, w io.Writer, encoun
 	if !pattern.HasRepresentation(encountered, config) {
 		return ErrNoRepresentation
 	}
-	_, err := w.Write([]byte("%" + pattern.Name))
+	_, err := w.Write(utils.StringAsBytes("%" + pattern.Name))
 	return err
 }
 
@@ -1204,7 +1204,7 @@ func (NamedSegmentPathPattern) HasRepresentation(encountered map[uintptr]int, co
 }
 
 func (patt *NamedSegmentPathPattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write([]byte(patt.node.Raw))
+	_, err := w.Write(utils.StringAsBytes(patt.node.Raw))
 	return err
 }
 

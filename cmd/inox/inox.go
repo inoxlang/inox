@@ -260,7 +260,7 @@ func _main(args []string) {
 			if err != nil {
 				fmt.Println(err)
 			} else {
-				_, err := result.PrettyPrint(os.Stdout, globals.DEFAULT_PRETTY_PRINT_CONFIG.WithContext(state.Ctx), 0, 0)
+				err := core.PrettyPrint(result, os.Stdout, globals.DEFAULT_PRETTY_PRINT_CONFIG.WithContext(state.Ctx), 0, 0)
 				fmt.Println("")
 				if err != nil {
 					fmt.Println(err)

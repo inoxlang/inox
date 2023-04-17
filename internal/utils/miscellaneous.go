@@ -12,8 +12,18 @@ func Must[T any](obj T, err error) T {
 	return obj
 }
 
+func PanicIfErr(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
 func Ret0[A, B any](a A, b B) A {
 	return a
+}
+
+func Ret1[A, B any](a A, b B) B {
+	return b
 }
 
 func SamePointer(a, b interface{}) bool {

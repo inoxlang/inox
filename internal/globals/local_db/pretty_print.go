@@ -1,10 +1,12 @@
 package internal
 
 import (
+	"bufio"
 	"fmt"
-	"io"
+
+	"github.com/inoxlang/inox/internal/utils"
 )
 
-func (kvs *LocalDatabase) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%T(...)", kvs)
+func (kvs *LocalDatabase) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%T(...)", kvs))
 }

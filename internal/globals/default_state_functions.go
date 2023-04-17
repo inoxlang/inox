@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -16,6 +17,8 @@ import (
 
 	"github.com/inoxlang/inox/internal/utils"
 )
+
+const BUFF_WRITER_SIZE = 100
 
 func _get_current_tx(ctx *core.Context) *core.Transaction {
 	return ctx.GetTx()
@@ -35,14 +38,15 @@ func _logvals(ctx *core.Context, args ...core.Value) {
 }
 
 func _log(ctx *core.Context, args ...core.Value) {
-	var buff bytes.Buffer
+	buff := &bytes.Buffer{}
+	w := bufio.NewWriterSize(buff, BUFF_WRITER_SIZE)
 
 	for i, e := range args {
 		if i != 0 {
 			buff.WriteRune(' ')
 		}
 
-		_, err := e.PrettyPrint(&buff, DEFAULT_LOG_PRINT_CONFIG.WithContext(ctx), 0, 0)
+		err := core.PrettyPrint(e, w, DEFAULT_LOG_PRINT_CONFIG.WithContext(ctx), 0, 0)
 		if err != nil {
 			panic(err)
 		}
@@ -57,14 +61,15 @@ func _log(ctx *core.Context, args ...core.Value) {
 }
 
 func __fprint(ctx *core.Context, out io.Writer, args ...core.Value) {
-	var buff bytes.Buffer
+	buff := &bytes.Buffer{}
+	w := bufio.NewWriterSize(buff, BUFF_WRITER_SIZE)
 
 	for i, e := range args {
 		if i != 0 {
 			buff.WriteRune(' ')
 		}
 
-		_, err := e.PrettyPrint(&buff, DEFAULT_PRETTY_PRINT_CONFIG.WithContext(ctx), 0, 0)
+		err := core.PrettyPrint(e, w, DEFAULT_PRETTY_PRINT_CONFIG.WithContext(ctx), 0, 0)
 		if err != nil {
 			panic(err)
 		}

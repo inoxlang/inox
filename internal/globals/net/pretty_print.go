@@ -1,18 +1,20 @@
 package internal
 
 import (
+	"bufio"
 	"fmt"
-	"io"
+
+	"github.com/inoxlang/inox/internal/utils"
 )
 
-func (conn *WebsocketConnection) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", conn)
+func (conn *WebsocketConnection) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", conn))
 }
 
-func (s *WebsocketServer) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", s)
+func (s *WebsocketServer) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", s))
 }
 
-func (conn *TcpConn) PrettyPrint(w io.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) (int, error) {
-	return fmt.Fprintf(w, "%#v", conn)
+func (conn *TcpConn) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", conn))
 }
