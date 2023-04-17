@@ -9,16 +9,19 @@ import (
 
 	core "github.com/inoxlang/inox/internal/core"
 	parse "github.com/inoxlang/inox/internal/parse"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
 	defaultPrettyPrintConfig = &core.PrettyPrintConfig{
-		MaxDepth: 7,
-		Colorize: true,
-		Colors:   &core.DEFAULT_DARKMODE_PRINT_COLORS,
-		Compact:  false,
-		Indent:   []byte{' ', ' '},
+		PrettyPrintConfig: pprint.PrettyPrintConfig{
+			MaxDepth: 7,
+			Colorize: true,
+			Colors:   &pprint.DEFAULT_DARKMODE_PRINT_COLORS,
+			Compact:  false,
+			Indent:   []byte{' ', ' '},
+		},
 	}
 
 	COLOR_NAME_TO_COLOR = map[core.Identifier]termenv.Color{

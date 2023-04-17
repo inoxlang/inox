@@ -10,88 +10,19 @@ import (
 	"strings"
 
 	parse "github.com/inoxlang/inox/internal/parse"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
+
 	"github.com/muesli/termenv"
 )
 
-const PRETTY_PRINT_BUFF_WRITER_SIZE = 100
-
-var LF_CR = []byte{'\n', '\r'}
-var DASH_DASH = []byte{'-', '-'}
-var SHARP_OPENING_PAREN = []byte{'#', '('}
-var COLON_SPACE = []byte{':', ' '}
-var COMMA_SPACE = []byte{',', ' '}
-var CLOSING_BRACKET_CLOSING_PAREN = []byte{']', ')'}
-var CLOSING_CURLY_BRACKET_CLOSING_PAREN = []byte{'}', ')'}
-var THREE_DOTS = []byte{'.', '.', '.'}
-var DOT_OPENING_CURLY_BRACKET = []byte{'.', '{'}
-
-type PrettyPrintColors struct {
-	ControlKeyword, OtherKeyword, PatternLiteral, StringLiteral, PathLiteral, IdentifierLiteral,
-	NumberLiteral, Constant, PatternIdentifier, CssTypeSelector, CssOtherSelector, InvalidNode, Index []byte
-}
-
-type PrettyPrintConfig struct {
-	MaxDepth                    int
-	Colorize                    bool
-	Colors                      *PrettyPrintColors
-	Compact                     bool
-	Indent                      []byte
-	Context                     *Context
-	PrintDecodedTopLevelStrings bool
-}
-
-func (config *PrettyPrintConfig) WithContext(ctx *Context) *PrettyPrintConfig {
-	newConfig := *config
-	newConfig.Context = ctx
-	return &newConfig
-}
-
-func GetFullColorSequence(color termenv.Color, bg bool) []byte {
-	var b = []byte(termenv.CSI)
-	b = append(b, []byte(color.Sequence(bg))...)
-	b = append(b, 'm')
-	return b
-}
-
 const (
-	MAX_VALUE_PRINT_DEPTH = 10
+	PRETTY_PRINT_BUFF_WRITER_SIZE = 100
+	MAX_VALUE_PRINT_DEPTH         = 10
 )
 
 var (
 	ANSI_RESET_SEQUENCE = []byte(termenv.CSI + termenv.ResetSeq + "m")
-
-	DEFAULT_DARKMODE_PRINT_COLORS = PrettyPrintColors{
-		ControlKeyword:    GetFullColorSequence(termenv.ANSIBrightMagenta, false),
-		OtherKeyword:      GetFullColorSequence(termenv.ANSIBlue, false),
-		PatternLiteral:    GetFullColorSequence(termenv.ANSIRed, false),
-		StringLiteral:     GetFullColorSequence(termenv.ANSI256Color(209), false),
-		PathLiteral:       GetFullColorSequence(termenv.ANSI256Color(209), false),
-		IdentifierLiteral: GetFullColorSequence(termenv.ANSIBrightCyan, false),
-		NumberLiteral:     GetFullColorSequence(termenv.ANSIBrightGreen, false),
-		Constant:          GetFullColorSequence(termenv.ANSIBlue, false),
-		PatternIdentifier: GetFullColorSequence(termenv.ANSIBrightGreen, false),
-		CssTypeSelector:   GetFullColorSequence(termenv.ANSIBlack, false),
-		CssOtherSelector:  GetFullColorSequence(termenv.ANSIYellow, false),
-		InvalidNode:       GetFullColorSequence(termenv.ANSIBrightRed, false),
-		Index:             GetFullColorSequence(termenv.ANSIBrightBlack, false),
-	}
-
-	DEFAULT_LIGHTMODE_PRINT_COLORS = PrettyPrintColors{
-		ControlKeyword:    GetFullColorSequence(termenv.ANSI256Color(90), false),
-		OtherKeyword:      GetFullColorSequence(termenv.ANSI256Color(26), false),
-		PatternLiteral:    GetFullColorSequence(termenv.ANSI256Color(1), false),
-		StringLiteral:     GetFullColorSequence(termenv.ANSI256Color(88), false),
-		PathLiteral:       GetFullColorSequence(termenv.ANSI256Color(88), false),
-		IdentifierLiteral: GetFullColorSequence(termenv.ANSI256Color(27), false),
-		NumberLiteral:     GetFullColorSequence(termenv.ANSI256Color(22), false),
-		Constant:          GetFullColorSequence(termenv.ANSI256Color(21), false),
-		PatternIdentifier: GetFullColorSequence(termenv.ANSI256Color(22), false),
-		CssTypeSelector:   GetFullColorSequence(termenv.ANSIBlack, false),
-		CssOtherSelector:  GetFullColorSequence(termenv.ANSIYellow, false),
-		InvalidNode:       GetFullColorSequence(termenv.ANSI256Color(160), false),
-		Index:             GetFullColorSequence(termenv.ANSIBrightBlack, false),
-	}
 
 	QUOTED_BELL_RUNE   = []byte("'\\b'")
 	QUOTED_FFEED_RUNE  = []byte("'\\f'")
@@ -101,7 +32,37 @@ var (
 	QUOTED_VTAB_RUNE   = []byte("'\\v'")
 	QUOTED_SQUOTE_RUNE = []byte("'\\''")
 	QUOTED_ASLASH_RUNE = []byte("'\\\\'")
+
+	LF_CR                               = []byte{'\n', '\r'}
+	DASH_DASH                           = []byte{'-', '-'}
+	SHARP_OPENING_PAREN                 = []byte{'#', '('}
+	COLON_SPACE                         = []byte{':', ' '}
+	COMMA_SPACE                         = []byte{',', ' '}
+	CLOSING_BRACKET_CLOSING_PAREN       = []byte{']', ')'}
+	CLOSING_CURLY_BRACKET_CLOSING_PAREN = []byte{'}', ')'}
+	THREE_DOTS                          = []byte{'.', '.', '.'}
+	DOT_OPENING_CURLY_BRACKET           = []byte{'.', '{'}
 )
+
+type PrettyPrintColors struct {
+	ControlKeyword, OtherKeyword, PatternLiteral, StringLiteral, PathLiteral, IdentifierLiteral,
+	NumberLiteral, Constant, PatternIdentifier, CssTypeSelector, CssOtherSelector, InvalidNode, Index []byte
+}
+
+type PrettyPrintConfig struct {
+	pprint.PrettyPrintConfig
+	Context *Context
+}
+
+func (config *PrettyPrintConfig) WithContext(ctx *Context) *PrettyPrintConfig {
+	newConfig := *config
+	newConfig.Context = ctx
+	return &newConfig
+}
+
+func GetFullColorSequence(color termenv.Color, bg bool) []byte {
+	return pprint.GetFullColorSequence(color, bg)
+}
 
 // Stringify calls PrettyPrint on the passed value
 func Stringify(v Value, ctx *Context) string {
@@ -109,10 +70,12 @@ func Stringify(v Value, ctx *Context) string {
 	w := bufio.NewWriterSize(buff, PRETTY_PRINT_BUFF_WRITER_SIZE)
 
 	err := PrettyPrint(v, w, &PrettyPrintConfig{
-		MaxDepth: 7,
-		Colorize: false,
-		Compact:  true,
-		Context:  ctx,
+		PrettyPrintConfig: pprint.PrettyPrintConfig{
+			MaxDepth: 7,
+			Colorize: false,
+			Compact:  true,
+		},
+		Context: ctx,
 	}, 0, 0)
 
 	if err != nil {
@@ -152,9 +115,9 @@ type ColorizationInfo struct {
 func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo {
 	var colorizations []ColorizationInfo
 
-	var colors = DEFAULT_DARKMODE_PRINT_COLORS
+	var colors = pprint.DEFAULT_DARKMODE_PRINT_COLORS
 	if lightMode {
-		colors = DEFAULT_LIGHTMODE_PRINT_COLORS
+		colors = pprint.DEFAULT_LIGHTMODE_PRINT_COLORS
 	}
 
 	parse.Walk(chunk, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, _ bool) (parse.TraversalAction, error) {
@@ -558,60 +521,7 @@ func (s Str) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, 
 }
 
 func (obj *Object) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	closestState := config.Context.GetClosestState()
-	obj.Lock(closestState)
-	defer obj.Unlock(closestState)
-	//TODO: prevent modification of the object while this function is running
 
-	if depth > config.MaxDepth && len(obj.keys) > 0 {
-		utils.Must(w.Write(utils.StringAsBytes("{(...)}")))
-		return
-	}
-
-	indentCount := parentIndentCount + 1
-	indent := bytes.Repeat(config.Indent, indentCount)
-
-	utils.PanicIfErr(w.WriteByte('{'))
-
-	for i, k := range obj.keys {
-
-		if !config.Compact {
-			utils.Must(w.Write(LF_CR))
-			utils.Must(w.Write(indent))
-		}
-
-		if config.Colorize {
-			utils.Must(w.Write(config.Colors.IdentifierLiteral))
-
-		}
-
-		utils.Must(w.Write(utils.Must(MarshalJsonNoHTMLEspace(k))))
-
-		if config.Colorize {
-			utils.Must(w.Write(ANSI_RESET_SEQUENCE))
-
-		}
-
-		//colon
-		utils.Must(w.Write(COLON_SPACE))
-
-		//value
-		v := obj.values[i]
-		v.PrettyPrint(w, config, depth+1, indentCount)
-
-		//comma & indent
-		isLastEntry := i == len(obj.keys)-1
-
-		if !isLastEntry {
-			utils.Must(w.Write(COMMA_SPACE))
-		}
-	}
-
-	if !config.Compact && len(obj.keys) > 0 {
-		utils.Must(w.Write(LF_CR))
-	}
-
-	utils.MustWriteMany(w, bytes.Repeat(config.Indent, depth), []byte{'}'})
 }
 
 func (rec Record) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {

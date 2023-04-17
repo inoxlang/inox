@@ -5,6 +5,7 @@ import (
 	"bytes"
 
 	parse "github.com/inoxlang/inox/internal/parse"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
 )
 
 const ASSERTION_BUFF_WRITER_SIZE = 100
@@ -23,11 +24,13 @@ func (err AssertionError) Error() string {
 	w := bufio.NewWriterSize(buf, ASSERTION_BUFF_WRITER_SIZE)
 
 	err.writeExplanation(w, &PrettyPrintConfig{
-		MaxDepth: 10,
-		Colorize: false,
-		Colors:   &DEFAULT_LIGHTMODE_PRINT_COLORS,
-		Compact:  false,
-		Indent:   []byte{' ', ' '},
+		PrettyPrintConfig: pprint.PrettyPrintConfig{
+			MaxDepth: 10,
+			Colorize: false,
+			Colors:   &pprint.DEFAULT_LIGHTMODE_PRINT_COLORS,
+			Compact:  false,
+			Indent:   []byte{' ', ' '},
+		},
 	})
 
 	w.Flush()

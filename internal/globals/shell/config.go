@@ -7,6 +7,7 @@ import (
 	"github.com/muesli/termenv"
 
 	core "github.com/inoxlang/inox/internal/core"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
 )
 
 type REPLConfiguration struct {
@@ -118,7 +119,7 @@ type PrintingConfig struct {
 func (c PrintingConfig) PrettyPrintConfig() *core.PrettyPrintConfig {
 	config := *defaultPrettyPrintConfig
 	if c.IsLight() {
-		config.Colors = &core.DEFAULT_LIGHTMODE_PRINT_COLORS
+		config.Colors = &pprint.DEFAULT_LIGHTMODE_PRINT_COLORS
 	}
 	return &config
 }

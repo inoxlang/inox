@@ -19,6 +19,7 @@ import (
 	_s3 "github.com/inoxlang/inox/internal/globals/s3"
 	_shell "github.com/inoxlang/inox/internal/globals/shell"
 	_sql "github.com/inoxlang/inox/internal/globals/sql"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
 )
 
 const (
@@ -40,24 +41,30 @@ var (
 	}
 
 	DEFAULT_LOG_PRINT_CONFIG = &core.PrettyPrintConfig{
-		MaxDepth: 10,
-		Colorize: false,
-		Compact:  true,
+		PrettyPrintConfig: pprint.PrettyPrintConfig{
+			MaxDepth: 10,
+			Colorize: false,
+			Compact:  true,
+		},
 	}
 
 	DEFAULT_PRETTY_PRINT_CONFIG = &core.PrettyPrintConfig{
-		MaxDepth:                    7,
-		Colorize:                    true,
-		Colors:                      &core.DEFAULT_DARKMODE_PRINT_COLORS,
-		Compact:                     false,
-		Indent:                      []byte{' ', ' '},
-		PrintDecodedTopLevelStrings: true,
+		PrettyPrintConfig: pprint.PrettyPrintConfig{
+			MaxDepth:                    7,
+			Colorize:                    true,
+			Colors:                      &pprint.DEFAULT_DARKMODE_PRINT_COLORS,
+			Compact:                     false,
+			Indent:                      []byte{' ', ' '},
+			PrintDecodedTopLevelStrings: true,
+		},
 	}
 
 	STR_CONVERSION_PRETTY_PRINT_CONFIG = &core.PrettyPrintConfig{
-		MaxDepth: 10,
-		Colorize: false,
-		Compact:  true,
+		PrettyPrintConfig: pprint.PrettyPrintConfig{
+			MaxDepth: 10,
+			Colorize: false,
+			Compact:  true,
+		},
 	}
 
 	_ = []core.GoValue{
