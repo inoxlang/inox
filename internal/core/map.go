@@ -89,6 +89,23 @@ func Map(ctx *Context, iterable Iterable, mapper Value) *List {
 			}
 			result.elements = append(result.elements, res)
 		}
+	case AstNode:
+		state := ctx.GetClosestState()
+		treeWalkState := NewTreeWalkStateWithGlobal(state)
+
+		treeWalkState.PushScope()
+		defer treeWalkState.PopScope()
+
+		it := iterable.Iterator(ctx, IteratorConfiguration{})
+		for it.Next(ctx) {
+			e := it.Value(ctx)
+			treeWalkState.CurrentLocalScope()[""] = e
+			res, err := TreeWalkEval(m.Node, treeWalkState)
+			if err != nil {
+				panic(err)
+			}
+			result.elements = append(result.elements, res)
+		}
 	case *Mapping:
 		it := iterable.Iterator(ctx, IteratorConfiguration{})
 		for it.Next(ctx) {
