@@ -30,3 +30,7 @@ func WriteMany[W io.Writer](w W, slices ...[]byte) error {
 	}
 	return nil
 }
+
+func MustWriteMany[W io.Writer](w W, slices ...[]byte) {
+	PanicIfErr(WriteMany(w, slices...))
+}

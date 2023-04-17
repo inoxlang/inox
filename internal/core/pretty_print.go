@@ -611,14 +611,59 @@ func (obj *Object) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth
 		utils.Must(w.Write(LF_CR))
 	}
 
-	utils.WriteMany(w, bytes.Repeat(config.Indent, depth), []byte{'}'})
+	utils.MustWriteMany(w, bytes.Repeat(config.Indent, depth), []byte{'}'})
 }
 
 func (rec Record) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	obj := objFrom(rec.EntryMap())
-	utils.PanicIfErr(w.WriteByte('#'))
+	if depth > config.MaxDepth && len(rec.keys) > 0 {
+		utils.Must(w.Write(utils.StringAsBytes("#{(...)}")))
+		return
+	}
 
-	obj.PrettyPrint(w, config, depth, parentIndentCount)
+	indentCount := parentIndentCount + 1
+	indent := bytes.Repeat(config.Indent, indentCount)
+
+	utils.Must(w.Write(utils.StringAsBytes("#{")))
+
+	for i, k := range rec.keys {
+
+		if !config.Compact {
+			utils.Must(w.Write(LF_CR))
+			utils.Must(w.Write(indent))
+		}
+
+		if config.Colorize {
+			utils.Must(w.Write(config.Colors.IdentifierLiteral))
+
+		}
+
+		utils.Must(w.Write(utils.Must(MarshalJsonNoHTMLEspace(k))))
+
+		if config.Colorize {
+			utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+
+		}
+
+		//colon
+		utils.Must(w.Write(COLON_SPACE))
+
+		//value
+		v := rec.values[i]
+		v.PrettyPrint(w, config, depth+1, indentCount)
+
+		//comma & indent
+		isLastEntry := i == len(rec.keys)-1
+
+		if !isLastEntry {
+			utils.Must(w.Write(COMMA_SPACE))
+		}
+	}
+
+	if !config.Compact && len(rec.keys) > 0 {
+		utils.Must(w.Write(LF_CR))
+	}
+
+	utils.MustWriteMany(w, bytes.Repeat(config.Indent, depth), []byte{'}'})
 }
 
 func (dict *Dictionary) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
