@@ -479,6 +479,10 @@ var (
 		CallImpl: func(values []Value) (Pattern, error) {
 			var stringPattern StringPattern
 
+			if len(values) == 0 {
+				return nil, FmtMissingArgument("pattern")
+			}
+
 			for _, val := range values {
 				switch v := val.(type) {
 				case StringPattern:
@@ -496,6 +500,10 @@ var (
 		},
 		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error) {
 			var stringPattern symbolic.StringPatternElement
+
+			if len(values) == 0 {
+				return nil, FmtMissingArgument("pattern")
+			}
 
 			for _, val := range values {
 				switch v := val.(type) {
