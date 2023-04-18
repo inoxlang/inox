@@ -136,7 +136,7 @@ func fmtInvalidNumberOfNonSpreadArgs(nonVariadicArgCount, nonVariadicParamCount 
 }
 
 func FmtInvalidArg(position int, actual, expected SymbolicValue) string {
-	return fmt.Sprintf("invalid value for argument at position %d: type is %v, but %v was expected", position, actual, expected)
+	return fmt.Sprintf("invalid value for argument at position %d: type is %s, but %s was expected", position, Stringify(actual), Stringify(expected))
 }
 
 func fmtInvalidReturnValue(actual, expected SymbolicValue) string {

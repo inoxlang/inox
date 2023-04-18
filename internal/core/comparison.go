@@ -1739,3 +1739,16 @@ func (e SystemGraphEdge) Equal(ctx *Context, other Value, alreadyCompared map[ui
 
 	return ok && e == otherEdge
 }
+
+func (s *Secret) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	return false
+}
+
+func (s *SecretPattern) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherPattern, ok := other.(*SecretPattern)
+	if !ok {
+		return false
+	}
+
+	return s == otherPattern
+}

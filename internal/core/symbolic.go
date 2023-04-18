@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 // this file contains the implementation of Value.ToSymbolicValue for core types and does some initialization.
@@ -1114,4 +1115,17 @@ func (e SystemGraphEvent) ToSymbolicValue(wide bool, encountered map[uintptr]sym
 
 func (e SystemGraphEdge) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	return symbolic.ANY_SYSTEM_GRAPH_EDGE, nil
+}
+
+func (s *Secret) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	return symbolic.NewSecret(
+		utils.Must(s.value.ToSymbolicValue(wide, encountered)),
+		utils.Must(s.pattern.ToSymbolicValue(wide, encountered)).(*symbolic.SecretPattern),
+	)
+}
+
+func (p *SecretPattern) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	stringPattern := utils.Must(p.stringPattern.ToSymbolicValue(wide, encountered))
+
+	return symbolic.NewSecretPattern(stringPattern.(symbolic.StringPatternElement)), nil
 }

@@ -79,6 +79,7 @@ var (
 	SYSGRAPH_TYPE           = reflect.TypeOf(&SystemGraph{})
 	SYSGRAPH_NODE_TYPE      = reflect.TypeOf(&SystemGraphNode{})
 	SYSGRAPH_EDGE_TYPE      = reflect.TypeOf(SystemGraphEdge{})
+	SECRET_TYPE             = reflect.TypeOf((*Secret)(nil))
 )
 
 var REMOVED_SINGLE_EXPR_ROUTINE_PERMS = []Permission{

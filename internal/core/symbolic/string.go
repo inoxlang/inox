@@ -413,6 +413,11 @@ func (*StringConcatenation) Prop(name string) SymbolicValue {
 	}
 }
 
+func isAnyStringLike(v SymbolicValue) bool {
+	_, ok := v.(*AnyStringLike)
+	return ok
+}
+
 // A AnyStringLike represents a symbolic StringLike we don't know the concret type.
 type AnyStringLike struct {
 	UnassignablePropsMixin

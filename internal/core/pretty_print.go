@@ -1791,3 +1791,11 @@ func (e SystemGraphEvent) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig
 func (e SystemGraphEdge) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(fmt.Fprintf(w, "%T(...)", e))
 }
+
+func (s *Secret) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%T(...)", s))
+}
+
+func (s *SecretPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%T(...)", s))
+}

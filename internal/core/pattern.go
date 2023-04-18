@@ -473,6 +473,47 @@ var (
 		Name:          "sysgraph.node",
 		SymbolicValue: symbolic.ANY_SYSTEM_GRAPH_NODE,
 	}
+	SECRET_PATTERN = &TypePattern{
+		Type: SECRET_TYPE,
+		Name: "secret",
+		CallImpl: func(values []Value) (Pattern, error) {
+			var stringPattern StringPattern
+
+			for _, val := range values {
+				switch v := val.(type) {
+				case StringPattern:
+					if stringPattern != nil {
+						return nil, FmtErrArgumentProvidedAtLeastTwice("pattern")
+					}
+
+					stringPattern = v
+				default:
+					return nil, FmtErrInvalidArgument(v)
+				}
+			}
+
+			return &SecretPattern{stringPattern: stringPattern}, nil
+		},
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error) {
+			var stringPattern symbolic.StringPatternElement
+
+			for _, val := range values {
+				switch v := val.(type) {
+				case symbolic.StringPatternElement:
+					if stringPattern != nil {
+						return nil, FmtErrArgumentProvidedAtLeastTwice("pattern")
+					}
+
+					stringPattern = v
+				default:
+					return nil, errors.New(symbolic.FmtInvalidArg(0, v, symbolic.ANY_SECRET_PATTERN))
+				}
+			}
+
+			return symbolic.NewSecretPattern(stringPattern), nil
+		},
+		SymbolicValue: symbolic.ANY_SECRET,
+	}
 
 	DEFAULT_NAMED_PATTERNS = map[string]Pattern{
 		"ident":          IDENT_PATTERN,
@@ -485,6 +526,7 @@ var (
 		"scheme":         SCHEME_PATTERN,
 		"host":           HOST_PATTERN,
 		"email_addr":     EMAIL_ADDR_PATTERN,
+		"secret":         SECRET_PATTERN,
 		"obj":            OBJECT_PATTERN,
 		"rec":            RECORD_PATTERN,
 		"tuple":          TUPLE_PATTERN,

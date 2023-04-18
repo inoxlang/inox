@@ -539,3 +539,11 @@ func (SystemGraphEvent) IsMutable() bool {
 func (SystemGraphEdge) IsMutable() bool {
 	return false
 }
+
+func (*Secret) IsMutable() bool {
+	return false
+}
+
+func (*SecretPattern) IsMutable() bool {
+	return false
+}
