@@ -723,9 +723,11 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 		}
 
 		// evaluation of manifest, this is performed only to get symbolic data
-		_, err := symbolicEval(n.Manifest.Object, state)
-		if err != nil {
-			return nil, err
+		if n.Manifest != nil {
+			_, err := symbolicEval(n.Manifest.Object, state)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		//evaluation of statements
