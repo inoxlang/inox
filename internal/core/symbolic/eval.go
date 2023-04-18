@@ -296,11 +296,9 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 			state.addError(makeSymbolicEvalError(n, state, msg))
 		})
 
-		if errors.Is(err, ErrPatternNotCallable) {
-			state.addError(makeSymbolicEvalError(n.Callee, state, ErrPatternNotCallable.Error()))
-			patt = &AnyPattern{}
-		} else if err != nil {
-			return nil, err
+		if err != nil {
+			state.addError(makeSymbolicEvalError(n, state, err.Error()))
+			patt = ANY_PATTERN
 		}
 		return patt, nil
 	case *parse.PipelineStatement, *parse.PipelineExpression:

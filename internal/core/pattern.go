@@ -514,7 +514,7 @@ var (
 
 					stringPattern = v
 				default:
-					return nil, errors.New(symbolic.FmtInvalidArg(0, v, symbolic.ANY_SECRET_PATTERN))
+					return nil, errors.New(symbolic.FmtInvalidArg(0, v, symbolic.ANY_STR_PATTERN_ELEM))
 				}
 			}
 

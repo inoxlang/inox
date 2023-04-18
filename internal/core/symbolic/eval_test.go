@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -22,6 +23,9 @@ func TestSymbolicEval(t *testing.T) {
 		state.ctx.AddNamedPattern("int", &TypePattern{
 			val: &Int{},
 			call: func(ctx *Context, values []SymbolicValue) (Pattern, error) {
+				if len(values) == 0 {
+					return nil, errors.New("missing argument")
+				}
 				return &IntRangePattern{}, nil
 			},
 		})
@@ -2966,6 +2970,23 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 			assert.Equal(t, &ObjectPattern{
 				entries: map[string]Pattern{"a": patt},
+			}, res)
+		})
+
+		t.Run("pattern call: invalid/missing arguments", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				return %{a: %int()}
+			`)
+
+			patternCallExpr := parse.FindNode(n, (*parse.PatternCallExpression)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(patternCallExpr, state, "missing argument"),
+			}, state.errors)
+			assert.Equal(t, &ObjectPattern{
+				entries: map[string]Pattern{"a": ANY_PATTERN},
 			}, res)
 		})
 
