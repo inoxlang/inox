@@ -1,11 +1,15 @@
 package internal
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
+	"sort"
+	"strconv"
 
 	parse "github.com/inoxlang/inox/internal/parse"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -83,8 +87,9 @@ func (p *AnyPattern) IsWidenable() bool {
 	return false
 }
 
-func (p *AnyPattern) String() string {
-	return "%pattern"
+func (p *AnyPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%pattern")))
+	return
 }
 
 func (p *AnyPattern) HasUnderylingPattern() bool {
@@ -135,8 +140,9 @@ func (p *PathPattern) IsWidenable() bool {
 	return false
 }
 
-func (p *PathPattern) String() string {
-	return "%path-pattern"
+func (p *PathPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%path-pattern")))
+	return
 }
 
 func (p *PathPattern) HasUnderylingPattern() bool {
@@ -203,8 +209,9 @@ func (p *URLPattern) IsWidenable() bool {
 	return false
 }
 
-func (p *URLPattern) String() string {
-	return "%url-pattern"
+func (p *URLPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%url-pattern")))
+	return
 }
 
 func (p *URLPattern) HasUnderylingPattern() bool {
@@ -271,8 +278,9 @@ func (p *HostPattern) IsWidenable() bool {
 	return false
 }
 
-func (p *HostPattern) String() string {
-	return "%host-pattern"
+func (p *HostPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%host-pattern")))
+	return
 }
 
 func (p *HostPattern) HasUnderylingPattern() bool {
@@ -339,11 +347,12 @@ func (p *NamedSegmentPathPattern) Test(v SymbolicValue) bool {
 	return p.node == nil || p.node == otherPattern.node
 }
 
-func (p *NamedSegmentPathPattern) String() string {
+func (p *NamedSegmentPathPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if p.node == nil {
-		return "%named-segment-path-pattern"
+		utils.Must(w.Write(utils.StringAsBytes("%named-segment-path-pattern")))
+		return
 	}
-	return fmt.Sprintf("%%named-segment-path-pattern(%p)", p.node)
+	utils.Must(fmt.Fprintf(w, "%%named-segment-path-pattern(%p)", p.node))
 }
 
 func (p *NamedSegmentPathPattern) Widen() (SymbolicValue, bool) {
@@ -445,8 +454,10 @@ func (p *ExactValuePattern) IsWidenable() bool {
 	return !ok
 }
 
-func (p *ExactValuePattern) String() string {
-	return fmt.Sprintf("%%exact-value-pattern(%s)", p.value.String())
+func (p *ExactValuePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%exact-value-pattern(\n")))
+	p.value.PrettyPrint(w, config, depth+1, parentIndentCount)
+	utils.Must(w.Write(utils.StringAsBytes("\n)")))
 }
 
 func (p *ExactValuePattern) HasUnderylingPattern() bool {
@@ -495,8 +506,9 @@ func (p *RegexPattern) IsWidenable() bool {
 	return false
 }
 
-func (p *RegexPattern) String() string {
-	return "%%regex-pattern"
+func (p *RegexPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%%regex-pattern")))
+	return
 }
 
 func (p *RegexPattern) HasUnderylingPattern() bool {
@@ -539,9 +551,9 @@ func (p *RegexPattern) WidestOfType() SymbolicValue {
 // An ObjectPattern represents a symbolic ObjectPattern.
 type ObjectPattern struct {
 	NotCallablePatternMixin
-	Entries                    map[string]Pattern
-	Inexact                    bool
-	ComplexPropertyConstraints []*ComplexPropertyConstraint
+	entries                    map[string]Pattern
+	inexact                    bool
+	complexPropertyConstraints []*ComplexPropertyConstraint
 }
 
 func NewAnyObjectPattern() *ObjectPattern {
@@ -549,7 +561,7 @@ func NewAnyObjectPattern() *ObjectPattern {
 }
 
 func newExactObjectPattern(entries map[string]Pattern) *ObjectPattern {
-	return &ObjectPattern{Entries: entries}
+	return &ObjectPattern{entries: entries}
 }
 
 func NewUnitializedObjectPattern() *ObjectPattern {
@@ -557,40 +569,40 @@ func NewUnitializedObjectPattern() *ObjectPattern {
 }
 
 func InitializeObjectPattern(patt *ObjectPattern, entries map[string]Pattern, inexact bool) {
-	if patt.Entries != nil || patt.ComplexPropertyConstraints != nil {
+	if patt.entries != nil || patt.complexPropertyConstraints != nil {
 		panic(ErrValueAlreadyInitialized)
 	}
-	patt.Entries = entries
-	patt.Inexact = inexact
+	patt.entries = entries
+	patt.inexact = inexact
 }
 
 func (p *ObjectPattern) ToRecordPattern() *RecordPattern {
-	if p.Entries == nil {
+	if p.entries == nil {
 		return NewAnyRecordPattern()
 	}
 	patt := NewUnitializedRecordPattern()
 	//TODO: check that SymbolicValue() of entry patterns are immutable
-	InitializeRecordPattern(patt, p.Entries, p.Inexact)
+	InitializeRecordPattern(patt, p.entries, p.inexact)
 	return patt
 }
 
 func (p *ObjectPattern) Test(v SymbolicValue) bool {
 	other, ok := v.(*ObjectPattern)
 
-	if !ok || p.Inexact != other.Inexact {
+	if !ok || p.inexact != other.inexact {
 		return false
 	}
 
-	if p.Entries == nil {
+	if p.entries == nil {
 		return true
 	}
 
-	if other.Entries == nil || len(p.Entries) != len(other.Entries) {
+	if other.entries == nil || len(p.entries) != len(other.entries) {
 		return false
 	}
 
-	for k, v := range p.Entries {
-		otherV, ok := other.Entries[k]
+	for k, v := range p.entries {
+		otherV, ok := other.entries[k]
 		if !ok || !v.Test(otherV) {
 			return false
 		}
@@ -600,18 +612,18 @@ func (p *ObjectPattern) Test(v SymbolicValue) bool {
 }
 
 func (p *ObjectPattern) Widen() (SymbolicValue, bool) {
-	if p.Entries == nil {
+	if p.entries == nil {
 		return nil, false
 	}
 
-	if len(p.Entries) == 0 {
+	if len(p.entries) == 0 {
 		return &ObjectPattern{}, true
 	}
 
 	widenedEntries := make(map[string]Pattern)
 	allAlreadyWidened := true
 
-	for k, v := range p.Entries {
+	for k, v := range p.entries {
 		if val, ok := v.Widen(); ok {
 			allAlreadyWidened = false
 			widenedEntries[k] = val.(Pattern)
@@ -619,45 +631,97 @@ func (p *ObjectPattern) Widen() (SymbolicValue, bool) {
 	}
 
 	if allAlreadyWidened {
-		if !p.Inexact {
+		if !p.inexact {
 			entries := make(map[string]Pattern)
 
-			for k, v := range p.Entries {
+			for k, v := range p.entries {
 				entries[k] = v
 			}
-			return &ObjectPattern{Entries: entries, Inexact: true}, true
+			return &ObjectPattern{entries: entries, inexact: true}, true
 		}
 
 		return &ObjectPattern{}, true
 	}
 
-	return &ObjectPattern{Entries: widenedEntries, Inexact: p.Inexact}, true
+	return &ObjectPattern{entries: widenedEntries, inexact: p.inexact}, true
 }
 
 func (p *ObjectPattern) IsWidenable() bool {
-	return p.Entries != nil
+	return p.entries != nil
 }
 
-func (p *ObjectPattern) String() string {
-	if p.Entries != nil {
-		buff := bytes.NewBufferString("%{")
-		i := 0
-		for k, pattern := range p.Entries {
-			if i > 0 {
-				buff.WriteString(", ")
+func (p *ObjectPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	if p.entries != nil {
+		if depth > config.MaxDepth && len(p.entries) > 0 {
+			utils.Must(w.Write(utils.StringAsBytes("%{(...)}")))
+			return
+		}
+
+		indentCount := parentIndentCount + 1
+		indent := bytes.Repeat(config.Indent, indentCount)
+
+		utils.Must(w.Write([]byte{'%', '{'}))
+
+		var keys []string
+		for k := range p.entries {
+			keys = append(keys, k)
+		}
+
+		sort.Strings(keys)
+
+		for i, k := range keys {
+
+			if !config.Compact {
+				utils.Must(w.Write(LF_CR))
+				utils.Must(w.Write(indent))
 			}
-			buff.WriteString(k)
-			buff.WriteString(": ")
-			buff.WriteString(pattern.String())
-			i++
+
+			if config.Colorize {
+				utils.Must(w.Write(config.Colors.IdentifierLiteral))
+			}
+
+			utils.Must(w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(k))))
+
+			if config.Colorize {
+				utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+			}
+
+			//colon
+			utils.Must(w.Write(COLON_SPACE))
+
+			//value
+			v := p.entries[k]
+			v.PrettyPrint(w, config, depth+1, indentCount)
+
+			//comma & indent
+			isLastEntry := i == len(keys)-1
+
+			if !isLastEntry || p.inexact {
+				utils.Must(w.Write(COLON_SPACE))
+			}
 		}
-		if p.Inexact {
-			buff.WriteString(", ...")
+
+		if p.inexact {
+			if !config.Compact {
+				utils.Must(w.Write(LF_CR))
+				utils.Must(w.Write(indent))
+			}
+
+			utils.Must(w.Write(THREE_DOTS))
 		}
-		buff.WriteRune('}')
-		return buff.String()
+
+		if !config.Compact && len(keys) > 0 {
+			utils.Must(w.Write(LF_CR))
+		}
+
+		utils.Must(w.Write(bytes.Repeat(config.Indent, depth)))
+		if err := w.WriteByte('}'); err != nil {
+			panic(err)
+		}
+		return
 	}
-	return "object-pattern"
+
+	utils.Must(w.Write(utils.StringAsBytes("%object-pattern")))
 }
 
 func (p *ObjectPattern) HasUnderylingPattern() bool {
@@ -670,19 +734,19 @@ func (p *ObjectPattern) TestValue(v SymbolicValue) bool {
 		return false
 	}
 
-	if p.Entries == nil {
+	if p.entries == nil {
 		return true
 	}
 
-	if p.Inexact {
+	if p.inexact {
 		if obj.entries == nil {
 			return false
 		}
-	} else if obj.entries == nil || len(p.Entries) != len(obj.entries) {
+	} else if obj.entries == nil || len(p.entries) != len(obj.entries) {
 		return false
 	}
 
-	for key, valuePattern := range p.Entries {
+	for key, valuePattern := range p.entries {
 		value, _, ok := obj.GetProperty(key)
 		if !ok || !valuePattern.TestValue(value) {
 			return false
@@ -696,8 +760,8 @@ func (p *ObjectPattern) SymbolicValue() SymbolicValue {
 	entries := map[string]SymbolicValue{}
 	static := map[string]Pattern{}
 
-	if p.Entries != nil {
-		for key, valuePattern := range p.Entries {
+	if p.entries != nil {
+		for key, valuePattern := range p.entries {
 			entries[key] = valuePattern.SymbolicValue()
 			static[key] = valuePattern
 		}
@@ -725,9 +789,9 @@ func (p *ObjectPattern) WidestOfType() SymbolicValue {
 // An RecordPattern represents a symbolic RecordPattern.
 type RecordPattern struct {
 	NotCallablePatternMixin
-	Entries                    map[string]Pattern
-	Inexact                    bool
-	ComplexPropertyConstraints []*ComplexPropertyConstraint
+	entries                    map[string]Pattern
+	inexact                    bool
+	complexPropertyConstraints []*ComplexPropertyConstraint
 }
 
 func NewAnyRecordPattern() *RecordPattern {
@@ -739,30 +803,30 @@ func NewUnitializedRecordPattern() *RecordPattern {
 }
 
 func InitializeRecordPattern(patt *RecordPattern, entries map[string]Pattern, inexact bool) {
-	if patt.Entries != nil || patt.ComplexPropertyConstraints != nil {
+	if patt.entries != nil || patt.complexPropertyConstraints != nil {
 		panic(ErrValueAlreadyInitialized)
 	}
-	patt.Entries = entries
-	patt.Inexact = inexact
+	patt.entries = entries
+	patt.inexact = inexact
 }
 
 func (p *RecordPattern) Test(v SymbolicValue) bool {
 	other, ok := v.(*RecordPattern)
 
-	if !ok || p.Inexact != other.Inexact {
+	if !ok || p.inexact != other.inexact {
 		return false
 	}
 
-	if p.Entries == nil {
+	if p.entries == nil {
 		return true
 	}
 
-	if other.Entries == nil || len(p.Entries) != len(other.Entries) {
+	if other.entries == nil || len(p.entries) != len(other.entries) {
 		return false
 	}
 
-	for k, v := range p.Entries {
-		otherV, ok := other.Entries[k]
+	for k, v := range p.entries {
+		otherV, ok := other.entries[k]
 		if !ok || !v.Test(otherV) {
 			return false
 		}
@@ -772,18 +836,18 @@ func (p *RecordPattern) Test(v SymbolicValue) bool {
 }
 
 func (p *RecordPattern) Widen() (SymbolicValue, bool) {
-	if p.Entries == nil {
+	if p.entries == nil {
 		return nil, false
 	}
 
-	if len(p.Entries) == 0 {
+	if len(p.entries) == 0 {
 		return &RecordPattern{}, true
 	}
 
 	widenedEntries := make(map[string]Pattern)
 	allAlreadyWidened := true
 
-	for k, v := range p.Entries {
+	for k, v := range p.entries {
 		if val, ok := v.Widen(); ok {
 			allAlreadyWidened = false
 			widenedEntries[k] = val.(Pattern)
@@ -791,45 +855,95 @@ func (p *RecordPattern) Widen() (SymbolicValue, bool) {
 	}
 
 	if allAlreadyWidened {
-		if !p.Inexact {
+		if !p.inexact {
 			entries := make(map[string]Pattern)
 
-			for k, v := range p.Entries {
+			for k, v := range p.entries {
 				entries[k] = v
 			}
-			return &RecordPattern{Entries: entries, Inexact: true}, true
+			return &RecordPattern{entries: entries, inexact: true}, true
 		}
 
 		return &RecordPattern{}, true
 	}
 
-	return &RecordPattern{Entries: widenedEntries, Inexact: p.Inexact}, true
+	return &RecordPattern{entries: widenedEntries, inexact: p.inexact}, true
 }
 
 func (p *RecordPattern) IsWidenable() bool {
-	return p.Entries != nil
+	return p.entries != nil
 }
 
-func (p *RecordPattern) String() string {
-	if p.Entries != nil {
-		buff := bytes.NewBufferString("%record-pattern(%{")
-		i := 0
-		for k, pattern := range p.Entries {
-			if i > 0 {
-				buff.WriteRune(',')
+func (p *RecordPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	if p.entries != nil {
+		if depth > config.MaxDepth && len(p.entries) > 0 {
+			utils.Must(w.Write(utils.StringAsBytes("record(%{(...)})")))
+			return
+		}
+
+		indentCount := parentIndentCount + 1
+		indent := bytes.Repeat(config.Indent, indentCount)
+
+		utils.Must(w.Write(utils.StringAsBytes("record(%{")))
+
+		var keys []string
+		for k := range p.entries {
+			keys = append(keys, k)
+		}
+
+		sort.Strings(keys)
+
+		for i, k := range keys {
+
+			if !config.Compact {
+				utils.Must(w.Write(LF_CR))
+				utils.Must(w.Write(indent))
 			}
-			buff.WriteString(k)
-			buff.WriteRune(':')
-			buff.WriteString(pattern.String())
-			i++
+
+			if config.Colorize {
+				utils.Must(w.Write(config.Colors.IdentifierLiteral))
+			}
+
+			utils.Must(w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(k))))
+
+			if config.Colorize {
+				utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+			}
+
+			//colon
+			utils.Must(w.Write(COLON_SPACE))
+
+			//value
+			v := p.entries[k]
+			v.PrettyPrint(w, config, depth+1, indentCount)
+
+			//comma & indent
+			isLastEntry := i == len(keys)-1
+
+			if !isLastEntry || p.inexact {
+				utils.Must(w.Write(COMMA_SPACE))
+
+			}
 		}
-		if p.Inexact {
-			buff.WriteString(", ...")
+
+		if p.inexact {
+			if !config.Compact {
+				utils.Must(w.Write(LF_CR))
+				utils.Must(w.Write(indent))
+			}
+
+			utils.Must(w.Write(THREE_DOTS))
 		}
-		buff.WriteString("})")
-		return buff.String()
+
+		if !config.Compact && len(keys) > 0 {
+			utils.Must(w.Write(LF_CR))
+		}
+
+		utils.Must(w.Write(bytes.Repeat(config.Indent, depth)))
+		utils.Must(w.Write(CLOSING_CURLY_BRACKET_CLOSING_PAREN))
+		return
 	}
-	return "%record-pattern"
+	utils.Must(w.Write(utils.StringAsBytes("%record-pattern")))
 }
 
 func (p *RecordPattern) HasUnderylingPattern() bool {
@@ -842,19 +956,19 @@ func (p *RecordPattern) TestValue(v SymbolicValue) bool {
 		return false
 	}
 
-	if p.Entries == nil {
+	if p.entries == nil {
 		return true
 	}
 
-	if p.Inexact {
+	if p.inexact {
 		if rec.entries == nil {
 			return false
 		}
-	} else if rec.entries == nil || len(p.Entries) != len(rec.entries) {
+	} else if rec.entries == nil || len(p.entries) != len(rec.entries) {
 		return false
 	}
 
-	for key, valuePattern := range p.Entries {
+	for key, valuePattern := range p.entries {
 		value, ok := rec.entries[key]
 		if !ok || !valuePattern.TestValue(value) {
 			return false
@@ -868,8 +982,8 @@ func (p *RecordPattern) SymbolicValue() SymbolicValue {
 	rec := &Record{
 		entries: map[string]SymbolicValue{},
 	}
-	if p.Entries != nil {
-		for key, valuePattern := range p.Entries {
+	if p.entries != nil {
+		for key, valuePattern := range p.entries {
 			rec.entries[key] = valuePattern.SymbolicValue()
 		}
 	}
@@ -970,19 +1084,105 @@ func (p *ListPattern) IsWidenable() bool {
 	return false
 }
 
-func (p *ListPattern) String() string {
-	if p.elements != nil {
-		buff := bytes.NewBufferString("%[")
-		for i, elem := range p.elements {
-			if i > 0 {
-				buff.WriteString(", ")
-			}
-			buff.WriteString(elem.SymbolicValue().String())
+func prettyPrintListPattern(
+	w *bufio.Writer, tuplePattern bool,
+	generalElementPattern Pattern, elementPatterns []Pattern,
+	config *pprint.PrettyPrintConfig, depth int, parentIndentCount int,
+
+) {
+
+	if generalElementPattern != nil {
+		b := utils.StringAsBytes("%[]")
+
+		if tuplePattern {
+			b = utils.StringAsBytes("%#[]")
 		}
-		buff.WriteRune(']')
-		return buff.String()
+
+		utils.Must(w.Write(b))
+
+		generalElementPattern.PrettyPrint(w, config, depth, parentIndentCount)
+
+		if tuplePattern {
+			utils.Must(w.Write(utils.StringAsBytes(")")))
+		}
 	}
-	return "%[]" + p.generalElement.SymbolicValue().String()
+
+	if depth > config.MaxDepth && len(elementPatterns) > 0 {
+		b := utils.StringAsBytes("%[(...)]")
+		if tuplePattern {
+			b = utils.StringAsBytes("%#(...)")
+		}
+
+		utils.Must(w.Write(b))
+		return
+	}
+
+	start := utils.StringAsBytes("%[")
+	if tuplePattern {
+		start = utils.StringAsBytes("%#[")
+	}
+	utils.Must(w.Write(start))
+
+	indentCount := parentIndentCount + 1
+	indent := bytes.Repeat(config.Indent, indentCount)
+	printIndices := !config.Compact && len(elementPatterns) > 10
+
+	for i, v := range elementPatterns {
+
+		if !config.Compact {
+			utils.Must(w.Write(LF_CR))
+			utils.Must(w.Write(indent))
+
+			//index
+			if printIndices {
+				if config.Colorize {
+					utils.Must(w.Write(config.Colors.Index))
+				}
+				if i < 10 {
+					utils.PanicIfErr(w.WriteByte(' '))
+				}
+				utils.Must(w.Write(utils.StringAsBytes(strconv.FormatInt(int64(i), 10))))
+				utils.Must(w.Write(config.Colors.Index))
+				utils.Must(w.Write(COLON_SPACE))
+
+				if config.Colorize {
+					utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+				}
+			}
+		}
+
+		//element
+		v.PrettyPrint(w, config, depth+1, indentCount)
+
+		//comma & indent
+		isLastEntry := i == len(elementPatterns)-1
+
+		if !isLastEntry {
+			utils.Must(w.Write(COMMA_SPACE))
+		}
+
+	}
+
+	if !config.Compact && len(elementPatterns) > 0 {
+		utils.Must(w.Write(LF_CR))
+	}
+
+	utils.Must(w.Write(bytes.Repeat(config.Indent, depth)))
+	if tuplePattern {
+		utils.Must(w.Write(CLOSING_BRACKET_CLOSING_PAREN))
+	} else {
+		utils.PanicIfErr(w.WriteByte(']'))
+	}
+}
+
+func (p *ListPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	if p.elements != nil {
+		prettyPrintListPattern(w, false, p.generalElement, p.elements, config, depth, parentIndentCount)
+		return
+	}
+	utils.Must(w.Write(utils.StringAsBytes("%[]")))
+	p.generalElement.PrettyPrint(w, config, 0, parentIndentCount)
+	return
 }
 
 func (p *ListPattern) HasUnderylingPattern() bool {
@@ -1124,19 +1324,14 @@ func (p *TuplePattern) IsWidenable() bool {
 	return false
 }
 
-func (p *TuplePattern) String() string {
+func (p *TuplePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if p.elements != nil {
-		buff := bytes.NewBufferString("%tuple-pattern([")
-		for i, elem := range p.elements {
-			if i > 0 {
-				buff.WriteString(", ")
-			}
-			buff.WriteString(elem.SymbolicValue().String())
-		}
-		buff.WriteString("])")
-		return buff.String()
+		prettyPrintListPattern(w, true, p.generalElement, p.elements, config, depth, parentIndentCount)
+		return
 	}
-	return "%tuple-pattern(" + p.generalElement.SymbolicValue().String() + ")"
+	utils.Must(w.Write(utils.StringAsBytes("%#[]")))
+	p.generalElement.PrettyPrint(w, config, 0, parentIndentCount)
+	return
 }
 
 func (p *TuplePattern) HasUnderylingPattern() bool {
@@ -1248,16 +1443,20 @@ func (p *UnionPattern) IsWidenable() bool {
 	return p.Cases != nil
 }
 
-func (p *UnionPattern) String() string {
-	buff := bytes.NewBufferString("(%| ")
+func (p *UnionPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("(%| ")))
+	indentCount := parentIndentCount + 1
+	indent := bytes.Repeat(config.Indent, indentCount)
+
 	for i, case_ := range p.Cases {
 		if i > 0 {
-			buff.WriteString(" | ")
+			utils.PanicIfErr(w.WriteByte('\n'))
+			utils.Must(w.Write(indent))
+			utils.Must(w.Write(utils.StringAsBytes("| ")))
 		}
-		buff.WriteString(case_.String())
+		case_.PrettyPrint(w, config, depth+1, parentIndentCount)
 	}
-	buff.WriteRune(')')
-	return buff.String()
+	utils.Must(w.Write(utils.StringAsBytes(")")))
 }
 
 func (p *UnionPattern) HasUnderylingPattern() bool {
@@ -1342,16 +1541,20 @@ func (p *IntersectionPattern) IsWidenable() bool {
 	return p.Cases != nil
 }
 
-func (p *IntersectionPattern) String() string {
-	buff := bytes.NewBufferString("(%& ")
+func (p *IntersectionPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("(%& ")))
+	indentCount := parentIndentCount + 1
+	indent := bytes.Repeat(config.Indent, indentCount)
+
 	for i, case_ := range p.Cases {
 		if i > 0 {
-			buff.WriteString(" & ")
+			utils.PanicIfErr(w.WriteByte('\n'))
+			utils.Must(w.Write(indent))
+			utils.Must(w.Write(utils.StringAsBytes("& ")))
 		}
-		buff.WriteString(case_.String())
+		case_.PrettyPrint(w, config, depth+1, parentIndentCount)
 	}
-	buff.WriteRune(')')
-	return buff.String()
+	utils.Must(w.Write(utils.StringAsBytes(")")))
 }
 
 func (p *IntersectionPattern) HasUnderylingPattern() bool {
@@ -1408,8 +1611,9 @@ func (p *OptionPattern) IsWidenable() bool {
 	return false
 }
 
-func (p *OptionPattern) String() string {
-	return "%option-pattern"
+func (p *OptionPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%option-pattern")))
+	return
 }
 
 func (p *OptionPattern) HasUnderylingPattern() bool {
@@ -1501,8 +1705,10 @@ func (p *TypePattern) IsWidenable() bool {
 	return false
 }
 
-func (p *TypePattern) String() string {
-	return fmt.Sprintf("%%type-pattern(%s)", p.val.String())
+func (p *TypePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%type-pattern(")))
+	p.val.PrettyPrint(w, config, depth+1, parentIndentCount)
+	utils.Must(w.Write(utils.StringAsBytes(")")))
 }
 
 func (p *TypePattern) HasUnderylingPattern() bool {
@@ -1562,8 +1768,12 @@ func (p *DifferencePattern) IsWidenable() bool {
 	return false
 }
 
-func (p *DifferencePattern) String() string {
-	return fmt.Sprintf("%%difference-pattern(%s \\ %s)", p.Base.String(), p.Removed.String())
+func (p *DifferencePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("(")))
+	p.Base.PrettyPrint(w, config, depth+1, parentIndentCount)
+	utils.Must(w.Write(utils.StringAsBytes(" \\ ")))
+	p.Removed.PrettyPrint(w, config, depth+1, parentIndentCount)
+	utils.Must(w.Write(utils.StringAsBytes(")")))
 }
 
 func (p *DifferencePattern) HasUnderylingPattern() bool {
@@ -1618,8 +1828,8 @@ func (p *OptionalPattern) IsWidenable() bool {
 	return false
 }
 
-func (p *OptionalPattern) String() string {
-	return fmt.Sprintf("%s?", p.pattern)
+func (p *OptionalPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%s?", p.pattern))
 }
 
 func (p *OptionalPattern) HasUnderylingPattern() bool {
@@ -1759,11 +1969,12 @@ func (p *FunctionPattern) StringPattern() (StringPatternElement, bool) {
 	return nil, false
 }
 
-func (fn *FunctionPattern) String() string {
+func (fn *FunctionPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if fn.node == nil {
-		return "%function-pattern"
+		utils.Must(w.Write(utils.StringAsBytes("%function-pattern")))
+		return
 	}
-	return fmt.Sprintf("%%function-pattern(%v)", fn.node)
+	utils.Must(fmt.Fprintf(w, "%%function-pattern(%v)", fn.node))
 }
 
 func (fn *FunctionPattern) WidestOfType() SymbolicValue {
@@ -1790,8 +2001,9 @@ func (p *IntRangePattern) IsWidenable() bool {
 	return false
 }
 
-func (p *IntRangePattern) String() string {
-	return "%int-range-pattern"
+func (p *IntRangePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%int-range-pattern")))
+	return
 }
 
 func (p *IntRangePattern) HasUnderylingPattern() bool {
@@ -1867,8 +2079,8 @@ func (p *EventPattern) IsWidenable() bool {
 	return false
 }
 
-func (p *EventPattern) String() string {
-	return fmt.Sprintf("%%event(%s)", p.ValuePattern)
+func (p *EventPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%%event(%s)", p.ValuePattern))
 }
 
 func (p *EventPattern) HasUnderylingPattern() bool {
@@ -1931,8 +2143,8 @@ func (p *MutationPattern) IsWidenable() bool {
 	return false
 }
 
-func (p *MutationPattern) String() string {
-	return fmt.Sprintf("%%mutation(%d, %s)", p.kind, p.data0Pattern)
+func (p *MutationPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%%mutation(%d, %s)", p.kind, p.data0Pattern))
 }
 
 func (p *MutationPattern) HasUnderylingPattern() bool {
@@ -2031,23 +2243,24 @@ func (ns *PatternNamespace) IsWidenable() bool {
 	return ok
 }
 
-func (ns *PatternNamespace) String() string {
+func (ns *PatternNamespace) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if ns.entries != nil {
-		buff := bytes.NewBufferString("pattern-namespace{")
+		utils.Must(w.Write(utils.StringAsBytes("pattern-namespace{")))
+
 		i := 0
 		for k, pattern := range ns.entries {
 			if i > 0 {
-				buff.WriteRune(',')
+				utils.Must(w.Write(utils.StringAsBytes(",")))
 			}
-			buff.WriteString(k)
-			buff.WriteRune(':')
-			buff.WriteString(pattern.String())
+			utils.Must(w.Write(utils.StringAsBytes(k)))
+			utils.Must(w.Write(utils.StringAsBytes(":")))
+			pattern.PrettyPrint(w, config, depth+1, parentIndentCount)
 			i++
 		}
-		buff.WriteRune('}')
-		return buff.String()
+		utils.Must(w.Write(utils.StringAsBytes("}")))
+		return
 	}
-	return "pattern-namespace"
+	utils.Must(w.Write(utils.StringAsBytes("pattern-namespace")))
 }
 
 func (ns *PatternNamespace) WidestOfType() SymbolicValue {

@@ -1,12 +1,14 @@
 package internal
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"reflect"
 	"runtime"
 
 	parse "github.com/inoxlang/inox/internal/parse"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -81,26 +83,24 @@ func (fn *InoxFunction) IsWidenable() bool {
 	return fn.node != nil
 }
 
-func (fn *InoxFunction) String() string {
+func (fn *InoxFunction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if fn.node == nil {
-		return "fn"
+		utils.Must(w.Write(utils.StringAsBytes("fn")))
 	}
 
-	buff := bytes.NewBufferString("fn(")
+	utils.Must(w.Write(utils.StringAsBytes("fn(")))
 
 	for i, param := range fn.parameters {
 		if i != 0 {
-			buff.WriteString(", ")
+			utils.Must(w.Write(utils.StringAsBytes(", ")))
 		}
-		buff.WriteString(fn.parameterNames[i])
-		buff.WriteByte(' ')
-		buff.WriteString(param.String())
+		utils.Must(w.Write(utils.StringAsBytes(fn.parameterNames[i])))
+		utils.Must(w.Write(utils.StringAsBytes(" ")))
+		param.PrettyPrint(w, config, 0, 0)
 	}
 
-	buff.WriteString(") ")
-	buff.WriteString(fn.returnType.String())
-
-	return buff.String()
+	utils.Must(w.Write(utils.StringAsBytes(") ")))
+	fn.returnType.PrettyPrint(w, config, 0, 0)
 }
 
 func (fn *InoxFunction) WidestOfType() SymbolicValue {
@@ -187,9 +187,9 @@ func (fn *GoFunction) IsWidenable() bool {
 	return fn.fn != nil
 }
 
-func (fn *GoFunction) String() string {
+func (fn *GoFunction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if fn.fn == nil {
-		return "fn"
+		utils.Must(w.Write(utils.StringAsBytes("fn")))
 	}
 
 	fnValType := reflect.TypeOf(fn.fn)
@@ -202,10 +202,12 @@ func (fn *GoFunction) String() string {
 		start++
 	}
 
+	utils.Must(w.Write(utils.StringAsBytes("fn(")))
+
 	buf := bytes.NewBufferString("fn(")
 	for i := start; i < fnValType.NumIn(); i++ {
 		if i != start {
-			buf.WriteString(", ")
+			utils.Must(w.Write(utils.StringAsBytes(", ")))
 		}
 
 		reflectParamType := fnValType.In(i)
@@ -217,7 +219,7 @@ func (fn *GoFunction) String() string {
 			if err != nil {
 				buf.WriteString("???" + err.Error())
 			} else {
-				buf.WriteString(param.String())
+				param.PrettyPrint(w, config, 0, 0)
 			}
 
 		} else {
@@ -225,21 +227,21 @@ func (fn *GoFunction) String() string {
 			if err != nil {
 				buf.WriteString("???" + err.Error())
 			} else {
-				buf.WriteString(param.String())
+				param.PrettyPrint(w, config, 0, 0)
 			}
 		}
 
 	}
 
-	buf.WriteString(") ")
+	utils.Must(w.Write(utils.StringAsBytes(") ")))
 
 	if fnValType.NumOut() > 1 {
-		buf.WriteString("[")
+		utils.Must(w.Write(utils.StringAsBytes("[")))
 	}
 
 	for i := 0; i < fnValType.NumOut(); i++ {
 		if i != 0 {
-			buf.WriteString(", ")
+			utils.Must(w.Write(utils.StringAsBytes(", ")))
 		}
 
 		reflectReturnType := fnValType.Out(i)
@@ -248,15 +250,14 @@ func (fn *GoFunction) String() string {
 		if err != nil {
 			buf.WriteString("???" + err.Error())
 		} else {
-			buf.WriteString(ret.String())
+			ret.PrettyPrint(w, config, 0, 0)
 		}
 	}
 
 	if fnValType.NumOut() > 1 {
-		buf.WriteString("]")
+		utils.Must(w.Write(utils.StringAsBytes("]")))
 	}
 
-	return buf.String()
 }
 
 func (fn *GoFunction) WidestOfType() SymbolicValue {

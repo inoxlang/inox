@@ -211,7 +211,7 @@ func (Str) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bo
 }
 
 func (s Str) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	jsonStr, err := MarshalJsonNoHTMLEspace(string(s))
+	jsonStr, err := utils.MarshalJsonNoHTMLEspace(string(s))
 	if err != nil {
 		return err
 	}
@@ -224,7 +224,7 @@ func (*RuneSlice) HasRepresentation(encountered map[uintptr]int, config *ReprCon
 }
 
 func (slice *RuneSlice) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	jsonStr, err := MarshalJsonNoHTMLEspace(string(slice.elements))
+	jsonStr, err := utils.MarshalJsonNoHTMLEspace(string(slice.elements))
 	if err != nil {
 		return err
 	}
@@ -285,7 +285,7 @@ func (obj *Object) WriteRepresentation(ctx *Context, w io.Writer, encountered ma
 			w.Write([]byte{','})
 		}
 		first = false
-		jsonStr, _ := MarshalJsonNoHTMLEspace(k)
+		jsonStr, _ := utils.MarshalJsonNoHTMLEspace(k)
 		_, err = w.Write(jsonStr)
 		if err != nil {
 			return err
@@ -337,7 +337,7 @@ func (rec Record) WriteRepresentation(ctx *Context, w io.Writer, encountered map
 			w.Write([]byte{','})
 		}
 		first = false
-		jsonStr, _ := MarshalJsonNoHTMLEspace(k)
+		jsonStr, _ := utils.MarshalJsonNoHTMLEspace(k)
 		_, err = w.Write(jsonStr)
 		if err != nil {
 			return err
@@ -808,7 +808,7 @@ func (str CheckedString) WriteRepresentation(ctx *Context, w io.Writer, encounte
 	if err != nil {
 		return err
 	}
-	jsonStr, _ := MarshalJsonNoHTMLEspace(str.str)
+	jsonStr, _ := utils.MarshalJsonNoHTMLEspace(str.str)
 	_, err = w.Write([]byte{'`'})
 	if err != nil {
 		return err

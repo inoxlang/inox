@@ -1,5 +1,12 @@
 package internal
 
+import (
+	"bufio"
+
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
+)
+
 var (
 	ANY_STREAM_SOURCE = &AnyStreamSource{}
 	_                 = []StreamSource{ANY_STREAM_SOURCE, &ReadableStream{}}
@@ -31,8 +38,9 @@ func (a *AnyStreamSource) IsWidenable() bool {
 	return false
 }
 
-func (r *AnyStreamSource) String() string {
-	return "%stream-source"
+func (r *AnyStreamSource) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%stream-source")))
+	return
 }
 
 func (r *AnyStreamSource) WidestOfType() SymbolicValue {
@@ -80,8 +88,9 @@ func (r *ReadableStream) IsWidenable() bool {
 	return r.element != nil
 }
 
-func (r *ReadableStream) String() string {
-	return "%readable-stream"
+func (r *ReadableStream) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%readable-stream")))
+	return
 }
 
 func (r *ReadableStream) StreamElement() SymbolicValue {

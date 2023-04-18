@@ -1,6 +1,13 @@
 package internal
 
-import symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+import (
+	"bufio"
+
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+
+	"github.com/inoxlang/inox/internal/utils"
+)
 
 type HttpServer struct {
 	symbolic.UnassignablePropsMixin
@@ -48,8 +55,9 @@ func (a *HttpServer) IsWidenable() bool {
 	return false
 }
 
-func (r *HttpServer) String() string {
-	return "%http-server"
+func (r *HttpServer) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%http-server")))
+	return
 }
 
 func (r *HttpServer) WidestOfType() symbolic.SymbolicValue {

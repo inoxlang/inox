@@ -1,6 +1,12 @@
 package internal
 
-import "errors"
+import (
+	"bufio"
+	"errors"
+
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
+)
 
 // An DynamicValue represents a symbolic DynamicValue.
 type DynamicValue struct {
@@ -47,8 +53,9 @@ func (d *DynamicValue) IsWidenable() bool {
 	return d.val.IsWidenable()
 }
 
-func (d *DynamicValue) String() string {
-	return "%dyn"
+func (d *DynamicValue) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%dyn")))
+	return
 }
 
 func (d *DynamicValue) WidestOfType() SymbolicValue {

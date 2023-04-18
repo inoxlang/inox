@@ -1,5 +1,12 @@
 package internal
 
+import (
+	"bufio"
+
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
+)
+
 // A Transaction represents a symbolic Transaction.
 type Transaction struct {
 	UnassignablePropsMixin
@@ -59,8 +66,9 @@ func (tx *Transaction) IsWidenable() bool {
 	return false
 }
 
-func (tx *Transaction) String() string {
-	return "%transaction"
+func (tx *Transaction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%transaction")))
+	return
 }
 
 func (tx *Transaction) WidestOfType() SymbolicValue {

@@ -1,9 +1,12 @@
 package internal
 
 import (
-	"bytes"
+	"bufio"
 	"errors"
 	"reflect"
+
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -133,16 +136,16 @@ func (mv *Multivalue) IsWidenable() bool {
 	return true
 }
 
-func (mv *Multivalue) String() string {
-	buf := bytes.NewBufferString("(")
+func (mv *Multivalue) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.PanicIfErr(w.WriteByte('('))
+
 	for i, val := range mv.values {
-		buf.WriteString(val.String())
+		val.PrettyPrint(w, config, 0, 0)
 		if i < len(mv.values)-1 {
-			buf.WriteString(" | ")
+			utils.Must(w.Write(utils.StringAsBytes("| ")))
 		}
 	}
-	buf.WriteByte(')')
-	return buf.String()
+	utils.PanicIfErr(w.WriteByte(')'))
 }
 
 func (mv *Multivalue) WidestOfType() SymbolicValue {

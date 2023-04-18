@@ -1,6 +1,12 @@
 package internal
 
-import "errors"
+import (
+	"bufio"
+	"errors"
+
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
+)
 
 var (
 	STATIC_CHECK_DATA_PROP_NAMES = []string{"errors"}
@@ -25,8 +31,9 @@ func (d *StaticCheckData) IsWidenable() bool {
 	return false
 }
 
-func (d *StaticCheckData) String() string {
-	return "%static-check-data"
+func (d *StaticCheckData) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%static-check-data")))
+	return
 }
 
 func (m *StaticCheckData) WidestOfType() SymbolicValue {

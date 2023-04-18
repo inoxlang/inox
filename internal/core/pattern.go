@@ -11,6 +11,7 @@ import (
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
+
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -419,7 +420,7 @@ var (
 					return nil, fmt.Errorf("unknown mutation kind '%s'", k)
 				}
 			default:
-				return nil, fmt.Errorf("mutation kind expected at position 0 but is a(n) '%s'", a.String())
+				return nil, fmt.Errorf("mutation kind expected at position 0 but is a(n) '%s'", symbolic.Stringify(a))
 			}
 
 			var data0Pattern symbolic.Pattern = symbolic.ANY_PATTERN //TODO: use symbolic any value

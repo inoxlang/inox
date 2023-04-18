@@ -1,9 +1,12 @@
 package internal
 
 import (
+	"bufio"
 	"errors"
 
 	parse "github.com/inoxlang/inox/internal/parse"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -71,8 +74,9 @@ func (d *SymbolicData) IsWidenable() bool {
 	return false
 }
 
-func (d *SymbolicData) String() string {
-	return "%symbolic-data"
+func (d *SymbolicData) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%symbolic-data")))
+	return
 }
 
 func (m *SymbolicData) WidestOfType() SymbolicValue {

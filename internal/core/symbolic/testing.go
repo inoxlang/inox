@@ -1,5 +1,12 @@
 package internal
 
+import (
+	"bufio"
+
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
+)
+
 // A TestSuite represents a symbolic TestSuite.
 type TestSuite struct {
 	UnassignablePropsMixin
@@ -51,8 +58,9 @@ func (s *TestSuite) IsWidenable() bool {
 	return false
 }
 
-func (s *TestSuite) String() string {
-	return "%test-suite"
+func (s *TestSuite) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%test-suite")))
+	return
 }
 
 // A TestCase represents a symbolic TestCase.
@@ -98,6 +106,7 @@ func (s *TestCase) IsWidenable() bool {
 	return false
 }
 
-func (s *TestCase) String() string {
-	return "%test-case"
+func (s *TestCase) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%test-case")))
+	return
 }

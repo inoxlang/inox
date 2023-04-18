@@ -1,5 +1,12 @@
 package internal
 
+import (
+	"bufio"
+
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
+)
+
 var (
 	GLOBAL_STATE_PROPNAMES = []string{"module"}
 
@@ -63,6 +70,7 @@ func (r *GlobalState) IsWidenable() bool {
 	return false
 }
 
-func (r *GlobalState) String() string {
-	return "%global-state"
+func (r *GlobalState) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%global-state")))
+	return
 }

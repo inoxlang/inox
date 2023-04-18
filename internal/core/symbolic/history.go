@@ -1,9 +1,12 @@
 package internal
 
 import (
+	"bufio"
 	"errors"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -75,7 +78,7 @@ func (h *ValueHistory) SetProp(name string, value SymbolicValue) (IProps, error)
 	case "selected-date":
 		_, ok := value.(*Date)
 		if !ok {
-			return nil, commonfmt.FmtFailedToSetPropXAcceptXButZProvided(name, "date", value.String())
+			return nil, commonfmt.FmtFailedToSetPropXAcceptXButZProvided(name, "date", Stringify(value))
 		}
 		return h, nil
 	}
@@ -98,8 +101,9 @@ func (h *ValueHistory) IsWidenable() bool {
 	return false
 }
 
-func (h *ValueHistory) String() string {
-	return "%value-history"
+func (h *ValueHistory) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%value-history")))
+	return
 }
 
 func (h *ValueHistory) ValueAt(ctx *Context, d *Date) SymbolicValue {

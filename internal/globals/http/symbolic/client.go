@@ -1,7 +1,12 @@
 package internal
 
 import (
+	"bufio"
+
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -50,8 +55,9 @@ func (c *HttpClient) IsWidenable() bool {
 	return false
 }
 
-func (c *HttpClient) String() string {
-	return "%http-client"
+func (c *HttpClient) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%http-client")))
+	return
 }
 
 func (c *HttpClient) WidestOfType() symbolic.SymbolicValue {

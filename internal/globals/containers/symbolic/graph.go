@@ -1,7 +1,12 @@
 package internal
 
 import (
+	"bufio"
+
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var _ = []symbolic.Iterable{&Graph{}}
@@ -64,8 +69,9 @@ func (a *Graph) IsWidenable() bool {
 	return false
 }
 
-func (r *Graph) String() string {
-	return "%graph"
+func (r *Graph) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%graph")))
+	return
 }
 
 func (g *Graph) IteratorElementKey() symbolic.SymbolicValue {
@@ -131,8 +137,9 @@ func (a *GraphNode) IsWidenable() bool {
 	return false
 }
 
-func (r *GraphNode) String() string {
-	return "%graph-node"
+func (r *GraphNode) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%graph-node")))
+	return
 }
 
 func (r *GraphNode) WidestOfType() symbolic.SymbolicValue {

@@ -1,6 +1,13 @@
 package internal
 
-import symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+import (
+	"bufio"
+
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+
+	"github.com/inoxlang/inox/internal/utils"
+)
 
 type ServerSentEventSource struct {
 	symbolic.UnassignablePropsMixin
@@ -43,8 +50,9 @@ func (a *ServerSentEventSource) IsWidenable() bool {
 	return false
 }
 
-func (r *ServerSentEventSource) String() string {
-	return "%event-source"
+func (r *ServerSentEventSource) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%event-source")))
+	return
 }
 
 func (r *ServerSentEventSource) WidestOfType() symbolic.SymbolicValue {

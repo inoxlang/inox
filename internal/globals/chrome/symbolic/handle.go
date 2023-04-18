@@ -1,9 +1,13 @@
 package internal
 
 import (
+	"bufio"
 	"errors"
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 type Handle struct {
@@ -28,8 +32,9 @@ func (a *Handle) IsWidenable() bool {
 	return false
 }
 
-func (r *Handle) String() string {
-	return "%browser-handle"
+func (r *Handle) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%browser-handle")))
+	return
 }
 
 func (r *Handle) WidestOfType() symbolic.SymbolicValue {

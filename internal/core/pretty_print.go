@@ -505,7 +505,7 @@ func (s Str) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, 
 		utils.Must(w.Write(config.Colors.StringLiteral))
 	}
 
-	jsonStr := utils.Must(MarshalJsonNoHTMLEspace(string(s)))
+	jsonStr := utils.Must(utils.MarshalJsonNoHTMLEspace(string(s)))
 
 	if depth > config.MaxDepth && len(jsonStr) > 3 {
 		//TODO: fix cut
@@ -521,7 +521,55 @@ func (s Str) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, 
 }
 
 func (obj *Object) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	if depth > config.MaxDepth && len(obj.keys) > 0 {
+		utils.Must(w.Write(utils.StringAsBytes("{(...)}")))
+		return
+	}
 
+	indentCount := parentIndentCount + 1
+	indent := bytes.Repeat(config.Indent, indentCount)
+
+	utils.Must(w.Write(utils.StringAsBytes("{")))
+
+	for i, k := range obj.keys {
+
+		if !config.Compact {
+			utils.Must(w.Write(LF_CR))
+			utils.Must(w.Write(indent))
+		}
+
+		if config.Colorize {
+			utils.Must(w.Write(config.Colors.IdentifierLiteral))
+
+		}
+
+		utils.Must(w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(k))))
+
+		if config.Colorize {
+			utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+
+		}
+
+		//colon
+		utils.Must(w.Write(COLON_SPACE))
+
+		//value
+		v := obj.values[i]
+		v.PrettyPrint(w, config, depth+1, indentCount)
+
+		//comma & indent
+		isLastEntry := i == len(obj.keys)-1
+
+		if !isLastEntry {
+			utils.Must(w.Write(COMMA_SPACE))
+		}
+	}
+
+	if !config.Compact && len(obj.keys) > 0 {
+		utils.Must(w.Write(LF_CR))
+	}
+
+	utils.MustWriteMany(w, bytes.Repeat(config.Indent, depth), []byte{'}'})
 }
 
 func (rec Record) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -547,7 +595,7 @@ func (rec Record) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth 
 
 		}
 
-		utils.Must(w.Write(utils.Must(MarshalJsonNoHTMLEspace(k))))
+		utils.Must(w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(k))))
 
 		if config.Colorize {
 			utils.Must(w.Write(ANSI_RESET_SEQUENCE))
@@ -639,8 +687,6 @@ func (dict *Dictionary) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, 
 }
 
 func (list KeyList) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	//TODO: prevent modification of the key list while this function is running
-
 	if depth > config.MaxDepth && len(list) > 0 {
 		utils.Must(w.Write(utils.StringAsBytes(".{(...)]}")))
 		return
@@ -936,7 +982,7 @@ func (str CheckedString) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig,
 
 	utils.PanicIfErr(w.WriteByte('`'))
 
-	jsonStr, _ := MarshalJsonNoHTMLEspace(str.str)
+	jsonStr, _ := utils.MarshalJsonNoHTMLEspace(str.str)
 	utils.Must(w.Write(jsonStr[1 : len(jsonStr)-1]))
 	utils.PanicIfErr(w.WriteByte('`'))
 
@@ -1140,7 +1186,6 @@ func (patt *NamedSegmentPathPattern) PrettyPrint(w *bufio.Writer, config *Pretty
 }
 
 func (patt ObjectPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-
 	if depth > config.MaxDepth && len(patt.entryPatterns) > 0 {
 		utils.Must(w.Write(utils.StringAsBytes("%{(...)}")))
 		return
@@ -1169,7 +1214,7 @@ func (patt ObjectPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig
 			utils.Must(w.Write(config.Colors.IdentifierLiteral))
 		}
 
-		utils.Must(w.Write(utils.Must(MarshalJsonNoHTMLEspace(k))))
+		utils.Must(w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(k))))
 
 		if config.Colorize {
 			utils.Must(w.Write(ANSI_RESET_SEQUENCE))
@@ -1210,7 +1255,6 @@ func (patt ObjectPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig
 }
 
 func (patt *RecordPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-
 	if depth > config.MaxDepth && len(patt.entryPatterns) > 0 {
 		utils.Must(w.Write(utils.StringAsBytes("record(%{(...)})")))
 		return
@@ -1239,7 +1283,7 @@ func (patt *RecordPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfi
 			utils.Must(w.Write(config.Colors.IdentifierLiteral))
 		}
 
-		utils.Must(w.Write(utils.Must(MarshalJsonNoHTMLEspace(k))))
+		utils.Must(w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(k))))
 
 		if config.Colorize {
 			utils.Must(w.Write(ANSI_RESET_SEQUENCE))

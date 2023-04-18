@@ -1,5 +1,12 @@
 package internal
 
+import (
+	"bufio"
+
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
+)
+
 var (
 	ANY_WATCHABLE = &AnyWatchable{}
 
@@ -32,8 +39,9 @@ func (a *AnyWatchable) IsWidenable() bool {
 	return false
 }
 
-func (r *AnyWatchable) String() string {
-	return "%watchable"
+func (r *AnyWatchable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%watchable")))
+	return
 }
 
 func (r *AnyWatchable) WidestOfType() SymbolicValue {
@@ -76,8 +84,9 @@ func (r *Watcher) IsWidenable() bool {
 	return r.filter != nil
 }
 
-func (r *Watcher) String() string {
-	return "%watcher"
+func (r *Watcher) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%watcher")))
+	return
 }
 
 func (r *Watcher) WatcherElement() SymbolicValue {

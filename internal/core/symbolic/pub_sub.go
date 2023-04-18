@@ -1,5 +1,12 @@
 package internal
 
+import (
+	"bufio"
+
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
+)
+
 var (
 	ANY_SUBSCRIBER   = &AnySubscriber{}
 	ANY_PUBLICATION  = &Publication{}
@@ -37,8 +44,9 @@ func (a *Publication) IsWidenable() bool {
 	return false
 }
 
-func (r *Publication) String() string {
-	return "%publication"
+func (r *Publication) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%publication")))
+	return
 }
 
 func (r *Publication) WidestOfType() SymbolicValue {
@@ -73,8 +81,9 @@ func (a *Subscription) IsWidenable() bool {
 	return false
 }
 
-func (r *Subscription) String() string {
-	return "%subscription"
+func (r *Subscription) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%subscription")))
+	return
 }
 
 func (r *Subscription) WidestOfType() SymbolicValue {
@@ -100,8 +109,9 @@ func (a *AnySubscriber) IsWidenable() bool {
 	return false
 }
 
-func (r *AnySubscriber) String() string {
-	return "%subscriber"
+func (r *AnySubscriber) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%subscriber")))
+	return
 }
 
 func (r *AnySubscriber) WidestOfType() SymbolicValue {

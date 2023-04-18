@@ -1,9 +1,13 @@
 package internal
 
 import (
+	"bufio"
 	"reflect"
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 type ContentSecurityPolicy struct {
@@ -37,8 +41,9 @@ func (r *ContentSecurityPolicy) IsWidenable() bool {
 	return false
 }
 
-func (r *ContentSecurityPolicy) String() string {
-	return "%content-security-policy"
+func (r *ContentSecurityPolicy) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%content-security-policy")))
+	return
 }
 
 func (r *ContentSecurityPolicy) WidestOfType() symbolic.SymbolicValue {

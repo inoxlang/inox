@@ -1,5 +1,12 @@
 package internal
 
+import (
+	"bufio"
+
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
+)
+
 var (
 	_            = []Integral{&Int{}, &Byte{}, &AnyIntegral{}}
 	ANY_INTEGRAL = &AnyIntegral{}
@@ -29,8 +36,8 @@ func (f *Float) Widen() (SymbolicValue, bool) {
 	return nil, false
 }
 
-func (f *Float) String() string {
-	return "float"
+func (f *Float) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%float")))
 }
 
 func (f *Float) WidestOfType() SymbolicValue {
@@ -55,8 +62,9 @@ func (i *Int) IsWidenable() bool {
 	return false
 }
 
-func (i *Int) String() string {
-	return "%int"
+func (i *Int) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%int")))
+	return
 }
 
 func (i *Int) WidestOfType() SymbolicValue {
@@ -86,8 +94,8 @@ func (*AnyIntegral) IsWidenable() bool {
 	return false
 }
 
-func (*AnyIntegral) String() string {
-	return "integral"
+func (*AnyIntegral) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%integral")))
 }
 
 func (*AnyIntegral) WidestOfType() SymbolicValue {

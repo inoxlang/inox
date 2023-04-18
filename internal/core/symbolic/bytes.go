@@ -1,5 +1,12 @@
 package internal
 
+import (
+	"bufio"
+
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
+)
+
 var (
 	_ = []WrappedString{
 		&String{}, &Identifier{}, &Path{}, &PathPattern{}, &Host{},
@@ -44,8 +51,8 @@ func (s *ByteSlice) IsWidenable() bool {
 	return false
 }
 
-func (s *ByteSlice) String() string {
-	return "%byte-slice"
+func (s *ByteSlice) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%byte-slice")))
 }
 
 func (s *ByteSlice) IteratorElementKey() SymbolicValue {
@@ -128,8 +135,8 @@ func (b *Byte) IsWidenable() bool {
 	return false
 }
 
-func (b *Byte) String() string {
-	return "%byte"
+func (b *Byte) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%byte")))
 }
 
 func (b *Byte) WidestOfType() SymbolicValue {
@@ -194,8 +201,8 @@ func (b *AnyBytesLike) IsWidenable() bool {
 	return false
 }
 
-func (b *AnyBytesLike) String() string {
-	return "%bytes-like"
+func (b *AnyBytesLike) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%bytes-like")))
 }
 
 // func (b *AnyBytesLike) GetOrBuildString() *String {
@@ -268,8 +275,8 @@ func (c *BytesConcatenation) IsWidenable() bool {
 	return false
 }
 
-func (c *BytesConcatenation) String() string {
-	return "%bytes-concatenation"
+func (c *BytesConcatenation) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%bytes-concatenation")))
 }
 
 // func (c *BytesConcatenation) GetOrBuildString() *String {

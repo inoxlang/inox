@@ -1,5 +1,12 @@
 package internal
 
+import (
+	"bufio"
+
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
+)
+
 var (
 	ERR_PROPNAMES = []string{"text", "data"}
 	ANY_ERR       = &Error{data: ANY}
@@ -32,8 +39,9 @@ func (e *Error) IsWidenable() bool {
 	return e.data.IsWidenable()
 }
 
-func (e *Error) String() string {
-	return "%error"
+func (e *Error) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%error")))
+	return
 }
 
 func (e *Error) WidestOfType() SymbolicValue {

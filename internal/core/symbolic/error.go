@@ -52,7 +52,7 @@ func fmtCannotCallNode(node parse.Node) string {
 }
 
 func fmtCannotCall(v SymbolicValue) string {
-	return fmt.Sprintf("cannot call %s", v.String())
+	return fmt.Sprintf("cannot call %s", Stringify(v))
 }
 
 func fmtInvalidBinaryOperator(operator parse.BinaryOperator) string {
@@ -60,11 +60,11 @@ func fmtInvalidBinaryOperator(operator parse.BinaryOperator) string {
 }
 
 func fmtOperandOfBoolNegateShouldBeBool(v SymbolicValue) string {
-	return fmt.Sprintf("operand of ! should should be a boolean but is a %s", v)
+	return fmt.Sprintf("operand of ! should should be a boolean but is a %s", Stringify(v))
 }
 
 func fmtOperandOfNumberNegateShouldBeIntOrFloat(v SymbolicValue) string {
-	return fmt.Sprintf("operand of '-' should should be an integer or float but is a %s", v)
+	return fmt.Sprintf("operand of '-' should should be an integer or float but is a %s", Stringify(v))
 }
 
 func fmtLeftOperandOfBinaryShouldBe(operator parse.BinaryOperator, expectedType string, actual string) string {
@@ -92,35 +92,35 @@ func fmtIfExprTestNotBoolBut(test SymbolicValue) string {
 }
 
 func fmtNotAssignableToVarOftype(a SymbolicValue, b Pattern) string {
-	return fmt.Sprintf("a(n) %s is not assignable to a variable of type %s", a, b.SymbolicValue())
+	return fmt.Sprintf("a(n) %s is not assignable to a variable of type %s", Stringify(a), Stringify(b.SymbolicValue()))
 }
 
 func fmtNotAssignableToPropOfType(a SymbolicValue, b Pattern) string {
-	return fmt.Sprintf("a(n) %s is not assignable to a property of type %s", a, b.SymbolicValue())
+	return fmt.Sprintf("a(n) %s is not assignable to a property of type %s", Stringify(a), Stringify(b.SymbolicValue()))
 }
 
 func fmtUnexpectedElemInListAnnotated(e SymbolicValue, elemType Pattern) string {
-	return fmt.Sprintf("unexpected element of type %s in a list of %s (annotation)", e, elemType.SymbolicValue())
+	return fmt.Sprintf("unexpected element of type %s in a list of %s (annotation)", Stringify(e), Stringify(elemType.SymbolicValue()))
 }
 
 func fmtUnexpectedElemInTupleAnnotated(e SymbolicValue, elemType Pattern) string {
-	return fmt.Sprintf("unexpected element of type %s in a tuple of %s (annotation)", e, elemType.SymbolicValue())
+	return fmt.Sprintf("unexpected element of type %s in a tuple of %s (annotation)", Stringify(e), Stringify(elemType.SymbolicValue()))
 }
 
 func FmtCannotAssignPropertyOf(v SymbolicValue) string {
-	return fmt.Sprintf("cannot assign property of a(n) %s", v.String())
+	return fmt.Sprintf("cannot assign property of a(n) %s", Stringify(v))
 }
 
 func fmtIndexIsNotAnIntButA(v SymbolicValue) string {
-	return fmt.Sprintf("index is not an integer but a(n) %s", v)
+	return fmt.Sprintf("index is not an integer but a(n) %s", Stringify(v))
 }
 
 func fmtStartIndexIsNotAnIntButA(v SymbolicValue) string {
-	return fmt.Sprintf("start index is not an integer but a(n) %s", v)
+	return fmt.Sprintf("start index is not an integer but a(n) %s", Stringify(v))
 }
 
 func fmtEndIndexIsNotAnIntButA(v SymbolicValue) string {
-	return fmt.Sprintf("end index is not an integer but a(n) %s", v)
+	return fmt.Sprintf("end index is not an integer but a(n) %s", Stringify(v))
 }
 
 func fmtMissingProperty(name string) string {
@@ -144,23 +144,23 @@ func fmtInvalidReturnValue(actual, expected SymbolicValue) string {
 }
 
 func fmtListExpectedButIs(value SymbolicValue) string {
-	return fmt.Sprintf("a list was expected but value is a(n) %s", value.String())
+	return fmt.Sprintf("a list was expected but value is a(n) %s", Stringify(value))
 }
 
 func fmtXisNotIterable(v SymbolicValue) string {
-	return fmt.Sprintf("a(n) %s is not iterable", v)
+	return fmt.Sprintf("a(n) %s is not iterable", Stringify(v))
 }
 
 func fmtXisNotWalkable(v SymbolicValue) string {
-	return fmt.Sprintf("a(n) %s is not walkable", v)
+	return fmt.Sprintf("a(n) %s is not walkable", Stringify(v))
 }
 
 func fmtXisNotIndexable(v SymbolicValue) string {
-	return fmt.Sprintf("a(n) %s is not indexable", v)
+	return fmt.Sprintf("a(n) %s is not indexable", Stringify(v))
 }
 
 func fmtXisNotASequence(v SymbolicValue) string {
-	return fmt.Sprintf("a(n) %s is not a sequence", v)
+	return fmt.Sprintf("a(n) %s is not a sequence", Stringify(v))
 }
 
 func fmtXisNotAMutableSequence(v SymbolicValue) string {
@@ -168,11 +168,11 @@ func fmtXisNotAMutableSequence(v SymbolicValue) string {
 }
 
 func fmtSequenceExpectedButIs(value SymbolicValue) string {
-	return fmt.Sprintf("a sequence was expected but value is a(n) %s", value.String())
+	return fmt.Sprintf("a sequence was expected but value is a(n) %s", Stringify(value))
 }
 
 func fmtMutableSequenceExpectedButIs(value SymbolicValue) string {
-	return fmt.Sprintf("a mutable sequence was expected but value is a(n) %s", value.String())
+	return fmt.Sprintf("a mutable sequence was expected but value is a(n) %s", Stringify(value))
 }
 
 func fmtPatternIsNotDeclared(name string) string {
@@ -200,11 +200,11 @@ func fmtAttempToAssignConstantGlobal(name string) string {
 }
 
 func fmtAssertedValueShouldBeBoolNot(v SymbolicValue) string {
-	return fmt.Sprintf("asserted value should be a boolean not a %s", v.String())
+	return fmt.Sprintf("asserted value should be a boolean not a %s", Stringify(v))
 }
 
 func fmtGroupPropertyNotRoutineGroup(v SymbolicValue) string {
-	return fmt.Sprintf("value of .group should be a routine group, not a(n) %s", v.String())
+	return fmt.Sprintf("value of .group should be a routine group, not a(n) %s", Stringify(v))
 }
 
 func fmtValueOfVarShouldBeAModuleNode(name string) string {
@@ -224,26 +224,26 @@ func fmtCannotInterpolateMemberOfPatternNamespaceDoesNotExist(name string, names
 }
 
 func fmtInterpolationIsNotStringBut(v SymbolicValue) string {
-	return fmt.Sprintf("result of interpolation expression should be a string but is a(n) %s", v.String())
+	return fmt.Sprintf("result of interpolation expression should be a string but is a(n) %s", Stringify(v))
 }
 
 func fmtPropOfSymbolicDoesNotExist(name string, v SymbolicValue, suggestion string) string {
 	if suggestion != "" {
 		suggestion = " maybe you meant ." + suggestion
 	}
-	return fmt.Sprintf("property .%s does not exist in %s (%T)%s", name, v.String(), v, suggestion)
+	return fmt.Sprintf("property .%s does not exist in %s (%T)%s", name, Stringify(v), v, suggestion)
 }
 
 func fmtPatternSpreadInObjectPatternShouldBeAnObjectPatternNot(v SymbolicValue) string {
-	return fmt.Sprintf("a pattern that is a spread in an object pattern should be an object pattern not a(n) %s", v.String())
+	return fmt.Sprintf("a pattern that is a spread in an object pattern should be an object pattern not a(n) %s", Stringify(v))
 }
 
 func fmtCannotCreateHostAliasWithA(value SymbolicValue) string {
-	return fmt.Sprintf("cannot create a host alias with a value of type %s", value.String())
+	return fmt.Sprintf("cannot create a host alias with a value of type %s", Stringify(value))
 }
 
 func fmtPatternNamespaceShouldBeInitWithNot(v SymbolicValue) string {
-	return fmt.Sprintf("a pattern namespace should be initialized with an object or a record not a(n) %s", v.String())
+	return fmt.Sprintf("a pattern namespace should be initialized with an object or a record not a(n) %s", Stringify(v))
 }
 
 func fmtMethodCyclesDetected(cycles [][]string) string {
@@ -263,7 +263,7 @@ func fmtCannotInitializedMetaProp(key string) string {
 }
 
 func fmtCannotGetDynamicMemberOfValueWithNoProps(v SymbolicValue) string {
-	return fmt.Sprintf("cannot get dynamic member of value with no properties: %s", v.String())
+	return fmt.Sprintf("cannot get dynamic member of value with no properties: %s", Stringify(v))
 }
 
 func FormatErrPropertyDoesNotExist(name string, v SymbolicValue) error {
@@ -271,7 +271,7 @@ func FormatErrPropertyDoesNotExist(name string, v SymbolicValue) error {
 }
 
 func fmtSynchronizedValueShouldBeASharableValueOrImmutableNot(v SymbolicValue) string {
-	return fmt.Sprintf("synchronized value should be a sharable or immutable value not a(n) %s", v.String())
+	return fmt.Sprintf("synchronized value should be a sharable or immutable value not a(n) %s", Stringify(v))
 }
 
 func fmtXisNotAGroupMatchingPattern(v SymbolicValue) string {
@@ -279,9 +279,9 @@ func fmtXisNotAGroupMatchingPattern(v SymbolicValue) string {
 }
 
 func fmtSubjectOfLifetimeJobShouldBeObjectPatternNot(v SymbolicValue) string {
-	return fmt.Sprintf("the subject pattern of a lifetime job should be an object pattern not an %s", v.String())
+	return fmt.Sprintf("the subject pattern of a lifetime job should be an object pattern not an %s", Stringify(v))
 }
 
 func fmtSelfShouldMatchLifetimeJobSubjectPattern(p Pattern) string {
-	return fmt.Sprintf("self should match subject pattern of lifetime job (%s) ", p.String())
+	return fmt.Sprintf("self should match subject pattern of lifetime job (%s) ", Stringify(p))
 }

@@ -1,14 +1,19 @@
 package internal
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
 	"log"
 	"os"
+	"strings"
 
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+
 	parse "github.com/inoxlang/inox/internal/parse"
 
 	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
@@ -95,11 +100,25 @@ func StartLSPServer() {
 			return &defines.Hover{}, nil
 		}
 
+		buff := &bytes.Buffer{}
+		w := bufio.NewWriterSize(buff, 1000)
+
+		utils.PanicIfErr(symbolic.PrettyPrint(val, w, &pprint.PrettyPrintConfig{
+			MaxDepth: 7,
+			Indent:   []byte{' ', ' '},
+			Colorize: false,
+			Compact:  false,
+		}, 0, 0))
+
+		w.Flush()
+		strinfiged := strings.ReplaceAll(buff.String(), "\n\r", "\n")
+
+		logs.Println(strinfiged)
+
 		return &defines.Hover{
 			Contents: defines.MarkupContent{
-				Kind: defines.MarkupKindMarkdown,
-				Value: "```inox\n" +
-					val.String() + "\n```",
+				Kind:  defines.MarkupKindMarkdown,
+				Value: "```inox\n" + strinfiged + "\n```",
 			},
 		}, nil
 	})

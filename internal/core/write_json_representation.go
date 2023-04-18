@@ -98,7 +98,7 @@ func (Float) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConf
 }
 
 func (f Float) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write(utils.Must(MarshalJsonNoHTMLEspace(f)))
+	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(f)))
 	return err
 }
 
@@ -107,7 +107,7 @@ func (Str) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig
 }
 
 func (s Str) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	jsonStr, err := MarshalJsonNoHTMLEspace(string(s))
+	jsonStr, err := utils.MarshalJsonNoHTMLEspace(string(s))
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func (obj *Object) WriteJSONRepresentation(ctx *Context, w io.Writer, encountere
 			w.Write([]byte{','})
 		}
 		first = false
-		jsonStr, _ := MarshalJsonNoHTMLEspace(k)
+		jsonStr, _ := utils.MarshalJsonNoHTMLEspace(k)
 		_, err = w.Write(jsonStr)
 		if err != nil {
 			return err
@@ -215,7 +215,7 @@ func (rec *Record) WriteJSONRepresentation(ctx *Context, w io.Writer, encountere
 		}
 
 		first = false
-		jsonStr, _ := MarshalJsonNoHTMLEspace(k)
+		jsonStr, _ := utils.MarshalJsonNoHTMLEspace(k)
 		_, err = w.Write(jsonStr)
 		if err != nil {
 			return err
@@ -416,7 +416,7 @@ func (opt Option) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered
 
 	b = append(b, opt.Name...)
 
-	_, err := w.Write(utils.Must(MarshalJsonNoHTMLEspace(string(b))))
+	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(string(b))))
 	if err != nil {
 		return err
 	}
@@ -436,7 +436,7 @@ func (Path) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfi
 }
 
 func (pth Path) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write(utils.Must(MarshalJsonNoHTMLEspace(pth)))
+	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(pth)))
 	return err
 }
 
@@ -445,7 +445,7 @@ func (PathPattern) HasJSONRepresentation(encountered map[uintptr]int, config *Re
 }
 
 func (patt PathPattern) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write(utils.Must(MarshalJsonNoHTMLEspace("%" + patt)))
+	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace("%" + patt)))
 	return err
 }
 
@@ -454,7 +454,7 @@ func (URL) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig
 }
 
 func (u URL) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write(utils.Must(MarshalJsonNoHTMLEspace(u)))
+	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(u)))
 	return err
 }
 
@@ -463,7 +463,7 @@ func (Host) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfi
 }
 
 func (host Host) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write(utils.Must(MarshalJsonNoHTMLEspace(host)))
+	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(host)))
 	return err
 }
 
@@ -472,7 +472,7 @@ func (Scheme) HasJSONRepresentation(encountered map[uintptr]int, config *ReprCon
 }
 
 func (scheme Scheme) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write(utils.Must(MarshalJsonNoHTMLEspace(scheme + "://")))
+	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(scheme + "://")))
 	return err
 }
 
@@ -481,7 +481,7 @@ func (HostPattern) HasJSONRepresentation(encountered map[uintptr]int, config *Re
 }
 
 func (patt HostPattern) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write(utils.Must(MarshalJsonNoHTMLEspace("%" + patt)))
+	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace("%" + patt)))
 	return err
 }
 
@@ -490,7 +490,7 @@ func (EmailAddress) HasJSONRepresentation(encountered map[uintptr]int, config *R
 }
 
 func (addr EmailAddress) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write(utils.Must(MarshalJsonNoHTMLEspace(addr)))
+	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(addr)))
 	return err
 }
 
@@ -499,7 +499,7 @@ func (URLPattern) HasJSONRepresentation(encountered map[uintptr]int, config *Rep
 }
 
 func (patt URLPattern) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write(utils.Must(MarshalJsonNoHTMLEspace("%" + patt)))
+	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace("%" + patt)))
 	return err
 }
 
@@ -508,7 +508,7 @@ func (Identifier) HasJSONRepresentation(encountered map[uintptr]int, config *Rep
 }
 
 func (i Identifier) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write(utils.Must(MarshalJsonNoHTMLEspace("#" + i)))
+	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace("#" + i)))
 	return err
 }
 
@@ -517,7 +517,7 @@ func (PropertyName) HasJSONRepresentation(encountered map[uintptr]int, config *R
 }
 
 func (p PropertyName) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write(utils.Must(MarshalJsonNoHTMLEspace("." + p)))
+	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace("." + p)))
 	return err
 }
 
@@ -529,7 +529,7 @@ func (str CheckedString) WriteJSONRepresentation(ctx *Context, w io.Writer, enco
 	var buff bytes.Buffer
 	str.WriteRepresentation(ctx, &buff, encountered, config)
 
-	_, err := w.Write(utils.Must(MarshalJsonNoHTMLEspace(buff.String())))
+	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
 	return err
 }
 
@@ -541,7 +541,7 @@ func (count ByteCount) writeJSON(w io.Writer) (int, error) {
 	var buff bytes.Buffer
 	count.write(&buff)
 
-	return w.Write(utils.Must(MarshalJsonNoHTMLEspace(buff.String())))
+	return w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
 }
 
 func (count ByteCount) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
@@ -557,7 +557,7 @@ func (count LineCount) writeJSON(w io.Writer) (int, error) {
 	var buff bytes.Buffer
 	count.write(&buff)
 
-	return w.Write(utils.Must(MarshalJsonNoHTMLEspace(buff.String())))
+	return w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
 }
 
 func (count LineCount) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
@@ -577,7 +577,7 @@ func (count RuneCount) writeJSON(w io.Writer) (int, error) {
 	var buff bytes.Buffer
 	count.write(&buff)
 
-	return w.Write(utils.Must(MarshalJsonNoHTMLEspace(buff.String())))
+	return w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
 }
 
 func (count RuneCount) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
@@ -597,7 +597,7 @@ func (rate ByteRate) writeJSON(w io.Writer) (int, error) {
 	var buff bytes.Buffer
 	rate.write(&buff)
 
-	return w.Write(utils.Must(MarshalJsonNoHTMLEspace(buff.String())))
+	return w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
 }
 
 func (rate ByteRate) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
@@ -617,7 +617,7 @@ func (rate SimpleRate) writeJSON(w io.Writer) (int, error) {
 	var buff bytes.Buffer
 	rate.write(&buff)
 
-	return w.Write(utils.Must(MarshalJsonNoHTMLEspace(buff.String())))
+	return w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
 }
 
 func (rate SimpleRate) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
@@ -637,7 +637,7 @@ func (d Duration) writeJSON(w io.Writer) (int, error) {
 	var buff bytes.Buffer
 	d.write(&buff)
 
-	return w.Write(utils.Must(MarshalJsonNoHTMLEspace(buff.String())))
+	return w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
 }
 
 func (d Duration) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
@@ -653,7 +653,7 @@ func (d Date) writeJSON(w io.Writer) (int, error) {
 	var buff bytes.Buffer
 	d.write(&buff)
 
-	return w.Write(utils.Must(MarshalJsonNoHTMLEspace(buff.String())))
+	return w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
 }
 
 func (d Date) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
@@ -677,7 +677,7 @@ func (r RuneRange) writeJSON(w io.Writer) (int, error) {
 	var buff bytes.Buffer
 	r.write(&buff)
 
-	return w.Write(utils.Must(MarshalJsonNoHTMLEspace(buff.String())))
+	return w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
 }
 
 func (r RuneRange) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
@@ -693,7 +693,7 @@ func (r QuantityRange) WriteJSONRepresentation(ctx *Context, w io.Writer, encoun
 	var buff bytes.Buffer
 	r.WriteRepresentation(ctx, &buff, encountered, config)
 
-	_, err := w.Write(utils.Must(MarshalJsonNoHTMLEspace(buff.String())))
+	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
 	return err
 }
 
@@ -705,7 +705,7 @@ func (r IntRange) writeJSON(w io.Writer) (int, error) {
 	var buff bytes.Buffer
 	r.write(&buff)
 
-	return w.Write(utils.Must(MarshalJsonNoHTMLEspace(buff.String())))
+	return w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
 }
 
 func (r IntRange) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
@@ -819,7 +819,7 @@ func (patt *NamedSegmentPathPattern) WriteJSONRepresentation(ctx *Context, w io.
 	var buff bytes.Buffer
 	patt.WriteRepresentation(ctx, &buff, encountered, config)
 
-	_, err := w.Write(utils.Must(MarshalJsonNoHTMLEspace(buff.String())))
+	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
 	return err
 }
 

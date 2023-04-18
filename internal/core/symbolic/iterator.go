@@ -1,5 +1,12 @@
 package internal
 
+import (
+	"bufio"
+
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
+)
+
 var (
 	ANY_ITERABLE = &AnyIterable{}
 )
@@ -30,8 +37,9 @@ func (a *AnyIterable) IsWidenable() bool {
 	return false
 }
 
-func (r *AnyIterable) String() string {
-	return "%iterable"
+func (r *AnyIterable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%iterable")))
+	return
 }
 
 func (r *AnyIterable) WidestOfType() SymbolicValue {
@@ -74,8 +82,9 @@ func (r *Iterator) IsWidenable() bool {
 	return r.ElementValue != nil
 }
 
-func (r *Iterator) String() string {
-	return "%iterator"
+func (r *Iterator) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%iterator")))
+	return
 }
 
 func (r *Iterator) IteratorElementKey() SymbolicValue {

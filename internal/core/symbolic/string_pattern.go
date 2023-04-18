@@ -1,5 +1,12 @@
 package internal
 
+import (
+	"bufio"
+
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
+)
+
 // A StringPatternElement represents a symbolic StringPatternElement.
 type StringPatternElement interface {
 	Pattern
@@ -25,8 +32,9 @@ func (p *AnyStringPatternElement) IsWidenable() bool {
 	return false
 }
 
-func (p *AnyStringPatternElement) String() string {
-	return "%string-pattern"
+func (p *AnyStringPatternElement) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%string-pattern")))
+	return
 }
 
 func (p *AnyStringPatternElement) HasUnderylingPattern() bool {
@@ -86,8 +94,9 @@ func (p *SequenceStringPattern) IsWidenable() bool {
 	return false
 }
 
-func (p *SequenceStringPattern) String() string {
-	return "%sequence-string-pattern"
+func (p *SequenceStringPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%sequence-string-pattern")))
+	return
 }
 
 func (p *SequenceStringPattern) HasUnderylingPattern() bool {
@@ -155,8 +164,9 @@ func (p *ParserBasedPattern) IsWidenable() bool {
 	return false
 }
 
-func (p *ParserBasedPattern) String() string {
-	return "%parser-based-pattern"
+func (p *ParserBasedPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%parser-based-pattern")))
+	return
 }
 
 func (p *ParserBasedPattern) HasUnderylingPattern() bool {

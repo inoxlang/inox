@@ -1,5 +1,12 @@
 package internal
 
+import (
+	"bufio"
+
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
+)
+
 var (
 	_ = []Readable{&String{}}
 )
@@ -32,8 +39,9 @@ func (r *AnyReadable) IsWidenable() bool {
 	return false
 }
 
-func (r *AnyReadable) String() string {
-	return "%readable"
+func (r *AnyReadable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%readable")))
+	return
 }
 
 func (r *AnyReadable) Reader() *Reader {
@@ -102,8 +110,9 @@ func (r *Reader) IsWidenable() bool {
 	return false
 }
 
-func (r *Reader) String() string {
-	return "%reader"
+func (r *Reader) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%reader")))
+	return
 }
 
 func (r *Reader) WidestOfType() SymbolicValue {

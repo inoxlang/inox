@@ -1,9 +1,13 @@
 package internal
 
 import (
+	"bufio"
 	"reflect"
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 type HTMLNode struct {
@@ -62,8 +66,9 @@ func (r *HTMLNode) IsWidenable() bool {
 	return false
 }
 
-func (r *HTMLNode) String() string {
-	return "%html-node"
+func (r *HTMLNode) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%html-node")))
+	return
 }
 
 func (r *HTMLNode) WidestOfType() symbolic.SymbolicValue {

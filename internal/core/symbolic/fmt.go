@@ -1,6 +1,12 @@
 package internal
 
-import "errors"
+import (
+	"bufio"
+	"errors"
+
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
+)
 
 var (
 	ANY_FORMAT = &AnyFormat{}
@@ -33,8 +39,9 @@ func (p *AnyFormat) IsWidenable() bool {
 	return false
 }
 
-func (p *AnyFormat) String() string {
-	return "%format"
+func (p *AnyFormat) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%format")))
+	return
 }
 
 func (p *AnyFormat) HasUnderylingPattern() bool {

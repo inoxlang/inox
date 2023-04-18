@@ -1,10 +1,13 @@
 package internal
 
 import (
+	"bufio"
 	"errors"
 	"reflect"
 
 	parse "github.com/inoxlang/inox/internal/parse"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -59,8 +62,9 @@ func (m *Module) IsWidenable() bool {
 	return m.MainChunk != nil
 }
 
-func (m *Module) String() string {
-	return "%module"
+func (m *Module) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%module")))
+	return
 }
 
 func (m *Module) WidestOfType() SymbolicValue {

@@ -1,7 +1,12 @@
 package internal
 
 import (
+	"bufio"
+
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 type Node struct {
@@ -55,8 +60,9 @@ func (r *Node) IsWidenable() bool {
 	return false
 }
 
-func (r *Node) String() string {
-	return "%dom-node"
+func (r *Node) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%dom-node")))
+	return
 }
 
 func (r *Node) WidestOfType() symbolic.SymbolicValue {

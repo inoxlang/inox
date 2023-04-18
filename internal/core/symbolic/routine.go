@@ -1,5 +1,12 @@
 package internal
 
+import (
+	"bufio"
+
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
+)
+
 var (
 	ROUTINE_PROPNAMES       = []string{"wait_result", "cancel", "steps"}
 	ROUTINE_GROUP_PROPNAMES = []string{"wait_results", "cancelAll"}
@@ -67,8 +74,9 @@ func (r *Routine) IsWidenable() bool {
 	return false
 }
 
-func (r *Routine) String() string {
-	return "%routine"
+func (r *Routine) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%routine")))
+	return
 }
 
 // A RoutineGroup represents a symbolic RoutineGroup.
@@ -128,8 +136,9 @@ func (g *RoutineGroup) IsWidenable() bool {
 	return false
 }
 
-func (g *RoutineGroup) String() string {
-	return "%routine-group"
+func (g *RoutineGroup) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%routine-group")))
+	return
 }
 
 func (g *RoutineGroup) WidestOfType() SymbolicValue {
@@ -193,6 +202,7 @@ func (r *ExecutedStep) IsWidenable() bool {
 	return false
 }
 
-func (r *ExecutedStep) String() string {
-	return "%executed-step"
+func (r *ExecutedStep) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%executed-step")))
+	return
 }

@@ -1,9 +1,13 @@
 package internal
 
 import (
+	"bufio"
 	"errors"
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -71,8 +75,9 @@ func (t *Tree) IsWidenable() bool {
 	return false
 }
 
-func (t *Tree) String() string {
-	return "%tree"
+func (t *Tree) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%tree")))
+	return
 }
 
 func (t *Tree) IteratorElementKey() symbolic.SymbolicValue {
@@ -179,8 +184,9 @@ func (a *TreeNode) IsWidenable() bool {
 	return false
 }
 
-func (r *TreeNode) String() string {
-	return "%tree-node"
+func (r *TreeNode) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%tree-node")))
+	return
 }
 
 func (r *TreeNode) WidestOfType() symbolic.SymbolicValue {
@@ -242,8 +248,9 @@ func (p *TreeNodePattern) IteratorElementValue() symbolic.SymbolicValue {
 	return ANY_TREE_NODE
 }
 
-func (p *TreeNodePattern) String() string {
-	return "%tree-node-pattern"
+func (p *TreeNodePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%tree-node-pattern")))
+	return
 }
 
 func (p *TreeNodePattern) WidestOfType() symbolic.SymbolicValue {

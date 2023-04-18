@@ -1,7 +1,12 @@
 package internal
 
 import (
+	"bufio"
+
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 type HttpResponseWriter struct {
@@ -62,8 +67,9 @@ func (a *HttpResponseWriter) IsWidenable() bool {
 	return false
 }
 
-func (r *HttpResponseWriter) String() string {
-	return "%http-response-writer"
+func (r *HttpResponseWriter) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%http-response-writer")))
+	return
 }
 
 func (r *HttpResponseWriter) WidestOfType() symbolic.SymbolicValue {

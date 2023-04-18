@@ -1,11 +1,15 @@
 package internal
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
+	"sort"
+	"strconv"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -119,19 +123,68 @@ func (list *List) IsWidenable() bool {
 	return list.elements != nil || !isAny(list.generalElement)
 }
 
-func (a *List) String() string {
-	if a.elements != nil {
-		buff := bytes.NewBufferString("[")
-		for i, elem := range a.elements {
-			if i > 0 {
-				buff.WriteString(", ")
-			}
-			buff.WriteString(elem.String())
+func (list *List) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	if list.elements != nil {
+		length := list.knownLen()
+
+		if depth > config.MaxDepth && length > 0 {
+			utils.Must(w.Write(utils.StringAsBytes("[(...)]")))
+			return
 		}
-		buff.WriteRune(']')
-		return buff.String()
+
+		utils.PanicIfErr(w.WriteByte('['))
+
+		indentCount := parentIndentCount + 1
+		indent := bytes.Repeat(config.Indent, indentCount)
+		printIndices := !config.Compact && length > 10
+
+		for i := 0; i < length; i++ {
+			v := list.elements[i]
+
+			if !config.Compact {
+				utils.Must(w.Write(LF_CR))
+				utils.Must(w.Write(indent))
+
+				//index
+				if printIndices {
+					if config.Colorize {
+						utils.Must(w.Write(config.Colors.Index))
+					}
+					if i < 10 {
+						utils.PanicIfErr(w.WriteByte(' '))
+					}
+					utils.Must(w.Write(utils.StringAsBytes(strconv.FormatInt(int64(i), 10))))
+					utils.Must(w.Write(COLON_SPACE))
+					if config.Colorize {
+						utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+					}
+				}
+			}
+
+			//element
+			v.PrettyPrint(w, config, depth+1, indentCount)
+
+			//comma & indent
+			isLastEntry := i == length-1
+
+			if !isLastEntry {
+				utils.Must(w.Write(COMMA_SPACE))
+			}
+
+		}
+
+		var end []byte
+		if !config.Compact && length > 0 {
+			end = append(end, '\n', '\r')
+		}
+		end = append(end, bytes.Repeat(config.Indent, depth)...)
+		end = append(end, ']')
+
+		utils.Must(w.Write(end))
+		return
 	}
-	return "[]" + a.generalElement.String()
+	utils.Must(w.Write(utils.StringAsBytes("[]")))
+	list.generalElement.PrettyPrint(w, config, 0, 0)
 }
 
 func (a *List) HasKnownLen() bool {
@@ -306,19 +359,15 @@ func (t *Tuple) IsWidenable() bool {
 	return t.elements != nil || !isAny(t.generalElement)
 }
 
-func (t *Tuple) String() string {
+func (t *Tuple) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if t.elements != nil {
-		buff := bytes.NewBufferString("#[")
-		for i, elem := range t.elements {
-			if i > 0 {
-				buff.WriteString(", ")
-			}
-			buff.WriteString(elem.String())
-		}
-		buff.WriteRune(']')
-		return buff.String()
+		lst := NewList(t.elements...)
+		utils.Must(w.Write([]byte{'#'}))
+		lst.PrettyPrint(w, config, depth, parentIndentCount)
+		return
 	}
-	return "#[]" + t.generalElement.String()
+	utils.Must(w.Write(utils.StringAsBytes("#[]")))
+	t.generalElement.PrettyPrint(w, config, 0, 0)
 }
 
 func (t *Tuple) append(element SymbolicValue) {
@@ -422,19 +471,30 @@ func (list *KeyList) IsWidenable() bool {
 	return list.Keys != nil
 }
 
-func (a *KeyList) String() string {
-	if a.Keys != nil {
-		buff := bytes.NewBufferString(".{")
-		for i, key := range a.Keys {
-			if i > 0 {
-				buff.WriteRune(',')
-			}
-			buff.WriteString(key)
+func (list *KeyList) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	if list.Keys != nil {
+		if depth > config.MaxDepth && len(list.Keys) > 0 {
+			utils.Must(w.Write(utils.StringAsBytes(".{(...)]}")))
+			return
 		}
-		buff.WriteRune('}')
-		return buff.String()
+
+		utils.Must(w.Write(DOT_OPENING_CURLY_BRACKET))
+
+		first := true
+
+		for _, k := range list.Keys {
+			if !first {
+				utils.Must(w.Write(COMMA_SPACE))
+			}
+			first = false
+
+			utils.Must(w.Write([]byte(k)))
+		}
+
+		utils.PanicIfErr(w.WriteByte(']'))
+		return
 	}
-	return "key-list"
+	utils.Must(w.Write(utils.StringAsBytes("%key-list")))
 }
 
 func (a *KeyList) append(key string) {
@@ -554,23 +614,69 @@ func (dict *Dictionary) IsWidenable() bool {
 	return ok
 }
 
-func (dict *Dictionary) String() string {
+func (dict *Dictionary) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if dict.Entries != nil {
-		buff := bytes.NewBufferString(":{")
-		i := 0
-		for k, pattern := range dict.Entries {
-			if i > 0 {
-				buff.WriteString(", ")
-			}
-			buff.WriteString(k)
-			buff.WriteString(": ")
-			buff.WriteString(pattern.String())
-			i++
+		if depth > config.MaxDepth && len(dict.Entries) > 0 {
+			utils.Must(w.Write(utils.StringAsBytes(":{(...)}")))
+			return
 		}
-		buff.WriteRune('}')
-		return buff.String()
+
+		indentCount := parentIndentCount + 1
+		indent := bytes.Repeat(config.Indent, indentCount)
+
+		utils.Must(w.Write(utils.StringAsBytes(":{")))
+
+		var keys []string
+		for k := range dict.Entries {
+			keys = append(keys, k)
+		}
+
+		sort.Strings(keys)
+
+		for i, k := range keys {
+			if !config.Compact {
+				utils.Must(w.Write(LF_CR))
+				utils.Must(w.Write(indent))
+			}
+
+			//key
+			if config.Colorize {
+				utils.Must(w.Write(config.Colors.StringLiteral))
+
+			}
+			utils.Must(w.Write(utils.StringAsBytes(k)))
+
+			if config.Colorize {
+				utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+			}
+
+			//colon
+			utils.Must(w.Write(COLON_SPACE))
+
+			//value
+			v := dict.Entries[k]
+
+			v.PrettyPrint(w, config, depth+1, indentCount)
+
+			//comma & indent
+			isLastEntry := i == len(keys)-1
+
+			if !isLastEntry {
+				utils.Must(w.Write([]byte{',', ' '}))
+
+			}
+
+		}
+
+		if !config.Compact && len(keys) > 0 {
+			utils.Must(w.Write(LF_CR))
+		}
+		utils.Must(w.Write(bytes.Repeat(config.Indent, depth)))
+		utils.PanicIfErr(w.WriteByte(']'))
+		return
 	}
-	return "%dictionary"
+	utils.Must(w.Write(utils.StringAsBytes("%dictionary")))
+	return
 }
 
 func (d *Dictionary) WidestOfType() SymbolicValue {
@@ -792,17 +898,17 @@ func (obj *Object) GetProperty(name string) (SymbolicValue, Pattern, bool) {
 func (obj *Object) AddStatic(pattern Pattern) {
 	if objPatt, ok := pattern.(*ObjectPattern); ok {
 		if obj.static == nil {
-			obj.static = make(map[string]Pattern, len(objPatt.Entries))
+			obj.static = make(map[string]Pattern, len(objPatt.entries))
 		}
 
-		for k, v := range objPatt.Entries {
+		for k, v := range objPatt.entries {
 			if _, ok := obj.entries[k]; !ok {
 				//TODO
 			}
 			obj.static[k] = v
 		}
 
-		if !objPatt.Inexact && len(obj.entries) != len(objPatt.Entries) {
+		if !objPatt.inexact && len(obj.entries) != len(objPatt.entries) {
 			//TODO
 		}
 	} else if _, ok := pattern.(*TypePattern); ok {
@@ -869,23 +975,61 @@ func (obj *Object) IsWidenable() bool {
 	return ok
 }
 
-func (obj *Object) String() string {
+func (obj *Object) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if obj.entries != nil {
-		buff := bytes.NewBufferString("{")
-		i := 0
-		for k, pattern := range obj.entries {
-			if i > 0 {
-				buff.WriteString(", ")
-			}
-			buff.WriteString(k)
-			buff.WriteString(": ")
-			buff.WriteString(pattern.String())
-			i++
+		if depth > config.MaxDepth && len(obj.entries) > 0 {
+			utils.Must(w.Write(utils.StringAsBytes("{(...)}")))
+			return
 		}
-		buff.WriteRune('}')
-		return buff.String()
+
+		indentCount := parentIndentCount + 1
+		indent := bytes.Repeat(config.Indent, indentCount)
+
+		utils.Must(w.Write(utils.StringAsBytes("{")))
+
+		keys := utils.GetMapKeys(obj.entries)
+
+		for i, k := range keys {
+
+			if !config.Compact {
+				utils.Must(w.Write(LF_CR))
+				utils.Must(w.Write(indent))
+			}
+
+			if config.Colorize {
+				utils.Must(w.Write(config.Colors.IdentifierLiteral))
+			}
+
+			utils.Must(w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(k))))
+
+			if config.Colorize {
+				utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+			}
+
+			//colon
+			utils.Must(w.Write(COLON_SPACE))
+
+			//value
+			v := obj.entries[k]
+			v.PrettyPrint(w, config, depth+1, indentCount)
+
+			//comma & indent
+			isLastEntry := i == len(keys)-1
+
+			if !isLastEntry {
+				utils.Must(w.Write(COMMA_SPACE))
+			}
+		}
+
+		if !config.Compact && len(keys) > 0 {
+			utils.Must(w.Write(LF_CR))
+		}
+
+		utils.MustWriteMany(w, bytes.Repeat(config.Indent, depth), []byte{'}'})
+		return
 	}
-	return "%object"
+	utils.Must(w.Write(utils.StringAsBytes("%object")))
+	return
 }
 
 func (o *Object) WidestOfType() SymbolicValue {
@@ -1040,26 +1184,66 @@ func (rec *Record) IsWidenable() bool {
 	return ok
 }
 
-func (rec *Record) String() string {
+func (rec *Record) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if rec.entries != nil {
-		buff := bytes.NewBufferString("#{")
-		i := 0
-		for k, pattern := range rec.entries {
-			if i > 0 {
-				buff.WriteString(", ")
-			}
-			buff.WriteString(k)
-			buff.WriteString(": ")
-			buff.WriteString(pattern.String())
-			i++
+		if depth > config.MaxDepth && len(rec.entries) > 0 {
+			utils.Must(w.Write(utils.StringAsBytes("#{(...)}")))
+			return
 		}
-		buff.WriteRune('}')
-		return buff.String()
+
+		indentCount := parentIndentCount + 1
+		indent := bytes.Repeat(config.Indent, indentCount)
+
+		utils.Must(w.Write(utils.StringAsBytes("#{")))
+
+		keys := utils.GetMapKeys(rec.entries)
+
+		for i, k := range keys {
+
+			if !config.Compact {
+				utils.Must(w.Write(LF_CR))
+				utils.Must(w.Write(indent))
+			}
+
+			if config.Colorize {
+				utils.Must(w.Write(config.Colors.IdentifierLiteral))
+			}
+
+			utils.Must(w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(k))))
+
+			if config.Colorize {
+				utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+			}
+
+			//colon
+			utils.Must(w.Write(COLON_SPACE))
+
+			//value
+			v := rec.entries[k]
+			v.PrettyPrint(w, config, depth+1, indentCount)
+
+			//comma & indent
+			isLastEntry := i == len(keys)-1
+
+			if !isLastEntry {
+				utils.Must(w.Write(COMMA_SPACE))
+			}
+		}
+
+		if !config.Compact && len(keys) > 0 {
+			utils.Must(w.Write(LF_CR))
+		}
+
+		utils.MustWriteMany(w, bytes.Repeat(config.Indent, depth), []byte{'}'})
+		return
 	}
 	if rec.valueOnly == nil {
-		return "record"
+		utils.Must(w.Write(utils.StringAsBytes("%record")))
+		return
 	}
-	return fmt.Sprintf("record(any, %s)", rec.valueOnly.String())
+	utils.Must(w.Write(utils.StringAsBytes("#{ any -> ")))
+	rec.valueOnly.PrettyPrint(w, config, 0, parentIndentCount)
+	utils.Must(w.Write(utils.StringAsBytes("}")))
 }
 
 func (r *Record) WidestOfType() SymbolicValue {
@@ -1085,8 +1269,9 @@ func (a *AnyIndexable) IsWidenable() bool {
 	return false
 }
 
-func (r *AnyIndexable) String() string {
-	return "%indexable"
+func (r *AnyIndexable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%indexable")))
+	return
 }
 
 func (r *AnyIndexable) WidestOfType() SymbolicValue {

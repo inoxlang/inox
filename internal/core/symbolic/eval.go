@@ -1657,7 +1657,7 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 			if _, ok := left.(*Int); ok {
 				_, ok = right.(*Int)
 				if !ok {
-					state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "int", right.String())))
+					state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "int", Stringify(right))))
 				}
 
 				switch n.Operator {
@@ -1669,7 +1669,7 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 			} else if _, ok := left.(*Float); ok {
 				_, ok = right.(*Float)
 				if !ok {
-					state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "float", right.String())))
+					state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "float", Stringify(right))))
 				}
 				switch n.Operator {
 				case parse.Add, parse.Sub, parse.Mul, parse.Div:
@@ -1678,7 +1678,7 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 					return &Bool{}, nil
 				}
 			} else {
-				state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "int or float", left.String())))
+				state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "int or float", Stringify(left))))
 
 				var arithmeticReturnVal SymbolicValue
 				switch right.(type) {
@@ -1687,7 +1687,7 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 				case *Float:
 					arithmeticReturnVal = ANY_FLOAT
 				default:
-					state.addError(makeSymbolicEvalError(n.Left, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "int or float", right.String())))
+					state.addError(makeSymbolicEvalError(n.Left, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "int or float", Stringify(right))))
 					arithmeticReturnVal = ANY
 				}
 
@@ -1708,20 +1708,20 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 			switch right.(type) {
 			case *List, *Object:
 			default:
-				state.addError(makeSymbolicEvalError(node, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "iterable", right.String())))
+				state.addError(makeSymbolicEvalError(node, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "iterable", Stringify(right))))
 			}
 			return &Bool{}, nil
 		case parse.NotIn:
 			switch right.(type) {
 			case *List, *Object:
 			default:
-				state.addError(makeSymbolicEvalError(node, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "iterable", right.String())))
+				state.addError(makeSymbolicEvalError(node, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "iterable", Stringify(right))))
 			}
 			return &Bool{}, nil
 		case parse.Keyof:
 			_, ok := left.(*String)
 			if !ok {
-				state.addError(makeSymbolicEvalError(node, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "string", left.String())))
+				state.addError(makeSymbolicEvalError(node, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "string", Stringify(left))))
 			}
 
 			switch rightVal := right.(type) {
@@ -1736,18 +1736,18 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 			_, ok := left.(*Bool)
 
 			if !ok {
-				state.addError(makeSymbolicEvalError(node, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "boolean", left.String())))
+				state.addError(makeSymbolicEvalError(node, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "boolean", Stringify(left))))
 			}
 
 			_, ok = right.(*Bool)
 			if !ok {
-				state.addError(makeSymbolicEvalError(node, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "boolean", right.String())))
+				state.addError(makeSymbolicEvalError(node, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "boolean", Stringify(right))))
 			}
 			return &Bool{}, nil
 		case parse.Match, parse.NotMatch:
 			_, ok := right.(Pattern)
 			if !ok {
-				state.addError(makeSymbolicEvalError(node, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "pattern", right.String())))
+				state.addError(makeSymbolicEvalError(node, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "pattern", Stringify(right))))
 			}
 
 			return &Bool{}, nil
@@ -1757,7 +1757,7 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 			case *RuneSlice, *ByteSlice:
 			default:
 				if _, ok := left.(StringLike); !ok {
-					state.addError(makeSymbolicEvalError(node, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "string-like", left.String())))
+					state.addError(makeSymbolicEvalError(node, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "string-like", Stringify(left))))
 				}
 			}
 
@@ -1765,14 +1765,14 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 			case *RuneSlice, *ByteSlice:
 			default:
 				if _, ok := right.(StringLike); !ok {
-					state.addError(makeSymbolicEvalError(node, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "string-like", right.String())))
+					state.addError(makeSymbolicEvalError(node, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "string-like", Stringify(right))))
 				}
 			}
 
 			return &Bool{}, nil
 		case parse.SetDifference:
 			if _, ok := left.(Pattern); !ok {
-				state.addError(makeSymbolicEvalError(node, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "pattern", left.String())))
+				state.addError(makeSymbolicEvalError(node, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "pattern", Stringify(left))))
 			}
 			return &DifferencePattern{
 				Base:    &AnyPattern{},
@@ -2267,13 +2267,13 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 		return patt, nil
 	case *parse.ObjectPatternLiteral:
 		pattern := &ObjectPattern{
-			Entries: make(map[string]Pattern),
-			Inexact: n.Inexact,
+			entries: make(map[string]Pattern),
+			inexact: n.Inexact,
 		}
 		for _, p := range n.Properties {
 			name := p.Name()
 			var err error
-			pattern.Entries[name], err = symbolicallyEvalPatternNode(p.Value, state)
+			pattern.entries[name], err = symbolicallyEvalPatternNode(p.Value, state)
 			if err != nil {
 				return nil, err
 			}
@@ -2286,11 +2286,11 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 			}
 
 			if objPattern, ok := compiledElement.(*ObjectPattern); ok {
-				if objPattern.Entries == nil {
+				if objPattern.entries == nil {
 					state.addError(makeSymbolicEvalError(el, state, CANNOT_SPREAD_OBJ_PATTERN_THAT_MATCHES_ANY_OBJECT))
 				} else {
-					for name, vpattern := range objPattern.Entries {
-						pattern.Entries[name] = vpattern
+					for name, vpattern := range objPattern.entries {
+						pattern.entries[name] = vpattern
 					}
 				}
 				// else if objPattern.Inexact {
@@ -3034,7 +3034,7 @@ func symbolicMemb(value SymbolicValue, name string, node parse.Node, state *Stat
 
 	iprops, ok := asIprops(value).(IProps)
 	if !ok {
-		state.addError(makeSymbolicEvalError(node, state, fmt.Sprintf("value has no properties: %s", value.String())))
+		state.addError(makeSymbolicEvalError(node, state, fmt.Sprintf("value has no properties: %s", Stringify(value))))
 		return ANY
 	}
 

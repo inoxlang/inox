@@ -1,5 +1,12 @@
 package internal
 
+import (
+	"bufio"
+
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
+)
+
 var (
 	ANY_MSG_RECEIVER     = &AnyMessageReceiver{}
 	ANY_MSG              = &Message{}
@@ -36,8 +43,9 @@ func (m *Message) IsWidenable() bool {
 	return false
 }
 
-func (m *Message) String() string {
-	return "%message"
+func (m *Message) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%message")))
+	return
 }
 
 func (m *Message) WidestOfType() SymbolicValue {
@@ -79,8 +87,9 @@ func (r *AnyMessageReceiver) IsWidenable() bool {
 	return false
 }
 
-func (r *AnyMessageReceiver) String() string {
-	return "%message-receiver"
+func (r *AnyMessageReceiver) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%message-receiver")))
+	return
 }
 
 func (r *AnyMessageReceiver) WidestOfType() SymbolicValue {
@@ -115,8 +124,9 @@ func (l *SynchronousMessageHandler) IsWidenable() bool {
 	return false
 }
 
-func (l *SynchronousMessageHandler) String() string {
-	return "%reception-handler"
+func (l *SynchronousMessageHandler) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%reception-handler")))
+	return
 }
 
 func (l *SynchronousMessageHandler) WidestOfType() SymbolicValue {

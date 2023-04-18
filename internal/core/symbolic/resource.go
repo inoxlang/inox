@@ -1,5 +1,12 @@
 package internal
 
+import (
+	"bufio"
+
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
+)
+
 var (
 	WALK_ELEM = NewObject(map[string]SymbolicValue{
 		"name":        &String{},
@@ -32,8 +39,9 @@ func (a *Path) IsWidenable() bool {
 	return false
 }
 
-func (a *Path) String() string {
-	return "%path"
+func (a *Path) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%path")))
+	return
 }
 
 func (p *Path) ResourceName() *String {
@@ -110,8 +118,9 @@ func (u *URL) IsWidenable() bool {
 	return false
 }
 
-func (u *URL) String() string {
-	return "%url"
+func (u *URL) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%url")))
+	return
 }
 
 func (u *URL) underylingString() *String {
@@ -163,8 +172,9 @@ func (s *Scheme) IsWidenable() bool {
 	return false
 }
 
-func (s *Scheme) String() string {
-	return "%scheme"
+func (s *Scheme) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%scheme")))
+	return
 }
 
 func (s *Scheme) underylingString() *String {
@@ -196,8 +206,9 @@ func (s *Host) IsWidenable() bool {
 	return false
 }
 
-func (s *Host) String() string {
-	return "%host"
+func (s *Host) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%host")))
+	return
 }
 
 func (h *Host) ResourceName() *String {

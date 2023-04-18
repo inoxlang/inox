@@ -1,7 +1,10 @@
 package internal
 
 import (
-	"fmt"
+	"bufio"
+
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 // A LifetimeJob represents a symbolic LifetimeJob.
@@ -52,9 +55,12 @@ func (j *LifetimeJob) IsWidenable() bool {
 	return false
 }
 
-func (r *LifetimeJob) String() string {
+func (r *LifetimeJob) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if isAny(r.subjectPattern) {
-		return "%lifetime-job"
+		utils.Must(w.Write(utils.StringAsBytes("%lifetime-job")))
+		return
 	}
-	return fmt.Sprintf("%%lifetime-job(%s)", r.subjectPattern.SymbolicValue())
+	utils.Must(w.Write(utils.StringAsBytes("%lifetime(\n")))
+	r.subjectPattern.PrettyPrint(w, config, depth+1, parentIndentCount)
+	utils.Must(w.Write(utils.StringAsBytes("\n)")))
 }

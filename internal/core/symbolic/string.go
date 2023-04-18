@@ -1,6 +1,12 @@
 package internal
 
-import "errors"
+import (
+	"bufio"
+	"errors"
+
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
+)
 
 var (
 	_ = []WrappedString{
@@ -50,8 +56,9 @@ func (a *String) IsWidenable() bool {
 	return false
 }
 
-func (s *String) String() string {
-	return "%string"
+func (s *String) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%string")))
+	return
 }
 
 func (s *String) HasKnownLen() bool {
@@ -145,8 +152,9 @@ func (a *Rune) IsWidenable() bool {
 	return false
 }
 
-func (r *Rune) String() string {
-	return "%rune"
+func (r *Rune) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%rune")))
+	return
 }
 
 func (r *Rune) WidestOfType() SymbolicValue {
@@ -188,8 +196,9 @@ func (a *CheckedString) IsWidenable() bool {
 	return false
 }
 
-func (s *CheckedString) String() string {
-	return "%checked-string"
+func (s *CheckedString) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%checked-string")))
+	return
 }
 
 func (p *CheckedString) PropertyNames() []string {
@@ -232,8 +241,9 @@ func (s *RuneSlice) IsWidenable() bool {
 	return false
 }
 
-func (s *RuneSlice) String() string {
-	return "%rune-slice"
+func (s *RuneSlice) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%rune-slice")))
+	return
 }
 
 func (s *RuneSlice) HasKnownLen() bool {
@@ -339,8 +349,9 @@ func (c *StringConcatenation) IsWidenable() bool {
 	return false
 }
 
-func (c *StringConcatenation) String() string {
-	return "%string-concatenation"
+func (c *StringConcatenation) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%string-concatenation")))
+	return
 }
 
 func (c *StringConcatenation) HasKnownLen() bool {
@@ -421,8 +432,9 @@ func (s *AnyStringLike) IsWidenable() bool {
 	return false
 }
 
-func (s *AnyStringLike) String() string {
-	return "%string-like"
+func (s *AnyStringLike) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%string-like")))
+	return
 }
 
 func (s *AnyStringLike) element() SymbolicValue {

@@ -1,7 +1,12 @@
 package internal
 
 import (
+	"bufio"
+
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 type HttpRequest struct {
@@ -54,8 +59,9 @@ func (a *HttpRequest) IsWidenable() bool {
 	return false
 }
 
-func (r *HttpRequest) String() string {
-	return "%http.req"
+func (r *HttpRequest) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%http.req")))
+	return
 }
 
 func (r *HttpRequest) WidestOfType() symbolic.SymbolicValue {

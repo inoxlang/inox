@@ -1,5 +1,12 @@
 package internal
 
+import (
+	"bufio"
+
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
+)
+
 // A Color represents a symbolic Color.
 type Color struct {
 	UnassignablePropsMixin
@@ -37,6 +44,7 @@ func (r *Color) IsWidenable() bool {
 	return false
 }
 
-func (r *Color) String() string {
-	return "%color"
+func (r *Color) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%color")))
+	return
 }

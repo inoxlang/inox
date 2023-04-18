@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"github.com/buger/jsonparser"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 func ToJSON(ctx *Context, v Value) Str {
@@ -28,7 +29,7 @@ func ToPrettyJSON(ctx *Context, v Value) Str {
 	s := ToJSON(ctx, v)
 	var unmarshalled interface{}
 	json.Unmarshal([]byte(s), &unmarshalled)
-	b, err := MarshalIndentJsonNoHTMLEspace(unmarshalled, "", " ")
+	b, err := utils.MarshalIndentJsonNoHTMLEspace(unmarshalled, "", " ")
 
 	if err != nil {
 		log.Panicln("tojson:", err)
@@ -106,38 +107,6 @@ func parseJson(ctx *Context, v any) (any, error) {
 	}
 
 	return ConvertJSONValToInoxVal(ctx, result, false), nil
-}
-
-func MarshalJsonNoHTMLEspace(v any) ([]byte, error) {
-	return marshalJsonNoHTMLEspace(v)
-}
-
-func marshalJsonNoHTMLEspace(v any, encoderOptions ...func(encoder *json.Encoder)) ([]byte, error) {
-	//create encoder
-
-	buf := bytes.NewBuffer(nil)
-	encoder := json.NewEncoder(buf)
-	encoder.SetEscapeHTML(false)
-	for _, opt := range encoderOptions {
-		opt(encoder)
-	}
-
-	//encode
-
-	err := encoder.Encode(v)
-
-	if err != nil {
-		return nil, err
-	}
-	bytes := buf.Bytes()
-	//remove newline
-	return bytes[:len(bytes)-1], nil
-}
-
-func MarshalIndentJsonNoHTMLEspace(v any, prefix, indent string) ([]byte, error) {
-	return marshalJsonNoHTMLEspace(v, func(encoder *json.Encoder) {
-		encoder.SetIndent(prefix, indent)
-	})
 }
 
 //

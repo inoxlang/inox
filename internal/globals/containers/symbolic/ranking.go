@@ -1,7 +1,12 @@
 package internal
 
 import (
+	"bufio"
+
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var _ = []symbolic.Iterable{&Ranking{}, &Rank{}}
@@ -54,8 +59,9 @@ func (a *Ranking) IsWidenable() bool {
 	return false
 }
 
-func (r *Ranking) String() string {
-	return "%ranking"
+func (r *Ranking) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%ranking")))
+	return
 }
 
 func (r *Ranking) IteratorElementKey() symbolic.SymbolicValue {
@@ -108,8 +114,9 @@ func (a *Rank) IsWidenable() bool {
 	return false
 }
 
-func (r *Rank) String() string {
-	return "%rank"
+func (r *Rank) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%rank")))
+	return
 }
 
 func (r *Rank) IteratorElementKey() symbolic.SymbolicValue {

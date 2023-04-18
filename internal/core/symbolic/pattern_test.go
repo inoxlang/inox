@@ -239,57 +239,57 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			ok      bool
 		}{
 			//symbolic object
-			{&ObjectPattern{Entries: nil}, &Object{entries: nil}, false},
-			{&ObjectPattern{Entries: nil}, &Object{entries: map[string]SymbolicValue{}}, false},
+			{&ObjectPattern{entries: nil}, &Object{entries: nil}, false},
+			{&ObjectPattern{entries: nil}, &Object{entries: map[string]SymbolicValue{}}, false},
 
 			//symbolic object pattern
-			{&ObjectPattern{Entries: nil}, &ObjectPattern{Entries: nil}, true},
-			{&ObjectPattern{Entries: map[string]Pattern{}}, &ObjectPattern{Entries: nil}, false},
-			{&ObjectPattern{Entries: nil}, &ObjectPattern{Entries: map[string]Pattern{}}, true},
+			{&ObjectPattern{entries: nil}, &ObjectPattern{entries: nil}, true},
+			{&ObjectPattern{entries: map[string]Pattern{}}, &ObjectPattern{entries: nil}, false},
+			{&ObjectPattern{entries: nil}, &ObjectPattern{entries: map[string]Pattern{}}, true},
 
-			{&ObjectPattern{Entries: map[string]Pattern{}}, &ObjectPattern{Entries: map[string]Pattern{}}, true},
+			{&ObjectPattern{entries: map[string]Pattern{}}, &ObjectPattern{entries: map[string]Pattern{}}, true},
 			{
 				&ObjectPattern{
-					Entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
+					entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
 				},
 				&ObjectPattern{
-					Entries: map[string]Pattern{},
+					entries: map[string]Pattern{},
 				},
 				false,
 			},
 			{
 				&ObjectPattern{
-					Entries: map[string]Pattern{},
+					entries: map[string]Pattern{},
 				},
 				&ObjectPattern{
-					Entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
+					entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
 				},
 				false,
 			},
 			{
 				&ObjectPattern{
-					Entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
+					entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
 				},
 				&ObjectPattern{
-					Entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
-				},
-				true,
-			},
-			{
-				&ObjectPattern{
-					Entries: map[string]Pattern{"a": &AnyPattern{}},
-				},
-				&ObjectPattern{
-					Entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
+					entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
 				},
 				true,
 			},
 			{
 				&ObjectPattern{
-					Entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
+					entries: map[string]Pattern{"a": &AnyPattern{}},
 				},
 				&ObjectPattern{
-					Entries: map[string]Pattern{"a": &AnyPattern{}},
+					entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
+				},
+				true,
+			},
+			{
+				&ObjectPattern{
+					entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
+				},
+				&ObjectPattern{
+					entries: map[string]Pattern{"a": &AnyPattern{}},
 				},
 				false,
 			},
@@ -308,22 +308,22 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			value   SymbolicValue
 			ok      bool
 		}{
-			{&ObjectPattern{Entries: nil}, &ObjectPattern{Entries: nil}, false},
-			{&ObjectPattern{Entries: nil}, &ObjectPattern{Entries: map[string]Pattern{}}, false},
+			{&ObjectPattern{entries: nil}, &ObjectPattern{entries: nil}, false},
+			{&ObjectPattern{entries: nil}, &ObjectPattern{entries: map[string]Pattern{}}, false},
 
 			//symbolic object
-			{&ObjectPattern{Entries: nil}, &Object{entries: nil}, true},
-			{&ObjectPattern{Entries: map[string]Pattern{}}, &Object{entries: nil}, false},
-			{&ObjectPattern{Entries: nil}, &Object{entries: map[string]SymbolicValue{}}, true},
+			{&ObjectPattern{entries: nil}, &Object{entries: nil}, true},
+			{&ObjectPattern{entries: map[string]Pattern{}}, &Object{entries: nil}, false},
+			{&ObjectPattern{entries: nil}, &Object{entries: map[string]SymbolicValue{}}, true},
 
 			{
-				&ObjectPattern{Entries: map[string]Pattern{}},
+				&ObjectPattern{entries: map[string]Pattern{}},
 				&Object{entries: map[string]SymbolicValue{}},
 				true,
 			},
 			{
 				&ObjectPattern{
-					Entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
+					entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
 				},
 				&Object{
 					entries: map[string]SymbolicValue{},
@@ -332,7 +332,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			},
 			{
 				&ObjectPattern{
-					Entries: map[string]Pattern{},
+					entries: map[string]Pattern{},
 				},
 				&Object{
 					entries: map[string]SymbolicValue{"a": &Int{}},
@@ -341,7 +341,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			},
 			{
 				&ObjectPattern{
-					Entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
+					entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
 				},
 				&Object{
 					entries: map[string]SymbolicValue{"a": &Int{}},
@@ -350,7 +350,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			},
 			{
 				&ObjectPattern{
-					Entries: map[string]Pattern{"a": &AnyPattern{}},
+					entries: map[string]Pattern{"a": &AnyPattern{}},
 				},
 				&Object{
 					entries: map[string]SymbolicValue{"a": &Int{}},
@@ -359,7 +359,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			},
 			{
 				&ObjectPattern{
-					Entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
+					entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
 				},
 				&Object{
 					entries: map[string]SymbolicValue{"a": ANY},
@@ -388,31 +388,31 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			},
 			{
 				&ObjectPattern{
-					Inexact: true,
-					Entries: make(map[string]Pattern),
+					inexact: true,
+					entries: make(map[string]Pattern),
 				},
 				&ObjectPattern{},
 				true,
 			},
 			{
 				&ObjectPattern{
-					Inexact: false,
-					Entries: make(map[string]Pattern),
+					inexact: false,
+					entries: make(map[string]Pattern),
 				},
 				&ObjectPattern{},
 				true,
 			},
 			{
 				&ObjectPattern{
-					Inexact: false,
-					Entries: map[string]Pattern{
+					inexact: false,
+					entries: map[string]Pattern{
 						"name": &ExactValuePattern{value: &Int{}},
 					},
 				},
 				//the entries can be widened
 				&ObjectPattern{
-					Inexact: false,
-					Entries: map[string]Pattern{
+					inexact: false,
+					entries: map[string]Pattern{
 						"name": &ExactValuePattern{value: ANY},
 					},
 				},
@@ -420,23 +420,23 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			},
 			{
 				&ObjectPattern{
-					Inexact: true,
-					Entries: map[string]Pattern{
+					inexact: true,
+					entries: map[string]Pattern{
 						"name": &ExactValuePattern{value: &Int{}},
 					},
 				},
 				//the entries can be widened
 				&ObjectPattern{
-					Inexact: true,
-					Entries: map[string]Pattern{
+					inexact: true,
+					entries: map[string]Pattern{
 						"name": &ExactValuePattern{value: ANY},
 					},
 				}, true,
 			},
 			{
 				&ObjectPattern{
-					Inexact: true,
-					Entries: map[string]Pattern{
+					inexact: true,
+					entries: map[string]Pattern{
 						"any": &ExactValuePattern{value: ANY},
 					},
 				},
@@ -446,15 +446,15 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			},
 			{
 				&ObjectPattern{
-					Inexact: false,
-					Entries: map[string]Pattern{
+					inexact: false,
+					entries: map[string]Pattern{
 						"any": &ExactValuePattern{value: ANY},
 					},
 				},
 				//entries cannot be widened so the object pattern becomes inexact
 				&ObjectPattern{
-					Inexact: true,
-					Entries: map[string]Pattern{
+					inexact: true,
+					entries: map[string]Pattern{
 						"any": &ExactValuePattern{value: ANY},
 					},
 				},
@@ -488,57 +488,57 @@ func TestSymbolicRecordPattern(t *testing.T) {
 			ok      bool
 		}{
 			//symbolic object
-			{&RecordPattern{Entries: nil}, &Object{entries: nil}, false},
-			{&RecordPattern{Entries: nil}, &Object{entries: map[string]SymbolicValue{}}, false},
+			{&RecordPattern{entries: nil}, &Object{entries: nil}, false},
+			{&RecordPattern{entries: nil}, &Object{entries: map[string]SymbolicValue{}}, false},
 
 			//symbolic object pattern
-			{&RecordPattern{Entries: nil}, &RecordPattern{Entries: nil}, true},
-			{&RecordPattern{Entries: map[string]Pattern{}}, &RecordPattern{Entries: nil}, false},
-			{&RecordPattern{Entries: nil}, &RecordPattern{Entries: map[string]Pattern{}}, true},
+			{&RecordPattern{entries: nil}, &RecordPattern{entries: nil}, true},
+			{&RecordPattern{entries: map[string]Pattern{}}, &RecordPattern{entries: nil}, false},
+			{&RecordPattern{entries: nil}, &RecordPattern{entries: map[string]Pattern{}}, true},
 
-			{&RecordPattern{Entries: map[string]Pattern{}}, &RecordPattern{Entries: map[string]Pattern{}}, true},
+			{&RecordPattern{entries: map[string]Pattern{}}, &RecordPattern{entries: map[string]Pattern{}}, true},
 			{
 				&RecordPattern{
-					Entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
+					entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
 				},
 				&RecordPattern{
-					Entries: map[string]Pattern{},
+					entries: map[string]Pattern{},
 				},
 				false,
 			},
 			{
 				&RecordPattern{
-					Entries: map[string]Pattern{},
+					entries: map[string]Pattern{},
 				},
 				&RecordPattern{
-					Entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
+					entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
 				},
 				false,
 			},
 			{
 				&RecordPattern{
-					Entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
+					entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
 				},
 				&RecordPattern{
-					Entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
-				},
-				true,
-			},
-			{
-				&RecordPattern{
-					Entries: map[string]Pattern{"a": &AnyPattern{}},
-				},
-				&RecordPattern{
-					Entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
+					entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
 				},
 				true,
 			},
 			{
 				&RecordPattern{
-					Entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
+					entries: map[string]Pattern{"a": &AnyPattern{}},
 				},
 				&RecordPattern{
-					Entries: map[string]Pattern{"a": &AnyPattern{}},
+					entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
+				},
+				true,
+			},
+			{
+				&RecordPattern{
+					entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
+				},
+				&RecordPattern{
+					entries: map[string]Pattern{"a": &AnyPattern{}},
 				},
 				false,
 			},
@@ -557,22 +557,22 @@ func TestSymbolicRecordPattern(t *testing.T) {
 			value   SymbolicValue
 			ok      bool
 		}{
-			{&RecordPattern{Entries: nil}, &RecordPattern{Entries: nil}, false},
-			{&RecordPattern{Entries: nil}, &RecordPattern{Entries: map[string]Pattern{}}, false},
+			{&RecordPattern{entries: nil}, &RecordPattern{entries: nil}, false},
+			{&RecordPattern{entries: nil}, &RecordPattern{entries: map[string]Pattern{}}, false},
 
 			//symbolic object
-			{&RecordPattern{Entries: nil}, &Record{entries: nil}, true},
-			{&RecordPattern{Entries: map[string]Pattern{}}, &Record{entries: nil}, false},
-			{&RecordPattern{Entries: nil}, &Record{entries: map[string]SymbolicValue{}}, true},
+			{&RecordPattern{entries: nil}, &Record{entries: nil}, true},
+			{&RecordPattern{entries: map[string]Pattern{}}, &Record{entries: nil}, false},
+			{&RecordPattern{entries: nil}, &Record{entries: map[string]SymbolicValue{}}, true},
 
 			{
-				&RecordPattern{Entries: map[string]Pattern{}},
+				&RecordPattern{entries: map[string]Pattern{}},
 				&Record{entries: map[string]SymbolicValue{}},
 				true,
 			},
 			{
 				&RecordPattern{
-					Entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
+					entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
 				},
 				&Record{
 					entries: map[string]SymbolicValue{},
@@ -581,7 +581,7 @@ func TestSymbolicRecordPattern(t *testing.T) {
 			},
 			{
 				&RecordPattern{
-					Entries: map[string]Pattern{},
+					entries: map[string]Pattern{},
 				},
 				&Record{
 					entries: map[string]SymbolicValue{"a": &Int{}},
@@ -590,7 +590,7 @@ func TestSymbolicRecordPattern(t *testing.T) {
 			},
 			{
 				&RecordPattern{
-					Entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
+					entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
 				},
 				&Record{
 					entries: map[string]SymbolicValue{"a": &Int{}},
@@ -599,7 +599,7 @@ func TestSymbolicRecordPattern(t *testing.T) {
 			},
 			{
 				&RecordPattern{
-					Entries: map[string]Pattern{"a": &AnyPattern{}},
+					entries: map[string]Pattern{"a": &AnyPattern{}},
 				},
 				&Record{
 					entries: map[string]SymbolicValue{"a": &Int{}},
@@ -608,7 +608,7 @@ func TestSymbolicRecordPattern(t *testing.T) {
 			},
 			{
 				&RecordPattern{
-					Entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
+					entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
 				},
 				&Record{
 					entries: map[string]SymbolicValue{"a": ANY},
@@ -637,31 +637,31 @@ func TestSymbolicRecordPattern(t *testing.T) {
 			},
 			{
 				&RecordPattern{
-					Inexact: true,
-					Entries: make(map[string]Pattern),
+					inexact: true,
+					entries: make(map[string]Pattern),
 				},
 				&RecordPattern{},
 				true,
 			},
 			{
 				&RecordPattern{
-					Inexact: false,
-					Entries: make(map[string]Pattern),
+					inexact: false,
+					entries: make(map[string]Pattern),
 				},
 				&RecordPattern{},
 				true,
 			},
 			{
 				&RecordPattern{
-					Inexact: false,
-					Entries: map[string]Pattern{
+					inexact: false,
+					entries: map[string]Pattern{
 						"name": &ExactValuePattern{value: &Int{}},
 					},
 				},
 				//the entries can be widened
 				&RecordPattern{
-					Inexact: false,
-					Entries: map[string]Pattern{
+					inexact: false,
+					entries: map[string]Pattern{
 						"name": &ExactValuePattern{value: ANY},
 					},
 				},
@@ -669,23 +669,23 @@ func TestSymbolicRecordPattern(t *testing.T) {
 			},
 			{
 				&RecordPattern{
-					Inexact: true,
-					Entries: map[string]Pattern{
+					inexact: true,
+					entries: map[string]Pattern{
 						"name": &ExactValuePattern{value: &Int{}},
 					},
 				},
 				//the entries can be widened
 				&RecordPattern{
-					Inexact: true,
-					Entries: map[string]Pattern{
+					inexact: true,
+					entries: map[string]Pattern{
 						"name": &ExactValuePattern{value: ANY},
 					},
 				}, true,
 			},
 			{
 				&RecordPattern{
-					Inexact: true,
-					Entries: map[string]Pattern{
+					inexact: true,
+					entries: map[string]Pattern{
 						"any": &ExactValuePattern{value: ANY},
 					},
 				},
@@ -695,15 +695,15 @@ func TestSymbolicRecordPattern(t *testing.T) {
 			},
 			{
 				&RecordPattern{
-					Inexact: false,
-					Entries: map[string]Pattern{
+					inexact: false,
+					entries: map[string]Pattern{
 						"any": &ExactValuePattern{value: ANY},
 					},
 				},
 				//entries cannot be widened so the object pattern becomes inexact
 				&RecordPattern{
-					Inexact: true,
-					Entries: map[string]Pattern{
+					inexact: true,
+					entries: map[string]Pattern{
 						"any": &ExactValuePattern{value: ANY},
 					},
 				},

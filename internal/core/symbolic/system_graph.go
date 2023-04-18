@@ -1,6 +1,12 @@
 package internal
 
-import "errors"
+import (
+	"bufio"
+	"errors"
+
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
+)
 
 var (
 	ANY_SYSTEM_GRAPH       = NewSystemGraph()
@@ -91,8 +97,9 @@ func (g *SystemGraph) IsWidenable() bool {
 	return false
 }
 
-func (g *SystemGraph) String() string {
-	return "%system-graph"
+func (g *SystemGraph) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%system-graph")))
+	return
 }
 
 func (g *SystemGraph) WidestOfType() SymbolicValue {
@@ -144,8 +151,9 @@ func (d *SystemGraphNodes) IteratorElementValue() SymbolicValue {
 	return ANY_SYSTEM_GRAPH_NODE
 }
 
-func (d *SystemGraphNodes) String() string {
-	return "%system-graph-nodes"
+func (d *SystemGraphNodes) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%system-graph-nodes")))
+	return
 }
 
 func (d *SystemGraphNodes) WidestOfType() SymbolicValue {
@@ -214,8 +222,9 @@ func (n *SystemGraphNode) IsWidenable() bool {
 	return false
 }
 
-func (n *SystemGraphNode) String() string {
-	return "%system-graph-node"
+func (n *SystemGraphNode) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%system-graph-node")))
+	return
 }
 
 func (n *SystemGraphNode) WidestOfType() SymbolicValue {
@@ -282,8 +291,9 @@ func (n *SystemGraphEvent) IsWidenable() bool {
 	return false
 }
 
-func (n *SystemGraphEvent) String() string {
-	return "%system-graph-event"
+func (n *SystemGraphEvent) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%system-graph-event")))
+	return
 }
 
 func (n *SystemGraphEvent) WidestOfType() SymbolicValue {
@@ -338,8 +348,9 @@ func (e *SystemGraphEdge) IsWidenable() bool {
 	return false
 }
 
-func (e *SystemGraphEdge) String() string {
-	return "%system-graph-edge"
+func (e *SystemGraphEdge) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%system-graph-edge")))
+	return
 }
 
 func (e *SystemGraphEdge) WidestOfType() SymbolicValue {

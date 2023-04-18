@@ -1,9 +1,11 @@
 package internal
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -65,8 +67,9 @@ func (s *EventSource) IsWidenable() bool {
 	return false
 }
 
-func (s *EventSource) String() string {
-	return "%event-source"
+func (s *EventSource) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%event-source")))
+	return
 }
 
 func (s *EventSource) IteratorElementKey() SymbolicValue {
@@ -121,8 +124,9 @@ func (r *Event) IsWidenable() bool {
 	return false
 }
 
-func (r *Event) String() string {
-	return "%event"
+func (r *Event) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%event")))
+	return
 }
 
 func (r *Event) WidestOfType() SymbolicValue {

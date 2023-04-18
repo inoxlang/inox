@@ -1,6 +1,13 @@
 package internal
 
-import symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+import (
+	"bufio"
+
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+
+	"github.com/inoxlang/inox/internal/utils"
+)
 
 type GetObjectResponse struct {
 	symbolic.UnassignablePropsMixin
@@ -41,8 +48,9 @@ func (a *GetObjectResponse) IsWidenable() bool {
 	return false
 }
 
-func (r *GetObjectResponse) String() string {
-	return "%get-object-response"
+func (r *GetObjectResponse) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%get-object-response")))
+	return
 }
 
 func (r *GetObjectResponse) WidestOfType() symbolic.SymbolicValue {
@@ -88,8 +96,9 @@ func (a *PutObjectResponse) IsWidenable() bool {
 	return false
 }
 
-func (r *PutObjectResponse) String() string {
-	return "%put-object-response"
+func (r *PutObjectResponse) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%put-object-response")))
+	return
 }
 
 func (r *PutObjectResponse) WidestOfType() symbolic.SymbolicValue {
@@ -135,8 +144,9 @@ func (a *GetBucketPolicyResponse) IsWidenable() bool {
 	return false
 }
 
-func (r *GetBucketPolicyResponse) String() string {
-	return "%get-bucket-policy-response"
+func (r *GetBucketPolicyResponse) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%get-bucket-policy-response")))
+	return
 }
 
 func (r *GetBucketPolicyResponse) WidestOfType() symbolic.SymbolicValue {

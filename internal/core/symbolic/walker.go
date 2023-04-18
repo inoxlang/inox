@@ -1,5 +1,12 @@
 package internal
 
+import (
+	"bufio"
+
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
+)
+
 var (
 	_ = []Walkable{(*Path)(nil)}
 )
@@ -30,8 +37,9 @@ func (a *AnyWalkable) IsWidenable() bool {
 	return false
 }
 
-func (r *AnyWalkable) String() string {
-	return "%walkable"
+func (r *AnyWalkable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%walkable")))
+	return
 }
 
 func (r *AnyWalkable) WidestOfType() SymbolicValue {
@@ -61,8 +69,9 @@ func (a *Walker) IsWidenable() bool {
 	return false
 }
 
-func (r *Walker) String() string {
-	return "%walker"
+func (r *Walker) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%walker")))
+	return
 }
 
 func (r *Walker) WidestOfType() SymbolicValue {

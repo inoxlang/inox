@@ -1,5 +1,12 @@
 package internal
 
+import (
+	"bufio"
+
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
+)
+
 // A RandomnessSource represents a symbolic RandomnessSource.
 type RandomnessSource struct {
 	UnassignablePropsMixin
@@ -51,8 +58,9 @@ func (r *RandomnessSource) IsWidenable() bool {
 	return false
 }
 
-func (r *RandomnessSource) String() string {
-	return "%random-source"
+func (r *RandomnessSource) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%random-source")))
+	return
 }
 
 func (r *RandomnessSource) WidestOfType() SymbolicValue {
