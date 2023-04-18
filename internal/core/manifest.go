@@ -38,6 +38,7 @@ type Manifest struct {
 	RequiredPermissions []Permission
 	Limitations         []Limitation
 	HostResolutions     map[Host]Value
+	EnvPattern          *ObjectPattern
 }
 
 func NewEmptyManifest() *Manifest {
@@ -125,7 +126,10 @@ type manifestObjectConfig struct {
 // Custom permissions are handled by config.HandleCustomType
 func createManifest(object *Object, config manifestObjectConfig) (*Manifest, error) {
 
-	var perms []Permission
+	var (
+		perms      []Permission
+		envPattern *ObjectPattern
+	)
 	permListing := NewObject()
 	limitations := make([]Limitation, 0)
 	hostResolutions := make(map[Host]Value, 0)
@@ -152,6 +156,12 @@ func createManifest(object *Object, config manifestObjectConfig) (*Manifest, err
 				return nil, fmt.Errorf("invalid manifest, the 'permissions' section should have a value of type object")
 			}
 			permListing = listing
+		case "env":
+			patt, ok := v.(*ObjectPattern)
+			if !ok {
+				return nil, fmt.Errorf("invalid manifest, the 'env' section should have a value of type object pattern")
+			}
+			envPattern = patt
 		default:
 			return nil, fmt.Errorf("invalid manifest, unknown section '%s'", k)
 		}
@@ -174,6 +184,7 @@ func createManifest(object *Object, config manifestObjectConfig) (*Manifest, err
 		RequiredPermissions: perms,
 		Limitations:         limitations,
 		HostResolutions:     hostResolutions,
+		EnvPattern:          envPattern,
 	}, nil
 }
 

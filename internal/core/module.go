@@ -124,6 +124,14 @@ func (m *Module) EvalManifest(config ManifestEvaluationConfig) (*Manifest, error
 	//we create a temporary state to evaluate some parts of the permissions
 	if config.RunningState == nil {
 		ctx := NewContext(ContextConfig{Permissions: []Permission{GlobalVarPermission{ReadPerm, "*"}}})
+		for k, v := range DEFAULT_NAMED_PATTERNS {
+			ctx.AddNamedPattern(k, v)
+		}
+
+		for k, v := range DEFAULT_PATTERN_NAMESPACES {
+			ctx.AddPatternNamespace(k, v)
+		}
+
 		state = NewTreeWalkState(ctx, getGlobalsAccessibleFromManifest().EntryMap())
 
 		if config.GlobalConsts != nil {

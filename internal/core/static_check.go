@@ -1649,6 +1649,28 @@ func checkManifestObject(objLit *parse.ObjectLiteral, onError func(n parse.Node,
 
 				return parse.Continue, nil
 			}, nil)
+		case "env":
+			patt, ok := p.Value.(*parse.ObjectPatternLiteral)
+
+			if !ok {
+				onError(p, ENV_SECTION_SHOULD_BE_AN_OBJECT_PATTERN)
+				continue
+			}
+
+			parse.Walk(patt, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
+				if node == patt {
+					return parse.Continue, nil
+				}
+
+				switch n := node.(type) {
+				case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression,
+					*parse.ObjectProperty, *parse.PatternCallExpression, parse.SimpleValueLiteral, *parse.GlobalVariable:
+				default:
+					onError(n, fmtForbiddenNodeInEnvSection(n))
+				}
+
+				return parse.Continue, nil
+			}, nil)
 		}
 	}
 

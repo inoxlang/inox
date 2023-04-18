@@ -14,7 +14,9 @@ const (
 	PERMS_SECTION_SHOULD_BE_AN_OBJECT               = "the 'permissions' section of the manifest should be an object"
 	IMPLICIT_KEY_PROPS_NOT_ALLOWED_IN_PERMS_SECTION = "implicit key properties are not allowed in the 'permissions' section"
 
-	LIMITS_SECTION_SHOULD_BE_AN_OBJECT  = "the 'limits' section of the manifest should be an object"
+	LIMITS_SECTION_SHOULD_BE_AN_OBJECT      = "the 'limits' section of the manifest should be an object"
+	ENV_SECTION_SHOULD_BE_AN_OBJECT_PATTERN = "the 'env' section of the manifest should be an object pattern literal"
+
 	HOST_RESOL_SECTION_SHOULD_BE_A_DICT = "the 'host_resolution' section of the manifest should be a dictionary"
 
 	INVALID_RATE     = "invalid rate"
@@ -68,6 +70,10 @@ func fmtForbiddenNodeInPermListing(n parse.Node) string {
 
 func fmtForbiddenNodeInLimitsSection(n parse.Node) string {
 	return fmt.Sprintf("invalid limits: invalid node %T, only variables and simple literals are allowed", n)
+}
+
+func fmtForbiddenNodeInEnvSection(n parse.Node) string {
+	return fmt.Sprintf("invalid env: invalid node %T, only variables, simple literals & named patterns are allowed", n)
 }
 
 func fmtForbiddenNodeInHostResolutionSection(n parse.Node) string {
