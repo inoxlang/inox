@@ -62,7 +62,7 @@ var (
 )
 
 type SymbolicEvalCheckInput struct {
-	Node         parse.Node
+	Node         *parse.Chunk
 	Module       *Module
 	GlobalConsts map[string]interface{}
 
@@ -709,7 +709,7 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 			defer state.unsetSelf()
 		}
 
-		//CONSTANTS
+		//evaluation of constants
 		if n.GlobalConstantDeclarations != nil {
 			for _, decl := range n.GlobalConstantDeclarations.Declarations {
 				constVal, err := symbolicEval(decl.Right, state)
@@ -722,8 +722,13 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 			}
 		}
 
-		//STATEMENTS
+		// evaluation of manifest, this is performed only to get symbolic data
+		_, err := symbolicEval(n.Manifest.Object, state)
+		if err != nil {
+			return nil, err
+		}
 
+		//evaluation of statements
 		if len(n.Statements) == 1 {
 			res, err := symbolicEval(n.Statements[0], state)
 			if err != nil {
