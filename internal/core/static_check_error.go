@@ -64,6 +64,10 @@ func fmtNotValidPermissionKindName(name string) string {
 	return fmt.Sprintf("'%s' is not a valid permission kind, valid permissions are %s", name, strings.Join(PERMISSION_KIND_STRINGS, ", "))
 }
 
+func fmtUnknownSectionOfManifest(name string) string {
+	return fmt.Sprintf("unknown section '%s' of manifest", name)
+}
+
 func fmtForbiddenNodeInPermListing(n parse.Node) string {
 	return fmt.Sprintf("invalid permission listing: invalid node %T, only variables, simple values, objects, lists & dictionaries are allowed", n)
 }

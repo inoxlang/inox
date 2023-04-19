@@ -1671,6 +1671,8 @@ func checkManifestObject(objLit *parse.ObjectLiteral, onError func(n parse.Node,
 
 				return parse.Continue, nil
 			}, nil)
+		default:
+			onError(p, fmtUnknownSectionOfManifest(p.Name()))
 		}
 	}
 
