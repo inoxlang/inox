@@ -79,6 +79,7 @@ func StartLSPServer() {
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             nil,
 			Out:                       os.Stdout,
+			IgnoreNonCriticalIssues:   true,
 		})
 
 		if state == nil || state.SymbolicData == nil {
@@ -137,6 +138,7 @@ func StartLSPServer() {
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             nil,
 			Out:                       os.Stdout,
+			IgnoreNonCriticalIssues:   true,
 		})
 
 		chunk := mod.MainChunk
@@ -193,6 +195,7 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, com
 		ParsingCompilationContext: compilationCtx,
 		ParentContext:             nil,
 		Out:                       io.Discard,
+		IgnoreNonCriticalIssues:   true,
 	})
 
 	//we need the diagnostics list to be present in the notification so diagnostics should not be nil

@@ -120,6 +120,7 @@ type manifestObjectConfig struct {
 	defaultLimitations    []Limitation
 	addDefaultPermissions bool
 	handleCustomType      CustomPermissionTypeHandler //optional
+	ignoreUnkownSections  bool
 }
 
 // createManifest gets permissions and limitations by evaluating an object literal.
@@ -163,6 +164,9 @@ func createManifest(object *Object, config manifestObjectConfig) (*Manifest, err
 			}
 			envPattern = patt
 		default:
+			if config.ignoreUnkownSections {
+				continue
+			}
 			return nil, fmt.Errorf("invalid manifest, unknown section '%s'", k)
 		}
 	}

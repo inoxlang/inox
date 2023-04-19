@@ -1555,14 +1555,14 @@ func (checker *checker) postCheckSingleNode(node, parent, scopeNode parse.Node, 
 
 		switch p := parent.(type) {
 		case *parse.Manifest:
-			checkManifestObject(n, func(n parse.Node, msg string) {
+			checkManifestObject(n, false, func(n parse.Node, msg string) {
 				checker.addError(n, msg)
 			})
 		case *parse.EmbeddedModule:
 			if p.Manifest == nil || p.Manifest.Object != node {
 				break
 			}
-			checkManifestObject(n, func(n parse.Node, msg string) {
+			checkManifestObject(n, false, func(n parse.Node, msg string) {
 				checker.addError(n, msg)
 			})
 		}
@@ -1578,7 +1578,7 @@ func (checker *checker) postCheckSingleNode(node, parent, scopeNode parse.Node, 
 	return parse.Continue
 }
 
-func checkManifestObject(objLit *parse.ObjectLiteral, onError func(n parse.Node, msg string)) {
+func checkManifestObject(objLit *parse.ObjectLiteral, ignoreUnknownSections bool, onError func(n parse.Node, msg string)) {
 	parse.Walk(objLit, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 		switch n := node.(type) {
 		case *parse.ObjectLiteral:
@@ -1672,7 +1672,9 @@ func checkManifestObject(objLit *parse.ObjectLiteral, onError func(n parse.Node,
 				return parse.Continue, nil
 			}, nil)
 		default:
-			onError(p, fmtUnknownSectionOfManifest(p.Name()))
+			if !ignoreUnknownSections {
+				onError(p, fmtUnknownSectionOfManifest(p.Name()))
+			}
 		}
 	}
 

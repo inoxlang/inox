@@ -96,6 +96,7 @@ type ManifestEvaluationConfig struct {
 	DefaultLimitations    []Limitation
 	AddDefaultPermissions bool
 	HandleCustomType      CustomPermissionTypeHandler //optional
+	IgnoreUnknownSections bool
 }
 
 func (m *Module) EvalManifest(config ManifestEvaluationConfig) (*Manifest, error) {
@@ -111,7 +112,7 @@ func (m *Module) EvalManifest(config ManifestEvaluationConfig) (*Manifest, error
 	// check object literal
 	{
 		var checkErr []error
-		checkManifestObject(manifestObjLiteral, func(n parse.Node, msg string) {
+		checkManifestObject(manifestObjLiteral, config.IgnoreUnknownSections, func(n parse.Node, msg string) {
 			checkErr = append(checkErr, errors.New(msg))
 		})
 		if len(checkErr) != 0 {
@@ -159,6 +160,7 @@ func (m *Module) EvalManifest(config ManifestEvaluationConfig) (*Manifest, error
 		handleCustomType:      config.HandleCustomType,
 		addDefaultPermissions: config.AddDefaultPermissions,
 		//addDefaultPermissions: true,
+		ignoreUnkownSections: config.IgnoreUnknownSections,
 	})
 
 	return manifest, err

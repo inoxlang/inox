@@ -18,6 +18,7 @@ type ScriptPreparationArgs struct {
 	ParsingCompilationContext *core.Context
 	ParentContext             *core.Context
 	UseContextAsParent        bool
+	IgnoreNonCriticalIssues   bool
 
 	Out io.Writer
 }
@@ -78,6 +79,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			DefaultLimitations:    DEFAULT_LIMITATIONS,
 			HandleCustomType:      handleCustomPermType,
 			AddDefaultPermissions: true,
+			IgnoreUnknownSections: args.IgnoreNonCriticalIssues,
 		})
 
 		if manifest == nil {
