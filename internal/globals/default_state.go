@@ -81,7 +81,7 @@ func init() {
 }
 
 // NewDefaultGlobalState creates a new GlobalState with the default globals.
-func NewDefaultGlobalState(ctx *core.Context, out io.Writer) *core.GlobalState {
+func NewDefaultGlobalState(ctx *core.Context, envPattern *core.ObjectPattern, out io.Writer) *core.GlobalState {
 
 	logger := log.New(out, log.Default().Prefix(), log.Default().Flags())
 
@@ -99,7 +99,7 @@ func NewDefaultGlobalState(ctx *core.Context, out io.Writer) *core.GlobalState {
 		"s3":      _s3.NewS3namespace(),
 		"chrome":  _chrome.NewChromeNamespace(),
 		"localdb": _locdb.NewLocalDbNamespace(),
-		"env":     _env.NewEnvNamespace(),
+		"env":     _env.NewEnvNamespace(ctx, envPattern),
 		"html":    _html.NewHTMLNamespace(),
 		"dom":     _dom.NewDomNamespace(),
 		"sql":     _sql.NewSQLNamespace(),

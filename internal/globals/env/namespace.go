@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"os"
 
 	core "github.com/inoxlang/inox/internal/core"
@@ -30,7 +31,7 @@ func init() {
 	})
 }
 
-func NewEnvNamespace() *core.Record {
+func NewEnvNamespace(ctx *core.Context, envPattern *core.ObjectPattern) *core.Record {
 	pth, ok := parse.ParsePath(os.Getenv("HOME"))
 	HOME := core.Path(pth)
 	var HOMEval core.Value
@@ -43,15 +44,49 @@ func NewEnvNamespace() *core.Record {
 		HOMEval = core.Nil
 	}
 
+	var initial *core.Record
+	if envPattern != nil {
+		propNames := make([]string, envPattern.EntryCount())
+		values := make([]core.Value, envPattern.EntryCount())
+
+		i := 0
+		envPattern.ForEachEntry(func(propName string, propPattern core.Pattern) {
+			propNames[i] = propName
+			envVal := os.Getenv(propName)
+
+			switch patt := propPattern.(type) {
+			case core.StringPattern:
+				val, err := patt.Parse(ctx, envVal)
+				if err != nil {
+					panic(fmt.Errorf("invalid value provided for environment variable '%s'", propName))
+				}
+				values[i] = val
+			case *core.SecretPattern:
+				val, err := patt.NewSecret(ctx, envVal)
+				if err != nil {
+					panic(fmt.Errorf("invalid value provided for environment variable '%s'", propName))
+				}
+				values[i] = val
+			default:
+				panic(fmt.Errorf("invalid pattern type %T for environment variable '%s'", propPattern, propName))
+			}
+		})
+
+		initial = core.NewRecordFromKeyValLists(propNames, values)
+	} else {
+		initial = core.NewRecordFromKeyValLists(nil, nil)
+	}
+
 	//PWD should not be provided by default because it is not necessary equal to the working directory.
 	//By providing it by default people could use it instead of properly getting the working directory.
 
 	return core.NewRecordFromMap(core.ValMap{
-		"HOME":   HOMEval,
-		"has":    core.ValOf(envHas),
-		"get":    core.ValOf(envGet),
-		"all":    core.ValOf(envAll),
-		"set":    core.ValOf(envSet),
-		"delete": core.ValOf(envDelete),
+		"HOME":    HOMEval,
+		"initial": initial,
+		"has":     core.ValOf(envHas),
+		"get":     core.ValOf(envGet),
+		"all":     core.ValOf(envAll),
+		"set":     core.ValOf(envSet),
+		"delete":  core.ValOf(envDelete),
 	})
 }

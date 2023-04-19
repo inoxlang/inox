@@ -11,7 +11,8 @@ import (
 func TestEnv(t *testing.T) {
 
 	os.Setenv("HOME", "/home/user")
-	env := NewEnvNamespace()
+	ctx := core.NewContext(core.ContextConfig{})
+	env := NewEnvNamespace(ctx, nil)
 
 	assert.Equal(t, core.Path("/home/user/"), env.Prop(nil, "HOME"))
 

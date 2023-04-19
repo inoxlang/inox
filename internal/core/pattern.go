@@ -918,6 +918,16 @@ func (patt *ObjectPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
+func (patt *ObjectPattern) ForEachEntry(fn func(propName string, propPattern Pattern)) {
+	for propName, propPattern := range patt.entryPatterns {
+		fn(propName, propPattern)
+	}
+}
+
+func (patt *ObjectPattern) EntryCount() int {
+	return len(patt.entryPatterns)
+}
+
 type RecordPattern struct {
 	NotCallablePatternMixin
 	entryPatterns map[string]Pattern

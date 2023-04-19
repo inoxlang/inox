@@ -23,9 +23,9 @@ const (
 	DEFAULT_ERR_OUT_BUFFER_SIZE = 4096
 )
 
-var newDefaultGlobalState (func(ctx *core.Context, out io.Writer) *core.GlobalState)
+var newDefaultGlobalState (func(ctx *core.Context, vPattern *core.ObjectPattern, out io.Writer) *core.GlobalState)
 
-func SetNewDefaultGlobalState(fn func(ctx *core.Context, out io.Writer) *core.GlobalState) {
+func SetNewDefaultGlobalState(fn func(ctx *core.Context, vPattern *core.ObjectPattern, out io.Writer) *core.GlobalState) {
 	newDefaultGlobalState = fn
 }
 
@@ -94,7 +94,7 @@ func NewShell(ctx *core.Context, configObj *core.Object) (*shell, error) {
 	var shellState *core.GlobalState
 
 	if globals == nil {
-		shellState = newDefaultGlobalState(shellCtx, state.Out)
+		shellState = newDefaultGlobalState(shellCtx, nil, state.Out)
 	} else {
 		shellState = core.NewGlobalState(shellCtx, globals)
 	}

@@ -328,7 +328,7 @@ func runStartupScript(startupScriptPath string) (*core.Object, *core.GlobalState
 		Limitations:     startupManifest.Limitations,
 		HostResolutions: startupManifest.HostResolutions,
 	}))
-	state := globals.NewDefaultGlobalState(ctx, os.Stdout)
+	state := globals.NewDefaultGlobalState(ctx, nil, os.Stdout)
 	state.Module = startupMod
 
 	//

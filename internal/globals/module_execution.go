@@ -112,7 +112,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		out = os.Stdout
 	}
 
-	state = NewDefaultGlobalState(ctx, out)
+	state = NewDefaultGlobalState(ctx, manifest.EnvPattern, out)
 	state.Module = mod
 
 	if passCLIArguments {
