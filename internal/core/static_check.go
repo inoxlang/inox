@@ -1671,6 +1671,15 @@ func checkManifestObject(objLit *parse.ObjectLiteral, ignoreUnknownSections bool
 
 				return parse.Continue, nil
 			}, nil)
+		case "parameters":
+			obj, ok := p.Value.(*parse.ObjectLiteral)
+
+			if !ok {
+				onError(p, PARAMS_SECTION_SHOULD_BE_AN_OBJECT)
+				continue
+			}
+
+			checkParametersObject(obj, onError)
 		default:
 			if !ignoreUnknownSections {
 				onError(p, fmtUnknownSectionOfManifest(p.Name()))
@@ -1700,6 +1709,82 @@ func checkPermissionListingObject(objLit *parse.ObjectLiteral, onError func(n pa
 
 		if !isPermissionKindName(p.Name()) {
 			onError(p.Key, fmtNotValidPermissionKindName(p.Name()))
+		}
+	}
+}
+
+func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Node, msg string)) {
+
+	parse.Walk(objLit, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
+		if node == objLit {
+			return parse.Continue, nil
+		}
+
+		switch n := node.(type) {
+		case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression,
+			*parse.ObjectProperty, *parse.ObjectLiteral, *parse.ListLiteral,
+			*parse.OptionPatternLiteral, *parse.OptionExpression, *parse.ListPatternLiteral, *parse.OptionalPatternExpression,
+			*parse.PatternCallExpression, parse.SimpleValueLiteral, *parse.GlobalVariable:
+		default:
+			onError(n, fmtForbiddenNodeInParametersSection(n))
+		}
+
+		return parse.Continue, nil
+	}, nil)
+
+	positionalParamsEnd := false
+
+	for _, prop := range objLit.Properties {
+		if !prop.HasImplicitKey() { // non positional parameter
+			positionalParamsEnd = true
+
+			propValue := prop.Value
+			optionPattern, ok := prop.Value.(*parse.OptionPatternLiteral)
+			if ok {
+				propValue = optionPattern.Value
+			}
+
+			switch propValue.(type) {
+			case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression:
+				//ok
+			default:
+				onError(prop,
+					"the description of a non positional parameter should be a named pattern (%path, %str, ...) or "+
+						"an option pattern (%-o=%path, ...)",
+				)
+			}
+
+		} else if positionalParamsEnd {
+			onError(prop, "properties with an implicit key describe positional parameters, all implict key properties should be at the top of the 'parameters' section")
+		} else { //positional parameter
+
+			obj, ok := prop.Value.(*parse.ObjectLiteral)
+			if !ok {
+				onError(prop, "the description of a positional parameter should be an object")
+				continue
+			}
+
+			missingPropertyNames := []string{"name", "pattern"}
+
+			for _, paramDescProp := range obj.Properties {
+				if paramDescProp.HasImplicitKey() {
+					onError(paramDescProp, "the description of a positional parameter should not contain implicit keys")
+					continue
+				}
+
+				for i, name := range missingPropertyNames {
+					if name == paramDescProp.Name() {
+						missingPropertyNames[i] = ""
+					}
+				}
+			}
+
+			missingPropertyNames = utils.FilterSlice(missingPropertyNames, func(s string) bool { return s != "" })
+			if len(missingPropertyNames) > 0 {
+				onError(prop, "missing properties in description of positional parameter: "+strings.Join(missingPropertyNames, ", "))
+			}
+			//TODO: check unique rest parameter
+			_ = obj
 		}
 	}
 }

@@ -16,6 +16,7 @@ const (
 
 	LIMITS_SECTION_SHOULD_BE_AN_OBJECT      = "the 'limits' section of the manifest should be an object"
 	ENV_SECTION_SHOULD_BE_AN_OBJECT_PATTERN = "the 'env' section of the manifest should be an object pattern literal"
+	PARAMS_SECTION_SHOULD_BE_AN_OBJECT      = "the 'parameters' section of the manifest should be an object literal"
 
 	HOST_RESOL_SECTION_SHOULD_BE_A_DICT = "the 'host_resolution' section of the manifest should be a dictionary"
 
@@ -82,6 +83,10 @@ func fmtForbiddenNodeInEnvSection(n parse.Node) string {
 
 func fmtForbiddenNodeInHostResolutionSection(n parse.Node) string {
 	return fmt.Sprintf("invalid host resolution description: invalid node %T, only variables and simple literals are allowed", n)
+}
+
+func fmtForbiddenNodeInParametersSection(n parse.Node) string {
+	return fmt.Sprintf("invalid parameters description: forbidden node %T", n)
 }
 
 func fmtFollowingNodeTypeNotAllowedInAssertions(n parse.Node) string {

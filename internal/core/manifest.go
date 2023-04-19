@@ -39,10 +39,23 @@ type Manifest struct {
 	Limitations         []Limitation
 	HostResolutions     map[Host]Value
 	EnvPattern          *ObjectPattern
+	Parameters          ModuleParameters
 }
 
 func NewEmptyManifest() *Manifest {
 	return &Manifest{}
+}
+
+type ModuleParameters struct {
+	Positional []ModuleParameter
+	Others     []ModuleParameter
+}
+
+type ModuleParameter struct {
+	Name       Identifier
+	Rest       bool
+	Positional bool
+	Pattern    Pattern
 }
 
 func (m *Manifest) RequiresPermission(perm Permission) bool {
@@ -128,8 +141,9 @@ type manifestObjectConfig struct {
 func createManifest(object *Object, config manifestObjectConfig) (*Manifest, error) {
 
 	var (
-		perms      []Permission
-		envPattern *ObjectPattern
+		perms        []Permission
+		envPattern   *ObjectPattern
+		moduleParams ModuleParameters
 	)
 	permListing := NewObject()
 	limitations := make([]Limitation, 0)
@@ -163,6 +177,61 @@ func createManifest(object *Object, config manifestObjectConfig) (*Manifest, err
 				return nil, fmt.Errorf("invalid manifest, the 'env' section should have a value of type object pattern")
 			}
 			envPattern = patt
+		case "parameters":
+			description, ok := v.(*Object)
+			if !ok {
+				return nil, fmt.Errorf("invalid manifest, the 'parameters' section should have a value of type object")
+			}
+
+			var params ModuleParameters
+			restParamFound := false
+
+			err := description.ForEachEntry(func(k string, v Value) error {
+				var param ModuleParameter
+
+				if IsIndexKey(k) { //positional parameter
+					obj, ok := v.(*Object)
+					if !ok {
+						return errors.New("each positional parameter should be described with an object")
+					}
+
+					obj.ForEachEntry(func(propName string, propVal Value) error {
+						switch propName {
+						case "name":
+							param.Name = propVal.(Identifier)
+							param.Positional = true
+						case "rest":
+							rest := bool(propVal.(Bool))
+							if rest && restParamFound {
+								return errors.New("at most one positional parameter should be a rest parameter")
+							}
+							param.Rest = rest
+							restParamFound = rest
+						case "pattern":
+							patt := propVal.(Pattern)
+							param.Pattern = patt
+						}
+						return nil
+					})
+
+					params.Positional = append(params.Positional, param)
+				} else { // non positional parameyer
+					switch val := v.(type) {
+					case Pattern:
+						param.Name = Identifier(k)
+						param.Pattern = val
+					default:
+						return errors.New("each non positional parameter should be described with a pattern")
+					}
+					params.Others = append(params.Others, param)
+				}
+				return nil
+			})
+
+			if err != nil {
+				return nil, fmt.Errorf("invalid manifest: 'parameters' section: %w", err)
+			}
+			moduleParams = params
 		default:
 			if config.ignoreUnkownSections {
 				continue
@@ -189,6 +258,7 @@ func createManifest(object *Object, config manifestObjectConfig) (*Manifest, err
 		Limitations:         limitations,
 		HostResolutions:     hostResolutions,
 		EnvPattern:          envPattern,
+		Parameters:          moduleParams,
 	}, nil
 }
 

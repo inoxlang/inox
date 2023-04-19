@@ -455,6 +455,9 @@ func (obj *Object) EntryMap() map[string]Value {
 }
 
 func (obj *Object) ForEachEntry(fn func(k string, v Value) error) error {
+	if obj.IsShared() {
+		panic(errors.New("Object.ForEachEntry() can only be called on objects that are not shared"))
+	}
 	for i, v := range obj.values {
 		if err := fn(obj.keys[i], v); err != nil {
 			return err
