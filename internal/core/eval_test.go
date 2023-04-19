@@ -8,7 +8,6 @@ import (
 	"math"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -5310,22 +5309,24 @@ func TestToBool(t *testing.T) {
 
 	testCases := []struct {
 		name  string
-		input interface{}
+		input Value
 		ok    bool
 	}{
-		{"nil slice", ([]int)(nil), false},
-		{"empty, not-nil slice", []int{}, false},
-		{"not empty slice", []int{2}, true},
+		{"nil slice", (KeyList)(nil), false},
+		{"empty, not-nil slice", KeyList{}, false},
+		{"not empty slice", KeyList{"a"}, true},
 		{"not empty pointer", &testMutableGoValue{}, true},
 		{"empty pointer", (*testMutableGoValue)(nil), false},
 		{"unitialized struct", testMutableGoValue{}, true},
-		{"empty string", "", false},
-		{"not empty string", "1", true},
+		{"empty string", Str(""), false},
+		{"not empty string", Str("1"), true},
+		{"empty list", NewWrappedValueList(), false},
+		{"not empty list", NewWrappedValueList(Int(1)), true},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			assert.True(t, testCase.ok == coerceToBool(reflect.ValueOf(testCase.input)))
+			assert.True(t, testCase.ok == coerceToBool(testCase.input))
 		})
 	}
 }

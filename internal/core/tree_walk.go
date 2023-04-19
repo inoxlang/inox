@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"reflect"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -1948,7 +1947,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return nil, err
 		}
 
-		return Bool(coerceToBool(reflect.ValueOf(valueToConvert))), nil
+		return Bool(coerceToBool(valueToConvert)), nil
 	case *parse.PatternDefinition:
 		var right Pattern
 		if n.IsLazy {

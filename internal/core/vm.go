@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"reflect"
 	"runtime/debug"
 	"strings"
 	"sync/atomic"
@@ -1045,7 +1044,7 @@ func (v *VM) run() {
 			}
 		case OpToBool:
 			val := v.stack[v.sp-1]
-			boolVal := Bool(coerceToBool(reflect.ValueOf(val)))
+			boolVal := Bool(coerceToBool(val))
 
 			v.stack[v.sp-1] = boolVal
 		case OpCreateCheckedString:

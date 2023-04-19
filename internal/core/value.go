@@ -147,9 +147,16 @@ func ValOf(v interface{}) Value {
 	}
 }
 
-func coerceToBool(reflVal reflect.Value) bool {
+func coerceToBool(val Value) bool {
+	reflVal := reflect.ValueOf(val)
+
 	if !reflVal.IsValid() {
 		return false
+	}
+
+	switch v := val.(type) {
+	case Indexable:
+		return v.Len() > 0
 	}
 
 	if reflVal.Type() == NIL_TYPE {
