@@ -522,6 +522,7 @@ var (
 		},
 		SymbolicValue: symbolic.ANY_SECRET,
 	}
+	SECRET_STRING_PATTERN = NewSecretPattern(NewRegexPattern(".*"))
 
 	DEFAULT_NAMED_PATTERNS = map[string]Pattern{
 		"ident":          IDENT_PATTERN,
@@ -535,6 +536,7 @@ var (
 		"host":           HOST_PATTERN,
 		"email_addr":     EMAIL_ADDR_PATTERN,
 		"secret":         SECRET_PATTERN,
+		"secret-string":  SECRET_STRING_PATTERN,
 		"obj":            OBJECT_PATTERN,
 		"rec":            RECORD_PATTERN,
 		"tuple":          TUPLE_PATTERN,

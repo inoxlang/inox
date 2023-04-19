@@ -27,6 +27,10 @@ type SecretPattern struct {
 	stringPattern StringPattern
 }
 
+func NewSecretPattern(stringPattern StringPattern) *SecretPattern {
+	return &SecretPattern{stringPattern: stringPattern}
+}
+
 // Test returns true if the pattern of the secret is p, the content of the secret is not verified.
 func (p *SecretPattern) Test(ctx *Context, v Value) bool {
 	secret, ok := v.(*Secret)
@@ -43,4 +47,12 @@ func (pattern *SecretPattern) StringPattern() (StringPattern, bool) {
 
 func (pattern *SecretPattern) Random(ctx *Context, options ...Option) Value {
 	panic(ErrNotImplemented)
+}
+
+func (pattern *SecretPattern) NewSecret(ctx *Context, s string) (*Secret, error) {
+	val, err := pattern.stringPattern.Parse(ctx, s)
+	if err != nil {
+		return nil, err
+	}
+	return &Secret{value: val.(StringLike), pattern: pattern}, nil
 }
