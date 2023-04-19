@@ -1,5 +1,7 @@
 package internal
 
+import "fmt"
+
 var (
 	_ = []Value{(*Secret)(nil)}
 
@@ -17,6 +19,14 @@ type Secret struct {
 
 func (s *Secret) Value() StringLike {
 	return s.value
+}
+
+func (s *Secret) String() string {
+	return "secret(...)"
+}
+
+func (s *Secret) Format(f fmt.State, verb rune) {
+	f.Write([]byte("secret(...)"))
 }
 
 type SecretPattern struct {
