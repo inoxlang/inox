@@ -20,6 +20,7 @@ const REGEX_SYNTAX = syntax.Perl
 var (
 	ErrStrGroupMatchingOnlySupportedForPatternWithRegex = errors.New("group matching is only supported by string patterns with a regex for now")
 	ErrCannotParse                                      = errors.New("cannot parse")
+	ErrInvalidInputString                               = errors.New("invalid input string")
 	_                                                   = []StringPattern{&ParserBasedPattern{}}
 )
 
@@ -183,7 +184,10 @@ func (patt *SequenceStringPattern) validate(s string, i *int) bool {
 }
 
 func (patt *SequenceStringPattern) Parse(ctx *Context, s string) (Value, error) {
-	return nil, ErrCannotParse
+	if !patt.Test(ctx, Str(s)) {
+		return nil, ErrInvalidInputString
+	}
+	return Str(s), nil
 }
 
 func (patt *SequenceStringPattern) MatchGroups(ctx *Context, v Value) (map[string]Value, bool, error) {
@@ -1173,7 +1177,10 @@ func (patt *RegexPattern) validate(s string, i *int) bool {
 }
 
 func (patt *RegexPattern) Parse(ctx *Context, s string) (Value, error) {
-	return nil, ErrCannotParse
+	if !patt.Test(ctx, Str(s)) {
+		return nil, ErrInvalidInputString
+	}
+	return Str(s), nil
 }
 
 func (patt *RegexPattern) FindMatches(ctx *Context, val Value, config MatchesFindConfig) (groups []Value, err error) {
