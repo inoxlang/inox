@@ -549,7 +549,7 @@ func (sh *shell) runLoop() {
 				continue
 			}
 
-			dbg("check", input)
+			//dbg("check", input)
 			lastInput = input
 			// mod, err := sh.parseModule(input)
 
