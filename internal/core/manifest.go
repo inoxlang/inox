@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -53,7 +54,6 @@ type ModuleParameters struct {
 
 func (p *ModuleParameters) GetArguments(argObj *Object) *Object {
 	positionalArgs := argObj.Indexed()
-
 	resultEntries := map[string]Value{}
 
 	for i, param := range p.positional {
@@ -137,6 +137,23 @@ outer:
 	}
 
 	return objFrom(entries), nil
+}
+
+func (p *ModuleParameters) GetSymbolicArguments() *symbolic.Object {
+	resultEntries := map[string]symbolic.SymbolicValue{}
+	encountered := map[uintptr]symbolic.SymbolicValue{}
+
+	for _, param := range p.others {
+		symbolicPatt := utils.Must(param.pattern.ToSymbolicValue(false, encountered)).(symbolic.Pattern)
+		resultEntries[string(param.name)] = symbolicPatt.SymbolicValue()
+	}
+
+	for _, param := range p.positional {
+		symbolicPatt := utils.Must(param.pattern.ToSymbolicValue(false, encountered)).(symbolic.Pattern)
+		resultEntries[string(param.name)] = symbolicPatt.SymbolicValue()
+	}
+
+	return symbolic.NewObject(resultEntries, nil)
 }
 
 type moduleParameter struct {

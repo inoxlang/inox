@@ -113,8 +113,9 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		args, err := manifest.Parameters.GetArgumentsFromCliArgs(ctx, args.CliArgs)
 		if err != nil {
 			modArgsError = err
+		} else {
+			modArgs = args
 		}
-		modArgs = args
 	} else {
 		modArgs = core.NewObject()
 	}
@@ -160,13 +161,9 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			globals[k] = v
 		})
 
-		var additionalSymbolicGlobals map[string]symbolic.SymbolicValue
-
-		if modArgsError != nil {
-			delete(globals, core.MOD_ARGS_VARNAME)
-			additionalSymbolicGlobals = map[string]symbolic.SymbolicValue{
-				core.MOD_ARGS_VARNAME: symbolic.ANY,
-			}
+		delete(globals, core.MOD_ARGS_VARNAME)
+		additionalSymbolicGlobals := map[string]symbolic.SymbolicValue{
+			core.MOD_ARGS_VARNAME: manifest.Parameters.GetSymbolicArguments(),
 		}
 
 		symbolicCtx, err_ := state.Ctx.ToSymbolicValue()
