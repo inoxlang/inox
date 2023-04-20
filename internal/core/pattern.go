@@ -42,10 +42,18 @@ var (
 		Name:          "byte",
 		SymbolicValue: &symbolic.Byte{},
 	}
-	PATH_PATTERN = &TypePattern{
+	ANY_PATH_STRING_PATTERN = NewStringPathPattern("")
+	PATH_PATTERN            = &TypePattern{
 		Type:          PATH_TYPE,
 		Name:          "path",
 		SymbolicValue: &symbolic.Path{},
+		stringPattern: func() (StringPattern, bool) {
+			return ANY_PATH_STRING_PATTERN, true
+		},
+		symbolicStringPattern: func() (symbolic.StringPatternElement, bool) {
+			//TODO
+			return symbolic.ANY_STR_PATTERN_ELEM, true
+		},
 	}
 	STR_PATTERN = &TypePattern{
 		Type:          STR_LIKE_INTERFACE_TYPE,
@@ -240,7 +248,8 @@ var (
 			return NewIntRangeStringPattern(-999999999999999999, 999999999999999999, nil), true
 		},
 		symbolicStringPattern: func() (symbolic.StringPatternElement, bool) {
-			return &symbolic.AnyStringPatternElement{}, true
+			//TODO
+			return symbolic.ANY_STR_PATTERN_ELEM, true
 		},
 	}
 	FLOAT_PATTERN = &TypePattern{

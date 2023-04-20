@@ -1129,6 +1129,15 @@ func (patt *IntRangeStringPattern) Equal(ctx *Context, other Value, alreadyCompa
 	return patt.intRange.Equal(ctx, otherPatt.intRange, alreadyCompared, depth+1)
 }
 
+func (patt *PathStringPattern) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherPatt, ok := other.(*PathStringPattern)
+	if !ok {
+		return false
+	}
+
+	return patt.optionalPathPattern == otherPatt.optionalPathPattern
+}
+
 func (reader *Reader) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	otherReader, ok := other.(*Reader)
 	if !ok {

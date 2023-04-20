@@ -679,6 +679,10 @@ func (p *IntRangeStringPattern) ToSymbolicValue(wide bool, encountered map[uintp
 	return symbolic.ANY_STR_PATTERN_ELEM, nil
 }
 
+func (p *PathStringPattern) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	return symbolic.ANY_STR_PATTERN_ELEM, nil
+}
+
 func (f *GoFunction) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	goFunc := f.fn
 	ptr := reflect.ValueOf(goFunc).Pointer()

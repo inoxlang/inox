@@ -274,6 +274,10 @@ func (patt *IntRangeStringPattern) IsMutable() bool {
 	return false
 }
 
+func (patt *PathStringPattern) IsMutable() bool {
+	return false
+}
+
 func (*Reader) IsMutable() bool {
 	return true
 }

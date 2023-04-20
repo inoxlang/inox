@@ -1327,6 +1327,166 @@ func (patt *RegexPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
+// A PathStringPattern represents a string pattern for paths
+type PathStringPattern struct {
+	NoReprMixin
+	optionalPathPattern PathPattern
+
+	hasEffectiveLengthRange bool
+	effectiveLengthRange    IntRange
+}
+
+// NewRegexPattern creates a StringPathPattern from the given string, if path pattern is empty the pattern matches any path.
+func NewStringPathPattern(pathPattern PathPattern) *PathStringPattern {
+	return &PathStringPattern{optionalPathPattern: pathPattern}
+}
+
+// AddValidPathPrefix adds the ./ prefix if necessary, AddValidPathPrefix does NOT check that its argument is valid path.
+func AddValidPathPrefix(s string) (string, error) {
+	if s != "" && s[0] == '/' {
+		return s, nil
+	}
+
+top:
+	switch len(s) {
+	case 0:
+		return "", ErrInvalidInputString
+	case 1:
+		switch s {
+		case ".":
+			s = "./"
+		case "/":
+			break top
+		default:
+			s = "./" + s
+		}
+	case 2:
+		switch s {
+		case "..":
+			s = "./.."
+		case "./":
+			break top
+		default:
+			s = "./" + s
+		}
+	default:
+		switch s[:3] {
+		case "../":
+			break top
+		}
+
+		switch s[:2] {
+		case "./":
+			break top
+		default:
+			s = "./" + s
+		}
+	}
+
+	return s, nil
+}
+
+func (pattern *PathStringPattern) Test(ctx *Context, v Value) bool {
+	str, ok := v.(StringLike)
+	if !ok || !checkMatchedStringLen(str, pattern) {
+		return false
+	}
+
+	path, err := AddValidPathPrefix(str.GetOrBuildString())
+	if err != nil {
+		return false
+	}
+
+	if pattern.optionalPathPattern == "" {
+		parsed, _ := ParseRepr(ctx, []byte(path))
+		_, ok := parsed.(Path)
+		return ok
+	}
+	return pattern.optionalPathPattern.Test(ctx, Str(path))
+}
+
+func (pattern *PathStringPattern) Regex() string {
+	panic(ErrNotImplemented)
+}
+
+func (patt *PathStringPattern) CompiledRegex() *regexp.Regexp {
+	panic(ErrNotImplemented)
+}
+
+func (pattern *PathStringPattern) HasRegex() bool {
+	return false
+}
+
+func (patt *PathStringPattern) validate(s string, i *int) bool {
+	panic(ErrNotImplementedYet)
+}
+
+func (patt *PathStringPattern) Parse(ctx *Context, s string) (Value, error) {
+	path, err := AddValidPathPrefix(s)
+	if err != nil {
+		return nil, ErrInvalidInputString
+	}
+
+	if !patt.Test(ctx, Str(s)) {
+		return nil, ErrInvalidInputString
+	}
+	return Path(path), nil
+}
+
+func (patt *PathStringPattern) FindMatches(ctx *Context, val Value, config MatchesFindConfig) (groups []Value, err error) {
+	return FindMatchesForStringPattern(ctx, patt, val, config)
+}
+
+func (patt *PathStringPattern) MatchGroups(ctx *Context, v Value) (map[string]Value, bool, error) {
+	_, ok := v.(StringLike)
+	if !ok || !patt.Test(ctx, v) {
+		return nil, false, nil
+	}
+
+	return map[string]Value{"0": v}, true, nil
+}
+
+func (patt *PathStringPattern) LengthRange() IntRange {
+	return IntRange{
+		Start:        1,
+		End:          100,
+		inclusiveEnd: true,
+		Step:         1,
+	}
+}
+
+func (patt *PathStringPattern) EffectiveLengthRange() IntRange {
+	if patt.hasEffectiveLengthRange {
+		return patt.effectiveLengthRange
+	}
+	return patt.LengthRange()
+}
+
+func (patt *PathStringPattern) Call(values []Value) (Pattern, error) {
+	lenRange, found, err := getNewEffectiveLenRange(values, patt.LengthRange())
+	if err != nil {
+		return nil, err
+	}
+
+	newPattern, err := patt.Clone(map[uintptr]map[int]Value{})
+	if err != nil {
+		return nil, err
+	}
+
+	pattClone := newPattern.(*PathStringPattern)
+
+	if found {
+		pattClone.effectiveLengthRange = lenRange
+		pattClone.hasEffectiveLengthRange = true
+	}
+
+	return pattClone, nil
+}
+
+func (patt *PathStringPattern) StringPattern() (StringPattern, bool) {
+	return nil, false
+}
+
 func getNewEffectiveLenRange(args []Value, originalRange IntRange) (intRange IntRange, found bool, err error) {
 	for _, arg := range args {
 		switch a := arg.(type) {

@@ -716,6 +716,25 @@ func (patt *OptionPattern) Clone(clones map[uintptr]map[int]Value) (Value, error
 	return patt, nil
 }
 
+func (patt *PathStringPattern) Clone(clones map[uintptr]map[int]Value) (Value, error) {
+	ptr := reflect.ValueOf(patt).Pointer()
+	if clone, ok := clones[ptr][0]; ok {
+		return clone, nil
+	}
+
+	clonePathPattern, err := patt.optionalPathPattern.Clone(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	clone := &PathStringPattern{optionalPathPattern: clonePathPattern.(PathPattern)}
+	if clones[ptr] == nil {
+		clones[ptr] = make(map[int]Value, 1)
+		clones[ptr][0] = clone
+	}
+	return clone, nil
+}
+
 func (mt Mimetype) Clone(clones map[uintptr]map[int]Value) (Value, error) {
 	return mt, nil
 }

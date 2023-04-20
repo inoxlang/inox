@@ -419,7 +419,7 @@ func (PathPattern) Call(values []Value) (Pattern, error) {
 }
 
 func (patt PathPattern) StringPattern() (StringPattern, bool) {
-	return nil, false
+	return &PathStringPattern{optionalPathPattern: patt}, true
 }
 
 func (patt PathPattern) UnderlyingString() string {

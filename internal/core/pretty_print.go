@@ -1441,6 +1441,10 @@ func (patt *IntRangeStringPattern) PrettyPrint(w *bufio.Writer, config *PrettyPr
 	utils.Must(fmt.Fprintf(w, "%#v", patt))
 }
 
+func (patt *PathStringPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", patt))
+}
+
 func (reader *Reader) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(fmt.Fprintf(w, "%#v", reader))
 }

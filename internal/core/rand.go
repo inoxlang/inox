@@ -472,3 +472,7 @@ func (pattern *IntRangeStringPattern) Random(ctx *Context, options ...Option) Va
 	n := int64(pattern.intRange.Random(ctx).(Int))
 	return Str(strconv.FormatInt(n, 10))
 }
+
+func (pattern *PathStringPattern) Random(ctx *Context, options ...Option) Value {
+	panic(ErrNotImplementedYet)
+}

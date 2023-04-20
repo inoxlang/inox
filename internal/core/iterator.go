@@ -1506,6 +1506,10 @@ func (patt *IntRangeStringPattern) Iterator(ctx *Context, config IteratorConfigu
 	})
 }
 
+func (patt *PathStringPattern) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
+	return NewEmptyPatternIterator()
+}
+
 func (patt *SecretPattern) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
 	return NewEmptyPatternIterator()
 }
