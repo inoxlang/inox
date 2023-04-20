@@ -62,9 +62,10 @@ var (
 )
 
 type SymbolicEvalCheckInput struct {
-	Node         *parse.Chunk
-	Module       *Module
-	GlobalConsts map[string]interface{}
+	Node                           *parse.Chunk
+	Module                         *Module
+	GlobalConsts                   map[string]interface{}
+	AdditionalSymbolicGlobalConsts map[string]SymbolicValue
 
 	IsShellChunk   bool
 	ShellLocalVars map[string]interface{}
@@ -88,6 +89,10 @@ func SymbolicEvalCheck(input SymbolicEvalCheckInput) (*SymbolicData, error) {
 			return nil, fmt.Errorf("cannot convert global %s: %s", k, err)
 		}
 		state.setGlobal(k, symbolicVal, GlobalConst)
+	}
+
+	for k, v := range input.AdditionalSymbolicGlobalConsts {
+		state.setGlobal(k, v, GlobalConst)
 	}
 
 	if input.IsShellChunk {

@@ -47,8 +47,8 @@ func NewEmptyManifest() *Manifest {
 }
 
 type ModuleParameters struct {
-	positional []ModuleParameter
-	others     []ModuleParameter
+	positional []moduleParameter
+	others     []moduleParameter
 }
 
 func (p *ModuleParameters) GetArguments(argObj *Object) *Object {
@@ -57,10 +57,10 @@ func (p *ModuleParameters) GetArguments(argObj *Object) *Object {
 	resultEntries := map[string]Value{}
 
 	for i, param := range p.positional {
-		if param.Rest {
-			resultEntries[string(param.Name)] = NewWrappedValueList(positionalArgs[i:]...)
+		if param.rest {
+			resultEntries[string(param.name)] = NewWrappedValueList(positionalArgs[i:]...)
 		} else {
-			resultEntries[string(param.Name)] = positionalArgs[i]
+			resultEntries[string(param.name)] = positionalArgs[i]
 		}
 	}
 
@@ -70,7 +70,7 @@ func (p *ModuleParameters) GetArguments(argObj *Object) *Object {
 		}
 
 		for _, param := range p.others {
-			if string(param.Name) == k {
+			if string(param.name) == k {
 				resultEntries[k] = v
 			}
 		}
@@ -81,11 +81,161 @@ func (p *ModuleParameters) GetArguments(argObj *Object) *Object {
 	return objFrom(resultEntries)
 }
 
-type ModuleParameter struct {
-	Name       Identifier
-	Rest       bool
-	Positional bool
-	Pattern    Pattern
+func (p *ModuleParameters) GetArgumentsFromCliArgs(ctx *Context, cliArgs []string) (*Object, error) {
+	var remainingCliArgs []string
+	entries := map[string]Value{}
+
+	// non positional arguments
+outer:
+	for _, cliArg := range cliArgs {
+
+		for _, param := range p.others {
+			paramValue, handled, err := param.GetArgumentFromCliArg(ctx, cliArg)
+			if !handled {
+				continue
+			}
+			if err != nil {
+				return nil, fmt.Errorf("invalid value for argument %s: %w", param.name, err)
+			}
+
+			entries[string(param.name)] = paramValue
+			continue outer
+		}
+
+		remainingCliArgs = append(remainingCliArgs, cliArg)
+	}
+
+	//default values
+	for _, param := range p.others {
+		_, ok := entries[string(param.name)]
+		if !ok {
+			defaultVal, ok := param.DefaultValue()
+			if !ok {
+				return nil, fmt.Errorf("missing value for argument %s", param.name)
+			}
+			entries[string(param.name)] = defaultVal
+		}
+	}
+
+	for i, param := range p.positional {
+		if param.rest {
+			paramValue, err := param.GetRestArgumentFromCliArgs(ctx, remainingCliArgs[i:])
+			if err != nil {
+				return nil, fmt.Errorf("invalid value for rest argument %s: %w", param.name, err)
+			}
+			entries[string(param.name)] = paramValue
+		} else {
+			if i >= len(remainingCliArgs) {
+				return nil, ErrNotEnoughCliArgs
+			}
+			paramValue, _, err := param.GetArgumentFromCliArg(ctx, remainingCliArgs[i])
+			if err != nil {
+				return nil, fmt.Errorf("invalid value for argument %s: %w", param.name, err)
+			}
+			entries[string(param.name)] = paramValue
+		}
+	}
+
+	return objFrom(entries), nil
+}
+
+type moduleParameter struct {
+	name                   Identifier
+	singleLetterCliArgName rune
+	cliArgName             string
+	rest                   bool
+	positional             bool
+	pattern                Pattern
+}
+
+func (p moduleParameter) DefaultValue() (Value, bool) {
+	if p.pattern == BOOL_PATTERN {
+		return False, true
+	}
+	return nil, false
+}
+
+func (p moduleParameter) GetArgumentFromCliArg(ctx *Context, s string) (v Value, handled bool, err error) {
+	if len(s) == 0 {
+		return nil, false, nil
+	}
+	if s[0] == '-' {
+		if p.positional {
+			return nil, false, nil
+		}
+
+		cliArg := s[1:]
+		if len(s) >= 2 && s[1] == '-' {
+			cliArg = s[2:]
+		}
+
+		name, valueString, hasValue := strings.Cut(cliArg, "=")
+
+		switch name {
+		case string(p.singleLetterCliArgName), string(p.cliArgName):
+			if !hasValue {
+				if p.pattern == BOOL_PATTERN {
+					return True, true, nil
+				}
+				return nil, true, errors.New("missing value, after the name add '=' followed by a value")
+			}
+
+			stringPatt, ok := p.pattern.StringPattern()
+			if !ok {
+				return nil, true, errors.New("parameter's pattern has no corresponding string pattern")
+			}
+			argValue, err := stringPatt.Parse(ctx, valueString)
+			if err != nil {
+				return nil, true, err
+			}
+			return argValue, true, nil
+		default:
+			return nil, false, nil
+		}
+	} else {
+		if !p.positional {
+			return nil, false, nil
+		}
+
+		stringPatt, ok := p.pattern.StringPattern()
+		if !ok {
+			return nil, true, errors.New("parameter's pattern has no corresponding string pattern")
+		}
+		argValue, err := stringPatt.Parse(ctx, s)
+		if err != nil {
+			return nil, true, err
+		}
+		return argValue, true, nil
+	}
+}
+
+func (p moduleParameter) GetRestArgumentFromCliArgs(ctx *Context, args []string) (v Value, err error) {
+	if !p.rest {
+		return nil, errors.New("not a rest parameter")
+	}
+
+	patt, ok := p.pattern.(*ListPattern)
+	if !ok {
+		return nil, errors.New("only list patterns are supported for rest parameter")
+	}
+
+	elemPattern := patt.generalElementPattern
+	stringPatt, ok := elemPattern.StringPattern()
+	if !ok {
+		return nil, errors.New("parameter's pattern has no corresponding string pattern")
+	}
+
+	elements := make([]Value, len(args))
+
+	for i, arg := range args {
+		argValue, err := stringPatt.Parse(ctx, arg)
+		if err != nil {
+			return nil, err //TODO: improve error
+		}
+		elements[i] = argValue
+	}
+
+	return NewWrappedValueListFrom(elements), nil
 }
 
 func (m *Manifest) RequiresPermission(perm Permission) bool {
@@ -217,7 +367,7 @@ func createManifest(object *Object, config manifestObjectConfig) (*Manifest, err
 			restParamFound := false
 
 			err := description.ForEachEntry(func(k string, v Value) error {
-				var param ModuleParameter
+				var param moduleParameter
 
 				if IsIndexKey(k) { //positional parameter
 					obj, ok := v.(*Object)
@@ -228,28 +378,36 @@ func createManifest(object *Object, config manifestObjectConfig) (*Manifest, err
 					obj.ForEachEntry(func(propName string, propVal Value) error {
 						switch propName {
 						case "name":
-							param.Name = propVal.(Identifier)
-							param.Positional = true
+							param.name = propVal.(Identifier)
+							param.positional = true
 						case "rest":
 							rest := bool(propVal.(Bool))
 							if rest && restParamFound {
 								return errors.New("at most one positional parameter should be a rest parameter")
 							}
-							param.Rest = rest
+							param.rest = rest
 							restParamFound = rest
 						case "pattern":
 							patt := propVal.(Pattern)
-							param.Pattern = patt
+							param.pattern = patt
 						}
 						return nil
 					})
 
 					params.positional = append(params.positional, param)
 				} else { // non positional parameyer
+					param.name = Identifier(k)
+
 					switch val := v.(type) {
+					case *OptionPattern:
+						if len(val.Name) == 1 {
+							param.singleLetterCliArgName = rune(val.Name[0])
+						} else {
+							param.cliArgName = val.Name
+						}
+						param.pattern = val.Value
 					case Pattern:
-						param.Name = Identifier(k)
-						param.Pattern = val
+						param.pattern = val
 					default:
 						return errors.New("each non positional parameter should be described with a pattern")
 					}

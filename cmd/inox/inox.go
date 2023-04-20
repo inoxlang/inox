@@ -73,7 +73,19 @@ func _main(args []string) {
 			runFlags.BoolVar(&disableOptimization, "no-optimization", false, "disable bytecode optimization")
 
 			commandArgs := args[2:] // get arguments after 'run' subcommand
-			moveFlagsStart(commandArgs)
+			//moveFlagsStart(commandArgs)
+
+			fileArgIndex := -1
+
+			for i, arg := range commandArgs {
+				if arg != "" && arg[0] != '-' {
+					fileArgIndex = i
+					break
+				}
+			}
+
+			moduleArgs := commandArgs[fileArgIndex+1:]
+			commandArgs = commandArgs[:fileArgIndex+1]
 
 			err := runFlags.Parse(commandArgs)
 			if err != nil {
@@ -82,11 +94,6 @@ func _main(args []string) {
 			}
 
 			fpath := runFlags.Arg(0)
-			var passedArgs []string
-
-			if len(runFlags.Args()) > 2 {
-				passedArgs = runFlags.Args()[2:]
-			}
 
 			if fpath == "" {
 				fmt.Fprintf(os.Stderr, "missing script path\n")
@@ -101,7 +108,7 @@ func _main(args []string) {
 
 			res, _, _, err := globals.RunLocalScript(globals.RunScriptArgs{
 				Fpath:                     fpath,
-				PassedArgs:                passedArgs,
+				PassedCLIArgs:             moduleArgs,
 				ParsingCompilationContext: compilationCtx,
 				ParentContext:             nil, //grant all permissions
 				UseBytecode:               !useTreeWalking,

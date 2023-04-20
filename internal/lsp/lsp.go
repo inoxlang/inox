@@ -75,7 +75,6 @@ func StartLSPServer() {
 
 		state, mod, _ := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
 			Fpath:                     fpath,
-			PassedArgs:                []string{},
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             nil,
 			Out:                       os.Stdout,
@@ -134,7 +133,6 @@ func StartLSPServer() {
 
 		state, mod, _ := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
 			Fpath:                     fpath,
-			PassedArgs:                []string{},
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             nil,
 			Out:                       os.Stdout,
@@ -191,7 +189,6 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, com
 	errSeverity := defines.DiagnosticSeverityError
 	state, mod, err := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
 		Fpath:                     fpath,
-		PassedArgs:                []string{},
 		ParsingCompilationContext: compilationCtx,
 		ParentContext:             nil,
 		Out:                       io.Discard,

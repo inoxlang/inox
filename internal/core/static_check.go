@@ -40,6 +40,10 @@ func StaticCheck(input StaticCheckInput) (*StaticCheckData, error) {
 		globals[module][name] = globalVarInfo{isConst: true}
 	})
 
+	for _, name := range input.AdditionalGlobalConsts {
+		globals[module][name] = globalVarInfo{isConst: true}
+	}
+
 	shellLocalVars := make(map[string]bool)
 
 	localVars := make(map[parse.Node]map[string]localVarInfo)
@@ -1893,14 +1897,15 @@ func combineStaticCheckErrors(errs ...*StaticCheckError) error {
 }
 
 type StaticCheckInput struct {
-	Node              parse.Node
-	Module            *Module
-	Chunk             *parse.ParsedChunk
-	ParentChecker     *checker
-	GlobalConsts      GlobalVariables
-	ShellLocalVars    map[string]Value
-	Patterns          map[string]Pattern
-	PatternNamespaces map[string]*PatternNamespace
+	Node                   parse.Node
+	Module                 *Module
+	Chunk                  *parse.ParsedChunk
+	ParentChecker          *checker
+	GlobalConsts           GlobalVariables
+	AdditionalGlobalConsts []string
+	ShellLocalVars         map[string]Value
+	Patterns               map[string]Pattern
+	PatternNamespaces      map[string]*PatternNamespace
 }
 
 // A StaticCheckData is the immutable data produced by statically checking a module.

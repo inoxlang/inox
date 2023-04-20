@@ -46,7 +46,7 @@ var (
 	ErrCannotSetProp             = errors.New("cannot set property")
 	ErrCannotLockUnsharableValue = errors.New("cannot lock unsharable value")
 
-	ErrNotImplemented    = errors.New("not implemented and won't be implemented")
+	ErrNotImplemented    = errors.New("not implemented and won't be implemented in the near future")
 	ErrNotImplementedYet = errors.New("not implemented yet")
 	ErrInvalidDirPath    = errors.New("invalid dir path")
 	ErrInvalidNonDirPath = errors.New("invalid non-dir path")
@@ -57,6 +57,8 @@ var (
 	ErrNotAttachedToSupersystem     = errors.New("value is not attached to a super system")
 
 	ErrSelfNotDefined = errors.New("self not defined")
+
+	ErrNotEnoughCliArgs = errors.New("not enough CLI arguments")
 )
 
 func FormatErrPropertyDoesNotExist(name string, v Value) error {

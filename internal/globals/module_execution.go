@@ -13,8 +13,11 @@ import (
 )
 
 type ScriptPreparationArgs struct {
-	Fpath                     string
-	PassedArgs                []string
+	Fpath string
+
+	CliArgs []string
+	Args    *core.Object
+
 	ParsingCompilationContext *core.Context
 	ParentContext             *core.Context
 	UseContextAsParent        bool
@@ -25,21 +28,6 @@ type ScriptPreparationArgs struct {
 
 // PrepareLocalScript parses & checks a script located in the filesystem and initialize its state.
 func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mod *core.Module, finalErr error) {
-	passCLIArguments := false
-
-	handleCustomPermType := func(kind core.PermissionKind, name string, value core.Value) ([]core.Permission, bool, error) {
-		if kind != core.ReadPerm || name != "cli-args" {
-			return nil, false, nil
-		}
-		boolean, ok := value.(core.Bool)
-		if !ok {
-			return nil, true, errors.New("cli-args should have a boolean value")
-		}
-
-		passCLIArguments = bool(boolean)
-		return nil, true, nil //okay to not give a permission ???
-	}
-
 	// parse module
 
 	absPath, pathErr := filepath.Abs(args.Fpath)
@@ -77,7 +65,6 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		manifest, manifestErr = mod.EvalManifest(core.ManifestEvaluationConfig{
 			GlobalConsts:          mod.MainChunk.Node.GlobalConstantDeclarations,
 			DefaultLimitations:    DEFAULT_LIMITATIONS,
-			HandleCustomType:      handleCustomPermType,
 			AddDefaultPermissions: true,
 			IgnoreUnknownSections: args.IgnoreNonCriticalIssues,
 		})
@@ -117,21 +104,38 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	state = NewDefaultGlobalState(ctx, manifest.EnvPattern, out)
 	state.Module = mod
 
-	if passCLIArguments {
-		cliArgs := []core.Value{}
-		for _, arg := range args.PassedArgs {
-			cliArgs = append(cliArgs, core.Str(arg))
+	var modArgs *core.Object
+	var modArgsError error
+
+	if args.Args != nil {
+		modArgs = manifest.Parameters.GetArguments(args.Args)
+	} else if args.CliArgs != nil {
+		args, err := manifest.Parameters.GetArgumentsFromCliArgs(ctx, args.CliArgs)
+		if err != nil {
+			modArgsError = err
 		}
-		state.Globals.Set("args", core.NewWrappedValueList(cliArgs...))
+		modArgs = args
+	} else {
+		modArgs = core.NewObject()
+	}
+
+	if modArgsError == nil {
+		state.Globals.Set(core.MOD_ARGS_VARNAME, modArgs)
 	}
 
 	// static check
 
 	staticCheckData, staticCheckErr := core.StaticCheck(core.StaticCheckInput{
-		Module:            mod,
-		Node:              mod.MainChunk.Node,
-		Chunk:             mod.MainChunk,
-		GlobalConsts:      state.Globals,
+		Module:       mod,
+		Node:         mod.MainChunk.Node,
+		Chunk:        mod.MainChunk,
+		GlobalConsts: state.Globals,
+		AdditionalGlobalConsts: func() []string {
+			if modArgsError != nil {
+				return []string{core.MOD_ARGS_VARNAME}
+			}
+			return nil
+		}(),
 		Patterns:          state.Ctx.GetNamedPatterns(),
 		PatternNamespaces: state.Ctx.GetPatternNamespaces(),
 	})
@@ -156,16 +160,26 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			globals[k] = v
 		})
 
+		var additionalSymbolicGlobals map[string]symbolic.SymbolicValue
+
+		if modArgsError != nil {
+			delete(globals, core.MOD_ARGS_VARNAME)
+			additionalSymbolicGlobals = map[string]symbolic.SymbolicValue{
+				core.MOD_ARGS_VARNAME: symbolic.ANY,
+			}
+		}
+
 		symbolicCtx, err_ := state.Ctx.ToSymbolicValue()
 		if err_ != nil {
 			return nil, nil, err_
 		}
 
 		symbolicData, err_ := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
-			Node:         mod.MainChunk.Node,
-			Module:       state.Module.ToSymbolic(),
-			GlobalConsts: globals,
-			Context:      symbolicCtx,
+			Node:                           mod.MainChunk.Node,
+			Module:                         state.Module.ToSymbolic(),
+			GlobalConsts:                   globals,
+			AdditionalSymbolicGlobalConsts: additionalSymbolicGlobals,
+			Context:                        symbolicCtx,
 		})
 
 		if symbolicData != nil {
@@ -185,12 +199,17 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		finalErr = staticCheckErr
 	}
 
+	if finalErr == nil && modArgsError != nil {
+		finalErr = modArgsError
+	}
+
 	return state, mod, finalErr
 }
 
 type RunScriptArgs struct {
 	Fpath                     string
-	PassedArgs                []string
+	PassedCLIArgs             []string
+	PassedArgs                *core.Object
 	ParsingCompilationContext *core.Context
 	ParentContext             *core.Context
 	UseContextAsParent        bool
@@ -211,7 +230,8 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 
 	state, mod, err := PrepareLocalScript(ScriptPreparationArgs{
 		Fpath:                     args.Fpath,
-		PassedArgs:                args.PassedArgs,
+		CliArgs:                   args.PassedCLIArgs,
+		Args:                      args.PassedArgs,
 		ParsingCompilationContext: args.ParsingCompilationContext,
 		ParentContext:             args.ParentContext,
 		UseContextAsParent:        args.UseContextAsParent,
@@ -258,7 +278,7 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 func GetCheckData(fpath string, compilationCtx *core.Context, out io.Writer) map[string]any {
 	state, mod, err := PrepareLocalScript(ScriptPreparationArgs{
 		Fpath:                     fpath,
-		PassedArgs:                []string{},
+		Args:                      nil,
 		ParsingCompilationContext: compilationCtx,
 		ParentContext:             nil,
 		Out:                       out,
