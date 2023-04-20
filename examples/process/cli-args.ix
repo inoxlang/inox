@@ -1,9 +1,13 @@
 manifest {
-    permissions: {
-        read: {
-            cli-args: true
-        }
+    parameters: {
+        #  {
+        #      name: #input-files
+        #      rest: true
+        #      pattern: %[]%path
+        #  }
+        #  verbose: %bool
+        #  output-file: %-o=%path
     }
 }
 
-print $$args
+print $$mod-args
