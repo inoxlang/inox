@@ -239,7 +239,7 @@ func NewDefaultGlobalState(ctx *core.Context, envPattern *core.ObjectPattern, ou
 	state.Logger = logger
 	state.GetBaseGlobalsForImportedModule = func(ctx *core.Context, manifest *core.Manifest) core.GlobalVariables {
 		importedModuleGlobals := utils.CopyMap(constants)
-		importedModuleGlobals["env"] = _env.NewEnvNamespace(ctx, manifest.EnvPattern)
+		importedModuleGlobals["env"] = _env.NewEnvNamespace(ctx, nil)
 		return core.GlobalVariablesFromMap(importedModuleGlobals)
 	}
 
