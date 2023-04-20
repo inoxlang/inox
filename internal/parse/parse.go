@@ -1363,7 +1363,7 @@ func (p *parser) parseMultilineStringLiteral() *MultilineStringLiteral {
 		b[len32(b)-1] = '"'
 
 		marshalingInput := make([]byte, 0, len32(b))
-		for _, _byte := range b {
+		for i, _byte := range b {
 			switch _byte {
 			case '\n':
 				marshalingInput = append(marshalingInput, '\\', 'n')
@@ -1371,6 +1371,12 @@ func (p *parser) parseMultilineStringLiteral() *MultilineStringLiteral {
 				marshalingInput = append(marshalingInput, '\\', 'r')
 			case '\t':
 				marshalingInput = append(marshalingInput, '\\', 't')
+			case '"':
+				if i != 0 && i < len(b)-1 {
+					marshalingInput = append(marshalingInput, '\\', '"')
+				} else {
+					marshalingInput = append(marshalingInput, '"')
+				}
 			default:
 				marshalingInput = append(marshalingInput, _byte)
 			}

@@ -4847,6 +4847,30 @@ func TestParse(t *testing.T) {
 					},
 				},
 			},
+			"`\"`": {
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
+					Statements: []Node{
+						&MultilineStringLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
+							Raw:      "`\"`",
+							Value:    "\"",
+						},
+					},
+				},
+			},
+			"`\"a\"`": {
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
+					Statements: []Node{
+						&MultilineStringLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
+							Raw:      "`\"a\"`",
+							Value:    "\"a\"",
+						},
+					},
+				},
+			},
 		}
 
 		for input, testCase := range testCases {
