@@ -768,7 +768,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 			// update list of locked values
 		loop:
-			for _, lockedVal := range state.Global.LockedValues {
+			for _, lockedVal := range state.Global.lockedValues {
 				for _, unlockedVal := range lockedValues {
 					if lockedVal == unlockedVal {
 						continue loop
@@ -776,7 +776,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				}
 				newLockedValues = append(newLockedValues, lockedVal)
 			}
-			state.Global.LockedValues = newLockedValues
+			state.Global.lockedValues = newLockedValues
 		}()
 
 		for _, valueNode := range n.SynchronizedValues {
@@ -794,7 +794,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				return nil, ErrCannotLockUnsharableValue
 			}
 
-			for _, locked := range state.Global.LockedValues {
+			for _, locked := range state.Global.lockedValues {
 				if potentiallySharable == locked {
 					continue
 				}
@@ -804,7 +804,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			potentiallySharable.ForceLock()
 
 			// update list of locked values
-			state.Global.LockedValues = append(state.Global.LockedValues, potentiallySharable)
+			state.Global.lockedValues = append(state.Global.lockedValues, potentiallySharable)
 			lockedValues = append(lockedValues, potentiallySharable)
 		}
 

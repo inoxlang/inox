@@ -206,7 +206,7 @@ func (v *VM) run() {
 		// 	// val.SynchronizedBlockUnlock(v.global)
 		// }
 
-		for _, locked := range v.global.LockedValues {
+		for _, locked := range v.global.lockedValues {
 			locked.ForceUnlock()
 		}
 
@@ -1876,7 +1876,7 @@ func (v *VM) run() {
 					return
 				}
 
-				for _, locked := range v.global.LockedValues {
+				for _, locked := range v.global.lockedValues {
 					if potentiallySharable == locked {
 						continue
 					}
@@ -1886,7 +1886,7 @@ func (v *VM) run() {
 				potentiallySharable.ForceLock()
 
 				// update list of locked values
-				v.global.LockedValues = append(v.global.LockedValues, potentiallySharable)
+				v.global.lockedValues = append(v.global.lockedValues, potentiallySharable)
 				v.curFrame.lockedValues = append(v.curFrame.lockedValues, potentiallySharable)
 			}
 			v.sp -= numValues
@@ -1902,7 +1902,7 @@ func (v *VM) run() {
 			var newLockedValues []PotentiallySharable
 			// update list of locked values
 		loop:
-			for _, lockedVal := range v.global.LockedValues {
+			for _, lockedVal := range v.global.lockedValues {
 				for _, unlockedVal := range lockedValues {
 					if lockedVal == unlockedVal {
 						continue loop
@@ -1910,7 +1910,7 @@ func (v *VM) run() {
 				}
 				newLockedValues = append(newLockedValues, lockedVal)
 			}
-			v.global.LockedValues = newLockedValues
+			v.global.lockedValues = newLockedValues
 		case OpSuspendVM:
 			return
 		default:

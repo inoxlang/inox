@@ -27,7 +27,7 @@ type GlobalState struct {
 
 	StaticCheckData *StaticCheckData
 	SymbolicData    *SymbolicData
-	LockedValues    []PotentiallySharable
+	lockedValues    []PotentiallySharable
 
 	NotClonableMixin
 	NoReprMixin

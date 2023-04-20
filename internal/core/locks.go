@@ -27,7 +27,7 @@ func (lock *SmartLock) Lock(state *GlobalState, embedder PotentiallySharable) {
 	//TODO: extract logic for reuse ?
 
 	if state != nil {
-		for _, e := range state.LockedValues {
+		for _, e := range state.lockedValues {
 			if e == embedder {
 				return //already locked
 			}
@@ -42,7 +42,7 @@ func (lock *SmartLock) Unlock(state *GlobalState, embedder PotentiallySharable) 
 	}
 
 	if state != nil {
-		for _, e := range state.LockedValues {
+		for _, e := range state.lockedValues {
 			if e == embedder {
 				return //already locked
 			}
