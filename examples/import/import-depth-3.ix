@@ -8,7 +8,7 @@ manifest {
 }
 
 import result ./import-depth-2.ix {
-    arguments: {print: print, IWD_PREFIX: IWD_PREFIX}
+    arguments: {}
     allow: {
         read: IWD_PREFIX
         create: {

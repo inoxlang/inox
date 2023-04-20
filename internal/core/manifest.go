@@ -47,8 +47,38 @@ func NewEmptyManifest() *Manifest {
 }
 
 type ModuleParameters struct {
-	Positional []ModuleParameter
-	Others     []ModuleParameter
+	positional []ModuleParameter
+	others     []ModuleParameter
+}
+
+func (p *ModuleParameters) GetArguments(argObj *Object) *Object {
+	positionalArgs := argObj.Indexed()
+
+	resultEntries := map[string]Value{}
+
+	for i, param := range p.positional {
+		if param.Rest {
+			resultEntries[string(param.Name)] = NewWrappedValueList(positionalArgs[i:]...)
+		} else {
+			resultEntries[string(param.Name)] = positionalArgs[i]
+		}
+	}
+
+	argObj.ForEachEntry(func(k string, v Value) error {
+		if IsIndexKey(k) { //positional arguments are already processed
+			return nil
+		}
+
+		for _, param := range p.others {
+			if string(param.Name) == k {
+				resultEntries[k] = v
+			}
+		}
+
+		return nil
+	})
+
+	return objFrom(resultEntries)
 }
 
 type ModuleParameter struct {
@@ -214,7 +244,7 @@ func createManifest(object *Object, config manifestObjectConfig) (*Manifest, err
 						return nil
 					})
 
-					params.Positional = append(params.Positional, param)
+					params.positional = append(params.positional, param)
 				} else { // non positional parameyer
 					switch val := v.(type) {
 					case Pattern:
@@ -223,7 +253,7 @@ func createManifest(object *Object, config manifestObjectConfig) (*Manifest, err
 					default:
 						return errors.New("each non positional parameter should be described with a pattern")
 					}
-					params.Others = append(params.Others, param)
+					params.others = append(params.others, param)
 				}
 				return nil
 			})

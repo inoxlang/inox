@@ -22,13 +22,13 @@ import (
 )
 
 const (
-	RETURN_1_MODULE_HASH        = "SG2a/7YNuwBjsD2OI6bM9jZM4gPcOp9W8g51DrQeyt4="
-	RETURN_GLOBAL_A_MODULE_HASH = "UYvV2gLwfuQ2D91v7PzQ8RMugUTcM0lOysCMqMqXfmg"
+	RETURN_1_MODULE_HASH     = "SG2a/7YNuwBjsD2OI6bM9jZM4gPcOp9W8g51DrQeyt4="
+	RETURN_ARG_A_MODULE_HASH = "15Njs+OhmiW9843cgnlMib7AiUzZbGx6gn3GAebWMOA="
 )
 
 func init() {
 	moduleCache[RETURN_1_MODULE_HASH] = "return 1"
-	moduleCache[RETURN_GLOBAL_A_MODULE_HASH] = "return $$a"
+	moduleCache[RETURN_ARG_A_MODULE_HASH] = "manifest {parameters: {a: %int}}\nreturn mod-args.a"
 }
 
 func TestTreeWalkEval(t *testing.T) {
@@ -3556,16 +3556,19 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.EqualValues(t, Int(1), res)
 		})
 
-		t.Run("imported module returns $$a", func(t *testing.T) {
+		t.Run("imported module returns the 'a' argument", func(t *testing.T) {
 			code := strings.ReplaceAll(`
 				import importname https://modules.com/return_global_a.ix {
 					validation: "<hash>"
 					arguments: {a: 1}
-					allow: {read: {globals: "a"}}
 				}
 				return $$importname
-			`, "<hash>", RETURN_GLOBAL_A_MODULE_HASH)
-			state := NewGlobalState(NewDefaultTestContext())
+			`, "<hash>", RETURN_ARG_A_MODULE_HASH)
+
+			ctx := NewDefaultTestContext()
+			ctx.AddNamedPattern("int", INT_PATTERN)
+
+			state := NewGlobalState(ctx)
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, Int(1), res)
@@ -3576,12 +3579,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				import importname ./return_a.ix  {
 					validation: "<hash>"
 					arguments: {a: 1}
-					allow: {read: {globals: "a"}}
 				}
 				return $$importname
-			`, "<hash>", RETURN_GLOBAL_A_MODULE_HASH)
+			`, "<hash>", RETURN_ARG_A_MODULE_HASH)
 
-			state := NewGlobalState(NewContext(ContextConfig{
+			ctx := NewContext(ContextConfig{
 				Permissions: []Permission{
 					GlobalVarPermission{ReadPerm, "*"},
 					GlobalVarPermission{UpdatePerm, "*"},
@@ -3591,7 +3593,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					FilesystemPermission{ReadPerm, PathPattern("/...")},
 					RoutinePermission{CreatePerm},
 				},
-			}))
+			})
+			ctx.AddNamedPattern("int", INT_PATTERN)
+			state := NewGlobalState(ctx)
 
 			state.Module = &Module{
 				MainChunk: &parse.ParsedChunk{

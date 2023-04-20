@@ -20,6 +20,7 @@ import (
 	_shell "github.com/inoxlang/inox/internal/globals/shell"
 	_sql "github.com/inoxlang/inox/internal/globals/sql"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
@@ -236,6 +237,11 @@ func NewDefaultGlobalState(ctx *core.Context, envPattern *core.ObjectPattern, ou
 	state := core.NewGlobalState(ctx, constants)
 	state.Out = out
 	state.Logger = logger
+	state.GetBaseGlobalsForImportedModule = func(ctx *core.Context, manifest *core.Manifest) core.GlobalVariables {
+		importedModuleGlobals := utils.CopyMap(constants)
+		importedModuleGlobals["env"] = _env.NewEnvNamespace(ctx, manifest.EnvPattern)
+		return core.GlobalVariablesFromMap(importedModuleGlobals)
+	}
 
 	return state
 }

@@ -98,7 +98,7 @@ manifest {
 }
 
 import lib ./malicious-lib.ix {
-  arguments: {fs: fs}
+  arguments: {}
   allow: {
     read: %/tmp/...
   }

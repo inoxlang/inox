@@ -454,6 +454,29 @@ func (obj *Object) EntryMap() map[string]Value {
 	return map_
 }
 
+// Indexed returns the list of indexed properties
+func (obj *Object) Indexed() []Value {
+	if obj.IsShared() {
+		panic(errors.New("Object.ForEachEntry() can only be called on objects that are not shared"))
+	}
+
+	values := make([]Value, obj.implicitPropCount)
+
+outer:
+	for i := 0; i < obj.implicitPropCount; i++ {
+		searchedKey := strconv.Itoa(i)
+		for i, key := range obj.keys {
+			if key == searchedKey {
+				values[i] = obj.values[i]
+				continue outer
+			}
+		}
+		panic(ErrUnreachable)
+	}
+
+	return values
+}
+
 func (obj *Object) ForEachEntry(fn func(k string, v Value) error) error {
 	if obj.IsShared() {
 		panic(errors.New("Object.ForEachEntry() can only be called on objects that are not shared"))
@@ -492,7 +515,7 @@ func (obj *Object) Keys() []string {
 
 // Record is the immutable equivalent of an Object, Record implements Value.
 type Record struct {
-	implicitPropCount int
+	implicitPropCount int //TODO: rename to indexedPropCount ? forbid explicit index keys ?
 	visibilityId      VisibilityId
 	url               URL //can be empty
 	keys              []string

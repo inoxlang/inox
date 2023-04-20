@@ -15,6 +15,7 @@ import (
 
 const (
 	INCLUDED_FILE_PATH_SHOULD_NOT_CONTAIN_X = "included file path should not contain '..'"
+	MOD_ARGS_VARNAME                        = "mod-args"
 )
 
 var (

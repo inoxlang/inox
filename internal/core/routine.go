@@ -111,6 +111,7 @@ func SpawnRoutine(args RoutineSpawnArgs) (*Routine, error) {
 	modState.Logger = args.SpawnerState.Logger
 	modState.Out = args.SpawnerState.Out
 	modState.StaticCheckData = staticCheckData
+	modState.GetBaseGlobalsForImportedModule = args.SpawnerState.GetBaseGlobalsForImportedModule
 	// TODO: set SymbolicData
 
 	routine := &Routine{

@@ -148,7 +148,6 @@ func ImportModule(config ImportConfig) (*Routine, error) {
 	if err != nil {
 		return nil, fmt.Errorf("import: cannot fetch module: %s", err.Error())
 	}
-	globals := GlobalVariablesFromMap(config.ArgObj.EntryMap())
 
 	manifest, err := mod.EvalManifest(ManifestEvaluationConfig{
 		GlobalConsts:          mod.MainChunk.Node.GlobalConstantDeclarations,
@@ -174,6 +173,20 @@ func ImportModule(config ImportConfig) (*Routine, error) {
 
 	for k, v := range config.ParentState.Ctx.namedPatterns {
 		routineCtx.AddNamedPattern(k, v)
+	}
+
+	var globals GlobalVariables
+	if config.ParentState.GetBaseGlobalsForImportedModule != nil {
+		globals = config.ParentState.GetBaseGlobalsForImportedModule(routineCtx, manifest)
+	} else {
+		globals = GlobalVariablesFromMap(map[string]Value{})
+	}
+
+	if config.ArgObj != nil {
+		args := manifest.Parameters.GetArguments(config.ArgObj)
+		globals.Set(MOD_ARGS_VARNAME, args)
+	} else {
+		globals.Set(MOD_ARGS_VARNAME, Nil)
 	}
 
 	_ = absScriptDir

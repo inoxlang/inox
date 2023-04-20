@@ -17,17 +17,19 @@ var (
 
 // A GlobalState represents the global state for the evaluation of a single module or the shell's loop.
 type GlobalState struct {
-	Ctx         *Context
-	Module      *Module         //nil in some cases (shell, mapping entry's state), TODO: check for usage
-	Globals     GlobalVariables //global variables
-	Routine     *Routine        //not nil if running in a routine
-	SystemGraph *SystemGraph
-	Out         io.Writer   //nil by default
-	Logger      *log.Logger //nil by default
+	Ctx          *Context
+	Module       *Module         //nil in some cases (shell, mapping entry's state), TODO: check for usage
+	Globals      GlobalVariables //global variables
+	Routine      *Routine        //not nil if running in a routine
+	SystemGraph  *SystemGraph
+	lockedValues []PotentiallySharable
+
+	GetBaseGlobalsForImportedModule func(ctx *Context, manifest *Manifest) GlobalVariables // ok if nil
+	Out                             io.Writer                                              //nil by default
+	Logger                          *log.Logger                                            //nil by default
 
 	StaticCheckData *StaticCheckData
 	SymbolicData    *SymbolicData
-	lockedValues    []PotentiallySharable
 
 	NotClonableMixin
 	NoReprMixin
