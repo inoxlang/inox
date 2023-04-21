@@ -130,7 +130,7 @@ func testExample(t *testing.T, config exampleTestConfig) {
 			Permissions: []core.Permission{
 				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern("/...")},
 				core.FilesystemPermission{Kind_: core.CreatePerm, Entity: core.PathPattern("/...")},
-				core.FilesystemPermission{Kind_: core.WritePerm, Entity: core.PathPattern("/...")},
+				core.FilesystemPermission{Kind_: core.WriteStreamPerm, Entity: core.PathPattern("/...")},
 			},
 			Limitations: []core.Limitation{
 				{

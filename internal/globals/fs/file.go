@@ -159,7 +159,7 @@ func (f *File) doRead(ctx *core.Context, closeFile bool, count int64) ([]byte, e
 }
 
 func (f *File) write(ctx *core.Context, data core.Readable) error {
-	perm := core.FilesystemPermission{Kind_: core.WritePerm, Entity: f.path}
+	perm := core.FilesystemPermission{Kind_: core.WriteStreamPerm, Entity: f.path}
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return err
 	}

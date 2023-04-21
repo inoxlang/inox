@@ -66,7 +66,7 @@ func openDatabase(ctx *Context, r ResourceName) (*LocalDatabase, error) {
 
 	patt := PathPattern(pth.ToAbs() + "...")
 
-	for _, kind := range []core.PermissionKind{core.ReadPerm, core.CreatePerm, core.WritePerm} {
+	for _, kind := range []core.PermissionKind{core.ReadPerm, core.CreatePerm, core.WriteStreamPerm} {
 		perm := FilesystemPermission{Kind_: kind, Entity: patt}
 		if err := ctx.CheckHasPermission(perm); err != nil {
 			return nil, err

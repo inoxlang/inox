@@ -51,6 +51,19 @@ func TestHttpPermission(t *testing.T) {
 		assert.False(t, httpsPerm.Includes(httpPerm))
 		assert.False(t, httpPerm.Includes(httpsPerm))
 	})
+
+	t.Run("write includes create & update", func(t *testing.T) {
+		patt := URLPattern("https://localhost:443/...")
+		writePerm := HttpPermission{Kind_: WritePerm, Entity: patt}
+		createPerm := HttpPermission{Kind_: CreatePerm, Entity: patt}
+		updatePerm := HttpPermission{Kind_: UpdatePerm, Entity: patt}
+
+		assert.True(t, writePerm.Includes(createPerm))
+		assert.True(t, writePerm.Includes(updatePerm))
+
+		assert.False(t, createPerm.Includes(writePerm))
+		assert.False(t, updatePerm.Includes(writePerm))
+	})
 }
 
 func TestDNSPermission(t *testing.T) {
@@ -205,6 +218,19 @@ func TestFilesystemPermission(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("write includes create & update", func(t *testing.T) {
+		patt := PathPattern("/...")
+		writePerm := FilesystemPermission{Kind_: WritePerm, Entity: patt}
+		createPerm := FilesystemPermission{Kind_: CreatePerm, Entity: patt}
+		updatePerm := FilesystemPermission{Kind_: UpdatePerm, Entity: patt}
+
+		assert.True(t, writePerm.Includes(createPerm))
+		assert.True(t, writePerm.Includes(updatePerm))
+
+		assert.False(t, createPerm.Includes(writePerm))
+		assert.False(t, updatePerm.Includes(writePerm))
+	})
 
 }
 

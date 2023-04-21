@@ -207,7 +207,7 @@ func TestOpenDatabase(t *testing.T) {
 			Permissions: []core.Permission{
 				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: pattern},
 				core.FilesystemPermission{Kind_: core.CreatePerm, Entity: pattern},
-				core.FilesystemPermission{Kind_: core.WritePerm, Entity: pattern},
+				core.FilesystemPermission{Kind_: core.WriteStreamPerm, Entity: pattern},
 			},
 			HostResolutions: map[core.Host]core.Value{
 				core.Host("ldb://main"): core.Path(dir),
@@ -239,7 +239,7 @@ func TestOpenDatabase(t *testing.T) {
 			Permissions: []core.Permission{
 				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: pattern},
 				core.FilesystemPermission{Kind_: core.CreatePerm, Entity: pattern},
-				core.FilesystemPermission{Kind_: core.WritePerm, Entity: pattern},
+				core.FilesystemPermission{Kind_: core.WriteStreamPerm, Entity: pattern},
 			},
 			HostResolutions: map[core.Host]core.Value{
 				core.Host("ldb://main"): core.Path(dir),

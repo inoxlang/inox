@@ -37,7 +37,7 @@ func TestTcpConn(t *testing.T) {
 		ctx := core.NewContext(ContextConfig{
 			Permissions: []Permission{
 				RawTcpPermission{Kind_: core.ReadPerm, Domain: host},
-				RawTcpPermission{Kind_: core.WritePerm, Domain: host},
+				RawTcpPermission{Kind_: core.WriteStreamPerm, Domain: host},
 			},
 			Limitations: []Limitation{{Name: TCP_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 1}},
 		})

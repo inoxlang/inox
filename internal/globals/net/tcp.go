@@ -76,7 +76,7 @@ func (conn *TcpConn) write(ctx *Context, data Readable) error {
 	}
 
 	perm := RawTcpPermission{
-		Kind_:  core.WritePerm,
+		Kind_:  core.WriteStreamPerm,
 		Domain: conn.host,
 	}
 

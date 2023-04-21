@@ -62,7 +62,7 @@ const (
 )
 
 func fmtNotValidPermissionKindName(name string) string {
-	return fmt.Sprintf("'%s' is not a valid permission kind, valid permissions are %s", name, strings.Join(PERMISSION_KIND_STRINGS, ", "))
+	return fmt.Sprintf("'%s' is not a valid permission kind, valid permissions are %s", name, strings.Join(PERMISSION_KIND_NAMES, ", "))
 }
 
 func fmtUnknownSectionOfManifest(name string) string {

@@ -5,38 +5,95 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
-	PERMISSION_KIND_STRINGS = []string{"read", "update", "create", "delete", "use", "write", "consume", "provide", "see"}
+	PERMISSION_KINDS = []struct {
+		PermissionKind PermissionKind
+		Name           string
+	}{
+		{ReadPerm, "read"},
+		{WritePerm, "write"},
+		{DeletePerm, "delete"},
+		{UsePerm, "use"},
+		{ConsumePerm, "consume"},
+		{ProvidePerm, "provide"},
+		{SeePerm, "see"},
+
+		{UpdatePerm, "update"},
+		{CreatePerm, "create"},
+		{WriteStreamPerm, "write-stream"},
+	}
+
+	PERMISSION_KIND_NAMES = utils.MapSlice(PERMISSION_KINDS, func(e struct {
+		PermissionKind PermissionKind
+		Name           string
+	}) string {
+		return e.Name
+	})
 )
+
+/*
+	read
+	write/update
+	write/write-stream
+	write/append
+*/
 
 type PermissionKind int
 
 const (
-	ReadPerm PermissionKind = iota
-	UpdatePerm
-	CreatePerm
-	DeletePerm
-	UsePerm
-	WritePerm
-	ConsumePerm
-	ProvidePerm
-	SeePerm
+	ReadPerm    PermissionKind = (1 << iota)
+	WritePerm                  = (1 << iota)
+	DeletePerm                 = (1 << iota)
+	UsePerm                    = (1 << iota)
+	ConsumePerm                = (1 << iota)
+	ProvidePerm                = (1 << iota)
+	SeePerm                    = (1 << iota)
+	//up to 16 major permission kinds
+
+	UpdatePerm      = WritePerm + (1 << 16)
+	CreatePerm      = WritePerm + (2 << 16)
+	WriteStreamPerm = WritePerm + (4 << 16)
+	//up to 16 minor permission kinds for each major one
 )
 
+func (k PermissionKind) Major() PermissionKind {
+	return k & 0xff
+}
+
+func (k PermissionKind) IsMajor() bool {
+	return k == (k & 0xff)
+}
+
+func (k PermissionKind) IsMinor() bool {
+	return k != (k & 0xff)
+}
+
+func (k PermissionKind) Includes(otherKind PermissionKind) bool {
+	return k.Major() == otherKind.Major() && ((k.IsMajor() && otherKind.IsMinor()) || k == otherKind)
+}
+
 func (kind PermissionKind) String() string {
-	if kind < 0 || int(kind) >= len(PERMISSION_KIND_STRINGS) {
+	if kind < 0 {
 		return "<invalid permission kind>"
 	}
 
-	return PERMISSION_KIND_STRINGS[kind]
+	for _, e := range PERMISSION_KINDS {
+		if e.PermissionKind == kind {
+			return e.Name
+		}
+	}
+
+	return "<invalid permission kind>"
 }
 
 func PermissionKindFromString(s string) (PermissionKind, bool) {
-	for i, perm := range PERMISSION_KIND_STRINGS {
-		if s == perm {
-			return PermissionKind(i), true
+	for _, e := range PERMISSION_KINDS {
+		if e.Name == s {
+			return e.PermissionKind, true
 		}
 	}
 
@@ -93,7 +150,7 @@ func (perm GlobalVarPermission) Kind() PermissionKind {
 
 func (perm GlobalVarPermission) Includes(otherPerm Permission) bool {
 	otherGlobVarPerm, ok := otherPerm.(GlobalVarPermission)
-	if !ok || perm.Kind() != otherGlobVarPerm.Kind() {
+	if !ok || !perm.Kind().Includes(otherGlobVarPerm.Kind()) {
 		return false
 	}
 
@@ -117,7 +174,7 @@ func (perm EnvVarPermission) Kind() PermissionKind {
 
 func (perm EnvVarPermission) Includes(otherPerm Permission) bool {
 	otherEnvVarPerm, ok := otherPerm.(EnvVarPermission)
-	if !ok || perm.Kind() != otherEnvVarPerm.Kind() {
+	if !ok || !perm.Kind().Includes(otherEnvVarPerm.Kind()) {
 		return false
 	}
 
@@ -141,7 +198,7 @@ func (perm RoutinePermission) Kind() PermissionKind {
 func (perm RoutinePermission) Includes(otherPerm Permission) bool {
 	otherRoutinePerm, ok := otherPerm.(RoutinePermission)
 
-	return ok && perm.Kind_ == otherRoutinePerm.Kind_
+	return ok && perm.Kind_.Includes(otherRoutinePerm.Kind_)
 }
 
 func (perm RoutinePermission) String() string {
@@ -163,7 +220,7 @@ func (perm FilesystemPermission) Kind() PermissionKind {
 
 func (perm FilesystemPermission) Includes(otherPerm Permission) bool {
 	otherFsPerm, ok := otherPerm.(FilesystemPermission)
-	if !ok || perm.Kind() != otherFsPerm.Kind() {
+	if !ok || !perm.Kind_.Includes(otherFsPerm.Kind_) {
 		return false
 	}
 
@@ -194,7 +251,7 @@ func (perm CommandPermission) Kind() PermissionKind {
 func (perm CommandPermission) Includes(otherPerm Permission) bool {
 
 	otherCmdPerm, ok := otherPerm.(CommandPermission)
-	if !ok || perm.Kind() != otherCmdPerm.Kind() {
+	if !ok || !perm.Kind().Includes(otherCmdPerm.Kind()) {
 		return false
 	}
 
@@ -263,7 +320,7 @@ func (perm HttpPermission) Kind() PermissionKind {
 
 func (perm HttpPermission) Includes(otherPerm Permission) bool {
 	otherHttpPerm, ok := otherPerm.(HttpPermission)
-	if !ok || perm.Kind() != otherHttpPerm.Kind() {
+	if !ok || !perm.Kind_.Includes(otherHttpPerm.Kind_) {
 		return false
 	}
 
@@ -335,7 +392,7 @@ func (perm WebsocketPermission) String() string {
 
 func (perm WebsocketPermission) Includes(otherPerm Permission) bool {
 	otherWsPerm, ok := otherPerm.(WebsocketPermission)
-	if !ok || perm.Kind() != otherWsPerm.Kind() {
+	if !ok || !perm.Kind_.Includes(otherWsPerm.Kind_) {
 		return false
 	}
 
@@ -357,7 +414,7 @@ func (perm DNSPermission) String() string {
 
 func (perm DNSPermission) Includes(otherPerm Permission) bool {
 	otherDnsPerm, ok := otherPerm.(DNSPermission)
-	if !ok || perm.Kind() != otherDnsPerm.Kind() {
+	if !ok || !perm.Kind_.Includes(otherDnsPerm.Kind_) {
 		return false
 	}
 
@@ -399,7 +456,7 @@ func (perm RawTcpPermission) String() string {
 
 func (perm RawTcpPermission) Includes(otherPerm Permission) bool {
 	otherTcpPerm, ok := otherPerm.(RawTcpPermission)
-	if !ok || perm.Kind() != otherTcpPerm.Kind() {
+	if !ok || !perm.Kind().Includes(otherTcpPerm.Kind_) {
 		return false
 	}
 
@@ -438,7 +495,7 @@ func (perm ValueVisibilityPermission) String() string {
 
 func (perm ValueVisibilityPermission) Includes(otherPerm Permission) bool {
 	otherVisibilityPerm, ok := otherPerm.(ValueVisibilityPermission)
-	if !ok || perm.Kind() != otherPerm.Kind() {
+	if !ok || !perm.Kind().Includes(otherPerm.Kind()) {
 		return false
 	}
 
@@ -465,5 +522,5 @@ func (perm SystemGraphAccessPermission) String() string {
 
 func (perm SystemGraphAccessPermission) Includes(otherPerm Permission) bool {
 	otherSysGraphPerm, ok := otherPerm.(SystemGraphAccessPermission)
-	return ok && perm.Kind() == otherSysGraphPerm.Kind()
+	return ok && perm.Kind_.Includes(otherSysGraphPerm.Kind_)
 }

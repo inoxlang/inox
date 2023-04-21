@@ -55,7 +55,7 @@ func (conn *WebsocketConnection) sendJSON(ctx *Context, msg Value) error {
 	}
 
 	perm := WebsocketPermission{
-		Kind_:    core.WritePerm,
+		Kind_:    core.WriteStreamPerm,
 		Endpoint: conn.endpoint,
 	}
 

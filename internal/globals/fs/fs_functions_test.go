@@ -448,7 +448,7 @@ func TestFile(t *testing.T) {
 		err := f.write(ctx, core.Str("hello"))
 		assert.IsType(t, core.NotAllowedError{}, err)
 		assert.Equal(t, core.FilesystemPermission{
-			Kind_:  core.WritePerm,
+			Kind_:  core.WriteStreamPerm,
 			Entity: pth.ToAbs(),
 		}, err.(core.NotAllowedError).Permission)
 	})
@@ -465,7 +465,7 @@ func TestFile(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern(tmpDir + "/...")},
-				core.FilesystemPermission{Kind_: core.WritePerm, Entity: core.PathPattern(tmpDir + "/...")},
+				core.FilesystemPermission{Kind_: core.WriteStreamPerm, Entity: core.PathPattern(tmpDir + "/...")},
 			},
 			Limitations: []core.Limitation{
 				{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: rate},
