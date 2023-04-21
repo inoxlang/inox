@@ -157,8 +157,12 @@ func StartLSPServer() {
 					Range: rangeToLspRange(completion.ReplacedRange),
 				},
 				SortText: func() *string {
-					s := string(rune(completionIndex/10) + 'a')
-					s += string(rune(completionIndex%10) + 'a')
+					index := completionIndex
+					if index > 99 {
+						index = 99
+					}
+					s := string(rune(index/10) + 'a')
+					s += string(rune(index%10) + 'a')
 					return &s
 				}(),
 			}
