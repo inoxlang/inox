@@ -112,7 +112,21 @@ outer:
 		if !ok {
 			defaultVal, ok := param.DefaultValue()
 			if !ok {
-				return nil, fmt.Errorf("missing value for argument %s", param.name)
+				cliArgNamesBuf := bytes.NewBuffer(nil)
+				if param.singleLetterCliArgName != 0 {
+					cliArgNamesBuf.WriteByte('-')
+					cliArgNamesBuf.WriteString(string(param.singleLetterCliArgName))
+
+					if param.cliArgName != "" {
+						cliArgNamesBuf.WriteString("|--")
+						cliArgNamesBuf.WriteString(param.cliArgName)
+					}
+				} else {
+					cliArgNamesBuf.WriteString("--")
+					cliArgNamesBuf.WriteString(param.cliArgName)
+				}
+
+				return nil, fmt.Errorf("missing value for argument %s (%s)", param.name, cliArgNamesBuf.String())
 			}
 			entries[string(param.name)] = defaultVal
 		}
