@@ -117,6 +117,10 @@ func (d *SymbolicData) Compute(ctx *Context, key SymbolicValue) SymbolicValue {
 }
 
 func (d *SymbolicData) GetLocalScopeData(n parse.Node, ancestorChain []parse.Node) (LocalScopeData, bool) {
+	if d == nil {
+		return LocalScopeData{}, false
+	}
+
 	for {
 		scopeData, ok := d.localScopeData[n]
 		if ok {
@@ -131,6 +135,10 @@ func (d *SymbolicData) GetLocalScopeData(n parse.Node, ancestorChain []parse.Nod
 }
 
 func (d *SymbolicData) SetLocalScopeData(n parse.Node, scopeData LocalScopeData) {
+	if d == nil {
+		return
+	}
+
 	_, ok := d.localScopeData[n]
 	if ok {
 		return
