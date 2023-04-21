@@ -31,7 +31,11 @@ func TestFindCompletions(t *testing.T) {
 	}
 
 	findCompletions := func(state *core.TreeWalkState, chunk *parse.ParsedChunk, cursorIndex int) []Completion {
-		completions := FindCompletions(state, chunk, cursorIndex)
+		completions := FindCompletions(CompletionSearchArgs{
+			State:       state,
+			Chunk:       chunk,
+			CursorIndex: cursorIndex,
+		})
 		//in order to simplify tess we remove all information in replaced ranges except the node span
 		for i, compl := range completions {
 			completions[i].ReplacedRange = parse.SourcePositionRange{

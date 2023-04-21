@@ -15,13 +15,15 @@ var (
 
 // SymbolicData represents the data produced by the symbolic execution of an AST.
 type SymbolicData struct {
-	nodeMap map[parse.Node]SymbolicValue
-	errors  []SymbolicEvaluationError
+	nodeMap        map[parse.Node]SymbolicValue
+	localScopeData map[parse.Node]LocalScopeData
+	errors         []SymbolicEvaluationError
 }
 
 func NewSymbolicData() *SymbolicData {
 	return &SymbolicData{
-		nodeMap: make(map[parse.Node]SymbolicValue, 0),
+		nodeMap:        make(map[parse.Node]SymbolicValue, 0),
+		localScopeData: make(map[parse.Node]LocalScopeData),
 	}
 }
 
@@ -57,6 +59,10 @@ func (data *SymbolicData) AddData(newData *SymbolicData) {
 		data.SetNodeValue(k, v)
 	}
 
+	for k, v := range newData.localScopeData {
+		data.SetLocalScopeData(k, v)
+	}
+
 	data.errors = append(data.errors, newData.errors...)
 }
 
@@ -76,7 +82,6 @@ func (d *SymbolicData) IsWidenable() bool {
 
 func (d *SymbolicData) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%symbolic-data")))
-	return
 }
 
 func (m *SymbolicData) WidestOfType() SymbolicValue {
@@ -109,4 +114,36 @@ func (*SymbolicData) PropertyNames() []string {
 
 func (d *SymbolicData) Compute(ctx *Context, key SymbolicValue) SymbolicValue {
 	return ANY
+}
+
+func (d *SymbolicData) GetLocalScopeData(n parse.Node, ancestorChain []parse.Node) (LocalScopeData, bool) {
+	for {
+		scopeData, ok := d.localScopeData[n]
+		if ok {
+			return scopeData, true
+		} else {
+			n, ok = parse.FindPreviousStatement(n, ancestorChain)
+			if !ok {
+				return LocalScopeData{}, false
+			}
+		}
+	}
+}
+
+func (d *SymbolicData) SetLocalScopeData(n parse.Node, scopeData LocalScopeData) {
+	_, ok := d.localScopeData[n]
+	if ok {
+		return
+	}
+
+	d.localScopeData[n] = scopeData
+}
+
+type LocalScopeData struct {
+	Variables []LocalVarData
+}
+
+type LocalVarData struct {
+	Name  string
+	Value SymbolicValue
 }

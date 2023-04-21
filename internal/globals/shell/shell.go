@@ -958,7 +958,12 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 				CodeString: string(sh.input),
 			})
 			cursorIndex = sh.getCursorIndex()
-			completions = compl.FindCompletions(sh.state, chunk, cursorIndex)
+			completions = compl.FindCompletions(compl.CompletionSearchArgs{
+				State:       sh.state,
+				Chunk:       chunk,
+				CursorIndex: cursorIndex,
+				Mode:        compl.ShellCompletions,
+			})
 
 			replacement       string
 			replacedSpan      parse.NodeSpan

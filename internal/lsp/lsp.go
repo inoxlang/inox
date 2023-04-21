@@ -139,16 +139,28 @@ func StartLSPServer() {
 		chunk := mod.MainChunk
 		pos := chunk.GetLineColumnPosition(line, column)
 
-		completions := compl.FindCompletions(core.NewTreeWalkStateWithGlobal(state), chunk, int(pos))
-
+		completions := compl.FindCompletions(compl.CompletionSearchArgs{
+			State:       core.NewTreeWalkStateWithGlobal(state),
+			Chunk:       chunk,
+			CursorIndex: int(pos),
+			Mode:        compl.LspCompletions,
+		})
+		completionIndex := 0
 		lspCompletions := utils.MapSlice(completions, func(completion compl.Completion) defines.CompletionItem {
+			defer func() {
+				completionIndex++
+			}()
 			return defines.CompletionItem{
 				Label: completion.Value,
 				Kind:  &completion.Kind,
 				TextEdit: defines.TextEdit{
 					Range: rangeToLspRange(completion.ReplacedRange),
 				},
-				InsertText: &completion.Value,
+				SortText: func() *string {
+					s := string(rune(completionIndex/10) + 'a')
+					s += string(rune(completionIndex%10) + 'a')
+					return &s
+				}(),
 			}
 		})
 		return &lspCompletions, nil

@@ -326,6 +326,18 @@ func (state *State) popScope() {
 	state.scopeStack = state.scopeStack[:len(state.scopeStack)-1]
 }
 
+func (state *State) currentLocalScopeData() LocalScopeData {
+	scope := state.scopeStack[len(state.scopeStack)-1]
+	var vars []LocalVarData
+	for k, v := range scope.variables {
+		vars = append(vars, LocalVarData{
+			Name:  k,
+			Value: v.value,
+		})
+	}
+	return LocalScopeData{Variables: vars}
+}
+
 func (state *State) pushCallee(callNode *parse.CallExpression, callee *parse.FunctionExpression) bool {
 	for _, c := range state.calleeStack {
 		if callee == c {

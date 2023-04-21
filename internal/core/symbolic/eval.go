@@ -407,6 +407,7 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 				state.setLocal(name, right, nil)
 			}
 			state.symbolicData.SetNodeValue(lhs, right)
+			state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
 		case *parse.IdentifierLiteral:
 			name := lhs.Name
 
@@ -426,6 +427,7 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 				state.setLocal(name, right, nil)
 			}
 			state.symbolicData.SetNodeValue(lhs, right)
+			state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
 		case *parse.GlobalVariable:
 			name := lhs.Name
 
@@ -651,9 +653,7 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 			for _, var_ := range n.Variables {
 				name := var_.(*parse.IdentifierLiteral).Name
 
-				if state.hasLocal(name) {
-					state.symbolicData.SetNodeValue(var_, ANY)
-				} else {
+				if !state.hasLocal(name) {
 					state.setLocal(name, ANY, nil)
 				}
 				state.symbolicData.SetNodeValue(var_, ANY)
@@ -676,6 +676,7 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 			}
 		}
 
+		state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
 		return nil, nil
 	case *parse.HostAliasDefinition:
 		name := n.Left.Value[1:]

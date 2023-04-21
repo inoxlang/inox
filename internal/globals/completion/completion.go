@@ -27,7 +27,26 @@ var (
 	CONTEXT_INDEPENDENT_STMT_STARTING_KEYWORDS = []string{"if", "drop-perms", "for", "assign", "switch", "match", "return", "assert"}
 )
 
-func FindCompletions(state *core.TreeWalkState, chunk *parse.ParsedChunk, cursorIndex int) []Completion {
+type CompletionSearchArgs struct {
+	State       *core.TreeWalkState
+	Chunk       *parse.ParsedChunk
+	CursorIndex int
+	Mode        CompletionMode
+}
+
+type CompletionMode int
+
+const (
+	ShellCompletions CompletionMode = iota
+	LspCompletions
+)
+
+func FindCompletions(args CompletionSearchArgs) []Completion {
+
+	state := args.State
+	chunk := args.Chunk
+	cursorIndex := args.CursorIndex
+	mode := args.Mode
 
 	var completions []Completion
 	var nodeAtCursor parse.Node
@@ -131,14 +150,28 @@ func FindCompletions(state *core.TreeWalkState, chunk *parse.ParsedChunk, cursor
 			}
 		}
 	case *parse.Variable:
-		for name := range state.CurrentLocalScope() {
-			if strings.HasPrefix(name, n.Name) {
-				completions = append(completions, Completion{
-					ShownString: name,
-					Value:       "$" + name,
-					Kind:        defines.CompletionItemKindVariable,
-				})
+		var names []string
+		if args.Mode == ShellCompletions {
+			for name := range state.CurrentLocalScope() {
+				if strings.HasPrefix(name, n.Name) {
+					names = append(names, name)
+				}
 			}
+		} else {
+			scopeData, _ := state.Global.SymbolicData.GetLocalScopeData(n, _ancestorChain)
+			for _, varData := range scopeData.Variables {
+				if strings.HasPrefix(varData.Name, n.Name) {
+					names = append(names, varData.Name)
+				}
+			}
+		}
+
+		for _, name := range names {
+			completions = append(completions, Completion{
+				ShownString: name,
+				Value:       "$" + name,
+				Kind:        defines.CompletionItemKindVariable,
+			})
 		}
 	case *parse.GlobalVariable:
 		state.Global.Globals.Foreach(func(name string, _ core.Value) {
@@ -151,7 +184,7 @@ func FindCompletions(state *core.TreeWalkState, chunk *parse.ParsedChunk, cursor
 			}
 		})
 	case *parse.IdentifierLiteral:
-		completions = handleIdentifierAndKeywordCompletions(n, deepestCall, _ancestorChain, state)
+		completions = handleIdentifierAndKeywordCompletions(mode, n, deepestCall, _ancestorChain, state)
 	case *parse.IdentifierMemberExpression:
 		completions = handleIdentifierMemberCompletions(n, state)
 	case *parse.MemberExpression:
@@ -184,7 +217,10 @@ func FindCompletions(state *core.TreeWalkState, chunk *parse.ParsedChunk, cursor
 	return completions
 }
 
-func handleIdentifierAndKeywordCompletions(ident *parse.IdentifierLiteral, deepestCall *parse.CallExpression, ancestors []parse.Node, state *core.TreeWalkState) []Completion {
+func handleIdentifierAndKeywordCompletions(
+	mode CompletionMode, ident *parse.IdentifierLiteral, deepestCall *parse.CallExpression,
+	ancestors []parse.Node, state *core.TreeWalkState,
+) []Completion {
 
 	var completions []Completion
 
@@ -239,7 +275,32 @@ func handleIdentifierAndKeywordCompletions(ident *parse.IdentifierLiteral, deepe
 		}
 	}
 
-	//suggest global & local variables
+	//suggest local variables
+
+	if mode == ShellCompletions {
+		for name := range state.CurrentLocalScope() {
+			if strings.HasPrefix(name, ident.Name) {
+				completions = append(completions, Completion{
+					ShownString: name,
+					Value:       name,
+					Kind:        defines.CompletionItemKindVariable,
+				})
+			}
+		}
+	} else {
+		scopeData, _ := state.Global.SymbolicData.GetLocalScopeData(ident, ancestors)
+		for _, varData := range scopeData.Variables {
+			if strings.HasPrefix(varData.Name, ident.Name) {
+				completions = append(completions, Completion{
+					ShownString: varData.Name,
+					Value:       varData.Name,
+					Kind:        defines.CompletionItemKindVariable,
+				})
+			}
+		}
+	}
+
+	//suggest global variables
 
 	state.Global.Globals.Foreach(func(name string, _ core.Value) {
 		if strings.HasPrefix(name, ident.Name) {
@@ -250,16 +311,6 @@ func handleIdentifierAndKeywordCompletions(ident *parse.IdentifierLiteral, deepe
 			})
 		}
 	})
-
-	for name := range state.CurrentLocalScope() {
-		if strings.HasPrefix(name, ident.Name) {
-			completions = append(completions, Completion{
-				ShownString: name,
-				Value:       name,
-				Kind:        defines.CompletionItemKindVariable,
-			})
-		}
-	}
 
 	parent := ancestors[len(ancestors)-1]
 
