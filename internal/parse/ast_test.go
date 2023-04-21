@@ -170,13 +170,8 @@ func TestFindPreviousStatement(t *testing.T) {
 		node, chain := FindNodeAndChain(chunk, (*IntLiteral)(nil), nil)
 
 		stmt, ok := FindPreviousStatement(node, chain)
-		if !assert.True(t, ok) {
-			return
-		}
-
-		assert.IsType(t, (*IntLiteral)(nil), stmt)
-
-		assert.Equal(t, int64(1), stmt.(*IntLiteral).Value)
+		assert.False(t, ok)
+		assert.Nil(t, stmt)
 	})
 
 }

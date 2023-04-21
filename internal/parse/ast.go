@@ -2470,7 +2470,7 @@ func FindNodeAndChain[T Node](root Node, typ T, handle func(n T, isUnique bool) 
 }
 
 func FindPreviousStatement(n Node, ancestorChain []Node) (stmt Node, ok bool) {
-	if len(ancestorChain) == 0 {
+	if len(ancestorChain) == 0 || IsScopeContainerNode(n) {
 		return nil, false
 	}
 
@@ -2489,7 +2489,7 @@ func FindPreviousStatement(n Node, ancestorChain []Node) (stmt Node, ok bool) {
 		for i, stmt := range parent.Statements {
 			if stmt == n {
 				if i == 0 {
-					return FindPreviousStatement(parent, ancestorChain[:len(ancestorChain)-1])
+					return nil, false
 				}
 				return parent.Statements[i-1], true
 			}
@@ -2498,7 +2498,7 @@ func FindPreviousStatement(n Node, ancestorChain []Node) (stmt Node, ok bool) {
 		for i, stmt := range parent.Statements {
 			if stmt == n {
 				if i == 0 {
-					return FindPreviousStatement(parent, ancestorChain[:len(ancestorChain)-1])
+					return nil, false
 				}
 				return parent.Statements[i-1], true
 			}
