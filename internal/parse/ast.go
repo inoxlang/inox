@@ -2444,22 +2444,67 @@ func FindNodes[T Node](root Node, typ T, handle func(n Node) bool) []T {
 }
 
 func FindNode[T Node](root Node, typ T, handle func(n T, isUnique bool) bool) T {
+	n, _ := FindNodeAndChain(root, typ, handle)
+	return n
+}
+
+func FindNodeAndChain[T Node](root Node, typ T, handle func(n T, isUnique bool) bool) (T, []Node) {
 	searchedType := reflect.TypeOf(typ)
 	isUnique := true
 
 	var found T
+	var _ancestorChain []Node
 
 	Walk(root, func(node, parent, scopeNode Node, ancestorChain []Node, after bool) (TraversalAction, error) {
 		if reflect.TypeOf(node) == searchedType {
 			if handle == nil || handle(node.(T), isUnique) {
 				found = node.(T)
 				isUnique = false
+				_ancestorChain = ancestorChain
 			}
 		}
 		return Continue, nil
 	}, nil)
 
-	return found
+	return found, _ancestorChain
+}
+
+func FindPreviousStatement(n Node, ancestorChain []Node) (stmt Node, ok bool) {
+	if len(ancestorChain) == 0 {
+		return nil, false
+	}
+
+	p := ancestorChain[len(ancestorChain)-1]
+	switch parent := p.(type) {
+	case *Block:
+		for i, stmt := range parent.Statements {
+			if stmt == n {
+				if i == 0 {
+					return FindPreviousStatement(parent, ancestorChain[:len(ancestorChain)-1])
+				}
+				return parent.Statements[i-1], true
+			}
+		}
+	case *Chunk:
+		for i, stmt := range parent.Statements {
+			if stmt == n {
+				if i == 0 {
+					return FindPreviousStatement(parent, ancestorChain[:len(ancestorChain)-1])
+				}
+				return parent.Statements[i-1], true
+			}
+		}
+	case *EmbeddedModule:
+		for i, stmt := range parent.Statements {
+			if stmt == n {
+				if i == 0 {
+					return FindPreviousStatement(parent, ancestorChain[:len(ancestorChain)-1])
+				}
+				return parent.Statements[i-1], true
+			}
+		}
+	}
+	return FindPreviousStatement(p, ancestorChain[:len(ancestorChain)-1])
 }
 
 func GetTreeView(n Node) string {
