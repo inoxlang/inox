@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"log"
@@ -172,6 +173,20 @@ func (p moduleParameter) DefaultValue() (Value, bool) {
 	return nil, false
 }
 
+func (p moduleParameter) Required() bool {
+	_, hasDefault := p.DefaultValue()
+	return !hasDefault
+}
+
+func (p moduleParameter) StringifiedPattern() string {
+	symb := utils.Must(p.pattern.ToSymbolicValue(false, map[uintptr]symbolic.SymbolicValue{}))
+	return symbolic.Stringify(symb.(symbolic.Pattern).SymbolicValue())
+}
+
+func (p moduleParameter) StringifiedPatternNoPercent() string {
+	return strings.ReplaceAll(p.StringifiedPattern(), "%", "")
+}
+
 func (p moduleParameter) GetArgumentFromCliArg(ctx *Context, s string) (v Value, handled bool, err error) {
 	if len(s) == 0 {
 		return nil, false, nil
@@ -284,6 +299,65 @@ func (m *Manifest) ArePermsGranted(grantedPerms []Permission, forbiddenPermissio
 	}
 
 	return len(missingPermissions) == 0, missingPermissions
+}
+
+func (m *Manifest) Usage() string {
+	buf := bytes.NewBuffer(nil)
+	for _, param := range m.Parameters.positional {
+		buf.WriteByte('<')
+		buf.WriteString(string(param.name))
+		if param.rest {
+			buf.WriteString("...")
+		}
+
+		if param.pattern != BOOL_PATTERN {
+			buf.WriteByte(' ')
+			buf.WriteString(param.StringifiedPatternNoPercent())
+		}
+		buf.WriteByte('>')
+	}
+
+	for _, param := range m.Parameters.others {
+		if !param.Required() {
+			buf.WriteString(" [")
+		} else {
+			buf.WriteByte(' ')
+		}
+
+		if param.singleLetterCliArgName != 0 {
+			buf.WriteByte('-')
+			buf.WriteString(string(param.singleLetterCliArgName))
+
+			if param.cliArgName != "" {
+				buf.WriteString("|--")
+				buf.WriteString(param.cliArgName)
+			}
+		} else {
+			buf.WriteString("--")
+			buf.WriteString(param.cliArgName)
+		}
+		if param.pattern != BOOL_PATTERN {
+			buf.WriteByte('=')
+			buf.WriteString(param.StringifiedPatternNoPercent())
+		}
+
+		if !param.Required() {
+			buf.WriteByte(']')
+		}
+	}
+
+	// buf.WriteString("\noptions:\n")
+
+	// for _, param := range m.Parameters.positional {
+	// 	buf.WriteByte('<')
+	// 	buf.WriteString(string(param.name))
+	// 	if param.rest {
+	// 		buf.WriteString("...")
+	// 	}
+	// 	buf.WriteByte('>')
+	// }
+
+	return buf.String()
 }
 
 // EvaluatePermissionListingObjectNode evaluates the object literal listing permissions in a permission drop statement.
@@ -424,6 +498,7 @@ func createManifest(object *Object, config manifestObjectConfig) (*Manifest, err
 						}
 						param.pattern = val.Value
 					case Pattern:
+						param.cliArgName = string(param.name)
 						param.pattern = val
 					default:
 						return errors.New("each non positional parameter should be described with a pattern")
