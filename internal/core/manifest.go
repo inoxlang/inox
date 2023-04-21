@@ -116,7 +116,7 @@ outer:
 				continue
 			}
 			if err != nil {
-				return nil, fmt.Errorf("invalid value for argument %s: %w", param.name, err)
+				return nil, fmt.Errorf("invalid value for argument %s (%s): %w", param.name, param.CliArgNames(), err)
 			}
 
 			entries[string(param.name)] = paramValue
@@ -132,21 +132,8 @@ outer:
 		if !ok {
 			defaultVal, ok := param.DefaultValue()
 			if !ok {
-				cliArgNamesBuf := bytes.NewBuffer(nil)
-				if param.singleLetterCliArgName != 0 {
-					cliArgNamesBuf.WriteByte('-')
-					cliArgNamesBuf.WriteString(string(param.singleLetterCliArgName))
 
-					if param.cliArgName != "" {
-						cliArgNamesBuf.WriteString("|--")
-						cliArgNamesBuf.WriteString(param.cliArgName)
-					}
-				} else {
-					cliArgNamesBuf.WriteString("--")
-					cliArgNamesBuf.WriteString(param.cliArgName)
-				}
-
-				return nil, fmt.Errorf("missing value for argument %s (%s)", param.name, cliArgNamesBuf.String())
+				return nil, fmt.Errorf("missing value for argument %s (%s)", param.name, param.CliArgNames())
 			}
 			entries[string(param.name)] = defaultVal
 		}
@@ -198,9 +185,14 @@ type moduleParameter struct {
 	rest                   bool
 	positional             bool
 	pattern                Pattern
+	description            string
+	defaultVal             Value
 }
 
 func (p moduleParameter) DefaultValue() (Value, bool) {
+	if p.defaultVal != nil {
+		return utils.Must(p.defaultVal.Clone(map[uintptr]map[int]Value{})), true
+	}
 	if p.pattern == BOOL_PATTERN {
 		return False, true
 	}
@@ -219,6 +211,23 @@ func (p moduleParameter) StringifiedPattern() string {
 
 func (p moduleParameter) StringifiedPatternNoPercent() string {
 	return strings.ReplaceAll(p.StringifiedPattern(), "%", "")
+}
+
+func (p moduleParameter) CliArgNames() string {
+	buf := bytes.NewBuffer(nil)
+	if p.singleLetterCliArgName != 0 {
+		buf.WriteByte('-')
+		buf.WriteString(string(p.singleLetterCliArgName))
+
+		if p.cliArgName != "" {
+			buf.WriteString("|--")
+			buf.WriteString(p.cliArgName)
+		}
+	} else {
+		buf.WriteString("--")
+		buf.WriteString(p.cliArgName)
+	}
+	return buf.String()
 }
 
 func (p moduleParameter) GetArgumentFromCliArg(ctx *Context, s string) (v Value, handled bool, err error) {
@@ -358,18 +367,8 @@ func (m *Manifest) Usage() string {
 			buf.WriteByte(' ')
 		}
 
-		if param.singleLetterCliArgName != 0 {
-			buf.WriteByte('-')
-			buf.WriteString(string(param.singleLetterCliArgName))
+		buf.WriteString(param.CliArgNames())
 
-			if param.cliArgName != "" {
-				buf.WriteString("|--")
-				buf.WriteString(param.cliArgName)
-			}
-		} else {
-			buf.WriteString("--")
-			buf.WriteString(param.cliArgName)
-		}
 		if param.pattern != BOOL_PATTERN {
 			buf.WriteByte('=')
 			buf.WriteString(param.StringifiedPatternNoPercent())
@@ -869,6 +868,9 @@ func getModuleParameters(v Value) (ModuleParameters, error) {
 				}
 				return nil
 			})
+			if param.pattern == nil {
+				return errors.New("missing .pattern in description of positional parameter")
+			}
 
 			params.positional = append(params.positional, param)
 		} else { // non positional parameyer
@@ -885,9 +887,32 @@ func getModuleParameters(v Value) (ModuleParameters, error) {
 			case Pattern:
 				param.cliArgName = string(param.name)
 				param.pattern = val
+			case *Object:
+				paramDesc := val
+				param.cliArgName = k
+
+				paramDesc.ForEachEntry(func(propName string, propVal Value) error {
+					switch propName {
+					case "pattern":
+						patt := propVal.(Pattern)
+						param.pattern = patt
+					case "default":
+						param.defaultVal = propVal
+					case "char-name":
+						param.singleLetterCliArgName = rune(propVal.(Rune))
+					case "description":
+						param.description = string(propVal.(Str))
+					}
+					return nil
+				})
 			default:
-				return errors.New("each non positional parameter should be described with a pattern")
+				return errors.New("each non positional parameter should be described with a pattern or an object")
 			}
+
+			if param.pattern == nil {
+				return errors.New("missing .pattern in description of non positional parameter")
+			}
+
 			params.others = append(params.others, param)
 		}
 		return nil

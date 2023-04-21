@@ -1743,14 +1743,60 @@ func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Nod
 			positionalParamsEnd = true
 
 			propValue := prop.Value
-			optionPattern, ok := prop.Value.(*parse.OptionPatternLiteral)
-			if ok {
+			optionPattern, isOptionPattern := prop.Value.(*parse.OptionPatternLiteral)
+			if isOptionPattern {
 				propValue = optionPattern.Value
 			}
 
-			switch propValue.(type) {
+			switch propVal := propValue.(type) {
 			case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression:
 				//ok
+			case *parse.ObjectLiteral:
+				if isOptionPattern {
+					break
+				}
+
+				missingPropertyNames := []string{"pattern"}
+
+				for _, paramDescProp := range propVal.Properties {
+					if paramDescProp.HasImplicitKey() {
+						continue
+					}
+					name := paramDescProp.Name()
+
+					for i, name := range missingPropertyNames {
+						if name == paramDescProp.Name() {
+							missingPropertyNames[i] = ""
+						}
+					}
+
+					switch name {
+					case "pattern":
+						switch paramDescProp.Value.(type) {
+						case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression:
+						default:
+							onError(paramDescProp, "the .pattern of a non positional parameter should be a named pattern (%path, %str, ...)")
+						}
+					case "default":
+					case "char-name":
+						switch paramDescProp.Value.(type) {
+						case *parse.RuneLiteral:
+						default:
+							onError(paramDescProp, "the .char-name of a non positional parameter should be a rune literal")
+						}
+					case "description":
+						switch paramDescProp.Value.(type) {
+						case *parse.QuotedStringLiteral, *parse.MultilineStringLiteral:
+						default:
+							onError(paramDescProp, "the .description of a non positional parameter should be a string literal")
+						}
+					}
+				}
+
+				missingPropertyNames = utils.FilterSlice(missingPropertyNames, func(s string) bool { return s != "" })
+				if len(missingPropertyNames) > 0 {
+					onError(prop, "missing properties in description of non positional parameter: "+strings.Join(missingPropertyNames, ", "))
+				}
 			default:
 				onError(prop,
 					"the description of a non positional parameter should be a named pattern (%path, %str, ...) or "+
