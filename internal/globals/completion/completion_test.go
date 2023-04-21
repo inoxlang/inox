@@ -44,6 +44,7 @@ func TestFindCompletions(t *testing.T) {
 				StartColumn: 0,
 				Span:        compl.ReplacedRange.Span,
 			}
+			completions[i].Kind = 0
 		}
 		return completions
 	}
