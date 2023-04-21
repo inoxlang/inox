@@ -483,67 +483,9 @@ func createManifest(object *Object, config manifestObjectConfig) (*Manifest, err
 			}
 			envPattern = patt
 		case "parameters":
-			description, ok := v.(*Object)
-			if !ok {
-				return nil, fmt.Errorf("invalid manifest, the 'parameters' section should have a value of type object")
-			}
-
-			var params ModuleParameters
-			restParamFound := false
-
-			err := description.ForEachEntry(func(k string, v Value) error {
-				var param moduleParameter
-
-				if IsIndexKey(k) { //positional parameter
-					obj, ok := v.(*Object)
-					if !ok {
-						return errors.New("each positional parameter should be described with an object")
-					}
-
-					obj.ForEachEntry(func(propName string, propVal Value) error {
-						switch propName {
-						case "name":
-							param.name = propVal.(Identifier)
-							param.positional = true
-						case "rest":
-							rest := bool(propVal.(Bool))
-							if rest && restParamFound {
-								return errors.New("at most one positional parameter should be a rest parameter")
-							}
-							param.rest = rest
-							restParamFound = rest
-						case "pattern":
-							patt := propVal.(Pattern)
-							param.pattern = patt
-						}
-						return nil
-					})
-
-					params.positional = append(params.positional, param)
-				} else { // non positional parameyer
-					param.name = Identifier(k)
-
-					switch val := v.(type) {
-					case *OptionPattern:
-						if len(val.Name) == 1 {
-							param.singleLetterCliArgName = rune(val.Name[0])
-						} else {
-							param.cliArgName = val.Name
-						}
-						param.pattern = val.Value
-					case Pattern:
-						param.cliArgName = string(param.name)
-						param.pattern = val
-					default:
-						return errors.New("each non positional parameter should be described with a pattern")
-					}
-					params.others = append(params.others, param)
-				}
-				return nil
-			})
-
+			params, err := getModuleParameters(v)
 			if err != nil {
-				return nil, fmt.Errorf("invalid manifest: 'parameters' section: %w", err)
+				return nil, err
 			}
 			moduleParams = params
 		default:
@@ -889,6 +831,73 @@ func getSingleKindPermissions(
 	}
 
 	return perms, nil
+}
+
+func getModuleParameters(v Value) (ModuleParameters, error) {
+	description, ok := v.(*Object)
+	if !ok {
+		return ModuleParameters{}, fmt.Errorf("invalid manifest, the 'parameters' section should have a value of type object")
+	}
+
+	var params ModuleParameters
+	restParamFound := false
+
+	err := description.ForEachEntry(func(k string, v Value) error {
+		var param moduleParameter
+
+		if IsIndexKey(k) { //positional parameter
+			obj, ok := v.(*Object)
+			if !ok {
+				return errors.New("each positional parameter should be described with an object")
+			}
+
+			obj.ForEachEntry(func(propName string, propVal Value) error {
+				switch propName {
+				case "name":
+					param.name = propVal.(Identifier)
+					param.positional = true
+				case "rest":
+					rest := bool(propVal.(Bool))
+					if rest && restParamFound {
+						return errors.New("at most one positional parameter should be a rest parameter")
+					}
+					param.rest = rest
+					restParamFound = rest
+				case "pattern":
+					patt := propVal.(Pattern)
+					param.pattern = patt
+				}
+				return nil
+			})
+
+			params.positional = append(params.positional, param)
+		} else { // non positional parameyer
+			param.name = Identifier(k)
+
+			switch val := v.(type) {
+			case *OptionPattern:
+				if len(val.Name) == 1 {
+					param.singleLetterCliArgName = rune(val.Name[0])
+				} else {
+					param.cliArgName = val.Name
+				}
+				param.pattern = val.Value
+			case Pattern:
+				param.cliArgName = string(param.name)
+				param.pattern = val
+			default:
+				return errors.New("each non positional parameter should be described with a pattern")
+			}
+			params.others = append(params.others, param)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return ModuleParameters{}, fmt.Errorf("invalid manifest: 'parameters' section: %w", err)
+	}
+
+	return params, nil
 }
 
 // getDnsPermissions gets a list DNSPermission from an AST node
