@@ -183,7 +183,10 @@ func ImportModule(config ImportConfig) (*Routine, error) {
 	}
 
 	if config.ArgObj != nil {
-		args := manifest.Parameters.GetArguments(config.ArgObj)
+		args, err := manifest.Parameters.GetArguments(routineCtx, config.ArgObj)
+		if err != nil {
+			return nil, fmt.Errorf("invalid arguments: %w", err)
+		}
 		globals.Set(MOD_ARGS_VARNAME, args)
 	} else {
 		globals.Set(MOD_ARGS_VARNAME, Nil)

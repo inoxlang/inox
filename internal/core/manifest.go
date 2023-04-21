@@ -53,33 +53,53 @@ type ModuleParameters struct {
 	others     []moduleParameter
 }
 
-func (p *ModuleParameters) GetArguments(argObj *Object) *Object {
+func (p *ModuleParameters) GetArguments(ctx *Context, argObj *Object) (*Object, error) {
 	positionalArgs := argObj.Indexed()
 	resultEntries := map[string]Value{}
 
 	for i, param := range p.positional {
 		if param.rest {
-			resultEntries[string(param.name)] = NewWrappedValueList(positionalArgs[i:]...)
+			list := NewWrappedValueList(positionalArgs[i:]...)
+			if !param.pattern.Test(ctx, list) {
+				return nil, fmt.Errorf("invalid value for rest positional argument %s", param.name)
+			}
+			resultEntries[string(param.name)] = list
 		} else {
-			resultEntries[string(param.name)] = positionalArgs[i]
+			if i >= len(positionalArgs) {
+				return nil, fmt.Errorf("missing value for positional argument %s", param.name)
+			}
+			arg := positionalArgs[i]
+			if !param.pattern.Test(ctx, arg) {
+				return nil, fmt.Errorf("invalid value for positional argument %s", param.name)
+			}
+			resultEntries[string(param.name)] = arg
 		}
 	}
 
-	argObj.ForEachEntry(func(k string, v Value) error {
+	argObj.ForEachEntry(func(k string, arg Value) error {
 		if IsIndexKey(k) { //positional arguments are already processed
 			return nil
 		}
 
 		for _, param := range p.others {
 			if string(param.name) == k {
-				resultEntries[k] = v
+				if !param.pattern.Test(ctx, arg) {
+					return fmt.Errorf("invalid value for non positional argument %s", param.name)
+				}
+				resultEntries[k] = arg
 			}
 		}
 
 		return nil
 	})
 
-	return objFrom(resultEntries)
+	for _, param := range p.others {
+		if _, ok := resultEntries[string(param.name)]; !ok {
+			return nil, fmt.Errorf("missing value for non positional argument %s", param.name)
+		}
+	}
+
+	return objFrom(resultEntries), nil
 }
 
 func (p *ModuleParameters) GetArgumentsFromCliArgs(ctx *Context, cliArgs []string) (*Object, error) {

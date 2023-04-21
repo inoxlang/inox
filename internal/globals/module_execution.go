@@ -108,7 +108,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	var modArgsError error
 
 	if args.Args != nil {
-		modArgs = manifest.Parameters.GetArguments(args.Args)
+		modArgs, modArgsError = manifest.Parameters.GetArguments(ctx, args.Args)
 	} else if args.CliArgs != nil {
 		args, err := manifest.Parameters.GetArgumentsFromCliArgs(ctx, args.CliArgs)
 		if err != nil {

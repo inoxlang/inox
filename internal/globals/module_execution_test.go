@@ -71,7 +71,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		assert.True(t, res.SymbolicData.IsEmpty())
 	})
 
-	t.Run("invalid CLI arguments", func(t *testing.T) {
+	t.Run("invalid CLI arguments: missing positional argument", func(t *testing.T) {
 
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
@@ -94,6 +94,191 @@ func TestPrepareLocalScript(t *testing.T) {
 		res, mod, err := PrepareLocalScript(ScriptPreparationArgs{
 			Fpath:                     file,
 			CliArgs:                   []string{}, //missing file argument
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			UseContextAsParent:        true,
+			Out:                       io.Discard,
+		})
+
+		if !assert.Error(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, res) {
+			return
+		}
+	})
+
+	t.Run("invalid arguments: missing positional argument", func(t *testing.T) {
+
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				parameters: {
+					{name: #file, pattern: %path}
+				}
+			}
+		
+		`), 0o600)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: core.GetDefaultGlobalVarPermissions(),
+		})
+		core.NewGlobalState(ctx)
+
+		res, mod, err := PrepareLocalScript(ScriptPreparationArgs{
+			Fpath:                     file,
+			Args:                      core.NewObjectFromMap(core.ValMap{}, ctx),
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			UseContextAsParent:        true,
+			Out:                       io.Discard,
+		})
+
+		if !assert.Error(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, res) {
+			return
+		}
+	})
+
+	t.Run("invalid arguments: missing non positional argument", func(t *testing.T) {
+
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				parameters: {
+					{name: #file, pattern: %path},
+					output: %path
+				}
+			}
+		
+		`), 0o600)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: core.GetDefaultGlobalVarPermissions(),
+		})
+		core.NewGlobalState(ctx)
+
+		res, mod, err := PrepareLocalScript(ScriptPreparationArgs{
+			Fpath: file,
+			Args: core.NewObjectFromMap(core.ValMap{
+				"0": core.Path("./a.txt"),
+			}, ctx),
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			UseContextAsParent:        true,
+			Out:                       io.Discard,
+		})
+
+		if !assert.Error(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, res) {
+			return
+		}
+	})
+
+	t.Run("invalid arguments: invalid value for positional argument", func(t *testing.T) {
+
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				parameters: {
+					{name: #file, pattern: %path}
+				}
+			}
+		
+		`), 0o600)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: core.GetDefaultGlobalVarPermissions(),
+		})
+		core.NewGlobalState(ctx)
+
+		res, mod, err := PrepareLocalScript(ScriptPreparationArgs{
+			Fpath: file,
+			Args: core.NewObjectFromMap(core.ValMap{
+				"0": core.True,
+			}, ctx),
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			UseContextAsParent:        true,
+			Out:                       io.Discard,
+		})
+
+		if !assert.Error(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, res) {
+			return
+		}
+	})
+
+	t.Run("invalid arguments: invalid value for non positional argument", func(t *testing.T) {
+
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				parameters: {
+					{name: #file, pattern: %path},
+					output: %path
+				}
+			}
+		
+		`), 0o600)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: core.GetDefaultGlobalVarPermissions(),
+		})
+		core.NewGlobalState(ctx)
+
+		res, mod, err := PrepareLocalScript(ScriptPreparationArgs{
+			Fpath: file,
+			Args: core.NewObjectFromMap(core.ValMap{
+				"0":      core.Path("./a.txt"),
+				"output": core.True,
+			}, ctx),
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
 			UseContextAsParent:        true,
