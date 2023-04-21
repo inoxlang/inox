@@ -10,6 +10,7 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	_fs "github.com/inoxlang/inox/internal/globals/fs"
 	_s3 "github.com/inoxlang/inox/internal/globals/s3"
+	"github.com/inoxlang/inox/internal/lsp/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
 
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -19,6 +20,7 @@ type Completion struct {
 	ShownString   string                    `json:"shownString"`
 	Value         string                    `json:"value"`
 	ReplacedRange parse.SourcePositionRange `json:"replacedRange"`
+	Kind          defines.CompletionItemKind
 }
 
 var (
@@ -32,8 +34,6 @@ func FindCompletions(state *core.TreeWalkState, chunk *parse.ParsedChunk, cursor
 	var _parent parse.Node
 	var deepestCall *parse.CallExpression
 	var _ancestorChain []parse.Node
-
-	//TODO: move following logic to parse package
 
 	parse.Walk(chunk.Node, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, _ bool) (parse.TraversalAction, error) {
 		span := node.Base().Span
@@ -86,6 +86,7 @@ func FindCompletions(state *core.TreeWalkState, chunk *parse.ParsedChunk, cursor
 				completions = append(completions, Completion{
 					ShownString: s,
 					Value:       s,
+					Kind:        defines.CompletionItemKindInterface,
 				})
 			}
 		}
@@ -95,6 +96,7 @@ func FindCompletions(state *core.TreeWalkState, chunk *parse.ParsedChunk, cursor
 				completions = append(completions, Completion{
 					ShownString: s,
 					Value:       s,
+					Kind:        defines.CompletionItemKindInterface,
 				})
 			}
 		}
@@ -109,6 +111,7 @@ func FindCompletions(state *core.TreeWalkState, chunk *parse.ParsedChunk, cursor
 			completions = append(completions, Completion{
 				ShownString: s,
 				Value:       s,
+				Kind:        defines.CompletionItemKindInterface,
 			})
 		}
 	case *parse.PatternNamespaceMemberExpression:
@@ -123,6 +126,7 @@ func FindCompletions(state *core.TreeWalkState, chunk *parse.ParsedChunk, cursor
 				completions = append(completions, Completion{
 					ShownString: s,
 					Value:       s,
+					Kind:        defines.CompletionItemKindInterface,
 				})
 			}
 		}
@@ -132,6 +136,7 @@ func FindCompletions(state *core.TreeWalkState, chunk *parse.ParsedChunk, cursor
 				completions = append(completions, Completion{
 					ShownString: name,
 					Value:       "$" + name,
+					Kind:        defines.CompletionItemKindVariable,
 				})
 			}
 		}
@@ -141,6 +146,7 @@ func FindCompletions(state *core.TreeWalkState, chunk *parse.ParsedChunk, cursor
 				completions = append(completions, Completion{
 					ShownString: name,
 					Value:       "$$" + name,
+					Kind:        defines.CompletionItemKindVariable,
 				})
 			}
 		})
@@ -168,6 +174,9 @@ func FindCompletions(state *core.TreeWalkState, chunk *parse.ParsedChunk, cursor
 		if completion.ReplacedRange.Span == (parse.NodeSpan{}) {
 			span := nodeAtCursor.Base().Span
 			completion.ReplacedRange = chunk.GetSourcePosition(span)
+		}
+		if completion.Kind == 0 {
+			completion.Kind = defines.CompletionItemKindText
 		}
 		completions[i] = completion
 	}
@@ -220,6 +229,7 @@ func handleIdentifierAndKeywordCompletions(ident *parse.IdentifierLiteral, deepe
 				completion := Completion{
 					ShownString: subcommandName,
 					Value:       subcommandName,
+					Kind:        defines.CompletionItemKindEnum,
 				}
 				if !completionSet[completion] {
 					completions = append(completions, completion)
@@ -236,6 +246,7 @@ func handleIdentifierAndKeywordCompletions(ident *parse.IdentifierLiteral, deepe
 			completions = append(completions, Completion{
 				ShownString: name,
 				Value:       name,
+				Kind:        defines.CompletionItemKindVariable,
 			})
 		}
 	})
@@ -245,6 +256,7 @@ func handleIdentifierAndKeywordCompletions(ident *parse.IdentifierLiteral, deepe
 			completions = append(completions, Completion{
 				ShownString: name,
 				Value:       name,
+				Kind:        defines.CompletionItemKindVariable,
 			})
 		}
 	}
@@ -267,6 +279,7 @@ func handleIdentifierAndKeywordCompletions(ident *parse.IdentifierLiteral, deepe
 						completions = append(completions, Completion{
 							ShownString: keyword,
 							Value:       keyword,
+							Kind:        defines.CompletionItemKindKeyword,
 						})
 					}
 				}
@@ -279,6 +292,7 @@ func handleIdentifierAndKeywordCompletions(ident *parse.IdentifierLiteral, deepe
 					completions = append(completions, Completion{
 						ShownString: "prune",
 						Value:       "prune",
+						Kind:        defines.CompletionItemKindKeyword,
 					})
 				}
 			}
@@ -295,6 +309,7 @@ func handleIdentifierAndKeywordCompletions(ident *parse.IdentifierLiteral, deepe
 				completions = append(completions, Completion{
 					ShownString: keyword,
 					Value:       keyword,
+					Kind:        defines.CompletionItemKindKeyword,
 				})
 			}
 		}
@@ -307,6 +322,7 @@ func handleIdentifierAndKeywordCompletions(ident *parse.IdentifierLiteral, deepe
 			completions = append(completions, Completion{
 				ShownString: keyword,
 				Value:       keyword,
+				Kind:        defines.CompletionItemKindKeyword,
 			})
 		}
 	}
@@ -435,6 +451,7 @@ func suggestPropertyNames(s string, curr interface{}, exprPropertyNames []*parse
 			completions = append(completions, Completion{
 				ShownString: s + "." + propName,
 				Value:       s + "." + propName,
+				Kind:        defines.CompletionItemKindProperty,
 			})
 		}
 	} else {
@@ -451,6 +468,7 @@ func suggestPropertyNames(s string, curr interface{}, exprPropertyNames []*parse
 			completions = append(completions, Completion{
 				ShownString: s + "." + propName,
 				Value:       s + "." + propName,
+				Kind:        defines.CompletionItemKindProperty,
 			})
 		}
 	}
@@ -493,6 +511,7 @@ top_loop:
 				ShownString:   name,
 				Value:         name,
 				ReplacedRange: chunk.GetSourcePosition(span),
+				Kind:          defines.CompletionItemKindEnum,
 			}
 			if !completionSet[completion] {
 				completions = append(completions, completion)
@@ -527,6 +546,7 @@ top_loop:
 			ShownString:   subcommandName,
 			Value:         subcommandName,
 			ReplacedRange: chunk.GetSourcePosition(span),
+			Kind:          defines.CompletionItemKindEnum,
 		}
 		if !completionSet[completion] {
 			completions = append(completions, completion)
@@ -568,6 +588,7 @@ func findPathCompletions(ctx *core.Context, pth string) []Completion {
 			completions = append(completions, Completion{
 				ShownString: name,
 				Value:       pth,
+				Kind:        defines.CompletionItemKindConstant,
 			})
 		}
 	}
@@ -603,6 +624,7 @@ func findURLCompletions(ctx *core.Context, u core.URL, parent parse.Node) []Comp
 					completions = append(completions, Completion{
 						ShownString: obj.Key,
 						Value:       val,
+						Kind:        defines.CompletionItemKindConstant,
 					})
 				}
 			}
@@ -623,6 +645,7 @@ func findHostCompletions(ctx *core.Context, prefix string, parent parse.Node) []
 			completions = append(completions, Completion{
 				ShownString: hostStr,
 				Value:       hostStr,
+				Kind:        defines.CompletionItemKindConstant,
 			})
 		}
 	}
@@ -637,6 +660,7 @@ func findHostCompletions(ctx *core.Context, prefix string, parent parse.Node) []
 			completions = append(completions, Completion{
 				ShownString: s,
 				Value:       s,
+				Kind:        defines.CompletionItemKindConstant,
 			})
 		}
 

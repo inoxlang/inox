@@ -124,9 +124,6 @@ func StartLSPServer() {
 	})
 
 	server.OnCompletion(func(ctx context.Context, req *defines.CompletionParams) (result *[]defines.CompletionItem, err error) {
-		logs.Println(req)
-		textKind := defines.CompletionItemKindText
-
 		fpath := getFilePath(req.TextDocument.Uri)
 		line := int32(req.Position.Line + 1)
 		column := int32(req.Position.Character + 1)
@@ -147,7 +144,7 @@ func StartLSPServer() {
 		lspCompletions := utils.MapSlice(completions, func(completion compl.Completion) defines.CompletionItem {
 			return defines.CompletionItem{
 				Label: completion.Value,
-				Kind:  &textKind,
+				Kind:  &completion.Kind,
 				TextEdit: defines.TextEdit{
 					Range: rangeToLspRange(completion.ReplacedRange),
 				},
