@@ -173,6 +173,7 @@ func StartLSPServer() {
 		s.Capabilities.HoverProvider = true
 		s.Capabilities.WorkspaceSymbolProvider = true
 		s.Capabilities.TextDocumentSync = defines.TextDocumentSyncKindFull
+		s.Capabilities.CompletionProvider = &defines.CompletionOptions{}
 		return s, nil
 	})
 
