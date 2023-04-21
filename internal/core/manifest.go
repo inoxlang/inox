@@ -381,13 +381,14 @@ func (m *Manifest) Usage() string {
 
 	buf.WriteString("\n\nrequired:\n")
 	leftPadding := "  "
-	doubleLeftPadding := "    "
+	tripleLeftPadding := "      "
 
 	for _, param := range m.Parameters.positional {
 		if param.description == "" {
-			buf.WriteString(fmt.Sprintf("\n%s%s: %s\n", leftPadding, param.name, param.StringifiedPatternNoPercent()))
+			buf.WriteString(
+				fmt.Sprintf("\n%s%s: %s\n", leftPadding, param.name, param.StringifiedPatternNoPercent()))
 		} else {
-			buf.WriteString(fmt.Sprintf("\n%s%s: %s\n%s%s\n", leftPadding, param.name, param.StringifiedPattern(), doubleLeftPadding, param.description))
+			buf.WriteString(fmt.Sprintf("\n%s%s: %s\n%s%s\n", leftPadding, param.name, param.StringifiedPattern(), tripleLeftPadding, param.description))
 		}
 	}
 
@@ -395,7 +396,8 @@ func (m *Manifest) Usage() string {
 		if !param.Required() {
 			continue
 		}
-		buf.WriteString(fmt.Sprintf("\n%s%s (%s): %s\n%s%s\n", leftPadding, param.name, param.CliArgNames(), param.StringifiedPatternNoPercent(), doubleLeftPadding, param.description))
+		buf.WriteString(
+			fmt.Sprintf("\n%s%s (%s): %s\n%s%s\n", leftPadding, param.name, param.CliArgNames(), param.StringifiedPatternNoPercent(), tripleLeftPadding, param.description))
 	}
 
 	buf.WriteString("\noptions:\n")
@@ -404,7 +406,8 @@ func (m *Manifest) Usage() string {
 		if param.Required() {
 			continue
 		}
-		buf.WriteString(fmt.Sprintf("\n%s%s (%s): %s\n%s%s\n", leftPadding, param.name, param.CliArgNames(), param.StringifiedPatternNoPercent(), doubleLeftPadding, param.description))
+		buf.WriteString(
+			fmt.Sprintf("\n%s%s (%s): %s\n%s%s\n", leftPadding, param.name, param.CliArgNames(), param.StringifiedPatternNoPercent(), tripleLeftPadding, param.description))
 	}
 
 	return buf.String()
