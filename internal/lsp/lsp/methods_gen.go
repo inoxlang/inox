@@ -294,7 +294,7 @@ func (m *Methods) didChangeTextDocumentMethodInfo() *jsonrpc.MethodInfo {
 		return nil
 	}	
     return &jsonrpc.MethodInfo{
-		Name: "didChangeTextDocument",
+		Name: "textDocument/didChange",
 		NewRequest: func() interface{} {
 			return &defines.DidChangeTextDocumentParams{}
 		},

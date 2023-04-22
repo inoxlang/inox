@@ -165,12 +165,25 @@ func StartLSPServer() {
 		return notifyDiagnostics(session, req.TextDocument.Uri, compilationCtx)
 	})
 
+	server.OnDidChangeTextDocument(func(ctx context.Context, req *defines.DidChangeTextDocumentParams) (err error) {
+		for _, change := range req.ContentChanges {
+			fullDocumentText := change.Text.(string)
+			logs.Println(fullDocumentText)
+		}
+		return nil
+	})
+
 	server.OnInitialize(func(ctx context.Context, req *defines.InitializeParams) (result *defines.InitializeResult, err *defines.InitializeError) {
 		logs.Println("initialized")
 		s := &defines.InitializeResult{}
+
 		s.Capabilities.HoverProvider = true
+
 		s.Capabilities.WorkspaceSymbolProvider = true
+
+		// makes the client send the whole document during synchronization
 		s.Capabilities.TextDocumentSync = defines.TextDocumentSyncKindFull
+
 		s.Capabilities.CompletionProvider = &defines.CompletionOptions{}
 		return s, nil
 	})

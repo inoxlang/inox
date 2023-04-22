@@ -48,8 +48,9 @@ var methods = []method{
 		Args:         defines.DidOpenTextDocumentParams{},
 	},
 	{
-		Name: "DidChangeTextDocument",
-		Args: defines.DidChangeTextDocumentParams{},
+		Name:         "DidChangeTextDocument",
+		RegisterName: "textDocument/didChange",
+		Args:         defines.DidChangeTextDocumentParams{},
 	},
 	{
 		Name: "DidCloseTextDocument",
