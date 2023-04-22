@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -148,46 +147,51 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		finalErr = staticCheckErr
 		return
 	}
-	log.Printf("%#v", mod.ParsingErrors)
 
 	if parsingErr != nil {
-		finalErr = parsingErr
-		return
+		if len(mod.OriginalErrors) > 1 ||
+			(len(mod.OriginalErrors) == 1 && !utils.SliceContains(symbolic.SUPPORTED_PARSING_ERRORS, mod.OriginalErrors[0].Kind())) {
+			finalErr = parsingErr
+			return
+		}
+		//we continue if there is a single error AND the error is supported by the symbolic evaluation
 	}
 
 	// symbolic check
 
-	if parsingErr == nil {
-		globals := map[string]any{}
-		state.Globals.Foreach(func(k string, v core.Value) {
-			globals[k] = v
-		})
+	globals := map[string]any{}
+	state.Globals.Foreach(func(k string, v core.Value) {
+		globals[k] = v
+	})
 
-		delete(globals, core.MOD_ARGS_VARNAME)
-		additionalSymbolicGlobals := map[string]symbolic.SymbolicValue{
-			core.MOD_ARGS_VARNAME: manifest.Parameters.GetSymbolicArguments(),
-		}
+	delete(globals, core.MOD_ARGS_VARNAME)
+	additionalSymbolicGlobals := map[string]symbolic.SymbolicValue{
+		core.MOD_ARGS_VARNAME: manifest.Parameters.GetSymbolicArguments(),
+	}
 
-		symbolicCtx, err_ := state.Ctx.ToSymbolicValue()
-		if err_ != nil {
-			return nil, nil, err_
-		}
+	symbolicCtx, err_ := state.Ctx.ToSymbolicValue()
+	if err_ != nil {
+		return nil, nil, err_
+	}
 
-		symbolicData, err_ := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
-			Node:                           mod.MainChunk.Node,
-			Module:                         state.Module.ToSymbolic(),
-			GlobalConsts:                   globals,
-			AdditionalSymbolicGlobalConsts: additionalSymbolicGlobals,
-			Context:                        symbolicCtx,
-		})
+	symbolicData, err_ := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
+		Node:                           mod.MainChunk.Node,
+		Module:                         state.Module.ToSymbolic(),
+		GlobalConsts:                   globals,
+		AdditionalSymbolicGlobalConsts: additionalSymbolicGlobals,
+		Context:                        symbolicCtx,
+	})
 
-		if symbolicData != nil {
-			state.SymbolicData.AddData(symbolicData)
-		}
+	if symbolicData != nil {
+		state.SymbolicData.AddData(symbolicData)
+	}
 
-		if err_ != nil {
-			finalErr = err_
-		}
+	if parsingErr != nil {
+		finalErr = parsingErr
+	}
+
+	if finalErr == nil && err_ != nil {
+		finalErr = err_
 	}
 
 	if finalErr == nil && manifestErr != nil {

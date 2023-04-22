@@ -39,6 +39,7 @@ type Module struct {
 	Bytecode                   *Bytecode
 	ParsingErrors              []Error
 	ParsingErrorPositions      []parse.SourcePositionRange
+	OriginalErrors             []*parse.ParsingError //len(.OriginalErrors) <= len(.ParsingErrors)
 
 	//.errors property accessible from scripts
 	errorsPropSet atomic.Bool
@@ -234,6 +235,7 @@ func ParseInMemoryModule(codeString Str, config InMemoryModuleParsingConfig) (*M
 			panic(ErrUnreachable)
 		}
 
+		mod.OriginalErrors = append(mod.OriginalErrors, errorAggregation.Errors...)
 		mod.ParsingErrors = make([]Error, len(errorAggregation.Errors))
 		mod.ParsingErrorPositions = make([]parse.SourcePositionRange, len(errorAggregation.Errors))
 
@@ -248,6 +250,7 @@ func ParseInMemoryModule(codeString Str, config InMemoryModuleParsingConfig) (*M
 	if code.Node.Manifest == nil {
 		err := NewError(fmt.Errorf("missing manifest in in-memory module "+string(config.Name)), Str(config.Name))
 		mod.ParsingErrors = append(mod.ParsingErrors, err)
+		//TODO: add position
 	}
 
 	inclusionStmts := parse.FindNodes(code.Node, &parse.InclusionImportStatement{}, nil)
@@ -256,6 +259,7 @@ func ParseInMemoryModule(codeString Str, config InMemoryModuleParsingConfig) (*M
 	if len(inclusionStmts) != 0 {
 		err := NewError(fmt.Errorf("inclusion import statements found in in-memory module "+config.Name), Str(config.Name))
 		mod.ParsingErrors = append(mod.ParsingErrors, err)
+		//TODO: add position
 	}
 
 	return mod, combineParsingErrorValues(mod.ParsingErrors, mod.ParsingErrorPositions)
@@ -338,6 +342,7 @@ func ParseLocalModule(config LocalModuleParsingConfig) (*Module, error) {
 
 		for i, err := range errorAggregation.Errors {
 			pos := errorAggregation.ErrorPositions[i]
+			mod.OriginalErrors = append(mod.OriginalErrors, err)
 			mod.ParsingErrors[i] = NewError(err, createRecordFromSourcePosition(pos))
 			mod.ParsingErrorPositions[i] = pos
 		}
@@ -372,6 +377,7 @@ func ParseLocalModule(config LocalModuleParsingConfig) (*Module, error) {
 			return nil, err
 		}
 
+		mod.OriginalErrors = append(mod.OriginalErrors, chunk.OriginalErrors...)
 		mod.ParsingErrors = append(mod.ParsingErrors, chunk.ParsingErrors...)
 		mod.ParsingErrorPositions = append(mod.ParsingErrorPositions, chunk.ParsingErrorPositions...)
 		mod.InclusionStatementMap[stmt] = chunk
@@ -386,6 +392,7 @@ func ParseLocalModule(config LocalModuleParsingConfig) (*Module, error) {
 type IncludedChunk struct {
 	*parse.ParsedChunk
 	IncludedChunkForest   []*IncludedChunk
+	OriginalErrors        []*parse.ParsingError
 	ParsingErrors         []Error
 	ParsingErrorPositions []parse.SourcePositionRange
 }
@@ -463,7 +470,7 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 		if !ok {
 			panic(ErrUnreachable)
 		}
-
+		includedChunk.OriginalErrors = append(mod.OriginalErrors, errorAggregation.Errors...)
 		includedChunk.ParsingErrors = make([]Error, len(errorAggregation.Errors))
 		includedChunk.ParsingErrorPositions = make([]parse.SourcePositionRange, len(errorAggregation.Errors))
 
@@ -479,6 +486,7 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 		includedChunk.ParsingErrors = append(includedChunk.ParsingErrors,
 			NewError(fmt.Errorf("included chunk files cannot contain a manifest: %s:"+fpath), Path(fpath)),
 		)
+		//TODO: add position
 	}
 
 	mod.IncludedChunkMap[absPath] = includedChunk
@@ -498,6 +506,7 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 			return nil, err
 		}
 
+		includedChunk.OriginalErrors = append(mod.OriginalErrors, chunk.OriginalErrors...)
 		includedChunk.ParsingErrors = append(includedChunk.ParsingErrors, chunk.ParsingErrors...)
 		mod.InclusionStatementMap[stmt] = chunk
 		includedChunk.IncludedChunkForest = append(includedChunk.IncludedChunkForest, chunk)
