@@ -128,24 +128,9 @@ func StartLSPServer() {
 		line := int32(req.Position.Line + 1)
 		column := int32(req.Position.Character + 1)
 
-		state, mod, _ := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
-			Fpath:                     fpath,
-			ParsingCompilationContext: compilationCtx,
-			ParentContext:             nil,
-			Out:                       os.Stdout,
-			IgnoreNonCriticalIssues:   true,
-		})
-
-		chunk := mod.MainChunk
-		pos := chunk.GetLineColumnPosition(line, column)
-
-		completions := compl.FindCompletions(compl.CompletionSearchArgs{
-			State:       core.NewTreeWalkStateWithGlobal(state),
-			Chunk:       chunk,
-			CursorIndex: int(pos),
-			Mode:        compl.LspCompletions,
-		})
+		completions := getCompletions(fpath, compilationCtx, line, column)
 		completionIndex := 0
+
 		lspCompletions := utils.MapSlice(completions, func(completion compl.Completion) defines.CompletionItem {
 			defer func() {
 				completionIndex++
@@ -279,6 +264,26 @@ send_diagnostics:
 	})
 
 	return nil
+}
+
+func getCompletions(fpath string, compilationCtx *core.Context, line, column int32) []compl.Completion {
+	state, mod, _ := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
+		Fpath:                     fpath,
+		ParsingCompilationContext: compilationCtx,
+		ParentContext:             nil,
+		Out:                       os.Stdout,
+		IgnoreNonCriticalIssues:   true,
+	})
+
+	chunk := mod.MainChunk
+	pos := chunk.GetLineColumnPosition(line, column)
+
+	return compl.FindCompletions(compl.CompletionSearchArgs{
+		State:       core.NewTreeWalkStateWithGlobal(state),
+		Chunk:       chunk,
+		CursorIndex: int(pos),
+		Mode:        compl.LspCompletions,
+	})
 }
 
 func rangeToLspRange(r parse.SourcePositionRange) defines.Range {
