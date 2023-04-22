@@ -24,6 +24,10 @@ func (err ParsingError) Error() string {
 	return err.message
 }
 
+func (err ParsingError) Kind() ParsingErrorKind {
+	return err.kind
+}
+
 type ParsingErrorKind int
 
 type ParsingErrorAggregation struct {

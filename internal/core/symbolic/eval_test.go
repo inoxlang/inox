@@ -7,17 +7,16 @@ import (
 	"testing"
 
 	parse "github.com/inoxlang/inox/internal/parse"
-	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSymbolicEval(t *testing.T) {
 
-	makeStateAndChunk := func(code string) (*parse.Chunk, *State) {
-		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+	_makeStateAndChunk := func(code string) (*parse.Chunk, *State, error) {
+		chunk, err := parse.ParseChunkSource(parse.InMemorySource{
 			NameString: "",
 			CodeString: code,
-		}))
+		})
 
 		state := newSymbolicState(NewSymbolicContext(), chunk)
 		state.ctx.AddNamedPattern("int", &TypePattern{
@@ -38,7 +37,16 @@ func TestSymbolicEval(t *testing.T) {
 		state.Module = &Module{
 			MainChunk: chunk,
 		}
-		return chunk.Node, state
+
+		return chunk.Node, state, err
+	}
+
+	makeStateAndChunk := func(code string) (*parse.Chunk, *State) {
+		node, state, err := _makeStateAndChunk(code)
+		if err != nil {
+			panic(err)
+		}
+		return node, state
 	}
 
 	t.Run("quoted string literal", func(t *testing.T) {
@@ -771,6 +779,18 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 			assert.Equal(t, NewMultivalue(&Int{}, &String{}), res.(*InoxFunction).returnType)
 		})
+
+		t.Run("unterminated", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				v = {"name": "foo"}
+				return $v.
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, ANY, res)
+		})
+
 	})
 
 	t.Run("dynamic member expression", func(t *testing.T) {
@@ -855,15 +875,39 @@ func TestSymbolicEval(t *testing.T) {
 		})
 	})
 
-	t.Run("identifier member expression: object", func(t *testing.T) {
-		n, state := makeStateAndChunk(`
-			v = {"name": "foo"}
-			return v.name
-		`)
-		res, err := symbolicEval(n, state)
-		assert.NoError(t, err)
-		assert.Empty(t, state.errors)
-		assert.Equal(t, &String{}, res)
+	t.Run("identifier member expression", func(t *testing.T) {
+		t.Run("object", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				v = {"name": "foo"}
+				return v.name
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, &String{}, res)
+		})
+
+		t.Run("unterminated (0 property names)", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				v = {"name": "foo"}
+				return v.
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("unterminated (1 property names)", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				v = {"a": {"b": "foo"}}
+				return v.a.
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, ANY, res)
+		})
 	})
 
 	t.Run("index expression", func(t *testing.T) {

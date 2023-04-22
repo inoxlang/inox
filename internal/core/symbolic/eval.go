@@ -59,6 +59,8 @@ var (
 	IN_MEM_SNAPSHOTABLE                = reflect.TypeOf((*InMemorySnapshotable)(nil)).Elem()
 
 	ANY_READABLE = &AnyReadable{}
+
+	SUPPORTED_PARSING_ERRORS = []parse.ParsingErrorKind{parse.UnterminatedMemberExpr}
 )
 
 type SymbolicEvalCheckInput struct {
@@ -457,6 +459,10 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 			object, err := symbolicEval(lhs.Left, state)
 			if err != nil {
 				return nil, err
+			}
+
+			if n.Err != nil {
+				return nil, nil
 			}
 
 			var iprops IProps
@@ -2057,6 +2063,10 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 			return nil, err
 		}
 
+		if n.PropertyName == nil { //parsing error
+			return ANY, nil
+		}
+
 		val := symbolicMemb(left, n.PropertyName.Name, n, state)
 		state.symbolicData.SetNodeValue(n.PropertyName, val)
 
@@ -2065,6 +2075,10 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 		v, err := symbolicEval(n.Left, state)
 		if err != nil {
 			return nil, err
+		}
+
+		if n.Err != nil {
+			return ANY, nil
 		}
 
 		var prevIdent *parse.IdentifierLiteral
