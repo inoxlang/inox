@@ -3,7 +3,8 @@ package internal
 import (
 	"errors"
 	"fmt"
-	"os"
+	"io"
+	"io/fs"
 	"path/filepath"
 	"strings"
 	"sync/atomic"
@@ -262,7 +263,7 @@ func ParseInMemoryModule(codeString Str, config InMemoryModuleParsingConfig) (*M
 
 type LocalModuleParsingConfig struct {
 	ModuleFilepath string
-	Context        *Context //this context is used to check permissions
+	Context        *Context //this context is used for checking permissions & getting the filesystem
 	//DefaultLimitations          []Limitationr
 	//CustomPermissionTypeHandler CustomPermissionTypeHandler
 }
@@ -284,11 +285,17 @@ func ParseLocalModule(config LocalModuleParsingConfig) (*Module, error) {
 		}
 	}
 
-	if info, err := os.Stat(fpath); err == os.ErrNotExist || (err == nil && info.IsDir()) {
+	if info, err := ctx.fs.Stat(fpath); err == fs.ErrNotExist || (err == nil && info.IsDir()) {
 		return nil, fmt.Errorf("%s does not exist or is a folder", fpath)
 	}
 
-	b, err := os.ReadFile(fpath)
+	file, err := ctx.fs.Open(fpath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open %s: %s", fpath, err)
+	}
+
+	b, err := io.ReadAll(file)
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to read %s: %s", fpath, err)
 	}
@@ -391,6 +398,7 @@ type LocalSecondaryChunkParsingConfig struct {
 
 func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*IncludedChunk, error) {
 	fpath := config.ChunkFilepath
+	ctx := config.Context
 	mod := config.Module
 
 	if strings.Contains(fpath, "..") {
@@ -415,13 +423,19 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 		}
 	}
 
-	if info, err := os.Stat(fpath); err == os.ErrNotExist || (err == nil && info.IsDir()) {
+	if info, err := ctx.fs.Stat(fpath); err == fs.ErrNotExist || (err == nil && info.IsDir()) {
 		return nil, fmt.Errorf("%s does not exist or is a folder", fpath)
 	}
 
-	b, err := os.ReadFile(fpath)
+	file, err := ctx.fs.Open(fpath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read %s: %w", fpath, err)
+		return nil, fmt.Errorf("failed to open %s: %s", fpath, err)
+	}
+
+	b, err := io.ReadAll(file)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to read %s: %s", fpath, err)
 	}
 
 	//parse

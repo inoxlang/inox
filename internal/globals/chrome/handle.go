@@ -27,7 +27,7 @@ func NewHandle(ctx *core.Context) (*Handle, error) {
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.DisableGPU,
 		chromedp.Flag("headless", true),
-		chromedp.UserDataDir(string(core.CreateTempdir("chrome"))),
+		chromedp.UserDataDir(string(core.CreateTempdir("chrome", ctx.GetFileSystem()))),
 		//chromedp.Headless,
 	)
 

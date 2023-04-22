@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/stretchr/testify/assert"
 
 	core "github.com/inoxlang/inox/internal/core"
@@ -43,7 +44,7 @@ func TestExamples(t *testing.T) {
 
 	defer os.Chdir(dir)
 	os.Chdir("..")
-	core.SetInitialWorkingDir()
+	core.SetInitialWorkingDir(os.Getwd)
 
 	//uncomment the following lines to test a given script
 	// testExample(t, exampleTestConfig{
@@ -153,7 +154,7 @@ func testExample(t *testing.T, config exampleTestConfig) {
 
 		defer os.Chdir(dir)
 		os.Chdir(tempDir)
-		core.SetInitialWorkingDir()
+		core.SetInitialWorkingDir(os.Getwd)
 	}
 
 	done := make(chan int)
@@ -167,6 +168,7 @@ func testExample(t *testing.T, config exampleTestConfig) {
 
 		parsingCompilationContext := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{core.CreateFsReadPerm(core.PathPattern("/..."))},
+			Filesystem:  osfs.New("/"),
 		})
 		core.NewGlobalState(parsingCompilationContext)
 

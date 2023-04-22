@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/go-git/go-billy/v5/osfs"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,6 +26,7 @@ func createParsingContext(modpath string) *Context {
 	pathPattern := PathPattern(Path(modpath).DirPath() + "...")
 	return NewContext(ContextConfig{
 		Permissions: []Permission{CreateFsReadPerm(pathPattern)},
+		Filesystem:  osfs.New("/"),
 	})
 }
 

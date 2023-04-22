@@ -9,6 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	afs "github.com/go-git/go-billy/v5"
+
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -40,6 +42,7 @@ type Context struct {
 
 	// associated state, it is set at the creation of the associated state.
 	state *GlobalState
+	fs    afs.Filesystem
 
 	currentTx         *Transaction
 	acquiredResources []ResourceName
@@ -83,6 +86,7 @@ type ContextConfig struct {
 	HostResolutions        map[Host]Value
 	ParentContext          *Context
 	ScaledLimitationTokens map[string]int64 // limitation tokens
+	Filesystem             afs.Filesystem
 }
 
 func (c ContextConfig) HasParentRequiredPermissions() (firstErr error, ok bool) {
@@ -103,11 +107,13 @@ func (c ContextConfig) HasParentRequiredPermissions() (firstErr error, ok bool) 
 func NewContext(config ContextConfig) *Context {
 
 	var (
-		limiters  map[string]*Limiter
-		stdlibCtx context.Context
-		cancel    context.CancelFunc
-		ctx       = &Context{} //the context is initialized later in the function but we need the address
+		limiters   map[string]*Limiter
+		stdlibCtx  context.Context
+		cancel     context.CancelFunc
+		filesystem afs.Filesystem = config.Filesystem
+		ctx                       = &Context{} //the context is initialized later in the function but we need the address
 	)
+
 	if config.ParentContext == nil {
 		limiters = make(map[string]*Limiter)
 
@@ -161,6 +167,10 @@ func NewContext(config ContextConfig) *Context {
 		}
 		limiters = config.ParentContext.limiters //limiters are shared with the parent context
 		stdlibCtx, cancel = context.WithCancel(config.ParentContext)
+
+		if filesystem == nil {
+			filesystem = config.ParentContext.fs
+		}
 	}
 
 	hostResolutions := utils.CopyMap(config.HostResolutions)
@@ -170,6 +180,7 @@ func NewContext(config ContextConfig) *Context {
 		Context:              stdlibCtx,
 		cancel:               cancel,
 		parentCtx:            config.ParentContext,
+		fs:                   filesystem,
 		executionStartTime:   time.Now(),
 		grantedPermissions:   utils.CopySlice(config.Permissions),
 		forbiddenPermissions: utils.CopySlice(config.ForbiddenPermissions),
@@ -379,10 +390,14 @@ func (ctx *Context) GetTempDir() Path {
 	ctx.assertNotDone()
 
 	if ctx.tempDir == "" {
-		ctx.tempDir = CreateTempdir("ctx")
+		ctx.tempDir = CreateTempdir("ctx", ctx.fs)
 	}
 
 	return ctx.tempDir
+}
+
+func (ctx *Context) GetFileSystem() afs.Filesystem {
+	return ctx.fs
 }
 
 // HasPermission checks if the passed permission is present in the Context.
@@ -500,6 +515,7 @@ func (ctx *Context) New() *Context {
 		Limitations:          ctx.limitations,
 		HostResolutions:      ctx.hostResolutionData,
 		ParentContext:        ctx.parentCtx,
+		Filesystem:           ctx.fs,
 	})
 
 	clone.namedPatterns = utils.CopyMap(ctx.namedPatterns)
@@ -536,6 +552,7 @@ top:
 		Permissions:          perms,
 		ForbiddenPermissions: ctx.forbiddenPermissions,
 		Limitations:          ctx.limitations,
+		Filesystem:           ctx.fs,
 	})
 	return newCtx, nil
 }

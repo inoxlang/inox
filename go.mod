@@ -12,6 +12,7 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2103.4
 	github.com/emirpasic/gods v1.18.1
 	github.com/fsnotify/fsnotify v1.6.0
+	github.com/go-git/go-billy/v5 v5.4.1
 	github.com/gorilla/websocket v1.5.0
 	github.com/johannesboyne/gofakes3 v0.0.0-20230104192229-1065b17a924f
 	github.com/json-iterator/go v1.1.12
@@ -83,11 +84,10 @@ require (
 	go.uber.org/zap v1.18.1 // indirect
 	golang.org/x/mod v0.6.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.2.0 // indirect
+	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	golang.org/x/tools v0.2.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.66.6 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

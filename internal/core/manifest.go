@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -21,8 +20,8 @@ var (
 	INITIAL_WORKING_DIR_PATH_PATTERN PathPattern
 )
 
-func SetInitialWorkingDir() {
-	wd, err := os.Getwd()
+func SetInitialWorkingDir(getWd func() (string, error)) {
+	wd, err := getWd()
 	if err != nil {
 		panic(err)
 	}

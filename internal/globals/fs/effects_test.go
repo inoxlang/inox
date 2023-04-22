@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/go-git/go-billy/v5/osfs"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/stretchr/testify/assert"
 )
@@ -217,6 +218,7 @@ func TestRemoveDirEffect(t *testing.T) {
 					core.FilesystemPermission{Kind_: core.DeletePerm, Entity: core.PathPattern("/...")},
 				},
 				Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1000}},
+				Filesystem:  osfs.New("/"),
 			})
 
 			assert.NoError(t, effect.Apply(ctx))
@@ -236,6 +238,7 @@ func TestRemoveDirEffect(t *testing.T) {
 					core.FilesystemPermission{Kind_: core.DeletePerm, Entity: core.PathPattern("/...")},
 				},
 				Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1000}},
+				Filesystem:  osfs.New("/"),
 			})
 
 			assert.NoError(t, effect.Apply(ctx))

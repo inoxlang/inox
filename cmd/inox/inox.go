@@ -11,6 +11,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/inoxlang/inox/internal/config"
 	core "github.com/inoxlang/inox/internal/core"
 
@@ -371,6 +372,7 @@ func createCompilationCtx(dir string) *core.Context {
 		Permissions: []core.Permission{
 			core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern(dir + "...")},
 		},
+		Filesystem: osfs.New("/"),
 	})
 	core.NewGlobalState(compilationCtx)
 	return compilationCtx
