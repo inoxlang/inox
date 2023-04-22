@@ -248,7 +248,7 @@ func ParseInMemoryModule(codeString Str, config InMemoryModuleParsingConfig) (*M
 
 	// add error if manifest is missing
 	if code.Node.Manifest == nil {
-		err := NewError(fmt.Errorf("missing manifest in in-memory module "+string(config.Name)), Str(config.Name))
+		err := NewError(fmt.Errorf("missing manifest in in-memory module %s: the file should start with 'manifest {}'", config.Name), Str(config.Name))
 		mod.ParsingErrors = append(mod.ParsingErrors, err)
 		//TODO: add position
 	}
@@ -350,7 +350,7 @@ func ParseLocalModule(config LocalModuleParsingConfig) (*Module, error) {
 
 	// add error if manifest is missing
 	if code.Node.Manifest == nil {
-		err := NewError(fmt.Errorf("missing manifest in module "+fpath), Path(fpath))
+		err := NewError(fmt.Errorf("missing manifest in module %s: the file should start with 'manifest {}'", fpath), Path(fpath))
 		mod.ParsingErrors = append(mod.ParsingErrors, err)
 		mod.ParsingErrorPositions = append(mod.ParsingErrorPositions, parse.SourcePositionRange{
 			SourceName:  fpath,
