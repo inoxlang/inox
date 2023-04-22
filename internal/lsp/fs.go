@@ -3,7 +3,8 @@ package internal
 import (
 	afs "github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/memfs"
-	"github.com/go-git/go-billy/v5/osfs"
+
+	_fs "github.com/inoxlang/inox/internal/globals/fs"
 )
 
 // Filesystem is an implementation of billy.Filesystem that stores the edited document files in a memory filesystem
@@ -14,7 +15,7 @@ type Filesystem struct {
 
 func NewFilesystem() *Filesystem {
 	return &Filesystem{
-		Filesystem: osfs.New("/"),
+		Filesystem: _fs.GetOsFilesystem(),
 		documents:  memfs.New(),
 	}
 }

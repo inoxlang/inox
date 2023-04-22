@@ -6,7 +6,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/go-git/go-billy/v5/osfs"
 	core "github.com/inoxlang/inox/internal/core"
 	_chrome "github.com/inoxlang/inox/internal/globals/chrome"
 	_containers "github.com/inoxlang/inox/internal/globals/containers"
@@ -265,7 +264,7 @@ func NewDefaultContext(config DefaultContextConfig) (*core.Context, error) {
 		Limitations:          config.Limitations,
 		HostResolutions:      config.HostResolutions,
 		ParentContext:        config.ParentContext,
-		Filesystem:           osfs.New("/"),
+		Filesystem:           _fs.GetOsFilesystem(),
 	}
 
 	if ctxConfig.ParentContext != nil {

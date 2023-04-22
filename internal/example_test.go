@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/stretchr/testify/assert"
 
 	core "github.com/inoxlang/inox/internal/core"
@@ -168,7 +167,7 @@ func testExample(t *testing.T, config exampleTestConfig) {
 
 		parsingCompilationContext := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{core.CreateFsReadPerm(core.PathPattern("/..."))},
-			Filesystem:  osfs.New("/"),
+			Filesystem:  _fs.GetOsFilesystem(),
 		})
 		core.NewGlobalState(parsingCompilationContext)
 

@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/go-git/go-billy/v5/osfs"
 	core "github.com/inoxlang/inox/internal/core"
+	_fs "github.com/inoxlang/inox/internal/globals/fs"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -35,7 +35,7 @@ func TestPrepareLocalScript(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
-			Filesystem:  osfs.New("/"),
+			Filesystem:  _fs.GetOsFilesystem(),
 		})
 		core.NewGlobalState(ctx)
 

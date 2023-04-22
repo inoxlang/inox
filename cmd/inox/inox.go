@@ -16,6 +16,7 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 
 	globals "github.com/inoxlang/inox/internal/globals"
+	_fs "github.com/inoxlang/inox/internal/globals/fs"
 	_http "github.com/inoxlang/inox/internal/globals/http"
 	_sh "github.com/inoxlang/inox/internal/globals/shell"
 	lsp "github.com/inoxlang/inox/internal/lsp"
@@ -373,7 +374,7 @@ func createCompilationCtx(dir string) *core.Context {
 		Permissions: []core.Permission{
 			core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern(dir + "...")},
 		},
-		Filesystem: osfs.New("/"),
+		Filesystem: _fs.GetOsFilesystem(),
 	})
 	core.NewGlobalState(compilationCtx)
 	return compilationCtx
