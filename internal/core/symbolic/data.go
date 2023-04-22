@@ -126,7 +126,7 @@ func (d *SymbolicData) GetLocalScopeData(n parse.Node, ancestorChain []parse.Nod
 		if ok {
 			return scopeData, true
 		} else {
-			n, ok = parse.FindPreviousStatement(n, ancestorChain)
+			n, ancestorChain, ok = parse.FindPreviousStatementAndChain(n, ancestorChain)
 			if !ok {
 				return LocalScopeData{}, false
 			}

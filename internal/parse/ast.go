@@ -2470,8 +2470,13 @@ func FindNodeAndChain[T Node](root Node, typ T, handle func(n T, isUnique bool) 
 }
 
 func FindPreviousStatement(n Node, ancestorChain []Node) (stmt Node, ok bool) {
+	stmt, _, ok = FindPreviousStatementAndChain(n, ancestorChain)
+	return
+}
+
+func FindPreviousStatementAndChain(n Node, ancestorChain []Node) (stmt Node, chain []Node, ok bool) {
 	if len(ancestorChain) == 0 || IsScopeContainerNode(n) {
-		return nil, false
+		return nil, nil, false
 	}
 
 	p := ancestorChain[len(ancestorChain)-1]
@@ -2480,31 +2485,31 @@ func FindPreviousStatement(n Node, ancestorChain []Node) (stmt Node, ok bool) {
 		for i, stmt := range parent.Statements {
 			if stmt == n {
 				if i == 0 {
-					return FindPreviousStatement(parent, ancestorChain[:len(ancestorChain)-1])
+					return FindPreviousStatementAndChain(parent, ancestorChain[:len(ancestorChain)-1])
 				}
-				return parent.Statements[i-1], true
+				return parent.Statements[i-1], ancestorChain, true
 			}
 		}
 	case *Chunk:
 		for i, stmt := range parent.Statements {
 			if stmt == n {
 				if i == 0 {
-					return nil, false
+					return nil, nil, false
 				}
-				return parent.Statements[i-1], true
+				return parent.Statements[i-1], ancestorChain, true
 			}
 		}
 	case *EmbeddedModule:
 		for i, stmt := range parent.Statements {
 			if stmt == n {
 				if i == 0 {
-					return nil, false
+					return nil, nil, false
 				}
-				return parent.Statements[i-1], true
+				return parent.Statements[i-1], ancestorChain, true
 			}
 		}
 	}
-	return FindPreviousStatement(p, ancestorChain[:len(ancestorChain)-1])
+	return FindPreviousStatementAndChain(p, ancestorChain[:len(ancestorChain)-1])
 }
 
 func GetTreeView(n Node) string {
