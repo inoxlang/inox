@@ -3,8 +3,9 @@ package internal
 import (
 	"fmt"
 	"io/fs"
-	"path/filepath"
 	"strings"
+
+	afs "github.com/go-git/go-billy/v5"
 )
 
 var (
@@ -40,9 +41,9 @@ func NewWalkableNodeMeta(ancestors []Value, parentEdge Value) WalkableNodeMeta {
 // For example if the walked directory only has a singike file inside it the result will be:
 // entries: [ [<dir entry>, <file entry>] ]
 // paths: [ [<dir path>, <file path> ] ]
-func GetWalkEntries(walkedDirPath Path) (entries [][]fs.DirEntry, paths [][]string) {
+func GetWalkEntries(fls afs.Filesystem, walkedDirPath Path) (entries [][]fs.DirEntry, paths [][]string) {
 
-	filepath.WalkDir(string(walkedDirPath), func(path string, d fs.DirEntry, err error) error {
+	walkDir(fls, string(walkedDirPath), func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			panic(err)
 		}
@@ -65,7 +66,7 @@ func GetWalkEntries(walkedDirPath Path) (entries [][]fs.DirEntry, paths [][]stri
 	return entries, paths
 }
 
-func GetDirTreeData(walkedDirPath Path) *UData {
+func GetDirTreeData(fls afs.Filesystem, walkedDirPath Path) *UData {
 	udata := &UData{
 		Root: walkedDirPath,
 	}
@@ -77,7 +78,7 @@ func GetDirTreeData(walkedDirPath Path) *UData {
 		return NewRecordFromKeyValLists(FS_TREE_DATA_ITEM_PROPNAMES, []Value{path, pathRelToOParent})
 	}
 
-	WalkDir(walkedDirPath, func(path Path, d fs.DirEntry, err error) error {
+	WalkDir(fls, walkedDirPath, func(path Path, d fs.DirEntry, err error) error {
 		if err != nil {
 			panic(err)
 		}
@@ -138,8 +139,8 @@ type DirWalker struct {
 }
 
 // NewDirWalker walks a directory and creates a DirWalker with the entries.
-func NewDirWalker(walkedDirPath Path) *DirWalker {
-	entries, paths := GetWalkEntries(walkedDirPath)
+func NewDirWalker(fls afs.Filesystem, walkedDirPath Path) *DirWalker {
+	entries, paths := GetWalkEntries(fls, walkedDirPath)
 
 	walker := &DirWalker{
 		dirIndex:              0,
@@ -153,14 +154,14 @@ func NewDirWalker(walkedDirPath Path) *DirWalker {
 	return walker
 }
 
-func WalkDir(walkedDirPath Path, fn func(path Path, d fs.DirEntry, err error) error) {
+func WalkDir(fls afs.Filesystem, walkedDirPath Path, fn func(path Path, d fs.DirEntry, err error) error) {
 	pathPrefix := ""
 
 	if walkedDirPath.IsRelative() {
 		pathPrefix = "./"
 	}
 
-	filepath.WalkDir(string(walkedDirPath), func(path string, d fs.DirEntry, err error) error {
+	walkDir(fls, string(walkedDirPath), func(path string, d fs.DirEntry, err error) error {
 		if d.IsDir() {
 			if path[len(path)-1] != '/' {
 				path += "/"
@@ -270,5 +271,5 @@ func (p Path) Walker(ctx *Context) (Walker, error) {
 		return nil, err
 	}
 
-	return NewDirWalker(p), nil
+	return NewDirWalker(ctx.GetFileSystem(), p), nil
 }

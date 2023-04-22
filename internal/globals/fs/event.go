@@ -154,7 +154,7 @@ func NewEventSource(ctx *core.Context, resourceNameOrPattern core.Value) (*Files
 	watchedDirPaths := map[core.Path]bool{}
 
 	if recursive {
-		_, paths := core.GetWalkEntries(eventSource.path)
+		_, paths := core.GetWalkEntries(ctx.GetFileSystem(), eventSource.path)
 		for _, pathList := range paths[1:] {
 			err = watcher.Add(pathList[0])
 			watchedDirPaths[core.Path(pathList[0])] = true

@@ -265,7 +265,7 @@ func Find(ctx *core.Context, dir core.Path, filters ...core.Pattern) (*core.List
 
 	var found []core.Value
 
-	core.WalkDir(dir, func(path core.Path, d fs.DirEntry, err error) error {
+	core.WalkDir(ctx.GetFileSystem(), dir, func(path core.Path, d fs.DirEntry, err error) error {
 
 		for _, filter := range filters {
 			switch filt := filter.(type) {
@@ -910,7 +910,7 @@ func GetTreeData(ctx *core.Context, path core.Path) *core.UData {
 		//TODO: improve error
 		panic(core.FmtErrInvalidArgumentAtPos(path, 0))
 	}
-	return core.GetDirTreeData(path)
+	return core.GetDirTreeData(ctx.GetFileSystem(), path)
 }
 
 func computeChunkSize(rate core.ByteRate, fileSize int) int {

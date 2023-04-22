@@ -316,6 +316,7 @@ func runStartupScript(startupScriptPath string) (*core.Object, *core.GlobalState
 		ModuleFilepath: startupScriptPath,
 		Context: core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{core.CreateFsReadPerm(core.Path(startupScriptPath))},
+			Filesystem:  osfs.New("/"),
 		}),
 	})
 	if err != nil {
