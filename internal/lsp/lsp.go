@@ -161,6 +161,14 @@ func StartLSPServer() {
 	})
 
 	server.OnDidOpenTextDocument(func(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err error) {
+		fpath := getFilePath(req.TextDocument.Uri)
+		fullDocumentText := req.TextDocument.Text
+
+		fsErr := fsutil.WriteFile(filesystem.documents, fpath, []byte(fullDocumentText), 0700)
+		if fsErr != nil {
+			logs.Println("failed to update state of document", fpath+":", fsErr)
+		}
+
 		session := jsonrpc.GetSession(ctx)
 		return notifyDiagnostics(session, req.TextDocument.Uri, compilationCtx)
 	})
