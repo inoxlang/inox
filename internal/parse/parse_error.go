@@ -291,10 +291,12 @@ const (
 	INVALID_WALK_STMT_MISSING_ENTRY_IDENTIFIER              = "invalid walk statement, missing entry identifier"
 	UNTERMINATED_WALK_STMT_MISSING_BLOCK                    = "unterminated walk statement, missing block"
 
-	UNTERMINATED_MULTI_ASSIGN_MISSING_EQL_SIGN                                    = "unterminated multi assign statement, missing '='"
-	ASSIGN_KEYWORD_SHOULD_BE_FOLLOWED_BY_IDENTS                                   = "assign keyword should be followed by identifiers (assign a b = <value>)"
-	UNTERMINATED_ASSIGNMENT_MISSING_VALUE_AFTER_EQL_SIGN                          = "unterminated assignment, missing value after '='"
-	INVALID_ASSIGN_A_PIPELINE_EXPR_WAS_EXPECTED_AFTER_PIPE                        = "invalid assignment, a pipeline expression was expected after '|'"
+	UNTERMINATED_MULTI_ASSIGN_MISSING_EQL_SIGN             = "unterminated multi assign statement, missing '='"
+	ASSIGN_KEYWORD_SHOULD_BE_FOLLOWED_BY_IDENTS            = "assign keyword should be followed by identifiers (assign a b = <value>)"
+	UNTERMINATED_ASSIGNMENT_MISSING_VALUE_AFTER_EQL_SIGN   = "unterminated assignment, missing value after '='"
+	INVALID_ASSIGN_A_PIPELINE_EXPR_WAS_EXPECTED_AFTER_PIPE = "invalid assignment, a pipeline expression was expected after '|'"
+	UNTERMINATED_ASSIGNMENT_MISSING_TERMINATOR             = "unterminated assignment, missing terminator (';' or end of line), if you are trying to write a binary expression note that binary expressions are always parenthesized, example: myvar = (1 + 2)"
+
 	UNTERMINATED_PIPE_STMT_LAST_STAGE_EMPTY                                       = "unterminated pipeline statement, last stage is empty"
 	INVALID_PIPE_STATE_ALL_STAGES_SHOULD_BE_CALLS                                 = "invalid pipeline stage, all pipeline stages should be calls"
 	UNTERMINATED_CALL                                                             = "unterminated call"

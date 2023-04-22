@@ -8055,6 +8055,18 @@ func (p *parser) parseMultiAssignmentStatement(assignIdent *IdentifierLiteral) *
 		right, _ = p.parseExpression()
 	}
 
+	// terminator
+	p.eatSpace()
+	if p.i < p.len {
+		switch p.s[p.i] {
+		case ';', '\r', '\n', '}':
+		default:
+			if parsingErr == nil {
+				parsingErr = &ParsingError{InvalidNext, UNTERMINATED_ASSIGNMENT_MISSING_TERMINATOR}
+			}
+		}
+	}
+
 	return &MultiAssignment{
 		NodeBase: NodeBase{
 			Span:            NodeSpan{assignIdent.Span.Start, right.Base().Span.End},
@@ -8066,7 +8078,23 @@ func (p *parser) parseMultiAssignmentStatement(assignIdent *IdentifierLiteral) *
 	}
 }
 
-func (p *parser) parseAssignmentAndPatternDefinition(left Node) Node {
+func (p *parser) parseAssignmentAndPatternDefinition(left Node) (result Node) {
+	// terminator
+	defer func() {
+		p.eatSpace()
+		if p.i >= p.len {
+			return
+		}
+
+		switch p.s[p.i] {
+		case ';', '\r', '\n', '}':
+		default:
+			base := result.BasePtr()
+			if base.Err == nil {
+				base.Err = &ParsingError{InvalidNext, UNTERMINATED_ASSIGNMENT_MISSING_TERMINATOR}
+			}
+		}
+	}()
 
 	var tokens []Token
 	var assignmentTokenType TokenType

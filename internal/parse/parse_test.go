@@ -5335,6 +5335,38 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
+		t.Run("missing terminator", func(t *testing.T) {
+			n, err := ParseChunk("$a = $b 2", "")
+			assert.Error(t, err)
+			
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{
+							NodeSpan{0, 7},
+							&ParsingError{InvalidNext, UNTERMINATED_ASSIGNMENT_MISSING_TERMINATOR},
+							[]Token{{Type: EQUAL, Span: NodeSpan{3, 4}}},
+						},
+						Left: &Variable{
+							NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+							Name:     "a",
+						},
+						Right: &Variable{
+							NodeBase: NodeBase{NodeSpan{5, 7}, nil, nil},
+							Name:     "b",
+						},
+						Operator: Assign,
+					},
+					&IntLiteral{
+						NodeBase: NodeBase{NodeSpan{8, 9}, nil, nil},
+						Raw:      "2",
+						Value:    2,
+					},
+				},
+			}, n)
+		})
+
 	})
 
 	t.Run("multi assignement statement", func(t *testing.T) {
@@ -5395,6 +5427,41 @@ func TestParse(t *testing.T) {
 							NodeBase: NodeBase{NodeSpan{13, 15}, nil, nil},
 							Name:     "c",
 						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing terminator", func(t *testing.T) {
+			n, err := ParseChunk("assign a = $b 2", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 15}, nil, nil},
+				Statements: []Node{
+					&MultiAssignment{
+						NodeBase: NodeBase{
+							NodeSpan{0, 13},
+							&ParsingError{InvalidNext, UNTERMINATED_ASSIGNMENT_MISSING_TERMINATOR},
+							[]Token{
+								{Type: ASSIGN_KEYWORD, Span: NodeSpan{0, 6}},
+								{Type: EQUAL, Span: NodeSpan{9, 10}},
+							},
+						},
+						Variables: []Node{
+							&IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{7, 8}, nil, nil},
+								Name:     "a",
+							},
+						},
+						Right: &Variable{
+							NodeBase: NodeBase{NodeSpan{11, 13}, nil, nil},
+							Name:     "b",
+						},
+					},
+					&IntLiteral{
+						NodeBase: NodeBase{NodeSpan{14, 15}, nil, nil},
+						Raw:      "2",
+						Value:    2,
 					},
 				},
 			}, n)
