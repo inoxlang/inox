@@ -5,7 +5,7 @@ After you have [installed Inox](https://github.com/inoxlang/inox/blob/master/REA
 $ inox shell
 ```
 
-This will open the **Inox REPL**, it allows you to interactively evaluate Inox code & run Inox scripts. You can learn more [here](https://github.com/inoxlang/inox/blob/master/docs/shell-starter.md).\
+This will open the **Inox REPL**, it allows you to interactively evaluate Inox code & run Inox scripts. You can learn more [here](https://github.com/inoxlang/inox/blob/master/docs/shell.md).\
 The `quit` command stops the REPL.
 
 <!--
@@ -25,3 +25,4 @@ This will start an IDE on https://localhost:1200, it is not very stable so feel 
 The basics of the language are explained in this [file](./language-basics.md).\
 You can also explore the `examples/` folder and start with scripts in `examples/basic`.\
 After you learned the basics you can go in the `docs/features` folder and pick the feature you want to explore !
+To learn scripting specifically go [here](./scripting.md).
