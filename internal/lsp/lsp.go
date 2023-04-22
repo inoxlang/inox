@@ -5,11 +5,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"os"
 	"strings"
 
+	fsutil "github.com/go-git/go-billy/v5/util"
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
@@ -58,11 +60,14 @@ func StartLSPServer() {
 		TextDocumentSync: defines.TextDocumentSyncKindFull,
 	})
 
+	filesystem := NewFilesystem()
+
 	compilationCtx := core.NewContext(core.ContextConfig{
 		Permissions: []core.Permission{
 			//TODO: change path pattern
 			core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern("/...")},
 		},
+		Filesystem: filesystem,
 	})
 	core.NewGlobalState(compilationCtx)
 
@@ -155,22 +160,24 @@ func StartLSPServer() {
 		return &lspCompletions, nil
 	})
 
-	server.OnDidSaveTextDocument(func(ctx context.Context, req *defines.DidSaveTextDocumentParams) (err error) {
-		session := jsonrpc.GetSession(ctx)
-		return notifyDiagnostics(session, req.TextDocument.Uri, compilationCtx)
-	})
-
 	server.OnDidOpenTextDocument(func(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err error) {
 		session := jsonrpc.GetSession(ctx)
 		return notifyDiagnostics(session, req.TextDocument.Uri, compilationCtx)
 	})
 
 	server.OnDidChangeTextDocument(func(ctx context.Context, req *defines.DidChangeTextDocumentParams) (err error) {
-		for _, change := range req.ContentChanges {
-			fullDocumentText := change.Text.(string)
-			logs.Println(fullDocumentText)
+		fpath := getFilePath(req.TextDocument.Uri)
+		if len(req.ContentChanges) > 1 {
+			return errors.New("single change supported")
 		}
-		return nil
+		fullDocumentText := req.ContentChanges[0].Text.(string)
+		fsErr := fsutil.WriteFile(filesystem.documents, fpath, []byte(fullDocumentText), 0700)
+		if fsErr != nil {
+			logs.Println("failed to update state of document", fpath+":", fsErr)
+		}
+
+		session := jsonrpc.GetSession(ctx)
+		return notifyDiagnostics(session, req.TextDocument.Uri, compilationCtx)
 	})
 
 	server.OnInitialize(func(ctx context.Context, req *defines.InitializeParams) (result *defines.InitializeResult, err *defines.InitializeError) {
