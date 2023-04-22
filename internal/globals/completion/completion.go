@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	core "github.com/inoxlang/inox/internal/core"
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+
 	_fs "github.com/inoxlang/inox/internal/globals/fs"
 	_s3 "github.com/inoxlang/inox/internal/globals/s3"
 	"github.com/inoxlang/inox/internal/lsp/lsp/defines"
@@ -186,9 +188,9 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 	case *parse.IdentifierLiteral:
 		completions = handleIdentifierAndKeywordCompletions(mode, n, deepestCall, _ancestorChain, state)
 	case *parse.IdentifierMemberExpression:
-		completions = handleIdentifierMemberCompletions(n, state)
+		completions = handleIdentifierMemberCompletions(n, state, mode)
 	case *parse.MemberExpression:
-		completions = handleMemberExpressionCompletions(n, state)
+		completions = handleMemberExpressionCompletions(n, state, mode)
 	case *parse.CallExpression: //if a call is the deepest node at cursor it means we are not in an argument
 		completions = handleNewCallArgumentCompletions(n, cursorIndex, state, chunk)
 	case *parse.RelativePathLiteral:
@@ -381,31 +383,50 @@ func handleIdentifierAndKeywordCompletions(
 	return completions
 }
 
-func handleIdentifierMemberCompletions(n *parse.IdentifierMemberExpression, state *core.TreeWalkState) []Completion {
+func handleIdentifierMemberCompletions(n *parse.IdentifierMemberExpression, state *core.TreeWalkState, mode CompletionMode) []Completion {
 
-	curr, ok := state.Get(n.Left.Name)
+	var buff *bytes.Buffer
+	var curr any
+	var ok bool
+
+	if mode == ShellCompletions {
+		curr, ok = state.Get(n.Left.Name)
+	} else {
+		curr, ok = state.Global.SymbolicData.GetNodeValue(n.Left)
+	}
+
 	if !ok {
 		return nil
 	}
 
-	buff := bytes.NewBufferString(n.Left.Name)
+	buff = bytes.NewBufferString(n.Left.Name)
 
 	//we get the next property until we reach the last property's name
 	for i, propName := range n.PropertyNames {
-		iprops, ok := curr.(core.IProps)
-		if !ok {
-			return nil
+		var propertyNames []string
+		if mode == ShellCompletions {
+			propertyNames = curr.(core.IProps).PropertyNames(state.Global.Ctx)
+		} else {
+			propertyNames = curr.(symbolic.IProps).PropertyNames()
 		}
 
 		found := false
-		for _, name := range iprops.PropertyNames(state.Global.Ctx) {
+		for _, name := range propertyNames {
 			if name == propName.Name {
 				if i == len(n.PropertyNames)-1 { //if last
 					return nil
 				}
 				buff.WriteRune('.')
 				buff.WriteString(propName.Name)
-				curr = iprops.Prop(state.Global.Ctx, name)
+
+				switch iprops := curr.(type) {
+				case core.IProps:
+					curr = iprops.Prop(state.Global.Ctx, name)
+				case symbolic.IProps:
+					curr = iprops.Prop(name)
+				default:
+					panic(core.ErrUnreachable)
+				}
 				found = true
 				break
 			}
@@ -418,10 +439,10 @@ func handleIdentifierMemberCompletions(n *parse.IdentifierMemberExpression, stat
 
 	s := buff.String()
 
-	return suggestPropertyNames(s, curr, n.PropertyNames, state.Global)
+	return suggestPropertyNames(s, curr, n.PropertyNames, state.Global, mode)
 }
 
-func handleMemberExpressionCompletions(n *parse.MemberExpression, state *core.TreeWalkState) []Completion {
+func handleMemberExpressionCompletions(n *parse.MemberExpression, state *core.TreeWalkState, mode CompletionMode) []Completion {
 	ok := true
 	buff := bytes.NewBufferString("")
 
@@ -444,7 +465,7 @@ loop:
 			return nil
 		}
 	}
-	var curr core.Value
+	var curr any
 
 	switch left := left.(type) {
 	case *parse.GlobalVariable:
@@ -461,16 +482,28 @@ loop:
 		if propName == nil {
 			break
 		}
-		iprops, ok := curr.(core.IProps)
-		if !ok {
-			return nil
-		}
 		found := false
-		for _, name := range iprops.PropertyNames(state.Global.Ctx) {
+
+		var propertyNames []string
+		if mode == ShellCompletions {
+			propertyNames = curr.(core.IProps).PropertyNames(state.Global.Ctx)
+		} else {
+			propertyNames = curr.(symbolic.IProps).PropertyNames()
+		}
+
+		for _, name := range propertyNames {
 			if name == propName.Name {
 				buff.WriteRune('.')
 				buff.WriteString(propName.Name)
-				curr = iprops.Prop(state.Global.Ctx, name)
+
+				switch iprops := curr.(type) {
+				case core.IProps:
+					curr = iprops.Prop(state.Global.Ctx, name)
+				case symbolic.IProps:
+					curr = iprops.Prop(name)
+				default:
+					panic(core.ErrUnreachable)
+				}
 				found = true
 				break
 			}
@@ -480,10 +513,10 @@ loop:
 		}
 	}
 
-	return suggestPropertyNames(buff.String(), curr, exprPropertyNames, state.Global)
+	return suggestPropertyNames(buff.String(), curr, exprPropertyNames, state.Global, mode)
 }
 
-func suggestPropertyNames(s string, curr interface{}, exprPropertyNames []*parse.IdentifierLiteral, state *core.GlobalState) []Completion {
+func suggestPropertyNames(s string, curr interface{}, exprPropertyNames []*parse.IdentifierLiteral, state *core.GlobalState, mode CompletionMode) []Completion {
 	var completions []Completion
 	var propNames []string
 
@@ -491,6 +524,8 @@ func suggestPropertyNames(s string, curr interface{}, exprPropertyNames []*parse
 	switch v := curr.(type) {
 	case core.IProps:
 		propNames = v.PropertyNames(state.Ctx)
+	case symbolic.IProps:
+		propNames = v.PropertyNames()
 	}
 
 	isLastPropPresent := len(exprPropertyNames) > 0 && exprPropertyNames[len(exprPropertyNames)-1] != nil
