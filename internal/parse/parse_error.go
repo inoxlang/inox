@@ -10,6 +10,7 @@ import (
 
 const (
 	UnspecifiedParsingError ParsingErrorKind = iota
+	UnterminatedMemberExpr
 	InvalidNext
 	//TODO: add more kinds
 )

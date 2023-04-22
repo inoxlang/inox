@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -147,6 +148,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		finalErr = staticCheckErr
 		return
 	}
+	log.Printf("%#v", mod.ParsingErrors)
 
 	if parsingErr != nil {
 		finalErr = parsingErr

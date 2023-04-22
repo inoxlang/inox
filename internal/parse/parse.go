@@ -2089,7 +2089,7 @@ func (p *parser) parseIdentStartingExpression() Node {
 				base := memberExpr.BasePtr()
 				base.Span.End = p.i
 
-				base.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_IDENT_MEMB_EXPR}
+				base.Err = &ParsingError{UnterminatedMemberExpr, UNTERMINATED_IDENT_MEMB_EXPR}
 				base.ValuelessTokens = append(base.ValuelessTokens, Token{Type: DOT, Span: NodeSpan{p.i - 1, p.i}})
 				return memberExpr
 			}
@@ -5346,7 +5346,7 @@ loop:
 					return &MemberExpression{
 						NodeBase: NodeBase{
 							NodeSpan{first.Base().Span.Start, p.i},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_MEMB_OR_INDEX_EXPR},
+							&ParsingError{UnterminatedMemberExpr, UNTERMINATED_MEMB_OR_INDEX_EXPR},
 							[]Token{{Type: DOT, Span: NodeSpan{p.i - 1, p.i}}},
 						},
 						Left: lhs,
@@ -5369,7 +5369,7 @@ loop:
 					return &InvalidMemberLike{
 						NodeBase: NodeBase{
 							NodeSpan{first.Base().Span.Start, p.i},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_MEMB_OR_INDEX_EXPR},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_INDEX_OR_SLICE_EXPR},
 							nil,
 						},
 						Left: lhs,

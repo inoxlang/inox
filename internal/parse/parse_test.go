@@ -1503,7 +1503,7 @@ func TestParse(t *testing.T) {
 					&MemberExpression{
 						NodeBase: NodeBase{
 							NodeSpan{0, 3},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_MEMB_OR_INDEX_EXPR},
+							&ParsingError{UnterminatedMemberExpr, UNTERMINATED_MEMB_OR_INDEX_EXPR},
 							[]Token{{Type: DOT, Span: NodeSpan{2, 3}}},
 						},
 						Left: &Variable{
@@ -1529,7 +1529,7 @@ func TestParse(t *testing.T) {
 					&MemberExpression{
 						NodeBase: NodeBase{
 							NodeSpan{0, 3},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_MEMB_OR_INDEX_EXPR},
+							&ParsingError{UnterminatedMemberExpr, UNTERMINATED_MEMB_OR_INDEX_EXPR},
 							[]Token{{Type: DOT, Span: NodeSpan{2, 3}}},
 						},
 						Left: &Variable{
@@ -1555,7 +1555,7 @@ func TestParse(t *testing.T) {
 					&MemberExpression{
 						NodeBase: NodeBase{
 							NodeSpan{0, 3},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_MEMB_OR_INDEX_EXPR},
+							&ParsingError{UnterminatedMemberExpr, UNTERMINATED_MEMB_OR_INDEX_EXPR},
 							[]Token{{Type: DOT, Span: NodeSpan{2, 3}}},
 						},
 						Left: &Variable{
@@ -1585,7 +1585,7 @@ func TestParse(t *testing.T) {
 					&MemberExpression{
 						NodeBase: NodeBase{
 							NodeSpan{0, 5},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_MEMB_OR_INDEX_EXPR},
+							&ParsingError{UnterminatedMemberExpr, UNTERMINATED_MEMB_OR_INDEX_EXPR},
 							[]Token{{Type: DOT, Span: NodeSpan{4, 5}}},
 						},
 						Left: &MemberExpression{
@@ -2087,7 +2087,7 @@ func TestParse(t *testing.T) {
 					&IdentifierMemberExpression{
 						NodeBase: NodeBase{
 							NodeSpan{0, 5},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_IDENT_MEMB_EXPR},
+							&ParsingError{UnterminatedMemberExpr, UNTERMINATED_IDENT_MEMB_EXPR},
 							[]Token{{Type: DOT, Span: NodeSpan{4, 5}}},
 						},
 						Left: &IdentifierLiteral{
@@ -2114,7 +2114,7 @@ func TestParse(t *testing.T) {
 					&IdentifierMemberExpression{
 						NodeBase: NodeBase{
 							NodeSpan{0, 5},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_IDENT_MEMB_EXPR},
+							&ParsingError{UnterminatedMemberExpr, UNTERMINATED_IDENT_MEMB_EXPR},
 							[]Token{{Type: DOT, Span: NodeSpan{4, 5}}},
 						},
 						Left: &IdentifierLiteral{
@@ -2141,7 +2141,7 @@ func TestParse(t *testing.T) {
 					&IdentifierMemberExpression{
 						NodeBase: NodeBase{
 							NodeSpan{0, 5},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_IDENT_MEMB_EXPR},
+							&ParsingError{UnterminatedMemberExpr, UNTERMINATED_IDENT_MEMB_EXPR},
 							[]Token{{Type: DOT, Span: NodeSpan{4, 5}}},
 						},
 						Left: &IdentifierLiteral{
@@ -5338,7 +5338,7 @@ func TestParse(t *testing.T) {
 		t.Run("missing terminator", func(t *testing.T) {
 			n, err := ParseChunk("$a = $b 2", "")
 			assert.Error(t, err)
-			
+
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
 				Statements: []Node{
