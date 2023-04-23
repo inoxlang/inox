@@ -364,7 +364,7 @@ if (a < 0){
 a = (if (a < 0) "a" else "b")
 ```
 
-# Switch statement
+## Switch statement
 
 ```
 switch 1 {
@@ -380,9 +380,9 @@ output:
 1
 ```
 
-# Match statement
+## Match statement
 
-A match statement is similar to a switch statements but uses patterns as case values.
+The match statement is similar to the switch statement but uses patterns as case values.
 The match statement executes the block following the first pattern matching the value.
 
 ```
@@ -401,7 +401,7 @@ output:
 /a
 ```
 
-# For statement
+## For statement
 
 ```
 for elem in [1, 2, 3] {
@@ -425,7 +425,7 @@ output:
 2 3
 ```
 
-## Functions
+# Functions
 
 There are 2 kinds of functions in Inox: normal Inox functions & native Golang functions (that you cannot define).
 
