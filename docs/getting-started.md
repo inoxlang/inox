@@ -24,4 +24,4 @@ This will start an IDE on https://localhost:1200, it is not very stable so feel 
 
 The basics of the language are explained in this [file](./language-basics.md).\
 You can also explore the `examples/` folder and start with scripts in `examples/basic`.\
-To learn scripting specifically go [here](./scripting.md).
+To learn scripting specifically go [here](./scripting-basics.md).
