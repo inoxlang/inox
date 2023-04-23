@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	_ = []Readable{&String{}}
+	_ = []Readable{(*String)(nil), (*StringConcatenation)(nil)}
 )
 
 // A Readable represents a symbolic Readable.

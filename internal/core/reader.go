@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	_ = []Readable{Str(""), WrappedBytes(nil)}
+	_ = []Readable{Str(""), WrappedBytes(nil), (*StringConcatenation)(nil)}
 
 	ErrCannotReadWithNoCopy = errors.New("cannot read with no copy")
 )
@@ -134,5 +134,15 @@ func (slice *ByteSlice) Reader() *Reader {
 		wrapped:    bytes.NewReader(slice.Bytes),
 		hasAllData: true,
 		data:       slice.Bytes,
+	}
+}
+
+func (c *StringConcatenation) Reader() *Reader {
+	//TODO: refactor in order to avoid allocating the full string
+	s := c.GetOrBuildString()
+
+	return &Reader{
+		wrapped: strings.NewReader(s),
+		data:    s,
 	}
 }
