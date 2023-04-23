@@ -144,6 +144,7 @@ func testExample(t *testing.T, config exampleTestConfig) {
 					Value: 100_000_000,
 				},
 			},
+			Filesystem: _fs.GetOsFilesystem(),
 		}), core.Path("./examples/"), core.Path(filepath.Join(tempDir, "./examples/")+"/"))
 		if !assert.NoError(t, err) {
 			return

@@ -90,7 +90,7 @@ func NewEventSource(ctx *core.Context, resourceNameOrPattern core.Value) (*Files
 
 	switch v := resourceNameOrPattern.(type) {
 	case core.PathPattern:
-		patt := v.ToAbs()
+		patt := v.ToAbs(ctx.GetFileSystem())
 		if !patt.IsPrefixPattern() {
 			return nil, errors.New("only prefix path patterns can be used to create a filesystem event source")
 		}
@@ -98,7 +98,7 @@ func NewEventSource(ctx *core.Context, resourceNameOrPattern core.Value) (*Files
 		recursive = true
 		permissionEntity = patt
 	case core.Path:
-		pth := v.ToAbs()
+		pth := v.ToAbs(ctx.GetFileSystem())
 		permissionEntity = pth
 
 		strPath := strings.TrimRight(string(pth), "/") //we remove any trailing / because os.LStat will return an error for a file

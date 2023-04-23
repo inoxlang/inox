@@ -64,7 +64,7 @@ func openDatabase(ctx *Context, r ResourceName) (*LocalDatabase, error) {
 		return nil, ErrInvalidDatabaseDirpath
 	}
 
-	patt := PathPattern(pth.ToAbs() + "...")
+	patt := PathPattern(pth.ToAbs(ctx.GetFileSystem()) + "...")
 
 	for _, kind := range []core.PermissionKind{core.ReadPerm, core.CreatePerm, core.WriteStreamPerm} {
 		perm := FilesystemPermission{Kind_: kind, Entity: patt}

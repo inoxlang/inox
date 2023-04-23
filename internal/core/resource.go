@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/inoxlang/inox/internal/afs"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	cmap "github.com/orcaman/concurrent-map/v2"
@@ -184,11 +185,11 @@ func (pth Path) IsRelative() bool {
 	return pth[0] == '.'
 }
 
-func (pth Path) ToAbs() Path {
+func (pth Path) ToAbs(fls afs.Filesystem) Path {
 	if pth.IsAbsolute() {
 		return pth
 	}
-	s, err := filepath.Abs(string(pth))
+	s, err := fls.Absolute(string(pth))
 	if err != nil {
 		panic(fmt.Errorf("path resolution: %s", err))
 	}
@@ -247,6 +248,8 @@ func (pth Path) PropertyNames(ctx *Context) []string {
 }
 
 func (pth Path) Prop(ctx *Context, name string) Value {
+	fls := ctx.GetFileSystem()
+
 	switch name {
 	case "segments":
 		split := strings.Split(string(pth), "/")
@@ -291,7 +294,7 @@ func (pth Path) Prop(ctx *Context, name string) Value {
 			if !relativePath.IsRelative() {
 				panic(errors.New("path argument is not relative"))
 			}
-			dirpath := Path(filepath.Join(string(pth), string(relativePath)))
+			dirpath := Path(fls.Join(string(pth), string(relativePath)))
 			if relativePath.IsDirPath() && dirpath[len(dirpath)-1] != '/' {
 				dirpath += "/"
 			}
@@ -385,11 +388,11 @@ func (patt PathPattern) Prefix() string {
 	return string(patt)
 }
 
-func (patt PathPattern) ToAbs() PathPattern {
+func (patt PathPattern) ToAbs(fls afs.Filesystem) PathPattern {
 	if patt.IsAbsolute() {
 		return patt
 	}
-	s, err := filepath.Abs(string(patt))
+	s, err := fls.Absolute(string(patt))
 	if err != nil {
 		panic(fmt.Errorf("path pattern resolution: %s", err))
 	}

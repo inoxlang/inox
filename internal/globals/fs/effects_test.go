@@ -10,12 +10,13 @@ import (
 )
 
 func TestCreateFileEffect(t *testing.T) {
+	fls := GetOsFilesystem()
 
 	t.Run("Apply", func(t *testing.T) {
 
 		t.Run("", func(t *testing.T) {
 			pth := core.Path(filepath.Join(t.TempDir(), "file.txt"))
-			effect := &CreateFile{path: pth.ToAbs()}
+			effect := &CreateFile{path: pth.ToAbs(fls)}
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
@@ -30,7 +31,7 @@ func TestCreateFileEffect(t *testing.T) {
 
 		t.Run("missing permission", func(t *testing.T) {
 			pth := core.Path(filepath.Join(t.TempDir(), "file.txt"))
-			effect := &CreateFile{path: pth.ToAbs()}
+			effect := &CreateFile{path: pth.ToAbs(fls)}
 
 			ctx := core.NewContext(core.ContextConfig{})
 
@@ -39,7 +40,7 @@ func TestCreateFileEffect(t *testing.T) {
 
 		t.Run("reverse", func(t *testing.T) {
 			pth := core.Path(filepath.Join(t.TempDir(), "file.txt"))
-			effect := &CreateFile{path: pth.ToAbs()}
+			effect := &CreateFile{path: pth.ToAbs(fls)}
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
@@ -60,6 +61,7 @@ func TestCreateFileEffect(t *testing.T) {
 }
 
 func TestAppendBytesToFileEffect(t *testing.T) {
+	fls := GetOsFilesystem()
 
 	createEmptyFile := func(t *testing.T, pth core.Path) {
 		f, err := os.Create(string(pth))
@@ -75,7 +77,7 @@ func TestAppendBytesToFileEffect(t *testing.T) {
 			pth := core.Path(filepath.Join(t.TempDir(), "file.txt"))
 			createEmptyFile(t, pth)
 
-			effect := &AppendBytesToFile{path: pth.ToAbs(), content: []byte{'h', 'e', 'l', 'l', 'o'}}
+			effect := &AppendBytesToFile{path: pth.ToAbs(fls), content: []byte{'h', 'e', 'l', 'l', 'o'}}
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
@@ -96,7 +98,7 @@ func TestAppendBytesToFileEffect(t *testing.T) {
 		t.Run("missing permission", func(t *testing.T) {
 			pth := core.Path(filepath.Join(t.TempDir(), "file.txt"))
 			createEmptyFile(t, pth)
-			effect := &AppendBytesToFile{path: pth.ToAbs(), content: []byte{'h', 'e', 'l', 'l', 'o'}}
+			effect := &AppendBytesToFile{path: pth.ToAbs(fls), content: []byte{'h', 'e', 'l', 'l', 'o'}}
 
 			ctx := core.NewContext(core.ContextConfig{})
 
@@ -106,7 +108,7 @@ func TestAppendBytesToFileEffect(t *testing.T) {
 		t.Run("reverse", func(t *testing.T) {
 			pth := core.Path(filepath.Join(t.TempDir(), "file.txt"))
 			createEmptyFile(t, pth)
-			effect := &AppendBytesToFile{path: pth.ToAbs(), content: []byte{'h', 'e', 'l', 'l', 'o'}}
+			effect := &AppendBytesToFile{path: pth.ToAbs(fls), content: []byte{'h', 'e', 'l', 'l', 'o'}}
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
@@ -128,12 +130,13 @@ func TestAppendBytesToFileEffect(t *testing.T) {
 }
 
 func TestCreateDirEffect(t *testing.T) {
+	fls := GetOsFilesystem()
 
 	t.Run("Apply", func(t *testing.T) {
 
 		t.Run("", func(t *testing.T) {
 			pth := core.Path(filepath.Join(t.TempDir(), "dir") + "/")
-			effect := &CreateDir{path: pth.ToAbs()}
+			effect := &CreateDir{path: pth.ToAbs(fls)}
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
@@ -148,7 +151,7 @@ func TestCreateDirEffect(t *testing.T) {
 
 		t.Run("missing permission", func(t *testing.T) {
 			pth := core.Path(filepath.Join(t.TempDir(), "dir") + "/")
-			effect := &CreateDir{path: pth.ToAbs()}
+			effect := &CreateDir{path: pth.ToAbs(fls)}
 
 			ctx := core.NewContext(core.ContextConfig{})
 
@@ -157,7 +160,7 @@ func TestCreateDirEffect(t *testing.T) {
 
 		t.Run("reverse", func(t *testing.T) {
 			pth := core.Path(filepath.Join(t.TempDir(), "dir") + "/")
-			effect := &CreateDir{path: pth.ToAbs()}
+			effect := &CreateDir{path: pth.ToAbs(fls)}
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
@@ -178,13 +181,14 @@ func TestCreateDirEffect(t *testing.T) {
 }
 
 func TestRemoveDirEffect(t *testing.T) {
+	fls := GetOsFilesystem()
 
 	t.Run("Apply", func(t *testing.T) {
 
 		t.Run("", func(t *testing.T) {
 			pth := core.Path(filepath.Join(t.TempDir(), "dir") + "/")
 			assert.NoError(t, os.Mkdir(string(pth), DEFAULT_DIR_FMODE))
-			effect := &RemoveFile{path: pth.ToAbs()}
+			effect := &RemoveFile{path: pth.ToAbs(fls)}
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
@@ -200,7 +204,7 @@ func TestRemoveDirEffect(t *testing.T) {
 		t.Run("missing permission", func(t *testing.T) {
 			pth := core.Path(filepath.Join(t.TempDir(), "dir") + "/")
 			assert.NoError(t, os.Mkdir(string(pth), DEFAULT_DIR_FMODE))
-			effect := &RemoveFile{path: pth.ToAbs()}
+			effect := &RemoveFile{path: pth.ToAbs(fls)}
 
 			ctx := core.NewContext(core.ContextConfig{})
 
@@ -210,7 +214,7 @@ func TestRemoveDirEffect(t *testing.T) {
 		t.Run("reverse (reversible)", func(t *testing.T) {
 			pth := core.Path(filepath.Join(t.TempDir(), "dir") + "/")
 			assert.NoError(t, os.Mkdir(string(pth), DEFAULT_DIR_FMODE))
-			effect := &RemoveFile{path: pth.ToAbs(), reversible: true}
+			effect := &RemoveFile{path: pth.ToAbs(fls), reversible: true}
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
@@ -230,7 +234,7 @@ func TestRemoveDirEffect(t *testing.T) {
 		t.Run("reverse (irreversible)", func(t *testing.T) {
 			pth := core.Path(filepath.Join(t.TempDir(), "dir") + "/")
 			assert.NoError(t, os.Mkdir(string(pth), DEFAULT_DIR_FMODE))
-			effect := &RemoveFile{path: pth.ToAbs(), reversible: false}
+			effect := &RemoveFile{path: pth.ToAbs(fls), reversible: false}
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{

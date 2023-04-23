@@ -14,6 +14,7 @@ import (
 // Example: execute(ctx, Identifier("command_name"), Identifier("subcommand_name"), Str("first_positional_arg"), Int(2))
 
 func _execute(ctx *core.Context, args ...core.Value) (core.Str, error) {
+	fls := ctx.GetFileSystem()
 
 	var subcommandNameChain []string
 	var cmdArgs []string
@@ -40,7 +41,7 @@ top:
 			args = args[1:]
 			break top
 		case core.Path:
-			cmdName = a.ToAbs()
+			cmdName = a.ToAbs(fls)
 			args = args[1:]
 			break top
 		case core.QuantityRange:

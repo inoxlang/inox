@@ -414,7 +414,7 @@ func HttpDelete(ctx *core.Context, args ...core.Value) (*HttpResponse, error) {
 
 func serveFile(ctx *core.Context, rw *HttpResponseWriter, r *HttpRequest, pth core.Path) error {
 
-	pth = pth.ToAbs()
+	pth = pth.ToAbs(ctx.GetFileSystem())
 	perm := core.FilesystemPermission{Kind_: core.ReadPerm, Entity: pth}
 
 	if err := ctx.CheckHasPermission(perm); err != nil {

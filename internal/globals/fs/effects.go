@@ -5,7 +5,6 @@ import (
 	"io/fs"
 	"net/url"
 	"os"
-	"path/filepath"
 
 	core "github.com/inoxlang/inox/internal/core"
 )
@@ -210,11 +209,12 @@ func (e *RemoveFile) Apply(ctx *core.Context) error {
 	}
 
 	e.applied = true
+	fls := ctx.GetFileSystem()
 
 	if e.reversible { //if the effect is reversible we move the folder instead of deleting it
 		tempDir := ctx.GetTempDir()
 		name := url.PathEscape(e.path.UnderlyingString())
-		e.save = core.Path(filepath.Join(tempDir.UnderlyingString(), name))
+		e.save = core.Path(fls.Join(tempDir.UnderlyingString(), name))
 		return os.Rename(e.path.UnderlyingString(), e.save.UnderlyingString())
 	} else {
 		return os.RemoveAll(e.path.UnderlyingString())

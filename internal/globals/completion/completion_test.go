@@ -7,6 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	_fs "github.com/inoxlang/inox/internal/globals/fs"
+
 	core "github.com/inoxlang/inox/internal/core"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
@@ -56,6 +58,13 @@ func TestFindCompletions(t *testing.T) {
 		})
 	}
 
+	newState := func() *core.TreeWalkState {
+		return core.NewTreeWalkState(core.NewContext(core.ContextConfig{
+			Permissions: perms,
+			Filesystem:  _fs.GetOsFilesystem(),
+		}))
+	}
+
 	t.Run("identifier member expression", func(t *testing.T) {
 		t.Run("suggest object property: object has no property", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}), map[string]core.Value{
@@ -68,7 +77,7 @@ func TestFindCompletions(t *testing.T) {
 		})
 
 		t.Run("suggest object property: empty property name: object has single property", func(t *testing.T) {
-			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			state := newState()
 			obj := core.NewObjectFromMap(core.ValMap{"name": core.Str("foo")}, state.Global.Ctx)
 			state.SetGlobal("obj", obj, core.GlobalConst)
 			chunk, _ := parseChunkSource("obj.", "")
@@ -80,7 +89,7 @@ func TestFindCompletions(t *testing.T) {
 		})
 
 		t.Run("suggest object property: start of property name: object has single property", func(t *testing.T) {
-			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			state := newState()
 			obj := core.NewObjectFromMap(core.ValMap{"name": core.Str("foo")}, state.Global.Ctx)
 			state.SetGlobal("obj", obj, core.GlobalConst)
 			chunk, _ := parseChunkSource("obj.n", "")
@@ -118,7 +127,7 @@ func TestFindCompletions(t *testing.T) {
 
 	t.Run("member expression", func(t *testing.T) {
 		t.Run("member expression: suggest object property: empty property name: object has single property", func(t *testing.T) {
-			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			state := newState()
 			obj := core.NewObjectFromMap(core.ValMap{"name": core.Str("foo")}, state.Global.Ctx)
 			state.SetGlobal("obj", obj, core.GlobalConst)
 			chunk, _ := parseChunkSource("$$obj.", "")
@@ -130,7 +139,7 @@ func TestFindCompletions(t *testing.T) {
 		})
 
 		t.Run("member expression: suggest object property: start of property name: object has single property", func(t *testing.T) {
-			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			state := newState()
 			obj := core.NewObjectFromMap(core.ValMap{"name": core.Str("foo")}, state.Global.Ctx)
 			state.SetGlobal("obj", obj, core.GlobalConst)
 			chunk, _ := parseChunkSource("$$obj.n", "")
@@ -142,7 +151,7 @@ func TestFindCompletions(t *testing.T) {
 		})
 
 		t.Run("member expression: suggest object property: empty property name: object has single property", func(t *testing.T) {
-			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			state := newState()
 			obj := core.NewObjectFromMap(core.ValMap{
 				"object": core.NewObjectFromMap(core.ValMap{"name": core.Str("foo")}, state.Global.Ctx),
 			}, state.Global.Ctx)
@@ -162,7 +171,7 @@ func TestFindCompletions(t *testing.T) {
 		t.Run("depth 0", func(t *testing.T) {
 			//TODO: implement
 			t.Skip()
-			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			state := newState()
 			chunk := utils.Must(parseChunkSource("cmd ", ""))
 
 			completions := findCompletions(state, chunk, 4)
@@ -172,7 +181,7 @@ func TestFindCompletions(t *testing.T) {
 		})
 
 		t.Run("depth 1", func(t *testing.T) {
-			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			state := newState()
 			chunk := utils.Must(parseChunkSource("cmd help ", ""))
 
 			completions := findCompletions(state, chunk, 9)
@@ -183,7 +192,7 @@ func TestFindCompletions(t *testing.T) {
 		})
 
 		t.Run("depth 0, subcommand of depth 1 is present ", func(t *testing.T) {
-			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			state := newState()
 			chunk := utils.Must(parseChunkSource("cmd  build", ""))
 
 			completions := findCompletions(state, chunk, 4)
@@ -193,7 +202,7 @@ func TestFindCompletions(t *testing.T) {
 		})
 
 		t.Run("suggest subcommand from subcommand prefix : depth 0", func(t *testing.T) {
-			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			state := newState()
 			chunk := utils.Must(parseChunkSource("cmd h", ""))
 
 			completions := findCompletions(state, chunk, 5)
@@ -203,7 +212,7 @@ func TestFindCompletions(t *testing.T) {
 		})
 
 		t.Run("suggest subcommand from subcommand prefix : depth 1", func(t *testing.T) {
-			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			state := newState()
 			chunk := utils.Must(parseChunkSource("cmd help b", ""))
 
 			completions := findCompletions(state, chunk, 10)
@@ -215,7 +224,7 @@ func TestFindCompletions(t *testing.T) {
 	})
 
 	t.Run("absolute path", func(t *testing.T) {
-		state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+		state := newState()
 
 		code := dir + "/f"
 		chunk, _ := parseChunkSource(code, "")
@@ -240,7 +249,7 @@ func TestFindCompletions(t *testing.T) {
 	})
 
 	t.Run("relative path", func(t *testing.T) {
-		state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+		state := newState()
 
 		reldir, _ := filepath.Rel(wd, dir)
 		code := reldir + "/f"
@@ -268,7 +277,7 @@ func TestFindCompletions(t *testing.T) {
 	t.Run("break", func(t *testing.T) {
 
 		t.Run("in for statement's block", func(t *testing.T) {
-			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			state := newState()
 			chunk, _ := parseChunkSource("for []{b}", "")
 
 			completions := findCompletions(state, chunk, 8)
@@ -278,7 +287,7 @@ func TestFindCompletions(t *testing.T) {
 		})
 
 		t.Run("in if's block within a for statement", func(t *testing.T) {
-			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			state := newState()
 			chunk, _ := parseChunkSource("for []{if true {b}}", "")
 
 			completions := findCompletions(state, chunk, 17)
@@ -292,7 +301,7 @@ func TestFindCompletions(t *testing.T) {
 	t.Run("suggest continue", func(t *testing.T) {
 
 		t.Run("in for statement's block", func(t *testing.T) {
-			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			state := newState()
 			chunk, _ := parseChunkSource("for []{cont}", "")
 
 			completions := findCompletions(state, chunk, 11)
@@ -302,7 +311,7 @@ func TestFindCompletions(t *testing.T) {
 		})
 
 		t.Run("in if's block within a for statement", func(t *testing.T) {
-			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			state := newState()
 			chunk, _ := parseChunkSource("for []{if true {cont}}", "")
 
 			completions := findCompletions(state, chunk, 20)
@@ -316,7 +325,7 @@ func TestFindCompletions(t *testing.T) {
 	t.Run("prune", func(t *testing.T) {
 
 		t.Run("in walk statement's block", func(t *testing.T) {
-			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			state := newState()
 			chunk, _ := parseChunkSource("walk ./ e {p}", "")
 
 			completions := findCompletions(state, chunk, 12)
@@ -326,7 +335,7 @@ func TestFindCompletions(t *testing.T) {
 		})
 
 		t.Run("in for statement's block within a walk statement", func(t *testing.T) {
-			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			state := newState()
 			chunk, _ := parseChunkSource("walk ./ e {for []{p}}", "")
 
 			completions := findCompletions(state, chunk, 19)
@@ -342,7 +351,7 @@ func TestFindCompletions(t *testing.T) {
 		for _, keyword := range CONTEXT_INDEPENDENT_STMT_STARTING_KEYWORDS {
 			t.Run(keyword, func(t *testing.T) {
 				t.Run("in top module", func(t *testing.T) {
-					state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+					state := newState()
 					chunk, _ := parseChunkSource(string(keyword[0]), "")
 
 					completions := findCompletions(state, chunk, 1)
@@ -360,7 +369,7 @@ func TestFindCompletions(t *testing.T) {
 	t.Run("udata", func(t *testing.T) {
 
 		t.Run("in top level module", func(t *testing.T) {
-			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			state := newState()
 			chunk, _ := parseChunkSource("u", "")
 
 			completions := findCompletions(state, chunk, 1)
@@ -370,7 +379,7 @@ func TestFindCompletions(t *testing.T) {
 		})
 
 		t.Run("in call", func(t *testing.T) {
-			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			state := newState()
 			chunk, _ := parseChunkSource("f(u)", "")
 
 			completions := findCompletions(state, chunk, 3)
@@ -384,7 +393,7 @@ func TestFindCompletions(t *testing.T) {
 	t.Run("Mapping", func(t *testing.T) {
 
 		t.Run("in top level module", func(t *testing.T) {
-			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			state := newState()
 			chunk, _ := parseChunkSource("M", "")
 
 			completions := findCompletions(state, chunk, 1)
@@ -394,7 +403,7 @@ func TestFindCompletions(t *testing.T) {
 		})
 
 		t.Run("in call", func(t *testing.T) {
-			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			state := newState()
 			chunk, _ := parseChunkSource("f(M)", "")
 
 			completions := findCompletions(state, chunk, 3)
@@ -408,7 +417,7 @@ func TestFindCompletions(t *testing.T) {
 	t.Run("concat", func(t *testing.T) {
 
 		t.Run("in top level module", func(t *testing.T) {
-			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			state := newState()
 			chunk, _ := parseChunkSource("c", "")
 
 			completions := findCompletions(state, chunk, 1)
@@ -418,7 +427,7 @@ func TestFindCompletions(t *testing.T) {
 		})
 
 		t.Run("in call", func(t *testing.T) {
-			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			state := newState()
 			chunk, _ := parseChunkSource("f(c)", "")
 
 			completions := findCompletions(state, chunk, 3)

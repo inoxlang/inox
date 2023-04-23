@@ -5,7 +5,7 @@ import (
 	"io/fs"
 	"strings"
 
-	afs "github.com/go-git/go-billy/v5"
+	afs "github.com/inoxlang/inox/internal/afs"
 )
 
 var (
@@ -257,14 +257,14 @@ func (it *DirWalker) NodeMeta(*Context) WalkableNodeMeta {
 }
 
 func (p Path) Walker(ctx *Context) (Walker, error) {
-
 	if !p.IsDirPath() {
 		return nil, fmt.Errorf("walks requires a directory path")
 	}
 
+	fls := ctx.GetFileSystem()
 	perm := FilesystemPermission{
 		Kind_:  ReadPerm,
-		Entity: PathPattern(string(p.ToAbs()) + "..."),
+		Entity: PathPattern(string(p.ToAbs(fls)) + "..."),
 	}
 
 	if err := ctx.CheckHasPermission(perm); err != nil {

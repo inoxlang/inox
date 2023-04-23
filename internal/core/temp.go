@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"time"
 
-	afs "github.com/go-git/go-billy/v5"
+	afs "github.com/inoxlang/inox/internal/afs"
 )
 
 func CreateTempdir(nameSecondPrefix string, fls afs.Filesystem) Path {

@@ -30,7 +30,8 @@ type File struct {
 }
 
 func openExistingFile(ctx *core.Context, pth core.Path, write bool) (*File, error) {
-	absPath := pth.ToAbs()
+	fls := ctx.GetFileSystem()
+	absPath := pth.ToAbs(fls)
 	perm := core.FilesystemPermission{Kind_: core.ReadPerm, Entity: absPath}
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return nil, err
@@ -193,5 +194,5 @@ func (f *File) info(ctx *core.Context) (core.FileInfo, error) {
 		return core.FileInfo{}, err
 	}
 
-	return makeFileInfo(stat, string(f.path)), nil
+	return makeFileInfo(stat, string(f.path), ctx.GetFileSystem()), nil
 }

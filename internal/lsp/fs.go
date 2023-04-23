@@ -1,8 +1,7 @@
 package internal
 
 import (
-	afs "github.com/go-git/go-billy/v5"
-	"github.com/go-git/go-billy/v5/memfs"
+	afs "github.com/inoxlang/inox/internal/afs"
 
 	_fs "github.com/inoxlang/inox/internal/globals/fs"
 )
@@ -16,7 +15,7 @@ type Filesystem struct {
 func NewFilesystem() *Filesystem {
 	return &Filesystem{
 		Filesystem: _fs.GetOsFilesystem(),
-		documents:  memfs.New(),
+		documents:  _fs.NewMemFilesystem(),
 	}
 }
 

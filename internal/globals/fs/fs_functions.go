@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/inoxlang/inox/internal/afs"
 	core "github.com/inoxlang/inox/internal/core"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
@@ -34,7 +35,7 @@ func makeFileHierarchy(ctx *core.Context, key core.Path, content core.Value, dep
 	}
 
 	if key.IsDirPath() {
-		absKey := key.ToAbs()
+		absKey := key.ToAbs(ctx.GetFileSystem())
 
 		effect := &CreateDir{path: absKey, fmode: core.FileMode(DEFAULT_DIR_FMODE)}
 
@@ -51,12 +52,14 @@ func makeFileHierarchy(ctx *core.Context, key core.Path, content core.Value, dep
 		}
 	}
 
+	fls := ctx.GetFileSystem()
+
 	switch v := content.(type) {
 	case *core.List:
 		length := v.Len()
 		for i := 0; i < length; i++ {
 			pth := v.At(ctx, i).(core.Path)
-			s := filepath.Join(string(key), string(pth))
+			s := fls.Join(string(key), string(pth))
 			if pth.IsDirPath() {
 				s += "/"
 			}
@@ -74,7 +77,7 @@ func makeFileHierarchy(ctx *core.Context, key core.Path, content core.Value, dep
 		}
 		for keyRepr, val := range v.Entries {
 			k := v.Keys[keyRepr].(core.Path)
-			pth := filepath.Join(string(key), keyRepr)
+			pth := fls.Join(string(key), keyRepr)
 			if k.IsDirPath() {
 				pth += "/"
 			}
@@ -181,7 +184,7 @@ func Mkfile(ctx *core.Context, fpath core.Path, args ...core.Value) error {
 		return core.FmtMissingArgument("path")
 	}
 
-	absFpath := fpath.ToAbs()
+	absFpath := fpath.ToAbs(ctx.GetFileSystem())
 
 	effect := &CreateFile{
 		path:    absFpath,
@@ -226,8 +229,8 @@ func ReadFile(ctx *core.Context, args ...core.Value) (*core.ByteSlice, error) {
 
 // Rename renames a file, it returns an error if the renamed file does not exist or it a file already has the new name.
 func Rename(ctx *core.Context, old, new core.Path) error {
-	old = old.ToAbs()
-	new = new.ToAbs()
+	old = old.ToAbs(ctx.GetFileSystem())
+	new = new.ToAbs(ctx.GetFileSystem())
 
 	effect := &RenameFile{
 		old: old,
@@ -300,6 +303,7 @@ func Copy(ctx *core.Context, args ...core.Value) error {
 	var src core.Path
 	var srcPaths []core.Path
 	listProvided := false
+	fls := ctx.GetFileSystem()
 
 	select {
 	case <-ctx.Done():
@@ -341,15 +345,15 @@ func Copy(ctx *core.Context, args ...core.Value) error {
 		return errors.New("missing destination path")
 	}
 
-	dest = dest.ToAbs()
+	dest = dest.ToAbs(ctx.GetFileSystem())
 
 	for i, src := range srcPaths {
-		srcPaths[i] = src.ToAbs()
+		srcPaths[i] = src.ToAbs(ctx.GetFileSystem())
 	}
 
 	//dest is the name of the copy
 	if src != "" {
-		src = src.ToAbs()
+		src = src.ToAbs(ctx.GetFileSystem())
 		if src.IsDirPath() != dest.IsDirPath() {
 			return errors.New("source and destination should be two file paths or two directory paths")
 		}
@@ -375,19 +379,19 @@ func Copy(ctx *core.Context, args ...core.Value) error {
 		}
 
 		if stat.IsDir() {
-			srcFolderToDest[string(src)] = filepath.Join(string(destDir), basename)
+			srcFolderToDest[string(src)] = fls.Join(string(destDir), basename)
 
 			entries, err := ReadDir(ctx, core.Path(src))
 			if err != nil {
 				return err
 			}
 			for _, entry := range entries {
-				if err := getFiles(filepath.Join(src, entry.Name()), filepath.Join(destDir, basename), ""); err != nil {
+				if err := getFiles(fls.Join(src, entry.Name()), fls.Join(destDir, basename), ""); err != nil {
 					return err
 				}
 			}
 		} else if stat.Mode().IsRegular() {
-			srcToDest[string(src)] = filepath.Join(string(destDir), basename)
+			srcToDest[string(src)] = fls.Join(string(destDir), basename)
 		} else {
 			return errors.New("only dirs and regular files are supported for now")
 		}
@@ -500,7 +504,7 @@ func AppendToFile(ctx *core.Context, args ...core.Value) error {
 		return errors.New("missing path argument")
 	}
 
-	fpath = fpath.ToAbs()
+	fpath = fpath.ToAbs(ctx.GetFileSystem())
 
 	b, err := io.ReadAll(content)
 	if err != nil {
@@ -546,7 +550,7 @@ func ReplaceFileContent(ctx *core.Context, args ...core.Value) error {
 		return core.FmtMissingArgument("path")
 	}
 
-	fpath = fpath.ToAbs()
+	fpath = fpath.ToAbs(ctx.GetFileSystem())
 
 	b, err := io.ReadAll(content)
 	if err != nil {
@@ -555,7 +559,7 @@ func ReplaceFileContent(ctx *core.Context, args ...core.Value) error {
 
 	//TODO: use an effect
 
-	fpath = fpath.ToAbs()
+	fpath = fpath.ToAbs(ctx.GetFileSystem())
 
 	perm := core.FilesystemPermission{
 		Kind_:  core.UpdatePerm,
@@ -602,7 +606,7 @@ func Remove(ctx *core.Context, args ...core.Value) error {
 		return core.FmtMissingArgument("path")
 	}
 
-	effect := RemoveFile{path: fpath.ToAbs()}
+	effect := RemoveFile{path: fpath.ToAbs(ctx.GetFileSystem())}
 	if err := effect.CheckPermissions(ctx); err != nil {
 		return err
 	}
@@ -624,7 +628,7 @@ func __createFile(ctx *core.Context, fpath core.Path, b []byte, fmode fs.FileMod
 
 	alreadyClosed := false
 
-	perm := core.FilesystemPermission{Kind_: core.CreatePerm, Entity: fpath.ToAbs()}
+	perm := core.FilesystemPermission{Kind_: core.CreatePerm, Entity: fpath.ToAbs(ctx.GetFileSystem())}
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return err
 	}
@@ -673,7 +677,7 @@ func __createFile(ctx *core.Context, fpath core.Path, b []byte, fmode fs.FileMod
 
 func ReadEntireFile(ctx *core.Context, fpath core.Path) ([]byte, error) {
 
-	perm := core.FilesystemPermission{Kind_: core.ReadPerm, Entity: fpath.ToAbs()}
+	perm := core.FilesystemPermission{Kind_: core.ReadPerm, Entity: fpath.ToAbs(ctx.GetFileSystem())}
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return nil, err
 	}
@@ -705,13 +709,13 @@ func ReadDir(ctx *core.Context, pth core.Path) ([]fs.DirEntry, error) {
 	return entries, nil
 }
 
-func makeFileInfo(info fs.FileInfo, pth string) core.FileInfo {
+func makeFileInfo(info fs.FileInfo, pth string, fls afs.Filesystem) core.FileInfo {
 	if info.IsDir() {
 		pth = core.AppendTrailingSlashIfNotPresent(pth)
 	}
 	return core.FileInfo{
 		Name:    core.Str(info.Name()),
-		AbsPath: core.Path(pth).ToAbs(),
+		AbsPath: core.Path(pth).ToAbs(fls),
 		Size:    core.Int(info.Size()),
 		Mode:    core.FileMode(info.Mode()),
 		ModTime: core.Date(info.ModTime()),
@@ -723,6 +727,7 @@ func ListFiles(ctx *core.Context, args ...core.Value) ([]core.FileInfo, error) {
 	var pth core.Path
 	var patt core.PathPattern
 	ERR := "a single path (or path pattern) argument is expected"
+	fls := ctx.GetFileSystem()
 
 	for _, arg := range args {
 		switch v := arg.(type) {
@@ -746,7 +751,7 @@ func ListFiles(ctx *core.Context, args ...core.Value) ([]core.FileInfo, error) {
 	}
 
 	if pth != "" {
-		pth = pth.ToAbs()
+		pth = pth.ToAbs(ctx.GetFileSystem())
 		if !pth.IsDirPath() {
 			return nil, errors.New("only directory paths are supported : " + string(pth))
 		}
@@ -772,13 +777,13 @@ func ListFiles(ctx *core.Context, args ...core.Value) ([]core.FileInfo, error) {
 				return nil, err
 			}
 
-			resultFileInfo = append(resultFileInfo, makeFileInfo(info, fpath))
+			resultFileInfo = append(resultFileInfo, makeFileInfo(info, fpath, fls))
 
 		}
 	} else { //pattern
 		perm := core.FilesystemPermission{
 			Kind_:  core.ReadPerm,
-			Entity: patt.ToAbs(),
+			Entity: patt.ToAbs(ctx.GetFileSystem()),
 		}
 
 		if err := ctx.CheckHasPermission(perm); err != nil {
@@ -797,7 +802,7 @@ func ListFiles(ctx *core.Context, args ...core.Value) ([]core.FileInfo, error) {
 				return nil, err
 			}
 
-			resultFileInfo = append(resultFileInfo, makeFileInfo(info, match))
+			resultFileInfo = append(resultFileInfo, makeFileInfo(info, match, fls))
 		}
 	}
 
@@ -866,7 +871,7 @@ func Glob(ctx *core.Context, patt core.PathPattern) []core.Path {
 func IsDir(ctx *core.Context, pth core.Path) core.Bool {
 	perm := core.FilesystemPermission{
 		Kind_:  core.ReadPerm,
-		Entity: pth.ToAbs(),
+		Entity: pth.ToAbs(ctx.GetFileSystem()),
 	}
 
 	if err := ctx.CheckHasPermission(perm); err != nil {
@@ -880,7 +885,7 @@ func IsDir(ctx *core.Context, pth core.Path) core.Bool {
 func IsFile(ctx *core.Context, pth core.Path) core.Bool {
 	perm := core.FilesystemPermission{
 		Kind_:  core.ReadPerm,
-		Entity: pth.ToAbs(),
+		Entity: pth.ToAbs(ctx.GetFileSystem()),
 	}
 
 	if err := ctx.CheckHasPermission(perm); err != nil {
@@ -894,7 +899,7 @@ func IsFile(ctx *core.Context, pth core.Path) core.Bool {
 func Exists(ctx *core.Context, pth core.Path) core.Bool {
 	perm := core.FilesystemPermission{
 		Kind_:  core.ReadPerm,
-		Entity: pth.ToAbs(),
+		Entity: pth.ToAbs(ctx.GetFileSystem()),
 	}
 
 	if err := ctx.CheckHasPermission(perm); err != nil {

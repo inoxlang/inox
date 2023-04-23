@@ -2124,6 +2124,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						GlobalVarPermission{UsePerm, "*"},
 						FilesystemPermission{ReadPerm, PathPattern(tempDirPath + "...")},
 					},
+					Filesystem: newOsFilesystem(),
 				})
 
 				state := NewGlobalState(ctx, map[string]Value{
@@ -3593,6 +3594,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					FilesystemPermission{ReadPerm, PathPattern("/...")},
 					RoutinePermission{CreatePerm},
 				},
+				Filesystem: newOsFilesystem(),
 			})
 			ctx.AddNamedPattern("int", INT_PATTERN)
 			state := NewGlobalState(ctx)
@@ -5350,6 +5352,7 @@ func NewDefaultTestContext() *Context {
 			HttpPermission{ReadPerm, HostPattern("https://**")},
 			RoutinePermission{CreatePerm},
 		},
+		Filesystem: newOsFilesystem(),
 	})
 }
 

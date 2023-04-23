@@ -105,12 +105,13 @@ func ImportModule(config ImportConfig) (*Routine, error) {
 		}
 		srcVal = val
 	case Path:
+		fls := config.ParentState.Ctx.GetFileSystem()
 		if val.IsRelative() && config.ParentState.Module != nil {
-			val = Path(filepath.Join(config.ParentState.Module.ResourceDir(), val.UnderlyingString()))
+			val = Path(fls.Join(config.ParentState.Module.ResourceDir(), val.UnderlyingString()))
 		}
 
 		absScriptDir = filepath.Dir(string(val))
-		fsPerm := FilesystemPermission{ReadPerm, val.ToAbs()}
+		fsPerm := FilesystemPermission{ReadPerm, val.ToAbs(fls)}
 		if err := config.ParentState.Ctx.CheckHasPermission(fsPerm); err != nil {
 			return nil, fmt.Errorf("import: %s", err.Error())
 		}
@@ -247,6 +248,7 @@ func fetchParseImportedModule(ctx *Context, src WrappedString, config sourceFile
 	var ok bool
 	var absScriptDir string
 	var isResourceURL bool
+	fls := ctx.GetFileSystem()
 
 	moduleCacheLock.Lock()
 	unlock := true
@@ -259,7 +261,7 @@ func fetchParseImportedModule(ctx *Context, src WrappedString, config sourceFile
 	if modString, ok = moduleCache[config.validation]; !ok {
 		switch srcVal := src.(type) {
 		case Path:
-			absSrc, err := filepath.Abs(string(srcVal))
+			absSrc, err := fls.Absolute(string(srcVal))
 			if err != nil {
 				return nil, err
 			}

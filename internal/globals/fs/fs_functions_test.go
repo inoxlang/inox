@@ -78,6 +78,7 @@ func TestCreateFile(t *testing.T) {
 					core.FilesystemPermission{Kind_: core.CreatePerm, Entity: fpath},
 				},
 				Limitations: []core.Limitation{testCase.limitation},
+				Filesystem:  GetOsFilesystem(),
 			})
 
 			ctx.Take(testCase.limitation.Name, testCase.limitation.Value)
@@ -162,6 +163,7 @@ func TestReadEntireFile(t *testing.T) {
 					core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.Path(fpath)},
 				},
 				Limitations: []core.Limitation{testCase.limitation},
+				Filesystem:  GetOsFilesystem(),
 			})
 			ctx.Take(testCase.limitation.Name, testCase.limitation.Value)
 
@@ -182,6 +184,7 @@ func TestFsMkfile(t *testing.T) {
 			Permissions: []core.Permission{
 				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern(tmpDir + "/...")},
 			},
+			Filesystem: GetOsFilesystem(),
 		})
 
 		pth := filepath.Join(tmpDir, "file")
@@ -202,6 +205,7 @@ func TestFsMkfile(t *testing.T) {
 				core.FilesystemPermission{Kind_: core.CreatePerm, Entity: core.PathPattern(tmpDir + "/...")},
 			},
 			Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1_000}},
+			Filesystem:  GetOsFilesystem(),
 		})
 
 		pth := filepath.Join(tmpDir, "file")
@@ -227,6 +231,7 @@ func TestFsMkdir(t *testing.T) {
 			Permissions: []core.Permission{
 				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern(tmpDir + "/...")},
 			},
+			Filesystem: GetOsFilesystem(),
 		})
 
 		pth := filepath.Join(tmpDir, "dir") + "/"
@@ -249,6 +254,7 @@ func TestFsMkdir(t *testing.T) {
 				core.FilesystemPermission{Kind_: core.CreatePerm, Entity: core.PathPattern(tmpDir + "/...")},
 			},
 			Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1_000}},
+			Filesystem:  GetOsFilesystem(),
 		})
 
 		pth := filepath.Join(tmpDir, "dir") + "/"
@@ -300,6 +306,7 @@ func TestFsCopy(t *testing.T) {
 				{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1 << 32},
 				{Name: FS_NEW_FILE_RATE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 100},
 			},
+			Filesystem: GetOsFilesystem(),
 		})
 	}
 
@@ -396,7 +403,9 @@ func TestFsOpenExisting(t *testing.T) {
 
 	t.Run("missing read permission", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		ctx := core.NewContext(core.ContextConfig{})
+		ctx := core.NewContext(core.ContextConfig{
+			Filesystem: GetOsFilesystem(),
+		})
 
 		var pth = core.Path(filepath.Join(tmpDir, "file"))
 
@@ -405,7 +414,7 @@ func TestFsOpenExisting(t *testing.T) {
 		assert.IsType(t, core.NotAllowedError{}, err)
 		assert.Equal(t, core.FilesystemPermission{
 			Kind_:  core.ReadPerm,
-			Entity: pth.ToAbs(),
+			Entity: pth.ToAbs(ctx.GetFileSystem()),
 		}, err.(core.NotAllowedError).Permission)
 		assert.Nil(t, f)
 	})
@@ -416,6 +425,7 @@ func TestFsOpenExisting(t *testing.T) {
 			Permissions: []core.Permission{
 				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern(tmpDir + "/...")},
 			},
+			Filesystem: GetOsFilesystem(),
 		})
 
 		var pth = core.Path(filepath.Join(tmpDir, "file"))
@@ -440,6 +450,7 @@ func TestFile(t *testing.T) {
 			Permissions: []core.Permission{
 				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern(tmpDir + "/...")},
 			},
+			Filesystem: GetOsFilesystem(),
 		})
 
 		f := utils.Must(openExistingFile(ctx, pth, true))
@@ -449,7 +460,7 @@ func TestFile(t *testing.T) {
 		assert.IsType(t, core.NotAllowedError{}, err)
 		assert.Equal(t, core.FilesystemPermission{
 			Kind_:  core.WriteStreamPerm,
-			Entity: pth.ToAbs(),
+			Entity: pth.ToAbs(ctx.GetFileSystem()),
 		}, err.(core.NotAllowedError).Permission)
 	})
 
@@ -470,6 +481,7 @@ func TestFile(t *testing.T) {
 			Limitations: []core.Limitation{
 				{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: rate},
 			},
+			Filesystem: GetOsFilesystem(),
 		})
 
 		f := utils.Must(openExistingFile(ctx, pth, true))
@@ -509,6 +521,7 @@ func TestFile(t *testing.T) {
 			Limitations: []core.Limitation{
 				{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: rate},
 			},
+			Filesystem: GetOsFilesystem(),
 		})
 
 		f := utils.Must(openExistingFile(ctx, pth, true))

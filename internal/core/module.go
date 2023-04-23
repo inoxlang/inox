@@ -275,7 +275,8 @@ type LocalModuleParsingConfig struct {
 func ParseLocalModule(config LocalModuleParsingConfig) (*Module, error) {
 	fpath := config.ModuleFilepath
 	ctx := config.Context
-	absPath, err := filepath.Abs(fpath)
+	fls := ctx.GetFileSystem()
+	absPath, err := fls.Absolute(fpath)
 	if err != nil {
 		return nil, err
 	}
@@ -368,7 +369,7 @@ func ParseLocalModule(config LocalModuleParsingConfig) (*Module, error) {
 		relativePath := stmt.PathSource().Value
 
 		chunk, err := ParseLocalSecondaryChunk(LocalSecondaryChunkParsingConfig{
-			ChunkFilepath: filepath.Join(src.ResourceDir, relativePath),
+			ChunkFilepath: fls.Join(src.ResourceDir, relativePath),
 			Module:        mod,
 			Context:       ctx,
 		})
@@ -406,13 +407,14 @@ type LocalSecondaryChunkParsingConfig struct {
 func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*IncludedChunk, error) {
 	fpath := config.ChunkFilepath
 	ctx := config.Context
+	fls := ctx.GetFileSystem()
 	mod := config.Module
 
 	if strings.Contains(fpath, "..") {
 		return nil, errors.New(INCLUDED_FILE_PATH_SHOULD_NOT_CONTAIN_X)
 	}
 
-	absPath, err := filepath.Abs(fpath)
+	absPath, err := fls.Absolute(fpath)
 	if err != nil {
 		return nil, err
 	}
@@ -497,7 +499,7 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 		relativePath := stmt.PathSource().Value
 
 		chunk, err := ParseLocalSecondaryChunk(LocalSecondaryChunkParsingConfig{
-			ChunkFilepath: filepath.Join(src.ResourceDir, relativePath),
+			ChunkFilepath: fls.Join(src.ResourceDir, relativePath),
 			Module:        mod,
 			Context:       config.Context,
 		})

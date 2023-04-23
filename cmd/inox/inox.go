@@ -11,7 +11,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/inoxlang/inox/internal/config"
 	core "github.com/inoxlang/inox/internal/core"
 
@@ -317,7 +316,7 @@ func runStartupScript(startupScriptPath string) (*core.Object, *core.GlobalState
 		ModuleFilepath: startupScriptPath,
 		Context: core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{core.CreateFsReadPerm(core.Path(startupScriptPath))},
-			Filesystem:  osfs.New("/"),
+			Filesystem:  _fs.GetOsFilesystem(),
 		}),
 	})
 	if err != nil {

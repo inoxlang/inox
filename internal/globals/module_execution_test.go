@@ -332,6 +332,7 @@ func createCompilationCtx(dir string) *core.Context {
 		Permissions: []core.Permission{
 			core.CreateFsReadPerm(core.PathPattern(dir + "/...")),
 		},
+		Filesystem: _fs.GetOsFilesystem(),
 	})
 	core.NewGlobalState(compilationCtx)
 	return compilationCtx

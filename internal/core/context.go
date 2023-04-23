@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	afs "github.com/go-git/go-billy/v5"
+	afs "github.com/inoxlang/inox/internal/afs"
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
