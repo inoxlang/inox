@@ -649,8 +649,7 @@ func getLimitations(desc Value, defaultLimitationsToNotSet map[string]bool) ([]L
 				log.Panicf("invalid manifest, limits: %s should have a total value\n", EXECUTION_TOTAL_LIMIT_NAME)
 			}
 			l.DecrementFn = func(lastDecrementTime time.Time) int64 {
-				v := TOKEN_BUCKET_CAPACITY_SCALE * time.Since(lastDecrementTime)
-				return v.Nanoseconds()
+				return time.Since(lastDecrementTime).Nanoseconds()
 			}
 		}
 		limitations[i] = l

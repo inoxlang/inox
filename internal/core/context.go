@@ -79,14 +79,14 @@ const (
 )
 
 type ContextConfig struct {
-	Kind                   ContextKind
-	Permissions            []Permission
-	ForbiddenPermissions   []Permission
-	Limitations            []Limitation
-	HostResolutions        map[Host]Value
-	ParentContext          *Context
-	ScaledLimitationTokens map[string]int64 // limitation tokens
-	Filesystem             afs.Filesystem
+	Kind                 ContextKind
+	Permissions          []Permission
+	ForbiddenPermissions []Permission
+	Limitations          []Limitation
+	HostResolutions      map[Host]Value
+	ParentContext        *Context
+	LimitationTokens     map[string]int64
+	Filesystem           afs.Filesystem
 }
 
 func (c ContextConfig) HasParentRequiredPermissions() (firstErr error, ok bool) {
@@ -125,30 +125,27 @@ func NewContext(config ContextConfig) *Context {
 				log.Panicf("context creation: duplicate limit '%s'\n", l.Name)
 			}
 
-			var increment int64 = 1
+			var fillRate int64 = 1
 
 			switch l.Kind {
 			case ByteRateLimitation, SimpleRateLimitation:
-				increment = l.Value
+				fillRate = l.Value
 			case TotalLimitation:
-				increment = 0 //incrementation/decrementation is handled by the limitation's DecrementFn
+				fillRate = 0 //incrementation/decrementation is handled by the limitation's DecrementFn
 			}
 
 			var cap int64 = l.Value
-			initialAvail, ok := config.ScaledLimitationTokens[l.Name]
+			initialAvail, ok := config.LimitationTokens[l.Name]
 			if !ok {
 				initialAvail = -1 //capacity
 			}
 
 			limiters[l.Name] = &Limiter{
 				limitation: l,
-				//Buckets all have the same tick interval. Calculating the interval from the rate
-				//can result in small values (< 5ms) that are too precise and cause issues.
 				bucket: newBucket(tokenBucketConfig{
-					interval:                     TOKEN_BUCKET_INTERVAL,
-					cap:                          TOKEN_BUCKET_CAPACITY_SCALE * cap,
+					cap:                          cap,
 					initialAvail:                 initialAvail,
-					inc:                          increment,
+					fillRate:                     fillRate,
 					decrementFn:                  l.DecrementFn,
 					cancelContextOnNegativeCount: l.Kind == TotalLimitation,
 				}),
@@ -162,7 +159,7 @@ func NewContext(config ContextConfig) *Context {
 			panic(fmt.Errorf("failed to create context, parent of context should at least have permissions of its child: %w", err))
 		}
 
-		if config.ScaledLimitationTokens != nil {
+		if config.LimitationTokens != nil {
 			panic(ErrCannotProvideLimitationTokensForChildContext)
 		}
 		limiters = config.ParentContext.limiters //limiters are shared with the parent context
@@ -591,14 +588,13 @@ func (ctx *Context) Take(limitationName string, count int64) error {
 	ctx.lock.Lock()
 	defer ctx.lock.Unlock()
 
-	scaledCount := TOKEN_BUCKET_CAPACITY_SCALE * count
-
 	limiter, ok := ctx.limiters[limitationName]
 	if ok {
-		if limiter.limitation.Kind == TotalLimitation && limiter.limitation.Value != 0 && limiter.bucket.Available() < scaledCount {
-			panic(fmt.Errorf("cannot take %v tokens from bucket (%s), only %v token(s) available", count, limitationName, limiter.bucket.Available()/TOKEN_BUCKET_CAPACITY_SCALE))
+		available := limiter.bucket.Available()
+		if limiter.limitation.Kind == TotalLimitation && limiter.limitation.Value != 0 && available < count {
+			panic(fmt.Errorf("cannot take %v tokens from bucket (%s), only %v token(s) available", count, limitationName, available))
 		}
-		limiter.bucket.Take(scaledCount)
+		limiter.bucket.Take(count)
 	}
 
 	return nil
@@ -658,7 +654,7 @@ func (ctx *Context) GetTotal(name string) (int64, error) {
 	if limiter.limitation.Kind != TotalLimitation {
 		return -1, fmt.Errorf("context: '%s' is not a total", name)
 	}
-	return limiter.bucket.Available() / TOKEN_BUCKET_CAPACITY_SCALE, nil
+	return limiter.bucket.Available(), nil
 }
 
 func (ctx *Context) GetGrantedPermissions() []Permission {

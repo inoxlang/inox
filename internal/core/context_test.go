@@ -23,7 +23,7 @@ func TestContextBuckets(t *testing.T) {
 		assert.Equal(t, int64(0), total)
 
 		//we check that the total has not increased after a wait
-		time.Sleep(2 * TOKEN_BUCKET_INTERVAL)
+		time.Sleep(2 * TOKEN_BUCKET_MANAGEMENT_TICK_INTERVAL)
 		total, err = ctx.GetTotal(LIMITATION_NAME)
 		assert.NoError(t, err)
 		assert.Equal(t, int64(0), total)
@@ -159,14 +159,13 @@ func TestContextLimiters(t *testing.T) {
 					Kind:  TotalLimitation,
 					Value: int64(time.Second),
 					DecrementFn: func(lastDecrementTime time.Time) int64 {
-						v := TOKEN_BUCKET_CAPACITY_SCALE * time.Since(lastDecrementTime)
-						return v.Nanoseconds()
+						return time.Since(lastDecrementTime).Nanoseconds()
 					},
 				},
 			},
 		})
 
-		capacity := int64(time.Second * TOKEN_BUCKET_CAPACITY_SCALE)
+		capacity := int64(time.Second)
 
 		assert.Equal(t, capacity, ctx.limiters["test"].bucket.Available())
 		time.Sleep(time.Second)
