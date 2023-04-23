@@ -337,11 +337,13 @@ path
 Dictionaries are similar to objects in that they store key-value pairs, but unlike objects, 
 they allow keys of any data type as long as they are representable (serializable).
 
+```
 dict = :{
     ./a: 1
     "./a": 
     1: 
 }
+```
 
 # Control flow
 
