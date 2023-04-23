@@ -781,16 +781,17 @@ func ListFiles(ctx *core.Context, args ...core.Value) ([]core.FileInfo, error) {
 
 		}
 	} else { //pattern
+		absPatt := patt.ToAbs(ctx.GetFileSystem())
 		perm := core.FilesystemPermission{
 			Kind_:  core.ReadPerm,
-			Entity: patt.ToAbs(ctx.GetFileSystem()),
+			Entity: absPatt,
 		}
 
 		if err := ctx.CheckHasPermission(perm); err != nil {
 			return nil, err
 		}
 
-		matches, err := filepath.Glob(string(patt))
+		matches, err := glob(fls, string(absPatt))
 
 		if err != nil {
 			return nil, err
@@ -844,7 +845,11 @@ func Glob(ctx *core.Context, patt core.PathPattern) []core.Path {
 		panic(errors.New("cannot call glob function on non-globbing pattern"))
 	}
 
-	res, err := filepath.Glob(string(patt))
+	fls := ctx.GetFileSystem()
+
+	absPtt := patt.ToAbs(fls)
+
+	res, err := glob(fls, string(absPtt))
 	if err != nil {
 		panic(err)
 	}
