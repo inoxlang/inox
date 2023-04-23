@@ -122,5 +122,24 @@ func registerHelp() {
 				},
 			},
 		},
+		{
+			Value: _find,
+			Topic: "find",
+			Text:  "the find function searches for items matching a pattern at a given location (a string, an iterable, a directory)",
+			Examples: []help.Example{
+				{
+					Code:   "find %`a+` \"a-aa-aaa\"",
+					Output: `["a", "aa", "aaa"]`,
+				},
+				{
+					Code:   `find %./**/*.json ./`,
+					Output: `[./file.json, ./dir/file.json, ./dir/dir/.file.json]`,
+				},
+				{
+					Code:   `find %int ['1', 2, "3"]`,
+					Output: `[2]`,
+				},
+			},
+		},
 	})
 }
