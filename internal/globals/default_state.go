@@ -30,16 +30,16 @@ const (
 )
 
 var (
-	DEFAULT_LIMITATIONS = []core.Limitation{
-		{Name: _fs.FS_READ_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1_000},
-		{Name: _fs.FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1_000},
+	DEFAULT_SCRIPT_LIMITATIONS = []core.Limitation{
+		{Name: _fs.FS_READ_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 100_000_000},
+		{Name: _fs.FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 100_000_000},
 
-		{Name: _fs.FS_NEW_FILE_RATE_LIMIT_NAME, Kind: core.SimpleRateLimitation, Value: 1},
-		{Name: _fs.FS_TOTAL_NEW_FILE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1},
+		{Name: _fs.FS_NEW_FILE_RATE_LIMIT_NAME, Kind: core.SimpleRateLimitation, Value: 100},
+		{Name: _fs.FS_TOTAL_NEW_FILE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 10_000},
 
-		{Name: _net.HTTP_REQUEST_RATE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1},
-		{Name: _net.WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 1},
-		{Name: _net.TCP_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 1},
+		{Name: _net.HTTP_REQUEST_RATE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 100},
+		{Name: _net.WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 10},
+		{Name: _net.TCP_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 10},
 	}
 
 	DEFAULT_LOG_PRINT_CONFIG = &core.PrettyPrintConfig{

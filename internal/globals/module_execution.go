@@ -64,7 +64,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	if mod != nil {
 		manifest, manifestErr = mod.EvalManifest(core.ManifestEvaluationConfig{
 			GlobalConsts:          mod.MainChunk.Node.GlobalConstantDeclarations,
-			DefaultLimitations:    DEFAULT_LIMITATIONS,
+			DefaultLimitations:    DEFAULT_SCRIPT_LIMITATIONS,
 			AddDefaultPermissions: true,
 			IgnoreUnknownSections: args.IgnoreNonCriticalIssues,
 		})
