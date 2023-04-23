@@ -840,7 +840,7 @@ func getSingleKindPermissions(
 				Kind_:  permKind,
 				Entity: v,
 			})
-			if !v.isAbsolute() {
+			if !v.IsAbsolute() {
 				return nil, fmt.Errorf("invalid manifest, only absolute path patterns are accepted: %s", v)
 			}
 		default:

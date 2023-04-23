@@ -362,7 +362,7 @@ func NewPathPattern(slices []Value, isStaticPathSliceList []bool) (Value, error)
 	return PathPattern(pth), nil
 }
 
-func (patt PathPattern) isAbsolute() bool {
+func (patt PathPattern) IsAbsolute() bool {
 	return patt[0] == '/'
 }
 
@@ -386,7 +386,7 @@ func (patt PathPattern) Prefix() string {
 }
 
 func (patt PathPattern) ToAbs() PathPattern {
-	if patt.isAbsolute() {
+	if patt.IsAbsolute() {
 		return patt
 	}
 	s, err := filepath.Abs(string(patt))
