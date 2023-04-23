@@ -57,3 +57,20 @@ Patch an HTTP resource: ``update <url> <string | object>``
 ## Delete
 
 Use ``delete <resource>`` for deletion. The deletion is recursive for folders.
+
+## Help for a function
+
+```
+help <name of function>
+
+example:
+help find
+```
+
+## Finding
+
+Recursivelly find all JSON files in a directory.
+```
+find %./**/*.json ./
+```
+

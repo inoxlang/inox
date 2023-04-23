@@ -311,6 +311,8 @@ udata "root" {
 
 ## Mappings
 
+<!-- TODO: add explanation about static key entries, ... -->
+
 A mapping maps keys and pattern of keys to values
 
 ```
@@ -332,10 +334,14 @@ path
 
 ## Dictionaries
 
-TODO
+Dictionaries are similar to objects in that they store key-value pairs, but unlike objects, 
+they allow keys of any data type as long as they are representable (serializable).
 
-<!-- TODO: add explanation about static key entries, ... -->
-
+dict = :{
+    ./a: 1
+    "./a": 
+    1: 
+}
 
 # Control flow
 
