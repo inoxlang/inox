@@ -5,6 +5,7 @@ import (
 
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	_fs "github.com/inoxlang/inox/internal/globals/fs"
 )
 
 func init() {
@@ -41,8 +42,26 @@ func _find(ctx *core.Context, pattern core.Pattern, location core.Value) (*core.
 			return core.NewWrappedValueList(results...), nil
 		}
 	case core.Path:
-		//TODO
-		return nil, fmt.Errorf("cannot find in a %T", location)
+		pathPattern, ok := pattern.(core.PathPattern)
+
+		if !ok {
+			return nil, fmt.Errorf("a path pattern was expected not a(n) %T", pattern)
+		}
+
+		if !pathPattern.IsGlobbingPattern() {
+			return nil, fmt.Errorf("only globbing path patterns are supported by find for now")
+		}
+
+		fls := ctx.GetFileSystem()
+		if pathPattern.IsAbsolute() {
+			if l != "/" {
+				return nil, fmt.Errorf("since path pattern is absolute the location argument should be the '/' path")
+			}
+		} else {
+			pathPattern = core.PathPattern(fls.Join(string(l), string(pathPattern)))
+		}
+		paths := _fs.Glob(ctx, pathPattern)
+		return core.NewWrappedValueListFrom(core.ToValueList(paths)), nil
 	case core.Iterable:
 		it := l.Iterator(ctx, core.IteratorConfiguration{ValueFilter: pattern})
 		var values []core.Value

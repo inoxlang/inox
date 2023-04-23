@@ -147,6 +147,14 @@ func ValOf(v interface{}) Value {
 	}
 }
 
+func ToValueList[T Value](arg []T) []Value {
+	values := make([]Value, len(arg))
+	for i, val := range arg {
+		values[i] = val
+	}
+	return values
+}
+
 func coerceToBool(val Value) bool {
 	reflVal := reflect.ValueOf(val)
 
