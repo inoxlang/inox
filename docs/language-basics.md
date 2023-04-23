@@ -96,7 +96,7 @@ print (myglobal + local2)
 var myglobal = 3
 ```
 
-Go to the [Functions](#functions) section to known more about variables & scopes.
+Go to the [Functions](#functions) section to learn more about variables & scopes.
 
 
 
@@ -288,7 +288,8 @@ record = #{
 }
 ```
 
-## Tuples
+
+## Tuples
 
 Tuples are the immutable equivalent of lists.
 ```
