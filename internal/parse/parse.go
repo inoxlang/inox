@@ -8060,6 +8060,11 @@ func (p *parser) parseMultiAssignmentStatement(assignIdent *IdentifierLiteral) *
 	if p.i < p.len {
 		switch p.s[p.i] {
 		case ';', '\r', '\n', '}':
+		case '#':
+			if p.i < p.len-1 && IsCommentFirstSpace(p.s[p.i+1]) {
+				break
+			}
+			fallthrough
 		default:
 			if parsingErr == nil {
 				parsingErr = &ParsingError{InvalidNext, UNTERMINATED_ASSIGNMENT_MISSING_TERMINATOR}
@@ -8088,6 +8093,11 @@ func (p *parser) parseAssignmentAndPatternDefinition(left Node) (result Node) {
 
 		switch p.s[p.i] {
 		case ';', '\r', '\n', '}':
+		case '#':
+			if p.i < p.len-1 && IsCommentFirstSpace(p.s[p.i+1]) {
+				break
+			}
+			fallthrough
 		default:
 			base := result.BasePtr()
 			if base.Err == nil {
