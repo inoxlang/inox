@@ -36,7 +36,12 @@
 - numbers without a point are integers: `1, -200`
 - boolean literals are `true` and `false`
 - nil literal (it represents the absence of value): `nil`
-- strings have double quotes: `"hello !"`
+- single line strings have double quotes: `"hello !"`
+- multiline strings have backquotes:
+    ``` 
+    `first line
+    second line`
+    ```
 - runes represents a single character, they have single quotes: `'a', '\n'`
 - path literals represent a path in the filesystem: `/etc/passwd, /home/user/`
     - they always start with `./`, `../` or `/`
@@ -340,8 +345,8 @@ they allow keys of any data type as long as they are representable (serializable
 ```
 dict = :{
     ./a: 1
-    "./a": 
-    1: 
+    "./a": 2
+    1: 3
 }
 ```
 
