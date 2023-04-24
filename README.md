@@ -5,7 +5,7 @@
 🛡️ Inox is a programming language for writing secure scripts and web apps, it is dynamically typed and has optional type annotations.
 It allows to easily write [concurrent code](#concurrency) and to exchange [messages](./README.md#communication) between objects.
 
-# Installation
+## Installation
 
 An archive with a Linux binary and some examples is available in [release assets](https://github.com/inoxlang/inox/releases), if you want to compile the language yourself go [here](#compile-from-source).
 
@@ -14,15 +14,19 @@ An archive with a Linux binary and some examples is available in [release assets
   ```
   sudo cp inox /usr/local/bin/inox
   ```
-- copy the `ide` folder where you want
+### Editor support
 
+- [Vim](https://github.com/inoxlang/inox-vim)
+- [Sublime Text](https://github.com/inoxlang/inox-sublime)
 
-[Get started](./docs/getting-started.md).\
+## Learning Inox
+
+Here is a [tutorial](./docs/getting-started.md) to get started.\
 ⚠️ The language is not production ready yet.
 
-# Features
+## Features
 
-## Injection Prevention
+### Injection Prevention
 
 In Inox interpolations are always restricted in order to prevent injections.
 When you dynamically create URLs the interpolations are restricted based on where the interpolation is located (path, query).
@@ -46,9 +50,9 @@ create a checked string all the interpolations must be explicitly typed.
 runtime check error: 0 or 1=1 does not match %sql.int
 -->
 
-## Permission system
+### Permission system
 
-### Required permissions 
+#### Required permissions 
 
 Inox features a fine-grained permission system that restricts what a module is allowed to do, here is a few examples of permissions:
 - access to the filesystem (read, create, update, write, delete)
@@ -81,7 +85,7 @@ print(fs.ls!(malicious_user_input))
 When a forbidden operation is performed the module panics with an error:\
 `core: error: not allowed, missing permission: [read path(s) /home/]`
 
-### Isolation of dependencies
+#### Isolation of dependencies
 
 In imports the importing module specifies the permissions it grants to the imported module.
 
@@ -124,7 +128,7 @@ data = fs.read!(/etc/passwd)
 If the imported module ask more permissions than granted an error is thrown:\
 `import: some permissions in the imported module's manifest are not granted: [read path(s) /...] `
 
-### Dropping permissions
+#### Dropping permissions
 
 Sometimes programs have an initialization phase, for example a program reads a file or performs an HTTP request to fetch its configuration.
 After this phase it no longer needs some permissions so it can drop them.
@@ -137,9 +141,9 @@ drop-perms {
 }
 -->
 
-## DoS mitigation
+### DoS mitigation
 
-### Limitations (WIP)
+#### Limitations (WIP)
 
 Limitations limit the speed at which some actions are performed, the minimum required values/rates are specified in the manifest.
 This feature is still in development and will be fully implemented soon.\
@@ -158,15 +162,15 @@ manifest {
 }
 ```
 
-## Sensitive data protection (WIP)
+### Sensitive data protection (WIP)
 
 TODO: explain
 
-### Visibility (WIP)
+#### Visibility (WIP)
 
 TODO: explain
 
-## Transactions & Effects (WIP)
+### Transactions & Effects (WIP)
 
 Inox allows you to attach a transaction to the current execution context (think SQL transactions).
 When a side effect happens it is recorded in the transaction. If the execution is cancelled for whatever reason the transaction is automatically rollbacked and 'reversible' effects are reversed. (A 'mode' that causes side effects to only be committed if the transaction succeed is also planned)
@@ -181,9 +185,9 @@ fs.mkfile ./file.txt
 cancel_exec() 
 ```
 
-## Concurrency
+### Concurrency
 
-### Coroutines (Goroutines)
+#### Coroutines (Goroutines)
 
 ```
 coroutine = go {globals: .{print}} do {
@@ -193,7 +197,7 @@ coroutine = go {globals: .{print}} do {
 result = coroutine.wait_result!()
 ```
 
-### Lifetime jobs
+#### Lifetime jobs
 
 Lifetime jobs are coroutines linked to an object.
 
@@ -207,11 +211,11 @@ object = {
 }
 ```
 
-## Communication
+### Communication
 
 In Inox objects can communicate in several different ways.
 
-### Message sending
+#### Message sending
 
 The `sendval` construct allows an object to send message to another object.
 
