@@ -197,8 +197,10 @@ cancel_exec()
 ```
 coroutine = go {globals: .{print}} do {
   print("hello from goroutine !")
+  return 1
 }
 
+# 1
 result = coroutine.wait_result!()
 ```
 
