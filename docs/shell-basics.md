@@ -8,6 +8,10 @@ inox shell
 Before starting the shell ``inox`` will execute the startup script found in `.config/inox` (or XDG_CONFIG_HOME) and grant the required permissions by the script to the shell.\
 No additional permissions will be granted. You can modify the startup script in `.config/inox` if you need more permissions.
 
+## Leaving the shell
+
+The `quit` pseudo command stops the process.
+
 ## Execute Inox scripts from the REPL
 
 ```
