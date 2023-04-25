@@ -1,4 +1,4 @@
-# REPL
+# Inox Shell (REPL)
 
 Launch the shell with the ``shell`` subcommand:
 ```
@@ -25,7 +25,6 @@ ex go help
 ```
 
 NOTE: Almost no commands are allowed by default, edit your startup script in `.config/inox` to allow more commands (and subcommands).
-
 
 ## Read, Create, Update, Delete, Provide resources
 
