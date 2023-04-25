@@ -16,6 +16,7 @@ An archive with a Linux binary and some examples is available in [release assets
   ```
 ### Editor support
 
+- [VSCode](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox)
 - [Vim](https://github.com/inoxlang/inox-vim)
 - [Sublime Text](https://github.com/inoxlang/inox-sublime)
 
