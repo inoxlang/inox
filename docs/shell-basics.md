@@ -1,9 +1,11 @@
 # Inox Shell (REPL)
 
-Launch the shell with the ``shell`` subcommand:
+Launch the shell with the following subcommand:
 ```
-inox shell
+inox
 ```
+
+Note: the `inox shell` command can also be used.
 
 Before starting the shell ``inox`` will execute the startup script found in `.config/inox` (or XDG_CONFIG_HOME) and grant the required permissions by the script to the shell.\
 No additional permissions will be granted. You can modify the startup script in `.config/inox` if you need more permissions.
