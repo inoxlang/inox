@@ -1,7 +1,11 @@
 name: Inox dev
 
 on:
-  push
+  push:
+    paths-ignore:
+      - 'docs/**'
+      - 'README.md'
+      - 'CONTRIBUTION.md'
 permissions: write-all
 
 jobs:
