@@ -124,6 +124,10 @@ func (c PrintingConfig) PrettyPrintConfig() *core.PrettyPrintConfig {
 	return &config
 }
 
+func (c PrintingConfig) Colorized() bool {
+	return defaultPrettyPrintConfig.Colorize
+}
+
 func (c PrintingConfig) IsLight() bool {
 	return !c.backgroundColor.IsDarkBackgroundColor()
 }

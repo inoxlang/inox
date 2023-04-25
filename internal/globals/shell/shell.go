@@ -261,7 +261,11 @@ func (sh *shell) printPromptAndInput(inputGotReplaced bool, completions []string
 	prompt, sh.promptLen = sprintPrompt(sh.state, sh.config)
 	buff.WriteString(prompt)
 
-	core.PrintColorizedChunk(buff, chunk, sh.input, sh.config.IsLight(), sh.config.defaultFgColorSequence)
+	if sh.config.PrintingConfig.Colorized() {
+		core.PrintColorizedChunk(buff, chunk, sh.input, sh.config.IsLight(), sh.config.defaultFgColorSequence)
+	} else {
+		buff.Write(utils.StringAsBytes(string(sh.input)))
+	}
 
 	fmt.Fprint(sh.out, buff.String())
 

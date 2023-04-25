@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/inoxlang/inox/internal/config"
 	core "github.com/inoxlang/inox/internal/core"
 	_chrome "github.com/inoxlang/inox/internal/globals/chrome"
 	_containers "github.com/inoxlang/inox/internal/globals/containers"
@@ -53,7 +54,7 @@ var (
 	DEFAULT_PRETTY_PRINT_CONFIG = &core.PrettyPrintConfig{
 		PrettyPrintConfig: pprint.PrettyPrintConfig{
 			MaxDepth:                    7,
-			Colorize:                    true,
+			Colorize:                    config.FORCE_COLOR || config.TRUECOLOR_COLORTERM,
 			Colors:                      &pprint.DEFAULT_DARKMODE_PRINT_COLORS,
 			Compact:                     false,
 			Indent:                      []byte{' ', ' '},

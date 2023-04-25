@@ -7,6 +7,7 @@ import (
 
 	"github.com/muesli/termenv"
 
+	"github.com/inoxlang/inox/internal/config"
 	core "github.com/inoxlang/inox/internal/core"
 	parse "github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
@@ -17,7 +18,7 @@ var (
 	defaultPrettyPrintConfig = &core.PrettyPrintConfig{
 		PrettyPrintConfig: pprint.PrettyPrintConfig{
 			MaxDepth: 7,
-			Colorize: true,
+			Colorize: config.FORCE_COLOR || config.TRUECOLOR_COLORTERM,
 			Colors:   &pprint.DEFAULT_DARKMODE_PRINT_COLORS,
 			Compact:  false,
 			Indent:   []byte{' ', ' '},
@@ -60,9 +61,9 @@ func printPrompt(writer io.Writer, state *core.TreeWalkState, config REPLConfigu
 
 // evaluates the different parts of the prompt and return the colorized prompt
 func sprintPrompt(state *core.TreeWalkState, config REPLConfiguration) (prompt string, prompt_length int) {
+	colorize := config.PrintingConfig.PrettyPrintConfig().Colorize
 
 	for _, part := range config.prompt.GetOrBuildElements(state.Global.Ctx) {
-
 		color := config.defaultFgColor.ToTermColor()
 
 		list, isList := part.(*core.List)
@@ -109,7 +110,10 @@ func sprintPrompt(state *core.TreeWalkState, config REPLConfiguration) (prompt s
 		//we print the part
 		prompt_length += len([]rune(s))
 		styled := termenv.String(s)
-		styled = styled.Foreground(color)
+
+		if colorize {
+			styled = styled.Foreground(color)
+		}
 		prompt += styled.String()
 	}
 	return

@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/adrg/xdg"
@@ -21,9 +22,13 @@ var (
 	//go:embed default_startup.ix
 	DEFAULT_STARTUP_SCRIPT_CODE string
 	USER_HOME                   string
+	FORCE_COLOR                 bool
+	TRUECOLOR_COLORTERM         bool
 )
 
 func init() {
+	// HOME
+
 	HOME, err := os.UserHomeDir()
 	if err != nil {
 		panic(err)
@@ -34,6 +39,17 @@ func init() {
 	}
 
 	USER_HOME = HOME
+
+	// FORCE COLOR
+
+	if s, ok := os.LookupEnv("FORCE_COLOR"); ok {
+		number, _ := strconv.Atoi(s)
+		FORCE_COLOR = len(s) == 0 || number != 0
+	}
+
+	//TERMCOLOR
+
+	TRUECOLOR_COLORTERM = os.Getenv("COLORTERM") == "truecolor"
 }
 
 // GetStartupScriptPath searches for the startup script, creates if if it does not exist and returns its path.
