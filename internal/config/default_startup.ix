@@ -1,7 +1,9 @@
 const(
     HOME = %/home/user/...
-    LOCALHOST_8080 = https://localhost:8080
-    LOCALHOST_8000 = https://localhost:8000
+    HTTPS_LOCALHOST_8080 = https://localhost:8080
+    HTTPS_LOCALHOST_8000 = https://localhost:8000
+    HTTP_LOCALHOST_8080 = http://localhost:8080
+    HTTP_LOCALHOST_8000 = http://localhost:8000
     LOCALHOST_1200 = https://localhost:1200
 )
 
@@ -14,8 +16,10 @@ manifest {
             %/...
             %https://**
             http://example.com
-            LOCALHOST_8080
-            LOCALHOST_8000
+            HTTPS_LOCALHOST_8080
+            HTTP_LOCALHOST_8080
+            HTTPS_LOCALHOST_8000
+            HTTP_LOCALHOST_8000
             LOCALHOST_1200
             HOME
             %/tmp/mydb/...
@@ -46,8 +50,10 @@ manifest {
         },
         create: {
             %https://**
-            LOCALHOST_8080
-            LOCALHOST_8000
+            HTTPS_LOCALHOST_8080
+            HTTP_LOCALHOST_8080
+            HTTPS_LOCALHOST_8000
+            HTTP_LOCALHOST_8000
             LOCALHOST_1200
             HOME
             %/tmp/mydb/...
@@ -59,24 +65,29 @@ manifest {
         update: {
             globals: "*"
             %https://**
-            LOCALHOST_8080
-            LOCALHOST_8000
+            HTTPS_LOCALHOST_8080
+            HTTP_LOCALHOST_8080
+            HTTPS_LOCALHOST_8000
+            HTTP_LOCALHOST_8000
             LOCALHOST_1200
             HOME
         }
         delete: {
             %https://**
-            LOCALHOST_8080
-            LOCALHOST_8000
+            HTTPS_LOCALHOST_8080
+            HTTP_LOCALHOST_8080
+            HTTPS_LOCALHOST_8000
+            HTTP_LOCALHOST_8000
             LOCALHOST_1200
             HOME
         }
         provide: {
             %https://**
-            LOCALHOST_8080
-            LOCALHOST_8000
+            HTTPS_LOCALHOST_8080
+            HTTP_LOCALHOST_8080
+            HTTPS_LOCALHOST_8000
+            HTTP_LOCALHOST_8000
             LOCALHOST_1200
-            https://localhost:4444
         }
     }
     limits: {
