@@ -1866,11 +1866,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return newList(&ValueList{
 						elements: []Value{
 							objFrom(ValMap{
-								"name":        Str(filepath.Base(tempDir)),
-								"path":        tempDirPath,
-								"isDir":       True,
-								"isRegular":   False,
-								"isWalkStart": True,
+								"name":          Str(filepath.Base(tempDir)),
+								"path":          tempDirPath,
+								"is-dir":        True,
+								"is-regular":    False,
+								"is-walk-start": True,
 							}),
 						},
 					})
@@ -1889,18 +1889,18 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return newList(&ValueList{
 						elements: []Value{
 							objFrom(ValMap{
-								"name":        Str(filepath.Base(tempDir)),
-								"path":        tempDirPath,
-								"isDir":       Bool(true),
-								"isRegular":   Bool(false),
-								"isWalkStart": Bool(true),
+								"name":          Str(filepath.Base(tempDir)),
+								"path":          tempDirPath,
+								"is-dir":        Bool(true),
+								"is-regular":    Bool(false),
+								"is-walk-start": Bool(true),
 							}),
 							objFrom(ValMap{
-								"name":        Str(regularFilename),
-								"path":        Path(regularFilePath),
-								"isDir":       Bool(false),
-								"isRegular":   Bool(true),
-								"isWalkStart": Bool(false),
+								"name":          Str(regularFilename),
+								"path":          Path(regularFilePath),
+								"is-dir":        Bool(false),
+								"is-regular":    Bool(true),
+								"is-walk-start": Bool(false),
 							}),
 						},
 					})
@@ -1923,25 +1923,25 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return newList(&ValueList{
 						elements: []Value{
 							objFrom(ValMap{
-								"name":        Str(filepath.Base(tempDir)),
-								"path":        Path(tempDir + "/"),
-								"isDir":       Bool(true),
-								"isRegular":   Bool(false),
-								"isWalkStart": Bool(true),
+								"name":          Str(filepath.Base(tempDir)),
+								"path":          Path(tempDir + "/"),
+								"is-dir":        Bool(true),
+								"is-regular":    Bool(false),
+								"is-walk-start": Bool(true),
 							}),
 							objFrom(ValMap{
-								"name":        Str(regularFilename),
-								"path":        Path(regularFilePath),
-								"isDir":       Bool(false),
-								"isRegular":   Bool(true),
-								"isWalkStart": Bool(false),
+								"name":          Str(regularFilename),
+								"path":          Path(regularFilePath),
+								"is-dir":        Bool(false),
+								"is-regular":    Bool(true),
+								"is-walk-start": Bool(false),
 							}),
 							objFrom(ValMap{
-								"name":        Str(subdirName),
-								"path":        Path(subdirPath + "/"),
-								"isDir":       Bool(true),
-								"isRegular":   Bool(false),
-								"isWalkStart": Bool(false),
+								"name":          Str(subdirName),
+								"path":          Path(subdirPath + "/"),
+								"is-dir":        Bool(true),
+								"is-regular":    Bool(false),
+								"is-walk-start": Bool(false),
 							}),
 						},
 					})
@@ -1953,7 +1953,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					entries = []
 					walk $$dir entry {
 						entries = append($entries, $entry)
-						if $entry.isRegular {
+						if $entry.is-regular {
 							prune
 						}
 					}
@@ -1971,18 +1971,18 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return newList(&ValueList{
 						elements: []Value{
 							objFrom(ValMap{
-								"name":        Str(filepath.Base(tempDir)),
-								"path":        Path(tempDir + "/"),
-								"isDir":       Bool(true),
-								"isRegular":   Bool(false),
-								"isWalkStart": Bool(true),
+								"name":          Str(filepath.Base(tempDir)),
+								"path":          Path(tempDir + "/"),
+								"is-dir":        Bool(true),
+								"is-regular":    Bool(false),
+								"is-walk-start": Bool(true),
 							}),
 							objFrom(ValMap{
-								"name":        Str(regularFilename),
-								"path":        Path(regularFilePath),
-								"isDir":       Bool(false),
-								"isRegular":   Bool(true),
-								"isWalkStart": Bool(false),
+								"name":          Str(regularFilename),
+								"path":          Path(regularFilePath),
+								"is-dir":        Bool(false),
+								"is-regular":    Bool(true),
+								"is-walk-start": Bool(false),
 							}),
 						},
 					})
@@ -1994,10 +1994,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					entries = []
 					walk $$dir entry {
 						entries = append($entries, $entry)
-						if $entry.isWalkStart {
+						if $entry.is-walk-start {
 							continue
 						}
-						if $entry.isDir {
+						if $entry.is-dir {
 							prune
 						}
 					}
@@ -2017,25 +2017,25 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return newList(&ValueList{
 						elements: []Value{
 							objFrom(ValMap{
-								"name":        Str(filepath.Base(tempDir)),
-								"path":        Path(tempDir + "/"),
-								"isDir":       Bool(true),
-								"isRegular":   Bool(false),
-								"isWalkStart": Bool(true),
+								"name":          Str(filepath.Base(tempDir)),
+								"path":          Path(tempDir + "/"),
+								"is-dir":        Bool(true),
+								"is-regular":    Bool(false),
+								"is-walk-start": Bool(true),
 							}),
 							objFrom(ValMap{
-								"name":        Str(subdir1Name),
-								"path":        Path(subdir1Path + "/"),
-								"isDir":       Bool(true),
-								"isRegular":   Bool(false),
-								"isWalkStart": Bool(false),
+								"name":          Str(subdir1Name),
+								"path":          Path(subdir1Path + "/"),
+								"is-dir":        Bool(true),
+								"is-regular":    Bool(false),
+								"is-walk-start": Bool(false),
 							}),
 							objFrom(ValMap{
-								"name":        Str(subdir2Name),
-								"path":        Path(subdir2Path + "/"),
-								"isDir":       Bool(true),
-								"isRegular":   Bool(false),
-								"isWalkStart": Bool(false),
+								"name":          Str(subdir2Name),
+								"path":          Path(subdir2Path + "/"),
+								"is-dir":        Bool(true),
+								"is-regular":    Bool(false),
+								"is-walk-start": Bool(false),
 							}),
 						},
 					})
@@ -2047,10 +2047,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					entries = []
 					walk $$dir entry {
 						entries = append($entries, $entry)
-						if $entry.isWalkStart {
+						if $entry.is-walk-start {
 							continue
 						}
-						if $entry.isDir {
+						if $entry.is-dir {
 							break
 						}
 					}
@@ -2069,18 +2069,18 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return newList(&ValueList{
 						elements: []Value{
 							objFrom(ValMap{
-								"name":        Str(filepath.Base(tempDir)),
-								"path":        Path(tempDir + "/"),
-								"isDir":       Bool(true),
-								"isRegular":   Bool(false),
-								"isWalkStart": Bool(true),
+								"name":          Str(filepath.Base(tempDir)),
+								"path":          Path(tempDir + "/"),
+								"is-dir":        Bool(true),
+								"is-regular":    Bool(false),
+								"is-walk-start": Bool(true),
 							}),
 							objFrom(ValMap{
-								"name":        Str(subdir1Name),
-								"path":        Path(subdir1Path + "/"),
-								"isDir":       Bool(true),
-								"isRegular":   Bool(false),
-								"isWalkStart": Bool(false),
+								"name":          Str(subdir1Name),
+								"path":          Path(subdir1Path + "/"),
+								"is-dir":        Bool(true),
+								"is-regular":    Bool(false),
+								"is-walk-start": Bool(false),
 							}),
 						},
 					})

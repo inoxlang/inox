@@ -187,11 +187,11 @@ func CreateDirEntry(path, walkedDirPath string, addDotSlashPrefix bool, d fs.Dir
 	}
 
 	return objFrom(ValMap{
-		"name":        Str(d.Name()),
-		"path":        pth,
-		"isDir":       Bool(d.IsDir()),
-		"isRegular":   Bool(d.Type().IsRegular()),
-		"isWalkStart": Bool(isWalkStart),
+		"name":          Str(d.Name()),
+		"path":          pth,
+		"is-dir":        Bool(d.IsDir()),
+		"is-regular":    Bool(d.Type().IsRegular()),
+		"is-walk-start": Bool(isWalkStart),
 	})
 }
 

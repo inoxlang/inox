@@ -571,12 +571,12 @@ var (
 		"opt":            OPTION_PATTERN,
 		"dir_entry": &ObjectPattern{
 			entryPatterns: map[string]Pattern{
-				"absPath": PATH_PATTERN,
-				"isDir":   BOOL_PATTERN,
-				"size":    INT_PATTERN,
-				"mode":    FILE_MODE_PATTERN,
-				"modTime": DATE_PATTERN,
-				"name":    STR_PATTERN,
+				"abs-path": PATH_PATTERN,
+				"is-dir":   BOOL_PATTERN,
+				"size":     INT_PATTERN,
+				"mode":     FILE_MODE_PATTERN,
+				"mod-time": DATE_PATTERN,
+				"name":     STR_PATTERN,
 			},
 		},
 		"event":         EVENT_PATTERN,

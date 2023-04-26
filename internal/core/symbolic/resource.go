@@ -9,11 +9,11 @@ import (
 
 var (
 	WALK_ELEM = NewObject(map[string]SymbolicValue{
-		"name":        &String{},
-		"path":        &Path{},
-		"isDir":       &Bool{},
-		"isRegular":   &Bool{},
-		"isWalkStart": &Bool{},
+		"name":          &String{},
+		"path":          &Path{},
+		"is-dir":        &Bool{},
+		"is-regular":    &Bool{},
+		"is-walk-start": &Bool{},
 	}, nil)
 
 	ANY_PATH       = &Path{}

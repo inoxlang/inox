@@ -35,7 +35,7 @@ walk ./tempdir/ entry {
 print "\nbreak after the starting node:"
 walk ./tempdir/ entry {
     print $entry.path
-    if entry.isWalkStart {
+    if entry.is-walk-start {
         break
     }
 }

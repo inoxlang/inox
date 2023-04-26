@@ -17,15 +17,15 @@ func (i FileInfo) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "name":
 		return i.Name
-	case "absPath":
+	case "abs-path":
 		return i.AbsPath
 	case "size":
 		return i.Size
 	case "mode":
 		return i.Mode
-	case "modTime":
+	case "mod-time":
 		return i.ModTime
-	case "isDir":
+	case "is-dir":
 		return i.IsDir
 	}
 	method, ok := i.GetGoMethod(name)
@@ -40,5 +40,5 @@ func (FileInfo) SetProp(ctx *Context, name string, value Value) error {
 }
 
 func (FileInfo) PropertyNames(ctx *Context) []string {
-	return []string{"name", "absPath", "size", "mode", "modTime", "isDir"}
+	return []string{"name", "abs-path", "size", "mode", "mod-time", "is-dir"}
 }
