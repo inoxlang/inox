@@ -1,6 +1,7 @@
 const(
     HOME = %/home/user/...
     LOCALHOST_8080 = https://localhost:8080
+    LOCALHOST_8000 = https://localhost:8000
     LOCALHOST_1200 = https://localhost:1200
 )
 
@@ -13,9 +14,10 @@ manifest {
             %/...
             %https://**
             http://example.com
-            $$LOCALHOST_8080
-            $$LOCALHOST_1200
-            $$HOME
+            LOCALHOST_8080
+            LOCALHOST_8000
+            LOCALHOST_1200
+            HOME
             %/tmp/mydb/...
             tcp: ://example.com:80
             env: "*"
@@ -44,9 +46,10 @@ manifest {
         },
         create: {
             %https://**
-            $$LOCALHOST_8080
-            $$LOCALHOST_1200
-            $$HOME
+            LOCALHOST_8080
+            LOCALHOST_8000
+            LOCALHOST_1200
+            HOME
             %/tmp/mydb/...
             routines: {}
         }
@@ -56,20 +59,23 @@ manifest {
         update: {
             globals: "*"
             %https://**
-            $$LOCALHOST_8080
-            $$LOCALHOST_1200
-            $$HOME
+            LOCALHOST_8080
+            LOCALHOST_8000
+            LOCALHOST_1200
+            HOME
         }
         delete: {
             %https://**
-            $$LOCALHOST_8080
-            $$LOCALHOST_1200
-            $$HOME
+            LOCALHOST_8080
+            LOCALHOST_8000
+            LOCALHOST_1200
+            HOME
         }
         provide: {
             %https://**
-            $$LOCALHOST_8080
-            $$LOCALHOST_1200
+            LOCALHOST_8080
+            LOCALHOST_8000
+            LOCALHOST_1200
             https://localhost:4444
         }
     }
