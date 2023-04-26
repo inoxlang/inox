@@ -10,9 +10,9 @@ It allows to easily write [concurrent code](#concurrency) and to exchange [messa
 An archive with a Linux binary and some examples is available in [release assets](https://github.com/inoxlang/inox/releases), if you want to compile the language yourself go [here](#compile-from-source).
 
 - uncompress the archive
-- copy the `inox` binary to `/usr/local/bin`
+- install the `inox` binary to `/usr/local/bin`
   ```
-  sudo cp inox /usr/local/bin/inox
+  sudo install inox -o root -m 0755 /usr/local/bin/inox
   ```
 ### Editor support
 
