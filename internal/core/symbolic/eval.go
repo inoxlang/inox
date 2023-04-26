@@ -141,8 +141,11 @@ func SymbolicEvalCheck(input SymbolicEvalCheckInput) (*SymbolicData, error) {
 }
 
 func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr error) {
+	return _symbolicEval(node, state, false)
+}
+func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result SymbolicValue, finalErr error) {
 	defer func() {
-		if finalErr == nil && result != nil && state.symbolicData != nil {
+		if !ignoreNodeValue && finalErr == nil && result != nil && state.symbolicData != nil {
 			state.symbolicData.SetNodeValue(node, result)
 		}
 	}()
@@ -218,7 +221,43 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 	case *parse.URLPatternLiteral:
 		return &URLPattern{}, nil
 	case *parse.URLExpression:
-		return &URL{}, nil
+		_, err := _symbolicEval(n.HostPart, state, true)
+		if err != nil {
+			return nil, err
+		}
+
+		state.symbolicData.SetNodeValue(n.HostPart, ANY_URL)
+
+		//path evaluation
+
+		for _, node := range n.Path {
+			_, isStaticPathSlice := node.(*parse.PathSlice)
+			_, err := _symbolicEval(node, state, isStaticPathSlice)
+			if err != nil {
+				return nil, err
+			}
+
+			if isStaticPathSlice {
+				state.symbolicData.SetNodeValue(node, ANY_URL)
+			}
+		}
+
+		//query evaluation
+
+		for _, p := range n.QueryParams {
+			param := p.(*parse.URLQueryParameter)
+
+			state.symbolicData.SetNodeValue(param, ANY_URL)
+
+			for _, slice := range param.Value {
+				_, err := _symbolicEval(slice, state, false)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+
+		return ANY_URL, nil
 	case *parse.NilLiteral:
 		return &NilT{}, nil
 	case *parse.SelfExpression:

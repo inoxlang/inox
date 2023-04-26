@@ -17,6 +17,7 @@ var (
 	}, nil)
 
 	ANY_PATH       = &Path{}
+	ANY_URL        = &URL{}
 	PATH_PROPNAMES = []string{"segments", "extension", "name", "dir", "ends_with_slash", "rel_equiv", "change_extension", "join"}
 )
 
@@ -151,7 +152,7 @@ func (u *URL) Prop(name string) SymbolicValue {
 }
 
 func (u *URL) WidestOfType() SymbolicValue {
-	return &URL{}
+	return ANY_URL
 }
 
 // A Scheme represents a symbolic Scheme.
