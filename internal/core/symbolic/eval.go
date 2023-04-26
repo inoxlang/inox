@@ -203,7 +203,28 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 	case *parse.OptionExpression:
 		return NewOption(n.Name), nil
 	case *parse.AbsolutePathExpression, *parse.RelativePathExpression:
-		return &Path{}, nil
+		var slices []parse.Node
+
+		switch pexpr := n.(type) {
+		case *parse.AbsolutePathExpression:
+			slices = pexpr.Slices
+		case *parse.RelativePathExpression:
+			slices = pexpr.Slices
+		}
+
+		for _, node := range slices {
+			_, isStaticPathSlice := node.(*parse.PathSlice)
+			_, err := _symbolicEval(node, state, isStaticPathSlice)
+			if err != nil {
+				return nil, err
+			}
+
+			if isStaticPathSlice {
+				state.symbolicData.SetNodeValue(node, ANY_PATH)
+			}
+		}
+
+		return ANY_PATH, nil
 	case *parse.PathPatternExpression:
 		return &PathPattern{}, nil
 	case *parse.URLLiteral:
