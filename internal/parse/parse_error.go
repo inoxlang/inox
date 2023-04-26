@@ -365,6 +365,9 @@ func fmtAPatternWasExpected(s []rune, i int32) string {
 func fmtInvalidObjKeyMissingColonAfterKey(lastKeyName string) string {
 	return fmt.Sprintf("invalid object literal, missing colon after key '%s'", lastKeyName)
 }
+func fmtInvalidObjKeyMissingColonAfterTypeAnnotation(lastKeyName string) string {
+	return fmt.Sprintf("invalid object literal, missing colon after type annotation for key '%s'", lastKeyName)
+}
 
 func fmtInvalidObjKeyCommentBeforeValueOfKey(lastKeyName string) string {
 	return fmt.Sprintf("invalid object literal, comment before value of key '%s'", lastKeyName)

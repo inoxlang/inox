@@ -6630,16 +6630,15 @@ func TestParse(t *testing.T) {
 							NodeBase: NodeBase{
 								NodeSpan{0, 3},
 								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_MISSING_CLOSING_BRACE},
-								[]Token{{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{0, 1}}},
+								[]Token{
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{0, 1}},
+									{Type: NEWLINE, Span: NodeSpan{2, 3}},
+								},
 							},
 							Properties: []*ObjectProperty{
 								{
-									NodeBase: NodeBase{
-										NodeSpan{1, 3},
-										&ParsingError{UnspecifiedParsingError, UNEXPECTED_NEWLINE_AFTER_COLON},
-										[]Token{{Type: NEWLINE, Span: NodeSpan{2, 3}}},
-									},
-									Key: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{1, 2}},
+									Value: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{1, 2}, nil, nil},
 										Name:     "a",
 									},
@@ -6890,7 +6889,7 @@ func TestParse(t *testing.T) {
 							},
 							Properties: []*ObjectProperty{
 								{
-									NodeBase: NodeBase{NodeSpan{2, 3}, nil, nil},
+									NodeBase: NodeBase{NodeSpan{2, 4}, nil, nil},
 									Key:      nil,
 									Value: &IntLiteral{
 										NodeBase: NodeBase{NodeSpan{2, 3}, nil, nil},
@@ -7038,7 +7037,7 @@ func TestParse(t *testing.T) {
 							},
 							Properties: []*ObjectProperty{
 								{
-									NodeBase: NodeBase{NodeSpan{3, 6}, nil, nil},
+									NodeBase: NodeBase{NodeSpan{3, 8}, nil, nil},
 									Key:      nil,
 									Value: &QuotedStringLiteral{
 										NodeBase: NodeBase{
@@ -7114,7 +7113,7 @@ func TestParse(t *testing.T) {
 							Properties: []*ObjectProperty{
 								{
 									NodeBase: NodeBase{
-										NodeSpan{2, 3},
+										NodeSpan{2, 4},
 										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_LIT_ENTRY_SEPARATION},
 										nil,
 									},
@@ -7126,7 +7125,7 @@ func TestParse(t *testing.T) {
 									},
 								},
 								{
-									NodeBase: NodeBase{NodeSpan{4, 5}, nil, nil},
+									NodeBase: NodeBase{NodeSpan{4, 6}, nil, nil},
 									Key:      nil,
 									Value: &IntLiteral{
 										NodeBase: NodeBase{NodeSpan{4, 5}, nil, nil},
@@ -7337,7 +7336,7 @@ func TestParse(t *testing.T) {
 							},
 							Properties: []*ObjectProperty{
 								{
-									NodeBase: NodeBase{NodeSpan{2, 7}, nil, nil},
+									NodeBase: NodeBase{NodeSpan{2, 8}, nil, nil},
 									Value: &PropertyNameLiteral{
 										NodeBase: NodeBase{NodeSpan{2, 7}, nil, nil},
 										Name:     "name",
@@ -7542,7 +7541,7 @@ func TestParse(t *testing.T) {
 							},
 							Properties: []*ObjectProperty{
 								{
-									NodeBase: NodeBase{NodeSpan{16, 17}, nil, nil},
+									NodeBase: NodeBase{NodeSpan{16, 18}, nil, nil},
 									Key:      nil,
 									Value: &IntLiteral{
 										NodeBase: NodeBase{NodeSpan{16, 17}, nil, nil},
@@ -8074,7 +8073,7 @@ func TestParse(t *testing.T) {
 							},
 							Properties: []*ObjectProperty{
 								{
-									NodeBase: NodeBase{NodeSpan{3, 4}, nil, nil},
+									NodeBase: NodeBase{NodeSpan{3, 5}, nil, nil},
 									Key:      nil,
 									Value: &IntLiteral{
 										NodeBase: NodeBase{NodeSpan{3, 4}, nil, nil},
@@ -8104,7 +8103,7 @@ func TestParse(t *testing.T) {
 							},
 							Properties: []*ObjectProperty{
 								{
-									NodeBase: NodeBase{NodeSpan{4, 7}, nil, nil},
+									NodeBase: NodeBase{NodeSpan{4, 9}, nil, nil},
 									Key:      nil,
 									Value: &QuotedStringLiteral{
 										NodeBase: NodeBase{
@@ -8142,7 +8141,7 @@ func TestParse(t *testing.T) {
 							Properties: []*ObjectProperty{
 								{
 									NodeBase: NodeBase{
-										NodeSpan{3, 4},
+										NodeSpan{3, 5},
 										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_LIT_ENTRY_SEPARATION},
 										nil,
 									},
@@ -8154,7 +8153,7 @@ func TestParse(t *testing.T) {
 									},
 								},
 								{
-									NodeBase: NodeBase{NodeSpan{5, 6}, nil, nil},
+									NodeBase: NodeBase{NodeSpan{5, 7}, nil, nil},
 									Key:      nil,
 									Value: &IntLiteral{
 										NodeBase: NodeBase{NodeSpan{5, 6}, nil, nil},
@@ -8419,7 +8418,7 @@ func TestParse(t *testing.T) {
 							},
 							Properties: []*ObjectProperty{
 								{
-									NodeBase: NodeBase{NodeSpan{3, 8}, nil, nil},
+									NodeBase: NodeBase{NodeSpan{3, 9}, nil, nil},
 									Value: &PropertyNameLiteral{
 										NodeBase: NodeBase{NodeSpan{3, 8}, nil, nil},
 										Name:     "name",
@@ -8532,7 +8531,7 @@ func TestParse(t *testing.T) {
 							},
 							Properties: []*ObjectProperty{
 								{
-									NodeBase: NodeBase{NodeSpan{17, 18}, nil, nil},
+									NodeBase: NodeBase{NodeSpan{17, 19}, nil, nil},
 									Key:      nil,
 									Value: &IntLiteral{
 										NodeBase: NodeBase{NodeSpan{17, 18}, nil, nil},
