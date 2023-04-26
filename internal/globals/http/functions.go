@@ -282,16 +282,60 @@ func HttpGet(ctx *core.Context, u core.URL, args ...core.Value) (*HttpResponse, 
 	return client.DoRequest(ctx, req)
 }
 
-func httpGetBody(ctx *core.Context, u core.URL, args ...core.Value) (*core.ByteSlice, error) {
+func HttpRead(ctx *core.Context, u core.URL, args ...core.Value) (result core.Value, finalErr error) {
+	var contentType core.Mimetype
+	var b []byte
+	var optionObject *core.Object
+	doParse := true
+	validateRaw := false
+
+	for _, arg := range args {
+		switch v := arg.(type) {
+		case core.Mimetype:
+			if contentType != "" {
+				finalErr = core.FmtErrXProvidedAtLeastTwice("content type")
+				return
+			}
+			contentType = v
+		case core.Option:
+			if v.Name == "raw" {
+				if v.Value == core.True {
+					doParse = false
+				}
+			} else {
+				return nil, fmt.Errorf("invalid argument %#v", arg)
+			}
+		case *core.Object:
+			if optionObject != nil {
+				return nil, core.FmtErrXProvidedAtLeastTwice("http option")
+			}
+			optionObject = v
+		default:
+			return nil, fmt.Errorf("invalid argument %#v", arg)
+		}
+	}
+
 	resp, err := HttpGet(ctx, u, args...)
 	if err != nil {
-		return &core.ByteSlice{}, err
+		return nil, fmt.Errorf("http network error: %w", err)
 	}
-	b, err := io.ReadAll(resp.wrapped.Body)
+
+	if resp.StatusCode(ctx) >= 400 {
+		return nil, fmt.Errorf("http: status code %d: %s", resp.StatusCode(ctx), resp.Status(ctx))
+	}
+
+	b, err = io.ReadAll(resp.wrapped.Body)
 	if err != nil {
-		return &core.ByteSlice{}, err
+		return nil, fmt.Errorf("http: error while reading body: %w", err)
 	}
-	return &core.ByteSlice{Bytes: b, IsDataMutable: true}, nil
+
+	respContentType, err := Mime_(ctx, core.Str(resp.ContentType(ctx)))
+	if err == nil && contentType == "" {
+		contentType = respContentType
+	}
+
+	result, _, finalErr = core.ParseOrValidateResourceContent(ctx, b, respContentType, doParse, validateRaw)
+	return
 }
 
 func HttpPost(ctx *core.Context, args ...core.Value) (*HttpResponse, error) {

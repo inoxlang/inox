@@ -33,4 +33,5 @@ var FILE_EXTENSION_TO_MIMETYPE = map[string]Mimetype{
 	".html": HTML_CTYPE,
 	".htm":  HTML_CTYPE,
 	".txt":  PLAIN_TEXT_CTYPE,
+	".md":   PLAIN_TEXT_CTYPE,
 }

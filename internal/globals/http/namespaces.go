@@ -37,8 +37,8 @@ func init() {
 		HttpGet, func(ctx *symbolic.Context, u *symbolic.URL, args ...symbolic.SymbolicValue) (*http_symbolic.HttpResponse, *symbolic.Error) {
 			return &http_symbolic.HttpResponse{}, nil
 		},
-		httpGetBody, func(ctx *symbolic.Context, u *symbolic.URL, args ...symbolic.SymbolicValue) (*symbolic.ByteSlice, *symbolic.Error) {
-			return &symbolic.ByteSlice{}, nil
+		HttpRead, func(ctx *symbolic.Context, u *symbolic.URL, args ...symbolic.SymbolicValue) (symbolic.SymbolicValue, *symbolic.Error) {
+			return symbolic.ANY, nil
 		},
 		HttpPost, func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) (*http_symbolic.HttpResponse, *symbolic.Error) {
 			return &http_symbolic.HttpResponse{}, nil
@@ -74,7 +74,7 @@ func NewHttpNamespace() *core.Record {
 	return core.NewRecordFromMap(core.ValMap{
 		"exists":     core.ValOf(httpExists),
 		"get":        core.ValOf(HttpGet),
-		"getbody":    core.ValOf(httpGetBody),
+		"read":       core.ValOf(HttpRead),
 		"post":       core.ValOf(HttpPost),
 		"patch":      core.ValOf(HttpPatch),
 		"delete":     core.ValOf(HttpDelete),

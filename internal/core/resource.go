@@ -19,8 +19,11 @@ import (
 )
 
 var (
-	ErrCannotReleaseUnregisteredResource = errors.New("cannot release unregistered resource")
-	ErrFailedToAcquireResurce            = errors.New("failed to acquire resource")
+	ErrCannotReleaseUnregisteredResource   = errors.New("cannot release unregistered resource")
+	ErrFailedToAcquireResurce              = errors.New("failed to acquire resource")
+	ErrResourceHasHardcodedUrlMetaProperty = errors.New("resource has hardcoded _url_ metaproperty")
+	ErrInvalidResourceContent              = errors.New("invalid resource's content")
+	ErrContentTypeParserNotFound           = errors.New("parser not found for content type")
 
 	//resourceMap is a global identity map for resources
 	resourceMap _resourceMap
@@ -862,4 +865,45 @@ func (patt URLPattern) Test(ctx *Context, v Value) bool {
 	default:
 		return false
 	}
+}
+
+func ParseOrValidateResourceContent(ctx *Context, resourceContent []byte, ctype Mimetype, doParse, validateRaw bool) (res Value, contentType Mimetype, err error) {
+	ct := ctype.WithoutParams()
+	switch ct {
+	case PLAIN_TEXT_CTYPE:
+		res = Str(resourceContent)
+	case "", APP_OCTET_STREAM_CTYPE:
+		res = NewByteSlice(resourceContent, false, "")
+	default:
+		parser, ok := GetParser(ct)
+
+		if doParse {
+			if !ok {
+				res = nil
+				contentType = ""
+				err = fmt.Errorf("%w (%s)", ErrContentTypeParserNotFound, ct)
+				return
+			}
+
+			res, err = parser.Parse(ctx, utils.BytesAsString(resourceContent))
+		} else if validateRaw {
+			if !ok {
+				res = nil
+				contentType = ""
+				err = fmt.Errorf("%w (%s)", ErrContentTypeParserNotFound, ct)
+				return
+			}
+
+			if !parser.Validate(ctx, utils.BytesAsString(resourceContent)) {
+				res = nil
+				contentType = ""
+				err = ErrInvalidResourceContent
+				return
+			}
+			res = NewByteSlice(resourceContent, false, ct)
+		} else {
+			res = NewByteSlice(resourceContent, false, ct)
+		}
+	}
+	return
 }

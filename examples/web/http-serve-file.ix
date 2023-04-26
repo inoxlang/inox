@@ -25,7 +25,7 @@ fn handle(rw %http.resp_writer, r %http.req){
 server = http.Server!(https://localhost:8080, handle)
 
 options = { --insecure }
-body = http.getbody!(https://localhost:8080/index.js, options)
-print tostr(body)
+body = http.read!(https://localhost:8080/index.js, options)
+print $body
 
 server.close()

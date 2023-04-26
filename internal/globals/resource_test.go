@@ -106,7 +106,7 @@ func TestReadResource(t *testing.T) {
 			}, ctx))
 
 			assert.Nil(t, res)
-			assert.ErrorIs(t, err, ErrContentTypeParserNotFound)
+			assert.ErrorIs(t, err, core.ErrContentTypeParserNotFound)
 		})
 
 		t.Run("an error should bot be returned if raw data is asked AND there is no parser for content type", func(t *testing.T) {

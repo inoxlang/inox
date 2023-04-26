@@ -4,5 +4,5 @@ manifest {
     }
 }
 
-body = http.getbody!(https://jsonplaceholder.typicode.com/posts/1)
-print tostr(body)
+body = http.read!(https://jsonplaceholder.typicode.com/posts/1)
+print $body

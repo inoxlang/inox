@@ -33,6 +33,9 @@ func init() {
 		ReadFile, func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) (*symbolic.ByteSlice, *symbolic.Error) {
 			return &symbolic.ByteSlice{}, nil
 		},
+		Read, func(ctx *symbolic.Context, pth *symbolic.Path, args ...symbolic.SymbolicValue) (symbolic.SymbolicValue, *symbolic.Error) {
+			return symbolic.ANY, nil
+		},
 		ListFiles, func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) (*symbolic.List, *symbolic.Error) {
 			return symbolic.NewListOf(&symbolic.FileInfo{}), nil
 		},
@@ -73,7 +76,8 @@ func NewFsNamespace() *core.Record {
 	return core.NewRecordFromMap(core.ValMap{
 		"mkfile":        core.WrapGoFunction(Mkfile),
 		"mkdir":         core.WrapGoFunction(Mkdir),
-		"read":          core.WrapGoFunction(ReadFile),
+		"read_file":     core.WrapGoFunction(ReadFile),
+		"read":          core.WrapGoFunction(Read),
 		"ls":            core.WrapGoFunction(ListFiles),
 		"rm":            core.WrapGoFunction(Remove),
 		"remove":        core.WrapGoFunction(Remove),

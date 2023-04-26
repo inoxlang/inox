@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 
@@ -720,6 +721,58 @@ func makeFileInfo(info fs.FileInfo, pth string, fls afs.Filesystem) core.FileInf
 		Mode:    core.FileMode(info.Mode()),
 		ModTime: core.Date(info.ModTime()),
 		IsDir:   core.Bool(info.IsDir()),
+	}
+}
+
+func Read(ctx *core.Context, path core.Path, args ...core.Value) (result core.Value, finalErr error) {
+	doParse := true
+	validateRaw := false
+	var contentType core.Mimetype
+
+	for _, arg := range args {
+		switch v := arg.(type) {
+		case core.Mimetype:
+			if contentType != "" {
+				finalErr = core.FmtErrXProvidedAtLeastTwice("content type")
+				return
+			}
+			contentType = v
+		case core.Option:
+			if v.Name == "raw" {
+				if v.Value == core.True {
+					doParse = false
+				}
+			} else {
+				return nil, fmt.Errorf("invalid argument %#v", arg)
+			}
+		default:
+			return nil, fmt.Errorf("invalid argument %#v", arg)
+		}
+	}
+
+	if path.IsDirPath() {
+		_res, lsErr := ListFiles(ctx, path)
+		if lsErr != nil {
+			finalErr = lsErr
+			return
+		}
+
+		result = core.ConvertReturnValue(reflect.ValueOf(_res))
+		return
+	} else {
+		var _err error
+		b, _err := ReadEntireFile(ctx, path)
+		if _err != nil {
+			finalErr = _err
+			return
+		}
+
+		t, ok := core.FILE_EXTENSION_TO_MIMETYPE[filepath.Ext(string(path))]
+		if ok {
+			contentType = t
+		}
+		val, _, err := core.ParseOrValidateResourceContent(ctx, b, contentType, doParse, validateRaw)
+		return val, err
 	}
 }
 
