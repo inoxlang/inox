@@ -20,6 +20,10 @@ var (
 	ANY_RES_NAME  = &AnyResourceName{}
 	ANY_OPTION    = &Option{}
 	ANY_INT_RANGE = &IntRange{}
+	ANY_FILEMODE  = &FileMode{}
+	ANY_DATE      = &Date{}
+
+	FILEINFO_PROPNAMES = []string{"name", "abs-path", "size", "mode", "mod-time", "is-dir"}
 )
 
 func isAny(val SymbolicValue) bool {
@@ -432,12 +436,43 @@ func (a *FileMode) WidestOfType() SymbolicValue {
 //
 
 type FileInfo struct {
+	UnassignablePropsMixin
 	_ int
 }
 
 func (f *FileInfo) Test(v SymbolicValue) bool {
 	_, ok := v.(*FileInfo)
 	return ok
+}
+
+func (f FileInfo) GetGoMethod(name string) (*GoFunction, bool) {
+	return nil, false
+}
+
+func (f *FileInfo) Prop(name string) SymbolicValue {
+	switch name {
+	case "name":
+		return ANY_STR
+	case "abs-path":
+		return ANY_PATH
+	case "size":
+		return ANY_INT
+	case "mode":
+		return ANY_FILEMODE
+	case "mod-time":
+		return ANY_DATE
+	case "is-dir":
+		return ANY_BOOL
+	}
+	method, ok := f.GetGoMethod(name)
+	if !ok {
+		panic(FormatErrPropertyDoesNotExist(name, f))
+	}
+	return method
+}
+
+func (*FileInfo) PropertyNames() []string {
+	return FILEINFO_PROPNAMES
 }
 
 func (a *FileInfo) IsWidenable() bool {
