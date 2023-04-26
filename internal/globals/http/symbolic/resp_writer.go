@@ -25,23 +25,23 @@ func (r HttpResponseWriter) Clone(clones map[uintptr]symbolic.SymbolicValue) sym
 
 func (resp *HttpResponseWriter) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
-	case "writePlainText":
+	case "write_text":
 		return symbolic.WrapGoMethod(resp.WritePlainText), true
-	case "writeBinary":
+	case "write_binary":
 		return symbolic.WrapGoMethod(resp.WriteBinary), true
-	case "writeHTML":
+	case "write_html":
 		return symbolic.WrapGoMethod(resp.WriteHTML), true
-	case "writeJSON":
+	case "write_json":
 		return symbolic.WrapGoMethod(resp.WriteJSON), true
-	case "writeIXON":
+	case "write_ixon":
 		return symbolic.WrapGoMethod(resp.WriteIXON), true
-	case "setCookie":
+	case "set_cookie":
 		return symbolic.WrapGoMethod(resp.SetCookie), true
-	case "writeStatus":
+	case "write_status":
 		return symbolic.WrapGoMethod(resp.WriteStatus), true
-	case "writeError":
+	case "write_error":
 		return symbolic.WrapGoMethod(resp.WriteError), true
-	case "addHeader":
+	case "add_header":
 		return symbolic.WrapGoMethod(resp.AddHeader), true
 	default:
 		return nil, false
@@ -54,8 +54,7 @@ func (resp *HttpResponseWriter) Prop(name string) symbolic.SymbolicValue {
 
 func (*HttpResponseWriter) PropertyNames() []string {
 	return []string{
-		"writePlainText", "writeBinary", "writeHTML", "writeJSON", "writeIXON", "setCookie", "writeStatus", "addHeader",
-		"finish",
+		"write_text", "write_binary", "write_html", "write_json", "write_ixon", "set_cookie", "write_status", "write_error", "add_header",
 	}
 }
 
@@ -69,7 +68,6 @@ func (a *HttpResponseWriter) IsWidenable() bool {
 
 func (r *HttpResponseWriter) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%http-response-writer")))
-	return
 }
 
 func (r *HttpResponseWriter) WidestOfType() symbolic.SymbolicValue {

@@ -7,7 +7,7 @@ manifest {
 
 
 fn handle(rw %http.resp_writer, r %http.req){
-    rw.writeJSON({ aa: 1 })
+    rw.write_json({ aa: 1 })
 }
 
 server = http.Server!(https://localhost:8080, Mapping {

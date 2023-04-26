@@ -16,7 +16,7 @@ fn handle(rw %http.resp_writer, r %http.req){
             err = http.servefile(rw, r, ./examples/static/{path})
             if err? {
                 print $err
-                rw.writeStatus(404)
+                rw.write_status(404)
             }
         }
     }

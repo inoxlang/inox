@@ -17,8 +17,8 @@ var (
 	ErrStatusAlreadySet             = errors.New("status already set")
 
 	RESP_WRITER_PROPNAMES = []string{
-		"writePlainText", "writeBinary", "writeHTML", "writeJSON", "writeIXON", "setCookie", "writeStatus", "writeError",
-		"addHeader", "finish",
+		"write_text", "write_binary", "write_html", "write_json", "write_ixon", "set_cookie", "write_status", "write_error",
+		"add_header",
 	}
 )
 
@@ -47,23 +47,23 @@ func (rw *HttpResponseWriter) GetGoMethod(name string) (*core.GoFunction, bool) 
 	rw.assertIsNotFinished()
 
 	switch name {
-	case "writePlainText":
+	case "write_text":
 		return core.WrapGoMethod(rw.WritePlainText), true
-	case "writeBinary":
+	case "write_binary":
 		return core.WrapGoMethod(rw.WriteBinary), true
-	case "writeHTML":
+	case "write_html":
 		return core.WrapGoMethod(rw.WriteHTML), true
-	case "writeJSON":
+	case "write_json":
 		return core.WrapGoMethod(rw.WriteJSON), true
-	case "writeIXON":
+	case "write_ixon":
 		return core.WrapGoMethod(rw.WriteIXON), true
-	case "setCookie":
+	case "set_cookie":
 		return core.WrapGoMethod(rw.SetCookie), true
-	case "writeStatus":
+	case "write_status":
 		return core.WrapGoMethod(rw.WriteStatus), true
-	case "writeError":
+	case "write_error":
 		return core.WrapGoMethod(rw.WriteError), true
-	case "addHeader":
+	case "add_header":
 		return core.WrapGoMethod(rw.AddHeader), true
 	default:
 		return nil, false

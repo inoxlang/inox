@@ -16,7 +16,7 @@ manifest {
 fn handle(rw %http.resp_writer, r %http.req){
     match r.path {
         / {
-            rw.setCookie({
+            rw.set_cookie({
                 name: "a"
                 value: "1"
             })

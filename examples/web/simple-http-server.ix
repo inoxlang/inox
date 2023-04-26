@@ -13,7 +13,7 @@ fn handle(rw %http.resp_writer, r %http.req){
 
     match r.path {
         / {
-            rw.writeJSON({ a: 1 })
+            rw.write_json({ a: 1 })
         }
     }
 }
