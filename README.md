@@ -31,6 +31,19 @@ View [Shell Basics](./docs/shell-basics.md) to learn how to use Inox interactive
 
 ## Features
 
+- [Injection Prevention](#injection-prevention)
+- [Permission system](#permission-system)
+  - [Required permissions](#required-permissions)
+  - [Isolation of dependencies](#isolation-of-dependencies)
+  - [Dropping permissions](#dropping-permissions)
+- [DoS Mitigation (WIP)](#dos-mitigation)
+- [Easy declaration of CLI Parameters](#easy-declaration-of-cli-parameters)
+- [Transactions & Effects (WIP)](#transactions--effects-wip)
+- [Concurrency](#concurrency)
+  - [Coroutines (Goroutines)](#coroutines-goroutines)
+  - [Lifetime jobs](#lifetime-jobs)
+- [Communication](#communication)
+
 ### Injection Prevention
 
 In Inox interpolations are always restricted in order to prevent injections.
