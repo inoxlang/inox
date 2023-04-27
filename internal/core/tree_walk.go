@@ -414,7 +414,9 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return nil, fmt.Errorf("cannot call nil %#v", n.Callee)
 		}
 
-		return TreeWalkCallFunc(callee, object, state, n.Arguments, n.Must, n.CommandLikeSyntax)
+		return TreeWalkCallFunc(TreeWalkCall{
+			callee: callee, self: object, state: state, arguments: n.Arguments, must: n.Must, cmdLineSyntax: n.CommandLikeSyntax,
+		})
 	case *parse.PatternCallExpression:
 		callee, err := TreeWalkEval(n.Callee, state)
 		if err != nil {
@@ -2317,9 +2319,25 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 }
 
+type TreeWalkCall struct {
+	callee        Value
+	self          Value
+	state         *TreeWalkState
+	arguments     any
+	must          bool
+	cmdLineSyntax bool
+}
+
 // TreeWalkCallFunc calls calleeNode, whatever its kind (Inox function or Go function).
 // If must is true and the second result of a Go function is a non-nil error, TreeWalkCallFunc will panic.
-func TreeWalkCallFunc(callee Value, self Value, state *TreeWalkState, arguments any, must bool, cmdLineSyntax bool) (Value, error) {
+func TreeWalkCallFunc(call TreeWalkCall) (Value, error) {
+	callee := call.callee
+	self := call.self
+	state := call.state
+	arguments := call.arguments
+	must := call.must
+	cmdLineSyntax := call.cmdLineSyntax
+
 	switch f := callee.(type) {
 	case *InoxFunction:
 		if f.compiledFunction != nil {

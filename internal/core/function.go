@@ -59,7 +59,9 @@ func (fn *InoxFunction) Call(globalState *GlobalState, self Value, args []Value)
 		return vm.Run()
 	} else {
 		newState := NewTreeWalkStateWithGlobal(globalState)
-		return TreeWalkCallFunc(fn, self, newState, newList(&ValueList{elements: args}), false, false)
+		return TreeWalkCallFunc(TreeWalkCall{
+			callee: fn, self: self, state: newState, arguments: newList(&ValueList{elements: args}),
+		})
 	}
 }
 
