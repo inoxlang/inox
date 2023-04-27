@@ -1785,26 +1785,26 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			switch right.(type) {
 			case *List, *Object:
 			default:
-				state.addError(makeSymbolicEvalError(node, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "iterable", Stringify(right))))
+				state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "iterable", Stringify(right))))
 			}
 			return &Bool{}, nil
 		case parse.NotIn:
 			switch right.(type) {
 			case *List, *Object:
 			default:
-				state.addError(makeSymbolicEvalError(node, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "iterable", Stringify(right))))
+				state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "iterable", Stringify(right))))
 			}
 			return &Bool{}, nil
 		case parse.Keyof:
 			_, ok := left.(*String)
 			if !ok {
-				state.addError(makeSymbolicEvalError(node, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "string", Stringify(left))))
+				state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "string", Stringify(left))))
 			}
 
 			switch rightVal := right.(type) {
 			case *Object:
 			default:
-				state.addError(makeSymbolicEvalError(node, state, fmtInvalidBinExprCannnotCheckNonObjectHasKey(rightVal)))
+				state.addError(makeSymbolicEvalError(n.Right, state, fmtInvalidBinExprCannnotCheckNonObjectHasKey(rightVal)))
 			}
 			return &Bool{}, nil
 		case parse.Range, parse.ExclEndRange:
@@ -1813,18 +1813,18 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			_, ok := left.(*Bool)
 
 			if !ok {
-				state.addError(makeSymbolicEvalError(node, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "boolean", Stringify(left))))
+				state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "boolean", Stringify(left))))
 			}
 
 			_, ok = right.(*Bool)
 			if !ok {
-				state.addError(makeSymbolicEvalError(node, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "boolean", Stringify(right))))
+				state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "boolean", Stringify(right))))
 			}
 			return &Bool{}, nil
 		case parse.Match, parse.NotMatch:
 			_, ok := right.(Pattern)
 			if !ok {
-				state.addError(makeSymbolicEvalError(node, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "pattern", Stringify(right))))
+				state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "pattern", Stringify(right))))
 			}
 
 			return &Bool{}, nil
@@ -1834,7 +1834,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			case *RuneSlice, *ByteSlice:
 			default:
 				if _, ok := left.(StringLike); !ok {
-					state.addError(makeSymbolicEvalError(node, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "string-like", Stringify(left))))
+					state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "string-like", Stringify(left))))
 				}
 			}
 
@@ -1842,14 +1842,14 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			case *RuneSlice, *ByteSlice:
 			default:
 				if _, ok := right.(StringLike); !ok {
-					state.addError(makeSymbolicEvalError(node, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "string-like", Stringify(right))))
+					state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "string-like", Stringify(right))))
 				}
 			}
 
 			return &Bool{}, nil
 		case parse.SetDifference:
 			if _, ok := left.(Pattern); !ok {
-				state.addError(makeSymbolicEvalError(node, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "pattern", Stringify(left))))
+				state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "pattern", Stringify(left))))
 			}
 			return &DifferencePattern{
 				Base:    &AnyPattern{},
