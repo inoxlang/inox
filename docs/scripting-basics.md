@@ -143,7 +143,7 @@ inox run gen-project.ix ./myapp/ --clean-existing
 
 ## Version 2 - verbose mode
 
-We want to add a verbose mode, in this mode the script will tells us if it has
+We want to add a verbose mode, in this mode the script will tell us if it has
 deleted the target directory in the case we used `--clean-existing`.
 
 Let's add the `verbose` parameter in the parameters section of the manifest.
@@ -172,3 +172,16 @@ clean-existing: {
     pattern: %bool
 }
 ```
+
+Now we add the conditional print before the call to fs.remove:
+
+```
+if clean-existing {
+    if (mod-args.verbose and fs.exists(dir)) {
+        print "remove" $dir
+    }
+    fs.remove $dir
+}
+```
+
+Since we are reading the filesystem we need to add `read: IWD_PREFIX` in the permissions.
