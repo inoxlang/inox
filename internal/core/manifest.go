@@ -883,6 +883,8 @@ func getModuleParameters(v Value) (ModuleParameters, error) {
 				case "pattern":
 					patt := propVal.(Pattern)
 					param.pattern = patt
+				case "description":
+					param.description = string(propVal.(Str))
 				}
 				return nil
 			})
