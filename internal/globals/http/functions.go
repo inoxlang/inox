@@ -315,7 +315,15 @@ func HttpRead(ctx *core.Context, u core.URL, args ...core.Value) (result core.Va
 		}
 	}
 
-	resp, err := HttpGet(ctx, u, args...)
+	var httpGetArgs []core.Value
+	if contentType != "" {
+		httpGetArgs = append(httpGetArgs, contentType)
+	}
+	if optionObject != nil {
+		httpGetArgs = append(httpGetArgs, optionObject)
+	}
+
+	resp, err := HttpGet(ctx, u, httpGetArgs...)
 	if err != nil {
 		return nil, fmt.Errorf("http network error: %w", err)
 	}
