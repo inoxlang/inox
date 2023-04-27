@@ -21,6 +21,13 @@ Run the script using the following command:
 inox run script.ix
 ```
 
+### Shebang
+
+Inox scripts support shebangs
+- add `#!/usr/local/bin/inox run` at the top of the file
+- `chmod u+x script.ix`
+- ./script.ix
+
 ## A script to generate the directory structure for a project
 
 ## Version 1
