@@ -2,7 +2,7 @@ manifest {
     permissions: {
         read: {
             https://localhost:8080
-            /home/...
+            %/home/...
         }
         provide: https://localhost:8080
     }
