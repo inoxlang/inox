@@ -11,7 +11,6 @@ import (
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
@@ -100,6 +99,7 @@ type ManifestEvaluationConfig struct {
 	AddDefaultPermissions bool
 	HandleCustomType      CustomPermissionTypeHandler //optional
 	IgnoreUnknownSections bool
+	IgnoreConstDeclErrors bool
 }
 
 func (m *Module) EvalManifest(config ManifestEvaluationConfig) (*Manifest, error) {
@@ -140,7 +140,20 @@ func (m *Module) EvalManifest(config ManifestEvaluationConfig) (*Manifest, error
 
 		if config.GlobalConsts != nil {
 			for _, decl := range config.GlobalConsts.Declarations {
-				state.SetGlobal(decl.Left.Name, utils.Must(TreeWalkEval(decl.Right, state)), GlobalConst)
+				//ignore declaration if incomplete
+				if config.IgnoreConstDeclErrors && decl.Left == nil || decl.Right == nil || parse.NodeIs(decl.Right, (*parse.MissingExpression)(nil)) {
+					continue
+				}
+
+				constVal, err := TreeWalkEval(decl.Right, state)
+				if err != nil {
+					if !config.IgnoreConstDeclErrors {
+						return nil, fmt.Errorf(
+							"%s: failed to evaluate manifest object: error while evaluating constant declarations: %w", m.Name(), err)
+					}
+				} else {
+					state.SetGlobal(decl.Left.Name, constVal, GlobalConst)
+				}
 			}
 		}
 

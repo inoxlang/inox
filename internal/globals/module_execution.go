@@ -67,6 +67,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			DefaultLimitations:    DEFAULT_SCRIPT_LIMITATIONS,
 			AddDefaultPermissions: true,
 			IgnoreUnknownSections: args.IgnoreNonCriticalIssues,
+			IgnoreConstDeclErrors: args.IgnoreNonCriticalIssues,
 		})
 
 		if manifest == nil {
