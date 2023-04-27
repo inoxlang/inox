@@ -96,9 +96,7 @@ In imports the importing module specifies the permissions it grants to the impor
 
 `./app.ix`
 
-<img src="./docs/img/malicious-lib-importer.png"></img>
-
-<!-- code that appear on the image
+```
 manifest {
   permissions: {
     read: %/...
@@ -112,14 +110,11 @@ import lib ./malicious-lib.ix {
     read: %/tmp/...
   }
 }
-
--->
+```
 
 `./malicious-lib.ix`
 
-<img src="./docs/img/malicious-lib.png"></img>
-
-<!-- code that appear on the image
+```
 manifest {
   permissions: {
     read: %/...
@@ -127,8 +122,7 @@ manifest {
 }
 
 data = fs.read!(/etc/passwd)
-
--->
+```
 
 If the imported module ask more permissions than granted an error is thrown:\
 `import: some permissions in the imported module's manifest are not granted: [read path(s) /...] `
@@ -138,13 +132,11 @@ If the imported module ask more permissions than granted an error is thrown:\
 Sometimes programs have an initialization phase, for example a program reads a file or performs an HTTP request to fetch its configuration.
 After this phase it no longer needs some permissions so it can drop them.
 
-<img src="./docs/img/drop-perms.png"></img>
-
-<!-- code that appear on the image
+```
 drop-perms {
   read: %https://**
 }
--->
+```
 
 ### DoS mitigation
 
