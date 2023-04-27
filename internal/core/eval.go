@@ -303,7 +303,7 @@ func evalSimpleValueLiteral(n parse.SimpleValueLiteral, global *GlobalState) (Va
 	case *parse.PortLiteral:
 		scheme := Scheme(NO_SCHEME_SCHEME)
 		if node.SchemeName != "" {
-			scheme = Scheme(node.SchemeName + "://")
+			scheme = Scheme(node.SchemeName)
 		}
 		return Port{
 			Number: node.PortNumber,

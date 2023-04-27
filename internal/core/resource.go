@@ -597,7 +597,7 @@ func (URL) SetProp(ctx *Context, name string, value Value) error {
 	return ErrCannotSetProp
 }
 
-// A Scheme represents an URL scheme.
+// A Scheme represents an URL scheme, example: 'https'.
 type Scheme string
 
 func (s Scheme) UnderlyingString() string {

@@ -217,7 +217,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		assert.NoError(t, err)
 		assert.Equal(t, Port{
 			Number: 80,
-			Scheme: "http://",
+			Scheme: "http",
 		}, res)
 	})
 
