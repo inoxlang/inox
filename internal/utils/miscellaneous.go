@@ -34,3 +34,10 @@ func GetByteSize[T any]() uintptr {
 	var v T
 	return unsafe.Sizeof(v)
 }
+
+func If[T any](cond bool, a, b T) T {
+	if cond {
+		return a
+	}
+	return b
+}

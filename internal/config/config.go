@@ -6,6 +6,9 @@ import (
 	"strings"
 
 	"github.com/adrg/xdg"
+	"github.com/muesli/termenv"
+
+	core "github.com/inoxlang/inox/internal/core"
 
 	_ "embed"
 )
@@ -25,6 +28,10 @@ var (
 	FORCE_COLOR                 bool
 	TRUECOLOR_COLORTERM         bool
 	TERM_256COLOR_CAPABLE       bool
+
+	// set if FORCE_COLOR | TRUECOLOR_COLORTERM | TERM_256COLOR_CAPABLE
+	INITIAL_FG_COLOR core.Color
+	INITIAL_BG_COLOR core.Color
 )
 
 func init() {
@@ -57,6 +64,13 @@ func init() {
 	term := os.Getenv("TERM")
 	if strings.Contains(term, "256color") {
 		TERM_256COLOR_CAPABLE = true
+	}
+
+	//
+
+	if FORCE_COLOR || TRUECOLOR_COLORTERM || TERM_256COLOR_CAPABLE {
+		INITIAL_BG_COLOR = core.ColorFromTermenvColor(termenv.BackgroundColor(), core.ColorFromTermenvColor(termenv.ANSIBlack))
+		INITIAL_FG_COLOR = core.ColorFromTermenvColor(termenv.ForegroundColor(), core.ColorFromTermenvColor(termenv.ANSIWhite))
 	}
 }
 

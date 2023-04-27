@@ -27,7 +27,6 @@ func (err AssertionError) Error() string {
 		PrettyPrintConfig: pprint.PrettyPrintConfig{
 			MaxDepth: 10,
 			Colorize: false,
-			Colors:   &pprint.DEFAULT_LIGHTMODE_PRINT_COLORS,
 			Compact:  false,
 			Indent:   []byte{' ', ' '},
 		},
