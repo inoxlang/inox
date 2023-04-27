@@ -74,9 +74,9 @@ func (c Color) ToTermColor() termenv.Color {
 		return termenv.ANSI256Color(c.data[0])
 	case rgb24:
 		b := [7]byte{'#'}
-		strconv.AppendUint(b[1:3], uint64(c.data[0]), 16)
-		strconv.AppendUint(b[3:5], uint64(c.data[1]), 16)
-		strconv.AppendUint(b[5:7], uint64(c.data[2]), 16)
+		strconv.AppendUint(b[1:1:3], uint64(c.data[0]), 16)
+		strconv.AppendUint(b[3:3:5], uint64(c.data[1]), 16)
+		strconv.AppendUint(b[5:5:7], uint64(c.data[2]), 16)
 		return termenv.RGBColor(string(b[:]))
 	default:
 		panic(fmt.Errorf("invalid or unsupported color id: %d", c.encodingId))
@@ -88,7 +88,8 @@ func (c Color) GetAnsiEscapeSequence(background bool) []byte {
 }
 
 func (c Color) IsDarkBackgroundColor() bool {
-	rgb := termenv.ConvertToRGB(c.ToTermColor())
+	termColor := c.ToTermColor()
+	rgb := termenv.ConvertToRGB(termColor)
 
 	_, _, l := rgb.Hsl()
 	return l < 0.5
