@@ -825,18 +825,23 @@ func (ByteCount) HasRepresentation(encountered map[uintptr]int, config *ReprConf
 	return true
 }
 
-func (count ByteCount) write(w io.Writer) (int, error) {
+func (count ByteCount) write(w io.Writer, _3digitGroupCount int) (int, error) {
 	format := "%dB"
 	var v = int64(count)
 
+	singleGroup := _3digitGroupCount == 1
+	if _3digitGroupCount != 1 && _3digitGroupCount > 0 {
+		return -1, errors.New("only one 3-digit group is supported for now")
+	}
+
 	switch {
-	case count >= 1_000_000_000 && count%1_000_000_000 == 0:
+	case count >= 1_000_000_000 && (singleGroup || count%1_000_000_000 == 0):
 		format = "%dGB"
 		v /= 1_000_000_000
-	case count >= 1_000_000 && count%1_000_000 == 0:
+	case count >= 1_000_000 && (singleGroup || count%1_000_000 == 0):
 		format = "%dMB"
 		v /= 1_000_000
-	case count >= 1000 && count%1_000 == 0:
+	case count >= 1000 && (singleGroup || count%1_000 == 0):
 		format = "%dkB"
 		v /= 1_000
 	case count >= 0:
@@ -848,7 +853,7 @@ func (count ByteCount) write(w io.Writer) (int, error) {
 }
 
 func (count ByteCount) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := count.write(w)
+	_, err := count.write(w, -1)
 	return err
 }
 
@@ -892,7 +897,7 @@ func (ByteRate) HasRepresentation(encountered map[uintptr]int, config *ReprConfi
 
 func (rate ByteRate) write(w io.Writer) (int, error) {
 	totalN := 0
-	if n, err := ByteCount(rate).write(w); err != nil {
+	if n, err := ByteCount(rate).write(w, -1); err != nil {
 		return n, err
 	} else {
 		totalN = n

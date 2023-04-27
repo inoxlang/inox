@@ -996,7 +996,7 @@ func (count ByteCount) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, d
 		utils.Must(w.Write(config.Colors.NumberLiteral))
 	}
 
-	utils.Must(count.write(w))
+	utils.Must(count.write(w, -1))
 
 	if config.Colorize {
 		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
@@ -1413,6 +1413,16 @@ func prettyPrintListPattern(
 	}
 }
 
+func (i FileInfo) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes(i.Name)))
+	if i.IsDir {
+		utils.PanicIfErr(w.WriteByte('/'))
+	} else {
+		utils.PanicIfErr(w.WriteByte(' '))
+		utils.Must(i.Size.write(w, 1))
+	}
+}
+
 func (patt ListPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	prettyPrintListPattern(w, false, patt.generalElementPattern, patt.elementPatterns, config, depth, parentIndentCount)
 }
@@ -1455,9 +1465,6 @@ func (writer *Writer) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, de
 
 func (mt Mimetype) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(fmt.Fprintf(w, "%#v", mt))
-}
-func (i FileInfo) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(fmt.Fprintf(w, "%#v", i))
 }
 
 func (r *Routine) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
