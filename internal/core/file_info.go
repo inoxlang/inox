@@ -3,7 +3,7 @@ package internal
 type FileInfo struct {
 	Name    Str
 	AbsPath Path
-	Size    Int
+	Size    ByteCount
 	Mode    FileMode
 	ModTime Date
 	IsDir   Bool

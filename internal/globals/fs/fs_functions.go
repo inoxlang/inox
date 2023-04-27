@@ -717,7 +717,7 @@ func makeFileInfo(info fs.FileInfo, pth string, fls afs.Filesystem) core.FileInf
 	return core.FileInfo{
 		Name:    core.Str(info.Name()),
 		AbsPath: core.Path(pth).ToAbs(fls),
-		Size:    core.Int(info.Size()),
+		Size:    core.ByteCount(info.Size()),
 		Mode:    core.FileMode(info.Mode()),
 		ModTime: core.Date(info.ModTime()),
 		IsDir:   core.Bool(info.IsDir()),

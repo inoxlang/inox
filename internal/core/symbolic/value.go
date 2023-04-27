@@ -22,6 +22,7 @@ var (
 	ANY_INT_RANGE = &IntRange{}
 	ANY_FILEMODE  = &FileMode{}
 	ANY_DATE      = &Date{}
+	ANY_BYTECOUNT = &ByteCount{}
 
 	FILEINFO_PROPNAMES = []string{"name", "abs-path", "size", "mode", "mod-time", "is-dir"}
 )
@@ -456,7 +457,7 @@ func (f *FileInfo) Prop(name string) SymbolicValue {
 	case "abs-path":
 		return ANY_PATH
 	case "size":
-		return ANY_INT
+		return ANY_BYTECOUNT
 	case "mode":
 		return ANY_FILEMODE
 	case "mod-time":
