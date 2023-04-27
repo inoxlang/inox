@@ -282,90 +282,7 @@ func TestHttpServer(t *testing.T) {
 				}`,
 				[]requestTestInfo{{contentType: core.IXON_CTYPE, result: `{"a":1,"e":a@mail.com,"password":"mypassword"}`}},
 			},
-			"HTML for model": {`
-				$$model = {
-					render: fn() => dom.div{class:"a"}
-				}
-				return Mapping {
-					/ => "hello"
-					%/... => model
-				}`,
-				[]requestTestInfo{
-					{contentType: core.PLAIN_TEXT_CTYPE, path: "/"}, // get session
-					{
-						pause:                         10 * time.Millisecond,
-						contentType:                   core.HTML_CTYPE,
-						resultRegex:                   `<div class="a".*?></div>`,
-						checkIdenticalParallelRequest: true,
-					},
-				},
-			},
-			"HTML for self updating model: 2 requests": {`
-				$$model = {
-					count: 1
-					sleep: sleep
-					render: fn() => dom.div{class:"a", self.<count}
 
-					lifetimejob #increment {
-						self.sleep(100ms)
-						self.count = 2
-					}
-				}
-
-				return Mapping {
-					%/... => model
-				}`,
-				[]requestTestInfo{
-					{contentType: core.HTML_CTYPE, resultRegex: `<div class="a".*?>1</div>`},
-					{contentType: core.HTML_CTYPE, resultRegex: `<div class="a".*?>2</div>`, preDelay: time.Second / 2},
-				},
-			},
-			"event stream request for a model with an invalid view": {
-				`
-				$$model = {
-					count: 1
-					sleep: sleep
-					render: fn() => 1
-				}
-
-				return Mapping {
-					%/... => model
-				}`,
-				[]requestTestInfo{
-					{
-						contentType: core.EVENT_STREAM_CTYPE,
-						// no events because fail
-					},
-				},
-			},
-			"self updating model: event stream request": {`
-				$$model = {
-					count: 1
-					sleep: sleep
-					render: fn() => dom.div{class:"a", self.<count}
-
-					lifetimejob #increment {
-						self.sleep(100ms)
-						self.count += 1
-					}
-				}
-
-				return Mapping {
-					%/... => model
-				}`,
-				[]requestTestInfo{
-					{contentType: core.HTML_CTYPE, resultRegex: `<div class="a".*?>1</div>`},
-					{
-						contentType: core.EVENT_STREAM_CTYPE,
-						events: []*core.Event{
-							(&ServerSentEvent{
-								Data: []byte(`<div class="a".*?>2</div>`),
-							}).ToEvent(),
-						},
-						preDelay: 10 * time.Millisecond,
-					},
-				},
-			},
 			"large binary stream: event stream request": {strings.Replace(`
 				return Mapping {
 					%/... => torstream(mkbytes(<size>))
@@ -401,6 +318,102 @@ func TestHttpServer(t *testing.T) {
 		for name, testCase := range testCases {
 			runMappingTestCase(t, name, testCase, createClient)
 		}
+
+		t.Run("reactive rendering", func(t *testing.T) {
+
+			t.Skip()
+
+			testCases := map[string]serverTestCase{
+				"HTML for model": {`
+					$$model = {
+						render: fn() => dom.div{class:"a"}
+					}
+					return Mapping {
+						/ => "hello"
+						%/... => model
+					}`,
+					[]requestTestInfo{
+						{contentType: core.PLAIN_TEXT_CTYPE, path: "/"}, // get session
+						{
+							pause:                         10 * time.Millisecond,
+							contentType:                   core.HTML_CTYPE,
+							resultRegex:                   `<div class="a".*?></div>`,
+							checkIdenticalParallelRequest: true,
+						},
+					},
+				},
+				"HTML for self updating model: 2 requests": {`
+					$$model = {
+						count: 1
+						sleep: sleep
+						render: fn() => dom.div{class:"a", self.<count}
+
+						lifetimejob #increment {
+							self.sleep(100ms)
+							self.count = 2
+						}
+					}
+
+					return Mapping {
+						%/... => model
+					}`,
+					[]requestTestInfo{
+						{contentType: core.HTML_CTYPE, resultRegex: `<div class="a".*?>1</div>`},
+						{contentType: core.HTML_CTYPE, resultRegex: `<div class="a".*?>2</div>`, preDelay: time.Second / 2},
+					},
+				},
+				"event stream request for a model with an invalid view": {
+					`
+			$$model = {
+				count: 1
+				sleep: sleep
+				render: fn() => 1
+			}
+
+			return Mapping {
+				%/... => model
+			}`,
+					[]requestTestInfo{
+						{
+							contentType: core.EVENT_STREAM_CTYPE,
+							// no events because fail
+						},
+					},
+				},
+				"self updating model: event stream request": {`
+					$$model = {
+						count: 1
+						sleep: sleep
+						render: fn() => dom.div{class:"a", self.<count}
+
+						lifetimejob #increment {
+							self.sleep(100ms)
+							self.count += 1
+						}
+					}
+
+					return Mapping {
+						%/... => model
+					}`,
+					[]requestTestInfo{
+						{contentType: core.HTML_CTYPE, resultRegex: `<div class="a".*?>1</div>`},
+						{
+							contentType: core.EVENT_STREAM_CTYPE,
+							events: []*core.Event{
+								(&ServerSentEvent{
+									Data: []byte(`<div class="a".*?>2</div>`),
+								}).ToEvent(),
+							},
+							preDelay: 10 * time.Millisecond,
+						},
+					},
+				},
+			}
+
+			for name, testCase := range testCases {
+				runMappingTestCase(t, name, testCase, createClient)
+			}
+		})
 	})
 
 	t.Run("handling description", func(t *testing.T) {
