@@ -59,6 +59,7 @@
 - URL literals: `https://example.com/index.html, https://google.com?q=inox`
 - URL pattern literals:
     - URL prefix patterns: `%https://example.com/...`
+- port literals: `:80, :80/http`
 - date literals represent a specific point in time: `2020y-10mt-5d-CET`, `2020y-10mt-5d-5h-4m-CET`
     - The location part (CET | UTC | Local | ...) at the end is mandatory.
 - quantity literals: `1B`, `2kB`, `10%`
