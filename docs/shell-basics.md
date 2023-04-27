@@ -41,11 +41,51 @@ You can easily manipulate resources using ``read | create | update | delete | pr
 
 ## Read
 
-Read the entries of a folder: ``read ./dir/``
+### Directory
 
-Read a file: ``read ./file.txt``
+Reading the entries of a directory ``read ./dir/`` returns a list of %file-info:
+```
+[
+    dir/
+    file.txt 1kB 
+]
+```
 
-Read an HTTP resource with: ``read https://jsonplaceholder.typicode.com/posts/1``
+### File
+
+By default the `read` function parses the content of the read file, the file extension
+is used to determinate the type of content.
+
+- Reading a text file returns a string: ``read ./file.txt` ->``"hello"`
+- Reading a JSON file returns Inox values (objects, lists, ...) resulting from the parsing : 
+    ``read ./file.json``
+    ```json
+    {"key": "value"}
+    ```
+
+### HTTP resource
+
+By default the `read` function parses the content of the read resource, the Content-Type header 
+is used to determinated the type of content.
+
+Reading an JSON HTTP resource: 
+``read https://jsonplaceholder.typicode.com/posts/1``
+
+```json
+{
+  "body": "quia et suscipit\nsuscipit recusandae consequuntur expedita....", 
+  "id": 1.0, 
+  "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit", 
+  "userId": 1.0
+}
+```
+
+Reading a HTML resource will return a `%html.node`.
+
+### Raw data
+
+You can disable parsing by adding the `--raw` switch after the resource name, a byte slice (%bytes)
+will be returned instead.
 
 ## Create
 
