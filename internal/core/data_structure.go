@@ -91,6 +91,15 @@ func objFrom(entryMap ValMap) *Object {
 	return obj
 }
 
+func objFromLists(keys []string, values []Value) *Object {
+
+	//handle index keys ? or ignore
+
+	obj := &Object{keys: keys, values: values}
+	obj.sortProps()
+	return obj
+}
+
 func (obj *Object) sortProps() {
 	obj.keys, obj.values = sortProps(obj.keys, obj.values)
 }

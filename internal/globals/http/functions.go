@@ -481,6 +481,8 @@ func Mime_(ctx *core.Context, arg core.Str) (core.Mimetype, error) {
 	switch arg {
 	case "json":
 		arg = core.JSON_CTYPE
+	case "yaml":
+		arg = core.APP_YAML_CTYPE
 	case "text":
 		arg = core.PLAIN_TEXT_CTYPE
 	}

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 
+	yamlLex "github.com/goccy/go-yaml/lexer"
+	yamlParse "github.com/goccy/go-yaml/parser"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -15,6 +17,7 @@ var (
 func init() {
 	RegisterParser(JSON_CTYPE, &jsonParser{})
 	RegisterParser(IXON_CTYPE, &inoxReprParser{})
+	RegisterParser(APP_YAML_CTYPE, &yamlParser{})
 }
 
 type StatelessParser interface {
@@ -60,4 +63,23 @@ func (p *inoxReprParser) Validate(ctx *Context, s string) bool {
 }
 func (p *inoxReprParser) Parse(ctx *Context, s string) (Value, error) {
 	return ParseRepr(ctx, utils.StringAsBytes(s))
+}
+
+type yamlParser struct {
+}
+
+func (p *yamlParser) Validate(ctx *Context, s string) bool {
+	tokens := yamlLex.Tokenize(s)
+	_, err := yamlParse.Parse(tokens, yamlParse.ParseComments)
+	return err == nil
+}
+
+func (p *yamlParser) Parse(ctx *Context, s string) (Value, error) {
+	tokens := yamlLex.Tokenize(s)
+	yml, err := yamlParse.Parse(tokens, 0)
+
+	if err != nil {
+		return nil, err
+	}
+	return ConvertYamlParsedFileToInoxVal(ctx, yml, false), nil
 }
