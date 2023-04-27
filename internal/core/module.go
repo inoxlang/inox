@@ -119,7 +119,7 @@ func (m *Module) EvalManifest(config ManifestEvaluationConfig) (*Manifest, error
 			checkErr = append(checkErr, errors.New(msg))
 		})
 		if len(checkErr) != 0 {
-			return nil, fmt.Errorf("%s: failed to check manifest's object literal: %w", m.Name(), combineErrors(checkErr...))
+			return nil, fmt.Errorf("%s: error while checking manifest's object literal: %w", m.Name(), combineErrors(checkErr...))
 		}
 	}
 

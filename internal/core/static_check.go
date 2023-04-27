@@ -1822,9 +1822,42 @@ func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Nod
 					continue
 				}
 
+				propName := paramDescProp.Name()
+
 				for i, name := range missingPropertyNames {
-					if name == paramDescProp.Name() {
+					if name == propName {
 						missingPropertyNames[i] = ""
+					}
+				}
+
+				switch propName {
+				case "description":
+					switch paramDescProp.Value.(type) {
+					case *parse.QuotedStringLiteral, *parse.MultilineStringLiteral:
+					default:
+						onError(paramDescProp, "the .description property of a positional parameter should be a string literal")
+					}
+				case "rest":
+					switch paramDescProp.Value.(type) {
+					case *parse.BooleanLiteral:
+					default:
+						onError(paramDescProp, "the .description property of a positional parameter should be a string literal")
+					}
+				case "name":
+					switch paramDescProp.Value.(type) {
+					case *parse.UnambiguousIdentifierLiteral:
+					default:
+						onError(paramDescProp, "the .description property of a positional parameter should be an identifier (ex: #dir)")
+					}
+				case "pattern":
+					switch paramDescProp.Value.(type) {
+					case *parse.UnambiguousIdentifierLiteral:
+					default:
+						switch paramDescProp.Value.(type) {
+						case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression:
+						default:
+							onError(paramDescProp, "the .pattern of a non positional parameter should be a named pattern (ex: %path, %str, ...)")
+						}
 					}
 				}
 			}

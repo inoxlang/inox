@@ -190,12 +190,12 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		finalErr = parsingErr
 	}
 
-	if finalErr == nil && err_ != nil {
-		finalErr = err_
-	}
-
 	if finalErr == nil && manifestErr != nil {
 		finalErr = manifestErr
+	}
+
+	if finalErr == nil && err_ != nil {
+		finalErr = err_
 	}
 
 	if finalErr == nil && staticCheckErr != nil {
