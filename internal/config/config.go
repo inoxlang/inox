@@ -24,6 +24,7 @@ var (
 	USER_HOME                   string
 	FORCE_COLOR                 bool
 	TRUECOLOR_COLORTERM         bool
+	TERM_256COLOR_CAPABLE       bool
 )
 
 func init() {
@@ -50,6 +51,13 @@ func init() {
 	//TERMCOLOR
 
 	TRUECOLOR_COLORTERM = os.Getenv("COLORTERM") == "truecolor"
+
+	//TERM
+
+	term := os.Getenv("TERM")
+	if strings.Contains(term, "256color") {
+		TERM_256COLOR_CAPABLE = true
+	}
 }
 
 // GetStartupScriptPath searches for the startup script, creates if if it does not exist and returns its path.

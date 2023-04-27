@@ -54,7 +54,7 @@ var (
 	DEFAULT_PRETTY_PRINT_CONFIG = &core.PrettyPrintConfig{
 		PrettyPrintConfig: pprint.PrettyPrintConfig{
 			MaxDepth:                    7,
-			Colorize:                    config.FORCE_COLOR || config.TRUECOLOR_COLORTERM,
+			Colorize:                    config.FORCE_COLOR || config.TRUECOLOR_COLORTERM || config.TERM_256COLOR_CAPABLE,
 			Colors:                      &pprint.DEFAULT_DARKMODE_PRINT_COLORS,
 			Compact:                     false,
 			Indent:                      []byte{' ', ' '},
