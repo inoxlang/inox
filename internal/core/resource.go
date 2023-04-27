@@ -870,12 +870,17 @@ func (patt URLPattern) Test(ctx *Context, v Value) bool {
 func ParseOrValidateResourceContent(ctx *Context, resourceContent []byte, ctype Mimetype, doParse, validateRaw bool) (res Value, contentType Mimetype, err error) {
 	ct := ctype.WithoutParams()
 	switch ct {
-	case PLAIN_TEXT_CTYPE:
-		res = Str(resourceContent)
 	case "", APP_OCTET_STREAM_CTYPE:
 		res = NewByteSlice(resourceContent, false, "")
 	default:
 		parser, ok := GetParser(ct)
+
+		if !ok && strings.HasPrefix(string(ct), "text/") {
+			//TODO: return error if they are not printable characters
+			res = Str(resourceContent)
+			contentType = ctype
+			return
+		}
 
 		if doParse {
 			if !ok {
