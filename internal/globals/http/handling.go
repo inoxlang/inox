@@ -18,6 +18,8 @@ const (
 
 var (
 	DEFAULT_CSP, _ = _dom.NewCSPWithDirectives(nil)
+
+	HANDLER_DISABLED_ARGS = []bool{true, true}
 )
 
 func isValidHandlerValue(val core.Value) bool {
@@ -39,7 +41,7 @@ func createHandlerFunction(handlerValue core.Value, isMiddleware bool, server *H
 		handler = func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState, logger *log.Logger) {
 			//call the Inox handler
 			args := []core.Value{core.ValOf(rw), core.ValOf(req)}
-			_, err := userHandler.Call(handlerGlobalState, nil, args)
+			_, err := userHandler.Call(handlerGlobalState, nil, args, HANDLER_DISABLED_ARGS)
 
 			if err != nil {
 				logger.Println(err)
@@ -103,7 +105,7 @@ func respondWithMappingResult(h handlingArguments) {
 	switch v := value.(type) {
 	case *core.InoxFunction: // if inox handler we call it and return
 		args := []core.Value{core.ValOf(rw), core.ValOf(req)}
-		_, err := v.Call(state, nil, args)
+		_, err := v.Call(state, nil, args, HANDLER_DISABLED_ARGS)
 
 		if err != nil {
 			logger.Println("error when calling returned inox function:", err)
@@ -448,7 +450,7 @@ func getOrCreateView(model *core.Object, args handlingArguments) (view *_dom.Vie
 			return nil
 		}
 
-		html, err := fn.Call(state, model, nil)
+		html, err := fn.Call(state, model, nil, nil)
 		if err != nil {
 			logger.Println("failed to create new view(): ", err.Error())
 			rw.writeStatus(http.StatusInternalServerError)

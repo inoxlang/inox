@@ -291,7 +291,7 @@ func NewDynamicCall(ctx *Context, callee Value, args ...Value) *DynamicValue {
 
 		switch c := callee.(type) {
 		case *InoxFunction:
-			return c.Call(state, nil, actualArgs)
+			return c.Call(state, nil, actualArgs, nil)
 		case *GoFunction:
 			args := utils.MapSlice(actualArgs, func(arg Value) any { return arg })
 			return c.Call(args, state, nil, false, true)

@@ -96,7 +96,7 @@ func TestHttpServer(t *testing.T) {
 
 		host := core.Host("https://localhost:8080")
 
-		code := "fn(rw, r){ rw.writeJSON(1) }"
+		code := "fn(rw, r){ rw.write_json(1) }"
 		nodeFn, compiledFn, module := createHandlers(t, code)
 
 		for i, handler := range []*core.InoxFunction{nodeFn, compiledFn} {
@@ -192,7 +192,7 @@ func TestHttpServer(t *testing.T) {
 			"handler": {
 				`
 					fn handle(rw %http.resp_writer, r %http.req){
-						rw.writeJSON({ a: 1 })
+						rw.write_json({ a: 1 })
 					}
 					return Mapping {
 						%/... => handle
@@ -203,7 +203,7 @@ func TestHttpServer(t *testing.T) {
 			"handler accessing a global function": {
 				`
 					fn helper(rw %http.resp_writer, r %http.req){
-						rw.writeJSON({ a: 1 })
+						rw.write_json({ a: 1 })
 					}
 					fn handle(rw %http.resp_writer, r %http.req){
 						helper(rw, r)

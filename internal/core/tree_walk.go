@@ -2320,12 +2320,13 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 }
 
 type TreeWalkCall struct {
-	callee        Value
-	self          Value
-	state         *TreeWalkState
-	arguments     any
-	must          bool
-	cmdLineSyntax bool
+	callee             Value
+	self               Value
+	state              *TreeWalkState
+	arguments          any
+	must               bool
+	cmdLineSyntax      bool
+	disabledArgSharing []bool
 }
 
 // TreeWalkCallFunc calls calleeNode, whatever its kind (Inox function or Go function).
@@ -2382,7 +2383,7 @@ func TreeWalkCallFunc(call TreeWalkCall) (Value, error) {
 			args = append(args, e)
 		}
 	} else {
-		for _, argn := range arguments.([]parse.Node) {
+		for argIndex, argn := range arguments.([]parse.Node) {
 
 			if spreadArg, ok := argn.(*parse.SpreadArgument); ok {
 				hasSpreadArg = true
@@ -2415,7 +2416,7 @@ func TreeWalkCallFunc(call TreeWalkCall) (Value, error) {
 					if err != nil {
 						return nil, err
 					}
-					if isSharedFunction {
+					if isSharedFunction && (len(call.disabledArgSharing) <= argIndex || !call.disabledArgSharing[argIndex]) {
 						shared, err := ShareOrClone(arg, state.Global)
 						if err != nil {
 							return nil, err

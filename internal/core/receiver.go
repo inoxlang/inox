@@ -120,7 +120,7 @@ func (handlers *SynchronousMessageHandlers) CallHandlers(ctx *Context, msg Messa
 	}
 	for _, h := range handlers.list {
 		if h.Pattern().Test(ctx, msg.Data()) {
-			_, err := h.handler.Call(ctx.GetClosestState(), self, []Value{msg.Data()})
+			_, err := h.handler.Call(ctx.GetClosestState(), self, []Value{msg.Data()}, nil)
 			if err != nil {
 				return fmt.Errorf("one of the message handler returned an error: %w", err)
 			}

@@ -44,14 +44,15 @@ func (fn *InoxFunction) FuncExpr() *parse.FunctionExpression {
 	}
 }
 
-func (fn *InoxFunction) Call(globalState *GlobalState, self Value, args []Value) (Value, error) {
+func (fn *InoxFunction) Call(globalState *GlobalState, self Value, args []Value, disabledArgSharing []bool) (Value, error) {
 	if fn.compiledFunction != nil {
 		vm, err := NewVM(VMConfig{
-			Bytecode: fn.compiledFunction.Bytecode,
-			Fn:       fn,
-			State:    globalState,
-			Self:     self,
-			FnArgs:   args,
+			Bytecode:           fn.compiledFunction.Bytecode,
+			Fn:                 fn,
+			State:              globalState,
+			Self:               self,
+			FnArgs:             args,
+			DisabledArgSharing: disabledArgSharing,
 		})
 		if err != nil {
 			return nil, err
@@ -60,7 +61,11 @@ func (fn *InoxFunction) Call(globalState *GlobalState, self Value, args []Value)
 	} else {
 		newState := NewTreeWalkStateWithGlobal(globalState)
 		return TreeWalkCallFunc(TreeWalkCall{
-			callee: fn, self: self, state: newState, arguments: newList(&ValueList{elements: args}),
+			callee:             fn,
+			self:               self,
+			state:              newState,
+			arguments:          newList(&ValueList{elements: args}),
+			disabledArgSharing: disabledArgSharing,
 		})
 	}
 }

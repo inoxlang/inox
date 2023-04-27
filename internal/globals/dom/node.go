@@ -75,7 +75,7 @@ func init() {
 			history := renderable.(*core.ValueHistory)
 			fn := history.RenderCurrentToHTMLFn()
 			lastValue := history.LastValue(ctx)
-			result, err := fn.Call(ctx.GetClosestState(), nil, []core.Value{lastValue})
+			result, err := fn.Call(ctx.GetClosestState(), nil, []core.Value{lastValue}, nil)
 			if err != nil {
 				return 0, fmt.Errorf("failed to render value history: rendering of last value in history: %w", err)
 			}

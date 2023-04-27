@@ -38,8 +38,9 @@ type VM struct {
 	err              error
 	moduleLocalCount int
 
-	runFn      bool
-	fnArgCount int
+	runFn              bool
+	fnArgCount         int
+	disabledArgSharing []bool
 }
 
 // frame represents a call frame.
@@ -62,8 +63,9 @@ type VMConfig struct {
 	Self     Value
 
 	//isolated call
-	Fn     *InoxFunction
-	FnArgs []Value
+	Fn                 *InoxFunction
+	FnArgs             []Value
+	DisabledArgSharing []bool
 }
 
 // NewVM creates a virtual machine that will execute the fn function, if fn is nil the main function of bytecode will be executed.
@@ -98,15 +100,16 @@ func NewVM(config VMConfig) (*VM, error) {
 	}
 
 	v := &VM{
-		global:           state,
-		constants:        bytecode.constants,
-		sp:               0,
-		module:           bytecode.module,
-		framesIndex:      1,
-		ip:               -1,
-		moduleLocalCount: fn.LocalCount,
-		runFn:            runFn,
-		fnArgCount:       len(fnArgs),
+		global:             state,
+		constants:          bytecode.constants,
+		sp:                 0,
+		module:             bytecode.module,
+		framesIndex:        1,
+		ip:                 -1,
+		moduleLocalCount:   fn.LocalCount,
+		runFn:              runFn,
+		fnArgCount:         len(fnArgs),
+		disabledArgSharing: config.DisabledArgSharing,
 	}
 	v.frames[0].fn = fn
 	v.frames[0].ip = -1
@@ -1961,6 +1964,9 @@ func (v *VM) fnCall(numArgs int, spread, must bool) bool {
 	if isSharedFunction { //share arguments
 
 		for i := v.sp - numArgs; i < v.sp; i++ {
+			if len(v.disabledArgSharing) > i && v.disabledArgSharing[i] {
+				continue
+			}
 			shared, err := ShareOrClone(v.stack[i], v.global)
 			if err != nil {
 				v.err = fmt.Errorf("failed to share an argument: %T: %w", v.stack[i], err)

@@ -2832,7 +2832,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 
 					fn := val.(*InoxFunction)
-					res, err := fn.Call(state, nil, testCase.isolatedCaseArguments())
+					res, err := fn.Call(state, nil, testCase.isolatedCaseArguments(), nil)
 
 					if testCase.error {
 						assert.Error(t, err)
@@ -5167,7 +5167,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			fn := val.(*InoxFunction)
-			res, err := fn.Call(state, nil, nil)
+			res, err := fn.Call(state, nil, nil, nil)
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -5203,7 +5203,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			fn := val.(*InoxFunction)
-			res, err := fn.Call(state, nil, nil)
+			res, err := fn.Call(state, nil, nil, nil)
 			if !assert.NoError(t, err) {
 				return
 			}

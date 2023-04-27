@@ -80,7 +80,7 @@ func Map(ctx *Context, iterable Iterable, mapper Value) *List {
 		it := iterable.Iterator(ctx, IteratorConfiguration{})
 		for it.Next(ctx) {
 			element := it.Value(ctx)
-			res, err := m.Call(state, nil, []Value{element})
+			res, err := m.Call(state, nil, []Value{element}, nil)
 			if err != nil {
 				panic(err)
 			}
