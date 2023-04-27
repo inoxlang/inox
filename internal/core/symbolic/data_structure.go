@@ -148,7 +148,7 @@ func (list *List) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig,
 				//index
 				if printIndices {
 					if config.Colorize {
-						utils.Must(w.Write(config.Colors.Index))
+						utils.Must(w.Write(config.Colors.DiscreteColor))
 					}
 					if i < 10 {
 						utils.PanicIfErr(w.WriteByte(' '))

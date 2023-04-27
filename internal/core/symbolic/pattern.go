@@ -1136,13 +1136,13 @@ func prettyPrintListPattern(
 			//index
 			if printIndices {
 				if config.Colorize {
-					utils.Must(w.Write(config.Colors.Index))
+					utils.Must(w.Write(config.Colors.DiscreteColor))
 				}
 				if i < 10 {
 					utils.PanicIfErr(w.WriteByte(' '))
 				}
 				utils.Must(w.Write(utils.StringAsBytes(strconv.FormatInt(int64(i), 10))))
-				utils.Must(w.Write(config.Colors.Index))
+				utils.Must(w.Write(config.Colors.DiscreteColor))
 				utils.Must(w.Write(COLON_SPACE))
 
 				if config.Colorize {

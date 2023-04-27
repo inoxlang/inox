@@ -64,6 +64,14 @@ const (
 
 type FileMode fs.FileMode
 
+func (m FileMode) FileMode() fs.FileMode {
+	return fs.FileMode(m)
+}
+
+func (m FileMode) Executable() bool {
+	return m&0o111 != 0
+}
+
 // ---------------------------
 
 func IsIndexKey(key string) bool {

@@ -16,7 +16,10 @@ var (
 		CssTypeSelector:   GetFullColorSequence(termenv.ANSIBlack, false),
 		CssOtherSelector:  GetFullColorSequence(termenv.ANSIYellow, false),
 		InvalidNode:       GetFullColorSequence(termenv.ANSIBrightRed, false),
-		Index:             GetFullColorSequence(termenv.ANSIBrightBlack, false),
+		DiscreteColor:     GetFullColorSequence(termenv.ANSIBrightBlack, false),
+
+		Folder:     GetFullColorSequence(termenv.ANSIBlue, false),
+		Executable: GetFullColorSequence(termenv.ANSIBrightGreen, false),
 	}
 
 	DEFAULT_LIGHTMODE_PRINT_COLORS = PrettyPrintColors{
@@ -32,13 +35,19 @@ var (
 		CssTypeSelector:   GetFullColorSequence(termenv.ANSIBlack, false),
 		CssOtherSelector:  GetFullColorSequence(termenv.ANSIYellow, false),
 		InvalidNode:       GetFullColorSequence(termenv.ANSI256Color(160), false),
-		Index:             GetFullColorSequence(termenv.ANSIBrightBlack, false),
+		DiscreteColor:     GetFullColorSequence(termenv.ANSIBrightBlack, false),
+
+		Folder:     GetFullColorSequence(termenv.ANSI256Color(90), false),
+		Executable: GetFullColorSequence(termenv.ANSI256Color(22), false),
 	}
 )
 
 type PrettyPrintColors struct {
+	//inox code
 	ControlKeyword, OtherKeyword, PatternLiteral, StringLiteral, PathLiteral, IdentifierLiteral,
-	NumberLiteral, Constant, PatternIdentifier, CssTypeSelector, CssOtherSelector, InvalidNode, Index []byte
+	NumberLiteral, Constant, PatternIdentifier, CssTypeSelector, CssOtherSelector, InvalidNode,
+
+	DiscreteColor, Folder, Executable []byte
 }
 
 type PrettyPrintConfig struct {
