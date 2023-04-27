@@ -10,6 +10,55 @@ Note: the `inox shell` command can also be used.
 Before starting the shell ``inox`` will execute the startup script found in `.config/inox` (or XDG_CONFIG_HOME) and grant the required permissions by the script to the shell.\
 No additional permissions will be granted. You can modify the startup script in `.config/inox` if you need more permissions.
 
+## Syntax
+
+Copy the following code in the Inox shell & press Enter:
+```
+fn f(...args){ print $args } # this function prints its arguments
+```
+
+Functions in Inox can be called in several ways:
+```
+f() 
+output: []
+
+f;
+output: []
+
+f 1 2 3
+output: [1, 2, 3]
+```
+
+The last call syntax is named a **command-like** call.
+
+### Variables
+
+When you reference a variable in the shell (or in an Inox script) you can directly use its name
+or prefix it with a dollar (two dollars for globals, but you will rarely use them this way).
+
+```
+a = 1; b = 2
+(a == $b)
+```
+
+⚠️ In a **command-like** call `a` is considered as an identifier value that can also be written `#a`, 
+you have to use `$a` to reference a.
+
+```
+f $a a
+output: [1, #a]
+```
+
+If you have **git** installed you should be able to execute the following:
+```
+git log
+```
+
+*press q to leave*
+
+This works because in **command-like** calls `log` is not considered a variable.
+
+
 ## Leaving the shell
 
 The `quit` pseudo command stops the process.
@@ -41,6 +90,8 @@ You can easily manipulate resources using ``read | create | update | delete | pr
 
 ## Read
 
+Read is a powerful function that allows you to get the content of files, directories & HTTP resources.
+
 ### Directory
 
 Reading the entries of a directory ``read ./dir/`` returns a list of %file-info:
@@ -53,7 +104,7 @@ Reading the entries of a directory ``read ./dir/`` returns a list of %file-info:
 
 ### File
 
-By default the `read` function parses the content of the read file, the file extension
+By default the `read` function parses the content of the read file, the extension
 is used to determinate the type of content.
 
 - Reading a text file returns a string: ``read ./file.txt` ->``"hello"`
@@ -84,7 +135,7 @@ Reading a HTML resource will return a `%html.node`.
 
 ### Raw data
 
-You can disable parsing by adding the `--raw` switch after the resource name, a byte slice (%bytes)
+You can disable parsing by adding the `--raw` switch **after** the resource name, a byte slice (%bytes)
 will be returned instead.
 
 ## Create
