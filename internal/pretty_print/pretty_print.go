@@ -29,16 +29,16 @@ var (
 		StringLiteral:     GetFullColorSequence(termenv.ANSI256Color(88), false),
 		PathLiteral:       GetFullColorSequence(termenv.ANSI256Color(88), false),
 		IdentifierLiteral: GetFullColorSequence(termenv.ANSI256Color(27), false),
-		NumberLiteral:     GetFullColorSequence(termenv.ANSI256Color(22), false),
+		NumberLiteral:     GetFullColorSequence(termenv.ANSI256Color(28), false),
 		Constant:          GetFullColorSequence(termenv.ANSI256Color(21), false),
-		PatternIdentifier: GetFullColorSequence(termenv.ANSI256Color(22), false),
+		PatternIdentifier: GetFullColorSequence(termenv.ANSI256Color(28), false),
 		CssTypeSelector:   GetFullColorSequence(termenv.ANSIBlack, false),
 		CssOtherSelector:  GetFullColorSequence(termenv.ANSIYellow, false),
 		InvalidNode:       GetFullColorSequence(termenv.ANSI256Color(160), false),
 		DiscreteColor:     GetFullColorSequence(termenv.ANSIBrightBlack, false),
 
-		Folder:     GetFullColorSequence(termenv.ANSI256Color(90), false),
-		Executable: GetFullColorSequence(termenv.ANSI256Color(22), false),
+		Folder:     GetFullColorSequence(termenv.ANSI256Color(26), false),
+		Executable: GetFullColorSequence(termenv.ANSI256Color(28), false),
 	}
 )
 
