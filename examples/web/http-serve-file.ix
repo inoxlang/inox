@@ -1,12 +1,15 @@
+const (
+    HOST = https://localhost:8080
+)
+
 manifest {
     permissions: {
-        read: {
-            https://localhost:8080
-            %/...
-        }
-        provide: https://localhost:8080
+        read: { HOST, %/... }
+        provide: HOST
     }
 }
+
+@host = HOST
 
 fn handle(rw %http.resp_writer, r %http.req){
     path = r.path
@@ -22,10 +25,10 @@ fn handle(rw %http.resp_writer, r %http.req){
     }
 }
 
-server = http.Server!(https://localhost:8080, handle)
+server = http.Server!(HOST, handle)
 
 options = { --insecure }
-body = http.read!(https://localhost:8080/index.js, options)
+body = http.read!(@host/index.js, options)
 print $body
 
 server.close()
