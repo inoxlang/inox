@@ -159,6 +159,57 @@ manifest {
 }
 ```
 
+### Easy declaration of CLI parameters 
+
+```
+manifest {
+    parameters: {
+        # positional parameters are listed at the start
+        {
+            name: #dir
+            pattern: %path
+            rest: false
+            description: "root directory of the project"
+        }
+        # non positional parameters
+        clean-existing: {
+            pattern: %bool
+            default: false
+            description: "if true delete <dir> if it already exists"
+        }
+    }
+
+    permissions: {
+        write: IWD_PREFIX # initial working directory
+        delete: IWD_PREFIX
+    }
+}
+
+# {
+#   "dir": ...
+#   "clean-existing": ...
+# }
+args = mod-args
+```
+
+#### Help message generation
+
+```
+$ inox run test.ix 
+not enough CLI arguments
+usage: <dir path> [--clean-existing]
+
+required:
+
+  dir: %path
+      root directory of the project
+
+options:
+
+  clean-existing (--clean-existing): boolean
+      if true delete <dir> if it already exists
+```
+
 ### Sensitive data protection (WIP)
 
 TODO: explain
