@@ -2,7 +2,7 @@
 
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
 
-🛡️ Inox is a [secure](#injection-prevention) high-level programming language that makes [scripts](#easy-declaration-of-cli-parameters) and [concurrent code](#concurrency) easy to write.
+🛡️ Inox is a [secure](#injection-prevention) programming language that makes [scripts](#easy-declaration-of-cli-parameters) and [concurrent code](#concurrency) easy to write.
 
 ## Installation
 
@@ -179,7 +179,7 @@ manifest {
 
 #### Secrets
 
-**Secrets** are special Inox values, they can only be created by defining an **environment variable** with a pattern like %secret-string.
+Secrets are special Inox values, they can only be created by defining an **environment variable** with a pattern like %secret-string.
 - The content is **hidden** when printed or logged
 - Secrets are not serializable, so you **cannot** send them over the network
 - A comparison involving a secret always return **false**
@@ -285,7 +285,7 @@ coroutine = go {globals: .{print}} do {
 result = coroutine.wait_result!()
 ```
 
-### Coroutine Groups
+#### Coroutine Groups
 
 ```
 group = RoutineGroup()
