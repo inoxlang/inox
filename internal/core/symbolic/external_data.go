@@ -9,6 +9,7 @@ var (
 
 type ExternalData struct {
 	ToSymbolicValue       func(v any, wide bool) (SymbolicValue, error)
+	SymbolicToPattern     func(v SymbolicValue) (any, bool)
 	GetQuantity           func(values []float64, units []string) (any, error)
 	ConvertKeyReprToValue func(string) any
 	IsReadable            func(v any) bool

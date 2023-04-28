@@ -22,6 +22,7 @@ var (
 	ANY_INDEXABLE = &AnyIndexable{}
 	ANY_TUPLE     = NewTupleOf(ANY)
 	ANY_OBJ       = &Object{}
+	ANY_REC       = &Record{}
 )
 
 // An Indexable represents a symbolic Indexable.
@@ -1033,7 +1034,7 @@ func (obj *Object) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 }
 
 func (o *Object) WidestOfType() SymbolicValue {
-	return &Object{}
+	return ANY_OBJ
 }
 
 //
@@ -1247,7 +1248,7 @@ func (rec *Record) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 }
 
 func (r *Record) WidestOfType() SymbolicValue {
-	return &Record{}
+	return ANY_REC
 }
 
 // An AnyIndexable represents a symbolic Indesable we do not know the concrete type.

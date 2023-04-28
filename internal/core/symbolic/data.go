@@ -15,15 +15,17 @@ var (
 
 // SymbolicData represents the data produced by the symbolic execution of an AST.
 type SymbolicData struct {
-	nodeMap        map[parse.Node]SymbolicValue
-	localScopeData map[parse.Node]LocalScopeData
-	errors         []SymbolicEvaluationError
+	nodeMap                  map[parse.Node]SymbolicValue
+	localScopeData           map[parse.Node]LocalScopeData
+	runtimeTypeCheckPatterns map[parse.Node]any //concrete Pattern
+	errors                   []SymbolicEvaluationError
 }
 
 func NewSymbolicData() *SymbolicData {
 	return &SymbolicData{
-		nodeMap:        make(map[parse.Node]SymbolicValue, 0),
-		localScopeData: make(map[parse.Node]LocalScopeData),
+		nodeMap:                  make(map[parse.Node]SymbolicValue, 0),
+		localScopeData:           make(map[parse.Node]LocalScopeData),
+		runtimeTypeCheckPatterns: make(map[parse.Node]any, 0),
 	}
 }
 
@@ -47,6 +49,24 @@ func (data *SymbolicData) SetNodeValue(node parse.Node, v SymbolicValue) {
 
 func (data *SymbolicData) GetNodeValue(node parse.Node) (SymbolicValue, bool) {
 	v, ok := data.nodeMap[node]
+	return v, ok
+}
+
+func (data *SymbolicData) SetRuntimeTypecheckPattern(node parse.Node, pattern any) {
+	if data == nil {
+		return
+	}
+
+	_, ok := data.runtimeTypeCheckPatterns[node]
+	if ok {
+		panic(errors.New("pattern already set"))
+	}
+
+	data.runtimeTypeCheckPatterns[node] = pattern
+}
+
+func (data *SymbolicData) GetRuntimeTypecheckPattern(node parse.Node) (any, bool) {
+	v, ok := data.runtimeTypeCheckPatterns[node]
 	return v, ok
 }
 

@@ -384,6 +384,12 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (SymbolicValue, error)
 			if !param.Test(widenedArg) {
 				if _, ok := argNode.(*parse.RuntimeTypeCheckExpression); ok {
 					args[paramIndex] = param
+					pattern, ok := extData.SymbolicToPattern(param)
+					if ok {
+						state.symbolicData.SetRuntimeTypecheckPattern(argNode, pattern)
+					} else {
+						state.addError(makeSymbolicEvalError(argNode, state, UNSUPPORTED_PARAM_TYPE_FOR_RUNTIME_TYPECHECK))
+					}
 				} else {
 					state.addError(makeSymbolicEvalError(argNode, state, FmtInvalidArg(position, arg, param)))
 				}

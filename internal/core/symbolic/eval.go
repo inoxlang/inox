@@ -3003,6 +3003,12 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			if argNode != nil {
 				if _, ok := argNode.(*parse.RuntimeTypeCheckExpression); ok {
 					args[i] = paramType
+					pattern, ok := extData.SymbolicToPattern(paramType)
+					if ok {
+						state.symbolicData.SetRuntimeTypecheckPattern(argNode, pattern)
+					} else {
+						state.addError(makeSymbolicEvalError(argNode, state, UNSUPPORTED_PARAM_TYPE_FOR_RUNTIME_TYPECHECK))
+					}
 				} else {
 					state.addError(makeSymbolicEvalError(argNode, state, FmtInvalidArg(i, arg, paramType)))
 				}

@@ -30,7 +30,8 @@ const (
 	KEY_VAR_SHOULD_BE_PROVIDED_ONLY_WHEN_ITERATING_OVER_AN_ITERABLE = "a key variable should be provided only when iterating over an iterable"
 	LIST_SHOULD_HAVE_LEN_GEQ_TWO                                    = "list should have a length greater or equal to two"
 
-	ELEMS_OF_TUPLE_SHOUD_BE_IMMUTABLE = "elements of a tuple should be immutable"
+	ELEMS_OF_TUPLE_SHOUD_BE_IMMUTABLE            = "elements of a tuple should be immutable"
+	UNSUPPORTED_PARAM_TYPE_FOR_RUNTIME_TYPECHECK = "unsupported parameter type for runtime typecheck"
 )
 
 var (

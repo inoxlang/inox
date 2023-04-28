@@ -25,6 +25,9 @@ func init() {
 		ToSymbolicValue: func(v any, wide bool) (symbolic.SymbolicValue, error) {
 			return ToSymbolicValue(v.(Value), wide)
 		},
+		SymbolicToPattern: func(v symbolic.SymbolicValue) (any, bool) {
+			return symbolicToPattern(v)
+		},
 		GetQuantity: func(values []float64, units []string) (any, error) {
 			return evalQuantity(values, units)
 		},
@@ -975,6 +978,24 @@ func _toSymbolicValue(v Value, wide bool, encountered map[uintptr]symbolic.Symbo
 		encountered[ptr] = e
 	}
 	return e, nil
+}
+
+func symbolicToPattern(v symbolic.SymbolicValue) (Pattern, bool) {
+	encountered := map[uintptr]symbolic.SymbolicValue{}
+
+	for _, pattern := range DEFAULT_NAMED_PATTERNS {
+		symbolicVal, err := pattern.ToSymbolicValue(false, encountered)
+		if err != nil {
+			continue
+		}
+		if v.Test(symbolicVal) {
+			return pattern, true
+		}
+	}
+	//TODO: support patterns in namespaces
+	//TODO: support specific symbolic values
+
+	return nil, false
 }
 
 func (w *GenericWatcher) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
