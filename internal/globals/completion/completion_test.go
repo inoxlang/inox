@@ -100,29 +100,32 @@ func TestFindCompletions(t *testing.T) {
 			}, completions)
 		})
 
-		t.Run("suggest struct's field: start of field name: struct has single field", func(t *testing.T) {
-			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}), map[string]core.Value{
-				"struct": core.ValOf(core.FileInfo{Name: "foo"}),
-			})
-			chunk, _ := parseChunkSource("struct.n", "")
+		t.Run("suggest object property (length 2): empty property name: object has single property", func(t *testing.T) {
+			state := newState()
+			inner := core.NewObjectFromMap(core.ValMap{"name": core.Str("foo")}, state.Global.Ctx)
+			obj := core.NewObjectFromMap(core.ValMap{"inner": inner}, state.Global.Ctx)
+			state.SetGlobal("obj", obj, core.GlobalConst)
+			chunk, _ := parseChunkSource("obj.inner.", "")
 
-			completions := findCompletions(state, chunk, 8)
+			completions := findCompletions(state, chunk, 10)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "struct.name", Value: "struct.name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 8}}},
+				{ShownString: "obj.inner.name", Value: "obj.inner.name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 10}}},
 			}, completions)
 		})
 
-		t.Run("suggest struct's method: start of method's name", func(t *testing.T) {
-			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}), map[string]core.Value{
-				"struct": core.ValOf(&core.Routine{}),
-			})
-			chunk, _ := parseChunkSource("struct.c", "")
+		t.Run("suggest object property (length 2): start of property name: object has single property", func(t *testing.T) {
+			state := newState()
+			inner := core.NewObjectFromMap(core.ValMap{"name": core.Str("foo")}, state.Global.Ctx)
+			obj := core.NewObjectFromMap(core.ValMap{"inner": inner}, state.Global.Ctx)
+			state.SetGlobal("obj", obj, core.GlobalConst)
+			chunk, _ := parseChunkSource("obj.inner.n", "")
 
-			completions := findCompletions(state, chunk, 8)
+			completions := findCompletions(state, chunk, 11)
 			assert.EqualValues(t, []Completion{
-				{ShownString: "struct.cancel", Value: "struct.cancel", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 8}}},
+				{ShownString: "obj.inner.name", Value: "obj.inner.name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 11}}},
 			}, completions)
 		})
+
 	})
 
 	t.Run("member expression", func(t *testing.T) {

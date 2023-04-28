@@ -401,6 +401,8 @@ func handleIdentifierMemberCompletions(n *parse.IdentifierMemberExpression, stat
 
 	buff = bytes.NewBufferString(n.Left.Name)
 
+	isLastPropPresent := len(n.PropertyNames) > 0 && (n.Err == nil || n.Err.Kind() != parse.UnterminatedMemberExpr)
+
 	//we get the next property until we reach the last property's name
 	for i, propName := range n.PropertyNames {
 		var propertyNames []string
@@ -412,8 +414,8 @@ func handleIdentifierMemberCompletions(n *parse.IdentifierMemberExpression, stat
 
 		found := false
 		for _, name := range propertyNames {
-			if name == propName.Name {
-				if i == len(n.PropertyNames)-1 { //if last
+			if name == propName.Name { //property's name is valid
+				if i == len(n.PropertyNames)-1 && (n.Err == nil || n.Err.Kind() != parse.UnterminatedMemberExpr) { //if last
 					return nil
 				}
 				buff.WriteRune('.')
@@ -439,7 +441,7 @@ func handleIdentifierMemberCompletions(n *parse.IdentifierMemberExpression, stat
 
 	s := buff.String()
 
-	return suggestPropertyNames(s, curr, n.PropertyNames, state.Global, mode)
+	return suggestPropertyNames(s, curr, n.PropertyNames, isLastPropPresent, state.Global, mode)
 }
 
 func handleMemberExpressionCompletions(n *parse.MemberExpression, state *core.TreeWalkState, mode CompletionMode) []Completion {
@@ -448,6 +450,7 @@ func handleMemberExpressionCompletions(n *parse.MemberExpression, state *core.Tr
 
 	var exprPropertyNames = []*parse.IdentifierLiteral{n.PropertyName}
 	left := n.Left
+	isLastPropPresent := n.PropertyName != nil
 
 loop:
 	for {
@@ -513,10 +516,13 @@ loop:
 		}
 	}
 
-	return suggestPropertyNames(buff.String(), curr, exprPropertyNames, state.Global, mode)
+	return suggestPropertyNames(buff.String(), curr, exprPropertyNames, isLastPropPresent, state.Global, mode)
 }
 
-func suggestPropertyNames(s string, curr interface{}, exprPropertyNames []*parse.IdentifierLiteral, state *core.GlobalState, mode CompletionMode) []Completion {
+func suggestPropertyNames(
+	s string, curr interface{}, exprPropNames []*parse.IdentifierLiteral, isLastPropPresent bool,
+	state *core.GlobalState, mode CompletionMode,
+) []Completion {
 	var completions []Completion
 	var propNames []string
 
@@ -527,8 +533,6 @@ func suggestPropertyNames(s string, curr interface{}, exprPropertyNames []*parse
 	case symbolic.IProps:
 		propNames = v.PropertyNames()
 	}
-
-	isLastPropPresent := len(exprPropertyNames) > 0 && exprPropertyNames[len(exprPropertyNames)-1] != nil
 
 	if !isLastPropPresent {
 		//we suggest all property names
@@ -543,7 +547,7 @@ func suggestPropertyNames(s string, curr interface{}, exprPropertyNames []*parse
 	} else {
 		//we suggest all property names which start with the last name in the member expression
 
-		propNamePrefix := exprPropertyNames[len(exprPropertyNames)-1].Name
+		propNamePrefix := exprPropNames[len(exprPropNames)-1].Name
 
 		for _, propName := range propNames {
 
