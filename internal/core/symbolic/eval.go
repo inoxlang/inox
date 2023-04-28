@@ -2518,6 +2518,14 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			}
 		}
 		return nil, nil
+	case *parse.RuntimeTypeCheckExpression:
+		ignoreNodeValue = true
+		val, err := symbolicEval(n.Expr, state)
+		if err != nil {
+			return nil, err
+		}
+
+		return val, nil
 	case *parse.TestSuiteExpression:
 		if n.Meta != nil {
 			_, err := symbolicEval(n.Meta, state)
@@ -2739,7 +2747,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 	}
 }
 
-func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, state *State, arguments interface{}, must bool, cmdLineSyntax bool) (SymbolicValue, error) {
+func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, state *State, argNodes []parse.Node, must bool, cmdLineSyntax bool) (SymbolicValue, error) {
 	var (
 		callee SymbolicValue
 		err    error
@@ -2786,65 +2794,59 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 	args := make([]SymbolicValue, 0)
 	nonSpreadArgCount := 0
 	hasSpreadArg := false
+	var spreadArgNode parse.Node
 
-	var argNodes []parse.Node
+	for _, argn := range argNodes {
 
-	if l, ok := arguments.([]SymbolicValue); ok {
-		args = l
-	} else {
-		argNodes = arguments.([]parse.Node)
+		if spreadArg, ok := argn.(*parse.SpreadArgument); ok {
+			hasSpreadArg = true
+			spreadArgNode = argn
+			v, err := symbolicEval(spreadArg.Expr, state)
+			if err != nil {
+				return nil, err
+			}
 
-		for _, argn := range argNodes {
+			list, ok := v.(*List)
 
-			if spreadArg, ok := argn.(*parse.SpreadArgument); ok {
-				hasSpreadArg = true
-				v, err := symbolicEval(spreadArg.Expr, state)
-				if err != nil {
-					return nil, err
-				}
-
-				list, ok := v.(*List)
-
-				if ok {
-					for _, e := range list.elements {
-						//same logic for non spread arguments
-						if isSharedFunction {
-							shared, err := ShareOrClone(e, state)
-							if err != nil {
-								state.addError(makeSymbolicEvalError(argn, state, err.Error()))
-								shared = ANY
-							}
-							e = shared
-						}
-						args = append(args, e)
-					}
-				} else {
-					state.addError(makeSymbolicEvalError(argn, state, fmtSpreadArgumentShouldBeList(v)))
-				}
-
-			} else {
-				nonSpreadArgCount++
-
-				if ident, ok := argn.(*parse.IdentifierLiteral); ok && cmdLineSyntax {
-					args = append(args, &Identifier{ident.Name})
-				} else {
-					arg, err := symbolicEval(argn, state)
-					if err != nil {
-						return nil, err
-					}
+			if ok {
+				for _, e := range list.elements {
+					//same logic for non spread arguments
 					if isSharedFunction {
-						shared, err := ShareOrClone(arg, state)
+						shared, err := ShareOrClone(e, state)
 						if err != nil {
 							state.addError(makeSymbolicEvalError(argn, state, err.Error()))
 							shared = ANY
 						}
-						arg = shared
+						e = shared
 					}
-					args = append(args, arg)
+					args = append(args, e)
 				}
+			} else {
+				state.addError(makeSymbolicEvalError(argn, state, fmtSpreadArgumentShouldBeList(v)))
 			}
 
+		} else {
+			nonSpreadArgCount++
+
+			if ident, ok := argn.(*parse.IdentifierLiteral); ok && cmdLineSyntax {
+				args = append(args, &Identifier{ident.Name})
+			} else {
+				arg, err := symbolicEval(argn, state)
+				if err != nil {
+					return nil, err
+				}
+				if isSharedFunction {
+					shared, err := ShareOrClone(arg, state)
+					if err != nil {
+						state.addError(makeSymbolicEvalError(argn, state, err.Error()))
+						shared = ANY
+					}
+					arg = shared
+				}
+				args = append(args, arg)
+			}
 		}
+
 	}
 
 	//EXECUTION
@@ -2987,19 +2989,32 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		}
 
 		paramType := pattern.SymbolicValue()
-
 		widenedArg := arg
+		var argNode parse.Node
+		if i < nonSpreadArgCount {
+			argNode = argNodes[i]
+		}
+
 		for !isAny(widenedArg) && !paramType.Test(widenedArg) {
 			widenedArg = widenOrAny(widenedArg)
 		}
 
 		if !paramType.Test(widenedArg) {
-			var node parse.Node = callNode
-			if argNodes != nil {
-				node = argNodes[i]
+			if argNode != nil {
+				if _, ok := argNode.(*parse.RuntimeTypeCheckExpression); ok {
+					args[i] = paramType
+				} else {
+					state.addError(makeSymbolicEvalError(argNode, state, FmtInvalidArg(i, arg, paramType)))
+				}
+			} else {
+				//TODO: support runtime typecheck for spread arg
+				node := spreadArgNode
+				if node == nil {
+					node = callNode
+				}
+				state.addError(makeSymbolicEvalError(node, state, FmtInvalidArg(i, arg, paramType)))
 			}
 
-			state.addError(makeSymbolicEvalError(node, state, FmtInvalidArg(i, arg, paramType)))
 			args[i] = paramType
 		} else {
 			args[i] = widenedArg

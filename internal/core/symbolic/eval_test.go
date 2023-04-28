@@ -1156,7 +1156,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(expr, state, fmtLeftOperandOfBinaryShouldBe(parse.Substrof, "string-like", "%int")),
+				makeSymbolicEvalError(expr.Left, state, fmtLeftOperandOfBinaryShouldBe(parse.Substrof, "string-like", "%int")),
 			}, state.errors)
 			assert.Equal(t, &Bool{}, res)
 		})
@@ -1169,7 +1169,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(expr, state, fmtRightOperandOfBinaryShouldBe(parse.Substrof, "string-like", "%int")),
+				makeSymbolicEvalError(expr.Right, state, fmtRightOperandOfBinaryShouldBe(parse.Substrof, "string-like", "%int")),
 			}, state.errors)
 			assert.Equal(t, &Bool{}, res)
 		})
@@ -3335,6 +3335,48 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Nil(t, res)
 		})
 
+	})
+
+	t.Run("runtime typecheck expression", func(t *testing.T) {
+		t.Run("argument of Go function", func(t *testing.T) {
+			n, state := makeStateAndChunk(`f ~arg`)
+
+			goFunc := &GoFunction{
+				fn: func(*Context, *Int) {
+				},
+			}
+
+			state.setGlobal("f", goFunc, GlobalConst)
+			state.setGlobal("arg", ANY, GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, Nil, res)
+		})
+
+		t.Run("argument of Inox function", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				fn f(n %int){
+					return n
+				}
+
+				return f(~arg)
+			`)
+
+			goFunc := &GoFunction{
+				fn: func(*Context, *Int) {
+				},
+			}
+
+			state.setGlobal("f", goFunc, GlobalConst)
+			state.setGlobal("arg", ANY, GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, ANY_INT, res)
+		})
 	})
 
 	t.Run("testsuite expression", func(t *testing.T) {

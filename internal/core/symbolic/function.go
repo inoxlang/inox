@@ -347,6 +347,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (SymbolicValue, error)
 			continue
 		}
 
+		// get type of parameter
 		reflectParamType := fnValType.In(paramIndex)
 		param, err := converTypeToSymbolicValue(reflectParamType)
 		if err != nil {
@@ -359,9 +360,17 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (SymbolicValue, error)
 			return nil, err
 		}
 
+		// check argument against the parameter's type
+
 		var arg SymbolicValue
 		if paramIndex < len(args) {
+			position := paramIndex
+			if isfirstArgCtx {
+				position -= 1
+			}
+
 			arg = args[paramIndex].(SymbolicValue)
+			argNode := callNode.Arguments[position]
 
 			// if extVal, ok := arg.(*SharedValue); ok {
 			// 	arg = extVal.value
@@ -373,15 +382,12 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (SymbolicValue, error)
 			}
 
 			if !param.Test(widenedArg) {
-				position := paramIndex
-
-				if isfirstArgCtx {
-					position -= 1
+				if _, ok := argNode.(*parse.RuntimeTypeCheckExpression); ok {
+					args[paramIndex] = param
+				} else {
+					state.addError(makeSymbolicEvalError(argNode, state, FmtInvalidArg(position, arg, param)))
 				}
 
-				argNode := callNode.Arguments[position]
-
-				state.addError(makeSymbolicEvalError(argNode, state, FmtInvalidArg(position, arg, param)))
 				args[paramIndex] = param //if argument does not match we use the symbolic parameter value as argument
 			} else {
 				args[paramIndex] = widenedArg
