@@ -1734,14 +1734,6 @@ func (v *VM) run() {
 			var ctx *Context
 
 			if isSingleExpr == 1 {
-				if permListing == nil {
-					newCtx, err := v.global.Ctx.ChildWithout(REMOVED_SINGLE_EXPR_ROUTINE_PERMS)
-					if err != nil {
-						v.err = fmt.Errorf("spawn expression: new context: %w", err)
-						return
-					}
-					ctx = newCtx
-				}
 				actualGlobals[string(caleeName)] = singleExprCallee
 			} else {
 
@@ -1780,6 +1772,13 @@ func (v *VM) run() {
 					ForbiddenPermissions: v.global.Ctx.forbiddenPermissions,
 					ParentContext:        v.global.Ctx,
 				})
+			} else {
+				newCtx, err := v.global.Ctx.ChildWithout(IMPLICITLY_REMOVED_ROUTINE_PERMS)
+				if err != nil {
+					v.err = fmt.Errorf("spawn expression: new context: %w", err)
+					return
+				}
+				ctx = newCtx
 			}
 
 			routine, err := SpawnRoutine(RoutineSpawnArgs{

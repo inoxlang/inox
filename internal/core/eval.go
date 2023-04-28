@@ -82,11 +82,7 @@ var (
 	SECRET_TYPE             = reflect.TypeOf((*Secret)(nil))
 )
 
-var REMOVED_SINGLE_EXPR_ROUTINE_PERMS = []Permission{
-	GlobalVarPermission{ReadPerm, "*"},
-	GlobalVarPermission{UpdatePerm, "*"},
-	GlobalVarPermission{CreatePerm, "*"},
-
+var IMPLICITLY_REMOVED_ROUTINE_PERMS = []Permission{
 	RoutinePermission{CreatePerm},
 }
 

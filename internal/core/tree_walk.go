@@ -886,13 +886,6 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		var chunk *parse.Chunk
 
 		if n.Module.SingleCallExpr {
-			if permListing == nil {
-				newCtx, err := state.Global.Ctx.ChildWithout(REMOVED_SINGLE_EXPR_ROUTINE_PERMS)
-				if err != nil {
-					return nil, fmt.Errorf("spawn expression: new context: %s", err.Error())
-				}
-				ctx = newCtx
-			}
 			chunk = &parse.Chunk{
 				NodeBase:   n.Module.NodeBase,
 				Statements: n.Module.Statements,
@@ -953,6 +946,12 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				ForbiddenPermissions: state.Global.Ctx.forbiddenPermissions,
 				ParentContext:        state.Global.Ctx,
 			})
+		} else {
+			newCtx, err := state.Global.Ctx.ChildWithout(IMPLICITLY_REMOVED_ROUTINE_PERMS)
+			if err != nil {
+				return nil, fmt.Errorf("spawn expression: new context: %s", err.Error())
+			}
+			ctx = newCtx
 		}
 
 		parsedChunk := &parse.ParsedChunk{
