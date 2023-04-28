@@ -90,10 +90,10 @@ This works because in **command-like** calls `log` is not considered a variable.
 Pipe statements are analogous to pipes in Unix but they act on the values returned by functions, not 
 file descriptors.
 
-Here is a exmaple:
+Here is an example:
 
 ```
-map [{value: "a"}, {value: 1}] .name | filter $ %int
+map [{value: "a"}, {value: 1}] .value | filter $ %int
 ```
 
 - in the first call we extract the .value property of several objects using the `map` function
@@ -104,7 +104,7 @@ map [{value: "a"}, {value: 1}] .name | filter $ %int
 
 Pipe expressions allows you to store the final result in a variable:
 ```
-ints = | map [{value: "a"}, {value: 1}] .name | filter $ %int
+ints = | map [{value: "a"}, {value: 1}] .value | filter $ %int
 ```
 
 ### 
