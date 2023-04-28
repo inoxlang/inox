@@ -2,7 +2,7 @@
 
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
 
-🛡️ Inox is a [secure](#injection-prevention) programming language that makes [scripts](#easy-declaration-of-cli-parameters) and [concurrent code](#concurrency) easy to write.
+🛡️ Inox is a [secure](#injection-prevention) programming language that makes [scripts](#declaration-of-cli-parameters--environment-variables) and [concurrent code](#concurrency) easy to write.
 
 ## Installation
 
@@ -39,8 +39,9 @@ Security:
 - [DoS Mitigation (WIP)](#dos-mitigation)
 
 Scripting:
-- [Easy declaration of CLI Parameters](#easy-declaration-of-cli-parameters)
+- [Easy declaration of CLI Parameters](#declaration-of-cli-parameters--environment-variables)
 - [Transactions & Effects (WIP)](#transactions--effects-wip)
+- [Simplified resource manipulation](#simplified-resource-manipulation)
 
 Other:
 - [Concurrency](#concurrency)
@@ -74,7 +75,7 @@ runtime check error: 0 or 1=1 does not match %sql.int
 
 ### Permission system
 
-#### Required permissions 
+#### **Required permissions** 
 
 Inox features a fine-grained **permission system** that restricts what a module is allowed to do, here are a few examples of permissions:
 - access to the filesystem (read, create, update, write, delete)
@@ -107,7 +108,7 @@ print(fs.ls!(malicious_user_input))
 When a forbidden operation is performed the module panics with an error:\
 `core: error: not allowed, missing permission: [read path(s) /home/]`
 
-#### Isolation of dependencies
+#### **Isolation of dependencies**
 
 In imports the importing module specifies the permissions it **grants** to the imported module.
 
@@ -144,7 +145,7 @@ data = fs.read!(/etc/passwd)
 If the imported module ask more permissions than granted an error is thrown:\
 `import: some permissions in the imported module's manifest are not granted: [read path(s) /...] `
 
-#### Dropping permissions
+#### **Dropping permissions**
 
 Sometimes programs have an **initialization** phase, for example a program reads a file or performs an HTTP request to fetch its configuration.
 After this phase it no longer needs some permissions so it can drop them.
@@ -157,7 +158,7 @@ drop-perms {
 
 ### DoS mitigation
 
-#### Limitations (WIP)
+#### **Limitations (WIP)**
 
 Limitations limit the **speed** at which some actions are performed, the minimum required values/rates are specified in the manifest.
 This feature is still in development and will be fully implemented soon.\
@@ -177,12 +178,12 @@ manifest {
 
 ### Sensitive data protection (WIP)
 
-#### Secrets
+#### **Secrets**
 
 Secrets are special Inox values, they can only be created by defining an **environment variable** with a pattern like %secret-string.
 - The content is **hidden** when printed or logged
 - Secrets are not serializable, so you **cannot** send them over the network
-- A comparison involving a secret always return **false**
+- A comparison involving a secret always returns **false**
 
 ```
 manifest {
@@ -197,7 +198,7 @@ API_KEY = env.initial.API_KEY
 ```
 
 
-#### Visibility (WIP)
+#### **Visibility (WIP)**
 
 TODO: explain
 
@@ -271,9 +272,27 @@ fs.mkfile ./file.txt
 cancel_exec() 
 ```
 
+#### **Simplified resource manipulation**
+
+- The builtin [**read**](./docs/shell-basics.md#read) function can read directories / files / HTTP resources and parse their content.
+```
+read ./dir/
+read ./file.json  # parsed by default
+read https://jsonplaceholder.typicode.com/posts  # parsed by default
+```
+
+- The builtin [**create**](./docs/shell-basics.md#create) function can create directories / files / HTTP resources.
+```
+create ./dir/
+create ./file.txt "hello world !"
+create https://example.com/posts tojson({title: "hello"})
+```
+
+Learn more [here](./docs/shell-basics#resource-manipulation)
+
 ### Concurrency
 
-#### Coroutines (Goroutines)
+#### **Coroutines (Goroutines)**
 
 ```
 coroutine = go {globals: .{print}} do {
@@ -285,7 +304,7 @@ coroutine = go {globals: .{print}} do {
 result = coroutine.wait_result!()
 ```
 
-#### Coroutine Groups
+#### **Coroutine Groups**
 
 ```
 group = RoutineGroup()
@@ -295,7 +314,7 @@ coroutine2 = go {group: group} do read!(https://jsonplaceholder.typicode.com/pos
 files = group.wait_results!()
 ```
 
-#### Lifetime jobs
+#### **Lifetime jobs**
 
 Lifetime jobs are coroutines linked to an object.
 
@@ -313,7 +332,7 @@ object = {
 
 In Inox objects can communicate in several different ways.
 
-#### Message sending
+#### **Message sending**
 
 The `sendval` construct allows an object to send message to another object.
 

@@ -18,16 +18,17 @@ No additional permissions will be granted. You can modify the startup script in 
 - [Type checker](#type-checker)
 - [Execute Inox scripts](#execute-inox-scripts-from-the-repl)
 - [Execute commands](#execute-commands)
-- [Read](#read)
-  - [Directory](#directory)
-  - [File](#file)
-  - [HTTP](#http-resource)
-  - [Raw](#raw-data)
-- [Create](#create)
-- [Update](#update)
-- [Delete](#update)
-- [Find](#find)
-- [Shell configuration](#configuration)
+- [Resource manipulation](#resource-manipulation)
+  - [Read](#read)
+    - [Directory](#directory)
+    - [File](#file)
+    - [HTTP](#http-resource)
+    - [Raw](#raw-data)
+  - [Create](#create)
+  - [Update](#update)
+  - [Delete](#update)
+  - [Find](#find)
+  - [Shell configuration](#configuration)
 
 ## Pseudo commands (quit, clear)
 
@@ -153,18 +154,16 @@ ex #go help
 
 NOTE: Almost no commands are allowed by default, edit your startup script in `.config/inox` to allow more commands (and subcommands).
 
-## Read, Create, Update, Delete, Provide resources
+## Resource manipulation
 
 From now on we will references files, HTTP servers and endpoints as "resources".
-
 You can easily manipulate resources using ``read | create | update | delete | provide`` followed by the resource's name.
 
-
-## Read
+### Read
 
 Read is a powerful function that allows you to get the content of files, directories & HTTP resources.
 
-### Directory
+#### **Directory**
 
 Reading the entries of a directory ``read ./dir/`` returns a list of %file-info:
 ```
@@ -174,7 +173,7 @@ Reading the entries of a directory ``read ./dir/`` returns a list of %file-info:
 ]
 ```
 
-### File
+#### **File**
 
 By default the `read` function parses the content of the read file, the extension
 is used to determinate the type of content.
@@ -186,7 +185,7 @@ is used to determinate the type of content.
     {"key": "value"}
     ```
 
-### HTTP resource
+#### **HTTP resource**
 
 By default the `read` function parses the content of the read resource, the Content-Type header 
 is used to determinated the type of content.
@@ -205,28 +204,28 @@ Reading an JSON HTTP resource:
 
 Reading a HTML resource will return a `%html.node`.
 
-### Raw data
+#### **Raw data**
 
 You can disable parsing by adding the `--raw` switch **after** the resource name, a byte slice (%bytes)
 will be returned instead.
 
-## Create
+### Create
 
 Create a dir: ``create ./dir/``
 
 Create a file: ``create ./file.txt [optional string content]``
 
-## Update
+### Update
 
 Append to a file: ``update ./file.txt append <string>``
 
 Patch an HTTP resource: ``update <url> <string | object>``
 
-## Delete
+### Delete
 
 Use ``delete <resource>`` for deletion. The deletion is recursive for folders.
 
-## Find
+### Find
 
 Recursivelly find all JSON files in a directory.
 ```
