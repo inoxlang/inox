@@ -50,7 +50,7 @@ func NewEnvNamespace(ctx *core.Context, envPattern *core.ObjectPattern) *core.Re
 		values := make([]core.Value, envPattern.EntryCount())
 
 		i := 0
-		envPattern.ForEachEntry(func(propName string, propPattern core.Pattern) {
+		envPattern.ForEachEntry(func(propName string, propPattern core.Pattern) error {
 			propNames[i] = propName
 			envVal := os.Getenv(propName)
 
@@ -67,9 +67,16 @@ func NewEnvNamespace(ctx *core.Context, envPattern *core.ObjectPattern) *core.Re
 					panic(fmt.Errorf("invalid value provided for environment variable '%s'", propName))
 				}
 				values[i] = val
+			case *core.TypePattern:
+				if patt != core.STR_PATTERN {
+					panic(fmt.Errorf("invalid pattern type %T for environment variable '%s'", propPattern, propName))
+				}
+				values[i] = core.Str(envVal)
 			default:
 				panic(fmt.Errorf("invalid pattern type %T for environment variable '%s'", propPattern, propName))
 			}
+
+			return nil
 		})
 
 		initial = core.NewRecordFromKeyValLists(propNames, values)

@@ -927,10 +927,13 @@ func (patt *ObjectPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (patt *ObjectPattern) ForEachEntry(fn func(propName string, propPattern Pattern)) {
+func (patt *ObjectPattern) ForEachEntry(fn func(propName string, propPattern Pattern) error) error {
 	for propName, propPattern := range patt.entryPatterns {
-		fn(propName, propPattern)
+		if err := fn(propName, propPattern); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func (patt *ObjectPattern) EntryCount() int {

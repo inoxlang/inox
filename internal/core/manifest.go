@@ -499,6 +499,21 @@ func createManifest(object *Object, config manifestObjectConfig) (*Manifest, err
 			if !ok {
 				return nil, fmt.Errorf("invalid manifest, the 'env' section should have a value of type object pattern")
 			}
+			err := patt.ForEachEntry(func(propName string, propPattern Pattern) error {
+				switch propPattern.(type) {
+				case StringPattern, *SecretPattern:
+					return nil
+				case *TypePattern:
+					if propPattern == STR_PATTERN {
+						return nil
+					}
+				default:
+				}
+				return fmt.Errorf("invalid 'env' section in manifest: invalid pattern type %T for environment variable '%s'", propPattern, propName)
+			})
+			if err != nil {
+				return nil, err
+			}
 			envPattern = patt
 		case "parameters":
 			params, err := getModuleParameters(v)
