@@ -984,11 +984,12 @@ func symbolicToPattern(v symbolic.SymbolicValue) (Pattern, bool) {
 	encountered := map[uintptr]symbolic.SymbolicValue{}
 
 	for _, pattern := range DEFAULT_NAMED_PATTERNS {
-		symbolicVal, err := pattern.ToSymbolicValue(false, encountered)
+		symbolicPattern, err := pattern.ToSymbolicValue(false, encountered)
 		if err != nil {
 			continue
 		}
-		if v.Test(symbolicVal.(symbolic.Pattern).SymbolicValue()) {
+		matchedSymbolicVal := symbolicPattern.(symbolic.Pattern).SymbolicValue()
+		if v.Test(matchedSymbolicVal) && matchedSymbolicVal.Test(v) {
 			return pattern, true
 		}
 	}
