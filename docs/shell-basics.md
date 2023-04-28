@@ -10,7 +10,33 @@ Note: the `inox shell` command can also be used.
 Before starting the shell ``inox`` will execute the startup script found in `.config/inox` (or XDG_CONFIG_HOME) and grant the required permissions by the script to the shell.\
 No additional permissions will be granted. You can modify the startup script in `.config/inox` if you need more permissions.
 
+- [Pseudo commands](#pseudo-commands-quit-clear)
+- [Syntax](#syntax)
+  - [Calling a function](#calling-a-function)
+  - [Variables](#variables)
+  - [Pipe statements](#pipe-statements)
+- [Type checker](#type-checker)
+- [Execute Inox scripts](#execute-inox-scripts-from-the-repl)
+- [Execute commands](#execute-commands)
+- [Read](#read)
+  - [Directory](#directory)
+  - [File](#file)
+  - [HTTP](#http-resource)
+  - [Raw](#raw-data)
+- [Create](#create)
+- [Update](#update)
+- [Delete](#update)
+- [Find](#find)
+
+
+## Pseudo commands (quit, clear)
+
+- `quit` pseudo command stops the process.
+- `clear` pseudo command clears the screen.
+
 ## Syntax
+
+### Calling a function
 
 Copy the following code in the Inox shell & press Enter:
 ```
@@ -49,6 +75,7 @@ f $a a
 output: [1, #a]
 ```
 
+Here is another example.
 If you have **git** installed you should be able to execute the following:
 ```
 git log
@@ -58,10 +85,65 @@ git log
 
 This works because in **command-like** calls `log` is not considered a variable.
 
+### Pipe statements
 
-## Leaving the shell
+Pipe statements are analogous to pipes in Unix but they act on the values returned by functions, not 
+file descriptors.
 
-The `quit` pseudo command stops the process.
+Here is a exmaple:
+
+```
+map [{value: "a"}, {value: 1}] .name | filter $ %int
+```
+
+- in the first call we extract the .value property of several objects using the `map` function
+- in the second call we filter the result of the previous call
+  - `$` is an anonymous variable that contains the result of the previous call
+  - `%int` is a pattern matching integers
+
+
+Pipe expressions allows you to store the final result in a variable:
+```
+ints = | map [{value: "a"}, {value: 1}] .name | filter $ %int
+```
+
+### 
+
+### Help
+
+```
+help <name of function>
+
+example:
+help find
+```
+
+## Type checker
+
+The type checker performs various checks before the input code is executed, allowing you to quickly catch errors.
+
+```
+> map 1 .name
+
+check(symbolic): shell-input:1:5: : invalid value for argument at position 0: type is %int, but %iterable was expected
+```
+
+This is convenient, but there are many cases where you **don't** want such strictness !
+Let's say you are executing the following command:
+
+```
+read https://jsonplaceholder.typicode.com/posts | map $ .title
+```
+
+The type checker will complain that `$` is not an %iterable, that's pretty annoying.
+You can postpone the type check of this argument at runtime by prefixing it with '~'.
+
+```
+read https://jsonplaceholder.typicode.com/posts | map ~$ .title
+```
+
+Note: '~' can be added in front of any expresion that is an argument in a call.
+
 
 ## Execute Inox scripts from the REPL
 
@@ -154,16 +236,7 @@ Patch an HTTP resource: ``update <url> <string | object>``
 
 Use ``delete <resource>`` for deletion. The deletion is recursive for folders.
 
-## Help for a function
-
-```
-help <name of function>
-
-example:
-help find
-```
-
-## Finding
+## Find
 
 Recursivelly find all JSON files in a directory.
 ```
