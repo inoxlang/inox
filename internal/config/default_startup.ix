@@ -104,7 +104,7 @@ manifest {
 
 
 return {
-    builtin-commands: [#cd, #pwd, #whoami, #hostname, #clear]
+    builtin-commands: [#cd, #pwd, #whoami, #hostname]
     trusted-commands: [#echo, #go, #git, #less, #grep, #cat]
     prompt: [
         [@(whoami())  #bright-black #black]
