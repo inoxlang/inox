@@ -205,6 +205,8 @@ TODO: explain
 
 ### Declaration of CLI parameters & environment variables
 
+CLI parameters & environment variables can be described in the manifest:
+
 ```
 manifest {
     parameters: {
@@ -237,6 +239,8 @@ manifest {
 #   "clean-existing": ...
 # }
 args = mod-args
+
+API_KEY = env.initial.API_KEY
 ```
 
 #### Help message generation
@@ -288,7 +292,7 @@ create ./file.txt "hello world !"
 create https://example.com/posts tojson({title: "hello"})
 ```
 
-Learn more [here](./docs/shell-basics#resource-manipulation)
+Learn more [here](./docs/shell-basics#resource-manipulation.md)
 
 ### Concurrency
 
