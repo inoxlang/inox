@@ -7,7 +7,7 @@ inox
 
 Note: the `inox shell` command can also be used.
 
-Before starting the shell ``inox`` will execute the startup script found in `.config/inox` (or XDG_CONFIG_HOME) and grant the required permissions by the script to the shell.\
+Before starting the shell ``inox`` will execute the startup script `~/.config/inox/startup.ix` (or $XDG_CONFIG_HOME/inox/startup.ix) and grant the required permissions by the script to the shell.\
 No additional permissions will be granted. You can modify the startup script in `.config/inox` if you need more permissions.
 
 - [Pseudo commands](#pseudo-commands-quit-clear)
@@ -27,7 +27,7 @@ No additional permissions will be granted. You can modify the startup script in 
 - [Update](#update)
 - [Delete](#update)
 - [Find](#find)
-
+- [Shell configuration](#configuration)
 
 ## Pseudo commands (quit, clear)
 
@@ -74,16 +74,6 @@ you have to use `$a` to reference a.
 f $a a
 output: [1, #a]
 ```
-
-Here is another example.
-If you have **git** installed you should be able to execute the following:
-```
-git log
-```
-
-*press q to leave*
-
-This works because in **command-like** calls `log` is not considered a variable.
 
 ### Pipe statements
 
@@ -158,7 +148,7 @@ run ./myscript.ix
 
 ```
 ex echo "hello"   # 'ex echo hello' will not work
-ex go help
+ex #go help
 ```
 
 NOTE: Almost no commands are allowed by default, edit your startup script in `.config/inox` to allow more commands (and subcommands).
@@ -243,3 +233,106 @@ Recursivelly find all JSON files in a directory.
 find %./**/*.json ./
 ```
 
+## Configuration
+
+The startup script `~/.config/inox/startup.ix` (or $XDG_CONFIG_HOME/inox/startup.ix) is executed before the shell is started,
+it returns the configuration for the shell.
+
+The startup script can be specificied using the `-c` flag:
+```
+inox shell -c startup.ix
+```
+
+### Minimal
+
+The default startup.ix gives at lot of permissions to the shell, if you want to highly restrict
+what the shell is allowed to do you should start with a minimal startup script & only add required permissions.
+
+The smallest possible startup script returns an empty object:
+```
+manifest {}
+
+return {}
+```
+
+The permissions required by the startup script are also granted to the shell: here the manifest is empty,
+so the shell will not be able to read files or make network requests. 
+
+Let's add the prompt configuration and a few permissions to make our shell usable.
+
+```
+const (
+  HOME_PREFIX = /home/user/... # replace with your HOME directory
+  TMP = /tmp/...
+)
+
+manifest {
+  # allow the shell to read|write|delete any file in /tmp/... or in the user's HOME directory (or below).
+  permissions: {
+    read: { HOME_PREFIX, TMP }
+    write: { HOME_PREFIX, TMP }
+    delete: { HOME_PREFIX, TMP }
+  }
+}
+
+return {
+  builtin-commands: [#cd, #pwd, #whoami, #hostname]
+  trusted-commands: [#echo, #less, #grep, #cat]
+
+  prompt: [
+    [@(whoami())  #bright-black #black]
+    ["@" #bright-black #black]
+    [@(hostname())  #bright-black #black]
+    ":"
+    [@(pwd())  #bright-blue #blue]
+    "> "
+  ]
+}
+```
+
+### Builtin commands
+
+Builtin commands are provided by the shell, note that commands do not exist natively in Inox,
+typing `cd ./dir/` is equivalent to `cd(./dir/)` because **cd** is a function.
+
+There are only a few builtin commands availabe:
+- cd
+- pwd
+- whoami
+- hostname
+
+### Trusted commands
+
+Trusted commands are commands that are fully trusted, when you execute z trusted command the standard input is redirected
+to the spawned process.
+
+You can try that with the following command 
+```
+less <file>
+```
+
+*press 'q' to leave, as you would do when using **less** in bash*
+
+### Prompt
+
+Here is an example of prompt configuration:
+```
+[
+  [@(whoami())  #bright-black #black]
+  ["@" #bright-black #black]
+  [@(hostname())  #bright-black #black]
+  ":"
+  [@(pwd())  #bright-blue #blue]
+  "> "
+]
+```
+
+- each part is described by a value or a list, allowed values are:
+  - strings & values similar to strings (paths, urls, ...) 
+  - lazy expressions
+- lists describe the part followed by 2 colors
+  - the first color is used when the terminal's background is darkish
+  - the second color is used when the terminal's background is light
+- lazy expressions such as @(whoami()) are evaluated each time the prompt is printed
+  - they must be calls
+  - only the whoami, hostname & pwd functions are allowed
