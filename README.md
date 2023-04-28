@@ -2,8 +2,7 @@
 
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
 
-🛡️ Inox is a secure scripting language with type checking.
-It allows to easily write [concurrent code](#concurrency) and to exchange [messages](./README.md#communication) between objects.
+🛡️ Inox is a [secure](#injection-prevention) high-level programming language that makes [scripts](#easy-declaration-of-cli-parameters) and [concurrent code](#concurrency) easy to write.
 
 ## Installation
 
@@ -31,14 +30,19 @@ View [Shell Basics](./docs/shell-basics.md) to learn how to use Inox interactive
 
 ## Features
 
+Security:
 - [Injection Prevention](#injection-prevention)
 - [Permission system](#permission-system)
   - [Required permissions](#required-permissions)
   - [Isolation of dependencies](#isolation-of-dependencies)
   - [Dropping permissions](#dropping-permissions)
 - [DoS Mitigation (WIP)](#dos-mitigation)
+
+Scripting:
 - [Easy declaration of CLI Parameters](#easy-declaration-of-cli-parameters)
 - [Transactions & Effects (WIP)](#transactions--effects-wip)
+
+Other:
 - [Concurrency](#concurrency)
   - [Coroutines (Goroutines)](#coroutines-goroutines)
   - [Lifetime jobs](#lifetime-jobs)
@@ -46,7 +50,7 @@ View [Shell Basics](./docs/shell-basics.md) to learn how to use Inox interactive
 
 ### Injection Prevention
 
-In Inox interpolations are always restricted in order to prevent injections.
+In Inox interpolations are always restricted in order to prevent **injections**.
 When you dynamically create URLs the interpolations are restricted based on where the interpolation is located (path, query).
 
 <img src="./docs/img/url-injection.png"></img>
@@ -58,7 +62,7 @@ URL expression: result of a path interpolation should not contain any of the fol
 -->
 
 Checked strings are strings that are validated against a pattern. When you dynamically
-create a checked string all the interpolations must be explicitly typed.
+create a checked string all the interpolations must be explicitly **typed**.
 
 <img src="./docs/img/query-injection.png"></img>
 
@@ -72,7 +76,7 @@ runtime check error: 0 or 1=1 does not match %sql.int
 
 #### Required permissions 
 
-Inox features a fine-grained permission system that restricts what a module is allowed to do, here is a few examples of permissions:
+Inox features a fine-grained **permission system** that restricts what a module is allowed to do, here are a few examples of permissions:
 - access to the filesystem (read, create, update, write, delete)
 - access to the network (several distinct permissions)
     - HTTP (read, create, update, delete, listen)
@@ -83,7 +87,7 @@ Inox features a fine-grained permission system that restricts what a module is a
 - create coroutines (multi threading)
 - execute specific commands
 
-Inox modules always start with a manifest that describes the required permissions.
+Inox modules always start with a **manifest** that describes the required permissions.
 
 <img src="./docs/img/fs-malicious-input.png"></img>
 
@@ -105,7 +109,7 @@ When a forbidden operation is performed the module panics with an error:\
 
 #### Isolation of dependencies
 
-In imports the importing module specifies the permissions it grants to the imported module.
+In imports the importing module specifies the permissions it **grants** to the imported module.
 
 `./app.ix`
 
@@ -142,7 +146,7 @@ If the imported module ask more permissions than granted an error is thrown:\
 
 #### Dropping permissions
 
-Sometimes programs have an initialization phase, for example a program reads a file or performs an HTTP request to fetch its configuration.
+Sometimes programs have an **initialization** phase, for example a program reads a file or performs an HTTP request to fetch its configuration.
 After this phase it no longer needs some permissions so it can drop them.
 
 ```
@@ -155,10 +159,9 @@ drop-perms {
 
 #### Limitations (WIP)
 
-Limitations limit the speed at which some actions are performed, the minimum required values/rates are specified in the manifest.
+Limitations limit the **speed** at which some actions are performed, the minimum required values/rates are specified in the manifest.
 This feature is still in development and will be fully implemented soon.\
-Limitations will for example allow the developer to restrict
-the share of disk/network bandwitch allocated to a http request handler.
+Limitations will for example allow the developer to **restrict** the share of disk/network bandwitch allocated to a http request handler.
 
 ```
 manifest {
@@ -172,7 +175,34 @@ manifest {
 }
 ```
 
-### Easy declaration of CLI parameters 
+### Sensitive data protection (WIP)
+
+#### Secrets
+
+**Secrets** are special Inox values, they can only be created by defining an **environment variable** with a pattern like %secret-string.
+- The content is **hidden** when printed or logged
+- Secrets are not serializable, so you **cannot** send them over the network
+- A comparison involving a secret always return **false**
+
+```
+manifest {
+    ...
+    env: %{
+        API_KEY: %secret-string
+    }
+    ...
+}
+
+API_KEY = env.initial.API_KEY
+```
+
+
+#### Visibility (WIP)
+
+TODO: explain
+
+
+### Declaration of CLI parameters & environment variables
 
 ```
 manifest {
@@ -190,6 +220,9 @@ manifest {
             default: false
             description: "if true delete <dir> if it already exists"
         }
+    }
+    env: {
+      API_KEY: %secret-string
     }
 
     permissions: {
@@ -223,18 +256,10 @@ options:
       if true delete <dir> if it already exists
 ```
 
-### Sensitive data protection (WIP)
-
-TODO: explain
-
-#### Visibility (WIP)
-
-TODO: explain
-
 ### Transactions & Effects (WIP)
 
-Inox allows you to attach a transaction to the current execution context (think SQL transactions).
-When a side effect happens it is recorded in the transaction. If the execution is cancelled for whatever reason the transaction is automatically rollbacked and 'reversible' effects are reversed. (A 'mode' that causes side effects to only be committed if the transaction succeed is also planned)
+Inox allows you to attach a **transaction** to the current execution context (think SQL transactions).
+When a **side effect** happens it is recorded in the transaction. If the execution is cancelled for whatever reason the transaction is automatically **rollbacked** and 'reversible' effects are reversed. (A 'mode' that causes side effects to only be committed if the transaction succeed is also planned)
 
 ```
 tx = start_tx()
@@ -258,6 +283,16 @@ coroutine = go {globals: .{print}} do {
 
 # 1
 result = coroutine.wait_result!()
+```
+
+### Coroutine Groups
+
+```
+group = RoutineGroup()
+coroutine1 = go {group: group} do read!(https://jsonplaceholder.typicode.com/posts/1)
+coroutine2 = go {group: group} do read!(https://jsonplaceholder.typicode.com/posts/2)
+
+files = group.wait_results!()
 ```
 
 #### Lifetime jobs
