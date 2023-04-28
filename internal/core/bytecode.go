@@ -236,6 +236,7 @@ const (
 	OpAssert
 	OpBlockLock
 	OpBlockUnlock
+	OpRuntimeTypecheck
 	OpSuspendVM
 )
 
@@ -348,6 +349,7 @@ var OpcodeNames = [...]string{
 	OpAssert:                       "ASSERT",
 	OpBlockLock:                    "BLOCK_LOCK",
 	OpBlockUnlock:                  "BLOCK_LOCK",
+	OpRuntimeTypecheck:             "TYPECHECK",
 	OpSuspendVM:                    "SUSPEND",
 }
 
@@ -460,10 +462,10 @@ var OpcodeOperands = [...][]int{
 	OpAssert:                       {},
 	OpBlockLock:                    {1},
 	OpBlockUnlock:                  {},
+	OpRuntimeTypecheck:             {2},
 	OpSuspendVM:                    {},
 }
 
-// OpcodeOperands is the number of operands.
 var OpcodeConstantIndexes = [...][]bool{
 	OpPushConstant:                 {true},
 	OpPop:                          {},
@@ -572,6 +574,7 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpAssert:                       {},
 	OpBlockLock:                    {false},
 	OpBlockUnlock:                  {},
+	OpRuntimeTypecheck:             {true},
 	OpSuspendVM:                    {},
 }
 

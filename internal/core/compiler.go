@@ -1683,6 +1683,12 @@ func (c *compiler) Compile(node parse.Node) error {
 			return err
 		}
 		c.emit(node, OpAssert)
+	case *parse.RuntimeTypeCheckExpression:
+		if err := c.Compile(node.Expr); err != nil {
+			return err
+		}
+		constantVal := AstNode{Node: node, chunk: c.currentChunk()}
+		c.emit(node, OpRuntimeTypecheck, c.addConstant(constantVal))
 	case *parse.TestSuiteExpression:
 		if node.IsStatement {
 			c.emit(node, OpPushNil)

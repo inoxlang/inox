@@ -1914,6 +1914,25 @@ func (v *VM) run() {
 				newLockedValues = append(newLockedValues, lockedVal)
 			}
 			v.global.lockedValues = newLockedValues
+		case OpRuntimeTypecheck:
+			v.ip += 2
+			astNodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			astNode := v.constants[astNodeIndex].(AstNode).Node.(*parse.RuntimeTypeCheckExpression)
+
+			pattern, ok := v.global.SymbolicData.GetRuntimeTypecheckPattern(astNode)
+			if !ok {
+				v.err = ErrMissinggRuntimeTypecheckSymbData
+				return
+			}
+			patt := pattern.(Pattern)
+			val := v.stack[v.sp-1]
+
+			if !patt.Test(v.global.Ctx, val) {
+				v.err = FormatRuntimeTypeCheckFailed(patt, v.global.Ctx)
+				return
+			}
+
+			//keep the value on top of the stack
 		case OpSuspendVM:
 			return
 		default:

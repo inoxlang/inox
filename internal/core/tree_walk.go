@@ -2114,6 +2114,22 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		return Nil, nil
+	case *parse.RuntimeTypeCheckExpression:
+		val, err := TreeWalkEval(n.Expr, state)
+		if err != nil {
+			return nil, err
+		}
+
+		pattern, ok := state.Global.SymbolicData.GetRuntimeTypecheckPattern(node)
+		if !ok {
+			return nil, ErrMissinggRuntimeTypecheckSymbData
+		}
+		patt := pattern.(Pattern)
+		if !patt.Test(state.Global.Ctx, val) {
+			return nil, FormatRuntimeTypeCheckFailed(patt, state.Global.Ctx)
+		}
+
+		return val, nil
 	case *parse.TestSuiteExpression:
 		var meta Value = Nil
 		if n.Meta != nil {

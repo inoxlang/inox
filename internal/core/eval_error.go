@@ -58,9 +58,14 @@ var (
 
 	ErrSelfNotDefined = errors.New("self not defined")
 
-	ErrNotEnoughCliArgs = errors.New("not enough CLI arguments")
+	ErrNotEnoughCliArgs                 = errors.New("not enough CLI arguments")
+	ErrMissinggRuntimeTypecheckSymbData = errors.New("impossible to perform runtime typecheck because symbolic data is missing")
 )
 
 func FormatErrPropertyDoesNotExist(name string, v Value) error {
 	return fmt.Errorf("property .%s of value %#v does not exist", name, v)
+}
+
+func FormatRuntimeTypeCheckFailed(pattern Pattern, ctx *Context) error {
+	return fmt.Errorf("runtime type check failed: value does not match the pattern %s", Stringify(pattern, ctx))
 }
