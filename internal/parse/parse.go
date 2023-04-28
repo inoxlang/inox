@@ -5265,6 +5265,17 @@ func (p *parser) parseExpression() (expr Node, isMissingExpr bool) {
 			Operator: BoolNegate,
 			Operand:  operand,
 		}, false
+	case '~':
+		p.i++
+		expr, _ := p.parseExpression()
+
+		return &RuntimeTypeCheckExpression{
+			NodeBase: NodeBase{
+				Span:            NodeSpan{__start, expr.Base().Span.End},
+				ValuelessTokens: []Token{{Type: TILDE, Span: NodeSpan{__start, __start + 1}}},
+			},
+			Expr: expr,
+		}, false
 	case ':':
 		if p.i >= p.len-1 {
 			break

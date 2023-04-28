@@ -94,6 +94,7 @@ const (
 	NOT_MATCH
 	SUBSTROF
 	PERCENT_SYMBOL
+	TILDE
 	EXCLAMATION_MARK
 	EXCLAMATION_MARK_EQUAL
 	PLUS
@@ -276,6 +277,7 @@ var tokenStrings = [...]string{
 	OR_KEYWORD:                     "or",
 	PERCENT_FN:                     "%fn",
 	PERCENT_SYMBOL:                 "%",
+	TILDE:                          "~",
 	EXCLAMATION_MARK:               "!",
 	EXCLAMATION_MARK_EQUAL:         "!=",
 	PERCENT_STR:                    "%str",
@@ -432,6 +434,7 @@ var tokenTypenames = [...]string{
 	NOT_MATCH:                      "NOT_MATCH",
 	SUBSTROF:                       "SUBSTROF",
 	PERCENT_SYMBOL:                 "PERCENT_SYMBOL",
+	TILDE:                          "TILDE",
 	EXCLAMATION_MARK:               "EXCLAMATION_MARK",
 	EXCLAMATION_MARK_EQUAL:         "EXCLAMATION_MARK_EQUAL",
 	PLUS:                           "PLUS",

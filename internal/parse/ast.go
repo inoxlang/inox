@@ -1841,6 +1841,15 @@ func (AssertionStatement) Kind() NodeKind {
 	return Stmt
 }
 
+type RuntimeTypeCheckExpression struct {
+	NodeBase
+	Expr Node
+}
+
+func (RuntimeTypeCheckExpression) Kind() NodeKind {
+	return Expr
+}
+
 type TestSuiteExpression struct {
 	NodeBase
 	Meta        Node
@@ -2387,6 +2396,8 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 			walk(el, node, ancestorChain, fn, afterFn)
 		}
 	case *AssertionStatement:
+		walk(n.Expr, node, ancestorChain, fn, afterFn)
+	case *RuntimeTypeCheckExpression:
 		walk(n.Expr, node, ancestorChain, fn, afterFn)
 	case *TestSuiteExpression:
 		walk(n.Meta, node, ancestorChain, fn, afterFn)

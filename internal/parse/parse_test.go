@@ -11140,6 +11140,59 @@ func TestParse(t *testing.T) {
 		})
 	})
 
+	t.Run("runtime typecheck expression", func(t *testing.T) {
+
+		t.Run("variable", func(t *testing.T) {
+			n := MustParseChunk("~a")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+				Statements: []Node{
+					&RuntimeTypeCheckExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 2},
+							nil,
+							[]Token{
+								{Type: TILDE, Span: NodeSpan{0, 1}},
+							},
+						},
+						Expr: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{1, 2}, nil, nil},
+							Name:     "a",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing expression", func(t *testing.T) {
+			n, err := ParseChunk("~", "")
+
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+				Statements: []Node{
+					&RuntimeTypeCheckExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 1},
+							nil,
+							[]Token{
+								{Type: TILDE, Span: NodeSpan{0, 1}},
+							},
+						},
+						Expr: &MissingExpression{
+							NodeBase: NodeBase{
+								NodeSpan{0, 1},
+								&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("~"), 1, true)},
+								nil,
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+	})
+
 	t.Run("upper bound range expression", func(t *testing.T) {
 		n := MustParseChunk("..10")
 		assert.EqualValues(t, &Chunk{
