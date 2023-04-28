@@ -988,7 +988,7 @@ func symbolicToPattern(v symbolic.SymbolicValue) (Pattern, bool) {
 		if err != nil {
 			continue
 		}
-		if v.Test(symbolicVal) {
+		if v.Test(symbolicVal.(symbolic.Pattern).SymbolicValue()) {
 			return pattern, true
 		}
 	}

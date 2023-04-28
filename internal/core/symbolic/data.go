@@ -83,6 +83,10 @@ func (data *SymbolicData) AddData(newData *SymbolicData) {
 		data.SetLocalScopeData(k, v)
 	}
 
+	for k, v := range newData.runtimeTypeCheckPatterns {
+		data.SetRuntimeTypecheckPattern(k, v)
+	}
+
 	data.errors = append(data.errors, newData.errors...)
 }
 
