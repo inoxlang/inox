@@ -70,7 +70,7 @@ func init() {
 	//
 
 	if FORCE_COLOR || TRUECOLOR_COLORTERM || TERM_256COLOR_CAPABLE {
-		INITIAL_COLORS_SET = false
+		INITIAL_COLORS_SET = true
 		INITIAL_BG_COLOR = core.ColorFromTermenvColor(termenv.BackgroundColor(), core.ColorFromTermenvColor(termenv.ANSIBlack))
 		INITIAL_FG_COLOR = core.ColorFromTermenvColor(termenv.ForegroundColor(), core.ColorFromTermenvColor(termenv.ANSIWhite))
 	}
