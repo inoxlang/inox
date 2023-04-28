@@ -63,6 +63,12 @@ func printPrompt(writer io.Writer, state *core.TreeWalkState, config REPLConfigu
 func sprintPrompt(state *core.TreeWalkState, config REPLConfiguration) (prompt string, prompt_length int) {
 	colorize := config.PrintingConfig.PrettyPrintConfig().Colorize
 
+	if config.prompt == nil {
+		prompt = "> "
+		prompt_length = 2
+		return
+	}
+
 	for _, part := range config.prompt.GetOrBuildElements(state.Global.Ctx) {
 		color := config.defaultFgColor.ToTermColor()
 
