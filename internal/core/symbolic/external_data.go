@@ -4,6 +4,10 @@ var (
 	extData = ExternalData{
 		CONSTRAINTS_KEY: "_constraints_",
 		VISIBILITY_KEY:  "_visibility_",
+		SymbolicToPattern: func(v SymbolicValue) (any, bool) {
+			//not a real pattern but it's okay
+			return struct{}{}, true
+		},
 	} // default data for tests
 )
 
