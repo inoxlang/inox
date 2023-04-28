@@ -61,7 +61,7 @@ func printPrompt(writer io.Writer, state *core.TreeWalkState, config REPLConfigu
 
 // evaluates the different parts of the prompt and return the colorized prompt
 func sprintPrompt(state *core.TreeWalkState, config REPLConfiguration) (prompt string, prompt_length int) {
-	colorize := config.PrintingConfig.PrettyPrintConfig().Colorize
+	colorize := config.PrintingConfig.Colorized()
 
 	if config.prompt == nil {
 		prompt = "> "
@@ -70,23 +70,31 @@ func sprintPrompt(state *core.TreeWalkState, config REPLConfiguration) (prompt s
 	}
 
 	for _, part := range config.prompt.GetOrBuildElements(state.Global.Ctx) {
-		color := config.defaultFgColor.ToTermColor()
+		var color termenv.Color
+		if colorize {
+			color = config.defaultFgColor.ToTermColor()
+		}
 
 		list, isList := part.(*core.List)
 
 		if isList && list.Len() == 3 {
 			part = list.At(state.Global.Ctx, 0)
-			colorIndex := 1
-			if config.IsLight() {
-				colorIndex = 2
-			}
 
-			colorIdent, isIdent := list.At(state.Global.Ctx, colorIndex).(core.Identifier)
+			if colorize {
+				//choose one color among the two provided
 
-			if isIdent {
-				clr, ok := COLOR_NAME_TO_COLOR[colorIdent]
-				if ok {
-					color = clr
+				colorIndex := 1
+				if config.IsLight() {
+					colorIndex = 2
+				}
+
+				colorIdent, isIdent := list.At(state.Global.Ctx, colorIndex).(core.Identifier)
+
+				if isIdent {
+					clr, ok := COLOR_NAME_TO_COLOR[colorIdent]
+					if ok {
+						color = clr
+					}
 				}
 			}
 		}
@@ -94,10 +102,11 @@ func sprintPrompt(state *core.TreeWalkState, config REPLConfiguration) (prompt s
 		s := ""
 
 		switch p := part.(type) {
-		case core.Str:
-			s = string(p)
+		case core.StringLike:
+			s = string(p.GetOrBuildString())
+		case core.WrappedString:
+			s = string(p.UnderlyingString())
 		case core.AstNode:
-
 			if call, isCall := p.Node.(*parse.CallExpression); isCall {
 
 				idnt, isIdent := call.Callee.(*parse.IdentifierLiteral)
@@ -105,11 +114,16 @@ func sprintPrompt(state *core.TreeWalkState, config REPLConfiguration) (prompt s
 					panic(fmt.Errorf("writePrompt: only some restricted call expressions are allowed"))
 				}
 
-			} else if !parse.NodeIsSimpleValueLiteral(p.Node) && !parse.NodeIs(p.Node, (*parse.URLExpression)(nil)) {
-				panic(fmt.Errorf("writePrompt: only url expressions, simple-value literals and some other restricted expressions can be evaluated"))
+			} else {
+				panic(fmt.Errorf("writePrompt: only some restricted call expressions can be evaluated"))
 			}
-			v, _ := core.TreeWalkEval(p.Node, state)
-			s = fmt.Sprintf("%s", v)
+			//!parse.NodeIsSimpleValueLiteral(p.Node) && !parse.NodeIs(p.Node, (*parse.URLExpression)(nil))
+
+			v, err := core.TreeWalkEval(p.Node, state)
+			if err != nil {
+				fmt.Println(err)
+			}
+			s = fmt.Sprintf("%v", v)
 		default:
 		}
 

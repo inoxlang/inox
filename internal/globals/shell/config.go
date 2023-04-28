@@ -114,18 +114,17 @@ type PrintingConfig struct {
 	defaultFgColorSequence         []byte
 	backgroundColor                core.Color
 	defaultBackgroundColorSequence []byte
+
+	prettyPrintConfig *core.PrettyPrintConfig
 }
 
 func (c PrintingConfig) PrettyPrintConfig() *core.PrettyPrintConfig {
 	config := *defaultPrettyPrintConfig
-	if c.IsLight() {
-		config.Colors = &pprint.DEFAULT_LIGHTMODE_PRINT_COLORS
-	}
 	return &config
 }
 
 func (c PrintingConfig) Colorized() bool {
-	return defaultPrettyPrintConfig.Colorize
+	return c.prettyPrintConfig.Colorize
 }
 
 func (c PrintingConfig) IsLight() bool {
@@ -138,6 +137,13 @@ func GetPrintingConfig() PrintingConfig {
 	config.defaultFgColorSequence = config.defaultFgColor.GetAnsiEscapeSequence(false)
 	config.backgroundColor = core.ColorFromTermenvColor(termenv.BackgroundColor(), core.ColorFromTermenvColor(termenv.ANSIBlack))
 	config.defaultBackgroundColorSequence = config.backgroundColor.GetAnsiEscapeSequence(true)
+
+	prettyPrintConfig := *defaultPrettyPrintConfig
+	config.prettyPrintConfig = &prettyPrintConfig
+
+	if config.IsLight() {
+		config.prettyPrintConfig.Colors = &pprint.DEFAULT_LIGHTMODE_PRINT_COLORS
+	}
 
 	return config
 }

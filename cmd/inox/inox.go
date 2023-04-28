@@ -125,7 +125,7 @@ func _main(args []string) {
 			var assertionErr *core.AssertionError
 			var errString string
 
-			prettyPrintConfig := _sh.GetPrintingConfig().PrettyPrintConfig().WithContext(compilationCtx) // TODO: use another context?
+			prettyPrintConfig := globals.DEFAULT_PRETTY_PRINT_CONFIG.WithContext(compilationCtx) // TODO: use another context?
 
 			if errors.As(err, &assertionErr) {
 				errString = assertionErr.PrettySPrint(prettyPrintConfig)
