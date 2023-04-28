@@ -1542,6 +1542,19 @@ switch_:
 		if _, ok := patterns[node.Name]; !ok {
 			c.addError(node, fmtPatternIsNotDeclared(node.Name))
 		}
+	case *parse.RuntimeTypeCheckExpression:
+		switch p := parent.(type) {
+		case *parse.CallExpression:
+			for _, arg := range p.Arguments {
+				if n == arg {
+					break switch_ //ok
+				}
+			}
+
+			c.addError(node, MISPLACED_RUNTIME_TYPECHECK_EXPRESSION)
+		default:
+			c.addError(node, MISPLACED_RUNTIME_TYPECHECK_EXPRESSION)
+		}
 	}
 
 	return parse.Continue

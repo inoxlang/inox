@@ -1755,6 +1755,24 @@ func TestCheck(t *testing.T) {
 
 	})
 
+	t.Run("runtime typecheck", func(t *testing.T) {
+
+		t.Run("as argument", func(t *testing.T) {
+			n, src := parseCode(`map ~$ .title`)
+			globals := GlobalVariablesFromMap(map[string]Value{"map": ValOf(Map)})
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, GlobalConsts: globals}))
+		})
+
+		t.Run("misplaced", func(t *testing.T) {
+			n, src := parseCode(`~$`)
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := combineErrors(
+				makeError(n.Statements[0], src, MISPLACED_RUNTIME_TYPECHECK_EXPRESSION),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+	})
 	t.Run("assert statement", func(t *testing.T) {
 
 		t.Run("no forbidden node in expression", func(t *testing.T) {

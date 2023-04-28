@@ -43,6 +43,7 @@ const (
 	INVALID_MAPPING_ENTRY_KEY_ONLY_SIMPL_LITS_AND_PATT_IDENTS      = "invalid mapping entry key: only simple value literals and pattern identifiers are supported"
 	ONLY_GLOBALS_ARE_ACCESSIBLE_FROM_RIGHT_SIDE_OF_MAPPING_ENTRIES = "only globals are accessible from the right side of mapping entries"
 
+	MISPLACED_RUNTIME_TYPECHECK_EXPRESSION                         = "misplaced runtime typecheck expression: for now runtime typechecks are only supported as arguments in function calls (ex: map ~$ .title)"
 	MISPLACED_COMPUTE_EXPR_SHOULD_BE_IN_DYNAMIC_MAPPING_EXPR_ENTRY = "misplaced compute expression: compute expressions are only allowed on the right side of a dynamic Mapping entry"
 	MISPLACE_YIELD_STATEMENT_ONLY_ALLOWED_IN_EMBEDDED_MODULES      = "misplaced yield statement: yield statements are only allowed in embedded modules"
 
