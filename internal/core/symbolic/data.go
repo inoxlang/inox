@@ -17,7 +17,7 @@ var (
 type SymbolicData struct {
 	nodeMap                  map[parse.Node]SymbolicValue
 	localScopeData           map[parse.Node]LocalScopeData
-	runtimeTypeCheckPatterns map[parse.Node]any //concrete Pattern
+	runtimeTypeCheckPatterns map[parse.Node]any //concrete Pattern or nil (nil means the check is disabled)
 	errors                   []SymbolicEvaluationError
 }
 

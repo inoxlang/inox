@@ -2124,9 +2124,11 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		if !ok {
 			return nil, ErrMissinggRuntimeTypecheckSymbData
 		}
-		patt := pattern.(Pattern)
-		if !patt.Test(state.Global.Ctx, val) {
-			return nil, FormatRuntimeTypeCheckFailed(patt, state.Global.Ctx)
+		if pattern != nil { //enabled
+			patt := pattern.(Pattern)
+			if !patt.Test(state.Global.Ctx, val) {
+				return nil, FormatRuntimeTypeCheckFailed(patt, state.Global.Ctx)
+			}
 		}
 
 		return val, nil

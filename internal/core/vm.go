@@ -1924,12 +1924,14 @@ func (v *VM) run() {
 				v.err = ErrMissinggRuntimeTypecheckSymbData
 				return
 			}
-			patt := pattern.(Pattern)
-			val := v.stack[v.sp-1]
+			if pattern != nil { //enabled
+				patt := pattern.(Pattern)
+				val := v.stack[v.sp-1]
 
-			if !patt.Test(v.global.Ctx, val) {
-				v.err = FormatRuntimeTypeCheckFailed(patt, v.global.Ctx)
-				return
+				if !patt.Test(v.global.Ctx, val) {
+					v.err = FormatRuntimeTypeCheckFailed(patt, v.global.Ctx)
+					return
+				}
 			}
 
 			//keep the value on top of the stack

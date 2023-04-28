@@ -396,6 +396,10 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (SymbolicValue, error)
 
 				args[paramIndex] = param //if argument does not match we use the symbolic parameter value as argument
 			} else {
+				//disable runtime type check
+				if _, ok := argNode.(*parse.RuntimeTypeCheckExpression); ok {
+					state.symbolicData.SetRuntimeTypecheckPattern(argNode, nil)
+				}
 				args[paramIndex] = widenedArg
 			}
 		} else { //if not enough arguments

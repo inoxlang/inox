@@ -3023,6 +3023,10 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 			args[i] = paramType
 		} else {
+			//disable runtime type check
+			if _, ok := argNode.(*parse.RuntimeTypeCheckExpression); ok {
+				state.symbolicData.SetRuntimeTypecheckPattern(argNode, nil)
+			}
 			args[i] = widenedArg
 		}
 	}
