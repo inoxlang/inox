@@ -375,6 +375,17 @@ if (a < 0){
 a = (if (a < 0) "a" else "b")
 ```
 
+When the condition is a boolean conversion expression the type of the converted value is narrowed:
+```
+intOrNil = ...
+
+if intOrNil? {
+    # intOrNil is an integer
+} else {
+    # intOrNil is nil
+}
+```
+
 ## Switch statement
 
 ```
