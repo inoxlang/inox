@@ -1495,25 +1495,41 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			return nil, err
 		}
 
+		var consequentValue SymbolicValue
+		var atlernateValue SymbolicValue
+
 		if _, ok := test.(*Bool); ok {
 			consequentStateFork := state.fork()
-			_, err = symbolicEval(n.Consequent, consequentStateFork)
+			if boolConvExpr, ok := n.Test.(*parse.BooleanConversionExpression); ok {
+				narrowPath(boolConvExpr.Expr, removePossibleValue, Nil, consequentStateFork, 0)
+			}
+
+			consequentValue, err = symbolicEval(n.Consequent, consequentStateFork)
 			if err != nil {
 				return nil, err
 			}
 
+			var alternateStateFork *State
 			if n.Alternate != nil {
 				alternateStateFork := state.fork()
-				_, err = symbolicEval(n.Alternate, alternateStateFork)
+				atlernateValue, err = symbolicEval(n.Alternate, alternateStateFork)
 				if err != nil {
 					return nil, err
 				}
+				return joinValues([]SymbolicValue{consequentValue, atlernateValue}), nil
 			}
-			return ANY, nil
+
+			if alternateStateFork != nil {
+				state.join(consequentStateFork, alternateStateFork)
+			} else {
+				state.join(consequentStateFork)
+			}
+
+			return consequentValue, nil
 		} else {
 			state.addError(makeSymbolicEvalError(node, state, fmtIfExprTestNotBoolBut(test)))
+			return ANY, nil
 		}
-		return nil, nil
 	case *parse.ForStatement:
 		iteratedValue, err := symbolicEval(n.IteratedValue, state)
 		if err != nil {
@@ -2251,7 +2267,11 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		return list, nil
 	case *parse.BooleanConversionExpression:
-		//TODO: check coercion
+		_, err := symbolicEval(n.Expr, state)
+		if err != nil {
+			return nil, err
+		}
+
 		return &Bool{}, nil
 	case *parse.PatternIdentifierLiteral:
 		patt := state.ctx.ResolveNamedPattern(n.Name)

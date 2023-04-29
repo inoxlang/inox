@@ -2517,7 +2517,7 @@ func TestSymbolicEval(t *testing.T) {
 				`)
 				_, err := symbolicEval(n, state)
 				assert.NoError(t, err)
-				assert.Empty(t, state.errors)
+				assert.NotEmpty(t, state.errors)
 			})
 
 			t.Run("non existing variable (local var)", func(t *testing.T) {
@@ -2530,7 +2530,7 @@ func TestSymbolicEval(t *testing.T) {
 				`)
 				_, err := symbolicEval(n, state)
 				assert.NoError(t, err)
-				assert.Empty(t, state.errors)
+				assert.NotEmpty(t, state.errors)
 			})
 
 			t.Run("non existing variable (global var)", func(t *testing.T) {
@@ -2543,7 +2543,7 @@ func TestSymbolicEval(t *testing.T) {
 				`)
 				_, err := symbolicEval(n, state)
 				assert.NoError(t, err)
-				assert.Empty(t, state.errors)
+				assert.NotEmpty(t, state.errors)
 			})
 		})
 	})
@@ -2558,18 +2558,90 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
-			assert.Equal(t, ANY, res)
+			assert.Equal(t, ANY_INT, res)
 		})
 
 		t.Run("if-else", func(t *testing.T) {
 			n, state := makeStateAndChunk(`
-				(if false 1 else 2)
+				(if false 1 else false)
 			`)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
-			assert.Equal(t, ANY, res)
+			assert.Equal(t, NewMultivalue(ANY_INT, ANY_BOOL), res)
+		})
+
+		t.Run("truthiness narrowing", func(t *testing.T) {
+
+			t.Run("parameter", func(t *testing.T) {
+				n, state := makeStateAndChunk(`
+					return fn(arg %int?){
+						return (if arg? arg else false)
+					}
+				`)
+
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors)
+				assert.Equal(t, NewMultivalue(ANY_INT, ANY_BOOL), res.(*InoxFunction).returnType)
+			})
+
+			t.Run("parameter field", func(t *testing.T) {
+				n, state := makeStateAndChunk(`
+					return fn(arg %{prop: %int?}){
+						return (if arg.prop? arg.prop else false)
+					}
+				`)
+
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors)
+				assert.Equal(t, NewMultivalue(ANY_INT, ANY_BOOL), res.(*InoxFunction).returnType)
+			})
+
+			t.Run("variable of static type %int? and nil value", func(t *testing.T) {
+				n, state := makeStateAndChunk(`
+					var v %int? = nil
+
+					return (if v? v else false)
+				`)
+
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors)
+				assert.Equal(t, NewMultivalue(ANY_INT, ANY_BOOL), res)
+			})
+
+			t.Run("non existing variable (identifier)", func(t *testing.T) {
+				n, state := makeStateAndChunk(`
+					return (if v? v else false)
+				`)
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, state.errors)
+				assert.Equal(t, ANY, res)
+			})
+
+			t.Run("non existing variable (local var)", func(t *testing.T) {
+				n, state := makeStateAndChunk(`
+					return (if $v? $v else false)
+				`)
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, state.errors)
+				assert.Equal(t, ANY, res)
+			})
+
+			t.Run("non existing variable (global var)", func(t *testing.T) {
+				n, state := makeStateAndChunk(`
+					return (if $$v? $$v else false)
+				`)
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, state.errors)
+				assert.Equal(t, ANY, res)
+			})
 		})
 	})
 
