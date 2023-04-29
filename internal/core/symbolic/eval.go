@@ -1872,7 +1872,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				Removed: ANY_PATTERN,
 			}, nil
 		case parse.NilCoalescing:
-			return joinValues([]SymbolicValue{left, right}), nil
+			return joinValues([]SymbolicValue{narrowOut(Nil, left), right}), nil
 		default:
 			return nil, fmt.Errorf(fmtInvalidBinaryOperator(n.Operator))
 		}
