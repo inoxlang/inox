@@ -147,6 +147,7 @@ const (
 	OpSubstrOf
 	OpKeyOf
 	OpDoSetDifference
+	OpNilCoalesce
 	OpJumpIfFalse
 	OpAndJump // Logical AND jump
 	OpOrJump  // Logical OR jump
@@ -260,6 +261,7 @@ var OpcodeNames = [...]string{
 	OpSubstrOf:                     "SUBSTR_OF",
 	OpKeyOf:                        "KEY_OF",
 	OpDoSetDifference:              "DO_SET_DIFF",
+	OpNilCoalesce:                  "NIL_COALESCE",
 	OpJumpIfFalse:                  "JUMP_IFF",
 	OpAndJump:                      "AND_JUMP",
 	OpOrJump:                       "OR_JUMP",
@@ -373,6 +375,7 @@ var OpcodeOperands = [...][]int{
 	OpSubstrOf:                     {},
 	OpKeyOf:                        {},
 	OpDoSetDifference:              {},
+	OpNilCoalesce:                  {},
 	OpJumpIfFalse:                  {2},
 	OpAndJump:                      {2},
 	OpOrJump:                       {2},
@@ -485,6 +488,7 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpSubstrOf:                     {},
 	OpKeyOf:                        {},
 	OpDoSetDifference:              {},
+	OpNilCoalesce:                  {},
 	OpJumpIfFalse:                  {false},
 	OpAndJump:                      {false},
 	OpOrJump:                       {false},

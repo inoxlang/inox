@@ -1735,8 +1735,12 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				right = &ExactValuePattern{value: right}
 			}
 			return &DifferencePattern{base: left.(Pattern), removed: right.(Pattern)}, nil
+		case parse.NilCoalescing:
+			if _, ok := left.(NilT); !ok {
+				return left, nil
+			}
+			return right, nil
 		default:
-
 			return nil, errors.New("invalid binary operator " + strconv.Itoa(int(n.Operator)))
 		}
 	case *parse.UpperBoundRangeExpression:

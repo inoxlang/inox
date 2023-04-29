@@ -1360,6 +1360,7 @@ const (
 	NotMatch
 	Substrof
 	SetDifference
+	NilCoalescing
 )
 
 var BINARY_OPERATOR_STRINGS = [...]string{
@@ -1396,6 +1397,7 @@ var BINARY_OPERATOR_STRINGS = [...]string{
 	NotMatch:          "not-match",
 	Substrof:          "substrof",
 	SetDifference:     "\\",
+	NilCoalescing:     "??",
 }
 
 func (operator BinaryOperator) String() string {

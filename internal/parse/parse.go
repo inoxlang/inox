@@ -4185,6 +4185,20 @@ _switch:
 		operator = GreaterThan
 		operatorToken = GREATER_THAN
 		p.i++
+	case '?':
+		p.i++
+		if p.i >= p.len {
+			return makeInvalidOperatorMissingRightOperand(-1)
+		}
+		if p.s[p.i] == '?' {
+			operator = NilCoalescing
+			operatorToken = DOUBLE_QUESTION_MARK
+			p.i++
+			break
+		}
+
+		eatInvalidOperatorChars(operatorStart, &tokens)
+		parsingErr = makeInvalidOperatorError()
 	case '!':
 		p.i++
 		if p.i >= p.len {

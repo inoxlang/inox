@@ -197,6 +197,8 @@ func (c *compiler) Compile(node parse.Node) error {
 		case parse.SetDifference:
 			c.emit(node, OpToPattern)
 			c.emit(node, OpDoSetDifference)
+		case parse.NilCoalescing:
+			c.emit(node, OpNilCoalesce)
 		default:
 			return c.NewError(node, makeInvalidBinaryOperator(node.Operator))
 		}

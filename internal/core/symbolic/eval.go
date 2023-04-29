@@ -1862,15 +1862,17 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				}
 			}
 
-			return &Bool{}, nil
+			return ANY_BOOL, nil
 		case parse.SetDifference:
 			if _, ok := left.(Pattern); !ok {
 				state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "pattern", Stringify(left))))
 			}
 			return &DifferencePattern{
-				Base:    &AnyPattern{},
-				Removed: &AnyPattern{},
+				Base:    ANY_PATTERN,
+				Removed: ANY_PATTERN,
 			}, nil
+		case parse.NilCoalescing:
+			return joinValues([]SymbolicValue{left, right}), nil
 		default:
 			return nil, fmt.Errorf(fmtInvalidBinaryOperator(n.Operator))
 		}

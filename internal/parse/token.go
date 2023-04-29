@@ -97,6 +97,7 @@ const (
 	TILDE
 	EXCLAMATION_MARK
 	EXCLAMATION_MARK_EQUAL
+	DOUBLE_QUESTION_MARK
 	PLUS
 	PLUS_DOT
 	MINUS
@@ -280,6 +281,7 @@ var tokenStrings = [...]string{
 	TILDE:                          "~",
 	EXCLAMATION_MARK:               "!",
 	EXCLAMATION_MARK_EQUAL:         "!=",
+	DOUBLE_QUESTION_MARK:           "??",
 	PERCENT_STR:                    "%str",
 	IN:                             "in",
 	NOT_IN:                         "not-in",
@@ -437,6 +439,7 @@ var tokenTypenames = [...]string{
 	TILDE:                          "TILDE",
 	EXCLAMATION_MARK:               "EXCLAMATION_MARK",
 	EXCLAMATION_MARK_EQUAL:         "EXCLAMATION_MARK_EQUAL",
+	DOUBLE_QUESTION_MARK:           "DOUBLE_QUESTION_MARK",
 	PLUS:                           "PLUS",
 	PLUS_DOT:                       "PLUS_DOT",
 	MINUS:                          "MINUS",

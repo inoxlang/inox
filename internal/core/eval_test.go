@@ -1006,6 +1006,24 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 	})
 
+	t.Run("nil coalescing", func(t *testing.T) {
+		t.Run("left is nil", func(t *testing.T) {
+			code := `(nil ?? 1)`
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+			assert.NoError(t, err)
+			assert.Equal(t, Int(1), res)
+		})
+
+		t.Run("left is not nil", func(t *testing.T) {
+			code := `(1 ?? 2)`
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+			assert.NoError(t, err)
+			assert.Equal(t, Int(1), res)
+		})
+	})
+
 	t.Run("return statement", func(t *testing.T) {
 		t.Run("value", func(t *testing.T) {
 			code := `return nil`

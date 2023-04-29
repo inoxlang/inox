@@ -581,6 +581,18 @@ func (v *VM) run() {
 			}
 			v.stack[v.sp] = &DifferencePattern{base: left.(Pattern), removed: right.(Pattern)}
 			v.sp++
+		case OpNilCoalesce:
+			left := v.stack[v.sp-2]
+			right := v.stack[v.sp-1]
+			v.sp -= 2
+
+			val := left
+
+			if _, ok := left.(NilT); ok {
+				val = right
+			}
+			v.stack[v.sp] = val
+			v.sp++
 		case OpJumpIfFalse:
 			v.ip += 2
 			v.sp--
