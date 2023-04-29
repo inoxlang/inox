@@ -2,6 +2,8 @@ package internal
 
 import (
 	core "github.com/inoxlang/inox/internal/core"
+	help "github.com/inoxlang/inox/internal/globals/help"
+
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	_html_symbolic "github.com/inoxlang/inox/internal/globals/html/symbolic"
 )
@@ -41,7 +43,12 @@ func init() {
 		core.RegisterSymbolicGoFunction(fn, specifcTagFactory)
 	}
 
-	registerHelp()
+	help.RegisterHelpValues(map[string]any{
+		"html.h1": _h1,
+		"html.h2": _h2,
+		"html.h3": _h3,
+		"html.h4": _h4,
+	})
 }
 
 func NewHTMLNamespace() *core.Record {

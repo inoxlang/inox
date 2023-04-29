@@ -4,6 +4,8 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
+
+	help "github.com/inoxlang/inox/internal/globals/help"
 )
 
 func init() {
@@ -34,7 +36,16 @@ func init() {
 		},
 	})
 
-	registerHelp()
+	help.RegisterHelpValues(map[string]any{
+		"Tree":    NewTree,
+		"Graph":   NewGraph,
+		"Map":     NewMap,
+		"Set":     NewSet,
+		"Stack":   NewStack,
+		"Ranking": NewRanking,
+		"Queue":   NewQueue,
+		"Thread":  NewThread,
+	})
 }
 
 func NewContainersNamespace() *core.Record {

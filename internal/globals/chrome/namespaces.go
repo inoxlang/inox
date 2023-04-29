@@ -4,6 +4,7 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	chrome_symbolic "github.com/inoxlang/inox/internal/globals/chrome/symbolic"
+	help "github.com/inoxlang/inox/internal/globals/help"
 )
 
 func init() {
@@ -13,7 +14,7 @@ func init() {
 		},
 	})
 
-	registerHelp()
+	help.RegisterHelpValue(NewHandle, "chrome.Handle")
 }
 
 func NewChromeNamespace() *core.Record {

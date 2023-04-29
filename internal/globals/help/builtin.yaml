@@ -1,0 +1,218 @@
+map:
+  topic: map
+  related-topics: [filter, some, all, none]
+  text: the map function creates a list by applying an operation on each element of an iterable
+  examples:
+  - code: 'map([{name: "foo"}], .name)'
+    output: '["foo"]'
+  - code: 'map([{a: 1, b: 2, c: 3}], .{a,b})'
+    output: '[{a: 1, b: 2}]'
+  - code: 'map([0, 1, 2], Mapping{0 => "0" 1 => "1"})'
+    output: '["0", "1", "nil"]'
+  - code: 'map([97, 98, 99], torune)'
+    output: "['a', 'b', 'c']"
+  - code: 'map([0, 1, 2], @($ + 1))'
+    output: '[1, 2, 3]'
+
+filter:
+  topic: filter
+  related-topics: [map, some, all, none]
+  text: the filter function creates a list by iterating over an iterable and keeping elements that pass a condition
+  examples:
+  - code: 'filter(["a", "0", 1], %int)'
+    output: '[1]'
+  - code: 'filter([0, 1, 2], @($ >= 1))'
+    output: '[1, 2]'
+
+some:
+  topic: some
+  related-topics: [map, filter, all, none]
+  text: the some function returns true if and only if at least one element of an iterable passes a condition. For an empty iterable the result is always true.
+  examples:
+  - code: 'some(["a", "0", 1], %int)'
+    output: 'true'
+  - code: "some([0, 1, 2], @($ == 'a'))"
+    output: 'false'
+
+all:
+  topic: all
+  related-topics: [map, filter, some, none]
+  text: the all function returns true if and only if all elements of an iterable pass a condition. For an empty iterable the result is always true.
+  examples:
+  - code: 'all([0, 1, "a"], %int)'
+    output: 'false'
+  - code: 'all([0, 1, 2], @($ >= 0))'
+    output: 'true'
+    
+none:
+  topic: none
+  related-topics: [map, filter, some, all]
+  text: the none function returns true if and only if no elements of an iterable pass a condition. For an emptty iterable the result is always true.
+  examples:
+  - code: 'none([0, 1, "a"], %int)'
+    output: 'false'
+  - code: 'none([0, 1, 2], @($ < 0))'
+    output: 'true'
+
+rand:
+  topic: rand
+  related-topics: [rand, pseudo_rand]
+  text: >
+    the rand function generates/pick a random value in a cryptographically secure way.
+    If the argument is a pattern a matching value is returned, if the argument is an indexable an element is picked.
+  examples:
+  - code: 'rand(%int(0..10))'
+    output: '3'
+  - code: 'rand(%str("a"+))'
+    output: '"aaaaa"'
+  - code: 'rand(["a", "b"])'
+    output: '"b"'
+
+
+find:
+  topic: find
+  text: the find function searches for items matching a pattern at a given location (a string, an iterable, a directory
+  examples:
+  - code: 'find %`a+` "a-aa-aaa"'
+    output: '["a", "aa", "aaa"]'
+  - code: 'find %./**/*.json ./'
+    output: '[./file.json, ./dir/file.json, ./dir/dir/.file.json]'
+  - code: find %int ['1', 2, "3"]
+    output: '[2]'
+
+# crypto
+hash_password:
+  topic: hash_password
+  text: >
+    the hash_password function hashes a password string using the Bcrypt hashing algorithm, it accepts the cost
+      as a second optional argument. The cost is an integer between 4 and 31, it defaults to 7.
+  examples:
+  - code: 'hash_password("password")'
+    output: '"JDJhJDA3JHNNNzRwaFVNUFVCNzVDQmxINU5HaWVOZERKZ09IRkx4a2xxYTFPTktsV3Nkd2JqampmYmxT"'
+  - code: 'hash_password("password", 10)'
+    output: '"JDJhJDEwJGhLODFiVThNdTlJZXVRMXVZdHlIUi5oOS5GSXljNWpYWGcwaVhXWUZYZC5YRTduR1hmSjl1"'
+
+check_password:
+  topic: check_password
+  text: the check_password hashes a string or a byte sequences using the SHA-256 algorithm
+  examples:
+  - code: 'check_password("password", "JDJhJDA3JHNNNzRwaFVNUFVCNzVDQmxINU5HaWVOZERKZ09IRkx4a2xxYTFPTktsV3Nkd2JqampmYmxT")'
+    output: 'true'
+
+sha256:
+  topic: sha256
+  text: the sha256 function hashes a string or a byte sequence with the SHA-256 algorithm
+  examples:
+  - code: sha256("string")
+    output: '0x[473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8'
+
+sha384:
+  topic: sha384
+  text: the sha384 function hashes a string or a byte sequence with the SHA-384 algorithm
+  examples:
+  - code: sha384("string")
+    output: '0x[36396a7e4de3fa1c2156ad291350adf507d11a8f8be8b124a028c5db40785803ca35a7fc97a6748d85b253babab7953e'
+
+sha512:
+  topic: sha512
+  text: the sha512 function hashes a string or a byte sequence with the SHA-512 algorithm
+  examples:
+  - code: sha512("string")
+    output: '0x[2757cb3cafc39af451abb2697be79b4ab61d63d74d85b0418629de8c26811b529f3f3780d0150063ff55a2beee74c4ec102a2a2731a1f1f7f10d473ad18a6a87'
+
+# html
+html.h1:
+  topic: html.h1
+  text: the html.h1 function creates a h1 HTML element
+
+html.h2:
+  topic: html.h2
+  text: the html.h2 function creates a h2 HTML element
+
+html.h3:
+  topic: html.h3
+  text: the html.h3 function creates a h3 HTML element
+
+html.h4:
+  topic: html.h4
+  text: the html.h4 function creates a h4 HTML element
+
+# chrome
+chrome:
+  topic: chrome
+  related-topics: [chrome.Handle]
+  text: chrome namespace
+
+chrome.Handle:
+  topic: chrome.Handle
+  text: the Handle function creates a new Chrome handle
+  examples:
+  - code: 'chrome.Handle!()'
+
+# containers
+Graph:
+  topic: Graph
+  related-topics: [Tree]
+  text: the Graph function creates a directed Graph
+
+Tree:
+  topic: Tree
+  related-topics: [Graph]
+  text: the Tree function creates a tree from a udata value
+  examples:
+  - code: 'Tree(udata "root")'
+    explanation: creates a Tree with a single node
+
+Stack:
+  topic: Stack
+  text:  "the Stack function creates a stack from an iterable"
+  examples:
+  - code: 'Stack([])'
+    explanation: creates an empty stack
+
+  - code: 'Stack([1])'
+    explanation: "creates a stack with an element 1"
+
+Queue:
+  topic: Queue
+  text: the Queue function creates a queue from an iterable
+  examples:
+  - code: 'Queue([])'
+    explanation: creates an empty queue
+  - code: 'Queue([1])'
+    expalnation: creates a queue with an element 1
+
+Set:
+  topic: Set
+  text: the Set function creates a set from an iterable, only representable (serializable) values are allowed
+  examples:
+  - code: 'Set([])'
+    explanation: creates an empty set
+  - code: 'Set([1])'
+    explanation: "creates a queue with an element 1"
+  
+
+Map:
+  topic: Map
+  text: the Map function creates a map from a list of flat entries
+  examples:
+  - code: 'Map(["key1", 10, "key2", 20]'
+    explanation: creates a Map with the entries "key1" -> 10, "key2" -> 20`
+
+Ranking:
+  topic: Ranking
+  text: >
+    the Ranking function creates a ranking from a list of flat entries.
+    An entry is composed of a value and a floating-point score. 
+    The value with the highest score has the first rank (0), values with the same score have the same rank.
+  examples:
+  - code: 'Ranking(["best player", 10.0, "other player", 5.0])'
+    explanation: 'creates a Ranking with the following ranks: rank(0) -> "best player", rank(1) -> "other player"'
+  - code: 'Ranking(["best player", 10.0, "other player", 10.0])'
+    explanation: 'creates a Ranking with the following ranks: rank(0) -> "best player" & "other player"'
+    
+Thread:
+  topic: Thread
+  text: the Thread function creates a thread from an iterable.
+  examples:
+  - code: 'Thread([{message: "hello", author-id: "5958"}])'
