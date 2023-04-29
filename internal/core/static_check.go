@@ -363,7 +363,8 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 		case *parse.Variable, *parse.GlobalVariable, *parse.IdentifierLiteral, *parse.BinaryExpression,
 			*parse.PatternIdentifierLiteral, *parse.ObjectPatternLiteral, *parse.ObjectProperty,
 			*parse.ListPatternLiteral, *parse.ObjectLiteral, *parse.ListLiteral, *parse.FunctionPatternExpression,
-			*parse.PatternNamespaceIdentifierLiteral, *parse.PatternNamespaceMemberExpression:
+			*parse.PatternNamespaceIdentifierLiteral, *parse.PatternNamespaceMemberExpression,
+			*parse.OptionPatternLiteral, *parse.OptionalPatternExpression:
 		default:
 			if !parse.NodeIsSimpleValueLiteral(n) {
 				c.addError(n, fmtFollowingNodeTypeNotAllowedInAssertions(n))
