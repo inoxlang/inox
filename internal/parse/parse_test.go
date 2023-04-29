@@ -17187,20 +17187,21 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
-		t.Run("unterminated interpolation at the end", func(t *testing.T) {
-			n, err := ParseChunk("%sql`SELECT * from users{{nothing:$nothing`", "")
+		t.Run("empty interpolation at the end", func(t *testing.T) {
+			n, err := ParseChunk("%sql`SELECT * from users{{}}`", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 43}, nil, nil},
+				NodeBase: NodeBase{NodeSpan{0, 29}, nil, nil},
 				Statements: []Node{
 					&StringTemplateLiteral{
 						NodeBase: NodeBase{
-							NodeSpan{0, 43},
+							NodeSpan{0, 29},
 							nil,
 							[]Token{
 								{Type: BACKQUOTE, Span: NodeSpan{4, 5}},
 								{Type: STR_INTERP_OPENING_BRACKETS, Span: NodeSpan{24, 26}},
-								{Type: BACKQUOTE, Span: NodeSpan{42, 43}},
+								{Type: STR_INTERP_CLOSING_BRACKETS, Span: NodeSpan{26, 28}},
+								{Type: BACKQUOTE, Span: NodeSpan{28, 29}},
 							},
 						},
 						Pattern: &PatternIdentifierLiteral{
@@ -17212,13 +17213,16 @@ func TestParse(t *testing.T) {
 								NodeBase: NodeBase{NodeSpan{5, 24}, nil, nil},
 								Raw:      "SELECT * from users",
 							},
-							&StringTemplateSlice{
+							&StringTemplateInterpolation{
 								NodeBase: NodeBase{
-									NodeSpan{26, 42},
-									&ParsingError{UnspecifiedParsingError, UNTERMINATED_STRING_INTERP},
+									NodeSpan{26, 26},
+									&ParsingError{UnspecifiedParsingError, INVALID_STRING_INTERPOLATION_SHOULD_NOT_BE_EMPTY},
 									nil,
 								},
-								Raw: "nothing:$nothing",
+							},
+							&StringTemplateSlice{
+								NodeBase: NodeBase{NodeSpan{28, 28}, nil, nil},
+								Raw:      "",
 							},
 						},
 					},

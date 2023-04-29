@@ -3886,19 +3886,26 @@ func (p *parser) parseStringTemplateLiteral(pattern Node) *StringTemplateLiteral
 				}
 			}
 
+			typeWithoutColon := ""
+			var interpTokens []Token
+			if len(typ) > 0 {
+				typeWithoutColon = typ[:len(typ)-1]
+				interpTokens = []Token{{
+					Type: STR_TEMPLATE_INTERP_TYPE,
+					Span: NodeSpan{interpolationStart,
+						interpolationStart + int32(len(typ)),
+					},
+					Raw: typ,
+				}}
+			}
+
 			interpolationNode := &StringTemplateInterpolation{
 				NodeBase: NodeBase{
 					NodeSpan{interpolationStart, interpolationExclEnd},
 					interpParsingErr,
-					[]Token{{
-						Type: STR_TEMPLATE_INTERP_TYPE,
-						Span: NodeSpan{interpolationStart,
-							interpolationStart + int32(len(typ)),
-						},
-						Raw: typ,
-					}},
+					interpTokens,
 				},
-				Type: typ[:len(typ)-1],
+				Type: typeWithoutColon,
 				Expr: expr,
 			}
 			slices = append(slices, interpolationNode)
