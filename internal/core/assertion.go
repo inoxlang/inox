@@ -6,6 +6,7 @@ import (
 
 	parse "github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const ASSERTION_BUFF_WRITER_SIZE = 100
@@ -44,6 +45,10 @@ func (err AssertionError) writeExplanation(w *bufio.Writer, config *PrettyPrintC
 		leftVal := err.data.intermediaryValues[node.Left]
 		rightVal := err.data.intermediaryValues[node.Right]
 
+		if leftVal == nil || rightVal == nil {
+			return
+		}
+
 		switch node.Operator {
 		case parse.Equal:
 			w.Write([]byte(": expected "))
@@ -55,7 +60,7 @@ func (err AssertionError) writeExplanation(w *bufio.Writer, config *PrettyPrintC
 }
 
 func (err AssertionError) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig) {
-	w.Write([]byte(err.msg))
+	w.Write(utils.StringAsBytes(err.msg))
 	err.writeExplanation(w, config)
 }
 
@@ -64,6 +69,7 @@ func (err AssertionError) PrettySPrint(config *PrettyPrintConfig) string {
 	w := bufio.NewWriterSize(buf, ASSERTION_BUFF_WRITER_SIZE)
 
 	err.PrettyPrint(w, config)
+	w.Flush()
 	return buf.String()
 }
 

@@ -129,9 +129,9 @@ func _main(args []string) {
 
 			if errors.As(err, &assertionErr) {
 				errString = assertionErr.PrettySPrint(prettyPrintConfig)
-			} else {
-				errString = utils.StripANSISequences(err.Error())
 			}
+			errString += "\n" + utils.StripANSISequences(err.Error())
+
 			errString = utils.AddCarriageReturnAfterNewlines(errString)
 
 			fmt.Print(errString, "\n\r")

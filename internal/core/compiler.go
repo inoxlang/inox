@@ -1682,7 +1682,8 @@ func (c *compiler) Compile(node parse.Node) error {
 		if err := c.Compile(node.Expr); err != nil {
 			return err
 		}
-		c.emit(node, OpAssert)
+		c.emit(node, OpAssert, c.addConstant(AstNode{Node: node}))
+		//TODO: support intermediary values
 	case *parse.RuntimeTypeCheckExpression:
 		if err := c.Compile(node.Expr); err != nil {
 			return err

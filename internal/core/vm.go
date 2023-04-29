@@ -1845,11 +1845,20 @@ func (v *VM) run() {
 			v.sp -= 1
 			v.stack[v.sp-1] = Nil
 		case OpAssert:
+			v.ip += 2
+			nodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			stmt := v.constants[nodeIndex].(AstNode).Node.(*parse.AssertionStatement)
+
 			ok := v.stack[v.sp-1].(Bool)
 			v.sp--
 
 			if !ok {
-				panic(&AssertionError{msg: "assertion is false"})
+				data := &AssertionData{
+					assertionStatement: stmt,
+					intermediaryValues: map[parse.Node]Value{},
+				}
+				v.err = &AssertionError{msg: "assertion is false", data: data}
+				return
 			}
 		case OpConcat:
 			v.ip++

@@ -3,7 +3,6 @@ package internal
 import (
 	"errors"
 	"fmt"
-	"log"
 	"math"
 
 	yaml "github.com/goccy/go-yaml/ast"
@@ -86,7 +85,6 @@ func ConvertYamlNodeToInoxVal(ctx *Context, n yaml.Node, immutable bool) Value {
 	case yaml.MappingKeyType:
 	case yaml.MappingValueType:
 		node := n.(*yaml.MappingValueNode)
-		log.Println(node.Key, node.Value)
 
 		val := ConvertYamlNodeToInoxVal(ctx, node.Value, immutable)
 		keys := []string{node.Key.String()}
