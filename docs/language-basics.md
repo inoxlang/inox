@@ -160,6 +160,15 @@ concat 0x[00] 0x[11 22]
 concat #[1] #[2]
 ```
 
+**Parenthesized** concatenation expressions can span several lines:
+```
+(concat "start"
+    "1" # comment
+    "2"
+    "end"
+)
+```
+
 ## Interpolation
 
 For now "normal" strings cannot be interpolated but the feature is coming soon, the interpolation
