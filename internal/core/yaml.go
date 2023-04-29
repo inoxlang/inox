@@ -52,7 +52,7 @@ func ConvertYamlNodeToInoxVal(ctx *Context, n yaml.Node, immutable bool) Value {
 	case yaml.NanType:
 		return Float(math.NaN())
 	case yaml.StringType:
-		return Str(n.(*yaml.StringNode).String())
+		return Str(n.(*yaml.StringNode).Value)
 	case yaml.LiteralType:
 		//TODO: handle start token ?
 		return Str(n.(*yaml.LiteralNode).Value.Value)
