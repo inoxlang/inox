@@ -4019,7 +4019,7 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 	var tokens = []Token{{Type: OPENING_PARENTHESIS, Span: NodeSpan{openingParenIndex, openingParenIndex + 1}}}
 	p.eatSpaceNewlineCommaComment(&tokens)
 
-	left, isMissingExpr := p.parseExpression()
+	left, isMissingExpr := p.parseExpression(true)
 
 	if ident, ok := left.(*IdentifierLiteral); ok && ident.Name == "if" {
 		return p.parseIfExpression(openingParenIndex, ident)
@@ -5211,7 +5211,7 @@ loop:
 }
 
 // parseExpression parses any expression, if expr is a *MissingExpression isMissingExpr will be true.
-func (p *parser) parseExpression() (expr Node, isMissingExpr bool) {
+func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isMissingExpr bool) {
 	__start := p.i
 	// these variables are only used for expressions that can be on the left side of a member/slice/index/call expression,
 	// other expressions are directly returned.
@@ -5326,7 +5326,7 @@ func (p *parser) parseExpression() (expr Node, isMissingExpr bool) {
 			case "udata":
 				return p.parseUdataLiteral(v), false
 			case "concat":
-				return p.parseConcatenationExpression(v), false
+				return p.parseConcatenationExpression(v, len(precededByOpeningParen) > 0 && precededByOpeningParen[0]), false
 			case "testsuite":
 				return p.parseTestSuiteExpression(v), false
 			case "testcase":
@@ -6505,7 +6505,7 @@ func (p *parser) parseTreeStructureEntry() (entry *UDataEntry, cont bool) {
 	}, true
 }
 
-func (p *parser) parseConcatenationExpression(concatIdent Node) *ConcatenationExpression {
+func (p *parser) parseConcatenationExpression(concatIdent Node, precededByOpeningParen bool) *ConcatenationExpression {
 	start := concatIdent.Base().Span.Start
 	var valuelessTokens = []Token{{Type: CONCAT_KEYWORD, Span: concatIdent.Base().Span}}
 	var elements []Node
@@ -6516,7 +6516,11 @@ func (p *parser) parseConcatenationExpression(concatIdent Node) *ConcatenationEx
 		elem, _ := p.parseExpression()
 
 		elements = append(elements, elem)
-		p.eatSpace()
+		if precededByOpeningParen {
+			p.eatSpaceNewlineComment(&valuelessTokens)
+		} else {
+			p.eatSpace()
+		}
 	}
 
 	var parsingErr *ParsingError
