@@ -2,7 +2,7 @@
 
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
 
-🛡️ Inox is a [secure](#injection-prevention) programming language that makes [scripts](#declaration-of-cli-parameters--environment-variables) and [concurrent code](#concurrency) easy to write.
+🛡️ Inox is a [secure](#injection-prevention) programming language that makes [scripts](#declaration-of-cli-parameters--environment-variables) and [concurrent code](#concurrency) easy to write. It features a powerful [shell](./docs/shell-basics.md) with colorization & completions.
 
 ## Installation
 
@@ -40,8 +40,8 @@ Security:
 
 Scripting:
 - [Easy declaration of CLI Parameters](#declaration-of-cli-parameters--environment-variables)
-- [Transactions & Effects (WIP)](#transactions--effects-wip)
 - [Simplified resource manipulation](#simplified-resource-manipulation)
+- [Transactions & Effects (WIP)](#transactions--effects-wip)
 
 Other:
 - [Concurrency](#concurrency)
@@ -261,21 +261,6 @@ options:
       if true delete <dir> if it already exists
 ```
 
-### Transactions & Effects (WIP)
-
-Inox allows you to attach a **transaction** to the current execution context (think SQL transactions).
-When a **side effect** happens it is recorded in the transaction. If the execution is cancelled for whatever reason the transaction is automatically **rollbacked** and 'reversible' effects are reversed. (A 'mode' that causes side effects to only be committed if the transaction succeed is also planned)
-
-```
-tx = start_tx()
-
-# effect
-fs.mkfile ./file.txt 
-
-# rollback transaction --> delete ./file.txt
-cancel_exec() 
-```
-
 #### **Simplified resource manipulation**
 
 - The builtin [**read**](./docs/shell-basics.md#read) function can read directories / files / HTTP resources and parse their content.
@@ -293,6 +278,22 @@ create https://example.com/posts tojson({title: "hello"})
 ```
 
 Learn more [here](./docs/shell-basics.md#resource-manipulation)
+
+### Transactions & Effects (WIP)
+
+Inox allows you to attach a **transaction** to the current execution context (think SQL transactions).
+When a **side effect** happens it is recorded in the transaction. If the execution is cancelled for whatever reason the transaction is automatically **rollbacked** and 'reversible' effects are reversed. (A 'mode' that causes side effects to only be committed if the transaction succeed is also planned)
+
+```
+tx = start_tx()
+
+# effect
+fs.mkfile ./file.txt 
+
+# rollback transaction --> delete ./file.txt
+cancel_exec() 
+```
+
 
 ### Concurrency
 
