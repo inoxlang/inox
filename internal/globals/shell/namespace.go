@@ -23,9 +23,9 @@ const (
 	DEFAULT_ERR_OUT_BUFFER_SIZE = 4096
 )
 
-var newDefaultGlobalState (func(ctx *core.Context, vPattern *core.ObjectPattern, out io.Writer) *core.GlobalState)
+var newDefaultGlobalState (func(ctx *core.Context, envPattern *core.ObjectPattern, out io.Writer) *core.GlobalState)
 
-func SetNewDefaultGlobalState(fn func(ctx *core.Context, vPattern *core.ObjectPattern, out io.Writer) *core.GlobalState) {
+func SetNewDefaultGlobalState(fn func(ctx *core.Context, envPattern *core.ObjectPattern, out io.Writer) *core.GlobalState) {
 	newDefaultGlobalState = fn
 }
 

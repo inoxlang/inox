@@ -178,6 +178,7 @@ func testExample(t *testing.T, config exampleTestConfig) {
 			OptimizeBytecode:          optimizeBytecode,
 			ParsingCompilationContext: parsingCompilationContext,
 			Out:                       io.Discard,
+			AllowMissingEnvVars:       true,
 			//Out:              os.Stdout, // &utils.TestWriter{T: t},
 		})
 

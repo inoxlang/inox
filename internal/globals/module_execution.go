@@ -22,6 +22,7 @@ type ScriptPreparationArgs struct {
 	ParentContext             *core.Context
 	UseContextAsParent        bool
 	IgnoreNonCriticalIssues   bool
+	AllowMissingEnvVars       bool
 
 	Out io.Writer
 }
@@ -102,7 +103,15 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		out = os.Stdout
 	}
 
-	state = NewDefaultGlobalState(ctx, manifest.EnvPattern, out)
+	globalState, err := NewDefaultGlobalState(ctx, out, DefaultGlobalStateConfig{
+		EnvPattern:          manifest.EnvPattern,
+		AllowMissingEnvVars: args.AllowMissingEnvVars,
+	})
+	if err != nil {
+		finalErr = err
+		return nil, nil, fmt.Errorf("failed to create global state: %w", err)
+	}
+	state = globalState
 	state.Module = mod
 
 	var modArgs *core.Object
@@ -144,7 +153,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 
 	state.StaticCheckData = staticCheckData
 
-	if staticCheckErr != nil && staticCheckData == nil {
+	if finalErr == nil && staticCheckErr != nil && staticCheckData == nil {
 		finalErr = staticCheckErr
 		return
 	}
@@ -220,6 +229,7 @@ type RunScriptArgs struct {
 	UseBytecode               bool
 	OptimizeBytecode          bool
 	ShowBytecode              bool
+	AllowMissingEnvVars       bool
 
 	//output for execution, if nil os.Stdout is used
 	Out io.Writer
@@ -240,6 +250,7 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 		ParentContext:             args.ParentContext,
 		UseContextAsParent:        args.UseContextAsParent,
 		Out:                       args.Out,
+		AllowMissingEnvVars:       args.AllowMissingEnvVars,
 	})
 
 	if err != nil {

@@ -312,7 +312,10 @@ func runStartupScript(startupScriptPath string) (*core.Object, *core.GlobalState
 		Limitations:     startupManifest.Limitations,
 		HostResolutions: startupManifest.HostResolutions,
 	}))
-	state := globals.NewDefaultGlobalState(ctx, nil, os.Stdout)
+	state, err := globals.NewDefaultGlobalState(ctx, os.Stdout, globals.DefaultGlobalStateConfig{})
+	if err != nil {
+		panic(fmt.Errorf("failed to startup script's global state: %w", err))
+	}
 	state.Module = startupMod
 
 	//

@@ -83,13 +83,26 @@ func init() {
 	core.SetInitialWorkingDir(os.Getwd)
 	registerHelp()
 
-	_shell.SetNewDefaultGlobalState(NewDefaultGlobalState)
+	_shell.SetNewDefaultGlobalState(func(ctx *core.Context, envPattern *core.ObjectPattern, out io.Writer) *core.GlobalState {
+		return utils.Must(NewDefaultGlobalState(ctx, out, DefaultGlobalStateConfig{
+			EnvPattern: envPattern,
+		}))
+	})
+}
+
+type DefaultGlobalStateConfig struct {
+	EnvPattern          *core.ObjectPattern
+	AllowMissingEnvVars bool
 }
 
 // NewDefaultGlobalState creates a new GlobalState with the default globals.
-func NewDefaultGlobalState(ctx *core.Context, envPattern *core.ObjectPattern, out io.Writer) *core.GlobalState {
-
+func NewDefaultGlobalState(ctx *core.Context, out io.Writer, config DefaultGlobalStateConfig) (*core.GlobalState, error) {
 	logger := log.New(out, log.Default().Prefix(), log.Default().Flags())
+
+	envNamespace, err := _env.NewEnvNamespace(ctx, config.EnvPattern, config.AllowMissingEnvVars)
+	if err != nil {
+		return nil, err
+	}
 
 	constants := map[string]core.Value{
 		// constants
@@ -105,7 +118,7 @@ func NewDefaultGlobalState(ctx *core.Context, envPattern *core.ObjectPattern, ou
 		"s3":      _s3.NewS3namespace(),
 		"chrome":  _chrome.NewChromeNamespace(),
 		"localdb": _locdb.NewLocalDbNamespace(),
-		"env":     _env.NewEnvNamespace(ctx, envPattern),
+		"env":     envNamespace,
 		"html":    _html.NewHTMLNamespace(),
 		"dom":     _dom.NewDomNamespace(),
 		"sql":     _sql.NewSQLNamespace(),
@@ -242,13 +255,18 @@ func NewDefaultGlobalState(ctx *core.Context, envPattern *core.ObjectPattern, ou
 	state := core.NewGlobalState(ctx, constants)
 	state.Out = out
 	state.Logger = logger
-	state.GetBaseGlobalsForImportedModule = func(ctx *core.Context, manifest *core.Manifest) core.GlobalVariables {
+	state.GetBaseGlobalsForImportedModule = func(ctx *core.Context, manifest *core.Manifest) (core.GlobalVariables, error) {
 		importedModuleGlobals := utils.CopyMap(constants)
-		importedModuleGlobals["env"] = _env.NewEnvNamespace(ctx, nil)
-		return core.GlobalVariablesFromMap(importedModuleGlobals)
+		env, err := _env.NewEnvNamespace(ctx, nil, config.AllowMissingEnvVars)
+		if err != nil {
+			return core.GlobalVariables{}, err
+		}
+
+		importedModuleGlobals["env"] = env
+		return core.GlobalVariablesFromMap(importedModuleGlobals), nil
 	}
 
-	return state
+	return state, nil
 }
 
 type DefaultContextConfig struct {

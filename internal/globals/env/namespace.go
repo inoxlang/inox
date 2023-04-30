@@ -31,7 +31,7 @@ func init() {
 	})
 }
 
-func NewEnvNamespace(ctx *core.Context, envPattern *core.ObjectPattern) *core.Record {
+func NewEnvNamespace(ctx *core.Context, envPattern *core.ObjectPattern, allowMissingEnvVars bool) (*core.Record, error) {
 	pth, ok := parse.ParsePath(os.Getenv("HOME"))
 	HOME := core.Path(pth)
 	var HOMEval core.Value
@@ -50,34 +50,44 @@ func NewEnvNamespace(ctx *core.Context, envPattern *core.ObjectPattern) *core.Re
 		values := make([]core.Value, envPattern.EntryCount())
 
 		i := 0
-		envPattern.ForEachEntry(func(propName string, propPattern core.Pattern) error {
+		err := envPattern.ForEachEntry(func(propName string, propPattern core.Pattern) error {
 			propNames[i] = propName
-			envVal := os.Getenv(propName)
+			envVal, isPresent := os.LookupEnv(propName)
+
+			if !isPresent {
+				if !allowMissingEnvVars {
+					return fmt.Errorf("missing environment variable '%s'", propName)
+				}
+				envVal = ""
+			}
 
 			switch patt := propPattern.(type) {
 			case core.StringPattern:
 				val, err := patt.Parse(ctx, envVal)
 				if err != nil {
-					panic(fmt.Errorf("invalid value provided for environment variable '%s'", propName))
+					return fmt.Errorf("invalid value provided for environment variable '%s'", propName)
 				}
 				values[i] = val
 			case *core.SecretPattern:
 				val, err := patt.NewSecret(ctx, envVal)
 				if err != nil {
-					panic(fmt.Errorf("invalid value provided for environment variable '%s'", propName))
+					return fmt.Errorf("invalid value provided for environment variable '%s'", propName)
 				}
 				values[i] = val
 			case *core.TypePattern:
 				if patt != core.STR_PATTERN {
-					panic(fmt.Errorf("invalid pattern type %T for environment variable '%s'", propPattern, propName))
+					return fmt.Errorf("invalid pattern type %T for environment variable '%s'", propPattern, propName)
 				}
 				values[i] = core.Str(envVal)
 			default:
-				panic(fmt.Errorf("invalid pattern type %T for environment variable '%s'", propPattern, propName))
+				return fmt.Errorf("invalid pattern type %T for environment variable '%s'", propPattern, propName)
 			}
 
 			return nil
 		})
+		if err != nil {
+			return nil, err
+		}
 
 		initial = core.NewRecordFromKeyValLists(propNames, values)
 	} else {
@@ -95,5 +105,5 @@ func NewEnvNamespace(ctx *core.Context, envPattern *core.ObjectPattern) *core.Re
 		"all":     core.ValOf(envAll),
 		"set":     core.ValOf(envSet),
 		"delete":  core.ValOf(envDelete),
-	})
+	}), nil
 }

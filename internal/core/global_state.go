@@ -24,9 +24,9 @@ type GlobalState struct {
 	SystemGraph  *SystemGraph
 	lockedValues []PotentiallySharable
 
-	GetBaseGlobalsForImportedModule func(ctx *Context, manifest *Manifest) GlobalVariables // ok if nil
-	Out                             io.Writer                                              //nil by default
-	Logger                          *log.Logger                                            //nil by default
+	GetBaseGlobalsForImportedModule func(ctx *Context, manifest *Manifest) (GlobalVariables, error) // ok if nil
+	Out                             io.Writer                                                       //nil by default
+	Logger                          *log.Logger                                                     //nil by default
 
 	StaticCheckData *StaticCheckData
 	SymbolicData    *SymbolicData

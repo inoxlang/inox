@@ -177,7 +177,11 @@ func ImportModule(config ImportConfig) (*Routine, error) {
 
 	var globals GlobalVariables
 	if config.ParentState.GetBaseGlobalsForImportedModule != nil {
-		globals = config.ParentState.GetBaseGlobalsForImportedModule(routineCtx, manifest)
+		baseGlobals, err := config.ParentState.GetBaseGlobalsForImportedModule(routineCtx, manifest)
+		if err != nil {
+			return nil, err
+		}
+		globals = baseGlobals
 	} else {
 		globals = GlobalVariablesFromMap(map[string]Value{})
 	}
