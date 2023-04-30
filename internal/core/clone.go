@@ -207,6 +207,26 @@ func (list *IntList) Clone(clones map[uintptr]map[int]Value) (Value, error) {
 	return clone, nil
 }
 
+func (list *BoolList) Clone(clones map[uintptr]map[int]Value) (Value, error) {
+	if list.constraintId.HasConstraint() {
+		return nil, ErrNotClonable
+	}
+
+	ptr := reflect.ValueOf(list).Pointer()
+
+	if l, ok := clones[ptr][0]; ok {
+		return l, nil
+	}
+
+	clone := &BoolList{
+		elements: list.elements.Clone(),
+	}
+
+	clones[ptr] = map[int]Value{0: clone}
+
+	return clone, nil
+}
+
 func (tuple *Tuple) Clone(clones map[uintptr]map[int]Value) (Value, error) {
 	if tuple.constraintId.HasConstraint() {
 		return nil, ErrNotClonable

@@ -368,6 +368,68 @@ func (list *IntList) Equal(ctx *Context, other Value, alreadyCompared map[uintpt
 	return true
 }
 
+func (list *BoolList) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	if depth > MAX_COMPARISON_DEPTH {
+		return false
+	}
+
+	var otherList underylingList
+	switch v := other.(type) {
+	case *List:
+		otherList = v.underylingList
+	case underylingList:
+		otherList = v
+	default:
+		return false
+	}
+
+	addr := reflect.ValueOf(list).Pointer()
+	otherAddr := reflect.ValueOf(otherList).Pointer()
+
+	if list.Len() != otherList.Len() {
+		return false
+	}
+
+	if alreadyCompared[addr] == otherAddr || alreadyCompared[otherAddr] == addr {
+		//we return true to prevent cycling
+		return true
+	}
+
+	alreadyCompared[addr] = otherAddr
+	alreadyCompared[otherAddr] = addr
+
+	if addr == otherAddr {
+		return true
+	}
+
+	switch other := otherList.(type) {
+	case *BoolList:
+		return list.elements.Equal(other.elements)
+	default:
+		it := other.Iterator(ctx, IteratorConfiguration{})
+		i := 0
+		//check that all elements are equal
+		for it.Next(ctx) {
+			if i >= list.Len() {
+				return false
+			}
+
+			otherElem := it.Value(ctx)
+			if boolean, ok := otherElem.(Bool); !ok || Bool(list.elements.Test(uint(i))) != boolean {
+				return false
+			}
+
+			i++
+		}
+
+		if i != list.Len() {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (tuple *Tuple) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	if depth > MAX_COMPARISON_DEPTH {
 		return false
@@ -1329,6 +1391,14 @@ func (it *ValueListIterator) Equal(ctx *Context, other Value, alreadyCompared ma
 
 func (it *IntListIterator) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	otherIt, ok := other.(*IntListIterator)
+	if !ok {
+		return false
+	}
+	return otherIt == it
+}
+
+func (it *BitSetIterator) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherIt, ok := other.(*BitSetIterator)
 	if !ok {
 		return false
 	}

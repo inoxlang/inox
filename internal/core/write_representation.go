@@ -18,6 +18,11 @@ import (
 
 // this file contains the implementation of Value.HasRepresentation & Value.WriteRepresentation for core types.
 
+var (
+	OPENING_BRACKET = []byte{'['}
+	CLOSING_BRACKET = []byte{']'}
+)
+
 type ValueRepresentation []byte
 
 func (r ValueRepresentation) Equal(r2 ValueRepresentation) bool {
@@ -539,6 +544,72 @@ func (list *IntList) WriteRepresentation(ctx *Context, w io.Writer, encountered 
 	}
 
 	_, err = w.Write([]byte{']'})
+	return err
+}
+
+func (list *BoolList) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+	return true
+}
+
+func (list *BoolList) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+	if encountered != nil && !list.HasRepresentation(encountered, config) {
+		return ErrNoRepresentation
+	}
+
+	_, err := w.Write(OPENING_BRACKET)
+	if err != nil {
+		return err
+	}
+
+	length := int(list.elements.Len())
+	if length == 0 {
+		_, err := w.Write(CLOSING_BRACKET)
+		return err
+	}
+
+	counter := 0
+	i, found := list.elements.NextSet(0)
+
+	if !found { //all zeroes
+		b := bytes.Repeat(utils.StringAsBytes("false, "), length)
+		b = b[:len(b)-2] //remove trailing ', '
+		_, err := w.Write(b)
+		if err != nil {
+			return err
+		}
+
+		_, err = w.Write(CLOSING_BRACKET)
+		return err
+	}
+
+	zeroCount := i
+
+	for found {
+		if zeroCount > 0 {
+			b := bytes.Repeat(utils.StringAsBytes("false, "), length)
+			_, err := w.Write(b)
+			if err != nil {
+				return err
+			}
+		}
+
+		counter = counter + 1
+		if i == uint(length)-1 { //last
+			w.Write(utils.StringAsBytes("true"))
+		} else {
+			w.Write(utils.StringAsBytes("true, "))
+		}
+
+		prevI := i
+		i, found = list.elements.NextSet(i + 1)
+		zeroCount = i - prevI - 1
+
+		if found {
+			w.Write(COMMA)
+		}
+	}
+
+	_, err = w.Write(CLOSING_BRACKET)
 	return err
 }
 

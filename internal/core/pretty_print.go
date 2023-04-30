@@ -33,6 +33,7 @@ var (
 	QUOTED_SQUOTE_RUNE = []byte("'\\''")
 	QUOTED_ASLASH_RUNE = []byte("'\\\\'")
 
+	COMMA                               = []byte{','}
 	LF_CR                               = []byte{'\n', '\r'}
 	DASH_DASH                           = []byte{'-', '-'}
 	SHARP_OPENING_PAREN                 = []byte{'#', '('}
@@ -778,6 +779,10 @@ func (list *ValueList) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, d
 }
 
 func (list *IntList) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	PrettyPrintList(list, w, config, depth, parentIndentCount)
+}
+
+func (list *BoolList) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	PrettyPrintList(list, w, config, depth, parentIndentCount)
 }
 
@@ -1556,6 +1561,10 @@ func (it *ValueListIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintCon
 }
 
 func (it *IntListIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", it))
+}
+
+func (it *BitSetIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(fmt.Fprintf(w, "%#v", it))
 }
 

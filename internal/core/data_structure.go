@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/bits-and-blooms/bitset"
 	"github.com/inoxlang/inox/internal/commonfmt"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
@@ -927,6 +928,102 @@ func (l *IntList) insertSequence(ctx *Context, seq Sequence, i Int) {
 }
 
 func (l *IntList) appendSequence(ctx *Context, seq Sequence) {
+	panic(ErrNotImplementedYet)
+}
+
+// BoolList implements underylingList
+type BoolList struct {
+	elements     *bitset.BitSet
+	constraintId ConstraintId
+}
+
+func NewWrappedBoolList(elements ...Bool) *List {
+	return &List{underylingList: newBoolList(elements...)}
+}
+
+func newBoolList(elements ...Bool) *BoolList {
+	bitset := bitset.New(uint(len(elements)))
+	for i, boolean := range elements {
+		if boolean {
+			bitset.Set(uint(i))
+		}
+	}
+	return &BoolList{elements: bitset}
+}
+
+func (list *BoolList) ContainsSimple(ctx *Context, v Value) bool {
+	if !IsSimpleInoxVal(v) {
+		panic("only booleans are expected")
+	}
+
+	boolean, ok := v.(Bool)
+	if !ok {
+		return false
+	}
+
+	if boolean {
+		_, ok := list.elements.NextSet(0)
+		return ok
+	}
+
+	_, ok = list.elements.NextClear(0)
+	return ok
+}
+
+func (list *BoolList) set(ctx *Context, i int, v Value) {
+	boolean := v.(Bool)
+	list.elements.SetTo(uint(i), bool(boolean))
+}
+
+func (list *BoolList) setSlice(ctx *Context, start, end int, v Value) {
+	i := start
+	it := v.(*List).Iterator(ctx, IteratorConfiguration{})
+
+	for it.Next(ctx) {
+		e := it.Value(ctx)
+		boolean := e.(Bool)
+		list.elements.SetTo(uint(i), bool(boolean))
+		i++
+	}
+}
+
+func (list *BoolList) slice(start, end int) Sequence {
+	panic(ErrNotImplementedYet)
+}
+
+func (list *BoolList) Len() int {
+	return int(list.elements.Len())
+}
+
+func (list *BoolList) At(ctx *Context, i int) Value {
+	panic(ErrNotImplementedYet)
+}
+
+func (list *BoolList) append(ctx *Context, values ...Value) {
+	panic(ErrNotImplementedYet)
+}
+
+func (l *BoolList) insertElement(ctx *Context, v Value, i Int) {
+	panic(ErrNotImplementedYet)
+}
+
+func (l *BoolList) removePosition(ctx *Context, i Int) {
+	panic(ErrNotImplementedYet)
+	// if i <= len(l.Elements)-1 {
+	// 	copy(l.Elements[i:], l.Elements[i+1:])
+	// }
+	// l.Elements = l.Elements[:len(l.Elements)-1]
+}
+
+func (l *BoolList) removePositionRange(ctx *Context, r IntRange) {
+	panic(ErrNotImplementedYet)
+}
+
+func (l *BoolList) insertSequence(ctx *Context, seq Sequence, i Int) {
+	panic(ErrNotImplementedYet)
+}
+
+func (l *BoolList) appendSequence(ctx *Context, seq Sequence) {
 	panic(ErrNotImplementedYet)
 }
 

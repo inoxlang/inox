@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/bits-and-blooms/bitset"
 	aq "github.com/emirpasic/gods/queues/arrayqueue"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -377,6 +378,39 @@ func (it *IntListIterator) Value(*Context) Value {
 
 func (list *IntList) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
 	return config.CreateIterator(&IntListIterator{list: list, i: -1})
+}
+
+type BitSetIterator struct {
+	NoReprMixin
+	NotClonableMixin
+
+	set       *bitset.BitSet
+	nextIndex uint //start at 0
+}
+
+func (it BitSetIterator) HasNext(*Context) bool {
+	return it.nextIndex < it.set.Len()
+}
+
+func (it *BitSetIterator) Next(ctx *Context) bool {
+	if !it.HasNext(ctx) {
+		return false
+	}
+
+	it.nextIndex++
+	return true
+}
+
+func (it *BitSetIterator) Key(ctx *Context) Value {
+	return Int(it.nextIndex)
+}
+
+func (it *BitSetIterator) Value(*Context) Value {
+	return Bool(it.set.Test(it.nextIndex))
+}
+
+func (list *BoolList) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
+	return config.CreateIterator(&BitSetIterator{set: list.elements, nextIndex: 0})
 }
 
 type TupleIterator struct {

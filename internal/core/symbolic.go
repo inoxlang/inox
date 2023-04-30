@@ -235,11 +235,15 @@ func (l *List) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.Symbo
 }
 
 func (l *ValueList) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return symbolic.NewListOf(&symbolic.Any{}), nil
+	return symbolic.NewListOf(symbolic.ANY), nil
 }
 
 func (l *IntList) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return symbolic.NewListOf(&symbolic.Int{}), nil
+	return symbolic.NewListOf(symbolic.ANY_INT), nil
+}
+
+func (l *BoolList) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	return symbolic.NewListOf(symbolic.ANY_BOOL), nil
 }
 
 func (l KeyList) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
@@ -829,6 +833,10 @@ func (it *ValueListIterator) ToSymbolicValue(wide bool, encountered map[uintptr]
 }
 
 func (it *IntListIterator) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	return &symbolic.Iterator{}, nil
+}
+
+func (it *BitSetIterator) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	return &symbolic.Iterator{}, nil
 }
 

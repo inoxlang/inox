@@ -338,6 +338,18 @@ func (list *IntList) WriteJSONRepresentation(ctx *Context, w io.Writer, encounte
 	return err
 }
 
+func (tuple *BoolList) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+	return true
+}
+
+func (list *BoolList) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+	if encountered != nil && !list.HasJSONRepresentation(encountered, config) {
+		return ErrNoRepresentation
+	}
+
+	return list.WriteRepresentation(ctx, w, nil, config)
+}
+
 func (tuple *Tuple) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
 	return true
 }
