@@ -3880,6 +3880,59 @@ func TestSymbolicEval(t *testing.T) {
 			}
 			assert.Equal(t, expectedFn, res)
 		})
+
+		t.Run("spread string list", func(t *testing.T) {
+			n, state := makeStateAndChunk(`concat ...["a"]`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, err)
+			assert.Equal(t, &StringConcatenation{}, res)
+		})
+
+		t.Run("spread list with invalid values", func(t *testing.T) {
+			n, state := makeStateAndChunk(`concat ...[1]`)
+			res, err := symbolicEval(n, state)
+
+			spreadElem := parse.FindNode(n, (*parse.ElementSpreadElement)(nil), nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(spreadElem, state, CONCATENATION_SUPPORTED_TYPES_EXPLANATION),
+			}, state.errors)
+			assert.Empty(t, err)
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("string followed by a spread list with invalid values", func(t *testing.T) {
+			n, state := makeStateAndChunk(`concat "a" ...[1]`)
+			res, err := symbolicEval(n, state)
+
+			spreadElem := parse.FindNode(n, (*parse.ElementSpreadElement)(nil), nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(spreadElem, state, CONCATENATION_SUPPORTED_TYPES_EXPLANATION),
+			}, state.errors)
+			assert.Empty(t, err)
+			assert.Equal(t, &StringConcatenation{}, res)
+		})
+
+		t.Run("non iterable spread element", func(t *testing.T) {
+			n, state := makeStateAndChunk(`return concat ...1`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, err)
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("string followed by a non iterable spread element", func(t *testing.T) {
+			n, state := makeStateAndChunk(`return concat "a" ...1`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, err)
+			assert.Equal(t, &StringConcatenation{}, res)
+		})
 	})
 
 	t.Run("string template literal", func(t *testing.T) {

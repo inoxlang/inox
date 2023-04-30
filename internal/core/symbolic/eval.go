@@ -2441,38 +2441,72 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		if len(n.Elements) == 0 {
 			return nil, errors.New("cannot create concatenation with no elements")
 		}
-		values := make([]SymbolicValue, len(n.Elements))
-		for i, elemNode := range n.Elements {
-			elem, err := symbolicEval(elemNode, state)
+		var values []SymbolicValue
+		var nodeIndexes []int
+		atLeastOneSpread := false
+
+		for elemNodeIndex, elemNode := range n.Elements {
+			spreadElem, ok := elemNode.(*parse.ElementSpreadElement)
+			if !ok {
+				elemVal, err := symbolicEval(elemNode, state)
+				if err != nil {
+					return nil, err
+				}
+				values = append(values, elemVal)
+				nodeIndexes = append(nodeIndexes, elemNodeIndex)
+				continue
+			}
+
+			//handle spread element
+			atLeastOneSpread = true
+
+			spreadVal, err := symbolicEval(spreadElem.Expr, state)
 			if err != nil {
 				return nil, err
 			}
-			values[i] = elem
+
+			if iterable, ok := spreadVal.(Iterable); ok {
+				iterableElemVal := iterable.IteratorElementValue()
+
+				switch iterableElemVal.(type) {
+				case StringLike, BytesLike, *Tuple:
+					values = append(values, iterableElemVal)
+					nodeIndexes = append(nodeIndexes, elemNodeIndex)
+				default:
+					state.addError(makeSymbolicEvalError(elemNode, state, CONCATENATION_SUPPORTED_TYPES_EXPLANATION))
+				}
+			} else {
+				state.addError(makeSymbolicEvalError(n, state, SPREAD_ELEMENT_IS_NOT_ITERABLE))
+			}
+		}
+
+		if len(values) == 0 {
+			return ANY, nil
 		}
 
 		switch values[0].(type) {
 		case StringLike:
-			if len(values) == 1 {
+			if len(values) == 1 && !atLeastOneSpread {
 				return values[0], nil
 			}
 			for i, elem := range values {
 				if _, ok := elem.(StringLike); !ok {
-					state.addError(makeSymbolicEvalError(n.Elements[i], state, fmt.Sprintf("string concatenation: invalid element of type %T", elem)))
+					state.addError(makeSymbolicEvalError(n.Elements[nodeIndexes[i]], state, fmt.Sprintf("string concatenation: invalid element of type %T", elem)))
 				}
 			}
 			return &StringConcatenation{}, nil
 		case BytesLike:
-			if len(values) == 1 {
+			if len(values) == 1 && !atLeastOneSpread {
 				return values[0], nil
 			}
 			for i, elem := range values {
 				if _, ok := elem.(BytesLike); !ok {
-					state.addError(makeSymbolicEvalError(n.Elements[i], state, fmt.Sprintf("bytes concatenation: invalid element of type %T", elem)))
+					state.addError(makeSymbolicEvalError(n.Elements[nodeIndexes[i]], state, fmt.Sprintf("bytes concatenation: invalid element of type %T", elem)))
 				}
 			}
 			return &BytesConcatenation{}, nil
 		case *Tuple:
-			if len(values) == 1 {
+			if len(values) == 1 && !atLeastOneSpread {
 				return values[0], nil
 			}
 
@@ -2487,7 +2521,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 						generalElements = append(generalElements, tuple.generalElement)
 					}
 				} else {
-					state.addError(makeSymbolicEvalError(n.Elements[i], state, fmt.Sprintf("tuple concatenation: invalid element of type %T", concatElem)))
+					state.addError(makeSymbolicEvalError(n.Elements[nodeIndexes[i]], state, fmt.Sprintf("tuple concatenation: invalid element of type %T", concatElem)))
 				}
 			}
 
@@ -2497,7 +2531,8 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				return NewTuple(elements...), nil
 			}
 		default:
-			return nil, errors.New("only string, bytes & tuple concatenations are supported for now")
+			state.addError(makeSymbolicEvalError(n, state, CONCATENATION_SUPPORTED_TYPES_EXPLANATION))
+			return ANY, nil
 		}
 	case *parse.AssertionStatement:
 		ok, err := symbolicEval(n.Expr, state)

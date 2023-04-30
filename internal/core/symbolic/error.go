@@ -32,6 +32,9 @@ const (
 
 	ELEMS_OF_TUPLE_SHOUD_BE_IMMUTABLE            = "elements of a tuple should be immutable"
 	UNSUPPORTED_PARAM_TYPE_FOR_RUNTIME_TYPECHECK = "unsupported parameter type for runtime typecheck"
+
+	CONCATENATION_SUPPORTED_TYPES_EXPLANATION = "only string, bytes & tuple concatenations are supported for now"
+	SPREAD_ELEMENT_IS_NOT_ITERABLE            = "spread element is not iterabe"
 )
 
 var (
