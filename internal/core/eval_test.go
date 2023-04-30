@@ -4375,6 +4375,33 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.NoError(t, err)
 			assert.Equal(t, NewTuple([]Value{Int(1), Str("a")}), res)
 		})
+
+		t.Run("string element followed by a spread element with a single item", func(t *testing.T) {
+			code := `concat "a" ...["b"]`
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, "ab", res.(*StringConcatenation).GetOrBuildString())
+		})
+
+		t.Run("string element followed by a spread element with two items", func(t *testing.T) {
+			code := `concat "a" ...["b", "c"]`
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, "abc", res.(*StringConcatenation).GetOrBuildString())
+		})
+
+		t.Run("alternation of normal & spread elements", func(t *testing.T) {
+			code := `concat "a" ...["b", "c"] "d" ...["e", "f"]`
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, "abcdef", res.(*StringConcatenation).GetOrBuildString())
+		})
 	})
 
 	t.Run("a value passed to a routine and then returned by it should not be wrapped", func(t *testing.T) {

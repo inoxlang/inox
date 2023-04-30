@@ -995,6 +995,10 @@ func (list *BoolList) Len() int {
 	return int(list.elements.Len())
 }
 
+func (list *BoolList) BoolAt(i int) bool {
+	return list.elements.Test(uint(i))
+}
+
 func (list *BoolList) At(ctx *Context, i int) Value {
 	panic(ErrNotImplementedYet)
 }

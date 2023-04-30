@@ -1873,10 +1873,40 @@ func (v *VM) run() {
 				return
 			}
 		case OpConcat:
-			v.ip++
-			numElements := int(v.curInsts[v.ip])
+			v.ip += 3
+			numElements := int(v.curInsts[v.ip-2])
+			spreadElemSetConstantIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			spreadElemSet := v.constants[spreadElemSetConstantIndex].(*List).underylingList.(*BoolList)
+
 			values := make([]Value, numElements)
 			copy(values, v.stack[v.sp-numElements:v.sp])
+
+			if spreadElemSet.elements.Any() {
+				index := 0
+				valuesAfterIndex := make([]Value, numElements)
+
+				// TODO: if iterables are all indexable & not shared we can pre allocate a list of the right size
+
+				ctx := v.global.Ctx
+
+				for i := 0; i < numElements; i++ {
+					if !spreadElemSet.BoolAt(i) {
+						index++
+						continue
+					}
+					copiedCount := copy(valuesAfterIndex, values[index+1:]) //save values after current index
+					iterable := values[index].(Iterable)
+					values = values[:index]
+
+					it := iterable.Iterator(ctx, IteratorConfiguration{})
+					for it.Next(ctx) {
+						values = append(values, it.Value(ctx))
+					}
+
+					index = len(values)
+					values = append(values, valuesAfterIndex[:copiedCount]...)
+				}
+			}
 
 			v.sp -= numElements
 			result, err := concatValues(v.global.Ctx, values)

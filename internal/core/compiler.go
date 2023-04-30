@@ -1671,15 +1671,24 @@ func (c *compiler) Compile(node parse.Node) error {
 		c.emit(node, OpCreateUdataHiearchyEntry, len(node.Children))
 
 	case *parse.ConcatenationExpression:
-		for _, elemNode := range node.Elements {
-			if err := c.Compile(elemNode); err != nil {
+		spreadElemSet := make([]Bool, len(node.Elements))
+
+		for i, elemNode := range node.Elements {
+			spreadNode, isSpread := elemNode.(*parse.ElementSpreadElement)
+			spreadElemSet[i] = Bool(isSpread)
+
+			if isSpread {
+				if err := c.Compile(spreadNode.Expr); err != nil {
+					return err
+				}
+			} else if err := c.Compile(elemNode); err != nil {
 				return err
 			}
 		}
 		if len(node.Elements) >= (1 << 8) {
 			return fmt.Errorf("too many elements in concatenation")
 		}
-		c.emit(node, OpConcat, len(node.Elements))
+		c.emit(node, OpConcat, len(node.Elements), c.addConstant(NewWrappedBoolList(spreadElemSet...)))
 	case *parse.AssertionStatement:
 		if err := c.Compile(node.Expr); err != nil {
 			return err

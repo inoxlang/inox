@@ -2078,15 +2078,32 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		return &OptionPattern{Name: n.Name, Value: valuePattern}, nil
 	case *parse.ConcatenationExpression:
-		values := make([]Value, len(n.Elements))
+		var values []Value
+		ctx := state.Global.Ctx
 
-		for i, elemNode := range n.Elements {
+		for _, elemNode := range n.Elements {
+			spreadNode, isSpread := elemNode.(*parse.ElementSpreadElement)
+			if isSpread {
+				elemNode = spreadNode.Expr
+			}
+
 			elem, err := TreeWalkEval(elemNode, state)
 			if err != nil {
 				return nil, err
 			}
-			values[i] = elem
+
+			if !isSpread {
+				values = append(values, elem)
+				continue
+			}
+
+			//spread element
+			it := elem.(Iterable).Iterator(ctx, IteratorConfiguration{})
+			for it.Next(ctx) {
+				values = append(values, it.Value(ctx))
+			}
 		}
+
 		return concatValues(state.Global.Ctx, values)
 	case *parse.AssertionStatement:
 		data := &AssertionData{
