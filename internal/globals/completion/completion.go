@@ -43,6 +43,17 @@ const (
 	LspCompletions
 )
 
+func (m CompletionMode) String() string {
+	switch m {
+	case ShellCompletions:
+		return "shell-completions"
+	case LspCompletions:
+		return "LSP-completions"
+	default:
+		panic(core.ErrUnreachable)
+	}
+}
+
 func FindCompletions(args CompletionSearchArgs) []Completion {
 
 	state := args.State
@@ -409,6 +420,11 @@ func handleIdentifierMemberCompletions(n *parse.IdentifierMemberExpression, stat
 		if mode == ShellCompletions {
 			propertyNames = curr.(core.IProps).PropertyNames(state.Global.Ctx)
 		} else {
+			// if the at one point in the member chain a value is any we have no completions to propose
+			// so we just return an empty list
+			if symbolic.IsAny(curr.(symbolic.SymbolicValue)) {
+				return nil
+			}
 			propertyNames = curr.(symbolic.IProps).PropertyNames()
 		}
 
@@ -472,17 +488,31 @@ loop:
 
 	switch left := left.(type) {
 	case *parse.GlobalVariable:
-		if curr, ok = state.Global.Globals.CheckedGet(left.Name); !ok {
-			return nil
+		if mode == ShellCompletions {
+			if curr, ok = state.Global.Globals.CheckedGet(left.Name); !ok {
+				return nil
+			}
+		} else {
+			if curr, ok = state.Global.SymbolicData.GetNodeValue(left); !ok {
+				return nil
+			}
 		}
 	case *parse.Variable:
-		if curr, ok = state.Get(left.Name); !ok {
-			return nil
+		if mode == ShellCompletions {
+			if curr, ok = state.Get(left.Name); !ok {
+				return nil
+			}
+		} else {
+			if curr, ok = state.Global.SymbolicData.GetNodeValue(left); !ok {
+				return nil
+			}
 		}
+	default:
+		panic(core.ErrUnreachable)
 	}
 
-	for i, propName := range exprPropertyNames {
-		if propName == nil {
+	for i, propNameNode := range exprPropertyNames {
+		if propNameNode == nil { //unterminated member expression
 			break
 		}
 		found := false
@@ -491,13 +521,20 @@ loop:
 		if mode == ShellCompletions {
 			propertyNames = curr.(core.IProps).PropertyNames(state.Global.Ctx)
 		} else {
+			// if the at one point in the member chain a value is any we have no completions to propose
+			// so we just return an empty list
+			if symbolic.IsAny(curr.(symbolic.SymbolicValue)) {
+				return nil
+			}
 			propertyNames = curr.(symbolic.IProps).PropertyNames()
 		}
 
+		//we search for the property name that matches the node
+		//if we find it we add '.<property name>' to the buffer
 		for _, name := range propertyNames {
-			if name == propName.Name {
+			if name == propNameNode.Name {
 				buff.WriteRune('.')
-				buff.WriteString(propName.Name)
+				buff.WriteString(propNameNode.Name)
 
 				switch iprops := curr.(type) {
 				case core.IProps:
@@ -511,6 +548,7 @@ loop:
 				break
 			}
 		}
+
 		if !found && i < len(exprPropertyNames)-1 { //if not last
 			return nil
 		}
