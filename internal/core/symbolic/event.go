@@ -90,7 +90,7 @@ type Event struct {
 }
 
 func NewEvent(value SymbolicValue) (*Event, error) {
-	if !isAny(value) && value.IsMutable() {
+	if !IsAny(value) && value.IsMutable() {
 		return nil, fmt.Errorf("failed to create event: value should be immutable: %T", value)
 	}
 	return &Event{value: value}, nil

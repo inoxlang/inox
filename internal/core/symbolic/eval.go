@@ -413,7 +413,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				static = type_.(Pattern)
 
 				widenedRight := right
-				for !isAny(widenedRight) && !static.TestValue(widenedRight) {
+				for !IsAny(widenedRight) && !static.TestValue(widenedRight) {
 					widenedRight = widenOrAny(widenedRight)
 				}
 
@@ -703,7 +703,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			return nil, err
 		}
 
-		for !isAny(right) {
+		for !IsAny(right) {
 			if _, ok := right.(*List); !ok {
 				right = widenOrAny(right)
 			} else {
@@ -3052,7 +3052,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			argNode = argNodes[i]
 		}
 
-		for !isAny(widenedArg) && !paramType.Test(widenedArg) {
+		for !IsAny(widenedArg) && !paramType.Test(widenedArg) {
 			widenedArg = widenOrAny(widenedArg)
 		}
 

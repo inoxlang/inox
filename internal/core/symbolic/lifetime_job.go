@@ -56,7 +56,7 @@ func (j *LifetimeJob) IsWidenable() bool {
 }
 
 func (r *LifetimeJob) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	if isAny(r.subjectPattern) {
+	if IsAny(r.subjectPattern) {
 		utils.Must(w.Write(utils.StringAsBytes("%lifetime-job")))
 		return
 	}

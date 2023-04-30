@@ -377,7 +377,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (SymbolicValue, error)
 			// }
 
 			widenedArg := arg
-			for !isAny(widenedArg) && !param.Test(widenedArg) {
+			for !IsAny(widenedArg) && !param.Test(widenedArg) {
 				widenedArg = widenOrAny(widenedArg)
 			}
 
@@ -423,7 +423,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (SymbolicValue, error)
 
 		for i, arg := range variadicArgs {
 			widenedArg := arg.(SymbolicValue)
-			for !isAny(widenedArg) && !variadicElemType.Test(widenedArg) {
+			for !IsAny(widenedArg) && !variadicElemType.Test(widenedArg) {
 				widenedArg = widenOrAny(widenedArg)
 			}
 

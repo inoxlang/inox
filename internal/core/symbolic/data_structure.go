@@ -121,7 +121,7 @@ func (list *List) Widen() (SymbolicValue, bool) {
 }
 
 func (list *List) IsWidenable() bool {
-	return list.elements != nil || !isAny(list.generalElement)
+	return list.elements != nil || !IsAny(list.generalElement)
 }
 
 func (list *List) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -357,7 +357,7 @@ func (t *Tuple) Widen() (SymbolicValue, bool) {
 }
 
 func (t *Tuple) IsWidenable() bool {
-	return t.elements != nil || !isAny(t.generalElement)
+	return t.elements != nil || !IsAny(t.generalElement)
 }
 
 func (t *Tuple) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

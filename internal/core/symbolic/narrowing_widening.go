@@ -16,7 +16,7 @@ func joinValues(values []SymbolicValue) SymbolicValue {
 
 	// if one of the value is any we just return any
 	for _, val := range values {
-		if isAny(val) {
+		if IsAny(val) {
 			return ANY
 		}
 	}

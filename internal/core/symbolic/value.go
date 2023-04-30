@@ -27,7 +27,7 @@ var (
 	FILEINFO_PROPNAMES = []string{"name", "abs-path", "size", "mode", "mod-time", "is-dir"}
 )
 
-func isAny(val SymbolicValue) bool {
+func IsAny(val SymbolicValue) bool {
 	_, ok := val.(*Any)
 	return ok
 }

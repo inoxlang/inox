@@ -267,7 +267,7 @@ func (state *State) updateLocal(name string, value SymbolicValue, node parse.Nod
 
 		widenedValue := value
 
-		for !isAny(widenedValue) && !info.static.TestValue(widenedValue) {
+		for !IsAny(widenedValue) && !info.static.TestValue(widenedValue) {
 			widenedValue = widenOrAny(widenedValue)
 		}
 
@@ -288,7 +288,7 @@ func (state *State) updateGlobal(name string, value SymbolicValue, node parse.No
 
 		widenedValue := value
 
-		for !isAny(widenedValue) && !info.static.TestValue(widenedValue) {
+		for !IsAny(widenedValue) && !info.static.TestValue(widenedValue) {
 			widenedValue = widenOrAny(widenedValue)
 		}
 
