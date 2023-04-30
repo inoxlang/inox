@@ -1954,6 +1954,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			variadicParam := n.VariadicParameter()
 			stateFork.setLocal(variadicParam.Var.Name, &List{generalElement: ANY}, nil)
 		}
+		stateFork.symbolicData.SetLocalScopeData(n.Body, stateFork.currentLocalScopeData())
 
 		//-----------------------------
 

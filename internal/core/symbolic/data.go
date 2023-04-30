@@ -144,16 +144,23 @@ func (d *SymbolicData) GetLocalScopeData(n parse.Node, ancestorChain []parse.Nod
 	if d == nil {
 		return LocalScopeData{}, false
 	}
+	var newAncestorChain []parse.Node
 
 	for {
 		scopeData, ok := d.localScopeData[n]
 		if ok {
 			return scopeData, true
 		} else {
-			n, ancestorChain, ok = parse.FindPreviousStatementAndChain(n, ancestorChain)
+			n, newAncestorChain, ok = parse.FindPreviousStatementAndChain(n, ancestorChain)
 			if !ok {
+				closestBlock, index, ok := parse.FindClosest(ancestorChain, (*parse.Block)(nil))
+				if ok && index > 0 && parse.NodeIs(ancestorChain[index-1], (*parse.FunctionExpression)(nil)) {
+					return d.GetLocalScopeData(closestBlock, ancestorChain[:index])
+				}
+
 				return LocalScopeData{}, false
 			}
+			ancestorChain = newAncestorChain
 		}
 	}
 }

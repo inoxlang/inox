@@ -2482,6 +2482,19 @@ func FindNodeAndChain[T Node](root Node, typ T, handle func(n T, isUnique bool) 
 	return found, _ancestorChain
 }
 
+func FindClosest[T Node](ancestorChain []Node, typ T) (node T, index int, ok bool) {
+	searchedType := reflect.TypeOf(typ)
+
+	for i := len(ancestorChain) - 1; i >= 0; i-- {
+		n := ancestorChain[i]
+		if reflect.TypeOf(n) == searchedType {
+			return n.(T), i, true
+		}
+	}
+
+	return reflect.Zero(searchedType).Interface().(T), -1, false
+}
+
 func FindPreviousStatement(n Node, ancestorChain []Node) (stmt Node, ok bool) {
 	stmt, _, ok = FindPreviousStatementAndChain(n, ancestorChain)
 	return
