@@ -2648,7 +2648,9 @@ func (p *parser) parseObjectPatternLiteral() *ObjectPatternLiteral {
 	var (
 		key            Node
 		keyName        string
+		keyOrVal       Node
 		implicitKey    bool
+		type_          Node
 		v              Node
 		isMissingExpr  bool
 		propSpanStart  int32
@@ -2712,9 +2714,11 @@ object_pattern_top_loop:
 		} else {
 
 			key, isMissingExpr = p.parseExpression()
+			keyOrVal = key
 
 			//if missing expression we report an error and we continue the main loop
 			if isMissingExpr {
+				propParsingErr = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInObjectPattern(p.s[p.i])}
 				entryTokens = append(entryTokens, Token{Type: UNEXPECTED_CHAR, Raw: string(p.s[p.i]), Span: NodeSpan{p.i, p.i + 1}})
 
 				p.i++
@@ -2746,6 +2750,7 @@ object_pattern_top_loop:
 					keyName = k.Value
 				default:
 					implicitKey = true
+					propParsingErr = &ParsingError{UnspecifiedParsingError, IMPLICIT_KEY_PROPS_ARE_NOT_ALLOWED_IN_OBJECT_PATTERNS}
 					keyName = strconv.Itoa(unamedPropCount)
 					v = key
 					propSpanEnd = v.Base().Span.End
@@ -2754,32 +2759,119 @@ object_pattern_top_loop:
 			}
 
 			p.eatSpace()
-
-			if p.i < p.len {
-				if p.s[p.i] == ':' {
-					if implicitKey {
-						propParsingErr = &ParsingError{UnspecifiedParsingError, fmtOnlyIdentsAndStringsValidObjKeysNot(key)}
-					} else {
-						entryTokens = append(entryTokens, Token{Type: COLON, Span: NodeSpan{p.i, p.i + 1}})
-						p.i++
-						p.eatSpace()
-					}
-
-					if p.i < p.len-1 && p.s[p.i] == '#' && IsCommentFirstSpace(p.s[p.i+1]) {
-						p.eatSpaceNewlineComment(&entryTokens)
-						propParsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidObjKeyCommentBeforeValueOfKey(keyName)}
-					}
-				} else if !implicitKey {
-					propParsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidObjKeyMissingColonAfterKey(keyName)}
-				} else if !isValidEntryEnd(p.s, p.i) {
-					propParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_OBJ_LIT_ENTRY_SEPARATION}
-				}
-			} else if !implicitKey {
-				propParsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidObjKeyMissingColonAfterKey(keyName)}
+			if p.i >= p.len {
+				break object_pattern_top_loop
 			}
 
-			//explicit key
-			if !implicitKey {
+			switch {
+			case isValidEntryEnd(p.s, p.i):
+				implicitKey = true
+				if propParsingErr == nil {
+					propParsingErr = &ParsingError{UnspecifiedParsingError, IMPLICIT_KEY_PROPS_ARE_NOT_ALLOWED_IN_OBJECT_PATTERNS}
+				}
+				properties = append(properties, &ObjectProperty{
+					NodeBase: NodeBase{
+						Span:            NodeSpan{propSpanStart, p.i},
+						Err:             propParsingErr,
+						ValuelessTokens: entryTokens,
+					},
+					Value: keyOrVal,
+				})
+				goto step_end
+			case p.s[p.i] == ':':
+				goto at_colon
+			case p.s[p.i] == '%': // type annotation
+				switch {
+				case implicitKey: // implicit key properties cannot be annotated
+					if propParsingErr == nil {
+						propParsingErr = &ParsingError{UnspecifiedParsingError, ONLY_EXPLICIT_KEY_CAN_HAVE_A_TYPE_ANNOT}
+					}
+					implicitKey = true
+					type_ = p.parsePercentPrefixedPattern()
+					propSpanEnd = type_.Base().Span.End
+
+					properties = append(properties, &ObjectProperty{
+						NodeBase: NodeBase{
+							Span:            NodeSpan{propSpanStart, propSpanEnd},
+							Err:             propParsingErr,
+							ValuelessTokens: entryTokens,
+						},
+						Value: keyOrVal,
+						Type:  type_,
+					})
+
+					goto step_end
+				default: //explicit key property
+				}
+
+				type_ = p.parsePercentPrefixedPattern()
+				propSpanEnd = type_.Base().Span.End
+
+				p.eatSpace()
+				if p.i >= p.len {
+					break object_pattern_top_loop
+				}
+
+				goto explicit_key
+			default:
+
+			}
+
+			// if meta property we add an error
+			if IsMetadataKey(keyName) && propParsingErr == nil {
+				propParsingErr = &ParsingError{UnspecifiedParsingError, METAPROPS_ARE_NOT_ALLOWED_IN_OBJECT_PATTERNS}
+			}
+
+			if implicitKey { // implicit key property not followed by a valid entry end
+				if propParsingErr == nil {
+					propParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION}
+				}
+				properties = append(properties, &ObjectProperty{
+					NodeBase: NodeBase{
+						Span:            NodeSpan{propSpanStart, p.i},
+						Err:             propParsingErr,
+						ValuelessTokens: entryTokens,
+					},
+					Value: keyOrVal,
+				})
+				goto step_end
+			}
+
+		explicit_key:
+			if p.s[p.i] != ':' { //we add the property and we keep the current character for the next iteration step
+				if type_ == nil {
+					propParsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidObjPatternKeyMissingColonAfterKey(keyName)}
+				} else {
+					propParsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidObjKeyMissingColonAfterTypeAnnotation(keyName)}
+				}
+				properties = append(properties, &ObjectProperty{
+					NodeBase: NodeBase{
+						Span:            NodeSpan{propSpanStart, p.i},
+						Err:             propParsingErr,
+						ValuelessTokens: entryTokens,
+					},
+					Key:  key,
+					Type: type_,
+				})
+				goto step_end
+			}
+
+		at_colon:
+			{
+				if implicitKey {
+					propParsingErr = &ParsingError{UnspecifiedParsingError, fmtOnlyIdentsAndStringsValidObjPatternKeysNot(key)}
+					implicitKey = false
+				}
+
+				entryTokens = append(entryTokens, Token{Type: COLON, Span: NodeSpan{p.i, p.i + 1}})
+				p.i++
+				p.eatSpace()
+
+				if p.i < p.len-1 && p.s[p.i] == '#' && IsCommentFirstSpace(p.s[p.i+1]) {
+					p.eatSpaceNewlineComment(&entryTokens)
+					propParsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidObjPatternKeyCommentBeforeValueOfKey(keyName)}
+				}
+
 				p.eatSpace()
 
 				if p.i >= p.len || p.s[p.i] == '}' {
@@ -2795,33 +2887,42 @@ object_pattern_top_loop:
 				propSpanEnd = p.i
 
 				if isMissingExpr {
-					propParsingErr = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInObject(p.s[p.i])}
-					entryTokens = append(entryTokens, Token{Type: UNEXPECTED_CHAR, Raw: string(p.s[p.i]), Span: NodeSpan{p.i, p.i + 1}})
-					p.i++
+					if p.i < p.len {
+						propParsingErr = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInObjectPattern(p.s[p.i])}
+						entryTokens = append(entryTokens, Token{Type: UNEXPECTED_CHAR, Raw: string(p.s[p.i]), Span: NodeSpan{p.i, p.i + 1}})
+						p.i++
+					} else {
+						v = nil
+					}
 				}
 
 				p.eatSpace()
 
 				if !isMissingExpr && p.i < p.len && !isValidEntryEnd(p.s, p.i) {
-					propParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_OBJ_LIT_ENTRY_SEPARATION}
+					propParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION}
 				}
+
+				properties = append(properties, &ObjectProperty{
+					NodeBase: NodeBase{
+						Span:            NodeSpan{propSpanStart, propSpanEnd},
+						Err:             propParsingErr,
+						ValuelessTokens: entryTokens,
+					},
+					Key:   key,
+					Type:  type_,
+					Value: v,
+				})
 			}
 
-			properties = append(properties, &ObjectProperty{
-				NodeBase: NodeBase{
-					Span:            NodeSpan{propSpanStart, propSpanEnd},
-					Err:             propParsingErr,
-					ValuelessTokens: entryTokens,
-				},
-				Key:   key,
-				Value: v,
-			})
+		step_end:
+			keyName = ""
+			key = nil
+			keyOrVal = nil
+			v = nil
+			implicitKey = false
+			type_ = nil
+			p.eatSpaceNewlineCommaComment(&tokens)
 		}
-
-		keyName = ""
-		key = nil
-		implicitKey = false
-		p.eatSpaceNewlineCommaComment(&tokens)
 	}
 
 	if !implicitKey && keyName != "" || (keyName == "" && key != nil) {
@@ -2838,7 +2939,7 @@ object_pattern_top_loop:
 	}
 
 	if p.i >= p.len {
-		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_MISSING_CLOSING_BRACE}
+		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_PATTERN_MISSING_CLOSING_BRACE}
 	} else {
 		tokens = append(tokens, Token{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 		p.i++
@@ -2989,7 +3090,7 @@ object_literal_top_loop:
 			p.eatSpace()
 
 			if p.i < p.len && !isValidEntryEnd(p.s, p.i) {
-				propParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_OBJ_LIT_ENTRY_SEPARATION}
+				propParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION}
 			}
 
 			spreadElements = append(spreadElements, &PropertySpreadElement{
@@ -3009,7 +3110,7 @@ object_literal_top_loop:
 
 		//if missing expression we report an error and we continue the main loop
 		if isMissingExpr {
-			propParsingErr = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInObject(p.s[p.i])}
+			propParsingErr = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInObjectRecord(p.s[p.i])}
 			entryTokens = append(entryTokens, Token{Type: UNEXPECTED_CHAR, Raw: string(p.s[p.i]), Span: NodeSpan{p.i, p.i + 1}})
 
 			p.i++
@@ -3152,7 +3253,7 @@ object_literal_top_loop:
 
 		if implicitKey { // implicit key property not followed by a valid entry end
 			if propParsingErr == nil {
-				propParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_OBJ_LIT_ENTRY_SEPARATION}
+				propParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION}
 			}
 			properties = append(properties, &ObjectProperty{
 				NodeBase: NodeBase{
@@ -3169,7 +3270,7 @@ object_literal_top_loop:
 
 		if p.s[p.i] != ':' { //we add the property and we keep the current character for the next iteration step
 			if type_ == nil {
-				propParsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidObjKeyMissingColonAfterKey(keyName)}
+				propParsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidObjRecordKeyMissingColonAfterKey(keyName)}
 			} else {
 				propParsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidObjKeyMissingColonAfterTypeAnnotation(keyName)}
 			}
@@ -3188,7 +3289,7 @@ object_literal_top_loop:
 	at_colon:
 		{
 			if implicitKey {
-				propParsingErr = &ParsingError{UnspecifiedParsingError, fmtOnlyIdentsAndStringsValidObjKeysNot(key)}
+				propParsingErr = &ParsingError{UnspecifiedParsingError, fmtOnlyIdentsAndStringsValidObjRecordKeysNot(key)}
 				implicitKey = false
 			}
 
@@ -3198,7 +3299,7 @@ object_literal_top_loop:
 
 			if p.i < p.len-1 && p.s[p.i] == '#' && IsCommentFirstSpace(p.s[p.i+1]) {
 				p.eatSpaceNewlineComment(&entryTokens)
-				propParsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidObjKeyCommentBeforeValueOfKey(keyName)}
+				propParsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidObjRecordKeyCommentBeforeValueOfKey(keyName)}
 			}
 
 			p.eatSpace()
@@ -3217,7 +3318,7 @@ object_literal_top_loop:
 
 			if isMissingExpr {
 				if p.i < p.len {
-					propParsingErr = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInObject(p.s[p.i])}
+					propParsingErr = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInObjectRecord(p.s[p.i])}
 					entryTokens = append(entryTokens, Token{Type: UNEXPECTED_CHAR, Raw: string(p.s[p.i]), Span: NodeSpan{p.i, p.i + 1}})
 					p.i++
 				} else {
@@ -3228,7 +3329,7 @@ object_literal_top_loop:
 			p.eatSpace()
 
 			if !isMissingExpr && p.i < p.len && !isValidEntryEnd(p.s, p.i) {
-				propParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_OBJ_LIT_ENTRY_SEPARATION}
+				propParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION}
 			}
 
 			properties = append(properties, &ObjectProperty{
@@ -3267,7 +3368,7 @@ object_literal_top_loop:
 	}
 
 	if p.i >= p.len {
-		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_MISSING_CLOSING_BRACE}
+		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_REC_MISSING_CLOSING_BRACE}
 	} else {
 		tokens = append(tokens, Token{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 		p.i++

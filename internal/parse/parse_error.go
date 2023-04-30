@@ -90,7 +90,6 @@ const (
 	ONLY_IDENTS_AND_STRINGS_VALID_OBJ_PATT_KEYS                          = "Only identifiers and strings are valid object pattern keys"
 	INVALID_PATT_UNION_ELEMENT_SEPARATOR_EXPLANATION                     = "invalid pattern union : elements should be separated by '|'"
 	INVALID_PATTERN_INVALID_OCCURENCE_COUNT                              = "invalid pattern: invalid exact ocurrence count"
-	UNTERMINATED_OBJ_MISSING_CLOSING_BRACE                               = "unterminated object literal, missing closing brace '}'"
 	UNTERMINATED_DICT_MISSING_CLOSING_BRACE                              = "unterminated dictionary literal, missing closing brace '}'"
 	INVALID_DICT_KEY_ONLY_SIMPLE_VALUE_LITS                              = "invalid key for dictionary literal, only simple value literals are allowed"
 	UNTERMINATED_PATT_UNTERMINATED_EXACT_OCURRENCE_COUNT                 = "unterminated pattern: unterminated exact ocurrence count: missing count after '='"
@@ -320,11 +319,18 @@ const (
 	UNTERMINATED_SYNCHRONIZED_MISSING_BLOCK                = "unterminated synchronized block: missing block"
 
 	//object literals
-	INVALID_OBJ_LIT_ENTRY_SEPARATION        = "invalid object literal, each entry should be followed by '}', newline, or ','."
-	INVALID_OBJ_LIT_SPREAD_SEPARATION       = "invalid object literal, a spread should be followed by '}', newline or ','."
-	UNEXPECTED_NEWLINE_AFTER_COLON          = "unexpected newline after colon"
-	ONLY_EXPLICIT_KEY_CAN_HAVE_A_TYPE_ANNOT = "only explicit keys can have a type annotation"
-	METAPROP_KEY_CANNOT_HAVE_A_TYPE_ANNOT   = "metaproperty keys cannot have a type annotation"
+	INVALID_OBJ_REC_LIT_ENTRY_SEPARATION       = "invalid object/record literal, each entry should be followed by '}', newline, or ','."
+	INVALID_OBJ_REC_LIT_SPREAD_SEPARATION      = "invalid object/record literal, a spread should be followed by '}', newline or ','."
+	UNEXPECTED_NEWLINE_AFTER_COLON             = "unexpected newline after colon"
+	ONLY_EXPLICIT_KEY_CAN_HAVE_A_TYPE_ANNOT    = "only explicit keys can have a type annotation"
+	METAPROP_KEY_CANNOT_HAVE_A_TYPE_ANNOT      = "metaproperty keys cannot have a type annotation"
+	UNTERMINATED_OBJ_REC_MISSING_CLOSING_BRACE = "unterminated object/record literal, missing closing brace '}'"
+
+	//object pattern literals
+	INVALID_OBJ_PATT_LIT_ENTRY_SEPARATION                 = "invalid object pattern literal, each entry should be followed by '}', newline, or ','."
+	METAPROPS_ARE_NOT_ALLOWED_IN_OBJECT_PATTERNS          = "metaproperties are not allowed in object patterns"
+	IMPLICIT_KEY_PROPS_ARE_NOT_ALLOWED_IN_OBJECT_PATTERNS = "implicit-key properties are not allowed in object patterns"
+	UNTERMINATED_OBJ_PATTERN_MISSING_CLOSING_BRACE        = "unterminated object pattern literal, missing closing brace '}'"
 
 	INVALID_DICT_LIT_ENTRY_SEPARATION                     = "invalid dictionary literal, each entry should be followed by '}', newline, or ','."
 	UNTERMINATED_IF_STMT_MISSING_BLOCK_AFTER_ELSE         = "unterminated if statement, missing block after 'else'"
@@ -340,12 +346,20 @@ func fmtInvalidRegexLiteral(err string) string {
 	return fmt.Sprintf("invalid regex literal: %s", err)
 }
 
-func fmtOnlyIdentsAndStringsValidObjKeysNot(v Node) string {
+func fmtOnlyIdentsAndStringsValidObjRecordKeysNot(v Node) string {
 	var s string
 	if lit, ok := v.(*UnquotedStringLiteral); ok {
 		s = "(" + lit.Value + ")"
 	}
-	return fmt.Sprintf("Only identifiers and strings are valid object literal keys, not a(n) %T %s", v, s)
+	return fmt.Sprintf("Only identifiers and strings are valid object/record literal keys, not a(n) %T %s", v, s)
+}
+
+func fmtOnlyIdentsAndStringsValidObjPatternKeysNot(v Node) string {
+	var s string
+	if lit, ok := v.(*UnquotedStringLiteral); ok {
+		s = "(" + lit.Value + ")"
+	}
+	return fmt.Sprintf("Only identifiers and strings are valid object pattern literal keys, not a(n) %T %s", v, s)
 }
 
 func fmtPrefixPattCannotContainGlobbingPattern(value string) string {
@@ -362,15 +376,24 @@ func fmtAPatternWasExpected(s []rune, i int32) string {
 	return fmt.Sprintf("a pattern was expected: ...%s<<here>>", before)
 }
 
-func fmtInvalidObjKeyMissingColonAfterKey(lastKeyName string) string {
-	return fmt.Sprintf("invalid object literal, missing colon after key '%s'", lastKeyName)
+func fmtInvalidObjRecordKeyMissingColonAfterKey(lastKeyName string) string {
+	return fmt.Sprintf("invalid object/record literal, missing colon after key '%s'", lastKeyName)
 }
+
+func fmtInvalidObjPatternKeyMissingColonAfterKey(lastKeyName string) string {
+	return fmt.Sprintf("invalid object pattern literal, missing colon after key '%s'", lastKeyName)
+}
+
 func fmtInvalidObjKeyMissingColonAfterTypeAnnotation(lastKeyName string) string {
 	return fmt.Sprintf("invalid object literal, missing colon after type annotation for key '%s'", lastKeyName)
 }
 
-func fmtInvalidObjKeyCommentBeforeValueOfKey(lastKeyName string) string {
-	return fmt.Sprintf("invalid object literal, comment before value of key '%s'", lastKeyName)
+func fmtInvalidObjRecordKeyCommentBeforeValueOfKey(lastKeyName string) string {
+	return fmt.Sprintf("invalid object/record literal, comment before value of key '%s'", lastKeyName)
+}
+
+func fmtInvalidObjPatternKeyCommentBeforeValueOfKey(lastKeyName string) string {
+	return fmt.Sprintf("invalid object pattern literal, comment before value of key '%s'", lastKeyName)
 }
 
 func fmtInvalidURIUnsupportedProtocol(protocol string) string {
@@ -512,8 +535,12 @@ func fmtUnexpectedCharInDictionary(r rune) string {
 	return fmt.Sprintf("unexpected char %s in dictionary", fmtRuneInfo(r))
 }
 
-func fmtUnexpectedCharInObject(r rune) string {
-	return fmt.Sprintf("unexpected char %s in object", fmtRuneInfo(r))
+func fmtUnexpectedCharInObjectRecord(r rune) string {
+	return fmt.Sprintf("unexpected char %s in object/record", fmtRuneInfo(r))
+}
+
+func fmtUnexpectedCharInObjectPattern(r rune) string {
+	return fmt.Sprintf("unexpected char %s in object pattern", fmtRuneInfo(r))
 }
 
 func fmtUnexpectedCharInSwitchOrMatchStatement(r rune) string {

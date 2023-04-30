@@ -6439,7 +6439,7 @@ func TestParse(t *testing.T) {
 						&ObjectLiteral{
 							NodeBase: NodeBase{
 								NodeSpan{0, 1},
-								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_MISSING_CLOSING_BRACE},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_REC_MISSING_CLOSING_BRACE},
 								[]Token{
 									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{0, 1}},
 								},
@@ -6458,7 +6458,7 @@ func TestParse(t *testing.T) {
 						&ObjectLiteral{
 							NodeBase: NodeBase{
 								NodeSpan{0, 2},
-								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_MISSING_CLOSING_BRACE},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_REC_MISSING_CLOSING_BRACE},
 								[]Token{
 									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{0, 1}},
 								},
@@ -6629,7 +6629,7 @@ func TestParse(t *testing.T) {
 						&ObjectLiteral{
 							NodeBase: NodeBase{
 								NodeSpan{0, 3},
-								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_MISSING_CLOSING_BRACE},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_REC_MISSING_CLOSING_BRACE},
 								[]Token{
 									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{0, 1}},
 									{Type: NEWLINE, Span: NodeSpan{2, 3}},
@@ -6850,7 +6850,7 @@ func TestParse(t *testing.T) {
 								{
 									NodeBase: NodeBase{
 										NodeSpan{2, 19},
-										&ParsingError{UnspecifiedParsingError, fmtInvalidObjKeyCommentBeforeValueOfKey("a")},
+										&ParsingError{UnspecifiedParsingError, fmtInvalidObjRecordKeyCommentBeforeValueOfKey("a")},
 										[]Token{
 											{Type: COLON, Span: NodeSpan{4, 5}},
 											{Type: COMMENT, Span: NodeSpan{6, 16}, Raw: "# comment "},
@@ -6911,7 +6911,7 @@ func TestParse(t *testing.T) {
 						&ObjectLiteral{
 							NodeBase: NodeBase{
 								NodeSpan{0, 2},
-								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_MISSING_CLOSING_BRACE},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_REC_MISSING_CLOSING_BRACE},
 								[]Token{
 									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{0, 1}},
 								},
@@ -6940,7 +6940,7 @@ func TestParse(t *testing.T) {
 						&ObjectLiteral{
 							NodeBase: NodeBase{
 								NodeSpan{0, 3},
-								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_MISSING_CLOSING_BRACE},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_REC_MISSING_CLOSING_BRACE},
 								[]Token{
 									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{0, 1}},
 								},
@@ -6969,7 +6969,7 @@ func TestParse(t *testing.T) {
 						&ObjectLiteral{
 							NodeBase: NodeBase{
 								NodeSpan{0, 3},
-								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_MISSING_CLOSING_BRACE},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_REC_MISSING_CLOSING_BRACE},
 								[]Token{
 									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{0, 1}},
 									{Type: NEWLINE, Span: NodeSpan{1, 2}},
@@ -6999,7 +6999,7 @@ func TestParse(t *testing.T) {
 						&ObjectLiteral{
 							NodeBase: NodeBase{
 								NodeSpan{0, 3},
-								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_MISSING_CLOSING_BRACE},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_REC_MISSING_CLOSING_BRACE},
 								[]Token{
 									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{0, 1}},
 									{Type: NEWLINE, Span: NodeSpan{2, 3}},
@@ -7114,7 +7114,7 @@ func TestParse(t *testing.T) {
 								{
 									NodeBase: NodeBase{
 										NodeSpan{2, 4},
-										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_LIT_ENTRY_SEPARATION},
+										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION},
 										nil,
 									},
 									Key: nil,
@@ -7157,7 +7157,7 @@ func TestParse(t *testing.T) {
 								{
 									NodeBase: NodeBase{
 										NodeSpan{2, 7},
-										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_LIT_ENTRY_SEPARATION},
+										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION},
 										[]Token{{Type: COLON, Span: NodeSpan{4, 5}}},
 									},
 									Key: &IdentifierLiteral{
@@ -7554,7 +7554,7 @@ func TestParse(t *testing.T) {
 								{
 									NodeBase: NodeBase{
 										NodeSpan{2, 15},
-										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_LIT_ENTRY_SEPARATION},
+										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION},
 										[]Token{{Type: THREE_DOTS, Span: NodeSpan{2, 5}}},
 									},
 									Expr: &ExtractionExpression{
@@ -8034,7 +8034,7 @@ func TestParse(t *testing.T) {
 								{
 									NodeBase: NodeBase{
 										NodeSpan{3, 20},
-										&ParsingError{UnspecifiedParsingError, fmtInvalidObjKeyCommentBeforeValueOfKey("a")},
+										&ParsingError{UnspecifiedParsingError, fmtInvalidObjRecordKeyCommentBeforeValueOfKey("a")},
 										[]Token{
 											{Type: COLON, Span: NodeSpan{5, 6}},
 											{Type: COMMENT, Span: NodeSpan{7, 17}, Raw: "# comment "},
@@ -8142,7 +8142,7 @@ func TestParse(t *testing.T) {
 								{
 									NodeBase: NodeBase{
 										NodeSpan{3, 5},
-										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_LIT_ENTRY_SEPARATION},
+										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION},
 										nil,
 									},
 									Key: nil,
@@ -8185,7 +8185,7 @@ func TestParse(t *testing.T) {
 								{
 									NodeBase: NodeBase{
 										NodeSpan{3, 8},
-										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_LIT_ENTRY_SEPARATION},
+										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION},
 										[]Token{{Type: COLON, Span: NodeSpan{5, 6}}},
 									},
 									Key: &IdentifierLiteral{
@@ -8544,7 +8544,7 @@ func TestParse(t *testing.T) {
 								{
 									NodeBase: NodeBase{
 										NodeSpan{3, 16},
-										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_LIT_ENTRY_SEPARATION},
+										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION},
 										[]Token{{Type: THREE_DOTS, Span: NodeSpan{3, 6}}},
 									},
 									Expr: &ExtractionExpression{
