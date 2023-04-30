@@ -14902,6 +14902,34 @@ func TestParse(t *testing.T) {
 				},
 			}, n)
 		})
+
+		t.Run("spread element", func(t *testing.T) {
+			n := MustParseChunk(`concat ...a`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
+				Statements: []Node{
+					&ConcatenationExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 11},
+							nil,
+							[]Token{{Type: CONCAT_KEYWORD, Span: NodeSpan{0, 6}}},
+						},
+						Elements: []Node{
+							&ElementSpreadElement{
+								NodeBase: NodeBase{
+									Span:            NodeSpan{7, 11},
+									ValuelessTokens: []Token{{Type: THREE_DOTS, Span: NodeSpan{7, 10}}},
+								},
+								Expr: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{10, 11}},
+									Name:     "a",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("pattern identifier literal", func(t *testing.T) {

@@ -6628,7 +6628,28 @@ func (p *parser) parseConcatenationExpression(concatIdent Node, precededByOpenin
 	p.eatSpace()
 
 	for p.i < p.len && !isUnpairedOrIsClosingDelim(p.s[p.i]) {
-		elem, _ := p.parseExpression()
+
+		var elem Node
+
+		//spread element
+		if p.i < p.len-2 && p.s[p.i] == '.' && p.s[p.i+1] == '.' && p.s[p.i+2] == '.' {
+			spreadStart := p.i
+			threeDotsSpan := NodeSpan{p.i, p.i + 3}
+			p.i += 3
+
+			e, _ := p.parseExpression()
+
+			elem = &ElementSpreadElement{
+				NodeBase: NodeBase{
+					Span:            NodeSpan{spreadStart, e.Base().Span.End},
+					ValuelessTokens: []Token{{Type: THREE_DOTS, Span: threeDotsSpan}},
+				},
+				Expr: e,
+			}
+
+		} else {
+			elem, _ = p.parseExpression()
+		}
 
 		elements = append(elements, elem)
 		if precededByOpeningParen {
