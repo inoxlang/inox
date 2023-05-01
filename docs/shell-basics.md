@@ -7,8 +7,7 @@ inox
 
 Note: the `inox shell` command can also be used.
 
-Before starting the shell ``inox`` will execute the startup script `~/.config/inox/startup.ix` (or $XDG_CONFIG_HOME/inox/startup.ix) and grant the required permissions by the script to the shell.\
-No additional permissions will be granted. You can modify the startup script in `.config/inox` if you need more permissions.
+Before starting the shell ``inox`` will execute the startup script `~/.config/inox/startup.ix` (or $XDG_CONFIG_HOME/inox/startup.ix) and grant the required permissions by the script to the shell.
 
 - [Pseudo commands](#pseudo-commands-quit-clear)
 - [Syntax](#syntax)
@@ -28,7 +27,7 @@ No additional permissions will be granted. You can modify the startup script in 
   - [Update](#update)
   - [Delete](#update)
   - [Find](#find)
-  - [Shell configuration](#configuration)
+- [Shell configuration](#configuration)
 
 ## Pseudo commands (quit, clear)
 
@@ -97,8 +96,6 @@ Pipe expressions allows you to store the final result in a variable:
 ```
 ints = | map [{value: "a"}, {value: 1}] .value | filter $ %int
 ```
-
-### 
 
 ### Help
 
@@ -235,7 +232,7 @@ find %./**/*.json ./
 ## Configuration
 
 The startup script `~/.config/inox/startup.ix` (or $XDG_CONFIG_HOME/inox/startup.ix) is executed before the shell is started,
-it returns the configuration for the shell.
+it returns the configuration for the shell. You can modify this file if you need more permissions.
 
 The startup script can be specificied using the `-c` flag:
 ```
