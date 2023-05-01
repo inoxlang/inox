@@ -714,6 +714,9 @@ func NewUnitializedObject() *Object {
 }
 
 func InitializeObject(obj *Object, entries map[string]SymbolicValue, static map[string]Pattern) {
+	if obj.entries != nil {
+		panic(errors.New("object is already initialized"))
+	}
 	obj.entries = entries
 	obj.static = static
 }

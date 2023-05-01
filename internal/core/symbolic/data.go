@@ -15,7 +15,8 @@ var (
 
 // SymbolicData represents the data produced by the symbolic execution of an AST.
 type SymbolicData struct {
-	nodeMap                  map[parse.Node]SymbolicValue
+	primaryNodeValues        map[parse.Node]SymbolicValue
+	secondaryNodeValues      map[parse.Node]SymbolicValue
 	localScopeData           map[parse.Node]LocalScopeData
 	runtimeTypeCheckPatterns map[parse.Node]any //concrete Pattern or nil (nil means the check is disabled)
 	errors                   []SymbolicEvaluationError
@@ -23,14 +24,15 @@ type SymbolicData struct {
 
 func NewSymbolicData() *SymbolicData {
 	return &SymbolicData{
-		nodeMap:                  make(map[parse.Node]SymbolicValue, 0),
+		primaryNodeValues:        make(map[parse.Node]SymbolicValue, 0),
+		secondaryNodeValues:      make(map[parse.Node]SymbolicValue, 0),
 		localScopeData:           make(map[parse.Node]LocalScopeData),
 		runtimeTypeCheckPatterns: make(map[parse.Node]any, 0),
 	}
 }
 
 func (data *SymbolicData) IsEmpty() bool {
-	return len(data.nodeMap) == 0 && len(data.errors) == 0
+	return len(data.primaryNodeValues) == 0 && len(data.errors) == 0
 }
 
 func (data *SymbolicData) SetNodeValue(node parse.Node, v SymbolicValue) {
@@ -38,18 +40,54 @@ func (data *SymbolicData) SetNodeValue(node parse.Node, v SymbolicValue) {
 		return
 	}
 
-	_, ok := data.nodeMap[node]
+	_, ok := data.primaryNodeValues[node]
 	if ok {
-		//data.nodeMap[node] = ANY
+		//TODO:
+		//panic(errors.New("node value already set"))
 		return
 	}
 
-	data.nodeMap[node] = v
+	data.primaryNodeValues[node] = v
 }
 
 func (data *SymbolicData) GetNodeValue(node parse.Node) (SymbolicValue, bool) {
-	v, ok := data.nodeMap[node]
+	v, ok := data.primaryNodeValues[node]
 	return v, ok
+}
+
+func (data *SymbolicData) SetSecondaryNodeValue(node parse.Node, v SymbolicValue) {
+	if data == nil {
+		return
+	}
+
+	_, ok := data.secondaryNodeValues[node]
+	if ok {
+		//TODO:
+		//panic(errors.New("secondary node value already set"))
+		return
+	}
+
+	data.secondaryNodeValues[node] = v
+}
+
+func (data *SymbolicData) GetSecondaryNodeValue(node parse.Node) (SymbolicValue, bool) {
+	v, ok := data.secondaryNodeValues[node]
+	return v, ok
+}
+
+func (data *SymbolicData) PushNodeValue(node parse.Node, v SymbolicValue) {
+	if data == nil {
+		return
+	}
+
+	prev, ok := data.primaryNodeValues[node]
+	if ok {
+		data.primaryNodeValues[node] = v
+		data.SetSecondaryNodeValue(node, prev)
+		return
+	}
+
+	data.primaryNodeValues[node] = v
 }
 
 func (data *SymbolicData) SetRuntimeTypecheckPattern(node parse.Node, pattern any) {
@@ -75,8 +113,12 @@ func (data *SymbolicData) Errors() []SymbolicEvaluationError {
 }
 
 func (data *SymbolicData) AddData(newData *SymbolicData) {
-	for k, v := range newData.nodeMap {
+	for k, v := range newData.primaryNodeValues {
 		data.SetNodeValue(k, v)
+	}
+
+	for k, v := range newData.secondaryNodeValues {
+		data.SetSecondaryNodeValue(k, v)
 	}
 
 	for k, v := range newData.localScopeData {

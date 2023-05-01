@@ -27,11 +27,6 @@ var (
 	FILEINFO_PROPNAMES = []string{"name", "abs-path", "size", "mode", "mod-time", "is-dir"}
 )
 
-func IsAny(val SymbolicValue) bool {
-	_, ok := val.(*Any)
-	return ok
-}
-
 // A SymbolicValue represents a Value during symbolic evaluation, its underyling data should be immutable.
 type SymbolicValue interface {
 	Test(v SymbolicValue) bool
@@ -45,6 +40,15 @@ type SymbolicValue interface {
 	WidestOfType() SymbolicValue
 
 	PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int)
+}
+
+func IsAny(val SymbolicValue) bool {
+	_, ok := val.(*Any)
+	return ok
+}
+
+func deeplyEqual(v1, v2 SymbolicValue) bool {
+	return v1.Test(v2) && v2.Test(v1)
 }
 
 type PseudoPropsValue interface {
@@ -579,41 +583,6 @@ func GetGoMethodOrPanic(name string, v GoValue) SymbolicValue {
 	}
 	return method
 }
-
-// An Function represents a symbolic function we do not know the concrete type.
-type Function struct {
-	pattern *FunctionPattern
-}
-
-func (r *Function) Test(v SymbolicValue) bool {
-	switch v.(type) {
-	case *Function, *GoFunction, *InoxFunction:
-		return r.pattern.TestValue(v)
-	default:
-		return false
-	}
-}
-
-func (r *Function) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (r *Function) IsWidenable() bool {
-	return false
-}
-
-func (r *Function) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%function")))
-	return
-}
-
-func (r *Function) WidestOfType() SymbolicValue {
-	return &Function{
-		pattern: (&FunctionPattern{}).WidestOfType().(*FunctionPattern),
-	}
-}
-
-//
 
 type Bytecode struct {
 	Bytecode any //if nil, any function is matched

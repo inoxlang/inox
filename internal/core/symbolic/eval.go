@@ -2016,14 +2016,14 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			node:           n,
 			parameters:     params,
 			parameterNames: paramNames,
-			returnType:     storedReturnType,
+			result:         storedReturnType,
 			capturedLocals: capturedLocals,
 		}, nil
 	case *parse.FunctionDeclaration:
 		funcName := n.Name.Name
 
 		//declare the function before checking it
-		state.setGlobal(funcName, &InoxFunction{node: n.Function, returnType: ANY}, GlobalConst)
+		state.setGlobal(funcName, &InoxFunction{node: n.Function, result: ANY}, GlobalConst)
 		v, err := symbolicEval(n.Function, state)
 		if err == nil {
 			state.overrideGlobal(funcName, v)
@@ -2819,15 +2819,14 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		err    error
 		self   *Object
 	)
-	//we first get the callee
 
+	//we first get the callee
 	switch c := calleeNode.(type) {
 	case *parse.IdentifierLiteral, *parse.IdentifierMemberExpression, *parse.Variable, *parse.MemberExpression:
 		callee, err = symbolicEval(callNode.Callee, state)
 		if err != nil {
 			return nil, err
 		}
-		state.symbolicData.SetNodeValue(callNode.Callee, callee)
 	case *parse.FunctionDeclaration, *parse.FunctionExpression:
 		callee = &AstNode{Node: c}
 	default:
@@ -2842,14 +2841,13 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		if isSharedFunction {
 			extState = inoxFn.originState
 		}
-
 	} else if goFn, ok := callee.(*GoFunction); ok {
 		isSharedFunction = goFn.IsShared()
 		if isSharedFunction {
 			extState = goFn.originState
 		}
 	} else if _, ok := callee.(*Function); ok {
-		// ok
+		//ok
 	} else {
 		state.addError(makeSymbolicEvalError(callNode, state, fmtCannotCall(callee)))
 		return ANY, nil
@@ -2942,7 +2940,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 	case *GoFunction:
 		//GO FUNCTION
 
-		result, err := f.Call(goFunctionCallInput{
+		result, multipleResults, err := f.Call(goFunctionCallInput{
 			symbolicArgs:      args,
 			nonSpreadArgCount: nonSpreadArgCount,
 			hasSpreadArg:      hasSpreadArg,
@@ -2956,6 +2954,27 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		state.consumeSymbolicGoFunctionErrors(func(msg string) {
 			state.addError(makeSymbolicEvalError(callNode, state, msg))
 		})
+
+		if f.fn != nil {
+			utils.PanicIfErr(f.LoadSignatureData())
+			params, ok := state.consumeSymbolicGoFunctionParameters()
+			if !ok {
+				params = f.ParametersExceptCtx()
+			}
+
+			function := &Function{
+				parameters: params,
+				variadic:   f.isVariadic,
+			}
+
+			if list, ok := result.(*List); ok && multipleResults {
+				function.results = list.elements
+			} else {
+				function.results = []SymbolicValue{result}
+			}
+
+			state.symbolicData.PushNodeValue(calleeNode, function)
+		}
 
 		return result, err
 	}

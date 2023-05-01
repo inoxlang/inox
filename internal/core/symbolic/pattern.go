@@ -1931,7 +1931,7 @@ func (pattern *FunctionPattern) TestValue(v SymbolicValue) bool {
 			}
 		}
 
-		return pattern.returnType.Test(fn.returnType)
+		return pattern.returnType.Test(fn.result)
 	default:
 		return false
 	}

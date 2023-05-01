@@ -280,7 +280,7 @@ func TestSymbolicEval(t *testing.T) {
 				node:           fnExpr,
 				parameters:     []SymbolicValue{argType},
 				parameterNames: []string{"v"},
-				returnType:     argType,
+				result:         argType,
 			}
 			assert.Equal(t, expectedFn, res)
 		})
@@ -765,7 +765,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
-			assert.Equal(t, &Int{}, res.(*InoxFunction).returnType)
+			assert.Equal(t, &Int{}, res.(*InoxFunction).result)
 		})
 
 		t.Run("multivalue: 2 objects with different property type", func(t *testing.T) {
@@ -777,7 +777,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
-			assert.Equal(t, NewMultivalue(&Int{}, &String{}), res.(*InoxFunction).returnType)
+			assert.Equal(t, NewMultivalue(&Int{}, &String{}), res.(*InoxFunction).result)
 		})
 
 		t.Run("unterminated", func(t *testing.T) {
@@ -1249,7 +1249,7 @@ func TestSymbolicEval(t *testing.T) {
 			fnExpr := n.Statements[0].(*parse.FunctionDeclaration).Function
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.Equal(t, &InoxFunction{node: fnExpr, returnType: Nil}, res)
+			assert.Equal(t, &InoxFunction{node: fnExpr, result: Nil}, res)
 		})
 
 		t.Run("single parameter", func(t *testing.T) {
@@ -1266,7 +1266,7 @@ func TestSymbolicEval(t *testing.T) {
 				node:           fnExpr,
 				parameters:     []SymbolicValue{ANY},
 				parameterNames: []string{"a"},
-				returnType:     ANY,
+				result:         ANY,
 			}, res)
 		})
 
@@ -1284,7 +1284,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, &InoxFunction{
 				node:           fnExpr,
-				returnType:     &Int{},
+				result:         &Int{},
 				capturedLocals: map[string]SymbolicValue{"a": &Int{}},
 			}, res)
 		})
@@ -1302,8 +1302,8 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, &InoxFunction{
-				node:       fnExpr,
-				returnType: NewList(&Int{}, &String{}),
+				node:   fnExpr,
+				result: NewList(&Int{}, &String{}),
 				capturedLocals: map[string]SymbolicValue{
 					"a": &Int{},
 					"b": &String{},
@@ -1355,7 +1355,7 @@ func TestSymbolicEval(t *testing.T) {
 			fnExpr := n.Statements[1].(*parse.FunctionDeclaration).Function
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.Equal(t, &InoxFunction{node: fnExpr, returnType: Nil}, res)
+			assert.Equal(t, &InoxFunction{node: fnExpr, result: Nil}, res)
 		})
 
 	})
@@ -1463,8 +1463,8 @@ func TestSymbolicEval(t *testing.T) {
 				entries: map[string]SymbolicValue{
 					"a": &Int{},
 					"f": &InoxFunction{
-						node:       fnExpr,
-						returnType: &Int{},
+						node:   fnExpr,
+						result: &Int{},
 					},
 				},
 			}, res)
@@ -1487,8 +1487,8 @@ func TestSymbolicEval(t *testing.T) {
 				entries: map[string]SymbolicValue{
 					"a": &Int{},
 					"f": &InoxFunction{
-						node:       fnExpr,
-						returnType: NewDynamicValue(ANY_INT),
+						node:   fnExpr,
+						result: NewDynamicValue(ANY_INT),
 					},
 				},
 			}, res)
@@ -1517,12 +1517,12 @@ func TestSymbolicEval(t *testing.T) {
 				entries: map[string]SymbolicValue{
 					"a": &Int{},
 					"f": &InoxFunction{
-						node:       fFnExpr,
-						returnType: g,
+						node:   fFnExpr,
+						result: g,
 					},
 					"g": &InoxFunction{
-						node:       gFnExpr,
-						returnType: &Int{},
+						node:   gFnExpr,
+						result: &Int{},
 					},
 				},
 			}, obj)
@@ -1551,12 +1551,12 @@ func TestSymbolicEval(t *testing.T) {
 				entries: map[string]SymbolicValue{
 					"a": &Int{},
 					"f": &InoxFunction{
-						node:       fFnExpr,
-						returnType: g,
+						node:   fFnExpr,
+						result: g,
 					},
 					"g": &InoxFunction{
-						node:       gFnExpr,
-						returnType: &Int{},
+						node:   gFnExpr,
+						result: &Int{},
 					},
 				},
 			}, obj)
@@ -1859,7 +1859,7 @@ func TestSymbolicEval(t *testing.T) {
 				node:           fnExpr,
 				parameters:     []SymbolicValue{NewMultivalue(NewListOf(&Int{}), NewListOf(&String{}))},
 				parameterNames: []string{"list"},
-				returnType:     Nil,
+				result:         Nil,
 			}, res)
 		})
 
@@ -2119,7 +2119,7 @@ func TestSymbolicEval(t *testing.T) {
 				node:           fnExpr,
 				parameters:     []SymbolicValue{NewMultivalue(NewListOf(&String{}), NewListOf(&Int{}))},
 				parameterNames: []string{"list"},
-				returnType:     NewListOf(ANY),
+				result:         NewListOf(ANY),
 			}, res)
 		})
 
@@ -2146,7 +2146,7 @@ func TestSymbolicEval(t *testing.T) {
 				node:           fnExpr,
 				parameters:     []SymbolicValue{NewMultivalue(NewListOf(&String{}), NewListOf(&Int{}))},
 				parameterNames: []string{"list"},
-				returnType:     NewListOf(ANY),
+				result:         NewListOf(ANY),
 			}, res)
 		})
 
@@ -2323,7 +2323,7 @@ func TestSymbolicEval(t *testing.T) {
 					},
 				},
 				parameterNames: []string{"func"},
-				returnType:     &Int{},
+				result:         &Int{},
 			}
 			assert.Equal(t, expectedFn, res)
 		})
@@ -2584,7 +2584,7 @@ func TestSymbolicEval(t *testing.T) {
 				res, err := symbolicEval(n, state)
 				assert.NoError(t, err)
 				assert.Empty(t, state.errors)
-				assert.Equal(t, NewMultivalue(ANY_INT, ANY_BOOL), res.(*InoxFunction).returnType)
+				assert.Equal(t, NewMultivalue(ANY_INT, ANY_BOOL), res.(*InoxFunction).result)
 			})
 
 			t.Run("parameter field", func(t *testing.T) {
@@ -2597,7 +2597,7 @@ func TestSymbolicEval(t *testing.T) {
 				res, err := symbolicEval(n, state)
 				assert.NoError(t, err)
 				assert.Empty(t, state.errors)
-				assert.Equal(t, NewMultivalue(ANY_INT, ANY_BOOL), res.(*InoxFunction).returnType)
+				assert.Equal(t, NewMultivalue(ANY_INT, ANY_BOOL), res.(*InoxFunction).result)
 			})
 
 			t.Run("variable of static type %int? and nil value", func(t *testing.T) {
@@ -3854,7 +3854,7 @@ func TestSymbolicEval(t *testing.T) {
 				node:           fnExpr,
 				parameters:     []SymbolicValue{NewTupleOf(&Int{}), NewTupleOf(&String{})},
 				parameterNames: []string{"a", "b"},
-				returnType:     NewTupleOf(NewMultivalue(ANY_INT, ANY_STR)),
+				result:         NewTupleOf(NewMultivalue(ANY_INT, ANY_STR)),
 			}
 			assert.Equal(t, expectedFn, res)
 		})
@@ -3876,7 +3876,7 @@ func TestSymbolicEval(t *testing.T) {
 				node:           fnExpr,
 				parameters:     []SymbolicValue{NewTupleOf(&Int{}), NewTupleOf(&Int{})},
 				parameterNames: []string{"a", "b"},
-				returnType:     NewTupleOf(ANY_INT),
+				result:         NewTupleOf(ANY_INT),
 			}
 			assert.Equal(t, expectedFn, res)
 		})

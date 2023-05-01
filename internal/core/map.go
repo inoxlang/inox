@@ -9,7 +9,30 @@ import (
 
 func init() {
 	RegisterSymbolicGoFunctions([]any{
-		Map, func(ctx *symbolic.Context, iterable symbolic.Iterable, filter symbolic.SymbolicValue) *symbolic.List {
+		Map, func(ctx *symbolic.Context, iterable symbolic.Iterable, mapper symbolic.SymbolicValue) *symbolic.List {
+			switch m := mapper.(type) {
+			case parse.Node:
+
+			case *symbolic.KeyList:
+				obj := symbolic.NewUnitializedObject()
+				entries := map[string]symbolic.SymbolicValue{}
+				for _, key := range m.Keys {
+					entries[key] = symbolic.ANY
+				}
+
+				symbolic.InitializeObject(obj, entries, nil)
+				return symbolic.NewListOf(obj)
+			case *symbolic.PropertyName:
+			case *symbolic.GoFunction:
+				return symbolic.NewListOf(m.Result())
+			case *symbolic.InoxFunction:
+				return symbolic.NewListOf(m.Result())
+			case *symbolic.AstNode:
+			case *symbolic.Mapping:
+			default:
+				ctx.AddSymbolicGoFunctionError("invalid mapper argument")
+			}
+
 			return symbolic.NewListOf(&symbolic.Any{})
 		},
 	})

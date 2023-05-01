@@ -3,6 +3,7 @@ package internal
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"reflect"
 	"runtime"
@@ -18,9 +19,23 @@ type InoxFunction struct {
 	node           parse.Node //if nil, any function is matched
 	parameters     []SymbolicValue
 	parameterNames []string
-	returnType     SymbolicValue
+	result         SymbolicValue
 	capturedLocals map[string]SymbolicValue
 	originState    *State
+}
+
+func (fn *InoxFunction) IsVariadic() bool {
+	if fn.node == nil {
+		panic(errors.New("node is nil"))
+	}
+	return fn.FuncExpr().IsVariadic
+}
+
+func (fn *InoxFunction) Result() SymbolicValue {
+	if fn.node == nil {
+		panic(errors.New("node is nil"))
+	}
+	return fn.result
 }
 
 func (fn *InoxFunction) FuncExpr() *parse.FunctionExpression {
@@ -86,6 +101,7 @@ func (fn *InoxFunction) IsWidenable() bool {
 func (fn *InoxFunction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if fn.node == nil {
 		utils.Must(w.Write(utils.StringAsBytes("fn")))
+		return
 	}
 
 	utils.Must(w.Write(utils.StringAsBytes("fn(")))
@@ -96,11 +112,15 @@ func (fn *InoxFunction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 		}
 		utils.Must(w.Write(utils.StringAsBytes(fn.parameterNames[i])))
 		utils.Must(w.Write(utils.StringAsBytes(" ")))
+
+		if fn.IsVariadic() && i == len(fn.parameters)-1 {
+			utils.Must(w.Write(utils.StringAsBytes("...")))
+		}
 		param.PrettyPrint(w, config, 0, 0)
 	}
 
 	utils.Must(w.Write(utils.StringAsBytes(") ")))
-	fn.returnType.PrettyPrint(w, config, 0, 0)
+	fn.result.PrettyPrint(w, config, 0, 0)
 }
 
 func (fn *InoxFunction) WidestOfType() SymbolicValue {
@@ -112,6 +132,35 @@ type GoFunction struct {
 	fn          any //if nil, any function is matched
 	kind        GoFunctionKind
 	originState *State
+
+	//signature
+	signatureDataLoaded   bool
+	isVariadic            bool
+	isfirstArgCtx         bool
+	nonVariadicParameters []SymbolicValue
+	parameters            []SymbolicValue
+	variadicElem          SymbolicValue
+	results               []SymbolicValue
+	resultList            *List
+	result                SymbolicValue
+}
+
+// the result should not be modified
+func (fn *GoFunction) NonVariadicParametersExceptCtx() []SymbolicValue {
+	utils.PanicIfErr(fn.LoadSignatureData())
+	if fn.isfirstArgCtx {
+		return fn.nonVariadicParameters[1:]
+	}
+	return fn.nonVariadicParameters
+}
+
+// the result should not be modified
+func (fn *GoFunction) ParametersExceptCtx() []SymbolicValue {
+	utils.PanicIfErr(fn.LoadSignatureData())
+	if fn.isfirstArgCtx {
+		return fn.parameters[1:]
+	}
+	return fn.parameters
 }
 
 type GoFunctionKind int
@@ -264,6 +313,108 @@ func (fn *GoFunction) WidestOfType() SymbolicValue {
 	return &GoFunction{}
 }
 
+func (goFunc *GoFunction) Result() SymbolicValue {
+	return goFunc.result
+}
+
+func (goFunc *GoFunction) LoadSignatureData() (finalErr error) {
+	if goFunc.signatureDataLoaded {
+		return nil
+	}
+
+	if goFunc.fn == nil {
+		panic(errors.New("function is nil"))
+	}
+
+	defer func() {
+		if finalErr == nil {
+			goFunc.signatureDataLoaded = true
+		}
+	}()
+
+	fnVal := reflect.ValueOf(goFunc.fn)
+	fnValType := fnVal.Type()
+	goFunc.isVariadic = fnValType.IsVariadic()
+
+	if fnVal.Kind() != reflect.Func {
+		return fmt.Errorf("cannot call Go value of kind %s: %#v (%T)", fnVal.Kind(), goFunc.fn, goFunc.fn)
+	}
+
+	if fnValType.NumIn() == 0 || !CTX_PTR_TYPE.AssignableTo(fnValType.In(0)) {
+		//ok
+	} else {
+		goFunc.isfirstArgCtx = true
+	}
+
+	nonVariadicParamCount := fnValType.NumIn()
+	if goFunc.isVariadic {
+		nonVariadicParamCount -= 1
+	}
+
+	goFunc.nonVariadicParameters = make([]SymbolicValue, nonVariadicParamCount)
+	for paramIndex := 0; paramIndex < nonVariadicParamCount; paramIndex++ {
+		if paramIndex == 0 && goFunc.isfirstArgCtx {
+			continue
+		}
+
+		reflectParamType := fnValType.In(paramIndex)
+		param, err := converTypeToSymbolicValue(reflectParamType)
+		if err != nil {
+			s := fmt.Sprintf("cannot convert one of a Go function parameter (type %s.%s) (function name: %s): %s",
+				reflectParamType.PkgPath(), reflectParamType.Name(),
+				runtime.FuncForPC(fnVal.Pointer()).Name(),
+				err.Error(),
+			)
+			return errors.New(s)
+		}
+		goFunc.nonVariadicParameters[paramIndex] = param
+	}
+
+	if fnValType.IsVariadic() {
+		goVariadicElemType := fnValType.In(fnValType.NumIn() - 1).Elem()
+		variadicElemType, err := converTypeToSymbolicValue(goVariadicElemType)
+		if err != nil {
+			s := fmt.Sprintf("cannot convert a Go function variadic parameter type %s.%s (function name: %s): %s",
+				goVariadicElemType.PkgPath(), goVariadicElemType.Name(),
+				runtime.FuncForPC(fnVal.Pointer()).Name(),
+				err.Error(),
+			)
+			return errors.New(s)
+		}
+		goFunc.variadicElem = variadicElemType
+		goFunc.parameters = append(goFunc.nonVariadicParameters, NewListOf(goFunc.variadicElem))
+	} else {
+		goFunc.parameters = goFunc.nonVariadicParameters
+	}
+
+	for i := 0; i < fnValType.NumOut(); i++ {
+		goResultType := fnValType.Out(i)
+		symbolicResultValue, err := converTypeToSymbolicValue(goResultType)
+		if err != nil {
+			return fmt.Errorf(
+				"cannot convert one of a Go function result %s.%s (function name: %s): %s",
+				goResultType.PkgPath(), goResultType.Name(),
+				runtime.FuncForPC(fnVal.Pointer()).Name(),
+				err.Error())
+		}
+
+		goFunc.results = append(goFunc.results, symbolicResultValue)
+	}
+	goFunc.resultList = NewList(goFunc.results...)
+
+	switch len(goFunc.resultList.elements) {
+	case 0:
+		goFunc.result = Nil
+	case 1:
+		goFunc.result = goFunc.resultList.elementAt(0)
+		//TODO: handle shared ?
+	default:
+		goFunc.result = goFunc.resultList
+	}
+
+	return nil
+}
+
 type goFunctionCallInput struct {
 	symbolicArgs      []SymbolicValue
 	nonSpreadArgCount int
@@ -273,17 +424,10 @@ type goFunctionCallInput struct {
 	callNode          *parse.CallExpression
 }
 
-func (goFunc *GoFunction) Call(input goFunctionCallInput) (SymbolicValue, error) {
+func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicValue, multipleResults bool, finalErr error) {
 	if goFunc.fn == nil {
 		input.state.addError(makeSymbolicEvalError(input.callNode, input.state, CANNOT_CALL_GO_FUNC_NO_CONCRETE_VALUE))
-		return ANY, nil
-	}
-
-	fnVal := reflect.ValueOf(goFunc.fn)
-	fnValType := fnVal.Type()
-
-	if fnVal.Kind() != reflect.Func {
-		return nil, fmt.Errorf("cannot call Go value of kind %s: %#v (%T)", fnVal.Kind(), goFunc.fn, goFunc.fn)
+		return ANY, false, nil
 	}
 
 	symbolicArgs := input.symbolicArgs
@@ -295,6 +439,11 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (SymbolicValue, error)
 	must := input.must
 	callNode := input.callNode
 
+	if err := goFunc.LoadSignatureData(); err != nil {
+		err = makeSymbolicEvalError(callNode, state, err.Error())
+		return nil, false, err
+	}
+
 	var ctx *Context = state.ctx
 	if isExt {
 		ctx = extState.ctx
@@ -305,67 +454,46 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (SymbolicValue, error)
 		args[i] = e
 	}
 
-	isfirstArgCtx := false
+	nonVariadicParamCount := len(goFunc.nonVariadicParameters)
+	inoxLandNonVariadicParamCount := nonVariadicParamCount
 
-	if fnValType.NumIn() == 0 || !CTX_PTR_TYPE.AssignableTo(fnValType.In(0)) {
-		//ok
-	} else {
-		isfirstArgCtx = true
+	if goFunc.isfirstArgCtx {
+		inoxLandNonVariadicParamCount -= 1
 	}
 
-	nonVariadicParamCount := fnValType.NumIn()
-	if fnValType.IsVariadic() {
-		nonVariadicParamCount -= 1
-	}
-	if isfirstArgCtx {
-		nonVariadicParamCount -= 1
-	}
-
-	if fnValType.IsVariadic() {
-		if nonSpreadArgCount < nonVariadicParamCount {
-			state.addError(makeSymbolicEvalError(callNode, state, fmtInvalidNumberOfNonSpreadArgs(nonSpreadArgCount, nonVariadicParamCount)))
+	if goFunc.isVariadic {
+		if nonSpreadArgCount < inoxLandNonVariadicParamCount {
+			state.addError(makeSymbolicEvalError(callNode, state, fmtInvalidNumberOfNonSpreadArgs(nonSpreadArgCount, inoxLandNonVariadicParamCount)))
 		}
 	} else if hasSpreadArg {
 		state.addError(makeSymbolicEvalError(callNode, state, SPREAD_ARGS_NOT_SUPPORTED_FOR_NON_VARIADIC_FUNCS))
-	} else if len(args) != nonVariadicParamCount {
-		state.addError(makeSymbolicEvalError(callNode, state, fmtInvalidNumberOfArgs(nonSpreadArgCount, nonVariadicParamCount)))
+	} else if len(args) != inoxLandNonVariadicParamCount {
+		state.addError(makeSymbolicEvalError(callNode, state, fmtInvalidNumberOfArgs(nonSpreadArgCount, inoxLandNonVariadicParamCount)))
 		// remove additional arguments
 
-		if len(args) > nonVariadicParamCount {
-			args = args[:nonVariadicParamCount]
+		if len(args) > inoxLandNonVariadicParamCount {
+			args = args[:inoxLandNonVariadicParamCount]
 		}
 	}
 
-	if isfirstArgCtx {
+	if goFunc.isfirstArgCtx {
 		args = append([]any{ctx}, args...)
-		nonVariadicParamCount += 1
 	}
 
 	//check arguments
 	for paramIndex := 0; paramIndex < nonVariadicParamCount; paramIndex++ {
-		if paramIndex == 0 && isfirstArgCtx {
+		if paramIndex == 0 && goFunc.isfirstArgCtx {
 			continue
 		}
 
-		// get type of parameter
-		reflectParamType := fnValType.In(paramIndex)
-		param, err := converTypeToSymbolicValue(reflectParamType)
-		if err != nil {
-			s := fmt.Sprintf("cannot convert one of a Go function parameter (type %s.%s) (function name: %s): %s",
-				reflectParamType.PkgPath(), reflectParamType.Name(),
-				runtime.FuncForPC(fnVal.Pointer()).Name(),
-				err.Error(),
-			)
-			err = makeSymbolicEvalError(callNode, state, s)
-			return nil, err
-		}
+		param := goFunc.nonVariadicParameters[paramIndex]
 
 		// check argument against the parameter's type
 
 		var arg SymbolicValue
 		if paramIndex < len(args) {
 			position := paramIndex
-			if isfirstArgCtx {
+			if goFunc.isfirstArgCtx {
 				position -= 1
 			}
 
@@ -407,33 +535,22 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (SymbolicValue, error)
 		}
 	}
 
-	if fnValType.IsVariadic() && len(args) > nonVariadicParamCount {
+	if goFunc.isVariadic && len(args) > nonVariadicParamCount {
 		variadicArgs := args[nonVariadicParamCount:]
-		goVariadicElemType := fnValType.In(fnValType.NumIn() - 1).Elem()
-		variadicElemType, err := converTypeToSymbolicValue(goVariadicElemType)
-		if err != nil {
-			s := fmt.Sprintf("cannot convert a Go function variadic parameter type %s.%s (function name: %s): %s",
-				goVariadicElemType.PkgPath(), goVariadicElemType.Name(),
-				runtime.FuncForPC(fnVal.Pointer()).Name(),
-				err.Error(),
-			)
-			err = makeSymbolicEvalError(callNode, state, s)
-			return nil, err
-		}
 
 		for i, arg := range variadicArgs {
 			widenedArg := arg.(SymbolicValue)
-			for !IsAny(widenedArg) && !variadicElemType.Test(widenedArg) {
+			for !IsAny(widenedArg) && !goFunc.variadicElem.Test(widenedArg) {
 				widenedArg = widenOrAny(widenedArg)
 			}
 
-			if !variadicElemType.Test(widenedArg) {
+			if !goFunc.variadicElem.Test(widenedArg) {
 				position := i + nonVariadicParamCount
-				if isfirstArgCtx {
+				if goFunc.isfirstArgCtx {
 					position -= 1
 				}
-				state.addError(makeSymbolicEvalError(callNode, state, FmtInvalidArg(position, arg.(SymbolicValue), variadicElemType)))
-				variadicArgs[i] = variadicElemType
+				state.addError(makeSymbolicEvalError(callNode, state, FmtInvalidArg(position, arg.(SymbolicValue), goFunc.variadicElem)))
+				variadicArgs[i] = goFunc.variadicElem
 			} else {
 				variadicArgs[i] = widenedArg
 			}
@@ -452,6 +569,9 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (SymbolicValue, error)
 		argValues[i] = argValue
 	}
 
+	fnVal := reflect.ValueOf(goFunc.fn)
+	fnValType := reflect.TypeOf(goFunc.fn)
+
 	resultValues := fnVal.Call(argValues)
 	resultCount := fnValType.NumOut()
 
@@ -463,19 +583,11 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (SymbolicValue, error)
 		reflectVal := resultValues[i]
 
 		if reflectVal.IsZero() {
-			goResultType := fnValType.Out(i)
-			symbolicResultValues[i], err = converTypeToSymbolicValue(goResultType)
-			if err != nil {
-				return nil, fmt.Errorf(
-					"cannot convert one of a Go function result %s.%s (function name: %s): %s",
-					goResultType.PkgPath(), goResultType.Name(),
-					runtime.FuncForPC(fnVal.Pointer()).Name(),
-					err.Error())
-			}
+			symbolicResultValues[i] = goFunc.results[i]
 		} else {
 			symbolicResultValues[i], err = converReflectValToSymbolicValue(reflectVal)
 			if err != nil {
-				return nil, fmt.Errorf(
+				return nil, false, fmt.Errorf(
 					"cannot convert one of a Go function result %s.%s (function name: %s): %s",
 					reflectVal.Type().PkgPath(), reflectVal.Type().Name(),
 					runtime.FuncForPC(fnVal.Pointer()).Name(),
@@ -493,7 +605,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (SymbolicValue, error)
 
 	switch len(symbolicResultValues) {
 	case 0:
-		return Nil, nil
+		return Nil, false, nil
 	case 1:
 		if isExt {
 			shared, err := ShareOrClone(symbolicResultValues[0], extState)
@@ -501,10 +613,10 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (SymbolicValue, error)
 				state.addError(makeSymbolicEvalError(callNode, state, err.Error()))
 				shared = ANY
 			}
-			return shared, nil
+			return shared, false, nil
 		}
 
-		return symbolicResultValues[0], nil
+		return symbolicResultValues[0], false, nil
 	}
 
 	var results []SymbolicValue
@@ -520,10 +632,150 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (SymbolicValue, error)
 			results = append(results, shared)
 		}
 	} else {
-		for _, resultValue := range symbolicResultValues {
-			results = append(results, resultValue)
+		results = append(results, symbolicResultValues...)
+	}
+
+	return NewList(results...), true, nil
+}
+
+// An Function represents a symbolic function we do not know the concrete type.
+type Function struct {
+	//if pattern is nil this function matches any function with the following parameters & results
+	parameters []SymbolicValue
+	results    []SymbolicValue
+	variadic   bool
+
+	pattern *FunctionPattern
+}
+
+func (fn *Function) NonVariadicParameters() []SymbolicValue {
+	if fn.variadic {
+		return fn.parameters[:len(fn.parameters)-1]
+	}
+	return fn.parameters
+}
+
+func (fn *Function) VariadicParamElem() SymbolicValue {
+	if !fn.variadic {
+		panic(errors.New("function is not variadic"))
+	}
+	param := fn.parameters[len(fn.parameters)-1]
+	return param.(*List).IteratorElementValue()
+}
+
+func (f *Function) Test(v SymbolicValue) bool {
+	if f.pattern != nil {
+		switch v.(type) {
+		case *Function, *GoFunction, *InoxFunction:
+			return f.pattern.TestValue(v)
+		default:
+			return false
 		}
 	}
 
-	return NewList(results...), nil
+	switch fn := v.(type) {
+	case *Function:
+		if fn.pattern != nil || len(f.parameters) != len(fn.parameters) || f.variadic != fn.variadic {
+			return false
+		}
+
+		for i, param := range f.parameters {
+			if !param.Test(fn.parameters[i]) || !fn.parameters[i].Test(param) {
+				return false
+			}
+		}
+
+		for i, result := range f.results {
+			if !result.Test(fn.results[i]) || !fn.results[i].Test(result) {
+				return false
+			}
+		}
+
+		return true
+	case *GoFunction:
+		fnNonVariadicParams := fn.NonVariadicParametersExceptCtx()
+
+		if f.variadic != fn.isVariadic || len(fnNonVariadicParams) != len(f.NonVariadicParameters()) ||
+			len(f.results) != len(fn.results) {
+			return false
+		}
+
+		for i, param := range f.NonVariadicParameters() {
+			if !deeplyEqual(param, fnNonVariadicParams[i]) {
+				return false
+			}
+		}
+
+		variadicParamElem := f.VariadicParamElem()
+
+		if !deeplyEqual(variadicParamElem, fn.variadicElem) {
+			return false
+		}
+
+		for i, result := range f.results {
+			if !deeplyEqual(result, fn.results[i]) {
+				return false
+			}
+		}
+
+		return true
+	case *InoxFunction:
+		if f.variadic != fn.IsVariadic() || len(f.parameters) != len(fn.parameters) {
+			return false
+		}
+
+		for i, param := range f.parameters {
+			if !deeplyEqual(param, fn.parameters[i]) {
+				return false
+			}
+		}
+
+		result := NewList(f.results...)
+		return deeplyEqual(result, fn.result)
+	default:
+		return false
+	}
+}
+
+func (f *Function) Widen() (SymbolicValue, bool) {
+	return nil, false
+}
+
+func (f *Function) IsWidenable() bool {
+	return false
+}
+
+func (f *Function) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	if f.pattern != nil {
+		utils.Must(w.Write(utils.StringAsBytes("%function(???)")))
+		return
+	}
+
+	utils.Must(w.Write(utils.StringAsBytes("fn(")))
+
+	for i, param := range f.parameters {
+		if i != 0 {
+			utils.Must(w.Write(utils.StringAsBytes(", ")))
+		}
+
+		if f.variadic && i == len(f.parameters)-1 {
+			utils.Must(w.Write(utils.StringAsBytes("...")))
+		}
+		param.PrettyPrint(w, config, 0, 0)
+	}
+
+	utils.Must(w.Write(utils.StringAsBytes(") ")))
+	switch len(f.results) {
+	case 0:
+	case 1:
+		f.results[0].PrettyPrint(w, config, 0, 0)
+	default:
+		NewList(f.results...).PrettyPrint(w, config, 0, 0)
+	}
+}
+
+func (f *Function) WidestOfType() SymbolicValue {
+	return &Function{
+		pattern: (&FunctionPattern{}).WidestOfType().(*FunctionPattern),
+	}
 }
