@@ -106,7 +106,7 @@ func StartLSPServer() {
 			return &defines.Hover{}, nil
 		}
 
-		primaryVal, ok := state.SymbolicData.GetNodeValue(foundNode)
+		primaryVal, ok := state.SymbolicData.GetMostSpecificNodeValue(foundNode)
 		if !ok {
 			logs.Println("no data")
 			return &defines.Hover{}, nil
@@ -118,7 +118,7 @@ func StartLSPServer() {
 		{
 			utils.PanicIfErr(symbolic.PrettyPrint(primaryVal, w, HOVER_PRETTY_PRINT_CONFIG, 0, 0))
 
-			secondaryVal, ok := state.SymbolicData.GetSecondaryNodeValue(foundNode)
+			secondaryVal, ok := state.SymbolicData.GetLessSpecificNodeValue(foundNode)
 			if ok {
 				w.Write(utils.StringAsBytes("\n\n# less specific\n"))
 				utils.PanicIfErr(symbolic.PrettyPrint(secondaryVal, w, HOVER_PRETTY_PRINT_CONFIG, 0, 0))

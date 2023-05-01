@@ -146,7 +146,7 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result SymbolicValue, finalErr error) {
 	defer func() {
 		if !ignoreNodeValue && finalErr == nil && result != nil && state.symbolicData != nil {
-			state.symbolicData.SetNodeValue(node, result)
+			state.symbolicData.SetMostSpecificNodeValue(node, result)
 		}
 	}()
 
@@ -220,7 +220,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			}
 
 			if isStaticPathSlice {
-				state.symbolicData.SetNodeValue(node, ANY_PATH)
+				state.symbolicData.SetMostSpecificNodeValue(node, ANY_PATH)
 			}
 		}
 
@@ -247,7 +247,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			return nil, err
 		}
 
-		state.symbolicData.SetNodeValue(n.HostPart, ANY_URL)
+		state.symbolicData.SetMostSpecificNodeValue(n.HostPart, ANY_URL)
 
 		//path evaluation
 
@@ -259,7 +259,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			}
 
 			if isStaticPathSlice {
-				state.symbolicData.SetNodeValue(node, ANY_URL)
+				state.symbolicData.SetMostSpecificNodeValue(node, ANY_URL)
 			}
 		}
 
@@ -268,7 +268,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		for _, p := range n.QueryParams {
 			param := p.(*parse.URLQueryParameter)
 
-			state.symbolicData.SetNodeValue(param, ANY_URL)
+			state.symbolicData.SetMostSpecificNodeValue(param, ANY_URL)
 
 			for _, slice := range param.Value {
 				_, err := _symbolicEval(slice, state, false)
@@ -428,7 +428,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			}
 
 			state.setLocal(name, right, static)
-			state.symbolicData.SetNodeValue(decl.Left, right)
+			state.symbolicData.SetMostSpecificNodeValue(decl.Left, right)
 		}
 		return nil, nil
 	case *parse.Assignment:
@@ -468,7 +468,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			} else {
 				state.setLocal(name, right, nil)
 			}
-			state.symbolicData.SetNodeValue(lhs, right)
+			state.symbolicData.SetMostSpecificNodeValue(lhs, right)
 			state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
 		case *parse.IdentifierLiteral:
 			name := lhs.Name
@@ -488,7 +488,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			} else {
 				state.setLocal(name, right, nil)
 			}
-			state.symbolicData.SetNodeValue(lhs, right)
+			state.symbolicData.SetMostSpecificNodeValue(lhs, right)
 			state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
 		case *parse.GlobalVariable:
 			name := lhs.Name
@@ -514,7 +514,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				state.setGlobal(name, right, GlobalVar)
 			}
 
-			state.symbolicData.SetNodeValue(lhs, right)
+			state.symbolicData.SetMostSpecificNodeValue(lhs, right)
 		case *parse.MemberExpression:
 			object, err := symbolicEval(lhs.Left, state)
 			if err != nil {
@@ -722,7 +722,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				if !state.hasLocal(name) {
 					state.setLocal(name, ANY, nil)
 				}
-				state.symbolicData.SetNodeValue(var_, ANY)
+				state.symbolicData.SetMostSpecificNodeValue(var_, ANY)
 			}
 		} else {
 			if list.HasKnownLen() && list.knownLen() < 2 {
@@ -738,7 +738,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				} else {
 					state.setLocal(name, val, nil)
 				}
-				state.symbolicData.SetNodeValue(var_, val)
+				state.symbolicData.SetMostSpecificNodeValue(var_, val)
 			}
 		}
 
@@ -998,13 +998,13 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 					keyVal = patt.SymbolicValue()
 				}
 				fork.setLocal(keyVarname, keyVal, nil)
-				state.symbolicData.SetNodeValue(e.KeyVar, keyVal)
+				state.symbolicData.SetMostSpecificNodeValue(e.KeyVar, keyVal)
 
 				if e.GroupMatchingVariable != nil {
 					matchingVarName := e.GroupMatchingVariable.(*parse.IdentifierLiteral).Name
 					anyObj := NewAnyObject()
 					fork.setLocal(matchingVarName, anyObj, nil)
-					state.symbolicData.SetNodeValue(e.GroupMatchingVariable, anyObj)
+					state.symbolicData.SetMostSpecificNodeValue(e.GroupMatchingVariable, anyObj)
 				}
 
 				_, err = symbolicEval(e.ValueComputation, fork)
@@ -1246,7 +1246,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				}
 
 				obj.initNewProp(key, propVal, static)
-				state.symbolicData.SetNodeValue(p.Key, propVal)
+				state.symbolicData.SetMostSpecificNodeValue(p.Key, propVal)
 			}
 			state.unsetNextSelf()
 			if restoreNextSelf {
@@ -1445,7 +1445,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			//TODO: refactor
 			key, _ := symbolicEval(node, newSymbolicState(NewSymbolicContext(), nil))
 			keys[keyRepr] = key
-			state.symbolicData.SetNodeValue(entry.Key, key)
+			state.symbolicData.SetMostSpecificNodeValue(entry.Key, key)
 		}
 
 		return NewDictionary(entries, keys), nil
@@ -1580,11 +1580,11 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		if n.KeyIndexIdent != nil {
 			state.setLocal(kVarname, keyType, nil)
-			state.symbolicData.SetNodeValue(n.KeyIndexIdent, keyType)
+			state.symbolicData.SetMostSpecificNodeValue(n.KeyIndexIdent, keyType)
 		}
 		if n.ValueElemIdent != nil {
 			state.setLocal(eVarname, valueType, nil)
-			state.symbolicData.SetNodeValue(n.ValueElemIdent, valueType)
+			state.symbolicData.SetMostSpecificNodeValue(n.ValueElemIdent, valueType)
 		}
 
 		_, err = symbolicEval(n.Body, state)
@@ -1612,11 +1612,11 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		}
 
 		state.setLocal(n.EntryIdent.Name, entry, nil)
-		state.symbolicData.SetNodeValue(n.EntryIdent, entry)
+		state.symbolicData.SetMostSpecificNodeValue(n.EntryIdent, entry)
 
 		if n.MetaIdent != nil {
 			state.setLocal(n.MetaIdent.Name, nodeMeta, nil)
-			state.symbolicData.SetNodeValue(n.MetaIdent, nodeMeta)
+			state.symbolicData.SetMostSpecificNodeValue(n.MetaIdent, nodeMeta)
 		}
 
 		_, blkErr := symbolicEval(n.Body, state)
@@ -1682,7 +1682,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 						if ok {
 							groupsObj := NewObject(groups, nil)
 							blockStateFork.setLocal(variable.Name, groupsObj, nil)
-							state.symbolicData.SetNodeValue(variable, groupsObj)
+							state.symbolicData.SetMostSpecificNodeValue(variable, groupsObj)
 
 							_, err := symbolicEval(matchCase.Block, blockStateFork)
 							if err != nil {
@@ -1930,7 +1930,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			}
 
 			stateFork.setLocal(name, paramValue, paramType)
-			state.symbolicData.SetNodeValue(p.Var, paramValue)
+			state.symbolicData.SetMostSpecificNodeValue(p.Var, paramValue)
 			params[i] = paramValue
 			paramNames[i] = name
 		}
@@ -2057,14 +2057,14 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			}
 
 			stateFork.setLocal(name, paramType, nil)
-			state.symbolicData.SetNodeValue(p.Var, paramType)
+			state.symbolicData.SetMostSpecificNodeValue(p.Var, paramType)
 		}
 
 		if n.IsVariadic {
 			variadicParam := n.VariadicParameter()
 			paramValue := &List{generalElement: ANY}
 			stateFork.setLocal(variadicParam.Var.Name, paramValue, nil)
-			state.symbolicData.SetNodeValue(variadicParam.Var, paramValue)
+			state.symbolicData.SetMostSpecificNodeValue(variadicParam.Var, paramValue)
 		}
 
 		//-----------------------------
@@ -2147,7 +2147,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		}
 
 		val := symbolicMemb(left, n.PropertyName.Name, n, state)
-		state.symbolicData.SetNodeValue(n.PropertyName, val)
+		state.symbolicData.SetMostSpecificNodeValue(n.PropertyName, val)
 
 		return val, nil
 	case *parse.IdentifierMemberExpression:
@@ -2163,13 +2163,13 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		var prevIdent *parse.IdentifierLiteral
 		for _, ident := range n.PropertyNames {
 			if prevIdent != nil {
-				state.symbolicData.SetNodeValue(prevIdent, v)
+				state.symbolicData.SetMostSpecificNodeValue(prevIdent, v)
 			}
 			v = symbolicMemb(v, ident.Name, n, state)
 			prevIdent = ident
 		}
 
-		state.symbolicData.SetNodeValue(prevIdent, v)
+		state.symbolicData.SetMostSpecificNodeValue(prevIdent, v)
 
 		return v, nil
 	case *parse.DynamicMemberExpression:

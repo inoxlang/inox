@@ -1793,7 +1793,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		var symbolicInoxFunc *symbolic.InoxFunction
 		{
-			value, ok := state.Global.SymbolicData.GetNodeValue(node)
+			value, ok := state.Global.SymbolicData.GetMostSpecificNodeValue(node)
 			if ok {
 				symbolicInoxFunc, ok = value.(*symbolic.InoxFunction)
 				if !ok {
@@ -1834,7 +1834,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		return Nil, nil
 
 	case *parse.FunctionPatternExpression:
-		symbolicData, ok := state.Global.SymbolicData.GetNodeValue(node)
+		symbolicData, ok := state.Global.SymbolicData.GetMostSpecificNodeValue(node)
 		var symbFnPattern *symbolic.FunctionPattern
 		if ok {
 			symbFnPattern, ok = symbolicData.(*symbolic.FunctionPattern)

@@ -403,7 +403,7 @@ func handleIdentifierMemberCompletions(n *parse.IdentifierMemberExpression, stat
 	if mode == ShellCompletions {
 		curr, ok = state.Get(n.Left.Name)
 	} else {
-		curr, ok = state.Global.SymbolicData.GetNodeValue(n.Left)
+		curr, ok = state.Global.SymbolicData.GetMostSpecificNodeValue(n.Left)
 	}
 
 	if !ok {
@@ -493,7 +493,7 @@ loop:
 				return nil
 			}
 		} else {
-			if curr, ok = state.Global.SymbolicData.GetNodeValue(left); !ok {
+			if curr, ok = state.Global.SymbolicData.GetMostSpecificNodeValue(left); !ok {
 				return nil
 			}
 		}
@@ -503,7 +503,7 @@ loop:
 				return nil
 			}
 		} else {
-			if curr, ok = state.Global.SymbolicData.GetNodeValue(left); !ok {
+			if curr, ok = state.Global.SymbolicData.GetMostSpecificNodeValue(left); !ok {
 				return nil
 			}
 		}

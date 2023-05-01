@@ -1274,7 +1274,7 @@ func (c *compiler) Compile(node parse.Node) error {
 
 		var symbolicInoxFunc *symbolic.InoxFunction
 		{
-			value, ok := c.symbolicData.GetNodeValue(node)
+			value, ok := c.symbolicData.GetMostSpecificNodeValue(node)
 			if ok {
 				symbolicInoxFunc, ok = value.(*symbolic.InoxFunction)
 				if !ok {
@@ -1312,7 +1312,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		}
 
 	case *parse.FunctionPatternExpression:
-		symbolicData, ok := c.symbolicData.GetNodeValue(node)
+		symbolicData, ok := c.symbolicData.GetMostSpecificNodeValue(node)
 		var symbFnPattern *symbolic.FunctionPattern
 		if ok {
 			symbFnPattern, ok = symbolicData.(*symbolic.FunctionPattern)
