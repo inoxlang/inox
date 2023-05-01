@@ -4,6 +4,8 @@
 
 🛡️ Inox is a [secure](#injection-prevention) programming language that makes [scripts](#declaration-of-cli-parameters--environment-variables) and [concurrent code](#concurrency) easy to write. It features a powerful [shell](./docs/shell-basics.md) with colorization & completions.
 
+[Main Features](#features)
+
 ## Installation
 
 An archive with a Linux binary and some examples is available in [release assets](https://github.com/inoxlang/inox/releases), if you want to compile the language yourself go [here](#compile-from-source).
