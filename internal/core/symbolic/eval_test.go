@@ -3953,6 +3953,17 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &CheckedString{}, res)
 		})
 
+		t.Run("no pattern, no interpolation", func(t *testing.T) {
+			n, state := makeStateAndChunk(replace(`
+				return |3|
+			`))
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, ANY_STR, res)
+		})
+
 		t.Run("interpolation & non-namespaced pattern", func(t *testing.T) {
 			n, state := makeStateAndChunk(replace(`
 				%sql = %str( %|.*| )
@@ -4005,6 +4016,30 @@ func TestSymbolicEval(t *testing.T) {
 				makeSymbolicEvalError(templateLit, state, fmtInterpolationIsNotStringBut(&Object{entries: map[string]SymbolicValue{}})),
 			}, state.errors)
 			assert.Equal(t, &CheckedString{}, res)
+		})
+
+		t.Run("no pattern, leading interpolation", func(t *testing.T) {
+			n, state := makeStateAndChunk(replace(`
+				s = "1"
+				return |{{s}}2|
+			`))
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, ANY_STR, res)
+		})
+
+		t.Run("no pattern, trailing interpolation", func(t *testing.T) {
+			n, state := makeStateAndChunk(replace(`
+				s = "2"
+				return |1{{s}}|
+			`))
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, ANY_STR, res)
 		})
 	})
 

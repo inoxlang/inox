@@ -2751,27 +2751,29 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		var namespaceName string
 		var namespace *PatternNamespace
 
-		if !isPatternAnIdent {
-			namespaceMembExpr := n.Pattern.(*parse.PatternNamespaceMemberExpression)
-			namespaceName = namespaceMembExpr.Namespace.Name
-			namespace = state.ctx.ResolvePatternNamespace(namespaceName)
+		if n.Pattern != nil {
+			if !isPatternAnIdent {
+				namespaceMembExpr := n.Pattern.(*parse.PatternNamespaceMemberExpression)
+				namespaceName = namespaceMembExpr.Namespace.Name
+				namespace = state.ctx.ResolvePatternNamespace(namespaceName)
 
-			if namespace == nil {
-				state.addError(makeSymbolicEvalError(node, state, fmtCannotInterpolatePatternNamespaceDoesNotExist(namespaceName)))
-				return &CheckedString{}, nil
+				if namespace == nil {
+					state.addError(makeSymbolicEvalError(node, state, fmtCannotInterpolatePatternNamespaceDoesNotExist(namespaceName)))
+					return &CheckedString{}, nil
+				}
+
+				memberName := namespaceMembExpr.MemberName.Name
+				_, ok := namespace.entries[memberName]
+				if !ok {
+					state.addError(makeSymbolicEvalError(node, state, fmtCannotInterpolateMemberOfPatternNamespaceDoesNotExist(memberName, namespaceName)))
+					return &CheckedString{}, nil
+				}
 			}
 
-			memberName := namespaceMembExpr.MemberName.Name
-			_, ok := namespace.entries[memberName]
-			if !ok {
-				state.addError(makeSymbolicEvalError(node, state, fmtCannotInterpolateMemberOfPatternNamespaceDoesNotExist(memberName, namespaceName)))
-				return &CheckedString{}, nil
+			_, err := symbolicEval(n.Pattern, state)
+			if err != nil {
+				return nil, err
 			}
-		}
-
-		_, err := symbolicEval(n.Pattern, state)
-		if err != nil {
-			return nil, err
 		}
 
 		for _, slice := range n.Slices {
@@ -2779,11 +2781,13 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			switch s := slice.(type) {
 			case *parse.StringTemplateSlice:
 			case *parse.StringTemplateInterpolation:
-				memberName := s.Type
-				_, ok := namespace.entries[memberName]
-				if !ok {
-					state.addError(makeSymbolicEvalError(node, state, fmtCannotInterpolateMemberOfPatternNamespaceDoesNotExist(memberName, namespaceName)))
-					return &CheckedString{}, nil
+				if s.Type != "" {
+					memberName := s.Type
+					_, ok := namespace.entries[memberName]
+					if !ok {
+						state.addError(makeSymbolicEvalError(node, state, fmtCannotInterpolateMemberOfPatternNamespaceDoesNotExist(memberName, namespaceName)))
+						return &CheckedString{}, nil
+					}
 				}
 
 				e, err := symbolicEval(s.Expr, state)
@@ -2795,6 +2799,10 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 					state.addError(makeSymbolicEvalError(node, state, fmtInterpolationIsNotStringBut(e)))
 				}
 			}
+		}
+
+		if n.Pattern == nil {
+			return ANY_STR, nil
 		}
 
 		return &CheckedString{}, nil
