@@ -33,6 +33,13 @@ import (
 	"net/url"
 )
 
+var HOVER_PRETTY_PRINT_CONFIG = &pprint.PrettyPrintConfig{
+	MaxDepth: 7,
+	Indent:   []byte{' ', ' '},
+	Colorize: false,
+	Compact:  false,
+}
+
 func StartLSPServer() {
 
 	f, err := os.OpenFile("/tmp/.inox-lsp.debug.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o600)
@@ -99,7 +106,7 @@ func StartLSPServer() {
 			return &defines.Hover{}, nil
 		}
 
-		val, ok := state.SymbolicData.GetNodeValue(foundNode)
+		primaryVal, ok := state.SymbolicData.GetNodeValue(foundNode)
 		if !ok {
 			logs.Println("no data")
 			return &defines.Hover{}, nil
@@ -107,23 +114,25 @@ func StartLSPServer() {
 
 		buff := &bytes.Buffer{}
 		w := bufio.NewWriterSize(buff, 1000)
+		var stringified string
+		{
+			utils.PanicIfErr(symbolic.PrettyPrint(primaryVal, w, HOVER_PRETTY_PRINT_CONFIG, 0, 0))
 
-		utils.PanicIfErr(symbolic.PrettyPrint(val, w, &pprint.PrettyPrintConfig{
-			MaxDepth: 7,
-			Indent:   []byte{' ', ' '},
-			Colorize: false,
-			Compact:  false,
-		}, 0, 0))
+			secondaryVal, ok := state.SymbolicData.GetSecondaryNodeValue(foundNode)
+			if ok {
+				w.Write(utils.StringAsBytes("\n\n# less specific\n"))
+				utils.PanicIfErr(symbolic.PrettyPrint(secondaryVal, w, HOVER_PRETTY_PRINT_CONFIG, 0, 0))
+			}
 
-		w.Flush()
-		strinfiged := strings.ReplaceAll(buff.String(), "\n\r", "\n")
-
-		logs.Println(strinfiged)
+			w.Flush()
+			stringified = strings.ReplaceAll(buff.String(), "\n\r", "\n")
+			logs.Println(stringified)
+		}
 
 		return &defines.Hover{
 			Contents: defines.MarkupContent{
 				Kind:  defines.MarkupKindMarkdown,
-				Value: "```inox\n" + strinfiged + "\n```",
+				Value: "```inox\n" + stringified + "\n```",
 			},
 		}, nil
 	})
