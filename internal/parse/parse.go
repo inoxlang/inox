@@ -1339,65 +1339,6 @@ func (p *parser) parseUnquotedStringLiteralAndEmailAddress(start int32) Node {
 	}
 }
 
-func (p *parser) parseMultilineStringLiteral() *MultilineStringLiteral {
-	start := p.i
-	var parsingErr *ParsingError
-	var value string
-	var raw string
-
-	p.i++
-
-	for p.i < p.len && (p.s[p.i] != '`' || countPrevBackslashes(p.s, p.i)%2 == 1) {
-		p.i++
-	}
-
-	if p.i >= p.len && p.s[p.i-1] != '`' {
-		raw = string(p.s[start:])
-		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_MULTILINE_STRING_LIT}
-	} else {
-		p.i++
-
-		raw = string(p.s[start:p.i])
-		b := []byte(raw)
-		b[0] = '"'
-		b[len32(b)-1] = '"'
-
-		marshalingInput := make([]byte, 0, len32(b))
-		for i, _byte := range b {
-			switch _byte {
-			case '\n':
-				marshalingInput = append(marshalingInput, '\\', 'n')
-			case '\r':
-				marshalingInput = append(marshalingInput, '\\', 'r')
-			case '\t':
-				marshalingInput = append(marshalingInput, '\\', 't')
-			case '"':
-				if i != 0 && i < len(b)-1 {
-					marshalingInput = append(marshalingInput, '\\', '"')
-				} else {
-					marshalingInput = append(marshalingInput, '"')
-				}
-			default:
-				marshalingInput = append(marshalingInput, _byte)
-			}
-		}
-		err := json.Unmarshal(marshalingInput, &value)
-
-		if err != nil {
-			parsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidStringLitJSON(err.Error())}
-		}
-	}
-
-	return &MultilineStringLiteral{
-		NodeBase: NodeBase{
-			Span: NodeSpan{start, p.i},
-			Err:  parsingErr,
-		},
-		Raw:   raw,
-		Value: value,
-	}
-}
-
 // parsePathLikeExpression parses paths, path expressions, simple path patterns and named segment path patterns
 func (p *parser) parsePathLikeExpression(isPattern bool) Node {
 	start := p.i
@@ -3908,7 +3849,50 @@ func (p *parser) parsePercentPrefixedPattern() Node {
 	}
 }
 
-func (p *parser) parseStringTemplateLiteral(pattern Node) *StringTemplateLiteral {
+func (p *parser) getValueOfMultilineStringSliceOrLiteral(raw []byte, literal bool) (string, *ParsingError) {
+	var value string
+
+	if literal {
+		raw[0] = '"'
+		raw[len32(raw)-1] = '"'
+	} else {
+		raw = append([]byte{'"'}, raw...)
+		raw = append(raw, '"')
+	}
+
+	marshalingInput := make([]byte, 0, len32(raw))
+	for i, _byte := range raw {
+		switch _byte {
+		case '\n':
+			marshalingInput = append(marshalingInput, '\\', 'n')
+		case '\r':
+			marshalingInput = append(marshalingInput, '\\', 'r')
+		case '\t':
+			marshalingInput = append(marshalingInput, '\\', 't')
+		case '"':
+			if i != 0 && i < len(raw)-1 {
+				marshalingInput = append(marshalingInput, '\\', '"')
+			} else {
+				marshalingInput = append(marshalingInput, '"')
+			}
+		default:
+			marshalingInput = append(marshalingInput, _byte)
+		}
+	}
+	err := json.Unmarshal(marshalingInput, &value)
+
+	if err != nil {
+		return "", &ParsingError{UnspecifiedParsingError, fmtInvalidStringLitJSON(err.Error())}
+	}
+	return value, nil
+}
+
+func (p *parser) parseStringTemplateLiteralOrMultilineStringLiteral(pattern Node) Node {
+	start := p.i
+	if pattern != nil {
+		start = pattern.Base().Span.Start
+	}
+	openingBackquoteIndex := p.i
 	p.i++ // eat `
 
 	inInterpolation := false
@@ -3918,25 +3902,31 @@ func (p *parser) parseStringTemplateLiteral(pattern Node) *StringTemplateLiteral
 	sliceStart := p.i
 
 	var parsingErr *ParsingError
+	isMultilineStringLiteral := false
 
 	for p.i < p.len && (p.s[p.i] != '`' || countPrevBackslashes(p.s, p.i)%2 == 1) {
 
+		//interpolation
 		if p.s[p.i] == '{' && p.s[p.i-1] == '{' {
 			valuelessTokens = append(valuelessTokens, Token{Type: STR_INTERP_OPENING_BRACKETS, Span: NodeSpan{p.i - 1, p.i + 1}})
 
+			// add previous slice
+			raw := string(p.s[sliceStart : p.i-1])
+			value, sliceErr := p.getValueOfMultilineStringSliceOrLiteral([]byte(raw), false)
 			slices = append(slices, &StringTemplateSlice{
 				NodeBase: NodeBase{
 					NodeSpan{sliceStart, p.i - 1},
-					nil,
+					sliceErr,
 					nil,
 				},
-				Raw: string(p.s[sliceStart : p.i-1]),
+				Raw:   raw,
+				Value: value,
 			})
 
 			inInterpolation = true
 			p.i++
 			interpolationStart = p.i
-		} else if inInterpolation && p.s[p.i] == '}' && p.s[p.i-1] == '}' {
+		} else if inInterpolation && p.s[p.i] == '}' && p.s[p.i-1] == '}' { //end of interpolation
 			valuelessTokens = append(valuelessTokens, Token{Type: STR_INTERP_CLOSING_BRACKETS, Span: NodeSpan{p.i - 1, p.i + 1}})
 			interpolationExclEnd := p.i - 1
 			inInterpolation = false
@@ -3959,29 +3949,39 @@ func (p *parser) parseStringTemplateLiteral(pattern Node) *StringTemplateLiteral
 			if interpParsingErr == nil {
 				if strings.TrimSpace(string(interpolation)) == "" {
 					interpParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_STRING_INTERPOLATION_SHOULD_NOT_BE_EMPTY}
-				} else if !isIdentChar(interpolation[0]) {
+				} else if pattern != nil && !isIdentChar(interpolation[0]) {
 					interpParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_STRING_INTERPOLATION_SHOULD_START_WITH_A_NAME}
 				} else {
 
-					i := int32(1)
-					for ; i < len32(interpolation) && isIdentChar(interpolation[i]); i++ {
-					}
+					if pattern != nil { //typed interpolation
+						i := int32(1)
+						for ; i < len32(interpolation) && isIdentChar(interpolation[i]); i++ {
+						}
 
-					typ = string(interpolation[:i+1])
+						typ = string(interpolation[:i+1])
 
-					if i >= len32(interpolation) || interpolation[i] != ':' || i >= len32(interpolation)-1 {
-						interpParsingErr = &ParsingError{UnspecifiedParsingError, NAME_IN_STR_INTERP_SHOULD_BE_FOLLOWED_BY_COLON_AND_EXPR}
-					} else {
-						i++
+						if i >= len32(interpolation) || interpolation[i] != ':' || i >= len32(interpolation)-1 {
+							interpParsingErr = &ParsingError{UnspecifiedParsingError, NAME_IN_STR_INTERP_SHOULD_BE_FOLLOWED_BY_COLON_AND_EXPR}
+						} else {
+							i++
 
-						exprStart := i + interpolationStart
+							exprStart := i + interpolationStart
 
-						e, ok := ParseExpression(string(interpolation[i:]))
+							e, ok := ParseExpression(string(interpolation[i:]))
+							if !ok {
+								interpParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_STR_INTERP}
+							} else {
+								expr = e
+								shiftNodeSpans(expr, exprStart)
+							}
+						}
+					} else { //untyped interpolation
+						e, ok := ParseExpression(string(interpolation))
 						if !ok {
 							interpParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_STR_INTERP}
 						} else {
 							expr = e
-							shiftNodeSpans(expr, exprStart)
+							shiftNodeSpans(expr, interpolationStart)
 						}
 					}
 				}
@@ -3989,7 +3989,7 @@ func (p *parser) parseStringTemplateLiteral(pattern Node) *StringTemplateLiteral
 
 			typeWithoutColon := ""
 			var interpTokens []Token
-			if len(typ) > 0 {
+			if pattern != nil && len(typ) > 0 {
 				typeWithoutColon = typ[:len(typ)-1]
 				interpTokens = []Token{{
 					Type: STR_TEMPLATE_INTERP_TYPE,
@@ -4016,23 +4016,61 @@ func (p *parser) parseStringTemplateLiteral(pattern Node) *StringTemplateLiteral
 	}
 
 	if inInterpolation {
+		raw := string(p.s[interpolationStart:p.i])
+		value, _ := p.getValueOfMultilineStringSliceOrLiteral([]byte(raw), false)
+
 		slices = append(slices, &StringTemplateSlice{
 			NodeBase: NodeBase{
 				NodeSpan{interpolationStart, p.i},
 				&ParsingError{UnspecifiedParsingError, UNTERMINATED_STRING_INTERP},
 				nil,
 			},
-			Raw: string(p.s[interpolationStart:p.i]),
+			Raw:   raw,
+			Value: value,
 		})
 	} else {
+		if len(slices) == 0 && pattern == nil { // multiline string literal
+			isMultilineStringLiteral = true
+			goto end
+		}
+
+		raw := string(p.s[sliceStart:p.i])
+		value, sliceErr := p.getValueOfMultilineStringSliceOrLiteral([]byte(raw), false)
+
 		slices = append(slices, &StringTemplateSlice{
 			NodeBase: NodeBase{
 				NodeSpan{sliceStart, p.i},
-				nil,
+				sliceErr,
 				nil,
 			},
-			Raw: string(p.s[sliceStart:p.i]),
+			Raw:   raw,
+			Value: value,
 		})
+	}
+
+end:
+	if isMultilineStringLiteral {
+		var value string
+		var raw string
+
+		if p.i >= p.len && p.s[p.i-1] != '`' {
+			raw = string(p.s[openingBackquoteIndex:])
+			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_MULTILINE_STRING_LIT}
+		} else {
+			p.i++
+
+			raw = string(p.s[openingBackquoteIndex:p.i])
+			value, parsingErr = p.getValueOfMultilineStringSliceOrLiteral([]byte(raw), true)
+		}
+
+		return &MultilineStringLiteral{
+			NodeBase: NodeBase{
+				Span: NodeSpan{openingBackquoteIndex, p.i},
+				Err:  parsingErr,
+			},
+			Raw:   raw,
+			Value: value,
+		}
 	}
 
 	if p.i >= p.len {
@@ -4046,7 +4084,7 @@ func (p *parser) parseStringTemplateLiteral(pattern Node) *StringTemplateLiteral
 
 	return &StringTemplateLiteral{
 		NodeBase: NodeBase{
-			NodeSpan{pattern.Base().Span.Start, p.i},
+			NodeSpan{start, p.i},
 			parsingErr,
 			valuelessTokens,
 		},
@@ -5490,8 +5528,7 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 	case '"':
 		return p.parseQuotedStringLiteral(), false
 	case '`':
-		return p.parseMultilineStringLiteral(), false
-
+		return p.parseStringTemplateLiteralOrMultilineStringLiteral(nil), false
 	case '+':
 		if p.i < p.len-1 && isDecDigit(p.s[p.i+1]) {
 			break
@@ -5541,7 +5578,7 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 		switch patt.(type) {
 		case *PatternIdentifierLiteral, *PatternNamespaceMemberExpression:
 			if p.i < p.len && p.s[p.i] == '`' {
-				return p.parseStringTemplateLiteral(patt), false
+				return p.parseStringTemplateLiteralOrMultilineStringLiteral(patt), false
 			}
 		}
 		return patt, false

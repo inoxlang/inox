@@ -454,7 +454,7 @@ func (MultilineStringLiteral) Kind() NodeKind {
 
 type StringTemplateLiteral struct {
 	NodeBase
-	Pattern Node   //*PatternIdentifierLiteral | *PatternNamespaceMemberExpression
+	Pattern Node   //*PatternIdentifierLiteral | *PatternNamespaceMemberExpression | nil
 	Slices  []Node //StringTemplateSlice | StringTemplateInterpolation
 }
 
@@ -473,12 +473,13 @@ func (StringTemplateLiteral) Kind() NodeKind {
 
 type StringTemplateSlice struct {
 	NodeBase
-	Raw string
+	Raw   string
+	Value string
 }
 
 type StringTemplateInterpolation struct {
 	NodeBase
-	Type string
+	Type string // empty if not typed
 	Expr Node
 }
 

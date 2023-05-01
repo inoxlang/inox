@@ -16942,6 +16942,7 @@ func TestParse(t *testing.T) {
 							&StringTemplateSlice{
 								NodeBase: NodeBase{NodeSpan{5, 24}, nil, nil},
 								Raw:      "SELECT * from users",
+								Value:    "SELECT * from users",
 							},
 						},
 					},
@@ -16978,6 +16979,7 @@ func TestParse(t *testing.T) {
 							&StringTemplateSlice{
 								NodeBase: NodeBase{NodeSpan{10, 29}, nil, nil},
 								Raw:      "SELECT * from users",
+								Value:    "SELECT * from users",
 							},
 						},
 					},
@@ -17007,12 +17009,14 @@ func TestParse(t *testing.T) {
 							&StringTemplateSlice{
 								NodeBase: NodeBase{NodeSpan{5, 24}, nil, nil},
 								Raw:      "SELECT * from users",
+								Value:    "SELECT * from users",
 							},
 						},
 					},
 				},
 			}, n)
 		})
+
 		t.Run("interpolation at the start", func(t *testing.T) {
 			n := MustParseChunk("%sql`{{nothing:$nothing}}SELECT * from users`")
 			assert.EqualValues(t, &Chunk{
@@ -17037,6 +17041,7 @@ func TestParse(t *testing.T) {
 							&StringTemplateSlice{
 								NodeBase: NodeBase{NodeSpan{5, 5}, nil, nil},
 								Raw:      "",
+								Value:    "",
 							},
 							&StringTemplateInterpolation{
 								NodeBase: NodeBase{NodeSpan{7, 23}, nil, []Token{{Type: STR_TEMPLATE_INTERP_TYPE, Raw: "nothing:", Span: NodeSpan{7, 15}}}},
@@ -17049,6 +17054,7 @@ func TestParse(t *testing.T) {
 							&StringTemplateSlice{
 								NodeBase: NodeBase{NodeSpan{25, 44}, nil, nil},
 								Raw:      "SELECT * from users",
+								Value:    "SELECT * from users",
 							},
 						},
 					},
@@ -17080,6 +17086,7 @@ func TestParse(t *testing.T) {
 							&StringTemplateSlice{
 								NodeBase: NodeBase{NodeSpan{5, 24}, nil, nil},
 								Raw:      "SELECT * from users",
+								Value:    "SELECT * from users",
 							},
 							&StringTemplateInterpolation{
 								NodeBase: NodeBase{NodeSpan{26, 42}, nil, []Token{{Type: STR_TEMPLATE_INTERP_TYPE, Raw: "nothing:", Span: NodeSpan{26, 34}}}},
@@ -17092,6 +17099,7 @@ func TestParse(t *testing.T) {
 							&StringTemplateSlice{
 								NodeBase: NodeBase{NodeSpan{44, 44}, nil, nil},
 								Raw:      "",
+								Value:    "",
 							},
 						},
 					},
@@ -17123,6 +17131,7 @@ func TestParse(t *testing.T) {
 							&StringTemplateSlice{
 								NodeBase: NodeBase{NodeSpan{5, 24}, nil, nil},
 								Raw:      "SELECT * from users",
+								Value:    "SELECT * from users",
 							},
 							&StringTemplateInterpolation{
 								NodeBase: NodeBase{NodeSpan{26, 41}, nil, []Token{{Type: STR_TEMPLATE_INTERP_TYPE, Raw: "nothing:", Span: NodeSpan{26, 34}}}},
@@ -17135,6 +17144,7 @@ func TestParse(t *testing.T) {
 							&StringTemplateSlice{
 								NodeBase: NodeBase{NodeSpan{43, 43}, nil, nil},
 								Raw:      "",
+								Value:    "",
 							},
 						},
 					},
@@ -17166,6 +17176,7 @@ func TestParse(t *testing.T) {
 							&StringTemplateSlice{
 								NodeBase: NodeBase{NodeSpan{5, 5}, nil, nil},
 								Raw:      "",
+								Value:    "",
 							},
 							&StringTemplateInterpolation{
 								NodeBase: NodeBase{NodeSpan{7, 16}, nil, []Token{{Type: STR_TEMPLATE_INTERP_TYPE, Raw: "nothing:", Span: NodeSpan{7, 15}}}},
@@ -17179,6 +17190,7 @@ func TestParse(t *testing.T) {
 							&StringTemplateSlice{
 								NodeBase: NodeBase{NodeSpan{18, 37}, nil, nil},
 								Raw:      "SELECT * from users",
+								Value:    "SELECT * from users",
 							},
 						},
 					},
@@ -17208,6 +17220,7 @@ func TestParse(t *testing.T) {
 							&StringTemplateSlice{
 								NodeBase: NodeBase{NodeSpan{5, 24}, nil, nil},
 								Raw:      "SELECT * from users",
+								Value:    "SELECT * from users",
 							},
 						},
 					},
@@ -17240,6 +17253,7 @@ func TestParse(t *testing.T) {
 							&StringTemplateSlice{
 								NodeBase: NodeBase{NodeSpan{5, 24}, nil, nil},
 								Raw:      "SELECT * from users",
+								Value:    "SELECT * from users",
 							},
 							&StringTemplateInterpolation{
 								NodeBase: NodeBase{
@@ -17251,11 +17265,53 @@ func TestParse(t *testing.T) {
 							&StringTemplateSlice{
 								NodeBase: NodeBase{NodeSpan{28, 28}, nil, nil},
 								Raw:      "",
+								Value:    "",
 							},
 						},
 					},
 				},
 			}, n)
+
+			t.Run("no pattern, interpolation at the start", func(t *testing.T) {
+				n := MustParseChunk("`{{$nothing}}SELECT * from users`")
+				assert.EqualValues(t, &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 33}, nil, nil},
+					Statements: []Node{
+						&StringTemplateLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{0, 33},
+								nil,
+								[]Token{
+									{Type: BACKQUOTE, Span: NodeSpan{0, 1}},
+									{Type: STR_INTERP_OPENING_BRACKETS, Span: NodeSpan{1, 3}},
+									{Type: STR_INTERP_CLOSING_BRACKETS, Span: NodeSpan{11, 13}},
+									{Type: BACKQUOTE, Span: NodeSpan{32, 33}},
+								},
+							},
+							Slices: []Node{
+								&StringTemplateSlice{
+									NodeBase: NodeBase{NodeSpan{1, 1}, nil, nil},
+									Raw:      "",
+									Value:    "",
+								},
+								&StringTemplateInterpolation{
+									NodeBase: NodeBase{NodeSpan{3, 11}, nil, nil},
+									Expr: &Variable{
+										NodeBase: NodeBase{NodeSpan{3, 11}, nil, nil},
+										Name:     "nothing",
+									},
+								},
+								&StringTemplateSlice{
+									NodeBase: NodeBase{NodeSpan{13, 32}, nil, nil},
+									Raw:      "SELECT * from users",
+									Value:    "SELECT * from users",
+								},
+							},
+						},
+					},
+				}, n)
+			})
+
 		})
 	})
 
