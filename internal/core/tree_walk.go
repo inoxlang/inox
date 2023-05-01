@@ -2301,11 +2301,12 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				sliceValues = append(sliceValues, sliceValue)
 			}
 		}
-		str, err := NewCheckedString(sliceValues, n, state.Global.Ctx)
-		if err != nil {
-			return nil, err
+
+		if n.Pattern == nil {
+			return NewStringFromSlices(sliceValues, n, state.Global.Ctx)
 		}
-		return str, err
+
+		return NewCheckedString(sliceValues, n, state.Global.Ctx)
 	case *parse.CssSelectorExpression:
 		selector := bytes.NewBufferString("")
 

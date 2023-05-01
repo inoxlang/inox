@@ -1062,8 +1062,9 @@ func (v *VM) run() {
 			boolVal := Bool(coerceToBool(val))
 
 			v.stack[v.sp-1] = boolVal
-		case OpCreateCheckedString:
-			v.ip += 3
+		case OpCreateString:
+			v.ip += 4
+			typed := v.curInsts[v.ip-3] == 1
 			numElements := int(v.curInsts[v.ip-2])
 			nodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
 			node := v.constants[nodeIndex].(AstNode).Node.(*parse.StringTemplateLiteral)
@@ -1075,7 +1076,15 @@ func (v *VM) run() {
 			}
 			v.sp -= numElements
 
-			val, err := NewCheckedString(sliceValues, node, v.global.Ctx)
+			var val Value
+			var err error
+
+			if typed {
+				val, err = NewCheckedString(sliceValues, node, v.global.Ctx)
+			} else {
+				val, err = NewStringFromSlices(sliceValues, node, v.global.Ctx)
+			}
+
 			if err != nil {
 				v.err = err
 				return

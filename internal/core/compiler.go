@@ -1769,7 +1769,13 @@ func (c *compiler) Compile(node parse.Node) error {
 				}
 			}
 		}
-		c.emit(node, OpCreateCheckedString, len(node.Slices), c.addConstant(AstNode{
+
+		typed := 0
+		if node.Pattern != nil {
+			typed = 1
+		}
+
+		c.emit(node, OpCreateString, typed, len(node.Slices), c.addConstant(AstNode{
 			Node:  node,
 			chunk: c.currentChunk(),
 		}))

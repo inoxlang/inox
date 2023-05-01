@@ -4959,6 +4959,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}, res)
 		})
 
+		t.Run("no pattern, no interpolation", func(t *testing.T) {
+			code := replace(`return |3|`)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Str("3"), res)
+		})
+
 		t.Run("valid interpolations", func(t *testing.T) {
 			code := replace(`
 				%sql. = {
@@ -5012,6 +5022,32 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.Error(t, err)
 			assert.Nil(t, res)
+		})
+
+		t.Run("no pattern, leading interpolation", func(t *testing.T) {
+			code := replace(`
+				s = "1"
+				return |{{s}}2|
+			`)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Str("12"), res)
+		})
+
+		t.Run("no pattern, trailing interpolation", func(t *testing.T) {
+			code := replace(`
+				s = "2"
+				return |1{{s}}|
+			`)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Str("12"), res)
 		})
 	})
 

@@ -178,7 +178,7 @@ const (
 	OpCreateOptionalPattern
 	OpToPattern
 	OpToBool
-	OpCreateCheckedString
+	OpCreateString
 	OpCreateOption
 	OpCreatePath
 	OpCreatePathPattern
@@ -292,7 +292,7 @@ var OpcodeNames = [...]string{
 	OpToPattern:                    "TO_PATT",
 	OpCreateOptionalPattern:        "CRT_OPTP",
 	OpToBool:                       "TO_BOOL",
-	OpCreateCheckedString:          "CRT_CSTR",
+	OpCreateString:                 "CRT_STR",
 	OpCreateOption:                 "CRT_OPT",
 	OpCreatePath:                   "CRT_PATH",
 	OpCreatePathPattern:            "CRT_PATHP",
@@ -408,7 +408,7 @@ var OpcodeOperands = [...][]int{
 	OpToPattern:                    {},
 	OpCreateOptionalPattern:        {},
 	OpToBool:                       {},
-	OpCreateCheckedString:          {1, 2},
+	OpCreateString:                 {1, 1, 2},
 	OpCreateOption:                 {2},
 	OpCreatePath:                   {1, 2},
 	OpCreatePathPattern:            {1, 2},
@@ -521,7 +521,7 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpToPattern:                    {},
 	OpCreateOptionalPattern:        {},
 	OpToBool:                       {},
-	OpCreateCheckedString:          {false, true},
+	OpCreateString:                 {false, false, true},
 	OpCreateOption:                 {true},
 	OpCreatePath:                   {false, true},
 	OpCreatePathPattern:            {false, true},

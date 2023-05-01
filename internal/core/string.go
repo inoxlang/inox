@@ -184,6 +184,25 @@ type CheckedString struct {
 	matchingPattern     Pattern
 }
 
+func NewStringFromSlices(slices []Value, node *parse.StringTemplateLiteral, ctx *Context) (Str, error) {
+	buff := bytes.NewBufferString("")
+
+	for i, sliceValue := range slices {
+		switch s := node.Slices[i].(type) {
+		case *parse.StringTemplateSlice:
+			buff.WriteString(s.Raw)
+		case *parse.StringTemplateInterpolation:
+			str := sliceValue.(Str)
+			buff.WriteString(string(str))
+		default:
+			return "", fmt.Errorf("runtime check error: slice value of type %T", sliceValue)
+		}
+	}
+
+	str := Str(buff.String())
+	return str, nil
+}
+
 // NewCheckedString creates a CheckedString in a secure way.
 func NewCheckedString(slices []Value, node *parse.StringTemplateLiteral, ctx *Context) (CheckedString, error) {
 	patternIdent, isPatternAnIdent := node.Pattern.(*parse.PatternIdentifierLiteral)
