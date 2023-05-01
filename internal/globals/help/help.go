@@ -45,13 +45,17 @@ func getValueId(v core.Value) (uintptr, bool) {
 	var ptr uintptr
 	switch val := v.(type) {
 	case *core.GoFunction:
-		ptr = reflect.ValueOf(val.GoFunc()).Pointer()
+		return getGoFuncId(val.GoFunc()), true
 	case *core.InoxFunction:
 		ptr = reflect.ValueOf(val).Pointer()
 	default:
 		return 0, false
 	}
 	return ptr, true
+}
+
+func getGoFuncId(fn any) uintptr {
+	return reflect.ValueOf(fn).Pointer()
 }
 
 func RegisterHelpValue(v any, topic string) {
@@ -100,52 +104,84 @@ type Example struct {
 	Output      string `json:"output"`
 }
 
-func (h TopicHelp) Print(w io.Writer) {
-	w.Write([]byte(h.Text + "\n\r"))
+func (h TopicHelp) Print(w io.Writer, config HelpMessageConfig) {
+	switch config.Format {
+	case ColorizedTerminalFormat:
+		w.Write(utils.StringAsBytes(h.Text + "\n\r"))
 
-	if len(h.Examples) > 0 {
-		w.Write([]byte("examples:\n\r"))
+		if len(h.Examples) > 0 {
+			w.Write(utils.StringAsBytes("examples:\n\r"))
 
-		for _, example := range h.Examples {
+			for _, example := range h.Examples {
 
-			chunk, err := parse.ParseChunk(example.Code, "")
-			if err != nil {
-				continue
-			}
-
-			w.Write([]byte("\n\r- "))
-			core.PrintColorizedChunk(w, chunk, []rune(example.Code), false, core.GetFullColorSequence(termenv.ANSIWhite, false))
-
-			if example.Explanation != "" {
-				w.Write([]byte(" # "))
-				w.Write([]byte(example.Explanation))
-			}
-
-			if example.Output != "" {
-				w.Write([]byte("\n\r  -> "))
-
-				chunk, err := parse.ParseChunk(example.Output, "")
+				chunk, err := parse.ParseChunk(example.Code, "")
 				if err != nil {
 					continue
 				}
 
-				core.PrintColorizedChunk(w, chunk, []rune(example.Output), false, core.GetFullColorSequence(termenv.ANSIWhite, false))
+				w.Write(utils.StringAsBytes("\n\r- "))
+				core.PrintColorizedChunk(w, chunk, []rune(example.Code), false, core.GetFullColorSequence(termenv.ANSIWhite, false))
+
+				if example.Explanation != "" {
+					w.Write(utils.StringAsBytes(" # "))
+					w.Write(utils.StringAsBytes(example.Explanation))
+				}
+
+				if example.Output != "" {
+					w.Write(utils.StringAsBytes("\n\r  -> "))
+
+					chunk, err := parse.ParseChunk(example.Output, "")
+					if err != nil {
+						continue
+					}
+
+					core.PrintColorizedChunk(w, chunk, []rune(example.Output), false, core.GetFullColorSequence(termenv.ANSIWhite, false))
+				}
+				w.Write(utils.StringAsBytes("\n\r"))
+
 			}
-			w.Write([]byte("\n\r"))
-
 		}
-	}
 
-	if len(h.RelatedTopics) > 0 {
-		w.Write([]byte("\n\rrelated: " + strings.Join(h.RelatedTopics, ", ")))
-		w.Write([]byte("\n\r"))
+		if len(h.RelatedTopics) > 0 {
+			w.Write(utils.StringAsBytes("\n\rrelated: " + strings.Join(h.RelatedTopics, ", ")))
+			w.Write(utils.StringAsBytes("\n\r"))
+		}
+	case MarkdownFormat:
+		w.Write(utils.StringAsBytes(h.Text + "\n"))
+
+		if len(h.Examples) > 0 {
+			w.Write(utils.StringAsBytes("\n**examples**:\n```inox\n"))
+
+			for _, example := range h.Examples {
+				w.Write(utils.StringAsBytes(example.Code))
+
+				if example.Explanation != "" {
+					w.Write(utils.StringAsBytes(" # "))
+					w.Write(utils.StringAsBytes(example.Explanation))
+				}
+
+				if example.Output != "" {
+					w.Write(utils.StringAsBytes("\n# output:\n"))
+					w.Write(utils.StringAsBytes(example.Output))
+				}
+				w.Write(utils.StringAsBytes("\n\n"))
+			}
+			w.Write(utils.StringAsBytes("\n```"))
+		}
+
+		if len(h.RelatedTopics) > 0 {
+			w.Write(utils.StringAsBytes("\nrelated: " + strings.Join(h.RelatedTopics, ", ")))
+			w.Write(utils.StringAsBytes("\n"))
+		}
+	default:
+		panic(core.ErrUnreachable)
 	}
 
 }
 
-func (h TopicHelp) String() string {
+func (h TopicHelp) String(config HelpMessageConfig) string {
 	buf := bytes.NewBuffer(nil)
-	h.Print(buf)
+	h.Print(buf, config)
 	return buf.String()
 }
 
@@ -159,12 +195,13 @@ func Help(ctx *core.Context, args ...core.Value) {
 
 	arg := args[0]
 	str := "no help found\n"
+	//TODO: support uncolorized
+	config := HelpMessageConfig{Format: ColorizedTerminalFormat}
 
 	if ident, ok := arg.(core.Identifier); ok {
-
 		help, ok := helpByTopic[string(ident)]
 		if ok {
-			str = help.String()
+			str = help.String(config)
 		}
 	} else {
 		id, ok := getValueId(arg)
@@ -172,11 +209,40 @@ func Help(ctx *core.Context, args ...core.Value) {
 		if ok {
 			help, ok := helpMap[id]
 			if ok {
-				str = help.String()
+				str = help.String(config)
 			}
 		}
 	}
 
 	out.Write([]byte(str))
 	utils.MoveCursorNextLine(out, 1)
+}
+
+type HelpMessageFormat int
+
+const (
+	ColorizedTerminalFormat HelpMessageFormat = iota + 1
+	MarkdownFormat
+)
+
+type HelpMessageConfig struct {
+	Format HelpMessageFormat
+}
+
+func HelpForGoFunc(fn any, config HelpMessageConfig) (string, bool) {
+	id := getGoFuncId(fn)
+	help, ok := helpMap[id]
+	if ok {
+		return help.String(config), true
+	}
+	return "", false
+}
+
+func HelpForSymbolicGoFunc(fn *symbolic.GoFunction, config HelpMessageConfig) (string, bool) {
+	concreteFn, ok := core.GetConcreteGoFuncFromSymbolic(fn)
+	if !ok {
+		return "", false
+	}
+
+	return HelpForGoFunc(concreteFn.Interface(), config)
 }

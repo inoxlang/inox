@@ -15,6 +15,7 @@ import (
 
 var (
 	symbolicGoFunctionMap = map[uintptr]*symbolic.GoFunction{}
+	goFunctionMap         = map[*symbolic.GoFunction]reflect.Value{}
 
 	SYMBOLIC_DATA_PROP_NAMES = []string{"errors"}
 )
@@ -72,7 +73,8 @@ func init() {
 // RegisterSymbolicGoFunction registers the symbolic equivalent of fn, fn should not be a method or a closure.
 // example: RegisterSymbolicGoFunction(func(ctx *Context){ }, func(ctx *symbolic.Context))
 func RegisterSymbolicGoFunction(fn any, symbolicFn any) {
-	ptr := reflect.ValueOf(fn).Pointer()
+	reflectVal := reflect.ValueOf(fn)
+	ptr := reflectVal.Pointer()
 	_, ok := symbolicGoFunctionMap[ptr]
 	if ok {
 		panic(fmt.Errorf("symbolic equivalent of function %s already registered", runtime.FuncForPC(ptr).Name()))
@@ -88,6 +90,7 @@ func RegisterSymbolicGoFunction(fn any, symbolicFn any) {
 	}
 
 	symbolicGoFunctionMap[ptr] = goFunc
+	goFunctionMap[goFunc] = reflectVal
 }
 
 // [<fn1>, <symbolic fn1>, <fn2>, <symbolic fn2>, ...]., See RegisterSymbolicGoFunction.
@@ -104,6 +107,11 @@ func IsSymbolicEquivalentOfGoFunctionRegistered(fn any) bool {
 	ptr := reflect.ValueOf(fn).Pointer()
 	_, ok := symbolicGoFunctionMap[ptr]
 	return ok
+}
+
+func GetConcreteGoFuncFromSymbolic(fn *symbolic.GoFunction) (reflect.Value, bool) {
+	concreteFn, ok := goFunctionMap[fn]
+	return concreteFn, ok
 }
 
 type SymbolicData struct {

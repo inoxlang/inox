@@ -28,9 +28,14 @@ import (
 
 	globals "github.com/inoxlang/inox/internal/globals"
 	compl "github.com/inoxlang/inox/internal/globals/completion"
+	help "github.com/inoxlang/inox/internal/globals/help"
 
 	_ "net/http/pprof"
 	"net/url"
+)
+
+const (
+	JSONRPC_VERSION = "2.0"
 )
 
 var HOVER_PRETTY_PRINT_CONFIG = &pprint.PrettyPrintConfig{
@@ -106,7 +111,8 @@ func StartLSPServer() {
 			return &defines.Hover{}, nil
 		}
 
-		primaryVal, ok := state.SymbolicData.GetMostSpecificNodeValue(foundNode)
+		mostSpecificVal, ok := state.SymbolicData.GetMostSpecificNodeValue(foundNode)
+		var lessSpecificVal symbolic.SymbolicValue
 		if !ok {
 			logs.Println("no data")
 			return &defines.Hover{}, nil
@@ -116,12 +122,12 @@ func StartLSPServer() {
 		w := bufio.NewWriterSize(buff, 1000)
 		var stringified string
 		{
-			utils.PanicIfErr(symbolic.PrettyPrint(primaryVal, w, HOVER_PRETTY_PRINT_CONFIG, 0, 0))
-
-			secondaryVal, ok := state.SymbolicData.GetLessSpecificNodeValue(foundNode)
+			utils.PanicIfErr(symbolic.PrettyPrint(mostSpecificVal, w, HOVER_PRETTY_PRINT_CONFIG, 0, 0))
+			var ok bool
+			lessSpecificVal, ok = state.SymbolicData.GetLessSpecificNodeValue(foundNode)
 			if ok {
 				w.Write(utils.StringAsBytes("\n\n# less specific\n"))
-				utils.PanicIfErr(symbolic.PrettyPrint(secondaryVal, w, HOVER_PRETTY_PRINT_CONFIG, 0, 0))
+				utils.PanicIfErr(symbolic.PrettyPrint(lessSpecificVal, w, HOVER_PRETTY_PRINT_CONFIG, 0, 0))
 			}
 
 			w.Flush()
@@ -129,10 +135,31 @@ func StartLSPServer() {
 			logs.Println(stringified)
 		}
 
+		//help
+		var helpMessage string
+		{
+			val := mostSpecificVal
+			for {
+				switch val := val.(type) {
+				case *symbolic.GoFunction:
+					text, ok := help.HelpForSymbolicGoFunc(val, help.HelpMessageConfig{Format: help.MarkdownFormat})
+					if ok {
+						helpMessage = "\n-----\n" + strings.ReplaceAll(text, "\n\r", "\n")
+					}
+				}
+				if helpMessage == "" && val == mostSpecificVal && lessSpecificVal != nil {
+					val = lessSpecificVal
+					continue
+				}
+				break
+			}
+
+		}
+
 		return &defines.Hover{
 			Contents: defines.MarkupContent{
 				Kind:  defines.MarkupKindMarkdown,
-				Value: "```inox\n" + stringified + "\n```",
+				Value: "```inox\n" + stringified + "\n```" + helpMessage,
 			},
 		}, nil
 	})
@@ -291,7 +318,7 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, com
 send_diagnostics:
 	session.Notify(jsonrpc.NotificationMessage{
 		BaseMessage: jsonrpc.BaseMessage{
-			Jsonrpc: "2.0",
+			Jsonrpc: JSONRPC_VERSION,
 		},
 		Method: "textDocument/publishDiagnostics",
 		Params: utils.Must(json.Marshal(defines.PublishDiagnosticsParams{

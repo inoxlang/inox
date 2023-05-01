@@ -8,7 +8,7 @@ map:
   - code: 'map([{a: 1, b: 2, c: 3}], .{a,b})'
     output: '[{a: 1, b: 2}]'
   - code: 'map([0, 1, 2], Mapping{0 => "0" 1 => "1"})'
-    output: '["0", "1", "nil"]'
+    output: '["0", "1", nil]'
   - code: 'map([97, 98, 99], torune)'
     output: "['a', 'b', 'c']"
   - code: 'map([0, 1, 2], @($ + 1))'
