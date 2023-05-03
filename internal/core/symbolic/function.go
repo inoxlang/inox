@@ -712,10 +712,11 @@ func (f *Function) Test(v SymbolicValue) bool {
 
 		return true
 	case *GoFunction:
+		goFunc := fn
 		fnNonVariadicParams := fn.NonVariadicParametersExceptCtx()
 
-		if f.variadic != fn.isVariadic || len(fnNonVariadicParams) != len(f.NonVariadicParameters()) ||
-			len(f.results) != len(fn.results) {
+		if f.variadic != goFunc.isVariadic || len(fnNonVariadicParams) != len(f.NonVariadicParameters()) ||
+			len(f.results) != len(goFunc.results) {
 			return false
 		}
 
@@ -727,30 +728,40 @@ func (f *Function) Test(v SymbolicValue) bool {
 
 		variadicParamElem := f.VariadicParamElem()
 
-		if !deeplyEqual(variadicParamElem, fn.variadicElem) {
+		if !deeplyEqual(variadicParamElem, goFunc.variadicElem) {
 			return false
 		}
 
 		for i, result := range f.results {
-			if !deeplyEqual(result, fn.results[i]) {
+			if !deeplyEqual(result, goFunc.results[i]) {
 				return false
 			}
 		}
 
 		return true
 	case *InoxFunction:
-		if fn.node == nil || f.variadic != fn.IsVariadic() || len(f.parameters) != len(fn.parameters) {
+		inoxFn := fn
+		if inoxFn.node == nil || f.variadic != inoxFn.IsVariadic() || len(f.parameters) != len(inoxFn.parameters) {
 			return false
 		}
 
 		for i, param := range f.parameters {
-			if !deeplyEqual(param, fn.parameters[i]) {
+			if !deeplyEqual(param, inoxFn.parameters[i]) {
 				return false
 			}
 		}
 
-		result := NewList(f.results...)
-		return deeplyEqual(result, fn.result)
+		var result SymbolicValue
+		switch len(f.results) {
+		case 0:
+			_, ok := inoxFn.result.(*NilT)
+			return ok
+		case 1:
+			result = f.results[0]
+		default:
+			result = NewList(f.results...)
+		}
+		return deeplyEqual(result, inoxFn.result)
 	default:
 		return false
 	}
