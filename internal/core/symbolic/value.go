@@ -15,14 +15,15 @@ var (
 	ErrNoSymbolicValue        = errors.New("no symbolic value")
 	ErrUnassignablePropsMixin = errors.New("UnassignablePropsMixin")
 
-	ANY           = &Any{}
-	ANY_BOOL      = &Bool{}
-	ANY_RES_NAME  = &AnyResourceName{}
-	ANY_OPTION    = &Option{}
-	ANY_INT_RANGE = &IntRange{}
-	ANY_FILEMODE  = &FileMode{}
-	ANY_DATE      = &Date{}
-	ANY_BYTECOUNT = &ByteCount{}
+	ANY            = &Any{}
+	ANY_BOOL       = &Bool{}
+	ANY_RES_NAME   = &AnyResourceName{}
+	ANY_OPTION     = &Option{}
+	ANY_INT_RANGE  = &IntRange{}
+	ANY_FILEMODE   = &FileMode{}
+	ANY_DATE       = &Date{}
+	ANY_BYTECOUNT  = &ByteCount{}
+	ANY_IDENTIFIER = &Identifier{}
 
 	FILEINFO_PROPNAMES = []string{"name", "abs-path", "size", "mode", "mod-time", "is-dir"}
 )
@@ -215,7 +216,7 @@ func (i *Identifier) Widen() (SymbolicValue, bool) {
 	if i.name == "" {
 		return nil, false
 	}
-	return &Identifier{}, true
+	return ANY_IDENTIFIER, true
 }
 
 func (i *Identifier) IsWidenable() bool {
@@ -235,7 +236,7 @@ func (s *Identifier) underylingString() *String {
 }
 
 func (s *Identifier) WidestOfType() SymbolicValue {
-	return &Identifier{}
+	return ANY_IDENTIFIER
 }
 
 // A PropertyName represents a symbolic PropertyName.

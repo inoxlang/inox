@@ -428,10 +428,10 @@ type goFunctionCallInput struct {
 	callNode          *parse.CallExpression
 }
 
-func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicValue, multipleResults bool, finalErr error) {
+func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicValue, multipleResults bool, enoughArgs bool, finalErr error) {
 	if goFunc.fn == nil {
 		input.state.addError(makeSymbolicEvalError(input.callNode, input.state, CANNOT_CALL_GO_FUNC_NO_CONCRETE_VALUE))
-		return ANY, false, nil
+		return ANY, false, false, nil
 	}
 
 	symbolicArgs := input.symbolicArgs
@@ -442,10 +442,11 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 	isExt := input.isExt
 	must := input.must
 	callNode := input.callNode
+	enoughArgs = true
 
 	if err := goFunc.LoadSignatureData(); err != nil {
 		err = makeSymbolicEvalError(callNode, state, err.Error())
-		return nil, false, err
+		return nil, false, false, err
 	}
 
 	var ctx *Context = state.ctx
@@ -535,6 +536,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 				args[paramIndex] = widenedArg
 			}
 		} else { //if not enough arguments
+			enoughArgs = false
 			args = append(args, param)
 		}
 	}
@@ -591,7 +593,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 		} else {
 			symbolicResultValues[i], err = converReflectValToSymbolicValue(reflectVal)
 			if err != nil {
-				return nil, false, fmt.Errorf(
+				return nil, false, enoughArgs, fmt.Errorf(
 					"cannot convert one of a Go function result %s.%s (function name: %s): %s",
 					reflectVal.Type().PkgPath(), reflectVal.Type().Name(),
 					runtime.FuncForPC(fnVal.Pointer()).Name(),
@@ -609,7 +611,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 
 	switch len(symbolicResultValues) {
 	case 0:
-		return Nil, false, nil
+		return Nil, false, enoughArgs, nil
 	case 1:
 		if isExt {
 			shared, err := ShareOrClone(symbolicResultValues[0], extState)
@@ -617,10 +619,10 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 				state.addError(makeSymbolicEvalError(callNode, state, err.Error()))
 				shared = ANY
 			}
-			return shared, false, nil
+			return shared, false, enoughArgs, nil
 		}
 
-		return symbolicResultValues[0], false, nil
+		return symbolicResultValues[0], false, enoughArgs, nil
 	}
 
 	var results []SymbolicValue
@@ -639,7 +641,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 		results = append(results, symbolicResultValues...)
 	}
 
-	return NewList(results...), true, nil
+	return NewList(results...), true, enoughArgs, nil
 }
 
 // An Function represents a symbolic function we do not know the concrete type.
@@ -653,16 +655,18 @@ type Function struct {
 	pattern *FunctionPattern
 }
 
-func NewFunction(parameters []SymbolicValue, variadic bool, results []SymbolicValue) *Function {
+func NewFunction(parameters []SymbolicValue, parameterNames []string, variadic bool, results []SymbolicValue) *Function {
 	//TODO: check that variadic parameter is a list
 
 	return &Function{
-		parameters: parameters,
-		results:    results,
-		variadic:   variadic,
+		parameters:     parameters,
+		parameterNames: parameterNames,
+		results:        results,
+		variadic:       variadic,
 	}
 }
 
+// returned slice should not be modified.
 func (fn *Function) NonVariadicParameters() []SymbolicValue {
 	if fn.variadic {
 		return fn.parameters[:len(fn.parameters)-1]
@@ -735,7 +739,7 @@ func (f *Function) Test(v SymbolicValue) bool {
 
 		return true
 	case *InoxFunction:
-		if f.variadic != fn.IsVariadic() || len(f.parameters) != len(fn.parameters) {
+		if fn.node == nil || f.variadic != fn.IsVariadic() || len(f.parameters) != len(fn.parameters) {
 			return false
 		}
 

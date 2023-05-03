@@ -2043,8 +2043,12 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			defer stateFork.unsetSelf()
 		}
 
+		parameterTypes := make([]SymbolicValue, len(n.Parameters))
+		parameterNames := make([]string, len(n.Parameters))
+		isVariadic := n.IsVariadic
+
 		//declare arguments
-		for _, p := range n.Parameters[:n.NonVariadicParamCount()] {
+		for paramIndex, p := range n.Parameters[:n.NonVariadicParamCount()] {
 			name := p.Var.Name
 			var paramType SymbolicValue = ANY
 
@@ -2056,6 +2060,9 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				paramType = pattern.SymbolicValue()
 			}
 
+			parameterTypes[paramIndex] = paramType
+			parameterNames[paramIndex] = name
+
 			stateFork.setLocal(name, paramType, nil)
 			state.symbolicData.SetMostSpecificNodeValue(p.Var, paramType)
 		}
@@ -2063,7 +2070,12 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		if n.IsVariadic {
 			variadicParam := n.VariadicParameter()
 			paramValue := &List{generalElement: ANY}
-			stateFork.setLocal(variadicParam.Var.Name, paramValue, nil)
+			name := variadicParam.Var.Name
+
+			parameterTypes[len(parameterTypes)-1] = paramValue
+			parameterNames[len(parameterTypes)-1] = name
+
+			stateFork.setLocal(name, paramValue, nil)
 			state.symbolicData.SetMostSpecificNodeValue(variadicParam.Var, paramValue)
 		}
 
@@ -2121,8 +2133,11 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		}
 
 		return &FunctionPattern{
-			node:       n,
-			returnType: storedReturnType,
+			node:           n,
+			returnType:     storedReturnType,
+			parameters:     parameterTypes,
+			parameterNames: parameterNames,
+			isVariadic:     isVariadic,
 		}, nil
 	case *parse.PatternConversionExpression:
 		v, err := symbolicEval(n.Value, state)
@@ -2920,7 +2935,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 	}
 
-	//EXECUTION
+	//execution
 
 	var fn *parse.FunctionExpression
 	var capturedLocals map[string]SymbolicValue
@@ -2944,10 +2959,10 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 				return ANY, nil
 			}
 		}
+		//evaluation is peformed further in the code
 	case *GoFunction:
-		//GO FUNCTION
 
-		result, multipleResults, err := f.Call(goFunctionCallInput{
+		result, multipleResults, enoughArgs, err := f.Call(goFunctionCallInput{
 			symbolicArgs:      args,
 			nonSpreadArgCount: nonSpreadArgCount,
 			hasSpreadArg:      hasSpreadArg,
@@ -2964,8 +2979,8 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 		if f.fn != nil {
 			utils.PanicIfErr(f.LoadSignatureData())
-			params, paramNames, ok := state.consumeSymbolicGoFunctionParameters()
-			if !ok {
+			params, paramNames, hasMoreSpecificParams := state.consumeSymbolicGoFunctionParameters()
+			if !hasMoreSpecificParams {
 				params = f.ParametersExceptCtx()
 			}
 
@@ -2982,30 +2997,90 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			}
 
 			state.symbolicData.PushNodeValue(calleeNode, function)
+
+			if !hasMoreSpecificParams || !enoughArgs {
+				goto go_func_result
+			}
+
+			//recheck arguments but with most specific function
+
+			paramTypes := function.parameters
+			currentArgs := args
+			if !f.isVariadic {
+				currentArgs = args[:len(params)]
+			}
+
+			for i, arg := range currentArgs {
+
+				widenedArg := arg
+				var argNode parse.Node
+				if i < nonSpreadArgCount {
+					argNode = argNodes[i]
+				}
+
+				paramType := paramTypes[i]
+
+				for !IsAny(widenedArg) && !paramType.Test(widenedArg) {
+					widenedArg = widenOrAny(widenedArg)
+				}
+
+				if !paramType.Test(widenedArg) {
+					if argNode != nil {
+						if _, ok := argNode.(*parse.RuntimeTypeCheckExpression); ok {
+							args[i] = paramType
+							pattern, ok := extData.SymbolicToPattern(paramType)
+							if ok {
+								state.symbolicData.SetRuntimeTypecheckPattern(argNode, pattern)
+							} else {
+								state.addError(makeSymbolicEvalError(argNode, state, UNSUPPORTED_PARAM_TYPE_FOR_RUNTIME_TYPECHECK))
+							}
+						} else {
+							state.addError(makeSymbolicEvalError(argNode, state, FmtInvalidArg(i, arg, paramType)))
+						}
+					} else {
+						//TODO: support runtime typecheck for spread arg
+						node := spreadArgNode
+						if node == nil {
+							node = callNode
+						}
+						state.addError(makeSymbolicEvalError(node, state, FmtInvalidArg(i, arg, paramType)))
+					}
+
+					args[i] = paramType
+				} else {
+					//disable runtime type check
+					if _, ok := argNode.(*parse.RuntimeTypeCheckExpression); ok {
+						state.symbolicData.SetRuntimeTypecheckPattern(argNode, nil)
+					}
+					args[i] = widenedArg
+				}
+			}
+
 		}
 
+	go_func_result:
 		return result, err
 	}
 
 	//inox function | unknown type function
 	var (
 		nonVariadicParamCount int
-		parameters            []*parse.FunctionParameter
-		variadicParam         *parse.FunctionParameter
+		parameterNodes        []*parse.FunctionParameter
+		variadicParamNode     *parse.FunctionParameter
 		returnType            parse.Node
 		isBodyExpression      bool
 		isVariadic            bool
 	)
 
 	if _, ok := callee.(*InoxFunction); ok {
-		nonVariadicParamCount, parameters, variadicParam, returnType, isBodyExpression =
+		nonVariadicParamCount, parameterNodes, variadicParamNode, returnType, isBodyExpression =
 			fn.SignatureInformation()
 	} else {
-		nonVariadicParamCount, parameters, variadicParam, returnType, isBodyExpression =
+		nonVariadicParamCount, parameterNodes, variadicParamNode, returnType, isBodyExpression =
 			callee.(*Function).pattern.node.SignatureInformation()
 	}
 
-	isVariadic = variadicParam != nil
+	isVariadic = variadicParamNode != nil
 
 	if isVariadic {
 		if nonSpreadArgCount < nonVariadicParamCount {
@@ -3015,7 +3090,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			for i := len(args); i < nonVariadicParamCount; i++ {
 				var paramType SymbolicValue
 
-				paramTypeNode := parameters[i].Type
+				paramTypeNode := parameterNodes[i].Type
 				if paramTypeNode == nil {
 					paramType = ANY
 				} else {
@@ -3029,23 +3104,23 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 				args = append(args, paramType)
 			}
 		}
-	} else if hasSpreadArg || len(args) != len(parameters) {
+	} else if hasSpreadArg || len(args) != len(parameterNodes) {
 
 		if hasSpreadArg {
 			state.addError(makeSymbolicEvalError(callNode, state, SPREAD_ARGS_NOT_SUPPORTED_FOR_NON_VARIADIC_FUNCS))
 		} else {
-			state.addError(makeSymbolicEvalError(callNode, state, fmtInvalidNumberOfArgs(len(args), len(parameters))))
+			state.addError(makeSymbolicEvalError(callNode, state, fmtInvalidNumberOfArgs(len(args), len(parameterNodes))))
 		}
 
-		if len(args) > len(parameters) {
+		if len(args) > len(parameterNodes) {
 			//if they are too many arguments we just ignore them
-			args = args[:len(parameters)]
+			args = args[:len(parameterNodes)]
 		} else {
 			//if they are not enough arguments we use the parameter types to set their value
-			for i := len(args); i < len(parameters); i++ {
+			for i := len(args); i < len(parameterNodes); i++ {
 				var paramType SymbolicValue
 
-				paramTypeNode := parameters[i].Type
+				paramTypeNode := parameterNodes[i].Type
 				if paramTypeNode == nil {
 					paramType = ANY
 				} else {
@@ -3067,9 +3142,9 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		var paramTypeNode parse.Node
 
 		if i >= nonVariadicParamCount {
-			paramTypeNode = variadicParam.Type
+			paramTypeNode = variadicParamNode.Type
 		} else {
-			paramTypeNode = parameters[i].Type
+			paramTypeNode = parameterNodes[i].Type
 		}
 
 		if paramTypeNode == nil {
@@ -3141,7 +3216,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		state.setSelf(self)
 	}
 
-	for i, p := range parameters[:nonVariadicParamCount] {
+	for i, p := range parameterNodes[:nonVariadicParamCount] {
 		name := p.Var.Name
 		state.setLocal(name, args[i], nil)
 	}
@@ -3152,7 +3227,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 	if isVariadic {
 		variadicArgs := NewList(args[nonVariadicParamCount:]...)
-		name := variadicParam.Var.Name
+		name := variadicParamNode.Var.Name
 		state.setLocal(name, variadicArgs, nil)
 	}
 

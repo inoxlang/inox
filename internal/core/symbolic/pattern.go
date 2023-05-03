@@ -1867,6 +1867,10 @@ func (p *OptionalPattern) WidestOfType() SymbolicValue {
 
 type FunctionPattern struct {
 	NotCallablePatternMixin
+	parameters     []SymbolicValue
+	parameterNames []string
+	isVariadic     bool
+
 	node       *parse.FunctionPatternExpression //if nil, any function is matched
 	returnType SymbolicValue
 }
@@ -1962,7 +1966,7 @@ func (fn *FunctionPattern) IteratorElementValue() SymbolicValue {
 }
 
 func (fn *FunctionPattern) SymbolicValue() SymbolicValue {
-	return &Function{pattern: fn}
+	return &Function{fn.parameters, fn.parameterNames, nil, fn.isVariadic, fn}
 }
 
 func (p *FunctionPattern) StringPattern() (StringPatternElement, bool) {

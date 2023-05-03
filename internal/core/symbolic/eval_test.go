@@ -1385,8 +1385,10 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, &FunctionPattern{
-				node:       fnPatt,
-				returnType: Nil,
+				node:           fnPatt,
+				returnType:     Nil,
+				parameters:     []SymbolicValue{},
+				parameterNames: []string{},
 			}, res)
 		})
 
@@ -1398,8 +1400,10 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, &FunctionPattern{
-				node:       fnPatt,
-				returnType: Nil,
+				node:           fnPatt,
+				returnType:     Nil,
+				parameters:     []SymbolicValue{ANY},
+				parameterNames: []string{"a"},
 			}, res)
 		})
 
@@ -1417,8 +1421,10 @@ func TestSymbolicEval(t *testing.T) {
 				makeSymbolicEvalError(fnPatt, state, MISSING_RETURN_IN_FUNCTION_PATT),
 			}, state.errors)
 			assert.Equal(t, &FunctionPattern{
-				node:       fnPatt,
-				returnType: &Int{},
+				node:           fnPatt,
+				returnType:     &Int{},
+				parameters:     []SymbolicValue{},
+				parameterNames: []string{},
 			}, res)
 		})
 
@@ -1438,8 +1444,10 @@ func TestSymbolicEval(t *testing.T) {
 				makeSymbolicEvalError(innerReturnStmt, state, fmtInvalidReturnValue(&String{}, &Int{})),
 			}, state.errors)
 			assert.Equal(t, &FunctionPattern{
-				node:       fnPatt,
-				returnType: &Int{},
+				node:           fnPatt,
+				returnType:     &Int{},
+				parameters:     []SymbolicValue{},
+				parameterNames: []string{},
 			}, res)
 		})
 
@@ -1976,7 +1984,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("call Go function", func(t *testing.T) {
-		t.Run("call Go function: signature is func(*Context) int", func(t *testing.T) {
+		t.Run("signature is func(*Context) int", func(t *testing.T) {
 			n, state := makeStateAndChunk(`
 				return f()
 			`)
@@ -1994,7 +2002,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &Int{}, res)
 		})
 
-		t.Run("call Go function: signature is func(*Context) *List", func(t *testing.T) {
+		t.Run("signature is func(*Context) *List", func(t *testing.T) {
 			n, state := makeStateAndChunk(`
 				return f()
 			`)
@@ -2012,7 +2020,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &List{generalElement: ANY}, res)
 		})
 
-		t.Run("call Go function: signature is func(*Context) (int, int)", func(t *testing.T) {
+		t.Run("signature is func(*Context) (int, int)", func(t *testing.T) {
 			n, state := makeStateAndChunk(`
 				return f()
 			`)
@@ -2030,7 +2038,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewList(&Int{}, &Int{}), res)
 		})
 
-		t.Run("call Go function: signature is func(*Context, *Int) *Int: missing argument", func(t *testing.T) {
+		t.Run("signature is func(*Context, *Int) *Int: missing argument", func(t *testing.T) {
 			n, state := makeStateAndChunk(`
 				return f()
 			`)
@@ -2052,7 +2060,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &Int{}, res)
 		})
 
-		t.Run("call Go function: signature is func(*Context, *Int) *Int: bad argument", func(t *testing.T) {
+		t.Run("signature is func(*Context, *Int) *Int: bad argument", func(t *testing.T) {
 			n, state := makeStateAndChunk(`
 				return f("a")
 			`)
@@ -2074,7 +2082,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &Int{}, res)
 		})
 
-		t.Run("call Go function: signature is func(*Context, *Int) *Int: too many arguments", func(t *testing.T) {
+		t.Run("signature is func(*Context, *Int) *Int: too many arguments", func(t *testing.T) {
 			n, state := makeStateAndChunk(`
 				return f(1, 2)
 			`)
@@ -2096,7 +2104,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &Int{}, res)
 		})
 
-		t.Run("call Go function: signature is func(*Context, *List) *Int: pass multivalue of 2 lists", func(t *testing.T) {
+		t.Run("signature is func(*Context, *List) *Int: pass multivalue of 2 lists", func(t *testing.T) {
 			n, state := makeStateAndChunk(`
 				return fn(list %| %[]%str | %[]%int){
 					return f(list)
@@ -2123,7 +2131,7 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
-		t.Run("call Go function: signature is func(*Context, ...*List) *Int: pass multivalue of 2 lists", func(t *testing.T) {
+		t.Run("signature is func(*Context, ...*List) *Int: pass multivalue of 2 lists", func(t *testing.T) {
 			n, state := makeStateAndChunk(`
 				return fn(list %| %[]%str | %[]%int){
 					return f(list)
@@ -2150,7 +2158,7 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
-		t.Run("call Go function: signature is func(*Context, ...*Int) *Int: bad first variadic argument", func(t *testing.T) {
+		t.Run("signature is func(*Context, ...*Int) *Int: bad first variadic argument", func(t *testing.T) {
 			n, state := makeStateAndChunk(`
 				return f("a")
 			`)
@@ -2172,7 +2180,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &Int{}, res)
 		})
 
-		t.Run("call Go function: signature is func(*Context, *Int, ...*Int) *Int: missing argument", func(t *testing.T) {
+		t.Run("signature is func(*Context, *Int, ...*Int) *Int: missing argument", func(t *testing.T) {
 			n, state := makeStateAndChunk(`
 				return f()
 			`)
@@ -2193,7 +2201,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &Int{}, res)
 		})
 
-		t.Run("call Go function: signature is func(*Context, ...*Int) *Int: bad second variadic argument", func(t *testing.T) {
+		t.Run("signature is func(*Context, ...*Int) *Int: bad second variadic argument", func(t *testing.T) {
 			n, state := makeStateAndChunk(`
 				return f(1, "a")
 			`)
@@ -2215,7 +2223,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &Int{}, res)
 		})
 
-		t.Run("call Go function: no concrete value", func(t *testing.T) {
+		t.Run("no concrete value", func(t *testing.T) {
 			n, state := makeStateAndChunk(`
 				return f()
 			`)
@@ -2293,6 +2301,32 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 			assert.Equal(t, &Int{}, res)
 		})
+
+		t.Run("specific Go function", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				return f(#b)
+			`)
+
+			argNode := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.CallExpression).Arguments[0]
+
+			goFunc := &GoFunction{
+				fn: func(ctx *Context, arg SymbolicValue) *Int {
+					if _, ok := arg.(*Identifier); ok {
+						ctx.SetSymbolicGoFunctionParameters(&[]SymbolicValue{&Identifier{name: "a"}}, []string{"arg"})
+					}
+					return ANY_INT
+				},
+			}
+
+			state.setGlobal("f", goFunc, GlobalConst)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(argNode, state, FmtInvalidArg(0, &Identifier{name: "b"}, &Identifier{name: "a"})),
+			}, state.errors)
+			assert.Equal(t, &Int{}, res)
+		})
+
 	})
 
 	t.Run("call abstract function", func(t *testing.T) {
@@ -2317,9 +2351,13 @@ func TestSymbolicEval(t *testing.T) {
 				parameters: []SymbolicValue{
 					&Function{
 						pattern: &FunctionPattern{
-							node:       fnPatt.(*parse.FunctionPatternExpression),
-							returnType: ANY_INT,
+							node:           fnPatt.(*parse.FunctionPatternExpression),
+							returnType:     ANY_INT,
+							parameters:     []SymbolicValue{},
+							parameterNames: []string{},
 						},
+						parameters:     []SymbolicValue{},
+						parameterNames: []string{},
 					},
 				},
 				parameterNames: []string{"func"},

@@ -15,7 +15,7 @@ func init() {
 
 			makeParams := func(result symbolic.SymbolicValue) *[]symbolic.SymbolicValue {
 				return &[]symbolic.SymbolicValue{iterable, symbolic.NewFunction(
-					[]symbolic.SymbolicValue{iterable.IteratorElementValue()}, false,
+					[]symbolic.SymbolicValue{iterable.IteratorElementValue()}, nil, false,
 					[]symbolic.SymbolicValue{result},
 				)}
 			}
