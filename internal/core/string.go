@@ -192,7 +192,15 @@ func NewStringFromSlices(slices []Value, node *parse.StringTemplateLiteral, ctx 
 		case *parse.StringTemplateSlice:
 			buff.WriteString(s.Raw)
 		case *parse.StringTemplateInterpolation:
-			str := sliceValue.(Str)
+			switch val := sliceValue.(type) {
+			case StringLike:
+			case Int:
+				sliceValue = Str(Stringify(val, ctx))
+			default:
+				panic(ErrUnreachable)
+			}
+
+			str := sliceValue.(StringLike).GetOrBuildString()
 			buff.WriteString(string(str))
 		default:
 			return "", fmt.Errorf("runtime check error: slice value of type %T", sliceValue)

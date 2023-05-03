@@ -2795,8 +2795,15 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 					return nil, err
 				}
 
-				if _, ok := e.(*String); !ok {
-					state.addError(makeSymbolicEvalError(node, state, fmtInterpolationIsNotStringBut(e)))
+				switch e.(type) {
+				case StringLike:
+				case *Int:
+				default:
+					if n.Pattern == nil {
+						state.addError(makeSymbolicEvalError(node, state, fmtUntypedInterpolationIsNotStringlikeOrIntBut(e)))
+					} else {
+						state.addError(makeSymbolicEvalError(node, state, fmtInterpolationIsNotStringlikeOrIntBut(e)))
+					}
 				}
 			}
 		}

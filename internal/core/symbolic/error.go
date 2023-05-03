@@ -227,8 +227,12 @@ func fmtCannotInterpolateMemberOfPatternNamespaceDoesNotExist(name string, names
 	return fmt.Sprintf("cannot interpolate: member .%s of pattern namespace '%s' does not exist", name, namespace)
 }
 
-func fmtInterpolationIsNotStringBut(v SymbolicValue) string {
-	return fmt.Sprintf("result of interpolation expression should be a string but is a(n) %s", Stringify(v))
+func fmtInterpolationIsNotStringlikeOrIntBut(v SymbolicValue) string {
+	return fmt.Sprintf("result of interpolation expression should be a string/int but is a(n) %s", Stringify(v))
+}
+
+func fmtUntypedInterpolationIsNotStringlikeOrIntBut(v SymbolicValue) string {
+	return fmt.Sprintf("result of untyped interpolation expression should be a string/int but is a(n) %s", Stringify(v))
 }
 
 func fmtPropOfSymbolicDoesNotExist(name string, v SymbolicValue, suggestion string) string {

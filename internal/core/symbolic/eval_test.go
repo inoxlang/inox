@@ -4013,7 +4013,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(templateLit, state, fmtInterpolationIsNotStringBut(&Object{entries: map[string]SymbolicValue{}})),
+				makeSymbolicEvalError(templateLit, state, fmtInterpolationIsNotStringlikeOrIntBut(&Object{entries: map[string]SymbolicValue{}})),
 			}, state.errors)
 			assert.Equal(t, &CheckedString{}, res)
 		})
