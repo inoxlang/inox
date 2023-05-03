@@ -2964,14 +2964,15 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 		if f.fn != nil {
 			utils.PanicIfErr(f.LoadSignatureData())
-			params, ok := state.consumeSymbolicGoFunctionParameters()
+			params, paramNames, ok := state.consumeSymbolicGoFunctionParameters()
 			if !ok {
 				params = f.ParametersExceptCtx()
 			}
 
 			function := &Function{
-				parameters: params,
-				variadic:   f.isVariadic,
+				parameters:     params,
+				parameterNames: paramNames,
+				variadic:       f.isVariadic,
 			}
 
 			if list, ok := result.(*List); ok && multipleResults {

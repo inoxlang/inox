@@ -25,8 +25,9 @@ type State struct {
 	iterationChange IterationChange
 	Module          *Module
 
-	tempSymbolicGoFunctionErrors     []string
-	tempSymbolicGoFunctionParameters *[]SymbolicValue
+	tempSymbolicGoFunctionErrors         []string
+	tempSymbolicGoFunctionParameters     *[]SymbolicValue
+	tempSymbolicGoFunctionParameterNames []string
 
 	errors          []SymbolicEvaluationError
 	errorMessageSet map[string]bool
@@ -444,21 +445,23 @@ func (state *State) consumeSymbolicGoFunctionErrors(fn func(msg string)) {
 	state.tempSymbolicGoFunctionErrors = state.tempSymbolicGoFunctionErrors[:0]
 }
 
-func (state *State) setSymbolicGoFunctionParameters(parameters *[]SymbolicValue) {
+func (state *State) setSymbolicGoFunctionParameters(parameters *[]SymbolicValue, names []string) {
 	if state.tempSymbolicGoFunctionParameters != nil {
 		panic(errors.New("a temporary signature is already present"))
 	}
+	state.tempSymbolicGoFunctionParameterNames = names
 	state.tempSymbolicGoFunctionParameters = parameters
 }
 
-func (state *State) consumeSymbolicGoFunctionParameters() ([]SymbolicValue, bool) {
+func (state *State) consumeSymbolicGoFunctionParameters() ([]SymbolicValue, []string, bool) {
 	if state.tempSymbolicGoFunctionParameters == nil {
-		return nil, false
+		return nil, nil, false
 	}
 	defer func() {
 		state.tempSymbolicGoFunctionParameters = nil
+		state.tempSymbolicGoFunctionParameterNames = nil
 	}()
-	return *state.tempSymbolicGoFunctionParameters, true
+	return *state.tempSymbolicGoFunctionParameters, state.tempSymbolicGoFunctionParameterNames, true
 }
 
 type varSymbolicInfo struct {

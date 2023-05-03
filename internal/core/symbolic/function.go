@@ -31,6 +31,10 @@ func (fn *InoxFunction) IsVariadic() bool {
 	return fn.FuncExpr().IsVariadic
 }
 
+func (fn *InoxFunction) Parameters() []SymbolicValue {
+	return fn.parameters
+}
+
 func (fn *InoxFunction) Result() SymbolicValue {
 	if fn.node == nil {
 		panic(errors.New("node is nil"))
@@ -641,11 +645,22 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 // An Function represents a symbolic function we do not know the concrete type.
 type Function struct {
 	//if pattern is nil this function matches any function with the following parameters & results
-	parameters []SymbolicValue
-	results    []SymbolicValue
-	variadic   bool
+	parameters     []SymbolicValue
+	parameterNames []string
+	results        []SymbolicValue
+	variadic       bool
 
 	pattern *FunctionPattern
+}
+
+func NewFunction(parameters []SymbolicValue, variadic bool, results []SymbolicValue) *Function {
+	//TODO: check that variadic parameter is a list
+
+	return &Function{
+		parameters: parameters,
+		results:    results,
+		variadic:   variadic,
+	}
 }
 
 func (fn *Function) NonVariadicParameters() []SymbolicValue {
@@ -761,6 +776,12 @@ func (f *Function) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 		if f.variadic && i == len(f.parameters)-1 {
 			utils.Must(w.Write(utils.StringAsBytes("...")))
 		}
+
+		if len(f.parameterNames) > i {
+			utils.Must(w.Write(utils.StringAsBytes(f.parameterNames[i])))
+			utils.PanicIfErr(w.WriteByte(' '))
+		}
+
 		param.PrettyPrint(w, config, 0, 0)
 	}
 

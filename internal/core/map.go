@@ -8,8 +8,18 @@ import (
 )
 
 func init() {
+	var MAP_PARAM_NAMES = []string{"iterable", "mapper"}
+
 	RegisterSymbolicGoFunctions([]any{
 		Map, func(ctx *symbolic.Context, iterable symbolic.Iterable, mapper symbolic.SymbolicValue) *symbolic.List {
+
+			makeParams := func(result symbolic.SymbolicValue) *[]symbolic.SymbolicValue {
+				return &[]symbolic.SymbolicValue{iterable, symbolic.NewFunction(
+					[]symbolic.SymbolicValue{iterable.IteratorElementValue()}, false,
+					[]symbolic.SymbolicValue{result},
+				)}
+			}
+
 			switch m := mapper.(type) {
 			case parse.Node:
 
@@ -24,8 +34,12 @@ func init() {
 				return symbolic.NewListOf(obj)
 			case *symbolic.PropertyName:
 			case *symbolic.GoFunction:
-				return symbolic.NewListOf(m.Result())
+				result := m.Result()
+				ctx.SetSymbolicGoFunctionParameters(makeParams(result), MAP_PARAM_NAMES)
+				return symbolic.NewListOf(result)
 			case *symbolic.InoxFunction:
+				result := m.Result()
+				ctx.SetSymbolicGoFunctionParameters(makeParams(result), MAP_PARAM_NAMES)
 				return symbolic.NewListOf(m.Result())
 			case *symbolic.AstNode:
 			case *symbolic.Mapping:

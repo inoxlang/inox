@@ -95,8 +95,8 @@ func (ctx *Context) AddSymbolicGoFunctionError(msg string) {
 	ctx.associatedState.addSymbolicGoFunctionError(msg)
 }
 
-func (ctx *Context) SetSymbolicGoFunctionParameters(parameters *[]SymbolicValue) {
-	ctx.associatedState.setSymbolicGoFunctionParameters(parameters)
+func (ctx *Context) SetSymbolicGoFunctionParameters(parameters *[]SymbolicValue, names []string) {
+	ctx.associatedState.setSymbolicGoFunctionParameters(parameters, names)
 }
 
 func (ctx *Context) fork() *Context {
