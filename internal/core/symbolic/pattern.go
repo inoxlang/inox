@@ -1829,7 +1829,8 @@ func (p *OptionalPattern) IsWidenable() bool {
 }
 
 func (p *OptionalPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(fmt.Fprintf(w, "%s?", p.pattern))
+	p.pattern.PrettyPrint(w, config, depth, parentIndentCount)
+	utils.PanicIfErr(w.WriteByte('?'))
 }
 
 func (p *OptionalPattern) HasUnderylingPattern() bool {
@@ -2084,7 +2085,9 @@ func (p *EventPattern) IsWidenable() bool {
 }
 
 func (p *EventPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(fmt.Fprintf(w, "%%event(%s)", p.ValuePattern))
+	utils.Must(w.Write(utils.StringAsBytes("%%event(")))
+	p.ValuePattern.PrettyPrint(w, config, depth, 0)
+	utils.PanicIfErr(w.WriteByte(')'))
 }
 
 func (p *EventPattern) HasUnderylingPattern() bool {
@@ -2148,7 +2151,9 @@ func (p *MutationPattern) IsWidenable() bool {
 }
 
 func (p *MutationPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(fmt.Fprintf(w, "%%mutation(%d, %s)", p.kind, p.data0Pattern))
+	utils.Must(w.Write(utils.StringAsBytes("%%mutation(?, ")))
+	p.data0Pattern.PrettyPrint(w, config, depth, 0)
+	utils.PanicIfErr(w.WriteByte(')'))
 }
 
 func (p *MutationPattern) HasUnderylingPattern() bool {
