@@ -176,6 +176,15 @@ func StartLSPServer() {
 			defer func() {
 				completionIndex++
 			}()
+
+			var labelDetails *defines.CompletionItemLabelDetails
+			if completion.Detail != "" {
+				detail := "  " + completion.Detail
+				labelDetails = &defines.CompletionItemLabelDetails{
+					Detail: &detail,
+				}
+			}
+
 			return defines.CompletionItem{
 				Label: completion.Value,
 				Kind:  &completion.Kind,
@@ -191,6 +200,7 @@ func StartLSPServer() {
 					s += string(rune(index%10) + 'a')
 					return &s
 				}(),
+				LabelDetails: labelDetails,
 			}
 		})
 		return &lspCompletions, nil
