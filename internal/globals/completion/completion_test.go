@@ -57,7 +57,7 @@ func TestFindCompletions(t *testing.T) {
 					CursorIndex: cursorIndex,
 					Mode:        mode,
 				})
-				//in order to simplify tests we remove all information in replaced ranges except the node span
+				//in order to simplify tests we remove some information like replaced ranges
 				for i, compl := range completions {
 					completions[i].ReplacedRange = parse.SourcePositionRange{
 						SourceName:  "",
@@ -66,6 +66,7 @@ func TestFindCompletions(t *testing.T) {
 						Span:        compl.ReplacedRange.Span,
 					}
 					completions[i].Kind = 0
+					completions[i].Detail = ""
 				}
 				return completions
 			}

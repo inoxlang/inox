@@ -23,6 +23,7 @@ type Completion struct {
 	Value         string                    `json:"value"`
 	ReplacedRange parse.SourcePositionRange `json:"replacedRange"`
 	Kind          defines.CompletionItemKind
+	Detail        string
 }
 
 var (
@@ -112,23 +113,29 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 
 	switch n := nodeAtCursor.(type) {
 	case *parse.PatternIdentifierLiteral:
-		for name := range state.Global.Ctx.GetNamedPatterns() {
+		for name, patt := range state.Global.Ctx.GetNamedPatterns() {
 			if strings.HasPrefix(name, n.Name) {
+				detail, _ := core.GetStringifiedSymbolicValue(patt, false)
+
 				s := "%" + name
 				completions = append(completions, Completion{
 					ShownString: s,
 					Value:       s,
 					Kind:        defines.CompletionItemKindInterface,
+					Detail:      detail,
 				})
 			}
 		}
-		for name := range state.Global.Ctx.GetPatternNamespaces() {
+		for name, namespace := range state.Global.Ctx.GetPatternNamespaces() {
+			detail, _ := core.GetStringifiedSymbolicValue(namespace, false)
+
 			if strings.HasPrefix(name, n.Name) {
 				s := "%" + name + "."
 				completions = append(completions, Completion{
 					ShownString: s,
 					Value:       s,
 					Kind:        defines.CompletionItemKindInterface,
+					Detail:      detail,
 				})
 			}
 		}
@@ -137,6 +144,8 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 		if namespace == nil {
 			return nil
 		}
+		detail, _ := core.GetStringifiedSymbolicValue(namespace, false)
+
 		for patternName := range namespace.Patterns {
 			s := "%" + n.Name + "." + patternName
 
@@ -144,6 +153,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 				ShownString: s,
 				Value:       s,
 				Kind:        defines.CompletionItemKindInterface,
+				Detail:      detail,
 			})
 		}
 	case *parse.PatternNamespaceMemberExpression:
@@ -151,23 +161,31 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 		if namespace == nil {
 			return nil
 		}
-		for patternName := range namespace.Patterns {
+
+		for patternName, pattern := range namespace.Patterns {
 			if strings.HasPrefix(patternName, n.MemberName.Name) {
 				s := "%" + n.Namespace.Name + "." + patternName
+				detail, _ := core.GetStringifiedSymbolicValue(pattern, false)
 
 				completions = append(completions, Completion{
 					ShownString: s,
 					Value:       s,
 					Kind:        defines.CompletionItemKindInterface,
+					Detail:      detail,
 				})
 			}
 		}
 	case *parse.Variable:
 		var names []string
+		var details []string
 		if args.Mode == ShellCompletions {
-			for name := range state.CurrentLocalScope() {
+			for name, varVal := range state.CurrentLocalScope() {
+
 				if strings.HasPrefix(name, n.Name) {
 					names = append(names, name)
+
+					detail, _ := core.GetStringifiedSymbolicValue(varVal, false)
+					details = append(details, detail)
 				}
 			}
 		} else {
@@ -175,24 +193,29 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 			for _, varData := range scopeData.Variables {
 				if strings.HasPrefix(varData.Name, n.Name) {
 					names = append(names, varData.Name)
+
+					details = append(details, symbolic.Stringify(varData.Value))
 				}
 			}
 		}
 
-		for _, name := range names {
+		for i, name := range names {
 			completions = append(completions, Completion{
 				ShownString: name,
 				Value:       "$" + name,
 				Kind:        defines.CompletionItemKindVariable,
+				Detail:      details[i],
 			})
 		}
 	case *parse.GlobalVariable:
-		state.Global.Globals.Foreach(func(name string, _ core.Value) {
+		state.Global.Globals.Foreach(func(name string, varVal core.Value) {
 			if strings.HasPrefix(name, n.Name) {
+				detail, _ := core.GetStringifiedSymbolicValue(varVal, false)
 				completions = append(completions, Completion{
 					ShownString: name,
 					Value:       "$$" + name,
 					Kind:        defines.CompletionItemKindVariable,
+					Detail:      detail,
 				})
 			}
 		})
@@ -291,12 +314,15 @@ func handleIdentifierAndKeywordCompletions(
 	//suggest local variables
 
 	if mode == ShellCompletions {
-		for name := range state.CurrentLocalScope() {
+		for name, varVal := range state.CurrentLocalScope() {
 			if strings.HasPrefix(name, ident.Name) {
+				detail, _ := core.GetStringifiedSymbolicValue(varVal, false)
+
 				completions = append(completions, Completion{
 					ShownString: name,
 					Value:       name,
 					Kind:        defines.CompletionItemKindVariable,
+					Detail:      detail,
 				})
 			}
 		}
@@ -308,6 +334,7 @@ func handleIdentifierAndKeywordCompletions(
 					ShownString: varData.Name,
 					Value:       varData.Name,
 					Kind:        defines.CompletionItemKindVariable,
+					Detail:      symbolic.Stringify(varData.Value),
 				})
 			}
 		}
@@ -315,12 +342,15 @@ func handleIdentifierAndKeywordCompletions(
 
 	//suggest global variables
 
-	state.Global.Globals.Foreach(func(name string, _ core.Value) {
+	state.Global.Globals.Foreach(func(name string, varVal core.Value) {
 		if strings.HasPrefix(name, ident.Name) {
+			detail, _ := core.GetStringifiedSymbolicValue(varVal, false)
+
 			completions = append(completions, Completion{
 				ShownString: name,
 				Value:       name,
 				Kind:        defines.CompletionItemKindVariable,
+				Detail:      detail,
 			})
 		}
 	})
@@ -563,23 +593,34 @@ func suggestPropertyNames(
 ) []Completion {
 	var completions []Completion
 	var propNames []string
+	var propDetails []string
 
 	//we get all property names
 	switch v := curr.(type) {
 	case core.IProps:
 		propNames = v.PropertyNames(state.Ctx)
+		propDetails = utils.MapSlice(propNames, func(name string) string {
+			propVal := v.Prop(state.Ctx, name)
+			detail, _ := core.GetStringifiedSymbolicValue(propVal, false)
+			return detail
+		})
 	case symbolic.IProps:
 		propNames = v.PropertyNames()
+		propDetails = utils.MapSlice(propNames, func(name string) string {
+			propVal := v.Prop(name)
+			return symbolic.Stringify(propVal)
+		})
 	}
 
 	if !isLastPropPresent {
 		//we suggest all property names
 
-		for _, propName := range propNames {
+		for i, propName := range propNames {
 			completions = append(completions, Completion{
 				ShownString: s + "." + propName,
 				Value:       s + "." + propName,
 				Kind:        defines.CompletionItemKindProperty,
+				Detail:      propDetails[i],
 			})
 		}
 	} else {
@@ -587,7 +628,7 @@ func suggestPropertyNames(
 
 		propNamePrefix := exprPropNames[len(exprPropNames)-1].Name
 
-		for _, propName := range propNames {
+		for i, propName := range propNames {
 
 			if !strings.HasPrefix(propName, propNamePrefix) {
 				continue
@@ -597,6 +638,7 @@ func suggestPropertyNames(
 				ShownString: s + "." + propName,
 				Value:       s + "." + propName,
 				Kind:        defines.CompletionItemKindProperty,
+				Detail:      propDetails[i],
 			})
 		}
 	}
@@ -717,6 +759,7 @@ func findPathCompletions(ctx *core.Context, pth string) []Completion {
 				ShownString: name,
 				Value:       pth,
 				Kind:        defines.CompletionItemKindConstant,
+				Detail:      "%" + core.PATH_PATTERN.Name,
 			})
 		}
 	}
@@ -753,6 +796,7 @@ func findURLCompletions(ctx *core.Context, u core.URL, parent parse.Node) []Comp
 						ShownString: obj.Key,
 						Value:       val,
 						Kind:        defines.CompletionItemKindConstant,
+						Detail:      "%" + core.URL_PATTERN.Name,
 					})
 				}
 			}
@@ -774,6 +818,7 @@ func findHostCompletions(ctx *core.Context, prefix string, parent parse.Node) []
 				ShownString: hostStr,
 				Value:       hostStr,
 				Kind:        defines.CompletionItemKindConstant,
+				Detail:      "%" + core.HOST_PATTERN.Name,
 			})
 		}
 	}
@@ -789,6 +834,7 @@ func findHostCompletions(ctx *core.Context, prefix string, parent parse.Node) []
 				ShownString: s,
 				Value:       s,
 				Kind:        defines.CompletionItemKindConstant,
+				Detail:      "%" + core.HOST_PATTERN.Name,
 			})
 		}
 

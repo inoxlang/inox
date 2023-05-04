@@ -166,6 +166,14 @@ func ToSymbolicValue(v Value, wide bool) (symbolic.SymbolicValue, error) {
 	return _toSymbolicValue(v, wide, make(map[uintptr]symbolic.SymbolicValue))
 }
 
+func GetStringifiedSymbolicValue(v Value, wide bool) (string, error) {
+	symbolicVal, err := ToSymbolicValue(v, wide)
+	if err != nil {
+		return "", err
+	}
+	return symbolic.Stringify(symbolicVal), nil
+}
+
 func (n NilT) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	return symbolic.Nil, nil
 }

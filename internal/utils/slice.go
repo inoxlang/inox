@@ -44,6 +44,16 @@ func MapSlice[T any, U any](s []T, mapper func(e T) U) []U {
 	return result
 }
 
+func MapSliceIndexed[T any, U any](s []T, mapper func(e T, i int) U) []U {
+	result := make([]U, len(s))
+
+	for i, e := range s {
+		result[i] = mapper(e, i)
+	}
+
+	return result
+}
+
 func FilterSlice[T any](s []T, filter func(e T) bool) []T {
 	result := make([]T, 0)
 
