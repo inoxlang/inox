@@ -332,6 +332,16 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			},
 			{
 				&ObjectPattern{
+					entries:         map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
+					optionalEntries: map[string]struct{}{"a": {}},
+				},
+				&Object{
+					entries: map[string]SymbolicValue{},
+				},
+				true,
+			},
+			{
+				&ObjectPattern{
 					entries: map[string]Pattern{},
 				},
 				&Object{
@@ -578,6 +588,16 @@ func TestSymbolicRecordPattern(t *testing.T) {
 					entries: map[string]SymbolicValue{},
 				},
 				false,
+			},
+			{
+				&RecordPattern{
+					entries:         map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
+					optionalEntries: map[string]struct{}{"a": {}},
+				},
+				&Record{
+					entries: map[string]SymbolicValue{},
+				},
+				true,
 			},
 			{
 				&RecordPattern{

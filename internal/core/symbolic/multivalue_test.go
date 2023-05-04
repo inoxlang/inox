@@ -86,19 +86,19 @@ func TestMultiValue(t *testing.T) {
 
 	t.Run("Iprops", func(t *testing.T) {
 		assert.Implements(t, (*IProps)(nil), NewMultivalue(
-			NewObject(map[string]SymbolicValue{"a": &Int{}}, nil),
-			NewObject(map[string]SymbolicValue{"b": &Int{}}, nil),
+			NewObject(map[string]SymbolicValue{"a": &Int{}}, nil, nil),
+			NewObject(map[string]SymbolicValue{"b": &Int{}}, nil, nil),
 		).as(IPROPS_INTERFACE_TYPE))
 
 		_, ok := NewMultivalue(
-			NewObject(map[string]SymbolicValue{"a": &Int{}}, nil),
+			NewObject(map[string]SymbolicValue{"a": &Int{}}, nil, nil),
 			&Bool{},
 		).as(IPROPS_INTERFACE_TYPE).(IProps)
 		assert.False(t, ok)
 
 		_, ok = NewMultivalue(
 			&Bool{},
-			NewObject(map[string]SymbolicValue{"a": &Int{}}, nil),
+			NewObject(map[string]SymbolicValue{"a": &Int{}}, nil, nil),
 		).as(IPROPS_INTERFACE_TYPE).(IProps)
 		assert.False(t, ok)
 	})

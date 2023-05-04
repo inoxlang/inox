@@ -16,7 +16,7 @@ func NewCookieObject() *symbolic.Object {
 		"name":   symbolic.ANY_STR,
 		"value":  symbolic.ANY_STR,
 		"domain": symbolic.Nil,
-	}, map[string]symbolic.Pattern{
+	}, nil, map[string]symbolic.Pattern{
 		"domain": optionalHostPattern,
 	})
 

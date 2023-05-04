@@ -38,12 +38,32 @@ func TestSymbolicObject(t *testing.T) {
 		},
 		{
 			&Object{
+				entries:         map[string]SymbolicValue{"a": &Int{}},
+				optionalEntries: map[string]struct{}{"a": {}},
+			},
+			&Object{
+				entries: map[string]SymbolicValue{},
+			},
+			true,
+		},
+		{
+			&Object{
 				entries: map[string]SymbolicValue{"a": &Int{}},
 			},
 			&Object{
 				entries: map[string]SymbolicValue{"a": &Int{}},
 			},
 			true,
+		},
+		{
+			&Object{
+				entries: map[string]SymbolicValue{"a": &Int{}},
+			},
+			&Object{
+				entries:         map[string]SymbolicValue{"a": &Int{}},
+				optionalEntries: map[string]struct{}{"a": {}},
+			},
+			false,
 		},
 		{
 			&Object{
@@ -66,7 +86,7 @@ func TestSymbolicObject(t *testing.T) {
 	}
 
 	for _, testCase := range cases {
-		t.Run(t.Name()+"_"+fmt.Sprint(testCase.object1, "_", testCase.object2), func(t *testing.T) {
+		t.Run(t.Name()+"_"+Stringify(testCase.object1)+"_"+Stringify(testCase.object2), func(t *testing.T) {
 			assert.Equal(t, testCase.ok, testCase.object1.Test(testCase.object2))
 		})
 	}
@@ -175,12 +195,32 @@ func TestSymbolicRecord(t *testing.T) {
 		},
 		{
 			&Record{
+				entries:         map[string]SymbolicValue{"a": &Int{}},
+				optionalEntries: map[string]struct{}{"a": {}},
+			},
+			&Record{
+				entries: map[string]SymbolicValue{},
+			},
+			true,
+		},
+		{
+			&Record{
 				entries: map[string]SymbolicValue{"a": &Int{}},
 			},
 			&Record{
 				entries: map[string]SymbolicValue{"a": &Int{}},
 			},
 			true,
+		},
+		{
+			&Record{
+				entries: map[string]SymbolicValue{"a": &Int{}},
+			},
+			&Record{
+				entries:         map[string]SymbolicValue{"a": &Int{}},
+				optionalEntries: map[string]struct{}{"a": {}},
+			},
+			false,
 		},
 		{
 			&Record{

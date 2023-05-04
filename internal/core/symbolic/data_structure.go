@@ -688,7 +688,8 @@ func (d *Dictionary) WidestOfType() SymbolicValue {
 
 type Object struct {
 	entries                    map[string]SymbolicValue //if nil, matches any object
-	static                     map[string]Pattern       //key in .Static => key in .Entries, not reciprocal
+	optionalEntries            map[string]struct{}
+	static                     map[string]Pattern //key in .Static => key in .Entries, not reciprocal
 	complexPropertyConstraints []*ComplexPropertyConstraint
 	shared                     bool
 }
@@ -701,10 +702,11 @@ func NewEmptyObject() *Object {
 	return &Object{entries: map[string]SymbolicValue{}}
 }
 
-func NewObject(entries map[string]SymbolicValue, static map[string]Pattern) *Object {
+func NewObject(entries map[string]SymbolicValue, optionalEntries map[string]struct{}, static map[string]Pattern) *Object {
 	obj := &Object{
-		entries: entries,
-		static:  static,
+		entries:         entries,
+		optionalEntries: optionalEntries,
+		static:          static,
 	}
 	return obj
 }
@@ -745,15 +747,31 @@ func (obj *Object) Test(v SymbolicValue) bool {
 		return true
 	}
 
-	if len(obj.entries) != len(otherObj.entries) || otherObj.entries == nil {
+	if (len(obj.optionalEntries) == 0 && len(obj.entries) != len(otherObj.entries)) || otherObj.entries == nil {
 		return false
 	}
 
-	for i, e := range obj.entries {
-		if !e.Test(otherObj.entries[i]) {
+	for k, e := range obj.entries {
+		_, isOptional := obj.optionalEntries[k]
+		_, isOptionalInOther := otherObj.optionalEntries[k]
+
+		other, ok := otherObj.entries[k]
+
+		if ok && !isOptional && isOptionalInOther {
+			return false
+		}
+
+		if !ok {
+			if isOptional {
+				continue
+			}
+			return false
+		}
+		if !e.Test(other) {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -1010,6 +1028,10 @@ func (obj *Object) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 				utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 			}
 
+			if _, isOptional := obj.optionalEntries[k]; isOptional {
+				utils.PanicIfErr(w.WriteByte('?'))
+			}
+
 			//colon
 			utils.Must(w.Write(COLON_SPACE))
 
@@ -1046,8 +1068,9 @@ func (o *Object) WidestOfType() SymbolicValue {
 
 type Record struct {
 	UnassignablePropsMixin
-	entries   map[string]SymbolicValue //if nil, matches any record
-	valueOnly SymbolicValue
+	entries         map[string]SymbolicValue //if nil, matches any record
+	optionalEntries map[string]struct{}
+	valueOnly       SymbolicValue
 }
 
 func NewAnyrecord() *Record {
@@ -1087,15 +1110,31 @@ func (rec *Record) Test(v SymbolicValue) bool {
 		return value.Test(otherRec.valueOnly)
 	}
 
-	if len(rec.entries) != len(otherRec.entries) || otherRec.entries == nil {
+	if (len(rec.optionalEntries) == 0 && len(rec.entries) != len(otherRec.entries)) || otherRec.entries == nil {
 		return false
 	}
 
-	for i, e := range rec.entries {
-		if !e.Test(otherRec.entries[i]) {
+	for k, e := range rec.entries {
+		_, isOptional := rec.optionalEntries[k]
+		_, isOptionalInOther := otherRec.optionalEntries[k]
+
+		other, ok := otherRec.entries[k]
+
+		if ok && !isOptional && isOptionalInOther {
+			return false
+		}
+
+		if !ok {
+			if isOptional {
+				continue
+			}
+			return false
+		}
+		if !e.Test(other) {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -1217,6 +1256,10 @@ func (rec *Record) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 
 			if config.Colorize {
 				utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+			}
+
+			if _, isOptional := rec.optionalEntries[k]; isOptional {
+				utils.PanicIfErr(w.WriteByte('?'))
 			}
 
 			//colon

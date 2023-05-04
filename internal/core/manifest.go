@@ -174,7 +174,7 @@ func (p *ModuleParameters) GetSymbolicArguments() *symbolic.Object {
 		resultEntries[string(param.name)] = symbolicPatt.SymbolicValue()
 	}
 
-	return symbolic.NewObject(resultEntries, nil)
+	return symbolic.NewObject(resultEntries, nil, nil)
 }
 
 type moduleParameter struct {

@@ -882,17 +882,29 @@ func (patt *ObjectPattern) Test(ctx *Context, v Value) bool {
 	if !ok {
 		return false
 	}
-	if !patt.inexact && len(obj.keys) != len(patt.entryPatterns) {
+	if !patt.inexact && len(patt.optionalEntries) == 0 && len(obj.keys) != len(patt.entryPatterns) {
 		return false
 	}
 
 	for key, valuePattern := range patt.entryPatterns {
 		if !obj.HasProp(ctx, key) {
+			if _, ok := patt.optionalEntries[key]; ok {
+				continue
+			}
 			return false
 		}
 		value := obj.Prop(ctx, key)
 		if !valuePattern.Test(ctx, value) {
 			return false
+		}
+	}
+
+	// if pattern is exact check that there are no additional properties
+	if !patt.inexact {
+		for _, propName := range obj.PropertyNames(ctx) {
+			if _, ok := patt.entryPatterns[propName]; !ok {
+				return false
+			}
 		}
 	}
 
@@ -937,8 +949,9 @@ func (patt *ObjectPattern) EntryCount() int {
 
 type RecordPattern struct {
 	NotCallablePatternMixin
-	entryPatterns map[string]Pattern
-	inexact       bool //if true the matched object can have additional properties
+	entryPatterns   map[string]Pattern
+	optionalEntries map[string]struct{}
+	inexact         bool //if true the matched object can have additional properties
 }
 
 func NewInexactRecordPattern(entries map[string]Pattern) *RecordPattern {
@@ -953,17 +966,29 @@ func (patt *RecordPattern) Test(ctx *Context, v Value) bool {
 	if !ok {
 		return false
 	}
-	if !patt.inexact && len(rec.keys) != len(patt.entryPatterns) {
+	if !patt.inexact && len(patt.optionalEntries) == 0 && len(rec.keys) != len(patt.entryPatterns) {
 		return false
 	}
 
 	for key, valuePattern := range patt.entryPatterns {
 		if !rec.HasProp(ctx, key) {
+			if _, ok := patt.optionalEntries[key]; ok {
+				continue
+			}
 			return false
 		}
 		value := rec.Prop(ctx, key)
 		if !valuePattern.Test(ctx, value) {
 			return false
+		}
+	}
+
+	// if pattern is exact check that there are no additional properties
+	if !patt.inexact {
+		for _, propName := range rec.PropertyNames(ctx) {
+			if _, ok := patt.entryPatterns[propName]; !ok {
+				return false
+			}
 		}
 	}
 	return true

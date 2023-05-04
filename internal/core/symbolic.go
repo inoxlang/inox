@@ -564,7 +564,7 @@ func (p *RecordPattern) ToSymbolicValue(wide bool, encountered map[uintptr]symbo
 
 	//TODO: initialize constraints
 
-	symbolic.InitializeRecordPattern(recPattern, entries, p.inexact)
+	symbolic.InitializeRecordPattern(recPattern, entries, p.optionalEntries, p.inexact)
 	return recPattern, nil
 }
 

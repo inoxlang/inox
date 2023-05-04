@@ -951,10 +951,17 @@ func (v *VM) run() {
 				inexact:       isInexact == 1,
 			}
 
-			for i := v.sp - numElements; i < v.sp; i += 2 {
+			for i := v.sp - numElements; i < v.sp; i += 3 {
 				key := v.stack[i].(Str)
 				value := v.stack[i+1].(Pattern)
+				isOptional := v.stack[i+2].(Bool)
 				pattern.entryPatterns[string(key)] = value
+				if isOptional {
+					if pattern.optionalEntries == nil {
+						pattern.optionalEntries = make(map[string]struct{}, 1)
+					}
+					pattern.optionalEntries[string(key)] = struct{}{}
+				}
 			}
 			v.sp -= numElements
 			v.stack[v.sp] = pattern

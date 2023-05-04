@@ -2021,6 +2021,12 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			name := p.Name()
 			var err error
 			pattern.entryPatterns[name], err = evalPatternNode(p.Value, state)
+			if p.Optional {
+				if pattern.optionalEntries == nil {
+					pattern.optionalEntries = make(map[string]struct{}, 1)
+				}
+				pattern.optionalEntries[name] = struct{}{}
+			}
 			if err != nil {
 				return nil, fmt.Errorf("failed to compile object pattern literal, error when evaluating value for '%s': %s", name, err.Error())
 			}

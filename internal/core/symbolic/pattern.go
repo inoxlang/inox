@@ -552,6 +552,7 @@ func (p *RegexPattern) WidestOfType() SymbolicValue {
 type ObjectPattern struct {
 	NotCallablePatternMixin
 	entries                    map[string]Pattern
+	optionalEntries            map[string]struct{}
 	inexact                    bool
 	complexPropertyConstraints []*ComplexPropertyConstraint
 }
@@ -582,7 +583,7 @@ func (p *ObjectPattern) ToRecordPattern() *RecordPattern {
 	}
 	patt := NewUnitializedRecordPattern()
 	//TODO: check that SymbolicValue() of entry patterns are immutable
-	InitializeRecordPattern(patt, p.entries, p.inexact)
+	InitializeRecordPattern(patt, p.entries, p.optionalEntries, p.inexact)
 	return patt
 }
 
@@ -686,6 +687,10 @@ func (p *ObjectPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 				utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 			}
 
+			if _, ok := p.optionalEntries[k]; ok {
+				utils.PanicIfErr(w.WriteByte('?'))
+			}
+
 			//colon
 			utils.Must(w.Write(COLON_SPACE))
 
@@ -742,14 +747,29 @@ func (p *ObjectPattern) TestValue(v SymbolicValue) bool {
 		if obj.entries == nil {
 			return false
 		}
-	} else if obj.entries == nil || len(p.entries) != len(obj.entries) {
+	} else if obj.entries == nil || (len(p.optionalEntries) == 0 && len(p.entries) != len(obj.entries)) {
 		return false
 	}
 
 	for key, valuePattern := range p.entries {
+		_, isOptional := p.optionalEntries[key]
 		value, _, ok := obj.GetProperty(key)
-		if !ok || !valuePattern.TestValue(value) {
+
+		if ok {
+			if !valuePattern.TestValue(value) {
+				return false
+			}
+		} else if !isOptional {
 			return false
+		}
+	}
+
+	// if pattern is exact check that there are no additional properties
+	if !p.inexact {
+		for _, propName := range obj.PropertyNames() {
+			if _, ok := p.entries[propName]; !ok {
+				return false
+			}
 		}
 	}
 
@@ -767,7 +787,7 @@ func (p *ObjectPattern) SymbolicValue() SymbolicValue {
 		}
 	}
 
-	return NewObject(entries, static)
+	return NewObject(entries, p.optionalEntries, static)
 }
 
 func (p *ObjectPattern) StringPattern() (StringPatternElement, bool) {
@@ -790,6 +810,7 @@ func (p *ObjectPattern) WidestOfType() SymbolicValue {
 type RecordPattern struct {
 	NotCallablePatternMixin
 	entries                    map[string]Pattern
+	optionalEntries            map[string]struct{}
 	inexact                    bool
 	complexPropertyConstraints []*ComplexPropertyConstraint
 }
@@ -802,11 +823,12 @@ func NewUnitializedRecordPattern() *RecordPattern {
 	return &RecordPattern{}
 }
 
-func InitializeRecordPattern(patt *RecordPattern, entries map[string]Pattern, inexact bool) {
+func InitializeRecordPattern(patt *RecordPattern, entries map[string]Pattern, optionalEntries map[string]struct{}, inexact bool) {
 	if patt.entries != nil || patt.complexPropertyConstraints != nil {
 		panic(ErrValueAlreadyInitialized)
 	}
 	patt.entries = entries
+	patt.optionalEntries = optionalEntries
 	patt.inexact = inexact
 }
 
@@ -910,6 +932,10 @@ func (p *RecordPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 				utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 			}
 
+			if _, ok := p.optionalEntries[k]; ok {
+				utils.PanicIfErr(w.WriteByte('?'))
+			}
+
 			//colon
 			utils.Must(w.Write(COLON_SPACE))
 
@@ -964,14 +990,29 @@ func (p *RecordPattern) TestValue(v SymbolicValue) bool {
 		if rec.entries == nil {
 			return false
 		}
-	} else if rec.entries == nil || len(p.entries) != len(rec.entries) {
+	} else if rec.entries == nil || (len(p.optionalEntries) == 0 && len(p.entries) != len(rec.entries)) {
 		return false
 	}
 
 	for key, valuePattern := range p.entries {
+		_, isOptional := p.optionalEntries[key]
 		value, ok := rec.entries[key]
-		if !ok || !valuePattern.TestValue(value) {
+
+		if ok {
+			if !valuePattern.TestValue(value) {
+				return false
+			}
+		} else if !isOptional {
 			return false
+		}
+	}
+
+	// if pattern is exact check that there are no additional properties
+	if !p.inexact {
+		for _, propName := range rec.PropertyNames() {
+			if _, ok := p.entries[propName]; !ok {
+				return false
+			}
 		}
 	}
 
@@ -980,7 +1021,8 @@ func (p *RecordPattern) TestValue(v SymbolicValue) bool {
 
 func (p *RecordPattern) SymbolicValue() SymbolicValue {
 	rec := &Record{
-		entries: map[string]SymbolicValue{},
+		entries:         map[string]SymbolicValue{},
+		optionalEntries: p.optionalEntries,
 	}
 	if p.entries != nil {
 		for key, valuePattern := range p.entries {

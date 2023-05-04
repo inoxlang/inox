@@ -1211,7 +1211,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			return getDependencyChainDepth(idA, nil) < getDependencyChainDepth(idB, nil)
 		})
 
-		obj := NewObject(entries, nil)
+		obj := NewObject(entries, nil, nil)
 
 		if len(cycles) > 0 {
 			state.addError(makeSymbolicEvalError(node, state, fmtMethodCyclesDetected(cycles)))
@@ -1680,7 +1680,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 					} else {
 						ok, groups := groupPattern.MatchGroups(discriminant)
 						if ok {
-							groupsObj := NewObject(groups, nil)
+							groupsObj := NewObject(groups, nil, nil)
 							blockStateFork.setLocal(variable.Name, groupsObj, nil)
 							state.symbolicData.SetMostSpecificNodeValue(variable, groupsObj)
 
@@ -2423,6 +2423,12 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			pattern.entries[name], err = symbolicallyEvalPatternNode(p.Value, state)
 			if err != nil {
 				return nil, err
+			}
+			if p.Optional {
+				if pattern.optionalEntries == nil {
+					pattern.optionalEntries = make(map[string]struct{}, 1)
+				}
+				pattern.optionalEntries[name] = struct{}{}
 			}
 		}
 

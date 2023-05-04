@@ -1137,9 +1137,15 @@ func (c *compiler) Compile(node parse.Node) error {
 				return err
 			}
 			c.emit(p.Value, OpToPattern)
+
+			if p.Optional {
+				c.emit(node, OpPushTrue)
+			} else {
+				c.emit(node, OpPushFalse)
+			}
 		}
 
-		c.emit(node, OpCreateObjectPattern, 2*len(node.Properties), isInexact)
+		c.emit(node, OpCreateObjectPattern, 3*len(node.Properties), isInexact)
 
 		for _, e := range node.SpreadElements {
 			if err := c.Compile(e.Expr); err != nil {

@@ -14,7 +14,7 @@ var (
 		"is-dir":        &Bool{},
 		"is-regular":    &Bool{},
 		"is-walk-start": &Bool{},
-	}, nil)
+	}, nil, nil)
 
 	ANY_PATH       = &Path{}
 	ANY_URL        = &URL{}

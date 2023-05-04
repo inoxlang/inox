@@ -2571,8 +2571,8 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 			assert.Equal(t, NewMultivalue(
 				NewEmptyObject(),
-				NewObject(map[string]SymbolicValue{"a": ANY_INT}, nil),
-				NewObject(map[string]SymbolicValue{"b": ANY_INT}, nil),
+				NewObject(map[string]SymbolicValue{"a": ANY_INT}, nil, nil),
+				NewObject(map[string]SymbolicValue{"b": ANY_INT}, nil, nil),
 			), res)
 		})
 
@@ -3019,8 +3019,8 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 			assert.Equal(t, NewMultivalue(
 				NewEmptyObject(),
-				NewObject(map[string]SymbolicValue{"a": ANY_INT}, nil),
-				NewObject(map[string]SymbolicValue{"b": ANY_INT}, nil),
+				NewObject(map[string]SymbolicValue{"a": ANY_INT}, nil, nil),
+				NewObject(map[string]SymbolicValue{"b": ANY_INT}, nil, nil),
 			), res)
 		})
 
@@ -3826,7 +3826,7 @@ func TestSymbolicEval(t *testing.T) {
 		assert.Empty(t, state.errors)
 		assert.Equal(t, NewObject(map[string]SymbolicValue{
 			"0": ANY_SYNC_MSG_HANDLER,
-		}, nil), res)
+		}, nil, nil), res)
 
 	})
 
@@ -4180,30 +4180,30 @@ func TestWidenValues(t *testing.T) {
 		{[]SymbolicValue{&Identifier{}, &Identifier{"foo"}}, &Identifier{}},
 		{
 			[]SymbolicValue{
-				NewObject(map[string]SymbolicValue{"a": &Int{}}, nil),
-				NewObject(map[string]SymbolicValue{}, nil),
+				NewObject(map[string]SymbolicValue{"a": &Int{}}, nil, nil),
+				NewObject(map[string]SymbolicValue{}, nil, nil),
 			},
 			NewMultivalue(
-				NewObject(map[string]SymbolicValue{"a": &Int{}}, nil),
-				NewObject(map[string]SymbolicValue{}, nil),
+				NewObject(map[string]SymbolicValue{"a": &Int{}}, nil, nil),
+				NewObject(map[string]SymbolicValue{}, nil, nil),
 			),
 		},
 		{
 			[]SymbolicValue{
-				NewObject(map[string]SymbolicValue{}, nil),
-				NewObject(map[string]SymbolicValue{"a": &Int{}}, nil),
+				NewObject(map[string]SymbolicValue{}, nil, nil),
+				NewObject(map[string]SymbolicValue{"a": &Int{}}, nil, nil),
 			},
 			NewMultivalue(
-				NewObject(map[string]SymbolicValue{}, nil),
-				NewObject(map[string]SymbolicValue{"a": &Int{}}, nil),
+				NewObject(map[string]SymbolicValue{}, nil, nil),
+				NewObject(map[string]SymbolicValue{"a": &Int{}}, nil, nil),
 			),
 		},
 		{
 			[]SymbolicValue{
-				NewObject(map[string]SymbolicValue{"a": ANY}, nil),
-				NewObject(map[string]SymbolicValue{"a": &Int{}}, nil),
+				NewObject(map[string]SymbolicValue{"a": ANY}, nil, nil),
+				NewObject(map[string]SymbolicValue{"a": &Int{}}, nil, nil),
 			},
-			NewObject(map[string]SymbolicValue{"a": ANY}, nil),
+			NewObject(map[string]SymbolicValue{"a": ANY}, nil, nil),
 		},
 		{
 			[]SymbolicValue{
