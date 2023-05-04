@@ -3,6 +3,7 @@ package internal
 import (
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	help "github.com/inoxlang/inox/internal/globals/help"
 	net_symbolic "github.com/inoxlang/inox/internal/globals/net/symbolic"
 )
 
@@ -25,6 +26,11 @@ func init() {
 		dnsResolve, func(ctx *symbolic.Context, domain *symbolic.String, recordTypeName *symbolic.String) (*symbolic.List, *symbolic.Error) {
 			return symbolic.NewListOf(&symbolic.String{}), nil
 		},
+	})
+
+	help.RegisterHelpValues(map[string]any{
+		"dns.resolve": dnsResolve,
+		"tcp.connect": tcpConnect,
 	})
 }
 

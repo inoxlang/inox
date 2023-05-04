@@ -216,3 +216,25 @@ Thread:
   text: the Thread function creates a thread from an iterable.
   examples:
   - code: 'Thread([{message: "hello", author-id: "5958"}])'
+
+# dns
+dns.resolve:
+  topic: dns.resolve
+  text: the dns.resolve function retrieves DNS records of the given type.
+  examples:
+  - code: 'dns.resolve!("github.com" "A")'
+    explanation: retrieves "A" records for github.com
+
+# tcp
+tcp.connect:
+  topic: tcp.connect
+  text: the tcp.connect functions creates a TCP connection to a given host.
+  examples:
+  - code: |
+      conn = tcp.connect!(://example.com:80)
+
+      conn.write!("GET / HTTP/1.1\nHost: example.com\n\n")
+      print tostr(conn.read!())
+
+      conn.close()
+    
