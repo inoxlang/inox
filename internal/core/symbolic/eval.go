@@ -1927,6 +1927,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				}
 				paramType = pattern
 				paramValue = pattern.SymbolicValue()
+				state.symbolicData.SetMostSpecificNodeValue(p.Type, pattern)
 			}
 
 			stateFork.setLocal(name, paramValue, paramType)
