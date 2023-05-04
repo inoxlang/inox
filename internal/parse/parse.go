@@ -2590,6 +2590,7 @@ func (p *parser) parseObjectPatternLiteral() *ObjectPatternLiteral {
 		key            Node
 		keyName        string
 		keyOrVal       Node
+		isOptional     bool
 		implicitKey    bool
 		type_          Node
 		v              Node
@@ -2673,6 +2674,13 @@ object_pattern_top_loop:
 					Value: nil,
 				})
 				continue object_pattern_top_loop
+			}
+
+			if boolConvExpr, ok := key.(*BooleanConversionExpression); ok {
+				key = boolConvExpr.Expr
+				keyOrVal = key
+				isOptional = true
+				entryTokens = append(entryTokens, Token{Type: QUESTION_MARK, Span: NodeSpan{p.i - 1, p.i}})
 			}
 
 			propSpanStart = key.Base().Span.Start
@@ -2849,9 +2857,10 @@ object_pattern_top_loop:
 						Err:             propParsingErr,
 						ValuelessTokens: entryTokens,
 					},
-					Key:   key,
-					Type:  type_,
-					Value: v,
+					Key:      key,
+					Type:     type_,
+					Value:    v,
+					Optional: isOptional,
 				})
 			}
 
@@ -2859,6 +2868,7 @@ object_pattern_top_loop:
 			keyName = ""
 			key = nil
 			keyOrVal = nil
+			isOptional = false
 			v = nil
 			implicitKey = false
 			type_ = nil

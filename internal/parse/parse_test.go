@@ -15165,6 +15165,47 @@ func TestParse(t *testing.T) {
 				},
 			}, n)
 		})
+
+		t.Run("{ optionam prop } ", func(t *testing.T) {
+			n := MustParseChunk("%{ name?: %str }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 16},
+							nil,
+							[]Token{
+								{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
+								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{15, 16}},
+							},
+						},
+						Inexact: false,
+						Properties: []*ObjectPatternProperty{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{3, 14},
+									nil,
+									[]Token{
+										{Type: QUESTION_MARK, Span: NodeSpan{7, 8}},
+										{Type: COLON, Span: NodeSpan{8, 9}},
+									},
+								},
+								Key: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{3, 7}, nil, nil},
+									Name:     "name",
+								},
+								Value: &PatternIdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{10, 14}, nil, nil},
+									Name:     "str",
+								},
+								Optional: true,
+							},
+						},
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("list pattern", func(t *testing.T) {
