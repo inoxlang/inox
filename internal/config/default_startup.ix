@@ -15,7 +15,6 @@ manifest {
         read: {
             %/...
             %https://**
-            http://example.com
             HTTPS_LOCALHOST_8080
             HTTP_LOCALHOST_8080
             HTTPS_LOCALHOST_8000
@@ -24,6 +23,7 @@ manifest {
             HOME
             %/tmp/mydb/...
             tcp: ://example.com:80
+            dns: %://**
             env: "*"
         }
         use: {
