@@ -2306,6 +2306,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			return nil, err
 		}
 		//TODO: add checks
+		state.symbolicData.SetMostSpecificNodeValue(n.Left, pattern)
 		state.ctx.AddNamedPattern(n.Left.Name, pattern)
 		return nil, nil
 	case *parse.PatternNamespaceDefinition:
@@ -2335,8 +2336,10 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			state.ctx.AddPatternNamespace(n.Left.Name, namespace)
 		default:
 			state.addError(makeSymbolicEvalError(node, state, fmtPatternNamespaceShouldBeInitWithNot(right)))
-			state.ctx.AddPatternNamespace(n.Left.Name, &PatternNamespace{})
+			state.ctx.AddPatternNamespace(n.Left.Name, namespace)
 		}
+		state.symbolicData.SetMostSpecificNodeValue(n.Left, namespace)
+
 		return nil, nil
 	case *parse.PatternNamespaceIdentifierLiteral:
 		namespace := state.ctx.ResolvePatternNamespace(n.Name)
