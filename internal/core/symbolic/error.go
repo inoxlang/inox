@@ -35,6 +35,8 @@ const (
 
 	CONCATENATION_SUPPORTED_TYPES_EXPLANATION = "only string, bytes & tuple concatenations are supported for now"
 	SPREAD_ELEMENT_IS_NOT_ITERABLE            = "spread element is not iterabe"
+
+	NESTED_RECURSIVE_FUNCTION_DECLARATION = "nested recursive function declarations are not allowed"
 )
 
 var (

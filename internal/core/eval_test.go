@@ -5207,6 +5207,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("recursive map calls", func(t *testing.T) {
 			code := `
 				fn rec(list %iterable){
+				    assert (list match %[]%iterable)
 					return map(list, rec)
 				}
 
@@ -5228,6 +5229,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("recursive map calls witin a function called in isolation", func(t *testing.T) {
 			code := `
 				fn rec(list %iterable){
+				    assert (list match %[]%iterable)
 					return map(list, rec)
 				}
 
@@ -5262,6 +5264,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("recursive map calls witin a method called in isolation", func(t *testing.T) {
 			code := `
 				fn rec(list %iterable){
+				    assert (list match %[]%iterable)
 					return map(list, rec)
 				}
 

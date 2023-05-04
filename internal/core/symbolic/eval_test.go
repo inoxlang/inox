@@ -49,6 +49,46 @@ func TestSymbolicEval(t *testing.T) {
 		return node, state
 	}
 
+	symbolicMap := func(ctx *Context, iterable Iterable, mapper SymbolicValue) *List {
+		var MAP_PARAM_NAMES = []string{"iterable", "mapper"}
+
+		makeParams := func(result SymbolicValue) *[]SymbolicValue {
+			return &[]SymbolicValue{iterable, NewFunction(
+				[]SymbolicValue{iterable.IteratorElementValue()}, nil, false,
+				[]SymbolicValue{result},
+			)}
+		}
+
+		switch m := mapper.(type) {
+		case parse.Node:
+
+		case *KeyList:
+			obj := NewUnitializedObject()
+			entries := map[string]SymbolicValue{}
+			for _, key := range m.Keys {
+				entries[key] = ANY
+			}
+
+			InitializeObject(obj, entries, nil)
+			return NewListOf(obj)
+		case *PropertyName:
+		case *GoFunction:
+			result := m.Result()
+			ctx.SetSymbolicGoFunctionParameters(makeParams(result), MAP_PARAM_NAMES)
+			return NewListOf(result)
+		case *InoxFunction:
+			result := m.Result()
+			ctx.SetSymbolicGoFunctionParameters(makeParams(result), MAP_PARAM_NAMES)
+			return NewListOf(m.Result())
+		case *AstNode:
+		case *Mapping:
+		default:
+			ctx.AddSymbolicGoFunctionError("invalid mapper argument")
+		}
+
+		return NewListOf(&Any{})
+	}
+
 	t.Run("quoted string literal", func(t *testing.T) {
 		n, state := makeStateAndChunk(`""`)
 		res, err := symbolicEval(n, state)
@@ -2302,7 +2342,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &Int{}, res)
 		})
 
-		t.Run("specific Go function", func(t *testing.T) {
+		t.Run("simple specific Go function", func(t *testing.T) {
 			n, state := makeStateAndChunk(`
 				return f(#b)
 			`)
@@ -2325,6 +2365,49 @@ func TestSymbolicEval(t *testing.T) {
 				makeSymbolicEvalError(argNode, state, FmtInvalidArg(0, &Identifier{name: "b"}, &Identifier{name: "a"})),
 			}, state.errors)
 			assert.Equal(t, &Int{}, res)
+		})
+
+		t.Run("complex specific Go function with invalid argument", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				return map([1, 2, 3], fn(arg %str){
+					return arg
+				})
+			`)
+
+			state.setGlobal("map", WrapGoFunction(symbolicMap), GlobalConst)
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, state.errors)
+			//TODO: check error
+		})
+
+		t.Run("complex specific Go function with valid arguments", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				return map([1, 2, 3], fn(arg %int){
+					return arg
+				})
+			`)
+
+			state.setGlobal("map", WrapGoFunction(symbolicMap), GlobalConst)
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+		})
+
+		t.Run("complex specific Go function within a recursive Inox function", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				fn rec(list %list){
+				    assert (list match %[]%list)
+					return map(list, rec)
+				}
+
+				return rec([ [ [], [] ], [ [], [] ]])
+			`)
+
+			state.setGlobal("map", WrapGoFunction(symbolicMap), GlobalConst)
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
 		})
 
 	})

@@ -16,7 +16,8 @@ type State struct {
 	chunkStack []*parse.ParsedChunk
 
 	// first scope is the global scope, forks start with a global scope copy & a copy of the deepest local scope
-	scopeStack []*scopeInfo
+	scopeStack            []*scopeInfo
+	recursiveFunctionName string
 
 	calleeStack     []*parse.FunctionExpression
 	topLevelSelf    SymbolicValue // can be nil

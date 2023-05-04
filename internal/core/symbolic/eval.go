@@ -1936,6 +1936,19 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			paramNames[i] = name
 		}
 
+		if state.recursiveFunctionName != "" {
+			tempFn := &InoxFunction{
+				node:           n,
+				parameters:     params,
+				parameterNames: paramNames,
+				result:         ANY,
+			}
+
+			state.overrideGlobal(state.recursiveFunctionName, tempFn)
+			stateFork.overrideGlobal(state.recursiveFunctionName, tempFn)
+			state.recursiveFunctionName = ""
+		}
+
 		//declare captured locals
 		capturedLocals := map[string]SymbolicValue{}
 		for _, e := range n.CaptureList {
@@ -2025,6 +2038,12 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		//declare the function before checking it
 		state.setGlobal(funcName, &InoxFunction{node: n.Function, result: ANY}, GlobalConst)
+		if state.recursiveFunctionName != "" {
+			state.addError(makeSymbolicEvalError(n, state, NESTED_RECURSIVE_FUNCTION_DECLARATION))
+		} else {
+			state.recursiveFunctionName = funcName
+		}
+
 		v, err := symbolicEval(n.Function, state)
 		if err == nil {
 			state.overrideGlobal(funcName, v)

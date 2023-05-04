@@ -861,16 +861,10 @@ func (patt *IntersectionPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-// An EntryPattern represents an entry in an object pattern
-type EntryPattern struct {
-	NotCallablePatternMixin
-	Key   Pattern
-	Value Pattern
-}
-
 type ObjectPattern struct {
 	NotCallablePatternMixin
 	entryPatterns           map[string]Pattern
+	optionalEntries         map[string]struct{}
 	inexact                 bool //if true the matched object can have additional properties
 	complexPropertyPatterns []*ComplexPropertyConstraint
 }
@@ -927,9 +921,10 @@ func (patt *ObjectPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (patt *ObjectPattern) ForEachEntry(fn func(propName string, propPattern Pattern) error) error {
+func (patt *ObjectPattern) ForEachEntry(fn func(propName string, propPattern Pattern, isOptional bool) error) error {
 	for propName, propPattern := range patt.entryPatterns {
-		if err := fn(propName, propPattern); err != nil {
+		_, isOptional := patt.optionalEntries[propName]
+		if err := fn(propName, propPattern, isOptional); err != nil {
 			return err
 		}
 	}
