@@ -202,6 +202,10 @@ func TestPrint(t *testing.T) {
 		"match 1 { 1 {} 2 {}",
 		"match 1 { 1 {} 2 {} }",
 		"match 1 { 1, 2 {} }",
+		//function expressions
+		"fn(){}",
+		"fn(arg){}",
+		"fn(arg %int){}",
 		//others
 		"@(1)",
 	}
