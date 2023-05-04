@@ -2028,6 +2028,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		v, err := symbolicEval(n.Function, state)
 		if err == nil {
 			state.overrideGlobal(funcName, v)
+			state.symbolicData.SetMostSpecificNodeValue(n.Name, v)
 		}
 		return nil, err
 	case *parse.FunctionPatternExpression:
