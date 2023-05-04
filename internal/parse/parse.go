@@ -2573,7 +2573,7 @@ func (p *parser) parsePatternCall(callee Node) *PatternCallExpression {
 func (p *parser) parseObjectPatternLiteral() *ObjectPatternLiteral {
 	var (
 		unamedPropCount = 0
-		properties      []*ObjectProperty
+		properties      []*ObjectPatternProperty
 		spreadElements  []*PatternPropertySpreadElement
 		parsingErr      *ParsingError
 		tokens          []Token
@@ -2663,7 +2663,7 @@ object_pattern_top_loop:
 				entryTokens = append(entryTokens, Token{Type: UNEXPECTED_CHAR, Raw: string(p.s[p.i]), Span: NodeSpan{p.i, p.i + 1}})
 
 				p.i++
-				properties = append(properties, &ObjectProperty{
+				properties = append(properties, &ObjectPatternProperty{
 					NodeBase: NodeBase{
 						Span:            NodeSpan{propSpanStart, p.i - 1},
 						Err:             propParsingErr,
@@ -2710,7 +2710,7 @@ object_pattern_top_loop:
 				if propParsingErr == nil {
 					propParsingErr = &ParsingError{UnspecifiedParsingError, IMPLICIT_KEY_PROPS_ARE_NOT_ALLOWED_IN_OBJECT_PATTERNS}
 				}
-				properties = append(properties, &ObjectProperty{
+				properties = append(properties, &ObjectPatternProperty{
 					NodeBase: NodeBase{
 						Span:            NodeSpan{propSpanStart, p.i},
 						Err:             propParsingErr,
@@ -2731,7 +2731,7 @@ object_pattern_top_loop:
 					type_ = p.parsePercentPrefixedPattern()
 					propSpanEnd = type_.Base().Span.End
 
-					properties = append(properties, &ObjectProperty{
+					properties = append(properties, &ObjectPatternProperty{
 						NodeBase: NodeBase{
 							Span:            NodeSpan{propSpanStart, propSpanEnd},
 							Err:             propParsingErr,
@@ -2767,7 +2767,7 @@ object_pattern_top_loop:
 				if propParsingErr == nil {
 					propParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION}
 				}
-				properties = append(properties, &ObjectProperty{
+				properties = append(properties, &ObjectPatternProperty{
 					NodeBase: NodeBase{
 						Span:            NodeSpan{propSpanStart, p.i},
 						Err:             propParsingErr,
@@ -2785,7 +2785,7 @@ object_pattern_top_loop:
 				} else {
 					propParsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidObjKeyMissingColonAfterTypeAnnotation(keyName)}
 				}
-				properties = append(properties, &ObjectProperty{
+				properties = append(properties, &ObjectPatternProperty{
 					NodeBase: NodeBase{
 						Span:            NodeSpan{propSpanStart, p.i},
 						Err:             propParsingErr,
@@ -2843,7 +2843,7 @@ object_pattern_top_loop:
 					propParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION}
 				}
 
-				properties = append(properties, &ObjectProperty{
+				properties = append(properties, &ObjectPatternProperty{
 					NodeBase: NodeBase{
 						Span:            NodeSpan{propSpanStart, propSpanEnd},
 						Err:             propParsingErr,
@@ -2868,7 +2868,7 @@ object_pattern_top_loop:
 
 	if !implicitKey && keyName != "" || (keyName == "" && key != nil) {
 
-		properties = append(properties, &ObjectProperty{
+		properties = append(properties, &ObjectPatternProperty{
 			NodeBase: NodeBase{
 				Span:            NodeSpan{propSpanStart, propSpanEnd},
 				Err:             propParsingErr,

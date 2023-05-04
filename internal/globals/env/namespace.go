@@ -50,7 +50,7 @@ func NewEnvNamespace(ctx *core.Context, envPattern *core.ObjectPattern, allowMis
 		values := make([]core.Value, envPattern.EntryCount())
 
 		i := 0
-		err := envPattern.ForEachEntry(func(propName string, propPattern core.Pattern) error {
+		err := envPattern.ForEachEntry(func(propName string, propPattern core.Pattern, _ bool) error {
 			propNames[i] = propName
 			envVal, isPresent := os.LookupEnv(propName)
 

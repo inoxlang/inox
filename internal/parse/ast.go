@@ -865,6 +865,29 @@ func (prop ObjectProperty) Name() string {
 	}
 }
 
+type ObjectPatternProperty struct {
+	NodeBase
+	Key      Node //can be nil (implicit key)
+	Type     Node //can be nil
+	Value    Node
+	Optional bool
+}
+
+func (prop ObjectPatternProperty) HasImplicitKey() bool {
+	return prop.Key == nil
+}
+
+func (prop ObjectPatternProperty) Name() string {
+	switch v := prop.Key.(type) {
+	case *IdentifierLiteral:
+		return v.Name
+	case *QuotedStringLiteral:
+		return v.Value
+	default:
+		panic(fmt.Errorf("invalid key type %T", v))
+	}
+}
+
 type ObjectMetaProperty struct {
 	NodeBase
 	Key            Node
@@ -1057,7 +1080,7 @@ func (OptionalPatternExpression) Kind() NodeKind {
 
 type ObjectPatternLiteral struct {
 	NodeBase
-	Properties     []*ObjectProperty
+	Properties     []*ObjectPatternProperty
 	SpreadElements []*PatternPropertySpreadElement
 	Inexact        bool
 }
@@ -2182,6 +2205,10 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 			walk(el, node, ancestorChain, fn, afterFn)
 		}
 	case *ObjectProperty:
+		walk(n.Key, node, ancestorChain, fn, afterFn)
+		walk(n.Type, node, ancestorChain, fn, afterFn)
+		walk(n.Value, node, ancestorChain, fn, afterFn)
+	case *ObjectPatternProperty:
 		walk(n.Key, node, ancestorChain, fn, afterFn)
 		walk(n.Type, node, ancestorChain, fn, afterFn)
 		walk(n.Value, node, ancestorChain, fn, afterFn)

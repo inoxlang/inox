@@ -361,7 +361,7 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 	if closestAssertion != nil {
 		switch n.(type) {
 		case *parse.Variable, *parse.GlobalVariable, *parse.IdentifierLiteral, *parse.BinaryExpression,
-			*parse.PatternIdentifierLiteral, *parse.ObjectPatternLiteral, *parse.ObjectProperty,
+			*parse.PatternIdentifierLiteral, *parse.ObjectPatternLiteral, *parse.ObjectProperty, *parse.ObjectPatternProperty,
 			*parse.ListPatternLiteral, *parse.ObjectLiteral, *parse.ListLiteral, *parse.FunctionPatternExpression,
 			*parse.PatternNamespaceIdentifierLiteral, *parse.PatternNamespaceMemberExpression,
 			*parse.OptionPatternLiteral, *parse.OptionalPatternExpression:
@@ -1352,6 +1352,10 @@ switch_:
 			if p.Key == node {
 				break switch_
 			}
+		case *parse.ObjectPatternProperty:
+			if p.Key == node {
+				break switch_
+			}
 		case *parse.ObjectMetaProperty:
 			if p.Key == node {
 				break switch_
@@ -1682,7 +1686,7 @@ func checkManifestObject(objLit *parse.ObjectLiteral, ignoreUnknownSections bool
 
 				switch n := node.(type) {
 				case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression,
-					*parse.ObjectProperty, *parse.PatternCallExpression, parse.SimpleValueLiteral, *parse.GlobalVariable:
+					*parse.ObjectPatternProperty, *parse.PatternCallExpression, parse.SimpleValueLiteral, *parse.GlobalVariable:
 				default:
 					onError(n, fmtForbiddenNodeInEnvSection(n))
 				}
@@ -1740,7 +1744,7 @@ func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Nod
 
 		switch n := node.(type) {
 		case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression,
-			*parse.ObjectProperty, *parse.ObjectLiteral, *parse.ListLiteral,
+			*parse.ObjectProperty, *parse.ObjectPatternProperty, *parse.ObjectLiteral, *parse.ListLiteral,
 			*parse.OptionPatternLiteral, *parse.OptionExpression, *parse.ListPatternLiteral, *parse.OptionalPatternExpression,
 			*parse.PatternCallExpression, parse.SimpleValueLiteral, *parse.GlobalVariable:
 		default:

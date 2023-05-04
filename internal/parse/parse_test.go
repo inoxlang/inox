@@ -15038,7 +15038,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						Inexact: true,
-						Properties: []*ObjectProperty{
+						Properties: []*ObjectPatternProperty{
 							{
 								NodeBase: NodeBase{
 									NodeSpan{9, 19},
@@ -15131,7 +15131,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						Inexact: false,
-						Properties: []*ObjectProperty{
+						Properties: []*ObjectPatternProperty{
 							{
 								NodeBase: NodeBase{
 									NodeSpan{3, 13},
@@ -15359,7 +15359,7 @@ func TestParse(t *testing.T) {
 									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{13, 14}},
 								},
 							},
-							Properties: []*ObjectProperty{
+							Properties: []*ObjectPatternProperty{
 								{
 									NodeBase: NodeBase{
 										NodeSpan{8, 12},
