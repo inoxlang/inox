@@ -7187,9 +7187,14 @@ func (p *parser) parseFunction(start int32) Node {
 			}
 
 			if _, ok := varNode.(*IdentifierLiteral); ok {
+				span := varNode.Base().Span
+				if typ != nil {
+					span.End = typ.Base().Span.End
+				}
+
 				parameters = append(parameters, &FunctionParameter{
 					NodeBase: NodeBase{
-						varNode.Base().Span,
+						span,
 						paramErr,
 						nil,
 					},
@@ -7200,6 +7205,11 @@ func (p *parser) parseFunction(start int32) Node {
 			} else {
 				varNode.BasePtr().Err = &ParsingError{UnspecifiedParsingError, PARAM_LIST_OF_FUNC_SHOULD_CONTAIN_PARAMETERS_SEP_BY_COMMAS}
 				additionalInvalidNodes = append(additionalInvalidNodes, varNode)
+
+				if typ != nil {
+					typ.BasePtr().Err = &ParsingError{UnspecifiedParsingError, PARAM_LIST_OF_FUNC_SHOULD_CONTAIN_PARAMETERS_SEP_BY_COMMAS}
+					additionalInvalidNodes = append(additionalInvalidNodes, typ)
+				}
 			}
 		}
 
@@ -7376,9 +7386,14 @@ func (p *parser) parseFunctionPattern(start int32) Node {
 					typ = nil
 				}
 
+				span := varNode.Base().Span
+				if typ != nil {
+					span.End = typ.Base().Span.End
+				}
+
 				parameters = append(parameters, &FunctionParameter{
 					NodeBase: NodeBase{
-						varNode.Base().Span,
+						span,
 						paramErr,
 						nil,
 					},
@@ -7404,6 +7419,11 @@ func (p *parser) parseFunctionPattern(start int32) Node {
 			default:
 				varNode.BasePtr().Err = &ParsingError{UnspecifiedParsingError, PARAM_LIST_OF_FUNC_PATT_SHOULD_CONTAIN_PARAMETERS_SEP_BY_COMMAS}
 				additionalInvalidNodes = append(additionalInvalidNodes, varNode)
+
+				if typ != nil {
+					typ.BasePtr().Err = &ParsingError{UnspecifiedParsingError, PARAM_LIST_OF_FUNC_SHOULD_CONTAIN_PARAMETERS_SEP_BY_COMMAS}
+					additionalInvalidNodes = append(additionalInvalidNodes, typ)
+				}
 			}
 
 		}

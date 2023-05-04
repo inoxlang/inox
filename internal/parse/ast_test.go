@@ -59,6 +59,20 @@ func TestShiftNodeSpans(t *testing.T) {
 
 }
 
+func TestFindNode(t *testing.T) {
+	chunk := MustParseChunk(`
+		fn(arg %int){
+
+		}
+	`)
+
+	node := FindNode(chunk, (*PatternIdentifierLiteral)(nil), nil)
+	if !assert.NotNil(t, node) {
+		return
+	}
+	assert.Equal(t, "int", node.Name)
+}
+
 func TestFindPreviousStatement(t *testing.T) {
 
 	t.Run("previous statement for second statement in top level", func(t *testing.T) {

@@ -11667,7 +11667,7 @@ func TestParse(t *testing.T) {
 						},
 						Parameters: []*FunctionParameter{
 							{
-								NodeBase: NodeBase{NodeSpan{3, 4}, nil, nil},
+								NodeBase: NodeBase{NodeSpan{3, 9}, nil, nil},
 								Var: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{3, 4}, nil, nil},
 									Name:     "x",
@@ -12162,7 +12162,7 @@ func TestParse(t *testing.T) {
 						},
 						Parameters: []*FunctionParameter{
 							{
-								NodeBase: NodeBase{NodeSpan{4, 5}, nil, nil},
+								NodeBase: NodeBase{NodeSpan{4, 10}, nil, nil},
 								Var: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{4, 5}, nil, nil},
 									Name:     "x",
