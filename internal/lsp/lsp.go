@@ -168,8 +168,9 @@ func StartLSPServer() {
 		fpath := getFilePath(req.TextDocument.Uri)
 		line := int32(req.Position.Line + 1)
 		column := int32(req.Position.Character + 1)
+		session := jsonrpc.GetSession(ctx)
 
-		completions := getCompletions(fpath, compilationCtx, line, column)
+		completions := getCompletions(fpath, compilationCtx, line, column, session)
 		completionIndex := 0
 
 		lspCompletions := utils.MapSlice(completions, func(completion compl.Completion) defines.CompletionItem {
@@ -268,6 +269,11 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, com
 		IgnoreNonCriticalIssues:   true,
 	})
 
+	if mod == nil { //unrecoverable parsing error
+		session.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
+		return nil
+	}
+
 	//we need the diagnostics list to be present in the notification so diagnostics should not be nil
 	diagnostics := make([]defines.Diagnostic, 0)
 
@@ -340,14 +346,19 @@ send_diagnostics:
 	return nil
 }
 
-func getCompletions(fpath string, compilationCtx *core.Context, line, column int32) []compl.Completion {
-	state, mod, _ := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
+func getCompletions(fpath string, compilationCtx *core.Context, line, column int32, session *jsonrpc.Session) []compl.Completion {
+	state, mod, err := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
 		Fpath:                     fpath,
 		ParsingCompilationContext: compilationCtx,
 		ParentContext:             nil,
 		Out:                       os.Stdout,
 		IgnoreNonCriticalIssues:   true,
 	})
+
+	if mod == nil { //unrecoverable parsing error
+		session.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
+		return nil
+	}
 
 	chunk := mod.MainChunk
 	pos := chunk.GetLineColumnPosition(line, column)
