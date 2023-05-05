@@ -3457,8 +3457,13 @@ func narrowPath(path parse.Node, action pathNarrowing, value SymbolicValue, stat
 					panic(err)
 				}
 
+				propName := node.PropertyNames[0].Name
+
 				iprops := asIprops(left).(IProps)
-				prevPropValue := iprops.Prop(node.PropertyNames[0].Name)
+				if !HasRequiredOrOptionalProperty(iprops, propName) {
+					break
+				}
+				prevPropValue := iprops.Prop(propName)
 				newPropValue := narrowOut(value, prevPropValue)
 
 				newRecPrevPropValue, err := iprops.WithExistingPropReplaced(node.PropertyNames[0].Name, newPropValue)

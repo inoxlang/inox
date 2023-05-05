@@ -2653,7 +2653,7 @@ func TestSymbolicEval(t *testing.T) {
 				assert.Empty(t, state.errors)
 			})
 
-			t.Run("parameter field", func(t *testing.T) {
+			t.Run("parameter's property", func(t *testing.T) {
 				n, state := makeStateAndChunk(`
 					return fn(arg %{prop: %int?}){
 						if arg.prop? {
@@ -2667,6 +2667,26 @@ func TestSymbolicEval(t *testing.T) {
 				_, err := symbolicEval(n, state)
 				assert.NoError(t, err)
 				assert.Empty(t, state.errors)
+			})
+
+			t.Run("inexisting parameter's property", func(t *testing.T) {
+				n, state := makeStateAndChunk(`
+					return fn(arg %{}){
+						if arg.prop? {
+							
+						} else {
+							
+						}
+					}
+				`)
+
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+
+				membExpr := parse.FindNode(n, (*parse.IdentifierMemberExpression)(nil), nil)
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(membExpr, state, fmtPropOfSymbolicDoesNotExist("prop", NewEmptyObject(), "")),
+				}, state.errors)
 			})
 
 			t.Run("variable of static type %int? and nil value", func(t *testing.T) {

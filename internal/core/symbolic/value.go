@@ -594,6 +594,15 @@ func IsPropertyOptional(v IProps, name string) bool {
 	return false
 }
 
+func HasRequiredOrOptionalProperty(v IProps, name string) bool {
+	for _, current := range v.PropertyNames() {
+		if name == current {
+			return true
+		}
+	}
+	return false
+}
+
 //
 
 type GoValue interface {
