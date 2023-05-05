@@ -1560,6 +1560,10 @@ switch_:
 		default:
 			c.addError(node, MISPLACED_RUNTIME_TYPECHECK_EXPRESSION)
 		}
+	case *parse.DynamicMemberExpression:
+		if node.Optional {
+			c.addError(node, OPTIONAL_DYN_MEMB_EXPR_NOT_SUPPORTED_YET)
+		}
 	}
 
 	return parse.Continue

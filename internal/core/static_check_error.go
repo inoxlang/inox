@@ -60,6 +60,8 @@ const (
 	VAL_SHOULD_BE_KEYLIST_LIT                      = "value should be a key list literal"
 	VAL_SHOULD_BE_DICT_LIT                         = "value should be a dictionary literal"
 	INVALID_VISIBILITY_DESC_KEY                    = "invalid key for visibility description"
+
+	OPTIONAL_DYN_MEMB_EXPR_NOT_SUPPORTED_YET = "optional dynamic member expression are not supported yet"
 )
 
 func fmtNotValidPermissionKindName(name string) string {
