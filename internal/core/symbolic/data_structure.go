@@ -876,13 +876,20 @@ func (obj *Object) PropertyNames() []string {
 	if obj.entries == nil {
 		return nil
 	}
-	props := make([]string, len(obj.entries))
+	props := make([]string, len(obj.entries)-len(obj.optionalEntries))
 	i := 0
 	for k := range obj.entries {
+		if _, isOptional := obj.optionalEntries[k]; isOptional {
+			continue
+		}
 		props[i] = k
 		i++
 	}
 	return props
+}
+
+func (obj *Object) OptionalPropertyNames() []string {
+	return utils.GetMapKeys(obj.optionalEntries)
 }
 
 // func (obj *Object) SetNewProperty(name string, value SymbolicValue, static Pattern) {
@@ -1150,13 +1157,20 @@ func (rec *Record) PropertyNames() []string {
 	if rec.entries == nil {
 		return nil
 	}
-	props := make([]string, len(rec.entries))
+	props := make([]string, len(rec.entries)-len(rec.optionalEntries))
 	i := 0
 	for k := range rec.entries {
+		if _, isOptional := rec.optionalEntries[k]; isOptional {
+			continue
+		}
 		props[i] = k
 		i++
 	}
 	return props
+}
+
+func (rec *Record) OptionalPropertyNames() []string {
+	return utils.GetMapKeys(rec.optionalEntries)
 }
 
 func (rec *Record) hasProperty(name string) bool {

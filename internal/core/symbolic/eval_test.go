@@ -776,6 +776,21 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY, res)
 		})
 
+		t.Run("optional property", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				fn f(arg %{name?: %str}){
+					return $arg.name
+				}
+			`)
+			memberExpr := parse.FindNode(n, (*parse.MemberExpression)(nil), nil)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(memberExpr, state, fmtPropertyIsOptionalUseOptionalMembExpr("name")),
+			}, state.errors)
+		})
+
 		t.Run("inexisting property of GoValue", func(t *testing.T) {
 			n, state := makeStateAndChunk(`
 				return v.XYZ
@@ -974,6 +989,21 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
 			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("optional property", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				fn f(arg %{name?: %str}){
+					return arg.name
+				}
+			`)
+			memberExpr := parse.FindNode(n, (*parse.IdentifierMemberExpression)(nil), nil)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(memberExpr, state, fmtPropertyIsOptionalUseOptionalMembExpr("name")),
+			}, state.errors)
 		})
 	})
 

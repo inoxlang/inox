@@ -3337,7 +3337,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 }
 
-func symbolicMemb(value SymbolicValue, name string, optional bool, node parse.Node, state *State) (result SymbolicValue) {
+func symbolicMemb(value SymbolicValue, name string, optionalMembExpr bool, node parse.Node, state *State) (result SymbolicValue) {
 
 	if _, ok := value.(*Any); ok {
 		return ANY
@@ -3362,10 +3362,16 @@ func symbolicMemb(value SymbolicValue, name string, optional bool, node parse.No
 				closest = ""
 			}
 
-			if !optional {
+			if !optionalMembExpr {
 				state.addError(makeSymbolicEvalError(node, state, fmtPropOfSymbolicDoesNotExist(name, value, closest)))
 			}
 			result = ANY
+		} else {
+			if optIprops, ok := iprops.(OptionalIProps); ok {
+				if !optionalMembExpr && utils.SliceContains(optIprops.OptionalPropertyNames(), name) {
+					state.addError(makeSymbolicEvalError(node, state, fmtPropertyIsOptionalUseOptionalMembExpr(name)))
+				}
+			}
 		}
 	}()
 

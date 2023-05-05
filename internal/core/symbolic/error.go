@@ -244,6 +244,10 @@ func fmtPropOfSymbolicDoesNotExist(name string, v SymbolicValue, suggestion stri
 	return fmt.Sprintf("property .%s does not exist in %s (%T)%s", name, Stringify(v), v, suggestion)
 }
 
+func fmtPropertyIsOptionalUseOptionalMembExpr(name string) string {
+	return fmt.Sprintf("property .%s is optional, you should use an optional member expression: .?%s", name, name)
+}
+
 func fmtPatternSpreadInObjectPatternShouldBeAnObjectPatternNot(v SymbolicValue) string {
 	return fmt.Sprintf("a pattern that is a spread in an object pattern should be an object pattern not a(n) %s", Stringify(v))
 }

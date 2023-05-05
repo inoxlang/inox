@@ -568,6 +568,11 @@ func (UnassignablePropsMixin) WithExistingPropReplaced(name string, value Symbol
 	return nil, ErrUnassignablePropsMixin
 }
 
+type OptionalIProps interface {
+	IProps
+	OptionalPropertyNames() []string
+}
+
 //
 
 type GoValue interface {
