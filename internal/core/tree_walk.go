@@ -484,16 +484,16 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		return Nil, nil
 	case *parse.Assignment:
 
-		handleAssignmentOperation := func(left, right Value) (Value, error) {
+		handleAssignmentOperation := func(left func() Value, right Value) (Value, error) {
 			switch n.Operator {
 			case parse.PlusAssign:
-				return intAdd(left.(Int), right.(Int))
+				return intAdd(left().(Int), right.(Int))
 			case parse.MinusAssign:
-				return intSub(left.(Int), right.(Int))
+				return intSub(left().(Int), right.(Int))
 			case parse.MulAssign:
-				return intMul(left.(Int), right.(Int))
+				return intMul(left().(Int), right.(Int))
 			case parse.DivAssign:
-				return intMul(left.(Int), right.(Int))
+				return intMul(left().(Int), right.(Int))
 			}
 
 			return right, nil
@@ -509,7 +509,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				return nil, err
 			}
 
-			right, err = handleAssignmentOperation(currentLocalScope[name], right)
+			right, err = handleAssignmentOperation(utils.Ret(currentLocalScope[name]), right)
 			if err != nil {
 				return nil, err
 			}
@@ -524,7 +524,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				return nil, err
 			}
 
-			right, err = handleAssignmentOperation(currentLocalScope[name], right)
+			right, err = handleAssignmentOperation(utils.Ret(currentLocalScope[name]), right)
 			if err != nil {
 				return nil, err
 			}
@@ -554,7 +554,10 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				return nil, err
 			}
 
-			right, err = handleAssignmentOperation(state.Global.Globals.Get(name), right)
+			getLeft := func() Value {
+				return state.Global.Globals.Get(name)
+			}
+			right, err = handleAssignmentOperation(getLeft, right)
 			if err != nil {
 				return nil, err
 			}
@@ -572,7 +575,11 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 
 			key := lhs.PropertyName.Name
-			right, err = handleAssignmentOperation(left.(*Object).Prop(state.Global.Ctx, key), right)
+			getLeft := func() Value {
+				return left.(*Object).Prop(state.Global.Ctx, key)
+			}
+
+			right, err = handleAssignmentOperation(getLeft, right)
 			if err != nil {
 				return nil, err
 			}
@@ -596,8 +603,11 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			lastPropName := lhs.PropertyNames[len(lhs.PropertyNames)-1].Name
 
 			iprops := v.(IProps)
+			getLeft := func() Value {
+				return iprops.Prop(state.Global.Ctx, lastPropName)
+			}
 
-			right, err = handleAssignmentOperation(iprops.Prop(state.Global.Ctx, lastPropName), right)
+			right, err = handleAssignmentOperation(getLeft, right)
 			if err != nil {
 				return nil, err
 			}
@@ -621,8 +631,11 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 			sequence := slice.(MutableSequence)
 			i := int(index.(Int))
+			getLeft := func() Value {
+				return sequence.At(state.Global.Ctx, i)
+			}
 
-			right, err = handleAssignmentOperation(sequence.At(state.Global.Ctx, i), right)
+			right, err = handleAssignmentOperation(getLeft, right)
 			if err != nil {
 				return nil, err
 			}
