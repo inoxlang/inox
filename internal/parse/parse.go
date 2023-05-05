@@ -2010,9 +2010,11 @@ func (p *parser) parseIdentStartingExpression() Node {
 	}
 
 	isDynamic := false
+	lastDotIndex := int32(-1)
 
 	//identifier member expression
 	if p.i < p.len && p.s[p.i] == '.' {
+		lastDotIndex = p.i
 		p.i++
 
 		var memberExpr Node = &IdentifierMemberExpression{
@@ -2025,6 +2027,13 @@ func (p *parser) parseIdentStartingExpression() Node {
 
 		for {
 			nameStart := p.i
+			isOptional := false
+
+			if p.i < p.len && p.s[p.i] == '?' {
+				isOptional = true
+				p.i++
+				nameStart = p.i
+			}
 
 			if p.i >= p.len || isUnpairedOrIsClosingDelim(p.s[p.i]) {
 				base := memberExpr.BasePtr()
@@ -2067,23 +2076,29 @@ func (p *parser) parseIdentStartingExpression() Node {
 						NodeBase:     NodeBase{Span: NodeSpan{ident.Span.Start, p.i}},
 						Left:         ident,
 						PropertyName: propNameNode,
+						Optional:     isOptional,
 					}
 				} else {
 					memberExpr = &DynamicMemberExpression{
 						NodeBase:     NodeBase{Span: NodeSpan{ident.Span.Start, p.i}},
 						Left:         memberExpr,
 						PropertyName: propNameNode,
+						Optional:     isOptional,
 					}
 				}
 			} else {
 				identMemberExpr, ok := memberExpr.(*IdentifierMemberExpression)
-				if ok {
+				if ok && !isOptional {
 					identMemberExpr.PropertyNames = append(identMemberExpr.PropertyNames, propNameNode)
 				} else {
+					if ok {
+						identMemberExpr.BasePtr().Span.End = lastDotIndex
+					}
 					memberExpr = &MemberExpression{
 						NodeBase:     NodeBase{Span: NodeSpan{ident.Span.Start, p.i}},
 						Left:         memberExpr,
 						PropertyName: propNameNode,
+						Optional:     isOptional,
 					}
 				}
 			}
@@ -2091,6 +2106,7 @@ func (p *parser) parseIdentStartingExpression() Node {
 			if p.i >= p.len || p.s[p.i] != '.' {
 				break
 			}
+			lastDotIndex = p.i
 			p.i++
 		}
 
@@ -5612,20 +5628,29 @@ loop:
 		case p.s[p.i] == '[' || p.s[p.i] == '.':
 			dot := p.s[p.i] == '.'
 			p.i++
-
 			start := p.i
+			isOptional := false
+
+			isDot := p.s[p.i-1] == '.'
+			isBracket := !isDot
+
+			if isDot && p.i < p.len && p.s[p.i] == '?' {
+				isOptional = true
+				p.i++
+				start = p.i
+			}
 
 			if p.i >= p.len || (isUnpairedOrIsClosingDelim(p.s[p.i]) && (dot || (p.s[p.i] != ':' && p.s[p.i] != ']'))) {
 				//unterminated member expression
-				if p.s[p.i-1] == '.' {
-
+				if isDot {
 					return &MemberExpression{
 						NodeBase: NodeBase{
 							NodeSpan{first.Base().Span.Start, p.i},
 							&ParsingError{UnterminatedMemberExpr, UNTERMINATED_MEMB_OR_INDEX_EXPR},
-							[]Token{{Type: DOT, Span: NodeSpan{p.i - 1, p.i}}},
+							nil,
 						},
-						Left: lhs,
+						Left:     lhs,
+						Optional: isOptional,
 					}, false
 				}
 				return &InvalidMemberLike{
@@ -5638,7 +5663,8 @@ loop:
 				}, false
 			}
 
-			if p.s[p.i-1] == '[' { //index/slice expression
+			switch {
+			case isBracket: //index/slice expression
 				p.eatSpace()
 
 				if p.i >= p.len {
@@ -5754,7 +5780,7 @@ loop:
 					Indexed: lhs,
 					Index:   startIndex,
 				}
-			} else if p.s[p.i] == '{' { //extraction expression (result is returned, the loop is not continued)
+			case p.s[p.i] == '{': //extraction expression (result is returned, the loop is not continued)
 				p.i--
 				keyList := p.parseKeyList()
 
@@ -5768,13 +5794,13 @@ loop:
 					Keys:   keyList,
 				}
 				continue loop
-			} else {
+			default:
 				isDynamic := false
 				spanStart := lhs.Base().Span.Start
 				var propertyNameNode *IdentifierLiteral
 				propNameStart := start
 
-				if p.s[p.i] == '<' {
+				if !isOptional && p.i < p.len && p.s[p.i] == '<' {
 					isDynamic = true
 					p.i++
 					propNameStart++
@@ -5790,6 +5816,7 @@ loop:
 							},
 							Left:         lhs,
 							PropertyName: propertyNameNode,
+							Optional:     isOptional,
 						}
 					}
 					return &MemberExpression{
@@ -5800,6 +5827,7 @@ loop:
 						},
 						Left:         lhs,
 						PropertyName: propertyNameNode,
+						Optional:     isOptional,
 					}
 				}
 

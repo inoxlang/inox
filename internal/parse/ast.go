@@ -198,6 +198,7 @@ type MemberExpression struct {
 	NodeBase
 	Left         Node
 	PropertyName *IdentifierLiteral
+	Optional     bool
 }
 
 func (MemberExpression) Kind() NodeKind {
@@ -1673,6 +1674,7 @@ type DynamicMemberExpression struct {
 	NodeBase
 	Left         Node
 	PropertyName *IdentifierLiteral
+	Optional     bool
 }
 
 func (DynamicMemberExpression) Kind() NodeKind {

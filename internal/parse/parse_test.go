@@ -1467,7 +1467,50 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
-		t.Run("variable '.' <propname> '.' <two-letter propname> ", func(t *testing.T) {
+		t.Run("variable '.?' <name>", func(t *testing.T) {
+			n := MustParseChunk("$a.?b")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
+				Statements: []Node{
+					&MemberExpression{
+						NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
+						Left: &Variable{
+							NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+							Name:     "a",
+						},
+						PropertyName: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{4, 5}, nil, nil},
+							Name:     "b",
+						},
+						Optional: true,
+					},
+				},
+			}, n)
+		})
+
+		t.Run("variable '.?'", func(t *testing.T) {
+			n, err := ParseChunk("$a.?", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
+				Statements: []Node{
+					&MemberExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 4},
+							&ParsingError{UnterminatedMemberExpr, UNTERMINATED_MEMB_OR_INDEX_EXPR},
+							nil,
+						},
+						Left: &Variable{
+							NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+							Name:     "a",
+						},
+						Optional: true,
+					},
+				},
+			}, n)
+		})
+
+		t.Run("variable '.' <prop name> '.' <two-letter prop name> ", func(t *testing.T) {
 			n := MustParseChunk("$a.b.cd")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
@@ -1494,6 +1537,34 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
+		t.Run("variable '.?' <prop> '.' <prop name> ", func(t *testing.T) {
+			n := MustParseChunk("$a.?b.c")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
+				Statements: []Node{
+					&MemberExpression{
+						NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
+						Left: &MemberExpression{
+							NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
+							Left: &Variable{
+								NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+								Name:     "a",
+							},
+							PropertyName: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{4, 5}, nil, nil},
+								Name:     "b",
+							},
+							Optional: true,
+						},
+						PropertyName: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{6, 7}, nil, nil},
+							Name:     "c",
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("missing property name: followed by EOF", func(t *testing.T) {
 			n, err := ParseChunk("$a.", "")
 			assert.Error(t, err)
@@ -1504,7 +1575,7 @@ func TestParse(t *testing.T) {
 						NodeBase: NodeBase{
 							NodeSpan{0, 3},
 							&ParsingError{UnterminatedMemberExpr, UNTERMINATED_MEMB_OR_INDEX_EXPR},
-							[]Token{{Type: DOT, Span: NodeSpan{2, 3}}},
+							nil,
 						},
 						Left: &Variable{
 							NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
@@ -1530,7 +1601,7 @@ func TestParse(t *testing.T) {
 						NodeBase: NodeBase{
 							NodeSpan{0, 3},
 							&ParsingError{UnterminatedMemberExpr, UNTERMINATED_MEMB_OR_INDEX_EXPR},
-							[]Token{{Type: DOT, Span: NodeSpan{2, 3}}},
+							nil,
 						},
 						Left: &Variable{
 							NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
@@ -1556,7 +1627,7 @@ func TestParse(t *testing.T) {
 						NodeBase: NodeBase{
 							NodeSpan{0, 3},
 							&ParsingError{UnterminatedMemberExpr, UNTERMINATED_MEMB_OR_INDEX_EXPR},
-							[]Token{{Type: DOT, Span: NodeSpan{2, 3}}},
+							nil,
 						},
 						Left: &Variable{
 							NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
@@ -1586,7 +1657,7 @@ func TestParse(t *testing.T) {
 						NodeBase: NodeBase{
 							NodeSpan{0, 5},
 							&ParsingError{UnterminatedMemberExpr, UNTERMINATED_MEMB_OR_INDEX_EXPR},
-							[]Token{{Type: DOT, Span: NodeSpan{4, 5}}},
+							nil,
 						},
 						Left: &MemberExpression{
 							NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
@@ -1688,6 +1759,39 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
+		t.Run("optional member of an identifier member expression", func(t *testing.T) {
+			n := MustParseChunk("a.b.?c")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
+				Statements: []Node{
+					&MemberExpression{
+						NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
+						Left: &IdentifierMemberExpression{
+							NodeBase: NodeBase{
+								NodeSpan{0, 3},
+								nil,
+								nil,
+							},
+							Left: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+								Name:     "a",
+							},
+							PropertyNames: []*IdentifierLiteral{
+								{
+									NodeBase: NodeBase{NodeSpan{2, 3}, nil, nil},
+									Name:     "b",
+								},
+							},
+						},
+						PropertyName: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{5, 6}, nil, nil},
+							Name:     "c",
+						},
+						Optional: true,
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("dynamic member expression", func(t *testing.T) {

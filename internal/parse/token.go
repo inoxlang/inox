@@ -140,6 +140,7 @@ const (
 	TWO_DOTS
 	DOT_DOT_LESS_THAN
 	THREE_DOTS
+	DOT_LESS_THAN
 	EQUAL
 	EQUAL_EQUAL
 	PLUS_EQUAL
@@ -313,6 +314,7 @@ var tokenStrings = [...]string{
 	CSS_SELECTOR_PREFIX:            "s!",
 	TWO_DOTS:                       "..",
 	THREE_DOTS:                     "...",
+	DOT_LESS_THAN:                  ".<",
 	PLUS:                           "+",
 	PLUS_DOT:                       "+.",
 	MINUS:                          "-",
@@ -481,6 +483,7 @@ var tokenTypenames = [...]string{
 	TWO_DOTS:                       "TWO_DOTS",
 	DOT_DOT_LESS_THAN:              "DOT_DOT_LESS_THAN",
 	THREE_DOTS:                     "THREE_DOTS",
+	DOT_LESS_THAN:                  "DOT_LESS_THAN",
 	EQUAL:                          "EQUAL",
 	EQUAL_EQUAL:                    "EQUAL_EQUAL",
 	PLUS_EQUAL:                     "PLUS_EQUAL",
@@ -594,6 +597,29 @@ func GetTokens(node Node, addMeta bool) []Token {
 				Type: DOT,
 				Span: NodeSpan{i, i + 1},
 			})
+
+			if n.Optional {
+				tokens = append(tokens, Token{
+					Type: QUESTION_MARK,
+					Span: NodeSpan{i + 1, i + 2},
+				})
+			}
+
+			return Continue, nil
+		case *DynamicMemberExpression:
+			i := n.Left.Base().Span.End
+
+			tokens = append(tokens, Token{
+				Type: DOT_LESS_THAN,
+				Span: NodeSpan{i, i + 2},
+			})
+
+			if n.Optional {
+				tokens = append(tokens, Token{
+					Type: QUESTION_MARK,
+					Span: NodeSpan{i + 2, i + 3},
+				})
+			}
 
 			return Continue, nil
 		case *IdentifierMemberExpression:
