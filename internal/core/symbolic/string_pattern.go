@@ -52,7 +52,7 @@ func (p *AnyStringPatternElement) MatchGroups(v SymbolicValue) (bool, map[string
 }
 
 func (p *AnyStringPatternElement) SymbolicValue() SymbolicValue {
-	return &String{}
+	return ANY_STR
 }
 
 func (p *AnyStringPatternElement) StringPattern() (StringPatternElement, bool) {
@@ -114,7 +114,7 @@ func (p *SequenceStringPattern) MatchGroups(v SymbolicValue) (bool, map[string]S
 }
 
 func (p *SequenceStringPattern) SymbolicValue() SymbolicValue {
-	return &String{}
+	return ANY_STR
 }
 
 func (p *SequenceStringPattern) StringPattern() (StringPatternElement, bool) {
@@ -179,7 +179,7 @@ func (p *ParserBasedPattern) TestValue(v SymbolicValue) bool {
 }
 
 func (p *ParserBasedPattern) SymbolicValue() SymbolicValue {
-	return &String{}
+	return ANY_STR
 }
 
 func (p *ParserBasedPattern) StringPattern() (StringPatternElement, bool) {
