@@ -630,6 +630,8 @@ The execution of a module has several phases:
 - parsing
 - [static check](#static-check)
 - [symbolic evaluation/check](#symbolic-evaluation)
+- [compilation](#compilation) (if using [bytecode interpreter](#evaluation))
+- [evaluation](#evaluation-phase)
 
 # Static check
 
@@ -644,3 +646,15 @@ During the static check phase the code is analyzed in order to find the followin
 
 The symbolic evaluation of a module is a "virtual" evaluation, it performs checks similar to those of a type checker.
 Throughout the Inox documentation you may encounter the terms "type checker"/ "type checking", this corresponds to the symbolic evaluation phase.
+
+# Compilation
+
+TODO
+
+# Evaluation
+
+The evaluation is performed by either a **bytecode interpreter or** a **tree walking interpreter**. You don't really need to understand
+how they work, just remember that:
+- the bytecode interpreter is the default when running a script with `inox run`
+- the tree walking interpreter is always used when using the REPL
+- the tree walking intepreter is much slower (filesystem & network operations are not affected)
