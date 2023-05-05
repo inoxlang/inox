@@ -2183,11 +2183,12 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		}
 
 		val := symbolicMemb(left, n.PropertyName.Name, n.Optional, n, state)
-		state.symbolicData.SetMostSpecificNodeValue(n.PropertyName, val)
-
 		if n.Optional {
 			val = joinValues([]SymbolicValue{val, Nil})
 		}
+
+		state.symbolicData.SetMostSpecificNodeValue(n.PropertyName, val)
+
 		return val, nil
 	case *parse.IdentifierMemberExpression:
 		v, err := symbolicEval(n.Left, state)
