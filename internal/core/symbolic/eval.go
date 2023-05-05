@@ -3439,9 +3439,14 @@ func narrowPath(path parse.Node, action pathNarrowing, value SymbolicValue, stat
 				if err != nil {
 					panic(err)
 				}
-
+				propName := node.PropertyNames[0].Name
 				iprops := asIprops(left).(IProps)
-				newPropValue, err := iprops.WithExistingPropReplaced(node.PropertyNames[0].Name, value)
+
+				if !HasRequiredOrOptionalProperty(iprops, propName) {
+					break
+				}
+
+				newPropValue, err := iprops.WithExistingPropReplaced(propName, value)
 				if err == nil {
 					narrowPath(node.Left, setExactValue, newPropValue, state, 0)
 				} else if err != ErrUnassignablePropsMixin {
@@ -3482,7 +3487,12 @@ func narrowPath(path parse.Node, action pathNarrowing, value SymbolicValue, stat
 				panic(err)
 			}
 
+			propName := node.PropertyName.Name
 			iprops := asIprops(left).(IProps)
+			if !HasRequiredOrOptionalProperty(iprops, propName) {
+				break
+			}
+
 			newPropValue, err := iprops.WithExistingPropReplaced(node.PropertyName.Name, value)
 			if err == nil {
 				narrowPath(node.Left, setExactValue, newPropValue, state, 0)
@@ -3495,7 +3505,13 @@ func narrowPath(path parse.Node, action pathNarrowing, value SymbolicValue, stat
 				panic(err)
 			}
 
+			propName := node.PropertyName.Name
 			iprops := asIprops(left).(IProps)
+
+			if !HasRequiredOrOptionalProperty(iprops, propName) {
+				break
+			}
+
 			prevPropValue := iprops.Prop(node.PropertyName.Name)
 			newPropValue := narrowOut(value, prevPropValue)
 
