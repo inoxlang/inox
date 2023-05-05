@@ -14868,6 +14868,55 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
+		t.Run("optional member expression", func(t *testing.T) {
+			n := MustParseChunk("$a.?b?")
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
+				Statements: []Node{
+					&BooleanConversionExpression{
+						NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
+						Expr: &MemberExpression{
+							NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
+							Left: &Variable{
+								NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+								Name:     "a",
+							},
+							PropertyName: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{4, 5}, nil, nil},
+								Name:     "b",
+							},
+							Optional: true,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("optional member expression", func(t *testing.T) {
+			n := MustParseChunk("a.?b?")
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
+				Statements: []Node{
+					&BooleanConversionExpression{
+						NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
+						Expr: &MemberExpression{
+							NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
+							Left: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+								Name:     "a",
+							},
+							PropertyName: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{3, 4}, nil, nil},
+								Name:     "b",
+							},
+							Optional: true,
+						},
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("concatenation expression", func(t *testing.T) {

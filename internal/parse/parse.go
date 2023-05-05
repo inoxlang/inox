@@ -2079,9 +2079,14 @@ func (p *parser) parseIdentStartingExpression() Node {
 						Optional:     isOptional,
 					}
 				} else {
+					left := memberExpr
+					if ok && len(identMemberExpr.PropertyNames) == 0 {
+						left = ident
+					}
+
 					memberExpr = &DynamicMemberExpression{
 						NodeBase:     NodeBase{Span: NodeSpan{ident.Span.Start, p.i}},
-						Left:         memberExpr,
+						Left:         left,
 						PropertyName: propNameNode,
 						Optional:     isOptional,
 					}
@@ -2094,9 +2099,14 @@ func (p *parser) parseIdentStartingExpression() Node {
 					if ok {
 						identMemberExpr.BasePtr().Span.End = lastDotIndex
 					}
+					left := memberExpr
+					if ok && len(identMemberExpr.PropertyNames) == 0 {
+						left = ident
+					}
+
 					memberExpr = &MemberExpression{
 						NodeBase:     NodeBase{Span: NodeSpan{ident.Span.Start, p.i}},
-						Left:         memberExpr,
+						Left:         left,
 						PropertyName: propNameNode,
 						Optional:     isOptional,
 					}
@@ -5522,7 +5532,7 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 			}
 		case *IdentifierMemberExpression:
 			name = v.Left.Name
-		case *SelfExpression:
+		case *SelfExpression, *MemberExpression:
 			lhs = identStartingExpr
 		default:
 			return v, false
