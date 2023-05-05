@@ -455,7 +455,7 @@ func handleIdentifierMemberCompletions(n *parse.IdentifierMemberExpression, stat
 			if symbolic.IsAny(curr.(symbolic.SymbolicValue)) {
 				return nil
 			}
-			propertyNames = curr.(symbolic.IProps).PropertyNames()
+			propertyNames = symbolic.GetAllPropertyNames(curr.(symbolic.IProps))
 		}
 
 		found := false
@@ -556,7 +556,7 @@ loop:
 			if symbolic.IsAny(curr.(symbolic.SymbolicValue)) {
 				return nil
 			}
-			propertyNames = curr.(symbolic.IProps).PropertyNames()
+			propertyNames = symbolic.GetAllPropertyNames(curr.(symbolic.IProps))
 		}
 
 		//we search for the property name that matches the node
@@ -594,6 +594,7 @@ func suggestPropertyNames(
 	var completions []Completion
 	var propNames []string
 	var propDetails []string
+	var optionalProps []bool
 
 	//we get all property names
 	switch v := curr.(type) {
@@ -605,10 +606,13 @@ func suggestPropertyNames(
 			return detail
 		})
 	case symbolic.IProps:
-		propNames = v.PropertyNames()
+		propNames = symbolic.GetAllPropertyNames(v)
 		propDetails = utils.MapSlice(propNames, func(name string) string {
 			propVal := v.Prop(name)
 			return symbolic.Stringify(propVal)
+		})
+		optionalProps = utils.MapSlice(propNames, func(name string) bool {
+			return symbolic.IsPropertyOptional(v, name)
 		})
 	}
 
@@ -616,9 +620,14 @@ func suggestPropertyNames(
 		//we suggest all property names
 
 		for i, propName := range propNames {
+			op := "."
+			if len(optionalProps) != 0 && optionalProps[i] {
+				op = ".?"
+			}
+
 			completions = append(completions, Completion{
-				ShownString: s + "." + propName,
-				Value:       s + "." + propName,
+				ShownString: s + op + propName,
+				Value:       s + op + propName,
 				Kind:        defines.CompletionItemKindProperty,
 				Detail:      propDetails[i],
 			})
@@ -634,9 +643,14 @@ func suggestPropertyNames(
 				continue
 			}
 
+			op := "."
+			if len(optionalProps) != 0 && optionalProps[i] {
+				op = ".?"
+			}
+
 			completions = append(completions, Completion{
-				ShownString: s + "." + propName,
-				Value:       s + "." + propName,
+				ShownString: s + op + propName,
+				Value:       s + op + propName,
 				Kind:        defines.CompletionItemKindProperty,
 				Detail:      propDetails[i],
 			})

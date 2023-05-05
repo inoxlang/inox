@@ -573,6 +573,27 @@ type OptionalIProps interface {
 	OptionalPropertyNames() []string
 }
 
+func GetAllPropertyNames(v IProps) []string {
+	names := utils.CopySlice(v.PropertyNames())
+	if optIprops, ok := v.(OptionalIProps); ok {
+		names = append(names, optIprops.OptionalPropertyNames()...)
+	}
+	return names
+}
+
+func IsPropertyOptional(v IProps, name string) bool {
+	optIprops, ok := v.(OptionalIProps)
+	if !ok {
+		return false
+	}
+	for _, current := range optIprops.OptionalPropertyNames() {
+		if name == current {
+			return true
+		}
+	}
+	return false
+}
+
 //
 
 type GoValue interface {
