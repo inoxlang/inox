@@ -2,7 +2,6 @@ package config
 
 import (
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/adrg/xdg"
@@ -28,8 +27,9 @@ var (
 	FORCE_COLOR                 bool
 	TRUECOLOR_COLORTERM         bool
 	TERM_256COLOR_CAPABLE       bool
+	NO_COLOR                    bool
 
-	// set if FORCE_COLOR | TRUECOLOR_COLORTERM | TERM_256COLOR_CAPABLE
+	// set if FORCE_COLOR | TRUECOLOR_COLORTERM | TERM_256COLOR_CAPABLE and NO_COLOR not true
 	INITIAL_COLORS_SET bool
 	INITIAL_FG_COLOR   core.Color
 	INITIAL_BG_COLOR   core.Color
@@ -52,14 +52,18 @@ func init() {
 	// FORCE COLOR
 
 	if s, ok := os.LookupEnv("FORCE_COLOR"); ok {
-		number, _ := strconv.Atoi(s)
-		FORCE_COLOR = len(s) == 0 || number != 0
+		FORCE_COLOR = len(s) != 0 && s != "false" && s != "0"
 	}
 
 	//TERMCOLOR
 
 	TRUECOLOR_COLORTERM = os.Getenv("COLORTERM") == "truecolor"
 
+	//NO_COLOR
+
+	if s, ok := os.LookupEnv("NO_COLOR"); ok {
+		NO_COLOR = len(s) != 0 && s != "false" && s != "0"
+	}
 	//TERM
 
 	term := os.Getenv("TERM")
@@ -69,7 +73,7 @@ func init() {
 
 	//
 
-	if FORCE_COLOR || TRUECOLOR_COLORTERM || TERM_256COLOR_CAPABLE {
+	if !NO_COLOR && (FORCE_COLOR || TRUECOLOR_COLORTERM || TERM_256COLOR_CAPABLE) {
 		INITIAL_COLORS_SET = true
 		INITIAL_BG_COLOR = core.ColorFromTermenvColor(termenv.BackgroundColor(), core.ColorFromTermenvColor(termenv.ANSIBlack))
 		INITIAL_FG_COLOR = core.ColorFromTermenvColor(termenv.ForegroundColor(), core.ColorFromTermenvColor(termenv.ANSIWhite))
