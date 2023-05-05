@@ -1,0 +1,63 @@
+# this scripts generates docs/builtin.md using the help data in the following file
+
+const (
+    DATA_FILE = ./internal/globals/help/builtin.yaml
+    OUTPUT_FILE = ./docs/builtin.md
+)
+
+manifest {
+    permissions: {
+        read: IWD_PREFIX
+        write: IWD_PREFIX
+    }
+}
+
+
+help_data = read!(DATA_FILE)
+assert (help_data match %[%obj])
+
+object = help_data[0]
+
+var builtin %str = ""
+
+%example = %{
+    code?: %str?
+    explanation?: %str?
+    output?: %str?,
+    ...
+}
+
+for k, v in object {
+    assert (v match %{
+        topic: %str
+        text?: %str?
+        examples?: %[]%example
+        ...
+    })
+
+    builtin = (concat builtin 
+        "## " v.topic "\n\n"
+        (v.?text ?? "") "\n"
+        "\n**examples**:\n\n"
+
+        ...map((v.?examples ?? []), fn(example %example){
+            code = example.?code
+            if code? {
+                output = example.?output
+                if output? {
+                    output = concat "\n# output: \n" output
+                } 
+                return concat "```inox\n" code (output ?? "") "\n```\n"
+            }
+            return ""
+        })
+    )
+}
+
+output = `
+# Builtin
+
+{{builtin}}
+`
+
+update $$OUTPUT_FILE replace $output
