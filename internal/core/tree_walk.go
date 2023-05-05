@@ -1875,7 +1875,14 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return nil, err
 		}
 
-		return left.(IProps).Prop(state.Global.Ctx, n.PropertyName.Name), nil
+		iprops := left.(IProps)
+		propName := n.PropertyName.Name
+
+		if n.Optional && !utils.SliceContains(iprops.PropertyNames(state.Global.Ctx), propName) {
+			return Nil, nil
+		}
+
+		return iprops.Prop(state.Global.Ctx, propName), nil
 	case *parse.DynamicMemberExpression:
 		left, err := TreeWalkEval(n.Left, state)
 		if err != nil {

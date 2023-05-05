@@ -3202,6 +3202,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				result: Nil,
 			},
 			{
+				input:  "return ({}).?a",
+				result: Nil,
+			},
+			{
 				input: `
 					rt = go do {
 						return {x: 1}

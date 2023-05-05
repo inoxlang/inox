@@ -1379,7 +1379,24 @@ func (v *VM) run() {
 			v.ip += 2
 			memberNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
 			memberName := string(v.constants[memberNameIndex].(Str))
+
 			memb := object.(IProps).Prop(v.global.Ctx, memberName)
+			v.stack[v.sp-1] = memb
+		case OpOptionalMemb:
+			object := v.stack[v.sp-1]
+			v.ip += 2
+			memberNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			memberName := string(v.constants[memberNameIndex].(Str))
+
+			iprops := object.(IProps)
+
+			var memb Value
+			if !utils.SliceContains(iprops.PropertyNames(v.global.Ctx), memberName) {
+				memb = Nil
+			} else {
+				memb = iprops.Prop(v.global.Ctx, memberName)
+			}
+
 			v.stack[v.sp-1] = memb
 		case OpDynMemb:
 			object := v.stack[v.sp-1]

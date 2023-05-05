@@ -1064,7 +1064,12 @@ func (c *compiler) Compile(node parse.Node) error {
 			return err
 		}
 
-		c.emit(node, OpMemb, c.addConstant(Str(node.PropertyName.Name)))
+		op := OpMemb
+		if node.Optional {
+			op = OpOptionalMemb
+		}
+
+		c.emit(node, op, c.addConstant(Str(node.PropertyName.Name)))
 	case *parse.DynamicMemberExpression:
 		if err := c.Compile(node.Left); err != nil {
 			return err
