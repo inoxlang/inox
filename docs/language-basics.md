@@ -27,8 +27,9 @@
     - [Named patterns](#named-patterns)
     - [Pattern namespaces](#pattern-namespaces)
     - [String patterns](#string-patterns)
-
-
+- [Modules](#modules)
+- [Static check](#static-check)
+- [Symbolic evaluation](#symbolic-evaluation)
 
 # Literals
 
@@ -618,3 +619,28 @@ String patterns can be composed thanks to named patterns:
 %domain = "@mail.com"
 %email-address = (("user1" | "user2") %domain)
 ```
+
+# Modules
+
+An Inox module is a code file that starts with a manifest.
+
+## Execution Phases
+
+The execution of a module has several phases:
+- parsing
+- [static check](#static-check)
+- [symbolic evaluation/check](#symbolic-evaluation)
+
+# Static check
+
+During the static check phase the code is analyzed in order to find the following issues:
+- misplaced statements
+- undeclared variables or patterns
+- duplicate declarations
+
+*(and a few others)*
+
+# Symbolic evaluation
+
+The symbolic evaluation of a module is a "virtual" evaluation, it performs checks similar to those of a type checker.
+Throughout the Inox documentation you may encounter the terms "type checker"/ "type checking", this corresponds to the symbolic evaluation phase.
