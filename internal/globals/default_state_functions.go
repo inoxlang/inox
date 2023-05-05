@@ -200,7 +200,12 @@ func _split(ctx *core.Context, r core.Readable, sep core.Str, p core.Pattern) (c
 		return nil, err
 	}
 
-	strPatt, ok := p.StringPattern()
+	strPatt, ok := p.(core.StringPattern)
+
+	if !ok {
+		strPatt, ok = p.StringPattern()
+	}
+
 	if !ok {
 		return nil, errors.New("failed to parse: passed pattern has no associated string pattern")
 	}
