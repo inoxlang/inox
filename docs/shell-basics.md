@@ -29,14 +29,14 @@ Before starting the shell ``inox`` will execute the startup script `~/.config/in
   - [Find](#find)
 - [Shell configuration](#configuration)
 
-## Pseudo commands (quit, clear)
+## Pseudo Commands (quit, clear)
 
 - `quit` pseudo command stops the process.
 - `clear` pseudo command clears the screen.
 
 ## Syntax
 
-### Calling a function
+### Calling a Function
 
 Copy the following code in the Inox shell & press Enter:
 ```
@@ -75,7 +75,7 @@ f $a a
 output: [1, #a]
 ```
 
-### Pipe statements
+### Pipe Statements
 
 Pipe statements are analogous to pipes in Unix but they act on the values returned by functions, not 
 file descriptors.
@@ -106,7 +106,7 @@ example:
 help find
 ```
 
-## Type checker
+## Type Checker
 
 The type checker performs various checks before the input code is executed, allowing you to quickly catch errors.
 
@@ -133,7 +133,7 @@ read https://jsonplaceholder.typicode.com/posts | map ~$ .title
 Note: '~' can be added in front of any expresion that is an argument in a call.
 
 
-## Execute Inox scripts from the REPL
+## Execute Inox Scripts from the REPL
 
 ```
 run ./myscript.ix
@@ -142,7 +142,7 @@ run ./myscript.ix
 ⚠️ Paths always start with `./, ../ or /` , if you type `run myscript.ix` it won't work.\
 ⚠️ The script will be potentially granted all the permissions of the shell !
 
-## Execute commands
+## Execute Commands
 
 ```
 ex echo "hello"   # 'ex echo hello' will not work
@@ -151,7 +151,7 @@ ex #go help
 
 NOTE: Almost no commands are allowed by default, edit your startup script in `.config/inox` to allow more commands (and subcommands).
 
-## Resource manipulation
+## Resource Manipulation
 
 From now on we will references files, HTTP servers and endpoints as "resources".
 You can easily manipulate resources using ``read | create | update | delete | provide`` followed by the resource's name.
@@ -182,7 +182,7 @@ is used to determinate the type of content.
     {"key": "value"}
     ```
 
-#### **HTTP resource**
+#### **HTTP Resource**
 
 By default the `read` function parses the content of the read resource, the Content-Type header 
 is used to determinated the type of content.
@@ -201,7 +201,7 @@ Reading an JSON HTTP resource:
 
 Reading a HTML resource will return a `%html.node`.
 
-#### **Raw data**
+#### **Raw Data**
 
 You can disable parsing by adding the `--raw` switch **after** the resource name, a byte slice (%bytes)
 will be returned instead.
@@ -286,7 +286,7 @@ return {
 }
 ```
 
-### Builtin commands
+### Builtin Commands
 
 Builtin commands are provided by the shell, note that commands do not exist natively in Inox,
 typing `cd ./dir/` is equivalent to `cd(./dir/)` because **cd** is a function.
@@ -297,7 +297,7 @@ There are only a few builtin commands availabe:
 - whoami
 - hostname
 
-### Trusted commands
+### Trusted Commands
 
 Trusted commands are commands that are fully trusted, when you execute z trusted command the standard input is redirected
 to the spawned process.

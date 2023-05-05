@@ -28,7 +28,7 @@ Inox scripts support shebangs
 - `chmod u+x script.ix`
 - ./script.ix
 
-## A script to generate the directory structure for a project
+## A Script to Generate the Directory Structure for a Project
 
 ## Version 1
 
@@ -141,7 +141,7 @@ Let's run the script:
 inox run gen-project.ix ./myapp/ --clean-existing
 ```
 
-## Version 2 - verbose mode
+## Version 2 - Verbose Switch
 
 We want to add a verbose mode, in this mode the script will tell us if it has
 deleted the target directory in the case we used `--clean-existing`.

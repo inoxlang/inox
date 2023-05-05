@@ -15,7 +15,7 @@ An archive with a Linux binary and some examples is available in [release assets
   ```
   sudo install inox -o root -m 0755 /usr/local/bin/inox
   ```
-### Editor support
+### Editor Support
 
 - [VSCode](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox)
 - [Vim](https://github.com/inoxlang/inox-vim)
@@ -75,9 +75,9 @@ create a checked string all the interpolations must be explicitly **typed**.
 runtime check error: 0 or 1=1 does not match %sql.int
 -->
 
-### Permission system
+### Permission System
 
-#### **Required permissions** 
+#### **Required Permissions** 
 
 Inox features a fine-grained **permission system** that restricts what a module is allowed to do, here are a few examples of permissions:
 - access to the filesystem (read, create, update, write, delete)
@@ -110,7 +110,7 @@ print(fs.ls!(malicious_user_input))
 When a forbidden operation is performed the module panics with an error:\
 `core: error: not allowed, missing permission: [read path(s) /home/]`
 
-#### **Isolation of dependencies**
+#### **Isolation of Dependencies**
 
 In imports the importing module specifies the permissions it **grants** to the imported module.
 
@@ -147,7 +147,7 @@ data = fs.read!(/etc/passwd)
 If the imported module ask more permissions than granted an error is thrown:\
 `import: some permissions in the imported module's manifest are not granted: [read path(s) /...] `
 
-#### **Dropping permissions**
+#### **Dropping Permissions**
 
 Sometimes programs have an **initialization** phase, for example a program reads a file or performs an HTTP request to fetch its configuration.
 After this phase it no longer needs some permissions so it can drop them.
@@ -158,7 +158,7 @@ drop-perms {
 }
 ```
 
-### DoS mitigation
+### DoS Mitigation
 
 #### **Limitations (WIP)**
 
@@ -178,7 +178,7 @@ manifest {
 }
 ```
 
-### Sensitive data protection (WIP)
+### Sensitive Data Protection (WIP)
 
 #### **Secrets**
 
@@ -205,7 +205,7 @@ API_KEY = env.initial.API_KEY
 TODO: explain
 
 
-### Declaration of CLI parameters & environment variables
+### Declaration of CLI Parameters & Environment Variables
 
 CLI parameters & environment variables can be described in the manifest:
 
@@ -245,7 +245,7 @@ args = mod-args
 API_KEY = env.initial.API_KEY
 ```
 
-#### Help message generation
+#### Help Message Generation
 
 ```
 $ inox run test.ix 
@@ -263,7 +263,7 @@ options:
       if true delete <dir> if it already exists
 ```
 
-#### **Simplified resource manipulation**
+#### **Simplified resource Manipulation**
 
 - The builtin [**read**](./docs/shell-basics.md#read) function can read directories / files / HTTP resources and parse their content.
 ```
@@ -321,7 +321,7 @@ coroutine2 = go {group: group} do read!(https://jsonplaceholder.typicode.com/pos
 files = group.wait_results!()
 ```
 
-#### **Lifetime jobs**
+#### **Lifetime Jobs**
 
 Lifetime jobs are coroutines linked to an object.
 
@@ -339,7 +339,7 @@ object = {
 
 In Inox objects can communicate in several different ways.
 
-#### **Message sending**
+#### **Message Sending**
 
 The `sendval` construct allows an object to send message to another object.
 
@@ -363,7 +363,7 @@ object = {
 TODO: explain
 
 
-## Compile from source
+## Compile from Source
 
 - clone this repository
 - `cd` into the directory

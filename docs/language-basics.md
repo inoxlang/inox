@@ -1,4 +1,4 @@
-# Inox basics
+# Inox Basics
 
 - [Literals](#Literals)
 - [Variables](#variables)
@@ -43,7 +43,7 @@
     `first line
     second line`
     ```
-- runes represents a single character, they have single quotes: `'a', '\n'`
+- runes represent a single character, they have single quotes: `'a', '\n'`
 - path literals represent a path in the filesystem: `/etc/passwd, /home/user/`
     - they always start with `./`, `../` or `/`
     - paths ending with `/` are directory paths
@@ -117,7 +117,7 @@ print(A)
 # Operations
 
 
-## Binary operations
+## Binary Operations
 
 Binary operations are always parenthesized:
 
@@ -131,7 +131,7 @@ Binary operations are always parenthesized:
 
 This [script](../examples/basic/binary-expressions.ix) contains most possible binary operations.
 
-## Unary operations 
+## Unary Operations 
 
 A number negation is always parenthesized
 ```
@@ -147,7 +147,7 @@ myvar = true
 !myvar # false
 ```
 
-## Concatenation operation
+## Concatenation Operation
 
 Concatenation of strings, byte slices and tuples is performed with a concatenation expression.
 ```
@@ -175,14 +175,14 @@ concat #[1] #[2]
 For now "normal" strings cannot be interpolated but the feature is coming soon, the interpolation
 of checked strings, URLs & paths is already implemented.
 
-### Checked strings
+### Checked Strings
 
 In Inox checked strings are strings that are validated against a pattern. When you dynamically
 create a checked string all the interpolations must be explicitly typed.
 
 <img src="./img/query-injection.png"></img>
 
-### URL expressions
+### URL Expressions
 
 URLs are part of the language, when you dynamically create URLs the interpolations are restricted.
 
@@ -210,7 +210,7 @@ https://google.com/?q={param_value}hub
 # result: https://google.com?q=github
 ```
 
-### Path expressions
+### Path Expressions
 
 ```
 path = /.bashrc     # you can also use the path ./.bashrc or a string
@@ -229,7 +229,7 @@ path = /../../etc/passwd
 ```
 
 
-# Data structures
+# Data Structures
 
 ## Lists
 
@@ -362,9 +362,9 @@ dict = :{
 }
 ```
 
-# Control flow
+# Control Flow
 
-## If statement & expression
+## If Statement & Expression
 
 ```
 if (a < 0){
@@ -387,7 +387,7 @@ if intOrNil? {
 }
 ```
 
-## Switch statement
+## Switch Statement
 
 ```
 switch 1 {
@@ -403,7 +403,7 @@ output:
 1
 ```
 
-## Match statement
+## Match Statement
 
 The match statement is similar to the switch statement but uses patterns as case values.
 The match statement executes the block following the first pattern matching the value.
@@ -424,7 +424,7 @@ output:
 /a
 ```
 
-## For statement
+## For Statement
 
 ```
 for elem in [1, 2, 3] {
@@ -452,7 +452,7 @@ output:
 
 There are 2 kinds of functions in Inox: normal Inox functions & native Golang functions (that you cannot define).
 
-## Functions definitions
+## Functions Definitions
 
 Functions in Inox can be declared in the global scope with the following syntax:
 
@@ -483,7 +483,7 @@ fn f(){
 }
 ```
 
-## Calling a function
+## Calling a Function
 
 Let's define some functions.
 
@@ -515,7 +515,7 @@ g"string" # equivalent to g("a")
 
 Besides the pattern [literals](#literals) there are other kinds of patterns in Inox.
 
-## Object patterns
+## Object Patterns
 
 ```
 object_pattern = %{
@@ -542,7 +542,7 @@ object_pattern = %{
 ({name: "John", additional_prop: 0} match object_pattern) 
 ```
 
-## List patterns
+## List Patterns
 
 List patterns matching a list with elements of the same shape have the following syntax:
 ```
@@ -561,7 +561,7 @@ pattern = %[%int, %str]
 ([1, "a"] match pattern) 
 ```
 
-## Named patterns
+## Named Patterns
 
 Named patterns are equivalent to variables but for patterns, there are many builtin named patterns such as: `%int, %str, %bool`.\
 Pattern definitions allow you to "declare" a pattern like you declare a variable but with a pattern identifier.
@@ -580,7 +580,7 @@ Some named patterns are 'callable', for example if you want a pattern that match
 pattern = %int(0..10)
 ```
 
-## Pattern namespaces
+## Pattern Namespaces
 
 Pattern namespaces are containers for storing a group of related patterns.
 
@@ -599,7 +599,7 @@ Pattern namespaces are containers for storing a group of related patterns.
 namespace = %ints.
 ```
 
-## String patterns
+## String Patterns
 
 Inox allows you to describe string patterns that are easier to read than regex expressions.
 
@@ -633,7 +633,7 @@ The execution of a module has several phases:
 - [compilation](#compilation) (if using [bytecode interpreter](#evaluation))
 - [evaluation](#evaluation-phase)
 
-# Static check
+# Static Check
 
 During the static check phase the code is analyzed in order to find the following issues:
 - misplaced statements
@@ -642,7 +642,7 @@ During the static check phase the code is analyzed in order to find the followin
 
 *(and a few others)*
 
-# Symbolic evaluation
+# Symbolic Evaluation
 
 The symbolic evaluation of a module is a "virtual" evaluation, it performs checks similar to those of a type checker.
 Throughout the Inox documentation you may encounter the terms "type checker"/ "type checking", this corresponds to the symbolic evaluation phase.
