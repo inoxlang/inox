@@ -18,8 +18,10 @@ var (
 		&String{}, &StringConcatenation{},
 	}
 
-	ANY_STR      = &String{}
-	ANY_STR_LIKE = &AnyStringLike{}
+	ANY_STR        = &String{}
+	ANY_STR_LIKE   = &AnyStringLike{}
+	ANY_STR_CONCAT = &StringConcatenation{}
+	ANY_RUNE       = &Rune{}
 
 	STRING_LIKE_PSEUDOPROPS = []string{"replace", "trim_space", "has_prefix", "has_suffix"}
 	RUNE_SLICE_PROPNAMES    = []string{"insert", "remove_position", "remove_position_range"}
@@ -337,7 +339,7 @@ type StringConcatenation struct {
 }
 
 func (c *StringConcatenation) Test(v SymbolicValue) bool {
-	_, ok := v.(*String)
+	_, ok := v.(*StringConcatenation)
 	return ok
 }
 
@@ -351,7 +353,6 @@ func (c *StringConcatenation) IsWidenable() bool {
 
 func (c *StringConcatenation) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%string-concatenation")))
-	return
 }
 
 func (c *StringConcatenation) HasKnownLen() bool {
@@ -363,19 +364,19 @@ func (c *StringConcatenation) knownLen() int {
 }
 
 func (c *StringConcatenation) element() SymbolicValue {
-	return &Rune{}
+	return ANY_RUNE
 }
 
 func (c *StringConcatenation) GetOrBuildString() *String {
-	return &String{}
+	return ANY_STR
 }
 
 func (c *StringConcatenation) WidestOfType() SymbolicValue {
-	return &String{}
+	return ANY_STR_CONCAT
 }
 
 func (c *StringConcatenation) Reader() *Reader {
-	return &Reader{}
+	return ANY_READER
 }
 
 func (p *StringConcatenation) PropertyNames() []string {

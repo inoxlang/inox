@@ -82,3 +82,29 @@ func TesyAnyStringLike(t *testing.T) {
 		assert.Nil(t, widened)
 	})
 }
+
+func TestSymbolicStringConcatenation(t *testing.T) {
+
+	t.Run("Test()", func(t *testing.T) {
+		concat := &StringConcatenation{}
+
+		assert.True(t, concat.Test(concat))
+		assert.True(t, concat.Test(&StringConcatenation{}))
+		assert.False(t, concat.Test(&String{}))
+		assert.False(t, concat.Test(&Int{}))
+	})
+
+	t.Run("IsWidenable()", func(t *testing.T) {
+		assert.False(t, (&StringConcatenation{}).IsWidenable())
+	})
+
+	t.Run("Widen()", func(t *testing.T) {
+		concat := &StringConcatenation{}
+
+		assert.False(t, concat.IsWidenable())
+
+		widened, ok := concat.Widen()
+		assert.False(t, ok)
+		assert.Nil(t, widened)
+	})
+}

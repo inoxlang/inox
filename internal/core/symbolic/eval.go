@@ -59,6 +59,7 @@ var (
 	IN_MEM_SNAPSHOTABLE                = reflect.TypeOf((*InMemorySnapshotable)(nil)).Elem()
 
 	ANY_READABLE = &AnyReadable{}
+	ANY_READER   = &Reader{}
 
 	SUPPORTED_PARSING_ERRORS = []parse.ParsingErrorKind{parse.UnterminatedMemberExpr}
 )
