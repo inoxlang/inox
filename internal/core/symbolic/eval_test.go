@@ -2743,6 +2743,45 @@ func TestSymbolicEval(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotEmpty(t, state.errors)
 			})
+
+			t.Run("property of non existing variable (identifier)", func(t *testing.T) {
+				n, state := makeStateAndChunk(`
+					if v.a? {
+
+					} else {
+						
+					}
+				`)
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, state.errors)
+			})
+
+			t.Run("property of non existing variable (local var)", func(t *testing.T) {
+				n, state := makeStateAndChunk(`
+					if $v.a? {
+
+					} else {
+						
+					}
+				`)
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, state.errors)
+			})
+
+			t.Run("property of non existing variable (global var)", func(t *testing.T) {
+				n, state := makeStateAndChunk(`
+					if $$v.a? {
+
+					} else {
+						
+					}
+				`)
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.NotEmpty(t, state.errors)
+			})
 		})
 	})
 

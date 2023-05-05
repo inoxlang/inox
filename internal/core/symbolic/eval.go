@@ -3440,9 +3440,9 @@ func narrowPath(path parse.Node, action pathNarrowing, value SymbolicValue, stat
 					panic(err)
 				}
 				propName := node.PropertyNames[0].Name
-				iprops := asIprops(left).(IProps)
+				iprops, ok := asIprops(left).(IProps)
 
-				if !HasRequiredOrOptionalProperty(iprops, propName) {
+				if !ok || !HasRequiredOrOptionalProperty(iprops, propName) {
 					break
 				}
 
@@ -3464,10 +3464,11 @@ func narrowPath(path parse.Node, action pathNarrowing, value SymbolicValue, stat
 
 				propName := node.PropertyNames[0].Name
 
-				iprops := asIprops(left).(IProps)
-				if !HasRequiredOrOptionalProperty(iprops, propName) {
+				iprops, ok := asIprops(left).(IProps)
+				if !ok || !HasRequiredOrOptionalProperty(iprops, propName) {
 					break
 				}
+
 				prevPropValue := iprops.Prop(propName)
 				newPropValue := narrowOut(value, prevPropValue)
 
@@ -3488,8 +3489,8 @@ func narrowPath(path parse.Node, action pathNarrowing, value SymbolicValue, stat
 			}
 
 			propName := node.PropertyName.Name
-			iprops := asIprops(left).(IProps)
-			if !HasRequiredOrOptionalProperty(iprops, propName) {
+			iprops, ok := asIprops(left).(IProps)
+			if !ok || !HasRequiredOrOptionalProperty(iprops, propName) {
 				break
 			}
 
@@ -3506,9 +3507,9 @@ func narrowPath(path parse.Node, action pathNarrowing, value SymbolicValue, stat
 			}
 
 			propName := node.PropertyName.Name
-			iprops := asIprops(left).(IProps)
+			iprops, ok := asIprops(left).(IProps)
 
-			if !HasRequiredOrOptionalProperty(iprops, propName) {
+			if !ok || !HasRequiredOrOptionalProperty(iprops, propName) {
 				break
 			}
 
