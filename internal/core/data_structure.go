@@ -290,7 +290,7 @@ func (obj *Object) Prop(ctx *Context, name string) Value {
 			return obj.values[i]
 		}
 	}
-	return nil
+	panic(FormatErrPropertyDoesNotExist(name, obj))
 }
 
 func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
@@ -577,7 +577,7 @@ func (rec *Record) Prop(ctx *Context, name string) Value {
 			return rec.values[i]
 		}
 	}
-	return nil
+	panic(FormatErrPropertyDoesNotExist(name, rec))
 }
 func (rec Record) SetProp(ctx *Context, name string, value Value) error {
 	return ErrCannotSetProp
