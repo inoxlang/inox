@@ -579,7 +579,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			}
 
 			for _, idents := range lhs.PropertyNames[:len(lhs.PropertyNames)-1] {
-				v = symbolicMemb(v, idents.Name, lhs, state)
+				v = symbolicMemb(v, idents.Name, false, lhs, state)
 			}
 
 			var iprops IProps
@@ -2182,7 +2182,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			return ANY, nil
 		}
 
-		val := symbolicMemb(left, n.PropertyName.Name, n, state)
+		val := symbolicMemb(left, n.PropertyName.Name, n.Optional, n, state)
 		state.symbolicData.SetMostSpecificNodeValue(n.PropertyName, val)
 
 		return val, nil
@@ -2201,7 +2201,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			if prevIdent != nil {
 				state.symbolicData.SetMostSpecificNodeValue(prevIdent, v)
 			}
-			v = symbolicMemb(v, ident.Name, n, state)
+			v = symbolicMemb(v, ident.Name, false, n, state)
 			prevIdent = ident
 		}
 
@@ -2219,7 +2219,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			return ANY, nil
 		}
 
-		return NewDynamicValue(symbolicMemb(iprops, n.PropertyName.Name, n, state)), nil
+		return NewDynamicValue(symbolicMemb(iprops, n.PropertyName.Name, false, n, state)), nil
 	case *parse.ExtractionExpression:
 		left, err := symbolicEval(n.Object, state)
 		if err != nil {
@@ -2231,7 +2231,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		for _, key := range n.Keys.Keys {
 			name := key.(*parse.IdentifierLiteral).Name
-			result.entries[name] = symbolicMemb(left, name, n, state)
+			result.entries[name] = symbolicMemb(left, name, false, n, state)
 		}
 		return result, nil
 	case *parse.IndexExpression:
@@ -3334,7 +3334,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 }
 
-func symbolicMemb(value SymbolicValue, name string, node parse.Node, state *State) (result SymbolicValue) {
+func symbolicMemb(value SymbolicValue, name string, optional bool, node parse.Node, state *State) (result SymbolicValue) {
 
 	if _, ok := value.(*Any); ok {
 		return ANY
@@ -3359,7 +3359,9 @@ func symbolicMemb(value SymbolicValue, name string, node parse.Node, state *Stat
 				closest = ""
 			}
 
-			state.addError(makeSymbolicEvalError(node, state, fmtPropOfSymbolicDoesNotExist(name, value, closest)))
+			if !optional {
+				state.addError(makeSymbolicEvalError(node, state, fmtPropOfSymbolicDoesNotExist(name, value, closest)))
+			}
 			result = ANY
 		}
 	}()

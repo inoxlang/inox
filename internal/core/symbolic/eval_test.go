@@ -749,7 +749,34 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &String{}, res)
 		})
 
-		t.Run("inexisting field of GoValue", func(t *testing.T) {
+		t.Run("inexisting property", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				v = {}
+				return v.name
+			`)
+			memberExpr := n.Statements[1].(*parse.ReturnStatement).Expr
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(memberExpr, state, fmtPropOfSymbolicDoesNotExist("name", NewEmptyObject(), "")),
+			}, state.errors)
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("inexisting property, optional member expression", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				v = {}
+				return v.?name
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("inexisting property of GoValue", func(t *testing.T) {
 			n, state := makeStateAndChunk(`
 				return v.XYZ
 			`)
