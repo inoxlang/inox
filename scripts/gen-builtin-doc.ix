@@ -14,9 +14,9 @@ manifest {
 
 
 help_data = read!(DATA_FILE)
-assert (help_data match %[%obj])
+assert (help_data match %[%list])
 
-object = help_data[0]
+items = help_data[0]
 
 var builtin %str = ""
 
@@ -27,7 +27,7 @@ var builtin %str = ""
     ...
 }
 
-for k, v in object {
+for v in items {
     assert (v match %{
         topic: %str
         text?: %str?

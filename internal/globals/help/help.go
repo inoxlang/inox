@@ -36,8 +36,13 @@ func init() {
 		Help, func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) {},
 	})
 
-	if err := yaml.Unmarshal(utils.StringAsBytes(BUILTIN_HELP_YAML), helpByTopic); err != nil {
+	var helpList []TopicHelp
+	if err := yaml.Unmarshal(utils.StringAsBytes(BUILTIN_HELP_YAML), &helpList); err != nil {
 		log.Panicf("error while parsing builtin.yaml: %s", err)
+	}
+
+	for _, item := range helpList {
+		helpByTopic[item.Topic] = item
 	}
 }
 
