@@ -550,12 +550,20 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single declaration with invalid LHS", func(t *testing.T) {
-			_, err := ParseChunk("var 1 = 1", "")
+			mod, err := ParseChunk("var %| %int | %str", "")
+			assert.NotNil(t, mod)
+			assert.Error(t, err)
+		})
+
+		t.Run("single declaration with invalid LHS", func(t *testing.T) {
+			mod, err := ParseChunk("var 1 = 1", "")
+			assert.NotNil(t, mod)
 			assert.Error(t, err)
 		})
 
 		t.Run("single declaration with unexpected char as LHS", func(t *testing.T) {
-			_, err := ParseChunk("var ? = 1", "")
+			mod, err := ParseChunk("var ? = 1", "")
+			assert.NotNil(t, mod)
 			assert.Error(t, err)
 		})
 	})

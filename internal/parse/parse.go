@@ -6107,7 +6107,7 @@ func (p *parser) parseSingleLocalVarDeclaration(declarations *[]*LocalVariableDe
 				declParsingErr,
 				nil,
 			},
-			Left: lhs.(*IdentifierLiteral),
+			Left: lhs,
 		})
 		return
 	}
