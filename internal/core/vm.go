@@ -194,10 +194,12 @@ func (v *VM) run() {
 			sourcePos := v.curFrame.fn.GetSourcePositionRange(ip)
 			if sourcePos.SourceName != "" {
 				v.err = fmt.Errorf("%s %w", sourcePos, v.err)
-				for v.framesIndex > 1 {
-					v.framesIndex--
-					v.curFrame = &v.frames[v.framesIndex-1]
-					sourcePos = v.curFrame.fn.GetSourcePositionRange(v.curFrame.ip - 1)
+				frameIndex := v.framesIndex
+				var frame *frame
+				for frameIndex > 1 {
+					frameIndex--
+					frame = &v.frames[frameIndex-1]
+					sourcePos = frame.fn.GetSourcePositionRange(frame.ip - 1)
 					v.err = fmt.Errorf("%s %w", sourcePos, v.err)
 				}
 			}
