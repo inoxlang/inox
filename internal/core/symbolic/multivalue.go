@@ -142,7 +142,7 @@ func (mv *Multivalue) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 	for i, val := range mv.values {
 		val.PrettyPrint(w, config, 0, 0)
 		if i < len(mv.values)-1 {
-			utils.Must(w.Write(utils.StringAsBytes("| ")))
+			utils.Must(w.Write(utils.StringAsBytes(" | ")))
 		}
 	}
 	utils.PanicIfErr(w.WriteByte(')'))
