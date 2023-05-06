@@ -316,12 +316,18 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		}
 		v := value
 
-		if state.returnType == nil || (*state.returnType).Test(v) {
-			state.returnValue = &v
-		} else {
-			state.addError(makeSymbolicEvalError(n, state, fmtInvalidReturnValue(v, *state.returnType)))
-			state.returnValue = &v
+		if state.returnType != nil && !state.returnType.Test(v) {
+			state.addError(makeSymbolicEvalError(n, state, fmtInvalidReturnValue(v, state.returnType)))
+			state.returnValue = state.returnType
 		}
+
+		if state.returnValue != nil {
+			state.returnValue = joinValues([]SymbolicValue{state.returnValue, v})
+		} else {
+			state.returnValue = v
+		}
+
+		state.conditionalReturn = false
 
 		return nil, nil
 	case *parse.YieldStatement:
@@ -810,13 +816,17 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			if err != nil {
 				return nil, err
 			}
-			if state.returnValue != nil {
-				return *state.returnValue, nil
+			if state.returnValue != nil && !state.conditionalReturn {
+				return state.returnValue, nil
 			}
 
+			if res == nil && state.returnValue != nil {
+				return joinValues([]SymbolicValue{state.returnValue, Nil}), nil
+			}
 			return res, nil
 		}
 
+		var returnValue SymbolicValue
 		for _, stmt := range n.Statements {
 			_, err := symbolicEval(stmt, state)
 
@@ -824,11 +834,15 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				return nil, err
 			}
 			if state.returnValue != nil {
-				return *state.returnValue, nil
+				if state.conditionalReturn {
+					returnValue = state.returnValue
+					continue
+				}
+				return state.returnValue, nil
 			}
 		}
 
-		return nil, nil
+		return returnValue, nil
 	case *parse.EmbeddedModule:
 		return &AstNode{Node: n.ToChunk()}, nil
 	case *parse.Block:
@@ -1572,15 +1586,6 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			eVarname = n.ValueElemIdent.Name
 		}
 
-		defer func() {
-			if n.KeyIndexIdent != nil {
-				state.deleteLocal(kVarname)
-			}
-			if n.ValueElemIdent != nil {
-				state.deleteLocal(eVarname)
-			}
-		}()
-
 		var keyType SymbolicValue = ANY
 		var valueType SymbolicValue = ANY
 
@@ -1604,22 +1609,26 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			state.addError(makeSymbolicEvalError(node, state, fmtXisNotIterable(iteratedValue)))
 		}
 
-		if n.KeyIndexIdent != nil {
-			state.setLocal(kVarname, keyType, nil)
-			state.symbolicData.SetMostSpecificNodeValue(n.KeyIndexIdent, keyType)
-		}
-		if n.ValueElemIdent != nil {
-			state.setLocal(eVarname, valueType, nil)
-			state.symbolicData.SetMostSpecificNodeValue(n.ValueElemIdent, valueType)
-		}
-
 		if n.Body != nil {
-			state.symbolicData.SetLocalScopeData(n.Body, state.currentLocalScopeData())
+			stateFork := state.fork()
 
-			_, err = symbolicEval(n.Body, state)
+			if n.KeyIndexIdent != nil {
+				stateFork.setLocal(kVarname, keyType, nil)
+				stateFork.symbolicData.SetMostSpecificNodeValue(n.KeyIndexIdent, keyType)
+			}
+			if n.ValueElemIdent != nil {
+				stateFork.setLocal(eVarname, valueType, nil)
+				stateFork.symbolicData.SetMostSpecificNodeValue(n.ValueElemIdent, valueType)
+			}
+
+			stateFork.symbolicData.SetLocalScopeData(n.Body, stateFork.currentLocalScopeData())
+
+			_, err = symbolicEval(n.Body, stateFork)
 			if err != nil {
 				return nil, err
 			}
+
+			state.join(stateFork)
 		}
 
 		return nil, nil
@@ -1642,21 +1651,25 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			nodeMeta = ANY
 		}
 
-		state.setLocal(n.EntryIdent.Name, entry, nil)
-		state.symbolicData.SetMostSpecificNodeValue(n.EntryIdent, entry)
-
-		if n.MetaIdent != nil {
-			state.setLocal(n.MetaIdent.Name, nodeMeta, nil)
-			state.symbolicData.SetMostSpecificNodeValue(n.MetaIdent, nodeMeta)
-		}
-
 		if n.Body != nil {
-			state.symbolicData.SetLocalScopeData(n.Body, state.currentLocalScopeData())
+			stateFork := state.fork()
 
-			_, blkErr := symbolicEval(n.Body, state)
+			stateFork.setLocal(n.EntryIdent.Name, entry, nil)
+			stateFork.symbolicData.SetMostSpecificNodeValue(n.EntryIdent, entry)
+
+			if n.MetaIdent != nil {
+				stateFork.setLocal(n.MetaIdent.Name, nodeMeta, nil)
+				stateFork.symbolicData.SetMostSpecificNodeValue(n.MetaIdent, nodeMeta)
+			}
+
+			stateFork.symbolicData.SetLocalScopeData(n.Body, stateFork.currentLocalScopeData())
+
+			_, blkErr := symbolicEval(n.Body, stateFork)
 			if blkErr != nil {
 				return nil, blkErr
 			}
+
+			state.join(stateFork)
 		}
 
 		state.iterationChange = NoIterationChange
@@ -2014,7 +2027,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		//-----------------------------
 
-		var signatureReturnType *SymbolicValue
+		var signatureReturnType SymbolicValue
 		var storedReturnType SymbolicValue
 		var err error
 
@@ -2023,8 +2036,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			if err != nil {
 				return nil, err
 			}
-			typ := pattern.SymbolicValue()
-			signatureReturnType = &typ
+			signatureReturnType = pattern.SymbolicValue()
 		}
 
 		if n.IsBodyExpression {
@@ -2034,9 +2046,9 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			}
 
 			if signatureReturnType != nil {
-				storedReturnType = *signatureReturnType
-				if !(*signatureReturnType).Test(storedReturnType) {
-					state.addError(makeSymbolicEvalError(n, state, fmtInvalidReturnValue(storedReturnType, *signatureReturnType)))
+				storedReturnType = signatureReturnType
+				if !signatureReturnType.Test(storedReturnType) {
+					state.addError(makeSymbolicEvalError(n, state, fmtInvalidReturnValue(storedReturnType, signatureReturnType)))
 				}
 			}
 		} else {
@@ -2050,17 +2062,19 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			}
 
 			//check return
-			retValuePtr := stateFork.returnValue
+			retValue := stateFork.returnValue
 
 			if signatureReturnType != nil {
-				storedReturnType = *signatureReturnType
-				if retValuePtr == nil {
+				storedReturnType = signatureReturnType
+				if retValue == nil {
 					stateFork.addError(makeSymbolicEvalError(n, stateFork, MISSING_RETURN_IN_FUNCTION))
+				} else if stateFork.conditionalReturn {
+					stateFork.addError(makeSymbolicEvalError(n, stateFork, MISSING_UNCONDITIONAL_RETURN_IN_FUNCTION))
 				}
-			} else if retValuePtr == nil {
+			} else if retValue == nil {
 				storedReturnType = Nil
 			} else {
-				storedReturnType = *retValuePtr
+				storedReturnType = retValue
 			}
 		}
 
@@ -2144,7 +2158,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		//-----------------------------
 
-		var signatureReturnType *SymbolicValue
+		var signatureReturnType SymbolicValue
 		var storedReturnType SymbolicValue
 		var err error
 
@@ -2154,7 +2168,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				return nil, err
 			}
 			typ := pattern.SymbolicValue()
-			signatureReturnType = &typ
+			signatureReturnType = typ
 		}
 
 		if n.IsBodyExpression {
@@ -2164,9 +2178,9 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			}
 
 			if signatureReturnType != nil {
-				storedReturnType = *signatureReturnType
-				if !(*signatureReturnType).Test(storedReturnType) {
-					state.addError(makeSymbolicEvalError(n, state, fmtInvalidReturnValue(storedReturnType, *signatureReturnType)))
+				storedReturnType = signatureReturnType
+				if !signatureReturnType.Test(storedReturnType) {
+					state.addError(makeSymbolicEvalError(n, state, fmtInvalidReturnValue(storedReturnType, signatureReturnType)))
 				}
 			}
 		} else {
@@ -2184,14 +2198,14 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			retValuePtr := stateFork.returnValue
 
 			if signatureReturnType != nil {
-				storedReturnType = *signatureReturnType
+				storedReturnType = signatureReturnType
 				if retValuePtr == nil && n.Body != nil {
 					stateFork.addError(makeSymbolicEvalError(n, stateFork, MISSING_RETURN_IN_FUNCTION_PATT))
 				}
 			} else if retValuePtr == nil {
 				storedReturnType = Nil
 			} else {
-				storedReturnType = *retValuePtr
+				storedReturnType = retValuePtr
 			}
 		}
 
@@ -3317,9 +3331,15 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 				return nil, err
 			}
 		} else { // block
+			conditionalReturn := state.conditionalReturn
+			defer func() {
+				//restore
+				state.conditionalReturn = conditionalReturn
+				//TODO: restore return value & return type ?
+			}()
+
 			// we do this to prevent invalid return statements to add an error
-			any := SymbolicValue(ANY)
-			state.returnType = &any
+			state.returnType = ANY
 
 			//execute body
 
@@ -3330,17 +3350,17 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 			//we retrieve and post process the return value
 
-			retValuePtr := state.returnValue
+			retValue := state.returnValue
 			defer func() {
 				state.returnValue = nil
 				state.returnType = nil
 			}()
 
-			if retValuePtr == nil {
-				return &NilT{}, nil
+			if retValue == nil {
+				return Nil, nil
 			}
 
-			ret = *state.returnValue
+			ret = state.returnValue
 		}
 
 		if must {

@@ -19,12 +19,13 @@ type State struct {
 	scopeStack            []*scopeInfo
 	recursiveFunctionName string
 
-	calleeStack     []*parse.FunctionExpression
-	topLevelSelf    SymbolicValue // can be nil
-	returnType      *SymbolicValue
-	returnValue     *SymbolicValue
-	iterationChange IterationChange
-	Module          *Module
+	calleeStack       []*parse.FunctionExpression
+	topLevelSelf      SymbolicValue // can be nil
+	returnType        SymbolicValue
+	returnValue       SymbolicValue
+	conditionalReturn bool
+	iterationChange   IterationChange
+	Module            *Module
 
 	tempSymbolicGoFunctionErrors         []string
 	tempSymbolicGoFunctionParameters     *[]SymbolicValue
@@ -373,6 +374,7 @@ func (state *State) fork() *State {
 	child.Module = state.Module
 	child.chunkStack = utils.CopySlice(state.chunkStack)
 	child.symbolicData = state.symbolicData
+	child.returnType = state.returnType
 
 	globalScopeCopy := &scopeInfo{
 		variables: make(map[string]varSymbolicInfo, 0),
@@ -418,6 +420,17 @@ func (state *State) join(forks ...*State) {
 			}
 			varInfo.value = joinValues([]SymbolicValue{varInfo.value, forkVarInfo.value})
 			scope.variables[k] = varInfo
+		}
+
+		if fork.returnValue == nil {
+			continue
+		}
+
+		if state.returnValue == nil {
+			state.returnValue = fork.returnValue
+			state.conditionalReturn = true
+		} else {
+			state.returnValue = joinValues([]SymbolicValue{state.returnValue, fork.returnValue})
 		}
 	}
 }

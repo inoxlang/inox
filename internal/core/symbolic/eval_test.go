@@ -1443,6 +1443,66 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Nil(t, res)
 		})
 
+		t.Run("missing unconditional return", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				fn f(a) %int {
+					if a? {
+						return 1
+					}
+				}
+			`)
+			fnExpr := n.Statements[0].(*parse.FunctionDeclaration).Function
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(fnExpr, state, MISSING_UNCONDITIONAL_RETURN_IN_FUNCTION),
+			}, state.errors)
+			assert.Nil(t, res)
+		})
+
+		t.Run("invalid conditional return value", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				fn f(a) %int {
+					if a? {
+						return "a"
+					}
+					return 1
+				}
+			`)
+
+			returnStmts := parse.FindNodes(n, (*parse.ReturnStatement)(nil), nil)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(returnStmts[0], state, fmtInvalidReturnValue(&String{}, &Int{})),
+			}, state.errors)
+			assert.Nil(t, res)
+		})
+
+		t.Run("invalid nested conditional return value", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				fn f(a) %int {
+					if a? {
+						if a? {
+							return "a"
+						}
+					}
+					return 1
+				}
+			`)
+
+			returnStmts := parse.FindNodes(n, (*parse.ReturnStatement)(nil), nil)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(returnStmts[0], state, fmtInvalidReturnValue(&String{}, &Int{})),
+			}, state.errors)
+			assert.Nil(t, res)
+		})
+
 		t.Run("patterns should be accessible from the body", func(t *testing.T) {
 			n, state := makeStateAndChunk(`
 				%p = 1
@@ -3051,12 +3111,12 @@ func TestSymbolicEval(t *testing.T) {
 			n, state := makeStateAndChunk(`
 				for k, v in {a: 1} {
 					return k
-				} 
+				}
 			`)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
-			assert.Equal(t, &String{}, res)
+			assert.Equal(t, NewMultivalue(ANY_STR, Nil), res)
 		})
 
 		t.Run("key & element variables should be present in local scope data", func(t *testing.T) {
@@ -3091,9 +3151,12 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
-			assert.Equal(t, NewList(
+
+			expectedResultFromForStmt := NewList(
 				&Int{}, NewMultivalue(NewList(&String{}), NewList(&Int{})),
-			), res)
+			)
+
+			assert.Equal(t, NewMultivalue(expectedResultFromForStmt, Nil), res)
 		})
 
 		t.Run("empty dictionary iteration: keys should be any", func(t *testing.T) {
@@ -3117,7 +3180,8 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
-			assert.Equal(t, &Path{}, res)
+
+			assert.Equal(t, NewMultivalue(ANY_PATH, Nil), res)
 		})
 
 		t.Run("int range iteration: keys and values are integers", func(t *testing.T) {
@@ -3129,7 +3193,9 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
-			assert.Equal(t, NewList(&Int{}, &Int{}), res)
+
+			expectedResultFromForStmt := NewList(ANY_INT, ANY_INT)
+			assert.Equal(t, NewMultivalue(expectedResultFromForStmt, Nil), res)
 		})
 
 		t.Run("rune range iteration: keys are integers and values are runes", func(t *testing.T) {
@@ -3141,7 +3207,9 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
-			assert.Equal(t, NewList(&Int{}, &Rune{}), res)
+
+			expectedResultFromForStmt := NewList(ANY_INT, ANY_RUNE)
+			assert.Equal(t, NewMultivalue(expectedResultFromForStmt, Nil), res)
 		})
 
 		t.Run("streamable iteration", func(t *testing.T) {
@@ -3187,7 +3255,9 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
-			assert.Equal(t, NewTupleOf(&String{}), res)
+
+			expectedResultFromForStmt := NewTupleOf(ANY_STR)
+			assert.Equal(t, NewMultivalue(expectedResultFromForStmt, Nil), res)
 		})
 
 		t.Run("error in head + missing body", func(t *testing.T) {
@@ -3203,6 +3273,20 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Nil(t, res)
 		})
 
+		t.Run("state should be forked", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				a = #a
+				for 1..2 {
+					a = #b
+				} 
+				return a
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, NewMultivalue(&Identifier{name: "a"}, &Identifier{"b"}), res)
+		})
 	})
 
 	t.Run("walk statement", func(t *testing.T) {
@@ -3234,7 +3318,8 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
-			assert.Equal(t, WALK_ELEM, res)
+
+			assert.Equal(t, NewMultivalue(WALK_ELEM, Nil), res)
 		})
 
 		t.Run("meta", func(t *testing.T) {
@@ -3247,7 +3332,9 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
-			assert.Equal(t, NewList(ANY, WALK_ELEM), res)
+
+			expectedResultFromWalkStmt := NewList(ANY, WALK_ELEM)
+			assert.Equal(t, NewMultivalue(expectedResultFromWalkStmt, Nil), res)
 		})
 
 		t.Run("error in head + missing body", func(t *testing.T) {
@@ -3264,6 +3351,21 @@ func TestSymbolicEval(t *testing.T) {
 				makeSymbolicEvalError(walkStmt, state, fmtXisNotWalkable(&Int{})),
 			}, state.errors)
 			assert.Nil(t, res)
+		})
+
+		t.Run("state should be forked", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				a = #a
+				walk ./ entry {
+					a = #b
+				} 
+				return a
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, NewMultivalue(&Identifier{name: "a"}, &Identifier{"b"}), res)
 		})
 	})
 

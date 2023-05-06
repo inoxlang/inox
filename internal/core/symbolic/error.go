@@ -18,6 +18,7 @@ const (
 	CANNOT_SPREAD_OBJ_PATTERN_THAT_MATCHES_ANY_OBJECT                             = "cannot spread an object pattern that matches any object"
 	CANNOT_SPREAD_OBJ_PATTERN_THAT_IS_INEXACT                                     = "cannot spread an object pattern that is inexact"
 	MISSING_RETURN_IN_FUNCTION                                                    = "missing return in function"
+	MISSING_UNCONDITIONAL_RETURN_IN_FUNCTION                                      = "missing unconditional return in function"
 	MISSING_RETURN_IN_FUNCTION_PATT                                               = "missing return in function pattern"
 	INVALID_INT_OPER_ASSIGN_LHS_NOT_INT                                           = "invalid assignment: left hand side is not an integer"
 	INVALID_INT_OPER_ASSIGN_RHS_NOT_INT                                           = "invalid assignment: right hand side is not an integer"
@@ -146,7 +147,7 @@ func FmtInvalidArg(position int, actual, expected SymbolicValue) string {
 }
 
 func fmtInvalidReturnValue(actual, expected SymbolicValue) string {
-	return fmt.Sprintf("invalid return value: type is %v, but a value matching %v was expected", actual, expected)
+	return fmt.Sprintf("invalid return value: type is %v, but a value matching %v was expected", Stringify(actual), Stringify(expected))
 }
 
 func fmtListExpectedButIs(value SymbolicValue) string {
