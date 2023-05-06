@@ -129,8 +129,16 @@ const (
 // TreeWalkEval evaluates a node, panics are always recovered so this function should not panic.
 func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err error) {
 	defer func() {
+
+		var assertionErr *AssertionError
+
 		if e := recover(); e != nil {
 			if er, ok := e.(error); ok {
+				if errors.As(er, &assertionErr) {
+					assertionErr = assertionErr.ShallowCopy()
+					er = assertionErr
+				}
+
 				err = fmt.Errorf("core: error: %w %s", er, debug.Stack())
 			} else {
 				err = fmt.Errorf("core: %s", e)
@@ -144,7 +152,11 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 					chunk.FormatNodeLocation(locationPartBuff, node)
 					locationPartBuff.WriteRune(' ')
 				}
-				err = fmt.Errorf("%s %w", locationPartBuff.String(), err)
+				location := locationPartBuff.String()
+				if assertionErr != nil {
+					assertionErr.msg = location + " " + assertionErr.msg
+				}
+				err = fmt.Errorf("%s %w", location, err)
 			}
 		}
 

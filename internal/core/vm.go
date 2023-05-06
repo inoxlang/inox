@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"math"
@@ -184,7 +185,14 @@ func (v *VM) run() {
 		}
 
 		if e != nil {
+			var assertionErr *AssertionError
+
 			if er, ok := e.(error); ok {
+				if errors.As(er, &assertionErr) {
+					assertionErr = assertionErr.ShallowCopy()
+					er = assertionErr
+				}
+
 				v.err = fmt.Errorf("vm: error: %w %s", er, debug.Stack())
 			} else {
 				v.err = fmt.Errorf("vm: %s", e)
@@ -193,15 +201,25 @@ func (v *VM) run() {
 			//add location to error message
 			sourcePos := v.curFrame.fn.GetSourcePositionRange(ip)
 			if sourcePos.SourceName != "" {
-				v.err = fmt.Errorf("%s %w", sourcePos, v.err)
+				locationPartBuff := bytes.NewBuffer(nil)
+
+				locationPartBuff.Write(utils.StringAsBytes(sourcePos.String()))
+				locationPartBuff.WriteByte(' ')
+
 				frameIndex := v.framesIndex
 				var frame *frame
 				for frameIndex > 1 {
 					frameIndex--
 					frame = &v.frames[frameIndex-1]
 					sourcePos = frame.fn.GetSourcePositionRange(frame.ip - 1)
-					v.err = fmt.Errorf("%s %w", sourcePos, v.err)
+					locationPartBuff.Write(utils.StringAsBytes(sourcePos.String()))
+					locationPartBuff.WriteByte(' ')
 				}
+
+				location := locationPartBuff.String()
+				assertionErr.msg = location + " " + assertionErr.msg
+
+				v.err = fmt.Errorf("%s %w", location, v.err)
 			}
 		}
 

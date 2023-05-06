@@ -16,6 +16,13 @@ type AssertionError struct {
 	data *AssertionData
 }
 
+func (err *AssertionError) ShallowCopy() *AssertionError {
+	return &AssertionError{
+		msg:  err.msg,
+		data: err.data,
+	}
+}
+
 func (err AssertionError) Error() string {
 	if err.data == nil {
 		return err.msg
