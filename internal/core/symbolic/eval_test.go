@@ -2817,6 +2817,66 @@ func TestSymbolicEval(t *testing.T) {
 				assert.NotEmpty(t, state.errors)
 			})
 		})
+
+		//type narrowing
+
+		t.Run("binary match expression narrows the type of a variable (%int)", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				if (a match %int) {
+					var b %int = a
+				}
+			`)
+
+			state.setGlobal("a", ANY, GlobalConst)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+		})
+
+		t.Run("binary match expression narrows the type of a variable: (object pattern literal)", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				if (a match %{a: 1, b: [3]}){
+					var b %{a: 1, b: [3]} = a
+				}
+			`)
+
+			state.setGlobal("a", ANY, GlobalConst)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+		})
+
+		t.Run("binary match expression narrows the type of a variable: (list pattern literal)", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				if (a match %[]%obj){
+					var b %[]%obj = a
+				}
+			`)
+
+			state.setGlobal("a", ANY, GlobalConst)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+		})
+
+		t.Run("binary match expression narrows the type of a property (%int)", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				if (a.prop match %int) {
+					var b %int = a.prop
+				}
+			`)
+
+			object := NewObject(map[string]SymbolicValue{"prop": ANY}, nil, nil)
+
+			state.setGlobal("a", object, GlobalConst)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+		})
 	})
 
 	t.Run("if expression", func(t *testing.T) {

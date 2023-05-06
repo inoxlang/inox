@@ -1470,8 +1470,22 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			var consequentStateFork *State
 			{
 				consequentStateFork = state.fork()
+
+				//if the expression is a boolean conversion we remove nil from possibile values
 				if boolConvExpr, ok := n.Test.(*parse.BooleanConversionExpression); ok {
 					narrowPath(boolConvExpr.Expr, removePossibleValue, Nil, consequentStateFork, 0)
+				}
+
+				// if the test expression is a match operation we narrow the left operand
+				if binExpr, ok := n.Test.(*parse.BinaryExpression); ok && state.symbolicData != nil {
+					switch binExpr.Operator {
+					case parse.Match:
+						right, _ := state.symbolicData.GetMostSpecificNodeValue(binExpr.Right)
+
+						if pattern, ok := right.(Pattern); ok {
+							narrowPath(binExpr.Left, setExactValue, pattern.SymbolicValue(), consequentStateFork, 0)
+						}
+					}
 				}
 
 				_, err = symbolicEval(n.Consequent, consequentStateFork)
@@ -2616,9 +2630,9 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			state.addError(makeSymbolicEvalError(node, state, fmtAssertedValueShouldBeBoolNot(ok)))
 		}
 
-		if binExpr, ok := n.Expr.(*parse.BinaryExpression); ok {
+		if binExpr, ok := n.Expr.(*parse.BinaryExpression); ok && state.symbolicData != nil {
 			isVar := parse.IsAnyVariableIdentifier(binExpr.Left)
-			if !isVar || state.symbolicData == nil {
+			if !isVar {
 				return nil, nil
 			}
 
