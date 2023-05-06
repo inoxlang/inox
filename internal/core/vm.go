@@ -217,7 +217,9 @@ func (v *VM) run() {
 				}
 
 				location := locationPartBuff.String()
-				assertionErr.msg = location + " " + assertionErr.msg
+				if assertionErr != nil {
+					assertionErr.msg = location + " " + assertionErr.msg
+				}
 
 				v.err = fmt.Errorf("%s %w", location, v.err)
 			}
