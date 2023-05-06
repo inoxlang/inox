@@ -26,6 +26,10 @@ const (
 var (
 	helpMap     = map[uintptr]TopicHelp{}
 	helpByTopic = map[string]TopicHelp{}
+	topicGroups map[string]struct {
+		IsNamespace bool        `json:"namespace"`
+		Elements    []TopicHelp `json:"elements"`
+	}
 
 	//go:embed builtin.yaml
 	BUILTIN_HELP_YAML string
@@ -36,14 +40,16 @@ func init() {
 		Help, func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) {},
 	})
 
-	var helpList []TopicHelp
-	if err := yaml.Unmarshal(utils.StringAsBytes(BUILTIN_HELP_YAML), &helpList); err != nil {
+	if err := yaml.Unmarshal(utils.StringAsBytes(BUILTIN_HELP_YAML), &topicGroups); err != nil {
 		log.Panicf("error while parsing builtin.yaml: %s", err)
 	}
 
-	for _, item := range helpList {
-		helpByTopic[item.Topic] = item
+	for _, group := range topicGroups {
+		for _, item := range group.Elements {
+			helpByTopic[item.Topic] = item
+		}
 	}
+
 }
 
 func getValueId(v core.Value) (uintptr, bool) {
