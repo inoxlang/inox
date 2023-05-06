@@ -6769,7 +6769,7 @@ func (p *parser) parseTestSuiteExpression(ident *IdentifierLiteral) *TestSuiteEx
 			NodeBase: NodeBase{
 				Span:            NodeSpan{start, p.i},
 				ValuelessTokens: valuelessTokens,
-				Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_TESTSUITE_EXPRESSION_MISSING_BLOCK},
+				Err:             &ParsingError{MissingBlock, UNTERMINATED_TESTSUITE_EXPRESSION_MISSING_BLOCK},
 			},
 		}
 	}
@@ -6786,7 +6786,7 @@ func (p *parser) parseTestSuiteExpression(ident *IdentifierLiteral) *TestSuiteEx
 			NodeBase: NodeBase{
 				Span:            NodeSpan{start, p.i},
 				ValuelessTokens: valuelessTokens,
-				Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_TESTSUITE_EXPRESSION_MISSING_BLOCK},
+				Err:             &ParsingError{MissingBlock, UNTERMINATED_TESTSUITE_EXPRESSION_MISSING_BLOCK},
 			},
 			Meta: meta,
 		}
@@ -6815,7 +6815,7 @@ func (p *parser) parseTestCaseExpression(ident *IdentifierLiteral) *TestCaseExpr
 			NodeBase: NodeBase{
 				Span:            NodeSpan{start, p.i},
 				ValuelessTokens: valuelessTokens,
-				Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_TESTCASE_EXPRESSION_MISSING_BLOCK},
+				Err:             &ParsingError{MissingBlock, UNTERMINATED_TESTCASE_EXPRESSION_MISSING_BLOCK},
 			},
 		}
 	}
@@ -7566,10 +7566,10 @@ func (p *parser) parseIfStatement(ifIdent *IdentifierLiteral) *IfStatement {
 
 	if p.i >= p.len {
 		end = p.i
-		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_IF_STMT_MISSING_BLOCK}
+		parsingErr = &ParsingError{MissingBlock, UNTERMINATED_IF_STMT_MISSING_BLOCK}
 	} else if p.s[p.i] != '{' {
 		end = p.i
-		parsingErr = &ParsingError{UnspecifiedParsingError, fmtUnterminatedIfStmtShouldBeFollowedByBlock(p.s[p.i])}
+		parsingErr = &ParsingError{MissingBlock, fmtUnterminatedIfStmtShouldBeFollowedByBlock(p.s[p.i])}
 	} else {
 		blk = p.parseBlock()
 		end = blk.Span.End
@@ -7584,9 +7584,9 @@ func (p *parser) parseIfStatement(ifIdent *IdentifierLiteral) *IfStatement {
 			p.eatSpace()
 
 			if p.i >= p.len {
-				parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_IF_STMT_MISSING_BLOCK_AFTER_ELSE}
+				parsingErr = &ParsingError{MissingBlock, UNTERMINATED_IF_STMT_MISSING_BLOCK_AFTER_ELSE}
 			} else if p.s[p.i] != '{' {
-				parsingErr = &ParsingError{UnspecifiedParsingError, fmtUnterminatedIfStmtElseShouldBeFollowedByBlock(p.s[p.i])}
+				parsingErr = &ParsingError{MissingBlock, fmtUnterminatedIfStmtElseShouldBeFollowedByBlock(p.s[p.i])}
 			} else {
 				alternate = p.parseBlock()
 				end = alternate.Span.End
@@ -7624,7 +7624,7 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 		end := int32(0)
 
 		if p.i >= p.len || p.s[p.i] != '{' {
-			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_STMT_MISSING_BLOCK}
+			parsingErr = &ParsingError{MissingBlock, UNTERMINATED_FOR_STMT_MISSING_BLOCK}
 			end = p.i
 		} else {
 			blk = p.parseBlock()
@@ -7799,7 +7799,7 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 		var end = p.i
 
 		if p.i >= p.len || p.s[p.i] != '{' {
-			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_STMT_MISSING_BLOCK}
+			parsingErr = &ParsingError{MissingBlock, UNTERMINATED_FOR_STMT_MISSING_BLOCK}
 		} else {
 			blk = p.parseBlock()
 			end = blk.Span.End
@@ -7894,7 +7894,7 @@ func (p *parser) parseWalkStatement(walkIdent *IdentifierLiteral) *WalkStatement
 
 	if p.i >= p.len || p.s[p.i] != '{' {
 		end = p.i
-		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_WALK_STMT_MISSING_BLOCK}
+		parsingErr = &ParsingError{MissingBlock, UNTERMINATED_WALK_STMT_MISSING_BLOCK}
 	} else {
 		blk = p.parseBlock()
 		end = blk.Span.End
@@ -8123,9 +8123,9 @@ top_loop:
 
 			if p.i >= p.len || p.s[p.i] != '{' { // missing block
 				if isMatchStmt {
-					matchCase.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_MATCH_CASE_MISSING_BLOCK}
+					matchCase.Err = &ParsingError{MissingBlock, UNTERMINATED_MATCH_CASE_MISSING_BLOCK}
 				} else {
-					switchCase.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_SWITCH_CASE_MISSING_BLOCK}
+					switchCase.Err = &ParsingError{MissingBlock, UNTERMINATED_SWITCH_CASE_MISSING_BLOCK}
 				}
 			} else {
 				blk = p.parseBlock()
@@ -8362,7 +8362,7 @@ func (p *parser) parseSynchronizedBlock(synchronizedIdent *IdentifierLiteral) *S
 	var block *Block
 
 	if p.i >= p.len || p.s[p.i] != '{' {
-		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_SYNCHRONIZED_MISSING_BLOCK}
+		parsingErr = &ParsingError{MissingBlock, UNTERMINATED_SYNCHRONIZED_MISSING_BLOCK}
 	} else {
 		block = p.parseBlock()
 	}

@@ -2612,6 +2612,38 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Nil(t, res)
 		})
 
+		t.Run("error in test + missing consequent block", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				if 1
+			`)
+
+			ifStmt := n.Statements[0]
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(ifStmt, state, fmtIfStmtTestNotBoolBut(&Int{})),
+			}, state.errors)
+			assert.Nil(t, res)
+		})
+
+		t.Run("error in test + missing alternate block", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				if 1 {
+
+				} else
+			`)
+
+			ifStmt := n.Statements[0]
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(ifStmt, state, fmtIfStmtTestNotBoolBut(&Int{})),
+			}, state.errors)
+			assert.Nil(t, res)
+		})
+
 		t.Run("join", func(t *testing.T) {
 			n, state := makeStateAndChunk(`
 				var a %obj = {}
@@ -2798,6 +2830,21 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY_INT, res)
 		})
 
+		t.Run("error in test + missing consequent", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				(if 1)
+			`)
+
+			ifStmt := n.Statements[0]
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(ifStmt, state, fmtIfExprTestNotBoolBut(&Int{})),
+			}, state.errors)
+			assert.Equal(t, ANY, res)
+		})
+
 		t.Run("if-else", func(t *testing.T) {
 			n, state := makeStateAndChunk(`
 				(if false 1 else false)
@@ -2807,6 +2854,21 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
 			assert.Equal(t, NewMultivalue(ANY_INT, ANY_BOOL), res)
+		})
+
+		t.Run("error in test + missing alternate", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				(if 1 1 else)
+			`)
+
+			ifStmt := n.Statements[0]
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(ifStmt, state, fmtIfExprTestNotBoolBut(&Int{})),
+			}, state.errors)
+			assert.Equal(t, ANY, res)
 		})
 
 		t.Run("truthiness narrowing", func(t *testing.T) {
@@ -3043,6 +3105,19 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewTupleOf(&String{}), res)
 		})
 
+		t.Run("error in head + missing body", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				for i, e in 1
+			`)
+			res, err := symbolicEval(n, state)
+			forStmt := n.Statements[0]
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(forStmt, state, fmtXisNotIterable(&Int{})),
+			}, state.errors)
+			assert.Nil(t, res)
+		})
+
 	})
 
 	t.Run("walk statement", func(t *testing.T) {
@@ -3089,10 +3164,28 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 			assert.Equal(t, NewList(ANY, WALK_ELEM), res)
 		})
+
+		t.Run("error in head + missing body", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				path = 1
+				walk $path entry
+			`)
+
+			walkStmt := n.Statements[1]
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(walkStmt, state, fmtXisNotWalkable(&Int{})),
+			}, state.errors)
+			assert.Nil(t, res)
+		})
 	})
 
 	t.Run("switch statement: error in every block", func(t *testing.T) {
-		n, state := makeStateAndChunk(`
+
+		t.Run("error in every block", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
 			v = 1
 			switch v {
 				0 {
@@ -3103,15 +3196,36 @@ func TestSymbolicEval(t *testing.T) {
 				}
 			}
 		`)
-		unaryExprs := parse.FindNodes(n, (*parse.UnaryExpression)(nil), nil)
+			unaryExprs := parse.FindNodes(n, (*parse.UnaryExpression)(nil), nil)
 
-		res, err := symbolicEval(n, state)
-		assert.NoError(t, err)
-		assert.Equal(t, []SymbolicEvaluationError{
-			makeSymbolicEvalError(unaryExprs[0], state, fmtOperandOfBoolNegateShouldBeBool(&String{})),
-			makeSymbolicEvalError(unaryExprs[1], state, fmtOperandOfBoolNegateShouldBeBool(&String{})),
-		}, state.errors)
-		assert.Nil(t, res)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(unaryExprs[0], state, fmtOperandOfBoolNegateShouldBeBool(&String{})),
+				makeSymbolicEvalError(unaryExprs[1], state, fmtOperandOfBoolNegateShouldBeBool(&String{})),
+			}, state.errors)
+			assert.Nil(t, res)
+		})
+
+		t.Run("block with an error + missing block", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+			v = 1
+			switch v {
+				0 {
+					!"s"
+				}
+				1
+			}
+		`)
+			unaryExprs := parse.FindNodes(n, (*parse.UnaryExpression)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(unaryExprs[0], state, fmtOperandOfBoolNegateShouldBeBool(&String{})),
+			}, state.errors)
+			assert.Nil(t, res)
+		})
 	})
 
 	t.Run("match statement", func(t *testing.T) {
@@ -3234,6 +3348,27 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
+			assert.Nil(t, res)
+		})
+
+		t.Run("error in one block + missing block", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				v = /path
+				match v {
+					/ {
+						!"s"
+					}
+					/...
+				}
+			`)
+
+			unaryExpr := parse.FindNode(n, (*parse.UnaryExpression)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(unaryExpr, state, fmtOperandOfBoolNegateShouldBeBool(&String{})),
+			}, state.errors)
 			assert.Nil(t, res)
 		})
 	})

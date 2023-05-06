@@ -61,7 +61,7 @@ var (
 	ANY_READABLE = &AnyReadable{}
 	ANY_READER   = &Reader{}
 
-	SUPPORTED_PARSING_ERRORS = []parse.ParsingErrorKind{parse.UnterminatedMemberExpr}
+	SUPPORTED_PARSING_ERRORS = []parse.ParsingErrorKind{parse.UnterminatedMemberExpr, parse.MissingBlock}
 )
 
 type SymbolicEvalCheckInput struct {
@@ -853,6 +853,11 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				state.addError(makeSymbolicEvalError(node, state, fmtSynchronizedValueShouldBeASharableValueOrImmutableNot(val)))
 			}
 		}
+
+		if n.Block == nil {
+			return nil, nil
+		}
+
 		_, err := symbolicEval(n.Block, state)
 		if err != nil {
 			return nil, err
@@ -1460,33 +1465,35 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			state.addError(makeSymbolicEvalError(node, state, fmtIfStmtTestNotBoolBut(test)))
 		}
 
-		//consequent
-		var consequentStateFork *State
-		{
-			consequentStateFork = state.fork()
-			if boolConvExpr, ok := n.Test.(*parse.BooleanConversionExpression); ok {
-				narrowPath(boolConvExpr.Expr, removePossibleValue, Nil, consequentStateFork, 0)
+		if n.Consequent != nil {
+			//consequent
+			var consequentStateFork *State
+			{
+				consequentStateFork = state.fork()
+				if boolConvExpr, ok := n.Test.(*parse.BooleanConversionExpression); ok {
+					narrowPath(boolConvExpr.Expr, removePossibleValue, Nil, consequentStateFork, 0)
+				}
+
+				_, err = symbolicEval(n.Consequent, consequentStateFork)
+				if err != nil {
+					return nil, err
+				}
 			}
 
-			_, err = symbolicEval(n.Consequent, consequentStateFork)
-			if err != nil {
-				return nil, err
+			var alternateStateFork *State
+			if n.Alternate != nil {
+				alternateStateFork = state.fork()
+				_, err = symbolicEval(n.Alternate, alternateStateFork)
+				if err != nil {
+					return nil, err
+				}
 			}
-		}
 
-		var alternateStateFork *State
-		if n.Alternate != nil {
-			alternateStateFork = state.fork()
-			_, err = symbolicEval(n.Alternate, alternateStateFork)
-			if err != nil {
-				return nil, err
+			if alternateStateFork != nil {
+				state.join(consequentStateFork, alternateStateFork)
+			} else {
+				state.join(consequentStateFork)
 			}
-		}
-
-		if alternateStateFork != nil {
-			state.join(consequentStateFork, alternateStateFork)
-		} else {
-			state.join(consequentStateFork)
 		}
 
 		return nil, nil
@@ -1500,37 +1507,40 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		var atlernateValue SymbolicValue
 
 		if _, ok := test.(*Bool); ok {
-			consequentStateFork := state.fork()
-			if boolConvExpr, ok := n.Test.(*parse.BooleanConversionExpression); ok {
-				narrowPath(boolConvExpr.Expr, removePossibleValue, Nil, consequentStateFork, 0)
-			}
+			if n.Consequent != nil {
+				consequentStateFork := state.fork()
+				if boolConvExpr, ok := n.Test.(*parse.BooleanConversionExpression); ok {
+					narrowPath(boolConvExpr.Expr, removePossibleValue, Nil, consequentStateFork, 0)
+				}
 
-			consequentValue, err = symbolicEval(n.Consequent, consequentStateFork)
-			if err != nil {
-				return nil, err
-			}
-
-			var alternateStateFork *State
-			if n.Alternate != nil {
-				alternateStateFork := state.fork()
-				atlernateValue, err = symbolicEval(n.Alternate, alternateStateFork)
+				consequentValue, err = symbolicEval(n.Consequent, consequentStateFork)
 				if err != nil {
 					return nil, err
 				}
-				return joinValues([]SymbolicValue{consequentValue, atlernateValue}), nil
-			}
 
-			if alternateStateFork != nil {
-				state.join(consequentStateFork, alternateStateFork)
-			} else {
-				state.join(consequentStateFork)
-			}
+				var alternateStateFork *State
+				if n.Alternate != nil {
+					alternateStateFork := state.fork()
+					atlernateValue, err = symbolicEval(n.Alternate, alternateStateFork)
+					if err != nil {
+						return nil, err
+					}
+					return joinValues([]SymbolicValue{consequentValue, atlernateValue}), nil
+				}
 
-			return consequentValue, nil
-		} else {
-			state.addError(makeSymbolicEvalError(node, state, fmtIfExprTestNotBoolBut(test)))
+				if alternateStateFork != nil {
+					state.join(consequentStateFork, alternateStateFork)
+				} else {
+					state.join(consequentStateFork)
+				}
+
+				return consequentValue, nil
+			}
 			return ANY, nil
 		}
+
+		state.addError(makeSymbolicEvalError(node, state, fmtIfExprTestNotBoolBut(test)))
+		return ANY, nil
 	case *parse.ForStatement:
 		iteratedValue, err := symbolicEval(n.IteratedValue, state)
 		if err != nil {
@@ -1588,10 +1598,13 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			state.symbolicData.SetMostSpecificNodeValue(n.ValueElemIdent, valueType)
 		}
 
-		_, err = symbolicEval(n.Body, state)
-		if err != nil {
-			return nil, err
+		if n.Body != nil {
+			_, err = symbolicEval(n.Body, state)
+			if err != nil {
+				return nil, err
+			}
 		}
+
 		return nil, nil
 	case *parse.WalkStatement:
 		walkedValue, err := symbolicEval(n.Walked, state)
@@ -1620,9 +1633,11 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			state.symbolicData.SetMostSpecificNodeValue(n.MetaIdent, nodeMeta)
 		}
 
-		_, blkErr := symbolicEval(n.Body, state)
-		if blkErr != nil {
-			return nil, blkErr
+		if n.Body != nil {
+			_, blkErr := symbolicEval(n.Body, state)
+			if blkErr != nil {
+				return nil, blkErr
+			}
 		}
 
 		state.iterationChange = NoIterationChange
@@ -1640,10 +1655,13 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				}
 
 				blockStateFork := state.fork()
-				_, err = symbolicEval(switchCase.Block, blockStateFork)
-				if err != nil {
-					return nil, err
+				if switchCase.Block != nil {
+					_, err = symbolicEval(switchCase.Block, blockStateFork)
+					if err != nil {
+						return nil, err
+					}
 				}
+
 			}
 		}
 		return nil, nil
@@ -1666,6 +1684,10 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 				if !ok { //if the value of the case is not a pattern we just check for equality
 					pattern = NewExactValuePattern(val)
+				}
+
+				if matchCase.Block == nil {
+					continue
 				}
 
 				blockStateFork := state.fork()
@@ -2865,6 +2887,8 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		return &CheckedString{}, nil
 	case *parse.CssSelectorExpression:
 		return &String{}, nil
+	case *parse.UnknownNode:
+		return ANY, nil
 	default:
 		return nil, fmt.Errorf("cannot evaluate %#v (%T)\n%s", node, node, debug.Stack())
 	}

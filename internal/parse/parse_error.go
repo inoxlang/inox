@@ -11,6 +11,7 @@ import (
 const (
 	UnspecifiedParsingError ParsingErrorKind = iota
 	UnterminatedMemberExpr
+	MissingBlock
 	InvalidNext
 	//TODO: add more kinds
 )

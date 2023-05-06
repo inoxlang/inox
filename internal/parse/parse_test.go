@@ -9968,7 +9968,7 @@ func TestParse(t *testing.T) {
 					&IfStatement{
 						NodeBase: NodeBase{
 							NodeSpan{0, 7},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_IF_STMT_MISSING_BLOCK},
+							&ParsingError{MissingBlock, UNTERMINATED_IF_STMT_MISSING_BLOCK},
 							[]Token{
 								{Type: IF_KEYWORD, Span: NodeSpan{0, 2}},
 							},
@@ -14217,7 +14217,7 @@ func TestParse(t *testing.T) {
 						IsStatement: true,
 						NodeBase: NodeBase{
 							NodeSpan{0, 9},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_TESTSUITE_EXPRESSION_MISSING_BLOCK},
+							&ParsingError{MissingBlock, UNTERMINATED_TESTSUITE_EXPRESSION_MISSING_BLOCK},
 							[]Token{{Type: TESTSUITE_KEYWORD, Span: NodeSpan{0, 9}}},
 						},
 					},
@@ -14235,7 +14235,7 @@ func TestParse(t *testing.T) {
 						IsStatement: true,
 						NodeBase: NodeBase{
 							NodeSpan{0, 16},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_TESTSUITE_EXPRESSION_MISSING_BLOCK},
+							&ParsingError{MissingBlock, UNTERMINATED_TESTSUITE_EXPRESSION_MISSING_BLOCK},
 							[]Token{{Type: TESTSUITE_KEYWORD, Span: NodeSpan{0, 9}}},
 						},
 						Meta: &QuotedStringLiteral{
@@ -14324,7 +14324,7 @@ func TestParse(t *testing.T) {
 						IsStatement: true,
 						NodeBase: NodeBase{
 							NodeSpan{0, 8},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_TESTCASE_EXPRESSION_MISSING_BLOCK},
+							&ParsingError{MissingBlock, UNTERMINATED_TESTCASE_EXPRESSION_MISSING_BLOCK},
 							[]Token{{Type: TESTCASE_KEYWORD, Span: NodeSpan{0, 8}}},
 						},
 					},
