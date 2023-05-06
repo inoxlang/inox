@@ -19,6 +19,8 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		state := newSymbolicState(NewSymbolicContext(), chunk)
+		state.symbolicData = NewSymbolicData()
+
 		state.ctx.AddNamedPattern("int", &TypePattern{
 			val: &Int{},
 			call: func(ctx *Context, values []SymbolicValue) (Pattern, error) {

@@ -2618,21 +2618,15 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		if binExpr, ok := n.Expr.(*parse.BinaryExpression); ok {
 			isVar := parse.IsAnyVariableIdentifier(binExpr.Left)
-			if !isVar {
+			if !isVar || state.symbolicData == nil {
 				return nil, nil
 			}
 
 			switch binExpr.Operator {
 			case parse.Match:
+				right, _ := state.symbolicData.GetMostSpecificNodeValue(binExpr.Right)
 
-				switch n := binExpr.Right.(type) {
-				case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression,
-					*parse.ObjectPatternLiteral, *parse.ListPatternLiteral, *parse.FunctionPatternExpression:
-					pattern, err := symbolicallyEvalPatternNode(n, state)
-					if err != nil {
-						return nil, err
-					}
-
+				if pattern, ok := right.(Pattern); ok {
 					name := parse.GetVariableName(binExpr.Left)
 					if !state.hasGlobal(name) && !state.hasLocal(name) {
 						break
@@ -2643,7 +2637,6 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 					} else {
 						state.updateGlobal(name, pattern.SymbolicValue(), node)
 					}
-				default:
 				}
 			}
 		}
