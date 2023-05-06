@@ -3841,6 +3841,20 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Nil(t, res)
 		})
 
+		t.Run("binary match expression narrows the type of a property (%int)", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				if (a.prop match %int){
+					var b %int = a.prop
+				}
+			`)
+
+			object := NewObject(map[string]SymbolicValue{"prop": ANY}, nil, nil)
+			state.setGlobal("a", object, GlobalConst)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+		})
 	})
 
 	t.Run("runtime typecheck expression", func(t *testing.T) {

@@ -2641,16 +2641,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				right, _ := state.symbolicData.GetMostSpecificNodeValue(binExpr.Right)
 
 				if pattern, ok := right.(Pattern); ok {
-					name := parse.GetVariableName(binExpr.Left)
-					if !state.hasGlobal(name) && !state.hasLocal(name) {
-						break
-					}
-
-					if state.hasLocal(name) {
-						state.updateLocal(name, pattern.SymbolicValue(), node)
-					} else {
-						state.updateGlobal(name, pattern.SymbolicValue(), node)
-					}
+					narrowPath(binExpr.Left, setExactValue, pattern.SymbolicValue(), state, 0)
 				}
 			}
 		}
