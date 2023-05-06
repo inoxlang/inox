@@ -62,6 +62,7 @@ func (mv *Multivalue) as(itf reflect.Type) SymbolicValue {
 		return result
 	}
 
+top_switch:
 	switch itf {
 	case INDEXABLE_INTERFACE_TYPE:
 		indexable := true
@@ -95,6 +96,16 @@ func (mv *Multivalue) as(itf reflect.Type) SymbolicValue {
 		}
 		if iprops {
 			result = &ipropsMultivalue{mv}
+		}
+	default:
+		for _, val := range mv.values {
+			if !reflect.ValueOf(val).Type().Implements(itf) {
+				break top_switch
+			}
+		}
+		val, err := converTypeToSymbolicValue(itf)
+		if err == nil {
+			return val
 		}
 	}
 

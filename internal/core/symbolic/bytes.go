@@ -15,9 +15,10 @@ var (
 
 	_ = []BytesLike{&AnyBytesLike{}, &ByteSlice{}, &BytesConcatenation{}}
 
-	ANY_BYTES_LIKE = &AnyBytesLike{}
-	ANY_BYTE_SLICE = &ByteSlice{}
-	ANY_BYTE       = &Byte{}
+	ANY_BYTES_LIKE   = &AnyBytesLike{}
+	ANY_BYTE_SLICE   = &ByteSlice{}
+	ANY_BYTE         = &Byte{}
+	ANY_BYTES_CONCAT = &BytesConcatenation{}
 )
 
 // An WrappedBytes represents a symbolic WrappedBytes.
@@ -284,7 +285,7 @@ func (c *BytesConcatenation) PrettyPrint(w *bufio.Writer, config *pprint.PrettyP
 // }
 
 func (c *BytesConcatenation) WidestOfType() SymbolicValue {
-	return &BytesConcatenation{}
+	return ANY_BYTES_CONCAT
 }
 
 func (c *BytesConcatenation) Reader() *Reader {

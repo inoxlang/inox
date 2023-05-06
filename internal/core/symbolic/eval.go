@@ -2563,11 +2563,11 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				return values[0], nil
 			}
 			for i, elem := range values {
-				if _, ok := elem.(StringLike); !ok {
+				if _, ok := as(elem, STRLIKE_INTERFACE_TYPE).(StringLike); !ok {
 					state.addError(makeSymbolicEvalError(n.Elements[nodeIndexes[i]], state, fmt.Sprintf("string concatenation: invalid element of type %T", elem)))
 				}
 			}
-			return &StringConcatenation{}, nil
+			return ANY_STR_CONCAT, nil
 		case BytesLike:
 			if len(values) == 1 && !atLeastOneSpread {
 				return values[0], nil
@@ -2577,7 +2577,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 					state.addError(makeSymbolicEvalError(n.Elements[nodeIndexes[i]], state, fmt.Sprintf("bytes concatenation: invalid element of type %T", elem)))
 				}
 			}
-			return &BytesConcatenation{}, nil
+			return ANY_BYTES_CONCAT, nil
 		case *Tuple:
 			if len(values) == 1 && !atLeastOneSpread {
 				return values[0], nil

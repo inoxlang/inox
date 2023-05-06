@@ -28,7 +28,7 @@ func TestSymbolicEval(t *testing.T) {
 				return &IntRangePattern{}, nil
 			},
 		})
-		state.ctx.AddNamedPattern("str", &TypePattern{val: &String{}})
+		state.ctx.AddNamedPattern("str", &TypePattern{val: ANY_STR_LIKE})
 		state.ctx.AddNamedPattern("obj", &TypePattern{val: NewAnyObject()})
 		state.ctx.AddNamedPattern("list", &TypePattern{val: NewListOf(ANY)})
 		state.ctx.AddPatternNamespace("myns", NewPatternNamespace(map[string]Pattern{
@@ -251,7 +251,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(decl.Right, state,
-					fmtNotAssignableToVarOftype(&Int{}, &TypePattern{val: &String{}})),
+					fmtNotAssignableToVarOftype(&Int{}, &TypePattern{val: ANY_STR_LIKE})),
 			}, state.errors)
 			assert.Equal(t, ANY, res)
 		})
@@ -268,7 +268,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(decl.Right, state,
-					fmtNotAssignableToVarOftype(NewEmptyObject(), &TypePattern{val: &String{}}),
+					fmtNotAssignableToVarOftype(NewEmptyObject(), &TypePattern{val: ANY_STR_LIKE}),
 				),
 			}, state.errors)
 			assert.Equal(t, ANY, res)
@@ -313,7 +313,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 
 			argType := NewMultivalue(
-				NewListOf(&Int{}), NewListOf(&String{}),
+				NewListOf(&Int{}), NewListOf(ANY_STR_LIKE),
 			)
 
 			expectedFn := &InoxFunction{
@@ -642,7 +642,7 @@ func TestSymbolicEval(t *testing.T) {
 			}, state.errors)
 			assert.Equal(t, &Object{
 				entries: map[string]SymbolicValue{
-					"name": &String{},
+					"name": ANY_STR_LIKE,
 				},
 				static: map[string]Pattern{
 					"name": state.ctx.ResolveNamedPattern("str"),
@@ -859,7 +859,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
-			assert.Equal(t, NewMultivalue(&Int{}, &String{}), res.(*InoxFunction).result)
+			assert.Equal(t, NewMultivalue(&Int{}, ANY_STR_LIKE), res.(*InoxFunction).result)
 		})
 
 		t.Run("unterminated", func(t *testing.T) {
@@ -1962,7 +1962,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 			assert.Equal(t, &InoxFunction{
 				node:           fnExpr,
-				parameters:     []SymbolicValue{NewMultivalue(NewListOf(&Int{}), NewListOf(&String{}))},
+				parameters:     []SymbolicValue{NewMultivalue(NewListOf(&Int{}), NewListOf(ANY_STR_LIKE))},
 				parameterNames: []string{"list"},
 				result:         Nil,
 			}, res)
@@ -2222,7 +2222,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 			assert.Equal(t, &InoxFunction{
 				node:           fnExpr,
-				parameters:     []SymbolicValue{NewMultivalue(NewListOf(&String{}), NewListOf(&Int{}))},
+				parameters:     []SymbolicValue{NewMultivalue(NewListOf(ANY_STR_LIKE), NewListOf(ANY_INT))},
 				parameterNames: []string{"list"},
 				result:         NewListOf(ANY),
 			}, res)
@@ -2249,7 +2249,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 			assert.Equal(t, &InoxFunction{
 				node:           fnExpr,
-				parameters:     []SymbolicValue{NewMultivalue(NewListOf(&String{}), NewListOf(&Int{}))},
+				parameters:     []SymbolicValue{NewMultivalue(NewListOf(ANY_STR_LIKE), NewListOf(&Int{}))},
 				parameterNames: []string{"list"},
 				result:         NewListOf(ANY),
 			}, res)
@@ -4168,8 +4168,8 @@ func TestSymbolicEval(t *testing.T) {
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.Empty(t, err)
-			assert.Equal(t, &String{}, res)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, ANY_STR, res)
 		})
 
 		t.Run("two string-like elements", func(t *testing.T) {
@@ -4177,8 +4177,30 @@ func TestSymbolicEval(t *testing.T) {
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.Empty(t, err)
-			assert.Equal(t, &StringConcatenation{}, res)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, ANY_STR_CONCAT, res)
+		})
+
+		t.Run("multivalue element implementing string like", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				var elem %str = "a"
+				if g {
+					elem = concat elem "b"
+				}
+				# at this point elem is a %string | %string-concatenation
+				return [elem, concat "x" elem]
+			`)
+
+			state.setGlobal("g", ANY_BOOL, GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, NewList(
+				//we also check that elem has the right because the test case depends on that
+				NewMultivalue(ANY_STR, ANY_STR_CONCAT),
+				ANY_STR_CONCAT,
+			), res)
 		})
 
 		t.Run("single byteslice element", func(t *testing.T) {
@@ -4186,7 +4208,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.Empty(t, err)
+			assert.Empty(t, state.errors)
 			assert.Equal(t, &ByteSlice{}, res)
 		})
 
@@ -4195,8 +4217,8 @@ func TestSymbolicEval(t *testing.T) {
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.Empty(t, err)
-			assert.Equal(t, &BytesConcatenation{}, res)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, ANY_BYTES_CONCAT, res)
 		})
 
 		t.Run("two tuples with known elements", func(t *testing.T) {
@@ -4204,7 +4226,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.Empty(t, err)
+			assert.Empty(t, state.errors)
 			assert.Equal(t, NewTuple(ANY_INT, ANY_STR), res)
 		})
 
@@ -4219,7 +4241,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.Empty(t, err)
+			assert.Empty(t, state.errors)
 
 			fnExpr := n.Statements[0].(*parse.ReturnStatement).Expr
 			expectedFn := &InoxFunction{
@@ -4241,7 +4263,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.Empty(t, err)
+			assert.Empty(t, state.errors)
 
 			fnExpr := n.Statements[0].(*parse.ReturnStatement).Expr
 			expectedFn := &InoxFunction{
@@ -4258,7 +4280,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.Empty(t, err)
+			assert.Empty(t, state.errors)
 			assert.Equal(t, &StringConcatenation{}, res)
 		})
 
@@ -4268,10 +4290,10 @@ func TestSymbolicEval(t *testing.T) {
 
 			spreadElem := parse.FindNode(n, (*parse.ElementSpreadElement)(nil), nil)
 
+			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(spreadElem, state, CONCATENATION_SUPPORTED_TYPES_EXPLANATION),
 			}, state.errors)
-			assert.Empty(t, err)
 			assert.Equal(t, ANY, res)
 		})
 
@@ -4281,10 +4303,10 @@ func TestSymbolicEval(t *testing.T) {
 
 			spreadElem := parse.FindNode(n, (*parse.ElementSpreadElement)(nil), nil)
 
+			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(spreadElem, state, CONCATENATION_SUPPORTED_TYPES_EXPLANATION),
 			}, state.errors)
-			assert.Empty(t, err)
 			assert.Equal(t, &StringConcatenation{}, res)
 		})
 
@@ -4293,7 +4315,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.Empty(t, err)
+			assert.NotEmpty(t, state.errors)
 			assert.Equal(t, ANY, res)
 		})
 
@@ -4302,7 +4324,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.Empty(t, err)
+			assert.NotEmpty(t, state.errors)
 			assert.Equal(t, &StringConcatenation{}, res)
 		})
 	})
