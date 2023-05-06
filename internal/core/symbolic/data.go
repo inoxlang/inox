@@ -196,8 +196,12 @@ func (d *SymbolicData) GetLocalScopeData(n parse.Node, ancestorChain []parse.Nod
 			n, newAncestorChain, ok = parse.FindPreviousStatementAndChain(n, ancestorChain)
 			if !ok {
 				closestBlock, index, ok := parse.FindClosest(ancestorChain, (*parse.Block)(nil))
-				if ok && index > 0 && parse.NodeIs(ancestorChain[index-1], (*parse.FunctionExpression)(nil)) {
-					return d.GetLocalScopeData(closestBlock, ancestorChain[:index])
+
+				if ok && index > 0 {
+					switch ancestorChain[index-1].(type) {
+					case *parse.FunctionExpression, *parse.ForStatement, *parse.WalkStatement:
+						return d.GetLocalScopeData(closestBlock, ancestorChain[:index])
+					}
 				}
 
 				return LocalScopeData{}, false

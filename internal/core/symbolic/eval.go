@@ -430,6 +430,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 			state.setLocal(name, right, static)
 			state.symbolicData.SetMostSpecificNodeValue(decl.Left, right)
+			state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
 		}
 		return nil, nil
 	case *parse.Assignment:
@@ -1613,6 +1614,8 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		}
 
 		if n.Body != nil {
+			state.symbolicData.SetLocalScopeData(n.Body, state.currentLocalScopeData())
+
 			_, err = symbolicEval(n.Body, state)
 			if err != nil {
 				return nil, err
@@ -1648,6 +1651,8 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		}
 
 		if n.Body != nil {
+			state.symbolicData.SetLocalScopeData(n.Body, state.currentLocalScopeData())
+
 			_, blkErr := symbolicEval(n.Body, state)
 			if blkErr != nil {
 				return nil, blkErr
