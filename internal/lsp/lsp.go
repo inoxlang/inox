@@ -96,6 +96,7 @@ func StartLSPServer() {
 			ParentContext:             nil,
 			Out:                       os.Stdout,
 			IgnoreNonCriticalIssues:   true,
+			AllowMissingEnvVars:       true,
 		})
 
 		if state == nil || state.SymbolicData == nil {
@@ -267,6 +268,7 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, com
 		ParentContext:             nil,
 		Out:                       io.Discard,
 		IgnoreNonCriticalIssues:   true,
+		AllowMissingEnvVars:       true,
 	})
 
 	if mod == nil { //unrecoverable parsing error
@@ -353,6 +355,7 @@ func getCompletions(fpath string, compilationCtx *core.Context, line, column int
 		ParentContext:             nil,
 		Out:                       os.Stdout,
 		IgnoreNonCriticalIssues:   true,
+		AllowMissingEnvVars:       true,
 	})
 
 	if mod == nil { //unrecoverable parsing error
