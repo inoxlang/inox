@@ -1,4 +1,4 @@
-# this scripts generates docs/builtin.md using the help data in the following file
+# this script generates docs/builtin.md
 
 const (
     DATA_FILE = ./internal/globals/help/builtin.yaml
@@ -9,50 +9,75 @@ manifest {
     permissions: {
         read: IWD_PREFIX
         write: IWD_PREFIX
+        create: {routines: {}}
     }
 }
 
 
-help_data = read!(DATA_FILE)
-assert (help_data match %[%list])
-
-items = help_data[0]
-
-var builtin %str = ""
-
 %example = %{
-    code?: %str?
-    explanation?: %str?
-    output?: %str?,
+    code?: %str
+    explanation?: %str
+    output?: %str,
     ...
 }
 
-for v in items {
-    assert (v match %{
-        topic: %str
-        text?: %str?
-        examples?: %[]%example
+%topic-data = %{
+    topic: %str
+    text?: %str
+    examples?: %[]%example
+    ...
+}
+
+
+help_data = read!(DATA_FILE)
+assert (help_data match %[%obj])
+
+groups = help_data[0]
+
+var builtin %str = ""
+
+for group_name, group in groups {
+    
+    assert (group match %{
+        namespace?: %bool
+        elements: %[]%topic-data
         ...
     })
 
-    builtin = (concat builtin 
-        "## " v.topic "\n\n"
-        (v.?text ?? "") "\n"
-        "\n**examples**:\n\n"
-
-        ...map((v.?examples ?? []), fn(example %example){
-            code = example.?code
-            if code? {
-                output = example.?output
-                if output? {
-                    output = concat "\n# output: \n" output
-                } 
-                return concat "```inox\n" code (output ?? "") "\n```\n"
-            }
-            return ""
-        })
+    builtin = (concat builtin
+        "\n## " strmanip.title_case(group_name) "\n\n"
     )
+
+    for v in group.elements {
+        assert (v match %topic-data)
+
+        var examples %str = ""
+        if v.?examples? {
+            examples = (concat ""
+                "\n**examples**\n\n"
+
+                ...map((v.?examples ?? []), fn(example %example) %str { # todo: return type should not be necessary
+                    code = example.?code
+                    if code? {
+                        output = example.?output
+                        if output? {
+                            output = concat "\n# output: \n" output
+                        } 
+                        return concat "```inox\n" code (output ?? "") "\n```\n"
+                    }
+                    return ""
+                })
+            )
+        }
+
+        builtin = (concat builtin 
+            "### " v.topic "\n\n"
+            (v.?text ?? "") "\n"
+            examples
+        )
+    }
 }
+
 
 output = `
 # Builtin
@@ -60,4 +85,9 @@ output = `
 {{builtin}}
 `
 
-update $$OUTPUT_FILE replace $output
+if fs.exists(OUTPUT_FILE) {
+    update $$OUTPUT_FILE replace $output
+} else {
+    create $$OUTPUT_FILE $output
+}
+
