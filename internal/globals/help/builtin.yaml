@@ -311,7 +311,7 @@ fs:
 
   - topic: fs.mkdir
     text: the fs.mkdir function takes a directory path as first argument & and optional dictionary literal as a second argument.
-      The second arguments recursively describes the content of the directory.
+      The second argument recursively describes the content of the directory.
     examples:
     - code: fs.mkdir ./dir_a/
     - code: |
@@ -324,6 +324,23 @@ fs:
         }
 
         fs.mkdir ./dir_b/ $dir_content
+
+  - topic: fs.read
+    text: the fs.read functions behaves exactly like the read function but only works on files & directories.
+
+  - topic: fs.ls
+    text: >
+      the fs.ls functions takes a directory path or a path pattern as first argument and returns a list of entries, if no argument is provided
+      the ./ directory is used.
+    examples:
+    - code: 'fs.ls()'
+    - code: 'fs.ls ./'
+    - code: 'fs.ls %./*.json'
+
+  - topic: fs.rename
+    alias: fs.mv
+    text: >
+      the fs.rename (fs.mv) function renames a file, it takes two path arguments. An error is returned if a file already exists at the target path.
 
   - topic: fs.get_tree_data
     text: > 

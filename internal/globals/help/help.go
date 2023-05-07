@@ -47,6 +47,9 @@ func init() {
 	for _, group := range topicGroups {
 		for _, item := range group.Elements {
 			helpByTopic[item.Topic] = item
+			if item.Alias != "" {
+				helpByTopic[item.Alias] = item
+			}
 		}
 	}
 
@@ -103,6 +106,7 @@ func RegisterHelpValues(values map[string]any) {
 type TopicHelp struct {
 	Value         any
 	Topic         string    `json:"topic"`
+	Alias         string    `json:"alias"`
 	RelatedTopics []string  `json:"related-topics"`
 	Summary       string    `json:"summary"`
 	Text          string    `json:"text"`

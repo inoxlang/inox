@@ -75,6 +75,10 @@ func init() {
 	help.RegisterHelpValues(map[string]any{
 		"fs.mkfile":        Mkfile,
 		"fs.mkdir":         Mkdir,
+		"fs.read":          Read,
+		"fs.ls":            ListFiles,
+		"fs.rename":        Rename,
+		"fs.mv":            Rename,
 		"fs.get_tree_data": GetTreeData,
 	})
 }
