@@ -2884,7 +2884,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 					return nil, err
 				}
 
-				switch e.(type) {
+				switch as(e, STRLIKE_INTERFACE_TYPE).(type) {
 				case StringLike:
 				case *Int:
 				default:
