@@ -298,3 +298,36 @@ Resource Manipulation:
     - code: 'delete ./file.txt'
     - code: 'delete ./dir/'
     - code: 'delete <url>'
+
+fs:
+  elements:
+  - topic: fs.mkfile
+    text: >
+      The fs.mkfile functions takes a file path as first argument. It accepts a --readonly switch that causes 
+      the created file to not have the write permission ; and a %readable argument that is the content of the file to create.
+    examples:
+    - code: fs.mkfile ./file.txt
+    - code: fs.mkfile ./file.txt "content"
+
+  - topic: fs.mkdir
+    text: the fs.mkdir function takes a directory path as first argument & and optional dictionary literal as a second argument.
+      The second arguments recursively describes the content of the directory.
+    examples:
+    - code: fs.mkdir ./dir_a/
+    - code: |
+        dir_content = :{
+            ./subdir_1/: [./empty_file]
+            ./subdir_2/: :{  
+                ./file: "foo"
+            }
+            ./file: "bar"
+        }
+
+        fs.mkdir ./dir_b/ $dir_content
+
+  - topic: fs.get_tree_data
+    text: > 
+      the fs.get_tree_data function takes a directory path argument and returns a %udata value 
+      thats contains the file hiearachy of the passed directory.
+    examples:
+    - code: fs.get_tree_data(./)

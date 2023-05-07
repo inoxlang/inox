@@ -4,6 +4,7 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	fs_symbolic "github.com/inoxlang/inox/internal/globals/fs/symbolic"
+	help "github.com/inoxlang/inox/internal/globals/help"
 )
 
 func init() {
@@ -69,6 +70,12 @@ func init() {
 		GetTreeData, func(ctx *symbolic.Context, pth *symbolic.Path) *symbolic.UData {
 			return &symbolic.UData{}
 		},
+	})
+
+	help.RegisterHelpValues(map[string]any{
+		"fs.mkfile":        Mkfile,
+		"fs.mkdir":         Mkdir,
+		"fs.get_tree_data": GetTreeData,
 	})
 }
 
