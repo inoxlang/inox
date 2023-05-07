@@ -18,6 +18,7 @@
     - [Switch statement](#switch-statement)
     - [Match statement](#match-statement)
     - [For statement](#for-statement)
+    - [Pipe statement](#pipe-statement)
 - [Functions](#functions)
     - [Definitions](#function-definitions)
     - [Call](#calling-a-function)
@@ -446,6 +447,27 @@ output:
 0 1
 1 2
 2 3
+```
+## Pipe Statement
+
+Pipe statements are analogous to pipes in Unix but they act on the values returned by functions, not 
+file descriptors.
+
+Here is an example:
+
+```
+map [{value: "a"}, {value: 1}] .value | filter $ %int
+```
+
+- in the first call we extract the .value property of several objects using the `map` function
+- in the second call we filter the result of the previous call
+  - `$` is an anonymous variable that contains the result of the previous call
+  - `%int` is a pattern matching integers
+
+
+Pipe expressions allows you to store the final result in a variable:
+```
+ints = | map [{value: "a"}, {value: 1}] .value | filter $ %int
 ```
 
 # Functions
