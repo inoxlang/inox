@@ -146,6 +146,21 @@ func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 }
 func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result SymbolicValue, finalErr error) {
 	defer func() {
+
+		e := recover()
+		if e != nil {
+			location := state.getErrorMesssageLocation(node)
+			stack := string(debug.Stack())
+			switch val := e.(type) {
+			case error:
+				finalErr = fmt.Errorf("%s %w\n%s", location, val, stack)
+			default:
+				finalErr = fmt.Errorf("panic: %s %#v\n%s", location, val, stack)
+			}
+			result = ANY
+			return
+		}
+
 		if !ignoreNodeValue && finalErr == nil && result != nil && state.symbolicData != nil {
 			state.symbolicData.SetMostSpecificNodeValue(node, result)
 		}
