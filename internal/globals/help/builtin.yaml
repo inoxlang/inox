@@ -53,7 +53,7 @@ functional:
       output: 'true'
 
   - topic: find
-    text: the find function searches for items matching a pattern at a given location (a string, an iterable, a directory
+    text: the find function searches for items matching a pattern at a given location (a string, an iterable, a directory)
     examples:
     - code: 'find %`a+` "a-aa-aaa"'
       output: '["a", "aa", "aaa"]'
@@ -100,19 +100,19 @@ crypto:
     text: the sha256 function hashes a string or a byte sequence with the SHA-256 algorithm
     examples:
     - code: sha256("string")
-      output: '0x[473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8'
+      output: '0x[473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8]'
 
   - topic: sha384
     text: the sha384 function hashes a string or a byte sequence with the SHA-384 algorithm
     examples:
     - code: sha384("string")
-      output: '0x[36396a7e4de3fa1c2156ad291350adf507d11a8f8be8b124a028c5db40785803ca35a7fc97a6748d85b253babab7953e'
+      output: '0x[36396a7e4de3fa1c2156ad291350adf507d11a8f8be8b124a028c5db40785803ca35a7fc97a6748d85b253babab7953e]'
 
   - topic: sha512
     text: the sha512 function hashes a string or a byte sequence with the SHA-512 algorithm
     examples:
     - code: sha512("string")
-      output: '0x[2757cb3cafc39af451abb2697be79b4ab61d63d74d85b0418629de8c26811b529f3f3780d0150063ff55a2beee74c4ec102a2a2731a1f1f7f10d473ad18a6a87'
+      output: '0x[2757cb3cafc39af451abb2697be79b4ab61d63d74d85b0418629de8c26811b529f3f3780d0150063ff55a2beee74c4ec102a2a2731a1f1f7f10d473ad18a6a87]'
 
 html:
   elements:
