@@ -402,6 +402,10 @@ func (goFunc *GoFunction) LoadSignatureData() (finalErr error) {
 				err.Error())
 		}
 
+		if _, isErr := symbolicResultValue.(*Error); isErr {
+			symbolicResultValue = NewMultivalue(symbolicResultValue, Nil)
+		}
+
 		goFunc.results = append(goFunc.results, symbolicResultValue)
 	}
 	goFunc.resultList = NewList(goFunc.results...)

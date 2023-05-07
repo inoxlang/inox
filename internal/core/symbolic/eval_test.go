@@ -2382,6 +2382,23 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &Int{}, res)
 		})
 
+		t.Run("signature is func(*Context) error", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				return f()
+			`)
+
+			goFunc := &GoFunction{
+				fn: func(*Context) *Error {
+					return nil
+				},
+			}
+
+			state.setGlobal("f", goFunc, GlobalConst)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, NewMultivalue(ANY_ERR, Nil), res)
+		})
 		t.Run("no concrete value", func(t *testing.T) {
 			n, state := makeStateAndChunk(`
 				return f()
