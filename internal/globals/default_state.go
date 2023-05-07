@@ -212,6 +212,7 @@ func NewDefaultGlobalState(ctx *core.Context, out io.Writer, config DefaultGloba
 		"none":    core.WrapGoFunction(core.None),
 		"replace": core.WrapGoFunction(_replace),
 		"find":    core.WrapGoFunction(_find),
+		"sort":    core.WrapGoFunction(core.Sort),
 
 		// concurrency & execution
 		"RoutineGroup": core.ValOf(core.NewRoutineGroup),

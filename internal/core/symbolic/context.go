@@ -1,6 +1,9 @@
 package internal
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 type Context struct {
 	forkingParent   *Context
@@ -93,6 +96,10 @@ func (ctx *Context) ForEachPatternNamespace(fn func(name string, namespace *Patt
 
 func (ctx *Context) AddSymbolicGoFunctionError(msg string) {
 	ctx.associatedState.addSymbolicGoFunctionError(msg)
+}
+
+func (ctx *Context) AddFormattedSymbolicGoFunctionError(format string, args ...any) {
+	ctx.associatedState.addSymbolicGoFunctionError(fmt.Sprintf(format, args...))
 }
 
 func (ctx *Context) SetSymbolicGoFunctionParameters(parameters *[]SymbolicValue, names []string) {

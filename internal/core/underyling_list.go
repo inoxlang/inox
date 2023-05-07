@@ -118,6 +118,10 @@ func NewWrappedIntList(elements ...Int) *List {
 	return &List{underylingList: newIntList(elements...)}
 }
 
+func NewWrappedIntListFrom(elements []Int) *List {
+	return &List{underylingList: &IntList{Elements: elements}}
+}
+
 func newIntList(elements ...Int) *IntList {
 	return &IntList{Elements: elements}
 }
@@ -218,6 +222,10 @@ type StringList struct {
 
 func NewWrappedStringList(elements ...StringLike) *List {
 	return &List{underylingList: newStringList(elements...)}
+}
+
+func NewWrappedStringListFrom(elements []StringLike) *List {
+	return &List{underylingList: &StringList{elements: elements}}
 }
 
 func newStringList(elements ...StringLike) *StringList {
