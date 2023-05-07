@@ -413,6 +413,39 @@ func (list *BoolList) Iterator(ctx *Context, config IteratorConfiguration) Itera
 	return config.CreateIterator(&BitSetIterator{set: list.elements, nextIndex: 0})
 }
 
+type StrListIterator struct {
+	NoReprMixin
+	NotClonableMixin
+
+	list *StringList
+	i    int
+}
+
+func (it StrListIterator) HasNext(*Context) bool {
+	return it.i < len(it.list.elements)-1
+}
+
+func (it *StrListIterator) Next(ctx *Context) bool {
+	if !it.HasNext(ctx) {
+		return false
+	}
+
+	it.i++
+	return true
+}
+
+func (it *StrListIterator) Key(ctx *Context) Value {
+	return Int(it.i)
+}
+
+func (it *StrListIterator) Value(*Context) Value {
+	return it.list.elements[it.i]
+}
+
+func (list *StringList) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
+	return config.CreateIterator(&StrListIterator{list: list, i: -1})
+}
+
 type TupleIterator struct {
 	NoReprMixin
 	NotClonableMixin
@@ -1569,4 +1602,14 @@ func IterateAll(ctx *Context, it Iterator) [][2]Value {
 	}
 
 	return entries
+}
+
+func IterateAllValuesOnly(ctx *Context, it Iterator) []Value {
+	values := make([]Value, 0)
+
+	for it.Next(ctx) {
+		values = append(values, it.Value(ctx))
+	}
+
+	return values
 }

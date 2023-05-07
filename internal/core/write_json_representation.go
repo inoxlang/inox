@@ -350,6 +350,38 @@ func (list *BoolList) WriteJSONRepresentation(ctx *Context, w io.Writer, encount
 	return list.WriteRepresentation(ctx, w, nil, config)
 }
 
+func (list *StringList) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+	return true
+}
+
+func (list *StringList) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+	if encountered != nil && !list.HasJSONRepresentation(encountered, config) {
+		return ErrNoRepresentation
+	}
+
+	_, err := w.Write([]byte{'['})
+	if err != nil {
+		return err
+	}
+	first := true
+	for _, v := range list.elements {
+		if !first {
+			_, err = w.Write([]byte{','})
+			if err != nil {
+				return err
+			}
+		}
+		first = false
+		err = v.WriteJSONRepresentation(ctx, w, nil, config)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = w.Write([]byte{']'})
+	return err
+}
+
 func (tuple *Tuple) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
 	return true
 }

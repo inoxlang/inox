@@ -262,6 +262,10 @@ func (l *BoolList) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.S
 	return symbolic.NewListOf(symbolic.ANY_BOOL), nil
 }
 
+func (l *StringList) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	return symbolic.NewListOf(symbolic.ANY_STR_LIKE), nil
+}
+
 func (l KeyList) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	var keys = make([]string, len(l))
 	copy(keys, l)
@@ -853,6 +857,10 @@ func (it *IntListIterator) ToSymbolicValue(wide bool, encountered map[uintptr]sy
 }
 
 func (it *BitSetIterator) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	return &symbolic.Iterator{}, nil
+}
+
+func (it *StrListIterator) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	return &symbolic.Iterator{}, nil
 }
 

@@ -46,6 +46,8 @@ type StringLike interface {
 	TrimSpace(ctx *Context) StringLike
 	HasPrefix(ctx *Context, prefix StringLike) Bool
 	HasSuffix(ctx *Context, prefix StringLike) Bool
+
+	//TODO: EqualStringLike(ctx *Context, s StringLike)
 }
 
 type Str string

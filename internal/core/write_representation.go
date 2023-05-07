@@ -613,6 +613,38 @@ func (list *BoolList) WriteRepresentation(ctx *Context, w io.Writer, encountered
 	return err
 }
 
+func (list *StringList) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+	return true
+}
+
+func (list *StringList) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+	if encountered != nil && !list.HasRepresentation(encountered, config) {
+		return ErrNoRepresentation
+	}
+
+	_, err := w.Write([]byte{'['})
+	if err != nil {
+		return err
+	}
+	first := true
+	for _, v := range list.elements {
+		if !first {
+			_, err = w.Write([]byte{','})
+			if err != nil {
+				return err
+			}
+		}
+		first = false
+		err = v.WriteRepresentation(ctx, w, nil, config)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = w.Write([]byte{']'})
+	return err
+}
+
 func (tuple *Tuple) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
 	return true
 }

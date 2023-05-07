@@ -72,6 +72,10 @@ func (list *BoolList) IsMutable() bool {
 	return true
 }
 
+func (list *StringList) IsMutable() bool {
+	return true
+}
+
 func (tuple *Tuple) IsMutable() bool {
 	return false
 }
@@ -371,6 +375,10 @@ func (it *IntListIterator) IsMutable() bool {
 }
 
 func (it *BitSetIterator) IsMutable() bool {
+	return true
+}
+
+func (it *StrListIterator) IsMutable() bool {
 	return true
 }
 

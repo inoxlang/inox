@@ -430,6 +430,65 @@ func (list *BoolList) Equal(ctx *Context, other Value, alreadyCompared map[uintp
 	return true
 }
 
+func (list *StringList) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	if depth > MAX_COMPARISON_DEPTH {
+		return false
+	}
+
+	var otherList underylingList
+	switch v := other.(type) {
+	case *List:
+		otherList = v.underylingList
+	case underylingList:
+		otherList = v
+	default:
+		return false
+	}
+
+	addr := reflect.ValueOf(list).Pointer()
+	otherAddr := reflect.ValueOf(otherList).Pointer()
+
+	if list.Len() != otherList.Len() {
+		return false
+	}
+
+	if alreadyCompared[addr] == otherAddr || alreadyCompared[otherAddr] == addr {
+		//we return true to prevent cycling
+		return true
+	}
+
+	alreadyCompared[addr] = otherAddr
+	alreadyCompared[otherAddr] = addr
+
+	if addr == otherAddr {
+		return true
+	}
+
+	switch other := otherList.(type) {
+	case *StringList:
+		//check that all elements are equal
+		for i, v := range list.elements {
+			if v != other.elements[i] {
+				return false
+			}
+		}
+	default:
+		it := other.Iterator(ctx, IteratorConfiguration{})
+
+		//check that all elements are equal
+		for _, v := range list.elements {
+			it.Next(ctx)
+			otherElem := it.Value(ctx)
+			if str, ok := otherElem.(StringLike); !ok || v.GetOrBuildString() != str.GetOrBuildString() {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
 func (tuple *Tuple) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	if depth > MAX_COMPARISON_DEPTH {
 		return false
@@ -1399,6 +1458,14 @@ func (it *IntListIterator) Equal(ctx *Context, other Value, alreadyCompared map[
 
 func (it *BitSetIterator) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	otherIt, ok := other.(*BitSetIterator)
+	if !ok {
+		return false
+	}
+	return otherIt == it
+}
+
+func (it *StrListIterator) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherIt, ok := other.(*StrListIterator)
 	if !ok {
 		return false
 	}
