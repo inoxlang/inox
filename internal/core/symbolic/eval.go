@@ -733,7 +733,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				state.symbolicData.SetMostSpecificNodeValue(var_, ANY)
 			}
 		} else {
-			if list.HasKnownLen() && list.knownLen() < 2 {
+			if list.HasKnownLen() && list.KnownLen() < 2 {
 				state.addError(makeSymbolicEvalError(node, state, LIST_SHOULD_HAVE_LEN_GEQ_TWO))
 			}
 
@@ -3368,7 +3368,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		}
 
 		if must {
-			if list, isList := ret.(*List); isList && list.HasKnownLen() && list.knownLen() != 0 {
+			if list, isList := ret.(*List); isList && list.HasKnownLen() && list.KnownLen() != 0 {
 				lastElem := list.elements[len(list.elements)-1]
 
 				if _, ok := lastElem.(*Error); ok {

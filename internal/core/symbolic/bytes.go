@@ -68,7 +68,7 @@ func (s *ByteSlice) HasKnownLen() bool {
 	return false
 }
 
-func (s *ByteSlice) knownLen() int {
+func (s *ByteSlice) KnownLen() int {
 	return -1
 }
 
@@ -174,7 +174,7 @@ func (b *AnyBytesLike) HasKnownLen() bool {
 	return false
 }
 
-func (b *AnyBytesLike) knownLen() int {
+func (b *AnyBytesLike) KnownLen() int {
 	return -1
 }
 
@@ -252,7 +252,7 @@ func (c *BytesConcatenation) HasKnownLen() bool {
 	return false
 }
 
-func (s *BytesConcatenation) knownLen() int {
+func (s *BytesConcatenation) KnownLen() int {
 	return -1
 }
 

@@ -30,7 +30,7 @@ type Indexable interface {
 	SymbolicValue
 	element() SymbolicValue
 	elementAt(i int) SymbolicValue
-	knownLen() int
+	KnownLen() int
 	HasKnownLen() bool
 }
 
@@ -126,7 +126,7 @@ func (list *List) IsWidenable() bool {
 
 func (list *List) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if list.elements != nil {
-		length := list.knownLen()
+		length := list.KnownLen()
 
 		if depth > config.MaxDepth && length > 0 {
 			utils.Must(w.Write(utils.StringAsBytes("[(...)]")))
@@ -192,7 +192,7 @@ func (a *List) HasKnownLen() bool {
 	return a.elements != nil
 }
 
-func (a *List) knownLen() int {
+func (a *List) KnownLen() int {
 	if a.elements == nil {
 		panic("cannot get length of a symbolic list with no known length")
 	}
@@ -383,7 +383,7 @@ func (t *Tuple) HasKnownLen() bool {
 	return t.elements != nil
 }
 
-func (t *Tuple) knownLen() int {
+func (t *Tuple) KnownLen() int {
 	if t.elements == nil {
 		panic("cannot get length of a symbolic length with no known length")
 	}
@@ -951,7 +951,7 @@ func (o *Object) HasKnownLen() bool {
 	return false
 }
 
-func (o *Object) knownLen() int {
+func (o *Object) KnownLen() int {
 	return -1
 }
 
@@ -1193,7 +1193,7 @@ func (rec *Record) HasKnownLen() bool {
 	return false
 }
 
-func (rec *Record) knownLen() int {
+func (rec *Record) KnownLen() int {
 	return -1
 }
 

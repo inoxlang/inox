@@ -180,7 +180,7 @@ func (mv *indexableMultivalue) elementAt(i int) SymbolicValue {
 	elements := make([]SymbolicValue, len(mv.values))
 	for i, val := range mv.values {
 		indexable := val.(Indexable)
-		if !indexable.HasKnownLen() || i >= indexable.knownLen() {
+		if !indexable.HasKnownLen() || i >= indexable.KnownLen() {
 			return ANY
 		}
 		elements[i] = val.(Indexable).elementAt(i)
@@ -189,8 +189,8 @@ func (mv *indexableMultivalue) elementAt(i int) SymbolicValue {
 	return joinValues(elements)
 }
 
-func (mv *indexableMultivalue) knownLen() int {
-	return mv.values[0].(Indexable).knownLen()
+func (mv *indexableMultivalue) KnownLen() int {
+	return mv.values[0].(Indexable).KnownLen()
 }
 
 func (mv *indexableMultivalue) HasKnownLen() bool {
@@ -203,9 +203,9 @@ func (mv *indexableMultivalue) HasKnownLen() bool {
 		}
 
 		if i == 0 {
-			length = indexable.knownLen()
+			length = indexable.KnownLen()
 		} else {
-			if indexable.knownLen() != length {
+			if indexable.KnownLen() != length {
 				return false
 			}
 		}

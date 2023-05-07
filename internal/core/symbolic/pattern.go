@@ -1237,7 +1237,7 @@ func (p *ListPattern) TestValue(v SymbolicValue) bool {
 	}
 
 	if p.elements != nil {
-		if !list.HasKnownLen() || list.knownLen() != len(p.elements) {
+		if !list.HasKnownLen() || list.KnownLen() != len(p.elements) {
 			return false
 		}
 		for i, e := range p.elements {
@@ -1386,7 +1386,7 @@ func (p *TuplePattern) TestValue(v SymbolicValue) bool {
 	}
 
 	if p.elements != nil {
-		if !tuple.HasKnownLen() || tuple.knownLen() != len(p.elements) {
+		if !tuple.HasKnownLen() || tuple.KnownLen() != len(p.elements) {
 			return false
 		}
 		for i, e := range p.elements {

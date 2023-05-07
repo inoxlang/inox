@@ -67,7 +67,7 @@ func (s *String) HasKnownLen() bool {
 	return false
 }
 
-func (s *String) knownLen() int {
+func (s *String) KnownLen() int {
 	return -1
 }
 
@@ -252,7 +252,7 @@ func (s *RuneSlice) HasKnownLen() bool {
 	return false
 }
 
-func (s *RuneSlice) knownLen() int {
+func (s *RuneSlice) KnownLen() int {
 	return -1
 }
 
@@ -359,7 +359,7 @@ func (c *StringConcatenation) HasKnownLen() bool {
 	return false
 }
 
-func (c *StringConcatenation) knownLen() int {
+func (c *StringConcatenation) KnownLen() int {
 	return -1
 }
 
@@ -451,7 +451,7 @@ func (s *AnyStringLike) elementAt(i int) SymbolicValue {
 	return &Byte{}
 }
 
-func (s *AnyStringLike) knownLen() int {
+func (s *AnyStringLike) KnownLen() int {
 	return -1
 }
 func (s *AnyStringLike) HasKnownLen() bool {

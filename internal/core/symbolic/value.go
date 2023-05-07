@@ -208,6 +208,10 @@ func (i *Identifier) Test(v SymbolicValue) bool {
 	return i.name == "" || i.name == other.name
 }
 
+func (i *Identifier) HasConcreteName() bool {
+	return i.name != ""
+}
+
 func (i *Identifier) Name() string {
 	return i.name
 }
@@ -714,7 +718,7 @@ func (r *IntRange) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 	return
 }
 
-func (r *IntRange) knownLen() int {
+func (r *IntRange) KnownLen() int {
 	return -1
 }
 
@@ -766,7 +770,7 @@ func (r *RuneRange) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfi
 	return
 }
 
-func (r *RuneRange) knownLen() int {
+func (r *RuneRange) KnownLen() int {
 	return -1
 }
 
