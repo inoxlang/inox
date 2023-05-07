@@ -171,7 +171,7 @@ func Mkfile(ctx *core.Context, fpath core.Path, args ...core.Value) error {
 				if a.Value == nil || a.Value != core.True {
 					return core.FmtErrInvalidArgument(a)
 				}
-				fileMode = DEFAULT_RW_FILE_FMODE
+				fileMode = DEFAULT_FILE_FMODE
 			default:
 				return core.FmtErrInvalidArgument(a)
 			}

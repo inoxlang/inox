@@ -17,8 +17,7 @@ const (
 
 	FS_WRITE_MIN_CHUNK_SIZE = 100_000
 	FS_READ_MIN_CHUNK_SIZE  = 1_000_000
-	DEFAULT_FILE_FMODE      = fs.FileMode(0o400)
-	DEFAULT_RW_FILE_FMODE   = fs.FileMode(0o600)
+	DEFAULT_FILE_FMODE      = fs.FileMode(0o600)
 	DEFAULT_DIR_FMODE       = fs.FileMode(0o700)
 )
 
