@@ -21,6 +21,7 @@ import (
 	_s3 "github.com/inoxlang/inox/internal/globals/s3"
 	_shell "github.com/inoxlang/inox/internal/globals/shell"
 	_sql "github.com/inoxlang/inox/internal/globals/sql"
+	_strmanip "github.com/inoxlang/inox/internal/globals/strmanip"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -110,20 +111,21 @@ func NewDefaultGlobalState(ctx *core.Context, out io.Writer, config DefaultGloba
 		"IWD_PREFIX": core.INITIAL_WORKING_DIR_PATH_PATTERN,
 
 		// namespaces
-		"fs":      _fs.NewFsNamespace(),
-		"http":    _http.NewHttpNamespace(),
-		"tcp":     _net.NewTcpNamespace(),
-		"dns":     _net.NewDNSnamespace(),
-		"ws":      _net.NewWebsocketNamespace(),
-		"s3":      _s3.NewS3namespace(),
-		"chrome":  _chrome.NewChromeNamespace(),
-		"localdb": _locdb.NewLocalDbNamespace(),
-		"env":     envNamespace,
-		"html":    _html.NewHTMLNamespace(),
-		"dom":     _dom.NewDomNamespace(),
-		"sql":     _sql.NewSQLNamespace(),
-		"inox":    NewInoxNamespace(),
-		"inoxsh":  _shell.NewInoxshNamespace(),
+		"fs":       _fs.NewFsNamespace(),
+		"http":     _http.NewHttpNamespace(),
+		"tcp":      _net.NewTcpNamespace(),
+		"dns":      _net.NewDNSnamespace(),
+		"ws":       _net.NewWebsocketNamespace(),
+		"s3":       _s3.NewS3namespace(),
+		"chrome":   _chrome.NewChromeNamespace(),
+		"localdb":  _locdb.NewLocalDbNamespace(),
+		"env":      envNamespace,
+		"html":     _html.NewHTMLNamespace(),
+		"dom":      _dom.NewDomNamespace(),
+		"sql":      _sql.NewSQLNamespace(),
+		"inox":     NewInoxNamespace(),
+		"inoxsh":   _shell.NewInoxshNamespace(),
+		"strmanip": _strmanip.NewStrManipNnamespace(),
 
 		// transaction
 		"get_current_tx": core.ValOf(_get_current_tx),
