@@ -2874,7 +2874,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 					memberName := s.Type
 					_, ok := namespace.entries[memberName]
 					if !ok {
-						state.addError(makeSymbolicEvalError(node, state, fmtCannotInterpolateMemberOfPatternNamespaceDoesNotExist(memberName, namespaceName)))
+						state.addError(makeSymbolicEvalError(slice, state, fmtCannotInterpolateMemberOfPatternNamespaceDoesNotExist(memberName, namespaceName)))
 						return &CheckedString{}, nil
 					}
 				}
@@ -2889,9 +2889,9 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				case *Int:
 				default:
 					if n.Pattern == nil {
-						state.addError(makeSymbolicEvalError(node, state, fmtUntypedInterpolationIsNotStringlikeOrIntBut(e)))
+						state.addError(makeSymbolicEvalError(slice, state, fmtUntypedInterpolationIsNotStringlikeOrIntBut(e)))
 					} else {
-						state.addError(makeSymbolicEvalError(node, state, fmtInterpolationIsNotStringlikeOrIntBut(e)))
+						state.addError(makeSymbolicEvalError(slice, state, fmtInterpolationIsNotStringlikeOrIntBut(e)))
 					}
 				}
 			}

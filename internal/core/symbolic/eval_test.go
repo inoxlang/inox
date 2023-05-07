@@ -4583,12 +4583,12 @@ func TestSymbolicEval(t *testing.T) {
 				return %sql.stmt|SELECT * FROM users WHERE id = {{int:$unsanitized_id}}|
 			`))
 
-			templateLit := n.Statements[2].(*parse.ReturnStatement).Expr
+			templateLit := n.Statements[2].(*parse.ReturnStatement).Expr.(*parse.StringTemplateLiteral)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(templateLit, state, fmtCannotInterpolateMemberOfPatternNamespaceDoesNotExist("int", "sql")),
+				makeSymbolicEvalError(templateLit.Slices[1], state, fmtCannotInterpolateMemberOfPatternNamespaceDoesNotExist("int", "sql")),
 			}, state.errors)
 			assert.Equal(t, &CheckedString{}, res)
 		})
@@ -4603,12 +4603,12 @@ func TestSymbolicEval(t *testing.T) {
 				return %sql.stmt|SELECT * FROM users WHERE id = {{int:$unsanitized_id}}|
 			`))
 
-			templateLit := n.Statements[2].(*parse.ReturnStatement).Expr
+			templateLit := n.Statements[2].(*parse.ReturnStatement).Expr.(*parse.StringTemplateLiteral)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(templateLit, state, fmtInterpolationIsNotStringlikeOrIntBut(&Object{entries: map[string]SymbolicValue{}})),
+				makeSymbolicEvalError(templateLit.Slices[1], state, fmtInterpolationIsNotStringlikeOrIntBut(&Object{entries: map[string]SymbolicValue{}})),
 			}, state.errors)
 			assert.Equal(t, &CheckedString{}, res)
 		})
