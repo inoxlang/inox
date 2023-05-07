@@ -170,11 +170,15 @@ func _updateResource(ctx *core.Context, resource core.ResourceName, args ...core
 		return nil, ErrNilResourceArgument
 	}
 
+	if mode == "" {
+		mode = "replace"
+	}
+
 	switch res := resource.(type) {
 	case core.URL:
 
-		if mode != "" {
-			return nil, errors.New("update: http does not support append mode yet")
+		if mode != "replace" {
+			return nil, errors.New("update: http only supports replace mode for now")
 		}
 
 		resp, err := _http.HttpPatch(ctx, res, content)
