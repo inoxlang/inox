@@ -1629,6 +1629,8 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			}
 
 			state.join(stateFork)
+			//we set the local scope data at the for statement, not the body
+			state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
 		}
 
 		return nil, nil
@@ -1670,6 +1672,8 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			}
 
 			state.join(stateFork)
+			//we set the local scope data at the for statement, not the body
+			state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
 		}
 
 		state.iterationChange = NoIterationChange
