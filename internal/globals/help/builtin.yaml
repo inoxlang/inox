@@ -52,6 +52,17 @@ functional:
     - code: 'none([0, 1, 2], @($ < 0))'
       output: 'true'
 
+  - topic: sort
+    text: >
+      the sort function creates a new list by sorting a list of strings or integers, the second argument is an identifier describing
+      the order. For strings the available orderings are #lex (lexicographic) & #revlex (same but reversed). For integers the available
+      orderings are #asc (ascending) & #desc (descending).
+    examples:
+    - code: 'sort([2, 1], #asc)'
+      output: '[1, 2]'
+    - code: 'sort(["b", "a"], #lex)'
+      output: '["a", "b"]'
+
   - topic: find
     text: the find function searches for items matching a pattern at a given location (a string, an iterable, a directory)
     examples:
@@ -61,6 +72,9 @@ functional:
       output: '[./file.json, ./dir/file.json, ./dir/dir/.file.json]'
     - code: find %int ['1', 2, "3"]
       output: '[2]'
+  
+  - topic: idt
+    text: the idt (identity) function takes a single argument and returns it.
 
 rand:
   namespace: false
@@ -168,7 +182,7 @@ containers:
     - code: 'Queue([])'
       explanation: creates an empty queue
     - code: 'Queue([1])'
-      expalnation: creates a queue with an element 1
+      explanation: creates a queue with an element 1
 
   - topic: Set
     text: the Set function creates a set from an iterable, only representable (serializable) values are allowed
@@ -211,7 +225,7 @@ dns:
 tcp:
   elements:
   - topic: tcp.connect
-    text: the tcp.connect functions creates a TCP connection to a given host.
+    text: the tcp.connect function creates a TCP connection to a given host.
     examples:
     - code: |
         conn = tcp.connect!(://example.com:80)
@@ -220,4 +234,67 @@ tcp:
         print tostr(conn.read!())
 
         conn.close()
-      
+
+Error:
+  namespace: false
+  elements:
+  - topic: Error
+    text: the Error function creates an error from the provided string and an optional data argument.
+    examples:
+    - code: 'Error("failed to create user")'
+    - code: 'Error("failed to create user", {user_id: 100})'
+
+Resource Manipulation:
+  namespace: false
+  elements:
+  - topic: read
+    text: > 
+      read is a general purpose function that reads the content of a file, a directory or a HTTP resource.
+      The content is parsed by default, to disable parsing use --raw after the resource's name: a byte slice 
+      will be returned instead.
+    examples:
+      - code: 'read ./'
+        output: |
+          [
+            dir/
+            file.txt 1kB 
+          ]
+        explanation: returns a list containing the entries of the directory ./
+
+      - code: 'read ./file.txt'
+        output: hello
+
+      - code: 'read ./file.json'
+        output: '{"key": "value"}'
+
+      - code: 'read https://jsonplaceholder.typicode.com/posts/1'
+        output: |
+          {
+            "body": "quia et suscipit\nsuscipit recusandae consequuntur expedita....", 
+            "id": 1.0, 
+            "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit", 
+            "userId": 1.0
+          }
+  - topic: create
+    text: create is a general purpose function that can create a file, a directory or a HTTP resource.
+    examples:
+    - code: 'create ./dir/'
+    - code: 'create ./empty-file.txt'
+    - code: 'create ./file.txt "content"'
+
+  - topic: update
+    text: >
+      update is a general purpose function that updates an existing resource, it has 2 modes: append and replace.
+      Replace is the default mode.
+    examples:
+    - code: update ./file.txt append 'additional content'`
+    - code: update ./file.txt 'new content'`
+    - code: update ./file.txt replace 'new content'`
+    - code: update <url> tojson({})'
+
+  - topic: delete
+    text: 'delete is a general purpose function that deletes a resource, deletion is recursive for directories.'
+    examples:
+    - code: 'delete ./file.txt'
+    - code: 'delete ./dir/'
+    - code: 'delete <url>'

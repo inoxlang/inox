@@ -7,6 +7,7 @@ import (
 
 func registerHelp() {
 	help.RegisterHelpValues(map[string]any{
+		//functional
 		"map":    core.Map,
 		"filter": core.Filter,
 		"some":   core.Some,
@@ -14,5 +15,15 @@ func registerHelp() {
 		"none":   core.None,
 		"rand":   _rand,
 		"find":   _find,
+		"sort":   core.Sort,
+
+		//resource manipulation
+		"create": _createResource,
+		"read":   _readResource,
+		"update": _updateResource,
+		"delete": _deleteResource,
+
+		//others
+		"Error": _Error,
 	})
 }
