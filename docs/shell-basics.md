@@ -7,7 +7,7 @@ inox
 
 Note: the `inox shell` command can also be used.
 
-Before starting the shell ``inox`` will execute the startup script `~/.config/inox/startup.ix` (or $XDG_CONFIG_HOME/inox/startup.ix) and grant the required permissions by the script to the shell.
+Before starting the shell ``inox`` will execute the startup script `~/.config/inox/startup.ix` (or $XDG_CONFIG_HOME/inox/startup.ix) that set the [configuration](#configuration).
 
 - [Pseudo commands](#pseudo-commands-quit-clear)
 - [Syntax](#syntax)
@@ -299,7 +299,7 @@ There are only a few builtin commands availabe:
 
 ### Trusted Commands
 
-Trusted commands are commands that are fully trusted, when you execute z trusted command the standard input is redirected
+Trusted commands are commands that are fully trusted, when you execute a trusted command the standard input is redirected
 to the spawned process.
 
 You can try that with the following command 

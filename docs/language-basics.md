@@ -89,7 +89,7 @@ var a %int = 0
 
 Declaration of global variables:
 ```
-$$myglobal = 1 # note: the syntax will change in the near future.
+$$myglobal = 1 # note: the syntax might change in the near future.
 
 var local1 = 2
 print (myglobal + local2)
@@ -604,13 +604,13 @@ namespace = %ints.
 Inox allows you to describe string patterns that are easier to read than regex expressions.
 
 ```
-# this pattern matches a string that contains only 'a's
+# matches any string containing only 'a's
 %str('a'+)
 
-# this pattern matches a string that starts with a 'a' followed by zero or more 'b's.
+# matches any string that starts with a 'a' followed by zero or more 'b's.
 %str('a' 'b'*)
 
-# this pattern matches a string that starts with a 'a' followed by zero or more 'b's and 'c's.
+# matches any string that starts with a 'a' followed by zero or more 'b's and 'c's.
 %str('a' (|'b' | 'c')*)
 ```
 
@@ -645,7 +645,7 @@ During the static check phase the code is analyzed in order to find the followin
 # Symbolic Evaluation
 
 The symbolic evaluation of a module is a "virtual" evaluation, it performs checks similar to those of a type checker.
-Throughout the Inox documentation you may encounter the terms "type checker"/ "type checking", this corresponds to the symbolic evaluation phase.
+Throughout the Inox documentation you may encounter the terms "type checker"/ "type checking", they correspond to the symbolic evaluation phase.
 
 # Compilation
 
