@@ -232,6 +232,7 @@ func NewDefaultGlobalState(ctx *core.Context, out io.Writer, config DefaultGloba
 		"add_ctx_data": core.ValOf(_add_ctx_data),
 		"ctx_data":     core.ValOf(_ctx_data),
 		"clone_val":    core.ValOf(_clone_val),
+		"propnames":    core.WrapGoFunction(_propnames),
 
 		"List":   core.ValOf(_List),
 		"append": core.ValOf(core.Append),

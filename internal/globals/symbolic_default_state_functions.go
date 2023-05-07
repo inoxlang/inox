@@ -253,6 +253,13 @@ func init() {
 		_get_system_graph, func(ctx *symbolic.Context) (*symbolic.SystemGraph, *symbolic.Bool) {
 			return symbolic.ANY_SYSTEM_GRAPH, symbolic.ANY_BOOL
 		},
+
+		_propnames, func(ctx *symbolic.Context, v symbolic.SymbolicValue) *symbolic.List {
+			if _, ok := v.(symbolic.IProps); !ok {
+				ctx.AddSymbolicGoFunctionError("value cannot have properties")
+			}
+			return symbolic.NewListOf(symbolic.ANY_STR)
+		},
 	})
 
 }

@@ -413,3 +413,9 @@ func _get_system_graph(ctx *core.Context) (*core.SystemGraph, core.Bool) {
 	g := ctx.GetClosestState().SystemGraph
 	return g, g != nil
 }
+
+func _propnames(ctx *core.Context, val core.Value) *core.List {
+	props := val.(core.IProps).PropertyNames(ctx)
+	values := utils.MapSlice(props, func(s string) core.Value { return core.Str(s) })
+	return core.NewWrappedValueListFrom(values)
+}
