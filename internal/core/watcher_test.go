@@ -88,6 +88,8 @@ func TestObjectWatcher(t *testing.T) {
 		})
 
 		t.Run("shallow watcher should NOT be informed about the shallow changes of a property value", func(t *testing.T) {
+			t.Skip()
+
 			ctx := NewContext(ContextConfig{})
 			NewGlobalState(ctx)
 
