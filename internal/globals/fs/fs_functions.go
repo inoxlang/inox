@@ -167,11 +167,11 @@ func Mkfile(ctx *core.Context, fpath core.Path, args ...core.Value) error {
 			}
 		case core.Option:
 			switch a.Name {
-			case "writable":
+			case "readonly":
 				if a.Value == nil || a.Value != core.True {
 					return core.FmtErrInvalidArgument(a)
 				}
-				fileMode = DEFAULT_FILE_FMODE
+				fileMode = DEFAULT_R_FILE_FMODE
 			default:
 				return core.FmtErrInvalidArgument(a)
 			}
