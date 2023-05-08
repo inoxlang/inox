@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -1446,9 +1447,17 @@ func (i FileInfo) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth 
 		utils.PanicIfErr(w.WriteByte(' '))
 		utils.Must(i.Size.write(w, 1))
 
-		if config.Colorize {
-			utils.Must(w.Write(ANSI_RESET_SEQUENCE))
-		}
+	}
+
+	if config.Colorize {
+		utils.Must(w.Write(config.Colors.DiscreteColor))
+	}
+
+	utils.PanicIfErr(w.WriteByte(' '))
+	utils.Must(w.Write(utils.StringAsBytes(os.FileMode(i.Mode).String())))
+
+	if config.Colorize {
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 	}
 }
 
