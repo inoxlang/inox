@@ -79,6 +79,13 @@ func init() {
 		"fs.ls":            ListFiles,
 		"fs.rename":        Rename,
 		"fs.mv":            Rename,
+		"fs.cp":            Copy,
+		"fs.exists":        Exists,
+		"fs.isdir":         IsDir,
+		"fs.isfile":        IsFile,
+		"fs.remove":        Remove,
+		"fs.glob":          Glob,
+		"fs.find":          Find,
 		"fs.get_tree_data": GetTreeData,
 	})
 }

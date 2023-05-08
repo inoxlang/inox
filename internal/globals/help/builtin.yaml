@@ -326,7 +326,10 @@ fs:
         fs.mkdir ./dir_b/ $dir_content
 
   - topic: fs.read
-    text: the fs.read functions behaves exactly like the read function but only works on files & directories.
+    text: 'the fs.read functions behaves exactly like the read function but only works on files & directories.'
+
+  - topic: fs.read_file
+    text: 'the fs.read functions behaves exactly like the read function but only works on files.'
 
   - topic: fs.ls
     text: >
@@ -340,7 +343,46 @@ fs:
   - topic: fs.rename
     alias: fs.mv
     text: >
-      the fs.rename (fs.mv) function renames a file, it takes two path arguments. An error is returned if a file already exists at the target path.
+      the fs.rename (fs.mv) function renames a file, it takes two path arguments. 
+      An error is returned if a file already exists at the target path.
+
+  - topic: fs.cp
+    text: >
+      the fs.cp function copies a file/dir at a destination or a list of files in a destination directory, the copy is recursive by default.
+      As you can see this behaviour is not exactly the same as the cp command on Unix.
+      An error is returned if a file or a directory already exists at one of the target paths (recursive).
+    examples:
+    - code: 'fs.cp ./file.txt ./file_copy.txt'
+    - code: 'fs.cp ./dir/ ./dir_copy/'
+    - code: 'fs.cp [./file.txt, ./dir/] ./dest_dir/'
+      explanation: 'creates ./dest_dir/file.txt and ./dest_dir/dir/ by copying the provided file & directory'
+
+  - topic: fs.exists
+    text: 'the fs.exists takes a path as first argument and returns a boolean.'
+
+  - topic: fs.isdir
+    text: 'the fs.isdir function returns true if there is a directory at the given path'
+
+  - topic: fs.isfile
+    text: 'the fs.isfile returns true if there is a regular file at the given path'
+
+  - topic: fs.remove
+    alias: fs.rm
+    text: 'the fs.remove function removes a file or a directory recursively.'
+
+  - topic: fs.glob
+    text: 'the fs.glob function takes a globbing path pattern argument (%./a/... will not work) and returns a list of paths matching this pattern.'
+    example:
+    - code: 'fs.glob %./*.json'
+      explanation: 'returns paths of JSON files in the current directory.'
+
+  - topic: fs.find
+    text: >
+      the fs.find function takes a directory path argument followed by one or more globbing path patterns, 
+      it returns a directory entry for each file matching at least one of the pattern.
+
+    examples:
+    - code: 'fs.find ./ %./**/*.json'
 
   - topic: fs.get_tree_data
     text: > 
