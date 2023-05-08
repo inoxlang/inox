@@ -114,6 +114,23 @@ manifest {}
 print(A)
 ```
 
+## Multi Assignment
+
+Multiple variables can be assigned at once using the `assign` keyword:
+```
+assign first second = [1, 2]
+
+assign first second = unknown_length_list
+```
+
+⚠️ If the number of elements in less than the number of variables the evaluation will panic.
+You can use a nillable multi-assignment to avoid that:
+
+```
+assign? first second = unknown_length_list
+```
+
+If at runtime `unknown_length_list` has a single element `second` will receive a value of `nil`.
 
 # Operations
 
