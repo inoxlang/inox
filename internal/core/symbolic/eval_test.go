@@ -3084,28 +3084,81 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("assignment", func(t *testing.T) {
-		// TODO
+		t.Run("assignment in if statement: variable LHS: RHS has incompatible type", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				v = []
+				if true {
+					v = 3
+				}
+				return v
+			`)
+			res, err := symbolicEval(n, state)
+			assignement := parse.FindNode(n.Statements[1], (*parse.Assignment)(nil), nil)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(assignement, state, fmtNotAssignableToVarOftype(&Int{}, &TypePattern{val: &List{generalElement: ANY}})),
+			}, state.errors)
+			assert.Equal(t, &List{elements: []SymbolicValue{}}, res)
+		})
+
 	})
 
 	t.Run("multi assignment", func(t *testing.T) {
-		// TODO
-	})
 
-	t.Run("assignment in if statement: variable LHS: RHS has incompatible type", func(t *testing.T) {
-		n, state := makeStateAndChunk(`
-			v = []
-			if true {
-				v = 3
-			}
-			return v
-		`)
-		res, err := symbolicEval(n, state)
-		assignement := parse.FindNode(n.Statements[1], (*parse.Assignment)(nil), nil)
-		assert.NoError(t, err)
-		assert.Equal(t, []SymbolicEvaluationError{
-			makeSymbolicEvalError(assignement, state, fmtNotAssignableToVarOftype(&Int{}, &TypePattern{val: &List{generalElement: ANY}})),
-		}, state.errors)
-		assert.Equal(t, &List{elements: []SymbolicValue{}}, res)
+		t.Run("RHS is too short (1 variable)", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				assign first = []
+			`)
+			res, err := symbolicEval(n, state)
+			stmt := n.Statements[0]
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(stmt, state, fmtListShouldHaveLengthGreaterOrEqualTo(1)),
+			}, state.errors)
+			assert.Nil(t, res)
+		})
+
+		t.Run("RHS is too short (2 variables)", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				assign first second = [1]
+			`)
+			res, err := symbolicEval(n, state)
+			stmt := n.Statements[0]
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(stmt, state, fmtListShouldHaveLengthGreaterOrEqualTo(2)),
+			}, state.errors)
+			assert.Nil(t, res)
+		})
+
+		t.Run("RHS is too short (2 variables) but nillable", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				assign? first second = [1]
+			`)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Nil(t, res)
+		})
+
+		t.Run("unknown-length list of integers : nillable", func(t *testing.T) {
+			n, state := makeStateAndChunk(`
+				assign? first second = list
+				return [first, second]
+			`)
+			state.setGlobal("list", NewListOf(ANY_INT), GlobalConst)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, NewList(
+				NewMultivalue(ANY_INT, Nil),
+				NewMultivalue(ANY_INT, Nil),
+			), res)
+		})
 	})
 
 	t.Run("for statement", func(t *testing.T) {

@@ -720,6 +720,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		return nil, nil
 	case *parse.MultiAssignment:
+		isNillable := n.Nillable
 		right, err := symbolicEval(n.Right, state)
 
 		if err != nil {
@@ -748,14 +749,18 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				state.symbolicData.SetMostSpecificNodeValue(var_, ANY)
 			}
 		} else {
-			if list.HasKnownLen() && list.KnownLen() < 2 {
-				state.addError(makeSymbolicEvalError(node, state, LIST_SHOULD_HAVE_LEN_GEQ_TWO))
+			if list.HasKnownLen() && list.KnownLen() < len(n.Variables) && !isNillable {
+				state.addError(makeSymbolicEvalError(node, state, fmtListShouldHaveLengthGreaterOrEqualTo(len(n.Variables))))
 			}
 
 			for i, var_ := range n.Variables {
 				name := var_.(*parse.IdentifierLiteral).Name
 
 				val := list.elementAt(i)
+				if isNillable && (!list.HasKnownLen() || i >= list.KnownLen() && isNillable) {
+					val = joinValues([]SymbolicValue{val, Nil})
+				}
+
 				if state.hasLocal(name) {
 					state.updateLocal(name, val, n)
 				} else {
