@@ -5544,6 +5544,37 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
+		t.Run("nillable", func(t *testing.T) {
+			n := MustParseChunk("assign? a = $b")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 14}, nil, nil},
+				Statements: []Node{
+					&MultiAssignment{
+						NodeBase: NodeBase{
+							NodeSpan{0, 14},
+							nil,
+							[]Token{
+								{Type: ASSIGN_KEYWORD, Span: NodeSpan{0, 6}},
+								{Type: QUESTION_MARK, Span: NodeSpan{6, 7}},
+								{Type: EQUAL, Span: NodeSpan{10, 11}},
+							},
+						},
+						Variables: []Node{
+							&IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{8, 9}, nil, nil},
+								Name:     "a",
+							},
+						},
+						Right: &Variable{
+							NodeBase: NodeBase{NodeSpan{12, 14}, nil, nil},
+							Name:     "b",
+						},
+						Nillable: true,
+					},
+				},
+			}, n)
+		})
+
 		t.Run("missing terminator", func(t *testing.T) {
 			n, err := ParseChunk("assign a = $b 2", "")
 			assert.Error(t, err)

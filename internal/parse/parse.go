@@ -8380,6 +8380,17 @@ func (p *parser) parseSynchronizedBlock(synchronizedIdent *IdentifierLiteral) *S
 
 func (p *parser) parseMultiAssignmentStatement(assignIdent *IdentifierLiteral) *MultiAssignment {
 	var vars []Node
+	var tokens = []Token{
+		{Type: ASSIGN_KEYWORD, Span: assignIdent.Span},
+	}
+
+	nillable := false
+
+	if p.i < p.len && p.s[p.i] == '?' {
+		nillable = true
+		tokens = append(tokens, Token{Type: QUESTION_MARK, Span: NodeSpan{p.i, p.i + 1}})
+		p.i++
+	}
 
 	for p.i < p.len && p.s[p.i] != '=' {
 		p.eatSpace()
@@ -8398,9 +8409,6 @@ func (p *parser) parseMultiAssignmentStatement(assignIdent *IdentifierLiteral) *
 	}
 
 	var (
-		tokens = []Token{
-			{Type: ASSIGN_KEYWORD, Span: assignIdent.Span},
-		}
 		right      Node
 		parsingErr *ParsingError
 		end        int32
@@ -8441,6 +8449,7 @@ func (p *parser) parseMultiAssignmentStatement(assignIdent *IdentifierLiteral) *
 		},
 		Variables: vars,
 		Right:     right,
+		Nillable:  nillable,
 	}
 }
 

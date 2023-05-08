@@ -1165,6 +1165,7 @@ type MultiAssignment struct {
 	NodeBase
 	Variables []Node
 	Right     Node
+	Nillable  bool
 }
 
 func (MultiAssignment) Kind() NodeKind {
