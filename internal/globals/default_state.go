@@ -127,6 +127,8 @@ func NewDefaultGlobalState(ctx *core.Context, out io.Writer, config DefaultGloba
 		"inoxsh":   _shell.NewInoxshNamespace(),
 		"strmanip": _strmanip.NewStrManipNnamespace(),
 
+		"ls": core.WrapGoFunction(_fs.ListFiles),
+
 		// transaction
 		"get_current_tx": core.ValOf(_get_current_tx),
 		"Tx":             core.ValOf(core.NewTransaction),
