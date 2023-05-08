@@ -8395,7 +8395,6 @@ func (p *parser) parseMultiAssignmentStatement(assignIdent *IdentifierLiteral) *
 		}
 		vars = append(vars, e)
 		p.eatSpace()
-
 	}
 
 	var (
@@ -8404,14 +8403,17 @@ func (p *parser) parseMultiAssignmentStatement(assignIdent *IdentifierLiteral) *
 		}
 		right      Node
 		parsingErr *ParsingError
+		end        int32
 	)
 	if p.i >= p.len || p.s[p.i] != '=' {
 		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_MULTI_ASSIGN_MISSING_EQL_SIGN}
+		end = p.i
 	} else {
 		tokens = append(tokens, Token{Type: EQUAL, Span: NodeSpan{p.i, p.i + 1}})
 		p.i++
 		p.eatSpace()
 		right, _ = p.parseExpression()
+		end = right.Base().Span.End
 	}
 
 	// terminator
@@ -8433,7 +8435,7 @@ func (p *parser) parseMultiAssignmentStatement(assignIdent *IdentifierLiteral) *
 
 	return &MultiAssignment{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{assignIdent.Span.Start, right.Base().Span.End},
+			Span:            NodeSpan{assignIdent.Span.Start, end},
 			Err:             parsingErr,
 			ValuelessTokens: tokens,
 		},

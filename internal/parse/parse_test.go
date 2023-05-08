@@ -5579,6 +5579,61 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
+		t.Run("only LHS", func(t *testing.T) {
+			n, err := ParseChunk("assign a", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
+				Statements: []Node{
+					&MultiAssignment{
+						NodeBase: NodeBase{
+							NodeSpan{0, 8},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_MULTI_ASSIGN_MISSING_EQL_SIGN},
+							[]Token{{Type: ASSIGN_KEYWORD, Span: NodeSpan{0, 6}}},
+						},
+						Variables: []Node{
+							&IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{7, 8}, nil, nil},
+								Name:     "a",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing value after equal sign", func(t *testing.T) {
+			n, err := ParseChunk("assign a =", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
+				Statements: []Node{
+					&MultiAssignment{
+						NodeBase: NodeBase{
+							NodeSpan{0, 10},
+							nil,
+							[]Token{
+								{Type: ASSIGN_KEYWORD, Span: NodeSpan{0, 6}},
+								{Type: EQUAL, Span: NodeSpan{9, 10}},
+							},
+						},
+						Variables: []Node{
+							&IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{7, 8}, nil, nil},
+								Name:     "a",
+							},
+						},
+						Right: &MissingExpression{
+							NodeBase: NodeBase{
+								NodeSpan{9, 10},
+								&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("assign a ="), 10, true)},
+								nil,
+							},
+						},
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("call with parenthesis", func(t *testing.T) {
