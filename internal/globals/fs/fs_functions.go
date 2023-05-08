@@ -250,47 +250,52 @@ func Rename(ctx *core.Context, old, new core.Path) error {
 }
 
 func Find(ctx *core.Context, dir core.Path, filters ...core.Pattern) (*core.List, error) {
-
 	if !dir.IsDirPath() {
 		return nil, errors.New("find: first argument should be a directory path")
 	}
 
-	relative := dir.IsRelative()
+	fls := ctx.GetFileSystem()
 
-	for _, filter := range filters {
+	//we check patterns & convert globbing patterns to absolute globbing path patterns.
+	for i, filter := range filters {
 		switch filt := filter.(type) {
 		case core.StringPattern:
 		case core.PathPattern:
 			if !filt.IsGlobbingPattern() {
 				return nil, errors.New("find: path filters should be globbing path patterns")
 			}
+			if !filt.IsAbsolute() {
+				filt = core.PathPattern(fls.Join(string(dir), string(filt)))
+				filters[i] = filt.ToAbs(fls)
+			}
+		default:
+			return nil, fmt.Errorf("invalid pattern for filtering files: %s", core.Stringify(filt, ctx))
 		}
 	}
 
 	var found []core.Value
+	var paths []string
 
-	core.WalkDir(ctx.GetFileSystem(), dir, func(path core.Path, d fs.DirEntry, err error) error {
-
-		for _, filter := range filters {
-			switch filt := filter.(type) {
-			case core.PathPattern:
-				base := filepath.Base(string(path))
-				if path.IsRelative() && (len(base) < 2 || base[0] != '.' || base[1] != '/') {
-					base = "./" + base
-				}
-
-				if d.IsDir() {
-					base += "/"
-				}
-
-				if filt.Test(ctx, core.Path(base)) {
-					found = append(found, core.CreateDirEntry(string(path), string(dir), relative, d))
-				}
+	//we first get matching paths
+	for _, filter := range filters {
+		switch filt := filter.(type) {
+		case core.PathPattern:
+			matches, err := glob(fls, string(filt))
+			if err != nil {
+				return nil, err
 			}
+			paths = append(paths, matches...)
 		}
+	}
 
-		return nil
-	})
+	//we get the information for each matched file
+	for _, pth := range paths {
+		info, err := fls.Lstat(pth)
+		if err != nil {
+			return nil, err
+		}
+		found = append(found, makeFileInfo(info, pth, fls))
+	}
 
 	return core.NewWrappedValueList(found...), nil
 }

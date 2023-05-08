@@ -557,3 +557,53 @@ func TestFile(t *testing.T) {
 		assert.LessOrEqual(t, successfullReads, 1)
 	})
 }
+
+func TestFind(t *testing.T) {
+
+	setup := func(t *testing.T) (core.Path, *core.Context) {
+		tmpDir := t.TempDir() + "/"
+
+		osFile := utils.Must(os.Create(filepath.Join(tmpDir, "file1.txt")))
+		osFile.Close()
+
+		osFile = utils.Must(os.Create(filepath.Join(tmpDir, "file2.json")))
+		osFile.Close()
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern(tmpDir + "/...")},
+			},
+			Limitations: []core.Limitation{
+				{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: FS_READ_MIN_CHUNK_SIZE},
+			},
+			Filesystem: GetOsFilesystem(),
+		})
+
+		return core.Path(tmpDir), ctx
+	}
+
+	t.Run("any file in current dir", func(t *testing.T) {
+		tmpDir, ctx := setup(t)
+
+		result, err := Find(ctx, tmpDir, core.PathPattern("./*"))
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.NotNil(t, result)
+		assert.Equal(t, 2, result.Len())
+	})
+
+	t.Run("text files in current dir", func(t *testing.T) {
+		tmpDir, ctx := setup(t)
+
+		result, err := Find(ctx, tmpDir, core.PathPattern("./*.txt"))
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.NotNil(t, result)
+		assert.Equal(t, 1, result.Len())
+	})
+
+}
