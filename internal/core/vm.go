@@ -1368,6 +1368,22 @@ func (v *VM) run() {
 
 			v.stack[v.sp] = val
 			v.sp++
+		case OpSafeAt:
+			index := v.stack[v.sp-1]
+			left := v.stack[v.sp-2]
+			v.sp -= 2
+
+			var val Value
+			indexable := left.(Indexable)
+			_index := int(index.(Int))
+			if _index >= indexable.Len() {
+				val = Nil
+			} else {
+				val = indexable.At(v.global.Ctx, _index)
+			}
+
+			v.stack[v.sp] = val
+			v.sp++
 		case OpSlice:
 			high := v.stack[v.sp-1]
 			low := v.stack[v.sp-2]

@@ -234,6 +234,7 @@ const (
 	OpOptionalMemb
 	OpDynMemb
 	OpAt
+	OpSafeAt
 	OpSlice
 	OpAssert
 	OpBlockLock
@@ -349,6 +350,7 @@ var OpcodeNames = [...]string{
 	OpOptionalMemb:                 "OPT_MEMB",
 	OpDynMemb:                      "DYN_MEMB",
 	OpAt:                           "AT",
+	OpSafeAt:                       "SAFE_AT",
 	OpSlice:                        "SLICE",
 	OpAssert:                       "ASSERT",
 	OpBlockLock:                    "BLOCK_LOCK",
@@ -464,6 +466,7 @@ var OpcodeOperands = [...][]int{
 	OpOptionalMemb:                 {2},
 	OpDynMemb:                      {2},
 	OpAt:                           {},
+	OpSafeAt:                       {},
 	OpSlice:                        {},
 	OpAssert:                       {2},
 	OpBlockLock:                    {1},
@@ -578,6 +581,7 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpOptionalMemb:                 {true},
 	OpDynMemb:                      {true},
 	OpAt:                           {},
+	OpSafeAt:                       {},
 	OpSlice:                        {},
 	OpAssert:                       {true},
 	OpBlockLock:                    {false},

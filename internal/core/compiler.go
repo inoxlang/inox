@@ -810,7 +810,11 @@ func (c *compiler) Compile(node parse.Node) error {
 				symbol = c.currentLocalSymbols().Define(name)
 			}
 			c.emit(node, OpPushConstant, c.addConstant(Int(i)))
-			c.emit(node, OpAt)
+			if node.Nillable {
+				c.emit(node, OpSafeAt)
+			} else {
+				c.emit(node, OpAt)
+			}
 			c.emit(node, OpSetLocal, symbol.Index)
 		}
 	case *parse.IdentifierLiteral:

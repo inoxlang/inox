@@ -1486,14 +1486,37 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("multi assignement", func(t *testing.T) {
-		code := `
-			assign a b = [1, 2]
-			return [$a, $b]
-		`
-		state := NewGlobalState(NewDefaultTestContext())
-		res, err := Eval(code, state, false)
-		assert.NoError(t, err)
-		assert.EqualValues(t, newList(&ValueList{elements: []Value{Int(1), Int(2)}}), res)
+		t.Run("variable count == length", func(t *testing.T) {
+			code := `
+				assign a b = [1, 2]
+				return [$a, $b]
+			`
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+			assert.NoError(t, err)
+			assert.EqualValues(t, newList(&ValueList{elements: []Value{Int(1), Int(2)}}), res)
+		})
+
+		t.Run("variable count > length", func(t *testing.T) {
+			code := `assign a b = [1]`
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.Error(t, err)
+			assert.Nil(t, res)
+		})
+
+		t.Run("nillable: variable count > length", func(t *testing.T) {
+			code := `
+				assign? a b = [1]
+				return [$a, $b]
+			`
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.EqualValues(t, newList(&ValueList{elements: []Value{Int(1), Nil}}), res)
+		})
 	})
 
 	t.Run("if statement", func(t *testing.T) {

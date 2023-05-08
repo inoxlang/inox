@@ -697,8 +697,20 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		list := right.(*List)
 		scope := state.CurrentLocalScope()
 
-		for i, var_ := range n.Variables {
+		listLength := list.Len()
+		valueReceivingVars := len(n.Variables)
+		if n.Nillable {
+			valueReceivingVars = utils.Min(listLength, len(n.Variables))
+		}
+		//for now we don't check the length + fast fail because we need to have the same behaviour
+		//as the bytecode interpreter
+
+		for i, var_ := range n.Variables[0:valueReceivingVars] {
 			scope[var_.(*parse.IdentifierLiteral).Name] = list.At(state.Global.Ctx, i)
+		}
+
+		for _, var_ := range n.Variables[valueReceivingVars:] {
+			scope[var_.(*parse.IdentifierLiteral).Name] = Nil
 		}
 
 		return Nil, nil

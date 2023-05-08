@@ -659,8 +659,7 @@ func (d *Dictionary) Value(ctx *Context, key Value) (Value, bool) {
 	if !key.HasRepresentation(map[uintptr]int{}, nil) {
 		return nil, false
 	}
-	keyRepr := string(GetRepresentation(key, ctx))
-	v, ok := d.Entries[keyRepr]
+	v, ok := d.Entries[string(GetRepresentation(key, ctx))]
 	return v, ok
 }
 
@@ -668,7 +667,10 @@ type KeyList []string
 
 type Indexable interface {
 	Iterable
+
+	// At should panic if the index is out of bounds.
 	At(ctx *Context, i int) Value
+
 	Len() int
 }
 
