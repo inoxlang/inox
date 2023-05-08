@@ -331,7 +331,7 @@ func Copy(ctx *core.Context, args ...core.Value) error {
 			} else if dest == "" {
 				dest = v
 			} else {
-				return errors.New("at least three paths have been provided")
+				return errors.New("at least three paths have been provided, only two paths or a list of paths followed by a destination dir are expected")
 			}
 		default:
 			return errors.New("invalid argument " + fmt.Sprintf("%#v", v))
@@ -372,7 +372,7 @@ func Copy(ctx *core.Context, args ...core.Value) error {
 		if newBasename != "" {
 			basename = newBasename
 		}
-		stat, err := os.Lstat(src)
+		stat, err := fls.Lstat(src)
 		srcToFileInfo[src] = stat
 
 		if err != nil {
@@ -416,14 +416,14 @@ func Copy(ctx *core.Context, args ...core.Value) error {
 	//we check that we will not overwrite a file or dir before making changes to the filesystem.
 
 	for srcFile, destFile := range srcToDest {
-		_, err := os.Lstat(destFile)
+		_, err := fls.Lstat(destFile)
 		if err == nil {
 			errs = append(errs, fmt.Sprintf("cannot copy file %s -> %s: destination already exists", srcFile, destFile))
 		}
 	}
 
 	for srcFolder, destFolder := range srcFolderToDest {
-		_, err := os.Lstat(destFolder)
+		_, err := fls.Lstat(destFolder)
 		if err == nil {
 			errs = append(errs, fmt.Sprintf("cannot copy dir %s -> %s: destination already exists", srcFolder, destFolder))
 		}
@@ -441,7 +441,7 @@ func Copy(ctx *core.Context, args ...core.Value) error {
 	for srcFolder, destFolder := range srcFolderToDest {
 		perm := srcToFileInfo[srcFolder].Mode().Perm()
 
-		if err := os.MkdirAll(destFolder, perm); err != nil {
+		if err := fls.MkdirAll(destFolder, perm); err != nil {
 			errs = append(errs, err.Error())
 		}
 	}
@@ -483,6 +483,7 @@ func Copy(ctx *core.Context, args ...core.Value) error {
 func AppendToFile(ctx *core.Context, args ...core.Value) error {
 	var fpath core.Path
 	var content *core.Reader
+	fls := ctx.GetFileSystem()
 
 	for _, arg := range args {
 		switch v := arg.(type) {
@@ -512,7 +513,7 @@ func AppendToFile(ctx *core.Context, args ...core.Value) error {
 		return fmt.Errorf("cannot append to file: %s", err.Error())
 	}
 
-	_, err = os.Stat(string(fpath))
+	_, err = fls.Stat(string(fpath))
 	if os.IsNotExist(err) {
 		return fmt.Errorf("cannot append to file: %s does not exist", fpath)
 	}
@@ -529,6 +530,7 @@ func AppendToFile(ctx *core.Context, args ...core.Value) error {
 func ReplaceFileContent(ctx *core.Context, args ...core.Value) error {
 	var fpath core.Path
 	var content *core.Reader
+	fls := ctx.GetFileSystem()
 
 	for _, arg := range args {
 		switch v := arg.(type) {
@@ -571,7 +573,7 @@ func ReplaceFileContent(ctx *core.Context, args ...core.Value) error {
 		return err
 	}
 
-	f, err := os.OpenFile(string(fpath), os.O_WRONLY|os.O_TRUNC, 0)
+	f, err := fls.OpenFile(string(fpath), os.O_WRONLY|os.O_TRUNC, 0)
 	defer func() {
 		f.Close()
 	}()
@@ -628,6 +630,7 @@ func __createFile(ctx *core.Context, fpath core.Path, b []byte, fmode fs.FileMod
 	}
 
 	alreadyClosed := false
+	fls := ctx.GetFileSystem()
 
 	perm := core.FilesystemPermission{Kind_: core.CreatePerm, Entity: fpath.ToAbs(ctx.GetFileSystem())}
 	if err := ctx.CheckHasPermission(perm); err != nil {
@@ -643,7 +646,7 @@ func __createFile(ctx *core.Context, fpath core.Path, b []byte, fmode fs.FileMod
 	}
 
 	chunkSize := computeChunkSize(rate, len(b))
-	f, err := os.OpenFile(string(fpath), os.O_CREATE|os.O_WRONLY, fmode)
+	f, err := fls.OpenFile(string(fpath), os.O_CREATE|os.O_WRONLY, fmode)
 	if err != nil {
 		return err
 	}
@@ -692,6 +695,8 @@ func ReadEntireFile(ctx *core.Context, fpath core.Path) ([]byte, error) {
 }
 
 func ReadDir(ctx *core.Context, pth core.Path) ([]fs.DirEntry, error) {
+	fls := ctx.GetFileSystem()
+	pth = pth.ToAbs(fls)
 	perm := core.FilesystemPermission{
 		Kind_:  core.ReadPerm,
 		Entity: pth,
@@ -701,13 +706,15 @@ func ReadDir(ctx *core.Context, pth core.Path) ([]fs.DirEntry, error) {
 		return nil, err
 	}
 
-	entries, err := os.ReadDir(string(pth))
+	entries, err := fls.ReadDir(string(pth))
 
 	if err != nil {
 		return nil, err
 	}
 
-	return entries, nil
+	return utils.MapSlice(entries, func(i fs.FileInfo) fs.DirEntry {
+		return core.NewStatDirEntry(i)
+	}), nil
 }
 
 func makeFileInfo(info fs.FileInfo, pth string, fls afs.Filesystem) core.FileInfo {
@@ -825,13 +832,12 @@ func ListFiles(ctx *core.Context, args ...core.Value) ([]core.FileInfo, error) {
 
 		for _, entry := range entries {
 			fpath := path.Join(string(pth), entry.Name())
-			info, err := os.Stat(fpath)
+			info, err := fls.Stat(fpath)
 			if err != nil {
 				return nil, err
 			}
 
 			resultFileInfo = append(resultFileInfo, makeFileInfo(info, fpath, fls))
-
 		}
 	} else { //pattern
 		absPatt := patt.ToAbs(ctx.GetFileSystem())
@@ -851,7 +857,7 @@ func ListFiles(ctx *core.Context, args ...core.Value) ([]core.FileInfo, error) {
 		}
 
 		for _, match := range matches {
-			info, err := os.Stat(match)
+			info, err := fls.Stat(match)
 			if err != nil {
 				return nil, err
 			}
@@ -909,7 +915,7 @@ func Glob(ctx *core.Context, patt core.PathPattern) []core.Path {
 
 	list := make([]core.Path, len(res))
 	for i, e := range res {
-		stat, err := os.Stat(e)
+		stat, err := fls.Stat(e)
 		if err != nil {
 			panic(err)
 		}
@@ -927,44 +933,53 @@ func Glob(ctx *core.Context, patt core.PathPattern) []core.Path {
 }
 
 func IsDir(ctx *core.Context, pth core.Path) core.Bool {
+	fls := ctx.GetFileSystem()
+	pth = pth.ToAbs(fls)
+
 	perm := core.FilesystemPermission{
 		Kind_:  core.ReadPerm,
-		Entity: pth.ToAbs(ctx.GetFileSystem()),
+		Entity: pth,
 	}
 
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		panic(err)
 	}
 
-	stat, err := os.Lstat(string(pth))
+	stat, err := fls.Lstat(string(pth))
 	return core.Bool(!os.IsNotExist(err) && stat.IsDir())
 }
 
 func IsFile(ctx *core.Context, pth core.Path) core.Bool {
+	fls := ctx.GetFileSystem()
+	pth = pth.ToAbs(fls)
+
 	perm := core.FilesystemPermission{
 		Kind_:  core.ReadPerm,
-		Entity: pth.ToAbs(ctx.GetFileSystem()),
+		Entity: pth,
 	}
 
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		panic(err)
 	}
 
-	stat, err := os.Lstat(string(pth))
+	stat, err := fls.Lstat(string(pth))
 	return core.Bool(!os.IsNotExist(err) && stat.Mode().IsRegular())
 }
 
 func Exists(ctx *core.Context, pth core.Path) core.Bool {
+	fls := ctx.GetFileSystem()
+	pth = pth.ToAbs(fls)
+
 	perm := core.FilesystemPermission{
 		Kind_:  core.ReadPerm,
-		Entity: pth.ToAbs(ctx.GetFileSystem()),
+		Entity: pth,
 	}
 
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		panic(err)
 	}
 
-	_, err := os.Lstat(string(pth))
+	_, err := fls.Lstat(string(pth))
 	return core.Bool(!os.IsNotExist(err))
 }
 

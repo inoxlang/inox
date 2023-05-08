@@ -7,14 +7,18 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-type statDirEntry struct {
+type StatDirEntry struct {
 	info fs.FileInfo
 }
 
-func (d *statDirEntry) Name() string               { return d.info.Name() }
-func (d *statDirEntry) IsDir() bool                { return d.info.IsDir() }
-func (d *statDirEntry) Type() fs.FileMode          { return d.info.Mode().Type() }
-func (d *statDirEntry) Info() (fs.FileInfo, error) { return d.info, nil }
+func NewStatDirEntry(info fs.FileInfo) *StatDirEntry {
+	return &StatDirEntry{info}
+}
+
+func (d *StatDirEntry) Name() string               { return d.info.Name() }
+func (d *StatDirEntry) IsDir() bool                { return d.info.IsDir() }
+func (d *StatDirEntry) Type() fs.FileMode          { return d.info.Mode().Type() }
+func (d *StatDirEntry) Info() (fs.FileInfo, error) { return d.info, nil }
 
 // /adapted from stdlib path/filepath/path.go
 func walkDir(fls afs.Filesystem, root string, fn fs.WalkDirFunc) error {
@@ -22,7 +26,7 @@ func walkDir(fls afs.Filesystem, root string, fn fs.WalkDirFunc) error {
 	if err != nil {
 		err = fn(root, nil, err)
 	} else {
-		err = _walkDir(fls, root, &statDirEntry{info}, fn)
+		err = _walkDir(fls, root, &StatDirEntry{info}, fn)
 	}
 	if err == fs.SkipDir || err == fs.SkipAll {
 		return nil
@@ -52,7 +56,7 @@ func _walkDir(fls afs.Filesystem, path string, d fs.DirEntry, walkDirFn fs.WalkD
 	}
 
 	entries := utils.MapSlice(dirs, func(i fs.FileInfo) fs.DirEntry {
-		return &statDirEntry{i}
+		return &StatDirEntry{i}
 	})
 
 	for _, d1 := range entries {
