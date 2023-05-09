@@ -1343,6 +1343,7 @@ switch_:
 			break
 		}
 
+		//we check the parent to know if the identifier refers to a variable
 		switch p := parent.(type) {
 		case *parse.CallExpression:
 			if p.CommandLikeSyntax && !node.IncludedIn(p.Callee) {
@@ -1377,7 +1378,18 @@ switch_:
 		case *parse.ForStatement, *parse.WalkStatement, *parse.ObjectLiteral, *parse.FunctionDeclaration, *parse.MemberExpression, *parse.QuantityLiteral, *parse.RateLiteral,
 			*parse.KeyListExpression:
 			break switch_
-		default:
+		case *parse.XMLOpeningElement:
+			if node == p.Name {
+				break switch_
+			}
+		case *parse.XMLClosingElement:
+			if node == p.Name {
+				break switch_
+			}
+		case *parse.XMLAttribute:
+			if node == p.Name {
+				break switch_
+			}
 		}
 
 		if !c.varExists(node.Name, ancestorChain) {

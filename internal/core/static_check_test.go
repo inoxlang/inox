@@ -2127,6 +2127,29 @@ func TestCheck(t *testing.T) {
 		})
 
 	})
+
+	t.Run("xml element", func(t *testing.T) {
+
+		t.Run("no variable used in elements", func(t *testing.T) {
+			n, src := parseCode(`html<div a=1></div>`)
+
+			globals := GlobalVariablesFromMap(map[string]Value{"html": Nil})
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, GlobalConsts: globals}))
+		})
+
+		t.Run("variable used in elements", func(t *testing.T) {
+			n, src := parseCode(`html<div a=b></div>`)
+
+			globals := GlobalVariablesFromMap(map[string]Value{"html": Nil})
+			variable := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[3]
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, GlobalConsts: globals})
+			expectedErr := combineErrors(
+				makeError(variable, src, fmtVarIsNotDeclared("b")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+	})
 }
 
 // testMutableGoValue implements the GoValue interface
