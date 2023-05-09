@@ -207,6 +207,7 @@ const (
 	PATTERN_GROUP_NAME
 	QUERY_PARAM_KEY_EQUAL
 	QUERY_PARAM_SLICE
+	XML_TEXT_SLICE
 )
 
 type TokenMeta uint16
@@ -552,6 +553,7 @@ var tokenTypenames = [...]string{
 	QUERY_PARAM_KEY_EQUAL:                "QUERY_PARAM_KEY_EQUAL",
 	QUERY_PARAM_SEP:                      "QUERY_PARAM_SEP",
 	QUERY_PARAM_SLICE:                    "QUERY_PARAM_SLICE",
+	XML_TEXT_SLICE:                       "XML_TEXT_SLICE",
 }
 
 func (t TokenType) String() string {
@@ -857,6 +859,9 @@ func GetTokens(node Node, addMeta bool) []Token {
 			raw = n.Raw
 		case *Comment:
 			tokenType = COMMENT
+			raw = n.Raw
+		case *XMLText:
+			tokenType = XML_TEXT_SLICE
 			raw = n.Raw
 		}
 

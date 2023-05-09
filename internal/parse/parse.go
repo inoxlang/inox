@@ -7216,8 +7216,9 @@ func (p *parser) parseXMLChildren(valuelessTokens *[]Token) ([]Node, *ParsingErr
 	for p.i < p.len && (p.s[p.i] != '<' || (p.i < p.len-1 && p.s[p.i+1] != '/')) {
 
 		//interpolation
-		if p.s[p.i] == '{' {
-			*valuelessTokens = append(*valuelessTokens, Token{Type: OPENING_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
+		switch {
+		case p.s[p.i] == '{':
+			*valuelessTokens = append(*valuelessTokens, Token{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 
 			// add previous slice
 			raw := string(p.s[childStart:p.i])
@@ -7235,8 +7236,8 @@ func (p *parser) parseXMLChildren(valuelessTokens *[]Token) ([]Node, *ParsingErr
 			inInterpolation = true
 			p.i++
 			interpolationStart = p.i
-		} else if inInterpolation && p.s[p.i] == '}' { //end of interpolation
-			*valuelessTokens = append(*valuelessTokens, Token{Type: CLOSING_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
+		case inInterpolation && p.s[p.i] == '}': //end of interpolation
+			*valuelessTokens = append(*valuelessTokens, Token{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 			interpolationExclEnd := p.i
 			inInterpolation = false
 			p.i++
@@ -7270,7 +7271,11 @@ func (p *parser) parseXMLChildren(valuelessTokens *[]Token) ([]Node, *ParsingErr
 				Expr: expr,
 			}
 			children = append(children, interpolationNode)
-		} else {
+		case p.s[p.i] == '<': //child element
+			child := p.parseXMLElement(p.i)
+			children = append(children, child)
+			childStart = p.i
+		default:
 			p.i++
 		}
 	}

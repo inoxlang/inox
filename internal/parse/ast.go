@@ -2520,6 +2520,8 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		walk(n.Value, node, ancestorChain, fn, afterFn)
 	case *XMLClosingElement:
 		walk(n.Name, node, ancestorChain, fn, afterFn)
+	case *XMLInterpolation:
+		walk(n.Expr, node, ancestorChain, fn, afterFn)
 	}
 
 	if afterFn != nil {
