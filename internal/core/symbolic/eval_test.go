@@ -4730,6 +4730,119 @@ func TestSymbolicEval(t *testing.T) {
 		})
 	})
 
+	t.Run("XML expression", func(t *testing.T) {
+
+		t.Run("namespace not a record", func(t *testing.T) {
+			n, state := makeStateAndChunk(`html<div></div>`)
+			state.setGlobal("html", Nil, GlobalConst)
+			res, err := symbolicEval(n, state)
+
+			namespaceIdent := n.Statements[0].(*parse.XMLExpression).Namespace
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(namespaceIdent, state, NAMESPACE_APPLIED_TO_XML_ELEMENT_SHOUD_BE_A_RECORD),
+			}, state.errors)
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("namespace has not the property for the factory", func(t *testing.T) {
+			n, state := makeStateAndChunk(`html<div></div>`)
+			state.setGlobal("html", NewRecord(map[string]SymbolicValue{}), GlobalConst)
+			res, err := symbolicEval(n, state)
+
+			namespaceIdent := n.Statements[0].(*parse.XMLExpression).Namespace
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(namespaceIdent, state, MISSING_FACTORY_IN_NAMESPACE_APPLIED_TO_XML_ELEMENT),
+			}, state.errors)
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("namespace's factory has not the right type", func(t *testing.T) {
+			n, state := makeStateAndChunk(`html<div></div>`)
+			state.setGlobal("html", NewRecord(map[string]SymbolicValue{
+				FROM_XML_FACTORY_NAME: Nil,
+			}), GlobalConst)
+			res, err := symbolicEval(n, state)
+
+			namespaceIdent := n.Statements[0].(*parse.XMLExpression).Namespace
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(namespaceIdent, state, FROM_XML_FACTORY_IS_NOT_A_GO_FUNCTION),
+			}, state.errors)
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("namespace's factory has not the right signature", func(t *testing.T) {
+			n, state := makeStateAndChunk(`html<div></div>`)
+			state.setGlobal("html", NewRecord(map[string]SymbolicValue{
+				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context) *Object {
+					return NewEmptyObject()
+				}),
+			}), GlobalConst)
+			res, err := symbolicEval(n, state)
+
+			namespaceIdent := n.Statements[0].(*parse.XMLExpression).Namespace
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(namespaceIdent, state, FROM_XML_FACTORY_SHOULD_HAVE_AT_LEAST_ONE_NON_VARIADIC_PARAM),
+			}, state.errors)
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("namespace's factory is valid", func(t *testing.T) {
+			n, state := makeStateAndChunk(`html<div></div>`)
+			state.setGlobal("html", NewRecord(map[string]SymbolicValue{
+				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *XMLElement) *Identifier {
+					return &Identifier{name: elem.name}
+				}),
+			}), GlobalConst)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, &Identifier{name: "div"}, res)
+		})
+
+		t.Run("interpolation", func(t *testing.T) {
+			n, state := makeStateAndChunk(`html<div>{1}</div>`)
+			state.setGlobal("html", NewRecord(map[string]SymbolicValue{
+				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *XMLElement) *XMLElement {
+					return elem
+				}),
+			}), GlobalConst)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, &XMLElement{
+				name:     "div",
+				children: []SymbolicValue{ANY_STR, ANY_INT, ANY_STR},
+			}, res)
+		})
+
+		t.Run("attributes", func(t *testing.T) {
+			n, state := makeStateAndChunk(`a = "a"; return html<div a=a></div>`)
+			state.setGlobal("html", NewRecord(map[string]SymbolicValue{
+				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *XMLElement) *XMLElement {
+					return elem
+				}),
+			}), GlobalConst)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, &XMLElement{
+				name:       "div",
+				attributes: map[string]SymbolicValue{"a": ANY_STR},
+				children:   []SymbolicValue{ANY_STR},
+			}, res)
+		})
+	})
 }
 
 func TestWidenValues(t *testing.T) {

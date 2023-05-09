@@ -2928,6 +2928,90 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		return &CheckedString{}, nil
 	case *parse.CssSelectorExpression:
 		return &String{}, nil
+	case *parse.XMLExpression:
+		namespace, err := symbolicEval(n.Namespace, state)
+		if err != nil {
+			return nil, err
+		}
+
+		elem, err := symbolicEval(n.Element, state)
+		if err != nil {
+			return nil, err
+		}
+
+		record, ok := namespace.(*Record)
+		if !ok {
+			state.addError(makeSymbolicEvalError(n.Namespace, state, NAMESPACE_APPLIED_TO_XML_ELEMENT_SHOUD_BE_A_RECORD))
+			return ANY, nil
+		} else {
+			if !record.hasProperty(FROM_XML_FACTORY_NAME) {
+				state.addError(makeSymbolicEvalError(n.Namespace, state, MISSING_FACTORY_IN_NAMESPACE_APPLIED_TO_XML_ELEMENT))
+				return ANY, nil
+			}
+			factory := record.Prop(FROM_XML_FACTORY_NAME)
+			goFn, ok := factory.(*GoFunction)
+			if !ok {
+				state.addError(makeSymbolicEvalError(n.Namespace, state, FROM_XML_FACTORY_IS_NOT_A_GO_FUNCTION))
+				return ANY, nil
+			}
+
+			if goFn.IsShared() {
+				state.addError(makeSymbolicEvalError(n.Namespace, state, FROM_XML_FACTORY_SHOULD_NOT_BE_A_SHARED_FUNCTION))
+				return ANY, nil
+			}
+
+			utils.PanicIfErr(goFn.LoadSignatureData())
+
+			if len(goFn.NonVariadicParametersExceptCtx()) == 0 {
+				state.addError(makeSymbolicEvalError(n.Namespace, state, FROM_XML_FACTORY_SHOULD_HAVE_AT_LEAST_ONE_NON_VARIADIC_PARAM))
+				return ANY, nil
+			}
+
+			result, _, _, err := goFn.Call(goFunctionCallInput{
+				symbolicArgs:      []SymbolicValue{elem},
+				nonSpreadArgCount: 1,
+				hasSpreadArg:      false,
+				state:             state,
+				isExt:             false,
+				must:              false,
+				callLikeNode:      n,
+			})
+
+			return result, err
+		}
+	case *parse.XMLElement:
+		var children []SymbolicValue
+		name := n.Opening.Name.(*parse.IdentifierLiteral).Name
+		var attrs map[string]SymbolicValue
+		if len(n.Opening.Attributes) > 0 {
+			attrs = make(map[string]SymbolicValue, len(n.Opening.Attributes))
+
+			for _, attr := range n.Opening.Attributes {
+				name := attr.Name.(*parse.IdentifierLiteral).Name
+				val, err := symbolicEval(attr.Value, state)
+				if err != nil {
+					return nil, err
+				}
+				attrs[name] = val
+			}
+		}
+
+		for _, child := range n.Children {
+			val, err := symbolicEval(child, state)
+			if err != nil {
+				return nil, err
+			}
+			children = append(children, val)
+		}
+		return NewXmlElement(name, attrs, children), nil
+	case *parse.XMLInterpolation:
+		val, err := symbolicEval(n.Expr, state)
+		if err != nil {
+			return nil, err
+		}
+		return val, err
+	case *parse.XMLText:
+		return ANY_STR, nil
 	case *parse.UnknownNode:
 		return ANY, nil
 	default:
@@ -3070,7 +3154,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			extState:          extState,
 			isExt:             isSharedFunction,
 			must:              must,
-			callNode:          callNode,
+			callLikeNode:      callNode,
 		})
 
 		state.consumeSymbolicGoFunctionErrors(func(msg string) {

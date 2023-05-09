@@ -37,6 +37,12 @@ const (
 	SPREAD_ELEMENT_IS_NOT_ITERABLE            = "spread element is not iterabe"
 
 	NESTED_RECURSIVE_FUNCTION_DECLARATION = "nested recursive function declarations are not allowed"
+
+	NAMESPACE_APPLIED_TO_XML_ELEMENT_SHOUD_BE_A_RECORD           = "namespace applied to xml element should be a record"
+	MISSING_FACTORY_IN_NAMESPACE_APPLIED_TO_XML_ELEMENT          = "namespace applied to xml has not a " + FROM_XML_FACTORY_NAME + " property"
+	FROM_XML_FACTORY_IS_NOT_A_GO_FUNCTION                        = "factory ." + FROM_XML_FACTORY_NAME + " is not a Go function"
+	FROM_XML_FACTORY_SHOULD_NOT_BE_A_SHARED_FUNCTION             = "factory ." + FROM_XML_FACTORY_NAME + " should not be a shared function"
+	FROM_XML_FACTORY_SHOULD_HAVE_AT_LEAST_ONE_NON_VARIADIC_PARAM = "factory ." + FROM_XML_FACTORY_NAME + " should have at least one non variadic parameter"
 )
 
 var (

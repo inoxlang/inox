@@ -43,6 +43,10 @@ func init() {
 		core.RegisterSymbolicGoFunction(fn, specifcTagFactory)
 	}
 
+	core.RegisterSymbolicGoFunction(CreateHTMLNodeFromXMLElement, func(ctx *symbolic.Context, elem *symbolic.XMLElement) *_html_symbolic.HTMLNode {
+		return _html_symbolic.NewHTMLNode()
+	})
+
 	help.RegisterHelpValues(map[string]any{
 		"html.h1": _h1,
 		"html.h2": _h2,
@@ -53,22 +57,24 @@ func init() {
 
 func NewHTMLNamespace() *core.Record {
 	return core.NewRecordFromMap(core.ValMap{
-		"find": core.ValOf(_html_find),
+		"find": core.WrapGoFunction(_html_find),
 
-		"Node": core.ValOf(NewNode),
-		"a":    core.ValOf(_a),
-		"div":  core.ValOf(_div),
-		"span": core.ValOf(_span),
-		"ul":   core.ValOf(_ul),
-		"ol":   core.ValOf(_ol),
-		"li":   core.ValOf(_li),
-		"svg":  core.ValOf(_svg),
-		"h1":   core.ValOf(_h1),
-		"h2":   core.ValOf(_h2),
-		"h3":   core.ValOf(_h3),
-		"h4":   core.ValOf(_h4),
+		"Node": core.WrapGoFunction(NewNode),
+		"a":    core.WrapGoFunction(_a),
+		"div":  core.WrapGoFunction(_div),
+		"span": core.WrapGoFunction(_span),
+		"ul":   core.WrapGoFunction(_ul),
+		"ol":   core.WrapGoFunction(_ol),
+		"li":   core.WrapGoFunction(_li),
+		"svg":  core.WrapGoFunction(_svg),
+		"h1":   core.WrapGoFunction(_h1),
+		"h2":   core.WrapGoFunction(_h2),
+		"h3":   core.WrapGoFunction(_h3),
+		"h4":   core.WrapGoFunction(_h4),
 
-		"render":     core.ValOf(Render),
-		"str_render": core.ValOf(RenderToString),
+		"render":     core.WrapGoFunction(Render),
+		"str_render": core.WrapGoFunction(RenderToString),
+
+		symbolic.FROM_XML_FACTORY_NAME: core.WrapGoFunction(CreateHTMLNodeFromXMLElement),
 	})
 }

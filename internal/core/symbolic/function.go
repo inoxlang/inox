@@ -429,12 +429,12 @@ type goFunctionCallInput struct {
 	hasSpreadArg      bool
 	state, extState   *State
 	isExt, must       bool
-	callNode          *parse.CallExpression
+	callLikeNode      parse.Node
 }
 
 func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicValue, multipleResults bool, enoughArgs bool, finalErr error) {
 	if goFunc.fn == nil {
-		input.state.addError(makeSymbolicEvalError(input.callNode, input.state, CANNOT_CALL_GO_FUNC_NO_CONCRETE_VALUE))
+		input.state.addError(makeSymbolicEvalError(input.callLikeNode, input.state, CANNOT_CALL_GO_FUNC_NO_CONCRETE_VALUE))
 		return ANY, false, false, nil
 	}
 
@@ -445,11 +445,11 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 	extState := input.extState
 	isExt := input.isExt
 	must := input.must
-	callNode := input.callNode
+	callLikeNode := input.callLikeNode
 	enoughArgs = true
 
 	if err := goFunc.LoadSignatureData(); err != nil {
-		err = makeSymbolicEvalError(callNode, state, err.Error())
+		err = makeSymbolicEvalError(callLikeNode, state, err.Error())
 		return nil, false, false, err
 	}
 
@@ -472,12 +472,12 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 
 	if goFunc.isVariadic {
 		if nonSpreadArgCount < inoxLandNonVariadicParamCount {
-			state.addError(makeSymbolicEvalError(callNode, state, fmtInvalidNumberOfNonSpreadArgs(nonSpreadArgCount, inoxLandNonVariadicParamCount)))
+			state.addError(makeSymbolicEvalError(callLikeNode, state, fmtInvalidNumberOfNonSpreadArgs(nonSpreadArgCount, inoxLandNonVariadicParamCount)))
 		}
 	} else if hasSpreadArg {
-		state.addError(makeSymbolicEvalError(callNode, state, SPREAD_ARGS_NOT_SUPPORTED_FOR_NON_VARIADIC_FUNCS))
+		state.addError(makeSymbolicEvalError(callLikeNode, state, SPREAD_ARGS_NOT_SUPPORTED_FOR_NON_VARIADIC_FUNCS))
 	} else if len(args) != inoxLandNonVariadicParamCount {
-		state.addError(makeSymbolicEvalError(callNode, state, fmtInvalidNumberOfArgs(nonSpreadArgCount, inoxLandNonVariadicParamCount)))
+		state.addError(makeSymbolicEvalError(callLikeNode, state, fmtInvalidNumberOfArgs(nonSpreadArgCount, inoxLandNonVariadicParamCount)))
 		// remove additional arguments
 
 		if len(args) > inoxLandNonVariadicParamCount {
@@ -498,6 +498,14 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 		param := goFunc.nonVariadicParameters[paramIndex]
 
 		// check argument against the parameter's type
+		var argumentNodes []parse.Node
+
+		switch c := callLikeNode.(type) {
+		case *parse.CallExpression:
+			argumentNodes = c.Arguments
+		case *parse.XMLExpression:
+			argumentNodes = []parse.Node{c.Element}
+		}
 
 		var arg SymbolicValue
 		if paramIndex < len(args) {
@@ -507,7 +515,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 			}
 
 			arg = args[paramIndex].(SymbolicValue)
-			argNode := callNode.Arguments[position]
+			argNode := argumentNodes[position]
 
 			// if extVal, ok := arg.(*SharedValue); ok {
 			// 	arg = extVal.value
@@ -559,7 +567,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 				if goFunc.isfirstArgCtx {
 					position -= 1
 				}
-				state.addError(makeSymbolicEvalError(callNode, state, FmtInvalidArg(position, arg.(SymbolicValue), goFunc.variadicElem)))
+				state.addError(makeSymbolicEvalError(callLikeNode, state, FmtInvalidArg(position, arg.(SymbolicValue), goFunc.variadicElem)))
 				variadicArgs[i] = goFunc.variadicElem
 			} else {
 				variadicArgs[i] = widenedArg
@@ -620,7 +628,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 		if isExt {
 			shared, err := ShareOrClone(symbolicResultValues[0], extState)
 			if err != nil {
-				state.addError(makeSymbolicEvalError(callNode, state, err.Error()))
+				state.addError(makeSymbolicEvalError(callLikeNode, state, err.Error()))
 				shared = ANY
 			}
 			return shared, false, enoughArgs, nil
@@ -635,7 +643,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 		for _, resultValue := range symbolicResultValues {
 			shared, err := ShareOrClone(resultValue, extState)
 			if err != nil {
-				state.addError(makeSymbolicEvalError(callNode, state, err.Error()))
+				state.addError(makeSymbolicEvalError(callLikeNode, state, err.Error()))
 				shared = ANY
 			}
 

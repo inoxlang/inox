@@ -544,3 +544,7 @@ func (*Secret) IsMutable() bool {
 func (*SecretPattern) IsMutable() bool {
 	return false
 }
+
+func (*XMLElement) IsMutable() bool {
+	return false
+}
