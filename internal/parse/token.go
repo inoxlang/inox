@@ -350,6 +350,8 @@ var tokenStrings = [...]string{
 	QUERY_PARAM_SEP:                "&",
 	QUESTION_MARK:                  "?",
 	BACKQUOTE:                      "`",
+	STR_INTERP_OPENING_BRACKETS:    "{{",
+	STR_INTERP_CLOSING_BRACKETS:    "}}",
 	NEWLINE:                        "\n",
 
 	// WITH VALUE
