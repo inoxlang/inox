@@ -7064,7 +7064,6 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 
 	//attributes
 	for p.i < p.len && p.s[p.i] != '>' {
-		p.eatSpace()
 		name, isMissingExpr := p.parseExpression()
 
 		if isMissingExpr {
@@ -7112,6 +7111,8 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 				Name: name,
 			})
 		}
+
+		p.eatSpace()
 	}
 
 	if p.i >= p.len || p.s[p.i] != '>' {

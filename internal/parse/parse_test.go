@@ -17731,6 +17731,78 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
+		t.Run("attribute with value, follwoed by space", func(t *testing.T) {
+			n := MustParseChunk(`h<div a="b" ></div>`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 19}, nil, nil},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 19}, nil, nil},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 19}, nil, nil},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{
+									NodeSpan{1, 13},
+									nil,
+									[]Token{
+										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
+										{Type: GREATER_THAN, Span: NodeSpan{12, 13}},
+									},
+								},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, nil},
+									Name:     "div",
+								},
+								Attributes: []*XMLAttribute{
+									{
+										NodeBase: NodeBase{
+											NodeSpan{6, 11},
+											nil,
+											[]Token{{Type: EQUAL, Span: NodeSpan{7, 8}}},
+										},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{6, 7}, nil, nil},
+											Name:     "a",
+										},
+										Value: &QuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{8, 11}, nil, nil},
+											Raw:      `"b"`,
+											Value:    "b",
+										},
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{13, 13}, nil, nil},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{
+									NodeSpan{13, 19},
+									nil,
+									[]Token{
+										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{13, 15}},
+										{Type: GREATER_THAN, Span: NodeSpan{18, 19}},
+									},
+								},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{15, 18}, nil, nil},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("attribute with invalid name with value", func(t *testing.T) {
 			n, err := ParseChunk(`h<div "a"="b"></div>`, "")
 			assert.Error(t, err)
