@@ -341,6 +341,16 @@ const (
 	CAPTURE_LIST_SHOULD_ONLY_CONTAIN_IDENTIFIERS          = "capture list should only contain identifiers"
 	VARIADIC_PARAM_IS_UNIQUE_AND_SHOULD_BE_LAST_PARAM     = "the variadic parameter should be unique and should be the last parameter"
 	STMTS_SHOULD_BE_SEPARATED_BY                          = "statements should be separated by a space, newline or ';'"
+
+	//xml
+	UNTERMINATED_XML_EXPRESSION_MISSING_TOP_ELEM_NAME  = "unterminated xml expression: missing name of top element"
+	UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING       = "unterminated opening xml tag: missing closing '>' after name"
+	UNTERMINATED_XML_INTERP                            = "unterminated xml interpolation"
+	UNTERMINATED_XML_ELEMENT_MISSING_CLOSING_TAG       = "unterminated xml element: missing closing tag </..."
+	UNTERMINATED_CLOSING_XML_TAG_MISSING_CLOSING_DELIM = "unterminated closing xml tag: missing closing '>' after name"
+	EMPTY_XML_INTERP                                   = "xml interpolation should not be empty"
+	INVALID_XML_INTERP                                 = "invalid xml interpolation"
+	INVALID_TAG_NAME                                   = "invalid tag name"
 )
 
 func fmtInvalidRegexLiteral(err string) string {
@@ -582,4 +592,8 @@ func fmtInvalidSpreadElemExprShouldBeExtrExprNot(expr Node) string {
 
 func fmtInvalidAssignmentInvalidLHS(expr Node) string {
 	return fmt.Sprintf("invalid assignment: cannot assign a(n) %T", expr)
+}
+
+func fmtExpectedClosingTag(name string) string {
+	return fmt.Sprintf("expected closing '%s' tag", name)
 }

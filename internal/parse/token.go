@@ -114,6 +114,7 @@ const (
 	LESS_THAN_DOT
 	LESS_OR_EQUAL
 	LESS_OR_EQUAL_DOT
+	END_TAG_OPEN_DELIMITER
 	OPENING_BRACKET
 	CLOSING_BRACKET
 	OPENING_CURLY_BRACKET
@@ -156,6 +157,8 @@ const (
 	BACKQUOTE
 	STR_INTERP_OPENING_BRACKETS
 	STR_INTERP_CLOSING_BRACKETS
+	XML_INTERP_OPENING_BRACKET
+	XML_INTERP_CLOSING_BRACKET
 	NEWLINE
 
 	//WITH VALUE
@@ -291,6 +294,7 @@ var tokenStrings = [...]string{
 	KEYOF:                          "keyof",
 	NOT_MATCH:                      "not-match",
 	SUBSTROF:                       "substrof",
+	END_TAG_OPEN_DELIMITER:         "</",
 	OPENING_BRACKET:                "[",
 	CLOSING_BRACKET:                "]",
 	OPENING_CURLY_BRACKET:          "{",
@@ -346,8 +350,6 @@ var tokenStrings = [...]string{
 	QUERY_PARAM_SEP:                "&",
 	QUESTION_MARK:                  "?",
 	BACKQUOTE:                      "`",
-	STR_INTERP_OPENING_BRACKETS:    "{{",
-	STR_INTERP_CLOSING_BRACKETS:    "}}",
 	NEWLINE:                        "\n",
 
 	// WITH VALUE
@@ -459,6 +461,7 @@ var tokenTypenames = [...]string{
 	LESS_OR_EQUAL:                  "LESS_OR_EQUAL",
 	LESS_OR_EQUAL_DOT:              "LESS_OR_EQUAL_DOT",
 	OPENING_BRACKET:                "OPENING_BRACKET",
+	END_TAG_OPEN_DELIMITER:         "END_TAG_OPEN_DELIMITER",
 	CLOSING_BRACKET:                "CLOSING_BRACKET",
 	OPENING_CURLY_BRACKET:          "OPENING_CURLY_BRACKET",
 	CLOSING_CURLY_BRACKET:          "CLOSING_CURLY_BRACKET",

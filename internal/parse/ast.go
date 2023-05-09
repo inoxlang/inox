@@ -1971,6 +1971,48 @@ type CssAttributeSelector struct {
 	Value         Node
 }
 
+type XMLExpression struct {
+	NodeBase
+	Namespace Node //NOT an XML namespace
+	Element   *XMLElement
+}
+
+type XMLElement struct {
+	NodeBase
+	Opening  *XMLOpeningElement
+	Children []Node
+	Closing  *XMLClosingElement
+}
+
+type XMLOpeningElement struct {
+	NodeBase
+	Name       Node
+	Attributes []XMLAttribute
+	SelfClosed bool
+}
+
+type XMLClosingElement struct {
+	NodeBase
+	Name Node
+}
+
+type XMLAttribute struct {
+	NodeBase
+	Name  *Node
+	Value Node
+}
+
+type XMLText struct {
+	NodeBase
+	Raw   string
+	Value string
+}
+
+type XMLInterpolation struct {
+	NodeBase
+	Expr Node
+}
+
 func NodeIsSimpleValueLiteral(node Node) bool {
 	_, ok := node.(SimpleValueLiteral)
 	return ok

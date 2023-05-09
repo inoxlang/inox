@@ -5542,6 +5542,10 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 			return identStartingExpr, false
 		}
 
+		if p.s[p.i] == '<' && NodeIs(identStartingExpr, (*IdentifierLiteral)(nil)) {
+			return p.parseXMLExpression(identStartingExpr.(*IdentifierLiteral)), false
+		}
+
 		call := p.tryParseCall(identStartingExpr, name)
 		if call != nil {
 			identStartingExpr = call
@@ -7010,6 +7014,245 @@ func (p *parser) parseSendValueExpression(ident *IdentifierLiteral) *SendValueEx
 		Value:    value,
 		Receiver: receiver,
 	}
+}
+
+func (p *parser) parseXMLExpression(namespaceIdent *IdentifierLiteral) *XMLExpression {
+	start := namespaceIdent.Span.Start
+
+	//we do not increment because we keep the '<' for parsing the top element
+
+	if p.i+1 >= p.len || !isAlpha(p.s[p.i+1]) {
+		tokens := []Token{{Type: LESS_THAN, Span: NodeSpan{p.i, p.i + 1}}}
+
+		return &XMLExpression{
+			NodeBase: NodeBase{
+				NodeSpan{start, p.i},
+				&ParsingError{UnspecifiedParsingError, UNTERMINATED_XML_EXPRESSION_MISSING_TOP_ELEM_NAME},
+				tokens,
+			},
+		}
+	}
+
+	topElem := p.parseXMLElement(p.i)
+	return &XMLExpression{
+		NodeBase:  NodeBase{Span: NodeSpan{start, p.i}},
+		Namespace: namespaceIdent,
+		Element:   topElem,
+	}
+}
+
+func (p *parser) parseXMLElement(start int32) *XMLElement {
+	var parsingErr *ParsingError
+	openingElemValuelessTokens := []Token{{Type: LESS_THAN, Span: NodeSpan{start, start + 1}}}
+	p.i++
+	openingName := p.parseIdentStartingExpression()
+
+	openingIdent, ok := openingName.(*IdentifierLiteral)
+	if !ok {
+		parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_TAG_NAME}
+	}
+
+	p.eatSpace()
+
+	openingElement := &XMLOpeningElement{
+		NodeBase: NodeBase{
+			Span:            NodeSpan{start, p.i},
+			ValuelessTokens: openingElemValuelessTokens,
+		},
+		Name: openingIdent,
+	}
+
+	if p.i >= p.len || p.s[p.i] != '>' {
+		openingElement.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING}
+
+		return &XMLElement{
+			NodeBase: NodeBase{
+				NodeSpan{start, p.i},
+				parsingErr,
+				openingElemValuelessTokens,
+			},
+			Opening: openingElement,
+		}
+	}
+
+	openingElemValuelessTokens = append(openingElemValuelessTokens, Token{Type: GREATER_THAN, Span: NodeSpan{p.i, p.i + 1}})
+	p.i++
+	openingElement.Span.End = p.i
+	openingElement.ValuelessTokens = openingElemValuelessTokens
+
+	//children
+
+	var valuelessTokens []Token
+
+	children, err := p.parseXMLChildren(&valuelessTokens)
+	parsingErr = err
+
+	if p.i >= p.len || p.s[p.i] != '<' {
+		return &XMLElement{
+			NodeBase: NodeBase{
+				NodeSpan{start, p.i},
+				&ParsingError{UnspecifiedParsingError, UNTERMINATED_XML_ELEMENT_MISSING_CLOSING_TAG},
+				valuelessTokens,
+			},
+			Opening:  openingElement,
+			Children: children,
+		}
+	}
+
+	closingElemStart := p.i
+	//closing element
+	closingElemValuelessTokens := []Token{{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{p.i, p.i + 2}}}
+	p.i += 2
+
+	closingName, _ := p.parseExpression()
+
+	closingElement := &XMLClosingElement{
+		NodeBase: NodeBase{
+			Span:            NodeSpan{closingElemStart, p.i},
+			ValuelessTokens: closingElemValuelessTokens,
+		},
+		Name: closingName,
+	}
+
+	if closing, ok := closingName.(*IdentifierLiteral); !ok {
+		closingElement.Err = &ParsingError{UnspecifiedParsingError, INVALID_TAG_NAME}
+	} else if openingIdent != nil && closing.Name != openingIdent.Name {
+		closingElement.Err = &ParsingError{UnspecifiedParsingError, fmtExpectedClosingTag(openingIdent.Name)}
+	}
+
+	if p.i >= p.len || p.s[p.i] != '>' {
+		if parsingErr == nil {
+			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_CLOSING_XML_TAG_MISSING_CLOSING_DELIM}
+		}
+
+		return &XMLElement{
+			NodeBase: NodeBase{
+				NodeSpan{start, p.i},
+				parsingErr,
+				openingElemValuelessTokens,
+			},
+			Opening:  openingElement,
+			Closing:  closingElement,
+			Children: children,
+		}
+	}
+
+	closingElemValuelessTokens = append(closingElemValuelessTokens, Token{Type: GREATER_THAN, Span: NodeSpan{p.i, p.i + 1}})
+	p.i++
+	closingElement.Span.End = p.i
+	closingElement.ValuelessTokens = closingElemValuelessTokens
+
+	return &XMLElement{
+		NodeBase: NodeBase{
+			NodeSpan{start, p.i},
+			parsingErr,
+			valuelessTokens,
+		},
+		Opening:  openingElement,
+		Closing:  closingElement,
+		Children: children,
+	}
+}
+
+func (p *parser) parseXMLChildren(valuelessTokens *[]Token) ([]Node, *ParsingError) {
+	inInterpolation := false
+	interpolationStart := int32(-1)
+	children := make([]Node, 0)
+	childStart := p.i
+
+	var parsingErr *ParsingError
+
+	for p.i < p.len && (p.s[p.i] != '<' || (p.i < p.len-1 && p.s[p.i+1] != '/')) {
+
+		//interpolation
+		if p.s[p.i] == '{' {
+			*valuelessTokens = append(*valuelessTokens, Token{Type: OPENING_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
+
+			// add previous slice
+			raw := string(p.s[childStart:p.i])
+			value, sliceErr := p.getValueOfMultilineStringSliceOrLiteral([]byte(raw), false)
+			children = append(children, &XMLText{
+				NodeBase: NodeBase{
+					NodeSpan{childStart, p.i},
+					sliceErr,
+					nil,
+				},
+				Raw:   raw,
+				Value: value,
+			})
+
+			inInterpolation = true
+			p.i++
+			interpolationStart = p.i
+		} else if inInterpolation && p.s[p.i] == '}' { //end of interpolation
+			*valuelessTokens = append(*valuelessTokens, Token{Type: CLOSING_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
+			interpolationExclEnd := p.i
+			inInterpolation = false
+			p.i++
+			childStart = p.i
+
+			var interpParsingErr *ParsingError
+			var expr Node
+
+			interpolation := p.s[interpolationStart:interpolationExclEnd]
+
+			if strings.TrimSpace(string(interpolation)) == "" {
+				interpParsingErr = &ParsingError{UnspecifiedParsingError, EMPTY_XML_INTERP}
+			} else {
+				e, ok := ParseExpression(string(interpolation))
+				if !ok {
+					interpParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_XML_INTERP}
+				} else {
+					expr = e
+					shiftNodeSpans(expr, interpolationStart)
+				}
+			}
+
+			var interpTokens []Token
+
+			interpolationNode := &XMLInterpolation{
+				NodeBase: NodeBase{
+					NodeSpan{interpolationStart, interpolationExclEnd},
+					interpParsingErr,
+					interpTokens,
+				},
+				Expr: expr,
+			}
+			children = append(children, interpolationNode)
+		} else {
+			p.i++
+		}
+	}
+
+	if inInterpolation {
+		raw := string(p.s[interpolationStart:p.i])
+		value, _ := p.getValueOfMultilineStringSliceOrLiteral([]byte(raw), false)
+
+		children = append(children, &XMLText{
+			NodeBase: NodeBase{
+				NodeSpan{interpolationStart, p.i},
+				&ParsingError{UnspecifiedParsingError, UNTERMINATED_XML_INTERP},
+				nil,
+			},
+			Raw:   raw,
+			Value: value,
+		})
+	} else {
+		raw := string(p.s[childStart:p.i])
+		value, sliceErr := p.getValueOfMultilineStringSliceOrLiteral([]byte(raw), false)
+
+		children = append(children, &XMLText{
+			NodeBase: NodeBase{
+				NodeSpan{childStart, p.i},
+				sliceErr,
+				nil,
+			},
+			Raw:   raw,
+			Value: value,
+		})
+	}
+
+	return children, parsingErr
 }
 
 // tryParseCall tries to parse a call or return nil (calls with parsing errors are returned)
