@@ -9,6 +9,9 @@ import (
 
 var (
 	ANY_ITERABLE = &AnyIterable{}
+	_            = []Iterable{
+		(*List)(nil), (*Tuple)(nil), (*Object)(nil), (*Record)(nil), (*IntRange)(nil), (*RuneRange)(nil), Pattern(nil), (*EventSource)(nil),
+	}
 )
 
 // An Iterable represents a symbolic Iterable.
