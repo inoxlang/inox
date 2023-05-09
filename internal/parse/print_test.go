@@ -211,6 +211,8 @@ func TestPrint(t *testing.T) {
 		"fn(){}",
 		"fn(arg){}",
 		"fn(arg %int){}",
+		//xml
+		"h<div></div>",
 		//others
 		"@(1)",
 	}

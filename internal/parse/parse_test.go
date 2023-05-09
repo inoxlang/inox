@@ -17685,7 +17685,7 @@ func TestParse(t *testing.T) {
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, nil},
 									Name:     "div",
 								},
-								Attributes: []XMLAttribute{
+								Attributes: []*XMLAttribute{
 									{
 										NodeBase: NodeBase{
 											NodeSpan{6, 11},
@@ -17731,8 +17731,87 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
+		t.Run("attribute with invalid name with value", func(t *testing.T) {
+			n, err := ParseChunk(`h<div "a"="b"></div>`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 20}, nil, nil},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 20}, nil, nil},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 20}, nil, nil},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{
+									NodeSpan{1, 14},
+									nil,
+									[]Token{
+										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
+										{Type: GREATER_THAN, Span: NodeSpan{13, 14}},
+									},
+								},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, nil},
+									Name:     "div",
+								},
+								Attributes: []*XMLAttribute{
+									{
+										NodeBase: NodeBase{
+											NodeSpan{6, 13},
+											nil,
+											[]Token{{Type: EQUAL, Span: NodeSpan{9, 10}}},
+										},
+										Name: &QuotedStringLiteral{
+											NodeBase: NodeBase{
+												NodeSpan{6, 9},
+												&ParsingError{UnspecifiedParsingError, XML_ATTRIBUTE_NAME_SHOULD_BE_IDENT},
+												nil,
+											},
+											Raw:   `"a"`,
+											Value: "a",
+										},
+										Value: &QuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{10, 13}, nil, nil},
+											Raw:      `"b"`,
+											Value:    "b",
+										},
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{14, 14}, nil, nil},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{
+									NodeSpan{14, 20},
+									nil,
+									[]Token{
+										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{14, 16}},
+										{Type: GREATER_THAN, Span: NodeSpan{19, 20}},
+									},
+								},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{16, 19}, nil, nil},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("attribute with missing value after '='", func(t *testing.T) {
-			n := MustParseChunk(`h<div a=></div>`)
+			n, err := ParseChunk(`h<div a=></div>`, "")
+			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 15}, nil, nil},
 				Statements: []Node{
@@ -17757,7 +17836,82 @@ func TestParse(t *testing.T) {
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, nil},
 									Name:     "div",
 								},
-								Attributes: []XMLAttribute{
+								Attributes: []*XMLAttribute{
+									{
+										NodeBase: NodeBase{
+											NodeSpan{6, 8},
+											nil,
+											[]Token{{Type: EQUAL, Span: NodeSpan{7, 8}}},
+										},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{6, 7}, nil, nil},
+											Name:     "a",
+										},
+										Value: &MissingExpression{
+											NodeBase: NodeBase{
+												NodeSpan{8, 9},
+												&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("h<div a=></div>"), 8, true)},
+												nil,
+											},
+										},
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{9, 9}, nil, nil},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{
+									NodeSpan{9, 15},
+									nil,
+									[]Token{
+										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{9, 11}},
+										{Type: GREATER_THAN, Span: NodeSpan{14, 15}},
+									},
+								},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{11, 14}, nil, nil},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("attribute with missing value after '='", func(t *testing.T) {
+			n, err := ParseChunk(`h<div a=></div>`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 15}, nil, nil},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 15}, nil, nil},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 15}, nil, nil},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{
+									NodeSpan{1, 9},
+									nil,
+									[]Token{
+										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
+										{Type: GREATER_THAN, Span: NodeSpan{8, 9}},
+									},
+								},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, nil},
+									Name:     "div",
+								},
+								Attributes: []*XMLAttribute{
 									{
 										NodeBase: NodeBase{
 											NodeSpan{6, 8},
@@ -17831,7 +17985,7 @@ func TestParse(t *testing.T) {
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, nil},
 									Name:     "div",
 								},
-								Attributes: []XMLAttribute{
+								Attributes: []*XMLAttribute{
 									{
 										NodeBase: NodeBase{NodeSpan{6, 7}, nil, nil},
 										Name: &IdentifierLiteral{
@@ -17894,7 +18048,7 @@ func TestParse(t *testing.T) {
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, nil},
 									Name:     "div",
 								},
-								Attributes: []XMLAttribute{
+								Attributes: []*XMLAttribute{
 									{
 										NodeBase: NodeBase{
 											NodeSpan{6, 11},
@@ -18212,7 +18366,9 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 		t.Run("empty interpolation", func(t *testing.T) {
-			n := MustParseChunk("h<div>{}</div>")
+			n, err := ParseChunk("h<div>{}</div>", "")
+			assert.Error(t, err)
+
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, nil},
 				Statements: []Node{

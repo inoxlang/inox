@@ -1977,6 +1977,10 @@ type XMLExpression struct {
 	Element   *XMLElement
 }
 
+func (XMLExpression) Kind() NodeKind {
+	return Expr
+}
+
 type XMLElement struct {
 	NodeBase
 	Opening  *XMLOpeningElement
@@ -1987,7 +1991,7 @@ type XMLElement struct {
 type XMLOpeningElement struct {
 	NodeBase
 	Name       Node
-	Attributes []XMLAttribute
+	Attributes []*XMLAttribute
 	SelfClosed bool
 }
 
@@ -2497,6 +2501,25 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 	case *CssAttributeSelector:
 		walk(n.AttributeName, node, ancestorChain, fn, afterFn)
 		walk(n.Value, node, ancestorChain, fn, afterFn)
+	case *XMLExpression:
+		walk(n.Namespace, node, ancestorChain, fn, afterFn)
+		walk(n.Element, node, ancestorChain, fn, afterFn)
+	case *XMLElement:
+		walk(n.Opening, node, ancestorChain, fn, afterFn)
+		for _, child := range n.Children {
+			walk(child, node, ancestorChain, fn, afterFn)
+		}
+		walk(n.Closing, node, ancestorChain, fn, afterFn)
+	case *XMLOpeningElement:
+		walk(n.Name, node, ancestorChain, fn, afterFn)
+		for _, attr := range n.Attributes {
+			walk(attr, node, ancestorChain, fn, afterFn)
+		}
+	case *XMLAttribute:
+		walk(n.Name, node, ancestorChain, fn, afterFn)
+		walk(n.Value, node, ancestorChain, fn, afterFn)
+	case *XMLClosingElement:
+		walk(n.Name, node, ancestorChain, fn, afterFn)
 	}
 
 	if afterFn != nil {

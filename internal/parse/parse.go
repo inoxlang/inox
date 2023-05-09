@@ -7068,7 +7068,7 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 		name, isMissingExpr := p.parseExpression()
 
 		if isMissingExpr {
-			openingElement.Attributes = append(openingElement.Attributes, XMLAttribute{
+			openingElement.Attributes = append(openingElement.Attributes, &XMLAttribute{
 				NodeBase: NodeBase{
 					Span: name.Base().Span,
 				},
@@ -7091,7 +7091,7 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 
 			value, isMissingExpr := p.parseExpression()
 
-			openingElement.Attributes = append(openingElement.Attributes, XMLAttribute{
+			openingElement.Attributes = append(openingElement.Attributes, &XMLAttribute{
 				NodeBase: NodeBase{
 					Span:            NodeSpan{name.Base().Span.Start, p.i},
 					ValuelessTokens: []Token{token},
@@ -7105,7 +7105,7 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 			}
 		} else {
 
-			openingElement.Attributes = append(openingElement.Attributes, XMLAttribute{
+			openingElement.Attributes = append(openingElement.Attributes, &XMLAttribute{
 				NodeBase: NodeBase{
 					Span: NodeSpan{name.Base().Span.Start, p.i},
 				},
