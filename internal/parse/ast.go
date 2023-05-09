@@ -1998,7 +1998,7 @@ type XMLClosingElement struct {
 
 type XMLAttribute struct {
 	NodeBase
-	Name  *Node
+	Name  Node
 	Value Node
 }
 

@@ -350,6 +350,7 @@ const (
 	UNTERMINATED_CLOSING_XML_TAG_MISSING_CLOSING_DELIM = "unterminated closing xml tag: missing closing '>' after name"
 	EMPTY_XML_INTERP                                   = "xml interpolation should not be empty"
 	INVALID_XML_INTERP                                 = "invalid xml interpolation"
+	XML_ATTRIBUTE_NAME_SHOULD_BE_IDENT                 = "xml attribute's name should be an identifier"
 	INVALID_TAG_NAME                                   = "invalid tag name"
 )
 

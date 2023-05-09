@@ -7062,6 +7062,58 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 		Name: openingIdent,
 	}
 
+	//attributes
+	for p.i < p.len && p.s[p.i] != '>' {
+		p.eatSpace()
+		name, isMissingExpr := p.parseExpression()
+
+		if isMissingExpr {
+			openingElement.Attributes = append(openingElement.Attributes, XMLAttribute{
+				NodeBase: NodeBase{
+					Span: name.Base().Span,
+				},
+				Name: name,
+			})
+			break
+		}
+
+		switch name.(type) {
+		case *IdentifierLiteral:
+		default:
+			if name.Base().Err == nil {
+				name.BasePtr().Err = &ParsingError{UnspecifiedParsingError, XML_ATTRIBUTE_NAME_SHOULD_BE_IDENT}
+			}
+		}
+
+		if p.i < p.len && p.s[p.i] == '=' {
+			token := Token{Type: EQUAL, Span: NodeSpan{p.i, p.i + 1}}
+			p.i++
+
+			value, isMissingExpr := p.parseExpression()
+
+			openingElement.Attributes = append(openingElement.Attributes, XMLAttribute{
+				NodeBase: NodeBase{
+					Span:            NodeSpan{name.Base().Span.Start, p.i},
+					ValuelessTokens: []Token{token},
+				},
+				Name:  name,
+				Value: value,
+			})
+
+			if isMissingExpr {
+				break
+			}
+		} else {
+
+			openingElement.Attributes = append(openingElement.Attributes, XMLAttribute{
+				NodeBase: NodeBase{
+					Span: NodeSpan{name.Base().Span.Start, p.i},
+				},
+				Name: name,
+			})
+		}
+	}
+
 	if p.i >= p.len || p.s[p.i] != '>' {
 		openingElement.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING}
 
@@ -7081,7 +7133,6 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 	openingElement.ValuelessTokens = openingElemValuelessTokens
 
 	//children
-
 	var valuelessTokens []Token
 
 	children, err := p.parseXMLChildren(&valuelessTokens)
@@ -7099,8 +7150,8 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 		}
 	}
 
-	closingElemStart := p.i
 	//closing element
+	closingElemStart := p.i
 	closingElemValuelessTokens := []Token{{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{p.i, p.i + 2}}}
 	p.i += 2
 
