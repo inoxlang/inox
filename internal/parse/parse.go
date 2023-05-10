@@ -7214,7 +7214,7 @@ func (p *parser) parseXMLChildren(valuelessTokens *[]Token) ([]Node, *ParsingErr
 
 	var parsingErr *ParsingError
 
-	for p.i < p.len && (p.s[p.i] != '<' || (p.i < p.len-1 && p.s[p.i+1] != '/')) {
+	for p.i < p.len && (inInterpolation || (p.s[p.i] != '<' || (p.i < p.len-1 && p.s[p.i+1] != '/'))) {
 
 		//interpolation
 		switch {
@@ -7272,7 +7272,7 @@ func (p *parser) parseXMLChildren(valuelessTokens *[]Token) ([]Node, *ParsingErr
 				Expr: expr,
 			}
 			children = append(children, interpolationNode)
-		case p.s[p.i] == '<': //child element
+		case !inInterpolation && p.s[p.i] == '<': //child element
 
 			// add previous slice
 			raw := string(p.s[childStart:p.i])

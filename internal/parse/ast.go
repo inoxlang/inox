@@ -2041,6 +2041,13 @@ func shiftNodeSpans(node Node, offset int32) {
 	walk(node, nil, &ancestorChain, func(node, parent, scopeNode Node, ancestorChain []Node, _ bool) (TraversalAction, error) {
 		node.BasePtr().Span.Start += offset
 		node.BasePtr().Span.End += offset
+
+		tokens := node.BasePtr().ValuelessTokens
+		for i, token := range tokens {
+			token.Span.Start += offset
+			token.Span.End += offset
+			tokens[i] = token
+		}
 		return Continue, nil
 	}, nil)
 }
