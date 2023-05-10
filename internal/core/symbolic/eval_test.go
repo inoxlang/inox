@@ -4825,8 +4825,26 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
-		t.Run("attributes", func(t *testing.T) {
+		t.Run("attribute with value", func(t *testing.T) {
 			n, state := makeStateAndChunk(`a = "a"; return html<div a=a></div>`)
+			state.setGlobal("html", NewRecord(map[string]SymbolicValue{
+				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *XMLElement) *XMLElement {
+					return elem
+				}),
+			}), GlobalConst)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, &XMLElement{
+				name:       "div",
+				attributes: map[string]SymbolicValue{"a": ANY_STR},
+				children:   []SymbolicValue{ANY_STR},
+			}, res)
+		})
+
+		t.Run("attribute without value", func(t *testing.T) {
+			n, state := makeStateAndChunk(`a = "a"; return html<div a></div>`)
 			state.setGlobal("html", NewRecord(map[string]SymbolicValue{
 				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *XMLElement) *XMLElement {
 					return elem

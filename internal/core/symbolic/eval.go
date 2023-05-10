@@ -2988,6 +2988,10 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 			for _, attr := range n.Opening.Attributes {
 				name := attr.Name.(*parse.IdentifierLiteral).Name
+				if attr.Value == nil {
+					attrs[name] = ANY_STR
+					continue
+				}
 				val, err := symbolicEval(attr.Value, state)
 				if err != nil {
 					return nil, err
