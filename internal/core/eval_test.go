@@ -5377,6 +5377,20 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, NewXmlElement("div", []XMLAttribute{{name: "a", value: Str("b")}}, []Value{Str("")}), val)
 		})
 
+		t.Run("attribute without value", func(t *testing.T) {
+			code := `idt<div a></div>`
+			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				"idt": createNamespace(),
+			})
+
+			val, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, NewXmlElement("div", []XMLAttribute{{name: "a", value: DEFAULT_XML_ATTR_VALUE}}, []Value{Str("")}), val)
+		})
+
 		t.Run("linefeed", func(t *testing.T) {
 			code := "idt<div>\n</div>"
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{

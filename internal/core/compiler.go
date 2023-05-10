@@ -1817,7 +1817,9 @@ func (c *compiler) Compile(node parse.Node) error {
 		for _, attr := range node.Opening.Attributes {
 			c.emit(node, OpPushConstant, c.addConstant(Str(attr.GetName())))
 
-			if err := c.Compile(attr.Value); err != nil {
+			if attr.Value == nil {
+				c.emit(node, OpPushConstant, c.addConstant(DEFAULT_XML_ATTR_VALUE))
+			} else if err := c.Compile(attr.Value); err != nil {
 				return err
 			}
 		}

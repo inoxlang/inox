@@ -2423,12 +2423,19 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		var attrs []XMLAttribute
 
-		for _, attr := range n.Opening.Attributes {
-			attrValue, err := TreeWalkEval(attr.Value, state)
-			if err != nil {
-				return nil, err
+		for _, attrNode := range n.Opening.Attributes {
+			attr := XMLAttribute{name: attrNode.GetName()}
+			if attrNode.Value != nil {
+				attrValue, err := TreeWalkEval(attrNode.Value, state)
+				if err != nil {
+					return nil, err
+				}
+				attr.value = attrValue
+			} else {
+				attr.value = DEFAULT_XML_ATTR_VALUE
 			}
-			attrs = append(attrs, XMLAttribute{name: attr.GetName(), value: attrValue})
+
+			attrs = append(attrs, attr)
 		}
 
 		var children []Value
