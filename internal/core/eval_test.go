@@ -5572,6 +5572,42 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			_, err := Eval(code, state, false)
 			assert.NoError(t, err)
 		})
+
+		t.Run("interpolation: XML element", func(t *testing.T) {
+			code := "idt<div>{idt<span></span>}</div>"
+			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				"idt": createNamespace(),
+			})
+
+			val, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, NewXmlElement("div", nil, []Value{
+				Str(""),
+				NewXmlElement("span", nil, []Value{Str("")}),
+				Str(""),
+			}), val)
+		})
+
+		t.Run("interpolation: string", func(t *testing.T) {
+			code := "idt<div>{\"a\"}</div>"
+			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				"idt": createNamespace(),
+			})
+
+			val, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, NewXmlElement("div", nil, []Value{
+				Str(""),
+				Str("a"),
+				Str(""),
+			}), val)
+		})
 	})
 
 }

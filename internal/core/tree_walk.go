@@ -2451,6 +2451,13 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		return NewXmlElement(name, attrs, children), nil
 	case *parse.XMLText:
 		return Str(html.EscapeString(n.Value)), nil
+	case *parse.XMLInterpolation:
+		val, err := TreeWalkEval(n.Expr, state)
+		if err != nil {
+			return nil, err
+		}
+
+		return val, nil
 	default:
 		return nil, fmt.Errorf("cannot evaluate %#v (%T)\n%s", node, node, debug.Stack())
 	}

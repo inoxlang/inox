@@ -1831,6 +1831,10 @@ func (c *compiler) Compile(node parse.Node) error {
 		}
 
 		c.emit(node, OpCreateXMLelem, c.addConstant(Str(name)), len(node.Opening.Attributes), len(node.Children))
+	case *parse.XMLInterpolation:
+		if err := c.Compile(node.Expr); err != nil {
+			return err
+		}
 	case *parse.XMLText:
 		str := Str(html.EscapeString(node.Value))
 		c.emit(node, OpPushConstant, c.addConstant(str))
