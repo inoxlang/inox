@@ -141,6 +141,10 @@ func SymbolicEvalCheck(input SymbolicEvalCheckInput) (*SymbolicData, error) {
 	return data, errors.New(finalErrBuff.String())
 }
 
+func SymbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr error) {
+	return symbolicEval(node, state)
+}
+
 func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr error) {
 	return _symbolicEval(node, state, false)
 }

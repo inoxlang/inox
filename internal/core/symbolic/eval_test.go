@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -11,45 +10,6 @@ import (
 )
 
 func TestSymbolicEval(t *testing.T) {
-
-	_makeStateAndChunk := func(code string) (*parse.Chunk, *State, error) {
-		chunk, err := parse.ParseChunkSource(parse.InMemorySource{
-			NameString: "",
-			CodeString: code,
-		})
-
-		state := newSymbolicState(NewSymbolicContext(), chunk)
-		state.symbolicData = NewSymbolicData()
-
-		state.ctx.AddNamedPattern("int", &TypePattern{
-			val: &Int{},
-			call: func(ctx *Context, values []SymbolicValue) (Pattern, error) {
-				if len(values) == 0 {
-					return nil, errors.New("missing argument")
-				}
-				return &IntRangePattern{}, nil
-			},
-		})
-		state.ctx.AddNamedPattern("str", &TypePattern{val: ANY_STR_LIKE})
-		state.ctx.AddNamedPattern("obj", &TypePattern{val: NewAnyObject()})
-		state.ctx.AddNamedPattern("list", &TypePattern{val: NewListOf(ANY)})
-		state.ctx.AddPatternNamespace("myns", NewPatternNamespace(map[string]Pattern{
-			"int": state.ctx.ResolveNamedPattern("int"),
-		}))
-		state.Module = &Module{
-			MainChunk: chunk,
-		}
-
-		return chunk.Node, state, err
-	}
-
-	makeStateAndChunk := func(code string) (*parse.Chunk, *State) {
-		node, state, err := _makeStateAndChunk(code)
-		if err != nil {
-			panic(err)
-		}
-		return node, state
-	}
 
 	symbolicMap := func(ctx *Context, iterable Iterable, mapper SymbolicValue) *List {
 		var MAP_PARAM_NAMES = []string{"iterable", "mapper"}
@@ -92,7 +52,7 @@ func TestSymbolicEval(t *testing.T) {
 	}
 
 	t.Run("quoted string literal", func(t *testing.T) {
-		n, state := makeStateAndChunk(`""`)
+		n, state := MakeTestStateAndChunk(`""`)
 		res, err := symbolicEval(n, state)
 		assert.NoError(t, err)
 		assert.Empty(t, state.errors)
@@ -100,7 +60,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("multiline string literal", func(t *testing.T) {
-		n, state := makeStateAndChunk("``")
+		n, state := MakeTestStateAndChunk("``")
 		res, err := symbolicEval(n, state)
 		assert.NoError(t, err)
 		assert.Empty(t, state.errors)
@@ -108,7 +68,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("byte slice literal", func(t *testing.T) {
-		n, state := makeStateAndChunk("0x[01]")
+		n, state := MakeTestStateAndChunk("0x[01]")
 		res, err := symbolicEval(n, state)
 		assert.NoError(t, err)
 		assert.Empty(t, state.errors)
@@ -116,7 +76,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("integer literal", func(t *testing.T) {
-		n, state := makeStateAndChunk("1")
+		n, state := MakeTestStateAndChunk("1")
 		res, err := symbolicEval(n, state)
 		assert.NoError(t, err)
 		assert.Empty(t, state.errors)
@@ -124,7 +84,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("date literal", func(t *testing.T) {
-		n, state := makeStateAndChunk("2020y-UTC")
+		n, state := MakeTestStateAndChunk("2020y-UTC")
 		res, err := symbolicEval(n, state)
 		assert.NoError(t, err)
 		assert.Empty(t, state.errors)
@@ -133,7 +93,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("list literal", func(t *testing.T) {
 		t.Run("empty", func(t *testing.T) {
-			n, state := makeStateAndChunk("[]")
+			n, state := MakeTestStateAndChunk("[]")
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
@@ -141,7 +101,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("singe element", func(t *testing.T) {
-			n, state := makeStateAndChunk("[1]")
+			n, state := MakeTestStateAndChunk("[1]")
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
@@ -149,7 +109,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("two elements of different type", func(t *testing.T) {
-			n, state := makeStateAndChunk(`[1, "a'"]`)
+			n, state := MakeTestStateAndChunk(`[1, "a'"]`)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
@@ -157,7 +117,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("type annotation and element of invalid type", func(t *testing.T) {
-			n, state := makeStateAndChunk("[]%int[true]")
+			n, state := MakeTestStateAndChunk("[]%int[true]")
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			elemNode := parse.FindNode(n, (*parse.BooleanLiteral)(nil), nil)
@@ -169,7 +129,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("type annotation and element of valid type", func(t *testing.T) {
-			n, state := makeStateAndChunk("[]%int[1]")
+			n, state := MakeTestStateAndChunk("[]%int[1]")
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
@@ -179,7 +139,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("tuple literal", func(t *testing.T) {
 		t.Run("empty", func(t *testing.T) {
-			n, state := makeStateAndChunk("#[]")
+			n, state := MakeTestStateAndChunk("#[]")
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
@@ -187,7 +147,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("singe element", func(t *testing.T) {
-			n, state := makeStateAndChunk("#[1]")
+			n, state := MakeTestStateAndChunk("#[1]")
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
@@ -195,7 +155,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("mutable element", func(t *testing.T) {
-			n, state := makeStateAndChunk("#[{}]")
+			n, state := MakeTestStateAndChunk("#[{}]")
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
@@ -208,7 +168,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("type annotation and element of invalid type", func(t *testing.T) {
-			n, state := makeStateAndChunk("#[]%int[true]")
+			n, state := MakeTestStateAndChunk("#[]%int[true]")
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			elemNode := parse.FindNode(n, (*parse.BooleanLiteral)(nil), nil)
@@ -220,7 +180,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("type annotation and element of valid type", func(t *testing.T) {
-			n, state := makeStateAndChunk("#[]%int[1]")
+			n, state := MakeTestStateAndChunk("#[]%int[1]")
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
@@ -231,7 +191,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("local variable declaration", func(t *testing.T) {
 		t.Run("no type annotation", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				var a = 1; 
 				return a
 			`)
@@ -242,7 +202,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("value not assignable to type", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				var a %str = 1; 
 				return a
 			`)
@@ -259,7 +219,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("object (ability to hold static data) is not assignable to type", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				var a %str = {}; 
 				return a
 			`)
@@ -277,7 +237,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("value assignable to type", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				var obj %{name: %| %str | %int} = {name: 1}; 
 				return obj
 			`)
@@ -301,7 +261,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("multivalue LHS", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return fn(v %| %[]%int | %[]%str){
 					var a %list = v; 
 					return a
@@ -329,7 +289,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("global variable defintion", func(t *testing.T) {
-		n, state := makeStateAndChunk(`
+		n, state := MakeTestStateAndChunk(`
 			$$v = []
 			return $$v
 		`)
@@ -342,7 +302,7 @@ func TestSymbolicEval(t *testing.T) {
 	t.Run("variable assignment", func(t *testing.T) {
 
 		t.Run("local variable", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				v = []
 				return $v
 			`)
@@ -353,7 +313,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("RHS has incompatible type", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				v = []
 				v = 3
 				return v
@@ -370,7 +330,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("RHS has type incompatible with static type of the variable", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				%p = %| %int | %str
 				var v %p = 1
 				v = true
@@ -391,7 +351,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("+= assignment, LHS has incompatible type", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				v = "a"
 				v += 1
 				return v
@@ -406,7 +366,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("+= assignment, RHS has incompatible type", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				v = 1
 				v += "a"
 				return v
@@ -421,7 +381,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("variable LHS in function: a local variable outside of the function already has the same name", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				a = ""
 				fn f(){
 					a = 3
@@ -437,7 +397,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("multi value RHS", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(v %| %[]%int | %[]%str){
 					list = []
 					list = v
@@ -451,7 +411,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("property assignement", func(t *testing.T) {
 		t.Run("set new property of an object", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				obj = {}
 				$obj.name = "foo"
 				return obj
@@ -467,7 +427,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("existing property: RHS has incompatible type", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				obj = {name: "foo"}
 				$obj.name = 1
 				return obj
@@ -487,7 +447,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("existing property: RHS has type compatible with static type", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				var obj %{name: %| %str | %int } = {name: "foo"}
 				$obj.name = 1
 				return obj
@@ -512,7 +472,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("existing property: RHS has type incompatible with static type", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				var obj %{name: %| %str | %int } = {name: "foo"}
 				$obj.name = true
 				return obj
@@ -543,7 +503,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("+= assignment, LHS has incompatible type", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				obj = {name: "foo"}
 				$obj.name += 1
 				return obj
@@ -562,7 +522,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("+= assignment, RHS has incompatible type", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				obj = {count: 1}
 				$obj.count += "a"
 				return obj
@@ -581,7 +541,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("object's property LHS (identifier member): new property", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				obj = {}
 				obj.name = "foo"
 				return obj
@@ -601,7 +561,7 @@ func TestSymbolicEval(t *testing.T) {
 	t.Run("object literal", func(t *testing.T) {
 		t.Run("basic", func(t *testing.T) {
 
-			n, state := makeStateAndChunk(`{"name": "foo"}`)
+			n, state := MakeTestStateAndChunk(`{"name": "foo"}`)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
@@ -613,7 +573,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("type annotation", func(t *testing.T) {
-			n, state := makeStateAndChunk(`{"name" %| %str | %int : "foo"}`)
+			n, state := MakeTestStateAndChunk(`{"name" %| %str | %int : "foo"}`)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
@@ -633,7 +593,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("type annotation with incompatible value", func(t *testing.T) {
-			n, state := makeStateAndChunk(`{"name" %str : 1}`)
+			n, state := MakeTestStateAndChunk(`{"name" %str : 1}`)
 			res, err := symbolicEval(n, state)
 
 			valueNode := parse.FindNode(state.Module.MainChunk.Node, (*parse.IntLiteral)(nil), nil)
@@ -654,7 +614,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("object in object", func(t *testing.T) {
 
-			n, state := makeStateAndChunk(`{v: {}}`)
+			n, state := MakeTestStateAndChunk(`{v: {}}`)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
@@ -668,7 +628,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("_constraints_", func(t *testing.T) {
-			n, state := makeStateAndChunk(`{
+			n, state := MakeTestStateAndChunk(`{
 				a: 1
 				b: 2
 
@@ -700,7 +660,7 @@ func TestSymbolicEval(t *testing.T) {
 	t.Run("record", func(t *testing.T) {
 
 		t.Run("ok", func(t *testing.T) {
-			n, state := makeStateAndChunk(`#{"name": "foo"}`)
+			n, state := MakeTestStateAndChunk(`#{"name": "foo"}`)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
@@ -712,7 +672,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("mutable value", func(t *testing.T) {
-			n, state := makeStateAndChunk(`#{"a": {}}`)
+			n, state := MakeTestStateAndChunk(`#{"a": {}}`)
 			res, err := symbolicEval(n, state)
 			valueNode := n.Statements[0].(*parse.RecordLiteral).Properties[0].Value
 
@@ -730,7 +690,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 	t.Run("member expression", func(t *testing.T) {
 		t.Run("object", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				v = {"name": "foo"}
 				return $v.name
 			`)
@@ -741,7 +701,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("record", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				v = #{"name": "foo"}
 				return $v.name
 			`)
@@ -752,7 +712,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("inexisting property", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				v = {}
 				return v.name
 			`)
@@ -767,7 +727,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("inexisting property, optional member expression", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				v = {}
 				return v.?name
 			`)
@@ -779,7 +739,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("optional property", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(arg %{name?: %str}){
 					return $arg.name
 				}
@@ -794,7 +754,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("inexisting property of GoValue", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return v.XYZ
 			`)
 			memberExpr := n.Statements[0].(*parse.ReturnStatement).Expr
@@ -811,7 +771,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("existing method of GoValue", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return v.cancel
 			`)
 
@@ -825,7 +785,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("inexisting method of GoValue", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return v.XYZ
 			`)
 			memberExpr := n.Statements[0].(*parse.ReturnStatement).Expr
@@ -841,7 +801,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("multivalue: 2 objects with same property type", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return fn(v %| %{a: %int} | %{a: %int, b: %str}) {
 					return v.a
 				}
@@ -853,7 +813,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("multivalue: 2 objects with different property type", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return fn(v %| %{a: %int} | %{a: %str}) {
 					return v.a
 				}
@@ -879,7 +839,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("dynamic member expression", func(t *testing.T) {
 		t.Run("object", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				v = {"name": "foo"}
 				return $v.<name
 			`)
@@ -890,7 +850,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("record", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				v = #{"name": "foo"}
 				return $v.<name
 			`)
@@ -901,7 +861,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("dynamic value", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				v = {a: {b: 1}}
 				return $v.<a.b
 			`)
@@ -912,7 +872,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("inexisting field of GoValue", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return v.<XYZ
 			`)
 			memberExpr := n.Statements[0].(*parse.ReturnStatement).Expr
@@ -929,7 +889,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("existing method of GoValue", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return v.<cancel
 			`)
 
@@ -943,7 +903,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("inexisting method of GoValue", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return v.<XYZ
 			`)
 			memberExpr := n.Statements[0].(*parse.ReturnStatement).Expr
@@ -961,7 +921,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("identifier member expression", func(t *testing.T) {
 		t.Run("object", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				v = {"name": "foo"}
 				return v.name
 			`)
@@ -994,7 +954,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("optional property", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(arg %{name?: %str}){
 					return arg.name
 				}
@@ -1011,7 +971,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("index expression", func(t *testing.T) {
 		t.Run("index is not an integer", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				v = ["a"]
 				return $v["0"]
 			`)
@@ -1026,7 +986,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("indexed is not indexable", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				v = 0
 				return $v[0]
 			`)
@@ -1041,7 +1001,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("ok", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				v = ["a"]
 				return $v[0]
 			`)
@@ -1052,7 +1012,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("list of unknown length", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return $$v[0]
 			`)
 			state.setGlobal("v", &List{generalElement: &String{}}, GlobalConst)
@@ -1063,7 +1023,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("rune slice", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return $$v[0]
 			`)
 			state.setGlobal("v", &RuneSlice{}, GlobalConst)
@@ -1074,7 +1034,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("byte slice", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return $$v[0]
 			`)
 			state.setGlobal("v", &ByteSlice{}, GlobalConst)
@@ -1088,7 +1048,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("slice expression", func(t *testing.T) {
 		t.Run("start index is not an integer", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				v = ["a"]
 				return $v["0":]
 			`)
@@ -1103,7 +1063,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("end index is not an integer", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				v = ["a"]
 				return $v[0:"1"]
 			`)
@@ -1118,7 +1078,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("indexed it not a sequence", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				v = 0
 				return $v[0:]
 			`)
@@ -1133,7 +1093,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("ok", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				v = ["a"]
 				return $v[0:]
 			`)
@@ -1144,7 +1104,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("list of unknown length", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return $$v[0:]
 			`)
 			state.setGlobal("v", &List{generalElement: &String{}}, GlobalConst)
@@ -1155,7 +1115,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("rune slice", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return $$v[0:]
 			`)
 			state.setGlobal("v", &RuneSlice{}, GlobalConst)
@@ -1166,7 +1126,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("byte slice", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return $$v[0:]
 			`)
 			state.setGlobal("v", &ByteSlice{}, GlobalConst)
@@ -1179,7 +1139,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("extraction expression", func(t *testing.T) {
-		n, state := makeStateAndChunk(`
+		n, state := MakeTestStateAndChunk(`
 			v = {a: 1, b: true, c: "a"}
 			return $v.{a, b}
 		`)
@@ -1196,7 +1156,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("binary expression", func(t *testing.T) {
 		t.Run("+: left operand is a string", func(t *testing.T) {
-			n, state := makeStateAndChunk(`("a" + 1)`)
+			n, state := MakeTestStateAndChunk(`("a" + 1)`)
 			res, err := symbolicEval(n, state)
 
 			leftOperand := n.Statements[0].(*parse.BinaryExpression).Left
@@ -1209,7 +1169,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("<: left operand is a string", func(t *testing.T) {
-			n, state := makeStateAndChunk(`("a" < 1)`)
+			n, state := MakeTestStateAndChunk(`("a" < 1)`)
 			res, err := symbolicEval(n, state)
 
 			leftOperand := n.Statements[0].(*parse.BinaryExpression).Left
@@ -1222,7 +1182,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("+: right operand is a string", func(t *testing.T) {
-			n, state := makeStateAndChunk(`(1 + "a")`)
+			n, state := MakeTestStateAndChunk(`(1 + "a")`)
 			res, err := symbolicEval(n, state)
 
 			rightOperand := n.Statements[0].(*parse.BinaryExpression).Right
@@ -1235,7 +1195,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("<: Right operand is a string", func(t *testing.T) {
-			n, state := makeStateAndChunk(`(1 < "a")`)
+			n, state := MakeTestStateAndChunk(`(1 < "a")`)
 			res, err := symbolicEval(n, state)
 
 			RightOperand := n.Statements[0].(*parse.BinaryExpression).Right
@@ -1248,7 +1208,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("substrof: left operand is an int", func(t *testing.T) {
-			n, state := makeStateAndChunk(`(1 substrof "1")`)
+			n, state := MakeTestStateAndChunk(`(1 substrof "1")`)
 			res, err := symbolicEval(n, state)
 
 			expr := n.Statements[0].(*parse.BinaryExpression)
@@ -1261,7 +1221,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("substrof: right operand is an int", func(t *testing.T) {
-			n, state := makeStateAndChunk(`("1" substrof 1)`)
+			n, state := MakeTestStateAndChunk(`("1" substrof 1)`)
 			res, err := symbolicEval(n, state)
 
 			expr := n.Statements[0].(*parse.BinaryExpression)
@@ -1274,7 +1234,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("match: right operand is a path pattern", func(t *testing.T) {
-			n, state := makeStateAndChunk(`(/home/user/ match %/home/user/...)`)
+			n, state := MakeTestStateAndChunk(`(/home/user/ match %/home/user/...)`)
 			res, err := symbolicEval(n, state)
 
 			assert.NoError(t, err)
@@ -1283,7 +1243,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("match: right operand is a regex pattern", func(t *testing.T) {
-			n, state := makeStateAndChunk("(\"\" match %`.*`)")
+			n, state := MakeTestStateAndChunk("(\"\" match %`.*`)")
 			res, err := symbolicEval(n, state)
 
 			assert.NoError(t, err)
@@ -1292,7 +1252,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("match: right operand is an object pattern", func(t *testing.T) {
-			n, state := makeStateAndChunk("({} match %{})")
+			n, state := MakeTestStateAndChunk("({} match %{})")
 			res, err := symbolicEval(n, state)
 
 			assert.NoError(t, err)
@@ -1301,7 +1261,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("set difference: right operand is a pattern", func(t *testing.T) {
-			n, state := makeStateAndChunk("((%| 1 | 2 | 3) \\ %| 1 | 2)")
+			n, state := MakeTestStateAndChunk("((%| 1 | 2 | 3) \\ %| 1 | 2)")
 			res, err := symbolicEval(n, state)
 
 			assert.NoError(t, err)
@@ -1313,7 +1273,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("set difference: right operand is an integer", func(t *testing.T) {
-			n, state := makeStateAndChunk("((%| 1 | 2) \\ 1)")
+			n, state := MakeTestStateAndChunk("((%| 1 | 2) \\ 1)")
 			res, err := symbolicEval(n, state)
 
 			assert.NoError(t, err)
@@ -1326,7 +1286,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("unary expression: !: operand is a string", func(t *testing.T) {
-		n, state := makeStateAndChunk(`!"string"`)
+		n, state := MakeTestStateAndChunk(`!"string"`)
 		res, err := symbolicEval(n, state)
 
 		assert.NoError(t, err)
@@ -1339,7 +1299,7 @@ func TestSymbolicEval(t *testing.T) {
 	t.Run("function declaration", func(t *testing.T) {
 
 		t.Run("empty", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(){
 	
 				}
@@ -1352,7 +1312,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("single parameter", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(a){
 					return a
 				}
@@ -1370,7 +1330,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("no params, single captured local", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				a = 1
 				fn[a] f(){
 					return a
@@ -1389,7 +1349,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("no params, two captured locals", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				a = 1
 				b = "1"
 				fn[a, b] f(){
@@ -1411,7 +1371,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("missing return", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f() %int {
 					
 				}
@@ -1427,7 +1387,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("invalid return value", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f() %int {
 					return "a"
 				}
@@ -1444,7 +1404,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("missing unconditional return", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(a) %int {
 					if a? {
 						return 1
@@ -1462,7 +1422,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("invalid conditional return value", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(a) %int {
 					if a? {
 						return "a"
@@ -1482,7 +1442,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("invalid nested conditional return value", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(a) %int {
 					if a? {
 						if a? {
@@ -1504,7 +1464,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("patterns should be accessible from the body", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				%p = 1
 				fn f(){
 					[%p, %int]
@@ -1521,7 +1481,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("function expression", func(t *testing.T) {
 		t.Run("patterns should be accessible from the body of a function expression within a function declaration", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				%p = 1
 				fn f(){
 					return fn(){
@@ -1537,7 +1497,7 @@ func TestSymbolicEval(t *testing.T) {
 	t.Run("function pattern", func(t *testing.T) {
 
 		t.Run("empty", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return %fn(){}
 			`)
 			fnPatt := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.FunctionPatternExpression)
@@ -1552,7 +1512,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("single parameter", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return %fn(a){}
 			`)
 			fnPatt := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.FunctionPatternExpression)
@@ -1567,7 +1527,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("missing return", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return %fn() %int {
 					
 				}
@@ -1588,7 +1548,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("invalid return value", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return %fn() %int {
 					return "a"
 				}
@@ -1614,7 +1574,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("methods", func(t *testing.T) {
 		t.Run("method returning a property", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				{
 					f: fn() => self.a,
 					a: 1,
@@ -1638,7 +1598,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("method returning a dynamic member", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				{
 					f: fn() => self.<a,
 					a: 1,
@@ -1662,7 +1622,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("method calling another method : caller declared first", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				{
 					a: 1,
 					f: fn() => self.g,
@@ -1696,7 +1656,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("method calling another method : callee declared first", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				{
 					a: 1,
 					g: fn() => self.a,
@@ -1730,7 +1690,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("cycle of two methods", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				{
 					f: fn() => self.g,
 					g: fn() => self.f,
@@ -1747,7 +1707,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &Object{}, res)
 		})
 		t.Run("cycle of three methods", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				{
 					f: fn() => self.g,
 					g: fn() => self.h,
@@ -1768,7 +1728,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("call Inox function", func(t *testing.T) {
 		t.Run("empty function (identifier)", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(){
 				}
 	
@@ -1781,7 +1741,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("empty function (member)", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				o = {
 					f: fn(){}
 				}
@@ -1795,7 +1755,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("empty function (identifier member)", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				o = {
 					f: fn(){}
 				}
@@ -1809,7 +1769,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("function always return an integer", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(){
 					return 1
 				}
@@ -1823,7 +1783,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("local variable defined outside of a function is not accessible from inside the function", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				a = ""
 				fn f(){
 					return a
@@ -1842,7 +1802,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("function return its first argument: type of result should be the type of the arg", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(x){
 					return x
 				}
@@ -1856,7 +1816,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("function returning its variadic argument", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(...rest){
 					return $rest
 				}
@@ -1870,7 +1830,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("no variadic parameter: spread argument (known length)", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(a){
 					return $a
 				}
@@ -1889,7 +1849,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("no variadic parameter: spread argument (unknown length)", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(a){
 					return $a
 				}
@@ -1910,7 +1870,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("single, variadic parameter: spread argument", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(...rest){
 					return $rest
 				}
@@ -1925,7 +1885,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("non variadic parameter + variadic parameter: spread argument", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(first, ...rest){
 					return [first, $rest]
 				}
@@ -1943,7 +1903,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("function declaration + call: %int return type", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f() %int {
 					return 1
 				}
@@ -1956,7 +1916,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("function declaration + call: invalid return value", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f() %int {
 					return "a"
 				}
@@ -1974,7 +1934,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("invalid argument", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(x %int){
 					return 1
 				}
@@ -1993,7 +1953,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("valid argument", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(x %int){
 					return 1
 				}
@@ -2008,7 +1968,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("multi value argument", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return fn(list %| %[]%int | %[]%str){
 					f = fn(list %list){
 						
@@ -2031,7 +1991,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("non-variadic function: not enough arguments", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(a, b %int, c){
 					return [a, b, c]
 				}
@@ -2049,7 +2009,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("non-variadic function: too many arguments", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(a){
 					return a
 				}
@@ -2067,7 +2027,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("variadic function fn(a, ...rest): not enough arguments", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(a, ...rest){
 					return [a, rest]
 				}
@@ -2085,7 +2045,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("variadic function fn(a, b, ...rest): not enough arguments", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(a, b, ...rest){
 					return [a, b, rest]
 				}
@@ -2103,7 +2063,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("direct recursion of a function with no return type", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn factorial(i %int) {
 					if (i == 0) {
 						return 1
@@ -2124,7 +2084,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("direct recursion of a function with a return type", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn factorial(i %int) %int {
 					if (i == 0) {
 						return 1
@@ -2144,7 +2104,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("call Go function", func(t *testing.T) {
 		t.Run("signature is func(*Context) int", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return f()
 			`)
 
@@ -2162,7 +2122,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("signature is func(*Context) *List", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return f()
 			`)
 
@@ -2180,7 +2140,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("signature is func(*Context) (int, int)", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return f()
 			`)
 
@@ -2198,7 +2158,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("signature is func(*Context, *Int) *Int: missing argument", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return f()
 			`)
 
@@ -2220,7 +2180,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("signature is func(*Context, *Int) *Int: bad argument", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return f("a")
 			`)
 
@@ -2242,7 +2202,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("signature is func(*Context, *Int) *Int: too many arguments", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return f(1, 2)
 			`)
 
@@ -2264,7 +2224,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("signature is func(*Context, *List) *Int: pass multivalue of 2 lists", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return fn(list %| %[]%str | %[]%int){
 					return f(list)
 				}
@@ -2291,7 +2251,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("signature is func(*Context, ...*List) *Int: pass multivalue of 2 lists", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return fn(list %| %[]%str | %[]%int){
 					return f(list)
 				}
@@ -2318,7 +2278,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("signature is func(*Context, ...*Int) *Int: bad first variadic argument", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return f("a")
 			`)
 
@@ -2340,7 +2300,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("signature is func(*Context, *Int, ...*Int) *Int: missing argument", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return f()
 			`)
 
@@ -2361,7 +2321,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("signature is func(*Context, ...*Int) *Int: bad second variadic argument", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return f(1, "a")
 			`)
 
@@ -2383,7 +2343,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("signature is func(*Context) error", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return f()
 			`)
 
@@ -2400,7 +2360,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewMultivalue(ANY_ERR, Nil), res)
 		})
 		t.Run("no concrete value", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return f()
 			`)
 
@@ -2416,7 +2376,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("call variadic Go function: spread argument (unknown length), missing non variadic argument", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return f(...list)
 			`)
 
@@ -2440,7 +2400,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("call variadic Go function: spread argument (unknown length)", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return f(...list)
 			`)
 
@@ -2460,7 +2420,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("'must' call Go function: error is not returned", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return f!()
 			`)
 
@@ -2479,7 +2439,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("simple specific Go function", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return f(#b)
 			`)
 
@@ -2504,7 +2464,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("complex specific Go function with invalid argument", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return map([1, 2, 3], fn(arg %str){
 					return arg
 				})
@@ -2518,7 +2478,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("complex specific Go function with valid arguments", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return map([1, 2, 3], fn(arg %int){
 					return arg
 				})
@@ -2531,7 +2491,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("complex specific Go function within a recursive Inox function", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn rec(list %list){
 				    assert (list match %[]%list)
 					return map(list, rec)
@@ -2552,7 +2512,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		//TODO: add more tests
 		t.Run("fn() %int", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(func %fn() %int){
 					return func()
 				}
@@ -2587,7 +2547,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	})
 	t.Run("call pattern", func(t *testing.T) {
-		n, state := makeStateAndChunk(`
+		n, state := MakeTestStateAndChunk(`
 			%mypattern()
 		`)
 
@@ -2604,7 +2564,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("pipe statement", func(t *testing.T) {
-		n, state := makeStateAndChunk(`
+		n, state := MakeTestStateAndChunk(`
 			fn one(){
 				return 1
 			}
@@ -2623,7 +2583,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("pipe statement: $ is an invalid argument in second call", func(t *testing.T) {
-		n, state := makeStateAndChunk(`
+		n, state := MakeTestStateAndChunk(`
 			fn one(){
 				return "1"
 			}
@@ -2649,7 +2609,7 @@ func TestSymbolicEval(t *testing.T) {
 	t.Run("if statement", func(t *testing.T) {
 
 		t.Run("test is a boolean", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				if true {
 					a
 				} else {
@@ -2670,7 +2630,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("test is not a boolean", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				if 1 {
 					a
 				} else {
@@ -2724,7 +2684,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("join", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				var a %obj = {}
 				if true {
 					a = {a: 1}
@@ -2749,7 +2709,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("truthiness narrowing", func(t *testing.T) {
 
 			t.Run("parameter", func(t *testing.T) {
-				n, state := makeStateAndChunk(`
+				n, state := MakeTestStateAndChunk(`
 					return fn(arg %int?){
 						if arg? {
 							var a %int = arg
@@ -2765,7 +2725,7 @@ func TestSymbolicEval(t *testing.T) {
 			})
 
 			t.Run("parameter's property", func(t *testing.T) {
-				n, state := makeStateAndChunk(`
+				n, state := MakeTestStateAndChunk(`
 					return fn(arg %{prop: %int?}){
 						if arg.prop? {
 							var a %int = arg.prop
@@ -2781,7 +2741,7 @@ func TestSymbolicEval(t *testing.T) {
 			})
 
 			t.Run("inexisting parameter's property", func(t *testing.T) {
-				n, state := makeStateAndChunk(`
+				n, state := MakeTestStateAndChunk(`
 					return fn(arg %{}){
 						if arg.prop? {
 							
@@ -2801,7 +2761,7 @@ func TestSymbolicEval(t *testing.T) {
 			})
 
 			t.Run("variable of static type %int? and nil value", func(t *testing.T) {
-				n, state := makeStateAndChunk(`
+				n, state := MakeTestStateAndChunk(`
 					var v %int? = nil
 
 					if v? {
@@ -2817,7 +2777,7 @@ func TestSymbolicEval(t *testing.T) {
 			})
 
 			t.Run("non existing variable (identifier)", func(t *testing.T) {
-				n, state := makeStateAndChunk(`
+				n, state := MakeTestStateAndChunk(`
 					if v? {
 
 					} else {
@@ -2830,7 +2790,7 @@ func TestSymbolicEval(t *testing.T) {
 			})
 
 			t.Run("non existing variable (local var)", func(t *testing.T) {
-				n, state := makeStateAndChunk(`
+				n, state := MakeTestStateAndChunk(`
 					if $v? {
 
 					} else {
@@ -2843,7 +2803,7 @@ func TestSymbolicEval(t *testing.T) {
 			})
 
 			t.Run("non existing variable (global var)", func(t *testing.T) {
-				n, state := makeStateAndChunk(`
+				n, state := MakeTestStateAndChunk(`
 					if $$v? {
 
 					} else {
@@ -2856,7 +2816,7 @@ func TestSymbolicEval(t *testing.T) {
 			})
 
 			t.Run("property of non existing variable (identifier)", func(t *testing.T) {
-				n, state := makeStateAndChunk(`
+				n, state := MakeTestStateAndChunk(`
 					if v.a? {
 
 					} else {
@@ -2869,7 +2829,7 @@ func TestSymbolicEval(t *testing.T) {
 			})
 
 			t.Run("property of non existing variable (local var)", func(t *testing.T) {
-				n, state := makeStateAndChunk(`
+				n, state := MakeTestStateAndChunk(`
 					if $v.a? {
 
 					} else {
@@ -2882,7 +2842,7 @@ func TestSymbolicEval(t *testing.T) {
 			})
 
 			t.Run("property of non existing variable (global var)", func(t *testing.T) {
-				n, state := makeStateAndChunk(`
+				n, state := MakeTestStateAndChunk(`
 					if $$v.a? {
 
 					} else {
@@ -2898,7 +2858,7 @@ func TestSymbolicEval(t *testing.T) {
 		//type narrowing
 
 		t.Run("binary match expression narrows the type of a variable (%int)", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				if (a match %int) {
 					var b %int = a
 				}
@@ -2912,7 +2872,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("binary match expression narrows the type of a variable: (object pattern literal)", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				if (a match %{a: 1, b: [3]}){
 					var b %{a: 1, b: [3]} = a
 				}
@@ -2926,7 +2886,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("binary match expression narrows the type of a variable: (list pattern literal)", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				if (a match %[]%obj){
 					var b %[]%obj = a
 				}
@@ -2940,7 +2900,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("binary match expression narrows the type of a property (%int)", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				if (a.prop match %int) {
 					var b %int = a.prop
 				}
@@ -2959,7 +2919,7 @@ func TestSymbolicEval(t *testing.T) {
 	t.Run("if expression", func(t *testing.T) {
 
 		t.Run("no else", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				(if true 1)
 			`)
 
@@ -2985,7 +2945,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("if-else", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				(if false 1 else false)
 			`)
 
@@ -3013,7 +2973,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("truthiness narrowing", func(t *testing.T) {
 
 			t.Run("parameter", func(t *testing.T) {
-				n, state := makeStateAndChunk(`
+				n, state := MakeTestStateAndChunk(`
 					return fn(arg %int?){
 						return (if arg? arg else false)
 					}
@@ -3026,7 +2986,7 @@ func TestSymbolicEval(t *testing.T) {
 			})
 
 			t.Run("parameter field", func(t *testing.T) {
-				n, state := makeStateAndChunk(`
+				n, state := MakeTestStateAndChunk(`
 					return fn(arg %{prop: %int?}){
 						return (if arg.prop? arg.prop else false)
 					}
@@ -3039,7 +2999,7 @@ func TestSymbolicEval(t *testing.T) {
 			})
 
 			t.Run("variable of static type %int? and nil value", func(t *testing.T) {
-				n, state := makeStateAndChunk(`
+				n, state := MakeTestStateAndChunk(`
 					var v %int? = nil
 
 					return (if v? v else false)
@@ -3052,7 +3012,7 @@ func TestSymbolicEval(t *testing.T) {
 			})
 
 			t.Run("non existing variable (identifier)", func(t *testing.T) {
-				n, state := makeStateAndChunk(`
+				n, state := MakeTestStateAndChunk(`
 					return (if v? v else false)
 				`)
 				res, err := symbolicEval(n, state)
@@ -3062,7 +3022,7 @@ func TestSymbolicEval(t *testing.T) {
 			})
 
 			t.Run("non existing variable (local var)", func(t *testing.T) {
-				n, state := makeStateAndChunk(`
+				n, state := MakeTestStateAndChunk(`
 					return (if $v? $v else false)
 				`)
 				res, err := symbolicEval(n, state)
@@ -3072,7 +3032,7 @@ func TestSymbolicEval(t *testing.T) {
 			})
 
 			t.Run("non existing variable (global var)", func(t *testing.T) {
-				n, state := makeStateAndChunk(`
+				n, state := MakeTestStateAndChunk(`
 					return (if $$v? $$v else false)
 				`)
 				res, err := symbolicEval(n, state)
@@ -3085,7 +3045,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("assignment", func(t *testing.T) {
 		t.Run("assignment in if statement: variable LHS: RHS has incompatible type", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				v = []
 				if true {
 					v = 3
@@ -3106,7 +3066,7 @@ func TestSymbolicEval(t *testing.T) {
 	t.Run("multi assignment", func(t *testing.T) {
 
 		t.Run("RHS is too short (1 variable)", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				assign first = []
 			`)
 			res, err := symbolicEval(n, state)
@@ -3120,7 +3080,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("RHS is too short (2 variables)", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				assign first second = [1]
 			`)
 			res, err := symbolicEval(n, state)
@@ -3134,7 +3094,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("RHS is too short (2 variables) but nillable", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				assign? first second = [1]
 			`)
 			res, err := symbolicEval(n, state)
@@ -3145,7 +3105,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("unknown-length list of integers : nillable", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				assign? first second = list
 				return [first, second]
 			`)
@@ -3163,7 +3123,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("for statement", func(t *testing.T) {
 		t.Run("iterated value is not iterable", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				for i, e in 1 {
 	
 				} 
@@ -3178,7 +3138,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("object iteration: keys are strings", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				for k, v in {a: 1} {
 					return k
 				}
@@ -3190,7 +3150,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("key & element variables should be present in local scope data", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				for k, v in {a: 1} {
 					return k
 				} 
@@ -3213,7 +3173,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("list iteration: keys are integers and values have type of element", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				for i, e in [["a"], [0]] {
 					return [i, e]
 				} 
@@ -3230,7 +3190,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("empty dictionary iteration: keys should be any", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				for k, v in :{} {
 					return k
 				} 
@@ -3242,7 +3202,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("path dictionary iteration: keys should be paths", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				for k, v in :{./a: 1, ./b: 2} {
 					return k
 				} 
@@ -3255,7 +3215,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("int range iteration: keys and values are integers", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				for i, e in 1..3 {
 					return [i, e]
 				} 
@@ -3269,7 +3229,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("rune range iteration: keys are integers and values are runes", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				for i, r in 'a'..'z' {
 					return [i, r]
 				} 
@@ -3283,7 +3243,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("streamable iteration", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				for e in streamable {
 					return e
 				} 
@@ -3297,7 +3257,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("key variable should not be provided when iterating over a streamable", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				for k, e in streamable {
 					
 				} 
@@ -3315,7 +3275,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("chunked streamable iteration", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				for chunked chunk in streamable {
 					return chunk
 				} 
@@ -3344,7 +3304,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("state should be forked", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				a = #a
 				for 1..2 {
 					a = #b
@@ -3361,7 +3321,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("walk statement", func(t *testing.T) {
 		t.Run("walked value is not walkable", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				path = 1
 				walk $path entry {
 	
@@ -3379,7 +3339,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("entries have right value", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				walk ./ entry {
 					return entry
 				}
@@ -3393,7 +3353,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("meta", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				walk ./ meta, entry {
 					return [meta, entry]
 				}
@@ -3424,7 +3384,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("state should be forked", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				a = #a
 				walk ./ entry {
 					a = #b
@@ -3442,7 +3402,7 @@ func TestSymbolicEval(t *testing.T) {
 	t.Run("switch statement: error in every block", func(t *testing.T) {
 
 		t.Run("error in every block", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 			v = 1
 			switch v {
 				0 {
@@ -3487,7 +3447,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("match statement", func(t *testing.T) {
 		t.Run("join", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				var v %obj = {}
 				match 1 {
 					%int {
@@ -3512,7 +3472,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("error in every block", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				v = /path
 				match v {
 					/ {
@@ -3536,7 +3496,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("single group matching case", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				match /home/user {
 					%/home/{:username} m {
 						m.username
@@ -3551,7 +3511,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("two group matching cases with same variable", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				match /home/user {
 					%/home/{:username} m {
 						m.username
@@ -3569,7 +3529,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("narrowing of variable's value", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(v){
 					match v {
 						%int {
@@ -3589,7 +3549,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("narrowing of property", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(v %{a: %| %int | %str}){
 					match v.a {
 						%int {
@@ -3631,7 +3591,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("regex literal", func(t *testing.T) {
-		n, state := makeStateAndChunk("%`a`")
+		n, state := MakeTestStateAndChunk("%`a`")
 
 		res, err := symbolicEval(n, state)
 		assert.NoError(t, err)
@@ -3642,7 +3602,7 @@ func TestSymbolicEval(t *testing.T) {
 	t.Run("object pattern literal", func(t *testing.T) {
 
 		t.Run("spread pattern that is not an object pattern", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return %{...1}
 			`)
 
@@ -3657,7 +3617,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("spread inexact object pattern", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return %{...%{...}}
 			`)
 
@@ -3674,7 +3634,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("spread object pattern matching all objects", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return %{...%p}
 			`)
 
@@ -3691,7 +3651,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("spread valid object pattern", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return %{...%{name: %str}}
 			`)
 
@@ -3704,7 +3664,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("pattern call", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return %{a: %int(0..1)}
 			`)
 
@@ -3719,7 +3679,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("pattern call: invalid/missing arguments", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return %{a: %int()}
 			`)
 
@@ -3736,7 +3696,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("pattern namespace's member", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return %{a: %myns.int}
 			`)
 
@@ -3749,7 +3709,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("deep object pattern", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return %{
 					a: %{name: %str}
 					b: %{
@@ -3788,7 +3748,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("list pattern literal", func(t *testing.T) {
-		n, state := makeStateAndChunk(`
+		n, state := MakeTestStateAndChunk(`
 			return %[ %{} ]
 		`)
 
@@ -3805,7 +3765,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("union pattern", func(t *testing.T) {
-		n, state := makeStateAndChunk(`
+		n, state := MakeTestStateAndChunk(`
 			return %| 1 | "1"
 		`)
 
@@ -3821,7 +3781,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("union pattern", func(t *testing.T) {
-		n, state := makeStateAndChunk(`
+		n, state := MakeTestStateAndChunk(`
 			return %| %int | %str
 		`)
 
@@ -3837,7 +3797,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("option pattern", func(t *testing.T) {
-		n, state := makeStateAndChunk(`
+		n, state := MakeTestStateAndChunk(`
 			return %--name=%str
 		`)
 
@@ -3848,7 +3808,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("string pattern", func(t *testing.T) {
-		n, state := makeStateAndChunk(`
+		n, state := MakeTestStateAndChunk(`
 			return %str( "a" )
 		`)
 
@@ -3859,7 +3819,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("pattern definition: object pattern literal", func(t *testing.T) {
-		n, state := makeStateAndChunk(`
+		n, state := MakeTestStateAndChunk(`
 			%p = %{list: %[1]}
 			return %p
 		`)
@@ -3880,7 +3840,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("pattern namespace definition: object pattern literal", func(t *testing.T) {
 		t.Run("RHS is an object pattern literal", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				%namespace. = {}
 				return %namespace.
 			`)
@@ -3894,7 +3854,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("RHS is invalid", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				%namespace. = 1
 				return %namespace.
 			`)
@@ -3914,7 +3874,7 @@ func TestSymbolicEval(t *testing.T) {
 	t.Run("optional pattern", func(t *testing.T) {
 
 		t.Run("ok", func(t *testing.T) {
-			n, state := makeStateAndChunk(`%int?`)
+			n, state := MakeTestStateAndChunk(`%int?`)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -3925,7 +3885,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("pattern already matches nil", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				%p = nil
 				return %p?
 			`)
@@ -3940,7 +3900,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("host alias definition: RHS is not a host", func(t *testing.T) {
-		n, state := makeStateAndChunk(`
+		n, state := MakeTestStateAndChunk(`
 			@h = 1
 		`)
 
@@ -3954,7 +3914,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("assertion statement", func(t *testing.T) {
 		t.Run("value is a boolean", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				assert (true or false)
 			`)
 
@@ -3965,7 +3925,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("value is not a boolean", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				assert (1 + 1)
 			`)
 
@@ -3978,7 +3938,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("binary match expression narrows the type of a variable (%int)", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				assert (a match %int)
 				return (1 + a)
 			`)
@@ -3992,7 +3952,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("binary match expression narrows the type of a variable: (object pattern literal)", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				assert (a match %{a: 1, b: [3]})
 			`)
 
@@ -4018,7 +3978,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("binary match expression narrows the type of a variable: (list pattern literal)", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				assert (a match %[]%obj)
 			`)
 
@@ -4037,7 +3997,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("binary match expression narrows the type of a property (%int)", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				if (a.prop match %int){
 					var b %int = a.prop
 				}
@@ -4054,7 +4014,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("runtime typecheck expression", func(t *testing.T) {
 		t.Run("argument of Go function", func(t *testing.T) {
-			n, state := makeStateAndChunk(`f ~arg`)
+			n, state := MakeTestStateAndChunk(`f ~arg`)
 
 			goFunc := &GoFunction{
 				fn: func(*Context, *Int) {
@@ -4071,7 +4031,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("argument of Inox function", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(n %int){
 					return n
 				}
@@ -4096,7 +4056,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("testsuite expression", func(t *testing.T) {
 		t.Run("empty module", func(t *testing.T) {
-			n, state := makeStateAndChunk(`testsuite "name" {}`)
+			n, state := MakeTestStateAndChunk(`testsuite "name" {}`)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -4105,7 +4065,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("error in module", func(t *testing.T) {
-			n, state := makeStateAndChunk(`testsuite "name" {
+			n, state := MakeTestStateAndChunk(`testsuite "name" {
 				(1 + true)
 			}`)
 
@@ -4122,7 +4082,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("testcase expression", func(t *testing.T) {
 		t.Run("empty module", func(t *testing.T) {
-			n, state := makeStateAndChunk(`testcase "name" {}`)
+			n, state := MakeTestStateAndChunk(`testcase "name" {}`)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -4131,7 +4091,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("error in module", func(t *testing.T) {
-			n, state := makeStateAndChunk(`testcase "name" {
+			n, state := MakeTestStateAndChunk(`testcase "name" {
 				(1 + true)
 			}`)
 
@@ -4148,7 +4108,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("lifetimejob expression", func(t *testing.T) {
 		t.Run("should have access to implicit subject properties defined before and after the jobs", func(t *testing.T) {
-			n, state := makeStateAndChunk(`{ 
+			n, state := MakeTestStateAndChunk(`{ 
 				a: 1
 				lifetimejob "name" { [self.a, self.b] } 
 				b: 2
@@ -4160,7 +4120,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("accessing a non existing property of the subject should cause an error", func(t *testing.T) {
-			n, state := makeStateAndChunk(`{ 
+			n, state := MakeTestStateAndChunk(`{ 
 				lifetimejob "name" { self.a } 
 			}`)
 
@@ -4174,7 +4134,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("implicit subject: error in module", func(t *testing.T) {
-			n, state := makeStateAndChunk(`{ 
+			n, state := MakeTestStateAndChunk(`{ 
 				a: 1
 				lifetimejob "name" { (1 + true) } 
 			}`)
@@ -4189,7 +4149,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("explicit subject", func(t *testing.T) {
-			n, state := makeStateAndChunk(`lifetimejob "name" for %list {}`)
+			n, state := MakeTestStateAndChunk(`lifetimejob "name" for %list {}`)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -4198,7 +4158,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("explicit subject: error in module", func(t *testing.T) {
-			n, state := makeStateAndChunk(`lifetimejob "name" for %list {
+			n, state := MakeTestStateAndChunk(`lifetimejob "name" for %list {
 				(1 + true)
 			}`)
 
@@ -4213,7 +4173,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("explicit subject: not matched by self", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				{
 					lifetimejob "name" for %{a: %int} {}
 				}
@@ -4232,7 +4192,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("lifetime job within an object literal should have access to patterns defined in parent state", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				%p = 1
 				{ 
 					a: 1
@@ -4246,7 +4206,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("lifetime job within a function should have access to patterns defined in top level state", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				%p = 1
 				fn createJob(){
 					return lifetimejob "name" for %obj { [%p, %int]  } 
@@ -4264,7 +4224,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("spawn_expression", func(t *testing.T) {
 		t.Run("single expression", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(){ }
 				return go {globals: .{}} do f()
 			`)
@@ -4276,7 +4236,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("single expression without meta", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(){ }
 				return go do f()
 			`)
@@ -4288,7 +4248,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("provided group is not a routine group", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				group = 0
 				return go {group: group, globals: .{}} do { }
 			`)
@@ -4303,7 +4263,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("error in embedded module", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return go {globals: .{}} do { return (1 + "a") }
 			`)
 
@@ -4318,7 +4278,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("call provided function", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				fn f(){
 					return 2
 				}
@@ -4337,7 +4297,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("reception handler expression", func(t *testing.T) {
-		n, state := makeStateAndChunk(`
+		n, state := MakeTestStateAndChunk(`
 			{
 				on received %{} {}
 			}
@@ -4354,7 +4314,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("sendvalue expression", func(t *testing.T) {
 		t.Run("in method", func(t *testing.T) {
-			n, state := makeStateAndChunk(`{
+			n, state := MakeTestStateAndChunk(`{
 				f: fn(){ 
 					sendval 1 to supersys
 				}
@@ -4370,7 +4330,7 @@ func TestSymbolicEval(t *testing.T) {
 	t.Run("mapping expression", func(t *testing.T) {
 
 		t.Run("ok", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				Mapping { 0 => 1  1 => comp 0 }
 			`)
 
@@ -4381,7 +4341,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("key variable & group matching variable should be accessible in right side", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				Mapping { p %/{:name} m => [p, m] }
 			`)
 
@@ -4392,7 +4352,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("key variable should be accessible in right side and have right type", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				Mapping { n 1 => (n - 1) }
 			`)
 
@@ -4403,7 +4363,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("key variable should be accessible in right side and have right type: case pattern key", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				Mapping { n %int => (n - 1) }
 			`)
 
@@ -4418,7 +4378,7 @@ func TestSymbolicEval(t *testing.T) {
 	t.Run("compute expression", func(t *testing.T) {
 
 		t.Run("argument is not a simple value", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				Mapping { 0 => comp {} }
 			`)
 
@@ -4435,7 +4395,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 	t.Run("concatenation expression", func(t *testing.T) {
 		t.Run("single string element", func(t *testing.T) {
-			n, state := makeStateAndChunk(`concat "a"`)
+			n, state := MakeTestStateAndChunk(`concat "a"`)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -4444,7 +4404,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("two string-like elements", func(t *testing.T) {
-			n, state := makeStateAndChunk(`concat "a" "b"`)
+			n, state := MakeTestStateAndChunk(`concat "a" "b"`)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -4453,7 +4413,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("multivalue element implementing string like", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				var elem %str = "a"
 				if g {
 					elem = concat elem "b"
@@ -4475,7 +4435,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("single byteslice element", func(t *testing.T) {
-			n, state := makeStateAndChunk(`concat 0d[12]`)
+			n, state := MakeTestStateAndChunk(`concat 0d[12]`)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -4484,7 +4444,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("two bytes-like elements", func(t *testing.T) {
-			n, state := makeStateAndChunk(`concat 0d[12] 0d[34]`)
+			n, state := MakeTestStateAndChunk(`concat 0d[12] 0d[34]`)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -4493,7 +4453,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("two tuples with known elements", func(t *testing.T) {
-			n, state := makeStateAndChunk(`concat #[1] #["a"]`)
+			n, state := MakeTestStateAndChunk(`concat #[1] #["a"]`)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -4502,7 +4462,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("two tuples with unknown elements, different general elements", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return fn(a %int_tuple, b %str_tuple){
 					return concat a b
 				}`,
@@ -4525,7 +4485,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("two tuples with unknown elements, same general element", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				return fn(a %int_tuple, b %int_tuple){
 					return concat a b
 				}`,
@@ -4547,7 +4507,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("spread string list", func(t *testing.T) {
-			n, state := makeStateAndChunk(`concat ...["a"]`)
+			n, state := MakeTestStateAndChunk(`concat ...["a"]`)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -4556,7 +4516,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("spread list with invalid values", func(t *testing.T) {
-			n, state := makeStateAndChunk(`concat ...[1]`)
+			n, state := MakeTestStateAndChunk(`concat ...[1]`)
 			res, err := symbolicEval(n, state)
 
 			spreadElem := parse.FindNode(n, (*parse.ElementSpreadElement)(nil), nil)
@@ -4569,7 +4529,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("string followed by a spread list with invalid values", func(t *testing.T) {
-			n, state := makeStateAndChunk(`concat "a" ...[1]`)
+			n, state := MakeTestStateAndChunk(`concat "a" ...[1]`)
 			res, err := symbolicEval(n, state)
 
 			spreadElem := parse.FindNode(n, (*parse.ElementSpreadElement)(nil), nil)
@@ -4582,7 +4542,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("non iterable spread element", func(t *testing.T) {
-			n, state := makeStateAndChunk(`return concat ...1`)
+			n, state := MakeTestStateAndChunk(`return concat ...1`)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -4591,7 +4551,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("string followed by a non iterable spread element", func(t *testing.T) {
-			n, state := makeStateAndChunk(`return concat "a" ...1`)
+			n, state := MakeTestStateAndChunk(`return concat "a" ...1`)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -4607,7 +4567,7 @@ func TestSymbolicEval(t *testing.T) {
 		}
 
 		t.Run("no interpolation", func(t *testing.T) {
-			n, state := makeStateAndChunk(replace(`
+			n, state := MakeTestStateAndChunk(replace(`
 				%digit = %str('0'..'9')
 				return %digit|3|
 			`))
@@ -4619,7 +4579,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("no pattern, no interpolation", func(t *testing.T) {
-			n, state := makeStateAndChunk(replace(`
+			n, state := MakeTestStateAndChunk(replace(`
 				return |3|
 			`))
 
@@ -4630,7 +4590,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("interpolation & non-namespaced pattern", func(t *testing.T) {
-			n, state := makeStateAndChunk(replace(`
+			n, state := MakeTestStateAndChunk(replace(`
 				%sql = %str( %|.*| )
 				unsanitized_id = "5"
 				return %sql|SELECT * FROM users WHERE id = {{int:$unsanitized_id}}|
@@ -4647,7 +4607,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("interpolation pattern does not exist", func(t *testing.T) {
-			n, state := makeStateAndChunk(replace(`
+			n, state := MakeTestStateAndChunk(replace(`
 				%sql. = {stmt: %str( %|.*| )}
 				unsanitized_id = "5"
 				return %sql.stmt|SELECT * FROM users WHERE id = {{int:$unsanitized_id}}|
@@ -4664,7 +4624,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("interpolation expression is not a string", func(t *testing.T) {
-			n, state := makeStateAndChunk(replace(`
+			n, state := MakeTestStateAndChunk(replace(`
 				%sql. = {
 					stmt: %str( %|.*| ),
 					int: %str( '0'..'9'+ )
@@ -4684,7 +4644,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("no pattern, leading interpolation", func(t *testing.T) {
-			n, state := makeStateAndChunk(replace(`
+			n, state := MakeTestStateAndChunk(replace(`
 				s = "1"
 				return |{{s}}2|
 			`))
@@ -4696,7 +4656,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("no pattern, trailing interpolation", func(t *testing.T) {
-			n, state := makeStateAndChunk(replace(`
+			n, state := MakeTestStateAndChunk(replace(`
 				s = "2"
 				return |1{{s}}|
 			`))
@@ -4708,7 +4668,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("no pattern, multivalue interpolation implementing string like", func(t *testing.T) {
-			n, state := makeStateAndChunk(`
+			n, state := MakeTestStateAndChunk(`
 				var elem %str = "a"
 				if g {
 					elem = concat elem "b"
@@ -4733,7 +4693,7 @@ func TestSymbolicEval(t *testing.T) {
 	t.Run("XML expression", func(t *testing.T) {
 
 		t.Run("namespace not a record", func(t *testing.T) {
-			n, state := makeStateAndChunk(`html<div></div>`)
+			n, state := MakeTestStateAndChunk(`html<div></div>`)
 			state.setGlobal("html", Nil, GlobalConst)
 			res, err := symbolicEval(n, state)
 
@@ -4747,7 +4707,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("namespace has not the property for the factory", func(t *testing.T) {
-			n, state := makeStateAndChunk(`html<div></div>`)
+			n, state := MakeTestStateAndChunk(`html<div></div>`)
 			state.setGlobal("html", NewRecord(map[string]SymbolicValue{}), GlobalConst)
 			res, err := symbolicEval(n, state)
 
@@ -4761,7 +4721,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("namespace's factory has not the right type", func(t *testing.T) {
-			n, state := makeStateAndChunk(`html<div></div>`)
+			n, state := MakeTestStateAndChunk(`html<div></div>`)
 			state.setGlobal("html", NewRecord(map[string]SymbolicValue{
 				FROM_XML_FACTORY_NAME: Nil,
 			}), GlobalConst)
@@ -4777,7 +4737,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("namespace's factory has not the right signature", func(t *testing.T) {
-			n, state := makeStateAndChunk(`html<div></div>`)
+			n, state := MakeTestStateAndChunk(`html<div></div>`)
 			state.setGlobal("html", NewRecord(map[string]SymbolicValue{
 				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context) *Object {
 					return NewEmptyObject()
@@ -4795,7 +4755,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("namespace's factory is valid", func(t *testing.T) {
-			n, state := makeStateAndChunk(`html<div></div>`)
+			n, state := MakeTestStateAndChunk(`html<div></div>`)
 			state.setGlobal("html", NewRecord(map[string]SymbolicValue{
 				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *XMLElement) *Identifier {
 					return &Identifier{name: elem.name}
@@ -4809,7 +4769,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("interpolation", func(t *testing.T) {
-			n, state := makeStateAndChunk(`html<div>{1}</div>`)
+			n, state := MakeTestStateAndChunk(`html<div>{1}</div>`)
 			state.setGlobal("html", NewRecord(map[string]SymbolicValue{
 				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *XMLElement) *XMLElement {
 					return elem
@@ -4826,7 +4786,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("attribute with value", func(t *testing.T) {
-			n, state := makeStateAndChunk(`a = "a"; return html<div a=a></div>`)
+			n, state := MakeTestStateAndChunk(`a = "a"; return html<div a=a></div>`)
 			state.setGlobal("html", NewRecord(map[string]SymbolicValue{
 				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *XMLElement) *XMLElement {
 					return elem
@@ -4844,7 +4804,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("attribute without value", func(t *testing.T) {
-			n, state := makeStateAndChunk(`a = "a"; return html<div a></div>`)
+			n, state := MakeTestStateAndChunk(`a = "a"; return html<div a></div>`)
 			state.setGlobal("html", NewRecord(map[string]SymbolicValue{
 				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *XMLElement) *XMLElement {
 					return elem

@@ -478,6 +478,10 @@ func (state *State) consumeSymbolicGoFunctionParameters() ([]SymbolicValue, []st
 	return *state.tempSymbolicGoFunctionParameters, state.tempSymbolicGoFunctionParameterNames, true
 }
 
+func (state *State) Errors() []SymbolicEvaluationError {
+	return utils.CopySlice(state.errors)
+}
+
 type varSymbolicInfo struct {
 	value      SymbolicValue
 	static     Pattern

@@ -36,17 +36,7 @@ func init() {
 		EscapeString, func(ctx *symbolic.Context, s symbolic.StringLike) *symbolic.String {
 			return symbolic.ANY_STR
 		},
-		CreateHTMLNodeFromXMLElement, func(ctx *symbolic.Context, elem *symbolic.XMLElement) *_html_symbolic.HTMLNode {
-			for name, val := range elem.Attributes() {
-				switch val.(type) {
-				case symbolic.StringLike, *symbolic.Int:
-				default:
-					ctx.AddFormattedSymbolicGoFunctionError("value of attribute '%s' is not accepted for now (%s), use a string or an integer", name, symbolic.Stringify(val))
-				}
-			}
-
-			return _html_symbolic.NewHTMLNode()
-		},
+		CreateHTMLNodeFromXMLElement, _html_symbolic.CreateHTMLNodeFromXMLElement,
 	})
 
 	specifcTagFactory := func(ctx *symbolic.Context, desc *symbolic.Object) *_html_symbolic.HTMLNode {
