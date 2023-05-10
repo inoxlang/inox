@@ -3011,7 +3011,13 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			}
 			children = append(children, val)
 		}
-		return NewXmlElement(name, attrs, children), nil
+
+		xmlElem := NewXmlElement(name, attrs, children)
+
+		state.symbolicData.SetMostSpecificNodeValue(n.Opening.Name, xmlElem)
+		state.symbolicData.SetMostSpecificNodeValue(n.Closing.Name, xmlElem)
+
+		return xmlElem, nil
 	case *parse.XMLInterpolation:
 		val, err := symbolicEval(n.Expr, state)
 		if err != nil {

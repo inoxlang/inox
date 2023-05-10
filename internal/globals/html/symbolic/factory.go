@@ -16,7 +16,7 @@ func CreateHTMLNodeFromXMLElement(ctx *symbolic.Context, elem *symbolic.XMLEleme
 			}
 		}
 
-		for _, child := range elem.Children() {
+		for _, child := range e.Children() {
 			switch c := child.(type) {
 			case *symbolic.XMLElement:
 				checkElem(c)
