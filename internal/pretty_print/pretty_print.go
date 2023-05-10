@@ -15,6 +15,7 @@ var (
 		PatternIdentifier: GetFullColorSequence(termenv.ANSIBrightGreen, false),
 		CssTypeSelector:   GetFullColorSequence(termenv.ANSIBlack, false),
 		CssOtherSelector:  GetFullColorSequence(termenv.ANSIYellow, false),
+		XmlTagName:        GetFullColorSequence(termenv.ANSIBlue, false),
 		InvalidNode:       GetFullColorSequence(termenv.ANSIBrightRed, false),
 		DiscreteColor:     GetFullColorSequence(termenv.ANSIBrightBlack, false),
 
@@ -34,6 +35,7 @@ var (
 		PatternIdentifier: GetFullColorSequence(termenv.ANSI256Color(28), false),
 		CssTypeSelector:   GetFullColorSequence(termenv.ANSIBlack, false),
 		CssOtherSelector:  GetFullColorSequence(termenv.ANSIYellow, false),
+		XmlTagName:        GetFullColorSequence(termenv.ANSIBlue, false),
 		InvalidNode:       GetFullColorSequence(termenv.ANSI256Color(160), false),
 		DiscreteColor:     GetFullColorSequence(termenv.ANSIBrightBlack, false),
 
@@ -45,7 +47,7 @@ var (
 type PrettyPrintColors struct {
 	//inox code
 	ControlKeyword, OtherKeyword, PatternLiteral, StringLiteral, PathLiteral, IdentifierLiteral,
-	NumberLiteral, Constant, PatternIdentifier, CssTypeSelector, CssOtherSelector, InvalidNode,
+	NumberLiteral, Constant, PatternIdentifier, CssTypeSelector, CssOtherSelector, XmlTagName, InvalidNode,
 
 	DiscreteColor, Folder, Executable []byte
 }

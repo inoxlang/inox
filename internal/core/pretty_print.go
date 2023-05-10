@@ -125,7 +125,22 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 	parse.Walk(chunk, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, _ bool) (parse.TraversalAction, error) {
 		switch n := node.(type) {
 		//literals
-		case *parse.IdentifierLiteral, *parse.Variable, *parse.GlobalVariable, *parse.AtHostLiteral, *parse.NamedPathSegment:
+		case *parse.IdentifierLiteral:
+			var colorSeq []byte
+			if openingElem, ok := parent.(*parse.XMLOpeningElement); ok && openingElem.Name == n {
+				colorSeq = colors.XmlTagName
+			} else if _, ok := parent.(*parse.XMLClosingElement); ok {
+				colorSeq = colors.XmlTagName
+			} else {
+				colorSeq = colors.IdentifierLiteral
+			}
+
+			colorizations = append(colorizations, ColorizationInfo{
+				Span:          n.Base().Span,
+				ColorSequence: colorSeq,
+			})
+
+		case *parse.Variable, *parse.GlobalVariable, *parse.AtHostLiteral, *parse.NamedPathSegment:
 			colorizations = append(colorizations, ColorizationInfo{
 				Span:          n.Base().Span,
 				ColorSequence: colors.IdentifierLiteral,
@@ -369,6 +384,13 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 				colorizations = append(colorizations, ColorizationInfo{
 					Span:          token.Span,
 					ColorSequence: colors.OtherKeyword,
+				})
+			}
+		case *parse.XMLOpeningElement, *parse.XMLClosingElement:
+			for _, token := range n.Base().ValuelessTokens {
+				colorizations = append(colorizations, ColorizationInfo{
+					Span:          token.Span,
+					ColorSequence: colors.DiscreteColor,
 				})
 			}
 		}
