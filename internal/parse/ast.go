@@ -1995,6 +1995,10 @@ type XMLOpeningElement struct {
 	SelfClosed bool
 }
 
+func (attr XMLOpeningElement) GetName() string {
+	return attr.Name.(*IdentifierLiteral).Name
+}
+
 type XMLClosingElement struct {
 	NodeBase
 	Name Node
@@ -2004,6 +2008,10 @@ type XMLAttribute struct {
 	NodeBase
 	Name  Node
 	Value Node
+}
+
+func (attr XMLAttribute) GetName() string {
+	return attr.Name.(*IdentifierLiteral).Name
 }
 
 type XMLText struct {

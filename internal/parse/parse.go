@@ -7273,6 +7273,20 @@ func (p *parser) parseXMLChildren(valuelessTokens *[]Token) ([]Node, *ParsingErr
 			}
 			children = append(children, interpolationNode)
 		case p.s[p.i] == '<': //child element
+
+			// add previous slice
+			raw := string(p.s[childStart:p.i])
+			value, sliceErr := p.getValueOfMultilineStringSliceOrLiteral([]byte(raw), false)
+			children = append(children, &XMLText{
+				NodeBase: NodeBase{
+					NodeSpan{childStart, p.i},
+					sliceErr,
+					nil,
+				},
+				Raw:   raw,
+				Value: value,
+			})
+
 			child := p.parseXMLElement(p.i)
 			children = append(children, child)
 			childStart = p.i
