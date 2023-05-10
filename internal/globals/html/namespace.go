@@ -33,6 +33,20 @@ func init() {
 		RenderToString, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) *symbolic.String {
 			return &symbolic.String{}
 		},
+		EscapeString, func(ctx *symbolic.Context, s symbolic.StringLike) *symbolic.String {
+			return symbolic.ANY_STR
+		},
+		CreateHTMLNodeFromXMLElement, func(ctx *symbolic.Context, elem *symbolic.XMLElement) *_html_symbolic.HTMLNode {
+			for name, val := range elem.Attributes() {
+				switch val.(type) {
+				case symbolic.StringLike, *symbolic.Int:
+				default:
+					ctx.AddFormattedSymbolicGoFunctionError("value of attribute '%s' is not accepted for now (%s), use a string or an integer", name, symbolic.Stringify(val))
+				}
+			}
+
+			return _html_symbolic.NewHTMLNode()
+		},
 	})
 
 	specifcTagFactory := func(ctx *symbolic.Context, desc *symbolic.Object) *_html_symbolic.HTMLNode {
@@ -42,18 +56,6 @@ func init() {
 	for _, fn := range []any{_a, _div, _ul, _ol, _li, _span, _svg, _h1, _h2, _h3, _h4} {
 		core.RegisterSymbolicGoFunction(fn, specifcTagFactory)
 	}
-
-	core.RegisterSymbolicGoFunction(CreateHTMLNodeFromXMLElement, func(ctx *symbolic.Context, elem *symbolic.XMLElement) *_html_symbolic.HTMLNode {
-		for name, val := range elem.Attributes() {
-			switch val.(type) {
-			case symbolic.StringLike, *symbolic.Int:
-			default:
-				ctx.AddFormattedSymbolicGoFunctionError("value of attribute '%s' is not accepted for now (%s), use a string or an integer", name, symbolic.Stringify(val))
-			}
-		}
-
-		return _html_symbolic.NewHTMLNode()
-	})
 
 	help.RegisterHelpValues(map[string]any{
 		"html.h1": _h1,
@@ -82,6 +84,7 @@ func NewHTMLNamespace() *core.Record {
 
 		"render":     core.WrapGoFunction(Render),
 		"str_render": core.WrapGoFunction(RenderToString),
+		"escape":     core.WrapGoFunction(EscapeString),
 
 		symbolic.FROM_XML_FACTORY_NAME: core.WrapGoFunction(CreateHTMLNodeFromXMLElement),
 	})
