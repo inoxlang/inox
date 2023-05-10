@@ -26,6 +26,20 @@ func NewXmlElement(name string, attributes map[string]SymbolicValue, children []
 	return &XMLElement{name: name, children: children, attributes: attributes}
 }
 
+func (e *XMLElement) Name() string {
+	return e.name
+}
+
+// result should not be modified.
+func (e *XMLElement) Attributes() map[string]SymbolicValue {
+	return e.attributes
+}
+
+// result should not be modified.
+func (e *XMLElement) Children() []SymbolicValue {
+	return e.children
+}
+
 func (r *XMLElement) Test(v SymbolicValue) bool {
 	switch val := v.(type) {
 	case Writable:

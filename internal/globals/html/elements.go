@@ -8,6 +8,7 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
 	_html_symbolic "github.com/inoxlang/inox/internal/globals/html/symbolic"
+	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 )
@@ -238,16 +239,17 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) (finalNode *HTM
 }
 
 type NodeDescription struct {
-	Tag      string
-	Children []*HTMLNode
-	Class    string
-	Id       string
+	Tag        string
+	Children   []*HTMLNode
+	Class      string
+	Id         string
+	Attributes []html.Attribute
 }
 
 func NewNodeFromGoDescription(desc NodeDescription) *HTMLNode {
 	//TODO: merge text nodes that are siblings
 
-	dataAtom := atom.Lookup([]byte(desc.Tag))
+	dataAtom := atom.Lookup(utils.StringAsBytes(desc.Tag))
 
 	if dataAtom == 0 {
 		panic(fmt.Errorf("provided tag '%s' is invalid", desc.Tag))
@@ -278,6 +280,8 @@ func NewNodeFromGoDescription(desc NodeDescription) *HTMLNode {
 	if desc.Id != "" {
 		node.node.Attr = append(node.node.Attr, html.Attribute{Key: "id", Val: desc.Id})
 	}
+
+	node.node.Attr = append(node.node.Attr, desc.Attributes...)
 
 	if len(desc.Children) > 0 {
 		node.node.FirstChild = desc.Children[0].node
