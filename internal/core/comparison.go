@@ -1898,3 +1898,13 @@ func (s *SecretPattern) Equal(ctx *Context, other Value, alreadyCompared map[uin
 
 	return s == otherPattern
 }
+
+func (e *XMLElement) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	//TODO: implement
+	otherElem, ok := other.(*XMLElement)
+	if !ok {
+		return false
+	}
+
+	return e == otherElem
+}

@@ -5326,6 +5326,127 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 	})
 
+	t.Run("XML expression", func(t *testing.T) {
+		__idt := WrapGoFunction(func(ctx *Context, e *XMLElement) *XMLElement {
+			return e
+		})
+
+		createNamespace := func() *Record {
+			return NewRecordFromMap(ValMap{symbolic.FROM_XML_FACTORY_NAME: __idt})
+		}
+
+		t.Run("element", func(t *testing.T) {
+			code := `idt<div></div>`
+			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				"idt": createNamespace(),
+			})
+
+			val, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, NewXmlElement("div", nil, []Value{Str("")}), val)
+		})
+
+		t.Run("integer attribute", func(t *testing.T) {
+			code := `idt<div a=1></div>`
+			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				"idt": createNamespace(),
+			})
+
+			val, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, NewXmlElement("div", []XMLAttribute{{name: "a", value: Int(1)}}, []Value{Str("")}), val)
+		})
+
+		t.Run("string attribute", func(t *testing.T) {
+			code := `idt<div a="b"></div>`
+			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				"idt": createNamespace(),
+			})
+
+			val, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, NewXmlElement("div", []XMLAttribute{{name: "a", value: Str("b")}}, []Value{Str("")}), val)
+		})
+
+		t.Run("linefeed", func(t *testing.T) {
+			code := "idt<div>\n</div>"
+			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				"idt": createNamespace(),
+			})
+
+			val, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, NewXmlElement("div", nil, []Value{Str("\n")}), val)
+		})
+
+		t.Run("empty child", func(t *testing.T) {
+			code := "idt<div><span></span></div>"
+			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				"idt": createNamespace(),
+			})
+
+			val, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, NewXmlElement("div", nil, []Value{
+				Str(""),
+				NewXmlElement("span", nil, []Value{Str("")}),
+				Str(""),
+			}), val)
+		})
+
+		t.Run("linefeed followed by empty child", func(t *testing.T) {
+			code := "idt<div>\n<span></span></div>"
+			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				"idt": createNamespace(),
+			})
+
+			val, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, NewXmlElement("div", nil, []Value{
+				Str("\n"),
+				NewXmlElement("span", nil, []Value{Str("")}),
+				Str(""),
+			}), val)
+		})
+
+		t.Run("non-empty child", func(t *testing.T) {
+			code := "idt<div><span>1</span></div>"
+			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				"idt": createNamespace(),
+			})
+
+			val, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, NewXmlElement("div", nil, []Value{
+				Str(""),
+				NewXmlElement("span", nil, []Value{Str("1")}),
+				Str(""),
+			}), val)
+		})
+
+	})
+
 }
 
 func TestSpawnRoutine(t *testing.T) {

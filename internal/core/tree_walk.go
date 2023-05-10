@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"html"
 	"math"
 	"runtime/debug"
 	"strconv"
@@ -2402,10 +2403,50 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		return Str(selector.String()), nil
 	case parse.SimpleValueLiteral:
 		return evalSimpleValueLiteral(n, state.Global)
+	case *parse.XMLExpression:
+		xmlElem, err := TreeWalkEval(n.Element, state)
+		if err != nil {
+			return nil, err
+		}
+
+		namespace, err := TreeWalkEval(n.Namespace, state)
+		if err != nil {
+			return nil, err
+		}
+
+		record := namespace.(*Record)
+		factory := record.Prop(state.Global.Ctx, symbolic.FROM_XML_FACTORY_NAME).(*GoFunction)
+
+		return factory.Call([]any{xmlElem}, state.Global, nil, false, false)
+	case *parse.XMLElement:
+		name := n.Opening.GetName()
+
+		var attrs []XMLAttribute
+
+		for _, attr := range n.Opening.Attributes {
+			attrValue, err := TreeWalkEval(attr.Value, state)
+			if err != nil {
+				return nil, err
+			}
+			attrs = append(attrs, XMLAttribute{name: attr.GetName(), value: attrValue})
+		}
+
+		var children []Value
+
+		for _, child := range n.Children {
+			childValue, err := TreeWalkEval(child, state)
+			if err != nil {
+				return nil, err
+			}
+			children = append(children, childValue)
+		}
+
+		return NewXmlElement(name, attrs, children), nil
+	case *parse.XMLText:
+		return Str(html.EscapeString(n.Value)), nil
 	default:
 		return nil, fmt.Errorf("cannot evaluate %#v (%T)\n%s", node, node, debug.Stack())
 	}
-
 }
 
 type TreeWalkCall struct {

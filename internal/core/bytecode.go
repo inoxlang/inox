@@ -191,11 +191,13 @@ const (
 	OpCreateTestCase
 	OpCreateLifetimeJob
 	OpCreateReceptionHandler
+	OpCreateXMLelem
 	OpSendValue
 	OpSpreadObjectPattern
 	BindCapturedLocals
 	OpCall
 	OpReturn
+	OpCallFromXMLFactory
 	OpYield
 	OpCallPattern
 	OpDropPerms
@@ -307,6 +309,7 @@ var OpcodeNames = [...]string{
 	OpCreateTestCase:               "CRT_TSTC",
 	OpCreateLifetimeJob:            "CRT_LFJOB",
 	OpCreateReceptionHandler:       "CRT_RHANDLER",
+	OpCreateXMLelem:                "CRT_XML_ELEM",
 	OpSendValue:                    "SEND_VAL",
 	OpSpreadObjectPattern:          "SPRD_OBJP",
 	BindCapturedLocals:             "BIND_LOCS",
@@ -317,6 +320,7 @@ var OpcodeNames = [...]string{
 	OpSetSlice:                     "SET_SLICE",
 	OpCall:                         "CALL",
 	OpReturn:                       "RETURN",
+	OpCallFromXMLFactory:           "CALL_FXML_FACTORY",
 	OpYield:                        "YIELD",
 	OpCallPattern:                  "CALL_PATT",
 	OpDropPerms:                    "DROP_PERMS",
@@ -425,6 +429,7 @@ var OpcodeOperands = [...][]int{
 	OpCreateTestCase:               {2},
 	OpCreateLifetimeJob:            {2},
 	OpCreateReceptionHandler:       {},
+	OpCreateXMLelem:                {2, 1, 1},
 	OpSendValue:                    {},
 	OpSpreadObjectPattern:          {},
 	BindCapturedLocals:             {1},
@@ -540,11 +545,13 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpCreateTestCase:               {true},
 	OpCreateLifetimeJob:            {true},
 	OpCreateReceptionHandler:       {},
+	OpCreateXMLelem:                {true, false, false},
 	OpSendValue:                    {},
 	OpSpreadObjectPattern:          {},
 	BindCapturedLocals:             {false},
 	OpCall:                         {false, false, false},
 	OpReturn:                       {false},
+	OpCallFromXMLFactory:           {},
 	OpYield:                        {false},
 	OpCallPattern:                  {false},
 	OpDropPerms:                    {},

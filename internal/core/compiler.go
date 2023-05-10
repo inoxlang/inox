@@ -3,6 +3,7 @@ package internal
 import (
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"math"
 	"reflect"
@@ -1800,6 +1801,37 @@ func (c *compiler) Compile(node parse.Node) error {
 		}
 
 		c.emit(node, OpToBool)
+	case *parse.XMLExpression:
+		if err := c.Compile(node.Element); err != nil {
+			return err
+		}
+
+		if err := c.Compile(node.Namespace); err != nil {
+			return err
+		}
+
+		c.emit(node, OpCallFromXMLFactory)
+	case *parse.XMLElement:
+		name := node.Opening.GetName()
+
+		for _, attr := range node.Opening.Attributes {
+			c.emit(node, OpPushConstant, c.addConstant(Str(attr.GetName())))
+
+			if err := c.Compile(attr.Value); err != nil {
+				return err
+			}
+		}
+
+		for _, child := range node.Children {
+			if err := c.Compile(child); err != nil {
+				return err
+			}
+		}
+
+		c.emit(node, OpCreateXMLelem, c.addConstant(Str(name)), len(node.Opening.Attributes), len(node.Children))
+	case *parse.XMLText:
+		str := Str(html.EscapeString(node.Value))
+		c.emit(node, OpPushConstant, c.addConstant(str))
 	default:
 		return fmt.Errorf("cannot compile %T", node)
 	}

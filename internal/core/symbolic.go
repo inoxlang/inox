@@ -1187,3 +1187,27 @@ func (p *SecretPattern) ToSymbolicValue(wide bool, encountered map[uintptr]symbo
 
 	return symbolic.NewSecretPattern(stringPattern.(symbolic.StringPatternElement)), nil
 }
+
+func (p *XMLElement) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+
+	attributes := make(map[string]symbolic.SymbolicValue, len(p.attributes))
+
+	for _, attr := range p.attributes {
+		symbolicVal, err := attr.value.ToSymbolicValue(wide, encountered)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert value of attribute '%s' to symbolic: %w", attr.name, err)
+		}
+		attributes[attr.name] = symbolicVal
+	}
+
+	children := make([]symbolic.SymbolicValue, len(p.children))
+	for i, child := range p.children {
+		symbolicVal, err := child.ToSymbolicValue(wide, encountered)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert value of a child at index %d to symbolic: %w", i, err)
+		}
+		children = append(children, symbolicVal)
+	}
+
+	return symbolic.NewXmlElement(p.name, attributes, children), nil
+}

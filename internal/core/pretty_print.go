@@ -1857,6 +1857,10 @@ func (s *SecretPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, 
 	printType(w, s)
 }
 
+func (s *XMLElement) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	printType(w, s)
+}
+
 func inspectPrint[T any](w *bufio.Writer, v T) {
 	utils.Must(fmt.Fprintf(w, "%#v", v))
 }

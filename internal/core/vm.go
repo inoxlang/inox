@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync/atomic"
 
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -1508,6 +1509,21 @@ func (v *VM) run() {
 			if topLevelFnEval {
 				return
 			}
+		case OpCallFromXMLFactory:
+			xmlElem := v.stack[v.sp-2].(*XMLElement)
+
+			namespace := v.stack[v.sp-1].(*Record)
+			factory := namespace.Prop(v.global.Ctx, symbolic.FROM_XML_FACTORY_NAME).(*GoFunction)
+
+			v.sp--
+
+			result, err := factory.Call([]any{xmlElem}, v.global, nil, false, false)
+			if err != nil {
+				v.err = err
+				return
+			}
+
+			v.stack[v.sp-1] = result
 		case OpYield:
 			v.ip++
 			var retVal Value
@@ -1910,6 +1926,37 @@ func (v *VM) run() {
 
 			v.stack[v.sp-2] = NewSynchronousMessageHandler(v.global.Ctx, handler, pattern)
 			v.sp--
+		case OpCreateXMLelem:
+			v.ip += 4
+			tagNameIndex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
+			attributeCount := int(v.curInsts[v.ip-1])
+			childCount := int(v.curInsts[v.ip])
+			tagName := string(v.constants[tagNameIndex].(Str))
+
+			var attributes []XMLAttribute
+			if attributeCount > 0 {
+				attributes = make([]XMLAttribute, attributeCount)
+
+				attributesStart := v.sp - childCount - 2*attributeCount
+				for i := attributesStart; i < attributesStart+2*attributeCount; i += 2 {
+					attributes[i/2] = XMLAttribute{
+						name:  string(v.stack[i].(Str)),
+						value: v.stack[i+1],
+					}
+				}
+			}
+
+			childrenStart := v.sp - childCount
+			var children []Value
+			if childCount > 0 {
+				children = make([]Value, childCount)
+				copy(children, v.stack[childrenStart:v.sp])
+			}
+
+			v.sp -= (childCount + 2*attributeCount)
+
+			v.stack[v.sp] = NewXmlElement(tagName, attributes, children)
+			v.sp++
 		case OpSendValue:
 			value := v.stack[v.sp-2]
 			receiver, ok := v.stack[v.sp-1].(MessageReceiver)
