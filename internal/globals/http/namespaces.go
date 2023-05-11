@@ -6,6 +6,8 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	http_symbolic "github.com/inoxlang/inox/internal/globals/http/symbolic"
+
+	help "github.com/inoxlang/inox/internal/globals/help"
 )
 
 func init() {
@@ -67,6 +69,19 @@ func init() {
 		NewClient, func(ctx *symbolic.Context, config *symbolic.Object) *http_symbolic.HttpClient {
 			return &http_symbolic.HttpClient{}
 		},
+	})
+
+	help.RegisterHelpValues(map[string]any{
+		"http.exists":     httpExists,
+		"http.get":        HttpGet,
+		"http.read":       HttpRead,
+		"http.post":       HttpPost,
+		"http.patch":      HttpPatch,
+		"http.delete":     HttpDelete,
+		"http.Server":     NewHttpServer,
+		"http.FileServer": NewFileServer,
+		"http.servefile":  serveFile,
+		"http.Client":     NewClient,
 	})
 }
 
