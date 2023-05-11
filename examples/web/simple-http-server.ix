@@ -20,7 +20,7 @@ fn handle(rw %http.resp_writer, r %http.req){
 
 
 server = http.Server!(https://localhost:8080, handle)
-body = http.read!(https://localhost:8080/ {--insecure})
+body = http.read!(https://localhost:8080/, --insecure)
 print $body
 
 server.close()

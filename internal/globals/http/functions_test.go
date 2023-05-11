@@ -47,9 +47,7 @@ func TestHttpClient(t *testing.T) {
 		client, err := NewClient(ctx, core.NewObjectFromMap(core.ValMap{"save-cookies": core.False}, ctx))
 		assert.NoError(t, err)
 
-		_, err = HttpGet(ctx, URL, core.NewObjectFromMap(core.ValMap{
-			"0": core.Option{Name: "client", Value: client},
-		}, ctx))
+		_, err = HttpGet(ctx, URL, core.Option{Name: "client", Value: client})
 
 		if !assert.NoError(t, err) {
 			t.FailNow()
@@ -73,9 +71,7 @@ func TestHttpClient(t *testing.T) {
 		client, err := NewClient(ctx, core.NewObjectFromMap(core.ValMap{"save-cookies": core.True}, ctx))
 		assert.NoError(t, err)
 
-		_, err = HttpGet(ctx, URL, core.NewObjectFromMap(core.ValMap{
-			"0": core.Option{Name: "client", Value: client},
-		}, ctx))
+		_, err = HttpGet(ctx, URL, core.Option{Name: "client", Value: client})
 		if !assert.NoError(t, err) {
 			t.FailNow()
 		}
@@ -99,9 +95,7 @@ func TestHttpClient(t *testing.T) {
 		client, err := NewClient(ctx, core.NewObjectFromMap(core.ValMap{"save-cookies": core.True}, ctx))
 		assert.NoError(t, err)
 
-		resp, err := HttpGet(ctx, URL, core.NewObjectFromMap(core.ValMap{
-			"0": core.Option{Name: "client", Value: client},
-		}, ctx))
+		resp, err := HttpGet(ctx, URL, core.Option{Name: "client", Value: client})
 
 		if !assert.NoError(t, err) {
 			t.FailNow()

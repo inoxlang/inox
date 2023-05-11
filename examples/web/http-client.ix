@@ -31,7 +31,7 @@ fn handle(rw %http.resp_writer, r %http.req){
 client = http.Client{ save-cookies: true, insecure: true }
 server = http.Server!(DOMAIN, handle)
 
-resp = http.get!(URL, {--insecure, --client=client})
+resp = http.get!(URL, --insecure, --client=client)
 
 print "cookies in response:" resp.cookies
 print "cookies in client:" client.get_host_cookies(DOMAIN) 

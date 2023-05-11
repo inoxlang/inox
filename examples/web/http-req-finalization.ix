@@ -28,6 +28,6 @@ client = http.Client{
 set_client_for_host(DOMAIN, client)
 
 server = http.Server!(DOMAIN, handle)
-http.get!(URL, {--insecure}) 
+http.get!(URL, --insecure) 
 
 server.close()

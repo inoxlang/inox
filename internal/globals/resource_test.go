@@ -51,9 +51,7 @@ func TestReadResource(t *testing.T) {
 			})
 			defer ctx.Cancel()
 
-			res, err := _readResource(ctx, resource, core.NewObjectFromMap(core.ValMap{
-				"0": insecure,
-			}, ctx))
+			res, err := _readResource(ctx, resource, insecure)
 
 			if assert.Error(t, err) {
 				assert.Nil(t, res)
@@ -66,9 +64,7 @@ func TestReadResource(t *testing.T) {
 			})
 			defer ctx.Cancel()
 
-			res, err := _readResource(ctx, resource, core.NewObjectFromMap(core.ValMap{
-				"0": insecure,
-			}, ctx))
+			res, err := _readResource(ctx, resource, insecure)
 
 			if !assert.NoError(t, err) {
 				return
@@ -83,9 +79,7 @@ func TestReadResource(t *testing.T) {
 			})
 			defer ctx.Cancel()
 
-			res, err := _readResource(ctx, resource, raw, core.NewObjectFromMap(core.ValMap{
-				"0": insecure,
-			}, ctx))
+			res, err := _readResource(ctx, resource, raw, insecure)
 
 			if !assert.NoError(t, err) {
 				return
@@ -101,9 +95,7 @@ func TestReadResource(t *testing.T) {
 			})
 			defer ctx.Cancel()
 
-			res, err := _readResource(ctx, resource, core.NewObjectFromMap(core.ValMap{
-				"0": insecure,
-			}, ctx))
+			res, err := _readResource(ctx, resource, insecure)
 
 			assert.Nil(t, res)
 			assert.ErrorIs(t, err, core.ErrContentTypeParserNotFound)
@@ -116,9 +108,7 @@ func TestReadResource(t *testing.T) {
 			})
 			defer ctx.Cancel()
 
-			res, err := _readResource(ctx, resource, raw, core.NewObjectFromMap(core.ValMap{
-				"0": insecure,
-			}, ctx))
+			res, err := _readResource(ctx, resource, raw, insecure)
 
 			if !assert.NoError(t, err) {
 				return
@@ -132,11 +122,7 @@ func TestReadResource(t *testing.T) {
 
 func TestGetResource(t *testing.T) {
 
-	options := func(ctx *core.Context) *core.Object {
-		return core.NewObjectFromMap(core.ValMap{
-			"0": core.Option{Name: "insecure", Value: core.True},
-		}, ctx)
-	}
+	insecure := core.Option{Name: "insecure", Value: core.True}
 
 	t.Run("read IXON", func(t *testing.T) {
 		ctx := setup(t, func(ctx *core.Context, rw *_http.HttpResponseWriter, req *_http.HttpRequest) {
@@ -145,7 +131,7 @@ func TestGetResource(t *testing.T) {
 		defer ctx.Cancel()
 
 		resource := core.URL(string(RESOURCE_TEST_HOST) + "/resource")
-		res, err := _getResource(ctx, resource, options(ctx))
+		res, err := _getResource(ctx, resource, insecure)
 
 		if !assert.NoError(t, err) {
 			return

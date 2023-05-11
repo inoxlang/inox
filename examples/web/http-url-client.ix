@@ -29,6 +29,6 @@ client = http.Client{ save-cookies: true, insecure: true }
 set_client_for_url(URL, client)
 
 server = http.Server!(DOMAIN, handle)
-http.get!(URL, {--insecure}) # client is automatically used
+http.get!(URL, --insecure) # client is automatically used
 
 server.close()

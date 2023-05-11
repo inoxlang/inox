@@ -15,7 +15,6 @@ import (
 	"math/big"
 	"mime"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -104,21 +103,12 @@ func generateSelfSignedCertAndKey() (cert *pem.Block, key *pem.Block, err error)
 	return &pem.Block{Type: "CERTIFICATE", Bytes: derBytes}, keyBlock, nil
 }
 
-func getClientAndOptions(ctx *core.Context, u core.URL, obj *core.Object) (*HttpClient, *HttpRequestOptions, error) {
+func getClientAndOptions(ctx *core.Context, u core.URL, requestOptionArgs ...core.Value) (*HttpClient, *HttpRequestOptions, error) {
 	options := *DEFAULT_HTTP_REQUEST_OPTIONS
 	specifiedOptionNames := make(map[string]int, 0)
 	var client *HttpClient
 
-	for k, v := range obj.EntryMap() {
-
-		//CHECK KEY
-
-		_, err := strconv.ParseUint(k, 10, 32)
-		if err != nil {
-			return nil, nil, errors.New("http option object: only integer keys are supported for now")
-		}
-
-		//CHECK VALUE
+	for _, v := range requestOptionArgs {
 
 		switch optVal := v.(type) {
 		case core.QuantityRange:
@@ -228,7 +218,7 @@ func httpExists(ctx *core.Context, args ...core.Value) core.Bool {
 		panic(errors.New("missing argument"))
 	}
 
-	client, opts, err := getClientAndOptions(ctx, url, nil)
+	client, opts, err := getClientAndOptions(ctx, url)
 	if err != nil {
 		panic(err)
 	}
@@ -243,7 +233,7 @@ func httpExists(ctx *core.Context, args ...core.Value) core.Bool {
 
 func HttpGet(ctx *core.Context, u core.URL, args ...core.Value) (*HttpResponse, error) {
 	var contentType core.Mimetype
-	var optionObject *core.Object
+	var requestOptionArgs []core.Value
 
 	for _, arg := range args {
 		switch argVal := arg.(type) {
@@ -254,11 +244,8 @@ func HttpGet(ctx *core.Context, u core.URL, args ...core.Value) (*HttpResponse, 
 				return nil, core.FmtErrXProvidedAtLeastTwice("mime type")
 			}
 			contentType = argVal
-		case *core.Object:
-			if optionObject != nil {
-				return nil, core.FmtErrXProvidedAtLeastTwice("http option")
-			}
-			optionObject = argVal
+		case core.Option, core.QuantityRange:
+			requestOptionArgs = append(requestOptionArgs, argVal)
 		default:
 			return nil, fmt.Errorf("invalid argument, type = %T ", arg)
 		}
@@ -270,7 +257,7 @@ func HttpGet(ctx *core.Context, u core.URL, args ...core.Value) (*HttpResponse, 
 		return nil, errors.New(MISSING_URL_ARG)
 	}
 
-	client, opts, err := getClientAndOptions(ctx, u, optionObject)
+	client, opts, err := getClientAndOptions(ctx, u, requestOptionArgs...)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +272,7 @@ func HttpGet(ctx *core.Context, u core.URL, args ...core.Value) (*HttpResponse, 
 func HttpRead(ctx *core.Context, u core.URL, args ...core.Value) (result core.Value, finalErr error) {
 	var contentType core.Mimetype
 	var b []byte
-	var optionObject *core.Object
+	var requestOptionArgs []core.Value
 	doParse := true
 	validateRaw := false
 
@@ -303,13 +290,10 @@ func HttpRead(ctx *core.Context, u core.URL, args ...core.Value) (result core.Va
 					doParse = false
 				}
 			} else {
-				return nil, fmt.Errorf("invalid argument %#v", arg)
+				requestOptionArgs = append(requestOptionArgs, v)
 			}
-		case *core.Object:
-			if optionObject != nil {
-				return nil, core.FmtErrXProvidedAtLeastTwice("http option")
-			}
-			optionObject = v
+		case core.QuantityRange:
+			requestOptionArgs = append(requestOptionArgs, v)
 		default:
 			return nil, fmt.Errorf("invalid argument %#v", arg)
 		}
@@ -319,8 +303,8 @@ func HttpRead(ctx *core.Context, u core.URL, args ...core.Value) (result core.Va
 	if contentType != "" {
 		httpGetArgs = append(httpGetArgs, contentType)
 	}
-	if optionObject != nil {
-		httpGetArgs = append(httpGetArgs, optionObject)
+	if requestOptionArgs != nil {
+		httpGetArgs = append(httpGetArgs, requestOptionArgs...)
 	}
 
 	resp, err := HttpGet(ctx, u, httpGetArgs...)
@@ -358,7 +342,7 @@ func _httpPostPatch(ctx *core.Context, isPatch bool, args ...core.Value) (*HttpR
 	var contentType core.Mimetype
 	var u core.URL
 	var body io.Reader
-	var optionObject *core.Object
+	var requestOptionArgs []core.Value
 
 	for _, arg := range args {
 		switch argVal := arg.(type) {
@@ -384,18 +368,14 @@ func _httpPostPatch(ctx *core.Context, isPatch bool, args ...core.Value) (*HttpR
 			jsonString := core.ToJSON(ctx, argVal)
 			body = strings.NewReader(string(jsonString))
 		case *core.Object:
-
 			if body == nil {
 				jsonString := core.ToJSON(ctx, argVal)
 				body = strings.NewReader(string(jsonString))
 			} else {
-
-				if optionObject != nil {
-					return nil, core.FmtErrXProvidedAtLeastTwice("http option")
-				}
-
-				optionObject = argVal
+				return nil, core.FmtErrArgumentProvidedAtLeastTwice("body")
 			}
+		case core.Option, core.QuantityRange:
+			requestOptionArgs = append(requestOptionArgs, argVal)
 		default:
 			return nil, fmt.Errorf("only an URL argument is expected, not a(n) %T ", arg)
 		}
@@ -407,7 +387,7 @@ func _httpPostPatch(ctx *core.Context, isPatch bool, args ...core.Value) (*HttpR
 		return nil, errors.New(MISSING_URL_ARG)
 	}
 
-	client, opts, err := getClientAndOptions(ctx, u, optionObject)
+	client, opts, err := getClientAndOptions(ctx, u, requestOptionArgs...)
 	if err != nil {
 		return nil, err
 	}
@@ -427,7 +407,7 @@ func _httpPostPatch(ctx *core.Context, isPatch bool, args ...core.Value) (*HttpR
 
 func HttpDelete(ctx *core.Context, args ...core.Value) (*HttpResponse, error) {
 	var u core.URL
-	var optionObject *core.Object
+	var requestOptionArgs []core.Value
 
 	for _, arg := range args {
 		switch argVal := arg.(type) {
@@ -436,11 +416,8 @@ func HttpDelete(ctx *core.Context, args ...core.Value) (*HttpResponse, error) {
 				return nil, core.FmtErrArgumentProvidedAtLeastTwice("url")
 			}
 			u = argVal
-		case *core.Object:
-			if optionObject != nil {
-				return nil, core.FmtErrXProvidedAtLeastTwice("http option")
-			}
-			optionObject = argVal
+		case core.Option, core.QuantityRange:
+			requestOptionArgs = append(requestOptionArgs, argVal)
 		default:
 			return nil, fmt.Errorf("only an core.URL argument is expected, not a(n) %T ", arg)
 		}
@@ -452,7 +429,7 @@ func HttpDelete(ctx *core.Context, args ...core.Value) (*HttpResponse, error) {
 		return nil, errors.New(MISSING_URL_ARG)
 	}
 
-	client, opts, err := getClientAndOptions(ctx, u, optionObject)
+	client, opts, err := getClientAndOptions(ctx, u, requestOptionArgs...)
 	if err != nil {
 		return nil, err
 	}
