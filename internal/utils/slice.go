@@ -74,6 +74,19 @@ func FilterSlice[T any](s []T, filter func(e T) bool) []T {
 	return result
 }
 
+func FilterMapSlice[T any, U any](s []T, mapper func(e T) (U, bool)) []U {
+	var result []U
+
+	for _, e := range s {
+		res, keep := mapper(e)
+		if keep {
+			result = append(result, res)
+		}
+	}
+
+	return result
+}
+
 func EmptySliceIfNil[T any](slice []T) []T {
 	if slice == nil {
 		return make([]T, 0)

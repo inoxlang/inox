@@ -49,8 +49,12 @@ func init() {
 			isNamespace := strings.EqualFold(item.Topic, groupName) && group.IsNamespace
 
 			if isNamespace {
-				item.SubTopics = append(item.SubTopics, utils.MapSlice(group.Elements, func(e TopicHelp) string {
-					return e.Topic
+				// add all elements of the group as subtopics (except the current topic)
+				item.SubTopics = append(item.SubTopics, utils.FilterMapSlice(group.Elements, func(e TopicHelp) (string, bool) {
+					if strings.EqualFold(e.Topic, groupName) {
+						return "", false
+					}
+					return e.Topic, true
 				})...)
 			}
 
