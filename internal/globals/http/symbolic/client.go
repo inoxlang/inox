@@ -40,7 +40,7 @@ func (c *HttpClient) Prop(name string) symbolic.SymbolicValue {
 }
 
 func (*HttpClient) PropertyNames() []string {
-	return []string{"wait_closed", "close", "get_host_cookies"}
+	return []string{"get_host_cookies"}
 }
 
 func (*HttpClient) Schemes() []string {
