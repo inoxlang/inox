@@ -489,3 +489,16 @@ func (serv *HttpServer) Close(ctx *core.Context) {
 	defer cancel()
 	serv.wrappedServer.Shutdown(timeoutCtx)
 }
+
+func serveFile(ctx *core.Context, rw *HttpResponseWriter, r *HttpRequest, pth core.Path) error {
+
+	pth = pth.ToAbs(ctx.GetFileSystem())
+	perm := core.FilesystemPermission{Kind_: core.ReadPerm, Entity: pth}
+
+	if err := ctx.CheckHasPermission(perm); err != nil {
+		return err
+	}
+
+	http.ServeFile(rw.rw, r.Request(), string(pth))
+	return nil
+}
