@@ -4,7 +4,9 @@
 
 🛡️ Inox is a [secure](#injection-prevention) programming language that makes [scripts](#declaration-of-cli-parameters--environment-variables) and [concurrent code](#concurrency) easy to write. It features a powerful [shell](./docs/shell-basics.md) with colorization & completions.
 
-[Main Features](#features)
+🔍 [Main Features](#features)
+
+👥 [Join the Discord](https://discord.gg/53YGx8GzgE)
 
 ## Installation
 
