@@ -6,7 +6,7 @@
 
 🔍 [Main Features](#features)
 
-👥 [Join the Discord](https://discord.gg/53YGx8GzgE)
+👥 [Join the Discord Server](https://discord.gg/53YGx8GzgE)
 
 ## Installation
 
