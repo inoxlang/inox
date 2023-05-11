@@ -27,8 +27,8 @@ var (
 	helpMap     = map[uintptr]TopicHelp{}
 	helpByTopic = map[string]TopicHelp{}
 	topicGroups map[string]struct {
-		IsNamespace bool        `json:"namespace"`
-		Elements    []TopicHelp `json:"elements"`
+		IsNamespace bool        `yaml:"namespace"`
+		Elements    []TopicHelp `yaml:"elements"`
 	}
 
 	//go:embed builtin.yaml
@@ -44,9 +44,18 @@ func init() {
 		log.Panicf("error while parsing builtin.yaml: %s", err)
 	}
 
-	for _, group := range topicGroups {
+	for groupName, group := range topicGroups {
 		for _, item := range group.Elements {
+			isNamespace := strings.EqualFold(item.Topic, groupName) && group.IsNamespace
+
+			if isNamespace {
+				item.SubTopics = append(item.SubTopics, utils.MapSlice(group.Elements, func(e TopicHelp) string {
+					return e.Topic
+				})...)
+			}
+
 			helpByTopic[item.Topic] = item
+
 			if item.Alias != "" {
 				helpByTopic[item.Alias] = item
 			}
@@ -105,27 +114,28 @@ func RegisterHelpValues(values map[string]any) {
 
 type TopicHelp struct {
 	Value         any
-	Topic         string    `json:"topic"`
-	Alias         string    `json:"alias"`
-	RelatedTopics []string  `json:"related-topics"`
-	Summary       string    `json:"summary"`
-	Text          string    `json:"text"`
+	Topic         string    `yaml:"topic"`
+	Alias         string    `yaml:"alias"`
+	RelatedTopics []string  `yaml:"related-topics"`
+	SubTopics     []string  `yaml:"sub-topics"`
+	Summary       string    `yaml:"summary"`
+	Text          string    `yaml:"text"`
 	Examples      []Example `yaml:"examples"`
 }
 
 type Example struct {
-	Code        string `json:"code"`
-	Explanation string `json:"explanation"`
-	Output      string `json:"output"`
+	Code        string `yaml:"code"`
+	Explanation string `yaml:"explanation"`
+	Output      string `yaml:"output"`
 }
 
 func (h TopicHelp) Print(w io.Writer, config HelpMessageConfig) {
 	switch config.Format {
 	case ColorizedTerminalFormat:
-		w.Write(utils.StringAsBytes(h.Text + "\n\r"))
+		w.Write(utils.StringAsBytes(h.Text))
 
 		if len(h.Examples) > 0 {
-			w.Write(utils.StringAsBytes("examples:\n\r"))
+			w.Write(utils.StringAsBytes("\n\rexamples:\n\r"))
 
 			for _, example := range h.Examples {
 
@@ -155,6 +165,11 @@ func (h TopicHelp) Print(w io.Writer, config HelpMessageConfig) {
 				w.Write(utils.StringAsBytes("\n\r"))
 
 			}
+		}
+
+		if len(h.SubTopics) > 0 {
+			w.Write(utils.StringAsBytes("\n\rsubtopics:\n\r\t- " + strings.Join(h.SubTopics, "\n\r\t- ")))
+			w.Write(utils.StringAsBytes("\n\r"))
 		}
 
 		if len(h.RelatedTopics) > 0 {
