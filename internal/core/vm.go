@@ -1938,10 +1938,10 @@ func (v *VM) run() {
 				attributes = make([]XMLAttribute, attributeCount)
 
 				attributesStart := v.sp - childCount - 2*attributeCount
-				for i := attributesStart; i < attributesStart+2*attributeCount; i += 2 {
+				for i := 0; i < 2*attributeCount; i += 2 {
 					attributes[i/2] = XMLAttribute{
-						name:  string(v.stack[i].(Str)),
-						value: v.stack[i+1],
+						name:  string(v.stack[attributesStart+i].(Str)),
+						value: v.stack[attributesStart+i+1],
 					}
 				}
 			}

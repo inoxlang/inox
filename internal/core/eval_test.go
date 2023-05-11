@@ -5558,12 +5558,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}), val)
 		})
 
-		t.Run("", func(t *testing.T) {
-			code := `node = idt<div a="a">
-				<div> 
-					</div><div> 
+		t.Run("non-zero stack height", func(t *testing.T) {
+			code := `
+				a = "1"
+				b = "2"
+				node = idt<div a="a">
+					<div> </div> <div> </div>
 				</div>
-			</div>
 			`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"idt": createNamespace(),
