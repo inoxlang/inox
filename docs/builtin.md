@@ -2,17 +2,17 @@
 # Builtin
 
 - [Errors](#errors)
+- [Browser Automation](#browser-automation)
+- [Data Containers](#data-containers)
+- [Cryptography](#cryptography)
+- [DNS](#dns)
+- [Filesystem](#filesystem)
+- [Functional Programming](#functional-programming)
+- [HTML](#html)
+- [HTTP](#http)
+- [rand](#rand)
 - [Resource Manipulation](#resource-manipulation)
-- [Chrome](#chrome)
-- [Containers](#containers)
-- [Crypto](#crypto)
-- [Dns](#dns)
-- [Fs](#fs)
-- [Functional](#functional)
-- [Html](#html)
-- [Http](#http)
-- [Rand](#rand)
-- [Tcp](#tcp)
+- [TCP](#tcp)
 ## Errors
 
 ### Error
@@ -28,94 +28,7 @@ Error("failed to create user")
 Error("failed to create user", {user_id: 100})
 ```
 
-## Resource Manipulation
-
-### read
-
-read is a general purpose function that reads the content of a file, a directory or a HTTP resource. The content is parsed by default, to disable parsing use --raw after the resource's name: a byte slice  will be returned instead.
-
-**examples**
-
-```inox
-read ./
-# output: 
-[
-  dir/
-  file.txt 1kB 
-]
-
-```
-```inox
-read ./file.txt
-# output: 
-hello
-```
-```inox
-read ./file.json
-# output: 
-{"key": "value"}
-```
-```inox
-read https://jsonplaceholder.typicode.com/posts/1
-# output: 
-{
-  "body": "quia et suscipit\nsuscipit recusandae consequuntur expedita....", 
-  "id": 1.0, 
-  "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit", 
-  "userId": 1.0
-}
-
-```
-### create
-
-create is a general purpose function that can create a file, a directory or a HTTP resource.
-
-**examples**
-
-```inox
-create ./dir/
-```
-```inox
-create ./empty-file.txt
-```
-```inox
-create ./file.txt "content"
-```
-### update
-
-update is a general purpose function that updates an existing resource, it has 2 modes: append and replace. Replace is the default mode.
-
-**examples**
-
-```inox
-update ./file.txt append 'additional content'`
-```
-```inox
-update ./file.txt 'new content'`
-```
-```inox
-update ./file.txt replace 'new content'`
-```
-```inox
-update <url> tojson({})'
-```
-### delete
-
-delete is a general purpose function that deletes a resource, deletion is recursive for directories.
-
-**examples**
-
-```inox
-delete ./file.txt
-```
-```inox
-delete ./dir/
-```
-```inox
-delete <url>
-```
-
-## Chrome
+## Browser Automation
 
 ### chrome
 
@@ -130,7 +43,7 @@ the Handle function creates a new Chrome handle
 chrome.Handle!()
 ```
 
-## Containers
+## Data Containers
 
 ### Graph
 
@@ -211,7 +124,7 @@ the Thread function creates a thread from an iterable.
 Thread([{message: "hello", author-id: "5958"}])
 ```
 
-## Crypto
+## Cryptography
 
 ### hash_password
 
@@ -286,7 +199,7 @@ the dns.resolve function retrieves DNS records of the given type.
 dns.resolve!("github.com" "A")
 ```
 
-## Fs
+## Filesystem
 
 ### fs.mkfile
 
@@ -395,7 +308,7 @@ the fs.get_tree_data function takes a directory path argument and returns a %uda
 fs.get_tree_data(./)
 ```
 
-## Functional
+## Functional Programming
 
 ### map
 
@@ -687,6 +600,93 @@ rand(%str("a"+))
 rand(["a", "b"])
 # output: 
 "b"
+```
+
+## Resource Manipulation
+
+### read
+
+read is a general purpose function that reads the content of a file, a directory or a HTTP resource. The content is parsed by default, to disable parsing use --raw after the resource's name: a byte slice  will be returned instead.
+
+**examples**
+
+```inox
+read ./
+# output: 
+[
+  dir/
+  file.txt 1kB 
+]
+
+```
+```inox
+read ./file.txt
+# output: 
+hello
+```
+```inox
+read ./file.json
+# output: 
+{"key": "value"}
+```
+```inox
+read https://jsonplaceholder.typicode.com/posts/1
+# output: 
+{
+  "body": "quia et suscipit\nsuscipit recusandae consequuntur expedita....", 
+  "id": 1.0, 
+  "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit", 
+  "userId": 1.0
+}
+
+```
+### create
+
+create is a general purpose function that can create a file, a directory or a HTTP resource.
+
+**examples**
+
+```inox
+create ./dir/
+```
+```inox
+create ./empty-file.txt
+```
+```inox
+create ./file.txt "content"
+```
+### update
+
+update is a general purpose function that updates an existing resource, it has 2 modes: append and replace. Replace is the default mode.
+
+**examples**
+
+```inox
+update ./file.txt append 'additional content'`
+```
+```inox
+update ./file.txt 'new content'`
+```
+```inox
+update ./file.txt replace 'new content'`
+```
+```inox
+update <url> tojson({})'
+```
+### delete
+
+delete is a general purpose function that deletes a resource, deletion is recursive for directories.
+
+**examples**
+
+```inox
+delete ./file.txt
+```
+```inox
+delete ./dir/
+```
+```inox
+delete <url>
 ```
 
 ## Tcp
