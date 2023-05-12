@@ -510,6 +510,9 @@ loop:
 		case *parse.Variable:
 			buff.WriteString(l.Str())
 			break loop
+		case *parse.SelfExpression:
+			buff.WriteString("self")
+			break loop
 		default:
 			return nil
 		}
@@ -532,6 +535,15 @@ loop:
 			if curr, ok = state.Get(left.Name); !ok {
 				return nil
 			}
+		} else {
+			if curr, ok = state.Global.SymbolicData.GetMostSpecificNodeValue(left); !ok {
+				return nil
+			}
+		}
+	case *parse.SelfExpression:
+		if mode == ShellCompletions {
+			//TODO
+			return nil
 		} else {
 			if curr, ok = state.Global.SymbolicData.GetMostSpecificNodeValue(left); !ok {
 				return nil
