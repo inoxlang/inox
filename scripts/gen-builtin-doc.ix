@@ -97,9 +97,15 @@ for i, group_name in group_names {
             )
         }
 
+        # make sure the text ends with '.'
+        var text %str = (v.?text ?? "")
+        if ((text != "") and (text[(len(text)-1)] != ".")){
+            text = concat text "."
+        }
+
         builtin = (concat builtin 
             "### " v.topic "\n\n"
-            (v.?text ?? "") "\n"
+            text "\n"
             examples
         )
     }

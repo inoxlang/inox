@@ -16,3 +16,8 @@ func Lowercase(s core.StringLike) core.Str {
 	str := s.GetOrBuildString()
 	return core.Str(strings.ToLower(str))
 }
+
+func TrimSpace(s core.StringLike) core.Str {
+	str := s.GetOrBuildString()
+	return core.Str(strings.TrimSpace(str))
+}
