@@ -10,11 +10,15 @@ func init() {
 		Titlecase, func(str symbolic.StringLike) symbolic.StringLike {
 			return symbolic.ANY_STR_LIKE
 		},
+		Lowercase, func(str symbolic.StringLike) symbolic.StringLike {
+			return symbolic.ANY_STR_LIKE
+		},
 	})
 }
 
 func NewStrManipNnamespace() *core.Record {
 	return core.NewRecordFromMap(core.ValMap{
 		"title_case": core.WrapGoFunction(Titlecase),
+		"lowercase":  core.WrapGoFunction(Lowercase),
 	})
 }
