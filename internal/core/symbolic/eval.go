@@ -45,6 +45,7 @@ var (
 	INTEGRAL_INTERFACE_TYPE         = reflect.TypeOf((*Integral)(nil)).Elem()
 	WRITABLE_INTERFACE_TYPE         = reflect.TypeOf((*Writable)(nil)).Elem()
 	STRLIKE_INTERFACE_TYPE          = reflect.TypeOf((*StringLike)(nil)).Elem()
+	BYTESLIKE_INTERFACE_TYPE        = reflect.TypeOf((*BytesLike)(nil)).Elem()
 
 	IPROPS_INTERFACE_TYPE              = reflect.TypeOf((*IProps)(nil)).Elem()
 	PROTOCOL_CLIENT_INTERFACE_TYPE     = reflect.TypeOf((*ProtocolClient)(nil)).Elem()
@@ -2607,6 +2608,15 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				if err != nil {
 					return nil, err
 				}
+
+				if strLike, isStrLike := as(elemVal, STRLIKE_INTERFACE_TYPE).(StringLike); isStrLike {
+					elemVal = strLike
+				}
+
+				if bytesLike, isBytesLike := as(elemVal, BYTESLIKE_INTERFACE_TYPE).(BytesLike); isBytesLike {
+					elemVal = bytesLike
+				}
+
 				values = append(values, elemVal)
 				nodeIndexes = append(nodeIndexes, elemNodeIndex)
 				continue
@@ -2622,6 +2632,14 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 			if iterable, ok := spreadVal.(Iterable); ok {
 				iterableElemVal := iterable.IteratorElementValue()
+
+				if strLike, isStrLike := as(iterableElemVal, STRLIKE_INTERFACE_TYPE).(StringLike); isStrLike {
+					iterableElemVal = strLike
+				}
+
+				if bytesLike, isBytesLike := as(iterableElemVal, BYTESLIKE_INTERFACE_TYPE).(BytesLike); isBytesLike {
+					iterableElemVal = bytesLike
+				}
 
 				switch iterableElemVal.(type) {
 				case StringLike, BytesLike, *Tuple:
@@ -2645,7 +2663,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				return values[0], nil
 			}
 			for i, elem := range values {
-				if _, ok := as(elem, STRLIKE_INTERFACE_TYPE).(StringLike); !ok {
+				if _, ok := elem.(StringLike); !ok {
 					state.addError(makeSymbolicEvalError(n.Elements[nodeIndexes[i]], state, fmt.Sprintf("string concatenation: invalid element of type %T", elem)))
 				}
 			}

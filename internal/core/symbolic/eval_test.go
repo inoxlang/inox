@@ -4489,7 +4489,29 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY_STR_CONCAT, res)
 		})
 
-		t.Run("multivalue element implementing string like", func(t *testing.T) {
+		t.Run("first element is a multivalue implementing string like", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var elem %str = "a"
+				if g {
+					elem = concat elem "b"
+				}
+				# at this point elem is a %string | %string-concatenation
+				return [elem, concat elem "x"]
+			`)
+
+			state.setGlobal("g", ANY_BOOL, GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, NewList(
+				//we also check that elem has the right because the test case depends on that
+				NewMultivalue(ANY_STR, ANY_STR_CONCAT),
+				ANY_STR_CONCAT,
+			), res)
+		})
+
+		t.Run("second element is a multivalue implementing string like", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				var elem %str = "a"
 				if g {
