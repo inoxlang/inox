@@ -1,4 +1,5 @@
 functional:
+  title: Functional Programming
   elements:
   - topic: map
     related-topics: [filter, some, all, none]
@@ -91,6 +92,7 @@ rand:
       output: '"b"'
 
 crypto:
+  title: Cryptography
   elements:
   - topic: hash_password
     text: >
@@ -128,6 +130,7 @@ crypto:
 
 html:
   namespace: true
+  title: HTML
   elements:
   - topic: html.h1
     text: the html.h1 function creates a h1 HTML element
@@ -143,6 +146,7 @@ html:
 
 chrome:
   namespace: true
+  title: Browser Automation
   elements:
   - topic: chrome
     related-topics: [chrome.Handle]
@@ -154,6 +158,7 @@ chrome:
     - code: 'chrome.Handle!()'
 
 containers:
+  title: Data Containers
   elements:
   - topic: Graph
     related-topics: [Tree]
@@ -214,6 +219,8 @@ containers:
     - code: 'Thread([{message: "hello", author-id: "5958"}])'
 
 dns:
+  namespace: true
+  title: DNS
   elements:
   - topic: dns.resolve
     text: the dns.resolve function retrieves DNS records of the given type.
@@ -223,6 +230,7 @@ dns:
 
 tcp:
   namespace: true
+  title: TCP
   elements:
   - topic: tcp.connect
     text: the tcp.connect function creates a TCP connection to a given host.
@@ -235,17 +243,9 @@ tcp:
 
         conn.close()
 
-Error:
+resource:
   namespace: false
-  elements:
-  - topic: Error
-    text: the Error function creates an error from the provided string and an optional data argument.
-    examples:
-    - code: 'Error("failed to create user")'
-    - code: 'Error("failed to create user", {user_id: 100})'
-
-Resource Manipulation:
-  namespace: false
+  title: Resource Manipulation
   elements:
   - topic: read
     text: > 
@@ -301,6 +301,7 @@ Resource Manipulation:
 
 fs:
   namespace: true
+  title: Filesystem
   elements:
   - topic: fs.mkfile
     text: >
@@ -394,6 +395,7 @@ fs:
 
 http:
   namespace: true
+  title: HTTP
   elements:
   - topic: http
     text: >
@@ -493,3 +495,13 @@ http:
       explanation: https://localhost:8080/index.html will return the content of the file ./examples/static/index.html
 
   - topic: http.servefile
+
+
+Errors:
+  namespace: false
+  elements:
+  - topic: Error
+    text: the Error function creates an error from the provided string and an optional data argument.
+    examples:
+    - code: 'Error("failed to create user")'
+    - code: 'Error("failed to create user", {user_id: 100})'
