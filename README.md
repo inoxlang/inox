@@ -320,7 +320,7 @@ group = RoutineGroup()
 coroutine1 = go {group: group} do read!(https://jsonplaceholder.typicode.com/posts/1)
 coroutine2 = go {group: group} do read!(https://jsonplaceholder.typicode.com/posts/2)
 
-files = group.wait_results!()
+results = group.wait_results!()
 ```
 
 #### **Lifetime Jobs**
