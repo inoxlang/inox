@@ -550,6 +550,33 @@ func TestCheck(t *testing.T) {
 		})
 	})
 
+	t.Run("compued member expression", func(t *testing.T) {
+		t.Run("property name node is an undefined variable", func(t *testing.T) {
+			n, src := parseCode(`
+				a = {}
+				a.(b)
+			`)
+			ident := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(ident *parse.IdentifierLiteral, _ bool) bool {
+				return ident.Name == "b"
+			})
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := combineErrors(
+				makeError(ident, src, fmtVarIsNotDeclared("b")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("property name node is a defined variable", func(t *testing.T) {
+			n, src := parseCode(`
+				a = {}
+				b = "a"
+				a.(b)
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+	})
+
 	t.Run("tuple literal", func(t *testing.T) {
 		t.Run("empty", func(t *testing.T) {
 			n, src := parseCode(`#[]`)
@@ -1249,7 +1276,7 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("undefined global varaible += assignment", func(t *testing.T) {
+		t.Run("undefined global variable += assignment", func(t *testing.T) {
 			n, src := parseCode(`
 				$$a += 1
 			`)
