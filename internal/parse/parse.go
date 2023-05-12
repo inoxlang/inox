@@ -7173,8 +7173,8 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 	}
 
 	if p.i >= p.len || p.s[p.i] != '>' {
-		if parsingErr == nil {
-			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_CLOSING_XML_TAG_MISSING_CLOSING_DELIM}
+		if closingElement.Err == nil {
+			closingElement.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_CLOSING_XML_TAG_MISSING_CLOSING_DELIM}
 		}
 
 		return &XMLElement{
