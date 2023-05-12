@@ -29,6 +29,14 @@ manifest {
 }
 
 
+%group-data =  %{
+    namespace?: %bool
+    elements: %[]%topic-data
+    title?: %str
+    ...
+}
+
+
 help_data = read!(DATA_FILE)
 assert (help_data match %[%obj])
 
@@ -42,29 +50,29 @@ var builtin %str = ""
 
 for i, group_name in group_names {
     group = groups.(group_name)
+    assert (group match %group-data)
 
-    fragment = strmanip.lowercase(replace!(" ", "-", group_name)) 
+    title = (group.?title ?? group_name)
+    fragment = strmanip.lowercase(replace!(" ", "-", title)) 
 
-    builtin = concat builtin "- [" strmanip.title_case(group_name) "](#" fragment ")\n"
+    builtin = concat builtin "- [" title "](#" fragment ")\n"
 }
 
 # topics
 
 for i, group_name in group_names {
     group = groups.(group_name)
+    assert (group match %group-data)
 
-    assert (group match %{
-        namespace?: %bool
-        elements: %[]%topic-data
-        ...
-    })
+    title = (group.?title ?? group_name)
+
 
     if (i > 0) {
         builtin = concat builtin "\n"
     }
 
     builtin = (concat builtin
-        "## " strmanip.title_case(group_name) "\n\n"
+        "## " strmanip.title_case(title) "\n\n"
     )
 
     for v in group.elements {
