@@ -928,7 +928,7 @@ func (ByteCount) HasRepresentation(encountered map[uintptr]int, config *ReprConf
 	return true
 }
 
-func (count ByteCount) write(w io.Writer, _3digitGroupCount int) (int, error) {
+func (count ByteCount) Write(w io.Writer, _3digitGroupCount int) (int, error) {
 	format := "%dB"
 	var v = int64(count)
 
@@ -956,7 +956,7 @@ func (count ByteCount) write(w io.Writer, _3digitGroupCount int) (int, error) {
 }
 
 func (count ByteCount) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := count.write(w, -1)
+	_, err := count.Write(w, -1)
 	return err
 }
 
@@ -1000,7 +1000,7 @@ func (ByteRate) HasRepresentation(encountered map[uintptr]int, config *ReprConfi
 
 func (rate ByteRate) write(w io.Writer) (int, error) {
 	totalN := 0
-	if n, err := ByteCount(rate).write(w, -1); err != nil {
+	if n, err := ByteCount(rate).Write(w, -1); err != nil {
 		return n, err
 	} else {
 		totalN = n

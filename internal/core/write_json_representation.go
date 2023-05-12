@@ -583,7 +583,7 @@ func (ByteCount) HasJSONRepresentation(encountered map[uintptr]int, config *Repr
 
 func (count ByteCount) writeJSON(w io.Writer) (int, error) {
 	var buff bytes.Buffer
-	count.write(&buff, -1)
+	count.Write(&buff, -1)
 
 	return w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
 }

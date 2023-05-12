@@ -1028,7 +1028,7 @@ func (count ByteCount) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, d
 		utils.Must(w.Write(config.Colors.NumberLiteral))
 	}
 
-	utils.Must(count.write(w, -1))
+	utils.Must(count.Write(w, -1))
 
 	if config.Colorize {
 		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
@@ -1467,7 +1467,7 @@ func (i FileInfo) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth 
 			utils.Must(w.Write(config.Colors.DiscreteColor))
 		}
 		utils.PanicIfErr(w.WriteByte(' '))
-		utils.Must(i.Size.write(w, 1))
+		utils.Must(i.Size.Write(w, 1))
 
 	}
 

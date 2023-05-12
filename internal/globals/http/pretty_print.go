@@ -22,7 +22,6 @@ func (rw *HttpResponseWriter) PrettyPrint(w *bufio.Writer, config *core.PrettyPr
 }
 
 func (r *HttpResponse) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
-
 	ctx := config.Context
 	code := r.StatusCode(ctx)
 	codeString := fmt.Sprintf("%d", code)
@@ -34,13 +33,32 @@ func (r *HttpResponse) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConf
 		}
 		utils.Must(w.Write(utils.StringAsBytes(codeString)))
 	}
-	text := r.Status(ctx)
+	text := utils.StripANSISequences(r.Status(ctx))
+
 	text = strings.TrimSpace(strings.TrimPrefix(text, codeString))
 	if text != "" {
 		utils.PanicIfErr(w.WriteByte(' '))
 		utils.Must(w.Write(utils.StringAsBytes(text)))
 		utils.PanicIfErr(w.WriteByte(' '))
 	}
+
+	if config.Colorize {
+		utils.Must(w.Write(core.ANSI_RESET_SEQUENCE))
+		utils.Must(w.Write(config.Colors.DiscreteColor))
+	}
+
+	utils.PanicIfErr(w.WriteByte('('))
+	length := core.ByteCount(r.wrapped.ContentLength)
+	utils.Must(length.Write(w, 1))
+	utils.PanicIfErr(w.WriteByte(')'))
+
+	contentType := r.wrapped.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = "No Content-Type"
+	}
+
+	utils.PanicIfErr(w.WriteByte(' '))
+	utils.Must(w.Write(utils.StringAsBytes(utils.StripANSISequences(contentType))))
 
 	if config.Colorize {
 		utils.Must(w.Write(core.ANSI_RESET_SEQUENCE))
