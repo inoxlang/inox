@@ -995,6 +995,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			Source: state.currentChunk().Source,
 		})
 		modState.Module = state.Module
+		modState.symbolicData = state.symbolicData
 
 		for k, v := range actualGlobals {
 			modState.setGlobal(k, v, GlobalConst)
@@ -2742,6 +2743,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			Source: state.currentChunk().Source,
 		})
 		modState.Module = state.Module
+		modState.symbolicData = state.symbolicData
 
 		_, err = symbolicEval(embeddedModule, modState)
 		if err != nil {
@@ -2774,6 +2776,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			Source: state.currentChunk().Source,
 		})
 		modState.Module = state.Module
+		modState.symbolicData = state.symbolicData
 
 		_, err = symbolicEval(embeddedModule, modState)
 		if err != nil {
@@ -2834,6 +2837,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		})
 
 		modState.Module = state.Module
+		modState.symbolicData = state.symbolicData
 
 		nextSelf, ok := state.getNextSelf()
 
