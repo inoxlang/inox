@@ -234,6 +234,7 @@ const (
 	OpRange
 	OpMemb
 	OpOptionalMemb
+	OpComputedMemb
 	OpDynMemb
 	OpAt
 	OpSafeAt
@@ -352,6 +353,7 @@ var OpcodeNames = [...]string{
 	OpRange:                        "RANGE",
 	OpMemb:                         "MEMB",
 	OpOptionalMemb:                 "OPT_MEMB",
+	OpComputedMemb:                 "COMPUTED_MEMB",
 	OpDynMemb:                      "DYN_MEMB",
 	OpAt:                           "AT",
 	OpSafeAt:                       "SAFE_AT",
@@ -469,6 +471,7 @@ var OpcodeOperands = [...][]int{
 	OpRange:                        {1},
 	OpMemb:                         {2},
 	OpOptionalMemb:                 {2},
+	OpComputedMemb:                 {},
 	OpDynMemb:                      {2},
 	OpAt:                           {},
 	OpSafeAt:                       {},
@@ -586,6 +589,7 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpRange:                        {false},
 	OpMemb:                         {true},
 	OpOptionalMemb:                 {true},
+	OpComputedMemb:                 {},
 	OpDynMemb:                      {true},
 	OpAt:                           {},
 	OpSafeAt:                       {},

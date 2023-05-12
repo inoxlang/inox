@@ -1075,6 +1075,21 @@ func (c *compiler) Compile(node parse.Node) error {
 		}
 
 		c.emit(node, op, c.addConstant(Str(node.PropertyName.Name)))
+	case *parse.ComputedMemberExpression:
+		if err := c.Compile(node.Left); err != nil {
+			return err
+		}
+
+		if err := c.Compile(node.PropertyName); err != nil {
+			return err
+		}
+
+		op := OpComputedMemb
+		if node.Optional {
+			return errors.New("optional computed member expressions are not supported yet")
+		}
+
+		c.emit(node, op)
 	case *parse.DynamicMemberExpression:
 		if err := c.Compile(node.Left); err != nil {
 			return err

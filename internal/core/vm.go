@@ -1437,6 +1437,14 @@ func (v *VM) run() {
 			}
 
 			v.stack[v.sp-1] = memb
+		case OpComputedMemb:
+			object := v.stack[v.sp-2]
+			propNameVal := v.stack[v.sp-1]
+			propName := propNameVal.(StringLike).GetOrBuildString()
+
+			memb := object.(IProps).Prop(v.global.Ctx, propName)
+			v.stack[v.sp-2] = memb
+			v.sp--
 		case OpDynMemb:
 			object := v.stack[v.sp-1]
 			v.ip += 2

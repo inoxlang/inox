@@ -3229,6 +3229,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				result: Nil,
 			},
 			{
+				input:  "$a = {v: 1}; return $a.(\"v\")",
+				result: Int(1),
+			},
+			{
 				input: `
 					rt = go do {
 						return {x: 1}
