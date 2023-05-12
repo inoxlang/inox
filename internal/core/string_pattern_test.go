@@ -663,6 +663,7 @@ func TestTurnCapturingGroupsIntoNonCapturing(t *testing.T) {
 	assert.Equal(t, "(?:)", turn("(?:)"))
 	assert.Equal(t, "a", turn("(?:a)"))
 	assert.Equal(t, "a", turn("(a)"))
+	assert.Equal(t, "\\Aa(?-m:$)", turn("^a$")) //equivalent, fix ?
 	assert.Equal(t, "\\(\\)", turn("\\(\\)"))
 	//assert.Equal(t, "", turn("\\\\(\\\\)"))
 	assert.Equal(t, "[\\(-\\)]", turn("[()]"))

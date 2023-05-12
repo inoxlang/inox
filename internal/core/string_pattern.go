@@ -1285,7 +1285,7 @@ func (patt *RegexPattern) LengthRange() IntRange {
 			lenRange.Start = 0
 			lenRange.End = 0
 			return
-		case syntax.OpNoWordBoundary, syntax.OpWordBoundary:
+		case syntax.OpNoWordBoundary, syntax.OpWordBoundary, syntax.OpBeginText, syntax.OpEndText:
 			return
 		}
 
@@ -1575,6 +1575,7 @@ func turnCapturingGroupsIntoNonCapturing(regex *syntax.Regexp) *syntax.Regexp {
 		}
 
 	case syntax.OpAnyChar, syntax.OpAnyCharNotNL, syntax.OpEmptyMatch, syntax.OpNoWordBoundary, syntax.OpWordBoundary:
+	case syntax.OpEndText, syntax.OpBeginText:
 
 	default:
 		panic(fmt.Errorf("unknown syntax operator %s", regex.Op.String()))
