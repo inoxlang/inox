@@ -229,6 +229,8 @@ Recursivelly find all JSON files in a directory.
 find %./**/*.json ./
 ```
 
+**You can read more about the built-in functions [here](./builtin.md)**
+
 ## Configuration
 
 The startup script `~/.config/inox/startup.ix` (or $XDG_CONFIG_HOME/inox/startup.ix) is executed before the shell is started,

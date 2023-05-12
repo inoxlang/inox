@@ -51,6 +51,7 @@ Other:
 - [Concurrency](#concurrency)
   - [Coroutines (Goroutines)](#coroutines-goroutines)
   - [Lifetime jobs](#lifetime-jobs)
+- [Built-in Functions](#built-in-functions)
 - [Communication](#communication)
 
 ### Injection Prevention
@@ -322,6 +323,16 @@ coroutine2 = go {group: group} do read!(https://jsonplaceholder.typicode.com/pos
 
 results = group.wait_results!()
 ```
+
+### Built-in Functions
+
+Inox comes with many built-in functions for:
+- browser automation
+- file manipulation
+- HTTP resource manipulation 
+- data container constructors (Graph, Tree, ...)
+
+**[List of Built-in Functions](./docs/builtin.md)**
 
 #### **Lifetime Jobs**
 
