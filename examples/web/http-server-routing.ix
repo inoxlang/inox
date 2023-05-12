@@ -7,15 +7,15 @@ manifest {
 
 
 fn handle(rw %http.resp_writer, r %http.req){
-    rw.write_json({ aa: 1 })
+    rw.write_json({ a: 1 })
 }
 
 server = http.Server!(https://localhost:8080, Mapping {
-    /a => "a"
+    /hello => "hello"
     %/... => handle
 })
 
-body = http.read!(https://localhost:8080/a, --insecure)
+body = http.read!(https://localhost:8080/hello, --insecure)
 print $body
 
 body = http.read!(https://localhost:8080/, --insecure)
