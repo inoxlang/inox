@@ -43,7 +43,7 @@ var builtin %str = ""
 for i, group_name in group_names {
     group = groups.(group_name)
 
-    fragment = replace!(" ", "-", group_name)
+    fragment = strmanip.lowercase(replace!(" ", "-", group_name)) 
 
     builtin = concat builtin "- [" strmanip.title_case(group_name) "](#" fragment ")\n"
 }
