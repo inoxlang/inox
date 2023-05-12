@@ -143,13 +143,16 @@ func (h TopicHelp) Print(w io.Writer, config HelpMessageConfig) {
 
 			for _, example := range h.Examples {
 
-				chunk, err := parse.ParseChunk(example.Code, "")
+				//add carriage returns because of the shell + left padding
+				code := strings.ReplaceAll(example.Code, "\n", "\n\r  ")
+
+				chunk, err := parse.ParseChunk(code, "")
 				if err != nil {
 					continue
 				}
 
 				w.Write(utils.StringAsBytes("\n\r- "))
-				core.PrintColorizedChunk(w, chunk, []rune(example.Code), false, core.GetFullColorSequence(termenv.ANSIWhite, false))
+				core.PrintColorizedChunk(w, chunk, []rune(code), false, core.GetFullColorSequence(termenv.ANSIWhite, false))
 
 				if example.Explanation != "" {
 					w.Write(utils.StringAsBytes(" # "))
