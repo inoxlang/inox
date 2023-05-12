@@ -38,16 +38,33 @@ group_names = sort(propnames(groups), #lex)
 
 var builtin %str = ""
 
-for group_name, group in groups {
-    
+# underline
+
+for i, group_name in group_names {
+    group = groups.(group_name)
+
+    fragment = replace!(" ", "-", group_name)
+
+    builtin = concat builtin "- [" strmanip.title_case(group_name) "](#" fragment ")\n"
+}
+
+# topics
+
+for i, group_name in group_names {
+    group = groups.(group_name)
+
     assert (group match %{
         namespace?: %bool
         elements: %[]%topic-data
         ...
     })
 
+    if (i > 0) {
+        builtin = concat builtin "\n"
+    }
+
     builtin = (concat builtin
-        "\n## " strmanip.title_case(group_name) "\n\n"
+        "## " strmanip.title_case(group_name) "\n\n"
     )
 
     for v in group.elements {
