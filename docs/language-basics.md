@@ -316,6 +316,18 @@ object = {
 object.print()
 ```
 
+### Computed Member Expressions
+
+Computed member expressions are member expressions where the property name is computed at runtime:
+
+```
+object = { name: "foo" }
+property_name = "name"
+name = object.(property_name)
+```
+
+⚠️ Accessing properties dynamically may cause security issues, this feature will be made more secure in the near future.
+
 ## Records
 
 Records are the immutable equivalent of objects, their properties can only have immutable values.
