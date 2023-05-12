@@ -21,6 +21,10 @@ var (
 
 		Folder:     GetFullColorSequence(termenv.ANSIBlue, false),
 		Executable: GetFullColorSequence(termenv.ANSIBrightGreen, false),
+
+		SuccessColor: GetFullColorSequence(termenv.ANSIBrightGreen, false),
+		WarnColor:    GetFullColorSequence(termenv.ANSIYellow, false),
+		ErrorColor:   GetFullColorSequence(termenv.ANSIRed, false),
 	}
 
 	DEFAULT_LIGHTMODE_PRINT_COLORS = PrettyPrintColors{
@@ -41,6 +45,10 @@ var (
 
 		Folder:     GetFullColorSequence(termenv.ANSI256Color(26), false),
 		Executable: GetFullColorSequence(termenv.ANSI256Color(28), false),
+
+		SuccessColor: GetFullColorSequence(termenv.ANSIBrightGreen, false),
+		WarnColor:    GetFullColorSequence(termenv.ANSIYellow, false),
+		ErrorColor:   GetFullColorSequence(termenv.ANSIRed, false),
 	}
 )
 
@@ -49,7 +57,8 @@ type PrettyPrintColors struct {
 	ControlKeyword, OtherKeyword, PatternLiteral, StringLiteral, PathLiteral, IdentifierLiteral,
 	NumberLiteral, Constant, PatternIdentifier, CssTypeSelector, CssOtherSelector, XmlTagName, InvalidNode,
 
-	DiscreteColor, Folder, Executable []byte
+	DiscreteColor, Folder, Executable,
+	SuccessColor, WarnColor, ErrorColor []byte
 }
 
 type PrettyPrintConfig struct {
