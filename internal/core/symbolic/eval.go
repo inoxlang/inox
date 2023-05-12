@@ -3037,7 +3037,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 	var (
 		callee SymbolicValue
 		err    error
-		self   *Object
+		self   SymbolicValue
 	)
 
 	//we first get the callee
@@ -3046,6 +3046,19 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		callee, err = symbolicEval(callNode.Callee, state)
 		if err != nil {
 			return nil, err
+		}
+		switch _c := calleeNode.(type) {
+		case *parse.IdentifierMemberExpression:
+			switch len(_c.PropertyNames) {
+			case 0:
+				self = ANY
+			case 1:
+				self, _ = state.symbolicData.GetMostSpecificNodeValue(_c.Left)
+			default:
+				self, _ = state.symbolicData.GetMostSpecificNodeValue(_c.PropertyNames[len(_c.PropertyNames)-2])
+			}
+		case *parse.MemberExpression:
+			self, _ = state.symbolicData.GetMostSpecificNodeValue(_c.Left)
 		}
 	case *parse.FunctionDeclaration, *parse.FunctionExpression:
 		callee = &AstNode{Node: c}

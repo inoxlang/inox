@@ -2100,6 +2100,63 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &Int{}, res)
 		})
 
+		t.Run("method returning a property (identifier member expression with single property)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				o = {
+					f: fn() => self.a,
+					a: 1,
+				}
+
+				return o.f()
+			`)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors)
+			assert.Equal(t, ANY_INT, res)
+		})
+
+		t.Run("method returning a property (member expression)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				o = {
+					f: fn() => self.a,
+					a: 1,
+				}
+
+				return $o.f()
+			`)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors)
+			assert.Equal(t, ANY_INT, res)
+		})
+
+		t.Run("method returning a property (identifier member expression with two properties)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				inner = {
+					f: fn() => self.a,
+					a: 1,
+				}
+
+
+				o = {inner: inner}
+
+				return o.inner.f()
+			`)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors)
+			assert.Equal(t, ANY_INT, res)
+		})
+
 	})
 
 	t.Run("call Go function", func(t *testing.T) {
