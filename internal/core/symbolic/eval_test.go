@@ -837,6 +837,26 @@ func TestSymbolicEval(t *testing.T) {
 
 	})
 
+	t.Run("computed member expression", func(t *testing.T) {
+		t.Run("property name is not a string", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				v = {"name": "foo"}
+				return v.(1)
+			`)
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			propNameNode := parse.FindNode(n, (*parse.IntLiteral)(nil), nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(propNameNode, state, fmtComputedPropNameShouldBeAStringNotA(ANY_INT)),
+			}, state.errors)
+			assert.Equal(t, ANY, res)
+		})
+	})
+
 	t.Run("dynamic member expression", func(t *testing.T) {
 		t.Run("object", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`

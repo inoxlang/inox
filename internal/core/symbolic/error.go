@@ -309,3 +309,7 @@ func fmtSelfShouldMatchLifetimeJobSubjectPattern(p Pattern) string {
 func fmtListShouldHaveLengthGreaterOrEqualTo(n int) string {
 	return fmt.Sprintf("list should have a length greater or equal to %d", n)
 }
+
+func fmtComputedPropNameShouldBeAStringNotA(v SymbolicValue) string {
+	return fmt.Sprintf("computed property name should be a string, not a(n) %s", Stringify(v))
+}

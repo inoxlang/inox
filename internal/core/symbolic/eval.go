@@ -2274,6 +2274,26 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		state.symbolicData.SetMostSpecificNodeValue(n.PropertyName, val)
 
 		return val, nil
+	case *parse.ComputedMemberExpression:
+		_, err := symbolicEval(n.Left, state)
+		if err != nil {
+			return nil, err
+		}
+
+		if n.PropertyName == nil { //parsing error
+			return ANY, nil
+		}
+
+		computedPropertyName, err := symbolicEval(n.PropertyName, state)
+		if err != nil {
+			return nil, err
+		}
+
+		if _, ok := computedPropertyName.(StringLike); !ok {
+			state.addError(makeSymbolicEvalError(n.PropertyName, state, fmtComputedPropNameShouldBeAStringNotA(computedPropertyName)))
+		}
+
+		return ANY, nil
 	case *parse.IdentifierMemberExpression:
 		v, err := symbolicEval(n.Left, state)
 		if err != nil {
