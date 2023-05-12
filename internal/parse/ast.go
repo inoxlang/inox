@@ -205,6 +205,17 @@ func (MemberExpression) Kind() NodeKind {
 	return Expr
 }
 
+type ComputedMemberExpression struct {
+	NodeBase
+	Left         Node
+	PropertyName Node
+	Optional     bool
+}
+
+func (ComputedMemberExpression) Kind() NodeKind {
+	return Expr
+}
+
 type IdentifierMemberExpression struct {
 	NodeBase
 	Left          *IdentifierLiteral
@@ -2305,6 +2316,9 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		walk(n.Key, node, ancestorChain, fn, afterFn)
 		walk(n.Value, node, ancestorChain, fn, afterFn)
 	case *MemberExpression:
+		walk(n.Left, node, ancestorChain, fn, afterFn)
+		walk(n.PropertyName, node, ancestorChain, fn, afterFn)
+	case *ComputedMemberExpression:
 		walk(n.Left, node, ancestorChain, fn, afterFn)
 		walk(n.PropertyName, node, ancestorChain, fn, afterFn)
 	case *ExtractionExpression:

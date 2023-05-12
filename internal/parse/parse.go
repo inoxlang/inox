@@ -2028,6 +2028,8 @@ func (p *parser) parseIdentStartingExpression() Node {
 		for {
 			nameStart := p.i
 			isOptional := false
+			isComputed := false
+			var propNameNode Node
 
 			if p.i < p.len && p.s[p.i] == '?' {
 				isOptional = true
@@ -2048,24 +2050,31 @@ func (p *parser) parseIdentStartingExpression() Node {
 				isDynamic = true
 				p.i++
 				nameStart = p.i
-			} else if !isAlpha(p.s[p.i]) && p.s[p.i] != '_' {
+			} else if !isAlpha(p.s[p.i]) && p.s[p.i] != '_' && p.s[p.i] != '(' {
 				return p.parseUnquotedStringLiteralAndEmailAddress(start)
 				//memberExpr.NodeBase.Err = &ParsingError{UnspecifiedParsingError, makePropNameShouldStartWithAletterNot(p.s[p.i])}
 				//return memberExpr
+			} else if p.s[p.i] == '(' {
+				isComputed = true
 			} else {
 				isDynamic = false
 			}
 
-			for p.i < p.len && isIdentChar(p.s[p.i]) {
+			if isComputed {
 				p.i++
-			}
+				propNameNode = p.parseUnaryBinaryAndParenthesizedExpression(p.i - 1)
+			} else {
+				for p.i < p.len && isIdentChar(p.s[p.i]) {
+					p.i++
+				}
 
-			propName := string(p.s[nameStart:p.i])
-			propNameNode := &IdentifierLiteral{
-				NodeBase: NodeBase{
-					Span: NodeSpan{nameStart, p.i},
-				},
-				Name: propName,
+				propName := string(p.s[nameStart:p.i])
+				propNameNode = &IdentifierLiteral{
+					NodeBase: NodeBase{
+						Span: NodeSpan{nameStart, p.i},
+					},
+					Name: propName,
+				}
 			}
 
 			if isDynamic {
@@ -2075,7 +2084,7 @@ func (p *parser) parseIdentStartingExpression() Node {
 					memberExpr = &DynamicMemberExpression{
 						NodeBase:     NodeBase{Span: NodeSpan{ident.Span.Start, p.i}},
 						Left:         ident,
-						PropertyName: propNameNode,
+						PropertyName: propNameNode.(*IdentifierLiteral),
 						Optional:     isOptional,
 					}
 				} else {
@@ -2087,28 +2096,38 @@ func (p *parser) parseIdentStartingExpression() Node {
 					memberExpr = &DynamicMemberExpression{
 						NodeBase:     NodeBase{Span: NodeSpan{ident.Span.Start, p.i}},
 						Left:         left,
-						PropertyName: propNameNode,
+						PropertyName: propNameNode.(*IdentifierLiteral),
 						Optional:     isOptional,
 					}
 				}
 			} else {
 				identMemberExpr, ok := memberExpr.(*IdentifierMemberExpression)
-				if ok && !isOptional {
-					identMemberExpr.PropertyNames = append(identMemberExpr.PropertyNames, propNameNode)
+				if ok && !isOptional && !isComputed {
+					identMemberExpr.PropertyNames = append(identMemberExpr.PropertyNames, propNameNode.(*IdentifierLiteral))
 				} else {
 					if ok {
 						identMemberExpr.BasePtr().Span.End = lastDotIndex
 					}
+
 					left := memberExpr
 					if ok && len(identMemberExpr.PropertyNames) == 0 {
 						left = ident
 					}
 
-					memberExpr = &MemberExpression{
-						NodeBase:     NodeBase{Span: NodeSpan{ident.Span.Start, p.i}},
-						Left:         left,
-						PropertyName: propNameNode,
-						Optional:     isOptional,
+					if !isComputed {
+						memberExpr = &MemberExpression{
+							NodeBase:     NodeBase{Span: NodeSpan{ident.Span.Start, p.i}},
+							Left:         left,
+							PropertyName: propNameNode.(*IdentifierLiteral),
+							Optional:     isOptional,
+						}
+					} else {
+						memberExpr = &ComputedMemberExpression{
+							NodeBase:     NodeBase{Span: NodeSpan{ident.Span.Start, p.i}},
+							Left:         left,
+							PropertyName: propNameNode,
+							Optional:     isOptional,
+						}
 					}
 				}
 			}
@@ -5810,14 +5829,23 @@ loop:
 				continue loop
 			default:
 				isDynamic := false
+				isComputed := false
 				spanStart := lhs.Base().Span.Start
-				var propertyNameNode *IdentifierLiteral
+				var computedPropertyNode Node
+				var propertyNameIdent *IdentifierLiteral
 				propNameStart := start
 
-				if !isOptional && p.i < p.len && p.s[p.i] == '<' {
-					isDynamic = true
-					p.i++
-					propNameStart++
+				if !isOptional && p.i < p.len {
+					switch p.s[p.i] {
+					case '<':
+						isDynamic = true
+						p.i++
+						propNameStart++
+					case '(':
+						isComputed = true
+						p.i++
+						computedPropertyNode = p.parseUnaryBinaryAndParenthesizedExpression(p.i - 1)
+					}
 				}
 
 				newMemberExpression := func(err *ParsingError) Node {
@@ -5829,7 +5857,19 @@ loop:
 								nil,
 							},
 							Left:         lhs,
-							PropertyName: propertyNameNode,
+							PropertyName: propertyNameIdent,
+							Optional:     isOptional,
+						}
+					}
+					if isComputed {
+						return &ComputedMemberExpression{
+							NodeBase: NodeBase{
+								NodeSpan{spanStart, p.i},
+								err,
+								nil,
+							},
+							Left:         lhs,
+							PropertyName: computedPropertyNode,
 							Optional:     isOptional,
 						}
 					}
@@ -5840,36 +5880,38 @@ loop:
 							nil,
 						},
 						Left:         lhs,
-						PropertyName: propertyNameNode,
+						PropertyName: propertyNameIdent,
 						Optional:     isOptional,
 					}
 				}
 
-				if isDynamic && p.i >= p.len {
-					return newMemberExpression(&ParsingError{UnspecifiedParsingError, UNTERMINATED_DYN_MEMB_OR_INDEX_EXPR}), false
-				}
+				if !isComputed {
+					if isDynamic && p.i >= p.len {
+						return newMemberExpression(&ParsingError{UnspecifiedParsingError, UNTERMINATED_DYN_MEMB_OR_INDEX_EXPR}), false
+					}
 
-				//member expression with invalid property name
-				if !isAlpha(p.s[p.i]) && p.s[p.i] != '_' {
-					return newMemberExpression(&ParsingError{UnspecifiedParsingError, fmtPropNameShouldStartWithAletterNot(p.s[p.i])}), false
-				}
+					//member expression with invalid property name
+					if !isAlpha(p.s[p.i]) && p.s[p.i] != '_' {
+						return newMemberExpression(&ParsingError{UnspecifiedParsingError, fmtPropNameShouldStartWithAletterNot(p.s[p.i])}), false
+					}
 
-				for p.i < p.len && isIdentChar(p.s[p.i]) {
-					p.i++
-				}
+					for p.i < p.len && isIdentChar(p.s[p.i]) {
+						p.i++
+					}
 
-				propName := string(p.s[propNameStart:p.i])
-				if lhs == first {
-					spanStart = __start
-				}
+					propName := string(p.s[propNameStart:p.i])
+					if lhs == first {
+						spanStart = __start
+					}
 
-				propertyNameNode = &IdentifierLiteral{
-					NodeBase: NodeBase{
-						NodeSpan{propNameStart, p.i},
-						nil,
-						nil,
-					},
-					Name: propName,
+					propertyNameIdent = &IdentifierLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{propNameStart, p.i},
+							nil,
+							nil,
+						},
+						Name: propName,
+					}
 				}
 
 				lhs = newMemberExpression(nil)

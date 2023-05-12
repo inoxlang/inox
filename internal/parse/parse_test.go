@@ -1802,6 +1802,105 @@ func TestParse(t *testing.T) {
 		})
 	})
 
+	t.Run("computed member expression", func(t *testing.T) {
+		t.Run("variable '.' '(' <var> ')'", func(t *testing.T) {
+			n := MustParseChunk("$a.(b)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
+				Statements: []Node{
+					&ComputedMemberExpression{
+						NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
+						Left: &Variable{
+							NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+							Name:     "a",
+						},
+						PropertyName: &IdentifierLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{4, 5},
+								nil,
+								[]Token{
+									{Type: OPENING_PARENTHESIS, Span: NodeSpan{3, 4}},
+									{Type: CLOSING_PARENTHESIS, Span: NodeSpan{5, 6}},
+								},
+							},
+							Name: "b",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("identifier '.' '(' <var> ')'", func(t *testing.T) {
+			n := MustParseChunk("a.(b)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
+				Statements: []Node{
+					&ComputedMemberExpression{
+						NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+							Name:     "a",
+						},
+						PropertyName: &IdentifierLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{3, 4},
+								nil,
+								[]Token{
+									{Type: OPENING_PARENTHESIS, Span: NodeSpan{2, 3}},
+									{Type: CLOSING_PARENTHESIS, Span: NodeSpan{4, 5}},
+								},
+							},
+							Name: "b",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run(" variable '.' '(' <var> ')' '.'  '(' <var> ')' ", func(t *testing.T) {
+			n := MustParseChunk("$a.(b).(c)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
+				Statements: []Node{
+					&ComputedMemberExpression{
+						NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
+						Left: &ComputedMemberExpression{
+							NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
+							Left: &Variable{
+								NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+								Name:     "a",
+							},
+							PropertyName: &IdentifierLiteral{
+								NodeBase: NodeBase{
+									NodeSpan{4, 5},
+									nil,
+									[]Token{
+										{Type: OPENING_PARENTHESIS, Span: NodeSpan{3, 4}},
+										{Type: CLOSING_PARENTHESIS, Span: NodeSpan{5, 6}},
+									},
+								},
+								Name: "b",
+							},
+						},
+						PropertyName: &IdentifierLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{8, 9},
+								nil,
+								[]Token{
+									{Type: OPENING_PARENTHESIS, Span: NodeSpan{7, 8}},
+									{Type: CLOSING_PARENTHESIS, Span: NodeSpan{9, 10}},
+								},
+							},
+							Name: "c",
+						},
+					},
+				},
+			}, n)
+		})
+
+		//TODO: add tests
+	})
+
 	t.Run("dynamic member expression", func(t *testing.T) {
 
 		t.Run("identifier '.<' <single letter propname> ", func(t *testing.T) {
