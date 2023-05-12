@@ -138,6 +138,10 @@ func (h TopicHelp) Print(w io.Writer, config HelpMessageConfig) {
 	case ColorizedTerminalFormat:
 		w.Write(utils.StringAsBytes(h.Text))
 
+		if !strings.HasSuffix(h.Text, ".") {
+			w.Write([]byte{'.'})
+		}
+
 		if len(h.Examples) > 0 {
 			w.Write(utils.StringAsBytes("\n\rexamples:\n\r"))
 
