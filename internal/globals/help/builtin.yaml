@@ -1,5 +1,4 @@
 functional:
-  namespace: false
   elements:
   - topic: map
     related-topics: [filter, some, all, none]
@@ -77,7 +76,6 @@ functional:
     text: the idt (identity) function takes a single argument and returns it.
 
 rand:
-  namespace: false
   elements:
   - topic: rand
     related-topics: [rand, pseudo_rand]
@@ -129,6 +127,7 @@ crypto:
       output: '0x[2757cb3cafc39af451abb2697be79b4ab61d63d74d85b0418629de8c26811b529f3f3780d0150063ff55a2beee74c4ec102a2a2731a1f1f7f10d473ad18a6a87]'
 
 html:
+  namespace: true
   elements:
   - topic: html.h1
     text: the html.h1 function creates a h1 HTML element
@@ -143,6 +142,7 @@ html:
     text: the html.h4 function creates a h4 HTML element
 
 chrome:
+  namespace: true
   elements:
   - topic: chrome
     related-topics: [chrome.Handle]
@@ -154,7 +154,6 @@ chrome:
     - code: 'chrome.Handle!()'
 
 containers:
-  namespace: false
   elements:
   - topic: Graph
     related-topics: [Tree]
@@ -223,6 +222,7 @@ dns:
       explanation: retrieves "A" records for github.com
 
 tcp:
+  namespace: true
   elements:
   - topic: tcp.connect
     text: the tcp.connect function creates a TCP connection to a given host.
@@ -300,6 +300,7 @@ Resource Manipulation:
     - code: 'delete <url>'
 
 fs:
+  namespace: true
   elements:
   - topic: fs.mkfile
     text: >
@@ -358,7 +359,7 @@ fs:
       explanation: 'creates ./dest_dir/file.txt and ./dest_dir/dir/ by copying the provided file & directory'
 
   - topic: fs.exists
-    text: 'the fs.exists takes a path as first argument and returns a boolean.'
+    text: 'the fs.exists takes a path as first argument and returns a boolean'
 
   - topic: fs.isdir
     text: 'the fs.isdir function returns true if there is a directory at the given path'
@@ -368,7 +369,7 @@ fs:
 
   - topic: fs.remove
     alias: fs.rm
-    text: 'the fs.remove function removes a file or a directory recursively.'
+    text: 'the fs.remove function removes a file or a directory recursively'
 
   - topic: fs.glob
     text: 'the fs.glob function takes a globbing path pattern argument (%./a/... will not work) and returns a list of paths matching this pattern.'
@@ -392,11 +393,12 @@ fs:
     - code: fs.get_tree_data(./)
 
 http:
+  namespace: true
   elements:
   - topic: http
     text: >
       the http namespace contains functions to read, modify & delete HTTP resources.
-      Most functions accepts the --insecure option to ignore certificate errors & the --client option
+      Most functions accept the --insecure option to ignore certificate errors & the --client option
       to specify a HTTP client to use.
   - topic: http.get
     text: >
@@ -411,10 +413,83 @@ http:
     - code: 'https://jsonplaceholder.typicode.com/posts/1'
 
   - topic: http.exists
+    text: 'the http.exists takes a URL (or host) as argument, it sends a HEAD request and returns true if the status code is less than 400.'
   - topic: http.post
+    text: > 
+      the http.post sends a POST request to the specified URL (or host) with the given body value, the body value can be any %readable or serializable object/list.
+      A %mimetype value can be specified to change the value of the Content-Type header.
+    examples:
+    - code: http.post https://example.com/posts '{"title":"hello"}'
+    - code: 'http.post https://example.com/posts {title: "hello"}'
+    - code: 'http.post https://example.com/posts [ {title: "hello"} ]'
+    - code: http.post https://example.com/posts mime"json" '{"title":"hello"}'
+
+
   - topic: http.patch
+    text: the http.patch function works like http.post but sends a HTTP PATCH request instead
+    related-topics: [http.post]
+
   - topic: http.delete
+    text: the http.delete function sends a HTTP DELETE request to the specified URL
+
   - topic: http.Client
+    text: the http.Client function creates a HTTP client that can be used in most http.* functions with the --client flag.
+
+    examples:
+    - code: 'http.Client{ save-cookies: true }'
+      explanation: saves the cookies received in responses, cookies are not persisted
+
+    - code: 'http.Client{ insecure: true }'
+      explanation: ignore certificate errors
+
+    - code: |
+        http.Client{
+          request-finalization: :{
+            https://example.com : { 
+              add-headers: {X-API-KEY: env.initial.API_KEY}
+            }
+          } 
+        }
+      explanation: add X-API-KEY header to all requests sent to https://example.com
   - topic: http.Server
+    text: >
+      the http.Server function creates a listening HTTP server with a given host & handler. The handler can be an function
+      or a Mapping that routes requests. When you send a request to a server listening to https://localhost add the --insecure flag to ignore certificate errors.
+    examples:
+    - code: |
+        fn handle(rw %http.resp_writer, r %http.req){
+          rw.write_json({ a: 1 })
+        }
+
+        server = http.Server!(https://localhost:8080, Mapping {
+            /hello => "hello"
+            %/... => handle
+        })
+      explanation: >
+        creates a HTTP server at https://localhost:8080, requests to /hello will return 'hello' & other requests will
+        be handled by the 'handle' function.
+
+    - code: |
+        fn handle(rw %http.resp_writer, r %http.req){
+            match r.path {
+              / {
+                  rw.write_json({ a: 1 })
+              }
+              %/... {
+                rw.write_status(404)
+              }
+            }
+        }
+
+        server = http.Server!(https://localhost:8080, handle)
+      explanation: >
+        creates a HTTP server at https://localhost:8080 that returns a JSON body with {a: 1} for the '/' path 
+        and a 404 status for other paths.
+
   - topic: http.FileServer
+    text: the http.FileServer creates a HTTP server that serves static file from a given directory.
+    examples:
+    - code: http.FileServer!(https://localhost:8080, ./examples/static/)
+      explanation: https://localhost:8080/index.html will return the content of the file ./examples/static/index.html
+
   - topic: http.servefile
