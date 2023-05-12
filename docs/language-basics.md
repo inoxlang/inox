@@ -301,6 +301,21 @@ one = object[0] # 1
 1
 ```
 
+### Methods
+
+Function expression properties can access the current object using `self`.
+
+```
+object = {
+    name: "foo"
+    print: fn(){
+        print(`hello I am {{self.name}}`)
+    }
+}
+
+object.print()
+```
+
 ## Records
 
 Records are the immutable equivalent of objects, their properties can only have immutable values.
