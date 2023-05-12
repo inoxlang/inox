@@ -17,7 +17,7 @@
 
 ### Error
 
-the Error function creates an error from the provided string and an optional data argument..
+the Error function creates an error from the provided string and an optional data argument.
 
 **examples**
 
@@ -104,7 +104,7 @@ Map(["key1", 10, "key2", 20]
 ```
 ### Ranking
 
-the Ranking function creates a ranking from a list of flat entries. An entry is composed of a value and a floating-point score.  The value with the highest score has the first rank (0), values with the same score have the same rank..
+the Ranking function creates a ranking from a list of flat entries. An entry is composed of a value and a floating-point score.  The value with the highest score has the first rank (0), values with the same score have the same rank.
 
 **examples**
 
@@ -116,7 +116,7 @@ Ranking(["best player", 10.0, "other player", 10.0])
 ```
 ### Thread
 
-the Thread function creates a thread from an iterable..
+the Thread function creates a thread from an iterable.
 
 **examples**
 
@@ -128,7 +128,7 @@ Thread([{message: "hello", author-id: "5958"}])
 
 ### hash_password
 
-the hash_password function hashes a password string using the Bcrypt hashing algorithm, it accepts the cost   as a second optional argument. The cost is an integer between 4 and 31, it defaults to 7..
+the hash_password function hashes a password string using the Bcrypt hashing algorithm, it accepts the cost   as a second optional argument. The cost is an integer between 4 and 31, it defaults to 7.
 
 **examples**
 
@@ -191,7 +191,7 @@ sha512("string")
 
 ### dns.resolve
 
-the dns.resolve function retrieves DNS records of the given type..
+the dns.resolve function retrieves DNS records of the given type.
 
 **examples**
 
@@ -203,7 +203,7 @@ dns.resolve!("github.com" "A")
 
 ### fs.mkfile
 
-The fs.mkfile function takes a file path as first argument. It accepts a --readonly switch that causes  the created file to not have the write permission ; and a %readable argument that is the content of the file to create..
+The fs.mkfile function takes a file path as first argument. It accepts a --readonly switch that causes  the created file to not have the write permission ; and a %readable argument that is the content of the file to create.
 
 **examples**
 
@@ -215,7 +215,7 @@ fs.mkfile ./file.txt "content"
 ```
 ### fs.mkdir
 
-the fs.mkdir function takes a directory path as first argument & and optional dictionary literal as a second argument. The second argument recursively describes the content of the directory..
+the fs.mkdir function takes a directory path as first argument & and optional dictionary literal as a second argument. The second argument recursively describes the content of the directory.
 
 **examples**
 
@@ -237,13 +237,13 @@ fs.mkdir ./dir_b/ $dir_content
 ```
 ### fs.read
 
-the fs.read function behaves exactly like the read function but only works on files & directories..
+the fs.read function behaves exactly like the read function but only works on files & directories.
 ### fs.read_file
 
-the fs.read function behaves exactly like the read function but only works on files..
+the fs.read function behaves exactly like the read function but only works on files.
 ### fs.ls
 
-the fs.ls function takes a directory path or a path pattern as first argument and returns a list of entries, if no argument is provided the ./ directory is used..
+the fs.ls function takes a directory path or a path pattern as first argument and returns a list of entries, if no argument is provided the ./ directory is used.
 
 **examples**
 
@@ -258,10 +258,10 @@ fs.ls %./*.json
 ```
 ### fs.rename
 
-the fs.rename (fs.mv) function renames a file, it takes two path arguments.  An error is returned if a file already exists at the target path..
+the fs.rename (fs.mv) function renames a file, it takes two path arguments.  An error is returned if a file already exists at the target path.
 ### fs.cp
 
-the fs.cp function copies a file/dir at a destination or a list of files in a destination directory, the copy is recursive by default. As you can see this behaviour is not exactly the same as the cp command on Unix. An error is returned if a file or a directory already exists at one of the target paths (recursive)..
+the fs.cp function copies a file/dir at a destination or a list of files in a destination directory, the copy is recursive by default. As you can see this behaviour is not exactly the same as the cp command on Unix. An error is returned if a file or a directory already exists at one of the target paths (recursive).
 
 **examples**
 
@@ -288,10 +288,10 @@ the fs.isfile returns true if there is a regular file at the given path.
 the fs.remove function removes a file or a directory recursively.
 ### fs.glob
 
-the fs.glob function takes a globbing path pattern argument (%./a/... will not work) and returns a list of paths matching this pattern..
+the fs.glob function takes a globbing path pattern argument (%./a/... will not work) and returns a list of paths matching this pattern.
 ### fs.find
 
-the fs.find function takes a directory path argument followed by one or more globbing path patterns,  it returns a directory entry for each file matching at least one of the pattern..
+the fs.find function takes a directory path argument followed by one or more globbing path patterns,  it returns a directory entry for each file matching at least one of the pattern.
 
 **examples**
 
@@ -300,7 +300,7 @@ fs.find ./ %./**/*.json
 ```
 ### fs.get_tree_data
 
-the fs.get_tree_data function takes a directory path argument and returns a %udata value  thats contains the file hiearachy of the passed directory..
+the fs.get_tree_data function takes a directory path argument and returns a %udata value  thats contains the file hiearachy of the passed directory.
 
 **examples**
 
@@ -359,7 +359,7 @@ filter([0, 1, 2], @($ >= 1))
 ```
 ### some
 
-the some function returns true if and only if at least one element of an iterable passes a condition. For an empty iterable the result is always true..
+the some function returns true if and only if at least one element of an iterable passes a condition. For an empty iterable the result is always true.
 
 **examples**
 
@@ -375,7 +375,7 @@ false
 ```
 ### all
 
-the all function returns true if and only if all elements of an iterable pass a condition. For an empty iterable the result is always true..
+the all function returns true if and only if all elements of an iterable pass a condition. For an empty iterable the result is always true.
 
 **examples**
 
@@ -391,7 +391,7 @@ true
 ```
 ### none
 
-the none function returns true if and only if no elements of an iterable pass a condition. For an emptty iterable the result is always true..
+the none function returns true if and only if no elements of an iterable pass a condition. For an emptty iterable the result is always true.
 
 **examples**
 
@@ -407,7 +407,7 @@ true
 ```
 ### sort
 
-the sort function creates a new list by sorting a list of strings or integers, the second argument is an identifier describing the order. For strings the available orderings are #lex (lexicographic) & #revlex (same but reversed). For integers the available orderings are #asc (ascending) & #desc (descending)..
+the sort function creates a new list by sorting a list of strings or integers, the second argument is an identifier describing the order. For strings the available orderings are #lex (lexicographic) & #revlex (same but reversed). For integers the available orderings are #asc (ascending) & #desc (descending).
 
 **examples**
 
@@ -444,7 +444,7 @@ find %int ['1', 2, "3"]
 ```
 ### idt
 
-the idt (identity) function takes a single argument and returns it..
+the idt (identity) function takes a single argument and returns it.
 
 ## Html
 
@@ -465,10 +465,10 @@ the html.h4 function creates a h4 HTML element.
 
 ### http
 
-the http namespace contains functions to read, modify & delete HTTP resources. Most functions accept the --insecure option to ignore certificate errors & the --client option to specify a HTTP client to use..
+the http namespace contains functions to read, modify & delete HTTP resources. Most functions accept the --insecure option to ignore certificate errors & the --client option to specify a HTTP client to use.
 ### http.get
 
-the http.get function takes a URL (or host) as first argument and returns a HTTP response. The --insecure options causes the function to ignore certificate errors..
+the http.get function takes a URL (or host) as first argument and returns a HTTP response. The --insecure options causes the function to ignore certificate errors.
 
 **examples**
 
@@ -477,7 +477,7 @@ http.get https://example.com/
 ```
 ### http.read
 
-the http.read function behaves exactly like the read function but only works on HTTP resources..
+the http.read function behaves exactly like the read function but only works on HTTP resources.
 
 **examples**
 
@@ -486,10 +486,10 @@ https://jsonplaceholder.typicode.com/posts/1
 ```
 ### http.exists
 
-the http.exists takes a URL (or host) as argument, it sends a HEAD request and returns true if the status code is less than 400..
+the http.exists takes a URL (or host) as argument, it sends a HEAD request and returns true if the status code is less than 400.
 ### http.post
 
-the http.post sends a POST request to the specified URL (or host) with the given body value, the body value can be any %readable or serializable object/list. A %mimetype value can be specified to change the value of the Content-Type header..
+the http.post sends a POST request to the specified URL (or host) with the given body value, the body value can be any %readable or serializable object/list. A %mimetype value can be specified to change the value of the Content-Type header.
 
 **examples**
 
@@ -513,7 +513,7 @@ the http.patch function works like http.post but sends a HTTP PATCH request inst
 the http.delete function sends a HTTP DELETE request to the specified URL.
 ### http.Client
 
-the http.Client function creates a HTTP client that can be used in most http.* functions with the --client flag..
+the http.Client function creates a HTTP client that can be used in most http.* functions with the --client flag.
 
 **examples**
 
@@ -535,7 +535,7 @@ http.Client{
 ```
 ### http.Server
 
-the http.Server function creates a listening HTTP server with a given host & handler. The handler can be an function or a Mapping that routes requests. When you send a request to a server listening to https://localhost add the --insecure flag to ignore certificate errors..
+the http.Server function creates a listening HTTP server with a given host & handler. The handler can be an function or a Mapping that routes requests. When you send a request to a server listening to https://localhost add the --insecure flag to ignore certificate errors.
 
 **examples**
 
@@ -567,7 +567,7 @@ server = http.Server!(https://localhost:8080, handle)
 ```
 ### http.FileServer
 
-the http.FileServer creates a HTTP server that serves static file from a given directory..
+the http.FileServer creates a HTTP server that serves static file from a given directory.
 
 **examples**
 
@@ -582,7 +582,7 @@ http.FileServer!(https://localhost:8080, ./examples/static/)
 
 ### rand
 
-the rand function generates/pick a random value in a cryptographically secure way. If the argument is a pattern a matching value is returned, if the argument is an indexable an element is picked..
+the rand function generates/pick a random value in a cryptographically secure way. If the argument is a pattern a matching value is returned, if the argument is an indexable an element is picked.
 
 **examples**
 
@@ -606,7 +606,7 @@ rand(["a", "b"])
 
 ### read
 
-read is a general purpose function that reads the content of a file, a directory or a HTTP resource. The content is parsed by default, to disable parsing use --raw after the resource's name: a byte slice  will be returned instead..
+read is a general purpose function that reads the content of a file, a directory or a HTTP resource. The content is parsed by default, to disable parsing use --raw after the resource's name: a byte slice  will be returned instead.
 
 **examples**
 
@@ -642,7 +642,7 @@ read https://jsonplaceholder.typicode.com/posts/1
 ```
 ### create
 
-create is a general purpose function that can create a file, a directory or a HTTP resource..
+create is a general purpose function that can create a file, a directory or a HTTP resource.
 
 **examples**
 
@@ -657,7 +657,7 @@ create ./file.txt "content"
 ```
 ### update
 
-update is a general purpose function that updates an existing resource, it has 2 modes: append and replace. Replace is the default mode..
+update is a general purpose function that updates an existing resource, it has 2 modes: append and replace. Replace is the default mode.
 
 **examples**
 
@@ -675,7 +675,7 @@ update <url> tojson({})'
 ```
 ### delete
 
-delete is a general purpose function that deletes a resource, deletion is recursive for directories..
+delete is a general purpose function that deletes a resource, deletion is recursive for directories.
 
 **examples**
 
@@ -693,7 +693,7 @@ delete <url>
 
 ### tcp.connect
 
-the tcp.connect function creates a TCP connection to a given host..
+the tcp.connect function creates a TCP connection to a given host.
 
 **examples**
 

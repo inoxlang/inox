@@ -98,8 +98,8 @@ for i, group_name in group_names {
         }
 
         # make sure the text ends with '.'
-        var text %str = (v.?text ?? "")
-        if ((text != "") and (text[(len(text)-1)] != ".")){
+        var text %str = strmanip.trim_space((v.?text ?? ""))
+        if ((text != "") and !(text match %`.+\.$`)){
             text = concat text "."
         }
 
