@@ -144,6 +144,7 @@ func (h TopicHelp) Print(w io.Writer, config HelpMessageConfig) {
 			for _, example := range h.Examples {
 
 				//add carriage returns because of the shell + left padding
+				singleLine := !strings.Contains(example.Code, "\n")
 				code := strings.ReplaceAll(example.Code, "\n", "\n\r  ")
 
 				chunk, err := parse.ParseChunk(code, "")
@@ -155,7 +156,11 @@ func (h TopicHelp) Print(w io.Writer, config HelpMessageConfig) {
 				core.PrintColorizedChunk(w, chunk, []rune(code), false, core.GetFullColorSequence(termenv.ANSIWhite, false))
 
 				if example.Explanation != "" {
-					w.Write(utils.StringAsBytes(" # "))
+					if singleLine {
+						w.Write(utils.StringAsBytes(" # "))
+					} else {
+						w.Write(utils.StringAsBytes("# "))
+					}
 					w.Write(utils.StringAsBytes(example.Explanation))
 				}
 
@@ -172,6 +177,8 @@ func (h TopicHelp) Print(w io.Writer, config HelpMessageConfig) {
 				w.Write(utils.StringAsBytes("\n\r"))
 
 			}
+		} else {
+			w.Write(utils.StringAsBytes("\n\r"))
 		}
 
 		if len(h.SubTopics) > 0 {
