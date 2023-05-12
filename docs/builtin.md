@@ -606,7 +606,7 @@ rand(["a", "b"])
 
 ### read
 
-read is a general purpose function that reads the content of a file, a directory or a HTTP resource. The content is parsed by default, to disable parsing use --raw after the resource's name: a byte slice  will be returned instead.
+read is a general purpose function that reads the content of a file, a directory or a HTTP resource. The content is parsed by default, to disable parsing use --raw after the resource's name: a byte slice  will be returned instead. The type of content is determined by looking at the extension for files &  the Content-Type header for HTTP resources.
 
 **examples**
 
