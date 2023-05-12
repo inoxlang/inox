@@ -72,7 +72,7 @@ for i, group_name in group_names {
     }
 
     builtin = (concat builtin
-        "## " strmanip.title_case(title) "\n\n"
+        "## " title "\n\n"
     )
 
     for v in group.elements {

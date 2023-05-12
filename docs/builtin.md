@@ -187,7 +187,7 @@ sha512("string")
 0x[2757cb3cafc39af451abb2697be79b4ab61d63d74d85b0418629de8c26811b529f3f3780d0150063ff55a2beee74c4ec102a2a2731a1f1f7f10d473ad18a6a87]
 ```
 
-## Dns
+## DNS
 
 ### dns.resolve
 
@@ -446,7 +446,7 @@ find %int ['1', 2, "3"]
 
 the idt (identity) function takes a single argument and returns it.
 
-## Html
+## HTML
 
 ### html.h1
 
@@ -461,7 +461,7 @@ the html.h3 function creates a h3 HTML element.
 
 the html.h4 function creates a h4 HTML element.
 
-## Http
+## HTTP
 
 ### http
 
@@ -578,7 +578,7 @@ http.FileServer!(https://localhost:8080, ./examples/static/)
 
 
 
-## Rand
+## rand
 
 ### rand
 
@@ -689,7 +689,7 @@ delete ./dir/
 delete <url>
 ```
 
-## Tcp
+## TCP
 
 ### tcp.connect
 
