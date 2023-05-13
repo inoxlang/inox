@@ -505,6 +505,24 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, URL("https://example.com/index.html"), res)
 		})
 
+		t.Run("path interpolation containg an encoded '?'", func(t *testing.T) {
+			code := `https://example.com{path}`
+			res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				"path": Str("%3F"),
+			}), false)
+			assert.NoError(t, err)
+			assert.Equal(t, URL("https://example.com/%3F"), res)
+		})
+
+		t.Run("path interpolation containg an encoded '#'", func(t *testing.T) {
+			code := `https://example.com{path}`
+			res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				"path": Str("%23"),
+			}), false)
+			assert.NoError(t, err)
+			assert.Equal(t, URL("https://example.com/%23"), res)
+		})
+
 		t.Run("host alias", func(t *testing.T) {
 			code := `@api/index.html`
 			ctx, _ := NewDefaultTestContext().NewWith(nil)
@@ -543,17 +561,42 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, URL("https://example.com/?v=a&w=b"), res)
 		})
 
+		t.Run("query interpolation containing an encoded '#'", func(t *testing.T) {
+			code := `
+				x = "%23"
+				return https://example.com/?v={$x}
+			`
+			res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), nil), false)
+			assert.NoError(t, err)
+			assert.Equal(t, URL("https://example.com/?v=%23"), res)
+		})
+
 		injectionCases := []struct {
 			input string
 			error string
 		}{
-			//path
+			//note: %2E is the URL encoding for '.'
+			//port injection in path
 			{
 				`path = ":8080"; return https://example.com{path}`,
 				S_URL_EXPR_PATH_START_LIMITATION,
 			},
+
+			//'..' injection in path
 			{
 				`path = "."; return https://example.com/.{path}`,
+				S_URL_EXPR_PATH_LIMITATION,
+			},
+			{
+				`path = "."; return https://example.com/%2E{path}`,
+				S_URL_EXPR_PATH_LIMITATION,
+			},
+			{
+				`path = "%2E"; return https://example.com/.{path}`,
+				S_URL_EXPR_PATH_LIMITATION,
+			},
+			{
+				`path = "%2E"; return https://example.com/%2E{path}`,
 				S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
@@ -561,9 +604,35 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
+				`path = ""; return https://example.com/%2E{path}.`,
+				S_URL_EXPR_PATH_LIMITATION,
+			},
+			{
+				`path = ""; return https://example.com/.{path}%2E`,
+				S_URL_EXPR_PATH_LIMITATION,
+			},
+			{
+				`path = ""; return https://example.com/%2E{path}%2E`,
+				S_URL_EXPR_PATH_LIMITATION,
+			},
+			{
 				`path = /.; return https://example.com{path}.`,
 				S_URL_EXPR_PATH_LIMITATION,
 			},
+			{
+				`path = /.; return https://example.com{path}%2E`,
+				S_URL_EXPR_PATH_LIMITATION,
+			},
+			{
+				`path = /%2E; return https://example.com{path}.`,
+				S_URL_EXPR_PATH_LIMITATION,
+			},
+			{
+				`path = /%2E; return https://example.com{path}%2E`,
+				S_URL_EXPR_PATH_LIMITATION,
+			},
+
+			//'?' injection in path
 			{
 				`path = "?a=b"; return https://example.com{path}`,
 				S_URL_PATH_INTERP_RESULT_LIMITATION,
@@ -572,15 +641,40 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`path = "x?a=b"; return https://example.com{path}`,
 				S_URL_PATH_INTERP_RESULT_LIMITATION,
 			},
+
+			//'#' injection in path
 			{
 				`path = "#"; return https://example.com{path}`,
 				S_URL_PATH_INTERP_RESULT_LIMITATION,
 			},
+
+			//'*' injection in path
+			{
+				`path = "*"; return https://example.com{path}`,
+				S_URL_PATH_INTERP_RESULT_LIMITATION,
+			},
+			{
+				`path = "/*"; return https://example.com{path}`,
+				S_URL_PATH_INTERP_RESULT_LIMITATION,
+			},
+			{
+				`path = "%2A"; return https://example.com{path}`,
+				S_URL_PATH_INTERP_RESULT_LIMITATION,
+			},
+			{
+				`path = "/%2A"; return https://example.com{path}`,
+				S_URL_PATH_INTERP_RESULT_LIMITATION,
+			},
 			//TODO: add more tests
 
-			//query
+			//'#' injection in query
 			{
 				`x = "#id"; return https://example.com/?v={$x}`,
+				S_QUERY_PARAM_VALUE_LIMITATION,
+			},
+			//'&' injection in query
+			{
+				`x = "x&admin=true"; return https://example.com/?v={$x}`,
 				S_QUERY_PARAM_VALUE_LIMITATION,
 			},
 

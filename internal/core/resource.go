@@ -473,25 +473,69 @@ func NewURL(host Value, pathSlices []Value, isStaticPathSliceList []bool, queryP
 			return nil, errors.New(ERR_PREFIX + S_PATH_SLICE_VALUE_LIMITATION)
 		}
 
-		if !isStaticPathSlice && (!checkPathInterpolationResult(str) || strings.Contains(str, "#")) {
+		if isStaticPathSlice {
+			continue
+		}
+
+		if !checkPathInterpolationResult(str) || strings.Contains(str, "#") {
+			return nil, errors.New(ERR_PREFIX + S_URL_PATH_INTERP_RESULT_LIMITATION)
+		}
+
+		// check decoded
+
+		decoded, err := utils.PercentDecode(str, true)
+		if err != nil {
+			return nil, fmt.Errorf(ERR_PREFIX + S_INVALID_URL_ENCODED_STRING)
+		}
+
+		ok := true
+		{
+		loop:
+			for i, b := range utils.StringAsBytes(decoded) {
+				switch b {
+				case '.':
+					if i < len(decoded)-1 && decoded[i+1] == '.' {
+						ok = false
+						break loop
+					}
+				case '\\', '*': //'?' and '#' are allowed because they are encoded
+					ok = false
+					break loop
+				}
+			}
+		}
+
+		if !ok {
 			return nil, errors.New(ERR_PREFIX + S_URL_PATH_INTERP_RESULT_LIMITATION)
 		}
 	}
 
 	//we check the final path
+	{
 
-	if strings.Contains(pth, "..") || strings.Contains(pth, "#") {
-		return nil, errors.New(ERR_PREFIX + S_URL_EXPR_PATH_LIMITATION)
-	}
-
-	if pth != "" {
-		if pth[0] == ':' {
-			return nil, errors.New(ERR_PREFIX + S_URL_EXPR_PATH_START_LIMITATION)
+		if strings.Contains(pth, "..") || strings.Contains(pth, "#") || strings.Contains(pth, "?") {
+			return nil, errors.New(ERR_PREFIX + S_URL_EXPR_PATH_LIMITATION)
 		}
 
-		if pth[0] != '/' {
-			pth = "/" + pth
+		decodedPath, err := utils.PercentDecode(pth, true)
+		if err != nil {
+			return nil, fmt.Errorf(ERR_PREFIX + S_INVALID_URL_ENCODED_PATH)
 		}
+
+		if strings.Contains(decodedPath, "..") {
+			return nil, errors.New(ERR_PREFIX + S_URL_EXPR_PATH_LIMITATION)
+		}
+
+		if pth != "" {
+			if pth[0] == ':' {
+				return nil, errors.New(ERR_PREFIX + S_URL_EXPR_PATH_START_LIMITATION)
+			}
+
+			if pth[0] != '/' {
+				pth = "/" + pth
+			}
+		}
+
 	}
 
 	//query evaluation

@@ -12,7 +12,9 @@ const (
 	S_URL_PATH_INTERP_RESULT_LIMITATION = "result of a URL path interpolation should not contain any of the following substrings: '..', '\\', '*', '?', '#'"
 	S_QUERY_PARAM_VALUE_LIMITATION      = "value of query parameter should not contain '&' nor '#'"
 	S_URL_EXPR_PATH_START_LIMITATION    = "path should not start with ':'"
-	S_URL_EXPR_PATH_LIMITATION          = "path should not contain the substring '..' or '#'"
+	S_URL_EXPR_PATH_LIMITATION          = "path should not contain any of the following substrings '..', '#', '?"
+	S_INVALID_URL_ENCODED_STRING        = "invalid URL encoded string"
+	S_INVALID_URL_ENCODED_PATH          = "invalid URL encoded path"
 )
 
 var (

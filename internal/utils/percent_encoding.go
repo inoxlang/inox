@@ -21,17 +21,28 @@ func PercentEncode(s string) string {
 	return BytesAsString(encoded)
 }
 
-func PercentDecode(s string) (string, error) {
-	if (len(s) % 3) != 0 {
-		return "", ErrInvalidPercentEncodedString
+func PercentDecode(s string, allowNotEncoded bool) (string, error) {
+	var decoded []byte
+	if allowNotEncoded {
+		decoded = make([]byte, 0, len(s)) //minimum capacity
+	} else {
+		if (len(s) % 3) != 0 {
+			return "", ErrInvalidPercentEncodedString
+		}
+
+		decoded = make([]byte, 0, len(s)/3) //exact capacity
+		decoded = decoded[0:len(decoded):len(decoded)]
 	}
-	decoded := make([]byte, 0, len(s)/3)
 
 	for i := 0; i < len(s); i++ {
 		if s[i] == '%' && i+2 < len(s) && IsHexDigit(s[i+1]) && IsHexDigit(s[i+2]) {
 			decoded = append(decoded, (HexDigitToByte(s[i+1])<<4 | HexDigitToByte(s[i+2])))
 			i += 2
 		} else { // if not valid
+			if allowNotEncoded && s[i] != '%' {
+				decoded = append(decoded, s[i])
+				continue
+			}
 			return "", ErrInvalidPercentEncodedString
 		}
 	}
