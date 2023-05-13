@@ -56,10 +56,44 @@ Other:
 
 ### Injection Prevention
 
-In Inox interpolations are always restricted in order to prevent **injections**.
-When you dynamically create URLs the interpolations are restricted based on where the interpolation is located (path, query).
+In Inox interpolations are always restricted in order to prevent **injections** and regular strings are **never trusted**.
+URLs & paths are first-class values and must be used to perform network or filesystem operations. 
 
-<img src="./docs/img/url-injection.png"></img>
+## URL Interpolations
+
+When you dynamically create URLs the interpolations are restricted based on their location (path, query).\
+
+Let's say that you are writing a piece of code that fetches **public** data from a private/internal service and returns the result 
+to a user. You are using the query parameter `?admin=false` in the URL because only public data should be returned.
+```
+public_data = http.read!(https://private-service{path}?admin=false)
+```
+
+The way in which the user interacts with your code is not important here, let's assume that the user can send any value for `path`.
+Obviously this is a very bad idea from a security standpoint.
+A malicious path could be used to:
+- perform a directory traversal if the private service has a vulnerable endpoint
+- inject a query parameter `?admin=true` to retrieve private data
+- inject a port number
+
+In Inox the URL interpolations are special, based on the location of the interpolation specific checks are performed:
+
+```
+https://example.com/api/{path}/?x={x}
+```
+
+- interpolations before the '?' are **path** interpolations
+  - the strings/characters `'..', '*', '?', '\\'` are forbidden
+  - ':' is forbidden at the start of the finalized path (after all interpolations have been evaluated)
+- interpolations after the '?' are **query** interpolations 
+  - the characters '&' and '#' are forbidden
+
+In the example if the path `/data?admin=true` is received the Inox runtime will throw an error:
+```
+URL expression: result of a path interpolation should not contain any of the following substrings: "..", "\" , "*", "?"
+```
+
+## Checked Strings (SQL..)
 
 <!-- code that appear in the image
 > path="/data?admin=true"
