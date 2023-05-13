@@ -24,7 +24,7 @@ func TestPercentEncoding(t *testing.T) {
 				return
 			}
 
-			decoded, err := PercentDecode(encoded)
+			decoded, err := PercentDecode(encoded, false)
 			if !assert.NoError(t, err) {
 				return
 			}
