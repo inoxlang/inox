@@ -69,6 +69,12 @@ func init() {
 		NewClient, func(ctx *symbolic.Context, config *symbolic.Object) *http_symbolic.HttpClient {
 			return &http_symbolic.HttpClient{}
 		},
+		PercentEncode, func(ctx *symbolic.Context, s symbolic.StringLike) symbolic.StringLike {
+			return symbolic.ANY_STR_LIKE
+		},
+		PercentDecode, func(ctx *symbolic.Context, s symbolic.StringLike) (symbolic.StringLike, *symbolic.Error) {
+			return symbolic.ANY_STR_LIKE, nil
+		},
 	})
 
 	help.RegisterHelpValues(map[string]any{
@@ -87,15 +93,17 @@ func init() {
 
 func NewHttpNamespace() *core.Record {
 	return core.NewRecordFromMap(core.ValMap{
-		"exists":     core.ValOf(httpExists),
-		"get":        core.ValOf(HttpGet),
-		"read":       core.ValOf(HttpRead),
-		"post":       core.ValOf(HttpPost),
-		"patch":      core.ValOf(HttpPatch),
-		"delete":     core.ValOf(HttpDelete),
-		"Server":     core.ValOf(NewHttpServer),
-		"FileServer": core.ValOf(NewFileServer),
-		"servefile":  core.ValOf(serveFile),
-		"Client":     core.ValOf(NewClient),
+		"exists":         core.WrapGoFunction(httpExists),
+		"get":            core.WrapGoFunction(HttpGet),
+		"read":           core.WrapGoFunction(HttpRead),
+		"post":           core.WrapGoFunction(HttpPost),
+		"patch":          core.WrapGoFunction(HttpPatch),
+		"delete":         core.WrapGoFunction(HttpDelete),
+		"Server":         core.WrapGoFunction(NewHttpServer),
+		"FileServer":     core.WrapGoFunction(NewFileServer),
+		"servefile":      core.WrapGoFunction(serveFile),
+		"Client":         core.WrapGoFunction(NewClient),
+		"percent_encode": core.WrapGoFunction(PercentEncode),
+		"percent_decode": core.WrapGoFunction(PercentDecode),
 	})
 }
