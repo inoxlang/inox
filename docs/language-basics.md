@@ -29,6 +29,9 @@
     - [Pattern namespaces](#pattern-namespaces)
     - [String patterns](#string-patterns)
 - [Modules](#modules)
+    - [Execution Phases](#execution-phases)
+    - [Module Imports](#module-imports)
+    - [Inclusion Imports](#inclusion-imports)
 - [Static check](#static-check)
 - [Symbolic evaluation](#symbolic-evaluation)
 
@@ -189,6 +192,15 @@ concat #[1] #[2]
 ```
 
 ## Interpolation
+
+### Regular Strings
+
+```
+`Hello {{name}}`
+
+`Hello ! 
+I am {{name}}`
+```
 
 For now "normal" strings cannot be interpolated but the feature is coming soon, the interpolation
 of checked strings, URLs & paths is already implemented.
@@ -694,10 +706,96 @@ An Inox module is a code file that starts with a manifest.
 
 The execution of a module has several phases:
 - parsing
-- [static check](#static-check)
-- [symbolic evaluation/check](#symbolic-evaluation)
-- [compilation](#compilation) (if using [bytecode interpreter](#evaluation))
-- [evaluation](#evaluation-phase)
+- [Static Check](#static-check)
+- [Symbolic Evaluation/Check](#symbolic-evaluation)
+- [Compilation](#compilation) (if using [bytecode interpreter](#evaluation))
+- [Evaluation](#evaluation)
+
+## Result
+
+Inox modules can return a value with a return statement:
+```
+# return-1.ix
+manifest {}
+
+return 1
+```
+
+## Module Imports
+
+As the name imply this language construct imports a **module**: an Inox file that starts with a manifest.
+Here is a minimal example:
+```
+# main.ix
+manifest {}
+
+import result ./return_1.ix {}
+
+print(result) # 1
+
+# return-1.ix
+manifest {}
+
+return 1
+```
+
+In most cases the modules you import will require access to the filesystem or the network.
+You can grant them the required permissions in the **allow** section of the import.
+
+> Note: in the following example IWD_PREFIX refers to a prefix path pattern matching the working directory
+
+```
+# main.ix
+manifest {
+    permissions: {
+        read: IWD_PREFIX
+    }
+}
+
+import read-config ./read-config.ix {
+    allow: {read: IWD_PREFIX}
+}
+
+config = read-config()
+# ...
+
+
+# read-config.ix
+manifest {
+    permissions: {
+        read: IWD_PREFIX
+    }
+}
+
+return fn(){
+    # ...
+}
+```
+
+⁉️ So I need to write a manifest + specify permissions in **EACH** file ?\
+-> No, you will typically use [inclusion imports](#inclusion-imports) for trusted, local files. Modules are useful to 
+provide a library or to decompose an application in smaller parts.
+
+## Inclusion Imports
+
+⚠️ This feature is currently in development ! Included files will be highly restricted.
+
+Inclusion imports include the content of a file in the current file.
+This is useful when you need to decompose a module, import pattern definitions or functions shared between modules.
+
+```
+# main.ix
+manifest {}
+
+import ./patterns.ix
+
+# patterns.ix
+%user = %{
+    name: %str
+    profile-picture: %url
+}
+```
+
 
 # Static Check
 
