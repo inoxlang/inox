@@ -2,11 +2,12 @@ package internal
 
 import (
 	"errors"
+	"fmt"
 
 	parse "github.com/inoxlang/inox/internal/parse"
 )
 
-func _makeStateAndChunk(code string, globals ...map[string]SymbolicValue) (*parse.Chunk, *State, error) {
+func _makeStateAndChunk(code string, includedFiles map[string]string, globals ...map[string]SymbolicValue) (*parse.Chunk, *State, error) {
 	chunk, err := parse.ParseChunkSource(parse.InMemorySource{
 		NameString: "",
 		CodeString: code,
@@ -40,11 +41,40 @@ func _makeStateAndChunk(code string, globals ...map[string]SymbolicValue) (*pars
 		}
 	}
 
+	if len(includedFiles) > 0 {
+		state.Module.InclusionStatementMap = make(map[*parse.InclusionImportStatement]*IncludedChunk, len(includedFiles))
+	}
+	for file, content := range includedFiles {
+		importStmt := parse.FindNode(chunk.Node, (*parse.InclusionImportStatement)(nil), func(stmt *parse.InclusionImportStatement, _ bool) bool {
+			pathLit, ok := stmt.Source.(*parse.RelativePathLiteral)
+			return ok && pathLit.Value == file
+		})
+
+		includedChunk, err := parse.ParseChunkSource(parse.InMemorySource{
+			NameString: file,
+			CodeString: content,
+		})
+
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to parse included chunk %s", file)
+		}
+
+		state.Module.InclusionStatementMap[importStmt] = &IncludedChunk{ParsedChunk: includedChunk}
+	}
+
 	return chunk.Node, state, err
 }
 
 func MakeTestStateAndChunk(code string, globals ...map[string]SymbolicValue) (*parse.Chunk, *State) {
-	node, state, err := _makeStateAndChunk(code)
+	node, state, err := _makeStateAndChunk(code, nil, globals...)
+	if err != nil {
+		panic(err)
+	}
+	return node, state
+}
+
+func MakeTestStateAndChunks(code string, files map[string]string, globals ...map[string]SymbolicValue) (*parse.Chunk, *State) {
+	node, state, err := _makeStateAndChunk(code, files, globals...)
 	if err != nil {
 		panic(err)
 	}

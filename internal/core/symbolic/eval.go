@@ -543,6 +543,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			}
 
 			state.symbolicData.SetMostSpecificNodeValue(lhs, right)
+			state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
 		case *parse.MemberExpression:
 			object, err := symbolicEval(lhs.Left, state)
 			if err != nil {
@@ -835,6 +836,8 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			}
 		}
 
+		state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
+
 		//evaluation of statements
 		if len(n.Statements) == 1 {
 			res, err := symbolicEval(n.Statements[0], state)
@@ -916,7 +919,11 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		return symbolicEval(chunk.Node, state)
 	case *parse.ImportStatement:
-		state.setGlobal(n.Identifier.Name, ANY, GlobalConst)
+		value := ANY
+		state.setGlobal(n.Identifier.Name, value, GlobalConst)
+
+		state.symbolicData.SetMostSpecificNodeValue(n.Identifier, value)
+		state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
 		return nil, nil
 	case *parse.SpawnExpression:
 		var actualGlobals = map[string]SymbolicValue{}

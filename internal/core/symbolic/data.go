@@ -17,7 +17,8 @@ var (
 type SymbolicData struct {
 	mostSpecificNodeValues   map[parse.Node]SymbolicValue
 	lessSpecificNodeValues   map[parse.Node]SymbolicValue
-	localScopeData           map[parse.Node]LocalScopeData
+	localScopeData           map[parse.Node]ScopeData
+	globalScopeData          map[parse.Node]ScopeData
 	runtimeTypeCheckPatterns map[parse.Node]any //concrete Pattern or nil (nil means the check is disabled)
 	errors                   []SymbolicEvaluationError
 }
@@ -26,7 +27,8 @@ func NewSymbolicData() *SymbolicData {
 	return &SymbolicData{
 		mostSpecificNodeValues:   make(map[parse.Node]SymbolicValue, 0),
 		lessSpecificNodeValues:   make(map[parse.Node]SymbolicValue, 0),
-		localScopeData:           make(map[parse.Node]LocalScopeData),
+		localScopeData:           make(map[parse.Node]ScopeData),
+		globalScopeData:          make(map[parse.Node]ScopeData),
 		runtimeTypeCheckPatterns: make(map[parse.Node]any, 0),
 	}
 }
@@ -125,6 +127,10 @@ func (data *SymbolicData) AddData(newData *SymbolicData) {
 		data.SetLocalScopeData(k, v)
 	}
 
+	for k, v := range newData.globalScopeData {
+		data.SetGlobalScopeData(k, v)
+	}
+
 	for k, v := range newData.runtimeTypeCheckPatterns {
 		data.SetRuntimeTypecheckPattern(k, v)
 	}
@@ -182,36 +188,65 @@ func (d *SymbolicData) Compute(ctx *Context, key SymbolicValue) SymbolicValue {
 	return ANY
 }
 
-func (d *SymbolicData) GetLocalScopeData(n parse.Node, ancestorChain []parse.Node) (LocalScopeData, bool) {
+func (d *SymbolicData) GetLocalScopeData(n parse.Node, ancestorChain []parse.Node) (ScopeData, bool) {
+	return d.getScopeData(n, ancestorChain, false)
+}
+
+func (d *SymbolicData) GetGlobalScopeData(n parse.Node, ancestorChain []parse.Node) (ScopeData, bool) {
+	return d.getScopeData(n, ancestorChain, true)
+}
+
+func (d *SymbolicData) getScopeData(n parse.Node, ancestorChain []parse.Node, global bool) (ScopeData, bool) {
 	if d == nil {
-		return LocalScopeData{}, false
+		return ScopeData{}, false
 	}
 	var newAncestorChain []parse.Node
 
 	for {
-		scopeData, ok := d.localScopeData[n]
+		var scopeData ScopeData
+		var ok bool
+		if global {
+			scopeData, ok = d.globalScopeData[n]
+		} else {
+			scopeData, ok = d.localScopeData[n]
+		}
+
 		if ok {
 			return scopeData, true
 		} else {
 			n, newAncestorChain, ok = parse.FindPreviousStatementAndChain(n, ancestorChain)
-			if !ok {
+			if ok {
+				ancestorChain = newAncestorChain
+				continue
+			}
+
+			if len(ancestorChain) == 0 {
+				return ScopeData{}, false
+			}
+
+			if global {
+				if parse.NodeIs(n, (*parse.EmbeddedModule)(nil)) {
+					return ScopeData{}, false
+				}
+				lastIndex := len(ancestorChain) - 1
+				return d.getScopeData(ancestorChain[lastIndex], ancestorChain[:lastIndex], global)
+			} else {
 				closestBlock, index, ok := parse.FindClosest(ancestorChain, (*parse.Block)(nil))
 
 				if ok && index > 0 {
 					switch ancestorChain[index-1].(type) {
 					case *parse.FunctionExpression, *parse.ForStatement, *parse.WalkStatement:
-						return d.GetLocalScopeData(closestBlock, ancestorChain[:index])
+						return d.getScopeData(closestBlock, ancestorChain[:index], global)
 					}
 				}
 
-				return LocalScopeData{}, false
+				return ScopeData{}, false
 			}
-			ancestorChain = newAncestorChain
 		}
 	}
 }
 
-func (d *SymbolicData) SetLocalScopeData(n parse.Node, scopeData LocalScopeData) {
+func (d *SymbolicData) SetLocalScopeData(n parse.Node, scopeData ScopeData) {
 	if d == nil {
 		return
 	}
@@ -224,11 +259,25 @@ func (d *SymbolicData) SetLocalScopeData(n parse.Node, scopeData LocalScopeData)
 	d.localScopeData[n] = scopeData
 }
 
-type LocalScopeData struct {
-	Variables []LocalVarData
+// TODO: global scope data generally contain a lot of variables, find a way to reduce memory usage.
+func (d *SymbolicData) SetGlobalScopeData(n parse.Node, scopeData ScopeData) {
+	if d == nil {
+		return
+	}
+
+	_, ok := d.globalScopeData[n]
+	if ok {
+		return
+	}
+
+	d.globalScopeData[n] = scopeData
 }
 
-type LocalVarData struct {
+type ScopeData struct {
+	Variables []VarData
+}
+
+type VarData struct {
 	Name  string
 	Value SymbolicValue
 }

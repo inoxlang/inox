@@ -51,6 +51,21 @@ func TestSymbolicEval(t *testing.T) {
 		return NewListOf(&Any{})
 	}
 
+	t.Run("empty", func(t *testing.T) {
+		n, state := MakeTestStateAndChunk(`""`)
+		_, err := symbolicEval(n, state)
+		assert.NoError(t, err)
+		assert.Empty(t, state.errors)
+
+		//check scope data
+		data, ok := state.symbolicData.GetGlobalScopeData(n, nil)
+		if !assert.True(t, ok) {
+			return
+		}
+
+		assert.Empty(t, data)
+	})
+
 	t.Run("quoted string literal", func(t *testing.T) {
 		n, state := MakeTestStateAndChunk(`""`)
 		res, err := symbolicEval(n, state)
@@ -309,7 +324,35 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
-			assert.Equal(t, &List{elements: []SymbolicValue{}}, res)
+			assert.Equal(t, NewList(), res)
+		})
+
+		t.Run("global variable", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				$$v = []
+				return $$v
+			`)
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors)
+			assert.Equal(t, NewList(), res)
+
+			//check scope data
+			stmt, ancestors := parse.FindNodeAndChain(n, (*parse.ReturnStatement)(nil), nil)
+			data, ok := state.symbolicData.GetGlobalScopeData(stmt, ancestors)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			for _, varData := range data.Variables {
+				if varData.Name == "v" {
+					return
+				}
+			}
+
+			assert.Fail(t, "variable not found in scope data")
 		})
 
 		t.Run("RHS has incompatible type", func(t *testing.T) {
@@ -326,7 +369,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(assignement, state, fmtNotAssignableToVarOftype(&Int{}, type_)),
 			}, state.errors)
-			assert.Equal(t, &List{elements: []SymbolicValue{}}, res)
+			assert.Equal(t, NewList(), res)
 		})
 
 		t.Run("RHS has type incompatible with static type of the variable", func(t *testing.T) {
@@ -828,7 +871,7 @@ func TestSymbolicEval(t *testing.T) {
 			n, state, _ := _makeStateAndChunk(`
 				v = {"name": "foo"}
 				return $v.
-			`)
+			`, nil)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
@@ -955,7 +998,7 @@ func TestSymbolicEval(t *testing.T) {
 			n, state, _ := _makeStateAndChunk(`
 				v = {"name": "foo"}
 				return v.
-			`)
+			`, nil)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
@@ -966,7 +1009,7 @@ func TestSymbolicEval(t *testing.T) {
 			n, state, _ := _makeStateAndChunk(`
 				v = {"a": {"b": "foo"}}
 				return v.a.
-			`)
+			`, nil)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
@@ -2731,7 +2774,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("error in test + missing consequent block", func(t *testing.T) {
 			n, state, _ := _makeStateAndChunk(`
 				if 1
-			`)
+			`, nil)
 
 			ifStmt := n.Statements[0]
 
@@ -2748,7 +2791,7 @@ func TestSymbolicEval(t *testing.T) {
 				if 1 {
 
 				} else
-			`)
+			`, nil)
 
 			ifStmt := n.Statements[0]
 
@@ -3009,7 +3052,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("error in test + missing consequent", func(t *testing.T) {
 			n, state, _ := _makeStateAndChunk(`
 				(if 1)
-			`)
+			`, nil)
 
 			ifStmt := n.Statements[0]
 
@@ -3035,7 +3078,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("error in test + missing alternate", func(t *testing.T) {
 			n, state, _ := _makeStateAndChunk(`
 				(if 1 1 else)
-			`)
+			`, nil)
 
 			ifStmt := n.Statements[0]
 
@@ -3245,8 +3288,12 @@ func TestSymbolicEval(t *testing.T) {
 				return
 			}
 
-			assert.Equal(t, "k", data.Variables[0].Name)
-			assert.Equal(t, "v", data.Variables[1].Name)
+			if data.Variables[0].Name == "k" {
+				assert.Equal(t, "v", data.Variables[1].Name)
+			} else {
+				assert.Equal(t, "v", data.Variables[0].Name)
+				assert.Equal(t, "k", data.Variables[1].Name)
+			}
 		})
 
 		t.Run("list iteration: keys are integers and values have type of element", func(t *testing.T) {
@@ -3370,7 +3417,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("error in head + missing body", func(t *testing.T) {
 			n, state, _ := _makeStateAndChunk(`
 				for i, e in 1
-			`)
+			`, nil)
 			res, err := symbolicEval(n, state)
 			forStmt := n.Statements[0]
 			assert.NoError(t, err)
@@ -3448,7 +3495,7 @@ func TestSymbolicEval(t *testing.T) {
 			n, state, _ := _makeStateAndChunk(`
 				path = 1
 				walk $path entry
-			`)
+			`, nil)
 
 			walkStmt := n.Statements[1]
 			res, err := symbolicEval(n, state)
@@ -3510,7 +3557,7 @@ func TestSymbolicEval(t *testing.T) {
 				}
 				1
 			}
-		`)
+		`, nil)
 			unaryExprs := parse.FindNodes(n, (*parse.UnaryExpression)(nil), nil)
 
 			res, err := symbolicEval(n, state)
@@ -3654,7 +3701,7 @@ func TestSymbolicEval(t *testing.T) {
 					}
 					/...
 				}
-			`)
+			`, nil)
 
 			unaryExpr := parse.FindNode(n, (*parse.UnaryExpression)(nil), nil)
 
@@ -4918,6 +4965,37 @@ func TestSymbolicEval(t *testing.T) {
 				attributes: map[string]SymbolicValue{"a": ANY_STR},
 				children:   []SymbolicValue{ANY_STR},
 			}, res)
+		})
+	})
+
+	t.Run("module import statement ", func(t *testing.T) {
+
+		t.Run("namespace not a record", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				manifest {}
+				import lib ./lib.ix {}
+				return lib
+			`)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, ANY, res)
+
+			//check scope data
+			stmt, ancestors := parse.FindNodeAndChain(n, (*parse.ReturnStatement)(nil), nil)
+			data, ok := state.symbolicData.GetGlobalScopeData(stmt, ancestors)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			for _, varData := range data.Variables {
+				if varData.Name == "lib" {
+					return
+				}
+			}
+
+			assert.Fail(t, "variable not found in scope data")
 		})
 	})
 }
