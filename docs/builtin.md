@@ -95,7 +95,7 @@ Set([1])
 ```
 ### Map
 
-the Map function creates a map from a list of flat entries.
+the Map function creates a map from flat list of entries.
 
 **examples**
 
@@ -104,7 +104,7 @@ Map(["key1", 10, "key2", 20]
 ```
 ### Ranking
 
-the Ranking function creates a ranking from a list of flat entries. An entry is composed of a value and a floating-point score.  The value with the highest score has the first rank (0), values with the same score have the same rank.
+the Ranking function creates a ranking from a flat list of entries. An entry is composed of a value and a floating-point score.  The value with the highest score has the first rank (0), values with the same score have the same rank.
 
 **examples**
 
@@ -582,7 +582,7 @@ http.FileServer!(https://localhost:8080, ./examples/static/)
 
 ### rand
 
-the rand function generates/pick a random value in a cryptographically secure way. If the argument is a pattern a matching value is returned, if the argument is an indexable an element is picked.
+the rand function generates/picks a random value in a cryptographically secure way. If the argument is a pattern a matching value is returned, if the argument is an indexable an element is picked.
 
 **examples**
 
@@ -662,13 +662,13 @@ update is a general purpose function that updates an existing resource, it has 2
 **examples**
 
 ```inox
-update ./file.txt append 'additional content'`
+update ./file.txt append 'additional content'
 ```
 ```inox
-update ./file.txt 'new content'`
+update ./file.txt 'new content'
 ```
 ```inox
-update ./file.txt replace 'new content'`
+update ./file.txt replace 'new content'
 ```
 ```inox
 update <url> tojson({})'

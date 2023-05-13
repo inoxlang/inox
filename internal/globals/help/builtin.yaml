@@ -81,7 +81,7 @@ rand:
   - topic: rand
     related-topics: [rand, pseudo_rand]
     text: >
-      the rand function generates/pick a random value in a cryptographically secure way.
+      the rand function generates/picks a random value in a cryptographically secure way.
       If the argument is a pattern a matching value is returned, if the argument is an indexable an element is picked.
     examples:
     - code: 'rand(%int(0..10))'
@@ -197,14 +197,14 @@ containers:
       explanation: "creates a queue with an element 1"
 
   - topic: Map
-    text: the Map function creates a map from a list of flat entries
+    text: the Map function creates a map from flat list of entries
     examples:
     - code: 'Map(["key1", 10, "key2", 20]'
       explanation: creates a Map with the entries "key1" -> 10, "key2" -> 20`
 
   - topic: Ranking
     text: >
-      the Ranking function creates a ranking from a list of flat entries.
+      the Ranking function creates a ranking from a flat list of entries.
       An entry is composed of a value and a floating-point score. 
       The value with the highest score has the first rank (0), values with the same score have the same rank.
     examples:
@@ -288,9 +288,9 @@ resource:
       update is a general purpose function that updates an existing resource, it has 2 modes: append and replace.
       Replace is the default mode.
     examples:
-    - code: update ./file.txt append 'additional content'`
-    - code: update ./file.txt 'new content'`
-    - code: update ./file.txt replace 'new content'`
+    - code: update ./file.txt append 'additional content'
+    - code: update ./file.txt 'new content'
+    - code: update ./file.txt replace 'new content'
     - code: update <url> tojson({})'
 
   - topic: delete
