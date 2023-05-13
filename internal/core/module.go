@@ -380,11 +380,13 @@ func ParseLocalModule(config LocalModuleParsingConfig) (*Module, error) {
 
 	for _, stmt := range inclusionStmts {
 		relativePath := stmt.PathSource().Value
+		stmtPos := mod.MainChunk.GetSourcePosition(stmt.Span)
 
 		chunk, err := ParseLocalSecondaryChunk(LocalSecondaryChunkParsingConfig{
-			ChunkFilepath: fls.Join(src.ResourceDir, relativePath),
-			Module:        mod,
-			Context:       ctx,
+			ChunkFilepath:  fls.Join(src.ResourceDir, relativePath),
+			Module:         mod,
+			Context:        ctx,
+			ImportPosition: stmtPos,
 		})
 
 		if err != nil && chunk == nil {
@@ -412,9 +414,10 @@ type IncludedChunk struct {
 }
 
 type LocalSecondaryChunkParsingConfig struct {
-	ChunkFilepath string
-	Module        *Module
-	Context       *Context
+	ChunkFilepath  string
+	Module         *Module
+	Context        *Context
+	ImportPosition parse.SourcePositionRange
 }
 
 func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*IncludedChunk, error) {
@@ -499,9 +502,9 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 	// add error if a manifest is present
 	if chunk.Node.Manifest != nil {
 		includedChunk.ParsingErrors = append(includedChunk.ParsingErrors,
-			NewError(fmt.Errorf("included chunk files cannot contain a manifest: %s:"+fpath), Path(fpath)),
+			NewError(fmt.Errorf("included chunk files should not contain a manifest: %s", fpath), Path(fpath)),
 		)
-		//TODO: add position
+		includedChunk.ParsingErrorPositions = append(includedChunk.ParsingErrorPositions, config.ImportPosition)
 	}
 
 	mod.IncludedChunkMap[absPath] = includedChunk
@@ -510,11 +513,13 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 
 	for _, stmt := range inclusionStmts {
 		relativePath := stmt.PathSource().Value
+		stmtPos := chunk.GetSourcePosition(stmt.Span)
 
 		chunk, err := ParseLocalSecondaryChunk(LocalSecondaryChunkParsingConfig{
-			ChunkFilepath: fls.Join(src.ResourceDir, relativePath),
-			Module:        mod,
-			Context:       config.Context,
+			ChunkFilepath:  fls.Join(src.ResourceDir, relativePath),
+			Module:         mod,
+			Context:        config.Context,
+			ImportPosition: stmtPos,
 		})
 
 		if err != nil && chunk == nil {

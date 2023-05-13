@@ -209,4 +209,27 @@ func TestParseLocalModule(t *testing.T) {
 		assert.Equal(t, []*IncludedChunk{includedChunk1, includedChunk2}, mod.FlattenedIncludedChunkList)
 	})
 
+	t.Run("included file is a module", func(t *testing.T) {
+		moduleName := "mymod.ix"
+		modpath := writeModuleAndIncludedFiles(t, moduleName, `
+			manifest {}
+			import ./dep.ix
+		`, map[string]string{"./dep.ix": "manifest {}"})
+
+		mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
+		assert.Error(t, err)
+
+		assert.Len(t, mod.ParsingErrors, 1)
+		assert.Len(t, mod.ParsingErrorPositions, 1)
+
+		assert.NotNil(t, mod.MainChunk)
+		assert.Len(t, mod.IncludedChunkForest, 1)
+		assert.NotNil(t, mod.ManifestTemplate)
+
+		includedChunk1 := mod.IncludedChunkForest[0]
+		assert.NotNil(t, includedChunk1.Node)
+		assert.Empty(t, includedChunk1.IncludedChunkForest)
+
+		assert.Equal(t, []*IncludedChunk{includedChunk1}, mod.FlattenedIncludedChunkList)
+	})
 }
