@@ -566,7 +566,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			},
 			{
 				`path = "?a=b"; return https://example.com{path}`,
-				S_PATH_INTERP_RESULT_LIMITATION,
+				S_URL_PATH_INTERP_RESULT_LIMITATION,
+			},
+			{
+				`path = "x?a=b"; return https://example.com{path}`,
+				S_URL_PATH_INTERP_RESULT_LIMITATION,
+			},
+			{
+				`path = "#"; return https://example.com{path}`,
+				S_URL_PATH_INTERP_RESULT_LIMITATION,
 			},
 			//TODO: add more tests
 

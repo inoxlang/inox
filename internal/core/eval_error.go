@@ -6,12 +6,13 @@ import (
 )
 
 const (
-	S_PATH_EXPR_PATH_LIMITATION      = "path should not contain the substring '..'"
-	S_PATH_SLICE_VALUE_LIMITATION    = "path slices should have a string or path value"
-	S_PATH_INTERP_RESULT_LIMITATION  = "result of a path interpolation should not contain any of the following substrings: '..', '\\', '*', '?'"
-	S_QUERY_PARAM_VALUE_LIMITATION   = "value of query parameter should not contain '&' nor '#'"
-	S_URL_EXPR_PATH_START_LIMITATION = "path should not start with ':'"
-	S_URL_EXPR_PATH_LIMITATION       = "path should not contain the substring '..'"
+	S_PATH_EXPR_PATH_LIMITATION         = "path should not contain the substring '..'"
+	S_PATH_SLICE_VALUE_LIMITATION       = "path slices should have a string or path value"
+	S_PATH_INTERP_RESULT_LIMITATION     = "result of a path interpolation should not contain any of the following substrings: '..', '\\', '*', '?'"
+	S_URL_PATH_INTERP_RESULT_LIMITATION = "result of a URL path interpolation should not contain any of the following substrings: '..', '\\', '*', '?', '#'"
+	S_QUERY_PARAM_VALUE_LIMITATION      = "value of query parameter should not contain '&' nor '#'"
+	S_URL_EXPR_PATH_START_LIMITATION    = "path should not start with ':'"
+	S_URL_EXPR_PATH_LIMITATION          = "path should not contain the substring '..' or '#'"
 )
 
 var (

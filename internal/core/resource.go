@@ -449,6 +449,8 @@ type URL string
 // createPath creates an URL in a secure way.
 func NewURL(host Value, pathSlices []Value, isStaticPathSliceList []bool, queryParamNames []Value, queryValues []Value) (Value, error) {
 
+	const ERR_PREFIX = "URL expression: "
+
 	//path evaluation
 
 	var pth string
@@ -468,23 +470,23 @@ func NewURL(host Value, pathSlices []Value, isStaticPathSliceList []bool, queryP
 			}
 			pth = path.Join(pth, str)
 		default:
-			return nil, errors.New("URL expression: " + S_PATH_SLICE_VALUE_LIMITATION)
+			return nil, errors.New(ERR_PREFIX + S_PATH_SLICE_VALUE_LIMITATION)
 		}
 
-		if !isStaticPathSlice && !checkPathInterpolationResult(str) {
-			return nil, errors.New("URL expression: " + S_PATH_INTERP_RESULT_LIMITATION)
+		if !isStaticPathSlice && (!checkPathInterpolationResult(str) || strings.Contains(str, "#")) {
+			return nil, errors.New(ERR_PREFIX + S_URL_PATH_INTERP_RESULT_LIMITATION)
 		}
 	}
 
 	//we check the final path
 
-	if strings.Contains(pth, "..") {
-		return nil, errors.New("URL expression: error: " + S_URL_EXPR_PATH_LIMITATION)
+	if strings.Contains(pth, "..") || strings.Contains(pth, "#") {
+		return nil, errors.New(ERR_PREFIX + S_URL_EXPR_PATH_LIMITATION)
 	}
 
 	if pth != "" {
 		if pth[0] == ':' {
-			return nil, errors.New("URL expression: error: " + S_URL_EXPR_PATH_START_LIMITATION)
+			return nil, errors.New(ERR_PREFIX + S_URL_EXPR_PATH_START_LIMITATION)
 		}
 
 		if pth[0] != '/' {
@@ -510,14 +512,14 @@ func NewURL(host Value, pathSlices []Value, isStaticPathSliceList []bool, queryP
 
 		valueString := string(paramValue.(Str))
 		if strings.ContainsAny(valueString, "&#") {
-			return nil, errors.New("URL expression: error: " + S_QUERY_PARAM_VALUE_LIMITATION)
+			return nil, errors.New(ERR_PREFIX + S_QUERY_PARAM_VALUE_LIMITATION)
 		}
 		queryBuff.WriteString(valueString)
 	}
 
 	u := host.(Host).UnderlyingString() + string(pth) + queryBuff.String()
 	if _, err := url.Parse(u); err != nil {
-		return nil, errors.New("URL expression: " + err.Error())
+		return nil, errors.New(ERR_PREFIX + err.Error())
 	}
 
 	return URL(u), nil
