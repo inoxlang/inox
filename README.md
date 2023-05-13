@@ -59,7 +59,7 @@ Other:
 In Inox interpolations are always restricted in order to prevent **injections** and regular strings are **never trusted**.
 URLs & paths are first-class values and must be used to perform network or filesystem operations. 
 
-## URL Interpolations
+#### **URL Interpolations**
 
 When you dynamically create URLs the interpolations are restricted based on their location (path, query).\
 
@@ -93,7 +93,7 @@ In the example if the path `/data?admin=true` is received the Inox runtime will 
 URL expression: result of a path interpolation should not contain any of the following substrings: "..", "\" , "*", "?"
 ```
 
-## Checked Strings (SQL..)
+#### **Checked Strings (SQL..)**
 
 <!-- code that appear in the image
 > path="/data?admin=true"
