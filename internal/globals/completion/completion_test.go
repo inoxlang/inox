@@ -124,6 +124,63 @@ func TestFindCompletions(t *testing.T) {
 						{ShownString: "val", Value: "val", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 8, End: 9}}},
 					}, completions)
 				})
+
+				t.Run("global variable ($$) in top level module", func(t *testing.T) {
+					if mode != LspCompletions {
+						t.Skip()
+						return
+					}
+
+					state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+					chunk, _ := parseChunkSource(`
+						manifest {
+							permissions: {
+								create: {routines: {}}
+							}
+						}
+						
+						import test ./test.ix {}
+						t
+					`, "")
+
+					idents := parse.FindNodes(chunk.Node, (*parse.IdentifierLiteral)(nil), nil)
+					ident := idents[len(idents)-1]
+					span := ident.Span
+
+					doSymbolicCheck(chunk, state.Global)
+					completions := findCompletions(state, chunk, int(ident.Span.End))
+					assert.EqualValues(t, []Completion{
+						{ShownString: "test", Value: "test", ReplacedRange: parse.SourcePositionRange{Span: span}},
+					}, completions)
+				})
+
+				t.Run("global variable ($$) in top level module", func(t *testing.T) {
+					if mode != LspCompletions {
+						t.Skip()
+						return
+					}
+
+					state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+					chunk, _ := parseChunkSource(`
+						manifest {
+							permissions: {
+								create: {routines: {}}
+							}
+						}
+						
+						import test ./test.ix {}
+						$$t
+					`, "")
+
+					globalVarIdent := parse.FindNode(chunk.Node, (*parse.GlobalVariable)(nil), nil)
+					span := globalVarIdent.Span
+
+					doSymbolicCheck(chunk, state.Global)
+					completions := findCompletions(state, chunk, int(globalVarIdent.Span.End))
+					assert.EqualValues(t, []Completion{
+						{ShownString: "test", Value: "$$test", ReplacedRange: parse.SourcePositionRange{Span: span}},
+					}, completions)
+				})
 			})
 
 			t.Run("identifier member expression", func(t *testing.T) {

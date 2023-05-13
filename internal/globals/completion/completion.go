@@ -208,17 +208,33 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 			})
 		}
 	case *parse.GlobalVariable:
-		state.Global.Globals.Foreach(func(name string, varVal core.Value) {
-			if strings.HasPrefix(name, n.Name) {
-				detail, _ := core.GetStringifiedSymbolicValue(varVal, false)
-				completions = append(completions, Completion{
-					ShownString: name,
-					Value:       "$$" + name,
-					Kind:        defines.CompletionItemKindVariable,
-					Detail:      detail,
-				})
+		if mode == ShellCompletions {
+			state.Global.Globals.Foreach(func(name string, varVal core.Value) {
+				if strings.HasPrefix(name, n.Name) {
+					detail, _ := core.GetStringifiedSymbolicValue(varVal, false)
+					completions = append(completions, Completion{
+						ShownString: name,
+						Value:       "$$" + name,
+						Kind:        defines.CompletionItemKindVariable,
+						Detail:      detail,
+					})
+				}
+			})
+		} else {
+			scopeData, _ := state.Global.SymbolicData.GetGlobalScopeData(n, _ancestorChain)
+
+			for _, varData := range scopeData.Variables {
+				if strings.HasPrefix(varData.Name, n.Name) {
+					completions = append(completions, Completion{
+						ShownString: varData.Name,
+						Value:       "$$" + varData.Name,
+						Kind:        defines.CompletionItemKindVariable,
+						Detail:      symbolic.Stringify(varData.Value),
+					})
+				}
 			}
-		})
+		}
+
 	case *parse.IdentifierLiteral:
 		completions = handleIdentifierAndKeywordCompletions(mode, n, deepestCall, _ancestorChain, state)
 	case *parse.IdentifierMemberExpression:
@@ -342,18 +358,34 @@ func handleIdentifierAndKeywordCompletions(
 
 	//suggest global variables
 
-	state.Global.Globals.Foreach(func(name string, varVal core.Value) {
-		if strings.HasPrefix(name, ident.Name) {
-			detail, _ := core.GetStringifiedSymbolicValue(varVal, false)
+	if mode == ShellCompletions {
 
-			completions = append(completions, Completion{
-				ShownString: name,
-				Value:       name,
-				Kind:        defines.CompletionItemKindVariable,
-				Detail:      detail,
-			})
+		state.Global.Globals.Foreach(func(name string, varVal core.Value) {
+			if strings.HasPrefix(name, ident.Name) {
+				detail, _ := core.GetStringifiedSymbolicValue(varVal, false)
+
+				completions = append(completions, Completion{
+					ShownString: name,
+					Value:       name,
+					Kind:        defines.CompletionItemKindVariable,
+					Detail:      detail,
+				})
+			}
+		})
+	} else {
+		scopeData, _ := state.Global.SymbolicData.GetGlobalScopeData(ident, ancestors)
+
+		for _, varData := range scopeData.Variables {
+			if strings.HasPrefix(varData.Name, ident.Name) {
+				completions = append(completions, Completion{
+					ShownString: varData.Name,
+					Value:       varData.Name,
+					Kind:        defines.CompletionItemKindVariable,
+					Detail:      symbolic.Stringify(varData.Value),
+				})
+			}
 		}
-	})
+	}
 
 	parent := ancestors[len(ancestors)-1]
 
