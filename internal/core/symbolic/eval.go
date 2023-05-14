@@ -917,7 +917,11 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		state.pushChunk(chunk.ParsedChunk)
 		defer state.popChunk()
 
-		return symbolicEval(chunk.Node, state)
+		_, err := symbolicEval(chunk.Node, state)
+		state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
+		state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
+		state.symbolicData.SetContextData(n, state.ctx.currentData())
+		return nil, err
 	case *parse.ImportStatement:
 		value := ANY
 		state.setGlobal(n.Identifier.Name, value, GlobalConst)
