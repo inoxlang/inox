@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync/atomic"
 
+	"github.com/go-git/go-billy/v5"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
@@ -23,7 +24,8 @@ const (
 var (
 	MODULE_PROP_NAMES            = []string{"parsing_errors", "main_chunk_node"}
 	SOURCE_POS_RECORD_PROPNAMES  = []string{"source", "line", "column", "start", "end"}
-	ErrFileToIncludeDoesNotExist = errors.New("file to include does not exist or is a folder")
+	ErrFileToIncludeDoesNotExist = errors.New("file to include does not exist")
+	ErrFileToIncludeIsAFolder    = errors.New("file to include is a folder")
 )
 
 // A Module represents an Inox module, it does not hold any state and should NOT be modified. Module implements Value.
@@ -307,11 +309,24 @@ func ParseLocalModule(config LocalModuleParsingConfig) (*Module, error) {
 		}
 	}
 
-	if info, err := ctx.fs.Stat(fpath); err == fs.ErrNotExist || (err == nil && info.IsDir()) {
-		return nil, fmt.Errorf("%s does not exist or is a folder", fpath)
+	file, err := ctx.fs.Open(fpath)
+
+	if os.IsNotExist(err) {
+		return nil, fmt.Errorf("%s does not exist", fpath)
 	}
 
-	file, err := ctx.fs.Open(fpath)
+	var info fs.FileInfo
+	if err == nil {
+		info, err = FileStat(file)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get information for file %s", fpath)
+		}
+
+		if info.IsDir() {
+			return nil, fmt.Errorf("%s is a folder", fpath)
+		}
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to open %s: %s", fpath, err)
 	}
@@ -463,15 +478,29 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 
 	var existenceError error
 
-	if info, err := ctx.fs.Stat(fpath); os.IsNotExist(err) || (err == nil && info.IsDir()) {
+	file, err := ctx.fs.Open(fpath)
+
+	var info fs.FileInfo
+	if err == nil {
+		info, err = FileStat(file)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get information for file to include %s", fpath)
+		}
+	}
+
+	if os.IsNotExist(err) {
 		if !config.RecoverFromNonExistingIncludedFiles {
 			return nil, err
 		}
-		existenceError = fmt.Errorf("%w: %s", ErrFileToIncludeDoesNotExist, fpath)
 
-		//empty content
+		existenceError = fmt.Errorf("%w: %s", ErrFileToIncludeDoesNotExist, fpath)
+	} else if err == nil && info.IsDir() {
+		if !config.RecoverFromNonExistingIncludedFiles {
+			return nil, err
+		}
+
+		existenceError = fmt.Errorf("%w: %s", ErrFileToIncludeIsAFolder, fpath)
 	} else {
-		file, err := ctx.fs.Open(fpath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to open included file %s: %s", fpath, err)
 		}
@@ -578,4 +607,14 @@ func createRecordFromSourcePositionStack(posStack parse.SourcePositionStack) *Re
 	}
 
 	return NewRecordFromKeyValLists([]string{"position-stack"}, []Value{NewTuple(positionRecords)})
+}
+
+//
+
+func FileStat(f billy.File) (os.FileInfo, error) {
+	interf, ok := f.(interface{ Stat() (os.FileInfo, error) })
+	if !ok {
+		return nil, ErrNotImplemented
+	}
+	return interf.Stat()
 }

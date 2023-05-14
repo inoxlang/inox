@@ -3,7 +3,6 @@ package internal
 import (
 	"errors"
 	"io/fs"
-	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -84,6 +83,7 @@ func (evs *FilesystemEventSource) Iterator(ctx *core.Context, config core.Iterat
 
 func NewEventSource(ctx *core.Context, resourceNameOrPattern core.Value) (*FilesystemEventSource, error) {
 	eventSource := &FilesystemEventSource{}
+	fls := ctx.GetFileSystem()
 
 	recursive := false
 	var permissionEntity core.WrappedString
@@ -102,7 +102,7 @@ func NewEventSource(ctx *core.Context, resourceNameOrPattern core.Value) (*Files
 		permissionEntity = pth
 
 		strPath := strings.TrimRight(string(pth), "/") //we remove any trailing / because os.LStat will return an error for a file
-		info, err := os.Lstat(strPath)
+		info, err := fls.Lstat(strPath)
 		if err != nil {
 			return nil, err
 		}
@@ -123,7 +123,7 @@ func NewEventSource(ctx *core.Context, resourceNameOrPattern core.Value) (*Files
 		}
 	}
 
-	info, err := os.Lstat(string(eventSource.path))
+	info, err := fls.Lstat(string(eventSource.path))
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +184,7 @@ func NewEventSource(ctx *core.Context, resourceNameOrPattern core.Value) (*Files
 					if watchedDirPaths[dirPath] {
 						eventPath = dirPath
 					} else {
-						info, err := os.Lstat(event.Name)
+						info, err := fls.Lstat(event.Name)
 						if err == nil && info.IsDir() {
 							eventPath = dirPath
 						}

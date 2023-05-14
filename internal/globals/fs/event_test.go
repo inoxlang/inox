@@ -123,6 +123,7 @@ func TestEvents(t *testing.T) {
 			Permissions: []core.Permission{
 				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: filepth},
 			},
+			Filesystem: GetOsFilesystem(),
 		})
 
 		// create the event source & add a callback function
@@ -254,6 +255,7 @@ func TestEvents(t *testing.T) {
 			Permissions: []core.Permission{
 				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: dir},
 			},
+			Filesystem: GetOsFilesystem(),
 		})
 
 		// we create an event source
@@ -275,6 +277,7 @@ func TestEvents(t *testing.T) {
 			Permissions: []core.Permission{
 				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: dirPatt},
 			},
+			Filesystem: GetOsFilesystem(),
 		})
 
 		// we create an event source

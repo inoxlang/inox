@@ -2,7 +2,6 @@ package internal
 
 import (
 	"bytes"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -846,6 +845,7 @@ top_loop:
 func findPathCompletions(ctx *core.Context, pth string) []Completion {
 	var completions []Completion
 
+	fls := ctx.GetFileSystem()
 	dir := path.Dir(pth)
 	base := path.Base(pth)
 
@@ -867,7 +867,7 @@ func findPathCompletions(ctx *core.Context, pth string) []Completion {
 				pth = "./" + pth
 			}
 
-			stat, _ := os.Stat(pth)
+			stat, _ := fls.Stat(pth)
 			if stat.IsDir() {
 				pth += "/"
 			}

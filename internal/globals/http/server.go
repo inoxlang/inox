@@ -255,7 +255,7 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 		lastHandlerFn(req, rw, handlerGlobalState, logger)
 	})
 
-	server, certFile, keyFile, err := makeHttpServer(addr, topHandler, "", "")
+	server, certFile, keyFile, err := makeHttpServer(addr, topHandler, "", "", ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -325,7 +325,7 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 		return nil, errors.New("no (directory) path required")
 	}
 
-	server, certFile, keyFile, err := makeHttpServer(addr, http.FileServer(http.Dir(dir)), "", "")
+	server, certFile, keyFile, err := makeHttpServer(addr, http.FileServer(http.Dir(dir)), "", "", ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -344,24 +344,25 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 	}, nil
 }
 
-func makeHttpServer(addr string, handler http.Handler, certFilePath string, keyFilePath string) (*http.Server, string, string, error) {
+func makeHttpServer(addr string, handler http.Handler, certFilePath string, keyFilePath string, ctx *core.Context) (*http.Server, string, string, error) {
+	fls := ctx.GetFileSystem()
 
 	//we generate a self signed certificate that we write to disk so that
 	//we can reuse it
 	CERT_FILEPATH := "localhost.cert"
 	CERT_KEY_FILEPATH := "localhost.key"
 
-	_, err1 := os.Stat(CERT_FILEPATH)
-	_, err2 := os.Stat(CERT_KEY_FILEPATH)
+	_, err1 := fls.Stat(CERT_FILEPATH)
+	_, err2 := fls.Stat(CERT_KEY_FILEPATH)
 
 	if errors.Is(err1, os.ErrNotExist) || errors.Is(err2, os.ErrNotExist) {
 
 		if err1 == nil {
-			os.Remove(CERT_FILEPATH)
+			fls.Remove(CERT_FILEPATH)
 		}
 
 		if err2 == nil {
-			os.Remove(CERT_KEY_FILEPATH)
+			fls.Remove(CERT_KEY_FILEPATH)
 		}
 
 		cert, key, err := generateSelfSignedCertAndKey()
@@ -369,14 +370,14 @@ func makeHttpServer(addr string, handler http.Handler, certFilePath string, keyF
 			return nil, "", "", err
 		}
 
-		certFile, err := os.Create(CERT_FILEPATH)
+		certFile, err := fls.Create(CERT_FILEPATH)
 		if err != nil {
 			return nil, "", "", err
 		}
 		pem.Encode(certFile, cert)
 		certFile.Close()
 
-		keyFile, err := os.Create(CERT_KEY_FILEPATH)
+		keyFile, err := fls.Create(CERT_KEY_FILEPATH)
 		if err != nil {
 			return nil, "", "", err
 		}

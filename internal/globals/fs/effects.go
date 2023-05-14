@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 
+	fsutil "github.com/go-git/go-billy/v5/util"
 	core "github.com/inoxlang/inox/internal/core"
 )
 
@@ -78,6 +79,7 @@ func (e AppendBytesToFile) IsApplied() bool {
 }
 
 func (e *AppendBytesToFile) Apply(ctx *core.Context) error {
+
 	if e.applied {
 		return nil
 	}
@@ -86,9 +88,10 @@ func (e *AppendBytesToFile) Apply(ctx *core.Context) error {
 		return err
 	}
 
+	fls := ctx.GetFileSystem()
 	e.applied = true
 
-	f, err := os.OpenFile(string(e.path), os.O_APPEND|os.O_WRONLY, 0o600)
+	f, err := fls.OpenFile(string(e.path), os.O_APPEND|os.O_WRONLY, 0o600)
 	if err != nil {
 		return fmt.Errorf("failed to append to file: failed to open file: %s", err.Error())
 	}
@@ -108,14 +111,19 @@ func (e AppendBytesToFile) Reverse(ctx *core.Context) error {
 		return nil
 	}
 
-	f, err := os.OpenFile(string(e.path), os.O_WRONLY, 0o600)
+	fls := ctx.GetFileSystem()
+
+	f, err := fls.OpenFile(string(e.path), os.O_WRONLY, 0o600)
 	if err != nil {
 		return fmt.Errorf("failed to reverse data append to file: failed to open file: %s", err.Error())
 	}
 
 	defer f.Close()
 
-	info, _ := f.Stat()
+	info, err := core.FileStat(f)
+	if err != nil {
+		return fmt.Errorf("failed to reverse data append to file: failed to get information for file: %s", err.Error())
+	}
 
 	previousSize := info.Size() - int64(len(e.content))
 	return f.Truncate(previousSize)
@@ -151,6 +159,8 @@ func (e CreateDir) IsApplied() bool {
 }
 
 func (e *CreateDir) Apply(ctx *core.Context) error {
+	fls := ctx.GetFileSystem()
+
 	if e.applied {
 		return nil
 	}
@@ -158,7 +168,7 @@ func (e *CreateDir) Apply(ctx *core.Context) error {
 		return err
 	}
 	e.applied = true
-	return os.Mkdir(e.path.UnderlyingString(), fs.FileMode(e.fmode))
+	return fls.MkdirAll(e.path.UnderlyingString(), fs.FileMode(e.fmode))
 }
 
 func (e CreateDir) Reverse(ctx *core.Context) error {
@@ -211,13 +221,13 @@ func (e *RemoveFile) Apply(ctx *core.Context) error {
 	e.applied = true
 	fls := ctx.GetFileSystem()
 
-	if e.reversible { //if the effect is reversible we move the folder instead of deleting it
+	if e.reversible { //if the effect is reversible we move the file instead of deleting it
 		tempDir := ctx.GetTempDir()
 		name := url.PathEscape(e.path.UnderlyingString())
 		e.save = core.Path(fls.Join(tempDir.UnderlyingString(), name))
-		return os.Rename(e.path.UnderlyingString(), e.save.UnderlyingString())
+		return fls.Rename(e.path.UnderlyingString(), e.save.UnderlyingString())
 	} else {
-		return os.RemoveAll(e.path.UnderlyingString())
+		return fsutil.RemoveAll(fls, e.path.UnderlyingString())
 	}
 }
 
@@ -226,9 +236,10 @@ func (e *RemoveFile) Reverse(ctx *core.Context) error {
 		return nil
 	}
 	e.applied = true
+	fls := ctx.GetFileSystem()
 
 	if e.reversible {
-		return os.Rename(e.save.UnderlyingString(), e.path.UnderlyingString())
+		return fls.Rename(e.save.UnderlyingString(), e.path.UnderlyingString())
 	}
 
 	return core.ErrIrreversible
@@ -263,20 +274,23 @@ func (e RenameFile) IsApplied() bool {
 }
 
 func (e *RenameFile) Apply(ctx *core.Context) error {
+
 	if e.applied {
 		return nil
 	}
 	e.applied = true
 
-	if _, err := os.Stat(string(e.old)); os.IsNotExist(err) {
+	fls := ctx.GetFileSystem()
+
+	if _, err := fls.Stat(string(e.old)); os.IsNotExist(err) {
 		return fmt.Errorf("rename: %w", err)
 	}
 
-	if _, err := os.Stat(string(e.new)); err == nil {
+	if _, err := fls.Stat(string(e.new)); err == nil {
 		return fmt.Errorf("rename: a file already exists at %s", e.new.ResourceName())
 	}
 
-	return os.Rename(string(e.old), string(e.new))
+	return fls.Rename(string(e.old), string(e.new))
 }
 
 func (e RenameFile) Reverse(ctx *core.Context) error {
@@ -284,7 +298,9 @@ func (e RenameFile) Reverse(ctx *core.Context) error {
 		return nil
 	}
 
-	return os.Rename(string(e.new), string(e.old))
+	fls := ctx.GetFileSystem()
+
+	return fls.Rename(string(e.new), string(e.old))
 }
 
 func (e RenameFile) CheckPermissions(ctx *core.Context) error {

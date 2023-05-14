@@ -3566,7 +3566,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`, map[string]string{"./dep.ix": "a = 1"})
 
 			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
-			assert.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
 
 			state := NewGlobalState(NewDefaultTestContext())
 			state.Module = mod
@@ -3589,7 +3591,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			})
 
 			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
-			assert.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
 
 			state := NewGlobalState(NewDefaultTestContext())
 			state.Module = mod
@@ -3611,7 +3615,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			})
 
 			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
-			assert.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
 
 			state := NewGlobalState(NewDefaultTestContext())
 			state.Module = mod
@@ -3629,7 +3635,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`, map[string]string{"./dep.ix": "a = myglobal"})
 
 			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
-			assert.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
 
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"myglobal": Int(1),
@@ -3653,7 +3661,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`})
 
 			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
-			assert.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
 
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"myglobal": Int(1),
@@ -3681,7 +3691,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`})
 
 			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
-			assert.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
 
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"myglobal": Int(1),
@@ -3702,7 +3714,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`, map[string]string{"./dep.ix": "%p = %str"})
 
 			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
-			assert.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
 
 			state := NewGlobalState(NewDefaultTestContext())
 			state.Ctx.AddNamedPattern("str", STR_PATTERN)

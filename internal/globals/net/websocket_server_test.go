@@ -7,6 +7,7 @@ import (
 	"time"
 
 	core "github.com/inoxlang/inox/internal/core"
+	_fs "github.com/inoxlang/inox/internal/globals/fs"
 	_http "github.com/inoxlang/inox/internal/globals/http"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,6 +19,7 @@ func createTestWebsocketServer(host core.Host, ctx *Context) (closeChan chan str
 				core.WebsocketPermission{Kind_: core.ProvidePerm},
 				core.HttpPermission{Kind_: core.ProvidePerm, Entity: host},
 			},
+			Filesystem: _fs.GetOsFilesystem(),
 		})
 		serverState := core.NewGlobalState(ctx)
 		serverState.Logger = log.Default()

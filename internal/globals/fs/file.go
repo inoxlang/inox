@@ -6,6 +6,7 @@ import (
 	"math"
 	"os"
 
+	"github.com/inoxlang/inox/internal/afs"
 	core "github.com/inoxlang/inox/internal/core"
 )
 
@@ -25,7 +26,7 @@ const (
 // this file contains the filesystem related types that implement the GoValue interface
 
 type File struct {
-	f    *os.File
+	f    afs.File
 	path core.Path
 }
 
@@ -43,7 +44,7 @@ func openExistingFile(ctx *core.Context, pth core.Path, write bool) (*File, erro
 	} else {
 		flag = os.O_RDONLY
 	}
-	underlyingFile, err := os.OpenFile(string(absPath), flag, 0)
+	underlyingFile, err := fls.OpenFile(string(absPath), flag, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +118,10 @@ func (f *File) doRead(ctx *core.Context, closeFile bool, count int64) ([]byte, e
 		return nil, err
 	}
 
-	stat, _ := f.f.Stat()
+	stat, err := core.FileStat(f.f)
+	if err != nil {
+		return nil, err
+	}
 
 	chunkSize := computeChunkSize(rate, int(stat.Size()))
 	chunk := make([]byte, chunkSize)
@@ -149,7 +153,10 @@ func (f *File) doRead(ctx *core.Context, closeFile bool, count int64) ([]byte, e
 		b = append(b, chunk[0:n]...)
 		totalN += int64(n)
 
-		stat, _ := f.f.Stat()
+		stat, err := core.FileStat(f.f)
+		if err != nil {
+			return nil, err
+		}
 
 		if totalN >= int64(stat.Size()) || totalN >= count || err == io.EOF {
 			break
@@ -189,7 +196,7 @@ func (f *File) close(ctx *core.Context) {
 
 func (f *File) info(ctx *core.Context) (core.FileInfo, error) {
 
-	stat, err := f.f.Stat()
+	stat, err := core.FileStat(f.f)
 	if err != nil {
 		return core.FileInfo{}, err
 	}

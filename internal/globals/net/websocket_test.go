@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	core "github.com/inoxlang/inox/internal/core"
+	_fs "github.com/inoxlang/inox/internal/globals/fs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,6 +23,7 @@ func TestWebsocketConnection(t *testing.T) {
 				WebsocketPermission{Kind_: core.ReadPerm, Endpoint: ENDPOINT},
 			},
 			Limitations: []Limitation{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 1}},
+			Filesystem:  _fs.GetOsFilesystem(),
 		})
 
 		conn, err := websocketConnect(clientCtx, ENDPOINT, core.Option{Name: "insecure", Value: core.True})

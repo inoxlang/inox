@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/go-git/go-billy/v5/helper/polyfill"
 	"github.com/go-git/go-billy/v5/osfs"
 	afs "github.com/inoxlang/inox/internal/afs"
 	"github.com/stretchr/testify/assert"
@@ -31,7 +32,7 @@ func createParsingContext(modpath string) *Context {
 }
 
 func newOsFilesystem() afs.Filesystem {
-	fs := osfs.New("/")
+	fs := polyfill.New(osfs.Default)
 
 	return afs.AddAbsoluteFeature(fs, func(path string) (string, error) {
 		return filepath.Abs(path)

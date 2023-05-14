@@ -30,7 +30,7 @@ var (
 	TIMING_OUT_EXAMPLES        = []string{"events.ix"}
 	CANCELLED_TOP_CTX_EXAMPLES = []string{"execution-time.ix", "rollback-on-cancellation.ix"}
 	FALSE_ASSERTION_EXAMPLES   = []string{"simple-testsuite.ix"}
-	SKIPPED_EXAMPLES           = []string{"get-resource.ix", "websocket.ix", "patterns.ix"}
+	SKIPPED_EXAMPLES           = []string{"get-resource.ix", "websocket.ix", "shared-patterns.ix"}
 
 	RUN_BROWSER_AUTOMATION_EXAMPLES = os.Getenv("RUN_BROWSER_AUTOMATION_EXAMPLES") == "true"
 )

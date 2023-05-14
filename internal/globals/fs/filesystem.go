@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"os"
 	"path/filepath"
 
 	"github.com/go-git/go-billy/v5"
@@ -25,6 +26,11 @@ type OsFilesystem struct {
 
 func GetOsFilesystem() *OsFilesystem {
 	return osFs
+}
+
+// we override Rename because osfs.OS.Rename is not the same as os.Rename
+func (fs *OsFilesystem) Rename(from, to string) error {
+	return os.Rename(from, to)
 }
 
 func (fs OsFilesystem) Chroot(path string) (billy.Filesystem, error) {

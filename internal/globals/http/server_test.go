@@ -17,6 +17,7 @@ import (
 
 	core "github.com/inoxlang/inox/internal/core"
 	_dom "github.com/inoxlang/inox/internal/globals/dom"
+	_fs "github.com/inoxlang/inox/internal/globals/fs"
 	_html "github.com/inoxlang/inox/internal/globals/html"
 	"golang.org/x/net/publicsuffix"
 
@@ -59,8 +60,10 @@ func TestHttpServer(t *testing.T) {
 		nodeFunction := &core.InoxFunction{Node: parse.FindNode(chunk.Node, (*parse.FunctionExpression)(nil), nil)}
 
 		core.Compile(core.CompilationInput{
-			Mod:             module,
-			Context:         core.NewContext(core.ContextConfig{}),
+			Mod: module,
+			Context: core.NewContext(core.ContextConfig{
+				Filesystem: _fs.GetOsFilesystem(),
+			}),
 			StaticCheckData: staticCheckData,
 		})
 		bytecode := module.Bytecode
@@ -81,7 +84,9 @@ func TestHttpServer(t *testing.T) {
 
 	t.Run("missing provide permission", func(t *testing.T) {
 		host := core.Host("https://localhost:8080")
-		ctx := core.NewContext(core.ContextConfig{})
+		ctx := core.NewContext(core.ContextConfig{
+			Filesystem: _fs.GetOsFilesystem(),
+		})
 		core.NewGlobalState(ctx)
 		server, err := NewHttpServer(ctx, host)
 
@@ -112,6 +117,7 @@ func TestHttpServer(t *testing.T) {
 					Permissions: []core.Permission{
 						core.HttpPermission{Kind_: core.ProvidePerm, Entity: host},
 					},
+					Filesystem: _fs.GetOsFilesystem(),
 				})
 				state := core.NewGlobalState(ctx)
 				state.Module = module
@@ -479,6 +485,7 @@ func setupAdvancedTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalS
 			core.GlobalVarPermission{Kind_: core.ReadPerm, Name: "*"},
 			core.RoutinePermission{Kind_: core.CreatePerm},
 		},
+		Filesystem: _fs.GetOsFilesystem(),
 	})
 
 	for k, v := range core.DEFAULT_NAMED_PATTERNS {

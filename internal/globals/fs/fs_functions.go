@@ -910,7 +910,6 @@ func Glob(ctx *core.Context, patt core.PathPattern) []core.Path {
 	}
 
 	fls := ctx.GetFileSystem()
-
 	absPtt := patt.ToAbs(fls)
 
 	res, err := glob(fls, string(absPtt))

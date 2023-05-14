@@ -186,7 +186,7 @@ func TestCreateDirEffect(t *testing.T) {
 
 }
 
-func TestRemoveDirEffect(t *testing.T) {
+func TestRemoveFileEffect(t *testing.T) {
 	fls := GetOsFilesystem()
 
 	t.Run("Apply", func(t *testing.T) {
