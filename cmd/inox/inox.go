@@ -271,7 +271,7 @@ func moveFlagsStart(args []string) {
 		if args[i] == "--" {
 			break
 		}
-		if args[i][0] == '-' {
+		if len(args[i]) > 0 && args[i][0] == '-' {
 			temp := args[i]
 			args[i] = args[index]
 			args[index] = temp
