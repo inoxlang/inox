@@ -1,0 +1,248 @@
+package internal
+
+import (
+	"bufio"
+	"bytes"
+	"context"
+	"errors"
+	"os"
+	"strings"
+
+	fsutil "github.com/go-git/go-billy/v5/util"
+
+	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
+	"github.com/inoxlang/inox/internal/lsp/logs"
+	"github.com/inoxlang/inox/internal/lsp/lsp"
+
+	"github.com/inoxlang/inox/internal/lsp/lsp/defines"
+
+	"github.com/inoxlang/inox/internal/utils"
+
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	globals "github.com/inoxlang/inox/internal/globals"
+	compl "github.com/inoxlang/inox/internal/globals/completion"
+	help "github.com/inoxlang/inox/internal/globals/help"
+	parse "github.com/inoxlang/inox/internal/parse"
+
+	_ "net/http/pprof"
+	"net/url"
+)
+
+func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx *core.Context) {
+
+	server.OnInitialize(func(ctx context.Context, req *defines.InitializeParams) (result *defines.InitializeResult, err *defines.InitializeError) {
+		logs.Println("initialized")
+		s := &defines.InitializeResult{}
+
+		s.Capabilities.HoverProvider = true
+		s.Capabilities.WorkspaceSymbolProvider = true
+		s.Capabilities.DefinitionProvider = true
+
+		// makes the client send the whole document during synchronization
+		s.Capabilities.TextDocumentSync = defines.TextDocumentSyncKindFull
+
+		s.Capabilities.CompletionProvider = &defines.CompletionOptions{}
+		return s, nil
+	})
+
+	server.OnHover(func(ctx context.Context, req *defines.HoverParams) (result *defines.Hover, err error) {
+		logs.Println(req)
+
+		fpath := getFilePath(req.TextDocument.Uri)
+		line := int32(req.Position.Line + 1)
+		column := int32(req.Position.Character + 1)
+
+		state, mod, _ := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
+			Fpath:                     fpath,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             nil,
+			Out:                       os.Stdout,
+			IgnoreNonCriticalIssues:   true,
+			AllowMissingEnvVars:       true,
+		})
+
+		if state == nil || state.SymbolicData == nil {
+			logs.Println("no data")
+			return &defines.Hover{}, nil
+		}
+
+		span := mod.MainChunk.GetLineColumnSingeCharSpan(line, column)
+		foundNode, ok := mod.MainChunk.GetNodeAtSpan(span)
+
+		if !ok || foundNode == nil {
+			logs.Println("no data")
+			return &defines.Hover{}, nil
+		}
+
+		mostSpecificVal, ok := state.SymbolicData.GetMostSpecificNodeValue(foundNode)
+		var lessSpecificVal symbolic.SymbolicValue
+		if !ok {
+			logs.Println("no data")
+			return &defines.Hover{}, nil
+		}
+
+		buff := &bytes.Buffer{}
+		w := bufio.NewWriterSize(buff, 1000)
+		var stringified string
+		{
+			utils.PanicIfErr(symbolic.PrettyPrint(mostSpecificVal, w, HOVER_PRETTY_PRINT_CONFIG, 0, 0))
+			var ok bool
+			lessSpecificVal, ok = state.SymbolicData.GetLessSpecificNodeValue(foundNode)
+			if ok {
+				w.Write(utils.StringAsBytes("\n\n# less specific\n"))
+				utils.PanicIfErr(symbolic.PrettyPrint(lessSpecificVal, w, HOVER_PRETTY_PRINT_CONFIG, 0, 0))
+			}
+
+			w.Flush()
+			stringified = strings.ReplaceAll(buff.String(), "\n\r", "\n")
+			logs.Println(stringified)
+		}
+
+		//help
+		var helpMessage string
+		{
+			val := mostSpecificVal
+			for {
+				switch val := val.(type) {
+				case *symbolic.GoFunction:
+					text, ok := help.HelpForSymbolicGoFunc(val, help.HelpMessageConfig{Format: help.MarkdownFormat})
+					if ok {
+						helpMessage = "\n-----\n" + strings.ReplaceAll(text, "\n\r", "\n")
+					}
+				}
+				if helpMessage == "" && val == mostSpecificVal && lessSpecificVal != nil {
+					val = lessSpecificVal
+					continue
+				}
+				break
+			}
+
+		}
+
+		return &defines.Hover{
+			Contents: defines.MarkupContent{
+				Kind:  defines.MarkupKindMarkdown,
+				Value: "```inox\n" + stringified + "\n```" + helpMessage,
+			},
+		}, nil
+	})
+
+	server.OnCompletion(func(ctx context.Context, req *defines.CompletionParams) (result *[]defines.CompletionItem, err error) {
+		fpath := getFilePath(req.TextDocument.Uri)
+		line := int32(req.Position.Line + 1)
+		column := int32(req.Position.Character + 1)
+		session := jsonrpc.GetSession(ctx)
+
+		completions := getCompletions(fpath, compilationCtx, line, column, session)
+		completionIndex := 0
+
+		lspCompletions := utils.MapSlice(completions, func(completion compl.Completion) defines.CompletionItem {
+			defer func() {
+				completionIndex++
+			}()
+
+			var labelDetails *defines.CompletionItemLabelDetails
+			if completion.Detail != "" {
+				detail := "  " + completion.Detail
+				labelDetails = &defines.CompletionItemLabelDetails{
+					Detail: &detail,
+				}
+			}
+
+			return defines.CompletionItem{
+				Label: completion.Value,
+				Kind:  &completion.Kind,
+				TextEdit: defines.TextEdit{
+					Range: rangeToLspRange(completion.ReplacedRange),
+				},
+				SortText: func() *string {
+					index := completionIndex
+					if index > 99 {
+						index = 99
+					}
+					s := string(rune(index/10) + 'a')
+					s += string(rune(index%10) + 'a')
+					return &s
+				}(),
+				LabelDetails: labelDetails,
+			}
+		})
+		return &lspCompletions, nil
+	})
+
+	server.OnDidOpenTextDocument(func(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err error) {
+		fpath := getFilePath(req.TextDocument.Uri)
+		fullDocumentText := req.TextDocument.Text
+
+		fsErr := fsutil.WriteFile(filesystem.documents, fpath, []byte(fullDocumentText), 0700)
+		if fsErr != nil {
+			logs.Println("failed to update state of document", fpath+":", fsErr)
+		}
+
+		session := jsonrpc.GetSession(ctx)
+		return notifyDiagnostics(session, req.TextDocument.Uri, compilationCtx)
+	})
+
+	server.OnDidChangeTextDocument(func(ctx context.Context, req *defines.DidChangeTextDocumentParams) (err error) {
+		fpath := getFilePath(req.TextDocument.Uri)
+		if len(req.ContentChanges) > 1 {
+			return errors.New("single change supported")
+		}
+		fullDocumentText := req.ContentChanges[0].Text.(string)
+		fsErr := fsutil.WriteFile(filesystem.documents, fpath, []byte(fullDocumentText), 0700)
+		if fsErr != nil {
+			logs.Println("failed to update state of document", fpath+":", fsErr)
+		}
+
+		session := jsonrpc.GetSession(ctx)
+		return notifyDiagnostics(session, req.TextDocument.Uri, compilationCtx)
+	})
+
+	server.OnDefinition(func(ctx context.Context, req *defines.DefinitionParams) (result *[]defines.LocationLink, err error) {
+		return nil, nil
+	})
+}
+
+func getFilePath(uri defines.DocumentUri) string {
+	return utils.Must(url.Parse(string(uri))).Path
+}
+
+func getCompletions(fpath string, compilationCtx *core.Context, line, column int32, session *jsonrpc.Session) []compl.Completion {
+	state, mod, err := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
+		Fpath:                     fpath,
+		ParsingCompilationContext: compilationCtx,
+		ParentContext:             nil,
+		Out:                       os.Stdout,
+		IgnoreNonCriticalIssues:   true,
+		AllowMissingEnvVars:       true,
+	})
+
+	if mod == nil { //unrecoverable parsing error
+		session.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
+		return nil
+	}
+
+	chunk := mod.MainChunk
+	pos := chunk.GetLineColumnPosition(line, column)
+
+	return compl.FindCompletions(compl.CompletionSearchArgs{
+		State:       core.NewTreeWalkStateWithGlobal(state),
+		Chunk:       chunk,
+		CursorIndex: int(pos),
+		Mode:        compl.LspCompletions,
+	})
+}
+
+func rangeToLspRange(r parse.SourcePositionRange) defines.Range {
+	return defines.Range{
+		Start: defines.Position{
+			Line:      uint(r.StartLine) - 1,
+			Character: uint(r.StartColumn - 1),
+		},
+		End: defines.Position{
+			Line:      uint(r.StartLine) - 1,
+			Character: uint(r.StartColumn - 1 + r.Span.End - r.Span.Start),
+		},
+	}
+}
