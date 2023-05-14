@@ -2242,6 +2242,15 @@ func NewPatternNamespace(patterns map[string]Pattern) *PatternNamespace {
 	}
 }
 
+func (ns *PatternNamespace) ForEachPattern(fn func(name string, patt Pattern) error) error {
+	for k, v := range ns.entries {
+		if err := fn(k, v); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (ns *PatternNamespace) Test(v SymbolicValue) bool {
 	otherNS, ok := v.(*PatternNamespace)
 	if !ok {

@@ -19,6 +19,7 @@ type SymbolicData struct {
 	lessSpecificNodeValues   map[parse.Node]SymbolicValue
 	localScopeData           map[parse.Node]ScopeData
 	globalScopeData          map[parse.Node]ScopeData
+	contextData              map[parse.Node]ContextData
 	runtimeTypeCheckPatterns map[parse.Node]any //concrete Pattern or nil (nil means the check is disabled)
 	errors                   []SymbolicEvaluationError
 }
@@ -29,6 +30,7 @@ func NewSymbolicData() *SymbolicData {
 		lessSpecificNodeValues:   make(map[parse.Node]SymbolicValue, 0),
 		localScopeData:           make(map[parse.Node]ScopeData),
 		globalScopeData:          make(map[parse.Node]ScopeData),
+		contextData:              make(map[parse.Node]ContextData),
 		runtimeTypeCheckPatterns: make(map[parse.Node]any, 0),
 	}
 }
@@ -273,6 +275,50 @@ func (d *SymbolicData) SetGlobalScopeData(n parse.Node, scopeData ScopeData) {
 	d.globalScopeData[n] = scopeData
 }
 
+func (d *SymbolicData) SetContextData(n parse.Node, contextData ContextData) {
+	if d == nil {
+		return
+	}
+
+	_, ok := d.contextData[n]
+	if ok {
+		return
+	}
+
+	d.contextData[n] = contextData
+}
+
+func (d *SymbolicData) GetContextData(n parse.Node, ancestorChain []parse.Node) (ContextData, bool) {
+	if d == nil {
+		return ContextData{}, false
+	}
+	var newAncestorChain []parse.Node
+
+	for {
+		contextData, ok := d.contextData[n]
+
+		if ok {
+			return contextData, true
+		} else {
+			n, newAncestorChain, ok = parse.FindPreviousStatementAndChain(n, ancestorChain)
+			if ok {
+				ancestorChain = newAncestorChain
+				continue
+			}
+
+			if len(ancestorChain) == 0 {
+				return ContextData{}, false
+			}
+
+			if parse.NodeIs(n, (*parse.EmbeddedModule)(nil)) {
+				return ContextData{}, false
+			}
+			lastIndex := len(ancestorChain) - 1
+			return d.GetContextData(ancestorChain[lastIndex], ancestorChain[:lastIndex])
+		}
+	}
+}
+
 type ScopeData struct {
 	Variables []VarData
 }
@@ -280,4 +326,19 @@ type ScopeData struct {
 type VarData struct {
 	Name  string
 	Value SymbolicValue
+}
+
+type ContextData struct {
+	Patterns          []NamedPatternData     //the slice is potentially shared between several ContextData
+	PatternNamespaces []PatternNamespaceData //the slice is potentially shared between several ContextData
+}
+
+type NamedPatternData struct {
+	Name  string
+	Value Pattern
+}
+
+type PatternNamespaceData struct {
+	Name  string
+	Value *PatternNamespace
 }

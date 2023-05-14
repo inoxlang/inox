@@ -3960,6 +3960,21 @@ func TestSymbolicEval(t *testing.T) {
 				},
 			},
 		}, res)
+
+		//check context data
+
+		pattern := state.ctx.ResolveNamedPattern("p")
+		returnStmt, ancestors := parse.FindNodeAndChain(n, (*parse.ReturnStatement)(nil), nil)
+
+		data, ok := state.symbolicData.GetContextData(returnStmt, ancestors)
+		if !assert.True(t, ok) {
+			return
+		}
+
+		assert.Contains(t, data.Patterns, NamedPatternData{
+			Name:  "p",
+			Value: pattern,
+		})
 	})
 
 	t.Run("pattern namespace definition: object pattern literal", func(t *testing.T) {
@@ -3975,6 +3990,21 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &PatternNamespace{
 				entries: nil,
 			}, res)
+
+			//check context data
+
+			namespace := state.ctx.ResolvePatternNamespace("namespace")
+			returnStmt, ancestors := parse.FindNodeAndChain(n, (*parse.ReturnStatement)(nil), nil)
+
+			data, ok := state.symbolicData.GetContextData(returnStmt, ancestors)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			assert.Contains(t, data.PatternNamespaces, PatternNamespaceData{
+				Name:  "namespace",
+				Value: namespace,
+			})
 		})
 
 		t.Run("RHS is invalid", func(t *testing.T) {
@@ -3991,6 +4021,21 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &PatternNamespace{
 				entries: nil,
 			}, res)
+
+			//check context data
+
+			namespace := state.ctx.ResolvePatternNamespace("namespace")
+			returnStmt, ancestors := parse.FindNodeAndChain(n, (*parse.ReturnStatement)(nil), nil)
+
+			data, ok := state.symbolicData.GetContextData(returnStmt, ancestors)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			assert.Contains(t, data.PatternNamespaces, PatternNamespaceData{
+				Name:  "namespace",
+				Value: namespace,
+			})
 		})
 
 	})

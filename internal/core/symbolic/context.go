@@ -106,6 +106,21 @@ func (ctx *Context) SetSymbolicGoFunctionParameters(parameters *[]SymbolicValue,
 	ctx.associatedState.setSymbolicGoFunctionParameters(parameters, names)
 }
 
+func (ctx *Context) currentData() (data ContextData) {
+	//TODO: share some pieces of data between ContextData values in order to save memor
+	//forking makes that non trivial
+
+	for name, pattern := range ctx.namedPatterns {
+		data.Patterns = append(data.Patterns, NamedPatternData{name, pattern})
+	}
+
+	for name, namespace := range ctx.patternNamespaces {
+		data.PatternNamespaces = append(data.PatternNamespaces, PatternNamespaceData{name, namespace})
+	}
+
+	return data
+}
+
 func (ctx *Context) fork() *Context {
 	child := NewSymbolicContext()
 	child.forkingParent = ctx
