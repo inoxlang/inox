@@ -319,7 +319,7 @@ func ParseLocalModule(config LocalModuleParsingConfig) (*Module, error) {
 	if err == nil {
 		info, err = FileStat(file)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get information for file %s", fpath)
+			return nil, fmt.Errorf("failed to get information for file %s: %w", fpath, err)
 		}
 
 		if info.IsDir() {
@@ -328,13 +328,13 @@ func ParseLocalModule(config LocalModuleParsingConfig) (*Module, error) {
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to open %s: %s", fpath, err)
+		return nil, fmt.Errorf("failed to open %s: %w", fpath, err)
 	}
 
 	b, err := io.ReadAll(file)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to read %s: %s", fpath, err)
+		return nil, fmt.Errorf("failed to read %s: %w", fpath, err)
 	}
 
 	//parse
@@ -484,7 +484,7 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 	if err == nil {
 		info, err = FileStat(file)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get information for file to include %s", fpath)
+			return nil, fmt.Errorf("failed to get information for file to include %s: %w", fpath, err)
 		}
 	}
 
