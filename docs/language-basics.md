@@ -206,9 +206,6 @@ concat #[1] #[2]
 I am {{name}}`
 ```
 
-For now "normal" strings cannot be interpolated but the feature is coming soon, the interpolation
-of checked strings, URLs & paths is already implemented.
-
 ### Checked Strings
 
 In Inox checked strings are strings that are validated against a pattern. When you dynamically
@@ -218,9 +215,18 @@ create a checked string all the interpolations must be explicitly typed.
 
 ### URL Expressions
 
-URLs are part of the language, when you dynamically create URLs the interpolations are restricted.
+When you dynamically create URLs the interpolations are restricted based on their location (path, query).
 
-<img src="./img/url-injection.png"></img>
+```
+https://example.com/api/{path}/?x={x}
+```
+
+- interpolations before the '?' are **path** interpolations
+    - the strings/characters `'..', '*', '?', '\\'` are forbidden
+    - ':' is forbidden at the start of the finalized path (after all interpolations have been evaluated)
+- interpolations after the '?' are **query** interpolations 
+    - the characters '&' and '#' are forbidden
+
 
 URL path interpolations:
 ```
