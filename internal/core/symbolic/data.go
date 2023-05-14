@@ -133,6 +133,10 @@ func (data *SymbolicData) AddData(newData *SymbolicData) {
 		data.SetGlobalScopeData(k, v)
 	}
 
+	for k, v := range newData.contextData {
+		data.SetContextData(k, v)
+	}
+
 	for k, v := range newData.runtimeTypeCheckPatterns {
 		data.SetRuntimeTypecheckPattern(k, v)
 	}
