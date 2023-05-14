@@ -2461,6 +2461,9 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				namespace.entries = make(map[string]Pattern)
 			}
 			for k, v := range r.entries {
+				if _, ok := v.(Pattern); !ok {
+					v = NewExactValuePattern(v)
+				}
 				namespace.entries[k] = v.(Pattern)
 			}
 			state.ctx.AddPatternNamespace(n.Left.Name, namespace)
@@ -2469,6 +2472,9 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				namespace.entries = make(map[string]Pattern)
 			}
 			for k, v := range r.entries {
+				if _, ok := v.(Pattern); !ok {
+					v = NewExactValuePattern(v)
+				}
 				namespace.entries[k] = v.(Pattern)
 			}
 			state.ctx.AddPatternNamespace(n.Left.Name, namespace)

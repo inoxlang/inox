@@ -4009,6 +4009,37 @@ func TestSymbolicEval(t *testing.T) {
 			})
 		})
 
+		t.Run("RHS is an object literal with an exact value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				%namespace. = {patt: #a}
+				return %namespace.
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, &PatternNamespace{
+				entries: map[string]Pattern{
+					"patt": NewExactValuePattern(&Identifier{name: "a"}),
+				},
+			}, res)
+
+			//check context data
+
+			namespace := state.ctx.ResolvePatternNamespace("namespace")
+			returnStmt, ancestors := parse.FindNodeAndChain(n, (*parse.ReturnStatement)(nil), nil)
+
+			data, ok := state.symbolicData.GetContextData(returnStmt, ancestors)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			assert.Contains(t, data.PatternNamespaces, PatternNamespaceData{
+				Name:  "namespace",
+				Value: namespace,
+			})
+		})
+
 		t.Run("RHS is invalid", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				%namespace. = 1
