@@ -113,8 +113,11 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 
 	switch n := nodeAtCursor.(type) {
 	case *parse.PatternIdentifierLiteral:
-		for name, patt := range state.Global.Ctx.GetNamedPatterns() {
-			if strings.HasPrefix(name, n.Name) {
+		if mode == ShellCompletions {
+			for name, patt := range state.Global.Ctx.GetNamedPatterns() {
+				if !strings.HasPrefix(name, n.Name) {
+					continue
+				}
 				detail, _ := core.GetStringifiedSymbolicValue(patt, false)
 
 				s := "%" + name
@@ -125,11 +128,12 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 					Detail:      detail,
 				})
 			}
-		}
-		for name, namespace := range state.Global.Ctx.GetPatternNamespaces() {
-			detail, _ := core.GetStringifiedSymbolicValue(namespace, false)
+			for name, namespace := range state.Global.Ctx.GetPatternNamespaces() {
+				detail, _ := core.GetStringifiedSymbolicValue(namespace, false)
 
-			if strings.HasPrefix(name, n.Name) {
+				if !strings.HasPrefix(name, n.Name) {
+					continue
+				}
 				s := "%" + name + "."
 				completions = append(completions, Completion{
 					ShownString: s,
@@ -138,34 +142,60 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 					Detail:      detail,
 				})
 			}
-		}
-	case *parse.PatternNamespaceIdentifierLiteral:
-		namespace := state.Global.Ctx.ResolvePatternNamespace(n.Name)
-		if namespace == nil {
-			return nil
-		}
-		detail, _ := core.GetStringifiedSymbolicValue(namespace, false)
+		} else {
+			contextData, _ := state.Global.SymbolicData.GetContextData(n, _ancestorChain)
+			for _, patternData := range contextData.Patterns {
+				if !strings.HasPrefix(patternData.Name, n.Name) {
+					continue
+				}
 
-		for patternName := range namespace.Patterns {
-			s := "%" + n.Name + "." + patternName
+				s := "%" + patternData.Name
+				completions = append(completions, Completion{
+					ShownString: s,
+					Value:       s,
+					Kind:        defines.CompletionItemKindInterface,
+					Detail:      symbolic.Stringify(patternData.Value),
+				})
+			}
+			for _, namespaceData := range contextData.PatternNamespaces {
+				if !strings.HasPrefix(namespaceData.Name, n.Name) {
+					continue
+				}
 
-			completions = append(completions, Completion{
-				ShownString: s,
-				Value:       s,
-				Kind:        defines.CompletionItemKindInterface,
-				Detail:      detail,
-			})
+				s := "%" + namespaceData.Name + "."
+				completions = append(completions, Completion{
+					ShownString: s,
+					Value:       s,
+					Kind:        defines.CompletionItemKindInterface,
+					Detail:      symbolic.Stringify(namespaceData.Value),
+				})
+			}
 		}
-	case *parse.PatternNamespaceMemberExpression:
-		namespace := state.Global.Ctx.ResolvePatternNamespace(n.Namespace.Name)
-		if namespace == nil {
-			return nil
+	case *parse.PatternNamespaceIdentifierLiteral, *parse.PatternNamespaceMemberExpression:
+		var namespaceName string
+		var memberName string
+
+		switch node := n.(type) {
+		case *parse.PatternNamespaceIdentifierLiteral:
+			namespaceName = node.Name
+		case *parse.PatternNamespaceMemberExpression:
+			namespaceName = node.Namespace.Name
+			memberName = node.MemberName.Name
 		}
 
-		for patternName, pattern := range namespace.Patterns {
-			if strings.HasPrefix(patternName, n.MemberName.Name) {
-				s := "%" + n.Namespace.Name + "." + patternName
-				detail, _ := core.GetStringifiedSymbolicValue(pattern, false)
+		if mode == ShellCompletions {
+			namespace := state.Global.Ctx.ResolvePatternNamespace(namespaceName)
+			if namespace == nil {
+				return nil
+			}
+
+			for patternName, patternValue := range namespace.Patterns {
+				if !strings.HasPrefix(patternName, memberName) {
+					continue
+				}
+
+				s := "%" + namespaceName + "." + patternName
+				detail, _ := core.GetStringifiedSymbolicValue(patternValue, false)
 
 				completions = append(completions, Completion{
 					ShownString: s,
@@ -174,6 +204,35 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 					Detail:      detail,
 				})
 			}
+		} else {
+			contextData, _ := state.Global.SymbolicData.GetContextData(n, _ancestorChain)
+			var namespace *symbolic.PatternNamespace
+			for _, namespaceData := range contextData.PatternNamespaces {
+				if namespaceData.Name == namespaceName {
+					namespace = namespaceData.Value
+					break
+				}
+			}
+			if namespace == nil {
+				return nil
+			}
+
+			namespace.ForEachPattern(func(patternName string, patternValue symbolic.Pattern) error {
+				if !strings.HasPrefix(patternName, memberName) {
+					return nil
+				}
+
+				s := "%" + namespaceName + "." + patternName
+
+				completions = append(completions, Completion{
+					ShownString: s,
+					Value:       s,
+					Kind:        defines.CompletionItemKindInterface,
+					Detail:      symbolic.Stringify(patternValue),
+				})
+
+				return nil
+			})
 		}
 	case *parse.Variable:
 		var names []string

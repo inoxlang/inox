@@ -295,6 +295,58 @@ func TestFindCompletions(t *testing.T) {
 
 			})
 
+			t.Run("named patterns", func(t *testing.T) {
+				if mode != LspCompletions {
+					t.Skip()
+					return
+				}
+
+				t.Run("suggest pattern from first letter", func(t *testing.T) {
+					state := newState()
+					chunk, _ := parseChunkSource("%patt = 1; %p", "")
+					doSymbolicCheck(chunk, state.Global)
+
+					completions := findCompletions(state, chunk, 13)
+					assert.EqualValues(t, []Completion{
+						{
+							ShownString:   "%patt",
+							Value:         "%patt",
+							ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 11, End: 13}},
+						},
+					}, completions)
+				})
+
+				t.Run("suggest pattern namespace from first letter", func(t *testing.T) {
+					state := newState()
+					chunk, _ := parseChunkSource("%namespace. = 1; %n", "")
+					doSymbolicCheck(chunk, state.Global)
+
+					completions := findCompletions(state, chunk, 19)
+					assert.EqualValues(t, []Completion{
+						{
+							ShownString:   "%namespace.",
+							Value:         "%namespace.",
+							ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 17, End: 19}},
+						},
+					}, completions)
+				})
+
+				t.Run("suggest pattern namespace member from first letter", func(t *testing.T) {
+					state := newState()
+					chunk, _ := parseChunkSource("%namespace. = {patt: 1}; %namespace.p", "")
+					doSymbolicCheck(chunk, state.Global)
+
+					completions := findCompletions(state, chunk, 37)
+					assert.EqualValues(t, []Completion{
+						{
+							ShownString:   "%namespace.patt",
+							Value:         "%namespace.patt",
+							ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 25, End: 37}},
+						},
+					}, completions)
+				})
+			})
+
 			t.Run("subcommand", func(t *testing.T) {
 				t.Run("depth 0", func(t *testing.T) {
 					//TODO: implement
