@@ -878,7 +878,7 @@ func (ctx *Context) ResolveUserData(name Identifier) Value {
 	return data
 }
 
-// AddHostAlias associates a Host with the passed alias name, if the alias is already defined the function will panic.
+// AddUserData associates a data with the passed name, if the data is already defined the function will panic.
 func (ctx *Context) AddUserData(name Identifier, value Value) {
 	ctx.lock.Lock()
 	defer ctx.lock.Unlock()
