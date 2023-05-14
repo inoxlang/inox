@@ -449,7 +449,7 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 	}
 
 	if info, err := ctx.fs.Stat(fpath); err == fs.ErrNotExist || (err == nil && info.IsDir()) {
-		return nil, fmt.Errorf("%s does not exist or is a folder", fpath)
+		return nil, fmt.Errorf("file to include %s does not exist or is a folder", fpath)
 	}
 
 	file, err := ctx.fs.Open(fpath)
