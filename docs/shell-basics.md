@@ -1,3 +1,6 @@
+[Install Inox](../README.md#installation) | [Language Basics](./language-basics.md) | [Scripting Basics](./scripting-basics.md)
+-----
+
 # Inox Shell (REPL)
 
 Launch the shell with the following subcommand:

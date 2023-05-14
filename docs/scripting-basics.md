@@ -1,3 +1,6 @@
+[Install Inox](../README.md#installation) | [Language Basics](./language-basics.md) | [Shell Basics](./shell-basics.md)
+-----
+
 # Scripting Basics
 
 In this tutorial you will learn how to write Inox scripts & use the most important functions.
@@ -28,7 +31,7 @@ Inox scripts support shebangs
 - `chmod u+x script.ix`
 - ./script.ix
 
-## A Script to Generate the Directory Structure for a Project
+## A Script to Generate a Project Directory Structure 
 
 ## Version 1
 
