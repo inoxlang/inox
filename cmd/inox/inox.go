@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -41,10 +42,10 @@ const (
 )
 
 func main() {
-	_main(os.Args)
+	_main(os.Args, os.Stdout, os.Stderr)
 }
 
-func _main(args []string) {
+func _main(args []string, outW io.Writer, errW io.Writer) {
 	mainSubCommand := ""
 	var mainSubCommandArgs []string
 
@@ -58,13 +59,13 @@ func _main(args []string) {
 
 	switch mainSubCommand {
 	case "help":
-		fmt.Print(HELP)
+		fmt.Fprint(outW, HELP)
 		return
 	case "run":
 		//read and check arguments
 
 		if len(mainSubCommandArgs) == 0 {
-			fmt.Fprintf(os.Stderr, "missing script path\n")
+			fmt.Fprintf(errW, "missing script path\n")
 			os.Exit(INVALID_INPUT_STATUS)
 			return
 		}
@@ -94,14 +95,14 @@ func _main(args []string) {
 
 		err := runFlags.Parse(mainSubCommandArgs)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Fprintln(outW, err)
 			return
 		}
 
 		fpath := runFlags.Arg(0)
 
 		if fpath == "" {
-			fmt.Fprintf(os.Stderr, "missing script path\n")
+			fmt.Fprintf(errW, "missing script path\n")
 			os.Exit(INVALID_INPUT_STATUS)
 			return
 		}
@@ -119,13 +120,14 @@ func _main(args []string) {
 			UseBytecode:               !useTreeWalking,
 			ShowBytecode:              showBytecode,
 			OptimizeBytecode:          !useTreeWalking && !disableOptimization,
+			Out:                       outW,
 		})
+
+		prettyPrintConfig := globals.DEFAULT_PRETTY_PRINT_CONFIG.WithContext(compilationCtx) // TODO: use another context?
 
 		if err != nil {
 			var assertionErr *core.AssertionError
 			var errString string
-
-			prettyPrintConfig := globals.DEFAULT_PRETTY_PRINT_CONFIG.WithContext(compilationCtx) // TODO: use another context?
 
 			if errors.As(err, &assertionErr) {
 				errString = assertionErr.PrettySPrint(prettyPrintConfig)
@@ -133,16 +135,16 @@ func _main(args []string) {
 			errString += "\n" + utils.StripANSISequences(err.Error())
 
 			errString = utils.AddCarriageReturnAfterNewlines(errString)
-
-			fmt.Print(errString, "\n\r")
+			fmt.Fprint(errW, errString, "\n\r")
 		} else {
 			if list, ok := res.(*core.List); (!ok && res != nil) || list.Len() != 0 {
-				fmt.Printf("%#v\n\r", res)
+				core.PrettyPrint(res, outW, prettyPrintConfig, 0, 0)
+				outW.Write([]byte("\n\r"))
 			}
 		}
 	case "check":
 		if len(mainSubCommandArgs) == 0 {
-			fmt.Fprintf(os.Stderr, "missing script path\n")
+			fmt.Fprintf(errW, "missing script path\n")
 			os.Exit(INVALID_INPUT_STATUS)
 			return
 		}
@@ -152,8 +154,8 @@ func _main(args []string) {
 
 		compilationCtx := createCompilationCtx(dir)
 
-		data := globals.GetCheckData(fpath, compilationCtx, os.Stdout)
-		fmt.Printf("%s\n\r", utils.Must(json.Marshal(data)))
+		data := globals.GetCheckData(fpath, compilationCtx, outW)
+		fmt.Fprintf(outW, "%s\n\r", utils.Must(json.Marshal(data)))
 
 	case "lsp":
 		lsp.StartLSPServer()
@@ -174,11 +176,11 @@ func _main(args []string) {
 			return
 		}
 
-		startupResult, state := runStartupScript(startupScriptPath)
+		startupResult, state := runStartupScript(startupScriptPath, outW)
 
 		config, err := _sh.MakeREPLConfiguration(startupResult)
 		if err != nil {
-			fmt.Println("configuration error:", err)
+			fmt.Fprintln(outW, "configuration error:", err)
 			return
 		}
 
@@ -187,7 +189,7 @@ func _main(args []string) {
 		_sh.StartShell(state, config)
 	case "eval", "e":
 		if len(mainSubCommandArgs) == 0 {
-			fmt.Fprintf(os.Stderr, "missing code string")
+			fmt.Fprintf(errW, "missing code string")
 			os.Exit(INVALID_INPUT_STATUS)
 			return
 		}
@@ -212,12 +214,12 @@ func _main(args []string) {
 		code := evalFlags.Arg(0)
 
 		if strings.TrimSpace(code) == "" {
-			fmt.Println("empty command")
+			fmt.Fprintln(outW, "empty command")
 			os.Exit(INVALID_INPUT_STATUS)
 			return
 		}
 
-		_, state := runStartupScript(startupScriptPath)
+		_, state := runStartupScript(startupScriptPath, outW)
 
 		signalChan := make(chan os.Signal, 1)
 		signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
@@ -235,19 +237,19 @@ func _main(args []string) {
 
 		commandMod, err := parse.ParseChunk(code, "")
 		if err != nil {
-			fmt.Println(fmt.Errorf("failed to parse command: %w", err))
+			fmt.Fprintln(errW, fmt.Errorf("failed to parse command: %w", err))
 			return
 		}
 
 		treeWalkState := core.NewTreeWalkStateWithGlobal(state)
 		result, err := core.TreeWalkEval(commandMod, treeWalkState)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Fprintln(errW, err)
 		} else {
-			err := core.PrettyPrint(result, os.Stdout, globals.DEFAULT_PRETTY_PRINT_CONFIG.WithContext(state.Ctx), 0, 0)
-			fmt.Println("")
+			err := core.PrettyPrint(result, outW, globals.DEFAULT_PRETTY_PRINT_CONFIG.WithContext(state.Ctx), 0, 0)
+			fmt.Fprintln(outW, "")
 			if err != nil {
-				fmt.Println(err)
+				fmt.Fprintln(errW, err)
 			}
 
 			switch r := result.(type) {
@@ -256,7 +258,7 @@ func _main(args []string) {
 			}
 		}
 	default:
-		fmt.Fprintf(os.Stderr, "unknown command '%s'\n", mainSubCommand)
+		fmt.Fprintf(errW, "unknown command '%s'\n", mainSubCommand)
 		os.Exit(INVALID_INPUT_STATUS)
 		return
 	}
@@ -278,7 +280,7 @@ func moveFlagsStart(args []string) {
 	}
 }
 
-func runStartupScript(startupScriptPath string) (*core.Object, *core.GlobalState) {
+func runStartupScript(startupScriptPath string, outW io.Writer) (*core.Object, *core.GlobalState) {
 	//we read, parse and evaluate the startup script
 
 	absPath, err := filepath.Abs(startupScriptPath)
@@ -312,7 +314,7 @@ func runStartupScript(startupScriptPath string) (*core.Object, *core.GlobalState
 		Limitations:     startupManifest.Limitations,
 		HostResolutions: startupManifest.HostResolutions,
 	}))
-	state, err := globals.NewDefaultGlobalState(ctx, os.Stdout, globals.DefaultGlobalStateConfig{})
+	state, err := globals.NewDefaultGlobalState(ctx, outW, globals.DefaultGlobalStateConfig{})
 	if err != nil {
 		panic(fmt.Errorf("failed to startup script's global state: %w", err))
 	}
