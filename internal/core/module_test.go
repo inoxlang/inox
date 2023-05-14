@@ -232,4 +232,112 @@ func TestParseLocalModule(t *testing.T) {
 
 		assert.Equal(t, []*IncludedChunk{includedChunk1}, mod.FlattenedIncludedChunkList)
 	})
+
+	t.Run("recovery from non existing files", func(t *testing.T) {
+		t.Run("single included file that does not exist", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import ./dep.ix
+			`, nil)
+
+			mod, err := ParseLocalModule(LocalModuleParsingConfig{
+				ModuleFilepath:                      modpath,
+				Context:                             createParsingContext(modpath),
+				RecoverFromNonExistingIncludedFiles: true,
+			})
+			if !assert.Error(t, err) {
+				return
+			}
+
+			assert.Len(t, mod.ParsingErrors, 1)
+			assert.Len(t, mod.ParsingErrorPositions, 1)
+			assert.ErrorIs(t, mod.ParsingErrors[0].goError, ErrFileToIncludeDoesNotExist)
+
+			assert.NotNil(t, mod.MainChunk)
+			assert.Len(t, mod.IncludedChunkForest, 1)
+			assert.NotNil(t, mod.ManifestTemplate)
+
+			includedChunk1 := mod.IncludedChunkForest[0]
+			assert.NotNil(t, includedChunk1.Node)
+			assert.Empty(t, includedChunk1.IncludedChunkForest)
+
+			assert.Equal(t, []*IncludedChunk{includedChunk1}, mod.FlattenedIncludedChunkList)
+		})
+
+		t.Run("one existing included file + non existing one", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import ./dep1.ix
+				import ./dep2.ix
+			`, map[string]string{"./dep2.ix": ""})
+
+			mod, err := ParseLocalModule(LocalModuleParsingConfig{
+				ModuleFilepath:                      modpath,
+				Context:                             createParsingContext(modpath),
+				RecoverFromNonExistingIncludedFiles: true,
+			})
+			if !assert.Error(t, err) {
+				return
+			}
+
+			assert.Len(t, mod.ParsingErrors, 1)
+			assert.Len(t, mod.ParsingErrorPositions, 1)
+			assert.ErrorIs(t, mod.ParsingErrors[0].goError, ErrFileToIncludeDoesNotExist)
+
+			assert.NotNil(t, mod.MainChunk)
+			assert.Len(t, mod.IncludedChunkForest, 2)
+			assert.NotNil(t, mod.ManifestTemplate)
+
+			includedChunk1 := mod.IncludedChunkForest[0]
+			assert.NotNil(t, includedChunk1.Node)
+			assert.Empty(t, includedChunk1.IncludedChunkForest)
+
+			includedChunk2 := mod.IncludedChunkForest[1]
+			assert.NotNil(t, includedChunk2.Node)
+			assert.Empty(t, includedChunk2.IncludedChunkForest)
+
+			assert.Equal(t, []*IncludedChunk{includedChunk1, includedChunk2}, mod.FlattenedIncludedChunkList)
+		})
+
+		t.Run("two included files that does not exist", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import ./dep1.ix
+				import ./dep2.ix
+			`, nil)
+
+			mod, err := ParseLocalModule(LocalModuleParsingConfig{
+				ModuleFilepath:                      modpath,
+				Context:                             createParsingContext(modpath),
+				RecoverFromNonExistingIncludedFiles: true,
+			})
+			if !assert.Error(t, err) {
+				return
+			}
+
+			assert.Len(t, mod.ParsingErrors, 2)
+			assert.Len(t, mod.ParsingErrorPositions, 2)
+			assert.ErrorIs(t, mod.ParsingErrors[0].goError, ErrFileToIncludeDoesNotExist)
+			assert.ErrorIs(t, mod.ParsingErrors[1].goError, ErrFileToIncludeDoesNotExist)
+
+			assert.NotNil(t, mod.MainChunk)
+			assert.Len(t, mod.IncludedChunkForest, 2)
+			assert.NotNil(t, mod.ManifestTemplate)
+
+			includedChunk1 := mod.IncludedChunkForest[0]
+			assert.NotNil(t, includedChunk1.Node)
+			assert.Empty(t, includedChunk1.IncludedChunkForest)
+
+			includedChunk2 := mod.IncludedChunkForest[1]
+			assert.NotNil(t, includedChunk2.Node)
+			assert.Empty(t, includedChunk2.IncludedChunkForest)
+
+			assert.Equal(t, []*IncludedChunk{includedChunk1, includedChunk2}, mod.FlattenedIncludedChunkList)
+		})
+
+	})
+
 }

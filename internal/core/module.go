@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync/atomic"
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
@@ -19,8 +21,9 @@ const (
 )
 
 var (
-	MODULE_PROP_NAMES           = []string{"parsing_errors", "main_chunk_node"}
-	SOURCE_POS_RECORD_PROPNAMES = []string{"source", "line", "column", "start", "end"}
+	MODULE_PROP_NAMES            = []string{"parsing_errors", "main_chunk_node"}
+	SOURCE_POS_RECORD_PROPNAMES  = []string{"source", "line", "column", "start", "end"}
+	ErrFileToIncludeDoesNotExist = errors.New("file to include does not exist or is a folder")
 )
 
 // A Module represents an Inox module, it does not hold any state and should NOT be modified. Module implements Value.
@@ -279,9 +282,10 @@ func ParseInMemoryModule(codeString Str, config InMemoryModuleParsingConfig) (*M
 }
 
 type LocalModuleParsingConfig struct {
-	ModuleFilepath string
-	Context        *Context //this context is used for checking permissions & getting the filesystem
-	//DefaultLimitations          []Limitationr
+	ModuleFilepath                      string
+	Context                             *Context //this context is used for checking permissions & getting the filesystem
+	RecoverFromNonExistingIncludedFiles bool
+	//DefaultLimitations          []Limitation
 	//CustomPermissionTypeHandler CustomPermissionTypeHandler
 }
 
@@ -383,10 +387,11 @@ func ParseLocalModule(config LocalModuleParsingConfig) (*Module, error) {
 		stmtPos := mod.MainChunk.GetSourcePosition(stmt.Span)
 
 		chunk, err := ParseLocalSecondaryChunk(LocalSecondaryChunkParsingConfig{
-			ChunkFilepath:  fls.Join(src.ResourceDir, relativePath),
-			Module:         mod,
-			Context:        ctx,
-			ImportPosition: stmtPos,
+			ChunkFilepath:                       fls.Join(src.ResourceDir, relativePath),
+			Module:                              mod,
+			Context:                             ctx,
+			ImportPosition:                      stmtPos,
+			RecoverFromNonExistingIncludedFiles: config.RecoverFromNonExistingIncludedFiles,
 		})
 
 		if err != nil && chunk == nil {
@@ -414,10 +419,11 @@ type IncludedChunk struct {
 }
 
 type LocalSecondaryChunkParsingConfig struct {
-	ChunkFilepath  string
-	Module         *Module
-	Context        *Context
-	ImportPosition parse.SourcePositionRange
+	ChunkFilepath                       string
+	Module                              *Module
+	Context                             *Context
+	ImportPosition                      parse.SourcePositionRange
+	RecoverFromNonExistingIncludedFiles bool
 }
 
 func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*IncludedChunk, error) {
@@ -448,34 +454,42 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 		}
 	}
 
-	if info, err := ctx.fs.Stat(fpath); err == fs.ErrNotExist || (err == nil && info.IsDir()) {
-		return nil, fmt.Errorf("file to include %s does not exist or is a folder", fpath)
-	}
-
-	file, err := ctx.fs.Open(fpath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open %s: %s", fpath, err)
-	}
-
-	b, err := io.ReadAll(file)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to read %s: %s", fpath, err)
-	}
-
-	//parse
-
 	src := parse.SourceFile{
 		NameString:    fpath,
 		Resource:      fpath,
-		CodeString:    string(b),
 		ResourceDir:   filepath.Dir(absPath),
 		IsResourceURL: false,
 	}
 
+	var existenceError error
+
+	if info, err := ctx.fs.Stat(fpath); os.IsNotExist(err) || (err == nil && info.IsDir()) {
+		if !config.RecoverFromNonExistingIncludedFiles {
+			return nil, err
+		}
+		existenceError = fmt.Errorf("%w: %s", ErrFileToIncludeDoesNotExist, fpath)
+
+		//empty content
+	} else {
+		file, err := ctx.fs.Open(fpath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open included file %s: %s", fpath, err)
+		}
+
+		b, err := io.ReadAll(file)
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to read included file %s: %s", fpath, err)
+		}
+
+		src.CodeString = utils.BytesAsString(b)
+	}
+
+	//parse
+
 	chunk, err := parse.ParseChunkSource(src)
 	if err != nil && chunk == nil {
-		return nil, fmt.Errorf("failed to parse %s: %w", fpath, err)
+		return nil, fmt.Errorf("failed to parse included file %s: %w", fpath, err)
 	}
 
 	includedChunk := &IncludedChunk{
@@ -483,7 +497,17 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 	}
 
 	// add parsing errors to the included chunk
-	if err != nil {
+	if existenceError != nil {
+		includedChunk.ParsingErrors = []Error{NewError(existenceError, Path(fpath))}
+		includedChunk.ParsingErrorPositions = []parse.SourcePositionRange{
+			{
+				SourceName:  fpath,
+				StartLine:   1,
+				StartColumn: 1,
+				Span:        parse.NodeSpan{Start: 0, End: 1},
+			},
+		}
+	} else if err != nil {
 		errorAggregation, ok := err.(*parse.ParsingErrorAggregation)
 		if !ok {
 			panic(ErrUnreachable)
@@ -516,10 +540,11 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 		stmtPos := chunk.GetSourcePosition(stmt.Span)
 
 		chunk, err := ParseLocalSecondaryChunk(LocalSecondaryChunkParsingConfig{
-			ChunkFilepath:  fls.Join(src.ResourceDir, relativePath),
-			Module:         mod,
-			Context:        config.Context,
-			ImportPosition: stmtPos,
+			ChunkFilepath:                       fls.Join(src.ResourceDir, relativePath),
+			Module:                              mod,
+			Context:                             config.Context,
+			ImportPosition:                      stmtPos,
+			RecoverFromNonExistingIncludedFiles: config.RecoverFromNonExistingIncludedFiles,
 		})
 
 		if err != nil && chunk == nil {
