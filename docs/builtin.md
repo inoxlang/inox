@@ -1,5 +1,9 @@
 
-# Builtin
+[Install Inox](../README.md#installation) | [Language Basics](./language-basics.md) | [Shell Basics](./shell-basics.md) | [Scripting Basics](./scripting-basics.md)
+
+-----
+
+# Built-in
 
 - [Errors](#errors)
 - [Browser Automation](#browser-automation)

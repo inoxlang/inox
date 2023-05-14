@@ -1,3 +1,7 @@
+[Install Inox](../README.md#installation) | [Shell Basics](./shell-basics.md) | [Scripting Basics](./scripting-basics.md) | [Built-in Functions](./builtin.md)
+
+-----
+
 # Inox Basics
 
 - [Literals](#Literals)

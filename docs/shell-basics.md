@@ -1,4 +1,5 @@
-[Install Inox](../README.md#installation) | [Language Basics](./language-basics.md) | [Scripting Basics](./scripting-basics.md)
+[Install Inox](../README.md#installation) | [Language Basics](./language-basics.md) | [Scripting Basics](./scripting-basics.md) | [Built-in Functions](./builtin.md)
+
 -----
 
 # Inox Shell (REPL)
