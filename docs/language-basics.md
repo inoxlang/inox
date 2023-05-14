@@ -244,6 +244,12 @@ https://google.com/?q={param_value}hub
 # result: https://google.com?q=github
 ```
 
+Host aliases:
+```
+@host = https://example.com   # host literal
+@host/index.html
+```
+
 ### Path Expressions
 
 ```
