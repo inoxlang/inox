@@ -3977,10 +3977,10 @@ func TestSymbolicEval(t *testing.T) {
 		})
 	})
 
-	t.Run("pattern namespace definition: object pattern literal", func(t *testing.T) {
-		t.Run("RHS is an object pattern literal", func(t *testing.T) {
+	t.Run("pattern namespace definition", func(t *testing.T) {
+		t.Run("RHS is an object literal", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				%namespace. = {}
+				%namespace. = {patt: %str}
 				return %namespace.
 			`)
 
@@ -3988,7 +3988,9 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
 			assert.Equal(t, &PatternNamespace{
-				entries: nil,
+				entries: map[string]Pattern{
+					"patt": state.ctx.ResolveNamedPattern("str"),
+				},
 			}, res)
 
 			//check context data
