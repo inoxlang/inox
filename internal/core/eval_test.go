@@ -596,7 +596,23 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
+				`path = "2E"; return https://example.com/.%{path}`,
+				S_URL_EXPR_PATH_LIMITATION,
+			},
+			{
+				`path = "E"; return https://example.com/.%2{path}`,
+				S_URL_EXPR_PATH_LIMITATION,
+			},
+			{
 				`path = "%2E"; return https://example.com/%2E{path}`,
+				S_URL_EXPR_PATH_LIMITATION,
+			},
+			{
+				`path = "2E"; return https://example.com/%2E%{path}`,
+				S_URL_EXPR_PATH_LIMITATION,
+			},
+			{
+				`path = "E"; return https://example.com/%2E%2{path}`,
 				S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
