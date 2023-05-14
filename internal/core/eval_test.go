@@ -3692,6 +3692,27 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.NoError(t, err)
 			assert.Equal(t, Int(1), res)
 		})
+
+		t.Run("included file defining a pattern", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import ./dep.ix
+				return %p
+			`, map[string]string{"./dep.ix": "%p = %str"})
+
+			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
+			assert.NoError(t, err)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.Ctx.AddNamedPattern("str", STR_PATTERN)
+			state.Module = mod
+			res, err := Eval(mod, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Equal(t, STR_PATTERN, res)
+		})
 	})
 
 	t.Run("import statement", func(t *testing.T) {
