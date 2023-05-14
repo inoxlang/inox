@@ -196,24 +196,19 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		state.SymbolicData.AddData(symbolicData)
 	}
 
-	if parsingErr != nil {
+	if parsingErr != nil { //priority to parsing error
 		finalErr = parsingErr
-	}
-
-	if finalErr == nil && manifestErr != nil {
-		finalErr = manifestErr
-	}
-
-	if finalErr == nil && err_ != nil {
-		finalErr = err_
-	}
-
-	if finalErr == nil && staticCheckErr != nil {
-		finalErr = staticCheckErr
-	}
-
-	if finalErr == nil && modArgsError != nil {
-		finalErr = modArgsError
+	} else if finalErr == nil {
+		switch {
+		case manifestErr != nil:
+			finalErr = manifestErr
+		case err_ != nil:
+			finalErr = err_
+		case staticCheckErr != nil:
+			finalErr = staticCheckErr
+		case finalErr == nil && modArgsError != nil:
+			finalErr = modArgsError
+		}
 	}
 
 	return state, mod, finalErr
