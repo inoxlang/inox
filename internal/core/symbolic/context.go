@@ -3,22 +3,28 @@ package internal
 import (
 	"errors"
 	"fmt"
+
+	parse "github.com/inoxlang/inox/internal/parse"
 )
 
 type Context struct {
 	forkingParent   *Context
 	associatedState *State
 
-	hostAliases       map[string]SymbolicValue
-	namedPatterns     map[string]Pattern
-	patternNamespaces map[string]*PatternNamespace
+	hostAliases                         map[string]SymbolicValue
+	namedPatterns                       map[string]Pattern
+	namedPatternPositionDefinitions     map[string]parse.SourcePositionRange
+	patternNamespaces                   map[string]*PatternNamespace
+	patternNamespacePositionDefinitions map[string]parse.SourcePositionRange
 }
 
 func NewSymbolicContext() *Context {
 	return &Context{
-		hostAliases:       make(map[string]SymbolicValue, 0),
-		namedPatterns:     make(map[string]Pattern, 0),
-		patternNamespaces: make(map[string]*PatternNamespace, 0),
+		hostAliases:                         make(map[string]SymbolicValue, 0),
+		namedPatterns:                       make(map[string]Pattern, 0),
+		namedPatternPositionDefinitions:     make(map[string]parse.SourcePositionRange, 0),
+		patternNamespaces:                   make(map[string]*PatternNamespace, 0),
+		patternNamespacePositionDefinitions: make(map[string]parse.SourcePositionRange, 0),
 	}
 }
 
@@ -56,8 +62,12 @@ func (ctx *Context) ResolveNamedPattern(name string) Pattern {
 	return pattern
 }
 
-func (ctx *Context) AddNamedPattern(name string, pattern Pattern) {
+func (ctx *Context) AddNamedPattern(name string, pattern Pattern, optDefinitionPosition ...parse.SourcePositionRange) {
 	ctx.namedPatterns[name] = pattern
+
+	if len(optDefinitionPosition) > 0 {
+		ctx.namedPatternPositionDefinitions[name] = optDefinitionPosition[0]
+	}
 }
 
 func (ctx *Context) ForEachPattern(fn func(name string, pattern Pattern)) {
@@ -81,8 +91,12 @@ func (ctx *Context) ResolvePatternNamespace(name string) *PatternNamespace {
 	return namespace
 }
 
-func (ctx *Context) AddPatternNamespace(name string, namespace *PatternNamespace) {
+func (ctx *Context) AddPatternNamespace(name string, namespace *PatternNamespace, optDefinitionPosition ...parse.SourcePositionRange) {
 	ctx.patternNamespaces[name] = namespace
+
+	if len(optDefinitionPosition) > 0 {
+		ctx.patternNamespacePositionDefinitions[name] = optDefinitionPosition[0]
+	}
 }
 
 func (ctx *Context) ForEachPatternNamespace(fn func(name string, namespace *PatternNamespace)) {
@@ -111,11 +125,19 @@ func (ctx *Context) currentData() (data ContextData) {
 	//forking makes that non trivial
 
 	for name, pattern := range ctx.namedPatterns {
-		data.Patterns = append(data.Patterns, NamedPatternData{name, pattern})
+		data.Patterns = append(data.Patterns, NamedPatternData{
+			name,
+			pattern,
+			ctx.namedPatternPositionDefinitions[name], //ok if zero value
+		})
 	}
 
 	for name, namespace := range ctx.patternNamespaces {
-		data.PatternNamespaces = append(data.PatternNamespaces, PatternNamespaceData{name, namespace})
+		data.PatternNamespaces = append(data.PatternNamespaces, PatternNamespaceData{
+			name,
+			namespace,
+			ctx.patternNamespacePositionDefinitions[name], //ok if zero value
+		})
 	}
 
 	return data

@@ -2449,7 +2449,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		}
 		//TODO: add checks
 		state.symbolicData.SetMostSpecificNodeValue(n.Left, pattern)
-		state.ctx.AddNamedPattern(n.Left.Name, pattern)
+		state.ctx.AddNamedPattern(n.Left.Name, pattern, state.getCurrentChunkNodePositionOrZero(n.Left))
 		state.symbolicData.SetContextData(n, state.ctx.currentData())
 		return nil, nil
 	case *parse.PatternNamespaceDefinition:
@@ -2459,6 +2459,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		}
 
 		namespace := &PatternNamespace{}
+		pos := state.getCurrentChunkNodePositionOrZero(n.Left)
 
 		switch r := right.(type) {
 		case *Object:
@@ -2471,7 +2472,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				}
 				namespace.entries[k] = v.(Pattern)
 			}
-			state.ctx.AddPatternNamespace(n.Left.Name, namespace)
+			state.ctx.AddPatternNamespace(n.Left.Name, namespace, pos)
 		case *Record:
 			if len(r.entries) > 0 {
 				namespace.entries = make(map[string]Pattern)
@@ -2482,10 +2483,10 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				}
 				namespace.entries[k] = v.(Pattern)
 			}
-			state.ctx.AddPatternNamespace(n.Left.Name, namespace)
+			state.ctx.AddPatternNamespace(n.Left.Name, namespace, pos)
 		default:
 			state.addError(makeSymbolicEvalError(node, state, fmtPatternNamespaceShouldBeInitWithNot(right)))
-			state.ctx.AddPatternNamespace(n.Left.Name, namespace)
+			state.ctx.AddPatternNamespace(n.Left.Name, namespace, pos)
 		}
 		state.symbolicData.SetMostSpecificNodeValue(n.Left, namespace)
 		state.symbolicData.SetContextData(n, state.ctx.currentData())
@@ -2860,10 +2861,10 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		//add patterns of parent state
 		modCtx := NewSymbolicContext()
 		state.ctx.ForEachPattern(func(name string, pattern Pattern) {
-			modCtx.AddNamedPattern(name, pattern)
+			modCtx.AddNamedPattern(name, pattern, parse.SourcePositionRange{})
 		})
 		state.ctx.ForEachPatternNamespace(func(name string, namespace *PatternNamespace) {
-			modCtx.AddPatternNamespace(name, namespace)
+			modCtx.AddPatternNamespace(name, namespace, parse.SourcePositionRange{})
 		})
 
 		modState := newSymbolicState(modCtx, &parse.ParsedChunk{

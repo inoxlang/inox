@@ -344,6 +344,37 @@ switch_:
 	return
 }
 
+func (d *SymbolicData) GetNamedPatternOrPatternNamespacePositionDefinition(node parse.Node, ancestors []parse.Node) (pos parse.SourcePositionRange, found bool) {
+
+	switch node := node.(type) {
+	case *parse.PatternIdentifierLiteral:
+		data, ok := d.GetContextData(node, ancestors)
+		if !ok {
+			return
+		}
+		for _, e := range data.Patterns {
+			if e.Name == node.Name && e.DefinitionPosition != (parse.SourcePositionRange{}) {
+				return e.DefinitionPosition, true
+			}
+		}
+	case *parse.PatternNamespaceIdentifierLiteral:
+		data, ok := d.GetContextData(node, ancestors)
+		if !ok {
+			return
+		}
+		for _, e := range data.PatternNamespaces {
+			if e.Name == node.Name && e.DefinitionPosition != (parse.SourcePositionRange{}) {
+				return e.DefinitionPosition, true
+			}
+		}
+	default:
+		return
+	}
+
+	found = false
+	return
+}
+
 func (d *SymbolicData) GetContextData(n parse.Node, ancestorChain []parse.Node) (ContextData, bool) {
 	if d == nil {
 		return ContextData{}, false
@@ -391,11 +422,13 @@ type ContextData struct {
 }
 
 type NamedPatternData struct {
-	Name  string
-	Value Pattern
+	Name               string
+	Value              Pattern
+	DefinitionPosition parse.SourcePositionRange
 }
 
 type PatternNamespaceData struct {
-	Name  string
-	Value *PatternNamespace
+	Name               string
+	Value              *PatternNamespace
+	DefinitionPosition parse.SourcePositionRange
 }

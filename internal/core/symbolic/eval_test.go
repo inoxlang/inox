@@ -4081,6 +4081,11 @@ func TestSymbolicEval(t *testing.T) {
 			return
 		}
 
+		//ignore definition positions
+		for i := range data.Patterns {
+			data.Patterns[i].DefinitionPosition = parse.SourcePositionRange{}
+		}
+
 		assert.Contains(t, data.Patterns, NamedPatternData{
 			Name:  "p",
 			Value: pattern,
@@ -4111,6 +4116,11 @@ func TestSymbolicEval(t *testing.T) {
 			data, ok := state.symbolicData.GetContextData(returnStmt, ancestors)
 			if !assert.True(t, ok) {
 				return
+			}
+
+			//ignore definition positions
+			for i := range data.PatternNamespaces {
+				data.PatternNamespaces[i].DefinitionPosition = parse.SourcePositionRange{}
 			}
 
 			assert.Contains(t, data.PatternNamespaces, PatternNamespaceData{
@@ -4144,6 +4154,11 @@ func TestSymbolicEval(t *testing.T) {
 				return
 			}
 
+			//ignore definition positions
+			for i := range data.PatternNamespaces {
+				data.PatternNamespaces[i].DefinitionPosition = parse.SourcePositionRange{}
+			}
+
 			assert.Contains(t, data.PatternNamespaces, PatternNamespaceData{
 				Name:  "namespace",
 				Value: namespace,
@@ -4173,6 +4188,11 @@ func TestSymbolicEval(t *testing.T) {
 			data, ok := state.symbolicData.GetContextData(returnStmt, ancestors)
 			if !assert.True(t, ok) {
 				return
+			}
+
+			//ignore definition positions
+			for i := range data.PatternNamespaces {
+				data.PatternNamespaces[i].DefinitionPosition = parse.SourcePositionRange{}
 			}
 
 			assert.Contains(t, data.PatternNamespaces, PatternNamespaceData{

@@ -125,11 +125,9 @@ func (state *State) setGlobal(name string, value SymbolicValue, constness Global
 		info = info_
 		info.value = value
 	} else {
-
 		var definitionPosition parse.SourcePositionRange
 		if len(optDefinitionNode) != 0 {
-			node := optDefinitionNode[0]
-			definitionPosition = state.currentChunk().GetSourcePosition(node.Base().Span)
+			definitionPosition = state.getCurrentChunkNodePositionOrZero(optDefinitionNode[0])
 		}
 
 		info = varSymbolicInfo{
@@ -168,8 +166,7 @@ func (state *State) setLocal(name string, value SymbolicValue, static Pattern, o
 
 	var definitionPosition parse.SourcePositionRange
 	if len(optDefinitionNode) != 0 {
-		node := optDefinitionNode[0]
-		definitionPosition = state.currentChunk().GetSourcePosition(node.Base().Span)
+		definitionPosition = state.getCurrentChunkNodePositionOrZero(optDefinitionNode[0])
 	}
 
 	scope.variables[name] = varSymbolicInfo{
@@ -177,6 +174,10 @@ func (state *State) setLocal(name string, value SymbolicValue, static Pattern, o
 		static:             static,
 		definitionPosition: definitionPosition,
 	}
+}
+
+func (state *State) getCurrentChunkNodePositionOrZero(node parse.Node) parse.SourcePositionRange {
+	return state.currentChunk().GetSourcePosition(node.Base().Span)
 }
 
 func (state *State) overrideLocal(name string, value SymbolicValue) {
