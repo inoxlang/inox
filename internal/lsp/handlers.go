@@ -231,6 +231,8 @@ func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx
 		case *parse.Variable, *parse.GlobalVariable, *parse.IdentifierLiteral:
 			position, ok = state.SymbolicData.GetVariableDefinitionPosition(foundNode, ancestors)
 
+		case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceIdentifierLiteral:
+			position, ok = state.SymbolicData.GetNamedPatternOrPatternNamespacePositionDefinition(foundNode, ancestors)
 		case *parse.RelativePathLiteral:
 			parent := ancestors[len(ancestors)-1]
 			switch parent.(type) {
