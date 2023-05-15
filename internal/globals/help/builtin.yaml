@@ -288,9 +288,9 @@ resource:
       update is a general purpose function that updates an existing resource, it has 2 modes: append and replace.
       Replace is the default mode.
     examples:
-    - code: update ./file.txt append 'additional content'
-    - code: update ./file.txt 'new content'
-    - code: update ./file.txt replace 'new content'
+    - code: 'update ./file.txt append "additional content"'
+    - code: update ./file.txt "new content"
+    - code: update ./file.txt replace "new content"
     - code: update <url> tojson({})'
 
   - topic: delete
@@ -413,7 +413,7 @@ http:
   - topic: http.read
     text: 'the http.read function behaves exactly like the read function but only works on HTTP resources.'
     examples:
-    - code: 'https://jsonplaceholder.typicode.com/posts/1'
+    - code: 'http.read https://jsonplaceholder.typicode.com/posts/1'
 
   - topic: http.exists
     text: 'the http.exists takes a URL (or host) as argument, it sends a HEAD request and returns true if the status code is less than 400.'

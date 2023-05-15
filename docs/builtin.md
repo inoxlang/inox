@@ -486,7 +486,7 @@ the http.read function behaves exactly like the read function but only works on 
 **examples**
 
 ```inox
-https://jsonplaceholder.typicode.com/posts/1
+http.read https://jsonplaceholder.typicode.com/posts/1
 ```
 ### http.exists
 
@@ -666,13 +666,13 @@ update is a general purpose function that updates an existing resource, it has 2
 **examples**
 
 ```inox
-update ./file.txt append 'additional content'
+update ./file.txt append "additional content"
 ```
 ```inox
-update ./file.txt 'new content'
+update ./file.txt "new content"
 ```
 ```inox
-update ./file.txt replace 'new content'
+update ./file.txt replace "new content"
 ```
 ```inox
 update <url> tojson({})'
