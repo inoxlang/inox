@@ -3287,16 +3287,21 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("pipeline statement", func(t *testing.T) {
 			code := `get-data | split-lines $`
+			var dollarVarValue Str
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"get-data": ValOf(func(ctx *Context) Str {
 					return "aaa\nbbb"
 				}),
-				"split-lines": ValOf(splitLines),
+				"split-lines": ValOf(func(ctx *Context, s Str) []Str {
+					dollarVarValue = s
+					return splitLines(ctx, s)
+				}),
 			})
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
-			//assert.Equal(t, newList(&ValueList{Elements: []Value{Str("aaa"), Str("bbb")}}), res)
+
+			assert.Equal(t, Str("aaa\nbbb"), dollarVarValue)
 		})
 
 		t.Run("original value of anonymous variable is restored", func(t *testing.T) {
@@ -3316,6 +3321,24 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, Int(1), res)
 		})
 
+	})
+
+	t.Run("pipeline expression", func(t *testing.T) {
+		code := `
+			result = | idt [1, "a", 2] | filter $ %int
+			return result
+		`
+		state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			"idt": ValOf(func(ctx *Context, v Value) Value {
+				return v
+			}),
+			"filter": ValOf(Filter),
+		})
+		state.Ctx.AddNamedPattern("int", INT_PATTERN)
+
+		res, err := Eval(code, state, false)
+		assert.NoError(t, err)
+		assert.Equal(t, NewWrappedValueList(Int(1), Int(2)), res)
 	})
 
 	t.Run("member expression", func(t *testing.T) {
