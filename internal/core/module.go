@@ -528,14 +528,7 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 	// add parsing errors to the included chunk
 	if existenceError != nil {
 		includedChunk.ParsingErrors = []Error{NewError(existenceError, Path(fpath))}
-		includedChunk.ParsingErrorPositions = []parse.SourcePositionRange{
-			{
-				SourceName:  fpath,
-				StartLine:   1,
-				StartColumn: 1,
-				Span:        parse.NodeSpan{Start: 0, End: 1},
-			},
-		}
+		includedChunk.ParsingErrorPositions = []parse.SourcePositionRange{config.ImportPosition}
 	} else if err != nil {
 		errorAggregation, ok := err.(*parse.ParsingErrorAggregation)
 		if !ok {
