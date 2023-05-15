@@ -50,8 +50,7 @@ func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx
 		logs.Println(req)
 
 		fpath := getFilePath(req.TextDocument.Uri)
-		line := int32(req.Position.Line + 1)
-		column := int32(req.Position.Character + 1)
+		line, column := getLineColumn(req.Position)
 
 		state, mod, _ := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
 			Fpath:                     fpath,
@@ -130,8 +129,7 @@ func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx
 
 	server.OnCompletion(func(ctx context.Context, req *defines.CompletionParams) (result *[]defines.CompletionItem, err error) {
 		fpath := getFilePath(req.TextDocument.Uri)
-		line := int32(req.Position.Line + 1)
-		column := int32(req.Position.Character + 1)
+		line, column := getLineColumn(req.Position)
 		session := jsonrpc.GetSession(ctx)
 
 		completions := getCompletions(fpath, compilationCtx, line, column, session)
@@ -200,7 +198,46 @@ func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx
 	})
 
 	server.OnDefinition(func(ctx context.Context, req *defines.DefinitionParams) (result *[]defines.LocationLink, err error) {
-		return nil, nil
+		fpath := getFilePath(req.TextDocument.Uri)
+		line, column := getLineColumn(req.Position)
+
+		state, mod, err := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
+			Fpath:                     fpath,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             nil,
+			Out:                       os.Stdout,
+			IgnoreNonCriticalIssues:   true,
+			AllowMissingEnvVars:       true,
+		})
+
+		if state == nil || state.SymbolicData == nil {
+			logs.Println("failed to prepare script", err)
+			return nil, nil
+		}
+
+		span := mod.MainChunk.GetLineColumnSingeCharSpan(line, column)
+		foundNode, ancestors, ok := mod.MainChunk.GetNodeAndChainAtSpan(span)
+
+		if !ok || foundNode == nil {
+			logs.Println("no data: node not found")
+			return nil, nil
+		}
+
+		definitionPosition, ok := state.SymbolicData.GetVariableDefinitionPosition(foundNode, ancestors)
+
+		if !ok {
+			logs.Println("no data")
+			return nil, nil
+		}
+
+		links := []defines.LocationLink{
+			{
+				TargetUri:            defines.DocumentUri("file://" + definitionPosition.SourceName),
+				TargetRange:          rangeToLspRange(definitionPosition),
+				TargetSelectionRange: rangeToLspRange(definitionPosition),
+			},
+		}
+		return &links, nil
 	})
 }
 
@@ -245,4 +282,10 @@ func rangeToLspRange(r parse.SourcePositionRange) defines.Range {
 			Character: uint(r.StartColumn - 1 + r.Span.End - r.Span.Start),
 		},
 	}
+}
+
+func getLineColumn(pos defines.Position) (int32, int32) {
+	line := int32(pos.Line + 1)
+	column := int32(pos.Character + 1)
+	return line, column
 }
