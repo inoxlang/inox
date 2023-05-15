@@ -85,7 +85,7 @@ func init() {
 		_getResource, func(*symbolic.Context, symbolic.ResourceName, ...symbolic.SymbolicValue) (symbolic.SymbolicValue, *symbolic.Error) {
 			return symbolic.ANY, nil
 		},
-		_createResource, func(ctx *symbolic.Context, resource symbolic.ResourceName, readable ...symbolic.Readable) (symbolic.SymbolicValue, *symbolic.Error) {
+		_createResource, func(ctx *symbolic.Context, resource symbolic.ResourceName, args ...symbolic.SymbolicValue) (symbolic.SymbolicValue, *symbolic.Error) {
 			switch resource.(type) {
 			case *symbolic.Path:
 				return nil, symbolic.ANY_ERR

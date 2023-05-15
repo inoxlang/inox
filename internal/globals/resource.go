@@ -88,15 +88,7 @@ func _getResource(ctx *core.Context, resource core.ResourceName, args ...core.Va
 }
 
 // _createResource creates a resource with its name and an (optional) content.
-func _createResource(ctx *core.Context, resource core.ResourceName, args ...core.Readable) (core.Value, error) {
-	var content *core.Reader
-
-	for _, arg := range args {
-		if content != nil {
-			return nil, core.FmtErrXProvidedAtLeastTwice("content")
-		}
-		content = arg.Reader()
-	}
+func _createResource(ctx *core.Context, resource core.ResourceName, args ...core.Value) (core.Value, error) {
 
 	if resource == nil {
 		return nil, ErrNilResourceArgument
@@ -104,7 +96,8 @@ func _createResource(ctx *core.Context, resource core.ResourceName, args ...core
 
 	switch res := resource.(type) {
 	case core.URL:
-		resp, err := _http.HttpPost(ctx, res, content)
+		args = append([]core.Value{res}, args...)
+		resp, err := _http.HttpPost(ctx, args...)
 		if resp != nil {
 			defer resp.Body(ctx).Close()
 		}
@@ -116,6 +109,15 @@ func _createResource(ctx *core.Context, resource core.ResourceName, args ...core
 			return resp, nil
 		}
 	case core.Path:
+		var content *core.Reader
+
+		for _, arg := range args {
+			if content != nil {
+				return nil, core.FmtErrXProvidedAtLeastTwice("content")
+			}
+			content = arg.(core.Readable).Reader()
+		}
+
 		if res.IsDirPath() {
 			return nil, _fs.Mkdir(ctx, res)
 		} else {

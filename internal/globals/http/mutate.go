@@ -32,7 +32,7 @@ func _httpPostPatch(ctx *core.Context, isPatch bool, args ...core.Value) (*HttpR
 			u = argVal
 		case core.Mimetype:
 			if contentType != "" {
-				return nil, core.FmtErrArgumentProvidedAtLeastTwice("mime tyoe")
+				return nil, core.FmtErrArgumentProvidedAtLeastTwice("mime type")
 			}
 			contentType = argVal
 		case core.Readable:
