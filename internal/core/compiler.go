@@ -1500,6 +1500,7 @@ func (c *compiler) Compile(node parse.Node) error {
 			c.emit(stage.Expr, OpSetLocal, anon.Index)
 		}
 
+		//unlike the tree-walking interpreter we push the value only for pipeline expressions
 		if !isStmt {
 			c.emit(node, OpGetLocal, anon.Index)
 		}

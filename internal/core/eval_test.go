@@ -3299,7 +3299,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			})
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+
+			if bytecodeEval {
+				assert.Equal(t, Nil, res)
+			} else {
+				assert.Equal(t, NewWrappedValueList(Str("aaa"), Str("bbb")), res)
+			}
 
 			assert.Equal(t, Str("aaa\nbbb"), dollarVarValue)
 		})

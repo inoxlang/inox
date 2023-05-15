@@ -448,14 +448,11 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		return callee.(Pattern).Call(args)
 	case *parse.PipelineStatement, *parse.PipelineExpression:
-
 		var stages []*parse.PipelineStage
-		isStmt := false
 
 		switch e := n.(type) {
 		case *parse.PipelineStatement:
 			stages = e.Stages
-			isStmt = true
 		case *parse.PipelineExpression:
 			stages = e.Stages
 		}
@@ -477,10 +474,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			scope[""] = res
 		}
 
-		if isStmt {
-			res = Nil
-		}
-
+		//unlike the bytecode interpreter we return the value even for pipe statement
+		//it's useful for the shell
 		return res, nil
 	case *parse.LocalVariableDeclarations:
 		currentScope := state.CurrentLocalScope()
