@@ -113,17 +113,7 @@ func _createResource(ctx *core.Context, resource core.ResourceName, args ...core
 			io.ReadAll(resp.Body(ctx))
 			return nil, fmt.Errorf("create: http: %s", err.Error())
 		} else {
-			contentType := resp.ContentType(ctx)
-			b, err := io.ReadAll(resp.Body(ctx))
-			if err != nil {
-				return nil, fmt.Errorf("create: http: body: %s", err.Error())
-			}
-
-			switch contentType {
-			case core.JSON_CTYPE, core.HTML_CTYPE, core.PLAIN_TEXT_CTYPE:
-				return core.Str(b), nil
-			}
-			return &core.ByteSlice{Bytes: b, IsDataMutable: true}, nil
+			return resp, nil
 		}
 	case core.Path:
 		if res.IsDirPath() {

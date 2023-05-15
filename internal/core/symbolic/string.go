@@ -29,6 +29,7 @@ var (
 
 // An WrappedString represents a symbolic WrappedString.
 type WrappedString interface {
+	SymbolicValue
 	underylingString() *String
 }
 

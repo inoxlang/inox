@@ -9,6 +9,10 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+var (
+	ANY_RESP = &HttpResponse{}
+)
+
 type HttpResponse struct {
 	symbolic.UnassignablePropsMixin
 	_ int

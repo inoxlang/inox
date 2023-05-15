@@ -3,6 +3,8 @@ package internal
 import (
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	_http_symbolic "github.com/inoxlang/inox/internal/globals/http/symbolic"
+
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -83,7 +85,15 @@ func init() {
 		_getResource, func(*symbolic.Context, symbolic.ResourceName, ...symbolic.SymbolicValue) (symbolic.SymbolicValue, *symbolic.Error) {
 			return symbolic.ANY, nil
 		},
-		_createResource, func(*symbolic.Context, symbolic.ResourceName, ...symbolic.Readable) (symbolic.SymbolicValue, *symbolic.Error) {
+		_createResource, func(ctx *symbolic.Context, resource symbolic.ResourceName, readable ...symbolic.Readable) (symbolic.SymbolicValue, *symbolic.Error) {
+			switch resource.(type) {
+			case *symbolic.Path:
+				return nil, symbolic.ANY_ERR
+			case *symbolic.URL:
+				return _http_symbolic.ANY_RESP, nil
+			default:
+				ctx.AddFormattedSymbolicGoFunctionError("provided resource type is not supported: %s", symbolic.Stringify(resource))
+			}
 			return symbolic.ANY, nil
 		},
 		_updateResource, func(*symbolic.Context, symbolic.ResourceName, ...symbolic.SymbolicValue) (symbolic.SymbolicValue, *symbolic.Error) {
