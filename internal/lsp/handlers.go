@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"path/filepath"
 	"strings"
 
 	fsutil "github.com/go-git/go-billy/v5/util"
@@ -213,15 +214,42 @@ func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx
 			return nil, nil
 		}
 
-		span := mod.MainChunk.GetLineColumnSingeCharSpan(line, column)
-		foundNode, ancestors, ok := mod.MainChunk.GetNodeAndChainAtSpan(span)
+		//TODO: support definition when included chunk is being edited
+		chunk := mod.MainChunk
+
+		span := chunk.GetLineColumnSingeCharSpan(line, column)
+		foundNode, ancestors, ok := chunk.GetNodeAndChainAtSpan(span)
 
 		if !ok || foundNode == nil {
 			logs.Println("no data: node not found")
 			return nil, nil
 		}
 
-		definitionPosition, ok := state.SymbolicData.GetVariableDefinitionPosition(foundNode, ancestors)
+		var position parse.SourcePositionRange
+
+		switch n := foundNode.(type) {
+		case *parse.Variable, *parse.GlobalVariable, *parse.IdentifierLiteral:
+			position, ok = state.SymbolicData.GetVariableDefinitionPosition(foundNode, ancestors)
+
+		case *parse.RelativePathLiteral:
+			parent := ancestors[len(ancestors)-1]
+			switch parent.(type) {
+			case *parse.InclusionImportStatement:
+				file, isFile := chunk.Source.(parse.SourceFile)
+				if !isFile || file.IsResourceURL || file.ResourceDir == "" {
+					break
+				}
+
+				path := filepath.Join(file.ResourceDir, n.Value)
+				position = parse.SourcePositionRange{
+					SourceName:  path,
+					StartLine:   1,
+					StartColumn: 1,
+					Span:        parse.NodeSpan{Start: 0, End: 1},
+				}
+				ok = true
+			}
+		}
 
 		if !ok {
 			logs.Println("no data")
@@ -230,9 +258,9 @@ func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx
 
 		links := []defines.LocationLink{
 			{
-				TargetUri:            defines.DocumentUri("file://" + definitionPosition.SourceName),
-				TargetRange:          rangeToLspRange(definitionPosition),
-				TargetSelectionRange: rangeToLspRange(definitionPosition),
+				TargetUri:            defines.DocumentUri("file://" + position.SourceName),
+				TargetRange:          rangeToLspRange(position),
+				TargetSelectionRange: rangeToLspRange(position),
 			},
 		}
 		return &links, nil
