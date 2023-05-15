@@ -407,7 +407,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		if savedAnonymousValue, hasValue := state.getLocal(""); hasValue {
 			defer func() {
-				state.updateLocal("", savedAnonymousValue.value, n)
+				state.overrideLocal("", savedAnonymousValue.value)
 			}()
 		}
 
@@ -419,7 +419,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			if err != nil {
 				return nil, err
 			}
-			state.setLocal("", res, nil)
+			state.overrideLocal("", res)
 		}
 
 		return res, nil

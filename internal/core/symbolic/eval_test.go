@@ -2752,46 +2752,65 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("pipe statement", func(t *testing.T) {
-		n, state := MakeTestStateAndChunk(`
-			fn one(){
-				return 1
-			}
+		t.Run("ok", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn one(){
+					return 1
+				}
+	
+				fn addOne(i %int){
+					$$result = (i + 1)
+				}
+	
+				one | addOne $
+				return $$result
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, &Int{}, res)
+		})
 
-			fn addOne(i %int){
-				$$result = (i + 1)
-			}
+		t.Run("$ is an invalid argument in second call", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn one(){
+					return "1"
+				}
+	
+				fn addOne(i %int){
+					$$result = (i + 1)
+				}
+	
+				one | addOne $
+				return $$result
+			`)
 
-			one | addOne $
-			return $$result
-		`)
-		res, err := symbolicEval(n, state)
-		assert.NoError(t, err)
-		assert.Empty(t, state.errors)
-		assert.Equal(t, &Int{}, res)
-	})
+			secondCall := parse.FindNodes(n, (*parse.CallExpression)(nil), nil)[1]
 
-	t.Run("pipe statement: $ is an invalid argument in second call", func(t *testing.T) {
-		n, state := MakeTestStateAndChunk(`
-			fn one(){
-				return "1"
-			}
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(secondCall.Arguments[0], state, FmtInvalidArg(0, &String{}, &Int{})),
+			}, state.errors)
+			assert.Equal(t, &Int{}, res)
+		})
 
-			fn addOne(i %int){
-				$$result = (i + 1)
-			}
+		t.Run("pipe statement should not be impacted by previous pipe statements", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn idt(arg){
+					return arg
+				}
 
-			one | addOne $
-			return $$result
-		`)
+				idt 1 | idt $
+				result = | idt "a" | idt $
 
-		secondCall := parse.FindNodes(n, (*parse.CallExpression)(nil), nil)[1]
-
-		res, err := symbolicEval(n, state)
-		assert.NoError(t, err)
-		assert.Equal(t, []SymbolicEvaluationError{
-			makeSymbolicEvalError(secondCall.Arguments[0], state, FmtInvalidArg(0, &String{}, &Int{})),
-		}, state.errors)
-		assert.Equal(t, &Int{}, res)
+				return result
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, ANY_STR, res)
+		})
 	})
 
 	t.Run("if statement", func(t *testing.T) {

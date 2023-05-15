@@ -179,6 +179,18 @@ func (state *State) setLocal(name string, value SymbolicValue, static Pattern, o
 	}
 }
 
+func (state *State) overrideLocal(name string, value SymbolicValue) {
+	state.assertHasLocals()
+	scope := state.scopeStack[len(state.scopeStack)-1]
+
+	static := &TypePattern{val: value.WidestOfType()}
+
+	scope.variables[name] = varSymbolicInfo{
+		value:  value,
+		static: static,
+	}
+}
+
 func (state *State) setNextSelf(value SymbolicValue) {
 	state.assertHasLocals()
 	scope := state.scopeStack[len(state.scopeStack)-1]
