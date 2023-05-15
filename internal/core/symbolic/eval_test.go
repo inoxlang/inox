@@ -2811,6 +2811,29 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 			assert.Equal(t, ANY_STR, res)
 		})
+
+		t.Run("anonymous variable should not be defined after pipe statement", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn idt(arg){
+					return arg
+				}
+
+				idt 1 | idt $
+
+				return $
+			`)
+
+			varIdent := parse.FindNodes(n, (*parse.Variable)(nil), nil)[1]
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(varIdent, state, fmtLocalVarIsNotDeclared("")),
+			}, state.errors)
+
+			assert.Equal(t, ANY, res)
+		})
+
 	})
 
 	t.Run("if statement", func(t *testing.T) {

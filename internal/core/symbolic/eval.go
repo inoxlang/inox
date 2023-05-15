@@ -405,11 +405,9 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			stages = e.Stages
 		}
 
-		if savedAnonymousValue, hasValue := state.getLocal(""); hasValue {
-			defer func() {
-				state.overrideLocal("", savedAnonymousValue.value)
-			}()
-		}
+		defer func() {
+			state.removeLocal("")
+		}()
 
 		var res SymbolicValue
 		var err error

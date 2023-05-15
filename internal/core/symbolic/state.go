@@ -191,6 +191,13 @@ func (state *State) overrideLocal(name string, value SymbolicValue) {
 	}
 }
 
+func (state *State) removeLocal(name string) {
+	state.assertHasLocals()
+	scope := state.scopeStack[len(state.scopeStack)-1]
+
+	delete(scope.variables, name)
+}
+
 func (state *State) setNextSelf(value SymbolicValue) {
 	state.assertHasLocals()
 	scope := state.scopeStack[len(state.scopeStack)-1]
