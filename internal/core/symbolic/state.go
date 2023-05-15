@@ -369,8 +369,9 @@ func (state *State) currentGlobalScopeData() ScopeData {
 	var vars []VarData
 	for k, v := range scope.variables {
 		vars = append(vars, VarData{
-			Name:  k,
-			Value: v.value,
+			Name:               k,
+			Value:              v.value,
+			DefinitionPosition: v.definitionPosition,
 		})
 	}
 	return ScopeData{Variables: vars}

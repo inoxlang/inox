@@ -204,6 +204,33 @@ func TestSymbolicEval(t *testing.T) {
 
 	})
 
+	t.Run("constant declarations", func(t *testing.T) {
+		n, state := MakeTestStateAndChunk(`
+			const (
+				A = 1
+			)
+
+			return A
+		`)
+		res, err := symbolicEval(n, state)
+		assert.NoError(t, err)
+		assert.Empty(t, state.errors)
+		assert.Equal(t, ANY_INT, res)
+
+		//check definition position data
+		idents, ancestorChains := parse.FindNodesAndChains(n, (*parse.IdentifierLiteral)(nil), nil)
+		definitionIdent := idents[0]
+		returnIdent := idents[1]
+		returnIdentAncestors := ancestorChains[1]
+
+		pos, ok := state.symbolicData.GetVariableDefinitionPosition(returnIdent, returnIdentAncestors)
+		if !assert.True(t, ok) {
+			return
+		}
+
+		assert.Equal(t, definitionIdent.Span, pos.Span)
+	})
+
 	t.Run("local variable declaration", func(t *testing.T) {
 		t.Run("no type annotation", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
@@ -325,6 +352,19 @@ func TestSymbolicEval(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Empty(t, state.errors)
 		assert.Equal(t, &List{elements: []SymbolicValue{}}, res)
+
+		//check definition position data
+		idents, ancestorChains := parse.FindNodesAndChains(n, (*parse.GlobalVariable)(nil), nil)
+		definitionIdent := idents[0]
+		returnIdent := idents[1]
+		returnIdentAncestors := ancestorChains[1]
+
+		pos, ok := state.symbolicData.GetVariableDefinitionPosition(returnIdent, returnIdentAncestors)
+		if !assert.True(t, ok) {
+			return
+		}
+
+		assert.Equal(t, definitionIdent.Span, pos.Span)
 	})
 
 	t.Run("variable assignment", func(t *testing.T) {
@@ -1889,6 +1929,21 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
 			assert.Equal(t, &Int{}, res)
+
+			//check definition position data
+			idents, ancestorChains := parse.FindNodesAndChains(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral) bool {
+				return n.Name == "x"
+			})
+			definitionIdent := idents[0]
+			returnIdent := idents[1]
+			returnIdentAncestors := ancestorChains[1]
+
+			pos, ok := state.symbolicData.GetVariableDefinitionPosition(returnIdent, returnIdentAncestors)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			assert.Equal(t, definitionIdent.Span, pos.Span)
 		})
 
 		t.Run("function returning its variadic argument", func(t *testing.T) {

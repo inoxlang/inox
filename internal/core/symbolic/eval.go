@@ -539,7 +539,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				}
 
 			} else {
-				state.setGlobal(name, right, GlobalVar)
+				state.setGlobal(name, right, GlobalVar, n.Left)
 			}
 
 			state.symbolicData.SetMostSpecificNodeValue(lhs, right)
@@ -822,7 +822,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				if err != nil {
 					return nil, err
 				}
-				if !state.setGlobal(decl.Left.Name, constVal, GlobalConst) {
+				if !state.setGlobal(decl.Left.Name, constVal, GlobalConst, decl.Left) {
 					return nil, fmt.Errorf("failed to set global '%s'", decl.Left.Name)
 				}
 			}
