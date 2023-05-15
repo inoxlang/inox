@@ -47,8 +47,6 @@ func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx
 	})
 
 	server.OnHover(func(ctx context.Context, req *defines.HoverParams) (result *defines.Hover, err error) {
-		logs.Println(req)
-
 		fpath := getFilePath(req.TextDocument.Uri)
 		line, column := getLineColumn(req.Position)
 
@@ -255,7 +253,8 @@ func getCompletions(fpath string, compilationCtx *core.Context, line, column int
 		AllowMissingEnvVars:       true,
 	})
 
-	if mod == nil { //unrecoverable parsing error
+	if mod == nil { //unrecoverable error
+		logs.Println("unrecoverable error", err.Error())
 		session.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
 		return nil
 	}
