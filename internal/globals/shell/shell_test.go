@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"io"
 	"testing"
 	"time"
 
@@ -9,33 +10,64 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const buffSize = 1000
+
 func TestShell(t *testing.T) {
+
+	t.Run("literal", func(t *testing.T) {
+		ctx, config, in, out := setup()
+		defer ctx.Cancel()
+
+		go func() {
+			state := core.NewGlobalState(ctx)
+
+			sh := newShell(config, state, in, out)
+			sh.runLoop()
+		}()
+
+		_, err := in.Write([]byte("1456\n"))
+		assert.NoError(t, err)
+
+		time.Sleep(time.Second / 10)
+
+		b := make([]byte, buffSize)
+		n, err := out.Read(b)
+		assert.NoError(t, err)
+
+		assert.Contains(t, string(b[:n]), "1456")
+	})
+
+	t.Run("pipe", func(t *testing.T) {
+		ctx, config, in, out := setup()
+		defer ctx.Cancel()
+
+		go func() {
+			state := core.NewGlobalState(ctx)
+
+			sh := newShell(config, state, in, out)
+			sh.runLoop()
+		}()
+
+		_, err := in.Write([]byte("idt [{title: \"hello\"}] | map ~$ .title\n"))
+		assert.NoError(t, err)
+
+		time.Sleep(time.Second / 10)
+
+		b := make([]byte, buffSize)
+		n, err := out.Read(b)
+		assert.NoError(t, err)
+
+		assert.Contains(t, string(b[:n]), "hello")
+	})
+
 	//TODO: fix data race + rework cd
 	//
 	//
 	t.Skip()
 
 	t.Run("ring buffers inputs & outputs", func(t *testing.T) {
-
-		fgColor := core.ColorFromAnsiColor(termenv.ANSIWhite)
-		bgColor := core.ColorFromAnsiColor(termenv.ANSIBlack)
-		config := REPLConfiguration{
-			PrintingConfig: PrintingConfig{
-				defaultFgColor:                 fgColor,
-				defaultFgColorSequence:         fgColor.GetAnsiEscapeSequence(false),
-				backgroundColor:                bgColor,
-				defaultBackgroundColorSequence: bgColor.GetAnsiEscapeSequence(true),
-			},
-			prompt: core.NewWrappedValueList(),
-		}
-
-		ctx := core.NewContext(core.ContextConfig{})
+		ctx, config, in, out := setup()
 		defer ctx.Cancel()
-
-		buffSize := 1000
-
-		in := core.NewRingBuffer(ctx, core.ByteCount(buffSize))
-		out := core.NewRingBuffer(ctx, core.ByteCount(buffSize))
 
 		go func() {
 			state := core.NewGlobalState(ctx)
@@ -56,4 +88,26 @@ func TestShell(t *testing.T) {
 		assert.Contains(t, string(b[:n]), "49108")
 	})
 
+}
+
+func setup() (ctx *core.Context, config REPLConfiguration, in io.ReadWriter, out io.ReadWriter) {
+
+	fgColor := core.ColorFromAnsiColor(termenv.ANSIWhite)
+	bgColor := core.ColorFromAnsiColor(termenv.ANSIBlack)
+	config = REPLConfiguration{
+		PrintingConfig: PrintingConfig{
+			defaultFgColor:                 fgColor,
+			defaultFgColorSequence:         fgColor.GetAnsiEscapeSequence(false),
+			backgroundColor:                bgColor,
+			defaultBackgroundColorSequence: bgColor.GetAnsiEscapeSequence(true),
+			prettyPrintConfig:              defaultPrettyPrintConfig,
+		},
+		prompt: core.NewWrappedValueList(),
+	}
+
+	ctx = core.NewContext(core.ContextConfig{})
+
+	in = core.NewRingBuffer(ctx, core.ByteCount(buffSize))
+	out = core.NewRingBuffer(ctx, core.ByteCount(buffSize))
+	return
 }
