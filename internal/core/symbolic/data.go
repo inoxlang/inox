@@ -292,6 +292,58 @@ func (d *SymbolicData) SetContextData(n parse.Node, contextData ContextData) {
 	d.contextData[n] = contextData
 }
 
+func (d *SymbolicData) GetVariableDefinitionPosition(node parse.Node, ancestors []parse.Node) (pos parse.SourcePositionRange, found bool) {
+
+	var data ScopeData
+	var ok bool
+	var name string
+
+switch_:
+	switch node := node.(type) {
+	case *parse.IdentifierLiteral:
+		name = node.Name
+		data, ok = d.GetGlobalScopeData(node, ancestors)
+
+		if ok {
+			for _, varInfo := range data.Variables {
+				if varInfo.Name == name {
+					break switch_
+				}
+			}
+		}
+
+		data, ok = d.GetLocalScopeData(node, ancestors)
+		if !ok {
+			return
+		}
+	case *parse.Variable:
+		name = node.Name
+		data, ok = d.GetLocalScopeData(node, ancestors)
+		if !ok {
+			return
+		}
+	case *parse.GlobalVariable:
+		name = node.Name
+		data, ok = d.GetGlobalScopeData(node, ancestors)
+		if !ok {
+			return
+		}
+	default:
+		return
+	}
+
+	for _, varInfo := range data.Variables {
+		if varInfo.Name == name && (varInfo.DefinitionPosition != parse.SourcePositionRange{}) {
+			pos = varInfo.DefinitionPosition
+			found = true
+			return
+		}
+	}
+
+	found = false
+	return
+}
+
 func (d *SymbolicData) GetContextData(n parse.Node, ancestorChain []parse.Node) (ContextData, bool) {
 	if d == nil {
 		return ContextData{}, false
@@ -328,8 +380,9 @@ type ScopeData struct {
 }
 
 type VarData struct {
-	Name  string
-	Value SymbolicValue
+	Name               string
+	Value              SymbolicValue
+	DefinitionPosition parse.SourcePositionRange
 }
 
 type ContextData struct {

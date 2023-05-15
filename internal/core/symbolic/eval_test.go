@@ -214,6 +214,19 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
 			assert.Equal(t, &Int{}, res)
+
+			//check definition position data
+			idents, ancestorChains := parse.FindNodesAndChains(n, (*parse.IdentifierLiteral)(nil), nil)
+			definitionIdent := idents[0]
+			returnIdent := idents[1]
+			returnIdentAncestors := ancestorChains[1]
+
+			pos, ok := state.symbolicData.GetVariableDefinitionPosition(returnIdent, returnIdentAncestors)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			assert.Equal(t, definitionIdent.Span, pos.Span)
 		})
 
 		t.Run("value not assignable to type", func(t *testing.T) {

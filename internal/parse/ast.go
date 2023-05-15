@@ -2568,19 +2568,26 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 }
 
 func FindNodes[T Node](root Node, typ T, handle func(n Node) bool) []T {
+	n, _ := FindNodesAndChains(root, typ, handle)
+	return n
+}
+
+func FindNodesAndChains[T Node](root Node, typ T, handle func(n Node) bool) ([]T, [][]Node) {
 	searchedType := reflect.TypeOf(typ)
 	var found []T
+	var ancestors [][]Node
 
 	Walk(root, func(node, parent, scopeNode Node, ancestorChain []Node, after bool) (TraversalAction, error) {
 		if reflect.TypeOf(node) == searchedType {
 			if handle == nil || handle(node) {
 				found = append(found, node.(T))
+				ancestors = append(ancestors, utils.CopySlice(ancestorChain))
 			}
 		}
 		return Continue, nil
 	}, nil)
 
-	return found
+	return found, ancestors
 }
 
 func FindNode[T Node](root Node, typ T, handle func(n T, isUnique bool) bool) T {

@@ -117,7 +117,7 @@ func (state *State) localCount() int {
 	return len(state.scopeStack[len(state.scopeStack)-1].variables)
 }
 
-func (state *State) setGlobal(name string, value SymbolicValue, constness GlobalConstness) (ok bool) {
+func (state *State) setGlobal(name string, value SymbolicValue, constness GlobalConstness, optDefinitionNode ...parse.Node) (ok bool) {
 	scope := state.scopeStack[0]
 	var info varSymbolicInfo
 
@@ -125,10 +125,18 @@ func (state *State) setGlobal(name string, value SymbolicValue, constness Global
 		info = info_
 		info.value = value
 	} else {
+
+		var definitionPosition parse.SourcePositionRange
+		if len(optDefinitionNode) != 0 {
+			node := optDefinitionNode[0]
+			definitionPosition = state.currentChunk().GetSourcePosition(node.Base().Span)
+		}
+
 		info = varSymbolicInfo{
-			isConstant: constness == GlobalConst,
-			static:     &TypePattern{val: value.WidestOfType()},
-			value:      value,
+			isConstant:         constness == GlobalConst,
+			static:             &TypePattern{val: value.WidestOfType()},
+			value:              value,
+			definitionPosition: definitionPosition,
 		}
 		scope.variables[name] = info
 		return true
@@ -150,7 +158,7 @@ func (state *State) overrideGlobal(name string, value SymbolicValue) (ok bool) {
 	return true
 }
 
-func (state *State) setLocal(name string, value SymbolicValue, static Pattern) {
+func (state *State) setLocal(name string, value SymbolicValue, static Pattern, optDefinitionNode ...parse.Node) {
 	state.assertHasLocals()
 	scope := state.scopeStack[len(state.scopeStack)-1]
 
@@ -158,9 +166,16 @@ func (state *State) setLocal(name string, value SymbolicValue, static Pattern) {
 		static = &TypePattern{val: value.WidestOfType()}
 	}
 
+	var definitionPosition parse.SourcePositionRange
+	if len(optDefinitionNode) != 0 {
+		node := optDefinitionNode[0]
+		definitionPosition = state.currentChunk().GetSourcePosition(node.Base().Span)
+	}
+
 	scope.variables[name] = varSymbolicInfo{
-		value:  value,
-		static: static,
+		value:              value,
+		static:             static,
+		definitionPosition: definitionPosition,
 	}
 }
 
@@ -341,8 +356,9 @@ func (state *State) currentLocalScopeData() ScopeData {
 	var vars []VarData
 	for k, v := range scope.variables {
 		vars = append(vars, VarData{
-			Name:  k,
-			Value: v.value,
+			Name:               k,
+			Value:              v.value,
+			DefinitionPosition: v.definitionPosition,
 		})
 	}
 	return ScopeData{Variables: vars}
@@ -495,9 +511,10 @@ func (state *State) Errors() []SymbolicEvaluationError {
 }
 
 type varSymbolicInfo struct {
-	value      SymbolicValue
-	static     Pattern
-	isConstant bool
+	value              SymbolicValue
+	static             Pattern
+	isConstant         bool
+	definitionPosition parse.SourcePositionRange
 }
 
 func (info varSymbolicInfo) constness() GlobalConstness {

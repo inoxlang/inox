@@ -152,9 +152,9 @@ func (chunk *ParsedChunk) GetSourcePosition(span NodeSpan) SourcePositionRange {
 	}
 }
 
-func (chunk *ParsedChunk) GetNodeAtSpan(target NodeSpan) (foundNode Node, ok bool) {
+func (chunk *ParsedChunk) GetNodeAndChainAtSpan(target NodeSpan) (foundNode Node, ancestors []Node, ok bool) {
 
-	Walk(chunk.Node, func(node, _, _ Node, _ []Node, _ bool) (TraversalAction, error) {
+	Walk(chunk.Node, func(node, _, _ Node, chain []Node, _ bool) (TraversalAction, error) {
 		span := node.Base().Span
 
 		//if the cursor is not in the node's span we don't check the descendants of the node
@@ -164,6 +164,7 @@ func (chunk *ParsedChunk) GetNodeAtSpan(target NodeSpan) (foundNode Node, ok boo
 
 		if foundNode == nil || node.Base().IncludedIn(foundNode) {
 			foundNode = node
+			ancestors = chain
 			ok = true
 		}
 
@@ -171,6 +172,11 @@ func (chunk *ParsedChunk) GetNodeAtSpan(target NodeSpan) (foundNode Node, ok boo
 	}, nil)
 
 	return
+}
+
+func (chunk *ParsedChunk) GetNodeAtSpan(target NodeSpan) (foundNode Node, ok bool) {
+	node, _, ok := chunk.GetNodeAndChainAtSpan(target)
+	return node, ok
 }
 
 type SourcePositionRange struct {
