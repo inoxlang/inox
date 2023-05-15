@@ -5,6 +5,6 @@ manifest {
 }
 
 res = http.post!(https://jsonplaceholder.typicode.com/posts, {name: "Foo"})
-body = tostr(res.body.readAll!())
+body = tostr(res.body.read_all!())
 
 print $body

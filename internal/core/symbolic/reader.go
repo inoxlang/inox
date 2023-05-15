@@ -88,7 +88,7 @@ func (reader *Reader) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
 	case "read":
 		return &GoFunction{fn: reader.ReadCtx}, true
-	case "readAll":
+	case "read_all":
 		return &GoFunction{fn: reader.ReadAll}, true
 	}
 	return nil, false
@@ -99,7 +99,7 @@ func (reader *Reader) Reader() *Reader {
 }
 
 func (Reader) PropertyNames() []string {
-	return []string{"read", "readAll"}
+	return []string{"read", "read_all"}
 }
 
 func (r *Reader) Widen() (SymbolicValue, bool) {
