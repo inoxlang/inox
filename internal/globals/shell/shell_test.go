@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const buffSize = 1000
+const buffSize = 10_000
 
 func TestShell(t *testing.T) {
 
@@ -25,7 +25,7 @@ func TestShell(t *testing.T) {
 			sh.runLoop()
 		}()
 
-		_, err := in.Write([]byte("1456\n"))
+		_, err := in.Write([]byte("14580\n"))
 		assert.NoError(t, err)
 
 		time.Sleep(time.Second / 10)
@@ -34,7 +34,7 @@ func TestShell(t *testing.T) {
 		n, err := out.Read(b)
 		assert.NoError(t, err)
 
-		assert.Contains(t, string(b[:n]), "1456")
+		assert.Contains(t, string(b[:n]), "14580")
 	})
 
 	t.Run("pipe", func(t *testing.T) {
