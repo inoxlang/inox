@@ -5144,6 +5144,50 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Fail(t, "variable not found in scope data")
 		})
 	})
+
+	t.Run("inclusion import statement ", func(t *testing.T) {
+
+		t.Run("ok", func(t *testing.T) {
+			n, state := MakeTestStateAndChunks(`
+				manifest {}
+				import ./lib.ix
+				return a
+			`, map[string]string{"./lib.ix": "a = 1"})
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, ANY_INT, res)
+
+			//check scope data
+			stmt, ancestors := parse.FindNodeAndChain(n, (*parse.ReturnStatement)(nil), nil)
+			data, ok := state.symbolicData.GetLocalScopeData(stmt, ancestors)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			for _, varData := range data.Variables {
+				if varData.Name == "a" {
+					return
+				}
+			}
+
+			assert.Fail(t, "variable not found in scope data")
+		})
+
+		t.Run("file does not exist", func(t *testing.T) {
+			n, state := MakeTestStateAndChunks(`
+				manifest {}
+				import ./lib.ix
+				return 1
+			`, map[string]string{})
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, ANY_INT, res)
+		})
+	})
 }
 
 func TestWidenValues(t *testing.T) {

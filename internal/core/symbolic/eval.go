@@ -913,7 +913,10 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		if state.Module == nil {
 			panic(fmt.Errorf("cannot evaluate inclusion import statement: global state's module is nil"))
 		}
-		chunk := state.Module.InclusionStatementMap[n]
+		chunk, ok := state.Module.InclusionStatementMap[n]
+		if !ok { //included file does not exist or is a folder
+			return nil, nil
+		}
 		state.pushChunk(chunk.ParsedChunk)
 		defer state.popChunk()
 
