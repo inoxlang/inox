@@ -101,6 +101,8 @@ Pipe expressions allows you to store the final result in a variable:
 ints = | map [{value: "a"}, {value: 1}] .value | filter $ %int
 ```
 
+> You can add '~' in front of **$** if you want to postpone the [type checking](#type-checker) at runtime.
+
 ### Help
 
 ```
@@ -134,7 +136,7 @@ You can postpone the type check of this argument at runtime by prefixing it with
 read https://jsonplaceholder.typicode.com/posts | map ~$ .title
 ```
 
-Note: '~' can be added in front of any expresion that is an argument in a call.
+Note: '~' can be added in front of any expression that is an argument in a call.
 
 
 ## Execute Inox Scripts from the REPL
