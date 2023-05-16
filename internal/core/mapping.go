@@ -152,7 +152,7 @@ func (m *Mapping) Compute(ctx *Context, key Value) Value {
 		val, err := TreeWalkEval(entry.Value, evalState)
 		if err != nil {
 			//log.Println(err)
-			callingState.Logger.Println("mapping.compute: ", err)
+			callingState.Logger.Print("mapping.compute: ", err)
 			return Nil
 		}
 		return val
@@ -207,7 +207,7 @@ func (m *Mapping) Compute(ctx *Context, key Value) Value {
 
 		v, err := TreeWalkEval(entry.ValueComputation, state)
 		if err != nil {
-			callingState.Logger.Println("mapping.compute: ", err)
+			callingState.Logger.Print("mapping.compute: ", err)
 			return Nil
 		}
 		return v

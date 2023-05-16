@@ -6,6 +6,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/oklog/ulid/v2"
 )
 
 const (
@@ -25,6 +27,7 @@ type Transaction struct {
 	NotClonableMixin
 	NoReprMixin
 
+	ulid              ulid.ULID
 	ctx               *Context
 	lock              sync.RWMutex
 	startTime         time.Time
@@ -91,10 +94,7 @@ func (tx *Transaction) Start(ctx *Context) error {
 			tx.Rollback(ctx)
 		case <-time.After(time.Duration(tx.timeout)):
 			if !tx.IsFinished() {
-				logger := tx.ctx.GetClosestState().Logger
-				if logger != nil {
-					logger.Println("transaction timed out")
-				}
+				ctx.Logger().Print(tx.ulid.String(), "transaction timed out")
 				tx.Rollback(ctx)
 			}
 		}

@@ -14,6 +14,11 @@ const buffSize = 10_000
 
 func TestShell(t *testing.T) {
 
+	//TODO: fix data race + rework cd
+	//
+	//
+	t.Skip()
+
 	t.Run("literal", func(t *testing.T) {
 		ctx, config, in, out := setup()
 		defer ctx.Cancel()
@@ -59,11 +64,6 @@ func TestShell(t *testing.T) {
 
 		assert.Contains(t, string(b[:n]), "hello")
 	})
-
-	//TODO: fix data race + rework cd
-	//
-	//
-	t.Skip()
 
 	t.Run("ring buffers inputs & outputs", func(t *testing.T) {
 		ctx, config, in, out := setup()

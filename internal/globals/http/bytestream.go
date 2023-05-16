@@ -16,7 +16,7 @@ var (
 )
 
 func pushByteStream(byteStream core.ReadableStream, h handlingArguments) error {
-	h.logger.Println("publish binary stream for", h.req.Path)
+	h.logger.Print("publish binary stream for", h.req.Path)
 
 	streamId := string(h.req.Session.Id) + string(h.req.Path)
 
@@ -47,7 +47,7 @@ func pushByteStream(byteStream core.ReadableStream, h handlingArguments) error {
 			if err == nil || (errors.Is(err, core.ErrEndOfStream) && chunk != nil) {
 				data, err := chunk.Data(ctx)
 				if err != nil {
-					h.logger.Println("error while getting data of binary chunk:", err)
+					h.logger.Print("error while getting data of binary chunk:", err)
 					return
 				}
 
@@ -74,7 +74,7 @@ func pushByteStream(byteStream core.ReadableStream, h handlingArguments) error {
 			}
 
 			if err != nil {
-				h.logger.Println("unexpected error while reading bytestrem", err)
+				h.logger.Print("unexpected error while reading bytestrem", err)
 				return
 			}
 		}

@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
-	"log"
 	"net/http"
 	_cookiejar "net/http/cookiejar"
 	"strconv"
@@ -19,6 +18,7 @@ import (
 	_dom "github.com/inoxlang/inox/internal/globals/dom"
 	_fs "github.com/inoxlang/inox/internal/globals/fs"
 	_html "github.com/inoxlang/inox/internal/globals/html"
+	"github.com/rs/zerolog"
 	"golang.org/x/net/publicsuffix"
 
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -121,7 +121,7 @@ func TestHttpServer(t *testing.T) {
 				})
 				state := core.NewGlobalState(ctx)
 				state.Module = module
-				state.Logger = log.New(io.Discard, "", 0)
+				state.Logger = zerolog.New(io.Discard)
 
 				server, err := NewHttpServer(ctx, host, handler)
 				if server != nil {
@@ -542,7 +542,7 @@ func setupAdvancedTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalS
 	})
 
 	// create logger
-	state.Logger = log.New(io.Discard, "", 0)
+	state.Logger = zerolog.New(io.Discard)
 	state.Out = io.Discard
 
 	// create module

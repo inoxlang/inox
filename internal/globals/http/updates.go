@@ -18,14 +18,19 @@ const (
 
 func pushViewUpdates(view *_dom.View, h handlingArguments) error {
 
-	h.logger.Println("publish view updates for", h.req.Path)
-
 	streamId := string(h.req.Session.Id) + string(h.req.Path)
 
 	sseStream, sseServer, err := h.server.getOrCreateStream(streamId)
 	if err != nil {
 		return err
 	}
+
+	logger := h.logger.With().
+		Str("liveView", string(h.req.Path)).
+		Str("streamId", sseStream.id).
+		Logger()
+
+	logger.Print("publish view updates for", h.req.Path)
 
 	//TODO: implement a single subscription stream type to reduce memory and CPU usage
 	ctx := h.state.Ctx

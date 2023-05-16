@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
-	"log"
 	"net/http"
 	"time"
 
 	core "github.com/inoxlang/inox/internal/core"
 	_dom "github.com/inoxlang/inox/internal/globals/dom"
+	"github.com/rs/zerolog"
 )
 
 const (
@@ -31,42 +31,42 @@ func isValidHandlerValue(val core.Value) bool {
 }
 
 // a handlerFn is a middleware or the final handler
-type handlerFn func(*HttpRequest, *HttpResponseWriter, *core.GlobalState, *log.Logger)
+type handlerFn func(*HttpRequest, *HttpResponseWriter, *core.GlobalState, zerolog.Logger)
 
 func createHandlerFunction(handlerValue core.Value, isMiddleware bool, server *HttpServer) (handler handlerFn) {
 
 	//set value for handler based on provided arguments
 	switch userHandler := handlerValue.(type) {
 	case *core.InoxFunction:
-		handler = func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState, logger *log.Logger) {
+		handler = func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState, logger zerolog.Logger) {
 			//call the Inox handler
 			args := []core.Value{core.ValOf(rw), core.ValOf(req)}
 			_, err := userHandler.Call(handlerGlobalState, nil, args, HANDLER_DISABLED_ARGS)
 
 			if err != nil {
-				logger.Println(err)
+				logger.Print(err)
 			}
 		}
 	case *core.GoFunction:
-		handler = func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState, logger *log.Logger) {
+		handler = func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState, logger zerolog.Logger) {
 			//call the Golang handler
 			args := []any{rw, req}
 
 			_, err := userHandler.Call(args, handlerGlobalState, nil, false, false)
 
 			if err != nil {
-				logger.Println(err)
+				logger.Print(err)
 			}
 		}
 	case *core.Mapping:
 		routing := userHandler
 		//if a routing Mapping is provided we compute a value by passing the request's path to the Mapping.
-		handler = func(req *HttpRequest, rw *HttpResponseWriter, state *core.GlobalState, logger *log.Logger) {
+		handler = func(req *HttpRequest, rw *HttpResponseWriter, state *core.GlobalState, logger zerolog.Logger) {
 			path := req.Path
 
 			value := routing.Compute(state.Ctx, path)
 			if value == nil {
-				logger.Println("routing mapping returned Go nil")
+				logger.Print("routing mapping returned Go nil")
 				rw.writeStatus(http.StatusNotFound)
 				return
 			}
@@ -87,7 +87,7 @@ type handlingArguments struct {
 	rw           *HttpResponseWriter
 	state        *core.GlobalState
 	server       *HttpServer
-	logger       *log.Logger
+	logger       zerolog.Logger
 	isMiddleware bool
 }
 
@@ -108,7 +108,7 @@ func respondWithMappingResult(h handlingArguments) {
 		_, err := v.Call(state, nil, args, HANDLER_DISABLED_ARGS)
 
 		if err != nil {
-			logger.Println("error when calling returned inox function:", err)
+			logger.Print("error when calling returned inox function:", err)
 		}
 		return
 	}
@@ -164,7 +164,7 @@ func respondWithMappingResult(h handlingArguments) {
 				b, err := req.Body.ReadAllBytes()
 
 				if err != nil {
-					logger.Println("failed to read request's body", err)
+					logger.Print("failed to read request's body", err)
 					rw.writeStatus(http.StatusInternalServerError)
 					return nil, false
 				}
@@ -185,7 +185,7 @@ func respondWithMappingResult(h handlingArguments) {
 				}
 
 				if err := stream.WriteBytes(state.Ctx, b); err != nil {
-					logger.Println("failed to write body to stream", err)
+					logger.Print("failed to write body to stream", err)
 					rw.writeStatus(http.StatusInternalServerError)
 					return
 				}
@@ -196,7 +196,7 @@ func respondWithMappingResult(h handlingArguments) {
 				}
 
 				if _, err := v.Writer().Write(b); err != nil {
-					logger.Println("failed to write body to writable", err)
+					logger.Print("failed to write body to writable", err)
 					rw.writeStatus(http.StatusInternalServerError)
 				}
 
@@ -234,12 +234,12 @@ loop:
 				}
 				rw.writeStatus(http.StatusNotFound)
 			default:
-				logger.Println("unknwon identifier " + string(v))
+				logger.Print("unknwon identifier " + string(v))
 				rw.writeStatus(http.StatusNotFound)
 			}
 
 		case core.NilT, nil:
-			logger.Println("nil result")
+			logger.Print("nil result")
 			rw.writeStatus(http.StatusNotFound)
 			return
 
@@ -280,7 +280,7 @@ loop:
 		case core.Renderable:
 
 			if !v.IsRecursivelyRenderable(state.Ctx, renderingConfig) { // get or create view
-				logger.Println("result is not renderable, attempt to get .view() for", req.Path)
+				logger.Print("result is not renderable, attempt to get .view() for", req.Path)
 
 				model, ok := v.(*core.Object)
 				if !ok {
@@ -328,7 +328,7 @@ loop:
 
 				_, err := core.Render(state.Ctx, rw.BodyWriter(), v, renderingConfig)
 				if err != nil {
-					logger.Println(err.Error())
+					logger.Print(err.Error())
 				}
 			}
 		case *_dom.View:
@@ -342,13 +342,13 @@ loop:
 
 					_, err := v.Node().Render(state.Ctx, rw.BodyWriter(), renderingConfig)
 					if err != nil {
-						logger.Println(err.Error())
+						logger.Print(err.Error())
 					}
 
 				case req.ParsedAcceptHeader.Match(core.EVENT_STREAM_CTYPE):
 
 					if err := pushViewUpdates(v, h); err != nil {
-						logger.Println(err)
+						logger.Print(err)
 						rw.writeStatus(http.StatusInternalServerError)
 						return
 					}
@@ -364,7 +364,7 @@ loop:
 
 				bytes, err := req.Body.ReadAllBytes()
 				if err != nil {
-					logger.Println(err)
+					logger.Print(err)
 					rw.writeStatus(http.StatusBadRequest)
 					return
 				}
@@ -372,7 +372,7 @@ loop:
 				var unmarshalled any
 
 				if err := json.Unmarshal(bytes, &unmarshalled); err != nil {
-					logger.Println("failed ton parse DOM event:", err)
+					logger.Print("failed ton parse DOM event:", err)
 					rw.writeStatus(http.StatusBadRequest)
 					return
 				}
@@ -380,11 +380,11 @@ loop:
 				data := core.ConvertJSONValToInoxVal(state.Ctx, unmarshalled, true)
 				eventData, ok := data.(*core.Record)
 				if !ok {
-					logger.Println("DOM event data should be a record")
+					logger.Print("DOM event data should be a record")
 					rw.writeStatus(http.StatusBadRequest)
 					return
 				} else {
-					logger.Println("dom event received")
+					logger.Print("dom event received")
 				}
 
 				view.SendDOMEventToForwader(state.Ctx, eventData, time.Now())
@@ -409,7 +409,7 @@ loop:
 			}
 
 			if !stream.ChunkDataType().Equal(state.Ctx, core.BYTESLICE_PATTERN, map[uintptr]uintptr{}, 0) {
-				logger.Println("only byte streams can be streamed for now")
+				logger.Print("only byte streams can be streamed for now")
 				rw.writeStatus(http.StatusNotAcceptable)
 				return
 			}
@@ -417,7 +417,7 @@ loop:
 			state.Ctx.PromoteToLongLived()
 
 			if err := pushByteStream(stream, h); err != nil {
-				logger.Println(err)
+				logger.Print(err)
 				rw.writeStatus(http.StatusInternalServerError) //TODO: cancel context
 				return
 			}
@@ -452,7 +452,7 @@ func getOrCreateView(model *core.Object, args handlingArguments) (view *_dom.Vie
 
 		html, err := fn.Call(state, model, nil, nil)
 		if err != nil {
-			logger.Println("failed to create new view(): ", err.Error())
+			logger.Print("failed to create new view(): ", err.Error())
 			rw.writeStatus(http.StatusInternalServerError)
 		} else {
 			//TODO: check if is error like result
@@ -473,14 +473,14 @@ func getOrCreateView(model *core.Object, args handlingArguments) (view *_dom.Vie
 	})
 
 	if found && sessionView.ModelIs(state.Ctx, model) {
-		logger.Println("view found in session for", req.Path)
+		logger.Print("view found in session for", req.Path)
 		view = sessionView
 		viewOk = true
 		return
 	}
 
 	if set {
-		logger.Println("new view created for", req.Path)
+		logger.Print("new view created for", req.Path)
 		view = sessionView
 		viewOk = true
 		return

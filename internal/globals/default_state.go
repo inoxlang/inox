@@ -2,7 +2,6 @@ package internal
 
 import (
 	"io"
-	"log"
 	"os"
 	"time"
 
@@ -24,6 +23,7 @@ import (
 	_strmanip "github.com/inoxlang/inox/internal/globals/strmanip"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/rs/zerolog"
 )
 
 const (
@@ -85,8 +85,9 @@ func init() {
 	registerHelp()
 
 	_shell.SetNewDefaultGlobalState(func(ctx *core.Context, envPattern *core.ObjectPattern, out io.Writer) *core.GlobalState {
-		return utils.Must(NewDefaultGlobalState(ctx, out, DefaultGlobalStateConfig{
+		return utils.Must(NewDefaultGlobalState(ctx, DefaultGlobalStateConfig{
 			EnvPattern: envPattern,
+			Out:        out,
 		}))
 	})
 }
@@ -94,11 +95,17 @@ func init() {
 type DefaultGlobalStateConfig struct {
 	EnvPattern          *core.ObjectPattern
 	AllowMissingEnvVars bool
+	Out                 io.Writer
+	LogOut              io.Writer
 }
 
 // NewDefaultGlobalState creates a new GlobalState with the default globals.
-func NewDefaultGlobalState(ctx *core.Context, out io.Writer, config DefaultGlobalStateConfig) (*core.GlobalState, error) {
-	logger := log.New(out, log.Default().Prefix(), log.Default().Flags())
+func NewDefaultGlobalState(ctx *core.Context, config DefaultGlobalStateConfig) (*core.GlobalState, error) {
+	logOut := config.LogOut
+	if logOut == nil {
+		logOut = config.Out
+	}
+	logger := zerolog.New(logOut)
 
 	envNamespace, err := _env.NewEnvNamespace(ctx, config.EnvPattern, config.AllowMissingEnvVars)
 	if err != nil {
@@ -259,7 +266,7 @@ func NewDefaultGlobalState(ctx *core.Context, out io.Writer, config DefaultGloba
 	}
 
 	state := core.NewGlobalState(ctx, constants)
-	state.Out = out
+	state.Out = config.Out
 	state.Logger = logger
 	state.GetBaseGlobalsForImportedModule = func(ctx *core.Context, manifest *core.Manifest) (core.GlobalVariables, error) {
 		importedModuleGlobals := utils.CopyMap(constants)

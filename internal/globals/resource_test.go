@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"log"
 	"net/http"
 	"os"
 	"testing"
@@ -10,6 +9,7 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	_fs "github.com/inoxlang/inox/internal/globals/fs"
 	_http "github.com/inoxlang/inox/internal/globals/http"
+	"github.com/rs/zerolog"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -27,7 +27,7 @@ func setup(t *testing.T, handler func(ctx *core.Context, rw *_http.HttpResponseW
 
 	state := core.NewGlobalState(ctx)
 	state.Out = os.Stdout
-	state.Logger = log.New(state.Out, "", 0)
+	state.Logger = zerolog.New(state.Out)
 
 	_, err := _http.NewHttpServer(ctx, RESOURCE_TEST_HOST, core.WrapGoFunction(handler))
 

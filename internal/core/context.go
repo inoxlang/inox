@@ -10,6 +10,7 @@ import (
 	"time"
 
 	afs "github.com/inoxlang/inox/internal/afs"
+	"github.com/rs/zerolog"
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
@@ -262,16 +263,8 @@ func (ctx *Context) getClosestStateNoLock() *GlobalState {
 	panic(ErrNoAssociatedState)
 }
 
-func (ctx *Context) Log(args ...any) {
-	ctx.GetClosestState().Logger.Println(args...)
-}
-
-func (ctx *Context) Logf(fmt string, args ...any) {
-	ctx.GetClosestState().Logger.Printf(fmt, args...)
-}
-
-func (ctx *Context) Logger() *log.Logger {
-	return ctx.GetClosestState().Logger
+func (ctx *Context) Logger() *zerolog.Logger {
+	return &ctx.GetClosestState().Logger
 }
 
 func (ctx *Context) SetClosestState(state *GlobalState) {

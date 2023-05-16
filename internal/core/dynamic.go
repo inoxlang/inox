@@ -325,7 +325,7 @@ func NewDynamicCall(ctx *Context, callee Value, args ...Value) *DynamicValue {
 
 				callResult, err := call(ctx)
 				if err != nil {
-					ctx.Log(fmt.Errorf("error during dynamic call: %s", err))
+					ctx.Logger().Print("error during dynamic call: ", err)
 					return
 				}
 				dyn.value = callResult

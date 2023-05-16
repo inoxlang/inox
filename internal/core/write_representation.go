@@ -1601,7 +1601,6 @@ func (entry UDataHiearchyEntry) WriteRepresentation(ctx *Context, w io.Writer, e
 
 			err := child.WriteRepresentation(ctx, w, nil, config)
 			if err != nil {
-				ctx.Logf("%#v has no repr", child)
 				return err
 			}
 		}

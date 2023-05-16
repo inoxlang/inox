@@ -9,6 +9,7 @@ import (
 
 	"github.com/aohorodnyk/mimeheader"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/rs/zerolog"
 )
 
 var (
@@ -32,14 +33,18 @@ type HttpResponseWriter struct {
 
 	status   int //do not use, call Status() to get the status
 	finished bool
+	logger   zerolog.Logger
 }
 
-func NewResponseWriter(req *HttpRequest, rw http.ResponseWriter) *HttpResponseWriter {
+func NewResponseWriter(req *HttpRequest, rw http.ResponseWriter, serverLogger zerolog.Logger) *HttpResponseWriter {
+	requestLogger := serverLogger.With().Str("requestId", req.ULIDString).Logger()
+
 	return &HttpResponseWriter{
 		acceptHeader: req.ParsedAcceptHeader,
 		rw:           rw,
 		request:      req,
 		status:       -1,
+		logger:       requestLogger,
 	}
 }
 
@@ -298,7 +303,7 @@ func (rw *HttpResponseWriter) WriteError(ctx *core.Context, err core.Error, code
 	rw.assertStatusNotSet()
 
 	rw.status = int(code)
-	defer ctx.GetClosestState().Logger.Println(err)
+	defer rw.logger.Print(err)
 	http.Error(rw.rw, err.Text(), int(code))
 }
 

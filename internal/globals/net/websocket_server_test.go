@@ -9,6 +9,7 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	_fs "github.com/inoxlang/inox/internal/globals/fs"
 	_http "github.com/inoxlang/inox/internal/globals/http"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,7 +23,7 @@ func createTestWebsocketServer(host core.Host, ctx *Context) (closeChan chan str
 			Filesystem: _fs.GetOsFilesystem(),
 		})
 		serverState := core.NewGlobalState(ctx)
-		serverState.Logger = log.Default()
+		serverState.Logger = zerolog.New(os.Stdout)
 		serverState.Out = os.Stdout
 	}
 
@@ -104,7 +105,7 @@ func TestWebsocketServer(t *testing.T) {
 		})
 
 		serverState := core.NewGlobalState(serverCtx)
-		serverState.Logger = log.Default()
+		serverState.Logger = zerolog.New(os.Stdout)
 		serverState.Out = os.Stdout
 
 		closeChan := createTestWebsocketServer(HOST, serverCtx)

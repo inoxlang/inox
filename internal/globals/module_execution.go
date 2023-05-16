@@ -24,7 +24,8 @@ type ScriptPreparationArgs struct {
 	IgnoreNonCriticalIssues   bool
 	AllowMissingEnvVars       bool
 
-	Out io.Writer
+	Out    io.Writer //defaults to os.Stdout
+	LogOut io.Writer //defaults to Out
 }
 
 // PrepareLocalScript parses & checks a script located in the filesystem and initialize its state.
@@ -81,6 +82,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	}
 
 	var ctxErr error
+
 	ctx, ctxErr = NewDefaultContext(DefaultContextConfig{
 		Permissions:     manifest.RequiredPermissions,
 		Limitations:     manifest.Limitations,
@@ -104,9 +106,11 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		out = os.Stdout
 	}
 
-	globalState, err := NewDefaultGlobalState(ctx, out, DefaultGlobalStateConfig{
+	globalState, err := NewDefaultGlobalState(ctx, DefaultGlobalStateConfig{
 		EnvPattern:          manifest.EnvPattern,
 		AllowMissingEnvVars: args.AllowMissingEnvVars,
+		Out:                 out,
+		LogOut:              args.LogOut,
 	})
 	if err != nil {
 		finalErr = err

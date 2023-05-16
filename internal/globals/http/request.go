@@ -2,7 +2,6 @@ package internal
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"strings"
@@ -13,6 +12,7 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/oklog/ulid/v2"
+	"github.com/rs/zerolog"
 )
 
 var METHODS_WITH_NO_BODY = []string{"GET", "HEAD", "OPTIONS"}
@@ -26,6 +26,7 @@ type HttpRequest struct {
 
 	isClientSide bool
 	ULID         ulid.ULID
+	ULIDString   string
 
 	//accessible from inox
 	Method             core.Str
@@ -152,7 +153,7 @@ func NewClientSideRequest(r *http.Request) (*HttpRequest, error) {
 	}, nil
 }
 
-func NewServerSideRequest(r *http.Request, logger *log.Logger, server *HttpServer) (*HttpRequest, error) {
+func NewServerSideRequest(r *http.Request, logger zerolog.Logger, server *HttpServer) (*HttpRequest, error) {
 	id := ulid.Make()
 	now := time.Now()
 
@@ -210,7 +211,8 @@ func NewServerSideRequest(r *http.Request, logger *log.Logger, server *HttpServe
 	}
 
 	req := &HttpRequest{
-		ULID: id,
+		ULID:       id,
+		ULIDString: id.String(),
 
 		Method:             core.Str(method),
 		URL:                core.URL(url),
@@ -234,7 +236,7 @@ func NewServerSideRequest(r *http.Request, logger *log.Logger, server *HttpServe
 	if err == nil {
 		req.Session = session
 	} else if err == ErrSessionNotFound {
-		logger.Println("no session id found, create new one")
+		logger.Print("no session id found, create new one")
 		req.Session = addNewSession(server)
 		req.NewSession = true
 	} else {

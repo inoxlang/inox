@@ -3,10 +3,10 @@ package internal
 import (
 	"errors"
 	"io"
-	"log"
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/rs/zerolog"
 )
 
 var (
@@ -26,7 +26,7 @@ type GlobalState struct {
 
 	GetBaseGlobalsForImportedModule func(ctx *Context, manifest *Manifest) (GlobalVariables, error) // ok if nil
 	Out                             io.Writer                                                       //nil by default
-	Logger                          *log.Logger                                                     //nil by default
+	Logger                          zerolog.Logger                                                  //nil by default
 
 	StaticCheckData *StaticCheckData
 	SymbolicData    *SymbolicData

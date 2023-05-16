@@ -2,7 +2,6 @@ package internal
 
 import (
 	"bytes"
-	"log"
 	"net/http"
 	"strconv"
 	"sync"
@@ -10,6 +9,7 @@ import (
 
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/rs/zerolog"
 )
 
 const DEFAULT_EVENT_STREAM_BUFFER_SIZE = 200
@@ -91,7 +91,7 @@ type eventPushConfig struct {
 	stream  *multiSubscriptionSSEStream
 	writer  *HttpResponseWriter
 	request *HttpRequest
-	logger  *log.Logger
+	logger  zerolog.Logger
 }
 
 // PushSubscriptionEvents writes the headers required for event streaming & push events.
@@ -125,6 +125,7 @@ func (s *SseServer) PushSubscriptionEvents(config eventPushConfig) {
 	}
 
 	subscription := stream.addSubscription(config.ctx, lastEventId, config.request.URL)
+	logger := config.logger.With().Str("sseStream", stream.id).Logger()
 
 	w.WriteHeader(http.StatusOK)
 	flusher.Flush()
@@ -135,7 +136,7 @@ func (s *SseServer) PushSubscriptionEvents(config eventPushConfig) {
 		newSubscriptionCount := stream.removeSubscription(subscription)
 
 		if newSubscriptionCount == 0 {
-			config.logger.Println("remove stream")
+			logger.Print("remove stream")
 			s.RemoveStream(stream.id)
 		}
 	}()

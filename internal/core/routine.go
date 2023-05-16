@@ -166,9 +166,7 @@ func SpawnRoutine(args RoutineSpawnArgs) (*Routine, error) {
 			}
 
 			if err != nil {
-				if modState.Logger != nil {
-					modState.Logger.Printf("a routine failed or was cancelled: %s", utils.AddCarriageReturnAfterNewlines(err.Error()))
-				}
+				modState.Logger.Print("a routine failed or was cancelled: " + utils.AddCarriageReturnAfterNewlines(err.Error()))
 				routine.result = Nil
 				routine.err = ValOf(err).(Error)
 				routine.wait_result <- struct{}{}

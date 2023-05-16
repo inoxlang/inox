@@ -5,7 +5,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -15,6 +14,7 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
 	_dom "github.com/inoxlang/inox/internal/globals/dom"
+	"github.com/rs/zerolog"
 
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -51,6 +51,7 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 			state:          ctx.GetClosestState(),
 			defaultCSP:     DEFAULT_CSP,
 			securityEngine: newSecurityEngine(),
+			serverLogger:   *ctx.Logger(),
 		}
 	)
 
@@ -181,7 +182,7 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 		lastHandlerFn = createHandlerFunction(userProvidedHandler, false, _server)
 	} else {
 		//we set a default handler that writes "hello"
-		lastHandlerFn = func(r *HttpRequest, rw *HttpResponseWriter, state *core.GlobalState, logger *log.Logger) {
+		lastHandlerFn = func(r *HttpRequest, rw *HttpResponseWriter, state *core.GlobalState, logger zerolog.Logger) {
 			rw.rw.Write([]byte("hello"))
 		}
 	}
@@ -195,22 +196,22 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 	// create the http.HandlerFunc that will call lastHandlerFn & middlewares
 	topHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		logger := _server.state.Logger
+		serverLogger := _server.serverLogger
 
-		if logger == nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		// if serverLogger == nil {
+		// 	w.WriteHeader(http.StatusInternalServerError)
+		// 	return
+		// }
 
 		//create the Inox values for the request and the response writer
-		req, err := NewServerSideRequest(r, logger, _server)
+		req, err := NewServerSideRequest(r, serverLogger, _server)
 		if err != nil {
-			logger.Println(err)
+			serverLogger.Print(err)
 			w.WriteHeader(http.StatusBadRequest)
 		}
 
-		rw := NewResponseWriter(req, w)
-		logger.Println(utils.AddCarriageReturnAfterNewlines(fmt.Sprintf("%s %s", req.Method, req.Path)))
+		rw := NewResponseWriter(req, w, serverLogger)
+		serverLogger.Print(fmt.Sprintf("%s %s", req.Method, req.Path))
 
 		// rate limiting & more
 
@@ -249,17 +250,17 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 		defer func() {
 			s := fmt.Sprintf("%s %s handled (%dms): %d %s",
 				req.Method, req.Path, time.Since(start).Milliseconds(), rw.Status(), http.StatusText(rw.Status()))
-			logger.Println(utils.AddCarriageReturnAfterNewlines(s))
+			serverLogger.Print(s)
 		}()
 
 		for _, fn := range middlewareFns {
-			fn(req, rw, handlerGlobalState, logger)
+			fn(req, rw, handlerGlobalState, serverLogger)
 			if rw.finished {
 				return
 			}
 		}
 
-		lastHandlerFn(req, rw, handlerGlobalState, logger)
+		lastHandlerFn(req, rw, handlerGlobalState, serverLogger)
 	})
 
 	server, certFile, keyFile, err := makeHttpServer(addr, topHandler, "", "", ctx)
@@ -275,13 +276,11 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 	//listen and serve in a goroutine
 	go func() {
 		logger := _server.state.Logger
-		if logger != nil {
-			logger.Println("serve", addr)
-		}
+		logger.Print("serve", addr)
 
 		err := server.ListenAndServeTLS(certFile, keyFile)
-		if logger != nil && err != nil {
-			logger.Println(err)
+		if err != nil {
+			logger.Print(err)
 		}
 		endChan <- struct{}{}
 	}()
@@ -362,6 +361,7 @@ type HttpServer struct {
 	state          *core.GlobalState
 	defaultCSP     *_dom.ContentSecurityPolicy
 	securityEngine *securityEngine
+	serverLogger   zerolog.Logger
 
 	sseServer *SseServer
 }

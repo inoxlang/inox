@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"os"
 	"path/filepath"
@@ -17,6 +16,7 @@ import (
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/rs/zerolog"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -3201,7 +3201,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 
 				state := NewGlobalState(NewDefaultTestContext(), globals)
-				state.Logger = log.Default()
+				state.Logger = zerolog.New(state.Out)
 				state.Out = os.Stdout
 
 				res, err := Eval(testCase.input, state, false)
@@ -3850,7 +3850,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return routine.wait_result!()
 			`
 			state := NewGlobalState(NewDefaultTestContext())
-			state.Logger = log.Default()
+			state.Logger = zerolog.New(state.Out)
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, Int(1), res)
@@ -4078,7 +4078,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					time.Sleep(time.Millisecond)
 				}),
 			})
-			state.Logger = log.Default()
+			state.Logger = zerolog.New(state.Out)
 			state.Out = os.Stdout
 
 			res, err := Eval(code, state, false)
@@ -4113,7 +4113,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					time.Sleep(time.Millisecond)
 				}),
 			})
-			state.Logger = log.Default()
+			state.Logger = zerolog.New(state.Out)
 			state.Out = os.Stdout
 
 			timedOut := atomic.Bool{}
@@ -4443,7 +4443,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				"RoutineGroup": WrapGoFunction(NewRoutineGroup),
 			})
 			state.Out = os.Stdout
-			state.Logger = log.Default()
+			state.Logger = zerolog.New(state.Out)
 
 			res, err := Eval(code, state, true)
 			if !assert.NoError(t, err) {
@@ -4478,7 +4478,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			})
 
 			state.Out = os.Stdout
-			state.Logger = log.Default()
+			state.Logger = zerolog.New(state.Out)
 
 			res, err := Eval(code, state, true)
 			if !assert.NoError(t, err) {
@@ -5108,7 +5108,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			state := NewGlobalState(NewDefaultTestContext())
 			state.Out = os.Stdout
-			state.Logger = log.Default()
+			state.Logger = zerolog.New(state.Out)
 			res, err := Eval(code, state, false)
 
 			e := errors.Unwrap(err)

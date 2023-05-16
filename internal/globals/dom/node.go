@@ -647,6 +647,8 @@ func (n *Node) SendDOMEventToForwader(ctx *core.Context, forwarderId uint64, eve
 		return
 	}
 
+	logger := ctx.Logger()
+
 	if n.forwarderId == forwarderId {
 		// forward event to model
 		eventType, ok := eventData.Prop(ctx, "type").(core.Str)
@@ -654,11 +656,10 @@ func (n *Node) SendDOMEventToForwader(ctx *core.Context, forwarderId uint64, eve
 			if utils.SliceContains(n.forwardedEvents, string(eventType)) {
 				receiver, ok := n.model.(core.MessageReceiver)
 				if ok {
-					logger := ctx.Logger()
-					logger.Println("forward", eventType, "dom event to model")
+					logger.Print("forward", eventType, "dom event to model")
 					err := receiver.ReceiveMessage(ctx, core.NewMessage(core.NewEvent(eventData, core.Date(t)), nil))
 					if err != nil {
-						logger.Println(err)
+						logger.Print(err)
 					}
 				}
 			} else if utils.SliceContains(n.listenedEvents, string(eventType)) {

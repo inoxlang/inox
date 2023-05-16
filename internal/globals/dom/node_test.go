@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"log"
 	"os"
 	"testing"
 	"time"
@@ -9,6 +8,7 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	_html "github.com/inoxlang/inox/internal/globals/html"
 	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/rs/zerolog"
 
 	"github.com/inoxlang/inox/internal/utils"
 
@@ -366,7 +366,7 @@ func TestSendDOMEventToForwader(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{})
 		state := core.NewGlobalState(ctx)
 		state.Out = os.Stdout
-		state.Logger = log.Default()
+		state.Logger = zerolog.New(os.Stdout)
 
 		model := core.NewObjectFromMap(core.ValMap{"name": core.Str("Foo")}, ctx)
 
