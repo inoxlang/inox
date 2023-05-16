@@ -121,9 +121,10 @@ func sprintPrompt(state *core.TreeWalkState, config REPLConfiguration) (prompt s
 
 			v, err := core.TreeWalkEval(p.Node, state)
 			if err != nil {
-				fmt.Println(err)
+				s = fmt.Sprint(err)
+			} else {
+				s = fmt.Sprintf("%v", v)
 			}
-			s = fmt.Sprintf("%v", v)
 		default:
 		}
 

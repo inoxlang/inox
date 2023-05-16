@@ -163,7 +163,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		shellFlags := flag.NewFlagSet("shell", flag.ExitOnError)
 		startupScriptPath, err := config.GetStartupScriptPath()
 		if err != nil {
-			fmt.Println(err)
+			fmt.Fprintln(errW, err)
 			return
 		}
 
@@ -172,7 +172,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 
 		err = shellFlags.Parse(mainSubCommandArgs)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Fprintln(errW, err)
 			return
 		}
 
@@ -197,7 +197,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		evalFlags := flag.NewFlagSet("eval", flag.ExitOnError)
 		startupScriptPath, err := config.GetStartupScriptPath()
 		if err != nil {
-			fmt.Println(err)
+			fmt.Fprintln(errW, err)
 			return
 		}
 
@@ -207,7 +207,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 
 		err = evalFlags.Parse(mainSubCommandArgs)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Fprintln(errW, err)
 			return
 		}
 
