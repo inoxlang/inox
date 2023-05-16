@@ -43,7 +43,7 @@ func If[T any](cond bool, a, b T) T {
 }
 
 func Ret[V any](v V) func() V {
-	return func() V{
+	return func() V {
 		return v
 	}
 }

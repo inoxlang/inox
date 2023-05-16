@@ -10,6 +10,12 @@ import (
 )
 
 const (
+	//socket
+	SOCKET_WINDOW              = 10 * time.Second
+	SOCKET_MAX_READ_REQ_COUNT  = 10
+	SOCKET_MAX_WRITE_REQ_COUNT = 2
+
+	//ip level
 	SHARED_READ_BUST_WINDOW      = 10 * time.Second
 	SHARED_READ_BURST_WINDOW_REQ = 60
 
@@ -55,7 +61,6 @@ func (engine *securityEngine) rateLimitRequest(req *HttpRequest, rw *HttpRespons
 }
 
 func (engine *securityEngine) getSocketMitigationData(req *HttpRequest) (*rateLimitingSlidingWindow, slidingWindowRequestInfo) {
-
 	slidingWindowReqInfo := slidingWindowRequestInfo{
 		ulid:              req.ULID,
 		ulidString:        req.ULIDString,
@@ -69,27 +74,30 @@ func (engine *securityEngine) getSocketMitigationData(req *HttpRequest) (*rateLi
 	var maxReqCount int
 
 	if slidingWindowReqInfo.IsMutation() {
-		maxReqCount = 2
+		maxReqCount = SOCKET_MAX_WRITE_REQ_COUNT
 		slidingWindowMap = engine.mutationSlidingWindows
 	} else {
 		slidingWindowMap = engine.readSlidingWindows
-		maxReqCount = 10
+		maxReqCount = SOCKET_MAX_READ_REQ_COUNT
 	}
 
 	ipLevelMigitigationData := engine.getIpLevelMitigationData(req)
 
 	slidingWindow, present := slidingWindowMap.Get(req.RemoteAddrAndPort)
 	if !present {
+		engine.debugLogger.Log().Str("newSlidingWindowFor", string(req.RemoteAddrAndPort)).Send()
 		slidingWindow = newRateLimitingSlidingWindow(rateLimitingWindowParameters{
-			duration:     10 * time.Second,
+			duration:     SOCKET_WINDOW,
 			requestCount: maxReqCount,
 		})
 		if slidingWindowReqInfo.IsMutation() {
-			slidingWindow.burstWindow = ipLevelMigitigationData.sharedWriteBurstWindow
+			slidingWindow.ipLevelWindow = ipLevelMigitigationData.sharedWriteBurstWindow
 		} else {
-			slidingWindow.burstWindow = ipLevelMigitigationData.sharedReadBurstWindow
+			slidingWindow.ipLevelWindow = ipLevelMigitigationData.sharedReadBurstWindow
 		}
 		slidingWindowMap.Set(req.RemoteAddrAndPort, slidingWindow)
+	} else {
+		engine.debugLogger.Log().Str("foundSlidingWindowFor", string(req.RemoteAddrAndPort)).Send()
 	}
 
 	return slidingWindow, slidingWindowReqInfo

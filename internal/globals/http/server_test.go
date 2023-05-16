@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -34,9 +35,12 @@ const (
 
 var (
 	anyErr = errors.New("any")
+
+	port = atomic.Int32{}
 )
 
 func TestHttpServer(t *testing.T) {
+	port.Store(8080)
 
 	createHandlers := func(t *testing.T, code string) (*core.InoxFunction, *core.InoxFunction, *core.Module) {
 		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
@@ -155,48 +159,48 @@ func TestHttpServer(t *testing.T) {
 
 		testCases := map[string]serverTestCase{
 			"string": {
-				`return Mapping {
+				input: `return Mapping {
 					%/... => "hello"
 				}
 				`,
-				[]requestTestInfo{
+				requests: []requestTestInfo{
 					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
 				},
 			},
 			"string: */* is accepted": {
-				`return Mapping {
+				input: `return Mapping {
 					%/... => "hello"
 				}
 				`,
-				[]requestTestInfo{
+				requests: []requestTestInfo{
 					{acceptedContentType: core.ANY_CTYPE, result: `hello`},
 				},
 			},
 			"bytes": {
-				`return Mapping {
+				input: `return Mapping {
 					%/... => 0d[65] # 'A'
 				}
 				`,
-				[]requestTestInfo{{acceptedContentType: core.APP_OCTET_STREAM_CTYPE, result: `A`}},
+				requests: []requestTestInfo{{acceptedContentType: core.APP_OCTET_STREAM_CTYPE, result: `A`}},
 			},
 			"html node": {
-				`return Mapping {
+				input: `return Mapping {
 					%/... => html.div{}
 				}`,
-				[]requestTestInfo{
+				requests: []requestTestInfo{
 					{acceptedContentType: core.HTML_CTYPE, result: `<div></div>`},
 				},
 			},
 			"html node: */* is accepted": {
-				`return Mapping {
+				input: `return Mapping {
 					%/... => html.div{}
 				}`,
-				[]requestTestInfo{
+				requests: []requestTestInfo{
 					{acceptedContentType: core.ANY_CTYPE, result: `<div></div>`},
 				},
 			},
 			"handler": {
-				`
+				input: `
 					fn handle(rw %http.resp_writer, r %http.req){
 						rw.write_json({ a: 1 })
 					}
@@ -204,10 +208,10 @@ func TestHttpServer(t *testing.T) {
 						%/... => handle
 					}
 				`,
-				[]requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":"1"}`}},
+				requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":"1"}`}},
 			},
 			"handler accessing a global function": {
-				`
+				input: `
 					fn helper(rw %http.resp_writer, r %http.req){
 						rw.write_json({ a: 1 })
 					}
@@ -218,17 +222,18 @@ func TestHttpServer(t *testing.T) {
 						%/... => handle
 					}
 				`,
-				[]requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":"1"}`}},
+				requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":"1"}`}},
 			},
-			"JSON for model": {`
-				$$model = {a: 1}
+			"JSON for model": {
+				input: `$$model = {a: 1}
 
 				return Mapping {
 					%/... => model
 				}`,
-				[]requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":"1"}`}},
+				requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":"1"}`}},
 			},
-			"JSON for model with sensitive data, no defined visibility": {`
+			"JSON for model with sensitive data, no defined visibility": {
+				input: `
 				$$model = {
 					a: 1
 					password: "mypassword"
@@ -238,10 +243,10 @@ func TestHttpServer(t *testing.T) {
 				return Mapping {
 					%/... => model
 				}`,
-				[]requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":"1"}`}},
+				requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":"1"}`}},
 			},
-			"JSON for model with all fields set as public": {`
-				$$model = {
+			"JSON for model with all fields set as public": {
+				input: `$$model = {
 					a: 1
 					password: "mypassword"
 					e: a@mail.com
@@ -256,10 +261,10 @@ func TestHttpServer(t *testing.T) {
 				return Mapping {
 					%/... => model
 				}`,
-				[]requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":"1","e":"a@mail.com","password":"mypassword"}`}},
+				requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":"1","e":"a@mail.com","password":"mypassword"}`}},
 			},
-			"IXON for model with no defined visibility": {`
-				$$model = {
+			"IXON for model with no defined visibility": {
+				input: ` $$model = {
 					a: 1
 					password: "mypassword"
 					e: foo@mail.com
@@ -268,10 +273,10 @@ func TestHttpServer(t *testing.T) {
 				return Mapping {
 					%/... => model
 				}`,
-				[]requestTestInfo{{acceptedContentType: core.IXON_CTYPE, result: `{"a":1}`}},
+				requests: []requestTestInfo{{acceptedContentType: core.IXON_CTYPE, result: `{"a":1}`}},
 			},
-			"IXON for model with all fields set as public": {`
-				$$model = {
+			"IXON for model with all fields set as public": {
+				input: `$$model = {
 					a: 1
 					password: "mypassword"
 					e: a@mail.com
@@ -286,14 +291,15 @@ func TestHttpServer(t *testing.T) {
 				return Mapping {
 					%/... => model
 				}`,
-				[]requestTestInfo{{acceptedContentType: core.IXON_CTYPE, result: `{"a":1,"e":a@mail.com,"password":"mypassword"}`}},
+				requests: []requestTestInfo{{acceptedContentType: core.IXON_CTYPE, result: `{"a":1,"e":a@mail.com,"password":"mypassword"}`}},
 			},
 
-			"large binary stream: event stream request": {strings.Replace(`
-				return Mapping {
-					%/... => torstream(mkbytes(<size>))
-				}`, "<size>", strconv.Itoa(int(10*DEFAULT_PUSHED_BYTESTREAM_CHUNK_SIZE_RANGE.InclusiveEnd())), 1),
-				[]requestTestInfo{
+			"large binary stream: event stream request": {
+				input: strings.Replace(`
+					return Mapping {
+						%/... => torstream(mkbytes(<size>))
+					}`, "<size>", strconv.Itoa(int(10*DEFAULT_PUSHED_BYTESTREAM_CHUNK_SIZE_RANGE.InclusiveEnd())), 1),
+				requests: []requestTestInfo{
 					{
 						acceptedContentType: core.EVENT_STREAM_CTYPE,
 						events: func() []*core.Event {
@@ -330,15 +336,15 @@ func TestHttpServer(t *testing.T) {
 			t.Skip()
 
 			testCases := map[string]serverTestCase{
-				"HTML for model": {`
-					$$model = {
+				"HTML for model": {
+					input: `$$model = {
 						render: fn() => dom.div{class:"a"}
 					}
 					return Mapping {
 						/ => "hello"
 						%/... => model
 					}`,
-					[]requestTestInfo{
+					requests: []requestTestInfo{
 						{acceptedContentType: core.PLAIN_TEXT_CTYPE, path: "/"}, // get session
 						{
 							pause:                         10 * time.Millisecond,
@@ -348,7 +354,8 @@ func TestHttpServer(t *testing.T) {
 						},
 					},
 				},
-				"HTML for self updating model: 2 requests": {`
+				"HTML for self updating model: 2 requests": {
+					input: `
 					$$model = {
 						count: 1
 						sleep: sleep
@@ -363,31 +370,31 @@ func TestHttpServer(t *testing.T) {
 					return Mapping {
 						%/... => model
 					}`,
-					[]requestTestInfo{
+					requests: []requestTestInfo{
 						{acceptedContentType: core.HTML_CTYPE, resultRegex: `<div class="a".*?>1</div>`},
 						{acceptedContentType: core.HTML_CTYPE, resultRegex: `<div class="a".*?>2</div>`, preDelay: time.Second / 2},
 					},
 				},
 				"event stream request for a model with an invalid view": {
-					`
-			$$model = {
-				count: 1
-				sleep: sleep
-				render: fn() => 1
-			}
+					input: `
+						$$model = {
+							count: 1
+							sleep: sleep
+							render: fn() => 1
+						}
 
-			return Mapping {
-				%/... => model
-			}`,
-					[]requestTestInfo{
+						return Mapping {
+							%/... => model
+						}`,
+					requests: []requestTestInfo{
 						{
 							acceptedContentType: core.EVENT_STREAM_CTYPE,
 							// no events because fail
 						},
 					},
 				},
-				"self updating model: event stream request": {`
-					$$model = {
+				"self updating model: event stream request": {
+					input: ` $$model = {
 						count: 1
 						sleep: sleep
 						render: fn() => dom.div{class:"a", self.<count}
@@ -401,7 +408,7 @@ func TestHttpServer(t *testing.T) {
 					return Mapping {
 						%/... => model
 					}`,
-					[]requestTestInfo{
+					requests: []requestTestInfo{
 						{acceptedContentType: core.HTML_CTYPE, resultRegex: `<div class="a".*?>1</div>`},
 						{
 							acceptedContentType: core.EVENT_STREAM_CTYPE,
@@ -425,29 +432,29 @@ func TestHttpServer(t *testing.T) {
 	t.Run("handling description", func(t *testing.T) {
 
 		testCases := map[string]serverTestCase{
-			"routing only": {`
-				return {
+			"routing only": {
+				input: `return {
 					routing: Mapping {
 						%/... => "hello"
 					}
 				}`,
-				[]requestTestInfo{
+				requests: []requestTestInfo{
 					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
 				},
 			},
-			"empty middleware list": {`
-				return {
+			"empty middleware list": {
+				input: `return {
 					middlewares: []
 					routing: Mapping {
 						%/... => "hello"
 					}
 				}`,
-				[]requestTestInfo{
+				requests: []requestTestInfo{
 					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
 				},
 			},
-			"a middleware filtering based on path": {`
-				return {
+			"a middleware filtering based on path": {
+				input: ` return {
 					middlewares: [
 						Mapping {
 							/a => #notfound
@@ -459,7 +466,7 @@ func TestHttpServer(t *testing.T) {
 						/b => "b"
 					}
 				}`,
-				[]requestTestInfo{
+				requests: []requestTestInfo{
 					{acceptedContentType: core.PLAIN_TEXT_CTYPE, path: "/a", status: 404},
 					{acceptedContentType: core.PLAIN_TEXT_CTYPE, path: "/b", result: `b`, status: 200},
 				},
@@ -480,22 +487,63 @@ func TestHttpServer(t *testing.T) {
 				}
 			}`
 
+		const MINI_PAUSE = 10 * time.Millisecond
+
+		//improve + add new tests
+
 		testCases := map[string]serverTestCase{
-			"many requests": {
-				HELLO,
-				[]requestTestInfo{
+			"server should block burst: same client (HTTP2)": {
+				input: HELLO,
+				requests: []requestTestInfo{
 					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, preDelay: time.Millisecond},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, preDelay: time.Millisecond},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, preDelay: time.Millisecond},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, preDelay: time.Millisecond},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, preDelay: time.Millisecond},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, preDelay: time.Millisecond},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, preDelay: time.Millisecond},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, preDelay: time.Millisecond},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, preDelay: time.Millisecond},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, preDelay: time.Millisecond},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, preDelay: time.Millisecond},
+					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
+					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
+					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
+					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
+					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
+					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true},
+					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true},
+					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true},
+					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true},
+				},
+				createClientFn: func() func() *http.Client {
+					client := &http.Client{
+						Transport: &http.Transport{
+							TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
+							ForceAttemptHTTP2: true,
+						},
+						Timeout: REQ_TIMEOUT,
+						Jar:     utils.Must(_cookiejar.New(&_cookiejar.Options{PublicSuffixList: publicsuffix.List})),
+					}
+
+					return utils.Ret(client)
+				},
+			},
+			"server should block burst : same client (HTTP2) + small pause beween requests": {
+				input: HELLO,
+				requests: []requestTestInfo{
+					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
+					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, pause: MINI_PAUSE},
+					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, pause: MINI_PAUSE},
+					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, pause: MINI_PAUSE},
+					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, pause: MINI_PAUSE},
+					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, pause: MINI_PAUSE},
+					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true, pause: MINI_PAUSE},
+					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true, pause: MINI_PAUSE},
+					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true, pause: MINI_PAUSE},
+					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true, pause: MINI_PAUSE},
+				},
+				createClientFn: func() func() *http.Client {
+					client := &http.Client{
+						Transport: &http.Transport{
+							TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
+							ForceAttemptHTTP2: true,
+						},
+						Timeout: REQ_TIMEOUT,
+						Jar:     utils.Must(_cookiejar.New(&_cookiejar.Options{PublicSuffixList: publicsuffix.List})),
+					}
+
+					return utils.Ret(client)
 				},
 			},
 		}
@@ -507,7 +555,7 @@ func TestHttpServer(t *testing.T) {
 }
 
 func setupAdvancedTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *core.Context, *parse.Chunk, core.Host, error) {
-	host := core.Host("https://localhost:8080")
+	host := core.Host("https://localhost:" + strconv.Itoa(int(port.Add(1))))
 
 	// create state & context
 	ctx := core.NewContext(core.ContextConfig{
@@ -542,8 +590,12 @@ func setupAdvancedTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalS
 	})
 
 	// create logger
-	state.Logger = zerolog.New(io.Discard)
-	state.Out = io.Discard
+	out := testCase.outWriter
+	if out == nil {
+		out = io.Discard
+	}
+	state.Logger = zerolog.New(out)
+	state.Out = out
 
 	// create module
 	chunk := parse.MustParseChunk(testCase.input)
@@ -569,7 +621,7 @@ func setupAdvancedTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalS
 	return state, ctx, chunk, host, nil
 }
 
-func runMappingTestCase(t *testing.T, name string, testCase serverTestCase, createClient func() *http.Client) {
+func runMappingTestCase(t *testing.T, name string, testCase serverTestCase, defaultCreateClient func() *http.Client) {
 
 	state, ctx, chunk, host, err := setupAdvancedTestCase(t, testCase)
 	if !assert.NoError(t, err) {
@@ -583,14 +635,14 @@ func runMappingTestCase(t *testing.T, name string, testCase serverTestCase, crea
 		return
 	}
 
-	runAdvancedServerTestCase(t, name, testCase, createClient, func() (*HttpServer, *core.Context, core.Host, error) {
+	runAdvancedServerTestCase(t, name, testCase, defaultCreateClient, func() (*HttpServer, *core.Context, core.Host, error) {
 		server, err := NewHttpServer(ctx, host, mapping)
 
 		return server, ctx, host, err
 	})
 }
 
-func runHandlingDescTestCase(t *testing.T, name string, testCase serverTestCase, createClient func() *http.Client) {
+func runHandlingDescTestCase(t *testing.T, name string, testCase serverTestCase, defaultCreateClientFn func() *http.Client) {
 	state, ctx, chunk, host, err := setupAdvancedTestCase(t, testCase)
 	if !assert.NoError(t, err) {
 		return
@@ -603,7 +655,7 @@ func runHandlingDescTestCase(t *testing.T, name string, testCase serverTestCase,
 		return
 	}
 
-	runAdvancedServerTestCase(t, name, testCase, createClient, func() (*HttpServer, *core.Context, core.Host, error) {
+	runAdvancedServerTestCase(t, name, testCase, defaultCreateClientFn, func() (*HttpServer, *core.Context, core.Host, error) {
 		server, err := NewHttpServer(ctx, host, desc)
 
 		return server, ctx, host, err
@@ -612,7 +664,7 @@ func runHandlingDescTestCase(t *testing.T, name string, testCase serverTestCase,
 
 func runAdvancedServerTestCase(
 	t *testing.T, name string, testCase serverTestCase,
-	createClient func() *http.Client, setup func() (*HttpServer, *core.Context, core.Host, error),
+	defaultCreateClient func() *http.Client, setup func() (*HttpServer, *core.Context, core.Host, error),
 ) {
 
 	t.Run(name, func(t *testing.T) {
@@ -626,6 +678,10 @@ func runAdvancedServerTestCase(
 		time.Sleep(time.Millisecond)
 
 		//send requests
+		createClient := defaultCreateClient
+		if testCase.createClientFn != nil {
+			createClient = testCase.createClientFn()
+		}
 		client := createClient()
 
 		ctx.SetProtocolClientForHost(host, NewHttpClientFromPreExistingClient(client, true))
@@ -698,6 +754,7 @@ func runAdvancedServerTestCase(
 
 		}
 
+		//send requests, add specified delays
 		for i, req := range testCase.requests {
 			if req.pause != 0 {
 				time.Sleep(req.pause)
@@ -732,61 +789,62 @@ func runAdvancedServerTestCase(
 					return
 				}
 
-			} else {
-				if info.err != anyErr {
-					assert.ErrorIs(t, err, info.err)
-				} else {
-					if !assert.Error(t, err) {
-						return
-					}
-				}
+			} else if info.err != anyErr {
+				assert.ErrorIs(t, err, info.err)
+			} else if !assert.Error(t, err) {
+				return
 			}
 
-			if info.acceptedContentType != core.EVENT_STREAM_CTYPE {
-
-				//check response
-				if info.err == nil {
-					if info.status == 0 {
-						if !assert.Equal(t, 200, resp.StatusCode) {
-							return
-						}
-					} else {
-						if !assert.Equal(t, info.status, resp.StatusCode, "request"+strconv.Itoa(i)) {
-							return
-						}
-					}
-
-					body := string(utils.Must(io.ReadAll(resp.Body)))
-
-					switch {
-					case info.result != "":
-						if !assert.Equal(t, info.result, body) {
-							return
-						}
-					case info.resultRegex != "":
-						if !assert.Regexp(t, info.resultRegex, body) {
-							return
-						}
-					default:
-						continue
-					}
-
-					if info.checkIdenticalParallelRequest {
-						for index, secondaryResp := range secondaryRequestResponses[i] {
-							secondaryBody := string(utils.Must(io.ReadAll(secondaryResp.Body)))
-							if !assert.Equal(t, body, secondaryBody, "secondary body should be equal to primary body, secondary request "+strconv.Itoa(index)) {
-								return
-							}
-						}
-					}
-
-				} else {
+			if info.acceptedContentType != core.EVENT_STREAM_CTYPE { //normal request
+				if info.err != nil {
 					if info.checkIdenticalParallelRequest {
 						for _, secondaryErr := range secondaryRequestResponseErrors[i] {
 							assert.ErrorIs(t, secondaryErr, info.err, "(secondary request)")
 						}
 					}
+					continue
 				}
+
+				//check response
+
+				if info.status == 0 {
+					if info.okayIf429 && resp.StatusCode == 429 {
+						goto check_body
+					}
+					if !assert.Equal(t, 200, resp.StatusCode) {
+						return
+					}
+				} else {
+					if !assert.Equal(t, info.status, resp.StatusCode, "request"+strconv.Itoa(i)) {
+						return
+					}
+				}
+			check_body:
+
+				body := string(utils.Must(io.ReadAll(resp.Body)))
+
+				switch {
+				case info.result != "":
+					if !assert.Equal(t, info.result, body) {
+						return
+					}
+				case info.resultRegex != "":
+					if !assert.Regexp(t, info.resultRegex, body) {
+						return
+					}
+				default:
+					continue
+				}
+
+				if info.checkIdenticalParallelRequest {
+					for index, secondaryResp := range secondaryRequestResponses[i] {
+						secondaryBody := string(utils.Must(io.ReadAll(secondaryResp.Body)))
+						if !assert.Equal(t, body, secondaryBody, "secondary body should be equal to primary body, secondary request "+strconv.Itoa(index)) {
+							return
+						}
+					}
+				}
+
 			} else { //check events
 				assert.Len(t, receivedEvents[i], len(info.events))
 			}
@@ -795,7 +853,7 @@ func runAdvancedServerTestCase(
 }
 
 type requestTestInfo struct {
-	pause               time.Duration
+	pause               time.Duration //like predelay but does not send next requests
 	preDelay            time.Duration
 	acceptedContentType core.Mimetype
 	path                string
@@ -805,12 +863,15 @@ type requestTestInfo struct {
 	checkIdenticalParallelRequest bool
 	header                        http.Header
 
-	events []*core.Event
-	err    error
-	status int
+	events    []*core.Event
+	err       error
+	status    int //defaults to 200
+	okayIf429 bool
 }
 
 type serverTestCase struct {
-	input    string
-	requests []requestTestInfo
+	input          string
+	requests       []requestTestInfo
+	outWriter      io.Writer
+	createClientFn func() func() *http.Client
 }
