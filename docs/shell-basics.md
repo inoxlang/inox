@@ -32,6 +32,7 @@ Before starting the shell ``inox`` will execute the startup script `~/.config/in
   - [Delete](#update)
   - [Find](#find)
 - [Shell configuration](#configuration)
+- [History & Completion](#history--completion)
 
 ## Pseudo Commands (quit, clear)
 
@@ -96,7 +97,7 @@ map [{value: "a"}, {value: 1}] .value | filter $ %int
   - `%int` is a pattern matching integers
 
 
-Pipe expressions allows you to store the final result in a variable:
+Pipe expressions allow you to store the final result in a variable:
 ```
 ints = | map [{value: "a"}, {value: 1}] .value | filter $ %int
 ```
@@ -340,3 +341,9 @@ Here is an example of prompt configuration:
 - lazy expressions such as @(whoami()) are evaluated each time the prompt is printed
   - they must be calls
   - only the whoami, hostname & pwd functions are allowed
+
+
+## History & Completion
+
+- Navigate the command **history** using the **Up** & **Down** arrow keys
+- List completions by pressing the **Tab** key twice 
