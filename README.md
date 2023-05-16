@@ -2,7 +2,7 @@
 
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
 
-🛡️ Inox is a [secure](#injection-prevention) programming language that makes [scripts](#declaration-of-cli-parameters--environment-variables) and [concurrent code](#concurrency) easy to write. It features a powerful [shell](./docs/shell-basics.md) with colorization & completions.
+🛡️ Inox is a [secure](#injection-prevention) programming language for Web development and [scripting](#declaration-of-cli-parameters--environment-variables). It features a powerful [shell](./docs/shell-basics.md) with colorization & completions.
 
 🔍 [Main Features](#features)
 
