@@ -3,13 +3,16 @@ package internal
 import (
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/aohorodnyk/mimeheader"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/oklog/ulid/v2"
 )
 
 var METHODS_WITH_NO_BODY = []string{"GET", "HEAD", "OPTIONS"}
@@ -22,6 +25,7 @@ type HttpRequest struct {
 	core.NotClonableMixin
 
 	isClientSide bool
+	ULID         ulid.ULID
 
 	//accessible from inox
 	Method             core.Str
@@ -39,7 +43,25 @@ type HttpRequest struct {
 	headersLock sync.Mutex
 
 	//
-	request *http.Request
+	CreationTime      time.Time
+	HeaderNames       []string
+	UserAgent         string
+	Hostname          string
+	RemoteAddrAndPort RemoteAddrAndPort //empty for client side requests
+	RemoteIpAddr      RemoteIpAddr      //empty for client side requests
+	request           *http.Request
+}
+
+type RemoteAddrAndPort string
+
+func (s RemoteAddrAndPort) String() string {
+	return string(s)
+}
+
+type RemoteIpAddr string
+
+func (s RemoteIpAddr) String() string {
+	return string(s)
 }
 
 func (req *HttpRequest) Request() *http.Request {
@@ -131,6 +153,11 @@ func NewClientSideRequest(r *http.Request) (*HttpRequest, error) {
 }
 
 func NewServerSideRequest(r *http.Request, logger *log.Logger, server *HttpServer) (*HttpRequest, error) {
+	id := ulid.Make()
+	now := time.Now()
+
+	addrAndPort := RemoteAddrAndPort(r.RemoteAddr)
+	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
 
 	// method
 	method := r.Method
@@ -145,6 +172,16 @@ func NewServerSideRequest(r *http.Request, logger *log.Logger, server *HttpServe
 			return nil, fmt.Errorf("cannot resolve URL of request")
 		}
 		url = string(server.host) + url
+	}
+
+	//hostname
+	hostname, _, err := net.SplitHostPort(r.Host)
+	if err != nil {
+		if strings.Contains(err.Error(), "missing port") {
+			hostname = r.Host
+		} else {
+			hostname = "failed-to-split-host-port"
+		}
 	}
 
 	// Content-Type header
@@ -163,16 +200,34 @@ func NewServerSideRequest(r *http.Request, logger *log.Logger, server *HttpServe
 		acceptHeaderValue = DEFAULT_ACCEPT_HEADER
 	}
 
+	//User-Agent header
+	agent := r.Header.Get("User-Agent")
+
+	//Header names
+	headerNames := make([]string, 0, len(r.Header))
+	for name, _ := range r.Header {
+		headerNames = append(headerNames, name)
+	}
+
 	req := &HttpRequest{
+		ULID: id,
+
 		Method:             core.Str(method),
 		URL:                core.URL(url),
 		Path:               core.Path(r.URL.Path),
+		RemoteAddrAndPort:  addrAndPort,
+		RemoteIpAddr:       RemoteIpAddr(ip),
 		Body:               core.WrapReader(r.Body, nil),
 		Cookies:            r.Cookies(),
 		request:            r,
 		ParsedAcceptHeader: mimeheader.ParseAcceptHeader(acceptHeaderValue),
 		AcceptHeader:       acceptHeaderValue,
 		ContentType:        contentType,
+
+		CreationTime: now,
+		Hostname:     hostname,
+		UserAgent:    agent,
+		HeaderNames:  headerNames,
 	}
 
 	session, err := getSession(req.request)

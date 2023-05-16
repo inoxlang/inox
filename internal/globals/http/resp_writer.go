@@ -30,7 +30,7 @@ type HttpResponseWriter struct {
 	acceptHeader mimeheader.AcceptHeader
 	rw           http.ResponseWriter
 
-	status   int
+	status   int //do not use, call Status() to get the status
 	finished bool
 }
 
