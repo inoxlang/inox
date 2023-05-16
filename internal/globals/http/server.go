@@ -14,9 +14,8 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
 	_dom "github.com/inoxlang/inox/internal/globals/dom"
-	"github.com/rs/zerolog"
-
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/rs/zerolog"
 )
 
 const (
@@ -41,139 +40,20 @@ var (
 
 // NewHttpServer returns an HttpServer with unitialized .state & .logger
 func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
-	var (
-		addr                string
-		userProvidedHandler core.Value
-		handlerValProvided  bool
-		middlewares         []core.Value
-
-		_server = &HttpServer{
-			state:          ctx.GetClosestState(),
-			defaultCSP:     DEFAULT_CSP,
-			securityEngine: newSecurityEngine(),
-			serverLogger:   *ctx.Logger(),
-		}
-	)
+	_server := &HttpServer{
+		state:          ctx.GetClosestState(),
+		defaultCSP:     DEFAULT_CSP,
+		securityEngine: newSecurityEngine(),
+		serverLogger:   *ctx.Logger(),
+	}
 
 	if _server.state == nil {
 		return nil, errors.New("cannot create server: context's associated state is nil")
 	}
 
-	const HANDLING_ARG_NAME = "handler/handling"
-
-	for _, arg := range args {
-		switch v := arg.(type) {
-		case core.Host:
-			if addr != "" {
-				return nil, errors.New("address already provided")
-			}
-			parsed, _ := url.Parse(string(v))
-			if v.Scheme() != "https" {
-				return nil, fmt.Errorf("invalid scheme '%s'", v)
-			}
-			_server.host = v
-			addr = parsed.Host
-
-			perm := core.HttpPermission{Kind_: core.ProvidePerm, Entity: v}
-			if err := ctx.CheckHasPermission(perm); err != nil {
-				return nil, err
-			}
-		case *core.InoxFunction:
-			if handlerValProvided {
-				return nil, core.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
-			}
-
-			if ok, expl := v.IsSharable(_server.state); !ok {
-				return nil, fmt.Errorf("%w: %s", ErrHandlerNotSharable, expl)
-			}
-			v.Share(_server.state)
-			userProvidedHandler = v
-			handlerValProvided = true
-		case *core.GoFunction:
-			if handlerValProvided {
-				return nil, core.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
-			}
-			if ok, expl := v.IsSharable(_server.state); !ok {
-				return nil, fmt.Errorf("%w: %s", ErrHandlerNotSharable, expl)
-			}
-			v.Share(_server.state)
-			userProvidedHandler = v
-			handlerValProvided = true
-		case *core.Mapping:
-			if handlerValProvided {
-				return nil, core.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
-			}
-			if ok, expl := v.IsSharable(_server.state); !ok {
-				return nil, fmt.Errorf("%w: %s", ErrHandlerNotSharable, expl)
-			}
-			v.Share(_server.state)
-
-			userProvidedHandler = v
-			handlerValProvided = true
-		case *core.Object:
-			if handlerValProvided {
-				return nil, core.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
-			}
-			handlerValProvided = true
-
-			// extract routing handler, middlewares, ... from description
-			for propKey, propVal := range v.EntryMap() {
-				switch propKey {
-				case HANDLING_DESC_MIDDLEWARES_KEY:
-					iterable, ok := propVal.(core.Iterable)
-					if !ok {
-						return nil, core.FmtPropOfArgXShouldBeOfTypeY(HANDLING_DESC_MIDDLEWARES_KEY, HANDLING_ARG_NAME, "iterable", propVal)
-					}
-
-					it := iterable.Iterator(ctx, core.IteratorConfiguration{})
-					for it.Next(ctx) {
-						e := it.Value(ctx)
-						if !isValidHandlerValue(e) {
-							s := fmt.Sprintf("%s is not a middleware", core.Stringify(e, ctx))
-							return nil, core.FmtUnexpectedElementInPropIterableOfArgX(HANDLING_DESC_MIDDLEWARES_KEY, HANDLING_ARG_NAME, s)
-						}
-
-						if psharable, ok := e.(core.PotentiallySharable); ok && utils.Ret0(psharable.IsSharable(_server.state)) {
-							psharable.Share(_server.state)
-						} else {
-							s := fmt.Sprintf("%s is not sharable", core.Stringify(e, ctx))
-							return nil, core.FmtUnexpectedElementInPropIterableOfArgX(HANDLING_DESC_MIDDLEWARES_KEY, HANDLING_ARG_NAME, s)
-						}
-						middlewares = append(middlewares, e)
-					}
-				case HANDLING_DESC_ROUTING_KEY:
-					if !isValidHandlerValue(propVal) {
-						return nil, core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, HANDLING_DESC_ROUTING_KEY, HANDLING_ARG_NAME)
-					}
-
-					if psharable, ok := propVal.(core.PotentiallySharable); ok && utils.Ret0(psharable.IsSharable(_server.state)) {
-						psharable.Share(_server.state)
-					} else {
-						return nil, core.FmtPropOfArgXShouldBeY(HANDLING_DESC_ROUTING_KEY, HANDLING_ARG_NAME, "sharable")
-					}
-
-					userProvidedHandler = propVal
-				case HANDLING_DESC_DEFAULT_CSP_KEY:
-					csp, ok := propVal.(*_dom.ContentSecurityPolicy)
-					if !ok {
-						return nil, core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, HANDLING_DESC_DEFAULT_CSP_KEY, HANDLING_ARG_NAME)
-					}
-					_server.defaultCSP = csp
-				default:
-					return nil, commonfmt.FmtUnexpectedPropInArgX(propKey, HANDLING_ARG_NAME)
-				}
-			}
-
-			if userProvidedHandler == nil {
-				return nil, core.FmtMissingPropInArgX(HANDLING_DESC_ROUTING_KEY, HANDLING_ARG_NAME)
-			}
-		default:
-			return nil, fmt.Errorf("http.server: invalid argument of type %T", v)
-		}
-	}
-
-	if addr == "" {
-		return nil, errors.New("no address provided")
+	addr, userProvidedHandler, handlerValProvided, middlewares, argErr := readHttpServerArgs(ctx, _server, args...)
+	if argErr != nil {
+		return nil, argErr
 	}
 
 	var lastHandlerFn handlerFn
@@ -263,6 +143,7 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 		lastHandlerFn(req, rw, handlerGlobalState, serverLogger)
 	})
 
+	//create a stdlib http Server
 	server, certFile, keyFile, err := makeHttpServer(addr, topHandler, "", "", ctx)
 	if err != nil {
 		return nil, err
@@ -294,6 +175,149 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 	time.Sleep(HTTP_SERVER_STARTING_WAIT_TIME)
 
 	return _server, nil
+}
+
+func readHttpServerArgs(ctx *core.Context, server *HttpServer, args ...core.Value) (
+	addr string,
+	userProvidedHandler core.Value,
+	handlerValProvided bool,
+	middlewares []core.Value,
+	argErr error,
+) {
+
+	const HANDLING_ARG_NAME = "handler/handling"
+
+	for _, arg := range args {
+		switch v := arg.(type) {
+		case core.Host:
+			if addr != "" {
+				argErr = errors.New("address already provided")
+				return
+			}
+			parsed, _ := url.Parse(string(v))
+			if v.Scheme() != "https" {
+				argErr = fmt.Errorf("invalid scheme '%s'", v)
+				return
+			}
+			server.host = v
+			addr = parsed.Host
+
+			perm := core.HttpPermission{Kind_: core.ProvidePerm, Entity: v}
+			if err := ctx.CheckHasPermission(perm); err != nil {
+				argErr = err
+				return
+			}
+		case *core.InoxFunction:
+			if handlerValProvided {
+				argErr = core.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
+				return
+			}
+
+			if ok, expl := v.IsSharable(server.state); !ok {
+				argErr = fmt.Errorf("%w: %s", ErrHandlerNotSharable, expl)
+				return
+			}
+			v.Share(server.state)
+			userProvidedHandler = v
+			handlerValProvided = true
+		case *core.GoFunction:
+			if handlerValProvided {
+				argErr = core.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
+				return
+			}
+			if ok, expl := v.IsSharable(server.state); !ok {
+				argErr = fmt.Errorf("%w: %s", ErrHandlerNotSharable, expl)
+				return
+			}
+			v.Share(server.state)
+			userProvidedHandler = v
+			handlerValProvided = true
+		case *core.Mapping:
+			if handlerValProvided {
+				argErr = core.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
+				return
+			}
+			if ok, expl := v.IsSharable(server.state); !ok {
+				argErr = fmt.Errorf("%w: %s", ErrHandlerNotSharable, expl)
+			}
+			v.Share(server.state)
+
+			userProvidedHandler = v
+			handlerValProvided = true
+		case *core.Object:
+			if handlerValProvided {
+				argErr = core.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
+				return
+			}
+			handlerValProvided = true
+
+			// extract routing handler, middlewares, ... from description
+			for propKey, propVal := range v.EntryMap() {
+				switch propKey {
+				case HANDLING_DESC_MIDDLEWARES_KEY:
+					iterable, ok := propVal.(core.Iterable)
+					if !ok {
+						argErr = core.FmtPropOfArgXShouldBeOfTypeY(HANDLING_DESC_MIDDLEWARES_KEY, HANDLING_ARG_NAME, "iterable", propVal)
+						return
+					}
+
+					it := iterable.Iterator(ctx, core.IteratorConfiguration{})
+					for it.Next(ctx) {
+						e := it.Value(ctx)
+						if !isValidHandlerValue(e) {
+							s := fmt.Sprintf("%s is not a middleware", core.Stringify(e, ctx))
+							argErr = core.FmtUnexpectedElementInPropIterableOfArgX(HANDLING_DESC_MIDDLEWARES_KEY, HANDLING_ARG_NAME, s)
+							return
+						}
+
+						if psharable, ok := e.(core.PotentiallySharable); ok && utils.Ret0(psharable.IsSharable(server.state)) {
+							psharable.Share(server.state)
+						} else {
+							s := fmt.Sprintf("%s is not sharable", core.Stringify(e, ctx))
+							argErr = core.FmtUnexpectedElementInPropIterableOfArgX(HANDLING_DESC_MIDDLEWARES_KEY, HANDLING_ARG_NAME, s)
+							return
+						}
+						middlewares = append(middlewares, e)
+					}
+				case HANDLING_DESC_ROUTING_KEY:
+					if !isValidHandlerValue(propVal) {
+						argErr = core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, HANDLING_DESC_ROUTING_KEY, HANDLING_ARG_NAME)
+					}
+
+					if psharable, ok := propVal.(core.PotentiallySharable); ok && utils.Ret0(psharable.IsSharable(server.state)) {
+						psharable.Share(server.state)
+					} else {
+						argErr = core.FmtPropOfArgXShouldBeY(HANDLING_DESC_ROUTING_KEY, HANDLING_ARG_NAME, "sharable")
+						return
+					}
+
+					userProvidedHandler = propVal
+				case HANDLING_DESC_DEFAULT_CSP_KEY:
+					csp, ok := propVal.(*_dom.ContentSecurityPolicy)
+					if !ok {
+						argErr = core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, HANDLING_DESC_DEFAULT_CSP_KEY, HANDLING_ARG_NAME)
+						return
+					}
+					server.defaultCSP = csp
+				default:
+					argErr = commonfmt.FmtUnexpectedPropInArgX(propKey, HANDLING_ARG_NAME)
+				}
+			}
+
+			if userProvidedHandler == nil {
+				argErr = core.FmtMissingPropInArgX(HANDLING_DESC_ROUTING_KEY, HANDLING_ARG_NAME)
+			}
+		default:
+			argErr = fmt.Errorf("http.server: invalid argument of type %T", v)
+		}
+	}
+
+	if addr == "" {
+		argErr = errors.New("no address provided")
+		return
+	}
+
+	return
 }
 
 func makeHttpServer(addr string, handler http.Handler, certFilePath string, keyFilePath string, ctx *core.Context) (*http.Server, string, string, error) {
