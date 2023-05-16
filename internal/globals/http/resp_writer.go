@@ -6,10 +6,15 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/aohorodnyk/mimeheader"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/rs/zerolog"
+)
+
+const (
+	REQUEST_ID_LOG_FIELD_NAME = "reqID"
 )
 
 var (
@@ -37,7 +42,18 @@ type HttpResponseWriter struct {
 }
 
 func NewResponseWriter(req *HttpRequest, rw http.ResponseWriter, serverLogger zerolog.Logger) *HttpResponseWriter {
-	requestLogger := serverLogger.With().Str("requestId", req.ULIDString).Logger()
+	requestLogger := serverLogger.With().Str(REQUEST_ID_LOG_FIELD_NAME, req.ULIDString).Logger()
+
+	//log request
+	event := requestLogger.Log().
+		Str("method", string(req.Method)).
+		Str("path", string(req.Path))
+
+	query := req.request.URL.RawQuery
+	if query != "" {
+		event.Str("query", query)
+	}
+	event.Send()
 
 	return &HttpResponseWriter{
 		acceptHeader: req.ParsedAcceptHeader,
@@ -340,4 +356,16 @@ func (rw *HttpResponseWriter) assertIsNotFinished() {
 	if rw.finished {
 		panic(ErrCannotMutateFinishedResponse)
 	}
+}
+
+func (rw *HttpResponseWriter) FinalLog() {
+	req := rw.request
+
+	duration := time.Since(req.CreationTime)
+
+	rw.logger.Debug().
+		Str("path", string(req.Path)).
+		Dur("duration", duration).
+		Int("status", rw.Status()).
+		Send()
 }

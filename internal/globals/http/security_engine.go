@@ -4,7 +4,9 @@ import (
 	"sync"
 	"time"
 
+	core "github.com/inoxlang/inox/internal/core"
 	cmap "github.com/orcaman/concurrent-map/v2"
+	"github.com/rs/zerolog"
 )
 
 const (
@@ -18,6 +20,8 @@ const (
 // the security engine is responsible for IP blacklisting, rate limiting & catpcha verification.
 type securityEngine struct {
 	mutex                  sync.Mutex
+	logger                 zerolog.Logger
+	debugLogger            zerolog.Logger
 	readSlidingWindows     cmap.ConcurrentMap[RemoteAddrAndPort, *rateLimitingSlidingWindow]
 	mutationSlidingWindows cmap.ConcurrentMap[RemoteAddrAndPort, *rateLimitingSlidingWindow]
 
@@ -26,8 +30,13 @@ type securityEngine struct {
 	//captchaValidationClient *http.Client
 }
 
-func newSecurityEngine() *securityEngine {
+func newSecurityEngine(baseLogger zerolog.Logger, serverLogSrc string) *securityEngine {
+	logger := baseLogger.Level(zerolog.NoLevel).With().Str(core.SOURCE_LOG_FIELD_NAME, serverLogSrc+"/sec").Logger()
+	debugLogger := logger.Level(zerolog.DebugLevel)
+
 	return &securityEngine{
+		logger:                 logger,
+		debugLogger:            debugLogger,
 		readSlidingWindows:     cmap.NewStringer[RemoteAddrAndPort, *rateLimitingSlidingWindow](),
 		mutationSlidingWindows: cmap.NewStringer[RemoteAddrAndPort, *rateLimitingSlidingWindow](),
 		ipMitigationData:       cmap.NewStringer[RemoteIpAddr, *remoteIpData](),
@@ -37,13 +46,19 @@ func newSecurityEngine() *securityEngine {
 func (engine *securityEngine) rateLimitRequest(req *HttpRequest, rw *HttpResponseWriter) bool {
 	slidingWindow, windowReqInfo := engine.getSocketMitigationData(req)
 
-	return !slidingWindow.allowRequest(windowReqInfo)
+	if !slidingWindow.allowRequest(windowReqInfo, engine.debugLogger) {
+		engine.logger.Log().Str("rateLimit", req.ULIDString)
+		return true
+	}
+
+	return false
 }
 
 func (engine *securityEngine) getSocketMitigationData(req *HttpRequest) (*rateLimitingSlidingWindow, slidingWindowRequestInfo) {
 
 	slidingWindowReqInfo := slidingWindowRequestInfo{
 		ulid:              req.ULID,
+		ulidString:        req.ULIDString,
 		method:            string(req.Method),
 		creationTime:      req.CreationTime,
 		remoteAddrAndPort: req.RemoteAddrAndPort,

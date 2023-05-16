@@ -32,6 +32,8 @@ const (
 	HANDLING_DESC_MIDDLEWARES_KEY = "middlewares"
 	HANDLING_DESC_ROUTING_KEY     = "routing"
 	HANDLING_DESC_DEFAULT_CSP_KEY = "default-csp"
+
+	HTTP_SERVER_SRC_PATH = "/http/server"
 )
 
 var (
@@ -40,11 +42,10 @@ var (
 
 // NewHttpServer returns an HttpServer with unitialized .state & .logger
 func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
+	ctxLogger := *ctx.Logger()
 	_server := &HttpServer{
-		state:          ctx.GetClosestState(),
-		defaultCSP:     DEFAULT_CSP,
-		securityEngine: newSecurityEngine(),
-		serverLogger:   *ctx.Logger(),
+		state:      ctx.GetClosestState(),
+		defaultCSP: DEFAULT_CSP,
 	}
 
 	if _server.state == nil {
@@ -54,6 +55,12 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 	addr, userProvidedHandler, handlerValProvided, middlewares, argErr := readHttpServerArgs(ctx, _server, args...)
 	if argErr != nil {
 		return nil, argErr
+	}
+
+	{
+		logSrc := HTTP_SERVER_SRC_PATH + "/" + addr
+		_server.serverLogger = ctxLogger.With().Str(core.SOURCE_LOG_FIELD_NAME, logSrc).Logger()
+		_server.securityEngine = newSecurityEngine(ctxLogger, logSrc)
 	}
 
 	var lastHandlerFn handlerFn
@@ -75,13 +82,7 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 
 	// create the http.HandlerFunc that will call lastHandlerFn & middlewares
 	topHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
 		serverLogger := _server.serverLogger
-
-		// if serverLogger == nil {
-		// 	w.WriteHeader(http.StatusInternalServerError)
-		// 	return
-		// }
 
 		//create the Inox values for the request and the response writer
 		req, err := NewServerSideRequest(r, serverLogger, _server)
@@ -91,7 +92,6 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 		}
 
 		rw := NewResponseWriter(req, w, serverLogger)
-		serverLogger.Print(fmt.Sprintf("%s %s", req.Method, req.Path))
 
 		// rate limiting & more
 
@@ -125,13 +125,9 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 			addSessionIdCookie(rw, req.Session.Id)
 		}
 
-		//call handler
+		defer rw.FinalLog()
 
-		defer func() {
-			s := fmt.Sprintf("%s %s handled (%dms): %d %s",
-				req.Method, req.Path, time.Since(start).Milliseconds(), rw.Status(), http.StatusText(rw.Status()))
-			serverLogger.Print(s)
-		}()
+		//call middlewares & handler
 
 		for _, fn := range middlewareFns {
 			fn(req, rw, handlerGlobalState, serverLogger)
@@ -156,12 +152,11 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 
 	//listen and serve in a goroutine
 	go func() {
-		logger := _server.state.Logger
-		logger.Print("serve", addr)
+		_server.serverLogger.WithLevel(zerolog.NoLevel).Msg("serve " + addr)
 
 		err := server.ListenAndServeTLS(certFile, keyFile)
 		if err != nil {
-			logger.Print(err)
+			_server.serverLogger.Print(err)
 		}
 		endChan <- struct{}{}
 	}()

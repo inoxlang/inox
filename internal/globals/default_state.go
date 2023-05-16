@@ -105,7 +105,7 @@ func NewDefaultGlobalState(ctx *core.Context, config DefaultGlobalStateConfig) (
 	if logOut == nil {
 		logOut = config.Out
 	}
-	logger := zerolog.New(logOut)
+	logger := zerolog.New(logOut).With().Timestamp().Logger()
 
 	envNamespace, err := _env.NewEnvNamespace(ctx, config.EnvPattern, config.AllowMissingEnvVars)
 	if err != nil {

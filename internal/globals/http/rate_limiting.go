@@ -6,10 +6,11 @@ import (
 
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/oklog/ulid/v2"
+	"github.com/rs/zerolog"
 )
 
 type irateLimitingWindow interface {
-	allowRequest(rInfo slidingWindowRequestInfo) (ok bool)
+	allowRequest(rInfo slidingWindowRequestInfo, logger zerolog.Logger) (ok bool)
 	//enrichRequestAfterHandling(reqInfo *IncomingRequestInfo)
 }
 
@@ -35,7 +36,7 @@ func newSharedRateLimitingWindow(params rateLimitingWindowParameters) *sharedRat
 	return window
 }
 
-func (window *sharedRateLimitingWindow) allowRequest(req slidingWindowRequestInfo) (ok bool) {
+func (window *sharedRateLimitingWindow) allowRequest(req slidingWindowRequestInfo, logger zerolog.Logger) (ok bool) {
 	prevReqCount := 0
 	sockets := make([]RemoteAddrAndPort, 0)
 
@@ -62,7 +63,7 @@ func (window *sharedRateLimitingWindow) allowRequest(req slidingWindowRequestInf
 	//socket has exceeded its share
 	ok = (len(sockets) == 1 && reqCountF < totalReqCountF/2) || (len(sockets) != 1 && reqCountF <= maxSocketReqCount)
 
-	if !window.rateLimitingSlidingWindow.allowRequest(req) {
+	if !window.rateLimitingSlidingWindow.allowRequest(req, logger) {
 		ok = false
 	}
 
@@ -77,6 +78,7 @@ type rateLimitingSlidingWindow struct {
 
 type slidingWindowRequestInfo struct {
 	ulid              ulid.ULID //should not be used to retrieve time of request
+	ulidString        string
 	method            string
 	creationTime      time.Time
 	remoteAddrAndPort RemoteAddrAndPort
@@ -107,7 +109,7 @@ func newRateLimitingSlidingWindow(params rateLimitingWindowParameters) *rateLimi
 	return window
 }
 
-func (window *rateLimitingSlidingWindow) allowRequest(rInfo slidingWindowRequestInfo) (ok bool) {
+func (window *rateLimitingSlidingWindow) allowRequest(rInfo slidingWindowRequestInfo, logger zerolog.Logger) (ok bool) {
 	candidateSlotIndexes := make([]int, 0)
 
 	//if we find an empty slot for the request we accept it immediately
@@ -116,6 +118,7 @@ func (window *rateLimitingSlidingWindow) allowRequest(rInfo slidingWindowRequest
 
 		if req.ulid == (ulid.ULID{}) { //empty slot
 			window.requests[i] = rInfo
+			logger.Log().Msg("found empty slot for request" + req.ulidString)
 			return true
 		}
 
@@ -123,6 +126,8 @@ func (window *rateLimitingSlidingWindow) allowRequest(rInfo slidingWindowRequest
 			candidateSlotIndexes = append(candidateSlotIndexes, i)
 		}
 	}
+
+	logger.Log().Str(REQUEST_ID_LOG_FIELD_NAME, rInfo.ulidString).Int("candidateSlots", len(candidateSlotIndexes))
 
 	switch len(candidateSlotIndexes) {
 	case 0:
@@ -136,7 +141,7 @@ func (window *rateLimitingSlidingWindow) allowRequest(rInfo slidingWindowRequest
 		}
 
 		window.requests[oldestRequestSlotIndex] = rInfo
-		return window.burstWindow != nil && window.burstWindow.allowRequest(rInfo)
+		return window.burstWindow != nil && window.burstWindow.allowRequest(rInfo, logger)
 	case 1:
 		window.requests[candidateSlotIndexes[0]] = rInfo
 		return true
