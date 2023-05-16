@@ -3,6 +3,7 @@ package internal
 import (
 	"log"
 	"os"
+	"runtime/debug"
 	"testing"
 	"time"
 
@@ -29,6 +30,8 @@ func createTestWebsocketServer(host core.Host, ctx *Context) (closeChan chan str
 
 	closeChan = make(chan struct{})
 
+	log.Println(ctx.GetFileSystem(), string(debug.Stack()))
+
 	go func() {
 		wsServer, _ := NewWebsocketServer(ctx)
 		handler := core.WrapGoFunction(func(ctx *Context, rw *_http.HttpResponseWriter, req *_http.HttpRequest) {
@@ -46,6 +49,8 @@ func createTestWebsocketServer(host core.Host, ctx *Context) (closeChan chan str
 				}
 			}()
 		})
+
+		log.Println(ctx.GetFileSystem(), string(debug.Stack()))
 
 		server, err := _http.NewHttpServer(ctx, host, handler)
 		if err != nil {
@@ -71,6 +76,7 @@ func TestWebsocketServer(t *testing.T) {
 			Permissions: []core.Permission{
 				core.WebsocketPermission{Kind_: core.ProvidePerm},
 			},
+			Filesystem: _fs.GetOsFilesystem(),
 		})
 		server, err := NewWebsocketServer(ctx)
 		assert.NoError(t, err)
@@ -92,6 +98,7 @@ func TestWebsocketServer(t *testing.T) {
 			Permissions: []core.Permission{
 				core.WebsocketPermission{Kind_: core.ReadPerm, Endpoint: ENDPOINT},
 			},
+			Filesystem: _fs.GetOsFilesystem(),
 		})
 
 		serverCtx := core.NewContext(core.ContextConfig{
@@ -102,6 +109,7 @@ func TestWebsocketServer(t *testing.T) {
 					Entity: HOST,
 				},
 			},
+			Filesystem: _fs.GetOsFilesystem(),
 		})
 
 		serverState := core.NewGlobalState(serverCtx)

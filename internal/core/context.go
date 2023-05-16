@@ -451,6 +451,7 @@ func (ctx *Context) BoundChild() *Context {
 	child.hostProtocolClients = ctx.hostProtocolClients
 	child.urlProtocolClients = ctx.urlProtocolClients
 	child.userData = ctx.userData
+	child.fs = ctx.fs
 
 	return child
 }
