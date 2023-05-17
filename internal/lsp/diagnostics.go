@@ -17,7 +17,7 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, com
 	fpath := getFilePath(docURI)
 
 	errSeverity := defines.DiagnosticSeverityError
-	state, mod, err := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
+	state, mod, _, err := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
 		Fpath:                     fpath,
 		ParsingCompilationContext: compilationCtx,
 		ParentContext:             nil,

@@ -39,7 +39,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(ctx)
 
-		res, mod, err := PrepareLocalScript(ScriptPreparationArgs{
+		res, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -93,7 +93,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(ctx)
 
-		res, mod, err := PrepareLocalScript(ScriptPreparationArgs{
+		res, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
 			Fpath:                     file,
 			CliArgs:                   []string{}, //missing file argument
 			ParsingCompilationContext: compilationCtx,
@@ -137,7 +137,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(ctx)
 
-		res, mod, err := PrepareLocalScript(ScriptPreparationArgs{
+		res, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
 			Fpath:                     file,
 			Args:                      core.NewObjectFromMap(core.ValMap{}, ctx),
 			ParsingCompilationContext: compilationCtx,
@@ -182,7 +182,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(ctx)
 
-		res, mod, err := PrepareLocalScript(ScriptPreparationArgs{
+		res, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
 			Fpath: file,
 			Args: core.NewObjectFromMap(core.ValMap{
 				"0": core.Path("./a.txt"),
@@ -228,7 +228,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(ctx)
 
-		res, mod, err := PrepareLocalScript(ScriptPreparationArgs{
+		res, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
 			Fpath: file,
 			Args: core.NewObjectFromMap(core.ValMap{
 				"0": core.True,
@@ -275,7 +275,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(ctx)
 
-		res, mod, err := PrepareLocalScript(ScriptPreparationArgs{
+		res, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
 			Fpath: file,
 			Args: core.NewObjectFromMap(core.ValMap{
 				"0":      core.Path("./a.txt"),

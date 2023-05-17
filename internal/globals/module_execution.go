@@ -1,15 +1,22 @@
 package internal
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 
+	"github.com/inoxlang/inox/internal/config"
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
+)
+
+var (
+	ErrUserRefusedExecution = errors.New("user refused execution")
 )
 
 type ScriptPreparationArgs struct {
@@ -29,12 +36,13 @@ type ScriptPreparationArgs struct {
 }
 
 // PrepareLocalScript parses & checks a script located in the filesystem and initialize its state.
-func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mod *core.Module, finalErr error) {
+func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mod *core.Module, manif *core.Manifest, finalErr error) {
 	// parse module
 
 	absPath, pathErr := filepath.Abs(args.Fpath)
 	if pathErr != nil {
-		return nil, nil, pathErr
+		finalErr = pathErr
+		return
 	}
 
 	args.Fpath = absPath
@@ -113,8 +121,8 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		LogOut:              args.LogOut,
 	})
 	if err != nil {
-		finalErr = err
-		return nil, nil, fmt.Errorf("failed to create global state: %w", err)
+		finalErr = fmt.Errorf("failed to create global state: %w", err)
+		return
 	}
 	state = globalState
 	state.Module = mod
@@ -186,7 +194,8 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 
 	symbolicCtx, err_ := state.Ctx.ToSymbolicValue()
 	if err_ != nil {
-		return nil, nil, err_
+		finalErr = parsingErr
+		return
 	}
 
 	symbolicData, err_ := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
@@ -216,7 +225,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		}
 	}
 
-	return state, mod, finalErr
+	return state, mod, manifest, finalErr
 }
 
 type RunScriptArgs struct {
@@ -233,6 +242,8 @@ type RunScriptArgs struct {
 
 	//output for execution, if nil os.Stdout is used
 	Out io.Writer
+
+	WaitConfirmPrompt func(msg string) (bool, error)
 }
 
 // RunLocalScript runs a script located in the filesystem.
@@ -242,7 +253,7 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 		return nil, nil, nil, errors.New(".UseContextAsParent is set to true but passed .Context is nil")
 	}
 
-	state, mod, err := PrepareLocalScript(ScriptPreparationArgs{
+	state, mod, manifest, err := PrepareLocalScript(ScriptPreparationArgs{
 		Fpath:                     args.Fpath,
 		CliArgs:                   args.PassedCLIArgs,
 		Args:                      args.PassedArgs,
@@ -255,6 +266,34 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 
 	if err != nil {
 		return nil, state, mod, err
+	}
+
+	riskScore := core.ComputeProgramRiskScore(mod, manifest)
+	if riskScore > config.DEFAULT_TRUSTED_RISK_SCORE {
+		if args.WaitConfirmPrompt == nil {
+			return nil, nil, nil, errors.New("risk score too high and no provided way to show confirm prompt")
+		}
+		msg := bytes.NewBufferString(mod.Name())
+		msg.WriteString("\nrisk score is ")
+		msg.WriteString(strconv.Itoa(int(riskScore)))
+		msg.WriteString("\nthe program is asking for the following permissions:\n")
+
+		for _, perm := range manifest.RequiredPermissions {
+			//ignore global var permissions
+			if _, ok := perm.(core.GlobalVarPermission); ok {
+				continue
+			}
+			msg.WriteByte('\t')
+			msg.WriteString(perm.String())
+			msg.WriteByte('\n')
+		}
+		msg.WriteString("allow execution (y,yes) ? ")
+
+		if ok, err := args.WaitConfirmPrompt(msg.String()); err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to show confirm prompt to user: %w", err)
+		} else if !ok {
+			return nil, nil, nil, ErrUserRefusedExecution
+		}
 	}
 
 	out := state.Out
@@ -291,7 +330,7 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 //		symbolicCheckErrors: [ ..., {text: <string>, location: <parse.SourcePosition>}, ... ]
 //	}
 func GetCheckData(fpath string, compilationCtx *core.Context, out io.Writer) map[string]any {
-	state, mod, err := PrepareLocalScript(ScriptPreparationArgs{
+	state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
 		Fpath:                     fpath,
 		Args:                      nil,
 		ParsingCompilationContext: compilationCtx,

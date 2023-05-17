@@ -121,6 +121,16 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			ShowBytecode:              showBytecode,
 			OptimizeBytecode:          !useTreeWalking && !disableOptimization,
 			Out:                       outW,
+			WaitConfirmPrompt: func(msg string) (bool, error) {
+				fmt.Fprint(outW, msg)
+				var input string
+				_, err := fmt.Scanln(&input)
+				if err != nil {
+					return false, err
+				}
+				input = strings.ToLower(input)
+				return input == "y" || input == "yes", nil
+			},
 		})
 
 		prettyPrintConfig := globals.DEFAULT_PRETTY_PRINT_CONFIG.WithContext(compilationCtx) // TODO: use another context?

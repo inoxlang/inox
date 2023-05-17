@@ -51,7 +51,7 @@ func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx
 		fpath := getFilePath(req.TextDocument.Uri)
 		line, column := getLineColumn(req.Position)
 
-		state, mod, _ := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
+		state, mod, _, _ := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
 			Fpath:                     fpath,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             nil,
@@ -200,7 +200,7 @@ func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx
 		fpath := getFilePath(req.TextDocument.Uri)
 		line, column := getLineColumn(req.Position)
 
-		state, mod, err := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
+		state, mod, _, err := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
 			Fpath:                     fpath,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             nil,
@@ -274,7 +274,7 @@ func getFilePath(uri defines.DocumentUri) string {
 }
 
 func getCompletions(fpath string, compilationCtx *core.Context, line, column int32, session *jsonrpc.Session) []compl.Completion {
-	state, mod, err := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
+	state, mod, _, err := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
 		Fpath:                     fpath,
 		ParsingCompilationContext: compilationCtx,
 		ParentContext:             nil,

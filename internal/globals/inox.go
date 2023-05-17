@@ -112,7 +112,7 @@ func _parse_in_memory_module(ctx *core.Context, name core.Str, code core.Str) (*
 }
 
 func _prepare_local_script(ctx *core.Context, src core.Path) (*core.Module, *core.GlobalState, *core.Record, error) {
-	state, mod, err := PrepareLocalScript(ScriptPreparationArgs{
+	state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
 		Fpath:                     string(src),
 		ParsingCompilationContext: ctx,
 		ParentContext:             ctx,
