@@ -4208,6 +4208,22 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			), res)
 		})
 
+		t.Run("patterns declared by an embedded module should not be declared in top level module's context", func(t *testing.T) {
+			code := `
+				%p1 = 1
+				rt = go {} do {
+					%p2 = 2
+				}
+	
+				rt.wait_result!()
+			`
+			state := NewGlobalState(NewDefaultTestContext())
+			_, err := Eval(code, state, false)
+			assert.NoError(t, err)
+
+			assert.NotNil(t, state.Ctx.ResolveNamedPattern("p1"))
+			assert.Nil(t, state.Ctx.ResolveNamedPattern("p2"))
+		})
 	})
 
 	t.Run("mapping expression", func(t *testing.T) {
