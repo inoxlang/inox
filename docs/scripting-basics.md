@@ -32,7 +32,27 @@ Inox scripts support shebangs
 - `chmod u+x script.ix`
 - ./script.ix
 
-## A Script to Generate a Project Directory Structure 
+
+## Permissions
+
+Let's write a program that creates a file with **"hello world !"** in it:
+
+```
+manifest {
+    permissions: {
+        write: IWD_PREFIX
+    }
+}
+
+create ./file.txt "hello world !"
+```
+
+The **permissions** section of the manifest lists the permissions required by our script.\
+We need access to the filesystem so we added a write permission followed by IWD_PREFIX (initial working directory)
+
+> Note: the `write: IWD_PREFIX` permission allows writing to any file below the current directory: ./file.txt, ./dir/file.txt ...
+
+## Project Directory Generation
 
 ## Version 1
 
