@@ -243,8 +243,6 @@ type RunScriptArgs struct {
 
 	//output for execution, if nil os.Stdout is used
 	Out io.Writer
-
-	WaitConfirmPrompt func(msg string) (bool, error)
 }
 
 // RunLocalScript runs a script located in the filesystem.
@@ -270,8 +268,10 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 	}
 
 	riskScore := core.ComputeProgramRiskScore(mod, manifest)
+
 	if !args.IgnoreHighRiskScore && riskScore > config.DEFAULT_TRUSTED_RISK_SCORE {
-		if args.WaitConfirmPrompt == nil {
+		waitConfirmPrompt := args.ParsingCompilationContext.GetWaitConfirmPrompt()
+		if waitConfirmPrompt == nil {
 			return nil, nil, nil, errors.New("risk score too high and no provided way to show confirm prompt")
 		}
 		msg := bytes.NewBufferString(mod.Name())
@@ -290,7 +290,7 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 		}
 		msg.WriteString("allow execution (y,yes) ? ")
 
-		if ok, err := args.WaitConfirmPrompt(msg.String()); err != nil {
+		if ok, err := waitConfirmPrompt(msg.String(), []string{"y", "yes"}); err != nil {
 			return nil, nil, nil, fmt.Errorf("failed to show confirm prompt to user: %w", err)
 		} else if !ok {
 			return nil, nil, nil, ErrUserRefusedExecution

@@ -3,6 +3,9 @@ package internal
 type termAction int
 
 const (
+	CTRL_C_CODE = 3
+	ENTER_CODE  = 13
+
 	NoAction termAction = iota
 	Up
 	Down
@@ -53,8 +56,6 @@ func getTermAction(runeSlice []rune) termAction {
 		BACKSPACE_CODE      = 8
 		DEL_CODE            = 127
 		CTRL_BACKSPACE_CODE = 23
-		ENTER_CODE          = 13
-		CTRL_C_CODE         = 3
 		TAB_CODE            = 9
 		ESCAPE_CODE         = 27
 

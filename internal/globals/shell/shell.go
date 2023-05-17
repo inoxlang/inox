@@ -40,6 +40,9 @@ import (
 const (
 	DEFAULT_TERM_WIDTH      = 10
 	DEFAULT_READ_CHUNK_SIZE = 1000
+
+	CONFIRMATION_PROMPT_TIMEOUT   = 5 * time.Second
+	MAX_CONFIRMATION_PROMPT_INPUT = 100
 )
 
 var (
@@ -112,6 +115,8 @@ type shell struct {
 	runeInputChan      chan runeInput
 	stopReadingInput   chan struct{}
 	resumeReadingInput chan struct{}
+	pauseShellLoop     chan struct{}
+	resumeShellLoop    chan struct{}
 
 	inputsToCheck     chan string
 	stopCheckingInput chan struct{}
@@ -155,6 +160,8 @@ func newShell(config REPLConfiguration, state *core.GlobalState, in io.ReadWrite
 		stopReadingInput:   make(chan struct{}, 1),
 		resumeReadingInput: make(chan struct{}, 1),
 		stopCheckingInput:  make(chan struct{}, 1),
+		pauseShellLoop:     make(chan struct{}),
+		resumeShellLoop:    make(chan struct{}, 1),
 		inputsToCheck:      make(chan string, 10),
 		inputCheckErrors:   make(chan error, 10),
 
@@ -407,6 +414,7 @@ func (sh *shell) applyConfiguration(prevTermState *term.State) {
 				cmd.Stdout = os.Stdout
 				cmd.Stderr = os.Stderr
 
+				//stop reading the input because we will redirect it to the command
 				sh.cancelReader.Cancel()
 				term.Restore(sh.inFd, prevTermState)
 
@@ -506,6 +514,56 @@ func (sh *shell) runLoop() {
 	sh.state.PushScope()
 	defer sh.state.PopScope()
 
+	sh.state.Global.Ctx.SetWaitConfirmPrompt(func(msg string, accepted []string) (bool, error) {
+		fmt.Fprint(sh.out, utils.AddCarriageReturnAfterNewlines(msg))
+
+		//synchronously pause the loop
+		sh.pauseShellLoop <- struct{}{}
+
+		//TODO: ignore previous input
+
+		var input []rune
+
+	loop:
+		for {
+			select {
+			case <-time.After(CONFIRMATION_PROMPT_TIMEOUT):
+				fmt.Fprint(sh.out, "timeout: ")
+				sh.resumeShellLoop <- struct{}{}
+				return false, nil
+			case r := <-sh.runeInputChan:
+				if r.err == io.EOF {
+					sh.out.Write([]byte("EOF"))
+				} else if r.err != nil {
+					sh.out.Write([]byte(r.err.Error()))
+					panic(r.err)
+				}
+
+				if r.r == CTRL_C_CODE {
+					return false, nil
+				}
+
+				if r.r == ENTER_CODE {
+					break loop
+				}
+
+				input = append(input, r.r)
+				fmt.Fprint(sh.out, string(r.r))
+
+				if len(input) > MAX_CONFIRMATION_PROMPT_INPUT {
+					fmt.Fprint(sh.out, "input is too long")
+					sh.resumeReadingInput <- struct{}{}
+					return false, nil
+				}
+			}
+		}
+
+		sh.resumeShellLoop <- struct{}{}
+
+		fmt.Fprint(sh.out, "\n\r\n\r")
+		return utils.SliceContains(accepted, string(input)), nil
+	})
+
 	//This routine reads the input without interruption.
 	//While there is a child process the read bytes are written to the child process's input
 	go func() {
@@ -596,6 +654,8 @@ shell_loop:
 			}
 			time.Sleep(time.Millisecond / 2)
 			continue
+		case <-sh.pauseShellLoop:
+			<-sh.resumeShellLoop
 		case runeInput := <-sh.runeInputChan:
 			r = runeInput.r
 			err = runeInput.err

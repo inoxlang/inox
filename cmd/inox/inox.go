@@ -112,6 +112,22 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		dir := getScriptDir(fpath)
 		compilationCtx := createCompilationCtx(dir)
 
+		compilationCtx.SetWaitConfirmPrompt(func(msg string, accepted []string) (bool, error) {
+			fmt.Fprint(outW, msg)
+			var input string
+			_, err := fmt.Scanln(&input)
+
+			if err != nil && err.Error() == "unexpected newline" {
+				return false, nil
+			}
+
+			if err != nil {
+				return false, err
+			}
+			input = strings.ToLower(input)
+			return utils.SliceContains(accepted, input), nil
+		})
+
 		res, _, _, err := globals.RunLocalScript(globals.RunScriptArgs{
 			Fpath:                     fpath,
 			PassedCLIArgs:             moduleArgs,
@@ -121,16 +137,6 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			ShowBytecode:              showBytecode,
 			OptimizeBytecode:          !useTreeWalking && !disableOptimization,
 			Out:                       outW,
-			WaitConfirmPrompt: func(msg string) (bool, error) {
-				fmt.Fprint(outW, msg)
-				var input string
-				_, err := fmt.Scanln(&input)
-				if err != nil {
-					return false, err
-				}
-				input = strings.ToLower(input)
-				return input == "y" || input == "yes", nil
-			},
 		})
 
 		prettyPrintConfig := globals.DEFAULT_PRETTY_PRINT_CONFIG.WithContext(compilationCtx) // TODO: use another context?

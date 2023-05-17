@@ -69,7 +69,8 @@ type Context struct {
 
 	executionStartTime time.Time
 
-	tempDir Path //directory for storing temporary files, defaults to a random directory in /tmp
+	tempDir           Path //directory for storing temporary files, defaults to a random directory in /tmp
+	waitConfirmPrompt WaitConfirmPrompt
 }
 
 type ContextKind int
@@ -88,7 +89,10 @@ type ContextConfig struct {
 	ParentContext        *Context
 	LimitationTokens     map[string]int64
 	Filesystem           afs.Filesystem
+
+	WaitConfirmPrompt WaitConfirmPrompt
 }
+type WaitConfirmPrompt func(msg string, accepted []string) (bool, error)
 
 func (c ContextConfig) HasParentRequiredPermissions() (firstErr error, ok bool) {
 	if c.ParentContext == nil {
@@ -191,6 +195,8 @@ func NewContext(config ContextConfig) *Context {
 		hostProtocolClients:  map[Host]ProtocolClient{},
 		hostResolutionData:   hostResolutions,
 		userData:             map[Identifier]Value{},
+
+		waitConfirmPrompt: config.WaitConfirmPrompt,
 	}
 
 	if config.ParentContext == nil {
@@ -390,6 +396,20 @@ func (ctx *Context) GetFileSystem() afs.Filesystem {
 	return ctx.fs
 }
 
+func (ctx *Context) SetWaitConfirmPrompt(fn WaitConfirmPrompt) {
+	ctx.lock.Lock()
+	defer ctx.lock.Unlock()
+	ctx.assertNotDone()
+
+	ctx.waitConfirmPrompt = fn
+}
+
+func (ctx *Context) GetWaitConfirmPrompt() WaitConfirmPrompt {
+	ctx.lock.RLock()
+	defer ctx.lock.RUnlock()
+	return ctx.waitConfirmPrompt
+}
+
 // HasPermission checks if the passed permission is present in the Context.
 // The passed permission is first checked against forbidden permissions: if it is included in one of them, false is returned.
 func (ctx *Context) HasPermission(perm Permission) bool {
@@ -507,6 +527,8 @@ func (ctx *Context) New() *Context {
 		HostResolutions:      ctx.hostResolutionData,
 		ParentContext:        ctx.parentCtx,
 		Filesystem:           ctx.fs,
+
+		WaitConfirmPrompt: ctx.waitConfirmPrompt,
 	})
 
 	clone.namedPatterns = utils.CopyMap(ctx.namedPatterns)
@@ -544,6 +566,8 @@ top:
 		ForbiddenPermissions: ctx.forbiddenPermissions,
 		Limitations:          ctx.limitations,
 		Filesystem:           ctx.fs,
+
+		WaitConfirmPrompt: ctx.waitConfirmPrompt,
 	})
 	return newCtx, nil
 }
