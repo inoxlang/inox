@@ -79,6 +79,9 @@ func ComputeProgramRiskScore(mod *Module, manifest *Manifest) (totalScore RiskSc
 	permTypeRiskScores := map[reflect.Type]RiskScore{}
 
 	for _, requiredPerm := range manifest.RequiredPermissions {
+		if _, ok := requiredPerm.(GlobalVarPermission); ok { //ignore
+			continue
+		}
 		permTypeRiskScores[reflect.TypeOf(requiredPerm)] += ComputePermissionRiskScore(requiredPerm)
 	}
 
