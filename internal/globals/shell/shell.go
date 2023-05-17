@@ -1356,7 +1356,7 @@ func (sh *shell) Reader() *core.Reader {
 	sh.ioLock.Lock()
 	defer sh.ioLock.Unlock()
 
-	_, ok := sh.preOut.(*core.RingBuffer)
+	_, ok := sh.out.(*core.RingBuffer)
 	if !ok {
 		panic(errors.New("cannot get reader for shell: not a ring buffer"))
 	}
@@ -1388,7 +1388,7 @@ func (sh *shell) Stream(ctx *core.Context, config *core.ReadableStreamConfigurat
 
 	//TODO: prevent future calls to .Reader()
 
-	outBuf, ok := sh.preOut.(*core.RingBuffer)
+	outBuf, ok := sh.out.(*core.RingBuffer)
 	if !ok {
 		panic(errors.New("cannot get readable stream for shell: output is not a ring buffer"))
 	}
