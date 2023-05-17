@@ -15,7 +15,9 @@ import (
 	"strings"
 	"time"
 
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
+
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -120,6 +122,10 @@ func ImportModule(config ImportConfig) (*Routine, error) {
 		return nil, fmt.Errorf("import: invalid source, type is %T", val)
 	}
 
+	if !strings.HasSuffix(srcVal.UnderlyingString(), ".ix") {
+		return nil, errors.New(symbolic.IMPORTED_MOD_PATH_MUST_END_WITH_IX)
+	}
+
 	grantedPerms, err := getPermissionsFromListing(config.GrantedPermListing, nil, nil, true)
 	if err != nil {
 		return nil, err
@@ -204,7 +210,8 @@ func ImportModule(config ImportConfig) (*Routine, error) {
 		RoutineCtx:   routineCtx,
 		//AbsScriptDir: absScriptDir,
 		//bytecode: //TODO
-		Timeout: timeout,
+		Timeout:                      timeout,
+		IgnoreCreateRoutinePermCheck: true,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("import: %s", err.Error())

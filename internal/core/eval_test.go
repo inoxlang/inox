@@ -22,13 +22,15 @@ import (
 )
 
 const (
-	RETURN_1_MODULE_HASH     = "SG2a/7YNuwBjsD2OI6bM9jZM4gPcOp9W8g51DrQeyt4="
-	RETURN_ARG_A_MODULE_HASH = "15Njs+OhmiW9843cgnlMib7AiUzZbGx6gn3GAebWMOA="
+	RETURN_1_MODULE_HASH             = "SG2a/7YNuwBjsD2OI6bM9jZM4gPcOp9W8g51DrQeyt4="
+	RETURN_NON_POS_ARG_A_MODULE_HASH = "15Njs+OhmiW9843cgnlMib7AiUzZbGx6gn3GAebWMOA="
+	RETURN_POS_ARG_A_MODULE_HASH     = "QNJpkgQeB5MA23yXpJ8L5XWLzUQIi6eDwi2HOnPTO3w="
 )
 
 func init() {
 	moduleCache[RETURN_1_MODULE_HASH] = "return 1"
-	moduleCache[RETURN_ARG_A_MODULE_HASH] = "manifest {parameters: {a: %int}}\nreturn mod-args.a"
+	moduleCache[RETURN_NON_POS_ARG_A_MODULE_HASH] = "manifest {parameters: {a: %int}}\nreturn mod-args.a"
+	moduleCache[RETURN_POS_ARG_A_MODULE_HASH] = "manifest {parameters: {{name: #a, pattern: %int}}}\nreturn mod-args.a"
 }
 
 func TestTreeWalkEval(t *testing.T) {
@@ -3787,14 +3789,32 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.EqualValues(t, Int(1), res)
 		})
 
-		t.Run("imported module returns the 'a' argument", func(t *testing.T) {
+		t.Run("imported module returns the positional 'a' argument", func(t *testing.T) {
+			code := strings.ReplaceAll(`
+				import importname https://modules.com/return_global_a.ix {
+					validation: "<hash>"
+					arguments: {1}
+				}
+				return $$importname
+			`, "<hash>", RETURN_POS_ARG_A_MODULE_HASH)
+
+			ctx := NewDefaultTestContext()
+			ctx.AddNamedPattern("int", INT_PATTERN)
+
+			state := NewGlobalState(ctx)
+			res, err := Eval(code, state, false)
+			assert.NoError(t, err)
+			assert.EqualValues(t, Int(1), res)
+		})
+
+		t.Run("imported module returns the non-positional 'a' argument", func(t *testing.T) {
 			code := strings.ReplaceAll(`
 				import importname https://modules.com/return_global_a.ix {
 					validation: "<hash>"
 					arguments: {a: 1}
 				}
 				return $$importname
-			`, "<hash>", RETURN_ARG_A_MODULE_HASH)
+			`, "<hash>", RETURN_NON_POS_ARG_A_MODULE_HASH)
 
 			ctx := NewDefaultTestContext()
 			ctx.AddNamedPattern("int", INT_PATTERN)
@@ -3812,7 +3832,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					arguments: {a: 1}
 				}
 				return $$importname
-			`, "<hash>", RETURN_ARG_A_MODULE_HASH)
+			`, "<hash>", RETURN_NON_POS_ARG_A_MODULE_HASH)
 
 			ctx := NewContext(ContextConfig{
 				Permissions: []Permission{

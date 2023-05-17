@@ -1,0 +1,11 @@
+manifest {
+    permissions: {
+        read: IWD_PREFIX
+    }
+}
+
+import result ./add.ix {
+    arguments: {1, 2}
+} 
+
+print(result) 

@@ -105,7 +105,7 @@ func ComputePermissionRiskScore(perm Permission) RiskScore {
 		return UNKNOWN_PERM_RISK_SCORE
 	}
 
-	var score RiskScore
+	var score RiskScore = UNKNOWN_PERM_RISK_SCORE
 
 	for _, permRiskScore := range permRiskScores {
 		if permRiskScore.Type == permType && permRiskScore.Kind == majorPermKind {

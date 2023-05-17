@@ -1,0 +1,15 @@
+manifest {
+    parameters: {
+        # positional parameters
+        {
+            name: #first_operand
+            pattern: %int
+        }
+        {
+            name: #second_operand
+            pattern: %int
+        }
+    }
+}
+
+return (mod-args.first_operand + mod-args.second_operand)

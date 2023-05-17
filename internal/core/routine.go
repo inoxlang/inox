@@ -62,15 +62,20 @@ type RoutineSpawnArgs struct {
 	StartPaused bool
 	Self        Value
 	Timeout     time.Duration
+
+	IgnoreCreateRoutinePermCheck bool
 }
 
 // SpawnRoutines spawns a new routine, if .routineCtx is nil a minimal context is created for the routine.
 // The provided globals that are not thread safe are wrapped in a SharedValue.
 func SpawnRoutine(args RoutineSpawnArgs) (*Routine, error) {
-	perm := RoutinePermission{Kind_: CreatePerm}
 
-	if err := args.SpawnerState.Ctx.CheckHasPermission(perm); err != nil {
-		return nil, fmt.Errorf("cannot spawn routine: %s", err.Error())
+	if !args.IgnoreCreateRoutinePermCheck {
+		perm := RoutinePermission{Kind_: CreatePerm}
+
+		if err := args.SpawnerState.Ctx.CheckHasPermission(perm); err != nil {
+			return nil, fmt.Errorf("cannot spawn routine: %s", err.Error())
+		}
 	}
 
 	if args.RoutineCtx == nil {

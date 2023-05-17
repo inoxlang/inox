@@ -8,6 +8,7 @@ import (
 	"runtime/debug"
 	"sort"
 	"strconv"
+	"strings"
 
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
@@ -929,6 +930,24 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		state.symbolicData.SetMostSpecificNodeValue(n.Identifier, value)
 		state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
+
+		var pathOrURL string
+
+		switch src := n.Source.(type) {
+		case *parse.RelativePathLiteral:
+			pathOrURL = src.Value
+		case *parse.AbsolutePathLiteral:
+			pathOrURL = src.Value
+		case *parse.URLLiteral:
+			pathOrURL = src.Value
+		default:
+			panic(ErrUnreachable)
+		}
+
+		if !strings.HasSuffix(pathOrURL, ".ix") {
+			state.addError(makeSymbolicEvalError(n.Source, state, IMPORTED_MOD_PATH_MUST_END_WITH_IX))
+		}
+
 		return nil, nil
 	case *parse.SpawnExpression:
 		var actualGlobals = map[string]SymbolicValue{}
