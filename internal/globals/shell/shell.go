@@ -469,6 +469,12 @@ func (sh *shell) runLoop() {
 		return
 	}
 
+	defer func() {
+		close(sh.pauseShellLoop)
+		close(sh.resumeShellLoop)
+		close(sh.inputsToCheck)
+	}()
+
 	var prevTermState *term.State
 
 	if sh.isInputFile() {
@@ -611,6 +617,7 @@ func (sh *shell) runLoop() {
 			var input string
 			select {
 			case <-sh.stopCheckingInput:
+				close(sh.stopCheckingInput)
 				return
 			case input = <-sh.inputsToCheck:
 			}
