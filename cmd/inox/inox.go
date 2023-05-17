@@ -74,10 +74,12 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		var useTreeWalking bool
 		var showBytecode bool
 		var disableOptimization bool
+		var fullyTrusted bool
 
 		runFlags.BoolVar(&useTreeWalking, "t", false, "use tree walking interpreter")
 		runFlags.BoolVar(&showBytecode, "show-bytecode", false, "show emitted bytecode before evaluating the script")
 		runFlags.BoolVar(&disableOptimization, "no-optimization", false, "disable bytecode optimization")
+		runFlags.BoolVar(&fullyTrusted, "fully-trusted", false, "does not show confirmation prompt if the risk score is high")
 
 		//moveFlagsStart(commandArgs)
 
@@ -113,6 +115,10 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		compilationCtx := createCompilationCtx(dir)
 
 		compilationCtx.SetWaitConfirmPrompt(func(msg string, accepted []string) (bool, error) {
+			if fullyTrusted {
+				return true, nil
+			}
+
 			fmt.Fprint(outW, msg)
 			var input string
 			_, err := fmt.Scanln(&input)
