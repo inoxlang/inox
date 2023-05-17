@@ -14,11 +14,11 @@ manifest {}
 print "hello world !"
 ```
 
-An Inox program always starts with a manifest, the manifest lists:
-- the [permisssions](./features/permissions.md) required by the program
-- the [parameters](#parameters) of the program
+An Inox program always starts with a **manifest**, the manifest lists:
+- the permisssions required by the program
+- the parameters of the program
 
-You will learn about the manifest throughout this tutorial.
+You will learn more about the manifest throughout this tutorial.
 
 Run the script using the following command:
 ```
@@ -35,7 +35,7 @@ Inox scripts support shebangs
 
 ## Permissions
 
-Let's write a program that creates a file with **"hello world !"** in it:
+Let's learn about permissions by writing a script that creates a file:
 
 ```
 manifest {
@@ -48,9 +48,9 @@ create ./file.txt "hello world !"
 ```
 
 The **permissions** section of the manifest lists the permissions required by our script.\
-We need access to the filesystem so we added a write permission followed by IWD_PREFIX (initial working directory)
+We need access to the filesystem so we added a write permission followed by the **IWD_PREFIX** constant (initial working directory)
 
-> Note: the `write: IWD_PREFIX` permission allows writing to any file below the current directory: ./file.txt, ./dir/file.txt ...
+> Note: the `write: IWD_PREFIX` permission allows writing to any file below the current directory: **./file.txt**, **./dir/file.txt ...**
 
 ## Project Directory Generation
 
