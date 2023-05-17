@@ -179,6 +179,7 @@ func testExample(t *testing.T, config exampleTestConfig) {
 			ParsingCompilationContext: parsingCompilationContext,
 			Out:                       io.Discard,
 			AllowMissingEnvVars:       true,
+			IgnoreHighRiskScore:       true,
 			//Out:              os.Stdout, // &utils.TestWriter{T: t},
 		})
 

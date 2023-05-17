@@ -320,6 +320,7 @@ func TestRunLocalScript(t *testing.T) {
 			UseContextAsParent:        true,
 			ParentContext:             ctx,
 			Out:                       io.Discard,
+			IgnoreHighRiskScore:       true,
 		})
 
 		assert.Error(t, err)

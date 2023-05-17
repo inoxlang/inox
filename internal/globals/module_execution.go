@@ -239,6 +239,7 @@ type RunScriptArgs struct {
 	OptimizeBytecode          bool
 	ShowBytecode              bool
 	AllowMissingEnvVars       bool
+	IgnoreHighRiskScore       bool
 
 	//output for execution, if nil os.Stdout is used
 	Out io.Writer
@@ -269,7 +270,7 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 	}
 
 	riskScore := core.ComputeProgramRiskScore(mod, manifest)
-	if riskScore > config.DEFAULT_TRUSTED_RISK_SCORE {
+	if !args.IgnoreHighRiskScore && riskScore > config.DEFAULT_TRUSTED_RISK_SCORE {
 		if args.WaitConfirmPrompt == nil {
 			return nil, nil, nil, errors.New("risk score too high and no provided way to show confirm prompt")
 		}
