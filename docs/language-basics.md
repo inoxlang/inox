@@ -33,6 +33,7 @@
     - [Pattern namespaces](#pattern-namespaces)
     - [String patterns](#string-patterns)
 - [Modules](#modules)
+    - [Module Parameters](#module-parameters)
     - [Execution Phases](#execution-phases)
     - [Module Imports](#module-imports)
     - [Inclusion Imports](#inclusion-imports)
@@ -623,8 +624,8 @@ object_pattern = %{
 ({name: "John", additional_prop: 0} match object_pattern) 
 ```
 
-By default object patterns are "exact": they don't accept additional properties.
-You can create an "inexact" object pattern by adding '...' in an object pattern
+By default object patterns are **exact**: they don't accept additional properties.
+You can create an **inexact** object pattern by adding '...' in an object pattern
 
 ```
 object_pattern = %{
@@ -658,7 +659,7 @@ pattern = %[%int, %str]
 ## Named Patterns
 
 Named patterns are equivalent to variables but for patterns, there are many builtin named patterns such as: `%int, %str, %bool`.\
-Pattern definitions allow you to "declare" a pattern like you declare a variable but with a pattern identifier.
+Pattern definitions allow you to declare a pattern.
 
 ```
 %int_list = %[]%int
@@ -669,7 +670,7 @@ Pattern definitions allow you to "declare" a pattern like you declare a variable
 
 ⚠️ Named patterns cannot be reassigned.
 
-Some named patterns are 'callable', for example if you want a pattern that matches all integers in the range 0..10 you can do the following:
+Some named patterns are callable, for example if you want a pattern that matches all integers in the range 0..10 you can do the following:
 ```
 pattern = %int(0..10)
 ```
@@ -718,6 +719,35 @@ String patterns can be composed thanks to named patterns:
 
 An Inox module is a code file that starts with a manifest.
 
+## Module Parameters
+
+Module can take parameters, for the main module they correpond to the CLI parameters.\
+In the following module manifest two parameters are defined: **dir** and **verbose**:
+
+```
+manifest {
+    parameters: {
+        # positional parameters are listed at the start
+        {
+            name: #dir
+            pattern: %path
+            rest: false
+            description: "root directory of the project"
+        }
+        # non positional parameters
+        verbose: %bool
+    }
+}
+
+dir = mod-args.dir
+clean-existing = mod-args.clean-existing
+```
+
+Arguments should be added after the path when executing the program:
+```
+inox run [...run options...] ./script.ix ./dir/ --verbose
+```
+
 ## Execution Phases
 
 The execution of a module has several phases:
@@ -737,23 +767,68 @@ manifest {}
 return 1
 ```
 
+This feature is generally used by imported modules to return a result or export functions.
+
 ## Module Imports
 
 As the name imply this language construct imports a **module**: an Inox file that starts with a manifest.
 Here is a minimal example:
 ```
 # main.ix
-manifest {}
+manifest {
+    permissions: {
+        read: IWD_PREFIX    # don't forget the read permission
+    }
+}
 
 import result ./return_1.ix {}
 
-print(result) # 1
+print(result) 
+
 
 # return-1.ix
 manifest {}
 
 return 1
 ```
+
+### Arguments
+
+As explained [here](#module-parameters) module can take parameters. 
+When an imported module does have parameters you have to pass arguments to it.
+
+```
+# main.ix
+manifest {
+    permissions: {
+        read: IWD_PREFIX
+    }
+}
+
+import result ./add.ix {
+    args: {1, 2}
+} 
+
+print(result) 
+
+# add.ix
+manifest {
+    parameters: {
+        {
+            name: #first_operand
+            pattern: %int
+        }
+        {
+            name: #second_operand
+            pattern: %int
+        }
+    }
+}
+
+return (mod-args.first_operand + mod-args.second_operand)
+```
+
+### Granting Permissions
 
 In most cases the modules you import will require access to the filesystem or the network.
 You can grant them the required permissions in the **allow** section of the import.
