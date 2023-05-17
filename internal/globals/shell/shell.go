@@ -22,6 +22,7 @@ import (
 	"unicode/utf8"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/rs/zerolog"
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	symbolic_shell "github.com/inoxlang/inox/internal/globals/shell/symbolic"
@@ -89,6 +90,7 @@ type shell struct {
 	ioLock sync.Mutex // prevents more than one goroutine to write the input|read the output
 	in     io.ReadWriter
 	inFd   int // >= 0 if .in is an *os.File
+	preOut io.ReadWriter
 	out    io.ReadWriter
 	outFd  int // >= 0 if .out is an *os.File
 	//errOut     io.ReadWriter
@@ -135,16 +137,22 @@ type shell struct {
 
 // starts the shell, the execution of this function ends when the shell is exited.
 func StartShell(state *core.GlobalState, config REPLConfiguration) {
-	shell := newShell(config, state, os.Stdin, os.Stdout /*os.Stderr*/)
+	preOut := appendCursorMoveAfterLineFeeds(os.Stdout)
+	state.Out = preOut
+	state.Logger = zerolog.New(preOut)
+
+	shell := newShell(config, state, os.Stdin, os.Stdout, preOut /*os.Stderr*/)
 	shell.runLoop()
 }
 
-func newShell(config REPLConfiguration, state *core.GlobalState, in io.ReadWriter, out io.ReadWriter /*err io.ReadWriter*/) *shell {
+func newShell(config REPLConfiguration, state *core.GlobalState, in io.ReadWriter, out io.ReadWriter, preOut io.ReadWriter) *shell {
+
 	sh := &shell{
 		config: config,
 		state:  core.NewTreeWalkStateWithGlobal(state),
 		in:     in,
 		inFd:   -1,
+		preOut: preOut,
 		out:    out,
 		outFd:  -1,
 		//errOut: err,
@@ -231,7 +239,7 @@ func (sh *shell) resetInput() {
 }
 
 func (sh *shell) moveCursorLineStart() {
-	moveCursorBack(sh.out, len(sh.input)+sh.promptLen)
+	moveCursorBack(sh.preOut, len(sh.input)+sh.promptLen)
 }
 
 func (sh *shell) getCursorIndex() int {
@@ -274,7 +282,7 @@ func (sh *shell) printPromptAndInput(inputGotReplaced bool, completions []string
 		buff.Write(utils.StringAsBytes(string(sh.input)))
 	}
 
-	fmt.Fprint(sh.out, buff.String())
+	fmt.Fprint(sh.preOut, buff.String())
 
 	//print completions
 
@@ -284,19 +292,19 @@ func (sh *shell) printPromptAndInput(inputGotReplaced bool, completions []string
 	if len(completions) != 0 || sh.prevCompletionCount != 0 {
 		sh.moveCursorLineStart()
 
-		fmt.Fprintf(sh.out, "\n\r%s", completionString)
+		fmt.Fprintf(sh.preOut, "\n\r%s", completionString)
 
 		if len(completions) == 0 {
-			clearLine(sh.out)
+			clearLine(sh.preOut)
 		}
 
 		//if the new completions are shorter than the previous ones we clear the additional lines of the previous completions
 		if sh.prevCompletionLineCount > completionLineCount {
-			moveCursorDown(sh.out, sh.prevCompletionLineCount-completionLineCount)
-			clearLines(sh.out, sh.prevCompletionLineCount-completionLineCount)
+			moveCursorDown(sh.preOut, sh.prevCompletionLineCount-completionLineCount)
+			clearLines(sh.preOut, sh.prevCompletionLineCount-completionLineCount)
 		}
 
-		moveCursorUp(sh.out, completionLineCount)
+		moveCursorUp(sh.preOut, completionLineCount)
 		sh.prevCompletionLineCount = completionLineCount
 		sh.prevCompletionCount = len(completions)
 	}
@@ -305,11 +313,11 @@ func (sh *shell) printPromptAndInput(inputGotReplaced bool, completions []string
 	if sh.prevInputLineCount > 1 {
 		upCount := int(utils.Abs(sh.prevInputLineCount - 1 - rowIndex))
 
-		moveCursorUp(sh.out, upCount)
+		moveCursorUp(sh.preOut, upCount)
 	}
 
-	moveCursorBack(sh.out, sh.termWidth)
-	moveCursorForward(sh.out, columnIndex)
+	moveCursorBack(sh.preOut, sh.termWidth)
+	moveCursorForward(sh.preOut, columnIndex)
 
 	sh.prevInputLineCount = lineCount
 	sh.prevRowIndex = rowIndex
@@ -504,7 +512,7 @@ func (sh *shell) runLoop() {
 	} else {
 		sh.termWidth = DEFAULT_TERM_WIDTH
 	}
-	sh.promptLen = printPrompt(sh.out, sh.state, sh.config)
+	sh.promptLen = printPrompt(sh.preOut, sh.state, sh.config)
 
 	defer func() {
 		sh.stopReadingInput <- struct{}{}
@@ -515,7 +523,7 @@ func (sh *shell) runLoop() {
 	defer sh.state.PopScope()
 
 	sh.state.Global.Ctx.SetWaitConfirmPrompt(func(msg string, accepted []string) (bool, error) {
-		fmt.Fprint(sh.out, utils.AddCarriageReturnAfterNewlines(msg))
+		fmt.Fprint(sh.preOut, utils.AddCarriageReturnAfterNewlines(msg))
 
 		//synchronously pause the loop
 		sh.pauseShellLoop <- struct{}{}
@@ -524,18 +532,18 @@ func (sh *shell) runLoop() {
 
 		var input []rune
 
-	loop:
+	read:
 		for {
 			select {
 			case <-time.After(CONFIRMATION_PROMPT_TIMEOUT):
-				fmt.Fprint(sh.out, "timeout: ")
+				fmt.Fprint(sh.preOut, "timeout: ")
 				sh.resumeShellLoop <- struct{}{}
 				return false, nil
 			case r := <-sh.runeInputChan:
 				if r.err == io.EOF {
-					sh.out.Write([]byte("EOF"))
+					sh.preOut.Write([]byte("EOF"))
 				} else if r.err != nil {
-					sh.out.Write([]byte(r.err.Error()))
+					sh.preOut.Write([]byte(r.err.Error()))
 					panic(r.err)
 				}
 
@@ -544,14 +552,14 @@ func (sh *shell) runLoop() {
 				}
 
 				if r.r == ENTER_CODE {
-					break loop
+					break read
 				}
 
 				input = append(input, r.r)
-				fmt.Fprint(sh.out, string(r.r))
+				fmt.Fprint(sh.preOut, string(r.r))
 
 				if len(input) > MAX_CONFIRMATION_PROMPT_INPUT {
-					fmt.Fprint(sh.out, "input is too long")
+					fmt.Fprint(sh.preOut, "input is too long")
 					sh.resumeReadingInput <- struct{}{}
 					return false, nil
 				}
@@ -560,7 +568,7 @@ func (sh *shell) runLoop() {
 
 		sh.resumeShellLoop <- struct{}{}
 
-		fmt.Fprint(sh.out, "\n\r\n\r")
+		fmt.Fprint(sh.preOut, "\n\r\n\r")
 		return utils.SliceContains(accepted, string(input)), nil
 	})
 
@@ -662,9 +670,9 @@ shell_loop:
 			lastRuneTime = time.Now()
 
 			if err == io.EOF {
-				sh.out.Write([]byte("EOF"))
+				sh.preOut.Write([]byte("EOF"))
 			} else if err != nil {
-				sh.out.Write([]byte(err.Error()))
+				sh.preOut.Write([]byte(err.Error()))
 				panic(err)
 			}
 
@@ -685,7 +693,7 @@ shell_loop:
 					clone.SetClosestState(sh.state.Global)
 					sh.state.Global.Ctx = clone
 
-					fmt.Fprint(sh.out, "\n\r")
+					fmt.Fprint(sh.preOut, "\n\r")
 				}
 				sh.runeSequence = nil
 				continue
@@ -768,12 +776,12 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 		fallthrough
 	case Down:
 		prevCount := sh.prevInputLineCount
-		clearLine(sh.out)
+		clearLine(sh.preOut)
 
 		sh.resetInput()
 		diff := utils.Abs(prevCount - sh.prevInputLineCount)
 		if diff != 0 {
-			moveCursorUp(sh.out, diff)
+			moveCursorUp(sh.preOut, diff)
 		}
 
 		sh.input = []rune(sh.history.current())
@@ -796,11 +804,11 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 		right := utils.CopySlice(sh.input[start+1:])
 		sh.input = append(sh.input[0:start], right...)
 
-		saveCursorPosition(sh.out)
+		saveCursorPosition(sh.preOut)
 
-		fmt.Fprint(sh.out, string(right))
-		clearLineRight(sh.out)
-		restoreCursorPosition(sh.out)
+		fmt.Fprint(sh.preOut, string(right))
+		clearLineRight(sh.preOut)
+		restoreCursorPosition(sh.preOut)
 
 		sh.backspaceCount -= 1
 	case Back:
@@ -813,11 +821,11 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 		right := utils.CopySlice(sh.input[start+1:])
 		sh.input = append(sh.input[0:start], right...)
 
-		moveCursorBack(sh.out, 1)
-		saveCursorPosition(sh.out)
+		moveCursorBack(sh.preOut, 1)
+		saveCursorPosition(sh.preOut)
 
 		sh.printPromptAndInput(false, nil)
-		restoreCursorPosition(sh.out)
+		restoreCursorPosition(sh.preOut)
 	case Home:
 		moveHome()
 	case End:
@@ -1076,14 +1084,14 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 			sh.input = append(beforeElem, []rune(replacement)...)
 			sh.input = append(sh.input, afterElem...)
 			newCharCount = len(sh.input) - prevLen
-			saveCursorPosition(sh.out)
+			saveCursorPosition(sh.preOut)
 		}
 
 		sh.printPromptAndInput(false, completionStrings)
 
 		if replacement != "" {
-			restoreCursorPosition(sh.out)
-			moveCursorForward(sh.out, newCharCount)
+			restoreCursorPosition(sh.preOut)
+			moveCursorForward(sh.preOut, newCharCount)
 		}
 
 	case Enter:
@@ -1093,12 +1101,12 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 		}
 
 		sh.history.resetIndex()
-		sh.out.Write(core.ANSI_RESET_SEQUENCE)
+		sh.preOut.Write(core.ANSI_RESET_SEQUENCE)
 
 		//if input is empty we do nothing and print the prompt on a new line
 		if strings.Trim(string(sh.input), " ") == "" {
-			fmt.Fprint(sh.out, "\n\r")
-			sh.promptLen = printPrompt(sh.out, sh.state, sh.config)
+			fmt.Fprint(sh.preOut, "\n\r")
+			sh.promptLen = printPrompt(sh.preOut, sh.state, sh.config)
 			break
 		}
 
@@ -1116,17 +1124,17 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 		switch splitted[0] {
 		case "clear":
 			sh.resetInput()
-			clearScreen(sh.out)
-			sh.promptLen = printPrompt(sh.out, sh.state, sh.config)
+			clearScreen(sh.preOut)
+			sh.promptLen = printPrompt(sh.preOut, sh.state, sh.config)
 		case "quit":
-			fmt.Fprint(sh.out, "\n\r")
+			fmt.Fprint(sh.preOut, "\n\r")
 			return true
 		default:
 			//handle normal commands
 			sh.resetInput()
-			fmt.Fprint(sh.out, "\n\r")
-			clearLine(sh.out)
-			moveCursorNextLine(sh.out, 1)
+			fmt.Fprint(sh.preOut, "\n\r")
+			clearLine(sh.preOut)
+			moveCursorNextLine(sh.preOut, 1)
 
 			mod, err := sh.parseModule(inputString)
 			var symbolicData *symbolic.SymbolicData
@@ -1139,9 +1147,9 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 			if err != nil {
 				//print parsing or checking error and print a new prompt
 				errString := utils.AddCarriageReturnAfterNewlines(err.Error())
-				fmt.Fprint(sh.out, errString, "\n\r")
-				moveCursorNextLine(sh.out, 1)
-				sh.promptLen = printPrompt(sh.out, sh.state, sh.config)
+				fmt.Fprint(sh.preOut, errString, "\n\r")
+				moveCursorNextLine(sh.preOut, 1)
+				sh.promptLen = printPrompt(sh.preOut, sh.state, sh.config)
 			} else {
 				//TODO: delete useless data in order to reduce memory usage
 				sh.state.Global.SymbolicData.AddData(symbolicData)
@@ -1164,7 +1172,7 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 					foregroundTask.result = res
 					foregroundTask.evalErr = evalErr
 				}(sh.foregroundTask)
-				moveCursorNextLine(sh.out, 1)
+				moveCursorNextLine(sh.preOut, 1)
 			}
 		}
 	}
@@ -1251,7 +1259,7 @@ func (sh *shell) printFgTaskError(ctx *core.Context) {
 	}
 	errString = utils.AddCarriageReturnAfterNewlines(errString)
 
-	fmt.Fprint(sh.out, errString, "\n\r")
+	fmt.Fprint(sh.preOut, errString, "\n\r")
 }
 
 func (sh *shell) handleFgTask() {
@@ -1267,8 +1275,8 @@ func (sh *shell) handleFgTask() {
 		sh.printFgTaskResult()
 	}
 
-	moveCursorNextLine(sh.out, 1)
-	sh.promptLen = printPrompt(sh.out, sh.state, sh.config)
+	moveCursorNextLine(sh.preOut, 1)
+	sh.promptLen = printPrompt(sh.preOut, sh.state, sh.config)
 
 	sh.foregroundTask = nil
 }
@@ -1284,21 +1292,21 @@ func (sh *shell) printFgTaskResult() {
 
 	switch r := result.(type) {
 	default:
-		core.PrettyPrint(r, sh.out, prettyPrintConfig, 0, 0)
-		sh.out.Write([]byte{'\n'})
+		core.PrettyPrint(r, sh.preOut, prettyPrintConfig, 0, 0)
+		sh.preOut.Write([]byte{'\n'})
 	case nil, core.NilT:
 		return
 	case core.Str:
 		s = utils.StripANSISequences(string(r)) + "\n"
-		fmt.Fprint(sh.out, utils.AddCarriageReturnAfterNewlines(s))
+		fmt.Fprint(sh.preOut, utils.AddCarriageReturnAfterNewlines(s))
 	case *core.List:
 		if r.Len() == 0 {
 			s = "[]\n"
-			fmt.Fprint(sh.out, utils.AddCarriageReturnAfterNewlines(s))
+			fmt.Fprint(sh.preOut, utils.AddCarriageReturnAfterNewlines(s))
 			return
 		} else {
-			core.PrettyPrint(r, sh.out, prettyPrintConfig, 0, 0)
-			sh.out.Write([]byte{'\n'})
+			core.PrettyPrint(r, sh.preOut, prettyPrintConfig, 0, 0)
+			sh.preOut.Write([]byte{'\n'})
 		}
 
 	}
@@ -1341,13 +1349,13 @@ func (sh *shell) Reader() *core.Reader {
 	sh.ioLock.Lock()
 	defer sh.ioLock.Unlock()
 
-	_, ok := sh.out.(*core.RingBuffer)
+	_, ok := sh.preOut.(*core.RingBuffer)
 	if !ok {
 		panic(errors.New("cannot get reader for shell: not a ring buffer"))
 	}
 
 	if sh.coreReader == nil {
-		sh.coreReader = core.WrapReader(io.MultiReader(sh.out, sh.out), &sh.ioLock)
+		sh.coreReader = core.WrapReader(io.MultiReader(sh.preOut, sh.preOut), &sh.ioLock)
 	}
 	return sh.coreReader
 }
@@ -1373,7 +1381,7 @@ func (sh *shell) Stream(ctx *core.Context, config *core.ReadableStreamConfigurat
 
 	//TODO: prevent future calls to .Reader()
 
-	outBuf, ok := sh.out.(*core.RingBuffer)
+	outBuf, ok := sh.preOut.(*core.RingBuffer)
 	if !ok {
 		panic(errors.New("cannot get readable stream for shell: output is not a ring buffer"))
 	}
@@ -1476,4 +1484,18 @@ func _whoami(ctx *core.Context) core.Str {
 func _hostname(ctx *core.Context) core.Str {
 	name, _ := os.Hostname()
 	return core.Str(name)
+}
+
+func appendCursorMoveAfterLineFeeds(out io.ReadWriter) io.ReadWriter {
+	lineFeedReplacement := []byte{'\n', '\r'}
+	lineFeedReplacement = append(lineFeedReplacement, MOVE_CURSOR_NEXT_LINE_SEQ...)
+
+	return utils.FnReaderWriter{
+		WriteFn: func(p []byte) (n int, err error) {
+			return out.Write(bytes.ReplaceAll(p, []byte{'\n'}, lineFeedReplacement))
+		},
+		ReadFn: func(p []byte) (n int, err error) {
+			return out.Read(p)
+		},
+	}
 }

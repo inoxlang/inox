@@ -26,7 +26,7 @@ func TestShell(t *testing.T) {
 		go func() {
 			state := core.NewGlobalState(ctx)
 
-			sh := newShell(config, state, in, out)
+			sh := newShell(config, state, in, out, out)
 			sh.runLoop()
 		}()
 
@@ -49,7 +49,7 @@ func TestShell(t *testing.T) {
 		go func() {
 			state := core.NewGlobalState(ctx)
 
-			sh := newShell(config, state, in, out)
+			sh := newShell(config, state, in, out, out)
 			sh.runLoop()
 		}()
 
@@ -72,7 +72,7 @@ func TestShell(t *testing.T) {
 		go func() {
 			state := core.NewGlobalState(ctx)
 
-			sh := newShell(config, state, in, out)
+			sh := newShell(config, state, in, out, out)
 			sh.runLoop()
 		}()
 

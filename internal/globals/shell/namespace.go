@@ -39,8 +39,6 @@ func init() {
 }
 
 func NewShell(ctx *core.Context, configObj *core.Object) (*shell, error) {
-	state := ctx.GetClosestState()
-
 	var (
 		config = REPLConfiguration{
 			prompt: core.NewWrappedValueList(core.Str("> ")),
@@ -93,8 +91,13 @@ func NewShell(ctx *core.Context, configObj *core.Object) (*shell, error) {
 	shellCtx := ctx.BoundChild()
 	var shellState *core.GlobalState
 
+	in := core.NewRingBuffer(nil, DEFAULT_IN_BUFFER_SIZE)
+	out := core.NewRingBuffer(nil, DEFAULT_OUT_BUFFER_SIZE)
+	preOut := appendCursorMoveAfterLineFeeds(out)
+	//errOut := core.NewRingBuffer(nil, DEFAULT_ERR_OUT_BUFFER_SIZE)
+
 	if globals == nil {
-		shellState = newDefaultGlobalState(shellCtx, nil, state.Out)
+		shellState = newDefaultGlobalState(shellCtx, nil, preOut)
 	} else {
 		shellState = core.NewGlobalState(shellCtx, globals)
 	}
@@ -104,11 +107,7 @@ func NewShell(ctx *core.Context, configObj *core.Object) (*shell, error) {
 	config.backgroundColor = bgColor
 	config.defaultBackgroundColorSequence = bgColor.GetAnsiEscapeSequence(true)
 
-	in := core.NewRingBuffer(nil, DEFAULT_IN_BUFFER_SIZE)
-	out := core.NewRingBuffer(nil, DEFAULT_OUT_BUFFER_SIZE)
-	//errOut := core.NewRingBuffer(nil, DEFAULT_ERR_OUT_BUFFER_SIZE)
-
-	return newShell(config, shellState, in, out /*errOut*/), nil
+	return newShell(config, shellState, in, out, preOut /*errOut*/), nil
 }
 
 func NewInoxshNamespace() *core.Record {

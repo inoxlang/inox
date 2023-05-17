@@ -33,8 +33,9 @@ func _logvals(ctx *core.Context, args ...core.Value) {
 	for _, arg := range args {
 		buff.WriteString(fmt.Sprintf("%#v", arg))
 	}
-	ctx.GetClosestState().Logger.Print(utils.StripANSISequences(buff.String()))
-	utils.MoveCursorNextLine(ctx.GetClosestState().Out, 1)
+
+	s := utils.StripANSISequences(buff.String())
+	ctx.GetClosestState().Logger.Print(s)
 }
 
 func _log(ctx *core.Context, args ...core.Value) {
@@ -53,11 +54,9 @@ func _log(ctx *core.Context, args ...core.Value) {
 	}
 
 	buff.WriteRune('\n')
-	s := utils.AddCarriageReturnAfterNewlines(buff.String())
-	s = utils.StripANSISequences(s)
+	s := utils.StripANSISequences(buff.String())
 
 	ctx.GetClosestState().Logger.Print(s)
-	utils.MoveCursorNextLine(ctx.GetClosestState().Out, 1)
 }
 
 func __fprint(ctx *core.Context, out io.Writer, args ...core.Value) {
@@ -76,12 +75,9 @@ func __fprint(ctx *core.Context, out io.Writer, args ...core.Value) {
 	}
 
 	buff.WriteRune('\n')
-	s := utils.AddCarriageReturnAfterNewlines(buff.String())
 
 	//TODO: strip ansi sequences without removing valid colors
-
-	fmt.Fprint(out, s)
-	utils.MoveCursorNextLine(out, 1)
+	fmt.Fprint(out, buff.String())
 }
 
 func _print(ctx *core.Context, args ...core.Value) {
@@ -101,7 +97,6 @@ func _printvals(ctx *core.Context, args ...core.Value) {
 
 	out := ctx.GetClosestState().Out
 	fmt.Fprintln(out, utils.StripANSISequences(buff.String()))
-	utils.MoveCursorNextLine(out, 1)
 }
 
 func _stringify_ast(ctx *core.Context, arg core.AstNode) core.Str {

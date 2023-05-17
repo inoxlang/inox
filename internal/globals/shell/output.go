@@ -25,6 +25,8 @@ var (
 		},
 	}
 
+	MOVE_CURSOR_NEXT_LINE_SEQ = utils.StringAsBytes(termenv.CSI + "1E")
+
 	COLOR_NAME_TO_COLOR = map[core.Identifier]termenv.Color{
 		"red":        termenv.ANSIRed,
 		"bright-red": termenv.ANSIBrightRed,
