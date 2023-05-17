@@ -1,8 +1,10 @@
 package internal
 
 import (
+	"strings"
 	"testing"
 
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -218,4 +220,49 @@ func TestComparePaths(t *testing.T) {
 func TestComparePathPatterns(t *testing.T) {
 	assert.True(t, PathPattern("./").Equal(nil, PathPattern("./"), map[uintptr]uintptr{}, 0))
 	assert.False(t, PathPattern("./").Equal(nil, PathPattern("./a"), map[uintptr]uintptr{}, 0))
+}
+
+func TestCompareStrings(t *testing.T) {
+	ctx := NewContext(ContextConfig{})
+	NewGlobalState(ctx)
+
+	s := utils.Must(concatValues(ctx, []Value{
+		Str(strings.Repeat("a", 50)),
+		Str(strings.Repeat("a", 50)),
+	}))
+	assert.IsType(t, &StringConcatenation{}, s)
+
+	t.Run("same string", func(t *testing.T) {
+		s1 := Str(strings.Repeat("a", 100))
+		s2 := utils.Must(concatValues(ctx, []Value{
+			Str(strings.Repeat("a", 50)),
+			Str(strings.Repeat("a", 50)),
+		}))
+
+		assert.True(t, s1.Equal(ctx, s1, map[uintptr]uintptr{}, 0))
+		assert.True(t, s2.Equal(ctx, s2, map[uintptr]uintptr{}, 0))
+	})
+
+	t.Run("two equal strings", func(t *testing.T) {
+		s1 := Str(strings.Repeat("a", 100))
+		s2 := utils.Must(concatValues(ctx, []Value{
+			Str(strings.Repeat("a", 50)),
+			Str(strings.Repeat("a", 50)),
+		}))
+
+		assert.True(t, s1.Equal(ctx, s2, map[uintptr]uintptr{}, 0))
+		assert.True(t, s2.Equal(ctx, s1, map[uintptr]uintptr{}, 0))
+	})
+
+	t.Run("two different lists", func(t *testing.T) {
+		s1 := Str(strings.Repeat("a", 100))
+		s2 := utils.Must(concatValues(ctx, []Value{
+			Str(strings.Repeat("a", 50)),
+			Str(strings.Repeat("a", 51)),
+		}))
+
+		assert.False(t, s1.Equal(ctx, s2, map[uintptr]uintptr{}, 0))
+		assert.False(t, s2.Equal(ctx, s1, map[uintptr]uintptr{}, 0))
+	})
+
 }
