@@ -130,7 +130,7 @@ assign first second = [1, 2]
 assign first second = unknown_length_list
 ```
 
-⚠️ If the number of elements in less than the number of variables the evaluation will panic.
+⚠️ If the number of elements is less than the number of variables the evaluation will panic.
 You can use a nillable multi-assignment to avoid that:
 
 ```
@@ -264,7 +264,7 @@ path = /.bashrc     # you can also use the path ./.bashrc or a string
 # result: /home/user/.bashrc
 ```
 
-⚠️ Some sequence characters such as '..' are allowed in the path but not in the interpolation !
+⚠️ Some sequences such as '..' are allowed in the path but not in the interpolation !
 ```
 # ok
 /home/user/dir/..
@@ -546,7 +546,7 @@ ints = | map [{value: "a"}, {value: 1}] .value | filter $ %int
 
 There are 2 kinds of functions in Inox: normal Inox functions & native Golang functions (that you cannot define).
 
-## Functions Definitions
+## Function Definitions
 
 Functions in Inox can be declared in the global scope with the following syntax:
 
@@ -565,7 +565,7 @@ fn add(a %int, b %int) %int {
 }
 ```
 
-Local variables are "local" to a function's scope or to the module's top local scope.
+Local variables are local to a function's scope or to the module's top local scope.
 Blocks might be introduced in the future.
 
 ```
