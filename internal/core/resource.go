@@ -246,6 +246,27 @@ func (pth Path) RelativeEquiv() Path {
 	return "." + pth
 }
 
+func (pth Path) ToGlobbingPattern() PathPattern {
+	pattern := make([]byte, 0, len(pth))
+
+	for _, b := range utils.StringAsBytes(pth) {
+		switch b {
+		case '*':
+			pattern = append(pattern, '\\', '*')
+		case '?':
+			pattern = append(pattern, '\\', '?')
+		case '[':
+			pattern = append(pattern, '\\', '[')
+		case ']':
+			pattern = append(pattern, '\\', ']')
+		default:
+			pattern = append(pattern, b)
+		}
+	}
+
+	return PathPattern(utils.BytesAsString(pattern))
+}
+
 func (pth Path) PropertyNames(ctx *Context) []string {
 	return PATH_PROPNAMES
 }
@@ -382,6 +403,13 @@ func (patt PathPattern) IsDirGlobbingPattern() bool {
 
 func (patt PathPattern) IsPrefixPattern() bool {
 	return strings.HasSuffix(string(patt), "/...")
+}
+
+func (patt PathPattern) ToGlobbingPattern() PathPattern {
+	if patt.IsGlobbingPattern() {
+		return patt
+	}
+	return PathPattern(patt.Prefix()) + "/**/*"
 }
 
 func (patt PathPattern) Prefix() string {
