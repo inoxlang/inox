@@ -16,6 +16,7 @@ type BasePermissionRiskScore struct {
 }
 
 const (
+	MAXIMUM_RISK_SCORE      = RiskScore(10_000)
 	UNKNOWN_PERM_RISK_SCORE = RiskScore(30)
 
 	HOST_PATTERN_RISK_MULTIPLIER = RiskScore(4)
@@ -26,8 +27,9 @@ const (
 	UNKNOW_FILE_SENSITIVITY_MULTIPLIER         = 2
 	UNKNOW_FILE_PATTERN_SENSITIVITY_MUTLIPLIER = 3
 
-	HTTP_READ_PERM_RISK_SCORE  = 10
-	HTTP_WRITE_PERM_RISK_SCORE = 20
+	HTTP_READ_PERM_RISK_SCORE    = 10
+	HTTP_WRITE_PERM_RISK_SCORE   = 20
+	HTTP_PROVIDE_PERM_RISK_SCORE = 20
 
 	FS_READ_PERM_RISK_SCORE  = 10
 	FS_WRITE_PERM_RISK_SCORE = 20
@@ -45,6 +47,7 @@ var (
 		HTTP_PERM_TYPE: {
 			{HTTP_PERM_TYPE, ReadPerm, HTTP_READ_PERM_RISK_SCORE},
 			{HTTP_PERM_TYPE, WritePerm, HTTP_WRITE_PERM_RISK_SCORE},
+			{HTTP_PERM_TYPE, ProvidePerm, HTTP_WRITE_PERM_RISK_SCORE},
 		},
 		FS_PERM_TYPE: {
 			{FS_PERM_TYPE, ReadPerm, FS_READ_PERM_RISK_SCORE},
@@ -81,6 +84,9 @@ func ComputeProgramRiskScore(mod *Module, manifest *Manifest) (totalScore RiskSc
 
 	totalScore = 1
 	for _, score := range permTypeRiskScores {
+		if totalScore > MAXIMUM_RISK_SCORE/score {
+			return MAXIMUM_RISK_SCORE
+		}
 		totalScore *= score
 	}
 

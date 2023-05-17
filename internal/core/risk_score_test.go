@@ -68,4 +68,27 @@ func TestComputeProgramRiskScore(t *testing.T) {
 		)
 		assert.Equal(t, expected, ComputeProgramRiskScore(mod, manifest))
 	})
+
+	t.Run("many permissions", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+
+		mod := utils.Must(ParseInMemoryModule(`
+			manifest {
+				permissions: {
+					read: {%/home/user/**/*, %https://**}
+					write: {%/home/user/**/*, %https://**}
+					provide: %https://**
+				}
+			}
+		`, InMemoryModuleParsingConfig{
+			Name:    "",
+			Context: ctx,
+		}))
+
+		manifest := utils.Must(mod.EvalManifest(ManifestEvaluationConfig{
+			GlobalConsts: mod.MainChunk.Node.GlobalConstantDeclarations,
+		}))
+
+		assert.Equal(t, MAXIMUM_RISK_SCORE, ComputeProgramRiskScore(mod, manifest))
+	})
 }
