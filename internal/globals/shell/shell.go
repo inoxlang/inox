@@ -262,7 +262,7 @@ func (sh *shell) printPromptAndInput(inputGotReplaced bool, completions []string
 
 	if lineCount > sh.prevInputLineCount {
 		if !inputGotReplaced {
-			fmt.Fprintf(buff, "\n\r")
+			fmt.Fprintf(buff, "\n")
 		}
 	} else if lineCount == sh.prevInputLineCount && sh.prevInputLineCount > 1 && sh.prevRowIndex != 0 {
 		moveCursorUp(buff, sh.prevRowIndex)
@@ -292,7 +292,7 @@ func (sh *shell) printPromptAndInput(inputGotReplaced bool, completions []string
 	if len(completions) != 0 || sh.prevCompletionCount != 0 {
 		sh.moveCursorLineStart()
 
-		fmt.Fprintf(sh.preOut, "\n\r%s", completionString)
+		fmt.Fprintf(sh.preOut, "\n%s", completionString)
 
 		if len(completions) == 0 {
 			clearLine(sh.preOut)
@@ -529,7 +529,7 @@ func (sh *shell) runLoop() {
 	defer sh.state.PopScope()
 
 	sh.state.Global.Ctx.SetWaitConfirmPrompt(func(msg string, accepted []string) (bool, error) {
-		fmt.Fprint(sh.preOut, utils.AddCarriageReturnAfterNewlines(msg))
+		fmt.Fprint(sh.preOut, msg)
 
 		//synchronously pause the loop
 		sh.pauseShellLoop <- struct{}{}
@@ -574,7 +574,7 @@ func (sh *shell) runLoop() {
 
 		sh.resumeShellLoop <- struct{}{}
 
-		fmt.Fprint(sh.preOut, "\n\r\n\r")
+		fmt.Fprint(sh.preOut, "\n\n")
 		return utils.SliceContains(accepted, string(input)), nil
 	})
 
@@ -700,7 +700,7 @@ shell_loop:
 					clone.SetClosestState(sh.state.Global)
 					sh.state.Global.Ctx = clone
 
-					fmt.Fprint(sh.preOut, "\n\r")
+					fmt.Fprint(sh.preOut, "\n")
 				}
 				sh.runeSequence = nil
 				continue
@@ -1112,7 +1112,7 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 
 		//if input is empty we do nothing and print the prompt on a new line
 		if strings.Trim(string(sh.input), " ") == "" {
-			fmt.Fprint(sh.preOut, "\n\r")
+			fmt.Fprint(sh.preOut, "\n")
 			sh.promptLen = printPrompt(sh.preOut, sh.state, sh.config)
 			break
 		}
@@ -1134,12 +1134,12 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 			clearScreen(sh.preOut)
 			sh.promptLen = printPrompt(sh.preOut, sh.state, sh.config)
 		case "quit":
-			fmt.Fprint(sh.preOut, "\n\r")
+			fmt.Fprint(sh.preOut, "\n")
 			return true
 		default:
 			//handle normal commands
 			sh.resetInput()
-			fmt.Fprint(sh.preOut, "\n\r")
+			fmt.Fprint(sh.preOut, "\n")
 			clearLine(sh.preOut)
 			moveCursorNextLine(sh.preOut, 1)
 
@@ -1153,9 +1153,7 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 
 			if err != nil {
 				//print parsing or checking error and print a new prompt
-				errString := utils.AddCarriageReturnAfterNewlines(err.Error())
-				fmt.Fprint(sh.preOut, errString, "\n\r")
-				moveCursorNextLine(sh.preOut, 1)
+				fmt.Fprint(sh.preOut, err, "\n")
 				sh.promptLen = printPrompt(sh.preOut, sh.state, sh.config)
 			} else {
 				//TODO: delete useless data in order to reduce memory usage
@@ -1264,9 +1262,8 @@ func (sh *shell) printFgTaskError(ctx *core.Context) {
 	} else {
 		errString = utils.StripANSISequences(err.Error())
 	}
-	errString = utils.AddCarriageReturnAfterNewlines(errString)
 
-	fmt.Fprint(sh.preOut, errString, "\n\r")
+	fmt.Fprint(sh.preOut, errString, "\n")
 }
 
 func (sh *shell) handleFgTask() {
@@ -1292,7 +1289,7 @@ func (sh *shell) printFgTaskResult() {
 
 	result := sh.foregroundTask.result
 
-	const VALUE_FMT = "%#v\n\r"
+	const VALUE_FMT = "%#v\n"
 	var s string
 
 	prettyPrintConfig := sh.config.PrettyPrintConfig().WithContext(sh.state.Global.Ctx) // ctx could be cancelled
@@ -1305,11 +1302,11 @@ func (sh *shell) printFgTaskResult() {
 		return
 	case core.Str:
 		s = utils.StripANSISequences(string(r)) + "\n"
-		fmt.Fprint(sh.preOut, utils.AddCarriageReturnAfterNewlines(s))
+		fmt.Fprint(sh.preOut, s)
 	case *core.List:
 		if r.Len() == 0 {
 			s = "[]\n"
-			fmt.Fprint(sh.preOut, utils.AddCarriageReturnAfterNewlines(s))
+			fmt.Fprint(sh.preOut, s)
 			return
 		} else {
 			core.PrettyPrint(r, sh.preOut, prettyPrintConfig, 0, 0)
