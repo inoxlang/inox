@@ -174,8 +174,13 @@ func NewDefaultGlobalState(ctx *core.Context, config DefaultGlobalStateConfig) (
 		"hash_password":  core.ValOf(_hashPassword),
 		"check_password": core.ValOf(_checkPassword),
 		"rand":           core.ValOf(_rand),
-		"b64":            core.ValOf(encodeBase64),
-		"db64":           core.ValOf(decodeBase64),
+
+		//encodings
+		"b64":  core.ValOf(encodeBase64),
+		"db64": core.ValOf(decodeBase64),
+
+		"hex":   core.ValOf(encodeHex),
+		"unhex": core.ValOf(decodeHex),
 
 		// conversion
 		"tostr":      core.ValOf(_tostr),

@@ -122,6 +122,14 @@ func init() {
 			return &symbolic.ByteSlice{}, nil
 		},
 
+		encodeHex, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.String {
+			return &symbolic.String{}
+		},
+
+		decodeHex, func(ctx *symbolic.Context, arg symbolic.Readable) (*symbolic.ByteSlice, *symbolic.Error) {
+			return &symbolic.ByteSlice{}, nil
+		},
+
 		_tostr, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) symbolic.StringLike {
 			return symbolic.ANY_STR_LIKE
 		},

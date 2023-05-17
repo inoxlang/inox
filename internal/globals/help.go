@@ -23,6 +23,13 @@ func registerHelp() {
 		"update": _updateResource,
 		"delete": _deleteResource,
 
+		//encoding
+		"b64":  encodeBase64,
+		"db64": decodeBase64,
+
+		"hex":   encodeHex,
+		"unhex": decodeHex,
+
 		//others
 		"Error": _Error,
 	})

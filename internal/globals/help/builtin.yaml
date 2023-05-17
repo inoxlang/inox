@@ -128,10 +128,27 @@ crypto:
     - code: sha512("string")
       output: '0x[2757cb3cafc39af451abb2697be79b4ab61d63d74d85b0418629de8c26811b529f3f3780d0150063ff55a2beee74c4ec102a2a2731a1f1f7f10d473ad18a6a87]'
 
+encoding:
+  title: Encodings
+  elements:
+  - topic: b64
+    text: the b64 function encodes a string or byte sequence to Base64.
+  - topic: db64
+    text: the db64 function decodes a byte sequence from Base64.
+
+  - topic: hex
+    text: the hex function encodes a string or byte sequence to hexadecimal.
+  - topic: unhex
+    text: the unhex function decodes a byte sequence from hexadecimal.
+
+
 html:
   namespace: true
   title: HTML
   elements:
+  - topic: html
+    text: the html namespace contains functions to create & manipulate HTML nodes
+
   - topic: html.h1
     text: the html.h1 function creates a h1 HTML element
 
@@ -304,6 +321,9 @@ fs:
   namespace: true
   title: Filesystem
   elements:
+  - topic: fs
+    text: the fs namespace contains functions to interact with the filesystem.
+
   - topic: fs.mkfile
     text: >
       The fs.mkfile function takes a file path as first argument. It accepts a --readonly switch that causes 
