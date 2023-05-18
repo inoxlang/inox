@@ -2365,7 +2365,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		for _, slice := range n.Slices {
 			switch s := slice.(type) {
 			case *parse.StringTemplateSlice:
-				sliceValues = append(sliceValues, Str(s.Raw))
+				sliceValues = append(sliceValues, Str(s.Value))
 			case *parse.StringTemplateInterpolation:
 				sliceValue, err := TreeWalkEval(s.Expr, state)
 				if err != nil {

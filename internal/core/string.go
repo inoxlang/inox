@@ -190,9 +190,9 @@ func NewStringFromSlices(slices []Value, node *parse.StringTemplateLiteral, ctx 
 	buff := bytes.NewBufferString("")
 
 	for i, sliceValue := range slices {
-		switch s := node.Slices[i].(type) {
+		switch node.Slices[i].(type) {
 		case *parse.StringTemplateSlice:
-			buff.WriteString(s.Raw)
+			buff.WriteString(string(sliceValue.(Str)))
 		case *parse.StringTemplateInterpolation:
 			switch val := sliceValue.(type) {
 			case StringLike:

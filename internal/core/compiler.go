@@ -1794,7 +1794,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		for _, slice := range node.Slices {
 			switch s := slice.(type) {
 			case *parse.StringTemplateSlice:
-				c.emit(node, OpPushConstant, c.addConstant(Str(s.Raw)))
+				c.emit(node, OpPushConstant, c.addConstant(Str(s.Value)))
 			case *parse.StringTemplateInterpolation:
 				if err := c.Compile(s.Expr); err != nil {
 					return err

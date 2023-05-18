@@ -231,10 +231,25 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("multiline string literal", func(t *testing.T) {
-		code := "`a`"
-		res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
-		assert.NoError(t, err)
-		assert.Equal(t, Str("a"), res)
+		t.Run("single character", func(t *testing.T) {
+			code := "`a`"
+			res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+			assert.NoError(t, err)
+			assert.Equal(t, Str("a"), res)
+		})
+
+		t.Run("linefeed", func(t *testing.T) {
+			code := "`1\n2`"
+			res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+			assert.NoError(t, err)
+			assert.Equal(t, Str("1\n2"), res)
+		})
+		t.Run("escaped n (\\n)", func(t *testing.T) {
+			code := "`1\\n2`"
+			res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+			assert.NoError(t, err)
+			assert.Equal(t, Str("1\n2"), res)
+		})
 	})
 
 	t.Run("byte slice literal", func(t *testing.T) {
@@ -5511,6 +5526,29 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, Str("12"), res)
+		})
+
+		t.Run("no pattern, interpolation & escaped n (\\n)", func(t *testing.T) {
+			code := replace(`
+				s = "1"
+				return |{{s}}\n2|
+			`)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Str("1\n2"), res)
+		})
+
+		t.Run("no pattern, interpolation & linefeed", func(t *testing.T) {
+			code := replace("s = \"1\"; return |{{s}}\n2|")
+
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Str("1\n2"), res)
 		})
 	})
 
