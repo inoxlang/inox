@@ -626,6 +626,22 @@ func TestRegexPattern(t *testing.T) {
 				Start: 0,
 				End:   math.MaxInt64,
 			},
+			`a{0,1}`: {
+				Start: 0,
+				End:   1,
+			},
+			`a{0,2}`: {
+				Start: 0,
+				End:   2,
+			},
+			`a{1,2}`: {
+				Start: 1,
+				End:   2,
+			},
+			`a{1,3}`: {
+				Start: 1,
+				End:   3,
+			},
 			`.`: {
 				Start: 1,
 				End:   1,

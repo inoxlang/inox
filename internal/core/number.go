@@ -186,12 +186,12 @@ func (r IntRange) clampedAdd(other IntRange) IntRange {
 
 func (r IntRange) times(n, m int64, clamped bool) IntRange {
 
-	if n <= 0 {
-		panic(fmt.Errorf("cannot multiply an integer range by a negative number or zero: %d", n))
+	if n < 0 {
+		panic(fmt.Errorf("cannot multiply the lower bound of an integer range by a negative number: %d", n))
 	}
 
 	if m <= 0 {
-		panic(fmt.Errorf("cannot multiply an integer range by a negative number or zero: %d", m))
+		panic(fmt.Errorf("cannot multiply the upper bound of an integer range by a negative number or zero: %d", m))
 	}
 
 	if r.unknownStart {
