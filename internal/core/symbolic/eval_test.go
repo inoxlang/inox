@@ -1419,12 +1419,25 @@ func TestSymbolicEval(t *testing.T) {
 				fn f(){
 	
 				}
-				return $$f
+				return f
 			`)
 			fnExpr := n.Statements[0].(*parse.FunctionDeclaration).Function
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, &InoxFunction{node: fnExpr, result: Nil}, res)
+
+			//check definition position data
+			idents, ancestorChains := parse.FindNodesAndChains(n, (*parse.IdentifierLiteral)(nil), nil)
+			definitionIdent := idents[0]
+			returnIdent := idents[1]
+			returnIdentAncestors := ancestorChains[1]
+
+			pos, ok := state.symbolicData.GetVariableDefinitionPosition(returnIdent, returnIdentAncestors)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			assert.Equal(t, definitionIdent.Span, pos.Span)
 		})
 
 		t.Run("single parameter", func(t *testing.T) {
@@ -1432,7 +1445,7 @@ func TestSymbolicEval(t *testing.T) {
 				fn f(a){
 					return a
 				}
-				return $$f
+				return f
 			`)
 			fnExpr := n.Statements[0].(*parse.FunctionDeclaration).Function
 			res, err := symbolicEval(n, state)
@@ -1451,7 +1464,7 @@ func TestSymbolicEval(t *testing.T) {
 				fn[a] f(){
 					return a
 				}
-				return $$f
+				return f
 			`)
 			fnExpr := n.Statements[1].(*parse.FunctionDeclaration).Function
 
@@ -1471,7 +1484,7 @@ func TestSymbolicEval(t *testing.T) {
 				fn[a, b] f(){
 					return [a, b]
 				}
-				return $$f
+				return f
 			`)
 			fnExpr := n.Statements[2].(*parse.FunctionDeclaration).Function
 			res, err := symbolicEval(n, state)

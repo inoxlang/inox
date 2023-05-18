@@ -2154,7 +2154,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		funcName := n.Name.Name
 
 		//declare the function before checking it
-		state.setGlobal(funcName, &InoxFunction{node: n.Function, result: ANY}, GlobalConst)
+		state.setGlobal(funcName, &InoxFunction{node: n.Function, result: ANY}, GlobalConst, n.Name)
 		if state.recursiveFunctionName != "" {
 			state.addError(makeSymbolicEvalError(n, state, NESTED_RECURSIVE_FUNCTION_DECLARATION))
 		} else {
@@ -2165,6 +2165,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		if err == nil {
 			state.overrideGlobal(funcName, v)
 			state.symbolicData.SetMostSpecificNodeValue(n.Name, v)
+			state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
 		}
 		return nil, err
 	case *parse.FunctionPatternExpression:
