@@ -56,9 +56,12 @@ We need access to the filesystem so we added a write permission followed by the 
 
 ## Version 1
 
-Our `gen-project.ix` script will have 2 parameters:
-- the location of the directory that will be created, it's a positional parameter (it is not prefixd with --).
+We will write a `gen-project.ix` script that takes 2 parameters:
+- the location of the directory that will be created, it's a positional parameter (it is not prefixd with **--**).
 - a `--clean-existing` switch to delete the directory if it already exists.
+
+
+### Writing the Manifest
 
 ```
 manifest {
@@ -76,8 +79,7 @@ manifest {
 }
 ```
 
-The script needs the `write` permission to create the directory structure and the `delete` permission
-to remove the directory when we use the `--clean-existing` switch.\
+The script needs the `write` permission to create the directory structure and the `delete` permission to remove the directory when we use the `--clean-existing` switch.\
 Let's add the `permissions` section in the manifest
 
 ```
@@ -87,8 +89,10 @@ Let's add the `permissions` section in the manifest
     }
 ```
 
+### Writing the Logic
+
 Now let's write the code for the program.
-First we need to get the module's argument.
+First we need to get the module's **arguments**:
 
 ```
 dir = mod-args.dir
