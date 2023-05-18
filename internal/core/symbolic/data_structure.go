@@ -177,8 +177,8 @@ func (list *List) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig,
 		var end []byte
 		if !config.Compact && length > 0 {
 			end = append(end, '\n', '\r')
+			end = append(end, bytes.Repeat(config.Indent, depth)...)
 		}
-		end = append(end, bytes.Repeat(config.Indent, depth)...)
 		end = append(end, ']')
 
 		utils.Must(w.Write(end))

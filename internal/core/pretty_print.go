@@ -577,7 +577,6 @@ func (obj *Object) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth
 
 		if config.Colorize {
 			utils.Must(w.Write(ANSI_RESET_SEQUENCE))
-
 		}
 
 		//colon

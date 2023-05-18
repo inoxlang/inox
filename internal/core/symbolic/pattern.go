@@ -456,8 +456,18 @@ func (p *ExactValuePattern) IsWidenable() bool {
 
 func (p *ExactValuePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%exact-value-pattern(\n")))
-	p.value.PrettyPrint(w, config, depth+1, parentIndentCount)
-	utils.Must(w.Write(utils.StringAsBytes("\n)")))
+	indentCount := parentIndentCount + 1
+
+	indent := bytes.Repeat(config.Indent, indentCount)
+	parentIndent := indent[:len(indent)-len(config.Indent)]
+
+	utils.Must(w.Write(indent))
+	p.value.PrettyPrint(w, config, depth+1, indentCount)
+
+	utils.PanicIfErr(w.WriteByte('\n'))
+	utils.Must(w.Write(parentIndent))
+	utils.PanicIfErr(w.WriteByte(')'))
+
 }
 
 func (p *ExactValuePattern) HasUnderylingPattern() bool {
@@ -701,7 +711,7 @@ func (p *ObjectPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 			isLastEntry := i == len(keys)-1
 
 			if !isLastEntry || p.inexact {
-				utils.Must(w.Write(COLON_SPACE))
+				utils.Must(w.Write(COMMA_SPACE))
 			}
 		}
 
@@ -1132,6 +1142,9 @@ func prettyPrintListPattern(
 
 ) {
 
+	indentCount := parentIndentCount + 1
+	indent := bytes.Repeat(config.Indent, indentCount)
+
 	if generalElementPattern != nil {
 		b := utils.StringAsBytes("%[]")
 
@@ -1164,8 +1177,6 @@ func prettyPrintListPattern(
 	}
 	utils.Must(w.Write(start))
 
-	indentCount := parentIndentCount + 1
-	indent := bytes.Repeat(config.Indent, indentCount)
 	printIndices := !config.Compact && len(elementPatterns) > 10
 
 	for i, v := range elementPatterns {
@@ -1206,9 +1217,9 @@ func prettyPrintListPattern(
 
 	if !config.Compact && len(elementPatterns) > 0 {
 		utils.Must(w.Write(LF_CR))
+		utils.Must(w.Write(bytes.Repeat(config.Indent, depth)))
 	}
 
-	utils.Must(w.Write(bytes.Repeat(config.Indent, depth)))
 	if tuplePattern {
 		utils.Must(w.Write(CLOSING_BRACKET_CLOSING_PAREN))
 	} else {
@@ -1222,7 +1233,7 @@ func (p *ListPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 		return
 	}
 	utils.Must(w.Write(utils.StringAsBytes("%[]")))
-	p.generalElement.PrettyPrint(w, config, 0, parentIndentCount)
+	p.generalElement.PrettyPrint(w, config, depth, parentIndentCount)
 	return
 }
 
