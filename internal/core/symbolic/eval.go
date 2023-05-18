@@ -134,6 +134,7 @@ func SymbolicEvalCheck(input SymbolicEvalCheckInput) (*SymbolicData, error) {
 	}
 
 	data.errors = state.errors
+	data.warnings = state.warnings
 
 	for _, err := range state.errors {
 		finalErrBuff.WriteString(err.Error())
@@ -966,17 +967,20 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		var globals SymbolicValue
 
 		if obj, ok := meta.(*Object); ok {
-			val, _, ok := obj.GetProperty("globals")
-			if ok {
-				globals = val
-			}
-			val, _, ok = obj.GetProperty("group")
-			if ok {
-				_, ok := val.(*RoutineGroup)
-				if !ok {
-					state.addError(makeSymbolicEvalError(n.Meta, state, fmtGroupPropertyNotRoutineGroup(val)))
+			obj.ForEachEntry(func(k string, v SymbolicValue) error {
+				switch k {
+				case "globals":
+					globals = v
+				case "group":
+					_, ok := v.(*RoutineGroup)
+					if !ok {
+						state.addError(makeSymbolicEvalError(n.Meta, state, fmtGroupPropertyNotRoutineGroup(v)))
+					}
+				default:
+					state.addWarning(makeSymbolicEvalWarning(n.Meta, state, fmtUnknownSectionInCoroutineMetadata(k)))
 				}
-			}
+				return nil
+			})
 		}
 
 		switch g := globals.(type) {
@@ -3850,6 +3854,15 @@ func makeSymbolicEvalError(node parse.Node, state *State, msg string) SymbolicEv
 		locatedMsg = fmt.Sprintf("check(symbolic): %s: %s", location, msg)
 	}
 	return SymbolicEvaluationError{msg, locatedMsg, location}
+}
+
+func makeSymbolicEvalWarning(node parse.Node, state *State, msg string) SymbolicEvaluationWarning {
+	locatedMsg := msg
+	location := state.getErrorMesssageLocation(node)
+	if state.Module != nil {
+		locatedMsg = fmt.Sprintf("check(symbolic): warning: %s: %s", location, msg)
+	}
+	return SymbolicEvaluationWarning{msg, locatedMsg, location}
 }
 
 func converReflectValToSymbolicValue(r reflect.Value) (SymbolicValue, error) {

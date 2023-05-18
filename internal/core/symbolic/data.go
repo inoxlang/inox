@@ -22,6 +22,7 @@ type SymbolicData struct {
 	contextData              map[parse.Node]ContextData
 	runtimeTypeCheckPatterns map[parse.Node]any //concrete Pattern or nil (nil means the check is disabled)
 	errors                   []SymbolicEvaluationError
+	warnings                 []SymbolicEvaluationWarning
 }
 
 func NewSymbolicData() *SymbolicData {
@@ -142,6 +143,7 @@ func (data *SymbolicData) AddData(newData *SymbolicData) {
 	}
 
 	data.errors = append(data.errors, newData.errors...)
+	data.warnings = append(data.warnings, newData.warnings...)
 }
 
 func (d *SymbolicData) Test(v SymbolicValue) bool {

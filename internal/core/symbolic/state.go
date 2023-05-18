@@ -31,6 +31,7 @@ type State struct {
 	tempSymbolicGoFunctionParameters     *[]SymbolicValue
 	tempSymbolicGoFunctionParameterNames []string
 
+	warnings        []SymbolicEvaluationWarning
 	errors          []SymbolicEvaluationError
 	errorMessageSet map[string]bool
 	symbolicData    *SymbolicData
@@ -496,6 +497,13 @@ func (state *State) addError(err SymbolicEvaluationError) {
 	}
 }
 
+func (state *State) addWarning(warning SymbolicEvaluationWarning) {
+	state.warnings = append(state.warnings, warning)
+	if state.parent != nil {
+		state.parent.addWarning(warning)
+	}
+}
+
 func (state *State) addSymbolicGoFunctionError(msg string) {
 	state.tempSymbolicGoFunctionErrors = append(state.tempSymbolicGoFunctionErrors, msg)
 }
@@ -529,6 +537,10 @@ func (state *State) consumeSymbolicGoFunctionParameters() ([]SymbolicValue, []st
 
 func (state *State) Errors() []SymbolicEvaluationError {
 	return utils.CopySlice(state.errors)
+}
+
+func (state *State) Warnings() []SymbolicEvaluationWarning {
+	return utils.CopySlice(state.warnings)
 }
 
 type varSymbolicInfo struct {

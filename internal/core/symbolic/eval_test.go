@@ -4567,7 +4567,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	})
 
-	t.Run("spawn_expression", func(t *testing.T) {
+	t.Run("spawn expression", func(t *testing.T) {
 		t.Run("single expression", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(){ }
@@ -4637,6 +4637,21 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
 			assert.IsType(t, ANY, res)
+		})
+
+		t.Run("unknown section in metadata", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return go {x: 1} do { return 1 }
+			`)
+
+			metadataNode := parse.FindNode(n, (*parse.ObjectLiteral)(nil), nil)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, []SymbolicEvaluationWarning{
+				makeSymbolicEvalWarning(metadataNode, state, fmtUnknownSectionInCoroutineMetadata("x")),
+			}, state.warnings)
 		})
 
 	})
