@@ -133,6 +133,7 @@ func NewDefaultGlobalState(ctx *core.Context, config DefaultGlobalStateConfig) (
 		"inox":     NewInoxNamespace(),
 		"inoxsh":   _shell.NewInoxshNamespace(),
 		"strmanip": _strmanip.NewStrManipNnamespace(),
+		"rsa":      newRSANamespace(),
 
 		"ls": core.WrapGoFunction(_fs.ListFiles),
 

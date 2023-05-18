@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"math/big"
 	"regexp/syntax"
@@ -21,7 +22,10 @@ var (
 	MAX_INT64  = big.NewInt(math.MaxInt64)
 	MAX_UINT64 = big.NewInt(0)
 
-	DefaultRandSource = &RandomnessSource{source: cryptoRandomnessSource{}}
+	CryptoRandSource = &RandomnessSource{source: cryptoRandomnessSource{}}
+	DefaultRandSource = CryptoRandSource
+
+	_ = []io.Reader{DefaultRandSource}
 )
 
 func init() {
@@ -43,6 +47,10 @@ type RandomnessSource struct {
 	NoReprMixin
 	NotClonableMixin
 	source underlyingRandomnessSource
+}
+
+func (s *RandomnessSource) Read(bytes []byte) (int, error) {
+	return s.source.Read(bytes)
 }
 
 func (r *RandomnessSource) Uint64() uint64 {

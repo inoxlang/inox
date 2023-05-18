@@ -9,11 +9,11 @@ import (
 )
 
 func _sha1(_ *core.Context, arg core.Readable) *core.ByteSlice {
-	return &core.ByteSlice{Bytes: hash(arg, SHA1), IsDataMutable: true}
+	return &core.ByteSlice{Bytes: _hash(arg, SHA1), IsDataMutable: true}
 }
 
 func _sha2(_ *core.Context, arg core.Readable) *core.ByteSlice {
-	return &core.ByteSlice{Bytes: hash(arg, MD5), IsDataMutable: true}
+	return &core.ByteSlice{Bytes: _hash(arg, MD5), IsDataMutable: true}
 }
 
 func _mkpath(ctx *core.Context, arg core.Value) core.Path {
