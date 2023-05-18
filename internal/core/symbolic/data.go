@@ -117,6 +117,10 @@ func (data *SymbolicData) Errors() []SymbolicEvaluationError {
 	return data.errors
 }
 
+func (data *SymbolicData) Warnings() []SymbolicEvaluationWarning {
+	return data.warnings
+}
+
 func (data *SymbolicData) AddData(newData *SymbolicData) {
 	for k, v := range newData.mostSpecificNodeValues {
 		data.SetMostSpecificNodeValue(k, v)

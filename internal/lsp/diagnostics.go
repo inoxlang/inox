@@ -17,6 +17,8 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, com
 	fpath := getFilePath(docURI)
 
 	errSeverity := defines.DiagnosticSeverityError
+	warningSeverity := defines.DiagnosticSeverityWarning
+
 	state, mod, _, err := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
 		Fpath:                     fpath,
 		ParsingCompilationContext: compilationCtx,
@@ -74,7 +76,7 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, com
 			diagnostics = append(diagnostics, staticCheckDiagnostics...)
 
 			i = -1
-			symbolicCheckDiagnostics := utils.MapSlice(state.SymbolicData.Errors(), func(err symbolic.SymbolicEvaluationError) defines.Diagnostic {
+			symbolicCheckErrorDiagnostics := utils.MapSlice(state.SymbolicData.Errors(), func(err symbolic.SymbolicEvaluationError) defines.Diagnostic {
 				i++
 
 				return defines.Diagnostic{
@@ -84,7 +86,19 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, com
 				}
 			})
 
-			diagnostics = append(diagnostics, symbolicCheckDiagnostics...)
+			diagnostics = append(diagnostics, symbolicCheckErrorDiagnostics...)
+
+			symbolicCheckWarningDiagnostics := utils.MapSlice(state.SymbolicData.Warnings(), func(err symbolic.SymbolicEvaluationWarning) defines.Diagnostic {
+				i++
+
+				return defines.Diagnostic{
+					Message:  err.Message,
+					Severity: &warningSeverity,
+					Range:    rangeToLspRange(err.Location[0]),
+				}
+			})
+
+			diagnostics = append(diagnostics, symbolicCheckWarningDiagnostics...)
 		}
 	}
 
