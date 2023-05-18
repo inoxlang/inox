@@ -87,6 +87,16 @@ func FilterMapSlice[T any, U any](s []T, mapper func(e T) (U, bool)) []U {
 	return result
 }
 
+func Some[T any](s []T, predicate func(e T) bool) bool {
+	for _, e := range s {
+		if predicate(e) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func EmptySliceIfNil[T any](slice []T) []T {
 	if slice == nil {
 		return make([]T, 0)

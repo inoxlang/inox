@@ -72,3 +72,11 @@ func FormatErrPropertyDoesNotExist(name string, v Value) error {
 func FormatRuntimeTypeCheckFailed(pattern Pattern, ctx *Context) error {
 	return fmt.Errorf("runtime type check failed: value does not match the pattern %s", Stringify(pattern, ctx))
 }
+
+func fmtTooManyPositionalArgs(positionalArgCount, positionalParamCount int) string {
+	return fmt.Sprintf("too many positional arguments were provided (%d), at most %d positional arguments are expected", positionalArgCount, positionalParamCount)
+}
+
+func fmtUnknownArgument(name string) string {
+	return fmt.Sprintf("unknown argument -%s", name)
+}

@@ -48,26 +48,31 @@ func NewEmptyManifest() *Manifest {
 }
 
 type ModuleParameters struct {
-	positional []moduleParameter
-	others     []moduleParameter
+	positional        []moduleParameter
+	others            []moduleParameter
+	hasRequiredParams bool //true if at least one positional parameter or one required non-positional parameter
+	hasOptions        bool //true if at least one optional non-positional parameter
 }
 
 func (p *ModuleParameters) GetArguments(ctx *Context, argObj *Object) (*Object, error) {
 	positionalArgs := argObj.Indexed()
 	resultEntries := map[string]Value{}
 
-	for i, param := range p.positional {
+	restParam := false
+
+	for paramIndex, param := range p.positional {
 		if param.rest {
-			list := NewWrappedValueList(positionalArgs[i:]...)
+			list := NewWrappedValueList(positionalArgs[paramIndex:]...)
 			if !param.pattern.Test(ctx, list) {
 				return nil, fmt.Errorf("invalid value for rest positional argument %s", param.name)
 			}
 			resultEntries[string(param.name)] = list
+			restParam = true
 		} else {
-			if i >= len(positionalArgs) {
+			if paramIndex >= len(positionalArgs) {
 				return nil, fmt.Errorf("missing value for positional argument %s", param.name)
 			}
-			arg := positionalArgs[i]
+			arg := positionalArgs[paramIndex]
 			if !param.pattern.Test(ctx, arg) {
 				return nil, fmt.Errorf("invalid value for positional argument %s", param.name)
 			}
@@ -75,7 +80,11 @@ func (p *ModuleParameters) GetArguments(ctx *Context, argObj *Object) (*Object, 
 		}
 	}
 
-	argObj.ForEachEntry(func(k string, arg Value) error {
+	if !restParam && len(positionalArgs) > len(p.positional) {
+		return nil, errors.New(fmtTooManyPositionalArgs(len(positionalArgs), len(p.positional)))
+	}
+
+	err := argObj.ForEachEntry(func(k string, arg Value) error {
 		if IsIndexKey(k) { //positional arguments are already processed
 			return nil
 		}
@@ -86,11 +95,16 @@ func (p *ModuleParameters) GetArguments(ctx *Context, argObj *Object) (*Object, 
 					return fmt.Errorf("invalid value for non positional argument %s", param.name)
 				}
 				resultEntries[k] = arg
+				return nil
 			}
 		}
 
-		return nil
+		return errors.New(fmtUnknownArgument(k))
 	})
+
+	if err != nil {
+		return nil, err
+	}
 
 	for _, param := range p.others {
 		if _, ok := resultEntries[string(param.name)]; !ok {
@@ -102,7 +116,7 @@ func (p *ModuleParameters) GetArguments(ctx *Context, argObj *Object) (*Object, 
 }
 
 func (p *ModuleParameters) GetArgumentsFromCliArgs(ctx *Context, cliArgs []string) (*Object, error) {
-	var remainingCliArgs []string
+	var positionalArgs []string
 	entries := map[string]Value{}
 
 	// non positional arguments
@@ -122,7 +136,19 @@ outer:
 			continue outer
 		}
 
-		remainingCliArgs = append(remainingCliArgs, cliArg)
+		if len(cliArg) > 0 && cliArg[0] == '-' {
+			opt := cliArg[1:]
+			if len(opt) > 0 && opt[0] == '-' {
+				opt = opt[1:]
+			}
+
+			name, _, _ := strings.Cut(opt, "=")
+			if name != "" {
+				return nil, errors.New(fmtUnknownArgument(name))
+			}
+		}
+
+		positionalArgs = append(positionalArgs, cliArg)
 	}
 
 	//default values
@@ -138,23 +164,29 @@ outer:
 		}
 	}
 
+	restParam := false
+
 	for i, param := range p.positional {
 		if param.rest {
-			paramValue, err := param.GetRestArgumentFromCliArgs(ctx, remainingCliArgs[i:])
+			paramValue, err := param.GetRestArgumentFromCliArgs(ctx, positionalArgs[i:])
 			if err != nil {
 				return nil, fmt.Errorf("invalid value for rest argument %s: %w", param.name, err)
 			}
 			entries[string(param.name)] = paramValue
 		} else {
-			if i >= len(remainingCliArgs) {
+			if i >= len(positionalArgs) {
 				return nil, ErrNotEnoughCliArgs
 			}
-			paramValue, _, err := param.GetArgumentFromCliArg(ctx, remainingCliArgs[i])
+			paramValue, _, err := param.GetArgumentFromCliArg(ctx, positionalArgs[i])
 			if err != nil {
 				return nil, fmt.Errorf("invalid value for argument %s: %w", param.name, err)
 			}
 			entries[string(param.name)] = paramValue
 		}
+	}
+
+	if !restParam && len(positionalArgs) > len(p.positional) {
+		return nil, errors.New(fmtTooManyPositionalArgs(len(positionalArgs), len(p.positional)))
 	}
 
 	return objFrom(entries), nil
@@ -345,6 +377,11 @@ func (m *Manifest) ArePermsGranted(grantedPerms []Permission, forbiddenPermissio
 
 func (m *Manifest) Usage() string {
 	buf := bytes.NewBuffer(nil)
+
+	if len(m.Parameters.positional) == 0 && len(m.Parameters.others) == 0 {
+		return "no arguments expected"
+	}
+
 	for _, param := range m.Parameters.positional {
 		buf.WriteByte('<')
 		buf.WriteString(string(param.name))
@@ -378,35 +415,40 @@ func (m *Manifest) Usage() string {
 		}
 	}
 
-	buf.WriteString("\n\nrequired:\n")
 	leftPadding := "  "
 	tripleLeftPadding := "      "
 
-	for _, param := range m.Parameters.positional {
-		if param.description == "" {
+	if m.Parameters.hasRequiredParams { //rest parameters count as required
+		buf.WriteString("\n\nrequired:\n")
+
+		for _, param := range m.Parameters.positional {
+			if param.description == "" {
+				buf.WriteString(
+					fmt.Sprintf("\n%s%s: %s\n", leftPadding, param.name, param.StringifiedPatternNoPercent()))
+			} else {
+				buf.WriteString(fmt.Sprintf("\n%s%s: %s\n%s%s\n", leftPadding, param.name, param.StringifiedPattern(), tripleLeftPadding, param.description))
+			}
+		}
+
+		for _, param := range m.Parameters.others {
+			if !param.Required() {
+				continue
+			}
 			buf.WriteString(
-				fmt.Sprintf("\n%s%s: %s\n", leftPadding, param.name, param.StringifiedPatternNoPercent()))
-		} else {
-			buf.WriteString(fmt.Sprintf("\n%s%s: %s\n%s%s\n", leftPadding, param.name, param.StringifiedPattern(), tripleLeftPadding, param.description))
+				fmt.Sprintf("\n%s%s (%s): %s\n%s%s\n", leftPadding, param.name, param.CliArgNames(), param.StringifiedPatternNoPercent(), tripleLeftPadding, param.description))
 		}
 	}
 
-	for _, param := range m.Parameters.others {
-		if !param.Required() {
-			continue
-		}
-		buf.WriteString(
-			fmt.Sprintf("\n%s%s (%s): %s\n%s%s\n", leftPadding, param.name, param.CliArgNames(), param.StringifiedPatternNoPercent(), tripleLeftPadding, param.description))
-	}
+	if m.Parameters.hasOptions {
+		buf.WriteString("\noptions:\n")
 
-	buf.WriteString("\noptions:\n")
-
-	for _, param := range m.Parameters.others {
-		if param.Required() {
-			continue
+		for _, param := range m.Parameters.others {
+			if param.Required() {
+				continue
+			}
+			buf.WriteString(
+				fmt.Sprintf("\n%s%s (%s): %s\n%s%s\n", leftPadding, param.name, param.CliArgNames(), param.StringifiedPatternNoPercent(), tripleLeftPadding, param.description))
 		}
-		buf.WriteString(
-			fmt.Sprintf("\n%s%s (%s): %s\n%s%s\n", leftPadding, param.name, param.CliArgNames(), param.StringifiedPatternNoPercent(), tripleLeftPadding, param.description))
 	}
 
 	return buf.String()
@@ -947,11 +989,20 @@ func getModuleParameters(v Value) (ModuleParameters, error) {
 			if param.pattern == nil {
 				return errors.New("missing .pattern in description of non positional parameter")
 			}
+			if param.Required() {
+				params.hasRequiredParams = true
+			} else {
+				params.hasOptions = true
+			}
 
 			params.others = append(params.others, param)
 		}
 		return nil
 	})
+
+	if len(params.positional) > 0 {
+		params.hasRequiredParams = true
+	}
 
 	if err != nil {
 		return ModuleParameters{}, fmt.Errorf("invalid manifest: 'parameters' section: %w", err)
