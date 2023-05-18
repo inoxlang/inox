@@ -2101,6 +2101,14 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 			for name, vpattern := range object.entryPatterns {
 				pattern.entryPatterns[name] = vpattern
+				if _, ok := object.optionalEntries[name]; !ok {
+					continue
+				}
+				//set as optional
+				if pattern.optionalEntries == nil {
+					pattern.optionalEntries = map[string]struct{}{}
+				}
+				pattern.optionalEntries[name] = struct{}{}
 			}
 		}
 

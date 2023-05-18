@@ -893,8 +893,15 @@ func (v *VM) run() {
 
 			for k, v := range spreadObjectPatt.entryPatterns {
 				patt.entryPatterns[k] = v
+				if _, ok := spreadObjectPatt.optionalEntries[k]; !ok {
+					continue
+				}
+				//set as optional
+				if patt.optionalEntries == nil {
+					patt.optionalEntries = map[string]struct{}{}
+				}
+				patt.optionalEntries[k] = struct{}{}
 			}
-
 			v.sp--
 		case BindCapturedLocals:
 			v.ip++

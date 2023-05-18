@@ -4890,6 +4890,26 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}, res)
 			})
 
+			t.Run("single-optional-property object pattern after properties", func(t *testing.T) {
+				code := `
+					%s = "s"
+					%user = %{name?: "foo"}
+					return %{s: %s, ...%user}
+				`
+
+				state := NewGlobalState(NewDefaultTestContext())
+				res, err := Eval(code, state, false)
+
+				assert.NoError(t, err)
+				assert.Equal(t, &ObjectPattern{
+					entryPatterns: map[string]Pattern{
+						"s":    &ExactValuePattern{value: Str("s")},
+						"name": &ExactValuePattern{value: Str("foo")},
+					},
+					optionalEntries: map[string]struct{}{"name": {}},
+				}, res)
+			})
+
 			t.Run("two-property object pattern after properties", func(t *testing.T) {
 				code := `
 					%s = "s"
