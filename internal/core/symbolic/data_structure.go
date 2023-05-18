@@ -185,7 +185,7 @@ func (list *List) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig,
 		return
 	}
 	utils.Must(w.Write(utils.StringAsBytes("[]")))
-	list.generalElement.PrettyPrint(w, config, 0, 0)
+	list.generalElement.PrettyPrint(w, config, depth, parentIndentCount)
 }
 
 func (a *List) HasKnownLen() bool {
