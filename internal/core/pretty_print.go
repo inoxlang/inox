@@ -1268,7 +1268,7 @@ func (patt ObjectPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig
 		isLastEntry := i == len(keys)-1
 
 		if !isLastEntry || patt.inexact {
-			utils.Must(w.Write(COLON_SPACE))
+			utils.Must(w.Write(COMMA_SPACE))
 		}
 	}
 
