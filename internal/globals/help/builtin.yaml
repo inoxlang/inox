@@ -128,6 +128,26 @@ crypto:
     - code: sha512("string")
       output: '0x[2757cb3cafc39af451abb2697be79b4ab61d63d74d85b0418629de8c26811b529f3f3780d0150063ff55a2beee74c4ec102a2a2731a1f1f7f10d473ad18a6a87]'
 
+  - topic: rsa
+    namespace: true
+    text: the rsa namespace contains functions to generate a key pair & encrypt/decrypt using OAEP.
+    subtopics:
+    - topic: rsa.gen_key
+      text: the rsa.gen_key function generates a public/private key pair
+      examples:
+      - code: 'rsa.gen_key()'
+        output: '#{public: "<key>", private: "<secret key>"}'
+
+    - topic: rsa.encrypt_oaep
+      text: the rsa.encrypt_oaep function encrypts a string or byte sequence using a public key
+      examples:
+      - code: 'rsa.encrypt_oaep("message", public_key)'
+
+    - topic: rsa.decrypt_oaep
+      text: the rsa.decrypt_oaep function decrypts a string or byte sequence using a private key
+      examples:
+      - code: 'rsa.encrypt_oaep(bytes, private_key)'
+
 encoding:
   title: Encodings
   elements:

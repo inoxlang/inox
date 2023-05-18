@@ -436,6 +436,12 @@ func PrintColorizedChunk(w io.Writer, chunk *parse.Chunk, code []rune, lightMode
 	}
 }
 
+func GetColorizedChunk(chunk *parse.Chunk, code []rune, lightMode bool, fgColorSequence []byte) string {
+	buf := bytes.NewBuffer(nil)
+	PrintColorizedChunk(buf, chunk, code, lightMode, fgColorSequence)
+	return buf.String()
+}
+
 func (n AstNode) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	inspectPrint(w, n)
 }

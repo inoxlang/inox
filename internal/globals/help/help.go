@@ -26,14 +26,15 @@ const (
 var (
 	helpMap     = map[uintptr]TopicHelp{}
 	helpByTopic = map[string]TopicHelp{}
-	topicGroups map[string]struct {
-		IsNamespace bool        `yaml:"namespace"`
-		Elements    []TopicHelp `yaml:"elements"`
-	}
-
+	topicGroups map[string]TopicGroup
 	//go:embed builtin.yaml
 	BUILTIN_HELP_YAML string
 )
+
+type TopicGroup struct {
+	IsNamespace bool        `yaml:"namespace"`
+	Elements    []TopicHelp `yaml:"elements"`
+}
 
 func init() {
 	core.RegisterSymbolicGoFunctions([]any{
@@ -44,30 +45,41 @@ func init() {
 		log.Panicf("error while parsing builtin.yaml: %s", err)
 	}
 
+	var addTopic func(item TopicHelp, groupName string, group TopicGroup)
+
+	addTopic = func(item TopicHelp, groupName string, group TopicGroup) {
+		isNamespace := strings.EqualFold(item.Topic, groupName) && group.IsNamespace
+
+		if isNamespace {
+			// add all elements of the group as subtopics (except the current topic)
+			item.SubTopicNames = append(item.SubTopicNames, utils.FilterMapSlice(group.Elements, func(e TopicHelp) (string, bool) {
+				if strings.EqualFold(e.Topic, groupName) {
+					return "", false
+				}
+				return e.Topic, true
+			})...)
+		}
+
+		item.Text = strings.TrimSpace(item.Text)
+		if !strings.HasSuffix(item.Text, ".") {
+			item.Text += "."
+		}
+
+		for _, subTopic := range item.SubTopics {
+			item.SubTopicNames = append(item.SubTopicNames, subTopic.Topic)
+			addTopic(subTopic, "?", TopicGroup{})
+		}
+
+		helpByTopic[item.Topic] = item
+
+		if item.Alias != "" {
+			helpByTopic[item.Alias] = item
+		}
+	}
+
 	for groupName, group := range topicGroups {
 		for _, item := range group.Elements {
-			isNamespace := strings.EqualFold(item.Topic, groupName) && group.IsNamespace
-
-			if isNamespace {
-				// add all elements of the group as subtopics (except the current topic)
-				item.SubTopics = append(item.SubTopics, utils.FilterMapSlice(group.Elements, func(e TopicHelp) (string, bool) {
-					if strings.EqualFold(e.Topic, groupName) {
-						return "", false
-					}
-					return e.Topic, true
-				})...)
-			}
-
-			item.Text = strings.TrimSpace(item.Text)
-			if !strings.HasSuffix(item.Text, ".") {
-				item.Text += "."
-			}
-
-			helpByTopic[item.Topic] = item
-
-			if item.Alias != "" {
-				helpByTopic[item.Alias] = item
-			}
+			addTopic(item, groupName, group)
 		}
 	}
 
@@ -122,14 +134,19 @@ func RegisterHelpValues(values map[string]any) {
 }
 
 type TopicHelp struct {
-	Value         any
-	Topic         string    `yaml:"topic"`
-	Alias         string    `yaml:"alias"`
-	RelatedTopics []string  `yaml:"related-topics"`
-	SubTopics     []string  `yaml:"sub-topics"`
-	Summary       string    `yaml:"summary"`
-	Text          string    `yaml:"text"`
-	Examples      []Example `yaml:"examples"`
+	Value any
+	//scalar
+	Topic       string `yaml:"topic"`
+	Alias       string `yaml:"alias"`
+	Summary     string `yaml:"summary"`
+	Text        string `yaml:"text"`
+	IsNamespace bool   `yaml:"namespace"`
+
+	//lists
+	RelatedTopics []string    `yaml:"related-topics"`
+	Examples      []Example   `yaml:"examples"`
+	SubTopicNames []string    `yaml:"subtopic-names"`
+	SubTopics     []TopicHelp `yaml:"subtopics"`
 }
 
 type Example struct {
@@ -177,7 +194,9 @@ func (h TopicHelp) Print(w io.Writer, config HelpMessageConfig) {
 						continue
 					}
 
-					core.PrintColorizedChunk(w, chunk, []rune(example.Output), false, core.GetFullColorSequence(termenv.ANSIWhite, false))
+					colorized := core.GetColorizedChunk(chunk, []rune(example.Output), false, core.GetFullColorSequence(termenv.ANSIWhite, false))
+					colorized = strings.ReplaceAll(colorized, "\n", "\n   ")
+					w.Write(utils.StringAsBytes(colorized))
 				}
 				w.Write(utils.StringAsBytes("\n\r"))
 
@@ -186,8 +205,8 @@ func (h TopicHelp) Print(w io.Writer, config HelpMessageConfig) {
 			w.Write(utils.StringAsBytes("\n\r"))
 		}
 
-		if len(h.SubTopics) > 0 {
-			w.Write(utils.StringAsBytes("\n\rsubtopics:\n\r\t- " + strings.Join(h.SubTopics, "\n\r\t- ")))
+		if len(h.SubTopicNames) > 0 {
+			w.Write(utils.StringAsBytes("\n\rsubtopics:\n\r\t- " + strings.Join(h.SubTopicNames, "\n\r\t- ")))
 			w.Write(utils.StringAsBytes("\n\r"))
 		}
 
@@ -195,6 +214,7 @@ func (h TopicHelp) Print(w io.Writer, config HelpMessageConfig) {
 			w.Write(utils.StringAsBytes("\n\rrelated: " + strings.Join(h.RelatedTopics, ", ")))
 			w.Write(utils.StringAsBytes("\n\r"))
 		}
+		w.Write(utils.StringAsBytes("\n"))
 	case MarkdownFormat:
 		w.Write(utils.StringAsBytes(h.Text + "\n"))
 
@@ -238,7 +258,6 @@ func Help(ctx *core.Context, args ...core.Value) {
 	out := ctx.GetClosestState().Out
 	if len(args) == 0 {
 		out.Write([]byte(helpUsage))
-		utils.MoveCursorNextLine(out, 1)
 		return
 	}
 
@@ -264,7 +283,6 @@ func Help(ctx *core.Context, args ...core.Value) {
 	}
 
 	out.Write([]byte(str))
-	utils.MoveCursorNextLine(out, 1)
 }
 
 type HelpMessageFormat int

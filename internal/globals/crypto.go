@@ -70,6 +70,10 @@ func init() {
 		"sha256":         _sha256,
 		"sha384":         _sha384,
 		"sha512":         _sha512,
+
+		"rsa.gen_key":      _rsa_gen_key,
+		"rsa.encrypt_oaep": _rsa_encrypt_oaep,
+		"rsa.decrypt_oaep": _rsa_decrypt_oaep,
 	})
 }
 
