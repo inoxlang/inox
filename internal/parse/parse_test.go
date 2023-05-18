@@ -17699,6 +17699,85 @@ func TestParse(t *testing.T) {
 				}, n)
 			})
 
+			t.Run("no pattern, interpolation + line feed", func(t *testing.T) {
+				n := MustParseChunk("`{{$nothing}}\n`")
+				assert.EqualValues(t, &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 15}, nil, nil},
+					Statements: []Node{
+						&StringTemplateLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{0, 15},
+								nil,
+								[]Token{
+									{Type: BACKQUOTE, Span: NodeSpan{0, 1}},
+									{Type: STR_INTERP_OPENING_BRACKETS, Span: NodeSpan{1, 3}},
+									{Type: STR_INTERP_CLOSING_BRACKETS, Span: NodeSpan{11, 13}},
+									{Type: BACKQUOTE, Span: NodeSpan{14, 15}},
+								},
+							},
+							Slices: []Node{
+								&StringTemplateSlice{
+									NodeBase: NodeBase{NodeSpan{1, 1}, nil, nil},
+									Raw:      "",
+									Value:    "",
+								},
+								&StringTemplateInterpolation{
+									NodeBase: NodeBase{NodeSpan{3, 11}, nil, nil},
+									Expr: &Variable{
+										NodeBase: NodeBase{NodeSpan{3, 11}, nil, nil},
+										Name:     "nothing",
+									},
+								},
+								&StringTemplateSlice{
+									NodeBase: NodeBase{NodeSpan{13, 14}, nil, nil},
+									Raw:      "\n",
+									Value:    "\n",
+								},
+							},
+						},
+					},
+				}, n)
+			})
+
+			t.Run("no pattern, interpolation + escaped n", func(t *testing.T) {
+				n := MustParseChunk("`{{$nothing}}\\n`")
+				assert.EqualValues(t, &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
+					Statements: []Node{
+						&StringTemplateLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{0, 16},
+								nil,
+								[]Token{
+									{Type: BACKQUOTE, Span: NodeSpan{0, 1}},
+									{Type: STR_INTERP_OPENING_BRACKETS, Span: NodeSpan{1, 3}},
+									{Type: STR_INTERP_CLOSING_BRACKETS, Span: NodeSpan{11, 13}},
+									{Type: BACKQUOTE, Span: NodeSpan{15, 16}},
+								},
+							},
+							Slices: []Node{
+								&StringTemplateSlice{
+									NodeBase: NodeBase{NodeSpan{1, 1}, nil, nil},
+									Raw:      "",
+									Value:    "",
+								},
+								&StringTemplateInterpolation{
+									NodeBase: NodeBase{NodeSpan{3, 11}, nil, nil},
+									Expr: &Variable{
+										NodeBase: NodeBase{NodeSpan{3, 11}, nil, nil},
+										Name:     "nothing",
+									},
+								},
+								&StringTemplateSlice{
+									NodeBase: NodeBase{NodeSpan{13, 15}, nil, nil},
+									Raw:      "\\n",
+									Value:    "\n",
+								},
+							},
+						},
+					},
+				}, n)
+			})
 		})
 	})
 
