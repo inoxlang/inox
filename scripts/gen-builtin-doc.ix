@@ -9,7 +9,6 @@ manifest {
     permissions: {
         read: IWD_PREFIX
         write: IWD_PREFIX
-        create: {routines: {}}
     }
 }
 
@@ -21,21 +20,65 @@ manifest {
     ...
 }
 
-%topic-data = %{
+%leaf-topic-data = %{
     topic: %str
     text?: %str
     examples?: %[]%example
     ...
 }
 
+%topic-data = %{
+    ...%leaf-topic-data
+    subtopics?: %[]%leaf-topic-data
+    ...
+}
 
-%group-data =  %{
+
+%group-data = %{
     namespace?: %bool
     elements: %[]%topic-data
     title?: %str
     ...
 }
 
+fn fmt_topic_markdown(topic %leaf-topic-data, is_leaf %bool){
+    markdown = ""
+    var examples %str = ""
+    if topic.?examples? {
+        examples = (concat ""
+            "\n**examples**\n\n"
+
+            ...map((topic.?examples ?? []), fn(example %example) %str { # todo: return type should not be necessary
+                code = example.?code
+                if code? {
+                    output = example.?output
+                    if output? {
+                        output = concat "\n# output: \n" output
+                    } 
+                    return concat "```inox\n" code (output ?? "") "\n```\n"
+                }
+                return ""
+            })
+        )
+    }
+
+    # make sure the text ends with '.'
+    var text %str = strmanip.trim_space((topic.?text ?? ""))
+    if ((text != "") and !(text match %`.+\.$`)){
+        text = concat text "."
+    }
+
+    head_level = "### "
+    if is_leaf {
+        head_level = "#### "
+    }
+
+    return (concat head_level
+        topic.topic "\n\n"
+        text "\n"
+        examples
+    )
+}
 
 help_data = read!(DATA_FILE)
 assert (help_data match %[%obj])
@@ -46,7 +89,7 @@ group_names = sort(propnames(groups), #lex)
 
 var builtin %str = ""
 
-# underline
+# outline
 
 for i, group_name in group_names {
     group = groups.(group_name)
@@ -55,7 +98,7 @@ for i, group_name in group_names {
     title = (group.?title ?? group_name)
     fragment = strmanip.lowercase(replace!(" ", "-", title)) 
 
-    builtin = concat builtin "- [" title "](#" fragment ")\n"
+    builtin = `{{builtin}} - [{{title}}](#{{fragment}})\n`
 }
 
 # topics
@@ -75,42 +118,18 @@ for i, group_name in group_names {
         "## " title "\n\n"
     )
 
-    for v in group.elements {
-        assert (v match %topic-data)
+    for topic in group.elements {
+        assert (topic match %topic-data)
 
-        var examples %str = ""
-        if v.?examples? {
-            examples = (concat ""
-                "\n**examples**\n\n"
+        topic_markdown = fmt_topic_markdown(topic, false)
+        builtin = concat builtin topic_markdown
 
-                ...map((v.?examples ?? []), fn(example %example) %str { # todo: return type should not be necessary
-                    code = example.?code
-                    if code? {
-                        output = example.?output
-                        if output? {
-                            output = concat "\n# output: \n" output
-                        } 
-                        return concat "```inox\n" code (output ?? "") "\n```\n"
-                    }
-                    return ""
-                })
-            )
+        for sub_topic in (topic.?subtopics ?? []) {
+            topic_markdown = fmt_topic_markdown(sub_topic, true)
+            builtin = concat builtin topic_markdown
         }
-
-        # make sure the text ends with '.'
-        var text %str = strmanip.trim_space((v.?text ?? ""))
-        if ((text != "") and !(text match %`.+\.$`)){
-            text = concat text "."
-        }
-
-        builtin = (concat builtin 
-            "### " v.topic "\n\n"
-            text "\n"
-            examples
-        )
     }
 }
-
 
 output = `
 [Install Inox](../README.md#installation) | [Language Basics](./language-basics.md) | [Shell Basics](./shell-basics.md) | [Scripting Basics](./scripting-basics.md)

@@ -5,18 +5,19 @@
 
 # Built-in
 
-- [Errors](#errors)
-- [Browser Automation](#browser-automation)
-- [Data Containers](#data-containers)
-- [Cryptography](#cryptography)
-- [DNS](#dns)
-- [Filesystem](#filesystem)
-- [Functional Programming](#functional-programming)
-- [HTML](#html)
-- [HTTP](#http)
-- [rand](#rand)
-- [Resource Manipulation](#resource-manipulation)
-- [TCP](#tcp)
+ - [Errors](#errors)
+ - [Browser Automation](#browser-automation)
+ - [Data Containers](#data-containers)
+ - [Cryptography](#cryptography)
+ - [DNS](#dns)
+ - [Encodings](#encodings)
+ - [Filesystem](#filesystem)
+ - [Functional Programming](#functional-programming)
+ - [HTML](#html)
+ - [HTTP](#http)
+ - [rand](#rand)
+ - [Resource Manipulation](#resource-manipulation)
+ - [TCP](#tcp)
 ## Errors
 
 ### Error
@@ -190,6 +191,38 @@ sha512("string")
 # output: 
 0x[2757cb3cafc39af451abb2697be79b4ab61d63d74d85b0418629de8c26811b529f3f3780d0150063ff55a2beee74c4ec102a2a2731a1f1f7f10d473ad18a6a87]
 ```
+### rsa
+
+the rsa namespace contains functions to generate a key pair & encrypt/decrypt using OAEP.
+#### rsa.gen_key
+
+the rsa.gen_key function generates a public/private key pair.
+
+**examples**
+
+```inox
+rsa.gen_key()
+# output: 
+#{public: "<key>", private: "<secret key>"}
+```
+#### rsa.encrypt_oaep
+
+the rsa.encrypt_oaep function encrypts a string or byte sequence using a public key.
+
+**examples**
+
+```inox
+rsa.encrypt_oaep("message", public_key)
+```
+#### rsa.decrypt_oaep
+
+the rsa.decrypt_oaep function decrypts a string or byte sequence using a private key.
+
+**examples**
+
+```inox
+rsa.encrypt_oaep(bytes, private_key)
+```
 
 ## DNS
 
@@ -203,8 +236,26 @@ the dns.resolve function retrieves DNS records of the given type.
 dns.resolve!("github.com" "A")
 ```
 
+## Encodings
+
+### b64
+
+the b64 function encodes a string or byte sequence to Base64.
+### db64
+
+the db64 function decodes a byte sequence from Base64.
+### hex
+
+the hex function encodes a string or byte sequence to hexadecimal.
+### unhex
+
+the unhex function decodes a byte sequence from hexadecimal.
+
 ## Filesystem
 
+### fs
+
+the fs namespace contains functions to interact with the filesystem.
 ### fs.mkfile
 
 The fs.mkfile function takes a file path as first argument. It accepts a --readonly switch that causes  the created file to not have the write permission ; and a %readable argument that is the content of the file to create.
@@ -452,6 +503,9 @@ the idt (identity) function takes a single argument and returns it.
 
 ## HTML
 
+### html
+
+the html namespace contains functions to create & manipulate HTML nodes.
 ### html.h1
 
 the html.h1 function creates a h1 HTML element.
