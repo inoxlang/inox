@@ -888,16 +888,14 @@ func (v *VM) run() {
 			v.stack[v.sp] = object
 			v.sp++
 		case OpSpreadObjectPattern:
-			patt := v.stack[v.sp-1].(*ObjectPattern)
-			spreadObjectPatt := v.stack[v.sp-2].(*ObjectPattern)
-			v.sp -= 2
+			patt := v.stack[v.sp-2].(*ObjectPattern)
+			spreadObjectPatt := v.stack[v.sp-1].(*ObjectPattern)
 
 			for k, v := range spreadObjectPatt.entryPatterns {
 				patt.entryPatterns[k] = v
 			}
 
-			v.stack[v.sp] = patt
-			v.sp++
+			v.sp--
 		case BindCapturedLocals:
 			v.ip++
 			numCaptured := int(v.curInsts[v.ip])

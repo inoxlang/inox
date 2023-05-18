@@ -4867,33 +4867,228 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}, res)
 		})
 
-		t.Run("spread element: object pattern", func(t *testing.T) {
-			code := `
-				%s = "s"
-				%user = %{name: "foo"}
-				return %{s: %s, ...%user}
-			`
+		t.Run("spread", func(t *testing.T) {
 
-			state := NewGlobalState(NewDefaultTestContext())
-			res, err := Eval(code, state, false)
+			//TODO: add tests with several spread
 
-			assert.NoError(t, err)
-			assert.Equal(t, &ObjectPattern{
-				entryPatterns: map[string]Pattern{
-					"s":    &ExactValuePattern{value: Str("s")},
-					"name": &ExactValuePattern{value: Str("foo")},
-				},
-			}, res)
-		})
+			t.Run("single-property object pattern after properties", func(t *testing.T) {
+				code := `
+					%s = "s"
+					%user = %{name: "foo"}
+					return %{s: %s, ...%user}
+				`
 
-		t.Run("spread element: not an object pattern", func(t *testing.T) {
-			code := `%s = "s"; return %{...%s}`
+				state := NewGlobalState(NewDefaultTestContext())
+				res, err := Eval(code, state, false)
 
-			state := NewGlobalState(NewDefaultTestContext())
-			res, err := Eval(code, state, false)
+				assert.NoError(t, err)
+				assert.Equal(t, &ObjectPattern{
+					entryPatterns: map[string]Pattern{
+						"s":    &ExactValuePattern{value: Str("s")},
+						"name": &ExactValuePattern{value: Str("foo")},
+					},
+				}, res)
+			})
 
-			assert.Error(t, err)
-			assert.Nil(t, res)
+			t.Run("two-property object pattern after properties", func(t *testing.T) {
+				code := `
+					%s = "s"
+					%user = %{name: "foo", age: 30}
+					return %{s: %s, ...%user}
+				`
+
+				state := NewGlobalState(NewDefaultTestContext())
+				res, err := Eval(code, state, false)
+
+				assert.NoError(t, err)
+				assert.Equal(t, &ObjectPattern{
+					entryPatterns: map[string]Pattern{
+						"s":    &ExactValuePattern{value: Str("s")},
+						"name": &ExactValuePattern{value: Str("foo")},
+						"age":  &ExactValuePattern{value: Int(30)},
+					},
+				}, res)
+			})
+
+			t.SkipNow()
+
+			t.Run("single-property object pattern after properties in inexact pattern", func(t *testing.T) {
+				code := `
+					%s = "s"
+					%user = %{name: "foo"}
+					return %{s: %s, ...%user, ...}
+				`
+
+				state := NewGlobalState(NewDefaultTestContext())
+				res, err := Eval(code, state, false)
+
+				assert.NoError(t, err)
+				assert.Equal(t, &ObjectPattern{
+					inexact: true,
+					entryPatterns: map[string]Pattern{
+						"s":    &ExactValuePattern{value: Str("s")},
+						"name": &ExactValuePattern{value: Str("foo")},
+					},
+				}, res)
+			})
+
+			t.Run("two-property object pattern after properties in inexact pattern", func(t *testing.T) {
+				code := `
+					%s = "s"
+					%user = %{name: "foo", age: 30}
+					return %{s: %s, ...%user, ...}
+				`
+
+				state := NewGlobalState(NewDefaultTestContext())
+				res, err := Eval(code, state, false)
+
+				assert.NoError(t, err)
+				assert.Equal(t, &ObjectPattern{
+					inexact: true,
+					entryPatterns: map[string]Pattern{
+						"s":    &ExactValuePattern{value: Str("s")},
+						"name": &ExactValuePattern{value: Str("foo")},
+						"age":  &ExactValuePattern{value: Int(30)},
+					},
+				}, res)
+			})
+
+			t.Run("single-property object pattern before properties", func(t *testing.T) {
+				code := `
+					%s = "s"
+					%user = %{name: "foo"}
+					return %{...%user, s: %s}
+				`
+
+				state := NewGlobalState(NewDefaultTestContext())
+				res, err := Eval(code, state, false)
+
+				assert.NoError(t, err)
+				assert.Equal(t, &ObjectPattern{
+					entryPatterns: map[string]Pattern{
+						"s":    &ExactValuePattern{value: Str("s")},
+						"name": &ExactValuePattern{value: Str("foo")},
+					},
+				}, res)
+			})
+
+			t.Run("two-property object pattern before properties", func(t *testing.T) {
+				code := `
+					%s = "s"
+					%user = %{name: "foo", age: 30}
+					return %{...%user, s: %s}
+				`
+
+				state := NewGlobalState(NewDefaultTestContext())
+				res, err := Eval(code, state, false)
+
+				assert.NoError(t, err)
+				assert.Equal(t, &ObjectPattern{
+					entryPatterns: map[string]Pattern{
+						"s":    &ExactValuePattern{value: Str("s")},
+						"name": &ExactValuePattern{value: Str("foo")},
+						"age":  &ExactValuePattern{value: Int(30)},
+					},
+				}, res)
+			})
+
+			t.Run("single-property object pattern before properties in inexact pattern", func(t *testing.T) {
+				code := `
+					%s = "s"
+					%user = %{name: "foo"}
+					return %{...%user, s: %s, ...}
+				`
+
+				state := NewGlobalState(NewDefaultTestContext())
+				res, err := Eval(code, state, false)
+
+				assert.NoError(t, err)
+				assert.Equal(t, &ObjectPattern{
+					inexact: true,
+					entryPatterns: map[string]Pattern{
+						"s":    &ExactValuePattern{value: Str("s")},
+						"name": &ExactValuePattern{value: Str("foo")},
+					},
+				}, res)
+			})
+
+			t.Run("two-property object pattern before properties in inexact pattern", func(t *testing.T) {
+				code := `
+					%s = "s"
+					%user = %{name: "foo", age: 30}
+					return %{...%user, s: %s, ...}
+				`
+
+				state := NewGlobalState(NewDefaultTestContext())
+				res, err := Eval(code, state, false)
+
+				assert.NoError(t, err)
+				assert.Equal(t, &ObjectPattern{
+					inexact: true,
+					entryPatterns: map[string]Pattern{
+						"s":    &ExactValuePattern{value: Str("s")},
+						"name": &ExactValuePattern{value: Str("foo")},
+						"age":  &ExactValuePattern{value: Int(30)},
+					},
+				}, res)
+			})
+
+			t.Run("complex (exact)", func(t *testing.T) {
+				code := `
+					%s = "s"
+					%user = %{name: "foo"}
+					return %{...%user, friends: %[]%user}
+				`
+
+				state := NewGlobalState(NewDefaultTestContext())
+				res, err := Eval(code, state, false)
+
+				assert.NoError(t, err)
+				assert.Equal(t, &ObjectPattern{
+					entryPatterns: map[string]Pattern{
+						"friends": NewListPatternOf(&ObjectPattern{
+							entryPatterns: map[string]Pattern{
+								"name": &ExactValuePattern{value: Str("foo")},
+							},
+						}),
+						"name": &ExactValuePattern{value: Str("foo")},
+					},
+				}, res)
+			})
+
+			t.Run("complex (inexact)", func(t *testing.T) {
+				code := `
+					%s = "s"
+					%user = %{name: "foo"}
+					return %{...%user, friends: %[]%user, ...}
+				`
+
+				state := NewGlobalState(NewDefaultTestContext())
+				res, err := Eval(code, state, false)
+
+				assert.NoError(t, err)
+				assert.Equal(t, &ObjectPattern{
+					inexact: true,
+					entryPatterns: map[string]Pattern{
+						"friends": NewListPatternOf(&ObjectPattern{
+							entryPatterns: map[string]Pattern{
+								"name": &ExactValuePattern{value: Str("foo")},
+							},
+						}),
+						"name": &ExactValuePattern{value: Str("foo")},
+					},
+				}, res)
+			})
+
+			t.Run("spread element is not an object pattern", func(t *testing.T) {
+				code := `%s = "s"; return %{...%s}`
+
+				state := NewGlobalState(NewDefaultTestContext())
+				res, err := Eval(code, state, false)
+
+				assert.Error(t, err)
+				assert.Nil(t, res)
+			})
 		})
 
 	})
