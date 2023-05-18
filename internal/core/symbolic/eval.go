@@ -3165,7 +3165,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 	} else if _, ok := callee.(*Function); ok {
 		//ok
 	} else {
-		state.addError(makeSymbolicEvalError(callNode, state, fmtCannotCall(callee)))
+		state.addError(makeSymbolicEvalError(calleeNode, state, fmtCannotCall(callee)))
 		return ANY, nil
 	}
 
