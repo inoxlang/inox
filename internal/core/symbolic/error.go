@@ -325,5 +325,5 @@ func fmtUnknownSectionInCoroutineMetadata(name string) string {
 }
 
 func fmtValueNotStringifiableToQueryParamValue(val SymbolicValue) string {
-	return fmt.Sprintf("value of type %s is not stringifiable to a query param value", Stringify(val))
+	return fmt.Sprintf("value of type %s is not stringifiable to a query param value: only strings, integers & booleans are accepted", Stringify(val))
 }
