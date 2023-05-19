@@ -53,13 +53,16 @@ const (
 	FS_READ_PERM_RISK_SCORE  = 10
 	FS_WRITE_PERM_RISK_SCORE = 20
 
+	ROUTINE_PERM_RISK_SCORE = 10
+
 	CMD_PERM_RISK_SCORE = 30
 )
 
 var (
-	HTTP_PERM_TYPE = reflect.TypeOf(HttpPermission{})
-	FS_PERM_TYPE   = reflect.TypeOf(FilesystemPermission{})
-	CMD_PERM_TYPE  = reflect.TypeOf(CommandPermission{})
+	HTTP_PERM_TYPE    = reflect.TypeOf(HttpPermission{})
+	FS_PERM_TYPE      = reflect.TypeOf(FilesystemPermission{})
+	ROUTINE_PERM_TYPE = reflect.TypeOf(RoutinePermission{})
+	CMD_PERM_TYPE     = reflect.TypeOf(CommandPermission{})
 
 	DEFAULT_PERM_RISK_SCORES = map[reflect.Type][]BasePermissionRiskScore{
 		HTTP_PERM_TYPE: {
@@ -70,6 +73,9 @@ var (
 		FS_PERM_TYPE: {
 			{FS_PERM_TYPE, permkind.Read, FS_READ_PERM_RISK_SCORE},
 			{FS_PERM_TYPE, permkind.Write, FS_WRITE_PERM_RISK_SCORE},
+		},
+		ROUTINE_PERM_TYPE: {
+			{ROUTINE_PERM_TYPE, permkind.Create, ROUTINE_PERM_RISK_SCORE},
 		},
 		CMD_PERM_TYPE: {
 			{CMD_PERM_TYPE, permkind.Use, CMD_PERM_RISK_SCORE},
@@ -100,7 +106,8 @@ func ComputeProgramRiskScore(mod *Module, manifest *Manifest) (totalScore RiskSc
 		if _, ok := requiredPerm.(GlobalVarPermission); ok { //ignore
 			continue
 		}
-		permTypeRiskScores[reflect.TypeOf(requiredPerm)] += ComputePermissionRiskScore(requiredPerm)
+		permRisk := ComputePermissionRiskScore(requiredPerm)
+		permTypeRiskScores[reflect.TypeOf(requiredPerm)] += permRisk
 	}
 
 	totalScore = 1
@@ -126,7 +133,7 @@ func ComputePermissionRiskScore(perm Permission) RiskScore {
 	var score RiskScore = UNKNOWN_PERM_RISK_SCORE
 
 	for _, permRiskScore := range permRiskScores {
-		if permRiskScore.Type == permType && permRiskScore.Kind == majorPermKind {
+		if permRiskScore.Type == permType && permRiskScore.Kind.Major() == majorPermKind {
 			score = permRiskScore.Score
 		}
 	}

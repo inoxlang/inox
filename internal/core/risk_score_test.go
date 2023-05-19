@@ -69,6 +69,26 @@ func TestComputeProgramRiskScore(t *testing.T) {
 		assert.Equal(t, expected, ComputeProgramRiskScore(mod, manifest))
 	})
 
+	t.Run("create routines permission", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+
+		mod := utils.Must(ParseInMemoryModule(`
+			manifest {
+				permissions: {create: {routines: {}}}
+			}
+		`, InMemoryModuleParsingConfig{
+			Name:    "",
+			Context: ctx,
+		}))
+
+		manifest := utils.Must(mod.EvalManifest(ManifestEvaluationConfig{
+			GlobalConsts: mod.MainChunk.Node.GlobalConstantDeclarations,
+		}))
+
+		expected := RiskScore(ROUTINE_PERM_RISK_SCORE)
+		assert.Equal(t, expected, ComputeProgramRiskScore(mod, manifest))
+	})
+
 	t.Run("many permissions", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 
