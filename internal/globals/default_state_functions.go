@@ -165,6 +165,23 @@ func _tofloat(ctx *core.Context, v core.Int) core.Float {
 	return core.Float(v)
 }
 
+func _toint(ctx *core.Context, v core.Value) core.Int {
+	switch val := v.(type) {
+	case core.Byte:
+		return core.Int(val)
+	case core.Float:
+		f := val
+		n := core.Int(f)
+		if core.Float(n) != f {
+			panic(core.ErrPrecisionLoss)
+		}
+		return n
+	default:
+		panic(core.ErrUnreachable)
+	}
+
+}
+
 func _torstream(ctx *core.Context, v core.Value) core.ReadableStream {
 	return core.ToReadableStream(ctx, v, core.ANYVAL_PATTERN)
 }

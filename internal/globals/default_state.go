@@ -188,6 +188,7 @@ func NewDefaultGlobalState(ctx *core.Context, config DefaultGlobalStateConfig) (
 		"torune":     core.ValOf(_torune),
 		"tobyte":     core.ValOf(_tobyte),
 		"tofloat":    core.ValOf(_tofloat),
+		"toint":      core.ValOf(_toint),
 		"torstream":  core.ValOf(_torstream),
 		"tojson":     core.ValOf(core.ToJSON),
 		"topjson":    core.ValOf(core.ToPrettyJSON),

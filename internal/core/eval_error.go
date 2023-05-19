@@ -63,6 +63,7 @@ var (
 
 	ErrNotEnoughCliArgs                 = errors.New("not enough CLI arguments")
 	ErrMissinggRuntimeTypecheckSymbData = errors.New("impossible to perform runtime typecheck because symbolic data is missing")
+	ErrPrecisionLoss                    = errors.New("precision loss")
 )
 
 func FormatErrPropertyDoesNotExist(name string, v Value) error {

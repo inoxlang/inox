@@ -115,32 +115,40 @@ func init() {
 		},
 
 		encodeBase64, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.String {
-			return &symbolic.String{}
+			return symbolic.ANY_STR
 		},
 
 		decodeBase64, func(ctx *symbolic.Context, arg symbolic.Readable) (*symbolic.ByteSlice, *symbolic.Error) {
-			return &symbolic.ByteSlice{}, nil
+			return symbolic.ANY_BYTE_SLICE, nil
 		},
 
 		encodeHex, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.String {
-			return &symbolic.String{}
+			return symbolic.ANY_STR
 		},
 
 		decodeHex, func(ctx *symbolic.Context, arg symbolic.Readable) (*symbolic.ByteSlice, *symbolic.Error) {
-			return &symbolic.ByteSlice{}, nil
+			return symbolic.ANY_BYTE_SLICE, nil
 		},
 
 		_tostr, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) symbolic.StringLike {
 			return symbolic.ANY_STR_LIKE
 		},
 		_torune, func(ctx *symbolic.Context, arg symbolic.Integral) *symbolic.Rune {
-			return &symbolic.Rune{}
+			return symbolic.ANY_RUNE
 		},
 		_tobyte, func(ctx *symbolic.Context, arg *symbolic.Int) *symbolic.Byte {
-			return &symbolic.Byte{}
+			return symbolic.ANY_BYTE
 		},
 		_tofloat, func(ctx *symbolic.Context, arg *symbolic.Int) *symbolic.Float {
-			return &symbolic.Float{}
+			return symbolic.ANY_FLOAT
+		},
+		_toint, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) *symbolic.Int {
+			switch arg.(type) {
+			case *symbolic.Float, *symbolic.Byte:
+			default:
+				ctx.AddFormattedSymbolicGoFunctionError("toint only accept floats & bytes, type is %s", symbolic.Stringify(arg))
+			}
+			return symbolic.ANY_INT
 		},
 		_torstream, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) *symbolic.ReadableStream {
 			return symbolic.NewReadableStream(symbolic.ANY)
