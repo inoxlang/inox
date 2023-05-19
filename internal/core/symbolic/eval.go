@@ -1045,7 +1045,8 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			state.addError(makeSymbolicEvalError(node, state, fmtValueOfVarShouldBeAModuleNode(varname)))
 		}
 
-		modCtx := NewSymbolicContext()
+		//TODO: check the allow section to know the permissions
+		modCtx := NewSymbolicContext(state.ctx.startingConcreteContext)
 		modState := newSymbolicState(modCtx, &parse.ParsedChunk{
 			Node:   embeddedModule,
 			Source: state.currentChunk().Source,
@@ -1545,7 +1546,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				panic(fmt.Errorf("invalid key representation '%s'", keyRepr))
 			}
 			//TODO: refactor
-			key, _ := symbolicEval(node, newSymbolicState(NewSymbolicContext(), nil))
+			key, _ := symbolicEval(node, newSymbolicState(NewSymbolicContext(nil), nil))
 			keys[keyRepr] = key
 			state.symbolicData.SetMostSpecificNodeValue(entry.Key, key)
 		}
@@ -2820,7 +2821,8 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		embeddedModule := v.(*AstNode).Node.(*parse.Chunk)
 
-		modCtx := NewSymbolicContext()
+		//TODO: read the manifest to known the permissions
+		modCtx := NewSymbolicContext(state.ctx.startingConcreteContext)
 		modState := newSymbolicState(modCtx, &parse.ParsedChunk{
 			Node:   embeddedModule,
 			Source: state.currentChunk().Source,
@@ -2853,7 +2855,8 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		embeddedModule := v.(*AstNode).Node.(*parse.Chunk)
 
-		modCtx := NewSymbolicContext()
+		//TODO: read the manifest to known the permissions
+		modCtx := NewSymbolicContext(state.ctx.startingConcreteContext)
 		modState := newSymbolicState(modCtx, &parse.ParsedChunk{
 			Node:   embeddedModule,
 			Source: state.currentChunk().Source,
@@ -2903,7 +2906,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		embeddedModule := v.(*AstNode).Node.(*parse.Chunk)
 
 		//add patterns of parent state
-		modCtx := NewSymbolicContext()
+		modCtx := NewSymbolicContext(state.ctx.startingConcreteContext) //TODO: read the manifest to known the permissions
 		state.ctx.ForEachPattern(func(name string, pattern Pattern) {
 			modCtx.AddNamedPattern(name, pattern, parse.SourcePositionRange{})
 		})

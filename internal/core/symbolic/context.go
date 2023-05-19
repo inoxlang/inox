@@ -8,8 +8,9 @@ import (
 )
 
 type Context struct {
-	forkingParent   *Context
-	associatedState *State
+	forkingParent           *Context
+	associatedState         *State
+	startingConcreteContext ConcreteContext
 
 	hostAliases                         map[string]SymbolicValue
 	namedPatterns                       map[string]Pattern
@@ -18,8 +19,10 @@ type Context struct {
 	patternNamespacePositionDefinitions map[string]parse.SourcePositionRange
 }
 
-func NewSymbolicContext() *Context {
+func NewSymbolicContext(startingConcreteContext ConcreteContext) *Context {
 	return &Context{
+		startingConcreteContext: startingConcreteContext,
+
 		hostAliases:                         make(map[string]SymbolicValue, 0),
 		namedPatterns:                       make(map[string]Pattern, 0),
 		namedPatternPositionDefinitions:     make(map[string]parse.SourcePositionRange, 0),
@@ -120,6 +123,13 @@ func (ctx *Context) SetSymbolicGoFunctionParameters(parameters *[]SymbolicValue,
 	ctx.associatedState.setSymbolicGoFunctionParameters(parameters, names)
 }
 
+func (ctx *Context) HasPermission(perm any) bool {
+	if ctx.startingConcreteContext == nil {
+		return false
+	}
+	return ctx.startingConcreteContext.HasPermissionUntyped(perm)
+}
+
 func (ctx *Context) currentData() (data ContextData) {
 	//TODO: share some pieces of data between ContextData values in order to save memor
 	//forking makes that non trivial
@@ -144,7 +154,11 @@ func (ctx *Context) currentData() (data ContextData) {
 }
 
 func (ctx *Context) fork() *Context {
-	child := NewSymbolicContext()
+	child := NewSymbolicContext(ctx.startingConcreteContext)
 	child.forkingParent = ctx
 	return child
+}
+
+type ConcreteContext interface {
+	HasPermissionUntyped(perm any) bool
 }

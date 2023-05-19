@@ -13,7 +13,7 @@ func _makeStateAndChunk(code string, includedFiles map[string]string, globals ..
 		CodeString: code,
 	})
 
-	state := newSymbolicState(NewSymbolicContext(), chunk)
+	state := newSymbolicState(NewSymbolicContext(nil), chunk)
 	state.symbolicData = NewSymbolicData()
 
 	state.ctx.AddNamedPattern("int", &TypePattern{

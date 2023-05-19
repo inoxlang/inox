@@ -418,6 +418,14 @@ func (ctx *Context) HasPermission(perm Permission) bool {
 	return ctx.hasPermission(perm)
 }
 
+// Like HasPermission but the permission is any, this function is used by symbolic contexts
+func (ctx *Context) HasPermissionUntyped(perm any) bool {
+	ctx.lock.RLock()
+	defer ctx.lock.RUnlock()
+
+	return ctx.hasPermission(perm.(Permission))
+}
+
 func (ctx *Context) hasPermission(perm Permission) bool {
 
 	for _, forbiddenPerm := range ctx.forbiddenPermissions {
@@ -950,8 +958,7 @@ func (ctx *Context) CancelIfShortLived() {
 }
 
 func (ctx *Context) ToSymbolicValue() (*symbolic.Context, error) {
-
-	symbolicCtx := symbolic.NewSymbolicContext()
+	symbolicCtx := symbolic.NewSymbolicContext(ctx)
 
 	for k, v := range ctx.namedPatterns {
 		symbolicVal, err := ToSymbolicValue(v, false)
