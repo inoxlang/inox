@@ -4,9 +4,11 @@
 
 # Scripting Basics
 
-In this tutorial you will learn how to write Inox scripts & use the most important functions.
+- [Hello World](#hello-world)
+- [Example: Project Directory Generation](#example-project-directory-generation)
+- [Retrieve, Filter & Extract Data](#retrieve-filter--extract-data)
 
-## Hello world
+## Hello World
 
 ```
 manifest {}
@@ -52,7 +54,7 @@ We need access to the filesystem so we added a write permission followed by the 
 
 > Note: the `write: IWD_PREFIX` permission allows writing to any file below the current directory: **./file.txt**, **./dir/file.txt ...**
 
-## Project Directory Generation
+## Example: Project Directory Generation
 
 ## Version 1
 
@@ -79,8 +81,8 @@ manifest {
 }
 ```
 
-The script needs the `write` permission to create the directory structure and the `delete` permission to remove the directory when we use the `--clean-existing` switch.\
-Let's add the `permissions` section in the manifest
+The script needs the `write` permission to create the directory structure and the `delete` permission to remove the directory if `--clean-existing` is present.\
+Let's add the permissions section in the manifest
 
 ```
     permissions: {
@@ -91,7 +93,7 @@ Let's add the `permissions` section in the manifest
 
 ### Writing the Logic
 
-Now let's write the code for the program.
+Now let's write the code for the script.
 First we need to get the module's **arguments**:
 
 ```
@@ -100,7 +102,7 @@ clean-existing = mod-args.clean-existing
 ```
 
 If `clean-existing` is true we have to recursively remove the directory,
-we can easily achieve this by using `fs.remove` or `delete`
+we can easily achieve this by using `fs.remove` or `delete`:
 
 ```
 if clean-existing {
@@ -213,3 +215,153 @@ if clean-existing {
 ```
 
 Since we are reading the filesystem we need to add `read: IWD_PREFIX` in the permissions.
+
+## Retrieve, Filter & Extract Data
+
+Let's start by creating a **script.ix** file with the following content:
+
+```
+manifest {
+    permissions: {
+        read: %https://**
+        create: {routines: {}}
+    }
+}
+```
+
+### Retrieve
+
+The built-in [read](./builtin.md#read) function can read & parse the content of files, directories and HTTP resources.
+You can learn more about resource manipulation [here](./shell-basics.md#resource-manipulation).
+
+Throughout this tutorial, we will work with the mocked API served by https://jsonplaceholder.typicode.com/ :
+```
+assign posts err = read(https://jsonplaceholder.typicode.com/posts)
+if err? { # if error not nil
+    print("failed to retrieve data", err)
+    return
+}
+```
+
+We can ignore the error value by writing the following:
+```
+posts = read!(https://jsonplaceholder.typicode.com/posts)
+```
+ℹ️ Any error will be thrown instead, this type of call is a **must** call.
+
+### Filter
+
+The posts have a **.userId** field, let's just keep the posts of the user of id **1**:
+```
+assert (posts match %iterable)
+user1_posts = filter(posts, %{userId: 1.0, ...})
+```
+
+**%{userId: 1.0, ...}** is a pattern that matches any object with the shape: **{userId: 1.0, ...}**.
+
+Alternatively you can use a **lazy expression** to filter posts:
+```
+user1_posts = filter(posts, @($.userId == 1.0))
+```
+
+ℹ️ Surrounding an expression with @(...) creates a lazy expression that is evaluated for each post.
+
+### Extract
+
+The **map** function creates a list by applying an operation on each element of an iterable.
+Let's call this function to extract the content of each post:
+```
+contents = map(user1_posts, .body)
+```
+
+Note: **.body** is a property name literal
+
+We can extract several fields of the post by using a **key list**:
+```
+post_data = map(user1_posts, .{id, body, title})
+```
+
+Lazy expressions are another alternative here:
+```
+post_data = map(user1_posts, @({ 
+    id: $.id
+    title: $.title
+    body: $.body
+}))
+```
+
+⚠️ Lazy expressions are more flexible but are slower and less secure, try to only use them when necessary.
+
+### Parallel Data Retrieval
+
+Let's fetch the comments of each post by using the **/comments** endpoint.
+We will use **coroutines** to retrieve the comments in parallel:
+
+```
+# we group the coroutines together
+request_group = RoutineGroup()
+
+for post in post_data {
+    id = post.id
+    assert (id match %float)
+
+    go {group: request_group, globals: {id: toint(id)}} do read!(https://jsonplaceholder.typicode.com/comments?postId={id})
+}
+
+comments_of_user1_posts = request_group.wait_results!()
+print(comments_of_user1_posts)
+```
+
+ℹ️ **go \[...]** is a spawn expression that creates a coroutine attached to **request_group**.
+
+### Complete Script
+
+```
+manifest {
+    permissions: {
+        read: %https://**
+        create: {routines: {}}
+    }
+}
+
+POSTS_URL = https://jsonplaceholder.typicode.com/posts
+posts = read!(POSTS_URL)
+assert (posts match %iterable)
+
+user1_posts = filter(posts, %{userId: 1.0, ...})
+post_data = map(user1_posts, .{id, body, title})
+
+# we group the coroutines together
+request_group = RoutineGroup()
+
+for post in post_data {
+    id = post.id
+    assert (id match %float)
+
+    go {group: request_group, globals: {id: toint(id)}} do read!(https://jsonplaceholder.typicode.com/comments?postId={id})
+}
+
+comments_of_user1_posts = request_group.wait_results!()
+print(comments_of_user1_posts)
+```
+
+### Simplification with Pipeline Statements
+
+Let's simplify the following code a bit:
+```
+posts = read!(POSTS_URL)
+assert (posts match %iterable)
+
+user1_posts = filter(posts, %{userId: 1.0, ...})
+
+post_data = map(user1_posts, .{id, body, title})
+```
+
+We can get rid of the **user1_posts** variable by using a [pipeline statement](./language-basics.md#pipe-statement):
+```
+posts = read!(POSTS_URL)
+assert (posts match %iterable)
+
+post_data = | filter $posts %{userId: 1.0, ...} | map $ .{id, body, title}
+```
+ℹ️ In pipeline statements **$** holds the result of the previous call.
