@@ -4649,9 +4649,10 @@ func TestSymbolicEval(t *testing.T) {
 			_, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
-			assert.Equal(t, []SymbolicEvaluationWarning{
+			assert.Contains(t,
+				state.warnings,
 				makeSymbolicEvalWarning(metadataNode, state, fmtUnknownSectionInCoroutineMetadata("x")),
-			}, state.warnings)
+			) //we use contains because there is also a warning about a missing permission
 		})
 
 	})

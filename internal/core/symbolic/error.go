@@ -45,6 +45,9 @@ const (
 	FROM_XML_FACTORY_SHOULD_HAVE_AT_LEAST_ONE_NON_VARIADIC_PARAM = "factory ." + FROM_XML_FACTORY_NAME + " should have at least one non variadic parameter"
 
 	IMPORTED_MOD_PATH_MUST_END_WITH_IX = "imported module's path must end with '.ix'"
+
+	//permissions
+	POSSIBLE_MISSING_PERM_TO_CREATE_A_COROUTINE = "missing permission to create a coroutine"
 )
 
 var (

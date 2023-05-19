@@ -15,6 +15,7 @@ type PermissionKind = permkind.PermissionKind
 // (read http://**) includes (read https://example.com).
 type Permission interface {
 	Kind() PermissionKind
+	InternalPermTypename() permkind.InternalPermissionTypename
 	Includes(Permission) bool
 	String() string
 }
@@ -54,6 +55,10 @@ func (perm GlobalVarPermission) Kind() PermissionKind {
 	return perm.Kind_
 }
 
+func (perm GlobalVarPermission) InternalPermTypename() permkind.InternalPermissionTypename {
+	return permkind.GLOBAL_VAR_PERM_TYPENAME
+}
+
 func (perm GlobalVarPermission) Includes(otherPerm Permission) bool {
 	otherGlobVarPerm, ok := otherPerm.(GlobalVarPermission)
 	if !ok || !perm.Kind().Includes(otherGlobVarPerm.Kind()) {
@@ -76,6 +81,10 @@ type EnvVarPermission struct {
 
 func (perm EnvVarPermission) Kind() PermissionKind {
 	return perm.Kind_
+}
+
+func (perm EnvVarPermission) InternalPermTypename() permkind.InternalPermissionTypename {
+	return permkind.ENV_PERM_TYPENAME
 }
 
 func (perm EnvVarPermission) Includes(otherPerm Permission) bool {
@@ -101,6 +110,10 @@ func (perm RoutinePermission) Kind() PermissionKind {
 	return perm.Kind_
 }
 
+func (perm RoutinePermission) InternalPermTypename() permkind.InternalPermissionTypename {
+	return permkind.ROUTINE_PERM_TYPENAME
+}
+
 func (perm RoutinePermission) Includes(otherPerm Permission) bool {
 	otherRoutinePerm, ok := otherPerm.(RoutinePermission)
 
@@ -122,6 +135,10 @@ func CreateFsReadPerm(entity WrappedString) FilesystemPermission {
 
 func (perm FilesystemPermission) Kind() PermissionKind {
 	return perm.Kind_
+}
+
+func (perm FilesystemPermission) InternalPermTypename() permkind.InternalPermissionTypename {
+	return permkind.FS_PERM_TYPENAME
 }
 
 func (perm FilesystemPermission) Includes(otherPerm Permission) bool {
@@ -148,6 +165,10 @@ func (perm FilesystemPermission) String() string {
 type CommandPermission struct {
 	CommandName         WrappedString //string or Path or PathPattern
 	SubcommandNameChain []string      //can be empty
+}
+
+func (perm CommandPermission) InternalPermTypename() permkind.InternalPermissionTypename {
+	return permkind.ROUTINE_PERM_TYPENAME
 }
 
 func (perm CommandPermission) Kind() PermissionKind {
@@ -224,6 +245,10 @@ func (perm HttpPermission) Kind() PermissionKind {
 	return perm.Kind_
 }
 
+func (perm HttpPermission) InternalPermTypename() permkind.InternalPermissionTypename {
+	return permkind.HTTP_PERM_TYPENAME
+}
+
 func (perm HttpPermission) Includes(otherPerm Permission) bool {
 	otherHttpPerm, ok := otherPerm.(HttpPermission)
 	if !ok || !perm.Kind_.Includes(otherHttpPerm.Kind_) {
@@ -292,6 +317,10 @@ func (perm WebsocketPermission) Kind() PermissionKind {
 	return perm.Kind_
 }
 
+func (perm WebsocketPermission) InternalPermTypename() permkind.InternalPermissionTypename {
+	return permkind.WEBSOCKET_PERM_TYPENAME
+}
+
 func (perm WebsocketPermission) String() string {
 	return fmt.Sprintf("[websocket %s %s]", perm.Kind_, perm.Endpoint)
 }
@@ -312,6 +341,10 @@ type DNSPermission struct {
 
 func (perm DNSPermission) Kind() PermissionKind {
 	return perm.Kind_
+}
+
+func (perm DNSPermission) InternalPermTypename() permkind.InternalPermissionTypename {
+	return permkind.DNS_PERM_TYPENAME
 }
 
 func (perm DNSPermission) String() string {
@@ -356,6 +389,10 @@ func (perm RawTcpPermission) Kind() PermissionKind {
 	return perm.Kind_
 }
 
+func (perm RawTcpPermission) InternalPermTypename() permkind.InternalPermissionTypename {
+	return permkind.TCP_PERM_TYPENAME
+}
+
 func (perm RawTcpPermission) String() string {
 	return fmt.Sprintf("[tcp %s %s]", perm.Kind_, perm.Domain)
 }
@@ -391,6 +428,10 @@ type ValueVisibilityPermission struct {
 	Pattern Pattern
 }
 
+func (perm ValueVisibilityPermission) InternalPermTypename() permkind.InternalPermissionTypename {
+	return permkind.VALUE_VISIBILITY_PERM_TYPENAME
+}
+
 func (perm ValueVisibilityPermission) Kind() PermissionKind {
 	return permkind.See
 }
@@ -416,6 +457,10 @@ func (perm ValueVisibilityPermission) Includes(otherPerm Permission) bool {
 
 type SystemGraphAccessPermission struct {
 	Kind_ PermissionKind
+}
+
+func (perm SystemGraphAccessPermission) InternalPermTypename() permkind.InternalPermissionTypename {
+	return permkind.SYSGRAPH_PERM_TYPENAME
 }
 
 func (perm SystemGraphAccessPermission) Kind() PermissionKind {

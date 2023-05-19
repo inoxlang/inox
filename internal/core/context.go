@@ -10,6 +10,7 @@ import (
 	"time"
 
 	afs "github.com/inoxlang/inox/internal/afs"
+	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/rs/zerolog"
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
@@ -418,14 +419,6 @@ func (ctx *Context) HasPermission(perm Permission) bool {
 	return ctx.hasPermission(perm)
 }
 
-// Like HasPermission but the permission is any, this function is used by symbolic contexts
-func (ctx *Context) HasPermissionUntyped(perm any) bool {
-	ctx.lock.RLock()
-	defer ctx.lock.RUnlock()
-
-	return ctx.hasPermission(perm.(Permission))
-}
-
 func (ctx *Context) hasPermission(perm Permission) bool {
 
 	for _, forbiddenPerm := range ctx.forbiddenPermissions {
@@ -436,6 +429,27 @@ func (ctx *Context) hasPermission(perm Permission) bool {
 
 	for _, grantedPerm := range ctx.grantedPermissions {
 		if grantedPerm.Includes(perm) {
+			return true
+		}
+	}
+	return false
+}
+
+// THIS FUNCTION SHOULD NEVER BE USED apart from the symbolic package
+func (ctx *Context) HasPermissionUntyped(perm any) bool {
+	ctx.lock.RLock()
+	defer ctx.lock.RUnlock()
+
+	return ctx.hasPermission(perm.(Permission))
+}
+
+// THIS FUNCTION SHOULD NEVER BE USED apart from the symbolic package
+func (ctx *Context) HasAPermissionWithKindAndType(kind permkind.PermissionKind, typename permkind.InternalPermissionTypename) bool {
+	ctx.lock.RLock()
+	defer ctx.lock.RUnlock()
+
+	for _, grantedPerm := range ctx.grantedPermissions {
+		if grantedPerm.Kind() == kind && grantedPerm.InternalPermTypename() == typename {
 			return true
 		}
 	}

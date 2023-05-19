@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"gonum.org/v1/gonum/graph/simple"
 )
@@ -141,12 +142,12 @@ func SymbolicEvalCheck(input SymbolicEvalCheckInput) (*SymbolicData, error) {
 		return nil, err
 	}
 
+	data.errors = state.errors
+	data.warnings = state.warnings
+
 	if len(state.errors) == 0 { //no error in checked code
 		return data, nil
 	}
-
-	data.errors = state.errors
-	data.warnings = state.warnings
 
 	for _, err := range state.errors {
 		finalErrBuff.WriteString(err.Error())
@@ -967,6 +968,10 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		var embeddedModule *parse.Chunk
 
 		var meta SymbolicValue
+
+		if !state.ctx.HasAPermissionWithKindAndType(permkind.Create, permkind.ROUTINE_PERM_TYPENAME) {
+			state.addWarning(makeSymbolicEvalWarning(n, state, POSSIBLE_MISSING_PERM_TO_CREATE_A_COROUTINE))
+		}
 
 		if n.Meta != nil {
 			v, err := symbolicEval(n.Meta, state)

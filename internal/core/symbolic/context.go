@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/permkind"
 )
 
 type Context struct {
@@ -130,6 +131,13 @@ func (ctx *Context) HasPermission(perm any) bool {
 	return ctx.startingConcreteContext.HasPermissionUntyped(perm)
 }
 
+func (ctx *Context) HasAPermissionWithKindAndType(kind permkind.PermissionKind, name permkind.InternalPermissionTypename) bool {
+	if ctx.startingConcreteContext == nil {
+		return false
+	}
+	return ctx.startingConcreteContext.HasAPermissionWithKindAndType(kind, name)
+}
+
 func (ctx *Context) currentData() (data ContextData) {
 	//TODO: share some pieces of data between ContextData values in order to save memor
 	//forking makes that non trivial
@@ -161,4 +169,5 @@ func (ctx *Context) fork() *Context {
 
 type ConcreteContext interface {
 	HasPermissionUntyped(perm any) bool
+	HasAPermissionWithKindAndType(kind permkind.PermissionKind, typename permkind.InternalPermissionTypename) bool
 }
