@@ -323,3 +323,7 @@ func fmtComputedPropNameShouldBeAStringNotA(v SymbolicValue) string {
 func fmtUnknownSectionInCoroutineMetadata(name string) string {
 	return fmt.Sprintf("unknown section '%s' in coroutine metadata", name)
 }
+
+func fmtValueNotStringifiableToQueryParamValue(val SymbolicValue) string {
+	return fmt.Sprintf("value of type %s is not stringifiable to a query param value", Stringify(val))
+}

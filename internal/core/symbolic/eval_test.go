@@ -5073,6 +5073,26 @@ func TestSymbolicEval(t *testing.T) {
 		})
 	})
 
+	t.Run("URL expressions", func(t *testing.T) {
+
+		t.Run("invalid query parameter value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				param_value = {}
+				return https://example.com/?x={param_value}
+			`)
+
+			queryParam := parse.FindNode(n, (*parse.URLQueryParameter)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(queryParam, state, fmtValueNotStringifiableToQueryParamValue(NewEmptyObject())),
+			}, state.errors)
+			assert.Equal(t, ANY_URL, res)
+		})
+
+	})
+
 	t.Run("XML expression", func(t *testing.T) {
 
 		t.Run("namespace not a record", func(t *testing.T) {

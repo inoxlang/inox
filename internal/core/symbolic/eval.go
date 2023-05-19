@@ -307,9 +307,14 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			state.symbolicData.SetMostSpecificNodeValue(param, ANY_URL)
 
 			for _, slice := range param.Value {
-				_, err := _symbolicEval(slice, state, false)
+				val, err := _symbolicEval(slice, state, false)
 				if err != nil {
 					return nil, err
+				}
+				switch val.(type) {
+				case StringLike, *Int, *Bool:
+				default:
+					state.addError(makeSymbolicEvalError(p, state, fmtValueNotStringifiableToQueryParamValue(val)))
 				}
 			}
 		}
