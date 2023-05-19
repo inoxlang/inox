@@ -399,13 +399,20 @@ func (v *VM) run() {
 			if v.err != nil {
 				return
 			}
-		case OptStrConcat:
+		case OpStrConcat:
 			right := v.stack[v.sp-1]
 			left := v.stack[v.sp-2]
 			res := Str(left.(WrappedString).UnderlyingString() + right.(WrappedString).UnderlyingString())
 
 			v.stack[v.sp-2] = res
 			v.sp--
+		case OptStrQueryParamVal:
+			val, err := stringifyQueryParamValue(v.stack[v.sp-1])
+			if err != nil {
+				v.err = err
+				return
+			}
+			v.stack[v.sp-1] = Str(val)
 		case OpRange:
 			right := v.stack[v.sp-1]
 			left := v.stack[v.sp-2]

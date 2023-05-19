@@ -229,7 +229,8 @@ const (
 	OpIntBin
 	OpFloatBin
 	OpNumBin
-	OptStrConcat
+	OptStrQueryParamVal
+	OpStrConcat
 	OpConcat
 	OpRange
 	OpMemb
@@ -348,7 +349,8 @@ var OpcodeNames = [...]string{
 	OpIntBin:                       "INT_BIN",
 	OpFloatBin:                     "FLOAT_BIN",
 	OpNumBin:                       "NUM_BIN",
-	OptStrConcat:                   "STR_CONCAT",
+	OpStrConcat:                    "STR_CONCAT",
+	OptStrQueryParamVal:            "STRINGIFY_QPARAM",
 	OpConcat:                       "CONCAT",
 	OpRange:                        "RANGE",
 	OpMemb:                         "MEMB",
@@ -466,7 +468,8 @@ var OpcodeOperands = [...][]int{
 	OpIntBin:                       {1},
 	OpFloatBin:                     {1},
 	OpNumBin:                       {1},
-	OptStrConcat:                   {},
+	OpStrConcat:                    {},
+	OptStrQueryParamVal:            {},
 	OpConcat:                       {1, 2},
 	OpRange:                        {1},
 	OpMemb:                         {2},
@@ -584,7 +587,8 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpIntBin:                       {false},
 	OpFloatBin:                     {false},
 	OpNumBin:                       {false},
-	OptStrConcat:                   {},
+	OpStrConcat:                    {},
+	OptStrQueryParamVal:            {},
 	OpConcat:                       {false, true},
 	OpRange:                        {false},
 	OpMemb:                         {true},

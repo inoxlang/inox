@@ -399,8 +399,11 @@ func (c *compiler) Compile(node parse.Node) error {
 				if err := c.Compile(n); err != nil {
 					return err
 				}
+				if _, ok := n.(*parse.URLQueryParameterValueSlice); !ok {
+					c.emit(node, OptStrQueryParamVal)
+				}
 				if i != 0 {
-					c.emit(node, OptStrConcat)
+					c.emit(node, OpStrConcat)
 				}
 			}
 		}

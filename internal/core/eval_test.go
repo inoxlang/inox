@@ -590,6 +590,26 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, URL("https://example.com/?v=%23"), res)
 		})
 
+		t.Run("query interpolation with an integer value", func(t *testing.T) {
+			code := `
+				x = 1
+				return https://example.com/?v={$x}
+			`
+			res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), nil), false)
+			assert.NoError(t, err)
+			assert.Equal(t, URL("https://example.com/?v=1"), res)
+		})
+
+		t.Run("query interpolation with a boolean value", func(t *testing.T) {
+			code := `
+				x = true
+				return https://example.com/?v={$x}
+			`
+			res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), nil), false)
+			assert.NoError(t, err)
+			assert.Equal(t, URL("https://example.com/?v=true"), res)
+		})
+
 		injectionCases := []struct {
 			input string
 			error string

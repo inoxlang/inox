@@ -293,7 +293,11 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				if err != nil {
 					return nil, err
 				}
-				queryValue += val.(Str)
+				stringified, err := stringifyQueryParamValue(val)
+				if err != nil {
+					return nil, err
+				}
+				queryValue += Str(stringified)
 			}
 			queryValues = append(queryValues, queryValue)
 		}

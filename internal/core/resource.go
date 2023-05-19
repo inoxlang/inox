@@ -597,6 +597,25 @@ func NewURL(host Value, pathSlices []Value, isStaticPathSliceList []bool, queryP
 	return URL(u), nil
 }
 
+// stringifyQueryParamValue stringifies a value intented to be a URL query parameter,
+// it returns an error if the stringification is not supported for the passed value (too ambiguous)
+func stringifyQueryParamValue(val Value) (string, error) {
+	switch v := val.(type) {
+	case StringLike:
+		return v.GetOrBuildString(), nil
+	case Int:
+		return strconv.FormatInt(int64(v), 10), nil
+	case Bool:
+		if v {
+			return "true", nil
+		} else {
+			return "false", nil
+		}
+	default:
+		return "", fmt.Errorf("value of type %T is not stringifiable to a query param value", val)
+	}
+}
+
 func (u URL) Scheme() Scheme {
 	url, _ := url.Parse(string(u))
 	return Scheme(url.Scheme)
