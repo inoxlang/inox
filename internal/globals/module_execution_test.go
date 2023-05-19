@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	core "github.com/inoxlang/inox/internal/core"
@@ -524,24 +525,61 @@ func TestPrepareLocalScript(t *testing.T) {
 
 func TestRunLocalScript(t *testing.T) {
 
+	createEvaluationCtx := func(dir string) *core.Context {
+		perms := core.GetDefaultGlobalVarPermissions()
+		perms = append(perms, core.CreateFsReadPerm(core.PathPattern(dir+"/...")))
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: perms,
+			Filesystem:  _fs.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx)
+		return ctx
+	}
+
+	//TODO: improve tests
+
 	t.Run("a script with static check errors should not be runned", func(t *testing.T) {
 
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
-		ctx := createCompilationCtx(dir)
 
 		os.WriteFile(file, []byte("fn(){self}; return 1"), 0o600)
 
 		res, _, _, err := RunLocalScript(RunScriptArgs{
 			Fpath:                     file,
-			ParsingCompilationContext: ctx,
+			ParsingCompilationContext: createCompilationCtx(dir),
 			UseContextAsParent:        true,
-			ParentContext:             ctx,
+			ParentContext:             createEvaluationCtx(dir),
 			Out:                       io.Discard,
 			IgnoreHighRiskScore:       true,
 		})
 
 		assert.Error(t, err)
+		assert.Nil(t, res)
+	})
+
+	t.Run("too many warnings", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+
+		manySpawnExprs := strings.Repeat("go do idt(1)\n", DEFAULT_MAX_ALLOWED_WARNINGS+1)
+
+		os.WriteFile(file, []byte("manifest {}\n"+manySpawnExprs), 0o600)
+
+		res, _, _, err := RunLocalScript(RunScriptArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: createCompilationCtx(dir),
+			UseContextAsParent:        true,
+			ParentContext:             createEvaluationCtx(dir),
+			Out:                       io.Discard,
+			IgnoreHighRiskScore:       true,
+		})
+
+		if !assert.ErrorIs(t, err, ErrExecutionAbortedTooManyWarnings) {
+			return
+		}
+
 		assert.Nil(t, res)
 	})
 }

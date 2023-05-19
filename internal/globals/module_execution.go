@@ -14,8 +14,13 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+const (
+	DEFAULT_MAX_ALLOWED_WARNINGS = 10
+)
+
 var (
-	ErrUserRefusedExecution = errors.New("user refused execution")
+	ErrExecutionAbortedTooManyWarnings = errors.New("execution was aborted because there are too many warnings")
+	ErrUserRefusedExecution            = errors.New("user refused execution")
 )
 
 type ScriptPreparationArgs struct {
@@ -270,8 +275,21 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 		return nil, state, mod, err
 	}
 
+	out := state.Out
+
+	//show warnings
+	warnings := state.SymbolicData.Warnings()
+	for _, warning := range warnings {
+		fmt.Fprintln(out, warning.LocatedMessage)
+	}
+
+	if len(warnings) > DEFAULT_MAX_ALLOWED_WARNINGS { //TODO: make the max configurable
+		return nil, nil, nil, ErrExecutionAbortedTooManyWarnings
+	}
+
 	riskScore := core.ComputeProgramRiskScore(mod, manifest)
 
+	// if the program is risky ask the user to confirm the execution
 	if !args.IgnoreHighRiskScore && riskScore > config.DEFAULT_TRUSTED_RISK_SCORE {
 		waitConfirmPrompt := args.ParsingCompilationContext.GetWaitConfirmPrompt()
 		if waitConfirmPrompt == nil {
@@ -300,7 +318,6 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 		}
 	}
 
-	out := state.Out
 	state.InitSystemGraph()
 
 	defer state.Ctx.Cancel()
