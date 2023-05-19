@@ -51,7 +51,7 @@ func Filter(ctx *Context, iterable Iterable, condition Value) *List {
 		it := iterable.Iterator(ctx, IteratorConfiguration{})
 		for it.Next(ctx) {
 			e := it.Value(ctx)
-			if fil.Test(nil, e) {
+			if fil.Test(ctx, e) {
 				result.elements = append(result.elements, e)
 			}
 		}
@@ -124,7 +124,7 @@ func All(ctx *Context, iterable Iterable, condition Value) Bool {
 		it := iterable.Iterator(ctx, IteratorConfiguration{})
 		for it.Next(ctx) {
 			e := it.Value(ctx)
-			if !cond.Test(nil, e) {
+			if !cond.Test(ctx, e) {
 				return false
 			}
 		}
@@ -159,7 +159,7 @@ func None(ctx *Context, iterable Iterable, condition Value) Bool {
 		it := iterable.Iterator(ctx, IteratorConfiguration{})
 		for it.Next(ctx) {
 			e := it.Value(ctx)
-			if cond.Test(nil, e) {
+			if cond.Test(ctx, e) {
 				return false
 			}
 		}
