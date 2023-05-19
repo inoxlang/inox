@@ -589,9 +589,15 @@ func NewURL(host Value, pathSlices []Value, isStaticPathSliceList []bool, queryP
 		queryBuff.WriteString(valueString)
 	}
 
-	u := host.(Host).UnderlyingString() + string(pth) + queryBuff.String()
-	if _, err := url.Parse(u); err != nil {
+	hostVal := host.(Host)
+	u := hostVal.UnderlyingString() + string(pth) + queryBuff.String()
+	parsed, err := url.Parse(u)
+	if err != nil {
 		return nil, errors.New(ERR_PREFIX + err.Error())
+	}
+
+	if parsed.Host != hostVal.WithoutScheme() {
+		return nil, errors.New(ERR_PREFIX + S_URL_EXPR_UNEXPECTED_HOST_IN_PARSED_URL_AFTER_EVAL)
 	}
 
 	return URL(u), nil

@@ -542,6 +542,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, URL("https://example.com/%23"), res)
 		})
 
+		t.Run("path interpolation starting with a '@'", func(t *testing.T) {
+			code := `https://example.com{path}`
+			res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				"path": Str("@domain.zip"),
+			}), false)
+			assert.NoError(t, err)
+			assert.Equal(t, URL("https://example.com/@domain.zip"), res)
+		})
+
 		t.Run("host alias", func(t *testing.T) {
 			code := `@api/index.html`
 			ctx, _ := NewDefaultTestContext().NewWith(nil)
