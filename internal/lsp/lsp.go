@@ -5,6 +5,7 @@ import (
 	"os"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/permkind"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 
 	"github.com/inoxlang/inox/internal/lsp/logs"
@@ -58,7 +59,7 @@ func StartLSPServer() {
 	compilationCtx := core.NewContext(core.ContextConfig{
 		Permissions: []core.Permission{
 			//TODO: change path pattern
-			core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern("/...")},
+			core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
 		},
 		Filesystem: filesystem,
 	})

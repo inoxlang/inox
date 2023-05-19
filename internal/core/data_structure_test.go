@@ -6,6 +6,7 @@ import (
 	"time"
 
 	parse "github.com/inoxlang/inox/internal/parse"
+	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,9 +21,9 @@ func TestObject(t *testing.T) {
 
 			ctx := NewContext(ContextConfig{
 				Permissions: []Permission{
-					RoutinePermission{Kind_: CreatePerm},
-					GlobalVarPermission{Kind_: UsePerm, Name: "*"},
-					GlobalVarPermission{Kind_: ReadPerm, Name: "*"},
+					RoutinePermission{Kind_: permkind.Create},
+					GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
+					GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
 				},
 			})
 

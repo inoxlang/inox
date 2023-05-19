@@ -9,6 +9,7 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	internal "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/permkind"
 )
 
 var (
@@ -66,7 +67,7 @@ func openDatabase(ctx *Context, r ResourceName) (*LocalDatabase, error) {
 
 	patt := PathPattern(pth.ToAbs(ctx.GetFileSystem()) + "...")
 
-	for _, kind := range []core.PermissionKind{core.ReadPerm, core.CreatePerm, core.WriteStreamPerm} {
+	for _, kind := range []core.PermissionKind{permkind.Read, permkind.Create, permkind.WriteStream} {
 		perm := FilesystemPermission{Kind_: kind, Entity: patt}
 		if err := ctx.CheckHasPermission(perm); err != nil {
 			return nil, err

@@ -14,6 +14,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/config"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/permkind"
 
 	globals "github.com/inoxlang/inox/internal/globals"
 	_fs "github.com/inoxlang/inox/internal/globals/fs"
@@ -376,7 +377,7 @@ func runStartupScript(startupScriptPath string, outW io.Writer) (*core.Object, *
 func createCompilationCtx(dir string) *core.Context {
 	compilationCtx := core.NewContext(core.ContextConfig{
 		Permissions: []core.Permission{
-			core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern(dir + "...")},
+			core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(dir + "...")},
 		},
 		Filesystem: _fs.GetOsFilesystem(),
 	})

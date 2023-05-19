@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/miekg/dns"
 )
 
@@ -41,7 +42,7 @@ func websocketConnect(ctx *Context, u URL, options ...Option) (*WebsocketConnect
 	}
 
 	perm := WebsocketPermission{
-		Kind_:    core.ReadPerm,
+		Kind_:    permkind.Read,
 		Endpoint: u,
 	}
 
@@ -73,7 +74,7 @@ func dnsResolve(ctx *Context, domain Str, recordTypeName Str) ([]Str, error) {
 	msg := new(dns.Msg)
 	var recordType uint16
 
-	perm := DNSPermission{Kind_: core.ReadPerm, Domain: Host("://" + domain)}
+	perm := DNSPermission{Kind_: permkind.Read, Domain: Host("://" + domain)}
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return nil, err
 	}
@@ -114,7 +115,7 @@ func dnsResolve(ctx *Context, domain Str, recordTypeName Str) ([]Str, error) {
 func tcpConnect(ctx *Context, host Host) (*TcpConn, error) {
 
 	perm := RawTcpPermission{
-		Kind_:  core.ReadPerm,
+		Kind_:  permkind.Read,
 		Domain: host,
 	}
 

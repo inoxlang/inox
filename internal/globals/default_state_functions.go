@@ -14,6 +14,7 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	_inoxsh "github.com/inoxlang/inox/internal/globals/shell"
 	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/permkind"
 
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -420,7 +421,7 @@ func _ctx_data(ctx *core.Context, name core.Identifier) core.Value {
 
 func _get_system_graph(ctx *core.Context) (*core.SystemGraph, core.Bool) {
 	perm := core.SystemGraphAccessPermission{
-		Kind_: core.ReadPerm,
+		Kind_: permkind.Read,
 	}
 
 	if err := ctx.CheckHasPermission(perm); err != nil {

@@ -11,6 +11,7 @@ import (
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
+	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -1804,7 +1805,7 @@ func (v *VM) run() {
 			source := v.stack[v.sp-2]
 			configObject := v.stack[v.sp-1].(*Object)
 
-			varPerm := GlobalVarPermission{CreatePerm, string(globalName)}
+			varPerm := GlobalVarPermission{permkind.Create, string(globalName)}
 			if err := v.global.Ctx.CheckHasPermission(varPerm); err != nil {
 				v.err = fmt.Errorf("import: %s", err.Error())
 				return

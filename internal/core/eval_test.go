@@ -15,6 +15,7 @@ import (
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
+	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 
@@ -1454,13 +1455,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}`
 
 			state := NewGlobalState(NewContext(ContextConfig{
-				Permissions: []Permission{RoutinePermission{Kind_: CreatePerm}},
+				Permissions: []Permission{RoutinePermission{Kind_: permkind.Create}},
 			}))
 			res, err := Eval(code, state, false)
 
 			assert.Error(t, err)
 			assert.ErrorIs(t, err, NewNotAllowedError(HttpPermission{
-				Kind_:  ReadPerm,
+				Kind_:  permkind.Read,
 				Entity: URL("https://example.com/index.html"),
 			}))
 			assert.Nil(t, res)
@@ -2331,11 +2332,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 				ctx := NewContext(ContextConfig{
 					Permissions: []Permission{
-						GlobalVarPermission{ReadPerm, "*"},
-						GlobalVarPermission{UpdatePerm, "*"},
-						GlobalVarPermission{CreatePerm, "*"},
-						GlobalVarPermission{UsePerm, "*"},
-						FilesystemPermission{ReadPerm, PathPattern(tempDirPath + "...")},
+						GlobalVarPermission{permkind.Read, "*"},
+						GlobalVarPermission{permkind.Update, "*"},
+						GlobalVarPermission{permkind.Create, "*"},
+						GlobalVarPermission{permkind.Use, "*"},
+						FilesystemPermission{permkind.Read, PathPattern(tempDirPath + "...")},
 					},
 					Filesystem: newOsFilesystem(),
 				})
@@ -3898,13 +3899,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			ctx := NewContext(ContextConfig{
 				Permissions: []Permission{
-					GlobalVarPermission{ReadPerm, "*"},
-					GlobalVarPermission{UpdatePerm, "*"},
-					GlobalVarPermission{CreatePerm, "*"},
-					GlobalVarPermission{UsePerm, "*"},
+					GlobalVarPermission{permkind.Read, "*"},
+					GlobalVarPermission{permkind.Update, "*"},
+					GlobalVarPermission{permkind.Create, "*"},
+					GlobalVarPermission{permkind.Use, "*"},
 
-					FilesystemPermission{ReadPerm, PathPattern("/...")},
-					RoutinePermission{CreatePerm},
+					FilesystemPermission{permkind.Read, PathPattern("/...")},
+					RoutinePermission{permkind.Create},
 				},
 				Filesystem: newOsFilesystem(),
 			})
@@ -4783,8 +4784,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		state := NewGlobalState(NewDefaultTestContext())
 		_, err := Eval(code, state, false)
 
-		assert.True(t, state.Ctx.HasPermission(GlobalVarPermission{Kind_: UsePerm, Name: "*"}))
-		assert.False(t, state.Ctx.HasPermission(GlobalVarPermission{Kind_: ReadPerm, Name: "*"}))
+		assert.True(t, state.Ctx.HasPermission(GlobalVarPermission{Kind_: permkind.Use, Name: "*"}))
+		assert.False(t, state.Ctx.HasPermission(GlobalVarPermission{Kind_: permkind.Read, Name: "*"}))
 
 		assert.NoError(t, err)
 	})
@@ -5429,13 +5430,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}`
 
 			state := NewGlobalState(NewContext(ContextConfig{
-				Permissions: []Permission{RoutinePermission{Kind_: CreatePerm}},
+				Permissions: []Permission{RoutinePermission{Kind_: permkind.Create}},
 			}))
 			res, err := Eval(code, state, false)
 
 			assert.Error(t, err)
 			assert.ErrorIs(t, err, NewNotAllowedError(HttpPermission{
-				Kind_:  ReadPerm,
+				Kind_:  permkind.Read,
 				Entity: URL("https://example.com/index.html"),
 			}))
 			assert.Nil(t, res)
@@ -5477,13 +5478,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}`
 
 			state := NewGlobalState(NewContext(ContextConfig{
-				Permissions: []Permission{RoutinePermission{Kind_: CreatePerm}},
+				Permissions: []Permission{RoutinePermission{Kind_: permkind.Create}},
 			}))
 			res, err := Eval(code, state, false)
 
 			assert.Error(t, err)
 			assert.ErrorIs(t, err, NewNotAllowedError(HttpPermission{
-				Kind_:  ReadPerm,
+				Kind_:  permkind.Read,
 				Entity: URL("https://example.com/index.html"),
 			}))
 			assert.Nil(t, res)
@@ -6168,9 +6169,9 @@ func TestSpawnRoutine(t *testing.T) {
 	t.Run("spawning a routine without the required permission should fail", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{
 			Permissions: []Permission{
-				GlobalVarPermission{Kind_: ReadPerm, Name: "*"},
-				GlobalVarPermission{Kind_: UsePerm, Name: "*"},
-				GlobalVarPermission{Kind_: CreatePerm, Name: "*"},
+				GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
+				GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
+				GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
 			},
 		})
 		state := NewGlobalState(ctx)
@@ -6194,10 +6195,10 @@ func TestSpawnRoutine(t *testing.T) {
 	t.Run("a routine should have access to globals passed to it", func(t *testing.T) {
 		state := NewGlobalState(NewContext(ContextConfig{
 			Permissions: []Permission{
-				GlobalVarPermission{Kind_: ReadPerm, Name: "*"},
-				GlobalVarPermission{Kind_: UsePerm, Name: "*"},
-				GlobalVarPermission{Kind_: CreatePerm, Name: "*"},
-				RoutinePermission{CreatePerm},
+				GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
+				GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
+				GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
+				RoutinePermission{permkind.Create},
 			},
 		}))
 		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
@@ -6225,10 +6226,10 @@ func TestSpawnRoutine(t *testing.T) {
 	t.Run("the result of a routine should be shared if it is sharable", func(t *testing.T) {
 		state := NewGlobalState(NewContext(ContextConfig{
 			Permissions: []Permission{
-				GlobalVarPermission{Kind_: ReadPerm, Name: "*"},
-				GlobalVarPermission{Kind_: UsePerm, Name: "*"},
-				GlobalVarPermission{Kind_: CreatePerm, Name: "*"},
-				RoutinePermission{CreatePerm},
+				GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
+				GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
+				GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
+				RoutinePermission{permkind.Create},
 			},
 		}))
 		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
@@ -6290,13 +6291,13 @@ func TestGetQuantity(t *testing.T) {
 func NewDefaultTestContext() *Context {
 	return NewContext(ContextConfig{
 		Permissions: []Permission{
-			GlobalVarPermission{ReadPerm, "*"},
-			GlobalVarPermission{UpdatePerm, "*"},
-			GlobalVarPermission{CreatePerm, "*"},
-			GlobalVarPermission{UsePerm, "*"},
+			GlobalVarPermission{permkind.Read, "*"},
+			GlobalVarPermission{permkind.Update, "*"},
+			GlobalVarPermission{permkind.Create, "*"},
+			GlobalVarPermission{permkind.Use, "*"},
 
-			HttpPermission{ReadPerm, HostPattern("https://**")},
-			RoutinePermission{CreatePerm},
+			HttpPermission{permkind.Read, HostPattern("https://**")},
+			RoutinePermission{permkind.Create},
 		},
 		Filesystem: newOsFilesystem(),
 	})
@@ -6320,7 +6321,7 @@ func (e *reversibleEffect) Resources() []ResourceName {
 }
 
 func (e *reversibleEffect) PermissionKind() PermissionKind {
-	return CreatePerm
+	return permkind.Create
 }
 func (e *reversibleEffect) Reversability(*Context) Reversability {
 	return Reversible
@@ -6351,7 +6352,7 @@ func (e *irreversibleEffect) Resources() []ResourceName {
 }
 
 func (e *irreversibleEffect) PermissionKind() PermissionKind {
-	return CreatePerm
+	return permkind.Create
 }
 func (e *irreversibleEffect) Reversability(*Context) Reversability {
 	return Irreversible

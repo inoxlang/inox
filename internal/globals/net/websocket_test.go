@@ -5,6 +5,7 @@ import (
 
 	core "github.com/inoxlang/inox/internal/core"
 	_fs "github.com/inoxlang/inox/internal/globals/fs"
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,7 +21,7 @@ func TestWebsocketConnection(t *testing.T) {
 
 		clientCtx := core.NewContext(ContextConfig{
 			Permissions: []Permission{
-				WebsocketPermission{Kind_: core.ReadPerm, Endpoint: ENDPOINT},
+				WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
 			},
 			Limitations: []Limitation{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 1}},
 			Filesystem:  _fs.GetOsFilesystem(),

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	parse "github.com/inoxlang/inox/internal/parse"
+	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -83,7 +84,7 @@ var (
 )
 
 var IMPLICITLY_REMOVED_ROUTINE_PERMS = []Permission{
-	RoutinePermission{CreatePerm},
+	RoutinePermission{permkind.Create},
 }
 
 func (change IterationChange) String() string {

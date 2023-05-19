@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/permkind"
 )
 
 type TcpConn struct {
@@ -52,7 +53,7 @@ func (conn *TcpConn) read(ctx *Context) (*ByteSlice, error) {
 	}
 
 	perm := RawTcpPermission{
-		Kind_:  core.ReadPerm,
+		Kind_:  permkind.Read,
 		Domain: conn.host,
 	}
 
@@ -76,7 +77,7 @@ func (conn *TcpConn) write(ctx *Context, data Readable) error {
 	}
 
 	perm := RawTcpPermission{
-		Kind_:  core.WriteStreamPerm,
+		Kind_:  permkind.WriteStream,
 		Domain: conn.host,
 	}
 

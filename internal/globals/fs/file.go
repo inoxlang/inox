@@ -8,6 +8,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/afs"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/permkind"
 )
 
 const (
@@ -33,7 +34,7 @@ type File struct {
 func openExistingFile(ctx *core.Context, pth core.Path, write bool) (*File, error) {
 	fls := ctx.GetFileSystem()
 	absPath := pth.ToAbs(fls)
-	perm := core.FilesystemPermission{Kind_: core.ReadPerm, Entity: absPath}
+	perm := core.FilesystemPermission{Kind_: permkind.Read, Entity: absPath}
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return nil, err
 	}
@@ -108,7 +109,7 @@ func (f *File) doRead(ctx *core.Context, closeFile bool, count int64) ([]byte, e
 	default:
 	}
 
-	perm := core.FilesystemPermission{Kind_: core.ReadPerm, Entity: f.path}
+	perm := core.FilesystemPermission{Kind_: permkind.Read, Entity: f.path}
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return nil, err
 	}
@@ -167,7 +168,7 @@ func (f *File) doRead(ctx *core.Context, closeFile bool, count int64) ([]byte, e
 }
 
 func (f *File) write(ctx *core.Context, data core.Readable) error {
-	perm := core.FilesystemPermission{Kind_: core.WriteStreamPerm, Entity: f.path}
+	perm := core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: f.path}
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return err
 	}

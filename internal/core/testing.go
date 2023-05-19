@@ -5,6 +5,7 @@ import (
 	"time"
 
 	parse "github.com/inoxlang/inox/internal/parse"
+	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -61,7 +62,7 @@ func (s *TestSuite) Run(ctx *Context, options ...Option) (*Routine, error) {
 
 	spawnerState := ctx.GetClosestState()
 
-	createRoutinePerm := RoutinePermission{Kind_: CreatePerm}
+	createRoutinePerm := RoutinePermission{Kind_: permkind.Create}
 
 	if err := spawnerState.Ctx.CheckHasPermission(createRoutinePerm); err != nil {
 		return nil, fmt.Errorf("testing: following permission is required for running tests: %w", err)
@@ -166,7 +167,7 @@ func NewTestCase(meta Value, modChunk *parse.Chunk, parentState *GlobalState) (*
 }
 
 // func evaluateTestingManifest(chunk *parse.ParsedChunk, parentState *GlobalState) (*Manifest, error) {
-// 	createRoutinePerm := RoutinePermission{Kind_: CreatePerm}
+// 	createRoutinePerm := RoutinePermission{Kind_: permkind.Create}
 
 // 	if err := parentState.Ctx.CheckHasPermission(createRoutinePerm); err != nil {
 // 		return nil, fmt.Errorf("testing: following permission is required for running tests: %w", err)

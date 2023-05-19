@@ -10,6 +10,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/permkind"
 )
 
 func init() {
@@ -131,7 +132,7 @@ func NewEventSource(ctx *core.Context, resourceNameOrPattern core.Value) (*Files
 		return nil, errors.New("cannot watch a symlinked directory")
 	}
 
-	perm := core.FilesystemPermission{Kind_: core.ReadPerm, Entity: permissionEntity}
+	perm := core.FilesystemPermission{Kind_: permkind.Read, Entity: permissionEntity}
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return nil, err
 	}

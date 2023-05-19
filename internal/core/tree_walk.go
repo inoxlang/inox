@@ -12,6 +12,7 @@ import (
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
+	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -194,7 +195,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		if state.HasGlobal(n.Left.Name) {
-			err = state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: UsePerm, Name: n.Left.Name})
+			err = state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permkind.Use, Name: n.Left.Name})
 			if err != nil {
 				return nil, err
 			}
@@ -317,7 +318,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 		return v, nil
 	case *parse.GlobalVariable:
-		err := state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: ReadPerm, Name: n.Name})
+		err := state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permkind.Read, Name: n.Name})
 		if err != nil {
 			return nil, err
 		}
@@ -375,7 +376,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		//we first get the callee
 		switch c := n.Callee.(type) {
 		case *parse.IdentifierLiteral:
-			err := state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: UsePerm, Name: c.Name})
+			err := state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permkind.Use, Name: c.Name})
 			if err != nil {
 				return nil, err
 			}
@@ -390,7 +391,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 
 			if state.HasGlobal(c.Left.Name) {
-				err = state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: UsePerm, Name: c.Left.Name})
+				err = state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permkind.Use, Name: c.Left.Name})
 				if err != nil {
 					return nil, err
 				}
@@ -550,12 +551,12 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 					return nil, errors.New("attempt to assign a constant global")
 				}
 
-				err := state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: UpdatePerm, Name: name})
+				err := state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permkind.Update, Name: name})
 				if err != nil {
 					return nil, err
 				}
 			} else {
-				err = state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: CreatePerm, Name: name})
+				err = state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permkind.Create, Name: name})
 				if err != nil {
 					return nil, err
 				}
@@ -873,7 +874,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		return TreeWalkEval(chunk.Node, state)
 	case *parse.ImportStatement:
-		varPerm := GlobalVarPermission{CreatePerm, n.Identifier.Name}
+		varPerm := GlobalVarPermission{permkind.Create, n.Identifier.Name}
 		if err := state.Global.Ctx.CheckHasPermission(varPerm); err != nil {
 			return nil, fmt.Errorf("import: %s", err.Error())
 		}

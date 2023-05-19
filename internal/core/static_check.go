@@ -11,6 +11,7 @@ import (
 	"time"
 
 	parse "github.com/inoxlang/inox/internal/parse"
+	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -1747,7 +1748,7 @@ func checkPermissionListingObject(objLit *parse.ObjectLiteral, onError func(n pa
 			continue
 		}
 
-		if !isPermissionKindName(p.Name()) {
+		if !permkind.IsPermissionKindName(p.Name()) {
 			onError(p.Key, fmtNotValidPermissionKindName(p.Name()))
 		}
 	}

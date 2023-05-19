@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/websocket"
 	core "github.com/inoxlang/inox/internal/core"
 	_http "github.com/inoxlang/inox/internal/globals/http"
+	"github.com/inoxlang/inox/internal/permkind"
 )
 
 const (
@@ -28,7 +29,7 @@ type WebsocketServer struct {
 
 func NewWebsocketServer(ctx *Context) (*WebsocketServer, error) {
 
-	perm := WebsocketPermission{Kind_: core.ProvidePerm}
+	perm := WebsocketPermission{Kind_: permkind.Provide}
 
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return nil, err

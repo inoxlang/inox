@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	parse "github.com/inoxlang/inox/internal/parse"
+	permkind "github.com/inoxlang/inox/internal/permkind"
 )
 
 const (
@@ -65,7 +66,7 @@ const (
 )
 
 func fmtNotValidPermissionKindName(name string) string {
-	return fmt.Sprintf("'%s' is not a valid permission kind, valid permissions are %s", name, strings.Join(PERMISSION_KIND_NAMES, ", "))
+	return fmt.Sprintf("'%s' is not a valid permission kind, valid permissions are %s", name, strings.Join(permkind.PERMISSION_KIND_NAMES, ", "))
 }
 
 func fmtUnknownSectionOfManifest(name string) string {

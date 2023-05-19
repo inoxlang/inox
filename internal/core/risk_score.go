@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"reflect"
 
+	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -45,16 +46,16 @@ var (
 
 	DEFAULT_PERM_RISK_SCORES = map[reflect.Type][]BasePermissionRiskScore{
 		HTTP_PERM_TYPE: {
-			{HTTP_PERM_TYPE, ReadPerm, HTTP_READ_PERM_RISK_SCORE},
-			{HTTP_PERM_TYPE, WritePerm, HTTP_WRITE_PERM_RISK_SCORE},
-			{HTTP_PERM_TYPE, ProvidePerm, HTTP_WRITE_PERM_RISK_SCORE},
+			{HTTP_PERM_TYPE, permkind.Read, HTTP_READ_PERM_RISK_SCORE},
+			{HTTP_PERM_TYPE, permkind.Write, HTTP_WRITE_PERM_RISK_SCORE},
+			{HTTP_PERM_TYPE, permkind.Provide, HTTP_WRITE_PERM_RISK_SCORE},
 		},
 		FS_PERM_TYPE: {
-			{FS_PERM_TYPE, ReadPerm, FS_READ_PERM_RISK_SCORE},
-			{FS_PERM_TYPE, WritePerm, FS_WRITE_PERM_RISK_SCORE},
+			{FS_PERM_TYPE, permkind.Read, FS_READ_PERM_RISK_SCORE},
+			{FS_PERM_TYPE, permkind.Write, FS_WRITE_PERM_RISK_SCORE},
 		},
 		CMD_PERM_TYPE: {
-			{CMD_PERM_TYPE, UsePerm, CMD_PERM_RISK_SCORE},
+			{CMD_PERM_TYPE, permkind.Use, CMD_PERM_RISK_SCORE},
 		},
 	}
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,7 +18,7 @@ func TestHttpPermission(t *testing.T) {
 		HostPattern("https://**"),
 	}
 
-	for kind := ReadPerm; kind <= ProvidePerm; kind++ {
+	for kind := permkind.Read; kind <= permkind.Provide; kind++ {
 		for _, entity := range ENTITIES {
 			t.Run(kind.String()+"_"+fmt.Sprint(entity)+"_includes_itself", func(t *testing.T) {
 				perm := HttpPermission{Kind_: kind, Entity: entity.(WrappedString)}
@@ -26,7 +27,7 @@ func TestHttpPermission(t *testing.T) {
 		}
 	}
 
-	for kind := ReadPerm; kind <= ProvidePerm; kind++ {
+	for kind := permkind.Read; kind <= permkind.Provide; kind++ {
 		for i, entity := range ENTITIES {
 			for _, prevEntity := range ENTITIES[:i] {
 				t.Run(fmt.Sprintf("%s_%s_includes_%s", kind, entity, prevEntity), func(t *testing.T) {
@@ -40,23 +41,23 @@ func TestHttpPermission(t *testing.T) {
 	}
 
 	t.Run("a permission with a prefix pattern should include a permission with a longer prefix pattern", func(t *testing.T) {
-		perm := HttpPermission{Kind_: ReadPerm, Entity: URLPattern("https://localhost:443/...")}
-		otherPerm := HttpPermission{Kind_: ReadPerm, Entity: URL("https://localhost:443/abc/...")}
+		perm := HttpPermission{Kind_: permkind.Read, Entity: URLPattern("https://localhost:443/...")}
+		otherPerm := HttpPermission{Kind_: permkind.Read, Entity: URL("https://localhost:443/abc/...")}
 		assert.True(t, perm.Includes(otherPerm))
 	})
 
 	t.Run("schemes should be equal", func(t *testing.T) {
-		httpsPerm := HttpPermission{Kind_: ReadPerm, Entity: URLPattern("https://localhost:443/...")}
-		httpPerm := HttpPermission{Kind_: ReadPerm, Entity: URL("http://localhost:443/...")}
+		httpsPerm := HttpPermission{Kind_: permkind.Read, Entity: URLPattern("https://localhost:443/...")}
+		httpPerm := HttpPermission{Kind_: permkind.Read, Entity: URL("http://localhost:443/...")}
 		assert.False(t, httpsPerm.Includes(httpPerm))
 		assert.False(t, httpPerm.Includes(httpsPerm))
 	})
 
 	t.Run("write includes create & update", func(t *testing.T) {
 		patt := URLPattern("https://localhost:443/...")
-		writePerm := HttpPermission{Kind_: WritePerm, Entity: patt}
-		createPerm := HttpPermission{Kind_: CreatePerm, Entity: patt}
-		updatePerm := HttpPermission{Kind_: UpdatePerm, Entity: patt}
+		writePerm := HttpPermission{Kind_: permkind.Write, Entity: patt}
+		createPerm := HttpPermission{Kind_: permkind.Create, Entity: patt}
+		updatePerm := HttpPermission{Kind_: permkind.Update, Entity: patt}
 
 		assert.True(t, writePerm.Includes(createPerm))
 		assert.True(t, writePerm.Includes(updatePerm))
@@ -93,8 +94,8 @@ func TestDNSPermission(t *testing.T) {
 		}
 
 		t.Run(fmt.Sprintf(FMT, t.Name(), testCase.domain1, testCase.domain2), func(t *testing.T) {
-			perm1 := DNSPermission{ReadPerm, testCase.domain1}
-			perm2 := DNSPermission{ReadPerm, testCase.domain2}
+			perm1 := DNSPermission{permkind.Read, testCase.domain1}
+			perm2 := DNSPermission{permkind.Read, testCase.domain2}
 
 			if testCase.oneIncludesTwo {
 				assert.True(t, perm1.Includes(perm2))
@@ -132,8 +133,8 @@ func TestRawTcpPermission(t *testing.T) {
 		}
 
 		t.Run(fmt.Sprintf(FMT, t.Name(), testCase.domain1, testCase.domain2), func(t *testing.T) {
-			perm1 := RawTcpPermission{ReadPerm, testCase.domain1}
-			perm2 := RawTcpPermission{ReadPerm, testCase.domain2}
+			perm1 := RawTcpPermission{permkind.Read, testCase.domain1}
+			perm2 := RawTcpPermission{permkind.Read, testCase.domain2}
 
 			if testCase.oneIncludesTwo {
 				assert.True(t, perm1.Includes(perm2))
@@ -176,7 +177,7 @@ func TestFilesystemPermission(t *testing.T) {
 		PathPattern("./*.go"),
 	}
 
-	for kind := ReadPerm; kind <= ProvidePerm; kind++ {
+	for kind := permkind.Read; kind <= permkind.Provide; kind++ {
 		for _, entity := range ENTITIES {
 			t.Run(kind.String()+"_"+fmt.Sprint(entity), func(t *testing.T) {
 				perm := FilesystemPermission{Kind_: kind, Entity: entity.(WrappedString)}
@@ -208,8 +209,8 @@ func TestFilesystemPermission(t *testing.T) {
 		}
 
 		t.Run(fmt.Sprintf(FMT, t.Name(), testCase.entity1, testCase.entity2), func(t *testing.T) {
-			perm1 := FilesystemPermission{ReadPerm, testCase.entity1}
-			perm2 := FilesystemPermission{ReadPerm, testCase.entity2}
+			perm1 := FilesystemPermission{permkind.Read, testCase.entity1}
+			perm2 := FilesystemPermission{permkind.Read, testCase.entity2}
 
 			if testCase.oneIncludesTwo {
 				assert.True(t, perm1.Includes(perm2))
@@ -221,9 +222,9 @@ func TestFilesystemPermission(t *testing.T) {
 
 	t.Run("write includes create & update", func(t *testing.T) {
 		patt := PathPattern("/...")
-		writePerm := FilesystemPermission{Kind_: WritePerm, Entity: patt}
-		createPerm := FilesystemPermission{Kind_: CreatePerm, Entity: patt}
-		updatePerm := FilesystemPermission{Kind_: UpdatePerm, Entity: patt}
+		writePerm := FilesystemPermission{Kind_: permkind.Write, Entity: patt}
+		createPerm := FilesystemPermission{Kind_: permkind.Create, Entity: patt}
+		updatePerm := FilesystemPermission{Kind_: permkind.Update, Entity: patt}
 
 		assert.True(t, writePerm.Includes(createPerm))
 		assert.True(t, writePerm.Includes(updatePerm))

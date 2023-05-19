@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/permkind"
 )
 
 func TestHttpClient(t *testing.T) {
@@ -37,7 +38,7 @@ func TestHttpClient(t *testing.T) {
 		server := makeServer()
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: core.ReadPerm, Entity: URL},
+				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
 			},
 			Limitations: []core.Limitation{},
 		})
@@ -61,7 +62,7 @@ func TestHttpClient(t *testing.T) {
 		server := makeServer()
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: core.ReadPerm, Entity: URL},
+				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
 			},
 			Limitations: []core.Limitation{},
 		})
@@ -85,7 +86,7 @@ func TestHttpClient(t *testing.T) {
 		server := makeServer()
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: core.ReadPerm, Entity: URL},
+				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
 			},
 			Limitations: []core.Limitation{},
 		})
@@ -130,7 +131,7 @@ func TestHttpGet(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: core.DeletePerm, Entity: URL},
+				core.HttpPermission{Kind_: permkind.Delete, Entity: URL},
 			},
 			Limitations: []core.Limitation{},
 		})
@@ -139,7 +140,7 @@ func TestHttpGet(t *testing.T) {
 		resp, err := HttpGet(ctx, URL)
 		assert.Error(t, err)
 		assert.IsType(t, core.NotAllowedError{}, err)
-		assert.Equal(t, core.HttpPermission{Kind_: core.ReadPerm, Entity: URL}, err.(core.NotAllowedError).Permission)
+		assert.Equal(t, core.HttpPermission{Kind_: permkind.Read, Entity: URL}, err.(core.NotAllowedError).Permission)
 		assert.Nil(t, resp)
 	})
 }
@@ -165,7 +166,7 @@ func TestHttpPost(t *testing.T) {
 	t.Run("missing URL", func(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: core.ReadPerm, Entity: URL},
+				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
 			},
 		})
 		core.NewGlobalState(ctx)
@@ -178,7 +179,7 @@ func TestHttpPost(t *testing.T) {
 	t.Run("string provided instead of URL", func(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: core.ReadPerm, Entity: URL},
+				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
 			},
 		})
 		core.NewGlobalState(ctx)
@@ -191,7 +192,7 @@ func TestHttpPost(t *testing.T) {
 	t.Run("missing body", func(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: core.ReadPerm, Entity: URL},
+				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
 			},
 		})
 		core.NewGlobalState(ctx)
@@ -207,7 +208,7 @@ func TestHttpPost(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: core.ReadPerm, Entity: URL},
+				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
 			},
 			Limitations: []core.Limitation{},
 		})
@@ -216,7 +217,7 @@ func TestHttpPost(t *testing.T) {
 		resp, err := HttpPost(ctx, URL)
 		assert.Error(t, err)
 		assert.IsType(t, core.NotAllowedError{}, err)
-		assert.Equal(t, core.HttpPermission{Kind_: core.CreatePerm, Entity: URL}, err.(core.NotAllowedError).Permission)
+		assert.Equal(t, core.HttpPermission{Kind_: permkind.Create, Entity: URL}, err.(core.NotAllowedError).Permission)
 		assert.Nil(t, resp)
 	})
 }
@@ -245,7 +246,7 @@ func TestHttpDelete(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: core.ReadPerm, Entity: URL},
+				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
 			},
 			Limitations: []core.Limitation{},
 		})
@@ -254,7 +255,7 @@ func TestHttpDelete(t *testing.T) {
 		resp, err := HttpDelete(ctx, URL)
 		assert.Error(t, err)
 		assert.IsType(t, core.NotAllowedError{}, err)
-		assert.Equal(t, core.HttpPermission{Kind_: core.DeletePerm, Entity: URL}, err.(core.NotAllowedError).Permission)
+		assert.Equal(t, core.HttpPermission{Kind_: permkind.Delete, Entity: URL}, err.(core.NotAllowedError).Permission)
 		assert.Nil(t, resp)
 	})
 }

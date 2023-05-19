@@ -15,6 +15,7 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	core "github.com/inoxlang/inox/internal/core"
 	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -570,7 +571,7 @@ func ReplaceFileContent(ctx *core.Context, args ...core.Value) error {
 	fpath = fpath.ToAbs(ctx.GetFileSystem())
 
 	perm := core.FilesystemPermission{
-		Kind_:  core.UpdatePerm,
+		Kind_:  permkind.Update,
 		Entity: fpath,
 	}
 
@@ -637,7 +638,7 @@ func __createFile(ctx *core.Context, fpath core.Path, b []byte, fmode fs.FileMod
 	alreadyClosed := false
 	fls := ctx.GetFileSystem()
 
-	perm := core.FilesystemPermission{Kind_: core.CreatePerm, Entity: fpath.ToAbs(ctx.GetFileSystem())}
+	perm := core.FilesystemPermission{Kind_: permkind.Create, Entity: fpath.ToAbs(ctx.GetFileSystem())}
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return err
 	}
@@ -686,7 +687,7 @@ func __createFile(ctx *core.Context, fpath core.Path, b []byte, fmode fs.FileMod
 
 func ReadEntireFile(ctx *core.Context, fpath core.Path) ([]byte, error) {
 
-	perm := core.FilesystemPermission{Kind_: core.ReadPerm, Entity: fpath.ToAbs(ctx.GetFileSystem())}
+	perm := core.FilesystemPermission{Kind_: permkind.Read, Entity: fpath.ToAbs(ctx.GetFileSystem())}
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return nil, err
 	}
@@ -703,7 +704,7 @@ func ReadDir(ctx *core.Context, pth core.Path) ([]fs.DirEntry, error) {
 	fls := ctx.GetFileSystem()
 	pth = pth.ToAbs(fls)
 	perm := core.FilesystemPermission{
-		Kind_:  core.ReadPerm,
+		Kind_:  permkind.Read,
 		Entity: pth,
 	}
 
@@ -847,7 +848,7 @@ func ListFiles(ctx *core.Context, args ...core.Value) ([]core.FileInfo, error) {
 	} else { //pattern
 		absPatt := patt.ToAbs(ctx.GetFileSystem())
 		perm := core.FilesystemPermission{
-			Kind_:  core.ReadPerm,
+			Kind_:  permkind.Read,
 			Entity: absPatt,
 		}
 
@@ -941,7 +942,7 @@ func IsDir(ctx *core.Context, pth core.Path) core.Bool {
 	pth = pth.ToAbs(fls)
 
 	perm := core.FilesystemPermission{
-		Kind_:  core.ReadPerm,
+		Kind_:  permkind.Read,
 		Entity: pth,
 	}
 
@@ -958,7 +959,7 @@ func IsFile(ctx *core.Context, pth core.Path) core.Bool {
 	pth = pth.ToAbs(fls)
 
 	perm := core.FilesystemPermission{
-		Kind_:  core.ReadPerm,
+		Kind_:  permkind.Read,
 		Entity: pth,
 	}
 
@@ -975,7 +976,7 @@ func Exists(ctx *core.Context, pth core.Path) core.Bool {
 	pth = pth.ToAbs(fls)
 
 	perm := core.FilesystemPermission{
-		Kind_:  core.ReadPerm,
+		Kind_:  permkind.Read,
 		Entity: pth,
 	}
 

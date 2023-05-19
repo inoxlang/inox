@@ -8,6 +8,7 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	_html "github.com/inoxlang/inox/internal/globals/html"
 	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/rs/zerolog"
 
 	"github.com/inoxlang/inox/internal/utils"
@@ -43,7 +44,7 @@ func TestNewNode(t *testing.T) {
 
 	t.Run("description with .jobs", func(t *testing.T) {
 		state := core.NewGlobalState(core.NewContext(core.ContextConfig{
-			Permissions: []core.Permission{core.RoutinePermission{Kind_: core.CreatePerm}},
+			Permissions: []core.Permission{core.RoutinePermission{Kind_: permkind.Create}},
 		}))
 		chunk := parse.MustParseChunk("")
 		state.Module = &core.Module{MainChunk: &parse.ParsedChunk{Node: chunk}}

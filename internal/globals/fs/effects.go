@@ -8,6 +8,7 @@ import (
 
 	fsutil "github.com/go-git/go-billy/v5/util"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/permkind"
 )
 
 var _ = []core.Effect{&CreateFile{}, &CreateDir{}, &RemoveFile{}}
@@ -26,7 +27,7 @@ func (e CreateFile) Resources() []core.ResourceName {
 }
 
 func (e CreateFile) PermissionKind() core.PermissionKind {
-	return core.CreatePerm
+	return permkind.Create
 }
 
 func (e CreateFile) Reversability(*core.Context) core.Reversability {
@@ -54,7 +55,7 @@ func (e CreateFile) Reverse(ctx *core.Context) error {
 }
 
 func (e CreateFile) CheckPermissions(ctx *core.Context) error {
-	perm := core.FilesystemPermission{Kind_: core.CreatePerm, Entity: e.path}
+	perm := core.FilesystemPermission{Kind_: permkind.Create, Entity: e.path}
 	return ctx.CheckHasPermission(perm)
 }
 
@@ -67,7 +68,7 @@ type AppendBytesToFile struct {
 }
 
 func (e AppendBytesToFile) PermissionKind() core.PermissionKind {
-	return core.UpdatePerm
+	return permkind.Update
 }
 
 func (e AppendBytesToFile) Reversability(*core.Context) core.Reversability {
@@ -130,7 +131,7 @@ func (e AppendBytesToFile) Reverse(ctx *core.Context) error {
 }
 
 func (e AppendBytesToFile) CheckPermissions(ctx *core.Context) error {
-	perm := core.FilesystemPermission{Kind_: core.UpdatePerm, Entity: e.path}
+	perm := core.FilesystemPermission{Kind_: permkind.Update, Entity: e.path}
 	return ctx.CheckHasPermission(perm)
 }
 
@@ -147,7 +148,7 @@ func (e CreateDir) Resources() []core.ResourceName {
 }
 
 func (e CreateDir) PermissionKind() core.PermissionKind {
-	return core.CreatePerm
+	return permkind.Create
 }
 
 func (e CreateDir) Reversability(*core.Context) core.Reversability {
@@ -164,7 +165,7 @@ func (e *CreateDir) Apply(ctx *core.Context) error {
 	if e.applied {
 		return nil
 	}
-	if err := ctx.CheckHasPermission(core.FilesystemPermission{Kind_: core.CreatePerm, Entity: e.path}); err != nil {
+	if err := ctx.CheckHasPermission(core.FilesystemPermission{Kind_: permkind.Create, Entity: e.path}); err != nil {
 		return err
 	}
 	e.applied = true
@@ -180,7 +181,7 @@ func (e CreateDir) Reverse(ctx *core.Context) error {
 }
 
 func (e CreateDir) CheckPermissions(ctx *core.Context) error {
-	perm := core.FilesystemPermission{Kind_: core.CreatePerm, Entity: e.path}
+	perm := core.FilesystemPermission{Kind_: permkind.Create, Entity: e.path}
 	return ctx.CheckHasPermission(perm)
 }
 
@@ -199,7 +200,7 @@ func (e RemoveFile) Resources() []core.ResourceName {
 }
 
 func (e RemoveFile) PermissionKind() core.PermissionKind {
-	return core.CreatePerm
+	return permkind.Create
 }
 
 func (e RemoveFile) Reversability(*core.Context) core.Reversability {
@@ -246,7 +247,7 @@ func (e *RemoveFile) Reverse(ctx *core.Context) error {
 }
 
 func (e RemoveFile) CheckPermissions(ctx *core.Context) error {
-	perm := core.FilesystemPermission{Kind_: core.DeletePerm, Entity: e.path}
+	perm := core.FilesystemPermission{Kind_: permkind.Delete, Entity: e.path}
 	return ctx.CheckHasPermission(perm)
 }
 
@@ -262,7 +263,7 @@ func (e RenameFile) Resources() []core.ResourceName {
 }
 
 func (e RenameFile) PermissionKind() core.PermissionKind {
-	return core.CreatePerm
+	return permkind.Create
 }
 
 func (e RenameFile) Reversability(*core.Context) core.Reversability {
@@ -304,11 +305,11 @@ func (e RenameFile) Reverse(ctx *core.Context) error {
 }
 
 func (e RenameFile) CheckPermissions(ctx *core.Context) error {
-	perm := core.FilesystemPermission{Kind_: core.ReadPerm, Entity: e.old}
+	perm := core.FilesystemPermission{Kind_: permkind.Read, Entity: e.old}
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return err
 	}
 
-	perm = core.FilesystemPermission{Kind_: core.CreatePerm, Entity: e.new}
+	perm = core.FilesystemPermission{Kind_: permkind.Create, Entity: e.new}
 	return ctx.CheckHasPermission(perm)
 }

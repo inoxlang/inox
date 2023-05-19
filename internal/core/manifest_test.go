@@ -5,15 +5,16 @@ import (
 	"time"
 
 	parse "github.com/inoxlang/inox/internal/parse"
+	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestEvalManifest(t *testing.T) {
 
 	defaultGlobalPermissions := []Permission{
-		GlobalVarPermission{ReadPerm, "*"},
-		GlobalVarPermission{UsePerm, "*"},
-		GlobalVarPermission{CreatePerm, "*"},
+		GlobalVarPermission{permkind.Read, "*"},
+		GlobalVarPermission{permkind.Use, "*"},
+		GlobalVarPermission{permkind.Create, "*"},
 	}
 	LimRegistry.RegisterLimitation("a", TotalLimitation, 0)
 	LimRegistry.RegisterLimitation("b", ByteRateLimitation, 0)
@@ -50,7 +51,7 @@ func TestEvalManifest(t *testing.T) {
 			"read_any_global", `manifest { 
 				permissions: { read: {globals: "*"} }
 			}`,
-			[]Permission{GlobalVarPermission{ReadPerm, "*"}},
+			[]Permission{GlobalVarPermission{permkind.Read, "*"}},
 			[]Limitation{},
 			nil,
 			false,
@@ -61,7 +62,7 @@ func TestEvalManifest(t *testing.T) {
 					create: {routines: {}} 
 				}
 			}`,
-			[]Permission{RoutinePermission{CreatePerm}},
+			[]Permission{RoutinePermission{permkind.Create}},
 			[]Limitation{},
 			nil,
 			false,
@@ -72,7 +73,7 @@ func TestEvalManifest(t *testing.T) {
 					create: {routines: {}} 
 				}
 			}`,
-			[]Permission{RoutinePermission{CreatePerm}},
+			[]Permission{RoutinePermission{permkind.Create}},
 			[]Limitation{},
 			nil,
 			false,
@@ -86,7 +87,7 @@ func TestEvalManifest(t *testing.T) {
 					permissions: { read: $$URL}
 				}
 			`,
-			[]Permission{HttpPermission{ReadPerm, URL("https://example.com/")}},
+			[]Permission{HttpPermission{permkind.Read, URL("https://example.com/")}},
 			[]Limitation{},
 			nil,
 			false,
@@ -142,7 +143,7 @@ func TestEvalManifest(t *testing.T) {
 			}
 			`,
 			[]Permission{
-				DNSPermission{ReadPerm, HostPattern("://**.com")},
+				DNSPermission{permkind.Read, HostPattern("://**.com")},
 			},
 			[]Limitation{},
 			nil,
@@ -196,7 +197,7 @@ func TestEvalManifest(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			if testCase.name == "read_any_global" {
 				testCase.expectedPermissions =
-					append(testCase.expectedPermissions, GlobalVarPermission{UsePerm, "*"}, GlobalVarPermission{CreatePerm, "*"})
+					append(testCase.expectedPermissions, GlobalVarPermission{permkind.Use, "*"}, GlobalVarPermission{permkind.Create, "*"})
 			} else {
 				testCase.expectedPermissions = append(testCase.expectedPermissions, defaultGlobalPermissions...)
 			}

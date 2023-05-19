@@ -9,6 +9,7 @@ import (
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	_fs "github.com/inoxlang/inox/internal/globals/fs"
+	"github.com/inoxlang/inox/internal/permkind"
 
 	core "github.com/inoxlang/inox/internal/core"
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -29,8 +30,8 @@ func TestFindCompletions(t *testing.T) {
 	perms := []core.Permission{
 		core.CommandPermission{CommandName: core.Str("cmd"), SubcommandNameChain: []string{"help", "build"}},
 		core.CommandPermission{CommandName: core.Str("cmd"), SubcommandNameChain: []string{"help", "run"}},
-		core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern(dir)},
-		core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern(dir + "/...")},
+		core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(dir)},
+		core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(dir + "/...")},
 	}
 
 	parseChunkSource := func(s, name string) (*parse.ParsedChunk, error) {

@@ -10,6 +10,7 @@ import (
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
+	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -71,7 +72,7 @@ type RoutineSpawnArgs struct {
 func SpawnRoutine(args RoutineSpawnArgs) (*Routine, error) {
 
 	if !args.IgnoreCreateRoutinePermCheck {
-		perm := RoutinePermission{Kind_: CreatePerm}
+		perm := RoutinePermission{Kind_: permkind.Create}
 
 		if err := args.SpawnerState.Ctx.CheckHasPermission(perm); err != nil {
 			return nil, fmt.Errorf("cannot spawn routine: %s", err.Error())
@@ -81,9 +82,9 @@ func SpawnRoutine(args RoutineSpawnArgs) (*Routine, error) {
 	if args.RoutineCtx == nil {
 		args.RoutineCtx = NewContext(ContextConfig{
 			Permissions: []Permission{
-				GlobalVarPermission{Kind_: ReadPerm, Name: "*"},
-				GlobalVarPermission{Kind_: UsePerm, Name: "*"},
-				GlobalVarPermission{Kind_: CreatePerm, Name: "*"},
+				GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
+				GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
+				GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
 			},
 			ParentContext: args.SpawnerState.Ctx,
 		})

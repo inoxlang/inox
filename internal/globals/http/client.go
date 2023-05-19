@@ -11,6 +11,7 @@ import (
 	"time"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/net/context"
 	"golang.org/x/net/publicsuffix"
@@ -152,17 +153,17 @@ func (c *HttpClient) MakeRequest(ctx *core.Context, method string, u core.URL, b
 	switch method {
 	case "GET", "HEAD":
 		perm = core.HttpPermission{
-			Kind_:  core.ReadPerm,
+			Kind_:  permkind.Read,
 			Entity: u,
 		}
 	case "POST", "PATCH":
 		perm = core.HttpPermission{
-			Kind_:  core.CreatePerm,
+			Kind_:  permkind.Create,
 			Entity: u,
 		}
 	case "DELETE":
 		perm = core.HttpPermission{
-			Kind_:  core.DeletePerm,
+			Kind_:  permkind.Delete,
 			Entity: u,
 		}
 	default:

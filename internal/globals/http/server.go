@@ -14,6 +14,7 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
 	_dom "github.com/inoxlang/inox/internal/globals/dom"
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 )
@@ -197,7 +198,7 @@ func readHttpServerArgs(ctx *core.Context, server *HttpServer, args ...core.Valu
 			server.host = v
 			addr = parsed.Host
 
-			perm := core.HttpPermission{Kind_: core.ProvidePerm, Entity: v}
+			perm := core.HttpPermission{Kind_: permkind.Provide, Entity: v}
 			if err := ctx.CheckHasPermission(perm); err != nil {
 				argErr = err
 				return

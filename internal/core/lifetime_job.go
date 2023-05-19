@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -76,7 +77,7 @@ func NewLifetimeJob(meta Value, subjectPattern Pattern, mod *Module, parentState
 func (j *LifetimeJob) Instantiate(ctx *Context, self Value) (*LifetimeJobInstance, error) {
 	spawnerState := ctx.GetClosestState()
 
-	createRoutinePerm := RoutinePermission{Kind_: CreatePerm}
+	createRoutinePerm := RoutinePermission{Kind_: permkind.Create}
 
 	if err := spawnerState.Ctx.CheckHasPermission(createRoutinePerm); err != nil {
 		return nil, fmt.Errorf("lifetime job: following permission is required for running the job: %w", err)
@@ -94,8 +95,8 @@ func (j *LifetimeJob) Instantiate(ctx *Context, self Value) (*LifetimeJobInstanc
 	permissions := utils.CopySlice(manifest.RequiredPermissions)
 	permissions = append(permissions, createRoutinePerm)
 
-	readGlobalPerm := GlobalVarPermission{Kind_: ReadPerm, Name: "*"}
-	useGlobalPerm := GlobalVarPermission{Kind_: UsePerm, Name: "*"}
+	readGlobalPerm := GlobalVarPermission{Kind_: permkind.Read, Name: "*"}
+	useGlobalPerm := GlobalVarPermission{Kind_: permkind.Use, Name: "*"}
 
 	if !manifest.RequiresPermission(readGlobalPerm) {
 		permissions = append(permissions, readGlobalPerm)
@@ -164,7 +165,7 @@ func (*LifetimeJob) PropertyNames(ctx *Context) []string {
 }
 
 // func evaluateLifetimeJobManifest(chunk *parse.ParsedChunk, parentState *GlobalState) (*Manifest, error) {
-// 	createRoutinePerm := RoutinePermission{Kind_: CreatePerm}
+// 	createRoutinePerm := RoutinePermission{Kind_: permkind.Create}
 
 // 	if err := parentState.Ctx.CheckHasPermission(createRoutinePerm); err != nil {
 // 		return nil, fmt.Errorf("lifetime job: following permission is required for running the job: %w", err)

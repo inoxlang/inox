@@ -10,6 +10,7 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	_fs "github.com/inoxlang/inox/internal/globals/fs"
 	_http "github.com/inoxlang/inox/internal/globals/http"
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,8 +19,8 @@ func createTestWebsocketServer(host core.Host, ctx *Context) (closeChan chan str
 	if ctx == nil {
 		ctx = core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.WebsocketPermission{Kind_: core.ProvidePerm},
-				core.HttpPermission{Kind_: core.ProvidePerm, Entity: host},
+				core.WebsocketPermission{Kind_: permkind.Provide},
+				core.HttpPermission{Kind_: permkind.Provide, Entity: host},
 			},
 			Filesystem: _fs.GetOsFilesystem(),
 		})
@@ -74,7 +75,7 @@ func TestWebsocketServer(t *testing.T) {
 	t.Run("create with required permission", func(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.WebsocketPermission{Kind_: core.ProvidePerm},
+				core.WebsocketPermission{Kind_: permkind.Provide},
 			},
 			Filesystem: _fs.GetOsFilesystem(),
 		})
@@ -86,7 +87,7 @@ func TestWebsocketServer(t *testing.T) {
 	t.Run("create without required permission", func(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{})
 		server, err := NewWebsocketServer(ctx)
-		assert.ErrorIs(t, err, core.NewNotAllowedError(core.WebsocketPermission{Kind_: core.ProvidePerm}))
+		assert.ErrorIs(t, err, core.NewNotAllowedError(core.WebsocketPermission{Kind_: permkind.Provide}))
 		assert.Nil(t, server)
 	})
 
@@ -96,16 +97,16 @@ func TestWebsocketServer(t *testing.T) {
 
 		clientCtx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.WebsocketPermission{Kind_: core.ReadPerm, Endpoint: ENDPOINT},
+				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
 			},
 			Filesystem: _fs.GetOsFilesystem(),
 		})
 
 		serverCtx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.WebsocketPermission{Kind_: core.ProvidePerm},
+				core.WebsocketPermission{Kind_: permkind.Provide},
 				core.HttpPermission{
-					Kind_:  core.ProvidePerm,
+					Kind_:  permkind.Provide,
 					Entity: HOST,
 				},
 			},

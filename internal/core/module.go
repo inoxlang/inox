@@ -13,6 +13,7 @@ import (
 	"github.com/go-git/go-billy/v5"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
+	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -132,7 +133,7 @@ func (m *Module) EvalManifest(config ManifestEvaluationConfig) (*Manifest, error
 
 	//we create a temporary state to evaluate some parts of the permissions
 	if config.RunningState == nil {
-		ctx := NewContext(ContextConfig{Permissions: []Permission{GlobalVarPermission{ReadPerm, "*"}}})
+		ctx := NewContext(ContextConfig{Permissions: []Permission{GlobalVarPermission{permkind.Read, "*"}}})
 		for k, v := range DEFAULT_NAMED_PATTERNS {
 			ctx.AddNamedPattern(k, v)
 		}
@@ -303,7 +304,7 @@ func ParseLocalModule(config LocalModuleParsingConfig) (*Module, error) {
 	//read the script
 
 	{
-		readPerm := FilesystemPermission{Kind_: ReadPerm, Entity: Path(absPath)}
+		readPerm := FilesystemPermission{Kind_: permkind.Read, Entity: Path(absPath)}
 		if err := ctx.CheckHasPermission(readPerm); err != nil {
 			return nil, fmt.Errorf("failed to parse local module: %w", err)
 		}
@@ -463,7 +464,7 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 	//read the file
 
 	{
-		readPerm := FilesystemPermission{Kind_: ReadPerm, Entity: Path(absPath)}
+		readPerm := FilesystemPermission{Kind_: permkind.Read, Entity: Path(absPath)}
 		if err := config.Context.CheckHasPermission(readPerm); err != nil {
 			return nil, fmt.Errorf("failed to parse included chunk %s: %w", config.ChunkFilepath, err)
 		}

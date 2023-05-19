@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	permkind "github.com/inoxlang/inox/internal/permkind"
+
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
@@ -471,7 +473,7 @@ func EvaluatePermissionListingObjectNode(n *parse.ObjectLiteral, config Manifest
 
 	//we create a temporary state to evaluate some parts of the permissions
 	if config.RunningState == nil {
-		ctx := NewContext(ContextConfig{Permissions: []Permission{GlobalVarPermission{ReadPerm, "*"}}})
+		ctx := NewContext(ContextConfig{Permissions: []Permission{GlobalVarPermission{permkind.Read, "*"}}})
 		state = NewTreeWalkState(ctx, getGlobalsAccessibleFromManifest().EntryMap())
 
 		if config.GlobalConsts != nil {
@@ -604,7 +606,7 @@ func getPermissionsFromListing(
 	}
 
 	for propName, propValue := range permDescriptions.EntryMap() {
-		permKind, ok := PermissionKindFromString(propName)
+		permKind, ok := permkind.PermissionKindFromString(propName)
 
 		if ok {
 			p, err := getSingleKindPermissions(permKind, propValue, specifiedGlobalPermKinds, handleCustomType)
@@ -619,7 +621,7 @@ func getPermissionsFromListing(
 
 	if addDefaultPermissions {
 		// for some permission kinds if no permissions are specified for globals we add a default lax permission
-		for _, kind := range []PermissionKind{ReadPerm, UsePerm, CreatePerm} {
+		for _, kind := range []PermissionKind{permkind.Read, permkind.Use, permkind.Create} {
 			if !specifiedGlobalPermKinds[kind] {
 				perms = append(perms, GlobalVarPermission{kind, "*"})
 			}
@@ -630,7 +632,7 @@ func getPermissionsFromListing(
 }
 
 func GetDefaultGlobalVarPermissions() (perms []Permission) {
-	for _, kind := range []PermissionKind{ReadPerm, UsePerm, CreatePerm} {
+	for _, kind := range []PermissionKind{permkind.Read, permkind.Use, permkind.Create} {
 		perms = append(perms, GlobalVarPermission{kind, "*"})
 	}
 	return
@@ -788,7 +790,7 @@ func getSingleKindPermissions(
 						return nil, errors.New("invalid permission, 'system-graph' should be followed by an object literal")
 					}
 				case "commands":
-					if permKind != UsePerm {
+					if permKind != permkind.Use {
 						return nil, errors.New("permission 'commands' should be required in the 'use' section of permission")
 					}
 
@@ -798,8 +800,8 @@ func getSingleKindPermissions(
 					}
 					perms = append(perms, newPerms...)
 				case "values":
-					if permKind != SeePerm {
-						if permKind != ReadPerm {
+					if permKind != permkind.See {
+						if permKind != permkind.Read {
 							return nil, fmt.Errorf("invalid manifest, invalid permissions: 'values' is only defined for 'see'")
 						}
 					}
@@ -1015,7 +1017,7 @@ func getModuleParameters(v Value) (ModuleParameters, error) {
 func getDnsPermissions(permKind PermissionKind, desc Value) ([]Permission, error) {
 	var perms []Permission
 
-	if permKind != ReadPerm {
+	if permKind != permkind.Read {
 		return nil, fmt.Errorf("invalid manifest, 'dns' is only defined for 'read'")
 	}
 	dnsReqNodes := make([]Value, 0)

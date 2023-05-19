@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,10 +26,10 @@ func TestEnv(t *testing.T) {
 	newCtxWithPerms := func() *core.Context {
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.EnvVarPermission{Kind_: core.ReadPerm, Name: "*"},
-				core.EnvVarPermission{Kind_: core.CreatePerm, Name: "*"},
-				core.EnvVarPermission{Kind_: core.UpdatePerm, Name: "*"},
-				core.EnvVarPermission{Kind_: core.DeletePerm, Name: "*"},
+				core.EnvVarPermission{Kind_: permkind.Read, Name: "*"},
+				core.EnvVarPermission{Kind_: permkind.Create, Name: "*"},
+				core.EnvVarPermission{Kind_: permkind.Update, Name: "*"},
+				core.EnvVarPermission{Kind_: permkind.Delete, Name: "*"},
 			},
 		})
 		core.NewGlobalState(ctx)

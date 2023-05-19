@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/permkind"
 )
 
 var ErrClosedWebsocketConnection = errors.New("closed websocket connection")
@@ -55,7 +56,7 @@ func (conn *WebsocketConnection) sendJSON(ctx *Context, msg Value) error {
 	}
 
 	perm := WebsocketPermission{
-		Kind_:    core.WriteStreamPerm,
+		Kind_:    permkind.WriteStream,
 		Endpoint: conn.endpoint,
 	}
 
@@ -80,7 +81,7 @@ func (conn *WebsocketConnection) readJSON(ctx *Context) (Value, error) {
 	}
 
 	perm := WebsocketPermission{
-		Kind_:    core.ReadPerm,
+		Kind_:    permkind.Read,
 		Endpoint: conn.endpoint,
 	}
 

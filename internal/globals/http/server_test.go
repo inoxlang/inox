@@ -19,6 +19,7 @@ import (
 	_dom "github.com/inoxlang/inox/internal/globals/dom"
 	_fs "github.com/inoxlang/inox/internal/globals/fs"
 	_html "github.com/inoxlang/inox/internal/globals/html"
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/rs/zerolog"
 	"golang.org/x/net/publicsuffix"
 
@@ -95,7 +96,7 @@ func TestHttpServer(t *testing.T) {
 		server, err := NewHttpServer(ctx, host)
 
 		assert.IsType(t, core.NotAllowedError{}, err)
-		assert.Equal(t, core.HttpPermission{Kind_: core.ProvidePerm, Entity: host}, err.(core.NotAllowedError).Permission)
+		assert.Equal(t, core.HttpPermission{Kind_: permkind.Provide, Entity: host}, err.(core.NotAllowedError).Permission)
 		assert.Nil(t, server)
 	})
 
@@ -119,7 +120,7 @@ func TestHttpServer(t *testing.T) {
 
 				ctx := core.NewContext(core.ContextConfig{
 					Permissions: []core.Permission{
-						core.HttpPermission{Kind_: core.ProvidePerm, Entity: host},
+						core.HttpPermission{Kind_: permkind.Provide, Entity: host},
 					},
 					Filesystem: _fs.GetOsFilesystem(),
 				})
@@ -560,11 +561,11 @@ func setupAdvancedTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalS
 	// create state & context
 	ctx := core.NewContext(core.ContextConfig{
 		Permissions: []core.Permission{
-			core.HttpPermission{Kind_: core.ProvidePerm, Entity: host},
-			core.GlobalVarPermission{Kind_: core.UsePerm, Name: "*"},
-			core.GlobalVarPermission{Kind_: core.CreatePerm, Name: "*"},
-			core.GlobalVarPermission{Kind_: core.ReadPerm, Name: "*"},
-			core.RoutinePermission{Kind_: core.CreatePerm},
+			core.HttpPermission{Kind_: permkind.Provide, Entity: host},
+			core.GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
+			core.GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
+			core.GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
+			core.RoutinePermission{Kind_: permkind.Create},
 		},
 		Filesystem: _fs.GetOsFilesystem(),
 	})

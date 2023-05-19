@@ -9,6 +9,7 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	_fs "github.com/inoxlang/inox/internal/globals/fs"
 	_http "github.com/inoxlang/inox/internal/globals/http"
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/rs/zerolog"
 
 	"github.com/stretchr/testify/assert"
@@ -19,8 +20,8 @@ const RESOURCE_TEST_HOST = core.Host("https://localhost:8080")
 func setup(t *testing.T, handler func(ctx *core.Context, rw *_http.HttpResponseWriter, req *_http.HttpRequest)) *core.Context {
 	ctx := core.NewContext(core.ContextConfig{
 		Permissions: []core.Permission{
-			core.HttpPermission{Kind_: core.ReadPerm, Entity: core.URLPattern("https://localhost:8080/...")},
-			core.HttpPermission{Kind_: core.ProvidePerm, Entity: RESOURCE_TEST_HOST},
+			core.HttpPermission{Kind_: permkind.Read, Entity: core.URLPattern("https://localhost:8080/...")},
+			core.HttpPermission{Kind_: permkind.Provide, Entity: RESOURCE_TEST_HOST},
 		},
 		Filesystem: _fs.GetOsFilesystem(),
 	})

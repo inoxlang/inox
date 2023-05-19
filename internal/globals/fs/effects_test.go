@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,7 +21,7 @@ func TestCreateFileEffect(t *testing.T) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
-					core.FilesystemPermission{Kind_: core.CreatePerm, Entity: core.PathPattern("/...")},
+					core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern("/...")},
 				},
 				Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1000}},
 				Filesystem:  GetOsFilesystem(),
@@ -45,8 +46,8 @@ func TestCreateFileEffect(t *testing.T) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
-					core.FilesystemPermission{Kind_: core.CreatePerm, Entity: core.PathPattern("/...")},
-					core.FilesystemPermission{Kind_: core.DeletePerm, Entity: core.PathPattern("/...")},
+					core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern("/...")},
+					core.FilesystemPermission{Kind_: permkind.Delete, Entity: core.PathPattern("/...")},
 				},
 				Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1000}},
 				Filesystem:  GetOsFilesystem(),
@@ -83,7 +84,7 @@ func TestAppendBytesToFileEffect(t *testing.T) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
-					core.FilesystemPermission{Kind_: core.UpdatePerm, Entity: core.PathPattern("/...")},
+					core.FilesystemPermission{Kind_: permkind.Update, Entity: core.PathPattern("/...")},
 				},
 				Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1000}},
 				Filesystem:  GetOsFilesystem(),
@@ -115,7 +116,7 @@ func TestAppendBytesToFileEffect(t *testing.T) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
-					core.FilesystemPermission{Kind_: core.UpdatePerm, Entity: core.PathPattern("/...")},
+					core.FilesystemPermission{Kind_: permkind.Update, Entity: core.PathPattern("/...")},
 				},
 				Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1000}},
 				Filesystem:  GetOsFilesystem(),
@@ -144,7 +145,7 @@ func TestCreateDirEffect(t *testing.T) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
-					core.FilesystemPermission{Kind_: core.CreatePerm, Entity: core.PathPattern("/...")},
+					core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern("/...")},
 				},
 				Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1000}},
 				Filesystem:  GetOsFilesystem(),
@@ -169,8 +170,8 @@ func TestCreateDirEffect(t *testing.T) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
-					core.FilesystemPermission{Kind_: core.CreatePerm, Entity: core.PathPattern("/...")},
-					core.FilesystemPermission{Kind_: core.DeletePerm, Entity: core.PathPattern("/...")},
+					core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern("/...")},
+					core.FilesystemPermission{Kind_: permkind.Delete, Entity: core.PathPattern("/...")},
 				},
 				Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1000}},
 				Filesystem:  GetOsFilesystem(),
@@ -198,7 +199,7 @@ func TestRemoveFileEffect(t *testing.T) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
-					core.FilesystemPermission{Kind_: core.DeletePerm, Entity: core.PathPattern("/...")},
+					core.FilesystemPermission{Kind_: permkind.Delete, Entity: core.PathPattern("/...")},
 				},
 				Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1000}},
 				Filesystem:  GetOsFilesystem(),
@@ -225,7 +226,7 @@ func TestRemoveFileEffect(t *testing.T) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
-					core.FilesystemPermission{Kind_: core.DeletePerm, Entity: core.PathPattern("/...")},
+					core.FilesystemPermission{Kind_: permkind.Delete, Entity: core.PathPattern("/...")},
 				},
 				Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1000}},
 				Filesystem:  GetOsFilesystem(),
@@ -245,7 +246,7 @@ func TestRemoveFileEffect(t *testing.T) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
-					core.FilesystemPermission{Kind_: core.DeletePerm, Entity: core.PathPattern("/...")},
+					core.FilesystemPermission{Kind_: permkind.Delete, Entity: core.PathPattern("/...")},
 				},
 				Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1000}},
 				Filesystem:  GetOsFilesystem(),

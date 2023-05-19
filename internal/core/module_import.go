@@ -17,6 +17,7 @@ import (
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
+	permkind "github.com/inoxlang/inox/internal/permkind"
 
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -101,7 +102,7 @@ func ImportModule(config ImportConfig) (*Routine, error) {
 
 	switch val := config.Src.(type) {
 	case URL:
-		httpPerm := HttpPermission{ReadPerm, val}
+		httpPerm := HttpPermission{permkind.Read, val}
 		if err := config.ParentState.Ctx.CheckHasPermission(httpPerm); err != nil {
 			return nil, fmt.Errorf("import: %s", err.Error())
 		}
@@ -113,7 +114,7 @@ func ImportModule(config ImportConfig) (*Routine, error) {
 		}
 
 		absScriptDir = filepath.Dir(string(val))
-		fsPerm := FilesystemPermission{ReadPerm, val.ToAbs(fls)}
+		fsPerm := FilesystemPermission{permkind.Read, val.ToAbs(fls)}
 		if err := config.ParentState.Ctx.CheckHasPermission(fsPerm); err != nil {
 			return nil, fmt.Errorf("import: %s", err.Error())
 		}

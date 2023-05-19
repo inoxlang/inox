@@ -8,6 +8,7 @@ import (
 	"time"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/permkind"
 )
 
 // NewFileServer returns an HttpServer that uses Go's http.FileServer(dir) to handle requests
@@ -24,7 +25,7 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 			parsed, _ := url.Parse(string(v))
 			addr = parsed.Host
 
-			perm := core.HttpPermission{Kind_: core.ProvidePerm, Entity: v}
+			perm := core.HttpPermission{Kind_: permkind.Provide, Entity: v}
 			if err := ctx.CheckHasPermission(perm); err != nil {
 				return nil, err
 			}
@@ -67,7 +68,7 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 func serveFile(ctx *core.Context, rw *HttpResponseWriter, r *HttpRequest, pth core.Path) error {
 
 	pth = pth.ToAbs(ctx.GetFileSystem())
-	perm := core.FilesystemPermission{Kind_: core.ReadPerm, Entity: pth}
+	perm := core.FilesystemPermission{Kind_: permkind.Read, Entity: pth}
 
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return err

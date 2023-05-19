@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -68,8 +69,8 @@ func TestContextResourceManagement(t *testing.T) {
 
 func TestContextForbiddenPermissions(t *testing.T) {
 
-	readGoFiles := FilesystemPermission{ReadPerm, PathPattern("./*.go")}
-	readFile := FilesystemPermission{ReadPerm, Path("./file.go")}
+	readGoFiles := FilesystemPermission{permkind.Read, PathPattern("./*.go")}
+	readFile := FilesystemPermission{permkind.Read, Path("./file.go")}
 
 	ctx := NewContext(ContextConfig{
 		Permissions:          []Permission{readGoFiles},
@@ -81,8 +82,8 @@ func TestContextForbiddenPermissions(t *testing.T) {
 }
 
 func TestContextDropPermissions(t *testing.T) {
-	readGoFiles := FilesystemPermission{ReadPerm, PathPattern("./*.go")}
-	readFile := FilesystemPermission{ReadPerm, Path("./file.go")}
+	readGoFiles := FilesystemPermission{permkind.Read, PathPattern("./*.go")}
+	readFile := FilesystemPermission{permkind.Read, Path("./file.go")}
 
 	ctx := NewContext(ContextConfig{
 		Permissions:          []Permission{readGoFiles},
@@ -179,7 +180,7 @@ func TestContextSetProtocolClientForURLForURL(t *testing.T) {
 
 	// ctx := core.NewContext(core.ContextConfig{
 	// 	Permissions: []core.Permission{
-	// 		core.HttpPermission{Kind_: core.ReadPerm, Entity: URL},
+	// 		permkind.Httpission{Kind_: permkind.Read, Entity: URL},
 	// 	},
 	// 	Limitations: []core.Limitation{},
 	// })

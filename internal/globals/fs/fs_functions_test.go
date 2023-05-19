@@ -10,6 +10,7 @@ import (
 	"time"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -75,7 +76,7 @@ func TestCreateFile(t *testing.T) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
-					core.FilesystemPermission{Kind_: core.CreatePerm, Entity: fpath},
+					core.FilesystemPermission{Kind_: permkind.Create, Entity: fpath},
 				},
 				Limitations: []core.Limitation{testCase.limitation},
 				Filesystem:  GetOsFilesystem(),
@@ -160,7 +161,7 @@ func TestReadEntireFile(t *testing.T) {
 			//read it
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
-					core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.Path(fpath)},
+					core.FilesystemPermission{Kind_: permkind.Read, Entity: core.Path(fpath)},
 				},
 				Limitations: []core.Limitation{testCase.limitation},
 				Filesystem:  GetOsFilesystem(),
@@ -182,7 +183,7 @@ func TestFsMkfile(t *testing.T) {
 		tmpDir := t.TempDir()
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern(tmpDir + "/...")},
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(tmpDir + "/...")},
 			},
 			Filesystem: GetOsFilesystem(),
 		})
@@ -192,7 +193,7 @@ func TestFsMkfile(t *testing.T) {
 		err := Mkfile(ctx, core.Path(pth))
 		assert.IsType(t, core.NotAllowedError{}, err)
 		assert.Equal(t, core.FilesystemPermission{
-			Kind_:  core.CreatePerm,
+			Kind_:  permkind.Create,
 			Entity: core.Path(pth),
 		}, err.(core.NotAllowedError).Permission)
 		assert.NoFileExists(t, pth)
@@ -202,7 +203,7 @@ func TestFsMkfile(t *testing.T) {
 		tmpDir := t.TempDir()
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: core.CreatePerm, Entity: core.PathPattern(tmpDir + "/...")},
+				core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern(tmpDir + "/...")},
 			},
 			Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1_000}},
 			Filesystem:  GetOsFilesystem(),
@@ -229,7 +230,7 @@ func TestFsMkdir(t *testing.T) {
 		tmpDir := t.TempDir()
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern(tmpDir + "/...")},
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(tmpDir + "/...")},
 			},
 			Filesystem: GetOsFilesystem(),
 		})
@@ -239,7 +240,7 @@ func TestFsMkdir(t *testing.T) {
 		err := Mkdir(ctx, core.Path(pth))
 		assert.IsType(t, core.NotAllowedError{}, err)
 		assert.Equal(t, core.FilesystemPermission{
-			Kind_:  core.CreatePerm,
+			Kind_:  permkind.Create,
 			Entity: core.Path(pth),
 		}, err.(core.NotAllowedError).Permission)
 
@@ -251,7 +252,7 @@ func TestFsMkdir(t *testing.T) {
 		tmpDir := t.TempDir()
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: core.CreatePerm, Entity: core.PathPattern(tmpDir + "/...")},
+				core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern(tmpDir + "/...")},
 			},
 			Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1_000}},
 			Filesystem:  GetOsFilesystem(),
@@ -298,8 +299,8 @@ func TestFsCopy(t *testing.T) {
 	makeCtx := func(tmpDir string) *core.Context {
 		return core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern(tmpDir + "/...")},
-				core.FilesystemPermission{Kind_: core.CreatePerm, Entity: core.PathPattern(tmpDir + "/...")},
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(tmpDir + "/...")},
+				core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern(tmpDir + "/...")},
 			},
 			Limitations: []core.Limitation{
 				{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1 << 32},
@@ -413,7 +414,7 @@ func TestFsOpenExisting(t *testing.T) {
 
 		assert.IsType(t, core.NotAllowedError{}, err)
 		assert.Equal(t, core.FilesystemPermission{
-			Kind_:  core.ReadPerm,
+			Kind_:  permkind.Read,
 			Entity: pth.ToAbs(ctx.GetFileSystem()),
 		}, err.(core.NotAllowedError).Permission)
 		assert.Nil(t, f)
@@ -423,7 +424,7 @@ func TestFsOpenExisting(t *testing.T) {
 		tmpDir := t.TempDir()
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern(tmpDir + "/...")},
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(tmpDir + "/...")},
 			},
 			Filesystem: GetOsFilesystem(),
 		})
@@ -448,7 +449,7 @@ func TestFile(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern(tmpDir + "/...")},
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(tmpDir + "/...")},
 			},
 			Filesystem: GetOsFilesystem(),
 		})
@@ -459,7 +460,7 @@ func TestFile(t *testing.T) {
 		err := f.write(ctx, core.Str("hello"))
 		assert.IsType(t, core.NotAllowedError{}, err)
 		assert.Equal(t, core.FilesystemPermission{
-			Kind_:  core.WriteStreamPerm,
+			Kind_:  permkind.WriteStream,
 			Entity: pth.ToAbs(ctx.GetFileSystem()),
 		}, err.(core.NotAllowedError).Permission)
 	})
@@ -475,8 +476,8 @@ func TestFile(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern(tmpDir + "/...")},
-				core.FilesystemPermission{Kind_: core.WriteStreamPerm, Entity: core.PathPattern(tmpDir + "/...")},
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(tmpDir + "/...")},
+				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: core.PathPattern(tmpDir + "/...")},
 			},
 			Limitations: []core.Limitation{
 				{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: rate},
@@ -516,7 +517,7 @@ func TestFile(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern(tmpDir + "/...")},
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(tmpDir + "/...")},
 			},
 			Limitations: []core.Limitation{
 				{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: rate},
@@ -571,7 +572,7 @@ func TestFind(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern(tmpDir + "/...")},
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(tmpDir + "/...")},
 			},
 			Limitations: []core.Limitation{
 				{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: FS_READ_MIN_CHUNK_SIZE},

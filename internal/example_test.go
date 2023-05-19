@@ -18,6 +18,8 @@ import (
 	globals "github.com/inoxlang/inox/internal/globals"
 	_fs "github.com/inoxlang/inox/internal/globals/fs"
 
+	"github.com/inoxlang/inox/internal/permkind"
+
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -128,9 +130,9 @@ func testExample(t *testing.T, config exampleTestConfig) {
 
 		err := _fs.Copy(core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: core.PathPattern("/...")},
-				core.FilesystemPermission{Kind_: core.CreatePerm, Entity: core.PathPattern("/...")},
-				core.FilesystemPermission{Kind_: core.WriteStreamPerm, Entity: core.PathPattern("/...")},
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+				core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern("/...")},
+				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: core.PathPattern("/...")},
 			},
 			Limitations: []core.Limitation{
 				{

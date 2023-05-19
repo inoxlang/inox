@@ -6,104 +6,10 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/inoxlang/inox/internal/utils"
+	permkind "github.com/inoxlang/inox/internal/permkind"
 )
 
-var (
-	PERMISSION_KINDS = []struct {
-		PermissionKind PermissionKind
-		Name           string
-	}{
-		{ReadPerm, "read"},
-		{WritePerm, "write"},
-		{DeletePerm, "delete"},
-		{UsePerm, "use"},
-		{ConsumePerm, "consume"},
-		{ProvidePerm, "provide"},
-		{SeePerm, "see"},
-
-		{UpdatePerm, "update"},
-		{CreatePerm, "create"},
-		{WriteStreamPerm, "write-stream"},
-	}
-
-	PERMISSION_KIND_NAMES = utils.MapSlice(PERMISSION_KINDS, func(e struct {
-		PermissionKind PermissionKind
-		Name           string
-	}) string {
-		return e.Name
-	})
-)
-
-/*
-	read
-	write/update
-	write/write-stream
-	write/append
-*/
-
-type PermissionKind int
-
-const (
-	ReadPerm    PermissionKind = (1 << iota)
-	WritePerm                  = (1 << iota)
-	DeletePerm                 = (1 << iota)
-	UsePerm                    = (1 << iota)
-	ConsumePerm                = (1 << iota)
-	ProvidePerm                = (1 << iota)
-	SeePerm                    = (1 << iota)
-	//up to 16 major permission kinds
-
-	UpdatePerm      = WritePerm + (1 << 16)
-	CreatePerm      = WritePerm + (2 << 16)
-	WriteStreamPerm = WritePerm + (4 << 16)
-	//up to 16 minor permission kinds for each major one
-)
-
-func (k PermissionKind) Major() PermissionKind {
-	return k & 0xff
-}
-
-func (k PermissionKind) IsMajor() bool {
-	return k == (k & 0xff)
-}
-
-func (k PermissionKind) IsMinor() bool {
-	return k != (k & 0xff)
-}
-
-func (k PermissionKind) Includes(otherKind PermissionKind) bool {
-	return k.Major() == otherKind.Major() && ((k.IsMajor() && otherKind.IsMinor()) || k == otherKind)
-}
-
-func (kind PermissionKind) String() string {
-	if kind < 0 {
-		return "<invalid permission kind>"
-	}
-
-	for _, e := range PERMISSION_KINDS {
-		if e.PermissionKind == kind {
-			return e.Name
-		}
-	}
-
-	return "<invalid permission kind>"
-}
-
-func PermissionKindFromString(s string) (PermissionKind, bool) {
-	for _, e := range PERMISSION_KINDS {
-		if e.Name == s {
-			return e.PermissionKind, true
-		}
-	}
-
-	return 0, false
-}
-
-func isPermissionKindName(s string) bool {
-	_, ok := PermissionKindFromString(s)
-	return ok
-}
+type PermissionKind = permkind.PermissionKind
 
 // A Permission carries a kind and can include narrower permissions, for example
 // (read http://**) includes (read https://example.com).
@@ -211,7 +117,7 @@ type FilesystemPermission struct {
 }
 
 func CreateFsReadPerm(entity WrappedString) FilesystemPermission {
-	return FilesystemPermission{Kind_: ReadPerm, Entity: entity}
+	return FilesystemPermission{Kind_: permkind.Read, Entity: entity}
 }
 
 func (perm FilesystemPermission) Kind() PermissionKind {
@@ -245,7 +151,7 @@ type CommandPermission struct {
 }
 
 func (perm CommandPermission) Kind() PermissionKind {
-	return UsePerm
+	return permkind.Use
 }
 
 func (perm CommandPermission) Includes(otherPerm Permission) bool {
@@ -396,7 +302,7 @@ func (perm WebsocketPermission) Includes(otherPerm Permission) bool {
 		return false
 	}
 
-	return perm.Kind_ == ProvidePerm || perm.Endpoint == otherWsPerm.Endpoint
+	return perm.Kind_ == permkind.Provide || perm.Endpoint == otherWsPerm.Endpoint
 }
 
 type DNSPermission struct {
@@ -486,7 +392,7 @@ type ValueVisibilityPermission struct {
 }
 
 func (perm ValueVisibilityPermission) Kind() PermissionKind {
-	return SeePerm
+	return permkind.See
 }
 
 func (perm ValueVisibilityPermission) String() string {

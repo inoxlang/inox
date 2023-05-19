@@ -8,6 +8,7 @@ import (
 	"time"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,7 +26,7 @@ func TestEvents(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: dirPatt},
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: dirPatt},
 			},
 			Filesystem: GetOsFilesystem(),
 		})
@@ -121,7 +122,7 @@ func TestEvents(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: filepth},
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: filepth},
 			},
 			Filesystem: GetOsFilesystem(),
 		})
@@ -173,7 +174,7 @@ func TestEvents(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: dirPatt},
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: dirPatt},
 			},
 			Filesystem: GetOsFilesystem(),
 		})
@@ -253,7 +254,7 @@ func TestEvents(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: dir},
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: dir},
 			},
 			Filesystem: GetOsFilesystem(),
 		})
@@ -275,7 +276,7 @@ func TestEvents(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: dirPatt},
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: dirPatt},
 			},
 			Filesystem: GetOsFilesystem(),
 		})

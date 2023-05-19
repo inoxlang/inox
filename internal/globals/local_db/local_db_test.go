@@ -7,6 +7,7 @@ import (
 
 	badger "github.com/dgraph-io/badger/v3"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -205,9 +206,9 @@ func TestOpenDatabase(t *testing.T) {
 
 		ctxConfig := core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: pattern},
-				core.FilesystemPermission{Kind_: core.CreatePerm, Entity: pattern},
-				core.FilesystemPermission{Kind_: core.WriteStreamPerm, Entity: pattern},
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: pattern},
+				core.FilesystemPermission{Kind_: permkind.Create, Entity: pattern},
+				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
 			},
 			HostResolutions: map[core.Host]core.Value{
 				core.Host("ldb://main"): core.Path(dir),
@@ -237,9 +238,9 @@ func TestOpenDatabase(t *testing.T) {
 
 		ctxConfig := core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: core.ReadPerm, Entity: pattern},
-				core.FilesystemPermission{Kind_: core.CreatePerm, Entity: pattern},
-				core.FilesystemPermission{Kind_: core.WriteStreamPerm, Entity: pattern},
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: pattern},
+				core.FilesystemPermission{Kind_: permkind.Create, Entity: pattern},
+				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
 			},
 			HostResolutions: map[core.Host]core.Value{
 				core.Host("ldb://main"): core.Path(dir),
