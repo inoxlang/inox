@@ -79,15 +79,15 @@
 
 # Variables
 
-There are two kinds of variables: globals & locals, local variables can be declared with the `var` keyword.
-Assigning a local that is not defined is allowed but redeclaration is an error.
-
+There are two kinds of variables: globals & locals, local variables are declared with the `var` keyword or with an assignment.
 ## Locals
 
 ```
 var local1 = 1
 local2 = 2
 ```
+
+ℹ️ Assigning a local that is not defined is allowed but redeclaration is an error.
 
 Local variable declarations can have a type annotation:
 ```
@@ -111,7 +111,7 @@ Go to the [Functions](#functions) section to learn more about variables & scopes
 
 
 
-Global constants are defined at the top of file, before the manifest.
+Global constants are defined at the top of the file, before the manifest.
 ```
 const (
     A = 1
