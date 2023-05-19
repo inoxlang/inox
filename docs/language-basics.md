@@ -222,11 +222,11 @@ When you dynamically create URLs the interpolations are restricted based on thei
 https://example.com/api/{path}/?x={x}
 ```
 
-- interpolations before the '?' are **path** interpolations
-    - the strings/characters `'..', '*', '?', '\\'` are forbidden
-    - ':' is forbidden at the start of the finalized path (after all interpolations have been evaluated)
-- interpolations after the '?' are **query** interpolations 
-    - the characters '&' and '#' are forbidden
+- interpolations before the **'?'** are **path** interpolations
+    - the strings/characters **..** | **\*** | **\\** | **?**  are forbidden
+    - **':'** is forbidden at the start of the finalized path (after all interpolations have been evaluated)
+- interpolations after the **'?'** are **query** interpolations 
+    - the characters **'&'** and **'#'** are forbidden
 
 
 URL path interpolations:
