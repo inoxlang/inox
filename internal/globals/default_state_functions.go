@@ -130,12 +130,17 @@ func _typeof(ctx *core.Context, arg core.Value) core.Type {
 
 func _tostr(ctx *core.Context, arg core.Value) core.StringLike {
 	switch a := arg.(type) {
+	case core.Bool:
+		if a {
+			return core.Str("true")
+		}
+		return core.Str("false")
 	case core.Integral:
 		return core.Str(core.Stringify(a, ctx))
 	case core.StringLike:
 		return a
 	case *core.ByteSlice:
-		return core.Str(a.Bytes)
+		return core.Str(a.Bytes) //TODO: panic if invalid characters ?
 	case *core.RuneSlice:
 		return core.Str(a.ElementsDoNotModify())
 	case core.ResourceName:
