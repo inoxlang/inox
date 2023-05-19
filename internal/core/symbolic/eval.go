@@ -66,14 +66,26 @@ var (
 	SUPPORTED_PARSING_ERRORS = []parse.ParsingErrorKind{parse.UnterminatedMemberExpr, parse.MissingBlock}
 )
 
+type ConcreteGlobalValue struct {
+	Value      any
+	IsConstant bool
+}
+
+func (v ConcreteGlobalValue) Constness() GlobalConstness {
+	if v.IsConstant {
+		return GlobalConst
+	}
+	return GlobalVar
+}
+
 type SymbolicEvalCheckInput struct {
 	Node                           *parse.Chunk
 	Module                         *Module
-	GlobalConsts                   map[string]interface{}
+	Globals                        map[string]ConcreteGlobalValue
 	AdditionalSymbolicGlobalConsts map[string]SymbolicValue
 
 	IsShellChunk   bool
-	ShellLocalVars map[string]interface{}
+	ShellLocalVars map[string]any
 	Context        *Context
 	//InitialSymbolicData *SymbolicData
 }
@@ -88,12 +100,12 @@ func SymbolicEvalCheck(input SymbolicEvalCheckInput) (*SymbolicData, error) {
 	state := newSymbolicState(input.Context, input.Module.MainChunk)
 	state.Module = input.Module
 
-	for k, v := range input.GlobalConsts {
-		symbolicVal, err := extData.ToSymbolicValue(v, false)
+	for k, concreteGlobal := range input.Globals {
+		symbolicVal, err := extData.ToSymbolicValue(concreteGlobal.Value, false)
 		if err != nil {
 			return nil, fmt.Errorf("cannot convert global %s: %s", k, err)
 		}
-		state.setGlobal(k, symbolicVal, GlobalConst)
+		state.setGlobal(k, symbolicVal, concreteGlobal.Constness())
 	}
 
 	for k, v := range input.AdditionalSymbolicGlobalConsts {
@@ -964,6 +976,14 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			meta = v
 		}
 
+		// add constant globals from parent
+		state.forEachGlobal(func(name string, info varSymbolicInfo) {
+			if info.isConstant {
+				actualGlobals[name] = info.value
+			}
+		})
+
+		// add globals defined in the 'globals' section
 		var globals SymbolicValue
 
 		if obj, ok := meta.(*Object); ok {
@@ -3646,7 +3666,12 @@ func symbolicMemb(value SymbolicValue, name string, optionalMembExpr bool, node 
 		}
 	}()
 
-	return iprops.Prop(name)
+	prop := iprops.Prop(name)
+	if prop == nil {
+		state.addError(makeSymbolicEvalError(node, state, "symbolic IProp should panic when a non-existing property is accessed"))
+		return ANY
+	}
+	return prop
 }
 
 type pathNarrowing int

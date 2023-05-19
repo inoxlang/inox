@@ -2,6 +2,7 @@ package internal
 
 import (
 	"errors"
+	"fmt"
 	"io"
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
@@ -35,23 +36,29 @@ type GlobalState struct {
 	NoReprMixin
 }
 
-func NewGlobalState(ctx *Context, args ...map[string]Value) *GlobalState {
+func NewGlobalState(ctx *Context, constants ...map[string]Value) *GlobalState {
 	if ctx.state != nil {
 		panic(ErrContextInUse)
 	}
 
 	state := &GlobalState{
-		Globals:      GlobalVariablesFromMap(map[string]Value{}),
 		Ctx:          ctx,
 		SymbolicData: &SymbolicData{SymbolicData: symbolic.NewSymbolicData()},
 	}
 	ctx.state = state
 
-	for _, arg := range args {
+	globals := map[string]Value{}
+
+	for _, arg := range constants {
 		for k, v := range arg {
-			state.Globals.permanent[k] = v
+			if v.IsMutable() {
+				panic(fmt.Errorf("error while creating a new state: constant global %s is mutable", k))
+			}
+			globals[k] = v
 		}
 	}
+
+	state.Globals = GlobalVariablesFromMap(globals, utils.GetMapKeys(globals))
 
 	return state
 }
@@ -94,12 +101,16 @@ func (*GlobalState) PropertyNames(ctx *Context) []string {
 }
 
 type GlobalVariables struct {
+	constants            []string
 	permanent            map[string]Value
 	capturedGlobalsStack [][]capturedGlobal
 }
 
-func GlobalVariablesFromMap(m map[string]Value) GlobalVariables {
-	return GlobalVariables{permanent: m}
+func GlobalVariablesFromMap(m map[string]Value, constants []string) GlobalVariables {
+	if m == nil {
+		m = make(map[string]Value)
+	}
+	return GlobalVariables{permanent: m, constants: constants}
 }
 
 func (g *GlobalVariables) Get(name string) Value {
@@ -138,19 +149,34 @@ func (g *GlobalVariables) Has(name string) bool {
 	return ok
 }
 
-func (g *GlobalVariables) Foreach(fn func(name string, v Value)) {
+func (g *GlobalVariables) Foreach(fn func(name string, v Value, isConstant bool) error) error {
+
 	if len(g.capturedGlobalsStack) != 0 {
 		for _, captured := range g.capturedGlobalsStack[len(g.capturedGlobalsStack)-1] {
-			fn(captured.name, captured.value)
+			err := fn(captured.name, captured.value, false) //TODO: never a constant global ?
+			if err != nil {
+				return err
+			}
 		}
 	}
 
 	for k, v := range g.permanent {
-		fn(k, v)
+		isConstant := utils.SliceContains(g.constants, k)
+		err := fn(k, v, isConstant)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
+// Set set the value for a global variable (not constant)
 func (g *GlobalVariables) Set(name string, value Value) {
+
+	if utils.SliceContains(g.constants, name) {
+		panic(fmt.Errorf("cannot change value of global constant %s", name))
+	}
+
 	if len(g.capturedGlobalsStack) != 0 {
 		for _, captured := range g.capturedGlobalsStack[len(g.capturedGlobalsStack)-1] {
 			if captured.name == name {
@@ -180,4 +206,17 @@ func (g *GlobalVariables) Entries() map[string]Value {
 	}
 
 	return _map
+}
+
+func (g *GlobalVariables) Constants() map[string]Value {
+	constants := make(map[string]Value, len(g.constants))
+	for _, name := range g.constants {
+		val := g.permanent[name]
+		if val == nil {
+			panic(fmt.Errorf("value of constant %s is nil", val))
+		}
+		constants[name] = val
+	}
+
+	return constants
 }

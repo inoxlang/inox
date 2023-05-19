@@ -136,16 +136,28 @@ func (m *Mapping) Compute(ctx *Context, key Value) Value {
 	computeStaticKeyEntryValue := func(entry *parse.StaticMappingEntry) Value {
 		callingState := ctx.GetClosestState()
 
-		var globalVars map[string]Value
-
-		if shared {
-			globalVars = m.capturedGlobals
-		} else {
-			globalVars = callingState.Globals.Entries()
+		//TODO: optimize
+		var globalConstants map[string]Value
+		if !shared {
+			globalConstants = callingState.Globals.Constants()
 		}
 
-		//TODO: optimize
-		evalState := NewTreeWalkState(callingState.Ctx.BoundChild(), globalVars)
+		evalState := NewTreeWalkState(callingState.Ctx.BoundChild(), globalConstants)
+
+		// set global variables
+		if shared {
+			for k, v := range m.capturedGlobals {
+				evalState.Global.Globals.Set(k, v)
+			}
+		} else {
+			callingState.Globals.Foreach(func(name string, v Value, isConstant bool) error {
+				if !isConstant {
+					evalState.Global.Globals.Set(name, v)
+				}
+				return nil
+			})
+		}
+
 		evalState.Global.Out = callingState.Out
 		evalState.Global.Logger = callingState.Logger
 
@@ -170,24 +182,35 @@ func (m *Mapping) Compute(ctx *Context, key Value) Value {
 		callingState := ctx.GetClosestState()
 		varName := entry.KeyVar.(*parse.IdentifierLiteral).Name
 
-		var globalVars map[string]Value // this value should be modified as it could be read by several goroutines
-
-		if shared {
-			globalVars = m.capturedGlobals
-		} else {
-			globalVars = callingState.Globals.Entries()
+		var globalConstants map[string]Value
+		if !shared {
+			globalConstants = callingState.Globals.Constants()
 		}
 
-		//TODO: optimize
-		state := NewTreeWalkState(ctx.BoundChild(), globalVars)
-		state.Global.Out = callingState.Out
-		state.Global.Logger = callingState.Logger
+		evalState := NewTreeWalkState(callingState.Ctx.BoundChild(), globalConstants)
+
+		// set global variables
+		if shared {
+			for k, v := range m.capturedGlobals {
+				evalState.Global.Globals.Set(k, v)
+			}
+		} else {
+			callingState.Globals.Foreach(func(name string, v Value, isConstant bool) error {
+				if !isConstant {
+					evalState.Global.Globals.Set(name, v)
+				}
+				return nil
+			})
+		}
+
+		evalState.Global.Out = callingState.Out
+		evalState.Global.Logger = callingState.Logger
 
 		// state.entryComputeFn = func(k Value) (Value, error) {
 
 		// }
 
-		state.SetGlobal(varName, key, GlobalConst)
+		evalState.SetGlobal(varName, key, GlobalConst)
 
 		if patt != nil && entry.GroupMatchingVariable != nil {
 			name := entry.GroupMatchingVariable.(*parse.IdentifierLiteral).Name
@@ -198,14 +221,14 @@ func (m *Mapping) Compute(ctx *Context, key Value) Value {
 
 			var obj *Object
 			if ok {
-				obj = NewObjectFromMap(groups, state.Global.Ctx)
+				obj = NewObjectFromMap(groups, evalState.Global.Ctx)
 			} else {
-				obj = NewObjectFromMap(ValMap{"0": key}, state.Global.Ctx)
+				obj = NewObjectFromMap(ValMap{"0": key}, evalState.Global.Ctx)
 			}
-			state.SetGlobal(name, obj, GlobalConst)
+			evalState.SetGlobal(name, obj, GlobalConst)
 		}
 
-		v, err := TreeWalkEval(entry.ValueComputation, state)
+		v, err := TreeWalkEval(entry.ValueComputation, evalState)
 		if err != nil {
 			callingState.Logger.Print("mapping.compute: ", err)
 			return Nil

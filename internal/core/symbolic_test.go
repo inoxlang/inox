@@ -23,8 +23,8 @@ func TestSymbolicEvalCheck(t *testing.T) {
 		_, err := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
 			Node:   chunk.Node,
 			Module: mod.ToSymbolic(),
-			GlobalConsts: map[string]interface{}{
-				"var": Int(1),
+			Globals: map[string]symbolic.ConcreteGlobalValue{
+				"var": {Value: Int(1), IsConstant: false},
 			},
 			Context: symbolic.NewSymbolicContext(),
 		})
@@ -44,8 +44,29 @@ func TestSymbolicEvalCheck(t *testing.T) {
 		_, err := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
 			Node:   chunk.Node,
 			Module: mod.ToSymbolic(),
-			GlobalConsts: map[string]interface{}{
-				"var": Int(1),
+			Globals: map[string]symbolic.ConcreteGlobalValue{
+				"var": {Value: Int(1), IsConstant: false},
+			},
+			Context: symbolic.NewSymbolicContext(),
+		})
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("spawn expression", func(t *testing.T) {
+		code := `go {globals: {global2: 2}} do { return (global1 + global2)}`
+		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+			NameString: "symbolic-core-test",
+			CodeString: code,
+		}))
+
+		mod := &Module{MainChunk: chunk}
+
+		_, err := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
+			Node:   chunk.Node,
+			Module: mod.ToSymbolic(),
+			Globals: map[string]symbolic.ConcreteGlobalValue{
+				"global1": {Value: Int(1), IsConstant: true},
 			},
 			Context: symbolic.NewSymbolicContext(),
 		})

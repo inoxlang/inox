@@ -189,7 +189,7 @@ func ImportModule(config ImportConfig) (*Routine, error) {
 		}
 		globals = baseGlobals
 	} else {
-		globals = GlobalVariablesFromMap(map[string]Value{})
+		globals = GlobalVariablesFromMap(map[string]Value{}, nil)
 	}
 
 	if config.ArgObj != nil {

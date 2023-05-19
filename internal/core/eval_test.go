@@ -66,7 +66,7 @@ func TestTreeWalkEval(t *testing.T) {
 				Node:              mod.MainChunk.Node,
 				Module:            mod,
 				Chunk:             mod.MainChunk,
-				GlobalConsts:      s.Globals,
+				Globals:           s.Globals,
 				Patterns:          s.Ctx.namedPatterns,
 				PatternNamespaces: s.Ctx.patternNamespaces,
 			})
@@ -76,10 +76,11 @@ func TestTreeWalkEval(t *testing.T) {
 
 			s.StaticCheckData = staticCheckData
 
-			globals := make(map[string]any)
-			for k, v := range s.Globals.permanent {
-				globals[k] = v
-			}
+			globals := make(map[string]symbolic.ConcreteGlobalValue)
+			s.Globals.Foreach(func(name string, v Value, isConstant bool) error {
+				globals[name] = symbolic.ConcreteGlobalValue{Value: v, IsConstant: isConstant}
+				return nil
+			})
 
 			symbCtx, err := s.Ctx.ToSymbolicValue()
 			if !assert.NoError(t, err) {
@@ -87,10 +88,10 @@ func TestTreeWalkEval(t *testing.T) {
 			}
 
 			symbData, err := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
-				Node:         mod.MainChunk.Node,
-				Module:       mod.ToSymbolic(),
-				GlobalConsts: globals,
-				Context:      symbCtx,
+				Node:    mod.MainChunk.Node,
+				Module:  mod.ToSymbolic(),
+				Globals: globals,
+				Context: symbCtx,
 			})
 
 			if !assert.NoError(t, err) {
@@ -151,7 +152,7 @@ func bytecodeTest(t *testing.T, optimize bool) {
 				Node:              mod.MainChunk.Node,
 				Module:            mod,
 				Chunk:             mod.MainChunk,
-				GlobalConsts:      s.Globals,
+				Globals:           s.Globals,
 				Patterns:          s.Ctx.namedPatterns,
 				PatternNamespaces: s.Ctx.patternNamespaces,
 			})
@@ -161,10 +162,11 @@ func bytecodeTest(t *testing.T, optimize bool) {
 
 			s.StaticCheckData = staticCheckData
 
-			globals := make(map[string]any)
-			for k, v := range s.Globals.permanent {
-				globals[k] = v
-			}
+			globals := make(map[string]symbolic.ConcreteGlobalValue)
+			s.Globals.Foreach(func(name string, v Value, isConstant bool) error {
+				globals[name] = symbolic.ConcreteGlobalValue{Value: v, IsConstant: isConstant}
+				return nil
+			})
 
 			symbCtx, err := s.Ctx.ToSymbolicValue()
 			if !assert.NoError(t, err) {
@@ -172,10 +174,10 @@ func bytecodeTest(t *testing.T, optimize bool) {
 			}
 
 			symbData, err := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
-				Node:         mod.MainChunk.Node,
-				Module:       mod.ToSymbolic(),
-				GlobalConsts: globals,
-				Context:      symbCtx,
+				Node:    mod.MainChunk.Node,
+				Module:  mod.ToSymbolic(),
+				Globals: globals,
+				Context: symbCtx,
 			})
 
 			if !assert.NoError(t, err) {
@@ -947,7 +949,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			error          bool
 			skipIfBytecode bool
 			result         Value
-			globals        map[string]Value
+			constants      map[string]Value
+			globalVars     map[string]Value
 		}{
 			{
 				input: `
@@ -1032,8 +1035,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					$a[0] = tobyte(1)
 					return a
 				`,
-				globals: map[string]Value{
-					"tobyte": WrapGoMethod(func(ctx *Context, i Int) Byte {
+				constants: map[string]Value{
+					"tobyte": WrapGoFunction(func(ctx *Context, i Int) Byte {
 						return Byte(i)
 					}),
 				},
@@ -1044,11 +1047,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					runes[0] = 'b'
 					return runes
 				`,
-				globals: map[string]Value{
-					"runes": NewRuneSlice([]rune("a")),
-					"torune": WrapGoMethod(func(ctx *Context, i Int) Byte {
+				constants: map[string]Value{
+					"torune": WrapGoFunction(func(ctx *Context, i Int) Byte {
 						return Byte(i)
 					}),
+				},
+				globalVars: map[string]Value{
+					"runes": NewRuneSlice([]rune("a")),
 				},
 				result: NewRuneSlice([]rune("b")),
 			},
@@ -1101,7 +1106,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				continue
 			}
 			t.Run(testCase.input, func(t *testing.T) {
-				state := NewGlobalState(NewDefaultTestContext(), testCase.globals)
+				state := NewGlobalState(NewDefaultTestContext(), testCase.constants)
+				for k, v := range testCase.globalVars {
+					state.Globals.Set(k, v)
+				}
 				res, err := Eval(testCase.input, state, false)
 				if testCase.error {
 					assert.Error(t, err)
@@ -3033,25 +3041,25 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 	t.Run("Go function call", func(t *testing.T) {
 		testCases := []struct {
-			name        string
-			error       bool
-			input       string
-			globals     map[string]Value
-			makeGlobals func(t *testing.T) map[string]Value
-			result      Value
+			name            string
+			error           bool
+			input           string
+			globalVariables map[string]Value
+			makeGlobals     func(t *testing.T) map[string]Value
+			result          Value
 		}{
 			{
 				name:  "variadic: arg count < non-variadic-param-count",
 				input: "gofunc()",
 				error: true,
-				globals: map[string]Value{
+				globalVariables: map[string]Value{
 					"gofunc": WrapGoFunction(func(ctx *Context, x Int, xs ...Int) {}),
 				},
 			},
 			{
 				name:  "variadic: arg count == non-variadic-param-count",
 				input: "gofunc(1)",
-				globals: map[string]Value{
+				globalVariables: map[string]Value{
 					"gofunc": WrapGoFunction(func(ctx *Context, x Int, xs ...Int) Int {
 						return x
 					}),
@@ -3061,7 +3069,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			{
 				name:  "variadic: arg count == 1 + non-variadic-param-count",
 				input: "gofunc(1, 2)",
-				globals: map[string]Value{
+				globalVariables: map[string]Value{
 					"gofunc": WrapGoFunction(func(ctx *Context, x Int, xs ...Int) Int {
 						return Int(x + xs[0])
 					}),
@@ -3143,7 +3151,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			// 	`,
 			// 	makeGlobals: func(t *testing.T) map[string]Value {
 			// 		return map[string]Value{
-			// 			"gofunc": WrapGoMethod(func(ctx *Context, sharedValue *InoxFunction) {
+			// 			"gofunc": WrapGoFunction(func(ctx *Context, sharedValue *InoxFunction) {
 			// 				assert.True(t, sharedValue.IsShared())
 			// 			}),
 			// 		}
@@ -3173,7 +3181,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			{
 				name:  "(must) call with two results",
 				input: "return gofunc!()",
-				globals: map[string]Value{
+				globalVariables: map[string]Value{
 					"gofunc": WrapGoFunction(func(ctx *Context) (Int, error) {
 						return 3, nil
 					}),
@@ -3183,7 +3191,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			{
 				name:  "GoValue returned",
 				input: "return getuser()",
-				globals: map[string]Value{
+				globalVariables: map[string]Value{
 					"getuser": WrapGoFunction(func(ctx *Context) GoValue {
 						return testMutableGoValue{Name: "Foo"}
 					}),
@@ -3193,7 +3201,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			{
 				name:  "[]string returned, should be converted to a list",
 				input: "return getNames()",
-				globals: map[string]Value{
+				globalVariables: map[string]Value{
 					"getNames": WrapGoFunction(func(ctx *Context) []Str {
 						return []Str{"string"}
 					}),
@@ -3203,7 +3211,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			{
 				name:  "method",
 				input: "return $$user.getName()",
-				globals: map[string]Value{
+				globalVariables: map[string]Value{
 					"user": testMutableGoValue{"Foo", ""},
 				},
 				result: Str("Foo"),
@@ -3212,12 +3220,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		for _, testCase := range testCases {
 			t.Run(testCase.name, func(t *testing.T) {
-				globals := testCase.globals
+				globals := testCase.globalVariables
 				if testCase.makeGlobals != nil {
 					globals = testCase.makeGlobals(t)
 				}
 
-				state := NewGlobalState(NewDefaultTestContext(), globals)
+				state := NewGlobalState(NewDefaultTestContext())
+				for k, v := range globals {
+					state.Globals.Set(k, v)
+				}
 				state.Logger = zerolog.New(state.Out)
 				state.Out = os.Stdout
 
@@ -3365,11 +3376,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 	t.Run("member expression", func(t *testing.T) {
 		testCases := []struct {
-			error   bool
-			input   string
-			globals map[string]Value
-			result  Value
-			pre     func(expected Value, actual Value, state *GlobalState)
+			error           bool
+			input           string
+			globalVariables map[string]Value
+			result          Value
+			pre             func(expected Value, actual Value, state *GlobalState)
 		}{
 			{
 				input:  "$a = {v: 1}; return $a.v",
@@ -3382,7 +3393,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			{
 				input: "return $$goval.secret",
 				error: true,
-				globals: map[string]Value{
+				globalVariables: map[string]Value{
 					"goval": ValOf(testMutableGoValue{Name: "Foo", secret: "secret"}),
 				},
 				result: Nil,
@@ -3425,7 +3436,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		for _, testCase := range testCases {
 			t.Run(testCase.input, func(t *testing.T) {
-				state := NewGlobalState(NewDefaultTestContext(), testCase.globals)
+				state := NewGlobalState(NewDefaultTestContext())
+				for k, v := range testCase.globalVariables {
+					state.Globals.Set(k, v)
+				}
 				res, err := Eval(testCase.input, state, false)
 				if testCase.error {
 					assert.Error(t, err)
@@ -3546,7 +3560,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		for _, testCase := range testCases {
 			t.Run(testCase.input, func(t *testing.T) {
-				state := NewGlobalState(NewDefaultTestContext(), testCase.globals)
+				state := NewGlobalState(NewDefaultTestContext())
+				for k, v := range testCase.globals {
+					state.Globals.Set(k, v)
+				}
+
 				res, err := Eval(testCase.input, state, false)
 				if testCase.error {
 					assert.Error(t, err)
@@ -3941,6 +3959,35 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			_, err := Eval(code, state, false)
 			assert.NoError(t, err)
+		})
+
+		t.Run("pass an additional global to a single expression embedded module", func(t *testing.T) {
+			code := `
+				rt = go {globals: {b: 2}} do idt(b)
+				return rt.wait_result!()
+			`
+			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				"idt": WrapGoFunction(func(ctx *Context, arg Value) Value {
+					return arg
+				}),
+			})
+			res, err := Eval(code, state, false)
+			assert.NoError(t, err)
+			assert.Equal(t, Int(2), res)
+		})
+
+		t.Run("pass an additional global to a embedded module (block)", func(t *testing.T) {
+			code := `
+				rt = go {globals: {b: 2}} do { 
+					return b
+				}
+	
+				return rt.wait_result!()
+			`
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+			assert.NoError(t, err)
+			assert.Equal(t, Int(2), res)
 		})
 
 		t.Run("group (used once)", func(t *testing.T) {
@@ -4354,9 +4401,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					1 => a
 				}
 			`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"notsharable": testMutableGoValue{},
-			})
+			state := NewGlobalState(NewDefaultTestContext())
+			state.Globals.Set("notsharable", testMutableGoValue{})
+
 			res, err := Eval(code, state, true)
 
 			if !assert.NoError(t, err) {
@@ -4374,9 +4421,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					1 => b
 				}
 			`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"notsharable": testMutableGoValue{},
-			})
+			state := NewGlobalState(NewDefaultTestContext())
+			state.Globals.Set("notsharable", testMutableGoValue{})
+
 			res, err := Eval(code, state, true)
 
 			if !assert.NoError(t, err) {
@@ -4614,7 +4661,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return c
 			`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"tobyte": WrapGoMethod(func(ctx *Context, i Int) Byte {
+				"tobyte": WrapGoFunction(func(ctx *Context, i Int) Byte {
 					return Byte(i)
 				}),
 			})
@@ -5715,7 +5762,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return rec([ [ [], [] ], [ [], [] ]])
 			`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"map": WrapGoMethod(Map),
+				"map": WrapGoFunction(Map),
 			})
 			state.Ctx.AddNamedPattern("iterable", ITERABLE_PATTERN)
 
@@ -5741,7 +5788,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return isolated
 			`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"map": WrapGoMethod(Map),
+				"map": WrapGoFunction(Map),
 			})
 			state.Ctx.AddNamedPattern("iterable", ITERABLE_PATTERN)
 
@@ -5778,7 +5825,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return obj.isolated
 			`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"map": WrapGoMethod(Map),
+				"map": WrapGoFunction(Map),
 			})
 			state.Ctx.AddNamedPattern("iterable", ITERABLE_PATTERN)
 
@@ -6105,7 +6152,7 @@ func TestSpawnRoutine(t *testing.T) {
 
 		routine, err := SpawnRoutine(RoutineSpawnArgs{
 			SpawnerState: state,
-			Globals:      GlobalVariablesFromMap(map[string]Value{}),
+			Globals:      GlobalVariablesFromMap(map[string]Value{}, nil),
 			Module: &Module{
 				MainChunk:  chunk,
 				ModuleKind: UserRoutineModule,
@@ -6133,7 +6180,7 @@ func TestSpawnRoutine(t *testing.T) {
 			SpawnerState: state,
 			Globals: GlobalVariablesFromMap(map[string]Value{
 				"x": Int(1),
-			}),
+			}, nil),
 			Module: &Module{
 				MainChunk:  chunk,
 				ModuleKind: UserRoutineModule,
@@ -6162,7 +6209,7 @@ func TestSpawnRoutine(t *testing.T) {
 
 		routine, err := SpawnRoutine(RoutineSpawnArgs{
 			SpawnerState: state,
-			Globals:      GlobalVariablesFromMap(map[string]Value{}),
+			Globals:      GlobalVariablesFromMap(map[string]Value{}, nil),
 			Module: &Module{
 				MainChunk:  chunk,
 				ModuleKind: UserRoutineModule,

@@ -15,8 +15,8 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-func NewTreeWalkState(ctx *Context, args ...map[string]Value) *TreeWalkState {
-	global := NewGlobalState(ctx, args...)
+func NewTreeWalkState(ctx *Context, constants ...map[string]Value) *TreeWalkState {
+	global := NewGlobalState(ctx, constants...)
 
 	return NewTreeWalkStateWithGlobal(global)
 }
@@ -915,42 +915,44 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		var ctx *Context
-		var actualGlobals map[string]Value
 		var chunk *parse.Chunk
+		var constants []string
+		actualGlobals := make(map[string]Value)
+
+		state.Global.Globals.Foreach(func(name string, v Value, isConstant bool) error {
+			if isConstant {
+				actualGlobals[name] = v
+				constants = append(constants, name)
+			}
+			return nil
+		})
+
+		switch g := globalsDesc.(type) {
+		case *Object:
+			for k, v := range g.EntryMap() {
+				actualGlobals[k] = v
+			}
+		case KeyList:
+			for _, name := range g {
+				actualGlobals[name] = state.Global.Globals.Get(name)
+			}
+		case NilT:
+			break
+		case nil:
+		default:
+			return nil, fmt.Errorf("spawn expression: globals: only objects and keylists are supported, not %T", g)
+		}
 
 		if n.Module.SingleCallExpr {
 			chunk = &parse.Chunk{
 				NodeBase:   n.Module.NodeBase,
 				Statements: n.Module.Statements,
 			}
-			actualGlobals = map[string]Value{}
 
-			state.Global.Globals.Foreach(func(name string, v Value) {
-				actualGlobals[name] = v
-			})
 			calleeIdent := n.Module.Statements[0].(*parse.CallExpression).Callee.(*parse.IdentifierLiteral)
 			callee, _ := state.Get(calleeIdent.Name)
 			actualGlobals[calleeIdent.Name] = callee
 		} else {
-			actualGlobals = make(map[string]Value)
-
-			if err != nil {
-				return nil, err
-			}
-
-			switch g := globalsDesc.(type) {
-			case *Object:
-				actualGlobals = g.EntryMap()
-			case KeyList:
-				for _, name := range g {
-					actualGlobals[name] = state.Global.Globals.Get(name)
-				}
-			case NilT:
-				break
-			case nil:
-			default:
-				return nil, fmt.Errorf("spawn expression: globals: only objects and keylists are supported, not %T", g)
-			}
 
 			expr, err := TreeWalkEval(n.Module, state)
 			if err != nil {
@@ -999,7 +1001,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		routine, err := SpawnRoutine(RoutineSpawnArgs{
 			SpawnerState: state.Global,
-			Globals:      GlobalVariablesFromMap(actualGlobals),
+			Globals:      GlobalVariablesFromMap(actualGlobals, constants),
 			Module:       routineMod,
 			RoutineCtx:   ctx,
 		})

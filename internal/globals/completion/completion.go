@@ -267,7 +267,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 		}
 	case *parse.GlobalVariable:
 		if mode == ShellCompletions {
-			state.Global.Globals.Foreach(func(name string, varVal core.Value) {
+			state.Global.Globals.Foreach(func(name string, varVal core.Value, _ bool) error {
 				if strings.HasPrefix(name, n.Name) {
 					detail, _ := core.GetStringifiedSymbolicValue(varVal, false)
 					completions = append(completions, Completion{
@@ -277,6 +277,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 						Detail:      detail,
 					})
 				}
+				return nil
 			})
 		} else {
 			scopeData, _ := state.Global.SymbolicData.GetGlobalScopeData(n, _ancestorChain)
@@ -418,7 +419,7 @@ func handleIdentifierAndKeywordCompletions(
 
 	if mode == ShellCompletions {
 
-		state.Global.Globals.Foreach(func(name string, varVal core.Value) {
+		state.Global.Globals.Foreach(func(name string, varVal core.Value, _ bool) error {
 			if strings.HasPrefix(name, ident.Name) {
 				detail, _ := core.GetStringifiedSymbolicValue(varVal, false)
 
@@ -429,6 +430,7 @@ func handleIdentifierAndKeywordCompletions(
 					Detail:      detail,
 				})
 			}
+			return nil
 		})
 	} else {
 		scopeData, _ := state.Global.SymbolicData.GetGlobalScopeData(ident, ancestors)

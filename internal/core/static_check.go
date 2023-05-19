@@ -36,8 +36,9 @@ func StaticCheck(input StaticCheckInput) (*StaticCheckData, error) {
 	}
 
 	globals[module] = map[string]globalVarInfo{}
-	input.GlobalConsts.Foreach(func(name string, v Value) {
-		globals[module][name] = globalVarInfo{isConst: true}
+	input.Globals.Foreach(func(name string, v Value, isBaseGlobal bool) error {
+		globals[module][name] = globalVarInfo{isConst: isBaseGlobal}
+		return nil
 	})
 
 	for _, name := range input.AdditionalGlobalConsts {
@@ -766,8 +767,9 @@ switch_:
 		globals := make(map[parse.Node]map[string]globalVarInfo)
 		globals[includedChunk.Node] = map[string]globalVarInfo{}
 
-		c.checkInput.GlobalConsts.Foreach(func(name string, v Value) {
-			globals[includedChunk.Node][name] = globalVarInfo{isConst: true}
+		c.checkInput.Globals.Foreach(func(name string, v Value, isConstant bool) error {
+			globals[includedChunk.Node][name] = globalVarInfo{isConst: isConstant}
+			return nil
 		})
 
 		patterns := make(map[parse.Node]map[string]int)
@@ -819,7 +821,7 @@ switch_:
 
 		//include all global data & top level local variables
 		for k, v := range chunkChecker.fnDecls[includedChunk.Node] {
-			if c.checkInput.GlobalConsts.Has(k) {
+			if c.checkInput.Globals.Has(k) {
 				continue
 			}
 
@@ -832,7 +834,7 @@ switch_:
 		}
 
 		for k, v := range chunkChecker.globalVars[includedChunk.Node] {
-			if c.checkInput.GlobalConsts.Has(k) {
+			if c.checkInput.Globals.Has(k) {
 				continue
 			}
 
@@ -2014,7 +2016,7 @@ type StaticCheckInput struct {
 	Module                 *Module
 	Chunk                  *parse.ParsedChunk
 	ParentChecker          *checker
-	GlobalConsts           GlobalVariables
+	Globals                GlobalVariables
 	AdditionalGlobalConsts []string
 	ShellLocalVars         map[string]Value
 	Patterns               map[string]Pattern

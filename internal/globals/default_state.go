@@ -282,7 +282,8 @@ func NewDefaultGlobalState(ctx *core.Context, config DefaultGlobalStateConfig) (
 		}
 
 		importedModuleGlobals["env"] = env
-		return core.GlobalVariablesFromMap(importedModuleGlobals), nil
+		baseGlobalKeys := utils.GetMapKeys(importedModuleGlobals)
+		return core.GlobalVariablesFromMap(importedModuleGlobals, baseGlobalKeys), nil
 	}
 
 	return state, nil

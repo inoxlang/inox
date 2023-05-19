@@ -93,7 +93,7 @@ func SpawnRoutine(args RoutineSpawnArgs) (*Routine, error) {
 		Node:              args.Module.MainChunk.Node,
 		Module:            args.Module,
 		Chunk:             args.Module.MainChunk,
-		GlobalConsts:      args.Globals,
+		Globals:           args.Globals,
 		Patterns:          args.RoutineCtx.namedPatterns,
 		PatternNamespaces: args.RoutineCtx.patternNamespaces,
 	})
@@ -101,17 +101,23 @@ func SpawnRoutine(args RoutineSpawnArgs) (*Routine, error) {
 		return nil, fmt.Errorf("cannot spawn routine: expression: module/expr checking failed: %w", err)
 	}
 
-	globals := args.Globals.Entries()
-
-	for k, v := range globals {
+	//set global variables & constants
+	modState := NewGlobalState(args.RoutineCtx, args.Globals.Constants())
+	err = args.Globals.Foreach(func(name string, v Value, isConstant bool) error {
+		if isConstant {
+			return nil
+		}
 		shared, err := ShareOrClone(v, args.SpawnerState)
 		if err != nil {
-			return nil, fmt.Errorf("failed to share/clone provided global '%s': %w", k, err)
+			return fmt.Errorf("failed to share/clone provided global '%s': %w", name, err)
 		}
-		globals[k] = shared
+		modState.Globals.Set(name, shared)
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	modState := NewGlobalState(args.RoutineCtx, globals)
 	modState.Module = args.Module
 	modState.Logger = args.SpawnerState.Logger
 	modState.Out = args.SpawnerState.Out

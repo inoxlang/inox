@@ -100,7 +100,7 @@ func (p *String) PropertyNames() []string {
 	return STRING_LIKE_PSEUDOPROPS
 }
 
-func (*String) Prop(name string) SymbolicValue {
+func (s *String) Prop(name string) SymbolicValue {
 	switch name {
 	case "replace":
 		return &GoFunction{
@@ -127,7 +127,7 @@ func (*String) Prop(name string) SymbolicValue {
 			},
 		}
 	default:
-		return nil
+		panic(FormatErrPropertyDoesNotExist(name, s))
 	}
 }
 
@@ -168,7 +168,7 @@ func (r *Rune) PropertyNames() []string {
 	return []string{"is_space", "is_printable", "is_letter"}
 }
 
-func (*Rune) Prop(name string) SymbolicValue {
+func (r *Rune) Prop(name string) SymbolicValue {
 	switch name {
 	case "is_space":
 		return &Bool{}
@@ -177,7 +177,7 @@ func (*Rune) Prop(name string) SymbolicValue {
 	case "is_letter":
 		return &Bool{}
 	default:
-		return nil
+		panic(FormatErrPropertyDoesNotExist(name, r))
 	}
 }
 
@@ -208,14 +208,14 @@ func (p *CheckedString) PropertyNames() []string {
 	return []string{"pattern_name", "pattern"}
 }
 
-func (*CheckedString) Prop(name string) SymbolicValue {
+func (s *CheckedString) Prop(name string) SymbolicValue {
 	switch name {
 	case "pattern_name":
 		return &String{}
 	case "pattern":
 		return &AnyPattern{}
 	default:
-		return nil
+		panic(FormatErrPropertyDoesNotExist(name, s))
 	}
 }
 
@@ -317,7 +317,7 @@ func (s *RuneSlice) Prop(name string) SymbolicValue {
 	case "remove_position_range":
 		return WrapGoMethod(s.removePositions)
 	default:
-		return nil
+		panic(FormatErrPropertyDoesNotExist(name, s))
 	}
 }
 
@@ -384,7 +384,7 @@ func (p *StringConcatenation) PropertyNames() []string {
 	return STRING_LIKE_PSEUDOPROPS
 }
 
-func (*StringConcatenation) Prop(name string) SymbolicValue {
+func (s *StringConcatenation) Prop(name string) SymbolicValue {
 	switch name {
 	case "replace":
 		return &GoFunction{
@@ -411,7 +411,7 @@ func (*StringConcatenation) Prop(name string) SymbolicValue {
 			},
 		}
 	default:
-		return nil
+		panic(FormatErrPropertyDoesNotExist(name, s))
 	}
 }
 
@@ -475,7 +475,7 @@ func (p *AnyStringLike) PropertyNames() []string {
 	return STRING_LIKE_PSEUDOPROPS
 }
 
-func (*AnyStringLike) Prop(name string) SymbolicValue {
+func (s *AnyStringLike) Prop(name string) SymbolicValue {
 	switch name {
 	case "replace":
 		return &GoFunction{
@@ -502,6 +502,6 @@ func (*AnyStringLike) Prop(name string) SymbolicValue {
 			},
 		}
 	default:
-		return nil
+		panic(FormatErrPropertyDoesNotExist(name, s))
 	}
 }

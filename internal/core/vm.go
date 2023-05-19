@@ -1842,30 +1842,44 @@ func (v *VM) run() {
 				}
 			}
 			actualGlobals := make(map[string]Value)
+			var constants []string
+
+			//pass constant globals
+
+			v.global.Globals.Foreach(func(name string, v Value, isConstant bool) error {
+				if isConstant {
+					actualGlobals[name] = v
+					constants = append(constants, name)
+				}
+				return nil
+			})
 
 			var ctx *Context
 
-			if isSingleExpr == 1 {
-				actualGlobals[string(caleeName)] = singleExprCallee
-			} else {
+			// pass global variables
 
-				switch g := globalsDesc.(type) {
-				case *Object:
-					actualGlobals = g.EntryMap()
-				case KeyList:
-					for _, name := range g {
-						actualGlobals[name] = v.global.Globals.Get(name)
-					}
-				case NilT:
-					break
-				case nil:
-				default:
-					v.err = fmt.Errorf("spawn expression: globals: only objects and keylists are supported, not %T", g)
-					return
+			switch g := globalsDesc.(type) {
+			case *Object:
+				for k, v := range g.EntryMap() {
+					actualGlobals[k] = v
 				}
-
+			case KeyList:
+				for _, name := range g {
+					actualGlobals[name] = v.global.Globals.Get(name)
+				}
+			case NilT:
+				break
+			case nil:
+			default:
+				v.err = fmt.Errorf("spawn expression: globals: only objects and keylists are supported, not %T", g)
+				return
 			}
 
+			if isSingleExpr == 1 {
+				actualGlobals[string(caleeName)] = singleExprCallee
+			}
+
+			//create context
 			if permListing != nil {
 				perms, err := getPermissionsFromListing(permListing, nil, nil, true)
 				if err != nil {
@@ -1895,7 +1909,7 @@ func (v *VM) run() {
 
 			routine, err := SpawnRoutine(RoutineSpawnArgs{
 				SpawnerState: v.global,
-				Globals:      GlobalVariablesFromMap(actualGlobals),
+				Globals:      GlobalVariablesFromMap(actualGlobals, constants),
 				Module:       routineMod,
 				RoutineCtx:   ctx,
 				UseBytecode:  true,

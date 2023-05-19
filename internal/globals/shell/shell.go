@@ -1020,8 +1020,9 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 		if strings.Trim(string(sh.input), " ") == "" {
 			var names []string
 
-			sh.state.Global.Globals.Foreach(func(name string, v core.Value) {
+			sh.state.Global.Globals.Foreach(func(name string, v core.Value, _ bool) error {
 				names = append(names, name)
+				return nil
 			})
 
 			sort.Strings(names)
@@ -1206,7 +1207,7 @@ func (sh *shell) checkModule(mod *core.Module) (*core.StaticCheckData, *symbolic
 		Node:              mod.MainChunk.Node,
 		Chunk:             mod.MainChunk,
 		Module:            mod,
-		GlobalConsts:      sh.state.Global.Globals,
+		Globals:           sh.state.Global.Globals,
 		ShellLocalVars:    sh.state.CurrentLocalScope(),
 		Patterns:          sh.state.Global.Ctx.GetNamedPatterns(),
 		PatternNamespaces: sh.state.Global.Ctx.GetPatternNamespaces(),
@@ -1222,11 +1223,12 @@ func (sh *shell) checkModule(mod *core.Module) (*core.StaticCheckData, *symbolic
 		return nil, nil, err
 	}
 
-	globalConsts := map[string]any{}
+	globals := map[string]symbolic.ConcreteGlobalValue{}
 	shellLocalVars := map[string]any{}
 
-	sh.state.Global.Globals.Foreach(func(k string, v core.Value) {
-		globalConsts[k] = v
+	sh.state.Global.Globals.Foreach(func(k string, v core.Value, isConst bool) error {
+		globals[k] = symbolic.ConcreteGlobalValue{Value: v, IsConstant: isConst}
+		return nil
 	})
 
 	for k, v := range sh.state.CurrentLocalScope() {
@@ -1238,7 +1240,7 @@ func (sh *shell) checkModule(mod *core.Module) (*core.StaticCheckData, *symbolic
 		Module: &symbolic.Module{
 			MainChunk: mod.MainChunk,
 		},
-		GlobalConsts: globalConsts,
+		Globals: globals,
 
 		IsShellChunk:   true,
 		ShellLocalVars: shellLocalVars,

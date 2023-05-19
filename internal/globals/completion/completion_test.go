@@ -75,9 +75,13 @@ func TestFindCompletions(t *testing.T) {
 			if mode == LspCompletions {
 				doSymbolicCheck = func(chunk *parse.ParsedChunk, state *core.GlobalState) {
 
-					globals := map[string]any{}
-					state.Globals.Foreach(func(name string, v core.Value) {
-						globals[name] = v
+					globals := map[string]symbolic.ConcreteGlobalValue{}
+					state.Globals.Foreach(func(name string, v core.Value, isConst bool) error {
+						globals[name] = symbolic.ConcreteGlobalValue{
+							Value:      v,
+							IsConstant: isConst,
+						}
+						return nil
 					})
 
 					data, _ := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
@@ -85,7 +89,7 @@ func TestFindCompletions(t *testing.T) {
 						Module: &symbolic.Module{
 							MainChunk: chunk,
 						},
-						GlobalConsts: globals,
+						Globals:      globals,
 						IsShellChunk: false,
 						Context:      utils.Must(state.Ctx.ToSymbolicValue()),
 					})
@@ -185,9 +189,8 @@ func TestFindCompletions(t *testing.T) {
 
 			t.Run("identifier member expression", func(t *testing.T) {
 				t.Run("suggest object property: object has no property", func(t *testing.T) {
-					state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}), map[string]core.Value{
-						"obj": core.NewObject(),
-					})
+					state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+					state.Global.Globals.Set("obj", core.NewObject())
 					chunk, _ := parseChunkSource("obj.", "")
 
 					doSymbolicCheck(chunk, state.Global)

@@ -150,10 +150,10 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	// static check
 
 	staticCheckData, staticCheckErr := core.StaticCheck(core.StaticCheckInput{
-		Module:       mod,
-		Node:         mod.MainChunk.Node,
-		Chunk:        mod.MainChunk,
-		GlobalConsts: state.Globals,
+		Module:  mod,
+		Node:    mod.MainChunk.Node,
+		Chunk:   mod.MainChunk,
+		Globals: state.Globals,
 		AdditionalGlobalConsts: func() []string {
 			if modArgsError != nil {
 				return []string{core.MOD_ARGS_VARNAME}
@@ -182,9 +182,13 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 
 	// symbolic check
 
-	globals := map[string]any{}
-	state.Globals.Foreach(func(k string, v core.Value) {
-		globals[k] = v
+	globals := map[string]symbolic.ConcreteGlobalValue{}
+	state.Globals.Foreach(func(k string, v core.Value, isConst bool) error {
+		globals[k] = symbolic.ConcreteGlobalValue{
+			Value:      v,
+			IsConstant: isConst,
+		}
+		return nil
 	})
 
 	delete(globals, core.MOD_ARGS_VARNAME)
@@ -201,7 +205,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	symbolicData, err_ := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
 		Node:                           mod.MainChunk.Node,
 		Module:                         state.Module.ToSymbolic(),
-		GlobalConsts:                   globals,
+		Globals:                        globals,
 		AdditionalSymbolicGlobalConsts: additionalSymbolicGlobals,
 		Context:                        symbolicCtx,
 	})

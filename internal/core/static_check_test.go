@@ -1786,8 +1786,8 @@ func TestCheck(t *testing.T) {
 
 		t.Run("as argument", func(t *testing.T) {
 			n, src := parseCode(`map ~$ .title`)
-			globals := GlobalVariablesFromMap(map[string]Value{"map": ValOf(Map)})
-			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, GlobalConsts: globals}))
+			globals := GlobalVariablesFromMap(map[string]Value{"map": ValOf(Map)}, nil)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals}))
 		})
 
 		t.Run("misplaced", func(t *testing.T) {
@@ -2160,17 +2160,17 @@ func TestCheck(t *testing.T) {
 		t.Run("no variable used in elements", func(t *testing.T) {
 			n, src := parseCode(`html<div a=1></div>`)
 
-			globals := GlobalVariablesFromMap(map[string]Value{"html": Nil})
-			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, GlobalConsts: globals}))
+			globals := GlobalVariablesFromMap(map[string]Value{"html": Nil}, nil)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals}))
 		})
 
 		t.Run("variable used in elements", func(t *testing.T) {
 			n, src := parseCode(`html<div a=b></div>`)
 
-			globals := GlobalVariablesFromMap(map[string]Value{"html": Nil})
+			globals := GlobalVariablesFromMap(map[string]Value{"html": Nil}, nil)
 			variable := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[3]
 
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, GlobalConsts: globals})
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
 			expectedErr := combineErrors(
 				makeError(variable, src, fmtVarIsNotDeclared("b")),
 			)

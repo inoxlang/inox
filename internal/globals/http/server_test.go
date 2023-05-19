@@ -610,7 +610,7 @@ func setupAdvancedTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalS
 		Node:              state.Module.MainChunk.Node,
 		Module:            state.Module,
 		Chunk:             state.Module.MainChunk,
-		GlobalConsts:      state.Globals,
+		Globals:           state.Globals,
 		Patterns:          state.Ctx.GetNamedPatterns(),
 		PatternNamespaces: state.Ctx.GetPatternNamespaces(),
 	})

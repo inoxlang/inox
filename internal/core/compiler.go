@@ -1581,11 +1581,12 @@ func (c *compiler) Compile(node parse.Node) error {
 		isSingleExpr := 0
 		calleeName := ""
 
+		for _, name := range c.globalSymbols.SymbolNames() {
+			embeddedModCompiler.globalSymbols.Define(name)
+		}
+
 		if node.Module.SingleCallExpr {
 			isSingleExpr = 1
-			for _, name := range c.globalSymbols.SymbolNames() {
-				embeddedModCompiler.globalSymbols.Define(name)
-			}
 			callee := node.Module.Statements[0].(*parse.CallExpression).Callee
 			calleeName = callee.(*parse.IdentifierLiteral).Name
 			embeddedModCompiler.globalSymbols.Define(calleeName)
@@ -1596,24 +1597,25 @@ func (c *compiler) Compile(node parse.Node) error {
 
 		} else {
 			c.emit(node, OpPushNil)
-			var globalDescNode parse.Node
+		}
 
-			if obj, ok := node.Meta.(*parse.ObjectLiteral); ok {
-				val, ok := obj.PropValue("globals")
-				if ok {
-					globalDescNode = val
-				}
+		var globalDescNode parse.Node
+
+		if obj, ok := node.Meta.(*parse.ObjectLiteral); ok {
+			val, ok := obj.PropValue("globals")
+			if ok {
+				globalDescNode = val
 			}
+		}
 
-			switch g := globalDescNode.(type) {
-			case *parse.KeyListExpression:
-				for _, key := range g.Keys {
-					embeddedModCompiler.globalSymbols.Define(key.(*parse.IdentifierLiteral).Name)
-				}
-			case *parse.ObjectLiteral:
-				for _, prop := range g.Properties {
-					embeddedModCompiler.globalSymbols.Define(prop.Name())
-				}
+		switch g := globalDescNode.(type) {
+		case *parse.KeyListExpression:
+			for _, key := range g.Keys {
+				embeddedModCompiler.globalSymbols.Define(key.(*parse.IdentifierLiteral).Name)
+			}
+		case *parse.ObjectLiteral:
+			for _, prop := range g.Properties {
+				embeddedModCompiler.globalSymbols.Define(prop.Name())
 			}
 		}
 
