@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strconv"
 
 	"github.com/inoxlang/inox/internal/config"
 	core "github.com/inoxlang/inox/internal/core"
@@ -280,7 +279,7 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 		}
 		msg := bytes.NewBufferString(mod.Name())
 		msg.WriteString("\nrisk score is ")
-		msg.WriteString(strconv.Itoa(int(riskScore)))
+		msg.WriteString(riskScore.ValueAndLevel())
 		msg.WriteString("\nthe program is asking for the following permissions:\n")
 
 		for _, perm := range manifest.RequiredPermissions {

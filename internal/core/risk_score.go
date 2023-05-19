@@ -3,6 +3,7 @@ package internal
 import (
 	"path/filepath"
 	"reflect"
+	"strconv"
 
 	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
@@ -10,14 +11,31 @@ import (
 
 type RiskScore int
 
+func (s RiskScore) ValueAndLevel() string {
+	str := strconv.Itoa(int(s)) + " "
+	switch {
+	case s >= HIGH_RISK_SCORE_LEVEL:
+		str += "(high)"
+	case s >= MEDIUM_RISK_SCORE_LEVEL:
+		str += "(medium)"
+	default:
+		str += "(low)"
+	}
+
+	return str
+}
+
 type BasePermissionRiskScore struct {
 	Type  reflect.Type
 	Kind  PermissionKind
 	Score RiskScore
 }
 
+// The following risk score constants are intended to be a starting point, they may be adjusted based on additional research and feedback.
 const (
 	MAXIMUM_RISK_SCORE      = RiskScore(10_000)
+	MEDIUM_RISK_SCORE_LEVEL = 300
+	HIGH_RISK_SCORE_LEVEL   = 500
 	UNKNOWN_PERM_RISK_SCORE = RiskScore(30)
 
 	HOST_PATTERN_RISK_MULTIPLIER = RiskScore(4)
@@ -38,7 +56,6 @@ const (
 	CMD_PERM_RISK_SCORE = 30
 )
 
-// The following risk score constants are intended to be a starting point, they may be adjusted based on additional research and feedback.
 var (
 	HTTP_PERM_TYPE = reflect.TypeOf(HttpPermission{})
 	FS_PERM_TYPE   = reflect.TypeOf(FilesystemPermission{})
