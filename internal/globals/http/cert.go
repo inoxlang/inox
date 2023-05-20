@@ -128,7 +128,7 @@ func GetTLSConfig(ctx *core.Context, pemEncodedCert string, pemEncodedKey string
 			zapcore.AddSync(utils.FnWriter{
 				WriteFn: func(p []byte) (n int, err error) {
 					zeroLog.Debug().Msg(utils.BytesAsString(p))
-					return n, nil
+					return len(p), nil
 				},
 			}),
 			zap.DebugLevel,
