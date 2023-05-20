@@ -9,7 +9,7 @@ import (
 
 var (
 	ROUTINE_PROPNAMES       = []string{"wait_result", "cancel", "steps"}
-	ROUTINE_GROUP_PROPNAMES = []string{"wait_results", "cancelAll"}
+	ROUTINE_GROUP_PROPNAMES = []string{"wait_results", "cancel_all"}
 	EXECUTED_STEP_PROPNAMES = []string{"result", "end_time"}
 )
 
@@ -98,7 +98,7 @@ func (g *RoutineGroup) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
 	case "wait_results":
 		return WrapGoMethod(g.WaitAllResults), true
-	case "cancelAll":
+	case "cancel_all":
 		return WrapGoMethod(g.CancelAll), true
 	}
 	return nil, false
