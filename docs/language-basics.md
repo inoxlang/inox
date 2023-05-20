@@ -441,13 +441,17 @@ dict = :{
 ## If Statement & Expression
 
 ```
-if (a < 0){
+a = 1
 
+if (a > 0){
+    # ...
 } else {
-
+    # ...
 }
 
-a = (if (a < 0) "a" else "b")
+string = (if (a > 0) "positive" else "negative or zero")
+
+val = (if false 1) # val is nil because the condition is false
 ```
 
 When the condition is a boolean conversion expression the type of the converted value is narrowed:
@@ -479,7 +483,7 @@ output:
 
 ## Match Statement
 
-The match statement is similar to the switch statement but uses patterns as case values.
+The match statement is similar to the switch statement but uses **patterns** as case values.
 The match statement executes the block following the first pattern matching the value.
 
 ```
