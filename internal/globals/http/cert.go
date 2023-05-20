@@ -145,6 +145,7 @@ func GetTLSConfig(ctx *core.Context, pemEncodedCert string, pemEncodedKey string
 				//TODO: Storage
 			}, nil
 		},
+		Logger: zapLogger,
 		// ...
 	})
 
