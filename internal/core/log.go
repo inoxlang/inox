@@ -12,7 +12,6 @@ func init() {
 	zerolog.MessageFieldName = "msg"
 	zerolog.LevelFieldName = "lvl"
 	zerolog.TimestampFieldName = "tm"
-	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 }
 
 const SOURCE_LOG_FIELD_NAME = "src"
