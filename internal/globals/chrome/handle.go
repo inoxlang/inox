@@ -12,6 +12,8 @@ import (
 
 const (
 	DEFAULT_SINGLE_ACTION_TIMEOUT = 15 * time.Second
+
+	SRC_PATH = "/chrome"
 )
 
 var (
@@ -28,6 +30,8 @@ type Handle struct {
 }
 
 func NewHandle(ctx *core.Context) (*Handle, error) {
+	logger := *ctx.Logger()
+	logger = logger.With().Str(core.SOURCE_LOG_FIELD_NAME, SRC_PATH).Logger()
 
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.DisableGPU,
@@ -40,6 +44,19 @@ func NewHandle(ctx *core.Context) (*Handle, error) {
 
 	chromedpCtx, cancel := chromedp.NewContext(
 		allocCtx,
+		chromedp.WithErrorf(func(s string, i ...interface{}) {
+			logger.Warn().Msgf(s, i...)
+		}),
+		chromedp.WithLogf(func(s string, i ...interface{}) {
+			logger.Info().Msgf(s, i...)
+		}),
+		//most chatty
+		chromedp.WithDebugf(func(s string, i ...interface{}) {
+			logger.Trace().Msgf(s, i...)
+		}),
+
+		//???: the previous options are not working if they are created as several chromedp.WithBrowserXXX calls in chromedp.WithBrowserOption(...)
+
 		//chromedp.WithDebugf(ctx.GetState().Logger.Printf),
 	)
 
