@@ -100,14 +100,22 @@ type DefaultGlobalStateConfig struct {
 }
 
 // NewDefaultGlobalState creates a new GlobalState with the default globals.
-func NewDefaultGlobalState(ctx *core.Context, config DefaultGlobalStateConfig) (*core.GlobalState, error) {
-	logOut := config.LogOut
+func NewDefaultGlobalState(ctx *core.Context, conf DefaultGlobalStateConfig) (*core.GlobalState, error) {
+	logOut := conf.LogOut
+	var logger zerolog.Logger
 	if logOut == nil {
-		logOut = config.Out
-	}
-	logger := zerolog.New(logOut).With().Timestamp().Logger()
+		logOut = conf.Out
 
-	envNamespace, err := _env.NewEnvNamespace(ctx, config.EnvPattern, config.AllowMissingEnvVars)
+		consoleLogger := zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
+			w.Out = logOut
+			w.NoColor = !config.SHOULD_COLORIZE
+		})
+		logger = zerolog.New(consoleLogger).With().Timestamp().Logger()
+	} else {
+		logger = zerolog.New(logOut).With().Timestamp().Logger()
+	}
+
+	envNamespace, err := _env.NewEnvNamespace(ctx, conf.EnvPattern, conf.AllowMissingEnvVars)
 	if err != nil {
 		return nil, err
 	}
@@ -273,11 +281,11 @@ func NewDefaultGlobalState(ctx *core.Context, config DefaultGlobalStateConfig) (
 	}
 
 	state := core.NewGlobalState(ctx, constants)
-	state.Out = config.Out
+	state.Out = conf.Out
 	state.Logger = logger
 	state.GetBaseGlobalsForImportedModule = func(ctx *core.Context, manifest *core.Manifest) (core.GlobalVariables, error) {
 		importedModuleGlobals := utils.CopyMap(constants)
-		env, err := _env.NewEnvNamespace(ctx, nil, config.AllowMissingEnvVars)
+		env, err := _env.NewEnvNamespace(ctx, nil, conf.AllowMissingEnvVars)
 		if err != nil {
 			return core.GlobalVariables{}, err
 		}
