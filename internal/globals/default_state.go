@@ -110,6 +110,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf DefaultGlobalStateConfig) (*c
 			w.Out = logOut
 			w.NoColor = !config.SHOULD_COLORIZE
 			w.TimeFormat = "15:04:05"
+			w.FieldsExclude = []string{"src"}
 		})
 		logger = zerolog.New(consoleLogger)
 	} else {
