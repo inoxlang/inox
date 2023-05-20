@@ -40,168 +40,125 @@ var (
 	port = atomic.Int32{}
 )
 
-func TestHttpServer(t *testing.T) {
+func init() {
 	port.Store(8080)
+}
 
-	createHandlers := func(t *testing.T, code string) (*core.InoxFunction, *core.InoxFunction, *core.Module) {
-		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
-			NameString: "server-test",
-			CodeString: code,
-		}))
-		module := &core.Module{
-			MainChunk: chunk,
-		}
+func TestHttpServerMissingProvidePermission(t *testing.T) {
 
-		staticCheckData, err := core.StaticCheck(core.StaticCheckInput{
-			Node:   chunk.Node,
-			Module: module,
-			Chunk:  module.MainChunk,
-		})
-
-		if !assert.NoError(t, err) {
-			panic(err)
-		}
-
-		nodeFunction := &core.InoxFunction{Node: parse.FindNode(chunk.Node, (*parse.FunctionExpression)(nil), nil)}
-
-		core.Compile(core.CompilationInput{
-			Mod: module,
-			Context: core.NewContext(core.ContextConfig{
-				Filesystem: _fs.GetOsFilesystem(),
-			}),
-			StaticCheckData: staticCheckData,
-		})
-		bytecode := module.Bytecode
-		consts := bytecode.Constants()
-		compiledFunction := consts[len(consts)-1].(*core.InoxFunction)
-		return nodeFunction, compiledFunction, module
-	}
-
-	createClient := func() *http.Client {
-		return &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			},
-			Timeout: REQ_TIMEOUT,
-			Jar:     utils.Must(_cookiejar.New(&_cookiejar.Options{PublicSuffixList: publicsuffix.List})),
-		}
-	}
-
-	t.Run("missing provide permission", func(t *testing.T) {
-		host := core.Host("https://localhost:8080")
-		ctx := core.NewContext(core.ContextConfig{
-			Filesystem: _fs.GetOsFilesystem(),
-		})
-		core.NewGlobalState(ctx)
-		server, err := NewHttpServer(ctx, host)
-
-		assert.IsType(t, core.NotAllowedError{}, err)
-		assert.Equal(t, core.HttpPermission{Kind_: permkind.Provide, Entity: host}, err.(core.NotAllowedError).Permission)
-		assert.Nil(t, server)
+	host := core.Host("https://localhost:8080")
+	ctx := core.NewContext(core.ContextConfig{
+		Filesystem: _fs.GetOsFilesystem(),
 	})
+	core.NewGlobalState(ctx)
+	server, err := NewHttpServer(ctx, host)
 
-	t.Run("custom handler", func(t *testing.T) {
+	assert.IsType(t, core.NotAllowedError{}, err)
+	assert.Equal(t, core.HttpPermission{Kind_: permkind.Provide, Entity: host}, err.(core.NotAllowedError).Permission)
+	assert.Nil(t, server)
+}
 
-		//TODO: rework test & add case where handler access a global
+func TestHttpServerUserHandler(t *testing.T) {
 
-		host := core.Host("https://localhost:8080")
+	//TODO: rework test & add case where handler access a global
 
-		code := "fn(rw, r){ rw.write_json(1) }"
-		nodeFn, compiledFn, module := createHandlers(t, code)
+	host := core.Host("https://localhost:8080")
 
-		for i, handler := range []*core.InoxFunction{nodeFn, compiledFn} {
-			name := "node handler"
-			if i == 1 {
-				name = "compiled function handler"
-				t.Skip()
+	code := "fn(rw, r){ rw.write_json(1) }"
+	nodeFn, compiledFn, module := createHandlers(t, code)
+
+	for i, handler := range []*core.InoxFunction{nodeFn, compiledFn} {
+		name := "node handler"
+		if i == 1 {
+			name = "compiled function handler"
+			t.Skip()
+		}
+
+		t.Run(name, func(t *testing.T) {
+
+			ctx := core.NewContext(core.ContextConfig{
+				Permissions: []core.Permission{
+					core.HttpPermission{Kind_: permkind.Provide, Entity: host},
+				},
+				Filesystem: _fs.GetOsFilesystem(),
+			})
+			state := core.NewGlobalState(ctx)
+			state.Module = module
+			state.Logger = zerolog.New(io.Discard)
+
+			server, err := NewHttpServer(ctx, host, handler)
+			if server != nil {
+				defer server.Close(ctx)
+				time.Sleep(time.Millisecond)
 			}
 
-			t.Run(name, func(t *testing.T) {
+			assert.NoError(t, err)
+			assert.NotNil(t, server)
 
-				ctx := core.NewContext(core.ContextConfig{
-					Permissions: []core.Permission{
-						core.HttpPermission{Kind_: permkind.Provide, Entity: host},
-					},
-					Filesystem: _fs.GetOsFilesystem(),
-				})
-				state := core.NewGlobalState(ctx)
-				state.Module = module
-				state.Logger = zerolog.New(io.Discard)
+			//we send a request to the server
+			req, _ := http.NewRequest("GET", string(host)+"/x", nil)
+			req.Header.Add("Accept", core.JSON_CTYPE)
 
-				server, err := NewHttpServer(ctx, host, handler)
-				if server != nil {
-					defer server.Close(ctx)
-					time.Sleep(time.Millisecond)
-				}
+			client := createClient()
+			resp, err := client.Do(req)
+			assert.NoError(t, err)
 
-				assert.NoError(t, err)
-				assert.NotNil(t, server)
-
-				//we send a request to the server
-				req, _ := http.NewRequest("GET", string(host)+"/x", nil)
-				req.Header.Add("Accept", core.JSON_CTYPE)
-
-				client := createClient()
-				resp, err := client.Do(req)
-				assert.NoError(t, err)
-
-				body := string(utils.Must(io.ReadAll(resp.Body)))
-				//we check the response
-				assert.Equal(t, `"1"`, body)
-				assert.Equal(t, 200, resp.StatusCode)
-			})
-		}
-	})
-
+			body := string(utils.Must(io.ReadAll(resp.Body)))
+			//we check the response
+			assert.Equal(t, `"1"`, body)
+			assert.Equal(t, 200, resp.StatusCode)
+		})
+	}
 	//TODO: add VM evaluation versions
-	//TODO: test that CSP is sent
+	//TODO: test that CSP is s
+}
 
-	t.Run("mapping", func(t *testing.T) {
+func TestHttpServerMapping(t *testing.T) {
 
-		testCases := map[string]serverTestCase{
-			"string": {
-				input: `return Mapping {
+	testCases := map[string]serverTestCase{
+		"string": {
+			input: `return Mapping {
 					%/... => "hello"
 				}
 				`,
-				requests: []requestTestInfo{
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
-				},
+			requests: []requestTestInfo{
+				{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
 			},
-			"string: */* is accepted": {
-				input: `return Mapping {
+		},
+		"string: */* is accepted": {
+			input: `return Mapping {
 					%/... => "hello"
 				}
 				`,
-				requests: []requestTestInfo{
-					{acceptedContentType: core.ANY_CTYPE, result: `hello`},
-				},
+			requests: []requestTestInfo{
+				{acceptedContentType: core.ANY_CTYPE, result: `hello`},
 			},
-			"bytes": {
-				input: `return Mapping {
+		},
+		"bytes": {
+			input: `return Mapping {
 					%/... => 0d[65] # 'A'
 				}
 				`,
-				requests: []requestTestInfo{{acceptedContentType: core.APP_OCTET_STREAM_CTYPE, result: `A`}},
-			},
-			"html node": {
-				input: `return Mapping {
+			requests: []requestTestInfo{{acceptedContentType: core.APP_OCTET_STREAM_CTYPE, result: `A`}},
+		},
+		"html node": {
+			input: `return Mapping {
 					%/... => html.div{}
 				}`,
-				requests: []requestTestInfo{
-					{acceptedContentType: core.HTML_CTYPE, result: `<div></div>`},
-				},
+			requests: []requestTestInfo{
+				{acceptedContentType: core.HTML_CTYPE, result: `<div></div>`},
 			},
-			"html node: */* is accepted": {
-				input: `return Mapping {
+		},
+		"html node: */* is accepted": {
+			input: `return Mapping {
 					%/... => html.div{}
 				}`,
-				requests: []requestTestInfo{
-					{acceptedContentType: core.ANY_CTYPE, result: `<div></div>`},
-				},
+			requests: []requestTestInfo{
+				{acceptedContentType: core.ANY_CTYPE, result: `<div></div>`},
 			},
-			"handler": {
-				input: `
+		},
+		"handler": {
+			input: `
 					fn handle(rw %http.resp_writer, r %http.req){
 						rw.write_json({ a: 1 })
 					}
@@ -209,10 +166,10 @@ func TestHttpServer(t *testing.T) {
 						%/... => handle
 					}
 				`,
-				requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":"1"}`}},
-			},
-			"handler accessing a global function": {
-				input: `
+			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":"1"}`}},
+		},
+		"handler accessing a global function": {
+			input: `
 					fn helper(rw %http.resp_writer, r %http.req){
 						rw.write_json({ a: 1 })
 					}
@@ -223,18 +180,18 @@ func TestHttpServer(t *testing.T) {
 						%/... => handle
 					}
 				`,
-				requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":"1"}`}},
-			},
-			"JSON for model": {
-				input: `$$model = {a: 1}
+			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":"1"}`}},
+		},
+		"JSON for model": {
+			input: `$$model = {a: 1}
 
 				return Mapping {
 					%/... => model
 				}`,
-				requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":"1"}`}},
-			},
-			"JSON for model with sensitive data, no defined visibility": {
-				input: `
+			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":"1"}`}},
+		},
+		"JSON for model with sensitive data, no defined visibility": {
+			input: `
 				$$model = {
 					a: 1
 					password: "mypassword"
@@ -244,10 +201,10 @@ func TestHttpServer(t *testing.T) {
 				return Mapping {
 					%/... => model
 				}`,
-				requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":"1"}`}},
-			},
-			"JSON for model with all fields set as public": {
-				input: `$$model = {
+			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":"1"}`}},
+		},
+		"JSON for model with all fields set as public": {
+			input: `$$model = {
 					a: 1
 					password: "mypassword"
 					e: a@mail.com
@@ -262,10 +219,10 @@ func TestHttpServer(t *testing.T) {
 				return Mapping {
 					%/... => model
 				}`,
-				requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":"1","e":"a@mail.com","password":"mypassword"}`}},
-			},
-			"IXON for model with no defined visibility": {
-				input: ` $$model = {
+			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":"1","e":"a@mail.com","password":"mypassword"}`}},
+		},
+		"IXON for model with no defined visibility": {
+			input: ` $$model = {
 					a: 1
 					password: "mypassword"
 					e: foo@mail.com
@@ -274,10 +231,10 @@ func TestHttpServer(t *testing.T) {
 				return Mapping {
 					%/... => model
 				}`,
-				requests: []requestTestInfo{{acceptedContentType: core.IXON_CTYPE, result: `{"a":1}`}},
-			},
-			"IXON for model with all fields set as public": {
-				input: `$$model = {
+			requests: []requestTestInfo{{acceptedContentType: core.IXON_CTYPE, result: `{"a":1}`}},
+		},
+		"IXON for model with all fields set as public": {
+			input: `$$model = {
 					a: 1
 					password: "mypassword"
 					e: a@mail.com
@@ -292,71 +249,71 @@ func TestHttpServer(t *testing.T) {
 				return Mapping {
 					%/... => model
 				}`,
-				requests: []requestTestInfo{{acceptedContentType: core.IXON_CTYPE, result: `{"a":1,"e":a@mail.com,"password":"mypassword"}`}},
-			},
+			requests: []requestTestInfo{{acceptedContentType: core.IXON_CTYPE, result: `{"a":1,"e":a@mail.com,"password":"mypassword"}`}},
+		},
 
-			"large binary stream: event stream request": {
-				input: strings.Replace(`
+		"large binary stream: event stream request": {
+			input: strings.Replace(`
 					return Mapping {
 						%/... => torstream(mkbytes(<size>))
 					}`, "<size>", strconv.Itoa(int(10*DEFAULT_PUSHED_BYTESTREAM_CHUNK_SIZE_RANGE.InclusiveEnd())), 1),
-				requests: []requestTestInfo{
-					{
-						acceptedContentType: core.EVENT_STREAM_CTYPE,
-						events: func() []*core.Event {
-							chunkMaxSize := DEFAULT_PUSHED_BYTESTREAM_CHUNK_SIZE_RANGE.InclusiveEnd()
-							size := int(10 * chunkMaxSize)
+			requests: []requestTestInfo{
+				{
+					acceptedContentType: core.EVENT_STREAM_CTYPE,
+					events: func() []*core.Event {
+						chunkMaxSize := DEFAULT_PUSHED_BYTESTREAM_CHUNK_SIZE_RANGE.InclusiveEnd()
+						size := int(10 * chunkMaxSize)
 
-							b := bytes.Repeat([]byte{0}, size)
-							encoded := []byte(hex.EncodeToString(b))
-							encodedSize := 2 * size
-							// 10 chunks of equal size
-							encodedDataChunkSize := encodedSize / 10
+						b := bytes.Repeat([]byte{0}, size)
+						encoded := []byte(hex.EncodeToString(b))
+						encodedSize := 2 * size
+						// 10 chunks of equal size
+						encodedDataChunkSize := encodedSize / 10
 
-							var events []*core.Event
+						var events []*core.Event
 
-							for i := 0; i < 10; i++ {
-								events = append(events, (&ServerSentEvent{
-									Data: []byte(encoded[i*encodedDataChunkSize : (i+1)*encodedDataChunkSize]),
-								}).ToEvent())
-							}
+						for i := 0; i < 10; i++ {
+							events = append(events, (&ServerSentEvent{
+								Data: []byte(encoded[i*encodedDataChunkSize : (i+1)*encodedDataChunkSize]),
+							}).ToEvent())
+						}
 
-							return events
-						}(),
-					},
+						return events
+					}(),
 				},
 			},
-		}
+		},
+	}
 
-		for name, testCase := range testCases {
-			runMappingTestCase(t, name, testCase, createClient)
-		}
+	for name, testCase := range testCases {
+		runMappingTestCase(t, name, testCase, createClient)
+	}
 
-		t.Run("reactive rendering", func(t *testing.T) {
+	t.Run("reactive rendering", func(t *testing.T) {
 
-			t.Skip()
+		t.Skip()
 
-			testCases := map[string]serverTestCase{
-				"HTML for model": {
-					input: `$$model = {
+		testCases := map[string]serverTestCase{
+			"HTML for model": {
+				input: `$$model = {
 						render: fn() => dom.div{class:"a"}
 					}
 					return Mapping {
 						/ => "hello"
 						%/... => model
 					}`,
-					requests: []requestTestInfo{
-						{acceptedContentType: core.PLAIN_TEXT_CTYPE, path: "/"}, // get session
-						{
-							pause:                         10 * time.Millisecond,
-							acceptedContentType:           core.HTML_CTYPE,
-							resultRegex:                   `<div class="a".*?></div>`,
-							checkIdenticalParallelRequest: true,
-						},
+				requests: []requestTestInfo{
+					{acceptedContentType: core.PLAIN_TEXT_CTYPE, path: "/"}, // get session
+					{
+						pause:                         10 * time.Millisecond,
+						acceptedContentType:           core.HTML_CTYPE,
+						resultRegex:                   `<div class="a".*?></div>`,
+						checkIdenticalParallelRequest: true,
 					},
 				},
-				"HTML for self updating model: 2 requests": {
-					input: `
+			},
+			"HTML for self updating model: 2 requests": {
+				input: `
 					$$model = {
 						count: 1
 						sleep: sleep
@@ -371,13 +328,13 @@ func TestHttpServer(t *testing.T) {
 					return Mapping {
 						%/... => model
 					}`,
-					requests: []requestTestInfo{
-						{acceptedContentType: core.HTML_CTYPE, resultRegex: `<div class="a".*?>1</div>`},
-						{acceptedContentType: core.HTML_CTYPE, resultRegex: `<div class="a".*?>2</div>`, preDelay: time.Second / 2},
-					},
+				requests: []requestTestInfo{
+					{acceptedContentType: core.HTML_CTYPE, resultRegex: `<div class="a".*?>1</div>`},
+					{acceptedContentType: core.HTML_CTYPE, resultRegex: `<div class="a".*?>2</div>`, preDelay: time.Second / 2},
 				},
-				"event stream request for a model with an invalid view": {
-					input: `
+			},
+			"event stream request for a model with an invalid view": {
+				input: `
 						$$model = {
 							count: 1
 							sleep: sleep
@@ -387,15 +344,15 @@ func TestHttpServer(t *testing.T) {
 						return Mapping {
 							%/... => model
 						}`,
-					requests: []requestTestInfo{
-						{
-							acceptedContentType: core.EVENT_STREAM_CTYPE,
-							// no events because fail
-						},
+				requests: []requestTestInfo{
+					{
+						acceptedContentType: core.EVENT_STREAM_CTYPE,
+						// no events because fail
 					},
 				},
-				"self updating model: event stream request": {
-					input: ` $$model = {
+			},
+			"self updating model: event stream request": {
+				input: ` $$model = {
 						count: 1
 						sleep: sleep
 						render: fn() => dom.div{class:"a", self.<count}
@@ -409,148 +366,23 @@ func TestHttpServer(t *testing.T) {
 					return Mapping {
 						%/... => model
 					}`,
-					requests: []requestTestInfo{
-						{acceptedContentType: core.HTML_CTYPE, resultRegex: `<div class="a".*?>1</div>`},
-						{
-							acceptedContentType: core.EVENT_STREAM_CTYPE,
-							events: []*core.Event{
-								(&ServerSentEvent{
-									Data: []byte(`<div class="a".*?>2</div>`),
-								}).ToEvent(),
-							},
-							preDelay: 10 * time.Millisecond,
+				requests: []requestTestInfo{
+					{acceptedContentType: core.HTML_CTYPE, resultRegex: `<div class="a".*?>1</div>`},
+					{
+						acceptedContentType: core.EVENT_STREAM_CTYPE,
+						events: []*core.Event{
+							(&ServerSentEvent{
+								Data: []byte(`<div class="a".*?>2</div>`),
+							}).ToEvent(),
 						},
+						preDelay: 10 * time.Millisecond,
 					},
 				},
-			}
-
-			for name, testCase := range testCases {
-				runMappingTestCase(t, name, testCase, createClient)
-			}
-		})
-	})
-
-	t.Run("handling description", func(t *testing.T) {
-
-		testCases := map[string]serverTestCase{
-			"routing only": {
-				input: `return {
-					routing: Mapping {
-						%/... => "hello"
-					}
-				}`,
-				requests: []requestTestInfo{
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
-				},
-			},
-			"empty middleware list": {
-				input: `return {
-					middlewares: []
-					routing: Mapping {
-						%/... => "hello"
-					}
-				}`,
-				requests: []requestTestInfo{
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
-				},
-			},
-			"a middleware filtering based on path": {
-				input: ` return {
-					middlewares: [
-						Mapping {
-							/a => #notfound
-							/b => #continue
-						}
-					]
-					routing: Mapping {
-						/a => "a"
-						/b => "b"
-					}
-				}`,
-				requests: []requestTestInfo{
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, path: "/a", status: 404},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, path: "/b", result: `b`, status: 200},
-				},
-			},
-			//add test on default-csp
-		}
-
-		for name, testCase := range testCases {
-			runHandlingDescTestCase(t, name, testCase, createClient)
-		}
-	})
-
-	t.Run("rate limiting", func(t *testing.T) {
-		const HELLO = `
-			return {
-				routing: Mapping {
-					%/... => "hello"
-				}
-			}`
-
-		const MINI_PAUSE = 10 * time.Millisecond
-
-		//improve + add new tests
-
-		testCases := map[string]serverTestCase{
-			"server should block burst: same client (HTTP2)": {
-				input: HELLO,
-				requests: []requestTestInfo{
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true},
-				},
-				createClientFn: func() func() *http.Client {
-					client := &http.Client{
-						Transport: &http.Transport{
-							TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
-							ForceAttemptHTTP2: true,
-						},
-						Timeout: REQ_TIMEOUT,
-						Jar:     utils.Must(_cookiejar.New(&_cookiejar.Options{PublicSuffixList: publicsuffix.List})),
-					}
-
-					return utils.Ret(client)
-				},
-			},
-			"server should block burst : same client (HTTP2) + small pause beween requests": {
-				input: HELLO,
-				requests: []requestTestInfo{
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, pause: MINI_PAUSE},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, pause: MINI_PAUSE},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, pause: MINI_PAUSE},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, pause: MINI_PAUSE},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, pause: MINI_PAUSE},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true, pause: MINI_PAUSE},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true, pause: MINI_PAUSE},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true, pause: MINI_PAUSE},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true, pause: MINI_PAUSE},
-				},
-				createClientFn: func() func() *http.Client {
-					client := &http.Client{
-						Transport: &http.Transport{
-							TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
-							ForceAttemptHTTP2: true,
-						},
-						Timeout: REQ_TIMEOUT,
-						Jar:     utils.Must(_cookiejar.New(&_cookiejar.Options{PublicSuffixList: publicsuffix.List})),
-					}
-
-					return utils.Ret(client)
-				},
 			},
 		}
 
 		for name, testCase := range testCases {
-			runHandlingDescTestCase(t, name, testCase, createClient)
+			runMappingTestCase(t, name, testCase, createClient)
 		}
 	})
 }
@@ -875,4 +707,48 @@ type serverTestCase struct {
 	requests       []requestTestInfo
 	outWriter      io.Writer
 	createClientFn func() func() *http.Client
+}
+
+func createHandlers(t *testing.T, code string) (*core.InoxFunction, *core.InoxFunction, *core.Module) {
+	chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+		NameString: "server-test",
+		CodeString: code,
+	}))
+	module := &core.Module{
+		MainChunk: chunk,
+	}
+
+	staticCheckData, err := core.StaticCheck(core.StaticCheckInput{
+		Node:   chunk.Node,
+		Module: module,
+		Chunk:  module.MainChunk,
+	})
+
+	if !assert.NoError(t, err) {
+		panic(err)
+	}
+
+	nodeFunction := &core.InoxFunction{Node: parse.FindNode(chunk.Node, (*parse.FunctionExpression)(nil), nil)}
+
+	core.Compile(core.CompilationInput{
+		Mod: module,
+		Context: core.NewContext(core.ContextConfig{
+			Filesystem: _fs.GetOsFilesystem(),
+		}),
+		StaticCheckData: staticCheckData,
+	})
+	bytecode := module.Bytecode
+	consts := bytecode.Constants()
+	compiledFunction := consts[len(consts)-1].(*core.InoxFunction)
+	return nodeFunction, compiledFunction, module
+}
+
+func createClient() *http.Client {
+	return &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+		Timeout: REQ_TIMEOUT,
+		Jar:     utils.Must(_cookiejar.New(&_cookiejar.Options{PublicSuffixList: publicsuffix.List})),
+	}
 }

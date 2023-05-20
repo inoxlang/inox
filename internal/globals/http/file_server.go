@@ -46,7 +46,7 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 		return nil, errors.New("no (directory) path required")
 	}
 
-	server, certFile, keyFile, err := makeHttpServer(addr, http.FileServer(http.Dir(dir)), "", "", ctx)
+	server, err := makeHttpServer(addr, http.FileServer(http.Dir(dir)), "", "", ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 	endChan := make(chan struct{}, 1)
 
 	go func() {
-		log.Println(server.ListenAndServeTLS(certFile, keyFile))
+		log.Println(server.ListenAndServeTLS("", ""))
 		endChan <- struct{}{}
 	}()
 

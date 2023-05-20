@@ -5,15 +5,21 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"log"
 	"math/big"
-	"mime"
 	"time"
 
+	"github.com/caddyserver/certmagic"
+
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/utils"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -98,20 +104,77 @@ func generateSelfSignedCertAndKey() (cert *pem.Block, key *pem.Block, err error)
 	return &pem.Block{Type: "CERTIFICATE", Bytes: derBytes}, keyBlock, nil
 }
 
-func Mime_(ctx *core.Context, arg core.Str) (core.Mimetype, error) {
-	switch arg {
-	case "json":
-		arg = core.JSON_CTYPE
-	case "yaml":
-		arg = core.APP_YAML_CTYPE
-	case "text":
-		arg = core.PLAIN_TEXT_CTYPE
-	}
-
-	_, _, err := mime.ParseMediaType(string(arg))
+func generateSelfSignedCertAndKeyValues(ctx *core.Context) (core.Str, *core.Secret, error) {
+	cert, key, err := generateSelfSignedCertAndKey()
 	if err != nil {
-		return "", fmt.Errorf("'%s' is not a MIME type: %s", arg, err.Error())
+		return "", nil, err
 	}
 
-	return core.Mimetype(arg), nil
+	secret, err := core.SECRET_STRING_PATTERN.NewSecret(ctx, string(pem.EncodeToMemory(key)))
+	if err != nil {
+		return "", nil, err
+	}
+
+	return core.Str(pem.EncodeToMemory(cert)), secret, nil
+}
+
+func GetTLSConfig(ctx *core.Context, pemEncodedCert string, pemEncodedKey string) (*tls.Config, error) {
+	var zapLogger *zap.Logger
+	{
+		zeroLog := ctx.Logger().With().Str(core.SOURCE_LOG_FIELD_NAME, "/http/certmagic").Logger()
+
+		core := zapcore.NewCore(
+			zapcore.NewConsoleEncoder(zap.NewProductionEncoderConfig()),
+			zapcore.AddSync(utils.FnWriter{
+				WriteFn: func(p []byte) (n int, err error) {
+					zeroLog.Debug().Msg(utils.BytesAsString(p))
+					return n, nil
+				},
+			}),
+			zap.DebugLevel,
+		)
+		zapLogger = zap.New(core)
+	}
+
+	cache := certmagic.NewCache(certmagic.CacheOptions{
+		GetConfigForCert: func(cert certmagic.Certificate) (*certmagic.Config, error) {
+
+			// Customize the config for the certificate
+			return &certmagic.Config{
+				Logger: zapLogger,
+				//TODO: Storage
+			}, nil
+		},
+		// ...
+	})
+
+	magic := certmagic.New(cache, certmagic.Config{
+		Logger: zapLogger,
+		// Customizations go here
+	})
+
+	// myACME := certmagic.NewACMEIssuer(magic, certmagic.ACMEIssuer{
+	// 	CA:     certmagic.LetsEncryptProductionCA,
+	// 	Email:  "you@yours.com",
+	// 	Agreed: true,
+	// 	// Other customizations
+	// })
+	// magic.Issuers = []certmagic.Issuer{myACME}
+
+	// err := magic.ManageSync(context.TODO(), []string{"example.com", "sub.example.com"})
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	cert, err := tls.X509KeyPair([]byte(pemEncodedCert), []byte(pemEncodedKey))
+	if err != nil {
+		log.Fatalf("failed to create tls.Certificate: %v", err)
+	}
+
+	magic.CacheUnmanagedTLSCertificate(ctx, cert, nil)
+
+	tlsConfig := magic.TLSConfig()
+	tlsConfig.NextProtos = append([]string{"h2", "http/1.1"}, tlsConfig.NextProtos...)
+
+	return tlsConfig, nil
 }

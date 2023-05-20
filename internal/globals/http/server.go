@@ -17,6 +17,8 @@ import (
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
+
+	fsutil "github.com/go-git/go-billy/v5/util"
 )
 
 const (
@@ -30,9 +32,11 @@ const (
 	HTTP_SERVER_STARTING_WAIT_TIME        = 5 * time.Millisecond
 	HTTP_SERVER_GRACEFUL_SHUTDOWN_TIMEOUT = 5 * time.Second
 
-	HANDLING_DESC_MIDDLEWARES_KEY = "middlewares"
-	HANDLING_DESC_ROUTING_KEY     = "routing"
-	HANDLING_DESC_DEFAULT_CSP_KEY = "default-csp"
+	HANDLING_DESC_MIDDLEWARES_PROPNAME = "middlewares"
+	HANDLING_DESC_ROUTING_PROPNAME     = "routing"
+	HANDLING_DESC_DEFAULT_CSP_PROPNAME = "default-csp"
+	HANDLING_DESC_CERTIFICATE_PROPNAME = "certificate"
+	HANDLING_DESC_KEY_PROPNAME         = "key"
 
 	HTTP_SERVER_SRC_PATH = "/http/server"
 )
@@ -53,7 +57,7 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 		return nil, errors.New("cannot create server: context's associated state is nil")
 	}
 
-	addr, userProvidedHandler, handlerValProvided, middlewares, argErr := readHttpServerArgs(ctx, _server, args...)
+	addr, _, _, userProvidedHandler, handlerValProvided, middlewares, argErr := readHttpServerArgs(ctx, _server, args...)
 	if argErr != nil {
 		return nil, argErr
 	}
@@ -141,7 +145,7 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 	})
 
 	//create a stdlib http Server
-	server, certFile, keyFile, err := makeHttpServer(addr, topHandler, "", "", ctx)
+	server, err := makeHttpServer(addr, topHandler, "", "", ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +159,7 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 	go func() {
 		_server.serverLogger.WithLevel(zerolog.NoLevel).Msg("serve " + addr)
 
-		err := server.ListenAndServeTLS(certFile, keyFile)
+		err := server.ListenAndServeTLS("", "")
 		if err != nil {
 			_server.serverLogger.Print(err)
 		}
@@ -175,6 +179,8 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 
 func readHttpServerArgs(ctx *core.Context, server *HttpServer, args ...core.Value) (
 	addr string,
+	certificate string,
+	certKey *core.Secret,
 	userProvidedHandler core.Value,
 	handlerValProvided bool,
 	middlewares []core.Value,
@@ -250,10 +256,10 @@ func readHttpServerArgs(ctx *core.Context, server *HttpServer, args ...core.Valu
 			// extract routing handler, middlewares, ... from description
 			for propKey, propVal := range v.EntryMap() {
 				switch propKey {
-				case HANDLING_DESC_MIDDLEWARES_KEY:
+				case HANDLING_DESC_MIDDLEWARES_PROPNAME:
 					iterable, ok := propVal.(core.Iterable)
 					if !ok {
-						argErr = core.FmtPropOfArgXShouldBeOfTypeY(HANDLING_DESC_MIDDLEWARES_KEY, HANDLING_ARG_NAME, "iterable", propVal)
+						argErr = core.FmtPropOfArgXShouldBeOfTypeY(propKey, HANDLING_ARG_NAME, "iterable", propVal)
 						return
 					}
 
@@ -262,7 +268,7 @@ func readHttpServerArgs(ctx *core.Context, server *HttpServer, args ...core.Valu
 						e := it.Value(ctx)
 						if !isValidHandlerValue(e) {
 							s := fmt.Sprintf("%s is not a middleware", core.Stringify(e, ctx))
-							argErr = core.FmtUnexpectedElementInPropIterableOfArgX(HANDLING_DESC_MIDDLEWARES_KEY, HANDLING_ARG_NAME, s)
+							argErr = core.FmtUnexpectedElementInPropIterableOfArgX(propKey, HANDLING_ARG_NAME, s)
 							return
 						}
 
@@ -270,38 +276,52 @@ func readHttpServerArgs(ctx *core.Context, server *HttpServer, args ...core.Valu
 							psharable.Share(server.state)
 						} else {
 							s := fmt.Sprintf("%s is not sharable", core.Stringify(e, ctx))
-							argErr = core.FmtUnexpectedElementInPropIterableOfArgX(HANDLING_DESC_MIDDLEWARES_KEY, HANDLING_ARG_NAME, s)
+							argErr = core.FmtUnexpectedElementInPropIterableOfArgX(propKey, HANDLING_ARG_NAME, s)
 							return
 						}
 						middlewares = append(middlewares, e)
 					}
-				case HANDLING_DESC_ROUTING_KEY:
+				case HANDLING_DESC_ROUTING_PROPNAME:
 					if !isValidHandlerValue(propVal) {
-						argErr = core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, HANDLING_DESC_ROUTING_KEY, HANDLING_ARG_NAME)
+						argErr = core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, propKey, HANDLING_ARG_NAME)
 					}
 
 					if psharable, ok := propVal.(core.PotentiallySharable); ok && utils.Ret0(psharable.IsSharable(server.state)) {
 						psharable.Share(server.state)
 					} else {
-						argErr = core.FmtPropOfArgXShouldBeY(HANDLING_DESC_ROUTING_KEY, HANDLING_ARG_NAME, "sharable")
+						argErr = core.FmtPropOfArgXShouldBeY(propKey, HANDLING_ARG_NAME, "sharable")
 						return
 					}
 
 					userProvidedHandler = propVal
-				case HANDLING_DESC_DEFAULT_CSP_KEY:
+				case HANDLING_DESC_DEFAULT_CSP_PROPNAME:
 					csp, ok := propVal.(*_dom.ContentSecurityPolicy)
 					if !ok {
-						argErr = core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, HANDLING_DESC_DEFAULT_CSP_KEY, HANDLING_ARG_NAME)
+						argErr = core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, propKey, HANDLING_ARG_NAME)
 						return
 					}
 					server.defaultCSP = csp
+				case HANDLING_DESC_CERTIFICATE_PROPNAME:
+					certVal, ok := propVal.(core.StringLike)
+					if !ok {
+						argErr = core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, propKey, HANDLING_ARG_NAME)
+						return
+					}
+					certificate = certVal.GetOrBuildString()
+				case HANDLING_DESC_KEY_PROPNAME:
+					secret, ok := propVal.(*core.Secret)
+					if !ok {
+						argErr = core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, propKey, HANDLING_ARG_NAME)
+						return
+					}
+					certKey = secret
 				default:
 					argErr = commonfmt.FmtUnexpectedPropInArgX(propKey, HANDLING_ARG_NAME)
 				}
 			}
 
 			if userProvidedHandler == nil {
-				argErr = core.FmtMissingPropInArgX(HANDLING_DESC_ROUTING_KEY, HANDLING_ARG_NAME)
+				argErr = core.FmtMissingPropInArgX(HANDLING_DESC_ROUTING_PROPNAME, HANDLING_ARG_NAME)
 			}
 		default:
 			argErr = fmt.Errorf("http.server: invalid argument of type %T", v)
@@ -316,45 +336,68 @@ func readHttpServerArgs(ctx *core.Context, server *HttpServer, args ...core.Valu
 	return
 }
 
-func makeHttpServer(addr string, handler http.Handler, certFilePath string, keyFilePath string, ctx *core.Context) (*http.Server, string, string, error) {
+func makeHttpServer(addr string, handler http.Handler, pemEncodedCert string, pemEncodedKey string, ctx *core.Context) (*http.Server, error) {
 	fls := ctx.GetFileSystem()
 
-	//we generate a self signed certificate that we write to disk so that
-	//we can reuse it
-	CERT_FILEPATH := "localhost.cert"
-	CERT_KEY_FILEPATH := "localhost.key"
+	if pemEncodedCert == "" { //if no certificate provided by the user we create one
+		//we generate a self signed certificate that we write to disk so that
+		//we can reuse it
+		CERT_FILEPATH := "localhost.cert"
+		CERT_KEY_FILEPATH := "localhost.key"
 
-	_, err1 := fls.Stat(CERT_FILEPATH)
-	_, err2 := fls.Stat(CERT_KEY_FILEPATH)
+		_, err1 := fls.Stat(CERT_FILEPATH)
+		_, err2 := fls.Stat(CERT_KEY_FILEPATH)
 
-	if errors.Is(err1, os.ErrNotExist) || errors.Is(err2, os.ErrNotExist) {
+		if errors.Is(err1, os.ErrNotExist) || errors.Is(err2, os.ErrNotExist) {
 
-		if err1 == nil {
-			fls.Remove(CERT_FILEPATH)
+			if err1 == nil {
+				fls.Remove(CERT_FILEPATH)
+			}
+
+			if err2 == nil {
+				fls.Remove(CERT_KEY_FILEPATH)
+			}
+
+			cert, key, err := generateSelfSignedCertAndKey()
+			if err != nil {
+				return nil, err
+			}
+
+			certFile, err := fls.Create(CERT_FILEPATH)
+			if err != nil {
+				return nil, err
+			}
+			pem.Encode(certFile, cert)
+			pemEncodedCert = string(pem.EncodeToMemory(cert))
+
+			certFile.Close()
+			keyFile, err := fls.Create(CERT_KEY_FILEPATH)
+			if err != nil {
+				return nil, err
+			}
+			pem.Encode(keyFile, key)
+			keyFile.Close()
+			pemEncodedKey = string(pem.EncodeToMemory(key))
+		} else if err1 == nil && err2 == nil {
+			certFile, err := fsutil.ReadFile(fls, CERT_FILEPATH)
+			if err != nil {
+				return nil, err
+			}
+			keyFile, err := fsutil.ReadFile(fls, CERT_KEY_FILEPATH)
+			if err != nil {
+				return nil, err
+			}
+
+			pemEncodedCert = string(certFile)
+			pemEncodedKey = string(keyFile)
+		} else {
+			return nil, fmt.Errorf("%w %w", err1, err2)
 		}
+	}
 
-		if err2 == nil {
-			fls.Remove(CERT_KEY_FILEPATH)
-		}
-
-		cert, key, err := generateSelfSignedCertAndKey()
-		if err != nil {
-			return nil, "", "", err
-		}
-
-		certFile, err := fls.Create(CERT_FILEPATH)
-		if err != nil {
-			return nil, "", "", err
-		}
-		pem.Encode(certFile, cert)
-		certFile.Close()
-
-		keyFile, err := fls.Create(CERT_KEY_FILEPATH)
-		if err != nil {
-			return nil, "", "", err
-		}
-		pem.Encode(keyFile, key)
-		keyFile.Close()
+	tlsConfig, err := GetTLSConfig(ctx, pemEncodedCert, pemEncodedKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get TLS config: %w", err)
 	}
 
 	server := &http.Server{
@@ -364,9 +407,10 @@ func makeHttpServer(addr string, handler http.Handler, certFilePath string, keyF
 		ReadTimeout:       DEFAULT_HTTP_SERVER_READ_TIMEOUT,
 		WriteTimeout:      DEFAULT_HTTP_SERVER_WRITE_TIMEOUT,
 		MaxHeaderBytes:    DEFAULT_HTTP_SERVER_MAX_HEADER_BYTES,
+		TLSConfig:         tlsConfig,
 	}
 
-	return server, CERT_FILEPATH, CERT_KEY_FILEPATH, nil
+	return server, nil
 }
 
 // HttpServer implements the GoValue interface.
