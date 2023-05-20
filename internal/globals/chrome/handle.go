@@ -76,6 +76,20 @@ func NewHandle(ctx *core.Context) (*Handle, error) {
 }
 
 func (h *Handle) do(ctx *core.Context, action chromedp.Action) error {
+	done := make(chan struct{})
+
+	go func() {
+		select {
+		case <-done:
+		case <-time.After(DEFAULT_SINGLE_ACTION_TIMEOUT):
+			h.close()
+		}
+	}()
+
+	defer func() {
+		done <- struct{}{}
+	}()
+
 	return chromedp.Run(h.chromedpContext,
 		action,
 	)
@@ -130,6 +144,10 @@ func (h *Handle) HtmlNode(ctx *core.Context, sel core.Str) (*_html.HTMLNode, err
 }
 
 func (h *Handle) Close(ctx *core.Context) {
+	h.close()
+}
+
+func (h *Handle) close() {
 	h.cancelChromedpContext()
 	h.cancelAllocCtx()
 }
