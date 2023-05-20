@@ -109,6 +109,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf DefaultGlobalStateConfig) (*c
 		consoleLogger := zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
 			w.Out = logOut
 			w.NoColor = !config.SHOULD_COLORIZE
+			w.TimeFormat = "15:04:05"
 		})
 		logger = zerolog.New(consoleLogger).With().Timestamp().Logger()
 	} else {
