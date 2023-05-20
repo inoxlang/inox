@@ -7,6 +7,8 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/permkind"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
+	"github.com/rs/zerolog"
 
 	"github.com/inoxlang/inox/internal/lsp/logs"
 	"github.com/inoxlang/inox/internal/lsp/lsp"
@@ -63,7 +65,13 @@ func StartLSPServer() {
 		},
 		Filesystem: filesystem,
 	})
-	core.NewGlobalState(compilationCtx)
+	state := core.NewGlobalState(compilationCtx)
+	state.Logger = zerolog.New(utils.FnWriter{
+		WriteFn: func(p []byte) (n int, err error) {
+			logs.Println(utils.BytesAsString(p))
+			return len(p), nil
+		},
+	})
 
 	registerHandlers(server, filesystem, compilationCtx)
 	server.Run()
