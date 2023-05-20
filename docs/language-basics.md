@@ -42,6 +42,8 @@
 
 # Literals
 
+Here are the most commonly used literals in Inox: 
+
 - numbers with a point (.) are floating point numbers: `1.0, 2.0e3`
 - numbers without a point are integers: `1, -200`
 - boolean literals are `true` and `false`
@@ -62,20 +64,40 @@
     - `%./*.go` matches any file in the `./` directory that ends with `.go`, it's a globbing path pattern
     - ⚠️ They are values, they don't expand like when you do `ls ./*.go`
     - note: you cannot mix prefix & globbing path patterns for now
+- URL literals: `https://example.com/index.html, https://google.com?q=inox`
+- URL pattern literals:
+    - URL prefix patterns: `%https://example.com/...`
+- regex literals: ``%`a+` ``
+
+<details>
+
+**<summary>Other literals</summary>**
+
 - host literals: `https://example.com, https://127.0.0.1`
 - host pattern literals:
     - `%https://**.com` matches any domain or subdomain ending in .com
     - `%https://**.example.com` matches any subdomain of `example.com`
-- URL literals: `https://example.com/index.html, https://google.com?q=inox`
-- URL pattern literals:
-    - URL prefix patterns: `%https://example.com/...`
 - port literals: `:80, :80/http`
 - date literals represent a specific point in time: `2020y-10mt-5d-CET`, `2020y-10mt-5d-5h-4m-CET`
     - The location part (CET | UTC | Local | ...) at the end is mandatory.
 - quantity literals: `1B`, `2kB`, `10%`
 - rate literals: `5B/s`, `10kB/s`
 - byte slice literals: `0x[0a b3]`, `0b[1111 0000]`, `0d[120 250]`
-- regex literals: ``%`a+` ``
+
+</detailms>
+
+### You can add a header
+
+You can add text within a collapsed section. 
+
+You can add an image or a code block, too.
+
+```ruby
+   puts "Hello World"
+```
+
+</details>
+
 
 # Variables
 
