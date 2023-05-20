@@ -29,11 +29,15 @@ func (n *HTMLNode) Render(ctx *core.Context, w io.Writer, config core.RenderingI
 
 func Render(ctx *core.Context, v core.Value) *core.ByteSlice {
 	buf := bytes.NewBuffer(nil)
-	_, err := v.(core.Renderable).Render(ctx, buf, core.RenderingInput{Mime: core.HTML_CTYPE})
+	renderToWriter(ctx, buf, v)
+	return &core.ByteSlice{Bytes: buf.Bytes(), IsDataMutable: true}
+}
+
+func renderToWriter(ctx *core.Context, w io.Writer, v core.Value) {
+	_, err := v.(core.Renderable).Render(ctx, w, core.RenderingInput{Mime: core.HTML_CTYPE})
 	if err != nil {
 		panic(err)
 	}
-	return &core.ByteSlice{Bytes: buf.Bytes(), IsDataMutable: true}
 }
 
 func RenderToString(ctx *core.Context, v core.Value) core.Str {
