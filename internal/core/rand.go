@@ -22,7 +22,7 @@ var (
 	MAX_INT64  = big.NewInt(math.MaxInt64)
 	MAX_UINT64 = big.NewInt(0)
 
-	CryptoRandSource = &RandomnessSource{source: cryptoRandomnessSource{}}
+	CryptoRandSource  = &RandomnessSource{source: cryptoRandomnessSource{}}
 	DefaultRandSource = CryptoRandSource
 
 	_ = []io.Reader{DefaultRandSource}
@@ -165,6 +165,10 @@ func (r IntRange) Random(ctx *Context) Value {
 // ------------ patterns ------------
 
 func (pattern ExactValuePattern) Random(ctx *Context, options ...Option) Value {
+	return pattern.value
+}
+
+func (pattern ExactStringPattern) Random(ctx *Context, options ...Option) Value {
 	return pattern.value
 }
 

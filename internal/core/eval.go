@@ -212,7 +212,7 @@ func CreatePatternNamespace(init Value) (*PatternNamespace, error) {
 		if patt, ok := v.(Pattern); ok {
 			namespace.Patterns[k] = patt
 		} else {
-			namespace.Patterns[k] = &ExactValuePattern{value: v}
+			namespace.Patterns[k] = NewMostAdaptedExactPattern(v)
 		}
 	}
 

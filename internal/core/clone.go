@@ -389,6 +389,20 @@ func (pattern *ExactValuePattern) Clone(clones map[uintptr]map[int]Value) (Value
 	return clone, nil
 }
 
+func (pattern *ExactStringPattern) Clone(clones map[uintptr]map[int]Value) (Value, error) {
+	ptr := reflect.ValueOf(pattern).Pointer()
+
+	if clone, ok := clones[ptr][0]; ok {
+		return clone, nil
+	}
+
+	clone := new(ExactStringPattern)
+	clones[ptr] = map[int]Value{0: clone}
+
+	*clone = *pattern
+	return clone, nil
+}
+
 func (pattern *TypePattern) Clone(clones map[uintptr]map[int]Value) (Value, error) {
 	ptr := reflect.ValueOf(pattern).Pointer()
 

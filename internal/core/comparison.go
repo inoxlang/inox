@@ -809,6 +809,15 @@ func (pattern *ExactValuePattern) Equal(ctx *Context, other Value, alreadyCompar
 	return pattern.value.Equal(ctx, otherPattern.value, alreadyCompared, depth+1)
 }
 
+func (pattern *ExactStringPattern) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherPattern, ok := other.(*ExactValuePattern)
+	if !ok {
+		return false
+	}
+
+	return pattern.value.Equal(ctx, otherPattern.value, alreadyCompared, depth+1)
+}
+
 func (pattern *TypePattern) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	otherPattern, ok := other.(*TypePattern)
 	if !ok {

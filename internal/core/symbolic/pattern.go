@@ -421,6 +421,13 @@ func NewExactValuePattern(v SymbolicValue) *ExactValuePattern {
 	return &ExactValuePattern{value: v}
 }
 
+func NewMostAdaptedExactPattern(value SymbolicValue) Pattern {
+	if _, ok := value.(StringLike); ok {
+		return NewExactStringPattern()
+	}
+	return NewExactValuePattern(value)
+}
+
 func (p *ExactValuePattern) SetVal(v SymbolicValue) {
 	if p.value != nil {
 		panic(errors.New("value already set"))
@@ -483,7 +490,7 @@ func (p *ExactValuePattern) SymbolicValue() SymbolicValue {
 }
 
 func (p *ExactValuePattern) StringPattern() (StringPatternElement, bool) {
-	return nil, false
+	return &ExactStringPattern{}, false
 }
 
 func (p *ExactValuePattern) IteratorElementKey() SymbolicValue {

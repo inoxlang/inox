@@ -4,10 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"regexp"
-	"regexp/syntax"
 	"time"
-	"unicode/utf8"
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -677,103 +674,29 @@ type ExactValuePattern struct {
 	NotCallablePatternMixin
 	NoReprMixin
 
-	value  Value
-	regexp *syntax.Regexp
+	value Value
 }
 
 func NewExactValuePattern(value Value) *ExactValuePattern {
 	return &ExactValuePattern{value: value}
 }
 
+func NewMostAdaptedExactPattern(value Value) Pattern {
+	if s, ok := value.(StringLike); ok {
+		return NewExactStringPattern(Str(s.GetOrBuildString()))
+	}
+	return NewExactValuePattern(value)
+}
+
 func (pattern *ExactValuePattern) Test(ctx *Context, v Value) bool {
 	return pattern.value.Equal(ctx, v, map[uintptr]uintptr{}, 0)
 }
 
-func (pattern *ExactValuePattern) Regex() string {
-	s, isString := pattern.value.(Str)
-	if !isString {
-		panic(errors.New("cannot get regex for a ExactSimpleValuePattern that has a non-string value"))
-	}
-	return regexp.QuoteMeta(string(s))
-}
-
-func (patt *ExactValuePattern) CompiledRegex() *regexp.Regexp {
-	s, isString := patt.value.(Str)
-	if !isString {
-		panic(errors.New("cannot get regex for a ExactSimpleValuePattern that has a non-string value"))
-	}
-
-	return regexp.MustCompile(regexp.QuoteMeta(string(s)))
-}
-
-func (pattern *ExactValuePattern) HasRegex() bool {
-	_, isString := pattern.value.(Str)
-	return isString
-}
-
-func (pattern *ExactValuePattern) validate(parsed string, i *int) bool {
-	s, isString := pattern.value.(Str)
-	if !isString {
-		panic(errors.New("an ExactSimpleValuePattern that doesn't have a string value cannot validate"))
-	}
-
-	length := len(s)
-	index := *i
-	if len(parsed)-index < length {
-		return false
-	}
-
-	if parsed[index:index+length] == string(s) {
-		*i += length
-		return true
-	}
-	return false
-}
-
-func (patt *ExactValuePattern) Parse(ctx *Context, s string) (Value, error) {
-	str, isString := patt.value.(Str)
-	if !isString {
-		panic(errors.New("an ExactSimpleValuePattern that doesn't have a string value cannot validate"))
-	}
-
-	if s != string(str) {
-		return nil, errors.New("string not equal to expected string")
-	}
-
-	return Str(s), nil
-}
-
-func (pattern *ExactValuePattern) FindMatches(ctx *Context, val Value, config MatchesFindConfig) (matches []Value, err error) {
-	_, isString := pattern.value.(Str)
-	if !isString {
-		panic(errors.New("an ExactSimpleValuePattern that doesn't have a string value cannot find matches"))
-	}
-
-	return FindMatchesForStringPattern(ctx, pattern, val, config)
-}
-
-func (pattern *ExactValuePattern) LengthRange() IntRange {
-	s, isString := pattern.value.(Str)
-	if !isString {
-		panic(errors.New("an ExactSimpleValuePattern that doesn't have a string value has no length range"))
-	}
-
-	//cache ?
-
-	length := utf8.RuneCountInString(string(s))
-	return IntRange{
-		Start:        int64(length),
-		End:          int64(length),
-		inclusiveEnd: true,
-		Step:         1,
-	}
-}
-
-func (pattern *ExactValuePattern) EffectiveLengthRange() IntRange {
-	return pattern.LengthRange()
-}
-
 func (patt *ExactValuePattern) StringPattern() (StringPattern, bool) {
+	if str, ok := patt.value.(StringLike); ok {
+		stringPattern := NewExactStringPattern(Str(str.GetOrBuildString()))
+		return stringPattern, true
+	}
 	return nil, false
 }
 

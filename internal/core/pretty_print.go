@@ -1157,6 +1157,10 @@ func (pattern ExactValuePattern) PrettyPrint(w *bufio.Writer, config *PrettyPrin
 	inspectPrint(w, pattern)
 }
 
+func (pattern ExactStringPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	inspectPrint(w, pattern)
+}
+
 func (pattern TypePattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.PatternIdentifier))

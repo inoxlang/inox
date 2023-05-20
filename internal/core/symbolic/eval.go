@@ -2523,7 +2523,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			}
 			for k, v := range r.entries {
 				if _, ok := v.(Pattern); !ok {
-					v = NewExactValuePattern(v)
+					v = NewMostAdaptedExactPattern(v)
 				}
 				namespace.entries[k] = v.(Pattern)
 			}
@@ -2534,7 +2534,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			}
 			for k, v := range r.entries {
 				if _, ok := v.(Pattern); !ok {
-					v = NewExactValuePattern(v)
+					v = NewMostAdaptedExactPattern(v)
 				}
 				namespace.entries[k] = v.(Pattern)
 			}

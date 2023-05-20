@@ -738,6 +738,29 @@ func (patt ExactValuePattern) Iterator(ctx *Context, config IteratorConfiguratio
 	})
 }
 
+func (patt ExactStringPattern) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
+	i := -1
+	return config.CreateIterator(&PatternIterator{
+		hasNext: func(pi *PatternIterator, ctx *Context) bool {
+			return i < 0
+		},
+		next: func(pi *PatternIterator, ctx *Context) bool {
+			i++
+			return true
+		},
+		key: func(pi *PatternIterator, ctx *Context) Value {
+			return Int(i)
+		},
+		value: func(pi *PatternIterator, ctx *Context) Value {
+			if i == 0 {
+				//TODO: clone ?
+				return patt.value
+			}
+			return nil
+		},
+	})
+}
+
 func (patt UnionPattern) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
 	var iterator = patt.cases[0].Iterator(ctx, IteratorConfiguration{})
 

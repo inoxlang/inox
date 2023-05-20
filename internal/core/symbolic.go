@@ -460,6 +460,21 @@ func (p *ExactValuePattern) ToSymbolicValue(wide bool, encountered map[uintptr]s
 	return exactValPattern, nil
 }
 
+func (p *ExactStringPattern) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	if wide {
+		return symbolic.NewExactValuePattern(&symbolic.Any{}), nil
+	}
+
+	ptr := reflect.ValueOf(p).Pointer()
+	if r, ok := encountered[ptr]; ok {
+		return r, nil
+	}
+	exactValPattern := symbolic.NewExactStringPattern()
+	encountered[ptr] = exactValPattern
+
+	return exactValPattern, nil
+}
+
 func (p *ListPattern) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	if wide {
 		return symbolic.ANY_LIST_PATTERN.WidestOfType(), nil

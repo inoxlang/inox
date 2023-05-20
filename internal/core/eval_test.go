@@ -4810,7 +4810,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &ExactValuePattern{value: Str("s")}, res)
+			assert.Equal(t, NewExactStringPattern(Str("s")), res)
 		})
 
 		t.Run("pattern definition & identifiers : RHS is another pattern identifier", func(t *testing.T) {
@@ -4822,7 +4822,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &ExactValuePattern{value: Str("p")}, res)
+			assert.Equal(t, NewExactStringPattern(Str("p")), res)
 		})
 
 		t.Run("pattern definition & identifiers : minimal lazy", func(t *testing.T) {
@@ -4955,7 +4955,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, &ObjectPattern{
 				inexact: true,
 				entryPatterns: map[string]Pattern{
-					"name":  &ExactValuePattern{value: Str("s")},
+					"name":  NewExactStringPattern(Str("s")),
 					"count": &ExactValuePattern{value: Int(2)},
 				},
 			}, res)
@@ -4979,8 +4979,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				assert.Equal(t, &ObjectPattern{
 					inexact: true,
 					entryPatterns: map[string]Pattern{
-						"s":    &ExactValuePattern{value: Str("s")},
-						"name": &ExactValuePattern{value: Str("foo")},
+						"s":    NewExactStringPattern(Str("s")),
+						"name": NewExactStringPattern(Str("foo")),
 					},
 				}, res)
 			})
@@ -4999,8 +4999,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				assert.Equal(t, &ObjectPattern{
 					inexact: true,
 					entryPatterns: map[string]Pattern{
-						"s":    &ExactValuePattern{value: Str("s")},
-						"name": &ExactValuePattern{value: Str("foo")},
+						"s":    NewExactStringPattern(Str("s")),
+						"name": NewExactStringPattern(Str("foo")),
 					},
 					optionalEntries: map[string]struct{}{"name": {}},
 				}, res)
@@ -5020,8 +5020,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				assert.Equal(t, &ObjectPattern{
 					inexact: true,
 					entryPatterns: map[string]Pattern{
-						"s":    &ExactValuePattern{value: Str("s")},
-						"name": &ExactValuePattern{value: Str("foo")},
+						"s":    NewExactStringPattern(Str("s")),
+						"name": NewExactStringPattern(Str("foo")),
 						"age":  &ExactValuePattern{value: Int(30)},
 					},
 				}, res)
@@ -5043,8 +5043,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				assert.Equal(t, &ObjectPattern{
 					inexact: true,
 					entryPatterns: map[string]Pattern{
-						"s":    &ExactValuePattern{value: Str("s")},
-						"name": &ExactValuePattern{value: Str("foo")},
+						"s":    NewExactStringPattern(Str("s")),
+						"name": NewExactStringPattern(Str("foo")),
 					},
 				}, res)
 			})
@@ -5063,8 +5063,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				assert.Equal(t, &ObjectPattern{
 					inexact: true,
 					entryPatterns: map[string]Pattern{
-						"s":    &ExactValuePattern{value: Str("s")},
-						"name": &ExactValuePattern{value: Str("foo")},
+						"s":    NewExactStringPattern(Str("s")),
+						"name": NewExactStringPattern(Str("foo")),
 						"age":  &ExactValuePattern{value: Int(30)},
 					},
 				}, res)
@@ -5086,10 +5086,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					entryPatterns: map[string]Pattern{
 						"friends": NewListPatternOf(&ObjectPattern{
 							entryPatterns: map[string]Pattern{
-								"name": &ExactValuePattern{value: Str("foo")},
+								"name": NewExactStringPattern(Str("foo")),
 							},
 						}),
-						"name": &ExactValuePattern{value: Str("foo")},
+						"name": NewExactStringPattern(Str("foo")),
 					},
 				}, res)
 			})

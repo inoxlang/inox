@@ -2728,16 +2728,16 @@ func evalPatternNode(node parse.Node, state *TreeWalkState) (Pattern, error) {
 		if patt, ok := val.(Pattern); ok {
 			return patt, nil
 		}
-		return &ExactValuePattern{value: val}, nil
+		return NewMostAdaptedExactPattern(val), nil
 	}
 }
 
 func evalStringPatternNode(node parse.Node, state *TreeWalkState, lazy bool) (StringPattern, error) {
 	switch v := node.(type) {
 	case *parse.QuotedStringLiteral:
-		return &ExactValuePattern{value: Str(v.Value)}, nil
+		return NewExactStringPattern(Str(v.Value)), nil
 	case *parse.RuneLiteral:
-		return &ExactValuePattern{value: Str(v.Value)}, nil
+		return NewExactStringPattern(Str(v.Value)), nil
 	case *parse.RuneRangeExpression:
 		return NewRuneRangeStringPattern(v.Lower.Value, v.Upper.Value, node), nil
 	case *parse.IntegerRangeLiteral:

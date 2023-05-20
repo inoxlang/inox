@@ -197,7 +197,7 @@ func TestIntersectionPatternClone(t *testing.T) {
 }
 
 func TestStringUnionPatternClone(t *testing.T) {
-	cases := []StringPattern{&ExactValuePattern{value: Str("a")}}
+	cases := []StringPattern{NewExactStringPattern(Str("a"))}
 	clone, err := (&UnionStringPattern{cases: cases}).Clone(map[uintptr]map[int]Value{})
 	assert.NoError(t, err)
 	assert.Equal(t, (&UnionStringPattern{cases: cases}), clone)
@@ -207,7 +207,7 @@ func TestStringUnionPatternClone(t *testing.T) {
 }
 
 func TestSequenceStringPatternClone(t *testing.T) {
-	elements := []StringPattern{&ExactValuePattern{value: Str("a")}}
+	elements := []StringPattern{NewExactStringPattern(Str("a"))}
 	clone, err := (&SequenceStringPattern{elements: elements}).Clone(map[uintptr]map[int]Value{})
 	assert.NoError(t, err)
 	assert.Equal(t, (&SequenceStringPattern{elements: elements}), clone)
@@ -217,7 +217,7 @@ func TestSequenceStringPatternClone(t *testing.T) {
 }
 
 func TestRepeatedPatternElementClone(t *testing.T) {
-	element := &ExactValuePattern{value: Str("a")}
+	element := NewExactStringPattern(Str("a"))
 	patt := &RepeatedPatternElement{
 		element:           element,
 		ocurrenceModifier: internal.ExactOcurrence,

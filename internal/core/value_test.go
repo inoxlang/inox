@@ -125,7 +125,7 @@ func TestRepeatedPatternElementRandom(t *testing.T) {
 			regexp:            nil,
 			ocurrenceModifier: parse.ExactOcurrence,
 			exactCount:        2,
-			element:           &ExactValuePattern{value: Str("a")},
+			element:           NewExactStringPattern(Str("a")),
 		}
 
 		for i := 0; i < 5; i++ {
@@ -139,7 +139,7 @@ func TestRepeatedPatternElementRandom(t *testing.T) {
 		patt := RepeatedPatternElement{
 			regexp:            nil,
 			ocurrenceModifier: parse.OptionalOcurrence,
-			element:           &ExactValuePattern{value: Str("a")},
+			element:           NewExactStringPattern(Str("a")),
 		}
 
 		for i := 0; i < 5; i++ {
@@ -154,7 +154,7 @@ func TestRepeatedPatternElementRandom(t *testing.T) {
 		patt := RepeatedPatternElement{
 			regexp:            nil,
 			ocurrenceModifier: parse.ZeroOrMoreOcurrence,
-			element:           &ExactValuePattern{value: Str("a")},
+			element:           NewExactStringPattern(Str("a")),
 		}
 
 		for i := 0; i < 5; i++ {
@@ -171,7 +171,7 @@ func TestRepeatedPatternElementRandom(t *testing.T) {
 		patt := RepeatedPatternElement{
 			regexp:            nil,
 			ocurrenceModifier: parse.ZeroOrMoreOcurrence,
-			element:           &ExactValuePattern{value: Str("a")},
+			element:           NewExactStringPattern(Str("a")),
 		}
 
 		for i := 0; i < 5; i++ {
@@ -190,8 +190,8 @@ func TestSequenceStringPatternRandom(t *testing.T) {
 		regexp: nil,
 		node:   nil,
 		elements: []StringPattern{
-			&ExactValuePattern{value: Str("a")},
-			&ExactValuePattern{value: Str("b")},
+			NewExactStringPattern(Str("a")),
+			NewExactStringPattern(Str("b")),
 		},
 	}
 
@@ -205,8 +205,8 @@ func TestUnionStringPatternRandom(t *testing.T) {
 		regexp: nil,
 		node:   nil,
 		cases: []StringPattern{
-			&ExactValuePattern{value: Str("a")},
-			&ExactValuePattern{value: Str("b")},
+			NewExactStringPattern(Str("a")),
+			NewExactStringPattern(Str("b")),
 		},
 	}
 

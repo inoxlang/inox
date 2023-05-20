@@ -1098,7 +1098,7 @@ func (v *VM) run() {
 			val := v.stack[v.sp-1]
 
 			if _, ok := val.(Pattern); !ok {
-				v.stack[v.sp-1] = &ExactValuePattern{value: val}
+				v.stack[v.sp-1] = NewMostAdaptedExactPattern(val)
 			}
 		case OpToBool:
 			val := v.stack[v.sp-1]

@@ -2093,9 +2093,9 @@ func (c *compiler) compileLogical(node *parse.BinaryExpression) error {
 func (c *compiler) CompileStringPatternNode(node parse.Node) error {
 	switch v := node.(type) {
 	case *parse.QuotedStringLiteral:
-		c.emit(node, OpPushConstant, c.addConstant(&ExactValuePattern{value: Str(v.Value)}))
+		c.emit(node, OpPushConstant, c.addConstant(NewExactStringPattern(Str(v.Value))))
 	case *parse.RuneLiteral:
-		c.emit(node, OpPushConstant, c.addConstant(&ExactValuePattern{value: Str(v.Value)}))
+		c.emit(node, OpPushConstant, c.addConstant(NewExactStringPattern(Str(v.Value))))
 	case *parse.RuneRangeExpression:
 		patt := NewRuneRangeStringPattern(v.Lower.Value, v.Upper.Value, node)
 		c.emit(node, OpPushConstant, c.addConstant(patt))

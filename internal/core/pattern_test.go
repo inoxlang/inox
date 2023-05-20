@@ -7,9 +7,16 @@ import (
 )
 
 func TestExactValuePattern(t *testing.T) {
+	patt := NewExactValuePattern(Int(2))
+
+	assert.True(t, patt.Equal(nil, patt, nil, 0))
+	assert.False(t, patt.Equal(nil, NewExactValuePattern(Float(2)), nil, 0))
+}
+
+func TestExactStringPattern(t *testing.T) {
 
 	t.Run(".LengthRange()", func(t *testing.T) {
-		patt := &ExactValuePattern{value: Str("ab")}
+		patt := NewExactStringPattern(Str("ab"))
 		assert.Equal(t, IntRange{
 			Start:        2,
 			End:          2,

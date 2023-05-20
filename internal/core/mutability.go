@@ -190,6 +190,10 @@ func (pattern *ExactValuePattern) IsMutable() bool {
 	return false
 }
 
+func (pattern *ExactStringPattern) IsMutable() bool {
+	return false
+}
+
 func (pattern *TypePattern) IsMutable() bool {
 	return false
 }

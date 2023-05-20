@@ -1801,7 +1801,7 @@ func TestCompileModule(t *testing.T) {
 				inst(OpSuspendVM),
 			),
 			[]Value{
-				&ExactValuePattern{value: Str("a")},
+				NewExactStringPattern("a"),
 				KeyList{""},
 				Str("p"),
 			},

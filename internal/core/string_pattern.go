@@ -50,6 +50,89 @@ type MatchesFindConfig struct {
 	Kind MatchesFindConfigKind
 }
 
+// ExactStringPattern matches values equal to .value: .value.Equal(...) returns true.
+type ExactStringPattern struct {
+	NotCallablePatternMixin
+	NoReprMixin
+
+	value  Str
+	regexp *regexp.Regexp
+}
+
+func NewExactStringPattern(value Str) *ExactStringPattern {
+	regex := regexp.QuoteMeta(string(value))
+	regexp := regexp.MustCompile(regex)
+
+	return &ExactStringPattern{
+		value:  value,
+		regexp: regexp,
+	}
+}
+
+func (pattern *ExactStringPattern) Test(ctx *Context, v Value) bool {
+	return pattern.value.Equal(ctx, v, map[uintptr]uintptr{}, 0)
+}
+
+func (pattern *ExactStringPattern) Regex() string {
+	return pattern.regexp.String()
+}
+
+func (patt *ExactStringPattern) CompiledRegex() *regexp.Regexp {
+	return patt.regexp
+}
+
+func (pattern *ExactStringPattern) HasRegex() bool {
+	return true
+}
+
+func (pattern *ExactStringPattern) validate(parsed string, i *int) bool {
+	exactString := pattern.value
+
+	length := len(exactString)
+	index := *i
+	if len(parsed)-index < length {
+		return false
+	}
+
+	if parsed[index:index+length] == string(exactString) {
+		*i += length
+		return true
+	}
+	return false
+}
+
+func (patt *ExactStringPattern) Parse(ctx *Context, s string) (Value, error) {
+	if s != string(patt.value) {
+		return nil, errors.New("string not equal to expected string")
+	}
+
+	return Str(s), nil
+}
+
+func (pattern *ExactStringPattern) FindMatches(ctx *Context, val Value, config MatchesFindConfig) (matches []Value, err error) {
+	return FindMatchesForStringPattern(ctx, pattern, val, config)
+}
+
+func (pattern *ExactStringPattern) LengthRange() IntRange {
+	//cache ?
+
+	length := utf8.RuneCountInString(string(pattern.value))
+	return IntRange{
+		Start:        int64(length),
+		End:          int64(length),
+		inclusiveEnd: true,
+		Step:         1,
+	}
+}
+
+func (pattern *ExactStringPattern) EffectiveLengthRange() IntRange {
+	return pattern.LengthRange()
+}
+
+func (patt *ExactStringPattern) StringPattern() (StringPattern, bool) {
+	return nil, false
+}
+
 // SequenceStringPattern represents a string pattern with sub elements
 type SequenceStringPattern struct {
 	regexp             *regexp.Regexp
