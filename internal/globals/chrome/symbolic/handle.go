@@ -76,11 +76,11 @@ func (h *Handle) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
 	case "nav":
 		return symbolic.WrapGoMethod(h.Nav), true
-	case "waitVisible":
+	case "wait_visible":
 		return symbolic.WrapGoMethod(h.WaitVisible), true
 	case "click":
 		return symbolic.WrapGoMethod(h.Click), true
-	case "screenshotPage":
+	case "screenshot_page":
 		return symbolic.WrapGoMethod(h.ScreenshotPage), true
 	case "screenshot":
 		return symbolic.WrapGoMethod(h.Screenshot), true
@@ -91,7 +91,7 @@ func (h *Handle) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 }
 
 func (h *Handle) PropertyNames() []string {
-	return []string{"nav", "waitVisible", "click", "screenshotPage", "screenshot", "close"}
+	return []string{"nav", "wait_visible", "click", "screenshot_page", "screenshot", "close"}
 }
 
 func (h *Handle) IsMutable() bool {

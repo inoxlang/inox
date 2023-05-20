@@ -117,13 +117,13 @@ func (h *Handle) GetGoMethod(name string) (*core.GoFunction, bool) {
 	switch name {
 	case "nav":
 		return core.WrapGoMethod(h.Nav), true
-	case "waitVisible":
+	case "wait_visible":
 		return core.WrapGoMethod(h.WaitVisible), true
 	case "click":
 		return core.WrapGoMethod(h.Click), true
 	case "screenshot":
 		return core.WrapGoMethod(h.Screenshot), true
-	case "screenshotPage":
+	case "screenshot_page":
 		return core.WrapGoMethod(h.ScreenshotPage), true
 	case "close":
 		return core.WrapGoMethod(h.Close), true
@@ -132,5 +132,5 @@ func (h *Handle) GetGoMethod(name string) (*core.GoFunction, bool) {
 }
 
 func (h *Handle) PropertyNames(ctx *core.Context) []string {
-	return []string{"nav", "waitVisible", "click", "screenshotPage", "close"}
+	return []string{"nav", "wait_visible", "click", "screenshot_page", "close"}
 }
