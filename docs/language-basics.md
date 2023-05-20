@@ -14,6 +14,8 @@
 - [Data Structures](#data-structures)
     - [Lists](#lists)
     - [Objects](#objects)
+    - [Tuples](#tuples)
+    - [Records](#records)
     - [Udata](#udata)
     - [Mappings](#mappings)
     - [Dictionaries](#dictionaries)
@@ -55,6 +57,12 @@ Here are the most commonly used literals in Inox:
     second line`
     ```
 - runes represent a single character, they have single quotes: `'a', '\n'`
+- regex literals: ``%`a+` ``
+
+<details>
+
+**<summary>URL & Path literals</summary>**
+
 - path literals represent a path in the filesystem: `/etc/passwd, /home/user/`
     - they always start with `./`, `../` or `/`
     - paths ending with `/` are directory paths
@@ -67,7 +75,8 @@ Here are the most commonly used literals in Inox:
 - URL literals: `https://example.com/index.html, https://google.com?q=inox`
 - URL pattern literals:
     - URL prefix patterns: `%https://example.com/...`
-- regex literals: ``%`a+` ``
+
+</details>
 
 <details>
 
@@ -84,19 +93,8 @@ Here are the most commonly used literals in Inox:
 - rate literals: `5B/s`, `10kB/s`
 - byte slice literals: `0x[0a b3]`, `0b[1111 0000]`, `0d[120 250]`
 
-</detailms>
-
-### You can add a header
-
-You can add text within a collapsed section. 
-
-You can add an image or a code block, too.
-
-```ruby
-   puts "Hello World"
-```
-
 </details>
+
 
 
 # Variables
@@ -381,6 +379,10 @@ name = object.(property_name)
 
 ## Records
 
+<details>
+
+<summary>Click to expand</summary>
+
 Records are the immutable equivalent of objects, their properties can only have immutable values.
 ```
 record = #{
@@ -395,8 +397,14 @@ record = #{
 }
 ```
 
+</details>
+
 
 ## Tuples
+
+<details>
+
+<summary>Click to expand</summary>
 
 Tuples are the immutable equivalent of lists.
 ```
@@ -405,7 +413,14 @@ tuple = #[1, #[2, 3]]
 tuple = #[1, [2, 3]] # error ! a list is mutable, it's not a valid element for a tuple
 ```
 
+</details>
+
+
 ## Udata
+
+<details>
+
+<summary>Click to expand</summary>
 
 A udata value allows you to represent immutable data that has the shape of a tree.
 
@@ -422,7 +437,14 @@ udata "root" {
 
 <!-- In the shell execute the following command to see an example of udata value ``fs.get_tree_data ./docs/`` -->
 
+</details>
+
+
 ## Mappings
+
+<details>
+
+<summary>Click to expand</summary>
 
 <!-- TODO: add explanation about static key entries, ... -->
 
@@ -445,7 +467,13 @@ output:
 path
 ```
 
+</details>
+
 ## Dictionaries
+
+<details>
+
+<summary>Click to expand</summary>
 
 Dictionaries are similar to objects in that they store key-value pairs, but unlike objects, 
 they allow keys of any data type as long as they are representable (serializable).
@@ -457,6 +485,8 @@ dict = :{
     1: 3
 }
 ```
+
+</details>
 
 # Control Flow
 
