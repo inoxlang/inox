@@ -53,7 +53,7 @@ const (
 	FS_READ_PERM_RISK_SCORE  = 10
 	FS_WRITE_PERM_RISK_SCORE = 20
 
-	ROUTINE_PERM_RISK_SCORE = 10
+	ROUTINE_PERM_RISK_SCORE = 2 //the creation of coroutines is not risky, it's the number of goroutines that can be an issue
 
 	CMD_PERM_RISK_SCORE = 30
 )
