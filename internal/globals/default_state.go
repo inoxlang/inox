@@ -103,7 +103,7 @@ type DefaultGlobalStateConfig struct {
 func NewDefaultGlobalState(ctx *core.Context, conf DefaultGlobalStateConfig) (*core.GlobalState, error) {
 	logOut := conf.LogOut
 	var logger zerolog.Logger
-	if logOut == nil {
+	if logOut == nil { //if there is not writer for logs we log to conf.Out
 		logOut = conf.Out
 
 		consoleLogger := zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
@@ -111,10 +111,12 @@ func NewDefaultGlobalState(ctx *core.Context, conf DefaultGlobalStateConfig) (*c
 			w.NoColor = !config.SHOULD_COLORIZE
 			w.TimeFormat = "15:04:05"
 		})
-		logger = zerolog.New(consoleLogger).With().Timestamp().Logger()
+		logger = zerolog.New(consoleLogger)
 	} else {
-		logger = zerolog.New(logOut).With().Timestamp().Logger()
+		logger = zerolog.New(logOut)
 	}
+
+	logger = logger.With().Timestamp().Logger().Level(zerolog.DebugLevel)
 
 	envNamespace, err := _env.NewEnvNamespace(ctx, conf.EnvPattern, conf.AllowMissingEnvVars)
 	if err != nil {
