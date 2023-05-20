@@ -2601,7 +2601,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 	case *parse.ObjectPatternLiteral:
 		pattern := &ObjectPattern{
 			entries: make(map[string]Pattern),
-			inexact: n.Inexact,
+			inexact: !n.Exact,
 		}
 		for _, p := range n.Properties {
 			name := p.Name()

@@ -2081,7 +2081,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 	case *parse.ObjectPatternLiteral:
 		pattern := &ObjectPattern{
 			entryPatterns: make(map[string]Pattern),
-			inexact:       n.Inexact,
+			inexact:       !n.Exact,
 		}
 		for _, p := range n.Properties {
 			name := p.Name()

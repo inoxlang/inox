@@ -675,22 +675,21 @@ object_pattern = %{
 
 # true
 ({name: "John"} match object_pattern) 
-
-# false
-({name: "John", additional_prop: 0} match object_pattern) 
 ```
 
-By default object patterns are **exact**: they don't accept additional properties.
-You can create an **inexact** object pattern by adding '...' in an object pattern
+⚠️ By default object patterns are **inexact**: they accept additional properties.
 
 ```
+# true
+({name: "John"} match %{}) 
+
 object_pattern = %{
     name: %str
-    ...
 }
 
 # true
 ({name: "John", additional_prop: 0} match object_pattern) 
+
 ```
 
 ## List Patterns

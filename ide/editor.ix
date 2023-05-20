@@ -246,8 +246,8 @@ $$editor = {
             %rec(%{
                 anchorOffset: %str
                 focusOffset: %str
-                anchorElemData: %rec(%{span: %str, ...})
-                focusElemData: %rec(%{span: %str, ...})
+                anchorElemData: %rec(%{span: %str})
+                focusElemData: %rec(%{span: %str})
                 ...
             }) {
 

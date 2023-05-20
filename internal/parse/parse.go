@@ -2622,7 +2622,7 @@ func (p *parser) parseObjectPatternLiteral() *ObjectPatternLiteral {
 		spreadElements  []*PatternPropertySpreadElement
 		parsingErr      *ParsingError
 		tokens          []Token
-		inexact         = false
+		exact           = false
 	)
 
 	patternOpeningBraceIndex := p.i - 1
@@ -2673,17 +2673,16 @@ object_pattern_top_loop:
 
 			p.eatSpace()
 
-			//inexact pattern
-			if p.i < p.len && (p.s[p.i] == '}' || p.s[p.i] == ',' || p.s[p.i] == '\n') {
-				tokens = append(tokens, Token{Type: THREE_DOTS, Span: NodeSpan{dotStart, dotStart + 3}})
+			// //inexact pattern
+			// if p.i < p.len && (p.s[p.i] == '}' || p.s[p.i] == ',' || p.s[p.i] == '\n') {
+			// 	tokens = append(tokens, Token{Type: THREE_DOTS, Span: NodeSpan{dotStart, dotStart + 3}})
 
-				inexact = true
+			// 	exact = false
 
-				p.eatSpaceNewlineCommaComment(&tokens)
-				continue object_pattern_top_loop
-			}
-
-			p.eatSpace()
+			// 	p.eatSpaceNewlineCommaComment(&tokens)
+			// 	continue object_pattern_top_loop
+			// }
+			// p.eatSpace()
 
 			expr, _ := p.parseExpression()
 
@@ -2951,7 +2950,7 @@ object_pattern_top_loop:
 		NodeBase:       base,
 		Properties:     properties,
 		SpreadElements: spreadElements,
-		Inexact:        inexact,
+		Exact:          exact,
 	}
 }
 

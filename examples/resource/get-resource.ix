@@ -6,7 +6,7 @@ manifest {
 }
 
 
-%user = %{name: %str, ...}
+%user = %{name: %str}
 
 fn handle(rw %http.resp_writer, r %http.req){
 

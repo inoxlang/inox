@@ -254,10 +254,10 @@ posts = read!(https://jsonplaceholder.typicode.com/posts)
 The posts have a **.userId** field, let's just keep the posts of the user of id **1**:
 ```
 assert (posts match %iterable)
-user1_posts = filter(posts, %{userId: 1.0, ...})
+user1_posts = filter(posts, %{userId: 1.0})
 ```
 
-**%{userId: 1.0, ...}** is a pattern that matches any object with the shape: **{userId: 1.0, ...}**.
+**%{userId: 1.0}** is a pattern that matches any object with the shape: **{userId: 1.0, ...}**.
 
 Alternatively you can use a **lazy expression** to filter posts:
 ```
@@ -328,7 +328,7 @@ POSTS_URL = https://jsonplaceholder.typicode.com/posts
 posts = read!(POSTS_URL)
 assert (posts match %iterable)
 
-user1_posts = filter(posts, %{userId: 1.0, ...})
+user1_posts = filter(posts, %{userId: 1.0})
 post_data = map(user1_posts, .{id, body, title})
 
 # we group the coroutines together
@@ -352,7 +352,7 @@ Let's simplify the following code a bit:
 posts = read!(POSTS_URL)
 assert (posts match %iterable)
 
-user1_posts = filter(posts, %{userId: 1.0, ...})
+user1_posts = filter(posts, %{userId: 1.0})
 
 post_data = map(user1_posts, .{id, body, title})
 ```
@@ -362,6 +362,6 @@ We can get rid of the **user1_posts** variable by using a [pipeline statement](.
 posts = read!(POSTS_URL)
 assert (posts match %iterable)
 
-post_data = | filter $posts %{userId: 1.0, ...} | map $ .{id, body, title}
+post_data = | filter $posts %{userId: 1.0} | map $ .{id, body, title}
 ```
 ℹ️ In pipeline statements **$** holds the result of the previous call.

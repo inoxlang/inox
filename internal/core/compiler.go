@@ -1150,10 +1150,10 @@ func (c *compiler) Compile(node parse.Node) error {
 
 		c.emit(node, OpCreateListPattern, len(node.Elements), hasGeneralElem)
 	case *parse.ObjectPatternLiteral:
-		isInexact := 0
+		isInexact := 1
 
-		if node.Inexact {
-			isInexact = 1
+		if node.Exact {
+			isInexact = 0
 		}
 
 		for _, p := range node.Properties {

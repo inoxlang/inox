@@ -1094,7 +1094,7 @@ type ObjectPatternLiteral struct {
 	NodeBase
 	Properties     []*ObjectPatternProperty
 	SpreadElements []*PatternPropertySpreadElement
-	Inexact        bool
+	Exact          bool
 }
 
 func (ObjectPatternLiteral) Kind() NodeKind {

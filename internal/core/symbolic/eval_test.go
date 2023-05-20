@@ -3860,12 +3860,15 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(spreadElem, state, fmtPatternSpreadInObjectPatternShouldBeAnObjectPatternNot(&ExactValuePattern{value: &Int{}})),
 			}, state.errors)
-			assert.Equal(t, &ObjectPattern{entries: map[string]Pattern{}}, res)
+			assert.Equal(t, &ObjectPattern{
+				entries: map[string]Pattern{},
+				inexact: true,
+			}, res)
 		})
 
-		t.Run("spread inexact object pattern", func(t *testing.T) {
+		t.Run("spread object pattern", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				return %{...%{...}}
+				return %{...%{}}
 			`)
 
 			//spreadElem := parse.FindNode(n, (*parse.PatternPropertySpreadElement)(nil), nil)
@@ -3877,7 +3880,10 @@ func TestSymbolicEval(t *testing.T) {
 			// assert.Equal(t, []SymbolicEvaluationError{
 			// 	makeSymbolicEvalError(spreadElem, state, CANNOT_SPREAD_OBJ_PATTERN_THAT_IS_INEXACT),
 			// }, state.errors)
-			assert.Equal(t, &ObjectPattern{entries: map[string]Pattern{}}, res)
+			assert.Equal(t, &ObjectPattern{
+				entries: map[string]Pattern{},
+				inexact: true,
+			}, res)
 		})
 
 		t.Run("spread object pattern matching all objects", func(t *testing.T) {
@@ -3894,7 +3900,10 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(spreadElem, state, CANNOT_SPREAD_OBJ_PATTERN_THAT_MATCHES_ANY_OBJECT),
 			}, state.errors)
-			assert.Equal(t, &ObjectPattern{entries: map[string]Pattern{}}, res)
+			assert.Equal(t, &ObjectPattern{
+				entries: map[string]Pattern{},
+				inexact: true,
+			}, res)
 		})
 
 		t.Run("spread valid object pattern", func(t *testing.T) {
@@ -3907,6 +3916,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 			assert.Equal(t, &ObjectPattern{
 				entries: map[string]Pattern{"name": state.ctx.ResolveNamedPattern("str")},
+				inexact: true,
 			}, res)
 		})
 
@@ -3922,6 +3932,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 			assert.Equal(t, &ObjectPattern{
 				entries: map[string]Pattern{"a": patt},
+				inexact: true,
 			}, res)
 		})
 
@@ -3939,6 +3950,7 @@ func TestSymbolicEval(t *testing.T) {
 			}, state.errors)
 			assert.Equal(t, &ObjectPattern{
 				entries: map[string]Pattern{"a": ANY_PATTERN},
+				inexact: true,
 			}, res)
 		})
 
@@ -3952,6 +3964,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 			assert.Equal(t, &ObjectPattern{
 				entries: map[string]Pattern{"a": state.ctx.ResolveNamedPattern("int")},
+				inexact: true,
 			}, res)
 		})
 
@@ -3975,6 +3988,7 @@ func TestSymbolicEval(t *testing.T) {
 				entries: map[string]Pattern{
 					"a": &ObjectPattern{
 						entries: map[string]Pattern{"name": state.ctx.ResolveNamedPattern("str")},
+						inexact: true,
 					},
 					"b": &ObjectPattern{
 						entries: map[string]Pattern{
@@ -3982,13 +3996,16 @@ func TestSymbolicEval(t *testing.T) {
 								entries: map[string]Pattern{
 									"count": state.ctx.ResolveNamedPattern("int"),
 								},
+								inexact: true,
 							},
 							"d": NewExactValuePattern(&Int{}),
 						},
+						inexact: true,
 					},
 					"e": NewExactValuePattern(&Int{}),
 					"f": NewExactValuePattern(NewEmptyObject()),
 				},
+				inexact: true,
 			}, res)
 		})
 
@@ -4006,6 +4023,7 @@ func TestSymbolicEval(t *testing.T) {
 			elements: []Pattern{
 				&ObjectPattern{
 					entries: map[string]Pattern{},
+					inexact: true,
 				},
 			},
 		}, res)
@@ -4082,6 +4100,7 @@ func TestSymbolicEval(t *testing.T) {
 					},
 				},
 			},
+			inexact: true,
 		}, res)
 
 		//check context data

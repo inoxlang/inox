@@ -710,19 +710,19 @@ func (p *ObjectPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 			//comma & indent
 			isLastEntry := i == len(keys)-1
 
-			if !isLastEntry || p.inexact {
+			if !isLastEntry /* /*p.inexact*/ {
 				utils.Must(w.Write(COMMA_SPACE))
 			}
 		}
 
-		if p.inexact {
-			if !config.Compact {
-				utils.Must(w.Write(LF_CR))
-				utils.Must(w.Write(indent))
-			}
+		// if p.inexact {
+		// 	if !config.Compact {
+		// 		utils.Must(w.Write(LF_CR))
+		// 		utils.Must(w.Write(indent))
+		// 	}
 
-			utils.Must(w.Write(THREE_DOTS))
-		}
+		// 	utils.Must(w.Write(THREE_DOTS))
+		// }
 
 		if !config.Compact && len(keys) > 0 {
 			utils.Must(w.Write(LF_CR))

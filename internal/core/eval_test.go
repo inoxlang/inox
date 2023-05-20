@@ -4911,7 +4911,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						"one": &ExactValuePattern{value: Int(1)},
 						"empty_obj": &ObjectPattern{
 							entryPatterns: map[string]Pattern{},
-							inexact:       false,
+							inexact:       true,
 						},
 					},
 				},
@@ -4940,6 +4940,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, &ObjectPattern{
+				inexact:       true,
 				entryPatterns: map[string]Pattern{},
 			}, res)
 		})
@@ -4952,6 +4953,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, &ObjectPattern{
+				inexact: true,
 				entryPatterns: map[string]Pattern{
 					"name":  &ExactValuePattern{value: Str("s")},
 					"count": &ExactValuePattern{value: Int(2)},
@@ -4975,6 +4977,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 				assert.NoError(t, err)
 				assert.Equal(t, &ObjectPattern{
+					inexact: true,
 					entryPatterns: map[string]Pattern{
 						"s":    &ExactValuePattern{value: Str("s")},
 						"name": &ExactValuePattern{value: Str("foo")},
@@ -4994,6 +4997,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 				assert.NoError(t, err)
 				assert.Equal(t, &ObjectPattern{
+					inexact: true,
 					entryPatterns: map[string]Pattern{
 						"s":    &ExactValuePattern{value: Str("s")},
 						"name": &ExactValuePattern{value: Str("foo")},
@@ -5014,6 +5018,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 				assert.NoError(t, err)
 				assert.Equal(t, &ObjectPattern{
+					inexact: true,
 					entryPatterns: map[string]Pattern{
 						"s":    &ExactValuePattern{value: Str("s")},
 						"name": &ExactValuePattern{value: Str("foo")},
@@ -5023,47 +5028,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			})
 
 			t.SkipNow()
-
-			t.Run("single-property object pattern after properties in inexact pattern", func(t *testing.T) {
-				code := `
-					%s = "s"
-					%user = %{name: "foo"}
-					return %{s: %s, ...%user, ...}
-				`
-
-				state := NewGlobalState(NewDefaultTestContext())
-				res, err := Eval(code, state, false)
-
-				assert.NoError(t, err)
-				assert.Equal(t, &ObjectPattern{
-					inexact: true,
-					entryPatterns: map[string]Pattern{
-						"s":    &ExactValuePattern{value: Str("s")},
-						"name": &ExactValuePattern{value: Str("foo")},
-					},
-				}, res)
-			})
-
-			t.Run("two-property object pattern after properties in inexact pattern", func(t *testing.T) {
-				code := `
-					%s = "s"
-					%user = %{name: "foo", age: 30}
-					return %{s: %s, ...%user, ...}
-				`
-
-				state := NewGlobalState(NewDefaultTestContext())
-				res, err := Eval(code, state, false)
-
-				assert.NoError(t, err)
-				assert.Equal(t, &ObjectPattern{
-					inexact: true,
-					entryPatterns: map[string]Pattern{
-						"s":    &ExactValuePattern{value: Str("s")},
-						"name": &ExactValuePattern{value: Str("foo")},
-						"age":  &ExactValuePattern{value: Int(30)},
-					},
-				}, res)
-			})
 
 			t.Run("single-property object pattern before properties", func(t *testing.T) {
 				code := `
@@ -5077,6 +5041,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 				assert.NoError(t, err)
 				assert.Equal(t, &ObjectPattern{
+					inexact: true,
 					entryPatterns: map[string]Pattern{
 						"s":    &ExactValuePattern{value: Str("s")},
 						"name": &ExactValuePattern{value: Str("foo")},
@@ -5096,46 +5061,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 				assert.NoError(t, err)
 				assert.Equal(t, &ObjectPattern{
-					entryPatterns: map[string]Pattern{
-						"s":    &ExactValuePattern{value: Str("s")},
-						"name": &ExactValuePattern{value: Str("foo")},
-						"age":  &ExactValuePattern{value: Int(30)},
-					},
-				}, res)
-			})
-
-			t.Run("single-property object pattern before properties in inexact pattern", func(t *testing.T) {
-				code := `
-					%s = "s"
-					%user = %{name: "foo"}
-					return %{...%user, s: %s, ...}
-				`
-
-				state := NewGlobalState(NewDefaultTestContext())
-				res, err := Eval(code, state, false)
-
-				assert.NoError(t, err)
-				assert.Equal(t, &ObjectPattern{
-					inexact: true,
-					entryPatterns: map[string]Pattern{
-						"s":    &ExactValuePattern{value: Str("s")},
-						"name": &ExactValuePattern{value: Str("foo")},
-					},
-				}, res)
-			})
-
-			t.Run("two-property object pattern before properties in inexact pattern", func(t *testing.T) {
-				code := `
-					%s = "s"
-					%user = %{name: "foo", age: 30}
-					return %{...%user, s: %s, ...}
-				`
-
-				state := NewGlobalState(NewDefaultTestContext())
-				res, err := Eval(code, state, false)
-
-				assert.NoError(t, err)
-				assert.Equal(t, &ObjectPattern{
 					inexact: true,
 					entryPatterns: map[string]Pattern{
 						"s":    &ExactValuePattern{value: Str("s")},
@@ -5145,34 +5070,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}, res)
 			})
 
-			t.Run("complex (exact)", func(t *testing.T) {
+			t.Run("complex", func(t *testing.T) {
 				code := `
 					%s = "s"
 					%user = %{name: "foo"}
 					return %{...%user, friends: %[]%user}
-				`
-
-				state := NewGlobalState(NewDefaultTestContext())
-				res, err := Eval(code, state, false)
-
-				assert.NoError(t, err)
-				assert.Equal(t, &ObjectPattern{
-					entryPatterns: map[string]Pattern{
-						"friends": NewListPatternOf(&ObjectPattern{
-							entryPatterns: map[string]Pattern{
-								"name": &ExactValuePattern{value: Str("foo")},
-							},
-						}),
-						"name": &ExactValuePattern{value: Str("foo")},
-					},
-				}, res)
-			})
-
-			t.Run("complex (inexact)", func(t *testing.T) {
-				code := `
-					%s = "s"
-					%user = %{name: "foo"}
-					return %{...%user, friends: %[]%user, ...}
 				`
 
 				state := NewGlobalState(NewDefaultTestContext())
@@ -5255,7 +5157,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.NoError(t, err)
 			assert.Equal(t, &ListPattern{
 				elementPatterns: []Pattern{
-					&ObjectPattern{entryPatterns: map[string]Pattern{}},
+					&ObjectPattern{
+						inexact:       true,
+						entryPatterns: map[string]Pattern{},
+					},
 				},
 			}, res)
 		})
@@ -5268,8 +5173,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, &ListPattern{
-				elementPatterns:       nil,
-				generalElementPattern: &ObjectPattern{entryPatterns: map[string]Pattern{}},
+				elementPatterns: nil,
+				generalElementPattern: &ObjectPattern{
+					inexact:       true,
+					entryPatterns: map[string]Pattern{},
+				},
 			}, res)
 		})
 	})
