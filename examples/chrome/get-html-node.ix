@@ -1,0 +1,11 @@
+manifest {
+    permissions: {}
+}
+
+h = chrome.Handle!()
+
+h.nav https://go.dev/
+node = h.html_node!(".Hero-blurb")
+h.close()
+
+print(node)

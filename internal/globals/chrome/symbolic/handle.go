@@ -5,9 +5,14 @@ import (
 	"errors"
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	_html "github.com/inoxlang/inox/internal/globals/html/symbolic"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 
 	"github.com/inoxlang/inox/internal/utils"
+)
+
+var (
+	HANDLE_PROPNAMES = []string{"nav", "wait_visible", "click", "screenshot_page", "screenshot", "html_node", "close"}
 )
 
 type Handle struct {
@@ -61,6 +66,10 @@ func (h *Handle) Screenshot(ctx *symbolic.Context, sel *symbolic.String) (*symbo
 	return &symbolic.ByteSlice{}, nil
 }
 
+func (h *Handle) HtmlNode(ctx *symbolic.Context, sel *symbolic.String) (*_html.HTMLNode, *symbolic.Error) {
+	return _html.NewHTMLNode(), nil
+}
+
 func (h *Handle) Close(ctx *symbolic.Context) {
 }
 
@@ -84,6 +93,8 @@ func (h *Handle) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 		return symbolic.WrapGoMethod(h.ScreenshotPage), true
 	case "screenshot":
 		return symbolic.WrapGoMethod(h.Screenshot), true
+	case "html_node":
+		return symbolic.WrapGoMethod(h.HtmlNode), true
 	case "close":
 		return symbolic.WrapGoMethod(h.Close), true
 	}
@@ -91,7 +102,7 @@ func (h *Handle) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 }
 
 func (h *Handle) PropertyNames() []string {
-	return []string{"nav", "wait_visible", "click", "screenshot_page", "screenshot", "close"}
+	return HANDLE_PROPNAMES
 }
 
 func (h *Handle) IsMutable() bool {

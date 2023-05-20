@@ -7,10 +7,15 @@ import (
 	"github.com/chromedp/chromedp"
 
 	core "github.com/inoxlang/inox/internal/core"
+	_html "github.com/inoxlang/inox/internal/globals/html"
 )
 
 const (
 	DEFAULT_SINGLE_ACTION_TIMEOUT = 15 * time.Second
+)
+
+var (
+	HANDLE_PROPNAMES = []string{"nav", "wait_visible", "click", "screenshot_page", "html_node", "close"}
 )
 
 type Handle struct {
@@ -96,6 +101,17 @@ func (h *Handle) Screenshot(ctx *core.Context, sel core.Str) (*core.ByteSlice, e
 	return &core.ByteSlice{Bytes: b, IsDataMutable: true}, nil
 }
 
+func (h *Handle) HtmlNode(ctx *core.Context, sel core.Str) (*_html.HTMLNode, error) {
+	var htmlS string
+
+	action := chromedp.OuterHTML(sel, &htmlS)
+	if err := h.do(ctx, action); err != nil {
+		return nil, err
+	}
+
+	return _html.ParseSingleNodeHTML(htmlS)
+}
+
 func (h *Handle) Close(ctx *core.Context) {
 	h.cancelChromedpContext()
 	h.cancelAllocCtx()
@@ -125,6 +141,8 @@ func (h *Handle) GetGoMethod(name string) (*core.GoFunction, bool) {
 		return core.WrapGoMethod(h.Screenshot), true
 	case "screenshot_page":
 		return core.WrapGoMethod(h.ScreenshotPage), true
+	case "html_node":
+		return core.WrapGoMethod(h.HtmlNode), true
 	case "close":
 		return core.WrapGoMethod(h.Close), true
 	}
@@ -132,5 +150,5 @@ func (h *Handle) GetGoMethod(name string) (*core.GoFunction, bool) {
 }
 
 func (h *Handle) PropertyNames(ctx *core.Context) []string {
-	return []string{"nav", "wait_visible", "click", "screenshot_page", "close"}
+	return HANDLE_PROPNAMES
 }
