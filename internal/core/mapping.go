@@ -150,8 +150,8 @@ func (m *Mapping) Compute(ctx *Context, key Value) Value {
 				evalState.Global.Globals.Set(k, v)
 			}
 		} else {
-			callingState.Globals.Foreach(func(name string, v Value, isConstant bool) error {
-				if !isConstant {
+			callingState.Globals.Foreach(func(name string, v Value, isStartConstant bool) error {
+				if !isStartConstant {
 					evalState.Global.Globals.Set(name, v)
 				}
 				return nil
@@ -195,8 +195,8 @@ func (m *Mapping) Compute(ctx *Context, key Value) Value {
 				evalState.Global.Globals.Set(k, v)
 			}
 		} else {
-			callingState.Globals.Foreach(func(name string, v Value, isConstant bool) error {
-				if !isConstant {
+			callingState.Globals.Foreach(func(name string, v Value, isStartConstant bool) error {
+				if !isStartConstant {
 					evalState.Global.Globals.Set(name, v)
 				}
 				return nil

@@ -611,12 +611,34 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-		t.Run("no provided globals", func(t *testing.T) {
-			n, src := parseCode(`go {} do {}`)
-			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		t.Run("no additional provided globals (single call expression)", func(t *testing.T) {
+			n, src := parseCode(`go {} do idt(a)`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				Node:  n,
+				Chunk: src,
+				Globals: GlobalVariablesFromMap(map[string]Value{
+					"a": Int(1),
+					"idt": WrapGoFunction(func(ctx *Context, arg Value) Value {
+						return Int(2)
+					}),
+				}, []string{"a"}),
+			}))
 		})
 
-		t.Run("globals provided with an object literal", func(t *testing.T) {
+		t.Run("no additional provided globals", func(t *testing.T) {
+			n, src := parseCode(`go {} do {
+				return a
+			}`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				Node:  n,
+				Chunk: src,
+				Globals: GlobalVariablesFromMap(map[string]Value{
+					"a": Int(1),
+				}, []string{"a"}),
+			}))
+		})
+
+		t.Run("additional globals provided with an object literal", func(t *testing.T) {
 			n, src := parseCode(`
 				$$global = 0
 				go {globals: {global: global}} do {

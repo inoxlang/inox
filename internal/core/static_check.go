@@ -37,8 +37,8 @@ func StaticCheck(input StaticCheckInput) (*StaticCheckData, error) {
 	}
 
 	globals[module] = map[string]globalVarInfo{}
-	input.Globals.Foreach(func(name string, v Value, isBaseGlobal bool) error {
-		globals[module][name] = globalVarInfo{isConst: isBaseGlobal}
+	input.Globals.Foreach(func(name string, v Value, isStartConstant bool) error {
+		globals[module][name] = globalVarInfo{isConst: true, isStartConstant: true}
 		return nil
 	})
 
@@ -126,8 +126,9 @@ type checker struct {
 
 // globalVarInfo represents the information stored about a global variable during checking.
 type globalVarInfo struct {
-	isConst bool
-	fnExpr  *parse.FunctionExpression
+	isConst         bool
+	isStartConstant bool
+	fnExpr          *parse.FunctionExpression
 }
 
 // locallVarInfo represents the information stored about a local variable during checking.
@@ -639,6 +640,15 @@ switch_:
 		var globals = make(map[string]globalVarInfo)
 		var globalDescNode parse.Node
 
+		//add constant globals
+		parentModuleGlobals := c.getModGlobalVars(closestModule)
+		for name, info := range parentModuleGlobals {
+			if info.isStartConstant {
+				globals[name] = info
+			}
+		}
+
+		// add globals passed by user
 		if obj, ok := node.Meta.(*parse.ObjectLiteral); ok {
 			val, ok := obj.PropValue("globals")
 			if ok {
@@ -768,8 +778,8 @@ switch_:
 		globals := make(map[parse.Node]map[string]globalVarInfo)
 		globals[includedChunk.Node] = map[string]globalVarInfo{}
 
-		c.checkInput.Globals.Foreach(func(name string, v Value, isConstant bool) error {
-			globals[includedChunk.Node][name] = globalVarInfo{isConst: isConstant}
+		c.checkInput.Globals.Foreach(func(name string, v Value, isStartConstant bool) error {
+			globals[includedChunk.Node][name] = globalVarInfo{isConst: isStartConstant}
 			return nil
 		})
 

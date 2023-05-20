@@ -921,13 +921,13 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		var ctx *Context
 		var chunk *parse.Chunk
-		var constants []string
+		var startConstants []string
 		actualGlobals := make(map[string]Value)
 
 		state.Global.Globals.Foreach(func(name string, v Value, isConstant bool) error {
 			if isConstant {
 				actualGlobals[name] = v
-				constants = append(constants, name)
+				startConstants = append(startConstants, name)
 			}
 			return nil
 		})
@@ -1006,7 +1006,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		routine, err := SpawnRoutine(RoutineSpawnArgs{
 			SpawnerState: state.Global,
-			Globals:      GlobalVariablesFromMap(actualGlobals, constants),
+			Globals:      GlobalVariablesFromMap(actualGlobals, startConstants),
 			Module:       routineMod,
 			RoutineCtx:   ctx,
 		})

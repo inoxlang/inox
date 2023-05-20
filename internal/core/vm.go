@@ -1850,14 +1850,14 @@ func (v *VM) run() {
 				}
 			}
 			actualGlobals := make(map[string]Value)
-			var constants []string
+			var startConstants []string
 
 			//pass constant globals
 
 			v.global.Globals.Foreach(func(name string, v Value, isConstant bool) error {
 				if isConstant {
 					actualGlobals[name] = v
-					constants = append(constants, name)
+					startConstants = append(startConstants, name)
 				}
 				return nil
 			})
@@ -1917,7 +1917,7 @@ func (v *VM) run() {
 
 			routine, err := SpawnRoutine(RoutineSpawnArgs{
 				SpawnerState: v.global,
-				Globals:      GlobalVariablesFromMap(actualGlobals, constants),
+				Globals:      GlobalVariablesFromMap(actualGlobals, startConstants),
 				Module:       routineMod,
 				RoutineCtx:   ctx,
 				UseBytecode:  true,

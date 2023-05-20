@@ -101,16 +101,19 @@ func (*GlobalState) PropertyNames(ctx *Context) []string {
 }
 
 type GlobalVariables struct {
-	constants            []string
+	//start constants are all the constants set before the code starts its execution,
+	//therefore that include base constants & constants defined before the manifest.
+	startConstants []string
+
 	permanent            map[string]Value
 	capturedGlobalsStack [][]capturedGlobal
 }
 
-func GlobalVariablesFromMap(m map[string]Value, constants []string) GlobalVariables {
+func GlobalVariablesFromMap(m map[string]Value, startConstants []string) GlobalVariables {
 	if m == nil {
 		m = make(map[string]Value)
 	}
-	return GlobalVariables{permanent: m, constants: constants}
+	return GlobalVariables{permanent: m, startConstants: startConstants}
 }
 
 func (g *GlobalVariables) Get(name string) Value {
@@ -149,7 +152,7 @@ func (g *GlobalVariables) Has(name string) bool {
 	return ok
 }
 
-func (g *GlobalVariables) Foreach(fn func(name string, v Value, isConstant bool) error) error {
+func (g *GlobalVariables) Foreach(fn func(name string, v Value, isStartConstant bool) error) error {
 
 	if len(g.capturedGlobalsStack) != 0 {
 		for _, captured := range g.capturedGlobalsStack[len(g.capturedGlobalsStack)-1] {
@@ -161,8 +164,8 @@ func (g *GlobalVariables) Foreach(fn func(name string, v Value, isConstant bool)
 	}
 
 	for k, v := range g.permanent {
-		isConstant := utils.SliceContains(g.constants, k)
-		err := fn(k, v, isConstant)
+		isStartConstant := utils.SliceContains(g.startConstants, k)
+		err := fn(k, v, isStartConstant)
 		if err != nil {
 			return err
 		}
@@ -173,7 +176,7 @@ func (g *GlobalVariables) Foreach(fn func(name string, v Value, isConstant bool)
 // Set set the value for a global variable (not constant)
 func (g *GlobalVariables) Set(name string, value Value) {
 
-	if utils.SliceContains(g.constants, name) {
+	if utils.SliceContains(g.startConstants, name) {
 		panic(fmt.Errorf("cannot change value of global constant %s", name))
 	}
 
@@ -209,8 +212,8 @@ func (g *GlobalVariables) Entries() map[string]Value {
 }
 
 func (g *GlobalVariables) Constants() map[string]Value {
-	constants := make(map[string]Value, len(g.constants))
-	for _, name := range g.constants {
+	constants := make(map[string]Value, len(g.startConstants))
+	for _, name := range g.startConstants {
 		val := g.permanent[name]
 		if val == nil {
 			panic(fmt.Errorf("value of constant %s is nil", val))
