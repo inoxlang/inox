@@ -157,7 +157,7 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 
 	//listen and serve in a goroutine
 	go func() {
-		_server.serverLogger.WithLevel(zerolog.NoLevel).Msg("serve " + addr)
+		_server.serverLogger.Info().Msg("serve " + addr)
 
 		err := server.ListenAndServeTLS("", "")
 		if err != nil {

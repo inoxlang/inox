@@ -45,7 +45,7 @@ func NewResponseWriter(req *HttpRequest, rw http.ResponseWriter, serverLogger ze
 	requestLogger := serverLogger.With().Str(REQUEST_ID_LOG_FIELD_NAME, req.ULIDString).Logger()
 
 	//log request
-	event := requestLogger.Log().
+	event := requestLogger.Info().
 		Str("method", string(req.Method)).
 		Str("path", string(req.Path))
 
@@ -363,7 +363,7 @@ func (rw *HttpResponseWriter) FinalLog() {
 
 	duration := time.Since(req.CreationTime)
 
-	rw.logger.Debug().
+	rw.logger.Info().
 		Str("path", string(req.Path)).
 		Dur("duration", duration).
 		Int("status", rw.Status()).

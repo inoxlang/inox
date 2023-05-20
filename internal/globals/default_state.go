@@ -116,7 +116,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf DefaultGlobalStateConfig) (*c
 		logger = zerolog.New(logOut)
 	}
 
-	logger = logger.With().Timestamp().Logger().Level(zerolog.DebugLevel)
+	logger = logger.With().Timestamp().Logger().Level(zerolog.InfoLevel)
 
 	envNamespace, err := _env.NewEnvNamespace(ctx, conf.EnvPattern, conf.AllowMissingEnvVars)
 	if err != nil {

@@ -76,7 +76,7 @@ func (window *rateLimitingSlidingWindow) allowRequest(rInfo slidingWindowRequest
 
 		if req.ulid == (ulid.ULID{}) { //empty slot
 			window.requests[i] = rInfo
-			logger.Log().Msg("found empty slot for request" + req.ulidString)
+			logger.Debug().Msg("found empty slot for request" + req.ulidString)
 			return true
 		}
 

@@ -37,12 +37,11 @@ type securityEngine struct {
 }
 
 func newSecurityEngine(baseLogger zerolog.Logger, serverLogSrc string) *securityEngine {
-	logger := baseLogger.Level(zerolog.NoLevel).With().Str(core.SOURCE_LOG_FIELD_NAME, serverLogSrc+"/sec").Logger()
-	debugLogger := logger.Level(zerolog.DebugLevel)
+	logger := baseLogger.With().Str(core.SOURCE_LOG_FIELD_NAME, serverLogSrc+"/sec").Logger()
 
 	return &securityEngine{
 		logger:                 logger,
-		debugLogger:            debugLogger,
+		debugLogger:            logger,
 		readSlidingWindows:     cmap.NewStringer[RemoteAddrAndPort, *rateLimitingSlidingWindow](),
 		mutationSlidingWindows: cmap.NewStringer[RemoteAddrAndPort, *rateLimitingSlidingWindow](),
 		ipMitigationData:       cmap.NewStringer[RemoteIpAddr, *remoteIpData](),
@@ -85,7 +84,7 @@ func (engine *securityEngine) getSocketMitigationData(req *HttpRequest) (*rateLi
 
 	slidingWindow, present := slidingWindowMap.Get(req.RemoteAddrAndPort)
 	if !present {
-		engine.debugLogger.Log().Str("newSlidingWindowFor", string(req.RemoteAddrAndPort)).Send()
+		engine.debugLogger.Debug().Str("newSlidingWindowFor", string(req.RemoteAddrAndPort)).Send()
 		slidingWindow = newRateLimitingSlidingWindow(rateLimitingWindowParameters{
 			duration:     SOCKET_WINDOW,
 			requestCount: maxReqCount,
