@@ -30,8 +30,9 @@ var (
 	TRUECOLOR_COLORTERM         bool
 	TERM_256COLOR_CAPABLE       bool
 	NO_COLOR                    bool
+	SHOULD_COLORIZE             bool
 
-	// set if FORCE_COLOR | TRUECOLOR_COLORTERM | TERM_256COLOR_CAPABLE and NO_COLOR not true
+	// set if SHOULD_COLORIZE
 	INITIAL_COLORS_SET bool
 	INITIAL_FG_COLOR   core.Color
 	INITIAL_BG_COLOR   core.Color
@@ -75,7 +76,9 @@ func init() {
 
 	//
 
-	if !NO_COLOR && (FORCE_COLOR || TRUECOLOR_COLORTERM || TERM_256COLOR_CAPABLE) {
+	SHOULD_COLORIZE = !NO_COLOR && (FORCE_COLOR || TRUECOLOR_COLORTERM || TERM_256COLOR_CAPABLE)
+
+	if SHOULD_COLORIZE {
 		INITIAL_COLORS_SET = true
 		INITIAL_BG_COLOR = core.ColorFromTermenvColor(termenv.BackgroundColor(), core.ColorFromTermenvColor(termenv.ANSIBlack))
 		INITIAL_FG_COLOR = core.ColorFromTermenvColor(termenv.ForegroundColor(), core.ColorFromTermenvColor(termenv.ANSIWhite))
