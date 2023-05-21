@@ -12,6 +12,7 @@ import (
 )
 
 type inMemStorage struct {
+	lock     sync.RWMutex
 	files    map[string]*inMemfile
 	children map[string]map[string]*inMemfile
 }
@@ -24,6 +25,12 @@ func newInMemoryStorage() *inMemStorage {
 }
 
 func (s *inMemStorage) Has(path string) bool {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.hasNoLock(path)
+}
+
+func (s *inMemStorage) hasNoLock(path string) bool {
 	path = clean(path)
 
 	_, ok := s.files[path]
@@ -31,9 +38,15 @@ func (s *inMemStorage) Has(path string) bool {
 }
 
 func (s *inMemStorage) New(path string, mode os.FileMode, flag int) (*inMemfile, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	return s.newNoLock(path, mode, flag)
+}
+
+func (s *inMemStorage) newNoLock(path string, mode os.FileMode, flag int) (*inMemfile, error) {
 	path = clean(path)
-	if s.Has(path) {
-		if !s.MustGet(path).mode.IsDir() {
+	if s.hasNoLock(path) {
+		if !s.mustGetNoLock(path).mode.IsDir() {
 			return nil, fmt.Errorf("file already exists %q", path)
 		}
 
@@ -50,18 +63,18 @@ func (s *inMemStorage) New(path string, mode os.FileMode, flag int) (*inMemfile,
 	}
 
 	s.files[path] = f
-	s.createParent(path, mode, f)
+	s.createParentNoLock(path, mode, f)
 	return f, nil
 }
 
-func (s *inMemStorage) createParent(path string, mode os.FileMode, f *inMemfile) error {
+func (s *inMemStorage) createParentNoLock(path string, mode os.FileMode, f *inMemfile) error {
 	base := filepath.Dir(path)
 	base = clean(base)
 	if f.Name() == string(separator) {
 		return nil
 	}
 
-	if _, err := s.New(base, mode.Perm()|os.ModeDir, 0); err != nil {
+	if _, err := s.newNoLock(base, mode.Perm()|os.ModeDir, 0); err != nil {
 		return err
 	}
 
@@ -74,6 +87,9 @@ func (s *inMemStorage) createParent(path string, mode os.FileMode, f *inMemfile)
 }
 
 func (s *inMemStorage) Children(path string) []*inMemfile {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
 	path = clean(path)
 
 	l := make([]*inMemfile, 0)
@@ -85,6 +101,9 @@ func (s *inMemStorage) Children(path string) []*inMemfile {
 }
 
 func (s *inMemStorage) MustGet(path string) *inMemfile {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
 	f, ok := s.Get(path)
 	if !ok {
 		panic(fmt.Errorf("couldn't find %q", path))
@@ -94,8 +113,21 @@ func (s *inMemStorage) MustGet(path string) *inMemfile {
 }
 
 func (s *inMemStorage) Get(path string) (*inMemfile, bool) {
+	return s.getNoLock(path)
+}
+
+func (s *inMemStorage) mustGetNoLock(path string) *inMemfile {
+	f, ok := s.getNoLock(path)
+	if !ok {
+		panic(fmt.Errorf("couldn't find %q", path))
+	}
+
+	return f
+}
+
+func (s *inMemStorage) getNoLock(path string) (*inMemfile, bool) {
 	path = clean(path)
-	if !s.Has(path) {
+	if !s.hasNoLock(path) {
 		return nil, false
 	}
 
@@ -104,10 +136,13 @@ func (s *inMemStorage) Get(path string) (*inMemfile, bool) {
 }
 
 func (s *inMemStorage) Rename(from, to string) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	from = clean(from)
 	to = clean(to)
 
-	if !s.Has(from) {
+	if !s.hasNoLock(from) {
 		return os.ErrNotExist
 	}
 
@@ -128,7 +163,7 @@ func (s *inMemStorage) Rename(from, to string) error {
 		from := ops[0]
 		to := ops[1]
 
-		if err := s.move(from, to); err != nil {
+		if err := s.moveNoLock(from, to); err != nil {
 			return err
 		}
 	}
@@ -136,7 +171,7 @@ func (s *inMemStorage) Rename(from, to string) error {
 	return nil
 }
 
-func (s *inMemStorage) move(from, to string) error {
+func (s *inMemStorage) moveNoLock(from, to string) error {
 	s.files[to] = s.files[from]
 	s.files[to].name = filepath.Base(to)
 	s.children[to] = s.children[from]
@@ -147,13 +182,16 @@ func (s *inMemStorage) move(from, to string) error {
 		delete(s.children[filepath.Dir(from)], filepath.Base(from))
 	}()
 
-	return s.createParent(to, 0644, s.files[to])
+	return s.createParentNoLock(to, 0644, s.files[to])
 }
 
 func (s *inMemStorage) Remove(path string) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	path = clean(path)
 
-	f, has := s.Get(path)
+	f, has := s.getNoLock(path)
 	if !has {
 		return os.ErrNotExist
 	}
