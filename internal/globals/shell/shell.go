@@ -139,7 +139,7 @@ type shell struct {
 func StartShell(state *core.GlobalState, config REPLConfiguration) {
 	preOut := appendCursorMoveAfterLineFeeds(os.Stdout)
 	state.Out = preOut
-	state.Logger = zerolog.New(preOut)
+	state.Logger = zerolog.New(preOut).Level(zerolog.DebugLevel)
 
 	shell := newShell(config, state, os.Stdin, os.Stdout, preOut /*os.Stderr*/)
 	shell.runLoop()
