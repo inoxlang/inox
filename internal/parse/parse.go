@@ -2009,6 +2009,11 @@ func (p *parser) parseIdentStartingExpression() Node {
 		}
 	}
 
+	if isKeyword(name) {
+		ident.Err = &ParsingError{UnspecifiedParsingError, IDENTS_WITH_KEYWORD_NAME_NOT_ALLOWED}
+		return ident
+	}
+
 	isDynamic := false
 	lastDotIndex := int32(-1)
 

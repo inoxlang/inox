@@ -735,7 +735,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("identifier", func(t *testing.T) {
 
-		t.Run("", func(t *testing.T) {
+		t.Run("single letter", func(t *testing.T) {
 			n := MustParseChunk("a")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
@@ -743,6 +743,27 @@ func TestParse(t *testing.T) {
 					&IdentifierLiteral{
 						NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
 						Name:     "a",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("keyword not allowed", func(t *testing.T) {
+			n, err := ParseChunk("(for)", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
+				Statements: []Node{
+					&IdentifierLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{1, 4},
+							&ParsingError{UnspecifiedParsingError, IDENTS_WITH_KEYWORD_NAME_NOT_ALLOWED},
+							[]Token{
+								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
+								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{4, 5}},
+							},
+						},
+						Name: "for",
 					},
 				},
 			}, n)

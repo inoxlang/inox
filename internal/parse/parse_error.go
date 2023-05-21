@@ -42,6 +42,7 @@ func (err ParsingErrorAggregation) Error() string {
 }
 
 const (
+	IDENTS_WITH_KEYWORD_NAME_NOT_ALLOWED                     = "identifiers with a keyword name are not allowed, use $<name> or $$<name> for variables instead"
 	INVALID_MANIFEST_DESC_VALUE                              = "invalid manifest description value, an object is expected"
 	UNTERMINATED_IDENTIFIER_LIT                              = "unterminated identifier literal"
 	UNTERMINATED_REGEX_LIT                                   = "unterminated regex literal"
