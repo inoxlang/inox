@@ -1,3 +1,5 @@
+# this script requires Chrome or Chromium to be installed.
+
 manifest {
     permissions: {
         create: IWD_PREFIX
@@ -9,7 +11,7 @@ manifest {
     }
 }
 
-# create a Handle to create a browser (you ch)
+# new Handle that creates a browser 
 h = chrome.Handle!()
 
 # load the page

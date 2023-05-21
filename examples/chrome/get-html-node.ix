@@ -1,3 +1,5 @@
+# this script requires Chrome or Chromium to be installed.
+
 manifest {
     permissions: {}
 }
