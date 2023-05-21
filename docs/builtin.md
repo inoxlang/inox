@@ -40,7 +40,7 @@ Error("failed to create user", {user_id: 100})
 chrome namespace.
 ### chrome.Handle
 
-the Handle function creates a new Chrome handle that provides methods to interact with a web browser instance. You should call its .close() method when you are finished using it.
+the Handle function creates a new Chrome handle that provides methods to interact with a web browser instance. You should call its .close() method when you are finished using it. Chrome or Chromium should be installed,  the list of checked paths can be found here: https://github.com/chromedp/chromedp/blob/master/allocate.go#L349.
 
 **examples**
 
