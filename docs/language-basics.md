@@ -327,7 +327,7 @@ object = {
 a = object.a
 ```
 
-Properties can be set without specifying a name, they are called implicit key properties.
+Implicit-key properties are properties that can be set without specifying a name:
 ```
 object = {
     1
@@ -694,7 +694,7 @@ object_pattern = %{
 
 ## List Patterns
 
-List patterns matching a list with elements of the same shape have the following syntax:
+The syntax for patterns that match a list with **elements of the same type** (only integers, only strings, etc.) is as follows:
 ```
 pattern = %[]%int
 ([] match pattern) # true
@@ -713,7 +713,7 @@ pattern = %[%int, %str]
 
 ## Named Patterns
 
-Named patterns are equivalent to variables but for patterns, there are many builtin named patterns such as: `%int, %str, %bool`.\
+Named patterns are equivalent to variables but for patterns, there are many built-in named patterns such as: `%int, %str, %bool`.
 Pattern definitions allow you to declare a pattern.
 
 ```
