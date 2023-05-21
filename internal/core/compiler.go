@@ -142,13 +142,13 @@ func (c *compiler) Compile(node parse.Node) error {
 			}
 		}
 	case *parse.GlobalConstantDeclaration:
-		c.globalSymbols.Define(node.Left.Name)
+		c.globalSymbols.Define(node.Ident().Name)
 
 		if err := c.Compile(node.Right); err != nil {
 			return err
 		}
 
-		c.emit(node, OpSetGlobal, c.addConstant(Str(node.Left.Name)))
+		c.emit(node, OpSetGlobal, c.addConstant(Str(node.Ident().Name)))
 	case *parse.BinaryExpression:
 		if node.Operator == parse.And || node.Operator == parse.Or {
 			return c.compileLogical(node)

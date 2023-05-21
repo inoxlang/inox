@@ -1133,8 +1133,12 @@ func (GlobalConstantDeclarations) Kind() NodeKind {
 
 type GlobalConstantDeclaration struct {
 	NodeBase
-	Left  *IdentifierLiteral
+	Left  Node //*IdentifierLiteral
 	Right Node
+}
+
+func (decl GlobalConstantDeclaration) Ident() *IdentifierLiteral {
+	return decl.Left.(*IdentifierLiteral)
 }
 
 func (GlobalConstantDeclaration) Kind() NodeKind {

@@ -181,10 +181,11 @@ const (
 	UNTERMINATED_SLICE_EXPR_MISSING_END_INDEX                = "unterminated slice expression, missing end index"
 	UNTERMINATED_INDEX_OR_SLICE_EXPR_MISSING_CLOSING_BRACKET = "unterminated index/slice expression, missing closing bracket ']'"
 	UNTERMINATED_CALL_MISSING_CLOSING_PAREN                  = "unterminated call, missing closing parenthesis ')'"
-	UNTERMINATED_GLOBAL_CONS_DECLS                           = "unterminated global  declarations"
-	INVALID_GLOBAL_CONST_DECLS_OPENING_PAREN_EXPECTED        = "invalid global  declarations, expected opening parenthesis after ''"
-	INVALID_GLOBAL_CONST_DECLS_MISSING_CLOSING_PAREN         = "invalid global  declarations, missing closing parenthesis"
-	INVALID_GLOBAL_CONST_DECL_LHS_MUST_BE_AN_IDENT           = "invalid global  declaration, left hand side must be an identifier"
+	UNTERMINATED_GLOBAL_CONS_DECLS                           = "unterminated global const declarations"
+	INVALID_GLOBAL_CONST_DECLS_OPENING_PAREN_EXPECTED        = "invalid global const declarations, expected opening parenthesis after ''"
+	INVALID_GLOBAL_CONST_DECLS_MISSING_CLOSING_PAREN         = "invalid global const declarations, missing closing parenthesis"
+	INVALID_GLOBAL_CONST_DECL_LHS_MUST_BE_AN_IDENT           = "invalid global const declaration, left hand side must be an identifier"
+	INVALID_GLOBAL_CONST_DECL_MISSING_EQL_SIGN               = "invalid global const declaration, missing '='"
 
 	//pattern call
 	UNTERMINATED_PATTERN_CALL_MISSING_CLOSING_PAREN = "unterminated pattern call: missing closing parenthesis ')'"

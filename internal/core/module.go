@@ -158,7 +158,7 @@ func (m *Module) EvalManifest(config ManifestEvaluationConfig) (*Manifest, error
 							"%s: failed to evaluate manifest object: error while evaluating constant declarations: %w", m.Name(), err)
 					}
 				} else {
-					state.SetGlobal(decl.Left.Name, constVal, GlobalConst)
+					state.SetGlobal(decl.Ident().Name, constVal, GlobalConst)
 				}
 			}
 		}

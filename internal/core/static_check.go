@@ -911,7 +911,11 @@ switch_:
 		globalVars := c.getModGlobalVars(closestModule)
 
 		for _, decl := range node.Declarations {
-			name := decl.Left.Name
+			ident, ok := decl.Left.(*parse.IdentifierLiteral)
+			if !ok {
+				continue
+			}
+			name := ident.Name
 
 			_, alreadyUsed := globalVars[name]
 			if alreadyUsed {

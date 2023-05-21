@@ -6019,7 +6019,11 @@ func (p *parser) parseSingleGlobalConstDeclaration(declarations *[]*GlobalConsta
 	p.eatSpace()
 
 	if p.i >= p.len || p.s[p.i] != '=' {
-		declParsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidConstDeclMissingEqualSign(globvar.Name)}
+		if globvar != nil {
+			declParsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidConstDeclMissingEqualSign(globvar.Name)}
+		} else {
+			declParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_GLOBAL_CONST_DECL_MISSING_EQL_SIGN}
+		}
 		if p.i < p.len {
 			p.i++
 		}
@@ -6029,7 +6033,7 @@ func (p *parser) parseSingleGlobalConstDeclaration(declarations *[]*GlobalConsta
 				declParsingErr,
 				nil,
 			},
-			Left: lhs.(*IdentifierLiteral),
+			Left: lhs,
 		})
 		return
 	}
@@ -6047,7 +6051,7 @@ func (p *parser) parseSingleGlobalConstDeclaration(declarations *[]*GlobalConsta
 			declParsingErr,
 			[]Token{{Type: EQUAL, Span: NodeSpan{equalSignIndex, equalSignIndex + 1}}},
 		},
-		Left:  lhs.(*IdentifierLiteral),
+		Left:  lhs,
 		Right: rhs,
 	})
 }
@@ -6063,6 +6067,7 @@ func (p *parser) parseGlobalConstantDeclarations() *GlobalConstantDeclarations {
 
 	if p.i < p.len && strings.HasPrefix(string(p.s[p.i:]), CONST_KEYWORD_STR) {
 		p.i += int32(len(CONST_KEYWORD_STR))
+		valuelessTokens = append(valuelessTokens, Token{Type: CONST_KEYWORD, Span: constKeywordSpan})
 
 		p.eatSpace()
 		var (
@@ -6070,7 +6075,7 @@ func (p *parser) parseGlobalConstantDeclarations() *GlobalConstantDeclarations {
 			parsingErr   *ParsingError
 		)
 
-		if p.i >= p.len {
+		if p.i >= p.len || p.s[p.i] == '\n' {
 			return &GlobalConstantDeclarations{
 				NodeBase: NodeBase{
 					NodeSpan{start, p.i},
@@ -6080,13 +6085,10 @@ func (p *parser) parseGlobalConstantDeclarations() *GlobalConstantDeclarations {
 			}
 		}
 
-		if isAlpha(p.s[p.i]) || p.s[p.i] == '_' {
+		if p.s[p.i] != '(' { //single declaration, no parenthesis
 			p.parseSingleGlobalConstDeclaration(&declarations)
 		} else {
-			if p.s[p.i] != '(' {
-				parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_GLOBAL_CONST_DECLS_OPENING_PAREN_EXPECTED}
-			}
-
+			valuelessTokens = append(valuelessTokens, Token{Type: OPENING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
 			p.i++
 
 			for p.i < p.len && p.s[p.i] != ')' {
@@ -6107,11 +6109,10 @@ func (p *parser) parseGlobalConstantDeclarations() *GlobalConstantDeclarations {
 			}
 
 			if p.i < p.len && p.s[p.i] == ')' {
+				valuelessTokens = append(valuelessTokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
 				p.i++
 			}
 		}
-
-		valuelessTokens = append(valuelessTokens, Token{Type: CONST_KEYWORD, Span: constKeywordSpan})
 
 		decls := &GlobalConstantDeclarations{
 			NodeBase: NodeBase{

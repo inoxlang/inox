@@ -283,7 +283,11 @@ func TestParse(t *testing.T) {
 					NodeBase: NodeBase{
 						NodeSpan{0, 8},
 						nil,
-						[]Token{{Type: CONST_KEYWORD, Span: NodeSpan{0, 5}}},
+						[]Token{
+							{Type: CONST_KEYWORD, Span: NodeSpan{0, 5}},
+							{Type: OPENING_PARENTHESIS, Span: NodeSpan{6, 7}},
+							{Type: CLOSING_PARENTHESIS, Span: NodeSpan{7, 8}},
+						},
 					},
 					Declarations: nil,
 				},
@@ -300,7 +304,11 @@ func TestParse(t *testing.T) {
 					NodeBase: NodeBase{
 						NodeSpan{0, 15},
 						nil,
-						[]Token{{Type: CONST_KEYWORD, Span: NodeSpan{0, 5}}},
+						[]Token{
+							{Type: CONST_KEYWORD, Span: NodeSpan{0, 5}},
+							{Type: OPENING_PARENTHESIS, Span: NodeSpan{6, 7}},
+							{Type: CLOSING_PARENTHESIS, Span: NodeSpan{14, 15}},
+						},
 					},
 					Declarations: []*GlobalConstantDeclaration{
 						{
@@ -358,6 +366,150 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
+		t.Run("const keyword followed by EOF", func(t *testing.T) {
+			n, err := ParseChunk("const", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase:   NodeBase{NodeSpan{0, 5}, nil, nil},
+				Statements: nil,
+				Manifest:   nil,
+				GlobalConstantDeclarations: &GlobalConstantDeclarations{
+					NodeBase: NodeBase{
+						NodeSpan{0, 5},
+						&ParsingError{UnspecifiedParsingError, UNTERMINATED_GLOBAL_CONS_DECLS},
+						[]Token{{Type: CONST_KEYWORD, Span: NodeSpan{0, 5}}},
+					},
+					Declarations: nil,
+				},
+			}, n)
+		})
+
+		t.Run("const keyword followed by space + EOF", func(t *testing.T) {
+			n, err := ParseChunk("const ", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase:   NodeBase{NodeSpan{0, 6}, nil, nil},
+				Statements: nil,
+				Manifest:   nil,
+				GlobalConstantDeclarations: &GlobalConstantDeclarations{
+					NodeBase: NodeBase{
+						NodeSpan{0, 6},
+						&ParsingError{UnspecifiedParsingError, UNTERMINATED_GLOBAL_CONS_DECLS},
+						[]Token{{Type: CONST_KEYWORD, Span: NodeSpan{0, 5}}},
+					},
+					Declarations: nil,
+				},
+			}, n)
+		})
+
+		t.Run("const keyword followed by a literal", func(t *testing.T) {
+			n, err := ParseChunk("const 1", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase:   NodeBase{NodeSpan{0, 7}, nil, nil},
+				Statements: nil,
+				Manifest:   nil,
+				GlobalConstantDeclarations: &GlobalConstantDeclarations{
+					NodeBase: NodeBase{
+						NodeSpan{0, 7},
+						nil,
+						[]Token{{Type: CONST_KEYWORD, Span: NodeSpan{0, 5}}},
+					},
+					Declarations: []*GlobalConstantDeclaration{
+						{
+							NodeBase: NodeBase{
+								NodeSpan{6, 7},
+								&ParsingError{UnspecifiedParsingError, INVALID_GLOBAL_CONST_DECL_MISSING_EQL_SIGN},
+								nil,
+							},
+							Left: &IntLiteral{
+								NodeBase: NodeBase{NodeSpan{6, 7}, nil, nil},
+								Raw:      "1",
+								Value:    1,
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("const keyword followed by a literal + equal sign", func(t *testing.T) {
+			n, err := ParseChunk("const 1 =", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase:   NodeBase{NodeSpan{0, 9}, nil, nil},
+				Statements: nil,
+				Manifest:   nil,
+				GlobalConstantDeclarations: &GlobalConstantDeclarations{
+					NodeBase: NodeBase{
+						NodeSpan{0, 9},
+						nil,
+						[]Token{{Type: CONST_KEYWORD, Span: NodeSpan{0, 5}}},
+					},
+					Declarations: []*GlobalConstantDeclaration{
+						{
+							NodeBase: NodeBase{
+								NodeSpan{6, 9},
+								&ParsingError{UnspecifiedParsingError, INVALID_GLOBAL_CONST_DECL_LHS_MUST_BE_AN_IDENT},
+								[]Token{{Type: EQUAL, Span: NodeSpan{8, 9}}},
+							},
+							Left: &IntLiteral{
+								NodeBase: NodeBase{NodeSpan{6, 7}, nil, nil},
+								Raw:      "1",
+								Value:    1,
+							},
+							Right: &MissingExpression{
+								NodeBase: NodeBase{
+									NodeSpan{8, 9},
+									&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("const 1 ="), 9, true)},
+									nil,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("const keyword followed by linefeed + manifest", func(t *testing.T) {
+			n, err := ParseChunk("const\nmanifest {}", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					NodeSpan{0, 17},
+					nil,
+					[]Token{{Type: NEWLINE, Span: NodeSpan{5, 6}}},
+				},
+				Statements: nil,
+				GlobalConstantDeclarations: &GlobalConstantDeclarations{
+					NodeBase: NodeBase{
+						NodeSpan{0, 5},
+						&ParsingError{UnspecifiedParsingError, UNTERMINATED_GLOBAL_CONS_DECLS},
+						[]Token{{Type: CONST_KEYWORD, Span: NodeSpan{0, 5}}},
+					},
+					Declarations: nil,
+				},
+				Manifest: &Manifest{
+					NodeBase: NodeBase{
+						Span: NodeSpan{6, 17},
+						ValuelessTokens: []Token{
+							{Type: MANIFEST_KEYWORD, Span: NodeSpan{6, 14}},
+						},
+					},
+					Object: &ObjectLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{15, 17},
+							nil,
+							[]Token{
+								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{15, 16}},
+								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{16, 17}},
+							},
+						},
+						Properties: nil,
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("top level local variables declarations", func(t *testing.T) {

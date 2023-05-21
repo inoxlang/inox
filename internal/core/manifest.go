@@ -478,7 +478,7 @@ func EvaluatePermissionListingObjectNode(n *parse.ObjectLiteral, config Manifest
 
 		if config.GlobalConsts != nil {
 			for _, decl := range config.GlobalConsts.Declarations {
-				state.SetGlobal(decl.Left.Name, utils.Must(TreeWalkEval(decl.Right, state)), GlobalConst)
+				state.SetGlobal(decl.Ident().Name, utils.Must(TreeWalkEval(decl.Right, state)), GlobalConst)
 			}
 		}
 

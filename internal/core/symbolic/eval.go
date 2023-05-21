@@ -840,8 +840,8 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				if err != nil {
 					return nil, err
 				}
-				if !state.setGlobal(decl.Left.Name, constVal, GlobalConst, decl.Left) {
-					return nil, fmt.Errorf("failed to set global '%s'", decl.Left.Name)
+				if !state.setGlobal(decl.Ident().Name, constVal, GlobalConst, decl.Left) {
+					return nil, fmt.Errorf("failed to set global '%s'", decl.Ident().Name)
 				}
 			}
 		}

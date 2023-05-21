@@ -48,6 +48,15 @@ func TestPrint(t *testing.T) {
 		//assignment
 		"a = 0",
 		"assign a b = c",
+		//global constant declarations
+		"const",
+		"const (",
+		"const ()",
+		"const (\n)",
+		"const (a = 1)",
+		"const (\na = 1)",
+		"const (\na = 1\n)",
+		"const (\na = 1\nb= 2\n)",
 		// member expression
 		"a.b",
 		"a.b.",
