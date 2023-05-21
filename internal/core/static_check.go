@@ -1656,13 +1656,13 @@ func checkManifestObject(objLit *parse.ObjectLiteral, ignoreUnknownSections bool
 		}
 
 		switch p.Name() {
-		case "permissions":
+		case MANIFEST_PERMS_SECTION_NAME:
 			if obj, ok := p.Value.(*parse.ObjectLiteral); ok {
 				checkPermissionListingObject(obj, onError)
 			} else {
 				onError(p, PERMS_SECTION_SHOULD_BE_AN_OBJECT)
 			}
-		case "host_resolution":
+		case MANIFEST_HOST_RESOLUTION_SECTION_NAME:
 			dict, ok := p.Value.(*parse.DictionaryLiteral)
 			if !ok {
 				onError(p, HOST_RESOL_SECTION_SHOULD_BE_A_DICT)
@@ -1683,7 +1683,7 @@ func checkManifestObject(objLit *parse.ObjectLiteral, ignoreUnknownSections bool
 				return parse.Continue, nil
 			}, nil)
 
-		case "limits":
+		case MANIFEST_LIMITS_SECTION_NAME:
 			obj, ok := p.Value.(*parse.ObjectLiteral)
 
 			if !ok {
@@ -1704,7 +1704,7 @@ func checkManifestObject(objLit *parse.ObjectLiteral, ignoreUnknownSections bool
 
 				return parse.Continue, nil
 			}, nil)
-		case "env":
+		case MANIFEST_ENV_SECTION_NAME:
 			patt, ok := p.Value.(*parse.ObjectPatternLiteral)
 
 			if !ok {
@@ -1726,7 +1726,7 @@ func checkManifestObject(objLit *parse.ObjectLiteral, ignoreUnknownSections bool
 
 				return parse.Continue, nil
 			}, nil)
-		case "parameters":
+		case MANIFEST_PARAMS_SECTION_NAME:
 			obj, ok := p.Value.(*parse.ObjectLiteral)
 
 			if !ok {

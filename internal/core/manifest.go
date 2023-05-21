@@ -16,10 +16,24 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+const (
+	MANIFEST_ENV_SECTION_NAME             = "env"
+	MANIFEST_PARAMS_SECTION_NAME          = "parameters"
+	MANIFEST_PERMS_SECTION_NAME           = "permissions"
+	MANIFEST_LIMITS_SECTION_NAME          = "limits"
+	MANIFEST_HOST_RESOLUTION_SECTION_NAME = "host_resolution"
+)
+
 var (
 	//the initial working dir is the working dir at the start of the program execution.
 	INITIAL_WORKING_DIR_PATH         Path
 	INITIAL_WORKING_DIR_PATH_PATTERN PathPattern
+
+	MANIFEST_SECTION_NAMES = []string{
+		MANIFEST_ENV_SECTION_NAME, MANIFEST_PARAMS_SECTION_NAME,
+		MANIFEST_PERMS_SECTION_NAME, MANIFEST_LIMITS_SECTION_NAME,
+		MANIFEST_HOST_RESOLUTION_SECTION_NAME,
+	}
 )
 
 func SetInitialWorkingDir(getWd func() (string, error)) {
@@ -520,28 +534,28 @@ func createManifest(object *Object, config manifestObjectConfig) (*Manifest, err
 
 	for k, v := range object.EntryMap() {
 		switch k {
-		case "limits":
+		case MANIFEST_LIMITS_SECTION_NAME:
 			l, err := getLimitations(v, defaultLimitationsToNotSet)
 			if err != nil {
 				return nil, err
 			}
 			limitations = append(limitations, l...)
-		case "host_resolution":
+		case MANIFEST_HOST_RESOLUTION_SECTION_NAME:
 			resolutions, err := getHostResolutions(v)
 			if err != nil {
 				return nil, err
 			}
 			hostResolutions = resolutions
-		case "permissions":
+		case MANIFEST_PERMS_SECTION_NAME:
 			listing, ok := v.(*Object)
 			if !ok {
-				return nil, fmt.Errorf("invalid manifest, the 'permissions' section should have a value of type object")
+				return nil, fmt.Errorf("invalid manifest, the " + MANIFEST_PERMS_SECTION_NAME + " section should have a value of type object")
 			}
 			permListing = listing
-		case "env":
+		case MANIFEST_ENV_SECTION_NAME:
 			patt, ok := v.(*ObjectPattern)
 			if !ok {
-				return nil, fmt.Errorf("invalid manifest, the 'env' section should have a value of type object pattern")
+				return nil, fmt.Errorf("invalid manifest, the " + MANIFEST_ENV_SECTION_NAME + " section should have a value of type object pattern")
 			}
 			err := patt.ForEachEntry(func(propName string, propPattern Pattern, _ bool) error {
 				switch propPattern.(type) {
@@ -553,13 +567,13 @@ func createManifest(object *Object, config manifestObjectConfig) (*Manifest, err
 					}
 				default:
 				}
-				return fmt.Errorf("invalid 'env' section in manifest: invalid pattern type %T for environment variable '%s'", propPattern, propName)
+				return fmt.Errorf("invalid "+MANIFEST_ENV_SECTION_NAME+" section in manifest: invalid pattern type %T for environment variable '%s'", propPattern, propName)
 			})
 			if err != nil {
 				return nil, err
 			}
 			envPattern = patt
-		case "parameters":
+		case MANIFEST_PARAMS_SECTION_NAME:
 			params, err := getModuleParameters(v)
 			if err != nil {
 				return nil, err
