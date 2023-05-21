@@ -45,13 +45,14 @@ Security:
 Scripting:
 - [Easy declaration of CLI Parameters](#declaration-of-cli-parameters--environment-variables)
 - [Simplified resource manipulation](#simplified-resource-manipulation)
+- [Built-in Browser Automation](#built-in-browser-automation)
 - [Transactions & Effects (WIP)](#transactions--effects-wip)
 
 Other:
 - [Concurrency](#concurrency)
   - [Coroutines (Goroutines)](#coroutines-goroutines)
   - [Lifetime jobs](#lifetime-jobs)
-- [Built-in Functions](#built-in-functions)
+- [Many Built-in Functions](#built-in-functions)
 - [Communication](#communication)
 
 ### Injection Prevention
@@ -300,13 +301,33 @@ options:
       if true delete <dir> if it already exists
 ```
 
-#### **Simplified resource Manipulation**
+#### **Simplified Resource Manipulation**
 
 - The builtin [**read**](./docs/shell-basics.md#read) function can read directories / files / HTTP resources and parse their content.
 ```
-read ./dir/
-read ./file.json  # parsed by default
-read https://jsonplaceholder.typicode.com/posts  # parsed by default
+read ./
+# output: 
+[
+  dir/
+  file.txt 1kB 
+]
+
+read ./file.txt
+# output: 
+hello
+
+read ./file.json
+# output: 
+{"key": "value"}
+
+read https://jsonplaceholder.typicode.com/posts/1
+# output: 
+{
+  "body": "quia et suscipit\nsuscipit recusandae consequuntur expedita....", 
+  "id": 1.0, 
+  "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit", 
+  "userId": 1.0
+}
 ```
 
 - The builtin [**create**](./docs/shell-basics.md#create) function can create directories / files / HTTP resources.
@@ -317,6 +338,20 @@ create https://example.com/posts tojson({title: "hello"})
 ```
 
 Learn more [here](./docs/shell-basics.md#resource-manipulation)
+
+### Built-in Browser Automation
+
+```
+h = chrome.Handle!()
+
+h.nav https://go.dev/
+node = h.html_node!(".Hero-blurb")
+h.close()
+```
+
+[Documentation](https://github.com/inoxlang/inox/blob/master/docs/builtin.md#browser-automation)
+
+[Examples](https://github.com/inoxlang/inox/tree/master/examples/chrome)
 
 ### Transactions & Effects (WIP)
 
@@ -358,16 +393,6 @@ coroutine2 = go {group: group} do read!(https://jsonplaceholder.typicode.com/pos
 results = group.wait_results!()
 ```
 
-### Built-in Functions
-
-Inox comes with many built-in functions for:
-- browser automation
-- file manipulation
-- HTTP resource manipulation 
-- data container constructors (Graph, Tree, ...)
-
-**[List of Built-in Functions](./docs/builtin.md)**
-
 #### **Lifetime Jobs**
 
 Lifetime jobs are coroutines linked to an object.
@@ -381,6 +406,17 @@ object = {
   }
 }
 ```
+
+
+### Built-in Functions
+
+Inox comes with many built-in functions for:
+- browser automation
+- file manipulation
+- HTTP resource manipulation 
+- data container constructors (Graph, Tree, ...)
+
+**[List of Built-in Functions](./docs/builtin.md)**
 
 ### Communication
 
