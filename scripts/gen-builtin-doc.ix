@@ -16,21 +16,18 @@ manifest {
 %example = %{
     code?: %str
     explanation?: %str
-    output?: %str,
-    ...
+    output?: %str
 }
 
 %leaf-topic-data = %{
     topic: %str
     text?: %str
     examples?: %[]%example
-    ...
 }
 
 %topic-data = %{
     ...%leaf-topic-data
     subtopics?: %[]%leaf-topic-data
-    ...
 }
 
 
@@ -38,7 +35,6 @@ manifest {
     namespace?: %bool
     elements: %[]%topic-data
     title?: %str
-    ...
 }
 
 fn fmt_topic_markdown(topic %leaf-topic-data, is_leaf %bool){

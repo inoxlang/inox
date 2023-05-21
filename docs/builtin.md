@@ -40,13 +40,70 @@ Error("failed to create user", {user_id: 100})
 chrome namespace.
 ### chrome.Handle
 
-the Handle function creates a new Chrome handle.
+the Handle function creates a new Chrome handle that provides methods to interact with a web browser instance. You should call its .close() method when you are finished using it.
 
 **examples**
 
 ```inox
 chrome.Handle!()
 ```
+### chrome.Handle/nav
+
+the nav method makes the browser navigate to a page.
+
+**examples**
+
+```inox
+handle.nav https://go.dev/
+```
+### chrome.Handle/wait_visible
+
+the wait_visible method waits until the DOM element matching the selector is visible.
+
+**examples**
+
+```inox
+handle.wait_visible "div.title"
+```
+### chrome.Handle/click
+
+the click method makes the browser click on the first DOM element matching the selector.
+
+**examples**
+
+```inox
+handle.click "button.menu-item"
+```
+### chrome.Handle/screenshot
+
+the screenshot method takes a screenshot of the first DOM element matching the selector.
+
+**examples**
+
+```inox
+png_bytes = handle.screenshot!("#content")
+```
+### chrome.Handle/screenshot_page
+
+the screenshot_page method takes a screenshot of the entire browser viewport.
+
+**examples**
+
+```inox
+png_bytes = handle.screenshot_page!()
+```
+### chrome.Handle/html_node
+
+the screenshot method gets the HTML of the first DOM element matching the selector, the result is %html.node not a string.
+
+**examples**
+
+```inox
+png_bytes = handle.screenshot_page!()
+```
+### chrome.Handle/close
+
+this method should be called when you are finished using the Chrome handle.
 
 ## Data Containers
 
@@ -149,7 +206,7 @@ hash_password("password", 10)
 ```
 ### check_password
 
-the check_password hashes a string or a byte sequences using the SHA-256 algorithm.
+the check_password verifies that a password matches a Bcrypt hash.
 
 **examples**
 

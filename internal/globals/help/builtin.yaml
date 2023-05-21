@@ -105,7 +105,8 @@ crypto:
       output: '"JDJhJDEwJGhLODFiVThNdTlJZXVRMXVZdHlIUi5oOS5GSXljNWpYWGcwaVhXWUZYZC5YRTduR1hmSjl1"'
 
   - topic: check_password
-    text: the check_password hashes a string or a byte sequences using the SHA-256 algorithm
+    text: the check_password verifies that a password matches a Bcrypt hash.
+    related-topics: [hash_password]
     examples:
     - code: 'check_password("password", "JDJhJDA3JHNNNzRwaFVNUFVCNzVDQmxINU5HaWVOZERKZ09IRkx4a2xxYTFPTktsV3Nkd2JqampmYmxT")'
       output: 'true'
@@ -190,9 +191,48 @@ chrome:
     text: chrome namespace
 
   - topic: chrome.Handle
-    text: the Handle function creates a new Chrome handle
+    text: > 
+      the Handle function creates a new Chrome handle that provides methods to interact with a web browser instance.
+      You should call its .close() method when you are finished using it.
     examples:
     - code: 'chrome.Handle!()'
+    subtopic-names: [
+      chrome.Handle/nav, chrome.Handle/wait_visible, chrome.Handle/click, chrome.Handle/screenshot, 
+      chrome.Handle/screenshot_page, chrome.Handle/html_node, chrome.Handle/close
+    ]
+
+  - topic: chrome.Handle/nav
+    text: the nav method makes the browser navigate to a page.
+    examples:
+    - code: 'handle.nav https://go.dev/'
+
+  - topic: chrome.Handle/wait_visible
+    text: the wait_visible method waits until the DOM element matching the selector is visible.
+    examples:
+    - code: 'handle.wait_visible "div.title"'
+
+  - topic: chrome.Handle/click
+    text: the click method makes the browser click on the first DOM element matching the selector.
+    examples:
+    - code: 'handle.click "button.menu-item"'
+
+  - topic: chrome.Handle/screenshot
+    text: the screenshot method takes a screenshot of the first DOM element matching the selector.
+    examples:
+    - code: 'png_bytes = handle.screenshot!("#content")'
+
+  - topic: chrome.Handle/screenshot_page
+    text: the screenshot_page method takes a screenshot of the entire browser viewport.
+    examples:
+    - code: 'png_bytes = handle.screenshot_page!()'
+
+  - topic: chrome.Handle/html_node
+    text: the screenshot method gets the HTML of the first DOM element matching the selector, the result is %html.node not a string.
+    examples:
+    - code: 'png_bytes = handle.screenshot_page!()'
+
+  - topic: chrome.Handle/close
+    text: this method should be called when you are finished using the Chrome handle.
 
 containers:
   title: Data Containers
