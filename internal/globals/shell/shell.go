@@ -105,14 +105,14 @@ type shell struct {
 	termWidth int
 
 	//current input info
-	cancelReader    cancelreader.CancelReader
-	reader          *bufio.Reader
-	input           []rune
-	runeSequence    []rune
-	backspaceCount  int //distance of the cursor from the end of the input
-	pressedTabCount int //used for completions
-	ignoreNextChar  bool
-	promptLen       int
+	cancelReader   cancelreader.CancelReader
+	reader         *bufio.Reader
+	input          []rune
+	runeSequence   []rune
+	backspaceCount int //distance of the cursor from the end of the input
+	//pressedTabCount int //used for completions
+	ignoreNextChar bool
+	promptLen      int
 
 	runeInputChan      chan runeInput
 	stopReadingInput   chan struct{}
@@ -159,10 +159,10 @@ func newShell(config REPLConfiguration, state *core.GlobalState, in io.ReadWrite
 
 		//input
 
-		input:           make([]rune, 0),
-		backspaceCount:  0,
-		pressedTabCount: 0,
-		ignoreNextChar:  false,
+		input:          make([]rune, 0),
+		backspaceCount: 0,
+		//pressedTabCount: 0,
+		ignoreNextChar: false,
 
 		runeInputChan:      make(chan (runeInput), 4096),
 		stopReadingInput:   make(chan struct{}, 1),
@@ -231,7 +231,7 @@ func (sh *shell) resetInput() {
 	sh.input = nil
 	sh.backspaceCount = 0
 	sh.runeSequence = nil
-	sh.pressedTabCount = 0
+	//sh.pressedTabCount = 0
 	sh.ignoreNextChar = false
 
 	sh.prevInputLineCount = sh.getNewLineCount()
@@ -1008,13 +1008,13 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 		sh.printPromptAndInput(true, nil)
 		return
 	case SuggestComplete:
-		sh.pressedTabCount++
+		// sh.pressedTabCount++
 
-		if sh.pressedTabCount == 1 {
-			return
-		} else {
-			sh.pressedTabCount = 0
-		}
+		// if sh.pressedTabCount == 1 {
+		// 	return
+		// } else {
+		// 	sh.pressedTabCount = 0
+		// }
 
 		//if the input is empty we print all global variable names.
 		if strings.Trim(string(sh.input), " ") == "" {
