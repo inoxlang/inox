@@ -308,6 +308,9 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 		completions = findHostCompletions(state.Global.Ctx, n.Value, _parent)
 	case *parse.SchemeLiteral:
 		completions = findHostCompletions(state.Global.Ctx, n.Name, _parent)
+
+	case *parse.ObjectLiteral:
+		completions = findObjectInteriorCompletions(n, _ancestorChain, int32(cursorIndex), chunk)
 	}
 
 	for i, completion := range completions {
@@ -858,4 +861,32 @@ top_loop:
 		}
 	}
 	return completions
+}
+
+func findObjectInteriorCompletions(n *parse.ObjectLiteral, ancestors []parse.Node, cursorIndex int32, chunk *parse.ParsedChunk) (completions []Completion) {
+	interiorSpan, err := parse.GetInteriorSpan(n)
+	if err != nil {
+		return nil
+	}
+
+	if !interiorSpan.HasPositionEndIncluded(cursorIndex) {
+		return nil
+	}
+
+	//if parent is a manifest node suggest all sections of the manifest
+	if len(ancestors) > 1 && parse.NodeIs(ancestors[len(ancestors)-1], (*parse.Manifest)(nil)) {
+		pos := chunk.GetSourcePosition(parse.NodeSpan{Start: cursorIndex, End: cursorIndex})
+
+		for _, sectionName := range core.MANIFEST_SECTION_NAMES {
+			completions = append(completions, Completion{
+				ShownString:   sectionName,
+				Value:         sectionName,
+				Kind:          defines.CompletionItemKindVariable,
+				ReplacedRange: pos,
+			})
+		}
+		return completions
+	}
+
+	return
 }

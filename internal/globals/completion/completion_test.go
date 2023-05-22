@@ -351,6 +351,34 @@ func TestFindCompletions(t *testing.T) {
 				})
 			})
 
+			t.Run("manifest section from prefix", func(t *testing.T) {
+				state := newState()
+				chunk, _ := parseChunkSource("manifest{e}", "")
+				doSymbolicCheck(chunk, state.Global)
+
+				completions := findCompletions(state, chunk, 10)
+				assert.EqualValues(t, []Completion{
+					{
+						ShownString:   "env",
+						Value:         "env",
+						ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 9, End: 10}},
+					},
+				}, completions)
+			})
+
+			t.Run("manifest section", func(t *testing.T) {
+				state := newState()
+				chunk, _ := parseChunkSource("manifest{}", "")
+				doSymbolicCheck(chunk, state.Global)
+
+				completions := findCompletions(state, chunk, 9)
+				assert.Contains(t, completions, Completion{
+					ShownString:   "env",
+					Value:         "env",
+					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 9, End: 9}},
+				})
+			})
+
 			t.Run("subcommand", func(t *testing.T) {
 				t.Run("depth 0", func(t *testing.T) {
 					//TODO: implement

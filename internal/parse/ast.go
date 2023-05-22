@@ -11,6 +11,10 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+var (
+	ErrMissingTokens = errors.New("missing tokens")
+)
+
 // A Node represents an immutable AST Node, all node types embed NodeBase that implements the Node interface
 type Node interface {
 	Base() NodeBase
@@ -22,6 +26,11 @@ type NodeSpan struct {
 	Start int32 `json:"start"`
 	End   int32 `json:"end"` //exclusive
 }
+
+func (s NodeSpan) HasPositionEndIncluded(i int32) bool {
+	return i >= s.Start && i <= s.End
+}
+
 
 // NodeBase implements Node interface
 type NodeBase struct {
@@ -2722,4 +2731,43 @@ func GetTreeView(n Node) string {
 	})
 
 	return buf.String()
+}
+
+func GetInteriorSpan(node Node) (interiorSpan NodeSpan, err error) {
+	switch node.(type) {
+	case *ObjectLiteral:
+		return getInteriorSpan(node, OPENING_CURLY_BRACKET, CLOSING_CURLY_BRACKET)
+	}
+	err = errors.New("not supported yet")
+	return
+}
+
+// GetInteriorSpan returns the span of the "interior" of nodes such as blocks, objects or lists.
+// the fist token matching the opening token is taken as the starting token (the span starts just after the token),
+// the last token matching the closingToken is as taken as the ending token (the span ends just before this token).
+func getInteriorSpan(node Node, openingToken, closingToken TokenType) (interiorSpan NodeSpan, err error) {
+	tokens := node.Base().ValuelessTokens
+	if len(tokens) == 0 {
+		err = ErrMissingTokens
+		return
+	}
+
+	interiorSpan = NodeSpan{Start: -1, End: -1}
+
+	for _, token := range tokens {
+		switch {
+		case token.Type == openingToken && interiorSpan.Start < 0:
+			interiorSpan.Start = token.Span.Start + 1
+		case token.Type == closingToken:
+			interiorSpan.End = token.Span.Start
+		}
+	}
+
+	if interiorSpan.Start == -1 || interiorSpan.End == -1 {
+		interiorSpan = NodeSpan{Start: -1, End: -1}
+		err = ErrMissingTokens
+		return
+	}
+
+	return
 }
