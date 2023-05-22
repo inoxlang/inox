@@ -6,6 +6,7 @@ import (
 
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/permkind"
 
 	"github.com/inoxlang/inox/internal/lsp/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
@@ -20,6 +21,11 @@ type Completion struct {
 	Kind          defines.CompletionItemKind
 	Detail        string
 }
+
+const (
+	MAJOR_PERM_KIND_TEXT = "major permission kind"
+	MINOR_PERM_KIND_TEXT = "minor permission kind"
+)
 
 var (
 	CONTEXT_INDEPENDENT_STMT_STARTING_KEYWORDS = []string{"if", "drop-perms", "for", "assign", "switch", "match", "return", "assert"}
@@ -291,7 +297,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 		}
 
 	case *parse.IdentifierLiteral:
-		completions = handleIdentifierAndKeywordCompletions(mode, n, deepestCall, _ancestorChain, state)
+		completions = handleIdentifierAndKeywordCompletions(mode, n, deepestCall, _ancestorChain, _parent, int32(cursorIndex), chunk, state)
 	case *parse.IdentifierMemberExpression:
 		completions = handleIdentifierMemberCompletions(n, state, mode)
 	case *parse.MemberExpression:
@@ -310,7 +316,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 		completions = findHostCompletions(state.Global.Ctx, n.Name, _parent)
 
 	case *parse.ObjectLiteral:
-		completions = findObjectInteriorCompletions(n, _ancestorChain, int32(cursorIndex), chunk)
+		completions = findObjectInteriorCompletions(n, _ancestorChain, _parent, int32(cursorIndex), chunk)
 	}
 
 	for i, completion := range completions {
@@ -329,7 +335,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 
 func handleIdentifierAndKeywordCompletions(
 	mode CompletionMode, ident *parse.IdentifierLiteral, deepestCall *parse.CallExpression,
-	ancestors []parse.Node, state *core.TreeWalkState,
+	ancestors []parse.Node, parent parse.Node, cursorIndex int32, chunk *parse.ParsedChunk, state *core.TreeWalkState,
 ) []Completion {
 
 	var completions []Completion
@@ -403,6 +409,55 @@ func handleIdentifierAndKeywordCompletions(
 			}
 			return completions
 		}
+
+		switch parent.(type) {
+		case *parse.Manifest: //suggest all sections of the manifest
+			for _, sectionName := range core.MANIFEST_SECTION_NAMES {
+				completions = append(completions, Completion{
+					ShownString: sectionName,
+					Value:       sectionName,
+					Kind:        defines.CompletionItemKindVariable,
+				})
+			}
+		case *parse.ObjectProperty:
+
+			//check if the current property is in an object describing one of the section of the manifest
+			if len(ancestors) < 6 || !(parse.NodeIs(ancestors[len(ancestors)-2], (*parse.ObjectLiteral)(nil)) &&
+				parse.NodeIs(ancestors[len(ancestors)-3], (*parse.ObjectProperty)(nil)) &&
+				parse.NodeIs(ancestors[len(ancestors)-5], (*parse.Manifest)(nil))) {
+				break
+			}
+
+			manifestObjProp := ancestors[len(ancestors)-3].(*parse.ObjectProperty)
+
+			if manifestObjProp.HasImplicitKey() {
+				break
+			}
+
+			switch manifestObjProp.Name() {
+			case core.MANIFEST_PERMS_SECTION_NAME:
+				for _, info := range permkind.PERMISSION_KINDS {
+					if !strings.HasPrefix(info.Name, ident.Name) {
+						continue
+					}
+
+					detail := MAJOR_PERM_KIND_TEXT
+
+					if info.PermissionKind.IsMinor() {
+						detail = MINOR_PERM_KIND_TEXT
+					}
+
+					completions = append(completions, Completion{
+						ShownString: info.Name,
+						Value:       info.Name,
+						Kind:        defines.CompletionItemKindVariable,
+						Detail:      detail,
+					})
+				}
+			}
+
+		}
+
 	}
 
 	//suggest local variables
@@ -465,8 +520,6 @@ func handleIdentifierAndKeywordCompletions(
 			}
 		}
 	}
-
-	parent := ancestors[len(ancestors)-1]
 
 	//suggest context dependent keywords
 
@@ -863,7 +916,7 @@ top_loop:
 	return completions
 }
 
-func findObjectInteriorCompletions(n *parse.ObjectLiteral, ancestors []parse.Node, cursorIndex int32, chunk *parse.ParsedChunk) (completions []Completion) {
+func findObjectInteriorCompletions(n *parse.ObjectLiteral, ancestors []parse.Node, parent parse.Node, cursorIndex int32, chunk *parse.ParsedChunk) (completions []Completion) {
 	interiorSpan, err := parse.GetInteriorSpan(n)
 	if err != nil {
 		return nil
@@ -873,10 +926,10 @@ func findObjectInteriorCompletions(n *parse.ObjectLiteral, ancestors []parse.Nod
 		return nil
 	}
 
-	//if parent is a manifest node suggest all sections of the manifest
-	if len(ancestors) > 1 && parse.NodeIs(ancestors[len(ancestors)-1], (*parse.Manifest)(nil)) {
-		pos := chunk.GetSourcePosition(parse.NodeSpan{Start: cursorIndex, End: cursorIndex})
+	pos := chunk.GetSourcePosition(parse.NodeSpan{Start: cursorIndex, End: cursorIndex})
 
+	switch parent := parent.(type) {
+	case *parse.Manifest: //suggest all sections of the manifest
 		for _, sectionName := range core.MANIFEST_SECTION_NAMES {
 			completions = append(completions, Completion{
 				ShownString:   sectionName,
@@ -885,7 +938,37 @@ func findObjectInteriorCompletions(n *parse.ObjectLiteral, ancestors []parse.Nod
 				ReplacedRange: pos,
 			})
 		}
-		return completions
+	case *parse.ObjectProperty:
+		if parent.HasImplicitKey() || len(ancestors) < 3 {
+			return nil
+		}
+
+		//grandParent := ancestors[len(ancestors)-2]
+
+		switch greatGrandParent := ancestors[len(ancestors)-3].(type) {
+		case *parse.Manifest:
+			switch parent.Name() {
+			case core.MANIFEST_PERMS_SECTION_NAME: //permissions section
+				for _, info := range permkind.PERMISSION_KINDS {
+					detail := MAJOR_PERM_KIND_TEXT
+
+					if info.PermissionKind.IsMinor() {
+						detail = MINOR_PERM_KIND_TEXT
+					}
+
+					completions = append(completions, Completion{
+						ShownString:   info.Name,
+						Value:         info.Name,
+						Kind:          defines.CompletionItemKindVariable,
+						ReplacedRange: pos,
+						Detail:        detail,
+					})
+				}
+			}
+		default:
+			_ = greatGrandParent
+		}
+
 	}
 
 	return

@@ -379,6 +379,34 @@ func TestFindCompletions(t *testing.T) {
 				})
 			})
 
+			t.Run("permission kind", func(t *testing.T) {
+				state := newState()
+				chunk, _ := parseChunkSource("manifest{permissions:{}}", "")
+				doSymbolicCheck(chunk, state.Global)
+
+				completions := findCompletions(state, chunk, 22)
+				assert.Contains(t, completions, Completion{
+					ShownString:   "read",
+					Value:         "read",
+					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 22, End: 22}},
+				})
+			})
+
+			t.Run("permission kind from prefix", func(t *testing.T) {
+				state := newState()
+				chunk, _ := parseChunkSource("manifest{permissions:{r}}", "")
+				doSymbolicCheck(chunk, state.Global)
+
+				completions := findCompletions(state, chunk, 23)
+				assert.EqualValues(t, []Completion{
+					{
+						ShownString:   "read",
+						Value:         "read",
+						ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 22, End: 23}},
+					},
+				}, completions)
+			})
+
 			t.Run("subcommand", func(t *testing.T) {
 				t.Run("depth 0", func(t *testing.T) {
 					//TODO: implement
