@@ -42,7 +42,10 @@ func (err ParsingErrorAggregation) Error() string {
 }
 
 const (
-	IDENTS_WITH_KEYWORD_NAME_NOT_ALLOWED                     = "identifiers with a keyword name are not allowed, use $<name> or $$<name> for variables instead"
+	KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS = "keywords should not be used in left hand side of assignment"
+	KEYWORDS_SHOULD_NOT_BE_USED_AS_FN_NAMES       = "keywords should not be used as function names"
+	KEYWORDS_SHOULD_NOT_BE_USED_AS_PARAM_NAMES    = "keywords should not be used as parameter names"
+
 	PREINIT_KEYWORD_SHOULD_BE_FOLLOWED_BY_A_BLOCK            = "preinit keyword should be followed by a block"
 	INVALID_MANIFEST_DESC_VALUE                              = "invalid manifest description value, an object is expected"
 	UNTERMINATED_IDENTIFIER_LIT                              = "unterminated identifier literal"

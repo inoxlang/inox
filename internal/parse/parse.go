@@ -2010,11 +2010,6 @@ func (p *parser) parseIdentStartingExpression() Node {
 		}
 	}
 
-	if isKeyword(name) {
-		ident.Err = &ParsingError{UnspecifiedParsingError, IDENTS_WITH_KEYWORD_NAME_NOT_ALLOWED}
-		return ident
-	}
-
 	isDynamic := false
 	lastDotIndex := int32(-1)
 
@@ -6051,6 +6046,8 @@ func (p *parser) parseSingleGlobalConstDeclaration(declarations *[]*GlobalConsta
 	globvar, ok := lhs.(*IdentifierLiteral)
 	if !ok {
 		declParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_GLOBAL_CONST_DECL_LHS_MUST_BE_AN_IDENT}
+	} else if isKeyword(globvar.Name) {
+		declParsingErr = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS}
 	}
 
 	p.eatSpace()
@@ -6173,6 +6170,8 @@ func (p *parser) parseSingleLocalVarDeclaration(declarations *[]*LocalVariableDe
 	ident, ok := lhs.(*IdentifierLiteral)
 	if !ok {
 		declParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_LOCAL_VAR_DECL_LHS_MUST_BE_AN_IDENT}
+	} else if isKeyword(ident.Name) {
+		declParsingErr = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS}
 	}
 
 	p.eatSpace()
@@ -6507,12 +6506,17 @@ func (p *parser) parseMappingExpression(mappingIdent Node) *MappingExpression {
 		}
 
 		dynamicEntryVar, isDynamicEntry := key.(*IdentifierLiteral)
+		var entryParsingErr *ParsingError
+		if isDynamicEntry && isKeyword(dynamicEntryVar.Name) {
+			entryParsingErr = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS}
+		}
 
 		if p.i >= p.len {
 			if isDynamicEntry {
 				entries = append(entries, &DynamicMappingEntry{
 					NodeBase: NodeBase{
 						Span: dynamicEntryVar.Base().Span,
+						Err:  entryParsingErr,
 					},
 					KeyVar: dynamicEntryVar,
 				})
@@ -6520,6 +6524,7 @@ func (p *parser) parseMappingExpression(mappingIdent Node) *MappingExpression {
 				entries = append(entries, &StaticMappingEntry{
 					NodeBase: NodeBase{
 						Span: key.Base().Span,
+						Err:  entryParsingErr,
 					},
 					Key: key,
 				})
@@ -6559,8 +6564,14 @@ func (p *parser) parseMappingExpression(mappingIdent Node) *MappingExpression {
 
 			if p.i < p.len && (isAlpha(p.s[p.i]) || p.s[p.i] == '_') {
 				groupMatchingVariable = p.parseIdentStartingExpression()
-				if _, ok := groupMatchingVariable.(*IdentifierLiteral); !ok && groupMatchingVariable.Base().Err == nil {
+				ident, ok := groupMatchingVariable.(*IdentifierLiteral)
+
+				if !ok && groupMatchingVariable.Base().Err == nil {
 					groupMatchingVariable.BasePtr().Err = &ParsingError{UnspecifiedParsingError, INVALID_DYNAMIC_MAPPING_ENTRY_GROUP_MATCHING_VAR_EXPECTED}
+				}
+
+				if ok && isKeyword(ident.Name) {
+					entryParsingErr = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS}
 				}
 			}
 		}
@@ -6576,7 +6587,6 @@ func (p *parser) parseMappingExpression(mappingIdent Node) *MappingExpression {
 			value, _ = p.parseExpression()
 		}
 
-		var entryParsingErr *ParsingError
 		if value != nil {
 			end = value.Base().Span.End
 		} else {
@@ -7495,6 +7505,9 @@ func (p *parser) parseFunction(start int32) Node {
 		}
 
 		if ident != nil {
+			if parsingErr == nil && isKeyword(ident.Name) {
+				parsingErr = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_AS_FN_NAMES}
+			}
 			return &FunctionDeclaration{
 				NodeBase: NodeBase{
 					Span:            fn.Span,
@@ -7627,10 +7640,14 @@ func (p *parser) parseFunction(start int32) Node {
 				typ = nil
 			}
 
-			if _, ok := varNode.(*IdentifierLiteral); ok {
+			if ident, ok := varNode.(*IdentifierLiteral); ok {
 				span := varNode.Base().Span
 				if typ != nil {
 					span.End = typ.Base().Span.End
+				}
+
+				if paramErr == nil && isKeyword(ident.Name) {
+					paramErr = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_AS_PARAM_NAMES}
 				}
 
 				parameters = append(parameters, &FunctionParameter{
@@ -7734,6 +7751,10 @@ func (p *parser) parseFunction(start int32) Node {
 		fn.Err = nil
 		fn.ValuelessTokens = nil
 
+		if parsingErr == nil && isKeyword(ident.Name) {
+			parsingErr = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_AS_FN_NAMES}
+		}
+
 		return &FunctionDeclaration{
 			NodeBase: NodeBase{
 				Span:            fn.Span,
@@ -7818,9 +7839,13 @@ func (p *parser) parseFunctionPattern(start int32) Node {
 
 		} else {
 
-			switch varNode.(type) {
+			switch varNode := varNode.(type) {
 			case *IdentifierLiteral:
 				p.eatSpace()
+
+				if paramErr == nil && isKeyword(varNode.Name) {
+					paramErr = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_AS_PARAM_NAMES}
+				}
 
 				typ, isMissingExpr = p.parseExpression()
 				if isMissingExpr {
@@ -7838,7 +7863,7 @@ func (p *parser) parseFunctionPattern(start int32) Node {
 						paramErr,
 						nil,
 					},
-					Var:        varNode.(*IdentifierLiteral),
+					Var:        varNode,
 					Type:       typ,
 					IsVariadic: isVariadic,
 				})
@@ -8482,6 +8507,11 @@ top_loop:
 
 				case isAlpha(p.s[p.i]) && isMatchStmt: // group matching variable
 					e, _ := p.parseExpression()
+
+					ident, ok := e.(*IdentifierLiteral)
+					if ok && isKeyword(ident.Name) {
+						matchCase.Err = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS}
+					}
 					matchCase.GroupMatchingVariable = e
 					p.eatSpace()
 					goto parse_block
@@ -8785,10 +8815,13 @@ func (p *parser) parseMultiAssignmentStatement(assignIdent *IdentifierLiteral) *
 		p.i++
 	}
 
+	var keywordLHSError *ParsingError
+
 	for p.i < p.len && p.s[p.i] != '=' {
 		p.eatSpace()
 		e, _ := p.parseExpression()
-		if _, ok := e.(*IdentifierLiteral); !ok {
+		ident, ok := e.(*IdentifierLiteral)
+		if !ok {
 			return &MultiAssignment{
 				NodeBase: NodeBase{
 					Span: NodeSpan{assignIdent.Span.Start, p.i},
@@ -8797,17 +8830,19 @@ func (p *parser) parseMultiAssignmentStatement(assignIdent *IdentifierLiteral) *
 				Variables: vars,
 			}
 		}
+		if isKeyword(ident.Name) {
+			keywordLHSError = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS}
+		}
 		vars = append(vars, e)
 		p.eatSpace()
 	}
 
 	var (
-		right      Node
-		parsingErr *ParsingError
-		end        int32
+		right Node
+		end   int32
 	)
 	if p.i >= p.len || p.s[p.i] != '=' {
-		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_MULTI_ASSIGN_MISSING_EQL_SIGN}
+		keywordLHSError = &ParsingError{UnspecifiedParsingError, UNTERMINATED_MULTI_ASSIGN_MISSING_EQL_SIGN}
 		end = p.i
 	} else {
 		tokens = append(tokens, Token{Type: EQUAL, Span: NodeSpan{p.i, p.i + 1}})
@@ -8828,8 +8863,8 @@ func (p *parser) parseMultiAssignmentStatement(assignIdent *IdentifierLiteral) *
 			}
 			fallthrough
 		default:
-			if parsingErr == nil {
-				parsingErr = &ParsingError{InvalidNext, UNTERMINATED_ASSIGNMENT_MISSING_TERMINATOR}
+			if keywordLHSError == nil {
+				keywordLHSError = &ParsingError{InvalidNext, UNTERMINATED_ASSIGNMENT_MISSING_TERMINATOR}
 			}
 		}
 	}
@@ -8837,7 +8872,7 @@ func (p *parser) parseMultiAssignmentStatement(assignIdent *IdentifierLiteral) *
 	return &MultiAssignment{
 		NodeBase: NodeBase{
 			Span:            NodeSpan{assignIdent.Span.Start, end},
-			Err:             parsingErr,
+			Err:             keywordLHSError,
 			ValuelessTokens: tokens,
 		},
 		Variables: vars,
@@ -8900,6 +8935,8 @@ func (p *parser) parseAssignmentAndPatternDefinition(left Node) (result Node) {
 
 	p.i++
 	p.eatSpace()
+
+	var keywordLHSError *ParsingError
 
 	switch l := left.(type) {
 	case *PatternIdentifierLiteral:
@@ -8990,7 +9027,11 @@ func (p *parser) parseAssignmentAndPatternDefinition(left Node) (result Node) {
 			}
 		}
 
-	case *GlobalVariable, *Variable, *IdentifierLiteral, *MemberExpression, *IndexExpression, *SliceExpression, *IdentifierMemberExpression:
+	case *GlobalVariable, *Variable, *MemberExpression, *IndexExpression, *SliceExpression, *IdentifierMemberExpression:
+	case *IdentifierLiteral:
+		if isKeyword(l.Name) {
+			keywordLHSError = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS}
+		}
 	default:
 		return &Assignment{
 			NodeBase: NodeBase{
@@ -9050,6 +9091,7 @@ func (p *parser) parseAssignmentAndPatternDefinition(left Node) (result Node) {
 		NodeBase: NodeBase{
 			Span:            NodeSpan{left.Base().Span.Start, right.Base().Span.End},
 			ValuelessTokens: tokens,
+			Err:             keywordLHSError,
 		},
 		Left:     left,
 		Right:    right,

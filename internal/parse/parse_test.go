@@ -474,6 +474,12 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
+		t.Run("variable identifiers should not be keywords", func(t *testing.T) {
+			n, err := ParseChunk("const manifest = 1", "")
+			assert.NotNil(t, n)
+			assert.ErrorContains(t, err, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS)
+		})
+
 		t.Run("const keyword followed by EOF", func(t *testing.T) {
 			n, err := ParseChunk("const", "")
 			assert.Error(t, err)
@@ -815,10 +821,22 @@ func TestParse(t *testing.T) {
 			assert.Error(t, err)
 		})
 
+		t.Run("single declaration with keyword LHS", func(t *testing.T) {
+			mod, err := ParseChunk("var manifest", "")
+			assert.NotNil(t, mod)
+			assert.Error(t, err)
+		})
+
 		t.Run("single declaration with invalid LHS", func(t *testing.T) {
 			mod, err := ParseChunk("var 1 = 1", "")
 			assert.NotNil(t, mod)
 			assert.Error(t, err)
+		})
+
+		t.Run("single declaration with keyword LHS", func(t *testing.T) {
+			mod, err := ParseChunk("var manifest = 1", "")
+			assert.NotNil(t, mod)
+			assert.ErrorContains(t, err, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS)
 		})
 
 		t.Run("single declaration with unexpected char as LHS", func(t *testing.T) {
@@ -851,27 +869,6 @@ func TestParse(t *testing.T) {
 					&IdentifierLiteral{
 						NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
 						Name:     "a",
-					},
-				},
-			}, n)
-		})
-
-		t.Run("keyword not allowed", func(t *testing.T) {
-			n, err := ParseChunk("(for)", "")
-			assert.Error(t, err)
-			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
-				Statements: []Node{
-					&IdentifierLiteral{
-						NodeBase: NodeBase{
-							NodeSpan{1, 4},
-							&ParsingError{UnspecifiedParsingError, IDENTS_WITH_KEYWORD_NAME_NOT_ALLOWED},
-							[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{4, 5}},
-							},
-						},
-						Name: "for",
 					},
 				},
 			}, n)
@@ -5703,6 +5700,38 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
+		t.Run("identifier = <value>", func(t *testing.T) {
+			n := MustParseChunk("a = $b")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{
+							NodeSpan{0, 6},
+							nil,
+							[]Token{{Type: EQUAL, Span: NodeSpan{2, 3}}},
+						},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+							Name:     "a",
+						},
+						Right: &Variable{
+							NodeBase: NodeBase{NodeSpan{4, 6}, nil, nil},
+							Name:     "b",
+						},
+						Operator: Assign,
+					},
+				},
+			}, n)
+		})
+
+		t.Run("keyword = <value>", func(t *testing.T) {
+			res, err := ParseChunk("const ()\nmanifest {}\nmanifest = $b", "")
+			assert.Error(t, err)
+			assert.NotNil(t, res)
+			assert.ErrorContains(t, err, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS)
+		})
+
 		t.Run("<index expr> = <value>", func(t *testing.T) {
 			n := MustParseChunk("$a[0] = $b")
 			assert.EqualValues(t, &Chunk{
@@ -5953,6 +5982,13 @@ func TestParse(t *testing.T) {
 					},
 				},
 			}, n)
+		})
+
+		t.Run("keyword LHS", func(t *testing.T) {
+			res, err := ParseChunk("const ()\nmanifest {}\nassign manifest = $b", "")
+			assert.Error(t, err)
+			assert.NotNil(t, res)
+			assert.ErrorContains(t, err, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS)
 		})
 
 		t.Run("missing terminator", func(t *testing.T) {
@@ -12612,6 +12648,60 @@ func TestParse(t *testing.T) {
 				},
 			}, n)
 		})
+
+		t.Run("parameter name should not be a keyword ", func(t *testing.T) {
+			n, err := ParseChunk("fn(manifest){}", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 14}, nil, nil},
+				Statements: []Node{
+					&FunctionExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 14},
+							nil,
+							[]Token{
+								{Type: FN_KEYWORD, Span: NodeSpan{0, 2}},
+								{Type: OPENING_PARENTHESIS, Span: NodeSpan{2, 3}},
+								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{11, 12}},
+							},
+						},
+						Parameters: []*FunctionParameter{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{3, 11},
+									&ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_AS_PARAM_NAMES},
+									nil,
+								},
+								Var: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{3, 11}, nil, nil},
+									Name:     "manifest",
+								},
+							},
+						},
+						Body: &Block{
+							NodeBase: NodeBase{
+								NodeSpan{12, 14},
+								nil,
+								[]Token{
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{12, 13}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{13, 14}},
+								},
+							},
+							Statements: nil,
+						},
+					},
+				},
+			}, n)
+		})
+	})
+
+	t.Run("function declaration", func(t *testing.T) {
+		t.Run("keyword name", func(t *testing.T) {
+			res, err := ParseChunk("fn manifest(){}", "")
+			assert.Error(t, err)
+			assert.NotNil(t, res)
+			assert.ErrorContains(t, err, KEYWORDS_SHOULD_NOT_BE_USED_AS_FN_NAMES)
+		})
 	})
 
 	t.Run("function pattern expression", func(t *testing.T) {
@@ -13014,6 +13104,51 @@ func TestParse(t *testing.T) {
 						NodeBase: NodeBase{NodeSpan{5, 6}, nil, nil},
 						Raw:      "1",
 						Value:    1,
+					},
+				},
+			}, n)
+		})
+
+		t.Run("parameter name should not be a keyword ", func(t *testing.T) {
+			n, err := ParseChunk("%fn(manifest){}", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 15}, nil, nil},
+				Statements: []Node{
+					&FunctionPatternExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 15},
+							nil,
+							[]Token{
+								{Type: PERCENT_FN, Span: NodeSpan{0, 3}},
+								{Type: OPENING_PARENTHESIS, Span: NodeSpan{3, 4}},
+								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{12, 13}},
+							},
+						},
+						Parameters: []*FunctionParameter{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{4, 12},
+									&ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_AS_PARAM_NAMES},
+									nil,
+								},
+								Var: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{4, 12}, nil, nil},
+									Name:     "manifest",
+								},
+							},
+						},
+						Body: &Block{
+							NodeBase: NodeBase{
+								NodeSpan{13, 15},
+								nil,
+								[]Token{
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{13, 14}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{14, 15}},
+								},
+							},
+							Statements: nil,
+						},
 					},
 				},
 			}, n)
@@ -13660,6 +13795,12 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
+		t.Run("group match variable should not be a keyword", func(t *testing.T) {
+			n, err := ParseChunk("match 1 { %/home/{:username} manifest { } }", "")
+			assert.NotNil(t, n)
+			assert.ErrorContains(t, err, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS)
+		})
+
 		t.Run("missing value before block of case", func(t *testing.T) {
 			s := "match 1 { {} }"
 
@@ -14094,6 +14235,12 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
+		t.Run("dynamic entry var should not be a keyword", func(t *testing.T) {
+			n, err := ParseChunk("Mapping { manifest 0 => n }", "")
+			assert.NotNil(t, n)
+			assert.ErrorContains(t, err, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS)
+		})
+
 		t.Run("dynamic entry with group matching variable", func(t *testing.T) {
 			n := MustParseChunk("Mapping { p %/ m => m }")
 			assert.EqualValues(t, &Chunk{
@@ -14138,6 +14285,12 @@ func TestParse(t *testing.T) {
 					},
 				},
 			}, n)
+		})
+
+		t.Run("group matching variable should not be a keyword", func(t *testing.T) {
+			n, err := ParseChunk("Mapping { p %/ manifest => m  }", "")
+			assert.NotNil(t, n)
+			assert.ErrorContains(t, err, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS)
 		})
 
 		t.Run("static entry, missing closing brace", func(t *testing.T) {
