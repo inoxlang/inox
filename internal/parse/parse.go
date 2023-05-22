@@ -31,14 +31,15 @@ const (
 	DATE_LITERAL_PATTERN         = "^(\\d+y)(-\\d{1,2}mt)?(-\\d{1,2}d)?(-\\d{1,2}h)?(-\\d{1,2}m)?(-\\d{1,2}s)?(-\\d{1,3}ms)?(-\\d{1,3}us)?(-[a-zA-Z_/]+[a-zA-Z_])$"
 	STRICT_EMAIL_ADDRESS_PATTERN = "(?i)(^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,24}$)"
 
-	MANIFEST_KEYWORD_STR = "manifest"
-	CONST_KEYWORD_STR    = "const"
-	VAR_KEYWORD_STR      = "var"
+	CONST_KEYWORD_STR = "const"
+	VAR_KEYWORD_STR   = "var"
 )
 
 var (
-	KEYWORDS = tokenStrings[IF_KEYWORD : OR_KEYWORD+1]
-	SCHEMES  = []string{"http", "https", "ws", "wss", "ldb", "file", "mem", "s3"}
+	KEYWORDS             = tokenStrings[IF_KEYWORD : OR_KEYWORD+1]
+	PREINIT_KEYWORD_STR  = tokenStrings[PREINIT_KEYWORD]
+	MANIFEST_KEYWORD_STR = tokenStrings[MANIFEST_KEYWORD]
+	SCHEMES              = []string{"http", "https", "ws", "wss", "ldb", "file", "mem", "s3"}
 
 	//regexes
 	URL_REGEX                  = regexp.MustCompile(URL_PATTERN)
@@ -5983,6 +5984,37 @@ loop:
 }
 
 // can return nil
+func (p *parser) parsePreInitIfPresent() *PreinitStatement {
+	var preinit *PreinitStatement
+	if p.i < p.len && strings.HasPrefix(string(p.s[p.i:]), PREINIT_KEYWORD_STR) {
+		start := p.i
+
+		tokens := []Token{{Type: PREINIT_KEYWORD, Span: NodeSpan{p.i, p.i + int32(len(PREINIT_KEYWORD_STR))}}}
+		p.i += int32(len(PREINIT_KEYWORD_STR))
+
+		p.eatSpace()
+
+		var parsingErr *ParsingError
+		var preinitBlock *Block
+		if p.i >= p.len || p.s[p.i] != '{' {
+			parsingErr = &ParsingError{UnspecifiedParsingError, PREINIT_KEYWORD_SHOULD_BE_FOLLOWED_BY_A_BLOCK}
+		} else {
+			preinitBlock = p.parseBlock()
+		}
+
+		preinit = &PreinitStatement{
+			NodeBase: NodeBase{
+				Span:            NodeSpan{start, preinitBlock.Base().Span.End},
+				Err:             parsingErr,
+				ValuelessTokens: tokens,
+			},
+			Block: preinitBlock,
+		}
+	}
+	return preinit
+}
+
+// can return nil
 func (p *parser) parseManifestIfPresent() *Manifest {
 	var manifest *Manifest
 	if p.i < p.len && strings.HasPrefix(string(p.s[p.i:]), MANIFEST_KEYWORD_STR) {
@@ -9346,6 +9378,9 @@ func (p *parser) parseChunk() (*Chunk, error) {
 	globalConstDecls := p.parseGlobalConstantDeclarations()
 
 	p.eatSpaceNewlineSemicolonComment(&valuelessTokens)
+	preinit := p.parsePreInitIfPresent()
+
+	p.eatSpaceNewlineSemicolonComment(&valuelessTokens)
 	manifest := p.parseManifestIfPresent()
 
 	p.eatSpaceNewlineSemicolonComment(&valuelessTokens)
@@ -9393,6 +9428,7 @@ func (p *parser) parseChunk() (*Chunk, error) {
 		p.eatSpaceNewlineSemicolonComment(&valuelessTokens)
 	}
 
+	chunk.Preinit = preinit
 	chunk.Manifest = manifest
 	chunk.Statements = stmts
 	chunk.GlobalConstantDeclarations = globalConstDecls

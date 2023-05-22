@@ -45,6 +45,7 @@ const (
 	//WITH NO ASSOCIATED VALUE
 	IF_KEYWORD TokenType = iota + 1
 	ELSE_KEYWORD
+	PREINIT_KEYWORD
 	MANIFEST_KEYWORD
 	DROP_PERMS_KEYWORD
 	ASSIGN_KEYWORD
@@ -245,6 +246,7 @@ func (m TokenMeta) Strings() ([16]string, int) {
 var tokenStrings = [...]string{
 	IF_KEYWORD:                     "if",
 	ELSE_KEYWORD:                   "else",
+	PREINIT_KEYWORD:                "preinit",
 	MANIFEST_KEYWORD:               "manifest",
 	DROP_PERMS_KEYWORD:             "drop-perms",
 	ASSIGN_KEYWORD:                 "assign",
@@ -394,6 +396,7 @@ var tokenStrings = [...]string{
 var tokenTypenames = [...]string{
 	IF_KEYWORD:                     "IF_KEYWORD",
 	ELSE_KEYWORD:                   "ELSE_KEYWORD",
+	PREINIT_KEYWORD:                "PREINIT_KEYWORD",
 	MANIFEST_KEYWORD:               "MANIFEST_KEYWORD",
 	DROP_PERMS_KEYWORD:             "DROP_PERMS_KEYWORD",
 	ASSIGN_KEYWORD:                 "ASSIGN_KEYWORD",

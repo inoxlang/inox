@@ -31,7 +31,6 @@ func (s NodeSpan) HasPositionEndIncluded(i int32) bool {
 	return i >= s.Start && i <= s.End
 }
 
-
 // NodeBase implements Node interface
 type NodeBase struct {
 	Span            NodeSpan
@@ -157,6 +156,7 @@ func IsScopeContainerNode(node Node) bool {
 type Chunk struct {
 	NodeBase
 	GlobalConstantDeclarations *GlobalConstantDeclarations //nil if no const declarations at the top of the module
+	Preinit                    *PreinitStatement           //nil if no preinit block at the top of the module
 	Manifest                   *Manifest                   //nil if no require at the top of the module
 	Statements                 []Node
 	IsShellChunk               bool
@@ -1645,6 +1645,11 @@ func (PatternConversionExpression) Kind() NodeKind {
 	return Expr
 }
 
+type PreinitStatement struct {
+	NodeBase
+	Block *Block
+}
+
 type Manifest struct {
 	NodeBase
 	Object Node
@@ -2146,11 +2151,14 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 	switch n := node.(type) {
 	case *Chunk:
 		walk(n.GlobalConstantDeclarations, node, ancestorChain, fn, afterFn)
+		walk(n.Preinit, node, ancestorChain, fn, afterFn)
 		walk(n.Manifest, node, ancestorChain, fn, afterFn)
 
 		for _, stmt := range n.Statements {
 			walk(stmt, node, ancestorChain, fn, afterFn)
 		}
+	case *PreinitStatement:
+		walk(n.Block, node, ancestorChain, fn, afterFn)
 	case *Manifest:
 		walk(n.Object, node, ancestorChain, fn, afterFn)
 	case *EmbeddedModule:

@@ -211,6 +211,62 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
+		t.Run("empty preinit", func(t *testing.T) {
+			n := MustParseChunk("preinit {}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase:   NodeBase{NodeSpan{0, 10}, nil, nil},
+				Statements: nil,
+				Preinit: &PreinitStatement{
+					NodeBase: NodeBase{
+						Span: NodeSpan{0, 10},
+						ValuelessTokens: []Token{
+							{Type: PREINIT_KEYWORD, Span: NodeSpan{0, 7}},
+						},
+					},
+					Block: &Block{
+						NodeBase: NodeBase{
+							NodeSpan{8, 10},
+							nil,
+							[]Token{
+								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
+								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("empty preinit after newline", func(t *testing.T) {
+			n := MustParseChunk("\npreinit {}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					NodeSpan{0, 11},
+					nil,
+					[]Token{{Type: NEWLINE, Span: NodeSpan{0, 1}}},
+				},
+				Statements: nil,
+				Preinit: &PreinitStatement{
+					NodeBase: NodeBase{
+						Span: NodeSpan{1, 11},
+						ValuelessTokens: []Token{
+							{Type: PREINIT_KEYWORD, Span: NodeSpan{1, 8}},
+						},
+					},
+					Block: &Block{
+						NodeBase: NodeBase{
+							NodeSpan{9, 11},
+							nil,
+							[]Token{
+								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
+								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("empty manifest", func(t *testing.T) {
 			n := MustParseChunk("manifest {}")
 			assert.EqualValues(t, &Chunk{
@@ -270,6 +326,58 @@ func TestParse(t *testing.T) {
 				},
 			}, n)
 		})
+
+		t.Run("empty manifest after preinit", func(t *testing.T) {
+			n := MustParseChunk("preinit {}\nmanifest {}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					NodeSpan{0, 22},
+					nil,
+					[]Token{
+						{Type: NEWLINE, Span: NodeSpan{10, 11}},
+					},
+				},
+				Statements: nil,
+				Preinit: &PreinitStatement{
+					NodeBase: NodeBase{
+						Span: NodeSpan{0, 10},
+						ValuelessTokens: []Token{
+							{Type: PREINIT_KEYWORD, Span: NodeSpan{0, 7}},
+						},
+					},
+					Block: &Block{
+						NodeBase: NodeBase{
+							NodeSpan{8, 10},
+							nil,
+							[]Token{
+								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
+								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
+							},
+						},
+					},
+				},
+				Manifest: &Manifest{
+					NodeBase: NodeBase{
+						Span: NodeSpan{11, 22},
+						ValuelessTokens: []Token{
+							{Type: MANIFEST_KEYWORD, Span: NodeSpan{11, 19}},
+						},
+					},
+					Object: &ObjectLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{20, 22},
+							nil,
+							[]Token{
+								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{20, 21}},
+								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{21, 22}},
+							},
+						},
+						Properties: nil,
+					},
+				},
+			}, n)
+		})
+
 	})
 
 	t.Run("top level constant declarations", func(t *testing.T) {
