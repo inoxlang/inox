@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"errors"
 	"fmt"
 
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -32,10 +31,10 @@ func NewSymbolicContext(startingConcreteContext ConcreteContext) *Context {
 	}
 }
 
-func (ctx *Context) AddHostAlias(name string, val *Host) {
+func (ctx *Context) AddHostAlias(name string, val *Host, ignoreError bool) {
 	_, ok := ctx.hostAliases[name]
-	if ok {
-		panic(errors.New("cannot register a host alias more than once"))
+	if ok && !ignoreError {
+		panic(fmt.Errorf("cannot register a host alias more than once: %s", name))
 	}
 	ctx.hostAliases[name] = val
 }
@@ -66,7 +65,12 @@ func (ctx *Context) ResolveNamedPattern(name string) Pattern {
 	return pattern
 }
 
-func (ctx *Context) AddNamedPattern(name string, pattern Pattern, optDefinitionPosition ...parse.SourcePositionRange) {
+func (ctx *Context) AddNamedPattern(name string, pattern Pattern, ignoreError bool, optDefinitionPosition ...parse.SourcePositionRange) {
+	_, ok := ctx.namedPatterns[name]
+	if ok && !ignoreError {
+		panic(fmt.Errorf("cannot register a pattern more than once: %s", name))
+	}
+
 	ctx.namedPatterns[name] = pattern
 
 	if len(optDefinitionPosition) > 0 {
@@ -95,7 +99,12 @@ func (ctx *Context) ResolvePatternNamespace(name string) *PatternNamespace {
 	return namespace
 }
 
-func (ctx *Context) AddPatternNamespace(name string, namespace *PatternNamespace, optDefinitionPosition ...parse.SourcePositionRange) {
+func (ctx *Context) AddPatternNamespace(name string, namespace *PatternNamespace, ignoreError bool, optDefinitionPosition ...parse.SourcePositionRange) {
+	_, ok := ctx.patternNamespaces[name]
+	if ok && !ignoreError {
+		panic(fmt.Errorf("cannot register a pattern namespace more than once: %s", name))
+	}
+
 	ctx.patternNamespaces[name] = namespace
 
 	if len(optDefinitionPosition) > 0 {

@@ -57,6 +57,7 @@ type RoutineSpawnArgs struct {
 	Globals      GlobalVariables
 	Module       *Module
 	RoutineCtx   *Context
+	PreinitState *GlobalState
 
 	//AbsScriptDir string
 	UseBytecode bool
@@ -124,6 +125,7 @@ func SpawnRoutine(args RoutineSpawnArgs) (*Routine, error) {
 	modState.Out = args.SpawnerState.Out
 	modState.StaticCheckData = staticCheckData
 	modState.GetBaseGlobalsForImportedModule = args.SpawnerState.GetBaseGlobalsForImportedModule
+	modState.GetBasePatternsForImportedModule = args.SpawnerState.GetBasePatternsForImportedModule
 	// TODO: set SymbolicData
 
 	routine := &Routine{

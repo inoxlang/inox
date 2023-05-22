@@ -164,6 +164,7 @@ func SymbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr error) {
 	return _symbolicEval(node, state, false)
 }
+
 func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result SymbolicValue, finalErr error) {
 	defer func() {
 
@@ -804,10 +805,10 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		}
 
 		if host, ok := value.(*Host); ok {
-			state.ctx.AddHostAlias(name, host)
+			state.ctx.AddHostAlias(name, host, state.inPreinit)
 		} else {
 			state.addError(makeSymbolicEvalError(node, state, fmtCannotCreateHostAliasWithA(value)))
-			state.ctx.AddHostAlias(name, &Host{})
+			state.ctx.AddHostAlias(name, &Host{}, state.inPreinit)
 		}
 
 		return nil, nil
@@ -844,6 +845,22 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 					return nil, fmt.Errorf("failed to set global '%s'", decl.Ident().Name)
 				}
 			}
+		}
+
+		//evaluation of preinit block
+		if n.Preinit != nil {
+			state.inPreinit = true
+			for _, stmt := range n.Preinit.Block.Statements {
+				_, err := _symbolicEval(stmt, state, false)
+
+				if err != nil {
+					return nil, err
+				}
+				if state.returnValue != nil {
+					return nil, fmt.Errorf("preinit block should not return")
+				}
+			}
+			state.inPreinit = false
 		}
 
 		// evaluation of manifest, this is performed only to get symbolic data
@@ -2505,7 +2522,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		}
 		//TODO: add checks
 		state.symbolicData.SetMostSpecificNodeValue(n.Left, pattern)
-		state.ctx.AddNamedPattern(n.Left.Name, pattern, state.getCurrentChunkNodePositionOrZero(n.Left))
+		state.ctx.AddNamedPattern(n.Left.Name, pattern, state.inPreinit, state.getCurrentChunkNodePositionOrZero(n.Left))
 		state.symbolicData.SetContextData(n, state.ctx.currentData())
 		return nil, nil
 	case *parse.PatternNamespaceDefinition:
@@ -2528,7 +2545,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				}
 				namespace.entries[k] = v.(Pattern)
 			}
-			state.ctx.AddPatternNamespace(n.Left.Name, namespace, pos)
+			state.ctx.AddPatternNamespace(n.Left.Name, namespace, state.inPreinit, pos)
 		case *Record:
 			if len(r.entries) > 0 {
 				namespace.entries = make(map[string]Pattern)
@@ -2539,10 +2556,10 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				}
 				namespace.entries[k] = v.(Pattern)
 			}
-			state.ctx.AddPatternNamespace(n.Left.Name, namespace, pos)
+			state.ctx.AddPatternNamespace(n.Left.Name, namespace, state.inPreinit, pos)
 		default:
 			state.addError(makeSymbolicEvalError(node, state, fmtPatternNamespaceShouldBeInitWithNot(right)))
-			state.ctx.AddPatternNamespace(n.Left.Name, namespace, pos)
+			state.ctx.AddPatternNamespace(n.Left.Name, namespace, state.inPreinit, pos)
 		}
 		state.symbolicData.SetMostSpecificNodeValue(n.Left, namespace)
 		state.symbolicData.SetContextData(n, state.ctx.currentData())
@@ -2919,10 +2936,10 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		//add patterns of parent state
 		modCtx := NewSymbolicContext(state.ctx.startingConcreteContext) //TODO: read the manifest to known the permissions
 		state.ctx.ForEachPattern(func(name string, pattern Pattern) {
-			modCtx.AddNamedPattern(name, pattern, parse.SourcePositionRange{})
+			modCtx.AddNamedPattern(name, pattern, state.inPreinit, parse.SourcePositionRange{})
 		})
 		state.ctx.ForEachPatternNamespace(func(name string, namespace *PatternNamespace) {
-			modCtx.AddPatternNamespace(name, namespace, parse.SourcePositionRange{})
+			modCtx.AddPatternNamespace(name, namespace, state.inPreinit, parse.SourcePositionRange{})
 		})
 
 		modState := newSymbolicState(modCtx, &parse.ParsedChunk{

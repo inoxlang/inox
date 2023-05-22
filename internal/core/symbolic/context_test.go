@@ -13,7 +13,7 @@ func TestSymbolicContext(t *testing.T) {
 			ctx := NewSymbolicContext(nil)
 			fork := ctx.fork()
 
-			fork.AddHostAlias("site", &Host{})
+			fork.AddHostAlias("site", &Host{}, false)
 			assert.Equal(t, &Host{}, fork.ResolveHostAlias("site"))
 			assert.Nil(t, ctx.ResolveHostAlias("site"))
 		})
@@ -22,7 +22,7 @@ func TestSymbolicContext(t *testing.T) {
 			ctx := NewSymbolicContext(nil)
 			fork := ctx.fork()
 
-			fork.AddNamedPattern("p", &AnyPattern{})
+			fork.AddNamedPattern("p", &AnyPattern{}, false)
 			assert.Equal(t, &AnyPattern{}, fork.ResolveNamedPattern("p"))
 			assert.Nil(t, ctx.ResolveNamedPattern("p"))
 		})

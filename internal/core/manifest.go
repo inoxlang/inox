@@ -471,7 +471,7 @@ func (m *Manifest) Usage() string {
 }
 
 // EvaluatePermissionListingObjectNode evaluates the object literal listing permissions in a permission drop statement.
-func EvaluatePermissionListingObjectNode(n *parse.ObjectLiteral, config ManifestEvaluationConfig) (*Object, error) {
+func EvaluatePermissionListingObjectNode(n *parse.ObjectLiteral, config PreinitArgs) (*Object, error) {
 
 	var state *TreeWalkState
 
@@ -514,6 +514,7 @@ type manifestObjectConfig struct {
 	defaultLimitations    []Limitation
 	addDefaultPermissions bool
 	handleCustomType      CustomPermissionTypeHandler //optional
+	envPattern            *ObjectPattern              //pre-evaluated
 	ignoreUnkownSections  bool
 }
 
@@ -553,26 +554,10 @@ func createManifest(object *Object, config manifestObjectConfig) (*Manifest, err
 			}
 			permListing = listing
 		case MANIFEST_ENV_SECTION_NAME:
-			patt, ok := v.(*ObjectPattern)
-			if !ok {
-				return nil, fmt.Errorf("invalid manifest, the " + MANIFEST_ENV_SECTION_NAME + " section should have a value of type object pattern")
+			envPattern = config.envPattern
+			if envPattern == nil {
+				return nil, fmt.Errorf("missing pre-evaluated environment pattern")
 			}
-			err := patt.ForEachEntry(func(propName string, propPattern Pattern, _ bool) error {
-				switch propPattern.(type) {
-				case StringPattern, *SecretPattern:
-					return nil
-				case *TypePattern:
-					if propPattern == STR_PATTERN {
-						return nil
-					}
-				default:
-				}
-				return fmt.Errorf("invalid "+MANIFEST_ENV_SECTION_NAME+" section in manifest: invalid pattern type %T for environment variable '%s'", propPattern, propName)
-			})
-			if err != nil {
-				return nil, err
-			}
-			envPattern = patt
 		case MANIFEST_PARAMS_SECTION_NAME:
 			params, err := getModuleParameters(v)
 			if err != nil {
@@ -607,6 +592,37 @@ func createManifest(object *Object, config manifestObjectConfig) (*Manifest, err
 		EnvPattern:          envPattern,
 		Parameters:          moduleParams,
 	}, nil
+}
+
+func evaluateEnvSection(n *parse.ObjectPatternLiteral, state *TreeWalkState, m *Module) (*ObjectPattern, error) {
+	v, err := TreeWalkEval(n, state)
+	if err != nil {
+		if err != nil {
+			return nil, fmt.Errorf("%s: failed to evaluate manifest object: %w", m.Name(), err)
+		}
+	}
+
+	patt, ok := v.(*ObjectPattern)
+	if !ok {
+		return nil, fmt.Errorf("invalid manifest, the " + MANIFEST_ENV_SECTION_NAME + " section should have a value of type object pattern")
+	}
+	err = patt.ForEachEntry(func(propName string, propPattern Pattern, _ bool) error {
+		switch propPattern.(type) {
+		case StringPattern, *SecretPattern:
+			return nil
+		case *TypePattern:
+			if propPattern == STR_PATTERN {
+				return nil
+			}
+		default:
+		}
+		return fmt.Errorf("invalid "+MANIFEST_ENV_SECTION_NAME+" section in manifest: invalid pattern type %T for environment variable '%s'", propPattern, propName)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return patt, nil
 }
 
 func getPermissionsFromListing(

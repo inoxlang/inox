@@ -40,7 +40,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(ctx)
 
-		res, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -58,20 +58,137 @@ func TestPrepareLocalScript(t *testing.T) {
 		}
 
 		// the state should be present because we can still make perform static check
-		if !assert.NotNil(t, res) {
+		if !assert.NotNil(t, state) {
 			return
 		}
-		if !assert.True(t, res.Ctx.HasPermission(core.CreateFsReadPerm(core.PathPattern("/...")))) {
+		if !assert.True(t, state.Ctx.HasPermission(core.CreateFsReadPerm(core.PathPattern("/...")))) {
 			return
 		}
 
 		// static check should have been performed
-		if !assert.NotEmpty(t, res.StaticCheckData.Errors()) {
+		if !assert.NotEmpty(t, state.StaticCheckData.Errors()) {
 			return
 		}
 
 		// symbolic check should not have been performed
-		assert.True(t, res.SymbolicData.IsEmpty())
+		assert.True(t, state.SymbolicData.IsEmpty())
+	})
+
+	t.Run("preinit block defines a pattern used in the manifest", func(t *testing.T) {
+
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+
+		os.WriteFile(file, []byte(`
+			preinit {
+				%patt = %/...
+			}
+			manifest {
+				permissions: {
+					read: %patt
+				}
+			}
+		`), 0o600)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  _fs.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx)
+
+		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			UseContextAsParent:        true,
+			Out:                       io.Discard,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		if !assert.True(t, state.Ctx.HasPermission(core.CreateFsReadPerm(core.PathPattern("/...")))) {
+			return
+		}
+
+		if !assert.Empty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
+	})
+
+	t.Run("preinit block defines a host alias used in the manifest", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+
+		os.WriteFile(file, []byte(`
+			preinit {
+				@host = https://localhost
+			}
+			manifest {
+				permissions: {
+					read: @host/
+				}
+			}
+		`), 0o600)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(
+				core.GetDefaultGlobalVarPermissions(),
+				core.CreateHttpReadPerm(core.Host("https://localhost")),
+			),
+			Filesystem: _fs.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx)
+
+		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			UseContextAsParent:        true,
+			Out:                       io.Discard,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		if !assert.True(t, state.Ctx.HasPermission(core.CreateHttpReadPerm(core.URL("https://localhost/")))) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.Empty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
 	})
 
 	t.Run("invalid CLI arguments: missing positional argument", func(t *testing.T) {
@@ -94,7 +211,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(ctx)
 
-		res, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
 			Fpath:                     file,
 			CliArgs:                   []string{}, //missing file argument
 			ParsingCompilationContext: compilationCtx,
@@ -113,7 +230,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		}
 
 		// the state should be present
-		if !assert.NotNil(t, res) {
+		if !assert.NotNil(t, state) {
 			return
 		}
 	})
@@ -136,7 +253,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(ctx)
 
-		res, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
 			Fpath:                     file,
 			CliArgs:                   []string{"true"}, //too many arguments
 			ParsingCompilationContext: compilationCtx,
@@ -155,7 +272,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		}
 
 		// the state should be present
-		if !assert.NotNil(t, res) {
+		if !assert.NotNil(t, state) {
 			return
 		}
 	})
@@ -178,7 +295,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(ctx)
 
-		res, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
 			Fpath:                     file,
 			CliArgs:                   []string{"-x"}, //unknown argument
 			ParsingCompilationContext: compilationCtx,
@@ -197,7 +314,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		}
 
 		// the state should be present
-		if !assert.NotNil(t, res) {
+		if !assert.NotNil(t, state) {
 			return
 		}
 	})
@@ -222,7 +339,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(ctx)
 
-		res, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
 			Fpath:                     file,
 			Args:                      core.NewObjectFromMap(core.ValMap{}, ctx),
 			ParsingCompilationContext: compilationCtx,
@@ -241,7 +358,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		}
 
 		// the state should be present
-		if !assert.NotNil(t, res) {
+		if !assert.NotNil(t, state) {
 			return
 		}
 	})
@@ -262,18 +379,18 @@ func TestPrepareLocalScript(t *testing.T) {
 		
 		`), 0o600)
 
-		ctx := core.NewContext(core.ContextConfig{
+		state := core.NewContext(core.ContextConfig{
 			Permissions: core.GetDefaultGlobalVarPermissions(),
 		})
-		core.NewGlobalState(ctx)
+		core.NewGlobalState(state)
 
 		res, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
 			Fpath: file,
 			Args: core.NewObjectFromMap(core.ValMap{
 				"0": core.Path("./a.txt"),
-			}, ctx),
+			}, state),
 			ParsingCompilationContext: compilationCtx,
-			ParentContext:             ctx,
+			ParentContext:             state,
 			UseContextAsParent:        true,
 			Out:                       io.Discard,
 		})
@@ -313,7 +430,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(ctx)
 
-		res, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
 			Fpath: file,
 			Args: core.NewObjectFromMap(core.ValMap{
 				"0": core.True,
@@ -334,7 +451,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		}
 
 		// the state should be present
-		if !assert.NotNil(t, res) {
+		if !assert.NotNil(t, state) {
 			return
 		}
 	})
@@ -357,7 +474,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(ctx)
 
-		res, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
 			Fpath: file,
 			Args: core.NewObjectFromMap(core.ValMap{
 				"0": core.True,
@@ -378,7 +495,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		}
 
 		// the state should be present
-		if !assert.NotNil(t, res) {
+		if !assert.NotNil(t, state) {
 			return
 		}
 	})
@@ -404,7 +521,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(ctx)
 
-		res, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
 			Fpath: file,
 			Args: core.NewObjectFromMap(core.ValMap{
 				"0":      core.Path("./a.txt"),
@@ -426,7 +543,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		}
 
 		// the state should be present
-		if !assert.NotNil(t, res) {
+		if !assert.NotNil(t, state) {
 			return
 		}
 	})
@@ -451,7 +568,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(ctx)
 
-		res, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
 			Fpath: file,
 			Args: core.NewObjectFromMap(core.ValMap{
 				"outpu": core.True, //unknown argument
@@ -472,7 +589,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		}
 
 		// the state should be present
-		if !assert.NotNil(t, res) {
+		if !assert.NotNil(t, state) {
 			return
 		}
 	})
@@ -495,7 +612,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(ctx)
 
-		res, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
 			Fpath: file,
 			Args: core.NewObjectFromMap(core.ValMap{
 				"x": core.True, //unknown argument
@@ -516,7 +633,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		}
 
 		// the state should be present
-		if !assert.NotNil(t, res) {
+		if !assert.NotNil(t, state) {
 			return
 		}
 	})
@@ -546,7 +663,7 @@ func TestRunLocalScript(t *testing.T) {
 
 		os.WriteFile(file, []byte("fn(){self}; return 1"), 0o600)
 
-		res, _, _, err := RunLocalScript(RunScriptArgs{
+		state, _, _, err := RunLocalScript(RunScriptArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: createCompilationCtx(dir),
 			UseContextAsParent:        true,
@@ -556,7 +673,7 @@ func TestRunLocalScript(t *testing.T) {
 		})
 
 		assert.Error(t, err)
-		assert.Nil(t, res)
+		assert.Nil(t, state)
 	})
 
 	t.Run("too many warnings", func(t *testing.T) {
@@ -567,7 +684,7 @@ func TestRunLocalScript(t *testing.T) {
 
 		os.WriteFile(file, []byte("manifest {}\n"+manySpawnExprs), 0o600)
 
-		res, _, _, err := RunLocalScript(RunScriptArgs{
+		state, _, _, err := RunLocalScript(RunScriptArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: createCompilationCtx(dir),
 			UseContextAsParent:        true,
@@ -580,7 +697,7 @@ func TestRunLocalScript(t *testing.T) {
 			return
 		}
 
-		assert.Nil(t, res)
+		assert.Nil(t, state)
 	})
 }
 

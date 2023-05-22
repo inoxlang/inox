@@ -17,6 +17,7 @@ type State struct {
 
 	// first scope is the global scope, forks start with a global scope copy & a copy of the deepest local scope
 	scopeStack            []*scopeInfo
+	inPreinit             bool
 	recursiveFunctionName string
 
 	calleeStack       []*parse.FunctionExpression

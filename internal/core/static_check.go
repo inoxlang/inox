@@ -358,6 +358,7 @@ func findClosestScopeContainerNode(ancestorChain []parse.Node) parse.Node {
 func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain []parse.Node, _ bool) parse.TraversalAction {
 	closestModule := findClosestModule(ancestorChain)
 	closestAssertion := findClosest[*parse.AssertionStatement](ancestorChain)
+	inPreinitBlock := findClosest[*parse.PreinitStatement](ancestorChain) != nil
 
 	//check that the node is allowed in assertion
 
@@ -1544,7 +1545,8 @@ switch_:
 	case *parse.PatternDefinition:
 		patternName := node.Left.Name
 		patterns := c.getModPatterns(closestModule)
-		if _, alreadyDefined := patterns[patternName]; alreadyDefined {
+
+		if _, alreadyDefined := patterns[patternName]; alreadyDefined && !inPreinitBlock {
 			c.addError(node, fmtPatternAlreadyDeclared(patternName))
 		} else {
 			patterns[patternName] = 0
@@ -1552,7 +1554,7 @@ switch_:
 	case *parse.PatternNamespaceDefinition:
 		namespaceName := node.Left.Name
 		namespaces := c.getModPatternNamespaces(closestModule)
-		if _, alreadyDefined := namespaces[namespaceName]; alreadyDefined {
+		if _, alreadyDefined := namespaces[namespaceName]; alreadyDefined && !inPreinitBlock {
 			c.addError(node, fmtPatternAlreadyDeclared(namespaceName))
 		} else {
 			namespaces[namespaceName] = 0
@@ -1631,6 +1633,19 @@ func (checker *checker) postCheckSingleNode(node, parent, scopeNode parse.Node, 
 		}
 	}
 	return parse.Continue
+}
+
+func checkPreinitBlock(preinit *parse.PreinitStatement, onError func(n parse.Node, msg string)) {
+	parse.Walk(preinit.Block, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
+		switch n := node.(type) {
+		case *parse.Block, *parse.HostAliasDefinition, *parse.IdentifierLiteral, *parse.PatternDefinition, parse.SimpleValueLiteral,
+			*parse.PatternIdentifierLiteral, *parse.URLExpression:
+		default:
+			onError(n, fmt.Sprintf("forbidden node type in preinit block: %T", n))
+		}
+
+		return parse.Continue, nil
+	}, nil)
 }
 
 func checkManifestObject(objLit *parse.ObjectLiteral, ignoreUnknownSections bool, onError func(n parse.Node, msg string)) {
@@ -1748,7 +1763,7 @@ func checkPermissionListingObject(objLit *parse.ObjectLiteral, onError func(n pa
 	parse.Walk(objLit, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 		switch n := node.(type) {
 		case *parse.ObjectLiteral, *parse.ListLiteral, *parse.DictionaryLiteral, *parse.DictionaryEntry, *parse.ObjectProperty,
-			parse.SimpleValueLiteral, *parse.GlobalVariable:
+			parse.SimpleValueLiteral, *parse.GlobalVariable, *parse.PatternIdentifierLiteral, *parse.URLExpression:
 		default:
 			onError(n, fmtForbiddenNodeInPermListing(n))
 		}

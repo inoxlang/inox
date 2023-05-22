@@ -23,15 +23,19 @@ import (
 )
 
 const (
-	RETURN_1_MODULE_HASH             = "SG2a/7YNuwBjsD2OI6bM9jZM4gPcOp9W8g51DrQeyt4="
-	RETURN_NON_POS_ARG_A_MODULE_HASH = "15Njs+OhmiW9843cgnlMib7AiUzZbGx6gn3GAebWMOA="
-	RETURN_POS_ARG_A_MODULE_HASH     = "QNJpkgQeB5MA23yXpJ8L5XWLzUQIi6eDwi2HOnPTO3w="
+	RETURN_1_MODULE_HASH               = "SG2a/7YNuwBjsD2OI6bM9jZM4gPcOp9W8g51DrQeyt4="
+	RETURN_NON_POS_ARG_A_MODULE_HASH   = "15Njs+OhmiW9843cgnlMib7AiUzZbGx6gn3GAebWMOA="
+	RETURN_POS_ARG_A_MODULE_HASH       = "QNJpkgQeB5MA23yXpJ8L5XWLzUQIi6eDwi2HOnPTO3w="
+	RETURN_PATTERN_INT_TWO_MODULE_HASH = "D9SSw63q6VesJ6tTYZZ1EJzyAW5L3FCTPxQjWfOi8F4="
+	RETURN_INT_PATTERN_MODULE_HASH     = "Ub9ua2QldCOc6MvxIPVpUYOQQfQoZpYEoDJitOdKFPA="
 )
 
 func init() {
 	moduleCache[RETURN_1_MODULE_HASH] = "return 1"
 	moduleCache[RETURN_NON_POS_ARG_A_MODULE_HASH] = "manifest {parameters: {a: %int}}\nreturn mod-args.a"
 	moduleCache[RETURN_POS_ARG_A_MODULE_HASH] = "manifest {parameters: {{name: #a, pattern: %int}}}\nreturn mod-args.a"
+	moduleCache[RETURN_PATTERN_INT_TWO_MODULE_HASH] = "manifest {}\n%two = 2; return %two"
+	moduleCache[RETURN_INT_PATTERN_MODULE_HASH] = "manifest {}; return %int"
 }
 
 func TestTreeWalkEval(t *testing.T) {
@@ -3888,6 +3892,69 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.EqualValues(t, Int(1), res)
 		})
 
+		t.Run("imported module returns the %two pattern (same pattern is defined in module)", func(t *testing.T) {
+			code := strings.ReplaceAll(`
+				%two = 1
+
+				import two_patt https://modules.com/return_global_a.ix {
+					validation: "<hash>"
+					arguments: {}
+				}
+				return $$two_patt
+			`, "<hash>", RETURN_PATTERN_INT_TWO_MODULE_HASH)
+
+			ctx := NewDefaultTestContext()
+			ctx.AddNamedPattern("int", INT_PATTERN)
+
+			state := NewGlobalState(ctx)
+			res, err := Eval(code, state, false)
+			assert.NoError(t, err)
+			assert.EqualValues(t, NewExactValuePattern(Int(2)), res)
+		})
+
+		t.Run("imported module returns the %two pattern", func(t *testing.T) {
+			code := strings.ReplaceAll(`
+				import two_patt https://modules.com/return_global_a.ix {
+					validation: "<hash>"
+					arguments: {}
+				}
+				return $$two_patt
+			`, "<hash>", RETURN_PATTERN_INT_TWO_MODULE_HASH)
+
+			ctx := NewDefaultTestContext()
+			ctx.AddNamedPattern("int", INT_PATTERN)
+
+			state := NewGlobalState(ctx)
+			res, err := Eval(code, state, false)
+			assert.NoError(t, err)
+			assert.EqualValues(t, NewExactValuePattern(Int(2)), res)
+		})
+
+		t.Run("imported module returns the %int pattern (base pattern)", func(t *testing.T) {
+			code := strings.ReplaceAll(`
+				import int_pattern https://modules.com/return_global_a.ix {
+					validation: "<hash>"
+					arguments: {}
+				}
+				return $$int_pattern
+			`, "<hash>", RETURN_INT_PATTERN_MODULE_HASH)
+
+			ctx := NewDefaultTestContext()
+			ctx.AddNamedPattern("int", INT_PATTERN)
+
+			state := NewGlobalState(ctx)
+			//we copy the pattern in order to later check that the importer's pattern is not passed to the imported module.
+			intPatternCopy := *INT_PATTERN
+
+			state.GetBasePatternsForImportedModule = func() (map[string]Pattern, map[string]*PatternNamespace) {
+				return map[string]Pattern{"int": &intPatternCopy}, nil
+			}
+
+			res, err := Eval(code, state, false)
+			assert.NoError(t, err)
+			assert.Same(t, &intPatternCopy, res)
+		})
+
 		t.Run("local module", func(t *testing.T) {
 			code := strings.ReplaceAll(`
 				import importname ./return_a.ix  {
@@ -3917,6 +3984,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					Source: parse.SourceFile{Resource: "/mytest", ResourceDir: "/", NameString: "/mytest"},
 				},
 			}
+			state.GetBasePatternsForImportedModule = func() (map[string]Pattern, map[string]*PatternNamespace) {
+				return DEFAULT_NAMED_PATTERNS, DEFAULT_PATTERN_NAMESPACES
+			}
+
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, Int(1), res)

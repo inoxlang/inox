@@ -156,8 +156,9 @@ func ImportModule(config ImportConfig) (*Routine, error) {
 		return nil, fmt.Errorf("import: cannot fetch module: %s", err.Error())
 	}
 
-	manifest, err := mod.EvalManifest(ManifestEvaluationConfig{
+	manifest, preinitState, err := mod.PreInit(PreinitArgs{
 		GlobalConsts:          mod.MainChunk.Node.GlobalConstantDeclarations,
+		Preinit:               mod.MainChunk.Node.Preinit,
 		AddDefaultPermissions: true,
 	})
 
@@ -178,10 +179,21 @@ func ImportModule(config ImportConfig) (*Routine, error) {
 		ParentContext:        config.ParentState.Ctx,
 	})
 
-	for k, v := range config.ParentState.Ctx.namedPatterns {
-		routineCtx.AddNamedPattern(k, v)
+	// add base patterns
+	var basePatterns map[string]Pattern
+	var basePatternNamespaces map[string]*PatternNamespace
+	if config.ParentState.GetBasePatternsForImportedModule != nil {
+		basePatterns, basePatternNamespaces = config.ParentState.GetBasePatternsForImportedModule()
+
+		for name, patt := range basePatterns {
+			routineCtx.AddNamedPattern(name, patt)
+		}
+		for name, ns := range basePatternNamespaces {
+			routineCtx.AddPatternNamespace(name, ns)
+		}
 	}
 
+	// add base globals
 	var globals GlobalVariables
 	if config.ParentState.GetBaseGlobalsForImportedModule != nil {
 		baseGlobals, err := config.ParentState.GetBaseGlobalsForImportedModule(routineCtx, manifest)
@@ -191,6 +203,25 @@ func ImportModule(config ImportConfig) (*Routine, error) {
 		globals = baseGlobals
 	} else {
 		globals = GlobalVariablesFromMap(map[string]Value{}, nil)
+	}
+
+	// pass patterns & host aliases of the preinit state to the context
+	if preinitState != nil {
+		for name, patt := range preinitState.Global.Ctx.GetNamedPatterns() {
+			if _, ok := basePatterns[name]; ok {
+				continue
+			}
+			routineCtx.AddNamedPattern(name, patt)
+		}
+		for name, ns := range preinitState.Global.Ctx.GetPatternNamespaces() {
+			if _, ok := basePatternNamespaces[name]; ok {
+				continue
+			}
+			routineCtx.AddPatternNamespace(name, ns)
+		}
+		for name, val := range preinitState.Global.Ctx.GetHostAliases() {
+			routineCtx.AddHostAlias(name, val)
+		}
 	}
 
 	if config.ArgObj != nil {

@@ -850,7 +850,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		return TreeWalkEval(n.Block, state)
 	case *parse.PermissionDroppingStatement:
-		permissionListing, err := EvaluatePermissionListingObjectNode(n.Object, ManifestEvaluationConfig{
+		permissionListing, err := EvaluatePermissionListingObjectNode(n.Object, PreinitArgs{
 			RunningState: state,
 		})
 		if err != nil {

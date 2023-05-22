@@ -68,7 +68,7 @@ func (s *TestSuite) Run(ctx *Context, options ...Option) (*Routine, error) {
 		return nil, fmt.Errorf("testing: following permission is required for running tests: %w", err)
 	}
 
-	manifest, err := s.module.EvalManifest(ManifestEvaluationConfig{
+	manifest, _, err := s.module.PreInit(PreinitArgs{
 		RunningState: NewTreeWalkStateWithGlobal(spawnerState),
 	})
 
@@ -232,7 +232,7 @@ func (s *TestCase) Run(ctx *Context, options ...Option) (*Routine, error) {
 
 	spawnerState := ctx.GetClosestState()
 
-	manifest, err := s.module.EvalManifest(ManifestEvaluationConfig{
+	manifest, _, err := s.module.PreInit(PreinitArgs{
 		RunningState: NewTreeWalkStateWithGlobal(spawnerState),
 	})
 

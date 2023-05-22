@@ -17,9 +17,9 @@ func TestComputeProgramRiskScore(t *testing.T) {
 			Context: ctx,
 		}))
 
-		manifest := utils.Must(mod.EvalManifest(ManifestEvaluationConfig{
+		manifest, _, _ := mod.PreInit(PreinitArgs{
 			GlobalConsts: mod.MainChunk.Node.GlobalConstantDeclarations,
-		}))
+		})
 
 		assert.Equal(t, RiskScore(1), ComputeProgramRiskScore(mod, manifest))
 	})
@@ -36,9 +36,9 @@ func TestComputeProgramRiskScore(t *testing.T) {
 			Context: ctx,
 		}))
 
-		manifest := utils.Must(mod.EvalManifest(ManifestEvaluationConfig{
+		manifest, _, _ := mod.PreInit(PreinitArgs{
 			GlobalConsts: mod.MainChunk.Node.GlobalConstantDeclarations,
-		}))
+		})
 
 		expected := RiskScore(FS_READ_PERM_RISK_SCORE * UNKNOW_FILE_PATTERN_SENSITIVITY_MUTLIPLIER)
 		assert.Equal(t, expected, ComputeProgramRiskScore(mod, manifest))
@@ -58,9 +58,9 @@ func TestComputeProgramRiskScore(t *testing.T) {
 			Context: ctx,
 		}))
 
-		manifest := utils.Must(mod.EvalManifest(ManifestEvaluationConfig{
+		manifest, _, _ := mod.PreInit(PreinitArgs{
 			GlobalConsts: mod.MainChunk.Node.GlobalConstantDeclarations,
-		}))
+		})
 
 		expected := RiskScore(
 			(FS_READ_PERM_RISK_SCORE * UNKNOW_FILE_PATTERN_SENSITIVITY_MUTLIPLIER) *
@@ -81,9 +81,9 @@ func TestComputeProgramRiskScore(t *testing.T) {
 			Context: ctx,
 		}))
 
-		manifest := utils.Must(mod.EvalManifest(ManifestEvaluationConfig{
+		manifest, _, _ := mod.PreInit(PreinitArgs{
 			GlobalConsts: mod.MainChunk.Node.GlobalConstantDeclarations,
-		}))
+		})
 
 		expected := RiskScore(ROUTINE_PERM_RISK_SCORE)
 		assert.Equal(t, expected, ComputeProgramRiskScore(mod, manifest))
@@ -105,9 +105,9 @@ func TestComputeProgramRiskScore(t *testing.T) {
 			Context: ctx,
 		}))
 
-		manifest := utils.Must(mod.EvalManifest(ManifestEvaluationConfig{
+		manifest, _, _ := mod.PreInit(PreinitArgs{
 			GlobalConsts: mod.MainChunk.Node.GlobalConstantDeclarations,
-		}))
+		})
 
 		assert.Equal(t, MAXIMUM_RISK_SCORE, ComputeProgramRiskScore(mod, manifest))
 	})

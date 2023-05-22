@@ -74,11 +74,13 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	}
 
 	var manifest *core.Manifest
-	var manifestErr error
+	var preinitState *core.TreeWalkState
+	var preinitErr error
 
 	if mod != nil {
-		manifest, manifestErr = mod.EvalManifest(core.ManifestEvaluationConfig{
+		manifest, preinitState, preinitErr = mod.PreInit(core.PreinitArgs{
 			GlobalConsts:          mod.MainChunk.Node.GlobalConstantDeclarations,
+			Preinit:               mod.MainChunk.Node.Preinit,
 			DefaultLimitations:    DEFAULT_SCRIPT_LIMITATIONS,
 			AddDefaultPermissions: true,
 			IgnoreUnknownSections: args.IgnoreNonCriticalIssues,
@@ -131,6 +133,26 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	state = globalState
 	state.Module = mod
 
+	//pass patterns & host aliases of the preinit state to the state
+	if preinitState != nil {
+		for name, patt := range preinitState.Global.Ctx.GetNamedPatterns() {
+			if _, ok := core.DEFAULT_NAMED_PATTERNS[name]; ok {
+				continue
+			}
+			state.Ctx.AddNamedPattern(name, patt)
+		}
+		for name, ns := range preinitState.Global.Ctx.GetPatternNamespaces() {
+			if _, ok := core.DEFAULT_PATTERN_NAMESPACES[name]; ok {
+				continue
+			}
+			state.Ctx.AddPatternNamespace(name, ns)
+		}
+		for name, val := range preinitState.Global.Ctx.GetHostAliases() {
+			state.Ctx.AddHostAlias(name, val)
+		}
+	}
+
+	// CLI arguments | arguments of imported module
 	var modArgs *core.Object
 	var modArgsError error
 
@@ -222,8 +244,8 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		finalErr = parsingErr
 	} else if finalErr == nil {
 		switch {
-		case manifestErr != nil:
-			finalErr = manifestErr
+		case preinitErr != nil:
+			finalErr = preinitErr
 		case err_ != nil:
 			finalErr = err_
 		case staticCheckErr != nil:

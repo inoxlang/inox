@@ -1412,9 +1412,9 @@ func TestFunctionPattern(t *testing.T) {
 
 	makeState := func() *State {
 		state := newSymbolicState(NewSymbolicContext(nil), nil)
-		state.ctx.AddNamedPattern("int", &TypePattern{val: &Int{}})
-		state.ctx.AddNamedPattern("str", &TypePattern{val: &String{}})
-		state.ctx.AddNamedPattern("obj", &TypePattern{val: NewAnyObject()})
+		state.ctx.AddNamedPattern("int", &TypePattern{val: &Int{}}, false)
+		state.ctx.AddNamedPattern("str", &TypePattern{val: &String{}}, false)
+		state.ctx.AddNamedPattern("obj", &TypePattern{val: NewAnyObject()}, false)
 		state.pushScope()
 		return state
 	}

@@ -298,6 +298,9 @@ func NewDefaultGlobalState(ctx *core.Context, conf DefaultGlobalStateConfig) (*c
 		baseGlobalKeys := utils.GetMapKeys(importedModuleGlobals)
 		return core.GlobalVariablesFromMap(importedModuleGlobals, baseGlobalKeys), nil
 	}
+	state.GetBasePatternsForImportedModule = func() (map[string]core.Pattern, map[string]*core.PatternNamespace) {
+		return utils.CopyMap(core.DEFAULT_NAMED_PATTERNS), utils.CopyMap(core.DEFAULT_PATTERN_NAMESPACES)
+	}
 
 	return state, nil
 }

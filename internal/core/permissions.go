@@ -241,6 +241,10 @@ type HttpPermission struct {
 	Entity WrappedString //URL, URLPattern, HTTPHost, HTTPHostPattern ....
 }
 
+func CreateHttpReadPerm(entity WrappedString) HttpPermission {
+	return HttpPermission{Kind_: permkind.Read, Entity: entity}
+}
+
 func (perm HttpPermission) Kind() PermissionKind {
 	return perm.Kind_
 }

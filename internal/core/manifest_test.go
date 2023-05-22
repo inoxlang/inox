@@ -216,7 +216,7 @@ func TestEvalManifest(t *testing.T) {
 				ManifestTemplate: chunk.Manifest,
 			}
 
-			manifest, err := mod.EvalManifest(ManifestEvaluationConfig{
+			manifest, _, err := mod.PreInit(PreinitArgs{
 				GlobalConsts:          chunk.GlobalConstantDeclarations,
 				RunningState:          nil,
 				AddDefaultPermissions: true,

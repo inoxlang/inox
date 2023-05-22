@@ -323,7 +323,7 @@ func runStartupScript(startupScriptPath string, outW io.Writer) (*core.Object, *
 		panic(fmt.Errorf("failed to parse startup script: %w", err))
 	}
 
-	startupManifest, err := startupMod.EvalManifest(core.ManifestEvaluationConfig{
+	startupManifest, _, err := startupMod.PreInit(core.PreinitArgs{
 		GlobalConsts:          startupMod.MainChunk.Node.GlobalConstantDeclarations,
 		AddDefaultPermissions: true,
 	})

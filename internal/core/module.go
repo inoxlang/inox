@@ -98,8 +98,10 @@ func (mod *Module) ToSymbolic() *symbolic.Module {
 	return symbolic.NewModule(mod.MainChunk, inclusionStmtMap)
 }
 
-type ManifestEvaluationConfig struct {
-	GlobalConsts          *parse.GlobalConstantDeclarations
+type PreinitArgs struct {
+	GlobalConsts *parse.GlobalConstantDeclarations //only used if no running state
+	Preinit      *parse.PreinitStatement           //only used if no running state
+
 	RunningState          *TreeWalkState //optional
 	DefaultLimitations    []Limitation
 	AddDefaultPermissions bool
@@ -108,31 +110,43 @@ type ManifestEvaluationConfig struct {
 	IgnoreConstDeclErrors bool
 }
 
-func (m *Module) EvalManifest(config ManifestEvaluationConfig) (*Manifest, error) {
+func (m *Module) PreInit(preinitArgs PreinitArgs) (*Manifest, *TreeWalkState, error) {
 	if m.ManifestTemplate == nil {
-		return &Manifest{}, nil
+		return &Manifest{}, nil, nil
 	}
 
 	manifestObjLiteral, ok := m.ManifestTemplate.Object.(*parse.ObjectLiteral)
 	if !ok {
-		return &Manifest{}, nil
+		return &Manifest{}, nil, nil
 	}
 
 	// check object literal
 	{
 		var checkErr []error
-		checkManifestObject(manifestObjLiteral, config.IgnoreUnknownSections, func(n parse.Node, msg string) {
+		checkManifestObject(manifestObjLiteral, preinitArgs.IgnoreUnknownSections, func(n parse.Node, msg string) {
 			checkErr = append(checkErr, errors.New(msg))
 		})
 		if len(checkErr) != 0 {
-			return nil, fmt.Errorf("%s: error while checking manifest's object literal: %w", m.Name(), combineErrors(checkErr...))
+			return nil, nil, fmt.Errorf("%s: error while checking manifest's object literal: %w", m.Name(), combineErrors(checkErr...))
+		}
+	}
+
+	//check preinit block
+	if preinitArgs.Preinit != nil {
+		var checkErr []error
+		checkPreinitBlock(preinitArgs.Preinit, func(n parse.Node, msg string) {
+			checkErr = append(checkErr, errors.New(msg))
+		})
+		if len(checkErr) != 0 {
+			return nil, nil, fmt.Errorf("%s: error while checking preinit block: %w", m.Name(), combineErrors(checkErr...))
 		}
 	}
 
 	var state *TreeWalkState
+	var envPattern *ObjectPattern
 
 	//we create a temporary state to evaluate some parts of the permissions
-	if config.RunningState == nil {
+	if preinitArgs.RunningState == nil {
 		ctx := NewContext(ContextConfig{Permissions: []Permission{GlobalVarPermission{permkind.Read, "*"}}})
 		for k, v := range DEFAULT_NAMED_PATTERNS {
 			ctx.AddNamedPattern(k, v)
@@ -144,17 +158,29 @@ func (m *Module) EvalManifest(config ManifestEvaluationConfig) (*Manifest, error
 
 		state = NewTreeWalkState(ctx, getGlobalsAccessibleFromManifest().EntryMap())
 
-		if config.GlobalConsts != nil {
-			for _, decl := range config.GlobalConsts.Declarations {
+		// pre evaluate the env section of the manifest
+		envSection, ok := manifestObjLiteral.PropValue(MANIFEST_ENV_SECTION_NAME)
+		if ok {
+			v, err := TreeWalkEval(envSection, state)
+			if err != nil {
+				if err != nil {
+					return nil, nil, fmt.Errorf("%s: failed to pre-evaluate the env section: %w", m.Name(), err)
+				}
+			}
+			envPattern = v.(*ObjectPattern)
+		}
+
+		if preinitArgs.GlobalConsts != nil {
+			for _, decl := range preinitArgs.GlobalConsts.Declarations {
 				//ignore declaration if incomplete
-				if config.IgnoreConstDeclErrors && decl.Left == nil || decl.Right == nil || parse.NodeIs(decl.Right, (*parse.MissingExpression)(nil)) {
+				if preinitArgs.IgnoreConstDeclErrors && decl.Left == nil || decl.Right == nil || parse.NodeIs(decl.Right, (*parse.MissingExpression)(nil)) {
 					continue
 				}
 
 				constVal, err := TreeWalkEval(decl.Right, state)
 				if err != nil {
-					if !config.IgnoreConstDeclErrors {
-						return nil, fmt.Errorf(
+					if !preinitArgs.IgnoreConstDeclErrors {
+						return nil, nil, fmt.Errorf(
 							"%s: failed to evaluate manifest object: error while evaluating constant declarations: %w", m.Name(), err)
 					}
 				} else {
@@ -163,29 +189,48 @@ func (m *Module) EvalManifest(config ManifestEvaluationConfig) (*Manifest, error
 			}
 		}
 
+		//evalute preinit block
+		if preinitArgs.Preinit != nil {
+			_, err := TreeWalkEval(preinitArgs.Preinit.Block, state)
+			if err != nil {
+				if err != nil {
+					return nil, nil, fmt.Errorf("%s: failed to evaluate manifest object: %w", m.Name(), err)
+				}
+			}
+		}
+
 	} else {
-		state = config.RunningState
+		if preinitArgs.GlobalConsts != nil {
+			return nil, nil, fmt.Errorf(".GlobalConstants argument should not have been passed for preinit")
+		}
+
+		if preinitArgs.Preinit != nil {
+			return nil, nil, fmt.Errorf(".Preinit argument should not have been passed for preinit")
+		}
+
+		state = preinitArgs.RunningState
 	}
 
 	// evaluate object literal
 	v, err := TreeWalkEval(m.ManifestTemplate.Object, state)
 	if err != nil {
 		if err != nil {
-			return nil, fmt.Errorf("%s: failed to evaluate manifest object: %w", m.Name(), err)
+			return nil, nil, fmt.Errorf("%s: failed to evaluate manifest object: %w", m.Name(), err)
 		}
 	}
 
 	manifestObj := v.(*Object)
 
 	manifest, err := createManifest(manifestObj, manifestObjectConfig{
-		defaultLimitations:    config.DefaultLimitations,
-		handleCustomType:      config.HandleCustomType,
-		addDefaultPermissions: config.AddDefaultPermissions,
+		defaultLimitations:    preinitArgs.DefaultLimitations,
+		handleCustomType:      preinitArgs.HandleCustomType,
+		addDefaultPermissions: preinitArgs.AddDefaultPermissions,
+		envPattern:            envPattern,
 		//addDefaultPermissions: true,
-		ignoreUnkownSections: config.IgnoreUnknownSections,
+		ignoreUnkownSections: preinitArgs.IgnoreUnknownSections,
 	})
 
-	return manifest, err
+	return manifest, state, err
 }
 
 func (m *Module) ParsingErrorTuple() *Tuple {

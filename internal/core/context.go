@@ -60,7 +60,7 @@ type Context struct {
 	limiters             map[string]*Limiter
 
 	//values
-	hostAliases         map[string]Value
+	hostAliases         map[string]Host
 	namedPatterns       map[string]Pattern
 	patternNamespaces   map[string]*PatternNamespace
 	urlProtocolClients  map[URL]ProtocolClient
@@ -189,7 +189,7 @@ func NewContext(config ContextConfig) *Context {
 		forbiddenPermissions: utils.CopySlice(config.ForbiddenPermissions),
 		limitations:          utils.CopySlice(config.Limitations),
 		limiters:             limiters,
-		hostAliases:          map[string]Value{},
+		hostAliases:          map[string]Host{},
 		namedPatterns:        map[string]Pattern{},
 		patternNamespaces:    map[string]*PatternNamespace{},
 		urlProtocolClients:   map[URL]ProtocolClient{},
@@ -731,9 +731,16 @@ func (ctx *Context) AddHostAlias(alias string, host Host) {
 
 	_, ok := ctx.hostAliases[alias]
 	if ok {
-		panic(ErrNotUniqueAliasDefinition)
+		panic(fmt.Errorf("%w: %s", ErrNotUniqueAliasDefinition, alias))
 	}
 	ctx.hostAliases[alias] = host
+}
+
+func (ctx *Context) GetHostAliases() map[string]Host {
+	ctx.lock.RLock()
+	defer ctx.lock.RUnlock()
+
+	return utils.CopyMap(ctx.hostAliases)
 }
 
 // ResolveNamedPattern returns the pattern associated with the passed name, if the pattern does not exist nil is returned.
@@ -765,7 +772,7 @@ func (ctx *Context) AddNamedPattern(name string, pattern Pattern) {
 	//_, isDynamic := patt.(*DynamicStringPatternElement)
 
 	if ok {
-		panic(ErrNotUniquePatternDefinition)
+		panic(fmt.Errorf("%w: %s", ErrNotUniquePatternDefinition, name))
 	}
 	ctx.namedPatterns[name] = pattern
 }
@@ -791,7 +798,7 @@ func (ctx *Context) AddPatternNamespace(name string, namespace *PatternNamespace
 	_, ok := ctx.patternNamespaces[name]
 
 	if ok {
-		panic(ErrNotUniquePatternNamespaceDefinition)
+		panic(fmt.Errorf("%w: %s", ErrNotUniquePatternNamespaceDefinition, name))
 	}
 	ctx.patternNamespaces[name] = namespace
 }
@@ -891,7 +898,7 @@ func (ctx *Context) AddHostResolutionData(h Host, data ResourceName) {
 	_, ok := ctx.hostResolutionData[h]
 
 	if ok {
-		panic(ErrNotUniqueHostResolutionDefinition)
+		panic(fmt.Errorf("%w: %s", ErrNotUniqueHostResolutionDefinition, h))
 	}
 	ctx.hostResolutionData[h] = data
 }
@@ -926,7 +933,7 @@ func (ctx *Context) AddUserData(name Identifier, value Value) {
 
 	_, ok := ctx.userData[name]
 	if ok {
-		panic(ErrDoubleUserDataDefinition)
+		panic(fmt.Errorf("%w: %s", ErrDoubleUserDataDefinition, name))
 	}
 
 	if ok, expl := IsSharable(value, ctx.getClosestStateNoLock()); !ok {
@@ -980,7 +987,7 @@ func (ctx *Context) ToSymbolicValue() (*symbolic.Context, error) {
 			return nil, fmt.Errorf("cannot convert named pattern %s: %s", k, err)
 		}
 
-		symbolicCtx.AddNamedPattern(k, symbolicVal.(symbolic.Pattern))
+		symbolicCtx.AddNamedPattern(k, symbolicVal.(symbolic.Pattern), false)
 	}
 
 	for k, v := range ctx.patternNamespaces {
@@ -989,7 +996,7 @@ func (ctx *Context) ToSymbolicValue() (*symbolic.Context, error) {
 			return nil, fmt.Errorf("cannot convert '%s' pattern namespace: %s", k, err)
 		}
 
-		symbolicCtx.AddPatternNamespace(k, symbolicVal.(*symbolic.PatternNamespace))
+		symbolicCtx.AddPatternNamespace(k, symbolicVal.(*symbolic.PatternNamespace), false)
 	}
 
 	for k, v := range ctx.hostAliases {
@@ -998,7 +1005,7 @@ func (ctx *Context) ToSymbolicValue() (*symbolic.Context, error) {
 			return nil, fmt.Errorf("cannot convert host alias %s: %s", k, err)
 		}
 
-		symbolicCtx.AddHostAlias(k, symbolicVal.(*symbolic.Host))
+		symbolicCtx.AddHostAlias(k, symbolicVal.(*symbolic.Host), false)
 	}
 
 	return symbolicCtx, nil

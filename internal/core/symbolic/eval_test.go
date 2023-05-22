@@ -2776,7 +2776,7 @@ func TestSymbolicEval(t *testing.T) {
 			call: func(ctx *Context, values []SymbolicValue) (Pattern, error) {
 				return &ExactValuePattern{value: &Int{}}, nil
 			},
-		})
+		}, false)
 
 		res, err := symbolicEval(n, state)
 		assert.NoError(t, err)
@@ -3911,7 +3911,7 @@ func TestSymbolicEval(t *testing.T) {
 				return %{...%p}
 			`)
 
-			state.ctx.AddNamedPattern("p", &ObjectPattern{})
+			state.ctx.AddNamedPattern("p", &ObjectPattern{}, false)
 
 			spreadElem := parse.FindNode(n, (*parse.PatternPropertySpreadElement)(nil), nil)
 
@@ -4103,44 +4103,84 @@ func TestSymbolicEval(t *testing.T) {
 		assert.Equal(t, &SequenceStringPattern{}, res)
 	})
 
-	t.Run("pattern definition: object pattern literal", func(t *testing.T) {
-		n, state := MakeTestStateAndChunk(`
-			%p = %{list: %[1]}
-			return %p
-		`)
+	t.Run("pattern definition", func(t *testing.T) {
 
-		res, err := symbolicEval(n, state)
-		assert.NoError(t, err)
-		assert.Empty(t, state.errors)
-		assert.Equal(t, &ObjectPattern{
-			entries: map[string]Pattern{
-				"list": &ListPattern{
-					elements: []Pattern{
-						&ExactValuePattern{value: &Int{}},
+		t.Run("object pattern literal", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				%p = %{list: %[1]}
+				return %p
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, &ObjectPattern{
+				entries: map[string]Pattern{
+					"list": &ListPattern{
+						elements: []Pattern{
+							&ExactValuePattern{value: &Int{}},
+						},
 					},
 				},
-			},
-			inexact: true,
-		}, res)
+				inexact: true,
+			}, res)
 
-		//check context data
+			//check context data
 
-		pattern := state.ctx.ResolveNamedPattern("p")
-		returnStmt, ancestors := parse.FindNodeAndChain(n, (*parse.ReturnStatement)(nil), nil)
+			pattern := state.ctx.ResolveNamedPattern("p")
+			returnStmt, ancestors := parse.FindNodeAndChain(n, (*parse.ReturnStatement)(nil), nil)
 
-		data, ok := state.symbolicData.GetContextData(returnStmt, ancestors)
-		if !assert.True(t, ok) {
-			return
-		}
+			data, ok := state.symbolicData.GetContextData(returnStmt, ancestors)
+			if !assert.True(t, ok) {
+				return
+			}
 
-		//ignore definition positions
-		for i := range data.Patterns {
-			data.Patterns[i].DefinitionPosition = parse.SourcePositionRange{}
-		}
+			//ignore definition positions
+			for i := range data.Patterns {
+				data.Patterns[i].DefinitionPosition = parse.SourcePositionRange{}
+			}
 
-		assert.Contains(t, data.Patterns, NamedPatternData{
-			Name:  "p",
-			Value: pattern,
+			assert.Contains(t, data.Patterns, NamedPatternData{
+				Name:  "p",
+				Value: pattern,
+			})
+		})
+
+		t.Run("in preinit block", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				preinit {
+					%p = %{}
+				}
+				return %p
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, &ObjectPattern{
+				entries: map[string]Pattern{},
+				inexact: true,
+			}, res)
+
+			//check context data
+
+			pattern := state.ctx.ResolveNamedPattern("p")
+			returnStmt, ancestors := parse.FindNodeAndChain(n, (*parse.ReturnStatement)(nil), nil)
+
+			data, ok := state.symbolicData.GetContextData(returnStmt, ancestors)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			//ignore definition positions
+			for i := range data.Patterns {
+				data.Patterns[i].DefinitionPosition = parse.SourcePositionRange{}
+			}
+
+			assert.Contains(t, data.Patterns, NamedPatternData{
+				Name:  "p",
+				Value: pattern,
+			})
 		})
 	})
 
@@ -4889,8 +4929,8 @@ func TestSymbolicEval(t *testing.T) {
 					return concat a b
 				}`,
 			)
-			state.ctx.AddNamedPattern("int_tuple", &TypePattern{val: NewTupleOf(ANY_INT)})
-			state.ctx.AddNamedPattern("str_tuple", &TypePattern{val: NewTupleOf(ANY_STR)})
+			state.ctx.AddNamedPattern("int_tuple", &TypePattern{val: NewTupleOf(ANY_INT)}, false)
+			state.ctx.AddNamedPattern("str_tuple", &TypePattern{val: NewTupleOf(ANY_STR)}, false)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -4912,7 +4952,7 @@ func TestSymbolicEval(t *testing.T) {
 					return concat a b
 				}`,
 			)
-			state.ctx.AddNamedPattern("int_tuple", &TypePattern{val: NewTupleOf(ANY_INT)})
+			state.ctx.AddNamedPattern("int_tuple", &TypePattern{val: NewTupleOf(ANY_INT)}, false)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
