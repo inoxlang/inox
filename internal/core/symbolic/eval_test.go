@@ -52,7 +52,7 @@ func TestSymbolicEval(t *testing.T) {
 	}
 
 	t.Run("empty", func(t *testing.T) {
-		n, state := MakeTestStateAndChunk(`""`)
+		n, state := MakeTestStateAndChunk(``)
 		_, err := symbolicEval(n, state)
 		assert.NoError(t, err)
 		assert.Empty(t, state.errors)
@@ -64,6 +64,26 @@ func TestSymbolicEval(t *testing.T) {
 		}
 
 		assert.Empty(t, data)
+
+		// check context data
+		{
+			pattern := state.ctx.ResolveNamedPattern("int")
+
+			data, ok := state.symbolicData.GetContextData(n, nil)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			//ignore definition positions
+			for i := range data.Patterns {
+				data.Patterns[i].DefinitionPosition = parse.SourcePositionRange{}
+			}
+
+			assert.Contains(t, data.Patterns, NamedPatternData{
+				Name:  "int",
+				Value: pattern,
+			})
+		}
 	})
 
 	t.Run("quoted string literal", func(t *testing.T) {

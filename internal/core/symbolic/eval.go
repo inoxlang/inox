@@ -855,6 +855,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		}
 
 		state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
+		state.symbolicData.SetContextData(n, state.ctx.currentData())
 
 		//evaluation of statements
 		if len(n.Statements) == 1 {
