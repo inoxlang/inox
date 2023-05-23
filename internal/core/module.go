@@ -156,7 +156,9 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (*Manifest, *TreeWalkState, er
 			ctx.AddPatternNamespace(k, v)
 		}
 
-		state = NewTreeWalkState(ctx, getGlobalsAccessibleFromManifest().EntryMap())
+		global := NewGlobalState(ctx, getGlobalsAccessibleFromManifest().EntryMap())
+		global.Module = m
+		state = NewTreeWalkStateWithGlobal(global)
 
 		// pre evaluate the env section of the manifest
 		envSection, ok := manifestObjLiteral.PropValue(MANIFEST_ENV_SECTION_NAME)
@@ -194,18 +196,18 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (*Manifest, *TreeWalkState, er
 			_, err := TreeWalkEval(preinitArgs.Preinit.Block, state)
 			if err != nil {
 				if err != nil {
-					return nil, nil, fmt.Errorf("%s: failed to evaluate manifest object: %w", m.Name(), err)
+					return nil, nil, fmt.Errorf("%s: failed to evaluate preinit block: %w", m.Name(), err)
 				}
 			}
 		}
 
 	} else {
 		if preinitArgs.GlobalConsts != nil {
-			return nil, nil, fmt.Errorf(".GlobalConstants argument should not have been passed for preinit")
+			return nil, nil, fmt.Errorf(".GlobalConstants argument should not have been passed")
 		}
 
 		if preinitArgs.Preinit != nil {
-			return nil, nil, fmt.Errorf(".Preinit argument should not have been passed for preinit")
+			return nil, nil, fmt.Errorf(".Preinit argument should not have been passed")
 		}
 
 		state = preinitArgs.RunningState

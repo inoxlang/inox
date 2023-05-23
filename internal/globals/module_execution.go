@@ -132,6 +132,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	}
 	state = globalState
 	state.Module = mod
+	state.PreinitError = preinitErr
 
 	//pass patterns & host aliases of the preinit state to the state
 	if preinitState != nil {
