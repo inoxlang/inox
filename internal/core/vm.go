@@ -202,6 +202,7 @@ func (v *VM) run() {
 
 			//add location to error message
 			sourcePos := v.curFrame.fn.GetSourcePositionRange(ip)
+			positionStack := parse.SourcePositionStack{sourcePos}
 			if sourcePos.SourceName != "" {
 				locationPartBuff := bytes.NewBuffer(nil)
 
@@ -214,6 +215,8 @@ func (v *VM) run() {
 					frameIndex--
 					frame = &v.frames[frameIndex-1]
 					sourcePos = frame.fn.GetSourcePositionRange(frame.ip - 1)
+					positionStack = append(positionStack, sourcePos)
+
 					locationPartBuff.Write(utils.StringAsBytes(sourcePos.String()))
 					locationPartBuff.WriteByte(' ')
 				}
@@ -223,7 +226,11 @@ func (v *VM) run() {
 					assertionErr.msg = location + " " + assertionErr.msg
 				}
 
-				v.err = fmt.Errorf("%s %w", location, v.err)
+				v.err = LocatedEvalError{
+					error:    fmt.Errorf("%s %w", location, v.err),
+					Message:  v.err.Error(),
+					Location: positionStack,
+				}
 			}
 		}
 

@@ -150,15 +150,31 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		if err != nil && state.Global.Module != nil && state.Global.Module.Name() != "" {
 			if !strings.HasPrefix(err.Error(), state.Global.Module.Name()) {
 				locationPartBuff := bytes.NewBuffer(nil)
-				for _, chunk := range state.chunkStack {
-					chunk.FormatNodeLocation(locationPartBuff, node)
+				var positionStack parse.SourcePositionStack
+
+				//TODO: get whole position stack
+				for i, chunk := range state.chunkStack {
+					if i == 0 {
+						positionStack = append(positionStack, chunk.GetSourcePosition(node.Base().Span))
+					}
+
+					chunk.FormatNodeLocation(locationPartBuff, node) //TODO: fix
 					locationPartBuff.WriteRune(' ')
 				}
 				location := locationPartBuff.String()
 				if assertionErr != nil {
 					assertionErr.msg = location + " " + assertionErr.msg
 				}
+
 				err = fmt.Errorf("%s %w", location, err)
+
+				if len(positionStack) > 0 {
+					err = LocatedEvalError{
+						error:    err,
+						Message:  err.Error(),
+						Location: positionStack,
+					}
+				}
 			}
 		}
 

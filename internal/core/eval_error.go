@@ -3,6 +3,8 @@ package internal
 import (
 	"errors"
 	"fmt"
+
+	parse "github.com/inoxlang/inox/internal/parse"
 )
 
 const (
@@ -81,4 +83,14 @@ func fmtTooManyPositionalArgs(positionalArgCount, positionalParamCount int) stri
 
 func fmtUnknownArgument(name string) string {
 	return fmt.Sprintf("unknown argument -%s", name)
+}
+
+type LocatedEvalError struct {
+	error
+	Message  string
+	Location parse.SourcePositionStack
+}
+
+func (e LocatedEvalError) Unwrap() error {
+	return e.error
 }
