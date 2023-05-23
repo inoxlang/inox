@@ -76,9 +76,10 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	var manifest *core.Manifest
 	var preinitState *core.TreeWalkState
 	var preinitErr error
+	var preinitStaticCheckErrors []*core.StaticCheckError
 
 	if mod != nil {
-		manifest, preinitState, preinitErr = mod.PreInit(core.PreinitArgs{
+		manifest, preinitState, preinitStaticCheckErrors, preinitErr = mod.PreInit(core.PreinitArgs{
 			GlobalConsts:          mod.MainChunk.Node.GlobalConstantDeclarations,
 			Preinit:               mod.MainChunk.Node.Preinit,
 			DefaultLimitations:    DEFAULT_SCRIPT_LIMITATIONS,
@@ -132,7 +133,8 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	}
 	state = globalState
 	state.Module = mod
-	state.PreinitError = preinitErr
+	state.PrenitStaticCheckErrors = preinitStaticCheckErrors
+	state.MainPreinitError = preinitErr
 
 	//pass patterns & host aliases of the preinit state to the state
 	if preinitState != nil {

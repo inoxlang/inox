@@ -94,3 +94,11 @@ type LocatedEvalError struct {
 func (e LocatedEvalError) Unwrap() error {
 	return e.error
 }
+
+func (err LocatedEvalError) MessageWithoutLocation() string {
+	return err.Message
+}
+
+func (err LocatedEvalError) LocationStack() parse.SourcePositionStack {
+	return err.Location
+}

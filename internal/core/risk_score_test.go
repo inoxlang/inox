@@ -17,7 +17,7 @@ func TestComputeProgramRiskScore(t *testing.T) {
 			Context: ctx,
 		}))
 
-		manifest, _, _ := mod.PreInit(PreinitArgs{
+		manifest, _, _, _ := mod.PreInit(PreinitArgs{
 			GlobalConsts: mod.MainChunk.Node.GlobalConstantDeclarations,
 		})
 
@@ -36,7 +36,7 @@ func TestComputeProgramRiskScore(t *testing.T) {
 			Context: ctx,
 		}))
 
-		manifest, _, _ := mod.PreInit(PreinitArgs{
+		manifest, _, _, _ := mod.PreInit(PreinitArgs{
 			GlobalConsts: mod.MainChunk.Node.GlobalConstantDeclarations,
 		})
 
@@ -58,7 +58,7 @@ func TestComputeProgramRiskScore(t *testing.T) {
 			Context: ctx,
 		}))
 
-		manifest, _, _ := mod.PreInit(PreinitArgs{
+		manifest, _, _, _ := mod.PreInit(PreinitArgs{
 			GlobalConsts: mod.MainChunk.Node.GlobalConstantDeclarations,
 		})
 
@@ -81,7 +81,7 @@ func TestComputeProgramRiskScore(t *testing.T) {
 			Context: ctx,
 		}))
 
-		manifest, _, _ := mod.PreInit(PreinitArgs{
+		manifest, _, _, _ := mod.PreInit(PreinitArgs{
 			GlobalConsts: mod.MainChunk.Node.GlobalConstantDeclarations,
 		})
 
@@ -105,7 +105,7 @@ func TestComputeProgramRiskScore(t *testing.T) {
 			Context: ctx,
 		}))
 
-		manifest, _, _ := mod.PreInit(PreinitArgs{
+		manifest, _, _, _ := mod.PreInit(PreinitArgs{
 			GlobalConsts: mod.MainChunk.Node.GlobalConstantDeclarations,
 		})
 

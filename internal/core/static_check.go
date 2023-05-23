@@ -22,6 +22,9 @@ const (
 
 var (
 	STATIC_CHECK_DATA_PROP_NAMES = []string{"errors"}
+	ErrForbiddenNodeinPreinit    = errors.New("forbidden node type in preinit block")
+
+	_ parse.LocatedError = &StaticCheckError{}
 )
 
 // StaticCheck performs various checks on an AST, like checking duplicate declarations and keys or checking that statements like return,
@@ -163,6 +166,13 @@ func (err StaticCheckError) Err() Error {
 	//TODO: cache (thread safe)
 	return NewError(err, createRecordFromSourcePositionStack(err.Location))
 
+}
+func (err StaticCheckError) MessageWithoutLocation() string {
+	return err.Message
+}
+
+func (err StaticCheckError) LocationStack() parse.SourcePositionStack {
+	return err.Location
 }
 
 func (checker *checker) makeCheckingError(node parse.Node, s string) *StaticCheckError {
@@ -1641,7 +1651,8 @@ func checkPreinitBlock(preinit *parse.PreinitStatement, onError func(n parse.Nod
 		case *parse.Block, *parse.HostAliasDefinition, *parse.IdentifierLiteral, *parse.PatternDefinition, parse.SimpleValueLiteral,
 			*parse.PatternIdentifierLiteral, *parse.URLExpression:
 		default:
-			onError(n, fmt.Sprintf("forbidden node type in preinit block: %T", n))
+			onError(n, fmt.Sprintf("%s: %T", ErrForbiddenNodeinPreinit, n))
+			return parse.Prune, nil
 		}
 
 		return parse.Continue, nil

@@ -156,7 +156,7 @@ func ImportModule(config ImportConfig) (*Routine, error) {
 		return nil, fmt.Errorf("import: cannot fetch module: %s", err.Error())
 	}
 
-	manifest, preinitState, err := mod.PreInit(PreinitArgs{
+	manifest, preinitState, _, err := mod.PreInit(PreinitArgs{
 		GlobalConsts:          mod.MainChunk.Node.GlobalConstantDeclarations,
 		Preinit:               mod.MainChunk.Node.Preinit,
 		AddDefaultPermissions: true,

@@ -200,3 +200,8 @@ func (stack SourcePositionStack) String() string {
 	}
 	return buff.String()
 }
+
+type LocatedError interface {
+	MessageWithoutLocation() string
+	LocationStack() SourcePositionStack
+}

@@ -83,7 +83,7 @@ func (j *LifetimeJob) Instantiate(ctx *Context, self Value) (*LifetimeJobInstanc
 		return nil, fmt.Errorf("lifetime job: following permission is required for running the job: %w", err)
 	}
 
-	manifest, _, err := j.module.PreInit(PreinitArgs{
+	manifest, _, _, err := j.module.PreInit(PreinitArgs{
 		RunningState:          NewTreeWalkStateWithGlobal(spawnerState),
 		AddDefaultPermissions: true,
 	})

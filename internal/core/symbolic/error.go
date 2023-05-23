@@ -53,6 +53,8 @@ const (
 var (
 	ErrNotImplementedYet = errors.New("not implemented yet")
 	ErrUnreachable       = errors.New("unreachable")
+
+	_ parse.LocatedError = SymbolicEvaluationError{}
 )
 
 type SymbolicEvaluationError struct {
@@ -63,6 +65,14 @@ type SymbolicEvaluationError struct {
 
 func (err SymbolicEvaluationError) Error() string {
 	return err.LocatedMessage
+}
+
+func (err SymbolicEvaluationError) MessageWithoutLocation() string {
+	return err.Message
+}
+
+func (err SymbolicEvaluationError) LocationStack() parse.SourcePositionStack {
+	return err.Location
 }
 
 func fmtCannotCallNode(node parse.Node) string {

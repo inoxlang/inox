@@ -30,9 +30,10 @@ type GlobalState struct {
 	Out                              io.Writer                                                       //nil by default
 	Logger                           zerolog.Logger                                                  //nil by default
 
-	PreinitError    error
-	StaticCheckData *StaticCheckData
-	SymbolicData    *SymbolicData
+	PrenitStaticCheckErrors []*StaticCheckError
+	MainPreinitError        error
+	StaticCheckData         *StaticCheckData
+	SymbolicData            *SymbolicData
 
 	NotClonableMixin
 	NoReprMixin

@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -9,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEvalManifest(t *testing.T) {
+func TestPreInit(t *testing.T) {
 
 	defaultGlobalPermissions := []Permission{
 		GlobalVarPermission{permkind.Read, "*"},
@@ -19,177 +21,213 @@ func TestEvalManifest(t *testing.T) {
 	LimRegistry.RegisterLimitation("a", TotalLimitation, 0)
 	LimRegistry.RegisterLimitation("b", ByteRateLimitation, 0)
 
-	testCases := []struct {
-		name                string
-		inputModule         string
-		expectedPermissions []Permission
-		expectedLimitations []Limitation
-		expectedResolutions map[Host]Value
-		error               bool
-	}{
+	type testCase struct {
+		name                      string
+		inputModule               string
+		expectedPermissions       []Permission
+		expectedLimitations       []Limitation
+		expectedResolutions       map[Host]Value
+		error                     bool
+		expectedStaticCheckErrors []string
+	}
+
+	var testCases = []testCase{
+
 		{
-			"host resolution", `
-			manifest { 
-				host_resolution: :{
-					ldb://main : /mydb
-				}
-			}
-			`,
-			[]Permission{},
-			[]Limitation{},
-			map[Host]Value{"ldb://main": Path("/mydb")},
-			false,
+			name: "host resolution",
+			inputModule: `
+				manifest { 
+					host_resolution: :{
+						ldb://main : /mydb
+					}
+				}`,
+			expectedPermissions: []Permission{},
+			expectedLimitations: []Limitation{},
+			expectedResolutions: map[Host]Value{"ldb://main": Path("/mydb")},
+			error:               false,
 		},
 		{
-			"empty manifest", `manifest {}`,
-			[]Permission{},
-			[]Limitation{},
-			nil,
-			false,
+			name:                "empty manifest",
+			inputModule:         `manifest {}`,
+			expectedPermissions: []Permission{},
+			expectedLimitations: []Limitation{},
+			expectedResolutions: nil,
+			error:               false,
 		},
 		{
-			"read_any_global", `manifest { 
-				permissions: { read: {globals: "*"} }
-			}`,
-			[]Permission{GlobalVarPermission{permkind.Read, "*"}},
-			[]Limitation{},
-			nil,
-			false,
+			name: "read_any_global",
+			inputModule: `manifest { 
+					permissions: { read: {globals: "*"} }
+				}`,
+			expectedPermissions: []Permission{GlobalVarPermission{permkind.Read, "*"}},
+			expectedLimitations: []Limitation{},
+			expectedResolutions: nil,
+			error:               false,
 		},
 		{
-			"create_routine", `manifest { 
-				permissions: {
-					create: {routines: {}} 
-				}
-			}`,
-			[]Permission{RoutinePermission{permkind.Create}},
-			[]Limitation{},
-			nil,
-			false,
+			name: "create_routine",
+			inputModule: `manifest { 
+					permissions: {
+						create: {routines: {}} 
+					}
+				}`,
+			expectedPermissions: []Permission{RoutinePermission{permkind.Create}},
+			expectedLimitations: []Limitation{},
+			expectedResolutions: nil,
+			error:               false,
 		},
 		{
-			"create_routine", `manifest { 
-				permissions: {
-					create: {routines: {}} 
-				}
-			}`,
-			[]Permission{RoutinePermission{permkind.Create}},
-			[]Limitation{},
-			nil,
-			false,
+			name: "create_routine",
+			inputModule: `manifest { 
+					permissions: {
+						create: {routines: {}} 
+					}
+				}`,
+			expectedPermissions: []Permission{RoutinePermission{permkind.Create}},
+			expectedLimitations: []Limitation{},
+			expectedResolutions: nil,
+			error:               false,
 		},
 		{
-			"read_@const_var", `
+			name: "read_@const_var",
+			inputModule: `
 				const (
 					URL = https://example.com/
 				)
 				manifest { 
 					permissions: { read: $$URL}
-				}
-			`,
-			[]Permission{HttpPermission{permkind.Read, URL("https://example.com/")}},
-			[]Limitation{},
-			nil,
-			false,
+				}`,
+			expectedPermissions: []Permission{HttpPermission{permkind.Read, URL("https://example.com/")}},
+			expectedLimitations: []Limitation{},
+			expectedResolutions: nil,
+			error:               false,
 		},
 		{
-			"limitations", `
-			manifest { 
-				limits: {
-					"a": 100ms
-				}
-			}
-			`,
-			[]Permission{},
-			[]Limitation{
+			name: "limitations",
+			inputModule: `manifest { 
+					limits: {
+						"a": 100ms
+					}
+				}`,
+			expectedPermissions: []Permission{},
+			expectedLimitations: []Limitation{
 				{Name: "a", Kind: TotalLimitation, Value: int64(100 * time.Millisecond)},
 			},
-			nil,
-			false,
-		},
-
-		{
-			"host_with_unsupported_scheme", `
-			manifest { 
-				permissions: {
-					read: mem://a.com
-				}
-			}
-			`,
-			[]Permission{},
-			[]Limitation{},
-			nil,
-			true,
+			expectedResolutions: nil,
+			error:               false,
 		},
 		{
-			"host_pattern_with_unsupported_scheme", `
-			manifest { 
-				permissions: { read: %ws://*.com }
-			}
-			`,
-			[]Permission{},
-			[]Limitation{},
-			nil,
-			true,
-		},
-		{
-			"dns", `
-			manifest { 
-				permissions: {
-					read: {
-						dns: %://**.com
+			name: "host_with_unsupported_scheme",
+			inputModule: `manifest { 
+					permissions: {
+						read: mem://a.com
 					}
-				}
-			}
-			`,
-			[]Permission{
+				}`,
+			expectedPermissions: []Permission{},
+			expectedLimitations: []Limitation{},
+			expectedResolutions: nil,
+			error:               true,
+		},
+		{
+			name: "host_pattern_with_unsupported_scheme",
+			inputModule: `manifest { 
+					permissions: { read: %ws://*.com }
+				}`,
+			expectedPermissions: []Permission{},
+			expectedLimitations: []Limitation{},
+			expectedResolutions: nil,
+			error:               true,
+		},
+		{
+			name: "dns",
+			inputModule: `manifest { 
+					permissions: {
+						read: {
+							dns: %://**.com
+						}
+					}
+				}`,
+			expectedPermissions: []Permission{
 				DNSPermission{permkind.Read, HostPattern("://**.com")},
 			},
-			[]Limitation{},
-			nil,
-			false,
+			expectedLimitations: []Limitation{},
+			expectedResolutions: nil,
+			error:               false,
 		},
 		{
-			"dns_host_pattern_literal_with_scheme", `
-			manifest { 
-				permissions: {
-					read: {
-						dns: %https://**.com
+			name: "dns_host_pattern_literal_with_scheme",
+			inputModule: `manifest { 
+					permissions: {
+						read: {
+							dns: %https://**.com
+						}
 					}
-				}
-			}
-			`,
-			[]Permission{},
-			[]Limitation{},
-			nil,
-			true,
+				}`,
+			expectedPermissions: []Permission{},
+			expectedLimitations: []Limitation{},
+			expectedResolutions: nil,
+			error:               true,
 		},
 		{
-			"see email addresses",
-			`manifest { 
-				permissions: {
-					see: { values: %emailaddr }
-				}
-			}`,
-			[]Permission{ValueVisibilityPermission{Pattern: EMAIL_ADDR_PATTERN}},
-			[]Limitation{},
-			nil,
-			true,
+			name: "see email addresses",
+			inputModule: `manifest { 
+					permissions: {
+						see: { values: %emailaddr }
+					}
+				}`,
+			expectedPermissions: []Permission{ValueVisibilityPermission{Pattern: EMAIL_ADDR_PATTERN}},
+			expectedLimitations: []Limitation{},
+			expectedResolutions: nil,
+			error:               true,
 		},
 		{
-			"see email addresses & ints",
-			`manifest { 
+			name: "see email addresses & ints",
+			inputModule: `manifest { 
 				permissions: {
 					see: { values: [%emailaddr, %int] }
 				}
 			}`,
-			[]Permission{
+			expectedPermissions: []Permission{
 				ValueVisibilityPermission{Pattern: EMAIL_ADDR_PATTERN},
 				ValueVisibilityPermission{Pattern: INT_PATTERN},
 			},
-			[]Limitation{},
-			nil,
-			true,
+			expectedLimitations: []Limitation{},
+			expectedResolutions: nil,
+			error:               true,
+		},
+		{
+			name: "invalid node type in preinit block",
+			inputModule: `
+			preinit {
+				go {} do {}
+			}
+
+			manifest { 
+				permissions: {}
+			}`,
+			expectedPermissions: []Permission{
+				ValueVisibilityPermission{Pattern: EMAIL_ADDR_PATTERN},
+				ValueVisibilityPermission{Pattern: INT_PATTERN},
+			},
+			expectedLimitations:       []Limitation{},
+			expectedResolutions:       nil,
+			expectedStaticCheckErrors: []string{ErrForbiddenNodeinPreinit.Error()},
+			error:                     true,
+		},
+		{
+			name: "invalid value for permissions section",
+			inputModule: `
+			manifest { 
+				permissions: 1
+			}`,
+			expectedPermissions: []Permission{
+				ValueVisibilityPermission{Pattern: EMAIL_ADDR_PATTERN},
+				ValueVisibilityPermission{Pattern: INT_PATTERN},
+			},
+			expectedLimitations:       []Limitation{},
+			expectedResolutions:       nil,
+			expectedStaticCheckErrors: []string{PERMS_SECTION_SHOULD_BE_AN_OBJECT},
+			error:                     true,
 		},
 	}
 
@@ -216,11 +254,34 @@ func TestEvalManifest(t *testing.T) {
 				ManifestTemplate: chunk.Manifest,
 			}
 
-			manifest, _, err := mod.PreInit(PreinitArgs{
+			manifest, _, staticCheckErrors, err := mod.PreInit(PreinitArgs{
 				GlobalConsts:          chunk.GlobalConstantDeclarations,
+				Preinit:               chunk.Preinit,
 				RunningState:          nil,
 				AddDefaultPermissions: true,
 			})
+
+			if len(testCase.expectedStaticCheckErrors) > 0 {
+				remainingErrors := map[string]error{}
+				for _, err := range staticCheckErrors {
+					remainingErrors[err.Error()] = err
+				}
+
+			outer:
+				for _, expected := range testCase.expectedStaticCheckErrors {
+					for _, err := range staticCheckErrors {
+						if strings.Contains(err.Error(), expected) {
+							delete(remainingErrors, err.Error())
+							continue outer
+						}
+					}
+					assert.Fail(t, fmt.Sprintf("expected static check errors to contain the error: %s", expected))
+				}
+
+				for _, err := range remainingErrors {
+					assert.Fail(t, fmt.Sprintf("the following static check error was not expected: %s", err.Error()))
+				}
+			}
 
 			if testCase.error {
 				assert.Error(t, err)
