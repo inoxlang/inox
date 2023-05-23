@@ -209,6 +209,11 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		//we continue if there is a single error AND the error is supported by the symbolic evaluation
 	}
 
+	if preinitErr != nil {
+		finalErr = preinitErr
+		return
+	}
+
 	// symbolic check
 
 	globals := map[string]symbolic.ConcreteGlobalValue{}

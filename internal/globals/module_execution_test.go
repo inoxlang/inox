@@ -191,6 +191,121 @@ func TestPrepareLocalScript(t *testing.T) {
 		assert.False(t, state.SymbolicData.IsEmpty())
 	})
 
+	t.Run("manifest & symbolic eval should be ignored when there is a preinit check error", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+
+		os.WriteFile(file, []byte(`
+			preinit {
+				go do {}
+			}
+			manifest {
+				permissions: {
+					read: https://localhost
+				}
+			}
+		`), 0o600)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(
+				core.GetDefaultGlobalVarPermissions(),
+				core.CreateHttpReadPerm(core.Host("https://localhost")),
+			),
+			Filesystem: _fs.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx)
+
+		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			UseContextAsParent:        true,
+			Out:                       io.Discard,
+		})
+
+		if !assert.Error(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		// manifest should be empty
+		if !assert.False(t, state.Ctx.HasPermission(core.CreateHttpReadPerm(core.URL("https://localhost/")))) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.Empty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should not have been performed
+		assert.True(t, state.SymbolicData.IsEmpty())
+	})
+
+	t.Run("manifest & symbolic eval should be ignored when there is a manifest check error", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				permissions: {
+					read: https://localhost
+				}
+				env: 1
+			}
+		`), 0o600)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(
+				core.GetDefaultGlobalVarPermissions(),
+				core.CreateHttpReadPerm(core.Host("https://localhost")),
+			),
+			Filesystem: _fs.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx)
+
+		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			UseContextAsParent:        true,
+			Out:                       io.Discard,
+		})
+
+		if !assert.Error(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		// manifest should be empty
+		if !assert.False(t, state.Ctx.HasPermission(core.CreateHttpReadPerm(core.URL("https://localhost/")))) {
+			return
+		}
+
+		// symbolic check should not have been performed
+		assert.True(t, state.SymbolicData.IsEmpty())
+	})
+
 	t.Run("invalid CLI arguments: missing positional argument", func(t *testing.T) {
 
 		dir := t.TempDir()
