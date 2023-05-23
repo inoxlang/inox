@@ -2,6 +2,7 @@ package internal
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 
 	core "github.com/inoxlang/inox/internal/core"
@@ -60,6 +61,27 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, com
 		})
 
 		diagnostics = append(diagnostics, parsingDiagnostics...)
+
+		if state != nil && state.PreinitError != nil {
+			var _range defines.Range
+			var msg string
+
+			var locatedEvalError core.LocatedEvalError
+
+			if errors.As(state.PreinitError, &locatedEvalError) {
+				msg = locatedEvalError.Message
+				_range = rangeToLspRange(locatedEvalError.Location[0])
+			} else {
+				_range = firstCharLspRange()
+				msg = state.PreinitError.Error()
+			}
+
+			diagnostics = append(diagnostics, defines.Diagnostic{
+				Message:  msg,
+				Severity: &errSeverity,
+				Range:    _range,
+			})
+		}
 
 		if state != nil && state.StaticCheckData != nil {
 			i := -1

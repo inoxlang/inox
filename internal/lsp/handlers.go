@@ -313,6 +313,14 @@ func rangeToLspRange(r parse.SourcePositionRange) defines.Range {
 	}
 }
 
+func firstCharLspRange() defines.Range {
+	return rangeToLspRange(parse.SourcePositionRange{
+		StartLine:   1,
+		StartColumn: 1,
+		Span:        parse.NodeSpan{Start: 0, End: 1},
+	})
+}
+
 func getLineColumn(pos defines.Position) (int32, int32) {
 	line := int32(pos.Line + 1)
 	column := int32(pos.Character + 1)
