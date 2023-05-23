@@ -1,0 +1,18 @@
+const (
+    HOST = https://jsonplaceholder.typicode.com
+)
+
+preinit {
+    @host = HOST
+}
+
+manifest {
+    permissions: {
+        read: @host/posts/1
+    }
+}
+
+print(@host/)
+
+body = http.read!(@host/posts/1, --insecure)
+print $body
