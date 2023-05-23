@@ -62,18 +62,37 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, com
 
 		diagnostics = append(diagnostics, parsingDiagnostics...)
 
-		if state != nil && state.PreinitError != nil {
+		if state == nil {
+			goto send_diagnostics
+		}
+
+		if state.PrenitStaticCheckErrors != nil {
+			i := -1
+			staticCheckDiagnostics := utils.MapSlice(state.PrenitStaticCheckErrors, func(err *core.StaticCheckError) defines.Diagnostic {
+				i++
+
+				return defines.Diagnostic{
+					Message:  err.Message,
+					Severity: &errSeverity,
+					Range:    rangeToLspRange(err.Location[0]),
+				}
+			})
+
+			diagnostics = append(diagnostics, staticCheckDiagnostics...)
+		}
+
+		if state.MainPreinitError != nil {
 			var _range defines.Range
 			var msg string
 
 			var locatedEvalError core.LocatedEvalError
 
-			if errors.As(state.PreinitError, &locatedEvalError) {
+			if errors.As(state.MainPreinitError, &locatedEvalError) {
 				msg = locatedEvalError.Message
 				_range = rangeToLspRange(locatedEvalError.Location[0])
 			} else {
 				_range = firstCharLspRange()
-				msg = state.PreinitError.Error()
+				msg = state.MainPreinitError.Error()
 			}
 
 			diagnostics = append(diagnostics, defines.Diagnostic{
@@ -83,7 +102,7 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, com
 			})
 		}
 
-		if state != nil && state.StaticCheckData != nil {
+		if state.StaticCheckData != nil {
 			i := -1
 			staticCheckDiagnostics := utils.MapSlice(state.StaticCheckData.Errors(), func(err *core.StaticCheckError) defines.Diagnostic {
 				i++
