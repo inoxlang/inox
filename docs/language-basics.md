@@ -37,8 +37,8 @@
 - [Modules](#modules)
     - [Module Parameters](#module-parameters)
     - [Execution Phases](#execution-phases)
-    - [Module Imports](#module-imports)
     - [Inclusion Imports](#inclusion-imports)
+    - [Module Imports](#module-imports)
 - [Static check](#static-check)
 - [Symbolic evaluation](#symbolic-evaluation)
 
@@ -824,6 +824,26 @@ return 1
 
 This feature is generally used by imported modules to return a result or export functions.
 
+## Inclusion Imports
+
+Inclusion imports include the content of a file in the current file.
+They are useful to decompose a module or regroup pattern definitions/functions shared between modules.
+
+```
+# main.ix
+manifest {}
+
+import ./patterns.ix
+
+# patterns.ix
+%user = %{
+    name: %str
+    profile-picture: %url
+}
+```
+
+⚠️ This feature is currently in development ! File inclusion will follow strict rules.
+
 ## Module Imports
 
 As the name imply this language construct imports a **module**: an Inox file that starts with a manifest.
@@ -921,27 +941,6 @@ return fn(){
 ⁉️ So I need to write a manifest + specify permissions in **EACH** file ?\
 -> No, you will typically use [inclusion imports](#inclusion-imports) for trusted, local files. Modules are useful to 
 provide a library or to decompose an application in smaller parts.
-
-## Inclusion Imports
-
-⚠️ This feature is currently in development ! Included files will be highly restricted.
-
-Inclusion imports include the content of a file in the current file.
-This is useful when you need to decompose a module, import pattern definitions or functions shared between modules.
-
-```
-# main.ix
-manifest {}
-
-import ./patterns.ix
-
-# patterns.ix
-%user = %{
-    name: %str
-    profile-picture: %url
-}
-```
-
 
 # Static Check
 
