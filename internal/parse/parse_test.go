@@ -3045,6 +3045,45 @@ func TestParse(t *testing.T) {
 
 	t.Run("url literal", func(t *testing.T) {
 
+		t.Run("host contains a -", func(t *testing.T) {
+			n := MustParseChunk(`https://an-example.com/`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 23}, nil, nil},
+				Statements: []Node{
+					&URLLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 23}, nil, nil},
+						Value:    "https://an-example.com/",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("subdomain", func(t *testing.T) {
+			n := MustParseChunk(`https://sub.example.com/`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 24}, nil, nil},
+				Statements: []Node{
+					&URLLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 24}, nil, nil},
+						Value:    "https://sub.example.com/",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("subdomain contains -", func(t *testing.T) {
+			n := MustParseChunk(`https://sub-x.example.com/`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 26}, nil, nil},
+				Statements: []Node{
+					&URLLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 26}, nil, nil},
+						Value:    "https://sub-x.example.com/",
+					},
+				},
+			}, n)
+		})
+
 		t.Run("root path", func(t *testing.T) {
 			n := MustParseChunk(`https://example.com/`)
 			assert.EqualValues(t, &Chunk{
@@ -3115,6 +3154,20 @@ func TestParse(t *testing.T) {
 				MustParseChunk(`https://example.com)`)
 			})
 		})
+
+		t.Run("long path", func(t *testing.T) {
+			n := MustParseChunk(`https://example.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 106}, nil, nil},
+				Statements: []Node{
+					&URLLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 106}, nil, nil},
+						Value:    "https://example.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+					},
+				},
+			}, n)
+		})
+
 	})
 
 	t.Run("url pattern literal", func(t *testing.T) {
