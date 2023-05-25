@@ -1506,7 +1506,8 @@ func appendCursorMoveAfterLineFeeds(out io.ReadWriter) io.ReadWriter {
 
 	return utils.FnReaderWriter{
 		WriteFn: func(p []byte) (n int, err error) {
-			return out.Write(bytes.ReplaceAll(p, []byte{'\n'}, lineFeedReplacement))
+			out.Write(bytes.ReplaceAll(p, []byte{'\n'}, lineFeedReplacement))
+			return len(p), nil
 		},
 		ReadFn: func(p []byte) (n int, err error) {
 			return out.Read(p)
