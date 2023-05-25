@@ -1,0 +1,30 @@
+# this script generates internal/browser_lsp_server.wasm
+
+manifest {
+    permissions: {
+        use: {
+            commands: {
+                "go": {}
+            }
+        }
+    }
+}
+
+print "build browser-inox"
+
+
+build_cmd_env = {
+    GOARCH: "wasm"
+    GOOS: "js"
+}
+
+assign result err = ex(
+    ..200s --env=build_cmd_env 
+    #go #build -x -v -o ./internal/ie/browser-lsp-server.wasm ./cmd/browser-lsp-server/main.go
+)
+
+
+if err? {
+    print "failed:\n"   
+}
+print $result

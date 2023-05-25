@@ -31,20 +31,33 @@ var HOVER_PRETTY_PRINT_CONFIG = &pprint.PrettyPrintConfig{
 }
 
 type LSPServerOptions struct {
-	WASM struct {
-		StdioInput  io.Reader
-		StdioOutput io.Writer
-	}
+	WASM *WasmOptions
+}
+
+type WasmOptions struct {
+	StdioInput  io.Reader
+	StdioOutput io.Writer
+	LogOutput   io.Writer
 }
 
 func StartLSPServer(opts LSPServerOptions) {
+	//setup logs
 
-	f, err := os.OpenFile("/tmp/.inox-lsp.debug.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o600)
-	if err != nil {
-		log.Panicln(err)
+	var logOut io.Writer
+	var logFile *os.File
+
+	if opts.WASM != nil {
+		logOut = opts.WASM.LogOutput
+	} else {
+		f, err := os.OpenFile("/tmp/.inox-lsp.debug.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o600)
+		if err != nil {
+			log.Panicln(err)
+		}
+		logOut = f
+		logFile = f
 	}
 
-	logger := log.New(f, "", 0)
+	logger := log.New(logOut, "", 0)
 	logs.Init(logger)
 
 	defer func() {
@@ -54,7 +67,9 @@ func StartLSPServer(opts LSPServerOptions) {
 			logs.Println(e)
 		}
 
-		f.Close()
+		if logFile != nil {
+			logFile.Close()
+		}
 	}()
 
 	options := &lsp.Options{
@@ -64,7 +79,7 @@ func StartLSPServer(opts LSPServerOptions) {
 		TextDocumentSync: defines.TextDocumentSyncKindFull,
 	}
 
-	if opts.WASM.StdioInput != nil {
+	if opts.WASM != nil {
 		options.StdioInput = opts.WASM.StdioInput
 		options.StdioOutput = opts.WASM.StdioOutput
 	}

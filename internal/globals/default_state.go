@@ -2,7 +2,6 @@ package internal
 
 import (
 	"io"
-	"os"
 
 	"github.com/inoxlang/inox/internal/config"
 	core "github.com/inoxlang/inox/internal/core"
@@ -75,7 +74,8 @@ var (
 )
 
 func init() {
-	core.SetInitialWorkingDir(os.Getwd)
+	//set initial working directory on unix, on WASM it's done by the main package
+	targetSpecificInit()
 	registerHelp()
 
 	_shell.SetNewDefaultGlobalState(func(ctx *core.Context, envPattern *core.ObjectPattern, out io.Writer) *core.GlobalState {
@@ -120,8 +120,8 @@ func NewDefaultGlobalState(ctx *core.Context, conf DefaultGlobalStateConfig) (*c
 
 	constants := map[string]core.Value{
 		// constants
-		"IWD":        core.INITIAL_WORKING_DIR_PATH,
-		"IWD_PREFIX": core.INITIAL_WORKING_DIR_PATH_PATTERN,
+		core.INITIAL_WORKING_DIR_VARNAME:        core.INITIAL_WORKING_DIR_PATH,
+		core.INITIAL_WORKING_DIR_PREFIX_VARNAME: core.INITIAL_WORKING_DIR_PATH_PATTERN,
 
 		// namespaces
 		"fs":       _fs.NewFsNamespace(),

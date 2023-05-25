@@ -22,6 +22,9 @@ const (
 	MANIFEST_PERMS_SECTION_NAME           = "permissions"
 	MANIFEST_LIMITS_SECTION_NAME          = "limits"
 	MANIFEST_HOST_RESOLUTION_SECTION_NAME = "host_resolution"
+
+	INITIAL_WORKING_DIR_VARNAME        = "IWD"
+	INITIAL_WORKING_DIR_PREFIX_VARNAME = "IWD_PREFIX"
 )
 
 var (
@@ -1311,7 +1314,7 @@ func getVisibilityPerms(desc Value) ([]Permission, error) {
 
 func getGlobalsAccessibleFromManifest() *Object {
 	return objFrom(ValMap{
-		"IWD":        INITIAL_WORKING_DIR_PATH,
-		"IWD_PREFIX": INITIAL_WORKING_DIR_PATH_PATTERN,
+		INITIAL_WORKING_DIR_VARNAME:        INITIAL_WORKING_DIR_PATH,
+		INITIAL_WORKING_DIR_PREFIX_VARNAME: INITIAL_WORKING_DIR_PATH_PATTERN,
 	})
 }
