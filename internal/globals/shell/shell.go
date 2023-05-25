@@ -21,6 +21,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/inoxlang/inox/internal/config"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/rs/zerolog"
 
@@ -136,12 +137,19 @@ type shell struct {
 }
 
 // starts the shell, the execution of this function ends when the shell is exited.
-func StartShell(state *core.GlobalState, config REPLConfiguration) {
+func StartShell(state *core.GlobalState, conf REPLConfiguration) {
 	preOut := appendCursorMoveAfterLineFeeds(os.Stdout)
 	state.Out = preOut
-	state.Logger = zerolog.New(preOut).Level(zerolog.DebugLevel)
 
-	shell := newShell(config, state, os.Stdin, os.Stdout, preOut /*os.Stderr*/)
+	consoleLogger := zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
+		w.Out = preOut
+		w.NoColor = !config.SHOULD_COLORIZE
+		w.TimeFormat = "15:04:05"
+		w.FieldsExclude = []string{"src"}
+	})
+	state.Logger = zerolog.New(consoleLogger).Level(zerolog.DebugLevel)
+
+	shell := newShell(conf, state, os.Stdin, os.Stdout, preOut /*os.Stderr*/)
 	shell.runLoop()
 }
 
