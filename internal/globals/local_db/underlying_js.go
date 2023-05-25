@@ -1,17 +1,12 @@
-//go:build wasm
+//go:build js
 
 package internal
-
-import (
-	core "github.com/inoxlang/inox/internal/core"
-	internal "github.com/inoxlang/inox/internal/core"
-)
 
 type underlying struct {
 }
 
 func openUnderlying(config LocalDatabaseConfig) (_ underlying, finalErr error) {
-	return nil, ErrDatabaseNotSupported
+	return underlying{}, ErrDatabaseNotSupported
 }
 
 func (u underlying) close() {
