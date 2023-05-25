@@ -181,7 +181,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		fmt.Fprintf(outW, "%s\n\r", utils.Must(json.Marshal(data)))
 
 	case "lsp":
-		lsp.StartLSPServer()
+		lsp.StartLSPServer(lsp.LSPServerOptions{})
 	case "shell":
 		shellFlags := flag.NewFlagSet("shell", flag.ExitOnError)
 		startupScriptPath, err := config.GetStartupScriptPath()
