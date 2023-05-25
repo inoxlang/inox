@@ -500,7 +500,7 @@ type StringTemplateSlice struct {
 
 type StringTemplateInterpolation struct {
 	NodeBase
-	Type string // empty if not typed
+	Type string // empty if not typed, examples of value: 'str', 'str.from' (without the quotes)
 	Expr Node
 }
 

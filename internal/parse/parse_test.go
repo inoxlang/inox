@@ -17973,6 +17973,52 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
+		t.Run("interpolation type containing a '.'", func(t *testing.T) {
+			n := MustParseChunk("%sql`{{ab.cdef:1}}SELECT * from users`")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 38}, nil, nil},
+				Statements: []Node{
+					&StringTemplateLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 38},
+							nil,
+							[]Token{
+								{Type: BACKQUOTE, Span: NodeSpan{4, 5}},
+								{Type: STR_INTERP_OPENING_BRACKETS, Span: NodeSpan{5, 7}},
+								{Type: STR_INTERP_CLOSING_BRACKETS, Span: NodeSpan{16, 18}},
+								{Type: BACKQUOTE, Span: NodeSpan{37, 38}},
+							},
+						},
+						Pattern: &PatternIdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
+							Name:     "sql",
+						},
+						Slices: []Node{
+							&StringTemplateSlice{
+								NodeBase: NodeBase{NodeSpan{5, 5}, nil, nil},
+								Raw:      "",
+								Value:    "",
+							},
+							&StringTemplateInterpolation{
+								NodeBase: NodeBase{NodeSpan{7, 16}, nil, []Token{{Type: STR_TEMPLATE_INTERP_TYPE, Raw: "ab.cdef:", Span: NodeSpan{7, 15}}}},
+								Type:     "ab.cdef",
+								Expr: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{15, 16}, nil, nil},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+							&StringTemplateSlice{
+								NodeBase: NodeBase{NodeSpan{18, 37}, nil, nil},
+								Raw:      "SELECT * from users",
+								Value:    "SELECT * from users",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("interpolation with expression of len 1", func(t *testing.T) {
 			n := MustParseChunk("%sql`{{nothing:1}}SELECT * from users`")
 			assert.EqualValues(t, &Chunk{

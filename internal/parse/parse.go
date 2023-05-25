@@ -3989,7 +3989,7 @@ func (p *parser) parseStringTemplateLiteralOrMultilineStringLiteral(pattern Node
 			sliceStart = p.i
 
 			var interpParsingErr *ParsingError
-			var typ string //typename followed by ':'
+			var typ string //typename or typename.method followed by ':'
 			var expr Node
 
 			interpolation := p.s[interpolationStart:interpolationExclEnd]
@@ -4010,7 +4010,7 @@ func (p *parser) parseStringTemplateLiteralOrMultilineStringLiteral(pattern Node
 
 					if pattern != nil { //typed interpolation
 						i := int32(1)
-						for ; i < len32(interpolation) && isIdentChar(interpolation[i]); i++ {
+						for ; i < len32(interpolation) && (interpolation[i] == '.' || isIdentChar(interpolation[i])); i++ {
 						}
 
 						typ = string(interpolation[:i+1])
