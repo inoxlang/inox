@@ -25,6 +25,7 @@ func (r *HttpResponse) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConf
 	ctx := config.Context
 	code := r.StatusCode(ctx)
 	codeString := fmt.Sprintf("%d", code)
+
 	if config.Colorize {
 		if code < 400 {
 			utils.Must(w.Write(config.Colors.SuccessColor))
@@ -39,7 +40,6 @@ func (r *HttpResponse) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConf
 	if text != "" {
 		utils.PanicIfErr(w.WriteByte(' '))
 		utils.Must(w.Write(utils.StringAsBytes(text)))
-		utils.PanicIfErr(w.WriteByte(' '))
 	}
 
 	if config.Colorize {
@@ -47,10 +47,12 @@ func (r *HttpResponse) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConf
 		utils.Must(w.Write(config.Colors.DiscreteColor))
 	}
 
-	utils.PanicIfErr(w.WriteByte('('))
-	length := core.ByteCount(r.wrapped.ContentLength)
-	utils.Must(length.Write(w, 1))
-	utils.PanicIfErr(w.WriteByte(')'))
+	if r.wrapped.ContentLength >= 0 {
+		utils.Must(w.Write(utils.StringAsBytes(" (")))
+		length := core.ByteCount(r.wrapped.ContentLength)
+		utils.Must(length.Write(w, 1))
+		utils.PanicIfErr(w.WriteByte(')'))
+	}
 
 	contentType := r.wrapped.Header.Get("Content-Type")
 	if contentType == "" {
