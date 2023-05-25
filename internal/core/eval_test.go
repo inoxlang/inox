@@ -5524,6 +5524,28 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}, res)
 		})
 
+		t.Run("valid interpolation with conversion", func(t *testing.T) {
+			code := replace(`
+				return %ns.any_str|integer = {{int_str.from:5}}|
+			`)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.Ctx.AddPatternNamespace("ns", &PatternNamespace{
+				Patterns: map[string]Pattern{
+					"any_str": STR_PATTERN,
+					"int_str": utils.Ret0(INT_PATTERN.StringPattern()),
+				},
+			})
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, CheckedString{
+				str:                 "integer = 5",
+				matchingPatternName: "ns.any_str",
+				matchingPattern:     state.Ctx.ResolvePatternNamespace("ns").Patterns["any_str"],
+			}, res)
+		})
+
 		t.Run("invalid interpolation", func(t *testing.T) {
 			code := replace(`
 				%sql. = {

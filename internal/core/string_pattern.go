@@ -21,7 +21,11 @@ var (
 	ErrStrGroupMatchingOnlySupportedForPatternWithRegex = errors.New("group matching is only supported by string patterns with a regex for now")
 	ErrCannotParse                                      = errors.New("cannot parse")
 	ErrInvalidInputString                               = errors.New("invalid input string")
-	_                                                   = []StringPattern{&ParserBasedPattern{}}
+	ErrFailedToConvertValueToMatchingString             = errors.New("failed to convert value to matching string")
+
+	_ = []StringPattern{&ParserBasedPattern{}}
+
+	_ = []ToStringConversionCapableStringPattern{(*IntRangeStringPattern)(nil)}
 )
 
 type StringPattern interface {
@@ -48,6 +52,11 @@ const (
 
 type MatchesFindConfig struct {
 	Kind MatchesFindConfigKind
+}
+
+type ToStringConversionCapableStringPattern interface {
+	StringPattern
+	StringFrom(ctx *Context, v Value) (string, error)
 }
 
 // ExactStringPattern matches values equal to .value: .value.Equal(...) returns true.
@@ -859,6 +868,15 @@ func (patt *IntRangeStringPattern) EffectiveLengthRange() IntRange {
 
 func (patt *IntRangeStringPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
+}
+
+func (patt *IntRangeStringPattern) StringFrom(ctx *Context, v Value) (string, error) {
+	switch val := v.(type) {
+	case Int:
+		return strconv.FormatInt(int64(val), 10), nil
+	default:
+		return "", ErrFailedToConvertValueToMatchingString
+	}
 }
 
 type DynamicStringPatternElement struct {

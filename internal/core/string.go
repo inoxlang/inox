@@ -259,13 +259,40 @@ func NewCheckedString(slices []Value, node *parse.StringTemplateLiteral, ctx *Co
 			buff.WriteString(s.Raw)
 		case *parse.StringTemplateInterpolation:
 			memberName := s.Type
+			var shouldConvert bool
+
+			if strings.Contains(memberName, ".") {
+				name, conversion, _ := strings.Cut(memberName, ".")
+				memberName = name
+				if conversion != "from" {
+					return CheckedString{}, fmt.Errorf("pattern namespace member should be followed by .from not .%s", conversion)
+				}
+				shouldConvert = true
+			}
+
 			pattern, ok := namespace.Patterns[memberName]
 			if !ok {
 				return CheckedString{}, fmt.Errorf("cannot interpolate: member .%s of pattern namespace '%s' does not exist", memberName, namespaceName)
 			}
-
 			patternName := namespaceName + "." + memberName
-			str := sliceValue.(Str)
+
+			var str Str
+
+			if shouldConvert {
+				patt, ok := pattern.(ToStringConversionCapableStringPattern)
+				if !ok {
+					return CheckedString{}, fmt.Errorf("pattern %s is not capable of conversion", patternName)
+				}
+				pattern = patt
+				s, err := patt.StringFrom(ctx, sliceValue)
+				if err != nil {
+					return CheckedString{}, fmt.Errorf("pattern %s failed to convert value", patternName)
+				}
+				str = Str(s)
+			} else {
+				str = sliceValue.(Str)
+			}
+
 			if !pattern.Test(ctx, str) {
 				return CheckedString{}, fmt.Errorf("runtime check error: `%s` does not match %%%s", str, patternName)
 			}
