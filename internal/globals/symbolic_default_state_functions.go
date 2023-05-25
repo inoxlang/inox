@@ -21,7 +21,7 @@ func init() {
 			return &symbolic.Transaction{}
 		},
 		_execute, func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) (*symbolic.String, *symbolic.Error) {
-			return &symbolic.String{}, &symbolic.Error{}
+			return &symbolic.String{}, nil
 		},
 		_sha1, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.ByteSlice {
 			return &symbolic.ByteSlice{}

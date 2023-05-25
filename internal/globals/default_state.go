@@ -3,7 +3,6 @@ package internal
 import (
 	"io"
 	"os"
-	"time"
 
 	"github.com/inoxlang/inox/internal/config"
 	core "github.com/inoxlang/inox/internal/core"
@@ -24,11 +23,6 @@ import (
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
-)
-
-const (
-	NO_TIMEOUT_OPTION_NAME      = "no-timeout"
-	DEFAULT_EX_TIMEOUT_DURATION = core.Duration(500 * time.Millisecond)
 )
 
 var (

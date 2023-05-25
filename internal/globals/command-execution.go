@@ -3,10 +3,17 @@ package internal
 import (
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"time"
 
 	core "github.com/inoxlang/inox/internal/core"
+)
+
+const (
+	NO_TIMEOUT_OPTION_NAME      = "no-timeout"
+	ENV_OPTION_NAME             = "env"
+	DEFAULT_EX_TIMEOUT_DURATION = core.Duration(500 * time.Millisecond)
 )
 
 // execute executes a command in non-interactive mode and returns its combined stderr & stdout.
@@ -22,6 +29,7 @@ func _execute(ctx *core.Context, args ...core.Value) (core.Str, error) {
 	var timeoutDuration core.Duration
 	var maxMemory core.ByteCount //future use
 	var noTimeout bool
+	var env []string
 
 	const TIMEOUT_INCONSISTENCY_ERROR = "inconsistent arguments: --" + NO_TIMEOUT_OPTION_NAME + " AND a timeout duration were provided"
 
@@ -75,6 +83,25 @@ top:
 				}
 
 				noTimeout = true
+				args = args[1:]
+			case ENV_OPTION_NAME:
+				obj, ok := a.Value.(*core.Object)
+				if !ok {
+					return "", formatErr(fmt.Sprint("--env should have an object value", ENV_OPTION_NAME))
+				}
+
+				err := obj.ForEachEntry(func(k string, v core.Value) error {
+					switch val := v.(type) {
+					case core.StringLike:
+						env = append(env, k+"="+val.GetOrBuildString())
+					default:
+						return fmt.Errorf("invalid value for property .%s of the environment description object", k)
+					}
+					return nil
+				})
+				if err != nil {
+					return "", err
+				}
 				args = args[1:]
 			default:
 				return "", core.FmtErrInvalidArgument(a)
@@ -130,6 +157,8 @@ top:
 		return "", permErr
 	}
 
+	//create command
+
 	passedArgs := make([]string, 0)
 	passedArgs = append(passedArgs, subcommandNameChain...)
 	passedArgs = append(passedArgs, cmdArgs...)
@@ -139,6 +168,10 @@ top:
 	var err error
 	doneChan := make(chan bool)
 	limitChan := make(chan error)
+	cmd.Env = os.Environ() //TODO: remove some sensitive variables
+	cmd.Env = append(cmd.Env, env...)
+
+	//execute the command
 
 	go func() {
 		b, err = cmd.CombinedOutput()
