@@ -53,7 +53,18 @@ func (s *Server) run() {
 	} else {
 		logs.Println("use stdio mode.")
 		// use stdio mode
-		s.rpcServer.ConnComeIn(NewStdio())
+
+		var stdio jsonrpc.ReaderWriter
+		if s.Opt.StdioInput != nil && s.Opt.StdioOutput != nil {
+			stdio = &stdioReaderWriter{
+				reader: s.Opt.StdioInput,
+				writer: s.Opt.StdioOutput,
+			}
+		} else {
+			stdio = NewStdio()
+		}
+
+		s.rpcServer.ConnComeIn(stdio)
 	}
 }
 

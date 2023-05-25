@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"io"
 	"log"
 	"os"
 
@@ -29,7 +30,14 @@ var HOVER_PRETTY_PRINT_CONFIG = &pprint.PrettyPrintConfig{
 	Compact:  false,
 }
 
-func StartLSPServer() {
+type LSPServerOptions struct {
+	WASM struct {
+		StdioInput  io.Reader
+		StdioOutput io.Writer
+	}
+}
+
+func StartLSPServer(opts LSPServerOptions) {
 
 	f, err := os.OpenFile("/tmp/.inox-lsp.debug.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o600)
 	if err != nil {
@@ -49,12 +57,19 @@ func StartLSPServer() {
 		f.Close()
 	}()
 
-	server := lsp.NewServer(&lsp.Options{
+	options := &lsp.Options{
 		CompletionProvider: &defines.CompletionOptions{
 			TriggerCharacters: &[]string{"."},
 		},
 		TextDocumentSync: defines.TextDocumentSyncKindFull,
-	})
+	}
+
+	if opts.WASM.StdioInput != nil {
+		options.StdioInput = opts.WASM.StdioInput
+		options.StdioOutput = opts.WASM.StdioOutput
+	}
+
+	server := lsp.NewServer(options)
 
 	filesystem := NewFilesystem()
 

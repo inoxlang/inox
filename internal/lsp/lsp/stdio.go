@@ -1,24 +1,11 @@
 package lsp
 
-import (
-	"io"
-	"os"
-
-	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
-)
+import "io"
 
 type stdioReaderWriter struct {
 	reader   io.Reader
 	writer   io.Writer
 	isClosed bool
-}
-
-func NewStdio() jsonrpc.ReaderWriter {
-	return &stdioReaderWriter{
-		reader:   os.Stdin,
-		writer:   os.Stdout,
-		isClosed: false,
-	}
 }
 
 func (s *stdioReaderWriter) Read(p []byte) (n int, err error) {
