@@ -51,7 +51,7 @@ func TestLocalDatabase(t *testing.T) {
 			assert.False(t, core.TryAcquireResource(r))
 
 			//we check that the database transaction is not commited yet
-			ldb.db.View(func(txn *badger.Txn) error {
+			ldb.underlying.db.View(func(txn *badger.Txn) error {
 				_, err := txn.Get([]byte(key))
 				assert.ErrorIs(t, err, badger.ErrKeyNotFound)
 				return nil
@@ -62,7 +62,7 @@ func TestLocalDatabase(t *testing.T) {
 			core.ReleaseResource(r)
 
 			//we check that the database transaction is commited
-			ldb.db.View(func(txn *badger.Txn) error {
+			ldb.underlying.db.View(func(txn *badger.Txn) error {
 				item, err := txn.Get([]byte(key))
 				assert.NoError(t, err)
 
@@ -90,7 +90,7 @@ func TestLocalDatabase(t *testing.T) {
 			assert.Equal(t, Int(1), v)
 
 			//we check that the database transaction is not commited yet
-			ldb.db.View(func(txn *badger.Txn) error {
+			ldb.underlying.db.View(func(txn *badger.Txn) error {
 				_, err := txn.Get([]byte(key))
 				assert.ErrorIs(t, err, badger.ErrKeyNotFound)
 				return nil
@@ -101,7 +101,7 @@ func TestLocalDatabase(t *testing.T) {
 			core.ReleaseResource(r)
 
 			//we check that the database transaction is not commited
-			ldb.db.View(func(txn *badger.Txn) error {
+			ldb.underlying.db.View(func(txn *badger.Txn) error {
 				_, err := txn.Get([]byte(key))
 				assert.ErrorIs(t, err, badger.ErrKeyNotFound)
 				return nil
@@ -149,7 +149,7 @@ func TestLocalDatabase(t *testing.T) {
 			assert.Equal(t, Int(1), v)
 
 			//we check that the database transaction is commited
-			ldb.db.View(func(txn *badger.Txn) error {
+			ldb.underlying.db.View(func(txn *badger.Txn) error {
 				item, err := txn.Get([]byte(key))
 				assert.NoError(t, err)
 
