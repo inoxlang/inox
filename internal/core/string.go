@@ -266,7 +266,7 @@ func NewCheckedString(slices []Value, node *parse.StringTemplateLiteral, ctx *Co
 
 			patternName := namespaceName + "." + memberName
 			str := sliceValue.(Str)
-			if !pattern.Test(nil, str) {
+			if !pattern.Test(ctx, str) {
 				return CheckedString{}, fmt.Errorf("runtime check error: `%s` does not match %%%s", str, patternName)
 			}
 
@@ -277,7 +277,7 @@ func NewCheckedString(slices []Value, node *parse.StringTemplateLiteral, ctx *Co
 	}
 
 	str := Str(buff.String())
-	if !finalPattern.Test(nil, str) {
+	if !finalPattern.Test(ctx, str) {
 		return CheckedString{}, fmt.Errorf("runtime check error: final string `%s` does not match %%%s", str, matchingPatternName)
 	}
 

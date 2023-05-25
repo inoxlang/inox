@@ -871,7 +871,7 @@ func (patt DynamicStringPatternElement) resolve() StringPattern {
 }
 
 func (patt DynamicStringPatternElement) Test(ctx *Context, v Value) bool {
-	return patt.resolve().Test(nil, v)
+	return patt.resolve().Test(ctx, v)
 }
 
 func (patt DynamicStringPatternElement) validate(s string, i *int) bool {

@@ -257,7 +257,7 @@ func (patt TuplePattern) Random(ctx *Context, options ...Option) Value {
 func (patt *DifferencePattern) Random(ctx *Context, options ...Option) Value {
 	for {
 		v := patt.base.Random(ctx, options...)
-		if !patt.removed.Test(nil, v) {
+		if !patt.removed.Test(ctx, v) {
 			return v
 		}
 	}
@@ -331,7 +331,7 @@ func (patt *IntersectionPattern) Random(ctx *Context, options ...Option) Value {
 loop:
 	for {
 		for _, otherCases := range patt.cases[1:] {
-			if !otherCases.Test(nil, rand) {
+			if !otherCases.Test(ctx, rand) {
 				rand = patt.cases[0].Random(ctx, sourceOption)
 				continue loop
 			}
