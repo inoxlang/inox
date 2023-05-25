@@ -2,8 +2,6 @@ package internal
 
 import (
 	core "github.com/inoxlang/inox/internal/core"
-
-	_ "github.com/pingcap/tidb/parser/test_driver"
 )
 
 func init() {

@@ -1,14 +1,8 @@
 package internal
 
 import (
-	"strings"
-
 	core "github.com/inoxlang/inox/internal/core"
-
-	"github.com/pingcap/tidb/parser"
-	"github.com/pingcap/tidb/parser/ast"
-	"github.com/pingcap/tidb/parser/mysql"
-	testdriver "github.com/pingcap/tidb/parser/test_driver"
+	//postgres
 )
 
 var (
@@ -16,20 +10,20 @@ var (
 )
 
 type sqlQueryParser struct {
-	parser *parser.Parser
+	underlying *underlyingQueryParser
 }
 
 func newQueryParser() *sqlQueryParser {
 	p := &sqlQueryParser{
-		parser: parser.New(),
+		newUnderlyingQueryParser(),
 	}
 
 	return p
 }
 
+// Validate checks that the string is a valid SQL statement with both MySQL & Postgres parsers.
 func (p *sqlQueryParser) Validate(ctx *core.Context, s string) bool {
-	_, w, err := p.parser.ParseSQL(s)
-	return w == nil && err == nil
+	return p.underlying.Validate(ctx, s)
 }
 
 func (p *sqlQueryParser) Parse(ctx *core.Context, s string) (core.Value, error) {
@@ -37,37 +31,20 @@ func (p *sqlQueryParser) Parse(ctx *core.Context, s string) (core.Value, error) 
 }
 
 type sqlStringValueParser struct {
-	parser *parser.Parser
+	underlying *underlyingStringValueParser
 }
 
 func newStringValueParser() *sqlStringValueParser {
 	p := &sqlStringValueParser{
-		parser: parser.New(),
+		newUnderlyingStringValueParser(),
 	}
 
 	return p
 }
 
+// Validate checks that the string is a valid SQL string literal with the MySQL parser.
 func (p *sqlStringValueParser) Validate(ctx *core.Context, s string) bool {
-	if strings.TrimSpace(s) != s { // TODO: change
-		return false
-	}
-
-	n, err := p.parser.ParseOneStmt("select "+s+";", "", "")
-	if err != nil {
-		return false
-	}
-
-	switch node := n.(type) {
-	case *ast.SelectStmt:
-		if node.Kind != ast.SelectStmtKindSelect || node.Fields == nil || len(node.Fields.Fields) != 1 {
-			return false
-		}
-		typ := node.Fields.Fields[0].Expr.(*testdriver.ValueExpr).Type.GetType()
-		return typ == mysql.TypeVarchar || typ == mysql.TypeVarString
-	default:
-	}
-	return false
+	return p.underlying.Validate(ctx, s)
 }
 
 func (p *sqlStringValueParser) Parse(ctx *core.Context, s string) (core.Value, error) {
