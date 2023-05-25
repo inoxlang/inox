@@ -10,7 +10,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"os/signal"
 	"os/user"
 	"sort"
 	"strconv"
@@ -499,24 +498,7 @@ func (sh *shell) runLoop() {
 	sh.applyConfiguration(prevTermState)
 
 	if sh.config.handleSignals {
-		signal.Reset()
-		signalChan := make(chan os.Signal, 1)
-		signal.Ignore(syscall.SIGTTOU, syscall.SIGTTIN, syscall.SIGTSTP)
-		signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM, syscall.SIGWINCH, syscall.SIGUSR1, syscall.SIGUSR2, syscall.SIGQUIT)
-
-		go func() {
-			for s := range signalChan {
-				switch s {
-				case os.Interrupt:
-					continue
-				case syscall.SIGTERM:
-					term.Restore(sh.inFd, prevTermState)
-					os.Exit(0)
-				case syscall.SIGWINCH:
-					continue
-				}
-			}
-		}()
+		handleSignalsInGoroutine(sh, prevTermState)
 	}
 
 	//
