@@ -172,7 +172,7 @@ func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx
 		fpath := getFilePath(req.TextDocument.Uri)
 		fullDocumentText := req.TextDocument.Text
 
-		fsErr := fsutil.WriteFile(filesystem.documents, fpath, []byte(fullDocumentText), 0700)
+		fsErr := fsutil.WriteFile(filesystem.docsFS(), fpath, []byte(fullDocumentText), 0700)
 		if fsErr != nil {
 			logs.Println("failed to update state of document", fpath+":", fsErr)
 		}
@@ -187,7 +187,7 @@ func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx
 			return errors.New("single change supported")
 		}
 		fullDocumentText := req.ContentChanges[0].Text.(string)
-		fsErr := fsutil.WriteFile(filesystem.documents, fpath, []byte(fullDocumentText), 0700)
+		fsErr := fsutil.WriteFile(filesystem.docsFS(), fpath, []byte(fullDocumentText), 0700)
 		if fsErr != nil {
 			logs.Println("failed to update state of document", fpath+":", fsErr)
 		}

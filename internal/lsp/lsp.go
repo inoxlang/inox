@@ -86,7 +86,7 @@ func StartLSPServer(opts LSPServerOptions) {
 
 	server := lsp.NewServer(options)
 
-	filesystem := NewFilesystem()
+	filesystem := newFilesystem()
 
 	compilationCtx := core.NewContext(core.ContextConfig{
 		Permissions: []core.Permission{
