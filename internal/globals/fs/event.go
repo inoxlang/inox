@@ -6,9 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
 
-	"github.com/fsnotify/fsnotify"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/permkind"
 )
@@ -24,7 +22,7 @@ type FilesystemEventSource struct {
 	pathFilter core.PathPattern //ignored if empty
 
 	core.EventSourceHandlerManagement
-	watcher  *fsnotify.Watcher
+	watcher  fsWatcher
 	lock     sync.RWMutex
 	isClosed bool
 }
@@ -139,12 +137,10 @@ func NewEventSource(ctx *core.Context, resourceNameOrPattern core.Value) (*Files
 
 	//create watcher & add paths
 
-	watcher, err := fsnotify.NewWatcher()
+	watcher, err := newFsWatcher()
 	if err != nil {
 		return nil, err
 	}
-
-	eventSource.watcher = watcher
 
 	// TODO: prevent watching on special filesystems
 	err = watcher.Add(string(eventSource.path))
@@ -165,98 +161,7 @@ func NewEventSource(ctx *core.Context, resourceNameOrPattern core.Value) (*Files
 		}
 	}
 
-	// start listening for events.
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				eventSource.Close()
-				return
-			case event, ok := <-watcher.Events:
-				if !ok {
-					return
-				}
-
-				eventPath := core.Path(event.Name)
-
-				if eventPath[len(eventPath)-1] != '/' {
-					dirPath := eventPath + "/"
-
-					if watchedDirPaths[dirPath] {
-						eventPath = dirPath
-					} else {
-						info, err := fls.Lstat(event.Name)
-						if err == nil && info.IsDir() {
-							eventPath = dirPath
-						}
-					}
-				}
-
-				filter := eventSource.GetFilter()
-				if filter != "" && !filter.Test(nil, eventPath) {
-					continue
-				}
-
-				now := time.Now()
-
-				var (
-					writeOp, createOp, removeOp, renameOp, chmodOp bool
-				)
-
-				if event.Has(fsnotify.Write) {
-					writeOp = true
-				}
-
-				if event.Has(fsnotify.Create) {
-					createOp = true
-
-					if eventPath.IsDirPath() {
-						watcher.Add(event.Name)
-						watchedDirPaths[eventPath] = true
-					}
-				}
-
-				if event.Has(fsnotify.Remove) {
-					removeOp = true
-					if eventPath.IsDirPath() {
-						watcher.Remove(event.Name)
-						delete(watchedDirPaths, eventPath)
-					}
-				}
-
-				if event.Has(fsnotify.Chmod) {
-					chmodOp = true
-				}
-
-				if event.Has(fsnotify.Rename) {
-					renameOp = true
-				}
-
-				fsEvent := core.NewEvent(core.NewRecordFromMap(core.ValMap{
-					"path":      eventPath,
-					"write_op":  core.Bool(writeOp),
-					"create_op": core.Bool(createOp),
-					"remove_op": core.Bool(removeOp),
-					"chmod_op":  core.Bool(chmodOp),
-					"rename_op": core.Bool(renameOp),
-				}), core.Date(now), eventPath)
-
-				for _, handler := range eventSource.GetHandlers() {
-					func() {
-						defer func() { recover() }()
-						handler(fsEvent)
-					}()
-				}
-
-			case err, ok := <-watcher.Errors:
-				if !ok {
-					return
-				}
-				//TODO: handle error
-				_ = err
-			}
-		}
-	}()
+	go watcher.listenForEventsSync(ctx, fls, eventSource, watchedDirPaths)
 
 	return eventSource, nil
 }
