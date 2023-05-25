@@ -13,9 +13,16 @@ var (
 	ErrOnlyS3httpsURLsSupported = errors.New("only s3:// & https:// urls are supported")
 )
 
+func checkScheme(u core.URL) error {
+	if u.Scheme() != "s3" && u.Scheme() != "https" && u.Scheme() != "http" {
+		return ErrOnlyS3httpsURLsSupported
+	}
+	return nil
+}
+
 func S3Get(ctx *core.Context, u core.URL) (*GetObjectResponse, error) {
-	if u.Scheme() != "s3" && u.Scheme() != "https" {
-		return nil, ErrOnlyS3httpsURLsSupported
+	if err := checkScheme(u); err != nil {
+		return nil, err
 	}
 
 	bucket, err := OpenBucket(ctx, u.Host())
@@ -51,8 +58,8 @@ func S3Get(ctx *core.Context, u core.URL) (*GetObjectResponse, error) {
 }
 
 func S3List(ctx *core.Context, u core.URL) ([]*ObjectInfo, error) {
-	if u.Scheme() != "s3" && u.Scheme() != "https" {
-		return nil, ErrOnlyS3httpsURLsSupported
+	if err := checkScheme(u); err != nil {
+		return nil, err
 	}
 
 	bucket, err := OpenBucket(ctx, u.Host())
@@ -88,8 +95,8 @@ func S3List(ctx *core.Context, u core.URL) ([]*ObjectInfo, error) {
 }
 
 func S3put(ctx *core.Context, u core.URL, readable core.Readable) (*PutObjectResponse, error) {
-	if u.Scheme() != "s3" && u.Scheme() != "https" {
-		return nil, ErrOnlyS3httpsURLsSupported
+	if err := checkScheme(u); err != nil {
+		return nil, err
 	}
 	reader := readable.Reader()
 
@@ -143,8 +150,8 @@ func S3put(ctx *core.Context, u core.URL, readable core.Readable) (*PutObjectRes
 }
 
 func S3Delete(ctx *core.Context, u core.URL, readable core.Readable) error {
-	if u.Scheme() != "s3" && u.Scheme() != "https" {
-		return ErrOnlyS3httpsURLsSupported
+	if err := checkScheme(u); err != nil {
+		return err
 	}
 
 	bucket, err := OpenBucket(ctx, u.Host())
@@ -165,8 +172,8 @@ func S3Delete(ctx *core.Context, u core.URL, readable core.Readable) error {
 }
 
 func S3GetBucketPolicy(ctx *core.Context, u core.URL) (*GetBucketPolicyResponse, error) {
-	if u.Scheme() != "s3" && u.Scheme() != "https" {
-		return nil, ErrOnlyS3httpsURLsSupported
+	if err := checkScheme(u); err != nil {
+		return nil, err
 	}
 
 	bucket, err := OpenBucket(ctx, u.Host())
@@ -191,8 +198,8 @@ func S3GetBucketPolicy(ctx *core.Context, u core.URL) (*GetBucketPolicyResponse,
 }
 
 func S3SetBucketPolicy(ctx *core.Context, u core.URL, policy core.Value) error {
-	if u.Scheme() != "s3" && u.Scheme() != "https" {
-		return ErrOnlyS3httpsURLsSupported
+	if err := checkScheme(u); err != nil {
+		return err
 	}
 
 	var policyString string
@@ -228,9 +235,8 @@ func S3SetBucketPolicy(ctx *core.Context, u core.URL, policy core.Value) error {
 }
 
 func S3RemoveBucketPolicy(ctx *core.Context, u core.URL) error {
-
-	if u.Scheme() != "s3" && u.Scheme() != "https" {
-		return ErrOnlyS3httpsURLsSupported
+	if err := checkScheme(u); err != nil {
+		return err
 	}
 
 	bucket, err := OpenBucket(ctx, u.Host())
