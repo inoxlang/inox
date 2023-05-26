@@ -1,4 +1,8 @@
-import { Go } from "./wasm_exec.js";
+import { Go } from './wasm_exec.js';
+import './editor/codemirror.js'
+import './editor/mode/javascript/javascript.js'
+import './editor/addon/hint/javascript-hint.js'
+
 
 //polyfill for WebAssembly.instantiateStreaming
 if (!WebAssembly.instantiateStreaming) {
@@ -25,6 +29,7 @@ WebAssembly.instantiateStreaming(
     inst = result.instance;
 
     go.run(inst);
+
     setTimeout(() => {
       let exports = /** 
       * @type { {
@@ -41,7 +46,20 @@ WebAssembly.instantiateStreaming(
   
       //@ts-ignore
       globalThis['exports'] = exports;
+
+
+      setupEditor()
     }, 10)
   },
 );
 
+
+function setupEditor(){
+  var myCodeMirror = CodeMirror(document.body, {
+    value: "function myScript(){return 100;}\n",
+    mode:  "javascript",
+    extraKeys: {
+        "Ctrl-Space": "autocomplete"
+    }
+  });
+}

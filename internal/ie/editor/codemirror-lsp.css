@@ -1,0 +1,33 @@
+.CodeMirror-lsp {
+  width: 10px;
+}
+
+.CodeMirror-lsp-guttermarker {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #900;
+}
+
+.CodeMirror-lsp-tooltip {
+  position: absolute;
+  font-size: 12px;
+  background: white;
+  border: 1px solid black;
+  padding: 2px;
+  z-index: 2;
+}
+
+.CodeMirror-lsp-context > * {
+  padding: 5px;
+  border-bottom: 1px solid #ccc;
+  cursor: pointer;
+}
+
+.CodeMirror-lsp-context > *:last-child {
+  border-bottom: none;
+}
+
+.CodeMirror-lsp-context *:hover {
+  background-color: #dde;
+}
