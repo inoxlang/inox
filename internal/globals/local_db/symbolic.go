@@ -3,6 +3,7 @@ package internal
 import (
 	"bufio"
 
+	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 
@@ -90,6 +91,6 @@ func (kvs *SymbolicLocalDatabase) WidestOfType() SymbolicValue {
 
 ///
 
-func (kvs *LocalDatabase) ToSymbolicValue(wide bool, encountered map[uintptr]SymbolicValue) (SymbolicValue, error) {
+func (kvs *LocalDatabase) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]SymbolicValue) (SymbolicValue, error) {
 	return &SymbolicLocalDatabase{}, nil
 }

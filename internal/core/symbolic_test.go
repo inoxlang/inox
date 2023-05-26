@@ -112,7 +112,7 @@ func TestToSymbolicValue(t *testing.T) {
 
 	t.Run("dictionary", func(t *testing.T) {
 		dict := NewDictionary(map[string]Value{`"name"`: Str("foo"), `./file`: True})
-		v, err := ToSymbolicValue(dict, false)
+		v, err := ToSymbolicValue(nil, dict, false)
 		assert.NoError(t, err)
 
 		assert.IsType(t, &symbolic.Dictionary{}, v)
@@ -134,7 +134,7 @@ func TestToSymbolicValue(t *testing.T) {
 		obj.SetProp(ctx, "self", obj)
 		obj.SetProp(ctx, "exact_pattern", pattern)
 
-		v, err := ToSymbolicValue(pattern, false)
+		v, err := ToSymbolicValue(nil, pattern, false)
 		assert.NoError(t, err)
 		symPattern := v.(*symbolic.ExactValuePattern)
 		symObject := symPattern.GetVal().(*symbolic.Object)

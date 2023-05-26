@@ -216,12 +216,12 @@ func (p *ModuleParameters) GetSymbolicArguments() *symbolic.Object {
 	encountered := map[uintptr]symbolic.SymbolicValue{}
 
 	for _, param := range p.others {
-		symbolicPatt := utils.Must(param.pattern.ToSymbolicValue(false, encountered)).(symbolic.Pattern)
+		symbolicPatt := utils.Must(param.pattern.ToSymbolicValue(nil, encountered)).(symbolic.Pattern)
 		resultEntries[string(param.name)] = symbolicPatt.SymbolicValue()
 	}
 
 	for _, param := range p.positional {
-		symbolicPatt := utils.Must(param.pattern.ToSymbolicValue(false, encountered)).(symbolic.Pattern)
+		symbolicPatt := utils.Must(param.pattern.ToSymbolicValue(nil, encountered)).(symbolic.Pattern)
 		resultEntries[string(param.name)] = symbolicPatt.SymbolicValue()
 	}
 
@@ -255,7 +255,7 @@ func (p moduleParameter) Required() bool {
 }
 
 func (p moduleParameter) StringifiedPattern() string {
-	symb := utils.Must(p.pattern.ToSymbolicValue(false, map[uintptr]symbolic.SymbolicValue{}))
+	symb := utils.Must(p.pattern.ToSymbolicValue(nil, map[uintptr]symbolic.SymbolicValue{}))
 	return symbolic.Stringify(symb.(symbolic.Pattern).SymbolicValue())
 }
 

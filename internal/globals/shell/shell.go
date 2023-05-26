@@ -1451,7 +1451,7 @@ func (sh *shell) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, de
 	utils.Must(fmt.Fprintf(w, "%#v", sh))
 }
 
-func (sh *shell) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (sh *shell) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	return &symbolic_shell.Shell{}, nil
 }
 

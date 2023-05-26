@@ -2233,7 +2233,7 @@ func (r testMutableGoValue) PrettyPrint(w *bufio.Writer, config *PrettyPrintConf
 	utils.Must(fmt.Fprintf(w, "%#v", r))
 }
 
-func (v testMutableGoValue) ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (v testMutableGoValue) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	return symbolic.ANY, nil
 }
 

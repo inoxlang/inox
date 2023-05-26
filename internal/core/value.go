@@ -39,7 +39,7 @@ type Value interface {
 	PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int)
 
 	//ToSymbolicValue should return a symbolic value that represents the value.
-	ToSymbolicValue(wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error)
+	ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error)
 }
 
 type ResourceName interface {

@@ -982,7 +982,7 @@ func (ctx *Context) ToSymbolicValue() (*symbolic.Context, error) {
 	symbolicCtx := symbolic.NewSymbolicContext(ctx)
 
 	for k, v := range ctx.namedPatterns {
-		symbolicVal, err := ToSymbolicValue(v, false)
+		symbolicVal, err := ToSymbolicValue(ctx, v, false)
 		if err != nil {
 			return nil, fmt.Errorf("cannot convert named pattern %s: %s", k, err)
 		}
@@ -991,7 +991,7 @@ func (ctx *Context) ToSymbolicValue() (*symbolic.Context, error) {
 	}
 
 	for k, v := range ctx.patternNamespaces {
-		symbolicVal, err := ToSymbolicValue(v, false)
+		symbolicVal, err := ToSymbolicValue(ctx, v, false)
 		if err != nil {
 			return nil, fmt.Errorf("cannot convert '%s' pattern namespace: %s", k, err)
 		}
@@ -1000,7 +1000,7 @@ func (ctx *Context) ToSymbolicValue() (*symbolic.Context, error) {
 	}
 
 	for k, v := range ctx.hostAliases {
-		symbolicVal, err := ToSymbolicValue(v, false)
+		symbolicVal, err := ToSymbolicValue(ctx, v, false)
 		if err != nil {
 			return nil, fmt.Errorf("cannot convert host alias %s: %s", k, err)
 		}

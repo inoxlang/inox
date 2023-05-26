@@ -112,6 +112,8 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 		return nil
 	}
 
+	ctx := state.Global.Ctx
+
 	switch n := nodeAtCursor.(type) {
 	case *parse.PatternIdentifierLiteral:
 		if mode == ShellCompletions {
@@ -119,7 +121,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 				if !strings.HasPrefix(name, n.Name) {
 					continue
 				}
-				detail, _ := core.GetStringifiedSymbolicValue(patt, false)
+				detail, _ := core.GetStringifiedSymbolicValue(ctx, patt, false)
 
 				s := "%" + name
 				completions = append(completions, Completion{
@@ -130,7 +132,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 				})
 			}
 			for name, namespace := range state.Global.Ctx.GetPatternNamespaces() {
-				detail, _ := core.GetStringifiedSymbolicValue(namespace, false)
+				detail, _ := core.GetStringifiedSymbolicValue(ctx, namespace, false)
 
 				if !strings.HasPrefix(name, n.Name) {
 					continue
@@ -196,7 +198,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 				}
 
 				s := "%" + namespaceName + "." + patternName
-				detail, _ := core.GetStringifiedSymbolicValue(patternValue, false)
+				detail, _ := core.GetStringifiedSymbolicValue(ctx, patternValue, false)
 
 				completions = append(completions, Completion{
 					ShownString: s,
@@ -244,7 +246,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 				if strings.HasPrefix(name, n.Name) {
 					names = append(names, name)
 
-					detail, _ := core.GetStringifiedSymbolicValue(varVal, false)
+					detail, _ := core.GetStringifiedSymbolicValue(ctx, varVal, false)
 					details = append(details, detail)
 				}
 			}
@@ -271,7 +273,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 		if mode == ShellCompletions {
 			state.Global.Globals.Foreach(func(name string, varVal core.Value, _ bool) error {
 				if strings.HasPrefix(name, n.Name) {
-					detail, _ := core.GetStringifiedSymbolicValue(varVal, false)
+					detail, _ := core.GetStringifiedSymbolicValue(ctx, varVal, false)
 					completions = append(completions, Completion{
 						ShownString: name,
 						Value:       "$$" + name,
@@ -465,7 +467,7 @@ func handleIdentifierAndKeywordCompletions(
 	if mode == ShellCompletions {
 		for name, varVal := range state.CurrentLocalScope() {
 			if strings.HasPrefix(name, ident.Name) {
-				detail, _ := core.GetStringifiedSymbolicValue(varVal, false)
+				detail, _ := core.GetStringifiedSymbolicValue(state.Global.Ctx, varVal, false)
 
 				completions = append(completions, Completion{
 					ShownString: name,
@@ -495,7 +497,7 @@ func handleIdentifierAndKeywordCompletions(
 
 		state.Global.Globals.Foreach(func(name string, varVal core.Value, _ bool) error {
 			if strings.HasPrefix(name, ident.Name) {
-				detail, _ := core.GetStringifiedSymbolicValue(varVal, false)
+				detail, _ := core.GetStringifiedSymbolicValue(state.Global.Ctx, varVal, false)
 
 				completions = append(completions, Completion{
 					ShownString: name,
@@ -778,7 +780,7 @@ func suggestPropertyNames(
 		propNames = v.PropertyNames(state.Ctx)
 		propDetails = utils.MapSlice(propNames, func(name string) string {
 			propVal := v.Prop(state.Ctx, name)
-			detail, _ := core.GetStringifiedSymbolicValue(propVal, false)
+			detail, _ := core.GetStringifiedSymbolicValue(state.Ctx, propVal, false)
 			return detail
 		})
 	case symbolic.IProps:

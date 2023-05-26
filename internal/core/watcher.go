@@ -33,7 +33,7 @@ var (
 
 func init() {
 	RegisterSymbolicGoFunction(WatchReceivedMessages, func(ctx *symbolic.Context, watchable symbolic.Watchable) *symbolic.Watcher {
-		pattern, _ := MSG_PATTERN.ToSymbolicValue(false, nil)
+		pattern, _ := MSG_PATTERN.ToSymbolicValue(nil, nil)
 		return symbolic.NewWatcher(pattern.(symbolic.Pattern))
 	})
 }

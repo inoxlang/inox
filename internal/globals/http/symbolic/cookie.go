@@ -8,7 +8,7 @@ import (
 )
 
 var optionalHostPattern = symbolic.NewOptionalPattern(
-	utils.Must(core.HOST_PATTERN.ToSymbolicValue(false, nil)).(symbolic.Pattern),
+	utils.Must(core.HOST_PATTERN.ToSymbolicValue(nil, nil)).(symbolic.Pattern),
 )
 
 func NewCookieObject() *symbolic.Object {
