@@ -22,8 +22,17 @@ var (
 	ANY_INT_RANGE  = &IntRange{}
 	ANY_FILEMODE   = &FileMode{}
 	ANY_DATE       = &Date{}
+	ANY_DURATION   = &Duration{}
 	ANY_BYTECOUNT  = &ByteCount{}
+	ANY_LINECOUNT  = &LineCount{}
+	ANY_RUNECOUNT  = &RuneCount{}
+	ANY_BYTERATE   = &ByteRate{}
+	ANY_SIMPLERATE = &SimpleRate{}
 	ANY_IDENTIFIER = &Identifier{}
+	ANY_PROPNAME   = &PropertyName{}
+	ANY_EMAIL_ADDR = &EmailAddress{}
+	ANY_FILEINFO   = &FileInfo{}
+	ANY_MIMETYPE   = &Mimetype{}
 
 	FILEINFO_PROPNAMES = []string{"name", "abs-path", "size", "mode", "mod-time", "is-dir"}
 )
@@ -104,25 +113,25 @@ type NilT struct {
 	_ int
 }
 
-func (b *NilT) Test(v SymbolicValue) bool {
+func (n *NilT) Test(v SymbolicValue) bool {
 	_, ok := v.(*NilT)
 	return ok
 }
 
-func (a *NilT) Widen() (SymbolicValue, bool) {
+func (n *NilT) Widen() (SymbolicValue, bool) {
 	return nil, false
 }
 
-func (a *NilT) IsWidenable() bool {
+func (n *NilT) IsWidenable() bool {
 	return false
 }
 
-func (a *NilT) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (n *NilT) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("nil")))
 }
 
-func (a *NilT) WidestOfType() SymbolicValue {
-	return &NilT{}
+func (n *NilT) WidestOfType() SymbolicValue {
+	return Nil
 }
 
 // A Bool represents a symbolic Bool.
@@ -135,20 +144,19 @@ func (b *Bool) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (a *Bool) Widen() (SymbolicValue, bool) {
+func (b *Bool) Widen() (SymbolicValue, bool) {
 	return nil, false
 }
 
-func (a *Bool) IsWidenable() bool {
+func (b *Bool) IsWidenable() bool {
 	return false
 }
 
-func (a *Bool) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (b *Bool) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%boolean")))
-	return
 }
 
-func (a *Bool) WidestOfType() SymbolicValue {
+func (b *Bool) WidestOfType() SymbolicValue {
 	return ANY_BOOL
 }
 
@@ -158,25 +166,24 @@ type EmailAddress struct {
 	_ int
 }
 
-func (s *EmailAddress) Test(v SymbolicValue) bool {
+func (e *EmailAddress) Test(v SymbolicValue) bool {
 	_, ok := v.(*EmailAddress)
 	return ok
 }
 
-func (s *EmailAddress) Widen() (SymbolicValue, bool) {
+func (e *EmailAddress) Widen() (SymbolicValue, bool) {
 	return nil, false
 }
 
-func (s *EmailAddress) IsWidenable() bool {
+func (e *EmailAddress) IsWidenable() bool {
 	return false
 }
 
-func (s *EmailAddress) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (e *EmailAddress) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%email-address")))
-	return
 }
 
-func (s *EmailAddress) PropertyNames() []string {
+func (e *EmailAddress) PropertyNames() []string {
 	return []string{"username", "domain"}
 }
 
@@ -191,8 +198,8 @@ func (*EmailAddress) Prop(name string) SymbolicValue {
 	}
 }
 
-func (s *EmailAddress) WidestOfType() SymbolicValue {
-	return &Host{}
+func (e *EmailAddress) WidestOfType() SymbolicValue {
+	return ANY_EMAIL_ADDR
 }
 
 // A Identifier represents a symbolic Identifier.
@@ -235,11 +242,11 @@ func (i *Identifier) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConf
 	utils.Must(fmt.Fprintf(w, "#%s", i.name))
 }
 
-func (s *Identifier) underylingString() *String {
+func (i *Identifier) underylingString() *String {
 	return &String{}
 }
 
-func (s *Identifier) WidestOfType() SymbolicValue {
+func (i *Identifier) WidestOfType() SymbolicValue {
 	return ANY_IDENTIFIER
 }
 
@@ -281,7 +288,7 @@ func (s *PropertyName) underylingString() *String {
 }
 
 func (s *PropertyName) WidestOfType() SymbolicValue {
-	return &Identifier{}
+	return ANY_PROPNAME
 }
 
 // A Mimetype represents a symbolic Mimetype.
@@ -289,26 +296,25 @@ type Mimetype struct {
 	_ int
 }
 
-func (p *Mimetype) Test(v SymbolicValue) bool {
+func (m *Mimetype) Test(v SymbolicValue) bool {
 	_, ok := v.(*Mimetype)
 	return ok
 }
 
-func (a *Mimetype) Widen() (SymbolicValue, bool) {
+func (m *Mimetype) Widen() (SymbolicValue, bool) {
 	return nil, false
 }
 
-func (a *Mimetype) IsWidenable() bool {
+func (m *Mimetype) IsWidenable() bool {
 	return false
 }
 
-func (p *Mimetype) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (m *Mimetype) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%mimetype")))
-	return
 }
 
-func (s *Mimetype) WidestOfType() SymbolicValue {
-	return &Mimetype{}
+func (m *Mimetype) WidestOfType() SymbolicValue {
+	return ANY_MIMETYPE
 }
 
 // An Option represents a symbolic Option.
@@ -353,7 +359,6 @@ func (o *Option) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, 
 		return
 	}
 	utils.Must(w.Write(utils.StringAsBytes("%--" + o.name + "(...)")))
-	return
 }
 
 func (o *Option) WidestOfType() SymbolicValue {
@@ -365,86 +370,80 @@ type Date struct {
 	_ int
 }
 
-func (f *Date) Test(v SymbolicValue) bool {
+func (d *Date) Test(v SymbolicValue) bool {
 	_, ok := v.(*Date)
 	return ok
 }
 
-func (a *Date) IsWidenable() bool {
+func (d *Date) IsWidenable() bool {
 	return false
 }
 
-func (a *Date) Widen() (SymbolicValue, bool) {
+func (d *Date) Widen() (SymbolicValue, bool) {
 	return nil, false
 }
 
-func (a *Date) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (d *Date) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%date")))
-	return
 }
 
-func (a *Date) WidestOfType() SymbolicValue {
-	return &Date{}
+func (d *Date) WidestOfType() SymbolicValue {
+	return ANY_DATE
 }
 
-//
-
+// A Duration represents a symbolic Duration.
 type Duration struct {
 	_ int
 }
 
-func (f *Duration) Test(v SymbolicValue) bool {
+func (d *Duration) Test(v SymbolicValue) bool {
 	_, ok := v.(*Duration)
 	return ok
 }
 
-func (a *Duration) IsWidenable() bool {
+func (d *Duration) IsWidenable() bool {
 	return false
 }
 
-func (a *Duration) Widen() (SymbolicValue, bool) {
+func (d *Duration) Widen() (SymbolicValue, bool) {
 	return nil, false
 }
 
-func (a *Duration) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (d *Duration) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%duration")))
-	return
 }
 
-func (a *Duration) WidestOfType() SymbolicValue {
-	return &Duration{}
+func (d *Duration) WidestOfType() SymbolicValue {
+	return ANY_DURATION
 }
 
-//
-
+// A FileMode represents a symbolic FileMode.
 type FileMode struct {
 	_ int
 }
 
-func (f *FileMode) Test(v SymbolicValue) bool {
+func (m *FileMode) Test(v SymbolicValue) bool {
 	_, ok := v.(*FileMode)
 	return ok
 }
 
-func (a *FileMode) IsWidenable() bool {
+func (m *FileMode) IsWidenable() bool {
 	return false
 }
 
-func (a *FileMode) Widen() (SymbolicValue, bool) {
+func (m *FileMode) Widen() (SymbolicValue, bool) {
 	return nil, false
 }
 
-func (a *FileMode) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (m *FileMode) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%filemode")))
-	return
 }
 
-func (a *FileMode) WidestOfType() SymbolicValue {
-	return &FileMode{}
+func (m *FileMode) WidestOfType() SymbolicValue {
+	return ANY_FILEMODE
 }
 
-//
-
+// A FileInfo represents a symbolic FileInfo.
 type FileInfo struct {
 	UnassignablePropsMixin
 	_ int
@@ -485,21 +484,20 @@ func (*FileInfo) PropertyNames() []string {
 	return FILEINFO_PROPNAMES
 }
 
-func (a *FileInfo) IsWidenable() bool {
+func (f *FileInfo) IsWidenable() bool {
 	return false
 }
 
-func (a *FileInfo) Widen() (SymbolicValue, bool) {
+func (f *FileInfo) Widen() (SymbolicValue, bool) {
 	return nil, false
 }
 
-func (a *FileInfo) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (f *FileInfo) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%file-info")))
-	return
 }
 
-func (a *FileInfo) WidestOfType() SymbolicValue {
-	return &FileInfo{}
+func (f *FileInfo) WidestOfType() SymbolicValue {
+	return ANY_FILEINFO
 }
 
 // A Type represents a symbolic Type.
@@ -507,12 +505,12 @@ type Type struct {
 	Type reflect.Type //if nil, any type is matched
 }
 
-func (b *Type) Test(v SymbolicValue) bool {
+func (t *Type) Test(v SymbolicValue) bool {
 	other, ok := v.(*Type)
 	if !ok {
 		return false
 	}
-	if b.Type == nil {
+	if t.Type == nil {
 		return true
 	}
 
@@ -520,26 +518,26 @@ func (b *Type) Test(v SymbolicValue) bool {
 		return false
 	}
 
-	return utils.SamePointer(b.Type, other.Type)
+	return utils.SamePointer(t.Type, other.Type)
 }
 
-func (b *Type) Widen() (SymbolicValue, bool) {
-	if b.Type == nil {
+func (t *Type) Widen() (SymbolicValue, bool) {
+	if t.Type == nil {
 		return nil, false
 	}
 	return &Type{}, true
 }
 
-func (b *Type) IsWidenable() bool {
-	return b.Type != nil
+func (t *Type) IsWidenable() bool {
+	return t.Type != nil
 }
 
-func (b *Type) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	if b.Type == nil {
+func (t *Type) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	if t.Type == nil {
 		utils.Must(w.Write(utils.StringAsBytes("%t")))
 		return
 	}
-	utils.Must(fmt.Fprintf(w, "%%type(%v)", b.Type))
+	utils.Must(fmt.Fprintf(w, "%%type(%v)", t.Type))
 }
 
 func (t *Type) WidestOfType() SymbolicValue {
@@ -687,7 +685,6 @@ func (s *QuantityRange) IsWidenable() bool {
 
 func (r *QuantityRange) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%quantity-range")))
-	return
 }
 
 func (r *QuantityRange) WidestOfType() SymbolicValue {
@@ -715,7 +712,6 @@ func (s *IntRange) IsWidenable() bool {
 
 func (r *IntRange) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%int-range")))
-	return
 }
 
 func (r *IntRange) KnownLen() int {
@@ -767,7 +763,6 @@ func (s *RuneRange) IsWidenable() bool {
 
 func (r *RuneRange) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%rune-range")))
-	return
 }
 
 func (r *RuneRange) KnownLen() int {
@@ -816,11 +811,10 @@ func (a *ByteCount) IsWidenable() bool {
 
 func (r *ByteCount) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%byte-count")))
-	return
 }
 
 func (r *ByteCount) WidestOfType() SymbolicValue {
-	return &ByteCount{}
+	return ANY_BYTECOUNT
 }
 
 //
@@ -847,11 +841,10 @@ func (a *ByteRate) IsWidenable() bool {
 
 func (r *ByteRate) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%byte-rate")))
-	return
 }
 
 func (r *ByteRate) WidestOfType() SymbolicValue {
-	return &ByteRate{}
+	return ANY_BYTERATE
 }
 
 // A LineCount represents a symbolic LineCount.
@@ -859,27 +852,26 @@ type LineCount struct {
 	_ int
 }
 
-func (r *LineCount) Test(v SymbolicValue) bool {
+func (c *LineCount) Test(v SymbolicValue) bool {
 	_, ok := v.(*LineCount)
 
 	return ok
 }
 
-func (r *LineCount) Widen() (SymbolicValue, bool) {
+func (c *LineCount) Widen() (SymbolicValue, bool) {
 	return nil, false
 }
 
-func (a *LineCount) IsWidenable() bool {
+func (c *LineCount) IsWidenable() bool {
 	return false
 }
 
-func (r *LineCount) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (c *LineCount) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%line-count")))
-	return
 }
 
-func (r *LineCount) WidestOfType() SymbolicValue {
-	return &LineCount{}
+func (c *LineCount) WidestOfType() SymbolicValue {
+	return ANY_LINECOUNT
 }
 
 // A RuneCount represents a symbolic RuneCount.
@@ -887,31 +879,29 @@ type RuneCount struct {
 	_ int
 }
 
-func (r *RuneCount) Test(v SymbolicValue) bool {
+func (c *RuneCount) Test(v SymbolicValue) bool {
 	_, ok := v.(*RuneCount)
 
 	return ok
 }
 
-func (r *RuneCount) Widen() (SymbolicValue, bool) {
+func (c *RuneCount) Widen() (SymbolicValue, bool) {
 	return nil, false
 }
 
-func (a *RuneCount) IsWidenable() bool {
+func (c *RuneCount) IsWidenable() bool {
 	return false
 }
 
-func (r *RuneCount) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (c *RuneCount) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%rune-count")))
-	return
 }
 
-func (r *RuneCount) WidestOfType() SymbolicValue {
-	return &RuneCount{}
+func (c *RuneCount) WidestOfType() SymbolicValue {
+	return ANY_RUNECOUNT
 }
 
-//
-
+// A SimpleRate represents a symbolic SimpleRate.
 type SimpleRate struct {
 	_ int
 }
@@ -926,17 +916,16 @@ func (r *SimpleRate) Widen() (SymbolicValue, bool) {
 	return nil, false
 }
 
-func (a *SimpleRate) IsWidenable() bool {
+func (r *SimpleRate) IsWidenable() bool {
 	return false
 }
 
 func (r *SimpleRate) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%simple-rate")))
-	return
 }
 
 func (r *SimpleRate) WidestOfType() SymbolicValue {
-	return &SimpleRate{}
+	return ANY_SIMPLERATE
 }
 
 type ResourceName interface {
@@ -967,7 +956,6 @@ func (r *AnyResourceName) IsWidenable() bool {
 
 func (r *AnyResourceName) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%resource-name")))
-	return
 }
 
 func (r *AnyResourceName) underylingString() *String {
@@ -1005,11 +993,10 @@ func (a *Port) IsWidenable() bool {
 
 func (i *Port) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%port")))
-	return
 }
 
 func (i *Port) WidestOfType() SymbolicValue {
-	return &Port{}
+	return ANY_PORT
 }
 
 // A Udata represents a symbolic UData.
@@ -1059,7 +1046,6 @@ func (a *UDataHiearchyEntry) IsWidenable() bool {
 
 func (i *UDataHiearchyEntry) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%udata-hiearchy-entry")))
-	return
 }
 
 func (i *UDataHiearchyEntry) WidestOfType() SymbolicValue {

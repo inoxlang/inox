@@ -219,7 +219,7 @@ func (i Identifier) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbol
 }
 
 func (p PropertyName) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.PropertyName{}, nil
+	return symbolic.ANY_PROPNAME, nil
 }
 
 func (p Path) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
@@ -694,31 +694,31 @@ func (f *GoFunction) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbo
 }
 
 func (d Date) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.Date{}, nil
+	return symbolic.ANY_DATE, nil
 }
 
 func (d Duration) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.Duration{}, nil
+	return symbolic.ANY_DURATION, nil
 }
 
 func (b Byte) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.Byte{}, nil
+	return symbolic.ANY_BYTE, nil
 }
 
 func (s *ByteSlice) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.ByteSlice{}, nil
+	return symbolic.ANY_BYTE_SLICE, nil
 }
 
 func (s Scheme) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.Scheme{}, nil
+	return symbolic.ANY_SCHEME, nil
 }
 
 func (h Host) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.Host{}, nil
+	return symbolic.ANY_HOST, nil
 }
 
 func (hddr EmailAddress) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.EmailAddress{}, nil
+	return symbolic.ANY_EMAIL_ADDR, nil
 }
 
 func (n AstNode) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
@@ -730,7 +730,7 @@ func (t Token) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Sy
 }
 
 func (m FileMode) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.FileMode{}, nil
+	return symbolic.ANY_FILEMODE, nil
 }
 
 func (r QuantityRange) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
@@ -746,27 +746,27 @@ func (r RuneRange) ToSymbolicValue(ctx *Context, encountered map[uintptr]symboli
 }
 
 func (c ByteCount) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.ByteCount{}, nil
+	return symbolic.ANY_BYTECOUNT, nil
 }
 
 func (c LineCount) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.LineCount{}, nil
+	return symbolic.ANY_LINECOUNT, nil
 }
 
 func (c RuneCount) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.RuneCount{}, nil
+	return symbolic.ANY_RUNECOUNT, nil
 }
 
 func (r ByteRate) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.ByteRate{}, nil
+	return symbolic.ANY_BYTERATE, nil
 }
 
 func (r SimpleRate) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.SimpleRate{}, nil
+	return symbolic.ANY_SIMPLERATE, nil
 }
 
 func (r *Reader) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.Reader{}, nil
+	return symbolic.ANY_READER, nil
 }
 
 func (writer *Writer) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
@@ -852,11 +852,11 @@ func (g *RoutineGroup) ToSymbolicValue(ctx *Context, encountered map[uintptr]sym
 }
 
 func (i FileInfo) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.FileInfo{}, nil
+	return symbolic.ANY_FILEINFO, nil
 }
 
 func (t Mimetype) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.Mimetype{}, nil
+	return symbolic.ANY_MIMETYPE, nil
 }
 
 func (fn *InoxFunction) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
@@ -900,7 +900,7 @@ func (ns *PatternNamespace) ToSymbolicValue(ctx *Context, encountered map[uintpt
 }
 
 func (port Port) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.Port{}, nil
+	return symbolic.ANY_PORT, nil
 }
 
 func (u *UData) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {

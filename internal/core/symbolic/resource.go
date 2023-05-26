@@ -16,8 +16,12 @@ var (
 		"is-walk-start": &Bool{},
 	}, nil, nil)
 
-	ANY_PATH       = &Path{}
-	ANY_URL        = &URL{}
+	ANY_PATH   = &Path{}
+	ANY_URL    = &URL{}
+	ANY_SCHEME = &Scheme{}
+	ANY_HOST   = &Host{}
+	ANY_PORT   = &Port{}
+
 	PATH_PROPNAMES = []string{"segments", "extension", "name", "dir", "ends_with_slash", "rel_equiv", "change_extension", "join"}
 )
 
