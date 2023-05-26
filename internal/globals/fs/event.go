@@ -148,6 +148,8 @@ func NewEventSource(ctx *core.Context, resourceNameOrPattern core.Value) (*Files
 		return nil, err
 	}
 
+	eventSource.watcher = watcher
+
 	watchedDirPaths := map[core.Path]bool{}
 
 	if recursive {

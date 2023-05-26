@@ -17,10 +17,10 @@ type fsWatcher struct {
 func newFsWatcher() (fsWatcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		return fsWatcher{watcher}, err
+		return fsWatcher{}, err
 	}
 
-	return fsWatcher{}, nil
+	return fsWatcher{watcher}, nil
 }
 
 // start listening for events.
