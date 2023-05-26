@@ -15,6 +15,7 @@ export const Go = (() => {
 		Array: Array,
 		Uint8Array: Uint8Array,
 		Date: Date,
+		fetch: fetch,
 		/** @type {Record<string, any>} */
 		exports: {}
 	}
