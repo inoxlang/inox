@@ -283,8 +283,14 @@ func getCompletions(fpath string, compilationCtx *core.Context, line, column int
 		AllowMissingEnvVars:       true,
 	})
 
-	if mod == nil { //unrecoverable error
-		logs.Println("unrecoverable error", err.Error())
+	if mod == nil { //unrecoverable parsing error
+		logs.Println("unrecoverable parsing error", err.Error())
+		session.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
+		return nil
+	}
+
+	if state == nil {
+		logs.Println("error", err.Error())
 		session.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
 		return nil
 	}
