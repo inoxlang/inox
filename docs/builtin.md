@@ -190,28 +190,23 @@ Thread([{message: "hello", author-id: "5958"}])
 
 ### hash_password
 
-the hash_password function hashes a password string using the Bcrypt hashing algorithm, it accepts the cost   as a second optional argument. The cost is an integer between 4 and 31, it defaults to 7.
+the hash_password function hashes a password string using the Argon2id algorithm, it returns a string containing the hash and a random salt. You can find the implementation in this file: https://github.com/inoxlang/inox/blob/master/internal/globals/crypto.go.
 
 **examples**
 
 ```inox
 hash_password("password")
 # output: 
-"JDJhJDA3JHNNNzRwaFVNUFVCNzVDQmxINU5HaWVOZERKZ09IRkx4a2xxYTFPTktsV3Nkd2JqampmYmxT"
-```
-```inox
-hash_password("password", 10)
-# output: 
-"JDJhJDEwJGhLODFiVThNdTlJZXVRMXVZdHlIUi5oOS5GSXljNWpYWGcwaVhXWUZYZC5YRTduR1hmSjl1"
+497YcpQY5qZWKZ0v2VefkEM6KIX0t+NoSsseL2bU9rk=|6bXjry/BYcokXTpLakw2ySzGJfNtAb0sKMctpEV1lyg=
 ```
 ### check_password
 
-the check_password verifies that a password matches a Bcrypt hash.
+the check_password verifies that a password matches a Argon2id hash.
 
 **examples**
 
 ```inox
-check_password("password", "JDJhJDA3JHNNNzRwaFVNUFVCNzVDQmxINU5HaWVOZERKZ09IRkx4a2xxYTFPTktsV3Nkd2JqampmYmxT")
+check_password("password", "497YcpQY5qZWKZ0v2VefkEM6KIX0t+NoSsseL2bU9rk=|6bXjry/BYcokXTpLakw2ySzGJfNtAb0sKMctpEV1lyg=")
 # output: 
 true
 ```

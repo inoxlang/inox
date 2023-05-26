@@ -13,16 +13,24 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"strings"
 
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	help "github.com/inoxlang/inox/internal/globals/help"
 	"github.com/inoxlang/inox/internal/utils"
-	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/crypto/argon2"
 )
 
 const (
-	DEFAULT_RSA_KEY_SIZE = 2048 //bit count
+	DEFAULT_RSA_KEY_SIZE           = 2048 //bit count
+	DEFAULT_ARGON2ID_SALT_SIZE     = core.ByteCount(32)
+	DEFAULT_ARGON2ID_TIME_PARAM    = 1
+	DEFAULT_ARGON2ID_THREAD_PARAM  = 1
+	DEFAULT_ARGON2ID_MEM_PARAM     = 64 * 1024
+	DEFAULT_ARGON2ID_KEY_LEN_PARAM = 32
+
+	ARGON2ID_HASH_SALT_SEP = "|"
 )
 
 var (
@@ -144,35 +152,58 @@ func _hash(readable core.Readable, algorithm HashingAlgorithm) []byte {
 }
 
 func _hashPassword(ctx *core.Context, password core.Str, args ...core.Value) core.Str {
-	cost := bcrypt.MinCost + 3
-
-	if len(args) > 1 {
-		panic(errors.New("at most one option expected (the cost)"))
-	}
-
-	for _, arg := range args {
-		if i, ok := arg.(core.Int); ok {
-			cost = int(i)
-		} else {
-			panic(fmt.Errorf("invalid argument %#v, a cost was expected", arg))
-		}
-	}
-
-	b, err := bcrypt.GenerateFromPassword([]byte(password), cost)
+	salt := make([]byte, DEFAULT_ARGON2ID_SALT_SIZE)
+	n, err := core.CryptoRandSource.Read(salt)
 	if err != nil {
-		panic(fmt.Errorf("failed to hash password: %w", err))
+		panic(err)
 	}
-	//TODO: use checked string
-	return core.Str(base64.StdEncoding.EncodeToString(b))
+	if n != len(salt) {
+		panic(errors.New("failed to read enough random bytes"))
+	}
+
+	hash := argon2.IDKey(
+		[]byte(password),
+		salt,
+		DEFAULT_ARGON2ID_TIME_PARAM,
+		DEFAULT_ARGON2ID_MEM_PARAM,
+		DEFAULT_ARGON2ID_THREAD_PARAM,
+		DEFAULT_ARGON2ID_KEY_LEN_PARAM,
+	)
+
+	hashAndSalt := base64.StdEncoding.EncodeToString(hash) + ARGON2ID_HASH_SALT_SEP + base64.StdEncoding.EncodeToString(salt)
+	return core.Str(hashAndSalt)
 }
 
-func _checkPassword(ctx *core.Context, password core.Str, hashed core.Str) core.Bool {
-	b, err := base64.StdEncoding.DecodeString(string(hashed))
+func _checkPassword(ctx *core.Context, password core.Str, hashAndSalt core.Str) core.Bool {
+	hashB64, saltB64, ok := strings.Cut(string(hashAndSalt), ARGON2ID_HASH_SALT_SEP)
+	if !ok {
+		panic(errors.New("missing separator between hash and salt"))
+	}
+
+	hashBytes, err := base64.StdEncoding.DecodeString(hashB64)
 	if err != nil {
 		panic(fmt.Errorf("failed to decode hashed password: %w", err))
 	}
-	err = bcrypt.CompareHashAndPassword(b, []byte(password))
-	return err == nil
+
+	saltBytes, err := base64.StdEncoding.DecodeString(saltB64)
+	if err != nil {
+		panic(fmt.Errorf("failed to decode salt: %w", err))
+	}
+
+	rehashBytes := argon2.IDKey(
+		[]byte(password),
+		saltBytes,
+		DEFAULT_ARGON2ID_TIME_PARAM,
+		DEFAULT_ARGON2ID_MEM_PARAM,
+		DEFAULT_ARGON2ID_THREAD_PARAM,
+		DEFAULT_ARGON2ID_KEY_LEN_PARAM,
+	)
+
+	if len(rehashBytes) != len(hashBytes) {
+		return false
+	}
+
+	return core.Bool(bytes.Equal(rehashBytes, hashBytes))
 }
 
 func _sha256(_ *core.Context, arg core.Readable) *core.ByteSlice {
