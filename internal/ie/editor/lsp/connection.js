@@ -11,7 +11,7 @@ import {
 
 
 const NOT_CONNECTED = 'not connected'
-
+const CONTENT_LENGTH_HEADER = 'content-length: '
 
 /** @typedef {import('vscode-languageserver-protocol').ClientCapabilities} ClientCapabilities */
 /** @typedef {import('vscode-languageserver-protocol').ServerCapabilities} ServerCapabilities */
@@ -171,34 +171,64 @@ export class LspConnection extends events.EventEmitter {
   async startLoopAsync() {
     //infinite loop reading the output
     let serverOutput = "";
-    let chunk = "";
     while (!this._close) {
-      chunk = "";
-      serverOutput = "";
+      //read as much as possible
+      {
+        let chunk = "";
 
-      while ((chunk = this.readFromServer()) != "") {
-        await sleepMillis(2000);
-        serverOutput += chunk;
+        while ((chunk = this.readFromServer()) != "") {
+          await sleepMillis(2000);
+          serverOutput += chunk;
+        }
       }
-
+   
       if(serverOutput.trim() == '') {
+        serverOutput = ''
         await sleepMillis(2000);
         continue
       }
 
-      try {
-        serverOutput.split("\n").forEach((item) => {
-          item = item.trim();
-          if (!item) {
-            return;
-          }
-          let json = JSON.parse(item);
-          this.handleRPC(json);
-        });
-      } catch (err) {
-        console.error(err);
-        console.error(serverOutput);
+      //parse & handle a single request
+      let originalServerOutput = serverOutput
+
+      if(!serverOutput.toLowerCase().startsWith(CONTENT_LENGTH_HEADER)){
+        console.error('JSON RPC request not starting with "content-length:" ->', serverOutput)
+        await sleepMillis(2000);
+        continue
       }
+
+      serverOutput = serverOutput.slice(CONTENT_LENGTH_HEADER.length).trim()
+      if(serverOutput.match(/^[ \t]*\d+\r\n\r\n/)){
+        const crIndex = serverOutput.indexOf('\r')
+
+        let contentLength = Number.parseInt(serverOutput.slice(0, crIndex).trim())
+
+        if(isNaN(contentLength)){
+          console.error('JSON RPC request has invalid content-length header ->', originalServerOutput)
+          continue
+        }
+
+        //remove header & linefeeds
+        serverOutput = serverOutput.slice(crIndex+4)
+
+        let encodedContent = encodeString(serverOutput).slice(0, contentLength)
+        let decodedContent = decodeString(encodedContent)
+
+        //remove content from server output
+        serverOutput = serverOutput.slice(decodedContent.length)
+
+        try {
+          let json = JSON.parse(decodedContent);
+          this.handleRPC(json);
+        } catch(err){
+          console.error("error while parsing & handling JSON RPC request", err, "\nrequest:", decodedContent)
+        }
+      
+      } else {
+        console.error('JSON RPC request has invalid content-length header ->', originalServerOutput)
+        continue
+      }
+    
     }
   }
 
@@ -771,6 +801,19 @@ function sleepMillis(timeMillis) {
   return new Promise((resolve) => {
     setTimeout(resolve, timeMillis);
   });
+}
+
+const encoder = new TextEncoder()
+const decoder = new TextDecoder()
+
+/** @param {string} s */
+function encodeString(s){
+  return encoder.encode(s)
+}
+
+/** @param {Uint8Array} a */
+function decodeString(a){
+  return decoder.decode(a)
 }
 
 export default LspConnection;
