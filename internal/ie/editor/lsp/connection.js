@@ -9,6 +9,10 @@ import {
   unregisterServerCapability,
 } from "./server-capability-registration.js";
 
+
+const NOT_CONNECTED = 'not connected'
+
+
 /** @typedef {import('vscode-languageserver-protocol').ClientCapabilities} ClientCapabilities */
 /** @typedef {import('vscode-languageserver-protocol').ServerCapabilities} ServerCapabilities */
 /** @typedef {import('vscode-languageserver-protocol').InitializeParams} InitializeParams */
@@ -93,6 +97,7 @@ export class LspConnection extends events.EventEmitter {
    */
   connect() {
     setTimeout(() => {
+      this.isConnected = true
       this.startLoopAsync();
     }, 0);
 
@@ -172,12 +177,12 @@ export class LspConnection extends events.EventEmitter {
       serverOutput = "";
 
       while ((chunk = this.readFromServer()) != "") {
-        await sleepMillis(1000);
+        await sleepMillis(2000);
         serverOutput += chunk;
       }
 
       if(serverOutput.trim() == '') {
-        await sleepMillis(1000);
+        await sleepMillis(2000);
         continue
       }
 
@@ -244,13 +249,14 @@ export class LspConnection extends events.EventEmitter {
     console.debug("send request", method);
 
     let requestId = Math.random();
-    let request = JSON.stringify({
+
+    let req = JSON.stringify({
       method: method,
       params: params,
       id: requestId,
-    }) + "\n";
+    })
 
-    this.writeToServer(request);
+    this.sendJSON(req);
 
     let promise = new Promise((resolve, reject) => {
       /** @type {RequestCallback} */
@@ -276,12 +282,22 @@ export class LspConnection extends events.EventEmitter {
   sendNotification(method, params) {
     console.debug("send notification ", method);
 
-    const request = JSON.stringify({
+    let notification = JSON.stringify({
       method: method,
       params: params,
-    }) + "\n";
+    })
 
-    this.writeToServer(request);
+    this.sendJSON(notification);
+  }
+
+  /** @param {string} json */
+  sendJSON(json){
+    let req = (
+      'Content-Length: ' + String(new TextEncoder().encode(json).byteLength) + '\r\n\r\n' +
+      json
+    )
+
+    this.writeToServer(req);
   }
 
   /**
@@ -679,7 +695,7 @@ export class LspConnection extends events.EventEmitter {
    */
   getLanguageCompletionCharacters() {
     if (!this.isConnected) {
-      return;
+      throw new Error(NOT_CONNECTED)
     }
     if (
       !(
@@ -699,7 +715,7 @@ export class LspConnection extends events.EventEmitter {
    */
   getLanguageSignatureCharacters() {
     if (!this.isConnected) {
-      return;
+      throw new Error(NOT_CONNECTED)
     }
     if (
       !(
