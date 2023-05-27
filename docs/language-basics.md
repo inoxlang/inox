@@ -174,6 +174,15 @@ Binary operations are always parenthesized:
 - deep equality: `({a: 1} == {a: 1})`
 - logical operations: `(a or b)`, `(a and b)`
 
+ℹ️ Parenthesis can be omitted around operands of **or**/**and** chains:
+```
+(a or b or c)       # ok
+(a < b or c < d)    # ok
+
+(a or b and c)      # error: 'or' and 'and' cannot be mixed in the same chain
+(a or (b and c))    # ok
+((a or b) and c)    # ok 
+```
 
 This [script](../examples/basic/binary-expressions.ix) contains most possible binary operations.
 
