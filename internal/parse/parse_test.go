@@ -11511,9 +11511,7 @@ func TestParse(t *testing.T) {
 							NodeBase: NodeBase{
 								NodeSpan{0, 6},
 								nil,
-								[]Token{
-									{Type: GREATER_THAN, Span: NodeSpan{3, 4}},
-								},
+								[]Token{{Type: GREATER_THAN, Span: NodeSpan{3, 4}}},
 							},
 							Operator: GreaterThan,
 							Left: &IdentifierLiteral{
@@ -11529,9 +11527,7 @@ func TestParse(t *testing.T) {
 							NodeBase: NodeBase{
 								NodeSpan{10, 15},
 								nil,
-								[]Token{
-									{Type: GREATER_THAN, Span: NodeSpan{12, 13}},
-								},
+								[]Token{{Type: GREATER_THAN, Span: NodeSpan{12, 13}}},
 							},
 							Operator: GreaterThan,
 							Left: &IdentifierLiteral{
@@ -11568,9 +11564,7 @@ func TestParse(t *testing.T) {
 							NodeBase: NodeBase{
 								NodeSpan{0, 6},
 								nil,
-								[]Token{
-									{Type: GREATER_THAN, Span: NodeSpan{3, 4}},
-								},
+								[]Token{{Type: GREATER_THAN, Span: NodeSpan{3, 4}}},
 							},
 							Operator: GreaterThan,
 							Left: &IdentifierLiteral{
@@ -11585,6 +11579,47 @@ func TestParse(t *testing.T) {
 						Right: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{10, 11}, nil, nil},
 							Name:     "c",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("OR(variable, bin ex)", func(t *testing.T) {
+			n := MustParseChunk("(a or b > c)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, nil},
+				Statements: []Node{
+					&BinaryExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 12},
+							nil,
+							[]Token{
+								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
+								{Type: OR_KEYWORD, Span: NodeSpan{3, 5}},
+								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{11, 12}},
+							},
+						},
+						Operator: Or,
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{1, 2}, nil, nil},
+							Name:     "a",
+						},
+						Right: &BinaryExpression{
+							NodeBase: NodeBase{
+								NodeSpan{6, 11},
+								nil,
+								[]Token{{Type: GREATER_THAN, Span: NodeSpan{8, 9}}},
+							},
+							Operator: GreaterThan,
+							Left: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{6, 7}, nil, nil},
+								Name:     "b",
+							},
+							Right: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{10, 11}, nil, nil},
+								Name:     "c",
+							},
 						},
 					},
 				},
@@ -11611,9 +11646,7 @@ func TestParse(t *testing.T) {
 							NodeBase: NodeBase{
 								NodeSpan{0, 6},
 								nil,
-								[]Token{
-									{Type: GREATER_THAN, Span: NodeSpan{3, 4}},
-								},
+								[]Token{{Type: GREATER_THAN, Span: NodeSpan{3, 4}}},
 							},
 							Operator: GreaterThan,
 							Left: &IdentifierLiteral{
@@ -11638,9 +11671,7 @@ func TestParse(t *testing.T) {
 								NodeBase: NodeBase{
 									NodeSpan{10, 16},
 									nil,
-									[]Token{
-										{Type: GREATER_THAN, Span: NodeSpan{12, 13}},
-									},
+									[]Token{{Type: GREATER_THAN, Span: NodeSpan{12, 13}}},
 								},
 								Operator: GreaterThan,
 								Left: &IdentifierLiteral{
@@ -11656,9 +11687,7 @@ func TestParse(t *testing.T) {
 								NodeBase: NodeBase{
 									NodeSpan{19, 24},
 									nil,
-									[]Token{
-										{Type: GREATER_THAN, Span: NodeSpan{21, 22}},
-									},
+									[]Token{{Type: GREATER_THAN, Span: NodeSpan{21, 22}}},
 								},
 								Operator: GreaterThan,
 								Left: &IdentifierLiteral{
@@ -11674,6 +11703,127 @@ func TestParse(t *testing.T) {
 					},
 				},
 			}, n)
+		})
+
+		t.Run("OR(var, bin ex 1, bin ex 2)", func(t *testing.T) {
+			n := MustParseChunk("(a or b > c or d > e)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 21}, nil, nil},
+				Statements: []Node{
+					&BinaryExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 21},
+							nil,
+							[]Token{
+								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
+								{Type: OR_KEYWORD, Span: NodeSpan{3, 5}},
+								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{20, 21}},
+							},
+						},
+						Operator: Or,
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{1, 2}, nil, nil},
+							Name:     "a",
+						},
+						Right: &BinaryExpression{
+							NodeBase: NodeBase{
+								NodeSpan{6, 20},
+								nil,
+								[]Token{{Type: OR_KEYWORD, Span: NodeSpan{12, 14}}},
+							},
+							Operator: Or,
+							Left: &BinaryExpression{
+								NodeBase: NodeBase{
+									NodeSpan{6, 12},
+									nil,
+									[]Token{{Type: GREATER_THAN, Span: NodeSpan{8, 9}}},
+								},
+								Operator: GreaterThan,
+								Left: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{6, 7}, nil, nil},
+									Name:     "b",
+								},
+								Right: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{10, 11}, nil, nil},
+									Name:     "c",
+								},
+							},
+							Right: &BinaryExpression{
+								NodeBase: NodeBase{
+									NodeSpan{15, 20},
+									nil,
+									[]Token{{Type: GREATER_THAN, Span: NodeSpan{17, 18}}},
+								},
+								Operator: GreaterThan,
+								Left: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{15, 16}, nil, nil},
+									Name:     "d",
+								},
+								Right: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{19, 20}, nil, nil},
+									Name:     "e",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("OR(var 1, var 2, bin ex 1)", func(t *testing.T) {
+			MustParseChunk("(a or b or c > d)")
+			//TODO: after the parsing of the chain modify the resulting output
+			//in order for the AST to have the following shape (possible errors in spans):
+
+			// assert.EqualValues(t, &Chunk{
+			// 	NodeBase: NodeBase{NodeSpan{0, 17}, nil, nil},
+			// 	Statements: []Node{
+			// 		&BinaryExpression{
+			// 			NodeBase: NodeBase{
+			// 				NodeSpan{0, 17},
+			// 				nil,
+			// 				[]Token{
+			// 					{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
+			// 					{Type: OR_KEYWORD, Span: NodeSpan{3, 5}},
+			// 					{Type: CLOSING_PARENTHESIS, Span: NodeSpan{16, 17}},
+			// 				},
+			// 			},
+			// 			Operator: Or,
+			// 			Left: &IdentifierLiteral{
+			// 				NodeBase: NodeBase{NodeSpan{1, 2}, nil, nil},
+			// 				Name:     "a",
+			// 			},
+			// 			Right: &BinaryExpression{
+			// 				NodeBase: NodeBase{
+			// 					NodeSpan{6, 20},
+			// 					nil,
+			// 					[]Token{{Type: OR_KEYWORD, Span: NodeSpan{12, 14}}},
+			// 				},
+			// 				Operator: Or,
+			// 				Left: &IdentifierLiteral{
+			// 					NodeBase: NodeBase{NodeSpan{1, 2}, nil, nil},
+			// 					Name:     "b",
+			// 				},
+			// 				Right: &BinaryExpression{
+			// 					NodeBase: NodeBase{
+			// 						NodeSpan{15, 20},
+			// 						nil,
+			// 						[]Token{{Type: GREATER_THAN, Span: NodeSpan{17, 18}}},
+			// 					},
+			// 					Operator: GreaterThan,
+			// 					Left: &IdentifierLiteral{
+			// 						NodeBase: NodeBase{NodeSpan{15, 16}, nil, nil},
+			// 						Name:     "c",
+			// 					},
+			// 					Right: &IdentifierLiteral{
+			// 						NodeBase: NodeBase{NodeSpan{19, 20}, nil, nil},
+			// 						Name:     "d",
+			// 					},
+			// 				},
+			// 			},
+			// 		},
+			// 	},
+			// }, n)
 		})
 
 		t.Run("OR(bin ex 1, AND(bin ex 2, bin ex 3))", func(t *testing.T) {
@@ -11697,9 +11847,7 @@ func TestParse(t *testing.T) {
 							NodeBase: NodeBase{
 								NodeSpan{0, 6},
 								nil,
-								[]Token{
-									{Type: GREATER_THAN, Span: NodeSpan{3, 4}},
-								},
+								[]Token{{Type: GREATER_THAN, Span: NodeSpan{3, 4}}},
 							},
 							Operator: GreaterThan,
 							Left: &IdentifierLiteral{
@@ -11724,9 +11872,7 @@ func TestParse(t *testing.T) {
 								NodeBase: NodeBase{
 									NodeSpan{10, 16},
 									nil,
-									[]Token{
-										{Type: GREATER_THAN, Span: NodeSpan{12, 13}},
-									},
+									[]Token{{Type: GREATER_THAN, Span: NodeSpan{12, 13}}},
 								},
 								Operator: GreaterThan,
 								Left: &IdentifierLiteral{
@@ -11742,9 +11888,7 @@ func TestParse(t *testing.T) {
 								NodeBase: NodeBase{
 									NodeSpan{20, 25},
 									nil,
-									[]Token{
-										{Type: GREATER_THAN, Span: NodeSpan{22, 23}},
-									},
+									[]Token{{Type: GREATER_THAN, Span: NodeSpan{22, 23}}},
 								},
 								Operator: GreaterThan,
 								Left: &IdentifierLiteral{
@@ -11783,9 +11927,7 @@ func TestParse(t *testing.T) {
 							NodeBase: NodeBase{
 								NodeSpan{0, 6},
 								nil,
-								[]Token{
-									{Type: GREATER_THAN, Span: NodeSpan{3, 4}},
-								},
+								[]Token{{Type: GREATER_THAN, Span: NodeSpan{3, 4}}},
 							},
 							Operator: GreaterThan,
 							Left: &IdentifierLiteral{
@@ -11801,18 +11943,14 @@ func TestParse(t *testing.T) {
 							NodeBase: NodeBase{
 								NodeSpan{10, 34},
 								nil,
-								[]Token{
-									{Type: AND_KEYWORD, Span: NodeSpan{16, 19}},
-								},
+								[]Token{{Type: AND_KEYWORD, Span: NodeSpan{16, 19}}},
 							},
 							Operator: And,
 							Left: &BinaryExpression{
 								NodeBase: NodeBase{
 									NodeSpan{10, 16},
 									nil,
-									[]Token{
-										{Type: GREATER_THAN, Span: NodeSpan{12, 13}},
-									},
+									[]Token{{Type: GREATER_THAN, Span: NodeSpan{12, 13}}},
 								},
 								Operator: GreaterThan,
 								Left: &IdentifierLiteral{
@@ -11828,18 +11966,14 @@ func TestParse(t *testing.T) {
 								NodeBase: NodeBase{
 									NodeSpan{20, 34},
 									nil,
-									[]Token{
-										{Type: OR_KEYWORD, Span: NodeSpan{26, 28}},
-									},
+									[]Token{{Type: OR_KEYWORD, Span: NodeSpan{26, 28}}},
 								},
 								Operator: Or,
 								Left: &BinaryExpression{
 									NodeBase: NodeBase{
 										NodeSpan{20, 26},
 										nil,
-										[]Token{
-											{Type: GREATER_THAN, Span: NodeSpan{22, 23}},
-										},
+										[]Token{{Type: GREATER_THAN, Span: NodeSpan{22, 23}}},
 									},
 									Operator: GreaterThan,
 									Left: &IdentifierLiteral{
@@ -11855,9 +11989,7 @@ func TestParse(t *testing.T) {
 									NodeBase: NodeBase{
 										NodeSpan{29, 34},
 										nil,
-										[]Token{
-											{Type: GREATER_THAN, Span: NodeSpan{31, 32}},
-										},
+										[]Token{{Type: GREATER_THAN, Span: NodeSpan{31, 32}}},
 									},
 									Operator: GreaterThan,
 									Left: &IdentifierLiteral{
@@ -11896,9 +12028,7 @@ func TestParse(t *testing.T) {
 							NodeBase: NodeBase{
 								NodeSpan{0, 6},
 								nil,
-								[]Token{
-									{Type: GREATER_THAN, Span: NodeSpan{3, 4}},
-								},
+								[]Token{{Type: GREATER_THAN, Span: NodeSpan{3, 4}}},
 							},
 							Operator: GreaterThan,
 							Left: &IdentifierLiteral{
@@ -11942,9 +12072,7 @@ func TestParse(t *testing.T) {
 							NodeBase: NodeBase{
 								NodeSpan{0, 6},
 								nil,
-								[]Token{
-									{Type: GREATER_THAN, Span: NodeSpan{3, 4}},
-								},
+								[]Token{{Type: GREATER_THAN, Span: NodeSpan{3, 4}}},
 							},
 							Operator: GreaterThan,
 							Left: &IdentifierLiteral{
@@ -11960,9 +12088,7 @@ func TestParse(t *testing.T) {
 							NodeBase: NodeBase{
 								NodeSpan{10, 15},
 								nil,
-								[]Token{
-									{Type: GREATER_THAN, Span: NodeSpan{12, 13}},
-								},
+								[]Token{{Type: GREATER_THAN, Span: NodeSpan{12, 13}}},
 							},
 							Operator: GreaterThan,
 							Left: &IdentifierLiteral{
