@@ -1,8 +1,10 @@
 import { Go } from './wasm_exec.js';
 import './editor/codemirror.js'
+//JS
 import './editor/mode/javascript/javascript.js'
 import './editor/addon/hint/javascript-hint.js'
-
+//INOX
+import './editor/mode/inox/inox.js'
 
 //polyfill for WebAssembly.instantiateStreaming
 if (!WebAssembly.instantiateStreaming) {
@@ -56,10 +58,10 @@ WebAssembly.instantiateStreaming(
 
 function setupEditor(){
   var myCodeMirror = CodeMirror(document.body, {
-    value: "function myScript(){return 100;}\n",
-    mode:  "javascript",
+    value: "fn myScript(){return 100;}\n",
+    mode:  "inox",
     extraKeys: {
-        "Ctrl-Space": "autocomplete"
+      "Ctrl-Space": "autocomplete"
     }
   });
 }
