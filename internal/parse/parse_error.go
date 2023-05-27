@@ -169,7 +169,7 @@ const (
 	UNTERMINATED_PARENTHESIZED_EXPR_MISSING_CLOSING_PAREN = "unterminated parenthesized expression: missing closing parenthesis"
 
 	//unary expression
-	UNTERMINATED_UNARY_EXPR_MISSING_OPERATOR = "unterminated unary expression: missing operator"
+	UNTERMINATED_UNARY_EXPR_MISSING_OPERAND = "unterminated unary expression: missing operand"
 
 	//binary expression
 	INVALID_BIN_EXPR_NON_EXISTING_OPERATOR                    = "invalid binary expression, non existing operator"
@@ -177,6 +177,7 @@ const (
 	UNTERMINATED_BIN_EXPR_MISSING_OPERAND_OR_INVALID_OPERATOR = "unterminated binary expression: missing right operand and/or invalid operator"
 	UNTERMINATED_BIN_EXPR_MISSING_OPERAND                     = "unterminated binary expression: missing right operand"
 	UNTERMINATED_BIN_EXPR_MISSING_PAREN                       = "unterminated binary expression: missing closing parenthesis"
+	ALL_BIN_EXPR_CHAIN_SHOULD_HAVE_THE_SAME_OPERATOR          = "all binary expression chain should have the same operator: either 'or' or 'and'"
 
 	UNTERMINATED_MEMB_OR_INDEX_EXPR                          = "unterminated member/index expression"
 	UNTERMINATED_IDENT_MEMB_EXPR                             = "unterminated identifier member expression"

@@ -2063,7 +2063,7 @@ func (p *parser) parseIdentStartingExpression() Node {
 
 			if isComputed {
 				p.i++
-				propNameNode = p.parseUnaryBinaryAndParenthesizedExpression(p.i - 1)
+				propNameNode = p.parseUnaryBinaryAndParenthesizedExpression(p.i-1, -1)
 			} else {
 				for p.i < p.len && isIdentChar(p.s[p.i]) {
 					p.i++
@@ -4209,13 +4209,21 @@ func (p *parser) parseIfExpression(openingParenIndex int32, ifIdent *IdentifierL
 	}
 }
 
-func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex int32) Node {
-	var tokens = []Token{{Type: OPENING_PARENTHESIS, Span: NodeSpan{openingParenIndex, openingParenIndex + 1}}}
+func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex int32, previousOperatorEnd int32) Node {
+	var tokens []Token
+	var startIndex = openingParenIndex
+	hasPreviousOperator := previousOperatorEnd > 0
+
+	if hasPreviousOperator {
+		startIndex = previousOperatorEnd
+	} else {
+		tokens = []Token{{Type: OPENING_PARENTHESIS, Span: NodeSpan{openingParenIndex, openingParenIndex + 1}}}
+	}
 	p.eatSpaceNewlineCommaComment(&tokens)
 
 	left, isMissingExpr := p.parseExpression(true)
 
-	if ident, ok := left.(*IdentifierLiteral); ok && ident.Name == "if" {
+	if ident, ok := left.(*IdentifierLiteral); ok && ident.Name == "if" && !hasPreviousOperator {
 		return p.parseIfExpression(openingParenIndex, ident)
 	}
 
@@ -4225,9 +4233,17 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 		left.BasePtr().ValuelessTokens = append(tokens, left.BasePtr().ValuelessTokens...)
 
 		if p.i >= p.len {
+			if hasPreviousOperator {
+				return &MissingExpression{
+					NodeBase: NodeBase{
+						Span: NodeSpan{p.i - 1, p.i},
+						Err:  &ParsingError{UnspecifiedParsingError, fmtExprExpectedHere(p.s, p.i, false)},
+					},
+				}
+			}
 			return &UnknownNode{
 				NodeBase: NodeBase{
-					NodeSpan{openingParenIndex, p.i},
+					NodeSpan{startIndex, p.i},
 					left.Base().Err,
 					tokens,
 				},
@@ -4235,14 +4251,24 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 		}
 
 		if p.s[p.i] == ')' {
-			p.i++
-			tokens = append(tokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i - 1, p.i}})
-			return &UnknownNode{
-				NodeBase: NodeBase{
-					NodeSpan{openingParenIndex, p.i},
-					left.Base().Err,
-					tokens,
-				},
+			if !hasPreviousOperator {
+				tokens = append(tokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
+				p.i++
+
+				return &UnknownNode{
+					NodeBase: NodeBase{
+						NodeSpan{startIndex, p.i},
+						left.Base().Err,
+						tokens,
+					},
+				}
+			} else {
+				return &MissingExpression{
+					NodeBase: NodeBase{
+						Span: NodeSpan{p.i - 1, p.i},
+						Err:  &ParsingError{UnspecifiedParsingError, fmtExprExpectedHere(p.s, p.i, false)},
+					},
+				}
 			}
 		}
 
@@ -4252,7 +4278,7 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 
 		return &UnknownNode{
 			NodeBase: NodeBase{
-				NodeSpan{openingParenIndex, p.i},
+				NodeSpan{startIndex, p.i},
 				&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInParenthesizedExpression(rune)},
 				tokens,
 			},
@@ -4266,14 +4292,16 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 
 		var parsingErr *ParsingError
 		if p.i >= p.len || p.s[p.i] != ')' {
-			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_UNARY_EXPR_MISSING_OPERATOR}
-		} else {
+			if !hasPreviousOperator {
+				parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_UNARY_EXPR_MISSING_OPERAND}
+			}
+		} else if !hasPreviousOperator {
 			tokens = append(tokens, Token{Type: MINUS, Span: left.Base().Span}, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
 			p.i++
 		}
 		return &UnaryExpression{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{openingParenIndex, p.i},
+				Span:            NodeSpan{startIndex, p.i},
 				Err:             parsingErr,
 				ValuelessTokens: tokens,
 			},
@@ -4283,32 +4311,36 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 	}
 
 	if p.i < p.len && p.s[p.i] == ')' { //parenthesized
-		p.i++
-		tokens := left.Base().ValuelessTokens
-		base := left.BasePtr()
-		base.ValuelessTokens = append([]Token{
-			{Type: OPENING_PARENTHESIS, Span: NodeSpan{openingParenIndex, openingParenIndex + 1}},
-		}, tokens...)
-		base.ValuelessTokens = append(base.ValuelessTokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i - 1, p.i}})
+		if !hasPreviousOperator {
+			base := left.BasePtr()
+			p.i++
+			tokens := left.Base().ValuelessTokens
+			base.ValuelessTokens = append([]Token{
+				{Type: OPENING_PARENTHESIS, Span: NodeSpan{startIndex, startIndex + 1}},
+			}, tokens...)
+			base.ValuelessTokens = append(base.ValuelessTokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i - 1, p.i}})
+		}
 		return left
 	}
 
 	if p.i >= p.len {
-		if left.Base().Err == nil {
-			left.BasePtr().Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_PARENTHESIZED_EXPR_MISSING_CLOSING_PAREN}
+		if !hasPreviousOperator {
+			if left.Base().Err == nil {
+				left.BasePtr().Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_PARENTHESIZED_EXPR_MISSING_CLOSING_PAREN}
+			}
+			tokens := left.Base().ValuelessTokens
+			base := left.BasePtr()
+			base.ValuelessTokens = append([]Token{
+				{Type: OPENING_PARENTHESIS, Span: NodeSpan{startIndex, startIndex + 1}},
+			}, tokens...)
 		}
-		tokens := left.Base().ValuelessTokens
-		base := left.BasePtr()
-		base.ValuelessTokens = append([]Token{
-			{Type: OPENING_PARENTHESIS, Span: NodeSpan{openingParenIndex, openingParenIndex + 1}},
-		}, tokens...)
 		return left
 	}
 
 	makeInvalidOperatorMissingRightOperand := func(operator BinaryOperator) Node {
 		return &BinaryExpression{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{openingParenIndex, p.i},
+				Span:            NodeSpan{startIndex, p.i},
 				Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_OPERAND_OR_INVALID_OPERATOR},
 				ValuelessTokens: tokens,
 			},
@@ -4321,14 +4353,37 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 		return &ParsingError{UnspecifiedParsingError, INVALID_BIN_EXPR_NON_EXISTING_OPERATOR}
 	}
 
-	eatInvalidOperatorChars := func(operatorStart int32, tokens *[]Token) {
+	eatInvalidOperatorToken := func(operatorStart int32, tokens *[]Token) {
 		j := operatorStart
 
-		for j < p.i {
-			*tokens = append(*tokens, Token{Type: UNEXPECTED_CHAR, Span: NodeSpan{j, j + 1}, Raw: string(p.s[j])})
-			j++
+		if isNonIdentBinaryOperatorChar(p.s[j]) {
+			for j < p.i && isNonIdentBinaryOperatorChar(p.s[j]) {
+				j++
+			}
+
+			for p.i < p.len && isNonIdentBinaryOperatorChar(p.s[p.i]) {
+				p.i++
+			}
+
+		} else if isAlpha(p.s[j]) || p.s[j] == '_' {
+			for j < p.i && isIdentChar(p.s[j]) {
+				j++
+			}
+			for p.i < p.len && isIdentChar(p.s[p.i]) {
+				p.i++
+			}
 		}
+		*tokens = append(*tokens, Token{
+			Type: INVALID_OPERATOR,
+			Span: NodeSpan{Start: operatorStart, End: p.i},
+			Raw:  string(p.s[operatorStart:p.i]),
+		})
 	}
+
+	const (
+		AND_LEN = int32(len("and"))
+		OR_LEN  = int32(len("or"))
+	)
 
 	var (
 		parsingErr    *ParsingError
@@ -4391,7 +4446,7 @@ _switch:
 			break
 		}
 
-		eatInvalidOperatorChars(operatorStart, &tokens)
+		eatInvalidOperatorToken(operatorStart, &tokens)
 		parsingErr = makeInvalidOperatorError()
 	case '!':
 		p.i++
@@ -4405,7 +4460,7 @@ _switch:
 			break
 		}
 
-		eatInvalidOperatorChars(operatorStart, &tokens)
+		eatInvalidOperatorToken(operatorStart, &tokens)
 		parsingErr = makeInvalidOperatorError()
 	case '=':
 		p.i++
@@ -4419,19 +4474,19 @@ _switch:
 			break
 		}
 
-		eatInvalidOperatorChars(operatorStart, &tokens)
+		eatInvalidOperatorToken(operatorStart, &tokens)
 		parsingErr = makeInvalidOperatorError()
 	case 'a':
-		AND_LEN := int32(len("and"))
-
-		if p.len-p.i >= AND_LEN && string(p.s[p.i:p.i+AND_LEN]) == "and" {
+		if p.len-p.i >= AND_LEN &&
+			string(p.s[p.i:p.i+AND_LEN]) == "and" &&
+			(p.len-p.i == AND_LEN || !isIdentChar(p.s[p.i+AND_LEN])) {
 			operator = And
 			p.i += AND_LEN
 			operatorToken = AND_KEYWORD
 			break
 		}
 
-		eatInvalidOperatorChars(operatorStart, &tokens)
+		eatInvalidOperatorToken(operatorStart, &tokens)
 		parsingErr = makeInvalidOperatorError()
 	case 'i':
 		operatorStart := p.i
@@ -4444,41 +4499,47 @@ _switch:
 			p.i++
 		}
 
-		switch string(p.s[operatorStart : p.i+1]) {
-		case "in":
-			operator = In
-			operatorToken = IN
-			p.i++
-			break _switch
-		case "is":
-			operator = Is
-			operatorToken = IS
-			p.i++
-			break _switch
-		case "is-not":
-			operator = IsNot
-			operatorToken = IS_NOT
-			p.i++
-			break _switch
+		if p.i+1 >= p.len || !isIdentChar(p.s[p.i+1]) {
+			switch string(p.s[operatorStart : p.i+1]) {
+			case "in":
+				operator = In
+				operatorToken = IN
+				p.i++
+				break _switch
+			case "is":
+				operator = Is
+				operatorToken = IS
+				p.i++
+				break _switch
+			case "is-not":
+				operator = IsNot
+				operatorToken = IS_NOT
+				p.i++
+				break _switch
+			}
 		}
 
 		//TODO: eat some chars
-		eatInvalidOperatorChars(operatorStart, &tokens)
+		eatInvalidOperatorToken(operatorStart, &tokens)
 		parsingErr = makeInvalidOperatorError()
 	case 'k':
 		KEYOF_LEN := int32(len("keyof"))
-		if p.len-p.i >= KEYOF_LEN && string(p.s[p.i:p.i+KEYOF_LEN]) == "keyof" {
+		if p.len-p.i >= KEYOF_LEN &&
+			string(p.s[p.i:p.i+KEYOF_LEN]) == "keyof" &&
+			(p.len-p.i == KEYOF_LEN || !isIdentChar(p.s[p.i+KEYOF_LEN])) {
 			operator = Keyof
 			operatorToken = KEYOF
 			p.i += KEYOF_LEN
 			break
 		}
 
-		eatInvalidOperatorChars(operatorStart, &tokens)
+		eatInvalidOperatorToken(operatorStart, &tokens)
 		parsingErr = makeInvalidOperatorError()
 	case 'n':
 		NOTIN_LEN := int32(len("not-in"))
-		if p.len-p.i >= NOTIN_LEN && string(p.s[p.i:p.i+NOTIN_LEN]) == "not-in" {
+		if p.len-p.i >= NOTIN_LEN &&
+			string(p.s[p.i:p.i+NOTIN_LEN]) == "not-in" &&
+			(p.len-p.i == NOTIN_LEN || !isIdentChar(p.s[p.i+NOTIN_LEN])) {
 			operator = NotIn
 			operatorToken = NOT_IN
 			p.i += NOTIN_LEN
@@ -4486,46 +4547,53 @@ _switch:
 		}
 
 		NOTMATCH_LEN := int32(len("not-match"))
-		if p.len-p.i >= NOTMATCH_LEN && string(p.s[p.i:p.i+NOTMATCH_LEN]) == "not-match" {
+		if p.len-p.i >= NOTMATCH_LEN &&
+			string(p.s[p.i:p.i+NOTMATCH_LEN]) == "not-match" &&
+			(p.len-p.i == NOTMATCH_LEN || !isIdentChar(p.s[p.i+NOTMATCH_LEN])) {
 			operator = NotMatch
 			operatorToken = NOT_MATCH
 			p.i += NOTMATCH_LEN
 			break
 		}
 
-		eatInvalidOperatorChars(operatorStart, &tokens)
+		eatInvalidOperatorToken(operatorStart, &tokens)
 		parsingErr = makeInvalidOperatorError()
 	case 'm':
 		MATCH_LEN := int32(len("match"))
-		if p.len-p.i >= MATCH_LEN && string(p.s[p.i:p.i+MATCH_LEN]) == "match" {
+		if p.len-p.i >= MATCH_LEN &&
+			string(p.s[p.i:p.i+MATCH_LEN]) == "match" &&
+			(p.len-p.i == MATCH_LEN || !isIdentChar(p.s[p.i+MATCH_LEN])) {
 			operator = Match
 			p.i += MATCH_LEN
 			operatorToken = MATCH_KEYWORD
 			break
 		}
 
-		eatInvalidOperatorChars(operatorStart, &tokens)
+		eatInvalidOperatorToken(operatorStart, &tokens)
 		parsingErr = makeInvalidOperatorError()
 	case 'o':
-		OR_LEN := int32(len("or"))
-		if p.len-p.i >= OR_LEN && string(p.s[p.i:p.i+OR_LEN]) == "or" {
+		if p.len-p.i >= OR_LEN &&
+			string(p.s[p.i:p.i+OR_LEN]) == "or" &&
+			(p.len-p.i == OR_LEN || !isIdentChar(p.s[p.i+OR_LEN])) {
 			operator = Or
 			operatorToken = OR_KEYWORD
 			p.i += OR_LEN
 			break
 		}
 
-		eatInvalidOperatorChars(operatorStart, &tokens)
+		eatInvalidOperatorToken(operatorStart, &tokens)
 		parsingErr = makeInvalidOperatorError()
 	case 's':
 		SUBSTROF_LEN := int32(len("substrof"))
-		if p.len-p.i >= SUBSTROF_LEN && string(p.s[p.i:p.i+SUBSTROF_LEN]) == "substrof" {
+		if p.len-p.i >= SUBSTROF_LEN &&
+			string(p.s[p.i:p.i+SUBSTROF_LEN]) == "substrof" &&
+			(p.len-p.i == SUBSTROF_LEN || !isIdentChar(p.s[p.i+SUBSTROF_LEN])) {
 			operator = Substrof
 			operatorToken = SUBSTROF
 			p.i += SUBSTROF_LEN
 			break
 		}
-		eatInvalidOperatorChars(operatorStart, &tokens)
+		eatInvalidOperatorToken(operatorStart, &tokens)
 		parsingErr = makeInvalidOperatorError()
 	case '.':
 		operator = Dot
@@ -4572,30 +4640,136 @@ _switch:
 	p.eatSpace()
 	if isMissingExpr {
 		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_OPERAND}
-
 	} else if p.i >= p.len {
-		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_PAREN}
-	}
-
-	if p.i < p.len {
-		if p.s[p.i] != ')' {
+		if !hasPreviousOperator {
 			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_PAREN}
-		} else {
-			tokens = append(tokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
-			p.i++
 		}
 	}
 
-	return &BinaryExpression{
+	var continueParsing bool
+	var andOrToken Token
+
+	chainElementEnd := p.i
+
+	if p.i < p.len {
+		switch p.s[p.i] {
+		case 'a':
+			if p.len-p.i >= AND_LEN &&
+				string(p.s[p.i:p.i+AND_LEN]) == "and" &&
+				(p.len-p.i == AND_LEN || !isIdentChar(p.s[p.i+AND_LEN])) {
+				continueParsing = true
+				andOrToken = Token{Type: AND_KEYWORD, Span: NodeSpan{p.i, p.i + AND_LEN}}
+				p.i += AND_LEN
+			}
+		case 'o':
+			if p.len-p.i >= OR_LEN &&
+				string(p.s[p.i:p.i+OR_LEN]) == "or" &&
+				(p.len-p.i == OR_LEN || !isIdentChar(p.s[p.i+OR_LEN])) {
+				andOrToken = Token{Type: OR_KEYWORD, Span: NodeSpan{p.i, p.i + OR_LEN}}
+				p.i += OR_LEN
+				continueParsing = true
+			}
+		case ')':
+			if !hasPreviousOperator {
+				tokens = append(tokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
+				p.i++
+				chainElementEnd = p.i
+			}
+		default:
+			if !hasPreviousOperator {
+				parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_PAREN}
+			}
+		}
+	}
+
+	binExpr := &BinaryExpression{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{openingParenIndex, p.i},
-			Err:             parsingErr,
-			ValuelessTokens: tokens,
+			Span: NodeSpan{startIndex, chainElementEnd},
+			Err:  parsingErr,
 		},
 		Operator: operator,
 		Left:     left,
 		Right:    right,
 	}
+
+	var openingParenToken Token
+	if !hasPreviousOperator && continueParsing {
+		openingParenToken = tokens[0]
+		tokens = tokens[1:] //remove '('
+		binExpr.Span.End = right.Base().Span.End
+	}
+	binExpr.ValuelessTokens = tokens
+
+	if continueParsing {
+		var operator BinaryOperator = And
+		var complementOperator = Or
+
+		if andOrToken.Type == OR_KEYWORD {
+			operator = Or
+			complementOperator = And
+		}
+		binExpr = &BinaryExpression{
+			NodeBase: NodeBase{
+				Span: NodeSpan{startIndex, p.i},
+			},
+			Operator: operator,
+			Left:     binExpr,
+		}
+
+		if !hasPreviousOperator {
+			binExpr.ValuelessTokens = []Token{openingParenToken, andOrToken}
+		} else {
+			binExpr.ValuelessTokens = []Token{andOrToken}
+		}
+
+		p.eatSpace()
+
+		right := p.parseUnaryBinaryAndParenthesizedExpression(-1, p.i)
+		binExpr.Right = right
+
+		p.eatSpace()
+
+		if !hasPreviousOperator {
+			if p.i >= p.len || p.s[p.i] != ')' {
+				if _, ok := right.(*MissingExpression); !ok {
+					binExpr.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_PAREN}
+				}
+				binExpr.Span.End = right.Base().Span.End
+			} else {
+				binExpr.ValuelessTokens = append(binExpr.ValuelessTokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
+				p.i++
+				binExpr.Span.End = p.i
+			}
+
+			if rightBinExpr, ok := right.(*BinaryExpression); ok &&
+				!rightBinExpr.IsParenthesized() && binExpr.Err == nil {
+
+				subLeft, isSubLeftBinExpr := rightBinExpr.Left.(*BinaryExpression)
+				subRight, isSubRightBinExpr := rightBinExpr.Right.(*BinaryExpression)
+
+				err := &ParsingError{UnspecifiedParsingError, ALL_BIN_EXPR_CHAIN_SHOULD_HAVE_THE_SAME_OPERATOR}
+
+				if isSubLeftBinExpr {
+					if (!subLeft.IsParenthesized() && (subLeft.Operator == complementOperator)) ||
+						(rightBinExpr.Operator == complementOperator) {
+						binExpr.Err = err
+					}
+				}
+
+				if isSubRightBinExpr {
+					if (!subRight.IsParenthesized() && subRight.Operator == complementOperator) ||
+						(rightBinExpr.Operator == complementOperator) {
+						binExpr.Err = err
+					}
+				}
+			}
+		} else {
+			binExpr.Span.End = right.Base().Span.End
+		}
+
+		return binExpr
+	}
+	return binExpr
 }
 
 func (p *parser) parseComplexStringPatternElement() Node {
@@ -5645,7 +5819,7 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 		openingParenIndex := p.i
 		p.i++
 
-		lhs = p.parseUnaryBinaryAndParenthesizedExpression(openingParenIndex)
+		lhs = p.parseUnaryBinaryAndParenthesizedExpression(openingParenIndex, -1)
 		if p.i >= p.len {
 			return lhs, false
 		}
@@ -5844,7 +6018,7 @@ loop:
 					case '(':
 						isComputed = true
 						p.i++
-						computedPropertyNode = p.parseUnaryBinaryAndParenthesizedExpression(p.i - 1)
+						computedPropertyNode = p.parseUnaryBinaryAndParenthesizedExpression(p.i-1, -1)
 					}
 				}
 
@@ -9700,6 +9874,15 @@ func isValidEntryEnd(s []rune, i int32) bool {
 		return false
 	}
 	return true
+}
+
+func isNonIdentBinaryOperatorChar(r rune) bool {
+	switch r {
+	case '+', '-', '*', '/', '\\', '>', '<', '?', '.', '!', '=':
+		return true
+	default:
+		return false
+	}
 }
 
 func IsAnyVariableIdentifier(node Node) bool {
