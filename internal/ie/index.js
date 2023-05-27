@@ -1,10 +1,17 @@
 import { Go } from './wasm_exec.js';
 import './editor/codemirror.js'
+
 //JS
 import './editor/mode/javascript/javascript.js'
 import './editor/addon/hint/javascript-hint.js'
+
 //INOX
 import './editor/mode/inox/inox.js'
+
+//LSP
+import {CodeMirrorAdapter} from './editor/lsp/lsp-adapter.js' 
+import {LspConnection} from './editor/lsp/connection.js' 
+
 
 //polyfill for WebAssembly.instantiateStreaming
 if (!WebAssembly.instantiateStreaming) {
@@ -22,6 +29,14 @@ let mod;
 /** @type {WebAssembly.Instance} */
 let inst;
 
+/** 
+* @typedef { {
+* 	setup: (arg: {IWD: string}) => any,
+*   write_lsp_input: (s: string) => void,
+*   read_lsp_output: () => string
+* }} InoxExports
+*/
+
 WebAssembly.instantiateStreaming(
   fetch("browser-lsp-server.wasm"),
   go.importObject,
@@ -33,35 +48,42 @@ WebAssembly.instantiateStreaming(
     go.run(inst);
 
     setTimeout(() => {
-      let exports = /** 
-      * @type { {
-      * 	setup: (arg: {IWD: string}) => any,
-      *  write_lsp_input: (s: string) => void,
-      *  read_lsp_output: () => string
-      * }} */ (go.exports);
+      let exports = /** @type {InoxExports} */ (go.exports);
   
       exports.setup({
         IWD: '/home/user'
       })
   
-      exports.write_lsp_input('HEEEZBEJBZEJBJEBJZEBJZBEJZEBJZEBJZBEJZEBJZEBJZEBJZEZBEJZEZEEZLLO')
-  
-      //@ts-ignore
-      globalThis['exports'] = exports;
-
-
-      setupEditor()
+      setupEditor(exports)
     }, 10)
   },
 );
 
 
-function setupEditor(){
-  var myCodeMirror = CodeMirror(document.body, {
+/** @param {InoxExports} exports */
+function setupEditor(exports){
+  let editor = CodeMirror(document.body, {
     value: "fn myScript(){return 100;}\n",
     mode:  "inox",
     extraKeys: {
       "Ctrl-Space": "autocomplete"
     }
   });
+
+  /** @type {ILspOptions} */
+  let lspOptions = {
+    documentText: () => '',
+    documentUri: 'file:///script.ix',
+    languageId: 'inox',
+    rootUri: 'file:///',
+    serverUri: ''
+  }
+
+  let conn = new LspConnection(lspOptions, exports.write_lsp_input, exports.read_lsp_output)
+  conn.connect()
+
+
+  /** @type {ITextEditorOptions} */
+  let adapterOptions = {}
+  new CodeMirrorAdapter(conn, adapterOptions, editor)
 }

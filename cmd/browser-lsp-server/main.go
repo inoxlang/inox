@@ -82,8 +82,12 @@ func registerCallbacks(lspInput io.ReadWriter, lspOutput *core.RingBuffer) {
 	exports.Set("read_lsp_output", js.FuncOf(func(this js.Value, args []js.Value) any {
 		fmt.Println(OUT_PREFIX, "read_lsp_output() called by JS")
 
-		b := lspOutput.ReadableBytesCopy()
-		return js.ValueOf(string(b))
+		b := make([]byte, LSP_OUTPUT_BUFFER_SIZE)
+		n, err := lspOutput.Read(b)
+		if err != nil {
+			fmt.Println(OUT_PREFIX, "read_lsp_output():", err)
+		}
+		return js.ValueOf(string(b[:n]))
 	}))
 
 	exports.Set("setup", js.FuncOf(func(this js.Value, args []js.Value) any {

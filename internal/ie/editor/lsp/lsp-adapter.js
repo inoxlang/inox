@@ -8,7 +8,7 @@
 
 import debounce from "../../debounce.js";
 
-class CodeMirrorAdapter {
+export class CodeMirrorAdapter {
   markedDiagnostics = [];
   highlightMarkers = [];
   connectionListeners = {};

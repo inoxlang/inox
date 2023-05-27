@@ -1,0 +1,760 @@
+// modified version of:
+//https://github.com/wylieconlon/lsp-editor-adapter/blob/master/src/ws-connection.ts by Wylie Conlon (ISC license)
+
+/// <reference types="./lsp-types.d.ts"/>
+
+import * as events from "./events.js";
+import {
+  registerServerCapability,
+  unregisterServerCapability,
+} from "./server-capability-registration.js";
+
+/** @typedef {import('vscode-languageserver-protocol').ClientCapabilities} ClientCapabilities */
+/** @typedef {import('vscode-languageserver-protocol').ServerCapabilities} ServerCapabilities */
+/** @typedef {import('vscode-languageserver-protocol').InitializeParams} InitializeParams */
+/** @typedef {import('vscode-languageserver-protocol').InitializeResult} InitializeResult */
+/** @typedef {import('vscode-languageserver-protocol').Registration} Registration */
+/** @typedef {import('vscode-languageserver-protocol').Unregistration} Unregistration */
+
+/** @typedef {import('vscode-languageserver-protocol').TextDocumentPositionParams} TextDocumentPositionParams */
+/** @typedef {import('vscode-languageserver-protocol').DidChangeTextDocumentParams} DidChangeTextDocumentParams */
+/** @typedef {import('vscode-languageserver-protocol').DidOpenTextDocumentParams} DidOpenTextDocumentParams */
+/** @typedef {import('vscode-languageserver-protocol').PublishDiagnosticsParams} PublishDiagnosticsParams */
+/** @typedef {import('vscode-languageserver-protocol').SignatureHelpParams} SignatureHelpParams */
+/** @typedef {import('vscode-languageserver-protocol').ShowMessageParams} ShowMessageParams */
+/** @typedef {import('vscode-languageserver-protocol').RegistrationParams} RegistrationParams */
+/** @typedef {import('vscode-languageserver-protocol').UnregistrationParams} UnregistrationParams */
+/** @typedef {import('vscode-languageserver-protocol').ShowMessageRequestParams} ShowMessageRequestParams */
+
+/** @typedef {import('vscode-languageserver-protocol').Hover} Hover */
+/** @typedef {import('vscode-languageserver-protocol').CompletionList} CompletionList */
+/** @typedef {import('vscode-languageserver-protocol').CompletionItem} CompletionItem */
+/** @typedef {import('vscode-languageserver-protocol').SignatureHelp} SignatureHelp */
+/** @typedef {import('vscode-languageserver-protocol').DocumentHighlight} DocumentHighlight */
+/** @typedef {import('vscode-languageserver-protocol').Location} Location */
+/** @typedef {import('vscode-languageserver-protocol').LocationLink} LocationLink */
+
+/**
+ * @interface ExtendedClientCapabilities
+ * @extends ClientCapabilities
+ * @property {boolean} [xfilesProvider]
+ * @property {boolean} [xcontentProvider]
+ */
+
+/**
+ * @typedef {((result: unknown, err: unknown) => any) & {timeoutHandle?: number}} RequestCallback
+ * @typedef {((params: unknown) => any)} RequestHandler
+ */
+
+/** @implements {ILspConnection} */
+export class LspConnection extends events.EventEmitter {
+  isConnected = false;
+
+  isInitialized = false;
+
+  _close = false;
+
+  /** @type {ILspOptions} */
+  documentInfo;
+
+  /** @type {ServerCapabilities} */
+  serverCapabilities;
+
+  documentVersion = 0;
+
+  //JSON RPC
+
+  /** @type {(arg: string) => any} */
+  writeToServer;
+
+  /** @type {() => string} readFromServer */
+  readFromServer;
+
+  /** @type {Record<string, RequestCallback>} */
+  pendingRequestCallbacks = {};
+
+  /** @type {Record<string, RequestHandler[]>} */
+  incomingRequestHandlers = {};
+
+  /**
+   * @param {ILspOptions} options
+   * @param {(arg: string) => any} writeToServer
+   * @param {() => string} readFromServer
+   */
+  constructor(options, writeToServer, readFromServer) {
+    super();
+    this.documentInfo = options;
+    this.writeToServer = writeToServer;
+    this.readFromServer = readFromServer;
+  }
+
+  /**
+   * @returns {this}
+   */
+  connect() {
+    setTimeout(() => {
+      this.startLoopAsync();
+    }, 0);
+
+    setTimeout(() => {
+      this.sendInitialize();
+    }, 10);
+
+    this.onNotification(
+      "textDocument/publishDiagnostics",
+      /** @param {PublishDiagnosticsParams} params */
+      (params) => {
+        this.emit("diagnostic", params);
+      },
+    );
+
+    this.onNotification(
+      "window/showMessage",
+      /** @param {ShowMessageParams} params */
+      (params) => {
+        this.emit("logging", params);
+      },
+    );
+
+    this.onRequest(
+      "client/registerCapability",
+      /** @param {RegistrationParams} params */
+      (params) => {
+        params.registrations.forEach(
+          /** @param {Registration} capabilityRegistration */
+          (capabilityRegistration) => {
+            this.serverCapabilities = registerServerCapability(
+              this.serverCapabilities,
+              capabilityRegistration,
+            );
+          },
+        );
+
+        this.emit("logging", params);
+      },
+    );
+
+    this.onRequest(
+      "client/unregisterCapability",
+      /** @param {UnregistrationParams} params */
+      (params) => {
+        params.unregisterations.forEach(
+          /** @param {Unregistration} capabilityUnregistration */
+          (capabilityUnregistration) => {
+            this.serverCapabilities = unregisterServerCapability(
+              this.serverCapabilities,
+              capabilityUnregistration,
+            );
+          },
+        );
+
+        this.emit("logging", params);
+      },
+    );
+
+    this.onRequest(
+      "window/showMessageRequest",
+      /** @param {ShowMessageRequestParams} params */
+      (params) => {
+        this.emit("logging", params);
+      },
+    );
+
+    return this;
+  }
+
+  async startLoopAsync() {
+    //infinite loop reading the output
+    let serverOutput = "";
+    let chunk = "";
+    while (!this._close) {
+      chunk = "";
+      serverOutput = "";
+
+      while ((chunk = this.readFromServer()) != "") {
+        await sleepMillis(1000);
+        serverOutput += chunk;
+      }
+
+      if(serverOutput.trim() == '') {
+        await sleepMillis(1000);
+        continue
+      }
+
+      try {
+        serverOutput.split("\n").forEach((item) => {
+          item = item.trim();
+          if (!item) {
+            return;
+          }
+          let json = JSON.parse(item);
+          this.handleRPC(json);
+        });
+      } catch (err) {
+        console.error(err);
+        console.error(serverOutput);
+      }
+    }
+  }
+
+  /** @param {unknown} json */
+  handleRPC(json) {
+    if (typeof json != "object" || json === null) {
+      console.error("invalid JSON, should be an object:", json);
+      return;
+    }
+
+    if (("id" in json) && json.id !== undefined) { //requests have an id
+      //request reponse
+      if (
+        ("result" in json && json.result != undefined) ||
+        (("error" in json) && json.error != undefined)
+      ) {
+        let id = String(json.id);
+        let callback = this.pendingRequestCallbacks[id];
+        if (callback === undefined) {
+          console.error("get response for request of unknown id", id);
+          return;
+        }
+        if (callback.timeoutHandle) {
+          clearTimeout(callback.timeoutHandle);
+        }
+        delete this.pendingRequestCallbacks[id];
+
+        //@ts-ignore
+        let error = json.error;
+        //@ts-ignore
+        let result = json.result;
+
+        callback(result, error);
+      } else { //request sent by the server
+        console.debug('receive request from the server')
+      }
+    } else { //notification sent by the server
+      console.debug('receive notifcation from the server')
+    }
+  }
+
+  /**
+   * @param {string} method
+   * @param {any} params
+   * @returns {Promise<unknown>}
+   */
+  sendRequest(method, params) {
+    console.debug("send request", method);
+
+    let requestId = Math.random();
+    let request = JSON.stringify({
+      method: method,
+      params: params,
+      id: requestId,
+    }) + "\n";
+
+    this.writeToServer(request);
+
+    let promise = new Promise((resolve, reject) => {
+      /** @type {RequestCallback} */
+      let callback = (result, error) => {
+        if (error) {
+          console.error(error);
+          reject(error);
+        } else {
+          resolve(result);
+        }
+      };
+      //callback.timeoutHandle =
+      this.pendingRequestCallbacks[requestId] = callback;
+    });
+
+    return promise;
+  }
+
+  /**
+   * @param {string} method
+   * @param {any} params
+   */
+  sendNotification(method, params) {
+    console.debug("send notification ", method);
+
+    const request = JSON.stringify({
+      method: method,
+      params: params,
+    }) + "\n";
+
+    this.writeToServer(request);
+  }
+
+  /**
+   * @param {string} method
+   * @param {Function} listener
+   */
+  onNotification(method, listener) {
+    console.debug("notification received ", method);
+  }
+
+  /**
+   * @param {string} method
+   * @param {RequestHandler} handler
+   */
+  onRequest(method, handler) {
+    this.incomingRequestHandlers[method] =
+      this.incomingRequestHandlers[method] || [];
+    this.incomingRequestHandlers[method].push(handler);
+  }
+
+  getDocumentUri() {
+    return this.documentInfo.documentUri;
+  }
+
+  sendInitialize() {
+    if (!this.isConnected) {
+      return;
+    }
+
+    /** @type {InitializeParams} */
+    const message = {
+      capabilities: {
+        textDocument: {
+          hover: {
+            dynamicRegistration: true,
+            contentFormat: ["plaintext", "markdown"],
+          },
+          synchronization: {
+            dynamicRegistration: true,
+            willSave: false,
+            didSave: false,
+            willSaveWaitUntil: false,
+          },
+          completion: {
+            dynamicRegistration: true,
+            completionItem: {
+              snippetSupport: false,
+              commitCharactersSupport: true,
+              documentationFormat: ["plaintext", "markdown"],
+              deprecatedSupport: false,
+              preselectSupport: false,
+            },
+            contextSupport: false,
+          },
+          signatureHelp: {
+            dynamicRegistration: true,
+            signatureInformation: {
+              documentationFormat: ["plaintext", "markdown"],
+            },
+          },
+          declaration: {
+            dynamicRegistration: true,
+            linkSupport: true,
+          },
+          definition: {
+            dynamicRegistration: true,
+            linkSupport: true,
+          },
+          typeDefinition: {
+            dynamicRegistration: true,
+            linkSupport: true,
+          },
+          implementation: {
+            dynamicRegistration: true,
+            linkSupport: true,
+          },
+        },
+        workspace: {
+          didChangeConfiguration: {
+            dynamicRegistration: true,
+          },
+        },
+        // xfilesProvider: true,
+        // xcontentProvider: true,
+      },
+      initializationOptions: null,
+      processId: null,
+      rootUri: this.documentInfo.rootUri,
+      workspaceFolders: null,
+    };
+
+    this.sendRequest("initialize", message).then(
+      /** @param {InitializeResult} params */
+      (params) => {
+        this.isInitialized = true;
+        this.serverCapabilities = params.capabilities;
+        const textDocumentMessage = {
+          textDocument: {
+            uri: this.documentInfo.documentUri,
+            languageId: this.documentInfo.languageId,
+            text: this.documentInfo.documentText(),
+            version: this.documentVersion,
+          },
+        };
+        this.sendNotification("initialized");
+        this.sendNotification("workspace/didChangeConfiguration", {
+          settings: {},
+        });
+        this.sendNotification("textDocument/didOpen", textDocumentMessage);
+        this.sendChange();
+      },
+      (e) => {
+      },
+    );
+  }
+
+  sendChange() {
+    if (!this.isConnected) {
+      return;
+    }
+    /** @type {DidChangeTextDocumentParams} */
+    const textDocumentChange = {
+      textDocument: {
+        uri: this.documentInfo.documentUri,
+        version: this.documentVersion,
+      },
+      contentChanges: [{
+        text: this.documentInfo.documentText(),
+      }],
+    };
+    this.sendNotification("textDocument/didChange", textDocumentChange);
+    this.documentVersion++;
+  }
+
+  /** @param {IPosition} location */
+  getHoverTooltip(location) {
+    if (!this.isInitialized) {
+      return;
+    }
+    this.sendRequest("textDocument/hover", {
+      textDocument: {
+        uri: this.documentInfo.documentUri,
+      },
+      position: {
+        line: location.line,
+        character: location.ch,
+      },
+    }).then(
+      /** @param {Hover} params */
+      (params) => {
+        this.emit("hover", params);
+      },
+    );
+  }
+
+  /**
+   * @param {IPosition} location
+   * @param {ITokenInfo} token
+   * @param {string|undefined} triggerCharacter
+   * @param {CompletionTriggerKind|undefined} triggerKind
+   * @returns
+   */
+  getCompletion(location, token, triggerCharacter, triggerKind) {
+    if (!this.isConnected) {
+      return;
+    }
+    if (
+      !(this.serverCapabilities && this.serverCapabilities.completionProvider)
+    ) {
+      return;
+    }
+
+    this.sendRequest("textDocument/completion", {
+      textDocument: {
+        uri: this.documentInfo.documentUri,
+      },
+      position: {
+        line: location.line,
+        character: location.ch,
+      },
+      context: {
+        triggerKind: triggerKind || CompletionTriggerKind.Invoked,
+        triggerCharacter,
+      },
+    }).then(
+      /**
+       * @param { CompletionList | CompletionItem[] | null} params
+       */
+      (params) => {
+        if (!params) {
+          this.emit("completion", params);
+          return;
+        }
+        this.emit("completion", "items" in params ? params.items : params);
+      },
+    );
+  }
+
+  /** @param {CompletionItem} completionItem */
+  getDetailedCompletion(completionItem) {
+    if (!this.isConnected) {
+      return;
+    }
+    this.sendRequest("completionItem/resolve", completionItem)
+      .then(
+        /** @param {CompletionItem} result */
+        (result) => {
+          this.emit("completionResolved", result);
+        },
+      );
+  }
+
+  /**
+   * @param {IPosition} location
+   */
+  getSignatureHelp(location) {
+    if (!this.isConnected) {
+      return;
+    }
+    if (
+      !(this.serverCapabilities &&
+        this.serverCapabilities.signatureHelpProvider)
+    ) {
+      return;
+    }
+
+    const code = this.documentInfo.documentText();
+    const lines = code.split("\n");
+    const typedCharacter = lines[location.line][location.ch];
+
+    if (
+      this.serverCapabilities.signatureHelpProvider &&
+      !this.serverCapabilities.signatureHelpProvider.triggerCharacters.indexOf(
+        typedCharacter,
+      )
+    ) {
+      // Not a signature character
+      return;
+    }
+
+    this.sendRequest("textDocument/signatureHelp", {
+      textDocument: {
+        uri: this.documentInfo.documentUri,
+      },
+      position: {
+        line: location.line,
+        character: location.ch,
+      },
+    }).then(
+      /** @param {SignatureHelp} params */
+      (params) => {
+        this.emit("signature", params);
+      },
+    );
+  }
+
+  /**
+   * Request the locations of all matching document symbols
+   * @param {IPosition} location
+   */
+  getDocumentHighlights(location) {
+    if (!this.isConnected) {
+      return;
+    }
+    if (
+      !(this.serverCapabilities &&
+        this.serverCapabilities.documentHighlightProvider)
+    ) {
+      return;
+    }
+
+    this.sendRequest("textDocument/documentHighlight", {
+      textDocument: {
+        uri: this.documentInfo.documentUri,
+      },
+      position: {
+        line: location.line,
+        character: location.ch,
+      },
+    }).then(
+      /** @param {DocumentHighlight[]} params */
+      (params) => {
+        this.emit("highlight", params);
+      },
+    );
+  }
+
+  /**
+   * Request a link to the definition of the current symbol. The results will not be displayed
+   * unless they are within the same file URI
+   * @param {IPosition} location
+   */
+  getDefinition(location) {
+    if (!this.isConnected || !this.isDefinitionSupported()) {
+      return;
+    }
+
+    this.sendRequest("textDocument/definition", {
+      textDocument: {
+        uri: this.documentInfo.documentUri,
+      },
+      position: {
+        line: location.line,
+        character: location.ch,
+      },
+    }).then(
+      /** @param {Location | Location[] | LocationLink[] | null} result */
+      (result) => {
+        this.emit("goTo", result);
+      },
+    );
+  }
+
+  /**
+   * Request a link to the type definition of the current symbol. The results will not be displayed
+   * unless they are within the same file URI
+   * @param {IPosition} location
+   */
+  getTypeDefinition(location) {
+    if (!this.isConnected || !this.isTypeDefinitionSupported()) {
+      return;
+    }
+
+    this.sendRequest("textDocument/typeDefinition", {
+      textDocument: {
+        uri: this.documentInfo.documentUri,
+      },
+      position: {
+        line: location.line,
+        character: location.ch,
+      },
+    }).then(
+      /** @param { Location | Location[] | LocationLink[] | null} result */
+      (result) => {
+        this.emit("goTo", result);
+      },
+    );
+  }
+
+  /**
+   * Request a link to the implementation of the current symbol. The results will not be displayed
+   * unless they are within the same file URI
+   * @param {IPosition} location
+   */
+  getImplementation(location) {
+    if (!this.isConnected || !this.isImplementationSupported()) {
+      return;
+    }
+
+    this.sendRequest("textDocument/implementation", {
+      textDocument: {
+        uri: this.documentInfo.documentUri,
+      },
+      position: {
+        line: location.line,
+        character: location.ch,
+      },
+    }).then(
+      /** @param {Location | Location[] | LocationLink[] | null} result */
+      (result) => {
+        this.emit("goTo", result);
+      },
+    );
+  }
+
+  /**
+   * Request a link to all references to the current symbol. The results will not be displayed
+   * unless they are within the same file URI
+   * @param {IPosition} location
+   */
+  getReferences(location) {
+    if (!this.isConnected || !this.isReferencesSupported()) {
+      return;
+    }
+
+    this.sendRequest("textDocument/references", {
+      textDocument: {
+        uri: this.documentInfo.documentUri,
+      },
+      position: {
+        line: location.line,
+        character: location.ch,
+      },
+    }).then(
+      /** @param {Location[] | null} result */
+      (result) => {
+        this.emit("goTo", result);
+      },
+    );
+  }
+
+  /**
+   * The characters that trigger completion automatically.
+   * @returns {string[]}
+   */
+  getLanguageCompletionCharacters() {
+    if (!this.isConnected) {
+      return;
+    }
+    if (
+      !(
+        this.serverCapabilities &&
+        this.serverCapabilities.completionProvider &&
+        this.serverCapabilities.completionProvider.triggerCharacters
+      )
+    ) {
+      return [];
+    }
+    return this.serverCapabilities.completionProvider.triggerCharacters;
+  }
+
+  /**
+   * The characters that trigger signature help automatically.
+   * @returns {string[]}
+   */
+  getLanguageSignatureCharacters() {
+    if (!this.isConnected) {
+      return;
+    }
+    if (
+      !(
+        this.serverCapabilities &&
+        this.serverCapabilities.signatureHelpProvider &&
+        this.serverCapabilities.signatureHelpProvider.triggerCharacters
+      )
+    ) {
+      return [];
+    }
+    return this.serverCapabilities.signatureHelpProvider.triggerCharacters;
+  }
+
+  /**
+   * Does the server support go to definition?
+   */
+  isDefinitionSupported() {
+    return !!(this.serverCapabilities &&
+      this.serverCapabilities.definitionProvider);
+  }
+
+  /**
+   * Does the server support go to type definition?
+   */
+  isTypeDefinitionSupported() {
+    return !!(this.serverCapabilities &&
+      this.serverCapabilities.typeDefinitionProvider);
+  }
+
+  /**
+   * Does the server support go to implementation?
+   */
+  isImplementationSupported() {
+    return !!(this.serverCapabilities &&
+      this.serverCapabilities.implementationProvider);
+  }
+
+  /**
+   * Does the server support find all references?
+   */
+  isReferencesSupported() {
+    return !!(this.serverCapabilities &&
+      this.serverCapabilities.referencesProvider);
+  }
+
+  close() {
+    this._close = true;
+  }
+}
+
+/** @param {number} timeMillis */
+function sleepMillis(timeMillis) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, timeMillis);
+  });
+}
+
+export default LspConnection;
