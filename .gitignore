@@ -9,3 +9,4 @@ __debug*
 /test.ix
 /inox
 
+node_modules/
