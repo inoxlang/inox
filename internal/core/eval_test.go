@@ -897,6 +897,53 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		}
 	})
 
+	t.Run("binary expression chain", func(t *testing.T) {
+		testCases := []struct {
+			code   string
+			result Value
+		}{
+			//or chain
+			{"(1 > 2 or false)", False},
+			{"(1 < 2 or true)", True},
+			{"(1 < 2 or 1 < 2)", True},
+			{"(1 < 2 or 1 > 2)", True},
+			{"(1 > 2 or 1 > 2)", False},
+			{"(1 > 2 or false or false)", False},
+			{"(1 < 2 or true or false)", True},
+			{"(1 < 2 or 1 < 2 or false)", True},
+			{"(1 < 2 or 1 > 2 or false)", True},
+			{"(1 > 2 or 1 > 2 or false)", False},
+			{"(1 > 2 or 1 > 2 or true)", True},
+
+			//and chain
+			{"(1 > 2 and false)", False},
+			{"(1 < 2 and true)", True},
+			{"(1 < 2 and 1 < 2)", True},
+			{"(1 < 2 and 1 > 2)", False},
+			{"(1 > 2 and 1 > 2)", False},
+			{"(1 > 2 and false and false)", False},
+			{"(1 < 2 and true and false)", False},
+			{"(1 < 2 and 1 < 2 and false)", False},
+			{"(1 < 2 and 1 > 2 and false)", False},
+			{"(1 > 2 and 1 > 2 and false)", False},
+			{"(1 > 2 and 1 > 2 and true)", False},
+			{"(1 > 2 and true and true)", False},
+			{"(1 < 2 and true and true)", True},
+			{"(1 < 2 and 1 < 2 and true)", True},
+			{"(1 < 2 and 1 > 2 and true)", False},
+			{"(1 < 2 and false and true)", False},
+			{"(1 < 2 and 1 > 2 and true)", False},
+		}
+
+		for _, testCase := range testCases {
+			t.Run(testCase.code, func(t *testing.T) {
+				res, err := Eval(testCase.code, NewGlobalState(NewDefaultTestContext(), nil), false)
+				assert.NoError(t, err)
+				assert.Equal(t, testCase.result, res)
+			})
+		}
+	})
+
 	t.Run("global variable definition", func(t *testing.T) {
 
 		t.Run("simple value", func(t *testing.T) {
