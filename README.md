@@ -35,7 +35,7 @@ View [Shell Basics](./docs/shell-basics.md) to learn how to use Inox interactive
 ## Features
 
 Security:
-- [Injection Prevention](#injection-prevention)
+- [Injection Prevention](#injection-prevention-wip)
 - [Permission system](#permission-system)
   - [Required permissions](#required-permissions)
   - [Isolation of dependencies](#isolation-of-dependencies)
@@ -55,7 +55,7 @@ Other:
 - [Many Built-in Functions](#built-in-functions)
 - [Communication](#communication)
 
-### Injection Prevention
+### Injection Prevention (WIP)
 
 In Inox interpolations are always restricted in order to prevent **injections** and regular strings are **never trusted**.
 URLs & paths are first-class values and must be used to perform network or filesystem operations. 
