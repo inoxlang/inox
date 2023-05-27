@@ -902,7 +902,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code   string
 			result Value
 		}{
-			//or chain
+			//'or' chain starting with a binary expression
 			{"(1 > 2 or false)", False},
 			{"(1 < 2 or true)", True},
 			{"(1 < 2 or 1 < 2)", True},
@@ -915,7 +915,20 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			{"(1 > 2 or 1 > 2 or false)", False},
 			{"(1 > 2 or 1 > 2 or true)", True},
 
-			//and chain
+			//'or' chain starting with a literal
+			{"(false or false)", False},
+			{"(true or true)", True},
+			{"(true or 1 < 2)", True},
+			{"(true or 1 > 2)", True},
+			{"(false or 1 > 2)", False},
+			{"(false or false or false)", False},
+			{"(true or true or false)", True},
+			{"(true or 1 < 2 or false)", True},
+			{"(true or 1 > 2 or false)", True},
+			{"(false or 1 > 2 or false)", False},
+			{"(false or 1 > 2 or true)", True},
+
+			//'and' chain starting with a binary expression
 			{"(1 > 2 and false)", False},
 			{"(1 < 2 and true)", True},
 			{"(1 < 2 and 1 < 2)", True},
@@ -933,6 +946,25 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			{"(1 < 2 and 1 > 2 and true)", False},
 			{"(1 < 2 and false and true)", False},
 			{"(1 < 2 and 1 > 2 and true)", False},
+
+			//'and' chain starting with a literal
+			{"(false and false)", False},
+			{"(true and true)", True},
+			{"(true and 1 < 2)", True},
+			{"(true and 1 > 2)", False},
+			{"(false and 1 > 2)", False},
+			{"(false and false and false)", False},
+			{"(true and true and false)", False},
+			{"(true and 1 < 2 and false)", False},
+			{"(true and 1 > 2 and false)", False},
+			{"(false and 1 > 2 and false)", False},
+			{"(false and 1 > 2 and true)", False},
+			{"(false and true and true)", False},
+			{"(true and true and true)", True},
+			{"(true and 1 < 2 and true)", True},
+			{"(true and 1 > 2 and true)", False},
+			{"(true and false and true)", False},
+			{"(true and 1 > 2 and true)", False},
 		}
 
 		for _, testCase := range testCases {
