@@ -498,7 +498,7 @@ true
 ```
 ### none
 
-the none function returns true if and only if no elements of an iterable pass a condition. For an emptty iterable the result is always true.
+the none function returns true if and only if no elements of an iterable pass a condition. For an empty iterable the result is always true.
 
 **examples**
 
