@@ -20178,3 +20178,12 @@ func TestParse(t *testing.T) {
 		}, n)
 	})
 }
+
+func TestParsePath(t *testing.T) {
+
+	t.Run("empty", func(t *testing.T) {
+		p, ok := ParsePath("")
+		assert.False(t, ok)
+		assert.Empty(t, p)
+	})
+}

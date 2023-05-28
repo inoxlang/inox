@@ -9705,7 +9705,7 @@ func ParseExpression(u string) (n Node, ok bool) {
 }
 
 func ParsePath(pth string) (path string, ok bool) {
-	if len(pth) > MAX_MODULE_BYTE_LEN {
+	if len(pth) > MAX_MODULE_BYTE_LEN || len(pth) == 0 {
 		return "", false
 	}
 
