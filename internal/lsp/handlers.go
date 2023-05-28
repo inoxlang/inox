@@ -5,12 +5,14 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 
 	fsutil "github.com/go-git/go-billy/v5/util"
 
+	"github.com/inoxlang/inox/internal/afs"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
 	"github.com/inoxlang/inox/internal/lsp/logs"
@@ -58,6 +60,7 @@ func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx
 			Out:                       os.Stdout,
 			IgnoreNonCriticalIssues:   true,
 			AllowMissingEnvVars:       true,
+			FileSystem:                filesystem,
 		})
 
 		if state == nil || state.SymbolicData == nil {
@@ -131,7 +134,7 @@ func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx
 		line, column := getLineColumn(req.Position)
 		session := jsonrpc.GetSession(ctx)
 
-		completions := getCompletions(fpath, compilationCtx, line, column, session)
+		completions := getCompletions(fpath, compilationCtx, line, column, session, filesystem)
 		completionIndex := 0
 
 		lspCompletions := utils.MapSlice(completions, func(completion compl.Completion) defines.CompletionItem {
@@ -178,7 +181,7 @@ func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx
 		}
 
 		session := jsonrpc.GetSession(ctx)
-		return notifyDiagnostics(session, req.TextDocument.Uri, compilationCtx)
+		return notifyDiagnostics(session, req.TextDocument.Uri, compilationCtx, filesystem)
 	})
 
 	server.OnDidChangeTextDocument(func(ctx context.Context, req *defines.DidChangeTextDocumentParams) (err error) {
@@ -193,7 +196,7 @@ func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx
 		}
 
 		session := jsonrpc.GetSession(ctx)
-		return notifyDiagnostics(session, req.TextDocument.Uri, compilationCtx)
+		return notifyDiagnostics(session, req.TextDocument.Uri, compilationCtx, filesystem)
 	})
 
 	server.OnDefinition(func(ctx context.Context, req *defines.DefinitionParams) (result *[]defines.LocationLink, err error) {
@@ -207,6 +210,7 @@ func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx
 			Out:                       os.Stdout,
 			IgnoreNonCriticalIssues:   true,
 			AllowMissingEnvVars:       true,
+			FileSystem:                filesystem,
 		})
 
 		if state == nil || state.SymbolicData == nil {
@@ -273,14 +277,15 @@ func getFilePath(uri defines.DocumentUri) string {
 	return utils.Must(url.Parse(string(uri))).Path
 }
 
-func getCompletions(fpath string, compilationCtx *core.Context, line, column int32, session *jsonrpc.Session) []compl.Completion {
+func getCompletions(fpath string, compilationCtx *core.Context, line, column int32, session *jsonrpc.Session, fls afs.Filesystem) []compl.Completion {
 	state, mod, _, err := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
 		Fpath:                     fpath,
 		ParsingCompilationContext: compilationCtx,
 		ParentContext:             nil,
-		Out:                       os.Stdout,
+		Out:                       io.Discard,
 		IgnoreNonCriticalIssues:   true,
 		AllowMissingEnvVars:       true,
+		FileSystem:                fls,
 	})
 
 	if mod == nil { //unrecoverable parsing error

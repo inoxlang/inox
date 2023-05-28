@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 
+	"github.com/inoxlang/inox/internal/afs"
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	globals "github.com/inoxlang/inox/internal/globals"
@@ -14,7 +15,7 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, compilationCtx *core.Context) error {
+func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, compilationCtx *core.Context, fls afs.Filesystem) error {
 	fpath := getFilePath(docURI)
 
 	errSeverity := defines.DiagnosticSeverityError
@@ -27,10 +28,11 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, com
 		Out:                       io.Discard,
 		IgnoreNonCriticalIssues:   true,
 		AllowMissingEnvVars:       true,
+		FileSystem:                fls,
 	})
 
 	if mod == nil { //unrecoverable parsing error
-		session.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
+		session.Notify(NewShowMessage(defines.MessageTypeError, "failed to prepare script: "+err.Error()))
 		return nil
 	}
 
