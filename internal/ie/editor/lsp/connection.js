@@ -248,7 +248,7 @@ export class LspConnection extends events.EventEmitter {
         let id = String(json.id);
         let callback = this.pendingRequestCallbacks[id];
         if (callback === undefined) {
-          console.error("get response for request of unknown id", id);
+          console.error("get response for request of unknown id", id, json);
           return;
         }
         if (callback.timeoutHandle) {

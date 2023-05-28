@@ -8,6 +8,15 @@
 
 import debounce from "../../debounce.js";
 
+/** @type {CompletionTriggerKind} */
+const CompletionTriggerKind_Invoked = 1
+
+/** @type {CompletionTriggerKind} */
+const CompletionTriggerKind_TriggerCharacter = 2
+
+/** @type {CompletionTriggerKind} */
+const CompletionTriggerKind_TriggerCharacter_TriggerForIncompleteCompletions = 3
+
 export class CodeMirrorAdapter {
   markedDiagnostics = [];
   highlightMarkers = [];
@@ -94,7 +103,7 @@ export class CodeMirrorAdapter {
         location,
         this.token,
         completionCharacters.find((c) => c === typedCharacter),
-        CompletionTriggerKind.TriggerCharacter,
+        CompletionTriggerKind_TriggerCharacter,
       );
     } else if (signatureCharacters.indexOf(typedCharacter) > -1) {
       this.token = this._getTokenEndingAtPosition(
@@ -108,7 +117,7 @@ export class CodeMirrorAdapter {
         location,
         this.token,
         "",
-        CompletionTriggerKind.Invoked,
+        CompletionTriggerKind_Invoked,
       );
       this.token = this._getTokenEndingAtPosition(
         code,

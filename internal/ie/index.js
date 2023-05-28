@@ -72,7 +72,7 @@ function setupEditor(exports){
 
   /** @type {ILspOptions} */
   let lspOptions = {
-    documentText: () => '',
+    documentText: () => editor.getDoc().getValue(),
     documentUri: 'file:///script.ix',
     languageId: 'inox',
     rootUri: 'file:///',
