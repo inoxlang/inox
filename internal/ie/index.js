@@ -31,7 +31,7 @@ let inst;
 
 /** 
 * @typedef { {
-* 	setup: (arg: {IWD: string}) => any,
+* 	setup: (arg: {IWD: string, print_debug: Function}) => any,
 *   write_lsp_input: (s: string) => void,
 *   read_lsp_output: () => string
 * }} InoxExports
@@ -51,7 +51,8 @@ WebAssembly.instantiateStreaming(
       let exports = /** @type {InoxExports} */ (go.exports);
   
       exports.setup({
-        IWD: '/home/user'
+        IWD: '/home/user',
+        print_debug: console.debug
       })
   
       setupEditor(exports)

@@ -19,6 +19,8 @@ const (
 	OUT_PREFIX             = "[lsp server module]"
 )
 
+var printDebug *js.Value
+
 func main() {
 	fmt.Println(OUT_PREFIX, "start")
 	ctx := core.NewContext(core.ContextConfig{})
@@ -27,20 +29,31 @@ func main() {
 	lspInput := core.NewRingBuffer(ctx, LSP_INPUT_BUFFER_SIZE)
 	lspInputWriter := utils.FnReaderWriter{
 		WriteFn: func(p []byte) (n int, err error) {
-			fmt.Println(OUT_PREFIX, "resume reading because we are going to write")
+			if printDebug != nil {
+				printDebug.Invoke(OUT_PREFIX, "resume reading because we are going to write")
+			}
 			select {
 			case <-pauseChan:
 			case <-time.After(100 * time.Millisecond):
 			}
-			fmt.Println(OUT_PREFIX, "write LSP input")
+			if printDebug != nil {
+				printDebug.Invoke(OUT_PREFIX, "write LSP input")
+			}
 			return lspInput.Write(p)
 		},
 		ReadFn: func(p []byte) (n int, err error) {
 			if lspInput.ReadableCount(ctx) == 0 {
-				fmt.Println(OUT_PREFIX, "pause read call because there is nothing to read")
+				if printDebug != nil {
+					printDebug.Invoke(OUT_PREFIX, "pause read call because there is nothing to read")
+				}
+
 				pauseChan <- struct{}{}
 			}
-			fmt.Println(OUT_PREFIX, "read LSP input")
+
+			if printDebug != nil {
+				printDebug.Invoke(OUT_PREFIX, "read LSP input")
+			}
+
 			return lspInput.Read(p)
 		},
 	}
@@ -71,8 +84,11 @@ func main() {
 
 func registerCallbacks(lspInput io.ReadWriter, lspOutput *core.RingBuffer) {
 	exports := js.Global().Get("exports")
+
 	exports.Set("write_lsp_input", js.FuncOf(func(this js.Value, args []js.Value) any {
-		fmt.Println(OUT_PREFIX, "write_lsp_input() called by JS")
+		if printDebug != nil {
+			printDebug.Invoke(OUT_PREFIX, "write_lsp_input() called by JS")
+		}
 
 		s := args[0].String()
 		lspInput.Write(utils.StringAsBytes(s))
@@ -80,20 +96,26 @@ func registerCallbacks(lspInput io.ReadWriter, lspOutput *core.RingBuffer) {
 	}))
 
 	exports.Set("read_lsp_output", js.FuncOf(func(this js.Value, args []js.Value) any {
-		fmt.Println(OUT_PREFIX, "read_lsp_output() called by JS")
+		if printDebug != nil {
+			printDebug.Invoke(OUT_PREFIX, "read_lsp_output() called by JS")
+		}
 
 		b := make([]byte, LSP_OUTPUT_BUFFER_SIZE)
 		n, err := lspOutput.Read(b)
-		if err != nil {
-			fmt.Println(OUT_PREFIX, "read_lsp_output():", err)
+		if err != nil && printDebug != nil {
+			printDebug.Invoke(OUT_PREFIX, "read_lsp_output():", err.Error())
 		}
 		return js.ValueOf(string(b[:n]))
 	}))
 
 	exports.Set("setup", js.FuncOf(func(this js.Value, args []js.Value) any {
-		fmt.Println(OUT_PREFIX, "setup() called by JS")
+		if printDebug != nil {
+			printDebug.Invoke(OUT_PREFIX, "setup() called by JS")
+		}
 
 		IWD := args[0].Get(core.INITIAL_WORKING_DIR_VARNAME).String()
+		debug := args[0].Get("print_debug")
+		printDebug = &debug
 
 		core.SetInitialWorkingDir(func() (string, error) {
 			return IWD, nil
