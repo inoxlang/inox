@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/inoxlang/inox/internal/config"
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -32,8 +33,9 @@ func init() {
 }
 
 func NewEnvNamespace(ctx *core.Context, envPattern *core.ObjectPattern, allowMissingEnvVars bool) (*core.Record, error) {
-	pth, ok := parse.ParsePath(os.Getenv("HOME"))
+	pth, ok := parse.ParsePath(config.USER_HOME)
 	HOME := core.Path(pth)
+
 	var HOMEval core.Value
 	if ok {
 		if !HOME.IsDirPath() {
