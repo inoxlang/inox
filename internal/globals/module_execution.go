@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/config"
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
@@ -35,8 +36,9 @@ type ScriptPreparationArgs struct {
 	IgnoreNonCriticalIssues   bool
 	AllowMissingEnvVars       bool
 
-	Out    io.Writer //defaults to os.Stdout
-	LogOut io.Writer //defaults to Out
+	Out        io.Writer      //defaults to os.Stdout
+	LogOut     io.Writer      //defaults to Out
+	FileSystem afs.Filesystem //used to create the context, it defaults to the OS filesystem
 }
 
 // PrepareLocalScript parses & checks a script located in the filesystem and initialize its state.
@@ -45,7 +47,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 
 	absPath, pathErr := filepath.Abs(args.Fpath)
 	if pathErr != nil {
-		finalErr = pathErr
+		finalErr = fmt.Errorf("failed to get absolute path of script: %w", pathErr)
 		return
 	}
 
@@ -103,6 +105,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		Limitations:     manifest.Limitations,
 		HostResolutions: manifest.HostResolutions,
 		ParentContext:   parentContext,
+		Filesystem:      args.FileSystem,
 	})
 
 	if ctxErr != nil {

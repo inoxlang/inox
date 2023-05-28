@@ -3,6 +3,7 @@ package internal
 import (
 	"io"
 
+	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/config"
 	core "github.com/inoxlang/inox/internal/core"
 	_chrome "github.com/inoxlang/inox/internal/globals/chrome"
@@ -304,7 +305,8 @@ type DefaultContextConfig struct {
 	ForbiddenPermissions []core.Permission
 	Limitations          []core.Limitation
 	HostResolutions      map[core.Host]core.Value
-	ParentContext        *core.Context //optional
+	ParentContext        *core.Context  //optional
+	Filesystem           afs.Filesystem //if nil the OS filesystem is used
 }
 
 // NewDefaultState creates a new Context with the default patterns.
@@ -316,7 +318,11 @@ func NewDefaultContext(config DefaultContextConfig) (*core.Context, error) {
 		Limitations:          config.Limitations,
 		HostResolutions:      config.HostResolutions,
 		ParentContext:        config.ParentContext,
-		Filesystem:           _fs.GetOsFilesystem(),
+		Filesystem:           config.Filesystem,
+	}
+
+	if ctxConfig.Filesystem == nil {
+		ctxConfig.Filesystem = _fs.GetOsFilesystem()
 	}
 
 	if ctxConfig.ParentContext != nil {
