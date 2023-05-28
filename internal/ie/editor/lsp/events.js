@@ -85,7 +85,7 @@ export class EventEmitter {
     // copy array so that removing listeners in listeners (once etc) does not affect the iteration
     var list = (this._events[event] || []).slice(0);
     for (var i = 0; i < list.length; i++) {
-      list[i].apply(this, Array.prototype.slice.call(args, 1));
+      list[i].apply(this, args);
     }
     return list.length > 0;
   }

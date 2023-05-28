@@ -1,6 +1,5 @@
 {
     "devDependencies": {
-      "vscode-languageserver-protocol": "^3.17.3"
+        "vscode-languageserver-protocol": "^3.17.3"
     }
-  }
-  
+}

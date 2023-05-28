@@ -2,11 +2,19 @@
 //https://github.com/wylieconlon/lsp-editor-adapter/blob/master/src/codemirror-adapter.ts by Wylie Conlon (ISC license)
 
 /// <reference types="./lsp-types.d.ts"/>
+/// <reference types="./marked.min.d.ts"/>
+/// <reference types="./lsp-types.d.ts"/>
+/// <reference types="../../purify.d.ts"/>
 
 /** @typedef {import('vscode-languageserver-protocol').Location} Location */
 /** @typedef {import('vscode-languageserver-protocol').LocationLink} LocationLink */
+/** @typedef {import('vscode-languageserver-protocol').MarkupContent} MarkupContent */
+
 
 import debounce from "../../debounce.js";
+import "./marked.min.js";
+import "../../purify.min.js";
+
 
 /** @type {CompletionTriggerKind} */
 const CompletionTriggerKind_Invoked = 1
@@ -158,13 +166,23 @@ export class CodeMirrorAdapter {
       });
     }
 
+    //either text or HTML
     let tooltipText;
-    if (isMarkupContent(response.contents)) {
-      tooltipText = response.contents.value;
-    } else if (Array.isArray(response.contents)) {
-      const firstItem = response.contents[0];
+    let tooltipUnsafeHTML;
+
+    const contents = response.contents
+
+    /** @param {string} mdown */
+    const markdown2HTML = (mdown) => {
+      return marked.parse(mdown.replace(/^[\u200B\u200C\u200D\u200E\u200F\uFEFF]/,""))
+    }
+
+    if (isMarkupContent(contents)) {
+      tooltipUnsafeHTML = markdown2HTML(contents.value);
+    } else if (Array.isArray(contents)) {
+      const firstItem = contents[0];
       if (isMarkupContent(firstItem)) {
-        tooltipText = firstItem.value;
+        tooltipUnsafeHTML = markdown2HTML(firstItem.value);
       } else if (firstItem === null) {
         return;
       } else if (typeof firstItem === "object") {
@@ -172,12 +190,18 @@ export class CodeMirrorAdapter {
       } else {
         tooltipText = firstItem;
       }
-    } else if (typeof response.contents === "string") {
-      tooltipText = response.contents;
+    } else if (typeof contents === "string") {
+      tooltipText = contents;
     }
 
     const htmlElement = document.createElement("div");
-    htmlElement.innerText = tooltipText;
+
+    if(tooltipUnsafeHTML){
+      htmlElement.innerHTML = DOMPurify.sanitize(tooltipUnsafeHTML);
+    } else {
+      htmlElement.innerText = tooltipText;
+    }
+
     const coords = this.editor.charCoords(start, "page");
     this._showTooltip(htmlElement, {
       x: coords.left,
@@ -683,6 +707,10 @@ function isLocation(arg) {
 }
 
 //good enough
+/** 
+ * @param {unknown} arg 
+ * @returns {arg is MarkupContent}
+*/
 function isMarkupContent(arg) {
   return typeof arg == "object" && "kind" in arg;
 }

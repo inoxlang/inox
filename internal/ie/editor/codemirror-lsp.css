@@ -11,9 +11,9 @@
 
 .CodeMirror-lsp-tooltip {
   position: absolute;
-  font-size: 12px;
-  background: white;
-  border: 1px solid black;
+  font-size: 15px;
+  background: var(--main-bg-color, grey);
+  border: var(--thin-border,  1px solid black);
   padding: 2px;
   z-index: 2;
 }
