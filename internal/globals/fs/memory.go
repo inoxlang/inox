@@ -38,6 +38,9 @@ func (fs MemFilesystem) Root() string {
 }
 
 func (fs MemFilesystem) Absolute(path string) (string, error) {
+	if filepath.IsAbs(path) {
+		return path, nil
+	}
 	return "", core.ErrNotImplemented
 }
 
