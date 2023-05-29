@@ -123,7 +123,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 				}
 				detail, _ := core.GetStringifiedSymbolicValue(ctx, patt, false)
 
-				s := "%" + name
+				s := parse.GetFirstTokenString(n)
 				completions = append(completions, Completion{
 					ShownString: s,
 					Value:       s,
@@ -137,7 +137,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 				if !strings.HasPrefix(name, n.Name) {
 					continue
 				}
-				s := "%" + name + "."
+				s := parse.GetFirstTokenString(n)
 				completions = append(completions, Completion{
 					ShownString: s,
 					Value:       s,
@@ -152,7 +152,10 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 					continue
 				}
 
-				s := "%" + patternData.Name
+				s := patternData.Name
+				if !n.Unprefixed {
+					s = "%" + s
+				}
 				completions = append(completions, Completion{
 					ShownString: s,
 					Value:       s,
@@ -165,7 +168,10 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 					continue
 				}
 
-				s := "%" + namespaceData.Name + "."
+				s := namespaceData.Name + "."
+				if !n.Unprefixed {
+					s = "%" + s
+				}
 				completions = append(completions, Completion{
 					ShownString: s,
 					Value:       s,
@@ -177,13 +183,16 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 	case *parse.PatternNamespaceIdentifierLiteral, *parse.PatternNamespaceMemberExpression:
 		var namespaceName string
 		var memberName string
+		var prefixed bool
 
 		switch node := n.(type) {
 		case *parse.PatternNamespaceIdentifierLiteral:
 			namespaceName = node.Name
+			prefixed = !node.Unprefixed
 		case *parse.PatternNamespaceMemberExpression:
 			namespaceName = node.Namespace.Name
 			memberName = node.MemberName.Name
+			prefixed = !node.Namespace.Unprefixed
 		}
 
 		if mode == ShellCompletions {
@@ -197,7 +206,10 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 					continue
 				}
 
-				s := "%" + namespaceName + "." + patternName
+				s := namespaceName + "." + patternName
+				if prefixed {
+					s = "%" + s
+				}
 				detail, _ := core.GetStringifiedSymbolicValue(ctx, patternValue, false)
 
 				completions = append(completions, Completion{
@@ -225,8 +237,10 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 					return nil
 				}
 
-				s := "%" + namespaceName + "." + patternName
-
+				s := namespaceName + "." + patternName
+				if prefixed {
+					s = "%" + s
+				}
 				completions = append(completions, Completion{
 					ShownString: s,
 					Value:       s,
