@@ -174,7 +174,13 @@ export class CodeMirrorAdapter {
 
     /** @param {string} mdown */
     const markdown2HTML = (mdown) => {
-      return marked.parse(mdown.replace(/^[\u200B\u200C\u200D\u200E\u200F\uFEFF]/,""))
+      // remove the most common zerowidth characters from the start of the file 
+      mdown = mdown.replace(/^[\u200B\u200C\u200D\u200E\u200F\uFEFF]/, "")
+
+      return marked.parse(mdown, {
+        mangle: false,
+        headerIds: false,
+      })
     }
 
     if (isMarkupContent(contents)) {

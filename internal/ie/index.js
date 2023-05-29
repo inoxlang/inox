@@ -1,90 +1,105 @@
-import { Go } from './wasm_exec.js';
-import './editor/codemirror.js'
+import "./editor/codemirror.js";
+
+//SHOW HINT
+import "./editor/addon/hint/show-hint.js";
 
 //JS
-import './editor/mode/javascript/javascript.js'
-import './editor/addon/hint/javascript-hint.js'
+import "./editor/mode/javascript/javascript.js";
+import "./editor/addon/hint/javascript-hint.js";
+
 
 //INOX
-import './editor/mode/inox/inox.js'
+import "./editor/mode/inox/inox.js";
 
 //LSP
-import {CodeMirrorAdapter} from './editor/lsp/lsp-adapter.js' 
-import {LspConnection} from './editor/lsp/connection.js' 
+import { CodeMirrorAdapter } from "./editor/lsp/lsp-adapter.js";
+import { LspConnection } from "./editor/lsp/connection.js";
 
+const inoxWorker = new Worker("./worker.js", {
+  type: "module",
+});
 
-//polyfill for WebAssembly.instantiateStreaming
-if (!WebAssembly.instantiateStreaming) {
-  WebAssembly.instantiateStreaming = async (resp, importObject) => {
-    const source = await (await resp).arrayBuffer();
-    return await WebAssembly.instantiate(source, importObject);
-  };
-}
-
-const go = new Go();
-
-/** @type {WebAssembly.Module} */
-let mod;
-
-/** @type {WebAssembly.Instance} */
-let inst;
+  /** @type {Record<string, ((response: unknown) => any)} */
+let responseCallbacks = {};
 
 /** 
-* @typedef { {
-* 	setup: (arg: {IWD: string, print_debug: Function}) => any,
-*   write_lsp_input: (s: string) => void,
-*   read_lsp_output: () => string
-* }} InoxExports
-*/
+ * @param {string} method
+ * @param {unknown} args
+ */
+const sendRequestToInoxWorker = async (method, args) => {
+  let id = Math.random() 
+  inoxWorker.postMessage({ method, args, id});
+  return new Promise((resolve, reject) => {
+    setTimeout(reject, 2000)
+    responseCallbacks[id] = resolve
+  })
+}
 
-WebAssembly.instantiateStreaming(
-  fetch("browser-lsp-server.wasm"),
-  go.importObject,
-).then(
-  async result => {
-    mod = result.module;
-    inst = result.instance;
+{
 
-    go.run(inst);
-
-    setTimeout(() => {
-      let exports = /** @type {InoxExports} */ (go.exports);
-  
-      exports.setup({
-        IWD: '/home/user',
-        print_debug: console.debug
-      })
-  
-      setupEditor(exports)
-    }, 10)
-  },
-);
-
-
-/** @param {InoxExports} exports */
-function setupEditor(exports){
-  let editor = CodeMirror(document.body, {
-    value: "fn myScript(){return 100;}\n",
-    mode:  "inox",
-    extraKeys: {
-      "Ctrl-Space": "autocomplete"
+  inoxWorker.addEventListener("message", (ev) => {
+    if (ev.data == "initialized") {
+      setupLSP();
+      return
     }
+
+    let {method, id, response} = ev.data
+    if(typeof id !== undefined){ //response
+      let callback = responseCallbacks[id]
+      if(callback){
+        delete responseCallbacks[id]
+        callback(response)
+      } else {
+        console.error('no response callback for reques with id', id)
+      }
+    } else { //notification 
+
+    }
+  
   });
+}
+
+
+let editor = CodeMirror(document.querySelector("#editor-wrapper"), {
+  value: "fn myScript(){return 100;}\n",
+  mode: "inox",
+  extraKeys: {
+    "Ctrl-Space": "autocomplete",
+  },
+});
+
+async function setupLSP() {
+  console.info("setup LSP client");
 
   /** @type {ILspOptions} */
   let lspOptions = {
     documentText: () => editor.getDoc().getValue(),
-    documentUri: 'file:///script.ix',
-    languageId: 'inox',
-    rootUri: 'file:///',
-    serverUri: ''
-  }
+    documentUri: "file:///script.ix",
+    languageId: "inox",
+    rootUri: "file:///",
+    serverUri: "",
+  };
 
-  let conn = new LspConnection(lspOptions, exports.write_lsp_input, exports.read_lsp_output)
-  conn.connect()
+  /** @param {string} data */
+  const writeInput = (data) => sendRequestToInoxWorker(
+    "write_lsp_input",
+    { input: data }
+  );
 
+  /** @returns {string} */
+  const readOutput = async () => {
+    let s = await sendRequestToInoxWorker("read_lsp_output");
+    if(typeof s != 'string'){
+      console.error('a string was expected')
+      return '';
+    }
+    return s
+  };
+
+  let conn = new LspConnection(lspOptions, writeInput, readOutput);
+  conn.connect();
 
   /** @type {ITextEditorOptions} */
-  let adapterOptions = {}
-  new CodeMirrorAdapter(conn, adapterOptions, editor)
+  let adapterOptions = {};
+  new CodeMirrorAdapter(conn, adapterOptions, editor);
 }

@@ -9,9 +9,9 @@ import {
   unregisterServerCapability,
 } from "./server-capability-registration.js";
 
-
-const NOT_CONNECTED = 'not connected'
-const CONTENT_LENGTH_HEADER = 'content-length: '
+const NOT_CONNECTED = "not connected";
+const CONTENT_LENGTH_HEADER = "content-length: ";
+const LOOP_WAIT_MILLIS = 80;
 
 /** @typedef {import('vscode-languageserver-protocol').ClientCapabilities} ClientCapabilities */
 /** @typedef {import('vscode-languageserver-protocol').ServerCapabilities} ServerCapabilities */
@@ -48,6 +48,7 @@ const CONTENT_LENGTH_HEADER = 'content-length: '
 /**
  * @typedef {((result: unknown, err: unknown) => any) & {timeoutHandle?: number}} RequestCallback
  * @typedef {((params: unknown) => any)} RequestHandler
+ * @typedef {((params: unknown) => any)} NotificationHandler
  */
 
 /** @implements {ILspConnection} */
@@ -68,10 +69,10 @@ export class LspConnection extends events.EventEmitter {
 
   //JSON RPC
 
-  /** @type {(arg: string) => any} */
+  /** @type {(arg: string) => Promise<void>} */
   writeToServer;
 
-  /** @type {() => string} readFromServer */
+  /** @type {() => Promise<string>} readFromServer */
   readFromServer;
 
   /** @type {Record<string, RequestCallback>} */
@@ -80,10 +81,13 @@ export class LspConnection extends events.EventEmitter {
   /** @type {Record<string, RequestHandler[]>} */
   incomingRequestHandlers = {};
 
+  /** @type {Record<string, NotificationHandler[]>} */
+  incomingNotificationHandlers = {};
+
   /**
    * @param {ILspOptions} options
-   * @param {(arg: string) => any} writeToServer
-   * @param {() => string} readFromServer
+   * @param {(arg: string) => Promise<void>} writeToServer
+   * @param {() => Promise<string>} readFromServer
    */
   constructor(options, writeToServer, readFromServer) {
     super();
@@ -97,7 +101,7 @@ export class LspConnection extends events.EventEmitter {
    */
   connect() {
     setTimeout(() => {
-      this.isConnected = true
+      this.isConnected = true;
       this.startLoopAsync();
     }, 0);
 
@@ -176,59 +180,73 @@ export class LspConnection extends events.EventEmitter {
       {
         let chunk = "";
 
-        while ((chunk = this.readFromServer()) != "") {
-          await sleepMillis(2000);
+        while ((chunk =  await this.readFromServer()) != "") {
+          await sleepMillis(LOOP_WAIT_MILLIS);
           serverOutput += chunk;
         }
       }
-   
-      if(serverOutput.trim() == '') {
-        serverOutput = ''
-        await sleepMillis(2000);
-        continue
+
+      if (serverOutput.trim() == "") {
+        serverOutput = "";
+        await sleepMillis(LOOP_WAIT_MILLIS);
+        continue;
       }
 
       //parse & handle a single request
-      let originalServerOutput = serverOutput
+      let originalServerOutput = serverOutput;
 
-      if(!serverOutput.toLowerCase().startsWith(CONTENT_LENGTH_HEADER)){
-        console.error('JSON RPC request not starting with "content-length:" ->', serverOutput)
-        await sleepMillis(2000);
-        continue
+      if (!serverOutput.toLowerCase().startsWith(CONTENT_LENGTH_HEADER)) {
+        console.error(
+          'JSON RPC request not starting with "content-length:" ->',
+          serverOutput,
+        );
+        await sleepMillis(LOOP_WAIT_MILLIS);
+        continue;
       }
 
-      serverOutput = serverOutput.slice(CONTENT_LENGTH_HEADER.length).trim()
-      if(serverOutput.match(/^[ \t]*\d+\r\n\r\n/)){
-        const crIndex = serverOutput.indexOf('\r')
+      serverOutput = serverOutput.slice(CONTENT_LENGTH_HEADER.length).trim();
+      if (serverOutput.match(/^[ \t]*\d+\r\n\r\n/)) {
+        const crIndex = serverOutput.indexOf("\r");
 
-        let contentLength = Number.parseInt(serverOutput.slice(0, crIndex).trim())
+        let contentLength = Number.parseInt(
+          serverOutput.slice(0, crIndex).trim(),
+        );
 
-        if(isNaN(contentLength)){
-          console.error('JSON RPC request has invalid content-length header ->', originalServerOutput)
-          continue
+        if (isNaN(contentLength)) {
+          console.error(
+            "JSON RPC request has invalid content-length header ->",
+            originalServerOutput,
+          );
+          continue;
         }
 
         //remove header & linefeeds
-        serverOutput = serverOutput.slice(crIndex+4)
+        serverOutput = serverOutput.slice(crIndex + 4);
 
-        let encodedContent = encodeString(serverOutput).slice(0, contentLength)
-        let decodedContent = decodeString(encodedContent)
+        let encodedContent = encodeString(serverOutput).slice(0, contentLength);
+        let decodedContent = decodeString(encodedContent);
 
         //remove content from server output
-        serverOutput = serverOutput.slice(decodedContent.length)
+        serverOutput = serverOutput.slice(decodedContent.length);
 
         try {
           let json = JSON.parse(decodedContent);
           this.handleRPC(json);
-        } catch(err){
-          console.error("error while parsing & handling JSON RPC request", err, "\nrequest:", decodedContent)
+        } catch (err) {
+          console.error(
+            "error while parsing & handling JSON RPC request",
+            err,
+            "\nrequest:",
+            decodedContent,
+          );
         }
-      
       } else {
-        console.error('JSON RPC request has invalid content-length header ->', originalServerOutput)
-        continue
+        console.error(
+          "JSON RPC request has invalid content-length header ->",
+          originalServerOutput,
+        );
+        continue;
       }
-    
     }
   }
 
@@ -263,10 +281,37 @@ export class LspConnection extends events.EventEmitter {
 
         callback(result, error);
       } else { //request sent by the server
-        console.debug('receive request from the server')
+
+        if(! ('method' in json) || (typeof json.method !== 'string')) {
+          console.error("missing/invalid .method in request sent by server:", json);
+          return
+        }
+
+        if(! ('params' in json)) {
+          console.error("missing .params in request sent by server:", json);
+          return
+        }
+
+        console.debug("receive request from the server", json.method);
+
+        let handlers = this.incomingRequestHandlers[json.method]
+        handlers.forEach(handler => handler(json.params))
       }
     } else { //notification sent by the server
-      console.debug('receive notifcation from the server')
+
+      if(! ('method' in json) || (typeof json.method !== 'string')) {
+        console.error("missing/invalid .method in notification sent by server:", json);
+        return
+      }
+
+      if(! ('params' in json)) {
+        console.error("missing .params in request notification by server:", json);
+        return
+      }
+
+      console.debug("receive notifcation from the server", json.method);
+      let handlers = this.incomingNotificationHandlers[json.method]
+      handlers.forEach(handler => handler(json.params))
     }
   }
 
@@ -284,7 +329,7 @@ export class LspConnection extends events.EventEmitter {
       method: method,
       params: params,
       id: requestId,
-    })
+    });
 
     this.sendJSON(req);
 
@@ -310,32 +355,34 @@ export class LspConnection extends events.EventEmitter {
    * @param {any} params
    */
   sendNotification(method, params) {
-    console.debug("send notification ", method);
+    console.debug("send notification", method);
 
     let notification = JSON.stringify({
       method: method,
       params: params,
-    })
+    });
 
     this.sendJSON(notification);
   }
 
   /** @param {string} json */
-  sendJSON(json){
-    let req = (
-      'Content-Length: ' + String(new TextEncoder().encode(json).byteLength) + '\r\n\r\n' +
-      json
-    )
+  sendJSON(json) {
+    let req = "Content-Length: " +
+      String(new TextEncoder().encode(json).byteLength) + "\r\n\r\n" +
+      json;
 
     this.writeToServer(req);
   }
 
   /**
    * @param {string} method
-   * @param {Function} listener
+   * @param {NotificationHandler} handler
    */
-  onNotification(method, listener) {
-    console.debug("notification received ", method);
+  onNotification(method, handler) {
+    this.incomingNotificationHandlers[method] =
+      this.incomingNotificationHandlers[method] || [];
+
+    this.incomingNotificationHandlers[method].push(handler);
   }
 
   /**
@@ -345,6 +392,7 @@ export class LspConnection extends events.EventEmitter {
   onRequest(method, handler) {
     this.incomingRequestHandlers[method] =
       this.incomingRequestHandlers[method] || [];
+
     this.incomingRequestHandlers[method].push(handler);
   }
 
@@ -725,7 +773,7 @@ export class LspConnection extends events.EventEmitter {
    */
   getLanguageCompletionCharacters() {
     if (!this.isConnected) {
-      throw new Error(NOT_CONNECTED)
+      throw new Error(NOT_CONNECTED);
     }
     if (
       !(
@@ -745,7 +793,7 @@ export class LspConnection extends events.EventEmitter {
    */
   getLanguageSignatureCharacters() {
     if (!this.isConnected) {
-      throw new Error(NOT_CONNECTED)
+      throw new Error(NOT_CONNECTED);
     }
     if (
       !(
@@ -803,17 +851,17 @@ function sleepMillis(timeMillis) {
   });
 }
 
-const encoder = new TextEncoder()
-const decoder = new TextDecoder()
+const encoder = new TextEncoder();
+const decoder = new TextDecoder();
 
 /** @param {string} s */
-function encodeString(s){
-  return encoder.encode(s)
+function encodeString(s) {
+  return encoder.encode(s);
 }
 
 /** @param {Uint8Array} a */
-function decodeString(a){
-  return decoder.decode(a)
+function decodeString(a) {
+  return decoder.decode(a);
 }
 
 export default LspConnection;
