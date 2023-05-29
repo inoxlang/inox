@@ -293,6 +293,23 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY, res)
 		})
 
+		t.Run("value not assignable to type (unprefixed named pattern)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var a str = 1; 
+				return a
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			decl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(decl.Right, state,
+					fmtNotAssignableToVarOftype(&Int{}, &TypePattern{val: ANY_STR_LIKE})),
+			}, state.errors)
+			assert.Equal(t, ANY, res)
+		})
+
 		t.Run("object (ability to hold static data) is not assignable to type", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				var a %str = {}; 
@@ -1552,6 +1569,23 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Nil(t, res)
 		})
 
+		t.Run("invalid return value (annotation is a unprefixed named pattern)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f() int {
+					return "a"
+				}
+			`)
+
+			returnStmt := parse.FindNode(n, (*parse.ReturnStatement)(nil), nil)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(returnStmt, state, fmtInvalidReturnValue(&String{}, &Int{})),
+			}, state.errors)
+			assert.Nil(t, res)
+		})
+
 		t.Run("missing unconditional return", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(a) %int {
@@ -2116,9 +2150,43 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &Int{}, res)
 		})
 
+		t.Run("invalid argument (unprefixed pattern)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(x int){
+					return 1
+				}
+	
+				return f("a")
+			`)
+
+			call := n.Statements[1].(*parse.ReturnStatement).Expr.(*parse.CallExpression)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(call.Arguments[0], state, FmtInvalidArg(0, &String{}, &Int{})),
+			}, state.errors)
+			assert.Equal(t, &Int{}, res)
+		})
+
 		t.Run("valid argument", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(x %int){
+					return 1
+				}
+	
+				return f(0)
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, &Int{}, res)
+		})
+
+		t.Run("valid argument (unprefixed pattern)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(x int){
 					return 1
 				}
 	
@@ -3997,7 +4065,7 @@ func TestSymbolicEval(t *testing.T) {
 						d: 1
 					}
 					e: 2
-					f: {}
+					f: %({})
 				}
 			`)
 
@@ -4108,6 +4176,47 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("object pattern literal", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				%p = %{list: %[1]}
+				return %p
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, &ObjectPattern{
+				entries: map[string]Pattern{
+					"list": &ListPattern{
+						elements: []Pattern{
+							&ExactValuePattern{value: &Int{}},
+						},
+					},
+				},
+				inexact: true,
+			}, res)
+
+			//check context data
+
+			pattern := state.ctx.ResolveNamedPattern("p")
+			returnStmt, ancestors := parse.FindNodeAndChain(n, (*parse.ReturnStatement)(nil), nil)
+
+			data, ok := state.symbolicData.GetContextData(returnStmt, ancestors)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			//ignore definition positions
+			for i := range data.Patterns {
+				data.Patterns[i].DefinitionPosition = parse.SourcePositionRange{}
+			}
+
+			assert.Contains(t, data.Patterns, NamedPatternData{
+				Name:  "p",
+				Value: pattern,
+			})
+		})
+
+		t.Run("unprefixed object pattern literal", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				%p = {list: [1]}
 				return %p
 			`)
 
@@ -4392,7 +4501,7 @@ func TestSymbolicEval(t *testing.T) {
 				},
 				static: map[string]Pattern{
 					"a": &ExactValuePattern{value: &Int{}},
-					"b": &ExactValuePattern{value: NewList(&Int{})},
+					"b": NewListPattern([]Pattern{NewExactValuePattern(ANY_INT)}),
 				},
 			}
 			assert.Equal(t, expectedObject, varInfo.value)

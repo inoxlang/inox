@@ -1730,6 +1730,10 @@ func symbolicallyEvalPatternNode(n parse.Node, state *State) (Pattern, error) {
 			return nil, err
 		}
 
+		if p, ok := v.(*ExactValuePattern); ok {
+			return p, nil
+		}
+
 		return &ExactValuePattern{value: v}, nil
 	}
 }
