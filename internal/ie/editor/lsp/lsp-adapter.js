@@ -9,21 +9,22 @@
 /** @typedef {import('vscode-languageserver-protocol').Location} Location */
 /** @typedef {import('vscode-languageserver-protocol').LocationLink} LocationLink */
 /** @typedef {import('vscode-languageserver-protocol').MarkupContent} MarkupContent */
+/** @typedef {import('vscode-languageserver-protocol').CompletionItem} CompletionItem */
 
 
 import debounce from "../../debounce.js";
 import "./marked.min.js";
 import "../../purify.min.js";
 
+/** @type {CompletionTriggerKind} */
+const CompletionTriggerKind_Invoked = 1;
 
 /** @type {CompletionTriggerKind} */
-const CompletionTriggerKind_Invoked = 1
+const CompletionTriggerKind_TriggerCharacter = 2;
 
 /** @type {CompletionTriggerKind} */
-const CompletionTriggerKind_TriggerCharacter = 2
-
-/** @type {CompletionTriggerKind} */
-const CompletionTriggerKind_TriggerCharacter_TriggerForIncompleteCompletions = 3
+const CompletionTriggerKind_TriggerCharacter_TriggerForIncompleteCompletions =
+  3;
 
 export class CodeMirrorAdapter {
   markedDiagnostics = [];
@@ -32,6 +33,7 @@ export class CodeMirrorAdapter {
   editorListeners = {};
   documentListeners = {};
   isShowingContextMenu = false;
+  isShowingHoverTooltip = false;
 
   /**
    * @param {ILspConnection} connection
@@ -60,6 +62,11 @@ export class CodeMirrorAdapter {
       !this._isEventInsideVisible(ev) ||
       !this._isEventOnCharacter(ev)
     ) {
+
+      if (this.isShowingHoverTooltip) {
+        this._removeTooltip();
+      }
+
       return;
     }
 
@@ -137,7 +144,7 @@ export class CodeMirrorAdapter {
     }
   }
 
-  handleHover(response) {
+  handleHoverResponse(response) {
     this._removeHover();
     this._removeTooltip();
 
@@ -170,18 +177,18 @@ export class CodeMirrorAdapter {
     let tooltipText;
     let tooltipUnsafeHTML;
 
-    const contents = response.contents
+    const contents = response.contents;
 
     /** @param {string} mdown */
     const markdown2HTML = (mdown) => {
-      // remove the most common zerowidth characters from the start of the file 
-      mdown = mdown.replace(/^[\u200B\u200C\u200D\u200E\u200F\uFEFF]/, "")
+      // remove the most common zerowidth characters from the start of the file
+      mdown = mdown.replace(/^[\u200B\u200C\u200D\u200E\u200F\uFEFF]/, "");
 
       return marked.parse(mdown, {
         mangle: false,
         headerIds: false,
-      })
-    }
+      });
+    };
 
     if (isMarkupContent(contents)) {
       tooltipUnsafeHTML = markdown2HTML(contents.value);
@@ -202,7 +209,7 @@ export class CodeMirrorAdapter {
 
     const htmlElement = document.createElement("div");
 
-    if(tooltipUnsafeHTML){
+    if (tooltipUnsafeHTML) {
       htmlElement.innerHTML = DOMPurify.sanitize(tooltipUnsafeHTML);
     } else {
       htmlElement.innerText = tooltipText;
@@ -213,15 +220,25 @@ export class CodeMirrorAdapter {
       x: coords.left,
       y: coords.top,
     });
+    this.isShowingHoverTooltip = true;
   }
 
   handleHighlight(items) {
     this._highlightRanges((items || []).map((i) => i.range));
   }
 
-  handleCompletion(completions) {
+  handleCompletionResponse(completions) {
     if (!this.token) {
       return;
+    }
+
+    if(! Array.isArray(completions) || !completions.every(isCompletionItem)){
+        console.error('completions should be a list')
+        return
+    }
+
+    if(completions.length == 0 || (completions.length == 1 && completions[0].label == this.token.text)){
+        return
     }
 
     const bestCompletions = this._getFilteredCompletions(
@@ -370,9 +387,9 @@ export class CodeMirrorAdapter {
 
     const self = this;
     this.connectionListeners = {
-      hover: this.handleHover.bind(self),
+      hover: this.handleHoverResponse.bind(self),
       highlight: this.handleHighlight.bind(self),
-      completion: this.handleCompletion.bind(self),
+      completion: this.handleCompletionResponse.bind(self),
       signature: this.handleSignature.bind(self),
       diagnostic: this.handleDiagnostic.bind(self),
       goTo: this.handleGoTo.bind(self),
@@ -446,6 +463,11 @@ export class CodeMirrorAdapter {
     };
   }
 
+  /**
+   * @param {string} triggerWord 
+   * @param {CompletionItem[]} items 
+   * @returns 
+   */
   _getFilteredCompletions(triggerWord, items) {
     if (/\W+/.test(triggerWord)) {
       return items;
@@ -583,6 +605,7 @@ export class CodeMirrorAdapter {
     }
   }
 
+  //show tooltip for hover | completion | signature help.
   _showTooltip(el, coords) {
     if (this.isShowingContextMenu) {
       return;
@@ -610,6 +633,7 @@ export class CodeMirrorAdapter {
   }
 
   _removeTooltip() {
+    this.isShowingHoverTooltip = false;
     if (this.tooltip) {
       this.isShowingContextMenu = false;
       this.tooltip.remove();
@@ -713,10 +737,21 @@ function isLocation(arg) {
 }
 
 //good enough
-/** 
- * @param {unknown} arg 
+/**
+ * @param {unknown} arg
  * @returns {arg is MarkupContent}
-*/
+ */
 function isMarkupContent(arg) {
   return typeof arg == "object" && "kind" in arg;
 }
+
+
+//good enough
+/**
+ * @param {unknown} arg
+ * @returns {arg is CompletionItem}
+ */
+function isCompletionItem(arg) {
+    return typeof arg == "object" && ("label" in arg) && (typeof arg.label == 'string');
+  }
+  

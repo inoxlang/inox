@@ -11,7 +11,7 @@ import {
 
 const NOT_CONNECTED = "not connected";
 const CONTENT_LENGTH_HEADER = "content-length: ";
-const LOOP_WAIT_MILLIS = 80;
+const LOOP_WAIT_MILLIS = 5;
 
 /** @typedef {import('vscode-languageserver-protocol').ClientCapabilities} ClientCapabilities */
 /** @typedef {import('vscode-languageserver-protocol').ServerCapabilities} ServerCapabilities */

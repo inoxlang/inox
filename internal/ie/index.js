@@ -86,7 +86,7 @@ async function setupLSP() {
     { input: data }
   );
 
-  /** @returns {string} */
+  /** @returns {Promise<string>} */
   const readOutput = async () => {
     let s = await sendRequestToInoxWorker("read_lsp_output");
     if(typeof s != 'string'){
