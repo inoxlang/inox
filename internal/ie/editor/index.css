@@ -78,6 +78,10 @@ body {
     padding: 7px;
 }
 
+.cm-s-default .cm-error {
+    border-bottom: 1px dashed red;
+}
+
 .cm-s-default .cm-variable {
     color: var(--editor-default-syntax-color);
 }

@@ -18,6 +18,10 @@
   z-index: 2;
 }
 
+.CodeMirror-lsp-tooltip pre {
+  margin: 0.1em;
+}
+
 .CodeMirror-lsp-context > * {
   padding: 5px;
   border-bottom: 1px solid #ccc;
