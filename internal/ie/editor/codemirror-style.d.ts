@@ -9,6 +9,7 @@ declare type style_name =
   | "operator"
   | "variable-2"
   | "variable-3"
+  | "type"
   | "comment"
   | "string"
   | "string-2"

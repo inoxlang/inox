@@ -7,7 +7,12 @@
 
     --editor-default-syntax-color: rgb(204, 202, 202);
     --editor-keyword-color: rgb(235, 126, 226);
+    --editor-stringlike-literal-color: rgba(255, 166, 106);
     --editor-numberlike-literal-color: rgb(61, 223, 61);
+    --editor-pattern-name-color: rgb(83, 214, 188);
+    --editor-constant-color: rgba(74, 140, 240);
+    --editor-property-color:rgb(156, 191, 243);
+    --editor-comment-color: rgb(106, 153, 85);
 }
 
 /* RESET */
@@ -42,6 +47,11 @@ html {
     font-size: 14px;
 }
 
+body {
+    height: 100%;
+    overflow: hidden;
+}
+
 
 @font-face {
     font-family: 'Droid Sans Mono';
@@ -51,23 +61,59 @@ html {
     font-style: normal;
 }
 
+
+#editor-wrapper {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+
 /* OVERRIDE CODE MIRROR STYLES */
 
 .CodeMirror {
     font-family: 'Droid Sans Mono';
     background-color: var(--main-bg-color);
-}
-
-.cm-s-default .cm-keyword {
-    color: var(--editor-keyword-color);
+    height: 100%;
+    width: 100%;
+    padding: 7px;
 }
 
 .cm-s-default .cm-variable {
     color: var(--editor-default-syntax-color);
 }
 
+.cm-s-default .cm-punctuation, .cm-s-default .cm-operator {
+    color: var(--editor-default-syntax-color);
+}
+
+.cm-s-default .cm-keyword {
+    color: var(--editor-keyword-color);
+}
+
+
 .cm-s-default .cm-number {
     color: var(--editor-numberlike-literal-color);
+}
+
+.cm-s-default .cm-type {
+    color: var(--editor-pattern-name-color);
+}
+
+.cm-s-default .cm-string {
+    color: var(--editor-stringlike-literal-color);
+}
+
+.cm-s-default .cm-atom {
+    color: var(--editor-constant-color);
+}
+
+.cm-s-default .cm-property {
+    color: var(--editor-property-color);
+}
+
+
+.cm-s-default .cm-comment {
+    color: var(--editor-comment-color);
 }
 
 .CodeMirror-cursor {
