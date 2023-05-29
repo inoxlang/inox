@@ -4963,6 +4963,39 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, NewExactStringPattern(Str("s")), res)
 		})
 
+		t.Run("RHS is an unprefixed object pattern", func(t *testing.T) {
+			code := `%o = {}; return %o`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, NewInexactObjectPattern(map[string]Pattern{}), res)
+		})
+
+		t.Run("RHS is a prefixed object pattern", func(t *testing.T) {
+			code := `%o = %{}; return %o`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, NewInexactObjectPattern(map[string]Pattern{}), res)
+		})
+
+		t.Run("RHS is an unprefixed object pattern with a unprefixed property pattern", func(t *testing.T) {
+			code := `%o = {a: int}; return %o`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.Ctx.AddNamedPattern("int", INT_PATTERN)
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, NewInexactObjectPattern(map[string]Pattern{
+				"a": INT_PATTERN,
+			}), res)
+		})
+
 		t.Run("pattern definition & identifiers : RHS is another pattern identifier", func(t *testing.T) {
 			code := `%p = "p"; 
 			%s = %p; 
@@ -5107,6 +5140,21 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				entryPatterns: map[string]Pattern{
 					"name":  NewExactStringPattern(Str("s")),
 					"count": &ExactValuePattern{value: Int(2)},
+				},
+			}, res)
+		})
+
+		t.Run("unprefixed named pattern", func(t *testing.T) {
+			code := `%s = "s"; return %{name: s}`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, &ObjectPattern{
+				inexact: true,
+				entryPatterns: map[string]Pattern{
+					"name": NewExactStringPattern(Str("s")),
 				},
 			}, res)
 		})
@@ -5284,7 +5332,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}, res)
 		})
 
-		t.Run("single element: object", func(t *testing.T) {
+		t.Run("single element: empty object pattern", func(t *testing.T) {
 			code := `%[ {} ]`
 
 			state := NewGlobalState(NewDefaultTestContext())
@@ -5293,7 +5341,21 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.NoError(t, err)
 			assert.Equal(t, &ListPattern{
 				elementPatterns: []Pattern{
-					&ExactValuePattern{value: &Object{}},
+					NewInexactObjectPattern(map[string]Pattern{}),
+				},
+			}, res)
+		})
+
+		t.Run("single element: empty object", func(t *testing.T) {
+			code := `%[ %({}) ]`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, &ListPattern{
+				elementPatterns: []Pattern{
+					NewExactValuePattern(NewObject()),
 				},
 			}, res)
 		})
@@ -5328,6 +5390,36 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					inexact:       true,
 					entryPatterns: map[string]Pattern{},
 				},
+			}, res)
+		})
+
+		t.Run("general element is an unprefixed object pattern literal", func(t *testing.T) {
+			code := `%[]%{}`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, &ListPattern{
+				elementPatterns: nil,
+				generalElementPattern: &ObjectPattern{
+					inexact:       true,
+					entryPatterns: map[string]Pattern{},
+				},
+			}, res)
+		})
+
+		t.Run("general element is an unprefixed named pattern", func(t *testing.T) {
+			code := `%[]int`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.Ctx.AddNamedPattern("int", INT_PATTERN)
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, &ListPattern{
+				elementPatterns:       nil,
+				generalElementPattern: INT_PATTERN,
 			}, res)
 		})
 	})

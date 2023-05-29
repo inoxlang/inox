@@ -796,7 +796,7 @@ func NewExactObjectPattern(entries map[string]Pattern) *ObjectPattern {
 	return &ObjectPattern{entryPatterns: entries}
 }
 
-func NewInexactExactObjectPattern(entries map[string]Pattern) *ObjectPattern {
+func NewInexactObjectPattern(entries map[string]Pattern) *ObjectPattern {
 	return &ObjectPattern{entryPatterns: entries, inexact: true}
 }
 
