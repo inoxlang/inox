@@ -136,9 +136,10 @@ func ParseChunk2(str string, fpath string) (runes []rune, result *Chunk, resultE
 
 // a parser parses a single Inox module, it can recover from errors
 type parser struct {
-	s   []rune //module's code
-	i   int32  //rune index
-	len int32
+	s         []rune //module's code
+	i         int32  //rune index
+	len       int32
+	inPattern bool
 }
 
 func newParser(s []rune) *parser {
@@ -2343,9 +2344,17 @@ func (p *parser) parsePercentAlphaStartingExpr() Node {
 	return left
 }
 
-func (p *parser) parsePatternUnion(start int32) *PatternUnion {
-	var cases []Node
-	tokens := []Token{{Type: PATTERN_UNION_OPENING_PIPE, Span: NodeSpan{p.i - 1, p.i + 1}}}
+func (p *parser) parsePatternUnion(start int32, isPercentPrefixed bool) *PatternUnion {
+	var (
+		cases  []Node
+		tokens []Token
+	)
+
+	if isPercentPrefixed {
+		tokens = []Token{{Type: PATTERN_UNION_OPENING_PIPE, Span: NodeSpan{p.i - 1, p.i + 1}}}
+	} else {
+		tokens = []Token{{Type: PATTERN_UNION_PIPE, Span: NodeSpan{p.i, p.i + 1}}}
+	}
 
 	p.i++
 	p.eatSpace()
@@ -2616,19 +2625,25 @@ func (p *parser) parsePatternCall(callee Node) *PatternCallExpression {
 	}
 }
 
-func (p *parser) parseObjectPatternLiteral() *ObjectPatternLiteral {
+func (p *parser) parseObjectPatternLiteral(percentPrefixed bool) *ObjectPatternLiteral {
 	var (
-		unamedPropCount = 0
-		properties      []*ObjectPatternProperty
-		spreadElements  []*PatternPropertySpreadElement
-		parsingErr      *ParsingError
-		tokens          []Token
-		exact           = false
+		unamedPropCount    = 0
+		properties         []*ObjectPatternProperty
+		spreadElements     []*PatternPropertySpreadElement
+		parsingErr         *ParsingError
+		tokens             []Token
+		exact              = false
+		objectPatternStart int32
 	)
 
-	patternOpeningBraceIndex := p.i - 1
+	if percentPrefixed {
+		tokens = []Token{{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{p.i - 1, p.i + 1}}}
+		objectPatternStart = p.i - 1
+	} else {
+		tokens = []Token{{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}}}
+		objectPatternStart = p.i
+	}
 
-	tokens = []Token{{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{p.i - 1, p.i + 1}}}
 	p.i++
 
 	//entry
@@ -2699,9 +2714,13 @@ object_pattern_top_loop:
 			})
 
 		} else {
+			prev := p.inPattern
+			p.inPattern = false
 
 			key, isMissingExpr = p.parseExpression()
 			keyOrVal = key
+
+			p.inPattern = prev
 
 			//if missing expression we report an error and we continue the main loop
 			if isMissingExpr {
@@ -2942,7 +2961,7 @@ object_pattern_top_loop:
 	}
 
 	base := NodeBase{
-		Span:            NodeSpan{patternOpeningBraceIndex, p.i},
+		Span:            NodeSpan{objectPatternStart, p.i},
 		Err:             parsingErr,
 		ValuelessTokens: tokens,
 	}
@@ -2955,14 +2974,24 @@ object_pattern_top_loop:
 	}
 }
 
-func (p *parser) parseListPatternLiteral() Node {
+func (p *parser) parseListPatternLiteral(percentPrefixed bool) Node {
 	openingBracketIndex := p.i
 	p.i++
 
 	var (
 		elements        []Node
-		valuelessTokens = []Token{{Type: OPENING_LIST_PATTERN_BRACKET, Span: NodeSpan{openingBracketIndex - 1, openingBracketIndex + 1}}}
+		valuelessTokens []Token
+		start           int32
 	)
+
+	if percentPrefixed {
+		valuelessTokens = []Token{{Type: OPENING_LIST_PATTERN_BRACKET, Span: NodeSpan{openingBracketIndex - 1, openingBracketIndex + 1}}}
+		start = openingBracketIndex - 1
+	} else {
+		valuelessTokens = []Token{{Type: OPENING_BRACKET, Span: NodeSpan{openingBracketIndex, openingBracketIndex + 1}}}
+		start = openingBracketIndex
+	}
+
 	for p.i < p.len && p.s[p.i] != ']' {
 		p.eatSpaceNewlineCommaComment(&valuelessTokens)
 
@@ -2982,6 +3011,7 @@ func (p *parser) parseListPatternLiteral() Node {
 
 		p.eatSpaceNewlineCommaComment(&valuelessTokens)
 	}
+
 	var parsingErr *ParsingError
 
 	if p.i >= p.len || p.s[p.i] != ']' {
@@ -2992,18 +3022,18 @@ func (p *parser) parseListPatternLiteral() Node {
 	}
 
 	var generalElement Node
-	if p.i < p.len && p.s[p.i] == '%' {
+	if p.i < p.len && (p.s[p.i] == '%' || isFirstIdentChar(p.s[p.i]) || isOpeningDelim(p.s[p.i])) {
 		if len32(elements) > 0 {
 			parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_LIST_PATT_GENERAL_ELEMENT_IF_ELEMENTS}
 		} else {
 			elements = nil
 		}
-		generalElement = p.parsePercentPrefixedPattern()
+		generalElement, _ = p.parseExpression()
 	}
 
 	return &ListPatternLiteral{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{openingBracketIndex - 1, p.i},
+			Span:            NodeSpan{start, p.i},
 			Err:             parsingErr,
 			ValuelessTokens: valuelessTokens,
 		},
@@ -3748,7 +3778,13 @@ func (p *parser) parsePercentPrefixedPattern() Node {
 
 	switch p.s[p.i] {
 	case '|':
-		union := p.parsePatternUnion(start)
+		prev := p.inPattern
+		defer func() {
+			p.inPattern = prev
+		}()
+		p.inPattern = true
+
+		union := p.parsePatternUnion(start, true)
 		p.eatSpace()
 
 		return union
@@ -3759,11 +3795,27 @@ func (p *parser) parsePercentPrefixedPattern() Node {
 		p.i++
 		return p.parseURLLikePattern(start)
 	case '{':
-		return p.parseObjectPatternLiteral()
+		prev := p.inPattern
+		defer func() {
+			p.inPattern = prev
+		}()
+		p.inPattern = true
+
+		return p.parseObjectPatternLiteral(true)
 	case '[':
-		return p.parseListPatternLiteral()
+		prev := p.inPattern
+		defer func() {
+			p.inPattern = prev
+		}()
+		p.inPattern = true
+
+		return p.parseListPatternLiteral(true)
 	case '(': //pattern conversion expresison
+		prev := p.inPattern
+		p.inPattern = false
 		e, _ := p.parseExpression()
+
+		p.inPattern = prev
 		return &PatternConversionExpression{
 			NodeBase: NodeBase{
 				Span:            NodeSpan{start, e.Base().Span.End},
@@ -3807,6 +3859,12 @@ func (p *parser) parsePercentPrefixedPattern() Node {
 			Raw:   raw,
 		}
 	case '-':
+		prev := p.inPattern
+		defer func() {
+			p.inPattern = prev
+		}()
+		p.inPattern = true
+
 		p.i++
 		if p.i >= p.len {
 			return &OptionPatternLiteral{
@@ -5754,7 +5812,26 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 			if isKeyword(name) {
 				return v, false
 			}
+			if p.inPattern {
+				return &PatternIdentifierLiteral{
+					NodeBase:   v.NodeBase,
+					Unprefixed: true,
+					Name:       v.Name,
+				}, false
+			}
 		case *IdentifierMemberExpression:
+			if p.inPattern && len(v.PropertyNames) == 1 {
+				return &PatternNamespaceMemberExpression{
+					NodeBase: v.NodeBase,
+					Namespace: &PatternNamespaceIdentifierLiteral{
+						NodeBase:   v.Left.NodeBase,
+						Unprefixed: true,
+						Name:       v.Left.Name,
+					},
+					MemberName: v.PropertyNames[0],
+				}, false
+			}
+
 			name = v.Left.Name
 		case *SelfExpression, *MemberExpression:
 			lhs = identStartingExpr
@@ -5784,9 +5861,20 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 	case '1', '2', '3', '4', '5', '6', '7', '8', '9':
 		return p.parseNumberAndRangeAndRateLiterals(), false
 	case '{':
+		if p.inPattern {
+			return p.parseObjectPatternLiteral(false), false
+		}
 		return p.parseObjectOrRecordLiteral(false), false
 	case '[':
+		if p.inPattern {
+			return p.parseListPatternLiteral(false), false
+		}
 		return p.parseListOrTupleLiteral(false), false
+	case '|':
+		if p.inPattern {
+			return p.parsePatternUnion(p.i, false), false
+		}
+		break
 	case '\'':
 		return p.parseRuneRuneRange(), false
 	case '"':
@@ -6381,7 +6469,11 @@ func (p *parser) parseSingleLocalVarDeclaration(declarations *[]*LocalVariableDe
 
 	p.eatSpace()
 
-	if p.i >= p.len || (p.s[p.i] != '=' && p.s[p.i] != '%') {
+	isAcceptedFirstTypeChar := func(r rune) bool {
+		return r == '%' || isFirstIdentChar(r) || isOpeningDelim(r)
+	}
+
+	if p.i >= p.len || (p.s[p.i] != '=' && !isAcceptedFirstTypeChar(p.s[p.i])) {
 		if ident != nil {
 			declParsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidLocalVarDeclMissingEqualSign(ident.Name)}
 		}
@@ -6401,8 +6493,12 @@ func (p *parser) parseSingleLocalVarDeclaration(declarations *[]*LocalVariableDe
 
 	var type_ Node
 
-	if p.s[p.i] == '%' {
-		type_ = p.parsePercentPrefixedPattern()
+	if isAcceptedFirstTypeChar(p.s[p.i]) {
+		prev := p.inPattern
+		p.inPattern = true
+
+		type_, _ = p.parseExpression()
+		p.inPattern = prev
 	}
 
 	p.eatSpace()
@@ -6444,7 +6540,6 @@ func (p *parser) parseSingleLocalVarDeclaration(declarations *[]*LocalVariableDe
 }
 
 func (p *parser) parseLocalVariableDeclarations(varKeywordBase NodeBase) *LocalVariableDeclarations {
-
 	var (
 		start           = varKeywordBase.Span.Start
 		valuelessTokens = []Token{{Type: VAR_KEYWORD, Span: varKeywordBase.Span}}
@@ -7840,7 +7935,15 @@ func (p *parser) parseFunction(start int32) Node {
 		} else {
 			p.eatSpace()
 
-			typ, isMissingExpr = p.parseExpression()
+			{
+				prev := p.inPattern
+				p.inPattern = true
+
+				typ, isMissingExpr = p.parseExpression()
+
+				p.inPattern = prev
+			}
+
 			if isMissingExpr {
 				typ = nil
 			}
@@ -7880,7 +7983,6 @@ func (p *parser) parseFunction(start int32) Node {
 	}
 
 	var (
-		manifest         *Manifest
 		returnType       Node
 		body             Node
 		isBodyExpression bool
@@ -7899,13 +8001,18 @@ func (p *parser) parseFunction(start int32) Node {
 
 		p.eatSpace()
 
-		if p.i < p.len && p.s[p.i] == '%' {
-			returnType = p.parsePercentPrefixedPattern()
+		isAcceptedFirstTypeChar := func(r rune) bool {
+			return r == '%' || isFirstIdentChar(r) || r == '(' || r == '['
 		}
 
-		p.eatSpace()
+		if p.i < p.len && isAcceptedFirstTypeChar(p.s[p.i]) {
+			prev := p.inPattern
+			p.inPattern = true
 
-		manifest = p.parseManifestIfPresent()
+			returnType, _ = p.parseExpression()
+
+			p.inPattern = prev
+		}
 
 		p.eatSpace()
 		if p.i >= p.len {
@@ -7949,7 +8056,6 @@ func (p *parser) parseFunction(start int32) Node {
 		IsVariadic:             isVariadic,
 		Body:                   body,
 		IsBodyExpression:       isBodyExpression,
-		manifest:               manifest,
 	}
 
 	if ident != nil {
@@ -8028,8 +8134,8 @@ func (p *parser) parseFunctionPattern(start int32) Node {
 		}
 
 		varNode, isMissingExpr := p.parseExpression()
-		var typ Node
 
+		var typ Node
 		if isMissingExpr {
 			r := p.s[p.i]
 			p.i++
@@ -9177,6 +9283,15 @@ func (p *parser) parseAssignmentAndPatternDefinition(left Node) (result Node) {
 			}
 
 			p.eatSpace()
+
+			{
+				prev := p.inPattern
+				defer func() {
+					p.inPattern = prev
+				}()
+			}
+
+			p.inPattern = true
 			right, _ = p.parseExpression()
 
 			return &PatternDefinition{
@@ -9191,7 +9306,6 @@ func (p *parser) parseAssignmentAndPatternDefinition(left Node) (result Node) {
 			}
 
 		}
-
 	case *PatternNamespaceIdentifierLiteral:
 		{
 			start := left.Base().Span.Start
@@ -9779,6 +9893,10 @@ func isIdentChar(r rune) bool {
 	return isAlpha(r) || isDecDigit(r) || r == '-' || r == '_'
 }
 
+func isFirstIdentChar(r rune) bool {
+	return isAlpha(r) || r == '_'
+}
+
 func isInterpolationAllowedChar(r rune) bool {
 	return isIdentChar(r) || isDecDigit(r) || r == '[' || r == ']' || r == '.' || r == '$' || r == ':'
 }
@@ -9798,6 +9916,15 @@ func IsCommentFirstSpace(r rune) bool {
 func IsDelim(r rune) bool {
 	switch r {
 	case '{', '}', '[', ']', '(', ')', '\n', ',', ';', ':', '|':
+		return true
+	default:
+		return false
+	}
+}
+
+func isOpeningDelim(r rune) bool {
+	switch r {
+	case '{', '[', '(':
 		return true
 	default:
 		return false

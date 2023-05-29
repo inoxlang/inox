@@ -713,7 +713,7 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
-		t.Run("single declaration without parenthesis and with type", func(t *testing.T) {
+		t.Run("single declaration without parenthesis and with percent-prefixed type", func(t *testing.T) {
 			n := MustParseChunk("var a %int = 1")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, nil},
@@ -741,6 +741,45 @@ func TestParse(t *testing.T) {
 								},
 								Right: &IntLiteral{
 									NodeBase: NodeBase{NodeSpan{13, 14}, nil, nil},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single declaration without parenthesis and with unprefixed named pattern", func(t *testing.T) {
+			n := MustParseChunk("var a int = 1")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
+				Statements: []Node{
+					&LocalVariableDeclarations{
+						NodeBase: NodeBase{
+							NodeSpan{0, 13},
+							nil,
+							[]Token{{Type: VAR_KEYWORD, Span: NodeSpan{0, 3}}},
+						},
+						Declarations: []*LocalVariableDeclaration{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{4, 13},
+									nil,
+									[]Token{{Type: EQUAL, Span: NodeSpan{10, 11}}},
+								},
+								Left: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{4, 5}, nil, nil},
+									Name:     "a",
+								},
+								Type: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{6, 9}, nil, nil},
+									Unprefixed: true,
+									Name:       "int",
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{12, 13}, nil, nil},
 									Raw:      "1",
 									Value:    1,
 								},
@@ -12652,6 +12691,43 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
+		t.Run("no parameters, no manifest, empty body, unprefixed return type", func(t *testing.T) {
+			n := MustParseChunk("fn() int {}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
+				Statements: []Node{
+					&FunctionExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 11},
+							nil,
+							[]Token{
+								{Type: FN_KEYWORD, Span: NodeSpan{0, 2}},
+								{Type: OPENING_PARENTHESIS, Span: NodeSpan{2, 3}},
+								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{3, 4}},
+							},
+						},
+						Parameters: nil,
+						ReturnType: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{5, 8}, nil, nil},
+							Unprefixed: true,
+							Name:       "int",
+						},
+						Body: &Block{
+							NodeBase: NodeBase{
+								NodeSpan{9, 11},
+								nil,
+								[]Token{
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
+								},
+							},
+							Statements: nil,
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("no parameters, empty capture list, empty body ", func(t *testing.T) {
 			n := MustParseChunk("fn[](){}")
 			assert.EqualValues(t, &Chunk{
@@ -12816,112 +12892,6 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
-		t.Run("no parameters, empty manifest, empty body ", func(t *testing.T) {
-			n := MustParseChunk("fn() manifest {} {}")
-			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 19}, nil, nil},
-				Statements: []Node{
-					&FunctionExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 19},
-							nil,
-							[]Token{
-								{Type: FN_KEYWORD, Span: NodeSpan{0, 2}},
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{2, 3}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{3, 4}},
-							},
-						},
-						Parameters: nil,
-						Body: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{17, 19},
-								nil,
-								[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{17, 18}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{18, 19}},
-								},
-							},
-							Statements: nil,
-						},
-						manifest: &Manifest{
-							NodeBase: NodeBase{
-								Span: NodeSpan{5, 16},
-								ValuelessTokens: []Token{
-									{Type: MANIFEST_KEYWORD, Span: NodeSpan{5, 13}},
-								},
-							},
-							Object: &ObjectLiteral{
-								NodeBase: NodeBase{
-									NodeSpan{14, 16},
-									nil,
-									[]Token{
-										{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{14, 15}},
-										{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{15, 16}},
-									},
-								},
-								Properties: nil,
-							},
-						},
-					},
-				},
-			}, n)
-		})
-
-		t.Run("no parameters, empty manifest, empty body, return type", func(t *testing.T) {
-			n := MustParseChunk("fn() %int manifest {} {}")
-			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 24}, nil, nil},
-				Statements: []Node{
-					&FunctionExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 24},
-							nil,
-							[]Token{
-								{Type: FN_KEYWORD, Span: NodeSpan{0, 2}},
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{2, 3}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{3, 4}},
-							},
-						},
-						Parameters: nil,
-						ReturnType: &PatternIdentifierLiteral{
-							NodeBase: NodeBase{NodeSpan{5, 9}, nil, nil},
-							Name:     "int",
-						},
-						Body: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{22, 24},
-								nil,
-								[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{22, 23}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{23, 24}},
-								},
-							},
-							Statements: nil,
-						},
-						manifest: &Manifest{
-							NodeBase: NodeBase{
-								Span: NodeSpan{10, 21},
-								ValuelessTokens: []Token{
-									{Type: MANIFEST_KEYWORD, Span: NodeSpan{10, 18}},
-								},
-							},
-							Object: &ObjectLiteral{
-								NodeBase: NodeBase{
-									NodeSpan{19, 21},
-									nil,
-									[]Token{
-										{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{19, 20}},
-										{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{20, 21}},
-									},
-								},
-								Properties: nil,
-							},
-						},
-					},
-				},
-			}, n)
-		})
-
 		t.Run("single parameter, empty body ", func(t *testing.T) {
 			n := MustParseChunk("fn(x){}")
 			assert.EqualValues(t, &Chunk{
@@ -12997,6 +12967,51 @@ func TestParse(t *testing.T) {
 								[]Token{
 									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
 									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{11, 12}},
+								},
+							},
+							Statements: nil,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single unprefix typed parameter, empty body ", func(t *testing.T) {
+			n := MustParseChunk("fn(x int){}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
+				Statements: []Node{
+					&FunctionExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 11},
+							nil,
+							[]Token{
+								{Type: FN_KEYWORD, Span: NodeSpan{0, 2}},
+								{Type: OPENING_PARENTHESIS, Span: NodeSpan{2, 3}},
+								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{8, 9}},
+							},
+						},
+						Parameters: []*FunctionParameter{
+							{
+								NodeBase: NodeBase{NodeSpan{3, 8}, nil, nil},
+								Var: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{3, 4}, nil, nil},
+									Name:     "x",
+								},
+								Type: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{5, 8}, nil, nil},
+									Unprefixed: true,
+									Name:       "int",
+								},
+							},
+						},
+						Body: &Block{
+							NodeBase: NodeBase{
+								NodeSpan{9, 11},
+								nil,
+								[]Token{
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
 								},
 							},
 							Statements: nil,
@@ -16593,6 +16608,40 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
+		t.Run("{ ...unprefixed named-pattern } ", func(t *testing.T) {
+			n := MustParseChunk("%{ ...patt }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, nil},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 12},
+							nil,
+							[]Token{
+								{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
+								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{11, 12}},
+							},
+						},
+						Exact: false,
+						SpreadElements: []*PatternPropertySpreadElement{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{3, 10},
+									nil,
+									[]Token{{Type: THREE_DOTS, Span: NodeSpan{3, 6}}},
+								},
+								Expr: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{6, 10}, nil, nil},
+									Unprefixed: true,
+									Name:       "patt",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("{ prop, ...named-pattern } ", func(t *testing.T) {
 			n := MustParseChunk("%{ name: %str,  ...%patt }")
 			assert.EqualValues(t, &Chunk{
@@ -16644,7 +16693,59 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
-		t.Run("{ optionam prop } ", func(t *testing.T) {
+		t.Run("{ prop with unprefixed named pattern, ...named-pattern } ", func(t *testing.T) {
+			n := MustParseChunk("%{ name: str,  ...%patt }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 25}, nil, nil},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 25},
+							nil,
+							[]Token{
+								{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
+								{Type: COMMA, Span: NodeSpan{12, 13}},
+								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{24, 25}},
+							},
+						},
+						Exact: false,
+						Properties: []*ObjectPatternProperty{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{3, 12},
+									nil,
+									[]Token{{Type: COLON, Span: NodeSpan{7, 8}}},
+								},
+								Key: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{3, 7}, nil, nil},
+									Name:     "name",
+								},
+								Value: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{9, 12}, nil, nil},
+									Unprefixed: true,
+									Name:       "str",
+								},
+							},
+						},
+						SpreadElements: []*PatternPropertySpreadElement{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{15, 23},
+									nil,
+									[]Token{{Type: THREE_DOTS, Span: NodeSpan{15, 18}}},
+								},
+								Expr: &PatternIdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{18, 23}, nil, nil},
+									Name:     "patt",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("{ optional prop } ", func(t *testing.T) {
 			n := MustParseChunk("%{ name?: %str }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
@@ -16684,6 +16785,168 @@ func TestParse(t *testing.T) {
 				},
 			}, n)
 		})
+
+		t.Run("property value is an unprefixed list pattern", func(t *testing.T) {
+			n := MustParseChunk("%{ list: [ 1 ] }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 16},
+							nil,
+							[]Token{
+								{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
+								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{15, 16}},
+							},
+						},
+						Properties: []*ObjectPatternProperty{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{3, 14},
+									nil,
+									[]Token{
+										{Type: COLON, Span: NodeSpan{7, 8}},
+									},
+								},
+								Key: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{Start: 3, End: 7}},
+									Name:     "list",
+								},
+								Value: &ListPatternLiteral{
+									NodeBase: NodeBase{
+										NodeSpan{9, 14},
+										nil,
+										[]Token{
+											{Type: OPENING_BRACKET, Span: NodeSpan{9, 10}},
+											{Type: CLOSING_BRACKET, Span: NodeSpan{13, 14}},
+										},
+									},
+									Elements: []Node{
+										&IntLiteral{
+											NodeBase: NodeBase{NodeSpan{11, 12}, nil, nil},
+											Raw:      "1",
+											Value:    1,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("property value is an unprefixed union pattern", func(t *testing.T) {
+			n := MustParseChunk("%{ prop: | a | b }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 18}, nil, nil},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 18},
+							nil,
+							[]Token{
+								{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
+								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{17, 18}},
+							},
+						},
+						Properties: []*ObjectPatternProperty{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{3, 17},
+									nil,
+									[]Token{
+										{Type: COLON, Span: NodeSpan{7, 8}},
+									},
+								},
+								Key: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{Start: 3, End: 7}},
+									Name:     "prop",
+								},
+								Value: &PatternUnion{
+									NodeBase: NodeBase{
+										NodeSpan{9, 17},
+										nil,
+										[]Token{
+											{Type: PATTERN_UNION_PIPE, Span: NodeSpan{9, 10}},
+											{Type: PATTERN_UNION_PIPE, Span: NodeSpan{13, 14}},
+										},
+									},
+									Cases: []Node{
+										&PatternIdentifierLiteral{
+											NodeBase:   NodeBase{NodeSpan{11, 12}, nil, nil},
+											Unprefixed: true,
+											Name:       "a",
+										},
+										&PatternIdentifierLiteral{
+											NodeBase:   NodeBase{NodeSpan{15, 16}, nil, nil},
+											Unprefixed: true,
+											Name:       "b",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("property value is an exact value pattern for an object (pattern conversion)", func(t *testing.T) {
+			n := MustParseChunk("%{ prop: %({}) }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 16},
+							nil,
+							[]Token{
+								{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
+								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{15, 16}},
+							},
+						},
+						Properties: []*ObjectPatternProperty{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{3, 14},
+									nil,
+									[]Token{
+										{Type: COLON, Span: NodeSpan{7, 8}},
+									},
+								},
+								Key: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{Start: 3, End: 7}},
+									Name:     "prop",
+								},
+								Value: &PatternConversionExpression{
+									NodeBase: NodeBase{
+										NodeSpan{9, 13},
+										nil,
+										[]Token{
+											{Type: PERCENT_SYMBOL, Span: NodeSpan{9, 10}},
+										},
+									},
+									Value: &ObjectLiteral{
+										NodeBase: NodeBase{
+											NodeSpan{11, 13},
+											nil,
+											[]Token{
+												{Type: OPENING_PARENTHESIS, Span: NodeSpan{10, 11}},
+												{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{11, 12}},
+												{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{12, 13}},
+												{Type: CLOSING_PARENTHESIS, Span: NodeSpan{13, 14}},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("list pattern", func(t *testing.T) {
@@ -16706,6 +16969,85 @@ func TestParse(t *testing.T) {
 								NodeBase: NodeBase{NodeSpan{3, 4}, nil, nil},
 								Raw:      "1",
 								Value:    1,
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single element is an unprefixed named pattern", func(t *testing.T) {
+			n := MustParseChunk("%[ a ]")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
+				Statements: []Node{
+					&ListPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 6},
+							nil,
+							[]Token{
+								{Type: OPENING_LIST_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
+								{Type: CLOSING_BRACKET, Span: NodeSpan{5, 6}},
+							},
+						},
+						Elements: []Node{
+							&PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{3, 4}, nil, nil},
+								Unprefixed: true,
+								Name:       "a",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single element is an unprefixed object pattern", func(t *testing.T) {
+			n := MustParseChunk("%[{ name?: %str }]")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 18}, nil, nil},
+				Statements: []Node{
+					&ListPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 18},
+							nil,
+							[]Token{
+								{Type: OPENING_LIST_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
+								{Type: CLOSING_BRACKET, Span: NodeSpan{17, 18}},
+							},
+						},
+						Elements: []Node{
+							&ObjectPatternLiteral{
+								NodeBase: NodeBase{
+									NodeSpan{2, 17},
+									nil,
+									[]Token{
+										{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{2, 3}},
+										{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{16, 17}},
+									},
+								},
+								Exact: false,
+								Properties: []*ObjectPatternProperty{
+									{
+										NodeBase: NodeBase{
+											NodeSpan{4, 15},
+											nil,
+											[]Token{
+												{Type: QUESTION_MARK, Span: NodeSpan{8, 9}},
+												{Type: COLON, Span: NodeSpan{9, 10}},
+											},
+										},
+										Key: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{4, 8}, nil, nil},
+											Name:     "name",
+										},
+										Value: &PatternIdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{11, 15}, nil, nil},
+											Name:     "str",
+										},
+										Optional: true,
+									},
+								},
 							},
 						},
 					},
@@ -16769,6 +17111,85 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
+		t.Run("general element is an unprefixed named pattern", func(t *testing.T) {
+			n := MustParseChunk("%[]int")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
+				Statements: []Node{
+					&ListPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 6},
+							nil,
+							[]Token{
+								{Type: OPENING_LIST_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
+								{Type: CLOSING_BRACKET, Span: NodeSpan{2, 3}},
+							},
+						},
+						Elements: nil,
+						GeneralElement: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{3, 6}, nil, nil},
+							Unprefixed: true,
+							Name:       "int",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("general element is an unprefixed object pattern", func(t *testing.T) {
+			n := MustParseChunk("%[]{ name?: %str }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 18}, nil, nil},
+				Statements: []Node{
+					&ListPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 18},
+							nil,
+							[]Token{
+								{Type: OPENING_LIST_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
+								{Type: CLOSING_BRACKET, Span: NodeSpan{2, 3}},
+							},
+						},
+						Elements: nil,
+						GeneralElement: &ObjectPatternLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{3, 18},
+								nil,
+								[]Token{
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{3, 4}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{17, 18}},
+								},
+							},
+							Exact: false,
+							Properties: []*ObjectPatternProperty{
+								{
+									NodeBase: NodeBase{
+										NodeSpan{5, 16},
+										nil,
+										[]Token{
+											{Type: QUESTION_MARK, Span: NodeSpan{9, 10}},
+											{Type: COLON, Span: NodeSpan{10, 11}},
+										},
+									},
+									Key: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{5, 9}, nil, nil},
+										Name:     "name",
+									},
+									Value: &PatternIdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{12, 16}, nil, nil},
+										Name:     "str",
+									},
+									Optional: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		//TODO: add more tests
+
 		t.Run("elements and general element", func(t *testing.T) {
 			n, err := ParseChunk("%[1]%int", "")
 			assert.Error(t, err)
@@ -16799,7 +17220,6 @@ func TestParse(t *testing.T) {
 				},
 			}, n)
 		})
-
 	})
 
 	t.Run("pattern definition", func(t *testing.T) {
@@ -16891,6 +17311,55 @@ func TestParse(t *testing.T) {
 									},
 									Value: &IntLiteral{
 										NodeBase: NodeBase{NodeSpan{11, 12}, nil, nil},
+										Raw:      "1",
+										Value:    1,
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("RHS is an unprefixed object pattern literal", func(t *testing.T) {
+
+			n := MustParseChunk("%i = { a: 1 }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{
+							NodeSpan{0, 13},
+							nil,
+							[]Token{{Type: EQUAL, Span: NodeSpan{3, 4}}},
+						},
+						Left: &PatternIdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+							Name:     "i",
+						},
+						Right: &ObjectPatternLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{5, 13},
+								nil,
+								[]Token{
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{5, 6}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{12, 13}},
+								},
+							},
+							Properties: []*ObjectPatternProperty{
+								{
+									NodeBase: NodeBase{
+										NodeSpan{7, 11},
+										nil,
+										[]Token{{Type: COLON, Span: NodeSpan{8, 9}}},
+									},
+									Key: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{7, 8}, nil, nil},
+										Name:     "a",
+									},
+									Value: &IntLiteral{
+										NodeBase: NodeBase{NodeSpan{10, 11}, nil, nil},
 										Raw:      "1",
 										Value:    1,
 									},
@@ -17578,6 +18047,25 @@ func TestParse(t *testing.T) {
 								NodeBase: NodeBase{NodeSpan{3, 6}, nil, nil},
 								Raw:      `"a"`,
 								Value:    "a",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single element is an unprefixed pattern", func(t *testing.T) {
+			n := MustParseChunk(`%| a`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
+				Statements: []Node{
+					&PatternUnion{
+						NodeBase: NodeBase{NodeSpan{0, 4}, nil, []Token{{Type: PATTERN_UNION_OPENING_PIPE, Span: NodeSpan{0, 2}}}},
+						Cases: []Node{
+							&PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{3, 4}, nil, nil},
+								Unprefixed: true,
+								Name:       "a",
 							},
 						},
 					},

@@ -190,7 +190,9 @@ const (
 	URL_PATTERN_LITERAL
 	HTTP_HOST_PATTERN_LITERAL
 	PATTERN_IDENTIFIER_LITERAL
+	UNPREFIXED_PATTERN_IDENTIFIER_LITERAL
 	PATTERN_NAMESPACE_IDENTIFIER_LITERAL
+	UNPREFIXED_PATTERN_NAMESPACE_IDENTIFIER_LITERAL
 	IDENTIFIER_LITERAL
 	PROP_NAME_LITERAL
 	UNAMBIGUOUS_IDENTIFIER_LITERAL
@@ -359,39 +361,41 @@ var tokenStrings = [...]string{
 	NEWLINE:                        "\n",
 
 	// WITH VALUE
-	INT_LITERAL:                          "<?>",
-	NIL_LITERAL:                          "<?>",
-	FLOAT_LITERAL:                        "<?>",
-	PORT_LITERAL:                         "<?>",
-	BOOLEAN_LITERAL:                      "<?>",
-	QUOTED_STRING_LITERAL:                "<?>",
-	UNQUOTED_STRING_LITERAL:              "<?>",
-	MULTILINE_STRING_LITERAL:             "<?>",
-	REGEX_LITERAL:                        "<?>",
-	RATE_LITERAL:                         "<?>",
-	QUANTITY_LITERAL:                     "<?>",
-	DATE_LITERAL:                         "<?>",
-	FLAG_LITERAL:                         "<?>",
-	RUNE_LITERAL:                         "<?>",
-	AT_HOST_LITERAL:                      "<?>",
-	HOST_LITERAL:                         "<?>",
-	URL_LITERAL:                          "<?>",
-	URL_PATTERN_LITERAL:                  "<?>",
-	HTTP_HOST_PATTERN_LITERAL:            "<?>",
-	PATTERN_IDENTIFIER_LITERAL:           "<?>",
-	PATTERN_NAMESPACE_IDENTIFIER_LITERAL: "<?>",
-	IDENTIFIER_LITERAL:                   "<?>",
-	UNAMBIGUOUS_IDENTIFIER_LITERAL:       "<?>",
-	ABSOLUTE_PATH_LITERAL:                "<?>",
-	RELATIVE_PATH_LITERAL:                "<?>",
-	ABSOLUTE_PATH_PATTERN_LITERAL:        "<?>",
-	RELATIVE_PATH_PATTERN_LITERAL:        "<?>",
-	PATH_SLICE:                           "<?>",
-	PATH_PATTERN_SLICE:                   "<?>",
-	STR_TEMPLATE_SLICE:                   "<?>",
-	STR_TEMPLATE_INTERP_TYPE:             "<?>",
-	BYTE_SLICE_LITERAL:                   "<?>",
-	NAMED_PATH_SEGMENT:                   "<?>",
+	INT_LITERAL:                           "<?>",
+	NIL_LITERAL:                           "<?>",
+	FLOAT_LITERAL:                         "<?>",
+	PORT_LITERAL:                          "<?>",
+	BOOLEAN_LITERAL:                       "<?>",
+	QUOTED_STRING_LITERAL:                 "<?>",
+	UNQUOTED_STRING_LITERAL:               "<?>",
+	MULTILINE_STRING_LITERAL:              "<?>",
+	REGEX_LITERAL:                         "<?>",
+	RATE_LITERAL:                          "<?>",
+	QUANTITY_LITERAL:                      "<?>",
+	DATE_LITERAL:                          "<?>",
+	FLAG_LITERAL:                          "<?>",
+	RUNE_LITERAL:                          "<?>",
+	AT_HOST_LITERAL:                       "<?>",
+	HOST_LITERAL:                          "<?>",
+	URL_LITERAL:                           "<?>",
+	URL_PATTERN_LITERAL:                   "<?>",
+	HTTP_HOST_PATTERN_LITERAL:             "<?>",
+	PATTERN_IDENTIFIER_LITERAL:            "<?>",
+	UNPREFIXED_PATTERN_IDENTIFIER_LITERAL: "<?>",
+	PATTERN_NAMESPACE_IDENTIFIER_LITERAL:  "<?>",
+	UNPREFIXED_PATTERN_NAMESPACE_IDENTIFIER_LITERAL: "<?>",
+	IDENTIFIER_LITERAL:             "<?>",
+	UNAMBIGUOUS_IDENTIFIER_LITERAL: "<?>",
+	ABSOLUTE_PATH_LITERAL:          "<?>",
+	RELATIVE_PATH_LITERAL:          "<?>",
+	ABSOLUTE_PATH_PATTERN_LITERAL:  "<?>",
+	RELATIVE_PATH_PATTERN_LITERAL:  "<?>",
+	PATH_SLICE:                     "<?>",
+	PATH_PATTERN_SLICE:             "<?>",
+	STR_TEMPLATE_SLICE:             "<?>",
+	STR_TEMPLATE_INTERP_TYPE:       "<?>",
+	BYTE_SLICE_LITERAL:             "<?>",
+	NAMED_PATH_SEGMENT:             "<?>",
 }
 
 var tokenTypenames = [...]string{
@@ -511,54 +515,56 @@ var tokenTypenames = [...]string{
 	NEWLINE:                        "NEWLINE",
 
 	//WITH: "WITH", VALUE: "VALUE",
-	UNEXPECTED_CHAR:                      "UNEXPECTED_CHAR",
-	INVALID_OPERATOR:                     "INVALID_OPERATOR",
-	INVALID_INTERP_SLICE:                 "INVALID_INTERP_SLICE",
-	INVALID_URL_LIT:                      "INVALID_URL_LIT",
-	INVALID_HOST_ALIAS:                   "INVALID_HOST_ALIAS",
-	COMMENT:                              "COMMENT",
-	INT_LITERAL:                          "INT_LITERAL",
-	NIL_LITERAL:                          "NIL_LITERAL",
-	FLOAT_LITERAL:                        "FLOAT_LITERAL",
-	PORT_LITERAL:                         "PORT_LITERAL",
-	BOOLEAN_LITERAL:                      "BOOLEAN_LITERAL",
-	QUOTED_STRING_LITERAL:                "QUOTED_STRING_LITERAL",
-	UNQUOTED_STRING_LITERAL:              "UNQUOTED_STRING_LITERAL",
-	MULTILINE_STRING_LITERAL:             "MULTILINE_STRING_LITERAL",
-	REGEX_LITERAL:                        "REGEX_LITERAL",
-	RATE_LITERAL:                         "RATE_LITERAL",
-	QUANTITY_LITERAL:                     "QUANTITY_LITERAL",
-	DATE_LITERAL:                         "DATE_LITERAL",
-	FLAG_LITERAL:                         "FLAG_LITERAL",
-	RUNE_LITERAL:                         "RUNE_LITERAL",
-	AT_HOST_LITERAL:                      "AT_HOST_LITERAL",
-	SCHEME_LITERAL:                       "SCHEME_LITERAL",
-	HOST_LITERAL:                         "HOST_LITERAL",
-	URL_LITERAL:                          "URL_LITERAL",
-	URL_PATTERN_LITERAL:                  "URL_PATTERN_LITERAL",
-	HTTP_HOST_PATTERN_LITERAL:            "HTTP_HOST_PATTERN_LITERAL",
-	PATTERN_IDENTIFIER_LITERAL:           "PATTERN_IDENTIFIER_LITERAL",
-	PATTERN_NAMESPACE_IDENTIFIER_LITERAL: "PATTERN_NAMESPACE_IDENTIFIER_LITERAL",
-	IDENTIFIER_LITERAL:                   "IDENTIFIER_LITERAL",
-	PROP_NAME_LITERAL:                    "PROP_NAME_LITERAL",
-	UNAMBIGUOUS_IDENTIFIER_LITERAL:       "UNAMBIGUOUS_IDENTIFIER_LITERAL",
-	LOCAL_VARNAME:                        "LOCAL_VARNAME",
-	GLOBAL_VARNAME:                       "GLOBAL_VARNAME",
-	ABSOLUTE_PATH_LITERAL:                "ABSOLUTE_PATH_LITERAL",
-	RELATIVE_PATH_LITERAL:                "RELATIVE_PATH_LITERAL",
-	ABSOLUTE_PATH_PATTERN_LITERAL:        "ABSOLUTE_PATH_PATTERN_LITERAL",
-	RELATIVE_PATH_PATTERN_LITERAL:        "RELATIVE_PATH_PATTERN_LITERAL",
-	PATH_SLICE:                           "PATH_SLICE",
-	PATH_PATTERN_SLICE:                   "PATH_PATTERN_SLICE",
-	STR_TEMPLATE_SLICE:                   "STR_TEMPLATE_SLICE",
-	STR_TEMPLATE_INTERP_TYPE:             "STR_TEMPLATE_INTERP_TYPE",
-	BYTE_SLICE_LITERAL:                   "BYTE_SLICE_LITERAL",
-	NAMED_PATH_SEGMENT:                   "NAMED_PATH_SEGMENT",
-	PATTERN_GROUP_NAME:                   "PATTERN_GROUP_NAME",
-	QUERY_PARAM_KEY_EQUAL:                "QUERY_PARAM_KEY_EQUAL",
-	QUERY_PARAM_SEP:                      "QUERY_PARAM_SEP",
-	QUERY_PARAM_SLICE:                    "QUERY_PARAM_SLICE",
-	XML_TEXT_SLICE:                       "XML_TEXT_SLICE",
+	UNEXPECTED_CHAR:                       "UNEXPECTED_CHAR",
+	INVALID_OPERATOR:                      "INVALID_OPERATOR",
+	INVALID_INTERP_SLICE:                  "INVALID_INTERP_SLICE",
+	INVALID_URL_LIT:                       "INVALID_URL_LIT",
+	INVALID_HOST_ALIAS:                    "INVALID_HOST_ALIAS",
+	COMMENT:                               "COMMENT",
+	INT_LITERAL:                           "INT_LITERAL",
+	NIL_LITERAL:                           "NIL_LITERAL",
+	FLOAT_LITERAL:                         "FLOAT_LITERAL",
+	PORT_LITERAL:                          "PORT_LITERAL",
+	BOOLEAN_LITERAL:                       "BOOLEAN_LITERAL",
+	QUOTED_STRING_LITERAL:                 "QUOTED_STRING_LITERAL",
+	UNQUOTED_STRING_LITERAL:               "UNQUOTED_STRING_LITERAL",
+	MULTILINE_STRING_LITERAL:              "MULTILINE_STRING_LITERAL",
+	REGEX_LITERAL:                         "REGEX_LITERAL",
+	RATE_LITERAL:                          "RATE_LITERAL",
+	QUANTITY_LITERAL:                      "QUANTITY_LITERAL",
+	DATE_LITERAL:                          "DATE_LITERAL",
+	FLAG_LITERAL:                          "FLAG_LITERAL",
+	RUNE_LITERAL:                          "RUNE_LITERAL",
+	AT_HOST_LITERAL:                       "AT_HOST_LITERAL",
+	SCHEME_LITERAL:                        "SCHEME_LITERAL",
+	HOST_LITERAL:                          "HOST_LITERAL",
+	URL_LITERAL:                           "URL_LITERAL",
+	URL_PATTERN_LITERAL:                   "URL_PATTERN_LITERAL",
+	HTTP_HOST_PATTERN_LITERAL:             "HTTP_HOST_PATTERN_LITERAL",
+	PATTERN_IDENTIFIER_LITERAL:            "PATTERN_IDENTIFIER_LITERAL",
+	UNPREFIXED_PATTERN_IDENTIFIER_LITERAL: "UNPREFIXED_PATTERN_IDENTIFIER_LITERAL",
+	PATTERN_NAMESPACE_IDENTIFIER_LITERAL:  "PATTERN_NAMESPACE_IDENTIFIER_LITERAL",
+	UNPREFIXED_PATTERN_NAMESPACE_IDENTIFIER_LITERAL: "UNPREFIXED_PATTERN_NAMESPACE_IDENTIFIER_LITERAL",
+	IDENTIFIER_LITERAL:             "IDENTIFIER_LITERAL",
+	PROP_NAME_LITERAL:              "PROP_NAME_LITERAL",
+	UNAMBIGUOUS_IDENTIFIER_LITERAL: "UNAMBIGUOUS_IDENTIFIER_LITERAL",
+	LOCAL_VARNAME:                  "LOCAL_VARNAME",
+	GLOBAL_VARNAME:                 "GLOBAL_VARNAME",
+	ABSOLUTE_PATH_LITERAL:          "ABSOLUTE_PATH_LITERAL",
+	RELATIVE_PATH_LITERAL:          "RELATIVE_PATH_LITERAL",
+	ABSOLUTE_PATH_PATTERN_LITERAL:  "ABSOLUTE_PATH_PATTERN_LITERAL",
+	RELATIVE_PATH_PATTERN_LITERAL:  "RELATIVE_PATH_PATTERN_LITERAL",
+	PATH_SLICE:                     "PATH_SLICE",
+	PATH_PATTERN_SLICE:             "PATH_PATTERN_SLICE",
+	STR_TEMPLATE_SLICE:             "STR_TEMPLATE_SLICE",
+	STR_TEMPLATE_INTERP_TYPE:       "STR_TEMPLATE_INTERP_TYPE",
+	BYTE_SLICE_LITERAL:             "BYTE_SLICE_LITERAL",
+	NAMED_PATH_SEGMENT:             "NAMED_PATH_SEGMENT",
+	PATTERN_GROUP_NAME:             "PATTERN_GROUP_NAME",
+	QUERY_PARAM_KEY_EQUAL:          "QUERY_PARAM_KEY_EQUAL",
+	QUERY_PARAM_SEP:                "QUERY_PARAM_SEP",
+	QUERY_PARAM_SLICE:              "QUERY_PARAM_SLICE",
+	XML_TEXT_SLICE:                 "XML_TEXT_SLICE",
 }
 
 func (t TokenType) String() string {
@@ -762,11 +768,21 @@ func GetTokens(node Node, addMeta bool) []Token {
 			tokenType = HTTP_HOST_PATTERN_LITERAL
 			raw = n.Raw
 		case *PatternIdentifierLiteral:
-			tokenType = PATTERN_IDENTIFIER_LITERAL
-			raw = "%" + n.Name
+			if n.Unprefixed {
+				tokenType = UNPREFIXED_PATTERN_IDENTIFIER_LITERAL
+				raw = n.Name
+			} else {
+				tokenType = PATTERN_IDENTIFIER_LITERAL
+				raw = "%" + n.Name
+			}
 		case *PatternNamespaceIdentifierLiteral:
-			tokenType = PATTERN_NAMESPACE_IDENTIFIER_LITERAL
-			raw = "%" + n.Name + "."
+			if n.Unprefixed {
+				tokenType = UNPREFIXED_PATTERN_NAMESPACE_IDENTIFIER_LITERAL
+				raw = n.Name + "."
+			} else {
+				tokenType = PATTERN_NAMESPACE_IDENTIFIER_LITERAL
+				raw = "%" + n.Name + "."
+			}
 		case *IdentifierLiteral:
 			tokenType = IDENTIFIER_LITERAL
 			raw = n.Name
@@ -909,6 +925,16 @@ func GetTokens(node Node, addMeta bool) []Token {
 	}
 
 	return uniqueTokens
+}
+
+func GetFirstToken(node Node) Token {
+	tokens := GetTokens(node, false)
+	return tokens[0]
+}
+
+func GetFirstTokenString(node Node) string {
+	tokens := GetTokens(node, false)
+	return tokens[0].Raw
 }
 
 func GetTokenAtPosition(pos int, node Node) (Token, bool) {

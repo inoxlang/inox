@@ -1074,7 +1074,8 @@ func (SendValueExpression) Kind() NodeKind {
 
 type PatternIdentifierLiteral struct {
 	NodeBase
-	Name string
+	Unprefixed bool
+	Name       string
 }
 
 func (PatternIdentifierLiteral) Kind() NodeKind {
@@ -1083,7 +1084,8 @@ func (PatternIdentifierLiteral) Kind() NodeKind {
 
 type PatternNamespaceIdentifierLiteral struct {
 	NodeBase
-	Name string
+	Unprefixed bool
+	Name       string
 }
 
 func (PatternNamespaceIdentifierLiteral) Kind() NodeKind {
@@ -1534,7 +1536,6 @@ type FunctionExpression struct {
 	IsVariadic             bool
 	Body                   Node
 	IsBodyExpression       bool
-	manifest               *Manifest
 }
 
 func (expr FunctionExpression) NonVariadicParamCount() int {
@@ -2245,11 +2246,8 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		}
 
 		walk(n.ReturnType, node, ancestorChain, fn, afterFn)
-		if n.manifest != nil {
-			walk(n.manifest.Object, node, ancestorChain, fn, afterFn)
-		}
-
 		walk(n.Body, node, ancestorChain, fn, afterFn)
+
 		for _, n := range n.AdditionalInvalidNodes {
 			walk(n, node, ancestorChain, fn, afterFn)
 		}
