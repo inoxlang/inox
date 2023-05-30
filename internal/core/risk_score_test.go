@@ -69,6 +69,29 @@ func TestComputeProgramRiskScore(t *testing.T) {
 		assert.Equal(t, expected, ComputeProgramRiskScore(mod, manifest))
 	})
 
+	t.Run("https://example.com/ permission for HTTP & Websocket", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+
+		mod := utils.Must(ParseInMemoryModule(`
+			manifest {
+				permissions: {
+					read: {wss://example.com/, https://example.com/}
+				}
+			}
+		`, InMemoryModuleParsingConfig{
+			Name:    "",
+			Context: ctx,
+		}))
+
+		manifest, _, _, _ := mod.PreInit(PreinitArgs{
+			GlobalConsts: mod.MainChunk.Node.GlobalConstantDeclarations,
+		})
+
+		expectedHttpScore := RiskScore((HTTP_READ_PERM_RISK_SCORE * URL_RISK_MULTIPLIER))
+		expectedScore := 2 * expectedHttpScore
+		assert.Equal(t, expectedScore, ComputeProgramRiskScore(mod, manifest))
+	})
+
 	t.Run("create routines permission", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 

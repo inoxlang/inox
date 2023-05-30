@@ -50,6 +50,10 @@ const (
 	HTTP_WRITE_PERM_RISK_SCORE   = 20
 	HTTP_PROVIDE_PERM_RISK_SCORE = 20
 
+	WS_READ_PERM_RISK_SCORE    = 10
+	WS_WRITE_PERM_RISK_SCORE   = 20
+	WS_PROVIDE_PERM_RISK_SCORE = 20
+
 	FS_READ_PERM_RISK_SCORE  = 10
 	FS_WRITE_PERM_RISK_SCORE = 20
 
@@ -60,6 +64,7 @@ const (
 
 var (
 	HTTP_PERM_TYPE    = reflect.TypeOf(HttpPermission{})
+	WS_PERM_TYPE      = reflect.TypeOf(WebsocketPermission{})
 	FS_PERM_TYPE      = reflect.TypeOf(FilesystemPermission{})
 	ROUTINE_PERM_TYPE = reflect.TypeOf(RoutinePermission{})
 	CMD_PERM_TYPE     = reflect.TypeOf(CommandPermission{})
@@ -70,13 +75,22 @@ var (
 			{HTTP_PERM_TYPE, permkind.Write, HTTP_WRITE_PERM_RISK_SCORE},
 			{HTTP_PERM_TYPE, permkind.Provide, HTTP_WRITE_PERM_RISK_SCORE},
 		},
+
+		WS_PERM_TYPE: {
+			{WS_PERM_TYPE, permkind.Read, WS_READ_PERM_RISK_SCORE},
+			{WS_PERM_TYPE, permkind.Write, WS_WRITE_PERM_RISK_SCORE},
+			{WS_PERM_TYPE, permkind.Provide, WS_WRITE_PERM_RISK_SCORE},
+		},
+
 		FS_PERM_TYPE: {
 			{FS_PERM_TYPE, permkind.Read, FS_READ_PERM_RISK_SCORE},
 			{FS_PERM_TYPE, permkind.Write, FS_WRITE_PERM_RISK_SCORE},
 		},
+
 		ROUTINE_PERM_TYPE: {
 			{ROUTINE_PERM_TYPE, permkind.Create, ROUTINE_PERM_RISK_SCORE},
 		},
+
 		CMD_PERM_TYPE: {
 			{CMD_PERM_TYPE, permkind.Use, CMD_PERM_RISK_SCORE},
 		},
@@ -98,7 +112,8 @@ var (
 )
 
 // ComputeProgramRiskScore computes the risk score for a prepared program. First the risk score for each permission
-// is computed, then scores of permissions of the same type are summed and finally the remaining score are multiplied.
+// is computed, then scores of permissions of the same type are summed and finally the remaining scores are multiplied together.
+// The current logic is intended to be a starting point, it may be adjusted based on additional research and feedback.
 func ComputeProgramRiskScore(mod *Module, manifest *Manifest) (totalScore RiskScore) {
 	permTypeRiskScores := map[reflect.Type]RiskScore{}
 
@@ -111,12 +126,33 @@ func ComputeProgramRiskScore(mod *Module, manifest *Manifest) (totalScore RiskSc
 	}
 
 	totalScore = 1
-	for _, score := range permTypeRiskScores {
+	combinedHttpWsScore := RiskScore(1)
+
+	for permType, score := range permTypeRiskScores {
 		if totalScore > MAXIMUM_RISK_SCORE/score {
 			return MAXIMUM_RISK_SCORE
 		}
+
+		//Special case: the HTTP and Websocket scores are added together because they are almost equivalent.
+		//The combined score is multiplied with the total score after the loop.
+		switch permType {
+		case HTTP_PERM_TYPE, WS_PERM_TYPE:
+			if combinedHttpWsScore <= 1 {
+				combinedHttpWsScore = score
+			} else {
+				combinedHttpWsScore = utils.Max(score, combinedHttpWsScore) + utils.Min(score, combinedHttpWsScore)
+			}
+			continue
+		}
+
 		totalScore *= score
 	}
+
+	if totalScore > MAXIMUM_RISK_SCORE/combinedHttpWsScore {
+		return MAXIMUM_RISK_SCORE
+	}
+
+	totalScore *= combinedHttpWsScore
 
 	return totalScore
 }
@@ -151,6 +187,17 @@ func ComputePermissionRiskScore(perm Permission) RiskScore {
 			//TODO: is the domain trustable ?
 		case URLPattern:
 			score *= URL_PATTERN_RISK_MULTIPLIER
+			//TODO: is the domain trustable ?
+		case URL:
+			score *= URL_RISK_MULTIPLIER
+			//TODO: is the domain trustable ?
+		default:
+			panic(ErrUnreachable)
+		}
+	case WebsocketPermission:
+		switch p.Endpoint.(type) {
+		case Host:
+			score *= HOST_RISK_MULTIPLIER
 			//TODO: is the domain trustable ?
 		case URL:
 			score *= URL_RISK_MULTIPLIER
