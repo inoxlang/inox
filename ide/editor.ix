@@ -97,7 +97,7 @@ $$editor = {
         self.update_module_data()
     }
 
-    handle_key: fn(event %dom.keydown-event){
+    handle_key: fn(event dom.keydown-event){
         keydown = event.value
 
         selection = self.get_selection_data(event)
@@ -214,7 +214,7 @@ $$editor = {
     }
 
 
-    handle_cut_paste: fn(event %event){
+    handle_cut_paste: fn(event event){
         match event {
             %dom.cut-event {
                 selection = self.get_selection_data(event)
@@ -234,7 +234,7 @@ $$editor = {
         }
     }
 
-    get_selection_data: fn(event %event){
+    get_selection_data: fn(event event){
         value = event.value
 
         cursor_position = -1

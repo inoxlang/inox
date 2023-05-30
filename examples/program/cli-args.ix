@@ -3,10 +3,10 @@ manifest {
         #  {
         #      name: #input-files
         #      rest: true
-        #      pattern: %[]%path
+        #      pattern: %[]path
         #  }
         #  verbose: %bool
-        #  output-file: %-o=%path
+        #  output-file: %-o=path
     }
 }
 

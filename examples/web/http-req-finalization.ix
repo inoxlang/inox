@@ -13,7 +13,7 @@ manifest {
 }
 
 
-fn handle(rw %http.resp_writer, r %http.req){
+fn handle(rw http.resp_writer, r http.req){
     print r.headers
 }
 

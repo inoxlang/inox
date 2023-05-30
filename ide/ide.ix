@@ -49,7 +49,7 @@ $$ide = {
             data = msg.data
 
             match data {
-                %rec(%{ide-action: #run-script, path: %path}) {
+                %rec(%{ide-action: #run-script, path: path}) {
                     fprint self.output concat "\n[run " tostr(data.path) "]"
 
                     assign result state errors err = inox.run_local_script(data.path, {
@@ -80,7 +80,7 @@ if !ok {
 
 $$graph_history = ValueHistory(graph, {
     max-length: 10
-    render: fn(graph %sysgraph) => html.div{
+    render: fn(graph sysgraph) => html.div{
         class: "sysgraph"
     
         tostr("")
@@ -91,7 +91,7 @@ $$graph_history = ValueHistory(graph, {
                 ("Nodes")
             }
             html.ul{
-                children: map(graph.nodes, fn(node %sysgraph.node) => html.div{
+                children: map(graph.nodes, fn(node sysgraph.node) => html.div{
                     id: node.value_id
                     class: "sysgraph-node"
 

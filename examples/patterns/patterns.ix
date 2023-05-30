@@ -10,14 +10,14 @@ print ""
 print "--- list pattern ---"
 print "[] match %[1]:" ([] match %[1])
 print "[1] match %[1]:" ([1] match %[1])
-print "[true] match %[]%int:" ([true] match %[]%int)
-print "[1] match %[]%int:" ([1] match %[]%int)
+print "[true] match %[]int:" ([true] match %[]int)
+print "[1] match %[]int:" ([1] match %[]int)
 print "\n"
 # %list matches any list pattern
 
 print "--- option pattern ---"
-print "--data match %--data=%obj" (--data match %--data=%obj)
-print "--data={} match %--data=%obj" (--data={} match %--data=%obj)
+print "--data match %--data=obj" (--data match %--data=obj)
+print "--data={} match %--data=obj" (--data={} match %--data=obj)
 print "\n"
 # %opt matches any option pattern
 

@@ -626,7 +626,7 @@ fn hello(a, b){
 Parameters and return value of a function can have a type annotation:
 
 ```
-fn add(a %int, b %int) %int {
+fn add(a int, b int) int {
     return (a + b)
 }
 ```
@@ -679,11 +679,19 @@ Besides the pattern [literals](#literals) there are other kinds of patterns in I
 
 ```
 object_pattern = %{
-    name: %str
+    name: str
 }
 
 # true
 ({name: "John"} match object_pattern) 
+
+other_pattern = %{
+    name: str
+    account: {  # '%' not required here 
+        creation-date: date
+    }
+}
+
 ```
 
 ⚠️ By default object patterns are **inexact**: they accept additional properties.
@@ -693,7 +701,7 @@ object_pattern = %{
 ({name: "John"} match %{}) 
 
 object_pattern = %{
-    name: %str
+    name: str
 }
 
 # true
@@ -705,7 +713,7 @@ object_pattern = %{
 
 The syntax for patterns that match a list with **elements of the same type** (only integers, only strings, etc.) is as follows:
 ```
-pattern = %[]%int
+pattern = %[]int
 ([] match pattern) # true
 ([1] match pattern) # true
 ([1, "a"] match pattern) # false
@@ -714,10 +722,16 @@ pattern = %[]%int
 You can also create list patterns that match a list of known length:
 
 ```
-pattern = %[%int, %str]
+pair_pattern = %[int, str]
 
 # true
-([1, "a"] match pattern) 
+([1, "a"] match pair_pattern)
+
+
+two_pair_pattern = %[ [int, str], [int, str] ]
+
+# true
+([ [1, "a"], [2, "b"] ] match two_pair_pattern)
 ```
 
 ## Named Patterns
@@ -726,10 +740,18 @@ Named patterns are equivalent to variables but for patterns, there are many buil
 Pattern definitions allow you to declare a pattern.
 
 ```
-%int_list = %[]%int
+%int_list = %[]int
 
 # true
 ([1, 2, 3] match %int_list) 
+
+# the % symbol can be omitted in front of the top list/object pattern:
+%int_list = []int
+
+%user = {
+    name: str
+    friends: []str
+}
 ```
 
 ⚠️ Named patterns cannot be reassigned.
@@ -845,9 +867,9 @@ manifest {}
 import ./patterns.ix
 
 # patterns.ix
-%user = %{
-    name: %str
-    profile-picture: %url
+%user = {
+    name: str
+    profile-picture: url
 }
 ```
 

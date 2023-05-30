@@ -41,7 +41,7 @@ print "res =" $res "err =" $err
 # ------ Parameter and return types ------
 
 # type of a is "any"
-fn myfunc(a, b %int) %int {
+fn myfunc(a, b int) int {
     assert (a match %int)
 
     return (a + b)

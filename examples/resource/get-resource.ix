@@ -6,9 +6,9 @@ manifest {
 }
 
 
-%user = %{name: %str}
+%user = {name: str}
 
-fn handle(rw %http.resp_writer, r %http.req){
+fn handle(rw http.resp_writer, r http.req){
 
     match r.path {
         /users/1 {

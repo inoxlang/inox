@@ -13,38 +13,38 @@ manifest {
 }
 
 
-%example = %{
-    code?: %str
-    explanation?: %str
-    output?: %str
+%example = {
+    code?: str
+    explanation?: str
+    output?: str
 }
 
-%leaf-topic-data = %{
-    topic: %str
-    text?: %str
-    examples?: %[]%example
+%leaf-topic-data = {
+    topic: str
+    text?: str
+    examples?: []example
 }
 
-%topic-data = %{
-    ...%leaf-topic-data
-    subtopics?: %[]%leaf-topic-data
+%topic-data = {
+    ...leaf-topic-data
+    subtopics?: []leaf-topic-data
 }
 
 
-%group-data = %{
-    namespace?: %bool
-    elements: %[]%topic-data
-    title?: %str
+%group-data = {
+    namespace?: bool
+    elements: []topic-data
+    title?: str
 }
 
-fn fmt_topic_markdown(topic %leaf-topic-data, is_leaf %bool){
+fn fmt_topic_markdown(topic leaf-topic-data, is_leaf bool){
     markdown = ""
     var examples %str = ""
     if topic.?examples? {
         examples = (concat ""
             "\n**examples**\n\n"
 
-            ...map((topic.?examples ?? []), fn(example %example) %str { # todo: return type should not be necessary
+            ...map((topic.?examples ?? []), fn(example example) %str { # todo: return type should not be necessary
                 code = example.?code
                 if code? {
                     output = example.?output

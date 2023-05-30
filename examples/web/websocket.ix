@@ -21,7 +21,7 @@ manifest {
 
 $$ws_server = ws.Server!()
 
-fn handle(rw %http.resp_writer, r %http.req){
+fn handle(rw http.resp_writer, r http.req){
     conn = ws_server.upgrade!(rw, r)
 
     # echo
@@ -40,7 +40,7 @@ if err? {
     print $err
 } else {
     print "message from server:" 
-    printvals $msg
+    print $msg
 }
 
 # this line will fail because the number of simultaneous connections is 1
