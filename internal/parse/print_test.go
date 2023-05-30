@@ -45,6 +45,11 @@ func TestPrint(t *testing.T) {
 		"(f)",
 		"a",
 		"a?",
+		"var a",
+		"var a =",
+		"var a = 1",
+		"var a int = 1",
+		"var a namespace.pattern = 1",
 		//assignment
 		"a = 0",
 		"assign a b = c",

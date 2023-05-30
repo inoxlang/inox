@@ -694,6 +694,7 @@ func GetTokens(node Node, addMeta bool) []Token {
 		var tokenType TokenType
 		var tokenMeta TokenMeta
 		var raw = ""
+		literalSpan := node.Base().Span
 
 		// literals
 		switch n := node.(type) {
@@ -890,7 +891,7 @@ func GetTokens(node Node, addMeta bool) []Token {
 			tokens = append(tokens, Token{
 				Type: tokenType,
 				Meta: tokenMeta,
-				Span: node.Base().Span,
+				Span: literalSpan,
 				Raw:  raw,
 			})
 		}

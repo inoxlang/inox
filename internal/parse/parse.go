@@ -5821,10 +5821,13 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 			}
 		case *IdentifierMemberExpression:
 			if p.inPattern && len(v.PropertyNames) == 1 {
+				base := v.Left.NodeBase
+				base.Span.End += 1 //add one for the dot
+
 				return &PatternNamespaceMemberExpression{
 					NodeBase: v.NodeBase,
 					Namespace: &PatternNamespaceIdentifierLiteral{
-						NodeBase:   v.Left.NodeBase,
+						NodeBase:   base,
 						Unprefixed: true,
 						Name:       v.Left.Name,
 					},

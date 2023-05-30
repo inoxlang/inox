@@ -790,6 +790,52 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 
+		t.Run("single declaration without parenthesis and with unprefixed pattern namespace member", func(t *testing.T) {
+			n := MustParseChunk("var a x.y = 1")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
+				Statements: []Node{
+					&LocalVariableDeclarations{
+						NodeBase: NodeBase{
+							NodeSpan{0, 13},
+							nil,
+							[]Token{{Type: VAR_KEYWORD, Span: NodeSpan{0, 3}}},
+						},
+						Declarations: []*LocalVariableDeclaration{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{4, 13},
+									nil,
+									[]Token{{Type: EQUAL, Span: NodeSpan{10, 11}}},
+								},
+								Left: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{4, 5}, nil, nil},
+									Name:     "a",
+								},
+								Type: &PatternNamespaceMemberExpression{
+									NodeBase: NodeBase{NodeSpan{6, 9}, nil, nil},
+									Namespace: &PatternNamespaceIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{6, 8}, nil, nil},
+										Unprefixed: true,
+										Name:       "x",
+									},
+									MemberName: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{8, 9}, nil, nil},
+										Name:     "y",
+									},
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{12, 13}, nil, nil},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("var keyword at end of file", func(t *testing.T) {
 			n, err := ParseChunk("var", "")
 			assert.Error(t, err)
