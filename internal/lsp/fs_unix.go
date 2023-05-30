@@ -14,7 +14,7 @@ type Filesystem struct {
 	documents afs.Filesystem
 }
 
-func newFilesystem() *Filesystem {
+func NewFilesystem() *Filesystem {
 	return &Filesystem{
 		Filesystem: _fs.GetOsFilesystem(),
 		documents:  _fs.NewMemFilesystem(),

@@ -1,12 +1,13 @@
 package internal
 
 import (
+	"errors"
 	"io"
 	"log"
 	"os"
+	"runtime/debug"
 
 	core "github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/permkind"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
@@ -31,7 +32,9 @@ var HOVER_PRETTY_PRINT_CONFIG = &pprint.PrettyPrintConfig{
 }
 
 type LSPServerOptions struct {
-	WASM *WasmOptions
+	WASM       *WasmOptions
+	Websocket  *WebsocketOptions
+	Filesystem *Filesystem
 }
 
 type WasmOptions struct {
@@ -40,7 +43,11 @@ type WasmOptions struct {
 	LogOutput   io.Writer
 }
 
-func StartLSPServer(opts LSPServerOptions) {
+type WebsocketOptions struct {
+	Addr string
+}
+
+func StartLSPServer(ctx *core.Context, opts LSPServerOptions) error {
 	//setup logs
 
 	var logOut io.Writer
@@ -64,7 +71,7 @@ func StartLSPServer(opts LSPServerOptions) {
 		e := recover()
 
 		if e != nil {
-			logs.Println(e)
+			logs.Println(e, "at", string(debug.Stack()))
 		}
 
 		if logFile != nil {
@@ -80,22 +87,27 @@ func StartLSPServer(opts LSPServerOptions) {
 	}
 
 	if opts.WASM != nil {
+
+		if opts.Websocket != nil {
+			panic(errors.New("invalid LSP options: options for WASM AND Websocket are both provided"))
+		}
+
 		options.StdioInput = opts.WASM.StdioInput
 		options.StdioOutput = opts.WASM.StdioOutput
 	}
 
-	server := lsp.NewServer(options)
+	if opts.Websocket != nil {
+		if opts.WASM != nil {
+			panic(errors.New("invalid LSP options: options for WASM AND Websocket are both provided"))
+		}
 
-	filesystem := newFilesystem()
+		options.Network = "wss"
+		options.Address = opts.Websocket.Addr
+	}
 
-	compilationCtx := core.NewContext(core.ContextConfig{
-		Permissions: []core.Permission{
-			//TODO: change path pattern
-			core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
-		},
-		Filesystem: filesystem,
-	})
-	state := core.NewGlobalState(compilationCtx)
+	server := lsp.NewServer(ctx, options)
+
+	state := core.NewGlobalState(ctx)
 	state.Logger = zerolog.New(utils.FnWriter{
 		WriteFn: func(p []byte) (n int, err error) {
 			logs.Println(utils.BytesAsString(p))
@@ -103,6 +115,6 @@ func StartLSPServer(opts LSPServerOptions) {
 		},
 	})
 
-	registerHandlers(server, filesystem, compilationCtx)
-	server.Run()
+	registerHandlers(server, opts.Filesystem, ctx)
+	return server.Run()
 }

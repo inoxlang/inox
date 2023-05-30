@@ -314,7 +314,7 @@ func (perm HttpPermission) String() string {
 
 type WebsocketPermission struct {
 	Kind_    PermissionKind
-	Endpoint ResourceName
+	Endpoint ResourceName //ignored for some permission kinds
 }
 
 func (perm WebsocketPermission) Kind() PermissionKind {
@@ -326,6 +326,9 @@ func (perm WebsocketPermission) InternalPermTypename() permkind.InternalPermissi
 }
 
 func (perm WebsocketPermission) String() string {
+	if perm.Endpoint == nil {
+		return fmt.Sprintf("[websocket %s]", perm.Kind_)
+	}
 	return fmt.Sprintf("[websocket %s %s]", perm.Kind_, perm.Endpoint)
 }
 

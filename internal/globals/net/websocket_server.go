@@ -2,6 +2,7 @@ package internal
 
 import (
 	"errors"
+	"net/http"
 	"sync/atomic"
 	"time"
 
@@ -19,6 +20,7 @@ const (
 
 var ErrClosedWebsocketServer = errors.New("closed websocket server")
 
+// WebsocketServer is a LSP server that uses Websocket to exchange messages with the client.
 type WebsocketServer struct {
 	core.NotClonableMixin
 	core.NoReprMixin
@@ -97,6 +99,10 @@ func (s *WebsocketServer) Upgrade(rw *_http.HttpResponseWriter, r *_http.HttpReq
 		closed:          0,
 		originalContext: s.originalContext,
 	}, nil
+}
+
+func (s *WebsocketServer) UpgradeGoValues(rw http.ResponseWriter, r *http.Request) (*websocket.Conn, error) {
+	return s.upgrader.Upgrade(rw, r, nil)
 }
 
 func (s *WebsocketServer) Close(ctx *Context) error {

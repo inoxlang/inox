@@ -7,21 +7,28 @@ import (
 
 	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
 	"github.com/inoxlang/inox/internal/lsp/logs"
+	"github.com/inoxlang/inox/internal/permkind"
+
+	core "github.com/inoxlang/inox/internal/core"
+	_net "github.com/inoxlang/inox/internal/globals/net"
 )
 
 type Server struct {
 	Methods
 	rpcServer *jsonrpc.Server
+	ctx       *core.Context
 }
 
-func NewServer(opt *Options) *Server {
-	s := &Server{}
+func NewServer(ctx *core.Context, opt *Options) *Server {
+	s := &Server{
+		ctx: ctx,
+	}
 	s.Opt = *opt
 	s.rpcServer = jsonrpc.NewServer()
 	return s
 }
 
-func (s *Server) Run() {
+func (s *Server) Run() error {
 	mtds := s.GetMethods()
 	for _, m := range mtds {
 		if m != nil {
@@ -29,26 +36,20 @@ func (s *Server) Run() {
 		}
 	}
 
-	s.run()
+	return s.run()
 }
-func (s *Server) run() {
+
+func (s *Server) run() error {
 	addr := s.Opt.Address
 	netType := s.Opt.Network
 	if netType != "" {
-		if addr == "" {
-			addr = "127.0.0.1:7998"
-		}
-		logs.Printf("use socket mode: net: %s, addr: %s\n", netType, addr)
-		listener, err := net.Listen(netType, addr)
-		if err != nil {
-			panic(err)
-		}
-		for {
-			conn, err := listener.Accept()
-			if err != nil {
-				panic(err)
-			}
-			go s.rpcServer.ConnComeIn(conn)
+		switch netType {
+		case "wss":
+			return s.startWebsocketServer(addr)
+		case "tcp":
+			return s.startTcpServer(netType, addr)
+		default:
+			return fmt.Errorf("network type %s is not supported/allowed", netType)
 		}
 	} else {
 		logs.Println("use stdio mode.")
@@ -66,6 +67,46 @@ func (s *Server) run() {
 
 		s.rpcServer.ConnComeIn(stdio)
 	}
+	return nil
+}
+
+func (s *Server) startTcpServer(netType string, addr string) error {
+	if addr == "" {
+		addr = "127.0.0.1:7998"
+	}
+
+	if err := s.ctx.CheckHasPermission(_net.RawTcpPermission{
+		Kind_:  permkind.Provide,
+		Domain: core.Host("://" + addr),
+	}); err != nil {
+		return err
+	}
+
+	logs.Printf("use socket mode: net: %s, addr: %s\n", netType, addr)
+	listener, err := net.Listen(netType, addr)
+	if err != nil {
+		panic(err)
+	}
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			panic(err)
+		}
+		go s.rpcServer.ConnComeIn(conn)
+	}
+}
+
+func (s *Server) startWebsocketServer(addr string) error {
+	if addr == "" {
+		addr = "127.0.0.1:7998"
+	}
+
+	wsServer, err := NewJsonRpcWebsocketServer(s.ctx, addr, s.rpcServer)
+	if err != nil {
+		return err
+	}
+
+	return wsServer.Listen()
 }
 
 func wrapErrorToRespError(err interface{}, code int) error {
@@ -81,6 +122,7 @@ func wrapErrorToRespError(err interface{}, code int) error {
 		Data:    err,
 	}
 }
+
 func isNil(i interface{}) bool {
 	if i == nil {
 		return true

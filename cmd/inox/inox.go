@@ -26,6 +26,7 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 
 	_ "net/http/pprof"
+	"net/url"
 )
 
 const (
@@ -181,7 +182,54 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		fmt.Fprintf(outW, "%s\n\r", utils.Must(json.Marshal(data)))
 
 	case "lsp":
-		lsp.StartLSPServer(lsp.LSPServerOptions{})
+		lspFlags := flag.NewFlagSet("lsp", flag.ExitOnError)
+		var host string
+		lspFlags.StringVar(&host, "h", "", "host")
+
+		opts := lsp.LSPServerOptions{}
+
+		err := lspFlags.Parse(mainSubCommandArgs)
+		if err != nil {
+			fmt.Fprintln(errW, "lsp:", err)
+			return
+		}
+
+		if host != "" {
+			u, err := url.Parse(host)
+			if err != nil {
+				fmt.Fprintln(errW, "invalid host:", host)
+			}
+			if u.Scheme != "wss" {
+				fmt.Fprintln(errW, "invalid host, scheme should be wss:", host)
+				return
+			}
+			if u.Path != "" {
+				fmt.Fprintln(errW, "invalid host, path should be empty:", host)
+				return
+			}
+			opts.Websocket = &lsp.WebsocketOptions{Addr: u.Host}
+		}
+
+		perms := []core.Permission{
+			//TODO: change path pattern
+			core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+		}
+
+		if opts.Websocket != nil {
+			perms = append(perms, core.WebsocketPermission{Kind_: permkind.Provide})
+		}
+
+		filesystem := lsp.NewFilesystem()
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: perms,
+			Filesystem:  filesystem,
+		})
+
+		opts.Filesystem = filesystem
+
+		if err := lsp.StartLSPServer(ctx, opts); err != nil {
+			fmt.Fprintln(errW, "failed to start LSP server:", err)
+		}
 	case "shell":
 		shellFlags := flag.NewFlagSet("shell", flag.ExitOnError)
 		startupScriptPath, err := config.GetStartupScriptPath()

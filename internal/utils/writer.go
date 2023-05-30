@@ -8,6 +8,7 @@ import (
 var (
 	_ = []io.Writer{FnWriter{}, FnReaderWriter{}}
 	_ = []io.Reader{FnReaderWriter{}}
+	_ = []io.ReadWriteCloser{FnReaderWriterCloser{}}
 )
 
 type TestWriter struct {
@@ -38,6 +39,24 @@ func (w FnReaderWriter) Write(p []byte) (n int, err error) {
 
 func (w FnReaderWriter) Read(p []byte) (n int, err error) {
 	return w.ReadFn(p)
+}
+
+type FnReaderWriterCloser struct {
+	WriteFn func(p []byte) (n int, err error)
+	ReadFn  func(p []byte) (n int, err error)
+	CloseFn func() error
+}
+
+func (w FnReaderWriterCloser) Write(p []byte) (n int, err error) {
+	return w.WriteFn(p)
+}
+
+func (w FnReaderWriterCloser) Read(p []byte) (n int, err error) {
+	return w.ReadFn(p)
+}
+
+func (w FnReaderWriterCloser) Close() error {
+	return w.CloseFn()
 }
 
 func WriteMany[W io.Writer](w W, slices ...[]byte) error {

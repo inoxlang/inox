@@ -145,7 +145,7 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 	})
 
 	//create a stdlib http Server
-	server, err := makeHttpServer(addr, topHandler, "", "", ctx)
+	server, err := NewGolangHttpServer(addr, topHandler, "", "", ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -336,7 +336,7 @@ func readHttpServerArgs(ctx *core.Context, server *HttpServer, args ...core.Valu
 	return
 }
 
-func makeHttpServer(addr string, handler http.Handler, pemEncodedCert string, pemEncodedKey string, ctx *core.Context) (*http.Server, error) {
+func NewGolangHttpServer(addr string, handler http.Handler, pemEncodedCert string, pemEncodedKey string, ctx *core.Context) (*http.Server, error) {
 	fls := ctx.GetFileSystem()
 
 	if pemEncodedCert == "" { //if no certificate provided by the user we create one
@@ -408,6 +408,7 @@ func makeHttpServer(addr string, handler http.Handler, pemEncodedCert string, pe
 		WriteTimeout:      DEFAULT_HTTP_SERVER_WRITE_TIMEOUT,
 		MaxHeaderBytes:    DEFAULT_HTTP_SERVER_MAX_HEADER_BYTES,
 		TLSConfig:         tlsConfig,
+		//TODO: set logger
 	}
 
 	return server, nil

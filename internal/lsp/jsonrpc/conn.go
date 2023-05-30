@@ -10,10 +10,22 @@ type ReaderWriter interface {
 	io.Writer
 	io.Closer
 }
+
+type MessageReaderWriter interface {
+	//ReadMessage reads an entire message and returns it, the returned bytes should not be modified by the caller.
+	ReadMessage() (msg []byte, err error)
+
+	//WriteMessage writes an entire message and returns it, the written bytes should not modified by the implementation.
+	WriteMessage(msg []byte) error
+
+	io.Closer
+}
+
 type CloserReader interface {
 	io.Reader
 	io.Closer
 }
+
 type fakeCloseReader struct {
 	io.Reader
 }

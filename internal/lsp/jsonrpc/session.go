@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gorilla/websocket"
 	"github.com/inoxlang/inox/internal/lsp/logs"
 	jsoniter "github.com/json-iterator/go"
 )
@@ -24,17 +25,27 @@ type executor struct {
 }
 
 type Session struct {
-	id           int
-	server       *Server
-	conn         ReaderWriter
+	id     int
+	server *Server
+
+	conn    ReaderWriter
+	msgConn MessageReaderWriter
+
 	executors    map[interface{}]*executor
 	executorLock sync.Mutex
 	writeLock    sync.Mutex
 	cancel       chan struct{}
 }
 
-func newSession(id int, server *Server, conn ReaderWriter) *Session {
+func newSessionWithConn(id int, server *Server, conn ReaderWriter) *Session {
 	s := &Session{id: id, server: server, conn: conn}
+	s.executors = make(map[interface{}]*executor)
+	s.cancel = make(chan struct{}, 1)
+	return s
+}
+
+func newSessionWithMessageConn(id int, server *Server, conn MessageReaderWriter) *Session {
+	s := &Session{id: id, server: server, msgConn: conn}
 	s.executors = make(map[interface{}]*executor)
 	s.cancel = make(chan struct{}, 1)
 	return s
@@ -99,60 +110,74 @@ func (s *Session) readSize(len int) ([]byte, error) {
 }
 
 func (s *Session) readRequest() (RequestMessage, error) {
-	lenHeader, err := s.readSize(15)
-	if err != nil {
-		return RequestMessage{}, err
-	}
-	if strings.ToLower(string(lenHeader)) != "content-length:" {
-		return RequestMessage{}, ParseError
-	}
-	var buf []byte
-	state := 0
-	for max := 0; max < 20; max++ {
-		b, err := s.readSize(1)
+	var contentBytes []byte
+
+	if s.msgConn != nil {
+		msg, err := s.msgConn.ReadMessage()
 		if err != nil {
 			return RequestMessage{}, err
 		}
-		if state == 0 {
-			buf = append(buf, b[0])
-		} else {
-			if b[0] != '\r' && b[0] != '\n' {
-				return RequestMessage{}, ParseError
-			}
+		contentBytes = msg
+	} else {
+		lenHeader, err := s.readSize(15)
+		if err != nil {
+			return RequestMessage{}, err
 		}
-		if b[0] == '\r' {
-			if state%2 == 0 {
-				state += 1
+		if strings.ToLower(string(lenHeader)) != "content-length:" {
+			return RequestMessage{}, ParseError
+		}
+
+		var buf []byte
+		state := 0
+		for max := 0; max < 20; max++ {
+			b, err := s.readSize(1)
+			if err != nil {
+				return RequestMessage{}, err
+			}
+			if state == 0 {
+				buf = append(buf, b[0])
 			} else {
-				return RequestMessage{}, ParseError
-			}
-		}
-		if b[0] == '\n' {
-			if state%2 == 1 {
-				state += 1
-				if state == 4 {
-					break
+				if b[0] != '\r' && b[0] != '\n' {
+					return RequestMessage{}, ParseError
 				}
-			} else {
-				return RequestMessage{}, ParseError
+			}
+			if b[0] == '\r' {
+				if state%2 == 0 {
+					state += 1
+				} else {
+					return RequestMessage{}, ParseError
+				}
+			}
+			if b[0] == '\n' {
+				if state%2 == 1 {
+					state += 1
+					if state == 4 {
+						break
+					}
+				} else {
+					return RequestMessage{}, ParseError
+				}
 			}
 		}
+		if state != 4 {
+			return RequestMessage{}, ParseError
+		}
+
+		contentLen, err := strconv.Atoi(strings.TrimSpace(string(buf)))
+		if err != nil {
+			e := ParseError
+			e.Data = err
+			return RequestMessage{}, e
+		}
+		content, err := s.readSize(contentLen)
+		if err != nil {
+			return RequestMessage{}, err
+		}
+		contentBytes = content
 	}
-	if state != 4 {
-		return RequestMessage{}, ParseError
-	}
-	contentLen, err := strconv.Atoi(strings.TrimSpace(string(buf)))
-	if err != nil {
-		e := ParseError
-		e.Data = err
-		return RequestMessage{}, e
-	}
-	content, err := s.readSize(contentLen)
-	if err != nil {
-		return RequestMessage{}, err
-	}
+
 	req := RequestMessage{}
-	err = jsoniter.Unmarshal(content, &req)
+	err := jsoniter.Unmarshal(contentBytes, &req)
 	if err != nil {
 		e := ParseError
 		e.Data = err
@@ -239,12 +264,19 @@ func (s *Session) handlerRequest(req RequestMessage) error {
 func (s *Session) write(resp ResponseMessage) error {
 	s.writeLock.Lock()
 	defer s.writeLock.Unlock()
+
 	res, err := jsoniter.Marshal(resp)
 	if err != nil {
 		return err
 	}
+
 	logs.Printf("Response: [%v] res: [%v]\n", resp.ID, string(res))
 	totalLen := len(res)
+
+	if s.msgConn != nil {
+		return s.msgConn.WriteMessage(res)
+	}
+
 	err = s.mustWrite([]byte(fmt.Sprintf("Content-Length: %d\r\n\r\n", totalLen)))
 	if err != nil {
 		return err
@@ -264,6 +296,11 @@ func (s *Session) Notify(notif NotificationMessage) error {
 		return err
 	}
 	logs.Printf("Notification: [%v]\n", string(res))
+
+	if s.msgConn != nil {
+		return s.msgConn.WriteMessage(res)
+	}
+
 	totalLen := len(res)
 	err = s.mustWrite([]byte(fmt.Sprintf("Content-Length: %d\r\n\r\n", totalLen)))
 	if err != nil {
@@ -304,12 +341,24 @@ func (s *Session) handlerResponse(id interface{}, result interface{}, err error)
 }
 
 func (s *Session) handlerError(err error) {
-	if errors.Is(err, io.EOF) {
+	isEof := errors.Is(err, io.EOF)
+	isWebsocketUnexpectedClose := websocket.IsUnexpectedCloseError(err)
+
+	if isEof || isWebsocketUnexpectedClose {
 		// conn done, close conn and remove session
-		err := s.conn.Close()
-		if err != nil {
-			logs.Println("close error: ", err)
+
+		if s.conn != nil {
+			err := s.conn.Close()
+			if err != nil {
+				logs.Println("close error: ", err)
+			}
+		} else {
+			err := s.msgConn.Close()
+			if err != nil {
+				logs.Println("message connection: close error: ", err)
+			}
 		}
+
 		func() {
 			s.executorLock.Lock()
 			defer s.executorLock.Unlock()
@@ -327,7 +376,6 @@ func (s *Session) handlerError(err error) {
 		s.server.removeSession(s.id)
 	}
 	logs.Println("error: ", err)
-	return
 }
 
 func isNil(i interface{}) bool {

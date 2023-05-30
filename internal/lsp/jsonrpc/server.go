@@ -38,6 +38,11 @@ func (s *Server) ConnComeIn(conn ReaderWriter) {
 	session.Start()
 }
 
+func (s *Server) MsgConnComeIn(conn MessageReaderWriter) {
+	session := s.newSessionWithMsgConn(conn)
+	session.Start()
+}
+
 func (s *Server) removeSession(id int) {
 	s.sessionLock.Lock()
 	defer s.sessionLock.Unlock()
@@ -47,9 +52,23 @@ func (s *Server) removeSession(id int) {
 func (s *Server) newSession(conn ReaderWriter) *Session {
 	s.sessionLock.Lock()
 	defer s.sessionLock.Unlock()
+
 	id := s.nowId
 	s.nowId += 1
-	session := newSession(id, s, conn)
+
+	session := newSessionWithConn(id, s, conn)
+	s.session[id] = session
+	return session
+}
+
+func (s *Server) newSessionWithMsgConn(conn MessageReaderWriter) *Session {
+	s.sessionLock.Lock()
+	defer s.sessionLock.Unlock()
+
+	id := s.nowId
+	s.nowId += 1
+
+	session := newSessionWithMessageConn(id, s, conn)
 	s.session[id] = session
 	return session
 }
