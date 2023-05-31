@@ -14,12 +14,12 @@ type File struct {
 	_ int
 }
 
-func (r *File) Test(v SymbolicValue) bool {
+func (r *File) Test(v symbolic.SymbolicValue) bool {
 	_, ok := v.(*File)
 	return ok
 }
 
-func (r File) Clone(clones map[uintptr]SymbolicValue) SymbolicValue {
+func (r File) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
 	return &File{}
 }
 
@@ -37,7 +37,7 @@ func (f *File) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }
 
-func (f *File) Prop(name string) SymbolicValue {
+func (f *File) Prop(name string) symbolic.SymbolicValue {
 	method, ok := f.GetGoMethod(name)
 	if !ok {
 		panic(symbolic.FormatErrPropertyDoesNotExist(name, f))
@@ -77,6 +77,6 @@ func (r *File) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, de
 	return
 }
 
-func (r *File) WidestOfType() SymbolicValue {
+func (r *File) WidestOfType() symbolic.SymbolicValue {
 	return &File{}
 }

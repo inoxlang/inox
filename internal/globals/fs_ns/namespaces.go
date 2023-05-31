@@ -70,6 +70,9 @@ func init() {
 		GetTreeData, func(ctx *symbolic.Context, pth *symbolic.Path) *symbolic.UData {
 			return &symbolic.UData{}
 		},
+		NewMemFilesystemIL, func(ctx *symbolic.Context, maxTotalStorageSize *symbolic.ByteCount) *fs_symbolic.Filesystem {
+			return fs_symbolic.ANY_FILESYSTEM
+		},
 	})
 
 	help_ns.RegisterHelpValues(map[string]any{
@@ -92,22 +95,23 @@ func init() {
 
 func NewFsNamespace() *core.Record {
 	return core.NewRecordFromMap(core.ValMap{
-		"mkfile":        core.WrapGoFunction(Mkfile),
-		"mkdir":         core.WrapGoFunction(Mkdir),
-		"read_file":     core.WrapGoFunction(ReadFile),
-		"read":          core.WrapGoFunction(Read),
-		"ls":            core.WrapGoFunction(ListFiles),
-		"rm":            core.WrapGoFunction(Remove),
-		"remove":        core.WrapGoFunction(Remove),
-		"cp":            core.WrapGoFunction(Copy),
-		"mv":            core.WrapGoFunction(Rename),
-		"rename":        core.WrapGoFunction(Rename),
-		"isdir":         core.WrapGoFunction(IsDir),
-		"isfile":        core.WrapGoFunction(IsFile),
-		"find":          core.WrapGoFunction(Find),
-		"exists":        core.WrapGoFunction(Exists),
-		"open":          core.WrapGoFunction(OpenExisting),
-		"glob":          core.WrapGoFunction(Glob),
-		"get_tree_data": core.WrapGoFunction(GetTreeData),
+		"mkfile":             core.WrapGoFunction(Mkfile),
+		"mkdir":              core.WrapGoFunction(Mkdir),
+		"read_file":          core.WrapGoFunction(ReadFile),
+		"read":               core.WrapGoFunction(Read),
+		"ls":                 core.WrapGoFunction(ListFiles),
+		"rm":                 core.WrapGoFunction(Remove),
+		"remove":             core.WrapGoFunction(Remove),
+		"cp":                 core.WrapGoFunction(Copy),
+		"mv":                 core.WrapGoFunction(Rename),
+		"rename":             core.WrapGoFunction(Rename),
+		"isdir":              core.WrapGoFunction(IsDir),
+		"isfile":             core.WrapGoFunction(IsFile),
+		"find":               core.WrapGoFunction(Find),
+		"exists":             core.WrapGoFunction(Exists),
+		"open":               core.WrapGoFunction(OpenExisting),
+		"glob":               core.WrapGoFunction(Glob),
+		"get_tree_data":      core.WrapGoFunction(GetTreeData),
+		"new_mem_filesystem": core.WrapGoFunction(NewMemFilesystemIL),
 	})
 }
