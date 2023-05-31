@@ -25,8 +25,8 @@ type MemFilesystem struct {
 	tempCount int
 }
 
-func NewMemFilesystem() *MemFilesystem {
-	return &MemFilesystem{s: newInMemoryStorage()}
+func NewMemFilesystem(maxTotalStorageSize core.ByteCount) *MemFilesystem {
+	return &MemFilesystem{s: newInMemoryStorage(maxTotalStorageSize)}
 }
 
 func (fs MemFilesystem) Chroot(path string) (billy.Filesystem, error) {
@@ -383,6 +383,8 @@ func (*fileInfo) Sys() interface{} {
 }
 
 func (c *inMemFileContent) Truncate() {
+	c.filesystemStorageSize.Add(-int64(len(c.bytes)))
+
 	c.bytes = make([]byte, 0)
 }
 

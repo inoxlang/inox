@@ -9,19 +9,43 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
+
+	core "github.com/inoxlang/inox/internal/core"
+)
+
+const (
+	TRUE_MAX_IN_MEM_STORAGE = core.ByteCount(100_000_000)
+)
+
+var (
+	ErrInMemoryStorageLimitExceededDuringWrite = errors.New("in-memory file storage limit exceeded during write operation")
 )
 
 type inMemStorage struct {
-	lock     sync.RWMutex
-	files    map[string]*inMemfile
-	children map[string]map[string]*inMemfile
+	lock             sync.RWMutex
+	files            map[string]*inMemfile
+	children         map[string]map[string]*inMemfile
+	totalContentSize atomic.Int64
+	maxStorageSize   int64
 }
 
-func newInMemoryStorage() *inMemStorage {
-	return &inMemStorage{
-		files:    make(map[string]*inMemfile, 0),
-		children: make(map[string]map[string]*inMemfile, 0),
+func newInMemoryStorage(maxStorageSize core.ByteCount) *inMemStorage {
+	if maxStorageSize <= 50 {
+		panic(errors.New("given max. total content size should be > 50"))
 	}
+
+	if int64(maxStorageSize) > int64(TRUE_MAX_IN_MEM_STORAGE) {
+		panic(errors.New("given max. total content size is greater than the true maximum"))
+	}
+
+	storage := &inMemStorage{
+		files:          make(map[string]*inMemfile, 0),
+		children:       make(map[string]map[string]*inMemfile, 0),
+		maxStorageSize: int64(maxStorageSize),
+	}
+
+	return storage
 }
 
 func (s *inMemStorage) Has(path string) bool {
@@ -61,6 +85,9 @@ func (s *inMemStorage) newNoLock(path string, mode os.FileMode, flag int) (*inMe
 		mode:    mode,
 		flag:    flag,
 	}
+
+	f.content.filesystemStorageSize = &s.totalContentSize
+	f.content.filesystemMaxStorageSize = s.maxStorageSize
 
 	s.files[path] = f
 	s.createParentNoLock(path, mode, f)
@@ -213,8 +240,10 @@ func clean(path string) string {
 }
 
 type inMemFileContent struct {
-	name  string
-	bytes []byte
+	name                     string
+	bytes                    []byte
+	filesystemMaxStorageSize int64
+	filesystemStorageSize    *atomic.Int64
 
 	m sync.RWMutex
 }
@@ -233,7 +262,18 @@ func (c *inMemFileContent) WriteAt(p []byte, off int64) (int, error) {
 
 	diff := int(off) - prev
 	if diff > 0 {
+		if c.filesystemStorageSize.Add(int64(diff)) > c.filesystemMaxStorageSize {
+			return 0, ErrInMemoryStorageLimitExceededDuringWrite
+		}
+
 		c.bytes = append(c.bytes, make([]byte, diff)...)
+	}
+
+	destSliceLength := int64(len(c.bytes[:off]))
+	allocationSize := int64(len(p)) - destSliceLength
+
+	if allocationSize > 0 && c.filesystemStorageSize.Add(allocationSize) > c.filesystemMaxStorageSize {
+		return 0, ErrInMemoryStorageLimitExceededDuringWrite
 	}
 
 	c.bytes = append(c.bytes[:off], p...)

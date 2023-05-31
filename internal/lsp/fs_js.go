@@ -7,7 +7,7 @@ import (
 	fs_ns "github.com/inoxlang/inox/internal/globals/fs_ns"
 )
 
-// Filesystem is an implementation of billy.Filesystem that stores the edited document files in a memory filesystem
+// Filesystem is a filesystem that stores all files in a memory filesystem.
 type Filesystem struct {
 	*fs_ns.MemFilesystem
 }

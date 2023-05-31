@@ -8,7 +8,11 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 )
 
-// Filesystem is an implementation of billy.Filesystem that stores all files in a memory filesystem
+const (
+	DEFAULT_MAX_IN_MEM_FS_STORAGE_SIZE = 10_000_000
+)
+
+// Filesystem is a filesystem that stores the edited document in a separate filesystem.
 type Filesystem struct {
 	afs.Filesystem
 	documents afs.Filesystem
@@ -17,7 +21,7 @@ type Filesystem struct {
 func NewDefaultFilesystem() *Filesystem {
 	return &Filesystem{
 		Filesystem: fs_ns.GetOsFilesystem(),
-		documents:  fs_ns.NewMemFilesystem(),
+		documents:  fs_ns.NewMemFilesystem(DEFAULT_MAX_IN_MEM_FS_STORAGE_SIZE),
 	}
 }
 
