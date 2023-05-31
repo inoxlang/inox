@@ -25,7 +25,7 @@ func NewServer(ctx *core.Context, opt *Options) *Server {
 		ctx: ctx,
 	}
 	s.Opt = *opt
-	s.rpcServer = jsonrpc.NewServer()
+	s.rpcServer = jsonrpc.NewServer(opt.OnSession)
 	return s
 }
 

@@ -48,6 +48,7 @@ func NewJsonRpcWebsocketServer(ctx *core.Context, addr string, rpcServer *jsonrp
 }
 
 func (server *JsonRpcWebsocketServer) Listen() error {
+	server.logger.Info().Msg("start HTTPS server")
 	err := server.httpServer.ListenAndServeTLS("", "")
 	if err != nil {
 		return fmt.Errorf("failed to create HTTPS server: %w", err)

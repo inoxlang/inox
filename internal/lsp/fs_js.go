@@ -12,7 +12,7 @@ type Filesystem struct {
 	*fs_ns.MemFilesystem
 }
 
-func NewFilesystem() *Filesystem {
+func NewDefaultFilesystem() *Filesystem {
 	return &Filesystem{
 		fs_ns.NewMemFilesystem(),
 	}

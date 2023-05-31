@@ -66,7 +66,7 @@ func main() {
 	fmt.Println(OUT_PREFIX, "start server")
 
 	go lsp.StartLSPServer(ctx, lsp.LSPServerOptions{
-		WASM: &lsp.WasmOptions{
+		InternalStdio: &lsp.InternalStdio{
 			StdioInput:  lspInputWriter,
 			StdioOutput: lspOuput,
 			LogOutput: utils.FnWriter{

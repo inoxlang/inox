@@ -14,6 +14,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/help_ns"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
+	"github.com/inoxlang/inox/internal/globals/inoxlsp_ns"
 	"github.com/inoxlang/inox/internal/globals/strmanip_ns"
 
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
@@ -109,6 +110,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 		"sql":      sql_ns.NewSQLNamespace(),
 		"inox":     inox_ns.NewInoxNamespace(),
 		"inoxsh":   inoxsh_ns.NewInoxshNamespace(),
+		"inoxlsp":  inoxlsp_ns.NewInoxLspNamespace(),
 		"strmanip": strmanip_ns.NewStrManipNnamespace(),
 		"rsa":      newRSANamespace(),
 

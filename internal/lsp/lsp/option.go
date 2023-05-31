@@ -3,13 +3,15 @@ package lsp
 import (
 	"io"
 
+	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
 	"github.com/inoxlang/inox/internal/lsp/lsp/defines"
 )
 
 type Options struct {
 	// if Network is null, will use stdio
-	Network string
-	Address string
+	Network   string
+	Address   string
+	OnSession jsonrpc.SessionCreationCallbackFn
 
 	StdioInput  io.Reader
 	StdioOutput io.Writer

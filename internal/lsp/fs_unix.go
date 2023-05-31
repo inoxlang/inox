@@ -14,10 +14,21 @@ type Filesystem struct {
 	documents afs.Filesystem
 }
 
-func NewFilesystem() *Filesystem {
+func NewDefaultFilesystem() *Filesystem {
 	return &Filesystem{
 		Filesystem: fs_ns.GetOsFilesystem(),
 		documents:  fs_ns.NewMemFilesystem(),
+	}
+}
+
+func NewFilesystem(base afs.Filesystem, editedDocumentFs afs.Filesystem) *Filesystem {
+	if editedDocumentFs == nil {
+		editedDocumentFs = base
+	}
+
+	return &Filesystem{
+		Filesystem: base,
+		documents:  editedDocumentFs,
 	}
 }
 

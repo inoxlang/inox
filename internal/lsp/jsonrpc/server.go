@@ -16,10 +16,20 @@ type Server struct {
 	nowId       int
 	methods     map[string]MethodInfo
 	sessionLock sync.Mutex
+	onSession   SessionCreationCallbackFn
 }
 
-func NewServer() *Server {
-	s := &Server{}
+// Called before starting each new JSON RPC session.
+type SessionCreationCallbackFn func(*Session) error
+
+func NewServer(onSession func(*Session) error) *Server {
+	if onSession == nil {
+		onSession = func(s *Session) error { return nil }
+	}
+
+	s := &Server{
+		onSession: onSession,
+	}
 	s.session = make(map[int]*Session)
 	s.methods = make(map[string]MethodInfo)
 
@@ -35,11 +45,17 @@ func (s *Server) RegisterMethod(m MethodInfo) {
 
 func (s *Server) ConnComeIn(conn ReaderWriter) {
 	session := s.newSession(conn)
+	if err := s.onSession(session); err != nil {
+		return
+	}
 	session.Start()
 }
 
 func (s *Server) MsgConnComeIn(conn MessageReaderWriter) {
 	session := s.newSessionWithMsgConn(conn)
+	if err := s.onSession(session); err != nil {
+		return
+	}
 	session.Start()
 }
 

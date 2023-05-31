@@ -222,7 +222,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			perms = append(perms, core.WebsocketPermission{Kind_: permkind.Provide})
 		}
 
-		filesystem := lsp.NewFilesystem()
+		filesystem := lsp.NewDefaultFilesystem()
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: perms,
 			Filesystem:  filesystem,

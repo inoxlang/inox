@@ -28,6 +28,7 @@ type Session struct {
 	id     int
 	server *Server
 
+	// Only one connection is non-nil
 	conn    ReaderWriter
 	msgConn MessageReaderWriter
 
@@ -291,6 +292,7 @@ func (s *Session) write(resp ResponseMessage) error {
 func (s *Session) Notify(notif NotificationMessage) error {
 	s.writeLock.Lock()
 	defer s.writeLock.Unlock()
+
 	res, err := jsoniter.Marshal(notif)
 	if err != nil {
 		return err
