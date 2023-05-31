@@ -33,7 +33,12 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 			if !v.IsDirPath() {
 				return nil, errors.New("the directory path should end with '/'")
 			}
-			dir = v
+			dir = v.ToAbs(ctx.GetFileSystem())
+
+			perm := core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(string(dir) + "...")}
+			if err := ctx.CheckHasPermission(perm); err != nil {
+				return nil, err
+			}
 		default:
 		}
 	}
