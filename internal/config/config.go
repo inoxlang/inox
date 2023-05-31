@@ -7,6 +7,8 @@ import (
 	"github.com/adrg/xdg"
 
 	core "github.com/inoxlang/inox/internal/core"
+	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
 
 	_ "embed"
 )
@@ -35,10 +37,43 @@ var (
 	INITIAL_COLORS_SET bool
 	INITIAL_FG_COLOR   core.Color
 	INITIAL_BG_COLOR   core.Color
+
+	DEFAULT_LOG_PRINT_CONFIG = &core.PrettyPrintConfig{
+		PrettyPrintConfig: pprint.PrettyPrintConfig{
+			MaxDepth: 10,
+			Colorize: false,
+			Compact:  true,
+		},
+	}
+
+	STR_CONVERSION_PRETTY_PRINT_CONFIG = &core.PrettyPrintConfig{
+		PrettyPrintConfig: pprint.PrettyPrintConfig{
+			MaxDepth: 10,
+			Colorize: false,
+			Compact:  true,
+		},
+	}
+
+	DEFAULT_PRETTY_PRINT_CONFIG *core.PrettyPrintConfig
 )
 
 func init() {
 	targetSpecificInit()
+
+	DEFAULT_PRETTY_PRINT_CONFIG = &core.PrettyPrintConfig{
+		PrettyPrintConfig: pprint.PrettyPrintConfig{
+			MaxDepth: 7,
+			Colorize: SHOULD_COLORIZE,
+			Colors: utils.If(INITIAL_COLORS_SET && INITIAL_BG_COLOR.IsDarkBackgroundColor(),
+				&pprint.DEFAULT_DARKMODE_PRINT_COLORS,
+				&pprint.DEFAULT_LIGHTMODE_PRINT_COLORS,
+			),
+			Compact:                     false,
+			Indent:                      []byte{' ', ' '},
+			PrintDecodedTopLevelStrings: true,
+		},
+	}
+
 }
 
 // GetStartupScriptPath searches for the startup script, creates if if it does not exist and returns its path.

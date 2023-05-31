@@ -6,8 +6,8 @@ import (
 	"io"
 
 	core "github.com/inoxlang/inox/internal/core"
-	_fs "github.com/inoxlang/inox/internal/globals/fs"
-	_http "github.com/inoxlang/inox/internal/globals/http"
+	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/globals/http_ns"
 )
 
 var (
@@ -37,9 +37,9 @@ func _readResource(ctx *core.Context, resource core.ResourceName, args ...core.V
 
 	switch resrc := resource.(type) {
 	case core.URL:
-		return _http.HttpRead(ctx, resrc, args...)
+		return http_ns.HttpRead(ctx, resrc, args...)
 	case core.Path:
-		return _fs.Read(ctx, resrc, args...)
+		return fs_ns.Read(ctx, resrc, args...)
 	default:
 		err = fmt.Errorf("resources of type %T not supported yet", resrc)
 		return
@@ -97,7 +97,7 @@ func _createResource(ctx *core.Context, resource core.ResourceName, args ...core
 	switch res := resource.(type) {
 	case core.URL:
 		args = append([]core.Value{res}, args...)
-		resp, err := _http.HttpPost(ctx, args...)
+		resp, err := http_ns.HttpPost(ctx, args...)
 		if resp != nil {
 			defer resp.Body(ctx).Close()
 		}
@@ -119,12 +119,12 @@ func _createResource(ctx *core.Context, resource core.ResourceName, args ...core
 		}
 
 		if res.IsDirPath() {
-			return nil, _fs.Mkdir(ctx, res)
+			return nil, fs_ns.Mkdir(ctx, res)
 		} else {
 			if content != nil {
-				return nil, _fs.Mkfile(ctx, res, content)
+				return nil, fs_ns.Mkfile(ctx, res, content)
 			}
-			return nil, _fs.Mkfile(ctx, res)
+			return nil, fs_ns.Mkfile(ctx, res)
 		}
 	default:
 		return nil, fmt.Errorf("resources of type %T not supported yet", res)
@@ -173,7 +173,7 @@ func _updateResource(ctx *core.Context, resource core.ResourceName, args ...core
 			return nil, errors.New("update: http only supports replace mode for now")
 		}
 
-		resp, err := _http.HttpPatch(ctx, res, content)
+		resp, err := http_ns.HttpPatch(ctx, res, content)
 
 		if resp != nil {
 			defer resp.Body(ctx).Close()
@@ -201,9 +201,9 @@ func _updateResource(ctx *core.Context, resource core.ResourceName, args ...core
 
 			switch mode {
 			case "append":
-				return nil, _fs.AppendToFile(ctx, resource, content)
+				return nil, fs_ns.AppendToFile(ctx, resource, content)
 			case "replace":
-				return nil, _fs.ReplaceFileContent(ctx, resource, content)
+				return nil, fs_ns.ReplaceFileContent(ctx, resource, content)
 			default:
 				panic(core.ErrUnreachable)
 			}
@@ -229,7 +229,7 @@ func _deleteResource(ctx *core.Context, resource core.ResourceName, args ...core
 
 	switch res := resource.(type) {
 	case core.URL:
-		resp, err := _http.HttpDelete(ctx, res)
+		resp, err := http_ns.HttpDelete(ctx, res)
 		if resp != nil {
 			defer resp.Body(ctx).Close()
 		}
@@ -251,7 +251,7 @@ func _deleteResource(ctx *core.Context, resource core.ResourceName, args ...core
 			return &core.ByteSlice{Bytes: b, IsDataMutable: true}, nil
 		}
 	case core.Path:
-		return nil, _fs.Remove(ctx, res)
+		return nil, fs_ns.Remove(ctx, res)
 	default:
 		return nil, fmt.Errorf("resources of type %T not supported yet", res)
 	}

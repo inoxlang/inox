@@ -4,17 +4,17 @@ package internal
 
 import (
 	afs "github.com/inoxlang/inox/internal/afs"
-	_fs "github.com/inoxlang/inox/internal/globals/fs"
+	fs_ns "github.com/inoxlang/inox/internal/globals/fs_ns"
 )
 
 // Filesystem is an implementation of billy.Filesystem that stores the edited document files in a memory filesystem
 type Filesystem struct {
-	*_fs.MemFilesystem
+	*fs_ns.MemFilesystem
 }
 
 func NewFilesystem() *Filesystem {
 	return &Filesystem{
-		_fs.NewMemFilesystem(),
+		fs_ns.NewMemFilesystem(),
 	}
 }
 

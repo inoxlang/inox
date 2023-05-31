@@ -3,74 +3,47 @@ package internal
 import (
 	"io"
 
-	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/config"
 	core "github.com/inoxlang/inox/internal/core"
-	_chrome "github.com/inoxlang/inox/internal/globals/chrome"
+	"github.com/inoxlang/inox/internal/default_state"
+	"github.com/inoxlang/inox/internal/globals/chrome_ns"
 	_containers "github.com/inoxlang/inox/internal/globals/containers"
-	_dom "github.com/inoxlang/inox/internal/globals/dom"
-	_env "github.com/inoxlang/inox/internal/globals/env"
-	_fs "github.com/inoxlang/inox/internal/globals/fs"
-	_help "github.com/inoxlang/inox/internal/globals/help"
-	_html "github.com/inoxlang/inox/internal/globals/html"
-	_http "github.com/inoxlang/inox/internal/globals/http"
-	_locdb "github.com/inoxlang/inox/internal/globals/local_db"
-	_net "github.com/inoxlang/inox/internal/globals/net"
-	_s3 "github.com/inoxlang/inox/internal/globals/s3"
-	_shell "github.com/inoxlang/inox/internal/globals/shell"
-	_sql "github.com/inoxlang/inox/internal/globals/sql"
-	_strmanip "github.com/inoxlang/inox/internal/globals/strmanip"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/globals/dom_ns"
+	"github.com/inoxlang/inox/internal/globals/env_ns"
+	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/globals/help_ns"
+	"github.com/inoxlang/inox/internal/globals/html_ns"
+	"github.com/inoxlang/inox/internal/globals/http_ns"
+	"github.com/inoxlang/inox/internal/globals/strmanip_ns"
+
+	"github.com/inoxlang/inox/internal/globals/inox_ns"
+	"github.com/inoxlang/inox/internal/globals/inoxsh_ns"
+	"github.com/inoxlang/inox/internal/globals/local_db_ns"
+	"github.com/inoxlang/inox/internal/globals/net_ns"
+	"github.com/inoxlang/inox/internal/globals/s3_ns"
+	"github.com/inoxlang/inox/internal/globals/sql_ns"
+
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 )
 
 var (
 	DEFAULT_SCRIPT_LIMITATIONS = []core.Limitation{
-		{Name: _fs.FS_READ_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 100_000_000},
-		{Name: _fs.FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 100_000_000},
+		{Name: fs_ns.FS_READ_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 100_000_000},
+		{Name: fs_ns.FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 100_000_000},
 
-		{Name: _fs.FS_NEW_FILE_RATE_LIMIT_NAME, Kind: core.SimpleRateLimitation, Value: 100},
-		{Name: _fs.FS_TOTAL_NEW_FILE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 10_000},
+		{Name: fs_ns.FS_NEW_FILE_RATE_LIMIT_NAME, Kind: core.SimpleRateLimitation, Value: 100},
+		{Name: fs_ns.FS_TOTAL_NEW_FILE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 10_000},
 
-		{Name: _net.HTTP_REQUEST_RATE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 100},
-		{Name: _net.WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 10},
-		{Name: _net.TCP_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 10},
-	}
-
-	DEFAULT_LOG_PRINT_CONFIG = &core.PrettyPrintConfig{
-		PrettyPrintConfig: pprint.PrettyPrintConfig{
-			MaxDepth: 10,
-			Colorize: false,
-			Compact:  true,
-		},
-	}
-
-	DEFAULT_PRETTY_PRINT_CONFIG = &core.PrettyPrintConfig{
-		PrettyPrintConfig: pprint.PrettyPrintConfig{
-			MaxDepth: 7,
-			Colorize: config.SHOULD_COLORIZE,
-			Colors: utils.If(config.INITIAL_COLORS_SET && config.INITIAL_BG_COLOR.IsDarkBackgroundColor(),
-				&pprint.DEFAULT_DARKMODE_PRINT_COLORS,
-				&pprint.DEFAULT_LIGHTMODE_PRINT_COLORS,
-			),
-			Compact:                     false,
-			Indent:                      []byte{' ', ' '},
-			PrintDecodedTopLevelStrings: true,
-		},
-	}
-
-	STR_CONVERSION_PRETTY_PRINT_CONFIG = &core.PrettyPrintConfig{
-		PrettyPrintConfig: pprint.PrettyPrintConfig{
-			MaxDepth: 10,
-			Colorize: false,
-			Compact:  true,
-		},
+		{Name: net_ns.HTTP_REQUEST_RATE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 100},
+		{Name: net_ns.WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 10},
+		{Name: net_ns.TCP_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 10},
 	}
 
 	_ = []core.GoValue{
-		&_html.HTMLNode{}, &core.GoFunction{}, &_http.HttpServer{}, &_net.TcpConn{}, &_net.WebsocketConnection{}, &_http.HttpRequest{}, &_http.HttpResponseWriter{},
-		&_fs.File{},
+		&html_ns.HTMLNode{}, &core.GoFunction{}, &http_ns.HttpServer{}, &net_ns.TcpConn{}, &net_ns.WebsocketConnection{},
+		&http_ns.HttpRequest{}, &http_ns.HttpResponseWriter{},
+		&fs_ns.File{},
 	}
 )
 
@@ -79,23 +52,20 @@ func init() {
 	targetSpecificInit()
 	registerHelp()
 
-	_shell.SetNewDefaultGlobalState(func(ctx *core.Context, envPattern *core.ObjectPattern, out io.Writer) *core.GlobalState {
-		return utils.Must(NewDefaultGlobalState(ctx, DefaultGlobalStateConfig{
+	inoxsh_ns.SetNewDefaultGlobalState(func(ctx *core.Context, envPattern *core.ObjectPattern, out io.Writer) *core.GlobalState {
+		return utils.Must(NewDefaultGlobalState(ctx, default_state.DefaultGlobalStateConfig{
 			EnvPattern: envPattern,
 			Out:        out,
 		}))
 	})
-}
 
-type DefaultGlobalStateConfig struct {
-	EnvPattern          *core.ObjectPattern
-	AllowMissingEnvVars bool
-	Out                 io.Writer
-	LogOut              io.Writer
+	default_state.SetNewDefaultGlobalStateFn(NewDefaultGlobalState)
+	default_state.SetNewDefaultContext(NewDefaultContext)
+	default_state.SetDefaultScriptLimitations(DEFAULT_SCRIPT_LIMITATIONS)
 }
 
 // NewDefaultGlobalState creates a new GlobalState with the default globals.
-func NewDefaultGlobalState(ctx *core.Context, conf DefaultGlobalStateConfig) (*core.GlobalState, error) {
+func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalStateConfig) (*core.GlobalState, error) {
 	logOut := conf.LogOut
 	var logger zerolog.Logger
 	if logOut == nil { //if there is not writer for logs we log to conf.Out
@@ -114,7 +84,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf DefaultGlobalStateConfig) (*c
 
 	logger = logger.With().Timestamp().Logger().Level(zerolog.InfoLevel)
 
-	envNamespace, err := _env.NewEnvNamespace(ctx, conf.EnvPattern, conf.AllowMissingEnvVars)
+	envNamespace, err := env_ns.NewEnvNamespace(ctx, conf.EnvPattern, conf.AllowMissingEnvVars)
 	if err != nil {
 		return nil, err
 	}
@@ -125,24 +95,24 @@ func NewDefaultGlobalState(ctx *core.Context, conf DefaultGlobalStateConfig) (*c
 		core.INITIAL_WORKING_DIR_PREFIX_VARNAME: core.INITIAL_WORKING_DIR_PATH_PATTERN,
 
 		// namespaces
-		"fs":       _fs.NewFsNamespace(),
-		"http":     _http.NewHttpNamespace(),
-		"tcp":      _net.NewTcpNamespace(),
-		"dns":      _net.NewDNSnamespace(),
-		"ws":       _net.NewWebsocketNamespace(),
-		"s3":       _s3.NewS3namespace(),
-		"chrome":   _chrome.NewChromeNamespace(),
-		"localdb":  _locdb.NewLocalDbNamespace(),
+		"fs":       fs_ns.NewFsNamespace(),
+		"http":     http_ns.NewHttpNamespace(),
+		"tcp":      net_ns.NewTcpNamespace(),
+		"dns":      net_ns.NewDNSnamespace(),
+		"ws":       net_ns.NewWebsocketNamespace(),
+		"s3":       s3_ns.NewS3namespace(),
+		"chrome":   chrome_ns.NewChromeNamespace(),
+		"localdb":  local_db_ns.NewLocalDbNamespace(),
 		"env":      envNamespace,
-		"html":     _html.NewHTMLNamespace(),
-		"dom":      _dom.NewDomNamespace(),
-		"sql":      _sql.NewSQLNamespace(),
-		"inox":     NewInoxNamespace(),
-		"inoxsh":   _shell.NewInoxshNamespace(),
-		"strmanip": _strmanip.NewStrManipNnamespace(),
+		"html":     html_ns.NewHTMLNamespace(),
+		"dom":      dom_ns.NewDomNamespace(),
+		"sql":      sql_ns.NewSQLNamespace(),
+		"inox":     inox_ns.NewInoxNamespace(),
+		"inoxsh":   inoxsh_ns.NewInoxshNamespace(),
+		"strmanip": strmanip_ns.NewStrManipNnamespace(),
 		"rsa":      newRSANamespace(),
 
-		"ls": core.WrapGoFunction(_fs.ListFiles),
+		"ls": core.WrapGoFunction(fs_ns.ListFiles),
 
 		// transaction
 		"get_current_tx": core.ValOf(_get_current_tx),
@@ -268,11 +238,11 @@ func NewDefaultGlobalState(ctx *core.Context, conf DefaultGlobalStateConfig) (*c
 		"len_range": core.ValOf(_len_range),
 
 		"sum_options": core.ValOf(core.SumOptions),
-		"mime":        core.ValOf(_http.Mime_),
+		"mime":        core.ValOf(http_ns.Mime_),
 
 		"Color": core.WrapGoFunction(_Color),
 
-		"help": core.ValOf(_help.Help),
+		"help": core.ValOf(help_ns.Help),
 	}
 
 	for k, v := range _containers.NewContainersNamespace().EntryMap() {
@@ -284,7 +254,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf DefaultGlobalStateConfig) (*c
 	state.Logger = logger
 	state.GetBaseGlobalsForImportedModule = func(ctx *core.Context, manifest *core.Manifest) (core.GlobalVariables, error) {
 		importedModuleGlobals := utils.CopyMap(constants)
-		env, err := _env.NewEnvNamespace(ctx, nil, conf.AllowMissingEnvVars)
+		env, err := env_ns.NewEnvNamespace(ctx, nil, conf.AllowMissingEnvVars)
 		if err != nil {
 			return core.GlobalVariables{}, err
 		}
@@ -300,17 +270,8 @@ func NewDefaultGlobalState(ctx *core.Context, conf DefaultGlobalStateConfig) (*c
 	return state, nil
 }
 
-type DefaultContextConfig struct {
-	Permissions          []core.Permission
-	ForbiddenPermissions []core.Permission
-	Limitations          []core.Limitation
-	HostResolutions      map[core.Host]core.Value
-	ParentContext        *core.Context  //optional
-	Filesystem           afs.Filesystem //if nil the OS filesystem is used
-}
-
 // NewDefaultState creates a new Context with the default patterns.
-func NewDefaultContext(config DefaultContextConfig) (*core.Context, error) {
+func NewDefaultContext(config default_state.DefaultContextConfig) (*core.Context, error) {
 
 	ctxConfig := core.ContextConfig{
 		Permissions:          config.Permissions,
@@ -322,7 +283,7 @@ func NewDefaultContext(config DefaultContextConfig) (*core.Context, error) {
 	}
 
 	if ctxConfig.Filesystem == nil {
-		ctxConfig.Filesystem = _fs.GetOsFilesystem()
+		ctxConfig.Filesystem = fs_ns.GetOsFilesystem()
 	}
 
 	if ctxConfig.ParentContext != nil {

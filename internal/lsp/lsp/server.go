@@ -10,7 +10,8 @@ import (
 	"github.com/inoxlang/inox/internal/permkind"
 
 	core "github.com/inoxlang/inox/internal/core"
-	_net "github.com/inoxlang/inox/internal/globals/net"
+
+	_net "github.com/inoxlang/inox/internal/globals/net_ns"
 )
 
 type Server struct {

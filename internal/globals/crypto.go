@@ -17,7 +17,7 @@ import (
 
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
-	help "github.com/inoxlang/inox/internal/globals/help"
+	"github.com/inoxlang/inox/internal/globals/help_ns"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/crypto/argon2"
 )
@@ -72,7 +72,7 @@ func init() {
 		},
 	})
 
-	help.RegisterHelpValues(map[string]any{
+	help_ns.RegisterHelpValues(map[string]any{
 		"hash_password":  _hashPassword,
 		"check_password": _checkPassword,
 		"sha256":         _sha256,

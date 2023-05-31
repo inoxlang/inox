@@ -15,8 +15,11 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	core "github.com/inoxlang/inox/internal/core"
-	globals "github.com/inoxlang/inox/internal/globals"
-	_fs "github.com/inoxlang/inox/internal/globals/fs"
+
+	_ "github.com/inoxlang/inox/internal/globals"
+
+	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/globals/inox_ns"
 
 	"github.com/inoxlang/inox/internal/permkind"
 
@@ -128,7 +131,7 @@ func testExample(t *testing.T, config exampleTestConfig) {
 
 		//we copy the examples in test directory and we set the WD to this directory
 
-		err := _fs.Copy(core.NewContext(core.ContextConfig{
+		err := fs_ns.Copy(core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
 				core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern("/...")},
@@ -136,17 +139,17 @@ func testExample(t *testing.T, config exampleTestConfig) {
 			},
 			Limitations: []core.Limitation{
 				{
-					Name:  _fs.FS_READ_LIMIT_NAME,
+					Name:  fs_ns.FS_READ_LIMIT_NAME,
 					Kind:  core.ByteRateLimitation,
 					Value: 100_000_000,
 				},
 				{
-					Name:  _fs.FS_WRITE_LIMIT_NAME,
+					Name:  fs_ns.FS_WRITE_LIMIT_NAME,
 					Kind:  core.ByteRateLimitation,
 					Value: 100_000_000,
 				},
 			},
-			Filesystem: _fs.GetOsFilesystem(),
+			Filesystem: fs_ns.GetOsFilesystem(),
 		}), core.Path("./examples/"), core.Path(filepath.Join(tempDir, "./examples/")+"/"))
 		if !assert.NoError(t, err) {
 			return
@@ -170,11 +173,11 @@ func testExample(t *testing.T, config exampleTestConfig) {
 
 		parsingCompilationContext := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{core.CreateFsReadPerm(core.PathPattern("/..."))},
-			Filesystem:  _fs.GetOsFilesystem(),
+			Filesystem:  fs_ns.GetOsFilesystem(),
 		})
 		core.NewGlobalState(parsingCompilationContext)
 
-		_, _, _, err := globals.RunLocalScript(globals.RunScriptArgs{
+		_, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 			Fpath:                     fpath,
 			UseBytecode:               useBytecode,
 			OptimizeBytecode:          optimizeBytecode,

@@ -8,7 +8,9 @@ import (
 	"testing"
 
 	core "github.com/inoxlang/inox/internal/core"
-	_fs "github.com/inoxlang/inox/internal/globals/fs"
+
+	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/globals/inox_ns"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -36,11 +38,11 @@ func TestPrepareLocalScript(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
-			Filesystem:  _fs.GetOsFilesystem(),
+			Filesystem:  fs_ns.GetOsFilesystem(),
 		})
 		core.NewGlobalState(ctx)
 
-		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -93,11 +95,11 @@ func TestPrepareLocalScript(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
-			Filesystem:  _fs.GetOsFilesystem(),
+			Filesystem:  fs_ns.GetOsFilesystem(),
 		})
 		core.NewGlobalState(ctx)
 
-		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -152,11 +154,11 @@ func TestPrepareLocalScript(t *testing.T) {
 				core.GetDefaultGlobalVarPermissions(),
 				core.CreateHttpReadPerm(core.Host("https://localhost")),
 			),
-			Filesystem: _fs.GetOsFilesystem(),
+			Filesystem: fs_ns.GetOsFilesystem(),
 		})
 		core.NewGlobalState(ctx)
 
-		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -212,11 +214,11 @@ func TestPrepareLocalScript(t *testing.T) {
 				core.GetDefaultGlobalVarPermissions(),
 				core.CreateHttpReadPerm(core.Host("https://localhost")),
 			),
-			Filesystem: _fs.GetOsFilesystem(),
+			Filesystem: fs_ns.GetOsFilesystem(),
 		})
 		core.NewGlobalState(ctx)
 
-		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -271,11 +273,11 @@ func TestPrepareLocalScript(t *testing.T) {
 				core.GetDefaultGlobalVarPermissions(),
 				core.CreateHttpReadPerm(core.Host("https://localhost")),
 			),
-			Filesystem: _fs.GetOsFilesystem(),
+			Filesystem: fs_ns.GetOsFilesystem(),
 		})
 		core.NewGlobalState(ctx)
 
-		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -326,7 +328,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(ctx)
 
-		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
 			CliArgs:                   []string{}, //missing file argument
 			ParsingCompilationContext: compilationCtx,
@@ -368,7 +370,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(ctx)
 
-		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
 			CliArgs:                   []string{"true"}, //too many arguments
 			ParsingCompilationContext: compilationCtx,
@@ -410,7 +412,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(ctx)
 
-		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
 			CliArgs:                   []string{"-x"}, //unknown argument
 			ParsingCompilationContext: compilationCtx,
@@ -454,7 +456,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(ctx)
 
-		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
 			Args:                      core.NewObjectFromMap(core.ValMap{}, ctx),
 			ParsingCompilationContext: compilationCtx,
@@ -499,7 +501,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(state)
 
-		res, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		res, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath: file,
 			Args: core.NewObjectFromMap(core.ValMap{
 				"0": core.Path("./a.txt"),
@@ -545,7 +547,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(ctx)
 
-		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath: file,
 			Args: core.NewObjectFromMap(core.ValMap{
 				"0": core.True,
@@ -589,7 +591,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(ctx)
 
-		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath: file,
 			Args: core.NewObjectFromMap(core.ValMap{
 				"0": core.True,
@@ -636,7 +638,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(ctx)
 
-		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath: file,
 			Args: core.NewObjectFromMap(core.ValMap{
 				"0":      core.Path("./a.txt"),
@@ -683,7 +685,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(ctx)
 
-		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath: file,
 			Args: core.NewObjectFromMap(core.ValMap{
 				"outpu": core.True, //unknown argument
@@ -727,7 +729,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(ctx)
 
-		state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath: file,
 			Args: core.NewObjectFromMap(core.ValMap{
 				"x": core.True, //unknown argument
@@ -763,7 +765,7 @@ func TestRunLocalScript(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: perms,
-			Filesystem:  _fs.GetOsFilesystem(),
+			Filesystem:  fs_ns.GetOsFilesystem(),
 		})
 		core.NewGlobalState(ctx)
 		return ctx
@@ -778,7 +780,7 @@ func TestRunLocalScript(t *testing.T) {
 
 		os.WriteFile(file, []byte("fn(){self}; return 1"), 0o600)
 
-		state, _, _, err := RunLocalScript(RunScriptArgs{
+		state, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: createCompilationCtx(dir),
 			UseContextAsParent:        true,
@@ -795,11 +797,11 @@ func TestRunLocalScript(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 
-		manySpawnExprs := strings.Repeat("go do idt(1)\n", DEFAULT_MAX_ALLOWED_WARNINGS+1)
+		manySpawnExprs := strings.Repeat("go do idt(1)\n", inox_ns.DEFAULT_MAX_ALLOWED_WARNINGS+1)
 
 		os.WriteFile(file, []byte("manifest {}\n"+manySpawnExprs), 0o600)
 
-		state, _, _, err := RunLocalScript(RunScriptArgs{
+		state, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: createCompilationCtx(dir),
 			UseContextAsParent:        true,
@@ -808,7 +810,7 @@ func TestRunLocalScript(t *testing.T) {
 			IgnoreHighRiskScore:       true,
 		})
 
-		if !assert.ErrorIs(t, err, ErrExecutionAbortedTooManyWarnings) {
+		if !assert.ErrorIs(t, err, inox_ns.ErrExecutionAbortedTooManyWarnings) {
 			return
 		}
 
@@ -821,7 +823,7 @@ func createCompilationCtx(dir string) *core.Context {
 		Permissions: []core.Permission{
 			core.CreateFsReadPerm(core.PathPattern(dir + "/...")),
 		},
-		Filesystem: _fs.GetOsFilesystem(),
+		Filesystem: fs_ns.GetOsFilesystem(),
 	})
 	core.NewGlobalState(compilationCtx)
 	return compilationCtx

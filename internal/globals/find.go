@@ -5,7 +5,7 @@ import (
 
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
-	_fs "github.com/inoxlang/inox/internal/globals/fs"
+	"github.com/inoxlang/inox/internal/globals/fs_ns"
 )
 
 func init() {
@@ -60,7 +60,7 @@ func _find(ctx *core.Context, pattern core.Pattern, location core.Value) (*core.
 		} else {
 			pathPattern = core.PathPattern(fls.Join(string(l), string(pathPattern)))
 		}
-		paths := _fs.Glob(ctx, pathPattern)
+		paths := fs_ns.Glob(ctx, pathPattern)
 		return core.NewWrappedValueListFrom(core.ToValueList(paths)), nil
 	case core.Iterable:
 		it := l.Iterator(ctx, core.IteratorConfiguration{ValueFilter: pattern})

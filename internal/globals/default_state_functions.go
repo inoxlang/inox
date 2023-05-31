@@ -11,8 +11,11 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/inoxlang/inox/internal/config"
 	core "github.com/inoxlang/inox/internal/core"
-	_inoxsh "github.com/inoxlang/inox/internal/globals/shell"
+	"github.com/inoxlang/inox/internal/globals/inox_ns"
+	"github.com/inoxlang/inox/internal/globals/inoxsh_ns"
+
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/permkind"
 
@@ -48,7 +51,7 @@ func _log(ctx *core.Context, args ...core.Value) {
 			buff.WriteRune(' ')
 		}
 
-		err := core.PrettyPrint(e, w, DEFAULT_LOG_PRINT_CONFIG.WithContext(ctx), 0, 0)
+		err := core.PrettyPrint(e, w, config.DEFAULT_LOG_PRINT_CONFIG.WithContext(ctx), 0, 0)
 		if err != nil {
 			panic(err)
 		}
@@ -69,7 +72,7 @@ func __fprint(ctx *core.Context, out io.Writer, args ...core.Value) {
 			buff.WriteRune(' ')
 		}
 
-		err := core.PrettyPrint(e, w, DEFAULT_PRETTY_PRINT_CONFIG.WithContext(ctx), 0, 0)
+		err := core.PrettyPrint(e, w, config.DEFAULT_PRETTY_PRINT_CONFIG.WithContext(ctx), 0, 0)
 		if err != nil {
 			panic(err)
 		}
@@ -330,7 +333,7 @@ func _dynimport(ctx *core.Context, src core.Value, argObj *core.Object, manifest
 }
 
 func _run(ctx *core.Context, src core.Path, args ...core.Value) error {
-	_, _, _, err := RunLocalScript(RunScriptArgs{
+	_, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 		Fpath:                     string(src),
 		ParsingCompilationContext: ctx,
 		ParentContext:             ctx,
@@ -400,7 +403,7 @@ func _Color(ctx *core.Context, firstArg core.Value, other ...core.Value) core.Co
 	case 0:
 		if ident, ok := firstArg.(core.Identifier); ok && strings.HasPrefix(string(ident), "ansi-") {
 			name := ident[len("ansi-"):]
-			color, ok := _inoxsh.COLOR_NAME_TO_COLOR[name]
+			color, ok := inoxsh_ns.COLOR_NAME_TO_COLOR[name]
 			if ok {
 				return core.ColorFromTermenvColor(color)
 			}

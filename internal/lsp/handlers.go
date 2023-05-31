@@ -20,12 +20,12 @@ import (
 
 	"github.com/inoxlang/inox/internal/lsp/lsp/defines"
 
+	"github.com/inoxlang/inox/internal/globals/inox_ns"
 	"github.com/inoxlang/inox/internal/utils"
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
-	globals "github.com/inoxlang/inox/internal/globals"
-	compl "github.com/inoxlang/inox/internal/globals/completion"
-	help "github.com/inoxlang/inox/internal/globals/help"
+	"github.com/inoxlang/inox/internal/globals/compl"
+	help_ns "github.com/inoxlang/inox/internal/globals/help_ns"
 	parse "github.com/inoxlang/inox/internal/parse"
 
 	_ "net/http/pprof"
@@ -53,7 +53,7 @@ func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx
 		fpath := getFilePath(req.TextDocument.Uri)
 		line, column := getLineColumn(req.Position)
 
-		state, mod, _, _ := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
+		state, mod, _, _ := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     fpath,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             nil,
@@ -107,7 +107,7 @@ func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx
 			for {
 				switch val := val.(type) {
 				case *symbolic.GoFunction:
-					text, ok := help.HelpForSymbolicGoFunc(val, help.HelpMessageConfig{Format: help.MarkdownFormat})
+					text, ok := help_ns.HelpForSymbolicGoFunc(val, help_ns.HelpMessageConfig{Format: help_ns.MarkdownFormat})
 					if ok {
 						helpMessage = "\n-----\n" + strings.ReplaceAll(text, "\n\r", "\n")
 					}
@@ -203,7 +203,7 @@ func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx
 		fpath := getFilePath(req.TextDocument.Uri)
 		line, column := getLineColumn(req.Position)
 
-		state, mod, _, err := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
+		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     fpath,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             nil,
@@ -278,7 +278,7 @@ func getFilePath(uri defines.DocumentUri) string {
 }
 
 func getCompletions(fpath string, compilationCtx *core.Context, line, column int32, session *jsonrpc.Session, fls afs.Filesystem) []compl.Completion {
-	state, mod, _, err := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
+	state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 		Fpath:                     fpath,
 		ParsingCompilationContext: compilationCtx,
 		ParentContext:             nil,

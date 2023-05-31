@@ -7,8 +7,8 @@ import (
 	"time"
 
 	core "github.com/inoxlang/inox/internal/core"
-	_fs "github.com/inoxlang/inox/internal/globals/fs"
-	_http "github.com/inoxlang/inox/internal/globals/http"
+	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/rs/zerolog"
 
@@ -17,20 +17,20 @@ import (
 
 const RESOURCE_TEST_HOST = core.Host("https://localhost:8080")
 
-func setup(t *testing.T, handler func(ctx *core.Context, rw *_http.HttpResponseWriter, req *_http.HttpRequest)) *core.Context {
+func setup(t *testing.T, handler func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest)) *core.Context {
 	ctx := core.NewContext(core.ContextConfig{
 		Permissions: []core.Permission{
 			core.HttpPermission{Kind_: permkind.Read, Entity: core.URLPattern("https://localhost:8080/...")},
 			core.HttpPermission{Kind_: permkind.Provide, Entity: RESOURCE_TEST_HOST},
 		},
-		Filesystem: _fs.GetOsFilesystem(),
+		Filesystem: fs_ns.GetOsFilesystem(),
 	})
 
 	state := core.NewGlobalState(ctx)
 	state.Out = os.Stdout
 	state.Logger = zerolog.New(state.Out)
 
-	_, err := _http.NewHttpServer(ctx, RESOURCE_TEST_HOST, core.WrapGoFunction(handler))
+	_, err := http_ns.NewHttpServer(ctx, RESOURCE_TEST_HOST, core.WrapGoFunction(handler))
 
 	assert.NoError(t, err)
 
@@ -50,7 +50,7 @@ func TestReadResource(t *testing.T) {
 
 	t.Run("http", func(t *testing.T) {
 		t.Run("resource not found", func(t *testing.T) {
-			ctx := setup(t, func(ctx *core.Context, rw *_http.HttpResponseWriter, req *_http.HttpRequest) {
+			ctx := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
 				rw.WriteStatus(ctx, http.StatusNotFound)
 			})
 			defer ctx.Cancel()
@@ -63,7 +63,7 @@ func TestReadResource(t *testing.T) {
 		})
 
 		t.Run("existing resource", func(t *testing.T) {
-			ctx := setup(t, func(ctx *core.Context, rw *_http.HttpResponseWriter, req *_http.HttpRequest) {
+			ctx := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
 				rw.WriteJSON(ctx, core.True)
 			})
 			defer ctx.Cancel()
@@ -78,7 +78,7 @@ func TestReadResource(t *testing.T) {
 		})
 
 		t.Run("raw", func(t *testing.T) {
-			ctx := setup(t, func(ctx *core.Context, rw *_http.HttpResponseWriter, req *_http.HttpRequest) {
+			ctx := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
 				rw.WriteJSON(ctx, core.True)
 			})
 			defer ctx.Cancel()
@@ -93,7 +93,7 @@ func TestReadResource(t *testing.T) {
 		})
 
 		t.Run("an error should be returned if parsing required AND there is no parser for content type", func(t *testing.T) {
-			ctx := setup(t, func(ctx *core.Context, rw *_http.HttpResponseWriter, req *_http.HttpRequest) {
+			ctx := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
 				rw.WriteContentType("custom/type")
 				rw.BodyWriter().Write([]byte("X;X"))
 			})
@@ -106,7 +106,7 @@ func TestReadResource(t *testing.T) {
 		})
 
 		t.Run("an error should bot be returned if raw data is asked AND there is no parser for content type", func(t *testing.T) {
-			ctx := setup(t, func(ctx *core.Context, rw *_http.HttpResponseWriter, req *_http.HttpRequest) {
+			ctx := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
 				rw.WriteContentType("custom/type")
 				rw.BodyWriter().Write([]byte("X;X"))
 			})
@@ -129,7 +129,7 @@ func TestGetResource(t *testing.T) {
 	insecure := core.Option{Name: "insecure", Value: core.True}
 
 	t.Run("read IXON", func(t *testing.T) {
-		ctx := setup(t, func(ctx *core.Context, rw *_http.HttpResponseWriter, req *_http.HttpRequest) {
+		ctx := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
 			rw.WriteIXON(ctx, core.NewObjectFromMap(core.ValMap{"a": core.Int(1)}, ctx))
 		})
 		defer ctx.Cancel()

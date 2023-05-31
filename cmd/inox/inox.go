@@ -12,14 +12,17 @@ import (
 	"strings"
 	"syscall"
 
+	_ "github.com/inoxlang/inox/internal/globals"
+
 	"github.com/inoxlang/inox/internal/config"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/default_state"
 	"github.com/inoxlang/inox/internal/permkind"
 
-	globals "github.com/inoxlang/inox/internal/globals"
-	_fs "github.com/inoxlang/inox/internal/globals/fs"
-	_http "github.com/inoxlang/inox/internal/globals/http"
-	_sh "github.com/inoxlang/inox/internal/globals/shell"
+	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/globals/http_ns"
+	"github.com/inoxlang/inox/internal/globals/inox_ns"
+	"github.com/inoxlang/inox/internal/globals/inoxsh_ns"
 	lsp "github.com/inoxlang/inox/internal/lsp"
 
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -136,7 +139,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			return utils.SliceContains(accepted, input), nil
 		})
 
-		res, _, _, err := globals.RunLocalScript(globals.RunScriptArgs{
+		res, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 			Fpath:                     fpath,
 			PassedCLIArgs:             moduleArgs,
 			ParsingCompilationContext: compilationCtx,
@@ -147,7 +150,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			Out:                       outW,
 		})
 
-		prettyPrintConfig := globals.DEFAULT_PRETTY_PRINT_CONFIG.WithContext(compilationCtx) // TODO: use another context?
+		prettyPrintConfig := config.DEFAULT_PRETTY_PRINT_CONFIG.WithContext(compilationCtx) // TODO: use another context?
 
 		if err != nil {
 			var assertionErr *core.AssertionError
@@ -178,7 +181,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 
 		compilationCtx := createCompilationCtx(dir)
 
-		data := globals.GetCheckData(fpath, compilationCtx, outW)
+		data := inox_ns.GetCheckData(fpath, compilationCtx, outW)
 		fmt.Fprintf(outW, "%s\n\r", utils.Must(json.Marshal(data)))
 
 	case "lsp":
@@ -249,7 +252,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 
 		startupResult, state := runStartupScript(startupScriptPath, outW)
 
-		config, err := _sh.MakeREPLConfiguration(startupResult)
+		config, err := inoxsh_ns.MakeREPLConfiguration(startupResult)
 		if err != nil {
 			fmt.Fprintln(outW, "configuration error:", err)
 			return
@@ -257,7 +260,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 
 		//start the shell
 
-		_sh.StartShell(state, config)
+		inoxsh_ns.StartShell(state, config)
 	case "eval", "e":
 		if len(mainSubCommandArgs) == 0 {
 			fmt.Fprintf(errW, "missing code string")
@@ -317,14 +320,14 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		if err != nil {
 			fmt.Fprintln(errW, err)
 		} else {
-			err := core.PrettyPrint(result, outW, globals.DEFAULT_PRETTY_PRINT_CONFIG.WithContext(state.Ctx), 0, 0)
+			err := core.PrettyPrint(result, outW, config.DEFAULT_PRETTY_PRINT_CONFIG.WithContext(state.Ctx), 0, 0)
 			fmt.Fprintln(outW, "")
 			if err != nil {
 				fmt.Fprintln(errW, err)
 			}
 
 			switch r := result.(type) {
-			case *_http.HttpServer:
+			case *http_ns.HttpServer:
 				r.WaitClosed(state.Ctx)
 			}
 		}
@@ -364,7 +367,7 @@ func runStartupScript(startupScriptPath string, outW io.Writer) (*core.Object, *
 		ModuleFilepath: startupScriptPath,
 		Context: core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{core.CreateFsReadPerm(core.Path(startupScriptPath))},
-			Filesystem:  _fs.GetOsFilesystem(),
+			Filesystem:  fs_ns.GetOsFilesystem(),
 		}),
 	})
 	if err != nil {
@@ -380,12 +383,12 @@ func runStartupScript(startupScriptPath string, outW io.Writer) (*core.Object, *
 		panic(fmt.Errorf("failed to evalute startup script's manifest: %w", err))
 	}
 
-	ctx := utils.Must(globals.NewDefaultContext(globals.DefaultContextConfig{
+	ctx := utils.Must(default_state.NewDefaultContext(default_state.DefaultContextConfig{
 		Permissions:     startupManifest.RequiredPermissions,
 		Limitations:     startupManifest.Limitations,
 		HostResolutions: startupManifest.HostResolutions,
 	}))
-	state, err := globals.NewDefaultGlobalState(ctx, globals.DefaultGlobalStateConfig{
+	state, err := default_state.NewDefaultGlobalState(ctx, default_state.DefaultGlobalStateConfig{
 		Out:    outW,
 		LogOut: outW,
 	})
@@ -427,7 +430,7 @@ func createCompilationCtx(dir string) *core.Context {
 		Permissions: []core.Permission{
 			core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(dir + "...")},
 		},
-		Filesystem: _fs.GetOsFilesystem(),
+		Filesystem: fs_ns.GetOsFilesystem(),
 	})
 	core.NewGlobalState(compilationCtx)
 	return compilationCtx

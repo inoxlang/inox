@@ -5,7 +5,7 @@ package internal
 import (
 	afs "github.com/inoxlang/inox/internal/afs"
 
-	_fs "github.com/inoxlang/inox/internal/globals/fs"
+	"github.com/inoxlang/inox/internal/globals/fs_ns"
 )
 
 // Filesystem is an implementation of billy.Filesystem that stores all files in a memory filesystem
@@ -16,8 +16,8 @@ type Filesystem struct {
 
 func NewFilesystem() *Filesystem {
 	return &Filesystem{
-		Filesystem: _fs.GetOsFilesystem(),
-		documents:  _fs.NewMemFilesystem(),
+		Filesystem: fs_ns.GetOsFilesystem(),
+		documents:  fs_ns.NewMemFilesystem(),
 	}
 }
 

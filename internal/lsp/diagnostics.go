@@ -8,7 +8,8 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
-	globals "github.com/inoxlang/inox/internal/globals"
+	"github.com/inoxlang/inox/internal/globals/inox_ns"
+
 	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
 	"github.com/inoxlang/inox/internal/lsp/logs"
 	"github.com/inoxlang/inox/internal/lsp/lsp/defines"
@@ -21,7 +22,7 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, com
 	errSeverity := defines.DiagnosticSeverityError
 	warningSeverity := defines.DiagnosticSeverityWarning
 
-	state, mod, _, err := globals.PrepareLocalScript(globals.ScriptPreparationArgs{
+	state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 		Fpath:                     fpath,
 		ParsingCompilationContext: compilationCtx,
 		ParentContext:             nil,

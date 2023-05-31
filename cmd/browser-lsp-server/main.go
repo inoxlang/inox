@@ -8,6 +8,8 @@ import (
 	"syscall/js"
 	"time"
 
+	_ "github.com/inoxlang/inox/internal/globals"
+
 	core "github.com/inoxlang/inox/internal/core"
 	lsp "github.com/inoxlang/inox/internal/lsp"
 	"github.com/inoxlang/inox/internal/utils"
@@ -63,7 +65,7 @@ func main() {
 
 	fmt.Println(OUT_PREFIX, "start server")
 
-	go lsp.StartLSPServer(lsp.LSPServerOptions{
+	go lsp.StartLSPServer(ctx, lsp.LSPServerOptions{
 		WASM: &lsp.WasmOptions{
 			StdioInput:  lspInputWriter,
 			StdioOutput: lspOuput,
