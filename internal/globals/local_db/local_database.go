@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	core "github.com/inoxlang/inox/internal/core"
-	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/permkind"
 )
 
@@ -25,19 +24,6 @@ var (
 		openDatabases: map[core.Path]*LocalDatabase{},
 	}
 )
-
-func init() {
-	core.RegisterSymbolicGoFunction(openDatabase, func(ctx *symbolic.Context, r symbolic.ResourceName) (*SymbolicLocalDatabase, *symbolic.Error) {
-		return &SymbolicLocalDatabase{}, nil
-	})
-}
-
-func NewLocalDbNamespace() *Record {
-	return core.NewRecordFromMap(core.ValMap{
-		//
-		"open": core.ValOf(openDatabase),
-	})
-}
 
 // openDatabase opens a local database, read, create & write permissions are required.
 func openDatabase(ctx *Context, r ResourceName) (*LocalDatabase, error) {
