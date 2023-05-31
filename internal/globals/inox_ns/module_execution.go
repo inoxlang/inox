@@ -37,9 +37,11 @@ type ScriptPreparationArgs struct {
 	IgnoreNonCriticalIssues   bool
 	AllowMissingEnvVars       bool
 
-	Out        io.Writer      //defaults to os.Stdout
-	LogOut     io.Writer      //defaults to Out
-	FileSystem afs.Filesystem //used to create the context, it defaults to the OS filesystem
+	Out    io.Writer //defaults to os.Stdout
+	LogOut io.Writer //defaults to Out
+
+	//used to create the context, it defaults to the OS filesystem
+	ScriptContextFileSystem afs.Filesystem
 }
 
 // PrepareLocalScript parses & checks a script located in the filesystem and initialize its state.
@@ -106,7 +108,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		Limitations:     manifest.Limitations,
 		HostResolutions: manifest.HostResolutions,
 		ParentContext:   parentContext,
-		Filesystem:      args.FileSystem,
+		Filesystem:      args.ScriptContextFileSystem,
 	})
 
 	if ctxErr != nil {

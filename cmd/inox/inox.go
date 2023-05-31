@@ -228,8 +228,6 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			Filesystem:  filesystem,
 		})
 
-		opts.Filesystem = filesystem
-
 		if err := lsp.StartLSPServer(ctx, opts); err != nil {
 			fmt.Fprintln(errW, "failed to start LSP server:", err)
 		}

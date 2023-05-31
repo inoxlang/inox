@@ -32,7 +32,7 @@ import (
 	"net/url"
 )
 
-func registerHandlers(server *lsp.Server, compilationCtx *core.Context) {
+func registerHandlers(server *lsp.Server) {
 
 	server.OnInitialize(func(ctx context.Context, req *defines.InitializeParams) (result *defines.InitializeResult, err *defines.InitializeError) {
 		logs.Println("initialized")
@@ -56,12 +56,12 @@ func registerHandlers(server *lsp.Server, compilationCtx *core.Context) {
 
 		state, mod, _, _ := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     fpath,
-			ParsingCompilationContext: compilationCtx,
+			ParsingCompilationContext: session.Context(),
 			ParentContext:             nil,
 			Out:                       os.Stdout,
 			IgnoreNonCriticalIssues:   true,
 			AllowMissingEnvVars:       true,
-			FileSystem:                session.Context().GetFileSystem(),
+			ScriptContextFileSystem:   session.Context().GetFileSystem(),
 		})
 
 		if state == nil || state.SymbolicData == nil {
@@ -135,7 +135,7 @@ func registerHandlers(server *lsp.Server, compilationCtx *core.Context) {
 		line, column := getLineColumn(req.Position)
 		session := jsonrpc.GetSession(ctx)
 
-		completions := getCompletions(fpath, compilationCtx, line, column, session, session.Context().GetFileSystem())
+		completions := getCompletions(fpath, session.Context(), line, column, session, session.Context().GetFileSystem())
 		completionIndex := 0
 
 		lspCompletions := utils.MapSlice(completions, func(completion compl.Completion) defines.CompletionItem {
@@ -183,7 +183,7 @@ func registerHandlers(server *lsp.Server, compilationCtx *core.Context) {
 			logs.Println("failed to update state of document", fpath+":", fsErr)
 		}
 
-		return notifyDiagnostics(session, req.TextDocument.Uri, compilationCtx, fls)
+		return notifyDiagnostics(session, req.TextDocument.Uri, session.Context(), fls)
 	})
 
 	server.OnDidChangeTextDocument(func(ctx context.Context, req *defines.DidChangeTextDocumentParams) (err error) {
@@ -200,7 +200,7 @@ func registerHandlers(server *lsp.Server, compilationCtx *core.Context) {
 			logs.Println("failed to update state of document", fpath+":", fsErr)
 		}
 
-		return notifyDiagnostics(session, req.TextDocument.Uri, compilationCtx, fls)
+		return notifyDiagnostics(session, req.TextDocument.Uri, session.Context(), fls)
 	})
 
 	server.OnDefinition(func(ctx context.Context, req *defines.DefinitionParams) (result *[]defines.LocationLink, err error) {
@@ -210,12 +210,12 @@ func registerHandlers(server *lsp.Server, compilationCtx *core.Context) {
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     fpath,
-			ParsingCompilationContext: compilationCtx,
+			ParsingCompilationContext: session.Context(),
 			ParentContext:             nil,
 			Out:                       os.Stdout,
 			IgnoreNonCriticalIssues:   true,
 			AllowMissingEnvVars:       true,
-			FileSystem:                session.Context().GetFileSystem(),
+			ScriptContextFileSystem:   session.Context().GetFileSystem(),
 		})
 
 		if state == nil || state.SymbolicData == nil {
@@ -290,7 +290,7 @@ func getCompletions(fpath string, compilationCtx *core.Context, line, column int
 		Out:                       io.Discard,
 		IgnoreNonCriticalIssues:   true,
 		AllowMissingEnvVars:       true,
-		FileSystem:                fls,
+		ScriptContextFileSystem:   fls,
 	})
 
 	if mod == nil { //unrecoverable parsing error

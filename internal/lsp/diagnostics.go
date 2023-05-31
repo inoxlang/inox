@@ -29,7 +29,7 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, com
 		Out:                       io.Discard,
 		IgnoreNonCriticalIssues:   true,
 		AllowMissingEnvVars:       true,
-		FileSystem:                fls,
+		ScriptContextFileSystem:   fls,
 	})
 
 	if mod == nil { //unrecoverable parsing error
