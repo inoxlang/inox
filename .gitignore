@@ -7,6 +7,10 @@ __debug*
 
 .vscode/
 /test.ix
+/cmd/inox.run
+/inox.run
 /inox
 
 node_modules/
+
+*.wasm
