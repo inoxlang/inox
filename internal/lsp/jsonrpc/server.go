@@ -3,6 +3,8 @@ package jsonrpc
 import (
 	"context"
 	"sync"
+
+	core "github.com/inoxlang/inox/internal/core"
 )
 
 type MethodInfo struct {
@@ -17,18 +19,20 @@ type Server struct {
 	methods     map[string]MethodInfo
 	sessionLock sync.Mutex
 	onSession   SessionCreationCallbackFn
+	ctx         *core.Context
 }
 
 // Called before starting each new JSON RPC session.
-type SessionCreationCallbackFn func(*Session) error
+type SessionCreationCallbackFn func(*core.Context, *Session) error
 
-func NewServer(onSession func(*Session) error) *Server {
+func NewServer(ctx *core.Context, onSession SessionCreationCallbackFn) *Server {
 	if onSession == nil {
-		onSession = func(s *Session) error { return nil }
+		onSession = func(ctx *core.Context, s *Session) error { return nil }
 	}
 
 	s := &Server{
 		onSession: onSession,
+		ctx:       ctx,
 	}
 	s.session = make(map[int]*Session)
 	s.methods = make(map[string]MethodInfo)
@@ -45,16 +49,22 @@ func (s *Server) RegisterMethod(m MethodInfo) {
 
 func (s *Server) ConnComeIn(conn ReaderWriter) {
 	session := s.newSession(conn)
-	if err := s.onSession(session); err != nil {
+	if err := s.onSession(s.ctx, session); err != nil {
 		return
+	}
+	if session.ctx == nil {
+		session.ctx = s.ctx.BoundChild()
 	}
 	session.Start()
 }
 
 func (s *Server) MsgConnComeIn(conn MessageReaderWriter) {
 	session := s.newSessionWithMsgConn(conn)
-	if err := s.onSession(session); err != nil {
+	if err := s.onSession(s.ctx, session); err != nil {
 		return
+	}
+	if session.ctx == nil {
+		session.ctx = s.ctx.BoundChild()
 	}
 	session.Start()
 }

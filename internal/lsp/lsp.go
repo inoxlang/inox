@@ -126,6 +126,6 @@ func StartLSPServer(ctx *core.Context, opts LSPServerOptions) (finalErr error) {
 		},
 	})
 
-	registerHandlers(server, opts.Filesystem, ctx)
+	registerHandlers(server, ctx)
 	return server.Run()
 }

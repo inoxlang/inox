@@ -32,7 +32,7 @@ import (
 	"net/url"
 )
 
-func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx *core.Context) {
+func registerHandlers(server *lsp.Server, compilationCtx *core.Context) {
 
 	server.OnInitialize(func(ctx context.Context, req *defines.InitializeParams) (result *defines.InitializeResult, err *defines.InitializeError) {
 		logs.Println("initialized")
@@ -52,6 +52,7 @@ func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx
 	server.OnHover(func(ctx context.Context, req *defines.HoverParams) (result *defines.Hover, err error) {
 		fpath := getFilePath(req.TextDocument.Uri)
 		line, column := getLineColumn(req.Position)
+		session := jsonrpc.GetSession(ctx)
 
 		state, mod, _, _ := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     fpath,
@@ -60,7 +61,7 @@ func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx
 			Out:                       os.Stdout,
 			IgnoreNonCriticalIssues:   true,
 			AllowMissingEnvVars:       true,
-			FileSystem:                filesystem,
+			FileSystem:                session.Context().GetFileSystem(),
 		})
 
 		if state == nil || state.SymbolicData == nil {
@@ -134,7 +135,7 @@ func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx
 		line, column := getLineColumn(req.Position)
 		session := jsonrpc.GetSession(ctx)
 
-		completions := getCompletions(fpath, compilationCtx, line, column, session, filesystem)
+		completions := getCompletions(fpath, compilationCtx, line, column, session, session.Context().GetFileSystem())
 		completionIndex := 0
 
 		lspCompletions := utils.MapSlice(completions, func(completion compl.Completion) defines.CompletionItem {
@@ -174,14 +175,15 @@ func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx
 	server.OnDidOpenTextDocument(func(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err error) {
 		fpath := getFilePath(req.TextDocument.Uri)
 		fullDocumentText := req.TextDocument.Text
+		session := jsonrpc.GetSession(ctx)
+		fls := session.Context().GetFileSystem().(*Filesystem)
 
-		fsErr := fsutil.WriteFile(filesystem.docsFS(), fpath, []byte(fullDocumentText), 0700)
+		fsErr := fsutil.WriteFile(fls.docsFS(), fpath, []byte(fullDocumentText), 0700)
 		if fsErr != nil {
 			logs.Println("failed to update state of document", fpath+":", fsErr)
 		}
 
-		session := jsonrpc.GetSession(ctx)
-		return notifyDiagnostics(session, req.TextDocument.Uri, compilationCtx, filesystem)
+		return notifyDiagnostics(session, req.TextDocument.Uri, compilationCtx, fls)
 	})
 
 	server.OnDidChangeTextDocument(func(ctx context.Context, req *defines.DidChangeTextDocumentParams) (err error) {
@@ -189,19 +191,22 @@ func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx
 		if len(req.ContentChanges) > 1 {
 			return errors.New("single change supported")
 		}
+		session := jsonrpc.GetSession(ctx)
+		fls := session.Context().GetFileSystem().(*Filesystem)
+
 		fullDocumentText := req.ContentChanges[0].Text.(string)
-		fsErr := fsutil.WriteFile(filesystem.docsFS(), fpath, []byte(fullDocumentText), 0700)
+		fsErr := fsutil.WriteFile(fls.docsFS(), fpath, []byte(fullDocumentText), 0700)
 		if fsErr != nil {
 			logs.Println("failed to update state of document", fpath+":", fsErr)
 		}
 
-		session := jsonrpc.GetSession(ctx)
-		return notifyDiagnostics(session, req.TextDocument.Uri, compilationCtx, filesystem)
+		return notifyDiagnostics(session, req.TextDocument.Uri, compilationCtx, fls)
 	})
 
 	server.OnDefinition(func(ctx context.Context, req *defines.DefinitionParams) (result *[]defines.LocationLink, err error) {
 		fpath := getFilePath(req.TextDocument.Uri)
 		line, column := getLineColumn(req.Position)
+		session := jsonrpc.GetSession(ctx)
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     fpath,
@@ -210,7 +215,7 @@ func registerHandlers(server *lsp.Server, filesystem *Filesystem, compilationCtx
 			Out:                       os.Stdout,
 			IgnoreNonCriticalIssues:   true,
 			AllowMissingEnvVars:       true,
-			FileSystem:                filesystem,
+			FileSystem:                session.Context().GetFileSystem(),
 		})
 
 		if state == nil || state.SymbolicData == nil {

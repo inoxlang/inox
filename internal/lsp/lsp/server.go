@@ -17,7 +17,7 @@ import (
 type Server struct {
 	Methods
 	rpcServer *jsonrpc.Server
-	ctx       *core.Context
+	ctx       *core.Context //same contxt as the JSON RPC server.
 }
 
 func NewServer(ctx *core.Context, opt *Options) *Server {
@@ -25,7 +25,7 @@ func NewServer(ctx *core.Context, opt *Options) *Server {
 		ctx: ctx,
 	}
 	s.Opt = *opt
-	s.rpcServer = jsonrpc.NewServer(opt.OnSession)
+	s.rpcServer = jsonrpc.NewServer(ctx, opt.OnSession)
 	return s
 }
 

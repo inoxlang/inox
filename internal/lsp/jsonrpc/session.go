@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/gorilla/websocket"
+	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/lsp/logs"
 	jsoniter "github.com/json-iterator/go"
 )
@@ -27,6 +28,7 @@ type executor struct {
 type Session struct {
 	id     int
 	server *Server
+	ctx    *core.Context
 
 	// Only one connection is non-nil
 	conn    ReaderWriter
@@ -378,6 +380,18 @@ func (s *Session) handlerError(err error) {
 		s.server.removeSession(s.id)
 	}
 	logs.Println("error: ", err)
+}
+
+func (s *Session) Context() *core.Context {
+	return s.ctx
+}
+
+func (s *Session) SetContextOnce(ctx *core.Context) error {
+	if s.ctx != nil {
+		return errors.New("already set")
+	}
+	s.ctx = ctx
+	return nil
 }
 
 func isNil(i interface{}) bool {
