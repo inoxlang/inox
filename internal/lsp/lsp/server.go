@@ -16,8 +16,9 @@ import (
 
 type Server struct {
 	Methods
-	rpcServer *jsonrpc.Server
-	ctx       *core.Context //same contxt as the JSON RPC server.
+	customMethods []*jsonrpc.MethodInfo
+	rpcServer     *jsonrpc.Server
+	ctx           *core.Context //same contxt as the JSON RPC server.
 }
 
 func NewServer(ctx *core.Context, opt *Options) *Server {
@@ -37,7 +38,22 @@ func (s *Server) Run() error {
 		}
 	}
 
+	for _, m := range s.customMethods {
+		if m != nil {
+			s.rpcServer.RegisterMethod(*m)
+		}
+	}
+
 	return s.run()
+}
+
+func (s *Server) OnCustom(info jsonrpc.MethodInfo) {
+	for _, m := range s.customMethods {
+		if m.Name == info.Name {
+			panic(fmt.Errorf("handler for method %s is already set", m.Name))
+		}
+	}
+	s.customMethods = append(s.customMethods, &info)
 }
 
 func (s *Server) run() error {

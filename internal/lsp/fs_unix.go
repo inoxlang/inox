@@ -12,32 +12,32 @@ const (
 	DEFAULT_MAX_IN_MEM_FS_STORAGE_SIZE = 10_000_000
 )
 
-// Filesystem is a filesystem that stores the edited document in a separate filesystem.
+// Filesystem is a filesystem that stores the unsaved documents in a separate filesystem.
 type Filesystem struct {
 	afs.Filesystem
-	documents afs.Filesystem
+	unsavedDocuments afs.Filesystem
 }
 
 func NewDefaultFilesystem() *Filesystem {
 	return &Filesystem{
-		Filesystem: fs_ns.GetOsFilesystem(),
-		documents:  fs_ns.NewMemFilesystem(DEFAULT_MAX_IN_MEM_FS_STORAGE_SIZE),
+		Filesystem:       fs_ns.GetOsFilesystem(),
+		unsavedDocuments: fs_ns.NewMemFilesystem(DEFAULT_MAX_IN_MEM_FS_STORAGE_SIZE),
 	}
 }
 
-func NewFilesystem(base afs.Filesystem, editedDocumentFs afs.Filesystem) *Filesystem {
-	if editedDocumentFs == nil {
-		editedDocumentFs = base
-	}
-
+func NewFilesystem(base afs.Filesystem, unsavedDocumentFs afs.Filesystem) *Filesystem {
 	return &Filesystem{
-		Filesystem: base,
-		documents:  editedDocumentFs,
+		Filesystem:       base,
+		unsavedDocuments: unsavedDocumentFs,
 	}
 }
 
 func (fs *Filesystem) Open(filename string) (afs.File, error) {
-	f, err := fs.documents.Open(filename)
+	if fs.unsavedDocuments == nil {
+		return fs.Filesystem.Open(filename)
+	}
+
+	f, err := fs.unsavedDocuments.Open(filename)
 	if err != nil {
 		return fs.Filesystem.Open(filename)
 	}
@@ -45,5 +45,12 @@ func (fs *Filesystem) Open(filename string) (afs.File, error) {
 }
 
 func (fs *Filesystem) docsFS() afs.Filesystem {
-	return fs.documents
+	if fs.unsavedDocuments == nil {
+		return fs
+	}
+	return fs.unsavedDocuments
+}
+
+func (fs *Filesystem) Save() {
+
 }

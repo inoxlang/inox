@@ -276,6 +276,33 @@ func registerHandlers(server *lsp.Server) {
 		}
 		return &links, nil
 	})
+
+	server.OnCustom(jsonrpc.MethodInfo{
+		Name: "fs/fileStat",
+		NewRequest: func() interface{} {
+			return &FsFileStatParams{}
+		},
+		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+			return &FsFileStat{
+				CTime:    0,
+				MTime:    0,
+				Size:     12,
+				FileType: FsDir,
+			}, nil
+		},
+	})
+
+	server.OnCustom(jsonrpc.MethodInfo{
+		Name: "fs/readDir",
+		NewRequest: func() interface{} {
+			return &FsReadirParams{}
+		},
+		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+			return FsDirEntries{
+				FsDirEntry{Name: "a", FileType: FsFile},
+			}, nil
+		},
+	})
 }
 
 func getFilePath(uri defines.DocumentUri) string {
