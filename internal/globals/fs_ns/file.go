@@ -204,3 +204,7 @@ func (f *File) info(ctx *core.Context) (core.FileInfo, error) {
 
 	return makeFileInfo(stat, string(f.path), ctx.GetFileSystem()), nil
 }
+
+type StatCapable interface {
+	Stat() (os.FileInfo, error)
+}

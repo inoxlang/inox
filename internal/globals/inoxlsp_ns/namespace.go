@@ -76,8 +76,8 @@ func StartLspServer(ctx *core.Context, config *core.Object) error {
 		Websocket: &lsp.WebsocketOptions{
 			Addr: host.WithoutScheme(),
 		},
-		UseContextLogger:        true,
-		HandleFilesystemMethods: true,
+		UseContextLogger: true,
+		RemoteFS:         true,
 		OnSession: func(rpcCtx *core.Context, s *jsonrpc.Session) error {
 			fls := fs_ns.NewMemFilesystem(lsp.DEFAULT_MAX_IN_MEM_FS_STORAGE_SIZE)
 

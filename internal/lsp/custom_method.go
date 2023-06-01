@@ -6,16 +6,18 @@ import (
 	"github.com/inoxlang/inox/internal/lsp/lsp/defines"
 )
 
+//get file stat operation
+
 type FsFileStatParams struct {
 	FileURI defines.URI `json:"uri"`
 }
 
 type FsFileStat struct {
 	//The creation timestamp in milliseconds elapsed since January 1, 1970 00:00:00 UTC.
-	CTime int64 `json:"ctime"`
+	CreationTime int64 `json:"ctime"`
 
 	//The modification timestamp in milliseconds elapsed since January 1, 1970 00:00:00 UTC.
-	MTime int64 `json:"mtime"`
+	ModificationTime int64 `json:"mtime"`
 
 	//The size in bytes.
 	Size int64 `json:"size"`
@@ -47,6 +49,8 @@ func FileTypeFromInfo(i fs.FileInfo) FsFileType {
 	}
 }
 
+//read dir operation
+
 type FsReadirParams struct {
 	DirURI defines.URI `json:"uri"`
 }
@@ -57,3 +61,20 @@ type FsDirEntry struct {
 }
 
 type FsDirEntries []FsDirEntry
+
+//read file operation
+
+type FsReadFileParams struct {
+	FileURI defines.URI `json:"uri"`
+}
+
+type FsFileContentBase64 string
+
+//write file operation
+
+type FsWriteFileParams struct {
+	FileURI       defines.URI         `json:"uri"`
+	ContentBase64 FsFileContentBase64 `json:"content"`
+	Create        bool                `json:"create"`
+	Overwrite     bool                `json:"overwrite"`
+}

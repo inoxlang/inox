@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -34,7 +35,12 @@ import (
 	"net/url"
 )
 
-func registerHandlers(server *lsp.Server, registerFilesystemHandlers bool) {
+var (
+	ErrFileURIExpected     = errors.New("a file: URI was expected")
+	ErrRemoteFsURIExpected = errors.New("a remotefs: URI was expected")
+)
+
+func registerHandlers(server *lsp.Server, remoteFs bool) {
 
 	server.OnInitialize(func(ctx context.Context, req *defines.InitializeParams) (result *defines.InitializeResult, err *defines.InitializeError) {
 		logs.Println("initialized")
@@ -52,7 +58,10 @@ func registerHandlers(server *lsp.Server, registerFilesystemHandlers bool) {
 	})
 
 	server.OnHover(func(ctx context.Context, req *defines.HoverParams) (result *defines.Hover, err error) {
-		fpath := getFilePath(req.TextDocument.Uri)
+		fpath, err := getFilePath(req.TextDocument.Uri, remoteFs)
+		if err != nil {
+			return nil, err
+		}
 		line, column := getLineColumn(req.Position)
 		session := jsonrpc.GetSession(ctx)
 
@@ -133,7 +142,11 @@ func registerHandlers(server *lsp.Server, registerFilesystemHandlers bool) {
 	})
 
 	server.OnCompletion(func(ctx context.Context, req *defines.CompletionParams) (result *[]defines.CompletionItem, err error) {
-		fpath := getFilePath(req.TextDocument.Uri)
+		fpath, err := getFilePath(req.TextDocument.Uri, remoteFs)
+		if err != nil {
+			return nil, err
+		}
+
 		line, column := getLineColumn(req.Position)
 		session := jsonrpc.GetSession(ctx)
 
@@ -175,7 +188,11 @@ func registerHandlers(server *lsp.Server, registerFilesystemHandlers bool) {
 	})
 
 	server.OnDidOpenTextDocument(func(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err error) {
-		fpath := getFilePath(req.TextDocument.Uri)
+		fpath, err := getFilePath(req.TextDocument.Uri, remoteFs)
+		if err != nil {
+			return err
+		}
+
 		fullDocumentText := req.TextDocument.Text
 		session := jsonrpc.GetSession(ctx)
 		fls := session.Context().GetFileSystem().(*Filesystem)
@@ -185,11 +202,15 @@ func registerHandlers(server *lsp.Server, registerFilesystemHandlers bool) {
 			logs.Println("failed to update state of document", fpath+":", fsErr)
 		}
 
-		return notifyDiagnostics(session, req.TextDocument.Uri, session.Context(), fls)
+		return notifyDiagnostics(session, req.TextDocument.Uri, remoteFs, session.Context(), fls)
 	})
 
 	server.OnDidChangeTextDocument(func(ctx context.Context, req *defines.DidChangeTextDocumentParams) (err error) {
-		fpath := getFilePath(req.TextDocument.Uri)
+		fpath, err := getFilePath(req.TextDocument.Uri, remoteFs)
+		if err != nil {
+			return err
+		}
+
 		if len(req.ContentChanges) > 1 {
 			return errors.New("single change supported")
 		}
@@ -202,11 +223,14 @@ func registerHandlers(server *lsp.Server, registerFilesystemHandlers bool) {
 			logs.Println("failed to update state of document", fpath+":", fsErr)
 		}
 
-		return notifyDiagnostics(session, req.TextDocument.Uri, session.Context(), fls)
+		return notifyDiagnostics(session, req.TextDocument.Uri, remoteFs, session.Context(), fls)
 	})
 
 	server.OnDefinition(func(ctx context.Context, req *defines.DefinitionParams) (result *[]defines.LocationLink, err error) {
-		fpath := getFilePath(req.TextDocument.Uri)
+		fpath, err := getFilePath(req.TextDocument.Uri, remoteFs)
+		if err != nil {
+			return nil, err
+		}
 		line, column := getLineColumn(req.Position)
 		session := jsonrpc.GetSession(ctx)
 
@@ -279,7 +303,7 @@ func registerHandlers(server *lsp.Server, registerFilesystemHandlers bool) {
 		return &links, nil
 	})
 
-	if registerFilesystemHandlers {
+	if remoteFs {
 		server.OnCustom(jsonrpc.MethodInfo{
 			Name: "fs/fileStat",
 			NewRequest: func() interface{} {
@@ -290,28 +314,131 @@ func registerHandlers(server *lsp.Server, registerFilesystemHandlers bool) {
 				fls := session.Context().GetFileSystem()
 				params := req.(*FsFileStatParams)
 
-				u, err := url.Parse(string(params.FileURI))
+				fpath, err := getPath(params.FileURI, remoteFs)
 				if err != nil {
-					logs.Println(err)
-					return nil, nil
+					return nil, err
 				}
 
-				stat, err := fls.Stat(u.Path)
+				stat, err := fls.Stat(fpath)
 				if err != nil {
-					return nil, fmt.Errorf("failed to get stat for file %s", u.Path)
+					return nil, fmt.Errorf("failed to get stat for file %s: %w", fpath, err)
 				}
 
 				ctime, mtime, err := fs_ns.GetCreationAndModifTime(stat)
 				if err != nil {
-					return nil, fmt.Errorf("failed to get ctime/mtime for file %s", u.Path)
+					return nil, fmt.Errorf("failed to get the creation/modification time for file %s", fpath)
 				}
 
 				return &FsFileStat{
-					CTime:    ctime.UnixMilli(),
-					MTime:    mtime.UnixMilli(),
-					Size:     stat.Size(),
-					FileType: FsDir,
+					CreationTime:     ctime.UnixMilli(),
+					ModificationTime: mtime.UnixMilli(),
+					Size:             stat.Size(),
+					FileType:         FileTypeFromInfo(stat),
 				}, nil
+			},
+		})
+
+		server.OnCustom(jsonrpc.MethodInfo{
+			Name: "fs/readFile",
+			NewRequest: func() interface{} {
+				return &FsReadFileParams{}
+			},
+			Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+				session := jsonrpc.GetSession(ctx)
+				fls := session.Context().GetFileSystem()
+				params := req.(*FsReadFileParams)
+
+				fpath, err := getPath(params.FileURI, remoteFs)
+				if err != nil {
+					return nil, err
+				}
+
+				content, err := fsutil.ReadFile(fls, fpath)
+				if err != nil {
+					return nil, fmt.Errorf("failed to read file %s: %w", fpath, err)
+				}
+
+				return FsFileContentBase64(base64.StdEncoding.EncodeToString(content)), nil
+			},
+		})
+
+		server.OnCustom(jsonrpc.MethodInfo{
+			Name: "fs/writeFile",
+			NewRequest: func() interface{} {
+				return &FsWriteFileParams{}
+			},
+			Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+				session := jsonrpc.GetSession(ctx)
+				fls := session.Context().GetFileSystem()
+				params := req.(*FsWriteFileParams)
+
+				fpath, err := getPath(params.FileURI, remoteFs)
+				if err != nil {
+					return nil, err
+				}
+
+				content, err := base64.StdEncoding.DecodeString(string(params.ContentBase64))
+				if err != nil {
+					return nil, fmt.Errorf("failed to decode received content for file %s: %w", fpath, err)
+				}
+
+				if params.Create {
+					f, err := fls.OpenFile(fpath, os.O_CREATE, fs_ns.DEFAULT_FILE_FMODE)
+
+					defer func() {
+						if f != nil {
+							f.Close()
+						}
+					}()
+
+					if err != nil && !os.IsNotExist(err) {
+						return nil, fmt.Errorf("failed to create file %s: %w", fpath, err)
+					}
+
+					alreadyExists := err == nil
+
+					if alreadyExists {
+						if !params.Overwrite {
+							return nil, fmt.Errorf("failed to create file %s: already exists and overwrite option is false", fpath)
+						}
+
+						if err := f.Truncate(int64(len(content))); err != nil {
+							return nil, fmt.Errorf("failed to truncate file before write %s: %w", fpath, err)
+						}
+					}
+
+					_, err = f.Write(content)
+
+					if err != nil {
+						return nil, fmt.Errorf("failed to create file %s: failed to write: %w", fpath, err)
+					}
+				} else {
+					f, err := fls.OpenFile(fpath, os.O_WRONLY, 0)
+
+					defer func() {
+						if f != nil {
+							f.Close()
+						}
+					}()
+
+					if os.IsNotExist(err) {
+						return nil, fmt.Errorf("failed to write file %s since it does not exist", fpath)
+					} else if err != nil {
+						return nil, fmt.Errorf("failed to write file %s: failed to open: %w", fpath, err)
+					}
+
+					if err := f.Truncate(int64(len(content))); err != nil {
+						return nil, fmt.Errorf("failed to truncate file before write: %s: %w", fpath, err)
+					}
+
+					_, err = f.Write(content)
+
+					if err != nil {
+						return nil, fmt.Errorf("failed to create file %s: failed to write: %w", fpath, err)
+					}
+				}
+
+				return FsFileContentBase64(base64.StdEncoding.EncodeToString(content)), nil
 			},
 		})
 
@@ -325,15 +452,14 @@ func registerHandlers(server *lsp.Server, registerFilesystemHandlers bool) {
 				fls := session.Context().GetFileSystem()
 				params := req.(*FsReadirParams)
 
-				u, err := url.Parse(string(params.DirURI))
+				dpath, err := getPath(params.DirURI, remoteFs)
 				if err != nil {
-					logs.Println(err)
-					return nil, nil
+					return nil, err
 				}
 
-				entries, err := fls.ReadDir(u.Path)
+				entries, err := fls.ReadDir(dpath)
 				if err != nil {
-					return nil, fmt.Errorf("failed to read dir %s", u.Path)
+					return nil, fmt.Errorf("failed to read dir %s", dpath)
 				}
 
 				var fsDirEntries FsDirEntries
@@ -351,8 +477,32 @@ func registerHandlers(server *lsp.Server, registerFilesystemHandlers bool) {
 
 }
 
-func getFilePath(uri defines.DocumentUri) string {
-	return utils.Must(url.Parse(string(uri))).Path
+func getFilePath(uri defines.DocumentUri, remoteFs bool) (string, error) {
+	u, err := url.Parse(string(uri))
+	if err != nil {
+		return "", fmt.Errorf("invalid URI: %s: %w", uri, err)
+	}
+	if remoteFs && u.Scheme != "remotefs" {
+		return "", fmt.Errorf("%w, URI is: %s", ErrRemoteFsURIExpected, string(uri))
+	}
+	if !remoteFs && u.Scheme != "file" {
+		return "", fmt.Errorf("%w, URI is: %s", ErrFileURIExpected, string(uri))
+	}
+	return u.Path, nil
+}
+
+func getPath(uri defines.URI, remoteFs bool) (string, error) {
+	u, err := url.Parse(string(uri))
+	if err != nil {
+		return "", fmt.Errorf("invalid URI: %s: %w", uri, err)
+	}
+	if remoteFs && u.Scheme != "remotefs" {
+		return "", fmt.Errorf("%w, actual is: %s", ErrRemoteFsURIExpected, string(uri))
+	}
+	if !remoteFs && u.Scheme != "file" {
+		return "", fmt.Errorf("%w, actual is: %s", ErrFileURIExpected, string(uri))
+	}
+	return u.Path, nil
 }
 
 func getCompletions(fpath string, compilationCtx *core.Context, line, column int32, session *jsonrpc.Session, fls afs.Filesystem) []compl.Completion {

@@ -16,8 +16,11 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, compilationCtx *core.Context, fls afs.Filesystem) error {
-	fpath := getFilePath(docURI)
+func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, remoteFs bool, compilationCtx *core.Context, fls afs.Filesystem) error {
+	fpath, err := getFilePath(docURI, remoteFs)
+	if err != nil {
+		return err
+	}
 
 	errSeverity := defines.DiagnosticSeverityError
 	warningSeverity := defines.DiagnosticSeverityWarning

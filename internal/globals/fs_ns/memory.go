@@ -19,6 +19,10 @@ import (
 
 const separator = filepath.Separator
 
+var (
+	errNotLink = errors.New("not a link")
+)
+
 type MemFilesystem struct {
 	s *inMemStorage
 
@@ -80,8 +84,6 @@ func (fs *MemFilesystem) OpenFile(filename string, flag int, perm os.FileMode) (
 
 	return f.Duplicate(filename, perm, flag), nil
 }
-
-var errNotLink = errors.New("not a link")
 
 func (fs *MemFilesystem) resolveLink(fullpath string, f *inMemfile) (target string, isLink bool) {
 	if !isSymlink(f.mode) {
