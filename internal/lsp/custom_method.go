@@ -95,6 +95,12 @@ type FsDeleteFileParams struct {
 	FileURI defines.URI `json:"uri"`
 }
 
+//create dir operation
+
+type FsCreateDirParams struct {
+	DirURI defines.URI `json:"uri"`
+}
+
 //basis errors
 
 type FsNonCriticalError string

@@ -555,6 +555,30 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 				return fsDirEntries, nil
 			},
 		})
+
+		server.OnCustom(jsonrpc.MethodInfo{
+			Name: "fs/createDir",
+			NewRequest: func() interface{} {
+				return &FsCreateDirParams{}
+			},
+			Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+				session := jsonrpc.GetSession(ctx)
+				fls := session.Context().GetFileSystem()
+				params := req.(*FsCreateDirParams)
+
+				path, err := getPath(params.DirURI, remoteFs)
+				if err != nil {
+					return nil, err
+				}
+
+				err = fls.MkdirAll(path, fs_ns.DEFAULT_DIR_FMODE)
+				if err != nil {
+					return nil, err
+				}
+
+				return nil, nil
+			},
+		})
 	}
 
 }
