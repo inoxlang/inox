@@ -28,8 +28,8 @@ type securityEngine struct {
 	mutex                  sync.Mutex
 	logger                 zerolog.Logger
 	debugLogger            zerolog.Logger
-	readSlidingWindows     cmap.ConcurrentMap[RemoteAddrAndPort, *rateLimitingSlidingWindow]
-	mutationSlidingWindows cmap.ConcurrentMap[RemoteAddrAndPort, *rateLimitingSlidingWindow]
+	readSlidingWindows     cmap.ConcurrentMap[RemoteAddrWithPort, *rateLimitingSlidingWindow]
+	mutationSlidingWindows cmap.ConcurrentMap[RemoteAddrWithPort, *rateLimitingSlidingWindow]
 
 	ipMitigationData cmap.ConcurrentMap[RemoteIpAddr, *remoteIpData]
 	//hcaptchaSecret          string
@@ -42,8 +42,8 @@ func newSecurityEngine(baseLogger zerolog.Logger, serverLogSrc string) *security
 	return &securityEngine{
 		logger:                 logger,
 		debugLogger:            logger,
-		readSlidingWindows:     cmap.NewStringer[RemoteAddrAndPort, *rateLimitingSlidingWindow](),
-		mutationSlidingWindows: cmap.NewStringer[RemoteAddrAndPort, *rateLimitingSlidingWindow](),
+		readSlidingWindows:     cmap.NewStringer[RemoteAddrWithPort, *rateLimitingSlidingWindow](),
+		mutationSlidingWindows: cmap.NewStringer[RemoteAddrWithPort, *rateLimitingSlidingWindow](),
 		ipMitigationData:       cmap.NewStringer[RemoteIpAddr, *remoteIpData](),
 	}
 }
@@ -69,7 +69,7 @@ func (engine *securityEngine) getSocketMitigationData(req *HttpRequest) (*rateLi
 		remoteIpAddr:      req.RemoteIpAddr,
 	}
 
-	var slidingWindowMap cmap.ConcurrentMap[RemoteAddrAndPort, *rateLimitingSlidingWindow]
+	var slidingWindowMap cmap.ConcurrentMap[RemoteAddrWithPort, *rateLimitingSlidingWindow]
 	var maxReqCount int
 
 	if slidingWindowReqInfo.IsMutation() {

@@ -8,18 +8,38 @@ import (
 
 	"github.com/gorilla/websocket"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/permkind"
 )
 
 var ErrClosedWebsocketConnection = errors.New("closed websocket connection")
 
+type WebsocketMessageType int
+
+const (
+	WebsocketBinaryMessage WebsocketMessageType = websocket.BinaryMessage
+	WebsocketTextMessage                        = websocket.TextMessage
+	WebsocketPingMessage                        = websocket.PingMessage
+	WebsocketPongMessage                        = websocket.PongMessage
+	WebsocketCloseMessage                       = websocket.CloseMessage
+)
+
 type WebsocketConnection struct {
+	conn               *websocket.Conn
+	remoteAddrWithPort http_ns.RemoteAddrWithPort
+	endpoint           URL //HTTP endpoint
+
+	messageTimeout time.Duration
+
+	//prevent giving back tokens, this value should NOT be used to check if the connection is closed.
+	closed atomic.Bool
+
+	server *WebsocketServer //nil on client side
+
+	originalContext *Context
+
 	core.NotClonableMixin
 	core.NoReprMixin
-	conn            *websocket.Conn
-	endpoint        URL   //HTTP endpoint
-	closed          int32 //prevent giving back tokens
-	originalContext *Context
 }
 
 func (conn *WebsocketConnection) GetGoMethod(name string) (*GoFunction, bool) {
@@ -29,7 +49,7 @@ func (conn *WebsocketConnection) GetGoMethod(name string) (*GoFunction, bool) {
 	case "readJSON":
 		return core.WrapGoMethod(conn.readJSON), true
 	case "close":
-		return core.WrapGoMethod(conn.close), true
+		return core.WrapGoMethod(conn.Close), true
 	}
 	return nil, false
 }
@@ -51,52 +71,25 @@ func (*WebsocketConnection) PropertyNames(ctx *Context) []string {
 }
 
 func (conn *WebsocketConnection) sendJSON(ctx *Context, msg Value) error {
-	if atomic.LoadInt32(&conn.closed) != 0 {
-		return ErrClosedWebsocketConnection
-	}
-
-	perm := WebsocketPermission{
-		Kind_:    permkind.WriteStream,
-		Endpoint: conn.endpoint,
-	}
-
-	if err := ctx.CheckHasPermission(perm); err != nil {
+	if err := conn.checkWriteAndConfig(ctx); err != nil {
 		return err
 	}
 
-	conn.conn.SetWriteDeadline(time.Now().Add(DEFAULT_WS_TIMEOUT))
 	err := conn.conn.WriteJSON(core.ToJSONVal(ctx, msg))
-
-	// only way to check a websocket.netError
-	if err != nil && strings.Contains(err.Error(), "i/o timeout") {
-		conn.close(ctx)
-	}
+	conn.closeIfNecessary(err)
 
 	return err
 }
 
 func (conn *WebsocketConnection) readJSON(ctx *Context) (Value, error) {
-	if atomic.LoadInt32(&conn.closed) != 0 {
-		return nil, ErrClosedWebsocketConnection
-	}
-
-	perm := WebsocketPermission{
-		Kind_:    permkind.Read,
-		Endpoint: conn.endpoint,
-	}
-
-	if err := ctx.CheckHasPermission(perm); err != nil {
+	if err := conn.checkReadAndConfig(ctx); err != nil {
 		return nil, err
 	}
 
 	var v interface{}
-	conn.conn.SetReadDeadline(time.Now().Add(DEFAULT_WS_TIMEOUT))
 	err := conn.conn.ReadJSON(&v)
 
-	// only way to check a websocket.netError
-	if err != nil && strings.Contains(err.Error(), "i/o timeout") {
-		conn.close(ctx)
-	}
+	conn.closeIfNecessary(err)
 
 	if err != nil {
 		return nil, err
@@ -105,10 +98,96 @@ func (conn *WebsocketConnection) readJSON(ctx *Context) (Value, error) {
 	return core.ConvertJSONValToInoxVal(ctx, v, false), nil
 }
 
-func (conn *WebsocketConnection) close(ctx *Context) error {
-	if !atomic.CompareAndSwapInt32(&conn.closed, 0, 1) {
+func (conn *WebsocketConnection) ReadMessage(ctx *Context) (messageType WebsocketMessageType, p []byte, err error) {
+	if err := conn.checkReadAndConfig(ctx); err != nil {
+		return 0, nil, err
+	}
+
+	msgType, p, err := conn.conn.ReadMessage()
+	conn.closeIfNecessary(err)
+
+	return WebsocketMessageType(msgType), p, err
+}
+
+func (conn *WebsocketConnection) WriteMessage(ctx *Context, messageType WebsocketMessageType, data []byte) error {
+	if err := conn.checkWriteAndConfig(ctx); err != nil {
+		return err
+	}
+
+	err := conn.conn.WriteMessage(int(messageType), data)
+	conn.closeIfNecessary(err)
+
+	return err
+}
+
+func (conn *WebsocketConnection) checkReadAndConfig(ctx *core.Context) error {
+	if conn.closed.Load() {
 		return ErrClosedWebsocketConnection
 	}
+
+	//if on client side
+	if conn.server == nil {
+		perm := WebsocketPermission{
+			Kind_:    permkind.Read,
+			Endpoint: conn.endpoint,
+		}
+
+		if err := ctx.CheckHasPermission(perm); err != nil {
+			return err
+		}
+	}
+
+	conn.conn.SetReadDeadline(time.Now().Add(conn.messageTimeout))
+	return nil
+}
+
+func (conn *WebsocketConnection) checkWriteAndConfig(ctx *core.Context) error {
+	if conn.closed.Load() {
+		return ErrClosedWebsocketConnection
+	}
+
+	//if on client side
+	if conn.server == nil {
+		perm := WebsocketPermission{
+			Kind_:    permkind.WriteStream,
+			Endpoint: conn.endpoint,
+		}
+
+		if err := ctx.CheckHasPermission(perm); err != nil {
+			return err
+		}
+	}
+
+	conn.conn.SetWriteDeadline(time.Now().Add(conn.messageTimeout))
+	return nil
+}
+
+func (conn *WebsocketConnection) closeIfNecessary(err error) {
+	if closeErr, ok := err.(*websocket.CloseError); ok {
+		switch closeErr.Code {
+		case websocket.CloseNormalClosure,
+			websocket.CloseGoingAway,
+			websocket.CloseNoStatusReceived:
+			conn.Close()
+			return
+		}
+	}
+
+	if err != nil && strings.Contains(err.Error(), "i/o timeout") {
+		conn.Close()
+	}
+}
+
+func (conn *WebsocketConnection) Close() error {
+	if !conn.closed.CompareAndSwap(false, true) {
+		return ErrClosedWebsocketConnection
+	}
+
+	if conn.server != nil && !conn.server.closingOrClosed.Load() {
+		conn.server.removeConnection(conn)
+	}
+
+	conn.conn.WriteControl(WebsocketCloseMessage, nil, time.Now().Add(SERVER_SIDE_WEBSOCKET_CLOSE_TIMEOUT))
 
 	conn.originalContext.GiveBack(WS_SIMUL_CONN_TOTAL_LIMIT_NAME, 1)
 	return conn.conn.Close()

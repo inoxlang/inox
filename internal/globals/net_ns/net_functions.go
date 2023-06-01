@@ -24,7 +24,7 @@ const (
 
 	DEFAULT_HTTP_CLIENT_TIMEOUT = 10 * time.Second
 
-	DEFAULT_WS_TIMEOUT = 10 * time.Second
+	DEFAULT_WS_TIMEOUT = 7 * time.Second
 
 	OPTION_DOES_NOT_EXIST_FMT = "option '%s' does not exist"
 )
@@ -63,7 +63,12 @@ func websocketConnect(ctx *Context, u URL, options ...Option) (*WebsocketConnect
 		return nil, fmt.Errorf("dial: %s", err.Error())
 	}
 
-	return &WebsocketConnection{conn: c, endpoint: u, closed: 0, originalContext: ctx}, nil
+	return &WebsocketConnection{
+		conn:            c,
+		endpoint:        u,
+		messageTimeout:  DEFAULT_WS_TIMEOUT,
+		originalContext: ctx,
+	}, nil
 }
 
 func dnsResolve(ctx *Context, domain Str, recordTypeName Str) ([]Str, error) {
@@ -86,7 +91,6 @@ func dnsResolve(ctx *Context, domain Str, recordTypeName Str) ([]Str, error) {
 		recordType = dns.TypeAAAA
 	case "CNAME":
 		recordType = dns.TypeCNAME
-	case "MX":
 		recordType = dns.TypeMX
 	default:
 		return nil, fmt.Errorf("invalid DNS record type: '%s'", recordTypeName)

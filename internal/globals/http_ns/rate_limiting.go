@@ -36,7 +36,7 @@ type slidingWindowRequestInfo struct {
 	ulidString        string
 	method            string
 	creationTime      time.Time
-	remoteAddrAndPort RemoteAddrAndPort
+	remoteAddrAndPort RemoteAddrWithPort
 	remoteIpAddr      RemoteIpAddr
 	sentBytes         int
 }
@@ -149,7 +149,7 @@ func newSharedRateLimitingWindow(params rateLimitingWindowParameters) *sharedRat
 func (window *sharedRateLimitingWindow) allowRequest(req slidingWindowRequestInfo, logger zerolog.Logger) (ok bool) {
 	//request count for the current socket
 	prevReqCount := 0
-	sockets := make([]RemoteAddrAndPort, 0)
+	sockets := make([]RemoteAddrWithPort, 0)
 
 	for _, windowReq := range window.rateLimitingSlidingWindow.requests {
 

@@ -48,15 +48,23 @@ type HttpRequest struct {
 	HeaderNames       []string
 	UserAgent         string
 	Hostname          string
-	RemoteAddrAndPort RemoteAddrAndPort //empty for client side requests
-	RemoteIpAddr      RemoteIpAddr      //empty for client side requests
+	RemoteAddrAndPort RemoteAddrWithPort //empty for client side requests
+	RemoteIpAddr      RemoteIpAddr       //empty for client side requests
 	request           *http.Request
 }
 
-type RemoteAddrAndPort string
+type RemoteAddrWithPort string
 
-func (s RemoteAddrAndPort) String() string {
+func (s RemoteAddrWithPort) String() string {
 	return string(s)
+}
+
+func (s RemoteAddrWithPort) RemoteIp() RemoteIpAddr {
+	ip, _, err := net.SplitHostPort(string(s))
+	if err != nil {
+		panic(err)
+	}
+	return RemoteIpAddr(ip)
 }
 
 type RemoteIpAddr string
@@ -83,7 +91,7 @@ func NewServerSideRequest(r *http.Request, logger zerolog.Logger, server *HttpSe
 	id := ulid.Make()
 	now := time.Now()
 
-	addrAndPort := RemoteAddrAndPort(r.RemoteAddr)
+	addrAndPort := RemoteAddrWithPort(r.RemoteAddr)
 	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
 
 	// method
