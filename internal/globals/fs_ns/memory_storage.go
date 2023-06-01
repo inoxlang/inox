@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	core "github.com/inoxlang/inox/internal/core"
 )
@@ -78,13 +79,19 @@ func (s *inMemStorage) newNoLock(path string, mode os.FileMode, flag int) (*inMe
 	}
 
 	name := filepath.Base(path)
+	now := time.Now()
 
 	f := &inMemfile{
-		name:    name,
-		content: &inMemFileContent{name: name},
-		mode:    mode,
-		flag:    flag,
+		name: name,
+		content: &inMemFileContent{
+			name:         name,
+			creationTime: now,
+		},
+		mode: mode,
+		flag: flag,
 	}
+
+	f.content.modificationTime.Store(now)
 
 	f.content.filesystemStorageSize = &s.totalContentSize
 	f.content.filesystemMaxStorageSize = s.maxStorageSize
@@ -242,10 +249,16 @@ func clean(path string) string {
 type inMemFileContent struct {
 	name                     string
 	bytes                    []byte
+	creationTime             time.Time
+	modificationTime         atomic.Value //time.Time
 	filesystemMaxStorageSize int64
 	filesystemStorageSize    *atomic.Int64
 
 	m sync.RWMutex
+}
+
+func (c *inMemFileContent) ModifTime() time.Time {
+	return c.modificationTime.Load().(time.Time)
 }
 
 func (c *inMemFileContent) WriteAt(p []byte, off int64) (int, error) {
@@ -275,6 +288,8 @@ func (c *inMemFileContent) WriteAt(p []byte, off int64) (int, error) {
 	if allocationSize > 0 && c.filesystemStorageSize.Add(allocationSize) > c.filesystemMaxStorageSize {
 		return 0, ErrInMemoryStorageLimitExceededDuringWrite
 	}
+
+	c.modificationTime.Store(time.Now())
 
 	c.bytes = append(c.bytes[:off], p...)
 	if len(c.bytes) < prev {

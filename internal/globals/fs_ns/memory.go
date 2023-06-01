@@ -1,6 +1,6 @@
 package fs_ns
 
-//slight modification of https://github.com/go-git/go-billy/blob/master/memfs/storage.go (Apache 2.0 license)
+//modification of https://github.com/go-git/go-billy/blob/master/memfs/storage.go (Apache 2.0 license)
 
 import (
 	"errors"
@@ -122,7 +122,7 @@ func (fs *MemFilesystem) Stat(filename string) (os.FileInfo, error) {
 	// the name of the file should always the name of the stated file, so we
 	// overwrite the Stat returned from the storage with it, since the
 	// filename may belong to a link.
-	fi.(*fileInfo).name = filepath.Base(filename)
+	fi.(*memFileInfo).name = filepath.Base(filename)
 	return fi, nil
 }
 
@@ -335,10 +335,13 @@ func (f *inMemfile) Duplicate(filename string, mode os.FileMode, flag int) billy
 }
 
 func (f *inMemfile) Stat() (os.FileInfo, error) {
-	return &fileInfo{
+	return &memFileInfo{
 		name: f.Name(),
 		mode: f.mode,
 		size: f.content.Len(),
+
+		creationTime:     f.content.creationTime,
+		modificationTime: f.content.ModifTime(),
 	}, nil
 }
 
@@ -352,33 +355,35 @@ func (f *inMemfile) Unlock() error {
 	return nil
 }
 
-type fileInfo struct {
-	name string
-	size int
-	mode os.FileMode
+type memFileInfo struct {
+	creationTime     time.Time
+	modificationTime time.Time
+	name             string
+	size             int
+	mode             os.FileMode
 }
 
-func (fi *fileInfo) Name() string {
+func (fi *memFileInfo) Name() string {
 	return fi.name
 }
 
-func (fi *fileInfo) Size() int64 {
+func (fi *memFileInfo) Size() int64 {
 	return int64(fi.size)
 }
 
-func (fi *fileInfo) Mode() os.FileMode {
+func (fi *memFileInfo) Mode() os.FileMode {
 	return fi.mode
 }
 
-func (*fileInfo) ModTime() time.Time {
+func (*memFileInfo) ModTime() time.Time {
 	return time.Now()
 }
 
-func (fi *fileInfo) IsDir() bool {
+func (fi *memFileInfo) IsDir() bool {
 	return fi.mode.IsDir()
 }
 
-func (*fileInfo) Sys() interface{} {
+func (*memFileInfo) Sys() interface{} {
 	return nil
 }
 

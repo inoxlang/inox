@@ -18,6 +18,20 @@ func TestMemoryStorage(t *testing.T) {
 
 	//TODO: add tests
 
+	t.Run("creation time & modification time should be set at creation", func(t *testing.T) {
+		maxStorage := core.ByteCount(100)
+		storage := newInMemoryStorage(maxStorage)
+
+		now := time.Now().Truncate(time.Millisecond)
+
+		file := utils.Must(storage.New("file", 0600, os.O_WRONLY))
+
+		assert.Equal(t, now, file.content.creationTime.Truncate(time.Millisecond))
+		assert.Equal(t, now, file.content.modificationTime.Load().(time.Time).Truncate(time.Millisecond))
+
+		assert.NoError(t, file.Close())
+	})
+
 	t.Run("writing too much to the same file should cause an error", func(t *testing.T) {
 		maxStorage := core.ByteCount(100)
 		storage := newInMemoryStorage(maxStorage)
