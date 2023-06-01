@@ -306,13 +306,7 @@ func (f *inMemfile) Close() error {
 }
 
 func (f *inMemfile) Truncate(size int64) error {
-	if size < int64(len(f.content.bytes)) {
-		f.content.bytes = f.content.bytes[:size]
-	} else if more := int(size) - len(f.content.bytes); more > 0 {
-		f.content.bytes = append(f.content.bytes, make([]byte, more)...)
-	}
-
-	return nil
+	return f.content.Truncate(size)
 }
 
 func (f *inMemfile) Duplicate(filename string, mode os.FileMode, flag int) billy.File {
@@ -324,7 +318,7 @@ func (f *inMemfile) Duplicate(filename string, mode os.FileMode, flag int) billy
 	}
 
 	if isTruncate(flag) {
-		new.content.Truncate()
+		new.content.Truncate(0)
 	}
 
 	if isAppend(flag) {
@@ -387,10 +381,23 @@ func (*memFileInfo) Sys() interface{} {
 	return nil
 }
 
-func (c *inMemFileContent) Truncate() {
-	c.filesystemStorageSize.Add(-int64(len(c.bytes)))
+func (c *inMemFileContent) Truncate(size int64) error {
+	if size <= int64(len(c.bytes)) {
+		c.filesystemStorageSize.Add(-int64(len(c.bytes)))
+		c.bytes = c.bytes[:size]
+	} else {
+		more := int(size) - len(c.bytes)
 
-	c.bytes = make([]byte, 0)
+		if c.filesystemStorageSize.Add(int64(more)) > c.filesystemMaxStorageSize {
+			return ErrInMemoryStorageLimitExceededDuringWrite
+		}
+
+		c.filesystemStorageSize.Add(-int64(len(c.bytes)))
+
+		c.bytes = append(c.bytes, make([]byte, more)...)
+	}
+
+	return nil
 }
 
 func (c *inMemFileContent) Len() int {
