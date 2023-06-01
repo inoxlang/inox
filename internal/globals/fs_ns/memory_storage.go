@@ -138,7 +138,7 @@ func (s *inMemStorage) MustGet(path string) *inMemfile {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
-	f, ok := s.Get(path)
+	f, ok := s.getNoLock(path)
 	if !ok {
 		panic(fmt.Errorf("couldn't find %q", path))
 	}
@@ -147,6 +147,9 @@ func (s *inMemStorage) MustGet(path string) *inMemfile {
 }
 
 func (s *inMemStorage) Get(path string) (*inMemfile, bool) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
 	return s.getNoLock(path)
 }
 
