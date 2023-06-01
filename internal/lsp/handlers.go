@@ -473,16 +473,51 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 					return FsFileNotFound, nil
 				}
 
-				_, err = fls.Stat(newPath)
+				newPathStat, err := fls.Stat(newPath)
 
 				if os.IsNotExist(err) {
+					//there is no file at the desination path so we can rename it.
 					return nil, fls.Rename(path, newPath)
 				} else { //exists
 					if params.Overwrite {
+						if err == nil && newPathStat.IsDir() {
+							if err := fls.Remove(newPath); err != nil {
+								return nil, fmt.Errorf("failed to rename %s to %s: deletion of found dir failed: %w", path, newPath, err)
+							}
+						}
+
+						//TODO: return is-dir error if there is a directory.
 						return nil, fls.Rename(path, newPath)
 					}
-					return nil, fmt.Errorf("failed to rename file %s to %s: file found at new path and overwrite option is false ", path, newPath)
+					return nil, fmt.Errorf("failed to rename %s to %s: file or dir found at new path and overwrite option is false ", path, newPath)
 				}
+			},
+		})
+
+		server.OnCustom(jsonrpc.MethodInfo{
+			Name: "fs/deleteFile",
+			NewRequest: func() interface{} {
+				return &FsDeleteFileParams{}
+			},
+			Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+				session := jsonrpc.GetSession(ctx)
+				fls := session.Context().GetFileSystem()
+				params := req.(*FsDeleteFileParams)
+
+				path, err := getPath(params.FileURI, remoteFs)
+				if err != nil {
+					return nil, err
+				}
+
+				err = fls.Remove(path)
+
+				if os.IsNotExist(err) {
+					return FsFileNotFound, nil
+				} else if err != nil { //exists
+					return nil, fmt.Errorf("failed to delete %s: %w", path, err)
+				}
+
+				return nil, nil
 			},
 		})
 

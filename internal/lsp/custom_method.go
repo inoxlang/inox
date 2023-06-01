@@ -89,6 +89,12 @@ type FsRenameFileParams struct {
 	Overwrite  bool        `json:"overwrite"`
 }
 
+//delete file operation
+
+type FsDeleteFileParams struct {
+	FileURI defines.URI `json:"uri"`
+}
+
 //basis errors
 
 type FsNonCriticalError string
