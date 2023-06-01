@@ -321,6 +321,9 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 
 				stat, err := fls.Stat(fpath)
 				if err != nil {
+					if os.IsNotExist(err) {
+						return FsFileNotFound, nil
+					}
 					return nil, fmt.Errorf("failed to get stat for file %s: %w", fpath, err)
 				}
 
@@ -350,6 +353,9 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 
 				fpath, err := getPath(params.FileURI, remoteFs)
 				if err != nil {
+					if os.IsNotExist(err) {
+						return FsFileNotFound, nil
+					}
 					return nil, err
 				}
 
@@ -358,7 +364,7 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 					return nil, fmt.Errorf("failed to read file %s: %w", fpath, err)
 				}
 
-				return FsFileContentBase64(base64.StdEncoding.EncodeToString(content)), nil
+				return FsFileContentBase64{Content: base64.StdEncoding.EncodeToString(content)}, nil
 			},
 		})
 
@@ -383,7 +389,7 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 				}
 
 				if params.Create {
-					f, err := fls.OpenFile(fpath, os.O_CREATE, fs_ns.DEFAULT_FILE_FMODE)
+					f, err := fls.OpenFile(fpath, os.O_CREATE|os.O_WRONLY, fs_ns.DEFAULT_FILE_FMODE)
 
 					defer func() {
 						if f != nil {
@@ -422,7 +428,7 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 					}()
 
 					if os.IsNotExist(err) {
-						return nil, fmt.Errorf("failed to write file %s since it does not exist", fpath)
+						return FsFileNotFound, nil
 					} else if err != nil {
 						return nil, fmt.Errorf("failed to write file %s: failed to open: %w", fpath, err)
 					}
@@ -438,7 +444,45 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 					}
 				}
 
-				return FsFileContentBase64(base64.StdEncoding.EncodeToString(content)), nil
+				return nil, nil
+			},
+		})
+
+		server.OnCustom(jsonrpc.MethodInfo{
+			Name: "fs/renameFile",
+			NewRequest: func() interface{} {
+				return &FsRenameFileParams{}
+			},
+			Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+				session := jsonrpc.GetSession(ctx)
+				fls := session.Context().GetFileSystem()
+				params := req.(*FsRenameFileParams)
+
+				path, err := getPath(params.FileURI, remoteFs)
+				if err != nil {
+					return nil, err
+				}
+
+				newPath, err := getPath(params.NewFileURI, remoteFs)
+				if err != nil {
+					return nil, err
+				}
+
+				_, err = fls.Stat(path)
+				if os.IsNotExist(err) {
+					return FsFileNotFound, nil
+				}
+
+				_, err = fls.Stat(newPath)
+
+				if os.IsNotExist(err) {
+					return nil, fls.Rename(path, newPath)
+				} else { //exists
+					if params.Overwrite {
+						return nil, fls.Rename(path, newPath)
+					}
+					return nil, fmt.Errorf("failed to rename file %s to %s: file found at new path and overwrite option is false ", path, newPath)
+				}
 			},
 		})
 
@@ -459,6 +503,9 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 
 				entries, err := fls.ReadDir(dpath)
 				if err != nil {
+					if os.IsNotExist(err) {
+						return FsFileNotFound, nil
+					}
 					return nil, fmt.Errorf("failed to read dir %s", dpath)
 				}
 

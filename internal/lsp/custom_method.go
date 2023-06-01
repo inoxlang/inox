@@ -68,13 +68,34 @@ type FsReadFileParams struct {
 	FileURI defines.URI `json:"uri"`
 }
 
-type FsFileContentBase64 string
+type FsFileContentBase64 struct {
+	Content string `json:"content"`
+}
 
 //write file operation
 
 type FsWriteFileParams struct {
-	FileURI       defines.URI         `json:"uri"`
-	ContentBase64 FsFileContentBase64 `json:"content"`
-	Create        bool                `json:"create"`
-	Overwrite     bool                `json:"overwrite"`
+	FileURI       defines.URI `json:"uri"`
+	ContentBase64 string      `json:"content"`
+	Create        bool        `json:"create"`
+	Overwrite     bool        `json:"overwrite"`
 }
+
+//rename file operation
+
+type FsRenameFileParams struct {
+	FileURI    defines.URI `json:"uri"`
+	NewFileURI defines.URI `json:"newUri"`
+	Overwrite  bool        `json:"overwrite"`
+}
+
+//basis errors
+
+type FsNonCriticalError string
+
+const (
+	FsFileNotFound = "not-found"
+	FsFileExists   = "exists"
+	FsFileIsDir    = "is-dir"
+	FsFileIsNotDir = "is-not-dir"
+)

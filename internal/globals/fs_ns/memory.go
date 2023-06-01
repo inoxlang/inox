@@ -144,6 +144,8 @@ func (a ByName) Less(i, j int) bool { return a[i].Name() < a[j].Name() }
 func (a ByName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
 func (fs *MemFilesystem) ReadDir(path string) ([]os.FileInfo, error) {
+	//TODO: return error if not a dir
+
 	if f, has := fs.s.Get(path); has {
 		if target, isLink := fs.resolveLink(path, f); isLink {
 			return fs.ReadDir(target)
