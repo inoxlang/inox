@@ -29,9 +29,9 @@ type HttpRequest struct {
 	ULIDString   string
 
 	//accessible from inox
-	Method             core.Str
-	URL                core.URL
-	Path               core.Path
+	Method             core.Str  //.url.Method from the *http.Request ("GET" if empty)
+	URL                core.URL  //.url.URL from the *http.Request
+	Path               core.Path //.url.Path from the *http.Request (already escaped)
 	Body               *core.Reader
 	Cookies            []*http.Cookie
 	ParsedAcceptHeader mimeheader.AcceptHeader
@@ -63,80 +63,6 @@ type RemoteIpAddr string
 
 func (s RemoteIpAddr) String() string {
 	return string(s)
-}
-
-func (req *HttpRequest) Request() *http.Request {
-	return req.request
-}
-
-func (req *HttpRequest) IsGetOrHead() bool {
-	return req.Method == "GET" || req.Method == "HEAD"
-}
-
-func (req *HttpRequest) AcceptAny() bool {
-	for _, h := range req.ParsedAcceptHeader.MHeaders {
-		if h.MimeType.Type == "*" && h.MimeType.Subtype == "*" {
-			return true
-		}
-	}
-	return false
-}
-
-func (req *HttpRequest) GetGoMethod(name string) (*core.GoFunction, bool) {
-	return nil, false
-}
-
-func (req *HttpRequest) Prop(ctx *core.Context, name string) core.Value {
-	switch name {
-	case "method":
-		return req.Method
-	case "url":
-		return req.URL
-	case "path":
-		return req.Path
-	case "body":
-		return req.Body
-	case "headers":
-		req.headersLock.Lock()
-		defer req.headersLock.Unlock()
-		if req.headers != nil {
-			return req.headers
-		}
-		keys := make([]string, len(req.request.Header))
-		vals := make([]core.Value, len(req.request.Header))
-
-		i := 0
-		for name, headerValues := range req.request.Header {
-			keys[i] = name
-
-			singleHeaderValues := make([]core.Value, len(headerValues))
-			for i, val := range headerValues {
-				singleHeaderValues[i] = core.Str(val)
-			}
-
-			vals[i] = core.NewTuple(singleHeaderValues)
-			i++
-		}
-		req.headers = core.NewRecordFromKeyValLists(keys, vals)
-		return req.headers
-	case "cookies":
-		//TODO
-		return nil
-	default:
-		method, ok := req.GetGoMethod(name)
-		if !ok {
-			panic(core.FormatErrPropertyDoesNotExist(name, req))
-		}
-		return method
-	}
-}
-
-func (*HttpRequest) SetProp(ctx *core.Context, name string, value core.Value) error {
-	return core.ErrCannotSetProp
-}
-
-func (*HttpRequest) PropertyNames(ctx *core.Context) []string {
-	return []string{"method", "url", "path", "body", "cookies", "headers"}
 }
 
 func NewClientSideRequest(r *http.Request) (*HttpRequest, error) {
@@ -244,4 +170,78 @@ func NewServerSideRequest(r *http.Request, logger zerolog.Logger, server *HttpSe
 	}
 
 	return req, nil
+}
+
+func (req *HttpRequest) Request() *http.Request {
+	return req.request
+}
+
+func (req *HttpRequest) IsGetOrHead() bool {
+	return req.Method == "GET" || req.Method == "HEAD"
+}
+
+func (req *HttpRequest) AcceptAny() bool {
+	for _, h := range req.ParsedAcceptHeader.MHeaders {
+		if h.MimeType.Type == "*" && h.MimeType.Subtype == "*" {
+			return true
+		}
+	}
+	return false
+}
+
+func (req *HttpRequest) GetGoMethod(name string) (*core.GoFunction, bool) {
+	return nil, false
+}
+
+func (req *HttpRequest) Prop(ctx *core.Context, name string) core.Value {
+	switch name {
+	case "method":
+		return req.Method
+	case "url":
+		return req.URL
+	case "path":
+		return req.Path
+	case "body":
+		return req.Body
+	case "headers":
+		req.headersLock.Lock()
+		defer req.headersLock.Unlock()
+		if req.headers != nil {
+			return req.headers
+		}
+		keys := make([]string, len(req.request.Header))
+		vals := make([]core.Value, len(req.request.Header))
+
+		i := 0
+		for name, headerValues := range req.request.Header {
+			keys[i] = name
+
+			singleHeaderValues := make([]core.Value, len(headerValues))
+			for i, val := range headerValues {
+				singleHeaderValues[i] = core.Str(val)
+			}
+
+			vals[i] = core.NewTuple(singleHeaderValues)
+			i++
+		}
+		req.headers = core.NewRecordFromKeyValLists(keys, vals)
+		return req.headers
+	case "cookies":
+		//TODO
+		return nil
+	default:
+		method, ok := req.GetGoMethod(name)
+		if !ok {
+			panic(core.FormatErrPropertyDoesNotExist(name, req))
+		}
+		return method
+	}
+}
+
+func (*HttpRequest) SetProp(ctx *core.Context, name string, value core.Value) error {
+	return core.ErrCannotSetProp
+}
+
+func (*HttpRequest) PropertyNames(ctx *core.Context) []string {
+	return []string{"method", "url", "path", "body", "cookies", "headers"}
 }
