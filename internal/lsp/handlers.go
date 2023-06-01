@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -20,6 +21,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/lsp/lsp/defines"
 
+	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
 	"github.com/inoxlang/inox/internal/utils"
 
@@ -32,7 +34,7 @@ import (
 	"net/url"
 )
 
-func registerHandlers(server *lsp.Server) {
+func registerHandlers(server *lsp.Server, registerFilesystemHandlers bool) {
 
 	server.OnInitialize(func(ctx context.Context, req *defines.InitializeParams) (result *defines.InitializeResult, err *defines.InitializeError) {
 		logs.Println("initialized")
@@ -277,32 +279,76 @@ func registerHandlers(server *lsp.Server) {
 		return &links, nil
 	})
 
-	server.OnCustom(jsonrpc.MethodInfo{
-		Name: "fs/fileStat",
-		NewRequest: func() interface{} {
-			return &FsFileStatParams{}
-		},
-		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-			return &FsFileStat{
-				CTime:    0,
-				MTime:    0,
-				Size:     12,
-				FileType: FsDir,
-			}, nil
-		},
-	})
+	if registerFilesystemHandlers {
+		server.OnCustom(jsonrpc.MethodInfo{
+			Name: "fs/fileStat",
+			NewRequest: func() interface{} {
+				return &FsFileStatParams{}
+			},
+			Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+				session := jsonrpc.GetSession(ctx)
+				fls := session.Context().GetFileSystem()
+				params := req.(*FsFileStatParams)
 
-	server.OnCustom(jsonrpc.MethodInfo{
-		Name: "fs/readDir",
-		NewRequest: func() interface{} {
-			return &FsReadirParams{}
-		},
-		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-			return FsDirEntries{
-				FsDirEntry{Name: "a", FileType: FsFile},
-			}, nil
-		},
-	})
+				u, err := url.Parse(string(params.FileURI))
+				if err != nil {
+					logs.Println(err)
+					return nil, nil
+				}
+
+				stat, err := fls.Stat(u.Path)
+				if err != nil {
+					return nil, fmt.Errorf("failed to get stat for file %s", u.Path)
+				}
+
+				ctime, mtime, err := fs_ns.GetCreationAndModifTime(stat)
+				if err != nil {
+					return nil, fmt.Errorf("failed to get ctime/mtime for file %s", u.Path)
+				}
+
+				return &FsFileStat{
+					CTime:    ctime.UnixMilli(),
+					MTime:    mtime.UnixMilli(),
+					Size:     stat.Size(),
+					FileType: FsDir,
+				}, nil
+			},
+		})
+
+		server.OnCustom(jsonrpc.MethodInfo{
+			Name: "fs/readDir",
+			NewRequest: func() interface{} {
+				return &FsReadirParams{}
+			},
+			Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+				session := jsonrpc.GetSession(ctx)
+				fls := session.Context().GetFileSystem()
+				params := req.(*FsReadirParams)
+
+				u, err := url.Parse(string(params.DirURI))
+				if err != nil {
+					logs.Println(err)
+					return nil, nil
+				}
+
+				entries, err := fls.ReadDir(u.Path)
+				if err != nil {
+					return nil, fmt.Errorf("failed to read dir %s", u.Path)
+				}
+
+				var fsDirEntries FsDirEntries
+				for _, e := range entries {
+					fsDirEntries = append(fsDirEntries, FsDirEntry{
+						Name:     e.Name(),
+						FileType: FileTypeFromInfo(e),
+					})
+				}
+
+				return fsDirEntries, nil
+			},
+		})
+	}
+
 }
 
 func getFilePath(uri defines.DocumentUri) string {

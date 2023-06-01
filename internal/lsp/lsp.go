@@ -34,9 +34,10 @@ var HOVER_PRETTY_PRINT_CONFIG = &pprint.PrettyPrintConfig{
 }
 
 type LSPServerOptions struct {
-	InternalStdio    *InternalStdio
-	Websocket        *WebsocketOptions
-	UseContextLogger bool
+	InternalStdio           *InternalStdio
+	Websocket               *WebsocketOptions
+	UseContextLogger        bool
+	HandleFilesystemMethods bool
 
 	OnSession jsonrpc.SessionCreationCallbackFn
 }
@@ -125,6 +126,6 @@ func StartLSPServer(ctx *core.Context, opts LSPServerOptions) (finalErr error) {
 		},
 	})
 
-	registerHandlers(server)
+	registerHandlers(server, opts.HandleFilesystemMethods)
 	return server.Run()
 }

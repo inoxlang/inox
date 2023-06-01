@@ -8,6 +8,7 @@ import (
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	symbolic_inoxlsp "github.com/inoxlang/inox/internal/globals/inoxlsp_ns/symbolic"
+	. "github.com/inoxlang/inox/internal/utils"
 
 	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
 
@@ -75,14 +76,21 @@ func StartLspServer(ctx *core.Context, config *core.Object) error {
 		Websocket: &lsp.WebsocketOptions{
 			Addr: host.WithoutScheme(),
 		},
-		UseContextLogger: true,
+		UseContextLogger:        true,
+		HandleFilesystemMethods: true,
 		OnSession: func(rpcCtx *core.Context, s *jsonrpc.Session) error {
+			fls := fs_ns.NewMemFilesystem(lsp.DEFAULT_MAX_IN_MEM_FS_STORAGE_SIZE)
+
+			file := Must(fls.Create("/main.ix"))
+			Must(file.Write([]byte("manifest{\n\n}")))
+			PanicIfErr(file.Close())
+
 			sessionCtx := core.NewContext(core.ContextConfig{
 				Permissions:          rpcCtx.GetGrantedPermissions(),
 				ForbiddenPermissions: rpcCtx.GetForbiddenPermissions(),
 
 				ParentContext: rpcCtx,
-				Filesystem:    lsp.NewFilesystem(fs_ns.NewMemFilesystem(lsp.DEFAULT_MAX_IN_MEM_FS_STORAGE_SIZE), nil),
+				Filesystem:    lsp.NewFilesystem(fls, nil),
 			})
 			tempState := core.NewGlobalState(sessionCtx)
 			tempState.Logger = state.Logger
