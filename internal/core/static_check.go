@@ -1752,6 +1752,48 @@ func checkManifestObject(objLit *parse.ObjectLiteral, ignoreUnknownSections bool
 
 				return parse.Continue, nil
 			}, nil)
+		case MANIFEST_PREINIT_FILES_SECTION_NAME:
+			obj, ok := p.Value.(*parse.ObjectLiteral)
+
+			if !ok {
+				onError(p, PREINIT_FILES_SECTION_SHOULD_BE_AN_OBJECT)
+				continue
+			}
+
+			parse.Walk(obj, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
+				if node == obj {
+					return parse.Continue, nil
+				}
+
+				switch n := node.(type) {
+				case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression, *parse.ObjectLiteral,
+					*parse.ObjectProperty, *parse.PatternCallExpression, parse.SimpleValueLiteral, *parse.GlobalVariable:
+				default:
+					onError(n, fmtForbiddenNodeInPreinitFilesSection(n))
+				}
+
+				return parse.Continue, nil
+			}, nil)
+
+			for _, p := range obj.Properties {
+				if p.Value == nil {
+					continue
+				}
+				fileDesc, ok := p.Value.(*parse.ObjectLiteral)
+				if !ok {
+					onError(p.Value, PREINIT_FILES__FILE_CONFIG_SHOULD_BE_AN_OBJECT)
+					continue
+				}
+
+				if !fileDesc.HasNamedProp(MANIFEST_PREINIT_FILE__PATH_PROP_NAME) {
+					onError(p, fmtMissingPropInPreinitFileDescription(MANIFEST_PREINIT_FILE__PATH_PROP_NAME, p.Name()))
+				}
+
+				if !fileDesc.HasNamedProp(MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME) {
+					onError(p, fmtMissingPropInPreinitFileDescription(MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME, p.Name()))
+				}
+			}
+
 		case MANIFEST_PARAMS_SECTION_NAME:
 			obj, ok := p.Value.(*parse.ObjectLiteral)
 

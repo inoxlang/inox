@@ -17,11 +17,14 @@ import (
 )
 
 const (
-	MANIFEST_ENV_SECTION_NAME             = "env"
-	MANIFEST_PARAMS_SECTION_NAME          = "parameters"
-	MANIFEST_PERMS_SECTION_NAME           = "permissions"
-	MANIFEST_LIMITS_SECTION_NAME          = "limits"
-	MANIFEST_HOST_RESOLUTION_SECTION_NAME = "host_resolution"
+	MANIFEST_ENV_SECTION_NAME                = "env"
+	MANIFEST_PARAMS_SECTION_NAME             = "parameters"
+	MANIFEST_PERMS_SECTION_NAME              = "permissions"
+	MANIFEST_LIMITS_SECTION_NAME             = "limits"
+	MANIFEST_HOST_RESOLUTION_SECTION_NAME    = "host_resolution"
+	MANIFEST_PREINIT_FILES_SECTION_NAME      = "preinit-files"
+	MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME = "pattern"
+	MANIFEST_PREINIT_FILE__PATH_PROP_NAME    = "path"
 
 	INITIAL_WORKING_DIR_VARNAME        = "IWD"
 	INITIAL_WORKING_DIR_PREFIX_VARNAME = "IWD_PREFIX"
@@ -35,7 +38,7 @@ var (
 	MANIFEST_SECTION_NAMES = []string{
 		MANIFEST_ENV_SECTION_NAME, MANIFEST_PARAMS_SECTION_NAME,
 		MANIFEST_PERMS_SECTION_NAME, MANIFEST_LIMITS_SECTION_NAME,
-		MANIFEST_HOST_RESOLUTION_SECTION_NAME,
+		MANIFEST_HOST_RESOLUTION_SECTION_NAME, MANIFEST_PREINIT_FILES_SECTION_NAME,
 	}
 )
 
@@ -60,6 +63,7 @@ type Manifest struct {
 	HostResolutions     map[Host]Value
 	EnvPattern          *ObjectPattern
 	Parameters          ModuleParameters
+	PreinitFiles        PreinitFileConfigs
 }
 
 func NewEmptyManifest() *Manifest {
@@ -71,6 +75,14 @@ type ModuleParameters struct {
 	others            []moduleParameter
 	hasRequiredParams bool //true if at least one positional parameter or one required non-positional parameter
 	hasOptions        bool //true if at least one optional non-positional parameter
+}
+
+type PreinitFileConfigs []PreinitFileConfig
+
+type PreinitFileConfig struct {
+	name    string
+	path    Path
+	pattern Pattern
 }
 
 func (p *ModuleParameters) GetArguments(ctx *Context, argObj *Object) (*Object, error) {
@@ -518,6 +530,7 @@ type manifestObjectConfig struct {
 	addDefaultPermissions bool
 	handleCustomType      CustomPermissionTypeHandler //optional
 	envPattern            *ObjectPattern              //pre-evaluated
+	preinitFileConfigs    PreinitFileConfigs          //pre-evaluated
 	ignoreUnkownSections  bool
 }
 
@@ -567,6 +580,11 @@ func createManifest(object *Object, config manifestObjectConfig) (*Manifest, err
 				return nil, err
 			}
 			moduleParams = params
+		case MANIFEST_PREINIT_FILES_SECTION_NAME:
+			configs := config.preinitFileConfigs
+			if configs == nil {
+				return nil, fmt.Errorf("missing pre-evaluated description of %s", MANIFEST_PREINIT_FILES_SECTION_NAME)
+			}
 		default:
 			if config.ignoreUnkownSections {
 				continue

@@ -148,6 +148,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (*Manifest, *TreeWalkState, []
 
 	var state *TreeWalkState
 	var envPattern *ObjectPattern
+	var preinitFileConfigs PreinitFileConfigs
 
 	//we create a temporary state to evaluate some parts of the permissions
 	if preinitArgs.RunningState == nil {
@@ -170,10 +171,57 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (*Manifest, *TreeWalkState, []
 			v, err := TreeWalkEval(envSection, state)
 			if err != nil {
 				if err != nil {
-					return nil, nil, nil, fmt.Errorf("%s: failed to pre-evaluate the env section: %w", m.Name(), err)
+					return nil, nil, nil, fmt.Errorf("%s: failed to pre-evaluate the %s section: %w", m.Name(), MANIFEST_ENV_SECTION_NAME, err)
 				}
 			}
 			envPattern = v.(*ObjectPattern)
+		}
+
+		// pre evaluate the env section of the manifest
+		preinitFilesSection, ok := manifestObjLiteral.PropValue(MANIFEST_PREINIT_FILES_SECTION_NAME)
+		if ok {
+			v, err := TreeWalkEval(preinitFilesSection, state)
+			if err != nil {
+				if err != nil {
+					return nil, nil, nil, fmt.Errorf("%s: failed to pre-evaluate the %s section: %w", m.Name(), MANIFEST_PREINIT_FILES_SECTION_NAME, err)
+				}
+			}
+
+			obj := v.(*Object)
+
+			err = obj.ForEachEntry(func(k string, v Value) error {
+				desc := v.(*Object)
+				propNames := desc.PropertyNames(ctx)
+
+				if !utils.SliceContains(propNames, MANIFEST_PREINIT_FILE__PATH_PROP_NAME) {
+					return fmt.Errorf("missing .%s property in description of preinit file %s", MANIFEST_PREINIT_FILE__PATH_PROP_NAME, k)
+				}
+
+				if !utils.SliceContains(propNames, MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME) {
+					return fmt.Errorf("missing .%s property in description of preinit file %s", MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME, k)
+				}
+
+				path, ok := desc.Prop(ctx, MANIFEST_PREINIT_FILE__PATH_PROP_NAME).(Path)
+				if !ok {
+					return fmt.Errorf("property .%s in description of preinit file %s is not a path", MANIFEST_PREINIT_FILE__PATH_PROP_NAME, k)
+				}
+				pattern, ok := desc.Prop(ctx, MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME).(Pattern)
+				if !ok {
+					return fmt.Errorf("property .%s in description of preinit file %s is not a pattern", MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME, k)
+				}
+
+				preinitFileConfigs = append(preinitFileConfigs, PreinitFileConfig{
+					name:    k,
+					path:    path,
+					pattern: pattern,
+				})
+
+				return nil
+			})
+
+			if err != nil {
+				return nil, nil, nil, fmt.Errorf("%s: failed to pre-evaluate the %s section: %w", m.Name(), MANIFEST_PREINIT_FILES_SECTION_NAME, err)
+			}
 		}
 
 		if preinitArgs.GlobalConsts != nil {
@@ -232,6 +280,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (*Manifest, *TreeWalkState, []
 		handleCustomType:      preinitArgs.HandleCustomType,
 		addDefaultPermissions: preinitArgs.AddDefaultPermissions,
 		envPattern:            envPattern,
+		preinitFileConfigs:    preinitFileConfigs,
 		//addDefaultPermissions: true,
 		ignoreUnkownSections: preinitArgs.IgnoreUnknownSections,
 	})

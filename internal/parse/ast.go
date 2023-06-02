@@ -840,6 +840,16 @@ func (objLit ObjectLiteral) PropValue(name string) (Node, bool) {
 	return nil, false
 }
 
+func (objLit ObjectLiteral) HasNamedProp(name string) bool {
+	for _, prop := range objLit.Properties {
+		if prop.Key != nil && prop.Name() == name {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (ObjectLiteral) Kind() NodeKind {
 	return Expr
 }

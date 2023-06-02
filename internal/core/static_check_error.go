@@ -15,11 +15,13 @@ const (
 	PERMS_SECTION_SHOULD_BE_AN_OBJECT               = "the 'permissions' section of the manifest should be an object"
 	IMPLICIT_KEY_PROPS_NOT_ALLOWED_IN_PERMS_SECTION = "implicit key properties are not allowed in the 'permissions' section"
 
-	LIMITS_SECTION_SHOULD_BE_AN_OBJECT      = "the 'limits' section of the manifest should be an object"
-	ENV_SECTION_SHOULD_BE_AN_OBJECT_PATTERN = "the 'env' section of the manifest should be an object pattern literal"
-	PARAMS_SECTION_SHOULD_BE_AN_OBJECT      = "the 'parameters' section of the manifest should be an object literal"
+	LIMITS_SECTION_SHOULD_BE_AN_OBJECT             = "the '" + MANIFEST_LIMITS_SECTION_NAME + "' section of the manifest should be an object"
+	ENV_SECTION_SHOULD_BE_AN_OBJECT_PATTERN        = "the '" + MANIFEST_ENV_SECTION_NAME + "env' section of the manifest should be an object pattern literal"
+	PARAMS_SECTION_SHOULD_BE_AN_OBJECT             = "the '" + MANIFEST_PARAMS_SECTION_NAME + "' section of the manifest should be an object literal"
+	PREINIT_FILES_SECTION_SHOULD_BE_AN_OBJECT      = "the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section of the manifest should be an object literal"
+	PREINIT_FILES__FILE_CONFIG_SHOULD_BE_AN_OBJECT = "the description of each file in the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section of the manifest should be an object literal"
 
-	HOST_RESOL_SECTION_SHOULD_BE_A_DICT = "the 'host_resolution' section of the manifest should be a dictionary"
+	HOST_RESOL_SECTION_SHOULD_BE_A_DICT = "the '" + MANIFEST_HOST_RESOLUTION_SECTION_NAME + "' section of the manifest should be a dictionary"
 
 	INVALID_RATE     = "invalid rate"
 	INVALID_QUANTITY = "invalid quantity"
@@ -78,19 +80,35 @@ func fmtForbiddenNodeInPermListing(n parse.Node) string {
 }
 
 func fmtForbiddenNodeInLimitsSection(n parse.Node) string {
-	return fmt.Sprintf("invalid limits: invalid node %T, only variables and simple literals are allowed", n)
+	return fmt.Sprintf(
+		"invalid %s: invalid node %T, only variables and simple literals are allowed",
+		MANIFEST_LIMITS_SECTION_NAME, n)
 }
 
 func fmtForbiddenNodeInEnvSection(n parse.Node) string {
-	return fmt.Sprintf("invalid env: invalid node %T, only variables, simple literals & named patterns are allowed", n)
+	return fmt.Sprintf(
+		"invalid %s section: invalid node %T, only variables, simple literals & named patterns are allowed",
+		MANIFEST_ENV_SECTION_NAME, n)
+}
+
+func fmtForbiddenNodeInPreinitFilesSection(n parse.Node) string {
+	return fmt.Sprintf(
+		"invalid %s section: invalid node %T, only variables, simple literals & named patterns are allowed",
+		PREINIT_FILES_SECTION_SHOULD_BE_AN_OBJECT, n)
 }
 
 func fmtForbiddenNodeInHostResolutionSection(n parse.Node) string {
-	return fmt.Sprintf("invalid host resolution description: invalid node %T, only variables and simple literals are allowed", n)
+	return fmt.Sprintf(
+		"invalid %s description: invalid node %T, only variables and simple literals are allowed",
+		MANIFEST_HOST_RESOLUTION_SECTION_NAME, n)
 }
 
 func fmtForbiddenNodeInParametersSection(n parse.Node) string {
-	return fmt.Sprintf("invalid parameters description: forbidden node %T", n)
+	return fmt.Sprintf("invalid %s description: forbidden node %T", MANIFEST_PARAMS_SECTION_NAME, n)
+}
+
+func fmtMissingPropInPreinitFileDescription(propName, name string) string {
+	return fmt.Sprintf("missing .%s property in description of preinit file %s", propName, name)
 }
 
 func fmtFollowingNodeTypeNotAllowedInAssertions(n parse.Node) string {
