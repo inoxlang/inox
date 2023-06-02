@@ -12,7 +12,6 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/permkind"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
@@ -24,6 +23,7 @@ const (
 
 	WEBSOCKET_CLOSE_TASK_PER_GOROUTINE  = 10
 	SERVER_SIDE_WEBSOCKET_CLOSE_TIMEOUT = 2 * time.Second
+	WEBSOCKET_SERVER_CLOSE_TIMEOUT      = 3 * time.Second
 
 	DEFAULT_WS_MESSAGE_TIMEOUT      = 10 * time.Second
 	DEFAULT_WS_WAIT_MESSAGE_TIMEOUT = 30 * time.Second
@@ -43,8 +43,10 @@ type WebsocketServer struct {
 
 	messageTimeout time.Duration
 
-	connectionMapLock sync.Mutex
-	connections       map[http_ns.RemoteIpAddr]*[]*WebsocketConnection
+	connectionMapLock         sync.Mutex
+	connections               map[http_ns.RemoteIpAddr]*[]*WebsocketConnection
+	connectionsToClose        chan (*WebsocketConnection)
+	closeMainClosingGoroutine chan (struct{})
 
 	originalContext *Context
 }
@@ -61,9 +63,11 @@ func newWebsocketServer(ctx *Context, messageTimeout time.Duration) (*WebsocketS
 		return nil, err
 	}
 
-	return &WebsocketServer{
-		connections:    map[http_ns.RemoteIpAddr]*[]*WebsocketConnection{},
-		messageTimeout: messageTimeout,
+	server := &WebsocketServer{
+		connections:               map[http_ns.RemoteIpAddr]*[]*WebsocketConnection{},
+		messageTimeout:            messageTimeout,
+		connectionsToClose:        make(chan *WebsocketConnection, 100),
+		closeMainClosingGoroutine: make(chan struct{}, 1),
 
 		upgrader: &websocket.Upgrader{
 			HandshakeTimeout: DEFAULT_WS_SERVER_HANDSHAKE_TIMEOUT,
@@ -73,7 +77,26 @@ func newWebsocketServer(ctx *Context, messageTimeout time.Duration) (*WebsocketS
 			EnableCompression: true,
 		},
 		originalContext: ctx,
-	}, nil
+	}
+
+	//spawn a goroutine to close connections.
+	go func() {
+	loop:
+		for {
+			select {
+			case conn := <-server.connectionsToClose:
+				func() {
+					defer recover()
+					conn.closeNoCheck()
+				}()
+
+			case <-server.closeMainClosingGoroutine:
+				break loop
+			}
+		}
+	}()
+
+	return server, nil
 }
 
 func (s *WebsocketServer) GetGoMethod(name string) (*GoFunction, bool) {
@@ -173,79 +196,46 @@ func (s *WebsocketServer) UpgradeGoValues(rw http.ResponseWriter, r *http.Reques
 	return wsConn, nil
 }
 
-func (s *WebsocketServer) removeConnection(conn *WebsocketConnection) {
-	s.connectionMapLock.Lock()
-	defer s.connectionMapLock.Unlock()
-
-	s.removeConnectionNoLock(conn)
-}
-
-func (s *WebsocketServer) removeConnectionNoLock(conn *WebsocketConnection) {
-	ip := conn.remoteAddrWithPort.RemoteIp()
-
-	conns := s.connections[ip]
-	if conns == nil {
-		return
-	}
-
-	index := -1
-	for i, c := range *conns {
-		if c.conn == conn.conn {
-			index = i
-			break
-		}
-	}
-
-	if index >= 0 {
-		*conns = utils.RemoveIndexOfSlice(*conns, index)
-	}
-}
-
 func (s *WebsocketServer) Close(ctx *Context) error {
 	if !s.closingOrClosed.CompareAndSwap(false, true) {
 		return ErrClosedWebsocketServer
 	}
 
 	s.connectionMapLock.Lock()
-	defer s.connectionMapLock.Unlock()
+	connections := s.connections
+	s.connections = nil
+	s.connectionMapLock.Unlock()
 
-	var allConnections []*WebsocketConnection
-
-	for ip, conns := range s.connections {
-		allConnections = append(allConnections, (*conns)...)
-		delete(s.connections, ip)
-	}
-
-	wg := new(sync.WaitGroup)
-	goroutineCount := (len(allConnections) / WEBSOCKET_CLOSE_TASK_PER_GOROUTINE) + (len(allConnections) % WEBSOCKET_CLOSE_TASK_PER_GOROUTINE)
-	wg.Add(goroutineCount)
-
-	//we create a goroutine for each group of CLOSE_TASK_PER_GOROUTINE connections.
-	for i := 0; i < goroutineCount; i++ {
-		startIndex := i * WEBSOCKET_CLOSE_TASK_PER_GOROUTINE
-		endIndex := utils.Min(len(allConnections), (i+1)*WEBSOCKET_CLOSE_TASK_PER_GOROUTINE)
-		if endIndex > startIndex {
-			break
+	//add connections to the connectionsToClose channel.
+	for _, conns := range connections {
+		if conns == nil {
+			continue
 		}
-
-		go func(conns []*WebsocketConnection) {
-			defer wg.Done()
-
-			for _, conn := range conns {
-				func(conn *WebsocketConnection) {
-					defer recover()
-					conn.Close()
-				}(conn)
+		for _, conn := range *conns {
+			if !conn.closed.Load() {
+				s.connectionsToClose <- conn
 			}
-		}(allConnections[startIndex:endIndex])
+		}
 	}
 
-	wg.Wait()
+	remainingTime := WEBSOCKET_SERVER_CLOSE_TIMEOUT
+	deadline := time.Now().Add(remainingTime)
 
-	for ip, conns := range s.connections {
-		allConnections = append(allConnections, (*conns)...)
-		delete(s.connections, ip)
+loop:
+	for {
+		select {
+		case conn := <-s.connectionsToClose:
+			func() {
+				defer recover()
+				conn.closeNoCheck()
+			}()
+
+			remainingTime = time.Until(deadline)
+		case <-time.After(remainingTime):
+			break loop
+		}
 	}
-
+	s.closeMainClosingGoroutine <- struct{}{}
+	//help the closing goroutine.
 	return nil
 }

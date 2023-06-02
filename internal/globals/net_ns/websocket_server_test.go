@@ -70,7 +70,9 @@ func TestWebsocketServer(t *testing.T) {
 			messageTimeout: time.Second,
 		}, serverCtx)
 		defer func() {
-			closeChan <- struct{}{}
+			go func() {
+				closeChan <- struct{}{}
+			}()
 		}()
 
 		conn, err := websocketConnect(clientCtx, ENDPOINT, core.Option{Name: "insecure", Value: core.True})
@@ -110,7 +112,9 @@ func TestWebsocketServer(t *testing.T) {
 		}, serverCtx)
 
 		defer func() {
-			closeChan <- struct{}{}
+			go func() {
+				closeChan <- struct{}{}
+			}()
 		}()
 
 		//okay
@@ -161,7 +165,9 @@ func TestWebsocketServer(t *testing.T) {
 		}, serverCtx)
 
 		defer func() {
-			closeChan <- struct{}{}
+			go func() {
+				closeChan <- struct{}{}
+			}()
 		}()
 
 		//okay

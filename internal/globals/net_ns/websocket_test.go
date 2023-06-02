@@ -21,7 +21,9 @@ func TestWebsocketConnection(t *testing.T) {
 			echo:           true,
 		}, nil)
 		defer func() {
-			closeChan <- struct{}{}
+			go func() {
+				closeChan <- struct{}{}
+			}()
 		}()
 
 		clientCtx := core.NewContext(ContextConfig{
@@ -69,7 +71,9 @@ func TestWebsocketConnection(t *testing.T) {
 			doNotReadMessages: true,
 		}, nil)
 		defer func() {
-			closeChan <- struct{}{}
+			go func() {
+				closeChan <- struct{}{}
+			}()
 		}()
 
 		clientCtx := core.NewContext(ContextConfig{
@@ -115,7 +119,9 @@ func TestWebsocketConnection(t *testing.T) {
 			doNotReadMessages: true,
 		}, nil)
 		defer func() {
-			closeChan <- struct{}{}
+			go func() {
+				closeChan <- struct{}{}
+			}()
 		}()
 
 		clientCtx := core.NewContext(ContextConfig{
