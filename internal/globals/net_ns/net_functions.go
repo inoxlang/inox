@@ -24,8 +24,6 @@ const (
 
 	DEFAULT_HTTP_CLIENT_TIMEOUT = 10 * time.Second
 
-	DEFAULT_WS_TIMEOUT = 7 * time.Second
-
 	OPTION_DOES_NOT_EXIST_FMT = "option '%s' does not exist"
 )
 
@@ -66,7 +64,7 @@ func websocketConnect(ctx *Context, u URL, options ...Option) (*WebsocketConnect
 	return &WebsocketConnection{
 		conn:            c,
 		endpoint:        u,
-		messageTimeout:  DEFAULT_WS_TIMEOUT,
+		messageTimeout:  DEFAULT_WS_MESSAGE_TIMEOUT,
 		originalContext: ctx,
 	}, nil
 }

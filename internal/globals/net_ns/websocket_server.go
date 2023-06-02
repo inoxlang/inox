@@ -2,6 +2,7 @@ package net_ns
 
 import (
 	"errors"
+	"net"
 	"net/http"
 	"sync"
 	"sync/atomic"
@@ -23,6 +24,9 @@ const (
 
 	WEBSOCKET_CLOSE_TASK_PER_GOROUTINE  = 10
 	SERVER_SIDE_WEBSOCKET_CLOSE_TIMEOUT = 2 * time.Second
+
+	DEFAULT_WS_MESSAGE_TIMEOUT      = 10 * time.Second
+	DEFAULT_WS_WAIT_MESSAGE_TIMEOUT = 30 * time.Second
 )
 
 var (
@@ -46,7 +50,7 @@ type WebsocketServer struct {
 }
 
 func NewWebsocketServer(ctx *Context) (*WebsocketServer, error) {
-	return newWebsocketServer(ctx, DEFAULT_WS_TIMEOUT)
+	return newWebsocketServer(ctx, DEFAULT_WS_MESSAGE_TIMEOUT)
 }
 
 func newWebsocketServer(ctx *Context, messageTimeout time.Duration) (*WebsocketServer, error) {
@@ -141,6 +145,18 @@ func (s *WebsocketServer) UpgradeGoValues(rw http.ResponseWriter, r *http.Reques
 	if r.URL.Scheme == "https" {
 		scheme = "wss"
 	}
+
+	conn.SetPingHandler(func(message string) error {
+		err := conn.WriteControl(websocket.PongMessage, []byte(message), time.Now().Add(s.messageTimeout))
+		conn.SetReadDeadline(time.Now().Add(DEFAULT_WS_WAIT_MESSAGE_TIMEOUT))
+
+		if err == websocket.ErrCloseSent {
+			return nil
+		} else if e, ok := err.(net.Error); ok && e.Temporary() {
+			return nil
+		}
+		return err
+	})
 
 	wsConn := &WebsocketConnection{
 		conn:               conn,

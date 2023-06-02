@@ -76,6 +76,7 @@ func (conn *WebsocketConnection) sendJSON(ctx *Context, msg Value) error {
 	}
 
 	err := conn.conn.WriteJSON(core.ToJSONVal(ctx, msg))
+	conn.conn.SetWriteDeadline(time.Now().Add(DEFAULT_WS_WAIT_MESSAGE_TIMEOUT))
 	conn.closeIfNecessary(err)
 
 	return err
@@ -88,6 +89,7 @@ func (conn *WebsocketConnection) readJSON(ctx *Context) (Value, error) {
 
 	var v interface{}
 	err := conn.conn.ReadJSON(&v)
+	conn.conn.SetReadDeadline(time.Now().Add(DEFAULT_WS_WAIT_MESSAGE_TIMEOUT))
 
 	conn.closeIfNecessary(err)
 
@@ -104,6 +106,7 @@ func (conn *WebsocketConnection) ReadMessage(ctx *Context) (messageType Websocke
 	}
 
 	msgType, p, err := conn.conn.ReadMessage()
+	conn.conn.SetReadDeadline(time.Now().Add(DEFAULT_WS_WAIT_MESSAGE_TIMEOUT))
 	conn.closeIfNecessary(err)
 
 	return WebsocketMessageType(msgType), p, err
@@ -115,6 +118,7 @@ func (conn *WebsocketConnection) WriteMessage(ctx *Context, messageType Websocke
 	}
 
 	err := conn.conn.WriteMessage(int(messageType), data)
+	conn.conn.SetReadDeadline(time.Now().Add(DEFAULT_WS_WAIT_MESSAGE_TIMEOUT))
 	conn.closeIfNecessary(err)
 
 	return err
