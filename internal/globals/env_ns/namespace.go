@@ -48,12 +48,11 @@ func NewEnvNamespace(ctx *core.Context, envPattern *core.ObjectPattern, allowMis
 
 	var initial *core.Record
 	if envPattern != nil {
-		propNames := make([]string, envPattern.EntryCount())
-		values := make([]core.Value, envPattern.EntryCount())
+		var propNames []string
+		var values []core.Value
 
-		i := 0
 		err := envPattern.ForEachEntry(func(propName string, propPattern core.Pattern, _ bool) error {
-			propNames[i] = propName
+			propNames = append(propNames, propName)
 			envVal, isPresent := os.LookupEnv(propName)
 
 			if !isPresent {
@@ -69,18 +68,18 @@ func NewEnvNamespace(ctx *core.Context, envPattern *core.ObjectPattern, allowMis
 				if err != nil {
 					return fmt.Errorf("invalid value provided for environment variable '%s'", propName)
 				}
-				values[i] = val
+				values = append(values, val)
 			case *core.SecretPattern:
 				val, err := patt.NewSecret(ctx, envVal)
 				if err != nil {
 					return fmt.Errorf("invalid value provided for environment variable '%s'", propName)
 				}
-				values[i] = val
+				values = append(values, val)
 			case *core.TypePattern:
 				if patt != core.STR_PATTERN {
 					return fmt.Errorf("invalid pattern type %T for environment variable '%s'", propPattern, propName)
 				}
-				values[i] = core.Str(envVal)
+				values = append(values, core.Str(envVal))
 			default:
 				return fmt.Errorf("invalid pattern type %T for environment variable '%s'", propPattern, propName)
 			}
