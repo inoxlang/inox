@@ -276,6 +276,7 @@ func startTokenBucketManagerGoroutine() {
 		for range ticks {
 			func() {
 				tokenBucketsLock.Lock()
+				defer recover()
 				defer tokenBucketsLock.Unlock()
 
 				for bucket := range tokenBuckets {
