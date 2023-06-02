@@ -2,6 +2,7 @@ package parse
 
 import (
 	"bytes"
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -53,19 +54,19 @@ var (
 
 // parses a file module, resultErr is either a non-syntax error or an aggregation of syntax errors (*ParsingErrorAggregation).
 // result and resultErr can be both non-nil at the same time because syntax errors are also stored in nodes.
-func ParseChunk(str string, fpath string) (result *Chunk, resultErr error) {
-	_, result, resultErr = ParseChunk2(str, fpath)
+func ParseChunk(str string, fpath string, opts ...parserOptions) (result *Chunk, resultErr error) {
+	_, result, resultErr = ParseChunk2(str, fpath, opts...)
 	return
 }
 
-func ParseChunk2(str string, fpath string) (runes []rune, result *Chunk, resultErr error) {
+func ParseChunk2(str string, fpath string, opts ...parserOptions) (runes []rune, result *Chunk, resultErr error) {
 
 	if int32(len(str)) > MAX_MODULE_BYTE_LEN {
 		return nil, nil, &ParsingError{UnspecifiedParsingError, fmt.Sprintf("module'p.s code is too long (%d bytes)", len(str))}
 	}
 
 	runes = []rune(str)
-	p := newParser(runes)
+	p := newParser(runes, opts...)
 
 	defer func() {
 		v := recover()
@@ -140,13 +141,65 @@ type parser struct {
 	i         int32  //rune index
 	len       int32
 	inPattern bool
+
+	noCheckFuel          int
+	remainingNoCheckFuel int //refueled after each context check.
+
+	context context.Context
 }
 
-func newParser(s []rune) *parser {
-	return &parser{s: s, i: 0, len: int32(len(s))}
+type parserOptions struct {
+	//the context is checked each time the no check fuel is empty.
+	//this option is ignored if <= 0 or context is nil.
+	noCheckFuel int
+
+	//this option is ignored if noCheckFuel is <= 0/
+	context context.Context
+}
+
+func newParser(s []rune, opts ...parserOptions) *parser {
+	p := &parser{
+		s:                    s,
+		i:                    0,
+		len:                  int32(len(s)),
+		noCheckFuel:          -1,
+		remainingNoCheckFuel: -1,
+	}
+
+	if len(opts) > 0 {
+		opt := opts[0]
+		if opt.context != nil && opt.noCheckFuel > 0 {
+			p.context = opt.context
+			p.noCheckFuel = opt.noCheckFuel
+			p.remainingNoCheckFuel = opt.noCheckFuel
+		}
+	}
+	return p
+}
+
+func (p *parser) panicIfContextDone() {
+	if p.noCheckFuel == -1 {
+		return
+	}
+
+	p.remainingNoCheckFuel--
+
+	if p.remainingNoCheckFuel == 0 {
+		p.remainingNoCheckFuel = p.noCheckFuel
+		if p.context != nil {
+			select {
+			case <-p.context.Done():
+				panic(p.context.Err())
+			default:
+				break
+			}
+		}
+	}
 }
 
 func (p *parser) eatComment(tokens *[]Token) bool {
+	p.panicIfContextDone()
+
 	start := p.i
 
 	if p.i < p.len-1 && isSpaceNotLF(p.s[p.i+1]) {
@@ -162,12 +215,16 @@ func (p *parser) eatComment(tokens *[]Token) bool {
 }
 
 func (p *parser) eatSpace() {
+	p.panicIfContextDone()
+
 	for p.i < p.len && isSpaceNotLF(p.s[p.i]) {
 		p.i++
 	}
 }
 
 func (p *parser) eatSpaceNewline(tokens *[]Token) {
+	p.panicIfContextDone()
+
 loop:
 	for p.i < p.len {
 		switch p.s[p.i] {
@@ -183,6 +240,8 @@ loop:
 }
 
 func (p *parser) eatSpaceComments(tokens *[]Token) {
+	p.panicIfContextDone()
+
 loop:
 	for p.i < p.len {
 		switch p.s[p.i] {
@@ -201,6 +260,8 @@ loop:
 }
 
 func (p *parser) eatSpaceNewlineComment(tokens *[]Token) {
+	p.panicIfContextDone()
+
 loop:
 	for p.i < p.len {
 		switch p.s[p.i] {
@@ -221,6 +282,8 @@ loop:
 }
 
 func (p *parser) eatSpaceNewlineCommaComment(tokens *[]Token) {
+	p.panicIfContextDone()
+
 loop:
 	for p.i < p.len {
 		switch p.s[p.i] {
@@ -242,6 +305,8 @@ loop:
 }
 
 func (p *parser) eatSpaceNewlineSemicolonComment(tokens *[]Token) {
+	p.panicIfContextDone()
+
 loop:
 	for p.i < p.len {
 		switch p.s[p.i] {
@@ -264,6 +329,8 @@ loop:
 }
 
 func (p *parser) eatSpaceNewlineComma(tokens *[]Token) {
+	p.panicIfContextDone()
+
 loop:
 	for p.i < p.len {
 		switch p.s[p.i] {
@@ -280,6 +347,8 @@ loop:
 }
 
 func (p *parser) eatSpaceComma(tokens *[]Token) {
+	p.panicIfContextDone()
+
 loop:
 	for p.i < p.len {
 		switch p.s[p.i] {
@@ -299,6 +368,8 @@ func (p *parser) isExpressionEnd() bool {
 }
 
 func (p *parser) parseCssSelectorElement(ignoreNextSpace bool) (node Node, isSpace bool) {
+	p.panicIfContextDone()
+
 	start := p.i
 	switch p.s[p.i] {
 	case '>', '~', '+':
@@ -559,6 +630,7 @@ func (p *parser) parseCssSelectorElement(ignoreNextSpace bool) (node Node, isSpa
 }
 
 func (p *parser) parseTopCssSelector(start int32) Node {
+	p.panicIfContextDone()
 
 	//p.s!
 	tokens := []Token{
@@ -608,6 +680,7 @@ func (p *parser) parseTopCssSelector(start int32) Node {
 }
 
 func (p *parser) parseBlock() *Block {
+	p.panicIfContextDone()
 
 	openingBraceIndex := p.i
 	prevStmtEndIndex := int32(-1)
@@ -687,6 +760,8 @@ func (p *parser) parseBlock() *Block {
 // parsePathExpressionSlices parses the slices in a path expression.
 // example: /{$HOME}/.cache -> [ / , $HOME , /.cache ]
 func (p *parser) parsePathExpressionSlices(start int32, exclEnd int32, tokens *[]Token) []Node {
+	p.panicIfContextDone()
+
 	slices := make([]Node, 0)
 	index := start
 	sliceStart := start
@@ -870,6 +945,8 @@ func (p *parser) parsePathExpressionSlices(start int32, exclEnd int32, tokens *[
 }
 
 func (p *parser) parseQueryParameterValueSlices(start int32, exclEnd int32, tokens *[]Token) []Node {
+	p.panicIfContextDone()
+
 	slices := make([]Node, 0)
 	index := start
 	sliceStart := start
@@ -1007,6 +1084,8 @@ func (p *parser) parseQueryParameterValueSlices(start int32, exclEnd int32, toke
 }
 
 func (p *parser) parseDotStartingExpression() Node {
+	p.panicIfContextDone()
+
 	if p.i < p.len-1 {
 		if p.s[p.i+1] == '/' || p.i < p.len-2 && p.s[p.i+1] == '.' && p.s[p.i+2] == '/' {
 			return p.parsePathLikeExpression(false)
@@ -1063,6 +1142,8 @@ func (p *parser) parseDotStartingExpression() Node {
 
 // parseDashStartingExpression parses all expressions that start with a dash: numbers, numbers ranges, options and unquoted strings
 func (p *parser) parseDashStartingExpression() Node {
+	p.panicIfContextDone()
+
 	__start := p.i
 
 	p.i++
@@ -1171,6 +1252,8 @@ func (p *parser) parseDashStartingExpression() Node {
 }
 
 func (p *parser) parseLazyAndHostAliasStuff() Node {
+	p.panicIfContextDone()
+
 	start := p.i
 	p.i++
 	if p.i >= p.len {
@@ -1272,6 +1355,8 @@ func (p *parser) parseLazyAndHostAliasStuff() Node {
 }
 
 func (p *parser) parseQuotedStringLiteral() *QuotedStringLiteral {
+	p.panicIfContextDone()
+
 	start := p.i
 	var parsingErr *ParsingError
 	var value string
@@ -1308,6 +1393,8 @@ func (p *parser) parseQuotedStringLiteral() *QuotedStringLiteral {
 }
 
 func (p *parser) parseUnquotedStringLiteralAndEmailAddress(start int32) Node {
+	p.panicIfContextDone()
+
 	p.i++
 
 	var parsingErr *ParsingError
@@ -1343,6 +1430,8 @@ func (p *parser) parseUnquotedStringLiteralAndEmailAddress(start int32) Node {
 
 // parsePathLikeExpression parses paths, path expressions, simple path patterns and named segment path patterns
 func (p *parser) parsePathLikeExpression(isPattern bool) Node {
+	p.panicIfContextDone()
+
 	start := p.i
 	if isPattern {
 		p.i++
@@ -1667,6 +1756,8 @@ func CheckURLPattern(u string) *ParsingError {
 
 // parseURLLike parses URLs, URL expressions and Hosts
 func (p *parser) parseURLLike(start int32) Node {
+	p.panicIfContextDone()
+
 	startsWithAtHost := p.s[start] == '@'
 
 	if !startsWithAtHost {
@@ -1908,6 +1999,7 @@ func (p *parser) parseURLLike(start int32) Node {
 
 // parseURLLike parses URLs pattenrs and host patterns
 func (p *parser) parseURLLikePattern(start int32) Node {
+	p.panicIfContextDone()
 
 	c := int32(0)
 	for p.i < p.len && p.s[p.i] == '/' {
@@ -1982,6 +2074,8 @@ func (p *parser) parseURLLikePattern(start int32) Node {
 
 // parseIdentStartingExpression parses identifiers, identifier member expressions, true, false, nil and URL-like expressions
 func (p *parser) parseIdentStartingExpression() Node {
+	p.panicIfContextDone()
+
 	start := p.i
 	p.i++
 	for p.i < p.len && isIdentChar(p.s[p.i]) {
@@ -2188,6 +2282,8 @@ func (p *parser) parseIdentStartingExpression() Node {
 }
 
 func (p *parser) parseKeyList() *KeyListExpression {
+	p.panicIfContextDone()
+
 	start := p.i
 	p.i += 2
 
@@ -2248,6 +2344,8 @@ func (p *parser) parseKeyList() *KeyListExpression {
 }
 
 func (p *parser) parsePercentAlphaStartingExpr() Node {
+	p.panicIfContextDone()
+
 	start := p.i
 	p.i++
 
@@ -2345,6 +2443,8 @@ func (p *parser) parsePercentAlphaStartingExpr() Node {
 }
 
 func (p *parser) parsePatternUnion(start int32, isPercentPrefixed bool) *PatternUnion {
+	p.panicIfContextDone()
+
 	var (
 		cases  []Node
 		tokens []Token
@@ -2398,6 +2498,7 @@ func (p *parser) parsePatternUnion(start int32, isPercentPrefixed bool) *Pattern
 }
 
 func (p *parser) parseComplexStringPatternUnion(start int32) *PatternUnion {
+	p.panicIfContextDone()
 
 	var cases []Node
 
@@ -2457,6 +2558,7 @@ func (p *parser) parseComplexStringPatternUnion(start int32) *PatternUnion {
 
 // parseComplexStringPatternPiece parses a piece (of string pattern) that can have one ore more elements
 func (p *parser) parseComplexStringPatternPiece(start int32, ident *PatternIdentifierLiteral) *ComplexStringPatternPiece {
+	p.panicIfContextDone()
 
 	var pieceValuelessTokens []Token
 	if ident != nil {
@@ -2580,6 +2682,8 @@ func (p *parser) parseComplexStringPatternPiece(start int32, ident *PatternIdent
 }
 
 func (p *parser) parsePatternCall(callee Node) *PatternCallExpression {
+	p.panicIfContextDone()
+
 	valuelessTokens := []Token{{Type: OPENING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}}}
 	p.i++
 	p.eatSpaceComma(&valuelessTokens)
@@ -2626,6 +2730,8 @@ func (p *parser) parsePatternCall(callee Node) *PatternCallExpression {
 }
 
 func (p *parser) parseObjectPatternLiteral(percentPrefixed bool) *ObjectPatternLiteral {
+	p.panicIfContextDone()
+
 	var (
 		unamedPropCount    = 0
 		properties         []*ObjectPatternProperty
@@ -2975,6 +3081,8 @@ object_pattern_top_loop:
 }
 
 func (p *parser) parseListPatternLiteral(percentPrefixed bool) Node {
+	p.panicIfContextDone()
+
 	openingBracketIndex := p.i
 	p.i++
 
@@ -3043,6 +3151,7 @@ func (p *parser) parseListPatternLiteral(percentPrefixed bool) Node {
 }
 
 func (p *parser) parseObjectOrRecordLiteral(isRecord bool) Node {
+	p.panicIfContextDone()
 
 	var (
 		unamedPropCount = 0
@@ -3423,6 +3532,7 @@ object_literal_top_loop:
 }
 
 func (p *parser) parseListOrTupleLiteral(isTuple bool) Node {
+	p.panicIfContextDone()
 
 	var (
 		openingBracketIndex = p.i
@@ -3525,6 +3635,8 @@ func (p *parser) parseListOrTupleLiteral(isTuple bool) Node {
 }
 
 func (p *parser) parseDictionaryLiteral() *DictionaryLiteral {
+	p.panicIfContextDone()
+
 	openingIndex := p.i
 	p.i += 2
 
@@ -3629,6 +3741,8 @@ dictionary_literal_top_loop:
 }
 
 func (p *parser) parseRuneRuneRange() Node {
+	p.panicIfContextDone()
+
 	start := p.i
 
 	parseRuneLiteral := func() *RuneLiteral {
@@ -3761,6 +3875,8 @@ func (p *parser) parseRuneRuneRange() Node {
 }
 
 func (p *parser) parsePercentPrefixedPattern() Node {
+	p.panicIfContextDone()
+
 	start := p.i
 	p.i++
 
@@ -3963,6 +4079,8 @@ func (p *parser) parsePercentPrefixedPattern() Node {
 }
 
 func (p *parser) getValueOfMultilineStringSliceOrLiteral(raw []byte, literal bool) (string, *ParsingError) {
+	p.panicIfContextDone()
+
 	var value string
 
 	if literal {
@@ -4001,6 +4119,8 @@ func (p *parser) getValueOfMultilineStringSliceOrLiteral(raw []byte, literal boo
 }
 
 func (p *parser) parseStringTemplateLiteralOrMultilineStringLiteral(pattern Node) Node {
+	p.panicIfContextDone()
+
 	start := p.i
 	if pattern != nil {
 		start = pattern.Base().Span.Start
@@ -4207,6 +4327,8 @@ end:
 }
 
 func (p *parser) parseIfExpression(openingParenIndex int32, ifIdent *IdentifierLiteral) *IfExpression {
+	p.panicIfContextDone()
+
 	var alternate Node
 	var end int32
 	var parsingErr *ParsingError
@@ -4268,6 +4390,8 @@ func (p *parser) parseIfExpression(openingParenIndex int32, ifIdent *IdentifierL
 }
 
 func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex int32, previousOperatorEnd int32) Node {
+	p.panicIfContextDone()
+
 	var tokens []Token
 	var startIndex = openingParenIndex
 	hasPreviousOperator := previousOperatorEnd > 0
@@ -4862,6 +4986,8 @@ _switch:
 }
 
 func (p *parser) parseComplexStringPatternElement() Node {
+	p.panicIfContextDone()
+
 	start := p.i
 	var parsingErr *ParsingError
 
@@ -4943,6 +5069,8 @@ func (p *parser) parseComplexStringPatternElement() Node {
 
 // parseParenthesizedCallArgs parses the arguments of a parenthesized call up until the closing parenthesis (included)
 func (p *parser) parseParenthesizedCallArgs(call *CallExpression) *CallExpression {
+	p.panicIfContextDone()
+
 	var (
 		lastSpreadArg *SpreadArgument = nil
 		argErr        *ParsingError
@@ -5017,6 +5145,7 @@ func (p *parser) parseParenthesizedCallArgs(call *CallExpression) *CallExpressio
 
 // parseCallArgsNoParenthesis parses the arguments of a call without parenthesis up until the end of the line or the next non-opening delimiter
 func (p *parser) parseCallArgsNoParenthesis(call *CallExpression) {
+	p.panicIfContextDone()
 
 	var lastSpreadArg *SpreadArgument = nil
 
@@ -5080,7 +5209,7 @@ func (p *parser) parseCallArgsNoParenthesis(call *CallExpression) {
 }
 
 func ParseDateLiteral(braw []byte) (date time.Time, parsingErr *ParsingError) {
-	if !DATE_LITERAL_REGEX.Match(braw) {
+	if len(braw) > 40 || !DATE_LITERAL_REGEX.Match(braw) {
 		return time.Time{}, &ParsingError{UnspecifiedParsingError, INVALID_DATE_LITERAL}
 	}
 
@@ -5135,6 +5264,8 @@ func ParseDateLiteral(braw []byte) (date time.Time, parsingErr *ParsingError) {
 }
 
 func (p *parser) parseDateLiterals(start int32) *DateLiteral {
+	p.panicIfContextDone()
+
 	literal := &DateLiteral{
 		NodeBase: NodeBase{
 			NodeSpan{start, p.i},
@@ -5185,6 +5316,8 @@ func (p *parser) parseDateLiterals(start int32) *DateLiteral {
 }
 
 func (p *parser) parsePortLiteral() *PortLiteral {
+	p.panicIfContextDone()
+
 	start := p.i // ':'
 	p.i++
 
@@ -5230,6 +5363,8 @@ func (p *parser) parsePortLiteral() *PortLiteral {
 }
 
 func (p *parser) parseNumberAndNumberRange() Node {
+	p.panicIfContextDone()
+
 	start := p.i
 	var parsingErr *ParsingError
 
@@ -5347,6 +5482,8 @@ func (p *parser) parseNumberAndNumberRange() Node {
 }
 
 func (p *parser) parseByteSlices() Node {
+	p.panicIfContextDone()
+
 	start := p.i //index of '0'
 	p.i++
 
@@ -5557,6 +5694,8 @@ func (p *parser) parseByteSlices() Node {
 }
 
 func (p *parser) parseNumberAndRangeAndRateLiterals() Node {
+	p.panicIfContextDone()
+
 	start := p.i //index of first digit or '-'
 	e := p.parseNumberAndNumberRange()
 
@@ -5581,6 +5720,8 @@ func (p *parser) parseNumberAndRangeAndRateLiterals() Node {
 }
 
 func (p *parser) parseQuantityOrRateLiteral(start int32, fValue float64, float bool) Node {
+	p.panicIfContextDone()
+
 	unitStart := p.i
 	var parsingErr *ParsingError
 
@@ -5683,6 +5824,21 @@ loop:
 
 // parseExpression parses any expression, if expr is a *MissingExpression isMissingExpr will be true.
 func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isMissingExpr bool) {
+	p.panicIfContextDone()
+
+	if p.remainingNoCheckFuel <= 0 {
+		p.remainingNoCheckFuel = 0
+		if p.context != nil {
+			select {
+			case <-p.context.Done():
+				panic(context.Canceled)
+			default:
+				p.remainingNoCheckFuel = 100
+			}
+		}
+	} else {
+		p.remainingNoCheckFuel--
+	}
 	__start := p.i
 	// these variables are only used for expressions that can be on the left side of a member/slice/index/call expression,
 	// other expressions are directly returned.
@@ -6276,6 +6432,8 @@ loop:
 
 // can return nil
 func (p *parser) parsePreInitIfPresent() *PreinitStatement {
+	p.panicIfContextDone()
+
 	var preinit *PreinitStatement
 	if p.i < p.len && strings.HasPrefix(string(p.s[p.i:]), PREINIT_KEYWORD_STR) {
 		start := p.i
@@ -6307,6 +6465,8 @@ func (p *parser) parsePreInitIfPresent() *PreinitStatement {
 
 // can return nil
 func (p *parser) parseManifestIfPresent() *Manifest {
+	p.panicIfContextDone()
+
 	var manifest *Manifest
 	if p.i < p.len && strings.HasPrefix(string(p.s[p.i:]), MANIFEST_KEYWORD_STR) {
 		start := p.i
@@ -6336,6 +6496,8 @@ func (p *parser) parseManifestIfPresent() *Manifest {
 }
 
 func (p *parser) parseSingleGlobalConstDeclaration(declarations *[]*GlobalConstantDeclaration) {
+	p.panicIfContextDone()
+
 	var declParsingErr *ParsingError
 
 	lhs, _ := p.parseExpression()
@@ -6387,6 +6549,8 @@ func (p *parser) parseSingleGlobalConstDeclaration(declarations *[]*GlobalConsta
 }
 
 func (p *parser) parseGlobalConstantDeclarations() *GlobalConstantDeclarations {
+	p.panicIfContextDone()
+
 	//nil is returned if there are no global constant declarations (no const (...) section)
 
 	var (
@@ -6460,6 +6624,8 @@ func (p *parser) parseGlobalConstantDeclarations() *GlobalConstantDeclarations {
 }
 
 func (p *parser) parseSingleLocalVarDeclaration(declarations *[]*LocalVariableDeclaration) {
+	p.panicIfContextDone()
+
 	var declParsingErr *ParsingError
 
 	lhs, _ := p.parseExpression()
@@ -6543,6 +6709,8 @@ func (p *parser) parseSingleLocalVarDeclaration(declarations *[]*LocalVariableDe
 }
 
 func (p *parser) parseLocalVariableDeclarations(varKeywordBase NodeBase) *LocalVariableDeclarations {
+	p.panicIfContextDone()
+
 	var (
 		start           = varKeywordBase.Span.Start
 		valuelessTokens = []Token{{Type: VAR_KEYWORD, Span: varKeywordBase.Span}}
@@ -6608,6 +6776,8 @@ func (p *parser) parseLocalVariableDeclarations(varKeywordBase NodeBase) *LocalV
 }
 
 func (p *parser) parseEmbeddedModule() *EmbeddedModule {
+	p.panicIfContextDone()
+
 	start := p.i
 	p.i++
 
@@ -6689,6 +6859,8 @@ func (p *parser) parseEmbeddedModule() *EmbeddedModule {
 }
 
 func (p *parser) parseSpawnExpression(goIdent Node) Node {
+	p.panicIfContextDone()
+
 	spawnExprStart := goIdent.Base().Span.Start
 	tokens := []Token{{Type: GO_KEYWORD, Span: goIdent.Base().Span}}
 
@@ -6773,6 +6945,8 @@ parse_embedded_module:
 }
 
 func (p *parser) parseMappingExpression(mappingIdent Node) *MappingExpression {
+	p.panicIfContextDone()
+
 	start := mappingIdent.Base().Span.Start
 	p.eatSpace()
 
@@ -6942,6 +7116,8 @@ func (p *parser) parseMappingExpression(mappingIdent Node) *MappingExpression {
 }
 
 func (p *parser) parseComputeExpression(compIdent Node) *ComputeExpression {
+	p.panicIfContextDone()
+
 	start := compIdent.Base().Span.Start
 	p.eatSpace()
 
@@ -7019,6 +7195,8 @@ func (p *parser) parseUdataLiteral(udataIdent Node) *UDataLiteral {
 }
 
 func (p *parser) parseTreeStructureEntry() (entry *UDataEntry, cont bool) {
+	p.panicIfContextDone()
+
 	start := p.i
 
 	node, isMissingExpr := p.parseExpression()
@@ -7102,6 +7280,8 @@ func (p *parser) parseTreeStructureEntry() (entry *UDataEntry, cont bool) {
 }
 
 func (p *parser) parseConcatenationExpression(concatIdent Node, precededByOpeningParen bool) *ConcatenationExpression {
+	p.panicIfContextDone()
+
 	start := concatIdent.Base().Span.Start
 	var valuelessTokens = []Token{{Type: CONCAT_KEYWORD, Span: concatIdent.Base().Span}}
 	var elements []Node
@@ -7156,6 +7336,8 @@ func (p *parser) parseConcatenationExpression(concatIdent Node, precededByOpenin
 }
 
 func (p *parser) parseTestSuiteExpression(ident *IdentifierLiteral) *TestSuiteExpression {
+	p.panicIfContextDone()
+
 	start := ident.Base().Span.Start
 	var valuelessTokens = []Token{{Type: TESTSUITE_KEYWORD, Span: ident.Base().Span}}
 
@@ -7202,6 +7384,8 @@ func (p *parser) parseTestSuiteExpression(ident *IdentifierLiteral) *TestSuiteEx
 }
 
 func (p *parser) parseTestCaseExpression(ident *IdentifierLiteral) *TestCaseExpression {
+	p.panicIfContextDone()
+
 	start := ident.Base().Span.Start
 	var valuelessTokens = []Token{{Type: TESTCASE_KEYWORD, Span: ident.Base().Span}}
 
@@ -7247,6 +7431,8 @@ func (p *parser) parseTestCaseExpression(ident *IdentifierLiteral) *TestCaseExpr
 }
 
 func (p *parser) parseLifetimeJobExpression(ident *IdentifierLiteral) *LifetimejobExpression {
+	p.panicIfContextDone()
+
 	start := ident.Base().Span.Start
 	var valuelessTokens = []Token{{Type: LIFETIMEJOB_KEYWORD, Span: ident.Base().Span}}
 
@@ -7303,6 +7489,8 @@ func (p *parser) parseLifetimeJobExpression(ident *IdentifierLiteral) *Lifetimej
 }
 
 func (p *parser) parseReceptionHandlerExpression(onIdent Node) Node {
+	p.panicIfContextDone()
+
 	exprStart := onIdent.Base().Span.Start
 	tokens := []Token{{Type: ON_KEYWORD, Span: onIdent.Base().Span}}
 
@@ -7364,6 +7552,8 @@ func (p *parser) parseReceptionHandlerExpression(onIdent Node) Node {
 }
 
 func (p *parser) parseSendValueExpression(ident *IdentifierLiteral) *SendValueExpression {
+	p.panicIfContextDone()
+
 	start := ident.Base().Span.Start
 	var valuelessTokens = []Token{{Type: SENDVAL_KEYWORD, Span: ident.Base().Span}}
 
@@ -7409,6 +7599,8 @@ func (p *parser) parseSendValueExpression(ident *IdentifierLiteral) *SendValueEx
 }
 
 func (p *parser) parseXMLExpression(namespaceIdent *IdentifierLiteral) *XMLExpression {
+	p.panicIfContextDone()
+
 	start := namespaceIdent.Span.Start
 
 	//we do not increment because we keep the '<' for parsing the top element
@@ -7434,6 +7626,8 @@ func (p *parser) parseXMLExpression(namespaceIdent *IdentifierLiteral) *XMLExpre
 }
 
 func (p *parser) parseXMLElement(start int32) *XMLElement {
+	p.panicIfContextDone()
+
 	var parsingErr *ParsingError
 	openingElemValuelessTokens := []Token{{Type: LESS_THAN, Span: NodeSpan{start, start + 1}}}
 	p.i++
@@ -7599,6 +7793,8 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 }
 
 func (p *parser) parseXMLChildren(valuelessTokens *[]Token) ([]Node, *ParsingError) {
+	p.panicIfContextDone()
+
 	inInterpolation := false
 	interpolationStart := int32(-1)
 	children := make([]Node, 0)
@@ -7720,6 +7916,8 @@ func (p *parser) parseXMLChildren(valuelessTokens *[]Token) ([]Node, *ParsingErr
 
 // tryParseCall tries to parse a call or return nil (calls with parsing errors are returned)
 func (p *parser) tryParseCall(callee Node, firstName string) *CallExpression {
+	p.panicIfContextDone()
+
 	switch {
 	case p.s[p.i] == '"': //func_name"string"
 		call := &CallExpression{
@@ -7787,6 +7985,8 @@ func (p *parser) tryParseCall(callee Node, firstName string) *CallExpression {
 
 // parseFunction parses function declarations and function expressions
 func (p *parser) parseFunction(start int32) Node {
+	p.panicIfContextDone()
+
 	tokens := []Token{{Type: FN_KEYWORD, Span: NodeSpan{p.i - 2, p.i}}}
 	p.eatSpace()
 
@@ -8085,6 +8285,8 @@ func (p *parser) parseFunction(start int32) Node {
 
 // parseFunction parses function declarations and function expressions
 func (p *parser) parseFunctionPattern(start int32) Node {
+	p.panicIfContextDone()
+
 	tokens := []Token{{Type: PERCENT_FN, Span: NodeSpan{p.i - 3, p.i}}}
 	p.eatSpace()
 
@@ -8283,6 +8485,8 @@ func (p *parser) parseFunctionPattern(start int32) Node {
 }
 
 func (p *parser) parseIfStatement(ifIdent *IdentifierLiteral) *IfStatement {
+	p.panicIfContextDone()
+
 	var alternate *Block
 	var blk *Block
 	var end int32
@@ -8339,6 +8543,8 @@ func (p *parser) parseIfStatement(ifIdent *IdentifierLiteral) *IfStatement {
 }
 
 func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
+	p.panicIfContextDone()
+
 	var parsingErr *ParsingError
 	var valuePattern Node
 	var valueElemIdent *IdentifierLiteral
@@ -8558,6 +8764,8 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 }
 
 func (p *parser) parseWalkStatement(walkIdent *IdentifierLiteral) *WalkStatement {
+	p.panicIfContextDone()
+
 	var parsingErr *ParsingError
 	var metaIdent, entryIdent *IdentifierLiteral
 	p.eatSpace()
@@ -8646,6 +8854,8 @@ func (p *parser) parseWalkStatement(walkIdent *IdentifierLiteral) *WalkStatement
 }
 
 func (p *parser) parseSwitchMatchStatement(keywordIdent *IdentifierLiteral) Node {
+	p.panicIfContextDone()
+
 	var tokens []Token
 	if keywordIdent.Name[0] == 's' {
 		tokens = append(tokens, Token{Type: SWITCH_KEYWORD, Span: keywordIdent.Base().Span})
@@ -8918,6 +9128,8 @@ top_loop:
 }
 
 func (p *parser) parsePermissionDroppingStatement(dropPermIdent *IdentifierLiteral) *PermissionDroppingStatement {
+	p.panicIfContextDone()
+
 	p.eatSpace()
 
 	e, _ := p.parseExpression()
@@ -8945,6 +9157,8 @@ func (p *parser) parsePermissionDroppingStatement(dropPermIdent *IdentifierLiter
 }
 
 func (p *parser) parseImportStatement(importIdent *IdentifierLiteral) Node {
+	p.panicIfContextDone()
+
 	tokens := []Token{
 		{Type: IMPORT_KEYWORD, Span: importIdent.Span},
 	}
@@ -9023,6 +9237,8 @@ func (p *parser) parseImportStatement(importIdent *IdentifierLiteral) Node {
 }
 
 func (p *parser) parseReturnStatement(returnIdent *IdentifierLiteral) *ReturnStatement {
+	p.panicIfContextDone()
+
 	var end int32 = p.i
 	var returnValue Node
 
@@ -9043,6 +9259,8 @@ func (p *parser) parseReturnStatement(returnIdent *IdentifierLiteral) *ReturnSta
 }
 
 func (p *parser) parseYieldStatement(yieldIdent *IdentifierLiteral) *YieldStatement {
+	p.panicIfContextDone()
+
 	var end int32 = p.i
 	var returnValue Node
 
@@ -9063,6 +9281,8 @@ func (p *parser) parseYieldStatement(yieldIdent *IdentifierLiteral) *YieldStatem
 }
 
 func (p *parser) parseSynchronizedBlock(synchronizedIdent *IdentifierLiteral) *SynchronizedBlockStatement {
+	p.panicIfContextDone()
+
 	var tokens = []Token{{Type: SYNCHRONIZED_KEYWORD, Span: synchronizedIdent.Span}}
 
 	p.eatSpace()
@@ -9116,6 +9336,8 @@ func (p *parser) parseSynchronizedBlock(synchronizedIdent *IdentifierLiteral) *S
 }
 
 func (p *parser) parseMultiAssignmentStatement(assignIdent *IdentifierLiteral) *MultiAssignment {
+	p.panicIfContextDone()
+
 	var vars []Node
 	var tokens = []Token{
 		{Type: ASSIGN_KEYWORD, Span: assignIdent.Span},
@@ -9196,6 +9418,8 @@ func (p *parser) parseMultiAssignmentStatement(assignIdent *IdentifierLiteral) *
 }
 
 func (p *parser) parseAssignmentAndPatternDefinition(left Node) (result Node) {
+	p.panicIfContextDone()
+
 	// terminator
 	defer func() {
 		p.eatSpace()
@@ -9422,6 +9646,7 @@ func (p *parser) parseAssignmentAndPatternDefinition(left Node) (result Node) {
 }
 
 func (p *parser) parseCommandLikeStatement(expr Node) Node {
+	p.panicIfContextDone()
 
 	call := &CallExpression{
 		NodeBase: NodeBase{
@@ -9536,6 +9761,8 @@ func (p *parser) parseCommandLikeStatement(expr Node) Node {
 }
 
 func (p *parser) parseStatement() Node {
+	// no p.panicIfContextDone() call because there is one in the following statement.
+
 	expr, _ := p.parseExpression()
 
 	var b rune
@@ -9719,6 +9946,8 @@ func (p *parser) parseStatement() Node {
 }
 
 func (p *parser) parseChunk() (*Chunk, error) {
+	p.panicIfContextDone()
+
 	chunk := &Chunk{
 		NodeBase: NodeBase{
 			Span: NodeSpan{Start: 0, End: p.len},
@@ -10112,8 +10341,8 @@ func len32[T any](arg []T) int32 {
 	return int32(len(arg))
 }
 
-func MustParseChunk(str string) (result *Chunk) {
-	n, err := ParseChunk(str, "<chunk>")
+func MustParseChunk(str string, opts ...parserOptions) (result *Chunk) {
+	n, err := ParseChunk(str, "<chunk>", opts...)
 	if err != nil {
 		panic(err)
 	}

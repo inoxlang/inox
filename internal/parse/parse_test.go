@@ -1,25 +1,170 @@
 package parse
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParse(t *testing.T) {
+func TestParseNoContext(t *testing.T) {
+	testParse(t, func(t *testing.T, str string) (result *Chunk) {
+		return MustParseChunk(str)
+	}, func(t *testing.T, str, name string) (result *Chunk, err error) {
+		return ParseChunk(str, name)
+	})
+}
+
+func TestParseSystematicCheckAndAlreadyDoneContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	mustParseChunk := func(t *testing.T, str string) (result *Chunk) {
+		err := (func() (err error) {
+			defer func() {
+				e := recover()
+				if er, ok := e.(error); ok {
+					err = er
+				}
+			}()
+			MustParseChunk(str, parserOptions{
+				noCheckFuel: 1, //check context every major function call during parsing.
+				context:     ctx,
+			})
+			return
+		})()
+
+		assert.ErrorContains(t, err, context.Canceled.Error())
+
+		return MustParseChunk(str)
+	}
+
+	parseChunk := func(t *testing.T, str, name string) (result *Chunk, e error) {
+		_, err := ParseChunk(str, name, parserOptions{
+			noCheckFuel: 1, //check context every major function call during parsing.
+			context:     ctx,
+		})
+
+		assert.ErrorContains(t, err, context.Canceled.Error())
+
+		return ParseChunk(str, name)
+	}
+
+	testParse(t, mustParseChunk, parseChunk)
+}
+
+func TestParseNonSystematicCheckAndAlreadyDoneContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	mustParseChunk := func(t *testing.T, str string) (result *Chunk) {
+		err := (func() (err error) {
+			defer func() {
+				e := recover()
+				if er, ok := e.(error); ok {
+					err = er
+				}
+			}()
+			MustParseChunk(str, parserOptions{
+				noCheckFuel: 2, //check context every 2 major function calls during parsing.
+				context:     ctx,
+			})
+			return
+		})()
+
+		assert.ErrorContains(t, err, context.Canceled.Error())
+
+		return MustParseChunk(str)
+	}
+
+	parseChunk := func(t *testing.T, str, name string) (result *Chunk, e error) {
+		_, err := ParseChunk(str, name, parserOptions{
+			noCheckFuel: 2, //check context every 2 major function calls during parsing.
+			context:     ctx,
+		})
+
+		assert.ErrorContains(t, err, context.Canceled.Error())
+
+		return ParseChunk(str, name)
+	}
+
+	testParse(t, mustParseChunk, parseChunk)
+}
+
+func TestParseNxxxx(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	const MIN_CONTEXT_CHECK_TEST_NODE_COUNT = 6
+
+	mustParseChunk := func(t *testing.T, str string) (result *Chunk) {
+		n := MustParseChunk(str)
+		nodeCount := countNodes(n)
+
+		if nodeCount < MIN_CONTEXT_CHECK_TEST_NODE_COUNT { //ignore context check test.
+			return n
+		}
+
+		err := (func() (err error) {
+			defer func() {
+				e := recover()
+				if er, ok := e.(error); ok {
+					err = er
+				}
+			}()
+			MustParseChunk(str, parserOptions{
+				noCheckFuel: nodeCount / 2, //check context somewhere during the parsing.
+				context:     ctx,
+			})
+			return
+		})()
+
+		assert.ErrorContains(t, err, context.Canceled.Error())
+
+		return n
+	}
+
+	parseChunk := func(t *testing.T, str, name string) (result *Chunk, e error) {
+		n, err := ParseChunk(str, name)
+		nodeCount := countNodes(n)
+
+		if nodeCount < MIN_CONTEXT_CHECK_TEST_NODE_COUNT { //ignore context check test.
+			return n, err
+		}
+
+		_, err = ParseChunk(str, name, parserOptions{
+			noCheckFuel: nodeCount / 2, //check context somewhere during the parsing.
+			context:     ctx,
+		})
+
+		assert.ErrorContains(t, err, context.Canceled.Error())
+
+		return ParseChunk(str, name)
+	}
+
+	testParse(t, mustParseChunk, parseChunk)
+}
+
+//TODO: add more specific tests for testing context checks.
+
+func testParse(
+	t *testing.T,
+	mustparseChunk func(t *testing.T, str string) (result *Chunk),
+	parseChunk func(t *testing.T, str string, name string) (result *Chunk, err error),
+) {
 
 	t.Run("module", func(t *testing.T) {
 
 		t.Run("empty", func(t *testing.T) {
-			n := MustParseChunk("")
+			n := mustparseChunk(t, "")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 0}, nil, nil},
 			}, n)
 		})
 
 		t.Run("comment with missing space", func(t *testing.T) {
-			n, err := ParseChunk("#", "")
+			n, err := parseChunk(t, "#", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
@@ -39,7 +184,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("shebang", func(t *testing.T) {
-			n := MustParseChunk("#!/usr/local/bin/inox")
+			n := mustparseChunk(t, "#!/usr/local/bin/inox")
 			assert.EqualValues(t, &Chunk{
 				NodeBase:   NodeBase{NodeSpan{0, 21}, nil, nil},
 				Statements: nil,
@@ -47,7 +192,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unexpected char", func(t *testing.T) {
-			n, err := ParseChunk("]", "")
+			n, err := parseChunk(t, "]", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
@@ -64,7 +209,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("non regular space", func(t *testing.T) {
-			n, err := ParseChunk(" ", "")
+			n, err := parseChunk(t, " ", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
@@ -81,14 +226,14 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("carriage return", func(t *testing.T) {
-			n := MustParseChunk("\r")
+			n := mustparseChunk(t, "\r")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
 			}, n)
 		})
 
 		t.Run("line feed", func(t *testing.T) {
-			n := MustParseChunk("\n")
+			n := mustparseChunk(t, "\n")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
 					NodeSpan{0, 1},
@@ -99,7 +244,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("two line feeds", func(t *testing.T) {
-			n := MustParseChunk("\n\n")
+			n := mustparseChunk(t, "\n\n")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
 					NodeSpan{0, 2},
@@ -113,7 +258,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("carriage return + line feed", func(t *testing.T) {
-			n := MustParseChunk("\r\n")
+			n := mustparseChunk(t, "\r\n")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
 					NodeSpan{0, 2},
@@ -124,7 +269,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("twice: carriage return + line feed", func(t *testing.T) {
-			n := MustParseChunk("\r\n\r\n")
+			n := mustparseChunk(t, "\r\n\r\n")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
 					NodeSpan{0, 4},
@@ -138,7 +283,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("two lines with one statement per line", func(t *testing.T) {
-			n := MustParseChunk("1\n2")
+			n := mustparseChunk(t, "1\n2")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
 					NodeSpan{0, 3},
@@ -163,7 +308,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("two lines with one statement per line, followed by newline character", func(t *testing.T) {
-			n := MustParseChunk("1\n2\n")
+			n := mustparseChunk(t, "1\n2\n")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
 					NodeSpan{0, 4},
@@ -189,7 +334,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("statements next to each other", func(t *testing.T) {
-			n, err := ParseChunk("1$v", "")
+			n, err := parseChunk(t, "1$v", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
@@ -212,7 +357,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("empty preinit", func(t *testing.T) {
-			n := MustParseChunk("preinit {}")
+			n := mustparseChunk(t, "preinit {}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase:   NodeBase{NodeSpan{0, 10}, nil, nil},
 				Statements: nil,
@@ -238,7 +383,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("empty preinit after newline", func(t *testing.T) {
-			n := MustParseChunk("\npreinit {}")
+			n := mustparseChunk(t, "\npreinit {}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
 					NodeSpan{0, 11},
@@ -268,7 +413,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("empty manifest", func(t *testing.T) {
-			n := MustParseChunk("manifest {}")
+			n := mustparseChunk(t, "manifest {}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase:   NodeBase{NodeSpan{0, 11}, nil, nil},
 				Statements: nil,
@@ -295,7 +440,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("empty manifest after newline", func(t *testing.T) {
-			n := MustParseChunk("\nmanifest {}")
+			n := mustparseChunk(t, "\nmanifest {}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
 					NodeSpan{0, 12},
@@ -328,7 +473,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("empty manifest after preinit", func(t *testing.T) {
-			n := MustParseChunk("preinit {}\nmanifest {}")
+			n := mustparseChunk(t, "preinit {}\nmanifest {}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
 					NodeSpan{0, 22},
@@ -382,7 +527,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("top level constant declarations", func(t *testing.T) {
 		t.Run("empty const declarations", func(t *testing.T) {
-			n := MustParseChunk("const ()")
+			n := mustparseChunk(t, "const ()")
 			assert.EqualValues(t, &Chunk{
 				NodeBase:   NodeBase{NodeSpan{0, 8}, nil, nil},
 				Statements: nil,
@@ -403,7 +548,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single declaration with parenthesis", func(t *testing.T) {
-			n := MustParseChunk("const ( a = 1 )")
+			n := mustparseChunk(t, "const ( a = 1 )")
 			assert.EqualValues(t, &Chunk{
 				NodeBase:   NodeBase{NodeSpan{0, 15}, nil, nil},
 				Statements: nil,
@@ -441,7 +586,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single declaration without parenthesis", func(t *testing.T) {
-			n := MustParseChunk("const a = 1")
+			n := mustparseChunk(t, "const a = 1")
 			assert.EqualValues(t, &Chunk{
 				NodeBase:   NodeBase{NodeSpan{0, 11}, nil, nil},
 				Statements: nil,
@@ -475,13 +620,13 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("variable identifiers should not be keywords", func(t *testing.T) {
-			n, err := ParseChunk("const manifest = 1", "")
+			n, err := parseChunk(t, "const manifest = 1", "")
 			assert.NotNil(t, n)
 			assert.ErrorContains(t, err, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS)
 		})
 
 		t.Run("const keyword followed by EOF", func(t *testing.T) {
-			n, err := ParseChunk("const", "")
+			n, err := parseChunk(t, "const", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase:   NodeBase{NodeSpan{0, 5}, nil, nil},
@@ -499,7 +644,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("const keyword followed by space + EOF", func(t *testing.T) {
-			n, err := ParseChunk("const ", "")
+			n, err := parseChunk(t, "const ", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase:   NodeBase{NodeSpan{0, 6}, nil, nil},
@@ -517,7 +662,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("const keyword followed by a literal", func(t *testing.T) {
-			n, err := ParseChunk("const 1", "")
+			n, err := parseChunk(t, "const 1", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase:   NodeBase{NodeSpan{0, 7}, nil, nil},
@@ -548,7 +693,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("const keyword followed by a literal + equal sign", func(t *testing.T) {
-			n, err := ParseChunk("const 1 =", "")
+			n, err := parseChunk(t, "const 1 =", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase:   NodeBase{NodeSpan{0, 9}, nil, nil},
@@ -586,7 +731,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("const keyword followed by linefeed + manifest", func(t *testing.T) {
-			n, err := ParseChunk("const\nmanifest {}", "")
+			n, err := parseChunk(t, "const\nmanifest {}", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
@@ -629,7 +774,7 @@ func TestParse(t *testing.T) {
 	t.Run("top level local variables declarations", func(t *testing.T) {
 
 		t.Run("empty declarations", func(t *testing.T) {
-			n := MustParseChunk("var ()")
+			n := mustparseChunk(t, "var ()")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
 				Statements: []Node{
@@ -646,7 +791,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single declaration", func(t *testing.T) {
-			n := MustParseChunk("var ( a = 1 )")
+			n := mustparseChunk(t, "var ( a = 1 )")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
 				Statements: []Node{
@@ -680,7 +825,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single declaration without parenthesis", func(t *testing.T) {
-			n := MustParseChunk("var a = 1")
+			n := mustparseChunk(t, "var a = 1")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
 				Statements: []Node{
@@ -714,7 +859,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single declaration without parenthesis and with percent-prefixed type", func(t *testing.T) {
-			n := MustParseChunk("var a %int = 1")
+			n := mustparseChunk(t, "var a %int = 1")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, nil},
 				Statements: []Node{
@@ -752,7 +897,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single declaration without parenthesis and with unprefixed named pattern", func(t *testing.T) {
-			n := MustParseChunk("var a int = 1")
+			n := mustparseChunk(t, "var a int = 1")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
 				Statements: []Node{
@@ -791,7 +936,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single declaration without parenthesis and with unprefixed pattern namespace member", func(t *testing.T) {
-			n := MustParseChunk("var a x.y = 1")
+			n := mustparseChunk(t, "var a x.y = 1")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
 				Statements: []Node{
@@ -837,7 +982,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("var keyword at end of file", func(t *testing.T) {
-			n, err := ParseChunk("var", "")
+			n, err := parseChunk(t, "var", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
@@ -854,7 +999,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("var keyword followed by newline", func(t *testing.T) {
-			n, err := ParseChunk("var\n", "")
+			n, err := parseChunk(t, "var\n", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
@@ -875,7 +1020,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("var keyword followed by newline + expression", func(t *testing.T) {
-			n, err := ParseChunk("var\n1", "")
+			n, err := parseChunk(t, "var\n1", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
@@ -901,38 +1046,38 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single declaration with invalid LHS", func(t *testing.T) {
-			mod, err := ParseChunk("var %| %int | %str", "")
+			mod, err := parseChunk(t, "var %| %int | %str", "")
 			assert.NotNil(t, mod)
 			assert.Error(t, err)
 		})
 
 		t.Run("single declaration with keyword LHS", func(t *testing.T) {
-			mod, err := ParseChunk("var manifest", "")
+			mod, err := parseChunk(t, "var manifest", "")
 			assert.NotNil(t, mod)
 			assert.Error(t, err)
 		})
 
 		t.Run("single declaration with invalid LHS", func(t *testing.T) {
-			mod, err := ParseChunk("var 1 = 1", "")
+			mod, err := parseChunk(t, "var 1 = 1", "")
 			assert.NotNil(t, mod)
 			assert.Error(t, err)
 		})
 
 		t.Run("single declaration with keyword LHS", func(t *testing.T) {
-			mod, err := ParseChunk("var manifest = 1", "")
+			mod, err := parseChunk(t, "var manifest = 1", "")
 			assert.NotNil(t, mod)
 			assert.ErrorContains(t, err, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS)
 		})
 
 		t.Run("single declaration with unexpected char as LHS", func(t *testing.T) {
-			mod, err := ParseChunk("var ? = 1", "")
+			mod, err := parseChunk(t, "var ? = 1", "")
 			assert.NotNil(t, mod)
 			assert.Error(t, err)
 		})
 	})
 
 	t.Run("variable", func(t *testing.T) {
-		n := MustParseChunk("$a")
+		n := mustparseChunk(t, "$a")
 		assert.EqualValues(t, &Chunk{
 			NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
 			Statements: []Node{
@@ -947,7 +1092,7 @@ func TestParse(t *testing.T) {
 	t.Run("identifier", func(t *testing.T) {
 
 		t.Run("single letter", func(t *testing.T) {
-			n := MustParseChunk("a")
+			n := mustparseChunk(t, "a")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
 				Statements: []Node{
@@ -960,7 +1105,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("followed by newline", func(t *testing.T) {
-			n := MustParseChunk("a\n")
+			n := mustparseChunk(t, "a\n")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
 					NodeSpan{0, 2},
@@ -979,7 +1124,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("boolean literals", func(t *testing.T) {
 		t.Run("true", func(t *testing.T) {
-			n := MustParseChunk("true")
+			n := mustparseChunk(t, "true")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
 				Statements: []Node{
@@ -992,7 +1137,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("false", func(t *testing.T) {
-			n := MustParseChunk("false")
+			n := mustparseChunk(t, "false")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
 				Statements: []Node{
@@ -1007,7 +1152,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("property name", func(t *testing.T) {
-		n := MustParseChunk(".a")
+		n := mustparseChunk(t, ".a")
 		assert.EqualValues(t, &Chunk{
 			NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
 			Statements: []Node{
@@ -1021,7 +1166,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("flag literal", func(t *testing.T) {
 		t.Run("single hyphen followed by a single letter", func(t *testing.T) {
-			n := MustParseChunk("-a")
+			n := mustparseChunk(t, "-a")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
 				Statements: []Node{
@@ -1036,7 +1181,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single hyphen followed by several letters", func(t *testing.T) {
-			n := MustParseChunk("-ab")
+			n := mustparseChunk(t, "-ab")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
 				Statements: []Node{
@@ -1051,7 +1196,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single hyphen followed by an unexpected character", func(t *testing.T) {
-			n, err := ParseChunk("-?", "")
+			n, err := parseChunk(t, "-?", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
@@ -1078,7 +1223,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("flag literal : double dash", func(t *testing.T) {
-			n := MustParseChunk("--abc")
+			n := mustparseChunk(t, "--abc")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
 				Statements: []Node{
@@ -1095,7 +1240,7 @@ func TestParse(t *testing.T) {
 	t.Run("option expression", func(t *testing.T) {
 
 		t.Run("ok", func(t *testing.T) {
-			n := MustParseChunk(`--name="foo"`)
+			n := mustparseChunk(t, `--name="foo"`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, nil},
 				Statements: []Node{
@@ -1118,7 +1263,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unterminated", func(t *testing.T) {
-			n, err := ParseChunk(`--name=`, "")
+			n, err := parseChunk(t, `--name=`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
@@ -1140,7 +1285,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("option patterns", func(t *testing.T) {
 		t.Run("missing '='", func(t *testing.T) {
-			n, err := ParseChunk(`%--name`, "")
+			n, err := parseChunk(t, `%--name`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
@@ -1159,7 +1304,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("missing value after '='", func(t *testing.T) {
-			n, err := ParseChunk(`%--name=`, "")
+			n, err := parseChunk(t, `%--name=`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
@@ -1178,7 +1323,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("valid option pattern", func(t *testing.T) {
-			n := MustParseChunk(`%--name=%foo`)
+			n := mustparseChunk(t, `%--name=%foo`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, nil},
 				Statements: []Node{
@@ -1199,7 +1344,7 @@ func TestParse(t *testing.T) {
 	t.Run("path literal", func(t *testing.T) {
 
 		t.Run("unquoted absolute path literal : /", func(t *testing.T) {
-			n := MustParseChunk("/")
+			n := mustparseChunk(t, "/")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
 				Statements: []Node{
@@ -1213,7 +1358,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("quoted absolute path literal : /`[]`", func(t *testing.T) {
-			n := MustParseChunk("/`[]`")
+			n := mustparseChunk(t, "/`[]`")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
 				Statements: []Node{
@@ -1227,7 +1372,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unquoted absolute path literal : /a", func(t *testing.T) {
-			n := MustParseChunk("/a")
+			n := mustparseChunk(t, "/a")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
 				Statements: []Node{
@@ -1241,7 +1386,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("relative path literal : ./", func(t *testing.T) {
-			n := MustParseChunk("./")
+			n := mustparseChunk(t, "./")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
 				Statements: []Node{
@@ -1255,7 +1400,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("relative path literal : ./a", func(t *testing.T) {
-			n := MustParseChunk("./a")
+			n := mustparseChunk(t, "./a")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
 				Statements: []Node{
@@ -1269,7 +1414,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("relative path literal in list : [./]", func(t *testing.T) {
-			n := MustParseChunk("[./]")
+			n := mustparseChunk(t, "[./]")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
 				Statements: []Node{
@@ -1298,7 +1443,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("path pattern", func(t *testing.T) {
 		t.Run("absolute path pattern literal : /a*", func(t *testing.T) {
-			n := MustParseChunk("%/a*")
+			n := mustparseChunk(t, "%/a*")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
 				Statements: []Node{
@@ -1312,7 +1457,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("absolute path pattern literal : /a[a-z]", func(t *testing.T) {
-			n := MustParseChunk("%/`a[a-z]`")
+			n := mustparseChunk(t, "%/`a[a-z]`")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
 				Statements: []Node{
@@ -1326,7 +1471,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("absolute path pattern literal ending with /... ", func(t *testing.T) {
-			n := MustParseChunk("%/a/...")
+			n := mustparseChunk(t, "%/a/...")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
 				Statements: []Node{
@@ -1340,7 +1485,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("absolute path pattern literal : /... ", func(t *testing.T) {
-			n := MustParseChunk("%/...")
+			n := mustparseChunk(t, "%/...")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
 				Statements: []Node{
@@ -1354,7 +1499,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("absolute path pattern literal with /... in the middle ", func(t *testing.T) {
-			n, err := ParseChunk("%/a/.../b", "")
+			n, err := parseChunk(t, "%/a/.../b", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
@@ -1373,7 +1518,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("absolute path pattern literal with /... in the middle and at the end", func(t *testing.T) {
-			n, err := ParseChunk("%/a/.../...", "")
+			n, err := parseChunk(t, "%/a/.../...", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
@@ -1395,7 +1540,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("named-segment path pattern literal  ", func(t *testing.T) {
 		t.Run("ok", func(t *testing.T) {
-			n := MustParseChunk("%/home/{:username}")
+			n := mustparseChunk(t, "%/home/{:username}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 18}, nil, nil},
 				Statements: []Node{
@@ -1429,35 +1574,35 @@ func TestParse(t *testing.T) {
 
 		t.Run("invalid named-segment path pattern literals", func(t *testing.T) {
 			assert.Panics(t, func() {
-				MustParseChunk("%/home/e{:username}")
+				mustparseChunk(t, "%/home/e{:username}")
 			})
 			assert.Panics(t, func() {
-				MustParseChunk("%/home/{:username}e")
+				mustparseChunk(t, "%/home/{:username}e")
 			})
 			assert.Panics(t, func() {
-				MustParseChunk("%/home/e{:username}e")
+				mustparseChunk(t, "%/home/e{:username}e")
 			})
 			assert.Panics(t, func() {
-				MustParseChunk("%/home/e{:username}e/{$a}/")
+				mustparseChunk(t, "%/home/e{:username}e/{$a}/")
 			})
 			assert.Panics(t, func() {
-				MustParseChunk("%/home/e{:username}e/{}")
+				mustparseChunk(t, "%/home/e{:username}e/{}")
 			})
 			assert.Panics(t, func() {
-				MustParseChunk("%/home/e{:username}e/{}/")
+				mustparseChunk(t, "%/home/e{:username}e/{}/")
 			})
 			assert.Panics(t, func() {
-				MustParseChunk("%/home/{")
+				mustparseChunk(t, "%/home/{")
 			})
 			assert.Panics(t, func() {
-				MustParseChunk("%/home/{:")
+				mustparseChunk(t, "%/home/{:")
 			})
 		})
 	})
 
 	t.Run("path pattern expression", func(t *testing.T) {
 		t.Run("trailing interpolation", func(t *testing.T) {
-			n := MustParseChunk("%/home/{$username}")
+			n := mustparseChunk(t, "%/home/{$username}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 18}, nil, nil},
 				Statements: []Node{
@@ -1487,7 +1632,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("empty trailing interpolation", func(t *testing.T) {
-			n, err := ParseChunk("%/home/{}", "")
+			n, err := parseChunk(t, "%/home/{}", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
@@ -1524,7 +1669,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("path expression", func(t *testing.T) {
 		t.Run("single trailing interpolation (variable)", func(t *testing.T) {
-			n := MustParseChunk("/home/{$username}")
+			n := mustparseChunk(t, "/home/{$username}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 17}, nil, nil},
 				Statements: []Node{
@@ -1553,7 +1698,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single embedded interpolation", func(t *testing.T) {
-			n := MustParseChunk("/home/{$username}/projects")
+			n := mustparseChunk(t, "/home/{$username}/projects")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 26}, nil, nil},
 				Statements: []Node{
@@ -1586,7 +1731,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single trailing interpolation (identifier)", func(t *testing.T) {
-			n := MustParseChunk("/home/{username}")
+			n := mustparseChunk(t, "/home/{username}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
 				Statements: []Node{
@@ -1615,7 +1760,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unterminated interpolation: code ends after '{'", func(t *testing.T) {
-			n, err := ParseChunk("/home/{", "")
+			n, err := parseChunk(t, "/home/{", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
@@ -1643,7 +1788,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unterminated interpolation: linefeed after '{'", func(t *testing.T) {
-			n, err := ParseChunk("/home/{\n", "")
+			n, err := parseChunk(t, "/home/{\n", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, []Token{{Type: NEWLINE, Span: NodeSpan{7, 8}}}},
@@ -1671,7 +1816,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("named segments are not allowed", func(t *testing.T) {
-			n, err := ParseChunk("/home/{:username}", "")
+			n, err := parseChunk(t, "/home/{:username}", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 17}, nil, nil},
@@ -1703,7 +1848,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("regex literal", func(t *testing.T) {
 		t.Run("empty", func(t *testing.T) {
-			n := MustParseChunk("%``")
+			n := mustparseChunk(t, "%``")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
 				Statements: []Node{
@@ -1717,7 +1862,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("not empty", func(t *testing.T) {
-			n := MustParseChunk("%`a+`")
+			n := mustparseChunk(t, "%`a+`")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
 				Statements: []Node{
@@ -1731,7 +1876,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unterminated", func(t *testing.T) {
-			n, err := ParseChunk("%`", "")
+			n, err := parseChunk(t, "%`", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
@@ -1747,7 +1892,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("nil literal", func(t *testing.T) {
-		n := MustParseChunk("nil")
+		n := mustparseChunk(t, "nil")
 		assert.EqualValues(t, &Chunk{
 			NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
 			Statements: []Node{
@@ -1759,7 +1904,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("self expression", func(t *testing.T) {
-		n := MustParseChunk("self")
+		n := mustparseChunk(t, "self")
 		assert.EqualValues(t, &Chunk{
 			NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
 			Statements: []Node{
@@ -1772,7 +1917,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("member expression", func(t *testing.T) {
 		t.Run("variable '.' <single letter propname> ", func(t *testing.T) {
-			n := MustParseChunk("$a.b")
+			n := mustparseChunk(t, "$a.b")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
 				Statements: []Node{
@@ -1792,7 +1937,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("variable '.' <two-letter propname> ", func(t *testing.T) {
-			n := MustParseChunk("$a.bc")
+			n := mustparseChunk(t, "$a.bc")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
 				Statements: []Node{
@@ -1812,7 +1957,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run(" variable '.' <propname> '.' <single-letter propname> ", func(t *testing.T) {
-			n := MustParseChunk("$a.b.c")
+			n := mustparseChunk(t, "$a.b.c")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
 				Statements: []Node{
@@ -1839,7 +1984,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("variable '.?' <name>", func(t *testing.T) {
-			n := MustParseChunk("$a.?b")
+			n := mustparseChunk(t, "$a.?b")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
 				Statements: []Node{
@@ -1860,7 +2005,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("variable '.?'", func(t *testing.T) {
-			n, err := ParseChunk("$a.?", "")
+			n, err := parseChunk(t, "$a.?", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
@@ -1882,7 +2027,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("variable '.' <prop name> '.' <two-letter prop name> ", func(t *testing.T) {
-			n := MustParseChunk("$a.b.cd")
+			n := mustparseChunk(t, "$a.b.cd")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
 				Statements: []Node{
@@ -1909,7 +2054,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("variable '.?' <prop> '.' <prop name> ", func(t *testing.T) {
-			n := MustParseChunk("$a.?b.c")
+			n := mustparseChunk(t, "$a.?b.c")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
 				Statements: []Node{
@@ -1937,7 +2082,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("missing property name: followed by EOF", func(t *testing.T) {
-			n, err := ParseChunk("$a.", "")
+			n, err := parseChunk(t, "$a.", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
@@ -1959,7 +2104,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("missing property name: followed by identifier on next line", func(t *testing.T) {
-			n, err := ParseChunk("$a.\nb", "")
+			n, err := parseChunk(t, "$a.\nb", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
@@ -1989,7 +2134,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("missing property name: followed by closing delim", func(t *testing.T) {
-			n, err := ParseChunk("$a.]", "")
+			n, err := parseChunk(t, "$a.]", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
@@ -2018,7 +2163,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("long member expression : unterminated", func(t *testing.T) {
-			n, err := ParseChunk("$a.b.", "")
+			n, err := parseChunk(t, "$a.b.", "")
 
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -2048,7 +2193,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("self '.' <two-letter propname> ", func(t *testing.T) {
-			n := MustParseChunk("(self.bc)")
+			n := mustparseChunk(t, "(self.bc)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
 				Statements: []Node{
@@ -2074,7 +2219,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("call '.' <two-letter propname> ", func(t *testing.T) {
-			n := MustParseChunk("a().bc")
+			n := mustparseChunk(t, "a().bc")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
 				Statements: []Node{
@@ -2104,7 +2249,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("member of a parenthesized expression", func(t *testing.T) {
-			n := MustParseChunk("($a).name")
+			n := mustparseChunk(t, "($a).name")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
 				Statements: []Node{
@@ -2131,7 +2276,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("optional member of an identifier member expression", func(t *testing.T) {
-			n := MustParseChunk("a.b.?c")
+			n := mustparseChunk(t, "a.b.?c")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
 				Statements: []Node{
@@ -2167,7 +2312,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("computed member expression", func(t *testing.T) {
 		t.Run("variable '.' '(' <var> ')'", func(t *testing.T) {
-			n := MustParseChunk("$a.(b)")
+			n := mustparseChunk(t, "$a.(b)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
 				Statements: []Node{
@@ -2194,7 +2339,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("identifier '.' '(' <var> ')'", func(t *testing.T) {
-			n := MustParseChunk("a.(b)")
+			n := mustparseChunk(t, "a.(b)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
 				Statements: []Node{
@@ -2221,7 +2366,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run(" variable '.' '(' <var> ')' '.'  '(' <var> ')' ", func(t *testing.T) {
-			n := MustParseChunk("$a.(b).(c)")
+			n := mustparseChunk(t, "$a.(b).(c)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
 				Statements: []Node{
@@ -2267,7 +2412,7 @@ func TestParse(t *testing.T) {
 	t.Run("dynamic member expression", func(t *testing.T) {
 
 		t.Run("identifier '.<' <single letter propname> ", func(t *testing.T) {
-			n := MustParseChunk("a.<b")
+			n := mustparseChunk(t, "a.<b")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
 				Statements: []Node{
@@ -2287,7 +2432,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("variable '.<' <single letter propname> ", func(t *testing.T) {
-			n := MustParseChunk("$a.<b")
+			n := mustparseChunk(t, "$a.<b")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
 				Statements: []Node{
@@ -2307,7 +2452,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("variable '.<' <two-letter propname> ", func(t *testing.T) {
-			n := MustParseChunk("$a.<bc")
+			n := mustparseChunk(t, "$a.<bc")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
 				Statements: []Node{
@@ -2327,7 +2472,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run(" variable '.' <propname> '.<' <single-letter propname> ", func(t *testing.T) {
-			n := MustParseChunk("$a.b.<c")
+			n := mustparseChunk(t, "$a.b.<c")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
 				Statements: []Node{
@@ -2354,7 +2499,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("variable '.' <propname> '.<' <two-letter propname> ", func(t *testing.T) {
-			n := MustParseChunk("$a.b.<cd")
+			n := mustparseChunk(t, "$a.b.<cd")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
 				Statements: []Node{
@@ -2381,7 +2526,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("variable '.<' <propname> '<' <two-letter propname> ", func(t *testing.T) {
-			n := MustParseChunk("$a.<b.cd")
+			n := mustparseChunk(t, "$a.<b.cd")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
 				Statements: []Node{
@@ -2408,7 +2553,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("identifier '.<' <propname> '<' <two-letter propname> ", func(t *testing.T) {
-			n := MustParseChunk("a.<b.cd")
+			n := mustparseChunk(t, "a.<b.cd")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
 				Statements: []Node{
@@ -2435,7 +2580,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unterminated", func(t *testing.T) {
-			n, err := ParseChunk("$a.<", "")
+			n, err := parseChunk(t, "$a.<", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
@@ -2457,7 +2602,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("long member expression : unterminated", func(t *testing.T) {
-			n, err := ParseChunk("$a.b.<", "")
+			n, err := parseChunk(t, "$a.b.<", "")
 
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -2487,7 +2632,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("self '.' <two-letter propname> ", func(t *testing.T) {
-			n := MustParseChunk("(self.<bc)")
+			n := mustparseChunk(t, "(self.<bc)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
 				Statements: []Node{
@@ -2513,7 +2658,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("call '.' <two-letter propname> ", func(t *testing.T) {
-			n := MustParseChunk("a().<bc")
+			n := mustparseChunk(t, "a().<bc")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
 				Statements: []Node{
@@ -2543,7 +2688,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("member of a parenthesized expression", func(t *testing.T) {
-			n := MustParseChunk("($a).<name")
+			n := mustparseChunk(t, "($a).<name")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
 				Statements: []Node{
@@ -2573,7 +2718,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("identifier member expression", func(t *testing.T) {
 		t.Run("identifier member expression", func(t *testing.T) {
-			n := MustParseChunk("http.get")
+			n := mustparseChunk(t, "http.get")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
 				Statements: []Node{
@@ -2595,7 +2740,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("parenthesized identifier member expression", func(t *testing.T) {
-			n := MustParseChunk("(http.get)")
+			n := mustparseChunk(t, "(http.get)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
 				Statements: []Node{
@@ -2623,7 +2768,7 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 		t.Run("parenthesized identifier member expression followed by a space", func(t *testing.T) {
-			n := MustParseChunk("(http.get) ")
+			n := mustparseChunk(t, "(http.get) ")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
 				Statements: []Node{
@@ -2652,7 +2797,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("missing last property name: followed by EOF", func(t *testing.T) {
-			n, err := ParseChunk("http.", "")
+			n, err := parseChunk(t, "http.", "")
 
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -2675,7 +2820,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("missing last property name, followed by an identifier on the next line", func(t *testing.T) {
-			n, err := ParseChunk("http.\na", "")
+			n, err := parseChunk(t, "http.\na", "")
 
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -2706,7 +2851,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("missing last property name, followed by a closing delimiter", func(t *testing.T) {
-			n, err := ParseChunk("http.]", "")
+			n, err := parseChunk(t, "http.]", "")
 
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -2738,7 +2883,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("extraction expression : object is a variable", func(t *testing.T) {
-		n := MustParseChunk("$a.{name}")
+		n := mustparseChunk(t, "$a.{name}")
 		assert.EqualValues(t, &Chunk{
 			NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
 			Statements: []Node{
@@ -2767,7 +2912,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("parenthesized expression", func(t *testing.T) {
-		n := MustParseChunk("($a)")
+		n := mustparseChunk(t, "($a)")
 		assert.EqualValues(t, &Chunk{
 			NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
 			Statements: []Node{
@@ -2789,7 +2934,7 @@ func TestParse(t *testing.T) {
 	t.Run("index expression", func(t *testing.T) {
 
 		t.Run("variable '[' <integer literal> '] ", func(t *testing.T) {
-			n := MustParseChunk("$a[0]")
+			n := mustparseChunk(t, "$a[0]")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
 				Statements: []Node{
@@ -2810,7 +2955,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("<member expression> '[' <integer literal> '] ", func(t *testing.T) {
-			n := MustParseChunk("$a.b[0]")
+			n := mustparseChunk(t, "$a.b[0]")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
 				Statements: []Node{
@@ -2838,7 +2983,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unterminated : variable '[' ", func(t *testing.T) {
-			n, err := ParseChunk("$a[", "")
+			n, err := parseChunk(t, "$a[", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
@@ -2859,7 +3004,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("identifier '[' <integer literal> '] ", func(t *testing.T) {
-			n := MustParseChunk("a[0]")
+			n := mustparseChunk(t, "a[0]")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
 				Statements: []Node{
@@ -2880,7 +3025,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("short identifier member expression '[' <integer literal> '] ", func(t *testing.T) {
-			n := MustParseChunk("a.b[0]")
+			n := mustparseChunk(t, "a.b[0]")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
 				Statements: []Node{
@@ -2910,7 +3055,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("long identifier member expression '[' <integer literal> '] ", func(t *testing.T) {
-			n := MustParseChunk("a.b.c[0]")
+			n := mustparseChunk(t, "a.b.c[0]")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
 				Statements: []Node{
@@ -2944,7 +3089,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("call '[' <integer literal> '] ", func(t *testing.T) {
-			n := MustParseChunk("a()[0]")
+			n := mustparseChunk(t, "a()[0]")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
 				Statements: []Node{
@@ -2978,7 +3123,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("slice expression", func(t *testing.T) {
 		t.Run("slice expression : variable '[' <integer literal> ':' ] ", func(t *testing.T) {
-			n := MustParseChunk("$a[0:]")
+			n := mustparseChunk(t, "$a[0:]")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
 				Statements: []Node{
@@ -2999,7 +3144,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("slice expression : variable '['  ':' <integer literal> ] ", func(t *testing.T) {
-			n := MustParseChunk("$a[:1]")
+			n := mustparseChunk(t, "$a[:1]")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
 				Statements: []Node{
@@ -3021,13 +3166,13 @@ func TestParse(t *testing.T) {
 
 		t.Run("slice expression : variable '[' ':' ']' : invalid ", func(t *testing.T) {
 			assert.Panics(t, func() {
-				MustParseChunk("$a[:]")
+				mustparseChunk(t, "$a[:]")
 			})
 		})
 
 		t.Run("slice expression : variable '[' ':' <integer literal> ':' ']' : invalid ", func(t *testing.T) {
 			assert.Panics(t, func() {
-				MustParseChunk("$a[:1:]")
+				mustparseChunk(t, "$a[:1:]")
 			})
 		})
 
@@ -3036,7 +3181,7 @@ func TestParse(t *testing.T) {
 	t.Run("key list expression", func(t *testing.T) {
 
 		t.Run("empty", func(t *testing.T) {
-			n := MustParseChunk(".{}")
+			n := mustparseChunk(t, ".{}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
 				Statements: []Node{
@@ -3053,7 +3198,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("one key", func(t *testing.T) {
-			n := MustParseChunk(".{name}")
+			n := mustparseChunk(t, ".{name}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
 				Statements: []Node{
@@ -3075,7 +3220,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unexpected char", func(t *testing.T) {
-			n, err := ParseChunk(".{:}", "")
+			n, err := parseChunk(t, ".{:}", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
@@ -3101,7 +3246,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("two keys separated by space", func(t *testing.T) {
-			n := MustParseChunk(".{name age}")
+			n := mustparseChunk(t, ".{name age}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
 				Statements: []Node{
@@ -3131,7 +3276,7 @@ func TestParse(t *testing.T) {
 	t.Run("url literal", func(t *testing.T) {
 
 		t.Run("host contains a -", func(t *testing.T) {
-			n := MustParseChunk(`https://an-example.com/`)
+			n := mustparseChunk(t, `https://an-example.com/`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 23}, nil, nil},
 				Statements: []Node{
@@ -3144,7 +3289,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("subdomain", func(t *testing.T) {
-			n := MustParseChunk(`https://sub.example.com/`)
+			n := mustparseChunk(t, `https://sub.example.com/`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 24}, nil, nil},
 				Statements: []Node{
@@ -3157,7 +3302,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("subdomain contains -", func(t *testing.T) {
-			n := MustParseChunk(`https://sub-x.example.com/`)
+			n := mustparseChunk(t, `https://sub-x.example.com/`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 26}, nil, nil},
 				Statements: []Node{
@@ -3170,7 +3315,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("root path", func(t *testing.T) {
-			n := MustParseChunk(`https://example.com/`)
+			n := mustparseChunk(t, `https://example.com/`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 20}, nil, nil},
 				Statements: []Node{
@@ -3183,7 +3328,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("path ends with ..", func(t *testing.T) {
-			n := MustParseChunk(`https://example.com/..`)
+			n := mustparseChunk(t, `https://example.com/..`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 22}, nil, nil},
 				Statements: []Node{
@@ -3196,7 +3341,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("path ends with ...", func(t *testing.T) {
-			n := MustParseChunk(`https://example.com/...`)
+			n := mustparseChunk(t, `https://example.com/...`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 23}, nil, nil},
 				Statements: []Node{
@@ -3209,7 +3354,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("empty query", func(t *testing.T) {
-			n := MustParseChunk(`https://example.com/?`)
+			n := mustparseChunk(t, `https://example.com/?`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 21}, nil, nil},
 				Statements: []Node{
@@ -3222,7 +3367,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("not empty query", func(t *testing.T) {
-			n := MustParseChunk(`https://example.com/?a=1`)
+			n := mustparseChunk(t, `https://example.com/?a=1`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 24}, nil, nil},
 				Statements: []Node{
@@ -3236,12 +3381,12 @@ func TestParse(t *testing.T) {
 
 		t.Run("host followed by ')'", func(t *testing.T) {
 			assert.Panics(t, func() {
-				MustParseChunk(`https://example.com)`)
+				mustparseChunk(t, `https://example.com)`)
 			})
 		})
 
 		t.Run("long path", func(t *testing.T) {
-			n := MustParseChunk(`https://example.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`)
+			n := mustparseChunk(t, `https://example.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 106}, nil, nil},
 				Statements: []Node{
@@ -3257,7 +3402,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("url pattern literal", func(t *testing.T) {
 		t.Run("prefix pattern, root", func(t *testing.T) {
-			n := MustParseChunk(`%https://example.com/...`)
+			n := mustparseChunk(t, `%https://example.com/...`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 24}, nil, nil},
 				Statements: []Node{
@@ -3271,7 +3416,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("prefix pattern", func(t *testing.T) {
-			n := MustParseChunk(`%https://example.com/a/...`)
+			n := mustparseChunk(t, `%https://example.com/a/...`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 26}, nil, nil},
 				Statements: []Node{
@@ -3285,7 +3430,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("prefix pattern containing two dots", func(t *testing.T) {
-			n := MustParseChunk(`%https://example.com/../...`)
+			n := mustparseChunk(t, `%https://example.com/../...`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 27}, nil, nil},
 				Statements: []Node{
@@ -3299,7 +3444,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("prefix pattern containing non trailing /...", func(t *testing.T) {
-			n, err := ParseChunk(`%https://example.com/.../a`, "")
+			n, err := parseChunk(t, `%https://example.com/.../a`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 26}, nil, nil},
@@ -3318,7 +3463,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("prefix pattern containing non trailing /... and trailing /...", func(t *testing.T) {
-			n, err := ParseChunk(`%https://example.com/.../...`, "")
+			n, err := parseChunk(t, `%https://example.com/.../...`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 28}, nil, nil},
@@ -3337,7 +3482,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("trailing /....", func(t *testing.T) {
-			n, err := ParseChunk(`%https://example.com/....`, "")
+			n, err := parseChunk(t, `%https://example.com/....`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 25}, nil, nil},
@@ -3433,12 +3578,12 @@ func TestParse(t *testing.T) {
 		for name, testCase := range testCases {
 			t.Run(name, func(t *testing.T) {
 				if testCase.err {
-					n, err := ParseChunk(name, "")
+					n, err := parseChunk(t, name, "")
 					if assert.Error(t, err) {
 						assert.EqualValues(t, testCase.result, n)
 					}
 				} else {
-					n := MustParseChunk(name)
+					n := mustparseChunk(t, name)
 					assert.EqualValues(t, testCase.result, n)
 				}
 			})
@@ -3447,7 +3592,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("scheme literal", func(t *testing.T) {
 		t.Run("HTTP", func(t *testing.T) {
-			n := MustParseChunk(`http://`)
+			n := mustparseChunk(t, `http://`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
 				Statements: []Node{
@@ -3460,7 +3605,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("Websocket", func(t *testing.T) {
-			n := MustParseChunk("wss://")
+			n := mustparseChunk(t, "wss://")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
 				Statements: []Node{
@@ -3473,7 +3618,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("host with no scheme", func(t *testing.T) {
-			n, err := ParseChunk(`://`, "")
+			n, err := parseChunk(t, `://`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
@@ -3493,7 +3638,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("host pattern", func(t *testing.T) {
 		t.Run("%https://* (invalid)", func(t *testing.T) {
-			n, err := ParseChunk(`%https://*`, "")
+			n, err := parseChunk(t, `%https://*`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
@@ -3512,7 +3657,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("%https://**", func(t *testing.T) {
-			n := MustParseChunk(`%https://**`)
+			n := mustparseChunk(t, `%https://**`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
 				Statements: []Node{
@@ -3526,7 +3671,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("%https://*.* (invalid)", func(t *testing.T) {
-			n, err := ParseChunk(`%https://*.*`, "")
+			n, err := parseChunk(t, `%https://*.*`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, nil},
@@ -3549,7 +3694,7 @@ func TestParse(t *testing.T) {
 	t.Run("host pattern", func(t *testing.T) {
 
 		t.Run("HTTP host pattern : %https://**:443", func(t *testing.T) {
-			n := MustParseChunk(`%https://**:443`)
+			n := mustparseChunk(t, `%https://**:443`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 15}, nil, nil},
 				Statements: []Node{
@@ -3563,7 +3708,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("HTTP host pattern : %https://*.<tld>", func(t *testing.T) {
-			n := MustParseChunk(`%https://*.com`)
+			n := mustparseChunk(t, `%https://*.com`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, nil},
 				Statements: []Node{
@@ -3577,7 +3722,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("HTTP host pattern : %https://a*.<tld>", func(t *testing.T) {
-			n := MustParseChunk(`%https://a*.com`)
+			n := mustparseChunk(t, `%https://a*.com`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 15}, nil, nil},
 				Statements: []Node{
@@ -3594,7 +3739,7 @@ func TestParse(t *testing.T) {
 		// })
 
 		t.Run("Websocket host pattern : %wss://*", func(t *testing.T) {
-			n := MustParseChunk(`%wss://**`)
+			n := mustparseChunk(t, `%wss://**`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
 				Statements: []Node{
@@ -3610,7 +3755,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("email address literal", func(t *testing.T) {
 		t.Run("only letters in username", func(t *testing.T) {
-			n := MustParseChunk(`foo@mail.com`)
+			n := mustparseChunk(t, `foo@mail.com`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, nil},
 				Statements: []Node{
@@ -3623,7 +3768,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("letters, dots & numbers", func(t *testing.T) {
-			n := MustParseChunk(`foo.e.9@mail.com`)
+			n := mustparseChunk(t, `foo.e.9@mail.com`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
 				Statements: []Node{
@@ -3636,7 +3781,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("letters, dots & numbers", func(t *testing.T) {
-			n := MustParseChunk(`foo+e%9@mail.com`)
+			n := mustparseChunk(t, `foo+e%9@mail.com`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
 				Statements: []Node{
@@ -3651,7 +3796,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("url expressions", func(t *testing.T) {
 		t.Run("no query, host interpolation", func(t *testing.T) {
-			n := MustParseChunk(`https://{$host}/`)
+			n := mustparseChunk(t, `https://{$host}/`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
 				Statements: []Node{
@@ -3690,7 +3835,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("no query, single trailing path interpolation, no '/'", func(t *testing.T) {
-			n := MustParseChunk(`https://example.com{$path}`)
+			n := mustparseChunk(t, `https://example.com{$path}`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 26}, nil, nil},
 				Statements: []Node{
@@ -3725,7 +3870,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("no query, host interpolation & path interpolation, no '/'", func(t *testing.T) {
-			n := MustParseChunk(`https://{$host}{$path}`)
+			n := mustparseChunk(t, `https://{$host}{$path}`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 22}, nil, nil},
 				Statements: []Node{
@@ -3771,7 +3916,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("trailing path interpolation after '/'", func(t *testing.T) {
-			n := MustParseChunk(`https://example.com/{$path}`)
+			n := mustparseChunk(t, `https://example.com/{$path}`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 27}, nil, nil},
 				Statements: []Node{
@@ -3806,7 +3951,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("two path interpolations", func(t *testing.T) {
-			n := MustParseChunk(`https://example.com/{$a}{$b}`)
+			n := mustparseChunk(t, `https://example.com/{$a}{$b}`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 28}, nil, nil},
 				Statements: []Node{
@@ -3851,7 +3996,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unterminated path interpolation: missing value after '{'", func(t *testing.T) {
-			n, err := ParseChunk(`https://example.com/{`, "")
+			n, err := parseChunk(t, `https://example.com/{`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 21}, nil, nil},
@@ -3888,7 +4033,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unterminated path interpolation: linefeed after '{'", func(t *testing.T) {
-			n, err := ParseChunk("https://example.com/{\n", "")
+			n, err := parseChunk(t, "https://example.com/{\n", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 22}, nil, []Token{{Type: NEWLINE, Span: NodeSpan{21, 22}}}},
@@ -3925,7 +4070,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unterminated path interpolation: missing '}'", func(t *testing.T) {
-			n, err := ParseChunk(`https://example.com/{1`, "")
+			n, err := parseChunk(t, `https://example.com/{1`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 22}, nil, nil},
@@ -3967,7 +4112,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("empty path interpolation", func(t *testing.T) {
-			n, err := ParseChunk(`https://example.com/{}`, "")
+			n, err := parseChunk(t, `https://example.com/{}`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 22}, nil, nil},
@@ -4006,7 +4151,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("invalid path interpolation", func(t *testing.T) {
-			n, err := ParseChunk(`https://example.com/{.}`, "")
+			n, err := parseChunk(t, `https://example.com/{.}`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 23}, nil, nil},
@@ -4045,7 +4190,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("invalid path interpolation followed by a path slice", func(t *testing.T) {
-			n, err := ParseChunk(`https://example.com/{.}/`, "")
+			n, err := parseChunk(t, `https://example.com/{.}/`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 24}, nil, nil},
@@ -4088,7 +4233,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("path interpolation with a forbidden character", func(t *testing.T) {
-			n, err := ParseChunk(`https://example.com/{@}`, "")
+			n, err := parseChunk(t, `https://example.com/{@}`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 23}, nil, nil},
@@ -4127,7 +4272,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("path interpolation with a forbidden character followed by a path slice", func(t *testing.T) {
-			n, err := ParseChunk(`https://example.com/{@}/`, "")
+			n, err := parseChunk(t, `https://example.com/{@}/`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 24}, nil, nil},
@@ -4170,7 +4315,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("trailing query interpolation", func(t *testing.T) {
-			n := MustParseChunk(`https://example.com/?v={$x}`)
+			n := mustparseChunk(t, `https://example.com/?v={$x}`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 27}, nil, nil},
 				Statements: []Node{
@@ -4216,7 +4361,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("trailing query interpolation, no path", func(t *testing.T) {
-			n := MustParseChunk(`https://example.com?v={$x}`)
+			n := mustparseChunk(t, `https://example.com?v={$x}`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 26}, nil, nil},
 				Statements: []Node{
@@ -4257,7 +4402,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("query interpolation followed by ampersand", func(t *testing.T) {
-			n := MustParseChunk(`https://example.com/?v={$x}&`)
+			n := mustparseChunk(t, `https://example.com/?v={$x}&`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 28}, nil, nil},
 				Statements: []Node{
@@ -4303,7 +4448,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("query interpolation followed by two ampersands", func(t *testing.T) {
-			n := MustParseChunk(`https://example.com/?v={$x}&&`)
+			n := mustparseChunk(t, `https://example.com/?v={$x}&&`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 29}, nil, nil},
 				Statements: []Node{
@@ -4349,7 +4494,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("query interpolation followed by parameter with empty name", func(t *testing.T) {
-			n := MustParseChunk(`https://example.com/?v={$x}&=3`)
+			n := mustparseChunk(t, `https://example.com/?v={$x}&=3`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 30}, nil, nil},
 				Statements: []Node{
@@ -4405,7 +4550,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("two query interpolations", func(t *testing.T) {
-			n := MustParseChunk(`https://example.com/?v={$x}&w={$y}`)
+			n := mustparseChunk(t, `https://example.com/?v={$x}&w={$y}`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 34}, nil, nil},
 				Statements: []Node{
@@ -4467,7 +4612,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unterminated query interpolation: missing value after '{'", func(t *testing.T) {
-			n, err := ParseChunk(`https://example.com/?v={`, "")
+			n, err := parseChunk(t, `https://example.com/?v={`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 24}, nil, nil},
@@ -4515,7 +4660,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unterminated query interpolation: missing '}'", func(t *testing.T) {
-			n, err := ParseChunk(`https://example.com/?v={1`, "")
+			n, err := parseChunk(t, `https://example.com/?v={1`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 25}, nil, nil},
@@ -4568,7 +4713,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("empty query interpolation", func(t *testing.T) {
-			n, err := ParseChunk(`https://example.com/?v={}`, "")
+			n, err := parseChunk(t, `https://example.com/?v={}`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 25}, nil, nil},
@@ -4618,7 +4763,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("invalid query interpolation", func(t *testing.T) {
-			n, err := ParseChunk(`https://example.com/?v={:}`, "")
+			n, err := parseChunk(t, `https://example.com/?v={:}`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 26}, nil, nil},
@@ -4668,7 +4813,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("invalid query interpolation followed by a query parameter", func(t *testing.T) {
-			n, err := ParseChunk(`https://example.com/?v={:}&w=3`, "")
+			n, err := parseChunk(t, `https://example.com/?v={:}&w=3`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 30}, nil, nil},
@@ -4728,7 +4873,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("query interpolation with a forbidden character", func(t *testing.T) {
-			n, err := ParseChunk(`https://example.com/?v={?}`, "")
+			n, err := parseChunk(t, `https://example.com/?v={?}`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 26}, nil, nil},
@@ -4779,7 +4924,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("query interpolation with a forbidden character followed by a query parameter", func(t *testing.T) {
-			n, err := ParseChunk(`https://example.com/?v={?}&w=3`, "")
+			n, err := parseChunk(t, `https://example.com/?v={?}&w=3`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 30}, nil, nil},
@@ -4842,7 +4987,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("invalid host alias stuff", func(t *testing.T) {
 		t.Run("", func(t *testing.T) {
-			n, err := ParseChunk(`@a`, "")
+			n, err := parseChunk(t, `@a`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
@@ -4860,7 +5005,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("in list", func(t *testing.T) {
-			n, err := ParseChunk(`[@a]`, "")
+			n, err := parseChunk(t, `[@a]`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
@@ -4891,7 +5036,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("host alias definition", func(t *testing.T) {
 		t.Run("missing value after equal sign", func(t *testing.T) {
-			n, err := ParseChunk(`@a =`, "")
+			n, err := parseChunk(t, `@a =`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
@@ -4913,7 +5058,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("integer literal", func(t *testing.T) {
-		n := MustParseChunk("12")
+		n := mustparseChunk(t, "12")
 		assert.EqualValues(t, &Chunk{
 			NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
 			Statements: []Node{
@@ -4928,7 +5073,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("float literal", func(t *testing.T) {
 		t.Run("float literal", func(t *testing.T) {
-			n := MustParseChunk("12.0")
+			n := mustparseChunk(t, "12.0")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
 				Statements: []Node{
@@ -4942,7 +5087,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("float literal with positive exponent", func(t *testing.T) {
-			n := MustParseChunk("12.0e2")
+			n := mustparseChunk(t, "12.0e2")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
 				Statements: []Node{
@@ -4956,7 +5101,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("float literal with negative exponent", func(t *testing.T) {
-			n := MustParseChunk("12.0e-2")
+			n := mustparseChunk(t, "12.0e-2")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
 				Statements: []Node{
@@ -4972,7 +5117,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("quantity literal", func(t *testing.T) {
 		t.Run("non zero integer", func(t *testing.T) {
-			n := MustParseChunk("1s")
+			n := mustparseChunk(t, "1s")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
 				Statements: []Node{
@@ -4987,7 +5132,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("zero integer", func(t *testing.T) {
-			n := MustParseChunk("0s")
+			n := mustparseChunk(t, "0s")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
 				Statements: []Node{
@@ -5002,7 +5147,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("non-zero float", func(t *testing.T) {
-			n := MustParseChunk("1.5s")
+			n := mustparseChunk(t, "1.5s")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
 				Statements: []Node{
@@ -5017,7 +5162,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("zero float", func(t *testing.T) {
-			n := MustParseChunk("0.0s")
+			n := mustparseChunk(t, "0.0s")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
 				Statements: []Node{
@@ -5032,7 +5177,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("multiplier", func(t *testing.T) {
-			n := MustParseChunk("1ks")
+			n := mustparseChunk(t, "1ks")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
 				Statements: []Node{
@@ -5047,7 +5192,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("multiple parts", func(t *testing.T) {
-			n := MustParseChunk("1s10ms")
+			n := mustparseChunk(t, "1s10ms")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
 				Statements: []Node{
@@ -5064,7 +5209,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("date literal", func(t *testing.T) {
 		t.Run("date literal : year only", func(t *testing.T) {
-			n := MustParseChunk("2020y-UTC")
+			n := mustparseChunk(t, "2020y-UTC")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
 				Statements: []Node{
@@ -5078,7 +5223,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("date literal : year and month", func(t *testing.T) {
-			n := MustParseChunk("2020y-5mt-UTC")
+			n := mustparseChunk(t, "2020y-5mt-UTC")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
 				Statements: []Node{
@@ -5092,7 +5237,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("date literal : year and microseconds", func(t *testing.T) {
-			n := MustParseChunk("2020y-5us-UTC")
+			n := mustparseChunk(t, "2020y-5us-UTC")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
 				Statements: []Node{
@@ -5106,7 +5251,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("date literal : up to minutes", func(t *testing.T) {
-			n := MustParseChunk("2020y-10mt-5d-5h-4m-UTC")
+			n := mustparseChunk(t, "2020y-10mt-5d-5h-4m-UTC")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 23}, nil, nil},
 				Statements: []Node{
@@ -5120,7 +5265,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("date literal : up to microseconds", func(t *testing.T) {
-			n := MustParseChunk("2020y-10mt-5d-5h-4m-5s-400ms-100us-UTC")
+			n := mustparseChunk(t, "2020y-10mt-5d-5h-4m-5s-400ms-100us-UTC")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 38}, nil, nil},
 				Statements: []Node{
@@ -5137,7 +5282,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("rate literal", func(t *testing.T) {
 		t.Run("rate literal", func(t *testing.T) {
-			n := MustParseChunk("1kB/s")
+			n := mustparseChunk(t, "1kB/s")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
 				Statements: []Node{
@@ -5152,7 +5297,7 @@ func TestParse(t *testing.T) {
 			}, n)
 
 			t.Run("missing unit after '/'", func(t *testing.T) {
-				n, err := ParseChunk("1kB/", "")
+				n, err := parseChunk(t, "1kB/", "")
 				assert.Error(t, err)
 				assert.EqualValues(t, &Chunk{
 					NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
@@ -5172,7 +5317,7 @@ func TestParse(t *testing.T) {
 			})
 
 			t.Run("invalid unit after '/'", func(t *testing.T) {
-				n, err := ParseChunk("1kB/1", "")
+				n, err := parseChunk(t, "1kB/1", "")
 				assert.Error(t, err)
 				assert.EqualValues(t, &Chunk{
 					NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
@@ -5201,7 +5346,7 @@ func TestParse(t *testing.T) {
 			})
 
 			t.Run("invalid unit after '/'", func(t *testing.T) {
-				n, err := ParseChunk("1kB/a1", "")
+				n, err := parseChunk(t, "1kB/a1", "")
 				assert.Error(t, err)
 				assert.EqualValues(t, &Chunk{
 					NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
@@ -5233,7 +5378,7 @@ func TestParse(t *testing.T) {
 
 		t.Run("unterminated rate literal", func(t *testing.T) {
 			assert.Panics(t, func() {
-				MustParseChunk("1kB/")
+				mustparseChunk(t, "1kB/")
 			})
 		})
 	})
@@ -5502,7 +5647,7 @@ func TestParse(t *testing.T) {
 
 		for input, testCase := range testCases {
 			t.Run(input, func(t *testing.T) {
-				n, err := ParseChunk(input, "")
+				n, err := parseChunk(t, input, "")
 
 				if !testCase.error {
 					if !assert.NoError(t, err) {
@@ -5654,7 +5799,7 @@ func TestParse(t *testing.T) {
 
 		for _, testCase := range testCases {
 			t.Run(testCase.input, func(t *testing.T) {
-				n, err := ParseChunk(testCase.input, "")
+				n, err := parseChunk(t, testCase.input, "")
 				assert.IsType(t, &ByteSliceLiteral{}, n.Statements[0])
 
 				literal := n.Statements[0].(*ByteSliceLiteral)
@@ -5672,7 +5817,7 @@ func TestParse(t *testing.T) {
 	t.Run("rune literal", func(t *testing.T) {
 
 		t.Run("rune literal : simple character", func(t *testing.T) {
-			n := MustParseChunk(`'a'`)
+			n := mustparseChunk(t, `'a'`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
 				Statements: []Node{
@@ -5685,7 +5830,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("rune literal : valid escaped character", func(t *testing.T) {
-			n := MustParseChunk(`'\n'`)
+			n := mustparseChunk(t, `'\n'`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
 				Statements: []Node{
@@ -5699,13 +5844,13 @@ func TestParse(t *testing.T) {
 
 		t.Run("rune literal : invalid escaped character", func(t *testing.T) {
 			assert.Panics(t, func() {
-				MustParseChunk(`'\z'`)
+				mustparseChunk(t, `'\z'`)
 			})
 		})
 
 		t.Run("rune literal : missing character", func(t *testing.T) {
 			assert.Panics(t, func() {
-				MustParseChunk(`''`)
+				mustparseChunk(t, `''`)
 			})
 		})
 
@@ -5713,7 +5858,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("single letter", func(t *testing.T) {
 		t.Run("single letter", func(t *testing.T) {
-			n := MustParseChunk(`e`)
+			n := mustparseChunk(t, `e`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
 
@@ -5727,7 +5872,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("letter followed by a digit", func(t *testing.T) {
-			n := MustParseChunk(`e2`)
+			n := mustparseChunk(t, `e2`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
 				Statements: []Node{
@@ -5740,7 +5885,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("empty unambiguous identifier", func(t *testing.T) {
-			n, err := ParseChunk(`#`, "")
+			n, err := parseChunk(t, `#`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
@@ -5759,7 +5904,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single letter unambiguous identifier", func(t *testing.T) {
-			n := MustParseChunk(`#e`)
+			n := mustparseChunk(t, `#e`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
 
@@ -5773,7 +5918,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unambiguous identifier literal : letter followed by a digit", func(t *testing.T) {
-			n := MustParseChunk(`#e2`)
+			n := mustparseChunk(t, `#e2`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
 				Statements: []Node{
@@ -5789,7 +5934,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("assignment", func(t *testing.T) {
 		t.Run("var = <value>", func(t *testing.T) {
-			n := MustParseChunk("$a = $b")
+			n := mustparseChunk(t, "$a = $b")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
 				Statements: []Node{
@@ -5814,7 +5959,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("var += <value>", func(t *testing.T) {
-			n := MustParseChunk("$a += $b")
+			n := mustparseChunk(t, "$a += $b")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
 				Statements: []Node{
@@ -5839,7 +5984,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("identifier = <value>", func(t *testing.T) {
-			n := MustParseChunk("a = $b")
+			n := mustparseChunk(t, "a = $b")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
 				Statements: []Node{
@@ -5864,14 +6009,14 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("keyword = <value>", func(t *testing.T) {
-			res, err := ParseChunk("const ()\nmanifest {}\nmanifest = $b", "")
+			res, err := parseChunk(t, "const ()\nmanifest {}\nmanifest = $b", "")
 			assert.Error(t, err)
 			assert.NotNil(t, res)
 			assert.ErrorContains(t, err, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS)
 		})
 
 		t.Run("<index expr> = <value>", func(t *testing.T) {
-			n := MustParseChunk("$a[0] = $b")
+			n := mustparseChunk(t, "$a[0] = $b")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
 				Statements: []Node{
@@ -5904,7 +6049,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("var = | <pipeline>", func(t *testing.T) {
-			n := MustParseChunk("$a = | a | b")
+			n := mustparseChunk(t, "$a = | a | b")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, nil},
 				Statements: []Node{
@@ -5961,7 +6106,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("<identifier member expr> = <value>", func(t *testing.T) {
-			n := MustParseChunk("a.b = $b")
+			n := mustparseChunk(t, "a.b = $b")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
 				Statements: []Node{
@@ -5995,7 +6140,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("missing terminator", func(t *testing.T) {
-			n, err := ParseChunk("$a = $b 2", "")
+			n, err := parseChunk(t, "$a = $b 2", "")
 			assert.Error(t, err)
 
 			assert.EqualValues(t, &Chunk{
@@ -6030,7 +6175,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("multi assignement statement", func(t *testing.T) {
 		t.Run("assign <ident> = <var>", func(t *testing.T) {
-			n := MustParseChunk("assign a = $b")
+			n := mustparseChunk(t, "assign a = $b")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
 				Statements: []Node{
@@ -6059,7 +6204,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("assign var var = var", func(t *testing.T) {
-			n := MustParseChunk("assign a b = $c")
+			n := mustparseChunk(t, "assign a b = $c")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 15}, nil, nil},
 				Statements: []Node{
@@ -6092,7 +6237,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("nillable", func(t *testing.T) {
-			n := MustParseChunk("assign? a = $b")
+			n := mustparseChunk(t, "assign? a = $b")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, nil},
 				Statements: []Node{
@@ -6123,14 +6268,14 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("keyword LHS", func(t *testing.T) {
-			res, err := ParseChunk("const ()\nmanifest {}\nassign manifest = $b", "")
+			res, err := parseChunk(t, "const ()\nmanifest {}\nassign manifest = $b", "")
 			assert.Error(t, err)
 			assert.NotNil(t, res)
 			assert.ErrorContains(t, err, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS)
 		})
 
 		t.Run("missing terminator", func(t *testing.T) {
-			n, err := ParseChunk("assign a = $b 2", "")
+			n, err := parseChunk(t, "assign a = $b 2", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 15}, nil, nil},
@@ -6165,7 +6310,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("only LHS", func(t *testing.T) {
-			n, err := ParseChunk("assign a", "")
+			n, err := parseChunk(t, "assign a", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
@@ -6188,7 +6333,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("missing value after equal sign", func(t *testing.T) {
-			n, err := ParseChunk("assign a =", "")
+			n, err := parseChunk(t, "assign a =", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
@@ -6223,7 +6368,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("call with parenthesis", func(t *testing.T) {
 		t.Run("no args", func(t *testing.T) {
-			n := MustParseChunk("print()")
+			n := mustparseChunk(t, "print()")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
 				Statements: []Node{
@@ -6247,7 +6392,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("no args 2", func(t *testing.T) {
-			n := MustParseChunk("print( )")
+			n := mustparseChunk(t, "print( )")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
 				Statements: []Node{
@@ -6271,7 +6416,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("exclamation mark", func(t *testing.T) {
-			n := MustParseChunk("print!()")
+			n := mustparseChunk(t, "print!()")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
 				Statements: []Node{
@@ -6297,7 +6442,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single arg", func(t *testing.T) {
-			n := MustParseChunk("print($a)")
+			n := mustparseChunk(t, "print($a)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
 				Statements: []Node{
@@ -6326,7 +6471,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("two args", func(t *testing.T) {
-			n := MustParseChunk("print($a $b)")
+			n := mustparseChunk(t, "print($a $b)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, nil},
 				Statements: []Node{
@@ -6359,7 +6504,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single arg: spread argument", func(t *testing.T) {
-			n := MustParseChunk("print(...$a)")
+			n := mustparseChunk(t, "print(...$a)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, nil},
 				Statements: []Node{
@@ -6395,7 +6540,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unexpected char", func(t *testing.T) {
-			n, err := ParseChunk("print(?1)", "")
+			n, err := parseChunk(t, "print(?1)", "")
 
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -6434,7 +6579,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("callee is an identifier member expression", func(t *testing.T) {
-			n := MustParseChunk("http.get()")
+			n := mustparseChunk(t, "http.get()")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
 				Statements: []Node{
@@ -6467,7 +6612,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("callee is a member expression", func(t *testing.T) {
-			n := MustParseChunk(`$a.b("a")`)
+			n := mustparseChunk(t, `$a.b("a")`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
 				Statements: []Node{
@@ -6504,7 +6649,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("double call", func(t *testing.T) {
-			n := MustParseChunk("print()()")
+			n := mustparseChunk(t, "print()()")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
 				Statements: []Node{
@@ -6542,7 +6687,7 @@ func TestParse(t *testing.T) {
 	t.Run("command-like call", func(t *testing.T) {
 
 		t.Run("no arg", func(t *testing.T) {
-			n := MustParseChunk("print;")
+			n := mustparseChunk(t, "print;")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
 				Statements: []Node{
@@ -6561,7 +6706,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("one arg", func(t *testing.T) {
-			n := MustParseChunk("print $a")
+			n := mustparseChunk(t, "print $a")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
 				Statements: []Node{
@@ -6585,7 +6730,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("one arg followed by a line feed", func(t *testing.T) {
-			n := MustParseChunk("print $a\n")
+			n := mustparseChunk(t, "print $a\n")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
 					NodeSpan{0, 9},
@@ -6613,7 +6758,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("two args", func(t *testing.T) {
-			n := MustParseChunk("print $a $b")
+			n := mustparseChunk(t, "print $a $b")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
 				Statements: []Node{
@@ -6641,7 +6786,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single arg with a delimiter", func(t *testing.T) {
-			n := MustParseChunk("print []")
+			n := mustparseChunk(t, "print []")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
 				Statements: []Node{
@@ -6672,7 +6817,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single arg starting with the same character as an assignment operator", func(t *testing.T) {
-			n := MustParseChunk("print /")
+			n := mustparseChunk(t, "print /")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
 				Statements: []Node{
@@ -6697,7 +6842,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("call followed by a single line comment", func(t *testing.T) {
-			n := MustParseChunk("print $a $b # comment")
+			n := mustparseChunk(t, "print $a $b # comment")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 21}, nil, nil},
 				Statements: []Node{
@@ -6729,7 +6874,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("callee is an identifier member expression", func(t *testing.T) {
-			n := MustParseChunk(`a.b "a"`)
+			n := mustparseChunk(t, `a.b "a"`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
 				Statements: []Node{
@@ -6767,18 +6912,18 @@ func TestParse(t *testing.T) {
 	t.Run("pipeline statement", func(t *testing.T) {
 		t.Run("empty second stage", func(t *testing.T) {
 			assert.Panics(t, func() {
-				MustParseChunk("print $a |")
+				mustparseChunk(t, "print $a |")
 			})
 		})
 
 		t.Run("second stage is not a call", func(t *testing.T) {
 			assert.Panics(t, func() {
-				MustParseChunk("print $a | 1")
+				mustparseChunk(t, "print $a | 1")
 			})
 		})
 
 		t.Run("second stage is a call with no arguments", func(t *testing.T) {
-			n := MustParseChunk("print $a | do-something")
+			n := mustparseChunk(t, "print $a | do-something")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 23}, nil, nil},
 				Statements: []Node{
@@ -6827,7 +6972,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("second stage is a call with no arguments, followed by a ';'", func(t *testing.T) {
-			n := MustParseChunk("print $a | do-something;")
+			n := mustparseChunk(t, "print $a | do-something;")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
 					NodeSpan{0, 24},
@@ -6880,7 +7025,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("second stage is a call with no arguments, followed by another statement on the following line", func(t *testing.T) {
-			n := MustParseChunk("print $a | do-something\n1")
+			n := mustparseChunk(t, "print $a | do-something\n1")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
 					NodeSpan{0, 25},
@@ -6938,7 +7083,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("first and second stages are calls with no arguments", func(t *testing.T) {
-			n := MustParseChunk("print | do-something")
+			n := mustparseChunk(t, "print | do-something")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 20}, nil, nil},
 				Statements: []Node{
@@ -6981,7 +7126,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("second stage is a call with a single argument", func(t *testing.T) {
-			n := MustParseChunk("print $a | do-something $")
+			n := mustparseChunk(t, "print $a | do-something $")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 25}, nil, nil},
 				Statements: []Node{
@@ -7035,7 +7180,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("third stage is a call with no arguments", func(t *testing.T) {
-			n := MustParseChunk("print $a | do-something $ | do-something-else")
+			n := mustparseChunk(t, "print $a | do-something $ | do-something-else")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 45}, nil, nil},
 				Statements: []Node{
@@ -7103,7 +7248,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("call <string> shorthand", func(t *testing.T) {
-		n := MustParseChunk(`mime"json"`)
+		n := mustparseChunk(t, `mime"json"`)
 		assert.EqualValues(t, &Chunk{
 			NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
 			Statements: []Node{
@@ -7127,7 +7272,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("call <object> shorthand", func(t *testing.T) {
-		n := MustParseChunk(`f{}`)
+		n := mustparseChunk(t, `f{}`)
 		assert.EqualValues(t, &Chunk{
 			NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
 			Statements: []Node{
@@ -8435,7 +8580,7 @@ func TestParse(t *testing.T) {
 
 		for _, testCase := range testCases {
 			t.Run(testCase.input, func(t *testing.T) {
-				n, err := ParseChunk(testCase.input, "")
+				n, err := parseChunk(t, testCase.input, "")
 				if testCase.hasError {
 					assert.Error(t, err)
 				} else {
@@ -9425,7 +9570,7 @@ func TestParse(t *testing.T) {
 
 		for _, testCase := range testCases {
 			t.Run(testCase.input, func(t *testing.T) {
-				n, err := ParseChunk(testCase.input, "")
+				n, err := parseChunk(t, testCase.input, "")
 				if testCase.hasError {
 					assert.Error(t, err)
 				} else {
@@ -9806,7 +9951,7 @@ func TestParse(t *testing.T) {
 
 		for _, testCase := range testCases {
 			t.Run(testCase.input, func(t *testing.T) {
-				n, err := ParseChunk(testCase.input, "")
+				n, err := parseChunk(t, testCase.input, "")
 				if testCase.hasError {
 					assert.Error(t, err)
 				} else {
@@ -10111,7 +10256,7 @@ func TestParse(t *testing.T) {
 
 		for _, testCase := range testCases {
 			t.Run(testCase.input, func(t *testing.T) {
-				n, err := ParseChunk(testCase.input, "")
+				n, err := parseChunk(t, testCase.input, "")
 				if testCase.hasError {
 					assert.Error(t, err)
 				} else {
@@ -10462,7 +10607,7 @@ func TestParse(t *testing.T) {
 
 		for _, testCase := range testCases {
 			t.Run(testCase.input, func(t *testing.T) {
-				n, err := ParseChunk(testCase.input, "")
+				n, err := parseChunk(t, testCase.input, "")
 				if testCase.hasError {
 					assert.Error(t, err)
 				} else {
@@ -10478,7 +10623,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("if statement", func(t *testing.T) {
 		t.Run("empty", func(t *testing.T) {
-			n := MustParseChunk("if true { }")
+			n := mustparseChunk(t, "if true { }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
 				Statements: []Node{
@@ -10511,7 +10656,7 @@ func TestParse(t *testing.T) {
 
 		//also used for checking block parsing
 		t.Run("non empty", func(t *testing.T) {
-			n := MustParseChunk("if true { 1 }")
+			n := mustparseChunk(t, "if true { 1 }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
 				Statements: []Node{
@@ -10550,7 +10695,7 @@ func TestParse(t *testing.T) {
 
 		//also used for checking call parsing
 		t.Run("body contains a call without parenthesis", func(t *testing.T) {
-			n := MustParseChunk("if true { a 1 }")
+			n := mustparseChunk(t, "if true { a 1 }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 15}, nil, nil},
 				Statements: []Node{
@@ -10600,7 +10745,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("missing block after if", func(t *testing.T) {
-			n, err := ParseChunk("if true", "")
+			n, err := parseChunk(t, "if true", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
@@ -10623,7 +10768,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("multiline", func(t *testing.T) {
-			n := MustParseChunk("if true { \n }")
+			n := mustparseChunk(t, "if true { \n }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
 				Statements: []Node{
@@ -10657,7 +10802,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("if-else", func(t *testing.T) {
-			n := MustParseChunk("if true { } else {}")
+			n := mustparseChunk(t, "if true { } else {}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 19}, nil, nil},
 				Statements: []Node{
@@ -10701,7 +10846,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("if-else within an if-else statement", func(t *testing.T) {
-			n := MustParseChunk("if true { if true {} else {} } else {}")
+			n := mustparseChunk(t, "if true { if true {} else {} } else {}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 38}, nil, nil},
 				Statements: []Node{
@@ -10783,7 +10928,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("(multiline) if-else within an if-else statement", func(t *testing.T) {
-			n := MustParseChunk(`
+			n := mustparseChunk(t, `
 				if a {
 					if true {
 
@@ -10809,7 +10954,7 @@ func TestParse(t *testing.T) {
 	t.Run("if expression", func(t *testing.T) {
 
 		t.Run("(if <test> <consequent>)", func(t *testing.T) {
-			n := MustParseChunk("(if true 1)")
+			n := mustparseChunk(t, "(if true 1)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
 				Statements: []Node{
@@ -10837,7 +10982,7 @@ func TestParse(t *testing.T) {
 		t.Run("(if <test> (missing value)", func(t *testing.T) {
 			code := "(if true"
 
-			n, err := ParseChunk(code, "")
+			n, err := parseChunk(t, code, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
@@ -10866,7 +11011,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("(if <test> <consequent> (missing parenthesis)", func(t *testing.T) {
-			n, err := ParseChunk("(if true 1", "")
+			n, err := parseChunk(t, "(if true 1", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
@@ -10893,7 +11038,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("(if <test> <consequent> else <alternate>)", func(t *testing.T) {
-			n := MustParseChunk("(if true 1 else 2)")
+			n := mustparseChunk(t, "(if true 1 else 2)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 18}, nil, nil},
 				Statements: []Node{
@@ -10925,7 +11070,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("(if <test> <consequent> else <alternate> (missing parenthesis)", func(t *testing.T) {
-			n, err := ParseChunk("(if true 1 else 2", "")
+			n, err := parseChunk(t, "(if true 1 else 2", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 17}, nil, nil},
@@ -10959,7 +11104,7 @@ func TestParse(t *testing.T) {
 
 		t.Run("(if <test> <consequent> else (missing vallue)", func(t *testing.T) {
 			code := "(if true 1 else"
-			n, err := ParseChunk(code, "")
+			n, err := parseChunk(t, code, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 15}, nil, nil},
@@ -10996,7 +11141,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("for statement", func(t *testing.T) {
 		t.Run("empty for <index>, <elem> ... in statement", func(t *testing.T) {
-			n := MustParseChunk("for i, u in $users { }")
+			n := mustparseChunk(t, "for i, u in $users { }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 22}, nil, nil},
 				Statements: []Node{
@@ -11039,7 +11184,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("empty for <index pattern> <index>, <elem> ... in statement", func(t *testing.T) {
-			n := MustParseChunk("for %even i, u in $users { }")
+			n := mustparseChunk(t, "for %even i, u in $users { }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 28}, nil, nil},
 				Statements: []Node{
@@ -11086,7 +11231,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("empty for <index pattern> <index>, <elem pattern> <elem> ... in statement", func(t *testing.T) {
-			n := MustParseChunk("for %even i, %p u in $users { }")
+			n := mustparseChunk(t, "for %even i, %p u in $users { }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 31}, nil, nil},
 				Statements: []Node{
@@ -11137,7 +11282,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("empty for <index>, <elem pattern> <elem> ... in statement", func(t *testing.T) {
-			n := MustParseChunk("for i, %p u in $users { }")
+			n := mustparseChunk(t, "for i, %p u in $users { }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 25}, nil, nil},
 				Statements: []Node{
@@ -11184,7 +11329,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("empty for <elem> ... in statement", func(t *testing.T) {
-			n := MustParseChunk("for u in $users { }")
+			n := mustparseChunk(t, "for u in $users { }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 19}, nil, nil},
 				Statements: []Node{
@@ -11223,7 +11368,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("empty for <elem> ... in chunked statement", func(t *testing.T) {
-			n := MustParseChunk("for chunked u in $users { }")
+			n := mustparseChunk(t, "for chunked u in $users { }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 27}, nil, nil},
 				Statements: []Node{
@@ -11264,7 +11409,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("for .. in with break statement", func(t *testing.T) {
-			n := MustParseChunk("for i, u in $users { break }")
+			n := mustparseChunk(t, "for i, u in $users { break }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 28}, nil, nil},
 				Statements: []Node{
@@ -11316,7 +11461,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("for .. in with continue statement", func(t *testing.T) {
-			n := MustParseChunk("for i, u in $users { continue }")
+			n := mustparseChunk(t, "for i, u in $users { continue }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 31}, nil, nil},
 				Statements: []Node{
@@ -11368,7 +11513,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("for <expr>", func(t *testing.T) {
-			n := MustParseChunk("for $array { }")
+			n := mustparseChunk(t, "for $array { }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, nil},
 				Statements: []Node{
@@ -11403,7 +11548,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("for <pattern>", func(t *testing.T) {
-			n := MustParseChunk("for %p { }")
+			n := mustparseChunk(t, "for %p { }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
 				Statements: []Node{
@@ -11442,7 +11587,7 @@ func TestParse(t *testing.T) {
 	t.Run("walk statement", func(t *testing.T) {
 
 		t.Run("empty", func(t *testing.T) {
-			n := MustParseChunk("walk ./ entry { }")
+			n := mustparseChunk(t, "walk ./ entry { }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 17}, nil, nil},
 				Statements: []Node{
@@ -11478,7 +11623,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("meta & entry variable identifiers", func(t *testing.T) {
-			n := MustParseChunk("walk ./ meta, entry { }")
+			n := mustparseChunk(t, "walk ./ meta, entry { }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 23}, nil, nil},
 				Statements: []Node{
@@ -11524,7 +11669,7 @@ func TestParse(t *testing.T) {
 	t.Run("unary expression", func(t *testing.T) {
 
 		t.Run("unary expression : boolean negate", func(t *testing.T) {
-			n := MustParseChunk("!true")
+			n := mustparseChunk(t, "!true")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
 				Statements: []Node{
@@ -11547,7 +11692,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unary expression : number negate", func(t *testing.T) {
-			n := MustParseChunk("(- 2)")
+			n := mustparseChunk(t, "(- 2)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
 				Statements: []Node{
@@ -11577,7 +11722,7 @@ func TestParse(t *testing.T) {
 	t.Run("binary expression", func(t *testing.T) {
 
 		t.Run("OR(bin ex 1, bin ex 2)", func(t *testing.T) {
-			n := MustParseChunk("(a > b or c > d)")
+			n := mustparseChunk(t, "(a > b or c > d)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
 				Statements: []Node{
@@ -11630,7 +11775,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("OR(bin ex 1, variable)", func(t *testing.T) {
-			n := MustParseChunk("(a > b or c)")
+			n := mustparseChunk(t, "(a > b or c)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, nil},
 				Statements: []Node{
@@ -11671,7 +11816,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("OR(variable, bin ex)", func(t *testing.T) {
-			n := MustParseChunk("(a or b > c)")
+			n := mustparseChunk(t, "(a or b > c)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, nil},
 				Statements: []Node{
@@ -11712,7 +11857,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("OR(bin ex 1, bin ex 2, bin ex 3)", func(t *testing.T) {
-			n := MustParseChunk("(a > b or c > d or e > f)")
+			n := mustparseChunk(t, "(a > b or c > d or e > f)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 25}, nil, nil},
 				Statements: []Node{
@@ -11791,7 +11936,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("OR(var, bin ex 1, bin ex 2)", func(t *testing.T) {
-			n := MustParseChunk("(a or b > c or d > e)")
+			n := mustparseChunk(t, "(a or b > c or d > e)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 21}, nil, nil},
 				Statements: []Node{
@@ -11856,7 +12001,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("OR(var 1, var 2, bin ex 1)", func(t *testing.T) {
-			MustParseChunk("(a or b or c > d)")
+			mustparseChunk(t, "(a or b or c > d)")
 			//TODO: after the parsing of the chain modify the resulting output
 			//in order for the AST to have the following shape (possible errors in spans):
 
@@ -11912,7 +12057,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("OR(bin ex 1, AND(bin ex 2, bin ex 3))", func(t *testing.T) {
-			n, err := ParseChunk("(a > b or c > d and e > f)", "")
+			n, err := parseChunk(t, "(a > b or c > d and e > f)", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 26}, nil, nil},
@@ -11992,7 +12137,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("OR(bin ex 1, AND(bin ex 2, bin ex 3), bin ex 4)", func(t *testing.T) {
-			n, err := ParseChunk("(a > b or c > d and e > f or g > h)", "")
+			n, err := parseChunk(t, "(a > b or c > d and e > f or g > h)", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 35}, nil, nil},
@@ -12094,7 +12239,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("OR(bin ex 1, ...missing operand ", func(t *testing.T) {
-			n, err := ParseChunk("(a > b or", "")
+			n, err := parseChunk(t, "(a > b or", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
@@ -12138,7 +12283,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("OR(bin ex 1, bin ex 2 <missing parenthesis>", func(t *testing.T) {
-			n, err := ParseChunk("(a > b or c > d", "")
+			n, err := parseChunk(t, "(a > b or c > d", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 15}, nil, nil},
@@ -12191,7 +12336,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("binary expression", func(t *testing.T) {
-			n := MustParseChunk("($a + $b)")
+			n := mustparseChunk(t, "($a + $b)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
 				Statements: []Node{
@@ -12220,7 +12365,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("range", func(t *testing.T) {
-			n := MustParseChunk("($a .. $b)")
+			n := mustparseChunk(t, "($a .. $b)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
 				Statements: []Node{
@@ -12249,7 +12394,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("exclusive end range", func(t *testing.T) {
-			n := MustParseChunk("($a ..< $b)")
+			n := mustparseChunk(t, "($a ..< $b)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
 				Statements: []Node{
@@ -12278,7 +12423,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("missing right operand", func(t *testing.T) {
-			n, err := ParseChunk("($a +)", "")
+			n, err := parseChunk(t, "($a +)", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
@@ -12310,7 +12455,7 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 		t.Run("unexpected operator", func(t *testing.T) {
-			n, err := ParseChunk("($a ? $b)", "")
+			n, err := parseChunk(t, "($a ? $b)", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
@@ -12340,7 +12485,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unexpected operator starting like an existing one", func(t *testing.T) {
-			n, err := ParseChunk("($a ! $b)", "")
+			n, err := parseChunk(t, "($a ! $b)", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
@@ -12370,7 +12515,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unexpected operator starting like an existing one (no spaces)", func(t *testing.T) {
-			n, err := ParseChunk("($a!$b)", "")
+			n, err := parseChunk(t, "($a!$b)", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
@@ -12400,7 +12545,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unexpected word operator : <and>e", func(t *testing.T) {
-			n, err := ParseChunk("($a ande $b)", "")
+			n, err := parseChunk(t, "($a ande $b)", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, nil},
@@ -12430,7 +12575,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("missing operator", func(t *testing.T) {
-			n, err := ParseChunk("($a$b)", "")
+			n, err := parseChunk(t, "($a$b)", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
@@ -12459,7 +12604,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("only opening parenthesis", func(t *testing.T) {
-			n, err := ParseChunk("(", "")
+			n, err := parseChunk(t, "(", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
@@ -12476,7 +12621,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("opening parenthesis followed by newline", func(t *testing.T) {
-			n, err := ParseChunk("(\n", "")
+			n, err := parseChunk(t, "(\n", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
@@ -12496,7 +12641,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("opening parenthesis followed by an unexpected character", func(t *testing.T) {
-			n, err := ParseChunk("(;", "")
+			n, err := parseChunk(t, "(;", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
@@ -12516,7 +12661,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("missing expression in between parenthesis", func(t *testing.T) {
-			n, err := ParseChunk("()", "")
+			n, err := parseChunk(t, "()", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
@@ -12540,7 +12685,7 @@ func TestParse(t *testing.T) {
 	t.Run("runtime typecheck expression", func(t *testing.T) {
 
 		t.Run("variable", func(t *testing.T) {
-			n := MustParseChunk("~a")
+			n := mustparseChunk(t, "~a")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
 				Statements: []Node{
@@ -12562,7 +12707,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("missing expression", func(t *testing.T) {
-			n, err := ParseChunk("~", "")
+			n, err := parseChunk(t, "~", "")
 
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -12591,7 +12736,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("upper bound range expression", func(t *testing.T) {
-		n := MustParseChunk("..10")
+		n := mustparseChunk(t, "..10")
 		assert.EqualValues(t, &Chunk{
 			NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
 			Statements: []Node{
@@ -12612,7 +12757,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("integer range literal", func(t *testing.T) {
-		n := MustParseChunk("1..2")
+		n := mustparseChunk(t, "1..2")
 		assert.EqualValues(t, &Chunk{
 			NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
 			Statements: []Node{
@@ -12635,7 +12780,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("rune range expression", func(t *testing.T) {
 		t.Run("rune range expression", func(t *testing.T) {
-			n := MustParseChunk("'a'..'z'")
+			n := mustparseChunk(t, "'a'..'z'")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
 				Statements: []Node{
@@ -12657,20 +12802,20 @@ func TestParse(t *testing.T) {
 		//TODO: improve tests
 		t.Run("invalid rune range expression : <rune> '.'", func(t *testing.T) {
 			assert.Panics(t, func() {
-				MustParseChunk("'a'.")
+				mustparseChunk(t, "'a'.")
 			})
 		})
 
 		t.Run("invalid rune range expression : <rune> '.' '.' ", func(t *testing.T) {
 			assert.Panics(t, func() {
-				MustParseChunk("'a'..")
+				mustparseChunk(t, "'a'..")
 			})
 		})
 	})
 
 	t.Run("function expression", func(t *testing.T) {
 		t.Run("no parameters, no manifest, empty body", func(t *testing.T) {
-			n := MustParseChunk("fn(){}")
+			n := mustparseChunk(t, "fn(){}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
 				Statements: []Node{
@@ -12702,7 +12847,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("no parameters, no manifest, empty body, return type", func(t *testing.T) {
-			n := MustParseChunk("fn() %int {}")
+			n := mustparseChunk(t, "fn() %int {}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, nil},
 				Statements: []Node{
@@ -12738,7 +12883,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("no parameters, no manifest, empty body, unprefixed return type", func(t *testing.T) {
-			n := MustParseChunk("fn() int {}")
+			n := mustparseChunk(t, "fn() int {}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
 				Statements: []Node{
@@ -12775,7 +12920,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("no parameters, empty capture list, empty body ", func(t *testing.T) {
-			n := MustParseChunk("fn[](){}")
+			n := mustparseChunk(t, "fn[](){}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
 				Statements: []Node{
@@ -12810,7 +12955,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("no parameters, capture list with single identifier, empty body ", func(t *testing.T) {
-			n := MustParseChunk("fn[a](){}")
+			n := mustparseChunk(t, "fn[a](){}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
 				Statements: []Node{
@@ -12850,7 +12995,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("no parameters, capture list with two identifiers, empty body ", func(t *testing.T) {
-			n := MustParseChunk("fn[a,b](){}")
+			n := mustparseChunk(t, "fn[a,b](){}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
 				Statements: []Node{
@@ -12895,7 +13040,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("no parameters, capture list with unexpected char, empty body ", func(t *testing.T) {
-			n, err := ParseChunk("fn[?](){}", "")
+			n, err := parseChunk(t, "fn[?](){}", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
@@ -12939,7 +13084,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single parameter, empty body ", func(t *testing.T) {
-			n := MustParseChunk("fn(x){}")
+			n := mustparseChunk(t, "fn(x){}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
 				Statements: []Node{
@@ -12979,7 +13124,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single typed parameter, empty body ", func(t *testing.T) {
-			n := MustParseChunk("fn(x %int){}")
+			n := mustparseChunk(t, "fn(x %int){}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, nil},
 				Statements: []Node{
@@ -13023,7 +13168,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single unprefix typed parameter, empty body ", func(t *testing.T) {
-			n := MustParseChunk("fn(x int){}")
+			n := mustparseChunk(t, "fn(x int){}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
 				Statements: []Node{
@@ -13068,7 +13213,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("two parameters, empty body ", func(t *testing.T) {
-			n := MustParseChunk("fn(x,n){}")
+			n := mustparseChunk(t, "fn(x,n){}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
 				Statements: []Node{
@@ -13116,7 +13261,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single parameter, body is an expression", func(t *testing.T) {
-			n := MustParseChunk("fn(x) => x")
+			n := mustparseChunk(t, "fn(x) => x")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
 				Statements: []Node{
@@ -13151,7 +13296,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("only fn keyword", func(t *testing.T) {
-			n, err := ParseChunk("fn", "")
+			n, err := parseChunk(t, "fn", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
@@ -13170,7 +13315,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("missing block's closing brace", func(t *testing.T) {
-			n, err := ParseChunk("fn(){", "")
+			n, err := parseChunk(t, "fn(){", "")
 
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -13202,7 +13347,7 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 		t.Run("missing block's closing brace, trailing space", func(t *testing.T) {
-			n, err := ParseChunk("fn(){ ", "")
+			n, err := parseChunk(t, "fn(){ ", "")
 
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -13235,7 +13380,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unexpected char in empty parameter list", func(t *testing.T) {
-			n, err := ParseChunk("fn(:){}", "")
+			n, err := parseChunk(t, "fn(:){}", "")
 
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -13278,7 +13423,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unexpected char in non-empty parameter list", func(t *testing.T) {
-			n, err := ParseChunk("fn(a:b){}", "")
+			n, err := parseChunk(t, "fn(a:b){}", "")
 
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -13336,7 +13481,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("parameter list not followed by a block", func(t *testing.T) {
-			n, err := ParseChunk("fn()1", "")
+			n, err := parseChunk(t, "fn()1", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
@@ -13364,7 +13509,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unterminated parameter list: end of module", func(t *testing.T) {
-			n, err := ParseChunk("fn(", "")
+			n, err := parseChunk(t, "fn(", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
@@ -13386,7 +13531,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unterminated parameter list: followed by newline", func(t *testing.T) {
-			n, err := ParseChunk("fn(\n", "")
+			n, err := parseChunk(t, "fn(\n", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
@@ -13409,7 +13554,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("parameter name should not be a keyword ", func(t *testing.T) {
-			n, err := ParseChunk("fn(manifest){}", "")
+			n, err := parseChunk(t, "fn(manifest){}", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, nil},
@@ -13456,7 +13601,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("function declaration", func(t *testing.T) {
 		t.Run("keyword name", func(t *testing.T) {
-			res, err := ParseChunk("fn manifest(){}", "")
+			res, err := parseChunk(t, "fn manifest(){}", "")
 			assert.Error(t, err)
 			assert.NotNil(t, res)
 			assert.ErrorContains(t, err, KEYWORDS_SHOULD_NOT_BE_USED_AS_FN_NAMES)
@@ -13465,7 +13610,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("function pattern expression", func(t *testing.T) {
 		t.Run("no parameters, no manifest, empty body", func(t *testing.T) {
-			n := MustParseChunk("%fn(){}")
+			n := mustparseChunk(t, "%fn(){}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
 				Statements: []Node{
@@ -13497,7 +13642,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("no parameters, empty body, return type", func(t *testing.T) {
-			n := MustParseChunk("%fn() %int {}")
+			n := mustparseChunk(t, "%fn() %int {}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
 				Statements: []Node{
@@ -13533,7 +13678,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single parameter, empty body ", func(t *testing.T) {
-			n := MustParseChunk("%fn(x){}")
+			n := mustparseChunk(t, "%fn(x){}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
 				Statements: []Node{
@@ -13573,7 +13718,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single typed parameter, empty body ", func(t *testing.T) {
-			n := MustParseChunk("%fn(x %int){}")
+			n := mustparseChunk(t, "%fn(x %int){}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
 				Statements: []Node{
@@ -13617,7 +13762,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single parameter with no name, empty body ", func(t *testing.T) {
-			n := MustParseChunk("%fn(%int){}")
+			n := mustparseChunk(t, "%fn(%int){}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
 				Statements: []Node{
@@ -13657,7 +13802,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("two parameters, empty body ", func(t *testing.T) {
-			n := MustParseChunk("%fn(x,n){}")
+			n := mustparseChunk(t, "%fn(x,n){}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
 				Statements: []Node{
@@ -13705,7 +13850,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single parameter, body is an expression", func(t *testing.T) {
-			n := MustParseChunk("%fn(x) => x")
+			n := mustparseChunk(t, "%fn(x) => x")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
 				Statements: []Node{
@@ -13740,7 +13885,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unexpected char in empty parameter list", func(t *testing.T) {
-			n, err := ParseChunk("%fn(:){}", "")
+			n, err := parseChunk(t, "%fn(:){}", "")
 
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -13783,7 +13928,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unexpected char in non-empty parameter list", func(t *testing.T) {
-			n, err := ParseChunk("%fn(a:b){}", "")
+			n, err := parseChunk(t, "%fn(a:b){}", "")
 
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -13841,7 +13986,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("parameter list not followed by a block", func(t *testing.T) {
-			n, err := ParseChunk("%fn()1", "")
+			n, err := parseChunk(t, "%fn()1", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
@@ -13869,7 +14014,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("parameter name should not be a keyword ", func(t *testing.T) {
-			n, err := ParseChunk("%fn(manifest){}", "")
+			n, err := parseChunk(t, "%fn(manifest){}", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 15}, nil, nil},
@@ -13915,7 +14060,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("pattern conversion expression", func(t *testing.T) {
-		n := MustParseChunk("%(1)")
+		n := mustparseChunk(t, "%(1)")
 		assert.EqualValues(t, &Chunk{
 			NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
 			Statements: []Node{
@@ -13947,7 +14092,7 @@ func TestParse(t *testing.T) {
 	t.Run("lazy expression", func(t *testing.T) {
 
 		t.Run("integer value", func(t *testing.T) {
-			n := MustParseChunk("@(1)")
+			n := mustparseChunk(t, "@(1)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
 				Statements: []Node{
@@ -13975,7 +14120,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("missing closing parenthesis ", func(t *testing.T) {
-			n, err := ParseChunk("@(1", "")
+			n, err := parseChunk(t, "@(1", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
@@ -14003,7 +14148,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("lazy expression followed by another expression", func(t *testing.T) {
-			n := MustParseChunk("@(1) 2")
+			n := mustparseChunk(t, "@(1) 2")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
 				Statements: []Node{
@@ -14407,7 +14552,7 @@ func TestParse(t *testing.T) {
 
 		for _, testCase := range testCases {
 			t.Run(testCase.input, func(t *testing.T) {
-				n, err := ParseChunk(testCase.input, "")
+				n, err := parseChunk(t, testCase.input, "")
 				if testCase.hasError {
 					assert.Error(t, err)
 				} else {
@@ -14424,13 +14569,13 @@ func TestParse(t *testing.T) {
 	t.Run("match statement", func(t *testing.T) {
 		t.Run("case is not a simple literal and is not statically known", func(t *testing.T) {
 			assert.Panics(t, func() {
-				MustParseChunk("match 1 { $a { } }")
+				mustparseChunk(t, "match 1 { $a { } }")
 			})
 		})
 
 		t.Run("case is not a simple literal but is statically known", func(t *testing.T) {
 
-			n := MustParseChunk("match 1 { ({}) { } }")
+			n := mustparseChunk(t, "match 1 { ({}) { } }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 20}, nil, nil},
 				Statements: []Node{
@@ -14485,7 +14630,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("case with group match variable", func(t *testing.T) {
-			n := MustParseChunk("match 1 { %/home/{:username} m { } }")
+			n := mustparseChunk(t, "match 1 { %/home/{:username} m { } }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 36}, nil, nil},
 				Statements: []Node{
@@ -14555,7 +14700,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("group match variable should not be a keyword", func(t *testing.T) {
-			n, err := ParseChunk("match 1 { %/home/{:username} manifest { } }", "")
+			n, err := parseChunk(t, "match 1 { %/home/{:username} manifest { } }", "")
 			assert.NotNil(t, n)
 			assert.ErrorContains(t, err, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS)
 		})
@@ -14563,7 +14708,7 @@ func TestParse(t *testing.T) {
 		t.Run("missing value before block of case", func(t *testing.T) {
 			s := "match 1 { {} }"
 
-			n, err := ParseChunk(s, "")
+			n, err := parseChunk(t, s, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, nil},
@@ -14615,7 +14760,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("empty single line comment", func(t *testing.T) {
-		n := MustParseChunk("# ")
+		n := mustparseChunk(t, "# ")
 		assert.EqualValues(t, &Chunk{
 			NodeBase: NodeBase{
 				NodeSpan{0, 2},
@@ -14627,7 +14772,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("not empty single line comment", func(t *testing.T) {
-		n := MustParseChunk("# some text")
+		n := mustparseChunk(t, "# some text")
 		assert.EqualValues(t, &Chunk{
 			NodeBase: NodeBase{
 				NodeSpan{0, 11},
@@ -14640,7 +14785,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("import statement", func(t *testing.T) {
 		t.Run("validation string", func(t *testing.T) {
-			n := MustParseChunk(`import a https://example.com/a.ix {}`)
+			n := mustparseChunk(t, `import a https://example.com/a.ix {}`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 36}, nil, nil},
 				Statements: []Node{
@@ -14680,7 +14825,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("inclusion import statement", func(t *testing.T) {
 		t.Run("ok", func(t *testing.T) {
-			n := MustParseChunk(`import ./file.ix`)
+			n := mustparseChunk(t, `import ./file.ix`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
 				Statements: []Node{
@@ -14706,7 +14851,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("spawn expression", func(t *testing.T) {
 		t.Run("call expression", func(t *testing.T) {
-			n := MustParseChunk(`go nil do f()`)
+			n := mustparseChunk(t, `go nil do f()`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
 				Statements: []Node{
@@ -14748,7 +14893,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("embedded module", func(t *testing.T) {
-			n := MustParseChunk(`go nil do { manifest {} }`)
+			n := mustparseChunk(t, `go nil do { manifest {} }`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 25}, nil, nil},
 				Statements: []Node{
@@ -14799,7 +14944,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("statements next to each other in embedded module", func(t *testing.T) {
-			n, err := ParseChunk(`go nil do { 1$v }`, "")
+			n, err := parseChunk(t, `go nil do { 1$v }`, "")
 
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -14848,7 +14993,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("missing expression/module after 'do' keyword", func(t *testing.T) {
-			n, err := ParseChunk(`go nil do`, "")
+			n, err := parseChunk(t, `go nil do`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
@@ -14874,7 +15019,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("mapping expression", func(t *testing.T) {
 		t.Run("empty", func(t *testing.T) {
-			n := MustParseChunk(`Mapping {}`)
+			n := mustparseChunk(t, `Mapping {}`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
 				Statements: []Node{
@@ -14894,7 +15039,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("empty, missing closing brace", func(t *testing.T) {
-			n, err := ParseChunk(`Mapping {`, "")
+			n, err := parseChunk(t, `Mapping {`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
@@ -14914,7 +15059,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("static entry", func(t *testing.T) {
-			n := MustParseChunk("Mapping { 0 => 1 }")
+			n := mustparseChunk(t, "Mapping { 0 => 1 }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 18}, nil, nil},
 				Statements: []Node{
@@ -14953,7 +15098,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("dynamic entry", func(t *testing.T) {
-			n := MustParseChunk("Mapping { n 0 => n }")
+			n := mustparseChunk(t, "Mapping { n 0 => n }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 20}, nil, nil},
 				Statements: []Node{
@@ -14995,13 +15140,13 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("dynamic entry var should not be a keyword", func(t *testing.T) {
-			n, err := ParseChunk("Mapping { manifest 0 => n }", "")
+			n, err := parseChunk(t, "Mapping { manifest 0 => n }", "")
 			assert.NotNil(t, n)
 			assert.ErrorContains(t, err, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS)
 		})
 
 		t.Run("dynamic entry with group matching variable", func(t *testing.T) {
-			n := MustParseChunk("Mapping { p %/ m => m }")
+			n := mustparseChunk(t, "Mapping { p %/ m => m }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 23}, nil, nil},
 				Statements: []Node{
@@ -15047,13 +15192,13 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("group matching variable should not be a keyword", func(t *testing.T) {
-			n, err := ParseChunk("Mapping { p %/ manifest => m  }", "")
+			n, err := parseChunk(t, "Mapping { p %/ manifest => m  }", "")
 			assert.NotNil(t, n)
 			assert.ErrorContains(t, err, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS)
 		})
 
 		t.Run("static entry, missing closing brace", func(t *testing.T) {
-			n, err := ParseChunk("Mapping { 0 => 1", "")
+			n, err := parseChunk(t, "Mapping { 0 => 1", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
@@ -15092,7 +15237,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("static entry: missing value", func(t *testing.T) {
-			n, err := ParseChunk("Mapping { 0 => }", "")
+			n, err := parseChunk(t, "Mapping { 0 => }", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
@@ -15134,7 +15279,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("two static entries", func(t *testing.T) {
-			n := MustParseChunk("Mapping { 0 => 1    2 => 3 }")
+			n := mustparseChunk(t, "Mapping { 0 => 1    2 => 3 }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 28}, nil, nil},
 				Statements: []Node{
@@ -15192,7 +15337,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("udata expression", func(t *testing.T) {
 		t.Run("empty", func(t *testing.T) {
-			n := MustParseChunk(`udata 0 {}`)
+			n := mustparseChunk(t, `udata 0 {}`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
 				Statements: []Node{
@@ -15217,7 +15362,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("empty, missing closing brace", func(t *testing.T) {
-			n, err := ParseChunk(`udata 0 {`, "")
+			n, err := parseChunk(t, `udata 0 {`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
@@ -15242,7 +15387,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single entry", func(t *testing.T) {
-			n := MustParseChunk("udata 0 { 0 {} }")
+			n := mustparseChunk(t, "udata 0 { 0 {} }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
 				Statements: []Node{
@@ -15284,7 +15429,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single entry without braces", func(t *testing.T) {
-			n := MustParseChunk("udata 0 { 0 }")
+			n := mustparseChunk(t, "udata 0 { 0 }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
 				Statements: []Node{
@@ -15319,7 +15464,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("two entries", func(t *testing.T) {
-			n := MustParseChunk("udata 0 { 0 {} 1 {} }")
+			n := mustparseChunk(t, "udata 0 { 0 {} 1 {} }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 21}, nil, nil},
 				Statements: []Node{
@@ -15376,7 +15521,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("two entries separated by a comma", func(t *testing.T) {
-			n := MustParseChunk("udata 0 { 0 {}, 1 {} }")
+			n := mustparseChunk(t, "udata 0 { 0 {}, 1 {} }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 22}, nil, nil},
 				Statements: []Node{
@@ -15434,7 +15579,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("two entries without braces", func(t *testing.T) {
-			n := MustParseChunk("udata 0 { 0 1 }")
+			n := mustparseChunk(t, "udata 0 { 0 1 }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 15}, nil, nil},
 				Statements: []Node{
@@ -15480,7 +15625,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("testsuite expression", func(t *testing.T) {
 		t.Run("no meta", func(t *testing.T) {
-			n := MustParseChunk(`testsuite {}`)
+			n := mustparseChunk(t, `testsuite {}`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, nil},
 				Statements: []Node{
@@ -15507,7 +15652,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("with meta", func(t *testing.T) {
-			n := MustParseChunk(`testsuite "name" {}`)
+			n := mustparseChunk(t, `testsuite "name" {}`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 19}, nil, nil},
 				Statements: []Node{
@@ -15541,7 +15686,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("embedded module with manifest", func(t *testing.T) {
-			n := MustParseChunk(`testsuite { manifest {} }`)
+			n := mustparseChunk(t, `testsuite { manifest {} }`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 25}, nil, nil},
 				Statements: []Node{
@@ -15586,7 +15731,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("missing embedded module and no meta", func(t *testing.T) {
-			n, err := ParseChunk(`testsuite`, "")
+			n, err := parseChunk(t, `testsuite`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
@@ -15604,7 +15749,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("with meta but missing embedded module", func(t *testing.T) {
-			n, err := ParseChunk(`testsuite "name"`, "")
+			n, err := parseChunk(t, `testsuite "name"`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
@@ -15632,7 +15777,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("testcase expression", func(t *testing.T) {
 		t.Run("no meta", func(t *testing.T) {
-			n := MustParseChunk(`testcase {}`)
+			n := mustparseChunk(t, `testcase {}`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
 				Statements: []Node{
@@ -15659,7 +15804,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("with meta", func(t *testing.T) {
-			n := MustParseChunk(`testcase "name" {}`)
+			n := mustparseChunk(t, `testcase "name" {}`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 18}, nil, nil},
 				Statements: []Node{
@@ -15693,7 +15838,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("missing embedded module and no meta", func(t *testing.T) {
-			n, err := ParseChunk(`testcase`, "")
+			n, err := parseChunk(t, `testcase`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
@@ -15711,7 +15856,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("with meta but missing embedded module", func(t *testing.T) {
-			n, err := ParseChunk(`testcase "name"`, "")
+			n, err := parseChunk(t, `testcase "name"`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 15}, nil, nil},
@@ -15740,7 +15885,7 @@ func TestParse(t *testing.T) {
 	t.Run("lifetimejob expression", func(t *testing.T) {
 
 		t.Run("ok", func(t *testing.T) {
-			n := MustParseChunk(`lifetimejob #job {}`)
+			n := mustparseChunk(t, `lifetimejob #job {}`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 19}, nil, nil},
 				Statements: []Node{
@@ -15770,7 +15915,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("missing meta", func(t *testing.T) {
-			n, err := ParseChunk(`lifetimejob`, "")
+			n, err := parseChunk(t, `lifetimejob`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
@@ -15787,7 +15932,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("missing embedded module after meta", func(t *testing.T) {
-			n, err := ParseChunk(`lifetimejob #job`, "")
+			n, err := parseChunk(t, `lifetimejob #job`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
@@ -15808,7 +15953,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("with subject", func(t *testing.T) {
-			n := MustParseChunk(`lifetimejob #job for %p {}`)
+			n := mustparseChunk(t, `lifetimejob #job for %p {}`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 26}, nil, nil},
 				Statements: []Node{
@@ -15845,7 +15990,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("missing embedded module after subject", func(t *testing.T) {
-			n, err := ParseChunk(`lifetimejob #job for %p`, "")
+			n, err := parseChunk(t, `lifetimejob #job for %p`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 23}, nil, nil},
@@ -15876,7 +16021,7 @@ func TestParse(t *testing.T) {
 	t.Run("reception handler expression", func(t *testing.T) {
 
 		t.Run("ok", func(t *testing.T) {
-			n := MustParseChunk(`on received %event h`)
+			n := mustparseChunk(t, `on received %event h`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 20}, nil, nil},
 				Statements: []Node{
@@ -15904,7 +16049,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("missing pattern", func(t *testing.T) {
-			n, err := ParseChunk(`on received`, "")
+			n, err := parseChunk(t, `on received`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
@@ -15924,7 +16069,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("missing body after 'do' keyword", func(t *testing.T) {
-			n, err := ParseChunk(`on received %event`, "")
+			n, err := parseChunk(t, `on received %event`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 18}, nil, nil},
@@ -15952,7 +16097,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("compute expression", func(t *testing.T) {
 		t.Run("missing expr", func(t *testing.T) {
-			n, err := ParseChunk(`comp`, "")
+			n, err := parseChunk(t, `comp`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
@@ -15976,7 +16121,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("ok", func(t *testing.T) {
-			n := MustParseChunk(`comp 1`)
+			n := mustparseChunk(t, `comp 1`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
 				Statements: []Node{
@@ -15999,7 +16144,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("permission dropping statement", func(t *testing.T) {
 		t.Run("empty object literal", func(t *testing.T) {
-			n := MustParseChunk("drop-perms {}")
+			n := mustparseChunk(t, "drop-perms {}")
 
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
@@ -16027,13 +16172,13 @@ func TestParse(t *testing.T) {
 
 		t.Run("value is not an object literal", func(t *testing.T) {
 			assert.Panics(t, func() {
-				MustParseChunk("drop-perms 1")
+				mustparseChunk(t, "drop-perms 1")
 			})
 		})
 
 		t.Run("value is not an object literal", func(t *testing.T) {
 			assert.Panics(t, func() {
-				MustParseChunk("drop-perms")
+				mustparseChunk(t, "drop-perms")
 			})
 		})
 
@@ -16041,7 +16186,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("return statement", func(t *testing.T) {
 		t.Run("value", func(t *testing.T) {
-			n := MustParseChunk("return 1")
+			n := mustparseChunk(t, "return 1")
 
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
@@ -16063,7 +16208,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("no value", func(t *testing.T) {
-			n := MustParseChunk("return")
+			n := mustparseChunk(t, "return")
 
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
@@ -16080,7 +16225,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("no value, followed by newline", func(t *testing.T) {
-			n := MustParseChunk("return\n")
+			n := mustparseChunk(t, "return\n")
 
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
@@ -16106,7 +16251,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("yield statement", func(t *testing.T) {
 		t.Run("value", func(t *testing.T) {
-			n := MustParseChunk("yield 1")
+			n := mustparseChunk(t, "yield 1")
 
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
@@ -16128,7 +16273,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("no value", func(t *testing.T) {
-			n := MustParseChunk("yield")
+			n := mustparseChunk(t, "yield")
 
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
@@ -16145,7 +16290,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("no value, followed by newline", func(t *testing.T) {
-			n := MustParseChunk("yield\n")
+			n := mustparseChunk(t, "yield\n")
 
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
@@ -16171,7 +16316,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("boolean conversion expression", func(t *testing.T) {
 		t.Run("variable", func(t *testing.T) {
-			n := MustParseChunk("$err?")
+			n := mustparseChunk(t, "$err?")
 
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
@@ -16188,7 +16333,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("identifier", func(t *testing.T) {
-			n := MustParseChunk("err?")
+			n := mustparseChunk(t, "err?")
 
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
@@ -16205,7 +16350,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("identifier member expression", func(t *testing.T) {
-			n := MustParseChunk("a.b?")
+			n := mustparseChunk(t, "a.b?")
 
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
@@ -16231,7 +16376,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("member expression", func(t *testing.T) {
-			n := MustParseChunk("$a.b?")
+			n := mustparseChunk(t, "$a.b?")
 
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
@@ -16255,7 +16400,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("optional member expression", func(t *testing.T) {
-			n := MustParseChunk("$a.?b?")
+			n := mustparseChunk(t, "$a.?b?")
 
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
@@ -16280,7 +16425,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("optional member expression", func(t *testing.T) {
-			n := MustParseChunk("a.?b?")
+			n := mustparseChunk(t, "a.?b?")
 
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
@@ -16307,7 +16452,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("concatenation expression", func(t *testing.T) {
 		t.Run("missing elements: end of chunk", func(t *testing.T) {
-			n, err := ParseChunk(`concat`, "")
+			n, err := parseChunk(t, `concat`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
@@ -16325,7 +16470,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("missing elements: newline", func(t *testing.T) {
-			n, err := ParseChunk("concat\n", "")
+			n, err := parseChunk(t, "concat\n", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
@@ -16347,7 +16492,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single element", func(t *testing.T) {
-			n := MustParseChunk(`concat "a"`)
+			n := mustparseChunk(t, `concat "a"`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
 				Statements: []Node{
@@ -16369,7 +16514,7 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 		t.Run("two elements", func(t *testing.T) {
-			n := MustParseChunk(`concat "a" "b"`)
+			n := mustparseChunk(t, `concat "a" "b"`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, nil},
 				Statements: []Node{
@@ -16397,7 +16542,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("expression is followed by a comma in a list", func(t *testing.T) {
-			n := MustParseChunk(`[concat "a" "b", "c"]`)
+			n := mustparseChunk(t, `[concat "a" "b", "c"]`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 21}, nil, nil},
 				Statements: []Node{
@@ -16443,7 +16588,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("spread element", func(t *testing.T) {
-			n := MustParseChunk(`concat ...a`)
+			n := mustparseChunk(t, `concat ...a`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
 				Statements: []Node{
@@ -16473,7 +16618,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("pattern identifier literal", func(t *testing.T) {
 		t.Run("pattern identifier literal", func(t *testing.T) {
-			n := MustParseChunk("%int")
+			n := mustparseChunk(t, "%int")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
 				Statements: []Node{
@@ -16486,7 +16631,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("percent only", func(t *testing.T) {
-			n, err := ParseChunk("%", "")
+			n, err := parseChunk(t, "%", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
@@ -16503,7 +16648,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("percent followed by newline", func(t *testing.T) {
-			n, err := ParseChunk("%\n", "")
+			n, err := parseChunk(t, "%\n", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
@@ -16525,7 +16670,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("pattern namespace identifier literal", func(t *testing.T) {
-		n := MustParseChunk("%mynamespace.")
+		n := mustparseChunk(t, "%mynamespace.")
 		assert.EqualValues(t, &Chunk{
 			NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
 			Statements: []Node{
@@ -16540,7 +16685,7 @@ func TestParse(t *testing.T) {
 	t.Run("object pattern", func(t *testing.T) {
 
 		// t.Run("{ ... } ", func(t *testing.T) {
-		// 	n := MustParseChunk("%{ ... }")
+		// 	n := mustparseChunk(t,"%{ ... }")
 		// 	assert.EqualValues(t, &Chunk{
 		// 		NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
 		// 		Statements: []Node{
@@ -16561,7 +16706,7 @@ func TestParse(t *testing.T) {
 		// })
 
 		// t.Run("{ ... , name: %str } ", func(t *testing.T) {
-		// 	n := MustParseChunk("%{ ... , name: %str }")
+		// 	n := mustparseChunk(t,"%{ ... , name: %str }")
 		// 	assert.EqualValues(t, &Chunk{
 		// 		NodeBase: NodeBase{NodeSpan{0, 21}, nil, nil},
 		// 		Statements: []Node{
@@ -16600,7 +16745,7 @@ func TestParse(t *testing.T) {
 		// })
 
 		// t.Run("{ ... \n } ", func(t *testing.T) {
-		// 	n := MustParseChunk("%{ ... \n }")
+		// 	n := mustparseChunk(t,"%{ ... \n }")
 		// 	assert.EqualValues(t, &Chunk{
 		// 		NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
 		// 		Statements: []Node{
@@ -16622,7 +16767,7 @@ func TestParse(t *testing.T) {
 		// })
 
 		t.Run("{ ...named-pattern } ", func(t *testing.T) {
-			n := MustParseChunk("%{ ...%patt }")
+			n := mustparseChunk(t, "%{ ...%patt }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
 				Statements: []Node{
@@ -16655,7 +16800,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("{ ...unprefixed named-pattern } ", func(t *testing.T) {
-			n := MustParseChunk("%{ ...patt }")
+			n := mustparseChunk(t, "%{ ...patt }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, nil},
 				Statements: []Node{
@@ -16689,7 +16834,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("{ prop, ...named-pattern } ", func(t *testing.T) {
-			n := MustParseChunk("%{ name: %str,  ...%patt }")
+			n := mustparseChunk(t, "%{ name: %str,  ...%patt }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 26}, nil, nil},
 				Statements: []Node{
@@ -16740,7 +16885,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("{ prop with unprefixed named pattern, ...named-pattern } ", func(t *testing.T) {
-			n := MustParseChunk("%{ name: str,  ...%patt }")
+			n := mustparseChunk(t, "%{ name: str,  ...%patt }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 25}, nil, nil},
 				Statements: []Node{
@@ -16792,7 +16937,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("{ optional prop } ", func(t *testing.T) {
-			n := MustParseChunk("%{ name?: %str }")
+			n := mustparseChunk(t, "%{ name?: %str }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
 				Statements: []Node{
@@ -16833,7 +16978,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("property value is an unprefixed list pattern", func(t *testing.T) {
-			n := MustParseChunk("%{ list: [ 1 ] }")
+			n := mustparseChunk(t, "%{ list: [ 1 ] }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
 				Statements: []Node{
@@ -16884,7 +17029,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("property value is an unprefixed union pattern", func(t *testing.T) {
-			n := MustParseChunk("%{ prop: | a | b }")
+			n := mustparseChunk(t, "%{ prop: | a | b }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 18}, nil, nil},
 				Statements: []Node{
@@ -16940,7 +17085,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("property value is an exact value pattern for an object (pattern conversion)", func(t *testing.T) {
-			n := MustParseChunk("%{ prop: %({}) }")
+			n := mustparseChunk(t, "%{ prop: %({}) }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
 				Statements: []Node{
@@ -16997,7 +17142,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("list pattern", func(t *testing.T) {
 		t.Run("single element", func(t *testing.T) {
-			n := MustParseChunk("%[ 1 ]")
+			n := mustparseChunk(t, "%[ 1 ]")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
 				Statements: []Node{
@@ -17023,7 +17168,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single element is an unprefixed named pattern", func(t *testing.T) {
-			n := MustParseChunk("%[ a ]")
+			n := mustparseChunk(t, "%[ a ]")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
 				Statements: []Node{
@@ -17049,7 +17194,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single element is an unprefixed object pattern", func(t *testing.T) {
-			n := MustParseChunk("%[{ name?: %str }]")
+			n := mustparseChunk(t, "%[{ name?: %str }]")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 18}, nil, nil},
 				Statements: []Node{
@@ -17102,7 +17247,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("two elements", func(t *testing.T) {
-			n := MustParseChunk("%[ 1, 2 ]")
+			n := mustparseChunk(t, "%[ 1, 2 ]")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
 				Statements: []Node{
@@ -17134,7 +17279,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("general element", func(t *testing.T) {
-			n := MustParseChunk("%[]%int")
+			n := mustparseChunk(t, "%[]%int")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
 				Statements: []Node{
@@ -17158,7 +17303,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("general element is an unprefixed named pattern", func(t *testing.T) {
-			n := MustParseChunk("%[]int")
+			n := mustparseChunk(t, "%[]int")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
 				Statements: []Node{
@@ -17183,7 +17328,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("general element is an unprefixed object pattern", func(t *testing.T) {
-			n := MustParseChunk("%[]{ name?: %str }")
+			n := mustparseChunk(t, "%[]{ name?: %str }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 18}, nil, nil},
 				Statements: []Node{
@@ -17237,7 +17382,7 @@ func TestParse(t *testing.T) {
 		//TODO: add more tests
 
 		t.Run("elements and general element", func(t *testing.T) {
-			n, err := ParseChunk("%[1]%int", "")
+			n, err := parseChunk(t, "%[1]%int", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
@@ -17270,7 +17415,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("pattern definition", func(t *testing.T) {
 		t.Run("RHS is a pattern identifier literal ", func(t *testing.T) {
-			n := MustParseChunk("%i = %int")
+			n := mustparseChunk(t, "%i = %int")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
 				Statements: []Node{
@@ -17294,7 +17439,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("lazy", func(t *testing.T) {
-			n := MustParseChunk("%i = @ 1")
+			n := mustparseChunk(t, "%i = @ 1")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
 				Statements: []Node{
@@ -17321,7 +17466,7 @@ func TestParse(t *testing.T) {
 
 		t.Run("RHS is an object pattern literal", func(t *testing.T) {
 
-			n := MustParseChunk("%i = %{ a: 1 }")
+			n := mustparseChunk(t, "%i = %{ a: 1 }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, nil},
 				Statements: []Node{
@@ -17370,7 +17515,7 @@ func TestParse(t *testing.T) {
 
 		t.Run("RHS is an unprefixed object pattern literal", func(t *testing.T) {
 
-			n := MustParseChunk("%i = { a: 1 }")
+			n := mustparseChunk(t, "%i = { a: 1 }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
 				Statements: []Node{
@@ -17418,7 +17563,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("pattern definition : missing RHS", func(t *testing.T) {
-			n, err := ParseChunk("%i =", "")
+			n, err := parseChunk(t, "%i =", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
@@ -17441,7 +17586,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("pattern namespace definition", func(t *testing.T) {
-		n := MustParseChunk("%mynamespace. = {}")
+		n := mustparseChunk(t, "%mynamespace. = {}")
 		assert.EqualValues(t, &Chunk{
 			NodeBase: NodeBase{NodeSpan{0, 18}, nil, nil},
 			Statements: []Node{
@@ -17471,7 +17616,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("pattern namespace member expression", func(t *testing.T) {
-		n := MustParseChunk("%mynamespace.a")
+		n := mustparseChunk(t, "%mynamespace.a")
 		assert.EqualValues(t, &Chunk{
 			NodeBase: NodeBase{NodeSpan{0, 14}, nil, nil},
 			Statements: []Node{
@@ -17492,7 +17637,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("complex string pattern", func(t *testing.T) {
 		t.Run("one element: string literal", func(t *testing.T) {
-			n := MustParseChunk(`%str("a")`)
+			n := mustparseChunk(t, `%str("a")`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
 				Statements: []Node{
@@ -17523,7 +17668,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("one element: string literal followed by linefeed", func(t *testing.T) {
-			n := MustParseChunk("%str(\"a\"\n)")
+			n := mustparseChunk(t, "%str(\"a\"\n)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
 				Statements: []Node{
@@ -17555,7 +17700,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("one element: int literal (should fail)", func(t *testing.T) {
-			n, err := ParseChunk(`%str(1)`, "")
+			n, err := parseChunk(t, `%str(1)`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
@@ -17589,7 +17734,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("one element: rune literal", func(t *testing.T) {
-			n := MustParseChunk("%str('a')")
+			n := mustparseChunk(t, "%str('a')")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
 				Statements: []Node{
@@ -17619,7 +17764,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("one element: element is a parenthesized string literal with '*' as ocurrence", func(t *testing.T) {
-			n := MustParseChunk(`%str(("a")*)`)
+			n := mustparseChunk(t, `%str(("a")*)`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, nil},
 				Statements: []Node{
@@ -17666,7 +17811,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("one element: element is a parenthesized string literal with '=2' as ocurrence", func(t *testing.T) {
-			n := MustParseChunk(`%str(("a")=2)`)
+			n := mustparseChunk(t, `%str(("a")=2)`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
 				Statements: []Node{
@@ -17714,7 +17859,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("one element: element is a pattern identifier literal with '=2' as ocurrence", func(t *testing.T) {
-			n := MustParseChunk(`%str(%s=2)`)
+			n := mustparseChunk(t, `%str(%s=2)`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
 				Statements: []Node{
@@ -17745,7 +17890,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("one named element", func(t *testing.T) {
-			n := MustParseChunk(`%str(l:"a")`)
+			n := mustparseChunk(t, `%str(l:"a")`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
 				Statements: []Node{
@@ -17784,7 +17929,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("element name without element", func(t *testing.T) {
-			n, err := ParseChunk(`%str(l:)`, "")
+			n, err := parseChunk(t, `%str(l:)`, "")
 			assert.Error(t, err)
 			runes := []rune("%str(l:)")
 			assert.EqualValues(t, &Chunk{
@@ -17827,7 +17972,7 @@ func TestParse(t *testing.T) {
 
 		t.Run("two elements string literal elements", func(t *testing.T) {
 
-			n := MustParseChunk(`%str("a" "b")`)
+			n := mustparseChunk(t, `%str("a" "b")`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
 				Statements: []Node{
@@ -17865,7 +18010,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("pattern union", func(t *testing.T) {
-			n := MustParseChunk(`%str( (| "a" | "b" ) )`)
+			n := mustparseChunk(t, `%str( (| "a" | "b" ) )`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 22}, nil, nil},
 				Statements: []Node{
@@ -17916,7 +18061,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("pattern call", func(t *testing.T) {
 		t.Run("pattern identifier callee, no arguments", func(t *testing.T) {
-			n := MustParseChunk(`%text()`)
+			n := mustparseChunk(t, `%text()`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
 				Statements: []Node{
@@ -17940,7 +18085,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("pattern namespace member callee, no arguments", func(t *testing.T) {
-			n := MustParseChunk(`%std.text()`)
+			n := mustparseChunk(t, `%std.text()`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
 				Statements: []Node{
@@ -17971,7 +18116,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single argument", func(t *testing.T) {
-			n := MustParseChunk(`%text(1)`)
+			n := mustparseChunk(t, `%text(1)`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
 				Statements: []Node{
@@ -18004,7 +18149,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("two arguments", func(t *testing.T) {
-			n := MustParseChunk(`%text(1,2)`)
+			n := mustparseChunk(t, `%text(1,2)`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
 				Statements: []Node{
@@ -18045,7 +18190,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unexpected char in arguments", func(t *testing.T) {
-			n, err := ParseChunk(`%text(:)`, "")
+			n, err := parseChunk(t, `%text(:)`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
@@ -18082,7 +18227,7 @@ func TestParse(t *testing.T) {
 	t.Run("pattern union", func(t *testing.T) {
 
 		t.Run("single element", func(t *testing.T) {
-			n := MustParseChunk(`%| "a"`)
+			n := mustparseChunk(t, `%| "a"`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
 				Statements: []Node{
@@ -18101,7 +18246,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single element is an unprefixed pattern", func(t *testing.T) {
-			n := MustParseChunk(`%| a`)
+			n := mustparseChunk(t, `%| a`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
 				Statements: []Node{
@@ -18120,7 +18265,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("parenthesized, single element", func(t *testing.T) {
-			n := MustParseChunk(`(%| "a")`)
+			n := mustparseChunk(t, `(%| "a")`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
 				Statements: []Node{
@@ -18147,7 +18292,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("two elements", func(t *testing.T) {
-			n := MustParseChunk(`%| "a" | "b"`)
+			n := mustparseChunk(t, `%| "a" | "b"`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, nil},
 				Statements: []Node{
@@ -18177,7 +18322,7 @@ func TestParse(t *testing.T) {
 			}, n)
 		})
 		t.Run("parenthesized, two elements", func(t *testing.T) {
-			n := MustParseChunk(`(%| "a" | "b")`)
+			n := mustparseChunk(t, `(%| "a" | "b")`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, nil},
 				Statements: []Node{
@@ -18212,7 +18357,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("assert statement", func(t *testing.T) {
 		t.Run("assert statement", func(t *testing.T) {
-			n := MustParseChunk("assert true")
+			n := mustparseChunk(t, "assert true")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
 				Statements: []Node{
@@ -18233,7 +18378,7 @@ func TestParse(t *testing.T) {
 
 		t.Run("missing expr", func(t *testing.T) {
 			code := "assert"
-			n, err := ParseChunk(code, "")
+			n, err := parseChunk(t, code, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
@@ -18260,7 +18405,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("synchronized block", func(t *testing.T) {
 		t.Run("keyword only", func(t *testing.T) {
-			n, err := ParseChunk("synchronized", "")
+			n, err := parseChunk(t, "synchronized", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, nil},
@@ -18278,7 +18423,7 @@ func TestParse(t *testing.T) {
 
 		t.Run("single value", func(t *testing.T) {
 			code := "synchronized val {}"
-			n := MustParseChunk(code)
+			n := mustparseChunk(t, code)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 19}, nil, nil},
 				Statements: []Node{
@@ -18313,7 +18458,7 @@ func TestParse(t *testing.T) {
 
 		t.Run("single value in parenthesis", func(t *testing.T) {
 			code := "synchronized(val){}"
-			n := MustParseChunk(code)
+			n := mustparseChunk(t, code)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 19}, nil, nil},
 				Statements: []Node{
@@ -18355,7 +18500,7 @@ func TestParse(t *testing.T) {
 
 		t.Run("two values", func(t *testing.T) {
 			code := "synchronized val1 val2 {}"
-			n := MustParseChunk(code)
+			n := mustparseChunk(t, code)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 25}, nil, nil},
 				Statements: []Node{
@@ -18394,7 +18539,7 @@ func TestParse(t *testing.T) {
 
 		t.Run("unexpected char", func(t *testing.T) {
 			code := "synchronized ? {}"
-			n, err := ParseChunk(code, "")
+			n, err := parseChunk(t, code, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 17}, nil, nil},
@@ -18436,7 +18581,7 @@ func TestParse(t *testing.T) {
 	t.Run("css selector", func(t *testing.T) {
 
 		t.Run("single element : type selector", func(t *testing.T) {
-			n := MustParseChunk("s!div")
+			n := mustparseChunk(t, "s!div")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
 				Statements: []Node{
@@ -18455,7 +18600,7 @@ func TestParse(t *testing.T) {
 
 		t.Run("selector followed by newline", func(t *testing.T) {
 
-			n := MustParseChunk("s!div\n")
+			n := mustparseChunk(t, "s!div\n")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
 					NodeSpan{0, 6},
@@ -18478,7 +18623,7 @@ func TestParse(t *testing.T) {
 
 		t.Run("selector followed by exclamation mark", func(t *testing.T) {
 
-			n := MustParseChunk("s!div!")
+			n := mustparseChunk(t, "s!div!")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
 				Statements: []Node{
@@ -18497,7 +18642,7 @@ func TestParse(t *testing.T) {
 
 		t.Run("selector followed by exclamation mark and an expression", func(t *testing.T) {
 
-			n := MustParseChunk("s!div! 1")
+			n := mustparseChunk(t, "s!div! 1")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
 				Statements: []Node{
@@ -18520,7 +18665,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single element : class selector", func(t *testing.T) {
-			n := MustParseChunk("s!.ab")
+			n := mustparseChunk(t, "s!.ab")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
 				Statements: []Node{
@@ -18538,7 +18683,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single element : pseudo class selector", func(t *testing.T) {
-			n := MustParseChunk("s!:ab")
+			n := mustparseChunk(t, "s!:ab")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
 				Statements: []Node{
@@ -18556,7 +18701,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single element : pseudo element selector", func(t *testing.T) {
-			n := MustParseChunk("s!::ab")
+			n := mustparseChunk(t, "s!::ab")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
 				Statements: []Node{
@@ -18574,7 +18719,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single element : pseudo element selector", func(t *testing.T) {
-			n := MustParseChunk("s!::ab")
+			n := mustparseChunk(t, "s!::ab")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
 				Statements: []Node{
@@ -18592,7 +18737,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single element : attribute selector", func(t *testing.T) {
-			n := MustParseChunk(`s![a="1"]`)
+			n := mustparseChunk(t, `s![a="1"]`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
 				Statements: []Node{
@@ -18619,7 +18764,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("direct child", func(t *testing.T) {
-			n := MustParseChunk("s!a > b")
+			n := mustparseChunk(t, "s!a > b")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
 				Statements: []Node{
@@ -18645,7 +18790,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("descendant", func(t *testing.T) {
-			n := MustParseChunk("s!a b")
+			n := mustparseChunk(t, "s!a b")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
 				Statements: []Node{
@@ -18713,7 +18858,7 @@ func TestParse(t *testing.T) {
 
 		for input, expectedOutput := range testCases {
 			t.Run("", func(t *testing.T) {
-				n := MustParseChunk(input)
+				n := mustparseChunk(t, input)
 				assert.EqualValues(t, expectedOutput, n)
 			})
 		}
@@ -18966,7 +19111,7 @@ func TestParse(t *testing.T) {
 		for _, testCase := range testCases {
 
 			t.Run(testCase.input, func(t *testing.T) {
-				n, _ := ParseChunk(testCase.input, "")
+				n, _ := parseChunk(t, testCase.input, "")
 				assert.EqualValues(t, testCase.output, n)
 			})
 		}
@@ -18974,7 +19119,7 @@ func TestParse(t *testing.T) {
 
 	t.Run("string template literal", func(t *testing.T) {
 		t.Run("pattern identifier, no interpolation", func(t *testing.T) {
-			n := MustParseChunk("%sql`SELECT * from users`")
+			n := mustparseChunk(t, "%sql`SELECT * from users`")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 25}, nil, nil},
 				Statements: []Node{
@@ -19004,7 +19149,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("pattern namespace's member, no interpolation", func(t *testing.T) {
-			n := MustParseChunk("%sql.stmt`SELECT * from users`")
+			n := mustparseChunk(t, "%sql.stmt`SELECT * from users`")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 30}, nil, nil},
 				Statements: []Node{
@@ -19041,7 +19186,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("no interpolation", func(t *testing.T) {
-			n, err := ParseChunk("%sql`SELECT * from users", "")
+			n, err := parseChunk(t, "%sql`SELECT * from users", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 24}, nil, nil},
@@ -19071,7 +19216,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("interpolation at the start", func(t *testing.T) {
-			n := MustParseChunk("%sql`{{nothing:$nothing}}SELECT * from users`")
+			n := mustparseChunk(t, "%sql`{{nothing:$nothing}}SELECT * from users`")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 45}, nil, nil},
 				Statements: []Node{
@@ -19116,7 +19261,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("interpolation (variable) at the end", func(t *testing.T) {
-			n := MustParseChunk("%sql`SELECT * from users{{nothing:$nothing}}`")
+			n := mustparseChunk(t, "%sql`SELECT * from users{{nothing:$nothing}}`")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 45}, nil, nil},
 				Statements: []Node{
@@ -19161,7 +19306,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("interpolation (identifier) at the end", func(t *testing.T) {
-			n := MustParseChunk("%sql`SELECT * from users{{nothing:nothing}}`")
+			n := mustparseChunk(t, "%sql`SELECT * from users{{nothing:nothing}}`")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 44}, nil, nil},
 				Statements: []Node{
@@ -19206,7 +19351,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("interpolation type containing a '.'", func(t *testing.T) {
-			n := MustParseChunk("%sql`{{ab.cdef:1}}SELECT * from users`")
+			n := mustparseChunk(t, "%sql`{{ab.cdef:1}}SELECT * from users`")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 38}, nil, nil},
 				Statements: []Node{
@@ -19252,7 +19397,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("interpolation with expression of len 1", func(t *testing.T) {
-			n := MustParseChunk("%sql`{{nothing:1}}SELECT * from users`")
+			n := mustparseChunk(t, "%sql`{{nothing:1}}SELECT * from users`")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 38}, nil, nil},
 				Statements: []Node{
@@ -19298,7 +19443,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("unterminated (no interpolatipn)", func(t *testing.T) {
-			n, err := ParseChunk("%sql`SELECT * from users", "")
+			n, err := parseChunk(t, "%sql`SELECT * from users", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 24}, nil, nil},
@@ -19328,7 +19473,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("empty interpolation at the end", func(t *testing.T) {
-			n, err := ParseChunk("%sql`SELECT * from users{{}}`", "")
+			n, err := parseChunk(t, "%sql`SELECT * from users{{}}`", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 29}, nil, nil},
@@ -19372,7 +19517,7 @@ func TestParse(t *testing.T) {
 			}, n)
 
 			t.Run("no pattern, interpolation at the start", func(t *testing.T) {
-				n := MustParseChunk("`{{$nothing}}SELECT * from users`")
+				n := mustparseChunk(t, "`{{$nothing}}SELECT * from users`")
 				assert.EqualValues(t, &Chunk{
 					NodeBase: NodeBase{NodeSpan{0, 33}, nil, nil},
 					Statements: []Node{
@@ -19412,7 +19557,7 @@ func TestParse(t *testing.T) {
 			})
 
 			t.Run("no pattern, interpolation + line feed", func(t *testing.T) {
-				n := MustParseChunk("`{{$nothing}}\n`")
+				n := mustparseChunk(t, "`{{$nothing}}\n`")
 				assert.EqualValues(t, &Chunk{
 					NodeBase: NodeBase{NodeSpan{0, 15}, nil, nil},
 					Statements: []Node{
@@ -19452,7 +19597,7 @@ func TestParse(t *testing.T) {
 			})
 
 			t.Run("no pattern, interpolation + escaped n", func(t *testing.T) {
-				n := MustParseChunk("`{{$nothing}}\\n`")
+				n := mustparseChunk(t, "`{{$nothing}}\\n`")
 				assert.EqualValues(t, &Chunk{
 					NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
 					Statements: []Node{
@@ -19496,7 +19641,7 @@ func TestParse(t *testing.T) {
 	t.Run("XML expression", func(t *testing.T) {
 
 		t.Run("no children: 0 characters", func(t *testing.T) {
-			n := MustParseChunk("h<div></div>")
+			n := mustparseChunk(t, "h<div></div>")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, nil},
 				Statements: []Node{
@@ -19550,7 +19695,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("attribute with value", func(t *testing.T) {
-			n := MustParseChunk(`h<div a="b"></div>`)
+			n := mustparseChunk(t, `h<div a="b"></div>`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 18}, nil, nil},
 				Statements: []Node{
@@ -19622,7 +19767,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("attribute with value, follwoed by space", func(t *testing.T) {
-			n := MustParseChunk(`h<div a="b" ></div>`)
+			n := mustparseChunk(t, `h<div a="b" ></div>`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 19}, nil, nil},
 				Statements: []Node{
@@ -19694,7 +19839,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("attribute with invalid name with value", func(t *testing.T) {
-			n, err := ParseChunk(`h<div "a"="b"></div>`, "")
+			n, err := parseChunk(t, `h<div "a"="b"></div>`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 20}, nil, nil},
@@ -19772,7 +19917,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("attribute with missing value after '='", func(t *testing.T) {
-			n, err := ParseChunk(`h<div a=></div>`, "")
+			n, err := parseChunk(t, `h<div a=></div>`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 15}, nil, nil},
@@ -19847,7 +19992,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("attribute with missing value after '='", func(t *testing.T) {
-			n, err := ParseChunk(`h<div a=></div>`, "")
+			n, err := parseChunk(t, `h<div a=></div>`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 15}, nil, nil},
@@ -19922,7 +20067,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("attribute with only name", func(t *testing.T) {
-			n := MustParseChunk(`h<div a></div>`)
+			n := mustparseChunk(t, `h<div a></div>`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, nil},
 				Statements: []Node{
@@ -19985,7 +20130,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("two attributes with value", func(t *testing.T) {
-			n := MustParseChunk(`h<div a="b" c="d"></div>`)
+			n := mustparseChunk(t, `h<div a="b" c="d"></div>`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 24}, nil, nil},
 				Statements: []Node{
@@ -20073,7 +20218,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("single space", func(t *testing.T) {
-			n := MustParseChunk("h<div> </div>")
+			n := mustparseChunk(t, "h<div> </div>")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
 				Statements: []Node{
@@ -20127,7 +20272,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("linefeed", func(t *testing.T) {
-			n := MustParseChunk("h<div>\n</div>")
+			n := mustparseChunk(t, "h<div>\n</div>")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
 				Statements: []Node{
@@ -20181,7 +20326,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("leading interpolation", func(t *testing.T) {
-			n := MustParseChunk("h<div>{1}2</div>")
+			n := mustparseChunk(t, "h<div>{1}2</div>")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
 				Statements: []Node{
@@ -20255,7 +20400,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("trailing interpolation", func(t *testing.T) {
-			n := MustParseChunk("h<div>1{2}</div>")
+			n := mustparseChunk(t, "h<div>1{2}</div>")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
 				Statements: []Node{
@@ -20329,7 +20474,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("XML expression within interpolation", func(t *testing.T) {
-			n := MustParseChunk("h<div>{h<div></div>}2</div>")
+			n := mustparseChunk(t, "h<div>{h<div></div>}2</div>")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 27}, nil, nil},
 				Statements: []Node{
@@ -20443,7 +20588,7 @@ func TestParse(t *testing.T) {
 		})
 
 		t.Run("empty interpolation", func(t *testing.T) {
-			n, err := ParseChunk("h<div>{}</div>", "")
+			n, err := parseChunk(t, "h<div>{}</div>", "")
 			assert.Error(t, err)
 
 			assert.EqualValues(t, &Chunk{
@@ -20519,7 +20664,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("leading child element", func(t *testing.T) {
-		n := MustParseChunk("h<div><span>1</span>2</div>")
+		n := mustparseChunk(t, "h<div><span>1</span>2</div>")
 		assert.EqualValues(t, &Chunk{
 			NodeBase: NodeBase{NodeSpan{0, 27}, nil, nil},
 			Statements: []Node{
@@ -20616,7 +20761,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("linefeed followed by child element", func(t *testing.T) {
-		n := MustParseChunk("h<div>\n<span>1</span>2</div>")
+		n := mustparseChunk(t, "h<div>\n<span>1</span>2</div>")
 		assert.EqualValues(t, &Chunk{
 			NodeBase: NodeBase{NodeSpan{0, 28}, nil, nil},
 			Statements: []Node{

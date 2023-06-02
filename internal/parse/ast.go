@@ -2586,6 +2586,15 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 	}
 }
 
+func countNodes(n Node) (count int) {
+	Walk(n, func(node, parent, scopeNode Node, ancestorChain []Node, after bool) (TraversalAction, error) {
+		count += 1
+		return Continue, nil
+	}, nil)
+
+	return
+}
+
 func FindNodes[T Node](root Node, typ T, handle func(n T) bool) []T {
 	n, _ := FindNodesAndChains(root, typ, handle)
 	return n
