@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"net"
 	"net/url"
 	"path"
 	"path/filepath"
@@ -731,15 +732,26 @@ func (host Host) HasScheme() bool {
 }
 
 func (host Host) HostWithoutPort() Host {
+
+	originalHost := host
+	hasScheme := host.HasScheme()
+	if !hasScheme {
+		host = NO_SCHEME_SCHEME + host
+	}
+
 	u, err := url.Parse(string(host))
 	if err != nil {
 		panic(err)
 	}
-	_, port, ok := strings.Cut(u.Host, ":")
-	if !ok {
-		return host
+	if u.Port() == "" {
+		return originalHost
 	}
-	return Host(strings.Replace(string(host), ":"+port, "", 1))
+	hostPart, _, err := net.SplitHostPort(u.Host)
+	if err != nil {
+		panic(err)
+	}
+
+	return Host(string(originalHost.Scheme()) + "://" + hostPart)
 }
 
 func (host Host) WithoutScheme() string {
