@@ -14,7 +14,6 @@ import (
 
 	fsutil "github.com/go-git/go-billy/v5/util"
 
-	"github.com/inoxlang/inox/internal/afs"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
 	"github.com/inoxlang/inox/internal/lsp/logs"
@@ -64,15 +63,17 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 		}
 		line, column := getLineColumn(req.Position)
 		session := jsonrpc.GetSession(ctx)
+		sessionCtx := session.Context()
 
 		state, mod, _, _ := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     fpath,
-			ParsingCompilationContext: session.Context(),
+			ParsingCompilationContext: sessionCtx,
 			ParentContext:             nil,
 			Out:                       os.Stdout,
 			IgnoreNonCriticalIssues:   true,
 			AllowMissingEnvVars:       true,
-			ScriptContextFileSystem:   session.Context().GetFileSystem(),
+			PreinitFilesystem:         sessionCtx.GetFileSystem(),
+			ScriptContextFileSystem:   sessionCtx.GetFileSystem(),
 		})
 
 		if state == nil || state.SymbolicData == nil {
@@ -150,7 +151,7 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 		line, column := getLineColumn(req.Position)
 		session := jsonrpc.GetSession(ctx)
 
-		completions := getCompletions(fpath, session.Context(), line, column, session, session.Context().GetFileSystem())
+		completions := getCompletions(fpath, session.Context(), line, column, session)
 		completionIndex := 0
 
 		lspCompletions := utils.MapSlice(completions, func(completion compl.Completion) defines.CompletionItem {
@@ -202,7 +203,7 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 			logs.Println("failed to update state of document", fpath+":", fsErr)
 		}
 
-		return notifyDiagnostics(session, req.TextDocument.Uri, remoteFs, session.Context(), fls)
+		return notifyDiagnostics(session, req.TextDocument.Uri, remoteFs)
 	})
 
 	server.OnDidChangeTextDocument(func(ctx context.Context, req *defines.DidChangeTextDocumentParams) (err error) {
@@ -223,7 +224,7 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 			logs.Println("failed to update state of document", fpath+":", fsErr)
 		}
 
-		return notifyDiagnostics(session, req.TextDocument.Uri, remoteFs, session.Context(), fls)
+		return notifyDiagnostics(session, req.TextDocument.Uri, remoteFs)
 	})
 
 	server.OnDefinition(func(ctx context.Context, req *defines.DefinitionParams) (result *[]defines.LocationLink, err error) {
@@ -233,15 +234,17 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 		}
 		line, column := getLineColumn(req.Position)
 		session := jsonrpc.GetSession(ctx)
+		sessionCtx := session.Context()
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     fpath,
-			ParsingCompilationContext: session.Context(),
+			ParsingCompilationContext: sessionCtx,
 			ParentContext:             nil,
 			Out:                       os.Stdout,
 			IgnoreNonCriticalIssues:   true,
 			AllowMissingEnvVars:       true,
-			ScriptContextFileSystem:   session.Context().GetFileSystem(),
+			ScriptContextFileSystem:   sessionCtx.GetFileSystem(),
+			PreinitFilesystem:         sessionCtx.GetFileSystem(),
 		})
 
 		if state == nil || state.SymbolicData == nil {
@@ -611,7 +614,9 @@ func getPath(uri defines.URI, remoteFs bool) (string, error) {
 	return u.Path, nil
 }
 
-func getCompletions(fpath string, compilationCtx *core.Context, line, column int32, session *jsonrpc.Session, fls afs.Filesystem) []compl.Completion {
+func getCompletions(fpath string, compilationCtx *core.Context, line, column int32, session *jsonrpc.Session) []compl.Completion {
+	fls := session.Context().GetFileSystem()
+
 	state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 		Fpath:                     fpath,
 		ParsingCompilationContext: compilationCtx,
@@ -620,6 +625,7 @@ func getCompletions(fpath string, compilationCtx *core.Context, line, column int
 		IgnoreNonCriticalIssues:   true,
 		AllowMissingEnvVars:       true,
 		ScriptContextFileSystem:   fls,
+		PreinitFilesystem:         fls,
 	})
 
 	if mod == nil { //unrecoverable parsing error

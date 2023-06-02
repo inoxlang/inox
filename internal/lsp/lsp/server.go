@@ -16,9 +16,11 @@ import (
 
 type Server struct {
 	Methods
-	customMethods []*jsonrpc.MethodInfo
-	rpcServer     *jsonrpc.Server
-	ctx           *core.Context //same contxt as the JSON RPC server.
+	customMethods                []*jsonrpc.MethodInfo
+	rpcServer                    *jsonrpc.Server
+	ctx                          *core.Context //same contxt as the JSON RPC server.
+	websoketServerCertificate    string
+	websoketServerCertificateKey string
 }
 
 func NewServer(ctx *core.Context, opt *Options) *Server {
@@ -118,7 +120,12 @@ func (s *Server) startWebsocketServer(addr string) error {
 		addr = "127.0.0.1:7998"
 	}
 
-	wsServer, err := NewJsonRpcWebsocketServer(s.ctx, addr, s.rpcServer)
+	wsServer, err := NewJsonRpcWebsocketServer(s.ctx, JsonRpcWebsocketServerConfig{
+		addr:                  addr,
+		rpcServer:             s.rpcServer,
+		certificate:           s.websoketServerCertificate,
+		certificatePrivateKey: s.websoketServerCertificateKey,
+	})
 	if err != nil {
 		return err
 	}

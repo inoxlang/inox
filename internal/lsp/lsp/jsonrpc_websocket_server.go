@@ -22,7 +22,14 @@ type JsonRpcWebsocketServer struct {
 	logger     *zerolog.Logger
 }
 
-func NewJsonRpcWebsocketServer(ctx *core.Context, addr string, rpcServer *jsonrpc.Server) (*JsonRpcWebsocketServer, error) {
+type JsonRpcWebsocketServerConfig struct {
+	addr                  string
+	certificate           string
+	certificatePrivateKey string
+	rpcServer             *jsonrpc.Server
+}
+
+func NewJsonRpcWebsocketServer(ctx *core.Context, config JsonRpcWebsocketServerConfig) (*JsonRpcWebsocketServer, error) {
 
 	logger := *ctx.Logger()
 	logger = logger.With().Str(core.SOURCE_LOG_FIELD_NAME, JSON_RPC_SERVER_LOGC_SRC).Logger()
@@ -35,10 +42,14 @@ func NewJsonRpcWebsocketServer(ctx *core.Context, addr string, rpcServer *jsonrp
 	server := &JsonRpcWebsocketServer{
 		wsServer:  wsServer,
 		logger:    &logger,
-		rpcServer: rpcServer,
+		rpcServer: config.rpcServer,
 	}
 
-	httpServer, err := http_ns.NewGolangHttpServer(addr, http.HandlerFunc(server.handleNew), "", "", ctx)
+	httpServer, err := http_ns.NewGolangHttpServer(
+		config.addr, http.HandlerFunc(server.handleNew),
+		config.certificate, config.certificatePrivateKey,
+		ctx,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTPS server: %w", err)
 	}

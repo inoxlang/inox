@@ -46,6 +46,8 @@ func StartLspServer(ctx *core.Context, config *core.Object) error {
 	childCtx := ctx.BoundChild()
 
 	var host core.Host
+	var cert string
+	var certKey string
 	var onSessionHandler *core.InoxFunction
 
 	err := config.ForEachEntry(func(k string, v core.Value) error {
@@ -60,6 +62,10 @@ func StartLspServer(ctx *core.Context, config *core.Object) error {
 				return errors.New("on-session handler function is not sharable " + msg)
 			}
 			onSessionHandler.Share(state)
+		case "certificate":
+			cert = v.(core.StringLike).GetOrBuildString()
+		case "certiticate-key":
+			certKey = v.(*core.Secret).StringValue().GetOrBuildString()
 		}
 		return nil
 	})
@@ -74,7 +80,9 @@ func StartLspServer(ctx *core.Context, config *core.Object) error {
 
 	return lsp.StartLSPServer(childCtx, lsp.LSPServerOptions{
 		Websocket: &lsp.WebsocketOptions{
-			Addr: host.WithoutScheme(),
+			Addr:                  host.WithoutScheme(),
+			Certificate:           cert,
+			CertificatePrivateKey: certKey,
 		},
 		UseContextLogger: true,
 		RemoteFS:         true,

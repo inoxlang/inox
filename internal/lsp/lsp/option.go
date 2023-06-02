@@ -9,8 +9,11 @@ import (
 
 type Options struct {
 	// if Network is null, will use stdio
-	Network   string
-	Address   string
+	Network                 string
+	Address                 string
+	WebsocketCertificate    string
+	WebsocketCertificateKey string
+
 	OnSession jsonrpc.SessionCreationCallbackFn
 
 	StdioInput  io.Reader

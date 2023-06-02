@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io"
 
-	"github.com/inoxlang/inox/internal/afs"
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
@@ -16,7 +15,10 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, remoteFs bool, compilationCtx *core.Context, fls afs.Filesystem) error {
+func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, remoteFs bool) error {
+	sessionCtx := session.Context()
+	fls := sessionCtx.GetFileSystem()
+
 	fpath, err := getFilePath(docURI, remoteFs)
 	if err != nil {
 		return err
@@ -27,12 +29,13 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, rem
 
 	state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 		Fpath:                     fpath,
-		ParsingCompilationContext: compilationCtx,
+		ParsingCompilationContext: sessionCtx,
 		ParentContext:             nil,
 		Out:                       io.Discard,
 		IgnoreNonCriticalIssues:   true,
 		AllowMissingEnvVars:       true,
 		ScriptContextFileSystem:   fls,
+		PreinitFilesystem:         fls,
 	})
 
 	if mod == nil { //unrecoverable parsing error
