@@ -63,13 +63,46 @@ func TestCheck(t *testing.T) {
 			assert.Error(t, expectedErr, err)
 		})
 
-		t.Run("duplicate explicit keys", func(t *testing.T) {
+		t.Run("duplicate explicit keys (two string literals)", func(t *testing.T) {
 			n, src := parseCode(`{"0":1, "0": 1}`)
 
 			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := combineErrors(
 				makeError(keyNode, src, fmtDuplicateKey("0")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("duplicate explicit keys (one identifier & one string)", func(t *testing.T) {
+			n, src := parseCode(`{a:1, "a": 1}`)
+
+			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := combineErrors(
+				makeError(keyNode, src, fmtDuplicateKey("a")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("duplicate explicit keys (one string & one identifier)", func(t *testing.T) {
+			n, src := parseCode(`{a:1, "a": 1}`)
+
+			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := combineErrors(
+				makeError(keyNode, src, fmtDuplicateKey("a")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("duplicate explicit keys (two identifiers)", func(t *testing.T) {
+			n, src := parseCode(`{a:1, "a": 1}`)
+
+			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := combineErrors(
+				makeError(keyNode, src, fmtDuplicateKey("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
