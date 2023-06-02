@@ -15,11 +15,12 @@ const (
 	PERMS_SECTION_SHOULD_BE_AN_OBJECT               = "the 'permissions' section of the manifest should be an object"
 	IMPLICIT_KEY_PROPS_NOT_ALLOWED_IN_PERMS_SECTION = "implicit key properties are not allowed in the 'permissions' section"
 
-	LIMITS_SECTION_SHOULD_BE_AN_OBJECT             = "the '" + MANIFEST_LIMITS_SECTION_NAME + "' section of the manifest should be an object"
-	ENV_SECTION_SHOULD_BE_AN_OBJECT_PATTERN        = "the '" + MANIFEST_ENV_SECTION_NAME + "env' section of the manifest should be an object pattern literal"
-	PARAMS_SECTION_SHOULD_BE_AN_OBJECT             = "the '" + MANIFEST_PARAMS_SECTION_NAME + "' section of the manifest should be an object literal"
-	PREINIT_FILES_SECTION_SHOULD_BE_AN_OBJECT      = "the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section of the manifest should be an object literal"
-	PREINIT_FILES__FILE_CONFIG_SHOULD_BE_AN_OBJECT = "the description of each file in the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section of the manifest should be an object literal"
+	LIMITS_SECTION_SHOULD_BE_AN_OBJECT                 = "the '" + MANIFEST_LIMITS_SECTION_NAME + "' section of the manifest should be an object"
+	ENV_SECTION_SHOULD_BE_AN_OBJECT_PATTERN            = "the '" + MANIFEST_ENV_SECTION_NAME + "env' section of the manifest should be an object pattern literal"
+	PARAMS_SECTION_SHOULD_BE_AN_OBJECT                 = "the '" + MANIFEST_PARAMS_SECTION_NAME + "' section of the manifest should be an object literal"
+	PREINIT_FILES_SECTION_SHOULD_BE_AN_OBJECT          = "the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section of the manifest should be an object literal"
+	PREINIT_FILES__FILE_CONFIG_SHOULD_BE_AN_OBJECT     = "the description of each file in the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section of the manifest should be an object literal"
+	PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_ABSOLUTE = "the ." + MANIFEST_PREINIT_FILE__PATH_PROP_NAME + " of each file in the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section (manifest) should be absolute"
 
 	HOST_RESOL_SECTION_SHOULD_BE_A_DICT = "the '" + MANIFEST_HOST_RESOLUTION_SECTION_NAME + "' section of the manifest should be a dictionary"
 

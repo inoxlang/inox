@@ -1573,6 +1573,16 @@ func checkManifestObject(objLit *parse.ObjectLiteral, ignoreUnknownSections bool
 			if len(n.SpreadElements) != 0 {
 				onError(n, NO_SPREAD_IN_MANIFEST)
 			}
+			shallowCheckObjectRecordProperties(n.Properties, nil, true, func(n parse.Node, msg string) {
+				onError(n, msg)
+			})
+		case *parse.RecordLiteral:
+			if len(n.SpreadElements) != 0 {
+				onError(n, NO_SPREAD_IN_MANIFEST)
+			}
+			shallowCheckObjectRecordProperties(n.Properties, nil, false, func(n parse.Node, msg string) {
+				onError(n, msg)
+			})
 		case *parse.ListLiteral:
 			if n.HasSpreadElements() {
 				onError(n, NO_SPREAD_IN_MANIFEST)

@@ -11,6 +11,8 @@ import (
 	"sync/atomic"
 
 	"github.com/go-git/go-billy/v5"
+
+	"github.com/inoxlang/inox/internal/afs"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
 	permkind "github.com/inoxlang/inox/internal/permkind"
@@ -102,7 +104,11 @@ type PreinitArgs struct {
 	GlobalConsts *parse.GlobalConstantDeclarations //only used if no running state
 	Preinit      *parse.PreinitStatement           //only used if no running state
 
-	RunningState          *TreeWalkState //optional
+	RunningState *TreeWalkState //optional
+
+	//if RunningState is nil it is used to create the temporary context.
+	PreinitFilesystem afs.Filesystem
+
 	DefaultLimitations    []Limitation
 	AddDefaultPermissions bool
 	HandleCustomType      CustomPermissionTypeHandler //optional
@@ -152,7 +158,10 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (*Manifest, *TreeWalkState, []
 
 	//we create a temporary state to evaluate some parts of the permissions
 	if preinitArgs.RunningState == nil {
-		ctx := NewContext(ContextConfig{Permissions: []Permission{GlobalVarPermission{permkind.Read, "*"}}})
+		ctx := NewContext(ContextConfig{
+			Permissions: []Permission{GlobalVarPermission{permkind.Read, "*"}},
+			Filesystem:  preinitArgs.PreinitFilesystem,
+		})
 		for k, v := range DEFAULT_NAMED_PATTERNS {
 			ctx.AddNamedPattern(k, v)
 		}
@@ -177,7 +186,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (*Manifest, *TreeWalkState, []
 			envPattern = v.(*ObjectPattern)
 		}
 
-		// pre evaluate the env section of the manifest
+		// pre evaluate the preinit-files section of the manifest
 		preinitFilesSection, ok := manifestObjLiteral.PropValue(MANIFEST_PREINIT_FILES_SECTION_NAME)
 		if ok {
 			v, err := TreeWalkEval(preinitFilesSection, state)
@@ -210,10 +219,18 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (*Manifest, *TreeWalkState, []
 					return fmt.Errorf("property .%s in description of preinit file %s is not a pattern", MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME, k)
 				}
 
+				if !path.IsAbsolute() {
+					return fmt.Errorf("property .%s in description of preinit file %s should be an absolute path", MANIFEST_PREINIT_FILE__PATH_PROP_NAME, k)
+				}
+
 				preinitFileConfigs = append(preinitFileConfigs, PreinitFileConfig{
-					name:    k,
-					path:    path,
-					pattern: pattern,
+					Name:    k,
+					Path:    path,
+					Pattern: pattern,
+					Permission: FilesystemPermission{
+						Kind_:  permkind.Read,
+						Entity: path,
+					},
 				})
 
 				return nil

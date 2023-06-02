@@ -58,12 +58,14 @@ func SetInitialWorkingDir(getWd func() (string, error)) {
 
 // A Manifest contains most of the user-defined metadata about a Module.
 type Manifest struct {
+	//note: permissions required for reading the preinit files are in .PreinitFiles.
 	RequiredPermissions []Permission
 	Limitations         []Limitation
-	HostResolutions     map[Host]Value
-	EnvPattern          *ObjectPattern
-	Parameters          ModuleParameters
-	PreinitFiles        PreinitFileConfigs
+
+	HostResolutions map[Host]Value
+	EnvPattern      *ObjectPattern
+	Parameters      ModuleParameters
+	PreinitFiles    PreinitFileConfigs
 }
 
 func NewEmptyManifest() *Manifest {
@@ -80,9 +82,10 @@ type ModuleParameters struct {
 type PreinitFileConfigs []PreinitFileConfig
 
 type PreinitFileConfig struct {
-	name    string
-	path    Path
-	pattern Pattern
+	Name       string //declared name, this is NOT the basename.
+	Path       Path   //absolute
+	Pattern    Pattern
+	Permission FilesystemPermission
 }
 
 func (p *ModuleParameters) GetArguments(ctx *Context, argObj *Object) (*Object, error) {
@@ -612,6 +615,7 @@ func createManifest(object *Object, config manifestObjectConfig) (*Manifest, err
 		HostResolutions:     hostResolutions,
 		EnvPattern:          envPattern,
 		Parameters:          moduleParams,
+		PreinitFiles:        config.preinitFileConfigs,
 	}, nil
 }
 

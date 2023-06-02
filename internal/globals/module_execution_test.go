@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/permkind"
 
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
@@ -181,6 +182,82 @@ func TestPrepareLocalScript(t *testing.T) {
 		}
 
 		if !assert.True(t, state.Ctx.HasPermission(core.CreateHttpReadPerm(core.URL("https://localhost/")))) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.Empty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
+	})
+
+	t.Run("preinit-files", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				preinit-files: {
+					FILE: {
+						path: /file.txt
+						pattern: %str
+					}
+				}
+			}
+		`), 0o600)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(
+				core.GetDefaultGlobalVarPermissions(),
+				core.CreateHttpReadPerm(core.Host("https://localhost")),
+			),
+			Filesystem: fs_ns.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx)
+
+		preinitFs := fs_ns.NewMemFilesystem(100)
+
+		state, mod, manifest, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			UseContextAsParent:        true,
+			Out:                       io.Discard,
+
+			PreinitFilesystem: preinitFs,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		//the manifest should contain the preinit config.
+
+		if !assert.Len(t, manifest.PreinitFiles, 1) {
+			return
+		}
+
+		assert.Equal(t, core.PreinitFileConfig{
+			Name:    "FILE",
+			Path:    "/file.txt",
+			Pattern: core.STR_PATTERN,
+			Permission: core.FilesystemPermission{
+				Kind_:  permkind.Read,
+				Entity: core.Path("/file.txt"),
+			},
+		}, manifest.PreinitFiles[0])
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
 			return
 		}
 
@@ -793,6 +870,33 @@ func TestRunLocalScript(t *testing.T) {
 		assert.Nil(t, state)
 	})
 
+	t.Run("a script with static check errors in the preinit-files section should not be runned", func(t *testing.T) {
+
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				preinit-files: {
+					A: {path: /a, pattern: %str},
+					A: {path: /b, pattern: %str},
+				}
+			}
+		`), 0o600)
+
+		state, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: createCompilationCtx(dir),
+			UseContextAsParent:        true,
+			ParentContext:             createEvaluationCtx(dir),
+			Out:                       io.Discard,
+			IgnoreHighRiskScore:       true,
+		})
+
+		assert.Error(t, err)
+		assert.Nil(t, state)
+	})
+
 	t.Run("too many warnings", func(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
@@ -811,6 +915,69 @@ func TestRunLocalScript(t *testing.T) {
 		})
 
 		if !assert.ErrorIs(t, err, inox_ns.ErrExecutionAbortedTooManyWarnings) {
+			return
+		}
+
+		assert.Nil(t, state)
+	})
+
+	t.Run("too wide preinit permissions", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				preinit-files: {
+					FILE1: {
+						path: /file1.txt
+						pattern: %str
+					}
+					FILE2: {
+						path: /file2.txt
+						pattern: %str
+					}
+					FILE3: {
+						path: /file3.txt
+						pattern: %str
+					}
+					FILE4: {
+						path: /file4.txt
+						pattern: %str
+					}
+					FILE5: {
+						path: /file5.txt
+						pattern: %str
+					}
+					FILE6: {
+						path: /file6.txt
+						pattern: %str
+					}
+					FILE7: {
+						path: /file7.txt
+						pattern: %str
+					}
+					FILE8: {
+						path: /file8.txt
+						pattern: %str
+					}
+					FILE9: {
+						path: /file9.txt
+						pattern: %str
+					}
+				}
+			}
+		`), 0o600)
+
+		state, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: createCompilationCtx(dir),
+			UseContextAsParent:        true,
+			ParentContext:             createEvaluationCtx(dir),
+			Out:                       io.Discard,
+			IgnoreHighRiskScore:       false, //<---
+		})
+
+		if !assert.ErrorIs(t, err, inox_ns.ErrNoProvidedConfirmExecPrompt) {
 			return
 		}
 

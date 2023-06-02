@@ -342,3 +342,7 @@ func TestParseLocalModule(t *testing.T) {
 	})
 
 }
+
+func TestManifestPreinit(t *testing.T) {
+	//TODO
+}

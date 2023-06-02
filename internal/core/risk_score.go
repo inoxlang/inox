@@ -96,7 +96,8 @@ var (
 		},
 	}
 
-	//TODO: move constants to an embedded file
+	//TODO: move constants to an embedded file.
+	//TODO: handle case where the a virtual system is used.
 	FILE_SENSITIVITY_MULTIPLIERS = []struct {
 		PathPattern
 		Multiplier int
@@ -116,8 +117,13 @@ var (
 // The current logic is intended to be a starting point, it may be adjusted based on additional research and feedback.
 func ComputeProgramRiskScore(mod *Module, manifest *Manifest) (totalScore RiskScore) {
 	permTypeRiskScores := map[reflect.Type]RiskScore{}
+	requiredPerms := utils.CopySlice(manifest.RequiredPermissions)
 
-	for _, requiredPerm := range manifest.RequiredPermissions {
+	for _, preinitFilePerm := range manifest.PreinitFiles {
+		requiredPerms = append(requiredPerms, preinitFilePerm.Permission)
+	}
+
+	for _, requiredPerm := range requiredPerms {
 		if _, ok := requiredPerm.(GlobalVarPermission); ok { //ignore
 			continue
 		}

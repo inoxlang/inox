@@ -23,6 +23,7 @@ const (
 var (
 	ErrExecutionAbortedTooManyWarnings = errors.New("execution was aborted because there are too many warnings")
 	ErrUserRefusedExecution            = errors.New("user refused execution")
+	ErrNoProvidedConfirmExecPrompt     = errors.New("risk score too high and no provided way to show confirm prompt")
 )
 
 type ScriptPreparationArgs struct {
@@ -39,6 +40,9 @@ type ScriptPreparationArgs struct {
 
 	Out    io.Writer //defaults to os.Stdout
 	LogOut io.Writer //defaults to Out
+
+	//used during the preinit
+	PreinitFilesystem afs.Filesystem
 
 	//used to create the context, it defaults to the OS filesystem
 	ScriptContextFileSystem afs.Filesystem
@@ -87,6 +91,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		manifest, preinitState, preinitStaticCheckErrors, preinitErr = mod.PreInit(core.PreinitArgs{
 			GlobalConsts:          mod.MainChunk.Node.GlobalConstantDeclarations,
 			Preinit:               mod.MainChunk.Node.Preinit,
+			PreinitFilesystem:     args.PreinitFilesystem,
 			DefaultLimitations:    default_state.GetDefaultScriptLimitations(),
 			AddDefaultPermissions: true,
 			IgnoreUnknownSections: args.IgnoreNonCriticalIssues,
@@ -279,11 +284,15 @@ type RunScriptArgs struct {
 	ParsingCompilationContext *core.Context
 	ParentContext             *core.Context
 	UseContextAsParent        bool
-	UseBytecode               bool
-	OptimizeBytecode          bool
-	ShowBytecode              bool
-	AllowMissingEnvVars       bool
-	IgnoreHighRiskScore       bool
+	//used during the preinit
+	PreinitFilesystem afs.Filesystem
+
+	UseBytecode      bool
+	OptimizeBytecode bool
+	ShowBytecode     bool
+
+	AllowMissingEnvVars bool
+	IgnoreHighRiskScore bool
 
 	//output for execution, if nil os.Stdout is used
 	Out io.Writer
@@ -305,6 +314,7 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 		UseContextAsParent:        args.UseContextAsParent,
 		Out:                       args.Out,
 		AllowMissingEnvVars:       args.AllowMissingEnvVars,
+		PreinitFilesystem:         args.PreinitFilesystem,
 	})
 
 	if err != nil {
@@ -329,7 +339,7 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 	if !args.IgnoreHighRiskScore && riskScore > config.DEFAULT_TRUSTED_RISK_SCORE {
 		waitConfirmPrompt := args.ParsingCompilationContext.GetWaitConfirmPrompt()
 		if waitConfirmPrompt == nil {
-			return nil, nil, nil, errors.New("risk score too high and no provided way to show confirm prompt")
+			return nil, nil, nil, ErrNoProvidedConfirmExecPrompt
 		}
 		msg := bytes.NewBufferString(mod.Name())
 		msg.WriteString("\nrisk score is ")
