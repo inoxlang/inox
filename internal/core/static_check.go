@@ -508,61 +508,15 @@ switch_:
 			c.addError(node, INVALID_MEM_HOST_ONLY_VALID_VALUE)
 		}
 	case *parse.ObjectLiteral:
-		indexKey := 0
-		keys := map[string]bool{}
+		action, keys := shallowCheckObjectRecordProperties(node.Properties, node.SpreadElements, true, func(n parse.Node, msg string) {
+			c.addError(n, msg)
+		})
+
+		if action != parse.Continue {
+			return action
+		}
 
 		propInfo := c.getPropertyInfo(node)
-
-		// look for duplicate keys
-		for _, prop := range node.Properties {
-			var k string
-
-			var isExplicit bool
-
-			switch n := prop.Key.(type) {
-			case *parse.QuotedStringLiteral:
-				k = n.Value
-				isExplicit = true
-			case *parse.IdentifierLiteral:
-				k = n.Name
-				isExplicit = true
-			case nil:
-				k = strconv.Itoa(indexKey)
-				indexKey++
-			}
-
-			if len(k) > MAX_NAME_BYTE_LEN {
-				c.addError(prop.Key, fmtNameIsTooLong(k))
-			}
-
-			if parse.IsMetadataKey(k) {
-				c.addError(prop.Key, OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS)
-			} else if prevIsExplicit, found := keys[k]; found {
-				if isExplicit && !prevIsExplicit {
-					c.addError(prop, fmtObjLitExplicityDeclaresPropWithImplicitKey(k))
-				} else {
-					c.addError(prop, fmtDuplicateKey(k))
-				}
-			}
-
-			keys[k] = isExplicit
-		}
-
-		// also look for duplicate keys
-		for _, element := range node.SpreadElements {
-
-			for _, key := range element.Expr.(*parse.ExtractionExpression).Keys.Keys {
-				name := key.(*parse.IdentifierLiteral).Name
-
-				_, found := keys[name]
-				if found {
-					c.addError(key, fmtDuplicateKey(name))
-					return parse.Continue
-				}
-				keys[name] = true
-			}
-		}
-
 		for k := range keys {
 			propInfo.known[k] = true
 		}
@@ -576,59 +530,12 @@ switch_:
 			}
 		}
 	case *parse.RecordLiteral:
-		indexKey := 0
-		keys := map[string]bool{}
+		action, _ := shallowCheckObjectRecordProperties(node.Properties, node.SpreadElements, false, func(n parse.Node, msg string) {
+			c.addError(n, msg)
+		})
 
-		// look for duplicate keys
-		for _, prop := range node.Properties {
-			var k string
-
-			var isExplicit bool
-
-			switch n := prop.Key.(type) {
-			case *parse.QuotedStringLiteral:
-				k = n.Value
-				isExplicit = true
-			case *parse.IdentifierLiteral:
-				k = n.Name
-				isExplicit = true
-			case nil:
-				k = strconv.Itoa(indexKey)
-				indexKey++
-			}
-
-			if len(k) > MAX_NAME_BYTE_LEN {
-				c.addError(prop.Key, fmtNameIsTooLong(k))
-				return parse.Continue
-			}
-
-			if parse.IsMetadataKey(k) {
-				c.addError(prop.Key, OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS)
-			} else if prevIsExplicit, found := keys[k]; found {
-				if isExplicit && !prevIsExplicit {
-					c.addError(prop, fmtRecLitExplicityDeclaresPropWithImplicitKey(k))
-					return parse.Continue
-				}
-				c.addError(prop, fmtDuplicateKey(k))
-				return parse.Continue
-			}
-
-			keys[k] = isExplicit
-		}
-
-		// also look for duplicate keys
-		for _, element := range node.SpreadElements {
-
-			for _, key := range element.Expr.(*parse.ExtractionExpression).Keys.Keys {
-				name := key.(*parse.IdentifierLiteral).Name
-
-				_, found := keys[name]
-				if found {
-					c.addError(key, fmtDuplicateKey(name))
-					return parse.Continue
-				}
-				keys[name] = true
-			}
+		if action != parse.Continue {
+			return action
 		}
 
 	case *parse.DictionaryLiteral:
@@ -1785,13 +1692,21 @@ func checkManifestObject(objLit *parse.ObjectLiteral, ignoreUnknownSections bool
 					continue
 				}
 
-				if !fileDesc.HasNamedProp(MANIFEST_PREINIT_FILE__PATH_PROP_NAME) {
+				pathNode, ok := fileDesc.PropValue(MANIFEST_PREINIT_FILE__PATH_PROP_NAME)
+
+				if !ok {
 					onError(p, fmtMissingPropInPreinitFileDescription(MANIFEST_PREINIT_FILE__PATH_PROP_NAME, p.Name()))
+				} else {
+					_, ok := pathNode.(*parse.AbsolutePathLiteral)
+					if !ok {
+						onError(p, PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_ABSOLUTE)
+					}
 				}
 
 				if !fileDesc.HasNamedProp(MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME) {
 					onError(p, fmtMissingPropInPreinitFileDescription(MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME, p.Name()))
 				}
+
 			}
 
 		case MANIFEST_PARAMS_SECTION_NAME:
@@ -2046,6 +1961,72 @@ func checkVisibilityInitializationBlock(propInfo *propertyInfo, block *parse.Ini
 			return
 		}
 	}
+}
+
+func shallowCheckObjectRecordProperties(
+	properties []*parse.ObjectProperty,
+	spreadElements []*parse.PropertySpreadElement,
+	isObject bool,
+	addError func(n parse.Node, msg string),
+) (parse.TraversalAction, map[string]bool) {
+	indexKey := 0
+	keys := map[string]bool{}
+
+	// look for duplicate keys
+	for _, prop := range properties {
+		var k string
+
+		var isExplicit bool
+
+		switch n := prop.Key.(type) {
+		case *parse.QuotedStringLiteral:
+			k = n.Value
+			isExplicit = true
+		case *parse.IdentifierLiteral:
+			k = n.Name
+			isExplicit = true
+		case nil:
+			k = strconv.Itoa(indexKey)
+			indexKey++
+		}
+
+		if len(k) > MAX_NAME_BYTE_LEN {
+			addError(prop.Key, fmtNameIsTooLong(k))
+		}
+
+		if parse.IsMetadataKey(k) {
+			addError(prop.Key, OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS)
+		} else if prevIsExplicit, found := keys[k]; found {
+			if isExplicit && !prevIsExplicit {
+				if isObject {
+					addError(prop, fmtObjLitExplicityDeclaresPropWithImplicitKey(k))
+				} else {
+					addError(prop, fmtRecLitExplicityDeclaresPropWithImplicitKey(k))
+				}
+			} else {
+				addError(prop, fmtDuplicateKey(k))
+			}
+		}
+
+		keys[k] = isExplicit
+	}
+
+	// also look for duplicate keys
+	for _, element := range spreadElements {
+
+		for _, key := range element.Expr.(*parse.ExtractionExpression).Keys.Keys {
+			name := key.(*parse.IdentifierLiteral).Name
+
+			_, found := keys[name]
+			if found {
+				addError(key, fmtDuplicateKey(name))
+				return parse.Continue, nil
+			}
+			keys[name] = true
+		}
+	}
+
+	return parse.Continue, keys
 }
 
 // combineErrors combines errors into a single error with a multiline message.
