@@ -63,7 +63,8 @@ func (server *JsonRpcWebsocketServer) handleNew(httpRespWriter http.ResponseWrit
 		return
 	}
 
-	//TODO: set deadlines
 	socket := NewJsonRpcWebsocket(conn, *server.logger)
-	server.rpcServer.MsgConnComeIn(socket)
+	server.rpcServer.MsgConnComeIn(socket, func(session *jsonrpc.Session) {
+		socket.sessionContext = session.Context()
+	})
 }

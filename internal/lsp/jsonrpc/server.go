@@ -23,7 +23,7 @@ type Server struct {
 }
 
 // Called before starting each new JSON RPC session.
-type SessionCreationCallbackFn func(*core.Context, *Session) error
+type SessionCreationCallbackFn func(rpcServerContext *core.Context, session *Session) error
 
 func NewServer(ctx *core.Context, onSession SessionCreationCallbackFn) *Server {
 	if onSession == nil {
@@ -43,28 +43,31 @@ func NewServer(ctx *core.Context, onSession SessionCreationCallbackFn) *Server {
 	return s
 }
 
-func (s *Server) RegisterMethod(m MethodInfo) {
-	s.methods[m.Name] = m
+func (server *Server) RegisterMethod(m MethodInfo) {
+	server.methods[m.Name] = m
 }
 
-func (s *Server) ConnComeIn(conn ReaderWriter) {
-	session := s.newSession(conn)
-	if err := s.onSession(s.ctx, session); err != nil {
+func (server *Server) ConnComeIn(conn ReaderWriter) {
+	session := server.newSession(conn)
+	if err := server.onSession(server.ctx, session); err != nil {
 		return
 	}
 	if session.ctx == nil {
-		session.ctx = s.ctx.BoundChild()
+		session.ctx = server.ctx.BoundChild()
 	}
 	session.Start()
 }
 
-func (s *Server) MsgConnComeIn(conn MessageReaderWriter) {
-	session := s.newSessionWithMsgConn(conn)
-	if err := s.onSession(s.ctx, session); err != nil {
+func (server *Server) MsgConnComeIn(conn MessageReaderWriter, onCreatedSession func(session *Session)) {
+	session := server.newSessionWithMsgConn(conn)
+	if err := server.onSession(server.ctx, session); err != nil {
 		return
 	}
 	if session.ctx == nil {
-		session.ctx = s.ctx.BoundChild()
+		session.ctx = server.ctx.BoundChild()
+	}
+	if onCreatedSession != nil {
+		onCreatedSession(session)
 	}
 	session.Start()
 }

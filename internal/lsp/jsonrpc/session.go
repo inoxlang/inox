@@ -12,6 +12,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/globals/net_ns"
 	"github.com/inoxlang/inox/internal/lsp/logs"
 	jsoniter "github.com/json-iterator/go"
 )
@@ -347,8 +348,9 @@ func (s *Session) handlerResponse(id interface{}, result interface{}, err error)
 func (s *Session) handlerError(err error) {
 	isEof := errors.Is(err, io.EOF)
 	isWebsocketUnexpectedClose := websocket.IsUnexpectedCloseError(err)
+	isClosedWebsocket := errors.Is(err, net_ns.ErrClosedWebsocketConnection)
 
-	if isEof || isWebsocketUnexpectedClose {
+	if isEof || isWebsocketUnexpectedClose || isClosedWebsocket {
 		// conn done, close conn and remove session
 
 		if s.conn != nil {

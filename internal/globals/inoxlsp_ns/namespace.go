@@ -79,10 +79,11 @@ func StartLspServer(ctx *core.Context, config *core.Object) error {
 		UseContextLogger: true,
 		RemoteFS:         true,
 		OnSession: func(rpcCtx *core.Context, s *jsonrpc.Session) error {
-			fls := fs_ns.NewMemFilesystem(lsp.DEFAULT_MAX_IN_MEM_FS_STORAGE_SIZE)
+			mainFs := fs_ns.NewMemFilesystem(lsp.DEFAULT_MAX_IN_MEM_FS_STORAGE_SIZE)
+			fls := lsp.NewFilesystem(mainFs, nil)
 
 			file := Must(fls.Create("/main.ix"))
-			Must(file.Write([]byte("manifest{\n\n}")))
+			Must(file.Write([]byte("manifest {\n\n}")))
 			PanicIfErr(file.Close())
 
 			sessionCtx := core.NewContext(core.ContextConfig{
@@ -90,7 +91,7 @@ func StartLspServer(ctx *core.Context, config *core.Object) error {
 				ForbiddenPermissions: rpcCtx.GetForbiddenPermissions(),
 
 				ParentContext: rpcCtx,
-				Filesystem:    lsp.NewFilesystem(fls, nil),
+				Filesystem:    fls,
 			})
 			tempState := core.NewGlobalState(sessionCtx)
 			tempState.Logger = state.Logger
