@@ -85,7 +85,7 @@ func StartLspServer(ctx *core.Context, config *core.Object) error {
 			CertificatePrivateKey: certKey,
 		},
 		UseContextLogger: true,
-		RemoteFS:         true,
+		InoxFS:           true,
 		OnSession: func(rpcCtx *core.Context, s *jsonrpc.Session) error {
 			mainFs := fs_ns.NewMemFilesystem(lsp.DEFAULT_MAX_IN_MEM_FS_STORAGE_SIZE)
 			fls := lsp.NewFilesystem(mainFs, nil)

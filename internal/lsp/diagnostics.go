@@ -15,11 +15,11 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, remoteFs bool) error {
+func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usingInoxFS bool) error {
 	sessionCtx := session.Context()
 	fls := sessionCtx.GetFileSystem()
 
-	fpath, err := getFilePath(docURI, remoteFs)
+	fpath, err := getFilePath(docURI, usingInoxFS)
 	if err != nil {
 		return err
 	}

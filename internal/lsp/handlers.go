@@ -35,12 +35,16 @@ import (
 	"net/url"
 )
 
-var (
-	ErrFileURIExpected     = errors.New("a file: URI was expected")
-	ErrRemoteFsURIExpected = errors.New("a remotefs: URI was expected")
+const (
+	INOX_FS_SCHEME = "inox"
 )
 
-func registerHandlers(server *lsp.Server, remoteFs bool) {
+var (
+	ErrFileURIExpected = errors.New("a file: URI was expected")
+	ErrInoxURIExpected = errors.New("a inox: URI was expected")
+)
+
+func registerHandlers(server *lsp.Server, usingInoxFS bool) {
 
 	var shuttingDownSessionsLock sync.Mutex
 	shuttingDownSessions := make(map[*jsonrpc.Session]struct{})
@@ -87,7 +91,7 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 	})
 
 	server.OnHover(func(ctx context.Context, req *defines.HoverParams) (result *defines.Hover, err error) {
-		fpath, err := getFilePath(req.TextDocument.Uri, remoteFs)
+		fpath, err := getFilePath(req.TextDocument.Uri, usingInoxFS)
 		if err != nil {
 			return nil, err
 		}
@@ -173,7 +177,7 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 	})
 
 	server.OnCompletion(func(ctx context.Context, req *defines.CompletionParams) (result *[]defines.CompletionItem, err error) {
-		fpath, err := getFilePath(req.TextDocument.Uri, remoteFs)
+		fpath, err := getFilePath(req.TextDocument.Uri, usingInoxFS)
 		if err != nil {
 			return nil, err
 		}
@@ -219,7 +223,7 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 	})
 
 	server.OnDidOpenTextDocument(func(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err error) {
-		fpath, err := getFilePath(req.TextDocument.Uri, remoteFs)
+		fpath, err := getFilePath(req.TextDocument.Uri, usingInoxFS)
 		if err != nil {
 			return err
 		}
@@ -233,11 +237,11 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 			logs.Println("failed to update state of document", fpath+":", fsErr)
 		}
 
-		return notifyDiagnostics(session, req.TextDocument.Uri, remoteFs)
+		return notifyDiagnostics(session, req.TextDocument.Uri, usingInoxFS)
 	})
 
 	server.OnDidChangeTextDocument(func(ctx context.Context, req *defines.DidChangeTextDocumentParams) (err error) {
-		fpath, err := getFilePath(req.TextDocument.Uri, remoteFs)
+		fpath, err := getFilePath(req.TextDocument.Uri, usingInoxFS)
 		if err != nil {
 			return err
 		}
@@ -254,11 +258,11 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 			logs.Println("failed to update state of document", fpath+":", fsErr)
 		}
 
-		return notifyDiagnostics(session, req.TextDocument.Uri, remoteFs)
+		return notifyDiagnostics(session, req.TextDocument.Uri, usingInoxFS)
 	})
 
 	server.OnDefinition(func(ctx context.Context, req *defines.DefinitionParams) (result *[]defines.LocationLink, err error) {
-		fpath, err := getFilePath(req.TextDocument.Uri, remoteFs)
+		fpath, err := getFilePath(req.TextDocument.Uri, usingInoxFS)
 		if err != nil {
 			return nil, err
 		}
@@ -336,7 +340,7 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 		return &links, nil
 	})
 
-	if remoteFs {
+	if usingInoxFS {
 		server.OnCustom(jsonrpc.MethodInfo{
 			Name: "fs/fileStat",
 			NewRequest: func() interface{} {
@@ -347,7 +351,7 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 				fls := session.Context().GetFileSystem()
 				params := req.(*FsFileStatParams)
 
-				fpath, err := getPath(params.FileURI, remoteFs)
+				fpath, err := getPath(params.FileURI, usingInoxFS)
 				if err != nil {
 					return nil, err
 				}
@@ -384,7 +388,7 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 				fls := session.Context().GetFileSystem()
 				params := req.(*FsReadFileParams)
 
-				fpath, err := getPath(params.FileURI, remoteFs)
+				fpath, err := getPath(params.FileURI, usingInoxFS)
 				if err != nil {
 					if os.IsNotExist(err) {
 						return FsFileNotFound, nil
@@ -411,7 +415,7 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 				fls := session.Context().GetFileSystem()
 				params := req.(*FsWriteFileParams)
 
-				fpath, err := getPath(params.FileURI, remoteFs)
+				fpath, err := getPath(params.FileURI, usingInoxFS)
 				if err != nil {
 					return nil, err
 				}
@@ -491,12 +495,12 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 				fls := session.Context().GetFileSystem()
 				params := req.(*FsRenameFileParams)
 
-				path, err := getPath(params.FileURI, remoteFs)
+				path, err := getPath(params.FileURI, usingInoxFS)
 				if err != nil {
 					return nil, err
 				}
 
-				newPath, err := getPath(params.NewFileURI, remoteFs)
+				newPath, err := getPath(params.NewFileURI, usingInoxFS)
 				if err != nil {
 					return nil, err
 				}
@@ -537,7 +541,7 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 				fls := session.Context().GetFileSystem()
 				params := req.(*FsDeleteFileParams)
 
-				path, err := getPath(params.FileURI, remoteFs)
+				path, err := getPath(params.FileURI, usingInoxFS)
 				if err != nil {
 					return nil, err
 				}
@@ -564,7 +568,7 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 				fls := session.Context().GetFileSystem()
 				params := req.(*FsReadirParams)
 
-				dpath, err := getPath(params.DirURI, remoteFs)
+				dpath, err := getPath(params.DirURI, usingInoxFS)
 				if err != nil {
 					return nil, err
 				}
@@ -599,7 +603,7 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 				fls := session.Context().GetFileSystem()
 				params := req.(*FsCreateDirParams)
 
-				path, err := getPath(params.DirURI, remoteFs)
+				path, err := getPath(params.DirURI, usingInoxFS)
 				if err != nil {
 					return nil, err
 				}
@@ -616,29 +620,29 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 
 }
 
-func getFilePath(uri defines.DocumentUri, remoteFs bool) (string, error) {
+func getFilePath(uri defines.DocumentUri, usingInoxFs bool) (string, error) {
 	u, err := url.Parse(string(uri))
 	if err != nil {
 		return "", fmt.Errorf("invalid URI: %s: %w", uri, err)
 	}
-	if remoteFs && u.Scheme != "remotefs" {
-		return "", fmt.Errorf("%w, URI is: %s", ErrRemoteFsURIExpected, string(uri))
+	if usingInoxFs && u.Scheme != INOX_FS_SCHEME {
+		return "", fmt.Errorf("%w, URI is: %s", ErrInoxURIExpected, string(uri))
 	}
-	if !remoteFs && u.Scheme != "file" {
+	if !usingInoxFs && u.Scheme != "file" {
 		return "", fmt.Errorf("%w, URI is: %s", ErrFileURIExpected, string(uri))
 	}
 	return u.Path, nil
 }
 
-func getPath(uri defines.URI, remoteFs bool) (string, error) {
+func getPath(uri defines.URI, usingInoxFS bool) (string, error) {
 	u, err := url.Parse(string(uri))
 	if err != nil {
 		return "", fmt.Errorf("invalid URI: %s: %w", uri, err)
 	}
-	if remoteFs && u.Scheme != "remotefs" {
-		return "", fmt.Errorf("%w, actual is: %s", ErrRemoteFsURIExpected, string(uri))
+	if usingInoxFS && u.Scheme != INOX_FS_SCHEME {
+		return "", fmt.Errorf("%w, actual is: %s", ErrInoxURIExpected, string(uri))
 	}
-	if !remoteFs && u.Scheme != "file" {
+	if !usingInoxFS && u.Scheme != "file" {
 		return "", fmt.Errorf("%w, actual is: %s", ErrFileURIExpected, string(uri))
 	}
 	return u.Path, nil

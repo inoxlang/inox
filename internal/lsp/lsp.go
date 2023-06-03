@@ -39,7 +39,7 @@ type LSPServerOptions struct {
 	UseContextLogger bool
 
 	//if true the LSP server provides a remote filesystem to the client.
-	RemoteFS bool
+	InoxFS bool
 
 	OnSession jsonrpc.SessionCreationCallbackFn
 }
@@ -132,6 +132,6 @@ func StartLSPServer(ctx *core.Context, opts LSPServerOptions) (finalErr error) {
 		},
 	})
 
-	registerHandlers(server, opts.RemoteFS)
+	registerHandlers(server, opts.InoxFS)
 	return server.Run()
 }
