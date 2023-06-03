@@ -12,6 +12,7 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/permkind"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
@@ -90,6 +91,7 @@ func newWebsocketServer(ctx *Context, messageTimeout time.Duration) (*WebsocketS
 					conn.closeNoCheck()
 				}()
 
+				server.removeConnection(conn)
 			case <-server.closeMainClosingGoroutine:
 				break loop
 			}
@@ -196,6 +198,21 @@ func (s *WebsocketServer) UpgradeGoValues(rw http.ResponseWriter, r *http.Reques
 	return wsConn, nil
 }
 
+func (s *WebsocketServer) removeConnection(conn *WebsocketConnection) {
+	s.connectionMapLock.Lock()
+	defer s.connectionMapLock.Unlock()
+
+	sameIpConns, ok := s.connections[conn.remoteAddrWithPort.RemoteIp()]
+	if ok {
+		for index, c := range *sameIpConns {
+			if c == conn {
+				*sameIpConns = utils.RemoveIndexOfSlice(*sameIpConns, index)
+				break
+			}
+		}
+	}
+}
+
 func (s *WebsocketServer) Close(ctx *Context) error {
 	if !s.closingOrClosed.CompareAndSwap(false, true) {
 		return ErrClosedWebsocketServer
@@ -230,6 +247,7 @@ loop:
 				conn.closeNoCheck()
 			}()
 
+			s.removeConnection(conn)
 			remainingTime = time.Until(deadline)
 		case <-time.After(remainingTime):
 			break loop
