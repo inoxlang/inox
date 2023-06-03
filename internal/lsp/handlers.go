@@ -74,11 +74,12 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 		session := jsonrpc.GetSession(ctx)
 
 		shuttingDownSessionsLock.Lock()
-		defer shuttingDownSessionsLock.Unlock()
 
 		if _, ok := shuttingDownSessions[session]; ok {
+			shuttingDownSessionsLock.Unlock()
 			session.Close()
 		} else {
+			shuttingDownSessionsLock.Unlock()
 			return errors.New("the client should make shutdown request before sending an exit notification")
 		}
 
