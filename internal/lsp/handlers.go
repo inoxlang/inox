@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	fsutil "github.com/go-git/go-billy/v5/util"
 
@@ -41,6 +42,9 @@ var (
 
 func registerHandlers(server *lsp.Server, remoteFs bool) {
 
+	var shuttingDownSessionsLock sync.Mutex
+	shuttingDownSessions := make(map[*jsonrpc.Session]struct{})
+
 	server.OnInitialize(func(ctx context.Context, req *defines.InitializeParams) (result *defines.InitializeResult, err *defines.InitializeError) {
 		logs.Println("initialized")
 		s := &defines.InitializeResult{}
@@ -54,6 +58,31 @@ func registerHandlers(server *lsp.Server, remoteFs bool) {
 
 		s.Capabilities.CompletionProvider = &defines.CompletionOptions{}
 		return s, nil
+	})
+
+	server.OnShutdown(func(ctx context.Context, req *defines.NoParams) (err error) {
+		session := jsonrpc.GetSession(ctx)
+
+		shuttingDownSessionsLock.Lock()
+		defer shuttingDownSessionsLock.Unlock()
+
+		shuttingDownSessions[session] = struct{}{}
+		return nil
+	})
+
+	server.OnExit(func(ctx context.Context, req *defines.NoParams) (err error) {
+		session := jsonrpc.GetSession(ctx)
+
+		shuttingDownSessionsLock.Lock()
+		defer shuttingDownSessionsLock.Unlock()
+
+		if _, ok := shuttingDownSessions[session]; ok {
+			session.Close()
+		} else {
+			return errors.New("the client should make shutdown request before sending an exit notification")
+		}
+
+		return nil
 	})
 
 	server.OnHover(func(ctx context.Context, req *defines.HoverParams) (result *defines.Hover, err error) {

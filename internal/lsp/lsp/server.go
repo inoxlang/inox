@@ -18,7 +18,7 @@ type Server struct {
 	Methods
 	customMethods                []*jsonrpc.MethodInfo
 	rpcServer                    *jsonrpc.Server
-	ctx                          *core.Context //same contxt as the JSON RPC server.
+	ctx                          *core.Context //same context as the JSON RPC server.
 	websoketServerCertificate    string
 	websoketServerCertificateKey string
 }

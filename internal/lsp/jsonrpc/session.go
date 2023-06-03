@@ -14,6 +14,7 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/net_ns"
 	"github.com/inoxlang/inox/internal/lsp/logs"
+	"github.com/inoxlang/inox/internal/lsp/lsp/defines"
 	jsoniter "github.com/json-iterator/go"
 )
 
@@ -257,10 +258,13 @@ func (s *Session) handlerRequest(req RequestMessage) error {
 		return MethodNotFound
 	}
 	reqArgs := mtdInfo.NewRequest()
-	err := jsoniter.Unmarshal(req.Params, reqArgs)
-	if err != nil {
-		return ParseError
+	if _, ok := reqArgs.(*defines.NoParams); !ok {
+		err := jsoniter.Unmarshal(req.Params, reqArgs)
+		if err != nil {
+			return ParseError
+		}
 	}
+
 	s.execute(mtdInfo, req, reqArgs)
 	return nil
 }
@@ -386,6 +390,16 @@ func (s *Session) handlerError(err error) {
 
 func (s *Session) Context() *core.Context {
 	return s.ctx
+}
+
+func (s *Session) Close() error {
+	defer s.ctx.Cancel()
+
+	if s.conn != nil {
+		return s.conn.Close()
+	} else {
+		return s.msgConn.Close()
+	}
 }
 
 func (s *Session) SetContextOnce(ctx *core.Context) error {

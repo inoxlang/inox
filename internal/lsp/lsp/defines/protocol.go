@@ -10,6 +10,7 @@ type ServerCapabilities struct {
 	_ServerCapabilities
 	WorkspaceFoldersServerCapabilities
 }
+
 type InitializeParams struct {
 	_InitializeParams
 	WorkspaceFoldersInitializeParams
@@ -2730,3 +2731,5 @@ type ApplyWorkspaceEditRequest string
 const (
 	ApplyWorkspaceEditRequestType ApplyWorkspaceEditRequest = "new ProtocolRequestType<ApplyWorkspaceEditParams, ApplyWorkspaceEditResult, never, void, void>('workspace/applyEdit')"
 )
+
+type NoParams struct{}

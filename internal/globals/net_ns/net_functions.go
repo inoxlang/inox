@@ -62,10 +62,10 @@ func websocketConnect(ctx *Context, u URL, options ...Option) (*WebsocketConnect
 	}
 
 	return &WebsocketConnection{
-		conn:            c,
-		endpoint:        u,
-		messageTimeout:  DEFAULT_WS_MESSAGE_TIMEOUT,
-		originalContext: ctx,
+		conn:           c,
+		endpoint:       u,
+		messageTimeout: DEFAULT_WS_MESSAGE_TIMEOUT,
+		serverContext:  ctx,
 	}, nil
 }
 

@@ -187,8 +187,8 @@ func (s *WebsocketServer) UpgradeGoValues(rw http.ResponseWriter, r *http.Reques
 		remoteAddrWithPort: remoteAddrAndPort,
 		messageTimeout:     s.messageTimeout,
 
-		server:          s,
-		originalContext: s.originalContext,
+		server:        s,
+		serverContext: s.originalContext,
 	}
 
 	*conns = append(*conns, wsConn)

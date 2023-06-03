@@ -30,9 +30,11 @@ var methods = []method{
 	},
 	{
 		Name: "Shutdown",
+		Args: defines.NoParams{},
 	},
 	{
 		Name: "Exit",
+		Args: defines.NoParams{},
 	},
 	{
 		Name: "DidChangeConfiguration",

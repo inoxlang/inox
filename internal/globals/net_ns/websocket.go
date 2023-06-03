@@ -36,7 +36,7 @@ type WebsocketConnection struct {
 
 	server *WebsocketServer //nil on client side
 
-	originalContext *Context
+	serverContext *Context
 
 	core.NotClonableMixin
 	core.NoReprMixin
@@ -199,6 +199,6 @@ func (conn *WebsocketConnection) Close() error {
 func (conn *WebsocketConnection) closeNoCheck() error {
 	conn.conn.WriteControl(WebsocketCloseMessage, nil, time.Now().Add(SERVER_SIDE_WEBSOCKET_CLOSE_TIMEOUT))
 
-	conn.originalContext.GiveBack(WS_SIMUL_CONN_TOTAL_LIMIT_NAME, 1)
+	conn.serverContext.GiveBack(WS_SIMUL_CONN_TOTAL_LIMIT_NAME, 1)
 	return conn.conn.Close()
 }

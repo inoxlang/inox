@@ -12,8 +12,8 @@ type Methods struct {
     Opt Options
 	onInitialize func(ctx context.Context, req *defines.InitializeParams) (*defines.InitializeResult, *defines.InitializeError)
 	onInitialized func(ctx context.Context, req *defines.InitializeParams) error
-	onShutdown func(ctx context.Context, req *interface{}) error
-	onExit func(ctx context.Context, req *interface{}) error
+	onShutdown func(ctx context.Context, req *defines.NoParams) error
+	onExit func(ctx context.Context, req *defines.NoParams) error
 	onDidChangeConfiguration func(ctx context.Context, req *defines.DidChangeConfigurationParams) error
 	onDidChangeWatchedFiles func(ctx context.Context, req *defines.DidChangeWatchedFilesParams) error
 	onDidOpenTextDocument func(ctx context.Context, req *defines.DidOpenTextDocumentParams) error
@@ -117,13 +117,13 @@ func (m *Methods) initializedMethodInfo() *jsonrpc.MethodInfo {
 }
 
 
-func (m *Methods) OnShutdown(f func(ctx context.Context, req *interface{}) (err error)) {
+func (m *Methods) OnShutdown(f func(ctx context.Context, req *defines.NoParams) (err error)) {
 	m.onShutdown = f
 }
 
 
 func (m *Methods) shutdown(ctx context.Context, req interface{}) (interface{}, error) {
-	params := req.(*interface{})
+	params := req.(*defines.NoParams)
 	if m.onShutdown != nil {
 		err := m.onShutdown(ctx, params)
 		e := wrapErrorToRespError(err, 0)
@@ -141,20 +141,20 @@ func (m *Methods) shutdownMethodInfo() *jsonrpc.MethodInfo {
     return &jsonrpc.MethodInfo{
 		Name: "shutdown",
 		NewRequest: func() interface{} {
-			return nil
+			return &defines.NoParams{}
 		},
 		Handler: m.shutdown,
 	}
 }
 
 
-func (m *Methods) OnExit(f func(ctx context.Context, req *interface{}) (err error)) {
+func (m *Methods) OnExit(f func(ctx context.Context, req *defines.NoParams) (err error)) {
 	m.onExit = f
 }
 
 
 func (m *Methods) exit(ctx context.Context, req interface{}) (interface{}, error) {
-	params := req.(*interface{})
+	params := req.(*defines.NoParams)
 	if m.onExit != nil {
 		err := m.onExit(ctx, params)
 		e := wrapErrorToRespError(err, 0)
@@ -172,7 +172,7 @@ func (m *Methods) exitMethodInfo() *jsonrpc.MethodInfo {
     return &jsonrpc.MethodInfo{
 		Name: "exit",
 		NewRequest: func() interface{} {
-			return nil
+			return &defines.NoParams{}
 		},
 		Handler: m.exit,
 	}
