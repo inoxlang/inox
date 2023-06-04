@@ -8,16 +8,6 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 )
 
-const (
-	DEFAULT_MAX_IN_MEM_FS_STORAGE_SIZE = 10_000_000
-)
-
-// Filesystem is a filesystem that stores the unsaved documents in a separate filesystem.
-type Filesystem struct {
-	afs.Filesystem
-	unsavedDocuments afs.Filesystem
-}
-
 func NewDefaultFilesystem() *Filesystem {
 	return &Filesystem{
 		Filesystem:       fs_ns.GetOsFilesystem(),

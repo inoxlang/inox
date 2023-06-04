@@ -7,14 +7,10 @@ import (
 	fs_ns "github.com/inoxlang/inox/internal/globals/fs_ns"
 )
 
-// Filesystem is a filesystem that stores all files in a memory filesystem.
-type Filesystem struct {
-	*fs_ns.MemFilesystem
-}
-
 func NewDefaultFilesystem() *Filesystem {
 	return &Filesystem{
-		fs_ns.NewMemFilesystem(),
+		Filesystem:       fs_ns.NewMemFilesystem(DEFAULT_MAX_IN_MEM_FS_STORAGE_SIZE),
+		unsavedDocuments: nil,
 	}
 }
 
