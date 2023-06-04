@@ -208,3 +208,7 @@ func (f *File) info(ctx *core.Context) (core.FileInfo, error) {
 type StatCapable interface {
 	Stat() (os.FileInfo, error)
 }
+
+type SyncCapable interface {
+	Sync() error
+}

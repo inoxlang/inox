@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -106,6 +107,18 @@ func (c ContextConfig) HasParentRequiredPermissions() (firstErr error, ok bool) 
 		}
 	}
 	return nil, true
+}
+
+func NewContexWithEmptyState(config ContextConfig, out io.Writer) *Context {
+	ctx := NewContext(config)
+	state := NewGlobalState(ctx)
+
+	if out == nil {
+		out = io.Discard
+	}
+	state.Out = out
+	state.Logger = zerolog.New(out)
+	return ctx
 }
 
 // NewContext creates a new context, if a parent context is provided the embedded context.Context will be

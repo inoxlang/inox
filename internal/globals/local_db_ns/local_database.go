@@ -13,7 +13,6 @@ var (
 	ErrInvalidDatabaseDirpath = errors.New("invalid database dir path")
 	ErrDatabaseAlreadyOpen    = errors.New("database is already open")
 	ErrCannotResolveDatabase  = errors.New("cannot resolve database")
-	ErrDatabaseClosed         = errors.New("database is closed")
 	ErrCannotFindDatabaseHost = errors.New("cannot find corresponding host of database")
 	ErrInvalidDatabaseHost    = errors.New("host of database is invalid")
 	ErrInvalidPathKey         = errors.New("invalid path used as local database key")
@@ -46,7 +45,7 @@ func openDatabase(ctx *Context, r ResourceName) (*LocalDatabase, error) {
 		return nil, ErrCannotResolveDatabase
 	}
 
-	if !pth.IsDirPath() {
+	if pth.IsDirPath() {
 		return nil, ErrInvalidDatabaseDirpath
 	}
 
@@ -80,7 +79,10 @@ func openDatabase(ctx *Context, r ResourceName) (*LocalDatabase, error) {
 	defer func() {
 		dbRegistry.lock.Unlock()
 	}()
-	db, err := NewLocalDatabase(LocalDatabaseConfig{Path: pth, Host: host})
+	db, err := openLocalDatabaseWithConfig(ctx, LocalDatabaseConfig{
+		Path: pth,
+		Host: host,
+	})
 	if err == nil {
 		dbRegistry.openDatabases[pth] = db
 		return db, nil
@@ -91,9 +93,9 @@ func openDatabase(ctx *Context, r ResourceName) (*LocalDatabase, error) {
 
 // A LocalDatabase is a database thats stores data on the filesystem.
 type LocalDatabase struct {
-	host       Host
-	path       Path
-	underlying underlying
+	host Host
+	path Path
+	kv   *KVStore
 }
 
 type LocalDatabaseConfig struct {
@@ -102,39 +104,39 @@ type LocalDatabaseConfig struct {
 	InMemory bool
 }
 
-func NewLocalDatabase(config LocalDatabaseConfig) (*LocalDatabase, error) {
-
+func openLocalDatabaseWithConfig(ctx *core.Context, config LocalDatabaseConfig) (*LocalDatabase, error) {
 	if config.InMemory {
 		config.Path = ""
 	}
 
-	underlying, err := openUnderlying(config)
+	kv, err := openKvWrapperNoPermCheck(config, ctx.GetFileSystem())
 	if err != nil {
 		return nil, err
 	}
 
 	localDB := &LocalDatabase{
-		path:       config.Path,
-		underlying: underlying,
+		host: config.Host,
+		path: config.Path,
+		kv:   kv,
 	}
 
 	return localDB, nil
 }
 
-func (ldb *LocalDatabase) Close() {
-	ldb.underlying.close()
+func (ldb *LocalDatabase) Close(ctx *core.Context) {
+	ldb.kv.close(ctx)
 }
 
 func (ldb *LocalDatabase) Get(ctx *Context, key Path) (Value, Bool) {
-	return ldb.underlying.get(ctx, key, ldb)
+	return ldb.kv.get(ctx, key, ldb)
 }
 
 func (ldb *LocalDatabase) Has(ctx *Context, key Path) Bool {
-	return ldb.underlying.has(ctx, key, ldb)
+	return ldb.kv.has(ctx, key, ldb)
 }
 
 func (ldb *LocalDatabase) Set(ctx *Context, key Path, value Value) {
-	ldb.underlying.set(ctx, key, value, ldb)
+	ldb.kv.set(ctx, key, value, ldb)
 }
 
 func (ldb *LocalDatabase) GetFullResourceName(key Path) ResourceName {
