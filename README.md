@@ -452,5 +452,13 @@ TODO: explain
 - `cd` into the directory
 - run `go build cmd/inox/inox.go`
 
+## Early Sponsors
 
+<table>
+  <tr>
+   <td align="center"><a href="https://github.com/Lexterl33t"><img src="https://avatars.githubusercontent.com/u/44911576?v=4&s=120" width="120" alt="Lexter"/><br />Lexter</a></td>
+   <td align="center"><a href="https://github.com/datamixio"><img src="https://avatars.githubusercontent.com/u/8696011?v=4&s=120" 
+   width="120" alt="Datamix.io"/><br />Datamix.io</a></td>
+  </tr>
+</table>
 
