@@ -691,7 +691,6 @@ other_pattern = %{
         creation-date: date
     }
 }
-
 ```
 
 ⚠️ By default object patterns are **inexact**: they accept additional properties.
@@ -736,7 +735,7 @@ two_pair_pattern = %[ [int, str], [int, str] ]
 
 ## Named Patterns
 
-Named patterns are equivalent to variables but for patterns, there are many built-in named patterns such as: `%int, %str, %bool`.
+Named patterns are equivalent to variables but for patterns, there are many built-in named patterns such as: `int, str, bool`.
 Pattern definitions allow you to declare a pattern.
 
 ```
