@@ -74,29 +74,35 @@ func TestOpenDatabase(t *testing.T) {
 		wg := new(sync.WaitGroup)
 		wg.Add(2)
 
+		var ctx1, ctx2 *core.Context
 		var db1, db2 *LocalDatabase
+
+		defer func() {
+			if db1 != nil {
+				db1.Close(ctx1)
+			}
+			if db2 != nil {
+				db2.Close(ctx2)
+			}
+		}()
 
 		go func() {
 			defer wg.Done()
 
 			//open database in first context
-			ctx1 := core.NewContexWithEmptyState(ctxConfig, nil)
+			ctx1 = core.NewContexWithEmptyState(ctxConfig, nil)
 
 			_db1, err := openDatabase(ctx1, core.Path(tempFilepath))
 			if !assert.NoError(t, err) {
 				return
 			}
 			db1 = _db1
-
-			defer func() {
-				db1.Close(ctx1)
-			}()
 		}()
 
 		go func() {
 			defer wg.Done()
 			//open same database in second context
-			ctx2 := core.NewContexWithEmptyState(ctxConfig, nil)
+			ctx2 = core.NewContexWithEmptyState(ctxConfig, nil)
 
 			_db2, err := openDatabase(ctx2, core.Path(tempFilepath))
 			if !assert.NoError(t, err) {

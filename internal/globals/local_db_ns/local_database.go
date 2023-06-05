@@ -2,7 +2,6 @@ package local_db_ns
 
 import (
 	"errors"
-	"log"
 	"sync"
 
 	core "github.com/inoxlang/inox/internal/core"
@@ -72,7 +71,7 @@ func openDatabase(ctx *Context, r ResourceName) (*LocalDatabase, error) {
 	db, ok := dbRegistry.openDatabases[pth]
 	if ok {
 		dbRegistry.lock.Unlock()
-		log.Println("db already exists !")
+		ctx.Logger().Print("reuse aready open db: " + host)
 		return db, nil
 	}
 
@@ -84,6 +83,7 @@ func openDatabase(ctx *Context, r ResourceName) (*LocalDatabase, error) {
 		Host: host,
 	})
 	if err == nil {
+		ctx.Logger().Print("register db: host is " + string(host) + ", path is " + string(pth))
 		dbRegistry.openDatabases[pth] = db
 		return db, nil
 	}
