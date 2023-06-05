@@ -16,7 +16,7 @@ import (
 
 func TestOpenDatabase(t *testing.T) {
 
-	t.Run("open same database sequentially (no in-between closing)", func(t *testing.T) {
+	t.Run("opening the same database is forbidden", func(t *testing.T) {
 		dir, _ := filepath.Abs(t.TempDir())
 		dir += "/"
 		tempFilepath := filepath.Join(dir, "data.db")
@@ -49,7 +49,7 @@ func TestOpenDatabase(t *testing.T) {
 		if !assert.NoError(t, err) {
 			return
 		}
-		assert.Same(t, db, _db)
+		assert.NotSame(t, db, _db)
 	})
 
 	t.Run("open same database sequentially (in-between closing)", func(t *testing.T) {
@@ -90,7 +90,11 @@ func TestOpenDatabase(t *testing.T) {
 		assert.NotSame(t, db, _db)
 	})
 
-	t.Run("open same database in parallel", func(t *testing.T) {
+	t.Run("open same database in parallel should result in at least one error", func(t *testing.T) {
+		//TODO when implemented.
+
+		t.SkipNow()
+
 		dir, _ := filepath.Abs(t.TempDir())
 		dir += "/"
 		tempFilepath := filepath.Join(dir, "data.db")

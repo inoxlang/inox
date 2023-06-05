@@ -16,11 +16,6 @@ var (
 	ErrInvalidDatabaseHost    = errors.New("host of database is invalid")
 	ErrInvalidPathKey         = errors.New("invalid path used as local database key")
 	ErrDatabaseNotSupported   = errors.New("database is not supported")
-
-	dbRegistry = databaseRegistry{
-		resolutions:   map[core.Host]core.Path{},
-		openDatabases: map[core.Path]*LocalDatabase{},
-	}
 )
 
 // openDatabase opens a local database, read, create & write permissions are required.
@@ -66,29 +61,12 @@ func openDatabase(ctx *Context, r ResourceName) (*LocalDatabase, error) {
 		return nil, ErrInvalidDatabaseHost
 	}
 
-	dbRegistry.lock.Lock()
-
-	db, ok := dbRegistry.openDatabases[pth]
-	if ok {
-		dbRegistry.lock.Unlock()
-		ctx.Logger().Print("reuse aready open db: " + host)
-		return db, nil
-	}
-
-	defer func() {
-		dbRegistry.lock.Unlock()
-	}()
 	db, err := openLocalDatabaseWithConfig(ctx, LocalDatabaseConfig{
 		Path: pth,
 		Host: host,
 	})
-	if err == nil {
-		ctx.Logger().Print("register db: host is " + string(host) + ", path is " + string(pth))
-		dbRegistry.openDatabases[pth] = db
-		return db, nil
-	}
 
-	return nil, err
+	return db, err
 }
 
 // A LocalDatabase is a database thats stores data on the filesystem.

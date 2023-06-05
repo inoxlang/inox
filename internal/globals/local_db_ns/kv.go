@@ -74,13 +74,6 @@ func (kv *KVStore) close(ctx *core.Context) {
 
 	logger.Print("close bluntDB")
 	kv.db.Close()
-
-	if kv.db.isClosed() {
-		dbRegistry.lock.Lock()
-		defer dbRegistry.lock.Unlock()
-
-		delete(dbRegistry.openDatabases, kv.path)
-	}
 }
 
 func (kv *KVStore) isClosed() bool {
