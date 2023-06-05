@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"testing"
 	"time"
 
@@ -62,8 +61,8 @@ func TestWebsocketServer(t *testing.T) {
 		})
 
 		serverState := core.NewGlobalState(serverCtx)
-		serverState.Logger = zerolog.New(os.Stdout)
-		serverState.Out = os.Stdout
+		serverState.Logger = zerolog.New(io.Discard)
+		serverState.Out = io.Discard
 
 		closeChan := createWebsocketServer(testWebsocketServerConfig{
 			host:           HOST,
@@ -103,8 +102,8 @@ func TestWebsocketServer(t *testing.T) {
 		})
 
 		serverState := core.NewGlobalState(serverCtx)
-		serverState.Logger = zerolog.New(os.Stdout)
-		serverState.Out = os.Stdout
+		serverState.Logger = zerolog.New(io.Discard)
+		serverState.Out = io.Discard
 
 		closeChan := createWebsocketServer(testWebsocketServerConfig{
 			host:           HOST,
@@ -156,8 +155,8 @@ func TestWebsocketServer(t *testing.T) {
 		})
 
 		serverState := core.NewGlobalState(serverCtx)
-		serverState.Logger = zerolog.New(os.Stdout)
-		serverState.Out = os.Stdout
+		serverState.Logger = zerolog.New(io.Discard)
+		serverState.Out = io.Discard
 
 		closeChan := createWebsocketServer(testWebsocketServerConfig{
 			host:           HOST,
@@ -223,8 +222,8 @@ func TestWebsocketServer(t *testing.T) {
 		})
 
 		serverState := core.NewGlobalState(serverCtx)
-		serverState.Logger = zerolog.New(os.Stdout)
-		serverState.Out = os.Stdout
+		serverState.Logger = zerolog.New(io.Discard)
+		serverState.Out = io.Discard
 
 		closeChan := createWebsocketServer(testWebsocketServerConfig{
 			host:           HOST,
