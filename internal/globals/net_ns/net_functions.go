@@ -39,13 +39,18 @@ func websocketConnect(ctx *Context, u URL, options ...Option) (*WebsocketConnect
 		}
 	}
 
+	//check that a websocket read or write-stream permission is granted
 	perm := WebsocketPermission{
-		Kind_:    permkind.Read,
+		Kind_:    permkind.WriteStream,
 		Endpoint: u,
 	}
 
 	if err := ctx.CheckHasPermission(perm); err != nil {
-		return nil, err
+		perm.Kind_ = permkind.Read
+
+		if err := ctx.CheckHasPermission(perm); err != nil {
+			return nil, err
+		}
 	}
 
 	ctx.Take(WS_SIMUL_CONN_TOTAL_LIMIT_NAME, 1)
