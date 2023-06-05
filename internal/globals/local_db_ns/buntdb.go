@@ -1,4 +1,6 @@
-//Fork of: https://github.com/tidwall/buntdb by Josh Baker (MIT licensed).
+//Original BuntDB repository: https://github.com/tidwall/buntdb by Josh Baker (MIT licensed).
+//This file contains a slightly modified version.
+//The primary change is the introduction of a filesystem parameter when creating the database.
 
 package local_db_ns
 
