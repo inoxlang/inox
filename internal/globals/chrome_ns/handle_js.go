@@ -5,7 +5,6 @@ package chrome_ns
 import (
 	"errors"
 
-	core "github.com/inoxlang/inox/internal/core"
 	html_ns "github.com/inoxlang/inox/internal/globals/html_ns"
 )
 

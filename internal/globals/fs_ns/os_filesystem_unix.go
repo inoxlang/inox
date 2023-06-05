@@ -10,7 +10,6 @@ import (
 	"github.com/go-git/go-billy/v5/osfs"
 
 	afs "github.com/inoxlang/inox/internal/afs"
-
 	core "github.com/inoxlang/inox/internal/core"
 )
 

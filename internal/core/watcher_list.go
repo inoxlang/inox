@@ -1,4 +1,4 @@
-package internal
+package core
 
 type ValueWatchers struct {
 	watchers  []Watcher //TODO: use pool

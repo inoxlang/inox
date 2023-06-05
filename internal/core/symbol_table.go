@@ -1,4 +1,4 @@
-package internal
+package core
 
 // A symbolScope represents a symbol scope during compilation.
 type symbolScope int

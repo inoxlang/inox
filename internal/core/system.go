@@ -1,4 +1,4 @@
-package internal
+package core
 
 var (
 	_ = []PotentialSystem{(*Object)(nil)}

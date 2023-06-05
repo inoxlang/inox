@@ -1,4 +1,4 @@
-package internal
+package core
 
 const (
 	MEM_HOSTNAME    = "localproc"

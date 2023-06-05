@@ -2,7 +2,7 @@
 
 package sql_ns
 
-import core "github.com/inoxlang/inox/internal/core"
+import "github.com/inoxlang/inox/internal/core"
 
 func targetSpecificInit() {
 	core.RegisterDefaultPatternNamespace("sql", &core.PatternNamespace{

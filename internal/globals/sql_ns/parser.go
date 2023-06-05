@@ -1,9 +1,8 @@
 package sql_ns
 
-import (
-	core "github.com/inoxlang/inox/internal/core"
-	//postgres
-)
+import core "github.com/inoxlang/inox/internal/core"
+
+//postgres
 
 var (
 	_ = []core.StatelessParser{&sqlQueryParser{}}

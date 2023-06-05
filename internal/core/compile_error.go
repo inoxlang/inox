@@ -1,4 +1,4 @@
-package internal
+package core
 
 import parse "github.com/inoxlang/inox/internal/parse"
 

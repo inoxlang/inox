@@ -5,7 +5,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/afs"
 	core "github.com/inoxlang/inox/internal/core"
-	internal "github.com/inoxlang/inox/internal/core"
+
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -55,7 +55,7 @@ func (kv *KVStore) close(ctx *core.Context) {
 	transactions := utils.CopyMap(kv.transactions)
 	kv.transactionMapLock.Unlock()
 
-	logger.Print("transactions to close: ", len(transactions))
+	logger.Print("number of transactions to close: ", len(transactions))
 
 	for tx, dbTx := range transactions {
 		func() {
@@ -113,7 +113,7 @@ func (kv *KVStore) get(ctx *Context, key Path, db any) (Value, Bool) {
 				return err
 			}
 
-			val, err = internal.ParseRepr(ctx, utils.StringAsBytes(item))
+			val, err = core.ParseRepr(ctx, utils.StringAsBytes(item))
 			return err
 		})
 
@@ -130,7 +130,7 @@ func (kv *KVStore) get(ctx *Context, key Path, db any) (Value, Bool) {
 		} else if err != nil {
 			panic(err)
 		} else {
-			val, err = internal.ParseRepr(ctx, utils.StringAsBytes(item))
+			val, err = core.ParseRepr(ctx, utils.StringAsBytes(item))
 
 			if err != nil {
 				panic(err)
@@ -266,8 +266,8 @@ func (kv *KVStore) set(ctx *Context, key Path, value Value, db any) {
 	}
 }
 
-func makeTxEndcallbackFn(dbtx *Tx, tx *core.Transaction, kv *KVStore) func(t *internal.Transaction, success bool) {
-	return func(t *internal.Transaction, success bool) {
+func makeTxEndcallbackFn(dbtx *Tx, tx *core.Transaction, kv *KVStore) func(t *core.Transaction, success bool) {
+	return func(t *core.Transaction, success bool) {
 		kv.transactionMapLock.Lock()
 		delete(kv.transactions, tx)
 		kv.transactionMapLock.Unlock()

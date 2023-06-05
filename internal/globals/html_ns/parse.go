@@ -4,10 +4,9 @@ import (
 	"errors"
 	"strings"
 
+	core "github.com/inoxlang/inox/internal/core"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
-
-	core "github.com/inoxlang/inox/internal/core"
 )
 
 func init() {

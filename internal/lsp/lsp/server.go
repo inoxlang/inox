@@ -5,11 +5,10 @@ import (
 	"net"
 	"reflect"
 
+	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
 	"github.com/inoxlang/inox/internal/lsp/logs"
 	"github.com/inoxlang/inox/internal/permkind"
-
-	core "github.com/inoxlang/inox/internal/core"
 
 	_net "github.com/inoxlang/inox/internal/globals/net_ns"
 )

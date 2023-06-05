@@ -1,4 +1,4 @@
-package internal
+package core
 
 const DEFAULT_XML_ATTR_VALUE = Str("")
 

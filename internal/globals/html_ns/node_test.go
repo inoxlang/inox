@@ -4,9 +4,8 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestHTMLRender(t *testing.T) {

@@ -1,4 +1,4 @@
-package internal
+package core
 
 var (
 	SELF_SENSITIVE_DATA_NAMES = map[string]struct {

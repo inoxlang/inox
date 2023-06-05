@@ -1,4 +1,4 @@
-package internal
+package core
 
 // A GoValue represents a user defined Value or a core Value that is not deeply integrated with the evaluation logic.
 type GoValue interface {

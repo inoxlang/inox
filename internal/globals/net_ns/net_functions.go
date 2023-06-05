@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/miekg/dns"

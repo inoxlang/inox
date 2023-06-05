@@ -8,9 +8,9 @@ import (
 	"syscall/js"
 	"time"
 
+	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
 
-	core "github.com/inoxlang/inox/internal/core"
 	lsp "github.com/inoxlang/inox/internal/lsp"
 	"github.com/inoxlang/inox/internal/utils"
 )

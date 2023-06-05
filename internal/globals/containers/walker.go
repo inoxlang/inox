@@ -1,6 +1,6 @@
 package internal
 
-import core "github.com/inoxlang/inox/internal/core"
+import "github.com/inoxlang/inox/internal/core"
 
 var (
 	_ = []core.Walkable{(*Graph)(nil)}

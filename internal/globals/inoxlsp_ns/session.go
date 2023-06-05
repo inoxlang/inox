@@ -3,9 +3,9 @@ package inoxlsp_ns
 import (
 	"bufio"
 
+	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
 
-	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 
 	symbolic_inox_ns "github.com/inoxlang/inox/internal/globals/inoxlsp_ns/symbolic"

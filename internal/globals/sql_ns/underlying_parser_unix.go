@@ -5,9 +5,8 @@ package sql_ns
 import (
 	"strings"
 
-	core "github.com/inoxlang/inox/internal/core"
-
 	//mysql
+	core "github.com/inoxlang/inox/internal/core"
 	"github.com/pingcap/tidb/parser"
 	"github.com/pingcap/tidb/parser/ast"
 	"github.com/pingcap/tidb/parser/mysql"

@@ -1,4 +1,4 @@
-package internal
+package core
 
 var (
 	_ = []MutableLengthSequence{&List{}, &ByteSlice{}, &RuneSlice{}}

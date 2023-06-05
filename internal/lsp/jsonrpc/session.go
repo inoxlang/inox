@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/gorilla/websocket"
+
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/net_ns"
 	"github.com/inoxlang/inox/internal/lsp/logs"

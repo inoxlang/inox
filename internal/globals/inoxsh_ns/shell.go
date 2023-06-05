@@ -22,6 +22,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/config"
 	core "github.com/inoxlang/inox/internal/core"
+
 	"github.com/rs/zerolog"
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"

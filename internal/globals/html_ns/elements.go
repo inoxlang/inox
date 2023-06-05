@@ -7,6 +7,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
+
 	_html_symbolic "github.com/inoxlang/inox/internal/globals/html_ns/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/net/html"

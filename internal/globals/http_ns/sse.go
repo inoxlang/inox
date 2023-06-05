@@ -1,9 +1,9 @@
 package http_ns
 
 import (
-	core "github.com/inoxlang/inox/internal/core"
-
 	"time"
+
+	core "github.com/inoxlang/inox/internal/core"
 )
 
 type ServerSentEvent struct {

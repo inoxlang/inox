@@ -1,8 +1,6 @@
 package dom_ns
 
-import (
-	core "github.com/inoxlang/inox/internal/core"
-)
+import core "github.com/inoxlang/inox/internal/core"
 
 func init() {
 

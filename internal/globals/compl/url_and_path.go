@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/lsp/lsp/defines"
 
-	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 
 	"github.com/inoxlang/inox/internal/globals/s3_ns"

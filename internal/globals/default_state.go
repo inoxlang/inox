@@ -5,6 +5,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/config"
 	core "github.com/inoxlang/inox/internal/core"
+
 	"github.com/inoxlang/inox/internal/default_state"
 	"github.com/inoxlang/inox/internal/globals/chrome_ns"
 	_containers "github.com/inoxlang/inox/internal/globals/containers"

@@ -1,6 +1,6 @@
 package net_ns
 
-import core "github.com/inoxlang/inox/internal/core"
+import "github.com/inoxlang/inox/internal/core"
 
 func (conn *WebsocketConnection) Equal(ctx *core.Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	otherConn, ok := other.(*WebsocketConnection)

@@ -4,9 +4,8 @@ import (
 	"errors"
 	"log"
 
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/thomasjungblut/go-sstables/wal"
-
-	core "github.com/inoxlang/inox/internal/core"
 )
 
 type Database struct {

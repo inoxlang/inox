@@ -12,10 +12,11 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
 
 	"github.com/inoxlang/inox/internal/config"
-	core "github.com/inoxlang/inox/internal/core"
+
 	"github.com/inoxlang/inox/internal/default_state"
 	"github.com/inoxlang/inox/internal/permkind"
 

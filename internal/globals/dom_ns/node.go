@@ -15,6 +15,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
+
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	_dom_symbolic "github.com/inoxlang/inox/internal/globals/dom_ns/symbolic"
 

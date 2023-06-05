@@ -2,9 +2,7 @@
 
 package sql_ns
 
-import (
-	core "github.com/inoxlang/inox/internal/core"
-)
+import ()
 
 var (
 	_ = []core.StatelessParser{&sqlQueryParser{}}

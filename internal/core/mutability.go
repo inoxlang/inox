@@ -1,4 +1,4 @@
-package internal
+package core
 
 func (err Error) IsMutable() bool {
 	return false

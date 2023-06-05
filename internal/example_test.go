@@ -14,8 +14,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	core "github.com/inoxlang/inox/internal/core"
-
+	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
 
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
