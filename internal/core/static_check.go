@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -1677,48 +1677,16 @@ func checkManifestObject(objLit *parse.ObjectLiteral, ignoreUnknownSections bool
 				continue
 			}
 
-			parse.Walk(obj, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
-				if node == obj {
-					return parse.Continue, nil
-				}
+			checkPreinitFilesObject(obj, onError)
+		case MANIFEST_DATABASES_SECTION_NAME:
+			obj, ok := p.Value.(*parse.ObjectLiteral)
 
-				switch n := node.(type) {
-				case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression, *parse.ObjectLiteral,
-					*parse.ObjectProperty, *parse.PatternCallExpression, parse.SimpleValueLiteral, *parse.GlobalVariable:
-				default:
-					onError(n, fmtForbiddenNodeInPreinitFilesSection(n))
-				}
-
-				return parse.Continue, nil
-			}, nil)
-
-			for _, p := range obj.Properties {
-				if p.Value == nil {
-					continue
-				}
-				fileDesc, ok := p.Value.(*parse.ObjectLiteral)
-				if !ok {
-					onError(p.Value, PREINIT_FILES__FILE_CONFIG_SHOULD_BE_AN_OBJECT)
-					continue
-				}
-
-				pathNode, ok := fileDesc.PropValue(MANIFEST_PREINIT_FILE__PATH_PROP_NAME)
-
-				if !ok {
-					onError(p, fmtMissingPropInPreinitFileDescription(MANIFEST_PREINIT_FILE__PATH_PROP_NAME, p.Name()))
-				} else {
-					_, ok := pathNode.(*parse.AbsolutePathLiteral)
-					if !ok {
-						onError(p, PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_ABSOLUTE)
-					}
-				}
-
-				if !fileDesc.HasNamedProp(MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME) {
-					onError(p, fmtMissingPropInPreinitFileDescription(MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME, p.Name()))
-				}
-
+			if !ok {
+				onError(p, DATABASES_SECTION_SHOULD_BE_AN_OBJECT)
+				continue
 			}
 
+			checkDatabasesObject(obj, onError)
 		case MANIFEST_PARAMS_SECTION_NAME:
 			obj, ok := p.Value.(*parse.ObjectLiteral)
 
@@ -1758,6 +1726,101 @@ func checkPermissionListingObject(objLit *parse.ObjectLiteral, onError func(n pa
 		if !permkind.IsPermissionKindName(p.Name()) {
 			onError(p.Key, fmtNotValidPermissionKindName(p.Name()))
 		}
+	}
+}
+
+func checkPreinitFilesObject(obj *parse.ObjectLiteral, onError func(n parse.Node, msg string)) {
+
+	parse.Walk(obj, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
+		if node == obj {
+			return parse.Continue, nil
+		}
+
+		switch n := node.(type) {
+		case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression, *parse.ObjectLiteral,
+			*parse.ObjectProperty, *parse.PatternCallExpression, parse.SimpleValueLiteral, *parse.GlobalVariable:
+		default:
+			onError(n, fmtForbiddenNodeInPreinitFilesSection(n))
+		}
+
+		return parse.Continue, nil
+	}, nil)
+
+	for _, p := range obj.Properties {
+		if p.Value == nil {
+			continue
+		}
+		fileDesc, ok := p.Value.(*parse.ObjectLiteral)
+		if !ok {
+			onError(p.Value, PREINIT_FILES__FILE_CONFIG_SHOULD_BE_AN_OBJECT)
+			continue
+		}
+
+		pathNode, ok := fileDesc.PropValue(MANIFEST_PREINIT_FILE__PATH_PROP_NAME)
+
+		if !ok {
+			onError(p, fmtMissingPropInPreinitFileDescription(MANIFEST_PREINIT_FILE__PATH_PROP_NAME, p.Name()))
+		} else {
+			_, ok := pathNode.(*parse.AbsolutePathLiteral)
+			if !ok {
+				onError(p, PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_ABSOLUTE)
+			}
+		}
+
+		if !fileDesc.HasNamedProp(MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME) {
+			onError(p, fmtMissingPropInPreinitFileDescription(MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME, p.Name()))
+		}
+
+	}
+}
+
+func checkDatabasesObject(obj *parse.ObjectLiteral, onError func(n parse.Node, msg string)) {
+
+	parse.Walk(obj, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
+		if node == obj {
+			return parse.Continue, nil
+		}
+
+		switch n := node.(type) {
+		case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression, *parse.ObjectLiteral,
+			*parse.ObjectProperty, *parse.PatternCallExpression, parse.SimpleValueLiteral, *parse.GlobalVariable:
+		default:
+			onError(n, fmtForbiddenNodeInPreinitFilesSection(n))
+		}
+
+		return parse.Continue, nil
+	}, nil)
+
+	for _, p := range obj.Properties {
+		if p.Value == nil {
+			continue
+		}
+		fileDesc, ok := p.Value.(*parse.ObjectLiteral)
+		if !ok {
+			onError(p.Value, DATABASES__DB_CONFIG_SHOULD_BE_AN_OBJECT)
+			continue
+		}
+
+		resourceNode, ok := fileDesc.PropValue(MANIFEST_DATABASE__RESOURCE_PROP_NAME)
+
+		if !ok {
+			onError(p, fmtMissingPropInDatabaseDescription(MANIFEST_DATABASE__RESOURCE_PROP_NAME, p.Name()))
+		} else {
+			switch resourceNode.(type) {
+			case *parse.HostLiteral, *parse.URLLiteral:
+			default:
+				onError(p, DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL)
+			}
+		}
+
+		if resolutionDataNode, ok := fileDesc.PropValue(MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME); ok {
+			switch resolutionDataNode.(type) {
+			case *parse.RelativePathLiteral, *parse.AbsolutePathLiteral:
+			default:
+				onError(p, DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED)
+			}
+		}
+
 	}
 }
 

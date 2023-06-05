@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -10345,6 +10346,14 @@ func MustParseChunk(str string, opts ...parserOptions) (result *Chunk) {
 	n, err := ParseChunk(str, "<chunk>", opts...)
 	if err != nil {
 		panic(err)
+	}
+	return n
+}
+
+func MustParseExpression(str string, opts ...parserOptions) Node {
+	n, ok := ParseExpression(str)
+	if !ok {
+		panic(errors.New("invalid expression"))
 	}
 	return n
 }

@@ -15,12 +15,20 @@ const (
 	PERMS_SECTION_SHOULD_BE_AN_OBJECT               = "the 'permissions' section of the manifest should be an object"
 	IMPLICIT_KEY_PROPS_NOT_ALLOWED_IN_PERMS_SECTION = "implicit key properties are not allowed in the 'permissions' section"
 
-	LIMITS_SECTION_SHOULD_BE_AN_OBJECT                 = "the '" + MANIFEST_LIMITS_SECTION_NAME + "' section of the manifest should be an object"
-	ENV_SECTION_SHOULD_BE_AN_OBJECT_PATTERN            = "the '" + MANIFEST_ENV_SECTION_NAME + "env' section of the manifest should be an object pattern literal"
-	PARAMS_SECTION_SHOULD_BE_AN_OBJECT                 = "the '" + MANIFEST_PARAMS_SECTION_NAME + "' section of the manifest should be an object literal"
+	LIMITS_SECTION_SHOULD_BE_AN_OBJECT      = "the '" + MANIFEST_LIMITS_SECTION_NAME + "' section of the manifest should be an object"
+	ENV_SECTION_SHOULD_BE_AN_OBJECT_PATTERN = "the '" + MANIFEST_ENV_SECTION_NAME + "env' section of the manifest should be an object pattern literal"
+	PARAMS_SECTION_SHOULD_BE_AN_OBJECT      = "the '" + MANIFEST_PARAMS_SECTION_NAME + "' section of the manifest should be an object literal"
+
+	//preinit-files section
 	PREINIT_FILES_SECTION_SHOULD_BE_AN_OBJECT          = "the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section of the manifest should be an object literal"
 	PREINIT_FILES__FILE_CONFIG_SHOULD_BE_AN_OBJECT     = "the description of each file in the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section of the manifest should be an object literal"
 	PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_ABSOLUTE = "the ." + MANIFEST_PREINIT_FILE__PATH_PROP_NAME + " of each file in the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section (manifest) should be absolute"
+
+	//databases section
+	DATABASES_SECTION_SHOULD_BE_AN_OBJECT              = "the '" + MANIFEST_DATABASES_SECTION_NAME + "' section of the manifest should be an object literal"
+	DATABASES__DB_CONFIG_SHOULD_BE_AN_OBJECT           = "the description of each database in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section of the manifest should be an object literal"
+	DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL       = "the ." + MANIFEST_DATABASE__RESOURCE_PROP_NAME + " of each database in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section (manifest) should be a Host or a URL"
+	DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED = "paths are the only supported values for ." + MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME + "in a database description"
 
 	HOST_RESOL_SECTION_SHOULD_BE_A_DICT = "the '" + MANIFEST_HOST_RESOLUTION_SECTION_NAME + "' section of the manifest should be a dictionary"
 
@@ -110,6 +118,10 @@ func fmtForbiddenNodeInParametersSection(n parse.Node) string {
 
 func fmtMissingPropInPreinitFileDescription(propName, name string) string {
 	return fmt.Sprintf("missing .%s property in description of preinit file %s", propName, name)
+}
+
+func fmtMissingPropInDatabaseDescription(propName, name string) string {
+	return fmt.Sprintf("missing .%s property in description of database %s", propName, name)
 }
 
 func fmtFollowingNodeTypeNotAllowedInAssertions(n parse.Node) string {

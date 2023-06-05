@@ -229,6 +229,16 @@ func TestPreInit(t *testing.T) {
 			expectedStaticCheckErrors: []string{PERMS_SECTION_SHOULD_BE_AN_OBJECT},
 			error:                     true,
 		},
+		{
+			name: "empty_preinit_files",
+			inputModule: `manifest { 
+					preinit-files: {}
+				}`,
+			expectedPermissions: []Permission{},
+			expectedLimitations: []Limitation{},
+			expectedResolutions: nil,
+			error:               true,
+		},
 	}
 
 	for _, testCase := range testCases {

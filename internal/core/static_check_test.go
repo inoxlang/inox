@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 
 	"github.com/stretchr/testify/assert"
@@ -2230,6 +2230,78 @@ func TestCheck(t *testing.T) {
 				makeError(variable, src, fmtVarIsNotDeclared("b")),
 			)
 			assert.Equal(t, expectedErr, err)
+		})
+	})
+}
+
+//TODO: add tests for static checking of remaining manifest sections.
+
+func TestCheckDatabasesObject(t *testing.T) {
+
+	parseObject := func(s string) *parse.ObjectLiteral {
+		return parse.MustParseChunk(s).Statements[0].(*parse.ObjectLiteral)
+	}
+
+	t.Run("empty", func(t *testing.T) {
+		objLiteral := parseObject("{}")
+
+		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
+			assert.Fail(t, msg)
+		})
+	})
+
+	t.Run("single database with correct description", func(t *testing.T) {
+		objLiteral := parseObject(`
+			{
+				main: {
+					resource: ldb://main
+					resolution-data: /tmp/mydb/
+				}
+			}
+		`)
+
+		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
+			assert.Fail(t, msg)
+		})
+	})
+	t.Run("single database with missing resource property", func(t *testing.T) {
+		objLiteral := parseObject(`
+			{
+				main: {}
+			}
+		`)
+
+		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
+			assert.Equal(t, fmtMissingPropInDatabaseDescription(MANIFEST_DATABASE__RESOURCE_PROP_NAME, "main"), msg)
+		})
+	})
+
+	t.Run("single database with invalid value for the resource property", func(t *testing.T) {
+		objLiteral := parseObject(`
+			{
+				main: {
+					resource: 1
+				}
+			}
+		`)
+
+		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
+			assert.Equal(t, DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL, msg)
+		})
+	})
+
+	t.Run("single database with unsupported value for the resolution-data property", func(t *testing.T) {
+		objLiteral := parseObject(`
+			{
+				main: {
+					resource: ldb://main
+					resolution-data: 1
+				}
+			}
+		`)
+
+		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
+			assert.Equal(t, DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED, msg)
 		})
 	})
 }
