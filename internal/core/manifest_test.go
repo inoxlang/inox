@@ -22,22 +22,22 @@ func TestPreInit(t *testing.T) {
 	LimRegistry.RegisterLimitation("b", ByteRateLimitation, 0)
 
 	type testCase struct {
-		name                      string
-		inputModule               string
-		expectedPermissions       []Permission
-		expectedLimitations       []Limitation
-		expectedResolutions       map[Host]Value
-		expectedDatabaseConfigs   DatabaseConfigs
-		error                     bool
-		expectedStaticCheckErrors []string
+		name                       string
+		inputModule                string
+		expectedPermissions        []Permission
+		expectedLimitations        []Limitation
+		expectedResolutions        map[Host]Value
+		expectedPreinitFileConfigs PreinitFileConfigs
+		expectedDatabaseConfigs    DatabaseConfigs
+		error                      bool
+		expectedStaticCheckErrors  []string
 	}
 
 	var testCases = []testCase{
-
 		{
 			name: "host resolution",
 			inputModule: `
-				manifest { 
+				manifest {
 					host_resolution: :{
 						ldb://main : /mydb
 					}
@@ -57,7 +57,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "read_any_global",
-			inputModule: `manifest { 
+			inputModule: `manifest {
 					permissions: { read: {globals: "*"} }
 				}`,
 			expectedPermissions: []Permission{GlobalVarPermission{permkind.Read, "*"}},
@@ -67,9 +67,9 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "create_routine",
-			inputModule: `manifest { 
+			inputModule: `manifest {
 					permissions: {
-						create: {routines: {}} 
+						create: {routines: {}}
 					}
 				}`,
 			expectedPermissions: []Permission{RoutinePermission{permkind.Create}},
@@ -79,9 +79,9 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "create_routine",
-			inputModule: `manifest { 
+			inputModule: `manifest {
 					permissions: {
-						create: {routines: {}} 
+						create: {routines: {}}
 					}
 				}`,
 			expectedPermissions: []Permission{RoutinePermission{permkind.Create}},
@@ -95,7 +95,7 @@ func TestPreInit(t *testing.T) {
 				const (
 					URL = https://example.com/
 				)
-				manifest { 
+				manifest {
 					permissions: { read: $$URL}
 				}`,
 			expectedPermissions: []Permission{HttpPermission{permkind.Read, URL("https://example.com/")}},
@@ -105,7 +105,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "limitations",
-			inputModule: `manifest { 
+			inputModule: `manifest {
 					limits: {
 						"a": 100ms
 					}
@@ -119,7 +119,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "host_with_unsupported_scheme",
-			inputModule: `manifest { 
+			inputModule: `manifest {
 					permissions: {
 						read: mem://a.com
 					}
@@ -128,14 +128,14 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "host_pattern_with_unsupported_scheme",
-			inputModule: `manifest { 
+			inputModule: `manifest {
 					permissions: { read: %ws://*.com }
 				}`,
 			error: true,
 		},
 		{
 			name: "dns",
-			inputModule: `manifest { 
+			inputModule: `manifest {
 					permissions: {
 						read: {
 							dns: %://**.com
@@ -151,7 +151,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "dns_host_pattern_literal_with_scheme",
-			inputModule: `manifest { 
+			inputModule: `manifest {
 					permissions: {
 						read: {
 							dns: %https://**.com
@@ -162,7 +162,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "see email addresses",
-			inputModule: `manifest { 
+			inputModule: `manifest {
 					permissions: {
 						see: { values: %emailaddr }
 					}
@@ -171,7 +171,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "see email addresses & ints",
-			inputModule: `manifest { 
+			inputModule: `manifest {
 				permissions: {
 					see: { values: [%emailaddr, %int] }
 				}
@@ -185,7 +185,7 @@ func TestPreInit(t *testing.T) {
 				go {} do {}
 			}
 
-			manifest { 
+			manifest {
 				permissions: {}
 			}`,
 			expectedPermissions: []Permission{
@@ -198,7 +198,7 @@ func TestPreInit(t *testing.T) {
 		{
 			name: "invalid value for permissions section",
 			inputModule: `
-			manifest { 
+			manifest {
 				permissions: 1
 			}`,
 			expectedPermissions: []Permission{
@@ -210,13 +210,77 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "empty_preinit_files",
-			inputModule: `manifest { 
+			inputModule: `manifest {
 					preinit-files: {}
 				}`,
 			expectedPermissions: []Permission{},
 			expectedLimitations: []Limitation{},
 			expectedResolutions: nil,
 			error:               false,
+		},
+		{
+			name: "correct_preinit_file",
+			inputModule: `manifest {
+					preinit-files: {
+						F: {
+							path: /file.txt
+							pattern: %str
+						}
+					}
+				}`,
+			expectedPermissions: []Permission{},
+			expectedLimitations: []Limitation{},
+			expectedPreinitFileConfigs: PreinitFileConfigs{
+				{
+					Name:               "F",
+					Path:               "/file.txt",
+					Pattern:            STR_PATTERN,
+					RequiredPermission: CreateFsReadPerm(Path("/file.txt")),
+				},
+			},
+			expectedResolutions: nil,
+			error:               false,
+		},
+		{
+			name: "several_correct_preinit_files",
+			inputModule: `manifest {
+					preinit-files: {
+						F1: {
+							path: /file1.txt
+							pattern: %str
+						}
+						F2: {
+							path: /file2.txt
+							pattern: %str
+						}
+					}
+				}`,
+			expectedPermissions: []Permission{},
+			expectedLimitations: []Limitation{},
+			expectedPreinitFileConfigs: PreinitFileConfigs{
+				{
+					Name:               "F1",
+					Path:               "/file1.txt",
+					Pattern:            STR_PATTERN,
+					RequiredPermission: CreateFsReadPerm(Path("/file1.txt")),
+				},
+				{
+					Name:               "F2",
+					Path:               "/file2.txt",
+					Pattern:            STR_PATTERN,
+					RequiredPermission: CreateFsReadPerm(Path("/file2.txt")),
+				},
+			},
+			expectedResolutions: nil,
+			error:               false,
+		},
+		{
+			name: "preinit-files_section_should_be_an_object",
+			inputModule: `manifest { 
+					preinit-files: 1
+				}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{PREINIT_FILES_SECTION_SHOULD_BE_AN_OBJECT},
 		},
 		{
 			name: "empty_databases",
@@ -293,6 +357,8 @@ func TestPreInit(t *testing.T) {
 			error:                     true,
 			expectedStaticCheckErrors: []string{DATABASES_SECTION_SHOULD_BE_AN_OBJECT},
 		},
+
+		//TODO: improve tests.
 	}
 
 	for _, testCase := range testCases {
