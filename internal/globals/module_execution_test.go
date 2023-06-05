@@ -250,7 +250,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Name:    "FILE",
 			Path:    "/file.txt",
 			Pattern: core.STR_PATTERN,
-			Permission: core.FilesystemPermission{
+			RequiredPermission: core.FilesystemPermission{
 				Kind_:  permkind.Read,
 				Entity: core.Path("/file.txt"),
 			},

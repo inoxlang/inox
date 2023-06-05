@@ -27,6 +27,7 @@ func TestPreInit(t *testing.T) {
 		expectedPermissions       []Permission
 		expectedLimitations       []Limitation
 		expectedResolutions       map[Host]Value
+		expectedDatabaseConfigs   DatabaseConfigs
 		error                     bool
 		expectedStaticCheckErrors []string
 	}
@@ -123,20 +124,14 @@ func TestPreInit(t *testing.T) {
 						read: mem://a.com
 					}
 				}`,
-			expectedPermissions: []Permission{},
-			expectedLimitations: []Limitation{},
-			expectedResolutions: nil,
-			error:               true,
+			error: true,
 		},
 		{
 			name: "host_pattern_with_unsupported_scheme",
 			inputModule: `manifest { 
 					permissions: { read: %ws://*.com }
 				}`,
-			expectedPermissions: []Permission{},
-			expectedLimitations: []Limitation{},
-			expectedResolutions: nil,
-			error:               true,
+			error: true,
 		},
 		{
 			name: "dns",
@@ -163,10 +158,7 @@ func TestPreInit(t *testing.T) {
 						}
 					}
 				}`,
-			expectedPermissions: []Permission{},
-			expectedLimitations: []Limitation{},
-			expectedResolutions: nil,
-			error:               true,
+			error: true,
 		},
 		{
 			name: "see email addresses",
@@ -175,10 +167,7 @@ func TestPreInit(t *testing.T) {
 						see: { values: %emailaddr }
 					}
 				}`,
-			expectedPermissions: []Permission{ValueVisibilityPermission{Pattern: EMAIL_ADDR_PATTERN}},
-			expectedLimitations: []Limitation{},
-			expectedResolutions: nil,
-			error:               true,
+			error: true,
 		},
 		{
 			name: "see email addresses & ints",
@@ -187,13 +176,7 @@ func TestPreInit(t *testing.T) {
 					see: { values: [%emailaddr, %int] }
 				}
 			}`,
-			expectedPermissions: []Permission{
-				ValueVisibilityPermission{Pattern: EMAIL_ADDR_PATTERN},
-				ValueVisibilityPermission{Pattern: INT_PATTERN},
-			},
-			expectedLimitations: []Limitation{},
-			expectedResolutions: nil,
-			error:               true,
+			error: true,
 		},
 		{
 			name: "invalid node type in preinit block",
@@ -209,8 +192,6 @@ func TestPreInit(t *testing.T) {
 				ValueVisibilityPermission{Pattern: EMAIL_ADDR_PATTERN},
 				ValueVisibilityPermission{Pattern: INT_PATTERN},
 			},
-			expectedLimitations:       []Limitation{},
-			expectedResolutions:       nil,
 			expectedStaticCheckErrors: []string{ErrForbiddenNodeinPreinit.Error()},
 			error:                     true,
 		},
@@ -224,8 +205,6 @@ func TestPreInit(t *testing.T) {
 				ValueVisibilityPermission{Pattern: EMAIL_ADDR_PATTERN},
 				ValueVisibilityPermission{Pattern: INT_PATTERN},
 			},
-			expectedLimitations:       []Limitation{},
-			expectedResolutions:       nil,
 			expectedStaticCheckErrors: []string{PERMS_SECTION_SHOULD_BE_AN_OBJECT},
 			error:                     true,
 		},
@@ -237,7 +216,82 @@ func TestPreInit(t *testing.T) {
 			expectedPermissions: []Permission{},
 			expectedLimitations: []Limitation{},
 			expectedResolutions: nil,
-			error:               true,
+			error:               false,
+		},
+		{
+			name: "empty_databases",
+			inputModule: `manifest { 
+					databases: {}
+				}`,
+			expectedPermissions: []Permission{},
+			expectedLimitations: []Limitation{},
+			expectedResolutions: nil,
+			error:               false,
+		},
+		{
+			name: "correct_databases",
+			inputModule: `manifest { 
+					databases: {
+						main: {
+							resource: ldb://main
+							resolution-data: /tmp/mydb/
+						}
+					}
+				}`,
+			expectedPermissions: []Permission{},
+			expectedLimitations: []Limitation{},
+			expectedDatabaseConfigs: DatabaseConfigs{
+				{
+					Name:           "main",
+					Resource:       Host("ldb://main"),
+					ResolutionData: Path("/tmp/mydb/"),
+				},
+			},
+			expectedResolutions: nil,
+			error:               false,
+		},
+		{
+			name: "database_with_invalid_resource",
+			inputModule: `manifest { 
+					databases: {
+						main: {
+							resource: 1
+						}
+					}
+				}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL},
+		},
+		{
+			name: "database_with_invalid_resolution_data",
+			inputModule: `manifest { 
+					databases: {
+						main: {
+							resource: ldb://main
+							resolution-data: 1
+						}
+					}
+				}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED},
+		},
+		{
+			name: "database_description_should_be_an_object",
+			inputModule: `manifest { 
+					databases: {
+						main: 1
+					}
+				}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{DATABASES__DB_CONFIG_SHOULD_BE_AN_OBJECT},
+		},
+		{
+			name: "databases_section_should_be_an_object",
+			inputModule: `manifest { 
+					databases: 1
+				}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{DATABASES_SECTION_SHOULD_BE_AN_OBJECT},
 		},
 	}
 
@@ -294,14 +348,20 @@ func TestPreInit(t *testing.T) {
 			}
 
 			if testCase.error {
-				assert.Error(t, err)
+				if !assert.Error(t, err) {
+					return
+				}
 			} else {
-				assert.NoError(t, err)
+				if !assert.NoError(t, err) {
+					return
+				}
+			}
+
+			if manifest != nil {
 				assert.EqualValues(t, testCase.expectedPermissions, manifest.RequiredPermissions)
 				assert.EqualValues(t, testCase.expectedLimitations, manifest.Limitations)
 				assert.EqualValues(t, testCase.expectedResolutions, manifest.HostResolutions)
 			}
-
 		})
 	}
 

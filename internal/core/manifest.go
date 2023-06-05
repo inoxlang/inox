@@ -73,6 +73,7 @@ type Manifest struct {
 	EnvPattern      *ObjectPattern
 	Parameters      ModuleParameters
 	PreinitFiles    PreinitFileConfigs
+	Databases       DatabaseConfigs
 }
 
 func NewEmptyManifest() *Manifest {
@@ -89,10 +90,18 @@ type ModuleParameters struct {
 type PreinitFileConfigs []PreinitFileConfig
 
 type PreinitFileConfig struct {
-	Name       string //declared name, this is NOT the basename.
-	Path       Path   //absolute
-	Pattern    Pattern
-	Permission FilesystemPermission
+	Name               string //declared name, this is NOT the basename.
+	Path               Path   //absolute
+	Pattern            Pattern
+	RequiredPermission FilesystemPermission
+}
+
+type DatabaseConfigs []DatabaseConfig
+
+type DatabaseConfig struct {
+	Name           string       //declared name, this is NOT the basename.
+	Resource       ResourceName //URL or Host
+	ResolutionData Path
 }
 
 func (p *ModuleParameters) GetArguments(ctx *Context, argObj *Object) (*Object, error) {
@@ -552,6 +561,7 @@ func createManifest(object *Object, config manifestObjectConfig) (*Manifest, err
 		perms        []Permission
 		envPattern   *ObjectPattern
 		moduleParams ModuleParameters
+		dbConfigs    DatabaseConfigs
 	)
 	permListing := NewObject()
 	limitations := make([]Limitation, 0)
@@ -595,6 +605,12 @@ func createManifest(object *Object, config manifestObjectConfig) (*Manifest, err
 			if configs == nil {
 				return nil, fmt.Errorf("missing pre-evaluated description of %s", MANIFEST_PREINIT_FILES_SECTION_NAME)
 			}
+		case MANIFEST_DATABASES_SECTION_NAME:
+			configs, err := getDatabaseConfigurations(v)
+			if err != nil {
+				return nil, err
+			}
+			dbConfigs = configs
 		default:
 			if config.ignoreUnkownSections {
 				continue
@@ -623,6 +639,7 @@ func createManifest(object *Object, config manifestObjectConfig) (*Manifest, err
 		EnvPattern:          envPattern,
 		Parameters:          moduleParams,
 		PreinitFiles:        config.preinitFileConfigs,
+		Databases:           dbConfigs,
 	}, nil
 }
 
@@ -974,7 +991,7 @@ func getSingleKindPermissions(
 func getModuleParameters(v Value) (ModuleParameters, error) {
 	description, ok := v.(*Object)
 	if !ok {
-		return ModuleParameters{}, fmt.Errorf("invalid manifest, the 'parameters' section should have a value of type object")
+		return ModuleParameters{}, fmt.Errorf("invalid manifest, the '%s' section should have a value of type object", MANIFEST_PARAMS_SECTION_NAME)
 	}
 
 	var params ModuleParameters
@@ -1069,10 +1086,59 @@ func getModuleParameters(v Value) (ModuleParameters, error) {
 	}
 
 	if err != nil {
-		return ModuleParameters{}, fmt.Errorf("invalid manifest: 'parameters' section: %w", err)
+		return ModuleParameters{}, fmt.Errorf("invalid manifest: '%s' section: %w", MANIFEST_PARAMS_SECTION_NAME, err)
 	}
 
 	return params, nil
+}
+
+func getDatabaseConfigurations(v Value) (DatabaseConfigs, error) {
+	description, ok := v.(*Object)
+	if !ok {
+		return nil, fmt.Errorf("invalid manifest, the '%s' section should have a value of type object", MANIFEST_DATABASES_SECTION_NAME)
+	}
+
+	var configs DatabaseConfigs
+
+	err := description.ForEachEntry(func(dbName string, desc Value) error {
+		dbDesc, ok := desc.(*Object)
+		if !ok {
+			return errors.New("each database should be described with an object")
+		}
+
+		var config DatabaseConfig
+
+		err := dbDesc.ForEachEntry(func(propName string, propVal Value) error {
+			switch propName {
+			case MANIFEST_DATABASE__RESOURCE_PROP_NAME:
+				switch val := propVal.(type) {
+				case Host:
+					config.Resource = val
+				case URL:
+					config.Resource = val
+				default:
+					return fmt.Errorf("invalid value found for the .%s of a database description", MANIFEST_DATABASE__RESOURCE_PROP_NAME)
+				}
+			case MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME:
+				switch val := propVal.(type) {
+				case Path:
+					config.ResolutionData = val
+				default:
+					return fmt.Errorf("invalid value found for the .%s of a database description", MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME)
+				}
+			}
+			configs = append(configs, config)
+			return nil
+		})
+
+		return err
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("invalid manifest: '%s' section: %w", MANIFEST_DATABASES_SECTION_NAME, err)
+	}
+
+	return configs, nil
 }
 
 // getDnsPermissions gets a list DNSPermission from an AST node

@@ -120,7 +120,7 @@ func ComputeProgramRiskScore(mod *Module, manifest *Manifest) (totalScore RiskSc
 	requiredPerms := utils.CopySlice(manifest.RequiredPermissions)
 
 	for _, preinitFilePerm := range manifest.PreinitFiles {
-		requiredPerms = append(requiredPerms, preinitFilePerm.Permission)
+		requiredPerms = append(requiredPerms, preinitFilePerm.RequiredPermission)
 	}
 
 	for _, requiredPerm := range requiredPerms {

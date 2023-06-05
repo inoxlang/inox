@@ -154,7 +154,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (*Manifest, *TreeWalkState, []
 
 	var state *TreeWalkState
 	var envPattern *ObjectPattern
-	var preinitFileConfigs PreinitFileConfigs
+	preinitFileConfigs := make(PreinitFileConfigs, 0)
 
 	//we create a temporary state to evaluate some parts of the permissions
 	if preinitArgs.RunningState == nil {
@@ -227,7 +227,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (*Manifest, *TreeWalkState, []
 					Name:    k,
 					Path:    path,
 					Pattern: pattern,
-					Permission: FilesystemPermission{
+					RequiredPermission: FilesystemPermission{
 						Kind_:  permkind.Read,
 						Entity: path,
 					},
