@@ -16,7 +16,7 @@ import (
 
 func TestOpenDatabase(t *testing.T) {
 
-	t.Run("open same database sequentially", func(t *testing.T) {
+	t.Run("open same database sequentially (no in-between closing)", func(t *testing.T) {
 		dir, _ := filepath.Abs(t.TempDir())
 		dir += "/"
 		tempFilepath := filepath.Join(dir, "data.db")
@@ -50,6 +50,44 @@ func TestOpenDatabase(t *testing.T) {
 			return
 		}
 		assert.Same(t, db, _db)
+	})
+
+	t.Run("open same database sequentially (in-between closing)", func(t *testing.T) {
+		dir, _ := filepath.Abs(t.TempDir())
+		dir += "/"
+		tempFilepath := filepath.Join(dir, "data.db")
+
+		pattern := core.PathPattern(dir + "...")
+
+		ctxConfig := core.ContextConfig{
+			Permissions: []core.Permission{
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: pattern},
+				core.FilesystemPermission{Kind_: permkind.Create, Entity: pattern},
+				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
+			},
+			HostResolutions: map[core.Host]core.Value{
+				core.Host("ldb://main"): core.Path(tempFilepath),
+			},
+			Filesystem: fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE),
+		}
+
+		ctx1 := core.NewContexWithEmptyState(ctxConfig, nil)
+
+		_db, err := openDatabase(ctx1, core.Path(tempFilepath))
+		if !assert.NoError(t, err) {
+			return
+		}
+		_db.Close(ctx1)
+
+		ctx2 := core.NewContexWithEmptyState(ctxConfig, nil)
+
+		db, err := openDatabase(ctx2, core.Path(tempFilepath))
+		if !assert.NoError(t, err) {
+			return
+		}
+		defer _db.Close(ctx1)
+
+		assert.NotSame(t, db, _db)
 	})
 
 	t.Run("open same database in parallel", func(t *testing.T) {
