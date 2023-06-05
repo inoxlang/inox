@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"strconv"
@@ -12,6 +11,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	fsutil "github.com/go-git/go-billy/v5/util"
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
@@ -21,15 +22,25 @@ import (
 
 const (
 	MAX_MEM_FS_STORAGE_SIZE = 100_000_000
+	DEFAULT_FILEPERM        = 0o666
+	DEFAULT_FILENAME        = "data.db"
 )
 
 //TODO: add tests with os filesystem
 
 func testOpen(t testing.TB) *buntDB {
-	// if err := fls.Remove("data.db"); err != nil {
+	// if err := fls.Remove(DEFAULT_FILENAME); err != nil {
 	// 	t.Fatal(err)
 	// }
 	return testReOpen(t, nil)
+}
+
+func testOpenWithFS(t testing.TB, fls afs.Filesystem) *buntDB {
+	db, err := openBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return db
 }
 
 func testReOpen(t testing.TB, db *buntDB) *buntDB {
@@ -58,7 +69,7 @@ func testReOpenDelay(t testing.TB, db *buntDB, dur time.Duration, fls afs.Filesy
 	}
 
 	time.Sleep(dur)
-	db, err := openBuntDBNoPermCheck("data.db", fls)
+	db, err := openBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,7 +78,7 @@ func testReOpenDelay(t testing.TB, db *buntDB, dur time.Duration, fls afs.Filesy
 
 func testClose(db *buntDB) {
 	_ = db.Close()
-	_ = db.fls.Remove("data.db")
+	_ = db.fls.Remove(DEFAULT_FILENAME)
 }
 
 func TestBackgroudOperations(t *testing.T) {
@@ -812,7 +823,7 @@ func TestVariousTx(t *testing.T) {
 	}); err == nil {
 		t.Fatal("should not be able to commit when the file is closed")
 	}
-	db.file, err = db.fls.OpenFile("data.db", os.O_CREATE|os.O_RDWR, 0666)
+	db.file, err = db.fls.OpenFile(DEFAULT_FILENAME, os.O_CREATE|os.O_RDWR, DEFAULT_FILEPERM)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1381,24 +1392,29 @@ func TestDatabaseFormat(t *testing.T) {
 			"*2\r\n$3\r\ndel\r\n$4\r\nvar1\r\n",
 			"*5\r\n$3\r\nset\r\n$3\r\nvar\r\n$3\r\nval\r\n$2\r\nex\r\n$2\r\n10\r\n",
 		}, "")
-		// if err := os.RemoveAll("data.db"); err != nil {
+		// if err := os.RemoveAll(DEFAULT_FILENAME); err != nil {
 		// 	t.Fatal(err)
 		// }
-		if err := ioutil.WriteFile("data.db", []byte(resp), 0666); err != nil {
+
+		fls := fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE)
+		if err := fsutil.WriteFile(fls, DEFAULT_FILENAME, []byte(resp), DEFAULT_FILEPERM); err != nil {
 			t.Fatal(err)
 		}
-		db := testOpen(t)
+		db := testOpenWithFS(t, fls)
 		defer testClose(db)
 	}()
 	testFormat := func(t *testing.T, expectValid bool, resp string, do func(db *buntDB) error) {
 		t.Helper()
-		//os.RemoveAll("data.db")
-		if err := ioutil.WriteFile("data.db", []byte(resp), 0666); err != nil {
+
+		fls := fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE)
+
+		//os.RemoveAll(DEFAULT_FILENAME)
+		if err := fsutil.WriteFile(fls, DEFAULT_FILENAME, []byte(resp), DEFAULT_FILEPERM); err != nil {
 			t.Fatal(err)
 		}
-		//defer os.RemoveAll("data.db")
+		//defer os.RemoveAll(DEFAULT_FILENAME)
 
-		db, err := openBuntDBNoPermCheck("data.db", fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE))
+		db, err := openBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
 		if err == nil {
 			if do != nil {
 				if err := do(db); err != nil {
@@ -1633,11 +1649,11 @@ func TestOpeningAFolder(t *testing.T) {
 func TestOpeningInvalidDatabaseFile(t *testing.T) {
 	var fls = fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE)
 
-	if err := ioutil.WriteFile("data.db", []byte("invalid\r\nfile"), 0666); err != nil {
+	if err := fsutil.WriteFile(fls, DEFAULT_FILENAME, []byte("invalid\r\nfile"), DEFAULT_FILEPERM); err != nil {
 		t.Fatal(err)
 	}
-	defer func() { _ = fls.Remove("data.db") }()
-	db, err := openBuntDBNoPermCheck("data.db", fls)
+	defer func() { _ = fls.Remove(DEFAULT_FILENAME) }()
+	db, err := openBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
 	if err == nil {
 		if err := db.Close(); err != nil {
 			t.Fatal(err)
@@ -1650,11 +1666,11 @@ func TestOpeningInvalidDatabaseFile(t *testing.T) {
 func TestOpeningClosedDatabase(t *testing.T) {
 	var fls = fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE)
 
-	db, err := openBuntDBNoPermCheck("data.db", fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE))
+	db, err := openBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer func() { _ = fls.Remove("data.db") }()
+	defer func() { _ = fls.Remove(DEFAULT_FILENAME) }()
 	if err := db.Close(); err != nil {
 		t.Fatal(err)
 	}
@@ -1680,7 +1696,7 @@ func TestShrink(t *testing.T) {
 	if err := db.Shrink(); err != nil {
 		t.Fatal(err)
 	}
-	fi, err := db.fls.Stat("data.db")
+	fi, err := db.fls.Stat(DEFAULT_FILENAME)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1712,7 +1728,7 @@ func TestShrink(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fi, err = db.fls.Stat("data.db")
+	fi, err = db.fls.Stat(DEFAULT_FILENAME)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1723,7 +1739,7 @@ func TestShrink(t *testing.T) {
 	if err := db.Shrink(); err != nil {
 		t.Fatal(err)
 	}
-	fi, err = db.fls.Stat("data.db")
+	fi, err = db.fls.Stat(DEFAULT_FILENAME)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2296,7 +2312,7 @@ func textHexUint64(s string) uint64 {
 }
 func benchClose(t *testing.B, persist bool, db *buntDB) {
 	if persist {
-		if err := db.fls.Remove("data.db"); err != nil {
+		if err := db.fls.Remove(DEFAULT_FILENAME); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -2314,10 +2330,10 @@ func benchOpenFillData(t *testing.B, N int,
 	rand.Seed(time.Now().UnixNano())
 	var err error
 	if persist {
-		if err := db.fls.Remove("data.db"); err != nil {
+		if err := db.fls.Remove(DEFAULT_FILENAME); err != nil {
 			t.Fatal(err)
 		}
-		db, err = openBuntDBNoPermCheck("data.db", fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE))
+		db, err = openBuntDBNoPermCheck(DEFAULT_FILENAME, fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE))
 	} else {
 		db, err = openBuntDBNoPermCheck(":memory:", fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE))
 	}
@@ -2857,15 +2873,15 @@ func TestTransactionLeak(t *testing.T) {
 
 func TestReloadNotInvalid(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
-	//fls.Remove("data.db")
-	//defer fls.Remove("data.db")
+	//fls.Remove(DEFAULT_FILENAME)
+	//defer fls.Remove(DEFAULT_FILENAME)
 
 	start := time.Now()
 	ii := 0
 	for time.Since(start) < time.Second*5 {
 		func() {
 			fls := fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE)
-			db, err := openBuntDBNoPermCheck("data.db", fls)
+			db, err := openBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -2874,7 +2890,7 @@ func TestReloadNotInvalid(t *testing.T) {
 					panic(err)
 				}
 				// truncate at a random point in the file
-				f, err := fls.OpenFile("data.db", os.O_RDWR, 0666)
+				f, err := fls.OpenFile(DEFAULT_FILENAME, os.O_RDWR, DEFAULT_FILEPERM)
 				if err != nil {
 					panic(err)
 				}

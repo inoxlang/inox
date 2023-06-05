@@ -686,13 +686,13 @@ func (db *buntDB) Shrink() error {
 	}
 	db.mu.Unlock()
 	time.Sleep(time.Second / 4) // wait just a bit before starting
-	f, err := os.Create(tmpname)
+	f, err := db.fls.Create(tmpname)
 	if err != nil {
 		return err
 	}
 	defer func() {
 		_ = f.Close()
-		_ = os.RemoveAll(tmpname)
+		_ = db.fls.Remove(tmpname)
 	}()
 
 	// we are going to read items in as chunks as to not hold up the database
@@ -750,7 +750,7 @@ func (db *buntDB) Shrink() error {
 		// We are going to open a new version of the aof file so that we do
 		// not change the seek position of the previous. This may cause a
 		// problem in the future if we choose to use syscall file locking.
-		aof, err := os.Open(fname)
+		aof, err := db.fls.Open(fname)
 		if err != nil {
 			return err
 		}
@@ -774,7 +774,7 @@ func (db *buntDB) Shrink() error {
 			return err
 		}
 		// Any failures below here are really bad. So just panic.
-		if err := os.Rename(tmpname, fname); err != nil {
+		if err := db.fls.Rename(tmpname, fname); err != nil {
 			panicErr(err)
 		}
 		db.file, err = db.fls.OpenFile(fname, os.O_CREATE|os.O_RDWR, 0666)
