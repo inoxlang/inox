@@ -122,7 +122,7 @@ func (e AppendBytesToFile) Reverse(ctx *core.Context) error {
 
 	defer f.Close()
 
-	info, err := core.FileStat(f)
+	info, err := core.FileStat(f, nil)
 	if err != nil {
 		return fmt.Errorf("failed to reverse data append to file: failed to get information for file: %s", err.Error())
 	}

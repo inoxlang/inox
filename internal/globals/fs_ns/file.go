@@ -120,7 +120,7 @@ func (f *File) doRead(ctx *core.Context, closeFile bool, count int64) ([]byte, e
 		return nil, err
 	}
 
-	stat, err := core.FileStat(f.f)
+	stat, err := core.FileStat(f.f, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +155,7 @@ func (f *File) doRead(ctx *core.Context, closeFile bool, count int64) ([]byte, e
 		b = append(b, chunk[0:n]...)
 		totalN += int64(n)
 
-		stat, err := core.FileStat(f.f)
+		stat, err := core.FileStat(f.f, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -198,7 +198,7 @@ func (f *File) close(ctx *core.Context) {
 
 func (f *File) info(ctx *core.Context) (core.FileInfo, error) {
 
-	stat, err := core.FileStat(f.f)
+	stat, err := core.FileStat(f.f, nil)
 	if err != nil {
 		return core.FileInfo{}, err
 	}

@@ -29,6 +29,7 @@ var (
 	SOURCE_POS_RECORD_PROPNAMES  = []string{"source", "line", "column", "start", "end"}
 	ErrFileToIncludeDoesNotExist = errors.New("file to include does not exist")
 	ErrFileToIncludeIsAFolder    = errors.New("file to include is a folder")
+	ErrMissingManifest           = errors.New("missing manifest")
 )
 
 // A Module represents an Inox module, it does not hold any state and should NOT be modified. Module implements Value.
@@ -430,12 +431,12 @@ func ParseLocalModule(config LocalModuleParsingConfig) (*Module, error) {
 	file, err := ctx.fs.Open(fpath)
 
 	if os.IsNotExist(err) {
-		return nil, fmt.Errorf("%s does not exist", fpath)
+		return nil, err
 	}
 
 	var info fs.FileInfo
 	if err == nil {
-		info, err = FileStat(file)
+		info, err = FileStat(file, fls)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get information for file %s: %w", fpath, err)
 		}
@@ -600,7 +601,7 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 
 	var info fs.FileInfo
 	if err == nil {
-		info, err = FileStat(file)
+		info, err = FileStat(file, fls)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get information for file to include %s: %w", fpath, err)
 		}
@@ -720,12 +721,12 @@ func createRecordFromSourcePositionStack(posStack parse.SourcePositionStack) *Re
 	return NewRecordFromKeyValLists([]string{"position-stack"}, []Value{NewTuple(positionRecords)})
 }
 
-//
-
-func FileStat(f billy.File) (os.FileInfo, error) {
+// FileStat tries to directly use the given file to get file information,
+// if it fails and fls is not nil then fls.Stat(f) is used.
+func FileStat(f billy.File, fls afs.Filesystem) (os.FileInfo, error) {
 	interf, ok := f.(interface{ Stat() (os.FileInfo, error) })
 	if !ok {
-		return nil, ErrNotImplemented
+		return fls.Stat(f.Name())
 	}
 	return interf.Stat()
 }
