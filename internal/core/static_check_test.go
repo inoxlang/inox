@@ -2236,6 +2236,74 @@ func TestCheck(t *testing.T) {
 
 //TODO: add tests for static checking of remaining manifest sections.
 
+func TestCheckPreinitFilesObject(t *testing.T) {
+
+	parseObject := func(s string) *parse.ObjectLiteral {
+		return parse.MustParseChunk(s).Statements[0].(*parse.ObjectLiteral)
+	}
+
+	t.Run("empty", func(t *testing.T) {
+		objLiteral := parseObject("{}")
+
+		checkPreinitFilesObject(objLiteral, func(n parse.Node, msg string) {
+			assert.Fail(t, msg)
+		})
+	})
+
+	t.Run("single file with correct description", func(t *testing.T) {
+		objLiteral := parseObject(`
+			{
+				FILE: {
+					path: /file.txt
+					pattern: %str
+				}
+			}
+		`)
+
+		checkPreinitFilesObject(objLiteral, func(n parse.Node, msg string) {
+			assert.Fail(t, msg)
+		})
+	})
+
+	t.Run("single file with invalid .path", func(t *testing.T) {
+		objLiteral := parseObject(`
+			{
+				FILE: {
+					path: {}
+					pattern: %str
+				}
+			}
+		`)
+
+		err := false
+
+		checkPreinitFilesObject(objLiteral, func(n parse.Node, msg string) {
+			err = true
+			assert.Equal(t, PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_ABS_PATH, msg)
+		})
+		assert.True(t, err)
+	})
+
+	t.Run("single file with relative .path", func(t *testing.T) {
+		objLiteral := parseObject(`
+			{
+				FILE: {
+					path: ./file.txt
+					pattern: %str
+				}
+			}
+		`)
+
+		err := false
+
+		checkPreinitFilesObject(objLiteral, func(n parse.Node, msg string) {
+			err = true
+			assert.Equal(t, PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_ABS_PATH, msg)
+		})
+		assert.True(t, err)
+	})
+}
+
 func TestCheckDatabasesObject(t *testing.T) {
 
 	parseObject := func(s string) *parse.ObjectLiteral {
@@ -2271,9 +2339,14 @@ func TestCheckDatabasesObject(t *testing.T) {
 			}
 		`)
 
+		err := false
+
 		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
+			err = true
 			assert.Equal(t, fmtMissingPropInDatabaseDescription(MANIFEST_DATABASE__RESOURCE_PROP_NAME, "main"), msg)
 		})
+
+		assert.True(t, err)
 	})
 
 	t.Run("single database with invalid value for the resource property", func(t *testing.T) {
@@ -2284,10 +2357,13 @@ func TestCheckDatabasesObject(t *testing.T) {
 				}
 			}
 		`)
+		err := false
 
 		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
+			err = true
 			assert.Equal(t, DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL, msg)
 		})
+		assert.True(t, err)
 	})
 
 	t.Run("single database with unsupported value for the resolution-data property", func(t *testing.T) {
@@ -2299,10 +2375,14 @@ func TestCheckDatabasesObject(t *testing.T) {
 				}
 			}
 		`)
+		err := false
 
 		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
+			err = true
 			assert.Equal(t, DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED, msg)
 		})
+
+		assert.True(t, err)
 	})
 }
 

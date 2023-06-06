@@ -22,7 +22,7 @@ const (
 	//preinit-files section
 	PREINIT_FILES_SECTION_SHOULD_BE_AN_OBJECT      = "the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section of the manifest should be an object literal"
 	PREINIT_FILES__FILE_CONFIG_SHOULD_BE_AN_OBJECT = "the description of each file in the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section of the manifest should be an object literal"
-	PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_PATH = "the ." + MANIFEST_PREINIT_FILE__PATH_PROP_NAME + " of each file in the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section (manifest) should be a path"
+	PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_ABS_PATH = "the ." + MANIFEST_PREINIT_FILE__PATH_PROP_NAME + " of each file in the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section (manifest) should be an absolute path"
 
 	//databases section
 	DATABASES_SECTION_SHOULD_BE_AN_OBJECT              = "the '" + MANIFEST_DATABASES_SECTION_NAME + "' section of the manifest should be an object literal"

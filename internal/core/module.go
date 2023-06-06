@@ -279,11 +279,9 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, _ *TreeWalkState
 					return fmt.Errorf("property .%s in description of preinit file %s is not a pattern", MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME, k)
 				}
 
-				// if !path.IsAbsolute() {
-				// 	return fmt.Errorf("property .%s in description of preinit file %s should be an absolute path", MANIFEST_PREINIT_FILE__PATH_PROP_NAME, k)
-				// }
-
-				path = path.ToAbs(fls)
+				if !path.IsAbsolute() {
+					return fmt.Errorf("property .%s in description of preinit file %s should be an absolute path", MANIFEST_PREINIT_FILE__PATH_PROP_NAME, k)
+				}
 
 				switch patt := pattern.(type) {
 				case StringPattern:

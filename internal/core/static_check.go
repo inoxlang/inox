@@ -1731,7 +1731,7 @@ func checkPermissionListingObject(objLit *parse.ObjectLiteral, onError func(n pa
 
 func checkPreinitFilesObject(obj *parse.ObjectLiteral, onError func(n parse.Node, msg string)) {
 
-	hasForbiddenNodes := false 
+	hasForbiddenNodes := false
 
 	parse.Walk(obj, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 		if node == obj {
@@ -1740,7 +1740,8 @@ func checkPreinitFilesObject(obj *parse.ObjectLiteral, onError func(n parse.Node
 
 		switch n := node.(type) {
 		case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression, *parse.ObjectLiteral,
-			*parse.ObjectProperty, *parse.PatternCallExpression, parse.SimpleValueLiteral, *parse.GlobalVariable:
+			*parse.ObjectProperty, *parse.PatternCallExpression, parse.SimpleValueLiteral, *parse.GlobalVariable,
+			*parse.AbsolutePathExpression, *parse.RelativePathExpression:
 		default:
 			onError(n, fmtForbiddenNodeInPreinitFilesSection(n))
 			hasForbiddenNodes = true
@@ -1769,9 +1770,9 @@ func checkPreinitFilesObject(obj *parse.ObjectLiteral, onError func(n parse.Node
 			onError(p, fmtMissingPropInPreinitFileDescription(MANIFEST_PREINIT_FILE__PATH_PROP_NAME, p.Name()))
 		} else {
 			switch pathNode.(type) {
-			case *parse.AbsolutePathLiteral, *parse.RelativePathLiteral:
+			case *parse.AbsolutePathLiteral, *parse.AbsolutePathExpression:
 			default:
-				onError(p, PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_PATH)
+				onError(p, PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_ABS_PATH)
 			}
 		}
 
