@@ -698,11 +698,11 @@ func rangeToLspRange(r parse.SourcePositionRange) defines.Range {
 	}
 }
 
-func firstCharLspRange() defines.Range {
+func firstCharsLspRange(count int32) defines.Range {
 	return rangeToLspRange(parse.SourcePositionRange{
 		StartLine:   1,
 		StartColumn: 1,
-		Span:        parse.NodeSpan{Start: 0, End: 1},
+		Span:        parse.NodeSpan{Start: 0, End: count},
 	})
 }
 

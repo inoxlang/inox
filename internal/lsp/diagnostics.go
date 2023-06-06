@@ -100,7 +100,7 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usi
 				msg = locatedEvalError.Message
 				_range = rangeToLspRange(locatedEvalError.Location[0])
 			} else {
-				_range = firstCharLspRange()
+				_range = firstCharsLspRange(5)
 				msg = state.MainPreinitError.Error()
 			}
 
