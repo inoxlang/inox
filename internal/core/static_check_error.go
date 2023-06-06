@@ -20,8 +20,8 @@ const (
 	PARAMS_SECTION_SHOULD_BE_AN_OBJECT      = "the '" + MANIFEST_PARAMS_SECTION_NAME + "' section of the manifest should be an object literal"
 
 	//preinit-files section
-	PREINIT_FILES_SECTION_SHOULD_BE_AN_OBJECT      = "the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section of the manifest should be an object literal"
-	PREINIT_FILES__FILE_CONFIG_SHOULD_BE_AN_OBJECT = "the description of each file in the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section of the manifest should be an object literal"
+	PREINIT_FILES_SECTION_SHOULD_BE_AN_OBJECT          = "the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section of the manifest should be an object literal"
+	PREINIT_FILES__FILE_CONFIG_SHOULD_BE_AN_OBJECT     = "the description of each file in the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section of the manifest should be an object literal"
 	PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_ABS_PATH = "the ." + MANIFEST_PREINIT_FILE__PATH_PROP_NAME + " of each file in the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section (manifest) should be an absolute path"
 
 	//databases section
@@ -104,6 +104,12 @@ func fmtForbiddenNodeInPreinitFilesSection(n parse.Node) string {
 	return fmt.Sprintf(
 		"invalid %s section: invalid node %T, only variables, simple literals & named patterns are allowed",
 		MANIFEST_PREINIT_FILES_SECTION_NAME, n)
+}
+
+func fmtForbiddenNodeInDatabasesSection(n parse.Node) string {
+	return fmt.Sprintf(
+		"invalid %s section: invalid node %T, only variables, simple literals, path expressions & named patterns are allowed",
+		DATABASES_SECTION_SHOULD_BE_AN_OBJECT, n)
 }
 
 func fmtForbiddenNodeInHostResolutionSection(n parse.Node) string {

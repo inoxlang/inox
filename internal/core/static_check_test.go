@@ -2366,6 +2366,21 @@ func TestCheckDatabasesObject(t *testing.T) {
 		assert.True(t, err)
 	})
 
+	t.Run("single database with path expression for the resolution-data property", func(t *testing.T) {
+		objLiteral := parseObject(`
+			{
+				main: {
+					resource: ldb://main
+					resolution-data: /{DB_DIR}/
+				}
+			}
+		`)
+
+		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
+			assert.Fail(t, msg)
+		})
+	})
+
 	t.Run("single database with unsupported value for the resolution-data property", func(t *testing.T) {
 		objLiteral := parseObject(`
 			{

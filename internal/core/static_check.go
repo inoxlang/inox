@@ -1792,9 +1792,10 @@ func checkDatabasesObject(obj *parse.ObjectLiteral, onError func(n parse.Node, m
 
 		switch n := node.(type) {
 		case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression, *parse.ObjectLiteral,
-			*parse.ObjectProperty, *parse.PatternCallExpression, parse.SimpleValueLiteral, *parse.GlobalVariable:
+			*parse.ObjectProperty, *parse.PatternCallExpression, parse.SimpleValueLiteral, *parse.GlobalVariable,
+			*parse.AbsolutePathExpression, *parse.RelativePathExpression:
 		default:
-			onError(n, fmtForbiddenNodeInPreinitFilesSection(n))
+			onError(n, fmtForbiddenNodeInDatabasesSection(n))
 		}
 
 		return parse.Continue, nil
@@ -1824,7 +1825,7 @@ func checkDatabasesObject(obj *parse.ObjectLiteral, onError func(n parse.Node, m
 
 		if resolutionDataNode, ok := fileDesc.PropValue(MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME); ok {
 			switch resolutionDataNode.(type) {
-			case *parse.RelativePathLiteral, *parse.AbsolutePathLiteral:
+			case *parse.RelativePathLiteral, *parse.AbsolutePathLiteral, *parse.AbsolutePathExpression, *parse.RelativePathExpression:
 			default:
 				onError(p, DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED)
 			}
