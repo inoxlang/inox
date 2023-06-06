@@ -246,7 +246,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			return
 		}
 
-		assert.Equal(t, core.PreinitFileConfig{
+		assert.Equal(t, core.PreinitFile{
 			Name:    "FILE",
 			Path:    "/file.txt",
 			Pattern: core.STR_PATTERN,

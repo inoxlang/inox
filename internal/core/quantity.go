@@ -8,7 +8,7 @@ import (
 )
 
 // ByteCount implements Value.
-type ByteCount int
+type ByteCount int64
 
 // LineCount implements Value.
 type LineCount int

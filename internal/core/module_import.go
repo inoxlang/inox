@@ -158,7 +158,7 @@ func ImportModule(config ImportConfig) (*Routine, error) {
 
 	manifest, preinitState, _, err := mod.PreInit(PreinitArgs{
 		GlobalConsts:          mod.MainChunk.Node.GlobalConstantDeclarations,
-		Preinit:               mod.MainChunk.Node.Preinit,
+		PreinitStatement:      mod.MainChunk.Node.Preinit,
 		AddDefaultPermissions: true,
 	})
 

@@ -2,10 +2,13 @@ package core
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/go-git/go-billy/v5/util"
+	"github.com/inoxlang/inox/internal/afs"
 	parse "github.com/inoxlang/inox/internal/parse"
 	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/stretchr/testify/assert"
@@ -24,13 +27,15 @@ func TestPreInit(t *testing.T) {
 	type testCase struct {
 		name                       string
 		inputModule                string
+		setupFilesystem            func(fls afs.Filesystem)
 		expectedPermissions        []Permission
 		expectedLimitations        []Limitation
 		expectedResolutions        map[Host]Value
-		expectedPreinitFileConfigs PreinitFileConfigs
+		expectedPreinitFileConfigs PreinitFiles
 		expectedDatabaseConfigs    DatabaseConfigs
 		error                      bool
 		expectedStaticCheckErrors  []string
+		expectedPreinitFileErrors  []string
 	}
 
 	var testCases = []testCase{
@@ -228,9 +233,12 @@ func TestPreInit(t *testing.T) {
 						}
 					}
 				}`,
+			setupFilesystem: func(fls afs.Filesystem) {
+				util.WriteFile(fls, "/file.txt", nil, 0o600)
+			},
 			expectedPermissions: []Permission{},
 			expectedLimitations: []Limitation{},
-			expectedPreinitFileConfigs: PreinitFileConfigs{
+			expectedPreinitFileConfigs: PreinitFiles{
 				{
 					Name:               "F",
 					Path:               "/file.txt",
@@ -240,6 +248,89 @@ func TestPreInit(t *testing.T) {
 			},
 			expectedResolutions: nil,
 			error:               false,
+		},
+		{
+			name: "correct_preinit_file",
+			inputModule: `manifest {
+					preinit-files: {
+						F: {
+							path: /file.txt
+							pattern: %str
+						}
+					}
+				}`,
+			setupFilesystem: func(fls afs.Filesystem) {
+				util.WriteFile(fls, "/file.txt", []byte("a"), 0o600)
+			},
+			expectedPermissions: []Permission{},
+			expectedLimitations: []Limitation{},
+			expectedPreinitFileConfigs: PreinitFiles{
+				{
+					Name:               "F",
+					Path:               "/file.txt",
+					Parsed:             Str("a"),
+					Pattern:            STR_PATTERN,
+					RequiredPermission: CreateFsReadPerm(Path("/file.txt")),
+				},
+			},
+			expectedResolutions: nil,
+			error:               false,
+		},
+		{
+			name: "correct_preinit_file_but_not_existing",
+			inputModule: `manifest {
+					preinit-files: {
+						F: {
+							path: /file.txt
+							pattern: %str
+						}
+					}
+				}`,
+			expectedPermissions: []Permission{},
+			expectedLimitations: []Limitation{},
+			expectedPreinitFileConfigs: PreinitFiles{
+				{
+					Name:               "F",
+					Path:               "/file.txt",
+					Pattern:            STR_PATTERN,
+					RequiredPermission: CreateFsReadPerm(Path("/file.txt")),
+				},
+			},
+			expectedResolutions:       nil,
+			expectedPreinitFileErrors: []string{os.ErrNotExist.Error()},
+			error:                     false,
+		},
+		{
+			name: "correct_preinit_file_but_content_not_matching_pattern",
+			inputModule: `
+				preinit {
+					%p = %str("a"+)
+				}
+				manifest {
+					preinit-files: {
+						F: {
+							path: /file.txt
+							pattern: %p
+						}
+					}
+				}
+			`,
+			setupFilesystem: func(fls afs.Filesystem) {
+				util.WriteFile(fls, "/file.txt", nil, 0o600)
+			},
+			expectedPermissions: []Permission{},
+			expectedLimitations: []Limitation{},
+			expectedPreinitFileConfigs: PreinitFiles{
+				{
+					Name:               "F",
+					Path:               "/file.txt",
+					Pattern:            STR_PATTERN,
+					RequiredPermission: CreateFsReadPerm(Path("/file.txt")),
+				},
+			},
+			expectedResolutions:       nil,
+			expectedPreinitFileErrors: []string{ErrInvalidInputString.Error()},
+			error:                     false,
 		},
 		{
 			name: "several_correct_preinit_files",
@@ -255,9 +346,13 @@ func TestPreInit(t *testing.T) {
 						}
 					}
 				}`,
+			setupFilesystem: func(fls afs.Filesystem) {
+				util.WriteFile(fls, "/file1.txt", nil, 0o600)
+				util.WriteFile(fls, "/file2.txt", nil, 0o600)
+			},
 			expectedPermissions: []Permission{},
 			expectedLimitations: []Limitation{},
-			expectedPreinitFileConfigs: PreinitFileConfigs{
+			expectedPreinitFileConfigs: PreinitFiles{
 				{
 					Name:               "F1",
 					Path:               "/file1.txt",
@@ -374,6 +469,11 @@ func TestPreInit(t *testing.T) {
 				testCase.expectedResolutions = map[Host]Value{}
 			}
 
+			fls := newMemFilesystem()
+			if testCase.setupFilesystem != nil {
+				testCase.setupFilesystem(fls)
+			}
+
 			chunk := parse.MustParseChunk(testCase.inputModule)
 
 			mod := &Module{
@@ -385,8 +485,9 @@ func TestPreInit(t *testing.T) {
 			}
 
 			manifest, _, staticCheckErrors, err := mod.PreInit(PreinitArgs{
+				PreinitFilesystem:     fls,
 				GlobalConsts:          chunk.GlobalConstantDeclarations,
-				Preinit:               chunk.Preinit,
+				PreinitStatement:      chunk.Preinit,
 				RunningState:          nil,
 				AddDefaultPermissions: true,
 			})
@@ -427,6 +528,23 @@ func TestPreInit(t *testing.T) {
 				assert.EqualValues(t, testCase.expectedPermissions, manifest.RequiredPermissions)
 				assert.EqualValues(t, testCase.expectedLimitations, manifest.Limitations)
 				assert.EqualValues(t, testCase.expectedResolutions, manifest.HostResolutions)
+
+				if testCase.expectedPreinitFileErrors == nil {
+					for _, preinitFile := range manifest.PreinitFiles {
+						assert.NoError(t, preinitFile.ReadParseError, "error for preinit file "+preinitFile.Path)
+					}
+				} else {
+					if len(manifest.PreinitFiles) != len(testCase.expectedPreinitFileErrors) {
+						assert.Fail(t, fmt.Sprintf("mismatch between length of preinit files (%d) and expected preinit file errors (%d)",
+							len(manifest.PreinitFiles), len(testCase.expectedPreinitFileErrors)))
+					} else {
+						for i, preinitFile := range manifest.PreinitFiles {
+							if testCase.expectedPreinitFileErrors[i] != "" {
+								assert.ErrorContains(t, preinitFile.ReadParseError, testCase.expectedPreinitFileErrors[i])
+							}
+						}
+					}
+				}
 			}
 		})
 	}

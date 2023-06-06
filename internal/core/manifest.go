@@ -72,7 +72,7 @@ type Manifest struct {
 	HostResolutions map[Host]Value
 	EnvPattern      *ObjectPattern
 	Parameters      ModuleParameters
-	PreinitFiles    PreinitFileConfigs
+	PreinitFiles    PreinitFiles
 	Databases       DatabaseConfigs
 }
 
@@ -87,13 +87,16 @@ type ModuleParameters struct {
 	hasOptions        bool //true if at least one optional non-positional parameter
 }
 
-type PreinitFileConfigs []PreinitFileConfig
+type PreinitFiles []*PreinitFile
 
-type PreinitFileConfig struct {
+type PreinitFile struct {
 	Name               string //declared name, this is NOT the basename.
 	Path               Path   //absolute
 	Pattern            Pattern
 	RequiredPermission FilesystemPermission
+	Content            []byte
+	Parsed             Value
+	ReadParseError     error
 }
 
 type DatabaseConfigs []DatabaseConfig
@@ -549,7 +552,7 @@ type manifestObjectConfig struct {
 	addDefaultPermissions bool
 	handleCustomType      CustomPermissionTypeHandler //optional
 	envPattern            *ObjectPattern              //pre-evaluated
-	preinitFileConfigs    PreinitFileConfigs          //pre-evaluated
+	preinitFileConfigs    PreinitFiles                //pre-evaluated
 	ignoreUnkownSections  bool
 }
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,6 +23,8 @@ import (
 const (
 	INCLUDED_FILE_PATH_SHOULD_NOT_CONTAIN_X = "included file path should not contain '..'"
 	MOD_ARGS_VARNAME                        = "mod-args"
+	MAX_PREINIT_FILE_SIZE                   = int32(100_000)
+	DEFAULT_MAX_READ_FILE_SIZE              = int32(100_000_000)
 )
 
 var (
@@ -102,12 +105,12 @@ func (mod *Module) ToSymbolic() *symbolic.Module {
 }
 
 type PreinitArgs struct {
-	GlobalConsts *parse.GlobalConstantDeclarations //only used if no running state
-	Preinit      *parse.PreinitStatement           //only used if no running state
+	GlobalConsts     *parse.GlobalConstantDeclarations //only used if no running state
+	PreinitStatement *parse.PreinitStatement           //only used if no running state
 
 	RunningState *TreeWalkState //optional
 
-	//if RunningState is nil it is used to create the temporary context.
+	//if RunningState is nil .PreinitFilesystem is used to create the temporary context.
 	PreinitFilesystem afs.Filesystem
 
 	DefaultLimitations    []Limitation
@@ -117,6 +120,21 @@ type PreinitArgs struct {
 	IgnoreConstDeclErrors bool
 }
 
+// PreInit performs the pre-initialization of the module:
+// 1)  the pre-init block is statically checked (if present).
+// 2)  the manifest's object literal is statically checked.
+// 3)  if .RunningState is not nil go to 10)
+// 4)  else (.RunningState is nil) a temporary context & state are created.
+// 5)  pre-evaluate the env section of the manifest.
+// 6)  pre-evaluate the preinit-files section of the manifest.
+// 7)  read & parse the preinit-files using the provided .PreinitFilesystem.
+// 8)  evaluate & define the global constants (const ....).
+// 9)  evaluate the preinit block.
+// 10) evaluate the manifest's object literal.
+// 11) create the manifest.
+//
+// If an error occurs at any step, the function returns. The only exception are error when reading or parsing
+// preinit files, the error is stored in the PreinitFile struct.
 func (m *Module) PreInit(preinitArgs PreinitArgs) (*Manifest, *TreeWalkState, []*StaticCheckError, error) {
 	if m.ManifestTemplate == nil {
 		return &Manifest{}, nil, nil, nil
@@ -128,9 +146,9 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (*Manifest, *TreeWalkState, []
 	}
 
 	//check preinit block
-	if preinitArgs.Preinit != nil {
+	if preinitArgs.PreinitStatement != nil {
 		var checkErrs []*StaticCheckError
-		checkPreinitBlock(preinitArgs.Preinit, func(n parse.Node, msg string) {
+		checkPreinitBlock(preinitArgs.PreinitStatement, func(n parse.Node, msg string) {
 			location := m.MainChunk.GetSourcePosition(n.Base().Span)
 			checkErr := NewStaticCheckError(msg, parse.SourcePositionStack{location})
 			checkErrs = append(checkErrs, checkErr)
@@ -155,7 +173,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (*Manifest, *TreeWalkState, []
 
 	var state *TreeWalkState
 	var envPattern *ObjectPattern
-	preinitFileConfigs := make(PreinitFileConfigs, 0)
+	preinitFiles := make(PreinitFiles, 0)
 
 	//we create a temporary state to evaluate some parts of the permissions
 	if preinitArgs.RunningState == nil {
@@ -185,6 +203,36 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (*Manifest, *TreeWalkState, []
 				}
 			}
 			envPattern = v.(*ObjectPattern)
+		}
+
+		//evaluate & declare the global constants.
+		if preinitArgs.GlobalConsts != nil {
+			for _, decl := range preinitArgs.GlobalConsts.Declarations {
+				//ignore declaration if incomplete
+				if preinitArgs.IgnoreConstDeclErrors && decl.Left == nil || decl.Right == nil || parse.NodeIs(decl.Right, (*parse.MissingExpression)(nil)) {
+					continue
+				}
+
+				constVal, err := TreeWalkEval(decl.Right, state)
+				if err != nil {
+					if !preinitArgs.IgnoreConstDeclErrors {
+						return nil, nil, nil, fmt.Errorf(
+							"%s: failed to evaluate manifest object: error while evaluating constant declarations: %w", m.Name(), err)
+					}
+				} else {
+					state.SetGlobal(decl.Ident().Name, constVal, GlobalConst)
+				}
+			}
+		}
+
+		//evalute preinit block
+		if preinitArgs.PreinitStatement != nil {
+			_, err := TreeWalkEval(preinitArgs.PreinitStatement.Block, state)
+			if err != nil {
+				if err != nil {
+					return nil, nil, nil, fmt.Errorf("%s: failed to evaluate preinit block: %w", m.Name(), err)
+				}
+			}
 		}
 
 		// pre evaluate the preinit-files section of the manifest
@@ -224,7 +272,18 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (*Manifest, *TreeWalkState, []
 					return fmt.Errorf("property .%s in description of preinit file %s should be an absolute path", MANIFEST_PREINIT_FILE__PATH_PROP_NAME, k)
 				}
 
-				preinitFileConfigs = append(preinitFileConfigs, PreinitFileConfig{
+				switch patt := pattern.(type) {
+				case StringPattern:
+				case *SecretPattern:
+				case *TypePattern:
+					if patt != STR_PATTERN {
+						return fmt.Errorf("invalid pattern type %T for preinit file '%s'", patt, k)
+					}
+				default:
+					return fmt.Errorf("invalid pattern type %T for preinit file '%s'", patt, k)
+				}
+
+				preinitFiles = append(preinitFiles, &PreinitFile{
 					Name:    k,
 					Path:    path,
 					Pattern: pattern,
@@ -240,33 +299,30 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (*Manifest, *TreeWalkState, []
 			if err != nil {
 				return nil, nil, nil, fmt.Errorf("%s: failed to pre-evaluate the %s section: %w", m.Name(), MANIFEST_PREINIT_FILES_SECTION_NAME, err)
 			}
-		}
 
-		if preinitArgs.GlobalConsts != nil {
-			for _, decl := range preinitArgs.GlobalConsts.Declarations {
-				//ignore declaration if incomplete
-				if preinitArgs.IgnoreConstDeclErrors && decl.Left == nil || decl.Right == nil || parse.NodeIs(decl.Right, (*parse.MissingExpression)(nil)) {
+			//read & parse preinit files
+			fls := ctx.GetFileSystem()
+			for _, file := range preinitFiles {
+				content, err := ReadFileInFS(fls, string(file.Path), MAX_PREINIT_FILE_SIZE)
+				file.Content = content
+				file.ReadParseError = err
+
+				if err != nil {
 					continue
 				}
 
-				constVal, err := TreeWalkEval(decl.Right, state)
-				if err != nil {
-					if !preinitArgs.IgnoreConstDeclErrors {
-						return nil, nil, nil, fmt.Errorf(
-							"%s: failed to evaluate manifest object: error while evaluating constant declarations: %w", m.Name(), err)
+				switch patt := file.Pattern.(type) {
+				case StringPattern:
+					file.Parsed, file.ReadParseError = patt.Parse(ctx, string(content))
+				case *SecretPattern:
+					file.Parsed, file.ReadParseError = patt.NewSecret(ctx, string(content))
+				case *TypePattern:
+					if patt != STR_PATTERN {
+						panic(ErrUnreachable)
 					}
-				} else {
-					state.SetGlobal(decl.Ident().Name, constVal, GlobalConst)
-				}
-			}
-		}
-
-		//evalute preinit block
-		if preinitArgs.Preinit != nil {
-			_, err := TreeWalkEval(preinitArgs.Preinit.Block, state)
-			if err != nil {
-				if err != nil {
-					return nil, nil, nil, fmt.Errorf("%s: failed to evaluate preinit block: %w", m.Name(), err)
+					file.Parsed = Str(content)
+				default:
+					panic(ErrUnreachable)
 				}
 			}
 		}
@@ -276,7 +332,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (*Manifest, *TreeWalkState, []
 			return nil, nil, nil, fmt.Errorf(".GlobalConstants argument should not have been passed")
 		}
 
-		if preinitArgs.Preinit != nil {
+		if preinitArgs.PreinitStatement != nil {
 			return nil, nil, nil, fmt.Errorf(".Preinit argument should not have been passed")
 		}
 
@@ -298,7 +354,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (*Manifest, *TreeWalkState, []
 		handleCustomType:      preinitArgs.HandleCustomType,
 		addDefaultPermissions: preinitArgs.AddDefaultPermissions,
 		envPattern:            envPattern,
-		preinitFileConfigs:    preinitFileConfigs,
+		preinitFileConfigs:    preinitFiles,
 		//addDefaultPermissions: true,
 		ignoreUnkownSections: preinitArgs.IgnoreUnknownSections,
 	})
@@ -723,10 +779,72 @@ func createRecordFromSourcePositionStack(posStack parse.SourcePositionStack) *Re
 
 // FileStat tries to directly use the given file to get file information,
 // if it fails and fls is not nil then fls.Stat(f) is used.
-func FileStat(f billy.File, fls afs.Filesystem) (os.FileInfo, error) {
+func FileStat(f billy.File, fls billy.Basic) (os.FileInfo, error) {
 	interf, ok := f.(interface{ Stat() (os.FileInfo, error) })
 	if !ok {
 		return fls.Stat(f.Name())
 	}
 	return interf.Stat()
+}
+
+var (
+	ErrFileSizeExceedSpecifiedLimit = errors.New("file's size exceeds the specified limit")
+)
+
+// ReadFileInFS reads up to maxSize bytes from a file in the given filesystem.
+// if maxSize is <=0 the max size is set to 100MB.
+func ReadFileInFS(fls billy.Basic, name string, maxSize int32) ([]byte, error) {
+	f, err := fls.Open(name)
+	if err != nil {
+		return nil, err
+	}
+
+	defer f.Close()
+
+	if maxSize <= 0 {
+		maxSize = DEFAULT_MAX_READ_FILE_SIZE
+	}
+
+	var size32 int32
+	if info, err := FileStat(f, fls); err == nil {
+		size64 := info.Size()
+		if size64 > int64(maxSize) || size64 >= math.MaxInt32 {
+			return nil, ErrFileSizeExceedSpecifiedLimit
+		}
+
+		size32 = int32(size64)
+	}
+
+	size32++ // one byte for final read at EOF
+	// If a file claims a small size, read at least 512 bytes.
+	// In particular, files in Linux's /proc claim size 0 but
+	// then do not work right if read in small pieces,
+	// so an initial read of 1 byte would not work correctly.
+
+	if size32 < 512 {
+		size32 = 512
+	}
+
+	data := make([]byte, 0, size32)
+	for {
+		if len(data) >= cap(data) {
+			d := append(data[:cap(data)], 0)
+			data = d[:len(data)]
+		}
+
+		n, err := f.Read(data[len(data):cap(data)])
+		data = data[:len(data)+n]
+
+		if len(data) > int(maxSize) {
+			return nil, ErrFileSizeExceedSpecifiedLimit
+		}
+
+		if err != nil {
+			if err == io.EOF {
+				err = nil
+			}
+
+			return data, err
+		}
+	}
 }

@@ -1556,7 +1556,7 @@ func checkPreinitBlock(preinit *parse.PreinitStatement, onError func(n parse.Nod
 	parse.Walk(preinit.Block, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 		switch n := node.(type) {
 		case *parse.Block, *parse.HostAliasDefinition, *parse.IdentifierLiteral, *parse.PatternDefinition, parse.SimpleValueLiteral,
-			*parse.PatternIdentifierLiteral, *parse.URLExpression:
+			*parse.PatternIdentifierLiteral, *parse.URLExpression, *parse.ComplexStringPatternPiece, *parse.PatternPieceElement:
 		default:
 			onError(n, fmt.Sprintf("%s: %T", ErrForbiddenNodeinPreinit, n))
 			return parse.Prune, nil

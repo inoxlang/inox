@@ -10,7 +10,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/config"
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/default_state"
@@ -28,7 +28,7 @@ var (
 )
 
 type ScriptPreparationArgs struct {
-	Fpath string
+	Fpath string //path of the script in the .ParsingCompilationContext's filesystem.
 
 	CliArgs []string
 	Args    *core.Object
@@ -91,7 +91,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	if mod != nil {
 		manifest, preinitState, preinitStaticCheckErrors, preinitErr = mod.PreInit(core.PreinitArgs{
 			GlobalConsts:          mod.MainChunk.Node.GlobalConstantDeclarations,
-			Preinit:               mod.MainChunk.Node.Preinit,
+			PreinitStatement:      mod.MainChunk.Node.Preinit,
 			PreinitFilesystem:     args.PreinitFilesystem,
 			DefaultLimitations:    default_state.GetDefaultScriptLimitations(),
 			AddDefaultPermissions: true,
