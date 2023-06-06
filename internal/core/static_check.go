@@ -1731,6 +1731,8 @@ func checkPermissionListingObject(objLit *parse.ObjectLiteral, onError func(n pa
 
 func checkPreinitFilesObject(obj *parse.ObjectLiteral, onError func(n parse.Node, msg string)) {
 
+	hasForbiddenNodes := false 
+
 	parse.Walk(obj, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 		if node == obj {
 			return parse.Continue, nil
@@ -1741,10 +1743,15 @@ func checkPreinitFilesObject(obj *parse.ObjectLiteral, onError func(n parse.Node
 			*parse.ObjectProperty, *parse.PatternCallExpression, parse.SimpleValueLiteral, *parse.GlobalVariable:
 		default:
 			onError(n, fmtForbiddenNodeInPreinitFilesSection(n))
+			hasForbiddenNodes = true
 		}
 
 		return parse.Continue, nil
 	}, nil)
+
+	if hasForbiddenNodes {
+		return
+	}
 
 	for _, p := range obj.Properties {
 		if p.Value == nil {
