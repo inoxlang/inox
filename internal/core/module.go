@@ -134,7 +134,17 @@ type PreinitArgs struct {
 // 11) create the manifest.
 //
 // If an error occurs at any step, the function returns.
-func (m *Module) PreInit(preinitArgs PreinitArgs) (*Manifest, *TreeWalkState, []*StaticCheckError, error) {
+func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, _ *TreeWalkState, _ []*StaticCheckError, preinitErr error) {
+	defer func() {
+		if preinitErr != nil && m.ManifestTemplate != nil {
+			preinitErr = LocatedEvalError{
+				error:    preinitErr,
+				Message:  preinitErr.Error(),
+				Location: parse.SourcePositionStack{m.MainChunk.GetSourcePosition(m.ManifestTemplate.Span)},
+			}
+		}
+	}()
+
 	if m.ManifestTemplate == nil {
 		return &Manifest{}, nil, nil, nil
 	}
