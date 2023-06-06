@@ -103,7 +103,7 @@ func fmtForbiddenNodeInEnvSection(n parse.Node) string {
 func fmtForbiddenNodeInPreinitFilesSection(n parse.Node) string {
 	return fmt.Sprintf(
 		"invalid %s section: invalid node %T, only variables, simple literals & named patterns are allowed",
-		PREINIT_FILES_SECTION_SHOULD_BE_AN_OBJECT, n)
+		MANIFEST_PREINIT_FILES_SECTION_NAME, n)
 }
 
 func fmtForbiddenNodeInHostResolutionSection(n parse.Node) string {
