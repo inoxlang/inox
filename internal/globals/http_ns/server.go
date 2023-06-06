@@ -58,7 +58,7 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 		return nil, errors.New("cannot create server: context's associated state is nil")
 	}
 
-	addr, _, _, userProvidedHandler, handlerValProvided, middlewares, argErr := readHttpServerArgs(ctx, _server, args...)
+	addr, userProvidedCert, userProvidedKey, userProvidedHandler, handlerValProvided, middlewares, argErr := readHttpServerArgs(ctx, _server, args...)
 	if argErr != nil {
 		return nil, argErr
 	}
@@ -146,7 +146,19 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 	})
 
 	//create a stdlib http Server
-	server, err := NewGolangHttpServer(addr, topHandler, "", "", ctx)
+	config := GolangHttpServerConfig{
+		Addr:    addr,
+		Handler: topHandler,
+	}
+	if userProvidedCert != "" {
+		config.PemEncodedCert = userProvidedCert
+	}
+
+	if userProvidedKey != nil {
+		config.PemEncodedKey = userProvidedKey.StringValue().GetOrBuildString()
+	}
+
+	server, err := NewGolangHttpServer(ctx, config)
 	if err != nil {
 		return nil, err
 	}
@@ -337,10 +349,20 @@ func readHttpServerArgs(ctx *core.Context, server *HttpServer, args ...core.Valu
 	return
 }
 
-func NewGolangHttpServer(addr string, handler http.Handler, pemEncodedCert string, pemEncodedKey string, ctx *core.Context) (*http.Server, error) {
+type GolangHttpServerConfig struct {
+	Addr           string
+	Handler        http.Handler
+	PemEncodedCert string
+	PemEncodedKey  string
+}
+
+func NewGolangHttpServer(ctx *core.Context, config GolangHttpServerConfig) (*http.Server, error) {
 	fls := ctx.GetFileSystem()
 
-	if pemEncodedCert == "" { //if no certificate provided by the user we create one
+	pemEncodedCert := config.PemEncodedCert
+	pemEncodedKey := config.PemEncodedKey
+
+	if config.PemEncodedCert == "" { //if no certificate provided by the user we create one
 		//we generate a self signed certificate that we write to disk so that
 		//we can reuse it
 		CERT_FILEPATH := "localhost.cert"
@@ -402,8 +424,8 @@ func NewGolangHttpServer(addr string, handler http.Handler, pemEncodedCert strin
 	}
 
 	server := &http.Server{
-		Addr:              addr,
-		Handler:           handler,
+		Addr:              config.Addr,
+		Handler:           config.Handler,
 		ReadHeaderTimeout: DEFAULT_HTTP_SERVER_READ_HEADER_TIMEOUT,
 		ReadTimeout:       DEFAULT_HTTP_SERVER_READ_TIMEOUT,
 		WriteTimeout:      DEFAULT_HTTP_SERVER_WRITE_TIMEOUT,

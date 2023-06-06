@@ -45,11 +45,12 @@ func NewJsonRpcWebsocketServer(ctx *core.Context, config JsonRpcWebsocketServerC
 		rpcServer: config.rpcServer,
 	}
 
-	httpServer, err := http_ns.NewGolangHttpServer(
-		config.addr, http.HandlerFunc(server.handleNew),
-		config.certificate, config.certificatePrivateKey,
-		ctx,
-	)
+	httpServer, err := http_ns.NewGolangHttpServer(ctx, http_ns.GolangHttpServerConfig{
+		Addr:           config.addr,
+		Handler:        http.HandlerFunc(server.handleNew),
+		PemEncodedCert: config.certificate,
+		PemEncodedKey:  config.certificatePrivateKey,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTPS server: %w", err)
 	}

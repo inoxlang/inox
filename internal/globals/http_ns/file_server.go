@@ -51,7 +51,10 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 		return nil, errors.New("no (directory) path required")
 	}
 
-	server, err := NewGolangHttpServer(addr, http.FileServer(http.Dir(dir)), "", "", ctx)
+	server, err := NewGolangHttpServer(ctx, GolangHttpServerConfig{
+		Addr:    addr,
+		Handler: http.FileServer(http.Dir(dir)),
+	})
 	if err != nil {
 		return nil, err
 	}
