@@ -528,7 +528,8 @@ var (
 		},
 		SymbolicValue: symbolic.ANY_SECRET,
 	}
-	SECRET_STRING_PATTERN = NewSecretPattern(NewRegexPattern(".*"), true)
+	SECRET_STRING_PATTERN     = NewSecretPattern(NewRegexPattern(".*"), false)
+	SECRET_PEM_STRING_PATTERN = NewSecretPattern(NewPEMRegexPattern(".*"), true)
 
 	DEFAULT_NAMED_PATTERNS = map[string]Pattern{
 		"ident":          IDENT_PATTERN,

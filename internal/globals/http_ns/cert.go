@@ -110,7 +110,7 @@ func generateSelfSignedCertAndKeyValues(ctx *core.Context) (core.Str, *core.Secr
 		return "", nil, err
 	}
 
-	secret, err := core.SECRET_STRING_PATTERN.NewSecret(ctx, string(pem.EncodeToMemory(key)))
+	secret, err := core.SECRET_PEM_STRING_PATTERN.NewSecret(ctx, string(pem.EncodeToMemory(key)))
 	if err != nil {
 		return "", nil, err
 	}
