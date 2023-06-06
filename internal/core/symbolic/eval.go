@@ -1396,7 +1396,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			case extData.VISIBILITY_KEY:
 				//
 			default:
-				state.addError(makeSymbolicEvalError(node, state, fmtCannotInitializedMetaProp(p.Name())))
+				state.addError(makeSymbolicEvalError(p, state, fmtCannotInitializedMetaProp(p.Name())))
 			}
 		}
 
