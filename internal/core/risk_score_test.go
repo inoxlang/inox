@@ -3,7 +3,7 @@ package core
 import (
 	"testing"
 
-	"github.com/inoxlang/inox/internal/utils"
+	. "github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,7 +12,7 @@ func TestComputeProgramRiskScore(t *testing.T) {
 	t.Run("empty manifest, empty code", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 
-		mod := utils.Must(ParseInMemoryModule("manifest {}", InMemoryModuleParsingConfig{
+		mod := Must(ParseInMemoryModule("manifest {}", InMemoryModuleParsingConfig{
 			Name:    "",
 			Context: ctx,
 		}))
@@ -21,13 +21,13 @@ func TestComputeProgramRiskScore(t *testing.T) {
 			GlobalConsts: mod.MainChunk.Node.GlobalConstantDeclarations,
 		})
 
-		assert.Equal(t, RiskScore(1), ComputeProgramRiskScore(mod, manifest))
+		assert.Equal(t, RiskScore(1), Ret0(ComputeProgramRiskScore(mod, manifest)))
 	})
 
 	t.Run("read /home/user/**/* permission", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 
-		mod := utils.Must(ParseInMemoryModule(`
+		mod := Must(ParseInMemoryModule(`
 			manifest {
 				permissions: {read: %/home/user/**/*}
 			}
@@ -41,13 +41,13 @@ func TestComputeProgramRiskScore(t *testing.T) {
 		})
 
 		expected := RiskScore(FS_READ_PERM_RISK_SCORE * UNKNOW_FILE_PATTERN_SENSITIVITY_MUTLIPLIER)
-		assert.Equal(t, expected, ComputeProgramRiskScore(mod, manifest))
+		assert.Equal(t, expected, Ret0(ComputeProgramRiskScore(mod, manifest)))
 	})
 
 	t.Run("read /home/user/**/* permission & read https://** permission", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 
-		mod := utils.Must(ParseInMemoryModule(`
+		mod := Must(ParseInMemoryModule(`
 			manifest {
 				permissions: {
 					read: {%/home/user/**/*, %https://**}
@@ -66,13 +66,13 @@ func TestComputeProgramRiskScore(t *testing.T) {
 			(FS_READ_PERM_RISK_SCORE * UNKNOW_FILE_PATTERN_SENSITIVITY_MUTLIPLIER) *
 				(HTTP_READ_PERM_RISK_SCORE * HOST_PATTERN_RISK_MULTIPLIER),
 		)
-		assert.Equal(t, expected, ComputeProgramRiskScore(mod, manifest))
+		assert.Equal(t, expected, Ret0(ComputeProgramRiskScore(mod, manifest)))
 	})
 
 	t.Run("https://example.com/ permission for HTTP & Websocket", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 
-		mod := utils.Must(ParseInMemoryModule(`
+		mod := Must(ParseInMemoryModule(`
 			manifest {
 				permissions: {
 					read: {wss://example.com/, https://example.com/}
@@ -89,13 +89,13 @@ func TestComputeProgramRiskScore(t *testing.T) {
 
 		expectedHttpScore := RiskScore((HTTP_READ_PERM_RISK_SCORE * URL_RISK_MULTIPLIER))
 		expectedScore := 2 * expectedHttpScore
-		assert.Equal(t, expectedScore, ComputeProgramRiskScore(mod, manifest))
+		assert.Equal(t, expectedScore, Ret0(ComputeProgramRiskScore(mod, manifest)))
 	})
 
 	t.Run("create routines permission", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 
-		mod := utils.Must(ParseInMemoryModule(`
+		mod := Must(ParseInMemoryModule(`
 			manifest {
 				permissions: {create: {routines: {}}}
 			}
@@ -109,13 +109,13 @@ func TestComputeProgramRiskScore(t *testing.T) {
 		})
 
 		expected := RiskScore(ROUTINE_PERM_RISK_SCORE)
-		assert.Equal(t, expected, ComputeProgramRiskScore(mod, manifest))
+		assert.Equal(t, expected, Ret0(ComputeProgramRiskScore(mod, manifest)))
 	})
 
 	t.Run("many permissions", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 
-		mod := utils.Must(ParseInMemoryModule(`
+		mod := Must(ParseInMemoryModule(`
 			manifest {
 				permissions: {
 					read: {%/home/user/**/*, %https://**}
@@ -132,6 +132,6 @@ func TestComputeProgramRiskScore(t *testing.T) {
 			GlobalConsts: mod.MainChunk.Node.GlobalConstantDeclarations,
 		})
 
-		assert.Equal(t, MAXIMUM_RISK_SCORE, ComputeProgramRiskScore(mod, manifest))
+		assert.Equal(t, MAXIMUM_RISK_SCORE, Ret0(ComputeProgramRiskScore(mod, manifest)))
 	})
 }

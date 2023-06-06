@@ -335,7 +335,7 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 		return nil, nil, nil, ErrExecutionAbortedTooManyWarnings
 	}
 
-	riskScore := core.ComputeProgramRiskScore(mod, manifest)
+	riskScore, requiredPerms := core.ComputeProgramRiskScore(mod, manifest)
 
 	// if the program is risky ask the user to confirm the execution
 	if !args.IgnoreHighRiskScore && riskScore > config.DEFAULT_TRUSTED_RISK_SCORE {
@@ -348,7 +348,7 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 		msg.WriteString(riskScore.ValueAndLevel())
 		msg.WriteString("\nthe program is asking for the following permissions:\n")
 
-		for _, perm := range manifest.RequiredPermissions {
+		for _, perm := range requiredPerms {
 			//ignore global var permissions
 			if _, ok := perm.(core.GlobalVarPermission); ok {
 				continue

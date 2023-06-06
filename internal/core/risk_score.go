@@ -115,9 +115,9 @@ var (
 // ComputeProgramRiskScore computes the risk score for a prepared program. First the risk score for each permission
 // is computed, then scores of permissions of the same type are summed and finally the remaining scores are multiplied together.
 // The current logic is intended to be a starting point, it may be adjusted based on additional research and feedback.
-func ComputeProgramRiskScore(mod *Module, manifest *Manifest) (totalScore RiskScore) {
+func ComputeProgramRiskScore(mod *Module, manifest *Manifest) (totalScore RiskScore, requiredPerms []Permission) {
 	permTypeRiskScores := map[reflect.Type]RiskScore{}
-	requiredPerms := utils.CopySlice(manifest.RequiredPermissions)
+	requiredPerms = utils.CopySlice(manifest.RequiredPermissions)
 
 	for _, preinitFilePerm := range manifest.PreinitFiles {
 		requiredPerms = append(requiredPerms, preinitFilePerm.RequiredPermission)
@@ -136,7 +136,7 @@ func ComputeProgramRiskScore(mod *Module, manifest *Manifest) (totalScore RiskSc
 
 	for permType, score := range permTypeRiskScores {
 		if totalScore > MAXIMUM_RISK_SCORE/score {
-			return MAXIMUM_RISK_SCORE
+			return MAXIMUM_RISK_SCORE, requiredPerms
 		}
 
 		//Special case: the HTTP and Websocket scores are added together because they are almost equivalent.
@@ -155,12 +155,12 @@ func ComputeProgramRiskScore(mod *Module, manifest *Manifest) (totalScore RiskSc
 	}
 
 	if totalScore > MAXIMUM_RISK_SCORE/combinedHttpWsScore {
-		return MAXIMUM_RISK_SCORE
+		return MAXIMUM_RISK_SCORE, requiredPerms
 	}
 
 	totalScore *= combinedHttpWsScore
 
-	return totalScore
+	return totalScore, requiredPerms
 }
 
 func ComputePermissionRiskScore(perm Permission) RiskScore {
