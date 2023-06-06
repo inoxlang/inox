@@ -135,6 +135,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 
 	globalState, err := default_state.NewDefaultGlobalState(ctx, default_state.DefaultGlobalStateConfig{
 		EnvPattern:          manifest.EnvPattern,
+		PreinitFiles:        manifest.PreinitFiles,
 		AllowMissingEnvVars: args.AllowMissingEnvVars,
 		Out:                 out,
 		LogOut:              args.LogOut,

@@ -29,6 +29,10 @@ import (
 	"github.com/rs/zerolog"
 )
 
+const (
+	PREINIT_DATA_GLOBAL_NAME = "preinit-data"
+)
+
 var (
 	DEFAULT_SCRIPT_LIMITATIONS = []core.Limitation{
 		{Name: fs_ns.FS_READ_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 100_000_000},
@@ -86,15 +90,31 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 
 	logger = logger.With().Timestamp().Logger().Level(zerolog.InfoLevel)
 
+	//create env namespace
+
 	envNamespace, err := env_ns.NewEnvNamespace(ctx, conf.EnvPattern, conf.AllowMissingEnvVars)
 	if err != nil {
 		return nil, err
 	}
 
+	//create value for the preinit-data global
+
+	var preinitFilesKeys []string
+	var preinitDataValues []core.Value
+	for _, preinitFile := range conf.PreinitFiles {
+		preinitFilesKeys = append(preinitFilesKeys, preinitFile.Name)
+		preinitDataValues = append(preinitDataValues, preinitFile.Parsed)
+	}
+
+	preinitData :=
+		core.NewRecordFromKeyValLists([]string{"files"}, []core.Value{core.NewRecordFromKeyValLists(preinitFilesKeys, preinitDataValues)})
+
 	constants := map[string]core.Value{
 		// constants
 		core.INITIAL_WORKING_DIR_VARNAME:        core.INITIAL_WORKING_DIR_PATH,
 		core.INITIAL_WORKING_DIR_PREFIX_VARNAME: core.INITIAL_WORKING_DIR_PATH_PATTERN,
+
+		PREINIT_DATA_GLOBAL_NAME: preinitData,
 
 		// namespaces
 		"fs":       fs_ns.NewFsNamespace(),

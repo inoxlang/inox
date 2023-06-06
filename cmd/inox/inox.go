@@ -143,6 +143,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		res, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 			Fpath:                     fpath,
 			PassedCLIArgs:             moduleArgs,
+			PreinitFilesystem:         compilationCtx.GetFileSystem(),
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             nil, //grant all permissions
 			UseBytecode:               !useTreeWalking,

@@ -17,6 +17,7 @@ var (
 
 type DefaultGlobalStateConfig struct {
 	EnvPattern          *core.ObjectPattern
+	PreinitFiles        core.PreinitFiles
 	AllowMissingEnvVars bool
 	Out                 io.Writer
 	LogOut              io.Writer
