@@ -298,7 +298,7 @@ func TestPreInit(t *testing.T) {
 			},
 			expectedResolutions:       nil,
 			expectedPreinitFileErrors: []string{os.ErrNotExist.Error()},
-			error:                     false,
+			error:                     true,
 		},
 		{
 			name: "correct_preinit_file_but_content_not_matching_pattern",
@@ -330,7 +330,7 @@ func TestPreInit(t *testing.T) {
 			},
 			expectedResolutions:       nil,
 			expectedPreinitFileErrors: []string{ErrInvalidInputString.Error()},
-			error:                     false,
+			error:                     true,
 		},
 		{
 			name: "several_correct_preinit_files",
