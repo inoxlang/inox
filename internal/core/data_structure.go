@@ -539,6 +539,9 @@ func NewRecordFromMap(entryMap ValMap) *Record {
 
 	i := 0
 	for k, v := range entryMap {
+		if v.IsMutable() {
+			panic(fmt.Errorf("value of provided property .%s is mutable", k))
+		}
 		if IsIndexKey(k) {
 			maxKeyIndex = utils.Max(maxKeyIndex, utils.Must(strconv.Atoi(k)))
 		}
@@ -557,6 +560,10 @@ func NewRecordFromKeyValLists(keys []string, values []Value) *Record {
 	i := 0
 	for ind, k := range keys {
 		v := values[ind]
+		if v.IsMutable() {
+			panic(fmt.Errorf("value of provided property .%s is mutable", k))
+		}
+
 		if IsIndexKey(k) {
 			maxKeyIndex = utils.Max(maxKeyIndex, utils.Must(strconv.Atoi(k)))
 		}
@@ -732,6 +739,11 @@ type Tuple struct {
 }
 
 func NewTuple(elements []Value) *Tuple {
+	for i, e := range elements {
+		if e.IsMutable() {
+			panic(fmt.Errorf("value at index [%d] is mutable", i))
+		}
+	}
 	return &Tuple{elements: elements}
 }
 

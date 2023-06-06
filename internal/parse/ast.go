@@ -832,7 +832,7 @@ type ObjectLiteral struct {
 
 func (objLit ObjectLiteral) PropValue(name string) (Node, bool) {
 	for _, prop := range objLit.Properties {
-		if prop.Name() == name {
+		if prop.Key != nil && prop.Name() == name {
 			return prop.Value, true
 		}
 	}

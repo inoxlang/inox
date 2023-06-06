@@ -1761,9 +1761,10 @@ func checkPreinitFilesObject(obj *parse.ObjectLiteral, onError func(n parse.Node
 		if !ok {
 			onError(p, fmtMissingPropInPreinitFileDescription(MANIFEST_PREINIT_FILE__PATH_PROP_NAME, p.Name()))
 		} else {
-			_, ok := pathNode.(*parse.AbsolutePathLiteral)
-			if !ok {
-				onError(p, PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_ABSOLUTE)
+			switch pathNode.(type) {
+			case *parse.AbsolutePathLiteral, *parse.RelativePathLiteral:
+			default:
+				onError(p, PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_PATH)
 			}
 		}
 

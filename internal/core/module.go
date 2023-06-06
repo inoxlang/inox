@@ -133,8 +133,7 @@ type PreinitArgs struct {
 // 10) evaluate the manifest's object literal.
 // 11) create the manifest.
 //
-// If an error occurs at any step, the function returns. The only exception are error when reading or parsing
-// preinit files, the error is stored in the PreinitFile struct.
+// If an error occurs at any step, the function returns.
 func (m *Module) PreInit(preinitArgs PreinitArgs) (*Manifest, *TreeWalkState, []*StaticCheckError, error) {
 	if m.ManifestTemplate == nil {
 		return &Manifest{}, nil, nil, nil
@@ -238,6 +237,8 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (*Manifest, *TreeWalkState, []
 		// pre evaluate the preinit-files section of the manifest
 		preinitFilesSection, ok := manifestObjLiteral.PropValue(MANIFEST_PREINIT_FILES_SECTION_NAME)
 		if ok {
+			fls := ctx.GetFileSystem()
+
 			v, err := TreeWalkEval(preinitFilesSection, state)
 			if err != nil {
 				if err != nil {
@@ -268,9 +269,11 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (*Manifest, *TreeWalkState, []
 					return fmt.Errorf("property .%s in description of preinit file %s is not a pattern", MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME, k)
 				}
 
-				if !path.IsAbsolute() {
-					return fmt.Errorf("property .%s in description of preinit file %s should be an absolute path", MANIFEST_PREINIT_FILE__PATH_PROP_NAME, k)
-				}
+				// if !path.IsAbsolute() {
+				// 	return fmt.Errorf("property .%s in description of preinit file %s should be an absolute path", MANIFEST_PREINIT_FILE__PATH_PROP_NAME, k)
+				// }
+
+				path = path.ToAbs(fls)
 
 				switch patt := pattern.(type) {
 				case StringPattern:
@@ -301,13 +304,14 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (*Manifest, *TreeWalkState, []
 			}
 
 			//read & parse preinit files
-			fls := ctx.GetFileSystem()
+			atLeastOneReadParseError := false
 			for _, file := range preinitFiles {
 				content, err := ReadFileInFS(fls, string(file.Path), MAX_PREINIT_FILE_SIZE)
 				file.Content = content
 				file.ReadParseError = err
 
 				if err != nil {
+					atLeastOneReadParseError = true
 					continue
 				}
 
@@ -324,6 +328,15 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (*Manifest, *TreeWalkState, []
 				default:
 					panic(ErrUnreachable)
 				}
+
+				if file.ReadParseError != nil {
+					atLeastOneReadParseError = true
+				}
+			}
+
+			if atLeastOneReadParseError {
+				//not very explicative on purpose.
+				return nil, nil, nil, fmt.Errorf("%s: at least one error when reading & parsing preinit files", m.Name())
 			}
 		}
 
