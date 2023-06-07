@@ -15,7 +15,7 @@ func TestTransaction(t *testing.T) {
 	for _, method := range []string{"commit", "rollback"} {
 		t.Run("after call to "+method+" all acquired resources should be released", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
-			tx := NewTransaction(ctx)
+			tx := newTransaction(ctx)
 			tx.Start(ctx)
 
 			resource := Path("/a" + strconv.Itoa(rand.Int()))
@@ -56,7 +56,7 @@ func TestTransaction(t *testing.T) {
 
 		t.Run("Start", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
-			tx := NewTransaction(ctx)
+			tx := newTransaction(ctx)
 			tx.Start(ctx)
 			assert.NoError(t, tx.Commit(ctx))
 
@@ -65,7 +65,7 @@ func TestTransaction(t *testing.T) {
 
 		t.Run("Commit", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
-			tx := NewTransaction(ctx)
+			tx := newTransaction(ctx)
 			tx.Start(ctx)
 			assert.NoError(t, tx.Commit(ctx))
 
@@ -74,7 +74,7 @@ func TestTransaction(t *testing.T) {
 
 		t.Run("Rollback", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
-			tx := NewTransaction(ctx)
+			tx := newTransaction(ctx)
 			tx.Start(ctx)
 			assert.NoError(t, tx.Commit(ctx))
 
@@ -83,7 +83,7 @@ func TestTransaction(t *testing.T) {
 
 		t.Run("SetValue", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
-			tx := NewTransaction(ctx)
+			tx := newTransaction(ctx)
 			tx.Start(ctx)
 			assert.NoError(t, tx.Commit(ctx))
 
@@ -92,7 +92,7 @@ func TestTransaction(t *testing.T) {
 
 		t.Run("GetValue", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
-			tx := NewTransaction(ctx)
+			tx := newTransaction(ctx)
 			tx.Start(ctx)
 			assert.NoError(t, tx.Commit(ctx))
 
@@ -106,7 +106,7 @@ func TestTransaction(t *testing.T) {
 
 		t.Run("Start", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
-			tx := NewTransaction(ctx)
+			tx := newTransaction(ctx)
 			tx.Start(ctx)
 			assert.NoError(t, tx.Rollback(ctx))
 
@@ -115,7 +115,7 @@ func TestTransaction(t *testing.T) {
 
 		t.Run("Commit", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
-			tx := NewTransaction(ctx)
+			tx := newTransaction(ctx)
 			tx.Start(ctx)
 			assert.NoError(t, tx.Rollback(ctx))
 
@@ -124,7 +124,7 @@ func TestTransaction(t *testing.T) {
 
 		t.Run("Rollback", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
-			tx := NewTransaction(ctx)
+			tx := newTransaction(ctx)
 			tx.Start(ctx)
 			assert.NoError(t, tx.Rollback(ctx))
 
@@ -133,7 +133,7 @@ func TestTransaction(t *testing.T) {
 
 		t.Run("SetValue", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
-			tx := NewTransaction(ctx)
+			tx := newTransaction(ctx)
 			tx.Start(ctx)
 			assert.NoError(t, tx.Rollback(ctx))
 
@@ -142,7 +142,7 @@ func TestTransaction(t *testing.T) {
 
 		t.Run("GetValue", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
-			tx := NewTransaction(ctx)
+			tx := newTransaction(ctx)
 			tx.Start(ctx)
 			assert.NoError(t, tx.Rollback(ctx))
 
@@ -155,7 +155,7 @@ func TestTransaction(t *testing.T) {
 	t.Run("transaction timeout", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
-		tx := NewTransaction(ctx, Option{TX_TIMEOUT_OPTION_NAME, Duration(time.Millisecond)})
+		tx := newTransaction(ctx, Option{TX_TIMEOUT_OPTION_NAME, Duration(time.Millisecond)})
 		tx.Start(ctx)
 
 		time.Sleep(2 * time.Millisecond)

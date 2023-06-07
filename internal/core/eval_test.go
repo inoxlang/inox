@@ -5872,10 +5872,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			return NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"start_tx": ValOf(func(ctx *Context) *Transaction {
-					tx := NewTransaction(ctx)
-					tx.Start(ctx)
-					*_tx = tx
-					return tx
+					*_tx = StartNewTransaction(ctx)
+					return *_tx
 				}),
 				"do_reversible_side_effect": ValOf(func(ctx *Context) {
 					effect := &reversibleEffect{}

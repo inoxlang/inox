@@ -135,7 +135,6 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 
 		// transaction
 		"get_current_tx": core.ValOf(_get_current_tx),
-		"Tx":             core.ValOf(core.NewTransaction),
 		"start_tx":       core.ValOf(core.StartNewTransaction),
 
 		"Error": core.ValOf(_Error),

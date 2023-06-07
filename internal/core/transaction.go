@@ -41,7 +41,7 @@ type Transaction struct {
 	isReadonly        bool
 }
 
-func NewTransaction(ctx *Context, options ...Option) *Transaction {
+func newTransaction(ctx *Context, options ...Option) *Transaction {
 	tx := &Transaction{
 		ctx:            ctx,
 		values:         make(map[any]any),
@@ -61,7 +61,7 @@ func NewTransaction(ctx *Context, options ...Option) *Transaction {
 
 // StartNewTransaction creates a new transaction and starts it immediately.
 func StartNewTransaction(ctx *Context, options ...Option) *Transaction {
-	tx := NewTransaction(ctx, options...)
+	tx := newTransaction(ctx, options...)
 	tx.Start(ctx)
 	return tx
 }
@@ -73,6 +73,10 @@ func (tx *Transaction) IsFinished() bool {
 func (tx *Transaction) Start(ctx *Context) error {
 	if tx.IsFinished() {
 		return ErrFinishedTransaction
+	}
+
+	if ctx != tx.ctx {
+		panic(errors.New("a transaction should be started by the same context that created it"))
 	}
 
 	tx.lock.Lock()

@@ -14,9 +14,6 @@ func init() {
 		_get_current_tx, func(ctx *symbolic.Context) *symbolic.Transaction {
 			return &symbolic.Transaction{}
 		},
-		core.NewTransaction, func(ctx *symbolic.Context, options ...*symbolic.Option) *symbolic.Transaction {
-			return &symbolic.Transaction{}
-		},
 		core.StartNewTransaction, func(ctx *symbolic.Context, options ...*symbolic.Option) *symbolic.Transaction {
 			return &symbolic.Transaction{}
 		},
