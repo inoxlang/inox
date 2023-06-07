@@ -28,6 +28,12 @@ import (
 )
 
 var (
+	defaultBuntdbConfig = buntDbConfig{
+		SyncPolicy:           SyncAlways,
+		AutoShrinkPercentage: 100,
+		AutoShrinkMinSize:    32 * 1024 * 1024,
+	}
+
 	// errTxNotWritable is returned when performing a write operation on a
 	// read-only transaction.
 	errTxNotWritable = errors.New("tx not writable")
@@ -83,7 +89,7 @@ type buntDB struct {
 	insIdxs   []*index          // a reuse buffer for gathering indexes
 	flushes   int               // a count of the number of disk flushes
 	closed    atomic.Bool       // set when the database has been closed (the database may be in the process of syncing)
-	config    Config            // the database configuration
+	config    buntDbConfig      // the database configuration
 	persist   bool              // do we write to disk
 	shrinking bool              // when an aof shrink is in-process.
 	lastaofsz int               // the size of the last shrink aof size
@@ -93,22 +99,22 @@ type buntDB struct {
 type SyncPolicy int
 
 const (
-	// Never is used to disable syncing data to disk.
+	// SyncNever is used to disable syncing data to disk.
 	// The faster and less safe method.
-	Never SyncPolicy = 0
-	// EverySecond is used to sync data to disk every second.
+	SyncNever SyncPolicy = 0
+	// SyncEverySecond is used to sync data to disk every second.
 	// It's pretty fast and you can lose 1 second of data if there
 	// is a disaster.
 	// This is the recommended setting.
-	EverySecond = 1
-	// Always is used to sync data after every write to disk.
+	SyncEverySecond = 1
+	// SyncAlways is used to sync data after every write to disk.
 	// Slow. Very safe.
-	Always = 2
+	SyncAlways = 2
 )
 
-// Config represents database configuration options. These
+// buntDbConfig represents database configuration options. These
 // options are used to change various behaviors of the database.
-type Config struct {
+type buntDbConfig struct {
 	// SyncPolicy adjusts how often the data is synced to disk.
 	// This value can be Never, EverySecond, or Always.
 	// The default is EverySecond.
@@ -148,18 +154,23 @@ type exctx struct {
 
 // openBuntDBNoPermCheck opens a database at the provided path.
 // If the file does not exist then it will be created automatically.
-func openBuntDBNoPermCheck(path string, fls afs.Filesystem) (*buntDB, error) {
+func openBuntDBNoPermCheck(path string, fls afs.Filesystem, config ...buntDbConfig) (*buntDB, error) {
 	db := &buntDB{fls: fls}
 	// initialize trees and indexes
 	db.keys = btreeNew(lessCtx(nil))
 	db.exps = btreeNew(lessCtx(&exctx{db}))
 	db.idxs = make(map[string]*index)
 	// initialize default configuration
-	db.config = Config{
-		SyncPolicy:           EverySecond,
-		AutoShrinkPercentage: 100,
-		AutoShrinkMinSize:    32 * 1024 * 1024,
+
+	switch len(config) {
+	case 0:
+		db.config = defaultBuntdbConfig
+	case 1:
+		db.config = config[0]
+	default:
+		return nil, errors.New("at most one config should be provided")
 	}
+
 	// turn off persistence for pure in-memory
 	db.persist = path != ":memory:"
 	if db.persist {
@@ -450,7 +461,7 @@ func (db *buntDB) Indexes() ([]string, error) {
 }
 
 // ReadConfig returns the database configuration.
-func (db *buntDB) ReadConfig(config *Config) error {
+func (db *buntDB) ReadConfig(config *buntDbConfig) error {
 	db.mu.RLock()
 	defer db.mu.RUnlock()
 	if db.closed.Load() {
@@ -461,7 +472,7 @@ func (db *buntDB) ReadConfig(config *Config) error {
 }
 
 // SetConfig updates the database configuration.
-func (db *buntDB) SetConfig(config Config) error {
+func (db *buntDB) SetConfig(config buntDbConfig) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	if db.closed.Load() {
@@ -470,7 +481,7 @@ func (db *buntDB) SetConfig(config Config) error {
 	switch config.SyncPolicy {
 	default:
 		return errInvalidSyncPolicy
-	case Never, EverySecond, Always:
+	case SyncNever, SyncEverySecond, SyncAlways:
 	}
 	db.config = config
 	return nil
@@ -637,7 +648,7 @@ func (db *buntDB) backgroundManager() {
 		func() {
 			db.mu.Lock()
 			defer db.mu.Unlock()
-			if db.persist && db.config.SyncPolicy == EverySecond &&
+			if db.persist && db.config.SyncPolicy == SyncEverySecond &&
 				flushes != db.flushes {
 				db.syncFileIfCapable()
 				flushes = db.flushes
@@ -1265,7 +1276,7 @@ func (tx *Tx) Commit() error {
 			}
 			tx.rollbackInner()
 		}
-		if tx.db.config.SyncPolicy == Always {
+		if tx.db.config.SyncPolicy == SyncAlways {
 			tx.db.syncFileIfCapable()
 		}
 		// Increment the number of flushes. The background syncing uses this.

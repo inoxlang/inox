@@ -2272,33 +2272,33 @@ func TestConfig(t *testing.T) {
 	db := testOpen(t)
 	defer testClose(db)
 
-	err := db.SetConfig(Config{SyncPolicy: SyncPolicy(-1)})
+	err := db.SetConfig(buntDbConfig{SyncPolicy: SyncPolicy(-1)})
 	if err == nil {
 		t.Fatal("expecting a config syncpolicy error")
 	}
-	err = db.SetConfig(Config{SyncPolicy: SyncPolicy(3)})
+	err = db.SetConfig(buntDbConfig{SyncPolicy: SyncPolicy(3)})
 	if err == nil {
 		t.Fatal("expecting a config syncpolicy error")
 	}
-	err = db.SetConfig(Config{SyncPolicy: Never})
+	err = db.SetConfig(buntDbConfig{SyncPolicy: SyncNever})
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = db.SetConfig(Config{SyncPolicy: EverySecond})
+	err = db.SetConfig(buntDbConfig{SyncPolicy: SyncEverySecond})
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = db.SetConfig(Config{AutoShrinkMinSize: 100, AutoShrinkPercentage: 200, SyncPolicy: Always})
+	err = db.SetConfig(buntDbConfig{AutoShrinkMinSize: 100, AutoShrinkPercentage: 200, SyncPolicy: SyncAlways})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	var c Config
+	var c buntDbConfig
 	if err := db.ReadConfig(&c); err != nil {
 		t.Fatal(err)
 	}
-	if c.AutoShrinkMinSize != 100 || c.AutoShrinkPercentage != 200 && c.SyncPolicy != Always {
-		t.Fatalf("expecting %v, %v, and %v, got %v, %v, and %v", 100, 200, Always, c.AutoShrinkMinSize, c.AutoShrinkPercentage, c.SyncPolicy)
+	if c.AutoShrinkMinSize != 100 || c.AutoShrinkPercentage != 200 && c.SyncPolicy != SyncAlways {
+		t.Fatalf("expecting %v, %v, and %v, got %v, %v, and %v", 100, 200, SyncAlways, c.AutoShrinkMinSize, c.AutoShrinkPercentage, c.SyncPolicy)
 	}
 }
 func testUint64Hex(n uint64) string {
@@ -2557,7 +2557,7 @@ func TestCoverConfigClosed(t *testing.T) {
 	db := testOpen(t)
 	defer testClose(db)
 	_ = db.Close()
-	var config Config
+	var config buntDbConfig
 	if err := db.ReadConfig(&config); err != errDatabaseClosed {
 		t.Fatal("expecting database closed error")
 	}
@@ -2699,7 +2699,7 @@ func TestOnExpiredSync(t *testing.T) {
 	db := testOpen(t)
 	defer testClose(db)
 
-	var config Config
+	var config buntDbConfig
 	if err := db.ReadConfig(&config); err != nil {
 		t.Fatal(err)
 	}
@@ -2958,3 +2958,53 @@ func TestWrappederror(t *testing.T) {
 	}()
 	panicErr(errors.New("my fake error"))
 }
+
+// func TestSync(t *testing.T) {
+// 	fls := fs_ns.GetOsFilesystem()
+
+// 	for i := 0; i < 10; i++ {
+// 		dir := t.TempDir()
+// 		path := filepath.Join(dir, "data.db")
+// 		data := strconv.Itoa(i) + "-" + strings.Repeat("1", 10_000)
+
+// 		db, err := openBuntDBNoPermCheck(path, fls)
+// 		if err != nil {
+// 			t.Fatal(err)
+// 		}
+
+// 		config := db.config
+// 		config.SyncPolicy = SyncNever
+// 		db.SetConfig(config)
+
+// 		//create & commit a transaction with a write
+// 		tx, err := db.Begin(true)
+// 		if !_assert.NoError(t, err) {
+// 			return
+// 		}
+// 		tx.Set("x", data, nil)
+// 		err = tx.Commit() //sync should work
+// 		if !_assert.NoError(t, err) {
+// 			return
+// 		}
+
+// 		//TODO: simulate brutal close (test several ways)
+
+// 		// open again
+// 		db, err = openBuntDBNoPermCheck(path, fls)
+// 		if err != nil {
+// 			t.Fatal(err)
+// 		}
+
+// 		//check the data has been written to disk
+// 		err = db.View(func(tx *Tx) error {
+// 			val, err := tx.Get("x")
+// 			if err != nil {
+// 				return err
+// 			}
+// 			_assert.Equal(t, data, val)
+// 			return nil
+// 		})
+
+// 		_assert.NoError(t, err)
+// 	}
+// }
