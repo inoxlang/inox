@@ -531,6 +531,10 @@ type Record struct {
 	values            []Value
 }
 
+func NewEmptyRecord() *Record {
+	return &Record{}
+}
+
 func NewRecordFromMap(entryMap ValMap) *Record {
 	keys := make([]string, len(entryMap))
 	values := make([]Value, len(entryMap))

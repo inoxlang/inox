@@ -5347,7 +5347,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("single element: empty object", func(t *testing.T) {
-			code := `%[ %({}) ]`
+			code := `%[ %(#{}) ]`
 
 			state := NewGlobalState(NewDefaultTestContext())
 			res, err := Eval(code, state, false)
@@ -5355,7 +5355,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.NoError(t, err)
 			assert.Equal(t, &ListPattern{
 				elementPatterns: []Pattern{
-					NewExactValuePattern(NewObject()),
+					NewExactValuePattern(NewEmptyRecord()),
 				},
 			}, res)
 		})

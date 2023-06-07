@@ -450,12 +450,12 @@ func TestObjectPatternRepresentation(t *testing.T) {
 		patt := NewInexactObjectPattern(map[string]Pattern{
 			"a": NewListPattern([]Pattern{
 				NewExactValuePattern(Int(1)),
-				NewExactValuePattern(objFrom(ValMap{"b": Int(2)})),
+				NewExactValuePattern(NewRecordFromMap(ValMap{"b": Int(2)})),
 			}),
 		})
 
 		assert.True(t, patt.HasRepresentation(map[uintptr]int{}, nil))
-		expectedRepr := `%{"a":%[%(1),%({"b":2})]}`
+		expectedRepr := `%{"a":%[%(1),%(#{"b":2})]}`
 		assert.Equal(t, expectedRepr, getRepr(t, patt, reprTestCtx))
 		node := assertParseExpression(t, expectedRepr)
 
@@ -507,11 +507,14 @@ func TestListPatternRepresentation(t *testing.T) {
 
 	t.Run("deep", func(t *testing.T) {
 		pattern := NewListPattern([]Pattern{
-			NewExactValuePattern(NewWrappedValueList(Int(2), objFrom(ValMap{"a": Int(1)}))),
+			NewExactValuePattern(NewTuple([]Value{
+				Int(2),
+				NewRecordFromMap(ValMap{"a": Int(1)}),
+			})),
 		})
 
 		assert.True(t, pattern.HasRepresentation(map[uintptr]int{}, nil))
-		expectedRepr := `%[%([2,{"a":1}])]`
+		expectedRepr := `%[%(#[2,#{"a":1}])]`
 		assert.Equal(t, expectedRepr, getRepr(t, pattern, reprTestCtx))
 		node := assertParseExpression(t, expectedRepr)
 

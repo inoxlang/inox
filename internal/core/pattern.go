@@ -684,14 +684,24 @@ type ExactValuePattern struct {
 	NotCallablePatternMixin
 	NoReprMixin
 
-	value Value
+	value Value //immutable in most cases
 }
 
 func NewExactValuePattern(value Value) *ExactValuePattern {
+	if value.IsMutable() {
+		panic(ErrValueInExactPatternValueShouldBeImmutable)
+	}
+	return &ExactValuePattern{value: value}
+}
+
+func newExactValuePatternNoCheck(value Value) *ExactValuePattern {
 	return &ExactValuePattern{value: value}
 }
 
 func NewMostAdaptedExactPattern(value Value) Pattern {
+	if value.IsMutable() {
+		panic(ErrValueInExactPatternValueShouldBeImmutable)
+	}
 	if s, ok := value.(StringLike); ok {
 		return NewExactStringPattern(Str(s.GetOrBuildString()))
 	}
