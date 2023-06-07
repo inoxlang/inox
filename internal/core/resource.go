@@ -111,6 +111,11 @@ type resourceInfo struct {
 	lock sync.Mutex
 }
 
+type SchemeHolder interface {
+	ResourceName
+	Scheme() Scheme
+}
+
 type Path string
 
 // NewPath creates a Path in a secure way.

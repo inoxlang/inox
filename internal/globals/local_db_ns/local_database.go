@@ -19,13 +19,13 @@ var (
 )
 
 // openDatabase opens a local database, read, create & write permissions are required.
-func openDatabase(ctx *Context, r ResourceName) (*LocalDatabase, error) {
+func openDatabase(ctx *Context, r core.ResourceName) (*LocalDatabase, error) {
 
 	var pth Path
 
 	switch resource := r.(type) {
 	case Host:
-		if resource.Scheme() != "ldb" {
+		if resource.Scheme() != LDB_SCHEME {
 			return nil, ErrCannotResolveDatabase
 		}
 		data, ok := ctx.GetHostResolutionData(resource).(Path)
@@ -57,7 +57,7 @@ func openDatabase(ctx *Context, r ResourceName) (*LocalDatabase, error) {
 		return nil, ErrCannotFindDatabaseHost
 	}
 
-	if host.Scheme() != "ldb" {
+	if host.Scheme() != LDB_SCHEME {
 		return nil, ErrInvalidDatabaseHost
 	}
 
@@ -101,8 +101,13 @@ func openLocalDatabaseWithConfig(ctx *core.Context, config LocalDatabaseConfig) 
 	return localDB, nil
 }
 
-func (ldb *LocalDatabase) Close(ctx *core.Context) {
+func (ldb *LocalDatabase) Resource() ResourceName {
+	return ldb.host
+}
+
+func (ldb *LocalDatabase) Close(ctx *core.Context) error {
 	ldb.kv.close(ctx)
+	return nil
 }
 
 func (ldb *LocalDatabase) Get(ctx *Context, key Path) (Value, Bool) {

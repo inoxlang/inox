@@ -19,9 +19,10 @@ var (
 // A GlobalState represents the global state for the evaluation of a single module or the shell's loop.
 type GlobalState struct {
 	Ctx          *Context
-	Module       *Module         //nil in some cases (shell, mapping entry's state), TODO: check for usage
-	Globals      GlobalVariables //global variables
-	Routine      *Routine        //not nil if running in a routine
+	Module       *Module             //nil in some cases (shell, mapping entry's state), TODO: check for usage
+	Globals      GlobalVariables     //global variables
+	Routine      *Routine            //not nil if running in a routine
+	Databases    map[string]Database //the map should never change
 	SystemGraph  *SystemGraph
 	lockedValues []PotentiallySharable
 
@@ -30,6 +31,7 @@ type GlobalState struct {
 	Out                              io.Writer                                                       //nil by default
 	Logger                           zerolog.Logger                                                  //nil by default
 
+	//errors & check data
 	PrenitStaticCheckErrors []*StaticCheckError
 	MainPreinitError        error
 	StaticCheckData         *StaticCheckData

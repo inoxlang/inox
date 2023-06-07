@@ -25,6 +25,7 @@ var (
 	ErrExecutionAbortedTooManyWarnings = errors.New("execution was aborted because there are too many warnings")
 	ErrUserRefusedExecution            = errors.New("user refused execution")
 	ErrNoProvidedConfirmExecPrompt     = errors.New("risk score too high and no provided way to show confirm prompt")
+	ErrDatabaseOpenFunctionNotFound    = errors.New("function to open database not found")
 )
 
 type ScriptPreparationArgs struct {
@@ -38,6 +39,7 @@ type ScriptPreparationArgs struct {
 	UseContextAsParent        bool
 	IgnoreNonCriticalIssues   bool
 	AllowMissingEnvVars       bool
+	ConnectDatabases          bool
 
 	Out    io.Writer //defaults to os.Stdout
 	LogOut io.Writer //defaults to Out
@@ -45,7 +47,7 @@ type ScriptPreparationArgs struct {
 	//used during the preinit
 	PreinitFilesystem afs.Filesystem
 
-	//used to create the context, it defaults to the OS filesystem
+	//used to create the context
 	ScriptContextFileSystem afs.Filesystem
 }
 
@@ -107,6 +109,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		manifest = core.NewEmptyManifest()
 	}
 
+	//create the script's context
 	var ctxErr error
 
 	ctx, ctxErr = default_state.NewDefaultContext(default_state.DefaultContextConfig{
@@ -133,6 +136,34 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		out = os.Stdout
 	}
 
+	//connect to databases
+	//TODO: disconnect if connection still not used after a few minutes
+
+	dbs := map[string]core.Database{}
+	if args.ConnectDatabases {
+		for _, config := range manifest.Databases {
+			if host, ok := config.Resource.(core.Host); ok {
+				ctx.AddHostResolutionData(host, config.ResolutionData)
+			}
+
+			openDB, ok := core.GetOpenDbFn(config.Resource.Scheme())
+			if !ok {
+				ctx.Cancel()
+				return nil, nil, nil, ErrDatabaseOpenFunctionNotFound
+			}
+
+			//possible futures issues because there is no state in the context
+			db, err := openDB(ctx, config.Resource, config.ResolutionData)
+			if err != nil {
+				ctx.Cancel()
+				return nil, nil, nil, fmt.Errorf("failed to open the '%s' database: %w", config.Name, err)
+			}
+			dbs[config.Name] = db
+		}
+	}
+
+	// create the script's state
+
 	globalState, err := default_state.NewDefaultGlobalState(ctx, default_state.DefaultGlobalStateConfig{
 		EnvPattern:          manifest.EnvPattern,
 		PreinitFiles:        manifest.PreinitFiles,
@@ -148,6 +179,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	state.Module = mod
 	state.PrenitStaticCheckErrors = preinitStaticCheckErrors
 	state.MainPreinitError = preinitErr
+	state.Databases = dbs
 
 	//pass patterns & host aliases of the preinit state to the state
 	if preinitState != nil {
