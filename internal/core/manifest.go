@@ -103,7 +103,7 @@ type DatabaseConfigs []DatabaseConfig
 
 type DatabaseConfig struct {
 	Name           string       //declared name, this is NOT the basename.
-	Resource       ResourceName //URL or Host
+	Resource       SchemeHolder //URL or Host
 	ResolutionData Path
 }
 
@@ -1109,7 +1109,7 @@ func getDatabaseConfigurations(v Value) (DatabaseConfigs, error) {
 			return errors.New("each database should be described with an object")
 		}
 
-		var config DatabaseConfig
+		config := DatabaseConfig{Name: dbName}
 
 		err := dbDesc.ForEachEntry(func(propName string, propVal Value) error {
 			switch propName {
@@ -1130,9 +1130,9 @@ func getDatabaseConfigurations(v Value) (DatabaseConfigs, error) {
 					return fmt.Errorf("invalid value found for the .%s of a database description", MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME)
 				}
 			}
-			configs = append(configs, config)
 			return nil
 		})
+		configs = append(configs, config)
 
 		return err
 	})

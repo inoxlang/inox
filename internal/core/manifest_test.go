@@ -388,7 +388,7 @@ func TestPreInit(t *testing.T) {
 			error:               false,
 		},
 		{
-			name: "correct_databases",
+			name: "correct_database",
 			inputModule: `manifest { 
 					databases: {
 						main: {
@@ -543,6 +543,19 @@ func TestPreInit(t *testing.T) {
 								assert.ErrorContains(t, preinitFile.ReadParseError, testCase.expectedPreinitFileErrors[i])
 							}
 						}
+					}
+				}
+
+				if testCase.expectedDatabaseConfigs != nil {
+
+					if len(manifest.Databases) != len(testCase.expectedDatabaseConfigs) {
+						assert.Fail(t, fmt.Sprintf("mismatch between number of databases (%d) and number of expected databases (%d)",
+							len(manifest.Databases), len(testCase.expectedDatabaseConfigs)))
+						return
+					}
+
+					for i, db := range manifest.Databases {
+						assert.Equal(t, testCase.expectedDatabaseConfigs[i], db)
 					}
 				}
 			}
