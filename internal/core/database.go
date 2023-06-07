@@ -16,7 +16,7 @@ type OpenDBFn func(ctx *Context, resource SchemeHolder, resolutionData Value) (D
 
 type Database interface {
 	Value
-	Resource() ResourceName //url or host
+	Resource() SchemeHolder
 	Close(ctx *Context) error
 }
 

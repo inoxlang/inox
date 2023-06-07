@@ -39,9 +39,9 @@ func openDatabase(ctx *Context, r core.ResourceName) (*LocalDatabase, error) {
 		return nil, ErrCannotResolveDatabase
 	}
 
-	if pth.IsDirPath() {
-		return nil, ErrInvalidDatabaseDirpath
-	}
+	// if pth.IsDirPath() {
+	// 	return nil, ErrInvalidDatabaseDirpath
+	// }
 
 	patt := PathPattern(pth.ToAbs(ctx.GetFileSystem()) + "...")
 
@@ -101,7 +101,7 @@ func openLocalDatabaseWithConfig(ctx *core.Context, config LocalDatabaseConfig) 
 	return localDB, nil
 }
 
-func (ldb *LocalDatabase) Resource() ResourceName {
+func (ldb *LocalDatabase) Resource() core.SchemeHolder {
 	return ldb.host
 }
 

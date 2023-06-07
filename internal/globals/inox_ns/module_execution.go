@@ -167,6 +167,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	globalState, err := default_state.NewDefaultGlobalState(ctx, default_state.DefaultGlobalStateConfig{
 		EnvPattern:          manifest.EnvPattern,
 		PreinitFiles:        manifest.PreinitFiles,
+		Databases:           dbs,
 		AllowMissingEnvVars: args.AllowMissingEnvVars,
 		Out:                 out,
 		LogOut:              args.LogOut,
@@ -321,6 +322,8 @@ type RunScriptArgs struct {
 	//used during the preinit
 	PreinitFilesystem afs.Filesystem
 
+	ConnectDatabases bool
+
 	UseBytecode      bool
 	OptimizeBytecode bool
 	ShowBytecode     bool
@@ -349,6 +352,7 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 		Out:                       args.Out,
 		AllowMissingEnvVars:       args.AllowMissingEnvVars,
 		PreinitFilesystem:         args.PreinitFilesystem,
+		ConnectDatabases:          args.ConnectDatabases,
 	})
 
 	if err != nil {

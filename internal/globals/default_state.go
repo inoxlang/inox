@@ -31,6 +31,7 @@ import (
 
 const (
 	PREINIT_DATA_GLOBAL_NAME = "preinit-data"
+	DATABASES_GLOBAL_NAME    = "dbs"
 )
 
 var (
@@ -98,7 +99,6 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 	}
 
 	//create value for the preinit-data global
-
 	var preinitFilesKeys []string
 	var preinitDataValues []core.Value
 	for _, preinitFile := range conf.PreinitFiles {
@@ -109,6 +109,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 	preinitData :=
 		core.NewRecordFromKeyValLists([]string{"files"}, []core.Value{core.NewRecordFromKeyValLists(preinitFilesKeys, preinitDataValues)})
 
+	//
 	constants := map[string]core.Value{
 		// constants
 		core.INITIAL_WORKING_DIR_VARNAME:        core.INITIAL_WORKING_DIR_PATH,
@@ -289,6 +290,14 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 	state.GetBasePatternsForImportedModule = func() (map[string]core.Pattern, map[string]*core.PatternNamespace) {
 		return utils.CopyMap(core.DEFAULT_NAMED_PATTERNS), utils.CopyMap(core.DEFAULT_PATTERN_NAMESPACES)
 	}
+
+	//add global containing databases
+	dbs := core.ValMap{}
+	for name, db := range conf.Databases {
+		dbs[name] = db
+	}
+	//TODO: make object immutable
+	state.Globals.Set(DATABASES_GLOBAL_NAME, core.NewObjectFromMap(dbs, ctx))
 
 	return state, nil
 }
