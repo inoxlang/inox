@@ -399,6 +399,128 @@ func TestListRepresentation(t *testing.T) {
 
 }
 
+func TestObjectPatternRepresentation(t *testing.T) {
+	t.Run("empty", func(t *testing.T) {
+		patt := NewInexactObjectPattern(map[string]Pattern{})
+		assert.True(t, patt.HasRepresentation(map[uintptr]int{}, nil))
+		assert.Equal(t, `%{}`, getRepr(t, patt, reprTestCtx))
+		node := assertParseExpression(t, `%{}`)
+
+		state := NewTreeWalkState(NewContext(ContextConfig{}))
+		assert.Equal(t, patt, utils.Must(TreeWalkEval(node, state)))
+	})
+
+	t.Run("single key", func(t *testing.T) {
+		patt := NewInexactObjectPattern(map[string]Pattern{
+			"a\nb": NewExactValuePattern(Int(1)),
+		})
+		assert.True(t, patt.HasRepresentation(map[uintptr]int{}, nil))
+		expectedRepr := `%{"a\nb":%(1)}`
+		assert.Equal(t, expectedRepr, getRepr(t, patt, reprTestCtx))
+		node := assertParseExpression(t, expectedRepr)
+
+		state := NewTreeWalkState(NewContext(ContextConfig{}))
+		assert.Equal(t, patt, utils.Must(TreeWalkEval(node, state)))
+	})
+
+	t.Run("two keys", func(t *testing.T) {
+		patt := NewInexactObjectPattern(map[string]Pattern{
+			"a\nb": NewExactValuePattern(Int(1)),
+			"c\nd": NewInexactObjectPattern(map[string]Pattern{}),
+		})
+
+		assert.True(t, patt.HasRepresentation(map[uintptr]int{}, nil))
+		expectedRepr := `%{"a\nb":%(1),"c\nd":%{}}`
+		repr := getRepr(t, patt, reprTestCtx)
+		// if repr[2] == 'c' {
+		// 	expectedRepr = `{"c\nd":2,"a\nb":1}`
+		// }
+		assert.Equal(t, expectedRepr, repr)
+		node := assertParseExpression(t, expectedRepr)
+
+		state := NewTreeWalkState(NewContext(ContextConfig{}))
+		assert.Equal(t, patt, utils.Must(TreeWalkEval(node, state)))
+	})
+
+	t.Run("one of entry's value has no representation", func(t *testing.T) {
+		//TODO
+	})
+
+	t.Run("deep", func(t *testing.T) {
+		patt := NewInexactObjectPattern(map[string]Pattern{
+			"a": NewListPattern([]Pattern{
+				NewExactValuePattern(Int(1)),
+				NewExactValuePattern(objFrom(ValMap{"b": Int(2)})),
+			}),
+		})
+
+		assert.True(t, patt.HasRepresentation(map[uintptr]int{}, nil))
+		expectedRepr := `%{"a":%[%(1),%({"b":2})]}`
+		assert.Equal(t, expectedRepr, getRepr(t, patt, reprTestCtx))
+		node := assertParseExpression(t, expectedRepr)
+
+		state := NewTreeWalkState(NewContext(ContextConfig{}))
+		assert.Equal(t, patt, utils.Must(TreeWalkEval(node, state)))
+	})
+
+}
+
+func TestListPatternRepresentation(t *testing.T) {
+	t.Run("empty", func(t *testing.T) {
+		pattern := NewListPattern(nil)
+		assert.True(t, pattern.HasRepresentation(map[uintptr]int{}, nil))
+		expectedRepr := `%[]`
+		assert.Equal(t, expectedRepr, getRepr(t, pattern, reprTestCtx))
+		node := assertParseExpression(t, expectedRepr)
+
+		state := NewTreeWalkState(NewContext(ContextConfig{}))
+		assert.Equal(t, pattern, utils.Must(TreeWalkEval(node, state)))
+	})
+
+	t.Run("single element", func(t *testing.T) {
+		pattern := NewListPattern([]Pattern{NewExactValuePattern(Int(2))})
+		assert.True(t, pattern.HasRepresentation(map[uintptr]int{}, nil))
+		expectedRepr := `%[%(2)]`
+		assert.Equal(t, expectedRepr, getRepr(t, pattern, reprTestCtx))
+		node := assertParseExpression(t, expectedRepr)
+
+		state := NewTreeWalkState(NewContext(ContextConfig{}))
+		assert.Equal(t, pattern, utils.Must(TreeWalkEval(node, state)))
+	})
+
+	t.Run("two elements", func(t *testing.T) {
+		pattern := NewListPattern([]Pattern{
+			NewExactValuePattern(Int(2)),
+			NewExactValuePattern(Path("./path")),
+		})
+		assert.True(t, pattern.HasRepresentation(map[uintptr]int{}, nil))
+		expectedRepr := `%[%(2),%(./path)]`
+		node := assertParseExpression(t, expectedRepr)
+
+		state := NewTreeWalkState(NewContext(ContextConfig{}))
+		assert.Equal(t, pattern, utils.Must(TreeWalkEval(node, state)))
+	})
+
+	t.Run("one element has no representation", func(t *testing.T) {
+		//TODO
+	})
+
+	t.Run("deep", func(t *testing.T) {
+		pattern := NewListPattern([]Pattern{
+			NewExactValuePattern(NewWrappedValueList(Int(2), objFrom(ValMap{"a": Int(1)}))),
+		})
+
+		assert.True(t, pattern.HasRepresentation(map[uintptr]int{}, nil))
+		expectedRepr := `%[%([2,{"a":1}])]`
+		assert.Equal(t, expectedRepr, getRepr(t, pattern, reprTestCtx))
+		node := assertParseExpression(t, expectedRepr)
+
+		state := NewTreeWalkState(NewContext(ContextConfig{}))
+		assert.Equal(t, pattern, utils.Must(TreeWalkEval(node, state)))
+	})
+
+}
+
 func TestByteSliceRepresentation(t *testing.T) {
 	assert.True(t, (&ByteSlice{}).HasRepresentation(nil, nil))
 	assert.Equal(t, "0x[]", getRepr(t, &ByteSlice{}, reprTestCtx))

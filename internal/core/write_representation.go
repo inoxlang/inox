@@ -1206,12 +1206,36 @@ func (r IntRange) WriteRepresentation(ctx *Context, w io.Writer, encountered map
 
 //patterns
 
-func (ExactValuePattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
+func (p *ExactValuePattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+	ptr := reflect.ValueOf(p).Pointer()
+	if _, ok := encountered[ptr]; ok {
+		return false
+	}
+	encountered[ptr] = -1
+
+	return p.value.HasRepresentation(encountered, config)
 }
 
-func (pattern ExactValuePattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
+func (p *ExactValuePattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+	if encountered != nil && !p.HasRepresentation(encountered, config) {
+		return ErrNoRepresentation
+	}
+
+	_, err := w.Write([]byte{'%', '('})
+	if err != nil {
+		return err
+	}
+
+	err = p.value.WriteRepresentation(ctx, w, nil, config)
+	if err != nil {
+		return err
+	}
+
+	_, err = w.Write([]byte{')'})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (p *TypePattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
@@ -1316,12 +1340,79 @@ func (patt *NamedSegmentPathPattern) WriteRepresentation(ctx *Context, w io.Writ
 	return err
 }
 
-func (ObjectPattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
+func (p *ObjectPattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+	ptr := reflect.ValueOf(p).Pointer()
+	if _, ok := encountered[ptr]; ok {
+		return false
+	}
+	encountered[ptr] = -1
+
+	for _, entryPatt := range p.entryPatterns {
+		if !entryPatt.HasRepresentation(encountered, config) {
+			return false
+		}
+	}
+	return true
 }
 
-func (patt ObjectPattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
+func (p *ObjectPattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+	if encountered != nil && !p.HasRepresentation(encountered, config) {
+		return ErrNoRepresentation
+	}
+
+	_, err := w.Write([]byte{'%', '{'})
+	if err != nil {
+		return err
+	}
+
+	keys := utils.GetMapKeys(p.entryPatterns)
+	sort.Strings(keys)
+
+	first := true
+	for _, k := range keys {
+		entryPattern := p.entryPatterns[k]
+
+		if !first {
+			w.Write([]byte{','})
+			if err != nil {
+				return err
+			}
+		}
+		first = false
+
+		//key
+		{
+			jsonStr, _ := utils.MarshalJsonNoHTMLEspace(k)
+			_, err = w.Write(jsonStr)
+			if err != nil {
+				return err
+			}
+
+			if _, ok := p.optionalEntries[k]; ok {
+				w.Write([]byte{'?'})
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		_, err = w.Write([]byte{':'})
+		if err != nil {
+			return err
+		}
+
+		//value
+		err = entryPattern.WriteRepresentation(ctx, w, nil, config)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = w.Write([]byte{'}'})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (RecordPattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
@@ -1332,12 +1423,63 @@ func (patt RecordPattern) WriteRepresentation(ctx *Context, w io.Writer, encount
 	return ErrNoRepresentation
 }
 
-func (ListPattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
+func (p *ListPattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+	ptr := reflect.ValueOf(p).Pointer()
+	if _, ok := encountered[ptr]; ok {
+		return false
+	}
+	encountered[ptr] = -1
+
+	if p.elementPatterns != nil {
+		for _, e := range p.elementPatterns {
+			if !e.HasRepresentation(encountered, config) {
+				return false
+			}
+		}
+		return true
+	}
+
+	return p.generalElementPattern.HasRepresentation(encountered, config)
 }
 
-func (patt ListPattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
+func (p *ListPattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+	if encountered != nil && !p.HasRepresentation(encountered, config) {
+		return ErrNoRepresentation
+	}
+
+	if p.elementPatterns != nil {
+		_, err := w.Write([]byte{'%', '['})
+		if err != nil {
+			return err
+		}
+
+		for i, e := range p.elementPatterns {
+			err = e.WriteRepresentation(ctx, w, nil, config)
+			if err != nil {
+				return err
+			}
+
+			//comma & indent
+			isLastEntry := i == len(p.elementPatterns)-1
+
+			if !isLastEntry {
+				utils.Must(w.Write([]byte{','}))
+			}
+		}
+		_, err = w.Write([]byte{']'})
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	_, err := w.Write([]byte{'%', '[', ']'})
+	if err != nil {
+		return err
+	}
+
+	return p.generalElementPattern.WriteRepresentation(ctx, w, nil, config)
 }
 
 func (TuplePattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
