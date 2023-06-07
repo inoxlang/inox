@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -1047,6 +1048,11 @@ func TestRunLocalScript(t *testing.T) {
 			}
 		`), 0o600)
 
+		preinitFs := fs_ns.NewMemFilesystem(100)
+		for i := 1; i <= 9; i++ {
+			util.WriteFile(preinitFs, fmt.Sprintf("/file%d.txt", i), nil, 0o600)
+		}
+
 		state, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: createCompilationCtx(dir),
@@ -1054,6 +1060,7 @@ func TestRunLocalScript(t *testing.T) {
 			ParentContext:             createEvaluationCtx(dir),
 			Out:                       io.Discard,
 			IgnoreHighRiskScore:       false, //<---
+			PreinitFilesystem:         preinitFs,
 		})
 
 		if !assert.ErrorIs(t, err, inox_ns.ErrNoProvidedConfirmExecPrompt) {
