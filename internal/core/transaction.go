@@ -27,18 +27,17 @@ type Transaction struct {
 	NotClonableMixin
 	NoReprMixin
 
-	ulid              ulid.ULID
-	ctx               *Context
-	lock              sync.RWMutex
-	startTime         time.Time
-	endTime           time.Time
-	effects           []Effect
-	acquiredResources []ResourceName
-	values            map[any]any
-	endCallbackFns    map[any]func(*Transaction, bool)
-	finished          uint32
-	timeout           Duration
-	isReadonly        bool
+	ulid           ulid.ULID
+	ctx            *Context
+	lock           sync.RWMutex
+	startTime      time.Time
+	endTime        time.Time
+	effects        []Effect
+	values         map[any]any
+	endCallbackFns map[any]func(*Transaction, bool)
+	finished       uint32
+	timeout        Duration
+	isReadonly     bool
 }
 
 func newTransaction(ctx *Context, options ...Option) *Transaction {
@@ -155,71 +154,6 @@ func (tx *Transaction) AddEffect(ctx *Context, effect Effect) error {
 	}
 	tx.effects = append(tx.effects, effect)
 
-	// acquire involved resources
-	for _, r := range effect.Resources() {
-		AcquireResource(r)
-		tx.acquiredResources = append(tx.acquiredResources, r)
-	}
-
-	return nil
-}
-
-func (tx *Transaction) acquireResource(ctx *Context, r ResourceName) error {
-	if tx.IsFinished() {
-		return ErrFinishedTransaction
-	}
-
-	tx.lock.Lock()
-	defer tx.lock.Unlock()
-
-	for _, acquired := range tx.acquiredResources {
-		if r == acquired {
-			return nil
-		}
-	}
-
-	AcquireResource(r)
-	tx.acquiredResources = append(tx.acquiredResources, r)
-	return nil
-}
-
-func (tx *Transaction) tryAcquireResource(ctx *Context, r ResourceName) (bool, error) {
-	if tx.IsFinished() {
-		return false, ErrFinishedTransaction
-	}
-
-	tx.lock.Lock()
-	defer tx.lock.Unlock()
-
-	for _, acquired := range tx.acquiredResources {
-		if r == acquired {
-			return true, nil
-		}
-	}
-
-	if TryAcquireResource(r) {
-		tx.acquiredResources = append(tx.acquiredResources, r)
-		return true, nil
-	}
-	return false, nil
-}
-
-func (tx *Transaction) releaseResource(ctx *Context, r ResourceName) error {
-	if tx.IsFinished() {
-		return ErrFinishedTransaction
-	}
-
-	tx.lock.Lock()
-	defer tx.lock.Unlock()
-
-	for i, acquired := range tx.acquiredResources {
-		if r == acquired {
-			ReleaseResource(r)
-			tx.acquiredResources = append(tx.acquiredResources[:i], tx.acquiredResources[i+1:]...)
-			break
-		}
-	}
-
 	return nil
 }
 
@@ -231,9 +165,6 @@ func (tx *Transaction) Commit(ctx *Context) error {
 	tx.lock.Lock()
 	defer func() {
 		tx.lock.Unlock()
-		for _, r := range tx.acquiredResources {
-			ReleaseResource(r)
-		}
 		tx.ctx.setTx(nil)
 	}()
 
@@ -262,9 +193,6 @@ func (tx *Transaction) Rollback(ctx *Context) error {
 	tx.lock.Lock()
 	defer func() {
 		tx.lock.Unlock()
-		for _, r := range tx.acquiredResources {
-			ReleaseResource(r)
-		}
 		tx.ctx.setTx(nil)
 	}()
 

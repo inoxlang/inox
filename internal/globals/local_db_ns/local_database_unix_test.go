@@ -167,7 +167,7 @@ func TestLocalDatabase(t *testing.T) {
 		}
 
 		setup := func(ctxHasTransaction bool) (*LocalDatabase, *Context, *core.Transaction) {
-			core.ResetResourceMap()
+			//core.ResetResourceMap()
 
 			config := LocalDatabaseConfig{
 				InMemory: inMemory,
@@ -228,16 +228,16 @@ func TestLocalDatabase(t *testing.T) {
 					defer ldb.Close(ctx)
 
 					key := Path("/a")
-					r := ldb.GetFullResourceName(key)
+					//r := ldb.GetFullResourceName(key)
 					ldb.Set(ctx, key, Int(1))
-					if !assert.False(t, core.TryAcquireResource(r)) {
-						return
-					}
+					// if !assert.False(t, core.TryAcquireConcreteResource(r)) {
+					// 	return
+					// }
 
 					v, ok := ldb.Get(ctx, key)
 					assert.True(t, bool(ok))
 					assert.Equal(t, Int(1), v)
-					assert.False(t, core.TryAcquireResource(r))
+					//assert.False(t, core.TryAcquireConcreteResource(r))
 
 					// //we check that the database transaction is not commited yet
 					// ldb.underlying.db.View(func(txn *Tx) error {
@@ -247,8 +247,8 @@ func TestLocalDatabase(t *testing.T) {
 					// })
 
 					assert.NoError(t, tx.Commit(ctx))
-					assert.True(t, core.TryAcquireResource(r))
-					core.ReleaseResource(r)
+					// assert.True(t, core.TryAcquireConcreteResource(r))
+					// core.ReleaseConcreteResource(r)
 
 					//we check that the database transaction is commited
 					ldb.mainKV.db.View(func(txn *Tx) error {
@@ -269,11 +269,11 @@ func TestLocalDatabase(t *testing.T) {
 					defer ldb.Close(ctx)
 
 					key := Path("/a")
-					r := ldb.GetFullResourceName(key)
+					//r := ldb.GetFullResourceName(key)
 					ldb.Set(ctx, key, Int(1))
-					if !assert.False(t, core.TryAcquireResource(r)) {
-						return
-					}
+					// if !assert.False(t, core.TryAcquireConcreteResource(r)) {
+					// 	return
+					// }
 
 					v, ok := ldb.Get(ctx, key)
 					assert.True(t, bool(ok))
@@ -287,8 +287,8 @@ func TestLocalDatabase(t *testing.T) {
 					// })
 
 					assert.NoError(t, tx.Rollback(ctx))
-					assert.True(t, core.TryAcquireResource(r))
-					core.ReleaseResource(r)
+					// assert.True(t, core.TryAcquireConcreteResource(r))
+					// core.ReleaseConcreteResource(r)
 
 					// //we check that the database transaction is not commited
 					// ldb.underlying.db.View(func(txn *Tx) error {
@@ -299,8 +299,8 @@ func TestLocalDatabase(t *testing.T) {
 
 					//same
 					v, ok = ldb.Get(ctx, key)
-					assert.True(t, core.TryAcquireResource(r))
-					core.ReleaseResource(r)
+					//assert.True(t, core.TryAcquireConcreteResource(r))
+					//core.ReleaseConcreteResource(r)
 					assert.Equal(t, core.Nil, v)
 					assert.False(t, bool(ok))
 				})

@@ -47,8 +47,7 @@ type Context struct {
 	state *GlobalState
 	fs    afs.Filesystem
 
-	currentTx         *Transaction
-	acquiredResources []ResourceName
+	currentTx *Transaction
 
 	longLived atomic.Bool
 	done      atomic.Bool
@@ -236,10 +235,7 @@ func NewContext(config ContextConfig) *Context {
 		}
 
 		//release acquired resources
-		for i, resource := range ctx.acquiredResources {
-			ReleaseResource(resource)
-			ctx.acquiredResources[i] = nil
-		}
+		//TODO
 
 		//rollback transaction (the rollback will be ignored if the transaction is finished)
 		if ctx.currentTx != nil {
@@ -327,71 +323,6 @@ func (ctx *Context) setTx(tx *Transaction) {
 	defer ctx.lock.Unlock()
 
 	ctx.currentTx = tx
-}
-
-func (ctx *Context) TryAcquireResource(r ResourceName) (bool, error) {
-	ctx.lock.Lock()
-	defer ctx.lock.Unlock()
-	ctx.assertNotDone()
-
-	//if the resource is already acquired by the context we return, even if there is a transaction
-	for _, resource := range ctx.acquiredResources {
-		if r == resource {
-			return true, nil
-		}
-	}
-
-	if tx := ctx.currentTx; tx != nil {
-		return tx.tryAcquireResource(ctx, r)
-	}
-
-	if TryAcquireResource(r) {
-		ctx.acquiredResources = append(ctx.acquiredResources, r)
-		return true, nil
-	}
-
-	return false, nil
-}
-
-func (ctx *Context) AcquireResource(r ResourceName) error {
-	ctx.lock.Lock()
-	defer ctx.lock.Unlock()
-	ctx.assertNotDone()
-
-	//if the resource is already acquired by the context we return, even if there is a transaction
-	for _, resource := range ctx.acquiredResources {
-		if r == resource {
-			return nil
-		}
-	}
-
-	if tx := ctx.currentTx; tx != nil {
-		return tx.acquireResource(ctx, r)
-	}
-
-	AcquireResource(r)
-	ctx.acquiredResources = append(ctx.acquiredResources, r)
-	return nil
-}
-
-func (ctx *Context) ReleaseResource(r ResourceName) error {
-	ctx.lock.Lock()
-	defer ctx.lock.Unlock()
-	ctx.assertNotDone()
-
-	for i, acquired := range ctx.acquiredResources {
-		if r == acquired {
-			ReleaseResource(r)
-			ctx.acquiredResources = append(ctx.acquiredResources[:i], ctx.acquiredResources[i+1:]...)
-			return nil
-		}
-	}
-
-	if tx := ctx.currentTx; tx != nil {
-		return tx.releaseResource(ctx, r)
-	}
-
-	return nil
 }
 
 func (ctx *Context) GetTempDir() Path {

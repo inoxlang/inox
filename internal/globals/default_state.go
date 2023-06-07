@@ -140,8 +140,8 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 		"Error": core.ValOf(_Error),
 
 		// resource
-		"read":   core.ValOf(_readResource),
-		"get":    core.ValOf(_getResource),
+		"read": core.ValOf(_readResource),
+		//"get":    core.ValOf(_getResource),
 		"create": core.ValOf(_createResource),
 		"update": core.ValOf(_updateResource),
 		"delete": core.ValOf(_deleteResource),

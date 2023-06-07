@@ -135,14 +135,6 @@ func (ldb *LocalDatabase) Set(ctx *Context, key Path, value Value) {
 	ldb.mainKV.set(ctx, key, value, ldb)
 }
 
-func (ldb *LocalDatabase) GetFullResourceName(key Path) ResourceName {
-	return getFullResourceName(ldb.host, ldb.dirPath)
-}
-
-func getFullResourceName(host Host, pth Path) ResourceName {
-	return URL(string(host) + string(pth))
-}
-
 func (ldb *LocalDatabase) Prop(ctx *core.Context, name string) Value {
 	method, ok := ldb.GetGoMethod(name)
 	if !ok {

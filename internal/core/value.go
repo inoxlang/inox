@@ -42,6 +42,8 @@ type Value interface {
 	ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error)
 }
 
+// A resource name is a string value that designates a resource, examples: URL, Path & Host are resource names.
+// The meaning of resource is broad and should not be confused with HTTP Resources.
 type ResourceName interface {
 	WrappedString
 	ResourceName() string

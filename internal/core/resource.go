@@ -16,7 +16,6 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
-	cmap "github.com/orcaman/concurrent-map/v2"
 )
 
 var (
@@ -26,9 +25,6 @@ var (
 	ErrInvalidResourceContent              = errors.New("invalid resource's content")
 	ErrContentTypeParserNotFound           = errors.New("parser not found for content type")
 
-	//resourceMap is a global identity map for resources
-	resourceMap _resourceMap
-
 	PATH_PROPNAMES         = []string{"segments", "extension", "name", "dir", "ends_with_slash", "rel_equiv", "change_extension", "join"}
 	HOST_PROPNAMES         = []string{"scheme", "explicit_port", "without_port"}
 	HOST_PATTERN_PROPNAMES = []string{"scheme"}
@@ -37,74 +33,6 @@ var (
 )
 
 func init() {
-	ResetResourceMap()
-}
-
-type _resourceMap struct {
-	lock sync.Mutex
-	map_ cmap.ConcurrentMap[string, *resourceInfo]
-}
-
-func AcquireResource(r ResourceName) {
-	info, ok := resourceMap.map_.Get(r.ResourceName())
-
-	if !ok { //we create an entry for the resource
-		if resourceMap.lock.TryLock() {
-			info = &resourceInfo{}
-			resourceMap.map_.Set(r.ResourceName(), info)
-			resourceMap.lock.Unlock()
-		} else {
-			AcquireResource(r)
-		}
-	}
-
-	info.lock.Lock()
-}
-
-func TryAcquireResource(r ResourceName) bool {
-	info, ok := resourceMap.map_.Get(r.ResourceName())
-
-	if !ok { //we create an entry for the resource
-		if resourceMap.lock.TryLock() {
-			info = &resourceInfo{}
-			resourceMap.map_.Set(r.ResourceName(), info)
-			resourceMap.lock.Unlock()
-		} else {
-			return TryAcquireResource(r)
-		}
-	}
-
-	if !info.lock.TryLock() {
-		return false
-	}
-	return true
-}
-
-func TryReleaseResource(r ResourceName) {
-	info, ok := resourceMap.map_.Get(r.ResourceName())
-
-	if !ok {
-		return
-	}
-
-	info.lock.Unlock()
-}
-
-func ReleaseResource(r ResourceName) {
-	name := r.ResourceName()
-	info, ok := resourceMap.map_.Get(name)
-
-	if !ok {
-		panic(fmt.Errorf("%w: %s", ErrCannotReleaseUnregisteredResource, name))
-	}
-
-	info.lock.Unlock()
-}
-
-func ResetResourceMap() {
-	resourceMap = _resourceMap{
-		map_: cmap.New[*resourceInfo](),
-	}
 }
 
 type resourceInfo struct {

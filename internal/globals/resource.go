@@ -49,18 +49,18 @@ func _readResource(ctx *core.Context, resource core.ResourceName, args ...core.V
 // _getResource is a high level function reading/fetching & acquiring a resource such as a file or a http resource.
 func _getResource(ctx *core.Context, resource core.ResourceName, args ...core.Value) (res core.Value, err error) {
 
-	if ok, err := ctx.TryAcquireResource(resource); !ok {
-		return core.Nil, ErrFailedToImmediatelyAcquireResource
-	} else if err != nil {
-		return nil, err
-	}
+	// if ok, err := ctx.TryAcquireResource(resource); !ok {
+	// 	return core.Nil, ErrFailedToImmediatelyAcquireResource
+	// } else if err != nil {
+	// 	return nil, err
+	// }
 
-	releaseResource := true
-	defer func() {
-		if releaseResource {
-			ctx.ReleaseResource(resource)
-		}
-	}()
+	// releaseResource := true
+	// defer func() {
+	// 	if releaseResource {
+	// 		ctx.ReleaseResource(resource)
+	// 	}
+	// }()
 
 	resp, readErr := _readResource(ctx, resource, args...)
 
@@ -77,7 +77,7 @@ func _getResource(ctx *core.Context, resource core.ResourceName, args ...core.Va
 			err = core.ErrResourceHasHardcodedUrlMetaProperty
 			return
 		}
-		releaseResource = false
+		//releaseResource = false
 		resp.SetURLOnce(ctx, url)
 		res = resp
 		return

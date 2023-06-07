@@ -95,7 +95,6 @@ func (kv *SingleFileKV) get(ctx *Context, key Path, db any) (Value, Bool) {
 	}
 
 	var (
-		r          = getFullResourceName(kv.host, key)
 		valueFound = core.True
 		val        Value
 		tx         = ctx.GetTx()
@@ -137,9 +136,7 @@ func (kv *SingleFileKV) get(ctx *Context, key Path, db any) (Value, Bool) {
 	}
 
 	if valueFound {
-		if err := ctx.AcquireResource(r); err != nil {
-			panic(err)
-		}
+		//TODO ....
 	}
 
 	if val == nil {
@@ -236,7 +233,6 @@ func (kv *SingleFileKV) set(ctx *Context, key Path, value Value, db any) {
 	}
 
 	tx := ctx.GetTx()
-	r := getFullResourceName(kv.host, key)
 
 	if tx == nil {
 		err := kv.db.Update(func(txn *Tx) error {
@@ -257,10 +253,6 @@ func (kv *SingleFileKV) set(ctx *Context, key Path, value Value, db any) {
 			panic(err)
 		}
 
-	}
-
-	if err := ctx.AcquireResource(r); err != nil {
-		panic(err)
 	}
 }
 
