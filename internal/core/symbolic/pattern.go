@@ -28,8 +28,9 @@ var (
 	ANY_LIST_PATTERN     = &ListPattern{generalElement: ANY_PATTERN}
 	ANY_TUPLE_PATTERN    = &TuplePattern{generalElement: ANY_PATTERN}
 
-	ErrPatternNotCallable      = errors.New("pattern is not callable")
-	ErrValueAlreadyInitialized = errors.New("value already initialized")
+	ErrPatternNotCallable                        = errors.New("pattern is not callable")
+	ErrValueAlreadyInitialized                   = errors.New("value already initialized")
+	ErrValueInExactPatternValueShouldBeImmutable = errors.New("the value in an exact value pattern should be immutable")
 )
 
 // A Pattern represents a symbolic Pattern.
@@ -417,13 +418,19 @@ type ExactValuePattern struct {
 	value SymbolicValue
 }
 
-func NewExactValuePattern(v SymbolicValue) *ExactValuePattern {
-	return &ExactValuePattern{value: v}
+func NewExactValuePattern(v SymbolicValue) (*ExactValuePattern, error) {
+	if !IsAny(v) && v.IsMutable() {
+		return nil, ErrValueInExactPatternValueShouldBeImmutable
+	}
+	return &ExactValuePattern{value: v}, nil
 }
 
-func NewMostAdaptedExactPattern(value SymbolicValue) Pattern {
+func NewMostAdaptedExactPattern(value SymbolicValue) (Pattern, error) {
+	if !IsAny(value) && value.IsMutable() {
+		return nil, ErrValueInExactPatternValueShouldBeImmutable
+	}
 	if _, ok := value.(StringLike); ok {
-		return NewExactStringPattern()
+		return NewExactStringPattern(), nil
 	}
 	return NewExactValuePattern(value)
 }

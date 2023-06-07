@@ -1829,7 +1829,13 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				pattern, ok := val.(Pattern)
 
 				if !ok { //if the value of the case is not a pattern we just check for equality
-					pattern = NewExactValuePattern(val)
+					patt, err := NewExactValuePattern(val)
+					if err == nil {
+						pattern = patt
+					} else {
+						pattern = ANY_PATTERN
+						state.addError(makeSymbolicEvalError(valNode, state, err.Error()))
+					}
 				}
 
 				if matchCase.Block == nil {
@@ -2541,7 +2547,13 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			}
 			for k, v := range r.entries {
 				if _, ok := v.(Pattern); !ok {
-					v = NewMostAdaptedExactPattern(v)
+					exactValPatt, err := NewMostAdaptedExactPattern(v)
+					if err == nil {
+						v = exactValPatt
+					} else {
+						v = ANY_PATTERN
+						state.addError(makeSymbolicEvalError(n.Right, state, err.Error()))
+					}
 				}
 				namespace.entries[k] = v.(Pattern)
 			}
@@ -2552,7 +2564,13 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			}
 			for k, v := range r.entries {
 				if _, ok := v.(Pattern); !ok {
-					v = NewMostAdaptedExactPattern(v)
+					exactValPatt, err := NewMostAdaptedExactPattern(v)
+					if err == nil {
+						v = exactValPatt
+					} else {
+						v = ANY_PATTERN
+						state.addError(makeSymbolicEvalError(n.Right, state, err.Error()))
+					}
 				}
 				namespace.entries[k] = v.(Pattern)
 			}

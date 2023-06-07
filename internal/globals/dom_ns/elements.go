@@ -56,7 +56,12 @@ var (
 					if patt, ok := v.(symbolic.Pattern); ok {
 						modelPattern = patt
 					} else {
-						modelPattern = symbolic.NewExactValuePattern(v)
+						p, err := symbolic.NewExactValuePattern(v)
+						if err != nil {
+							return fmt.Errorf("exact-value model should be immutable")
+						}
+
+						modelPattern = p
 					}
 				default:
 					return fmt.Errorf("invalid key '%s' in description", k)

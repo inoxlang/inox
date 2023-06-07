@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -4065,7 +4066,7 @@ func TestSymbolicEval(t *testing.T) {
 						d: 1
 					}
 					e: 2
-					f: %({})
+					f: %(#{})
 				}
 			`)
 
@@ -4086,12 +4087,12 @@ func TestSymbolicEval(t *testing.T) {
 								},
 								inexact: true,
 							},
-							"d": NewExactValuePattern(&Int{}),
+							"d": utils.Must(NewExactValuePattern(&Int{})),
 						},
 						inexact: true,
 					},
-					"e": NewExactValuePattern(&Int{}),
-					"f": NewExactValuePattern(NewEmptyObject()),
+					"e": utils.Must(NewExactValuePattern(&Int{})),
+					"f": utils.Must(NewExactValuePattern(NewRecord(nil))),
 				},
 				inexact: true,
 			}, res)
@@ -4341,7 +4342,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 			assert.Equal(t, &PatternNamespace{
 				entries: map[string]Pattern{
-					"patt": NewExactValuePattern(&Identifier{name: "a"}),
+					"patt": utils.Must(NewExactValuePattern(&Identifier{name: "a"})),
 				},
 			}, res)
 
@@ -4501,7 +4502,7 @@ func TestSymbolicEval(t *testing.T) {
 				},
 				static: map[string]Pattern{
 					"a": &ExactValuePattern{value: &Int{}},
-					"b": NewListPattern([]Pattern{NewExactValuePattern(ANY_INT)}),
+					"b": NewListPattern([]Pattern{utils.Must(NewExactValuePattern(ANY_INT))}),
 				},
 			}
 			assert.Equal(t, expectedObject, varInfo.value)

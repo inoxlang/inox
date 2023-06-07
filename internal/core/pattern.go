@@ -361,7 +361,12 @@ var (
 					if valuePattern != nil {
 						return nil, FmtErrArgumentProvidedAtLeastTwice("value pattern")
 					}
-					valuePattern = symbolic.NewExactValuePattern(a)
+					p, err := symbolic.NewExactValuePattern(a)
+					if err != nil {
+						return nil, fmt.Errorf("argument should be immutable")
+					}
+
+					valuePattern = p
 				}
 			}
 
@@ -434,7 +439,11 @@ var (
 			if len(args) > 1 {
 				patt, ok := args[1].(symbolic.Pattern)
 				if !ok {
-					patt = symbolic.NewExactValuePattern(args[1])
+					p, err := symbolic.NewExactValuePattern(args[1])
+					if err != nil {
+						return nil, fmt.Errorf("second argument should be immutable")
+					}
+					patt = p
 				}
 				data0Pattern = patt
 			}
