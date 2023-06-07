@@ -14,7 +14,7 @@ const (
 )
 
 // thin wrapper around a buntdb database.
-type KVStore struct {
+type SingleFileKV struct {
 	db   *buntDB
 	path core.Path
 	host Host
@@ -29,7 +29,7 @@ type KvStoreConfig struct {
 	InMemory bool
 }
 
-func openKvWrapperNoPermCheck(config KvStoreConfig, fls afs.Filesystem) (_ *KVStore, finalErr error) {
+func openKvWrapperNoPermCheck(config KvStoreConfig, fls afs.Filesystem) (_ *SingleFileKV, finalErr error) {
 	path := string(config.Path)
 	if config.InMemory {
 		path = ":memory:"
@@ -41,7 +41,7 @@ func openKvWrapperNoPermCheck(config KvStoreConfig, fls afs.Filesystem) (_ *KVSt
 		return
 	}
 
-	return &KVStore{
+	return &SingleFileKV{
 		db:   db,
 		path: config.Path,
 		host: config.Host,
@@ -50,7 +50,7 @@ func openKvWrapperNoPermCheck(config KvStoreConfig, fls afs.Filesystem) (_ *KVSt
 	}, nil
 }
 
-func (kv *KVStore) close(ctx *core.Context) {
+func (kv *SingleFileKV) close(ctx *core.Context) {
 	logger := ctx.Logger().With().Str(core.SOURCE_LOG_FIELD_NAME, KV_STORE_SRC_NAME).Logger()
 	//before closing the buntdb database all the transactions must be closed or a deadlock will occur.
 
@@ -81,11 +81,11 @@ func (kv *KVStore) close(ctx *core.Context) {
 	kv.db.Close()
 }
 
-func (kv *KVStore) isClosed() bool {
+func (kv *SingleFileKV) isClosed() bool {
 	return kv.db.isClosed()
 }
 
-func (kv *KVStore) get(ctx *Context, key Path, db any) (Value, Bool) {
+func (kv *SingleFileKV) get(ctx *Context, key Path, db any) (Value, Bool) {
 	if kv.isClosed() {
 		panic(errDatabaseClosed)
 	}
@@ -149,7 +149,7 @@ func (kv *KVStore) get(ctx *Context, key Path, db any) (Value, Bool) {
 	return val, valueFound
 }
 
-func (kv *KVStore) getCreateDatabaseTxn(db any, tx *core.Transaction) *Tx {
+func (kv *SingleFileKV) getCreateDatabaseTxn(db any, tx *core.Transaction) *Tx {
 	//if there is already a database transaction in the core.Transaction we return it.
 	v, err := tx.GetValue(db)
 	if err != nil {
@@ -182,7 +182,7 @@ func (kv *KVStore) getCreateDatabaseTxn(db any, tx *core.Transaction) *Tx {
 	return dbTx
 }
 
-func (kv *KVStore) has(ctx *Context, key Path, db any) Bool {
+func (kv *SingleFileKV) has(ctx *Context, key Path, db any) Bool {
 	if kv.isClosed() {
 		panic(errDatabaseClosed)
 	}
@@ -225,7 +225,7 @@ func (kv *KVStore) has(ctx *Context, key Path, db any) Bool {
 	return valueFound
 }
 
-func (kv *KVStore) set(ctx *Context, key Path, value Value, db any) {
+func (kv *SingleFileKV) set(ctx *Context, key Path, value Value, db any) {
 
 	if kv.db.isClosed() {
 		panic(errDatabaseClosed)
@@ -264,7 +264,7 @@ func (kv *KVStore) set(ctx *Context, key Path, value Value, db any) {
 	}
 }
 
-func makeTxEndcallbackFn(dbtx *Tx, tx *core.Transaction, kv *KVStore) func(t *core.Transaction, success bool) {
+func makeTxEndcallbackFn(dbtx *Tx, tx *core.Transaction, kv *SingleFileKV) func(t *core.Transaction, success bool) {
 	return func(t *core.Transaction, success bool) {
 		kv.transactionMapLock.Lock()
 		delete(kv.transactions, tx)

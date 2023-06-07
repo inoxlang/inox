@@ -29,11 +29,6 @@ import (
 	"github.com/rs/zerolog"
 )
 
-const (
-	PREINIT_DATA_GLOBAL_NAME = "preinit-data"
-	DATABASES_GLOBAL_NAME    = "dbs"
-)
-
 var (
 	DEFAULT_SCRIPT_LIMITATIONS = []core.Limitation{
 		{Name: fs_ns.FS_READ_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 100_000_000},
@@ -115,7 +110,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 		core.INITIAL_WORKING_DIR_VARNAME:        core.INITIAL_WORKING_DIR_PATH,
 		core.INITIAL_WORKING_DIR_PREFIX_VARNAME: core.INITIAL_WORKING_DIR_PATH_PATTERN,
 
-		PREINIT_DATA_GLOBAL_NAME: preinitData,
+		default_state.PREINIT_DATA_GLOBAL_NAME: preinitData,
 
 		// namespaces
 		"fs":       fs_ns.NewFsNamespace(),
@@ -297,7 +292,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 		dbs[name] = db
 	}
 	//TODO: make object immutable
-	state.Globals.Set(DATABASES_GLOBAL_NAME, core.NewObjectFromMap(dbs, ctx))
+	state.Globals.Set(default_state.DATABASES_GLOBAL_NAME, core.NewObjectFromMap(dbs, ctx))
 
 	return state, nil
 }

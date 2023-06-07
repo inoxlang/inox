@@ -9,6 +9,11 @@ import (
 	"io"
 )
 
+const (
+	PREINIT_DATA_GLOBAL_NAME = "preinit-data"
+	DATABASES_GLOBAL_NAME    = "dbs"
+)
+
 var (
 	NewDefaultGlobalState    NewDefaultGlobalStateFn
 	NewDefaultContext        NewDefaultContextFn

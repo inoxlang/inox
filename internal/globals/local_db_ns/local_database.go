@@ -8,6 +8,10 @@ import (
 	"github.com/inoxlang/inox/internal/permkind"
 )
 
+const (
+	SCHEMA_KEY = "/schema"
+)
+
 var (
 	ErrInvalidDatabaseDirpath = errors.New("invalid database dir path")
 	ErrDatabaseAlreadyOpen    = errors.New("database is already open")
@@ -17,6 +21,20 @@ var (
 	ErrInvalidPathKey         = errors.New("invalid path used as local database key")
 	ErrDatabaseNotSupported   = errors.New("database is not supported")
 )
+
+// A LocalDatabase is a database thats stores data on the filesystem.
+type LocalDatabase struct {
+	host    Host
+	dirPath core.Path
+	mainKV  *SingleFileKV
+	schema  *core.ObjectPattern
+}
+
+type LocalDatabaseConfig struct {
+	Host     core.Host
+	Path     core.Path
+	InMemory bool
+}
 
 // openDatabase opens a local database, read, create & write permissions are required.
 func openDatabase(ctx *Context, r core.ResourceName) (*LocalDatabase, error) {
@@ -67,19 +85,6 @@ func openDatabase(ctx *Context, r core.ResourceName) (*LocalDatabase, error) {
 	})
 
 	return db, err
-}
-
-// A LocalDatabase is a database thats stores data on the filesystem.
-type LocalDatabase struct {
-	host    Host
-	dirPath Path
-	mainKV  *KVStore
-}
-
-type LocalDatabaseConfig struct {
-	Host     Host
-	Path     Path
-	InMemory bool
 }
 
 func openLocalDatabaseWithConfig(ctx *core.Context, config LocalDatabaseConfig) (*LocalDatabase, error) {
