@@ -39,9 +39,9 @@ func openDatabase(ctx *Context, r core.ResourceName) (*LocalDatabase, error) {
 		return nil, ErrCannotResolveDatabase
 	}
 
-	// if pth.IsDirPath() {
-	// 	return nil, ErrInvalidDatabaseDirpath
-	// }
+	if !pth.IsDirPath() {
+		return nil, ErrInvalidDatabaseDirpath
+	}
 
 	patt := PathPattern(pth.ToAbs(ctx.GetFileSystem()) + "...")
 
@@ -71,9 +71,9 @@ func openDatabase(ctx *Context, r core.ResourceName) (*LocalDatabase, error) {
 
 // A LocalDatabase is a database thats stores data on the filesystem.
 type LocalDatabase struct {
-	host Host
-	path Path
-	kv   *KVStore
+	host    Host
+	dirPath Path
+	mainKV  *KVStore
 }
 
 type LocalDatabaseConfig struct {
@@ -83,19 +83,27 @@ type LocalDatabaseConfig struct {
 }
 
 func openLocalDatabaseWithConfig(ctx *core.Context, config LocalDatabaseConfig) (*LocalDatabase, error) {
+	mainKVPath := core.Path("")
 	if config.InMemory {
 		config.Path = ""
+	} else {
+		mainKVPath = config.Path.Join("./main.db", ctx.GetFileSystem())
 	}
 
-	kv, err := openKvWrapperNoPermCheck(config, ctx.GetFileSystem())
+	kv, err := openKvWrapperNoPermCheck(KvStoreConfig{
+		Host:     config.Host,
+		Path:     mainKVPath,
+		InMemory: config.InMemory,
+	}, ctx.GetFileSystem())
+
 	if err != nil {
 		return nil, err
 	}
 
 	localDB := &LocalDatabase{
-		host: config.Host,
-		path: config.Path,
-		kv:   kv,
+		host:    config.Host,
+		dirPath: config.Path,
+		mainKV:  kv,
 	}
 
 	return localDB, nil
@@ -106,24 +114,24 @@ func (ldb *LocalDatabase) Resource() core.SchemeHolder {
 }
 
 func (ldb *LocalDatabase) Close(ctx *core.Context) error {
-	ldb.kv.close(ctx)
+	ldb.mainKV.close(ctx)
 	return nil
 }
 
 func (ldb *LocalDatabase) Get(ctx *Context, key Path) (Value, Bool) {
-	return ldb.kv.get(ctx, key, ldb)
+	return ldb.mainKV.get(ctx, key, ldb)
 }
 
 func (ldb *LocalDatabase) Has(ctx *Context, key Path) Bool {
-	return ldb.kv.has(ctx, key, ldb)
+	return ldb.mainKV.has(ctx, key, ldb)
 }
 
 func (ldb *LocalDatabase) Set(ctx *Context, key Path, value Value) {
-	ldb.kv.set(ctx, key, value, ldb)
+	ldb.mainKV.set(ctx, key, value, ldb)
 }
 
 func (ldb *LocalDatabase) GetFullResourceName(key Path) ResourceName {
-	return getFullResourceName(ldb.host, ldb.path)
+	return getFullResourceName(ldb.host, ldb.dirPath)
 }
 
 func getFullResourceName(host Host, pth Path) ResourceName {

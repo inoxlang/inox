@@ -288,7 +288,7 @@ func TestPrepareLocalScript(t *testing.T) {
 				databases: {
 					local: {
 						resource: ldb://main
-						resolution-data: /data.db
+						resolution-data: /
 					}
 				}
 			}

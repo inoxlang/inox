@@ -23,8 +23,13 @@ type KVStore struct {
 	transactions       map[*core.Transaction]*Tx
 }
 
-func openKvWrapperNoPermCheck(config LocalDatabaseConfig, fls afs.Filesystem) (_ *KVStore, finalErr error) {
+type KvStoreConfig struct {
+	Host     Host
+	Path     Path
+	InMemory bool
+}
 
+func openKvWrapperNoPermCheck(config KvStoreConfig, fls afs.Filesystem) (_ *KVStore, finalErr error) {
 	path := string(config.Path)
 	if config.InMemory {
 		path = ":memory:"

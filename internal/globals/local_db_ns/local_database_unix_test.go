@@ -19,7 +19,6 @@ func TestOpenDatabase(t *testing.T) {
 	t.Run("opening the same database is forbidden", func(t *testing.T) {
 		dir, _ := filepath.Abs(t.TempDir())
 		dir += "/"
-		tempFilepath := filepath.Join(dir, "data.db")
 
 		pattern := core.PathPattern(dir + "...")
 
@@ -30,14 +29,14 @@ func TestOpenDatabase(t *testing.T) {
 				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
 			},
 			HostResolutions: map[core.Host]core.Value{
-				core.Host("ldb://main"): core.Path(tempFilepath),
+				core.Host("ldb://main"): core.Path(dir),
 			},
 			Filesystem: fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE),
 		}
 
 		ctx1 := core.NewContexWithEmptyState(ctxConfig, nil)
 
-		_db, err := openDatabase(ctx1, core.Path(tempFilepath))
+		_db, err := openDatabase(ctx1, core.Path(dir))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -45,7 +44,7 @@ func TestOpenDatabase(t *testing.T) {
 
 		ctx2 := core.NewContexWithEmptyState(ctxConfig, nil)
 
-		db, err := openDatabase(ctx2, core.Path(tempFilepath))
+		db, err := openDatabase(ctx2, core.Path(dir))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -55,7 +54,6 @@ func TestOpenDatabase(t *testing.T) {
 	t.Run("open same database sequentially (in-between closing)", func(t *testing.T) {
 		dir, _ := filepath.Abs(t.TempDir())
 		dir += "/"
-		tempFilepath := filepath.Join(dir, "data.db")
 
 		pattern := core.PathPattern(dir + "...")
 
@@ -66,14 +64,14 @@ func TestOpenDatabase(t *testing.T) {
 				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
 			},
 			HostResolutions: map[core.Host]core.Value{
-				core.Host("ldb://main"): core.Path(tempFilepath),
+				core.Host("ldb://main"): core.Path(dir),
 			},
 			Filesystem: fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE),
 		}
 
 		ctx1 := core.NewContexWithEmptyState(ctxConfig, nil)
 
-		_db, err := openDatabase(ctx1, core.Path(tempFilepath))
+		_db, err := openDatabase(ctx1, core.Path(dir))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -81,7 +79,7 @@ func TestOpenDatabase(t *testing.T) {
 
 		ctx2 := core.NewContexWithEmptyState(ctxConfig, nil)
 
-		db, err := openDatabase(ctx2, core.Path(tempFilepath))
+		db, err := openDatabase(ctx2, core.Path(dir))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -97,7 +95,6 @@ func TestOpenDatabase(t *testing.T) {
 
 		dir, _ := filepath.Abs(t.TempDir())
 		dir += "/"
-		tempFilepath := filepath.Join(dir, "data.db")
 
 		pattern := core.PathPattern(dir + "...")
 
@@ -108,7 +105,7 @@ func TestOpenDatabase(t *testing.T) {
 				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
 			},
 			HostResolutions: map[core.Host]core.Value{
-				core.Host("ldb://main"): core.Path(tempFilepath),
+				core.Host("ldb://main"): core.Path(dir),
 			},
 			Filesystem: fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE),
 		}
@@ -134,7 +131,7 @@ func TestOpenDatabase(t *testing.T) {
 			//open database in first context
 			ctx1 = core.NewContexWithEmptyState(ctxConfig, nil)
 
-			_db1, err := openDatabase(ctx1, core.Path(tempFilepath))
+			_db1, err := openDatabase(ctx1, core.Path(dir))
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -146,7 +143,7 @@ func TestOpenDatabase(t *testing.T) {
 			//open same database in second context
 			ctx2 = core.NewContexWithEmptyState(ctxConfig, nil)
 
-			_db2, err := openDatabase(ctx2, core.Path(tempFilepath))
+			_db2, err := openDatabase(ctx2, core.Path(dir))
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -181,7 +178,6 @@ func TestLocalDatabase(t *testing.T) {
 			if !inMemory {
 				dir, _ := filepath.Abs(t.TempDir())
 				dir += "/"
-				tempFilepath := filepath.Join(dir, "data.db")
 				pattern := core.PathPattern(dir + "...")
 
 				ctxConfig = core.ContextConfig{
@@ -191,12 +187,12 @@ func TestLocalDatabase(t *testing.T) {
 						core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
 					},
 					HostResolutions: map[core.Host]core.Value{
-						HOST: core.Path(tempFilepath),
+						HOST: core.Path(dir),
 					},
 					Filesystem: fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE),
 				}
 				config.Host = HOST
-				config.Path = core.Path(tempFilepath)
+				config.Path = core.Path(dir)
 			}
 
 			ctx := core.NewContexWithEmptyState(ctxConfig, nil)
@@ -255,7 +251,7 @@ func TestLocalDatabase(t *testing.T) {
 					core.ReleaseResource(r)
 
 					//we check that the database transaction is commited
-					ldb.kv.db.View(func(txn *Tx) error {
+					ldb.mainKV.db.View(func(txn *Tx) error {
 						item, err := txn.Get(string(key))
 						if !assert.NoError(t, err) {
 							return nil
@@ -335,7 +331,7 @@ func TestLocalDatabase(t *testing.T) {
 					assert.Equal(t, Int(1), v)
 
 					//we check that the database transaction is commited
-					ldb.kv.db.View(func(txn *Tx) error {
+					ldb.mainKV.db.View(func(txn *Tx) error {
 						item, err := txn.Get(string(key))
 						if !assert.NoError(t, err) {
 							return nil

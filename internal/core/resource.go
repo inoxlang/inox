@@ -273,6 +273,21 @@ func (pth Path) ToGlobbingPattern() PathPattern {
 	return PathPattern(utils.BytesAsString(pattern))
 }
 
+func (pth Path) Join(relativePath Path, fls afs.Filesystem) Path {
+	if !relativePath.IsRelative() {
+		panic(errors.New("path argument is not relative"))
+	}
+	dirpath := Path(fls.Join(string(pth), string(relativePath)))
+	if relativePath.IsDirPath() && dirpath[len(dirpath)-1] != '/' {
+		dirpath += "/"
+	}
+	if pth.IsRelative() {
+		prefix, _, _ := strings.Cut(string(pth), "/")
+		dirpath = Path(prefix) + "/" + dirpath
+	}
+	return dirpath
+}
+
 func (pth Path) PropertyNames(ctx *Context) []string {
 	return PATH_PROPNAMES
 }
@@ -321,18 +336,7 @@ func (pth Path) Prop(ctx *Context, name string) Value {
 		})
 	case "join":
 		return WrapGoClosure(func(ctx *Context, relativePath Path) Path {
-			if !relativePath.IsRelative() {
-				panic(errors.New("path argument is not relative"))
-			}
-			dirpath := Path(fls.Join(string(pth), string(relativePath)))
-			if relativePath.IsDirPath() && dirpath[len(dirpath)-1] != '/' {
-				dirpath += "/"
-			}
-			if pth.IsRelative() {
-				prefix, _, _ := strings.Cut(string(pth), "/")
-				dirpath = Path(prefix) + "/" + dirpath
-			}
-			return dirpath
+			return pth.Join(relativePath, fls)
 		})
 	default:
 		return nil
