@@ -17,7 +17,7 @@ type SymbolicLocalDatabase struct {
 	_ int
 }
 
-func (r *SymbolicLocalDatabase) Test(v SymbolicValue) bool {
+func (ldb *SymbolicLocalDatabase) Test(v SymbolicValue) bool {
 	_, ok := v.(*SymbolicLocalDatabase)
 	return ok
 }
@@ -26,23 +26,15 @@ func (r SymbolicLocalDatabase) Clone(clones map[uintptr]SymbolicValue) symbolic.
 	return &SymbolicLocalDatabase{}
 }
 
-func (r *SymbolicLocalDatabase) Widen() (symbolic.SymbolicValue, bool) {
+func (ldb *SymbolicLocalDatabase) Widen() (symbolic.SymbolicValue, bool) {
 	return nil, false
 }
 
+func (ldb *SymbolicLocalDatabase) UpdateSchema(ctx *symbolic.Context, schema *symbolic.ObjectPattern) {
+	
+}
+
 func (ldb *SymbolicLocalDatabase) Close() {
-
-}
-
-func (ldb *SymbolicLocalDatabase) Get(ctx *symbolic.Context, key *symbolic.Path) (SymbolicValue, *symbolic.Bool) {
-	return &symbolic.Any{}, nil
-}
-
-func (ldb *SymbolicLocalDatabase) Has(ctx *symbolic.Context, key *symbolic.Path) *symbolic.Bool {
-	return &symbolic.Bool{}
-}
-
-func (ldb *SymbolicLocalDatabase) Set(ctx *symbolic.Context, key *symbolic.Path, value SymbolicValue) {
 
 }
 
@@ -60,6 +52,8 @@ func (ldb *SymbolicLocalDatabase) Prop(name string) SymbolicValue {
 
 func (ldb *SymbolicLocalDatabase) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
+	case "update_schema":
+		return symbolic.WrapGoMethod(ldb.UpdateSchema), true
 	case "close":
 		return symbolic.WrapGoMethod(ldb.Close), true
 	}
@@ -70,20 +64,20 @@ func (ldb *SymbolicLocalDatabase) PropertyNames() []string {
 	return LOCAL_DB_PROPNAMES
 }
 
-func (a *SymbolicLocalDatabase) IsWidenable() bool {
+func (ldb *SymbolicLocalDatabase) IsWidenable() bool {
 	return false
 }
 
-func (r *SymbolicLocalDatabase) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (ldb *SymbolicLocalDatabase) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%local-database")))
 }
 
-func (kvs *SymbolicLocalDatabase) WidestOfType() SymbolicValue {
+func (ldb *SymbolicLocalDatabase) WidestOfType() SymbolicValue {
 	return &SymbolicLocalDatabase{}
 }
 
 ///
 
-func (kvs *LocalDatabase) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]SymbolicValue) (SymbolicValue, error) {
+func (ldb *LocalDatabase) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]SymbolicValue) (SymbolicValue, error) {
 	return &SymbolicLocalDatabase{}, nil
 }

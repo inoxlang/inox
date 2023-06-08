@@ -2,16 +2,19 @@ package local_db_ns
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/permkind"
+	"github.com/rs/zerolog"
 )
 
 const (
-	SCHEMA_KEY = "/schema"
+	SCHEMA_KEY = "/_schema_"
 
-	MAIN_KV_FILE = "main.kv"
+	MAIN_KV_FILE   = "main.kv"
+	SCHEMA_KV_FILE = "schema.kv"
 )
 
 var (
@@ -23,15 +26,17 @@ var (
 	ErrInvalidPathKey         = errors.New("invalid path used as local database key")
 	ErrDatabaseNotSupported   = errors.New("database is not supported")
 
-	LOCAL_DB_PROPNAMES = []string{"close"}
+	LOCAL_DB_PROPNAMES = []string{"update_schema", "close"}
 )
 
 // A LocalDatabase is a database thats stores data on the filesystem.
 type LocalDatabase struct {
-	host    Host
-	dirPath core.Path
-	mainKV  *SingleFileKV
-	schema  *core.ObjectPattern
+	host     Host
+	dirPath  core.Path
+	mainKV   *SingleFileKV
+	schemaKV *SingleFileKV
+	schema   *core.ObjectPattern
+	logger   zerolog.Logger
 }
 
 type LocalDatabaseConfig struct {
@@ -93,26 +98,55 @@ func openDatabase(ctx *Context, r core.ResourceName) (*LocalDatabase, error) {
 
 func openLocalDatabaseWithConfig(ctx *core.Context, config LocalDatabaseConfig) (*LocalDatabase, error) {
 	mainKVPath := core.Path("")
+	schemaKVPath := core.Path("")
+
+	fls := ctx.GetFileSystem()
+
 	if config.InMemory {
 		config.Path = ""
 	} else {
-		mainKVPath = config.Path.Join("./"+MAIN_KV_FILE, ctx.GetFileSystem())
+		mainKVPath = config.Path.Join("./"+MAIN_KV_FILE, fls)
+		schemaKVPath = config.Path.Join("./"+SCHEMA_KV_FILE, fls)
 	}
 
-	kv, err := openKvWrapperNoPermCheck(KvStoreConfig{
+	mainKv, err := openSingleFileKV(KvStoreConfig{
 		Host:     config.Host,
 		Path:     mainKVPath,
 		InMemory: config.InMemory,
-	}, ctx.GetFileSystem())
+	}, fls)
+
+	if err != nil {
+		return nil, err
+	}
+
+	schemaKv, err := openSingleFileKV(KvStoreConfig{
+		Host:     config.Host,
+		Path:     schemaKVPath,
+		InMemory: config.InMemory,
+	}, fls)
 
 	if err != nil {
 		return nil, err
 	}
 
 	localDB := &LocalDatabase{
-		host:    config.Host,
-		dirPath: config.Path,
-		mainKV:  kv,
+		host:     config.Host,
+		dirPath:  config.Path,
+		mainKV:   mainKv,
+		schemaKV: schemaKv,
+	}
+
+	schema, ok := schemaKv.get(ctx, "/", localDB)
+	if ok {
+		patt, ok := schema.(*ObjectPattern)
+		if !ok {
+			err := localDB.Close(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("schema is present but is not an object pattern, close db: %w", err)
+			}
+			return nil, fmt.Errorf("schema is present but is not an object pattern, close db")
+		}
+		localDB.schema = patt
 	}
 
 	return localDB, nil
@@ -122,8 +156,14 @@ func (ldb *LocalDatabase) Resource() core.SchemeHolder {
 	return ldb.host
 }
 
+func (ldb *LocalDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern) {
+	ldb.schemaKV.set(ctx, "/", schema, ldb)
+	ldb.schema = schema
+}
+
 func (ldb *LocalDatabase) Close(ctx *core.Context) error {
 	ldb.mainKV.close(ctx)
+	ldb.schemaKV.close(ctx)
 	return nil
 }
 
@@ -153,6 +193,8 @@ func (*LocalDatabase) SetProp(ctx *core.Context, name string, value core.Value) 
 
 func (ldb *LocalDatabase) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
+	case "update_schema":
+		return core.WrapGoMethod(ldb.UpdateSchema), true
 	case "close":
 		return core.WrapGoMethod(ldb.Close), true
 	}

@@ -29,7 +29,7 @@ type KvStoreConfig struct {
 	InMemory bool
 }
 
-func openKvWrapperNoPermCheck(config KvStoreConfig, fls afs.Filesystem) (_ *SingleFileKV, finalErr error) {
+func openSingleFileKV(config KvStoreConfig, fls afs.Filesystem) (_ *SingleFileKV, finalErr error) {
 	path := string(config.Path)
 	if config.InMemory {
 		path = ":memory:"
