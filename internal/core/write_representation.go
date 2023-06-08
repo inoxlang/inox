@@ -1474,12 +1474,32 @@ func (p *ListPattern) WriteRepresentation(ctx *Context, w io.Writer, encountered
 		return nil
 	}
 
-	_, err := w.Write([]byte{'%', '[', ']'})
-	if err != nil {
+	generalElementPattern := p.generalElementPattern
+	switch generalElementPattern.(type) {
+	case *ExactValuePattern, *ExactStringPattern:
+		_, err := w.Write([]byte{'%', '[', ']'})
+		if err != nil {
+			return err
+		}
+
+		return generalElementPattern.WriteRepresentation(ctx, w, nil, config)
+	default:
+		//surround the general element pattern with %( )
+
+		_, err := w.Write([]byte{'%', '[', ']', '%', '('})
+		if err != nil {
+			return err
+		}
+
+		err = generalElementPattern.WriteRepresentation(ctx, w, nil, config)
+		if err != nil {
+			return err
+		}
+
+		_, err = w.Write([]byte{')'})
 		return err
 	}
 
-	return p.generalElementPattern.WriteRepresentation(ctx, w, nil, config)
 }
 
 func (TuplePattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
