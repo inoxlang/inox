@@ -21,74 +21,6 @@ func TestParseRepr(t *testing.T) {
 		value    Value
 	}{
 
-		//object patterns
-		{`%{}`, -1, NewInexactObjectPattern(nil)},
-		/*    */ {"%{\n}", -1, NewInexactObjectPattern(nil)},
-		/*    */ {"%{\r\n}", -1, NewInexactObjectPattern(nil)},
-		/*    */ {"%{\n\n}", -1, NewInexactObjectPattern(nil)},
-		/*    */ {"%{\r\n\r\n}", -1, NewInexactObjectPattern(nil)},
-		{`%{,}`, -1, NewInexactObjectPattern(nil)},
-		/*    */ {"%{\n,}", -1, NewInexactObjectPattern(nil)},
-		/*    */ {"%{\n\n,}", -1, NewInexactObjectPattern(nil)},
-		/*    */ {"%{,\n}", -1, NewInexactObjectPattern(nil)},
-		/*    */ {"%{,\n\n}", -1, NewInexactObjectPattern(nil)},
-		{`%{"a":true}`, -1, objPatt(map[string]Pattern{"a": exact(True)})},
-		/*    */ {"%{\"a\"\n:true}", 5, nil},
-		/*    */ {"%{\"a\":\ntrue}", 6, nil},
-		{`%{"a" :true}`, -1, objPatt(map[string]Pattern{"a": exact(True)})},
-		{`%{"a": true}`, -1, objPatt(map[string]Pattern{"a": exact(True)})},
-		{`%{"a" : true}`, -1, objPatt(map[string]Pattern{"a": exact(True)})},
-		{`%{"a":true,}`, -1, objPatt(map[string]Pattern{"a": exact(True)})},
-		{`%{"a":true,"b":false}`, -1, objPatt(map[string]Pattern{"a": exact(True), "b": exact(False)})},
-		{`%{"a":true, "b":false}`, -1, objPatt(map[string]Pattern{"a": exact(True), "b": exact(False)})},
-		{`%{"a":true,"b":false,}`, -1, objPatt(map[string]Pattern{"a": exact(True), "b": exact(False)})},
-		{`%{a:true}`, -1, objPatt(map[string]Pattern{"a": exact(True)})},
-		/*    */ {"%{a:true\n}", 8, nil},
-		/*    */ {"%{a:true\r\n}", 9, nil}, // \r is space
-		/*    */ {"%{a\n:true}", 3, nil},
-		/*    */ {"%{a\r\n:true}", 4, nil}, // \r is space
-		/*    */ {"%{a:\ntrue}", 4, nil},
-		/*    */ {"%{a:\r\ntrue}", 5, nil}, // \r is space
-		{`%{a :true}`, -1, objPatt(map[string]Pattern{"a": exact(True)})},
-		{`%{a: true}`, -1, objPatt(map[string]Pattern{"a": exact(True)})},
-		{`%{a : true}`, -1, objPatt(map[string]Pattern{"a": exact(True)})},
-		{`%{a:true,}`, -1, objPatt(map[string]Pattern{"a": exact(True)})},
-		/*    */ {"%{a:true,\n}", -1, objPatt(map[string]Pattern{"a": exact(True)})},
-		{`%{a-b:true}`, -1, objPatt(map[string]Pattern{"a-b": exact(True)})},
-		{`%{a:true,b:false}`, -1, objPatt(map[string]Pattern{"a": exact(True), "b": exact(False)})},
-		/*    */ {"%{a:true,\nb:false}", -1, objPatt(map[string]Pattern{"a": exact(True), "b": exact(False)})},
-		{`%{a:true,"b":false}`, -1, objPatt(map[string]Pattern{"a": exact(True), "b": exact(False)})},
-		{`%{"a":true,b:false}`, -1, objPatt(map[string]Pattern{"a": exact(True), "b": exact(False)})},
-		/*        */ {`%{"a":%(#[])}`, -1, objPatt(map[string]Pattern{"a": exact(NewTupleVariadic())})},
-		/*        */ {`%{"a":%(#[1])}`, -1, objPatt(map[string]Pattern{"a": exact(NewTupleVariadic(Int(1)))})},
-		/*        */ {`%{"a":%(#[#{a:true}])}`, -1, objPatt(map[string]Pattern{"a": exact(NewTupleVariadic(NewRecordFromMap(ValMap{"a": True})))})},
-		/*        */ {`%{"a":%(#[#{a:true,b:false}])}`, -1, objPatt(map[string]Pattern{
-			"a": exact(NewTupleVariadic(NewRecordFromMap(ValMap{"a": True, "b": False}))),
-		})},
-		/*        */ {`%{"a":%(#{a:true})}`, -1, objPatt(map[string]Pattern{"a": exact(NewRecordFromMap(ValMap{"a": True}))})},
-		/*        */ {`%{"a":%(#{a:true,b:false})}`, -1, objPatt(map[string]Pattern{"a": exact(NewRecordFromMap(ValMap{"a": True, "b": False}))})},
-		/*        */ {`%{"a":%(#[]), b: %(#[])}`, -1, objPatt(map[string]Pattern{"a": exact(NewTupleVariadic()), "b": exact(NewTupleVariadic())})},
-		/*        */ {`%{"a":%(#[1]), b: %(#[2])}`, -1, objPatt(map[string]Pattern{"a": exact(NewTupleVariadic(Int(1))), "b": exact(NewTupleVariadic(Int(2)))})},
-		/*        */ {`%{"a":%(#[#{a:true}]), "b": %(#[#{b:false}])}`, -1, objPatt(map[string]Pattern{
-			/*              */ "a": exact(NewTupleVariadic(NewRecordFromMap(ValMap{"a": True}))),
-			/*              */ "b": exact(NewTupleVariadic(NewRecordFromMap(ValMap{"b": False}))),
-			/*              */})},
-		/*        */ {`%{"a":%(#{a:true}), "b": %(#{b:false})}`, -1, objPatt(map[string]Pattern{
-			/*              */ "a": exact(NewRecordFromMap(ValMap{"a": True})),
-			/*              */ "b": exact(NewRecordFromMap(ValMap{"b": False})),
-			/*              */})},
-		//
-		{`%{"a":#[]}`, 7, nil},
-		/*              */ {`%{"a": #[]}`, 8, nil},
-		{`%{"a":#{}}`, 7, nil},
-		/*              */ {`%{"a": #{}}`, 8, nil},
-		{`%{"a":[]}`, 6, nil},
-		/*              */ {`%{"a": []}`, 7, nil},
-		{`%{"a":{}}`, 6, nil},
-		/*              */ {`%{"a": {}}`, 7, nil},
-		{`%{"a"::{}}`, 6, nil},
-		/*              */ {`%{"a": :{}}`, 7, nil},
-
 		//udata
 		{
 			"udata 0 {}", -1, &UData{Root: Int(0)},
@@ -514,6 +446,40 @@ func TestParseRepr(t *testing.T) {
 			`[[1],[2]]`, -1, NewWrappedValueList(NewWrappedValueList(Int(1)), NewWrappedValueList(Int(2))),
 		},
 
+		//list patterns
+		{`%[]`, -1, listPatt()},
+		/*    */ {"%[\n]", -1, listPatt()},
+		/*    */ {"%[\n\n]", -1, listPatt()},
+		{`%[,]`, -1, listPatt()},
+		/*    */ {"%[\n,]", -1, listPatt()},
+		/*    */ {"%[\n\n,]", -1, listPatt()},
+		/*    */ {"%[,\n]", -1, listPatt()},
+		/*    */ {"%[,\n\n]", -1, listPatt()},
+		{`%[1]`, -1, listPatt(exact(Int(1)))},
+		/*    */ {"%[\n1]", -1, listPatt(exact(Int(1)))},
+		/*    */ {"%[1\n]", 3, nil},
+		{`%[ 1]`, -1, listPatt(exact(Int(1)))},
+		/*    */ {"%[\n 1]", -1, listPatt(exact(Int(1)))},
+		{`%[ 1 ]`, -1, listPatt(exact(Int(1)))},
+		{`%[1,]`, -1, listPatt(exact(Int(1)))},
+		/*    */ {"%[1,\n]", -1, listPatt(exact(Int(1)))},
+		/*    */ {"%[1,\n\n]", -1, listPatt(exact(Int(1)))},
+		{`%[a]`, 2, nil},
+		{`%[1,2]`, -1, listPatt(exact(Int(1)), exact(Int(2)))},
+		/*    */ {"%[1,\n2]", -1, listPatt(exact(Int(1)), exact(Int(2)))},
+		/*    */ {"%[1,\n\n2]", -1, listPatt(exact(Int(1)), exact(Int(2)))},
+		/*    */ {"%[1\n2]", 3, nil},
+		{`%[1 ,2]`, -1, listPatt(exact(Int(1)), exact(Int(2)))},
+		/*    */ {"%[1 \n,2]", 4, nil},
+		{`%[1, 2]`, -1, listPatt(exact(Int(1)), exact(Int(2)))},
+		/*    */ {"%[1,\n 2]", -1, listPatt(exact(Int(1)), exact(Int(2)))},
+		{`%[1,2,]`, -1, listPatt(exact(Int(1)), exact(Int(2)))},
+		/*    */ {`%[%(#[])]`, -1, listPatt(exact(NewTupleVariadic()))},
+		/*    */ {`%[%(#[1])]`, -1, listPatt(exact(NewTupleVariadic(Int(1))))},
+		/*    */ {
+			`%[%(#[1]),%(#[2])]`, -1, listPatt(exact(NewTupleVariadic(Int(1))), exact(NewTupleVariadic(Int(2)))),
+		},
+
 		//paths in lists
 		{`[/]`, -1, NewWrappedValueList(Path("/"))},
 		{`[/,]`, -1, NewWrappedValueList(Path("/"))},
@@ -727,6 +693,74 @@ func TestParseRepr(t *testing.T) {
 			/*              */ "a": NewRecordFromMap(ValMap{"a": True}),
 			/*              */ "b": NewRecordFromMap(ValMap{"b": False}),
 			/*              */})},
+
+		//object patterns
+		{`%{}`, -1, NewInexactObjectPattern(nil)},
+		/*    */ {"%{\n}", -1, NewInexactObjectPattern(nil)},
+		/*    */ {"%{\r\n}", -1, NewInexactObjectPattern(nil)},
+		/*    */ {"%{\n\n}", -1, NewInexactObjectPattern(nil)},
+		/*    */ {"%{\r\n\r\n}", -1, NewInexactObjectPattern(nil)},
+		{`%{,}`, -1, NewInexactObjectPattern(nil)},
+		/*    */ {"%{\n,}", -1, NewInexactObjectPattern(nil)},
+		/*    */ {"%{\n\n,}", -1, NewInexactObjectPattern(nil)},
+		/*    */ {"%{,\n}", -1, NewInexactObjectPattern(nil)},
+		/*    */ {"%{,\n\n}", -1, NewInexactObjectPattern(nil)},
+		{`%{"a":true}`, -1, objPatt(map[string]Pattern{"a": exact(True)})},
+		/*    */ {"%{\"a\"\n:true}", 5, nil},
+		/*    */ {"%{\"a\":\ntrue}", 6, nil},
+		{`%{"a" :true}`, -1, objPatt(map[string]Pattern{"a": exact(True)})},
+		{`%{"a": true}`, -1, objPatt(map[string]Pattern{"a": exact(True)})},
+		{`%{"a" : true}`, -1, objPatt(map[string]Pattern{"a": exact(True)})},
+		{`%{"a":true,}`, -1, objPatt(map[string]Pattern{"a": exact(True)})},
+		{`%{"a":true,"b":false}`, -1, objPatt(map[string]Pattern{"a": exact(True), "b": exact(False)})},
+		{`%{"a":true, "b":false}`, -1, objPatt(map[string]Pattern{"a": exact(True), "b": exact(False)})},
+		{`%{"a":true,"b":false,}`, -1, objPatt(map[string]Pattern{"a": exact(True), "b": exact(False)})},
+		{`%{a:true}`, -1, objPatt(map[string]Pattern{"a": exact(True)})},
+		/*    */ {"%{a:true\n}", 8, nil},
+		/*    */ {"%{a:true\r\n}", 9, nil}, // \r is space
+		/*    */ {"%{a\n:true}", 3, nil},
+		/*    */ {"%{a\r\n:true}", 4, nil}, // \r is space
+		/*    */ {"%{a:\ntrue}", 4, nil},
+		/*    */ {"%{a:\r\ntrue}", 5, nil}, // \r is space
+		{`%{a :true}`, -1, objPatt(map[string]Pattern{"a": exact(True)})},
+		{`%{a: true}`, -1, objPatt(map[string]Pattern{"a": exact(True)})},
+		{`%{a : true}`, -1, objPatt(map[string]Pattern{"a": exact(True)})},
+		{`%{a:true,}`, -1, objPatt(map[string]Pattern{"a": exact(True)})},
+		/*    */ {"%{a:true,\n}", -1, objPatt(map[string]Pattern{"a": exact(True)})},
+		{`%{a-b:true}`, -1, objPatt(map[string]Pattern{"a-b": exact(True)})},
+		{`%{a:true,b:false}`, -1, objPatt(map[string]Pattern{"a": exact(True), "b": exact(False)})},
+		/*    */ {"%{a:true,\nb:false}", -1, objPatt(map[string]Pattern{"a": exact(True), "b": exact(False)})},
+		{`%{a:true,"b":false}`, -1, objPatt(map[string]Pattern{"a": exact(True), "b": exact(False)})},
+		{`%{"a":true,b:false}`, -1, objPatt(map[string]Pattern{"a": exact(True), "b": exact(False)})},
+		/*        */ {`%{"a":%(#[])}`, -1, objPatt(map[string]Pattern{"a": exact(NewTupleVariadic())})},
+		/*        */ {`%{"a":%(#[1])}`, -1, objPatt(map[string]Pattern{"a": exact(NewTupleVariadic(Int(1)))})},
+		/*        */ {`%{"a":%(#[#{a:true}])}`, -1, objPatt(map[string]Pattern{"a": exact(NewTupleVariadic(NewRecordFromMap(ValMap{"a": True})))})},
+		/*        */ {`%{"a":%(#[#{a:true,b:false}])}`, -1, objPatt(map[string]Pattern{
+			"a": exact(NewTupleVariadic(NewRecordFromMap(ValMap{"a": True, "b": False}))),
+		})},
+		/*        */ {`%{"a":%(#{a:true})}`, -1, objPatt(map[string]Pattern{"a": exact(NewRecordFromMap(ValMap{"a": True}))})},
+		/*        */ {`%{"a":%(#{a:true,b:false})}`, -1, objPatt(map[string]Pattern{"a": exact(NewRecordFromMap(ValMap{"a": True, "b": False}))})},
+		/*        */ {`%{"a":%(#[]), b: %(#[])}`, -1, objPatt(map[string]Pattern{"a": exact(NewTupleVariadic()), "b": exact(NewTupleVariadic())})},
+		/*        */ {`%{"a":%(#[1]), b: %(#[2])}`, -1, objPatt(map[string]Pattern{"a": exact(NewTupleVariadic(Int(1))), "b": exact(NewTupleVariadic(Int(2)))})},
+		/*        */ {`%{"a":%(#[#{a:true}]), "b": %(#[#{b:false}])}`, -1, objPatt(map[string]Pattern{
+			/*              */ "a": exact(NewTupleVariadic(NewRecordFromMap(ValMap{"a": True}))),
+			/*              */ "b": exact(NewTupleVariadic(NewRecordFromMap(ValMap{"b": False}))),
+			/*              */})},
+		/*        */ {`%{"a":%(#{a:true}), "b": %(#{b:false})}`, -1, objPatt(map[string]Pattern{
+			/*              */ "a": exact(NewRecordFromMap(ValMap{"a": True})),
+			/*              */ "b": exact(NewRecordFromMap(ValMap{"b": False})),
+			/*              */})},
+		//
+		{`%{"a":#[]}`, 7, nil},
+		/*              */ {`%{"a": #[]}`, 8, nil},
+		{`%{"a":#{}}`, 7, nil},
+		/*              */ {`%{"a": #{}}`, 8, nil},
+		{`%{"a":[]}`, 6, nil},
+		/*              */ {`%{"a": []}`, 7, nil},
+		{`%{"a":{}}`, 6, nil},
+		/*              */ {`%{"a": {}}`, 7, nil},
+		{`%{"a"::{}}`, 6, nil},
+		/*              */ {`%{"a": :{}}`, 7, nil},
 
 		//dictionaries
 		{`:{}`, -1, NewDictionary(nil)},
@@ -984,4 +1018,8 @@ func exact(v Value) *ExactValuePattern {
 
 func objPatt(entries map[string]Pattern) *ObjectPattern {
 	return NewInexactObjectPattern(entries)
+}
+
+func listPatt(elements ...Pattern) *ListPattern {
+	return NewListPatternVariadic(elements...)
 }

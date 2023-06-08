@@ -964,6 +964,13 @@ func NewListPattern(elementPatterns []Pattern) *ListPattern {
 	return &ListPattern{elementPatterns: elementPatterns}
 }
 
+func NewListPatternVariadic(elementPatterns... Pattern) *ListPattern {
+	if elementPatterns == nil {
+		elementPatterns = []Pattern{}
+	}
+	return &ListPattern{elementPatterns: elementPatterns}
+}
+
 func (patt ListPattern) Test(ctx *Context, v Value) bool {
 	list, ok := v.(*List)
 	if !ok {
