@@ -2,24 +2,29 @@ package core
 
 import (
 	"errors"
+	"fmt"
 	"sync"
+
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
 	openDbFnRegistry     = map[Scheme]OpenDBFn{}
 	openDbFnRegistryLock sync.Mutex
 
-	ErrNonUniqueDbOpenFnRegistration = errors.New("non unique open DB function registration")
-)
+	ErrNonUniqueDbOpenFnRegistration                = errors.New("non unique open DB function registration")
+	ErrNameCollisionWithInitialDatabasePropertyName = errors.New("name collision with initial database property name")
 
-var (
 	DATABASE_PROPNAMES = []string{"update_schema", "close", "schema"}
 
 	_ Value = (*DatabaseIL)(nil)
 )
 
 type DatabaseIL struct {
-	inner Database
+	inner            Database
+	initialSchema    *ObjectPattern
+	propertyNames    []string
+	topLevelEntities map[string]Value
 
 	NoReprMixin
 	NotClonableMixin
@@ -42,8 +47,22 @@ type Database interface {
 }
 
 func WrapDatabase(inner Database) *DatabaseIL {
+	schema := inner.Schema()
+
+	propertyNames := utils.CopySlice(DATABASE_PROPNAMES)
+	schema.ForEachEntry(func(propName string, propPattern Pattern, isOptional bool) error {
+		if utils.SliceContains(DATABASE_PROPNAMES, propName) {
+			panic(fmt.Errorf("%w: %s", ErrNameCollisionWithInitialDatabasePropertyName, propName))
+		}
+		propertyNames = append(propertyNames, propName)
+		return nil
+	})
+
 	return &DatabaseIL{
-		inner: inner,
+		inner:            inner,
+		initialSchema:    schema,
+		propertyNames:    propertyNames,
+		topLevelEntities: inner.TopLevelEntities(),
 	}
 }
 
@@ -93,8 +112,14 @@ func (db *DatabaseIL) GetGoMethod(name string) (*GoFunction, bool) {
 func (db *DatabaseIL) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "schema":
-		return db.inner.Schema()
+		return db.initialSchema
 	}
+
+	val, ok := db.topLevelEntities[name]
+	if ok {
+		return val
+	}
+
 	method, ok := db.GetGoMethod(name)
 	if !ok {
 		panic(FormatErrPropertyDoesNotExist(name, db))
@@ -106,6 +131,6 @@ func (*DatabaseIL) SetProp(ctx *Context, name string, value Value) error {
 	return ErrCannotSetProp
 }
 
-func (*DatabaseIL) PropertyNames(ctx *Context) []string {
-	return DATABASE_PROPNAMES
+func (db *DatabaseIL) PropertyNames(ctx *Context) []string {
+	return db.propertyNames
 }

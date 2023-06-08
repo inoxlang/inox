@@ -2,6 +2,7 @@ package internal
 
 import (
 	"bufio"
+	"fmt"
 
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
@@ -16,12 +17,22 @@ var (
 // A DatabaseIL represents a symbolic DatabaseIL.
 type DatabaseIL struct {
 	UnassignablePropsMixin
-	schema *ObjectPattern
+	schema        *ObjectPattern
+	propertyNames []string
 }
 
 func NewDatabaseIL(schema *ObjectPattern) *DatabaseIL {
+	propertyNames := utils.CopySlice(DATABASE_PROPNAMES)
+	for propName := range schema.entries {
+		if utils.SliceContains(DATABASE_PROPNAMES, propName) {
+			panic(fmt.Errorf("name collision with inital property name '%s'", propName))
+		}
+		propertyNames = append(propertyNames, propName)
+	}
+
 	return &DatabaseIL{
-		schema: schema,
+		schema:        schema,
+		propertyNames: propertyNames,
 	}
 }
 
@@ -53,6 +64,12 @@ func (db *DatabaseIL) Prop(name string) SymbolicValue {
 	case "schema":
 		return db.schema
 	}
+
+	entry, ok := db.schema.entries[name]
+	if ok {
+		return entry.SymbolicValue()
+	}
+
 	method, ok := db.GetGoMethod(name)
 	if !ok {
 		panic(FormatErrPropertyDoesNotExist(name, db))
@@ -60,8 +77,8 @@ func (db *DatabaseIL) Prop(name string) SymbolicValue {
 	return method
 }
 
-func (*DatabaseIL) PropertyNames() []string {
-	return DATABASE_PROPNAMES
+func (db *DatabaseIL) PropertyNames() []string {
+	return db.propertyNames
 }
 
 func (DatabaseIL *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern) *Error {
