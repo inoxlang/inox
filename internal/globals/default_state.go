@@ -23,7 +23,6 @@ import (
 	"github.com/inoxlang/inox/internal/globals/local_db_ns"
 	"github.com/inoxlang/inox/internal/globals/net_ns"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
-	"github.com/inoxlang/inox/internal/globals/sql_ns"
 
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
@@ -124,7 +123,6 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 		"env":      envNamespace,
 		"html":     html_ns.NewHTMLNamespace(),
 		"dom":      dom_ns.NewDomNamespace(),
-		"sql":      sql_ns.NewSQLNamespace(),
 		"inox":     inox_ns.NewInoxNamespace(),
 		"inoxsh":   inoxsh_ns.NewInoxshNamespace(),
 		"inoxlsp":  inoxlsp_ns.NewInoxLspNamespace(),
