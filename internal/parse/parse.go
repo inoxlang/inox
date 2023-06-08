@@ -5970,18 +5970,23 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 				return v, false
 			}
 			if p.inPattern {
-				return &PatternIdentifierLiteral{
+				result := &PatternIdentifierLiteral{
 					NodeBase:   v.NodeBase,
 					Unprefixed: true,
 					Name:       v.Name,
-				}, false
+				}
+				if p.i < p.len && p.s[p.i] == '(' {
+					return p.parsePatternCall(result), false
+				} else {
+					return result, false
+				}
 			}
 		case *IdentifierMemberExpression:
 			if p.inPattern && len(v.PropertyNames) == 1 {
 				base := v.Left.NodeBase
 				base.Span.End += 1 //add one for the dot
 
-				return &PatternNamespaceMemberExpression{
+				result := &PatternNamespaceMemberExpression{
 					NodeBase: v.NodeBase,
 					Namespace: &PatternNamespaceIdentifierLiteral{
 						NodeBase:   base,
@@ -5989,7 +5994,12 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 						Name:       v.Left.Name,
 					},
 					MemberName: v.PropertyNames[0],
-				}, false
+				}
+				if p.i < p.len && p.s[p.i] == '(' {
+					return p.parsePatternCall(result), false
+				} else {
+					return result, false
+				}
 			}
 
 			name = v.Left.Name
