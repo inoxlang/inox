@@ -13,7 +13,7 @@ var (
 )
 
 var (
-	DATABASE_PROPNAMES = []string{"update_schema", "close"}
+	DATABASE_PROPNAMES = []string{"update_schema", "close", "schema"}
 
 	_ Value = (*DatabaseIL)(nil)
 )
@@ -92,6 +92,8 @@ func (db *DatabaseIL) GetGoMethod(name string) (*GoFunction, bool) {
 
 func (db *DatabaseIL) Prop(ctx *Context, name string) Value {
 	switch name {
+	case "schema":
+		return db.inner.Schema()
 	}
 	method, ok := db.GetGoMethod(name)
 	if !ok {

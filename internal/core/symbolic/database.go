@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	DATABASE_PROPNAMES = []string{"update_schema", "close"}
+	DATABASE_PROPNAMES = []string{"update_schema", "close", "schema"}
 
 	ANY_DATABASE = NewDatabaseIL(NewAnyObjectPattern())
 )
@@ -50,6 +50,8 @@ func (db *DatabaseIL) GetGoMethod(name string) (*GoFunction, bool) {
 
 func (db *DatabaseIL) Prop(name string) SymbolicValue {
 	switch name {
+	case "schema":
+		return db.schema
 	}
 	method, ok := db.GetGoMethod(name)
 	if !ok {
