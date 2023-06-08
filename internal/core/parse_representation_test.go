@@ -751,16 +751,40 @@ func TestParseRepr(t *testing.T) {
 			/*              */ "b": exact(NewRecordFromMap(ValMap{"b": False})),
 			/*              */})},
 		//
+		{`%{a?:true}`, -1, NewInexactObjectPatternWithOptionalProps(
+			map[string]Pattern{"a": exact(True)},
+			map[string]struct{}{"a": {}},
+		)},
+		{`%{a? :true}`, -1, NewInexactObjectPatternWithOptionalProps(
+			map[string]Pattern{"a": exact(True)},
+			map[string]struct{}{"a": {}},
+		)},
+		{`%{a?: true}`, -1, NewInexactObjectPatternWithOptionalProps(
+			map[string]Pattern{"a": exact(True)},
+			map[string]struct{}{"a": {}},
+		)},
+		{`%{"a"?:true}`, -1, NewInexactObjectPatternWithOptionalProps(
+			map[string]Pattern{"a": exact(True)},
+			map[string]struct{}{"a": {}},
+		)},
+		{`%{"a"? :true}`, -1, NewInexactObjectPatternWithOptionalProps(
+			map[string]Pattern{"a": exact(True)},
+			map[string]struct{}{"a": {}},
+		)},
+		{`%{"a"?: true}`, -1, NewInexactObjectPatternWithOptionalProps(
+			map[string]Pattern{"a": exact(True)},
+			map[string]struct{}{"a": {}},
+		)},
 		{`%{"a":#[]}`, 7, nil},
-		/*              */ {`%{"a": #[]}`, 8, nil},
+		{`%{"a": #[]}`, 8, nil},
 		{`%{"a":#{}}`, 7, nil},
-		/*              */ {`%{"a": #{}}`, 8, nil},
+		{`%{"a": #{}}`, 8, nil},
 		{`%{"a":[]}`, 6, nil},
-		/*              */ {`%{"a": []}`, 7, nil},
+		{`%{"a": []}`, 7, nil},
 		{`%{"a":{}}`, 6, nil},
-		/*              */ {`%{"a": {}}`, 7, nil},
+		{`%{"a": {}}`, 7, nil},
 		{`%{"a"::{}}`, 6, nil},
-		/*              */ {`%{"a": :{}}`, 7, nil},
+		{`%{"a": :{}}`, 7, nil},
 
 		//dictionaries
 		{`:{}`, -1, NewDictionary(nil)},

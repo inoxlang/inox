@@ -820,6 +820,10 @@ func NewInexactObjectPattern(entries map[string]Pattern) *ObjectPattern {
 	return &ObjectPattern{entryPatterns: entries, inexact: true}
 }
 
+func NewInexactObjectPatternWithOptionalProps(entries map[string]Pattern, optionalProperties map[string]struct{}) *ObjectPattern {
+	return &ObjectPattern{entryPatterns: entries, optionalEntries: optionalProperties, inexact: true}
+}
+
 func (patt *ObjectPattern) Test(ctx *Context, v Value) bool {
 	obj, ok := v.(*Object)
 	if !ok {

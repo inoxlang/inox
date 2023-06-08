@@ -31,6 +31,8 @@ const (
 	rstateColon
 	rstateIdentLike
 	rstateFlagLitName
+	rstateOptionalPropKey
+	rstateOptionalPropStringKey
 	rstateDot
 	rstateTwoDots
 	rstatePercent
@@ -210,6 +212,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 		stack                    [stackHeight]CompoundValueKind
 		compoundValueStack       [stackHeight]Value
 		objectKeyStack           [stackHeight]string
+		optionalPropStack        [stackHeight]bool
 		dictKeyStack             [stackHeight]Value
 		hieararchyEntryHasBraces [stackHeight]bool
 		inPattern                = []bool{false}
@@ -967,6 +970,10 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				rstateHostPattern:
 			case rstateURLPatternInPath:
 				state = rstateURLPatternInQuery
+			case rstateIdentLike:
+				state = rstateOptionalPropKey
+			case rstateClosingDoubleQuotes:
+				state = rstateOptionalPropStringKey
 			default:
 				return nil, i
 			}
@@ -1143,6 +1150,10 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 					if key == "" {
 						return nil, i
 					}
+
+					isOptionalProp := optionalPropStack[stackIndex]
+					optionalPropStack[stackIndex] = false
+
 					if val, errIndex, ok := getVal(i); ok {
 						if errIndex >= 0 {
 							return nil, errIndex
@@ -1151,6 +1162,13 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 						if pattern.entryPatterns == nil {
 							pattern.entryPatterns = map[string]Pattern{}
 						}
+						if isOptionalProp {
+							if pattern.optionalEntries == nil {
+								pattern.optionalEntries = map[string]struct{}{}
+							}
+							pattern.optionalEntries[key] = struct{}{}
+						}
+
 						pattern.entryPatterns[key] = toPattern(val)
 						objectKeyStack[stackIndex] = ""
 					} else {
@@ -1286,7 +1304,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 			}
 
 		case ':':
-			if prevAtomState == rstateIdentLike {
+			if prevAtomState == rstateIdentLike || prevAtomState == rstateOptionalPropKey || prevAtomState == rstateOptionalPropStringKey {
 				state = prevAtomState
 				prevAtomState = -1
 			}
@@ -1357,6 +1375,44 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				atomStartIndex = -1
 				atomEndIndex = -1
 				state = rstateObjectColon
+			case rstateOptionalPropKey:
+				var end int = i
+				if atomEndIndex > 0 {
+					end = atomEndIndex
+				}
+
+				if stack[stackIndex] != ObjectPatternVal {
+					return nil, i
+				}
+
+				objectKeyStack[stackIndex] = string(b[atomStartIndex : end-1])
+				optionalPropStack[stackIndex] = true
+				atomStartIndex = -1
+				atomEndIndex = -1
+				state = rstateObjPatternColon
+			case rstateOptionalPropStringKey:
+
+				var end int = i
+				if atomEndIndex > 0 {
+					end = atomEndIndex
+				}
+
+				if stack[stackIndex] != ObjectPatternVal {
+					return nil, i
+				}
+
+				var s string
+				bytes := b[atomStartIndex:end]
+				err := json.Unmarshal(bytes, &s)
+				if err != nil {
+					return nil, i
+				}
+
+				objectKeyStack[stackIndex] = s
+				optionalPropStack[stackIndex] = true
+				atomStartIndex = -1
+				atomEndIndex = -1
+				state = rstateObjPatternColon
 			case rstatePercent:
 				state = rstateURLPatternNoPostSchemeSlash
 			case rstatePercentAlpha:
@@ -1507,6 +1563,9 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 					continue
 				}
 
+				isOptionalProp := optionalPropStack[stackIndex]
+				optionalPropStack[stackIndex] = false
+
 				if val, errIndex, ok := getVal(i); ok {
 					if errIndex >= 0 {
 						return nil, errIndex
@@ -1516,6 +1575,14 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 						patt.entryPatterns = map[string]Pattern{}
 					}
 					patt.entryPatterns[key] = toPattern(val)
+
+					if isOptionalProp {
+						if patt.optionalEntries == nil {
+							patt.optionalEntries = map[string]struct{}{}
+						}
+						patt.optionalEntries[key] = struct{}{}
+					}
+
 					objectKeyStack[stackIndex] = ""
 					state = rstateObjectPatternComma
 					continue
