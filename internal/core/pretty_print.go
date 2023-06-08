@@ -1384,6 +1384,7 @@ func prettyPrintListPattern(
 		if tuplePattern {
 			utils.Must(w.Write(utils.StringAsBytes(")")))
 		}
+		return
 	}
 
 	if depth > config.MaxDepth && len(elementPatterns) > 0 {
