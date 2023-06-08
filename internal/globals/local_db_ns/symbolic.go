@@ -60,12 +60,6 @@ func (ldb *SymbolicLocalDatabase) Prop(name string) SymbolicValue {
 
 func (ldb *SymbolicLocalDatabase) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
-	case "get":
-		return symbolic.WrapGoMethod(ldb.Get), true
-	case "has":
-		return symbolic.WrapGoMethod(ldb.Has), true
-	case "set":
-		return symbolic.WrapGoMethod(ldb.Set), true
 	case "close":
 		return symbolic.WrapGoMethod(ldb.Close), true
 	}
@@ -73,7 +67,7 @@ func (ldb *SymbolicLocalDatabase) GetGoMethod(name string) (*symbolic.GoFunction
 }
 
 func (ldb *SymbolicLocalDatabase) PropertyNames() []string {
-	return []string{"get", "has", "set", "close"}
+	return LOCAL_DB_PROPNAMES
 }
 
 func (a *SymbolicLocalDatabase) IsWidenable() bool {
@@ -82,7 +76,6 @@ func (a *SymbolicLocalDatabase) IsWidenable() bool {
 
 func (r *SymbolicLocalDatabase) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%local-database")))
-	return
 }
 
 func (kvs *SymbolicLocalDatabase) WidestOfType() SymbolicValue {

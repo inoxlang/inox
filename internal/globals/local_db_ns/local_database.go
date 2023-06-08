@@ -20,6 +20,8 @@ var (
 	ErrInvalidDatabaseHost    = errors.New("host of database is invalid")
 	ErrInvalidPathKey         = errors.New("invalid path used as local database key")
 	ErrDatabaseNotSupported   = errors.New("database is not supported")
+
+	LOCAL_DB_PROPNAMES = []string{"close"}
 )
 
 // A LocalDatabase is a database thats stores data on the filesystem.
@@ -149,12 +151,6 @@ func (*LocalDatabase) SetProp(ctx *core.Context, name string, value core.Value) 
 
 func (ldb *LocalDatabase) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
-	case "get":
-		return core.WrapGoMethod(ldb.Get), true
-	case "has":
-		return core.WrapGoMethod(ldb.Has), true
-	case "set":
-		return core.WrapGoMethod(ldb.Set), true
 	case "close":
 		return core.WrapGoMethod(ldb.Close), true
 	}
@@ -162,7 +158,7 @@ func (ldb *LocalDatabase) GetGoMethod(name string) (*GoFunction, bool) {
 }
 
 func (ldb *LocalDatabase) PropertyNames(ctx *Context) []string {
-	return []string{"get", "has", "set", "close"}
+	return LOCAL_DB_PROPNAMES
 }
 
 type databaseRegistry struct {
