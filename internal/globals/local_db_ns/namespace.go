@@ -14,8 +14,8 @@ func init() {
 		return &SymbolicLocalDatabase{}, nil
 	})
 
-	core.RegisterOpenDbFn(LDB_SCHEME, func(ctx *core.Context, resource core.SchemeHolder, resolutionData core.Value) (core.Database, error) {
-		return openDatabase(ctx, resource)
+	core.RegisterOpenDbFn(LDB_SCHEME, func(ctx *core.Context, config core.DbOpenConfiguration) (core.Database, error) {
+		return openDatabase(ctx, config.Resource, !config.FullAccess)
 	})
 }
 

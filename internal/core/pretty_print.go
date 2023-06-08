@@ -1893,6 +1893,10 @@ func (s *XMLElement) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, dep
 	PrintType(w, s)
 }
 
+func (db *DatabaseIL) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	PrintType(w, db)
+}
+
 func InspectPrint[T any](w *bufio.Writer, v T) {
 	utils.Must(fmt.Fprintf(w, "%#v", v))
 }

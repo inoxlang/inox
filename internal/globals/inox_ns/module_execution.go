@@ -39,7 +39,7 @@ type ScriptPreparationArgs struct {
 	UseContextAsParent        bool
 	IgnoreNonCriticalIssues   bool
 	AllowMissingEnvVars       bool
-	ConnectDatabases          bool
+	FullAccessToDatabases     bool
 
 	Out    io.Writer //defaults to os.Stdout
 	LogOut io.Writer //defaults to Out
@@ -139,27 +139,29 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	//connect to databases
 	//TODO: disconnect if connection still not used after a few minutes
 
-	dbs := map[string]core.Database{}
-	if args.ConnectDatabases {
-		for _, config := range manifest.Databases {
-			if host, ok := config.Resource.(core.Host); ok {
-				ctx.AddHostResolutionData(host, config.ResolutionData)
-			}
-
-			openDB, ok := core.GetOpenDbFn(config.Resource.Scheme())
-			if !ok {
-				ctx.Cancel()
-				return nil, nil, nil, ErrDatabaseOpenFunctionNotFound
-			}
-
-			//possible futures issues because there is no state in the context
-			db, err := openDB(ctx, config.Resource, config.ResolutionData)
-			if err != nil {
-				ctx.Cancel()
-				return nil, nil, nil, fmt.Errorf("failed to open the '%s' database: %w", config.Name, err)
-			}
-			dbs[config.Name] = db
+	dbs := map[string]*core.DatabaseIL{}
+	for _, config := range manifest.Databases {
+		if host, ok := config.Resource.(core.Host); ok {
+			ctx.AddHostResolutionData(host, config.ResolutionData)
 		}
+
+		openDB, ok := core.GetOpenDbFn(config.Resource.Scheme())
+		if !ok {
+			ctx.Cancel()
+			return nil, nil, nil, ErrDatabaseOpenFunctionNotFound
+		}
+
+		//possible futures issues because there is no state in the context
+		db, err := openDB(ctx, core.DbOpenConfiguration{
+			Resource:       config.Resource,
+			ResolutionData: config.ResolutionData,
+			FullAccess:     args.FullAccessToDatabases,
+		})
+		if err != nil {
+			ctx.Cancel()
+			return nil, nil, nil, fmt.Errorf("failed to open the '%s' database: %w", config.Name, err)
+		}
+		dbs[config.Name] = core.WrapDatabase(db)
 	}
 
 	// create the script's state
@@ -352,7 +354,7 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 		Out:                       args.Out,
 		AllowMissingEnvVars:       args.AllowMissingEnvVars,
 		PreinitFilesystem:         args.PreinitFilesystem,
-		ConnectDatabases:          args.ConnectDatabases,
+		FullAccessToDatabases:     args.ConnectDatabases,
 	})
 
 	if err != nil {

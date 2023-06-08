@@ -316,7 +316,7 @@ func TestPrepareLocalScript(t *testing.T) {
 
 			PreinitFilesystem:       fs,
 			ScriptContextFileSystem: fs,
-			ConnectDatabases:        true,
+			FullAccessToDatabases:   true,
 		})
 
 		if !assert.NoError(t, err) {

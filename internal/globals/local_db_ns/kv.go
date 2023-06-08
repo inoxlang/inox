@@ -24,18 +24,22 @@ type SingleFileKV struct {
 }
 
 type KvStoreConfig struct {
-	Host     Host
-	Path     Path
-	InMemory bool
+	Host       Host
+	Path       Path
+	InMemory   bool
+	Filesystem afs.Filesystem
 }
 
-func openSingleFileKV(config KvStoreConfig, fls afs.Filesystem) (_ *SingleFileKV, finalErr error) {
+func openSingleFileKV(config KvStoreConfig) (_ *SingleFileKV, finalErr error) {
 	path := string(config.Path)
 	if config.InMemory {
 		path = ":memory:"
 	}
 
-	db, err := openBuntDBNoPermCheck(path, fls)
+	fls := config.Filesystem
+	buntDBconfig := defaultBuntdbConfig
+
+	db, err := openBuntDBNoPermCheck(path, fls, buntDBconfig)
 	if err != nil {
 		finalErr = err
 		return

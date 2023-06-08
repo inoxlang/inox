@@ -27,6 +27,8 @@ var (
 	ErrDatabaseNotSupported   = errors.New("database is not supported")
 
 	LOCAL_DB_PROPNAMES = []string{"update_schema", "close"}
+
+	_ core.Database = (*LocalDatabase)(nil)
 )
 
 // A LocalDatabase is a database thats stores data on the filesystem.
@@ -40,13 +42,14 @@ type LocalDatabase struct {
 }
 
 type LocalDatabaseConfig struct {
-	Host     core.Host
-	Path     core.Path
-	InMemory bool
+	Host       core.Host
+	Path       core.Path
+	InMemory   bool
+	Restricted bool
 }
 
 // openDatabase opens a local database, read, create & write permissions are required.
-func openDatabase(ctx *Context, r core.ResourceName) (*LocalDatabase, error) {
+func openDatabase(ctx *Context, r core.ResourceName, restrictedAccess bool) (*LocalDatabase, error) {
 
 	var pth Path
 
@@ -89,8 +92,9 @@ func openDatabase(ctx *Context, r core.ResourceName) (*LocalDatabase, error) {
 	}
 
 	db, err := openLocalDatabaseWithConfig(ctx, LocalDatabaseConfig{
-		Path: pth,
-		Host: host,
+		Path:       pth,
+		Host:       host,
+		Restricted: restrictedAccess,
 	})
 
 	return db, err
@@ -109,31 +113,35 @@ func openLocalDatabaseWithConfig(ctx *core.Context, config LocalDatabaseConfig) 
 		schemaKVPath = config.Path.Join("./"+SCHEMA_KV_FILE, fls)
 	}
 
-	mainKv, err := openSingleFileKV(KvStoreConfig{
-		Host:     config.Host,
-		Path:     mainKVPath,
-		InMemory: config.InMemory,
-	}, fls)
+	localDB := &LocalDatabase{
+		host:    config.Host,
+		dirPath: config.Path,
+	}
 
-	if err != nil {
-		return nil, err
+	if !config.Restricted {
+		mainKv, err := openSingleFileKV(KvStoreConfig{
+			Host:       config.Host,
+			Path:       mainKVPath,
+			InMemory:   config.InMemory,
+			Filesystem: fls,
+		})
+
+		if err != nil {
+			return nil, err
+		}
+
+		localDB.mainKV = mainKv
 	}
 
 	schemaKv, err := openSingleFileKV(KvStoreConfig{
-		Host:     config.Host,
-		Path:     schemaKVPath,
-		InMemory: config.InMemory,
-	}, fls)
+		Host:       config.Host,
+		Path:       schemaKVPath,
+		InMemory:   config.InMemory,
+		Filesystem: fls,
+	})
 
 	if err != nil {
 		return nil, err
-	}
-
-	localDB := &LocalDatabase{
-		host:     config.Host,
-		dirPath:  config.Path,
-		mainKV:   mainKv,
-		schemaKV: schemaKv,
 	}
 
 	schema, ok := schemaKv.get(ctx, "/", localDB)
@@ -147,6 +155,8 @@ func openLocalDatabaseWithConfig(ctx *core.Context, config LocalDatabaseConfig) 
 			return nil, fmt.Errorf("schema is present but is not an object pattern, close db")
 		}
 		localDB.schema = patt
+	} else {
+		localDB.schema = core.NewInexactObjectPattern(map[string]core.Pattern{})
 	}
 
 	return localDB, nil
@@ -156,9 +166,18 @@ func (ldb *LocalDatabase) Resource() core.SchemeHolder {
 	return ldb.host
 }
 
-func (ldb *LocalDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern) {
+func (ldb *LocalDatabase) TopLevelEntities() map[string]Value {
+	return nil
+}
+
+func (ldb *LocalDatabase) Schema() *core.ObjectPattern {
+	return ldb.schema
+}
+
+func (ldb *LocalDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern) error {
 	ldb.schemaKV.set(ctx, "/", schema, ldb)
 	ldb.schema = schema
+	return nil
 }
 
 func (ldb *LocalDatabase) Close(ctx *core.Context) error {

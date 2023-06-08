@@ -1184,3 +1184,12 @@ func (p *XMLElement) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbo
 
 	return symbolic.NewXmlElement(p.name, attributes, children), nil
 }
+
+func (db *DatabaseIL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	pattern, err := db.inner.Schema().ToSymbolicValue(ctx, encountered)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert schema to symbolic: %w", err)
+	}
+
+	return symbolic.NewDatabaseIL(pattern.(*symbolic.ObjectPattern)), nil
+}

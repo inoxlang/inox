@@ -1917,3 +1917,12 @@ func (e *XMLElement) Equal(ctx *Context, other Value, alreadyCompared map[uintpt
 
 	return e == otherElem
 }
+
+func (db *DatabaseIL) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherDB, ok := other.(*DatabaseIL)
+	if !ok {
+		return false
+	}
+
+	return db == otherDB
+}
