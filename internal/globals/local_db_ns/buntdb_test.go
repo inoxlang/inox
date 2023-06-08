@@ -23,7 +23,7 @@ import (
 const (
 	MAX_MEM_FS_STORAGE_SIZE = 100_000_000
 	DEFAULT_FILEPERM        = 0o666
-	DEFAULT_FILENAME        = "data.db"
+	DEFAULT_FILENAME        = "data.kv"
 )
 
 //TODO: add tests with os filesystem
@@ -142,13 +142,13 @@ func TestSaveLoad(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	f, err := fls.Create("temp.db")
+	f, err := fls.Create("temp.kv")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer func() {
 		f.Close()
-		fls.Remove("temp.db")
+		fls.Remove("temp.kv")
 	}()
 	if err := db.Save(f); err != nil {
 		t.Fatal(err)
@@ -159,7 +159,7 @@ func TestSaveLoad(t *testing.T) {
 	db.Close()
 	db, _ = openBuntDBNoPermCheck(":memory:", fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE))
 	defer db.Close()
-	f, err = fls.Open("temp.db")
+	f, err = fls.Open("temp.kv")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2964,7 +2964,7 @@ func TestWrappederror(t *testing.T) {
 
 // 	for i := 0; i < 10; i++ {
 // 		dir := t.TempDir()
-// 		path := filepath.Join(dir, "data.db")
+// 		path := filepath.Join(dir, "data.kv")
 // 		data := strconv.Itoa(i) + "-" + strings.Repeat("1", 10_000)
 
 // 		db, err := openBuntDBNoPermCheck(path, fls)

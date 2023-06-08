@@ -10,6 +10,8 @@ import (
 
 const (
 	SCHEMA_KEY = "/schema"
+
+	MAIN_KV_FILE = "main.kv"
 )
 
 var (
@@ -94,7 +96,7 @@ func openLocalDatabaseWithConfig(ctx *core.Context, config LocalDatabaseConfig) 
 	if config.InMemory {
 		config.Path = ""
 	} else {
-		mainKVPath = config.Path.Join("./main.db", ctx.GetFileSystem())
+		mainKVPath = config.Path.Join("./"+MAIN_KV_FILE, ctx.GetFileSystem())
 	}
 
 	kv, err := openKvWrapperNoPermCheck(KvStoreConfig{
