@@ -2741,10 +2741,7 @@ func evalPatternNode(node parse.Node, state *TreeWalkState) (Pattern, error) {
 		if err != nil {
 			return nil, err
 		}
-		if patt, ok := val.(Pattern); ok {
-			return patt, nil
-		}
-		return NewMostAdaptedExactPattern(val), nil
+		return toPattern(val), nil
 	}
 }
 

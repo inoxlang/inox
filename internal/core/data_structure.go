@@ -751,6 +751,15 @@ func NewTuple(elements []Value) *Tuple {
 	return &Tuple{elements: elements}
 }
 
+func NewTupleVariadic(elements ...Value) *Tuple {
+	for i, e := range elements {
+		if e.IsMutable() {
+			panic(fmt.Errorf("value at index [%d] is mutable", i))
+		}
+	}
+	return &Tuple{elements: elements}
+}
+
 func (tuple *Tuple) ContainsSimple(ctx *Context, v Value) bool {
 	if !IsSimpleInoxVal(v) {
 		panic("only simple values are expected")

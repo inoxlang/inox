@@ -429,3 +429,10 @@ func concatValues(ctx *Context, values []Value) (Value, error) {
 		return nil, errors.New("only string, bytes & tuple concatenations are supported for now")
 	}
 }
+
+func toPattern(val Value) Pattern {
+	if patt, ok := val.(Pattern); ok {
+		return patt
+	}
+	return NewMostAdaptedExactPattern(val)
+}
