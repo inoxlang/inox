@@ -37,7 +37,7 @@ func TestOpenDatabase(t *testing.T) {
 
 		ctx1 := core.NewContexWithEmptyState(ctxConfig, nil)
 
-		_db, err := openDatabase(ctx1, core.Path(dir))
+		_db, err := openDatabase(ctx1, core.Path(dir), false)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -45,7 +45,7 @@ func TestOpenDatabase(t *testing.T) {
 
 		ctx2 := core.NewContexWithEmptyState(ctxConfig, nil)
 
-		db, err := openDatabase(ctx2, core.Path(dir))
+		db, err := openDatabase(ctx2, core.Path(dir), false)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -72,7 +72,7 @@ func TestOpenDatabase(t *testing.T) {
 
 		ctx1 := core.NewContexWithEmptyState(ctxConfig, nil)
 
-		_db, err := openDatabase(ctx1, core.Path(dir))
+		_db, err := openDatabase(ctx1, core.Path(dir), false)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -80,7 +80,7 @@ func TestOpenDatabase(t *testing.T) {
 
 		ctx2 := core.NewContexWithEmptyState(ctxConfig, nil)
 
-		db, err := openDatabase(ctx2, core.Path(dir))
+		db, err := openDatabase(ctx2, core.Path(dir), false)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -132,7 +132,7 @@ func TestOpenDatabase(t *testing.T) {
 			//open database in first context
 			ctx1 = core.NewContexWithEmptyState(ctxConfig, nil)
 
-			_db1, err := openDatabase(ctx1, core.Path(dir))
+			_db1, err := openDatabase(ctx1, core.Path(dir), false)
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -144,7 +144,7 @@ func TestOpenDatabase(t *testing.T) {
 			//open same database in second context
 			ctx2 = core.NewContexWithEmptyState(ctxConfig, nil)
 
-			_db2, err := openDatabase(ctx2, core.Path(dir))
+			_db2, err := openDatabase(ctx2, core.Path(dir), false)
 			if !assert.NoError(t, err) {
 				return
 			}

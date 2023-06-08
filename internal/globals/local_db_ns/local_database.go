@@ -131,6 +131,10 @@ func openLocalDatabaseWithConfig(ctx *core.Context, config LocalDatabaseConfig) 
 		}
 
 		localDB.mainKV = mainKv
+	} else {
+		localDB.mainKV, _ = openSingleFileKV(KvStoreConfig{
+			InMemory: true,
+		})
 	}
 
 	schemaKv, err := openSingleFileKV(KvStoreConfig{
@@ -143,6 +147,8 @@ func openLocalDatabaseWithConfig(ctx *core.Context, config LocalDatabaseConfig) 
 	if err != nil {
 		return nil, err
 	}
+
+	localDB.schemaKV = schemaKv
 
 	schema, ok := schemaKv.get(ctx, "/", localDB)
 	if ok {
@@ -181,7 +187,9 @@ func (ldb *LocalDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern) erro
 }
 
 func (ldb *LocalDatabase) Close(ctx *core.Context) error {
-	ldb.mainKV.close(ctx)
+	if ldb.mainKV != nil {
+		ldb.mainKV.close(ctx)
+	}
 	ldb.schemaKV.close(ctx)
 	return nil
 }
