@@ -424,9 +424,50 @@ func TestUpdateSchema(t *testing.T) {
 			return
 		}
 
+		//re open
+
 		ldb, ctx = openDB(tempdir, fls)
 		defer ldb.Close(ctx)
 		assert.Equal(t, schema, ldb.schema)
+	})
+
+	t.Run("updating with the schema should be ignored", func(t *testing.T) {
+
+		tempdir := t.TempDir()
+		fls := fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE)
+
+		ldb, ctx := openDB(tempdir, fls)
+
+		schema := core.NewInexactObjectPattern(map[string]core.Pattern{
+			"a": core.INT_PATTERN,
+		})
+
+		ldb.UpdateSchema(ctx, schema)
+
+		err := ldb.Close(ctx)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		//re open
+
+		ldb, ctx = openDB(tempdir, fls)
+		defer ldb.Close(ctx)
+		defer ldb.Close(ctx)
+
+		currentSchema := ldb.schema
+
+		schemaCopy := core.NewInexactObjectPattern(map[string]core.Pattern{
+			"a": core.INT_PATTERN,
+		})
+
+		err = ldb.UpdateSchema(ctx, schemaCopy)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		//should not have changed
+		assert.Same(t, currentSchema, ldb.schema)
 	})
 
 }

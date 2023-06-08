@@ -181,6 +181,9 @@ func (ldb *LocalDatabase) Schema() *core.ObjectPattern {
 }
 
 func (ldb *LocalDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern) error {
+	if ldb.schema.Equal(ctx, schema, map[uintptr]uintptr{}, 0) {
+		return nil
+	}
 	ldb.schemaKV.set(ctx, "/", schema, ldb)
 	ldb.schema = schema
 	return nil
