@@ -2651,6 +2651,12 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			if err != nil {
 				return nil, err
 			}
+			if state.symbolicData != nil {
+				val, ok := state.symbolicData.GetMostSpecificNodeValue(p.Value)
+				if ok {
+					state.symbolicData.SetMostSpecificNodeValue(p.Key, val)
+				}
+			}
 			if p.Optional {
 				if pattern.optionalEntries == nil {
 					pattern.optionalEntries = make(map[string]struct{}, 1)
