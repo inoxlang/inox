@@ -26,7 +26,7 @@ require (
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/orcaman/concurrent-map/v2 v2.0.1
 	github.com/rs/zerolog v1.29.1
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.4
 	github.com/texttheater/golang-levenshtein v1.0.2-0.20211007163542-3d00ed831923
 	github.com/thomasjungblut/go-sstables v1.3.1
 	github.com/tidwall/assert v0.1.0
