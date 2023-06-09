@@ -118,7 +118,7 @@ func (*Set) IsWidenable() bool {
 
 func (s *Set) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%Set(")))
-	s.elementPattern.SymbolicValue().PrettyPrint(w, config, depth+1, parentIndentCount+1)
+	s.elementPattern.SymbolicValue().PrettyPrint(w, config, depth, parentIndentCount)
 	utils.Must(w.Write(utils.StringAsBytes(")")))
 }
 
