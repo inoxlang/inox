@@ -5,11 +5,18 @@ import (
 	"unsafe"
 )
 
-func Must[T any](obj T, err error) T {
+func Must[T any](a T, err error) T {
 	if err != nil {
 		panic(err)
 	}
-	return obj
+	return a
+}
+
+func Must2[T any, U any](a T, b U, err error) (T, U) {
+	if err != nil {
+		panic(err)
+	}
+	return a, b
 }
 
 func PanicIfErr(err error) {

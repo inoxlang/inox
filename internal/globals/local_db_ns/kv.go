@@ -89,13 +89,13 @@ func (kv *SingleFileKV) isClosed() bool {
 	return kv.db.isClosed()
 }
 
-func (kv *SingleFileKV) get(ctx *Context, key Path, db any) (Value, Bool) {
+func (kv *SingleFileKV) get(ctx *Context, key Path, db any) (Value, Bool, error) {
 	if kv.isClosed() {
-		panic(errDatabaseClosed)
+		return nil, false, errDatabaseClosed
 	}
 
 	if !key.IsAbsolute() {
-		panic(ErrInvalidPathKey)
+		return nil, false, ErrInvalidPathKey
 	}
 
 	var (
@@ -119,7 +119,7 @@ func (kv *SingleFileKV) get(ctx *Context, key Path, db any) (Value, Bool) {
 		})
 
 		if err != nil {
-			panic(err)
+			return nil, false, err
 		}
 
 	} else {
@@ -134,7 +134,7 @@ func (kv *SingleFileKV) get(ctx *Context, key Path, db any) (Value, Bool) {
 			val, err = core.ParseRepr(ctx, utils.StringAsBytes(item))
 
 			if err != nil {
-				panic(err)
+				return nil, false, err
 			}
 		}
 	}
@@ -147,7 +147,7 @@ func (kv *SingleFileKV) get(ctx *Context, key Path, db any) (Value, Bool) {
 		val = core.Nil
 	}
 
-	return val, valueFound
+	return val, valueFound, nil
 }
 
 func (kv *SingleFileKV) getCreateDatabaseTxn(db any, tx *core.Transaction) *Tx {

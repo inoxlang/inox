@@ -7,6 +7,7 @@ import (
 
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/permkind"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 )
 
@@ -150,7 +151,10 @@ func openLocalDatabaseWithConfig(ctx *core.Context, config LocalDatabaseConfig) 
 
 	localDB.schemaKV = schemaKv
 
-	schema, ok := schemaKv.get(ctx, "/", localDB)
+	schema, ok, err := schemaKv.get(ctx, "/", localDB)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read schema: %w", err)
+	}
 	if ok {
 		patt, ok := schema.(*ObjectPattern)
 		if !ok {
@@ -198,7 +202,7 @@ func (ldb *LocalDatabase) Close(ctx *core.Context) error {
 }
 
 func (ldb *LocalDatabase) Get(ctx *Context, key Path) (Value, Bool) {
-	return ldb.mainKV.get(ctx, key, ldb)
+	return utils.Must2(ldb.mainKV.get(ctx, key, ldb))
 }
 
 func (ldb *LocalDatabase) Has(ctx *Context, key Path) Bool {
