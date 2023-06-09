@@ -123,7 +123,12 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 				}
 				detail, _ := core.GetStringifiedSymbolicValue(ctx, patt, false)
 
-				s := parse.GetFirstTokenString(n)
+				hasPercent := parse.GetFirstTokenString(n)[0] == '%'
+				s := name
+				if hasPercent {
+					s = "%" + s
+				}
+
 				completions = append(completions, Completion{
 					ShownString: s,
 					Value:       s,
@@ -137,7 +142,13 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 				if !strings.HasPrefix(name, n.Name) {
 					continue
 				}
-				s := parse.GetFirstTokenString(n)
+
+				hasPercent := parse.GetFirstTokenString(n)[0] == '%'
+				s := name
+				if hasPercent {
+					s = "%" + s
+				}
+
 				completions = append(completions, Completion{
 					ShownString: s,
 					Value:       s,

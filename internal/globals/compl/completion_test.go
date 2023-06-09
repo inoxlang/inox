@@ -300,8 +300,36 @@ func TestFindCompletions(t *testing.T) {
 			})
 
 			t.Run("named patterns", func(t *testing.T) {
-				if mode != LspCompletions {
-					t.Skip()
+				if mode == ShellCompletions {
+					t.Run("suggest pre-declared pattern from first letter", func(t *testing.T) {
+						state := newState()
+						state.Global.Ctx.AddNamedPattern("int", core.INT_PATTERN)
+						chunk, _ := parseChunkSource("%i", "")
+
+						completions := findCompletions(state, chunk, 2)
+						assert.EqualValues(t, []Completion{
+							{
+								ShownString:   "%int",
+								Value:         "%int",
+								ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 2}},
+							},
+						}, completions)
+					})
+
+					t.Run("suggest pre-declared pattern namespace from first letter", func(t *testing.T) {
+						state := newState()
+						state.Global.Ctx.AddPatternNamespace("inox", core.DEFAULT_PATTERN_NAMESPACES["inox"])
+						chunk, _ := parseChunkSource("%i", "")
+
+						completions := findCompletions(state, chunk, 2)
+						assert.EqualValues(t, []Completion{
+							{
+								ShownString:   "%inox",
+								Value:         "%inox",
+								ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 2}},
+							},
+						}, completions)
+					})
 					return
 				}
 
