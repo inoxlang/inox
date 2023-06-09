@@ -59,3 +59,7 @@ func (n TreeNode) IsMutable() bool {
 func (p *TreeNodePattern) IsMutable() bool {
 	return false
 }
+
+func (p *SetPattern) IsMutable() bool {
+	return false
+}

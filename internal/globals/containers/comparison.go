@@ -83,3 +83,8 @@ func (n *TreeNode) Equal(ctx *core.Context, other core.Value, alreadyCompared ma
 	otherNode, ok := other.(*TreeNode)
 	return ok && n == otherNode
 }
+
+func (p *SetPattern) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherPatt, ok := other.(*SetPattern)
+	return ok && p.config.Equal(ctx, otherPatt.config, alreadyCompared, depth+1)
+}

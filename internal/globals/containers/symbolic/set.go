@@ -19,7 +19,8 @@ var (
 
 	SET_ADD_METHOD_PARAM_NAMES = []string{"element"}
 
-	ANY_SET = NewSetWithPattern(symbolic.ANY_PATTERN)
+	ANY_SET         = NewSetWithPattern(symbolic.ANY_PATTERN)
+	ANY_SET_PATTERN = NewSetWithPattern(symbolic.ANY_PATTERN)
 )
 
 type Set struct {
@@ -117,7 +118,7 @@ func (*Set) IsWidenable() bool {
 
 func (s *Set) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%Set(")))
-	s.elementPattern.PrettyPrint(w, config, depth+1, parentIndentCount+1)
+	s.elementPattern.SymbolicValue().PrettyPrint(w, config, depth+1, parentIndentCount+1)
 	utils.Must(w.Write(utils.StringAsBytes(")")))
 }
 
@@ -130,5 +131,69 @@ func (*Set) IteratorElementValue() symbolic.SymbolicValue {
 }
 
 func (*Set) WidestOfType() symbolic.SymbolicValue {
+	return ANY_SET
+}
+
+type SetPattern struct {
+	symbolic.UnassignablePropsMixin
+	elementPattern symbolic.Pattern
+
+	symbolic.NotCallablePatternMixin
+}
+
+func NewSetPatternWithElementPattern(elementPattern symbolic.Pattern) *SetPattern {
+	return &SetPattern{elementPattern: elementPattern}
+}
+
+func (p *SetPattern) Test(v symbolic.SymbolicValue) bool {
+	otherPattern, ok := v.(*SetPattern)
+	if !ok {
+		return false
+	}
+
+	return p.elementPattern.Test(otherPattern.elementPattern)
+}
+
+func (p *SetPattern) TestValue(v symbolic.SymbolicValue) bool {
+	if otherPatt, ok := v.(*SetPattern); ok {
+		return p.elementPattern.TestValue(otherPatt.elementPattern)
+	}
+	return false
+	//TODO: test nodes's value
+}
+
+func (p *SetPattern) HasUnderylingPattern() bool {
+	return true
+}
+
+func (p *SetPattern) StringPattern() (symbolic.StringPatternElement, bool) {
+	return nil, false
+}
+
+func (p *SetPattern) SymbolicValue() symbolic.SymbolicValue {
+	return NewSetPatternWithElementPattern(p.elementPattern)
+}
+
+func (p *SetPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%set-pattern")))
+}
+
+func (*SetPattern) Widen() (symbolic.SymbolicValue, bool) {
+	return nil, false
+}
+
+func (*SetPattern) IsWidenable() bool {
+	return false
+}
+
+func (*SetPattern) IteratorElementKey() symbolic.SymbolicValue {
+	return symbolic.ANY
+}
+
+func (*SetPattern) IteratorElementValue() symbolic.SymbolicValue {
+	return symbolic.ANY
+}
+
+func (*SetPattern) WidestOfType() symbolic.SymbolicValue {
 	return ANY_SET
 }

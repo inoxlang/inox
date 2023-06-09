@@ -19,9 +19,6 @@ func TestNewSet(t *testing.T) {
 		assert.Equal(t, SetConfig{
 			Uniqueness: UniquenessConstraint{
 				Type: UniqueRepr,
-				Repr: &core.ReprConfig{
-					AllVisible: true,
-				},
 			},
 		}, set.config)
 	})
@@ -33,9 +30,6 @@ func TestNewSet(t *testing.T) {
 		assert.Equal(t, SetConfig{
 			Uniqueness: UniquenessConstraint{
 				Type: UniqueRepr,
-				Repr: &core.ReprConfig{
-					AllVisible: true,
-				},
 			},
 		}, set.config)
 	})
@@ -134,9 +128,6 @@ func TestNewSet(t *testing.T) {
 		assert.Equal(t, SetConfig{
 			Uniqueness: UniquenessConstraint{
 				Type: UniqueRepr,
-				Repr: &core.ReprConfig{
-					AllVisible: true,
-				},
 			},
 			Element: elementPattern,
 		}, set.config)

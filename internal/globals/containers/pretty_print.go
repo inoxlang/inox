@@ -67,3 +67,7 @@ func (n TreeNode) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, d
 func (n *TreeNodePattern) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(fmt.Fprintf(w, "%#v", n))
 }
+
+func (n *SetPattern) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%T", n))
+}

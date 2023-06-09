@@ -12,12 +12,27 @@ var (
 	ErrFailedGetUniqueKeyNoURL       = errors.New("failed to get unique key for value since it has no URL")
 	ErrFailedGetUniqueKeyNoProps     = errors.New("failed to get unique key for value since it has no properties")
 	ErrFailedGetUniqueKeyPropMissing = errors.New("failed to get unique key for value since the property is missing")
+
+	UniqueKeyReprConfig = &core.ReprConfig{AllVisible: true}
 )
 
 type UniquenessConstraint struct {
 	Type         UniquenessConstraintType
 	PropertyName core.PropertyName //set if UniquePropertyValue
-	Repr         *core.ReprConfig  //set if UniqueRepr
+}
+
+func (c UniquenessConstraint) Equal(otherConstraint UniquenessConstraint) bool {
+	if c.Type != otherConstraint.Type {
+		return false
+	}
+
+	//TODO: check Repr config
+
+	if c.Type == UniquePropertyValue && c.PropertyName != otherConstraint.PropertyName {
+		return false
+	}
+
+	return true
 }
 
 type UniquenessConstraintType int
@@ -33,7 +48,7 @@ func getUniqueKey(ctx *core.Context, v core.Value, config UniquenessConstraint) 
 	switch config.Type {
 	case UniqueRepr:
 		// representation is context-dependent -> possible issues
-		key = string(core.MustGetRepresentationWithConfig(v, config.Repr, ctx))
+		key = string(core.MustGetRepresentationWithConfig(v, UniqueKeyReprConfig, ctx))
 	case UniqueURL:
 		url, err := core.UrlOf(ctx, v)
 		if err != nil {
@@ -51,7 +66,7 @@ func getUniqueKey(ctx *core.Context, v core.Value, config UniquenessConstraint) 
 		}
 		//ToC / Tos ??
 		propVal := iprops.Prop(ctx, config.PropertyName.UnderlyingString())
-		repr := core.MustGetRepresentationWithConfig(propVal, config.Repr, ctx)
+		repr := core.MustGetRepresentationWithConfig(propVal, UniqueKeyReprConfig, ctx)
 		key = string(repr)
 	}
 	return key

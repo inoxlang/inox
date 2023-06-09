@@ -1,6 +1,10 @@
 package internal
 
-import "github.com/inoxlang/inox/internal/core"
+import (
+	"reflect"
+
+	"github.com/inoxlang/inox/internal/core"
+)
 
 func (s *Set) Clone(clones map[uintptr]map[int]core.Value) (core.Value, error) {
 	return nil, core.ErrNotClonable
@@ -60,4 +64,26 @@ func (p *TreeNodePattern) Clone(clones map[uintptr]map[int]core.Value) (core.Val
 
 func (it *TreeIterator) Clone(clones map[uintptr]map[int]core.Value) (core.Value, error) {
 	return nil, core.ErrNotClonable
+}
+
+func (pattern *SetPattern) Clone(clones map[uintptr]map[int]core.Value) (core.Value, error) {
+	ptr := reflect.ValueOf(pattern).Pointer()
+
+	if clone, ok := clones[ptr][0]; ok {
+		return clone, nil
+	}
+
+	clone := &SetPattern{}
+	clones[ptr] = map[int]core.Value{0: clone}
+
+	elemenPatternClone, err := pattern.config.Element.Clone(clones)
+	if err != nil {
+		return nil, err
+	}
+
+	clone.config = SetConfig{
+		Element:    elemenPatternClone.(core.Pattern),
+		Uniqueness: pattern.config.Uniqueness,
+	}
+	return clone, nil
 }

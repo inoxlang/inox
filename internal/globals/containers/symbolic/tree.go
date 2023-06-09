@@ -250,7 +250,6 @@ func (p *TreeNodePattern) IteratorElementValue() symbolic.SymbolicValue {
 
 func (p *TreeNodePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%tree-node-pattern")))
-	return
 }
 
 func (p *TreeNodePattern) WidestOfType() symbolic.SymbolicValue {

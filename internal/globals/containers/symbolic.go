@@ -20,6 +20,19 @@ func (s *Set) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symboli
 	return coll_symbolic.NewSetWithPattern(patt), nil
 }
 
+func (p *SetPattern) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	var patt symbolic.Pattern = symbolic.ANY_PATTERN
+
+	if p.config.Element != nil {
+		p, err := p.config.Element.ToSymbolicValue(ctx, encountered)
+		if err != nil {
+			return nil, err
+		}
+		patt = p.(symbolic.Pattern)
+	}
+	return coll_symbolic.NewSetPatternWithElementPattern(patt), nil
+}
+
 func (s *Stack) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	return &coll_symbolic.Stack{}, nil
 }

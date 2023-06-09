@@ -1,6 +1,9 @@
 package internal
 
 import (
+	"reflect"
+
+	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
@@ -9,6 +12,66 @@ import (
 )
 
 func init() {
+	core.RegisterDefaultPattern("Set", &core.TypePattern{
+		Name:          "Set",
+		Type:          reflect.TypeOf((*Set)(nil)),
+		SymbolicValue: coll_symbolic.ANY_SET,
+		CallImpl: func(values []core.Value) (core.Pattern, error) {
+			if len(values) == 0 {
+				return nil, core.FmtMissingArgument("element pattern")
+			}
+			if len(values) == 1 {
+				return nil, core.FmtMissingArgument("uniqueness")
+			}
+
+			elementPattern, ok := values[0].(core.Pattern)
+			if !ok {
+				return nil, core.FmtErrInvalidArgumentAtPos(elementPattern, 0)
+			}
+
+			var uniqueness UniquenessConstraint
+			switch u := values[1].(type) {
+			case core.Identifier:
+				if u != "url" {
+					return nil, core.FmtErrInvalidArgumentAtPos(elementPattern, 0)
+				}
+				uniqueness.Type = UniqueURL
+			case core.PropertyName:
+			default:
+				return nil, core.FmtErrInvalidArgumentAtPos(elementPattern, 0)
+			}
+			return NewSetPattern(SetConfig{
+				Element: elementPattern,
+			}), nil
+		},
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error) {
+			if len(values) == 0 {
+				return nil, core.FmtMissingArgument("element pattern")
+			}
+			if len(values) == 1 {
+				return nil, core.FmtMissingArgument("uniqueness")
+			}
+
+			elementPattern, ok := values[0].(symbolic.Pattern)
+			if !ok {
+				return nil, commonfmt.FmtErrInvalidArgumentAtPos(0, "a pattern is expected")
+			}
+
+			var uniqueness UniquenessConstraint
+			switch u := values[1].(type) {
+			case *symbolic.Identifier:
+				if u.HasConcreteName() && u.Name() != "url" {
+					return nil, commonfmt.FmtErrInvalidArgumentAtPos(1, "#url or a property name is expected")
+				}
+				uniqueness.Type = UniqueURL
+			case *symbolic.PropertyName:
+			default:
+				return nil, commonfmt.FmtErrInvalidArgumentAtPos(1, "#url or a property name is expected")
+			}
+			return coll_symbolic.NewSetPatternWithElementPattern(elementPattern), nil
+		},
+	})
+
 	core.RegisterSymbolicGoFunctions([]any{
 		NewSet, coll_symbolic.NewSet,
 		NewStack, func(ctx *symbolic.Context, elements symbolic.Iterable) *coll_symbolic.Stack {
