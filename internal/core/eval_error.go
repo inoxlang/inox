@@ -69,6 +69,8 @@ var (
 	ErrPrecisionLoss                    = errors.New("precision loss")
 
 	ErrValueInExactPatternValueShouldBeImmutable = errors.New("the value in an exact value pattern should be immutable")
+
+	ErrValueHasNoProperties = errors.New("value has no properties")
 )
 
 func FormatErrPropertyDoesNotExist(name string, v Value) error {

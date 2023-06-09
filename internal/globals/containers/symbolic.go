@@ -8,7 +8,16 @@ import (
 )
 
 func (s *Set) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &coll_symbolic.Set{}, nil
+	var patt symbolic.Pattern = symbolic.ANY_PATTERN
+
+	if s.config.Element != nil {
+		p, err := s.config.Element.ToSymbolicValue(ctx, encountered)
+		if err != nil {
+			return nil, err
+		}
+		patt = p.(symbolic.Pattern)
+	}
+	return coll_symbolic.NewSetWithPattern(patt), nil
 }
 
 func (s *Stack) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {

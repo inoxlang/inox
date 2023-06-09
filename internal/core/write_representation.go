@@ -57,11 +57,11 @@ func WriteRepresentation(w io.Writer, v Value, config *ReprConfig, ctx *Context)
 }
 
 type ReprConfig struct {
-	allVisible bool
+	AllVisible bool
 }
 
 func (r *ReprConfig) IsValueVisible(v Value) bool {
-	if r == nil || r.allVisible {
+	if r == nil || r.AllVisible {
 		return true
 	}
 	if IsAtomSensitive(v) {
@@ -71,7 +71,7 @@ func (r *ReprConfig) IsValueVisible(v Value) bool {
 }
 
 func (r *ReprConfig) IsPropertyVisible(name string, v Value, info *ValueVisibility, ctx *Context) bool {
-	if r == nil || r.allVisible || (info != nil && utils.SliceContains(info.publicKeys, name)) {
+	if r == nil || r.AllVisible || (info != nil && utils.SliceContains(info.publicKeys, name)) {
 		return true
 	}
 

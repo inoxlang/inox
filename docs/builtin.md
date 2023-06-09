@@ -145,7 +145,7 @@ Queue([1])
 ```
 ### Set
 
-the Set function creates a set from an iterable, only representable (serializable) values are allowed.
+the Set function creates a set from an iterable, by default only representable (serializable) values are allowed. A configuration is accepted as a second argument.
 
 **examples**
 
@@ -154,6 +154,12 @@ Set([])
 ```
 ```inox
 Set([1])
+```
+```inox
+Set([], {element: %int})
+```
+```inox
+Set([{name: "A"}, {name: "B"}], {uniqueness: .name})
 ```
 ### Map
 

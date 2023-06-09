@@ -265,12 +265,19 @@ containers:
       explanation: creates a queue with an element 1
 
   - topic: Set
-    text: the Set function creates a set from an iterable, only representable (serializable) values are allowed
+    text: >
+      the Set function creates a set from an iterable, by default only representable (serializable) values are allowed.
+      A configuration is accepted as a second argument.
+
     examples:
     - code: 'Set([])'
       explanation: creates an empty set
     - code: 'Set([1])'
       explanation: "creates a queue with an element 1"
+    - code: 'Set([], {element: %int})'
+      explanation: creates an empty set of integers
+    - code: 'Set([{name: "A"}, {name: "B"}], {uniqueness: .name})'
+      explanation: creates a set of values where the identity is defined by the .name property
 
   - topic: Map
     text: the Map function creates a map from flat list of entries

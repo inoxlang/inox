@@ -10,9 +10,7 @@ import (
 
 func init() {
 	core.RegisterSymbolicGoFunctions([]any{
-		NewSet, func(ctx *symbolic.Context, elements symbolic.Iterable) *coll_symbolic.Set {
-			return &coll_symbolic.Set{}
-		},
+		NewSet, coll_symbolic.NewSet,
 		NewStack, func(ctx *symbolic.Context, elements symbolic.Iterable) *coll_symbolic.Stack {
 			return &coll_symbolic.Stack{}
 		},

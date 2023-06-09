@@ -148,7 +148,7 @@ func TestObjectRepresentation(t *testing.T) {
 		expectedRepr := `{"a":1}`
 
 		assert.Equal(t, expectedRepr, getRepr(t, obj, reprTestCtx, &ReprConfig{
-			allVisible: false,
+			AllVisible: false,
 		}))
 	})
 
@@ -162,7 +162,7 @@ func TestObjectRepresentation(t *testing.T) {
 		expectedRepr := `{"a":1,"e":a@mail.com,"password":"mypassword"}`
 
 		assert.Equal(t, expectedRepr, getRepr(t, obj, reprTestCtx, &ReprConfig{
-			allVisible: true,
+			AllVisible: true,
 		}))
 	})
 
@@ -181,7 +181,7 @@ func TestObjectRepresentation(t *testing.T) {
 		expectedRepr := `{"a":1,"e":a@mail.com,"password":"mypassword"}`
 
 		assert.Equal(t, expectedRepr, getRepr(t, obj, reprTestCtx, &ReprConfig{
-			allVisible: false,
+			AllVisible: false,
 		}))
 	})
 }
@@ -248,7 +248,7 @@ func TestRecordRepresentation(t *testing.T) {
 		expectedRepr := `#{"a":1}`
 
 		assert.Equal(t, expectedRepr, getRepr(t, rec, reprTestCtx, &ReprConfig{
-			allVisible: false,
+			AllVisible: false,
 		}))
 	})
 
@@ -1007,7 +1007,7 @@ func getRepr(t *testing.T, v Value, ctx *Context, reprConfig ...*ReprConfig) str
 	encountered := map[uintptr]int{}
 
 	if reprConfig == nil {
-		reprConfig = append(reprConfig, &ReprConfig{allVisible: true})
+		reprConfig = append(reprConfig, &ReprConfig{AllVisible: true})
 	}
 
 	err := v.WriteRepresentation(ctx, buff, encountered, reprConfig[0])

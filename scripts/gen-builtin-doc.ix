@@ -1,7 +1,7 @@
 # this script generates docs/builtin.md
 
 const (
-    DATA_FILE = ./internal/globals/help/builtin.yaml
+    DATA_FILE = ./internal/globals/help_ns/builtin.yaml
     OUTPUT_FILE = ./docs/builtin.md
 )
 

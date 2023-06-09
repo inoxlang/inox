@@ -65,7 +65,7 @@ type SpecificMutationAcceptor interface {
 
 func WriteSingleRepresentation(ctx *Context, v Value) ([]byte, [6]int32, error) {
 	buf := bytes.NewBuffer(nil)
-	config := &ReprConfig{allVisible: true}
+	config := &ReprConfig{AllVisible: true}
 	if err := WriteRepresentation(buf, v, config, ctx); err != nil {
 		return nil, [6]int32{}, err
 	}
@@ -74,7 +74,7 @@ func WriteSingleRepresentation(ctx *Context, v Value) ([]byte, [6]int32, error) 
 
 func WriteConcatenatedRepresentations(ctx *Context, values ...Value) ([]byte, [6]int32, error) {
 	buf := bytes.NewBuffer(nil)
-	config := &ReprConfig{allVisible: true}
+	config := &ReprConfig{AllVisible: true}
 
 	var sizes [6]int32
 

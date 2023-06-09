@@ -58,7 +58,7 @@ func TakeSnapshot(ctx *Context, v Value, mustBeSerialized bool) (*Snapshot, erro
 		snapshotableErr = err
 	}
 
-	repr, err := GetRepresentationWithConfig(v, &ReprConfig{allVisible: true}, ctx)
+	repr, err := GetRepresentationWithConfig(v, &ReprConfig{AllVisible: true}, ctx)
 	if err != nil {
 		if snapshotableErr != nil {
 			err = fmt.Errorf("%w AND value was an InMemorySnapshotable that returned this error when snapshoted: %w", err, snapshotableErr)
@@ -114,7 +114,7 @@ func (s *Snapshot) WithChangeApplied(ctx *Context, c Change) (*Snapshot, error) 
 		}, nil
 	}
 
-	repr, err := GetRepresentationWithConfig(v, &ReprConfig{allVisible: true}, ctx)
+	repr, err := GetRepresentationWithConfig(v, &ReprConfig{AllVisible: true}, ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to take snapshot of value: %w", err)
 	}
