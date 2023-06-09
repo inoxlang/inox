@@ -5,21 +5,27 @@ manifest {
         delete: %/tmp/mydb/
     }
 
-    host_resolution: :{
-        ldb://main : /tmp/mydb/
+
+    databases: {
+        local: {
+            resource: ldb://main
+            resolution-data: /tmp/mydb/
+        }
     }
 }
 
-delete /tmp/mydb/
+# delete /tmp/mydb/
 
-db = localdb.open!(ldb://main)
-db.set(/a, 0)
+#  dbs.local
 
-tx = start_tx()
-db.set(/a, 1000)
-tx.rollback()
+#  db = localdb.open!(ldb://main)
+#  db.set(/a, 0)
 
-assign v ok = db.get(/a)
-print "value for key a: " $v 
+#  tx = start_tx()
+#  db.set(/a, 1000)
+#  tx.rollback()
 
-db.close()
+#  assign v ok = db.get(/a)
+#  print "value for key a: " $v 
+
+#  db.close()
