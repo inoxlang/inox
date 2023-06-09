@@ -171,7 +171,7 @@ func (p *SetPattern) StringPattern() (symbolic.StringPatternElement, bool) {
 }
 
 func (p *SetPattern) SymbolicValue() symbolic.SymbolicValue {
-	return NewSetPatternWithElementPattern(p.elementPattern)
+	return NewSetWithPattern(p.elementPattern)
 }
 
 func (p *SetPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
