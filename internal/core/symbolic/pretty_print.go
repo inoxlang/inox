@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"runtime/debug"
 
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/muesli/termenv"
@@ -58,9 +59,9 @@ func PrettyPrint(v SymbolicValue, w io.Writer, config *pprint.PrettyPrintConfig,
 		e := recover()
 		switch v := e.(type) {
 		case error:
-			err = v
+			err = fmt.Errorf("%w %s", v, string(debug.Stack()))
 		default:
-			err = fmt.Errorf("panic: %#v", e)
+			err = fmt.Errorf("panic: %#v %s", e, string(debug.Stack()))
 		case nil:
 		}
 	}()
