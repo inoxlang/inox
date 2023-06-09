@@ -1,4 +1,4 @@
-package internal
+package containers
 
 import (
 	core "github.com/inoxlang/inox/internal/core"

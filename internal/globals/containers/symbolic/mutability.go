@@ -1,4 +1,4 @@
-package internal
+package containers
 
 func (s *Set) IsMutable() bool {
 	return true

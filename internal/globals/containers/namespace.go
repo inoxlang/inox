@@ -1,4 +1,4 @@
-package internal
+package containers
 
 import (
 	"reflect"

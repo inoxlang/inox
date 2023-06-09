@@ -8,7 +8,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/default_state"
 	"github.com/inoxlang/inox/internal/globals/chrome_ns"
-	_containers "github.com/inoxlang/inox/internal/globals/containers"
+	"github.com/inoxlang/inox/internal/globals/containers"
 	"github.com/inoxlang/inox/internal/globals/dom_ns"
 	"github.com/inoxlang/inox/internal/globals/env_ns"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
@@ -261,7 +261,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 		"help": core.ValOf(help_ns.Help),
 	}
 
-	for k, v := range _containers.NewContainersNamespace().EntryMap() {
+	for k, v := range containers.NewContainersNamespace().EntryMap() {
 		constants[k] = v
 	}
 
