@@ -856,6 +856,10 @@ func TestParseRepr(t *testing.T) {
 		//pattern calls
 		{"%int()", 5, nil},
 		{"%int(1..2)", -1, NewIncludedEndIntRangePattern(1, 2)},
+		{`%{"a":%int(1..2)}`, -1, NewInexactObjectPattern(map[string]Pattern{
+			"a": NewIncludedEndIntRangePattern(1, 2),
+		})},
+
 
 		//weird cases
 		{`/ a`, 1, nil},

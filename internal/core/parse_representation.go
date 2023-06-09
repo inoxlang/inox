@@ -1889,10 +1889,6 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 			state = rstatePatternConvOpeningParen
 			inPattern = append(inPattern, false)
 		case ')':
-			if inPattern[len(inPattern)-1] {
-				return nil, i
-			}
-
 			if stack[stackIndex] == PatternCallVal {
 				if state != rstatePatternCallComma {
 					if val, errIndex, ok := getVal(i); ok {
