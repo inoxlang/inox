@@ -4,7 +4,9 @@ package fs_ns
 
 import (
 	"errors"
+
 	afs "github.com/inoxlang/inox/internal/afs"
+	"github.com/inoxlang/inox/internal/core"
 )
 
 var (

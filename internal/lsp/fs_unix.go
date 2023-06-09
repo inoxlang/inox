@@ -15,13 +15,6 @@ func NewDefaultFilesystem() *Filesystem {
 	}
 }
 
-func NewFilesystem(base afs.Filesystem, unsavedDocumentFs afs.Filesystem) *Filesystem {
-	return &Filesystem{
-		Filesystem:       base,
-		unsavedDocuments: unsavedDocumentFs,
-	}
-}
-
 func (fs *Filesystem) Open(filename string) (afs.File, error) {
 	if fs.unsavedDocuments == nil {
 		return fs.Filesystem.Open(filename)

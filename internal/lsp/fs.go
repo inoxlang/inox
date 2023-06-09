@@ -13,3 +13,11 @@ type Filesystem struct {
 	afs.Filesystem
 	unsavedDocuments afs.Filesystem
 }
+
+
+func NewFilesystem(base afs.Filesystem, unsavedDocumentFs afs.Filesystem) *Filesystem {
+	return &Filesystem{
+		Filesystem:       base,
+		unsavedDocuments: unsavedDocumentFs,
+	}
+}
