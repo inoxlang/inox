@@ -398,6 +398,8 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		args := make([]SymbolicValue, len(n.Arguments))
 
+		errCount := len(state.errors)
+
 		for i, argNode := range n.Arguments {
 			arg, err := symbolicEval(argNode, state)
 			if err != nil {
@@ -406,16 +408,19 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			args[i] = arg
 		}
 
-		patt, err := callee.(Pattern).Call(state.ctx, args)
-		state.consumeSymbolicGoFunctionErrors(func(msg string) {
-			state.addError(makeSymbolicEvalError(n, state, msg))
-		})
+		if len(state.errors) == errCount {
+			patt, err := callee.(Pattern).Call(state.ctx, args)
+			state.consumeSymbolicGoFunctionErrors(func(msg string) {
+				state.addError(makeSymbolicEvalError(n, state, msg))
+			})
 
-		if err != nil {
-			state.addError(makeSymbolicEvalError(n, state, err.Error()))
-			patt = ANY_PATTERN
+			if err != nil {
+				state.addError(makeSymbolicEvalError(n, state, err.Error()))
+				patt = ANY_PATTERN
+			}
+			return patt, nil
 		}
-		return patt, nil
+		return ANY_PATTERN, nil
 	case *parse.PipelineStatement, *parse.PipelineExpression:
 		var stages []*parse.PipelineStage
 
