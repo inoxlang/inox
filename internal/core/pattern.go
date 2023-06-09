@@ -241,8 +241,8 @@ var (
 			return &IntRangePattern{
 				intRange: intRange,
 				CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-					callee: typePattern,
-					params: []Value{intRange},
+					Callee: typePattern,
+					Params: []Value{intRange},
 				},
 			}, nil
 		},
@@ -1188,8 +1188,8 @@ func NewIncludedEndIntRangePattern(start, end int64) *IntRangePattern {
 	return &IntRangePattern{
 		intRange: range_,
 		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-			callee: INT_PATTERN,
-			params: []Value{range_},
+			Callee: INT_PATTERN,
+			Params: []Value{range_},
 		},
 	}
 }
@@ -1199,8 +1199,8 @@ func NewSingleElementIntRangePattern(n int64) *IntRangePattern {
 	return &IntRangePattern{
 		intRange: range_,
 		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-			callee: INT_PATTERN,
-			params: []Value{range_},
+			Callee: INT_PATTERN,
+			Params: []Value{range_},
 		},
 	}
 }

@@ -135,13 +135,17 @@ func (*Set) PropertyNames(ctx *core.Context) []string {
 type SetPattern struct {
 	config SetConfig
 
+	core.CallBasedPatternReprMixin
+
 	core.NotCallablePatternMixin
 	core.NotClonableMixin
-	core.NoReprMixin
 }
 
-func NewSetPattern(config SetConfig) *SetPattern {
-	return &SetPattern{config: config}
+func NewSetPattern(config SetConfig, callData core.CallBasedPatternReprMixin) *SetPattern {
+	return &SetPattern{
+		config:                    config,
+		CallBasedPatternReprMixin: callData,
+	}
 }
 
 func (patt *SetPattern) Test(ctx *core.Context, v core.Value) bool {

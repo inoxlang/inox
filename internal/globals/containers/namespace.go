@@ -7,12 +7,13 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
+	"github.com/inoxlang/inox/internal/utils"
 
 	"github.com/inoxlang/inox/internal/globals/help_ns"
 )
 
-func init() {
-	core.RegisterDefaultPattern("Set", &core.TypePattern{
+var (
+	SET_PATTERN = &core.TypePattern{
 		Name:          "Set",
 		Type:          reflect.TypeOf((*Set)(nil)),
 		SymbolicValue: coll_symbolic.ANY_SET,
@@ -42,6 +43,9 @@ func init() {
 			}
 			return NewSetPattern(SetConfig{
 				Element: elementPattern,
+			}, core.CallBasedPatternReprMixin{
+				Callee: typePattern,
+				Params: utils.CopySlice(values),
 			}), nil
 		},
 		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error) {
@@ -70,7 +74,11 @@ func init() {
 			}
 			return coll_symbolic.NewSetPatternWithElementPattern(elementPattern), nil
 		},
-	})
+	}
+)
+
+func init() {
+	core.RegisterDefaultPattern("Set", SET_PATTERN)
 
 	core.RegisterSymbolicGoFunctions([]any{
 		NewSet, coll_symbolic.NewSet,

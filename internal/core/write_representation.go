@@ -103,12 +103,12 @@ func (n NoReprMixin) WriteJSONRepresentation(ctx *Context, w io.Writer, encounte
 }
 
 type CallBasedPatternReprMixin struct {
-	callee Pattern
-	params []Value
+	Callee Pattern
+	Params []Value
 }
 
 func (m CallBasedPatternReprMixin) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	for _, p := range m.params {
+	for _, p := range m.Params {
 		if p.IsMutable() || !p.HasRepresentation(encountered, config) {
 			return false
 		}
@@ -120,7 +120,7 @@ func (m CallBasedPatternReprMixin) WriteRepresentation(ctx *Context, w io.Writer
 	if encountered != nil && !m.HasRepresentation(encountered, config) {
 		return ErrNoRepresentation
 	}
-	err := m.callee.WriteRepresentation(ctx, w, encountered, config)
+	err := m.Callee.WriteRepresentation(ctx, w, encountered, config)
 	if err != nil {
 		return err
 	}
@@ -129,7 +129,7 @@ func (m CallBasedPatternReprMixin) WriteRepresentation(ctx *Context, w io.Writer
 		return err
 	}
 
-	for i, p := range m.params {
+	for i, p := range m.Params {
 		if i != 0 {
 			_, err = w.Write([]byte{','})
 			if err != nil {
