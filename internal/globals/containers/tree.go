@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
@@ -37,7 +38,7 @@ func init() {
 						switch v := val.(type) {
 						case core.Pattern:
 							if valuePattern != nil {
-								return nil, core.FmtErrArgumentProvidedAtLeastTwice("value pattern")
+								return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("value pattern")
 							}
 
 							valuePattern = v

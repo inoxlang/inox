@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	"github.com/inoxlang/inox/internal/afs"
+	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
 
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -111,7 +112,7 @@ func Mkdir(ctx *core.Context, args ...core.Value) error {
 		switch v := arg.(type) {
 		case core.Path:
 			if dirpath != "" {
-				return core.FmtErrArgumentProvidedAtLeastTwice("path")
+				return commonfmt.FmtErrArgumentProvidedAtLeastTwice("path")
 			}
 			dirpath = v
 			if !dirpath.IsDirPath() {
@@ -119,7 +120,7 @@ func Mkdir(ctx *core.Context, args ...core.Value) error {
 			}
 		case *core.Dictionary:
 			if contentDesc != nil {
-				return core.FmtErrArgumentProvidedAtLeastTwice("content")
+				return commonfmt.FmtErrArgumentProvidedAtLeastTwice("content")
 			}
 			contentDesc = v
 
@@ -144,7 +145,7 @@ func Mkdir(ctx *core.Context, args ...core.Value) error {
 	}
 
 	if dirpath == "" {
-		return core.FmtMissingArgument("path")
+		return commonfmt.FmtMissingArgument("path")
 	}
 
 	return makeFileHierarchy(ctx, dirpath, contentDesc, 0)
@@ -160,7 +161,7 @@ func Mkfile(ctx *core.Context, fpath core.Path, args ...core.Value) error {
 		switch a := arg.(type) {
 		case core.Readable:
 			if b != nil {
-				return core.FmtErrArgumentProvidedAtLeastTwice("content")
+				return commonfmt.FmtErrArgumentProvidedAtLeastTwice("content")
 			}
 			var err error
 			b, err = a.Reader().ReadAllBytes()
@@ -184,7 +185,7 @@ func Mkfile(ctx *core.Context, fpath core.Path, args ...core.Value) error {
 	}
 
 	if fpath == "" {
-		return core.FmtMissingArgument("path")
+		return commonfmt.FmtMissingArgument("path")
 	}
 
 	absFpath := fpath.ToAbs(ctx.GetFileSystem())
@@ -214,7 +215,7 @@ func ReadFile(ctx *core.Context, args ...core.Value) (*core.ByteSlice, error) {
 		switch v := arg.(type) {
 		case core.Path:
 			if fpath != "" {
-				return nil, core.FmtErrArgumentProvidedAtLeastTwice("path")
+				return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("path")
 			}
 			fpath = v
 		default:
@@ -223,7 +224,7 @@ func ReadFile(ctx *core.Context, args ...core.Value) (*core.ByteSlice, error) {
 	}
 
 	if fpath == "" {
-		return &core.ByteSlice{}, core.FmtMissingArgument("path")
+		return &core.ByteSlice{}, commonfmt.FmtMissingArgument("path")
 	}
 
 	b, err := ReadEntireFile(ctx, fpath)
@@ -496,12 +497,12 @@ func AppendToFile(ctx *core.Context, args ...core.Value) error {
 		switch v := arg.(type) {
 		case core.Path:
 			if fpath != "" {
-				return core.FmtErrArgumentProvidedAtLeastTwice("path")
+				return commonfmt.FmtErrArgumentProvidedAtLeastTwice("path")
 			}
 			fpath = v
 		case core.Readable:
 			if content != nil {
-				return core.FmtErrArgumentProvidedAtLeastTwice("content")
+				return commonfmt.FmtErrArgumentProvidedAtLeastTwice("content")
 			}
 			content = v.Reader()
 		default:
@@ -543,12 +544,12 @@ func ReplaceFileContent(ctx *core.Context, args ...core.Value) error {
 		switch v := arg.(type) {
 		case core.Path:
 			if fpath != "" {
-				return core.FmtErrArgumentProvidedAtLeastTwice("path")
+				return commonfmt.FmtErrArgumentProvidedAtLeastTwice("path")
 			}
 			fpath = v
 		case core.Readable:
 			if content != nil {
-				return core.FmtErrArgumentProvidedAtLeastTwice("content")
+				return commonfmt.FmtErrArgumentProvidedAtLeastTwice("content")
 			}
 			content = v.Reader()
 		default:
@@ -557,7 +558,7 @@ func ReplaceFileContent(ctx *core.Context, args ...core.Value) error {
 	}
 
 	if fpath == "" {
-		return core.FmtMissingArgument("path")
+		return commonfmt.FmtMissingArgument("path")
 	}
 
 	fpath = fpath.ToAbs(ctx.GetFileSystem())
@@ -604,7 +605,7 @@ func Remove(ctx *core.Context, args ...core.Value) error {
 		switch v := arg.(type) {
 		case core.Path:
 			if fpath != "" {
-				return core.FmtErrArgumentProvidedAtLeastTwice("path")
+				return commonfmt.FmtErrArgumentProvidedAtLeastTwice("path")
 			}
 			fpath = v
 		default:
@@ -613,7 +614,7 @@ func Remove(ctx *core.Context, args ...core.Value) error {
 	}
 
 	if fpath == "" {
-		return core.FmtMissingArgument("path")
+		return commonfmt.FmtMissingArgument("path")
 	}
 
 	effect := RemoveFile{path: fpath.ToAbs(ctx.GetFileSystem())}
@@ -747,7 +748,7 @@ func Read(ctx *core.Context, path core.Path, args ...core.Value) (result core.Va
 		switch v := arg.(type) {
 		case core.Mimetype:
 			if contentType != "" {
-				finalErr = core.FmtErrXProvidedAtLeastTwice("content type")
+				finalErr = commonfmt.FmtErrXProvidedAtLeastTwice("content type")
 				return
 			}
 			contentType = v
@@ -885,7 +886,7 @@ func OpenExisting(ctx *core.Context, args ...core.Value) (*File, error) {
 		switch a := arg.(type) {
 		case core.Path:
 			if pth != "" {
-				return nil, core.FmtErrArgumentProvidedAtLeastTwice("path")
+				return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("path")
 			}
 			pth = a
 		case core.Option:

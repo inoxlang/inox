@@ -252,11 +252,11 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *Node {
 				child, ok := elem.(*html_ns.HTMLNode)
 				if ok {
 					if child.HasParent() {
-						panic(core.FmtUnexpectedElementInPropIterable("children", S_NODE_ALREADY_HAS_A_PARENT))
+						panic(commonfmt.FmtUnexpectedElementInPropIterable("children", S_NODE_ALREADY_HAS_A_PARENT))
 					}
 
 					if child.HasPrevSibling() || child.HasNextSibling() {
-						panic(core.FmtUnexpectedElementInPropIterable("children", S_NODE_ALREADY_HAS_SIBLINGS))
+						panic(commonfmt.FmtUnexpectedElementInPropIterable("children", S_NODE_ALREADY_HAS_SIBLINGS))
 					}
 				}
 
@@ -319,17 +319,17 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *Node {
 			v := desc.Prop(ctx, k)
 
 			if childrenAlreadyProvided {
-				panic(core.FmtUnexpectedElementAtIndeKeyXofArg(k, "description", S_CHILDREN_ALREADY_PROVIDED_WITH_CHILDREN_PROP))
+				panic(commonfmt.FmtUnexpectedElementAtIndeKeyXofArg(k, "description", S_CHILDREN_ALREADY_PROVIDED_WITH_CHILDREN_PROP))
 			}
 
 			childNode, ok := v.(*html_ns.HTMLNode)
 			if ok {
 				if childNode.HasParent() {
-					panic(core.FmtUnexpectedElementAtIndeKeyXofArg(k, "description", S_NODE_ALREADY_HAS_A_PARENT))
+					panic(commonfmt.FmtUnexpectedElementAtIndeKeyXofArg(k, "description", S_NODE_ALREADY_HAS_A_PARENT))
 				}
 
 				if childNode.HasPrevSibling() || childNode.HasNextSibling() {
-					panic(core.FmtUnexpectedElementAtIndeKeyXofArg(k, "description", S_NODE_ALREADY_HAS_SIBLINGS))
+					panic(commonfmt.FmtUnexpectedElementAtIndeKeyXofArg(k, "description", S_NODE_ALREADY_HAS_SIBLINGS))
 				}
 			}
 

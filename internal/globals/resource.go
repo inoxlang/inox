@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
@@ -113,7 +114,7 @@ func _createResource(ctx *core.Context, resource core.ResourceName, args ...core
 
 		for _, arg := range args {
 			if content != nil {
-				return nil, core.FmtErrXProvidedAtLeastTwice("content")
+				return nil, commonfmt.FmtErrXProvidedAtLeastTwice("content")
 			}
 			content = arg.(core.Readable).Reader()
 		}
@@ -139,7 +140,7 @@ func _updateResource(ctx *core.Context, resource core.ResourceName, args ...core
 		switch v := arg.(type) {
 		case core.Identifier:
 			if mode != "" {
-				return nil, core.FmtErrXProvidedAtLeastTwice("mod")
+				return nil, commonfmt.FmtErrXProvidedAtLeastTwice("mod")
 			}
 
 			switch v {
@@ -150,7 +151,7 @@ func _updateResource(ctx *core.Context, resource core.ResourceName, args ...core
 			}
 		case core.Readable:
 			if content != nil {
-				return nil, core.FmtErrXProvidedAtLeastTwice("content")
+				return nil, commonfmt.FmtErrXProvidedAtLeastTwice("content")
 			}
 			content = v.Reader()
 		default:

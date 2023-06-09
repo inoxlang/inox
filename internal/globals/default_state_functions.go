@@ -11,6 +11,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/config"
 	core "github.com/inoxlang/inox/internal/core"
 
@@ -372,7 +373,7 @@ func _List(ctx *core.Context, args ...core.Value) *core.List {
 		switch a := arg.(type) {
 		case core.Indexable:
 			if elements != nil {
-				panic(core.FmtErrArgumentProvidedAtLeastTwice("elements"))
+				panic(commonfmt.FmtErrArgumentProvidedAtLeastTwice("elements"))
 			}
 			length := a.Len()
 			elements = make([]core.Value, length)
@@ -381,7 +382,7 @@ func _List(ctx *core.Context, args ...core.Value) *core.List {
 			}
 		case core.Iterable:
 			if elements != nil {
-				panic(core.FmtErrArgumentProvidedAtLeastTwice("elements"))
+				panic(commonfmt.FmtErrArgumentProvidedAtLeastTwice("elements"))
 			}
 			it := a.Iterator(ctx, core.IteratorConfiguration{})
 			for it.Next(ctx) {

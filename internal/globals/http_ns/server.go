@@ -224,7 +224,7 @@ func readHttpServerArgs(ctx *core.Context, server *HttpServer, args ...core.Valu
 			}
 		case *core.InoxFunction:
 			if handlerValProvided {
-				argErr = core.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
+				argErr = commonfmt.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
 				return
 			}
 
@@ -237,7 +237,7 @@ func readHttpServerArgs(ctx *core.Context, server *HttpServer, args ...core.Valu
 			handlerValProvided = true
 		case *core.GoFunction:
 			if handlerValProvided {
-				argErr = core.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
+				argErr = commonfmt.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
 				return
 			}
 			if ok, expl := v.IsSharable(server.state); !ok {
@@ -249,7 +249,7 @@ func readHttpServerArgs(ctx *core.Context, server *HttpServer, args ...core.Valu
 			handlerValProvided = true
 		case *core.Mapping:
 			if handlerValProvided {
-				argErr = core.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
+				argErr = commonfmt.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
 				return
 			}
 			if ok, expl := v.IsSharable(server.state); !ok {
@@ -261,7 +261,7 @@ func readHttpServerArgs(ctx *core.Context, server *HttpServer, args ...core.Valu
 			handlerValProvided = true
 		case *core.Object:
 			if handlerValProvided {
-				argErr = core.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
+				argErr = commonfmt.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
 				return
 			}
 			handlerValProvided = true
@@ -281,7 +281,7 @@ func readHttpServerArgs(ctx *core.Context, server *HttpServer, args ...core.Valu
 						e := it.Value(ctx)
 						if !isValidHandlerValue(e) {
 							s := fmt.Sprintf("%s is not a middleware", core.Stringify(e, ctx))
-							argErr = core.FmtUnexpectedElementInPropIterableOfArgX(propKey, HANDLING_ARG_NAME, s)
+							argErr = commonfmt.FmtUnexpectedElementInPropIterableOfArgX(propKey, HANDLING_ARG_NAME, s)
 							return
 						}
 
@@ -289,7 +289,7 @@ func readHttpServerArgs(ctx *core.Context, server *HttpServer, args ...core.Valu
 							psharable.Share(server.state)
 						} else {
 							s := fmt.Sprintf("%s is not sharable", core.Stringify(e, ctx))
-							argErr = core.FmtUnexpectedElementInPropIterableOfArgX(propKey, HANDLING_ARG_NAME, s)
+							argErr = commonfmt.FmtUnexpectedElementInPropIterableOfArgX(propKey, HANDLING_ARG_NAME, s)
 							return
 						}
 						middlewares = append(middlewares, e)
@@ -302,7 +302,7 @@ func readHttpServerArgs(ctx *core.Context, server *HttpServer, args ...core.Valu
 					if psharable, ok := propVal.(core.PotentiallySharable); ok && utils.Ret0(psharable.IsSharable(server.state)) {
 						psharable.Share(server.state)
 					} else {
-						argErr = core.FmtPropOfArgXShouldBeY(propKey, HANDLING_ARG_NAME, "sharable")
+						argErr = commonfmt.FmtPropOfArgXShouldBeY(propKey, HANDLING_ARG_NAME, "sharable")
 						return
 					}
 
@@ -334,7 +334,7 @@ func readHttpServerArgs(ctx *core.Context, server *HttpServer, args ...core.Valu
 			}
 
 			if userProvidedHandler == nil {
-				argErr = core.FmtMissingPropInArgX(HANDLING_DESC_ROUTING_PROPNAME, HANDLING_ARG_NAME)
+				argErr = commonfmt.FmtMissingPropInArgX(HANDLING_DESC_ROUTING_PROPNAME, HANDLING_ARG_NAME)
 			}
 		default:
 			argErr = fmt.Errorf("http.server: invalid argument of type %T", v)

@@ -3,9 +3,11 @@ package dom_ns
 import (
 	"bytes"
 	"fmt"
+
 	"io"
 	"sort"
 
+	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	_dom_symbolic "github.com/inoxlang/inox/internal/globals/dom_ns/symbolic"
@@ -65,7 +67,7 @@ func NewCSP(ctx *core.Context, desc *core.Object) (*ContentSecurityPolicy, error
 				val := it.Value(ctx)
 				s, ok := val.(core.Str)
 				if !ok {
-					return nil, core.FmtUnexpectedElementInPropIterableOfArgX(k, "description", core.Stringify(s, ctx))
+					return nil, commonfmt.FmtUnexpectedElementInPropIterableOfArgX(k, "description", core.Stringify(s, ctx))
 				}
 				directive.values = append(directive.values, CSPDirectiveValue{raw: string(s)})
 			}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
 )
 
@@ -15,10 +16,10 @@ func HttpGet(ctx *core.Context, u core.URL, args ...core.Value) (*HttpResponse, 
 	for _, arg := range args {
 		switch argVal := arg.(type) {
 		case core.URL:
-			return nil, core.FmtErrArgumentProvidedAtLeastTwice("url")
+			return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("url")
 		case core.Mimetype:
 			if contentType != "" {
-				return nil, core.FmtErrXProvidedAtLeastTwice("mime type")
+				return nil, commonfmt.FmtErrXProvidedAtLeastTwice("mime type")
 			}
 			contentType = argVal
 		case core.Option, core.QuantityRange:
@@ -57,7 +58,7 @@ func HttpRead(ctx *core.Context, u core.URL, args ...core.Value) (result core.Va
 		switch v := arg.(type) {
 		case core.Mimetype:
 			if contentType != "" {
-				finalErr = core.FmtErrXProvidedAtLeastTwice("content type")
+				finalErr = commonfmt.FmtErrXProvidedAtLeastTwice("content type")
 				return
 			}
 			contentType = v
@@ -116,7 +117,7 @@ func httpExists(ctx *core.Context, args ...core.Value) core.Bool {
 		switch a := arg.(type) {
 		case core.Host:
 			if url != "" {
-				panic(core.FmtErrArgumentProvidedAtLeastTwice("entity"))
+				panic(commonfmt.FmtErrArgumentProvidedAtLeastTwice("entity"))
 			}
 			if a.HasScheme() && !a.HasHttpScheme() {
 				panic(errors.New("only http(s) hosts are accepted"))
@@ -125,7 +126,7 @@ func httpExists(ctx *core.Context, args ...core.Value) core.Bool {
 			}
 		case core.URL:
 			if url != "" {
-				panic(core.FmtErrArgumentProvidedAtLeastTwice("entity"))
+				panic(commonfmt.FmtErrArgumentProvidedAtLeastTwice("entity"))
 			}
 			url = a
 		default:

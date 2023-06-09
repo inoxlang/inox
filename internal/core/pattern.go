@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/inoxlang/inox/internal/commonfmt"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
 
@@ -92,7 +93,7 @@ var (
 				switch v := val.(type) {
 				case *ObjectPattern:
 					if recordPattern != nil {
-						return nil, FmtErrArgumentProvidedAtLeastTwice("pattern")
+						return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("pattern")
 					}
 
 					recordPattern = &RecordPattern{
@@ -101,7 +102,7 @@ var (
 					}
 				case *RecordPattern:
 					if recordPattern != nil {
-						return nil, FmtErrArgumentProvidedAtLeastTwice("pattern")
+						return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("pattern")
 					}
 
 					recordPattern = v
@@ -119,13 +120,13 @@ var (
 				switch v := val.(type) {
 				case *symbolic.ObjectPattern:
 					if recordPattern != nil {
-						return nil, FmtErrArgumentProvidedAtLeastTwice("pattern")
+						return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("pattern")
 					}
 
 					recordPattern = v.ToRecordPattern()
 				case *symbolic.RecordPattern:
 					if recordPattern != nil {
-						return nil, FmtErrArgumentProvidedAtLeastTwice("pattern")
+						return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("pattern")
 					}
 
 					recordPattern = v
@@ -153,7 +154,7 @@ var (
 				switch v := val.(type) {
 				case Pattern:
 					if elemPattern != nil {
-						return nil, FmtErrArgumentProvidedAtLeastTwice("pattern")
+						return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("pattern")
 					}
 					elemPattern = v
 				default:
@@ -170,7 +171,7 @@ var (
 				switch v := val.(type) {
 				case symbolic.Pattern:
 					if elemPattern != nil {
-						return nil, FmtErrArgumentProvidedAtLeastTwice("pattern")
+						return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("pattern")
 					}
 					elemPattern = v
 				default:
@@ -220,7 +221,7 @@ var (
 				switch v := val.(type) {
 				case IntRange:
 					if intRangeProvided {
-						return nil, FmtErrArgumentProvidedAtLeastTwice("range")
+						return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("range")
 					}
 					intRange = v
 					intRangeProvided = true
@@ -335,12 +336,12 @@ var (
 				switch a := arg.(type) {
 				case Pattern:
 					if valuePattern != nil {
-						return nil, FmtErrArgumentProvidedAtLeastTwice("value pattern")
+						return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("value pattern")
 					}
 					valuePattern = a
 				default:
 					if valuePattern != nil {
-						return nil, FmtErrArgumentProvidedAtLeastTwice("value pattern")
+						return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("value pattern")
 					}
 					valuePattern = &ExactValuePattern{value: a}
 				}
@@ -354,12 +355,12 @@ var (
 				switch a := arg.(type) {
 				case symbolic.Pattern:
 					if valuePattern != nil {
-						return nil, FmtErrArgumentProvidedAtLeastTwice("value pattern")
+						return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("value pattern")
 					}
 					valuePattern = a
 				default:
 					if valuePattern != nil {
-						return nil, FmtErrArgumentProvidedAtLeastTwice("value pattern")
+						return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("value pattern")
 					}
 					p, err := symbolic.NewExactValuePattern(a)
 					if err != nil {
@@ -388,7 +389,7 @@ var (
 			case 2:
 			case 1:
 			default:
-				return nil, FmtErrNArgumentsExpected("1 or 2")
+				return nil, commonfmt.FmtErrNArgumentsExpected("1 or 2")
 			}
 
 			var kind MutationKind
@@ -421,7 +422,7 @@ var (
 			case 2:
 			case 1:
 			default:
-				return nil, FmtErrNArgumentsExpected("1 or 2")
+				return nil, commonfmt.FmtErrNArgumentsExpected("1 or 2")
 			}
 
 			switch a := args[0].(type) {
@@ -495,14 +496,14 @@ var (
 			var stringPattern StringPattern
 
 			if len(values) == 0 {
-				return nil, FmtMissingArgument("pattern")
+				return nil, commonfmt.FmtMissingArgument("pattern")
 			}
 
 			for _, val := range values {
 				switch v := val.(type) {
 				case StringPattern:
 					if stringPattern != nil {
-						return nil, FmtErrArgumentProvidedAtLeastTwice("pattern")
+						return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("pattern")
 					}
 
 					stringPattern = v
@@ -517,14 +518,14 @@ var (
 			var stringPattern symbolic.StringPatternElement
 
 			if len(values) == 0 {
-				return nil, FmtMissingArgument("pattern")
+				return nil, commonfmt.FmtMissingArgument("pattern")
 			}
 
 			for _, val := range values {
 				switch v := val.(type) {
 				case symbolic.StringPatternElement:
 					if stringPattern != nil {
-						return nil, FmtErrArgumentProvidedAtLeastTwice("pattern")
+						return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("pattern")
 					}
 
 					stringPattern = v
@@ -968,7 +969,7 @@ func NewListPattern(elementPatterns []Pattern) *ListPattern {
 	return &ListPattern{elementPatterns: elementPatterns}
 }
 
-func NewListPatternVariadic(elementPatterns... Pattern) *ListPattern {
+func NewListPatternVariadic(elementPatterns ...Pattern) *ListPattern {
 	if elementPatterns == nil {
 		elementPatterns = []Pattern{}
 	}

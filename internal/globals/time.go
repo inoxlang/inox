@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 )
@@ -31,7 +32,7 @@ func _now(ctx *core.Context, args ...core.Value) core.Value {
 		switch a := arg.(type) {
 		case core.Str:
 			if format != "" {
-				panic(core.FmtErrXProvidedAtLeastTwice("format string"))
+				panic(commonfmt.FmtErrXProvidedAtLeastTwice("format string"))
 			}
 			format = a.UnderlyingString()
 		default:

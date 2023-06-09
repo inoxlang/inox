@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/inoxlang/inox/internal/commonfmt"
 	parse "github.com/inoxlang/inox/internal/parse"
 	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
@@ -52,11 +53,11 @@ func (s *TestSuite) Run(ctx *Context, options ...Option) (*Routine, error) {
 		switch opt.Name {
 		case "timeout":
 			if timeout != 0 {
-				return nil, FmtErrOptionProvidedAtLeastTwice("timeout")
+				return nil, commonfmt.FmtErrOptionProvidedAtLeastTwice("timeout")
 			}
 			timeout = time.Duration(opt.Value.(Duration))
 		default:
-			return nil, FmtErrInvalidOptionName(opt.Name)
+			return nil, commonfmt.FmtErrInvalidOptionName(opt.Name)
 		}
 	}
 
@@ -222,11 +223,11 @@ func (s *TestCase) Run(ctx *Context, options ...Option) (*Routine, error) {
 		switch opt.Name {
 		case "timeout":
 			if timeout != 0 {
-				return nil, FmtErrOptionProvidedAtLeastTwice("timeout")
+				return nil, commonfmt.FmtErrOptionProvidedAtLeastTwice("timeout")
 			}
 			timeout = time.Duration(opt.Value.(Duration))
 		default:
-			return nil, FmtErrInvalidOptionName(opt.Name)
+			return nil, commonfmt.FmtErrInvalidOptionName(opt.Name)
 		}
 	}
 

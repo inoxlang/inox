@@ -11,6 +11,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/inoxlang/inox/internal/commonfmt"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -1593,7 +1594,7 @@ func getNewEffectiveLenRange(args []Value, originalRange IntRange) (intRange Int
 		switch a := arg.(type) {
 		case IntRange:
 			if found {
-				return IntRange{}, false, FmtErrArgumentProvidedAtLeastTwice("length range")
+				return IntRange{}, false, commonfmt.FmtErrArgumentProvidedAtLeastTwice("length range")
 			}
 			found = true
 			intRange = a

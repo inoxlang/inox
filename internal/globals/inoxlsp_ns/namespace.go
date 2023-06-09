@@ -4,6 +4,7 @@ import (
 	"errors"
 	"reflect"
 
+	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
@@ -75,7 +76,7 @@ func StartLspServer(ctx *core.Context, config *core.Object) error {
 	}
 
 	if onSessionHandler == nil {
-		return core.FmtMissingArgument("missing on-session handler function")
+		return commonfmt.FmtMissingArgument("missing on-session handler function")
 	}
 
 	return lsp.StartLSPServer(childCtx, lsp.LSPServerOptions{

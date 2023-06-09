@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
 )
 
@@ -27,22 +28,22 @@ func _httpPostPatch(ctx *core.Context, isPatch bool, args ...core.Value) (*HttpR
 		switch argVal := arg.(type) {
 		case core.URL:
 			if u != "" {
-				return nil, core.FmtErrArgumentProvidedAtLeastTwice("url")
+				return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("url")
 			}
 			u = argVal
 		case core.Mimetype:
 			if contentType != "" {
-				return nil, core.FmtErrArgumentProvidedAtLeastTwice("mime type")
+				return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("mime type")
 			}
 			contentType = argVal
 		case core.Readable:
 			if body != nil {
-				return nil, core.FmtErrArgumentProvidedAtLeastTwice("body")
+				return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("body")
 			}
 			body = argVal.Reader()
 		case *core.List:
 			if body != nil {
-				return nil, core.FmtErrArgumentProvidedAtLeastTwice("body")
+				return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("body")
 			}
 			jsonString := core.ToJSON(ctx, argVal)
 			body = strings.NewReader(string(jsonString))
@@ -51,7 +52,7 @@ func _httpPostPatch(ctx *core.Context, isPatch bool, args ...core.Value) (*HttpR
 				jsonString := core.ToJSON(ctx, argVal)
 				body = strings.NewReader(string(jsonString))
 			} else {
-				return nil, core.FmtErrArgumentProvidedAtLeastTwice("body")
+				return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("body")
 			}
 		case core.Option, core.QuantityRange:
 			requestOptionArgs = append(requestOptionArgs, argVal)
@@ -92,7 +93,7 @@ func HttpDelete(ctx *core.Context, args ...core.Value) (*HttpResponse, error) {
 		switch argVal := arg.(type) {
 		case core.URL:
 			if u != "" {
-				return nil, core.FmtErrArgumentProvidedAtLeastTwice("url")
+				return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("url")
 			}
 			u = argVal
 		case core.Option, core.QuantityRange:

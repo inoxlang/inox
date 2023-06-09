@@ -82,11 +82,11 @@ func NewShell(ctx *core.Context, configObj *core.Object) (*shell, error) {
 	}
 
 	if !configObj.HasProp(ctx, FG_COLOR_KEY) {
-		return nil, core.FmtMissingPropInArgX(FG_COLOR_KEY, CONFIG_ARGNAME)
+		return nil, commonfmt.FmtMissingPropInArgX(FG_COLOR_KEY, CONFIG_ARGNAME)
 	}
 
 	if !configObj.HasProp(ctx, BG_COLOR_KEY) {
-		return nil, core.FmtMissingPropInArgX(BG_COLOR_KEY, CONFIG_ARGNAME)
+		return nil, commonfmt.FmtMissingPropInArgX(BG_COLOR_KEY, CONFIG_ARGNAME)
 	}
 
 	shellCtx := ctx.BoundChild()

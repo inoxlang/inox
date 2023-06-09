@@ -18,10 +18,10 @@ func init() {
 		SymbolicValue: coll_symbolic.ANY_SET,
 		CallImpl: func(values []core.Value) (core.Pattern, error) {
 			if len(values) == 0 {
-				return nil, core.FmtMissingArgument("element pattern")
+				return nil, commonfmt.FmtMissingArgument("element pattern")
 			}
 			if len(values) == 1 {
-				return nil, core.FmtMissingArgument("uniqueness")
+				return nil, commonfmt.FmtMissingArgument("uniqueness")
 			}
 
 			elementPattern, ok := values[0].(core.Pattern)
@@ -46,10 +46,10 @@ func init() {
 		},
 		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error) {
 			if len(values) == 0 {
-				return nil, core.FmtMissingArgument("element pattern")
+				return nil, commonfmt.FmtMissingArgument("element pattern")
 			}
 			if len(values) == 1 {
-				return nil, core.FmtMissingArgument("uniqueness")
+				return nil, commonfmt.FmtMissingArgument("uniqueness")
 			}
 
 			elementPattern, ok := values[0].(symbolic.Pattern)

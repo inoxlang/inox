@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
 )
 
@@ -60,12 +61,12 @@ top:
 					return "", fmt.Errorf(TIMEOUT_INCONSISTENCY_ERROR)
 				}
 				if timeoutDuration != 0 {
-					return "", formatErr(core.FmtErrXProvidedAtLeastTwice("maximum duration"))
+					return "", formatErr(commonfmt.FmtErrXProvidedAtLeastTwice("maximum duration"))
 				}
 				timeoutDuration = end
 			case core.ByteCount:
 				if maxMemory != 0 {
-					return "", formatErr(core.FmtErrXProvidedAtLeastTwice("maximum memory"))
+					return "", formatErr(commonfmt.FmtErrXProvidedAtLeastTwice("maximum memory"))
 				}
 				maxMemory = end
 			default:

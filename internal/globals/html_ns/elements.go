@@ -168,11 +168,11 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) (finalNode *HTM
 					panic(core.FmtUnexpectedElementInPropIterableShowVal(elem, CHILDREN_KEY))
 				}
 				if child.node.Parent != nil {
-					panic(core.FmtUnexpectedElementInPropIterable("children", S_NODE_ALREADY_HAS_A_PARENT))
+					panic(commonfmt.FmtUnexpectedElementInPropIterable("children", S_NODE_ALREADY_HAS_A_PARENT))
 				}
 
 				if child.node.NextSibling != nil || child.node.PrevSibling != nil {
-					panic(core.FmtUnexpectedElementInPropIterable("children", S_NODE_ALREADY_HAS_SIBLINGS))
+					panic(commonfmt.FmtUnexpectedElementInPropIterable("children", S_NODE_ALREADY_HAS_SIBLINGS))
 				}
 
 				addChild(child)
@@ -205,7 +205,7 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) (finalNode *HTM
 			v := desc.Prop(ctx, k)
 
 			if childrenAlreadyProvided {
-				panic(core.FmtUnexpectedElementAtIndeKeyXofArg(k, "description", S_CHILDREN_ALREADY_PROVIDED_WITH_CHILDREN_PROP))
+				panic(commonfmt.FmtUnexpectedElementAtIndeKeyXofArg(k, "description", S_CHILDREN_ALREADY_PROVIDED_WITH_CHILDREN_PROP))
 			}
 
 			strLike, ok := v.(core.StringLike)
@@ -220,11 +220,11 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) (finalNode *HTM
 			}
 
 			if childNode.node.Parent != nil {
-				panic(core.FmtUnexpectedElementAtIndeKeyXofArg(k, "description", S_NODE_ALREADY_HAS_A_PARENT))
+				panic(commonfmt.FmtUnexpectedElementAtIndeKeyXofArg(k, "description", S_NODE_ALREADY_HAS_A_PARENT))
 			}
 
 			if childNode.node.NextSibling != nil || childNode.node.PrevSibling != nil {
-				panic(core.FmtUnexpectedElementAtIndeKeyXofArg(k, "description", S_NODE_ALREADY_HAS_SIBLINGS))
+				panic(commonfmt.FmtUnexpectedElementAtIndeKeyXofArg(k, "description", S_NODE_ALREADY_HAS_SIBLINGS))
 			}
 
 			addChild(childNode)

@@ -8,7 +8,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/miekg/dns"
 )
@@ -36,7 +36,7 @@ func websocketConnect(ctx *Context, u URL, options ...Option) (*WebsocketConnect
 		case "insecure":
 			insecure = bool(opt.Value.(Bool))
 		default:
-			return nil, core.FmtErrInvalidOptionName(opt.Name)
+			return nil, commonfmt.FmtErrInvalidOptionName(opt.Name)
 		}
 	}
 
