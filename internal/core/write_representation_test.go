@@ -996,6 +996,21 @@ func TestNamedSegmentPathPatternRepresentation(t *testing.T) {
 	//TODO: finish test
 }
 
+func TestIntRangePatternRepresentation(t *testing.T) {
+	intRangePattern := NewIncludedEndIntRangePattern(1, 2)
+
+	assert.True(t, intRangePattern.HasRepresentation(nil, nil))
+
+	expectedRepr := `%int(1..2)`
+	assert.Equal(t, expectedRepr, getRepr(t, intRangePattern, reprTestCtx))
+	node := assertParseExpression(t, expectedRepr)
+
+	state := NewTreeWalkState(NewContext(ContextConfig{}))
+
+	state.Global.Ctx.AddNamedPattern("int", INT_PATTERN)
+	assert.Equal(t, intRangePattern, utils.Must(TreeWalkEval(node, state)))
+}
+
 func assertParseExpression(t *testing.T, s string) parse.Node {
 	n, ok := parse.ParseExpression(s)
 	assert.True(t, ok, "failed to parsed '"+s+"'")

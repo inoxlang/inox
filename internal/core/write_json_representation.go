@@ -831,14 +831,6 @@ func (patt RuneRangeStringPattern) WriteJSONRepresentation(ctx *Context, w io.Wr
 	return ErrNoRepresentation
 }
 
-func (*IntRangePattern) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (patt *IntRangePattern) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
 func (DynamicStringPatternElement) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
 	return false
 }

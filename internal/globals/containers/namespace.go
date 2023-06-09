@@ -16,7 +16,7 @@ func init() {
 		Name:          "Set",
 		Type:          reflect.TypeOf((*Set)(nil)),
 		SymbolicValue: coll_symbolic.ANY_SET,
-		CallImpl: func(values []core.Value) (core.Pattern, error) {
+		CallImpl: func(typePattern *core.TypePattern, values []core.Value) (core.Pattern, error) {
 			if len(values) == 0 {
 				return nil, commonfmt.FmtMissingArgument("element pattern")
 			}

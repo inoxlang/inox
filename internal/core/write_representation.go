@@ -102,6 +102,60 @@ func (n NoReprMixin) WriteJSONRepresentation(ctx *Context, w io.Writer, encounte
 	return ErrNoRepresentation
 }
 
+type CallBasedPatternReprMixin struct {
+	callee Pattern
+	params []Value
+}
+
+func (m CallBasedPatternReprMixin) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+	for _, p := range m.params {
+		if p.IsMutable() || !p.HasRepresentation(encountered, config) {
+			return false
+		}
+	}
+	return true
+}
+
+func (m CallBasedPatternReprMixin) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+	if encountered != nil && !m.HasRepresentation(encountered, config) {
+		return ErrNoRepresentation
+	}
+	err := m.callee.WriteRepresentation(ctx, w, encountered, config)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write([]byte{'('})
+	if err != nil {
+		return err
+	}
+
+	for i, p := range m.params {
+		if i != 0 {
+			_, err = w.Write([]byte{','})
+			if err != nil {
+				return err
+			}
+		}
+		err := p.WriteRepresentation(ctx, w, encountered, config)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = w.Write([]byte{')'})
+	return err
+}
+
+func (m CallBasedPatternReprMixin) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+	return false
+}
+
+func (m CallBasedPatternReprMixin) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+	return ErrNoRepresentation
+}
+
+// implementations
+
 func (n AstNode) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
 	return false
 }
@@ -1304,14 +1358,6 @@ func (RuneRangeStringPattern) HasRepresentation(encountered map[uintptr]int, con
 }
 
 func (patt RuneRangeStringPattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (*IntRangePattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (patt *IntRangePattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
 	return ErrNoRepresentation
 }
 
