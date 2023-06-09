@@ -32,7 +32,7 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usi
 		ParsingCompilationContext: sessionCtx,
 		ParentContext:             nil,
 		Out:                       io.Discard,
-		IgnoreNonCriticalIssues:   true,
+		DevMode:                   true,
 		AllowMissingEnvVars:       true,
 		ScriptContextFileSystem:   fls,
 		PreinitFilesystem:         fls,
@@ -109,6 +109,10 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usi
 				Severity: &errSeverity,
 				Range:    _range,
 			})
+		}
+
+		if state.FirstDatabaseOpeningError != nil {
+			session.Notify(NewShowMessage(defines.MessageTypeWarning, "failed to open at least one database: "+err.Error()))
 		}
 
 		if state.StaticCheckData != nil {
