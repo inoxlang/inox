@@ -55,6 +55,11 @@ const (
 	rstateUdataHiearchyEntryAfterVal
 	rstateUdataHiearchyEntryClosingBrace
 
+	//pattern call
+	rstatePatternCallOpeningParen
+	rstatePatternCallComma
+	rstatePatternCallClosingParen
+
 	rstatePropertyName
 
 	//email addresses
@@ -63,12 +68,14 @@ const (
 
 	//numbers, quantities
 	rstateInt
-	rstateFloatDot
+	rstateIntDot
 	rstateFloatDecimalPart
 	rstateFloatE
 	rstateFloatExponentNumber
 	rstatePortNumber
 	rstatePortSchemeName
+	rstateIntDotDot
+	rstateIntInclusiveRange
 
 	//dates
 	rstateDate
@@ -180,6 +187,7 @@ const (
 	ListPatternVal
 	UdataVal
 	UdataHiearchyEntryVal
+	PatternCallVal
 )
 
 type InReprCall int
@@ -219,6 +227,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 		byteSliceDigits          []byte
 		quantityValues           []float64
 		quantityUnits            []string
+		patternCallArguments     [][]Value
 		lastCompoundValue        Value
 		i                        = -1
 		c                        = byte(0)
@@ -278,6 +287,17 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				break
 			}
 			v, index = _parseFloatRepr(atomBytes)
+		case rstateIntInclusiveRange:
+			lowerBoundBytes, upperBoundBytes, _ := bytes.Cut(atomBytes, []byte{'.', '.'})
+			lowerBound, index := _parseIntRepr(lowerBoundBytes)
+			if index >= 0 {
+				break
+			}
+			upperBound, index := _parseIntRepr(upperBoundBytes)
+			if index >= 0 {
+				break
+			}
+			v = NewIncludedEndIntRange(int64(lowerBound), int64(upperBound))
 		case rstatePortNumber, rstatePortSchemeName:
 			v, index = _parsePortRepr(atomBytes)
 		case rstateIdentLike:
@@ -547,6 +567,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 		switch state {
 		case rstateInt,
 			rstateFloatDecimalPart, rstateFloatExponentNumber,
+			rstateIntInclusiveRange,
 			rstatePortNumber, rstatePortSchemeName,
 			rstateFlagLitName, rstateClosingDoubleQuotes, rstateClosingSimpleQuote, rstateIdentLike,
 			rstateByteSliceClosingBracket,
@@ -583,6 +604,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 		case rstateObjClosingBrace, rstateRecordClosingBrace, rstateDictClosingBrace, rstateListClosingBracket, rstateTupleClosingBracket,
 			rstateObjPatternClosingBrace,
 			rstateListPatternClosingBracket,
+			rstatePatternCallClosingParen,
 			rstateKeyListClosingBrace,
 			rstateUdataClosingBrace, rstateUdataHiearchyEntryClosingBrace:
 			defer func() {
@@ -721,6 +743,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				rstateListOpeningBracket, rstateListComma,
 				rstateTupleOpeningBracket, rstateTupleComma,
 				rstateListPatternOpeningBracket, rstateListPatternComma,
+				rstatePatternCallOpeningParen, rstatePatternCallComma,
 				rstatePatternConvOpeningParen,
 				rstateUdata, rstateUdataOpeningBrace, rstateUdataBodyComma,
 				rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBodyComma, rstateUdataHiearchyEntryClosingBrace:
@@ -739,10 +762,12 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				atomStartIndex = i - 1
 				state = rstateInt
 				prevAtomState = -1
-			case rstateFloatDot:
+			case rstateIntDot:
 				state = rstateFloatDecimalPart
 			case rstateFloatE:
 				state = rstateFloatExponentNumber
+			case rstateIntDotDot:
+				state = rstateIntInclusiveRange
 			case rstateColon:
 				atomStartIndex = i - 1
 				state = rstatePortNumber
@@ -759,6 +784,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 			case rstateInt, rstateIdentLike,
 				rstateByteSliceBytes,
 				rstateFloatDecimalPart, rstateFloatExponentNumber,
+				rstateIntInclusiveRange,
 				rstatePortNumber, rstatePortSchemeName,
 				rstateString,
 				rstateUnquotedPathPatternLike,
@@ -782,6 +808,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				rstateListOpeningBracket, rstateListComma,
 				rstateTupleOpeningBracket, rstateTupleComma,
 				rstateListPatternOpeningBracket, rstateListPatternComma,
+				rstatePatternCallOpeningParen, rstatePatternCallComma,
 				rstatePatternConvOpeningParen:
 
 				if atomEndIndex >= 0 {
@@ -819,6 +846,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				rstateListOpeningBracket, rstateListComma,
 				rstateTupleOpeningBracket, rstateTupleComma,
 				rstateListPatternOpeningBracket, rstateListPatternComma,
+				rstatePatternCallOpeningParen, rstatePatternCallComma,
 				rstatePatternConvOpeningParen,
 				rstateUdata, rstateUdataOpeningBrace, rstateUdataBodyComma, rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBodyComma:
 
@@ -851,6 +879,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				rstateListOpeningBracket, rstateListComma,
 				rstateTupleOpeningBracket, rstateTupleComma,
 				rstateListPatternOpeningBracket, rstateListPatternComma,
+				rstatePatternCallOpeningParen, rstatePatternCallComma,
 				rstatePatternConvOpeningParen,
 				rstateUdata, rstateUdataOpeningBrace, rstateUdataBodyComma, rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBodyComma:
 
@@ -862,7 +891,9 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				state = rstateDot
 				prevAtomState = -1
 			case rstateInt:
-				state = rstateFloatDot
+				state = rstateIntDot
+			case rstateIntDot:
+				state = rstateIntDotDot
 			case rstateDot:
 				state = rstateTwoDots
 			case rstatePercent:
@@ -890,6 +921,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				rstateListOpeningBracket, rstateListComma,
 				rstateTupleOpeningBracket, rstateTupleComma,
 				rstateListPatternOpeningBracket, rstateListPatternComma,
+				rstatePatternCallOpeningParen, rstatePatternCallComma,
 				rstatePatternConvOpeningParen,
 				rstateUdata, rstateUdataOpeningBrace, rstateUdataBodyComma, rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBodyComma:
 
@@ -940,6 +972,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				rstateListOpeningBracket, rstateListComma,
 				rstateTupleOpeningBracket, rstateTupleComma,
 				rstateListPatternOpeningBracket, rstateListPatternComma,
+				rstatePatternCallOpeningParen, rstatePatternCallComma,
 				rstatePatternConvOpeningParen,
 				rstateUdata, rstateUdataOpeningBrace, rstateUdataBodyComma, rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBodyComma:
 				if atomEndIndex >= 0 {
@@ -999,6 +1032,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				rstateListOpeningBracket, rstateListComma,
 				rstateTupleOpeningBracket, rstateTupleComma,
 				rstateListPatternOpeningBracket, rstateListPatternComma,
+				rstatePatternCallOpeningParen, rstatePatternCallComma,
 				rstatePatternConvOpeningParen,
 				rstateUdataOpeningBrace, rstateUdataBodyComma, rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBodyComma:
 
@@ -1318,6 +1352,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				rstateListOpeningBracket, rstateListComma,
 				rstateTupleOpeningBracket, rstateTupleComma,
 				rstateListPatternOpeningBracket, rstateListPatternComma,
+				rstatePatternCallOpeningParen, rstatePatternCallComma,
 				rstatePatternConvOpeningParen:
 
 				if inPattern[len(inPattern)-1] {
@@ -1511,7 +1546,8 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 		case ',':
 			switch state {
 			case rstateHostLike, rstateURLPatternNoPostSchemeSlash,
-				rstateObjectComma, rstateRecordComma, rstateObjectPatternComma, rstateDictComma, rstateListComma, rstateTupleComma, rstateKeyListComma,
+				rstateObjectComma, rstateRecordComma, rstateObjectPatternComma, rstateDictComma, rstateListComma,
+				rstateTupleComma, rstateKeyListComma, rstatePatternCallComma,
 				rstateUdataBodyComma, rstateUdataHiearchyEntryBodyComma:
 				continue
 			case rstateUdataHiearchyEntryClosingBrace:
@@ -1644,6 +1680,18 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				}
 				state = rstateListPatternComma
 				continue
+			case PatternCallVal:
+				if val, errIndex, ok := getVal(i); ok {
+					if errIndex >= 0 {
+						return nil, errIndex
+					}
+
+					patternCallArguments[len(patternCallArguments)-1] = append(patternCallArguments[len(patternCallArguments)-1], val)
+					state = rstatePatternCallComma
+					continue
+				}
+				state = rstatePatternCallComma
+				continue
 			case UdataHiearchyEntryVal:
 				entry := compoundValueStack[stackIndex].(*UDataHiearchyEntry)
 
@@ -1709,6 +1757,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				rstateListOpeningBracket, rstateListComma,
 				rstateTupleOpeningBracket, rstateTupleComma,
 				rstateListPatternOpeningBracket, rstateListPatternComma,
+				rstatePatternCallOpeningParen, rstatePatternCallComma,
 				rstatePatternConvOpeningParen,
 				rstateUdata, rstateUdataOpeningBrace, rstateUdataBodyComma, rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBodyComma:
 
@@ -1821,6 +1870,17 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 					return nil, i
 				}
 			case rstateTupleGeneralElementPercent:
+			case rstatePercentAlpha:
+				stackIndex++
+				stack[stackIndex] = PatternCallVal
+				pattern, index, ok := getVal(i)
+				if !ok {
+					return nil, index
+				}
+				compoundValueStack[stackIndex] = pattern.(Pattern)
+				state = rstatePatternCallOpeningParen
+				patternCallArguments = append(patternCallArguments, nil)
+				continue
 			default:
 				return nil, i
 			}
@@ -1832,6 +1892,31 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 			if inPattern[len(inPattern)-1] {
 				return nil, i
 			}
+
+			if stack[stackIndex] == PatternCallVal {
+				if state != rstatePatternCallComma {
+					if val, errIndex, ok := getVal(i); ok {
+						if errIndex >= 0 {
+							return nil, errIndex
+						}
+						patternCallArguments[len(patternCallArguments)-1] = append(patternCallArguments[len(patternCallArguments)-1], val)
+					}
+				}
+
+				state = rstatePatternCallClosingParen
+				pattern := compoundValueStack[stackIndex].(Pattern)
+				result, err := pattern.Call(patternCallArguments[len(patternCallArguments)-1])
+				if err != nil {
+					return nil, i
+				}
+
+				lastCompoundValue = result
+				stack[stackIndex] = NoVal
+				stackIndex--
+				patternCallArguments = patternCallArguments[:len(patternCallArguments)-1]
+				continue
+			}
+
 			switch v := compoundValueStack[stackIndex].(type) {
 			case *ObjectPattern:
 			case *ListPattern:
@@ -1857,7 +1942,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 			case rstateDot, rstateTwoDots,
 				rstatePercent, rstatePercentAlpha, rstatePercentDot, rstatePercentTwoDots,
 				rstateSingleDash, rstateDoubleDash,
-				rstateFloatDot, rstateFloatE:
+				rstateIntDot, rstateFloatE:
 				return nil, i
 			case rstateUdataHiearchyEntryAfterVal:
 				continue
@@ -2042,6 +2127,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 					rstateListOpeningBracket, rstateListComma,
 					rstateTupleOpeningBracket, rstateTupleComma,
 					rstateListPatternOpeningBracket, rstateListPatternComma,
+					rstatePatternCallOpeningParen, rstatePatternCallComma,
 					rstatePatternConvOpeningParen,
 					rstateKeyListOpeningBrace, rstateKeyListComma,
 					rstateUdata, rstateUdataOpeningBrace, rstateUdataBodyComma, rstateUdataHiearchyEntryOpeningBrace, rstateUdataHiearchyEntryBodyComma:
@@ -2163,6 +2249,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 	switch state {
 	case rstateInt,
 		rstateFloatDecimalPart, rstateFloatExponentNumber,
+		rstateIntInclusiveRange,
 		rstatePortNumber, rstatePortSchemeName,
 		rstateFlagLitName, rstateClosingDoubleQuotes, rstateClosingSimpleQuote, rstateIdentLike,
 		rstateByteSliceClosingBracket,
@@ -2202,6 +2289,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 	case rstateObjClosingBrace, rstateRecordClosingBrace, rstateDictClosingBrace, rstateListClosingBracket, rstateTupleClosingBracket,
 		rstateObjPatternClosingBrace,
 		rstateListPatternClosingBracket,
+		rstatePatternCallClosingParen,
 		rstateKeyListClosingBrace,
 		rstateUdataClosingBrace:
 		return lastCompoundValue, -1
@@ -2211,12 +2299,12 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 
 }
 
-func _parseIntRepr(b []byte) (val Value, errorIndex int) {
+func _parseIntRepr(b []byte) (val Int, errorIndex int) {
 	i, err := strconv.ParseInt(string(b), 10, 64)
 	if err == nil {
 		return Int(i), -1
 	}
-	return nil, len(b)
+	return -1, len(b)
 }
 
 func _parseFloatRepr(b []byte) (val Value, errorIndex int) {

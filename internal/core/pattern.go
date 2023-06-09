@@ -234,6 +234,10 @@ var (
 				}
 			}
 
+			if !intRangeProvided {
+				return nil, commonfmt.FmtMissingArgument("range")
+			}
+
 			return &IntRangePattern{
 				intRange: intRange,
 				CallBasedPatternReprMixin: CallBasedPatternReprMixin{

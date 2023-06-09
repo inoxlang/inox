@@ -20,7 +20,6 @@ func TestParseRepr(t *testing.T) {
 		errIndex int
 		value    Value
 	}{
-
 		//udata
 		{
 			"udata 0 {}", -1, &UData{Root: Int(0)},
@@ -346,6 +345,10 @@ func TestParseRepr(t *testing.T) {
 		{`10x/`, 4, nil},
 		{`10x/1`, 4, nil},
 		{`10x/a1`, 5, nil},
+
+		{"1..2", -1, NewIncludedEndIntRange(1, 2)},
+		{"1..23", -1, NewIncludedEndIntRange(1, 23)},
+		{"12..34", -1, NewIncludedEndIntRange(12, 34)},
 
 		//runes
 		{`'a'`, -1, Rune('a')},
@@ -849,6 +852,10 @@ func TestParseRepr(t *testing.T) {
 		{":{/`[a]`:0}", -1, NewDictionary(ValMap{"/`[a]`": Int(0)})},
 		{":{/`a}`:0}", -1, NewDictionary(ValMap{"/`a}`": Int(0)})},
 		{":{/`a}`:0}", -1, NewDictionary(ValMap{"/`a}`": Int(0)})},
+
+		//pattern calls
+		{"%int()", 5, nil},
+		{"%int(1..2)", -1, NewIncludedEndIntRangePattern(1, 2)},
 
 		//weird cases
 		{`/ a`, 1, nil},
