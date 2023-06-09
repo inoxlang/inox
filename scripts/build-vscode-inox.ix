@@ -1,0 +1,30 @@
+# this script generates ./vscode-inox/vscode-inox.wasm
+
+manifest {
+    permissions: {
+        use: {
+            commands: {
+                "go": {}
+            }
+        }
+    }
+}
+
+print "build vscode-inox"
+
+
+build_cmd_env = {
+    GOARCH: "wasm"
+    GOOS: "js"
+}
+
+assign result err = ex(
+    ..200s --env=build_cmd_env 
+    #go #build -x -v -o ./vscode-inox/vscode-inox.wasm ./vscode-inox/main.go
+)
+
+
+if err? {
+    print "failed:\n"   
+}
+print $result
