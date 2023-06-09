@@ -37,7 +37,7 @@ type ScriptPreparationArgs struct {
 	ParsingCompilationContext *core.Context
 	ParentContext             *core.Context
 	UseContextAsParent        bool
-	IgnoreNonCriticalIssues   bool
+	DevMode                   bool
 	AllowMissingEnvVars       bool
 	FullAccessToDatabases     bool
 
@@ -66,7 +66,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	module, parsingErr := core.ParseLocalModule(core.LocalModuleParsingConfig{
 		ModuleFilepath:                      args.Fpath,
 		Context:                             args.ParsingCompilationContext,
-		RecoverFromNonExistingIncludedFiles: args.IgnoreNonCriticalIssues,
+		RecoverFromNonExistingIncludedFiles: args.DevMode,
 	})
 
 	mod = module
@@ -97,8 +97,8 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			PreinitFilesystem:     args.PreinitFilesystem,
 			DefaultLimitations:    default_state.GetDefaultScriptLimitations(),
 			AddDefaultPermissions: true,
-			IgnoreUnknownSections: args.IgnoreNonCriticalIssues,
-			IgnoreConstDeclErrors: args.IgnoreNonCriticalIssues,
+			IgnoreUnknownSections: args.DevMode,
+			IgnoreConstDeclErrors: args.DevMode,
 		})
 
 		if manifest == nil {
@@ -139,6 +139,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	//connect to databases
 	//TODO: disconnect if connection still not used after a few minutes
 
+	var dbOpeningError error
 	dbs := map[string]*core.DatabaseIL{}
 	for _, config := range manifest.Databases {
 		if host, ok := config.Resource.(core.Host); ok {
@@ -158,8 +159,14 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			FullAccess:     args.FullAccessToDatabases,
 		})
 		if err != nil {
-			ctx.Cancel()
-			return nil, nil, nil, fmt.Errorf("failed to open the '%s' database: %w", config.Name, err)
+			err = fmt.Errorf("failed to open the '%s' database: %w", config.Name, err)
+			if !args.DevMode {
+				ctx.Cancel()
+				return nil, nil, nil, err
+			}
+			dbOpeningError = err
+			//TODO: use cached schema
+			db = core.NewFailedToOpenDatabase()
 		}
 		dbs[config.Name] = core.WrapDatabase(db)
 	}
@@ -182,6 +189,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	state.Module = mod
 	state.PrenitStaticCheckErrors = preinitStaticCheckErrors
 	state.MainPreinitError = preinitErr
+	state.FirstDatabaseOpeningError = dbOpeningError
 	state.Databases = dbs
 
 	//pass patterns & host aliases of the preinit state to the state
@@ -306,8 +314,10 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			finalErr = err_
 		case staticCheckErr != nil:
 			finalErr = staticCheckErr
-		case finalErr == nil && modArgsError != nil:
+		case modArgsError != nil:
 			finalErr = modArgsError
+		case dbOpeningError != nil:
+			finalErr = dbOpeningError
 		}
 	}
 

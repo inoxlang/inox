@@ -32,10 +32,11 @@ type GlobalState struct {
 	Logger                           zerolog.Logger                                                  //nil by default
 
 	//errors & check data
-	PrenitStaticCheckErrors []*StaticCheckError
-	MainPreinitError        error
-	StaticCheckData         *StaticCheckData
-	SymbolicData            *SymbolicData
+	PrenitStaticCheckErrors   []*StaticCheckError
+	MainPreinitError          error
+	FirstDatabaseOpeningError error
+	StaticCheckData           *StaticCheckData
+	SymbolicData              *SymbolicData
 
 	NotClonableMixin
 	NoReprMixin

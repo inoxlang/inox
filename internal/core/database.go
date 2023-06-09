@@ -17,7 +17,8 @@ var (
 
 	DATABASE_PROPNAMES = []string{"update_schema", "close", "schema"}
 
-	_ Value = (*DatabaseIL)(nil)
+	_ Value    = (*DatabaseIL)(nil)
+	_ Database = (*FailedToOpenDatabase)(nil)
 )
 
 type DatabaseIL struct {
@@ -133,4 +134,32 @@ func (*DatabaseIL) SetProp(ctx *Context, name string, value Value) error {
 
 func (db *DatabaseIL) PropertyNames(ctx *Context) []string {
 	return db.propertyNames
+}
+
+type FailedToOpenDatabase struct {
+	resource SchemeHolder
+}
+
+func NewFailedToOpenDatabase() *FailedToOpenDatabase {
+	return &FailedToOpenDatabase{}
+}
+
+func (db *FailedToOpenDatabase) Resource() SchemeHolder {
+	return db.resource
+}
+
+func (db *FailedToOpenDatabase) Schema() *ObjectPattern {
+	return EMPTY_INEXACT_OBJECT_PATTERN
+}
+
+func (db *FailedToOpenDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern) error {
+	return ErrNotImplemented
+}
+
+func (db *FailedToOpenDatabase) TopLevelEntities() map[string]Value {
+	return nil
+}
+
+func (db *FailedToOpenDatabase) Close(ctx *Context) error {
+	return ErrNotImplemented
 }
