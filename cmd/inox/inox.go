@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
+	"github.com/rs/zerolog"
 
 	"github.com/inoxlang/inox/internal/config"
 
@@ -201,6 +203,8 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			return
 		}
 
+		var out io.Writer
+
 		if host != "" {
 			u, err := url.Parse(host)
 			if err != nil {
@@ -215,6 +219,15 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 				return
 			}
 			opts.Websocket = &lsp.WebsocketOptions{Addr: u.Host}
+
+			out = os.Stdout //we can log to stdout since we will not be in Stdio mode
+		} else {
+			f, err := os.OpenFile("/tmp/.inox-lsp.debug.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o600)
+			if err != nil {
+				log.Panicln(err)
+			}
+			out = f
+			defer f.Close()
 		}
 
 		perms := []core.Permission{
@@ -231,6 +244,10 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			Permissions: perms,
 			Filesystem:  filesystem,
 		})
+
+		state := core.NewGlobalState(ctx)
+		state.Out = out
+		state.Logger = zerolog.New(out)
 
 		if err := lsp.StartLSPServer(ctx, opts); err != nil {
 			fmt.Fprintln(errW, "failed to start LSP server:", err)

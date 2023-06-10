@@ -10,6 +10,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
+	"github.com/rs/zerolog"
 
 	lsp "github.com/inoxlang/inox/internal/lsp"
 	"github.com/inoxlang/inox/internal/utils"
@@ -65,16 +66,20 @@ func main() {
 
 	fmt.Println(OUT_PREFIX, "start server")
 
-	go lsp.StartLSPServer(ctx, lsp.LSPServerOptions{
+	serverCtx := ctx.BoundChild()
+	serverState := core.NewGlobalState(serverCtx)
+	serverState.Out = utils.FnWriter{
+		WriteFn: func(p []byte) (n int, err error) {
+			fmt.Println(OUT_PREFIX, utils.BytesAsString(p))
+			return len(p), nil
+		},
+	}
+	serverState.Logger = zerolog.New(serverState.Out)
+
+	go lsp.StartLSPServer(serverCtx, lsp.LSPServerOptions{
 		InternalStdio: &lsp.InternalStdio{
 			StdioInput:  lspInputWriter,
 			StdioOutput: lspOuput,
-			LogOutput: utils.FnWriter{
-				WriteFn: func(p []byte) (n int, err error) {
-					fmt.Println(OUT_PREFIX, utils.BytesAsString(p))
-					return len(p), nil
-				},
-			},
 		},
 	})
 

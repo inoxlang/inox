@@ -19,6 +19,8 @@ type Options struct {
 	StdioInput  io.Reader
 	StdioOutput io.Writer
 
+	MessageReaderWriter jsonrpc.MessageReaderWriter
+
 	TextDocumentSync                 defines.TextDocumentSyncKind
 	CompletionProvider               *defines.CompletionOptions
 	HoverProvider                    *defines.HoverOptions

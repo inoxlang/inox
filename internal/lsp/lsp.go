@@ -4,13 +4,10 @@ import (
 	"errors"
 	"io"
 	"log"
-	"os"
 	"runtime/debug"
 
 	core "github.com/inoxlang/inox/internal/core"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-	"github.com/inoxlang/inox/internal/utils"
-	"github.com/rs/zerolog"
 
 	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
 	"github.com/inoxlang/inox/internal/lsp/logs"
@@ -34,9 +31,10 @@ var HOVER_PRETTY_PRINT_CONFIG = &pprint.PrettyPrintConfig{
 }
 
 type LSPServerOptions struct {
-	InternalStdio    *InternalStdio
-	Websocket        *WebsocketOptions
-	UseContextLogger bool
+	InternalStdio       *InternalStdio
+	Websocket           *WebsocketOptions
+	MessageReaderWriter jsonrpc.MessageReaderWriter
+	UseContextLogger    bool
 
 	//if true the LSP server provides a remote filesystem to the client.
 	InoxFS bool
@@ -47,7 +45,6 @@ type LSPServerOptions struct {
 type InternalStdio struct {
 	StdioInput  io.Reader
 	StdioOutput io.Writer
-	LogOutput   io.Writer
 }
 
 type WebsocketOptions struct {
@@ -59,22 +56,7 @@ type WebsocketOptions struct {
 func StartLSPServer(ctx *core.Context, opts LSPServerOptions) (finalErr error) {
 	//setup logs
 
-	var logOut io.Writer
-	var logFile *os.File
-
-	if opts.InternalStdio != nil {
-		logOut = opts.InternalStdio.LogOutput
-	} else if opts.UseContextLogger {
-		logOut = ctx.Logger().With().Str(core.SOURCE_LOG_FIELD_NAME, LSP_LOG_SRC).Logger()
-	} else {
-		f, err := os.OpenFile("/tmp/.inox-lsp.debug.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o600)
-		if err != nil {
-			log.Panicln(err)
-		}
-		logOut = f
-		logFile = f
-	}
-
+	logOut := ctx.Logger().With().Str(core.SOURCE_LOG_FIELD_NAME, LSP_LOG_SRC).Logger()
 	logger := log.New(logOut, "", 0)
 	logs.Init(logger)
 
@@ -86,10 +68,6 @@ func StartLSPServer(ctx *core.Context, opts LSPServerOptions) (finalErr error) {
 				finalErr = err
 			}
 			logs.Println(e, "at", string(debug.Stack()))
-		}
-
-		if logFile != nil {
-			logFile.Close()
 		}
 	}()
 
@@ -122,16 +100,20 @@ func StartLSPServer(ctx *core.Context, opts LSPServerOptions) (finalErr error) {
 		options.WebsocketCertificateKey = opts.Websocket.CertificatePrivateKey
 	}
 
+	if opts.MessageReaderWriter != nil {
+		if opts.InternalStdio != nil {
+			panic(errors.New("invalid LSP options: MessageReaderWriter AND STDIO both set"))
+		}
+		if opts.Websocket != nil {
+			panic(errors.New("invalid LSP options: MessageReaderWriter AND Websocket both set"))
+		}
+
+		options.MessageReaderWriter = opts.MessageReaderWriter
+	}
+
 	server := lsp.NewServer(ctx, options)
-
-	state := core.NewGlobalState(ctx)
-	state.Logger = zerolog.New(utils.FnWriter{
-		WriteFn: func(p []byte) (n int, err error) {
-			logs.Println(utils.BytesAsString(p))
-			return len(p), nil
-		},
-	})
-
 	registerHandlers(server, opts.InoxFS)
+
+	logs.Println("LSP server configured, start listening")
 	return server.Run()
 }

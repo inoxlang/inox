@@ -60,7 +60,12 @@ func (s *Server) OnCustom(info jsonrpc.MethodInfo) {
 func (s *Server) run() error {
 	addr := s.Opt.Address
 	netType := s.Opt.Network
-	if netType != "" {
+
+	if s.Opt.MessageReaderWriter != nil {
+		logs.Println("use custom message reader+writer.")
+
+		s.rpcServer.MsgConnComeIn(s.Opt.MessageReaderWriter, func(session *jsonrpc.Session) {})
+	} else if netType != "" {
 		switch netType {
 		case "wss":
 			return s.startWebsocketServer(addr)

@@ -5,6 +5,10 @@ import (
 	"io"
 )
 
+var (
+	_ MessageReaderWriter = (*FnMessageReaderWriter)(nil)
+)
+
 type ReaderWriter interface {
 	io.Reader
 	io.Writer
@@ -19,6 +23,23 @@ type MessageReaderWriter interface {
 	WriteMessage(msg []byte) error
 
 	io.Closer
+}
+
+type FnMessageReaderWriter struct {
+	ReadMessageFn  func() (msg []byte, err error)
+	WriteMessageFn func(msg []byte) error
+	CloseFn        func() error
+}
+
+func (rw FnMessageReaderWriter) ReadMessage() (msg []byte, err error) {
+	return rw.ReadMessageFn()
+}
+func (rw FnMessageReaderWriter) WriteMessage(msg []byte) error {
+	return rw.WriteMessageFn(msg)
+}
+
+func (rw FnMessageReaderWriter) Close() error {
+	return rw.CloseFn()
 }
 
 type CloserReader interface {
