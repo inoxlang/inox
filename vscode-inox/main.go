@@ -17,7 +17,7 @@ import (
 const (
 	LSP_INPUT_BUFFER_SIZE  = 5_000_000
 	LSP_OUTPUT_BUFFER_SIZE = 5_000_000
-	OUT_PREFIX             = "[vscode-inox module]"
+	OUT_PREFIX             = "[vscode-inox]"
 )
 
 var printDebug *js.Value
@@ -61,6 +61,7 @@ func main() {
 	lspOuput := core.NewRingBuffer(ctx, LSP_OUTPUT_BUFFER_SIZE)
 	registerCallbacks(lspInputWriter, lspOuput)
 
+	fmt.Println(OUT_PREFIX, "start LSP server")
 	go lsp.StartLSPServer(ctx, lsp.LSPServerOptions{
 		InternalStdio: &lsp.InternalStdio{
 			StdioInput:  lspInputWriter,
@@ -75,6 +76,8 @@ func main() {
 			},
 		},
 	})
+
+	fmt.Println(OUT_PREFIX, "end of main() reached: block with channel")
 
 	channel := make(chan struct{})
 	<-channel
@@ -108,7 +111,7 @@ func registerCallbacks(lspInput io.ReadWriter, lspOutput *core.RingBuffer) {
 
 	exports.Set("setup", js.FuncOf(func(this js.Value, args []js.Value) any {
 		if printDebug != nil {
-			printDebug.Invoke(OUT_PREFIX, "setup() called by JS")
+			printDebug.Invoke(OUT_PREFIX, "setup() called again by JS")
 		}
 
 		IWD := args[0].Get(core.INITIAL_WORKING_DIR_VARNAME).String()
@@ -123,4 +126,5 @@ func registerCallbacks(lspInput io.ReadWriter, lspOutput *core.RingBuffer) {
 		return js.ValueOf(string(b))
 	}))
 
+	fmt.Println(OUT_PREFIX, "handlers registered")
 }
