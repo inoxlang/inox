@@ -2,7 +2,7 @@
 //This file contains a slightly modified version.
 //The primary change is the introduction of a filesystem parameter when creating the database.
 
-package local_db_ns
+package filekv
 
 import (
 	"bufio"

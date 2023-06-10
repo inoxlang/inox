@@ -1,4 +1,4 @@
-package local_db_ns
+package filekv
 
 import (
 	"bytes"

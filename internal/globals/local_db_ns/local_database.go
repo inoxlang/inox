@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/filekv"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
@@ -24,7 +25,6 @@ var (
 	ErrCannotResolveDatabase  = errors.New("cannot resolve database")
 	ErrCannotFindDatabaseHost = errors.New("cannot find corresponding host of database")
 	ErrInvalidDatabaseHost    = errors.New("host of database is invalid")
-	ErrInvalidPathKey         = errors.New("invalid path used as local database key")
 	ErrDatabaseNotSupported   = errors.New("database is not supported")
 
 	LOCAL_DB_PROPNAMES = []string{"update_schema", "close"}
@@ -36,8 +36,8 @@ var (
 type LocalDatabase struct {
 	host     Host
 	dirPath  core.Path
-	mainKV   *SingleFileKV
-	schemaKV *SingleFileKV
+	mainKV   *filekv.SingleFileKV
+	schemaKV *filekv.SingleFileKV
 	schema   *core.ObjectPattern
 	logger   zerolog.Logger
 }
@@ -120,7 +120,7 @@ func openLocalDatabaseWithConfig(ctx *core.Context, config LocalDatabaseConfig) 
 	}
 
 	if !config.Restricted {
-		mainKv, err := openSingleFileKV(KvStoreConfig{
+		mainKv, err := filekv.OpenSingleFileKV(filekv.KvStoreConfig{
 			Host:       config.Host,
 			Path:       mainKVPath,
 			InMemory:   config.InMemory,
@@ -133,12 +133,12 @@ func openLocalDatabaseWithConfig(ctx *core.Context, config LocalDatabaseConfig) 
 
 		localDB.mainKV = mainKv
 	} else {
-		localDB.mainKV, _ = openSingleFileKV(KvStoreConfig{
+		localDB.mainKV, _ = filekv.OpenSingleFileKV(filekv.KvStoreConfig{
 			InMemory: true,
 		})
 	}
 
-	schemaKv, err := openSingleFileKV(KvStoreConfig{
+	schemaKv, err := filekv.OpenSingleFileKV(filekv.KvStoreConfig{
 		Host:       config.Host,
 		Path:       schemaKVPath,
 		InMemory:   config.InMemory,
@@ -151,7 +151,7 @@ func openLocalDatabaseWithConfig(ctx *core.Context, config LocalDatabaseConfig) 
 
 	localDB.schemaKV = schemaKv
 
-	schema, ok, err := schemaKv.get(ctx, "/", localDB)
+	schema, ok, err := schemaKv.Get(ctx, "/", localDB)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read schema: %w", err)
 	}
@@ -188,29 +188,29 @@ func (ldb *LocalDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern) erro
 	if ldb.schema.Equal(ctx, schema, map[uintptr]uintptr{}, 0) {
 		return nil
 	}
-	ldb.schemaKV.set(ctx, "/", schema, ldb)
+	ldb.schemaKV.Set(ctx, "/", schema, ldb)
 	ldb.schema = schema
 	return nil
 }
 
 func (ldb *LocalDatabase) Close(ctx *core.Context) error {
 	if ldb.mainKV != nil {
-		ldb.mainKV.close(ctx)
+		ldb.mainKV.Close(ctx)
 	}
-	ldb.schemaKV.close(ctx)
+	ldb.schemaKV.Close(ctx)
 	return nil
 }
 
 func (ldb *LocalDatabase) Get(ctx *Context, key Path) (Value, Bool) {
-	return utils.Must2(ldb.mainKV.get(ctx, key, ldb))
+	return utils.Must2(ldb.mainKV.Get(ctx, key, ldb))
 }
 
 func (ldb *LocalDatabase) Has(ctx *Context, key Path) Bool {
-	return ldb.mainKV.has(ctx, key, ldb)
+	return ldb.mainKV.Has(ctx, key, ldb)
 }
 
 func (ldb *LocalDatabase) Set(ctx *Context, key Path, value Value) {
-	ldb.mainKV.set(ctx, key, value, ldb)
+	ldb.mainKV.Set(ctx, key, value, ldb)
 }
 
 func (ldb *LocalDatabase) Prop(ctx *core.Context, name string) Value {

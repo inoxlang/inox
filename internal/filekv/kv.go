@@ -1,6 +1,7 @@
-package local_db_ns
+package filekv
 
 import (
+	"errors"
 	"sync"
 
 	"github.com/inoxlang/inox/internal/afs"
@@ -13,24 +14,28 @@ const (
 	KV_STORE_SRC_NAME = "/kv"
 )
 
+var (
+	ErrInvalidPathKey = errors.New("invalid path used as local database key")
+)
+
 // thin wrapper around a buntdb database.
 type SingleFileKV struct {
 	db   *buntDB
 	path core.Path
-	host Host
+	host core.Host
 
 	transactionMapLock sync.Mutex
 	transactions       map[*core.Transaction]*Tx
 }
 
 type KvStoreConfig struct {
-	Host       Host
-	Path       Path
+	Host       core.Host
+	Path       core.Path
 	InMemory   bool
 	Filesystem afs.Filesystem
 }
 
-func openSingleFileKV(config KvStoreConfig) (_ *SingleFileKV, finalErr error) {
+func OpenSingleFileKV(config KvStoreConfig) (_ *SingleFileKV, finalErr error) {
 	path := string(config.Path)
 	if config.InMemory {
 		path = ":memory:"
@@ -54,7 +59,7 @@ func openSingleFileKV(config KvStoreConfig) (_ *SingleFileKV, finalErr error) {
 	}, nil
 }
 
-func (kv *SingleFileKV) close(ctx *core.Context) {
+func (kv *SingleFileKV) Close(ctx *core.Context) {
 	logger := ctx.Logger().With().Str(core.SOURCE_LOG_FIELD_NAME, KV_STORE_SRC_NAME).Logger()
 	//before closing the buntdb database all the transactions must be closed or a deadlock will occur.
 
@@ -89,7 +94,7 @@ func (kv *SingleFileKV) isClosed() bool {
 	return kv.db.isClosed()
 }
 
-func (kv *SingleFileKV) get(ctx *Context, key Path, db any) (Value, Bool, error) {
+func (kv *SingleFileKV) Get(ctx *core.Context, key core.Path, db any) (core.Value, core.Bool, error) {
 	if kv.isClosed() {
 		return nil, false, errDatabaseClosed
 	}
@@ -100,7 +105,7 @@ func (kv *SingleFileKV) get(ctx *Context, key Path, db any) (Value, Bool, error)
 
 	var (
 		valueFound = core.True
-		val        Value
+		val        core.Value
 		tx         = ctx.GetTx()
 	)
 
@@ -183,7 +188,7 @@ func (kv *SingleFileKV) getCreateDatabaseTxn(db any, tx *core.Transaction) *Tx {
 	return dbTx
 }
 
-func (kv *SingleFileKV) has(ctx *Context, key Path, db any) Bool {
+func (kv *SingleFileKV) Has(ctx *core.Context, key core.Path, db any) core.Bool {
 	if kv.isClosed() {
 		panic(errDatabaseClosed)
 	}
@@ -226,7 +231,7 @@ func (kv *SingleFileKV) has(ctx *Context, key Path, db any) Bool {
 	return valueFound
 }
 
-func (kv *SingleFileKV) set(ctx *Context, key Path, value Value, db any) {
+func (kv *SingleFileKV) Set(ctx *core.Context, key core.Path, value core.Value, db any) {
 
 	if kv.db.isClosed() {
 		panic(errDatabaseClosed)
