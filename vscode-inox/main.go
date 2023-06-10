@@ -25,6 +25,7 @@ const (
 )
 
 var printDebug *js.Value
+var printTrace *js.Value
 
 func main() {
 	ctx := core.NewContext(core.ContextConfig{})
@@ -76,10 +77,10 @@ func main() {
 			ReadMessageFn: func() (msg []byte, err error) {
 				s, ok := <-inputMessageChannel
 				if !ok {
-					printDebug.Invoke(OUT_PREFIX, "input message channel is closed")
+					printTrace.Invoke(OUT_PREFIX, "input message channel is closed")
 					return nil, io.EOF
 				}
-				printDebug.Invoke(OUT_PREFIX, fmt.Sprintf("%d-byte message read from input message channel", len(s)))
+				printTrace.Invoke(OUT_PREFIX, fmt.Sprintf("%d-byte message read from input message channel", len(s)))
 
 				return []byte(s), nil
 			},
@@ -130,8 +131,8 @@ func registerCallbacks(inputMessageChannel chan string, outputMessageChannel cha
 	exports := js.Global().Get("exports")
 
 	exports.Set("write_lsp_message", js.FuncOf(func(this js.Value, args []js.Value) any {
-		if printDebug != nil {
-			printDebug.Invoke(OUT_PREFIX, "write_lsp_message() called by JS")
+		if printTrace != nil {
+			printTrace.Invoke(OUT_PREFIX, "write_lsp_message() called by JS")
 		}
 
 		s := args[0].String()
@@ -140,8 +141,8 @@ func registerCallbacks(inputMessageChannel chan string, outputMessageChannel cha
 	}))
 
 	exports.Set("read_lsp_message", js.FuncOf(func(this js.Value, args []js.Value) any {
-		if printDebug != nil {
-			printDebug.Invoke(OUT_PREFIX, "read_lsp_message() called by JS")
+		if printTrace != nil {
+			printTrace.Invoke(OUT_PREFIX, "read_lsp_message() called by JS")
 		}
 
 		select {
@@ -163,6 +164,9 @@ func registerCallbacks(inputMessageChannel chan string, outputMessageChannel cha
 		IWD := args[0].Get(core.INITIAL_WORKING_DIR_VARNAME).String()
 		debug := args[0].Get("print_debug")
 		printDebug = &debug
+
+		trace := args[0].Get("print_trace")
+		printTrace = &trace
 
 		core.SetInitialWorkingDir(func() (string, error) {
 			return IWD, nil
