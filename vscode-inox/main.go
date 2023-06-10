@@ -39,67 +39,62 @@ func main() {
 	}
 	state.Logger = zerolog.New(state.Out)
 
-	pauseChan := make(chan struct{})
 	setupDoneChan := make(chan struct{}, 1)
+	inputMessageChannel := make(chan string, 10)
+	outputMessageChannel := make(chan string, 10)
 
-	lspInput := core.NewRingBuffer(ctx, LSP_INPUT_BUFFER_SIZE)
-	lspInputWriter := utils.FnReaderWriter{
-		WriteFn: func(p []byte) (n int, err error) {
-			if printDebug != nil {
-				printDebug.Invoke(OUT_PREFIX, "resume reading because we are going to write")
-			}
-			select {
-			case <-pauseChan:
-			case <-time.After(100 * time.Millisecond):
-			}
-			if printDebug != nil {
-				printDebug.Invoke(OUT_PREFIX, "write LSP input")
-			}
-			return lspInput.Write(p)
-		},
-		ReadFn: func(p []byte) (n int, err error) {
-			if lspInput.ReadableCount(ctx) == 0 {
-				if printDebug != nil {
-					printDebug.Invoke(OUT_PREFIX, "pause read call because there is nothing to read")
-				}
-
-				pauseChan <- struct{}{}
-			}
-
-			if printDebug != nil {
-				printDebug.Invoke(OUT_PREFIX, "read LSP input")
-			}
-
-			return lspInput.Read(p)
-		},
-	}
-
-	lspOuput := core.NewRingBuffer(ctx, LSP_OUTPUT_BUFFER_SIZE)
-	registerCallbacks(lspInputWriter, lspOuput, setupDoneChan)
+	registerCallbacks(inputMessageChannel, outputMessageChannel, setupDoneChan)
 
 	fmt.Println(OUT_PREFIX, "wait for setup() to be called by JS")
 	<-setupDoneChan
 	close(setupDoneChan)
 
-	fmt.Println(OUT_PREFIX, "start LSP server")
+	printDebug.Invoke(OUT_PREFIX, "create context & state for LSP server")
 
-	serverCtx := ctx.BoundChild()
+	serverCtx := core.NewContext(core.ContextConfig{
+		Permissions: []core.Permission{
+			core.CreateFsReadPerm(core.INITIAL_WORKING_DIR_PATH_PATTERN),
+		},
+	})
+	{
+		serverState := core.NewGlobalState(serverCtx)
+		serverState.Out = utils.FnWriter{
+			WriteFn: func(p []byte) (n int, err error) {
+				printDebug.Invoke(OUT_PREFIX, string(p))
+				return len(p), nil
+			},
+		}
+		serverState.Logger = zerolog.New(state.Out)
+	}
+
+	printDebug.Invoke(OUT_PREFIX, "start LSP server")
+
 	go lsp.StartLSPServer(serverCtx, lsp.LSPServerOptions{
-		InoxFS: true,
-		InternalStdio: &lsp.InternalStdio{
-			StdioInput:  lspInputWriter,
-			StdioOutput: lspOuput,
-			LogOutput: utils.FnWriter{
-				WriteFn: func(p []byte) (n int, err error) {
-					if printDebug != nil {
-						printDebug.Invoke(OUT_PREFIX, utils.BytesAsString(p))
-					}
-					return len(p), nil
-				},
+		InoxFS:           true,
+		UseContextLogger: true,
+		MessageReaderWriter: jsonrpc.FnMessageReaderWriter{
+			ReadMessageFn: func() (msg []byte, err error) {
+				s, ok := <-inputMessageChannel
+				if !ok {
+					printDebug.Invoke(OUT_PREFIX, "input message channel is closed")
+					return nil, io.EOF
+				}
+				printDebug.Invoke(OUT_PREFIX, fmt.Sprintf("%d-byte message read from input message channel", len(s)))
+
+				return []byte(s), nil
+			},
+			WriteMessageFn: func(msg []byte) error {
+				outputMessageChannel <- string(msg)
+				return nil
+			},
+			CloseFn: func() error {
+				close(inputMessageChannel)
+				close(outputMessageChannel)
+				return nil
 			},
 		},
 		OnSession: func(rpcCtx *core.Context, s *jsonrpc.Session) error {
-			printDebug.Invoke("new LSP session")
+			printDebug.Invoke(OUT_PREFIX, "new LSP session")
 
 			mainFs := fs_ns.NewMemFilesystem(lsp.DEFAULT_MAX_IN_MEM_FS_STORAGE_SIZE)
 			fls := lsp.NewFilesystem(mainFs, nil)
@@ -120,6 +115,7 @@ func main() {
 			tempState.Out = state.Out
 			s.SetContextOnce(sessionCtx)
 
+			printDebug.Invoke(OUT_PREFIX, "context of LSP session created")
 			return nil
 		},
 	})
@@ -130,30 +126,30 @@ func main() {
 	<-channel
 }
 
-func registerCallbacks(lspInput io.ReadWriter, lspOutput *core.RingBuffer, setupDoneChan chan struct{}) {
+func registerCallbacks(inputMessageChannel chan string, outputMessageChannel chan string, setupDoneChan chan struct{}) {
 	exports := js.Global().Get("exports")
 
-	exports.Set("write_lsp_input", js.FuncOf(func(this js.Value, args []js.Value) any {
+	exports.Set("write_lsp_message", js.FuncOf(func(this js.Value, args []js.Value) any {
 		if printDebug != nil {
-			printDebug.Invoke(OUT_PREFIX, "write_lsp_input() called by JS")
+			printDebug.Invoke(OUT_PREFIX, "write_lsp_message() called by JS")
 		}
 
 		s := args[0].String()
-		lspInput.Write(utils.StringAsBytes(s))
+		inputMessageChannel <- s
 		return js.ValueOf(nil)
 	}))
 
-	exports.Set("read_lsp_output", js.FuncOf(func(this js.Value, args []js.Value) any {
+	exports.Set("read_lsp_message", js.FuncOf(func(this js.Value, args []js.Value) any {
 		if printDebug != nil {
-			printDebug.Invoke(OUT_PREFIX, "read_lsp_output() called by JS")
+			printDebug.Invoke(OUT_PREFIX, "read_lsp_message() called by JS")
 		}
 
-		b := make([]byte, LSP_OUTPUT_BUFFER_SIZE)
-		n, err := lspOutput.Read(b)
-		if err != nil && printDebug != nil {
-			printDebug.Invoke(OUT_PREFIX, "read_lsp_output():", err.Error())
+		select {
+		case msg := <-outputMessageChannel:
+			return js.ValueOf(msg)
+		case <-time.After(100 * time.Millisecond):
+			return js.ValueOf(nil)
 		}
-		return js.ValueOf(string(b[:n]))
 	}))
 
 	exports.Set("setup", js.FuncOf(func(this js.Value, args []js.Value) any {
@@ -172,11 +168,9 @@ func registerCallbacks(lspInput io.ReadWriter, lspOutput *core.RingBuffer, setup
 			return IWD, nil
 		})
 
-		b := lspOutput.ReadableBytesCopy()
-
 		setupDoneChan <- struct{}{}
 
-		return js.ValueOf(string(b))
+		return js.ValueOf("ok")
 	}))
 
 	fmt.Println(OUT_PREFIX, "handlers registered")
