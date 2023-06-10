@@ -3,7 +3,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"syscall/js"
 	"time"
@@ -24,7 +23,6 @@ const (
 var printDebug *js.Value
 
 func main() {
-	fmt.Println(OUT_PREFIX, "start")
 	ctx := core.NewContext(core.ContextConfig{})
 	pauseChan := make(chan struct{})
 
@@ -63,22 +61,20 @@ func main() {
 	lspOuput := core.NewRingBuffer(ctx, LSP_OUTPUT_BUFFER_SIZE)
 	registerCallbacks(lspInputWriter, lspOuput)
 
-	fmt.Println(OUT_PREFIX, "start server")
-
 	go lsp.StartLSPServer(ctx, lsp.LSPServerOptions{
 		InternalStdio: &lsp.InternalStdio{
 			StdioInput:  lspInputWriter,
 			StdioOutput: lspOuput,
 			LogOutput: utils.FnWriter{
 				WriteFn: func(p []byte) (n int, err error) {
-					fmt.Println(OUT_PREFIX, utils.BytesAsString(p))
+					if printDebug != nil {
+						printDebug.Invoke(OUT_PREFIX, utils.BytesAsString(p))
+					}
 					return len(p), nil
 				},
 			},
 		},
 	})
-
-	fmt.Println(OUT_PREFIX, "end of main: block with channel")
 
 	channel := make(chan struct{})
 	<-channel
@@ -127,5 +123,4 @@ func registerCallbacks(lspInput io.ReadWriter, lspOutput *core.RingBuffer) {
 		return js.ValueOf(string(b))
 	}))
 
-	fmt.Println(OUT_PREFIX, "exports registered")
 }
