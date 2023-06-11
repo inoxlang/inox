@@ -293,7 +293,7 @@ func (fs *MetaFilesystem) ReadDir(path string) ([]os.FileInfo, error) {
 		entries = append(entries, stat)
 	}
 
-	sort.Sort(ByName(entries))
+	sort.Sort(SortableFileInfo(entries))
 
 	return entries, nil
 }

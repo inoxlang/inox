@@ -19,10 +19,6 @@ import (
 
 const separator = filepath.Separator
 
-var (
-	errNotLink = errors.New("not a link")
-)
-
 type MemFilesystem struct {
 	s         *inMemStorage
 	tempCount int
@@ -138,12 +134,6 @@ func (fs *MemFilesystem) Lstat(filename string) (os.FileInfo, error) {
 	return f.Stat()
 }
 
-type ByName []os.FileInfo
-
-func (a ByName) Len() int           { return len(a) }
-func (a ByName) Less(i, j int) bool { return a[i].Name() < a[j].Name() }
-func (a ByName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-
 func (fs *MemFilesystem) ReadDir(path string) ([]os.FileInfo, error) {
 	//TODO: return error if not a dir
 
@@ -159,7 +149,7 @@ func (fs *MemFilesystem) ReadDir(path string) ([]os.FileInfo, error) {
 		entries = append(entries, fi)
 	}
 
-	sort.Sort(ByName(entries))
+	sort.Sort(SortableFileInfo(entries))
 
 	return entries, nil
 }
