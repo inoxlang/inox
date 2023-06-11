@@ -2,6 +2,8 @@ package filekv
 
 import (
 	"errors"
+	"fmt"
+	"runtime/debug"
 	"sync"
 
 	"github.com/inoxlang/inox/internal/afs"
@@ -195,7 +197,7 @@ func (kv *SingleFileKV) ForEach(ctx *core.Context, fn func(key core.Path, getVal
 	}
 }
 
-func (kv *SingleFileKV) UpdateNoCtx(fn func(dbTx *DatabaseTxIL) error, db any) error {
+func (kv *SingleFileKV) UpdateNoCtx(fn func(dbTx *DatabaseTx) error) error {
 	if kv.isClosed() {
 		return errDatabaseClosed
 	}
@@ -204,7 +206,17 @@ func (kv *SingleFileKV) UpdateNoCtx(fn func(dbTx *DatabaseTxIL) error, db any) e
 		return errors.New("iteration function is nil")
 	}
 
-	return kv.db.Update(func(dbTx *Tx) error {
+	return kv.db.Update(func(dbTx *Tx) (finalErr error) {
+		defer func() {
+			e := recover()
+			switch v := e.(type) {
+			case error:
+				finalErr = fmt.Errorf("%w %s", v, string(debug.Stack()))
+			default:
+				finalErr = fmt.Errorf("panic: %#v %s", e, string(debug.Stack()))
+			case nil:
+			}
+		}()
 		return fn(NewDatabaseTxIL(dbTx))
 	})
 }
@@ -315,7 +327,7 @@ func (kv *SingleFileKV) Delete(ctx *core.Context, key core.Path, db any) {
 	}
 }
 
-func (kv *SingleFileKV) getCreateDatabaseTxn(db any, tx *core.Transaction) *DatabaseTxIL {
+func (kv *SingleFileKV) getCreateDatabaseTxn(db any, tx *core.Transaction) *DatabaseTx {
 	//if there is already a database transaction in the core.Transaction we return it.
 	v, err := tx.GetValue(db)
 	if err != nil {
@@ -364,17 +376,17 @@ func makeTxEndcallbackFn(dbtx *Tx, tx *core.Transaction, kv *SingleFileKV) func(
 	}
 }
 
-type DatabaseTxIL struct {
+type DatabaseTx struct {
 	tx *Tx
 }
 
-func NewDatabaseTxIL(tx *Tx) *DatabaseTxIL {
-	return &DatabaseTxIL{
+func NewDatabaseTxIL(tx *Tx) *DatabaseTx {
+	return &DatabaseTx{
 		tx: tx,
 	}
 }
 
-func (tx *DatabaseTxIL) Get(ctx *core.Context, key core.Path) (result core.Value, valueFound core.Bool, finalErr error) {
+func (tx *DatabaseTx) Get(ctx *core.Context, key core.Path) (result core.Value, valueFound core.Bool, finalErr error) {
 	item, err := tx.tx.Get(string(key))
 	if err == errNotFound {
 		valueFound = false
@@ -392,14 +404,14 @@ func (tx *DatabaseTxIL) Get(ctx *core.Context, key core.Path) (result core.Value
 	return
 }
 
-func (tx *DatabaseTxIL) Set(ctx *core.Context, key core.Path, value core.Value) error {
+func (tx *DatabaseTx) Set(ctx *core.Context, key core.Path, value core.Value) error {
 	repr := core.GetRepresentation(value, ctx)
 	_, _, err := tx.tx.Set(string(key), string(repr), nil)
 
 	return err
 }
 
-func (tx *DatabaseTxIL) Delete(ctx *core.Context, key core.Path) error {
+func (tx *DatabaseTx) Delete(ctx *core.Context, key core.Path) error {
 	_, err := tx.tx.Delete(string(key))
 	return err
 }
