@@ -155,37 +155,51 @@ func (kv *SingleFileKV) Get(ctx *core.Context, key core.Path, db any) (core.Valu
 	return val, valueFound, nil
 }
 
-func (kv *SingleFileKV) getCreateDatabaseTxn(db any, tx *core.Transaction) *Tx {
-	//if there is already a database transaction in the core.Transaction we return it.
-	v, err := tx.GetValue(db)
-	if err != nil {
-		panic(err)
-	}
-	dbTx, ok := v.(*Tx)
-
-	if ok {
-		return dbTx
+// ForEach calls a function for each item in the database, the provided getVal function should not be stored as it only
+// returns the value at the time of the iteration.
+func (kv *SingleFileKV) ForEach(ctx *core.Context, fn func(key core.Path, getVal func() core.Value) error, db any) error {
+	if kv.isClosed() {
+		return errDatabaseClosed
 	}
 
-	//begin a new database transaction & add it to the core.Transaction.
-	dbTx, err = kv.db.Begin(true)
-	if err != nil {
-		panic(err)
-	}
-	if err = tx.SetValue(db, dbTx); err != nil {
-		panic(err)
+	if fn == nil {
+		return errors.New("iteration function is nil")
 	}
 
-	//add core.Transaction to KV.
-	kv.transactionMapLock.Lock()
-	kv.transactions[tx] = dbTx
-	kv.transactionMapLock.Unlock()
+	tx := ctx.GetTx()
 
-	if err = tx.OnEnd(db, makeTxEndcallbackFn(dbTx, tx, kv)); err != nil {
-		panic(err)
+	handleItem := func(key, value string) (cont bool) {
+		if key == "" || key[0] != '/' {
+			return true
+		}
+
+		defer func() {
+			if recover() != nil {
+				cont = false
+			}
+		}()
+
+		path := core.PathFrom(key)
+		getVal := func() core.Value {
+			return utils.Must(core.ParseRepr(ctx, utils.StringAsBytes(value)))
+		}
+
+		err := fn(path, getVal)
+		return err == nil
 	}
 
-	return dbTx
+	iterWithTx := func(dbTx *Tx) error {
+		return dbTx.Ascend("", func(key, value string) bool {
+			return handleItem(key, value)
+		})
+	}
+
+	if tx == nil {
+		return kv.db.View(iterWithTx)
+	} else {
+		dbTx := kv.getCreateDatabaseTxn(db, tx)
+		return iterWithTx(dbTx)
+	}
 }
 
 func (kv *SingleFileKV) Has(ctx *core.Context, key core.Path, db any) core.Bool {
@@ -263,6 +277,71 @@ func (kv *SingleFileKV) Set(ctx *core.Context, key core.Path, value core.Value, 
 		}
 
 	}
+}
+
+func (kv *SingleFileKV) Delete(ctx *core.Context, key core.Path, db any) {
+
+	if kv.db.isClosed() {
+		panic(errDatabaseClosed)
+	}
+
+	if !key.IsAbsolute() {
+		panic(ErrInvalidPathKey)
+	}
+
+	tx := ctx.GetTx()
+
+	if tx == nil {
+		err := kv.db.Update(func(dbTx *Tx) error {
+			_, err := dbTx.Delete(string(key))
+			return err
+		})
+
+		if err != nil {
+			panic(err)
+		}
+
+	} else {
+		dbTx := kv.getCreateDatabaseTxn(db, tx)
+
+		_, err := dbTx.Delete(string(key))
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func (kv *SingleFileKV) getCreateDatabaseTxn(db any, tx *core.Transaction) *Tx {
+	//if there is already a database transaction in the core.Transaction we return it.
+	v, err := tx.GetValue(db)
+	if err != nil {
+		panic(err)
+	}
+	dbTx, ok := v.(*Tx)
+
+	if ok {
+		return dbTx
+	}
+
+	//begin a new database transaction & add it to the core.Transaction.
+	dbTx, err = kv.db.Begin(true)
+	if err != nil {
+		panic(err)
+	}
+	if err = tx.SetValue(db, dbTx); err != nil {
+		panic(err)
+	}
+
+	//add core.Transaction to KV.
+	kv.transactionMapLock.Lock()
+	kv.transactions[tx] = dbTx
+	kv.transactionMapLock.Unlock()
+
+	if err = tx.OnEnd(db, makeTxEndcallbackFn(dbTx, tx, kv)); err != nil {
+		panic(err)
+	}
+
+	return dbTx
 }
 
 func makeTxEndcallbackFn(dbtx *Tx, tx *core.Transaction, kv *SingleFileKV) func(t *core.Transaction, success bool) {
