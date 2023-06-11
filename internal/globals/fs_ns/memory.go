@@ -123,8 +123,10 @@ func (fs *MemFilesystem) Stat(filename string) (os.FileInfo, error) {
 	// the name of the file should always the name of the stated file, so we
 	// overwrite the Stat returned from the storage with it, since the
 	// filename may belong to a link.
-	fi.(*memFileInfo).name = filepath.Base(filename)
-	return fi, nil
+
+	coreFileInfo := fi.(*core.FileInfo)
+	coreFileInfo.Name_ = filepath.Base(filename)
+	return coreFileInfo, nil
 }
 
 func (fs *MemFilesystem) Lstat(filename string) (os.FileInfo, error) {
@@ -332,13 +334,14 @@ func (f *inMemfile) Duplicate(filename string, mode os.FileMode, flag int) billy
 }
 
 func (f *inMemfile) Stat() (os.FileInfo, error) {
-	return &memFileInfo{
-		name: f.Name(),
-		mode: f.mode,
-		size: f.content.Len(),
-
-		creationTime:     f.content.creationTime,
-		modificationTime: f.content.ModifTime(),
+	//a pointer is returned because we need
+	return core.FileInfo{
+		Name_:           f.name,
+		Mode_:           core.FileMode(f.mode),
+		Size_:           core.ByteCount(f.content.Len()),
+		ModTime_:        core.Date(f.content.ModifTime()),
+		HasCreationTime: true,
+		CreationTime_:   core.Date(f.content.creationTime),
 	}, nil
 }
 
@@ -349,38 +352,6 @@ func (f *inMemfile) Lock() error {
 
 // Unlock is a no-op in memfs.
 func (f *inMemfile) Unlock() error {
-	return nil
-}
-
-type memFileInfo struct {
-	creationTime     time.Time
-	modificationTime time.Time
-	name             string
-	size             int
-	mode             os.FileMode
-}
-
-func (fi *memFileInfo) Name() string {
-	return fi.name
-}
-
-func (fi *memFileInfo) Size() int64 {
-	return int64(fi.size)
-}
-
-func (fi *memFileInfo) Mode() os.FileMode {
-	return fi.mode
-}
-
-func (*memFileInfo) ModTime() time.Time {
-	return time.Now()
-}
-
-func (fi *memFileInfo) IsDir() bool {
-	return fi.mode.IsDir()
-}
-
-func (*memFileInfo) Sys() interface{} {
 	return nil
 }
 

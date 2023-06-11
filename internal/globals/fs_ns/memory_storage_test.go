@@ -162,6 +162,7 @@ func TestMemoryStorage(t *testing.T) {
 			}()
 		}
 
+		//TODO: add assertions
 		wg.Wait()
 	})
 

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/djherbis/times"
+	"github.com/inoxlang/inox/internal/core"
 )
 
 var (
@@ -16,8 +17,14 @@ var (
 func GetCreationAndModifTime(i fs.FileInfo) (time.Time, time.Time, error) {
 	if i.Sys() == nil {
 		switch info := i.(type) {
-		case *memFileInfo:
-			return info.creationTime, info.modificationTime, nil
+		case core.ExtendedFileInfo:
+			creationTime, ok := info.CreationTime()
+
+			if !ok {
+				return time.Time{}, time.Time{}, ErrTimeInfoNotAvailable
+			}
+
+			return creationTime, info.ModTime(), nil
 		default:
 			return time.Time{}, time.Time{}, ErrTimeInfoNotAvailable
 		}

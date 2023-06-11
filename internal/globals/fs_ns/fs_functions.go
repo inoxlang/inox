@@ -730,7 +730,7 @@ func makeFileInfo(info fs.FileInfo, pth string, fls afs.Filesystem) core.FileInf
 		pth = core.AppendTrailingSlashIfNotPresent(pth)
 	}
 	return core.FileInfo{
-		Name_:    core.Str(info.Name()),
+		Name_:    info.Name(),
 		AbsPath_: core.Path(pth).ToAbs(fls),
 		Size_:    core.ByteCount(info.Size()),
 		Mode_:    core.FileMode(info.Mode()),
