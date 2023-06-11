@@ -19,7 +19,6 @@ import (
 
 	"github.com/go-git/go-billy/v5"
 	"github.com/inoxlang/inox/internal/afs"
-	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/tidwall/btree"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/grect"
@@ -193,7 +192,7 @@ func openBuntDBNoPermCheck(path string, fls afs.Filesystem, config ...buntDbConf
 }
 
 func (db *buntDB) syncFileIfCapable() error {
-	if file, ok := db.file.(fs_ns.SyncCapable); ok {
+	if file, ok := db.file.(afs.SyncCapable); ok {
 		// do a sync but ignore the error
 		return file.Sync()
 	} else {
@@ -989,7 +988,7 @@ func (db *buntDB) load() error {
 	var fi os.FileInfo
 	var err error
 
-	statCapable, ok := db.file.(fs_ns.StatCapable)
+	statCapable, ok := db.file.(afs.StatCapable)
 	if ok {
 		fi, err = statCapable.Stat()
 	} else {
