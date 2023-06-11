@@ -19,7 +19,7 @@ func TestMap(t *testing.T) {
 		result := Map(ctx, NewWrappedValueList(obj), mapper)
 		assert.Equal(t, NewWrappedValueList(Str("a")), result)
 
-		fileInfo := FileInfo{Name: "file.txt"}
+		fileInfo := FileInfo{Name_: "file.txt"}
 		result = Map(ctx, NewWrappedValueList(fileInfo), mapper)
 		assert.Equal(t, NewWrappedValueList(Str("file.txt")), result)
 	})
@@ -37,7 +37,7 @@ func TestMap(t *testing.T) {
 			"name": Str("a"),
 		})), result)
 
-		fileInfo := FileInfo{Name: "file.txt"}
+		fileInfo := FileInfo{Name_: "file.txt"}
 		result = Map(ctx, NewWrappedValueList(fileInfo), mapper)
 		assert.Equal(t, NewWrappedValueList(objFrom(ValMap{
 			"name": Str("file.txt"),

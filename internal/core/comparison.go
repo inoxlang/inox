@@ -1299,12 +1299,11 @@ func (i FileInfo) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]u
 		return false
 	}
 
-	return i.Name == otherInfo.Name &&
-		i.AbsPath == otherInfo.AbsPath &&
-		i.IsDir == otherInfo.IsDir &&
-		i.ModTime.Equal(ctx, otherInfo.ModTime, alreadyCompared, depth+1) &&
-		i.Mode == otherInfo.Mode &&
-		i.Size == otherInfo.Size
+	return i.Name_ == otherInfo.Name_ &&
+		i.AbsPath_ == otherInfo.AbsPath_ &&
+		i.ModTime_.Equal(ctx, otherInfo.ModTime_, alreadyCompared, depth+1) &&
+		i.Mode_ == otherInfo.Mode_ &&
+		i.Size_ == otherInfo.Size_
 }
 
 func (r *Routine) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {

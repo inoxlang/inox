@@ -1457,27 +1457,27 @@ func prettyPrintListPattern(
 
 func (i FileInfo) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 
-	if i.IsDir {
+	if i.IsDir() {
 		if config.Colorize {
 			utils.Must(w.Write(config.Colors.Folder))
 		}
-		utils.Must(w.Write(utils.StringAsBytes(i.Name)))
+		utils.Must(w.Write(utils.StringAsBytes(i.Name_)))
 		utils.PanicIfErr(w.WriteByte('/'))
 		if config.Colorize {
 			utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 		}
 	} else {
 
-		if i.Mode.Executable() && config.Colorize {
+		if i.Mode_.Executable() && config.Colorize {
 			utils.Must(w.Write(config.Colors.Executable))
 		}
-		utils.Must(w.Write(utils.StringAsBytes(i.Name)))
+		utils.Must(w.Write(utils.StringAsBytes(i.Name_)))
 
 		if config.Colorize {
 			utils.Must(w.Write(config.Colors.DiscreteColor))
 		}
 		utils.PanicIfErr(w.WriteByte(' '))
-		utils.Must(i.Size.Write(w, 1))
+		utils.Must(i.Size_.Write(w, 1))
 
 	}
 
@@ -1486,7 +1486,7 @@ func (i FileInfo) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth 
 	}
 
 	utils.PanicIfErr(w.WriteByte(' '))
-	utils.Must(w.Write(utils.StringAsBytes(os.FileMode(i.Mode).String())))
+	utils.Must(w.Write(utils.StringAsBytes(os.FileMode(i.Mode_).String())))
 
 	if config.Colorize {
 		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
