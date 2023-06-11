@@ -12,10 +12,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-git/go-billy/v5/memfs"
 	fsutil "github.com/go-git/go-billy/v5/util"
 
 	"github.com/inoxlang/inox/internal/afs"
-	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/tidwall/assert"
 	"github.com/tidwall/lotsa"
 )
@@ -48,7 +49,7 @@ func testReOpen(t testing.TB, db *buntDB) *buntDB {
 	if db != nil {
 		fls = db.fls
 	} else {
-		fls = fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE)
+		fls = newMemFilesystem()
 	}
 	return testReOpenDelay(t, db, 0, fls)
 }
@@ -64,7 +65,7 @@ func testReOpenDelay(t testing.TB, db *buntDB, dur time.Duration, fls afs.Filesy
 		if db != nil {
 			fls = db.fls
 		} else {
-			fls = fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE)
+			fls = newMemFilesystem()
 		}
 	}
 
@@ -128,7 +129,7 @@ func TestBackgroudOperations(t *testing.T) {
 	}
 }
 func TestSaveLoad(t *testing.T) {
-	var fls = fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE)
+	var fls = newMemFilesystem()
 	db, _ := openBuntDBNoPermCheck(":memory:", fls)
 	defer db.Close()
 	if err := db.Update(func(tx *Tx) error {
@@ -157,7 +158,7 @@ func TestSaveLoad(t *testing.T) {
 		t.Fatal(err)
 	}
 	db.Close()
-	db, _ = openBuntDBNoPermCheck(":memory:", fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE))
+	db, _ = openBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	defer db.Close()
 	f, err = fls.Open("temp.kv")
 	if err != nil {
@@ -1063,7 +1064,7 @@ func TestVariousTx(t *testing.T) {
 func TestNearby(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 	N := 100000
-	db, _ := openBuntDBNoPermCheck(":memory:", fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE))
+	db, _ := openBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	db.CreateSpatialIndex("points", "*", IndexRect)
 	db.Update(func(tx *Tx) error {
 		for i := 0; i < N; i++ {
@@ -1101,7 +1102,7 @@ func TestNearby(t *testing.T) {
 }
 
 func Example_descKeys() {
-	db, _ := openBuntDBNoPermCheck(":memory:", fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE))
+	db, _ := openBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	db.CreateIndex("name", "*", IndexString)
 	db.Update(func(tx *Tx) error {
 		tx.Set("user:100:first", "Tom", nil)
@@ -1163,7 +1164,7 @@ func Example_descKeys() {
 }
 
 func ExampleDesc() {
-	db, _ := openBuntDBNoPermCheck(":memory:", fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE))
+	db, _ := openBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	db.CreateIndex("last_name_age", "*", IndexJSON("name.last"), Desc(IndexJSON("age")))
 	db.Update(func(tx *Tx) error {
 		tx.Set("1", `{"name":{"first":"Tom","last":"Johnson"},"age":38}`, nil)
@@ -1192,7 +1193,7 @@ func ExampleDesc() {
 }
 
 func ExampleDB_CreateIndex_jSON() {
-	db, _ := openBuntDBNoPermCheck(":memory:", fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE))
+	db, _ := openBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	db.CreateIndex("last_name", "*", IndexJSON("name.last"))
 	db.CreateIndex("age", "*", IndexJSON("age"))
 	db.Update(func(tx *Tx) error {
@@ -1238,7 +1239,7 @@ func ExampleDB_CreateIndex_jSON() {
 }
 
 func ExampleDB_CreateIndex_strings() {
-	db, _ := openBuntDBNoPermCheck(":memory:", fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE))
+	db, _ := openBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	db.CreateIndex("name", "*", IndexString)
 	db.Update(func(tx *Tx) error {
 		tx.Set("1", "Tom", nil)
@@ -1267,7 +1268,7 @@ func ExampleDB_CreateIndex_strings() {
 }
 
 func ExampleDB_CreateIndex_ints() {
-	db, _ := openBuntDBNoPermCheck(":memory:", fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE))
+	db, _ := openBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	db.CreateIndex("age", "*", IndexInt)
 	db.Update(func(tx *Tx) error {
 		tx.Set("1", "30", nil)
@@ -1295,7 +1296,7 @@ func ExampleDB_CreateIndex_ints() {
 	//4: 76
 }
 func ExampleDB_CreateIndex_multipleFields() {
-	db, _ := openBuntDBNoPermCheck(":memory:", fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE))
+	db, _ := openBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	db.CreateIndex("last_name_age", "*", IndexJSON("name.last"), IndexJSON("age"))
 	db.Update(func(tx *Tx) error {
 		tx.Set("1", `{"name":{"first":"Tom","last":"Johnson"},"age":38}`, nil)
@@ -1396,7 +1397,7 @@ func TestDatabaseFormat(t *testing.T) {
 		// 	t.Fatal(err)
 		// }
 
-		fls := fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE)
+		fls := newMemFilesystem()
 		if err := fsutil.WriteFile(fls, DEFAULT_FILENAME, []byte(resp), DEFAULT_FILEPERM); err != nil {
 			t.Fatal(err)
 		}
@@ -1406,7 +1407,7 @@ func TestDatabaseFormat(t *testing.T) {
 	testFormat := func(t *testing.T, expectValid bool, resp string, do func(db *buntDB) error) {
 		t.Helper()
 
-		fls := fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE)
+		fls := newMemFilesystem()
 
 		//os.RemoveAll(DEFAULT_FILENAME)
 		if err := fsutil.WriteFile(fls, DEFAULT_FILENAME, []byte(resp), DEFAULT_FILEPERM); err != nil {
@@ -1630,7 +1631,7 @@ func TestIndexCompare(t *testing.T) {
 
 // test opening a folder.
 func TestOpeningAFolder(t *testing.T) {
-	var fls = fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE)
+	var fls = newMemFilesystem()
 
 	if err := fls.MkdirAll("dir.tmp", 0700); err != nil {
 		t.Fatal(err)
@@ -1647,7 +1648,7 @@ func TestOpeningAFolder(t *testing.T) {
 
 // test opening an invalid resp file.
 func TestOpeningInvalidDatabaseFile(t *testing.T) {
-	var fls = fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE)
+	var fls = newMemFilesystem()
 
 	if err := fsutil.WriteFile(fls, DEFAULT_FILENAME, []byte("invalid\r\nfile"), DEFAULT_FILEPERM); err != nil {
 		t.Fatal(err)
@@ -1664,7 +1665,7 @@ func TestOpeningInvalidDatabaseFile(t *testing.T) {
 
 // test closing a closed database.
 func TestOpeningClosedDatabase(t *testing.T) {
-	var fls = fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE)
+	var fls = newMemFilesystem()
 
 	db, err := openBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
 	if err != nil {
@@ -1677,7 +1678,7 @@ func TestOpeningClosedDatabase(t *testing.T) {
 	if err := db.Close(); err != errDatabaseClosed {
 		t.Fatal("should not be able to close a closed database")
 	}
-	db, err = openBuntDBNoPermCheck(":memory:", fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE))
+	db, err = openBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1754,7 +1755,7 @@ func TestShrink(t *testing.T) {
 		t.Fatal("shrink on a closed databse should not be allowed")
 	}
 	// Now we will openBuntDB a db that does not persist
-	db, err = openBuntDBNoPermCheck(":memory:", fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE))
+	db, err = openBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2333,9 +2334,9 @@ func benchOpenFillData(t *testing.B, N int,
 		if err := db.fls.Remove(DEFAULT_FILENAME); err != nil {
 			t.Fatal(err)
 		}
-		db, err = openBuntDBNoPermCheck(DEFAULT_FILENAME, fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE))
+		db, err = openBuntDBNoPermCheck(DEFAULT_FILENAME, newMemFilesystem())
 	} else {
-		db, err = openBuntDBNoPermCheck(":memory:", fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE))
+		db, err = openBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	}
 	if err != nil {
 		t.Fatal(err)
@@ -2794,7 +2795,7 @@ func TestTransactionLeak(t *testing.T) {
 	// This tests an bug identified in Issue #69. When inside a Update
 	// transaction, a Set after a Delete for a key that previously exists will
 	// remove the key when the transaction was rolledback.
-	buntDB, err := openBuntDBNoPermCheck(":memory:", fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE))
+	buntDB, err := openBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2880,7 +2881,7 @@ func TestReloadNotInvalid(t *testing.T) {
 	ii := 0
 	for time.Since(start) < time.Second*5 {
 		func() {
-			fls := fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE)
+			fls := newMemFilesystem()
 			db, err := openBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
 			if err != nil {
 				t.Fatal(err)
@@ -3008,3 +3009,11 @@ func TestWrappederror(t *testing.T) {
 // 		_assert.NoError(t, err)
 // 	}
 // }
+
+func newMemFilesystem() afs.Filesystem {
+	fs := memfs.New()
+
+	return afs.AddAbsoluteFeature(fs, func(path string) (string, error) {
+		return "", core.ErrNotImplemented
+	})
+}
