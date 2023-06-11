@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/go-git/go-billy/v5"
@@ -37,7 +36,7 @@ func (fs MemFilesystem) Root() string {
 }
 
 func (fs MemFilesystem) Absolute(path string) (string, error) {
-	if filepath.IsAbs(path) {
+	if core.PathFrom(path).IsAbsolute() {
 		return path, nil
 	}
 	return "", core.ErrNotImplemented
@@ -86,18 +85,11 @@ func (fs *MemFilesystem) resolveLink(fullpath string, f *inMemfile) (target stri
 	}
 
 	target = string(f.content.bytes)
-	if !isAbs(target) {
+	if !core.PathFrom(fullpath).IsAbsolute() {
 		target = fs.Join(filepath.Dir(fullpath), target)
 	}
 
 	return target, true
-}
-
-// On Windows OS, IsAbs validates if a path is valid based on if stars with a
-// unit (eg.: `C:\`)  to assert that is absolute, but in this mem implementation
-// any path starting by `separator` is also considered absolute.
-func isAbs(path string) bool {
-	return filepath.IsAbs(path) || strings.HasPrefix(path, string(separator))
 }
 
 func (fs *MemFilesystem) Stat(filename string) (os.FileInfo, error) {
