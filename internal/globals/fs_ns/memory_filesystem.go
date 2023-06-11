@@ -74,7 +74,7 @@ func (fs *MemFilesystem) OpenFile(filename string, flag int, perm os.FileMode) (
 		return nil, fmt.Errorf("cannot open directory: %s", filename)
 	}
 
-	return f.Duplicate(path, perm, flag), nil
+	return f.Duplicate(path, filename, perm, flag), nil
 }
 
 func (fs *MemFilesystem) resolveLink(fullpath string, f *inMemfile) (target string, isLink bool) {
@@ -110,7 +110,7 @@ func (fs *MemFilesystem) Stat(filename string) (os.FileInfo, error) {
 	// overwrite the Stat returned from the storage with it, since the
 	// filename may belong to a link.
 
-	coreFileInfo := fi.(*core.FileInfo)
+	coreFileInfo := fi.(core.FileInfo)
 	coreFileInfo.BaseName_ = filepath.Base(filename)
 	return coreFileInfo, nil
 }
@@ -168,7 +168,8 @@ func (fs *MemFilesystem) Remove(filename string) error {
 }
 
 func (fs *MemFilesystem) Join(elem ...string) string {
-	return filepath.Join(elem...)
+	result := filepath.Join(elem...)
+	return result
 }
 
 func (fs *MemFilesystem) Symlink(target, link string) error {

@@ -4,10 +4,30 @@ import (
 	"testing"
 
 	billy "github.com/go-git/go-billy/v5"
+	"gopkg.in/check.v1"
+
 	"github.com/stretchr/testify/assert"
 )
 
-type MemoryFsTestSuite struct{}
+var _ = check.Suite(&MemoryFsTestSuite{})
+
+type MemoryFsTestSuite struct {
+	BasicTestSuite
+	DirTestSuite
+}
+
+func (s *MemoryFsTestSuite) SetUpTest(c *check.C) {
+	s.BasicTestSuite = BasicTestSuite{
+		FS: NewMemFilesystem(100_000_00),
+	}
+	s.DirTestSuite = DirTestSuite{
+		FS: NewMemFilesystem(100_000_00),
+	}
+}
+
+func TestMemoryFilesystem(t *testing.T) {
+	check.TestingT(t)
+}
 
 func TestMemoryFilesystemCapabilities(t *testing.T) {
 	cases := []struct {

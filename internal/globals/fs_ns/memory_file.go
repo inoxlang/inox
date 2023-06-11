@@ -10,18 +10,19 @@ import (
 )
 
 type inMemfile struct {
-	basename string
-	path     core.Path
-	content  *inMemFileContent
-	position int64
-	flag     int
-	mode     os.FileMode
+	basename     string
+	originalPath string //only used by Name()
+	path         core.Path
+	content      *inMemFileContent
+	position     int64
+	flag         int
+	mode         os.FileMode
 
 	isClosed bool
 }
 
 func (f *inMemfile) Name() string {
-	return f.path.UnderlyingString()
+	return f.originalPath
 }
 
 func (f *inMemfile) Read(b []byte) (int, error) {
@@ -94,13 +95,14 @@ func (f *inMemfile) Truncate(size int64) error {
 	return f.content.Truncate(size)
 }
 
-func (f *inMemfile) Duplicate(pth core.Path, mode os.FileMode, flag int) billy.File {
+func (f *inMemfile) Duplicate(pth core.Path, originalPath string, mode os.FileMode, flag int) billy.File {
 	new := &inMemfile{
-		basename: string(pth.Basename()),
-		path:     pth,
-		content:  f.content,
-		mode:     mode,
-		flag:     flag,
+		basename:     string(pth.Basename()),
+		path:         pth,
+		originalPath: originalPath,
+		content:      f.content,
+		mode:         mode,
+		flag:         flag,
 	}
 
 	if isTruncate(flag) {
