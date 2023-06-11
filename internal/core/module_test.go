@@ -56,7 +56,10 @@ func newMemFilesystem() afs.Filesystem {
 	fs := memfs.New()
 
 	return afs.AddAbsoluteFeature(fs, func(path string) (string, error) {
-		return filepath.Abs(path)
+		if path[0] == '/' {
+			return path, nil
+		}
+		return "", ErrNotImplemented
 	})
 }
 
