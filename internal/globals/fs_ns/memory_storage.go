@@ -264,6 +264,29 @@ func (c *inMemFileContent) ModifTime() time.Time {
 	return c.modificationTime.Load().(time.Time)
 }
 
+func (c *inMemFileContent) Truncate(size int64) error {
+	if size <= int64(len(c.bytes)) {
+		c.filesystemStorageSize.Add(-int64(len(c.bytes)))
+		c.bytes = c.bytes[:size]
+	} else {
+		more := int(size) - len(c.bytes)
+
+		if c.filesystemStorageSize.Add(int64(more)) > c.filesystemMaxStorageSize {
+			return ErrInMemoryStorageLimitExceededDuringWrite
+		}
+
+		c.filesystemStorageSize.Add(-int64(len(c.bytes)))
+
+		c.bytes = append(c.bytes, make([]byte, more)...)
+	}
+
+	return nil
+}
+
+func (c *inMemFileContent) Len() int {
+	return len(c.bytes)
+}
+
 func (c *inMemFileContent) WriteAt(p []byte, off int64) (int, error) {
 	if off < 0 {
 		return 0, &os.PathError{
