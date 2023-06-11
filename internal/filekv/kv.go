@@ -130,17 +130,10 @@ func (kv *SingleFileKV) Get(ctx *core.Context, key core.Path, db any) (core.Valu
 	} else {
 		dbtx := kv.getCreateDatabaseTxn(db, tx)
 
-		item, err := dbtx.Get(string(key))
-		if err == errNotFound {
-			valueFound = core.False
-		} else if err != nil {
-			panic(err)
-		} else {
-			val, err = core.ParseRepr(ctx, utils.StringAsBytes(item))
-
-			if err != nil {
-				return nil, false, err
-			}
+		var err error
+		val, valueFound, err = dbtx.Get(ctx, key)
+		if err != nil {
+			return nil, false, err
 		}
 	}
 
@@ -198,8 +191,22 @@ func (kv *SingleFileKV) ForEach(ctx *core.Context, fn func(key core.Path, getVal
 		return kv.db.View(iterWithTx)
 	} else {
 		dbTx := kv.getCreateDatabaseTxn(db, tx)
-		return iterWithTx(dbTx)
+		return iterWithTx(dbTx.tx)
 	}
+}
+
+func (kv *SingleFileKV) UpdateNoCtx(fn func(dbTx *DatabaseTxIL) error, db any) error {
+	if kv.isClosed() {
+		return errDatabaseClosed
+	}
+
+	if fn == nil {
+		return errors.New("iteration function is nil")
+	}
+
+	return kv.db.Update(func(dbTx *Tx) error {
+		return fn(NewDatabaseTxIL(dbTx))
+	})
 }
 
 func (kv *SingleFileKV) Has(ctx *core.Context, key core.Path, db any) core.Bool {
@@ -233,13 +240,11 @@ func (kv *SingleFileKV) Has(ctx *core.Context, key core.Path, db any) core.Bool 
 	} else {
 		dbtx := kv.getCreateDatabaseTxn(db, tx)
 
-		_, err := dbtx.Get(string(key))
-		if err == errNotFound {
-			valueFound = core.False
-		} else if err != nil {
+		var err error
+		_, valueFound, err = dbtx.Get(ctx, key)
+		if err != nil {
 			panic(err)
 		}
-
 	}
 
 	return valueFound
@@ -270,12 +275,11 @@ func (kv *SingleFileKV) Set(ctx *core.Context, key core.Path, value core.Value, 
 
 	} else {
 		dbtx := kv.getCreateDatabaseTxn(db, tx)
+		err := dbtx.Set(ctx, key, value)
 
-		repr := core.GetRepresentation(value, ctx)
-		if _, _, err := dbtx.Set(string(key), string(repr), nil); err != nil {
+		if err != nil {
 			panic(err)
 		}
-
 	}
 }
 
@@ -304,14 +308,14 @@ func (kv *SingleFileKV) Delete(ctx *core.Context, key core.Path, db any) {
 	} else {
 		dbTx := kv.getCreateDatabaseTxn(db, tx)
 
-		_, err := dbTx.Delete(string(key))
+		err := dbTx.Delete(ctx, key)
 		if err != nil {
 			panic(err)
 		}
 	}
 }
 
-func (kv *SingleFileKV) getCreateDatabaseTxn(db any, tx *core.Transaction) *Tx {
+func (kv *SingleFileKV) getCreateDatabaseTxn(db any, tx *core.Transaction) *DatabaseTxIL {
 	//if there is already a database transaction in the core.Transaction we return it.
 	v, err := tx.GetValue(db)
 	if err != nil {
@@ -320,7 +324,7 @@ func (kv *SingleFileKV) getCreateDatabaseTxn(db any, tx *core.Transaction) *Tx {
 	dbTx, ok := v.(*Tx)
 
 	if ok {
-		return dbTx
+		return NewDatabaseTxIL(dbTx)
 	}
 
 	//begin a new database transaction & add it to the core.Transaction.
@@ -341,7 +345,7 @@ func (kv *SingleFileKV) getCreateDatabaseTxn(db any, tx *core.Transaction) *Tx {
 		panic(err)
 	}
 
-	return dbTx
+	return NewDatabaseTxIL(dbTx)
 }
 
 func makeTxEndcallbackFn(dbtx *Tx, tx *core.Transaction, kv *SingleFileKV) func(t *core.Transaction, success bool) {
@@ -358,4 +362,44 @@ func makeTxEndcallbackFn(dbtx *Tx, tx *core.Transaction, kv *SingleFileKV) func(
 			panic(err)
 		}
 	}
+}
+
+type DatabaseTxIL struct {
+	tx *Tx
+}
+
+func NewDatabaseTxIL(tx *Tx) *DatabaseTxIL {
+	return &DatabaseTxIL{
+		tx: tx,
+	}
+}
+
+func (tx *DatabaseTxIL) Get(ctx *core.Context, key core.Path) (result core.Value, valueFound core.Bool, finalErr error) {
+	item, err := tx.tx.Get(string(key))
+	if err == errNotFound {
+		valueFound = false
+	} else if err != nil {
+		panic(err)
+	} else {
+		valueFound = true
+		result, err = core.ParseRepr(ctx, utils.StringAsBytes(item))
+
+		if err != nil {
+			return nil, false, err
+		}
+		return
+	}
+	return
+}
+
+func (tx *DatabaseTxIL) Set(ctx *core.Context, key core.Path, value core.Value) error {
+	repr := core.GetRepresentation(value, ctx)
+	_, _, err := tx.tx.Set(string(key), string(repr), nil)
+
+	return err
+}
+
+func (tx *DatabaseTxIL) Delete(ctx *core.Context, key core.Path) error {
+	_, err := tx.tx.Delete(string(key))
+	return err
 }
