@@ -10,7 +10,8 @@ import (
 )
 
 type inMemfile struct {
-	name     string
+	basename string
+	path     core.Path
 	content  *inMemFileContent
 	position int64
 	flag     int
@@ -20,7 +21,7 @@ type inMemfile struct {
 }
 
 func (f *inMemfile) Name() string {
-	return f.name
+	return f.path.UnderlyingString()
 }
 
 func (f *inMemfile) Read(b []byte) (int, error) {
@@ -93,12 +94,13 @@ func (f *inMemfile) Truncate(size int64) error {
 	return f.content.Truncate(size)
 }
 
-func (f *inMemfile) Duplicate(filename string, mode os.FileMode, flag int) billy.File {
+func (f *inMemfile) Duplicate(pth core.Path, mode os.FileMode, flag int) billy.File {
 	new := &inMemfile{
-		name:    filename,
-		content: f.content,
-		mode:    mode,
-		flag:    flag,
+		basename: string(pth.Basename()),
+		path:     pth,
+		content:  f.content,
+		mode:     mode,
+		flag:     flag,
 	}
 
 	if isTruncate(flag) {
@@ -114,7 +116,7 @@ func (f *inMemfile) Duplicate(filename string, mode os.FileMode, flag int) billy
 
 func (f *inMemfile) Stat() (os.FileInfo, error) {
 	return core.FileInfo{
-		BaseName_:       f.name,
+		BaseName_:       f.basename,
 		Mode_:           core.FileMode(f.mode),
 		Size_:           core.ByteCount(f.content.Len()),
 		ModTime_:        core.Date(f.content.ModifTime()),

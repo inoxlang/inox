@@ -14,8 +14,6 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 )
 
-const separator = filepath.Separator
-
 type MemFilesystem struct {
 	s         *inMemStorage
 	tempCount int
@@ -50,6 +48,8 @@ func (fs *MemFilesystem) Open(filename string) (billy.File, error) {
 
 func (fs *MemFilesystem) OpenFile(filename string, flag int, perm os.FileMode) (billy.File, error) {
 	f, has := fs.s.Get(filename)
+	path := core.PathFrom(filename)
+
 	if !has {
 		if !isCreate(flag) {
 			return nil, os.ErrNotExist
@@ -74,7 +74,7 @@ func (fs *MemFilesystem) OpenFile(filename string, flag int, perm os.FileMode) (
 		return nil, fmt.Errorf("cannot open directory: %s", filename)
 	}
 
-	return f.Duplicate(filename, perm, flag), nil
+	return f.Duplicate(path, perm, flag), nil
 }
 
 func (fs *MemFilesystem) resolveLink(fullpath string, f *inMemfile) (target string, isLink bool) {

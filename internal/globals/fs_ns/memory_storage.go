@@ -82,7 +82,7 @@ func (s *inMemStorage) newNoLock(path string, mode os.FileMode, flag int) (*inMe
 	now := time.Now()
 
 	f := &inMemfile{
-		name: name,
+		basename: name,
 		content: &inMemFileContent{
 			name:         name,
 			creationTime: now,
@@ -104,7 +104,7 @@ func (s *inMemStorage) newNoLock(path string, mode os.FileMode, flag int) (*inMe
 func (s *inMemStorage) createParentNoLock(path string, mode os.FileMode, f *inMemfile) error {
 	base := filepath.Dir(path)
 	base = clean(base)
-	if f.Name() == string(separator) {
+	if f.Name() == "/" {
 		return nil
 	}
 
@@ -210,7 +210,7 @@ func (s *inMemStorage) Rename(from, to string) error {
 
 func (s *inMemStorage) moveNoLock(from, to string) error {
 	s.files[to] = s.files[from]
-	s.files[to].name = filepath.Base(to)
+	s.files[to].basename = filepath.Base(to)
 	s.children[to] = s.children[from]
 
 	defer func() {
