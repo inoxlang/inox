@@ -125,7 +125,7 @@ func (fs *MemFilesystem) Stat(filename string) (os.FileInfo, error) {
 	// filename may belong to a link.
 
 	coreFileInfo := fi.(*core.FileInfo)
-	coreFileInfo.Name_ = filepath.Base(filename)
+	coreFileInfo.BaseName_ = filepath.Base(filename)
 	return coreFileInfo, nil
 }
 
@@ -334,9 +334,8 @@ func (f *inMemfile) Duplicate(filename string, mode os.FileMode, flag int) billy
 }
 
 func (f *inMemfile) Stat() (os.FileInfo, error) {
-	//a pointer is returned because we need
 	return core.FileInfo{
-		Name_:           f.name,
+		BaseName_:       f.name,
 		Mode_:           core.FileMode(f.mode),
 		Size_:           core.ByteCount(f.content.Len()),
 		ModTime_:        core.Date(f.content.ModifTime()),

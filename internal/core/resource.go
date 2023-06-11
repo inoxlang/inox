@@ -96,6 +96,30 @@ func NewPath(slices []Value, isStaticPathSliceList []bool) (Value, error) {
 	return Path(pth), nil
 }
 
+func PathFrom(pth string) Path {
+	if pth == "" {
+		panic(errors.New("empty path"))
+	}
+
+	pth = filepath.Clean(pth)
+
+	if !parse.HasPathLikeStart(pth) {
+		pth = "./" + pth
+	}
+
+	//add additional checks on characters
+
+	return Path(pth)
+}
+
+func DirPathFrom(pth string) Path {
+	path := PathFrom(pth)
+	if !path.IsDirPath() {
+		path += "/"
+	}
+	return path
+}
+
 func checkPathInterpolationResult(s string) bool {
 	for i, b := range utils.StringAsBytes(s) {
 		switch b {

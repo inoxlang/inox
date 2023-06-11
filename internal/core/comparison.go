@@ -1299,7 +1299,7 @@ func (i FileInfo) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]u
 		return false
 	}
 
-	return i.Name_ == otherInfo.Name_ &&
+	return i.BaseName_ == otherInfo.BaseName_ &&
 		i.AbsPath_ == otherInfo.AbsPath_ &&
 		i.ModTime_.Equal(ctx, otherInfo.ModTime_, alreadyCompared, depth+1) &&
 		i.Mode_ == otherInfo.Mode_ &&

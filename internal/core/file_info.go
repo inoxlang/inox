@@ -17,7 +17,7 @@ type ExtendedFileInfo interface {
 }
 
 type FileInfo struct {
-	Name_         string
+	BaseName_     string
 	AbsPath_      Path
 	Size_         ByteCount
 	Mode_         FileMode
@@ -28,7 +28,7 @@ type FileInfo struct {
 }
 
 func (fi FileInfo) Name() string {
-	return fi.Name_
+	return fi.BaseName_
 }
 
 func (fi FileInfo) Size() int64 {
@@ -65,7 +65,7 @@ func (i FileInfo) GetGoMethod(name string) (*GoFunction, bool) {
 func (i FileInfo) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "name":
-		return Str(i.Name_)
+		return Str(i.BaseName_)
 	case "abs-path":
 		return i.AbsPath_
 	case "size":

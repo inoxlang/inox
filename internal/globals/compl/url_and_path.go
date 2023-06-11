@@ -33,7 +33,7 @@ func findPathCompletions(ctx *core.Context, pth string) []Completion {
 	}
 
 	for _, e := range entries {
-		name := string(e.Name_)
+		name := string(e.BaseName_)
 		if strings.HasPrefix(name, base) {
 			pth := path.Join(dir, name)
 

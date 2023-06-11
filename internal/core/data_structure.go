@@ -466,7 +466,7 @@ func (obj *Object) EntryMap() map[string]Value {
 // Indexed returns the list of indexed properties
 func (obj *Object) Indexed() []Value {
 	if obj.IsShared() {
-		panic(errors.New("Object.ForEachEntry() can only be called on objects that are not shared"))
+		panic(errors.New("Object.Indexed() can only be called on objects that are not shared"))
 	}
 
 	values := make([]Value, obj.implicitPropCount)
@@ -589,6 +589,7 @@ func (rec *Record) Prop(ctx *Context, name string) Value {
 	}
 	panic(FormatErrPropertyDoesNotExist(name, rec))
 }
+
 func (rec Record) SetProp(ctx *Context, name string, value Value) error {
 	return ErrCannotSetProp
 }
@@ -604,6 +605,15 @@ func (rec *Record) HasProp(ctx *Context, name string) bool {
 		}
 	}
 	return false
+}
+
+func (rec *Record) ForEachEntry(fn func(k string, v Value) error) error {
+	for i, v := range rec.values {
+		if err := fn(rec.keys[i], v); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (rec *Record) sortProps() {
