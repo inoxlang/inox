@@ -5267,6 +5267,26 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("hexadecimal integer", func(t *testing.T) {
+			n, err := parseChunk(t, "0x3s", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
+				Statements: []Node{
+					&QuantityLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 4},
+							&ParsingError{UnspecifiedParsingError, QUANTITY_LIT_NOT_ALLOWED_WITH_HEXADECIMAL_NUM},
+							nil,
+						},
+						Raw:    "0x3s",
+						Units:  []string{"s"},
+						Values: []float64{3},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("non-zero float", func(t *testing.T) {
 			n := mustparseChunk(t, "1.5s")
 			assert.EqualValues(t, &Chunk{

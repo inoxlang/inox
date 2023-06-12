@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	"github.com/inoxlang/inox/internal/utils"
@@ -334,6 +335,11 @@ type IntLiteral struct {
 	NodeBase
 	Raw   string
 	Value int64
+}
+
+
+func (l IntLiteral) IsHex() bool {
+	return strings.HasPrefix(l.Raw, "0x")
 }
 
 func (l IntLiteral) ValueString() string {

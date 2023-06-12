@@ -5714,10 +5714,12 @@ func (p *parser) parseNumberAndRangeAndRateLiterals() Node {
 
 	var fValue float64
 	var isFloat = false
+	isHexInt := false
 
 	switch n := e.(type) {
 	case *IntLiteral:
 		fValue = float64(n.Value)
+		isHexInt = n.IsHex()
 	case *FloatLiteral:
 		fValue = float64(n.Value)
 		isFloat = true
@@ -5726,7 +5728,11 @@ func (p *parser) parseNumberAndRangeAndRateLiterals() Node {
 	}
 
 	if p.i < p.len && (isAlpha(p.s[p.i]) || p.s[p.i] == '%') { //quantity literal or rate literal
-		return p.parseQuantityOrRateLiteral(start, fValue, isFloat)
+		node := p.parseQuantityOrRateLiteral(start, fValue, isFloat)
+		if isHexInt {
+			node.BasePtr().Err = &ParsingError{UnspecifiedParsingError, QUANTITY_LIT_NOT_ALLOWED_WITH_HEXADECIMAL_NUM}
+		}
+		return node
 	}
 
 	return e
