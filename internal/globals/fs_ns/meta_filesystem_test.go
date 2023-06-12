@@ -33,6 +33,10 @@ func (s *MetaFsTestSuite) SetUpTest(c *check.C) {
 	// }
 }
 
+func (s *MetaFsTestSuite) TearDownTest(c *check.C) {
+	//
+}
+
 func TestMetaFilesystem(t *testing.T) {
 	check.Run(&MetaFsTestSuite{}, &check.RunConf{
 		Verbose: true,

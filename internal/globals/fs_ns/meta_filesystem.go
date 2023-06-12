@@ -341,6 +341,17 @@ func (fls *MetaFilesystem) statNoLock(filename string) (os.FileInfo, error) {
 		return nil, os.ErrNotExist
 	}
 
+	var size core.ByteCount
+
+	if metadata.concreteFile != nil {
+		underlyingFilePath := *metadata.concreteFile
+		stat, err := fls.underlying.Stat(string(underlyingFilePath))
+		if err != nil {
+			return nil, fmt.Errorf("failed to get stat of %s", filename)
+		}
+		size = core.ByteCount(stat.Size())
+	}
+
 	return core.FileInfo{
 		BaseName_:       string(metadata.path.Basename()),
 		AbsPath_:        metadata.path,
@@ -348,6 +359,7 @@ func (fls *MetaFilesystem) statNoLock(filename string) (os.FileInfo, error) {
 		CreationTime_:   metadata.creationTime,
 		ModTime_:        metadata.modificationTime,
 		HasCreationTime: true,
+		Size_:           size,
 	}, nil
 }
 
@@ -515,33 +527,38 @@ func (fls *MetaFilesystem) Rename(from, to string) error {
 	noCheckFuel := 10
 
 	err = fls.metadata.UpdateNoCtx(func(dbTx *filekv.DatabaseTx) error {
-		//get metadata of previous parent directory
-		fromDirPath := core.DirPathFrom(filepath.Dir(from))
+		fromDir := filepath.Dir(from)
+		if fromDir != "/" && fromDir != "." {
+			// get metadata of previous parent directory
+			fromDirPath := core.DirPathFrom(fromDir)
 
-		fromDirMetadata, found, err := fls.getFileMetadata(fromDirPath, dbTx)
-		if err != nil {
-			return err
-		}
+			fromDirMetadata, found, err := fls.getFileMetadata(fromDirPath, dbTx)
+			if err != nil {
+				return err
+			}
 
-		if found {
-			panic(core.ErrUnreachable)
-		}
+			if !found {
+				panic(core.ErrUnreachable)
+			}
 
-		//update it
-		indexFound := false
-		for index, child := range fromDirMetadata.children {
-			if child == fromPath {
-				indexFound = true
-				fromDirMetadata.children = utils.RemoveIndexOfSlice(fromDirMetadata.children, index)
-				break
+			// update it
+			indexFound := false
+			for index, child := range fromDirMetadata.children {
+				if child == fromPath {
+					indexFound = true
+					fromDirMetadata.children = utils.RemoveIndexOfSlice(fromDirMetadata.children, index)
+					break
+				}
+			}
+
+			if !indexFound {
+				return fmt.Errorf("failed to remove %s from children of %s", fromPath.Basename(), fromDirPath)
+			}
+
+			if err := fls.setFileMetadata(fromDirMetadata, dbTx); err != nil {
+				return err
 			}
 		}
-
-		if !indexFound {
-			return fmt.Errorf("failed to remove %s from children of %s", fromPath.Basename(), fromDirPath)
-		}
-
-		fls.setFileMetadata(fromDirMetadata, dbTx)
 
 		//update metadata of moved files & directories
 
@@ -562,11 +579,11 @@ func (fls *MetaFilesystem) Rename(from, to string) error {
 			to := ops[1]
 
 			//get current metadata
-			metadata, ok, err := fls.getFileMetadata(from, dbTx)
+			metadata, exists, err := fls.getFileMetadata(from, dbTx)
 			if err != nil {
 				return err
 			}
-			if ok {
+			if !exists {
 				panic(core.ErrUnreachable)
 			}
 
@@ -581,7 +598,7 @@ func (fls *MetaFilesystem) Rename(from, to string) error {
 			}
 
 			//delete previous metadata
-			fls.metadata.Delete(fls.ctx, from, fls)
+			fls.deleteFileMetadata(from, dbTx)
 		}
 		return nil
 	})
