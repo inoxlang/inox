@@ -257,7 +257,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 		"mime":        core.ValOf(http_ns.Mime_),
 
 		"Color":    core.WrapGoFunction(_Color),
-		"FileMode": core.WrapGoFunction(_FileMode),
+		"FileMode": core.WrapGoFunction(core.FileModeFrom),
 
 		"help": core.ValOf(help_ns.Help),
 	}

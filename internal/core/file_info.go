@@ -3,11 +3,25 @@ package core
 import (
 	"io/fs"
 	"time"
+
+	"github.com/inoxlang/inox/internal/commonfmt"
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 )
 
 var (
 	_ fs.FileInfo = FileInfo{}
 )
+
+func init() {
+	RegisterSymbolicGoFunction(FileModeFrom, func(ctx *symbolic.Context, firstArg symbolic.SymbolicValue) *symbolic.FileMode {
+		_, ok := firstArg.(*symbolic.Int)
+		if !ok {
+			ctx.AddSymbolicGoFunctionError("argument should be an integer")
+		}
+
+		return symbolic.ANY_FILEMODE
+	})
+}
 
 type ExtendedFileInfo interface {
 	fs.FileInfo
@@ -90,4 +104,13 @@ func (FileInfo) SetProp(ctx *Context, name string, value Value) error {
 
 func (FileInfo) PropertyNames(ctx *Context) []string {
 	return []string{"name", "abs-path", "size", "mode", "mod-time", "is-dir"}
+}
+
+func FileModeFrom(ctx *Context, firstArg Value) FileMode {
+	integer, ok := firstArg.(Int)
+	if !ok {
+		panic(commonfmt.FmtErrInvalidArgumentAtPos(0, "should be an integer"))
+	}
+
+	return FileMode(integer)
 }

@@ -381,6 +381,11 @@ func TestParseRepr(t *testing.T) {
 		{`Runes"# a"`, -1, NewRuneSlice([]rune("# a"))},
 		{`Runes"a"`, -1, NewRuneSlice([]rune("a"))},
 
+		//FileMode call
+		{`FileMode(`, 9, nil},
+		{`FileMode(0`, 10, nil},
+		{`FileMode(0)`, -1, FileMode(0)},
+
 		//integers
 		{`1`, -1, Int(1)},
 		/*    */ {"\n1", -1, Int(1)},
@@ -859,7 +864,6 @@ func TestParseRepr(t *testing.T) {
 		{`%{"a":%int(1..2)}`, -1, NewInexactObjectPattern(map[string]Pattern{
 			"a": NewIncludedEndIntRangePattern(1, 2),
 		})},
-
 
 		//weird cases
 		{`/ a`, 1, nil},
