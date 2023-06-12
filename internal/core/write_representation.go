@@ -1179,11 +1179,24 @@ func (d Date) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uin
 }
 
 func (FileMode) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
+	return true
 }
 
 func (m FileMode) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
+	if _, err := w.Write(utils.StringAsBytes(FILEMODE_PRIMORDIAL_FUNCNAME)); err != nil {
+		return err
+	}
+
+	if _, err := w.Write([]byte{'('}); err != nil {
+		return err
+	}
+
+	if _, err := fmt.Fprint(w, uint32(m)); err != nil {
+		return err
+	}
+
+	_, err := w.Write([]byte{')'})
+	return err
 }
 
 func (RuneRange) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {

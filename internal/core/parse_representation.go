@@ -1968,7 +1968,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				var result Value
 
 				switch fn {
-				case "FileMode":
+				case FILEMODE_PRIMORDIAL_FUNCNAME:
 					result = FileModeFrom(ctx, callArgs[0])
 				default:
 					panic(fmt.Errorf("unknown function in representation call: %s", fn))

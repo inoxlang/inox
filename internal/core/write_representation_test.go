@@ -2,6 +2,8 @@ package core
 
 import (
 	"bytes"
+	"fmt"
+	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -1009,6 +1011,14 @@ func TestIntRangePatternRepresentation(t *testing.T) {
 
 	state.Global.Ctx.AddNamedPattern("int", INT_PATTERN)
 	assert.Equal(t, intRangePattern, utils.Must(TreeWalkEval(node, state)))
+}
+
+func TestFileModeRepresentation(t *testing.T) {
+	fileMode := FileMode(os.ModeDir | 0o777)
+	assert.True(t, fileMode.HasRepresentation(nil, nil))
+
+	expectedRepr := fmt.Sprintf("FileMode(%d)", fileMode)
+	assert.Equal(t, expectedRepr, getRepr(t, fileMode, reprTestCtx))
 }
 
 func assertParseExpression(t *testing.T, s string) parse.Node {

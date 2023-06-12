@@ -8,6 +8,11 @@ import (
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
 )
 
+
+const (
+	FILEMODE_PRIMORDIAL_FUNCNAME = "FileMode"
+)
+
 var (
 	_ fs.FileInfo = FileInfo{}
 )
