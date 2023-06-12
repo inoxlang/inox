@@ -1105,7 +1105,9 @@ func (d Date) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int,
 }
 
 func (m FileMode) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	InspectPrint(w, m)
+	s := os.FileMode(m).String()
+
+	utils.Must(w.Write(utils.StringAsBytes(s)))
 }
 
 func (r RuneRange) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
