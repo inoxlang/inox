@@ -30,6 +30,8 @@ const (
 	METAFS_UNDERLYING_UNDERLYING_FILE_PERM = 0600
 
 	METAFS_FILES_KEY = "/files"
+
+	METAFS_KV_FILENAME = "metadata.kv"
 )
 
 var (
@@ -50,8 +52,26 @@ type MetaFilesystem struct {
 	lock sync.RWMutex
 }
 
-func NewPortableOfsBackedFilesystem(ctx *core.Context, maxTotalStorageSize core.ByteCount) *MetaFilesystem {
-	return &MetaFilesystem{}
+func OpenMetaFilesystem(ctx *core.Context, underlying afs.Filesystem, dir string) (*MetaFilesystem, error) {
+	if err := underlying.MkdirAll(dir, 0700); err != nil {
+		return nil, fmt.Errorf("failed to create directory for meta filesystem: %w", err)
+	}
+
+	kv, err := filekv.OpenSingleFileKV(filekv.KvStoreConfig{
+		Path:       core.PathFrom(underlying.Join(dir, METAFS_KV_FILENAME)),
+		Filesystem: underlying,
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to open/create single-file KV store for storing metadata of meta filesystem: %w", err)
+	}
+
+	return &MetaFilesystem{
+		ctx:        ctx,
+		underlying: underlying,
+		dir:        dir,
+		metadata:   kv,
+	}, nil
 }
 
 func (fls *MetaFilesystem) Chroot(path string) (billy.Filesystem, error) {
@@ -70,15 +90,11 @@ func (fls *MetaFilesystem) Absolute(path string) (string, error) {
 }
 
 func (fls *MetaFilesystem) getFileMetadata(pth core.Path, usedTx *filekv.DatabaseTx) (*metaFsFileMetadata, bool, error) {
-	if pth.IsAbsolute() {
+	if !pth.IsAbsolute() {
 		return nil, false, errors.New("file's path should be absolute")
 	}
-	key := METAFS_FILES_KEY + pth
 
-	//remove trailing slash
-	if pth[len(pth)-1] == '/' {
-		pth = pth[:len(pth)-1]
-	}
+	key := getKvKeyFromPath(pth)
 
 	var (
 		info core.Value
@@ -144,19 +160,18 @@ func (fls *MetaFilesystem) getFileMetadata(pth core.Path, usedTx *filekv.Databas
 }
 
 func (fls *MetaFilesystem) setFileMetadata(metadata *metaFsFileMetadata, usedTx *filekv.DatabaseTx) error {
-	if metadata.path.IsAbsolute() {
+	if !metadata.path.IsAbsolute() {
 		return errors.New("file's path should be absolute")
 	}
 
 	recordPropertyNames := []string{
-		METAFS_UNDERLYING_FILE_PROPNAME,
 		METAFS_FILE_MODE_PROPNAME,
 		METAFS_CREATION_TIME_PROPNAME,
 		METAFS_MODIF_TIME_PROPNAME,
 	}
 
 	recordPropertyValues := []core.Value{
-		core.Str(metadata.concreteFile.Basename()),
+
 		core.FileMode(metadata.mode),
 		metadata.creationTime,
 		metadata.modificationTime,
@@ -171,20 +186,31 @@ func (fls *MetaFilesystem) setFileMetadata(metadata *metaFsFileMetadata, usedTx 
 
 		recordPropertyNames = append(recordPropertyNames, METAFS_CHILDREN_PROPNAME)
 		recordPropertyValues = append(recordPropertyValues, core.NewTuple(children))
+	} else { //if not a dir set name of underlying file
+		recordPropertyNames = append(recordPropertyNames, METAFS_UNDERLYING_FILE_PROPNAME)
+		recordPropertyValues = append(recordPropertyValues, core.Str(metadata.concreteFile.Basename()))
 	}
 
 	metadataRecord := core.NewRecordFromKeyValLists(recordPropertyNames, recordPropertyValues)
 
-	key := metadata.path
-	//remove trailing slash
-	if key[len(key)-1] == '/' {
-		key = key[:len(key)-1]
-	}
+	key := getKvKeyFromPath(metadata.path)
 
 	if usedTx == nil {
 		fls.metadata.Set(fls.ctx, key, metadataRecord, fls)
 	} else {
 		return usedTx.Set(fls.ctx, key, metadataRecord)
+	}
+
+	return nil
+}
+
+func (fls *MetaFilesystem) deleteFileMetadata(pth core.Path, usedTx *filekv.DatabaseTx) error {
+	key := getKvKeyFromPath(pth)
+
+	if usedTx == nil {
+		fls.metadata.Delete(fls.ctx, key, fls)
+	} else {
+		return usedTx.Delete(fls.ctx, key)
 	}
 
 	return nil
@@ -202,20 +228,27 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 	fls.lock.Lock()
 	defer fls.lock.Unlock()
 
+	originalPath := filename
+	filename = normalizeAsAbsolute(filename)
+
 	pth := core.PathFrom(filename)
 	metadata, exists, err := fls.getFileMetadata(pth, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	if isSymlink(metadata.mode) {
-		//
-		return nil, errors.New("symlinks not supported")
-	}
-
 	if !exists {
 		if !isCreate(flag) {
 			return nil, os.ErrNotExist
+		}
+
+		dir := filepath.Dir(originalPath)
+		if dir != "/" {
+			//make sure parent exists
+			err := fls.MkdirAllNoLock(dir, 0700)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create %s", dir)
+			}
 		}
 
 		//get & update metadata of parent directory
@@ -241,7 +274,6 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 		creationTime := core.Date(time.Now())
 
 		mode := fs.FileMode(perm)
-		mode |= fs.FileMode(fs.ModeDir)
 
 		newFileMetadata := &metaFsFileMetadata{
 			path:             pth,
@@ -257,6 +289,11 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 
 		metadata = newFileMetadata
 	} else {
+		if isSymlink(metadata.mode) {
+			//
+			return nil, errors.New("symlinks not supported")
+		}
+
 		if isExclusive(flag) {
 			return nil, os.ErrExist
 		}
@@ -274,9 +311,11 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 	}
 
 	file := &metaFsFile{
-		path:       pth,
-		metadata:   metadata,
-		underlying: underlyingFile,
+		path:         pth,
+		fs:           fls,
+		originalPath: originalPath,
+		metadata:     metadata,
+		underlying:   underlyingFile,
 	}
 
 	return file, nil
@@ -290,6 +329,8 @@ func (fls *MetaFilesystem) Stat(filename string) (os.FileInfo, error) {
 }
 
 func (fls *MetaFilesystem) statNoLock(filename string) (os.FileInfo, error) {
+	filename = normalizeAsAbsolute(filename)
+
 	metadata, exists, err := fls.getFileMetadata(core.PathFrom(filename), nil)
 
 	if err != nil {
@@ -335,6 +376,8 @@ func (fls *MetaFilesystem) ReadDir(path string) ([]os.FileInfo, error) {
 	fls.lock.RLock()
 	defer fls.lock.RUnlock()
 
+	path = normalizeAsAbsolute(path)
+
 	metadata, exists, err := fls.getFileMetadata(core.PathFrom(path), nil)
 
 	if err != nil {
@@ -364,12 +407,19 @@ func (fls *MetaFilesystem) ReadDir(path string) ([]os.FileInfo, error) {
 }
 
 func (fls *MetaFilesystem) MkdirAll(path string, perm os.FileMode) error {
+	fls.lock.Lock()
+	defer fls.lock.Unlock()
+
+	return fls.MkdirAllNoLock(path, perm)
+}
+
+func (fls *MetaFilesystem) MkdirAllNoLock(path string, perm os.FileMode) error {
 	if path == "/" {
 		return nil
 	}
 
-	fls.lock.Lock()
-	defer fls.lock.Unlock()
+	path = normalizeAsAbsolute(path)
+	perm |= fs.ModeDir
 
 	_, exists, err := fls.getFileMetadata(core.PathFrom(path), nil)
 
@@ -380,6 +430,16 @@ func (fls *MetaFilesystem) MkdirAll(path string, perm os.FileMode) error {
 	pth := core.DirPathFrom(path)
 
 	if !exists { //create the directory
+
+		//make sure the parent exists
+		dir := filepath.Dir(path)
+		if dir != "/" && dir != "." {
+			err := fls.MkdirAllNoLock(dir, perm)
+			if err != nil {
+				return err
+			}
+		}
+
 		creationTime := core.Date(time.Now())
 
 		newFileMetadata := &metaFsFileMetadata{
@@ -406,6 +466,9 @@ func (fls *MetaFilesystem) TempFile(dir, prefix string) (billy.File, error) {
 func (fls *MetaFilesystem) Rename(from, to string) error {
 	fls.lock.Lock()
 	defer fls.lock.Unlock()
+
+	from = normalizeAsAbsolute(from)
+	to = normalizeAsAbsolute(to)
 
 	_, exists, err := fls.getFileMetadata(core.PathFrom(from), nil)
 
@@ -527,7 +590,102 @@ func (fls *MetaFilesystem) Rename(from, to string) error {
 }
 
 func (fls *MetaFilesystem) Remove(filename string) error {
-	panic(core.ErrNotImplementedYet)
+	fls.lock.Lock()
+	defer fls.lock.Unlock()
+
+	filename = normalizeAsAbsolute(filename)
+
+	pth := core.PathFrom(filename)
+	metadata, exists, err := fls.getFileMetadata(pth, nil)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return os.ErrNotExist
+	}
+
+	noCheckFuel := 10
+
+	err = fls.metadata.UpdateNoCtx(func(dbTx *filekv.DatabaseTx) error {
+		dir := filepath.Dir(filename)
+
+		//remove entry from parent
+		if dir != "/" && dir != "." {
+			parentMetadata, exists, err := fls.getFileMetadata(pth, dbTx)
+			if err != nil {
+				return err
+			}
+			if !exists {
+				panic(core.ErrUnreachable)
+			}
+
+			found := false
+			for index, child := range parentMetadata.children {
+				if child == pth {
+					parentMetadata.children = utils.RemoveIndexOfSlice(parentMetadata.children, index)
+					break
+				}
+			}
+			if !found {
+				panic(core.ErrUnreachable)
+			}
+
+			if err := fls.setFileMetadata(parentMetadata, dbTx); err != nil {
+				return err
+			}
+		}
+
+		if err := fls.deleteFileMetadata(metadata.path, dbTx); err != nil {
+			return err
+		}
+
+		if !metadata.mode.IsDir() {
+			return nil
+		}
+
+		//remove descendants recursively
+		queue := utils.CopySlice(metadata.children)
+
+		for len(queue) > 0 {
+			if noCheckFuel <= 0 { //check context
+				select {
+				case <-fls.ctx.Done():
+					return fls.ctx.Err()
+				default:
+				}
+				noCheckFuel = 10
+			} else {
+				noCheckFuel--
+			}
+
+			current := queue[len(queue)-1]
+			queue = queue[:len(queue)-1]
+
+			currentMetadata, exists, err := fls.getFileMetadata(current, dbTx)
+
+			if err != nil {
+				return err
+			}
+
+			if !exists {
+				//the metadata should exist, continue anyway
+				continue
+			}
+
+			//delete current descendant & add its own descendants to the queue
+			if currentMetadata.mode.IsDir() {
+				queue = append(queue, currentMetadata.children...)
+			}
+
+			if err := fls.deleteFileMetadata(metadata.path, dbTx); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	return err
 }
 
 func (fls *MetaFilesystem) Join(elem ...string) string {
@@ -555,6 +713,16 @@ type metaFsFileMetadata struct {
 
 	//children files if directory
 	children []core.Path
+}
+
+func getKvKeyFromPath(pth core.Path) core.Path {
+	key := METAFS_FILES_KEY + pth
+	//remove trailing slash
+	if key[len(key)-1] == '/' {
+		key = key[:len(key)-1]
+	}
+
+	return key
 }
 
 func fmtFailedToGetFileMetadataError(pth core.Path, err error) error {

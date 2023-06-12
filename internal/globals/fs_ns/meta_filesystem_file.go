@@ -12,14 +12,15 @@ var (
 )
 
 type metaFsFile struct {
-	fs         *MetaFilesystem
-	path       core.Path
-	underlying billy.File
-	metadata   *metaFsFileMetadata
+	fs           *MetaFilesystem
+	originalPath string
+	path         core.Path
+	underlying   billy.File
+	metadata     *metaFsFileMetadata
 }
 
 func (f *metaFsFile) Name() string {
-	return string(f.path)
+	return f.originalPath
 }
 
 func (f *metaFsFile) Write(p []byte) (n int, err error) {
