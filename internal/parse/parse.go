@@ -5372,7 +5372,10 @@ func (p *parser) parseNumberAndNumberRange() Node {
 
 	parseIntegerLiteral := func(raw string, start, end int32, base int) (*IntLiteral, int64) {
 		s := raw
-		if base == 16 {
+		switch base {
+		case 8:
+			s = strings.TrimPrefix(s, "0o")
+		case 16:
 			s = strings.TrimPrefix(s, "0x")
 		}
 
@@ -5449,6 +5452,12 @@ func (p *parser) parseNumberAndNumberRange() Node {
 		base = 16
 		p.i++
 		for p.i < p.len && (isHexDigit(p.s[p.i]) || p.s[p.i] == '_') {
+			p.i++
+		}
+	} else if p.i < p.len-1 && p.s[p.i] == 'o' && isOctalDigit(p.s[p.i+1]) { //octal
+		base = 8
+		p.i++
+		for p.i < p.len && (isOctalDigit(p.s[p.i]) || p.s[p.i] == '_') {
 			p.i++
 		}
 	}
@@ -5715,11 +5724,13 @@ func (p *parser) parseNumberAndRangeAndRateLiterals() Node {
 	var fValue float64
 	var isFloat = false
 	isHexInt := false
+	isOctalInt := false
 
 	switch n := e.(type) {
 	case *IntLiteral:
 		fValue = float64(n.Value)
 		isHexInt = n.IsHex()
+		isOctalInt = n.IsOctal()
 	case *FloatLiteral:
 		fValue = float64(n.Value)
 		isFloat = true
@@ -5731,6 +5742,8 @@ func (p *parser) parseNumberAndRangeAndRateLiterals() Node {
 		node := p.parseQuantityOrRateLiteral(start, fValue, isFloat)
 		if isHexInt {
 			node.BasePtr().Err = &ParsingError{UnspecifiedParsingError, QUANTITY_LIT_NOT_ALLOWED_WITH_HEXADECIMAL_NUM}
+		} else if isOctalInt {
+			node.BasePtr().Err = &ParsingError{UnspecifiedParsingError, QUANTITY_LIT_NOT_ALLOWED_WITH_OCTAL_NUM}
 		}
 		return node
 	}
@@ -10152,6 +10165,10 @@ func isDecDigit(r rune) bool {
 
 func isHexDigit(r rune) bool {
 	return (r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')
+}
+
+func isOctalDigit(r rune) bool {
+	return r >= '0' && r <= '7'
 }
 
 func isIdentChar(r rune) bool {

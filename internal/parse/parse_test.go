@@ -5176,6 +5176,7 @@ func testParse(
 				},
 			}, n)
 		})
+
 		t.Run("hexadecimal", func(t *testing.T) {
 			n := mustparseChunk(t, "0x33")
 			assert.EqualValues(t, &Chunk{
@@ -5190,6 +5191,19 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("octal", func(t *testing.T) {
+			n := mustparseChunk(t, "0o33")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
+				Statements: []Node{
+					&IntLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
+						Raw:      "0o33",
+						Value:    0o33,
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("float literal", func(t *testing.T) {
@@ -5280,6 +5294,26 @@ func testParse(
 							nil,
 						},
 						Raw:    "0x3s",
+						Units:  []string{"s"},
+						Values: []float64{3},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("octal integer", func(t *testing.T) {
+			n, err := parseChunk(t, "0o3s", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
+				Statements: []Node{
+					&QuantityLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 4},
+							&ParsingError{UnspecifiedParsingError, QUANTITY_LIT_NOT_ALLOWED_WITH_OCTAL_NUM},
+							nil,
+						},
+						Raw:    "0o3s",
 						Units:  []string{"s"},
 						Values: []float64{3},
 					},

@@ -337,9 +337,12 @@ type IntLiteral struct {
 	Value int64
 }
 
-
 func (l IntLiteral) IsHex() bool {
 	return strings.HasPrefix(l.Raw, "0x")
+}
+
+func (l IntLiteral) IsOctal() bool {
+	return strings.HasPrefix(l.Raw, "0o")
 }
 
 func (l IntLiteral) ValueString() string {

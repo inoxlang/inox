@@ -318,6 +318,7 @@ const (
 	INVALID_FLOAT_LIT                                                             = "invalid floating point literal"
 	INVALID_QUANTITY_LIT                                                          = "invalid quantity literal"
 	QUANTITY_LIT_NOT_ALLOWED_WITH_HEXADECIMAL_NUM                                 = "quantity literals with an hexadecimal number are not allowed"
+	QUANTITY_LIT_NOT_ALLOWED_WITH_OCTAL_NUM                                       = "quantity literals with an octal number are not allowed"
 	INVALID_RATE_LIT                                                              = "invalid rate literal"
 	INVALID_RATE_LIT_DIV_SYMBOL_SHOULD_BE_FOLLOWED_BY_UNIT                        = "invalid rate literal: '/' should be immeditately followed by a unit"
 	UNTERMINATED_DATE_LITERAL                                                     = "unterminated date literal"
