@@ -31,7 +31,6 @@ type SingleFileKV struct {
 }
 
 type KvStoreConfig struct {
-	Host       core.Host
 	Path       core.Path
 	InMemory   bool
 	Filesystem afs.Filesystem
@@ -55,7 +54,6 @@ func OpenSingleFileKV(config KvStoreConfig) (_ *SingleFileKV, finalErr error) {
 	return &SingleFileKV{
 		db:   db,
 		path: config.Path,
-		host: config.Host,
 
 		transactions: map[*core.Transaction]*Tx{},
 	}, nil

@@ -121,7 +121,6 @@ func openLocalDatabaseWithConfig(ctx *core.Context, config LocalDatabaseConfig) 
 
 	if !config.Restricted {
 		mainKv, err := filekv.OpenSingleFileKV(filekv.KvStoreConfig{
-			Host:       config.Host,
 			Path:       mainKVPath,
 			InMemory:   config.InMemory,
 			Filesystem: fls,
@@ -139,7 +138,6 @@ func openLocalDatabaseWithConfig(ctx *core.Context, config LocalDatabaseConfig) 
 	}
 
 	schemaKv, err := filekv.OpenSingleFileKV(filekv.KvStoreConfig{
-		Host:       config.Host,
 		Path:       schemaKVPath,
 		InMemory:   config.InMemory,
 		Filesystem: fls,

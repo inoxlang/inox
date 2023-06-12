@@ -12,7 +12,6 @@ func TestKvSet(t *testing.T) {
 	fls := newMemFilesystem()
 
 	kv, err := OpenSingleFileKV(KvStoreConfig{
-		Host:       "ldb://main",
 		Path:       "/data.kv",
 		Filesystem: fls,
 	})
@@ -47,7 +46,6 @@ func TestKvForEach(t *testing.T) {
 	fls := newMemFilesystem()
 
 	kv, err := OpenSingleFileKV(KvStoreConfig{
-		Host:       "ldb://main",
 		Path:       "/data.kv",
 		Filesystem: fls,
 	})
@@ -85,7 +83,6 @@ func TestKvDelete(t *testing.T) {
 	fls := newMemFilesystem()
 
 	kv, err := OpenSingleFileKV(KvStoreConfig{
-		Host:       "ldb://main",
 		Path:       "/data.kv",
 		Filesystem: fls,
 	})
