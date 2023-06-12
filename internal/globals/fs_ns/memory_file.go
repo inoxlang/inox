@@ -4,25 +4,25 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/go-git/go-billy/v5"
 	"github.com/inoxlang/inox/internal/core"
 )
 
 type inMemfile struct {
-	basename     string
-	originalPath string //only used by Name()
-	path         core.Path
-	content      *inMemFileContent
-	position     int64
-	flag         int
-	mode         os.FileMode
+	basename string
+	path     string
+	content  *inMemFileContent
+	position int64
+	flag     int
+	mode     os.FileMode
 
 	isClosed bool
 }
 
 func (f *inMemfile) Name() string {
-	return f.originalPath
+	return f.path
 }
 
 func (f *inMemfile) Read(b []byte) (int, error) {
@@ -95,14 +95,13 @@ func (f *inMemfile) Truncate(size int64) error {
 	return f.content.Truncate(size)
 }
 
-func (f *inMemfile) Duplicate(pth core.Path, originalPath string, mode os.FileMode, flag int) billy.File {
+func (f *inMemfile) Duplicate(originalPath string, mode os.FileMode, flag int) billy.File {
 	new := &inMemfile{
-		basename:     string(pth.Basename()),
-		path:         pth,
-		originalPath: originalPath,
-		content:      f.content,
-		mode:         mode,
-		flag:         flag,
+		basename: string(filepath.Base(originalPath)),
+		path:     originalPath,
+		content:  f.content,
+		mode:     mode,
+		flag:     flag,
 	}
 
 	if isTruncate(flag) {

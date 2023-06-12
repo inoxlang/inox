@@ -56,7 +56,7 @@ func (s *inMemStorage) Has(path string) bool {
 }
 
 func (s *inMemStorage) hasNoLock(path string) bool {
-	path = clean(path)
+	path = normalizeAsAbsolute(path)
 
 	_, ok := s.files[path]
 	return ok
@@ -69,7 +69,8 @@ func (s *inMemStorage) New(path string, mode os.FileMode, flag int) (*inMemfile,
 }
 
 func (s *inMemStorage) newNoLock(path string, mode os.FileMode, flag int) (*inMemfile, error) {
-	path = clean(path)
+	originalPath := path
+	path = normalizeAsAbsolute(path)
 	if s.hasNoLock(path) {
 		if !s.mustGetNoLock(path).mode.IsDir() {
 			return nil, fmt.Errorf("file already exists %q", path)
@@ -83,6 +84,7 @@ func (s *inMemStorage) newNoLock(path string, mode os.FileMode, flag int) (*inMe
 
 	f := &inMemfile{
 		basename: name,
+		path:     originalPath,
 		content: &inMemFileContent{
 			name:         name,
 			creationTime: now,
@@ -103,13 +105,19 @@ func (s *inMemStorage) newNoLock(path string, mode os.FileMode, flag int) (*inMe
 
 func (s *inMemStorage) createParentNoLock(path string, mode os.FileMode, f *inMemfile) error {
 	base := filepath.Dir(path)
-	base = clean(base)
+	if base == "." {
+		base = "/"
+	}
+	base = normalizeAsAbsolute(base)
+
 	if f.Name() == "/" {
 		return nil
 	}
 
-	if _, err := s.newNoLock(base, mode.Perm()|os.ModeDir, 0); err != nil {
-		return err
+	if base != "/" {
+		if _, err := s.newNoLock(base, mode.Perm()|os.ModeDir, 0); err != nil {
+			return err
+		}
 	}
 
 	if _, ok := s.children[base]; !ok {
@@ -124,7 +132,7 @@ func (s *inMemStorage) Children(path string) []*inMemfile {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
-	path = clean(path)
+	path = normalizeAsAbsolute(path)
 
 	l := make([]*inMemfile, 0)
 	for _, f := range s.children[path] {
@@ -163,7 +171,7 @@ func (s *inMemStorage) mustGetNoLock(path string) *inMemfile {
 }
 
 func (s *inMemStorage) getNoLock(path string) (*inMemfile, bool) {
-	path = clean(path)
+	path = normalizeAsAbsolute(path)
 	if !s.hasNoLock(path) {
 		return nil, false
 	}
@@ -176,8 +184,8 @@ func (s *inMemStorage) Rename(from, to string) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	from = clean(from)
-	to = clean(to)
+	from = normalizeAsAbsolute(from)
+	to = normalizeAsAbsolute(to)
 
 	if !s.hasNoLock(from) {
 		return os.ErrNotExist
@@ -191,7 +199,7 @@ func (s *inMemStorage) Rename(from, to string) error {
 		}
 
 		rel, _ := filepath.Rel(from, pathFrom)
-		pathTo := filepath.Join(to, rel)
+		pathTo := normalizeAsAbsolute(filepath.Join(to, rel))
 
 		move = append(move, [2]string{pathFrom, pathTo})
 	}
@@ -226,7 +234,7 @@ func (s *inMemStorage) Remove(path string) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	path = clean(path)
+	path = normalizeAsAbsolute(path)
 
 	f, has := s.getNoLock(path)
 	if !has {
@@ -245,8 +253,14 @@ func (s *inMemStorage) Remove(path string) error {
 	return nil
 }
 
-func clean(path string) string {
-	return filepath.Clean(filepath.FromSlash(path))
+func normalizeAsAbsolute(path string) string {
+	path = filepath.Clean(path)
+
+	if path != "/" && path[0] != '/' {
+		return "/" + path
+	}
+
+	return path
 }
 
 type inMemFileContent struct {
