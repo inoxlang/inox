@@ -770,6 +770,11 @@ func NewTupleVariadic(elements ...Value) *Tuple {
 	return &Tuple{elements: elements}
 }
 
+// the caller can modify the result
+func (tuple *Tuple) GetOrBuildElements(ctx *Context) []Value {
+	return utils.CopySlice(tuple.elements)
+}
+
 func (tuple *Tuple) ContainsSimple(ctx *Context, v Value) bool {
 	if !IsSimpleInoxVal(v) {
 		panic("only simple values are expected")

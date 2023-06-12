@@ -72,8 +72,9 @@ func (s *inMemStorage) newNoLock(path string, mode os.FileMode, flag int) (*inMe
 	originalPath := path
 	path = normalizeAsAbsolute(path)
 	if s.hasNoLock(path) {
+		//if there is a non-dir file we return an error
 		if !s.mustGetNoLock(path).mode.IsDir() {
-			return nil, fmt.Errorf("file already exists %q", path)
+			return nil, fmt.Errorf("%w at %q", os.ErrExist, path)
 		}
 
 		return nil, nil

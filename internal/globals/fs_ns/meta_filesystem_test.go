@@ -9,7 +9,7 @@ import (
 
 type MetaFsTestSuite struct {
 	BasicTestSuite
-	//DirTestSuite
+	DirTestSuite
 }
 
 func (s *MetaFsTestSuite) SetUpTest(c *check.C) {
@@ -28,9 +28,9 @@ func (s *MetaFsTestSuite) SetUpTest(c *check.C) {
 	s.BasicTestSuite = BasicTestSuite{
 		FS: createMetaFS(),
 	}
-	// s.DirTestSuite = DirTestSuite{
-	// 	FS: createMetaFS(),
-	// }
+	s.DirTestSuite = DirTestSuite{
+		FS: createMetaFS(),
+	}
 }
 
 func (s *MetaFsTestSuite) TearDownTest(c *check.C) {
