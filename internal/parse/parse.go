@@ -5368,9 +5368,15 @@ func (p *parser) parseNumberAndNumberRange() Node {
 
 	start := p.i
 	var parsingErr *ParsingError
+	base := 10
 
-	parseIntegerLiteral := func(raw string, start, end int32) (*IntLiteral, int64) {
-		integer, err := strconv.ParseInt(strings.ReplaceAll(raw, "_", ""), 10, 64)
+	parseIntegerLiteral := func(raw string, start, end int32, base int) (*IntLiteral, int64) {
+		s := raw
+		if base == 16 {
+			s = strings.TrimPrefix(s, "0x")
+		}
+
+		integer, err := strconv.ParseInt(strings.ReplaceAll(s, "_", ""), base, 64)
 		if err != nil {
 			parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_INT_LIT}
 		}
@@ -5399,7 +5405,7 @@ func (p *parser) parseNumberAndNumberRange() Node {
 
 		if p.i < p.len && p.s[p.i] == '.' { //int range literal
 			lower := string(p.s[start : p.i-1])
-			lowerIntLiteral, _ := parseIntegerLiteral(lower, start, p.i-1)
+			lowerIntLiteral, _ := parseIntegerLiteral(lower, start, p.i-1, 10)
 			tokens := []Token{{Type: TWO_DOTS, Span: NodeSpan{p.i - 1, p.i + 1}}}
 
 			p.i++
@@ -5423,7 +5429,7 @@ func (p *parser) parseNumberAndNumberRange() Node {
 
 			upper := string(p.s[upperStart:p.i])
 
-			upperIntLiteral, _ := parseIntegerLiteral(upper, upperStart, p.i)
+			upperIntLiteral, _ := parseIntegerLiteral(upper, upperStart, p.i, 10)
 			return &IntegerRangeLiteral{
 				NodeBase: NodeBase{
 					NodeSpan{lowerIntLiteral.Base().Span.Start, upperIntLiteral.Base().Span.End},
@@ -5437,6 +5443,12 @@ func (p *parser) parseNumberAndNumberRange() Node {
 
 		//else float
 		for p.i < p.len && (isDecDigit(p.s[p.i]) || p.s[p.i] == '-') {
+			p.i++
+		}
+	} else if p.i < p.len-1 && p.s[p.i] == 'x' && isHexDigit(p.s[p.i+1]) { //hexa decimal
+		base = 16
+		p.i++
+		for p.i < p.len && (isHexDigit(p.s[p.i]) || p.s[p.i] == '_') {
 			p.i++
 		}
 	}
@@ -5476,7 +5488,7 @@ func (p *parser) parseNumberAndNumberRange() Node {
 		}
 
 	} else {
-		literal, _ = parseIntegerLiteral(raw, start, p.i)
+		literal, _ = parseIntegerLiteral(raw, start, p.i, base)
 	}
 
 	return literal
@@ -10130,6 +10142,10 @@ func isByteSliceBase(r rune) bool {
 
 func isDecDigit(r rune) bool {
 	return r >= '0' && r <= '9'
+}
+
+func isHexDigit(r rune) bool {
+	return (r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')
 }
 
 func isIdentChar(r rune) bool {

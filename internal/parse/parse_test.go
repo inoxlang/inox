@@ -5163,17 +5163,33 @@ func testParse(
 	})
 
 	t.Run("integer literal", func(t *testing.T) {
-		n := mustparseChunk(t, "12")
-		assert.EqualValues(t, &Chunk{
-			NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
-			Statements: []Node{
-				&IntLiteral{
-					NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
-					Raw:      "12",
-					Value:    12,
+		t.Run("decimal", func(t *testing.T) {
+			n := mustparseChunk(t, "12")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+				Statements: []Node{
+					&IntLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+						Raw:      "12",
+						Value:    12,
+					},
 				},
-			},
-		}, n)
+			}, n)
+		})
+		t.Run("hexadecimal", func(t *testing.T) {
+			n := mustparseChunk(t, "0x33")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
+				Statements: []Node{
+					&IntLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
+						Raw:      "0x33",
+						Value:    0x33,
+					},
+				},
+			}, n)
+		})
+
 	})
 
 	t.Run("float literal", func(t *testing.T) {
