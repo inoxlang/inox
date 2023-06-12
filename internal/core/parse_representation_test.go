@@ -321,6 +321,11 @@ func TestParseRepr(t *testing.T) {
 		//dates
 		{`2020y-Local`, -1, Date(time.Date(2020, 1, 1, 0, 0, 0, 0, time.Local))},
 		{`2020y-10mt-Local`, -1, Date(time.Date(2020, 10, 1, 0, 0, 0, 0, time.Local))},
+		{
+			`2020y-6mt-12d-18h-4m-4s-349ms-665us-Local`,
+			-1,
+			Date(time.Date(2020, 6, 12, 18, 4, 4, (349*1_000_000)+(665*1000), time.Local)),
+		},
 		{`2020y-`, 6, nil},
 		{`2020y-10`, 8, nil},
 		{`2020y-10m`, 9, nil},

@@ -5210,7 +5210,7 @@ func (p *parser) parseCallArgsNoParenthesis(call *CallExpression) {
 }
 
 func ParseDateLiteral(braw []byte) (date time.Time, parsingErr *ParsingError) {
-	if len(braw) > 40 || !DATE_LITERAL_REGEX.Match(braw) {
+	if len(braw) > 50 || !DATE_LITERAL_REGEX.Match(braw) {
 		return time.Time{}, &ParsingError{UnspecifiedParsingError, INVALID_DATE_LITERAL}
 	}
 

@@ -5453,6 +5453,20 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("date literal : up to microseconds (longer)", func(t *testing.T) {
+			n := mustparseChunk(t, "2020y-6mt-12d-18h-4m-4s-349ms-665us-Local")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 41}, nil, nil},
+				Statements: []Node{
+					&DateLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 41}, nil, nil},
+						Raw:      "2020y-6mt-12d-18h-4m-4s-349ms-665us-Local",
+						Value:    time.Date(2020, 6, 12, 18, 4, 4, (349*1_000_000)+(665*1000), time.Local),
+					},
+				},
+			}, n)
+		})
+
 	})
 
 	t.Run("rate literal", func(t *testing.T) {

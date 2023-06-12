@@ -19,6 +19,10 @@ func ParseRepr(ctx *Context, b []byte) (Value, error) {
 		return v, nil
 	}
 
+	if errIndex == len(b) {
+		return nil, fmt.Errorf("error at end of representation")
+	}
+
 	return nil, fmt.Errorf("error at index %d, unexpected character '%s'", errIndex, string(b[errIndex]))
 }
 
