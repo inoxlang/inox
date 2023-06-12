@@ -7,6 +7,10 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+var (
+	ANY_COLOR = &Color{}
+)
+
 // A Color represents a symbolic Color.
 type Color struct {
 	UnassignablePropsMixin

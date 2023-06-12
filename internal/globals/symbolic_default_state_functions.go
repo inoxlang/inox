@@ -264,7 +264,16 @@ func init() {
 
 		//
 		_Color, func(ctx *symbolic.Context, firstArg symbolic.SymbolicValue, others ...symbolic.SymbolicValue) *symbolic.Color {
-			return &symbolic.Color{}
+			return symbolic.ANY_COLOR
+		},
+
+		_FileMode, func(ctx *symbolic.Context, firstArg symbolic.SymbolicValue) *symbolic.FileMode {
+			_, ok := firstArg.(*symbolic.Int)
+			if !ok {
+				ctx.AddSymbolicGoFunctionError("argument should be an integer")
+			}
+
+			return symbolic.ANY_FILEMODE
 		},
 
 		_add_ctx_data, func(ctx *symbolic.Context, name *symbolic.Identifier, value symbolic.SymbolicValue) {

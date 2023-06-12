@@ -416,6 +416,15 @@ func _Color(ctx *core.Context, firstArg core.Value, other ...core.Value) core.Co
 	}
 }
 
+func _FileMode(ctx *core.Context, firstArg core.Value) core.FileMode {
+	integer, ok := firstArg.(core.Int)
+	if !ok {
+		panic(commonfmt.FmtErrInvalidArgumentAtPos(0, "should be an integer"))
+	}
+
+	return core.FileMode(integer)
+}
+
 func _add_ctx_data(ctx *core.Context, name core.Identifier, value core.Value) {
 	ctx.AddUserData(name, value)
 }

@@ -256,7 +256,8 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 		"sum_options": core.ValOf(core.SumOptions),
 		"mime":        core.ValOf(http_ns.Mime_),
 
-		"Color": core.WrapGoFunction(_Color),
+		"Color":    core.WrapGoFunction(_Color),
+		"FileMode": core.WrapGoFunction(_FileMode),
 
 		"help": core.ValOf(help_ns.Help),
 	}
