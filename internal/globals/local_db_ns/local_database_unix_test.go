@@ -11,9 +11,10 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/permkind"
-	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
+
+const MEM_FS_STORAGE_SIZE = 100_000_000
 
 func TestOpenDatabase(t *testing.T) {
 
@@ -32,7 +33,7 @@ func TestOpenDatabase(t *testing.T) {
 			HostResolutions: map[core.Host]core.Value{
 				core.Host("ldb://main"): core.Path(dir),
 			},
-			Filesystem: fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE),
+			Filesystem: fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE),
 		}
 
 		ctx1 := core.NewContexWithEmptyState(ctxConfig, nil)
@@ -67,7 +68,7 @@ func TestOpenDatabase(t *testing.T) {
 			HostResolutions: map[core.Host]core.Value{
 				core.Host("ldb://main"): core.Path(dir),
 			},
-			Filesystem: fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE),
+			Filesystem: fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE),
 		}
 
 		ctx1 := core.NewContexWithEmptyState(ctxConfig, nil)
@@ -108,7 +109,7 @@ func TestOpenDatabase(t *testing.T) {
 			HostResolutions: map[core.Host]core.Value{
 				core.Host("ldb://main"): core.Path(dir),
 			},
-			Filesystem: fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE),
+			Filesystem: fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE),
 		}
 
 		wg := new(sync.WaitGroup)
@@ -190,7 +191,7 @@ func TestLocalDatabase(t *testing.T) {
 					HostResolutions: map[core.Host]core.Value{
 						HOST: core.Path(dir),
 					},
-					Filesystem: fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE),
+					Filesystem: fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE),
 				}
 				config.Host = HOST
 				config.Path = core.Path(dir)
@@ -252,17 +253,14 @@ func TestLocalDatabase(t *testing.T) {
 					// core.ReleaseConcreteResource(r)
 
 					//we check that the database transaction is commited
-					ldb.mainKV.db.View(func(txn *Tx) error {
-						item, err := txn.Get(string(key))
-						if !assert.NoError(t, err) {
-							return nil
-						}
+					otherCtx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+					v, ok, err := ldb.mainKV.Get(otherCtx, key, ldb)
 
-						v, err := core.ParseRepr(ctx, utils.StringAsBytes(item))
-						assert.NoError(t, err)
-						assert.Equal(t, Int(1), v)
-						return nil
-					})
+					if !assert.NoError(t, err) {
+						return
+					}
+					assert.True(t, bool(ok))
+					assert.Equal(t, Int(1), v)
 				})
 
 				t.Run("Set -> rollback", func(t *testing.T) {
@@ -332,17 +330,15 @@ func TestLocalDatabase(t *testing.T) {
 					assert.Equal(t, Int(1), v)
 
 					//we check that the database transaction is commited
-					ldb.mainKV.db.View(func(txn *Tx) error {
-						item, err := txn.Get(string(key))
-						if !assert.NoError(t, err) {
-							return nil
-						}
+					otherCtx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 
-						v, err := core.ParseRepr(ctx, utils.StringAsBytes(item))
-						assert.NoError(t, err)
-						assert.Equal(t, Int(1), v)
-						return nil
-					})
+					v, ok, err := ldb.mainKV.Get(otherCtx, key, ldb)
+
+					if !assert.NoError(t, err) {
+						return
+					}
+					assert.True(t, bool(ok))
+					assert.Equal(t, Int(1), v)
 				})
 			})
 
@@ -409,7 +405,7 @@ func TestUpdateSchema(t *testing.T) {
 
 	t.Run("", func(t *testing.T) {
 		tempdir := t.TempDir()
-		fls := fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE)
+		fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)
 
 		ldb, ctx := openDB(tempdir, fls)
 
@@ -434,7 +430,7 @@ func TestUpdateSchema(t *testing.T) {
 	t.Run("updating with the schema should be ignored", func(t *testing.T) {
 
 		tempdir := t.TempDir()
-		fls := fs_ns.NewMemFilesystem(MAX_MEM_FS_STORAGE_SIZE)
+		fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)
 
 		ldb, ctx := openDB(tempdir, fls)
 
