@@ -78,7 +78,7 @@ const (
 // Transactions are used for all forms of data access to the buntDB.
 type buntDB struct {
 	path      string
-	fls       afs.Filesystem
+	fls       billy.Basic
 	mu        sync.RWMutex      // the gatekeeper for all fields
 	file      billy.File        // the underlying file
 	buf       []byte            // a buffer to write to
@@ -153,7 +153,7 @@ type exctx struct {
 
 // openBuntDBNoPermCheck opens a database at the provided path.
 // If the file does not exist then it will be created automatically.
-func openBuntDBNoPermCheck(path string, fls afs.Filesystem, config ...buntDbConfig) (*buntDB, error) {
+func openBuntDBNoPermCheck(path string, fls billy.Basic, config ...buntDbConfig) (*buntDB, error) {
 	db := &buntDB{fls: fls}
 	// initialize trees and indexes
 	db.keys = btreeNew(lessCtx(nil))

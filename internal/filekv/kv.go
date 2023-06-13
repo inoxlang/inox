@@ -6,7 +6,7 @@ import (
 	"runtime/debug"
 	"sync"
 
-	"github.com/inoxlang/inox/internal/afs"
+	"github.com/go-git/go-billy/v5"
 	core "github.com/inoxlang/inox/internal/core"
 
 	"github.com/inoxlang/inox/internal/utils"
@@ -33,7 +33,7 @@ type SingleFileKV struct {
 type KvStoreConfig struct {
 	Path       core.Path
 	InMemory   bool
-	Filesystem afs.Filesystem
+	Filesystem billy.Basic
 }
 
 func OpenSingleFileKV(config KvStoreConfig) (_ *SingleFileKV, finalErr error) {

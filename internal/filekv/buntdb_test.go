@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/memfs"
 	fsutil "github.com/go-git/go-billy/v5/util"
 
@@ -45,7 +46,7 @@ func testOpenWithFS(t testing.TB, fls afs.Filesystem) *buntDB {
 }
 
 func testReOpen(t testing.TB, db *buntDB) *buntDB {
-	var fls afs.Filesystem
+	var fls billy.Basic
 	if db != nil {
 		fls = db.fls
 	} else {
@@ -54,7 +55,7 @@ func testReOpen(t testing.TB, db *buntDB) *buntDB {
 	return testReOpenDelay(t, db, 0, fls)
 }
 
-func testReOpenDelay(t testing.TB, db *buntDB, dur time.Duration, fls afs.Filesystem) *buntDB {
+func testReOpenDelay(t testing.TB, db *buntDB, dur time.Duration, fls billy.Basic) *buntDB {
 	if db != nil {
 		if err := db.Close(); err != nil {
 			t.Fatal(err)
