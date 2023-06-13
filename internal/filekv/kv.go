@@ -331,9 +331,16 @@ func (kv *SingleFileKV) getCreateDatabaseTxn(db any, tx *core.Transaction) *Data
 	if err != nil {
 		panic(err)
 	}
-	dbTx, ok := v.(*Tx)
 
-	if ok {
+	var dbTx *Tx
+	var hasTx bool
+
+	txMap, hasTxMap := v.(map[any]*Tx)
+	if hasTxMap {
+		dbTx, hasTx = txMap[kv]
+	}
+
+	if hasTx {
 		return NewDatabaseTxIL(dbTx)
 	}
 
@@ -342,7 +349,13 @@ func (kv *SingleFileKV) getCreateDatabaseTxn(db any, tx *core.Transaction) *Data
 	if err != nil {
 		panic(err)
 	}
-	if err = tx.SetValue(db, dbTx); err != nil {
+
+	if !hasTxMap {
+		txMap = map[any]*Tx{}
+	}
+	txMap[kv] = dbTx
+
+	if err = tx.SetValue(db, txMap); err != nil {
 		panic(err)
 	}
 
