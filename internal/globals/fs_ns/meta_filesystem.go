@@ -42,8 +42,9 @@ var (
 // MetaFilesystem is a filesystem that works on top of another filesystem, it stores its metadata in a file and file contents
 // in regular files.
 type MetaFilesystem struct {
-	underlying afs.Filesystem
-	dir        string
+	//underlying afs.Filesystem
+	underlying billy.Basic
+	dir        *string //optional
 
 	//all the metadata about files is stored in this Key value store.
 	metadata *filekv.SingleFileKV
@@ -52,15 +53,31 @@ type MetaFilesystem struct {
 	lock sync.RWMutex
 }
 
-func OpenMetaFilesystem(ctx *core.Context, underlying afs.Filesystem, dir string) (*MetaFilesystem, error) {
-	if err := underlying.MkdirAll(dir, 0700); err != nil {
-		return nil, fmt.Errorf("failed to create directory for meta filesystem: %w", err)
+type MetaFilesystemOptions struct {
+	Dir string //used if underlying is a  filesystem
+}
+
+func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFilesystemOptions) (*MetaFilesystem, error) {
+	kvConfig := filekv.KvStoreConfig{
+		Filesystem: underlying,
 	}
 
-	kv, err := filekv.OpenSingleFileKV(filekv.KvStoreConfig{
-		Path:       core.PathFrom(underlying.Join(dir, METAFS_KV_FILENAME)),
-		Filesystem: underlying,
-	})
+	if opts.Dir != "" {
+		fls, ok := underlying.(afs.Filesystem)
+		if !ok {
+			return nil,
+				fmt.Errorf("impossble to create directory for meta filesystem since the underlying storage is not a full-fledge filesystem")
+		}
+
+		if err := fls.MkdirAll(opts.Dir, 0700); err != nil {
+			return nil, fmt.Errorf("failed to create directory for meta filesystem: %w", err)
+		}
+		kvConfig.Path = core.PathFrom(underlying.Join(opts.Dir, METAFS_KV_FILENAME))
+	} else {
+		kvConfig.Path = "/" + METAFS_KV_FILENAME
+	}
+
+	kv, err := filekv.OpenSingleFileKV(kvConfig)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to open/create single-file KV store for storing metadata of meta filesystem: %w", err)
@@ -69,8 +86,12 @@ func OpenMetaFilesystem(ctx *core.Context, underlying afs.Filesystem, dir string
 	fls := &MetaFilesystem{
 		ctx:        ctx,
 		underlying: underlying,
-		dir:        dir,
 		metadata:   kv,
+	}
+
+	dir := opts.Dir
+	if dir != "" {
+		fls.dir = &dir
 	}
 
 	//create metadata for root directory '/' if not present
@@ -167,7 +188,11 @@ func (fls *MetaFilesystem) getFileMetadata(pth core.Path, usedTx *filekv.Databas
 		underylingFile := record.Prop(fls.ctx, METAFS_UNDERLYING_FILE_PROPNAME).(core.Str)
 
 		underlyingFilePath = new(core.Path)
-		*underlyingFilePath = core.PathFrom(fls.underlying.Join(fls.dir, string(underylingFile)))
+		if fls.dir != nil {
+			*underlyingFilePath = core.PathFrom(fls.underlying.Join(*fls.dir, string(underylingFile)))
+		} else {
+			*underlyingFilePath = core.PathFrom(normalizeAsAbsolute(string(underylingFile)))
+		}
 	}
 
 	var children []core.Str
@@ -300,8 +325,14 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 		}
 
 		//create & store metadata for new file
+		var underlyingFilePath core.Path
 
-		underlyingFilePath := core.Path(fls.underlying.Join(fls.dir, ulid.Make().String()))
+		if fls.dir != nil {
+			underlyingFilePath = core.Path(fls.underlying.Join(*fls.dir, ulid.Make().String()))
+		} else {
+			underlyingFilePath = core.Path(normalizeAsAbsolute(ulid.Make().String()))
+		}
+
 		creationTime := core.Date(time.Now())
 
 		mode := fs.FileMode(perm)
