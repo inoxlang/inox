@@ -84,8 +84,9 @@ func (s *inMemStorage) newNoLock(path string, mode os.FileMode, flag int) (*inMe
 	now := time.Now()
 
 	f := &inMemfile{
-		basename: name,
-		path:     originalPath,
+		basename:     name,
+		originalPath: originalPath,
+		absPath:      core.PathFrom(path),
 		content: &inMemFileContent{
 			name:         name,
 			creationTime: now,
