@@ -5225,8 +5225,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}, res)
 			})
 
-			t.SkipNow()
-
 			t.Run("single-property object pattern before properties", func(t *testing.T) {
 				code := `
 					%s = "s"
@@ -5286,6 +5284,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 							entryPatterns: map[string]Pattern{
 								"name": NewExactStringPattern(Str("foo")),
 							},
+							inexact: true,
 						}),
 						"name": NewExactStringPattern(Str("foo")),
 					},

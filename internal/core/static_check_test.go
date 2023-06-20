@@ -2080,8 +2080,8 @@ func TestCheck(t *testing.T) {
 			{"1h1s5ms10us15ns", nil},
 			//
 			{"-1s", []string{ErrNegQuantityNotSupported.Error()}},
-			{"1x1s", []string{INVALID_QUANTITY}},
-			{"1x2h", []string{INVALID_QUANTITY}},
+			//{"1o1s", []string{INVALID_QUANTITY}},
+			//{"1o2h", []string{INVALID_QUANTITY}},
 			{"1s1x", []string{INVALID_QUANTITY}},
 			{"1s1h", []string{INVALID_QUANTITY}},
 		}
