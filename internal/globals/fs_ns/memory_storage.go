@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sync"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
@@ -46,6 +48,70 @@ func newInMemoryStorage(maxStorageSize core.ByteCount) *inMemStorage {
 		maxStorageSize: int64(maxStorageSize),
 	}
 
+	return storage
+}
+
+func newInMemoryStorageFromSnapshot(snapshot FilesystemSnapshot, maxStorageSize core.ByteCount) *inMemStorage {
+	storage := newInMemoryStorage(maxStorageSize)
+
+	//create all files & directories
+	for path, metadata := range snapshot.Metadata {
+		file := &inMemfile{
+			basename:     filepath.Base(path),
+			originalPath: path,
+			absPath:      metadata.AbsolutePath,
+			flag:         0,
+			mode:         fs.FileMode(metadata.Mode),
+		}
+		storage.files[path] = file
+		content, ok := snapshot.FileContents[path]
+
+		file.content = &inMemFileContent{
+			name:                     file.basename,
+			creationTime:             time.Time(metadata.CreationTime),
+			filesystemMaxStorageSize: storage.maxStorageSize,
+			filesystemStorageSize:    &storage.totalContentSize,
+		}
+
+		file.content.modificationTime.Store(time.Time(metadata.ModificationTime))
+
+		if ok {
+			file.content.bytes = utils.Must(io.ReadAll(content.Reader()))
+
+			if len(file.content.bytes) != int(metadata.Size) {
+				panic(fmt.Errorf("failed to create filesystem from snapshot, inconsistency: size of file %s is %d but size of content is %d",
+					path, metadata.Size, len(file.content.bytes)))
+			}
+		} else {
+
+		}
+	}
+
+	//create structure
+
+	children := map[string]*inMemfile{}
+	storage.children["/"] = children
+
+	for _, child := range snapshot.RootChildNames {
+		childPath := filepath.Join("/", child)
+		children[child] = storage.files[childPath]
+	}
+
+	for path, metadata := range snapshot.Metadata {
+		file := storage.files[path]
+
+		if !file.mode.IsDir() {
+			continue
+		}
+
+		children := map[string]*inMemfile{}
+		storage.children[path] = children
+
+		for _, child := range metadata.ChildrenNames {
+			childPath := filepath.Join(path, child)
+			children[childPath] = storage.files[childPath]
+		}
+	}
 	return storage
 }
 

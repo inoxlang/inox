@@ -29,6 +29,14 @@ func NewMemFilesystem(maxTotalStorageSize core.ByteCount) *MemFilesystem {
 	return &MemFilesystem{s: newInMemoryStorage(maxTotalStorageSize)}
 }
 
+func NewMemFilesystemFromSnapshot(snapshot FilesystemSnapshot, maxTotalStorageSize core.ByteCount) *MemFilesystem {
+	storage := newInMemoryStorageFromSnapshot(snapshot, maxTotalStorageSize)
+
+	return &MemFilesystem{
+		s: storage,
+	}
+}
+
 func (fs MemFilesystem) Chroot(path string) (billy.Filesystem, error) {
 	return nil, core.ErrNotImplemented
 }
@@ -264,6 +272,12 @@ func (fs *MemFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [
 			snapshot.FileContents[normalizedPath] = content
 		}
 
+	}
+
+	childrenMap := storage.children["/"]
+
+	for child := range childrenMap {
+		snapshot.RootChildNames = append(snapshot.RootChildNames, filepath.Base(child))
 	}
 
 	return snapshot

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	billy "github.com/go-git/go-billy/v5"
+	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core"
 	"gopkg.in/check.v1"
 
@@ -80,7 +81,7 @@ func TestMemoryFilesystemCapabilities(t *testing.T) {
 	}
 }
 
-func TestMemoryFilesystemSnapshot(t *testing.T) {
+func TestMemoryFilesystemTakeFilesystemSnapshot(t *testing.T) {
 	const MAX_STORAGE_SIZE = 10_000
 	getContentNoCache := func(ChecksumSHA256 [32]byte) AddressableContent {
 		return nil
@@ -267,7 +268,7 @@ func TestMemoryFilesystemSnapshot(t *testing.T) {
 		assert.NoError(t, err)
 		dirInfo := info[0].(core.FileInfo)
 
-		//create dir
+		//create file
 		f, err := fs.Create("/dir/file.txt")
 		assert.NoError(t, err)
 		f.Write([]byte("hello"))
@@ -325,5 +326,177 @@ func TestMemoryFilesystemSnapshot(t *testing.T) {
 		actualContentBytes, err := io.ReadAll(content.Reader())
 		assert.NoError(t, err)
 		assert.Equal(t, []byte("hello"), actualContentBytes)
+	})
+}
+
+func TestNewMemFilesystemFromSnapshot(t *testing.T) {
+	const MAX_STORAGE_SIZE = 10_000
+	getContentNoCache := func(ChecksumSHA256 [32]byte) AddressableContent {
+		return nil
+	}
+
+	t.Run("empty filesystem", func(t *testing.T) {
+		originalFS := NewMemFilesystem(MAX_STORAGE_SIZE)
+		snapshot := originalFS.TakeFilesystemSnapshot(getContentNoCache)
+
+		fs := NewMemFilesystemFromSnapshot(snapshot, MAX_STORAGE_SIZE)
+
+		entries, err := fs.ReadDir("/")
+		assert.NoError(t, err)
+		assert.Empty(t, entries)
+	})
+
+	t.Run("file at root level", func(t *testing.T) {
+		originalFS := NewMemFilesystem(MAX_STORAGE_SIZE)
+
+		f, err := originalFS.Create("/file.txt")
+		assert.NoError(t, err)
+		f.Write([]byte("hello"))
+		f.Close()
+
+		snapshot := originalFS.TakeFilesystemSnapshot(getContentNoCache)
+		fs := NewMemFilesystemFromSnapshot(snapshot, MAX_STORAGE_SIZE)
+
+		entries, err := fs.ReadDir("/")
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Len(t, entries, 1) {
+			return
+		}
+
+		originalEntries, _ := originalFS.ReadDir("/")
+		assert.Equal(t, originalEntries, entries)
+
+		//check content of file
+		content, err := util.ReadFile(fs, "/file.txt")
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, []byte("hello"), content)
+	})
+
+	t.Run("two files at root level", func(t *testing.T) {
+		originalFS := NewMemFilesystem(MAX_STORAGE_SIZE)
+
+		f, err := originalFS.Create("/file1.txt")
+		assert.NoError(t, err)
+		f.Write([]byte("hello1"))
+		f.Close()
+
+		f2, err := originalFS.Create("/file2.txt")
+		assert.NoError(t, err)
+		f2.Write([]byte("hello2"))
+		f2.Close()
+
+		snapshot := originalFS.TakeFilesystemSnapshot(getContentNoCache)
+		fs := NewMemFilesystemFromSnapshot(snapshot, MAX_STORAGE_SIZE)
+
+		entries, err := fs.ReadDir("/")
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Len(t, entries, 2) {
+			return
+		}
+
+		originalEntries, _ := originalFS.ReadDir("/")
+		assert.Equal(t, originalEntries, entries)
+
+		//check content of file 1
+		content1, err := util.ReadFile(fs, "/file1.txt")
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, []byte("hello1"), content1)
+
+		//check content1 of file 2
+		content2, err := util.ReadFile(fs, "/file2.txt")
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, []byte("hello2"), content2)
+	})
+
+	t.Run("empty dir at root level", func(t *testing.T) {
+		originalFS := NewMemFilesystem(MAX_STORAGE_SIZE)
+
+		err := originalFS.MkdirAll("/dir", DEFAULT_DIR_FMODE)
+		assert.NoError(t, err)
+
+		snapshot := originalFS.TakeFilesystemSnapshot(getContentNoCache)
+		fs := NewMemFilesystemFromSnapshot(snapshot, MAX_STORAGE_SIZE)
+
+		//check the dir exists in the new filesystem
+		entries, err := fs.ReadDir("/")
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Len(t, entries, 1) {
+			return
+		}
+
+		originalEntries, _ := originalFS.ReadDir("/")
+		assert.Equal(t, originalEntries, entries)
+
+		assert.Equal(t, "dir", entries[0].Name())
+		assert.True(t, entries[0].IsDir())
+
+		dirEntries, err := fs.ReadDir("/dir")
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Empty(t, dirEntries)
+	})
+
+	t.Run("dir with file", func(t *testing.T) {
+		originalFS := NewMemFilesystem(MAX_STORAGE_SIZE)
+
+		//create dir
+		err := originalFS.MkdirAll("/dir", DEFAULT_DIR_FMODE)
+		assert.NoError(t, err)
+
+		//create file
+		f, err := originalFS.Create("/dir/file.txt")
+		assert.NoError(t, err)
+		f.Write([]byte("hello"))
+
+		snapshot := originalFS.TakeFilesystemSnapshot(getContentNoCache)
+		fs := NewMemFilesystemFromSnapshot(snapshot, MAX_STORAGE_SIZE)
+
+		//check the dir exists in the new filesystem
+		entries, err := fs.ReadDir("/")
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Len(t, entries, 1) {
+			return
+		}
+
+		originalEntries, _ := originalFS.ReadDir("/")
+		assert.Equal(t, originalEntries, entries)
+
+		assert.Equal(t, "dir", entries[0].Name())
+		assert.True(t, entries[0].IsDir())
+
+		//check the file
+		originalDirEntries, err := originalFS.ReadDir("/dir")
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		dirEntries, err := fs.ReadDir("/dir")
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Equal(t, originalDirEntries, dirEntries)
+
+		//check content of file
+		content1, err := util.ReadFile(fs, "/dir/file.txt")
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, []byte("hello"), content1)
 	})
 }
