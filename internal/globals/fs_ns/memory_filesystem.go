@@ -233,7 +233,11 @@ func (fs *MemFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [
 		info := f.FileInfo()
 
 		childrenMap := storage.children[normalizedPath]
-		childrenNames := utils.GetMapKeys(childrenMap)
+		var childrenNames []string
+
+		for child := range childrenMap {
+			childrenNames = append(childrenNames, filepath.Base(child))
+		}
 
 		metadata := &FileMetadata{
 			Size:             info.Size_,

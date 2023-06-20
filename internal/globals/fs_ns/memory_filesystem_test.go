@@ -255,4 +255,75 @@ func TestMemoryFilesystemSnapshot(t *testing.T) {
 
 		assert.Empty(t, snapshot.FileContents)
 	})
+
+	t.Run("dir with file", func(t *testing.T) {
+		fs := NewMemFilesystem(MAX_STORAGE_SIZE)
+
+		//create dir
+		err := fs.MkdirAll("/dir", DEFAULT_DIR_FMODE)
+		assert.NoError(t, err)
+
+		info, err := fs.ReadDir("/")
+		assert.NoError(t, err)
+		dirInfo := info[0].(core.FileInfo)
+
+		//create dir
+		f, err := fs.Create("/dir/file.txt")
+		assert.NoError(t, err)
+		f.Write([]byte("hello"))
+
+		fileInfo := f.(*inMemfile).FileInfo()
+		fileCreationTime := fileInfo.CreationTime_
+		fileModifTime := fileInfo.ModTime_
+		fileMode := fileInfo.Mode_
+		f.Close()
+
+		snapshot := fs.TakeFilesystemSnapshot(getContentNoCache)
+
+		if !assert.Len(t, snapshot.Metadata, 2) {
+			return
+		}
+		//check dir
+		if !assert.Contains(t, snapshot.Metadata, "/dir") {
+			return
+		}
+
+		metadata := snapshot.Metadata["/dir"]
+		assert.Equal(t, &FileMetadata{
+			AbsolutePath:     "/dir",
+			CreationTime:     dirInfo.CreationTime_,
+			ModificationTime: dirInfo.ModTime_,
+			Mode:             dirInfo.Mode_,
+			ChildrenNames:    []string{"file.txt"},
+		}, metadata)
+
+		//check file
+		assert.Len(t, snapshot.FileContents, 1)
+
+		if !assert.Contains(t, snapshot.Metadata, "/dir/file.txt") {
+			return
+		}
+
+		checkSum := sha256.Sum256([]byte("hello"))
+
+		metadata1 := snapshot.Metadata["/dir/file.txt"]
+		assert.Equal(t, &FileMetadata{
+			AbsolutePath:     "/dir/file.txt",
+			Size:             5,
+			CreationTime:     fileCreationTime,
+			ModificationTime: fileModifTime,
+			Mode:             fileMode,
+			ChecksumSHA256:   checkSum,
+		}, metadata1)
+
+		if !assert.Contains(t, snapshot.FileContents, "/dir/file.txt") {
+			return
+		}
+
+		content := snapshot.FileContents["/dir/file.txt"]
+		assert.Equal(t, checkSum, content.ChecksumSHA256())
+		actualContentBytes, err := io.ReadAll(content.Reader())
+		assert.NoError(t, err)
+		assert.Equal(t, []byte("hello"), actualContentBytes)
+	})
 }
