@@ -1098,12 +1098,19 @@ func (p *parser) parseDotStartingExpression() Node {
 			start := p.i
 			p.i += 2
 
+			tokens := []Token{{Type: TWO_DOTS, Span: NodeSpan{start, start + 2}}}
+
+			var err *ParsingError
+			if p.i < p.len && p.s[p.i] == '.' {
+				err = &ParsingError{UnspecifiedParsingError, INVALID_UPPER_BOUND_RANGE_EXPR}
+			}
+
 			upperBound, _ := p.parseExpression()
 			expr := &UpperBoundRangeExpression{
 				NodeBase: NodeBase{
 					NodeSpan{start, p.i},
-					nil,
-					[]Token{{Type: TWO_DOTS, Span: NodeSpan{start, start + 2}}},
+					err,
+					tokens,
 				},
 				UpperBound: upperBound,
 			}

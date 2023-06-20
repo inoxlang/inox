@@ -24,6 +24,12 @@ func TestPrint(t *testing.T) {
 		"1..",
 		"'a'..'b'",
 		"'a'..",
+		//upper-bound range expression
+		"..1",
+		"..12",
+		".../",
+		"..../",
+		"...../",
 		//url expressions
 		"https://{host}/",
 		"https://example.com/{x}",

@@ -13033,24 +13033,49 @@ func testParse(
 	})
 
 	t.Run("upper bound range expression", func(t *testing.T) {
-		n := mustparseChunk(t, "..10")
-		assert.EqualValues(t, &Chunk{
-			NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
-			Statements: []Node{
-				&UpperBoundRangeExpression{
-					NodeBase: NodeBase{
-						NodeSpan{0, 4},
-						nil,
-						[]Token{{Type: TWO_DOTS, Span: NodeSpan{0, 2}}},
-					},
-					UpperBound: &IntLiteral{
-						NodeBase: NodeBase{NodeSpan{2, 4}, nil, nil},
-						Raw:      "10",
-						Value:    10,
+		t.Run("integer", func(t *testing.T) {
+			n := mustparseChunk(t, "..10")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
+				Statements: []Node{
+					&UpperBoundRangeExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 4},
+							nil,
+							[]Token{{Type: TWO_DOTS, Span: NodeSpan{0, 2}}},
+						},
+						UpperBound: &IntLiteral{
+							NodeBase: NodeBase{NodeSpan{2, 4}, nil, nil},
+							Raw:      "10",
+							Value:    10,
+						},
 					},
 				},
-			},
-		}, n)
+			}, n)
+		})
+
+		t.Run("upper-bound expression should not start with '.'", func(t *testing.T) {
+			n, err := parseChunk(t, ".../", "")
+			assert.Error(t, err)
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
+				Statements: []Node{
+					&UpperBoundRangeExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 4},
+							&ParsingError{UnspecifiedParsingError, INVALID_UPPER_BOUND_RANGE_EXPR},
+							[]Token{{Type: TWO_DOTS, Span: NodeSpan{0, 2}}},
+						},
+						UpperBound: &RelativePathLiteral{
+							NodeBase: NodeBase{NodeSpan{2, 4}, nil, nil},
+							Raw:      "./",
+							Value:    "./",
+						},
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("integer range literal", func(t *testing.T) {

@@ -145,6 +145,7 @@ const (
 	INVALID_RUNE_LIT_INVALID_SINGLE_CHAR_ESCAPE                     = "invalid rune literal: invalid single character escape"
 	UNTERMINATED_RUNE_LIT_MISSING_QUOTE                             = "unterminated rune literal, missing ' at the end"
 	INVALID_RUNE_RANGE_EXPR                                         = "invalid rune range expression"
+	INVALID_UPPER_BOUND_RANGE_EXPR                                  = "invalid upper-bound range expression"
 	UNTERMINATED_QUOTED_STRING_LIT                                  = "unterminated quoted string literal"
 	UNTERMINATED_MULTILINE_STRING_LIT                               = "unterminated multiline string literal"
 	UNKNOWN_BYTE_SLICE_BASE                                         = "unknown byte slice base"
