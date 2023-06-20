@@ -3,6 +3,7 @@ package fs_ns
 //modification of https://github.com/go-git/go-billy/blob/master/memfs/storage.go (Apache 2.0 license)
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,6 +13,11 @@ import (
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/util"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/utils"
+)
+
+var (
+	_ SnapshotableFilesystem = (*MemFilesystem)(nil)
 )
 
 type MemFilesystem struct {
@@ -208,4 +214,53 @@ func (fs *MemFilesystem) Capabilities() billy.Capability {
 		billy.ReadAndWriteCapability |
 		billy.SeekCapability |
 		billy.TruncateCapability
+}
+
+func (fs *MemFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [32]byte) AddressableContent) FilesystemSnapshot {
+	storage := fs.s
+	storage.lock.RLock()
+	defer storage.lock.RUnlock()
+
+	snapshot := FilesystemSnapshot{
+		Metadata:     make(map[string]*FileMetadata, len(storage.files)),
+		FileContents: make(map[string]AddressableContent, len(storage.files)),
+	}
+
+	for normalizedPath, f := range storage.files {
+		f.content.m.RLock()
+		defer f.content.m.RUnlock()
+
+		info := f.FileInfo()
+
+		childrenMap := storage.children[normalizedPath]
+		childrenNames := utils.GetMapKeys(childrenMap)
+
+		metadata := &FileMetadata{
+			Size:             info.Size_,
+			AbsolutePath:     f.absPath,
+			CreationTime:     info.CreationTime_,
+			ModificationTime: info.ModTime_,
+			Mode:             info.Mode_,
+			ChildrenNames:    childrenNames,
+		}
+
+		snapshot.Metadata[normalizedPath] = metadata
+
+		if !info.IsDir() {
+			metadata.ChecksumSHA256 = sha256.Sum256(f.content.bytes)
+
+			content := getContent(metadata.ChecksumSHA256)
+			if content == nil {
+				content = AddressableContentBytes{
+					sha256: metadata.ChecksumSHA256,
+					data:   utils.CopySlice(f.content.bytes),
+				}
+			}
+
+			snapshot.FileContents[normalizedPath] = content
+		}
+
+	}
+
+	return snapshot
 }

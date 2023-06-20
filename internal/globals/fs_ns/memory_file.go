@@ -116,7 +116,7 @@ func (f *inMemfile) Duplicate(originalPath string, mode os.FileMode, flag int) b
 	return new
 }
 
-func (f *inMemfile) Stat() (os.FileInfo, error) {
+func (f *inMemfile) FileInfo() core.FileInfo {
 	return core.FileInfo{
 		BaseName_:       f.basename,
 		AbsPath_:        f.absPath,
@@ -125,7 +125,11 @@ func (f *inMemfile) Stat() (os.FileInfo, error) {
 		ModTime_:        core.Date(f.content.ModifTime()),
 		HasCreationTime: true,
 		CreationTime_:   core.Date(f.content.creationTime),
-	}, nil
+	}
+}
+
+func (f *inMemfile) Stat() (os.FileInfo, error) {
+	return f.FileInfo(), nil
 }
 
 // Lock is a no-op in memfs.
