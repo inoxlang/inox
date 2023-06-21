@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -90,6 +89,7 @@ type ContextConfig struct {
 	ParentContext        *Context
 	LimitationTokens     map[string]int64
 	Filesystem           afs.Filesystem
+	CreateFilesystem     func(ctx *Context) (afs.Filesystem, error)
 
 	WaitConfirmPrompt WaitConfirmPrompt
 }
@@ -132,6 +132,18 @@ func NewContext(config ContextConfig) *Context {
 		ctx                       = &Context{} //the context is initialized later in the function but we need the address
 	)
 
+	if config.CreateFilesystem != nil {
+		if filesystem != nil {
+			panic(fmt.Errorf("invalid arguments: both .CreateFilesystem & .Filesystem provided"))
+		}
+
+		fs, err := config.CreateFilesystem(ctx)
+		if err != nil {
+			panic(err)
+		}
+		filesystem = fs
+	}
+
 	if config.ParentContext == nil {
 		limiters = make(map[string]*Limiter)
 
@@ -140,7 +152,7 @@ func NewContext(config ContextConfig) *Context {
 			_, alreadyExist := limiters[l.Name]
 			if alreadyExist {
 				//TODO: use logger
-				log.Panicf("context creation: duplicate limit '%s'\n", l.Name)
+				panic(fmt.Errorf("context creation: duplicate limit '%s'\n", l.Name))
 			}
 
 			var fillRate int64 = 1

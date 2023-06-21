@@ -3,11 +3,14 @@
 package main
 
 import (
+	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"syscall/js"
 	"time"
 
+	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
@@ -21,11 +24,15 @@ import (
 const (
 	LSP_INPUT_BUFFER_SIZE  = 5_000_000
 	LSP_OUTPUT_BUFFER_SIZE = 5_000_000
-	OUT_PREFIX             = "[vscode-inox]"
+	FS_SAVE_INTERVAL       = 1 * time.Second
+
+	OUT_PREFIX = "[vscode-inox]"
 )
 
 var printDebug *js.Value
 var printTrace *js.Value
+var saveContent *js.Value
+var saveFilesystemMetadata *js.Value
 
 func main() {
 	ctx := core.NewContext(core.ContextConfig{})
@@ -97,19 +104,35 @@ func main() {
 		OnSession: func(rpcCtx *core.Context, s *jsonrpc.Session) error {
 			printDebug.Invoke(OUT_PREFIX, "new LSP session")
 
-			mainFs := fs_ns.NewMemFilesystem(lsp.DEFAULT_MAX_IN_MEM_FS_STORAGE_SIZE)
-			fls := lsp.NewFilesystem(mainFs, nil)
-
-			file := utils.Must(fls.Create("/main.ix"))
-			utils.Must(file.Write([]byte("manifest {\n\n}")))
-			utils.PanicIfErr(file.Close())
-
-			sessionCtx := core.NewContext(core.ContextConfig{
+			var sessionCtx *core.Context
+			sessionCtx = core.NewContext(core.ContextConfig{
 				Permissions:          rpcCtx.GetGrantedPermissions(),
 				ForbiddenPermissions: rpcCtx.GetForbiddenPermissions(),
 
 				ParentContext: rpcCtx,
-				Filesystem:    fls,
+				CreateFilesystem: func(ctx *core.Context) (afs.Filesystem, error) {
+					mainFs := fs_ns.NewMemFilesystem(1_000_000)
+
+					go func() {
+						for {
+							select {
+							case <-sessionCtx.Done():
+							case <-time.After(FS_SAVE_INTERVAL):
+								saveFilesystem(mainFs)
+							}
+						}
+					}()
+
+					file := utils.Must(mainFs.Create("/main.ix"))
+					if _, err := file.Write([]byte("manifest {\n\n}")); err != nil {
+						return nil, err
+					}
+					if err := file.Close(); err != nil {
+						return nil, err
+					}
+
+					return lsp.NewFilesystem(mainFs, fs_ns.NewMemFilesystem(lsp.DEFAULT_MAX_IN_MEM_FS_STORAGE_SIZE)), nil
+				},
 			})
 			tempState := core.NewGlobalState(sessionCtx)
 			tempState.Logger = state.Logger
@@ -168,6 +191,12 @@ func registerCallbacks(inputMessageChannel chan string, outputMessageChannel cha
 		trace := args[0].Get("print_trace")
 		printTrace = &trace
 
+		save := args[0].Get("save_file_content")
+		saveContent = &save
+
+		save_metadata := args[0].Get("save_filesystem_metadata")
+		saveFilesystemMetadata = &save_metadata
+
 		core.SetInitialWorkingDir(func() (string, error) {
 			return IWD, nil
 		})
@@ -178,4 +207,41 @@ func registerCallbacks(inputMessageChannel chan string, outputMessageChannel cha
 	}))
 
 	fmt.Println(OUT_PREFIX, "handlers registered")
+}
+
+func saveFilesystem(fls *fs_ns.MemFilesystem) {
+	snapshot := fls.TakeFilesystemSnapshot(func(ChecksumSHA256 [32]byte) fs_ns.AddressableContent {
+		return nil
+	})
+
+	//save metadata
+	metadata := map[string]any{}
+
+	for path, fileMetadata := range snapshot.Metadata {
+		fileMetadataJSON := map[string]any{
+			"absPath":      fileMetadata.AbsolutePath.UnderlyingString(),
+			"size":         fmt.Sprint(fileMetadata.Size),
+			"creationTime": time.Time(fileMetadata.CreationTime).Format(time.RFC3339),
+			"modifTime":    time.Time(fileMetadata.ModificationTime).Format(time.RFC3339),
+			"mode":         fmt.Sprint(fileMetadata.Mode),
+		}
+		if fileMetadata.Mode.FileMode().IsDir() {
+			fileMetadataJSON["childrenNames"] = utils.MapSlice(fileMetadata.ChildrenNames, func(s string) any { return s })
+		} else {
+			fileMetadataJSON["checksumSHA256"] = hex.EncodeToString(fileMetadata.ChecksumSHA256[:])
+		}
+		metadata[path] = fileMetadataJSON
+	}
+
+	saveFilesystemMetadata.Invoke(metadata)
+
+	//save file contents
+
+	for _, content := range snapshot.FileContents {
+		encodedContent := base64.StdEncoding.EncodeToString(utils.Must(io.ReadAll(content.Reader())))
+		checksum := content.ChecksumSHA256()
+		encodedChecksum := hex.EncodeToString(checksum[:])
+
+		saveContent.Invoke(encodedChecksum, encodedContent)
+	}
 }
