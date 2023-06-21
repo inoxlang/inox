@@ -241,10 +241,10 @@ func (fs *MemFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [
 		info := f.FileInfo()
 
 		childrenMap := storage.children[normalizedPath]
-		var childrenNames []string
+		var childNames []string
 
 		for child := range childrenMap {
-			childrenNames = append(childrenNames, filepath.Base(child))
+			childNames = append(childNames, filepath.Base(child))
 		}
 
 		metadata := &FileMetadata{
@@ -253,7 +253,7 @@ func (fs *MemFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [
 			CreationTime:     info.CreationTime_,
 			ModificationTime: info.ModTime_,
 			Mode:             info.Mode_,
-			ChildrenNames:    childrenNames,
+			ChildNames:       childNames,
 		}
 
 		snapshot.Metadata[normalizedPath] = metadata
@@ -264,8 +264,8 @@ func (fs *MemFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [
 			content := getContent(metadata.ChecksumSHA256)
 			if content == nil {
 				content = AddressableContentBytes{
-					sha256: metadata.ChecksumSHA256,
-					data:   utils.CopySlice(f.content.bytes),
+					Sha256: metadata.ChecksumSHA256,
+					Data:   utils.CopySlice(f.content.bytes),
 				}
 			}
 

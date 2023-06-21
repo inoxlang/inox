@@ -7,6 +7,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"io/fs"
+	"strconv"
 	"syscall/js"
 	"time"
 
@@ -25,12 +27,17 @@ const (
 	LSP_INPUT_BUFFER_SIZE  = 5_000_000
 	LSP_OUTPUT_BUFFER_SIZE = 5_000_000
 	FS_SAVE_INTERVAL       = 1 * time.Second
+	MAX_FS_STORAGE         = core.ByteCount(10_000_000)
+
+	DATE_FORMAT = time.RFC3339
 
 	OUT_PREFIX = "[vscode-inox]"
 )
 
 var printDebug *js.Value
 var printTrace *js.Value
+var getFileContent *js.Value
+var getFilesystemMetadata *js.Value
 var saveContent *js.Value
 var saveFilesystemMetadata *js.Value
 
@@ -111,7 +118,12 @@ func main() {
 
 				ParentContext: rpcCtx,
 				CreateFilesystem: func(ctx *core.Context) (afs.Filesystem, error) {
-					mainFs := fs_ns.NewMemFilesystem(1_000_000)
+					mainFs, err := createFilesystem()
+					if err != nil {
+						printDebug.Invoke(OUT_PREFIX, err.Error())
+
+						return nil, fmt.Errorf("failed to create filesystem for session: %w", err)
+					}
 
 					go func() {
 						for {
@@ -191,6 +203,12 @@ func registerCallbacks(inputMessageChannel chan string, outputMessageChannel cha
 		trace := args[0].Get("print_trace")
 		printTrace = &trace
 
+		get := args[0].Get("get_file_content")
+		getFileContent = &get
+
+		getMetadata := args[0].Get("get_filesystem_metadata")
+		getFilesystemMetadata = &getMetadata
+
 		save := args[0].Get("save_file_content")
 		saveContent = &save
 
@@ -215,22 +233,23 @@ func saveFilesystem(fls *fs_ns.MemFilesystem) {
 	})
 
 	//save metadata
-	metadata := map[string]any{}
+	metadata := []any{}
 
 	for path, fileMetadata := range snapshot.Metadata {
 		fileMetadataJSON := map[string]any{
+			"path":         path,
 			"absPath":      fileMetadata.AbsolutePath.UnderlyingString(),
-			"size":         fmt.Sprint(fileMetadata.Size),
-			"creationTime": time.Time(fileMetadata.CreationTime).Format(time.RFC3339),
-			"modifTime":    time.Time(fileMetadata.ModificationTime).Format(time.RFC3339),
+			"creationTime": time.Time(fileMetadata.CreationTime).Format(DATE_FORMAT),
+			"modifTime":    time.Time(fileMetadata.ModificationTime).Format(DATE_FORMAT),
 			"mode":         fmt.Sprint(fileMetadata.Mode),
 		}
 		if fileMetadata.Mode.FileMode().IsDir() {
-			fileMetadataJSON["childrenNames"] = utils.MapSlice(fileMetadata.ChildrenNames, func(s string) any { return s })
+			fileMetadataJSON["childNames"] = utils.MapSlice(fileMetadata.ChildNames, func(s string) any { return s })
 		} else {
 			fileMetadataJSON["checksumSHA256"] = hex.EncodeToString(fileMetadata.ChecksumSHA256[:])
+			fileMetadataJSON["size"] = fmt.Sprint(fileMetadata.Size)
 		}
-		metadata[path] = fileMetadataJSON
+		metadata = append(metadata, fileMetadataJSON)
 	}
 
 	saveFilesystemMetadata.Invoke(metadata)
@@ -244,4 +263,95 @@ func saveFilesystem(fls *fs_ns.MemFilesystem) {
 
 		saveContent.Invoke(encodedChecksum, encodedContent)
 	}
+}
+
+func createFilesystem() (*fs_ns.MemFilesystem, error) {
+	results := getFilesystemMetadata.Invoke()
+	metadata := results.Index(0)
+
+	if metadata.Equal(js.Null()) {
+		return fs_ns.NewMemFilesystem(MAX_FS_STORAGE), nil
+	}
+
+	snapshot := fs_ns.FilesystemSnapshot{
+		Metadata:     map[string]*fs_ns.FileMetadata{},
+		FileContents: map[string]fs_ns.AddressableContent{},
+	}
+
+	//get metadata
+	for i := 0; i < metadata.Length(); i++ {
+		fileMetadata := metadata.Index(i)
+		path := fileMetadata.Get("path").String()
+		absPath := fileMetadata.Get("absPath").String()
+		modeVal, err := strconv.ParseUint(fileMetadata.Get("mode").String(), 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse .mode for file %s: %w", path, err)
+		}
+		mode := fs.FileMode(modeVal)
+
+		creationTime, err := time.Parse(DATE_FORMAT, fileMetadata.Get("creationTime").String())
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse .creationTime date for file %s: %w", path, err)
+		}
+		modifTime, err := time.Parse(DATE_FORMAT, fileMetadata.Get("modifTime").String())
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse .modifTime date for file %s: %w", path, err)
+		}
+
+		metadata := &fs_ns.FileMetadata{
+			AbsolutePath:     core.Path(absPath),
+			CreationTime:     core.Date(creationTime),
+			ModificationTime: core.Date(modifTime),
+			Mode:             core.FileMode(mode),
+		}
+		snapshot.Metadata[path] = metadata
+
+		var childNames []string
+		if mode.IsDir() {
+			array := fileMetadata.Get("childNames")
+			for i := 0; i < array.Length(); i++ {
+				childNames = append(childNames, array.Index(i).String())
+			}
+			metadata.ChildNames = childNames
+		} else {
+			size, err := strconv.ParseInt(fileMetadata.Get("size").String(), 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse .size for file %s: %w", path, err)
+			}
+
+			checksumSha256, err := hex.DecodeString(fileMetadata.Get("checksumSHA256").String())
+			if err != nil {
+				return nil, fmt.Errorf("failed to decode .checksumSHA256 for file %s: %w", path, err)
+			}
+
+			metadata.Size = core.ByteCount(size)
+			metadata.ChecksumSHA256 = [32]byte(checksumSha256)
+		}
+	}
+
+	//get contents
+
+	for path, metadata := range snapshot.Metadata {
+		if metadata.Mode.FileMode().IsDir() {
+			continue
+		}
+		checksum := hex.EncodeToString(metadata.ChecksumSHA256[:])
+		results := getFileContent.Invoke(checksum)
+
+		errString := results.Index(1).String()
+		if errString != "" {
+			return nil, fmt.Errorf("failed to get content of file %s: %s", path, errString)
+		}
+		encodedContent := results.Index(0).String()
+		content, err := base64.StdEncoding.DecodeString(encodedContent)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode content of file %s: %s", path, err)
+		}
+		snapshot.FileContents[path] = fs_ns.AddressableContentBytes{
+			Sha256: metadata.ChecksumSHA256,
+			Data:   content,
+		}
+	}
+
+	return fs_ns.NewMemFilesystemFromSnapshot(snapshot, MAX_FS_STORAGE), nil
 }

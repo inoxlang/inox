@@ -295,7 +295,7 @@ func TestMemoryFilesystemTakeFilesystemSnapshot(t *testing.T) {
 			CreationTime:     dirInfo.CreationTime_,
 			ModificationTime: dirInfo.ModTime_,
 			Mode:             dirInfo.Mode_,
-			ChildrenNames:    []string{"file.txt"},
+			ChildNames:       []string{"file.txt"},
 		}, metadata)
 
 		//check file

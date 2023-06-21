@@ -22,7 +22,7 @@ type FileMetadata struct {
 	CreationTime     core.Date
 	ModificationTime core.Date
 	Mode             core.FileMode
-	ChildrenNames    []string
+	ChildNames       []string
 	ChecksumSHA256   [32]byte //empty if directory
 }
 
@@ -32,14 +32,14 @@ type AddressableContent interface {
 }
 
 type AddressableContentBytes struct {
-	sha256 [32]byte
-	data   []byte
+	Sha256 [32]byte
+	Data   []byte
 }
 
 func (b AddressableContentBytes) ChecksumSHA256() [32]byte {
-	return b.sha256
+	return b.Sha256
 }
 
 func (b AddressableContentBytes) Reader() io.Reader {
-	return bytes.NewReader(b.data)
+	return bytes.NewReader(b.Data)
 }

@@ -108,7 +108,7 @@ func newInMemoryStorageFromSnapshot(snapshot FilesystemSnapshot, maxStorageSize 
 		children := map[string]*inMemfile{}
 		storage.children[path] = children
 
-		for _, child := range metadata.ChildrenNames {
+		for _, child := range metadata.ChildNames {
 			childPath := filepath.Join(path, child)
 			children[childPath] = storage.files[childPath]
 		}
