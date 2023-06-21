@@ -12,9 +12,8 @@ type SnapshotableFilesystem interface {
 }
 
 type FilesystemSnapshot struct {
-	RootChildNames []string
-	Metadata       map[string]*FileMetadata
-	FileContents   map[string]AddressableContent
+	Metadata     map[string]*FileMetadata
+	FileContents map[string]AddressableContent
 }
 
 type FileMetadata struct {

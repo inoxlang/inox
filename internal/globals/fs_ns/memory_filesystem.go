@@ -274,11 +274,5 @@ func (fs *MemFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [
 
 	}
 
-	childrenMap := storage.children["/"]
-
-	for child := range childrenMap {
-		snapshot.RootChildNames = append(snapshot.RootChildNames, filepath.Base(child))
-	}
-
 	return snapshot
 }
