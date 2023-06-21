@@ -98,6 +98,15 @@ func (s *DirTestSuite) TestStatDir(c *check.C) {
 	c.Assert(fi.IsDir(), check.Equals, true)
 }
 
+func (s *DirTestSuite) TestStatRootDir(c *check.C) {
+	fi, err := s.FS.Stat("/")
+	c.Assert(err, check.IsNil)
+	c.Assert(fi.Name(), check.Equals, "/")
+	c.Assert(fi.Mode().IsDir(), check.Equals, true)
+	c.Assert(fi.ModTime().IsZero(), check.Equals, false)
+	c.Assert(fi.IsDir(), check.Equals, true)
+}
+
 func (s *BasicTestSuite) TestStatDeep(c *check.C) {
 	files := []string{"foo", "bar", "qux/baz", "qux/qux"}
 	for _, name := range files {

@@ -91,7 +91,7 @@ func TestMemoryFilesystemTakeFilesystemSnapshot(t *testing.T) {
 		fs := NewMemFilesystem(MAX_STORAGE_SIZE)
 		snapshot := fs.TakeFilesystemSnapshot(getContentNoCache)
 
-		assert.Len(t, snapshot.Metadata, 0)
+		assert.Len(t, snapshot.Metadata, 1)
 		assert.Len(t, snapshot.FileContents, 0)
 	})
 
@@ -110,7 +110,7 @@ func TestMemoryFilesystemTakeFilesystemSnapshot(t *testing.T) {
 
 		snapshot := fs.TakeFilesystemSnapshot(getContentNoCache)
 
-		if !assert.Len(t, snapshot.Metadata, 1) {
+		if !assert.Len(t, snapshot.Metadata, 2) {
 			return
 		}
 		if !assert.Contains(t, snapshot.Metadata, "/file.txt") {
@@ -166,7 +166,7 @@ func TestMemoryFilesystemTakeFilesystemSnapshot(t *testing.T) {
 
 		snapshot := fs.TakeFilesystemSnapshot(getContentNoCache)
 
-		if !assert.Len(t, snapshot.Metadata, 2) {
+		if !assert.Len(t, snapshot.Metadata, 3) {
 			return
 		}
 		assert.Len(t, snapshot.FileContents, 2)
@@ -239,7 +239,7 @@ func TestMemoryFilesystemTakeFilesystemSnapshot(t *testing.T) {
 
 		snapshot := fs.TakeFilesystemSnapshot(getContentNoCache)
 
-		if !assert.Len(t, snapshot.Metadata, 1) {
+		if !assert.Len(t, snapshot.Metadata, 2) {
 			return
 		}
 		if !assert.Contains(t, snapshot.Metadata, "/dir") {
@@ -281,7 +281,7 @@ func TestMemoryFilesystemTakeFilesystemSnapshot(t *testing.T) {
 
 		snapshot := fs.TakeFilesystemSnapshot(getContentNoCache)
 
-		if !assert.Len(t, snapshot.Metadata, 2) {
+		if !assert.Len(t, snapshot.Metadata, 3) {
 			return
 		}
 		//check dir

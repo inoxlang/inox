@@ -48,6 +48,12 @@ func newInMemoryStorage(maxStorageSize core.ByteCount) *inMemStorage {
 		maxStorageSize: int64(maxStorageSize),
 	}
 
+	f, err := storage.newNoLock("/", 0700|fs.ModeDir, 0)
+	if err != nil {
+		panic(err)
+	}
+	f.Close()
+
 	return storage
 }
 
