@@ -135,14 +135,6 @@ func main() {
 						}
 					}()
 
-					file := utils.Must(mainFs.Create("/main.ix"))
-					if _, err := file.Write([]byte("manifest {\n\n}")); err != nil {
-						return nil, err
-					}
-					if err := file.Close(); err != nil {
-						return nil, err
-					}
-
 					return lsp.NewFilesystem(mainFs, fs_ns.NewMemFilesystem(lsp.DEFAULT_MAX_IN_MEM_FS_STORAGE_SIZE)), nil
 				},
 			})
@@ -270,7 +262,15 @@ func createFilesystem() (*fs_ns.MemFilesystem, error) {
 	metadata := results.Index(0)
 
 	if metadata.Equal(js.Null()) {
-		return fs_ns.NewMemFilesystem(MAX_FS_STORAGE), nil
+		fls := fs_ns.NewMemFilesystem(MAX_FS_STORAGE)
+		file := utils.Must(fls.Create("/main.ix"))
+		if _, err := file.Write([]byte("manifest {\n\n}")); err != nil {
+			return nil, err
+		}
+		if err := file.Close(); err != nil {
+			return nil, err
+		}
+		return fls, nil
 	}
 
 	snapshot := fs_ns.FilesystemSnapshot{
