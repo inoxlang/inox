@@ -1,10 +1,13 @@
 package project
 
 import (
+	"bufio"
 	"fmt"
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
+	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/oklog/ulid/v2"
 )
@@ -13,9 +16,16 @@ const (
 	PROJECTS_KV_PREFIX = "/projects"
 )
 
+var (
+	_ core.Value = (*Project)(nil)
+)
+
 type Project struct {
 	id                ProjectID
 	projectFilesystem afs.Filesystem
+
+	core.NoReprMixin
+	core.NotClonableMixin
 }
 
 type ProjectID string
@@ -75,4 +85,25 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 	}
 
 	return project, nil
+}
+
+func (p *Project) IsMutable() bool {
+	return true
+}
+
+func (p *Project) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherProject, ok := other.(*Project)
+	if !ok {
+		return false
+	}
+
+	return p == otherProject
+}
+
+func (p *Project) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
+	core.PrintType(w, p)
+}
+
+func (p *Project) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	return symbolic.ANY, nil
 }
