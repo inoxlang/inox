@@ -463,7 +463,6 @@ func (ctx *Context) boundChild(opts BoundChildContextOptions) *Context {
 	child.hostProtocolClients = ctx.hostProtocolClients
 	child.urlProtocolClients = ctx.urlProtocolClients
 	child.userData = ctx.userData
-	child.fs = ctx.fs
 
 	return child
 }
