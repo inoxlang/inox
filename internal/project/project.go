@@ -2,6 +2,7 @@ package project
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 
 	"github.com/inoxlang/inox/internal/afs"
@@ -17,6 +18,8 @@ const (
 )
 
 var (
+	ErrProjectNotFound = errors.New("project not found")
+
 	_ core.Value               = (*Project)(nil)
 	_ core.PotentiallySharable = (*Project)(nil)
 )
@@ -71,6 +74,16 @@ type OpenProjectParams struct {
 
 // OpenProject
 func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Project, error) {
+	_, found, err := r.kv.Get(ctx, params.Id.KvKey(), r)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while reading KV: %w", err)
+	}
+
+	if !found {
+		return nil, ErrProjectNotFound
+	}
+
 	projectDir := r.filesystem.Join(r.projectsDir, string(params.Id))
 
 	projectFS, err := fs_ns.OpenMetaFilesystem(ctx, r.filesystem, fs_ns.MetaFilesystemOptions{
