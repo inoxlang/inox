@@ -17,7 +17,8 @@ const (
 )
 
 var (
-	ErrInvalidPathKey = errors.New("invalid path used as local database key")
+	ErrInvalidPathKey    = errors.New("invalid path used as local database key")
+	ErrKeyAlreadyPresent = errors.New("key already present")
 )
 
 // thin wrapper around a buntdb database.
@@ -260,6 +261,41 @@ func (kv *SingleFileKV) Has(ctx *core.Context, key core.Path, db any) core.Bool 
 	return valueFound
 }
 
+func (kv *SingleFileKV) Insert(ctx *core.Context, key core.Path, value core.Value, db any) {
+	if kv.db.isClosed() {
+		panic(errDatabaseClosed)
+	}
+
+	if !key.IsAbsolute() {
+		panic(ErrInvalidPathKey)
+	}
+
+	tx := ctx.GetTx()
+
+	if tx == nil {
+		err := kv.db.Update(func(txn *Tx) error {
+			repr := core.GetRepresentation(value, ctx)
+			_, replaced, err := txn.Set(string(key), string(repr), nil)
+			if replaced {
+				return fmt.Errorf("%w: %s", ErrKeyAlreadyPresent, key)
+			}
+			return err
+		})
+
+		if err != nil {
+			panic(err)
+		}
+
+	} else {
+		dbtx := kv.getCreateDatabaseTxn(db, tx)
+		err := dbtx.Insert(ctx, key, value)
+
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
 func (kv *SingleFileKV) Set(ctx *core.Context, key core.Path, value core.Value, db any) {
 
 	if kv.db.isClosed() {
@@ -418,6 +454,17 @@ func (tx *DatabaseTx) Get(ctx *core.Context, key core.Path) (result core.Value, 
 func (tx *DatabaseTx) Set(ctx *core.Context, key core.Path, value core.Value) error {
 	repr := core.GetRepresentation(value, ctx)
 	_, _, err := tx.tx.Set(string(key), string(repr), nil)
+
+	return err
+}
+
+func (tx *DatabaseTx) Insert(ctx *core.Context, key core.Path, value core.Value) error {
+	repr := core.GetRepresentation(value, ctx)
+	_, replaced, err := tx.tx.Set(string(key), string(repr), nil)
+
+	if replaced {
+		return fmt.Errorf("%w: %s", ErrKeyAlreadyPresent, key)
+	}
 
 	return err
 }

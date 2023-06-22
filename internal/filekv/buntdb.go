@@ -185,6 +185,7 @@ func openBuntDBNoPermCheck(path string, fls billy.Basic, config ...buntDbConfig)
 			_ = db.file.Close()
 			return nil, err
 		}
+		//TODO: lock file
 	}
 	// start the background manager.
 	go db.backgroundManager()
