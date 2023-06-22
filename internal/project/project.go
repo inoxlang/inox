@@ -17,12 +17,14 @@ const (
 )
 
 var (
-	_ core.Value = (*Project)(nil)
+	_ core.Value               = (*Project)(nil)
+	_ core.PotentiallySharable = (*Project)(nil)
 )
 
 type Project struct {
 	id                ProjectID
 	projectFilesystem afs.Filesystem
+	lock              core.SmartLock
 
 	core.NoReprMixin
 	core.NotClonableMixin
@@ -87,6 +89,10 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 	return project, nil
 }
 
+func (p *Project) Filesystem() afs.Filesystem {
+	return p.projectFilesystem
+}
+
 func (p *Project) IsMutable() bool {
 	return true
 }
@@ -106,4 +112,25 @@ func (p *Project) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, d
 
 func (p *Project) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	return symbolic.ANY, nil
+}
+
+func (p *Project) IsSharable(originState *core.GlobalState) (bool, string) {
+	return true, ""
+}
+
+func (p *Project) Share(originState *core.GlobalState) {
+	p.lock.Share(originState, func() {
+
+	})
+}
+
+func (p *Project) IsShared() bool {
+	return p.lock.IsValueShared()
+}
+
+func (p *Project) ForceLock() {
+	p.lock.ForceLock()
+}
+func (p *Project) ForceUnlock() {
+	p.lock.ForceUnlock()
 }
