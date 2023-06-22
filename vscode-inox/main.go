@@ -85,7 +85,7 @@ func main() {
 	printDebug.Invoke(OUT_PREFIX, "start LSP server")
 
 	go lsp.StartLSPServer(serverCtx, lsp.LSPServerOptions{
-		InoxFS:           true,
+		ProjectMode:      true,
 		UseContextLogger: true,
 		MessageReaderWriter: jsonrpc.FnMessageReaderWriter{
 			ReadMessageFn: func() (msg []byte, err error) {

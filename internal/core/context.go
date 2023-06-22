@@ -429,8 +429,20 @@ func (ctx *Context) CheckHasPermission(perm Permission) error {
 	return nil
 }
 
+type BoundChildContextOptions struct {
+	Filesystem afs.Filesystem
+}
+
 // BoundChild creates a child of the context that also inherits callbacks, named patterns, host aliases and protocol clients.
 func (ctx *Context) BoundChild() *Context {
+	return ctx.boundChild(BoundChildContextOptions{})
+}
+
+func (ctx *Context) BoundChildWithOptions(opts BoundChildContextOptions) *Context {
+	return ctx.boundChild(opts)
+}
+
+func (ctx *Context) boundChild(opts BoundChildContextOptions) *Context {
 	ctx.lock.RLock()
 	defer ctx.lock.RUnlock()
 	ctx.assertNotDone()
@@ -441,6 +453,8 @@ func (ctx *Context) BoundChild() *Context {
 		Limitations:          ctx.limitations,
 		HostResolutions:      ctx.hostResolutionData,
 		ParentContext:        ctx,
+
+		Filesystem: opts.Filesystem,
 	})
 
 	child.namedPatterns = ctx.namedPatterns

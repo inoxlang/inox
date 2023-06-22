@@ -6,6 +6,7 @@ import (
 	"log"
 	"runtime/debug"
 
+	"github.com/inoxlang/inox/internal/afs"
 	core "github.com/inoxlang/inox/internal/core"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 
@@ -36,8 +37,9 @@ type LSPServerOptions struct {
 	MessageReaderWriter jsonrpc.MessageReaderWriter
 	UseContextLogger    bool
 
-	//if true the LSP server provides a remote filesystem to the client.
-	InoxFS bool
+	ProjectMode           bool
+	ProjectsDir           core.Path
+	ProjectsDirFilesystem afs.Filesystem
 
 	OnSession jsonrpc.SessionCreationCallbackFn
 }
@@ -112,7 +114,7 @@ func StartLSPServer(ctx *core.Context, opts LSPServerOptions) (finalErr error) {
 	}
 
 	server := lsp.NewServer(ctx, options)
-	registerHandlers(server, opts.InoxFS)
+	registerHandlers(server, opts)
 
 	logs.Println("LSP server configured, start listening")
 	return server.Run()

@@ -15,9 +15,11 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usingInoxFS bool) error {
+func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usingInoxFS bool, fls *Filesystem) error {
 	sessionCtx := session.Context()
-	fls := sessionCtx.GetFileSystem()
+	ctx := sessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
+		Filesystem: fls,
+	})
 
 	fpath, err := getFilePath(docURI, usingInoxFS)
 	if err != nil {
@@ -29,7 +31,7 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usi
 
 	state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 		Fpath:                     fpath,
-		ParsingCompilationContext: sessionCtx,
+		ParsingCompilationContext: ctx,
 		ParentContext:             nil,
 		Out:                       io.Discard,
 		DevMode:                   true,

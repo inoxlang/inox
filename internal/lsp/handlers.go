@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -22,7 +21,6 @@ import (
 
 	"github.com/inoxlang/inox/internal/lsp/lsp/defines"
 
-	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
 	"github.com/inoxlang/inox/internal/utils"
 
@@ -44,10 +42,16 @@ var (
 	ErrInoxURIExpected = errors.New("a inox: URI was expected")
 )
 
-func registerHandlers(server *lsp.Server, usingInoxFS bool) {
-
+func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 	var shuttingDownSessionsLock sync.Mutex
 	shuttingDownSessions := make(map[*jsonrpc.Session]struct{})
+
+	projectMode := opts.ProjectMode
+
+	if projectMode {
+		registerFilesystemMethodHandlers(server)
+		registerProjectMethodHandlers(server, opts)
+	}
 
 	server.OnInitialize(func(ctx context.Context, req *defines.InitializeParams) (result *defines.InitializeResult, err *defines.InitializeError) {
 		logs.Println("initialized")
@@ -80,6 +84,11 @@ func registerHandlers(server *lsp.Server, usingInoxFS bool) {
 		shuttingDownSessionsLock.Lock()
 
 		if _, ok := shuttingDownSessions[session]; ok {
+			sessionToFilesystemLock.Lock()
+			delete(sessionToFilesystem, session)
+			sessionToFilesystemLock.Unlock()
+
+			delete(shuttingDownSessions, session)
 			shuttingDownSessionsLock.Unlock()
 			session.Close()
 		} else {
@@ -91,7 +100,7 @@ func registerHandlers(server *lsp.Server, usingInoxFS bool) {
 	})
 
 	server.OnHover(func(ctx context.Context, req *defines.HoverParams) (result *defines.Hover, err error) {
-		fpath, err := getFilePath(req.TextDocument.Uri, usingInoxFS)
+		fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
 		if err != nil {
 			return nil, err
 		}
@@ -99,15 +108,24 @@ func registerHandlers(server *lsp.Server, usingInoxFS bool) {
 		session := jsonrpc.GetSession(ctx)
 		sessionCtx := session.Context()
 
+		fls, ok := getLspFilesystem(session)
+		if !ok {
+			return nil, errors.New(FsNoFilesystem)
+		}
+
+		handlingCtx := sessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
+			Filesystem: fls,
+		})
+
 		state, mod, _, _ := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     fpath,
-			ParsingCompilationContext: sessionCtx,
+			ParsingCompilationContext: handlingCtx,
 			ParentContext:             nil,
 			Out:                       os.Stdout,
 			DevMode:                   true,
 			AllowMissingEnvVars:       true,
-			PreinitFilesystem:         sessionCtx.GetFileSystem(),
-			ScriptContextFileSystem:   sessionCtx.GetFileSystem(),
+			PreinitFilesystem:         fls,
+			ScriptContextFileSystem:   fls,
 		})
 
 		if state == nil || state.SymbolicData == nil {
@@ -177,7 +195,7 @@ func registerHandlers(server *lsp.Server, usingInoxFS bool) {
 	})
 
 	server.OnCompletion(func(ctx context.Context, req *defines.CompletionParams) (result *[]defines.CompletionItem, err error) {
-		fpath, err := getFilePath(req.TextDocument.Uri, usingInoxFS)
+		fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
 		if err != nil {
 			return nil, err
 		}
@@ -185,7 +203,7 @@ func registerHandlers(server *lsp.Server, usingInoxFS bool) {
 		line, column := getLineColumn(req.Position)
 		session := jsonrpc.GetSession(ctx)
 
-		completions := getCompletions(fpath, session.Context(), line, column, session)
+		completions := getCompletions(fpath, line, column, session)
 		completionIndex := 0
 
 		lspCompletions := utils.MapSlice(completions, func(completion compl.Completion) defines.CompletionItem {
@@ -223,25 +241,28 @@ func registerHandlers(server *lsp.Server, usingInoxFS bool) {
 	})
 
 	server.OnDidOpenTextDocument(func(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err error) {
-		fpath, err := getFilePath(req.TextDocument.Uri, usingInoxFS)
+		fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
 		if err != nil {
 			return err
 		}
 
 		fullDocumentText := req.TextDocument.Text
 		session := jsonrpc.GetSession(ctx)
-		fls := session.Context().GetFileSystem().(*Filesystem)
+		fls, ok := getLspFilesystem(session)
+		if !ok {
+			return errors.New(FsNoFilesystem)
+		}
 
 		fsErr := fsutil.WriteFile(fls.docsFS(), fpath, []byte(fullDocumentText), 0700)
 		if fsErr != nil {
 			logs.Println("failed to update state of document", fpath+":", fsErr)
 		}
 
-		return notifyDiagnostics(session, req.TextDocument.Uri, usingInoxFS)
+		return notifyDiagnostics(session, req.TextDocument.Uri, projectMode, fls)
 	})
 
 	server.OnDidChangeTextDocument(func(ctx context.Context, req *defines.DidChangeTextDocumentParams) (err error) {
-		fpath, err := getFilePath(req.TextDocument.Uri, usingInoxFS)
+		fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
 		if err != nil {
 			return err
 		}
@@ -250,7 +271,10 @@ func registerHandlers(server *lsp.Server, usingInoxFS bool) {
 			return errors.New("single change supported")
 		}
 		session := jsonrpc.GetSession(ctx)
-		fls := session.Context().GetFileSystem().(*Filesystem)
+		fls, ok := getLspFilesystem(session)
+		if !ok {
+			return errors.New(FsNoFilesystem)
+		}
 
 		fullDocumentText := req.ContentChanges[0].Text.(string)
 		fsErr := fsutil.WriteFile(fls.docsFS(), fpath, []byte(fullDocumentText), 0700)
@@ -258,11 +282,11 @@ func registerHandlers(server *lsp.Server, usingInoxFS bool) {
 			logs.Println("failed to update state of document", fpath+":", fsErr)
 		}
 
-		return notifyDiagnostics(session, req.TextDocument.Uri, usingInoxFS)
+		return notifyDiagnostics(session, req.TextDocument.Uri, projectMode, fls)
 	})
 
 	server.OnDefinition(func(ctx context.Context, req *defines.DefinitionParams) (result *[]defines.LocationLink, err error) {
-		fpath, err := getFilePath(req.TextDocument.Uri, usingInoxFS)
+		fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
 		if err != nil {
 			return nil, err
 		}
@@ -270,15 +294,24 @@ func registerHandlers(server *lsp.Server, usingInoxFS bool) {
 		session := jsonrpc.GetSession(ctx)
 		sessionCtx := session.Context()
 
+		fls, ok := getLspFilesystem(session)
+		if !ok {
+			return nil, errors.New(FsNoFilesystem)
+		}
+
+		handlingCtx := sessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
+			Filesystem: fls,
+		})
+
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     fpath,
-			ParsingCompilationContext: sessionCtx,
+			ParsingCompilationContext: handlingCtx,
 			ParentContext:             nil,
 			Out:                       os.Stdout,
 			DevMode:                   true,
 			AllowMissingEnvVars:       true,
-			ScriptContextFileSystem:   sessionCtx.GetFileSystem(),
-			PreinitFilesystem:         sessionCtx.GetFileSystem(),
+			ScriptContextFileSystem:   fls,
+			PreinitFilesystem:         fls,
 		})
 
 		if state == nil || state.SymbolicData == nil {
@@ -340,284 +373,6 @@ func registerHandlers(server *lsp.Server, usingInoxFS bool) {
 		return &links, nil
 	})
 
-	if usingInoxFS {
-		server.OnCustom(jsonrpc.MethodInfo{
-			Name: "fs/fileStat",
-			NewRequest: func() interface{} {
-				return &FsFileStatParams{}
-			},
-			Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-				session := jsonrpc.GetSession(ctx)
-				fls := session.Context().GetFileSystem()
-				params := req.(*FsFileStatParams)
-
-				fpath, err := getPath(params.FileURI, usingInoxFS)
-				if err != nil {
-					return nil, err
-				}
-
-				stat, err := fls.Stat(fpath)
-				if err != nil {
-					if os.IsNotExist(err) {
-						return FsFileNotFound, nil
-					}
-					return nil, fmt.Errorf("failed to get stat for file %s: %w", fpath, err)
-				}
-
-				ctime, mtime, err := fs_ns.GetCreationAndModifTime(stat)
-				if err != nil {
-					return nil, fmt.Errorf("failed to get the creation/modification time for file %s", fpath)
-				}
-
-				return &FsFileStat{
-					CreationTime:     ctime.UnixMilli(),
-					ModificationTime: mtime.UnixMilli(),
-					Size:             stat.Size(),
-					FileType:         FileTypeFromInfo(stat),
-				}, nil
-			},
-		})
-
-		server.OnCustom(jsonrpc.MethodInfo{
-			Name: "fs/readFile",
-			NewRequest: func() interface{} {
-				return &FsReadFileParams{}
-			},
-			Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-				session := jsonrpc.GetSession(ctx)
-				fls := session.Context().GetFileSystem()
-				params := req.(*FsReadFileParams)
-
-				fpath, err := getPath(params.FileURI, usingInoxFS)
-				if err != nil {
-					if os.IsNotExist(err) {
-						return FsFileNotFound, nil
-					}
-					return nil, err
-				}
-
-				content, err := fsutil.ReadFile(fls, fpath)
-				if err != nil {
-					return nil, fmt.Errorf("failed to read file %s: %w", fpath, err)
-				}
-
-				return FsFileContentBase64{Content: base64.StdEncoding.EncodeToString(content)}, nil
-			},
-		})
-
-		server.OnCustom(jsonrpc.MethodInfo{
-			Name: "fs/writeFile",
-			NewRequest: func() interface{} {
-				return &FsWriteFileParams{}
-			},
-			Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-				session := jsonrpc.GetSession(ctx)
-				fls := session.Context().GetFileSystem()
-				params := req.(*FsWriteFileParams)
-
-				fpath, err := getPath(params.FileURI, usingInoxFS)
-				if err != nil {
-					return nil, err
-				}
-
-				content, err := base64.StdEncoding.DecodeString(string(params.ContentBase64))
-				if err != nil {
-					return nil, fmt.Errorf("failed to decode received content for file %s: %w", fpath, err)
-				}
-
-				if params.Create {
-					f, err := fls.OpenFile(fpath, os.O_CREATE|os.O_WRONLY, fs_ns.DEFAULT_FILE_FMODE)
-
-					defer func() {
-						if f != nil {
-							f.Close()
-						}
-					}()
-
-					if err != nil && !os.IsNotExist(err) {
-						return nil, fmt.Errorf("failed to create file %s: %w", fpath, err)
-					}
-
-					alreadyExists := err == nil
-
-					if alreadyExists {
-						if !params.Overwrite {
-							return nil, fmt.Errorf("failed to create file %s: already exists and overwrite option is false", fpath)
-						}
-
-						if err := f.Truncate(int64(len(content))); err != nil {
-							return nil, fmt.Errorf("failed to truncate file before write %s: %w", fpath, err)
-						}
-					}
-
-					_, err = f.Write(content)
-
-					if err != nil {
-						return nil, fmt.Errorf("failed to create file %s: failed to write: %w", fpath, err)
-					}
-				} else {
-					f, err := fls.OpenFile(fpath, os.O_WRONLY, 0)
-
-					defer func() {
-						if f != nil {
-							f.Close()
-						}
-					}()
-
-					if os.IsNotExist(err) {
-						return FsFileNotFound, nil
-					} else if err != nil {
-						return nil, fmt.Errorf("failed to write file %s: failed to open: %w", fpath, err)
-					}
-
-					if err := f.Truncate(int64(len(content))); err != nil {
-						return nil, fmt.Errorf("failed to truncate file before write: %s: %w", fpath, err)
-					}
-
-					_, err = f.Write(content)
-
-					if err != nil {
-						return nil, fmt.Errorf("failed to create file %s: failed to write: %w", fpath, err)
-					}
-				}
-
-				return nil, nil
-			},
-		})
-
-		server.OnCustom(jsonrpc.MethodInfo{
-			Name: "fs/renameFile",
-			NewRequest: func() interface{} {
-				return &FsRenameFileParams{}
-			},
-			Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-				session := jsonrpc.GetSession(ctx)
-				fls := session.Context().GetFileSystem()
-				params := req.(*FsRenameFileParams)
-
-				path, err := getPath(params.FileURI, usingInoxFS)
-				if err != nil {
-					return nil, err
-				}
-
-				newPath, err := getPath(params.NewFileURI, usingInoxFS)
-				if err != nil {
-					return nil, err
-				}
-
-				_, err = fls.Stat(path)
-				if os.IsNotExist(err) {
-					return FsFileNotFound, nil
-				}
-
-				newPathStat, err := fls.Stat(newPath)
-
-				if os.IsNotExist(err) {
-					//there is no file at the desination path so we can rename it.
-					return nil, fls.Rename(path, newPath)
-				} else { //exists
-					if params.Overwrite {
-						if err == nil && newPathStat.IsDir() {
-							if err := fls.Remove(newPath); err != nil {
-								return nil, fmt.Errorf("failed to rename %s to %s: deletion of found dir failed: %w", path, newPath, err)
-							}
-						}
-
-						//TODO: return is-dir error if there is a directory.
-						return nil, fls.Rename(path, newPath)
-					}
-					return nil, fmt.Errorf("failed to rename %s to %s: file or dir found at new path and overwrite option is false ", path, newPath)
-				}
-			},
-		})
-
-		server.OnCustom(jsonrpc.MethodInfo{
-			Name: "fs/deleteFile",
-			NewRequest: func() interface{} {
-				return &FsDeleteFileParams{}
-			},
-			Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-				session := jsonrpc.GetSession(ctx)
-				fls := session.Context().GetFileSystem()
-				params := req.(*FsDeleteFileParams)
-
-				path, err := getPath(params.FileURI, usingInoxFS)
-				if err != nil {
-					return nil, err
-				}
-
-				err = fls.Remove(path)
-
-				if os.IsNotExist(err) {
-					return FsFileNotFound, nil
-				} else if err != nil { //exists
-					return nil, fmt.Errorf("failed to delete %s: %w", path, err)
-				}
-
-				return nil, nil
-			},
-		})
-
-		server.OnCustom(jsonrpc.MethodInfo{
-			Name: "fs/readDir",
-			NewRequest: func() interface{} {
-				return &FsReadirParams{}
-			},
-			Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-				session := jsonrpc.GetSession(ctx)
-				fls := session.Context().GetFileSystem()
-				params := req.(*FsReadirParams)
-
-				dpath, err := getPath(params.DirURI, usingInoxFS)
-				if err != nil {
-					return nil, err
-				}
-
-				entries, err := fls.ReadDir(dpath)
-				if err != nil {
-					if os.IsNotExist(err) {
-						return FsFileNotFound, nil
-					}
-					return nil, fmt.Errorf("failed to read dir %s", dpath)
-				}
-
-				var fsDirEntries FsDirEntries
-				for _, e := range entries {
-					fsDirEntries = append(fsDirEntries, FsDirEntry{
-						Name:     e.Name(),
-						FileType: FileTypeFromInfo(e),
-					})
-				}
-
-				return fsDirEntries, nil
-			},
-		})
-
-		server.OnCustom(jsonrpc.MethodInfo{
-			Name: "fs/createDir",
-			NewRequest: func() interface{} {
-				return &FsCreateDirParams{}
-			},
-			Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-				session := jsonrpc.GetSession(ctx)
-				fls := session.Context().GetFileSystem()
-				params := req.(*FsCreateDirParams)
-
-				path, err := getPath(params.DirURI, usingInoxFS)
-				if err != nil {
-					return nil, err
-				}
-
-				err = fls.MkdirAll(path, fs_ns.DEFAULT_DIR_FMODE)
-				if err != nil {
-					return nil, err
-				}
-
-				return nil, nil
-			},
-		})
-	}
-
 }
 
 func getFilePath(uri defines.DocumentUri, usingInoxFs bool) (string, error) {
@@ -648,12 +403,19 @@ func getPath(uri defines.URI, usingInoxFS bool) (string, error) {
 	return u.Path, nil
 }
 
-func getCompletions(fpath string, compilationCtx *core.Context, line, column int32, session *jsonrpc.Session) []compl.Completion {
-	fls := session.Context().GetFileSystem()
+func getCompletions(fpath string, line, column int32, session *jsonrpc.Session) []compl.Completion {
+	fls, ok := getLspFilesystem(session)
+	if !ok {
+		return nil
+	}
+
+	handlingCtx := session.Context().BoundChildWithOptions(core.BoundChildContextOptions{
+		Filesystem: fls,
+	})
 
 	state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 		Fpath:                     fpath,
-		ParsingCompilationContext: compilationCtx,
+		ParsingCompilationContext: handlingCtx,
 		ParentContext:             nil,
 		Out:                       io.Discard,
 		DevMode:                   true,

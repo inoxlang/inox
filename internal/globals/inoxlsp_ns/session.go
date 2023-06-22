@@ -20,7 +20,6 @@ var (
 type LSPSession struct {
 	rpcSession *jsonrpc.Session
 	lock       core.SmartLock
-	shared     bool
 
 	core.NotClonableMixin
 	core.NoReprMixin
@@ -43,7 +42,7 @@ func (s *LSPSession) Share(originState *core.GlobalState) {
 }
 
 func (s *LSPSession) IsShared() bool {
-	return s.shared
+	return s.lock.IsValueShared()
 }
 
 func (s *LSPSession) ForceLock() {

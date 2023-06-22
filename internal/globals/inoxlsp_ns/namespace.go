@@ -2,14 +2,13 @@ package inoxlsp_ns
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
 	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
-	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	symbolic_inoxlsp "github.com/inoxlang/inox/internal/globals/inoxlsp_ns/symbolic"
-	. "github.com/inoxlang/inox/internal/utils"
 
 	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
 
@@ -50,6 +49,7 @@ func StartLspServer(ctx *core.Context, config *core.Object) error {
 	var cert string
 	var certKey string
 	var onSessionHandler *core.InoxFunction
+	var projectsDir core.Path
 
 	err := config.ForEachEntry(func(k string, v core.Value) error {
 		//TODO: add more checks + symbolic checks
@@ -67,6 +67,11 @@ func StartLspServer(ctx *core.Context, config *core.Object) error {
 			cert = v.(core.StringLike).GetOrBuildString()
 		case "certiticate-key":
 			certKey = v.(*core.Secret).StringValue().GetOrBuildString()
+		case "projects-dir":
+			projectsDir = v.(core.Path)
+			if !projectsDir.IsDirPath() {
+				return fmt.Errorf("%s should be a directory path", k)
+			}
 		}
 		return nil
 	})
@@ -85,22 +90,16 @@ func StartLspServer(ctx *core.Context, config *core.Object) error {
 			Certificate:           cert,
 			CertificatePrivateKey: certKey,
 		},
-		UseContextLogger: true,
-		InoxFS:           true,
+		UseContextLogger:      true,
+		ProjectMode:           true,
+		ProjectsDir:           projectsDir,
+		ProjectsDirFilesystem: ctx.GetFileSystem(),
 		OnSession: func(rpcCtx *core.Context, s *jsonrpc.Session) error {
-			mainFs := fs_ns.NewMemFilesystem(lsp.DEFAULT_MAX_IN_MEM_FS_STORAGE_SIZE)
-			fls := lsp.NewFilesystem(mainFs, nil)
-
-			file := Must(fls.Create("/main.ix"))
-			Must(file.Write([]byte("manifest {\n\n}")))
-			PanicIfErr(file.Close())
-
 			sessionCtx := core.NewContext(core.ContextConfig{
 				Permissions:          rpcCtx.GetGrantedPermissions(),
 				ForbiddenPermissions: rpcCtx.GetForbiddenPermissions(),
 
 				ParentContext: rpcCtx,
-				Filesystem:    fls,
 			})
 			tempState := core.NewGlobalState(sessionCtx)
 			tempState.Logger = state.Logger
