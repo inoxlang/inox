@@ -655,6 +655,24 @@ func (fls *MetaFilesystem) Rename(from, to string) error {
 			return err
 		}
 
+		//add file in children of new parent
+		toDirPath := core.DirPathFrom(toDir)
+
+		toDirMetadata, found, err := fls.getFileMetadata(toDirPath, dbTx)
+		if err != nil {
+			return err
+		}
+
+		if !found {
+			panic(core.ErrUnreachable)
+		}
+
+		toDirMetadata.children = append(toDirMetadata.children, toPath.Basename())
+
+		if err := fls.setFileMetadata(toDirMetadata, dbTx); err != nil {
+			return err
+		}
+
 		//update metadata of moved files & directories
 
 		for _, ops := range move {

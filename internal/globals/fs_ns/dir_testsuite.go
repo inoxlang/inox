@@ -229,6 +229,19 @@ func (s *DirTestSuite) TestReadDirFileInfoDirs(c *check.C) {
 	c.Assert(info[0].Mode(), check.Not(check.Equals), 0)
 }
 
+func (s *DirTestSuite) TestReadDirAfterFileRename(c *check.C) {
+	err := util.WriteFile(s.FS, "foo", nil, 0644)
+	c.Assert(err, check.IsNil)
+
+	err = s.FS.Rename("foo", "bar")
+	c.Assert(err, check.IsNil)
+
+	info, err := s.FS.ReadDir("/")
+	c.Assert(err, check.IsNil)
+	c.Assert(info, check.HasLen, 1)
+	c.Assert(info[0].Name(), check.Equals, "bar")
+}
+
 func (s *DirTestSuite) TestRenameToDir(c *check.C) {
 	err := util.WriteFile(s.FS, "foo", nil, 0644)
 	c.Assert(err, check.IsNil)
@@ -274,4 +287,10 @@ func (s *DirTestSuite) TestRenameDir(c *check.C) {
 	bar, err := s.FS.Stat("bar/bar")
 	c.Assert(err, check.IsNil)
 	c.Assert(bar, check.NotNil)
+
+	info, err := s.FS.ReadDir("/")
+	c.Assert(err, check.IsNil)
+	c.Assert(info, check.HasLen, 1)
+	c.Assert(info[0].IsDir(), check.Equals, true)
+	c.Assert(info[0].Name(), check.Equals, "bar")
 }

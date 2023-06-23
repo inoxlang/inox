@@ -30,9 +30,13 @@ func (s *MemoryFsTestSuite) SetUpTest(c *check.C) {
 }
 
 func TestMemoryFilesystem(t *testing.T) {
-	check.Run(&MemoryFsTestSuite{}, &check.RunConf{
+	result := check.Run(&MemoryFsTestSuite{}, &check.RunConf{
 		Verbose: true,
 	})
+
+	if result.Failed > 0 {
+		assert.Fail(t, result.String())
+	}
 }
 
 func TestMemoryFilesystemCapabilities(t *testing.T) {

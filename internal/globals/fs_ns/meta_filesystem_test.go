@@ -4,19 +4,28 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/stretchr/testify/assert"
 	"gopkg.in/check.v1"
 )
 
 func TestMetaFilesystemWithUnderlyingFs(t *testing.T) {
-	check.Run(&MetaFsWithUnderlyingFsTestSuite{}, &check.RunConf{
+	result := check.Run(&MetaFsWithUnderlyingFsTestSuite{}, &check.RunConf{
 		Verbose: true,
 	})
+
+	if result.Failed > 0 {
+		assert.Fail(t, result.String())
+	}
 }
 
 func TestMetaFilesystemWithBasic(t *testing.T) {
-	check.Run(&MetaFsTestSuite{}, &check.RunConf{
+	result := check.Run(&MetaFsTestSuite{}, &check.RunConf{
 		Verbose: true,
 	})
+
+	if result.Failed > 0 {
+		assert.Fail(t, result.String())
+	}
 }
 
 type MetaFsWithUnderlyingFsTestSuite struct {

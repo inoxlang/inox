@@ -287,7 +287,11 @@ func (s *inMemStorage) Rename(from, to string) error {
 
 func (s *inMemStorage) moveNoLock(from, to string) error {
 	s.files[to] = s.files[from]
-	s.files[to].basename = filepath.Base(to)
+	f := s.files[to]
+	f.basename = filepath.Base(to)
+	f.absPath = core.PathFrom(to)
+	f.originalPath = to
+
 	s.children[to] = s.children[from]
 
 	defer func() {
