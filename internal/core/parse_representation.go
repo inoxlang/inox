@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -485,6 +486,9 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 		case rstateDate:
 			date, err := parse.ParseDateLiteral(atomBytes)
 			if err != nil {
+				index = len(atomBytes)
+				break
+			} else if date.Location() != time.UTC { //only UTC location allowed
 				index = len(atomBytes)
 				break
 			}

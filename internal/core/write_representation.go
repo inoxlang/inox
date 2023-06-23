@@ -1164,7 +1164,7 @@ func (Date) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) b
 
 func (d Date) write(w io.Writer) (int, error) {
 	// TODO: change
-	t := time.Time(d)
+	t := time.Time(d).UTC()
 	ns := t.Nanosecond()
 	ms := ns / 1_000_000
 	us := (ns % 1_000_000) / 1000
