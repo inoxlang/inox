@@ -153,7 +153,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 				if os.IsNotExist(err) {
 					return FsFileNotFound, nil
 				}
-				return nil, fmt.Errorf("failed to get stat for file %s: %w", fpath, err)
+				return nil, fmtInternalError("failed to get stat for file %s: %s", fpath, err)
 			}
 
 			ctime, mtime, err := fs_ns.GetCreationAndModifTime(stat)
@@ -185,15 +185,15 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 
 			fpath, err := getPath(params.FileURI, true)
 			if err != nil {
-				if os.IsNotExist(err) {
-					return FsFileNotFound, nil
-				}
 				return nil, err
 			}
 
 			content, err := fsutil.ReadFile(fls, fpath)
 			if err != nil {
-				return nil, fmt.Errorf("failed to read file %s: %w", fpath, err)
+				if os.IsNotExist(err) {
+					return FsFileNotFound, nil
+				}
+				return nil, fmtInternalError("failed to read file %s: %s", fpath, err)
 			}
 
 			return FsFileContentBase64{Content: base64.StdEncoding.EncodeToString(content)}, nil
@@ -233,18 +233,18 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 				}()
 
 				if err != nil && !os.IsNotExist(err) {
-					return nil, fmt.Errorf("failed to create file %s: %w", fpath, err)
+					return nil, fmtInternalError("failed to create file %s: %s", fpath, err)
 				}
 
 				alreadyExists := err == nil
 
 				if alreadyExists {
 					if !params.Overwrite {
-						return nil, fmt.Errorf("failed to create file %s: already exists and overwrite option is false", fpath)
+						return nil, fmtInternalError("failed to create file %s: already exists and overwrite option is false", fpath)
 					}
 
 					if err := f.Truncate(int64(len(content))); err != nil {
-						return nil, fmt.Errorf("failed to truncate file before write %s: %w", fpath, err)
+						return nil, fmtInternalError("failed to truncate file before write %s: %s", fpath, err)
 					}
 				}
 
@@ -265,17 +265,17 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 				if os.IsNotExist(err) {
 					return FsFileNotFound, nil
 				} else if err != nil {
-					return nil, fmt.Errorf("failed to write file %s: failed to open: %w", fpath, err)
+					return nil, fmtInternalError("failed to write file %s: failed to open: %s", fpath, err)
 				}
 
 				if err := f.Truncate(int64(len(content))); err != nil {
-					return nil, fmt.Errorf("failed to truncate file before write: %s: %w", fpath, err)
+					return nil, fmtInternalError("failed to truncate file before write: %s: %s", fpath, err)
 				}
 
 				_, err = f.Write(content)
 
 				if err != nil {
-					return nil, fmt.Errorf("failed to create file %s: failed to write: %w", fpath, err)
+					return nil, fmtInternalError("failed to create file %s: failed to write: %s", fpath, err)
 				}
 			}
 
@@ -315,19 +315,23 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 
 			if os.IsNotExist(err) {
 				//there is no file at the desination path so we can rename it.
-				return nil, fls.Rename(path, newPath)
+				err := fls.Rename(path, newPath)
+				if err != nil {
+					return nil, fmtInternalError(err.Error())
+				}
+				return nil, nil
 			} else { //exists
 				if params.Overwrite {
 					if err == nil && newPathStat.IsDir() {
 						if err := fls.Remove(newPath); err != nil {
-							return nil, fmt.Errorf("failed to rename %s to %s: deletion of found dir failed: %w", path, newPath, err)
+							return nil, fmtInternalError("failed to rename %s to %s: deletion of found dir failed: %s", path, newPath, err)
 						}
 					}
 
 					//TODO: return is-dir error if there is a directory.
 					return nil, fls.Rename(path, newPath)
 				}
-				return nil, fmt.Errorf("failed to rename %s to %s: file or dir found at new path and overwrite option is false ", path, newPath)
+				return nil, fmtInternalError("failed to rename %s to %s: file or dir found at new path and overwrite option is false ", path, newPath)
 			}
 		},
 	})
@@ -355,7 +359,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 			if os.IsNotExist(err) {
 				return FsFileNotFound, nil
 			} else if err != nil { //exists
-				return nil, fmt.Errorf("failed to delete %s: %w", path, err)
+				return nil, fmtInternalError("failed to delete %s: %s", path, err)
 			}
 
 			return nil, nil
@@ -385,7 +389,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 				if os.IsNotExist(err) {
 					return FsFileNotFound, nil
 				}
-				return nil, fmt.Errorf("failed to read dir %s", dpath)
+				return nil, fmtInternalError("failed to read dir %s", dpath)
 			}
 
 			fsDirEntries := FsDirEntries{}
@@ -420,7 +424,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 
 			err = fls.MkdirAll(path, fs_ns.DEFAULT_DIR_FMODE)
 			if err != nil {
-				return nil, err
+				return nil, fmtInternalError("failed to create dir %s: %s", path, err)
 			}
 
 			return nil, nil
