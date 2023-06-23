@@ -294,3 +294,22 @@ func (s *DirTestSuite) TestRenameDir(c *check.C) {
 	c.Assert(info[0].IsDir(), check.Equals, true)
 	c.Assert(info[0].Name(), check.Equals, "bar")
 }
+
+func (s *DirTestSuite) TestRemoveNonEmptyDir(c *check.C) {
+	err := s.FS.MkdirAll("foo", 0755)
+	c.Assert(err, check.IsNil)
+
+	err = util.WriteFile(s.FS, "foo/bar", nil, 0644)
+	c.Assert(err, check.IsNil)
+
+	err = s.FS.Remove("foo")
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, fmtDirContainFiles("/foo"))
+
+	//check the dir still exists
+	info, err := s.FS.ReadDir("/")
+	c.Assert(err, check.IsNil)
+	c.Assert(info, check.HasLen, 1)
+	c.Assert(info[0].IsDir(), check.Equals, true)
+	c.Assert(info[0].Name(), check.Equals, "foo")
+}

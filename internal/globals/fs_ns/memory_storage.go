@@ -315,7 +315,7 @@ func (s *inMemStorage) Remove(path string) error {
 	}
 
 	if f.mode.IsDir() && len(s.children[path]) != 0 {
-		return fmt.Errorf("dir: %s contains files", path)
+		return errors.New(fmtDirContainFiles(path))
 	}
 
 	base, file := filepath.Split(path)

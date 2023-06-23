@@ -736,6 +736,10 @@ func (fls *MetaFilesystem) Remove(filename string) error {
 		return os.ErrNotExist
 	}
 
+	if metadata.mode.IsDir() && len(metadata.children) > 0 {
+		return errors.New(fmtDirContainFiles(filename))
+	}
+
 	noCheckFuel := 10
 
 	err = fls.metadata.UpdateNoCtx(func(dbTx *filekv.DatabaseTx) error {
@@ -777,7 +781,7 @@ func (fls *MetaFilesystem) Remove(filename string) error {
 			return nil
 		}
 
-		//remove descendants recursively
+		//remove descendants recursively (the code is not used yet because .Remove is not recursive)
 		queue := utils.CopySlice(metadata.ChildrenPaths())
 
 		for len(queue) > 0 {
@@ -811,7 +815,7 @@ func (fls *MetaFilesystem) Remove(filename string) error {
 				queue = append(queue, currentMetadata.ChildrenPaths()...)
 			}
 
-			if err := fls.deleteFileMetadata(metadata.path, dbTx); err != nil {
+			if err := fls.deleteFileMetadata(current, dbTx); err != nil {
 				return err
 			}
 		}
