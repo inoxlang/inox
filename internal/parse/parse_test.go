@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -5462,6 +5463,20 @@ func testParse(
 						NodeBase: NodeBase{NodeSpan{0, 41}, nil, nil},
 						Raw:      "2020y-6mt-12d-18h-4m-4s-349ms-665us-Local",
 						Value:    time.Date(2020, 6, 12, 18, 4, 4, (349*1_000_000)+(665*1000), time.Local),
+					},
+				},
+			}, n)
+		})
+
+		t.Run("date literal : up to microseconds (long location)", func(t *testing.T) {
+			n := mustparseChunk(t, "2020y-6mt-12d-18h-4m-4s-349ms-665us-America/Los_Angeles")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 55}, nil, nil},
+				Statements: []Node{
+					&DateLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 55}, nil, nil},
+						Raw:      "2020y-6mt-12d-18h-4m-4s-349ms-665us-America/Los_Angeles",
+						Value:    time.Date(2020, 6, 12, 18, 4, 4, (349*1_000_000)+(665*1000), utils.Must(time.LoadLocation("America/Los_Angeles"))),
 					},
 				},
 			}, n)
