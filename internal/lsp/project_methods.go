@@ -2,7 +2,6 @@ package internal
 
 import (
 	"context"
-	"errors"
 
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
@@ -45,7 +44,14 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerOptions) {
 				Name: params.Name,
 			})
 
-			return projectId, err
+			if err != nil {
+				return nil, jsonrpc.ResponseError{
+					Code:    jsonrpc.InternalError.Code,
+					Message: err.Error(),
+				}
+			}
+
+			return projectId, nil
 		},
 	})
 
@@ -61,7 +67,10 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerOptions) {
 
 			_, ok := getProject(session)
 			if ok {
-				return nil, errors.New("a project is already open")
+				return nil, jsonrpc.ResponseError{
+					Code:    jsonrpc.InternalError.Code,
+					Message: "a project is already open",
+				}
 			}
 
 			project, err := projectRegistry.OpenProject(sessionCtx, project.OpenProjectParams{
@@ -69,7 +78,10 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerOptions) {
 			})
 
 			if err != nil {
-				return nil, err
+				return nil, jsonrpc.ResponseError{
+					Code:    jsonrpc.InternalError.Code,
+					Message: err.Error(),
+				}
 			}
 
 			sessionCtx.AddUserData(CURRENT_PROJECT_CTX_KEY, project)
