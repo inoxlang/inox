@@ -793,7 +793,15 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("record", func(t *testing.T) {
 
-		t.Run("ok", func(t *testing.T) {
+		t.Run("empty", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`#{}`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, NewEmptyRecord(), res)
+		})
+
+		t.Run("property", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`#{"name": "foo"}`)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -2753,6 +2761,70 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &Int{}, res)
 		})
 
+		t.Run("specific Go function with non-empty object parameter, missing property in argument", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return f({})
+			`)
+
+			argNode := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.CallExpression).Arguments[0]
+
+			param := NewObject(map[string]SymbolicValue{
+				"prop": ANY_INT,
+			}, nil, nil)
+
+			goFunc := &GoFunction{
+				fn: func(ctx *Context, arg SymbolicValue) *Int {
+					ctx.SetSymbolicGoFunctionParameters(&[]SymbolicValue{param}, []string{"arg"})
+					return ANY_INT
+				},
+			}
+
+			state.setGlobal("f", goFunc, GlobalConst)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(argNode, state, FmtInvalidArg(0, NewEmptyObject(), param)),
+			}, state.errors)
+
+			allowedProps, ok := state.symbolicData.GetAllowedNonPresentProperties(argNode)
+			assert.True(t, ok)
+			assert.Equal(t, []string{"prop"}, allowedProps)
+
+			assert.Equal(t, &Int{}, res)
+		})
+
+		t.Run("specific Go function with non-empty record parameter, missing property in argument", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return f(#{})
+			`)
+
+			argNode := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.CallExpression).Arguments[0]
+
+			param := NewRecord(map[string]SymbolicValue{
+				"prop": ANY_INT,
+			})
+
+			goFunc := &GoFunction{
+				fn: func(ctx *Context, arg SymbolicValue) *Int {
+					ctx.SetSymbolicGoFunctionParameters(&[]SymbolicValue{param}, []string{"arg"})
+					return ANY_INT
+				},
+			}
+
+			state.setGlobal("f", goFunc, GlobalConst)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(argNode, state, FmtInvalidArg(0, NewEmptyRecord(), param)),
+			}, state.errors)
+
+			allowedProps, ok := state.symbolicData.GetAllowedNonPresentProperties(argNode)
+			assert.True(t, ok)
+			assert.Equal(t, []string{"prop"}, allowedProps)
+
+			assert.Equal(t, &Int{}, res)
+		})
+
 		t.Run("complex specific Go function with invalid argument", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return map([1, 2, 3], fn(arg %str){
@@ -4092,7 +4164,7 @@ func TestSymbolicEval(t *testing.T) {
 						inexact: true,
 					},
 					"e": utils.Must(NewExactValuePattern(&Int{})),
-					"f": utils.Must(NewExactValuePattern(NewRecord(nil))),
+					"f": utils.Must(NewExactValuePattern(NewEmptyRecord())),
 				},
 				inexact: true,
 			}, res)

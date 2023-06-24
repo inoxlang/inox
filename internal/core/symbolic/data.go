@@ -15,24 +15,26 @@ var (
 
 // SymbolicData represents the data produced by the symbolic execution of an AST.
 type SymbolicData struct {
-	mostSpecificNodeValues   map[parse.Node]SymbolicValue
-	lessSpecificNodeValues   map[parse.Node]SymbolicValue
-	localScopeData           map[parse.Node]ScopeData
-	globalScopeData          map[parse.Node]ScopeData
-	contextData              map[parse.Node]ContextData
-	runtimeTypeCheckPatterns map[parse.Node]any //concrete Pattern or nil (nil means the check is disabled)
-	errors                   []SymbolicEvaluationError
-	warnings                 []SymbolicEvaluationWarning
+	mostSpecificNodeValues      map[parse.Node]SymbolicValue
+	lessSpecificNodeValues      map[parse.Node]SymbolicValue
+	localScopeData              map[parse.Node]ScopeData
+	globalScopeData             map[parse.Node]ScopeData
+	contextData                 map[parse.Node]ContextData
+	allowedNonPresentProperties map[parse.Node][]string
+	runtimeTypeCheckPatterns    map[parse.Node]any //concrete Pattern or nil (nil means the check is disabled)
+	errors                      []SymbolicEvaluationError
+	warnings                    []SymbolicEvaluationWarning
 }
 
 func NewSymbolicData() *SymbolicData {
 	return &SymbolicData{
-		mostSpecificNodeValues:   make(map[parse.Node]SymbolicValue, 0),
-		lessSpecificNodeValues:   make(map[parse.Node]SymbolicValue, 0),
-		localScopeData:           make(map[parse.Node]ScopeData),
-		globalScopeData:          make(map[parse.Node]ScopeData),
-		contextData:              make(map[parse.Node]ContextData),
-		runtimeTypeCheckPatterns: make(map[parse.Node]any, 0),
+		mostSpecificNodeValues:      make(map[parse.Node]SymbolicValue, 0),
+		lessSpecificNodeValues:      make(map[parse.Node]SymbolicValue, 0),
+		localScopeData:              make(map[parse.Node]ScopeData),
+		globalScopeData:             make(map[parse.Node]ScopeData),
+		allowedNonPresentProperties: make(map[parse.Node][]string, 0),
+		contextData:                 make(map[parse.Node]ContextData),
+		runtimeTypeCheckPatterns:    make(map[parse.Node]any, 0),
 	}
 }
 
@@ -110,6 +112,18 @@ func (data *SymbolicData) SetRuntimeTypecheckPattern(node parse.Node, pattern an
 
 func (data *SymbolicData) GetRuntimeTypecheckPattern(node parse.Node) (any, bool) {
 	v, ok := data.runtimeTypeCheckPatterns[node]
+	return v, ok
+}
+
+func (data *SymbolicData) SetAllowedNonPresentProperties(node parse.Node, properties []string) {
+	if data == nil {
+		return
+	}
+	data.allowedNonPresentProperties[node] = properties
+}
+
+func (data *SymbolicData) GetAllowedNonPresentProperties(node parse.Node) ([]string, bool) {
+	v, ok := data.allowedNonPresentProperties[node]
 	return v, ok
 }
 
