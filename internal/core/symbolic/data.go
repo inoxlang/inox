@@ -156,6 +156,10 @@ func (data *SymbolicData) AddData(newData *SymbolicData) {
 		data.SetContextData(k, v)
 	}
 
+	for k, v := range newData.allowedNonPresentProperties {
+		data.SetAllowedNonPresentProperties(k, v)
+	}
+
 	for k, v := range newData.runtimeTypeCheckPatterns {
 		data.SetRuntimeTypecheckPattern(k, v)
 	}
