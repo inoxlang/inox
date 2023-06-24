@@ -64,7 +64,9 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 		// makes the client send the whole document during synchronization
 		s.Capabilities.TextDocumentSync = defines.TextDocumentSyncKindFull
 
-		s.Capabilities.CompletionProvider = &defines.CompletionOptions{}
+		s.Capabilities.CompletionProvider = &defines.CompletionOptions{
+			TriggerCharacters: &[]string{"."},
+		}
 		return s, nil
 	})
 

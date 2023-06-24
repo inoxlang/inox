@@ -14,8 +14,6 @@ import (
 	"github.com/inoxlang/inox/internal/lsp/logs"
 	"github.com/inoxlang/inox/internal/lsp/lsp"
 
-	"github.com/inoxlang/inox/internal/lsp/lsp/defines"
-
 	_ "net/http/pprof"
 )
 
@@ -74,11 +72,7 @@ func StartLSPServer(ctx *core.Context, opts LSPServerOptions) (finalErr error) {
 	}()
 
 	options := &lsp.Options{
-		CompletionProvider: &defines.CompletionOptions{
-			TriggerCharacters: &[]string{"."},
-		},
-		TextDocumentSync: defines.TextDocumentSyncKindFull,
-		OnSession:        opts.OnSession,
+		OnSession: opts.OnSession,
 	}
 
 	if opts.InternalStdio != nil {
