@@ -15,6 +15,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
+	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
 	"github.com/rs/zerolog"
 
 	"github.com/inoxlang/inox/internal/config"
@@ -43,6 +44,7 @@ const (
 		"\teval - evaluate a single statement\n" +
 		"\te - alias for eval\n" +
 		"\tlsp - start the language server (LSP)\n\n" +
+		"\tproject-server - start the project server\n\n" +
 		"The run command:\n" +
 		"\trun <script path> [passed arguments]\n"
 
@@ -206,22 +208,15 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		var out io.Writer
 
 		if host != "" {
-			u, err := url.Parse(host)
-			if err != nil {
-				fmt.Fprintln(errW, "invalid host:", host)
-			}
-			if u.Scheme != "wss" {
-				fmt.Fprintln(errW, "invalid host, scheme should be wss:", host)
+			u := checkLspHost(host, errW)
+			if u == nil {
 				return
 			}
-			if u.Path != "" {
-				fmt.Fprintln(errW, "invalid host, path should be empty:", host)
-				return
-			}
+
 			opts.Websocket = &lsp.WebsocketOptions{Addr: u.Host}
 
 			out = os.Stdout //we can log to stdout since we will not be in Stdio mode
-		} else {
+		} else { //stdio
 			f, err := os.OpenFile("/tmp/.inox-lsp.debug.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o600)
 			if err != nil {
 				log.Panicln(err)
@@ -248,6 +243,75 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		state := core.NewGlobalState(ctx)
 		state.Out = out
 		state.Logger = zerolog.New(out)
+
+		if err := lsp.StartLSPServer(ctx, opts); err != nil {
+			fmt.Fprintln(errW, "failed to start LSP server:", err)
+		}
+	case "project-server":
+		lspFlags := flag.NewFlagSet("project-server", flag.ExitOnError)
+		var host string
+		lspFlags.StringVar(&host, "h", "", "host")
+
+		var projectsDir = filepath.Join(config.USER_HOME, "inox-projects") + "/"
+
+		err := lspFlags.Parse(mainSubCommandArgs)
+		if err != nil {
+			fmt.Fprintln(errW, "project-server:", err)
+			return
+		}
+
+		if host == "" {
+			fmt.Fprintln(errW, "project-server: missing host argument")
+			return
+		}
+
+		u := checkLspHost(host, errW)
+		if u == nil {
+			return
+		}
+
+		//create context & state
+		perms := []core.Permission{
+			//TODO: change path pattern
+			core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+			core.WebsocketPermission{Kind_: permkind.Provide},
+		}
+
+		out := os.Stdout
+		filesystem := lsp.NewDefaultFilesystem()
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: perms,
+			Filesystem:  filesystem,
+		})
+
+		state := core.NewGlobalState(ctx)
+		state.Out = out
+		state.Logger = zerolog.New(out)
+
+		//configure server
+
+		opts := lsp.LSPServerOptions{
+			Websocket: &lsp.WebsocketOptions{
+				Addr: u.Host,
+			},
+			UseContextLogger:      true,
+			ProjectMode:           true,
+			ProjectsDir:           core.DirPathFrom(projectsDir),
+			ProjectsDirFilesystem: ctx.GetFileSystem(),
+			OnSession: func(rpcCtx *core.Context, s *jsonrpc.Session) error {
+				sessionCtx := core.NewContext(core.ContextConfig{
+					Permissions:          rpcCtx.GetGrantedPermissions(),
+					ForbiddenPermissions: rpcCtx.GetForbiddenPermissions(),
+
+					ParentContext: rpcCtx,
+				})
+				tempState := core.NewGlobalState(sessionCtx)
+				tempState.Logger = state.Logger
+				tempState.Out = state.Out
+				s.SetContextOnce(sessionCtx)
+				return nil
+			},
+		}
 
 		if err := lsp.StartLSPServer(ctx, opts); err != nil {
 			fmt.Fprintln(errW, "failed to start LSP server:", err)
@@ -460,4 +524,21 @@ func getScriptDir(fpath string) string {
 	dir, _ = filepath.Abs(dir)
 	dir = core.AppendTrailingSlashIfNotPresent(dir)
 	return dir
+}
+
+func checkLspHost(host string, errW io.Writer) *url.URL {
+	u, err := url.Parse(host)
+	if err != nil {
+		fmt.Fprintln(errW, "invalid host:", host)
+	}
+	if u.Scheme != "wss" {
+		fmt.Fprintln(errW, "invalid host, scheme should be wss:", host)
+		return nil
+	}
+	if u.Path != "" {
+		fmt.Fprintln(errW, "invalid host, path should be empty:", host)
+		return nil
+	}
+
+	return u
 }
