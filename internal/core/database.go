@@ -5,12 +5,16 @@ import (
 	"fmt"
 	"sync"
 
+	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
 	openDbFnRegistry     = map[Scheme]OpenDBFn{}
 	openDbFnRegistryLock sync.Mutex
+
+	staticallyCheckDbResolutionDataFnRegistry     = map[Scheme]StaticallyCheckDbResolutionDataFn{}
+	staticallyCheckDbResolutionDataFnRegistryLock sync.Mutex
 
 	ErrNonUniqueDbOpenFnRegistration                = errors.New("non unique open DB function registration")
 	ErrNameCollisionWithInitialDatabasePropertyName = errors.New("name collision with initial database property name")
@@ -38,6 +42,8 @@ type DbOpenConfiguration struct {
 }
 
 type OpenDBFn func(ctx *Context, config DbOpenConfiguration) (Database, error)
+
+type StaticallyCheckDbResolutionDataFn func(node parse.Node) (errorMsg string)
 
 type Database interface {
 	Resource() SchemeHolder
@@ -83,7 +89,29 @@ func GetOpenDbFn(scheme Scheme) (OpenDBFn, bool) {
 	openDbFnRegistryLock.Lock()
 	defer openDbFnRegistryLock.Unlock()
 
+	//TODO: prevent re-opening database (same resolution data)
 	fn, ok := openDbFnRegistry[scheme]
+
+	return fn, ok
+}
+
+func RegisterStaticallyCheckDbResolutionDataFn(scheme Scheme, fn StaticallyCheckDbResolutionDataFn) {
+	staticallyCheckDbResolutionDataFnRegistryLock.Lock()
+	defer staticallyCheckDbResolutionDataFnRegistryLock.Unlock()
+
+	_, ok := staticallyCheckDbResolutionDataFnRegistry[scheme]
+	if ok {
+		panic(ErrNonUniqueDbOpenFnRegistration)
+	}
+
+	staticallyCheckDbResolutionDataFnRegistry[scheme] = fn
+}
+
+func GetStaticallyCheckDbResolutionDataFn(scheme Scheme) (StaticallyCheckDbResolutionDataFn, bool) {
+	staticallyCheckDbResolutionDataFnRegistryLock.Lock()
+	defer staticallyCheckDbResolutionDataFnRegistryLock.Unlock()
+
+	fn, ok := staticallyCheckDbResolutionDataFnRegistry[scheme]
 
 	return fn, ok
 }

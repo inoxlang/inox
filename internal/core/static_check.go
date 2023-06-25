@@ -1830,12 +1830,22 @@ func checkDatabasesObject(obj *parse.ObjectLiteral, onError func(n parse.Node, m
 		}
 
 		resourceNode, ok := fileDesc.PropValue(MANIFEST_DATABASE__RESOURCE_PROP_NAME)
+		var scheme Scheme
 
 		if !ok {
 			onError(p, fmtMissingPropInDatabaseDescription(MANIFEST_DATABASE__RESOURCE_PROP_NAME, p.Name()))
 		} else {
-			switch resourceNode.(type) {
-			case *parse.HostLiteral, *parse.URLLiteral:
+			switch res := resourceNode.(type) {
+			case *parse.HostLiteral:
+				u, _ := url.Parse(res.Value)
+				if u != nil {
+					scheme = Scheme(u.Scheme)
+				}
+			case *parse.URLLiteral:
+				u, _ := url.Parse(res.Value)
+				if u != nil {
+					scheme = Scheme(u.Scheme)
+				}
 			default:
 				onError(p, DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL)
 			}
@@ -1844,6 +1854,16 @@ func checkDatabasesObject(obj *parse.ObjectLiteral, onError func(n parse.Node, m
 		if resolutionDataNode, ok := fileDesc.PropValue(MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME); ok {
 			switch resolutionDataNode.(type) {
 			case *parse.RelativePathLiteral, *parse.AbsolutePathLiteral, *parse.AbsolutePathExpression, *parse.RelativePathExpression:
+				if scheme == "" {
+					break
+				}
+				checkData, ok := GetStaticallyCheckDbResolutionDataFn(scheme)
+				if ok {
+					errMsg := checkData(resolutionDataNode)
+					if errMsg != "" {
+						onError(resolutionDataNode, errMsg)
+					}
+				}
 			default:
 				onError(p, DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED)
 			}

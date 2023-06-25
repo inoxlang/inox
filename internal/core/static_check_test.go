@@ -1533,6 +1533,7 @@ func TestCheck(t *testing.T) {
 			)
 			assert.Equal(t, expectedErr, err)
 		})
+
 	})
 
 	t.Run("inclusion import statement", func(t *testing.T) {
@@ -2318,7 +2319,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 		})
 	})
 
-	t.Run("single database with correct description", func(t *testing.T) {
+	t.Run("database with correct description", func(t *testing.T) {
 		objLiteral := parseObject(`
 			{
 				main: {
@@ -2332,7 +2333,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 			assert.Fail(t, msg)
 		})
 	})
-	t.Run("single database with missing resource property", func(t *testing.T) {
+	t.Run("database with missing resource property", func(t *testing.T) {
 		objLiteral := parseObject(`
 			{
 				main: {}
@@ -2349,7 +2350,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 		assert.True(t, err)
 	})
 
-	t.Run("single database with invalid value for the resource property", func(t *testing.T) {
+	t.Run("database with invalid value for the resource property", func(t *testing.T) {
 		objLiteral := parseObject(`
 			{
 				main: {
@@ -2366,7 +2367,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 		assert.True(t, err)
 	})
 
-	t.Run("single database with path expression for the resolution-data property", func(t *testing.T) {
+	t.Run("database with path expression for the resolution-data property", func(t *testing.T) {
 		objLiteral := parseObject(`
 			{
 				main: {
@@ -2381,7 +2382,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 		})
 	})
 
-	t.Run("single database with unsupported value for the resolution-data property", func(t *testing.T) {
+	t.Run("database with unsupported value for the resolution-data property", func(t *testing.T) {
 		objLiteral := parseObject(`
 			{
 				main: {
@@ -2395,6 +2396,35 @@ func TestCheckDatabasesObject(t *testing.T) {
 		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			err = true
 			assert.Equal(t, DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED, msg)
+		})
+
+		assert.True(t, err)
+	})
+
+	t.Run("database with incorrect value for the resolution-data property", func(t *testing.T) {
+		objLiteral := parseObject(`
+			{
+				main: {
+					resource: ldb://main
+					resolution-data: /file
+				}
+			}
+		`)
+		pathNode := parse.FindNode(objLiteral, (*parse.AbsolutePathLiteral)(nil), nil)
+
+		delete(staticallyCheckDbResolutionDataFnRegistry, "ldb")
+		RegisterStaticallyCheckDbResolutionDataFn("ldb", func(node parse.Node) (errorMsg string) {
+			return "bad"
+		})
+
+		checkData, _ := GetStaticallyCheckDbResolutionDataFn("ldb")
+		errMsg := checkData(pathNode)
+
+		err := false
+
+		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
+			err = true
+			assert.Equal(t, errMsg, msg)
 		})
 
 		assert.True(t, err)
