@@ -114,7 +114,8 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usi
 		}
 
 		if state.FirstDatabaseOpeningError != nil {
-			session.Notify(NewShowMessage(defines.MessageTypeWarning, "failed to open at least one database: "+err.Error()))
+			session.Notify(NewShowMessage(defines.MessageTypeWarning, "failed to open at least one database: "+
+				state.FirstDatabaseOpeningError.Error()))
 		}
 
 		if state.StaticCheckData != nil {
