@@ -183,7 +183,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 			state.symbolicData.PushNodeValue(calleeNode, function)
 
-			getAllowedNonPresentProperties(argNodes, nonSpreadArgCount, params, state)
+			setAllowedNonPresentProperties(argNodes, nonSpreadArgCount, params, state)
 
 			if !hasMoreSpecificParams || !enoughArgs {
 				goto go_func_result
@@ -327,6 +327,8 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 	//check arguments
 
+	var params []SymbolicValue
+
 	for i, arg := range args {
 		var paramTypeNode parse.Node
 
@@ -346,6 +348,8 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		}
 
 		paramType := pattern.SymbolicValue()
+		params = append(params, paramType)
+
 		widenedArg := arg
 		var argNode parse.Node
 		if i < nonSpreadArgCount {
@@ -387,6 +391,8 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			args[i] = widenedArg
 		}
 	}
+
+	setAllowedNonPresentProperties(argNodes, nonSpreadArgCount, params, state)
 
 	if fn == nil { // *Function
 		patt, err := symbolicEval(returnType, state)
@@ -499,7 +505,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 }
 
-func getAllowedNonPresentProperties(argNodes []parse.Node, nonSpreadArgCount int, params []SymbolicValue, state *State) {
+func setAllowedNonPresentProperties(argNodes []parse.Node, nonSpreadArgCount int, params []SymbolicValue, state *State) {
 	//ignore spread arg
 	argNodes = argNodes[:utils.Min(len(argNodes), nonSpreadArgCount)]
 	//ignore additional arguments
