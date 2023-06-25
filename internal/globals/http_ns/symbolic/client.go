@@ -10,6 +10,8 @@ import (
 )
 
 var (
+	HTTP_CLIENT_PROPNAMES = []string{"get_host_cookies"}
+
 	_ = []symbolic.ProtocolClient{&HttpClient{}}
 )
 
@@ -40,7 +42,7 @@ func (c *HttpClient) Prop(name string) symbolic.SymbolicValue {
 }
 
 func (*HttpClient) PropertyNames() []string {
-	return []string{"get_host_cookies"}
+	return HTTP_CLIENT_PROPNAMES
 }
 
 func (*HttpClient) Schemes() []string {

@@ -9,6 +9,10 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+var (
+	HTTP_REQUEST_PROPNAMES = []string{"method", "url", "path", "body" /*"cookies"*/, "headers"}
+)
+
 type HttpRequest struct {
 	symbolic.UnassignablePropsMixin
 	_ int
@@ -48,7 +52,7 @@ func (req *HttpRequest) Prop(name string) symbolic.SymbolicValue {
 }
 
 func (HttpRequest) PropertyNames() []string {
-	return []string{"method", "url", "path", "body" /*"cookies"*/, "headers"}
+	return HTTP_REQUEST_PROPNAMES
 }
 
 func (r *HttpRequest) Widen() (symbolic.SymbolicValue, bool) {

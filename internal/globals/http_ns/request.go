@@ -14,6 +14,8 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/oklog/ulid/v2"
 	"github.com/rs/zerolog"
+
+	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 )
 
 var METHODS_WITH_NO_BODY = []string{"GET", "HEAD", "OPTIONS"}
@@ -252,5 +254,5 @@ func (*HttpRequest) SetProp(ctx *core.Context, name string, value core.Value) er
 }
 
 func (*HttpRequest) PropertyNames(ctx *core.Context) []string {
-	return []string{"method", "url", "path", "body", "cookies", "headers"}
+	return http_ns_symb.HTTP_REQUEST_PROPNAMES
 }

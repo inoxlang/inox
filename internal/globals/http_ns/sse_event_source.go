@@ -13,6 +13,8 @@ import (
 	"time"
 
 	core "github.com/inoxlang/inox/internal/core"
+	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
+
 	"github.com/inoxlang/inox/internal/utils"
 	"gopkg.in/cenkalti/backoff.v1"
 )
@@ -158,7 +160,7 @@ func (*ServerSentEventSource) SetProp(ctx *core.Context, name string, value core
 }
 
 func (*ServerSentEventSource) PropertyNames(ctx *core.Context) []string {
-	return []string{"close"}
+	return http_ns_symb.SSE_SOURCE_PROPNAMES
 }
 
 func (evs *ServerSentEventSource) Close() {

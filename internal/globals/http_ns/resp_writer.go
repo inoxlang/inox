@@ -12,6 +12,8 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 
 	"github.com/rs/zerolog"
+
+	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 )
 
 const (
@@ -22,11 +24,6 @@ var (
 	ErrNotAcceptedContentType       = errors.New("not accepted content type")
 	ErrCannotMutateFinishedResponse = errors.New("cannot mutate finished response")
 	ErrStatusAlreadySet             = errors.New("status already set")
-
-	RESP_WRITER_PROPNAMES = []string{
-		"write_text", "write_binary", "write_html", "write_json", "write_ixon", "set_cookie", "write_status", "write_error",
-		"add_header",
-	}
 )
 
 type HttpResponseWriter struct {
@@ -109,7 +106,7 @@ func (*HttpResponseWriter) SetProp(ctx *core.Context, name string, value core.Va
 
 func (rw *HttpResponseWriter) PropertyNames(ctx *core.Context) []string {
 	rw.assertIsNotFinished()
-	return RESP_WRITER_PROPNAMES
+	return http_ns_symb.HTTP_RESP_WRITER_PROPNAMES
 }
 
 func (rw *HttpResponseWriter) WritePlainText(ctx *core.Context, bytes *core.ByteSlice) (core.Int, error) {

@@ -9,6 +9,10 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+var (
+	SSE_SOURCE_PROPNAMES =   []string{"close"}
+)
+
 type ServerSentEventSource struct {
 	symbolic.UnassignablePropsMixin
 	_ int
@@ -36,7 +40,7 @@ func (s *ServerSentEventSource) Prop(name string) symbolic.SymbolicValue {
 }
 
 func (*ServerSentEventSource) PropertyNames() []string {
-	return []string{"close"}
+	return SSE_SOURCE_PROPNAMES
 }
 
 func (serv *ServerSentEventSource) close(ctx *symbolic.Context) {

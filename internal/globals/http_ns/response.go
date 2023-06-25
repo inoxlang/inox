@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	core "github.com/inoxlang/inox/internal/core"
+
+	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 )
 
 type HttpResponse struct {
@@ -56,7 +58,7 @@ func (*HttpResponse) SetProp(ctx *core.Context, name string, value core.Value) e
 }
 
 func (*HttpResponse) PropertyNames(ctx *core.Context) []string {
-	return []string{"body", "status", "statusCode", "cookies"}
+	return http_ns_symb.HTTP_RESPONSE_PROPNAMES
 }
 
 func (resp *HttpResponse) ContentType(ctx *core.Context) string {

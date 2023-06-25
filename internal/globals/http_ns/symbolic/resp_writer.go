@@ -9,6 +9,13 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+var (
+	HTTP_RESP_WRITER_PROPNAMES = []string{
+		"write_text", "write_binary", "write_html", "write_json", "write_ixon", "set_cookie", "write_status", "write_error",
+		"add_header",
+	}
+)
+
 type HttpResponseWriter struct {
 	symbolic.UnassignablePropsMixin
 	_ int
@@ -53,9 +60,7 @@ func (resp *HttpResponseWriter) Prop(name string) symbolic.SymbolicValue {
 }
 
 func (*HttpResponseWriter) PropertyNames() []string {
-	return []string{
-		"write_text", "write_binary", "write_html", "write_json", "write_ixon", "set_cookie", "write_status", "write_error", "add_header",
-	}
+	return HTTP_RESP_WRITER_PROPNAMES
 }
 
 func (r *HttpResponseWriter) Widen() (symbolic.SymbolicValue, bool) {

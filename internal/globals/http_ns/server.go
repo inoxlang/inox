@@ -13,6 +13,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
+	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 
 	"github.com/inoxlang/inox/internal/globals/dom_ns"
 	"github.com/inoxlang/inox/internal/permkind"
@@ -497,7 +498,7 @@ func (*HttpServer) SetProp(ctx *core.Context, name string, value core.Value) err
 }
 
 func (*HttpServer) PropertyNames(ctx *core.Context) []string {
-	return []string{"wait_closed", "close"}
+	return http_ns_symb.HTTP_SERVER_PROPNAMES
 }
 
 func (serv *HttpServer) WaitClosed(ctx *core.Context) {

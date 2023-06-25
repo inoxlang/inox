@@ -9,6 +9,10 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+var (
+	HTTP_SERVER_PROPNAMES = []string{"wait_closed", "close"}
+)
+
 type HttpServer struct {
 	symbolic.UnassignablePropsMixin
 	_ int
@@ -38,7 +42,7 @@ func (s *HttpServer) Prop(name string) symbolic.SymbolicValue {
 }
 
 func (*HttpServer) PropertyNames() []string {
-	return []string{"wait_closed", "close"}
+	return HTTP_SERVER_PROPNAMES
 }
 
 func (serv *HttpServer) wait_closed(ctx *symbolic.Context) {

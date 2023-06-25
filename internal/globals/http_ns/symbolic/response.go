@@ -11,6 +11,8 @@ import (
 
 var (
 	ANY_RESP = &HttpResponse{}
+
+	HTTP_RESPONSE_PROPNAMES = []string{"body", "status", "statusCode", "cookies"}
 )
 
 type HttpResponse struct {
@@ -47,7 +49,7 @@ func (resp *HttpResponse) Prop(name string) symbolic.SymbolicValue {
 }
 
 func (*HttpResponse) PropertyNames() []string {
-	return []string{"body", "status", "statusCode", "cookies"}
+	return HTTP_RESPONSE_PROPNAMES
 }
 
 func (r *HttpResponse) Widen() (symbolic.SymbolicValue, bool) {

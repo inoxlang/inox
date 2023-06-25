@@ -15,6 +15,8 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/net/context"
 	"golang.org/x/net/publicsuffix"
+
+	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 )
 
 var (
@@ -124,7 +126,7 @@ func (*HttpClient) SetProp(ctx *core.Context, name string, value core.Value) err
 }
 
 func (*HttpClient) PropertyNames(ctx *core.Context) []string {
-	return []string{"get_host_cookies"}
+	return http_ns_symb.HTTP_CLIENT_PROPNAMES
 }
 
 func (c *HttpClient) Schemes() []core.Scheme {
