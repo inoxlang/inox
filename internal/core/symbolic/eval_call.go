@@ -225,6 +225,11 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 							}
 						} else {
 							state.addError(makeSymbolicEvalError(argNode, state, FmtInvalidArg(i, arg, paramType)))
+
+							switch paramType.(type) {
+							case *Object, *Record:
+								addBadPropertyErrorsInLiteral(arg, argNode, paramType, state)
+							}
 						}
 					} else {
 						//TODO: support runtime typecheck for spread arg
