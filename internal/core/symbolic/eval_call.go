@@ -372,6 +372,11 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 					}
 				} else {
 					state.addError(makeSymbolicEvalError(argNode, state, FmtInvalidArg(i, arg, paramType)))
+
+					switch paramType.(type) {
+					case *Object, *Record:
+						addBadPropertyErrorsInLiteral(arg, argNode, paramType, state)
+					}
 				}
 			} else {
 				//TODO: support runtime typecheck for spread arg
@@ -557,4 +562,57 @@ func setAllowedNonPresentProperties(argNodes []parse.Node, nonSpreadArgCount int
 			continue
 		}
 	}
+}
+
+func addBadPropertyErrorsInLiteral(arg SymbolicValue, argNode parse.Node, param SymbolicValue, state *State) {
+
+	addErrors := func(actualEntries map[string]SymbolicValue, expectedEntries map[string]SymbolicValue, propNodes []*parse.ObjectProperty) {
+		for _, propNode := range propNodes {
+			if propNode.HasImplicitKey() {
+				continue
+			}
+			propName := propNode.Name()
+
+			actual, ok := actualEntries[propName]
+			if !ok {
+				panic(ErrUnreachable)
+			}
+
+			expected, ok := expectedEntries[propName]
+
+			if !ok || expected.Test(actual) {
+				continue
+			}
+
+			state.addError(makeSymbolicEvalError(propNode.Key, state, fmtNotAssignableToPropOfValue(actual, expected)))
+		}
+	}
+
+	switch p := param.(type) {
+	case *Object:
+		objLit, ok := argNode.(*parse.ObjectLiteral)
+		if !ok {
+			return
+		}
+
+		actualObject, ok := arg.(*Object)
+		if !ok {
+			return
+		}
+
+		addErrors(actualObject.entries, p.entries, objLit.Properties)
+	case *Record:
+		recordLit, ok := argNode.(*parse.RecordLiteral)
+		if !ok {
+			return
+		}
+
+		actualRecord, ok := arg.(*Record)
+		if !ok {
+			return
+		}
+
+		addErrors(actualRecord.entries, p.entries, recordLit.Properties)
+	}
+	return
 }

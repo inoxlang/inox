@@ -127,6 +127,10 @@ func fmtNotAssignableToPropOfType(a SymbolicValue, b Pattern) string {
 	return fmt.Sprintf("a(n) %s is not assignable to a property of type %s", Stringify(a), Stringify(b.SymbolicValue()))
 }
 
+func fmtNotAssignableToPropOfValue(a SymbolicValue, b SymbolicValue) string {
+	return fmt.Sprintf("a(n) %s is not assignable to a property of type %s", Stringify(a), Stringify(b))
+}
+
 func fmtUnexpectedElemInListAnnotated(e SymbolicValue, elemType Pattern) string {
 	return fmt.Sprintf("unexpected element of type %s in a list of %s (annotation)", Stringify(e), Stringify(elemType.SymbolicValue()))
 }
