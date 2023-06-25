@@ -13,6 +13,8 @@ import (
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/symbolic"
+	dom_ns_symb "github.com/inoxlang/inox/internal/globals/dom_ns/symbolic"
 	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 
 	"github.com/inoxlang/inox/internal/globals/dom_ns"
@@ -45,10 +47,29 @@ const (
 
 var (
 	ErrHandlerNotSharable = errors.New("handler is not sharable")
+
+	SYMBOLIC_HANDLING_DESC = symbolic.NewObject(map[string]symbolic.SymbolicValue{
+		HANDLING_DESC_ROUTING_PROPNAME: symbolic.NewMultivalue(
+			symbolic.ANY_INOX_FUNC,
+			symbolic.NewMapping(),
+		),
+		HANDLING_DESC_MIDDLEWARES_PROPNAME: symbolic.ANY_ITERABLE,
+		HANDLING_DESC_DEFAULT_CSP_PROPNAME: dom_ns_symb.ANY_CSP,
+		HANDLING_DESC_CERTIFICATE_PROPNAME: symbolic.ANY_STR_LIKE,
+		HANDLING_DESC_KEY_PROPNAME:         symbolic.ANY_SECRET,
+	}, map[string]struct{}{
+		//optional entries
+		HANDLING_DESC_MIDDLEWARES_PROPNAME: {},
+		HANDLING_DESC_DEFAULT_CSP_PROPNAME: {},
+		HANDLING_DESC_CERTIFICATE_PROPNAME: {},
+		HANDLING_DESC_KEY_PROPNAME:         {},
+	}, nil)
+
+	NEW_SERVER_TWO_PARAM_NAMES = []string{"host", "handling"}
 )
 
 // NewHttpServer returns an HttpServer with unitialized .state & .logger
-func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
+func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*HttpServer, error) {
 	ctxLogger := *ctx.Logger()
 	_server := &HttpServer{
 		state:      ctx.GetClosestState(),
@@ -59,7 +80,8 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 		return nil, errors.New("cannot create server: context's associated state is nil")
 	}
 
-	addr, userProvidedCert, userProvidedKey, userProvidedHandler, handlerValProvided, middlewares, argErr := readHttpServerArgs(ctx, _server, args...)
+	addr, userProvidedCert, userProvidedKey, userProvidedHandler, handlerValProvided, middlewares, argErr :=
+		readHttpServerArgs(ctx, _server, host, args...)
 	if argErr != nil {
 		return nil, argErr
 	}
@@ -189,165 +211,6 @@ func NewHttpServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 	time.Sleep(HTTP_SERVER_STARTING_WAIT_TIME)
 
 	return _server, nil
-}
-
-func readHttpServerArgs(ctx *core.Context, server *HttpServer, args ...core.Value) (
-	addr string,
-	certificate string,
-	certKey *core.Secret,
-	userProvidedHandler core.Value,
-	handlerValProvided bool,
-	middlewares []core.Value,
-	argErr error,
-) {
-
-	const HANDLING_ARG_NAME = "handler/handling"
-
-	for _, arg := range args {
-		switch v := arg.(type) {
-		case core.Host:
-			if addr != "" {
-				argErr = errors.New("address already provided")
-				return
-			}
-			parsed, _ := url.Parse(string(v))
-			if v.Scheme() != "https" {
-				argErr = fmt.Errorf("invalid scheme '%s'", v)
-				return
-			}
-			server.host = v
-			addr = parsed.Host
-
-			perm := core.HttpPermission{Kind_: permkind.Provide, Entity: v}
-			if err := ctx.CheckHasPermission(perm); err != nil {
-				argErr = err
-				return
-			}
-		case *core.InoxFunction:
-			if handlerValProvided {
-				argErr = commonfmt.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
-				return
-			}
-
-			if ok, expl := v.IsSharable(server.state); !ok {
-				argErr = fmt.Errorf("%w: %s", ErrHandlerNotSharable, expl)
-				return
-			}
-			v.Share(server.state)
-			userProvidedHandler = v
-			handlerValProvided = true
-		case *core.GoFunction:
-			if handlerValProvided {
-				argErr = commonfmt.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
-				return
-			}
-			if ok, expl := v.IsSharable(server.state); !ok {
-				argErr = fmt.Errorf("%w: %s", ErrHandlerNotSharable, expl)
-				return
-			}
-			v.Share(server.state)
-			userProvidedHandler = v
-			handlerValProvided = true
-		case *core.Mapping:
-			if handlerValProvided {
-				argErr = commonfmt.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
-				return
-			}
-			if ok, expl := v.IsSharable(server.state); !ok {
-				argErr = fmt.Errorf("%w: %s", ErrHandlerNotSharable, expl)
-			}
-			v.Share(server.state)
-
-			userProvidedHandler = v
-			handlerValProvided = true
-		case *core.Object:
-			if handlerValProvided {
-				argErr = commonfmt.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
-				return
-			}
-			handlerValProvided = true
-
-			// extract routing handler, middlewares, ... from description
-			for propKey, propVal := range v.EntryMap() {
-				switch propKey {
-				case HANDLING_DESC_MIDDLEWARES_PROPNAME:
-					iterable, ok := propVal.(core.Iterable)
-					if !ok {
-						argErr = core.FmtPropOfArgXShouldBeOfTypeY(propKey, HANDLING_ARG_NAME, "iterable", propVal)
-						return
-					}
-
-					it := iterable.Iterator(ctx, core.IteratorConfiguration{})
-					for it.Next(ctx) {
-						e := it.Value(ctx)
-						if !isValidHandlerValue(e) {
-							s := fmt.Sprintf("%s is not a middleware", core.Stringify(e, ctx))
-							argErr = commonfmt.FmtUnexpectedElementInPropIterableOfArgX(propKey, HANDLING_ARG_NAME, s)
-							return
-						}
-
-						if psharable, ok := e.(core.PotentiallySharable); ok && utils.Ret0(psharable.IsSharable(server.state)) {
-							psharable.Share(server.state)
-						} else {
-							s := fmt.Sprintf("%s is not sharable", core.Stringify(e, ctx))
-							argErr = commonfmt.FmtUnexpectedElementInPropIterableOfArgX(propKey, HANDLING_ARG_NAME, s)
-							return
-						}
-						middlewares = append(middlewares, e)
-					}
-				case HANDLING_DESC_ROUTING_PROPNAME:
-					if !isValidHandlerValue(propVal) {
-						argErr = core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, propKey, HANDLING_ARG_NAME)
-					}
-
-					if psharable, ok := propVal.(core.PotentiallySharable); ok && utils.Ret0(psharable.IsSharable(server.state)) {
-						psharable.Share(server.state)
-					} else {
-						argErr = commonfmt.FmtPropOfArgXShouldBeY(propKey, HANDLING_ARG_NAME, "sharable")
-						return
-					}
-
-					userProvidedHandler = propVal
-				case HANDLING_DESC_DEFAULT_CSP_PROPNAME:
-					csp, ok := propVal.(*dom_ns.ContentSecurityPolicy)
-					if !ok {
-						argErr = core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, propKey, HANDLING_ARG_NAME)
-						return
-					}
-					server.defaultCSP = csp
-				case HANDLING_DESC_CERTIFICATE_PROPNAME:
-					certVal, ok := propVal.(core.StringLike)
-					if !ok {
-						argErr = core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, propKey, HANDLING_ARG_NAME)
-						return
-					}
-					certificate = certVal.GetOrBuildString()
-				case HANDLING_DESC_KEY_PROPNAME:
-					secret, ok := propVal.(*core.Secret)
-					if !ok {
-						argErr = core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, propKey, HANDLING_ARG_NAME)
-						return
-					}
-					certKey = secret
-				default:
-					argErr = commonfmt.FmtUnexpectedPropInArgX(propKey, HANDLING_ARG_NAME)
-				}
-			}
-
-			if userProvidedHandler == nil {
-				argErr = commonfmt.FmtMissingPropInArgX(HANDLING_DESC_ROUTING_PROPNAME, HANDLING_ARG_NAME)
-			}
-		default:
-			argErr = fmt.Errorf("http.server: invalid argument of type %T", v)
-		}
-	}
-
-	if addr == "" {
-		argErr = errors.New("no address provided")
-		return
-	}
-
-	return
 }
 
 type GolangHttpServerConfig struct {
@@ -517,6 +380,169 @@ func (serv *HttpServer) ImmediatelyClose(ctx *core.Context) {
 	}
 }
 
+func readHttpServerArgs(ctx *core.Context, server *HttpServer, host core.Host, args ...core.Value) (
+	addr string,
+	certificate string,
+	certKey *core.Secret,
+	userProvidedHandler core.Value,
+	handlerValProvided bool,
+	middlewares []core.Value,
+	argErr error,
+) {
+
+	const HANDLING_ARG_NAME = "handler/handling"
+
+	//check host
+	{
+		parsed, _ := url.Parse(string(host))
+		if host.Scheme() != "https" {
+			argErr = fmt.Errorf("invalid scheme '%s'", host)
+			return
+		}
+		server.host = host
+		addr = parsed.Host
+
+		perm := core.HttpPermission{Kind_: permkind.Provide, Entity: host}
+		if err := ctx.CheckHasPermission(perm); err != nil {
+			argErr = err
+			return
+		}
+	}
+
+	for _, arg := range args {
+		switch v := arg.(type) {
+		case core.Host:
+			if addr != "" {
+				argErr = errors.New("address already provided")
+				return
+			}
+		case *core.InoxFunction:
+			if handlerValProvided {
+				argErr = commonfmt.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
+				return
+			}
+
+			if ok, expl := v.IsSharable(server.state); !ok {
+				argErr = fmt.Errorf("%w: %s", ErrHandlerNotSharable, expl)
+				return
+			}
+			v.Share(server.state)
+			userProvidedHandler = v
+			handlerValProvided = true
+		case *core.GoFunction:
+			if handlerValProvided {
+				argErr = commonfmt.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
+				return
+			}
+			if ok, expl := v.IsSharable(server.state); !ok {
+				argErr = fmt.Errorf("%w: %s", ErrHandlerNotSharable, expl)
+				return
+			}
+			v.Share(server.state)
+			userProvidedHandler = v
+			handlerValProvided = true
+		case *core.Mapping:
+			if handlerValProvided {
+				argErr = commonfmt.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
+				return
+			}
+			if ok, expl := v.IsSharable(server.state); !ok {
+				argErr = fmt.Errorf("%w: %s", ErrHandlerNotSharable, expl)
+			}
+			v.Share(server.state)
+
+			userProvidedHandler = v
+			handlerValProvided = true
+		case *core.Object:
+			if handlerValProvided {
+				argErr = commonfmt.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
+				return
+			}
+			handlerValProvided = true
+
+			// extract routing handler, middlewares, ... from description
+			for propKey, propVal := range v.EntryMap() {
+				switch propKey {
+				case HANDLING_DESC_MIDDLEWARES_PROPNAME:
+					iterable, ok := propVal.(core.Iterable)
+					if !ok {
+						argErr = core.FmtPropOfArgXShouldBeOfTypeY(propKey, HANDLING_ARG_NAME, "iterable", propVal)
+						return
+					}
+
+					it := iterable.Iterator(ctx, core.IteratorConfiguration{})
+					for it.Next(ctx) {
+						e := it.Value(ctx)
+						if !isValidHandlerValue(e) {
+							s := fmt.Sprintf("%s is not a middleware", core.Stringify(e, ctx))
+							argErr = commonfmt.FmtUnexpectedElementInPropIterableOfArgX(propKey, HANDLING_ARG_NAME, s)
+							return
+						}
+
+						if psharable, ok := e.(core.PotentiallySharable); ok && utils.Ret0(psharable.IsSharable(server.state)) {
+							psharable.Share(server.state)
+						} else {
+							s := fmt.Sprintf("%s is not sharable", core.Stringify(e, ctx))
+							argErr = commonfmt.FmtUnexpectedElementInPropIterableOfArgX(propKey, HANDLING_ARG_NAME, s)
+							return
+						}
+						middlewares = append(middlewares, e)
+					}
+				case HANDLING_DESC_ROUTING_PROPNAME:
+					if !isValidHandlerValue(propVal) {
+						argErr = core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, propKey, HANDLING_ARG_NAME)
+					}
+
+					if psharable, ok := propVal.(core.PotentiallySharable); ok && utils.Ret0(psharable.IsSharable(server.state)) {
+						psharable.Share(server.state)
+					} else {
+						argErr = commonfmt.FmtPropOfArgXShouldBeY(propKey, HANDLING_ARG_NAME, "sharable")
+						return
+					}
+
+					userProvidedHandler = propVal
+				case HANDLING_DESC_DEFAULT_CSP_PROPNAME:
+					csp, ok := propVal.(*dom_ns.ContentSecurityPolicy)
+					if !ok {
+						argErr = core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, propKey, HANDLING_ARG_NAME)
+						return
+					}
+					server.defaultCSP = csp
+				case HANDLING_DESC_CERTIFICATE_PROPNAME:
+					certVal, ok := propVal.(core.StringLike)
+					if !ok {
+						argErr = core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, propKey, HANDLING_ARG_NAME)
+						return
+					}
+					certificate = certVal.GetOrBuildString()
+				case HANDLING_DESC_KEY_PROPNAME:
+					secret, ok := propVal.(*core.Secret)
+					if !ok {
+						argErr = core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, propKey, HANDLING_ARG_NAME)
+						return
+					}
+					certKey = secret
+				default:
+					argErr = commonfmt.FmtUnexpectedPropInArgX(propKey, HANDLING_ARG_NAME)
+				}
+			}
+
+			if userProvidedHandler == nil {
+				argErr = commonfmt.FmtMissingPropInArgX(HANDLING_DESC_ROUTING_PROPNAME, HANDLING_ARG_NAME)
+			}
+		default:
+			argErr = fmt.Errorf("http.server: invalid argument of type %T", v)
+		}
+	}
+
+	if addr == "" {
+		argErr = errors.New("no address provided")
+		return
+	}
+
+	return
+}
+
 func (serv *HttpServer) Close(ctx *core.Context) {
 	//we first close the event streams to prevent hanging during shutdown
 	serv.lock.Lock()
@@ -532,4 +558,34 @@ func (serv *HttpServer) Close(ctx *core.Context) {
 	timeoutCtx, cancel := context.WithTimeout(ctx, HTTP_SERVER_GRACEFUL_SHUTDOWN_TIMEOUT)
 	defer cancel()
 	serv.wrappedServer.Shutdown(timeoutCtx)
+}
+
+func newSymbolicHttpServer(ctx *symbolic.Context, host *symbolic.Host, args ...symbolic.SymbolicValue) (*http_ns_symb.HttpServer, *symbolic.Error) {
+	server := &http_ns_symb.HttpServer{}
+
+	if len(args) == 0 {
+		return server, nil
+	}
+
+	switch args[0].(type) {
+	case *symbolic.InoxFunction:
+	case *symbolic.GoFunction:
+	case *symbolic.Mapping:
+	case *symbolic.Object:
+		ctx.SetSymbolicGoFunctionParameters(&[]symbolic.SymbolicValue{
+			symbolic.ANY_HOST,
+			SYMBOLIC_HANDLING_DESC,
+		}, NEW_SERVER_TWO_PARAM_NAMES)
+	default:
+		ctx.SetSymbolicGoFunctionParameters(&[]symbolic.SymbolicValue{
+			symbolic.ANY_HOST,
+			symbolic.NewMultivalue(
+				symbolic.ANY_INOX_FUNC,
+				symbolic.NewMapping(),
+				SYMBOLIC_HANDLING_DESC,
+			),
+		}, NEW_SERVER_TWO_PARAM_NAMES)
+	}
+
+	return server, nil
 }

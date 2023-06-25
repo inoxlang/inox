@@ -10,6 +10,10 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+var (
+	ANY_CSP = NewCSP()
+)
+
 type ContentSecurityPolicy struct {
 	_ int
 }

@@ -50,10 +50,8 @@ func init() {
 		HttpDelete, func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) (*http_symbolic.HttpResponse, *symbolic.Error) {
 			return &http_symbolic.HttpResponse{}, nil
 		},
-		NewHttpServer, func(ctx *symbolic.Context, ars ...symbolic.SymbolicValue) (*http_symbolic.HttpServer, *symbolic.Error) {
-			return &http_symbolic.HttpServer{}, nil
-		},
-		NewFileServer, func(ctx *symbolic.Context, ars ...symbolic.SymbolicValue) (*http_symbolic.HttpServer, *symbolic.Error) {
+		NewHttpServer, newSymbolicHttpServer,
+		NewFileServer, func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) (*http_symbolic.HttpServer, *symbolic.Error) {
 			return &http_symbolic.HttpServer{}, nil
 		},
 		serveFile, func(ctx *symbolic.Context, rw *http_symbolic.HttpResponseWriter, r *http_symbolic.HttpRequest, path *symbolic.Path) *symbolic.Error {

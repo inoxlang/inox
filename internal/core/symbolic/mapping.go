@@ -13,7 +13,10 @@ import (
 // A Mapping represents a symbolic Mapping.
 type Mapping struct {
 	shared bool
-	_      int
+}
+
+func NewMapping() *Mapping {
+	return &Mapping{}
 }
 
 func (m *Mapping) Test(v SymbolicValue) bool {

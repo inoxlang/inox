@@ -13,6 +13,12 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+var (
+	ANY_INOX_FUNC = &InoxFunction{
+		node: nil,
+	}
+)
+
 // An InoxFunction represents a symbolic InoxFunction.
 // TODO: keep in sync with concrete InoxFunction
 type InoxFunction struct {
