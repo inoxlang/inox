@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 )

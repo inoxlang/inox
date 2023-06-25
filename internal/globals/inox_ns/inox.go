@@ -8,7 +8,7 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
 
-	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
 )
 

@@ -3,7 +3,7 @@ package net_ns
 import (
 	"bufio"
 
-	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	http_symbolic "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"

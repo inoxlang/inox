@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	core "github.com/inoxlang/inox/internal/core"
-	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 )
 

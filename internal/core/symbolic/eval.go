@@ -1,4 +1,4 @@
-package internal
+package symbolic
 
 import (
 	"bytes"

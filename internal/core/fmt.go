@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
 )
 

@@ -25,7 +25,7 @@ import (
 
 	"github.com/rs/zerolog"
 
-	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	symbolic_shell "github.com/inoxlang/inox/internal/globals/inoxsh_ns/symbolic"
 
 	"github.com/inoxlang/inox/internal/globals/compl"

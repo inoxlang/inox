@@ -16,7 +16,7 @@ import (
 	"strings"
 
 	core "github.com/inoxlang/inox/internal/core"
-	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/help_ns"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/crypto/argon2"

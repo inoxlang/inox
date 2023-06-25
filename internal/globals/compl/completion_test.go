@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	core "github.com/inoxlang/inox/internal/core"
-	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/permkind"
 

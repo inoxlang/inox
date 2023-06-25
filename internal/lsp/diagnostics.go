@@ -6,7 +6,7 @@ import (
 	"io"
 
 	core "github.com/inoxlang/inox/internal/core"
-	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
 
 	"github.com/inoxlang/inox/internal/lsp/jsonrpc"

@@ -14,7 +14,7 @@ import (
 	"github.com/go-git/go-billy/v5"
 
 	"github.com/inoxlang/inox/internal/afs"
-	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
 	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"

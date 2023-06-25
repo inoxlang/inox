@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"errors"
 
-	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	html_ns "github.com/inoxlang/inox/internal/globals/html_ns/symbolic"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 

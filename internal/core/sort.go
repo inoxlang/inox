@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
 )
 

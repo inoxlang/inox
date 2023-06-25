@@ -4,7 +4,7 @@ import (
 	"reflect"
 
 	core "github.com/inoxlang/inox/internal/core"
-	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/help_ns"
 	http_symbolic "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 )

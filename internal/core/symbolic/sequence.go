@@ -1,4 +1,4 @@
-package internal
+package symbolic
 
 var (
 	_ = []Sequence{&String{}, &Tuple{}}

@@ -2,7 +2,7 @@ package s3_ns
 
 import (
 	core "github.com/inoxlang/inox/internal/core"
-	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	s3_symbolic "github.com/inoxlang/inox/internal/globals/s3_ns/symbolic"
 )
 

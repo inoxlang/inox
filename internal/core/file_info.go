@@ -5,9 +5,8 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
-	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 )
-
 
 const (
 	FILEMODE_PRIMORDIAL_FUNCNAME = "FileMode"

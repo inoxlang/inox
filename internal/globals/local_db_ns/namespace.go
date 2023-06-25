@@ -2,7 +2,7 @@ package local_db_ns
 
 import (
 	core "github.com/inoxlang/inox/internal/core"
-	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 )
 
 const (

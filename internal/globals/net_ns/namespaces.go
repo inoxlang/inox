@@ -2,7 +2,7 @@ package net_ns
 
 import (
 	core "github.com/inoxlang/inox/internal/core"
-	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	help_ns "github.com/inoxlang/inox/internal/globals/help_ns"
 	net_symbolic "github.com/inoxlang/inox/internal/globals/net_ns/symbolic"
 )

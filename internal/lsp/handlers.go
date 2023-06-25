@@ -24,7 +24,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
 	"github.com/inoxlang/inox/internal/utils"
 
-	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/compl"
 	help_ns "github.com/inoxlang/inox/internal/globals/help_ns"
 	parse "github.com/inoxlang/inox/internal/parse"

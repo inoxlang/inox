@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"sync/atomic"
 
-	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
 )
 

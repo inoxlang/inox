@@ -11,7 +11,7 @@ import (
 	_ "embed"
 
 	"github.com/inoxlang/inox/internal/core"
-	symbolic "github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/muesli/termenv"
 	"gopkg.in/yaml.v3"
