@@ -544,7 +544,7 @@ func setAllowedNonPresentProperties(argNodes []parse.Node, nonSpreadArgCount int
 
 		switch p := param.(type) {
 		case *Object:
-			allowedNonPresentProperties := p.PropertyNames()
+			allowedNonPresentProperties := GetAllPropertyNames(p)
 
 			objLit, ok := arg.(*parse.ObjectLiteral)
 			if !ok {
@@ -554,7 +554,7 @@ func setAllowedNonPresentProperties(argNodes []parse.Node, nonSpreadArgCount int
 			allowedNonPresentProperties = removePropertiesAlreadyPresent(allowedNonPresentProperties, objLit.Properties)
 			state.symbolicData.SetAllowedNonPresentProperties(objLit, allowedNonPresentProperties)
 		case *Record:
-			allowedNonPresentProperties := p.PropertyNames()
+			allowedNonPresentProperties := GetAllPropertyNames(p)
 
 			recordLit, ok := arg.(*parse.RecordLiteral)
 			if !ok {

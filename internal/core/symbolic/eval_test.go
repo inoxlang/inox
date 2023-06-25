@@ -2205,6 +2205,34 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &Int{}, res)
 		})
 
+		t.Run("missing property in object argument and optional property in parameter", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(arg {a: int, b: int}){
+					return 1
+				}
+				return f({})
+			`)
+
+			argNode := n.Statements[1].(*parse.ReturnStatement).Expr.(*parse.CallExpression).Arguments[0]
+
+			param := NewObject(map[string]SymbolicValue{
+				"a": ANY_INT,
+				"b": ANY_INT,
+			}, nil, nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(argNode, state, FmtInvalidArg(0, NewEmptyObject(), param)),
+			}, state.errors)
+
+			allowedProps, ok := state.symbolicData.GetAllowedNonPresentProperties(argNode)
+			assert.True(t, ok)
+			assert.Equal(t, []string{"a", "b"}, allowedProps)
+
+			assert.Equal(t, &Int{}, res)
+		})
+
 		t.Run("invalid type of property in object argument", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(arg {a: int}){
