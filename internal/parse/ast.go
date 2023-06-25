@@ -2771,6 +2771,8 @@ func GetInteriorSpan(node Node) (interiorSpan NodeSpan, err error) {
 	switch node.(type) {
 	case *ObjectLiteral:
 		return getInteriorSpan(node, OPENING_CURLY_BRACKET, CLOSING_CURLY_BRACKET)
+	case *RecordLiteral:
+		return getInteriorSpan(node, OPENING_RECORD_BRACKET, CLOSING_CURLY_BRACKET)
 	}
 	err = errors.New("not supported yet")
 	return

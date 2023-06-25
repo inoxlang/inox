@@ -1006,18 +1006,19 @@ func findObjectInteriorCompletions(
 		return nil
 	}
 
+	pos := chunk.GetSourcePosition(parse.NodeSpan{Start: cursorIndex, End: cursorIndex})
+
 	properties, ok := state.SymbolicData.GetAllowedNonPresentProperties(n)
 	if ok {
 		for _, name := range properties {
 			completions = append(completions, Completion{
-				ShownString: name,
-				Value:       name,
-				Kind:        defines.CompletionItemKindProperty,
+				ShownString:   name,
+				Value:         name,
+				Kind:          defines.CompletionItemKindProperty,
+				ReplacedRange: pos,
 			})
 		}
 	}
-
-	pos := chunk.GetSourcePosition(parse.NodeSpan{Start: cursorIndex, End: cursorIndex})
 
 	switch parent := parent.(type) {
 	case *parse.Manifest: //suggest all sections of the manifest
@@ -1078,15 +1079,18 @@ func findRecordInteriorCompletions(
 		return nil
 	}
 
+	pos := chunk.GetSourcePosition(parse.NodeSpan{Start: cursorIndex, End: cursorIndex})
+
 	properties, ok := state.SymbolicData.GetAllowedNonPresentProperties(n)
 	if ok {
 		for _, name := range properties {
 			completions = append(completions, Completion{
-				ShownString: name,
-				Value:       name,
-				Kind:        defines.CompletionItemKindProperty,
+				ShownString:   name,
+				Value:         name,
+				Kind:          defines.CompletionItemKindProperty,
+				ReplacedRange: pos,
 			})
 		}
 	}
-	return nil
+	return
 }
