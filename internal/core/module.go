@@ -170,10 +170,14 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, _ *TreeWalkState
 	// check object literal
 	{
 		var checkErrs []*StaticCheckError
-		checkManifestObject(manifestObjLiteral, preinitArgs.IgnoreUnknownSections, func(n parse.Node, msg string) {
-			location := m.MainChunk.GetSourcePosition(n.Base().Span)
-			checkErr := NewStaticCheckError(msg, parse.SourcePositionStack{location})
-			checkErrs = append(checkErrs, checkErr)
+		checkManifestObject(manifestStaticCheckArguments{
+			objLit: manifestObjLiteral, 
+			ignoreUnknownSections: preinitArgs.IgnoreUnknownSections, 
+			onError: func(n parse.Node, msg string) {
+				location := m.MainChunk.GetSourcePosition(n.Base().Span)
+				checkErr := NewStaticCheckError(msg, parse.SourcePositionStack{location})
+				checkErrs = append(checkErrs, checkErr)
+			},
 		})
 		if len(checkErrs) != 0 {
 			return nil, nil, checkErrs, fmt.Errorf("%s: error while checking manifest's object literal: %w", m.Name(), combineStaticCheckErrors(checkErrs...))

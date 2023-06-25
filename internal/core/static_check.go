@@ -1529,15 +1529,23 @@ func (checker *checker) postCheckSingleNode(node, parent, scopeNode parse.Node, 
 
 		switch p := parent.(type) {
 		case *parse.Manifest:
-			checkManifestObject(n, false, func(n parse.Node, msg string) {
-				checker.addError(n, msg)
+			checkManifestObject(manifestStaticCheckArguments{
+				objLit:                n,
+				ignoreUnknownSections: false,
+				onError: func(n parse.Node, msg string) {
+					checker.addError(n, msg)
+				},
 			})
 		case *parse.EmbeddedModule:
 			if p.Manifest == nil || p.Manifest.Object != node {
 				break
 			}
-			checkManifestObject(n, false, func(n parse.Node, msg string) {
-				checker.addError(n, msg)
+			checkManifestObject(manifestStaticCheckArguments{
+				objLit:                n,
+				ignoreUnknownSections: false,
+				onError: func(n parse.Node, msg string) {
+					checker.addError(n, msg)
+				},
 			})
 		}
 	case *parse.ForStatement, *parse.WalkStatement:
@@ -1566,7 +1574,17 @@ func checkPreinitBlock(preinit *parse.PreinitStatement, onError func(n parse.Nod
 	}, nil)
 }
 
-func checkManifestObject(objLit *parse.ObjectLiteral, ignoreUnknownSections bool, onError func(n parse.Node, msg string)) {
+type manifestStaticCheckArguments struct {
+	objLit                *parse.ObjectLiteral
+	ignoreUnknownSections bool
+	onError               func(n parse.Node, msg string)
+}
+
+func checkManifestObject(args manifestStaticCheckArguments) {
+	objLit := args.objLit
+	ignoreUnknownSections := args.ignoreUnknownSections
+	onError := args.onError
+
 	parse.Walk(objLit, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 		switch n := node.(type) {
 		case *parse.ObjectLiteral:
