@@ -158,6 +158,10 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usi
 		}
 	}
 
+	if len(diagnostics) == 0 && err != nil {
+		logs.Println("unexpected error", err)
+	}
+
 send_diagnostics:
 	session.Notify(jsonrpc.NotificationMessage{
 		BaseMessage: jsonrpc.BaseMessage{
