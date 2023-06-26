@@ -14,6 +14,16 @@ type DebugInitializeParams struct {
 	Request   dap.InitializeRequest `json:"request"`
 }
 
+type DebugConfigurationDoneParams struct {
+	SessionId string                       `json:"sessionID"`
+	Request   dap.ConfigurationDoneRequest `json:"request"`
+}
+
+type DebugLaunchRequestParams struct {
+	SessionId string            `json:"sessionID"`
+	Request   dap.LaunchRequest `json:"request"`
+}
+
 type DebugSessions struct {
 	sessions        []*DebugSession
 	sessionListLock sync.Mutex
@@ -88,7 +98,7 @@ func registerDebugMethodHandlers(
 						Seq:  debugSession.NextSeq(),
 						Type: "response",
 					},
-					Command: "initialize",
+					Command: dapRequest.Command,
 				},
 				Body: dap.Capabilities{
 					SupportsConfigurationDoneRequest:   true,
@@ -98,4 +108,55 @@ func registerDebugMethodHandlers(
 		},
 	})
 
+	server.OnCustom(jsonrpc.MethodInfo{
+		Name: "debug/configurationDone",
+		NewRequest: func() interface{} {
+			return &DebugConfigurationDoneParams{}
+		},
+		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+			session := jsonrpc.GetSession(ctx)
+			params := req.(*DebugConfigurationDoneParams)
+			dapRequest := params.Request
+
+			debugSession := getDebugSession(session, params.SessionId)
+
+			return dap.ConfigurationDoneResponse{
+				Response: dap.Response{
+					RequestSeq: dapRequest.Seq,
+					Success:    true,
+					ProtocolMessage: dap.ProtocolMessage{
+						Seq:  debugSession.NextSeq(),
+						Type: "response",
+					},
+					Command: dapRequest.Command,
+				},
+			}, nil
+		},
+	})
+
+	server.OnCustom(jsonrpc.MethodInfo{
+		Name: "debug/launch",
+		NewRequest: func() interface{} {
+			return &DebugLaunchRequestParams{}
+		},
+		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+			session := jsonrpc.GetSession(ctx)
+			params := req.(*DebugLaunchRequestParams)
+			dapRequest := params.Request
+
+			debugSession := getDebugSession(session, params.SessionId)
+
+			return dap.LaunchResponse{
+				Response: dap.Response{
+					RequestSeq: dapRequest.Seq,
+					Success:    true,
+					ProtocolMessage: dap.ProtocolMessage{
+						Seq:  debugSession.NextSeq(),
+						Type: "response",
+					},
+					Command: dapRequest.Command,
+				},
+			}, nil
+		},
+	})
 }
