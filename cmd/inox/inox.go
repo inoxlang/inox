@@ -49,6 +49,8 @@ const (
 		"\trun <script path> [passed arguments]\n"
 
 	INVALID_INPUT_STATUS = 1
+
+	DEFAULT_ALLOWED_DEV_HOST = core.Host("https://localhost:8080")
 )
 
 func main() {
@@ -274,8 +276,16 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		perms := []core.Permission{
 			//TODO: change path pattern
 			core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+			core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
+			core.FilesystemPermission{Kind_: permkind.Delete, Entity: core.PathPattern("/...")},
+
 			core.WebsocketPermission{Kind_: permkind.Provide},
+			core.HttpPermission{Kind_: permkind.Provide, Entity: DEFAULT_ALLOWED_DEV_HOST},
+			core.HttpPermission{Kind_: permkind.Read, Entity: DEFAULT_ALLOWED_DEV_HOST},
+			core.HttpPermission{Kind_: permkind.Write, Entity: DEFAULT_ALLOWED_DEV_HOST},
 		}
+
+		perms = append(perms, core.GetDefaultGlobalVarPermissions()...)
 
 		out := os.Stdout
 		filesystem := lsp.NewDefaultFilesystem()
