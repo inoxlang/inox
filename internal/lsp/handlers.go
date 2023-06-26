@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -135,7 +134,7 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 			Fpath:                     fpath,
 			ParsingCompilationContext: handlingCtx,
 			ParentContext:             nil,
-			Out:                       os.Stdout,
+			Out:                       io.Discard,
 			DevMode:                   true,
 			AllowMissingEnvVars:       true,
 			PreinitFilesystem:         fls,
@@ -321,7 +320,7 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 			Fpath:                     fpath,
 			ParsingCompilationContext: handlingCtx,
 			ParentContext:             nil,
-			Out:                       os.Stdout,
+			Out:                       io.Discard,
 			DevMode:                   true,
 			AllowMissingEnvVars:       true,
 			ScriptContextFileSystem:   fls,
