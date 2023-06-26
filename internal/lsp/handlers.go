@@ -43,14 +43,21 @@ var (
 )
 
 func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
-	var shuttingDownSessionsLock sync.Mutex
-	shuttingDownSessions := make(map[*jsonrpc.Session]struct{})
+	var (
+		shuttingDownSessionsLock sync.Mutex
+		shuttingDownSessions     = make(map[*jsonrpc.Session]struct{})
+
+		//debug adapter protocol
+		sessionToDebugSessions      = map[*jsonrpc.Session]*DebugSessions{}
+		sessionToDebugSessionIdLock sync.Mutex
+	)
 
 	projectMode := opts.ProjectMode
 
 	if projectMode {
 		registerFilesystemMethodHandlers(server)
 		registerProjectMethodHandlers(server, opts)
+		registerDebugMethodHandlers(server, opts, sessionToDebugSessions, &sessionToDebugSessionIdLock)
 	}
 
 	server.OnInitialize(func(ctx context.Context, req *defines.InitializeParams) (result *defines.InitializeResult, err *defines.InitializeError) {
@@ -92,6 +99,11 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 
 			delete(shuttingDownSessions, session)
 			shuttingDownSessionsLock.Unlock()
+
+			sessionToDebugSessionIdLock.Lock()
+			delete(sessionToDebugSessions, session)
+			sessionToDebugSessionIdLock.Lock()
+
 			session.Close()
 		} else {
 			shuttingDownSessionsLock.Unlock()
