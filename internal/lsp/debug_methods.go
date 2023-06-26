@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"runtime/debug"
 	"sync"
@@ -53,15 +52,15 @@ func (sessions *DebugSessions) AddSession(s *DebugSession) {
 
 type DebugSession struct {
 	id              string
-	nextSeq         int
+	nextSeq         atomic.Int32
 	programDoneChan chan error //ok if error is nil
 	finished        atomic.Bool
 }
 
 func (s *DebugSession) NextSeq() int {
-	seq := s.nextSeq
-	s.nextSeq++
-	return seq
+	next := s.nextSeq.Add(1)
+
+	return int(next - 1)
 }
 
 func registerDebugMethodHandlers(
@@ -87,9 +86,9 @@ func registerDebugMethodHandlers(
 
 		if debugSession == nil {
 			debugSession = &DebugSession{
-				id:      sessionId,
-				nextSeq: 1,
+				id: sessionId,
 			}
+			debugSession.nextSeq.Store(1)
 			debugSessions.AddSession(debugSession)
 		}
 
@@ -159,7 +158,6 @@ func registerDebugMethodHandlers(
 		},
 		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
 			session := jsonrpc.GetSession(ctx)
-			sessionCtx := session.Context()
 			params := req.(*DebugLaunchRequestParams)
 			dapRequest := params.Request
 
@@ -216,51 +214,7 @@ func registerDebugMethodHandlers(
 
 			debugSession.programDoneChan = make(chan error, 1)
 
-			go func() {
-				defer func() {
-					e := recover()
-					switch val := e.(type) {
-					case nil:
-					case error:
-						debugSession.programDoneChan <- val
-					default:
-						debugSession.programDoneChan <- fmt.Errorf("%#v: %s", val, string(debug.Stack()))
-					}
-
-					debugSession.finished.Store(true)
-
-					session.Notify(jsonrpc.NotificationMessage{
-						BaseMessage: jsonrpc.BaseMessage{
-							Jsonrpc: JSONRPC_VERSION,
-						},
-						Method: "debug/terminated",
-					})
-
-					session.Notify(jsonrpc.NotificationMessage{
-						BaseMessage: jsonrpc.BaseMessage{
-							Jsonrpc: JSONRPC_VERSION,
-						},
-						Method: "debug/exited",
-					})
-				}()
-
-				ctx := sessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
-					Filesystem: fls,
-				})
-
-				_, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
-					Fpath:                     programPath,
-					ParsingCompilationContext: ctx,
-					ParentContext:             sessionCtx,
-					UseContextAsParent:        true,
-					Out:                       os.Stdout,
-					AllowMissingEnvVars:       false,
-					IgnoreHighRiskScore:       true,
-					PreinitFilesystem:         fls,
-				})
-
-				debugSession.programDoneChan <- err
-			}()
+			go launchDebuggedProgram(programPath, session, debugSession, fls)
 
 			select {
 			case <-time.After(time.Second):
@@ -296,4 +250,78 @@ func registerDebugMethodHandlers(
 		},
 	})
 
+}
+
+func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSession *DebugSession, fls *Filesystem) {
+	sessionCtx := session.Context()
+
+	defer func() {
+		e := recover()
+		switch val := e.(type) {
+		case nil:
+		case error:
+			debugSession.programDoneChan <- val
+		default:
+			debugSession.programDoneChan <- fmt.Errorf("%#v: %s", val, string(debug.Stack()))
+		}
+
+		debugSession.finished.Store(true)
+
+		session.Notify(jsonrpc.NotificationMessage{
+			BaseMessage: jsonrpc.BaseMessage{
+				Jsonrpc: JSONRPC_VERSION,
+			},
+			Method: "debug/terminated",
+		})
+
+		session.Notify(jsonrpc.NotificationMessage{
+			BaseMessage: jsonrpc.BaseMessage{
+				Jsonrpc: JSONRPC_VERSION,
+			},
+			Method: "debug/exited",
+		})
+	}()
+
+	ctx := sessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
+		Filesystem: fls,
+	})
+
+	_, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
+		Fpath:                     programPath,
+		ParsingCompilationContext: ctx,
+		ParentContext:             sessionCtx,
+		UseContextAsParent:        true,
+		Out: utils.FnWriter{
+			WriteFn: func(p []byte) (n int, err error) {
+				outputEvent := dap.OutputEvent{
+					Event: dap.Event{
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  debugSession.NextSeq(),
+							Type: "event",
+						},
+						Event: "output",
+					},
+					Body: dap.OutputEventBody{
+						Output:   string(p),
+						Category: "stdout",
+					},
+				}
+
+				session.Notify(jsonrpc.NotificationMessage{
+					BaseMessage: jsonrpc.BaseMessage{
+						Jsonrpc: JSONRPC_VERSION,
+					},
+					Method: "debug/output",
+					Params: utils.Must(json.Marshal(outputEvent)),
+				})
+
+				return len(p), nil
+			},
+		},
+		AllowMissingEnvVars: false,
+		IgnoreHighRiskScore: true,
+		PreinitFilesystem:   fls,
+	})
+
+	debugSession.programDoneChan <- err
 }
