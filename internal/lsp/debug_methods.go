@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime/debug"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/google/go-dap"
@@ -54,6 +55,7 @@ type DebugSession struct {
 	id              string
 	nextSeq         int
 	programDoneChan chan error //ok if error is nil
+	finished        atomic.Bool
 }
 
 func (s *DebugSession) NextSeq() int {
@@ -212,7 +214,7 @@ func registerDebugMethodHandlers(
 				}, nil
 			}
 
-			debugSession.programDoneChan = make(chan error)
+			debugSession.programDoneChan = make(chan error, 1)
 
 			go func() {
 				defer func() {
@@ -224,6 +226,22 @@ func registerDebugMethodHandlers(
 					default:
 						debugSession.programDoneChan <- fmt.Errorf("%#v: %s", val, string(debug.Stack()))
 					}
+
+					debugSession.finished.Store(true)
+
+					session.Notify(jsonrpc.NotificationMessage{
+						BaseMessage: jsonrpc.BaseMessage{
+							Jsonrpc: JSONRPC_VERSION,
+						},
+						Method: "debug/terminated",
+					})
+
+					session.Notify(jsonrpc.NotificationMessage{
+						BaseMessage: jsonrpc.BaseMessage{
+							Jsonrpc: JSONRPC_VERSION,
+						},
+						Method: "debug/exited",
+					})
 				}()
 
 				ctx := sessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
