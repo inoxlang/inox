@@ -180,7 +180,6 @@ func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 			assert.Nil(t, ancestors)
 		})
 
-
 		t.Run("second line is a space: nothing should be found in first line", func(t *testing.T) {
 			chunk := utils.Must(ParseChunkSource(InMemorySource{
 				NameString: "test",
@@ -295,6 +294,74 @@ func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 			chunk := utils.Must(ParseChunkSource(InMemorySource{
 				NameString: "test",
 				CodeString: "\n1; 2",
+			}))
+
+			node, ancestors, found := chunk.FindFirstStatementAndChainOnLine(2)
+			if !assert.True(t, found) {
+				return
+			}
+
+			expectedNodes, expectedAncestors := FindNodesAndChains(chunk.Node, (*IntLiteral)(nil), nil)
+
+			assert.Equal(t, expectedNodes[0], node)
+			assert.Equal(t, expectedAncestors[0], ancestors)
+		})
+	})
+
+	t.Run("block", func(t *testing.T) {
+		t.Run("empty", func(t *testing.T) {
+			chunk := utils.Must(ParseChunkSource(InMemorySource{
+				NameString: "test",
+				CodeString: "if true {\n}",
+			}))
+
+			node, ancestors, found := chunk.FindFirstStatementAndChainOnLine(2)
+			if !assert.False(t, found) {
+				return
+			}
+
+			assert.Nil(t, node)
+			assert.Nil(t, ancestors)
+		})
+
+		t.Run("single statement", func(t *testing.T) {
+			chunk := utils.Must(ParseChunkSource(InMemorySource{
+				NameString: "test",
+				CodeString: "if true {\n1}",
+			}))
+
+			node, ancestors, found := chunk.FindFirstStatementAndChainOnLine(2)
+			if !assert.True(t, found) {
+				return
+			}
+
+			expectedNode, expectedAncestors := FindNodeAndChain(chunk.Node, (*IntLiteral)(nil), nil)
+
+			assert.Equal(t, expectedNode, node)
+			assert.Equal(t, expectedAncestors, ancestors)
+		})
+
+		t.Run("single statement preceded by a space", func(t *testing.T) {
+			chunk := utils.Must(ParseChunkSource(InMemorySource{
+				NameString: "test",
+				CodeString: "if true {\n 1}",
+			}))
+
+			node, ancestors, found := chunk.FindFirstStatementAndChainOnLine(2)
+			if !assert.True(t, found) {
+				return
+			}
+
+			expectedNode, expectedAncestors := FindNodeAndChain(chunk.Node, (*IntLiteral)(nil), nil)
+
+			assert.Equal(t, expectedNode, node)
+			assert.Equal(t, expectedAncestors, ancestors)
+		})
+
+		t.Run("two statements", func(t *testing.T) {
+			chunk := utils.Must(ParseChunkSource(InMemorySource{
+				NameString: "test",
+				CodeString: "if true {\n1; 2}",
 			}))
 
 			node, ancestors, found := chunk.FindFirstStatementAndChainOnLine(2)
