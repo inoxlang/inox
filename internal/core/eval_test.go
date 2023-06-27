@@ -6385,6 +6385,8 @@ func testDebugModeEval(
 				},
 			}
 
+			time.Sleep(10 * time.Millisecond) //wait for the debugger to set the breakpoints
+
 			var globalScopes []map[string]Value
 			var localScopes []map[string]Value
 
@@ -6447,6 +6449,8 @@ func testDebugModeEval(
 					chunk.Node.Statements[0]: {}, //a = 1
 				},
 			}
+
+			time.Sleep(10 * time.Millisecond) //wait for the debugger to set the breakpoints
 
 			var globalScopes []map[string]Value
 			var localScopes []map[string]Value
