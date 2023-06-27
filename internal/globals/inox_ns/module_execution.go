@@ -439,7 +439,7 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 
 	treeWalkState := core.NewTreeWalkStateWithGlobal(state)
 	if args.Debugger != nil {
-		treeWalkState.EnterDebugMode(args.Debugger)
+		args.Debugger.AttachAndStart(treeWalkState)
 	}
 
 	res, err := core.TreeWalkEval(state.Module.MainChunk.Node, treeWalkState)

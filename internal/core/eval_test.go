@@ -6341,7 +6341,7 @@ func TestTreeWalkDebug(t *testing.T) {
 		debugger := NewDebugger(DebuggerArgs{
 			Logger: zerolog.New(io.Discard),
 		})
-		treeWalkState.EnterDebugMode(debugger)
+		debugger.AttachAndStart(treeWalkState)
 
 		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
 			NameString: "core-test",

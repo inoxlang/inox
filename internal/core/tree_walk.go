@@ -113,14 +113,20 @@ func (state *TreeWalkState) PopScope() {
 	state.LocalScopeStack = state.LocalScopeStack[:len(state.LocalScopeStack)-1]
 }
 
-func (state *TreeWalkState) EnterDebugMode(debugger *Debugger) {
+func (state *TreeWalkState) GetGlobalState() *GlobalState {
+	return state.Global
+}
+
+func (state *TreeWalkState) AttachDebugger(debugger *Debugger) {
 	if state.debug != nil {
-		return
+		panic(ErrDebuggerAlreadyAttached)
 	}
 
 	state.debug = debugger
-	debugger.globalState = state.Global
-	state.debug.startGoroutine()
+}
+
+func (state *TreeWalkState) DetachDebugger() {
+	state.debug = nil
 }
 
 type IterationChange int
@@ -795,7 +801,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		for _, stmt := range n.Statements {
 			if state.debug != nil {
-				state.debug.beforeInstruction(stmt, state)
+				state.debug.beforeInstruction(stmt)
 			}
 
 			_, err = TreeWalkEval(stmt, state)
@@ -815,7 +821,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 	loop:
 		for _, stmt := range n.Statements {
 			if state.debug != nil {
-				state.debug.beforeInstruction(stmt, state)
+				state.debug.beforeInstruction(stmt)
 			}
 
 			_, err := TreeWalkEval(stmt, state)

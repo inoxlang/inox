@@ -1,6 +1,7 @@
 package core
 
 import (
+	"errors"
 	"sync"
 	"sync/atomic"
 
@@ -9,13 +10,20 @@ import (
 	"github.com/rs/zerolog"
 )
 
+var (
+	ErrDebuggerAlreadyAttached = errors.New("debugger already attached")
+)
+
 type Breakpoint struct {
 	node  parse.Node
 	chunk *parse.ParsedChunk
 }
 
 type DebugCommandSetBreakpoints struct {
-	Breakpoints map[parse.Node]struct{}
+	Breakpoints       map[parse.Node]struct{}
+	BreakPointsByLine map[int]struct{}
+
+	GetBreakpoints func(breakpoints map[int]Breakpoint)
 }
 
 type DebugCommandPause struct {
@@ -56,10 +64,24 @@ type Debugger struct {
 	breakpointsLock           sync.Mutex
 	resumeExecutionChan       chan struct{}
 
-	globalState *GlobalState
-	logger      zerolog.Logger
+	evaluationState EvaluationState
+	globalState     *GlobalState
+	module          *Module
+	logger          zerolog.Logger
 
 	closed atomic.Bool //closed debugger
+}
+
+type EvaluationState interface {
+	//AttachDebugger should be called before starting the evaluation.
+	AttachDebugger(*Debugger)
+
+	//DetachDebugger should be called by the evaluation's goroutine.
+	DetachDebugger()
+
+	CurrentLocalScope() map[string]Value
+
+	GetGlobalState() *GlobalState
 }
 
 type DebuggerArgs struct {
@@ -89,6 +111,14 @@ func (d *Debugger) ControlChan() chan any {
 // ControlChan returns a channel to which debug commands should be sent.
 func (d *Debugger) Closed() bool {
 	return d.closed.Load()
+}
+
+// AttachAndStart attaches the debugger to state & starts the debugging goroutine.
+func (d *Debugger) AttachAndStart(state EvaluationState) {
+	state.AttachDebugger(d)
+	d.globalState = state.GetGlobalState()
+	d.evaluationState = state
+	d.startGoroutine()
 }
 
 func (d *Debugger) startGoroutine() {
@@ -146,7 +176,7 @@ func (d *Debugger) startGoroutine() {
 	}()
 }
 
-func (d *Debugger) beforeInstruction(n parse.Node, state *TreeWalkState) {
+func (d *Debugger) beforeInstruction(n parse.Node) {
 	if d.closed.Load() {
 		return
 	}
@@ -173,22 +203,22 @@ func (d *Debugger) beforeInstruction(n parse.Node, state *TreeWalkState) {
 			case _, ok := <-d.resumeExecutionChan:
 				d.stoppedProgram.Store(false)
 				if !ok { //debugger closed
-					state.debug = nil
+					d.evaluationState.DetachDebugger()
 					close(d.stoppedProgramChan)
 				}
 
 				return
 			case cmd, ok := <-d.stoppedProgramCommandChan:
 				if !ok { //debugger closed
-					state.debug = nil
+					d.evaluationState.DetachDebugger()
 					close(d.stoppedProgramChan)
 					return
 				}
 
 				switch c := cmd.(type) {
 				case DebugCommandGetScopes:
-					globals := state.Global.Globals.Entries()
-					locals := utils.CopyMap(state.CurrentLocalScope())
+					globals := d.globalState.Globals.Entries()
+					locals := utils.CopyMap(d.evaluationState.CurrentLocalScope())
 					c.Get(globals, locals)
 				}
 			}
