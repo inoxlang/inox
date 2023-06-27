@@ -67,6 +67,7 @@ func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 		assert.Nil(t, node)
 		assert.Nil(t, ancestors)
 	})
+
 	t.Run("single line chunk", func(t *testing.T) {
 		t.Run("space", func(t *testing.T) {
 			chunk := utils.Must(ParseChunkSource(InMemorySource{
@@ -126,6 +127,23 @@ func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 			}
 
 			expectedNode, expectedAncestors := FindNodeAndChain(chunk.Node, (*IntLiteral)(nil), nil)
+
+			assert.Equal(t, expectedNode, node)
+			assert.Equal(t, expectedAncestors, ancestors)
+		})
+
+		t.Run("single multi-node statement", func(t *testing.T) {
+			chunk := utils.Must(ParseChunkSource(InMemorySource{
+				NameString: "test",
+				CodeString: "f()",
+			}))
+
+			node, ancestors, found := chunk.FindFirstStatementAndChainOnLine(1)
+			if !assert.True(t, found) {
+				return
+			}
+
+			expectedNode, expectedAncestors := FindNodeAndChain(chunk.Node, (*CallExpression)(nil), nil)
 
 			assert.Equal(t, expectedNode, node)
 			assert.Equal(t, expectedAncestors, ancestors)

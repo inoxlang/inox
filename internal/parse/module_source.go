@@ -193,6 +193,7 @@ func (chunk *ParsedChunk) FindFirstStatementAndChainOnLine(line int) (foundNode 
 		i++
 	}
 
+	//eat leading space
 	for i < length && isSpaceNotLF(runes[i]) {
 		i++
 	}
@@ -213,11 +214,36 @@ func (chunk *ParsedChunk) FindFirstStatementAndChainOnLine(line int) (foundNode 
 	}
 
 	if found {
-		parent := ancestors[len(ancestors)-1]
-		switch parent.(type) {
-		case *Block, *Chunk, *EmbeddedModule:
-			return node, ancestors, true
+		//search for closest statement
+
+		for i := len(ancestors) - 1; i >= 0; i-- {
+			ancestor := ancestors[i]
+			switch ancestor.(type) {
+			case *Block, *Chunk, *EmbeddedModule:
+
+				var (
+					stmt          Node
+					stmtAncestors []Node
+				)
+
+				if i == len(ancestors)-1 {
+					stmt = node
+					stmtAncestors = ancestors
+				} else {
+					stmt = ancestors[i+1]
+					stmtAncestors = ancestors[:i+1]
+				}
+
+				//if the statement does not start on the line we return false
+				if stmt.Base().Span.Start != pos {
+					return nil, nil, false
+				}
+
+				return stmt, stmtAncestors, true
+			}
 		}
+
+		return nil, nil, false
 	}
 
 	return nil, nil, false
