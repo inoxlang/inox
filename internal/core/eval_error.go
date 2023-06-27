@@ -71,6 +71,9 @@ var (
 	ErrValueInExactPatternValueShouldBeImmutable = errors.New("the value in an exact value pattern should be immutable")
 
 	ErrValueHasNoProperties = errors.New("value has no properties")
+
+	ErrNotInDebugMode      = errors.New("not in debug mode")
+	ErrStepNonPausedProgram = errors.New("impossible to step in the execution of a non-paused program")
 )
 
 func FormatErrPropertyDoesNotExist(name string, v Value) error {

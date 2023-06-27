@@ -44,6 +44,7 @@ type TreeWalkState struct {
 	constantVars    map[string]bool
 	postHandle      func(node parse.Node, val Value, err error) (Value, error)
 
+	debug           *Debugger
 	returnValue     Value           //return value from a function or module
 	iterationChange IterationChange //break, continue, prune
 	self            Value           //value of self in methods
@@ -110,6 +111,16 @@ func (state *TreeWalkState) PushScope() {
 
 func (state *TreeWalkState) PopScope() {
 	state.LocalScopeStack = state.LocalScopeStack[:len(state.LocalScopeStack)-1]
+}
+
+func (state *TreeWalkState) EnterDebugMode(debugger *Debugger) {
+	if state.debug != nil {
+		return
+	}
+
+	state.debug = debugger
+	debugger.globalState = state.Global
+	state.debug.startGoroutine()
 }
 
 type IterationChange int
@@ -783,6 +794,10 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		for _, stmt := range n.Statements {
+			if state.debug != nil {
+				state.debug.beforeInstruction(stmt, state)
+			}
+
 			_, err = TreeWalkEval(stmt, state)
 
 			if err != nil {
@@ -799,6 +814,10 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 	case *parse.Block:
 	loop:
 		for _, stmt := range n.Statements {
+			if state.debug != nil {
+				state.debug.beforeInstruction(stmt, state)
+			}
+
 			_, err := TreeWalkEval(stmt, state)
 			if err != nil {
 				return nil, err

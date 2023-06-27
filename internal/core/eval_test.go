@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"os"
 	"path/filepath"
@@ -6333,6 +6334,221 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 }
 
+func TestTreeWalkDebug(t *testing.T) {
+	testDebugModeEval(t, func(code string) (any, *Context, *parse.ParsedChunk, *Debugger) {
+		state := NewGlobalState(NewDefaultTestContext())
+		treeWalkState := NewTreeWalkStateWithGlobal(state)
+		debugger := NewDebugger(DebuggerArgs{
+			Logger: zerolog.New(io.Discard),
+		})
+		treeWalkState.EnterDebugMode(debugger)
+
+		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+			NameString: "core-test",
+			CodeString: code,
+		}))
+
+		state.Module = &Module{MainChunk: chunk}
+		return treeWalkState, state.Ctx, chunk, debugger
+	}, func(n parse.Node, state any) (Value, error) {
+		result, err := TreeWalkEval(n, state.(*TreeWalkState))
+
+		return result, err
+	})
+}
+
+func testDebugModeEval(
+	t *testing.T,
+	setup func(code string) (any, *Context, *parse.ParsedChunk, *Debugger),
+	eval func(n parse.Node, state any) (Value, error),
+) {
+
+	t.Run("shallow", func(t *testing.T) {
+
+		t.Run("successive breakpoints", func(t *testing.T) {
+			state, ctx, chunk, debugger := setup(`
+				a = 1
+				a = 2
+				a = 3
+				return a
+			`)
+
+			controlChan := debugger.ControlChan()
+			stoppedChan := debugger.StoppedChan()
+
+			defer ctx.Cancel()
+
+			controlChan <- DebugCommandSetBreakpoints{
+				Breakpoints: map[parse.Node]struct{}{
+					chunk.Node.Statements[1]: {}, //a = 2
+					chunk.Node.Statements[2]: {}, //a = 3
+				},
+			}
+
+			var globalScopes []map[string]Value
+			var localScopes []map[string]Value
+
+			go func() {
+				<-stoppedChan
+
+				//get scopes while stopped at 'a = 2'
+				controlChan <- DebugCommandGetScopes{
+					func(globalScope, localScope map[string]Value) {
+						globalScopes = append(globalScopes, globalScope)
+						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				controlChan <- DebugCommandContinue{}
+
+				<-stoppedChan
+
+				//get scopes while stopped at 'a = 3'
+				controlChan <- DebugCommandGetScopes{
+					func(globalScope, localScope map[string]Value) {
+						globalScopes = append(globalScopes, globalScope)
+						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				controlChan <- DebugCommandContinue{}
+			}()
+
+			result, err := eval(chunk.Node, state)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, Int(3), result)
+
+			assert.Equal(t, []map[string]Value{{}, {}}, globalScopes)
+
+			assert.Equal(t, []map[string]Value{
+				{"a": Int(1)}, {"a": Int(2)},
+			}, localScopes)
+		})
+
+		t.Run("breakpoint & two steps", func(t *testing.T) {
+			state, ctx, chunk, debugger := setup(`
+				a = 1
+				a = 2
+				a = 3
+				return a
+			`)
+
+			controlChan := debugger.ControlChan()
+			stoppedChan := debugger.StoppedChan()
+
+			defer ctx.Cancel()
+
+			controlChan <- DebugCommandSetBreakpoints{
+				Breakpoints: map[parse.Node]struct{}{
+					chunk.Node.Statements[0]: {}, //a = 1
+				},
+			}
+
+			var globalScopes []map[string]Value
+			var localScopes []map[string]Value
+
+			go func() {
+				<-stoppedChan
+
+				controlChan <- DebugCommandNextStep{}
+
+				<-stoppedChan
+
+				//get scopes while stopped at 'a = 2'
+				controlChan <- DebugCommandGetScopes{
+					func(globalScope, localScope map[string]Value) {
+						globalScopes = append(globalScopes, globalScope)
+						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				controlChan <- DebugCommandNextStep{}
+
+				<-stoppedChan
+
+				//get scopes while stopped at 'a = 3'
+				controlChan <- DebugCommandGetScopes{
+					func(globalScope, localScope map[string]Value) {
+						globalScopes = append(globalScopes, globalScope)
+						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				controlChan <- DebugCommandContinue{}
+			}()
+
+			result, err := eval(chunk.Node, state)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, Int(3), result)
+
+			assert.Equal(t, []map[string]Value{{}, {}}, globalScopes)
+
+			assert.Equal(t, []map[string]Value{
+				{"a": Int(1)}, {"a": Int(2)},
+			}, localScopes)
+		})
+
+		t.Run("pause", func(t *testing.T) {
+			state, ctx, chunk, debugger := setup(`
+				a = 1
+				sleep 1s
+				a = 2
+				return a
+			`)
+
+			global := WrapGoFunction(Sleep)
+			ctx.GetClosestState().Globals.Set("sleep", global)
+
+			controlChan := debugger.ControlChan()
+			stoppedChan := debugger.StoppedChan()
+
+			defer ctx.Cancel()
+
+			var globalScopes []map[string]Value
+			var localScopes []map[string]Value
+
+			go func() {
+				controlChan <- DebugCommandPause{}
+
+				<-stoppedChan
+
+				//get scopes while stopped at 'a = 2'
+				controlChan <- DebugCommandGetScopes{
+					func(globalScope, localScope map[string]Value) {
+						globalScopes = append(globalScopes, globalScope)
+						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				controlChan <- DebugCommandContinue{}
+			}()
+
+			result, err := eval(chunk.Node, state)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, Int(2), result)
+			assert.Equal(t, []map[string]Value{
+				{"sleep": global},
+			}, globalScopes)
+
+			assert.Equal(t, []map[string]Value{
+				{"a": Int(1)},
+			}, localScopes)
+		})
+	})
+}
+
 func TestSpawnRoutine(t *testing.T) {
 
 	t.Run("spawning a routine without the required permission should fail", func(t *testing.T) {
@@ -6425,6 +6641,7 @@ func TestSpawnRoutine(t *testing.T) {
 		assert.True(t, obj.IsShared())
 		assert.Equal(t, map[string]Value{"a": Int(1)}, obj.EntryMap())
 	})
+
 }
 
 func TestToBool(t *testing.T) {
