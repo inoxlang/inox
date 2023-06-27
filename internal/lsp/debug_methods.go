@@ -41,6 +41,11 @@ type DebugPauseParams struct {
 	Request   dap.PauseRequest `json:"request"`
 }
 
+type DebugThreadsParams struct {
+	SessionId string             `json:"sessionID"`
+	Request   dap.ThreadsRequest `json:"request"`
+}
+
 type DebugLaunchArgs struct {
 	Program string `json:"program"`
 }
@@ -59,6 +64,7 @@ func (sessions *DebugSessions) AddSession(s *DebugSession) {
 
 type DebugSession struct {
 	id                             string
+	programPath                    string
 	columnsStartAt1, lineStartsAt1 bool
 
 	nextSeq         atomic.Int32
@@ -226,6 +232,7 @@ func registerDebugMethodHandlers(
 				}, nil
 			}
 
+			debugSession.programPath = programPath
 			debugSession.programDoneChan = make(chan error, 1)
 
 			go launchDebuggedProgram(programPath, session, debugSession, fls)
@@ -259,6 +266,42 @@ func registerDebugMethodHandlers(
 						Type: "response",
 					},
 					Command: dapRequest.Command,
+				},
+			}, nil
+		},
+	})
+
+	server.OnCustom(jsonrpc.MethodInfo{
+		Name: "debug/threads",
+		NewRequest: func() interface{} {
+			return &DebugThreadsParams{}
+		},
+		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+			session := jsonrpc.GetSession(ctx)
+			params := req.(*DebugThreadsParams)
+			dapRequest := params.Request
+
+			debugSession := getDebugSession(session, params.SessionId)
+
+			var threads []dap.Thread
+
+			threads = append(threads, dap.Thread{
+				Id:   1,
+				Name: debugSession.programPath,
+			})
+
+			return dap.ThreadsResponse{
+				Response: dap.Response{
+					RequestSeq: dapRequest.Seq,
+					Success:    true,
+					ProtocolMessage: dap.ProtocolMessage{
+						Seq:  debugSession.NextSeq(),
+						Type: "response",
+					},
+					Command: dapRequest.Command,
+				},
+				Body: dap.ThreadsResponseBody{
+					Threads: threads,
 				},
 			}, nil
 		},
