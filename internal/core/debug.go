@@ -34,12 +34,24 @@ type DebugCommandGetScopes struct {
 type DebugCommandCloseDebugger struct {
 }
 
+type ProgramStoppedEvent struct {
+	Reason ProgramStopReason
+}
+
+type ProgramStopReason int
+
+const (
+	PauseStop ProgramStopReason = 1 + iota
+	StepStop
+	BreakpointStop
+)
+
 type Debugger struct {
 	controlChan               chan any
 	stoppedProgramCommandChan chan any
-	stoppedProgramChan        chan struct{}
+	stoppedProgramChan        chan ProgramStoppedEvent
 	stoppedProgram            atomic.Bool
-	stopBeforeNextStatement   atomic.Bool
+	stopBeforeNextStatement   atomic.Value //non-breakpoint ProgramStopReason
 	breakpoints               map[parse.Node]struct{}
 	breakpointsLock           sync.Mutex
 	resumeExecutionChan       chan struct{}
@@ -58,14 +70,14 @@ func NewDebugger(args DebuggerArgs) *Debugger {
 	return &Debugger{
 		controlChan:               make(chan any),
 		stoppedProgramCommandChan: make(chan any),
-		stoppedProgramChan:        make(chan struct{}, 1),
+		stoppedProgramChan:        make(chan ProgramStoppedEvent, 1),
 		resumeExecutionChan:       make(chan struct{}),
 		logger:                    args.Logger,
 	}
 }
 
 // StoppedChan returns a channel that sends an item each time the program stops.
-func (d *Debugger) StoppedChan() chan struct{} {
+func (d *Debugger) StoppedChan() chan ProgramStoppedEvent {
 	return d.stoppedProgramChan
 }
 
@@ -113,7 +125,7 @@ func (d *Debugger) startGoroutine() {
 					if d.stoppedProgram.Load() {
 						continue
 					}
-					d.stopBeforeNextStatement.Store(true)
+					d.stopBeforeNextStatement.Store(PauseStop)
 				case DebugCommandContinue:
 					if d.stoppedProgram.Load() {
 						d.resumeExecutionChan <- struct{}{}
@@ -122,7 +134,7 @@ func (d *Debugger) startGoroutine() {
 					if !d.stoppedProgram.Load() {
 						continue
 					}
-					d.stopBeforeNextStatement.Store(true)
+					d.stopBeforeNextStatement.Store(StepStop)
 					d.resumeExecutionChan <- struct{}{}
 				case DebugCommandGetScopes:
 					if d.stoppedProgram.Load() {
@@ -140,12 +152,20 @@ func (d *Debugger) beforeInstruction(n parse.Node, state *TreeWalkState) {
 	}
 
 	d.breakpointsLock.Lock()
-	_, ok := d.breakpoints[n]
+	_, breakpoint := d.breakpoints[n]
 	d.breakpointsLock.Unlock()
 
-	if ok || d.stopBeforeNextStatement.CompareAndSwap(true, false) {
+	var stopReason ProgramStopReason
+	if breakpoint {
+		stopReason = BreakpointStop
+	} else {
+		stopReason, _ = d.stopBeforeNextStatement.Swap(ProgramStopReason(0)).(ProgramStopReason)
+	}
+
+	if stopReason > 0 {
 		d.stoppedProgram.Store(true)
-		d.stoppedProgramChan <- struct{}{}
+		d.stoppedProgramChan <- ProgramStoppedEvent{Reason: stopReason}
+
 		for {
 			select {
 			case <-d.globalState.Ctx.Done():

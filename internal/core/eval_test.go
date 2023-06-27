@@ -6387,11 +6387,13 @@ func testDebugModeEval(
 
 			time.Sleep(10 * time.Millisecond) //wait for the debugger to set the breakpoints
 
+			var stoppedEvents []ProgramStoppedEvent
 			var globalScopes []map[string]Value
 			var localScopes []map[string]Value
 
 			go func() {
-				<-stoppedChan
+				event := <-stoppedChan
+				stoppedEvents = append(stoppedEvents, event)
 
 				//get scopes while stopped at 'a = 2'
 				controlChan <- DebugCommandGetScopes{
@@ -6403,7 +6405,8 @@ func testDebugModeEval(
 
 				controlChan <- DebugCommandContinue{}
 
-				<-stoppedChan
+				event = <-stoppedChan
+				stoppedEvents = append(stoppedEvents, event)
 
 				//get scopes while stopped at 'a = 3'
 				controlChan <- DebugCommandGetScopes{
@@ -6423,6 +6426,11 @@ func testDebugModeEval(
 			}
 
 			assert.Equal(t, Int(3), result)
+
+			assert.Equal(t, []ProgramStoppedEvent{
+				{Reason: BreakpointStop},
+				{Reason: BreakpointStop},
+			}, stoppedEvents)
 
 			assert.Equal(t, []map[string]Value{{}, {}}, globalScopes)
 
@@ -6452,15 +6460,18 @@ func testDebugModeEval(
 
 			time.Sleep(10 * time.Millisecond) //wait for the debugger to set the breakpoints
 
+			var stoppedEvents []ProgramStoppedEvent
 			var globalScopes []map[string]Value
 			var localScopes []map[string]Value
 
 			go func() {
-				<-stoppedChan
+				event := <-stoppedChan
+				stoppedEvents = append(stoppedEvents, event)
 
 				controlChan <- DebugCommandNextStep{}
 
-				<-stoppedChan
+				event = <-stoppedChan
+				stoppedEvents = append(stoppedEvents, event)
 
 				//get scopes while stopped at 'a = 2'
 				controlChan <- DebugCommandGetScopes{
@@ -6472,7 +6483,8 @@ func testDebugModeEval(
 
 				controlChan <- DebugCommandNextStep{}
 
-				<-stoppedChan
+				event = <-stoppedChan
+				stoppedEvents = append(stoppedEvents, event)
 
 				//get scopes while stopped at 'a = 3'
 				controlChan <- DebugCommandGetScopes{
@@ -6492,6 +6504,12 @@ func testDebugModeEval(
 			}
 
 			assert.Equal(t, Int(3), result)
+
+			assert.Equal(t, []ProgramStoppedEvent{
+				{Reason: BreakpointStop},
+				{Reason: StepStop},
+				{Reason: StepStop},
+			}, stoppedEvents)
 
 			assert.Equal(t, []map[string]Value{{}, {}}, globalScopes)
 
@@ -6516,13 +6534,15 @@ func testDebugModeEval(
 
 			defer ctx.Cancel()
 
+			var stoppedEvents []ProgramStoppedEvent
 			var globalScopes []map[string]Value
 			var localScopes []map[string]Value
 
 			go func() {
 				controlChan <- DebugCommandPause{}
 
-				<-stoppedChan
+				event := <-stoppedChan
+				stoppedEvents = append(stoppedEvents, event)
 
 				//get scopes while stopped at 'a = 2'
 				controlChan <- DebugCommandGetScopes{
@@ -6542,6 +6562,9 @@ func testDebugModeEval(
 			}
 
 			assert.Equal(t, Int(2), result)
+
+			assert.Equal(t, []ProgramStoppedEvent{{Reason: PauseStop}}, stoppedEvents)
+
 			assert.Equal(t, []map[string]Value{
 				{"sleep": global},
 			}, globalScopes)
