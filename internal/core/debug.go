@@ -46,7 +46,7 @@ type Debugger struct {
 }
 
 type DebuggerArgs struct {
-	Logger zerolog.Logger
+	Logger zerolog.Logger //ok if not set
 }
 
 func NewDebugger(args DebuggerArgs) *Debugger {
@@ -70,6 +70,8 @@ func (d *Debugger) ControlChan() chan any {
 }
 
 func (d *Debugger) startGoroutine() {
+	d.logger.Info().Msg("start debugging")
+
 	go func() {
 		for {
 			//TODO: empty stoppedProgramCommandChan if program not stopped

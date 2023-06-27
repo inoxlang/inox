@@ -18,6 +18,7 @@ import (
 	"github.com/inoxlang/inox/internal/lsp/logs"
 	"github.com/inoxlang/inox/internal/lsp/lsp"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/rs/zerolog"
 )
 
 type DebugInitializeParams struct {
@@ -44,6 +45,7 @@ type DebugSessions struct {
 	sessionListLock sync.Mutex
 }
 
+// TODO: limit running sessions to 2.
 func (sessions *DebugSessions) AddSession(s *DebugSession) {
 	sessions.sessionListLock.Lock()
 	defer sessions.sessionListLock.Unlock()
@@ -51,8 +53,11 @@ func (sessions *DebugSessions) AddSession(s *DebugSession) {
 }
 
 type DebugSession struct {
-	id              string
+	id                             string
+	columnsStartAt1, lineStartsAt1 bool
+
 	nextSeq         atomic.Int32
+	debugger        *core.Debugger
 	programDoneChan chan error //ok if error is nil
 	finished        atomic.Bool
 }
@@ -107,6 +112,9 @@ func registerDebugMethodHandlers(
 
 			debugSession := getDebugSession(session, params.SessionId)
 
+			debugSession.columnsStartAt1 = dapRequest.Arguments.ColumnsStartAt1
+			debugSession.lineStartsAt1 = dapRequest.Arguments.LinesStartAt1
+
 			return dap.InitializeResponse{
 				Response: dap.Response{
 					RequestSeq: dapRequest.Seq,
@@ -118,8 +126,7 @@ func registerDebugMethodHandlers(
 					Command: dapRequest.Command,
 				},
 				Body: dap.Capabilities{
-					SupportsConfigurationDoneRequest:   true,
-					SupportsBreakpointLocationsRequest: true,
+					SupportsConfigurationDoneRequest: true,
 				},
 			}, nil
 		},
@@ -136,6 +143,8 @@ func registerDebugMethodHandlers(
 			dapRequest := params.Request
 
 			debugSession := getDebugSession(session, params.SessionId)
+
+			//TODO: store config done in session
 
 			return dap.ConfigurationDoneResponse{
 				Response: dap.Response{
@@ -286,41 +295,82 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 		Filesystem: fls,
 	})
 
+	programOut := utils.FnWriter{
+		WriteFn: func(p []byte) (n int, err error) {
+			outputEvent := dap.OutputEvent{
+				Event: dap.Event{
+					ProtocolMessage: dap.ProtocolMessage{
+						Seq:  debugSession.NextSeq(),
+						Type: "event",
+					},
+					Event: "output",
+				},
+				Body: dap.OutputEventBody{
+					Output:   string(p),
+					Category: "stdout",
+				},
+			}
+
+			session.Notify(jsonrpc.NotificationMessage{
+				BaseMessage: jsonrpc.BaseMessage{
+					Jsonrpc: JSONRPC_VERSION,
+				},
+				Method: "debug/output",
+				Params: utils.Must(json.Marshal(outputEvent)),
+			})
+
+			return len(p), nil
+		},
+	}
+
+	debuggerOut := utils.FnWriter{
+		WriteFn: func(p []byte) (n int, err error) {
+			outputEvent := dap.OutputEvent{
+				Event: dap.Event{
+					ProtocolMessage: dap.ProtocolMessage{
+						Seq:  debugSession.NextSeq(),
+						Type: "event",
+					},
+					Event: "output",
+				},
+				Body: dap.OutputEventBody{
+					Output:   string(p),
+					Category: "console",
+				},
+			}
+
+			session.Notify(jsonrpc.NotificationMessage{
+				BaseMessage: jsonrpc.BaseMessage{
+					Jsonrpc: JSONRPC_VERSION,
+				},
+				Method: "debug/output",
+				Params: utils.Must(json.Marshal(outputEvent)),
+			})
+
+			return len(p), nil
+		},
+	}
+
+	debugSession.debugger = core.NewDebugger(core.DebuggerArgs{
+		Logger: zerolog.New(zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
+			w.Out = debuggerOut
+			w.NoColor = true
+			w.PartsExclude = []string{zerolog.LevelFieldName}
+			w.FieldsExclude = []string{"src"}
+		})),
+	})
+
 	_, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 		Fpath:                     programPath,
 		ParsingCompilationContext: ctx,
 		ParentContext:             sessionCtx,
 		UseContextAsParent:        true,
-		Out: utils.FnWriter{
-			WriteFn: func(p []byte) (n int, err error) {
-				outputEvent := dap.OutputEvent{
-					Event: dap.Event{
-						ProtocolMessage: dap.ProtocolMessage{
-							Seq:  debugSession.NextSeq(),
-							Type: "event",
-						},
-						Event: "output",
-					},
-					Body: dap.OutputEventBody{
-						Output:   string(p),
-						Category: "stdout",
-					},
-				}
+		PreinitFilesystem:         fls,
+		AllowMissingEnvVars:       false,
+		IgnoreHighRiskScore:       true,
+		Out:                       programOut,
 
-				session.Notify(jsonrpc.NotificationMessage{
-					BaseMessage: jsonrpc.BaseMessage{
-						Jsonrpc: JSONRPC_VERSION,
-					},
-					Method: "debug/output",
-					Params: utils.Must(json.Marshal(outputEvent)),
-				})
-
-				return len(p), nil
-			},
-		},
-		AllowMissingEnvVars: false,
-		IgnoreHighRiskScore: true,
-		PreinitFilesystem:   fls,
+		Debugger: debugSession.debugger,
 	})
 
 	debugSession.programDoneChan <- err
