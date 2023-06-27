@@ -36,7 +36,7 @@ type Debugger struct {
 	stoppedProgramCommandChan chan any
 	stoppedChan               chan struct{}
 	stopped                   atomic.Bool
-	stopBeforeNextInstruction atomic.Bool
+	stopBeforeNextStatement   atomic.Bool
 	breakpoints               map[parse.Node]struct{}
 	breakpointsLock           sync.Mutex
 	resumeExecutionChan       chan struct{}
@@ -59,13 +59,16 @@ func NewDebugger(args DebuggerArgs) *Debugger {
 	}
 }
 
+// StoppedChan returns a channel that sends an item each time the program stops.
 func (d *Debugger) StoppedChan() chan struct{} {
 	return d.stoppedChan
 }
 
+// ControlChan returns a channel to which debug commands should be sent.
 func (d *Debugger) ControlChan() chan any {
 	return d.controlChan
 }
+
 func (d *Debugger) startGoroutine() {
 	go func() {
 		for {
@@ -84,7 +87,7 @@ func (d *Debugger) startGoroutine() {
 					if d.stopped.Load() {
 						continue
 					}
-					d.stopBeforeNextInstruction.Store(true)
+					d.stopBeforeNextStatement.Store(true)
 				case DebugCommandContinue:
 					if d.stopped.Load() {
 						d.resumeExecutionChan <- struct{}{}
@@ -93,7 +96,7 @@ func (d *Debugger) startGoroutine() {
 					if !d.stopped.Load() {
 						continue
 					}
-					d.stopBeforeNextInstruction.Store(true)
+					d.stopBeforeNextStatement.Store(true)
 					d.resumeExecutionChan <- struct{}{}
 				case DebugCommandGetScopes:
 					if d.stopped.Load() {
@@ -110,7 +113,7 @@ func (d *Debugger) beforeInstruction(n parse.Node, state *TreeWalkState) {
 	_, ok := d.breakpoints[n]
 	d.breakpointsLock.Unlock()
 
-	if ok || d.stopBeforeNextInstruction.CompareAndSwap(true, false) {
+	if ok || d.stopBeforeNextStatement.CompareAndSwap(true, false) {
 		d.stopped.Store(true)
 		d.stoppedChan <- struct{}{}
 	loop:

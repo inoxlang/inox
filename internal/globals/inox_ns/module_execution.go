@@ -343,6 +343,8 @@ type RunScriptArgs struct {
 	AllowMissingEnvVars bool
 	IgnoreHighRiskScore bool
 
+	Debugger *core.Debugger //if not nil the script is executed in debug mode with this debugger
+
 	//output for execution, if nil os.Stdout is used
 	Out io.Writer
 }
@@ -435,7 +437,12 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 		return res, state, mod, err
 	}
 
-	res, err := core.TreeWalkEval(state.Module.MainChunk.Node, core.NewTreeWalkStateWithGlobal(state))
+	treeWalkState := core.NewTreeWalkStateWithGlobal(state)
+	if args.Debugger != nil {
+		treeWalkState.EnterDebugMode(args.Debugger)
+	}
+
+	res, err := core.TreeWalkEval(state.Module.MainChunk.Node, treeWalkState)
 	return res, state, mod, err
 }
 
