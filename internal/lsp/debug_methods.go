@@ -36,6 +36,11 @@ type DebugLaunchRequestParams struct {
 	Request   dap.LaunchRequest `json:"request"`
 }
 
+type DebugPauseParams struct {
+	SessionId string           `json:"sessionID"`
+	Request   dap.PauseRequest `json:"request"`
+}
+
 type DebugLaunchArgs struct {
 	Program string `json:"program"`
 }
@@ -259,6 +264,36 @@ func registerDebugMethodHandlers(
 		},
 	})
 
+	server.OnCustom(jsonrpc.MethodInfo{
+		Name: "debug/pause",
+		NewRequest: func() interface{} {
+			return &DebugPauseParams{}
+		},
+		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+			session := jsonrpc.GetSession(ctx)
+			params := req.(*DebugPauseParams)
+			dapRequest := params.Request
+
+			debugSession := getDebugSession(session, params.SessionId)
+
+			debugger := debugSession.debugger
+			if debugger.Closed() {
+				debugger.ControlChan() <- core.DebugCommandPause{}
+			}
+
+			return dap.PauseResponse{
+				Response: dap.Response{
+					RequestSeq: dapRequest.Seq,
+					Success:    true,
+					ProtocolMessage: dap.ProtocolMessage{
+						Seq:  debugSession.NextSeq(),
+						Type: "response",
+					},
+					Command: dapRequest.Command,
+				},
+			}, nil
+		},
+	})
 }
 
 func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSession *DebugSession, fls *Filesystem) {
@@ -360,6 +395,42 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 		})),
 	})
 
+	//send a "stopped" event each time the program stops.
+	go func() {
+		stoppedChan := debugSession.debugger.StoppedChan()
+		for {
+			select {
+			case stop := <-stoppedChan:
+
+				stoppedEvent := dap.StoppedEvent{
+					Event: dap.Event{
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  debugSession.NextSeq(),
+							Type: "event",
+						},
+						Event: "stopped",
+					},
+					Body: dap.StoppedEventBody{
+						Reason:   stopReasonToDapStopReason(stop.Reason),
+						ThreadId: 1,
+					},
+				}
+
+				session.Notify(jsonrpc.NotificationMessage{
+					BaseMessage: jsonrpc.BaseMessage{
+						Jsonrpc: JSONRPC_VERSION,
+					},
+					Method: "debug/stopped",
+					Params: utils.Must(json.Marshal(stoppedEvent)),
+				})
+			case <-time.After(time.Second):
+				if debugSession.debugger.Closed() {
+					return
+				}
+			}
+		}
+	}()
+
 	_, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 		Fpath:                     programPath,
 		ParsingCompilationContext: ctx,
@@ -374,4 +445,17 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 	})
 
 	debugSession.programDoneChan <- err
+}
+
+func stopReasonToDapStopReason(reason core.ProgramStopReason) string {
+	switch reason {
+	case core.PauseStop:
+		return "pause"
+	case core.StepStop:
+		return "step"
+	case core.BreakpointStop:
+		return "breakpoint"
+	default:
+		panic(core.ErrUnreachable)
+	}
 }
