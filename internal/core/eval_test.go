@@ -6550,6 +6550,45 @@ func testDebugModeEval(
 				{"a": Int(1)},
 			}, localScopes)
 		})
+
+		t.Run("close debugger while program stopped at breakpoint", func(t *testing.T) {
+			state, ctx, chunk, debugger := setup(`
+				a = 1
+				a = 2
+				return a
+			`)
+
+			controlChan := debugger.ControlChan()
+			stoppedChan := debugger.StoppedChan()
+
+			defer ctx.Cancel()
+
+			controlChan <- DebugCommandSetBreakpoints{
+				Breakpoints: map[parse.Node]struct{}{
+					chunk.Node.Statements[0]: {}, //a = 1
+
+					//this breakpoint should be ignored because the debugger should be closed when it is reached
+					chunk.Node.Statements[1]: {}, //a = 2
+				},
+			}
+
+			time.Sleep(10 * time.Millisecond) //wait for the debugger to set the breakpoints
+
+			go func() {
+				<-stoppedChan
+				//a = 1
+
+				controlChan <- DebugCommandCloseDebugger{}
+			}()
+
+			result, err := eval(chunk.Node, state)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, Int(2), result)
+		})
 	})
 }
 

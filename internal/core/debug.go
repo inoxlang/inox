@@ -31,11 +31,14 @@ type DebugCommandGetScopes struct {
 	Get func(globalScope map[string]Value, localScope map[string]Value)
 }
 
+type DebugCommandCloseDebugger struct {
+}
+
 type Debugger struct {
 	controlChan               chan any
 	stoppedProgramCommandChan chan any
-	stoppedChan               chan struct{}
-	stopped                   atomic.Bool
+	stoppedProgramChan        chan struct{}
+	stoppedProgram            atomic.Bool
 	stopBeforeNextStatement   atomic.Bool
 	breakpoints               map[parse.Node]struct{}
 	breakpointsLock           sync.Mutex
@@ -43,6 +46,8 @@ type Debugger struct {
 
 	globalState *GlobalState
 	logger      zerolog.Logger
+
+	closed atomic.Bool //closed debugger
 }
 
 type DebuggerArgs struct {
@@ -53,7 +58,7 @@ func NewDebugger(args DebuggerArgs) *Debugger {
 	return &Debugger{
 		controlChan:               make(chan any),
 		stoppedProgramCommandChan: make(chan any),
-		stoppedChan:               make(chan struct{}, 1),
+		stoppedProgramChan:        make(chan struct{}, 1),
 		resumeExecutionChan:       make(chan struct{}),
 		logger:                    args.Logger,
 	}
@@ -61,7 +66,7 @@ func NewDebugger(args DebuggerArgs) *Debugger {
 
 // StoppedChan returns a channel that sends an item each time the program stops.
 func (d *Debugger) StoppedChan() chan struct{} {
-	return d.stoppedChan
+	return d.stoppedProgramChan
 }
 
 // ControlChan returns a channel to which debug commands should be sent.
@@ -69,10 +74,27 @@ func (d *Debugger) ControlChan() chan any {
 	return d.controlChan
 }
 
+// ControlChan returns a channel to which debug commands should be sent.
+func (d *Debugger) Closed() bool {
+	return d.closed.Load()
+}
+
 func (d *Debugger) startGoroutine() {
 	d.logger.Info().Msg("start debugging")
 
 	go func() {
+		defer func() {
+			d.logger.Info().Msg("stop debugging")
+			d.closed.Store(true)
+
+			d.breakpointsLock.Lock()
+			d.breakpoints = nil
+			d.breakpointsLock.Unlock()
+
+			close(d.stoppedProgramCommandChan)
+			close(d.resumeExecutionChan)
+		}()
+
 		for {
 			//TODO: empty stoppedProgramCommandChan if program not stopped
 
@@ -81,27 +103,29 @@ func (d *Debugger) startGoroutine() {
 				return
 			case cmd := <-d.controlChan:
 				switch c := cmd.(type) {
+				case DebugCommandCloseDebugger:
+					return
 				case DebugCommandSetBreakpoints:
 					d.breakpointsLock.Lock()
 					d.breakpoints = c.Breakpoints
 					d.breakpointsLock.Unlock()
 				case DebugCommandPause:
-					if d.stopped.Load() {
+					if d.stoppedProgram.Load() {
 						continue
 					}
 					d.stopBeforeNextStatement.Store(true)
 				case DebugCommandContinue:
-					if d.stopped.Load() {
+					if d.stoppedProgram.Load() {
 						d.resumeExecutionChan <- struct{}{}
 					}
 				case DebugCommandNextStep:
-					if !d.stopped.Load() {
+					if !d.stoppedProgram.Load() {
 						continue
 					}
 					d.stopBeforeNextStatement.Store(true)
 					d.resumeExecutionChan <- struct{}{}
 				case DebugCommandGetScopes:
-					if d.stopped.Load() {
+					if d.stoppedProgram.Load() {
 						d.stoppedProgramCommandChan <- c
 					}
 				}
@@ -111,22 +135,36 @@ func (d *Debugger) startGoroutine() {
 }
 
 func (d *Debugger) beforeInstruction(n parse.Node, state *TreeWalkState) {
+	if d.closed.Load() {
+		return
+	}
+
 	d.breakpointsLock.Lock()
 	_, ok := d.breakpoints[n]
 	d.breakpointsLock.Unlock()
 
 	if ok || d.stopBeforeNextStatement.CompareAndSwap(true, false) {
-		d.stopped.Store(true)
-		d.stoppedChan <- struct{}{}
-	loop:
+		d.stoppedProgram.Store(true)
+		d.stoppedProgramChan <- struct{}{}
 		for {
 			select {
 			case <-d.globalState.Ctx.Done():
 				panic(d.globalState.Ctx.Err())
-			case <-d.resumeExecutionChan:
-				d.stopped.Store(false)
-				break loop
-			case cmd := <-d.stoppedProgramCommandChan:
+			case _, ok := <-d.resumeExecutionChan:
+				d.stoppedProgram.Store(false)
+				if !ok { //debugger closed
+					state.debug = nil
+					close(d.stoppedProgramChan)
+				}
+
+				return
+			case cmd, ok := <-d.stoppedProgramCommandChan:
+				if !ok { //debugger closed
+					state.debug = nil
+					close(d.stoppedProgramChan)
+					return
+				}
+
 				switch c := cmd.(type) {
 				case DebugCommandGetScopes:
 					globals := state.Global.Globals.Entries()
