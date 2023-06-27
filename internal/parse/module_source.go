@@ -179,6 +179,50 @@ func (chunk *ParsedChunk) GetNodeAtSpan(target NodeSpan) (foundNode Node, ok boo
 	return node, ok
 }
 
+func (chunk *ParsedChunk) FindFirstStatementAndChainOnLine(line int) (foundNode Node, ancestors []Node, ok bool) {
+	i := int32(0)
+	runes := chunk.getRunes()
+	length := len32(runes)
+
+	line -= 1
+
+	for i < length && line > 0 {
+		if runes[i] == '\n' {
+			line--
+		}
+		i++
+	}
+
+	for i < length && isSpaceNotLF(runes[i]) {
+		i++
+	}
+
+	if i < length && runes[i] == '\n' { //empty line
+		return nil, nil, false
+	}
+
+	pos := i
+
+	span := NodeSpan{
+		Start: pos,
+		End:   pos + 1,
+	}
+	node, ancestors, found := chunk.GetNodeAndChainAtSpan(span)
+	if len(ancestors) == 0 || IsScopeContainerNode(node) {
+		return nil, nil, false
+	}
+
+	if found {
+		parent := ancestors[len(ancestors)-1]
+		switch parent.(type) {
+		case *Block, *Chunk, *EmbeddedModule:
+			return node, ancestors, true
+		}
+	}
+
+	return nil, nil, false
+}
+
 type SourcePositionRange struct {
 	SourceName  string   `json:"sourceName"`
 	StartLine   int32    `json:"line"`
