@@ -117,7 +117,7 @@ func _prepare_local_script(ctx *core.Context, src core.Path) (*core.Module, *cor
 		Fpath:                     string(src),
 		ParsingCompilationContext: ctx,
 		ParentContext:             ctx,
-		UseContextAsParent:        true,
+		ParentContextRequired:     true,
 
 		Out: ctx.GetClosestState().Out,
 	})
@@ -172,7 +172,7 @@ func _run_local_script(ctx *core.Context, src core.Path, config *core.Object) (c
 		Fpath:                     string(src),
 		ParsingCompilationContext: ctx,
 		ParentContext:             ctx,
-		UseContextAsParent:        true,
+		ParentContextRequired:     true,
 
 		UseBytecode:      ctx.GetClosestState().Module.IsCompiled(),
 		OptimizeBytecode: true,

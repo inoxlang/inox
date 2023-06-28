@@ -49,7 +49,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
-			UseContextAsParent:        true,
+			ParentContextRequired:     true,
 			Out:                       io.Discard,
 		})
 
@@ -106,7 +106,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
-			UseContextAsParent:        true,
+			ParentContextRequired:     true,
 			Out:                       io.Discard,
 		})
 
@@ -165,7 +165,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
-			UseContextAsParent:        true,
+			ParentContextRequired:     true,
 			Out:                       io.Discard,
 		})
 
@@ -228,7 +228,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
-			UseContextAsParent:        true,
+			ParentContextRequired:     true,
 			Out:                       io.Discard,
 
 			PreinitFilesystem: preinitFs,
@@ -311,7 +311,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
-			UseContextAsParent:        true,
+			ParentContextRequired:     true,
 			Out:                       io.Discard,
 
 			PreinitFilesystem:       fs,
@@ -379,7 +379,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
-			UseContextAsParent:        true,
+			ParentContextRequired:     true,
 			Out:                       io.Discard,
 		})
 
@@ -438,7 +438,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
-			UseContextAsParent:        true,
+			ParentContextRequired:     true,
 			Out:                       io.Discard,
 		})
 
@@ -490,7 +490,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			CliArgs:                   []string{}, //missing file argument
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
-			UseContextAsParent:        true,
+			ParentContextRequired:     true,
 			Out:                       io.Discard,
 		})
 
@@ -532,7 +532,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			CliArgs:                   []string{"true"}, //too many arguments
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
-			UseContextAsParent:        true,
+			ParentContextRequired:     true,
 			Out:                       io.Discard,
 		})
 
@@ -574,7 +574,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			CliArgs:                   []string{"-x"}, //unknown argument
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
-			UseContextAsParent:        true,
+			ParentContextRequired:     true,
 			Out:                       io.Discard,
 		})
 
@@ -618,7 +618,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Args:                      core.NewObjectFromMap(core.ValMap{}, ctx),
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
-			UseContextAsParent:        true,
+			ParentContextRequired:     true,
 			Out:                       io.Discard,
 		})
 
@@ -665,7 +665,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			}, state),
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             state,
-			UseContextAsParent:        true,
+			ParentContextRequired:     true,
 			Out:                       io.Discard,
 		})
 
@@ -711,7 +711,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			}, ctx),
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
-			UseContextAsParent:        true,
+			ParentContextRequired:     true,
 			Out:                       io.Discard,
 		})
 
@@ -755,7 +755,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			}, ctx),
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
-			UseContextAsParent:        true,
+			ParentContextRequired:     true,
 			Out:                       io.Discard,
 		})
 
@@ -803,7 +803,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			}, ctx),
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
-			UseContextAsParent:        true,
+			ParentContextRequired:     true,
 			Out:                       io.Discard,
 		})
 
@@ -849,7 +849,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			}, ctx),
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
-			UseContextAsParent:        true,
+			ParentContextRequired:     true,
 			Out:                       io.Discard,
 		})
 
@@ -893,7 +893,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			}, ctx),
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
-			UseContextAsParent:        true,
+			ParentContextRequired:     true,
 			Out:                       io.Discard,
 		})
 
@@ -940,7 +940,7 @@ func TestRunLocalScript(t *testing.T) {
 		state, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: createCompilationCtx(dir),
-			UseContextAsParent:        true,
+			ParentContextRequired:     true,
 			ParentContext:             createEvaluationCtx(dir),
 			Out:                       io.Discard,
 			IgnoreHighRiskScore:       true,
@@ -967,7 +967,7 @@ func TestRunLocalScript(t *testing.T) {
 		state, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: createCompilationCtx(dir),
-			UseContextAsParent:        true,
+			ParentContextRequired:     true,
 			ParentContext:             createEvaluationCtx(dir),
 			Out:                       io.Discard,
 			IgnoreHighRiskScore:       true,
@@ -988,7 +988,7 @@ func TestRunLocalScript(t *testing.T) {
 		state, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: createCompilationCtx(dir),
-			UseContextAsParent:        true,
+			ParentContextRequired:     true,
 			ParentContext:             createEvaluationCtx(dir),
 			Out:                       io.Discard,
 			IgnoreHighRiskScore:       true,
@@ -1056,7 +1056,7 @@ func TestRunLocalScript(t *testing.T) {
 		state, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: createCompilationCtx(dir),
-			UseContextAsParent:        true,
+			ParentContextRequired:     true,
 			ParentContext:             createEvaluationCtx(dir),
 			Out:                       io.Discard,
 			IgnoreHighRiskScore:       false, //<---

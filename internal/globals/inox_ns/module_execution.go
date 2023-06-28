@@ -36,7 +36,7 @@ type ScriptPreparationArgs struct {
 
 	ParsingCompilationContext *core.Context
 	ParentContext             *core.Context
-	UseContextAsParent        bool
+	ParentContextRequired     bool
 	DevMode                   bool
 	AllowMissingEnvVars       bool
 	FullAccessToDatabases     bool
@@ -54,6 +54,10 @@ type ScriptPreparationArgs struct {
 // PrepareLocalScript parses & checks a script located in the filesystem and initialize its state.
 func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mod *core.Module, manif *core.Manifest, finalErr error) {
 	// parse module
+
+	if args.ParentContextRequired && args.ParentContext == nil {
+		return nil, nil, nil, errors.New(".ParentContextRequired is set to true but passed .ParentContext is nil")
+	}
 
 	absPath, pathErr := filepath.Abs(args.Fpath)
 	if pathErr != nil {
@@ -80,10 +84,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 
 	var ctx *core.Context
 
-	var parentContext *core.Context
-	if args.UseContextAsParent {
-		parentContext = args.ParentContext
-	}
+	parentContext := args.ParentContext
 
 	var manifest *core.Manifest
 	var preinitState *core.TreeWalkState
@@ -330,11 +331,11 @@ type RunScriptArgs struct {
 	PassedArgs                *core.Object
 	ParsingCompilationContext *core.Context
 	ParentContext             *core.Context
-	UseContextAsParent        bool
+	ParentContextRequired     bool
 	//used during the preinit
 	PreinitFilesystem afs.Filesystem
 
-	ConnectDatabases bool
+	FullAccessToDatabases bool
 
 	UseBytecode      bool
 	OptimizeBytecode bool
@@ -352,8 +353,8 @@ type RunScriptArgs struct {
 // RunLocalScript runs a script located in the filesystem.
 func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Module, error) {
 
-	if args.UseContextAsParent && args.ParentContext == nil {
-		return nil, nil, nil, errors.New(".UseContextAsParent is set to true but passed .Context is nil")
+	if args.ParentContextRequired && args.ParentContext == nil {
+		return nil, nil, nil, errors.New(".ParentContextRequired is set to true but passed .ParentContext is nil")
 	}
 
 	state, mod, manifest, err := PrepareLocalScript(ScriptPreparationArgs{
@@ -362,11 +363,11 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 		Args:                      args.PassedArgs,
 		ParsingCompilationContext: args.ParsingCompilationContext,
 		ParentContext:             args.ParentContext,
-		UseContextAsParent:        args.UseContextAsParent,
+		ParentContextRequired:     args.ParentContextRequired,
 		Out:                       args.Out,
 		AllowMissingEnvVars:       args.AllowMissingEnvVars,
 		PreinitFilesystem:         args.PreinitFilesystem,
-		FullAccessToDatabases:     args.ConnectDatabases,
+		FullAccessToDatabases:     args.FullAccessToDatabases,
 	})
 
 	if err != nil {

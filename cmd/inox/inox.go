@@ -157,7 +157,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			OptimizeBytecode:          !useTreeWalking && !disableOptimization,
 			Out:                       outW,
 
-			ConnectDatabases: true,
+			FullAccessToDatabases: true,
 		})
 
 		prettyPrintConfig := config.DEFAULT_PRETTY_PRINT_CONFIG.WithContext(compilationCtx) // TODO: use another context?

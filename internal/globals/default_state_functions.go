@@ -339,7 +339,7 @@ func _run(ctx *core.Context, src core.Path, args ...core.Value) error {
 		Fpath:                     string(src),
 		ParsingCompilationContext: ctx,
 		ParentContext:             ctx,
-		UseContextAsParent:        true,
+		ParentContextRequired:     true,
 
 		Out: ctx.GetClosestState().Out,
 	})
@@ -415,7 +415,6 @@ func _Color(ctx *core.Context, firstArg core.Value, other ...core.Value) core.Co
 		panic(errors.New("invalid number of arguments"))
 	}
 }
-
 
 func _add_ctx_data(ctx *core.Context, name core.Identifier, value core.Value) {
 	ctx.AddUserData(name, value)

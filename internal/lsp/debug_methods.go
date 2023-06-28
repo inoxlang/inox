@@ -633,7 +633,7 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 		Fpath:                     programPath,
 		ParsingCompilationContext: ctx,
 		ParentContext:             sessionCtx,
-		UseContextAsParent:        true,
+		ParentContextRequired:     true,
 		PreinitFilesystem:         fls,
 		AllowMissingEnvVars:       false,
 		IgnoreHighRiskScore:       true,
