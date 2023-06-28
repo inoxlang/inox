@@ -256,7 +256,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 		"sum_options": core.ValOf(core.SumOptions),
 		"mime":        core.ValOf(http_ns.Mime_),
 
-		"Color":    core.WrapGoFunction(_Color),
+		"Color":                           core.WrapGoFunction(_Color),
 		core.FILEMODE_PRIMORDIAL_FUNCNAME: core.WrapGoFunction(core.FileModeFrom),
 
 		"help": core.ValOf(help_ns.Help),
@@ -307,7 +307,7 @@ func NewDefaultContext(config default_state.DefaultContextConfig) (*core.Context
 		Filesystem:           config.Filesystem,
 	}
 
-	if ctxConfig.Filesystem == nil {
+	if ctxConfig.Filesystem == nil && ctxConfig.ParentContext == nil {
 		ctxConfig.Filesystem = fs_ns.GetOsFilesystem()
 	}
 
