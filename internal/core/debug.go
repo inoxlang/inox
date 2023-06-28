@@ -67,6 +67,8 @@ type DebugCommandGetStackTrace struct {
 }
 
 type DebugCommandCloseDebugger struct {
+	CancelExecution bool
+	Done            func()
 }
 
 type ProgramStoppedEvent struct {
@@ -158,6 +160,9 @@ func (d *Debugger) startGoroutine() {
 	d.logger.Info().Msg("start debugging")
 
 	go func() {
+		var done func()
+		cancelExecution := false
+
 		defer func() {
 			d.logger.Info().Msg("stop debugging")
 			d.closed.Store(true)
@@ -168,6 +173,14 @@ func (d *Debugger) startGoroutine() {
 
 			close(d.stoppedProgramCommandChan)
 			close(d.resumeExecutionChan)
+
+			if cancelExecution {
+				d.logger.Info().Msg("cancel execution of debuggee")
+				go d.globalState.Ctx.Cancel()
+			}
+			if done != nil {
+				done()
+			}
 		}()
 
 		for {
@@ -179,6 +192,8 @@ func (d *Debugger) startGoroutine() {
 			case cmd := <-d.controlChan:
 				switch c := cmd.(type) {
 				case DebugCommandCloseDebugger:
+					done = c.Done
+					cancelExecution = c.CancelExecution
 					return
 				case DebugCommandSetBreakpoints:
 					breakpoints := map[parse.Node]BreakpointInfo{}
