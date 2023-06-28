@@ -15,8 +15,11 @@ var (
 )
 
 type BreakpointInfo struct {
-	Node  parse.Node //can be nil
-	Chunk *parse.ParsedChunk
+	Node        parse.Node //can be nil
+	Chunk       *parse.ParsedChunk
+	Id          int32 //unique for a given debugger
+	StartLine   int32
+	StartColumn int32
 }
 
 func (i BreakpointInfo) Verified() bool {
@@ -47,7 +50,8 @@ type DebugCommandCloseDebugger struct {
 }
 
 type ProgramStoppedEvent struct {
-	Reason ProgramStopReason
+	Reason     ProgramStopReason
+	Breakpoint *BreakpointInfo
 }
 
 type ProgramStopReason int
@@ -64,7 +68,8 @@ type Debugger struct {
 	stoppedProgramChan        chan ProgramStoppedEvent
 	stoppedProgram            atomic.Bool
 	stopBeforeNextStatement   atomic.Value //non-breakpoint ProgramStopReason
-	breakpoints               map[parse.Node]struct{}
+	breakpoints               map[parse.Node]BreakpointInfo
+	nextBreakpointId          int32
 	breakpointsLock           sync.Mutex
 	resumeExecutionChan       chan struct{}
 
@@ -99,6 +104,8 @@ func NewDebugger(args DebuggerArgs) *Debugger {
 		stoppedProgramChan:        make(chan ProgramStoppedEvent, 1),
 		resumeExecutionChan:       make(chan struct{}),
 		logger:                    args.Logger,
+
+		nextBreakpointId: 1, //starts at 1 for compatibility with the Debug Adapter Protocol
 	}
 }
 
@@ -152,27 +159,55 @@ func (d *Debugger) startGoroutine() {
 				case DebugCommandCloseDebugger:
 					return
 				case DebugCommandSetBreakpoints:
-					breakpointLocations := utils.CopyMap(c.Breakpoints)
-
+					breakpoints := map[parse.Node]BreakpointInfo{}
 					var breakpointsSetByLine []BreakpointInfo
-					mainChunk := d.globalState.Module.MainChunk
 
-					for _, line := range c.BreakPointsByLine {
-						stmt, _, _ := mainChunk.FindFirstStatementAndChainOnLine(line)
+					func() {
+						d.breakpointsLock.Lock()
+						defer d.breakpointsLock.Unlock()
 
-						breakpointsSetByLine = append(breakpointsSetByLine, BreakpointInfo{
-							Node:  stmt,
-							Chunk: mainChunk,
-						})
+						mainChunk := d.globalState.Module.MainChunk
 
-						if stmt != nil {
-							breakpointLocations[stmt] = struct{}{}
+						for node := range c.Breakpoints {
+							id := d.nextBreakpointId
+							d.nextBreakpointId++
+
+							line, col := mainChunk.GetLineColumn(node)
+
+							breakpoints[node] = BreakpointInfo{
+								Node:        node,
+								Chunk:       mainChunk,
+								Id:          id,
+								StartLine:   line,
+								StartColumn: col,
+							}
 						}
-					}
 
-					d.breakpointsLock.Lock()
-					d.breakpoints = breakpointLocations
-					d.breakpointsLock.Unlock()
+						for _, line := range c.BreakPointsByLine {
+							stmt, _, _ := mainChunk.FindFirstStatementAndChainOnLine(line)
+
+							id := d.nextBreakpointId
+							d.nextBreakpointId++
+
+							breakpointInfo := BreakpointInfo{
+								Node:  stmt,
+								Chunk: mainChunk,
+								Id:    id,
+							}
+
+							if stmt != nil {
+								line, col := mainChunk.GetLineColumn(stmt)
+								breakpointInfo.StartLine = line
+								breakpointInfo.StartColumn = col
+
+								breakpoints[stmt] = breakpointInfo
+							}
+
+							breakpointsSetByLine = append(breakpointsSetByLine, breakpointInfo)
+						}
+
+						d.breakpoints = breakpoints
+					}()
 
 					if c.GetBreakpointsSetByLine != nil {
 						c.GetBreakpointsSetByLine(breakpointsSetByLine)
@@ -209,11 +244,11 @@ func (d *Debugger) beforeInstruction(n parse.Node) {
 	}
 
 	d.breakpointsLock.Lock()
-	_, breakpoint := d.breakpoints[n]
+	breakpointInfo, hasBreakpoint := d.breakpoints[n]
 	d.breakpointsLock.Unlock()
 
 	var stopReason ProgramStopReason
-	if breakpoint {
+	if hasBreakpoint {
 		stopReason = BreakpointStop
 	} else {
 		stopReason, _ = d.stopBeforeNextStatement.Swap(ProgramStopReason(0)).(ProgramStopReason)
@@ -221,7 +256,11 @@ func (d *Debugger) beforeInstruction(n parse.Node) {
 
 	if stopReason > 0 {
 		d.stoppedProgram.Store(true)
-		d.stoppedProgramChan <- ProgramStoppedEvent{Reason: stopReason}
+		event := ProgramStoppedEvent{Reason: stopReason}
+		if hasBreakpoint {
+			event.Breakpoint = &breakpointInfo
+		}
+		d.stoppedProgramChan <- event
 
 		for {
 			select {

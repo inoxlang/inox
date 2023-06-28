@@ -6393,6 +6393,8 @@ func testDebugModeEval(
 
 			go func() {
 				event := <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+
 				stoppedEvents = append(stoppedEvents, event)
 
 				//get scopes while stopped at 'a = 2'
@@ -6406,6 +6408,8 @@ func testDebugModeEval(
 				controlChan <- DebugCommandContinue{}
 
 				event = <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+
 				stoppedEvents = append(stoppedEvents, event)
 
 				//get scopes while stopped at 'a = 3'
@@ -6464,6 +6468,8 @@ func testDebugModeEval(
 
 			go func() {
 				event := <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+
 				stoppedEvents = append(stoppedEvents, event)
 
 				//get scopes while stopped at 'a = 2'
@@ -6477,6 +6483,8 @@ func testDebugModeEval(
 				controlChan <- DebugCommandContinue{}
 
 				event = <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+
 				stoppedEvents = append(stoppedEvents, event)
 
 				//get scopes while stopped at 'a = 3'
@@ -6537,11 +6545,13 @@ func testDebugModeEval(
 
 			go func() {
 				event := <-stoppedChan
+				event.Breakpoint = nil //not checked yet
 				stoppedEvents = append(stoppedEvents, event)
 
 				controlChan <- DebugCommandNextStep{}
 
 				event = <-stoppedChan
+				event.Breakpoint = nil //not checked yet
 				stoppedEvents = append(stoppedEvents, event)
 
 				//get scopes while stopped at 'a = 2'
@@ -6555,6 +6565,7 @@ func testDebugModeEval(
 				controlChan <- DebugCommandNextStep{}
 
 				event = <-stoppedChan
+				event.Breakpoint = nil //not checked yet
 				stoppedEvents = append(stoppedEvents, event)
 
 				//get scopes while stopped at 'a = 3'
@@ -6613,6 +6624,7 @@ func testDebugModeEval(
 				controlChan <- DebugCommandPause{}
 
 				event := <-stoppedChan
+				event.Breakpoint = nil //not checked yet
 				stoppedEvents = append(stoppedEvents, event)
 
 				//get scopes while stopped at 'a = 2'
