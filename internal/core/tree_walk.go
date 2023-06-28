@@ -40,6 +40,7 @@ func NewTreeWalkStateWithGlobal(global *GlobalState) *TreeWalkState {
 type TreeWalkState struct {
 	Global          *GlobalState
 	LocalScopeStack []map[string]Value
+	frameInfo       []StackFrameInfo
 	chunkStack      []*parse.ParsedChunk
 	constantVars    map[string]bool
 	postHandle      func(node parse.Node, val Value, err error) (Value, error)
@@ -127,6 +128,10 @@ func (state *TreeWalkState) AttachDebugger(debugger *Debugger) {
 
 func (state *TreeWalkState) DetachDebugger() {
 	state.debug = nil
+}
+
+func (state *TreeWalkState) GetStackTrace() []StackFrameInfo {
+	return utils.CopySlice(state.frameInfo)
 }
 
 type IterationChange int
@@ -765,6 +770,24 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		if manageLocalScope {
 			state.LocalScopeStack = nil //we only keep the global scope
 			state.PushScope()
+
+			if state.debug != nil {
+				chunk := state.Global.Module.MainChunk
+				line, col := chunk.GetLineColumn(chunk.Node)
+
+				state.frameInfo = append(state.frameInfo, StackFrameInfo{
+					Node:        n,
+					Name:        chunk.Name(),
+					Chunk:       chunk,
+					StartLine:   line,
+					StartColumn: col,
+					Id:          state.debug.stackFrameId.Add(1),
+				})
+
+				defer func() {
+					state.frameInfo = state.frameInfo[:len(state.frameInfo)-1]
+				}()
+			}
 		}
 
 		state.returnValue = nil
@@ -2649,6 +2672,7 @@ func TreeWalkCallFunc(call TreeWalkCall) (Value, error) {
 	var (
 		fn             *parse.FunctionExpression
 		capturedLocals map[string]Value
+		functionName   string
 	)
 	switch f := callee.(type) {
 	case *InoxFunction:
@@ -2659,6 +2683,7 @@ func TreeWalkCallFunc(call TreeWalkCall) (Value, error) {
 			fn = node
 		case *parse.FunctionDeclaration:
 			fn = node.Function
+			functionName = node.Name.Name
 		default:
 			panic(fmt.Errorf("cannot call node of type %T", node))
 		}
@@ -2694,6 +2719,31 @@ func TreeWalkCallFunc(call TreeWalkCall) (Value, error) {
 		state.PopScope()
 		state.self = prevSelf
 	}()
+
+	if state.debug != nil {
+		chunk := state.currentChunk()
+		line, col := chunk.GetLineColumn(fn)
+
+		frameName := functionName
+		if frameName == "" {
+			frameName = chunk.GetFormattedNodeLocation(fn)
+		}
+
+		frameName = FUNCTION_FRAME_PREFIX + frameName
+
+		state.frameInfo = append(state.frameInfo, StackFrameInfo{
+			Node:        fn,
+			Name:        frameName,
+			Chunk:       chunk,
+			StartLine:   line,
+			StartColumn: col,
+			Id:          state.debug.stackFrameId.Add(1),
+		})
+
+		defer func() {
+			state.frameInfo = state.frameInfo[:len(state.frameInfo)-1]
+		}()
+	}
 
 	currentScope := state.CurrentLocalScope()
 

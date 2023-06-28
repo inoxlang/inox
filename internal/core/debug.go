@@ -10,6 +10,10 @@ import (
 	"github.com/rs/zerolog"
 )
 
+const (
+	FUNCTION_FRAME_PREFIX = "(fn) "
+)
+
 var (
 	ErrDebuggerAlreadyAttached = errors.New("debugger already attached")
 )
@@ -24,6 +28,15 @@ type BreakpointInfo struct {
 
 func (i BreakpointInfo) Verified() bool {
 	return i.Node != nil
+}
+
+type StackFrameInfo struct {
+	Name        string
+	Node        parse.Node //can be nil
+	Chunk       *parse.ParsedChunk
+	Id          int32 //set if debugging, unique for a given debugger
+	StartLine   int32
+	StartColumn int32
 }
 
 type DebugCommandSetBreakpoints struct {
@@ -44,6 +57,10 @@ type DebugCommandNextStep struct {
 
 type DebugCommandGetScopes struct {
 	Get func(globalScope map[string]Value, localScope map[string]Value)
+}
+
+type DebugCommandGetStackTrace struct {
+	Get func(trace []StackFrameInfo)
 }
 
 type DebugCommandCloseDebugger struct {
@@ -73,6 +90,8 @@ type Debugger struct {
 	breakpointsLock           sync.Mutex
 	resumeExecutionChan       chan struct{}
 
+	stackFrameId atomic.Int32 //incremented by debuggees
+
 	evaluationState EvaluationState
 	globalState     *GlobalState
 	module          *Module
@@ -91,6 +110,8 @@ type EvaluationState interface {
 	CurrentLocalScope() map[string]Value
 
 	GetGlobalState() *GlobalState
+
+	GetStackTrace() []StackFrameInfo
 }
 
 type DebuggerArgs struct {
@@ -230,7 +251,7 @@ func (d *Debugger) startGoroutine() {
 					}
 					d.stopBeforeNextStatement.Store(StepStop)
 					d.resumeExecutionChan <- struct{}{}
-				case DebugCommandGetScopes:
+				case DebugCommandGetScopes, DebugCommandGetStackTrace:
 					if d.stoppedProgram.Load() {
 						d.stoppedProgramCommandChan <- c
 					}
@@ -288,6 +309,8 @@ func (d *Debugger) beforeInstruction(n parse.Node) {
 					globals := d.globalState.Globals.Entries()
 					locals := utils.CopyMap(d.evaluationState.CurrentLocalScope())
 					c.Get(globals, locals)
+				case DebugCommandGetStackTrace:
+					c.Get(d.evaluationState.GetStackTrace())
 				}
 			}
 		}

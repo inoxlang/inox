@@ -6390,6 +6390,7 @@ func testDebugModeEval(
 			var stoppedEvents []ProgramStoppedEvent
 			var globalScopes []map[string]Value
 			var localScopes []map[string]Value
+			var stackTraces [][]StackFrameInfo
 
 			go func() {
 				event := <-stoppedChan
@@ -6405,6 +6406,13 @@ func testDebugModeEval(
 					},
 				}
 
+				//get stack trace while stopped at 'a = 2'
+				controlChan <- DebugCommandGetStackTrace{
+					func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
+					},
+				}
+
 				controlChan <- DebugCommandContinue{}
 
 				event = <-stoppedChan
@@ -6417,6 +6425,13 @@ func testDebugModeEval(
 					func(globalScope, localScope map[string]Value) {
 						globalScopes = append(globalScopes, globalScope)
 						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				//get stack trace while stopped at 'a = 3'
+				controlChan <- DebugCommandGetStackTrace{
+					func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
 					},
 				}
 
@@ -6441,6 +6456,29 @@ func testDebugModeEval(
 			assert.Equal(t, []map[string]Value{
 				{"a": Int(1)}, {"a": Int(2)},
 			}, localScopes)
+
+			assert.Equal(t, [][]StackFrameInfo{
+				{
+					{
+						Name:        "core-test",
+						Node:        chunk.Node,
+						Chunk:       chunk,
+						Id:          1,
+						StartLine:   1,
+						StartColumn: 1,
+					},
+				},
+				{
+					{
+						Name:        "core-test",
+						Node:        chunk.Node,
+						Chunk:       chunk,
+						Id:          1,
+						StartLine:   1,
+						StartColumn: 1,
+					},
+				},
+			}, stackTraces)
 		})
 
 		t.Run("successive breakpoints set by line", func(t *testing.T) {
@@ -6465,6 +6503,7 @@ func testDebugModeEval(
 			var stoppedEvents []ProgramStoppedEvent
 			var globalScopes []map[string]Value
 			var localScopes []map[string]Value
+			var stackTraces [][]StackFrameInfo
 
 			go func() {
 				event := <-stoppedChan
@@ -6480,6 +6519,13 @@ func testDebugModeEval(
 					},
 				}
 
+				//get stack trace while stopped at 'a = 2'
+				controlChan <- DebugCommandGetStackTrace{
+					func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
+					},
+				}
+
 				controlChan <- DebugCommandContinue{}
 
 				event = <-stoppedChan
@@ -6492,6 +6538,13 @@ func testDebugModeEval(
 					func(globalScope, localScope map[string]Value) {
 						globalScopes = append(globalScopes, globalScope)
 						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				//get stack trace while stopped at 'a = 3'
+				controlChan <- DebugCommandGetStackTrace{
+					func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
 					},
 				}
 
@@ -6516,6 +6569,29 @@ func testDebugModeEval(
 			assert.Equal(t, []map[string]Value{
 				{"a": Int(1)}, {"a": Int(2)},
 			}, localScopes)
+
+			assert.Equal(t, [][]StackFrameInfo{
+				{
+					{
+						Name:        "core-test",
+						Node:        chunk.Node,
+						Chunk:       chunk,
+						Id:          1,
+						StartLine:   1,
+						StartColumn: 1,
+					},
+				},
+				{
+					{
+						Name:        "core-test",
+						Node:        chunk.Node,
+						Chunk:       chunk,
+						Id:          1,
+						StartLine:   1,
+						StartColumn: 1,
+					},
+				},
+			}, stackTraces)
 		})
 
 		t.Run("breakpoint & two steps", func(t *testing.T) {
@@ -6542,6 +6618,7 @@ func testDebugModeEval(
 			var stoppedEvents []ProgramStoppedEvent
 			var globalScopes []map[string]Value
 			var localScopes []map[string]Value
+			var stackTraces [][]StackFrameInfo
 
 			go func() {
 				event := <-stoppedChan
@@ -6562,6 +6639,13 @@ func testDebugModeEval(
 					},
 				}
 
+				//get stack trace while stopped at 'a = 2'
+				controlChan <- DebugCommandGetStackTrace{
+					func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
+					},
+				}
+
 				controlChan <- DebugCommandNextStep{}
 
 				event = <-stoppedChan
@@ -6573,6 +6657,13 @@ func testDebugModeEval(
 					func(globalScope, localScope map[string]Value) {
 						globalScopes = append(globalScopes, globalScope)
 						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				//get stack trace while stopped at 'a = 3'
+				controlChan <- DebugCommandGetStackTrace{
+					func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
 					},
 				}
 
@@ -6598,6 +6689,29 @@ func testDebugModeEval(
 			assert.Equal(t, []map[string]Value{
 				{"a": Int(1)}, {"a": Int(2)},
 			}, localScopes)
+
+			assert.Equal(t, [][]StackFrameInfo{
+				{
+					{
+						Name:        "core-test",
+						Node:        chunk.Node,
+						Chunk:       chunk,
+						Id:          1,
+						StartLine:   1,
+						StartColumn: 1,
+					},
+				},
+				{
+					{
+						Name:        "core-test",
+						Node:        chunk.Node,
+						Chunk:       chunk,
+						Id:          1,
+						StartLine:   1,
+						StartColumn: 1,
+					},
+				},
+			}, stackTraces)
 		})
 
 		t.Run("pause", func(t *testing.T) {
@@ -6619,6 +6733,7 @@ func testDebugModeEval(
 			var stoppedEvents []ProgramStoppedEvent
 			var globalScopes []map[string]Value
 			var localScopes []map[string]Value
+			var stackTraces [][]StackFrameInfo
 
 			go func() {
 				controlChan <- DebugCommandPause{}
@@ -6632,6 +6747,13 @@ func testDebugModeEval(
 					func(globalScope, localScope map[string]Value) {
 						globalScopes = append(globalScopes, globalScope)
 						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				//get stack trace while stopped at 'a = 2'
+				controlChan <- DebugCommandGetStackTrace{
+					func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
 					},
 				}
 
@@ -6655,6 +6777,19 @@ func testDebugModeEval(
 			assert.Equal(t, []map[string]Value{
 				{"a": Int(1)},
 			}, localScopes)
+
+			assert.Equal(t, [][]StackFrameInfo{
+				{
+					{
+						Name:        "core-test",
+						Node:        chunk.Node,
+						Chunk:       chunk,
+						Id:          1,
+						StartLine:   1,
+						StartColumn: 1,
+					},
+				},
+			}, stackTraces)
 		})
 
 		t.Run("close debugger while program stopped at breakpoint", func(t *testing.T) {
