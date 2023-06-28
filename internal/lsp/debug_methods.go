@@ -42,6 +42,11 @@ type DebugPauseParams struct {
 	Request   dap.PauseRequest `json:"request"`
 }
 
+type DebugContinueParams struct {
+	SessionId string              `json:"sessionID"`
+	Request   dap.ContinueRequest `json:"request"`
+}
+
 type DebugThreadsParams struct {
 	SessionId string             `json:"sessionID"`
 	Request   dap.ThreadsRequest `json:"request"`
@@ -359,7 +364,11 @@ func registerDebugMethodHandlers(
 							Verified: breakpoint.Verified(),
 							Id:       int(breakpoint.Id),
 							Line:     int(breakpoint.StartLine),
-							Column:   int(breakpoint.StartColumn + 1),
+							Column:   int(breakpoint.StartColumn),
+						}
+
+						if !debugSession.columnsStartAt1 {
+							dapBreakpoint.Column -= 1
 						}
 
 						src, ok := breakpoint.Chunk.Source.(parse.SourceFile)
@@ -427,7 +436,7 @@ func registerDebugMethodHandlers(
 			debugSession := getDebugSession(session, params.SessionId)
 
 			debugger := debugSession.debugger
-			if debugger.Closed() {
+			if !debugger.Closed() {
 				debugger.ControlChan() <- core.DebugCommandPause{}
 			}
 
@@ -440,6 +449,41 @@ func registerDebugMethodHandlers(
 						Type: "response",
 					},
 					Command: dapRequest.Command,
+				},
+			}, nil
+		},
+	})
+
+	server.OnCustom(jsonrpc.MethodInfo{
+		Name: "debug/continue",
+		NewRequest: func() interface{} {
+			return &DebugContinueParams{}
+		},
+		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+			session := jsonrpc.GetSession(ctx)
+			params := req.(*DebugContinueParams)
+			dapRequest := params.Request
+
+			debugSession := getDebugSession(session, params.SessionId)
+
+			debugger := debugSession.debugger
+			if !debugger.Closed() {
+				//TODO: support continuing a specific thread (see params)
+				debugger.ControlChan() <- core.DebugCommandContinue{}
+			}
+
+			return dap.ContinueResponse{
+				Response: dap.Response{
+					RequestSeq: dapRequest.Seq,
+					Success:    true,
+					ProtocolMessage: dap.ProtocolMessage{
+						Seq:  debugSession.NextSeq(),
+						Type: "response",
+					},
+					Command: dapRequest.Command,
+				},
+				Body: dap.ContinueResponseBody{
+					AllThreadsContinued: true,
 				},
 			}, nil
 		},
