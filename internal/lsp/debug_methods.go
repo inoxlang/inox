@@ -632,7 +632,7 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 	_, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 		Fpath:                     programPath,
 		ParsingCompilationContext: ctx,
-		ParentContext:             sessionCtx,
+		ParentContext:             ctx,
 		ParentContextRequired:     true,
 		PreinitFilesystem:         fls,
 		AllowMissingEnvVars:       false,
