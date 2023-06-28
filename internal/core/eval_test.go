@@ -6439,6 +6439,77 @@ func testDebugModeEval(
 			}, localScopes)
 		})
 
+		t.Run("successive breakpoints set by line", func(t *testing.T) {
+			state, ctx, chunk, debugger := setup(
+				`a = 1
+				a = 2
+				a = 3
+				return a
+			`)
+
+			controlChan := debugger.ControlChan()
+			stoppedChan := debugger.StoppedChan()
+
+			defer ctx.Cancel()
+
+			controlChan <- DebugCommandSetBreakpoints{
+				BreakPointsByLine: []int{2, 3}, //a = 2 & a = 3
+			}
+
+			time.Sleep(10 * time.Millisecond) //wait for the debugger to set the breakpoints
+
+			var stoppedEvents []ProgramStoppedEvent
+			var globalScopes []map[string]Value
+			var localScopes []map[string]Value
+
+			go func() {
+				event := <-stoppedChan
+				stoppedEvents = append(stoppedEvents, event)
+
+				//get scopes while stopped at 'a = 2'
+				controlChan <- DebugCommandGetScopes{
+					func(globalScope, localScope map[string]Value) {
+						globalScopes = append(globalScopes, globalScope)
+						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				controlChan <- DebugCommandContinue{}
+
+				event = <-stoppedChan
+				stoppedEvents = append(stoppedEvents, event)
+
+				//get scopes while stopped at 'a = 3'
+				controlChan <- DebugCommandGetScopes{
+					func(globalScope, localScope map[string]Value) {
+						globalScopes = append(globalScopes, globalScope)
+						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				controlChan <- DebugCommandContinue{}
+			}()
+
+			result, err := eval(chunk.Node, state)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, Int(3), result)
+
+			assert.Equal(t, []ProgramStoppedEvent{
+				{Reason: BreakpointStop},
+				{Reason: BreakpointStop},
+			}, stoppedEvents)
+
+			assert.Equal(t, []map[string]Value{{}, {}}, globalScopes)
+
+			assert.Equal(t, []map[string]Value{
+				{"a": Int(1)}, {"a": Int(2)},
+			}, localScopes)
+		})
+
 		t.Run("breakpoint & two steps", func(t *testing.T) {
 			state, ctx, chunk, debugger := setup(`
 				a = 1

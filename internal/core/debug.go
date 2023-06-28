@@ -14,16 +14,20 @@ var (
 	ErrDebuggerAlreadyAttached = errors.New("debugger already attached")
 )
 
-type Breakpoint struct {
-	node  parse.Node
-	chunk *parse.ParsedChunk
+type BreakpointInfo struct {
+	Node  parse.Node //can be nil
+	Chunk *parse.ParsedChunk
+}
+
+func (i BreakpointInfo) Verified() bool {
+	return i.Node != nil
 }
 
 type DebugCommandSetBreakpoints struct {
 	Breakpoints       map[parse.Node]struct{}
-	BreakPointsByLine map[int]struct{}
+	BreakPointsByLine []int
 
-	GetBreakpoints func(breakpoints map[int]Breakpoint)
+	GetBreakpointsSetByLine func(breakpoints []BreakpointInfo)
 }
 
 type DebugCommandPause struct {
@@ -148,9 +152,32 @@ func (d *Debugger) startGoroutine() {
 				case DebugCommandCloseDebugger:
 					return
 				case DebugCommandSetBreakpoints:
+					breakpointLocations := utils.CopyMap(c.Breakpoints)
+
+					var breakpointsSetByLine []BreakpointInfo
+					mainChunk := d.globalState.Module.MainChunk
+
+					for _, line := range c.BreakPointsByLine {
+						stmt, _, _ := mainChunk.FindFirstStatementAndChainOnLine(line)
+
+						breakpointsSetByLine = append(breakpointsSetByLine, BreakpointInfo{
+							Node:  stmt,
+							Chunk: mainChunk,
+						})
+
+						if stmt != nil {
+							breakpointLocations[stmt] = struct{}{}
+						}
+					}
+
 					d.breakpointsLock.Lock()
-					d.breakpoints = c.Breakpoints
+					d.breakpoints = breakpointLocations
 					d.breakpointsLock.Unlock()
+
+					if c.GetBreakpointsSetByLine != nil {
+						c.GetBreakpointsSetByLine(breakpointsSetByLine)
+					}
+
 				case DebugCommandPause:
 					if d.stoppedProgram.Load() {
 						continue
