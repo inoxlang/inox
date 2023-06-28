@@ -46,6 +46,11 @@ type DebugThreadsParams struct {
 	Request   dap.ThreadsRequest `json:"request"`
 }
 
+type DebugSetBreakpointsParams struct {
+	SessionId string                    `json:"sessionID"`
+	Request   dap.SetBreakpointsRequest `json:"request"`
+}
+
 type DebugLaunchArgs struct {
 	Program string `json:"program"`
 }
@@ -302,6 +307,94 @@ func registerDebugMethodHandlers(
 				},
 				Body: dap.ThreadsResponseBody{
 					Threads: threads,
+				},
+			}, nil
+		},
+	})
+
+	server.OnCustom(jsonrpc.MethodInfo{
+		Name: "debug/setBreakpoints",
+		NewRequest: func() interface{} {
+			return &DebugSetBreakpointsParams{}
+		},
+		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+			session := jsonrpc.GetSession(ctx)
+			params := req.(*DebugSetBreakpointsParams)
+			dapRequest := params.Request
+
+			debugSession := getDebugSession(session, params.SessionId)
+
+			path := dapRequest.Arguments.Source.Path
+
+			if path == "" {
+				return dap.SetBreakpointsResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  debugSession.NextSeq(),
+							Type: "response",
+						},
+						Message: "source.path is not set",
+						Command: dapRequest.Command,
+					},
+				}, nil
+			}
+
+			var lines []int
+
+			for _, srcBreakpoint := range dapRequest.Arguments.Breakpoints {
+				lines = append(lines, srcBreakpoint.Line)
+			}
+
+			breakpointsChan := make(chan []dap.Breakpoint)
+
+			cmd := core.DebugCommandSetBreakpoints{
+				BreakPointsByLine: lines,
+				GetBreakpointsSetByLine: func(breakpoints []core.BreakpointInfo) {
+					var dapBreakpoints []dap.Breakpoint
+					for _, breakpoint := range breakpoints {
+						dapBreakpoints = append(dapBreakpoints, dap.Breakpoint{
+							Verified: breakpoint.Verified(),
+						})
+					}
+					breakpointsChan <- dapBreakpoints
+				},
+			}
+
+			debugSession.debugger.ControlChan() <- cmd
+
+			var breakpoints []dap.Breakpoint
+
+			select {
+			case breakpoints = <-breakpointsChan:
+			case <-time.After(time.Second):
+				return dap.SetBreakpointsResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  debugSession.NextSeq(),
+							Type: "response",
+						},
+						Message: "failed to set breakpoints",
+						Command: dapRequest.Command,
+					},
+				}, nil
+			}
+
+			return dap.SetBreakpointsResponse{
+				Response: dap.Response{
+					RequestSeq: dapRequest.Seq,
+					Success:    true,
+					ProtocolMessage: dap.ProtocolMessage{
+						Seq:  debugSession.NextSeq(),
+						Type: "response",
+					},
+					Command: dapRequest.Command,
+				},
+				Body: dap.SetBreakpointsResponseBody{
+					Breakpoints: breakpoints,
 				},
 			}, nil
 		},
