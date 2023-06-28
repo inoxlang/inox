@@ -62,6 +62,11 @@ type DebugScopesParams struct {
 	Request   dap.ScopesRequest `json:"request"`
 }
 
+type DebugVariablesParams struct {
+	SessionId string               `json:"sessionID"`
+	Request   dap.VariablesRequest `json:"request"`
+}
+
 type DebugSetBreakpointsParams struct {
 	SessionId string                    `json:"sessionID"`
 	Request   dap.SetBreakpointsRequest `json:"request"`
@@ -431,15 +436,15 @@ func registerDebugMethodHandlers(
 				Get: func(globalScope, localScope map[string]core.Value) {
 					scopesChan <- []dap.Scope{
 						{
-							Name:               "Global Scope",
-							NamedVariables:     len(globalScope),
-							VariablesReference: 1,
-						},
-						{
 							Name:               "Local Scope",
 							PresentationHint:   "locals",
 							NamedVariables:     len(localScope),
 							VariablesReference: 1000,
+						},
+						{
+							Name:               "Global Scope",
+							NamedVariables:     len(globalScope),
+							VariablesReference: 1,
 						},
 					}
 				},
@@ -474,6 +479,84 @@ func registerDebugMethodHandlers(
 				},
 				Body: dap.ScopesResponseBody{
 					Scopes: scopes,
+				},
+			}, nil
+		},
+	})
+
+	server.OnCustom(jsonrpc.MethodInfo{
+		Name: "debug/variables",
+		NewRequest: func() interface{} {
+			return &DebugVariablesParams{}
+		},
+		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+			session := jsonrpc.GetSession(ctx)
+			params := req.(*DebugVariablesParams)
+			dapRequest := params.Request
+
+			debugSession := getDebugSession(session, params.SessionId)
+
+			var variables []dap.Variable
+			varsChan := make(chan []dap.Variable)
+
+			ref := dapRequest.Arguments.VariablesReference
+
+			debugSession.debugger.ControlChan() <- core.DebugCommandGetScopes{
+				Get: func(globalScope, localScope map[string]core.Value) {
+					var variables []dap.Variable
+
+					handlingCtx := session.Context().BoundChild()
+
+					var scope map[string]core.Value
+
+					switch ref {
+					case 1:
+						scope = globalScope
+					case 1000:
+						scope = localScope
+					default:
+						//invalid reference
+					}
+
+					for k, v := range scope {
+						variables = append(variables, dap.Variable{
+							Name:  k,
+							Value: core.Stringify(v, handlingCtx),
+						})
+					}
+					varsChan <- variables
+				},
+			}
+
+			select {
+			case variables = <-varsChan:
+			case <-time.After(time.Second):
+				return dap.VariablesResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  debugSession.NextSeq(),
+							Type: "response",
+						},
+						Message: "failed to get variables",
+						Command: dapRequest.Command,
+					},
+				}, nil
+			}
+
+			return dap.VariablesResponse{
+				Response: dap.Response{
+					RequestSeq: dapRequest.Seq,
+					Success:    true,
+					ProtocolMessage: dap.ProtocolMessage{
+						Seq:  debugSession.NextSeq(),
+						Type: "response",
+					},
+					Command: dapRequest.Command,
+				},
+				Body: dap.VariablesResponseBody{
+					Variables: variables,
 				},
 			}, nil
 		},
