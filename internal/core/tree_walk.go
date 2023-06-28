@@ -40,7 +40,7 @@ func NewTreeWalkStateWithGlobal(global *GlobalState) *TreeWalkState {
 type TreeWalkState struct {
 	Global          *GlobalState
 	LocalScopeStack []map[string]Value
-	frameInfo       []StackFrameInfo
+	frameInfo       []StackFrameInfo //used for debugging only
 	chunkStack      []*parse.ParsedChunk
 	constantVars    map[string]bool
 	postHandle      func(node parse.Node, val Value, err error) (Value, error)
@@ -130,8 +130,15 @@ func (state *TreeWalkState) DetachDebugger() {
 	state.debug = nil
 }
 
-func (state *TreeWalkState) GetStackTrace() []StackFrameInfo {
-	return utils.CopySlice(state.frameInfo)
+func (state *TreeWalkState) updateStackTrace(currentStmt parse.Node) {
+	currentFrame := state.frameInfo[len(state.frameInfo)-1]
+	currentFrame.Node = currentStmt
+
+	line, col := currentFrame.Chunk.GetLineColumn(currentStmt)
+	currentFrame.StatementStartLine = line
+	currentFrame.StatementStartColumn = col
+
+	state.frameInfo[len(state.frameInfo)-1] = currentFrame
 }
 
 type IterationChange int
@@ -782,6 +789,9 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 					StartLine:   line,
 					StartColumn: col,
 					Id:          state.debug.stackFrameId.Add(1),
+
+					StatementStartLine:   1,
+					StatementStartColumn: 1,
 				})
 
 				defer func() {
@@ -824,7 +834,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		for _, stmt := range n.Statements {
 			if state.debug != nil {
-				state.debug.beforeInstruction(stmt)
+				state.updateStackTrace(stmt)
+				state.debug.beforeInstruction(stmt, state.frameInfo)
 			}
 
 			_, err = TreeWalkEval(stmt, state)
@@ -844,7 +855,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 	loop:
 		for _, stmt := range n.Statements {
 			if state.debug != nil {
-				state.debug.beforeInstruction(stmt)
+				state.updateStackTrace(stmt)
+				state.debug.beforeInstruction(stmt, state.frameInfo)
 			}
 
 			_, err := TreeWalkEval(stmt, state)

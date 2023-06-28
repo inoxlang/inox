@@ -6460,22 +6460,26 @@ func testDebugModeEval(
 			assert.Equal(t, [][]StackFrameInfo{
 				{
 					{
-						Name:        "core-test",
-						Node:        chunk.Node,
-						Chunk:       chunk,
-						Id:          1,
-						StartLine:   1,
-						StartColumn: 1,
+						Name:                 "core-test",
+						Node:                 chunk.Node.Statements[1],
+						Chunk:                chunk,
+						Id:                   1,
+						StartLine:            1,
+						StartColumn:          1,
+						StatementStartLine:   3,
+						StatementStartColumn: 5,
 					},
 				},
 				{
 					{
-						Name:        "core-test",
-						Node:        chunk.Node,
-						Chunk:       chunk,
-						Id:          1,
-						StartLine:   1,
-						StartColumn: 1,
+						Name:                 "core-test",
+						Node:                 chunk.Node.Statements[2],
+						Chunk:                chunk,
+						Id:                   1,
+						StartLine:            1,
+						StartColumn:          1,
+						StatementStartLine:   4,
+						StatementStartColumn: 5,
 					},
 				},
 			}, stackTraces)
@@ -6573,22 +6577,26 @@ func testDebugModeEval(
 			assert.Equal(t, [][]StackFrameInfo{
 				{
 					{
-						Name:        "core-test",
-						Node:        chunk.Node,
-						Chunk:       chunk,
-						Id:          1,
-						StartLine:   1,
-						StartColumn: 1,
+						Name:                 "core-test",
+						Node:                 chunk.Node.Statements[1],
+						Chunk:                chunk,
+						Id:                   1,
+						StartLine:            1,
+						StartColumn:          1,
+						StatementStartLine:   2,
+						StatementStartColumn: 5,
 					},
 				},
 				{
 					{
-						Name:        "core-test",
-						Node:        chunk.Node,
-						Chunk:       chunk,
-						Id:          1,
-						StartLine:   1,
-						StartColumn: 1,
+						Name:                 "core-test",
+						Node:                 chunk.Node.Statements[2],
+						Chunk:                chunk,
+						Id:                   1,
+						StartLine:            1,
+						StartColumn:          1,
+						StatementStartLine:   3,
+						StatementStartColumn: 5,
 					},
 				},
 			}, stackTraces)
@@ -6693,22 +6701,26 @@ func testDebugModeEval(
 			assert.Equal(t, [][]StackFrameInfo{
 				{
 					{
-						Name:        "core-test",
-						Node:        chunk.Node,
-						Chunk:       chunk,
-						Id:          1,
-						StartLine:   1,
-						StartColumn: 1,
+						Name:                 "core-test",
+						Node:                 chunk.Node.Statements[1],
+						Chunk:                chunk,
+						Id:                   1,
+						StartLine:            1,
+						StartColumn:          1,
+						StatementStartLine:   3,
+						StatementStartColumn: 5,
 					},
 				},
 				{
 					{
-						Name:        "core-test",
-						Node:        chunk.Node,
-						Chunk:       chunk,
-						Id:          1,
-						StartLine:   1,
-						StartColumn: 1,
+						Name:                 "core-test",
+						Node:                 chunk.Node.Statements[2],
+						Chunk:                chunk,
+						Id:                   1,
+						StartLine:            1,
+						StartColumn:          1,
+						StatementStartLine:   4,
+						StatementStartColumn: 5,
 					},
 				},
 			}, stackTraces)
@@ -6736,6 +6748,9 @@ func testDebugModeEval(
 			var stackTraces [][]StackFrameInfo
 
 			go func() {
+				//wait to make sure the pause command will be sent during the sleep(1s) call
+				time.Sleep(10 * time.Millisecond)
+
 				controlChan <- DebugCommandPause{}
 
 				event := <-stoppedChan
@@ -6781,12 +6796,14 @@ func testDebugModeEval(
 			assert.Equal(t, [][]StackFrameInfo{
 				{
 					{
-						Name:        "core-test",
-						Node:        chunk.Node,
-						Chunk:       chunk,
-						Id:          1,
-						StartLine:   1,
-						StartColumn: 1,
+						Name:                 "core-test",
+						Node:                 chunk.Node.Statements[2],
+						Chunk:                chunk,
+						Id:                   1,
+						StartLine:            1,
+						StartColumn:          1,
+						StatementStartLine:   4,
+						StatementStartColumn: 5,
 					},
 				},
 			}, stackTraces)

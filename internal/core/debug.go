@@ -32,11 +32,14 @@ func (i BreakpointInfo) Verified() bool {
 
 type StackFrameInfo struct {
 	Name        string
-	Node        parse.Node //can be nil
+	Node        parse.Node //can be nil, it's either a Chunk or the current statement
 	Chunk       *parse.ParsedChunk
 	Id          int32 //set if debugging, unique for a given debugger
 	StartLine   int32
 	StartColumn int32
+
+	StatementStartLine   int32
+	StatementStartColumn int32
 }
 
 type DebugCommandSetBreakpoints struct {
@@ -110,8 +113,6 @@ type EvaluationState interface {
 	CurrentLocalScope() map[string]Value
 
 	GetGlobalState() *GlobalState
-
-	GetStackTrace() []StackFrameInfo
 }
 
 type DebuggerArgs struct {
@@ -261,10 +262,12 @@ func (d *Debugger) startGoroutine() {
 	}()
 }
 
-func (d *Debugger) beforeInstruction(n parse.Node) {
+func (d *Debugger) beforeInstruction(n parse.Node, trace []StackFrameInfo) {
 	if d.closed.Load() {
 		return
 	}
+
+	trace = utils.CopySlice(trace)
 
 	d.breakpointsLock.Lock()
 	breakpointInfo, hasBreakpoint := d.breakpoints[n]
@@ -310,7 +313,7 @@ func (d *Debugger) beforeInstruction(n parse.Node) {
 					locals := utils.CopyMap(d.evaluationState.CurrentLocalScope())
 					c.Get(globals, locals)
 				case DebugCommandGetStackTrace:
-					c.Get(d.evaluationState.GetStackTrace())
+					c.Get(trace)
 				}
 			}
 		}
