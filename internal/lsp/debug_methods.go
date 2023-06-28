@@ -17,6 +17,7 @@ import (
 	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
 	"github.com/inoxlang/inox/internal/lsp/logs"
 	"github.com/inoxlang/inox/internal/lsp/lsp"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 )
@@ -354,9 +355,22 @@ func registerDebugMethodHandlers(
 				GetBreakpointsSetByLine: func(breakpoints []core.BreakpointInfo) {
 					var dapBreakpoints []dap.Breakpoint
 					for _, breakpoint := range breakpoints {
-						dapBreakpoints = append(dapBreakpoints, dap.Breakpoint{
+						dapBreakpoint := dap.Breakpoint{
 							Verified: breakpoint.Verified(),
-						})
+							Id:       int(breakpoint.Id),
+							Line:     int(breakpoint.StartLine),
+							Column:   int(breakpoint.StartColumn + 1),
+						}
+
+						src, ok := breakpoint.Chunk.Source.(parse.SourceFile)
+						if ok && !src.IsResourceURL {
+							dapBreakpoint.Source = &dap.Source{
+								Name: src.Name(),
+								Path: src.Resource,
+							}
+						}
+
+						dapBreakpoints = append(dapBreakpoints, dapBreakpoint)
 					}
 					breakpointsChan <- dapBreakpoints
 				},
@@ -550,6 +564,10 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 						Reason:   stopReasonToDapStopReason(stop.Reason),
 						ThreadId: 1,
 					},
+				}
+
+				if stop.Breakpoint != nil {
+					stoppedEvent.Body.HitBreakpointIds = []int{int(stop.Breakpoint.Id)}
 				}
 
 				session.Notify(jsonrpc.NotificationMessage{
