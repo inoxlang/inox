@@ -22,6 +22,10 @@ import (
 	"github.com/rs/zerolog"
 )
 
+const (
+	DEFAULT_DEBUG_COMMAND_TIMEOUT = 2 * time.Second
+)
+
 type DebugInitializeParams struct {
 	SessionId string                `json:"sessionID"`
 	Request   dap.InitializeRequest `json:"request"`
@@ -76,6 +80,11 @@ type DebugLaunchArgs struct {
 	Program string `json:"program"`
 }
 
+type DebugDisconnectParams struct {
+	SessionId string                `json:"sessionID"`
+	Request   dap.DisconnectRequest `json:"request"`
+}
+
 type DebugSessions struct {
 	sessions        []*DebugSession
 	sessionListLock sync.Mutex
@@ -97,6 +106,7 @@ type DebugSession struct {
 	debugger        *core.Debugger
 	programDoneChan chan error //ok if error is nil
 	finished        atomic.Bool
+	wasAttached     bool //debugger was attached to a running debuggee
 }
 
 func (s *DebugSession) NextSeq() int {
@@ -377,7 +387,7 @@ func registerDebugMethodHandlers(
 
 			select {
 			case stackFrames = <-framesChan:
-			case <-time.After(time.Second):
+			case <-time.After(DEFAULT_DEBUG_COMMAND_TIMEOUT):
 				return dap.StackTraceResponse{
 					Response: dap.Response{
 						RequestSeq: dapRequest.Seq,
@@ -452,7 +462,7 @@ func registerDebugMethodHandlers(
 
 			select {
 			case scopes = <-scopesChan:
-			case <-time.After(time.Second):
+			case <-time.After(DEFAULT_DEBUG_COMMAND_TIMEOUT):
 				return dap.ScopesResponse{
 					Response: dap.Response{
 						RequestSeq: dapRequest.Seq,
@@ -530,7 +540,7 @@ func registerDebugMethodHandlers(
 
 			select {
 			case variables = <-varsChan:
-			case <-time.After(time.Second):
+			case <-time.After(DEFAULT_DEBUG_COMMAND_TIMEOUT):
 				return dap.VariablesResponse{
 					Response: dap.Response{
 						RequestSeq: dapRequest.Seq,
@@ -635,7 +645,7 @@ func registerDebugMethodHandlers(
 
 			select {
 			case breakpoints = <-breakpointsChan:
-			case <-time.After(time.Second):
+			case <-time.After(DEFAULT_DEBUG_COMMAND_TIMEOUT):
 				return dap.SetBreakpointsResponse{
 					Response: dap.Response{
 						RequestSeq: dapRequest.Seq,
@@ -732,6 +742,62 @@ func registerDebugMethodHandlers(
 			}, nil
 		},
 	})
+
+	server.OnCustom(jsonrpc.MethodInfo{
+		Name: "debug/disconnect",
+		NewRequest: func() interface{} {
+			return &DebugDisconnectParams{}
+		},
+		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+			session := jsonrpc.GetSession(ctx)
+			params := req.(*DebugDisconnectParams)
+			dapRequest := params.Request
+
+			debugSession := getDebugSession(session, params.SessionId)
+			debugger := debugSession.debugger
+
+			doneChan := make(chan struct{})
+
+			if !debugger.Closed() {
+				debugger.ControlChan() <- core.DebugCommandCloseDebugger{
+					CancelExecution: !debugSession.wasAttached,
+					Done: func() {
+						doneChan <- struct{}{}
+					},
+				}
+
+				select {
+				case <-doneChan:
+				case <-time.After(DEFAULT_DEBUG_COMMAND_TIMEOUT):
+					return dap.DisconnectResponse{
+						Response: dap.Response{
+							RequestSeq: dapRequest.Seq,
+							Success:    false,
+							ProtocolMessage: dap.ProtocolMessage{
+								Seq:  debugSession.NextSeq(),
+								Type: "response",
+							},
+							Message: "failed to disconnect: timeout",
+							Command: dapRequest.Command,
+						},
+					}, nil
+				}
+			}
+
+			return dap.DisconnectResponse{
+				Response: dap.Response{
+					RequestSeq: dapRequest.Seq,
+					Success:    true,
+					ProtocolMessage: dap.ProtocolMessage{
+						Seq:  debugSession.NextSeq(),
+						Type: "response",
+					},
+					Command: dapRequest.Command,
+				},
+			}, nil
+		},
+	})
+
 }
 
 func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSession *DebugSession, fls *Filesystem) {
