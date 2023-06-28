@@ -52,6 +52,16 @@ type DebugThreadsParams struct {
 	Request   dap.ThreadsRequest `json:"request"`
 }
 
+type DebugStackTraceParams struct {
+	SessionId string                `json:"sessionID"`
+	Request   dap.StackTraceRequest `json:"request"`
+}
+
+type DebugScopesParams struct {
+	SessionId string            `json:"sessionID"`
+	Request   dap.ScopesRequest `json:"request"`
+}
+
 type DebugSetBreakpointsParams struct {
 	SessionId string                    `json:"sessionID"`
 	Request   dap.SetBreakpointsRequest `json:"request"`
@@ -319,6 +329,157 @@ func registerDebugMethodHandlers(
 	})
 
 	server.OnCustom(jsonrpc.MethodInfo{
+		Name: "debug/stackTrace",
+		NewRequest: func() interface{} {
+			return &DebugStackTraceParams{}
+		},
+		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+			session := jsonrpc.GetSession(ctx)
+			params := req.(*DebugStackTraceParams)
+			dapRequest := params.Request
+
+			debugSession := getDebugSession(session, params.SessionId)
+
+			var stackFrames []dap.StackFrame
+			framesChan := make(chan []dap.StackFrame)
+
+			debugSession.debugger.ControlChan() <- core.DebugCommandGetStackTrace{
+				Get: func(trace []core.StackFrameInfo) {
+					var frames []dap.StackFrame
+
+					for _, frame := range trace {
+						var source *dap.Source
+						src, ok := frame.Chunk.Source.(parse.SourceFile)
+						if ok && !src.IsResourceURL {
+							source = &dap.Source{
+								Name: src.Name(),
+								Path: INOX_FS_SCHEME + "://" + src.Resource,
+							}
+						}
+
+						frames = append(frames, dap.StackFrame{
+							Id:     int(frame.Id),
+							Name:   frame.Name,
+							Source: source,
+							Line:   int(frame.StatementStartLine),
+							Column: int(frame.StatementStartColumn),
+						})
+					}
+
+					framesChan <- frames
+				},
+			}
+
+			select {
+			case stackFrames = <-framesChan:
+			case <-time.After(time.Second):
+				return dap.StackTraceResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  debugSession.NextSeq(),
+							Type: "response",
+						},
+						Message: "failed to get stack trace",
+						Command: dapRequest.Command,
+					},
+				}, nil
+			}
+
+			totalFrames := len(stackFrames)
+			stackFrames = stackFrames[dapRequest.Arguments.StartFrame:]
+			maxFrames := dapRequest.Arguments.Levels
+			if maxFrames > 0 {
+				stackFrames = stackFrames[:utils.Min(len(stackFrames), maxFrames)]
+			}
+
+			return dap.StackTraceResponse{
+				Response: dap.Response{
+					RequestSeq: dapRequest.Seq,
+					Success:    true,
+					ProtocolMessage: dap.ProtocolMessage{
+						Seq:  debugSession.NextSeq(),
+						Type: "response",
+					},
+					Command: dapRequest.Command,
+				},
+				Body: dap.StackTraceResponseBody{
+					StackFrames: stackFrames,
+					TotalFrames: totalFrames,
+				},
+			}, nil
+		},
+	})
+
+	server.OnCustom(jsonrpc.MethodInfo{
+		Name: "debug/scopes",
+		NewRequest: func() interface{} {
+			return &DebugScopesParams{}
+		},
+		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+			session := jsonrpc.GetSession(ctx)
+			params := req.(*DebugScopesParams)
+			dapRequest := params.Request
+
+			debugSession := getDebugSession(session, params.SessionId)
+
+			var scopes []dap.Scope
+			scopesChan := make(chan []dap.Scope)
+
+			debugSession.debugger.ControlChan() <- core.DebugCommandGetScopes{
+				Get: func(globalScope, localScope map[string]core.Value) {
+					scopesChan <- []dap.Scope{
+						{
+							Name:               "Global Scope",
+							NamedVariables:     len(globalScope),
+							VariablesReference: 1,
+						},
+						{
+							Name:               "Local Scope",
+							PresentationHint:   "locals",
+							NamedVariables:     len(localScope),
+							VariablesReference: 1000,
+						},
+					}
+				},
+			}
+
+			select {
+			case scopes = <-scopesChan:
+			case <-time.After(time.Second):
+				return dap.ScopesResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  debugSession.NextSeq(),
+							Type: "response",
+						},
+						Message: "failed to get scopes",
+						Command: dapRequest.Command,
+					},
+				}, nil
+			}
+
+			return dap.ScopesResponse{
+				Response: dap.Response{
+					RequestSeq: dapRequest.Seq,
+					Success:    true,
+					ProtocolMessage: dap.ProtocolMessage{
+						Seq:  debugSession.NextSeq(),
+						Type: "response",
+					},
+					Command: dapRequest.Command,
+				},
+				Body: dap.ScopesResponseBody{
+					Scopes: scopes,
+				},
+			}, nil
+		},
+	})
+
+	server.OnCustom(jsonrpc.MethodInfo{
 		Name: "debug/setBreakpoints",
 		NewRequest: func() interface{} {
 			return &DebugSetBreakpointsParams{}
@@ -375,7 +536,7 @@ func registerDebugMethodHandlers(
 						if ok && !src.IsResourceURL {
 							dapBreakpoint.Source = &dap.Source{
 								Name: src.Name(),
-								Path: src.Resource,
+								Path: INOX_FS_SCHEME + "://" + src.Resource,
 							}
 						}
 
