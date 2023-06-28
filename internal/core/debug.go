@@ -217,9 +217,11 @@ func (d *Debugger) startGoroutine() {
 					if d.stoppedProgram.Load() {
 						continue
 					}
+					d.logger.Info().Msg("pause")
 					d.stopBeforeNextStatement.Store(PauseStop)
 				case DebugCommandContinue:
 					if d.stoppedProgram.Load() {
+						d.logger.Info().Msg("continue")
 						d.resumeExecutionChan <- struct{}{}
 					}
 				case DebugCommandNextStep:
