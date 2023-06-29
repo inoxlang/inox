@@ -2,9 +2,12 @@ package core
 
 import (
 	"errors"
+	"fmt"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 
+	"github.com/inoxlang/inox/internal/afs"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
@@ -12,6 +15,7 @@ import (
 
 const (
 	FUNCTION_FRAME_PREFIX = "(fn) "
+	INITIAL_BREAKPOINT_ID = 1 //starts at 1 for compatibility with the Debug Adapter Protocol
 )
 
 var (
@@ -19,7 +23,7 @@ var (
 )
 
 type BreakpointInfo struct {
-	Node        parse.Node //can be nil
+	Node        parse.Node //nil if not set
 	Chunk       *parse.ParsedChunk
 	Id          int32 //unique for a given debugger
 	StartLine   int32
@@ -43,8 +47,14 @@ type StackFrameInfo struct {
 }
 
 type DebugCommandSetBreakpoints struct {
-	Breakpoints       map[parse.Node]struct{}
+	//nodes where we want to set a breakpoint, this can be set independently from .BreakPointsByLine
+	BreakpointsAtNode map[parse.Node]struct{}
+
+	//lines where we want to set a breakpoint, this can be set independently from .BreakpointsAtNode.
+	//GetBreakpointsSetByLine is invoked with the resulting breakpoints, some of them can be disabled.
 	BreakPointsByLine []int
+
+	Chunk *parse.ParsedChunk
 
 	GetBreakpointsSetByLine func(breakpoints []BreakpointInfo)
 }
@@ -84,7 +94,20 @@ const (
 	BreakpointStop
 )
 
+type EvaluationState interface {
+	//AttachDebugger should be called before starting the evaluation.
+	AttachDebugger(*Debugger)
+
+	//DetachDebugger should be called by the evaluation's goroutine.
+	DetachDebugger()
+
+	CurrentLocalScope() map[string]Value
+
+	GetGlobalState() *GlobalState
+}
+
 type Debugger struct {
+	ctx                       *Context
 	controlChan               chan any
 	stoppedProgramCommandChan chan any
 	stoppedProgramChan        chan ProgramStoppedEvent
@@ -105,31 +128,37 @@ type Debugger struct {
 	closed atomic.Bool //closed debugger
 }
 
-type EvaluationState interface {
-	//AttachDebugger should be called before starting the evaluation.
-	AttachDebugger(*Debugger)
-
-	//DetachDebugger should be called by the evaluation's goroutine.
-	DetachDebugger()
-
-	CurrentLocalScope() map[string]Value
-
-	GetGlobalState() *GlobalState
-}
-
 type DebuggerArgs struct {
-	Logger zerolog.Logger //ok if not set
+	Logger             zerolog.Logger //ok if not set
+	InitialBreakpoints []BreakpointInfo
+
+	//cancelling this context will cause the debugger to close.
+	//the debugger uses this context's filesystem.
+	Context *Context
 }
 
 func NewDebugger(args DebuggerArgs) *Debugger {
+
+	initialBreakpoints := map[parse.Node]BreakpointInfo{}
+	nextBreakpointId := 1
+
+	for _, breakpoint := range args.InitialBreakpoints {
+		nextBreakpointId = utils.Max(nextBreakpointId, int(breakpoint.Id)+1)
+		if breakpoint.Node != nil {
+			initialBreakpoints[breakpoint.Node] = breakpoint
+		}
+	}
+
 	return &Debugger{
+		ctx:                       args.Context,
 		controlChan:               make(chan any),
 		stoppedProgramCommandChan: make(chan any),
 		stoppedProgramChan:        make(chan ProgramStoppedEvent, 1),
 		resumeExecutionChan:       make(chan struct{}),
 		logger:                    args.Logger,
 
-		nextBreakpointId: 1, //starts at 1 for compatibility with the Debug Adapter Protocol
+		nextBreakpointId: INITIAL_BREAKPOINT_ID,
+		breakpoints:      initialBreakpoints,
 	}
 }
 
@@ -196,51 +225,41 @@ func (d *Debugger) startGoroutine() {
 					cancelExecution = c.CancelExecution
 					return
 				case DebugCommandSetBreakpoints:
-					breakpoints := map[parse.Node]BreakpointInfo{}
-					var breakpointsSetByLine []BreakpointInfo
+					var (
+						breakpoints          = map[parse.Node]BreakpointInfo{}
+						breakpointsSetByLine []BreakpointInfo
+						chunk                = c.Chunk
+					)
 
 					func() {
 						d.breakpointsLock.Lock()
 						defer d.breakpointsLock.Unlock()
 
-						mainChunk := d.globalState.Module.MainChunk
-
-						for node := range c.Breakpoints {
+						for node := range c.BreakpointsAtNode {
 							id := d.nextBreakpointId
 							d.nextBreakpointId++
 
-							line, col := mainChunk.GetLineColumn(node)
+							line, col := chunk.GetLineColumn(node)
 
 							breakpoints[node] = BreakpointInfo{
 								Node:        node,
-								Chunk:       mainChunk,
+								Chunk:       chunk,
 								Id:          id,
 								StartLine:   line,
 								StartColumn: col,
 							}
 						}
 
-						for _, line := range c.BreakPointsByLine {
-							stmt, _, _ := mainChunk.FindFirstStatementAndChainOnLine(line)
+						breakpointsFromLines, err := GetBreakpointsFromLines(c.BreakPointsByLine, chunk, &d.nextBreakpointId)
 
-							id := d.nextBreakpointId
-							d.nextBreakpointId++
-
-							breakpointInfo := BreakpointInfo{
-								Node:  stmt,
-								Chunk: mainChunk,
-								Id:    id,
+						if err == nil {
+							for _, breakpoint := range breakpointsFromLines {
+								if breakpoint.Node != nil {
+									breakpoints[breakpoint.Node] = breakpoint
+								}
 							}
-
-							if stmt != nil {
-								line, col := mainChunk.GetLineColumn(stmt)
-								breakpointInfo.StartLine = line
-								breakpointInfo.StartColumn = col
-
-								breakpoints[stmt] = breakpointInfo
-							}
-
-							breakpointsSetByLine = append(breakpointsSetByLine, breakpointInfo)
+						} else {
+							d.logger.Err(err).Msg("failed to get breakpoints from lines")
 						}
 
 						d.breakpoints = breakpoints
@@ -334,4 +353,51 @@ func (d *Debugger) beforeInstruction(n parse.Node, trace []StackFrameInfo) {
 		}
 	}
 
+}
+
+func ParseFileChunk(absoluteSourcePath string, fls afs.Filesystem) (*parse.ParsedChunk, error) {
+	content, err := ReadFileInFS(fls, absoluteSourcePath, -1)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read %s: %w", absoluteSourcePath, err)
+	}
+
+	src := parse.SourceFile{
+		NameString:    absoluteSourcePath,
+		Resource:      absoluteSourcePath,
+		ResourceDir:   filepath.Dir(absoluteSourcePath),
+		IsResourceURL: false,
+		CodeString:    string(content),
+	}
+
+	chunk, parsingErr := parse.ParseChunkSource(src)
+	if parsingErr != nil {
+		return nil, fmt.Errorf("failed to parse %s: %w", absoluteSourcePath, parsingErr)
+	}
+	return chunk, nil
+}
+
+func GetBreakpointsFromLines(lines []int, chunk *parse.ParsedChunk, nextBreakpointId *int32) ([]BreakpointInfo, error) {
+	var breakpointsSetByLine []BreakpointInfo
+
+	for _, line := range lines {
+		stmt, _, _ := chunk.FindFirstStatementAndChainOnLine(line)
+
+		id := *nextBreakpointId
+		*nextBreakpointId = *nextBreakpointId + 1
+
+		breakpointInfo := BreakpointInfo{
+			Node:  stmt,
+			Chunk: chunk,
+			Id:    id,
+		}
+
+		if stmt != nil {
+			line, col := chunk.GetLineColumn(stmt)
+			breakpointInfo.StartLine = line
+			breakpointInfo.StartColumn = col
+		}
+
+		breakpointsSetByLine = append(breakpointsSetByLine, breakpointInfo)
+	}
+	return breakpointsSetByLine, nil
 }

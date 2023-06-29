@@ -171,8 +171,8 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, _ *TreeWalkState
 	{
 		var checkErrs []*StaticCheckError
 		checkManifestObject(manifestStaticCheckArguments{
-			objLit: manifestObjLiteral, 
-			ignoreUnknownSections: preinitArgs.IgnoreUnknownSections, 
+			objLit:                manifestObjLiteral,
+			ignoreUnknownSections: preinitArgs.IgnoreUnknownSections,
 			onError: func(n parse.Node, msg string) {
 				location := m.MainChunk.GetSourcePosition(n.Base().Span)
 				checkErr := NewStaticCheckError(msg, parse.SourcePositionStack{location})
