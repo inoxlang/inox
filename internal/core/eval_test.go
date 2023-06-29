@@ -6614,6 +6614,129 @@ func testDebugModeEval(
 			}, stackTraces)
 		})
 
+		t.Run("successive breakpoints set by line with equal but not same chunk", func(t *testing.T) {
+			state, ctx, chunk, debugger := setup(
+				`a = 1
+				a = 2
+				a = 3
+				return a
+			`)
+
+			controlChan := debugger.ControlChan()
+			stoppedChan := debugger.StoppedChan()
+
+			defer ctx.Cancel()
+
+			equalChunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+				NameString: "core-test",
+				CodeString: chunk.Source.Code(),
+			}))
+
+			controlChan <- DebugCommandSetBreakpoints{
+				Chunk:             equalChunk,
+				BreakPointsByLine: []int{2, 3}, //a = 2 & a = 3
+			}
+
+			time.Sleep(10 * time.Millisecond) //wait for the debugger to set the breakpoints
+
+			var stoppedEvents []ProgramStoppedEvent
+			var globalScopes []map[string]Value
+			var localScopes []map[string]Value
+			var stackTraces [][]StackFrameInfo
+
+			go func() {
+				event := <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+
+				stoppedEvents = append(stoppedEvents, event)
+
+				//get scopes while stopped at 'a = 2'
+				controlChan <- DebugCommandGetScopes{
+					func(globalScope, localScope map[string]Value) {
+						globalScopes = append(globalScopes, globalScope)
+						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				//get stack trace while stopped at 'a = 2'
+				controlChan <- DebugCommandGetStackTrace{
+					func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
+					},
+				}
+
+				controlChan <- DebugCommandContinue{}
+
+				event = <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+
+				stoppedEvents = append(stoppedEvents, event)
+
+				//get scopes while stopped at 'a = 3'
+				controlChan <- DebugCommandGetScopes{
+					func(globalScope, localScope map[string]Value) {
+						globalScopes = append(globalScopes, globalScope)
+						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				//get stack trace while stopped at 'a = 3'
+				controlChan <- DebugCommandGetStackTrace{
+					func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
+					},
+				}
+
+				controlChan <- DebugCommandContinue{}
+			}()
+
+			result, err := eval(chunk.Node, state)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, Int(3), result)
+
+			assert.Equal(t, []ProgramStoppedEvent{
+				{Reason: BreakpointStop},
+				{Reason: BreakpointStop},
+			}, stoppedEvents)
+
+			assert.Equal(t, []map[string]Value{{}, {}}, globalScopes)
+
+			assert.Equal(t, []map[string]Value{
+				{"a": Int(1)}, {"a": Int(2)},
+			}, localScopes)
+
+			assert.Equal(t, [][]StackFrameInfo{
+				{
+					{
+						Name:                 "core-test",
+						Node:                 chunk.Node.Statements[1],
+						Chunk:                chunk,
+						Id:                   1,
+						StartLine:            1,
+						StartColumn:          1,
+						StatementStartLine:   2,
+						StatementStartColumn: 5,
+					},
+				},
+				{
+					{
+						Name:                 "core-test",
+						Node:                 chunk.Node.Statements[2],
+						Chunk:                chunk,
+						Id:                   1,
+						StartLine:            1,
+						StartColumn:          1,
+						StatementStartLine:   3,
+						StatementStartColumn: 5,
+					},
+				},
+			}, stackTraces)
+		})
+
 		t.Run("successive breakpoints set by line during initialization", func(t *testing.T) {
 			state, ctx, chunk, debugger := setup(
 				`a = 1

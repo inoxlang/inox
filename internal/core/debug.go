@@ -23,7 +23,7 @@ var (
 )
 
 type BreakpointInfo struct {
-	Node        parse.Node //nil if not set
+	NodeSpan    parse.NodeSpan //zero if the breakpoint is not set
 	Chunk       *parse.ParsedChunk
 	Id          int32 //unique for a given debugger
 	StartLine   int32
@@ -31,7 +31,7 @@ type BreakpointInfo struct {
 }
 
 func (i BreakpointInfo) Verified() bool {
-	return i.Node != nil
+	return i.NodeSpan != parse.NodeSpan{}
 }
 
 type StackFrameInfo struct {
@@ -113,7 +113,7 @@ type Debugger struct {
 	stoppedProgramChan        chan ProgramStoppedEvent
 	stoppedProgram            atomic.Bool
 	stopBeforeNextStatement   atomic.Value //non-breakpoint ProgramStopReason
-	breakpoints               map[parse.Node]BreakpointInfo
+	breakpoints               map[parse.NodeSpan]BreakpointInfo
 	nextBreakpointId          int32
 	breakpointsLock           sync.Mutex
 	resumeExecutionChan       chan struct{}
@@ -122,7 +122,6 @@ type Debugger struct {
 
 	evaluationState EvaluationState
 	globalState     *GlobalState
-	module          *Module
 	logger          zerolog.Logger
 
 	closed atomic.Bool //closed debugger
@@ -139,13 +138,13 @@ type DebuggerArgs struct {
 
 func NewDebugger(args DebuggerArgs) *Debugger {
 
-	initialBreakpoints := map[parse.Node]BreakpointInfo{}
+	initialBreakpoints := map[parse.NodeSpan]BreakpointInfo{}
 	nextBreakpointId := 1
 
 	for _, breakpoint := range args.InitialBreakpoints {
 		nextBreakpointId = utils.Max(nextBreakpointId, int(breakpoint.Id)+1)
-		if breakpoint.Node != nil {
-			initialBreakpoints[breakpoint.Node] = breakpoint
+		if breakpoint.NodeSpan != (parse.NodeSpan{}) {
+			initialBreakpoints[breakpoint.NodeSpan] = breakpoint
 		}
 	}
 
@@ -226,7 +225,7 @@ func (d *Debugger) startGoroutine() {
 					return
 				case DebugCommandSetBreakpoints:
 					var (
-						breakpoints          = map[parse.Node]BreakpointInfo{}
+						breakpoints          = map[parse.NodeSpan]BreakpointInfo{}
 						breakpointsSetByLine []BreakpointInfo
 						chunk                = c.Chunk
 					)
@@ -241,8 +240,8 @@ func (d *Debugger) startGoroutine() {
 
 							line, col := chunk.GetLineColumn(node)
 
-							breakpoints[node] = BreakpointInfo{
-								Node:        node,
+							breakpoints[node.Base().Span] = BreakpointInfo{
+								NodeSpan:    node.Base().Span,
 								Chunk:       chunk,
 								Id:          id,
 								StartLine:   line,
@@ -254,8 +253,8 @@ func (d *Debugger) startGoroutine() {
 
 						if err == nil {
 							for _, breakpoint := range breakpointsFromLines {
-								if breakpoint.Node != nil {
-									breakpoints[breakpoint.Node] = breakpoint
+								if breakpoint.NodeSpan != (parse.NodeSpan{}) {
+									breakpoints[breakpoint.NodeSpan] = breakpoint
 								}
 							}
 						} else {
@@ -304,7 +303,7 @@ func (d *Debugger) beforeInstruction(n parse.Node, trace []StackFrameInfo) {
 	trace = utils.CopySlice(trace)
 
 	d.breakpointsLock.Lock()
-	breakpointInfo, hasBreakpoint := d.breakpoints[n]
+	breakpointInfo, hasBreakpoint := d.breakpoints[n.Base().Span]
 	d.breakpointsLock.Unlock()
 
 	var stopReason ProgramStopReason
@@ -386,9 +385,9 @@ func GetBreakpointsFromLines(lines []int, chunk *parse.ParsedChunk, nextBreakpoi
 		*nextBreakpointId = *nextBreakpointId + 1
 
 		breakpointInfo := BreakpointInfo{
-			Node:  stmt,
-			Chunk: chunk,
-			Id:    id,
+			NodeSpan: stmt.Base().Span,
+			Chunk:    chunk,
+			Id:       id,
 		}
 
 		if stmt != nil {
