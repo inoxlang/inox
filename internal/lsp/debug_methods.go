@@ -904,7 +904,10 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 		stoppedChan := debugSession.debugger.StoppedChan()
 		for {
 			select {
-			case stop := <-stoppedChan:
+			case stop, ok := <-stoppedChan:
+				if !ok {
+					return
+				}
 
 				stoppedEvent := dap.StoppedEvent{
 					Event: dap.Event{
