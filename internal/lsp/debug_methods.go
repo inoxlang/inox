@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime/debug"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -98,15 +99,22 @@ func (sessions *DebugSessions) AddSession(s *DebugSession) {
 }
 
 type DebugSession struct {
-	id                             string
+	id      string
+	nextSeq atomic.Int32
+
 	programPath                    string
 	columnsStartAt1, lineStartsAt1 bool
+	configurationDone              atomic.Bool
 
-	nextSeq         atomic.Int32
+	//this field is set to nil during launch to remove some unecessary references
+	sourcePathToInitialBreakpoints map[string][]core.BreakpointInfo
+	nextInitialBreakpointId        int32
+	initialBreakpointsLock         sync.Mutex
+
 	debugger        *core.Debugger
+	wasAttached     bool       //debugger was attached to a running debuggee
 	programDoneChan chan error //ok if error is nil
 	finished        atomic.Bool
-	wasAttached     bool //debugger was attached to a running debuggee
 }
 
 func (s *DebugSession) NextSeq() int {
@@ -138,7 +146,9 @@ func registerDebugMethodHandlers(
 
 		if debugSession == nil {
 			debugSession = &DebugSession{
-				id: sessionId,
+				id:                             sessionId,
+				sourcePathToInitialBreakpoints: make(map[string][]core.BreakpointInfo),
+				nextInitialBreakpointId:        core.INITIAL_BREAKPOINT_ID,
 			}
 			debugSession.nextSeq.Store(1)
 			debugSessions.AddSession(debugSession)
@@ -191,7 +201,20 @@ func registerDebugMethodHandlers(
 
 			debugSession := getDebugSession(session, params.SessionId)
 
-			//TODO: store config done in session
+			if !debugSession.configurationDone.CompareAndSwap(false, true) {
+				return dap.ConfigurationDoneResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  debugSession.NextSeq(),
+							Type: "response",
+						},
+						Command: dapRequest.Command,
+						Message: "configuration is already done",
+					},
+				}, nil
+			}
 
 			return dap.ConfigurationDoneResponse{
 				Response: dap.Response{
@@ -222,6 +245,21 @@ func registerDebugMethodHandlers(
 			fls, ok := getLspFilesystem(session)
 			if !ok {
 				return nil, errors.New(FsNoFilesystem)
+			}
+
+			if !debugSession.configurationDone.Load() {
+				return dap.LaunchResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  debugSession.NextSeq(),
+							Type: "response",
+						},
+						Message: "failed to launch: configuration is not done",
+						Command: dapRequest.Command,
+					},
+				}, nil
 			}
 
 			var launchArgs DebugLaunchArgs
@@ -584,9 +622,10 @@ func registerDebugMethodHandlers(
 
 			debugSession := getDebugSession(session, params.SessionId)
 
-			path := dapRequest.Arguments.Source.Path
+			pathWithScheme := dapRequest.Arguments.Source.Path
+			path := strings.TrimPrefix(pathWithScheme, INOX_FS_SCHEME+":")
 
-			if path == "" {
+			if pathWithScheme == "" {
 				return dap.SetBreakpointsResponse{
 					Response: dap.Response{
 						RequestSeq: dapRequest.Seq,
@@ -607,32 +646,98 @@ func registerDebugMethodHandlers(
 				lines = append(lines, srcBreakpoint.Line)
 			}
 
+			//read & parse file
+			fls, ok := getLspFilesystem(session)
+			if !ok {
+				return nil, errors.New(FsNoFilesystem)
+			}
+
+			chunk, err := core.ParseFileChunk(path, fls)
+
+			if err != nil {
+				return dap.SetBreakpointsResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  debugSession.NextSeq(),
+							Type: "response",
+						},
+						Message: fmt.Sprintf("failed to get read/parse %s: %s", pathWithScheme, err),
+						Command: dapRequest.Command,
+					},
+				}, nil
+			}
+
+			//initial breakpoints
+			if !debugSession.configurationDone.Load() {
+				var (
+					breakpoints []core.BreakpointInfo
+					err         error
+				)
+
+				func() {
+					debugSession.initialBreakpointsLock.Lock()
+					defer debugSession.initialBreakpointsLock.Unlock()
+					nextBreakpointId := &debugSession.nextInitialBreakpointId
+
+					breakpoints, err = core.GetBreakpointsFromLines(lines, chunk, nextBreakpointId)
+				}()
+
+				//get breakpoints & return them in the response
+
+				if err != nil {
+					debugSession.initialBreakpointsLock.Unlock()
+					return dap.SetBreakpointsResponse{
+						Response: dap.Response{
+							RequestSeq: dapRequest.Seq,
+							Success:    false,
+							ProtocolMessage: dap.ProtocolMessage{
+								Seq:  debugSession.NextSeq(),
+								Type: "response",
+							},
+							Message: fmt.Sprintf("failed to get breakpoints by line in %s: %s", pathWithScheme, err),
+							Command: dapRequest.Command,
+						},
+					}, nil
+				}
+				debugSession.initialBreakpointsLock.Lock()
+				debugSession.sourcePathToInitialBreakpoints[path] = breakpoints
+				debugSession.initialBreakpointsLock.Unlock()
+
+				var dapBreakpoints []dap.Breakpoint
+				for _, breakpoint := range breakpoints {
+					dapBreakpoint := breakpointInfoToDebugAdapterProtocolBreakpoint(breakpoint, debugSession.columnsStartAt1)
+					dapBreakpoints = append(dapBreakpoints, dapBreakpoint)
+				}
+
+				return dap.SetBreakpointsResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    true,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  debugSession.NextSeq(),
+							Type: "response",
+						},
+						Command: dapRequest.Command,
+					},
+					Body: dap.SetBreakpointsResponseBody{
+						Breakpoints: dapBreakpoints,
+					},
+				}, nil
+			}
+
+			//else non-initial breakpoints (program is launched)
+
 			breakpointsChan := make(chan []dap.Breakpoint)
 
 			cmd := core.DebugCommandSetBreakpoints{
+				Chunk:             chunk,
 				BreakPointsByLine: lines,
 				GetBreakpointsSetByLine: func(breakpoints []core.BreakpointInfo) {
 					var dapBreakpoints []dap.Breakpoint
 					for _, breakpoint := range breakpoints {
-						dapBreakpoint := dap.Breakpoint{
-							Verified: breakpoint.Verified(),
-							Id:       int(breakpoint.Id),
-							Line:     int(breakpoint.StartLine),
-							Column:   int(breakpoint.StartColumn),
-						}
-
-						if !debugSession.columnsStartAt1 {
-							dapBreakpoint.Column -= 1
-						}
-
-						src, ok := breakpoint.Chunk.Source.(parse.SourceFile)
-						if ok && !src.IsResourceURL {
-							dapBreakpoint.Source = &dap.Source{
-								Name: src.Name(),
-								Path: INOX_FS_SCHEME + "://" + src.Resource,
-							}
-						}
-
+						dapBreakpoint := breakpointInfoToDebugAdapterProtocolBreakpoint(breakpoint, debugSession.columnsStartAt1)
 						dapBreakpoints = append(dapBreakpoints, dapBreakpoint)
 					}
 					breakpointsChan <- dapBreakpoints
@@ -758,7 +863,7 @@ func registerDebugMethodHandlers(
 
 			doneChan := make(chan struct{})
 
-			if !debugger.Closed() {
+			if debugger != nil && !debugger.Closed() {
 				debugger.ControlChan() <- core.DebugCommandCloseDebugger{
 					CancelExecution: !debugSession.wasAttached,
 					Done: func() {
@@ -890,6 +995,16 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 		},
 	}
 
+	//create debugger
+
+	var initialBreakpoints []core.BreakpointInfo
+	debugSession.initialBreakpointsLock.Lock()
+	for _, breakpoints := range debugSession.sourcePathToInitialBreakpoints {
+		initialBreakpoints = append(initialBreakpoints, breakpoints...)
+	}
+	debugSession.sourcePathToInitialBreakpoints = nil
+	debugSession.initialBreakpointsLock.Unlock()
+
 	debugSession.debugger = core.NewDebugger(core.DebuggerArgs{
 		Logger: zerolog.New(zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
 			w.Out = debuggerOut
@@ -897,6 +1012,7 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 			w.PartsExclude = []string{zerolog.LevelFieldName}
 			w.FieldsExclude = []string{"src"}
 		})),
+		InitialBreakpoints: initialBreakpoints,
 	})
 
 	//send a "stopped" event each time the program stops.
@@ -969,4 +1085,27 @@ func stopReasonToDapStopReason(reason core.ProgramStopReason) string {
 	default:
 		panic(core.ErrUnreachable)
 	}
+}
+
+func breakpointInfoToDebugAdapterProtocolBreakpoint(breakpoint core.BreakpointInfo, columnsStartAt1 bool) dap.Breakpoint {
+	dapBreakpoint := dap.Breakpoint{
+		Verified: breakpoint.Verified(),
+		Id:       int(breakpoint.Id),
+		Line:     int(breakpoint.StartLine),
+		Column:   int(breakpoint.StartColumn),
+	}
+
+	if !columnsStartAt1 {
+		dapBreakpoint.Column -= 1
+	}
+
+	src, ok := breakpoint.Chunk.Source.(parse.SourceFile)
+	if ok && !src.IsResourceURL {
+		dapBreakpoint.Source = &dap.Source{
+			Name: src.Name(),
+			Path: INOX_FS_SCHEME + "://" + src.Resource,
+		}
+	}
+
+	return dapBreakpoint
 }
