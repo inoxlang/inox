@@ -86,6 +86,11 @@ type DebugDisconnectParams struct {
 	Request   dap.DisconnectRequest `json:"request"`
 }
 
+type DebugSecondaryEvent struct {
+	dap.Event
+	Body any `json:"body"`
+}
+
 type DebugSessions struct {
 	sessions        []*DebugSession
 	sessionListLock sync.Mutex
@@ -1049,6 +1054,45 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 					},
 					Method: "debug/stoppedEvent",
 					Params: utils.Must(json.Marshal(stoppedEvent)),
+				})
+			case <-time.After(time.Second):
+				if debugSession.debugger.Closed() {
+					return
+				}
+			}
+		}
+	}()
+
+	//send secondary events
+	go func() {
+		secondaryEventChan := debugSession.debugger.SecondaryEvents()
+		for {
+			select {
+			case debugEvent, ok := <-secondaryEventChan:
+				if !ok {
+					return
+				}
+
+				eventType := debugEvent.SecondaryDebugEventType().String()
+				//TODO: check format of event type
+
+				dapEvent := DebugSecondaryEvent{
+					Event: dap.Event{
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  debugSession.NextSeq(),
+							Type: "event",
+						},
+						Event: eventType,
+					},
+					Body: debugEvent,
+				}
+
+				session.Notify(jsonrpc.NotificationMessage{
+					BaseMessage: jsonrpc.BaseMessage{
+						Jsonrpc: JSONRPC_VERSION,
+					},
+					Method: "debug/" + eventType + "Event",
+					Params: utils.Must(json.Marshal(dapEvent)),
 				})
 			case <-time.After(time.Second):
 				if debugSession.debugger.Closed() {

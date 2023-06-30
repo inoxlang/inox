@@ -55,6 +55,15 @@ const (
 	IncomingMessageReceivedEventType = iota + 1
 )
 
+func (t SecondaryDebugEventType) String() string {
+	switch t {
+	case IncomingMessageReceivedEventType:
+		return "incomingMessageReceived"
+	default:
+		panic(ErrUnreachable)
+	}
+}
+
 type IncomingMessageReceivedEvent struct {
 	MessageType string `json:"messageType"` // examples: http/request, websocket/message
 	Url         string `json:"url,omitempty"`
