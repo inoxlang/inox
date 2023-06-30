@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -7095,6 +7096,68 @@ func testDebugModeEval(
 
 			assert.Equal(t, Int(2), result)
 		})
+	})
+
+	t.Run("secondary event", func(t *testing.T) {
+		state, ctx, chunk, debugger := setup(`
+			send_secondary_debug_event()
+
+			# add a delay in order for the debugger to receive the command while the program is running.
+			# otherwise it will receive the command after the call to eval().
+			sleep 500ms 
+
+			return 1
+		`)
+
+		ctx.GetClosestState().Globals.Set("sleep", WrapGoFunction(Sleep))
+
+		ctx.GetClosestState().Globals.Set("send_secondary_debug_event", WrapGoFunction(func(ctx *Context) {
+			debugger.ControlChan() <- DebugCommandInformAboutSecondaryEvent{
+				Event: IncomingMessageReceivedEvent{
+					MessageType: "x",
+				},
+			}
+		}))
+
+		var events []SecondaryDebugEvent
+		var eventsLock sync.Mutex
+
+		goroutineStarted := make(chan struct{})
+
+		go func() {
+			goroutineStarted <- struct{}{}
+			for event := range debugger.SecondaryEvents() {
+				eventsLock.Lock()
+				events = append(events, event)
+				eventsLock.Unlock()
+			}
+		}()
+
+		<-goroutineStarted
+
+		defer ctx.Cancel()
+
+		result, err := eval(chunk.Node, state)
+
+		debugger.ControlChan() <- DebugCommandCloseDebugger{}
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Equal(t, Int(1), result)
+
+		eventsLock.Lock()
+		defer eventsLock.Unlock()
+
+		assert.Equal(t, []SecondaryDebugEvent{
+			IncomingMessageReceivedEvent{
+				MessageType: "x",
+			},
+		}, events)
+
+		_, notClosed := <-debugger.SecondaryEvents()
+		assert.False(t, notClosed)
 	})
 }
 

@@ -15,83 +15,15 @@ import (
 
 const (
 	FUNCTION_FRAME_PREFIX = "(fn) "
-	INITIAL_BREAKPOINT_ID = 1 //starts at 1 for compatibility with the Debug Adapter Protocol
+
+	//starts at 1 for compatibility with the Debug Adapter Protocol
+	INITIAL_BREAKPOINT_ID = 1
+
+	SECONDARY_EVENT_CHAN_CAP = 1000
 )
 
 var (
-	ErrDebuggerAlreadyAttached              = errors.New("debugger already attached")
-)
-
-type BreakpointInfo struct {
-	NodeSpan    parse.NodeSpan //zero if the breakpoint is not set
-	Chunk       *parse.ParsedChunk
-	Id          int32 //unique for a given debugger
-	StartLine   int32
-	StartColumn int32
-}
-
-func (i BreakpointInfo) Verified() bool {
-	return i.NodeSpan != parse.NodeSpan{}
-}
-
-type StackFrameInfo struct {
-	Name        string
-	Node        parse.Node //can be nil, it's either a Chunk or the current statement
-	Chunk       *parse.ParsedChunk
-	Id          int32 //set if debugging, unique for a given debugger
-	StartLine   int32
-	StartColumn int32
-
-	StatementStartLine   int32
-	StatementStartColumn int32
-}
-
-type DebugCommandSetBreakpoints struct {
-	//nodes where we want to set a breakpoint, this can be set independently from .BreakPointsByLine
-	BreakpointsAtNode map[parse.Node]struct{}
-
-	//lines where we want to set a breakpoint, this can be set independently from .BreakpointsAtNode.
-	//GetBreakpointsSetByLine is invoked with the resulting breakpoints, some of them can be disabled.
-	BreakPointsByLine []int
-
-	Chunk *parse.ParsedChunk
-
-	GetBreakpointsSetByLine func(breakpoints []BreakpointInfo)
-}
-
-type DebugCommandPause struct {
-}
-
-type DebugCommandContinue struct {
-}
-
-type DebugCommandNextStep struct {
-}
-
-type DebugCommandGetScopes struct {
-	Get func(globalScope map[string]Value, localScope map[string]Value)
-}
-
-type DebugCommandGetStackTrace struct {
-	Get func(trace []StackFrameInfo)
-}
-
-type DebugCommandCloseDebugger struct {
-	CancelExecution bool
-	Done            func()
-}
-
-type ProgramStoppedEvent struct {
-	Reason     ProgramStopReason
-	Breakpoint *BreakpointInfo
-}
-
-type ProgramStopReason int
-
-const (
-	PauseStop ProgramStopReason = 1 + iota
-	StepStop
-	BreakpointStop
+	ErrDebuggerAlreadyAttached = errors.New("debugger already attached")
 )
 
 type EvaluationState interface {
@@ -109,6 +41,7 @@ type EvaluationState interface {
 type Debugger struct {
 	ctx                       *Context
 	controlChan               chan any
+	secondaryEventChan        chan SecondaryDebugEvent
 	stoppedProgramCommandChan chan any
 	stoppedProgramChan        chan ProgramStoppedEvent
 	stoppedProgram            atomic.Bool
@@ -151,6 +84,7 @@ func NewDebugger(args DebuggerArgs) *Debugger {
 	return &Debugger{
 		ctx:                       args.Context,
 		controlChan:               make(chan any),
+		secondaryEventChan:        make(chan SecondaryDebugEvent, SECONDARY_EVENT_CHAN_CAP),
 		stoppedProgramCommandChan: make(chan any),
 		stoppedProgramChan:        make(chan ProgramStoppedEvent, 1),
 		resumeExecutionChan:       make(chan struct{}),
@@ -169,6 +103,11 @@ func (d *Debugger) StoppedChan() chan ProgramStoppedEvent {
 // ControlChan returns a channel to which debug commands should be sent.
 func (d *Debugger) ControlChan() chan any {
 	return d.controlChan
+}
+
+// SecondaryEvents returns a channel that sends secondary events received by the debugger.
+func (d *Debugger) SecondaryEvents() chan SecondaryDebugEvent {
+	return d.secondaryEventChan
 }
 
 // ControlChan returns a channel to which debug commands should be sent.
@@ -200,6 +139,7 @@ func (d *Debugger) startGoroutine() {
 			d.breakpointsLock.Unlock()
 
 			close(d.stoppedProgramCommandChan)
+			close(d.secondaryEventChan)
 			close(d.resumeExecutionChan)
 
 			if cancelExecution {
@@ -289,6 +229,16 @@ func (d *Debugger) startGoroutine() {
 					if d.stoppedProgram.Load() {
 						d.stoppedProgramCommandChan <- c
 					}
+				case DebugCommandInformAboutSecondaryEvent:
+					//if the channel is full we drop the event.
+					//note: this kind of check can be done because:
+					// - there is a single piece of code that write to this channel.
+					// - if the channels happens to be read just after the check it's okay.
+					if len(d.secondaryEventChan) == cap(d.secondaryEventChan) {
+						return
+					}
+
+					d.secondaryEventChan <- c.Event
 				}
 			}
 		}

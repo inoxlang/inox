@@ -31,7 +31,7 @@ type GlobalState struct {
 	GetBasePatternsForImportedModule func() (map[string]Pattern, map[string]*PatternNamespace)       // ok if nil
 	Out                              io.Writer                                                       //nil by default
 	Logger                           zerolog.Logger                                                  //nil by default
-	Debugger                         atomic.Value                                                    //*Debugger
+	Debugger                         atomic.Value                                                    //nil or (nillable) *Debugger
 
 	//errors & check data
 	PrenitStaticCheckErrors   []*StaticCheckError
