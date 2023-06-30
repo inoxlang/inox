@@ -19,7 +19,7 @@ const (
 )
 
 var (
-	ErrDebuggerAlreadyAttached = errors.New("debugger already attached")
+	ErrDebuggerAlreadyAttached              = errors.New("debugger already attached")
 )
 
 type BreakpointInfo struct {

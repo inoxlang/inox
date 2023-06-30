@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sync/atomic"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
@@ -30,6 +31,7 @@ type GlobalState struct {
 	GetBasePatternsForImportedModule func() (map[string]Pattern, map[string]*PatternNamespace)       // ok if nil
 	Out                              io.Writer                                                       //nil by default
 	Logger                           zerolog.Logger                                                  //nil by default
+	Debugger                         atomic.Value                                                    //*Debugger
 
 	//errors & check data
 	PrenitStaticCheckErrors   []*StaticCheckError

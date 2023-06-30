@@ -123,11 +123,16 @@ func (state *TreeWalkState) AttachDebugger(debugger *Debugger) {
 		panic(ErrDebuggerAlreadyAttached)
 	}
 
+	if !state.Global.Debugger.CompareAndSwap(nil, debugger) {
+		panic(ErrDebuggerAlreadyAttached)
+	}
+
 	state.debug = debugger
 }
 
 func (state *TreeWalkState) DetachDebugger() {
 	state.debug = nil
+	state.Global.Debugger.Store((*Debugger)(nil))
 }
 
 func (state *TreeWalkState) updateStackTrace(currentStmt parse.Node) {
