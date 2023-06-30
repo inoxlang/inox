@@ -122,6 +122,16 @@ func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*Http
 
 		rw := NewResponseWriter(req, w, serverLogger)
 
+		debugger, _ := _server.state.Debugger.Load().(*core.Debugger)
+		if debugger != nil {
+			debugger.ControlChan() <- core.DebugCommandInformAboutSecondaryEvent{
+				Event: core.IncomingMessageReceivedEvent{
+					MessageType: "http/request",
+					Url:         string(req.URL),
+				},
+			}
+		}
+
 		// rate limiting & more
 
 		if _server.securityEngine.rateLimitRequest(req, rw) {
