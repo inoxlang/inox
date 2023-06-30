@@ -924,14 +924,14 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 			BaseMessage: jsonrpc.BaseMessage{
 				Jsonrpc: JSONRPC_VERSION,
 			},
-			Method: "debug/terminated",
+			Method: "debug/terminatedEvent",
 		})
 
 		session.Notify(jsonrpc.NotificationMessage{
 			BaseMessage: jsonrpc.BaseMessage{
 				Jsonrpc: JSONRPC_VERSION,
 			},
-			Method: "debug/exited",
+			Method: "debug/exitedEvent",
 		})
 	}()
 
@@ -959,7 +959,7 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 				BaseMessage: jsonrpc.BaseMessage{
 					Jsonrpc: JSONRPC_VERSION,
 				},
-				Method: "debug/output",
+				Method: "debug/outputEvent",
 				Params: utils.Must(json.Marshal(outputEvent)),
 			})
 
@@ -987,7 +987,7 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 				BaseMessage: jsonrpc.BaseMessage{
 					Jsonrpc: JSONRPC_VERSION,
 				},
-				Method: "debug/output",
+				Method: "debug/outputEvent",
 				Params: utils.Must(json.Marshal(outputEvent)),
 			})
 
@@ -1047,7 +1047,7 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 					BaseMessage: jsonrpc.BaseMessage{
 						Jsonrpc: JSONRPC_VERSION,
 					},
-					Method: "debug/stopped",
+					Method: "debug/stoppedEvent",
 					Params: utils.Must(json.Marshal(stoppedEvent)),
 				})
 			case <-time.After(time.Second):
