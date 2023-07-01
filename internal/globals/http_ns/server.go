@@ -53,7 +53,7 @@ var (
 	SYMBOLIC_HANDLING_DESC = symbolic.NewObject(map[string]symbolic.SymbolicValue{
 		HANDLING_DESC_ROUTING_PROPNAME: symbolic.NewMultivalue(
 			symbolic.ANY_INOX_FUNC,
-			symbolic.ANY_PATH,
+			symbolic.ANY_DIR_PATH,
 			symbolic.NewMapping(),
 		),
 		HANDLING_DESC_MIDDLEWARES_PROPNAME: symbolic.ANY_ITERABLE,
