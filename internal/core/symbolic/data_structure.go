@@ -1017,6 +1017,7 @@ func (obj *Object) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 		utils.Must(w.Write(utils.StringAsBytes("{")))
 
 		keys := utils.GetMapKeys(obj.entries)
+		sort.Strings(keys)
 
 		for i, k := range keys {
 
@@ -1254,6 +1255,7 @@ func (rec *Record) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 		utils.Must(w.Write(utils.StringAsBytes("#{")))
 
 		keys := utils.GetMapKeys(rec.entries)
+		sort.Strings(keys)
 
 		for i, k := range keys {
 
