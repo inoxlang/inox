@@ -132,6 +132,13 @@ func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*Http
 			}
 		}
 
+		// check that path does not contain '..' segments
+
+		if slices.Contains(strings.Split(r.URL.Path, "/"), "..") {
+			rw.writeStatus(http.StatusBadRequest)
+			return
+		}
+
 		// rate limiting & more
 
 		if _server.securityEngine.rateLimitRequest(req, rw) {
