@@ -116,10 +116,11 @@ type DebugSession struct {
 	nextInitialBreakpointId        int32
 	initialBreakpointsLock         sync.Mutex
 
-	debugger        *core.Debugger
-	wasAttached     bool       //debugger was attached to a running debuggee
-	programDoneChan chan error //ok if error is nil
-	finished        atomic.Bool
+	debugger                      *core.Debugger
+	wasAttached                   bool       //debugger was attached to a running debuggee
+	programDoneChan               chan error //ok if error is nil
+	programPreparedOrFailedToChan chan error
+	finished                      atomic.Bool
 }
 
 func (s *DebugSession) NextSeq() int {
@@ -313,27 +314,24 @@ func registerDebugMethodHandlers(
 
 			debugSession.programPath = programPath
 			debugSession.programDoneChan = make(chan error, 1)
+			debugSession.programPreparedOrFailedToChan = make(chan error)
 
 			go launchDebuggedProgram(programPath, session, debugSession, fls)
 
-			select {
-			case <-time.After(time.Second):
-				//TODO: only wait for preparation to finish
-			case err := <-debugSession.programDoneChan:
-				if err != nil {
-					return dap.LaunchResponse{
-						Response: dap.Response{
-							RequestSeq: dapRequest.Seq,
-							Success:    false,
-							ProtocolMessage: dap.ProtocolMessage{
-								Seq:  debugSession.NextSeq(),
-								Type: "response",
-							},
-							Message: "program: " + err.Error(),
-							Command: dapRequest.Command,
+			err = <-debugSession.programPreparedOrFailedToChan
+			if err != nil {
+				return dap.LaunchResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  debugSession.NextSeq(),
+							Type: "response",
 						},
-					}, nil
-				}
+						Message: "program: " + err.Error(),
+						Command: dapRequest.Command,
+					},
+				}, nil
 			}
 
 			return dap.LaunchResponse{
@@ -1102,7 +1100,7 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 		}
 	}()
 
-	_, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
+	_, _, _, failedToPrepare, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 		Fpath:                     programPath,
 		ParsingCompilationContext: ctx,
 		ParentContext:             ctx,
@@ -1112,10 +1110,13 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 		IgnoreHighRiskScore:       true,
 		Out:                       programOut,
 
-		Debugger: debugSession.debugger,
+		Debugger:     debugSession.debugger,
+		PreparedChan: debugSession.programPreparedOrFailedToChan,
 	})
 
-	debugSession.programDoneChan <- err
+	if !failedToPrepare {
+		debugSession.programDoneChan <- err
+	}
 }
 
 func stopReasonToDapStopReason(reason core.ProgramStopReason) string {
