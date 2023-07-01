@@ -18,10 +18,12 @@ var (
 		&String{}, &StringConcatenation{},
 	}
 
-	ANY_STR        = &String{}
-	ANY_STR_LIKE   = &AnyStringLike{}
-	ANY_STR_CONCAT = &StringConcatenation{}
-	ANY_RUNE       = &Rune{}
+	ANY_STR         = &String{}
+	ANY_CHECKED_STR = &CheckedString{}
+	ANY_STR_LIKE    = &AnyStringLike{}
+	ANY_STR_CONCAT  = &StringConcatenation{}
+	ANY_RUNE        = &Rune{}
+	ANY_RUNE_SLICE  = &RuneSlice{}
 
 	STRING_LIKE_PSEUDOPROPS = []string{"replace", "trim_space", "has_prefix", "has_suffix"}
 	RUNE_SLICE_PROPNAMES    = []string{"insert", "remove_position", "remove_position_range"}
@@ -61,7 +63,6 @@ func (a *String) IsWidenable() bool {
 
 func (s *String) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%string")))
-	return
 }
 
 func (s *String) HasKnownLen() bool {
@@ -73,11 +74,11 @@ func (s *String) KnownLen() int {
 }
 
 func (s *String) element() SymbolicValue {
-	return &Byte{}
+	return ANY_BYTE
 }
 
 func (*String) elementAt(i int) SymbolicValue {
-	return &Byte{}
+	return ANY_BYTE
 }
 
 func (s *String) underylingString() *String {
@@ -157,11 +158,10 @@ func (a *Rune) IsWidenable() bool {
 
 func (r *Rune) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%rune")))
-	return
 }
 
 func (r *Rune) WidestOfType() SymbolicValue {
-	return &Rune{}
+	return ANY_RUNE
 }
 
 func (r *Rune) PropertyNames() []string {
@@ -201,7 +201,6 @@ func (a *CheckedString) IsWidenable() bool {
 
 func (s *CheckedString) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%checked-string")))
-	return
 }
 
 func (p *CheckedString) PropertyNames() []string {
@@ -224,7 +223,7 @@ func (s *CheckedString) underylingString() *String {
 }
 
 func (s *CheckedString) WidestOfType() SymbolicValue {
-	return &CheckedString{}
+	return ANY_CHECKED_STR
 }
 
 type RuneSlice struct {
@@ -258,15 +257,15 @@ func (s *RuneSlice) KnownLen() int {
 }
 
 func (s *RuneSlice) element() SymbolicValue {
-	return &Rune{}
+	return ANY_RUNE
 }
 
 func (*RuneSlice) elementAt(i int) SymbolicValue {
-	return &Rune{}
+	return ANY_RUNE
 }
 
 func (b *RuneSlice) WidestOfType() SymbolicValue {
-	return &RuneSlice{}
+	return ANY_RUNE_SLICE
 }
 
 func (s *RuneSlice) slice(start, end *Int) Sequence {

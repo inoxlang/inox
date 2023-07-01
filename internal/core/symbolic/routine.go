@@ -11,6 +11,10 @@ var (
 	ROUTINE_PROPNAMES       = []string{"wait_result", "cancel", "steps"}
 	ROUTINE_GROUP_PROPNAMES = []string{"wait_results", "cancel_all"}
 	EXECUTED_STEP_PROPNAMES = []string{"result", "end_time"}
+
+	ANY_ROUTINE       = &Routine{}
+	ANY_ROUTINE_GROUP = &RoutineGroup{}
+	ANY_EXECUTED_STEP = &ExecutedStep{}
 )
 
 // A Routine represents a symbolic Routine.
@@ -29,7 +33,7 @@ func (r *Routine) Test(v SymbolicValue) bool {
 }
 
 func (r *Routine) WidestOfType() SymbolicValue {
-	return &Routine{}
+	return ANY_ROUTINE
 }
 
 func (r *Routine) GetGoMethod(name string) (*GoFunction, bool) {
@@ -76,7 +80,6 @@ func (r *Routine) IsWidenable() bool {
 
 func (r *Routine) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%routine")))
-	return
 }
 
 // A RoutineGroup represents a symbolic RoutineGroup.
@@ -138,11 +141,10 @@ func (g *RoutineGroup) IsWidenable() bool {
 
 func (g *RoutineGroup) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%routine-group")))
-	return
 }
 
 func (g *RoutineGroup) WidestOfType() SymbolicValue {
-	return &RoutineGroup{}
+	return ANY_ROUTINE_GROUP
 }
 
 // An ExecutedStep represents a symbolic ExecutedStep.
@@ -151,7 +153,7 @@ type ExecutedStep struct {
 	_ int
 }
 
-func (r *ExecutedStep) Test(v SymbolicValue) bool {
+func (s *ExecutedStep) Test(v SymbolicValue) bool {
 	switch v.(type) {
 	case *ExecutedStep:
 		return true
@@ -160,25 +162,25 @@ func (r *ExecutedStep) Test(v SymbolicValue) bool {
 	}
 }
 
-func (r *ExecutedStep) WidestOfType() SymbolicValue {
-	return &ExecutedStep{}
+func (s *ExecutedStep) WidestOfType() SymbolicValue {
+	return ANY_EXECUTED_STEP
 }
 
-func (r *ExecutedStep) GetGoMethod(name string) (*GoFunction, bool) {
+func (s *ExecutedStep) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (r *ExecutedStep) Prop(name string) SymbolicValue {
+func (s *ExecutedStep) Prop(name string) SymbolicValue {
 	switch name {
 	case "result":
 		return ANY
 	case "end_time":
-		return &Date{}
+		return ANY_DATE
 	}
 
-	method, ok := r.GetGoMethod(name)
+	method, ok := s.GetGoMethod(name)
 	if !ok {
-		panic(FormatErrPropertyDoesNotExist(name, r))
+		panic(FormatErrPropertyDoesNotExist(name, s))
 	}
 	return method
 }
@@ -187,22 +189,21 @@ func (*ExecutedStep) PropertyNames() []string {
 	return EXECUTED_STEP_PROPNAMES
 }
 
-func (routine *ExecutedStep) WaitResult(ctx *Context) (SymbolicValue, *Error) {
+func (s *ExecutedStep) WaitResult(ctx *Context) (SymbolicValue, *Error) {
 	return ANY, nil
 }
 
-func (routine *ExecutedStep) Cancel(*Context) {
+func (s *ExecutedStep) Cancel(*Context) {
 }
 
-func (r *ExecutedStep) Widen() (SymbolicValue, bool) {
+func (s *ExecutedStep) Widen() (SymbolicValue, bool) {
 	return nil, false
 }
 
-func (r *ExecutedStep) IsWidenable() bool {
+func (s *ExecutedStep) IsWidenable() bool {
 	return false
 }
 
-func (r *ExecutedStep) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (s *ExecutedStep) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%executed-step")))
-	return
 }

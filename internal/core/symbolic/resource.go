@@ -277,7 +277,7 @@ func (s *Scheme) underylingString() *String {
 }
 
 func (s *Scheme) WidestOfType() SymbolicValue {
-	return &Scheme{}
+	return ANY_SCHEME
 }
 
 //
@@ -288,22 +288,21 @@ type Host struct {
 	_ int
 }
 
-func (s *Host) Test(v SymbolicValue) bool {
+func (h *Host) Test(v SymbolicValue) bool {
 	_, ok := v.(*Host)
 	return ok
 }
 
-func (s *Host) Widen() (SymbolicValue, bool) {
+func (h *Host) Widen() (SymbolicValue, bool) {
 	return nil, false
 }
 
-func (s *Host) IsWidenable() bool {
+func (h *Host) IsWidenable() bool {
 	return false
 }
 
-func (s *Host) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (h *Host) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%host")))
-	return
 }
 
 func (h *Host) ResourceName() *String {
@@ -327,10 +326,10 @@ func (*Host) Prop(name string) SymbolicValue {
 	}
 }
 
-func (s *Host) underylingString() *String {
+func (h *Host) underylingString() *String {
 	return &String{}
 }
 
-func (s *Host) WidestOfType() SymbolicValue {
-	return &Host{}
+func (h *Host) WidestOfType() SymbolicValue {
+	return ANY_HOST
 }

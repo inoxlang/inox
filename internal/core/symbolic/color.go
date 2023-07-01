@@ -17,7 +17,7 @@ type Color struct {
 	_ int
 }
 
-func (r *Color) Test(v SymbolicValue) bool {
+func (c *Color) Test(v SymbolicValue) bool {
 	switch v.(type) {
 	case *Color:
 		return true
@@ -26,11 +26,11 @@ func (r *Color) Test(v SymbolicValue) bool {
 	}
 }
 
-func (r *Color) WidestOfType() SymbolicValue {
-	return &Color{}
+func (c *Color) WidestOfType() SymbolicValue {
+	return ANY_COLOR
 }
 
-func (r *Color) Prop(name string) SymbolicValue {
+func (c *Color) Prop(name string) SymbolicValue {
 	switch name {
 	}
 	return nil
@@ -40,15 +40,15 @@ func (*Color) PropertyNames() []string {
 	return []string{}
 }
 
-func (r *Color) Widen() (SymbolicValue, bool) {
+func (*Color) Widen() (SymbolicValue, bool) {
 	return nil, false
 }
 
-func (r *Color) IsWidenable() bool {
+func (c *Color) IsWidenable() bool {
 	return false
 }
 
-func (r *Color) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (c *Color) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%color")))
 	return
 }

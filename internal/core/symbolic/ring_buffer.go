@@ -66,7 +66,6 @@ func (r *RingBuffer) IsWidenable() bool {
 
 func (r *RingBuffer) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%ring-buffer")))
-	return
 }
 
 func (r *RingBuffer) WidestOfType() SymbolicValue {
