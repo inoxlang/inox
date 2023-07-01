@@ -25,6 +25,7 @@ import (
 
 const (
 	DEFAULT_DEBUG_COMMAND_TIMEOUT = 2 * time.Second
+	EXCEPTION_ERROR_FILTER        = "exception"
 )
 
 type DebugInitializeParams struct {
@@ -77,6 +78,11 @@ type DebugSetBreakpointsParams struct {
 	Request   dap.SetBreakpointsRequest `json:"request"`
 }
 
+type DebugSetExceptionBreakpointsParams struct {
+	SessionId string                             `json:"sessionID"`
+	Request   dap.SetExceptionBreakpointsRequest `json:"request"`
+}
+
 type DebugLaunchArgs struct {
 	Program string `json:"program"`
 }
@@ -113,6 +119,7 @@ type DebugSession struct {
 
 	//this field is set to nil during launch to remove some unecessary references
 	sourcePathToInitialBreakpoints map[string][]core.BreakpointInfo
+	exceptionBreakpointsId         int32
 	nextInitialBreakpointId        int32
 	initialBreakpointsLock         sync.Mutex
 
@@ -190,6 +197,12 @@ func registerDebugMethodHandlers(
 				},
 				Body: dap.Capabilities{
 					SupportsConfigurationDoneRequest: true,
+					ExceptionBreakpointFilters: []dap.ExceptionBreakpointsFilter{
+						{
+							Filter: EXCEPTION_ERROR_FILTER,
+							Label:  "Exception Errors",
+						},
+					},
 				},
 			}, nil
 		},
@@ -786,6 +799,109 @@ func registerDebugMethodHandlers(
 	})
 
 	server.OnCustom(jsonrpc.MethodInfo{
+		Name: "debug/setExceptionBreakpoints",
+		NewRequest: func() interface{} {
+			return &DebugSetExceptionBreakpointsParams{}
+		},
+		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+			session := jsonrpc.GetSession(ctx)
+			params := req.(*DebugSetExceptionBreakpointsParams)
+			dapRequest := params.Request
+
+			debugSession := getDebugSession(session, params.SessionId)
+
+			//initial exception breakpoints
+			if !debugSession.configurationDone.Load() {
+				debugSession.initialBreakpointsLock.Lock()
+				id := debugSession.nextInitialBreakpointId
+				debugSession.nextInitialBreakpointId++
+
+				debugSession.exceptionBreakpointsId = id
+				debugSession.initialBreakpointsLock.Unlock()
+
+				return dap.SetBreakpointsResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    true,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  debugSession.NextSeq(),
+							Type: "response",
+						},
+						Command: dapRequest.Command,
+					},
+					Body: dap.SetBreakpointsResponseBody{
+						Breakpoints: []dap.Breakpoint{
+							{
+								Id: int(id),
+							},
+						},
+					},
+				}, nil
+			}
+
+			//else non-initial exception breakpoints (program is launched)
+
+			disable := true
+			for _, filter := range dapRequest.Arguments.Filters {
+				if filter == EXCEPTION_ERROR_FILTER {
+					disable = false
+					break
+				}
+			}
+
+			idChan := make(chan int32)
+
+			cmd := core.DebugCommandSetExceptionBreakpoints{
+				Disable: disable,
+				GetExceptionBreakpointId: func(i int32) {
+					idChan <- i
+				},
+			}
+
+			debugSession.debugger.ControlChan() <- cmd
+
+			var id int32
+
+			select {
+			case id = <-idChan:
+			case <-time.After(DEFAULT_DEBUG_COMMAND_TIMEOUT):
+				return dap.SetBreakpointsResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  debugSession.NextSeq(),
+							Type: "response",
+						},
+						Message: "failed to set breakpoints",
+						Command: dapRequest.Command,
+					},
+				}, nil
+			}
+
+			return dap.SetExceptionBreakpointsResponse{
+				Response: dap.Response{
+					RequestSeq: dapRequest.Seq,
+					Success:    true,
+					ProtocolMessage: dap.ProtocolMessage{
+						Seq:  debugSession.NextSeq(),
+						Type: "response",
+					},
+					Command: dapRequest.Command,
+				},
+				Body: dap.SetExceptionBreakpointsResponseBody{
+					Breakpoints: []dap.Breakpoint{
+						{
+							Id:       int(id),
+							Verified: true,
+						},
+					},
+				},
+			}, nil
+		},
+	})
+
+	server.OnCustom(jsonrpc.MethodInfo{
 		Name: "debug/pause",
 		NewRequest: func() interface{} {
 			return &DebugPauseParams{}
@@ -1006,6 +1122,7 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 		initialBreakpoints = append(initialBreakpoints, breakpoints...)
 	}
 	debugSession.sourcePathToInitialBreakpoints = nil
+	exceptionBreakpointsId := debugSession.exceptionBreakpointsId
 	debugSession.initialBreakpointsLock.Unlock()
 
 	debugSession.debugger = core.NewDebugger(core.DebuggerArgs{
@@ -1015,7 +1132,8 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 			w.PartsExclude = []string{zerolog.LevelFieldName}
 			w.FieldsExclude = []string{"src"}
 		})),
-		InitialBreakpoints: initialBreakpoints,
+		InitialBreakpoints:    initialBreakpoints,
+		ExceptionBreakpointId: exceptionBreakpointsId,
 	})
 
 	//send a "stopped" event each time the program stops.
@@ -1028,6 +1146,17 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 					return
 				}
 
+				body := dap.StoppedEventBody{
+					Reason:   stopReasonToDapStopReason(stop.Reason),
+					ThreadId: 1,
+				}
+
+				if stop.ExceptionError != nil {
+					//TODO: make sure no sensitive information is leaked
+					body.Description = stop.ExceptionError.Error()
+					body.Text = body.Description
+				}
+
 				stoppedEvent := dap.StoppedEvent{
 					Event: dap.Event{
 						ProtocolMessage: dap.ProtocolMessage{
@@ -1036,10 +1165,7 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 						},
 						Event: "stopped",
 					},
-					Body: dap.StoppedEventBody{
-						Reason:   stopReasonToDapStopReason(stop.Reason),
-						ThreadId: 1,
-					},
+					Body: body,
 				}
 
 				if stop.Breakpoint != nil {
@@ -1127,6 +1253,8 @@ func stopReasonToDapStopReason(reason core.ProgramStopReason) string {
 		return "step"
 	case core.BreakpointStop:
 		return "breakpoint"
+	case core.ExceptionBreakpointStop:
+		return "exception"
 	default:
 		panic(core.ErrUnreachable)
 	}
