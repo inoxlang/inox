@@ -3737,7 +3737,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
 
-			assert.Equal(t, NewMultivalue(ANY_PATH, Nil), res)
+			assert.Equal(t, NewMultivalue(ANY_REL_NON_DIR_PATH, Nil), res)
 		})
 
 		t.Run("int range iteration: keys and values are integers", func(t *testing.T) {

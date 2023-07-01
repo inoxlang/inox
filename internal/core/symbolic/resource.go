@@ -16,7 +16,35 @@ var (
 		"is-walk-start": &Bool{},
 	}, nil, nil)
 
-	ANY_PATH   = &Path{}
+	ANY_PATH     = &Path{}
+	ANY_DIR_PATH = &Path{
+		dirConstraint: DirPath,
+	}
+	ANY_NON_DIR_PATH = &Path{
+		dirConstraint: NonDirPath,
+	}
+	ANY_ABS_PATH = &Path{
+		absoluteness: AbsolutePath,
+	}
+	ANY_REL_PATH = &Path{
+		absoluteness: RelativePath,
+	}
+	ANY_ABS_DIR_PATH = &Path{
+		absoluteness:  AbsolutePath,
+		dirConstraint: DirPath,
+	}
+	ANY_ABS_NON_DIR_PATH = &Path{
+		absoluteness:  AbsolutePath,
+		dirConstraint: NonDirPath,
+	}
+	ANY_REL_DIR_PATH = &Path{
+		absoluteness:  RelativePath,
+		dirConstraint: DirPath,
+	}
+	ANY_REL_NON_DIR_PATH = &Path{
+		absoluteness:  RelativePath,
+		dirConstraint: NonDirPath,
+	}
 	ANY_URL    = &URL{}
 	ANY_SCHEME = &Scheme{}
 	ANY_HOST   = &Host{}
@@ -28,25 +56,81 @@ var (
 // A Path represents a symbolic Path.
 type Path struct {
 	UnassignablePropsMixin
-	_ int
+	absoluteness  PathAbsoluteness
+	dirConstraint DirPathConstraint
 }
 
-func (i *Path) Test(v SymbolicValue) bool {
-	_, ok := v.(*Path)
+type PathAbsoluteness int
+type DirPathConstraint int
+
+const (
+	UnspecifiedPathAbsoluteness PathAbsoluteness = iota
+	AbsolutePath
+	RelativePath
+)
+
+const (
+	UnspecifiedDirOrFilePath DirPathConstraint = iota
+	DirPath
+	NonDirPath
+)
+
+func (p *Path) Test(v SymbolicValue) bool {
+	otherPath, ok := v.(*Path)
+	if !ok {
+		return false
+	}
+
+	if p.absoluteness != UnspecifiedPathAbsoluteness && otherPath.absoluteness != p.absoluteness {
+		return false
+	}
+
+	if p.dirConstraint != UnspecifiedDirOrFilePath && otherPath.dirConstraint != p.dirConstraint {
+		return false
+	}
+
 	return ok
 }
 
-func (a *Path) Widen() (SymbolicValue, bool) {
+func (p *Path) Widen() (SymbolicValue, bool) {
+	if p.IsWidenable() {
+		return ANY_PATH, true
+	}
 	return nil, false
 }
 
-func (a *Path) IsWidenable() bool {
-	return false
+func (p *Path) IsWidenable() bool {
+	return p.absoluteness != UnspecifiedPathAbsoluteness || p.dirConstraint != UnspecifiedDirOrFilePath
 }
 
-func (a *Path) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%path")))
-	return
+func (p *Path) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	s := "%path"
+
+	switch p.absoluteness {
+	case AbsolutePath:
+		s += "(#abs"
+	case RelativePath:
+		s += "(#rel"
+	}
+
+	if p.absoluteness != UnspecifiedPathAbsoluteness && p.dirConstraint != UnspecifiedDirOrFilePath {
+		s += ","
+	} else if p.dirConstraint != UnspecifiedDirOrFilePath {
+		s += "("
+	}
+
+	switch p.dirConstraint {
+	case DirPath:
+		s += "#dir"
+	case NonDirPath:
+		s += "#non-dir"
+	}
+
+	if p.absoluteness != UnspecifiedPathAbsoluteness || p.dirConstraint != UnspecifiedDirOrFilePath {
+		s += ")"
+	}
+
+	utils.Must(w.Write(utils.StringAsBytes(s)))
 }
 
 func (p *Path) ResourceName() *String {
@@ -57,30 +141,36 @@ func (p *Path) PropertyNames() []string {
 	return PATH_PROPNAMES
 }
 
-func (*Path) Prop(name string) SymbolicValue {
+func (p *Path) Prop(name string) SymbolicValue {
 	switch name {
 	case "segments":
 		return &List{generalElement: &String{}}
 	case "extension":
-		return &String{}
+		return ANY_STR
 	case "name":
-		return &String{}
+		return ANY_STR
 	case "dir":
-		return &Path{}
+		switch p.absoluteness {
+		case AbsolutePath:
+			return ANY_ABS_DIR_PATH
+		case RelativePath:
+			return ANY_REL_DIR_PATH
+		}
+		return ANY_DIR_PATH
 	case "ends_with_slash":
-		return &Bool{}
+		return ANY_BOOL
 	case "rel_equiv":
-		return &Path{}
+		return ANY_PATH
 	case "change_extension":
 		return &GoFunction{
 			fn: func(ctx *Context, newExtension *String) *Path {
-				return &Path{}
+				return p
 			},
 		}
 	case "join":
 		return &GoFunction{
 			fn: func(ctx *Context, relativePath *Path) *Path {
-				return &Path{}
+				return p
 			},
 		}
 	default:
@@ -88,20 +178,20 @@ func (*Path) Prop(name string) SymbolicValue {
 	}
 }
 
-func (s *Path) underylingString() *String {
+func (p *Path) underylingString() *String {
 	return &String{}
 }
 
-func (s *Path) WalkerElement() SymbolicValue {
+func (p *Path) WalkerElement() SymbolicValue {
 	return WALK_ELEM
 }
 
-func (s *Path) WalkerNodeMeta() SymbolicValue {
+func (p *Path) WalkerNodeMeta() SymbolicValue {
 	return ANY
 }
 
-func (s *Path) WidestOfType() SymbolicValue {
-	return &Path{}
+func (p *Path) WidestOfType() SymbolicValue {
+	return ANY_PATH
 }
 
 // A URL represents a symbolic URL.

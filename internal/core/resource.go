@@ -176,6 +176,7 @@ func (pth Path) Basename() Str {
 	return Str(filepath.Base(string(pth)))
 }
 
+// Path of parent directory.
 func (pth Path) DirPath() Path {
 	if pth == "/" {
 		return "/"

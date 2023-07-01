@@ -223,8 +223,16 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		return &Identifier{name: n.Name}, nil
 	case *parse.PropertyNameLiteral:
 		return &PropertyName{name: n.Name}, nil
-	case *parse.AbsolutePathLiteral, *parse.RelativePathLiteral:
-		return &Path{}, nil
+	case *parse.AbsolutePathLiteral:
+		if strings.HasSuffix(n.Value, "/") {
+			return ANY_ABS_DIR_PATH, nil
+		}
+		return ANY_ABS_NON_DIR_PATH, nil
+	case *parse.RelativePathLiteral:
+		if strings.HasSuffix(n.Value, "/") {
+			return ANY_REL_DIR_PATH, nil
+		}
+		return ANY_REL_NON_DIR_PATH, nil
 	case *parse.AbsolutePathPatternLiteral, *parse.RelativePathPatternLiteral:
 		return &PathPattern{}, nil
 	case *parse.NamedSegmentPathPatternLiteral:

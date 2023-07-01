@@ -157,26 +157,62 @@ func TestSymbolicRune(t *testing.T) {
 func TestSymbolicPath(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
-		path := &Path{}
+		anyPath := &Path{}
+		assert.True(t, anyPath.Test(anyPath))
+		assert.True(t, anyPath.Test(&Path{}))
+		assert.False(t, anyPath.Test(&String{}))
+		assert.False(t, anyPath.Test(&Int{}))
 
-		assert.True(t, path.Test(path))
-		assert.True(t, path.Test(&Path{}))
-		assert.False(t, path.Test(&String{}))
-		assert.False(t, path.Test(&Int{}))
+		anyAbsPath := &Path{absoluteness: AbsolutePath}
+		assert.True(t, anyAbsPath.Test(anyAbsPath))
+		assert.True(t, anyAbsPath.Test(&Path{absoluteness: AbsolutePath}))
+		assert.True(t, anyPath.Test(anyAbsPath))
+		assert.False(t, anyAbsPath.Test(anyPath))
+
+		anyDirPath := &Path{dirConstraint: DirPath}
+		assert.True(t, anyDirPath.Test(anyDirPath))
+		assert.True(t, anyDirPath.Test(&Path{dirConstraint: DirPath}))
+		assert.True(t, anyPath.Test(anyDirPath))
+		assert.False(t, anyDirPath.Test(anyPath))
+		assert.False(t, anyDirPath.Test(anyAbsPath))
 	})
 
 	t.Run("IsWidenable()", func(t *testing.T) {
 		assert.False(t, (&Path{}).IsWidenable())
+		assert.True(t, (&Path{dirConstraint: DirPath}).IsWidenable())
+		assert.True(t, (&Path{absoluteness: AbsolutePath}).IsWidenable())
 	})
 
 	t.Run("Widen()", func(t *testing.T) {
-		path := &Path{}
+		t.Run("non specific", func(t *testing.T) {
+			path := &Path{}
 
-		assert.False(t, path.IsWidenable())
+			assert.False(t, path.IsWidenable())
 
-		widened, ok := path.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
+			widened, ok := path.Widen()
+			assert.False(t, ok)
+			assert.Nil(t, widened)
+		})
+
+		t.Run("dir path", func(t *testing.T) {
+			path := &Path{dirConstraint: DirPath}
+
+			assert.True(t, path.IsWidenable())
+
+			widened, ok := path.Widen()
+			assert.True(t, ok)
+			assert.Equal(t, ANY_PATH, widened)
+		})
+
+		t.Run("absolute path", func(t *testing.T) {
+			path := &Path{absoluteness: AbsolutePath}
+
+			assert.True(t, path.IsWidenable())
+
+			widened, ok := path.Widen()
+			assert.True(t, ok)
+			assert.Equal(t, ANY_PATH, widened)
+		})
 	})
 }
 
