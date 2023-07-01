@@ -17,8 +17,11 @@ func (i BreakpointInfo) Verified() bool {
 }
 
 type StackFrameInfo struct {
-	Name        string
-	Node        parse.Node //can be nil, it's either a Chunk or the current statement
+	Name string
+
+	//can be nil, current *Chunk | *FunctionExpression or statement (current statement if we are stopped at a breakpoint exception)
+	Node parse.Node
+
 	Chunk       *parse.ParsedChunk
 	Id          int32 //set if debugging, unique for a given debugger
 	StartLine   int32
@@ -31,8 +34,9 @@ type StackFrameInfo struct {
 // Primary Events
 
 type ProgramStoppedEvent struct {
-	Reason     ProgramStopReason
-	Breakpoint *BreakpointInfo
+	Reason         ProgramStopReason
+	Breakpoint     *BreakpointInfo
+	ExceptionError error
 }
 
 type ProgramStopReason int
@@ -41,6 +45,7 @@ const (
 	PauseStop ProgramStopReason = 1 + iota
 	StepStop
 	BreakpointStop
+	ExceptionBreakpointStop
 )
 
 // Secondary Events
@@ -86,6 +91,11 @@ type DebugCommandSetBreakpoints struct {
 	Chunk *parse.ParsedChunk
 
 	GetBreakpointsSetByLine func(breakpoints []BreakpointInfo)
+}
+
+type DebugCommandSetExceptionBreakpoints struct {
+	Disable                  bool
+	GetExceptionBreakpointId func(int32)
 }
 
 type DebugCommandPause struct {

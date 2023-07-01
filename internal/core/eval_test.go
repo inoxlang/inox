@@ -6338,7 +6338,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 func TestTreeWalkDebug(t *testing.T) {
 	//TODO: add test with included chunks
 
-	testDebugModeEval(t, func(code string, breakpointLines ...int) (any, *Context, *parse.ParsedChunk, *Debugger) {
+	testDebugModeEval(t, func(code string, opts ...debugTestOptions) (any, *Context, *parse.ParsedChunk, *Debugger) {
 		state := NewGlobalState(NewDefaultTestContext())
 		treeWalkState := NewTreeWalkStateWithGlobal(state)
 
@@ -6348,14 +6348,20 @@ func TestTreeWalkDebug(t *testing.T) {
 		}))
 
 		nextBreakPointId := int32(INITIAL_BREAKPOINT_ID)
-		breakpoints, err := GetBreakpointsFromLines(breakpointLines, chunk, &nextBreakPointId)
+		var options debugTestOptions
+		if len(opts) == 1 {
+			options = opts[0]
+		}
+
+		breakpoints, err := GetBreakpointsFromLines(options.breakpointLines, chunk, &nextBreakPointId)
 		if !assert.NoError(t, err) {
 			assert.Fail(t, "failed to get breakpoints from lines "+err.Error())
 		}
 
 		debugger := NewDebugger(DebuggerArgs{
-			Logger:             zerolog.New(io.Discard),
-			InitialBreakpoints: breakpoints,
+			Logger:                zerolog.New(io.Discard),
+			InitialBreakpoints:    breakpoints,
+			ExceptionBreakpointId: options.exceptionBreakpointId,
 		})
 		debugger.AttachAndStart(treeWalkState)
 
@@ -6368,9 +6374,14 @@ func TestTreeWalkDebug(t *testing.T) {
 	})
 }
 
+type debugTestOptions struct {
+	breakpointLines       []int
+	exceptionBreakpointId int32
+}
+
 func testDebugModeEval(
 	t *testing.T,
-	setup func(code string, breakpointLines ...int) (any, *Context, *parse.ParsedChunk, *Debugger),
+	setup func(code string, opts ...debugTestOptions) (any, *Context, *parse.ParsedChunk, *Debugger),
 	eval func(n parse.Node, state any) (Value, error),
 ) {
 
@@ -6744,7 +6755,9 @@ func testDebugModeEval(
 				a = 2
 				a = 3
 				return a
-			`, 2, 3) //a = 2 & a = 3
+			`, debugTestOptions{
+					breakpointLines: []int{2, 3}, //a = 2 & a = 3
+				})
 
 			controlChan := debugger.ControlChan()
 			stoppedChan := debugger.StoppedChan()
@@ -6968,6 +6981,171 @@ func testDebugModeEval(
 						StartLine:            1,
 						StartColumn:          1,
 						StatementStartLine:   4,
+						StatementStartColumn: 5,
+					},
+				},
+			}, stackTraces)
+		})
+
+		t.Run("exceptions breakpoints set", func(t *testing.T) {
+			state, ctx, chunk, debugger := setup(`
+				a = 1
+				overflow = (10_000_000_000 * 10_000_000_000)
+				return a
+			`)
+
+			controlChan := debugger.ControlChan()
+			stoppedChan := debugger.StoppedChan()
+
+			defer ctx.Cancel()
+
+			var breakpointId int32
+
+			controlChan <- DebugCommandSetExceptionBreakpoints{
+				GetExceptionBreakpointId: func(id int32) {
+					breakpointId = id
+				},
+			}
+
+			time.Sleep(10 * time.Millisecond) //wait for the debugger to set the breakpoints
+
+			var stoppedEvents []ProgramStoppedEvent
+			var globalScopes []map[string]Value
+			var localScopes []map[string]Value
+			var stackTraces [][]StackFrameInfo
+
+			go func() {
+				event := <-stoppedChan
+
+				stoppedEvents = append(stoppedEvents, event)
+
+				//get scopes while stopped at 'overflow = ...'
+				controlChan <- DebugCommandGetScopes{
+					func(globalScope, localScope map[string]Value) {
+						globalScopes = append(globalScopes, globalScope)
+						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				//get stack trace while stopped at 'overflow = ...'
+				controlChan <- DebugCommandGetStackTrace{
+					func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
+					},
+				}
+
+				controlChan <- DebugCommandContinue{}
+			}()
+
+			_, err := eval(chunk.Node, state)
+
+			if !assert.Error(t, err) {
+				return
+			}
+
+			if !assert.Len(t, stoppedEvents, 1) {
+				return
+			}
+
+			event := stoppedEvents[0]
+			assert.Equal(t, ExceptionBreakpointStop, event.Reason)
+			assert.ErrorIs(t, event.ExceptionError, ErrIntOverflow)
+			assert.Equal(t, breakpointId, event.Breakpoint.Id)
+
+			assert.Equal(t, []map[string]Value{{}}, globalScopes)
+
+			assert.Equal(t, []map[string]Value{
+				{"a": Int(1)},
+			}, localScopes)
+
+			assert.Equal(t, [][]StackFrameInfo{
+				{
+					{
+						Name:                 "core-test",
+						Node:                 chunk.Node.Statements[1],
+						Chunk:                chunk,
+						Id:                   1,
+						StartLine:            1,
+						StartColumn:          1,
+						StatementStartLine:   3,
+						StatementStartColumn: 5,
+					},
+				},
+			}, stackTraces)
+		})
+
+		t.Run("exceptions breakpoints set during initialization", func(t *testing.T) {
+			exceptionBreakpointId := int32(INITIAL_BREAKPOINT_ID + 3)
+			state, ctx, chunk, debugger := setup(`
+				a = 1
+				overflow = (10_000_000_000 * 10_000_000_000)
+				return a
+			`, debugTestOptions{exceptionBreakpointId: exceptionBreakpointId})
+
+			controlChan := debugger.ControlChan()
+			stoppedChan := debugger.StoppedChan()
+
+			defer ctx.Cancel()
+
+			var stoppedEvents []ProgramStoppedEvent
+			var globalScopes []map[string]Value
+			var localScopes []map[string]Value
+			var stackTraces [][]StackFrameInfo
+
+			go func() {
+				event := <-stoppedChan
+
+				stoppedEvents = append(stoppedEvents, event)
+
+				//get scopes while stopped at 'overflow = ...'
+				controlChan <- DebugCommandGetScopes{
+					func(globalScope, localScope map[string]Value) {
+						globalScopes = append(globalScopes, globalScope)
+						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				//get stack trace while stopped at 'overflow = ...'
+				controlChan <- DebugCommandGetStackTrace{
+					func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
+					},
+				}
+
+				controlChan <- DebugCommandContinue{}
+			}()
+
+			_, err := eval(chunk.Node, state)
+
+			if !assert.Error(t, err) {
+				return
+			}
+
+			if !assert.Len(t, stoppedEvents, 1) {
+				return
+			}
+
+			event := stoppedEvents[0]
+			assert.Equal(t, ExceptionBreakpointStop, event.Reason)
+			assert.ErrorIs(t, event.ExceptionError, ErrIntOverflow)
+			assert.Equal(t, exceptionBreakpointId, event.Breakpoint.Id)
+
+			assert.Equal(t, []map[string]Value{{}}, globalScopes)
+
+			assert.Equal(t, []map[string]Value{
+				{"a": Int(1)},
+			}, localScopes)
+
+			assert.Equal(t, [][]StackFrameInfo{
+				{
+					{
+						Name:                 "core-test",
+						Node:                 chunk.Node.Statements[1],
+						Chunk:                chunk,
+						Id:                   1,
+						StartLine:            1,
+						StartColumn:          1,
+						StatementStartLine:   3,
 						StatementStartColumn: 5,
 					},
 				},

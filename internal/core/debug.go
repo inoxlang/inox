@@ -47,9 +47,11 @@ type Debugger struct {
 	stoppedProgram            atomic.Bool
 	stopBeforeNextStatement   atomic.Value //non-breakpoint ProgramStopReason
 	breakpoints               map[parse.NodeSpan]BreakpointInfo
-	nextBreakpointId          int32
-	breakpointsLock           sync.Mutex
-	resumeExecutionChan       chan struct{}
+	exceptionBreakpointsId    atomic.Int32
+
+	nextBreakpointId    int32
+	breakpointsLock     sync.Mutex
+	resumeExecutionChan chan struct{}
 
 	stackFrameId atomic.Int32 //incremented by debuggees
 
@@ -61,8 +63,9 @@ type Debugger struct {
 }
 
 type DebuggerArgs struct {
-	Logger             zerolog.Logger //ok if not set
-	InitialBreakpoints []BreakpointInfo
+	Logger                zerolog.Logger //ok if not set
+	InitialBreakpoints    []BreakpointInfo
+	ExceptionBreakpointId int32 //if not set exception breakpoints are not enabled
 
 	//cancelling this context will cause the debugger to close.
 	//the debugger uses this context's filesystem.
@@ -81,7 +84,9 @@ func NewDebugger(args DebuggerArgs) *Debugger {
 		}
 	}
 
-	return &Debugger{
+	
+
+	debugger := &Debugger{
 		ctx:                       args.Context,
 		controlChan:               make(chan any),
 		secondaryEventChan:        make(chan SecondaryDebugEvent, SECONDARY_EVENT_CHAN_CAP),
@@ -93,6 +98,12 @@ func NewDebugger(args DebuggerArgs) *Debugger {
 		nextBreakpointId: INITIAL_BREAKPOINT_ID,
 		breakpoints:      initialBreakpoints,
 	}
+
+	if args.ExceptionBreakpointId >= INITIAL_BREAKPOINT_ID {
+		debugger.exceptionBreakpointsId.Store(args.ExceptionBreakpointId )
+	}
+
+	return debugger
 }
 
 // StoppedChan returns a channel that sends an item each time the program stops.
@@ -113,6 +124,14 @@ func (d *Debugger) SecondaryEvents() chan SecondaryDebugEvent {
 // ControlChan returns a channel to which debug commands should be sent.
 func (d *Debugger) Closed() bool {
 	return d.closed.Load()
+}
+
+func (d *Debugger) ExceptionBreakpointsId() (_ int32, enabled bool) {
+	id := d.exceptionBreakpointsId.Load()
+	if id >= INITIAL_BREAKPOINT_ID {
+		return id, true
+	}
+	return 0, false
 }
 
 // AttachAndStart attaches the debugger to state & starts the debugging goroutine.
@@ -208,6 +227,23 @@ func (d *Debugger) startGoroutine() {
 						c.GetBreakpointsSetByLine(breakpointsSetByLine)
 					}
 
+				case DebugCommandSetExceptionBreakpoints:
+					if c.Disable {
+						d.exceptionBreakpointsId.Store(0)
+						continue
+					}
+					//enable
+
+					d.breakpointsLock.Lock()
+					id := d.nextBreakpointId
+					d.nextBreakpointId++
+					d.breakpointsLock.Unlock()
+
+					d.exceptionBreakpointsId.Store(id)
+
+					if c.GetExceptionBreakpointId != nil {
+						c.GetExceptionBreakpointId(id)
+					}
 				case DebugCommandPause:
 					if d.stoppedProgram.Load() {
 						continue
@@ -245,32 +281,56 @@ func (d *Debugger) startGoroutine() {
 	}()
 }
 
-func (d *Debugger) beforeInstruction(n parse.Node, trace []StackFrameInfo) {
+func (d *Debugger) beforeInstruction(n parse.Node, trace []StackFrameInfo, exceptionError error) {
 	if d.closed.Load() {
 		return
 	}
 
 	trace = utils.CopySlice(trace)
 
-	d.breakpointsLock.Lock()
-	breakpointInfo, hasBreakpoint := d.breakpoints[n.Base().Span]
-	d.breakpointsLock.Unlock()
+	var (
+		stopReason     ProgramStopReason
+		breakpointInfo BreakpointInfo
+		hasBreakpoint  bool
+	)
 
-	var stopReason ProgramStopReason
-	if hasBreakpoint {
-		stopReason = BreakpointStop
-	} else {
-		stopReason, _ = d.stopBeforeNextStatement.Swap(ProgramStopReason(0)).(ProgramStopReason)
+	if exceptionError == nil {
+		d.breakpointsLock.Lock()
+		breakpointInfo, hasBreakpoint = d.breakpoints[n.Base().Span]
+		d.breakpointsLock.Unlock()
+
+		if hasBreakpoint {
+			stopReason = BreakpointStop
+		} else {
+			stopReason, _ = d.stopBeforeNextStatement.Swap(ProgramStopReason(0)).(ProgramStopReason)
+		}
+	} else if id, enabled := d.ExceptionBreakpointsId(); enabled {
+		stopReason = ExceptionBreakpointStop
+
+		chunk := trace[len(trace)-1].Chunk
+		line, col := chunk.GetLineColumn(n)
+
+		hasBreakpoint = true
+
+		breakpointInfo = BreakpointInfo{
+			Id:          id,
+			NodeSpan:    n.Base().Span,
+			Chunk:       chunk,
+			StartLine:   line,
+			StartColumn: col,
+		}
 	}
 
 	if stopReason > 0 {
 		d.stoppedProgram.Store(true)
-		event := ProgramStoppedEvent{Reason: stopReason}
+		event := ProgramStoppedEvent{Reason: stopReason, ExceptionError: exceptionError}
 		if hasBreakpoint {
 			event.Breakpoint = &breakpointInfo
 		}
 		d.stoppedProgramChan <- event
 
+		//while the program is stopped we handle commands
+		//such as DebugCommandGetScopes or DebugCommandGetStackTrace.
 		for {
 			select {
 			case <-d.globalState.Ctx.Done():

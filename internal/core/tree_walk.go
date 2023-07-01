@@ -177,7 +177,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 				err = fmt.Errorf("core: error: %w %s", er, debug.Stack())
 			} else {
-				err = fmt.Errorf("core: %s", e)
+				err = fmt.Errorf("core: %#v", e)
 			}
 		}
 
@@ -840,12 +840,14 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		for _, stmt := range n.Statements {
 			if state.debug != nil {
 				state.updateStackTrace(stmt)
-				state.debug.beforeInstruction(stmt, state.frameInfo)
+				state.debug.beforeInstruction(stmt, state.frameInfo, nil)
 			}
 
 			_, err = TreeWalkEval(stmt, state)
 
 			if err != nil {
+				state.updateStackTrace(stmt)
+				state.debug.beforeInstruction(stmt, state.frameInfo, err)
 				return nil, err
 			}
 			if state.returnValue != nil {
@@ -861,11 +863,13 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		for _, stmt := range n.Statements {
 			if state.debug != nil {
 				state.updateStackTrace(stmt)
-				state.debug.beforeInstruction(stmt, state.frameInfo)
+				state.debug.beforeInstruction(stmt, state.frameInfo, nil)
 			}
 
 			_, err := TreeWalkEval(stmt, state)
 			if err != nil {
+				state.updateStackTrace(stmt)
+				state.debug.beforeInstruction(stmt, state.frameInfo, err)
 				return nil, err
 			}
 
