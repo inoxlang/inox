@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"html"
 	"net/http"
+	"path/filepath"
+	"strings"
 	"time"
 
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/dom_ns"
+	"github.com/inoxlang/inox/internal/globals/inox_ns"
 	"github.com/rs/zerolog"
 )
 
@@ -24,54 +27,132 @@ var (
 
 func isValidHandlerValue(val core.Value) bool {
 	switch val.(type) {
-	case *core.InoxFunction, *core.GoFunction, *core.Mapping:
+	case *core.InoxFunction, *core.GoFunction, *core.Mapping, core.Path:
 		return true
 	}
 	return false
 }
 
 // a handlerFn is a middleware or the final handler
-type handlerFn func(*HttpRequest, *HttpResponseWriter, *core.GlobalState, zerolog.Logger)
+type handlerFn func(*HttpRequest, *HttpResponseWriter, *core.GlobalState)
 
 func createHandlerFunction(handlerValue core.Value, isMiddleware bool, server *HttpServer) (handler handlerFn) {
 
 	//set value for handler based on provided arguments
 	switch userHandler := handlerValue.(type) {
 	case *core.InoxFunction:
-		handler = func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState, logger zerolog.Logger) {
+		handler = func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
 			//call the Inox handler
 			args := []core.Value{core.ValOf(rw), core.ValOf(req)}
 			_, err := userHandler.Call(handlerGlobalState, nil, args, HANDLER_DISABLED_ARGS)
 
 			if err != nil {
-				logger.Print(err)
+				handlerGlobalState.Logger.Print(err)
 			}
 		}
 	case *core.GoFunction:
-		handler = func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState, logger zerolog.Logger) {
+		handler = func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
 			//call the Golang handler
 			args := []any{rw, req}
 
 			_, err := userHandler.Call(args, handlerGlobalState, nil, false, false)
 
 			if err != nil {
-				logger.Print(err)
+				handlerGlobalState.Logger.Print(err)
 			}
 		}
-	case *core.Mapping:
-		routing := userHandler
-		//if a routing Mapping is provided we compute a value by passing the request's path to the Mapping.
-		handler = func(req *HttpRequest, rw *HttpResponseWriter, state *core.GlobalState, logger zerolog.Logger) {
-			path := req.Path
+	case core.Path:
+		//filesystem routing
 
-			value := routing.Compute(state.Ctx, path)
-			if value == nil {
-				logger.Print("routing mapping returned Go nil")
+		routingDirPath := userHandler
+		routingDirPathNoTrailingSlash := strings.TrimSuffix(string(routingDirPath), "/")
+		routingDirPathSegments := strings.Split(string(routingDirPathNoTrailingSlash), "/")
+
+		if !routingDirPath.IsAbsolute() || !routingDirPath.IsDirPath() {
+			panic(fmt.Errorf("path of routing directory should be an absolute directory path"))
+		}
+		handler = func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
+			fls := server.state.Ctx.GetFileSystem()
+			path := req.Path
+			if !path.IsAbsolute() {
+				panic(core.ErrUnreachable)
+			}
+
+			if path.IsDirPath() {
 				rw.writeStatus(http.StatusNotFound)
 				return
 			}
 
-			respondWithMappingResult(handlingArguments{value, req, rw, state, server, logger, isMiddleware})
+			modulePath := fls.Join(string(routingDirPath), string(path)+".ix")
+
+			//verify that the module is located in the routing directory (or below).
+			{
+				ancestorDir := filepath.Dir(modulePath)
+				dirOk := false
+
+				//move left in the path until we find the routing directory
+				for ancestorDir != "." && ancestorDir != "" && len(strings.Split(ancestorDir, "/")) >= len(routingDirPathSegments) {
+					if ancestorDir == routingDirPathNoTrailingSlash {
+						dirOk = true
+						break
+					}
+					ancestorDir = filepath.Dir(ancestorDir)
+				}
+
+				if !dirOk {
+					rw.writeStatus(http.StatusNotFound)
+					return
+				}
+				//TODO: add more checks
+			}
+
+			handlerCtx := handlerGlobalState.Ctx
+
+			//TODO: check the file is not writable
+
+			result, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
+				Fpath:                     modulePath,
+				ParentContext:             handlerCtx,
+				ParentContextRequired:     true,
+				ParsingCompilationContext: handlerCtx,
+				Out:                       handlerGlobalState.Out,
+				LogOut:                    handlerGlobalState.Logger,
+
+				FullAccessToDatabases: false, //databases should be passed by parent state
+				IgnoreHighRiskScore:   true,
+				PreinitFilesystem:     handlerCtx.GetFileSystem(),
+			})
+
+			if err != nil {
+				handlerGlobalState.Logger.Err(err).Send()
+				rw.writeStatus(http.StatusNotFound)
+				return
+			}
+
+			respondWithMappingResult(handlingArguments{
+				value:        result,
+				req:          req,
+				rw:           rw,
+				state:        handlerGlobalState,
+				server:       server,
+				logger:       handlerGlobalState.Logger,
+				isMiddleware: false,
+			})
+		}
+	case *core.Mapping:
+		routing := userHandler
+		//if a routing Mapping is provided we compute a value by passing the request's path to the Mapping.
+		handler = func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
+			path := req.Path
+
+			value := routing.Compute(handlerGlobalState.Ctx, path)
+			if value == nil {
+				handlerGlobalState.Logger.Print("routing mapping returned Go nil")
+				rw.writeStatus(http.StatusNotFound)
+				return
+			}
+
+			respondWithMappingResult(handlingArguments{value, req, rw, handlerGlobalState, server, handlerGlobalState.Logger, isMiddleware})
 		}
 	default:
 		panic(core.ErrUnreachable)

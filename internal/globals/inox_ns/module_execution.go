@@ -349,6 +349,8 @@ type RunScriptArgs struct {
 	//output for execution, if nil os.Stdout is used
 	Out io.Writer
 
+	LogOut io.Writer
+
 	//PreparedChan signals when the script is prepared (nil error) or failed to prepared (non-nil error),
 	//the channel should be buffered.
 	PreparedChan chan error
@@ -372,6 +374,7 @@ func RunLocalScript(args RunScriptArgs) (
 		ParentContext:             args.ParentContext,
 		ParentContextRequired:     args.ParentContextRequired,
 		Out:                       args.Out,
+		LogOut:                    args.LogOut,
 		AllowMissingEnvVars:       args.AllowMissingEnvVars,
 		PreinitFilesystem:         args.PreinitFilesystem,
 		FullAccessToDatabases:     args.FullAccessToDatabases,

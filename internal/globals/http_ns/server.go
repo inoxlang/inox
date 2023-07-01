@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	dom_ns_symb "github.com/inoxlang/inox/internal/globals/dom_ns/symbolic"
 	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
+	"golang.org/x/exp/slices"
 
 	"github.com/inoxlang/inox/internal/globals/dom_ns"
 	"github.com/inoxlang/inox/internal/permkind"
@@ -51,6 +53,7 @@ var (
 	SYMBOLIC_HANDLING_DESC = symbolic.NewObject(map[string]symbolic.SymbolicValue{
 		HANDLING_DESC_ROUTING_PROPNAME: symbolic.NewMultivalue(
 			symbolic.ANY_INOX_FUNC,
+			symbolic.ANY_PATH,
 			symbolic.NewMapping(),
 		),
 		HANDLING_DESC_MIDDLEWARES_PROPNAME: symbolic.ANY_ITERABLE,
@@ -98,7 +101,7 @@ func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*Http
 		lastHandlerFn = createHandlerFunction(userProvidedHandler, false, _server)
 	} else {
 		//we set a default handler that writes "hello"
-		lastHandlerFn = func(r *HttpRequest, rw *HttpResponseWriter, state *core.GlobalState, logger zerolog.Logger) {
+		lastHandlerFn = func(r *HttpRequest, rw *HttpResponseWriter, state *core.GlobalState) {
 			rw.rw.Write([]byte("hello"))
 		}
 	}
@@ -176,13 +179,13 @@ func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*Http
 		//call middlewares & handler
 
 		for _, fn := range middlewareFns {
-			fn(req, rw, handlerGlobalState, serverLogger)
+			fn(req, rw, handlerGlobalState)
 			if rw.finished {
 				return
 			}
 		}
 
-		lastHandlerFn(req, rw, handlerGlobalState, serverLogger)
+		lastHandlerFn(req, rw, handlerGlobalState)
 	})
 
 	//create a stdlib http Server
@@ -429,10 +432,8 @@ func readHttpServerArgs(ctx *core.Context, server *HttpServer, host core.Host, a
 	for _, arg := range args {
 		switch v := arg.(type) {
 		case core.Host:
-			if addr != "" {
-				argErr = errors.New("address already provided")
-				return
-			}
+			argErr = errors.New("address already provided")
+			return
 		case *core.InoxFunction:
 			if handlerValProvided {
 				argErr = commonfmt.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
@@ -510,7 +511,18 @@ func readHttpServerArgs(ctx *core.Context, server *HttpServer, host core.Host, a
 						argErr = core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, propKey, HANDLING_ARG_NAME)
 					}
 
-					if psharable, ok := propVal.(core.PotentiallySharable); ok && utils.Ret0(psharable.IsSharable(server.state)) {
+					if path, ok := propVal.(core.Path); ok {
+						if !path.IsDirPath() {
+							argErr = commonfmt.FmtPropOfArgXShouldBeY(propKey, HANDLING_ARG_NAME, "absolute if it's a path")
+							return
+						}
+						var err error
+						propVal, err = path.ToAbs(ctx.GetFileSystem())
+						if err != nil {
+							argErr = err
+							return
+						}
+					} else if psharable, ok := propVal.(core.PotentiallySharable); ok && utils.Ret0(psharable.IsSharable(server.state)) {
 						psharable.Share(server.state)
 					} else {
 						argErr = commonfmt.FmtPropOfArgXShouldBeY(propKey, HANDLING_ARG_NAME, "sharable")
