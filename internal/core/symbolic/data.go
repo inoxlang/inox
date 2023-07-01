@@ -3,6 +3,7 @@ package symbolic
 import (
 	"bufio"
 	"errors"
+	"sort"
 
 	parse "github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
@@ -119,6 +120,7 @@ func (data *SymbolicData) SetAllowedNonPresentProperties(node parse.Node, proper
 	if data == nil {
 		return
 	}
+	sort.Strings(properties)
 	data.allowedNonPresentProperties[node] = properties
 }
 
