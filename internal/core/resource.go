@@ -146,18 +146,18 @@ func (pth Path) IsRelative() bool {
 	return pth[0] == '.'
 }
 
-func (pth Path) ToAbs(fls afs.Filesystem) Path {
+func (pth Path) ToAbs(fls afs.Filesystem) (Path, error) {
 	if pth.IsAbsolute() {
-		return pth
+		return pth, nil
 	}
 	s, err := fls.Absolute(string(pth))
 	if err != nil {
-		panic(fmt.Errorf("path resolution: %s", err))
+		return "", fmt.Errorf("filesystem failed to resolve path to absolute: %w", err)
 	}
 	if pth.IsDirPath() && s[len(s)-1] != '/' {
 		s += "/"
 	}
-	return Path(s)
+	return Path(s), nil
 }
 
 func (pth Path) UnderlyingString() string {

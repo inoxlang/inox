@@ -109,12 +109,16 @@ func ImportModule(config ImportConfig) (*Routine, error) {
 		srcVal = val
 	case Path:
 		fls := config.ParentState.Ctx.GetFileSystem()
-		if val.IsRelative() && config.ParentState.Module != nil {
-			val = Path(fls.Join(config.ParentState.Module.ResourceDir(), val.UnderlyingString()))
+		if val.IsRelative() {
+			if config.ParentState.Module != nil {
+				val = Path(fls.Join(config.ParentState.Module.ResourceDir(), val.UnderlyingString()))
+			} else {
+				return nil, fmt.Errorf("import: impossible to resolve relative import path as parent state has no module")
+			}
 		}
 
 		absScriptDir = filepath.Dir(string(val))
-		fsPerm := FilesystemPermission{permkind.Read, val.ToAbs(fls)}
+		fsPerm := FilesystemPermission{permkind.Read, utils.Must(val.ToAbs(fls))}
 		if err := config.ParentState.Ctx.CheckHasPermission(fsPerm); err != nil {
 			return nil, fmt.Errorf("import: %s", err.Error())
 		}

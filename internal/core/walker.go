@@ -262,10 +262,14 @@ func (p Path) Walker(ctx *Context) (Walker, error) {
 		return nil, fmt.Errorf("walks requires a directory path")
 	}
 
-	fls := ctx.GetFileSystem()
+	absPath, err := p.ToAbs(ctx.GetFileSystem())
+	if err != nil {
+		return nil, err
+	}
+
 	perm := FilesystemPermission{
 		Kind_:  permkind.Read,
-		Entity: PathPattern(string(p.ToAbs(fls)) + "..."),
+		Entity: PathPattern(string(absPath) + "..."),
 	}
 
 	if err := ctx.CheckHasPermission(perm); err != nil {

@@ -97,7 +97,10 @@ func NewEventSource(ctx *core.Context, resourceNameOrPattern core.Value) (*Files
 		recursive = true
 		permissionEntity = patt
 	case core.Path:
-		pth := v.ToAbs(ctx.GetFileSystem())
+		pth, err := v.ToAbs(ctx.GetFileSystem())
+		if err != nil {
+			return nil, err
+		}
 		permissionEntity = pth
 
 		strPath := strings.TrimRight(string(pth), "/") //we remove any trailing / because os.LStat will return an error for a file

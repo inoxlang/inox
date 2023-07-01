@@ -50,7 +50,11 @@ top:
 			args = args[1:]
 			break top
 		case core.Path:
-			cmdName = a.ToAbs(fls)
+			var err error
+			cmdName, err = a.ToAbs(fls)
+			if err != nil {
+				return "", fmt.Errorf("failed to resolve path of executable: %w", err)
+			}
 			args = args[1:]
 			break top
 		case core.QuantityRange:

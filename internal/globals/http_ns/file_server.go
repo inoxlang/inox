@@ -33,7 +33,11 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 			if !v.IsDirPath() {
 				return nil, errors.New("the directory path should end with '/'")
 			}
-			dir = v.ToAbs(ctx.GetFileSystem())
+			var err error
+			dir, err = v.ToAbs(ctx.GetFileSystem())
+			if err != nil {
+				return nil, err
+			}
 
 			perm := core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(string(dir) + "...")}
 			if err := ctx.CheckHasPermission(perm); err != nil {
@@ -74,8 +78,14 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 }
 
 func serveFile(ctx *core.Context, rw *HttpResponseWriter, r *HttpRequest, pth core.Path) error {
+	{
+		var err error
+		pth, err = pth.ToAbs(ctx.GetFileSystem())
+		if err != nil {
+			return err
+		}
+	}
 
-	pth = pth.ToAbs(ctx.GetFileSystem())
 	perm := core.FilesystemPermission{Kind_: permkind.Read, Entity: pth}
 
 	if err := ctx.CheckHasPermission(perm); err != nil {

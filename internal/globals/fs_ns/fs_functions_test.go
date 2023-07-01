@@ -415,7 +415,7 @@ func TestFsOpenExisting(t *testing.T) {
 		assert.IsType(t, core.NotAllowedError{}, err)
 		assert.Equal(t, core.FilesystemPermission{
 			Kind_:  permkind.Read,
-			Entity: pth.ToAbs(ctx.GetFileSystem()),
+			Entity: utils.Must(pth.ToAbs(ctx.GetFileSystem())),
 		}, err.(core.NotAllowedError).Permission)
 		assert.Nil(t, f)
 	})
@@ -461,7 +461,7 @@ func TestFile(t *testing.T) {
 		assert.IsType(t, core.NotAllowedError{}, err)
 		assert.Equal(t, core.FilesystemPermission{
 			Kind_:  permkind.WriteStream,
-			Entity: pth.ToAbs(ctx.GetFileSystem()),
+			Entity: utils.Must(pth.ToAbs(ctx.GetFileSystem())),
 		}, err.(core.NotAllowedError).Permission)
 	})
 

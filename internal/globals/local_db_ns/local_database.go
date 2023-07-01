@@ -65,7 +65,11 @@ func openDatabase(ctx *Context, r core.ResourceName, restrictedAccess bool) (*Lo
 		}
 		pth = data
 	case Path:
-		pth = resource
+		var err error
+		pth, err = resource.ToAbs(ctx.GetFileSystem())
+		if err != nil {
+			return nil, err
+		}
 	default:
 		return nil, ErrCannotResolveDatabase
 	}
@@ -74,7 +78,7 @@ func openDatabase(ctx *Context, r core.ResourceName, restrictedAccess bool) (*Lo
 		return nil, ErrInvalidDatabaseDirpath
 	}
 
-	patt := PathPattern(pth.ToAbs(ctx.GetFileSystem()) + "...")
+	patt := PathPattern(pth + "...")
 
 	for _, kind := range []core.PermissionKind{permkind.Read, permkind.Create, permkind.WriteStream} {
 		perm := FilesystemPermission{Kind_: kind, Entity: patt}
