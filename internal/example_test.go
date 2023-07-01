@@ -176,7 +176,7 @@ func testExample(t *testing.T, config exampleTestConfig) {
 		})
 		core.NewGlobalState(parsingCompilationContext)
 
-		_, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
+		_, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 			Fpath:                     fpath,
 			UseBytecode:               useBytecode,
 			OptimizeBytecode:          optimizeBytecode,

@@ -335,7 +335,7 @@ func _dynimport(ctx *core.Context, src core.Value, argObj *core.Object, manifest
 }
 
 func _run(ctx *core.Context, src core.Path, args ...core.Value) error {
-	_, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
+	_, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 		Fpath:                     string(src),
 		ParsingCompilationContext: ctx,
 		ParentContext:             ctx,

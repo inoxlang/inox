@@ -348,13 +348,20 @@ type RunScriptArgs struct {
 
 	//output for execution, if nil os.Stdout is used
 	Out io.Writer
+
+	//PreparedChan signals when the script is prepared (nil error) or failed to prepared (non-nil error),
+	//the channel should be buffered.
+	PreparedChan chan error
 }
 
 // RunLocalScript runs a script located in the filesystem.
-func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Module, error) {
+func RunLocalScript(args RunScriptArgs) (
+	scriptResult core.Value, scriptState *core.GlobalState, scriptModule *core.Module,
+	preparationSuccess bool, _err error,
+) {
 
 	if args.ParentContextRequired && args.ParentContext == nil {
-		return nil, nil, nil, errors.New(".ParentContextRequired is set to true but passed .ParentContext is nil")
+		return nil, nil, nil, false, errors.New(".ParentContextRequired is set to true but passed .ParentContext is nil")
 	}
 
 	state, mod, manifest, err := PrepareLocalScript(ScriptPreparationArgs{
@@ -370,8 +377,15 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 		FullAccessToDatabases:     args.FullAccessToDatabases,
 	})
 
+	if args.PreparedChan != nil {
+		select {
+		case args.PreparedChan <- err:
+		default:
+		}
+	}
+
 	if err != nil {
-		return nil, state, mod, err
+		return nil, state, mod, false, err
 	}
 
 	out := state.Out
@@ -383,7 +397,7 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 	}
 
 	if len(warnings) > DEFAULT_MAX_ALLOWED_WARNINGS { //TODO: make the max configurable
-		return nil, nil, nil, ErrExecutionAbortedTooManyWarnings
+		return nil, nil, nil, true, ErrExecutionAbortedTooManyWarnings
 	}
 
 	riskScore, requiredPerms := core.ComputeProgramRiskScore(mod, manifest)
@@ -392,7 +406,7 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 	if !args.IgnoreHighRiskScore && riskScore > config.DEFAULT_TRUSTED_RISK_SCORE {
 		waitConfirmPrompt := args.ParsingCompilationContext.GetWaitConfirmPrompt()
 		if waitConfirmPrompt == nil {
-			return nil, nil, nil, ErrNoProvidedConfirmExecPrompt
+			return nil, nil, nil, true, ErrNoProvidedConfirmExecPrompt
 		}
 		msg := bytes.NewBufferString(mod.Name())
 		msg.WriteString("\nrisk score is ")
@@ -411,9 +425,9 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 		msg.WriteString("allow execution (y,yes) ? ")
 
 		if ok, err := waitConfirmPrompt(msg.String(), []string{"y", "yes"}); err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to show confirm prompt to user: %w", err)
+			return nil, nil, nil, true, fmt.Errorf("failed to show confirm prompt to user: %w", err)
 		} else if !ok {
-			return nil, nil, nil, ErrUserRefusedExecution
+			return nil, nil, nil, true, ErrUserRefusedExecution
 		}
 	}
 
@@ -435,7 +449,7 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 			CompilationContext:   args.ParsingCompilationContext,
 		})
 
-		return res, state, mod, err
+		return res, state, mod, true, err
 	}
 
 	treeWalkState := core.NewTreeWalkStateWithGlobal(state)
@@ -444,7 +458,7 @@ func RunLocalScript(args RunScriptArgs) (core.Value, *core.GlobalState, *core.Mo
 	}
 
 	res, err := core.TreeWalkEval(state.Module.MainChunk.Node, treeWalkState)
-	return res, state, mod, err
+	return res, state, mod, true, err
 }
 
 // GetCheckData returns a map that can be safely marshaled to JSON, the data has the following structure:

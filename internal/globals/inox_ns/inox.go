@@ -168,7 +168,7 @@ func _run_local_script(ctx *core.Context, src core.Path, config *core.Object) (c
 		return nil, nil, nil, err
 	}
 
-	runResult, state, mod, err := RunLocalScript(RunScriptArgs{
+	runResult, state, mod, _, err := RunLocalScript(RunScriptArgs{
 		Fpath:                     string(src),
 		ParsingCompilationContext: ctx,
 		ParentContext:             ctx,

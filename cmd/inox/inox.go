@@ -146,7 +146,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			return utils.SliceContains(accepted, input), nil
 		})
 
-		res, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
+		res, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 			Fpath:                     fpath,
 			PassedCLIArgs:             moduleArgs,
 			PreinitFilesystem:         compilationCtx.GetFileSystem(),

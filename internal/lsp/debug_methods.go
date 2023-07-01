@@ -1102,7 +1102,7 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 		}
 	}()
 
-	_, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
+	_, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 		Fpath:                     programPath,
 		ParsingCompilationContext: ctx,
 		ParentContext:             ctx,

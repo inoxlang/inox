@@ -937,7 +937,7 @@ func TestRunLocalScript(t *testing.T) {
 
 		os.WriteFile(file, []byte("fn(){self}; return 1"), 0o600)
 
-		state, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
+		state, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: createCompilationCtx(dir),
 			ParentContextRequired:     true,
@@ -964,7 +964,7 @@ func TestRunLocalScript(t *testing.T) {
 			}
 		`), 0o600)
 
-		state, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
+		state, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: createCompilationCtx(dir),
 			ParentContextRequired:     true,
@@ -985,7 +985,7 @@ func TestRunLocalScript(t *testing.T) {
 
 		os.WriteFile(file, []byte("manifest {}\n"+manySpawnExprs), 0o600)
 
-		state, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
+		state, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: createCompilationCtx(dir),
 			ParentContextRequired:     true,
@@ -1053,7 +1053,7 @@ func TestRunLocalScript(t *testing.T) {
 			util.WriteFile(preinitFs, fmt.Sprintf("/file%d.txt", i), nil, 0o600)
 		}
 
-		state, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
+		state, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: createCompilationCtx(dir),
 			ParentContextRequired:     true,
