@@ -17,7 +17,6 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	dom_ns_symb "github.com/inoxlang/inox/internal/globals/dom_ns/symbolic"
 	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
-	"golang.org/x/exp/slices"
 
 	"github.com/inoxlang/inox/internal/globals/dom_ns"
 	"github.com/inoxlang/inox/internal/permkind"
@@ -135,11 +134,16 @@ func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*Http
 			}
 		}
 
-		// check that path does not contain '..' segments
+		// check that path does not contain '..' elements.
+		// use same logic as containsDotDot in stdlib net/http/fs.go
 
-		if slices.Contains(strings.Split(r.URL.Path, "/"), "..") {
-			rw.writeStatus(http.StatusBadRequest)
-			return
+		isSlashRune := func(r rune) bool { return r == '/' || r == '\\' }
+
+		for _, ent := range strings.FieldsFunc(r.URL.Path, isSlashRune) {
+			if ent == ".." {
+				rw.writeStatus(http.StatusBadRequest)
+				return
+			}
 		}
 
 		// rate limiting & more
