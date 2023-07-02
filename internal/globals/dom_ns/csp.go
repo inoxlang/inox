@@ -38,8 +38,36 @@ var (
 )
 
 func init() {
+
+	stringOrStringList := symbolic.NewMultivalue(
+		symbolic.NewListOf(symbolic.ANY_STR_LIKE),
+		symbolic.ANY_STR_LIKE,
+	)
+
 	core.RegisterSymbolicGoFunction(NewCSP,
 		func(ctx *symbolic.Context, desc *symbolic.Object) (*_dom_symbolic.ContentSecurityPolicy, *symbolic.Error) {
+			ctx.SetSymbolicGoFunctionParameters(&[]symbolic.SymbolicValue{
+				symbolic.NewObject(map[string]symbolic.SymbolicValue{
+					"default-src":     stringOrStringList,
+					"frame-ancestors": stringOrStringList,
+					"frame-src":       stringOrStringList,
+					"script-src-elem": stringOrStringList,
+					"connect-src":     stringOrStringList,
+					"font-src":        stringOrStringList,
+					"img-src":         stringOrStringList,
+					"style-src":       stringOrStringList,
+				}, map[string]struct{}{
+					"default-src":     {},
+					"frame-ancestors": {},
+					"frame-src":       {},
+					"script-src-elem": {},
+					"connect-src":     {},
+					"font-src":        {},
+					"img-src":         {},
+					"style-src":       {},
+				}, nil),
+			}, []string{"csp"})
+
 			return _dom_symbolic.NewCSP(), nil
 		},
 	)
@@ -59,6 +87,8 @@ func NewCSP(ctx *core.Context, desc *core.Object) (*ContentSecurityPolicy, error
 		directive := CSPDirective{name: k}
 
 		switch directiveDesc := v.(type) {
+		case core.Str:
+			directive.values = append(directive.values, CSPDirectiveValue{raw: string(directiveDesc)})
 		case core.Iterable:
 			iterable := directiveDesc
 			it := iterable.Iterator(ctx, core.IteratorConfiguration{})
@@ -71,8 +101,6 @@ func NewCSP(ctx *core.Context, desc *core.Object) (*ContentSecurityPolicy, error
 				}
 				directive.values = append(directive.values, CSPDirectiveValue{raw: string(s)})
 			}
-		case core.Str:
-			directive.values = append(directive.values, CSPDirectiveValue{raw: string(directiveDesc)})
 		default:
 			return nil, core.FmtPropOfArgXShouldBeOfTypeY(k, "description", "iterable or string", v)
 		}
