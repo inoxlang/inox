@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html"
 	"net/http"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/dom_ns"
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
 	"github.com/rs/zerolog"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -65,8 +65,6 @@ func createHandlerFunction(handlerValue core.Value, isMiddleware bool, server *H
 		//filesystem routing
 
 		routingDirPath := userHandler
-		routingDirPathNoTrailingSlash := strings.TrimSuffix(string(routingDirPath), "/")
-		routingDirPathSegments := strings.Split(string(routingDirPathNoTrailingSlash), "/")
 
 		if !routingDirPath.IsAbsolute() || !routingDirPath.IsDirPath() {
 			panic(fmt.Errorf("path of routing directory should be an absolute directory path"))
@@ -78,32 +76,27 @@ func createHandlerFunction(handlerValue core.Value, isMiddleware bool, server *H
 				panic(core.ErrUnreachable)
 			}
 
-			if path.IsDirPath() {
+			if path.IsDirPath() && path != "/" {
+				rw.writeStatus(http.StatusNotFound)
+				return
+			}
+
+			if slices.Contains(strings.Split(path.UnderlyingString(), "/"), "..") {
 				rw.writeStatus(http.StatusNotFound)
 				return
 			}
 
 			modulePath := fls.Join(string(routingDirPath), string(path)+".ix")
 
-			//verify that the module is located in the routing directory (or below).
-			{
-				ancestorDir := filepath.Dir(modulePath)
-				dirOk := false
+			_, err := fls.Stat(modulePath)
+			if err != nil {
+				modulePath = fls.Join(string(routingDirPath), string(path), "index.ix")
+			}
 
-				//move left in the path until we find the routing directory
-				for ancestorDir != "." && ancestorDir != "" && len(strings.Split(ancestorDir, "/")) >= len(routingDirPathSegments) {
-					if ancestorDir == routingDirPathNoTrailingSlash {
-						dirOk = true
-						break
-					}
-					ancestorDir = filepath.Dir(ancestorDir)
-				}
-
-				if !dirOk {
-					rw.writeStatus(http.StatusNotFound)
-					return
-				}
-				//TODO: add more checks
+			_, err = fls.Stat(modulePath)
+			if err != nil {
+				rw.writeStatus(http.StatusNotFound)
+				return
 			}
 
 			handlerCtx := handlerGlobalState.Ctx
