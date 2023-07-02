@@ -313,3 +313,12 @@ func (s *DirTestSuite) TestRemoveNonEmptyDir(c *check.C) {
 	c.Assert(info[0].IsDir(), check.Equals, true)
 	c.Assert(info[0].Name(), check.Equals, "foo")
 }
+
+func (s *DirTestSuite) TestOpenDir(c *check.C) {
+	err := s.FS.MkdirAll("foo", 0755)
+	c.Assert(err, check.IsNil)
+
+	f, err := s.FS.Open("/foo")
+	c.Assert(err, check.ErrorMatches, ".*"+ErrCannotOpenDir.Error()+".*")
+	c.Assert(f, check.IsNil)
+}

@@ -361,15 +361,15 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 		}
 	}
 
+	if metadata.mode.IsDir() {
+		return nil, fmt.Errorf("%w: %s", ErrCannotOpenDir, filename)
+	}
+
 	underlyingFile, err := fls.underlying.OpenFile(metadata.concreteFile.UnderlyingString(), flag, METAFS_UNDERLYING_UNDERLYING_FILE_PERM)
 
 	if err != nil {
 		//TODO: give more info about the error without leaking information about the underlying filesystem.
 		return nil, fmt.Errorf("failed to open %s", pth)
-	}
-
-	if metadata.mode.IsDir() {
-		return nil, fmt.Errorf("cannot open directory: %s", filename)
 	}
 
 	file := &metaFsFile{

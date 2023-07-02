@@ -84,7 +84,7 @@ func (fs *MemFilesystem) OpenFile(filename string, flag int, perm os.FileMode) (
 	}
 
 	if f.mode.IsDir() {
-		return nil, fmt.Errorf("cannot open directory: %s", filename)
+		return nil, fmt.Errorf("%w: %s", ErrCannotOpenDir, filename)
 	}
 
 	return f.Duplicate(filename, perm, flag), nil

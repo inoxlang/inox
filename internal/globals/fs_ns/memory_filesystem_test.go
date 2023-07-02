@@ -34,7 +34,7 @@ func TestMemoryFilesystem(t *testing.T) {
 		Verbose: true,
 	})
 
-	if result.Failed > 0 {
+	if result.Failed > 0 || result.Panicked > 0 {
 		assert.Fail(t, result.String())
 	}
 }
