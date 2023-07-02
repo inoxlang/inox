@@ -14,6 +14,7 @@ import (
 	"github.com/inoxlang/inox/internal/lsp/lsp"
 	"github.com/inoxlang/inox/internal/lsp/lsp/defines"
 
+	"github.com/go-git/go-billy/v5/util"
 	fsutil "github.com/go-git/go-billy/v5/util"
 )
 
@@ -108,7 +109,8 @@ type FsRenameFileParams struct {
 //delete file operation
 
 type FsDeleteFileParams struct {
-	FileURI defines.URI `json:"uri"`
+	FileURI   defines.URI `json:"uri"`
+	Recursive bool        `json:"recursive,omitempty"`
 }
 
 //create dir operation
@@ -354,12 +356,23 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 				return nil, err
 			}
 
-			err = fls.Remove(path)
+			if params.Recursive {
+				//TODO: add implementation of the { RemoveAll(string) error } interface to MetaFilesystem & MemoryFilesystem.
+				err = util.RemoveAll(fls, path)
 
-			if os.IsNotExist(err) {
-				return FsFileNotFound, nil
-			} else if err != nil { //exists
-				return nil, fmtInternalError("failed to delete %s: %s", path, err)
+				if os.IsNotExist(err) {
+					return FsFileNotFound, nil
+				} else if err != nil { //exists
+					return nil, fmtInternalError("failed to recursively delete %s: %s", path, err)
+				}
+			} else {
+				err = fls.Remove(path)
+
+				if os.IsNotExist(err) {
+					return FsFileNotFound, nil
+				} else if err != nil { //exists
+					return nil, fmtInternalError("failed to delete %s: %s", path, err)
+				}
 			}
 
 			return nil, nil
