@@ -226,12 +226,37 @@ func (pth Path) ToGlobbingPattern() PathPattern {
 	return PathPattern(utils.BytesAsString(pattern))
 }
 
+// JoinAbsolute joins the current path to a relative path:
+// /a , ./b -> /a/b
+// /a , ./b/ -> /a/b/
+// /a , /b -> error
+// /a , /b/ -> error
 func (pth Path) Join(relativePath Path, fls afs.Filesystem) Path {
 	if !relativePath.IsRelative() {
 		panic(errors.New("path argument is not relative"))
 	}
 	dirpath := Path(fls.Join(string(pth), string(relativePath)))
 	if relativePath.IsDirPath() && dirpath[len(dirpath)-1] != '/' {
+		dirpath += "/"
+	}
+	if pth.IsRelative() {
+		prefix, _, _ := strings.Cut(string(pth), "/")
+		dirpath = Path(prefix) + "/" + dirpath
+	}
+	return dirpath
+}
+
+// JoinAbsolute joins the current path to an absolute path:
+// /a , /b -> /a/b
+// /a , /b/ -> /a/b/
+// /a , ./b -> error
+// /a , ./b/ -> error
+func (pth Path) JoinAbsolute(absPath Path, fls afs.Filesystem) Path {
+	if !absPath.IsAbsolute() {
+		panic(errors.New("path argument is not absolute"))
+	}
+	dirpath := Path(fls.Join(string(pth), string(absPath)))
+	if absPath.IsDirPath() && dirpath[len(dirpath)-1] != '/' {
 		dirpath += "/"
 	}
 	if pth.IsRelative() {

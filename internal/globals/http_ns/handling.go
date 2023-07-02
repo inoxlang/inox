@@ -10,6 +10,7 @@ import (
 
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/dom_ns"
+	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
 	"github.com/rs/zerolog"
 	"golang.org/x/exp/slices"
@@ -27,7 +28,7 @@ var (
 
 func isValidHandlerValue(val core.Value) bool {
 	switch val.(type) {
-	case *core.InoxFunction, *core.GoFunction, *core.Mapping, core.Path:
+	case *core.InoxFunction, *core.GoFunction, *core.Mapping, core.Path, *core.Object:
 		return true
 	}
 	return false
@@ -69,68 +70,48 @@ func createHandlerFunction(handlerValue core.Value, isMiddleware bool, server *H
 		if !routingDirPath.IsAbsolute() || !routingDirPath.IsDirPath() {
 			panic(fmt.Errorf("path of routing directory should be an absolute directory path"))
 		}
+		handler = createHandleDynamic(server, routingDirPath)
+	case *core.Object:
+		var staticDir core.Path
+		var dynamicDir core.Path
+		var handleDynamic handlerFn
+
+		propertyNames := userHandler.PropertyNames(server.state.Ctx)
+		if slices.Contains(propertyNames, "static") {
+			staticDir = userHandler.Prop(server.state.Ctx, "static").(core.Path)
+		}
+		if slices.Contains(propertyNames, "dynamic") {
+			dynamicDir = userHandler.Prop(server.state.Ctx, "dynamic").(core.Path)
+			handleDynamic = createHandleDynamic(server, dynamicDir)
+		}
+
 		handler = func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
-			fls := server.state.Ctx.GetFileSystem()
-			path := req.Path
-			if !path.IsAbsolute() {
-				panic(core.ErrUnreachable)
+
+			if staticDir != "" {
+				staticResourcePath := staticDir.JoinAbsolute(req.Path, handlerGlobalState.Ctx.GetFileSystem())
+
+				if staticResourcePath.IsDirPath() {
+					staticResourcePath += "index.html"
+				}
+
+				if fs_ns.Exists(handlerGlobalState.Ctx, staticResourcePath) {
+					err := serveFile(handlerGlobalState.Ctx, rw, req, staticResourcePath)
+					if err != nil {
+						handlerGlobalState.Logger.Err(err).Send()
+						rw.writeStatus(http.StatusNotFound)
+						return
+					}
+					return
+				}
 			}
 
-			if path.IsDirPath() && path != "/" {
-				rw.writeStatus(http.StatusNotFound)
-				return
+			if handleDynamic != nil {
+				handleDynamic(req, rw, handlerGlobalState)
 			}
 
-			if slices.Contains(strings.Split(path.UnderlyingString(), "/"), "..") {
-				rw.writeStatus(http.StatusNotFound)
-				return
+			if staticDir == "" && dynamicDir == "" {
+				rw.rw.Write([]byte(NO_HANDLER_PLACEHOLDER_MESSAGE))
 			}
-
-			modulePath := fls.Join(string(routingDirPath), string(path)+".ix")
-
-			_, err := fls.Stat(modulePath)
-			if err != nil {
-				modulePath = fls.Join(string(routingDirPath), string(path), "index.ix")
-			}
-
-			_, err = fls.Stat(modulePath)
-			if err != nil {
-				rw.writeStatus(http.StatusNotFound)
-				return
-			}
-
-			handlerCtx := handlerGlobalState.Ctx
-
-			//TODO: check the file is not writable
-
-			result, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
-				Fpath:                     modulePath,
-				ParentContext:             handlerCtx,
-				ParentContextRequired:     true,
-				ParsingCompilationContext: handlerCtx,
-				Out:                       handlerGlobalState.Out,
-				LogOut:                    handlerGlobalState.Logger,
-
-				FullAccessToDatabases: false, //databases should be passed by parent state
-				IgnoreHighRiskScore:   true,
-				PreinitFilesystem:     handlerCtx.GetFileSystem(),
-			})
-
-			if err != nil {
-				handlerGlobalState.Logger.Err(err).Send()
-				rw.writeStatus(http.StatusNotFound)
-				return
-			}
-
-			respondWithMappingResult(handlingArguments{
-				value:        result,
-				req:          req,
-				rw:           rw,
-				state:        handlerGlobalState,
-				server:       server,
-				logger:       handlerGlobalState.Logger,
-				isMiddleware: false,
-			})
 		}
 	case *core.Mapping:
 		routing := userHandler
@@ -153,6 +134,72 @@ func createHandlerFunction(handlerValue core.Value, isMiddleware bool, server *H
 	}
 
 	return handler
+}
+
+func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn {
+	return func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
+		fls := server.state.Ctx.GetFileSystem()
+		path := req.Path
+		if !path.IsAbsolute() {
+			panic(core.ErrUnreachable)
+		}
+
+		if path.IsDirPath() && path != "/" {
+			rw.writeStatus(http.StatusNotFound)
+			return
+		}
+
+		if slices.Contains(strings.Split(path.UnderlyingString(), "/"), "..") {
+			rw.writeStatus(http.StatusNotFound)
+			return
+		}
+
+		modulePath := fls.Join(string(routingDirPath), string(path)+".ix")
+
+		_, err := fls.Stat(modulePath)
+		if err != nil {
+			modulePath = fls.Join(string(routingDirPath), string(path), "index.ix")
+		}
+
+		_, err = fls.Stat(modulePath)
+		if err != nil {
+			rw.writeStatus(http.StatusNotFound)
+			return
+		}
+
+		handlerCtx := handlerGlobalState.Ctx
+
+		//TODO: check the file is not writable
+
+		result, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
+			Fpath:                     modulePath,
+			ParentContext:             handlerCtx,
+			ParentContextRequired:     true,
+			ParsingCompilationContext: handlerCtx,
+			Out:                       handlerGlobalState.Out,
+			LogOut:                    handlerGlobalState.Logger,
+
+			FullAccessToDatabases: false, //databases should be passed by parent state
+			IgnoreHighRiskScore:   true,
+			PreinitFilesystem:     handlerCtx.GetFileSystem(),
+		})
+
+		if err != nil {
+			handlerGlobalState.Logger.Err(err).Send()
+			rw.writeStatus(http.StatusNotFound)
+			return
+		}
+
+		respondWithMappingResult(handlingArguments{
+			value:        result,
+			req:          req,
+			rw:           rw,
+			state:        handlerGlobalState,
+			server:       server,
+			logger:       handlerGlobalState.Logger,
+			isMiddleware: false,
+		})
+	}
 }
 
 type handlingArguments struct {

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/permkind"
 )
 
@@ -77,10 +78,18 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 	}, nil
 }
 
+// serveFile opens the file with the given path and calls http.ServeContent,
+// an error is returned in the following cases:
+// - permission error (read perm is required).
+// - failure to open the file.
+// - failure to get creation & modification time from file info.
+// Note that errors can still happen during the call to http.ServeContent but they are written to the *http.ResponseWriter.
 func serveFile(ctx *core.Context, rw *HttpResponseWriter, r *HttpRequest, pth core.Path) error {
+
+	fls := ctx.GetFileSystem()
 	{
 		var err error
-		pth, err = pth.ToAbs(ctx.GetFileSystem())
+		pth, err = pth.ToAbs(fls)
 		if err != nil {
 			return err
 		}
@@ -92,6 +101,24 @@ func serveFile(ctx *core.Context, rw *HttpResponseWriter, r *HttpRequest, pth co
 		return err
 	}
 
-	http.ServeFile(rw.rw, r.Request(), string(pth))
+	f, err := fls.Open(string(pth))
+	if err != nil {
+		return err
+	}
+
+	//TODO: add implementation of afs.StatCapable to all file types in fs_ns.
+
+	stat, err := core.FileStat(f, fls)
+	if err != nil {
+		return err
+	}
+
+	_, modif, err := fs_ns.GetCreationAndModifTime(stat)
+	if err != nil {
+		return err
+	}
+
+	//TODO: pass a custom response writer that logs error and return a 404 status code.
+	http.ServeContent(rw.rw, r.Request(), string(pth), modif, f)
 	return nil
 }

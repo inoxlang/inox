@@ -17,6 +17,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	dom_ns_symb "github.com/inoxlang/inox/internal/globals/dom_ns/symbolic"
 	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
+	"golang.org/x/exp/slices"
 
 	"github.com/inoxlang/inox/internal/globals/dom_ns"
 	"github.com/inoxlang/inox/internal/permkind"
@@ -37,6 +38,8 @@ const (
 	HTTP_SERVER_STARTING_WAIT_TIME        = 5 * time.Millisecond
 	HTTP_SERVER_GRACEFUL_SHUTDOWN_TIMEOUT = 5 * time.Second
 
+	NO_HANDLER_PLACEHOLDER_MESSAGE = "hello"
+
 	HANDLING_DESC_MIDDLEWARES_PROPNAME = "middlewares"
 	HANDLING_DESC_ROUTING_PROPNAME     = "routing"
 	HANDLING_DESC_DEFAULT_CSP_PROPNAME = "default-csp"
@@ -49,11 +52,19 @@ const (
 var (
 	ErrHandlerNotSharable = errors.New("handler is not sharable")
 
+	HTTP_ROUTING_SYMB_OBJ = symbolic.NewObject(map[string]symbolic.SymbolicValue{
+		"static":  symbolic.ANY_DIR_PATH,
+		"dynamic": symbolic.ANY_DIR_PATH,
+	}, map[string]struct{}{
+		"static": {}, "dynamic": {},
+	}, nil)
+
 	SYMBOLIC_HANDLING_DESC = symbolic.NewObject(map[string]symbolic.SymbolicValue{
 		HANDLING_DESC_ROUTING_PROPNAME: symbolic.NewMultivalue(
 			symbolic.ANY_INOX_FUNC,
 			symbolic.ANY_DIR_PATH,
 			symbolic.NewMapping(),
+			HTTP_ROUTING_SYMB_OBJ,
 		),
 		HANDLING_DESC_MIDDLEWARES_PROPNAME: symbolic.ANY_ITERABLE,
 		HANDLING_DESC_DEFAULT_CSP_PROPNAME: dom_ns_symb.ANY_CSP,
@@ -99,9 +110,9 @@ func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*Http
 	if handlerValProvided {
 		lastHandlerFn = createHandlerFunction(userProvidedHandler, false, _server)
 	} else {
-		//we set a default handler that writes "hello"
+		//we set a default handler that writes NO_HANDLER_PLACEHOLDER_MESSAGE
 		lastHandlerFn = func(r *HttpRequest, rw *HttpResponseWriter, state *core.GlobalState) {
-			rw.rw.Write([]byte("hello"))
+			rw.rw.Write([]byte(NO_HANDLER_PLACEHOLDER_MESSAGE))
 		}
 	}
 
@@ -525,6 +536,20 @@ func readHttpServerArgs(ctx *core.Context, server *HttpServer, host core.Host, a
 						if err != nil {
 							argErr = err
 							return
+						}
+					} else if obj, ok := propVal.(*core.Object); ok {
+						properties := obj.PropertyNames(ctx)
+						if slices.Contains(properties, "static") {
+							static, ok := obj.Prop(ctx, "static").(core.Path)
+							if !ok || !static.IsDirPath() {
+								argErr = commonfmt.FmtPropOfArgXShouldBeY(propKey, HANDLING_ARG_NAME, symbolic.Stringify(HTTP_ROUTING_SYMB_OBJ))
+							}
+						}
+						if slices.Contains(properties, "dynamic") {
+							static, ok := obj.Prop(ctx, "dynamic").(core.Path)
+							if !ok || !static.IsDirPath() {
+								argErr = commonfmt.FmtPropOfArgXShouldBeY(propKey, HANDLING_ARG_NAME, symbolic.Stringify(HTTP_ROUTING_SYMB_OBJ))
+							}
 						}
 					} else if psharable, ok := propVal.(core.PotentiallySharable); ok && utils.Ret0(psharable.IsSharable(server.state)) {
 						psharable.Share(server.state)
