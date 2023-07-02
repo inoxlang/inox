@@ -50,7 +50,9 @@ const (
 
 	INVALID_INPUT_STATUS = 1
 
-	DEFAULT_ALLOWED_DEV_HOST = core.Host("https://localhost:8080")
+	DEFAULT_ALLOWED_DEV_HOST    = core.Host("https://localhost:8080")
+	DEFAULT_PROJECT_SERVER_PORT = "8305"
+	DEFAULT_PROJECT_SERVER_HOST = core.Host("wss://localhost:" + DEFAULT_PROJECT_SERVER_PORT)
 )
 
 func main() {
@@ -263,8 +265,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		}
 
 		if host == "" {
-			fmt.Fprintln(errW, "project-server: missing host argument")
-			return
+			host = string(DEFAULT_PROJECT_SERVER_HOST)
 		}
 
 		u := checkLspHost(host, errW)
