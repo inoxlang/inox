@@ -253,11 +253,18 @@ func TestPrint(t *testing.T) {
 		"fn(arg %int){}",
 		//xml
 		"h<div></div>",
+		"h<div",
+		"h<div/>",
+		"h<div/",
 		"h<div>{1}2</div>",
 		"h<div>1{2}</div>",
 		"h<div>1{2}3</div>",
 		`h<div a="b"></div>`,
+		`h<div a=></div>`,
 		`h<div "a"="b"></div>`,
+		`h<div a="b"/>`,
+		`h<div a=/>`,
+		`h<div "a"="b"/>`,
 		"h<div></span></span></div>",
 		"h<div></span>1</span>2</div>",
 		//others

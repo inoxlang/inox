@@ -2034,7 +2034,7 @@ type XMLElement struct {
 	NodeBase
 	Opening  *XMLOpeningElement
 	Children []Node
-	Closing  *XMLClosingElement
+	Closing  *XMLClosingElement //nil if self-closed
 }
 
 type XMLOpeningElement struct {

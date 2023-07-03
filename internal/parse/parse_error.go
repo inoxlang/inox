@@ -355,6 +355,7 @@ const (
 	//xml
 	UNTERMINATED_XML_EXPRESSION_MISSING_TOP_ELEM_NAME  = "unterminated xml expression: missing name of top element"
 	UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING       = "unterminated opening xml tag: missing closing '>' after name"
+	UNTERMINATED_SELF_CLOSING_XML_TAG_MISSING_CLOSING  = "unterminated self-closing xml tag: missing closing '>' after '/'"
 	UNTERMINATED_XML_INTERP                            = "unterminated xml interpolation"
 	UNTERMINATED_XML_ELEMENT_MISSING_CLOSING_TAG       = "unterminated xml element: missing closing tag </..."
 	UNTERMINATED_CLOSING_XML_TAG_MISSING_CLOSING_DELIM = "unterminated closing xml tag: missing closing '>' after name"

@@ -115,6 +115,7 @@ const (
 	LESS_THAN_DOT
 	LESS_OR_EQUAL
 	LESS_OR_EQUAL_DOT
+	SELF_CLOSING_TAG_TERMINATOR
 	END_TAG_OPEN_DELIMITER
 	OPENING_BRACKET
 	CLOSING_BRACKET
@@ -300,6 +301,7 @@ var tokenStrings = [...]string{
 	KEYOF:                          "keyof",
 	NOT_MATCH:                      "not-match",
 	SUBSTROF:                       "substrof",
+	SELF_CLOSING_TAG_TERMINATOR:    "/>",
 	END_TAG_OPEN_DELIMITER:         "</",
 	OPENING_BRACKET:                "[",
 	CLOSING_BRACKET:                "]",
@@ -472,6 +474,7 @@ var tokenTypenames = [...]string{
 	LESS_OR_EQUAL:                  "LESS_OR_EQUAL",
 	LESS_OR_EQUAL_DOT:              "LESS_OR_EQUAL_DOT",
 	OPENING_BRACKET:                "OPENING_BRACKET",
+	SELF_CLOSING_TAG_TERMINATOR:    "SELF_CLOSING_TAG_TERMINATOR",
 	END_TAG_OPEN_DELIMITER:         "END_TAG_OPEN_DELIMITER",
 	CLOSING_BRACKET:                "CLOSING_BRACKET",
 	OPENING_CURLY_BRACKET:          "OPENING_CURLY_BRACKET",

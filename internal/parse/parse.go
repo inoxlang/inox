@@ -7680,12 +7680,28 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 	var parsingErr *ParsingError
 	openingElemValuelessTokens := []Token{{Type: LESS_THAN, Span: NodeSpan{start, start + 1}}}
 	p.i++
-	openingName := p.parseIdentStartingExpression()
 
-	openingIdent, ok := openingName.(*IdentifierLiteral)
-	if !ok {
-		parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_TAG_NAME}
+	var openingIdent *IdentifierLiteral
+	{
+		start := p.i
+		p.i++
+		for p.i < p.len && isIdentChar(p.s[p.i]) {
+			p.i++
+		}
+
+		name := string(p.s[start:p.i])
+		openingIdent = &IdentifierLiteral{
+			NodeBase: NodeBase{
+				Span: NodeSpan{start, p.i},
+			},
+			Name: name,
+		}
 	}
+
+	// openingIdent, ok := openingName.(*IdentifierLiteral)
+	// if !ok {
+	// 	parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_TAG_NAME}
+	// }
 
 	p.eatSpace()
 
@@ -7698,7 +7714,7 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 	}
 
 	//attributes
-	for p.i < p.len && p.s[p.i] != '>' {
+	for p.i < p.len && p.s[p.i] != '>' && p.s[p.i] != '/' {
 		name, isMissingExpr := p.parseExpression()
 
 		if isMissingExpr {
@@ -7750,16 +7766,55 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 		p.eatSpace()
 	}
 
-	if p.i >= p.len || p.s[p.i] != '>' {
+	if p.i >= p.len || (p.s[p.i] != '>' && p.s[p.i] != '/') {
 		openingElement.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING}
 
 		return &XMLElement{
 			NodeBase: NodeBase{
 				NodeSpan{start, p.i},
 				parsingErr,
-				openingElemValuelessTokens,
+				nil,
 			},
 			Opening: openingElement,
+		}
+	}
+
+	selfClosing := p.s[p.i] == '/'
+
+	if selfClosing {
+		if p.i >= p.len-1 || p.s[p.i+1] != '>' {
+			openingElemValuelessTokens = append(openingElemValuelessTokens, Token{Type: SLASH, Span: NodeSpan{p.i, p.i + 1}})
+			p.i++
+			openingElement.Span.End = p.i
+			openingElement.ValuelessTokens = openingElemValuelessTokens
+
+			openingElement.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_SELF_CLOSING_XML_TAG_MISSING_CLOSING}
+
+			return &XMLElement{
+				NodeBase: NodeBase{
+					NodeSpan{start, p.i},
+					parsingErr,
+					nil,
+				},
+				Opening: openingElement,
+			}
+		}
+
+		openingElemValuelessTokens = append(openingElemValuelessTokens, Token{Type: SELF_CLOSING_TAG_TERMINATOR, Span: NodeSpan{p.i, p.i + 2}})
+		p.i += 2
+
+		openingElement.Span.End = p.i
+		openingElement.ValuelessTokens = openingElemValuelessTokens
+
+		return &XMLElement{
+			NodeBase: NodeBase{
+				NodeSpan{start, p.i},
+				parsingErr,
+				nil,
+			},
+			Opening:  openingElement,
+			Closing:  nil,
+			Children: nil,
 		}
 	}
 

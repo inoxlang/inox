@@ -20087,6 +20087,37 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("unterminated opening tag", func(t *testing.T) {
+			n, err := parseChunk(t, "h<div", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 5}, nil, nil},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{
+									NodeSpan{1, 5},
+									&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING},
+									[]Token{{Type: LESS_THAN, Span: NodeSpan{1, 2}}},
+								},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, nil},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("attribute with value", func(t *testing.T) {
 			n := mustparseChunk(t, `h<div a="b"></div>`)
 			assert.EqualValues(t, &Chunk{
@@ -20601,6 +20632,74 @@ func testParse(
 								},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{20, 23}, nil, nil},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("self closing", func(t *testing.T) {
+			n := mustparseChunk(t, "h<div/>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 7}, nil, nil},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{
+									NodeSpan{1, 7},
+									nil,
+									[]Token{
+										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
+										{Type: SELF_CLOSING_TAG_TERMINATOR, Span: NodeSpan{5, 7}},
+									},
+								},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, nil},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unterminated self closing", func(t *testing.T) {
+			n, err := parseChunk(t, "h<div/", "")
+			assert.Error(t, err)
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 6}, nil, nil},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{
+									NodeSpan{1, 6},
+									&ParsingError{UnspecifiedParsingError, UNTERMINATED_SELF_CLOSING_XML_TAG_MISSING_CLOSING},
+									[]Token{
+										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
+										{Type: SLASH, Span: NodeSpan{5, 6}},
+									},
+								},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, nil},
 									Name:     "div",
 								},
 							},
