@@ -20190,6 +20190,57 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("self-closing: attribute with value", func(t *testing.T) {
+			n := mustparseChunk(t, `h<div a="b"/>`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 13}, nil, nil},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{
+									NodeSpan{1, 13},
+									nil,
+									[]Token{
+										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
+										{Type: SELF_CLOSING_TAG_TERMINATOR, Span: NodeSpan{11, 13}},
+									},
+								},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, nil},
+									Name:     "div",
+								},
+								Attributes: []*XMLAttribute{
+									{
+										NodeBase: NodeBase{
+											NodeSpan{6, 11},
+											nil,
+											[]Token{{Type: EQUAL, Span: NodeSpan{7, 8}}},
+										},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{6, 7}, nil, nil},
+											Name:     "a",
+										},
+										Value: &QuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{8, 11}, nil, nil},
+											Raw:      `"b"`,
+											Value:    "b",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("attribute with value, follwoed by space", func(t *testing.T) {
 			n := mustparseChunk(t, `h<div a="b" ></div>`)
 			assert.EqualValues(t, &Chunk{
