@@ -21,8 +21,9 @@ import (
 )
 
 const (
-	DEFAULT_RSA_KEY_SIZE   = 2048 //bit count
-	ARGON2ID_HASH_SALT_SEP = "|"
+	DEFAULT_RSA_KEY_SIZE    = 2048 //bit count
+	ARGON2ID_HASH_SALT_SEP  = "|"
+	MAX_PASSWORD_BYTE_COUNT = 100
 )
 
 var (
@@ -41,6 +42,8 @@ var (
 		SaltLength:  argon2id.DefaultParams.SaltLength,
 		KeyLength:   argon2id.DefaultParams.KeyLength,
 	}
+
+	ErrPasswordTooLong = errors.New("password is too long")
 )
 
 func init() {
@@ -152,11 +155,19 @@ func _hash(readable core.Readable, algorithm HashingAlgorithm) []byte {
 }
 
 func _hashPassword(ctx *core.Context, password core.Str, args ...core.Value) core.Str {
+	if len(string(password)) > MAX_PASSWORD_BYTE_COUNT {
+		panic(ErrPasswordTooLong)
+	}
+
 	hash := utils.Must(argon2id.CreateHash(string(password), &DEFAULT_ARGON2ID_PARAMS))
 	return core.Str(hash)
 }
 
 func _checkPassword(ctx *core.Context, password core.Str, hash core.Str) core.Bool {
+	if len(string(password)) > MAX_PASSWORD_BYTE_COUNT {
+		panic(ErrPasswordTooLong)
+	}
+
 	ok := utils.Must(argon2id.ComparePasswordAndHash(string(password), string(hash)))
 	return core.Bool(ok)
 }
