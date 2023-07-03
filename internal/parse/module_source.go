@@ -152,13 +152,16 @@ func (chunk *ParsedChunk) GetSourcePosition(span NodeSpan) SourcePositionRange {
 	}
 }
 
+// GetNodeAndChainAtSpan searches for the deepest node that includes the provided span.
+// Spans of length 0 are supported, nodes whose exclusive range end is equal to the start of the provided span
+// are ignored.
 func (chunk *ParsedChunk) GetNodeAndChainAtSpan(target NodeSpan) (foundNode Node, ancestors []Node, ok bool) {
 
 	Walk(chunk.Node, func(node, _, _ Node, chain []Node, _ bool) (TraversalAction, error) {
 		span := node.Base().Span
 
 		//if the cursor is not in the node's span we don't check the descendants of the node
-		if span.Start > target.End || span.End < target.Start {
+		if span.Start >= target.End || span.End <= target.Start {
 			return Prune, nil
 		}
 
@@ -174,6 +177,7 @@ func (chunk *ParsedChunk) GetNodeAndChainAtSpan(target NodeSpan) (foundNode Node
 	return
 }
 
+// GetNodeAtSpan calls .GetNodeAndChainAtSpan and returns the found node.
 func (chunk *ParsedChunk) GetNodeAtSpan(target NodeSpan) (foundNode Node, ok bool) {
 	node, _, ok := chunk.GetNodeAndChainAtSpan(target)
 	return node, ok

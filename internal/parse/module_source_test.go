@@ -10,46 +10,125 @@ import (
 func TestGetNodeAtSpan(t *testing.T) {
 
 	t.Run("shallow", func(t *testing.T) {
-		chunk := utils.Must(ParseChunkSource(InMemorySource{
-			NameString: "test",
-			CodeString: "a = 1\na\nfn f(){}",
-		}))
+		t.Run("", func(t *testing.T) {
+			chunk := utils.Must(ParseChunkSource(InMemorySource{
+				NameString: "test",
+				CodeString: "a = 1\na\nfn f(){}",
+			}))
 
-		span := chunk.GetLineColumnSingeCharSpan(1, 1)
-		node, ok := chunk.GetNodeAtSpan(span)
-		if !assert.True(t, ok) {
-			return
-		}
-		assert.IsType(t, &IdentifierLiteral{}, node)
+			//identifier on first line
+			span := chunk.GetLineColumnSingeCharSpan(1, 1)
+			node, ok := chunk.GetNodeAtSpan(span)
+			if !assert.True(t, ok) {
+				return
+			}
+			assert.IsType(t, &IdentifierLiteral{}, node)
 
-		span = chunk.GetLineColumnSingeCharSpan(2, 1)
-		node, ok = chunk.GetNodeAtSpan(span)
-		if !assert.True(t, ok) {
-			return
-		}
-		assert.IsType(t, &IdentifierLiteral{}, node)
+			//identifier on second line
+			span = chunk.GetLineColumnSingeCharSpan(2, 1)
+			node, ok = chunk.GetNodeAtSpan(span)
+			if !assert.True(t, ok) {
+				return
+			}
+			assert.IsType(t, &IdentifierLiteral{}, node)
+		})
+
+		t.Run("empty span within an identifier", func(t *testing.T) {
+			chunk := utils.Must(ParseChunkSource(InMemorySource{
+				NameString: "test",
+				CodeString: "aaa",
+			}))
+
+			node, ok := chunk.GetNodeAtSpan(NodeSpan{1, 1})
+			if !assert.True(t, ok) {
+				return
+			}
+			assert.IsType(t, &IdentifierLiteral{}, node)
+		})
+
+		t.Run("span starting at exclusive end of node", func(t *testing.T) {
+			chunk := utils.Must(ParseChunkSource(InMemorySource{
+				NameString: "test",
+				CodeString: "aaa ",
+			}))
+
+			node, ok := chunk.GetNodeAtSpan(NodeSpan{3, 4})
+			if !assert.True(t, ok) {
+				return
+			}
+			assert.IsType(t, &Chunk{}, node)
+		})
 	})
 
-	t.Run("deep (single line)", func(t *testing.T) {
-		chunk := utils.Must(ParseChunkSource(InMemorySource{
-			NameString: "test",
-			CodeString: "fn f(arg %int){}",
-		}))
+	t.Run("deep", func(t *testing.T) {
+		t.Run("", func(t *testing.T) {
+			chunk := utils.Must(ParseChunkSource(InMemorySource{
+				NameString: "test",
+				CodeString: "fn f(arg %int){}",
+			}))
 
-		span := chunk.GetLineColumnSingeCharSpan(1, 10)
-		node, ok := chunk.GetNodeAtSpan(span)
-		if !assert.True(t, ok) {
-			return
-		}
-		assert.IsType(t, &PatternIdentifierLiteral{}, node)
+			span := chunk.GetLineColumnSingeCharSpan(1, 10)
+			node, ok := chunk.GetNodeAtSpan(span)
+			if !assert.True(t, ok) {
+				return
+			}
+			assert.IsType(t, &PatternIdentifierLiteral{}, node)
 
-		span = chunk.GetLineColumnSingeCharSpan(1, 14)
-		node, ok = chunk.GetNodeAtSpan(span)
-		if !assert.True(t, ok) {
-			return
-		}
-		assert.IsType(t, &PatternIdentifierLiteral{}, node)
+			span = chunk.GetLineColumnSingeCharSpan(1, 13)
+			node, ok = chunk.GetNodeAtSpan(span)
+			if !assert.True(t, ok) {
+				return
+			}
+			assert.IsType(t, &PatternIdentifierLiteral{}, node)
+		})
+
+		t.Run("span starting at exclusive end of node", func(t *testing.T) {
+			chunk := utils.Must(ParseChunkSource(InMemorySource{
+				NameString: "test",
+				CodeString: "html<div></div>",
+			}))
+
+			// elements: ... (div)[identifier] (>)[token of opening elem] ()[xml text] ...
+			// the found node should be the XML opening element.
+
+			node, ok := chunk.GetNodeAtSpan(NodeSpan{8, 9}) //the 'div' identifier ends at 8.
+			if !assert.True(t, ok) {
+				return
+			}
+			assert.IsType(t, &XMLOpeningElement{}, node)
+		})
+
+		t.Run("empty span within an identifier", func(t *testing.T) {
+			chunk := utils.Must(ParseChunkSource(InMemorySource{
+				NameString: "test",
+				CodeString: "html<div></div>",
+			}))
+
+			node, ok := chunk.GetNodeAtSpan(NodeSpan{7, 7}) //the 'div' identifier ends at 8.
+			if !assert.True(t, ok) {
+				return
+			}
+			if !assert.IsType(t, &IdentifierLiteral{}, node) {
+				return
+			}
+
+			assert.Equal(t, "div", node.(*IdentifierLiteral).Name)
+		})
+
+		t.Run("empty span at a node with an empty span", func(t *testing.T) {
+			chunk := utils.Must(ParseChunkSource(InMemorySource{
+				NameString: "test",
+				CodeString: "html<div></div>",
+			}))
+
+			node, ok := chunk.GetNodeAtSpan(NodeSpan{9, 9}) //the XML text is empty and its position is 9
+			if !assert.True(t, ok) {
+				return
+			}
+			assert.IsType(t, &XMLElement{}, node)
+		})
 	})
+
 }
 
 func TestFindFirstStatementAndChainOnLine(t *testing.T) {
