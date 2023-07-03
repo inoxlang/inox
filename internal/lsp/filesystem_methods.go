@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"sync"
 
 	fs_ns "github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
@@ -16,11 +15,6 @@ import (
 
 	"github.com/go-git/go-billy/v5/util"
 	fsutil "github.com/go-git/go-billy/v5/util"
-)
-
-var (
-	sessionToFilesystem     = map[*jsonrpc.Session]*Filesystem{}
-	sessionToFilesystemLock sync.RWMutex
 )
 
 //get file stat operation
@@ -446,9 +440,8 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 }
 
 func getLspFilesystem(session *jsonrpc.Session) (*Filesystem, bool) {
-	sessionToFilesystemLock.RLock()
-	defer sessionToFilesystemLock.RUnlock()
+	sessionData := getLockedSessionData(session)
+	defer sessionData.lock.Unlock()
 
-	fls, ok := sessionToFilesystem[session]
-	return fls, ok
+	return sessionData.filesystem, sessionData.filesystem != nil
 }

@@ -39,6 +39,9 @@ const (
 )
 
 var (
+	sessionToAdditionalData     = make(map[*jsonrpc.Session]*additionalSessionData)
+	sessionToAdditionalDataLock sync.Mutex
+
 	ErrFileURIExpected = errors.New("a file: URI was expected")
 	ErrInoxURIExpected = errors.New("a inox: URI was expected")
 
@@ -46,17 +49,34 @@ var (
 	False = false
 )
 
+type additionalSessionData struct {
+	lock                             sync.RWMutex
+	didSaveCapabilityRegistrationIds map[defines.DocumentUri]uuid.UUID
+	filesystem                       *Filesystem
+
+	//debug adapter protocol
+	debugSessions *DebugSessions
+}
+
+func getLockedSessionData(session *jsonrpc.Session) *additionalSessionData {
+	sessionToAdditionalDataLock.Lock()
+	sessionData := sessionToAdditionalData[session]
+	if sessionData == nil {
+		sessionData = &additionalSessionData{
+			didSaveCapabilityRegistrationIds: make(map[defines.DocumentUri]uuid.UUID, 0),
+		}
+		sessionToAdditionalData[session] = sessionData
+	}
+
+	sessionToAdditionalDataLock.Unlock()
+	sessionData.lock.Lock()
+	return sessionData
+}
+
 func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 	var (
-		didSaveCapabilityRegistrationIds     = make(map[defines.DocumentUri]uuid.UUID)
-		didSaveCapabilityRegistrationIdsLock sync.Mutex
-
 		shuttingDownSessionsLock sync.Mutex
 		shuttingDownSessions     = make(map[*jsonrpc.Session]struct{})
-
-		//debug adapter protocol
-		sessionToDebugSessions      = map[*jsonrpc.Session]*DebugSessions{}
-		sessionToDebugSessionIdLock sync.Mutex
 	)
 
 	projectMode := opts.ProjectMode
@@ -64,7 +84,7 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 	if projectMode {
 		registerFilesystemMethodHandlers(server)
 		registerProjectMethodHandlers(server, opts)
-		registerDebugMethodHandlers(server, opts, sessionToDebugSessions, &sessionToDebugSessionIdLock)
+		registerDebugMethodHandlers(server, opts)
 	}
 
 	server.OnInitialize(func(ctx context.Context, req *defines.InitializeParams) (result *defines.InitializeResult, err *defines.InitializeError) {
@@ -103,16 +123,12 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 		shuttingDownSessionsLock.Lock()
 
 		if _, ok := shuttingDownSessions[session]; ok {
-			sessionToFilesystemLock.Lock()
-			delete(sessionToFilesystem, session)
-			sessionToFilesystemLock.Unlock()
-
 			delete(shuttingDownSessions, session)
 			shuttingDownSessionsLock.Unlock()
 
-			sessionToDebugSessionIdLock.Lock()
-			delete(sessionToDebugSessions, session)
-			sessionToDebugSessionIdLock.Lock()
+			sessionToAdditionalDataLock.Lock()
+			delete(sessionToAdditionalData, session)
+			sessionToAdditionalDataLock.Unlock()
 
 			session.Close()
 		} else {
@@ -283,11 +299,11 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 		}
 
 		registrationId := uuid.New()
+		sessionData := getLockedSessionData(session)
 
-		didSaveCapabilityRegistrationIdsLock.Lock()
-		if _, ok := didSaveCapabilityRegistrationIds[req.TextDocument.Uri]; !ok {
-			didSaveCapabilityRegistrationIds[req.TextDocument.Uri] = registrationId
-			didSaveCapabilityRegistrationIdsLock.Unlock()
+		if _, ok := sessionData.didSaveCapabilityRegistrationIds[req.TextDocument.Uri]; !ok {
+			sessionData.didSaveCapabilityRegistrationIds[req.TextDocument.Uri] = registrationId
+			sessionData.lock.Unlock()
 
 			session.SendRequest(jsonrpc.RequestMessage{
 				BaseMessage: jsonrpc.BaseMessage{
@@ -314,7 +330,7 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 			})
 
 		} else {
-			didSaveCapabilityRegistrationIdsLock.Unlock()
+			sessionData.lock.Unlock()
 		}
 
 		return notifyDiagnostics(session, req.TextDocument.Uri, projectMode, fls)
@@ -342,14 +358,14 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 				logs.Println("failed to update state of document", fpath+":", fsErr)
 			}
 
-			didSaveCapabilityRegistrationIdsLock.Lock()
-			registrationId, ok := didSaveCapabilityRegistrationIds[req.TextDocument.Uri]
+			sessionData := getLockedSessionData(session)
+			registrationId, ok := sessionData.didSaveCapabilityRegistrationIds[req.TextDocument.Uri]
 
 			if !ok {
-				didSaveCapabilityRegistrationIdsLock.Unlock()
+				sessionData.lock.Unlock()
 			} else {
-				delete(didSaveCapabilityRegistrationIds, req.TextDocument.Uri)
-				didSaveCapabilityRegistrationIdsLock.Unlock()
+				delete(sessionData.didSaveCapabilityRegistrationIds, req.TextDocument.Uri)
+				sessionData.lock.Unlock()
 
 				session.SendRequest(jsonrpc.RequestMessage{
 					BaseMessage: jsonrpc.BaseMessage{

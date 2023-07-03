@@ -138,17 +138,17 @@ func (s *DebugSession) NextSeq() int {
 
 func registerDebugMethodHandlers(
 	server *lsp.Server, opts LSPServerOptions,
-	sessionToDebugSessions map[*jsonrpc.Session]*DebugSessions, sessionToDebugSessionsLock *sync.Mutex,
 ) {
 
 	getDebugSession := func(session *jsonrpc.Session, sessionId string) *DebugSession {
-		sessionToDebugSessionsLock.Lock()
-		debugSessions, ok := sessionToDebugSessions[session]
-		if !ok {
+		sessionData := getLockedSessionData(session)
+
+		debugSessions := sessionData.debugSessions
+		if debugSessions == nil {
 			debugSessions = &DebugSessions{}
-			sessionToDebugSessions[session] = debugSessions
+			sessionData.debugSessions = debugSessions
 		}
-		sessionToDebugSessionsLock.Unlock()
+		sessionData.lock.Unlock()
 
 		var debugSession *DebugSession
 		for _, s := range debugSessions.sessions {

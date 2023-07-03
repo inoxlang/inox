@@ -88,9 +88,9 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerOptions) {
 
 			lspFilesystem := NewFilesystem(project.Filesystem(), fs_ns.NewMemFilesystem(10_000_000))
 
-			sessionToFilesystemLock.Lock()
-			defer sessionToFilesystemLock.Unlock()
-			sessionToFilesystem[session] = lspFilesystem
+			sessionData := getLockedSessionData(session)
+			defer sessionData.lock.Unlock()
+			sessionData.filesystem = lspFilesystem
 			return nil, nil
 		},
 	})
