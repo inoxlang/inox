@@ -8,6 +8,12 @@ import (
 	_html_symbolic "github.com/inoxlang/inox/internal/globals/html_ns/symbolic"
 )
 
+var (
+	VOID_HTML_TAG_NAMES = []string{
+		"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr",
+	}
+)
+
 func init() {
 
 	// register patterns

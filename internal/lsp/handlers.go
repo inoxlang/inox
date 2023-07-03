@@ -50,9 +50,12 @@ var (
 )
 
 type additionalSessionData struct {
-	lock                             sync.RWMutex
+	lock sync.RWMutex
+
 	didSaveCapabilityRegistrationIds map[defines.DocumentUri]uuid.UUID
 	filesystem                       *Filesystem
+	clientCapabilities               defines.ClientCapabilities
+	serverCapabilities               defines.ServerCapabilities
 
 	//debug adapter protocol
 	debugSessions *DebugSessions
@@ -88,7 +91,8 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 	}
 
 	server.OnInitialize(func(ctx context.Context, req *defines.InitializeParams) (result *defines.InitializeResult, err *defines.InitializeError) {
-		logs.Println("initialized")
+		session := jsonrpc.GetSession(ctx)
+
 		s := &defines.InitializeResult{}
 
 		s.Capabilities.HoverProvider = true
@@ -104,6 +108,12 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 		s.Capabilities.CompletionProvider = &defines.CompletionOptions{
 			TriggerCharacters: &[]string{"."},
 		}
+
+		sessionData := getLockedSessionData(session)
+		sessionData.clientCapabilities = req.Capabilities
+		sessionData.serverCapabilities = s.Capabilities
+		sessionData.lock.Unlock()
+
 		return s, nil
 	})
 
@@ -430,8 +440,11 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 
 		var fullDocumentText string
 
-		//full document text
-		if len(req.ContentChanges) == 1 && req.ContentChanges[0].Range == (defines.Range{}) {
+		sessionData := getLockedSessionData(session)
+		syncFull := sessionData.serverCapabilities.TextDocumentSync == defines.TextDocumentSyncKindFull
+		sessionData.lock.Unlock()
+
+		if syncFull {
 			fullDocumentText = req.ContentChanges[0].Text.(string)
 		} else {
 			currentContent, err := fsutil.ReadFile(fls.docsFS(), fpath)
@@ -441,6 +454,12 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 					Message: fmt.Sprintf("failed to read state of document %s: %s", fpath+":", err),
 				}
 			}
+
+			var (
+				lastReplacementStirng string
+				lastRangeStart        int32
+				lastRangeExlusiveEnd  int32
+			)
 
 			for _, change := range req.ContentChanges {
 				startLine, startColumn := getLineColumn(change.Range.Start)
@@ -458,18 +477,39 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 					}
 				}
 
-				start := chunk.GetLineColumnPosition(startLine, startColumn)
-				exclusiveEnd := chunk.GetLineColumnPosition(endLine, endColumn)
-				rangeLength := exclusiveEnd - start
+				lastReplacementStirng = change.Text.(string)
 
-				replacement := change.Text.(string)
+				lastRangeStart = chunk.GetLineColumnPosition(startLine, startColumn)
+				lastRangeExlusiveEnd = chunk.GetLineColumnPosition(endLine, endColumn)
+				rangeLength := lastRangeExlusiveEnd - lastRangeStart
 
-				afterRange := utils.CopySlice(currentContent[start+rangeLength:])
-				currentContent = append(currentContent[:start], replacement...)
+				afterRange := utils.CopySlice(currentContent[lastRangeStart+rangeLength:])
+				currentContent = append(currentContent[:lastRangeStart], lastReplacementStirng...)
 				currentContent = append(currentContent, afterRange...)
 			}
 
 			fullDocumentText = string(currentContent)
+
+			textEdit, ok := getAutoEditForChange(fullDocumentText, lastReplacementStirng, lastRangeStart, lastRangeExlusiveEnd)
+
+			if ok {
+				//the response can be sefaly ignored because if the edit is applied a textDocument/didSave request
+				//will be sent by the client.
+				go session.SendRequest(jsonrpc.RequestMessage{
+					BaseMessage: jsonrpc.BaseMessage{
+						Jsonrpc: JSONRPC_VERSION,
+					},
+					Method: "workspace/applyEdit",
+					ID:     uuid.New(),
+					Params: utils.Must(json.Marshal(defines.ApplyWorkspaceEditParams{
+						Edit: defines.WorkspaceEdit{
+							Changes: &map[string][]defines.TextEdit{
+								string(req.TextDocument.Uri): {textEdit},
+							},
+						},
+					})),
+				})
+			}
 		}
 
 		fsErr := fsutil.WriteFile(fls.docsFS(), fpath, []byte(fullDocumentText), 0700)
