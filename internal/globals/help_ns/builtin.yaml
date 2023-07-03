@@ -97,16 +97,16 @@ crypto:
   - topic: hash_password
     text: >
       the hash_password function hashes a password string using the Argon2id algorithm, it returns a string
-      containing the hash and a random salt. You can find the implementation in this file: https://github.com/inoxlang/inox/blob/master/internal/globals/crypto.go 
+      containing: the hash, a random salt and parameters. You can find the implementation in this file: https://github.com/inoxlang/inox/blob/master/internal/globals/crypto.go 
     examples:
     - code: 'hash_password("password")'
-      output: '497YcpQY5qZWKZ0v2VefkEM6KIX0t+NoSsseL2bU9rk=|6bXjry/BYcokXTpLakw2ySzGJfNtAb0sKMctpEV1lyg='
+      output: '$argon2id$v=19$m=65536,t=1,p=1$xDLqbPJUrCURnSiVYuy/Qg$OhEJCObGgJ2EbcH0a7oE2sfD1+5T2BPRs8SRWkreE00'
 
   - topic: check_password
     text: the check_password verifies that a password matches a Argon2id hash.
     related-topics: [hash_password]
     examples:
-    - code: 'check_password("password", "497YcpQY5qZWKZ0v2VefkEM6KIX0t+NoSsseL2bU9rk=|6bXjry/BYcokXTpLakw2ySzGJfNtAb0sKMctpEV1lyg=")'
+    - code: 'check_password("password", "$argon2id$v=19$m=65536,t=1,p=1$xDLqbPJUrCURnSiVYuy/Qg$OhEJCObGgJ2EbcH0a7oE2sfD1+5T2BPRs8SRWkreE00")'
       output: 'true'
 
   - topic: sha256
