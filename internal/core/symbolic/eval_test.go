@@ -5550,6 +5550,20 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &Identifier{name: "div"}, res)
 		})
 
+		t.Run("self-closing element", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`html<div/>`)
+			state.setGlobal("html", NewRecord(map[string]SymbolicValue{
+				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *XMLElement) *Identifier {
+					return &Identifier{name: elem.name}
+				}),
+			}), GlobalConst)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, &Identifier{name: "div"}, res)
+		})
+
 		t.Run("interpolation", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`html<div>{1}</div>`)
 			state.setGlobal("html", NewRecord(map[string]SymbolicValue{
