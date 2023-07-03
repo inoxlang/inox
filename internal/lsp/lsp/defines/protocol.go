@@ -2,9 +2,6 @@ package defines
 
 type ClientCapabilities struct {
 	_ClientCapabilities
-	WorkspaceFoldersClientCapabilities
-	ConfigurationClientCapabilities
-	WorkDoneProgressClientCapabilities
 }
 type ServerCapabilities struct {
 	_ServerCapabilities
@@ -114,6 +111,13 @@ type _ServerCapabilities struct {
 		//
 		// @since 3.16.0
 		FileOperations *FileOperationOptions `json:"fileOperations,omitempty"`
+
+		/**
+		 * The server supports workspace folder.
+		 *
+		 * @since 3.6.0
+		 */
+		WorkspaceFolders interface{} `json:"workspaceFolders,omitempty"` // WorkspaceFoldersServerCapabilities
 	} `json:"workspace,omitempty"`
 
 	// The server provides moniker support.
@@ -219,6 +223,18 @@ type WorkspaceClientCapabilities struct {
 
 	// Capabilities specific to the `workspaceexecuteCommand` request.
 	ExecuteCommand *ExecuteCommandClientCapabilities `json:"executeCommand,omitempty"`
+
+	//
+	// The client has support for workspace folders.
+	//
+	// @since 3.6.0
+	//
+	WorkspaceFolders *bool `json:"workspaceFolders,omitempty"`
+
+	// The client supports `workspace/configuration` requests.
+	//
+	// @since 3.6.0
+	Configuration *bool `json:"configuration,omitempty"`
 
 	// Capabilities specific to the semantic token requests scoped to the
 	// workspace.
@@ -394,7 +410,6 @@ type TextDocumentClientCapabilities struct {
 }
 
 type WindowClientCapabilities struct {
-
 	// Whether client supports handling progress notifications. If set
 	// servers are allowed to report in `workDoneProgress` property in the
 	// request specific server capabilities.

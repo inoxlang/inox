@@ -6,24 +6,21 @@ type WorkspaceFoldersInitializeParams struct {
 	WorkspaceFolders interface{} `json:"workspaceFolders,omitempty"` // []WorkspaceFolder, null,
 }
 
-type WorkspaceFoldersClientCapabilities struct {
+// type WorkspaceFoldersClientCapabilities struct {
 
-	// The workspace client capabilities
-	Workspace *struct {
+// 	// The workspace client capabilities
+// 	Workspace *struct {
 
-		// The client has support for workspace folders
-		//
-		// @since 3.6.0
-		WorkspaceFolders *bool `json:"workspaceFolders,omitempty"`
-	} `json:"workspace,omitempty"`
-}
+// 		// The client has support for workspace folders
+// 		//
+// 		// @since 3.6.0
+// 		WorkspaceFolders *bool `json:"workspaceFolders,omitempty"`
+// 	} `json:"workspace,omitempty"`
+// }
 
 type WorkspaceFoldersServerCapabilities struct {
-
-	// The workspace server capabilities
-	Workspace *struct {
-		WorkspaceFolders interface{} `json:"workspaceFolders,omitempty"` // supported, changeNotifications,
-	} `json:"workspace,omitempty"`
+	Supported           bool        `json:"supported,omitempty"`
+	ChangeNotifications interface{} `json:"changeNotifications,omitempty"` //string | boolean
 }
 
 type WorkspaceFolder struct {

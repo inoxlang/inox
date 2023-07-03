@@ -6,7 +6,7 @@ type ConfigurationClientCapabilities struct {
 	// The workspace client capabilities
 	Workspace *struct {
 
-		// The client supports `workspaceconfiguration` requests.
+		// The client supports `workspace/configuration` requests.
 		//
 		// @since 3.6.0
 		Configuration *bool `json:"configuration,omitempty"`

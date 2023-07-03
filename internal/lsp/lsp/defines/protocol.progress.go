@@ -1,17 +1,17 @@
 package defines
 
-type WorkDoneProgressClientCapabilities struct {
+// type WorkDoneProgressClientCapabilities struct {
 
-	// Window specific client capabilities.
-	Window *struct {
+// 	// Window specific client capabilities.
+// 	Window *struct {
 
-		// Whether client supports server initiated progress using the
-		// `windowworkDoneProgresscreate` request.
-		//
-		// Since 3.15.0
-		WorkDoneProgress *bool `json:"workDoneProgress,omitempty"`
-	} `json:"window,omitempty"`
-}
+// 		// Whether client supports server initiated progress using the
+// 		// `windowworkDoneProgresscreate` request.
+// 		//
+// 		// Since 3.15.0
+// 		WorkDoneProgress *bool `json:"workDoneProgress,omitempty"`
+// 	} `json:"window,omitempty"`
+// }
 
 type WorkDoneProgressBegin struct {
 	Kind interface{} `json:"kind,omitempty"` // 'begin'
