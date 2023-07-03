@@ -846,8 +846,10 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			_, err = TreeWalkEval(stmt, state)
 
 			if err != nil {
-				state.updateStackTrace(stmt)
-				state.debug.beforeInstruction(stmt, state.frameInfo, err)
+				if state.debug != nil {
+					state.updateStackTrace(stmt)
+					state.debug.beforeInstruction(stmt, state.frameInfo, err)
+				}
 				return nil, err
 			}
 			if state.returnValue != nil {
@@ -868,8 +870,10 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 			_, err := TreeWalkEval(stmt, state)
 			if err != nil {
-				state.updateStackTrace(stmt)
-				state.debug.beforeInstruction(stmt, state.frameInfo, err)
+				if state.debug != nil {
+					state.updateStackTrace(stmt)
+					state.debug.beforeInstruction(stmt, state.frameInfo, err)
+				}
 				return nil, err
 			}
 
