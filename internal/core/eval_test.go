@@ -6071,6 +6071,20 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, NewXmlElement("div", nil, []Value{Str("")}), val)
 		})
 
+		t.Run("self-closing element", func(t *testing.T) {
+			code := `idt<div/>`
+			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				"idt": createNamespace(),
+			})
+
+			val, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, NewXmlElement("div", nil, nil), val)
+		})
+
 		t.Run("integer attribute", func(t *testing.T) {
 			code := `idt<div a=1></div>`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
