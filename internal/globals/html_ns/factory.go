@@ -40,9 +40,16 @@ func CreateHTMLNodeFromXMLElement(ctx *core.Context, arg *core.XMLElement) *HTML
 		}
 	}
 
-	return NewNodeFromGoDescription(NodeDescription{
+	node := NewNodeFromGoDescription(NodeDescription{
 		Tag:        arg.Name(),
 		Children:   childNodes,
 		Attributes: attributes,
 	})
+
+	if arg.Name() == "html" {
+		return NewHTML5DocumentNodeFromGoDescription(HTML5DocumentDescription{
+			HtmlTagNode: node,
+		})
+	}
+	return node
 }

@@ -292,6 +292,34 @@ func NewNodeFromGoDescription(desc NodeDescription) *HTMLNode {
 	return node
 }
 
+type HTML5DocumentDescription struct {
+	HtmlTagNode *HTMLNode //this value should not be referenced elsewhere
+}
+
+func NewHTML5DocumentNodeFromGoDescription(desc HTML5DocumentDescription) *HTMLNode {
+	if desc.HtmlTagNode.node.Type != html.ElementNode || desc.HtmlTagNode.node.DataAtom != atom.Html {
+		panic(fmt.Errorf("argument is not a <html> element node"))
+	}
+
+	docTypeNode := &html.Node{
+		Type:        html.DoctypeNode,
+		Data:        "html",
+		NextSibling: desc.HtmlTagNode.node,
+	}
+
+	desc.HtmlTagNode.node.PrevSibling = docTypeNode
+
+	docNode := &HTMLNode{
+		node: &html.Node{
+			Type:       html.DocumentNode,
+			FirstChild: docTypeNode,
+			LastChild:  desc.HtmlTagNode.node,
+		},
+	}
+
+	return docNode
+}
+
 func CreateTextNode(strLike core.StringLike) *HTMLNode {
 	return NewHTMLNode(createTextNode(strLike.GetOrBuildString()))
 }
