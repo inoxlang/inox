@@ -1,6 +1,13 @@
 package afs
 
-import "os"
+import (
+	"errors"
+	"os"
+)
+
+var (
+	ErrNotStatCapable = errors.New("not stat capable")
+)
 
 type StatCapable interface {
 	Stat() (os.FileInfo, error)

@@ -163,6 +163,10 @@ type Unregistration struct {
 	Method string `json:"method,omitempty"`
 }
 
+type UnregistrationParams struct {
+	Unregistrations []Unregistration `json:"unregisterations,omitempty"`
+}
+
 type ProgressToken interface{} // number | string
 
 type WorkDoneProgressParams struct {

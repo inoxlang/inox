@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"sync"
 
 	fsutil "github.com/go-git/go-billy/v5/util"
+	"github.com/google/uuid"
 
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
@@ -39,10 +41,16 @@ const (
 var (
 	ErrFileURIExpected = errors.New("a file: URI was expected")
 	ErrInoxURIExpected = errors.New("a inox: URI was expected")
+
+	True  = true
+	False = false
 )
 
 func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 	var (
+		didSaveCapabilityRegistrationIds     = make(map[defines.DocumentUri]uuid.UUID)
+		didSaveCapabilityRegistrationIdsLock sync.Mutex
+
 		shuttingDownSessionsLock sync.Mutex
 		shuttingDownSessions     = make(map[*jsonrpc.Session]struct{})
 
@@ -67,8 +75,11 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 		s.Capabilities.WorkspaceSymbolProvider = true
 		s.Capabilities.DefinitionProvider = true
 
-		// makes the client send the whole document during synchronization
-		s.Capabilities.TextDocumentSync = defines.TextDocumentSyncKindFull
+		if *req.Capabilities.TextDocument.Synchronization.DidSave && *req.Capabilities.TextDocument.Synchronization.DynamicRegistration {
+			s.Capabilities.TextDocumentSync = defines.TextDocumentSyncKindIncremental
+		} else {
+			s.Capabilities.TextDocumentSync = defines.TextDocumentSyncKindFull
+		}
 
 		s.Capabilities.CompletionProvider = &defines.CompletionOptions{
 			TriggerCharacters: &[]string{"."},
@@ -271,6 +282,121 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 			logs.Println("failed to update state of document", fpath+":", fsErr)
 		}
 
+		registrationId := uuid.New()
+
+		didSaveCapabilityRegistrationIdsLock.Lock()
+		if _, ok := didSaveCapabilityRegistrationIds[req.TextDocument.Uri]; !ok {
+			didSaveCapabilityRegistrationIds[req.TextDocument.Uri] = registrationId
+			didSaveCapabilityRegistrationIdsLock.Unlock()
+
+			session.SendRequest(jsonrpc.RequestMessage{
+				BaseMessage: jsonrpc.BaseMessage{
+					Jsonrpc: JSONRPC_VERSION,
+				},
+				Method: "client/registerCapability",
+				ID:     uuid.New(),
+				Params: utils.Must(json.Marshal(defines.RegistrationParams{
+					Registrations: []defines.Registration{
+						{
+							Id:     registrationId.String(),
+							Method: "textDocument/didSave",
+							RegisterOptions: defines.TextDocumentSaveRegistrationOptions{
+								TextDocumentRegistrationOptions: defines.TextDocumentRegistrationOptions{
+									DocumentSelector: req.TextDocument,
+								},
+								SaveOptions: defines.SaveOptions{
+									IncludeText: &True,
+								},
+							},
+						},
+					},
+				})),
+			})
+
+		} else {
+			didSaveCapabilityRegistrationIdsLock.Unlock()
+		}
+
+		return notifyDiagnostics(session, req.TextDocument.Uri, projectMode, fls)
+	})
+
+	server.OnDidSaveTextDocument(func(ctx context.Context, req *defines.DidSaveTextDocumentParams) (err error) {
+		fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
+		if err != nil {
+			return err
+		}
+		session := jsonrpc.GetSession(ctx)
+		fls, ok := getLspFilesystem(session)
+		if !ok {
+			return errors.New(FsNoFilesystem)
+		}
+
+		// The document's text should be included because we asked for it:
+		// a client/registerCapability request was sent for the textDocument/didSave method.
+		// After the document is saved we immediately unregister the capability. The only purpose is
+		// to get the initial content for a newly created file as no textDocument/didChange request
+		// is sent for the first modification.
+		if req.Text != nil {
+			fsErr := fsutil.WriteFile(fls.docsFS(), fpath, []byte(*req.Text), 0700)
+			if fsErr != nil {
+				logs.Println("failed to update state of document", fpath+":", fsErr)
+			}
+
+			didSaveCapabilityRegistrationIdsLock.Lock()
+			registrationId, ok := didSaveCapabilityRegistrationIds[req.TextDocument.Uri]
+
+			if !ok {
+				didSaveCapabilityRegistrationIdsLock.Unlock()
+			} else {
+				delete(didSaveCapabilityRegistrationIds, req.TextDocument.Uri)
+				didSaveCapabilityRegistrationIdsLock.Unlock()
+
+				session.SendRequest(jsonrpc.RequestMessage{
+					BaseMessage: jsonrpc.BaseMessage{
+						Jsonrpc: JSONRPC_VERSION,
+					},
+					Method: "client/unregisterCapability",
+					ID:     uuid.New(),
+					Params: utils.Must(json.Marshal(defines.UnregistrationParams{
+						Unregistrations: []defines.Unregistration{
+							{
+								Id:     registrationId.String(),
+								Method: "textDocument/didSave",
+							},
+						},
+					})),
+				})
+
+				//on vscode unregistering the capability does not stop the client from sending didSave
+				//notifications with the text included so we register the capability again but this time
+				//we ask the client to not include the full text.
+
+				session.SendRequest(jsonrpc.RequestMessage{
+					BaseMessage: jsonrpc.BaseMessage{
+						Jsonrpc: JSONRPC_VERSION,
+					},
+					Method: "client/registerCapability",
+					ID:     uuid.New(),
+					Params: utils.Must(json.Marshal(defines.RegistrationParams{
+						Registrations: []defines.Registration{
+							{
+								Id:     uuid.New().String(),
+								Method: "textDocument/didSave",
+								RegisterOptions: defines.TextDocumentSaveRegistrationOptions{
+									TextDocumentRegistrationOptions: defines.TextDocumentRegistrationOptions{
+										DocumentSelector: req.TextDocument,
+									},
+									SaveOptions: defines.SaveOptions{
+										IncludeText: &False,
+									},
+								},
+							},
+						},
+					})),
+				})
+			}
+		}
+
 		return notifyDiagnostics(session, req.TextDocument.Uri, projectMode, fls)
 	})
 
@@ -280,19 +406,62 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 			return err
 		}
 
-		if len(req.ContentChanges) > 1 {
-			return errors.New("single change supported")
-		}
 		session := jsonrpc.GetSession(ctx)
 		fls, ok := getLspFilesystem(session)
 		if !ok {
 			return errors.New(FsNoFilesystem)
 		}
 
-		fullDocumentText := req.ContentChanges[0].Text.(string)
+		var fullDocumentText string
+
+		//full document text
+		if len(req.ContentChanges) == 1 && req.ContentChanges[0].Range == (defines.Range{}) {
+			fullDocumentText = req.ContentChanges[0].Text.(string)
+		} else {
+			currentContent, err := fsutil.ReadFile(fls.docsFS(), fpath)
+			if err != nil {
+				return jsonrpc.ResponseError{
+					Code:    jsonrpc.InternalError.Code,
+					Message: fmt.Sprintf("failed to read state of document %s: %s", fpath+":", err),
+				}
+			}
+
+			for _, change := range req.ContentChanges {
+				startLine, startColumn := getLineColumn(change.Range.Start)
+				endLine, endColumn := getLineColumn(change.Range.End)
+
+				chunk, err := parse.ParseChunkSource(parse.InMemorySource{
+					NameString: "script",
+					CodeString: string(currentContent),
+				})
+
+				if err != nil && chunk == nil { //critical parsing error
+					return jsonrpc.ResponseError{
+						Code:    jsonrpc.InternalError.Code,
+						Message: fmt.Sprintf("failed to update state of document %s: critical parsing error: %s", fpath+":", err),
+					}
+				}
+
+				start := chunk.GetLineColumnPosition(startLine, startColumn)
+				exclusiveEnd := chunk.GetLineColumnPosition(endLine, endColumn)
+				rangeLength := exclusiveEnd - start
+
+				replacement := change.Text.(string)
+
+				afterRange := utils.CopySlice(currentContent[start+rangeLength:])
+				currentContent = append(currentContent[:start], replacement...)
+				currentContent = append(currentContent, afterRange...)
+			}
+
+			fullDocumentText = string(currentContent)
+		}
+
 		fsErr := fsutil.WriteFile(fls.docsFS(), fpath, []byte(fullDocumentText), 0700)
 		if fsErr != nil {
-			logs.Println("failed to update state of document", fpath+":", fsErr)
+			return jsonrpc.ResponseError{
+				Code:    jsonrpc.InternalError.Code,
+				Message: fmt.Sprintf("failed to update state of document %s: %s", fpath+":", fsErr),
+			}
 		}
 
 		return notifyDiagnostics(session, req.TextDocument.Uri, projectMode, fls)

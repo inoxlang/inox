@@ -280,46 +280,60 @@ func (s *Session) write(resp ResponseMessage) error {
 	}
 
 	logs.Printf("Response: [%v] res: [%v]\n", resp.ID, string(res))
-	totalLen := len(res)
 
 	if s.msgConn != nil {
 		return s.msgConn.WriteMessage(res)
 	}
 
-	err = s.mustWrite([]byte(fmt.Sprintf("Content-Length: %d\r\n\r\n", totalLen)))
-	if err != nil {
-		return err
-	}
-	err = s.mustWrite(res)
-	if err != nil {
-		return err
-	}
-	return nil
+	return s.mustWriteWithContentLengthHeader(res)
 }
 
 func (s *Session) Notify(notif NotificationMessage) error {
 	s.writeLock.Lock()
 	defer s.writeLock.Unlock()
 
-	res, err := jsoniter.Marshal(notif)
+	notifBytes, err := jsoniter.Marshal(notif)
 	if err != nil {
 		return err
 	}
-	logs.Printf("Notification: [%v]\n", string(res))
+	logs.Printf("Notification: [%v]\n", string(notifBytes))
 
 	if s.msgConn != nil {
-		return s.msgConn.WriteMessage(res)
+		return s.msgConn.WriteMessage(notifBytes)
 	}
 
-	totalLen := len(res)
-	err = s.mustWrite([]byte(fmt.Sprintf("Content-Length: %d\r\n\r\n", totalLen)))
+	return s.mustWriteWithContentLengthHeader(notifBytes)
+}
+
+func (s *Session) SendRequest(req RequestMessage) error {
+	s.writeLock.Lock()
+	defer s.writeLock.Unlock()
+
+	reqBytes, err := jsoniter.Marshal(req)
 	if err != nil {
 		return err
 	}
-	err = s.mustWrite(res)
+	logs.Printf("Request To Client: [%v]\n", string(reqBytes))
+
+	if s.msgConn != nil {
+		return s.msgConn.WriteMessage(reqBytes)
+	}
+
+	return s.mustWriteWithContentLengthHeader(reqBytes)
+}
+
+func (s *Session) mustWriteWithContentLengthHeader(msg []byte) error {
+	totalLen := len(msg)
+
+	err := s.mustWrite([]byte(fmt.Sprintf("Content-Length: %d\r\n\r\n", totalLen)))
 	if err != nil {
 		return err
 	}
+	err = s.mustWrite(msg)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
