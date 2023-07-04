@@ -7761,6 +7761,7 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 				},
 				Name: name,
 			})
+			openingElement.Span.End = p.i
 		}
 
 		p.eatSpace()

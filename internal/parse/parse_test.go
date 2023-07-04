@@ -20241,7 +20241,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("attribute with value, follwoed by space", func(t *testing.T) {
+		t.Run("attribute with value, followed by space", func(t *testing.T) {
 			n := mustparseChunk(t, `h<div a="b" ></div>`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 19}, nil, nil},
@@ -20596,6 +20596,46 @@ func testParse(
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{10, 13}, nil, nil},
 									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("attribute with only name: unterminated opening tag", func(t *testing.T) {
+			n, err := parseChunk(t, `h<div a`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 7}, nil, nil},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{
+									NodeSpan{1, 7},
+									&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING},
+									[]Token{{Type: LESS_THAN, Span: NodeSpan{1, 2}}},
+								},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, nil},
+									Name:     "div",
+								},
+								Attributes: []*XMLAttribute{
+									{
+										NodeBase: NodeBase{NodeSpan{6, 7}, nil, nil},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{6, 7}, nil, nil},
+											Name:     "a",
+										},
+									},
 								},
 							},
 						},
