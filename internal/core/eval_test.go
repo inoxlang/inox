@@ -6763,6 +6763,44 @@ func testDebugModeEval(
 			}, stackTraces)
 		})
 
+		t.Run("breakpoint set on empty line", func(t *testing.T) {
+			state, ctx, chunk, debugger := setup(
+				`a = 1
+
+				return 3
+			`)
+
+			controlChan := debugger.ControlChan()
+
+			defer ctx.Cancel()
+
+			breakpointsChan := make(chan []BreakpointInfo)
+
+			controlChan <- DebugCommandSetBreakpoints{
+				Chunk:             chunk,
+				BreakPointsByLine: []int{2},
+				GetBreakpointsSetByLine: func(breakpoints []BreakpointInfo) {
+					breakpointsChan <- breakpoints
+				},
+			}
+
+			breakpoints := <-breakpointsChan
+			assert.Equal(t, []BreakpointInfo{
+				{
+					Chunk: chunk,
+					Id:    INITIAL_BREAKPOINT_ID,
+				},
+			}, breakpoints)
+
+			result, err := eval(chunk.Node, state)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, Int(3), result)
+		})
+
 		t.Run("successive breakpoints set by line during initialization", func(t *testing.T) {
 			state, ctx, chunk, debugger := setup(
 				`a = 1

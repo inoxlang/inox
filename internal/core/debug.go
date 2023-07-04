@@ -84,8 +84,6 @@ func NewDebugger(args DebuggerArgs) *Debugger {
 		}
 	}
 
-	
-
 	debugger := &Debugger{
 		ctx:                       args.Context,
 		controlChan:               make(chan any),
@@ -100,7 +98,7 @@ func NewDebugger(args DebuggerArgs) *Debugger {
 	}
 
 	if args.ExceptionBreakpointId >= INITIAL_BREAKPOINT_ID {
-		debugger.exceptionBreakpointsId.Store(args.ExceptionBreakpointId )
+		debugger.exceptionBreakpointsId.Store(args.ExceptionBreakpointId)
 	}
 
 	return debugger
@@ -216,6 +214,7 @@ func (d *Debugger) startGoroutine() {
 									breakpoints[breakpoint.NodeSpan] = breakpoint
 								}
 							}
+							breakpointsSetByLine = append(breakpointsSetByLine, breakpointsFromLines...)
 						} else {
 							d.logger.Err(err).Msg("failed to get breakpoints from lines")
 						}
@@ -395,13 +394,13 @@ func GetBreakpointsFromLines(lines []int, chunk *parse.ParsedChunk, nextBreakpoi
 		*nextBreakpointId = *nextBreakpointId + 1
 
 		breakpointInfo := BreakpointInfo{
-			NodeSpan: stmt.Base().Span,
-			Chunk:    chunk,
-			Id:       id,
+			Chunk: chunk,
+			Id:    id,
 		}
 
 		if stmt != nil {
 			line, col := chunk.GetLineColumn(stmt)
+			breakpointInfo.NodeSpan = stmt.Base().Span
 			breakpointInfo.StartLine = line
 			breakpointInfo.StartColumn = col
 		}
