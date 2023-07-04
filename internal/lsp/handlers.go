@@ -56,9 +56,17 @@ type additionalSessionData struct {
 	filesystem                       *Filesystem
 	clientCapabilities               defines.ClientCapabilities
 	serverCapabilities               defines.ServerCapabilities
+	projectMode                      bool
 
 	//debug adapter protocol
 	debugSessions *DebugSessions
+}
+
+func (d *additionalSessionData) Scheme() string {
+	if d.projectMode {
+		return INOX_FS_SCHEME
+	}
+	return "file"
 }
 
 func getLockedSessionData(session *jsonrpc.Session) *additionalSessionData {
@@ -112,6 +120,7 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 		sessionData := getLockedSessionData(session)
 		sessionData.clientCapabilities = req.Capabilities
 		sessionData.serverCapabilities = s.Capabilities
+		sessionData.projectMode = projectMode
 		sessionData.lock.Unlock()
 
 		return s, nil
@@ -531,6 +540,8 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 		line, column := getLineColumn(req.Position)
 		session := jsonrpc.GetSession(ctx)
 		sessionCtx := session.Context()
+		sessionData := getLockedSessionData(session)
+		sessionData.lock.Unlock()
 
 		fls, ok := getLspFilesystem(session)
 		if !ok {
@@ -570,6 +581,8 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 
 		var position parse.SourcePositionRange
 
+		ok = false
+
 		switch n := foundNode.(type) {
 		case *parse.Variable, *parse.GlobalVariable, *parse.IdentifierLiteral:
 			position, ok = state.SymbolicData.GetVariableDefinitionPosition(foundNode, ancestors)
@@ -603,7 +616,7 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 
 		links := []defines.LocationLink{
 			{
-				TargetUri:            defines.DocumentUri("file://" + position.SourceName),
+				TargetUri:            defines.DocumentUri(sessionData.Scheme() + "://" + position.SourceName),
 				TargetRange:          rangeToLspRange(position),
 				TargetSelectionRange: rangeToLspRange(position),
 			},
