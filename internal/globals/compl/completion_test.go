@@ -58,7 +58,7 @@ func TestFindCompletions(t *testing.T) {
 					CursorIndex: cursorIndex,
 					Mode:        mode,
 				})
-				//in order to simplify tests we remove some information like replaced ranges
+				//in order to simplify tests we remove/simplify some information like replaced ranges
 				for i, compl := range completions {
 					completions[i].ReplacedRange = parse.SourcePositionRange{
 						SourceName:  "",
@@ -721,6 +721,29 @@ func TestFindCompletions(t *testing.T) {
 					completions := findCompletions(state, chunk, 3)
 					assert.EqualValues(t, []Completion{
 						{ShownString: "concat", Value: "concat", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 2, End: 3}}},
+					}, completions)
+				})
+
+			})
+
+			t.Run("html attribute names", func(t *testing.T) {
+				t.Run("local variable in top level module", func(t *testing.T) {
+					state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+					chunk, _ := parseChunkSource("html<img sr />", "")
+
+					doSymbolicCheck(chunk, state.Global)
+					completions := findCompletions(state, chunk, 11)
+					assert.EqualValues(t, []Completion{
+						{
+							ShownString:   "src",
+							Value:         "src",
+							ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 9, End: 11}},
+						},
+						{
+							ShownString:   "srcset",
+							Value:         "srcset",
+							ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 9, End: 11}},
+						},
 					}, completions)
 				})
 

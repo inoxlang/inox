@@ -525,6 +525,17 @@ func handleIdentifierAndKeywordCompletions(
 		}
 	}
 
+	// in attribute
+	if attribute, ok := parent.(*parse.XMLAttribute); ok {
+		//if name
+		switch {
+		case ident == attribute.Name:
+			completions = findXmlAttributeNameCompletions(ident, attribute, ancestors)
+		}
+
+		return completions
+	}
+
 	//suggest local variables
 
 	if mode == ShellCompletions {
@@ -586,7 +597,7 @@ func handleIdentifierAndKeywordCompletions(
 		}
 	}
 
-	//suggest context dependent keywords
+	//suggest context-dependent keywords
 
 	for i := len(ancestors) - 1; i >= 0; i-- {
 		if parse.IsScopeContainerNode(ancestors[i]) {
@@ -622,13 +633,13 @@ func handleIdentifierAndKeywordCompletions(
 		}
 	}
 
-	//suggest context independent keywords starting statements
+	//suggest context-independent statement-starting keywords
 
-	for _, keyword := range CONTEXT_INDEPENDENT_STMT_STARTING_KEYWORDS {
+	switch parent.(type) {
+	case *parse.Block, *parse.InitializationBlock, *parse.EmbeddedModule, *parse.Chunk:
+		for _, keyword := range CONTEXT_INDEPENDENT_STMT_STARTING_KEYWORDS {
 
-		if strings.HasPrefix(keyword, ident.Name) {
-			switch parent.(type) {
-			case *parse.Block, *parse.InitializationBlock, *parse.EmbeddedModule, *parse.Chunk:
+			if strings.HasPrefix(keyword, ident.Name) {
 				completions = append(completions, Completion{
 					ShownString: keyword,
 					Value:       keyword,
@@ -638,7 +649,7 @@ func handleIdentifierAndKeywordCompletions(
 		}
 	}
 
-	//suggest some keywords starting expressions
+	//suggest some expression-starting keywords
 
 	for _, keyword := range []string{"udata", "Mapping", "concat"} {
 		if strings.HasPrefix(keyword, ident.Name) {
