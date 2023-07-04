@@ -25,7 +25,7 @@ func (c *ParsedChunk) getRunes() []rune {
 }
 
 type ChunkSource interface {
-	Name() string
+	Name() string //unique name | URL | path
 	Code() string
 }
 

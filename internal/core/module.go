@@ -93,6 +93,16 @@ func (mod *Module) IsCompiled() bool {
 	return mod.Bytecode != nil
 }
 
+// ImportStatements returns the top-level import statements.
+func (mod *Module) ImportStatements() (imports []*parse.ImportStatement) {
+	for _, stmt := range mod.MainChunk.Node.Statements {
+		if importStmt, ok := stmt.(*parse.ImportStatement); ok {
+			imports = append(imports, importStmt)
+		}
+	}
+	return
+}
+
 func (mod *Module) ToSymbolic() *symbolic.Module {
 	inclusionStmtMap := make(map[*parse.InclusionImportStatement]*symbolic.IncludedChunk, len(mod.IncludedChunkMap))
 

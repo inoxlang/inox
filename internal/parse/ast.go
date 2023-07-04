@@ -1687,8 +1687,21 @@ func (PermissionDroppingStatement) Kind() NodeKind {
 type ImportStatement struct {
 	NodeBase
 	Identifier    *IdentifierLiteral
-	Source        Node
+	Source        Node // *URLLiteral, *RelativePathLiteral, *AbsolutePathLiteral
 	Configuration Node
+}
+
+func (stmt *ImportStatement) SourceString() (string, bool) {
+	switch src := stmt.Source.(type) {
+	case *URLLiteral:
+		return src.Value, true
+	case *AbsolutePathLiteral:
+		return src.Value, true
+	case *RelativePathLiteral:
+		return src.Value, true
+	default:
+		return "",false
+	}
 }
 
 func (ImportStatement) Kind() NodeKind {

@@ -2,6 +2,7 @@ package core
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -11,11 +12,16 @@ import (
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
 	NO_SCHEME_SCHEME_NAME = "noscheme"
 	NO_SCHEME_SCHEME      = NO_SCHEME_SCHEME_NAME + "://"
+)
+
+var (
+	ErrNotResourceName = errors.New("not a resource name")
 )
 
 // Value is the interface implemented by all values accessible to Inox code.
@@ -47,6 +53,17 @@ type Value interface {
 type ResourceName interface {
 	WrappedString
 	ResourceName() string
+}
+
+func ResourceNameFrom(s string) ResourceName {
+	n, _ := parse.ParseExpression(s)
+
+	switch n.(type) {
+	case *parse.HostLiteral, *parse.AbsolutePathLiteral, *parse.RelativePathLiteral, *parse.URLLiteral:
+		return utils.Must(evalSimpleValueLiteral(n.(parse.SimpleValueLiteral), nil)).(ResourceName)
+	}
+
+	panic(fmt.Errorf("%q is not a valid resource name", s))
 }
 
 type NilT int
