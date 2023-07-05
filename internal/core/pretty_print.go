@@ -1899,6 +1899,10 @@ func (db *DatabaseIL) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, de
 	PrintType(w, db)
 }
 
+func (api *ApiIL) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	PrintType(w, api)
+}
+
 func InspectPrint[T any](w *bufio.Writer, v T) {
 	utils.Must(fmt.Fprintf(w, "%#v", v))
 }

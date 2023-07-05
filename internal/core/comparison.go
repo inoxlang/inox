@@ -1925,3 +1925,12 @@ func (db *DatabaseIL) Equal(ctx *Context, other Value, alreadyCompared map[uintp
 
 	return db == otherDB
 }
+
+func (api *ApiIL) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherAPI, ok := other.(*ApiIL)
+	if !ok {
+		return false
+	}
+
+	return api == otherAPI
+}

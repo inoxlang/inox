@@ -1193,3 +1193,12 @@ func (db *DatabaseIL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symb
 
 	return symbolic.NewDatabaseIL(pattern.(*symbolic.ObjectPattern)), nil
 }
+
+func (api *ApiIL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	pattern, err := api.inner.Schema().ToSymbolicValue(ctx, encountered)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert schema to symbolic: %w", err)
+	}
+
+	return symbolic.NewApiIL(pattern.(*symbolic.ObjectPattern)), nil
+}

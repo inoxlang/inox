@@ -579,3 +579,7 @@ func (*XMLElement) IsMutable() bool {
 func (*DatabaseIL) IsMutable() bool {
 	return true
 }
+
+func (*ApiIL) IsMutable() bool {
+	return true
+}
