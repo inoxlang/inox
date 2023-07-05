@@ -7931,7 +7931,7 @@ func (p *parser) parseXMLChildren(valuelessTokens *[]Token) ([]Node, *ParsingErr
 			p.i++
 			interpolationStart = p.i
 		case inInterpolation && p.s[p.i] == '}': //end of interpolation
-			*valuelessTokens = append(*valuelessTokens, Token{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
+			closingBracketToken := Token{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}}
 			interpolationExclEnd := p.i
 			inInterpolation = false
 			p.i++
@@ -7945,14 +7945,41 @@ func (p *parser) parseXMLChildren(valuelessTokens *[]Token) ([]Node, *ParsingErr
 			if strings.TrimSpace(string(interpolation)) == "" {
 				interpParsingErr = &ParsingError{UnspecifiedParsingError, EMPTY_XML_INTERP}
 			} else {
-				e, ok := ParseExpression(string(interpolation))
+				//ignore leading & trailing space
+				exprStart := int32(0)
+				inclusiveExprEnd := int32(len32(interpolation) - 1)
+
+				for exprStart < len32(interpolation) && interpolation[exprStart] == '\n' || isSpaceNotLF(interpolation[exprStart]) {
+					if interpolation[exprStart] == '\n' {
+						pos := interpolationStart + exprStart
+						*valuelessTokens = append(*valuelessTokens, Token{
+							Type: NEWLINE,
+							Span: NodeSpan{Start: pos, End: pos + 1},
+						})
+					}
+					exprStart++
+				}
+
+				for inclusiveExprEnd > 0 && interpolation[inclusiveExprEnd] == '\n' || isSpaceNotLF(interpolation[inclusiveExprEnd]) {
+					if interpolation[inclusiveExprEnd] == '\n' {
+						pos := interpolationStart + inclusiveExprEnd
+						*valuelessTokens = append(*valuelessTokens, Token{
+							Type: NEWLINE,
+							Span: NodeSpan{Start: pos, End: pos + 1},
+						})
+					}
+					inclusiveExprEnd--
+				}
+
+				e, ok := ParseExpression(string(interpolation[exprStart : inclusiveExprEnd+1]))
 				if !ok {
 					interpParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_XML_INTERP}
 				} else {
 					expr = e
-					shiftNodeSpans(expr, interpolationStart)
+					shiftNodeSpans(expr, interpolationStart+exprStart)
 				}
 			}
+			*valuelessTokens = append(*valuelessTokens, closingBracketToken)
 
 			var interpTokens []Token
 
