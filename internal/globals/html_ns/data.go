@@ -41,6 +41,14 @@ type TagData struct {
 	References  []DataReference `json:"references"`
 }
 
+func (d TagData) DescriptionText() string {
+	return getDescriptionText(d.Description)
+}
+
+func (d TagData) DescriptionContent() string {
+	return getDescriptionContent(d.Description)
+}
+
 type AttributeData struct {
 	Name        string               `json:"name"`
 	Description any                  `json:"description"` //string | MarkupContent
@@ -50,18 +58,11 @@ type AttributeData struct {
 }
 
 func (d AttributeData) DescriptionText() string {
-	description, ok := d.Description.(string)
-	if ok {
-		return description
-	}
+	return getDescriptionText(d.Description)
+}
 
-	markupContent, ok := d.Description.(map[string]any)
-	if ok {
-		//TODO: remove markdown formatting
-		return markupContent["value"].(string)
-	}
-
-	return ""
+func (d AttributeData) DescriptionContent() string {
+	return getDescriptionContent(d.Description)
 }
 
 type DataReference struct {
@@ -75,9 +76,17 @@ type AttributeValueSet struct {
 }
 
 type AttributeValueData struct {
-	Values      string          `json:"name"`
+	Name        string          `json:"name"`
 	Description any             `json:"description"` //string | MarkupContent
 	References  []DataReference `json:"references"`
+}
+
+func (d AttributeValueData) DescriptionText() string {
+	return getDescriptionText(d.Description)
+}
+
+func (d AttributeValueData) DescriptionContent() string {
+	return getDescriptionContent(d.Description)
 }
 
 // GetTagData returns the standard data about a tag (e.g "img", "p"), the returned data should NOT be modified.
@@ -114,4 +123,34 @@ func GetAllTagAttributes(name string) ([]AttributeData, bool) {
 	data = append(data, STANDARD_DATA.GlobalAttributes...)
 
 	return data, true
+}
+
+func getDescriptionText(d any) string {
+	description, ok := d.(string)
+	if ok {
+		return description
+	}
+
+	markupContent, ok := d.(map[string]any)
+	if ok {
+		//TODO: remove markdown formatting
+		return markupContent["value"].(string)
+	}
+
+	return ""
+}
+
+func getDescriptionContent(d any) string {
+	description, ok := d.(string)
+	if ok {
+		return description
+	}
+
+	markupContent, ok := d.(map[string]any)
+	if ok {
+		//TODO: remove markdown formatting
+		return markupContent["value"].(string)
+	}
+
+	return ""
 }

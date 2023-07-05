@@ -1,15 +1,12 @@
 package internal
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
-	"strings"
 	"sync"
 
 	fsutil "github.com/go-git/go-billy/v5/util"
@@ -25,9 +22,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
 	"github.com/inoxlang/inox/internal/utils"
 
-	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/compl"
-	help_ns "github.com/inoxlang/inox/internal/globals/help_ns"
 	parse "github.com/inoxlang/inox/internal/parse"
 
 	_ "net/http/pprof"
@@ -176,81 +171,7 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 			Filesystem: fls,
 		})
 
-		state, mod, _, _ := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
-			Fpath:                     fpath,
-			ParsingCompilationContext: handlingCtx,
-			ParentContext:             nil,
-			Out:                       io.Discard,
-			DevMode:                   true,
-			AllowMissingEnvVars:       true,
-			PreinitFilesystem:         fls,
-			ScriptContextFileSystem:   fls,
-		})
-
-		if state == nil || state.SymbolicData == nil {
-			logs.Println("no data")
-			return &defines.Hover{}, nil
-		}
-
-		span := mod.MainChunk.GetLineColumnSingeCharSpan(line, column)
-		foundNode, ok := mod.MainChunk.GetNodeAtSpan(span)
-
-		if !ok || foundNode == nil {
-			logs.Println("no data")
-			return &defines.Hover{}, nil
-		}
-
-		mostSpecificVal, ok := state.SymbolicData.GetMostSpecificNodeValue(foundNode)
-		var lessSpecificVal symbolic.SymbolicValue
-		if !ok {
-			logs.Println("no data")
-			return &defines.Hover{}, nil
-		}
-
-		buff := &bytes.Buffer{}
-		w := bufio.NewWriterSize(buff, 1000)
-		var stringified string
-		{
-			utils.PanicIfErr(symbolic.PrettyPrint(mostSpecificVal, w, HOVER_PRETTY_PRINT_CONFIG, 0, 0))
-			var ok bool
-			lessSpecificVal, ok = state.SymbolicData.GetLessSpecificNodeValue(foundNode)
-			if ok {
-				w.Write(utils.StringAsBytes("\n\n# less specific\n"))
-				utils.PanicIfErr(symbolic.PrettyPrint(lessSpecificVal, w, HOVER_PRETTY_PRINT_CONFIG, 0, 0))
-			}
-
-			w.Flush()
-			stringified = strings.ReplaceAll(buff.String(), "\n\r", "\n")
-			logs.Println(stringified)
-		}
-
-		//help
-		var helpMessage string
-		{
-			val := mostSpecificVal
-			for {
-				switch val := val.(type) {
-				case *symbolic.GoFunction:
-					text, ok := help_ns.HelpForSymbolicGoFunc(val, help_ns.HelpMessageConfig{Format: help_ns.MarkdownFormat})
-					if ok {
-						helpMessage = "\n-----\n" + strings.ReplaceAll(text, "\n\r", "\n")
-					}
-				}
-				if helpMessage == "" && val == mostSpecificVal && lessSpecificVal != nil {
-					val = lessSpecificVal
-					continue
-				}
-				break
-			}
-
-		}
-
-		return &defines.Hover{
-			Contents: defines.MarkupContent{
-				Kind:  defines.MarkupKindMarkdown,
-				Value: "```inox\n" + stringified + "\n```" + helpMessage,
-			},
-		}, nil
+		return getHoverContent(fpath, line, column, handlingCtx)
 	})
 
 	server.OnCompletion(func(ctx context.Context, req *defines.CompletionParams) (result *[]defines.CompletionItem, err error) {
