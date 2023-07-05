@@ -3,6 +3,7 @@ package lsp
 import (
 	"fmt"
 	"net"
+	"net/http"
 	"reflect"
 
 	core "github.com/inoxlang/inox/internal/core"
@@ -10,16 +11,20 @@ import (
 	"github.com/inoxlang/inox/internal/lsp/logs"
 	"github.com/inoxlang/inox/internal/permkind"
 
+	"github.com/inoxlang/inox/internal/globals/http_ns"
 	_net "github.com/inoxlang/inox/internal/globals/net_ns"
 )
 
 type Server struct {
 	Methods
-	customMethods                []*jsonrpc.MethodInfo
-	rpcServer                    *jsonrpc.Server
-	ctx                          *core.Context //same context as the JSON RPC server.
-	websoketServerCertificate    string
-	websoketServerCertificateKey string
+	customMethods []*jsonrpc.MethodInfo
+	rpcServer     *jsonrpc.Server
+	ctx           *core.Context //same context as the JSON RPC server.
+
+	//websocket mode
+	ServerCertificate    string
+	ServerCertificateKey string
+	ServerHttpHandler    http.Handler
 }
 
 func NewServer(ctx *core.Context, opt *Options) *Server {
@@ -125,16 +130,37 @@ func (s *Server) startWebsocketServer(addr string) error {
 	}
 
 	wsServer, err := NewJsonRpcWebsocketServer(s.ctx, JsonRpcWebsocketServerConfig{
-		addr:                  addr,
-		rpcServer:             s.rpcServer,
-		certificate:           s.websoketServerCertificate,
-		certificatePrivateKey: s.websoketServerCertificateKey,
+		addr:      addr,
+		rpcServer: s.rpcServer,
 	})
 	if err != nil {
 		return err
 	}
 
-	return wsServer.Listen()
+	httpServer, err := http_ns.NewGolangHttpServer(s.ctx, http_ns.GolangHttpServerConfig{
+		Addr: addr,
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/" {
+				wsServer.handleNew(w, r)
+				return
+			}
+			s.ServerHttpHandler.ServeHTTP(w, r)
+		}),
+		PemEncodedCert: s.ServerCertificate,
+		PemEncodedKey:  s.ServerCertificateKey,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	wsServer.logger.Info().Msg("start HTTPS server")
+	err = httpServer.ListenAndServeTLS("", "")
+	if err != nil {
+		return fmt.Errorf("failed to create HTTPS server: %w", err)
+	}
+
+	return nil
 }
 
 func wrapErrorToRespError(err interface{}, code int) error {

@@ -2,6 +2,7 @@ package lsp
 
 import (
 	"io"
+	"net/http"
 
 	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
 	"github.com/inoxlang/inox/internal/lsp/lsp/defines"
@@ -9,10 +10,11 @@ import (
 
 type Options struct {
 	// if Network is null, will use stdio
-	Network                 string
-	Address                 string
-	WebsocketCertificate    string
-	WebsocketCertificateKey string
+	Network        string
+	Address        string
+	Certificate    string
+	CertificateKey string
+	HttpHandler    http.Handler
 
 	OnSession jsonrpc.SessionCreationCallbackFn
 

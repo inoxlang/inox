@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	core "github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/globals/net_ns"
 	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
 	"github.com/rs/zerolog"
@@ -16,17 +15,14 @@ const (
 )
 
 type JsonRpcWebsocketServer struct {
-	httpServer *http.Server
-	wsServer   *net_ns.WebsocketServer
-	rpcServer  *jsonrpc.Server
-	logger     *zerolog.Logger
+	wsServer  *net_ns.WebsocketServer
+	rpcServer *jsonrpc.Server
+	logger    *zerolog.Logger
 }
 
 type JsonRpcWebsocketServerConfig struct {
-	addr                  string
-	certificate           string
-	certificatePrivateKey string
-	rpcServer             *jsonrpc.Server
+	addr      string
+	rpcServer *jsonrpc.Server
 }
 
 func NewJsonRpcWebsocketServer(ctx *core.Context, config JsonRpcWebsocketServerConfig) (*JsonRpcWebsocketServer, error) {
@@ -45,27 +41,11 @@ func NewJsonRpcWebsocketServer(ctx *core.Context, config JsonRpcWebsocketServerC
 		rpcServer: config.rpcServer,
 	}
 
-	httpServer, err := http_ns.NewGolangHttpServer(ctx, http_ns.GolangHttpServerConfig{
-		Addr:           config.addr,
-		Handler:        http.HandlerFunc(server.handleNew),
-		PemEncodedCert: config.certificate,
-		PemEncodedKey:  config.certificatePrivateKey,
-	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTPS server: %w", err)
 	}
-	server.httpServer = httpServer
 
 	return server, nil
-}
-
-func (server *JsonRpcWebsocketServer) Listen() error {
-	server.logger.Info().Msg("start HTTPS server")
-	err := server.httpServer.ListenAndServeTLS("", "")
-	if err != nil {
-		return fmt.Errorf("failed to create HTTPS server: %w", err)
-	}
-	return nil
 }
 
 func (server *JsonRpcWebsocketServer) handleNew(httpRespWriter http.ResponseWriter, httpReq *http.Request) {

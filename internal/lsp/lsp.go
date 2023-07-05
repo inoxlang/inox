@@ -92,8 +92,8 @@ func StartLSPServer(ctx *core.Context, opts LSPServerOptions) (finalErr error) {
 
 		options.Network = "wss"
 		options.Address = opts.Websocket.Addr
-		options.WebsocketCertificate = opts.Websocket.Certificate
-		options.WebsocketCertificateKey = opts.Websocket.CertificatePrivateKey
+		options.Certificate = opts.Websocket.Certificate
+		options.CertificateKey = opts.Websocket.CertificatePrivateKey
 	}
 
 	if opts.MessageReaderWriter != nil {
