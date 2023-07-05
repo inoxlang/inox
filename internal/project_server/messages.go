@@ -1,10 +1,10 @@
-package internal
+package project_server
 
 import (
 	"encoding/json"
 
-	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
-	"github.com/inoxlang/inox/internal/lsp/lsp/defines"
+	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
+	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
 )
 

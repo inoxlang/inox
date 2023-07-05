@@ -1,4 +1,4 @@
-package internal
+package project_server
 
 import (
 	"context"
@@ -15,10 +15,10 @@ import (
 	"github.com/google/go-dap"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
-	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
-	"github.com/inoxlang/inox/internal/lsp/logs"
-	"github.com/inoxlang/inox/internal/lsp/lsp"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
+	"github.com/inoxlang/inox/internal/project_server/logs"
+	"github.com/inoxlang/inox/internal/project_server/lsp"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 )

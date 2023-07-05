@@ -12,7 +12,7 @@ import (
 	_ "github.com/inoxlang/inox/internal/globals"
 	"github.com/rs/zerolog"
 
-	lsp "github.com/inoxlang/inox/internal/lsp"
+	lsp "github.com/inoxlang/inox/internal/project_server"
 	"github.com/inoxlang/inox/internal/utils"
 )
 

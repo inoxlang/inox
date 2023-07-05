@@ -15,7 +15,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
-	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
+	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/rs/zerolog"
 
 	"github.com/inoxlang/inox/internal/config"
@@ -27,7 +27,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
 	"github.com/inoxlang/inox/internal/globals/inoxsh_ns"
-	lsp "github.com/inoxlang/inox/internal/lsp"
+	lsp "github.com/inoxlang/inox/internal/project_server"
 
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"

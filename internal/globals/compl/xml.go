@@ -4,8 +4,8 @@ import (
 	"strings"
 
 	"github.com/inoxlang/inox/internal/globals/html_ns"
-	"github.com/inoxlang/inox/internal/lsp/lsp/defines"
 	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
 )
 
 func findXmlAttributeNameCompletions(ident *parse.IdentifierLiteral, parent *parse.XMLAttribute, ancestors []parse.Node) (completions []Completion) {

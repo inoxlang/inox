@@ -1,4 +1,4 @@
-package internal
+package project_server
 
 import (
 	"encoding/json"
@@ -8,10 +8,10 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
+	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
+	"github.com/inoxlang/inox/internal/project_server/logs"
 
-	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
-	"github.com/inoxlang/inox/internal/lsp/logs"
-	"github.com/inoxlang/inox/internal/lsp/lsp/defines"
+	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
 )
 

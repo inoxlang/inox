@@ -5,7 +5,7 @@ package lsp
 import (
 	"os"
 
-	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
+	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 )
 
 func NewStdio() jsonrpc.ReaderWriter {

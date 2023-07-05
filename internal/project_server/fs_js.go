@@ -1,6 +1,6 @@
 //go:build js
 
-package internal
+package project_server
 
 import (
 	afs "github.com/inoxlang/inox/internal/afs"

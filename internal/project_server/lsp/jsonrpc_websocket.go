@@ -8,7 +8,7 @@ import (
 
 	core "github.com/inoxlang/inox/internal/core"
 	net_ns "github.com/inoxlang/inox/internal/globals/net_ns"
-	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
+	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/rs/zerolog"
 )
 

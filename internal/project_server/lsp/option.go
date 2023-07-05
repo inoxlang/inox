@@ -4,8 +4,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
-	"github.com/inoxlang/inox/internal/lsp/lsp/defines"
+	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
+	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
 )
 
 type Options struct {

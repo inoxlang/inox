@@ -1,4 +1,4 @@
-package internal
+package project_server
 
 import (
 	afs "github.com/inoxlang/inox/internal/afs"
@@ -13,7 +13,6 @@ type Filesystem struct {
 	afs.Filesystem
 	unsavedDocuments afs.Filesystem
 }
-
 
 func NewFilesystem(base afs.Filesystem, unsavedDocumentFs afs.Filesystem) *Filesystem {
 	return &Filesystem{

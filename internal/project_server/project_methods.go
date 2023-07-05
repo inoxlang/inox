@@ -1,13 +1,13 @@
-package internal
+package project_server
 
 import (
 	"context"
 
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
-	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
-	"github.com/inoxlang/inox/internal/lsp/lsp"
 	"github.com/inoxlang/inox/internal/project"
+	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
+	"github.com/inoxlang/inox/internal/project_server/lsp"
 )
 
 const (

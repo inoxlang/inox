@@ -5,8 +5,8 @@ package lsp
 //	"context"
 //	"fmt"
 //
-//	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
-//	"github.com/inoxlang/inox/internal/lsp/lsp/defines"
+//	"github.com/inoxlang/inox/internal/project_serverjsonrpc"
+//	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
 //)
 //
 //type Methods struct {

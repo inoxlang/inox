@@ -1,9 +1,9 @@
-package internal
+package project_server
 
 import (
 	"github.com/inoxlang/inox/internal/globals/html_ns"
-	"github.com/inoxlang/inox/internal/lsp/lsp/defines"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
 	"golang.org/x/exp/slices"
 )
 

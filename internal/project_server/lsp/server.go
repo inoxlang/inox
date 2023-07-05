@@ -7,9 +7,9 @@ import (
 	"reflect"
 
 	core "github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
-	"github.com/inoxlang/inox/internal/lsp/logs"
 	"github.com/inoxlang/inox/internal/permkind"
+	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
+	"github.com/inoxlang/inox/internal/project_server/logs"
 
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	_net "github.com/inoxlang/inox/internal/globals/net_ns"
@@ -33,6 +33,7 @@ func NewServer(ctx *core.Context, opt *Options) *Server {
 	}
 	s.Opt = *opt
 	s.rpcServer = jsonrpc.NewServer(ctx, opt.OnSession)
+	s.ServerHttpHandler = opt.HttpHandler
 	return s
 }
 
@@ -144,7 +145,9 @@ func (s *Server) startWebsocketServer(addr string) error {
 				wsServer.handleNew(w, r)
 				return
 			}
-			s.ServerHttpHandler.ServeHTTP(w, r)
+			if s.ServerHttpHandler != nil {
+				s.ServerHttpHandler.ServeHTTP(w, r)
+			}
 		}),
 		PemEncodedCert: s.ServerCertificate,
 		PemEncodedKey:  s.ServerCertificateKey,

@@ -1,4 +1,4 @@
-package internal
+package project_server
 
 import (
 	"bufio"
@@ -11,9 +11,9 @@ import (
 	"github.com/inoxlang/inox/internal/globals/help_ns"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
-	"github.com/inoxlang/inox/internal/lsp/logs"
-	"github.com/inoxlang/inox/internal/lsp/lsp/defines"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/project_server/logs"
+	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
 )
 

@@ -16,10 +16,10 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
-	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
+	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/rs/zerolog"
 
-	lsp "github.com/inoxlang/inox/internal/lsp"
+	lsp "github.com/inoxlang/inox/internal/project_server"
 	"github.com/inoxlang/inox/internal/utils"
 )
 

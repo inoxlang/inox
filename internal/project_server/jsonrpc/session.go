@@ -14,8 +14,8 @@ import (
 
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/net_ns"
-	"github.com/inoxlang/inox/internal/lsp/logs"
-	"github.com/inoxlang/inox/internal/lsp/lsp/defines"
+	"github.com/inoxlang/inox/internal/project_server/logs"
+	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
 	jsoniter "github.com/json-iterator/go"
 )
 

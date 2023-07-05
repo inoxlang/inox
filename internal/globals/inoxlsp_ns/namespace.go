@@ -9,10 +9,9 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	symbolic_inoxlsp "github.com/inoxlang/inox/internal/globals/inoxlsp_ns/symbolic"
+	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 
-	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
-
-	lsp "github.com/inoxlang/inox/internal/lsp"
+	"github.com/inoxlang/inox/internal/project_server"
 )
 
 var (
@@ -84,8 +83,8 @@ func StartLspServer(ctx *core.Context, config *core.Object) error {
 		return commonfmt.FmtMissingArgument("missing on-session handler function")
 	}
 
-	return lsp.StartLSPServer(childCtx, lsp.LSPServerOptions{
-		Websocket: &lsp.WebsocketOptions{
+	return project_server.StartLSPServer(childCtx, project_server.LSPServerOptions{
+		Websocket: &project_server.WebsocketOptions{
 			Addr:                  host.WithoutScheme(),
 			Certificate:           cert,
 			CertificatePrivateKey: certKey,

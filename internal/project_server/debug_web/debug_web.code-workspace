@@ -1,0 +1,31 @@
+{
+  "folders": [
+    {
+      "path": "."
+    },
+    {
+      "name": "Project FS",
+      "uri": "inox:/"
+    }
+  ],
+  "settings": {
+    "inox.enableProjectMode": true
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "type": "inox",
+        "request": "launch",
+        "name": "Launch Inox Program",
+        "program": "${file}"
+      },
+      {
+        "type": "inox",
+        "request": "launch",
+        "name": "Launch Main Inox Program",
+        "program": "/main.ix"
+      }
+    ]
+  }
+}

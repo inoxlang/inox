@@ -1,6 +1,6 @@
 package lsp
 
-import "github.com/inoxlang/inox/internal/lsp/lsp/defines"
+import "github.com/inoxlang/inox/internal/project_server/lsp/defines"
 
 type method struct {
 	Name          string

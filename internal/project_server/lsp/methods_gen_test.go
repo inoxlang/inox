@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	defines "github.com/inoxlang/inox/internal/lsp/lsp/defines"
+	defines "github.com/inoxlang/inox/internal/project_server/lsp/defines"
 )
 
 type typ_ struct {
@@ -228,8 +228,8 @@ func generate(items []method) string {
 	import (
 		"context"
 	
-		"github.com/inoxlang/inox/internal/lsp/jsonrpc"
-		"github.com/inoxlang/inox/internal/lsp/lsp/defines"
+		"github.com/inoxlang/inox/internal/project_serverjsonrpc"
+		"github.com/inoxlang/inox/internal/project_server/lsp/defines"
 	)
 	`
 

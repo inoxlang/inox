@@ -1,4 +1,4 @@
-package internal
+package project_server
 
 import (
 	"errors"
@@ -9,10 +9,9 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	core "github.com/inoxlang/inox/internal/core"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-
-	"github.com/inoxlang/inox/internal/lsp/jsonrpc"
-	"github.com/inoxlang/inox/internal/lsp/logs"
-	"github.com/inoxlang/inox/internal/lsp/lsp"
+	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
+	"github.com/inoxlang/inox/internal/project_server/logs"
+	"github.com/inoxlang/inox/internal/project_server/lsp"
 
 	_ "net/http/pprof"
 )
