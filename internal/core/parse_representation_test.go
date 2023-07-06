@@ -275,12 +275,14 @@ func TestParseRepr(t *testing.T) {
 		// hosts
 		{`https://example.com`, -1, Host("https://example.com")},
 		/*    */ {"https://example.com\n", 19, nil},
+		{`https://example1.com`, -1, Host("https://example1.com")},
 		{`https://127.0.0.1`, -1, Host("https://127.0.0.1")},
 
 		//urls
 		{`https://example.com/`, -1, URL("https://example.com/")},
 		/*    */ {"https://example.com/\n", 20, nil},
 		{`https://example.com/a/`, -1, URL("https://example.com/a/")},
+		{`https://example.com/1/`, -1, URL("https://example.com/1/")},
 		{`https://example.com/...`, -1, URL("https://example.com/...")},
 		{`https://example.com/....`, -1, URL("https://example.com/....")},
 		{`https://example.com/a/...`, -1, URL("https://example.com/a/...")},
@@ -289,6 +291,7 @@ func TestParseRepr(t *testing.T) {
 		//host patterns
 		{`%https://example.com`, -1, HostPattern("https://example.com")},
 		/*    */ {"%https://example.com\n", 20, nil},
+		{`%https://example1.com`, -1, HostPattern("https://example1.com")},
 		{`%https://**.com`, -1, HostPattern("https://**.com")},
 		{`%https://*.*.com`, -1, HostPattern("https://*.*.com")},
 		{`%://*.*.com`, -1, HostPattern("://*.*.com")},
@@ -297,6 +300,7 @@ func TestParseRepr(t *testing.T) {
 		//url patterns
 		{`%https://example.com/...`, -1, URLPattern("https://example.com/...")},
 		/*    */ {"%https://example.com/...\n", 24, nil},
+		{`%https://example1.com/...`, -1, URLPattern("https://example1.com/...")},
 		{`%https://example.com/a/...`, -1, URLPattern("https://example.com/a/...")},
 		{`%https://example.com/....`, 25, nil},
 		{`%https://example.com/.../...`, 28, nil},

@@ -804,6 +804,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				rstatePortNumber, rstatePortSchemeName,
 				rstateString,
 				rstateUnquotedPathPatternLike,
+				rstateURLLike,
 				rstateHostLike,
 				rstateHostPattern,
 				rstateURLPatternInPath, rstateURLPatternInQuery, rstateURLPatternInFragment,
