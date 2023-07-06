@@ -186,6 +186,21 @@ func TestObjectRepresentation(t *testing.T) {
 			AllVisible: false,
 		}))
 	})
+
+	t.Run("id", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		obj := objFrom(ValMap{})
+
+		url := URL("https://example.com/objects/98484")
+		utils.PanicIfErr(obj.SetURLOnce(ctx, url))
+
+		assert.True(t, obj.HasRepresentation(map[uintptr]int{}, nil))
+		expectedRepr := `{"_url_":` + string(url) + "}"
+		assert.Equal(t, expectedRepr, getRepr(t, obj, reprTestCtx))
+
+		//parsing the representation & evaluating the AST Nodes is not done
+		//because metaproperty keys are not allowed in properties.
+	})
 }
 
 func TestRecordRepresentation(t *testing.T) {

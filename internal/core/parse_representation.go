@@ -1143,8 +1143,15 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 							return nil, errIndex
 						}
 						obj := compoundValueStack[stackIndex].(*Object)
-						obj.keys = append(obj.keys, key)
-						obj.values = append(obj.values, val)
+
+						//property
+						if key != URL_METADATA_KEY {
+							obj.keys = append(obj.keys, key)
+							obj.values = append(obj.values, val)
+						} else {
+							obj.url = val.(URL)
+						}
+
 						objectKeyStack[stackIndex] = ""
 					} else {
 						return nil, i
@@ -1429,7 +1436,13 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 				if atomEndIndex > 0 {
 					end = atomEndIndex
 				}
-				objectKeyStack[stackIndex] = string(b[atomStartIndex:end])
+
+				key := string(b[atomStartIndex:end])
+				if parse.IsMetadataKey(key) && (key != URL_METADATA_KEY || stack[stackIndex] != ObjVal) {
+					return nil, end
+				}
+				objectKeyStack[stackIndex] = key
+
 				atomStartIndex = -1
 				atomEndIndex = -1
 				state = rstateObjectColon
@@ -1443,7 +1456,12 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 					return nil, i
 				}
 
-				objectKeyStack[stackIndex] = string(b[atomStartIndex : end-1])
+				key := string(b[atomStartIndex : end-1])
+				if parse.IsMetadataKey(key) {
+					return nil, end
+				}
+
+				objectKeyStack[stackIndex] = key
 				optionalPropStack[stackIndex] = true
 				atomStartIndex = -1
 				atomEndIndex = -1
@@ -1466,7 +1484,12 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 					return nil, i
 				}
 
-				objectKeyStack[stackIndex] = s
+				key := s
+				if parse.IsMetadataKey(key) {
+					return nil, end
+				}
+
+				objectKeyStack[stackIndex] = key
 				optionalPropStack[stackIndex] = true
 				atomStartIndex = -1
 				atomEndIndex = -1
@@ -1516,7 +1539,12 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 						}
 						switch v := val.(type) {
 						case Str:
-							objectKeyStack[stackIndex] = string(v)
+							key := string(v)
+							if parse.IsMetadataKey(key) && key != URL_METADATA_KEY {
+								return nil, i //TODO: return end position of key
+							}
+							objectKeyStack[stackIndex] = key
+
 							state = rstateObjectColon
 							continue
 						}
@@ -1533,7 +1561,12 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 						}
 						switch v := val.(type) {
 						case Str:
-							objectKeyStack[stackIndex] = string(v)
+							key := string(v)
+							if parse.IsMetadataKey(key) {
+								return nil, i //TODO: return end position of key
+							}
+							objectKeyStack[stackIndex] = key
+
 							state = rstateRecordColon
 							continue
 						}
@@ -1551,7 +1584,12 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 						}
 						switch v := val.(type) {
 						case Str:
-							objectKeyStack[stackIndex] = string(v)
+							key := string(v)
+							if parse.IsMetadataKey(key) {
+								return nil, i //TODO: return end position of key
+							}
+							objectKeyStack[stackIndex] = key
+
 							state = rstateObjPatternColon
 							continue
 						}
@@ -1590,9 +1628,17 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int) {
 					if errIndex >= 0 {
 						return nil, errIndex
 					}
+
 					obj := compoundValueStack[stackIndex].(*Object)
-					obj.keys = append(obj.keys, key)
-					obj.values = append(obj.values, val)
+
+					//property
+					if key != URL_METADATA_KEY {
+						obj.keys = append(obj.keys, key)
+						obj.values = append(obj.values, val)
+					} else {
+						obj.url = val.(URL)
+					}
+
 					objectKeyStack[stackIndex] = ""
 					state = rstateObjectComma
 					continue

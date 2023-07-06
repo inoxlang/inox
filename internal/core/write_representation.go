@@ -329,10 +329,28 @@ func (obj *Object) WriteRepresentation(ctx *Context, w io.Writer, encountered ma
 		return err
 	}
 
+	first := true
+
+	//meta properties
+
+	if obj.url != "" {
+		first = false
+
+		_, err = w.Write(utils.StringAsBytes(`"_url_":`))
+		if err != nil {
+			return err
+		}
+
+		err = obj.url.WriteRepresentation(ctx, w, nil, config)
+		if err != nil {
+			return err
+		}
+	}
+
+	//properties
 	keys := obj.keys
 	visibility, _ := GetVisibility(obj.visibilityId)
 
-	first := true
 	for i, k := range keys {
 		v := obj.values[i]
 

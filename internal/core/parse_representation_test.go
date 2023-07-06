@@ -617,6 +617,13 @@ func TestParseRepr(t *testing.T) {
 		{`{a:true,}`, -1, objFrom(ValMap{"a": True})},
 		/*    */ {"{a:true,\n}", -1, objFrom(ValMap{"a": True})},
 		{`{a-b:true}`, -1, objFrom(ValMap{"a-b": True})},
+		{`{"_xxx_":true}`, 8, nil},
+		{`{"_url_":https://a.com/objects/a}`, -1, func() *Object {
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			obj := objFrom(nil)
+			obj.SetURLOnce(ctx, "https://a.com/objects/a")
+			return obj
+		}()},
 		{`{a:true,b:false}`, -1, objFrom(ValMap{"a": True, "b": False})},
 		/*    */ {"{a:true,\nb:false}", -1, objFrom(ValMap{"a": True, "b": False})},
 		{`{a:true,"b":false}`, -1, objFrom(ValMap{"a": True, "b": False})},
@@ -687,6 +694,7 @@ func TestParseRepr(t *testing.T) {
 		{`#{a:true,}`, -1, NewRecordFromMap(ValMap{"a": True})},
 		/*    */ {"#{a:true,\n}", -1, NewRecordFromMap(ValMap{"a": True})},
 		{`#{a-b:true}`, -1, NewRecordFromMap(ValMap{"a-b": True})},
+		{`#{"_url_":true}`, 9, nil},
 		{`#{a:true,b:false}`, -1, NewRecordFromMap(ValMap{"a": True, "b": False})},
 		/*    */ {"#{a:true,\nb:false}", -1, NewRecordFromMap(ValMap{"a": True, "b": False})},
 		{`#{a:true,"b":false}`, -1, NewRecordFromMap(ValMap{"a": True, "b": False})},
@@ -742,6 +750,7 @@ func TestParseRepr(t *testing.T) {
 		{`%{a:true,}`, -1, objPatt(map[string]Pattern{"a": exact(True)})},
 		/*    */ {"%{a:true,\n}", -1, objPatt(map[string]Pattern{"a": exact(True)})},
 		{`%{a-b:true}`, -1, objPatt(map[string]Pattern{"a-b": exact(True)})},
+		{`%{"_url_":true}`, 9, nil},
 		{`%{a:true,b:false}`, -1, objPatt(map[string]Pattern{"a": exact(True), "b": exact(False)})},
 		/*    */ {"%{a:true,\nb:false}", -1, objPatt(map[string]Pattern{"a": exact(True), "b": exact(False)})},
 		{`%{a:true,"b":false}`, -1, objPatt(map[string]Pattern{"a": exact(True), "b": exact(False)})},
