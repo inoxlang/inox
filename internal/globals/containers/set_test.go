@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/filekv"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
@@ -153,4 +155,168 @@ func TestNewSet(t *testing.T) {
 			NewSet(ctx, core.NewWrappedValueList(obj), config)
 		}()
 	})
+}
+
+func TestLoadSet(t *testing.T) {
+
+	setup := func() (*core.Context, core.SerializedValueStorage) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		kv := utils.Must(filekv.OpenSingleFileKV(filekv.KvStoreConfig{
+			InMemory: true,
+		}))
+		storage := filekv.NewSerializedValueStorage(kv)
+		return ctx, storage
+	}
+
+	t.Run("empty", func(t *testing.T) {
+		ctx, storage := setup()
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: UniquenessConstraint{
+				Type: UniqueRepr,
+			},
+		}, core.CallBasedPatternReprMixin{})
+
+		storage.SetSerialized(ctx, "/set", `[]`)
+		set, err := loadSet(ctx, "/set", storage, pattern)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.NotNil(t, set)
+	})
+
+	t.Run("unique repr: single element", func(t *testing.T) {
+		ctx, storage := setup()
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: UniquenessConstraint{
+				Type: UniqueRepr,
+			},
+		}, core.CallBasedPatternReprMixin{})
+
+		storage.SetSerialized(ctx, "/set", `[1]`)
+		set, err := loadSet(ctx, "/set", storage, pattern)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.True(t, bool(set.(*Set).Has(ctx, core.Int(1))))
+	})
+
+	t.Run("unique repr: two elements", func(t *testing.T) {
+		ctx, storage := setup()
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: UniquenessConstraint{
+				Type: UniqueRepr,
+			},
+		}, core.CallBasedPatternReprMixin{})
+
+		storage.SetSerialized(ctx, "/set", `[1, 2]`)
+		set, err := loadSet(ctx, "/set", storage, pattern)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.True(t, bool(set.(*Set).Has(ctx, core.Int(1))))
+		assert.True(t, bool(set.(*Set).Has(ctx, core.Int(2))))
+	})
+
+	t.Run("unique repr: element with non-unique repr", func(t *testing.T) {
+		ctx, storage := setup()
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: UniquenessConstraint{
+				Type: UniqueRepr,
+			},
+		}, core.CallBasedPatternReprMixin{})
+
+		//a mutable object is not considered to have a unique representation.
+
+		storage.SetSerialized(ctx, "/set", `[{}]`)
+		set, err := loadSet(ctx, "/set", storage, pattern)
+		if !assert.ErrorIs(t, err, core.ErrReprOfMutableValueCanChange) {
+			return
+		}
+
+		assert.Nil(t, set)
+	})
+
+	t.Run("unique property value: element with missing property", func(t *testing.T) {
+		ctx, storage := setup()
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: UniquenessConstraint{
+				Type:         UniquePropertyValue,
+				PropertyName: "id",
+			},
+		}, core.CallBasedPatternReprMixin{})
+
+		storage.SetSerialized(ctx, "/set", `[{}]`)
+		set, err := loadSet(ctx, "/set", storage, pattern)
+		if !assert.ErrorIs(t, err, ErrFailedGetUniqueKeyPropMissing) {
+			return
+		}
+
+		assert.Nil(t, set)
+	})
+
+	t.Run("unique property value: one element", func(t *testing.T) {
+		ctx, storage := setup()
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: UniquenessConstraint{
+				Type:         UniquePropertyValue,
+				PropertyName: "id",
+			},
+		}, core.CallBasedPatternReprMixin{})
+
+		storage.SetSerialized(ctx, "/set", `[{"id": "a"}]`)
+		set, err := loadSet(ctx, "/set", storage, pattern)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.NotNil(t, set)
+	})
+
+	t.Run("unique property value: two elements", func(t *testing.T) {
+		ctx, storage := setup()
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: UniquenessConstraint{
+				Type:         UniquePropertyValue,
+				PropertyName: "id",
+			},
+		}, core.CallBasedPatternReprMixin{})
+
+		storage.SetSerialized(ctx, "/set", `[{"id": "a"}, {"id": "b"}]`)
+		set, err := loadSet(ctx, "/set", storage, pattern)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.NotNil(t, set)
+	})
+
+	t.Run("unique property value: two elements with same unique prop", func(t *testing.T) {
+		ctx, storage := setup()
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: UniquenessConstraint{
+				Type:         UniquePropertyValue,
+				PropertyName: "id",
+			},
+		}, core.CallBasedPatternReprMixin{})
+
+		storage.SetSerialized(ctx, "/set", `[{"id": "a"}, {"id": "a"}]`)
+		set, err := loadSet(ctx, "/set", storage, pattern)
+		if !assert.ErrorIs(t, err, ErrValueWithSameKeyAlreadyPresent) {
+			return
+		}
+
+		assert.Nil(t, set)
+	})
+
 }

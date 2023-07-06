@@ -13,7 +13,7 @@ import (
 var (
 	_ = []symbolic.Iterable{&Set{}}
 
-	SET_PROPNAMES                       = []string{"add", "remove"}
+	SET_PROPNAMES                       = []string{"has", "add", "remove"}
 	SET_CONFIG_ELEMENT_PATTERN_PROP_KEY = "element"
 	SET_CONFIG_UNIQUE_PROP_KEY          = "unique"
 
@@ -80,6 +80,8 @@ func (s *Set) Test(v symbolic.SymbolicValue) bool {
 
 func (s *Set) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
+	case "has":
+		return symbolic.WrapGoMethod(s.Has), true
 	case "add":
 		return symbolic.WrapGoMethod(s.Add), true
 	case "remove":
@@ -94,6 +96,12 @@ func (s *Set) Prop(name string) symbolic.SymbolicValue {
 
 func (*Set) PropertyNames() []string {
 	return SET_PROPNAMES
+}
+
+func (s *Set) Has(ctx *symbolic.Context, v symbolic.SymbolicValue) {
+	ctx.SetSymbolicGoFunctionParameters(&[]symbolic.SymbolicValue{
+		s.elementPattern.SymbolicValue(),
+	}, SET_ADD_METHOD_PARAM_NAMES)
 }
 
 func (s *Set) Add(ctx *symbolic.Context, v symbolic.SymbolicValue) {
@@ -126,8 +134,8 @@ func (*Set) IteratorElementKey() symbolic.SymbolicValue {
 	return symbolic.ANY
 }
 
-func (*Set) IteratorElementValue() symbolic.SymbolicValue {
-	return symbolic.ANY
+func (s *Set) IteratorElementValue() symbolic.SymbolicValue {
+	return s.elementPattern.SymbolicValue()
 }
 
 func (*Set) WidestOfType() symbolic.SymbolicValue {

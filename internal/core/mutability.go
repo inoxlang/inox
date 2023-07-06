@@ -1,5 +1,11 @@
 package core
 
+import "errors"
+
+var (
+	ErrReprOfMutableValueCanChange = errors.New("the representation of a mutable value can change")
+)
+
 func (err Error) IsMutable() bool {
 	return false
 }

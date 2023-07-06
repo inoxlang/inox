@@ -47,6 +47,9 @@ func getUniqueKey(ctx *core.Context, v core.Value, config UniquenessConstraint) 
 	var key string
 	switch config.Type {
 	case UniqueRepr:
+		if v.IsMutable() {
+			panic(core.ErrReprOfMutableValueCanChange)
+		}
 		// representation is context-dependent -> possible issues
 		key = string(core.MustGetRepresentationWithConfig(v, UniqueKeyReprConfig, ctx))
 	case UniqueURL:

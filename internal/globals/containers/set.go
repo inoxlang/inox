@@ -2,9 +2,12 @@ package containers
 
 import (
 	"errors"
+	"fmt"
+	"reflect"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
+	jsoniter "github.com/json-iterator/go"
 
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
 )
@@ -12,7 +15,12 @@ import (
 var (
 	ErrSetCanOnlyContainRepresentableValues = errors.New("a Set can only contain representable values")
 	ErrValueDoesMatchElementPattern         = errors.New("provided value does not match the element pattern")
+	ErrValueWithSameKeyAlreadyPresent       = errors.New("provided value has the same key as an already present element")
 )
+
+func init() {
+	core.RegisterLoadInstanceFn(reflect.TypeOf((*SetPattern)(nil)), loadSet)
+}
 
 type Set struct {
 	elements map[string]core.Value
@@ -60,6 +68,48 @@ func NewSet(ctx *core.Context, elements core.Iterable, configObject ...*core.Obj
 	return NewSetWithConfig(ctx, elements, config)
 }
 
+func loadSet(ctx *core.Context, path core.Path, storage core.SerializedValueStorage, pattern core.Pattern) (core.Value, error) {
+	setPattern := pattern.(*SetPattern)
+	rootData, ok := storage.GetSerialized(ctx, path)
+	if !ok {
+		return nil, fmt.Errorf("%w: %s", core.ErrFailedToLoadNonExistingValue, path)
+	}
+
+	set := NewSetWithConfig(ctx, nil, setPattern.config)
+
+	var finalErr error
+
+	//TODO: lazy load
+	it := jsoniter.ParseString(jsoniter.ConfigCompatibleWithStandardLibrary, rootData)
+	it.ReadArrayCB(func(i *jsoniter.Iterator) (cont bool) {
+		s := it.ReadAny().ToString()
+		val, err := core.ParseRepr(ctx, []byte(s))
+		if err != nil {
+			finalErr = err
+			return false
+		}
+
+		defer func() {
+			e := recover()
+
+			if err, ok := e.(error); ok {
+				finalErr = err
+			} else if e != nil {
+				cont = false
+				finalErr = fmt.Errorf("%#v", e)
+			}
+		}()
+		set.Add(ctx, val)
+		return true
+	})
+
+	if finalErr != nil {
+		return nil, finalErr
+	}
+
+	return set, nil
+}
+
 type SetConfig struct {
 	Element    core.Pattern //optional
 	Uniqueness UniquenessConstraint
@@ -77,19 +127,32 @@ func (c SetConfig) Equal(ctx *core.Context, otherConfig SetConfig, alreadyCompar
 
 	return c.Element == nil || c.Element.Equal(ctx, otherConfig.Element, alreadyCompared, depth+1)
 }
+
 func NewSetWithConfig(ctx *core.Context, elements core.Iterable, config SetConfig) *Set {
 	set := &Set{
 		elements: make(map[string]core.Value),
 		config:   config,
 	}
 
-	it := elements.Iterator(ctx, core.IteratorConfiguration{})
-	for it.Next(ctx) {
-		e := it.Value(ctx)
-		set.Add(ctx, e)
+	if elements != nil {
+		it := elements.Iterator(ctx, core.IteratorConfiguration{})
+		for it.Next(ctx) {
+			e := it.Value(ctx)
+			set.Add(ctx, e)
+		}
 	}
 
 	return set
+}
+
+func (set *Set) Has(ctx *core.Context, elem core.Value) core.Bool {
+	if set.config.Element != nil && !set.config.Element.Test(ctx, elem) {
+		panic(ErrValueDoesMatchElementPattern)
+	}
+
+	key := getUniqueKey(ctx, elem, set.config.Uniqueness)
+	_, ok := set.elements[key]
+	return core.Bool(ok)
 }
 
 func (set *Set) Add(ctx *core.Context, elem core.Value) {
@@ -98,6 +161,10 @@ func (set *Set) Add(ctx *core.Context, elem core.Value) {
 	}
 
 	key := getUniqueKey(ctx, elem, set.config.Uniqueness)
+	curr, ok := set.elements[key]
+	if ok && elem != curr {
+		panic(ErrValueWithSameKeyAlreadyPresent)
+	}
 	set.elements[key] = elem
 }
 
@@ -108,6 +175,8 @@ func (set *Set) Remove(ctx *core.Context, elem core.Value) {
 
 func (f *Set) GetGoMethod(name string) (*core.GoFunction, bool) {
 	switch name {
+	case "has":
+		return core.WrapGoMethod(f.Has), true
 	case "add":
 		return core.WrapGoMethod(f.Add), true
 	case "remove":
