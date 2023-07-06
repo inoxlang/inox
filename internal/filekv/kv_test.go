@@ -11,6 +11,50 @@ import (
 
 func TestKvSet(t *testing.T) {
 
+	for _, serialized := range []string{"not_serialized", "serialized"} {
+		t.Run(serialized, func(t *testing.T) {
+
+			fls := newMemFilesystem()
+
+			kv, err := OpenSingleFileKV(KvStoreConfig{
+				Path:       "/data.kv",
+				Filesystem: fls,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			ctx := core.NewContext(core.ContextConfig{
+				Permissions: []core.Permission{core.CreateFsReadPerm(core.PathPattern("/..."))},
+			})
+
+			//create item
+			if serialized == "not_serialized" {
+				kv.Set(ctx, "/data", core.Int(1), kv)
+			} else {
+				kv.SetSerialized(ctx, "/data", "1", kv)
+			}
+
+			//check item exists
+			val, ok, err := kv.Get(ctx, "/data", kv)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			if !assert.True(t, bool(ok)) {
+				return
+			}
+
+			assert.Equal(t, core.Int(1), val)
+		})
+	}
+
+}
+
+func TestKvGetSerialized(t *testing.T) {
+
 	fls := newMemFilesystem()
 
 	kv, err := OpenSingleFileKV(KvStoreConfig{
@@ -30,7 +74,7 @@ func TestKvSet(t *testing.T) {
 	kv.Set(ctx, "/data", core.Int(1), kv)
 
 	//check item exists
-	val, ok, err := kv.Get(ctx, "/data", kv)
+	val, ok, err := kv.GetSerialized(ctx, "/data", kv)
 
 	if !assert.NoError(t, err) {
 		return
@@ -40,85 +84,102 @@ func TestKvSet(t *testing.T) {
 		return
 	}
 
-	assert.Equal(t, core.Int(1), val)
+	assert.Equal(t, "1", val)
 }
 
 func TestKvInsert(t *testing.T) {
 
-	t.Run("simple", func(t *testing.T) {
-		fls := newMemFilesystem()
+	for _, serialized := range []string{"not_serialized", "serialized"} {
+		t.Run(serialized, func(t *testing.T) {
+			t.Run("simple", func(t *testing.T) {
+				fls := newMemFilesystem()
 
-		kv, err := OpenSingleFileKV(KvStoreConfig{
-			Path:       "/data.kv",
-			Filesystem: fls,
+				kv, err := OpenSingleFileKV(KvStoreConfig{
+					Path:       "/data.kv",
+					Filesystem: fls,
+				})
+
+				if !assert.NoError(t, err) {
+					return
+				}
+
+				ctx := core.NewContext(core.ContextConfig{
+					Permissions: []core.Permission{core.CreateFsReadPerm(core.PathPattern("/..."))},
+				})
+
+				//create item
+				if serialized == "not_serialized" {
+					kv.Insert(ctx, "/data", core.Int(1), kv)
+				} else {
+					kv.InsertSerialized(ctx, "/data", "1", kv)
+				}
+
+				//check item exists
+				val, ok, err := kv.Get(ctx, "/data", kv)
+
+				if !assert.NoError(t, err) {
+					return
+				}
+
+				if !assert.True(t, bool(ok)) {
+					return
+				}
+
+				assert.Equal(t, core.Int(1), val)
+			})
+
+			t.Run("double insert", func(t *testing.T) {
+				fls := newMemFilesystem()
+
+				kv, err := OpenSingleFileKV(KvStoreConfig{
+					Path:       "/data.kv",
+					Filesystem: fls,
+				})
+
+				if !assert.NoError(t, err) {
+					return
+				}
+
+				ctx := core.NewContext(core.ContextConfig{
+					Permissions: []core.Permission{core.CreateFsReadPerm(core.PathPattern("/..."))},
+				})
+
+				//first insert
+				if serialized == "not_serialized" {
+					kv.Insert(ctx, "/data", core.Int(1), kv)
+				} else {
+					kv.InsertSerialized(ctx, "/data", "1", kv)
+				}
+
+				//second insert
+				func() {
+					defer func() {
+						e := recover()
+						assert.ErrorIs(t, e.(error), ErrKeyAlreadyPresent)
+					}()
+					if serialized == "not_serialized" {
+						kv.Insert(ctx, "/data", core.Int(1), kv)
+					} else {
+						kv.InsertSerialized(ctx, "/data", "2", kv)
+					}
+				}()
+
+				//check item exists and has the original value
+				val, ok, err := kv.Get(ctx, "/data", kv)
+
+				if !assert.NoError(t, err) {
+					return
+				}
+
+				if !assert.True(t, bool(ok)) {
+					return
+				}
+
+				assert.Equal(t, core.Int(1), val)
+			})
 		})
+	}
 
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		ctx := core.NewContext(core.ContextConfig{
-			Permissions: []core.Permission{core.CreateFsReadPerm(core.PathPattern("/..."))},
-		})
-
-		//create item
-		kv.Insert(ctx, "/data", core.Int(1), kv)
-
-		//check item exists
-		val, ok, err := kv.Get(ctx, "/data", kv)
-
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		if !assert.True(t, bool(ok)) {
-			return
-		}
-
-		assert.Equal(t, core.Int(1), val)
-	})
-
-	t.Run("double insert", func(t *testing.T) {
-		fls := newMemFilesystem()
-
-		kv, err := OpenSingleFileKV(KvStoreConfig{
-			Path:       "/data.kv",
-			Filesystem: fls,
-		})
-
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		ctx := core.NewContext(core.ContextConfig{
-			Permissions: []core.Permission{core.CreateFsReadPerm(core.PathPattern("/..."))},
-		})
-
-		//first insert
-		kv.Insert(ctx, "/data", core.Int(1), kv)
-
-		//second insert
-		func() {
-			defer func() {
-				e := recover()
-				assert.ErrorIs(t, e.(error), ErrKeyAlreadyPresent)
-			}()
-			kv.Insert(ctx, "/data", core.Int(2), kv)
-		}()
-
-		//check item exists and has the original value
-		val, ok, err := kv.Get(ctx, "/data", kv)
-
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		if !assert.True(t, bool(ok)) {
-			return
-		}
-
-		assert.Equal(t, core.Int(1), val)
-	})
 }
 
 func TestKvForEach(t *testing.T) {

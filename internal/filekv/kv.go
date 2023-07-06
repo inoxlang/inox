@@ -96,17 +96,32 @@ func (kv *SingleFileKV) isClosed() bool {
 }
 
 func (kv *SingleFileKV) Get(ctx *core.Context, key core.Path, db any) (core.Value, core.Bool, error) {
+	serialized, found, err := kv.GetSerialized(ctx, key, db)
+
+	if err != nil {
+		return nil, found, err
+	}
+
+	if !found {
+		return core.Nil, false, nil
+	}
+
+	val, err := core.ParseRepr(ctx, utils.StringAsBytes(serialized))
+	return val, found, err
+}
+
+func (kv *SingleFileKV) GetSerialized(ctx *core.Context, key core.Path, db any) (string, core.Bool, error) {
 	if kv.isClosed() {
-		return nil, false, errDatabaseClosed
+		return "", false, errDatabaseClosed
 	}
 
 	if !key.IsAbsolute() {
-		return nil, false, ErrInvalidPathKey
+		return "", false, ErrInvalidPathKey
 	}
 
 	var (
 		valueFound = core.True
-		val        core.Value
+		serialized string
 		tx         = ctx.GetTx()
 	)
 
@@ -119,22 +134,21 @@ func (kv *SingleFileKV) Get(ctx *core.Context, key core.Path, db any) (core.Valu
 			} else if err != nil {
 				return err
 			}
-
-			val, err = core.ParseRepr(ctx, utils.StringAsBytes(item))
-			return err
+			serialized = item
+			return nil
 		})
 
 		if err != nil {
-			return nil, false, err
+			return "", false, err
 		}
 
 	} else {
 		dbtx := kv.getCreateDatabaseTxn(db, tx)
 
 		var err error
-		val, valueFound, err = dbtx.Get(ctx, key)
+		serialized, valueFound, err = dbtx.GetSerialized(ctx, key)
 		if err != nil {
-			return nil, false, err
+			return "", false, err
 		}
 	}
 
@@ -142,11 +156,7 @@ func (kv *SingleFileKV) Get(ctx *core.Context, key core.Path, db any) (core.Valu
 		//TODO ....
 	}
 
-	if val == nil {
-		val = core.Nil
-	}
-
-	return val, valueFound, nil
+	return serialized, valueFound, nil
 }
 
 // ForEach calls a function for each item in the database, the provided getVal function should not be stored as it only
@@ -262,6 +272,14 @@ func (kv *SingleFileKV) Has(ctx *core.Context, key core.Path, db any) core.Bool 
 }
 
 func (kv *SingleFileKV) Insert(ctx *core.Context, key core.Path, value core.Value, db any) {
+	repr := core.GetRepresentation(value, ctx)
+
+	kv.InsertSerialized(ctx, key, string(repr), db)
+}
+
+func (kv *SingleFileKV) InsertSerialized(ctx *core.Context, key core.Path, serialized string, db any) {
+	//TODO: check valid representation
+
 	if kv.db.isClosed() {
 		panic(errDatabaseClosed)
 	}
@@ -274,8 +292,7 @@ func (kv *SingleFileKV) Insert(ctx *core.Context, key core.Path, value core.Valu
 
 	if tx == nil {
 		err := kv.db.Update(func(txn *Tx) error {
-			repr := core.GetRepresentation(value, ctx)
-			_, replaced, err := txn.Set(string(key), string(repr), nil)
+			_, replaced, err := txn.Set(string(key), serialized, nil)
 			if replaced {
 				return fmt.Errorf("%w: %s", ErrKeyAlreadyPresent, key)
 			}
@@ -288,7 +305,7 @@ func (kv *SingleFileKV) Insert(ctx *core.Context, key core.Path, value core.Valu
 
 	} else {
 		dbtx := kv.getCreateDatabaseTxn(db, tx)
-		err := dbtx.Insert(ctx, key, value)
+		err := dbtx.InsertSerialized(ctx, key, serialized)
 
 		if err != nil {
 			panic(err)
@@ -297,6 +314,12 @@ func (kv *SingleFileKV) Insert(ctx *core.Context, key core.Path, value core.Valu
 }
 
 func (kv *SingleFileKV) Set(ctx *core.Context, key core.Path, value core.Value, db any) {
+	repr := core.GetRepresentation(value, ctx)
+	kv.SetSerialized(ctx, key, string(repr), db)
+}
+
+func (kv *SingleFileKV) SetSerialized(ctx *core.Context, key core.Path, serialized string, db any) {
+	//TODO: check valid representation
 
 	if kv.db.isClosed() {
 		panic(errDatabaseClosed)
@@ -310,8 +333,7 @@ func (kv *SingleFileKV) Set(ctx *core.Context, key core.Path, value core.Value, 
 
 	if tx == nil {
 		err := kv.db.Update(func(txn *Tx) error {
-			repr := core.GetRepresentation(value, ctx)
-			_, _, err := txn.Set(string(key), string(repr), nil)
+			_, _, err := txn.Set(string(key), serialized, nil)
 			return err
 		})
 
@@ -321,7 +343,7 @@ func (kv *SingleFileKV) Set(ctx *core.Context, key core.Path, value core.Value, 
 
 	} else {
 		dbtx := kv.getCreateDatabaseTxn(db, tx)
-		err := dbtx.Set(ctx, key, value)
+		err := dbtx.SetSerialized(ctx, key, serialized)
 
 		if err != nil {
 			panic(err)
@@ -434,6 +456,25 @@ func NewDatabaseTxIL(tx *Tx) *DatabaseTx {
 }
 
 func (tx *DatabaseTx) Get(ctx *core.Context, key core.Path) (result core.Value, valueFound core.Bool, finalErr error) {
+	serialized, found, err := tx.GetSerialized(ctx, key)
+	if err != nil {
+		return nil, false, err
+	}
+
+	if !found {
+		return nil, found, nil
+	}
+
+	result, err = core.ParseRepr(ctx, utils.StringAsBytes(serialized))
+
+	if err != nil {
+		return nil, true, err
+	}
+
+	return result, true, nil
+}
+
+func (tx *DatabaseTx) GetSerialized(ctx *core.Context, key core.Path) (result string, valueFound core.Bool, finalErr error) {
 	item, err := tx.tx.Get(string(key))
 	if err == errNotFound {
 		valueFound = false
@@ -441,11 +482,7 @@ func (tx *DatabaseTx) Get(ctx *core.Context, key core.Path) (result core.Value, 
 		panic(err)
 	} else {
 		valueFound = true
-		result, err = core.ParseRepr(ctx, utils.StringAsBytes(item))
-
-		if err != nil {
-			return nil, false, err
-		}
+		result = item
 		return
 	}
 	return
@@ -453,14 +490,22 @@ func (tx *DatabaseTx) Get(ctx *core.Context, key core.Path) (result core.Value, 
 
 func (tx *DatabaseTx) Set(ctx *core.Context, key core.Path, value core.Value) error {
 	repr := core.GetRepresentation(value, ctx)
-	_, _, err := tx.tx.Set(string(key), string(repr), nil)
+	return tx.SetSerialized(ctx, key, string(repr))
+}
+
+func (tx *DatabaseTx) SetSerialized(ctx *core.Context, key core.Path, serialized string) error {
+	_, _, err := tx.tx.Set(string(key), serialized, nil)
 
 	return err
 }
 
 func (tx *DatabaseTx) Insert(ctx *core.Context, key core.Path, value core.Value) error {
 	repr := core.GetRepresentation(value, ctx)
-	_, replaced, err := tx.tx.Set(string(key), string(repr), nil)
+	return tx.InsertSerialized(ctx, key, string(repr))
+}
+
+func (tx *DatabaseTx) InsertSerialized(ctx *core.Context, key core.Path, serialized string) error {
+	_, replaced, err := tx.tx.Set(string(key), serialized, nil)
 
 	if replaced {
 		return fmt.Errorf("%w: %s", ErrKeyAlreadyPresent, key)
