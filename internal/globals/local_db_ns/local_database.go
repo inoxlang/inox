@@ -178,7 +178,7 @@ func (ldb *LocalDatabase) Resource() core.SchemeHolder {
 	return ldb.host
 }
 
-func (ldb *LocalDatabase) TopLevelEntities() map[string]Value {
+func (ldb *LocalDatabase) TopLevelEntities(ctx *core.Context) map[string]Value {
 	return nil
 }
 

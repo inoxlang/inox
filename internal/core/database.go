@@ -49,11 +49,11 @@ type Database interface {
 	Resource() SchemeHolder
 	Schema() *ObjectPattern
 	UpdateSchema(ctx *Context, schema *ObjectPattern) error
-	TopLevelEntities() map[string]Value
+	TopLevelEntities(ctx *Context) map[string]Value
 	Close(ctx *Context) error
 }
 
-func WrapDatabase(inner Database) *DatabaseIL {
+func WrapDatabase(ctx *Context, inner Database) *DatabaseIL {
 	schema := inner.Schema()
 
 	propertyNames := utils.CopySlice(DATABASE_PROPNAMES)
@@ -69,7 +69,7 @@ func WrapDatabase(inner Database) *DatabaseIL {
 		inner:            inner,
 		initialSchema:    schema,
 		propertyNames:    propertyNames,
-		topLevelEntities: inner.TopLevelEntities(),
+		topLevelEntities: inner.TopLevelEntities(ctx),
 	}
 }
 
@@ -184,7 +184,7 @@ func (db *FailedToOpenDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern
 	return ErrNotImplemented
 }
 
-func (db *FailedToOpenDatabase) TopLevelEntities() map[string]Value {
+func (db *FailedToOpenDatabase) TopLevelEntities(_ *Context) map[string]Value {
 	return nil
 }
 
