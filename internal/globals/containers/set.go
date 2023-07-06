@@ -8,7 +8,9 @@ import (
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/utils"
 	jsoniter "github.com/json-iterator/go"
+	"github.com/oklog/ulid/v2"
 
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
 )
@@ -26,6 +28,10 @@ func init() {
 type Set struct {
 	elements map[string]core.Value
 	config   SetConfig
+
+	//persistence
+	storage core.SerializedValueStorage //nillable
+	url     core.URL                    //set if .storage set
 }
 
 func NewSet(ctx *core.Context, elements core.Iterable, configObject ...*core.Object) *Set {
@@ -77,6 +83,8 @@ func loadSet(ctx *core.Context, path core.Path, storage core.SerializedValueStor
 	}
 
 	set := NewSetWithConfig(ctx, nil, setPattern.config)
+	set.storage = storage
+	set.url = storage.BaseURL().AppendAbsolutePath(path)
 
 	var finalErr error
 
@@ -182,7 +190,28 @@ func (set *Set) Add(ctx *core.Context, elem core.Value) {
 		panic(ErrValueDoesMatchElementPattern)
 	}
 
+	if set.config.Uniqueness.Type == UniqueURL {
+		holder, ok := elem.(core.UrlHolder)
+		if !ok {
+			panic(errors.New("elements should be URL holders"))
+		}
+
+		_, ok = holder.URL()
+		if !ok {
+			if set.storage == nil {
+				panic(ErrFailedGetUniqueKeyNoURL)
+			}
+
+			//if the Set is persisted & the elements are unique by URL
+			//we set the url of the new element to set.url + '/' + random ID
+
+			url := set.url.ToDirURL().AppendAbsolutePath(core.Path("/" + ulid.Make().String()))
+			utils.PanicIfErr(holder.SetURLOnce(ctx, url))
+		}
+	}
+
 	key := getUniqueKey(ctx, elem, set.config.Uniqueness)
+
 	curr, ok := set.elements[key]
 	if ok && elem != curr {
 		panic(ErrValueWithSameKeyAlreadyPresent)

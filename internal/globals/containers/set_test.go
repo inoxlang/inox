@@ -2,10 +2,12 @@ package containers
 
 import (
 	"io"
+	"strings"
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/filekv"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 
@@ -39,12 +41,24 @@ func TestNewSet(t *testing.T) {
 	t.Run("element with no representation", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
 
-		obj := core.NewObject()
-		obj.SetProp(ctx, "self", obj)
+		node := core.AstNode{Node: parse.MustParseChunk("")}
 
 		func() {
 			defer func() {
 				assert.ErrorContains(t, recover().(error), "failed to get representation")
+			}()
+			NewSet(ctx, core.NewWrappedValueList(node))
+		}()
+	})
+
+	t.Run("element with representation should be immutable ", func(t *testing.T) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
+
+		obj := core.NewObjectFromMap(core.ValMap{}, ctx)
+
+		func() {
+			defer func() {
+				assert.ErrorContains(t, recover().(error), core.ErrReprOfMutableValueCanChange.Error())
 			}()
 			NewSet(ctx, core.NewWrappedValueList(obj))
 		}()
@@ -66,7 +80,7 @@ func TestNewSet(t *testing.T) {
 		}, set.config)
 	})
 
-	t.Run("url uniqueness: element has no URL", func(t *testing.T) {
+	t.Run("url uniqueness: element has no URL & Set has no URL", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
 
 		config := core.NewObjectFromMap(core.ValMap{
@@ -77,7 +91,7 @@ func TestNewSet(t *testing.T) {
 			defer func() {
 				assert.ErrorContains(t, recover().(error), ErrFailedGetUniqueKeyNoURL.Error())
 			}()
-			NewSet(ctx, core.NewWrappedValueList(core.Int(1)), config)
+			NewSet(ctx, core.NewWrappedValueList(core.NewObjectFromMap(nil, ctx)), config)
 		}()
 
 	})
@@ -158,13 +172,12 @@ func TestNewSet(t *testing.T) {
 }
 
 func TestPersistLoadSet(t *testing.T) {
-
 	setup := func() (*core.Context, core.SerializedValueStorage) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		kv := utils.Must(filekv.OpenSingleFileKV(filekv.KvStoreConfig{
 			InMemory: true,
 		}))
-		storage := filekv.NewSerializedValueStorage(kv)
+		storage := filekv.NewSerializedValueStorage(kv, "ldb://main/")
 		return ctx, storage
 	}
 
@@ -354,7 +367,11 @@ func TestPersistLoadSet(t *testing.T) {
 			if !assert.True(t, ok) {
 				return
 			}
-			assert.Equal(t, `[{"id":"a"},{"id":"b"}]`, serialized)
+			if strings.Index(serialized, `"a"`) < strings.Index(serialized, `"b"`) {
+				assert.Equal(t, `[{"id":"a"},{"id":"b"}]`, serialized)
+			} else {
+				assert.Equal(t, `[{"id":"b"},{"id":"a"}]`, serialized)
+			}
 		}
 
 		loadedSet, err := loadSet(ctx, "/set", storage, pattern)
@@ -382,6 +399,46 @@ func TestPersistLoadSet(t *testing.T) {
 		}
 
 		assert.Nil(t, set)
+	})
+
+}
+
+func TestSetAddToPersistedSet(t *testing.T) {
+
+	setup := func() (*core.Context, core.SerializedValueStorage) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		kv := utils.Must(filekv.OpenSingleFileKV(filekv.KvStoreConfig{
+			InMemory: true,
+		}))
+		storage := filekv.NewSerializedValueStorage(kv, "ldb://main/")
+		return ctx, storage
+	}
+
+	t.Run("url holder with no URL should get one", func(t *testing.T) {
+		ctx, storage := setup()
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: UniquenessConstraint{
+				Type: UniqueURL,
+			},
+		}, core.CallBasedPatternReprMixin{})
+
+		storage.SetSerialized(ctx, "/set", `[]`)
+		set, err := loadSet(ctx, "/set", storage, pattern)
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		obj := core.NewObjectFromMap(core.ValMap{}, ctx)
+		set.(*Set).Add(ctx, obj)
+
+		url, ok := obj.URL()
+		if !assert.True(t, ok) {
+			return
+		}
+
+		assert.Regexp(t, "ldb://main/.*", string(url))
 	})
 
 }

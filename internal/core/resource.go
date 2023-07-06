@@ -648,6 +648,15 @@ func (u URL) WithoutQuery() URL {
 	return URL(newURL)
 }
 
+func (u URL) ToDirURL() URL {
+	if u.Path().IsDirPath() {
+		return u
+	}
+	parsed, _ := url.Parse(string(u))
+
+	return URL(parsed.JoinPath("/").String())
+}
+
 // AppendRelativePath joins a relative path starting with './' with the URL's path if it has a directory path.
 // If the input path is not relative or if the URL's path is not a directory path the function panics.
 func (u URL) AppendRelativePath(relPath Path) URL {
