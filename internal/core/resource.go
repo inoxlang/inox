@@ -648,17 +648,41 @@ func (u URL) WithoutQuery() URL {
 	return URL(newURL)
 }
 
-// AppendRelativePath joins a relative path with the URL's path if it has a directory path.
+// AppendRelativePath joins a relative path starting with './' with the URL's path if it has a directory path.
 // If the input path is not relative or if the URL's path is not a directory path the function panics.
 func (u URL) AppendRelativePath(relPath Path) URL {
-	if !u.Path().IsDirPath() {
-		panic(errors.New("relative paths can only be appended to a URL which path ends with /"))
-	}
 	if !relPath.IsRelative() {
 		panic(errors.New("relative path expected"))
 	}
+	if strings.HasPrefix(string(relPath), "../") {
+		panic(errors.New("relative path should start with './'"))
+	}
+	return u.appendPath(relPath)
+}
+
+// AppendAbsolutePath joins anabsolute path with the URL's path if it has a directory path.
+// If the input path is not absolute or if the URL's path is not a directory path the function panics.
+func (u URL) AppendAbsolutePath(absPath Path) URL {
+	if !absPath.IsAbsolute() {
+		panic(errors.New("absolute path expected"))
+	}
+	return u.appendPath(absPath)
+}
+
+func (u URL) appendPath(path Path) URL {
+	if !u.Path().IsDirPath() {
+		panic(errors.New("paths can only be appended to a URL which path ends with /"))
+	}
 	parsed, _ := url.Parse(string(u))
-	return URL(strings.Replace(string(u), parsed.RawPath, parsed.RawPath+string(relPath[2:]), 1))
+
+	unprefixedPath := string(path)
+	// /a -> a
+	// ./a -> a
+	// ../a -> a
+	unprefixedPath = unprefixedPath[strings.Index(unprefixedPath, "/")+1:]
+
+	newURL := parsed.JoinPath(unprefixedPath)
+	return URL(newURL.String())
 }
 
 func (u URL) PropertyNames(ctx *Context) []string {
