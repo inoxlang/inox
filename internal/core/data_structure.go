@@ -498,6 +498,13 @@ func (obj *Object) ForEachEntry(fn func(k string, v Value) error) error {
 	return nil
 }
 
+func (obj *Object) URL() (URL, bool) {
+	if obj.url != "" {
+		return obj.url, true
+	}
+	return "", false
+}
+
 func (obj *Object) SetURLOnce(ctx *Context, u URL) error {
 	closestState := ctx.GetClosestState()
 	obj.Lock(closestState)

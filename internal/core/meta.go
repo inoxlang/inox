@@ -18,12 +18,20 @@ var (
 	ErrValueNoId  = errors.New("value has not an identifier")
 )
 
+type UrlHolder interface {
+	Value
+	SetURLOnce(ctx *Context, u URL) error
+	URL() (URL, bool)
+}
+
 func UrlOf(ctx *Context, v Value) (URL, error) {
 	switch val := v.(type) {
-	case *Object:
-		if val.url != "" {
-			return val.url, nil
+	case UrlHolder:
+		url, ok := val.URL()
+		if !ok {
+			return "", ErrValueNoURL
 		}
+		return url, nil
 	}
 	return "", ErrValueNoURL
 }
