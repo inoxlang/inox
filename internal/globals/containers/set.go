@@ -1,6 +1,7 @@
 package containers
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"reflect"
@@ -108,6 +109,27 @@ func loadSet(ctx *core.Context, path core.Path, storage core.SerializedValueStor
 	}
 
 	return set, nil
+}
+
+func persistSet(ctx *core.Context, set *Set, path core.Path, storage core.SerializedValueStorage, pattern core.Pattern) error {
+	buff := bytes.NewBufferString("[")
+
+	first := true
+	for _, e := range set.elements {
+		if !first {
+			buff.WriteByte(',')
+		}
+		first = false
+
+		if err := core.WriteRepresentation(buff, e, &core.ReprConfig{AllVisible: true}, ctx); err != nil {
+			return err
+		}
+	}
+
+	buff.WriteByte(']')
+
+	storage.SetSerialized(ctx, path, buff.String())
+	return nil
 }
 
 type SetConfig struct {

@@ -157,7 +157,7 @@ func TestNewSet(t *testing.T) {
 	})
 }
 
-func TestLoadSet(t *testing.T) {
+func TestPersistLoadSet(t *testing.T) {
 
 	setup := func() (*core.Context, core.SerializedValueStorage) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
@@ -176,14 +176,25 @@ func TestLoadSet(t *testing.T) {
 				Type: UniqueRepr,
 			},
 		}, core.CallBasedPatternReprMixin{})
+		set := NewSetWithConfig(ctx, nil, pattern.config)
 
-		storage.SetSerialized(ctx, "/set", `[]`)
-		set, err := loadSet(ctx, "/set", storage, pattern)
+		//persist
+		{
+			persistSet(ctx, set, "/set", storage, pattern)
+
+			serialized, ok := storage.GetSerialized(ctx, "/set")
+			if !assert.True(t, ok) {
+				return
+			}
+			assert.Equal(t, "[]", serialized)
+		}
+
+		loadedSet, err := loadSet(ctx, "/set", storage, pattern)
 		if !assert.NoError(t, err) {
 			return
 		}
 
-		assert.NotNil(t, set)
+		assert.NotNil(t, loadedSet)
 	})
 
 	t.Run("unique repr: single element", func(t *testing.T) {
@@ -194,14 +205,27 @@ func TestLoadSet(t *testing.T) {
 				Type: UniqueRepr,
 			},
 		}, core.CallBasedPatternReprMixin{})
+		set := NewSetWithConfig(ctx, nil, pattern.config)
 
-		storage.SetSerialized(ctx, "/set", `[1]`)
-		set, err := loadSet(ctx, "/set", storage, pattern)
+		set.Add(ctx, core.Int(1))
+
+		//persist
+		{
+			persistSet(ctx, set, "/set", storage, pattern)
+
+			serialized, ok := storage.GetSerialized(ctx, "/set")
+			if !assert.True(t, ok) {
+				return
+			}
+			assert.Equal(t, "[1]", serialized)
+		}
+
+		loadedSet, err := loadSet(ctx, "/set", storage, pattern)
 		if !assert.NoError(t, err) {
 			return
 		}
 
-		assert.True(t, bool(set.(*Set).Has(ctx, core.Int(1))))
+		assert.True(t, bool(loadedSet.(*Set).Has(ctx, core.Int(1))))
 	})
 
 	t.Run("unique repr: two elements", func(t *testing.T) {
@@ -212,15 +236,29 @@ func TestLoadSet(t *testing.T) {
 				Type: UniqueRepr,
 			},
 		}, core.CallBasedPatternReprMixin{})
+		set := NewSetWithConfig(ctx, nil, pattern.config)
 
-		storage.SetSerialized(ctx, "/set", `[1, 2]`)
-		set, err := loadSet(ctx, "/set", storage, pattern)
+		set.Add(ctx, core.Int(1))
+		set.Add(ctx, core.Int(2))
+
+		//persist
+		{
+			persistSet(ctx, set, "/set", storage, pattern)
+
+			serialized, ok := storage.GetSerialized(ctx, "/set")
+			if !assert.True(t, ok) {
+				return
+			}
+			assert.Equal(t, "[1,2]", serialized)
+		}
+
+		loadedSet, err := loadSet(ctx, "/set", storage, pattern)
 		if !assert.NoError(t, err) {
 			return
 		}
 
-		assert.True(t, bool(set.(*Set).Has(ctx, core.Int(1))))
-		assert.True(t, bool(set.(*Set).Has(ctx, core.Int(2))))
+		assert.True(t, bool(loadedSet.(*Set).Has(ctx, core.Int(1))))
+		assert.True(t, bool(loadedSet.(*Set).Has(ctx, core.Int(2))))
 	})
 
 	t.Run("unique repr: element with non-unique repr", func(t *testing.T) {
@@ -271,14 +309,27 @@ func TestLoadSet(t *testing.T) {
 				PropertyName: "id",
 			},
 		}, core.CallBasedPatternReprMixin{})
+		set := NewSetWithConfig(ctx, nil, pattern.config)
 
-		storage.SetSerialized(ctx, "/set", `[{"id": "a"}]`)
-		set, err := loadSet(ctx, "/set", storage, pattern)
+		set.Add(ctx, core.NewObjectFromMap(core.ValMap{"id": core.Str("a")}, ctx))
+
+		//persist
+		{
+			persistSet(ctx, set, "/set", storage, pattern)
+
+			serialized, ok := storage.GetSerialized(ctx, "/set")
+			if !assert.True(t, ok) {
+				return
+			}
+			assert.Equal(t, `[{"id":"a"}]`, serialized)
+		}
+
+		loadedSet, err := loadSet(ctx, "/set", storage, pattern)
 		if !assert.NoError(t, err) {
 			return
 		}
 
-		assert.NotNil(t, set)
+		assert.NotNil(t, loadedSet)
 	})
 
 	t.Run("unique property value: two elements", func(t *testing.T) {
@@ -290,14 +341,28 @@ func TestLoadSet(t *testing.T) {
 				PropertyName: "id",
 			},
 		}, core.CallBasedPatternReprMixin{})
+		set := NewSetWithConfig(ctx, nil, pattern.config)
 
-		storage.SetSerialized(ctx, "/set", `[{"id": "a"}, {"id": "b"}]`)
-		set, err := loadSet(ctx, "/set", storage, pattern)
+		set.Add(ctx, core.NewObjectFromMap(core.ValMap{"id": core.Str("a")}, ctx))
+		set.Add(ctx, core.NewObjectFromMap(core.ValMap{"id": core.Str("b")}, ctx))
+
+		//persist
+		{
+			persistSet(ctx, set, "/set", storage, pattern)
+
+			serialized, ok := storage.GetSerialized(ctx, "/set")
+			if !assert.True(t, ok) {
+				return
+			}
+			assert.Equal(t, `[{"id":"a"},{"id":"b"}]`, serialized)
+		}
+
+		loadedSet, err := loadSet(ctx, "/set", storage, pattern)
 		if !assert.NoError(t, err) {
 			return
 		}
 
-		assert.NotNil(t, set)
+		assert.NotNil(t, loadedSet)
 	})
 
 	t.Run("unique property value: two elements with same unique prop", func(t *testing.T) {
