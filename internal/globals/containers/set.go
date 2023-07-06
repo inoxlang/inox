@@ -75,7 +75,7 @@ func NewSet(ctx *core.Context, elements core.Iterable, configObject ...*core.Obj
 	return NewSetWithConfig(ctx, elements, config)
 }
 
-func loadSet(ctx *core.Context, path core.Path, storage core.SerializedValueStorage, pattern core.Pattern) (core.Value, error) {
+func loadSet(ctx *core.Context, path core.Path, storage core.SerializedValueStorage, pattern core.Pattern) (core.UrlHolder, error) {
 	setPattern := pattern.(*SetPattern)
 	rootData, ok := storage.GetSerialized(ctx, path)
 	if !ok {
@@ -173,6 +173,17 @@ func NewSetWithConfig(ctx *core.Context, elements core.Iterable, config SetConfi
 	}
 
 	return set
+}
+
+func (set *Set) URL() (core.URL, bool) {
+	if set.storage != nil {
+		return set.url, true
+	}
+	return "", false
+}
+
+func (set *Set) SetURLOnce(ctx *core.Context, url core.URL) error {
+	return core.ErrValueDoesNotAcceptURL
 }
 
 func (set *Set) Has(ctx *core.Context, elem core.Value) core.Bool {

@@ -24,7 +24,7 @@ type SerializedValueStorage interface {
 	InsertSerialized(ctx *Context, key Path, serialized string)
 }
 
-type LoadInstanceFn func(ctx *Context, key Path, storage SerializedValueStorage, pattern Pattern) (Value, error)
+type LoadInstanceFn func(ctx *Context, key Path, storage SerializedValueStorage, pattern Pattern) (UrlHolder, error)
 
 func RegisterLoadInstanceFn(patternType reflect.Type, fn LoadInstanceFn) {
 	loadInstanceFnRegistryLock.Lock()

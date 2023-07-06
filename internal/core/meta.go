@@ -14,8 +14,9 @@ const (
 )
 
 var (
-	ErrValueNoURL = errors.New("value has not an URL")
-	ErrValueNoId  = errors.New("value has not an identifier")
+	ErrValueNoURL            = errors.New("value has not an URL")
+	ErrValueNoId             = errors.New("value has not an identifier")
+	ErrValueDoesNotAcceptURL = errors.New("value does not accept URL")
 )
 
 type UrlHolder interface {
