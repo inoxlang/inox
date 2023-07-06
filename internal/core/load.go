@@ -17,6 +17,7 @@ var (
 )
 
 type SerializedValueStorage interface {
+	BaseURL() (URL, bool)
 	GetSerialized(ctx *Context, key Path) (string, bool)
 	Has(ctx *Context, key Path) bool
 	SetSerialized(ctx *Context, key Path, serialized string)
