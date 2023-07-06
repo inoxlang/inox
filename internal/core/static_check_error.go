@@ -46,7 +46,7 @@ const (
 	SELF_ACCESSIBILITY_EXPLANATION                                 = "'self' is only accessible within functions that are object properties, metaproperty initialization blocks and in lifetime jobs"
 	CANNOT_CHECK_OBJECT_PROP_WITHOUT_PARENT                        = "checking an ObjectProperty node requires the parent ObjectLiteral node"
 	CANNOT_CHECK_OBJECT_METAPROP_WITHOUT_PARENT                    = "checking an ObjectMetaProperty node requires the parent ObjectLiteral node"
-	OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS                          = "object and record literals cannot have metaproperty keys, metaproperty keys have a starting & a trailing underscore '_'"
+	OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS                          = "(object | object pattern | record) literals cannot have metaproperty keys, metaproperty keys have a starting & a trailing underscore '_'"
 
 	MISPLACED_SENDVAL_EXPR                 = "sendval expressions are only usable within functions that are object properties, metaproperty initialization blocks and in lifetime jobs"
 	MISPLACED_SUPERSYS_EXPR                = "supersys expressions are only usable within functions that are object properties, metaproperty initialization blocks and in lifetime jobs"

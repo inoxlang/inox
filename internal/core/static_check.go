@@ -537,7 +537,53 @@ switch_:
 		if action != parse.Continue {
 			return action
 		}
+	case *parse.ObjectPatternLiteral:
+		indexKey := 0
+		keys := map[string]struct{}{}
 
+		// look for duplicate keys
+		for _, prop := range node.Properties {
+			var k string
+
+			switch n := prop.Key.(type) {
+			case *parse.QuotedStringLiteral:
+				k = n.Value
+			case *parse.IdentifierLiteral:
+				k = n.Name
+			case nil:
+				k = strconv.Itoa(indexKey)
+				indexKey++
+			}
+
+			if len(k) > MAX_NAME_BYTE_LEN {
+				c.addError(prop.Key, fmtNameIsTooLong(k))
+			}
+
+			if parse.IsMetadataKey(k) {
+				c.addError(prop.Key, OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS)
+			} else if _, found := keys[k]; found {
+				c.addError(prop, fmtDuplicateKey(k))
+			}
+
+			keys[k] = struct{}{}
+		}
+
+		// also look for duplicate keys
+		for _, element := range node.SpreadElements {
+
+			for _, key := range element.Expr.(*parse.ExtractionExpression).Keys.Keys {
+				name := key.(*parse.IdentifierLiteral).Name
+
+				_, found := keys[name]
+				if found {
+					c.addError(key, fmtDuplicateKey(name))
+					return parse.Continue
+				}
+				keys[name] = struct{}{}
+			}
+		}
+
+		return parse.Continue
 	case *parse.DictionaryLiteral:
 		keys := map[string]bool{}
 
