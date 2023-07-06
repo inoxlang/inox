@@ -522,15 +522,16 @@ func (tx *DatabaseTx) Delete(ctx *core.Context, key core.Path) error {
 }
 
 type SerializedValueStorageAdapter struct {
-	kv *SingleFileKV
+	kv  *SingleFileKV
+	url core.URL
 }
 
-func NewSerializedValueStorage(kv *SingleFileKV) *SerializedValueStorageAdapter {
-	return &SerializedValueStorageAdapter{kv: kv}
+func NewSerializedValueStorage(kv *SingleFileKV, url core.URL) *SerializedValueStorageAdapter {
+	return &SerializedValueStorageAdapter{kv: kv, url: url}
 }
 
-func (*SerializedValueStorageAdapter) BaseURL() (core.URL, bool) {
-	return "", false
+func (a *SerializedValueStorageAdapter) BaseURL() core.URL {
+	return a.url
 }
 
 func (a *SerializedValueStorageAdapter) GetSerialized(ctx *core.Context, key core.Path) (string, bool) {
