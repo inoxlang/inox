@@ -19,6 +19,8 @@ const (
 var (
 	ErrInvalidPathKey    = errors.New("invalid path used as local database key")
 	ErrKeyAlreadyPresent = errors.New("key already present")
+
+	_ core.SerializedValueStorage = (*SerializedValueStorageAdapter)(nil)
 )
 
 // thin wrapper around a buntdb database.
@@ -517,4 +519,30 @@ func (tx *DatabaseTx) InsertSerialized(ctx *core.Context, key core.Path, seriali
 func (tx *DatabaseTx) Delete(ctx *core.Context, key core.Path) error {
 	_, err := tx.tx.Delete(string(key))
 	return err
+}
+
+type SerializedValueStorageAdapter struct {
+	kv *SingleFileKV
+}
+
+func NewSerializedValueStorage(kv *SingleFileKV) *SerializedValueStorageAdapter {
+	return &SerializedValueStorageAdapter{kv: kv}
+}
+
+func (a *SerializedValueStorageAdapter) GetSerialized(ctx *core.Context, key core.Path) (string, bool) {
+	serialized, ok := utils.Must2(a.kv.GetSerialized(ctx, key, a))
+	return serialized, bool(ok)
+}
+
+func (a SerializedValueStorageAdapter) Has(ctx *core.Context, key core.Path) bool {
+	return bool(a.kv.Has(ctx, key, a))
+}
+
+func (a *SerializedValueStorageAdapter) InsertSerialized(ctx *core.Context, key core.Path, serialized string) {
+	a.kv.InsertSerialized(ctx, key, serialized, a)
+}
+
+// SetSerialized implements core.SerializedValueStorage.
+func (a *SerializedValueStorageAdapter) SetSerialized(ctx *core.Context, key core.Path, serialized string) {
+	a.kv.SetSerialized(ctx, key, serialized, a)
 }
