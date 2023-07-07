@@ -13,6 +13,7 @@ import (
 
 var (
 	ErrPatternNotCallable = errors.New("pattern is not callable")
+	ErrNoDefaultValue     = errors.New("no default value")
 
 	_ = []GroupPattern{&NamedSegmentPathPattern{}}
 )
@@ -60,6 +61,13 @@ type GroupPattern interface {
 	Pattern
 	MatchGroups(*Context, Value) (groups map[string]Value, ok bool, err error)
 	FindGroupMatches(*Context, Value, GroupMatchesFindConfig) (groups []*Object, err error)
+}
+
+// DefaultValuePattern is implemented by patterns that can provide
+// a default value that matches them in most cases. ErrNoDefaultValue should be returned if it's not possible.
+type DefaultValuePattern interface {
+	Pattern
+	DefaultValue(ctx *Context) (Value, error)
 }
 
 type PatternNamespace struct {
