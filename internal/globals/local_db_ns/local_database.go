@@ -178,12 +178,36 @@ func (ldb *LocalDatabase) Resource() core.SchemeHolder {
 	return ldb.host
 }
 
-func (ldb *LocalDatabase) TopLevelEntities(ctx *core.Context) map[string]Value {
-	return nil
+func (ldb *LocalDatabase) TopLevelEntities(ctx *core.Context) (entities map[string]Value) {
+	entities = make(map[string]core.Value, ldb.schema.EntryCount())
+
+	err := ldb.schema.ForEachEntry(func(propName string, propPattern core.Pattern, isOptional bool) error {
+		path := core.PathFrom("/" + propName)
+		value, err := core.LoadInstance(ctx, core.InstanceLoadArgs{
+			Pattern:      propPattern,
+			Key:          path,
+			Storage:      ldb,
+			AllowMissing: true,
+		})
+		if err != nil {
+			return err
+		}
+		entities[propName] = value
+		return nil
+	})
+
+	if err != nil {
+		panic(err)
+	}
+	return
 }
 
 func (ldb *LocalDatabase) Schema() *core.ObjectPattern {
 	return ldb.schema
+}
+
+func (ldb *LocalDatabase) BaseURL() core.URL {
+	return core.URL(ldb.host + "/")
 }
 
 func (ldb *LocalDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern) error {
@@ -207,12 +231,29 @@ func (ldb *LocalDatabase) Get(ctx *Context, key Path) (Value, Bool) {
 	return utils.Must2(ldb.mainKV.Get(ctx, key, ldb))
 }
 
-func (ldb *LocalDatabase) Has(ctx *Context, key Path) Bool {
-	return ldb.mainKV.Has(ctx, key, ldb)
+func (ldb *LocalDatabase) GetSerialized(ctx *Context, key Path) (string, bool) {
+	s, ok := utils.Must2(ldb.mainKV.GetSerialized(ctx, key, ldb))
+	return s, bool(ok)
+}
+
+func (ldb *LocalDatabase) Has(ctx *Context, key Path) bool {
+	return bool(ldb.mainKV.Has(ctx, key, ldb))
 }
 
 func (ldb *LocalDatabase) Set(ctx *Context, key Path, value Value) {
 	ldb.mainKV.Set(ctx, key, value, ldb)
+}
+
+func (ldb *LocalDatabase) SetSerialized(ctx *Context, key Path, serialized string) {
+	ldb.mainKV.SetSerialized(ctx, key, serialized, ldb)
+}
+
+func (ldb *LocalDatabase) Insert(ctx *Context, key Path, value Value) {
+	ldb.mainKV.Insert(ctx, key, value, ldb)
+}
+
+func (ldb *LocalDatabase) InsertSerialized(ctx *Context, key Path, serialized string) {
+	ldb.mainKV.InsertSerialized(ctx, key, serialized, ldb)
 }
 
 func (ldb *LocalDatabase) Prop(ctx *core.Context, name string) Value {

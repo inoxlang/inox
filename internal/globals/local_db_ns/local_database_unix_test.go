@@ -9,8 +9,10 @@ import (
 
 	"github.com/inoxlang/inox/internal/afs"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/globals/containers"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/permkind"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -154,6 +156,71 @@ func TestOpenDatabase(t *testing.T) {
 		wg.Wait()
 
 		assert.Same(t, db1, db2)
+	})
+
+	t.Run("re-open with a schema", func(t *testing.T) {
+
+		t.Run("top-level Set with URL-based uniqueness", func(t *testing.T) {
+			dir, _ := filepath.Abs(t.TempDir())
+			dir += "/"
+
+			pattern := core.PathPattern(dir + "...")
+
+			ctxConfig := core.ContextConfig{
+				Permissions: []core.Permission{
+					core.FilesystemPermission{Kind_: permkind.Read, Entity: pattern},
+					core.FilesystemPermission{Kind_: permkind.Create, Entity: pattern},
+					core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
+				},
+				HostResolutions: map[core.Host]core.Value{
+					core.Host("ldb://main"): core.Path(dir),
+				},
+				Filesystem: fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE),
+			}
+
+			ctx := core.NewContexWithEmptyState(ctxConfig, nil)
+			ctx.AddNamedPattern("Set", containers.SET_PATTERN)
+			ctx.AddNamedPattern("str", containers.SET_PATTERN)
+
+			db, err := openDatabase(ctx, core.Path(dir), false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			setPattern :=
+				utils.Must(containers.SET_PATTERN.CallImpl(containers.SET_PATTERN,
+					[]core.Value{core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), containers.URL_UNIQUENESS_IDENT}))
+
+			schema := core.NewInexactObjectPattern(map[string]core.Pattern{
+				"users": setPattern,
+			})
+
+			utils.PanicIfErr(db.UpdateSchema(ctx, schema))
+
+			err = db.Close(ctx)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			//re-open
+
+			db, err = openDatabase(ctx, core.Path(dir), false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			defer db.Close(ctx)
+
+			entities := db.TopLevelEntities(ctx)
+
+			if !assert.Contains(t, entities, "users") {
+				return
+			}
+
+			userSet := entities["users"]
+			assert.IsType(t, (*containers.Set)(nil), userSet)
+		})
+
 	})
 }
 
@@ -427,7 +494,7 @@ func TestUpdateSchema(t *testing.T) {
 		assert.Equal(t, schema, ldb.schema)
 	})
 
-	t.Run("updating with the schema should be ignored", func(t *testing.T) {
+	t.Run("updating with the same schema should be ignored", func(t *testing.T) {
 
 		tempdir := t.TempDir()
 		fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)
@@ -448,7 +515,6 @@ func TestUpdateSchema(t *testing.T) {
 		//re open
 
 		ldb, ctx = openDB(tempdir, fls)
-		defer ldb.Close(ctx)
 		defer ldb.Close(ctx)
 
 		currentSchema := ldb.schema

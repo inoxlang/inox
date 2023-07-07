@@ -12,6 +12,10 @@ import (
 	"github.com/inoxlang/inox/internal/globals/help_ns"
 )
 
+const (
+	URL_UNIQUENESS_IDENT = core.Identifier("url")
+)
+
 var (
 	SET_PATTERN = &core.TypePattern{
 		Name:          "Set",
@@ -33,7 +37,7 @@ var (
 			var uniqueness UniquenessConstraint
 			switch u := values[1].(type) {
 			case core.Identifier:
-				if u != "url" {
+				if u != URL_UNIQUENESS_IDENT {
 					return nil, core.FmtErrInvalidArgumentAtPos(elementPattern, 0)
 				}
 				uniqueness.Type = UniqueURL
