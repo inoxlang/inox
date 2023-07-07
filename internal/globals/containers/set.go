@@ -19,6 +19,8 @@ var (
 	ErrSetCanOnlyContainRepresentableValues = errors.New("a Set can only contain representable values")
 	ErrValueDoesMatchElementPattern         = errors.New("provided value does not match the element pattern")
 	ErrValueWithSameKeyAlreadyPresent       = errors.New("provided value has the same key as an already present element")
+
+	_ core.DefaultValuePattern = (*SetPattern)(nil)
 )
 
 func init() {
@@ -305,4 +307,8 @@ func (p *SetPattern) Random(ctx *core.Context, options ...core.Option) core.Valu
 
 func (p *SetPattern) StringPattern() (core.StringPattern, bool) {
 	return nil, false
+}
+
+func (p *SetPattern) DefaultValue(ctx *core.Context) (core.Value, error) {
+	return NewSetWithConfig(ctx, nil, p.config), nil
 }
