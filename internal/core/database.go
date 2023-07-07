@@ -18,6 +18,7 @@ var (
 
 	ErrNonUniqueDbOpenFnRegistration                = errors.New("non unique open DB function registration")
 	ErrNameCollisionWithInitialDatabasePropertyName = errors.New("name collision with initial database property name")
+	ErrTopLevelEntitiesAlreadyLoaded                = errors.New("top-level entities already loaded")
 
 	DATABASE_PROPNAMES = []string{"update_schema", "close", "schema"}
 
@@ -47,8 +48,13 @@ type StaticallyCheckDbResolutionDataFn func(node parse.Node) (errorMsg string)
 
 type Database interface {
 	Resource() SchemeHolder
+
 	Schema() *ObjectPattern
+
+	//UpdateSchema updates the schema and validates the content of the database,
+	//this method should return ErrTopLevelEntitiesAlreadyLoaded if it is called after .TopLevelEntities.
 	UpdateSchema(ctx *Context, schema *ObjectPattern) error
+
 	TopLevelEntities(ctx *Context) map[string]Value
 	Close(ctx *Context) error
 }

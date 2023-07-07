@@ -40,6 +40,9 @@ type LocalDatabase struct {
 	schemaKV *filekv.SingleFileKV
 	schema   *core.ObjectPattern
 	logger   zerolog.Logger
+
+	topLevelValues     map[string]Value
+	topLevelValuesLock sync.Mutex
 }
 
 type LocalDatabaseConfig struct {
@@ -178,8 +181,15 @@ func (ldb *LocalDatabase) Resource() core.SchemeHolder {
 	return ldb.host
 }
 
-func (ldb *LocalDatabase) TopLevelEntities(ctx *core.Context) (entities map[string]Value) {
-	entities = make(map[string]core.Value, ldb.schema.EntryCount())
+func (ldb *LocalDatabase) TopLevelEntities(ctx *core.Context) map[string]Value {
+	ldb.topLevelValuesLock.Lock()
+	defer ldb.topLevelValuesLock.Unlock()
+
+	if ldb.topLevelValues != nil {
+		return ldb.topLevelValues
+	}
+
+	ldb.topLevelValues = make(map[string]core.Value, ldb.schema.EntryCount())
 
 	err := ldb.schema.ForEachEntry(func(propName string, propPattern core.Pattern, isOptional bool) error {
 		path := core.PathFrom("/" + propName)
@@ -192,14 +202,14 @@ func (ldb *LocalDatabase) TopLevelEntities(ctx *core.Context) (entities map[stri
 		if err != nil {
 			return err
 		}
-		entities[propName] = value
+		ldb.topLevelValues[propName] = value
 		return nil
 	})
 
 	if err != nil {
 		panic(err)
 	}
-	return
+	return ldb.topLevelValues
 }
 
 func (ldb *LocalDatabase) Schema() *core.ObjectPattern {
@@ -211,6 +221,13 @@ func (ldb *LocalDatabase) BaseURL() core.URL {
 }
 
 func (ldb *LocalDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern) error {
+	ldb.topLevelValuesLock.Lock()
+	defer ldb.topLevelValuesLock.Unlock()
+
+	if ldb.topLevelValues != nil {
+		return core.ErrTopLevelEntitiesAlreadyLoaded
+	}
+
 	if ldb.schema.Equal(ctx, schema, map[uintptr]uintptr{}, 0) {
 		return nil
 	}

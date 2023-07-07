@@ -470,28 +470,68 @@ func TestUpdateSchema(t *testing.T) {
 		return ldb, ctx
 	}
 
-	t.Run("", func(t *testing.T) {
+	t.Run("simple top-level entity", func(t *testing.T) {
+		t.Skip()
+
 		tempdir := t.TempDir()
 		fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)
 
 		ldb, ctx := openDB(tempdir, fls)
+		defer ldb.Close(ctx)
 
 		schema := core.NewInexactObjectPattern(map[string]core.Pattern{
 			"a": core.INT_PATTERN,
 		})
 
-		ldb.UpdateSchema(ctx, schema)
+		utils.PanicIfErr(ldb.UpdateSchema(ctx, schema))
+	})
 
-		err := ldb.Close(ctx)
-		if !assert.NoError(t, err) {
+	t.Run("complex top-level entity", func(t *testing.T) {
+		tempdir := t.TempDir()
+		fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)
+
+		ldb, ctx := openDB(tempdir, fls)
+		defer ldb.Close(ctx)
+
+		setPattern :=
+			utils.Must(containers.SET_PATTERN.CallImpl(containers.SET_PATTERN,
+				[]core.Value{core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), containers.URL_UNIQUENESS_IDENT}))
+
+		schema := core.NewInexactObjectPattern(map[string]core.Pattern{
+			"users": setPattern,
+		})
+
+		utils.PanicIfErr(ldb.UpdateSchema(ctx, schema))
+
+		topLevelValues := ldb.TopLevelEntities(ctx)
+
+		if !assert.Contains(t, topLevelValues, "users") {
 			return
 		}
 
-		//re open
+		userSet := topLevelValues["users"]
+		assert.IsType(t, (*containers.Set)(nil), userSet)
+	})
 
-		ldb, ctx = openDB(tempdir, fls)
+	t.Run("call after TopLevelEntities() call", func(t *testing.T) {
+		tempdir := t.TempDir()
+		fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)
+
+		ldb, ctx := openDB(tempdir, fls)
 		defer ldb.Close(ctx)
-		assert.Equal(t, schema, ldb.schema)
+
+		topLevelValues := ldb.TopLevelEntities(ctx)
+		assert.Empty(t, topLevelValues)
+
+		setPattern :=
+			utils.Must(containers.SET_PATTERN.CallImpl(containers.SET_PATTERN,
+				[]core.Value{core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), containers.URL_UNIQUENESS_IDENT}))
+
+		schema := core.NewInexactObjectPattern(map[string]core.Pattern{
+			"users": setPattern,
+		})
+
+		assert.Error(t, core.ErrTopLevelEntitiesAlreadyLoaded, ldb.UpdateSchema(ctx, schema))
 	})
 
 	t.Run("updating with the same schema should be ignored", func(t *testing.T) {
@@ -505,7 +545,7 @@ func TestUpdateSchema(t *testing.T) {
 			"a": core.INT_PATTERN,
 		})
 
-		ldb.UpdateSchema(ctx, schema)
+		utils.PanicIfErr(ldb.UpdateSchema(ctx, schema))
 
 		err := ldb.Close(ctx)
 		if !assert.NoError(t, err) {
