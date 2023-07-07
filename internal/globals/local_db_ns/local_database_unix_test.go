@@ -470,22 +470,6 @@ func TestUpdateSchema(t *testing.T) {
 		return ldb, ctx
 	}
 
-	t.Run("simple top-level entity", func(t *testing.T) {
-		t.Skip()
-
-		tempdir := t.TempDir()
-		fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)
-
-		ldb, ctx := openDB(tempdir, fls)
-		defer ldb.Close(ctx)
-
-		schema := core.NewInexactObjectPattern(map[string]core.Pattern{
-			"a": core.INT_PATTERN,
-		})
-
-		utils.PanicIfErr(ldb.UpdateSchema(ctx, schema))
-	})
-
 	t.Run("complex top-level entity", func(t *testing.T) {
 		tempdir := t.TempDir()
 		fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)

@@ -46,6 +46,14 @@ func RegisterLoadInstanceFn(patternType reflect.Type, fn LoadInstanceFn) {
 	loadInstanceFnregistry[patternType] = fn
 }
 
+func hasTypeLoadingFunction(pattern Pattern) bool {
+	loadInstanceFnRegistryLock.Lock()
+	defer loadInstanceFnRegistryLock.Unlock()
+
+	_, ok := loadInstanceFnregistry[reflect.TypeOf(pattern)]
+	return ok
+}
+
 func LoadInstance(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
 	loadInstanceFnRegistryLock.Lock()
 
