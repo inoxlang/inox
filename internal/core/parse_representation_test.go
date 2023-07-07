@@ -1043,13 +1043,12 @@ func TestParseRepr(t *testing.T) {
 	for _, case_ := range testCases {
 		name := strings.ReplaceAll(case_.input, "\n", "<nl>")
 		t.Run(name, func(t *testing.T) {
-			ctx := NewContext(ContextConfig{})
-			NewGlobalState(ctx)
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 
 			for name, patt := range DEFAULT_NAMED_PATTERNS {
 				ctx.AddNamedPattern(name, patt)
 			}
-			v, i := _parseRepr([]byte(case_.input), ctx)
+			v, i, _ := _parseRepr([]byte(case_.input), ctx)
 			assert.Equal(t, case_.errIndex, i)
 
 			//prepare expected value
@@ -1068,6 +1067,19 @@ func TestParseRepr(t *testing.T) {
 			assert.Equal(t, case_.value, v)
 		})
 	}
+
+	t.Run("undefined pattern", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		_, _, err := _parseRepr([]byte("%Set()"), ctx)
+		assert.ErrorContains(t, err, "named pattern Set is not defined")
+	})
+
+	t.Run("non-supported metaproperty", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		_, _, err := _parseRepr([]byte(`{"_x_": 1}`), ctx)
+		assert.ErrorIs(t, err, ErrNonSupportedMetaProperty)
+	})
+
 }
 
 func exact(v Value) *ExactValuePattern {
