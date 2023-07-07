@@ -34,6 +34,7 @@ type Set struct {
 	//persistence
 	storage core.SerializedValueStorage //nillable
 	url     core.URL                    //set if .storage set
+	path    core.Path
 }
 
 func NewSet(ctx *core.Context, elements core.Iterable, configObject ...*core.Object) *Set {
@@ -94,6 +95,7 @@ func loadSet(ctx *core.Context, args core.InstanceLoadArgs) (core.UrlHolder, err
 
 	set := NewSetWithConfig(ctx, nil, setPattern.config)
 	set.storage = storage
+	set.path = path
 	set.url = storage.BaseURL().AppendAbsolutePath(path)
 
 	var finalErr error
@@ -104,7 +106,7 @@ func loadSet(ctx *core.Context, args core.InstanceLoadArgs) (core.UrlHolder, err
 		s := it.ReadAny().ToString()
 		val, err := core.ParseRepr(ctx, []byte(s))
 		if err != nil {
-			finalErr = err
+			finalErr = fmt.Errorf("failed to parse representation of one of the Set's element: %w", err)
 			return false
 		}
 
@@ -118,7 +120,7 @@ func loadSet(ctx *core.Context, args core.InstanceLoadArgs) (core.UrlHolder, err
 				finalErr = fmt.Errorf("%#v", e)
 			}
 		}()
-		set.Add(ctx, val)
+		set.addNoPersist(ctx, val)
 		return true
 	})
 
@@ -129,7 +131,7 @@ func loadSet(ctx *core.Context, args core.InstanceLoadArgs) (core.UrlHolder, err
 	return set, nil
 }
 
-func persistSet(ctx *core.Context, set *Set, path core.Path, storage core.SerializedValueStorage, pattern core.Pattern) error {
+func persistSet(ctx *core.Context, set *Set, path core.Path, storage core.SerializedValueStorage) error {
 	buff := bytes.NewBufferString("[")
 
 	first := true
@@ -207,6 +209,15 @@ func (set *Set) Has(ctx *core.Context, elem core.Value) core.Bool {
 }
 
 func (set *Set) Add(ctx *core.Context, elem core.Value) {
+	set.addNoPersist(ctx, elem)
+	//TODO: fully support transaction (in-memory changes)
+
+	if set.storage != nil {
+		utils.PanicIfErr(persistSet(ctx, set, set.path, set.storage))
+	}
+}
+
+func (set *Set) addNoPersist(ctx *core.Context, elem core.Value) {
 	if set.config.Element != nil && !set.config.Element.Test(ctx, elem) {
 		panic(ErrValueDoesMatchElementPattern)
 	}
@@ -243,6 +254,12 @@ func (set *Set) Add(ctx *core.Context, elem core.Value) {
 func (set *Set) Remove(ctx *core.Context, elem core.Value) {
 	key := getUniqueKey(ctx, elem, set.config.Uniqueness)
 	delete(set.elements, key)
+
+	//TODO: fully support transaction (in-memory changes)
+
+	if set.storage != nil {
+		utils.PanicIfErr(persistSet(ctx, set, set.path, set.storage))
+	}
 }
 
 func (f *Set) GetGoMethod(name string) (*core.GoFunction, bool) {

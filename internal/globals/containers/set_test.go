@@ -193,7 +193,7 @@ func TestPersistLoadSet(t *testing.T) {
 
 		//persist
 		{
-			persistSet(ctx, set, "/set", storage, pattern)
+			persistSet(ctx, set, "/set", storage)
 
 			serialized, ok := storage.GetSerialized(ctx, "/set")
 			if !assert.True(t, ok) {
@@ -226,7 +226,7 @@ func TestPersistLoadSet(t *testing.T) {
 
 		//persist
 		{
-			persistSet(ctx, set, "/set", storage, pattern)
+			persistSet(ctx, set, "/set", storage)
 
 			serialized, ok := storage.GetSerialized(ctx, "/set")
 			if !assert.True(t, ok) {
@@ -260,7 +260,7 @@ func TestPersistLoadSet(t *testing.T) {
 
 		//persist
 		{
-			persistSet(ctx, set, "/set", storage, pattern)
+			persistSet(ctx, set, "/set", storage)
 
 			serialized, ok := storage.GetSerialized(ctx, "/set")
 			if !assert.True(t, ok) {
@@ -338,7 +338,7 @@ func TestPersistLoadSet(t *testing.T) {
 
 		//persist
 		{
-			persistSet(ctx, set, "/set", storage, pattern)
+			persistSet(ctx, set, "/set", storage)
 
 			serialized, ok := storage.GetSerialized(ctx, "/set")
 			if !assert.True(t, ok) {
@@ -373,7 +373,7 @@ func TestPersistLoadSet(t *testing.T) {
 
 		//persist
 		{
-			persistSet(ctx, set, "/set", storage, pattern)
+			persistSet(ctx, set, "/set", storage)
 
 			serialized, ok := storage.GetSerialized(ctx, "/set")
 			if !assert.True(t, ok) {
@@ -430,6 +430,49 @@ func TestSetAddToPersistedSet(t *testing.T) {
 		return ctx, storage
 	}
 
+	t.Run("representation uniqueness: Set should be persisted during call to .Add", func(t *testing.T) {
+		ctx, storage := setup()
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: UniquenessConstraint{
+				Type: UniqueRepr,
+			},
+		}, core.CallBasedPatternReprMixin{})
+
+		storage.SetSerialized(ctx, "/set", `[]`)
+		set, err := loadSet(ctx, core.InstanceLoadArgs{
+			Key: "/set", Storage: storage, Pattern: pattern,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		set.(*Set).Add(ctx, core.Int(1))
+
+		//check that the Set is persised
+
+		persisted, err := loadSet(ctx, core.InstanceLoadArgs{
+			Key: "/set", Storage: storage, Pattern: pattern,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		//future-proofing the test
+		assert.NotSame(t, persisted, set)
+
+		vals := core.IterateAllValuesOnly(ctx, set.(*Set).Iterator(ctx, core.IteratorConfiguration{}))
+		if !assert.Len(t, vals, 1) {
+			return
+		}
+
+		val := vals[0]
+
+		assert.Equal(t, core.Int(1), val)
+	})
+
 	t.Run("url holder with no URL should get one", func(t *testing.T) {
 		ctx, storage := setup()
 
@@ -457,6 +500,53 @@ func TestSetAddToPersistedSet(t *testing.T) {
 		}
 
 		assert.Regexp(t, "ldb://main/.*", string(url))
+	})
+
+}
+
+func TestSetRemoveFromPersistedSet(t *testing.T) {
+
+	setup := func() (*core.Context, core.SerializedValueStorage) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		kv := utils.Must(filekv.OpenSingleFileKV(filekv.KvStoreConfig{
+			InMemory: true,
+		}))
+		storage := filekv.NewSerializedValueStorage(kv, "ldb://main/")
+		return ctx, storage
+	}
+
+	t.Run("representation uniqueness", func(t *testing.T) {
+		ctx, storage := setup()
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: UniquenessConstraint{
+				Type: UniqueRepr,
+			},
+		}, core.CallBasedPatternReprMixin{})
+
+		storage.SetSerialized(ctx, "/set", `[]`)
+		set, err := loadSet(ctx, core.InstanceLoadArgs{
+			Key: "/set", Storage: storage, Pattern: pattern,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		set.(*Set).Add(ctx, core.Int(1))
+		set.(*Set).Remove(ctx, core.Int(1))
+
+		//check that the Set is persised
+
+		persisted, err := loadSet(ctx, core.InstanceLoadArgs{
+			Key: "/set", Storage: storage, Pattern: pattern,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.False(t, bool(persisted.(*Set).Has(ctx, core.Int(1))))
 	})
 
 }
