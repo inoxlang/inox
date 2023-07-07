@@ -75,11 +75,19 @@ func NewSet(ctx *core.Context, elements core.Iterable, configObject ...*core.Obj
 	return NewSetWithConfig(ctx, elements, config)
 }
 
-func loadSet(ctx *core.Context, path core.Path, storage core.SerializedValueStorage, pattern core.Pattern) (core.UrlHolder, error) {
+func loadSet(ctx *core.Context, args core.InstanceLoadArgs) (core.UrlHolder, error) {
+	path := args.Key
+	pattern := args.Pattern
+	storage := args.Storage
+
 	setPattern := pattern.(*SetPattern)
 	rootData, ok := storage.GetSerialized(ctx, path)
 	if !ok {
-		return nil, fmt.Errorf("%w: %s", core.ErrFailedToLoadNonExistingValue, path)
+		if args.AllowMissing {
+			rootData = "[]"
+		} else {
+			return nil, fmt.Errorf("%w: %s", core.ErrFailedToLoadNonExistingValue, path)
+		}
 	}
 
 	set := NewSetWithConfig(ctx, nil, setPattern.config)

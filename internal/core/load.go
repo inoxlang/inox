@@ -10,10 +10,11 @@ var (
 	loadInstanceFnregistry     = map[reflect.Type] /* pattern type*/ LoadInstanceFn{}
 	loadInstanceFnRegistryLock sync.Mutex
 
-	ErrNonUniqueLoadInstanceFnRegistration = errors.New("non unique load instance function registration")
+	ErrNonUniqueLoadInstanceFnRegistration = errors.New("non unique loading function registration")
+	ErrNoLoadInstanceFnRegistered          = errors.New("no loading function registered for given type")
 	ErrLoadingRequireTransaction           = errors.New("loading a value requires a transaction")
 	ErrTransactionsNotSupportedYet         = errors.New("transactions not supported yet")
-	ErrFailedToLoadNonExistingValue        = errors.New("failed to non-existing value")
+	ErrFailedToLoadNonExistingValue        = errors.New("failed to load non-existing value")
 )
 
 type SerializedValueStorage interface {
@@ -24,7 +25,14 @@ type SerializedValueStorage interface {
 	InsertSerialized(ctx *Context, key Path, serialized string)
 }
 
-type LoadInstanceFn func(ctx *Context, key Path, storage SerializedValueStorage, pattern Pattern) (UrlHolder, error)
+type InstanceLoadArgs struct {
+	Key          Path
+	Storage      SerializedValueStorage
+	Pattern      Pattern
+	AllowMissing bool
+}
+
+type LoadInstanceFn func(ctx *Context, args InstanceLoadArgs) (UrlHolder, error)
 
 func RegisterLoadInstanceFn(patternType reflect.Type, fn LoadInstanceFn) {
 	loadInstanceFnRegistryLock.Lock()
@@ -38,11 +46,16 @@ func RegisterLoadInstanceFn(patternType reflect.Type, fn LoadInstanceFn) {
 	loadInstanceFnregistry[patternType] = fn
 }
 
-func getLoadInstanceFn(typ reflect.Type) (LoadInstanceFn, bool) {
+func LoadInstance(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
 	loadInstanceFnRegistryLock.Lock()
-	defer loadInstanceFnRegistryLock.Unlock()
 
-	fn, ok := loadInstanceFnregistry[typ]
+	patternType := reflect.TypeOf(args.Pattern)
+	fn, ok := loadInstanceFnregistry[patternType]
+	loadInstanceFnRegistryLock.Unlock()
 
-	return fn, ok
+	if !ok {
+		panic(ErrNoLoadInstanceFnRegistered)
+	}
+
+	return fn(ctx, args)
 }
