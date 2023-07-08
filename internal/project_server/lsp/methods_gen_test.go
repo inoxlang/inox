@@ -228,7 +228,7 @@ func generate(items []method) string {
 	import (
 		"context"
 	
-		"github.com/inoxlang/inox/internal/project_serverjsonrpc"
+		"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 		"github.com/inoxlang/inox/internal/project_server/lsp/defines"
 	)
 	`
