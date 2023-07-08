@@ -1063,14 +1063,6 @@ func (patt OptionPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stre
 	return ErrNoRepresentation
 }
 
-func (Reader) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
-	return false
-}
-
-func (reader Reader) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
-	return ErrNoRepresentation
-}
-
 func (Mimetype) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return false
 }
@@ -1092,14 +1084,6 @@ func (b *Bytecode) HasJSONRepresentation(encountered map[uintptr]int, config JSO
 }
 
 func (b *Bytecode) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
-	return ErrNoRepresentation
-}
-
-func (t Type) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
-	return false
-}
-
-func (t Type) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	return ErrNoRepresentation
 }
 

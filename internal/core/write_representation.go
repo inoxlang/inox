@@ -1572,14 +1572,6 @@ func (patt OptionPattern) WriteRepresentation(ctx *Context, w io.Writer, encount
 	return ErrNoRepresentation
 }
 
-func (Reader) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (reader Reader) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
 func (Mimetype) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
 	return false
 }
@@ -1625,78 +1617,6 @@ func (b *Bytecode) HasRepresentation(encountered map[uintptr]int, config *ReprCo
 }
 
 func (b *Bytecode) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (it IntRangeIterator) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (it IntRangeIterator) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (it RuneRangeIterator) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (it RuneRangeIterator) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (it *PatternIterator) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (it *PatternIterator) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (it indexedEntryIterator) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (it indexedEntryIterator) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (it *EventSourceIterator) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (it *EventSourceIterator) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (it *DirWalker) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (it *DirWalker) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (it *ValueListIterator) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (it *ValueListIterator) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (it *TupleIterator) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (it *TupleIterator) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (t Type) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (t Type) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
 	return ErrNoRepresentation
 }
 

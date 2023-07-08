@@ -218,4 +218,7 @@ type Port struct {
 	Scheme Scheme
 }
 
-type Type struct{ reflect.Type }
+type Type struct {
+	reflect.Type
+	NoReprMixin
+}

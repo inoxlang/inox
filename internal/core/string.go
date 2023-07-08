@@ -547,6 +547,8 @@ type StringConcatenation struct {
 	elements    []StringLike
 	totalLen    int
 	finalString string // empty by default
+
+	NoReprMixin
 }
 
 func (c *StringConcatenation) GetOrBuildString() string {
