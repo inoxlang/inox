@@ -20,6 +20,7 @@ var (
 	ANY_RES_NAME   = &AnyResourceName{}
 	ANY_OPTION     = &Option{}
 	ANY_INT_RANGE  = &IntRange{}
+	ANY_RUNE_RANGE = &RuneRange{}
 	ANY_FILEMODE   = &FileMode{}
 	ANY_DATE       = &Date{}
 	ANY_DURATION   = &Duration{}

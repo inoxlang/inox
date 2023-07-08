@@ -272,31 +272,31 @@ var (
 
 	BYTECOUNT_PATTERN = &TypePattern{
 		Type:          INT_TYPE,
-		Name:          "bytecount",
+		Name:          "byte-count",
 		SymbolicValue: symbolic.ANY_BYTECOUNT,
 	}
 
 	LINECOUNT_PATTERN = &TypePattern{
 		Type:          INT_TYPE,
-		Name:          "linecount",
+		Name:          "line-count",
 		SymbolicValue: symbolic.ANY_LINECOUNT,
 	}
 
 	RUNECOUNT_PATTERN = &TypePattern{
 		Type:          INT_TYPE,
-		Name:          "runecount",
+		Name:          "rune-count",
 		SymbolicValue: symbolic.ANY_RUNECOUNT,
 	}
 
 	BYTERATE_PATTERN = &TypePattern{
 		Type:          INT_TYPE,
-		Name:          "byterate",
+		Name:          "byte-rate",
 		SymbolicValue: symbolic.ANY_BYTERATE,
 	}
 
 	SIMPLERATE_PATTERN = &TypePattern{
 		Type:          INT_TYPE,
-		Name:          "simplerate",
+		Name:          "simple-rate",
 		SymbolicValue: symbolic.ANY_SIMPLERATE,
 	}
 
@@ -524,6 +524,11 @@ var (
 		Type:          INT_RANGE_TYPE,
 		Name:          "int-range",
 		SymbolicValue: symbolic.ANY_INT_RANGE,
+	}
+	RUNE_RANGE_PATTERN = &TypePattern{
+		Type:          INT_RANGE_TYPE,
+		Name:          "rune-range",
+		SymbolicValue: symbolic.ANY_RUNE_RANGE,
 	}
 	VALUE_HISTORY_PATTERN = &TypePattern{
 		Type:          VALUE_HISTORY_TYPE,
