@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	JSON_UNTYPED_VALUE_PREFIX = "__value"
+	JSON_UNTYPED_VALUE_SUFFIX = "__value"
 )
 
 var (
@@ -43,7 +43,7 @@ func GetJSONRepresentation(v Value, ctx *Context) string {
 
 func writeUntypedValueJSON(typeName string, fn func(w *jsoniter.Stream), w *jsoniter.Stream) {
 	w.WriteObjectStart()
-	w.WriteObjectField(JSON_UNTYPED_VALUE_PREFIX)
+	w.WriteObjectField(typeName + JSON_UNTYPED_VALUE_SUFFIX)
 	fn(w)
 	w.WriteObjectEnd()
 }
@@ -75,16 +75,14 @@ func (r Rune) HasJSONRepresentation(encountered map[uintptr]int, config JSONSeri
 }
 
 func (r Rune) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
-	s := utils.BytesAsString(r.reprBytes())
-
 	if config.Pattern == nil {
 		writeUntypedValueJSON(RUNE_PATTERN.Name, func(w *jsoniter.Stream) {
-			w.WriteString(s)
+			w.WriteString(string(r))
 		}, w)
 		return nil
 	}
 
-	w.WriteString(s)
+	w.WriteString(string(r))
 	return nil
 }
 
@@ -887,12 +885,11 @@ func (r RuneRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, enc
 	w.WriteObjectStart()
 
 	w.WriteObjectField("start")
-	w.WriteInt32(int32(r.Start))
+	w.WriteString(string(r.Start))
 	w.WriteMore()
 
 	w.WriteObjectField("end")
-	w.WriteInt32(int32(r.End))
-	w.WriteMore()
+	w.WriteString(string(r.End))
 
 	w.WriteObjectEnd()
 	return nil
@@ -919,7 +916,6 @@ func (r IntRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, enco
 
 	w.WriteObjectField("end")
 	w.WriteString(strconv.FormatInt(int64(r.End), 10))
-	w.WriteMore()
 
 	w.WriteObjectEnd()
 	return nil
