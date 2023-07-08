@@ -130,6 +130,7 @@ type GoFunction struct {
 	shared      atomic.Bool
 	originState *GlobalState // used for methods & closures, nil otherwise
 	NotClonableMixin
+	NoReprMixin
 }
 
 type GoFunctionKind int

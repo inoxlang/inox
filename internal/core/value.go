@@ -13,6 +13,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
+	jsoniter "github.com/json-iterator/go"
 )
 
 const (
@@ -38,8 +39,8 @@ type Value interface {
 	WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error
 
 	//JSON representation
-	HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool
-	WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error
+	HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool
+	WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error
 
 	//human readable representation
 	PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int)

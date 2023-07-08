@@ -261,8 +261,51 @@ var (
 	FLOAT_PATTERN = &TypePattern{
 		Type:          FLOAT64_TYPE,
 		Name:          "float",
-		SymbolicValue: &symbolic.Float{},
+		SymbolicValue: symbolic.ANY_FLOAT,
 	}
+
+	PORT_PATTERN = &TypePattern{
+		Type:          INT_TYPE,
+		Name:          "port",
+		SymbolicValue: symbolic.ANY_PORT,
+	}
+
+	BYTECOUNT_PATTERN = &TypePattern{
+		Type:          INT_TYPE,
+		Name:          "bytecount",
+		SymbolicValue: symbolic.ANY_BYTECOUNT,
+	}
+
+	LINECOUNT_PATTERN = &TypePattern{
+		Type:          INT_TYPE,
+		Name:          "linecount",
+		SymbolicValue: symbolic.ANY_LINECOUNT,
+	}
+
+	RUNECOUNT_PATTERN = &TypePattern{
+		Type:          INT_TYPE,
+		Name:          "runecount",
+		SymbolicValue: symbolic.ANY_RUNECOUNT,
+	}
+
+	BYTERATE_PATTERN = &TypePattern{
+		Type:          INT_TYPE,
+		Name:          "byterate",
+		SymbolicValue: symbolic.ANY_BYTERATE,
+	}
+
+	SIMPLERATE_PATTERN = &TypePattern{
+		Type:          INT_TYPE,
+		Name:          "simplerate",
+		SymbolicValue: symbolic.ANY_SIMPLERATE,
+	}
+
+	DURATION_PATTERN = &TypePattern{
+		Type:          INT_TYPE,
+		Name:          "duration",
+		SymbolicValue: symbolic.ANY_DURATION,
+	}
+
 	ASTNODE_PATTERN = &TypePattern{
 		Type:          NODE_TYPE,
 		Name:          "inox.node",

@@ -30,6 +30,8 @@ const (
 type File struct {
 	f    afs.File
 	path core.Path
+
+	core.NoReprMixin
 }
 
 func openExistingFile(ctx *core.Context, pth core.Path, write bool) (*File, error) {
@@ -54,7 +56,7 @@ func openExistingFile(ctx *core.Context, pth core.Path, write bool) (*File, erro
 		return nil, err
 	}
 
-	return &File{underlyingFile, absPath}, nil
+	return &File{f: underlyingFile, path: absPath}, nil
 }
 
 func (f *File) GetGoMethod(name string) (*core.GoFunction, bool) {

@@ -2,121 +2,128 @@ package core
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
-	"io"
 	"reflect"
+	"strconv"
 
 	"github.com/inoxlang/inox/internal/utils"
+	jsoniter "github.com/json-iterator/go"
+)
+
+const (
+	JSON_UNTYPED_VALUE_PREFIX = "__value"
+)
+
+var (
+	ErrPatternDoesNotMatchValueToSerialize = errors.New("pattern does not match value to serialize")
+	ErrPatternRequiredToSerialize          = errors.New("pattern required to serialize")
 )
 
 // this file contains the implementation of Value.HasJSONRepresentation & Value.WriteJSONRepresentation for core types.
 
+type JSONSerializationConfig struct {
+	*ReprConfig
+	Pattern  Pattern //nillable
+	Location string  //location of the current value being serialized
+}
+
 func GetJSONRepresentation(v Value, ctx *Context) string {
 	buff := bytes.NewBuffer(nil)
 	encountered := map[uintptr]int{}
-	err := v.WriteJSONRepresentation(ctx, buff, encountered, &ReprConfig{})
+
+	stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, nil, 10)
+
+	err := v.WriteJSONRepresentation(ctx, stream, encountered, JSONSerializationConfig{})
 	if err != nil {
 		panic(fmt.Errorf("%s: %w", Stringify(v, ctx), err))
 	}
 	return buff.String()
 }
 
-func (n AstNode) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
+func writeUntypedValueJSON(typeName string, fn func(w *jsoniter.Stream), w *jsoniter.Stream) {
+	w.WriteObjectStart()
+	w.WriteObjectField(JSON_UNTYPED_VALUE_PREFIX)
+	fn(w)
+	w.WriteObjectEnd()
 }
 
-func (n AstNode) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
+func fmtErrPatternDoesNotMatchValueToSerialize(ctx *Context, config JSONSerializationConfig) error {
+	return fmt.Errorf("%w at /%s, pattern: %s", ErrPatternDoesNotMatchValueToSerialize, config.Location, Stringify(config.Pattern, ctx))
 }
 
-func (Nil NilT) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (Nil NilT) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return true
 }
 
-func (Nil NilT) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write([]byte{'n', 'u', 'l', 'l'})
-	return err
+func (Nil NilT) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	w.WriteNil()
+	return nil
 }
 
-func (err Error) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (err Error) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (b Bool) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (b Bool) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return true
 }
 
-func (b Bool) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	if b {
-		_, err := w.Write([]byte{'t', 'r', 'u', 'e'})
-		return err
-	} else {
-		_, err := w.Write([]byte{'f', 'a', 'l', 's', 'e'})
-		return err
+func (b Bool) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	w.WriteBool(bool(b))
+	return nil
+}
+
+func (r Rune) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return true
+}
+
+func (r Rune) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	s := utils.BytesAsString(r.reprBytes())
+
+	if config.Pattern == nil {
+		writeUntypedValueJSON(RUNE_PATTERN.Name, func(w *jsoniter.Stream) {
+			w.WriteString(s)
+		}, w)
+		return nil
 	}
+
+	w.WriteString(s)
+	return nil
 }
 
-func (r Rune) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (r Rune) writeJSON(w io.Writer) (int, error) {
-	b := []byte("\"")
-	b = append(b, r.reprBytes()...)
-	b = append(b, '"')
-	return w.Write(b)
-}
-
-func (r Rune) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := r.writeJSON(w)
-	return err
-}
-
-func (Byte) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (Byte) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return false
 }
 
-func (b Byte) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (b Byte) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	return ErrNoRepresentation
 }
 
-func (Int) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (Int) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return true
 }
 
-func (i Int) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (i Int) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	fmt.Fprintf(w, `"%d"`, i)
 	return nil
 }
 
-func (Float) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (Float) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return true
 }
 
-func (f Float) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(f)))
-	return err
+func (f Float) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	w.WriteFloat64(float64(f))
+	return w.Error
 }
 
-func (Str) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (Str) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return true
 }
 
-func (s Str) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	jsonStr, err := utils.MarshalJsonNoHTMLEspace(string(s))
-	if err != nil {
-		return err
-	}
-	_, err = w.Write(jsonStr)
-	return err
+func (s Str) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	w.WriteString(string(s))
+	return nil
 }
 
-func (obj *Object) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-
+func (obj *Object) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	ptr := reflect.ValueOf(obj).Pointer()
 	if _, ok := encountered[ptr]; ok {
 		return false
@@ -133,11 +140,18 @@ func (obj *Object) HasJSONRepresentation(encountered map[uintptr]int, config *Re
 	return true
 }
 
-func (obj *Object) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (obj *Object) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	//TODO: prevent modification of the Object while this function is running
 
 	if encountered != nil && !obj.HasJSONRepresentation(encountered, config) {
 		return ErrNoRepresentation
+	}
+
+	var entryPatterns map[string]Pattern
+
+	objPatt, ok := config.Pattern.(*ObjectPattern)
+	if ok {
+		entryPatterns = objPatt.entryPatterns
 	}
 
 	_, err := w.Write([]byte{'{'})
@@ -172,7 +186,10 @@ func (obj *Object) WriteJSONRepresentation(ctx *Context, w io.Writer, encountere
 		if err != nil {
 			return err
 		}
-		err = v.WriteJSONRepresentation(ctx, w, nil, config)
+		err = v.WriteJSONRepresentation(ctx, w, nil, JSONSerializationConfig{
+			ReprConfig: config.ReprConfig,
+			Pattern:    entryPatterns[k],
+		})
 		if err != nil {
 			return err
 		}
@@ -185,14 +202,20 @@ func (obj *Object) WriteJSONRepresentation(ctx *Context, w io.Writer, encountere
 	return nil
 }
 
-func (rec *Record) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (rec *Record) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return true
 }
 
-func (rec *Record) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-
+func (rec *Record) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	if encountered != nil && !rec.HasJSONRepresentation(encountered, config) {
 		return ErrNoRepresentation
+	}
+
+	var entryPatterns map[string]Pattern
+
+	recPatt, ok := config.Pattern.(*RecordPattern)
+	if ok {
+		entryPatterns = recPatt.entryPatterns
 	}
 
 	_, err := w.Write([]byte{'{'})
@@ -224,7 +247,10 @@ func (rec *Record) WriteJSONRepresentation(ctx *Context, w io.Writer, encountere
 		if err != nil {
 			return err
 		}
-		err = v.WriteJSONRepresentation(ctx, w, nil, config)
+		err = v.WriteJSONRepresentation(ctx, w, nil, JSONSerializationConfig{
+			ReprConfig: config.ReprConfig,
+			Pattern:    entryPatterns[k],
+		})
 		if err != nil {
 			return err
 		}
@@ -237,32 +263,32 @@ func (rec *Record) WriteJSONRepresentation(ctx *Context, w io.Writer, encountere
 	return nil
 }
 
-func (dict *Dictionary) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (dict *Dictionary) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return false
 }
 
-func (dict *Dictionary) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (dict *Dictionary) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	return ErrNoRepresentation
 }
 
-func (list KeyList) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (list KeyList) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return false
 }
 
-func (list KeyList) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (list KeyList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	return ErrNoRepresentation
 
 }
 
-func (list *List) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (list *List) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return list.underylingList.HasJSONRepresentation(encountered, config)
 }
 
-func (list *List) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (list *List) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	return list.underylingList.WriteJSONRepresentation(ctx, w, encountered, config)
 }
 
-func (list *ValueList) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (list *ValueList) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	ptr := reflect.ValueOf(list).Pointer()
 	if _, ok := encountered[ptr]; ok {
 		return false
@@ -277,7 +303,120 @@ func (list *ValueList) HasJSONRepresentation(encountered map[uintptr]int, config
 	return true
 }
 
-func (list *ValueList) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (list *ValueList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	if encountered != nil && !list.HasJSONRepresentation(encountered, config) {
+		return ErrNoRepresentation
+	}
+
+	var generalElementPattern Pattern
+	listPattern, _ := config.Pattern.(*ListPattern)
+	if listPattern == nil && config.Pattern != nil {
+		generalElementPattern = ANYVAL_PATTERN
+	}
+
+	_, err := w.Write([]byte{'['})
+	if err != nil {
+		return err
+	}
+	first := true
+	for i, v := range list.elements {
+
+		if !first {
+			_, err = w.Write([]byte{','})
+			if err != nil {
+				return err
+			}
+		}
+		first = false
+
+		elementConfig := JSONSerializationConfig{
+			ReprConfig: config.ReprConfig,
+		}
+
+		if generalElementPattern != nil {
+			elementConfig.Pattern = generalElementPattern
+		} else if listPattern != nil {
+			elementConfig.Pattern = listPattern.elementPatterns[i]
+		}
+
+		err = v.WriteJSONRepresentation(ctx, w, encountered, elementConfig)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = w.Write([]byte{']'})
+	return err
+}
+
+func (list *IntList) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return true
+}
+
+func (list *IntList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	if encountered != nil && !list.HasJSONRepresentation(encountered, config) {
+		return ErrNoRepresentation
+	}
+
+	var generalElementPattern Pattern
+	listPattern, _ := config.Pattern.(*ListPattern)
+	if listPattern == nil && config.Pattern != nil {
+		generalElementPattern = ANYVAL_PATTERN
+	}
+
+	_, err := w.Write([]byte{'['})
+	if err != nil {
+		return err
+	}
+	first := true
+	for i, v := range list.Elements {
+		if !first {
+			_, err = w.Write([]byte{','})
+			if err != nil {
+				return err
+			}
+		}
+		first = false
+
+		elementConfig := JSONSerializationConfig{
+			ReprConfig: config.ReprConfig,
+		}
+
+		if generalElementPattern != nil {
+			elementConfig.Pattern = generalElementPattern
+		} else if listPattern != nil {
+			elementConfig.Pattern = listPattern.elementPatterns[i]
+		}
+
+		err = v.WriteJSONRepresentation(ctx, w, nil, elementConfig)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = w.Write([]byte{']'})
+	return err
+}
+
+func (tuple *BoolList) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return true
+}
+
+func (list *BoolList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	if encountered != nil && !list.HasJSONRepresentation(encountered, config) {
+		return ErrNoRepresentation
+	}
+
+	return list.WriteRepresentation(ctx, w, nil, &ReprConfig{
+		AllVisible: true,
+	})
+}
+
+func (list *StringList) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return true
+}
+
+func (list *StringList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	if encountered != nil && !list.HasJSONRepresentation(encountered, config) {
 		return ErrNoRepresentation
 	}
@@ -288,7 +427,6 @@ func (list *ValueList) WriteJSONRepresentation(ctx *Context, w io.Writer, encoun
 	}
 	first := true
 	for _, v := range list.elements {
-
 		if !first {
 			_, err = w.Write([]byte{','})
 			if err != nil {
@@ -306,98 +444,24 @@ func (list *ValueList) WriteJSONRepresentation(ctx *Context, w io.Writer, encoun
 	return err
 }
 
-func (list *IntList) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (tuple *Tuple) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return true
 }
 
-func (list *IntList) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	if encountered != nil && !list.HasJSONRepresentation(encountered, config) {
-		return ErrNoRepresentation
-	}
-
-	_, err := w.Write([]byte{'['})
-	if err != nil {
-		return err
-	}
-	first := true
-	for _, v := range list.Elements {
-		if !first {
-			_, err = w.Write([]byte{','})
-			if err != nil {
-				return err
-			}
-		}
-		first = false
-		err = v.WriteJSONRepresentation(ctx, w, nil, config)
-		if err != nil {
-			return err
-		}
-	}
-
-	_, err = w.Write([]byte{']'})
-	return err
-}
-
-func (tuple *BoolList) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (list *BoolList) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	if encountered != nil && !list.HasJSONRepresentation(encountered, config) {
-		return ErrNoRepresentation
-	}
-
-	return list.WriteRepresentation(ctx, w, nil, config)
-}
-
-func (list *StringList) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (list *StringList) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	if encountered != nil && !list.HasJSONRepresentation(encountered, config) {
-		return ErrNoRepresentation
-	}
-
-	_, err := w.Write([]byte{'['})
-	if err != nil {
-		return err
-	}
-	first := true
-	for _, v := range list.elements {
-		if !first {
-			_, err = w.Write([]byte{','})
-			if err != nil {
-				return err
-			}
-		}
-		first = false
-		err = v.WriteJSONRepresentation(ctx, w, nil, config)
-		if err != nil {
-			return err
-		}
-	}
-
-	_, err = w.Write([]byte{']'})
-	return err
-}
-
-func (tuple *Tuple) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (tuple *Tuple) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (tuple *Tuple) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	if encountered != nil && !tuple.HasJSONRepresentation(encountered, config) {
 		return ErrNoRepresentation
 	}
 
+	tuplePattern := config.Pattern.(*TuplePattern)
+
 	_, err := w.Write([]byte{'['})
 	if err != nil {
 		return err
 	}
 
 	first := true
-	for _, v := range tuple.elements {
+	for i, v := range tuple.elements {
 
 		if !first {
 			_, err = w.Write([]byte{','})
@@ -406,7 +470,18 @@ func (tuple *Tuple) WriteJSONRepresentation(ctx *Context, w io.Writer, encounter
 			}
 		}
 		first = false
-		err = v.WriteJSONRepresentation(ctx, w, nil, config)
+
+		elementConfig := JSONSerializationConfig{
+			ReprConfig: config.ReprConfig,
+		}
+
+		if tuplePattern.generalElementPattern != nil {
+			elementConfig.Pattern = tuplePattern.generalElementPattern
+		} else {
+			elementConfig.Pattern = tuplePattern.elementPatterns[i]
+		}
+
+		err = v.WriteJSONRepresentation(ctx, w, nil, elementConfig)
 		if err != nil {
 			return err
 		}
@@ -416,36 +491,28 @@ func (tuple *Tuple) WriteJSONRepresentation(ctx *Context, w io.Writer, encounter
 	return err
 }
 
-func (*RuneSlice) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (*RuneSlice) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return false
 }
 
-func (slice *RuneSlice) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (slice *RuneSlice) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	return ErrNoRepresentation
 }
 
-func (*ByteSlice) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (*ByteSlice) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return false
 }
 
-func (slice *ByteSlice) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (slice *ByteSlice) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	return ErrNoRepresentation
 }
 
-func (*GoFunction) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (v *GoFunction) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (opt Option) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (opt Option) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	v, ok := opt.Value.(Bool)
 	return ok && v == True
 }
 
-func (opt Option) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (opt Option) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	if encountered != nil && !opt.HasJSONRepresentation(encountered, config) {
 		return ErrNoRepresentation
 	}
@@ -475,491 +542,587 @@ func (opt Option) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered
 	return nil
 }
 
-func (Path) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (Path) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return true
 }
 
-func (pth Path) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(pth)))
-	return err
+func (pth Path) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	if config.Pattern == nil {
+		writeUntypedValueJSON(PATH_PATTERN.Name, func(w *jsoniter.Stream) {
+			w.WriteString(string(pth))
+		}, w)
+		return nil
+	}
+	w.WriteString(string(pth))
+	return nil
 }
 
-func (PathPattern) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (PathPattern) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return true
 }
 
-func (patt PathPattern) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace("%" + patt)))
-	return err
-}
-
-func (URL) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (u URL) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(u)))
-	return err
-}
-
-func (Host) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (host Host) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(host)))
-	return err
-}
-
-func (Scheme) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (scheme Scheme) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(scheme + "://")))
-	return err
-}
-
-func (HostPattern) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (patt HostPattern) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace("%" + patt)))
-	return err
-}
-
-func (EmailAddress) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (addr EmailAddress) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(addr)))
-	return err
-}
-
-func (URLPattern) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (patt URLPattern) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace("%" + patt)))
-	return err
-}
-
-func (Identifier) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (i Identifier) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace("#" + i)))
-	return err
-}
-
-func (PropertyName) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (p PropertyName) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace("." + p)))
-	return err
-}
-
-func (CheckedString) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (str CheckedString) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	var buff bytes.Buffer
-	str.WriteRepresentation(ctx, &buff, encountered, config)
-
-	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
-	return err
-}
-
-func (ByteCount) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (count ByteCount) writeJSON(w io.Writer) (int, error) {
-	var buff bytes.Buffer
-	count.Write(&buff, -1)
-
-	return w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
-}
-
-func (count ByteCount) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := count.writeJSON(w)
-	return err
-}
-
-func (LineCount) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (count LineCount) writeJSON(w io.Writer) (int, error) {
-	var buff bytes.Buffer
-	count.write(&buff)
-
-	return w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
-}
-
-func (count LineCount) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	if count < 0 {
-		return ErrNoRepresentation
+func (patt PathPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	if config.Pattern == nil {
+		writeUntypedValueJSON(PATHPATTERN_PATTERN.Name, func(w *jsoniter.Stream) {
+			w.WriteString(string(patt))
+		}, w)
+		return nil
 	}
 
-	_, err := count.writeJSON(w)
-	return err
+	w.WriteString(string(patt))
+	return nil
 }
 
-func (RuneCount) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (URL) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return true
 }
 
-func (count RuneCount) writeJSON(w io.Writer) (int, error) {
-	var buff bytes.Buffer
-	count.write(&buff)
-
-	return w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
-}
-
-func (count RuneCount) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	if count < 0 {
-		return ErrNoRepresentation
+func (u URL) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	if config.Pattern == nil {
+		writeUntypedValueJSON(URL_PATTERN.Name, func(w *jsoniter.Stream) {
+			w.WriteString(string(u))
+		}, w)
+		return nil
 	}
-
-	_, err := count.writeJSON(w)
-	return err
+	w.WriteString(string(u))
+	return nil
 }
 
-func (ByteRate) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (Host) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return true
 }
 
-func (rate ByteRate) writeJSON(w io.Writer) (int, error) {
-	var buff bytes.Buffer
-	rate.write(&buff)
-
-	return w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
-}
-
-func (rate ByteRate) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	if rate < 0 {
-		return ErrNoRepresentation
+func (host Host) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	if config.Pattern == nil {
+		writeUntypedValueJSON(HOST_PATTERN.Name, func(w *jsoniter.Stream) {
+			w.WriteString(string(host))
+		}, w)
+		return nil
 	}
-
-	_, err := rate.writeJSON(w)
-	return err
+	w.WriteString(string(host))
+	return nil
 }
 
-func (SimpleRate) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (Scheme) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return true
 }
 
-func (rate SimpleRate) writeJSON(w io.Writer) (int, error) {
-	var buff bytes.Buffer
-	rate.write(&buff)
-
-	return w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
-}
-
-func (rate SimpleRate) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	if rate < 0 {
-		return ErrNoRepresentation
+func (scheme Scheme) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	if config.Pattern == nil {
+		writeUntypedValueJSON(SCHEME_PATTERN.Name, func(w *jsoniter.Stream) {
+			w.WriteString(string(scheme))
+		}, w)
+		return nil
 	}
-
-	_, err := rate.writeJSON(w)
-	return err
+	w.WriteString(string(scheme))
+	return nil
 }
 
-func (Duration) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (HostPattern) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return true
 }
 
-func (d Duration) writeJSON(w io.Writer) (int, error) {
-	var buff bytes.Buffer
-	d.write(&buff)
-
-	return w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
+func (patt HostPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	if config.Pattern == nil {
+		writeUntypedValueJSON(HOSTPATTERN_PATTERN.Name, func(w *jsoniter.Stream) {
+			w.WriteString(string(patt))
+		}, w)
+		return nil
+	}
+	w.WriteString(string(patt))
+	return nil
 }
 
-func (d Duration) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := d.writeJSON(w)
-	return err
-}
-
-func (Date) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (EmailAddress) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return true
 }
 
-func (d Date) writeJSON(w io.Writer) (int, error) {
-	var buff bytes.Buffer
-	d.write(&buff)
-
-	return w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
+func (addr EmailAddress) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	if config.Pattern == nil {
+		writeUntypedValueJSON(EMAIL_ADDR_PATTERN.Name, func(w *jsoniter.Stream) {
+			w.WriteString(string(addr))
+		}, w)
+		return nil
+	}
+	w.WriteString(string(addr))
+	return nil
 }
 
-func (d Date) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := d.writeJSON(w)
-	return err
+func (URLPattern) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return true
 }
 
-func (FileMode) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (patt URLPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	if config.Pattern == nil {
+		writeUntypedValueJSON(URLPATTERN_PATTERN.Name, func(w *jsoniter.Stream) {
+			w.WriteString(string(patt))
+		}, w)
+		return nil
+	}
+	w.WriteString(string(patt))
+	return nil
+}
+
+func (Identifier) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return true
+}
+
+func (i Identifier) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	if config.Pattern == nil {
+		writeUntypedValueJSON(IDENT_PATTERN.Name, func(w *jsoniter.Stream) {
+			w.WriteString(string(i))
+		}, w)
+		return nil
+	}
+	w.WriteString(string(i))
+	return nil
+}
+
+func (PropertyName) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return true
+}
+
+func (p PropertyName) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	if config.Pattern == nil {
+		writeUntypedValueJSON(PROPNAME_PATTERN.Name, func(w *jsoniter.Stream) {
+			w.WriteString(string(p))
+		}, w)
+		return nil
+	}
+	w.WriteString(string(p))
+	return nil
+}
+
+func (CheckedString) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return false
 }
 
-func (m FileMode) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (str CheckedString) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	return ErrNoRepresentation
 }
 
-func (RuneRange) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (ByteCount) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return true
 }
 
-func (r RuneRange) writeJSON(w io.Writer) (int, error) {
+func (count ByteCount) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	var buff bytes.Buffer
-	r.write(&buff)
+	if _, err := count.Write(&buff, -1); err != nil {
+		return err
+	}
+
+	if config.Pattern == nil {
+		writeUntypedValueJSON(BYTECOUNT_PATTERN.Name, func(w *jsoniter.Stream) {
+			w.WriteString(buff.String())
+		}, w)
+		return nil
+	}
+	w.WriteString(buff.String())
+	return nil
+}
+
+func (LineCount) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return true
+}
+
+func (count LineCount) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	var buff bytes.Buffer
+	if count < 0 {
+		return ErrNoRepresentation
+	}
+	if _, err := count.write(&buff); err != nil {
+		return err
+	}
+
+	if config.Pattern == nil {
+		writeUntypedValueJSON(BYTECOUNT_PATTERN.Name, func(w *jsoniter.Stream) {
+			w.WriteString(buff.String())
+		}, w)
+		return nil
+	}
+	w.WriteString(buff.String())
+	return nil
+}
+
+func (RuneCount) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return true
+}
+
+func (count RuneCount) writeJSON(w *jsoniter.Stream) (int, error) {
+	var buff bytes.Buffer
+	count.write(&buff)
 
 	return w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
 }
 
-func (r RuneRange) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := r.writeJSON(w)
-	return err
-}
-
-func (r QuantityRange) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return r.HasRepresentation(encountered, config)
-}
-
-func (r QuantityRange) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (count RuneCount) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	var buff bytes.Buffer
-	r.WriteRepresentation(ctx, &buff, encountered, config)
+	if count < 0 {
+		return ErrNoRepresentation
+	}
+	if _, err := count.write(&buff); err != nil {
+		return err
+	}
 
-	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
-	return err
+	if config.Pattern == nil {
+		writeUntypedValueJSON(RUNECOUNT_PATTERN.Name, func(w *jsoniter.Stream) {
+			w.WriteString(buff.String())
+		}, w)
+		return nil
+	}
+	w.WriteString(buff.String())
+	return nil
 }
 
-func (IntRange) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (ByteRate) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return true
 }
 
-func (r IntRange) writeJSON(w io.Writer) (int, error) {
+func (rate ByteRate) writeJSON(w *jsoniter.Stream) (int, error) {
 	var buff bytes.Buffer
-	r.write(&buff)
+	rate.write(&buff)
 
 	return w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
 }
 
-func (r IntRange) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := r.writeJSON(w)
-	return err
+func (rate ByteRate) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	var buff bytes.Buffer
+	if rate < 0 {
+		return ErrNoRepresentation
+	}
+	if _, err := rate.write(&buff); err != nil {
+		return err
+	}
+
+	if config.Pattern == nil {
+		writeUntypedValueJSON(BYTERATE_PATTERN.Name, func(w *jsoniter.Stream) {
+			w.WriteString(buff.String())
+		}, w)
+		return nil
+	}
+	w.WriteString(buff.String())
+	return nil
+}
+
+func (SimpleRate) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return true
+}
+
+func (rate SimpleRate) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	var buff bytes.Buffer
+	if rate < 0 {
+		return ErrNoRepresentation
+	}
+	if _, err := rate.write(&buff); err != nil {
+		return err
+	}
+
+	if config.Pattern == nil {
+		writeUntypedValueJSON(SIMPLERATE_PATTERN.Name, func(w *jsoniter.Stream) {
+			w.WriteString(buff.String())
+		}, w)
+		return nil
+	}
+	w.WriteString(buff.String())
+	return nil
+}
+
+func (Duration) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return true
+}
+
+func (d Duration) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	var buff bytes.Buffer
+	if d < 0 {
+		return ErrNoRepresentation
+	}
+	if _, err := d.write(&buff); err != nil {
+		return err
+	}
+
+	if config.Pattern == nil {
+		writeUntypedValueJSON(DURATION_PATTERN.Name, func(w *jsoniter.Stream) {
+			w.WriteString(buff.String())
+		}, w)
+		return nil
+	}
+	w.WriteString(buff.String())
+	return nil
+}
+
+func (Date) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return true
+}
+
+func (d Date) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	var buff bytes.Buffer
+
+	if _, err := d.write(&buff); err != nil {
+		return err
+	}
+
+	if config.Pattern == nil {
+		writeUntypedValueJSON(DATE_PATTERN.Name, func(w *jsoniter.Stream) {
+			w.WriteString(buff.String())
+		}, w)
+		return nil
+	}
+	w.WriteString(buff.String())
+	return nil
+}
+
+func (FileMode) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return false
+}
+
+func (m FileMode) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	return ErrNoRepresentation
+}
+
+func (RuneRange) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return true
+}
+
+func (r RuneRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	w.WriteObjectStart()
+
+	w.WriteObjectField("start")
+	w.WriteInt32(int32(r.Start))
+	w.WriteMore()
+
+	w.WriteObjectField("end")
+	w.WriteInt32(int32(r.End))
+	w.WriteMore()
+
+	w.WriteObjectEnd()
+	return nil
+}
+
+func (r QuantityRange) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return r.HasRepresentation(encountered, config.ReprConfig)
+}
+
+func (r QuantityRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	return ErrNotImplementedYet
+}
+
+func (IntRange) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return true
+}
+
+func (r IntRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	w.WriteObjectStart()
+
+	w.WriteObjectField("start")
+	w.WriteString(strconv.FormatInt(int64(r.Start), 10))
+	w.WriteMore()
+
+	w.WriteObjectField("end")
+	w.WriteString(strconv.FormatInt(int64(r.End), 10))
+	w.WriteMore()
+
+	w.WriteObjectEnd()
+	return nil
 }
 
 //patterns
 
-func (ExactValuePattern) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (ExactValuePattern) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return false
 }
 
-func (pattern ExactValuePattern) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (pattern ExactValuePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	return ErrNoRepresentation
 }
 
-func (TypePattern) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (TypePattern) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return false
 }
 
-func (pattern TypePattern) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (pattern TypePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	return ErrNoRepresentation
 }
 
-func (*DifferencePattern) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (*DifferencePattern) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return false
 }
 
-func (pattern *DifferencePattern) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (pattern *DifferencePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	return ErrNoRepresentation
 }
 
-func (*OptionalPattern) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (*OptionalPattern) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return false
 }
 
-func (pattern *OptionalPattern) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (pattern *OptionalPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	return ErrNoRepresentation
 }
 
-func (RegexPattern) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (RegexPattern) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return false
 }
 
-func (patt RegexPattern) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (patt RegexPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	return ErrNoRepresentation
 }
 
-func (UnionPattern) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (UnionPattern) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return false
 }
 
-func (patt UnionPattern) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (patt UnionPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	return ErrNoRepresentation
 }
 
-func (SequenceStringPattern) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (SequenceStringPattern) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return false
 }
 
-func (patt SequenceStringPattern) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (patt SequenceStringPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	return ErrNoRepresentation
 }
 
-func (UnionStringPattern) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (UnionStringPattern) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return false
 }
 
-func (patt UnionStringPattern) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (patt UnionStringPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	return ErrNoRepresentation
 }
 
-func (RuneRangeStringPattern) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (RuneRangeStringPattern) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return false
 }
 
-func (patt RuneRangeStringPattern) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (patt RuneRangeStringPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	return ErrNoRepresentation
 }
 
-func (DynamicStringPatternElement) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (DynamicStringPatternElement) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return false
 }
 
-func (patt DynamicStringPatternElement) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (patt DynamicStringPatternElement) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	return ErrNoRepresentation
 }
 
-func (RepeatedPatternElement) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (RepeatedPatternElement) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return false
 }
 
-func (patt *RepeatedPatternElement) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (patt *RepeatedPatternElement) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	return ErrNoRepresentation
 }
 
-func (NamedSegmentPathPattern) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (NamedSegmentPathPattern) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return false
+}
+
+func (patt *NamedSegmentPathPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	return ErrNotImplementedYet
+}
+
+func (ObjectPattern) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return false
+}
+
+func (patt ObjectPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	return ErrNoRepresentation
+}
+
+func (RecordPattern) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return false
+}
+
+func (patt RecordPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	return ErrNoRepresentation
+}
+
+func (ListPattern) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return false
+}
+
+func (patt ListPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	return ErrNoRepresentation
+}
+
+func (TuplePattern) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return false
+}
+
+func (patt TuplePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	return ErrNoRepresentation
+}
+
+func (OptionPattern) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return false
+}
+
+func (patt OptionPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	return ErrNoRepresentation
+}
+
+func (Reader) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return false
+}
+
+func (reader Reader) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	return ErrNoRepresentation
+}
+
+func (Mimetype) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return false
+}
+
+func (mt Mimetype) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	return ErrNoRepresentation
+}
+
+func (FileInfo) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return false
+}
+
+func (i FileInfo) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	return ErrNoRepresentation
+}
+
+func (b *Bytecode) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return false
+}
+
+func (b *Bytecode) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	return ErrNoRepresentation
+}
+
+func (t Type) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return false
+}
+
+func (t Type) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	return ErrNoRepresentation
+}
+
+func (Port) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+	return false
+}
+
+func (port Port) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	return ErrNotImplementedYet
+}
+
+func (*StringConcatenation) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return true
 }
 
-func (patt *NamedSegmentPathPattern) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	var buff bytes.Buffer
-	patt.WriteRepresentation(ctx, &buff, encountered, config)
-
-	_, err := w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
-	return err
-}
-
-func (ObjectPattern) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (patt ObjectPattern) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (RecordPattern) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (patt RecordPattern) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (ListPattern) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (patt ListPattern) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (TuplePattern) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (patt TuplePattern) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (OptionPattern) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (patt OptionPattern) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (Reader) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (reader Reader) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (Mimetype) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (mt Mimetype) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (FileInfo) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (i FileInfo) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (b *Bytecode) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (b *Bytecode) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (t Type) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (t Type) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (Port) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (port Port) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write(port.repr(true))
-	return err
-}
-
-func (*StringConcatenation) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (c *StringConcatenation) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (c *StringConcatenation) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	return Str(c.GetOrBuildString()).WriteJSONRepresentation(ctx, w, encountered, config)
 }
 
-func (Color) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (Color) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return true
 }
 
-func (c Color) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (c Color) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	panic(ErrNotImplementedYet)
 }

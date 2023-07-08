@@ -9,6 +9,8 @@ import (
 type Thread struct {
 	elements []threadElement
 	//finite
+
+	core.NoReprMixin
 }
 
 func NewThread(ctx *core.Context, elements core.Iterable) *Thread {

@@ -10,6 +10,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
+	jsoniter "github.com/json-iterator/go"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -2495,11 +2496,11 @@ func (v testMutableGoValue) WriteRepresentation(ctx *Context, w io.Writer, encou
 	return err
 }
 
-func (v testMutableGoValue) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (v testMutableGoValue) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return true
 }
 
-func (v testMutableGoValue) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (v testMutableGoValue) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	_, err := w.Write([]byte("\"mygoval\""))
 	return err
 }
@@ -2512,35 +2513,35 @@ func (v testMutableGoValue) ToSymbolicValue(ctx *Context, encountered map[uintpt
 	return symbolic.ANY, nil
 }
 
-func (user testMutableGoValue) GetGoMethod(name string) (*GoFunction, bool) {
+func (v testMutableGoValue) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
 	case "getName":
-		return &GoFunction{fn: user.GetName}, true
+		return &GoFunction{fn: v.GetName}, true
 	case "getNameNoCtx":
-		return &GoFunction{fn: user.GetNameNoCtx}, true
+		return &GoFunction{fn: v.GetNameNoCtx}, true
 	default:
 		return nil, false
 	}
 }
 
-func (user testMutableGoValue) Prop(ctx *Context, name string) Value {
+func (v testMutableGoValue) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "name":
-		return Str(user.Name)
+		return Str(v.Name)
 	default:
-		method, ok := user.GetGoMethod(name)
+		method, ok := v.GetGoMethod(name)
 		if !ok {
-			panic(FormatErrPropertyDoesNotExist(name, user))
+			panic(FormatErrPropertyDoesNotExist(name, v))
 		}
 		return method
 	}
 }
 
-func (user testMutableGoValue) SetProp(ctx *Context, name string, value Value) error {
+func (v testMutableGoValue) SetProp(ctx *Context, name string, value Value) error {
 	return ErrCannotSetProp
 }
 
-func (user testMutableGoValue) PropertyNames(ctx *Context) []string {
+func (v testMutableGoValue) PropertyNames(ctx *Context) []string {
 	return []string{"name", "getName", "getNameNoCtx"}
 }
 

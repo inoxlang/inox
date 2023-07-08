@@ -14,6 +14,7 @@ import (
 
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
+	jsoniter "github.com/json-iterator/go"
 )
 
 // this file contains the implementation of Value.HasRepresentation & Value.WriteRepresentation for core types.
@@ -94,11 +95,11 @@ func (n NoReprMixin) WriteRepresentation(ctx *Context, w io.Writer, encountered 
 	return ErrNoRepresentation
 }
 
-func (n NoReprMixin) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (n NoReprMixin) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return false
 }
 
-func (n NoReprMixin) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (n NoReprMixin) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	return ErrNoRepresentation
 }
 
@@ -146,23 +147,15 @@ func (m CallBasedPatternReprMixin) WriteRepresentation(ctx *Context, w io.Writer
 	return err
 }
 
-func (m CallBasedPatternReprMixin) HasJSONRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (m CallBasedPatternReprMixin) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return false
 }
 
-func (m CallBasedPatternReprMixin) WriteJSONRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (m CallBasedPatternReprMixin) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	return ErrNoRepresentation
 }
 
 // implementations
-
-func (n AstNode) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (n AstNode) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
 
 func (Nil NilT) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
 	return true
@@ -171,14 +164,6 @@ func (Nil NilT) HasRepresentation(encountered map[uintptr]int, config *ReprConfi
 func (Nil NilT) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
 	_, err := w.Write([]byte{'n', 'i', 'l'})
 	return err
-}
-
-func (err Error) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (err Error) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
 }
 
 func (b Bool) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
@@ -775,14 +760,6 @@ func (slice *ByteSlice) write(w io.Writer) (int, error) {
 func (slice *ByteSlice) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
 	_, err := slice.write(w)
 	return err
-}
-
-func (*GoFunction) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (v *GoFunction) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return ErrNoRepresentation
 }
 
 func (opt Option) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {

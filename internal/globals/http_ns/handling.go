@@ -12,6 +12,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/dom_ns"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/rs/zerolog"
 	"golang.org/x/exp/slices"
 )
@@ -262,7 +263,9 @@ func respondWithMappingResult(h handlingArguments) {
 				return
 			}
 
-			config := &core.ReprConfig{}
+			config := core.JSONSerializationConfig{
+				ReprConfig: &core.ReprConfig{},
+			}
 
 			if !value.HasJSONRepresentation(map[uintptr]int{}, config) {
 				rw.writeStatus(http.StatusNotAcceptable)
@@ -270,7 +273,8 @@ func respondWithMappingResult(h handlingArguments) {
 			}
 
 			rw.WriteContentType(core.JSON_CTYPE)
-			value.WriteJSONRepresentation(state.Ctx, rw.BodyWriter(), map[uintptr]int{}, config)
+			stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, rw.BodyWriter(), 0)
+			value.WriteJSONRepresentation(state.Ctx, stream, map[uintptr]int{}, config)
 			return
 		default:
 			break

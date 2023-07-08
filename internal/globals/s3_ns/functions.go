@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	core "github.com/inoxlang/inox/internal/core"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/minio/minio-go/v7"
 )
 
@@ -208,12 +209,14 @@ func S3SetBucketPolicy(ctx *core.Context, u core.URL, policy core.Value) error {
 	case core.Str:
 		policyString = string(p)
 	case *core.Object:
-		buf := bytes.NewBuffer(nil)
-		config := &core.ReprConfig{}
-		if err := p.WriteJSONRepresentation(ctx, buf, map[uintptr]int{}, config); err != nil {
+		stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, nil, 0)
+		config := core.JSONSerializationConfig{
+			ReprConfig: &core.ReprConfig{},
+		}
+		if err := p.WriteJSONRepresentation(ctx, stream, map[uintptr]int{}, config); err != nil {
 			return errors.New("invalid policy description: pass a string or an object with a JSON representation")
 		}
-		policyString = buf.String()
+		policyString = string(stream.Buffer())
 	default:
 		return errors.New("invalid policy description: pass a string or an object with a JSON representation")
 	}

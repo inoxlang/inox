@@ -1,26 +1,30 @@
 package core
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 
 	"github.com/buger/jsonparser"
 	"github.com/inoxlang/inox/internal/utils"
+	jsoniter "github.com/json-iterator/go"
 )
 
 func ToJSON(ctx *Context, v Value) Str {
-	return ToJSONWithConfig(ctx, v, &ReprConfig{})
+	return ToJSONWithConfig(ctx, v, JSONSerializationConfig{
+		ReprConfig: &ReprConfig{},
+		Pattern:    ANYVAL_PATTERN,
+		Location:   "/",
+	})
 }
 
-func ToJSONWithConfig(ctx *Context, v Value, config *ReprConfig) Str {
+func ToJSONWithConfig(ctx *Context, v Value, config JSONSerializationConfig) Str {
 	if v.HasJSONRepresentation(map[uintptr]int{}, config) {
-		var buff bytes.Buffer
-		if err := v.WriteJSONRepresentation(ctx, &buff, map[uintptr]int{}, config); err != nil {
+		stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, nil, 10)
+		if err := v.WriteJSONRepresentation(ctx, stream, map[uintptr]int{}, config); err != nil {
 			panic(err)
 		}
-		return Str(buff.String())
+		return Str(stream.Buffer())
 	}
 	panic(ErrNoRepresentation)
 }

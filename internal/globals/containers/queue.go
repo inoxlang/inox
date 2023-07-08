@@ -21,6 +21,7 @@ func NewQueue(ctx *core.Context, elements core.Iterable) *Queue {
 
 type Queue struct {
 	elements *arrayqueue.Queue
+	core.NoReprMixin
 }
 
 func (s *Queue) Enqueue(ctx *core.Context, elem core.Value) {

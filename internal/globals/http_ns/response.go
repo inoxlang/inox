@@ -10,11 +10,11 @@ import (
 )
 
 type HttpResponse struct {
-	core.NoReprMixin
-	core.NotClonableMixin
-
 	wrapped *http.Response
 	cookies []core.Value
+
+	core.NoReprMixin
+	core.NotClonableMixin
 }
 
 func (resp *HttpResponse) GetGoMethod(name string) (*core.GoFunction, bool) {

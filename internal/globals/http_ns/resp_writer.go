@@ -27,9 +27,6 @@ var (
 )
 
 type HttpResponseWriter struct {
-	core.NoReprMixin
-	core.NotClonableMixin
-
 	request      *HttpRequest
 	acceptHeader mimeheader.AcceptHeader
 	rw           http.ResponseWriter
@@ -37,6 +34,9 @@ type HttpResponseWriter struct {
 	status   int //do not use, call Status() to get the status
 	finished bool
 	logger   zerolog.Logger
+
+	core.NoReprMixin
+	core.NotClonableMixin
 }
 
 func NewResponseWriter(req *HttpRequest, rw http.ResponseWriter, serverLogger zerolog.Logger) *HttpResponseWriter {
@@ -237,7 +237,9 @@ func (rw *HttpResponseWriter) WriteJSON(ctx *core.Context, v core.Value) (core.I
 	case core.Readable:
 		reader = val.Reader()
 	default:
-		b = []byte(core.ToJSONWithConfig(ctx, val, &core.ReprConfig{}))
+		b = []byte(core.ToJSONWithConfig(ctx, val, core.JSONSerializationConfig{
+			ReprConfig: &core.ReprConfig{},
+		}))
 	}
 
 	if len(b) == 0 {

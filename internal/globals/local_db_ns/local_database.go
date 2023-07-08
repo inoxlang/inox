@@ -43,6 +43,8 @@ type LocalDatabase struct {
 
 	topLevelValues     map[string]Value
 	topLevelValuesLock sync.Mutex
+
+	core.NoReprMixin
 }
 
 type LocalDatabaseConfig struct {
