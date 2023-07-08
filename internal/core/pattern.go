@@ -418,6 +418,13 @@ func NewTuplePatternOf(generalElementPattern Pattern) *TuplePattern {
 	return &TuplePattern{generalElementPattern: generalElementPattern}
 }
 
+func NewTuplePattern(elementPatterns []Pattern) *TuplePattern {
+	if elementPatterns == nil {
+		elementPatterns = []Pattern{}
+	}
+	return &TuplePattern{elementPatterns: elementPatterns}
+}
+
 func (patt *TuplePattern) Test(ctx *Context, v Value) bool {
 	tuple, ok := v.(*Tuple)
 	if !ok {

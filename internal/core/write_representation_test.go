@@ -741,28 +741,28 @@ func TestCheckedStringRepresentation(t *testing.T) {
 	//TODO: test more complex cases
 }
 
+var byteCountReprTestCases = []struct {
+	value          ByteCount
+	representation string
+}{
+	{3, "3B"},
+	{1_000, "1kB"},
+	{1_001, "1001B"},
+	{999_000, "999kB"},
+	{1_000_000, "1MB"},
+	{1_001_000, "1001kB"},
+	{999_000_000, "999MB"},
+	{1_000_000_000, "1GB"},
+	{1_001_000_000, "1001MB"},
+	{1_001_001_000, "1001001kB"},
+	{1_001_001_001, "1001001001B"},
+}
+
 func TestByteCountRepresentation(t *testing.T) {
 	negative := ByteCount(-1)
 	assert.ErrorIs(t, negative.WriteRepresentation(reprTestCtx, nil, nil, nil), ErrNoRepresentation)
 
-	testCases := []struct {
-		value          ByteCount
-		representation string
-	}{
-		{3, "3B"},
-		{1_000, "1kB"},
-		{1_001, "1001B"},
-		{999_000, "999kB"},
-		{1_000_000, "1MB"},
-		{1_001_000, "1001kB"},
-		{999_000_000, "999MB"},
-		{1_000_000_000, "1GB"},
-		{1_001_000_000, "1001MB"},
-		{1_001_001_000, "1001001kB"},
-		{1_001_001_001, "1001001001B"},
-	}
-
-	for _, testCase := range testCases {
+	for _, testCase := range byteCountReprTestCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
 			assert.True(t, testCase.value.HasRepresentation(nil, nil))
 			assert.Equal(t, testCase.representation, getRepr(t, testCase.value, reprTestCtx))
@@ -784,28 +784,28 @@ func TestLineCountRepresentation(t *testing.T) {
 	//TODO: test more complex cases
 }
 
+var byteRateReprTestCases = []struct {
+	value          ByteRate
+	representation string
+}{
+	{3, "3B/s"},
+	{1_000, "1kB/s"},
+	{1_001, "1001B/s"},
+	{999_000, "999kB/s"},
+	{1_000_000, "1MB/s"},
+	{1_001_000, "1001kB/s"},
+	{999_000_000, "999MB/s"},
+	{1_000_000_000, "1GB/s"},
+	{1_001_000_000, "1001MB/s"},
+	{1_001_001_000, "1001001kB/s"},
+	{1_001_001_001, "1001001001B/s"},
+}
+
 func TestByteRateRepresentation(t *testing.T) {
 	negative := ByteRate(-1)
 	assert.ErrorIs(t, negative.WriteRepresentation(reprTestCtx, nil, nil, nil), ErrNoRepresentation)
 
-	testCases := []struct {
-		value          ByteRate
-		representation string
-	}{
-		{3, "3B/s"},
-		{1_000, "1kB/s"},
-		{1_001, "1001B/s"},
-		{999_000, "999kB/s"},
-		{1_000_000, "1MB/s"},
-		{1_001_000, "1001kB/s"},
-		{999_000_000, "999MB/s"},
-		{1_000_000_000, "1GB/s"},
-		{1_001_000_000, "1001MB/s"},
-		{1_001_001_000, "1001001kB/s"},
-		{1_001_001_001, "1001001001B/s"},
-	}
-
-	for _, testCase := range testCases {
+	for _, testCase := range byteRateReprTestCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
 			assert.True(t, testCase.value.HasRepresentation(nil, nil))
 			assert.Equal(t, testCase.representation, getRepr(t, testCase.value, reprTestCtx))
@@ -814,30 +814,30 @@ func TestByteRateRepresentation(t *testing.T) {
 			assert.Equal(t, testCase.value, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
 		})
 	}
+}
+
+var simpleRateReprTestCases = []struct {
+	value          SimpleRate
+	representation string
+}{
+	{3, "3x/s"},
+	{1_000, "1kx/s"},
+	{1_001, "1001x/s"},
+	{999_000, "999kx/s"},
+	{1_000_000, "1Mx/s"},
+	{1_001_000, "1001kx/s"},
+	{999_000_000, "999Mx/s"},
+	{1_000_000_000, "1Gx/s"},
+	{1_001_000_000, "1001Mx/s"},
+	{1_001_001_000, "1001001kx/s"},
+	{1_001_001_001, "1001001001x/s"},
 }
 
 func TestSimpleRateRepresentation(t *testing.T) {
 	negative := SimpleRate(-1)
 	assert.ErrorIs(t, negative.WriteRepresentation(reprTestCtx, nil, nil, nil), ErrNoRepresentation)
 
-	testCases := []struct {
-		value          SimpleRate
-		representation string
-	}{
-		{3, "3x/s"},
-		{1_000, "1kx/s"},
-		{1_001, "1001x/s"},
-		{999_000, "999kx/s"},
-		{1_000_000, "1Mx/s"},
-		{1_001_000, "1001kx/s"},
-		{999_000_000, "999Mx/s"},
-		{1_000_000_000, "1Gx/s"},
-		{1_001_000_000, "1001Mx/s"},
-		{1_001_001_000, "1001001kx/s"},
-		{1_001_001_001, "1001001001x/s"},
-	}
-
-	for _, testCase := range testCases {
+	for _, testCase := range simpleRateReprTestCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
 			assert.True(t, testCase.value.HasRepresentation(nil, nil))
 			assert.Equal(t, testCase.representation, getRepr(t, testCase.value, reprTestCtx))
@@ -848,33 +848,30 @@ func TestSimpleRateRepresentation(t *testing.T) {
 	}
 }
 
+var durationReprTestCases = []struct {
+	value          Duration
+	representation string
+}{
+
+	{Duration(time.Millisecond), "1ms"},
+	{Duration(300 * time.Millisecond), "300ms"},
+	{Duration(300 * time.Millisecond), "300ms"},
+	{Duration(999 * time.Millisecond), "999ms"},
+	{Duration(time.Second), "1s"},
+	{Duration(time.Second + time.Millisecond), "1s1ms"},
+	{Duration(59 * time.Second), "59s"},
+	{Duration(time.Minute), "1mn"},
+	{Duration(time.Minute + time.Millisecond), "1mn1ms"},
+	{Duration(time.Minute + time.Second), "1mn1s"},
+	{Duration(59 * time.Minute), "59mn"},
+	{Duration(time.Hour), "1h"},
+	{Duration(1000 * time.Hour), "1000h"},
+	{Duration(time.Hour + time.Millisecond), "1h1ms"},
+	{Duration(time.Hour + time.Second), "1h1s"},
+}
+
 func TestDurationRepresentation(t *testing.T) {
-	negative := SimpleRate(-1)
-	assert.ErrorIs(t, negative.WriteRepresentation(reprTestCtx, nil, nil, nil), ErrNoRepresentation)
-
-	testCases := []struct {
-		value          Duration
-		representation string
-	}{
-
-		{Duration(time.Millisecond), "1ms"},
-		{Duration(300 * time.Millisecond), "300ms"},
-		{Duration(300 * time.Millisecond), "300ms"},
-		{Duration(999 * time.Millisecond), "999ms"},
-		{Duration(time.Second), "1s"},
-		{Duration(time.Second + time.Millisecond), "1s1ms"},
-		{Duration(59 * time.Second), "59s"},
-		{Duration(time.Minute), "1mn"},
-		{Duration(time.Minute + time.Millisecond), "1mn1ms"},
-		{Duration(time.Minute + time.Second), "1mn1s"},
-		{Duration(59 * time.Minute), "59mn"},
-		{Duration(time.Hour), "1h"},
-		{Duration(1000 * time.Hour), "1000h"},
-		{Duration(time.Hour + time.Millisecond), "1h1ms"},
-		{Duration(time.Hour + time.Second), "1h1s"},
-	}
-
-	for _, testCase := range testCases {
+	for _, testCase := range durationReprTestCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
 			assert.True(t, testCase.value.HasRepresentation(nil, nil))
 			assert.Equal(t, testCase.representation, getRepr(t, testCase.value, reprTestCtx))

@@ -22,6 +22,8 @@ var (
 
 // this file contains the implementation of Value.HasJSONRepresentation & Value.WriteJSONRepresentation for core types.
 
+//TODO: for all types, add more checks before not using JSON_UNTYPED_VALUE_SUFFIX.
+
 type JSONSerializationConfig struct {
 	*ReprConfig
 	Pattern  Pattern //nillable
@@ -32,7 +34,7 @@ func GetJSONRepresentation(v Value, ctx *Context) string {
 	buff := bytes.NewBuffer(nil)
 	encountered := map[uintptr]int{}
 
-	stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, nil, 10)
+	stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, nil, 0)
 
 	err := v.WriteJSONRepresentation(ctx, stream, encountered, JSONSerializationConfig{})
 	if err != nil {
@@ -41,11 +43,14 @@ func GetJSONRepresentation(v Value, ctx *Context) string {
 	return buff.String()
 }
 
-func writeUntypedValueJSON(typeName string, fn func(w *jsoniter.Stream), w *jsoniter.Stream) {
+func writeUntypedValueJSON(typeName string, fn func(w *jsoniter.Stream) error, w *jsoniter.Stream) error {
 	w.WriteObjectStart()
 	w.WriteObjectField(typeName + JSON_UNTYPED_VALUE_SUFFIX)
-	fn(w)
+	if err := fn(w); err != nil {
+		return err
+	}
 	w.WriteObjectEnd()
+	return nil
 }
 
 func fmtErrPatternDoesNotMatchValueToSerialize(ctx *Context, config JSONSerializationConfig) error {
@@ -75,9 +80,10 @@ func (r Rune) HasJSONRepresentation(encountered map[uintptr]int, config JSONSeri
 }
 
 func (r Rune) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
-	if config.Pattern == nil {
-		writeUntypedValueJSON(RUNE_PATTERN.Name, func(w *jsoniter.Stream) {
+	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
+		writeUntypedValueJSON(RUNE_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(r))
+			return nil
 		}, w)
 		return nil
 	}
@@ -99,6 +105,14 @@ func (Int) HasJSONRepresentation(encountered map[uintptr]int, config JSONSeriali
 }
 
 func (i Int) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
+		writeUntypedValueJSON(INT_PATTERN.Name, func(w *jsoniter.Stream) error {
+			fmt.Fprintf(w, `"%d"`, i)
+			return nil
+		}, w)
+		return nil
+	}
+
 	fmt.Fprintf(w, `"%d"`, i)
 	return nil
 }
@@ -152,10 +166,8 @@ func (obj *Object) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, enc
 		entryPatterns = objPatt.entryPatterns
 	}
 
-	_, err := w.Write([]byte{'{'})
-	if err != nil {
-		return err
-	}
+	w.WriteObjectStart()
+	var err error
 
 	closestState := ctx.GetClosestState()
 	obj.Lock(closestState)
@@ -164,6 +176,20 @@ func (obj *Object) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, enc
 	visibility, _ := GetVisibility(obj.visibilityId)
 
 	first := true
+
+	//meta properties
+
+	if obj.url != "" {
+		first = false
+
+		_, err = w.Write(utils.StringAsBytes(`"_url_":`))
+		if err != nil {
+			return err
+		}
+
+		w.WriteString(obj.url.UnderlyingString())
+	}
+
 	for i, k := range keys {
 		v := obj.values[i]
 
@@ -172,18 +198,12 @@ func (obj *Object) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, enc
 		}
 
 		if !first {
-			w.Write([]byte{','})
+			w.WriteMore()
 		}
+
 		first = false
-		jsonStr, _ := utils.MarshalJsonNoHTMLEspace(k)
-		_, err = w.Write(jsonStr)
-		if err != nil {
-			return err
-		}
-		_, err = w.Write([]byte{':'})
-		if err != nil {
-			return err
-		}
+		w.WriteObjectField(k)
+
 		err = v.WriteJSONRepresentation(ctx, w, nil, JSONSerializationConfig{
 			ReprConfig: config.ReprConfig,
 			Pattern:    entryPatterns[k],
@@ -193,10 +213,7 @@ func (obj *Object) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, enc
 		}
 	}
 
-	_, err = w.Write([]byte{'}'})
-	if err != nil {
-		return err
-	}
+	w.WriteObjectEnd()
 	return nil
 }
 
@@ -209,56 +226,59 @@ func (rec *Record) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, enc
 		return ErrNoRepresentation
 	}
 
-	var entryPatterns map[string]Pattern
+	write := func(w *jsoniter.Stream) error {
+		var entryPatterns map[string]Pattern
 
-	recPatt, ok := config.Pattern.(*RecordPattern)
-	if ok {
-		entryPatterns = recPatt.entryPatterns
-	}
-
-	_, err := w.Write([]byte{'{'})
-	if err != nil {
-		return err
-	}
-
-	keys := rec.keys
-	first := true
-
-	for i, k := range keys {
-		v := rec.values[i]
-
-		if !config.IsPropertyVisible(k, v, nil, ctx) {
-			continue
+		recPatt, ok := config.Pattern.(*RecordPattern)
+		if ok {
+			entryPatterns = recPatt.entryPatterns
 		}
 
-		if !first {
-			w.Write([]byte{','})
-		}
-
-		first = false
-		jsonStr, _ := utils.MarshalJsonNoHTMLEspace(k)
-		_, err = w.Write(jsonStr)
+		_, err := w.Write([]byte{'{'})
 		if err != nil {
 			return err
 		}
-		_, err = w.Write([]byte{':'})
+
+		keys := rec.keys
+		first := true
+
+		for i, k := range keys {
+			v := rec.values[i]
+
+			if !config.IsPropertyVisible(k, v, nil, ctx) {
+				continue
+			}
+
+			if !first {
+				w.WriteMore()
+			}
+
+			first = false
+			w.WriteObjectField(k)
+
+			err = v.WriteJSONRepresentation(ctx, w, nil, JSONSerializationConfig{
+				ReprConfig: config.ReprConfig,
+				Pattern:    entryPatterns[k],
+			})
+			if err != nil {
+				return err
+			}
+		}
+
+		_, err = w.Write([]byte{'}'})
 		if err != nil {
 			return err
 		}
-		err = v.WriteJSONRepresentation(ctx, w, nil, JSONSerializationConfig{
-			ReprConfig: config.ReprConfig,
-			Pattern:    entryPatterns[k],
-		})
-		if err != nil {
-			return err
-		}
+		return nil
 	}
 
-	_, err = w.Write([]byte{'}'})
-	if err != nil {
-		return err
+	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
+		return writeUntypedValueJSON(RECORD_PATTERN.Name, func(w *jsoniter.Stream) error {
+			return write(w)
+		}, w)
 	}
-	return nil
+
+	return write(w)
 }
 
 func (dict *Dictionary) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
@@ -306,11 +326,7 @@ func (list *ValueList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream,
 		return ErrNoRepresentation
 	}
 
-	var generalElementPattern Pattern
 	listPattern, _ := config.Pattern.(*ListPattern)
-	if listPattern == nil && config.Pattern != nil {
-		generalElementPattern = ANYVAL_PATTERN
-	}
 
 	_, err := w.Write([]byte{'['})
 	if err != nil {
@@ -331,10 +347,12 @@ func (list *ValueList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream,
 			ReprConfig: config.ReprConfig,
 		}
 
-		if generalElementPattern != nil {
-			elementConfig.Pattern = generalElementPattern
-		} else if listPattern != nil {
-			elementConfig.Pattern = listPattern.elementPatterns[i]
+		if listPattern != nil {
+			if listPattern.generalElementPattern != nil {
+				elementConfig.Pattern = listPattern.generalElementPattern
+			} else if listPattern != nil {
+				elementConfig.Pattern = listPattern.elementPatterns[i]
+			}
 		}
 
 		err = v.WriteJSONRepresentation(ctx, w, encountered, elementConfig)
@@ -356,11 +374,7 @@ func (list *IntList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, e
 		return ErrNoRepresentation
 	}
 
-	var generalElementPattern Pattern
 	listPattern, _ := config.Pattern.(*ListPattern)
-	if listPattern == nil && config.Pattern != nil {
-		generalElementPattern = ANYVAL_PATTERN
-	}
 
 	_, err := w.Write([]byte{'['})
 	if err != nil {
@@ -380,10 +394,12 @@ func (list *IntList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, e
 			ReprConfig: config.ReprConfig,
 		}
 
-		if generalElementPattern != nil {
-			elementConfig.Pattern = generalElementPattern
-		} else if listPattern != nil {
-			elementConfig.Pattern = listPattern.elementPatterns[i]
+		if listPattern != nil {
+			if listPattern.generalElementPattern != nil {
+				elementConfig.Pattern = listPattern.generalElementPattern
+			} else if listPattern != nil {
+				elementConfig.Pattern = listPattern.elementPatterns[i]
+			}
 		}
 
 		err = v.WriteJSONRepresentation(ctx, w, nil, elementConfig)
@@ -432,7 +448,9 @@ func (list *StringList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream
 			}
 		}
 		first = false
-		err = v.WriteJSONRepresentation(ctx, w, nil, config)
+		err = v.WriteJSONRepresentation(ctx, w, nil, JSONSerializationConfig{
+			ReprConfig: config.ReprConfig,
+		})
 		if err != nil {
 			return err
 		}
@@ -545,9 +563,10 @@ func (Path) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerial
 }
 
 func (pth Path) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
-	if config.Pattern == nil {
-		writeUntypedValueJSON(PATH_PATTERN.Name, func(w *jsoniter.Stream) {
+	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
+		writeUntypedValueJSON(PATH_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(pth))
+			return nil
 		}, w)
 		return nil
 	}
@@ -560,9 +579,10 @@ func (PathPattern) HasJSONRepresentation(encountered map[uintptr]int, config JSO
 }
 
 func (patt PathPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
-	if config.Pattern == nil {
-		writeUntypedValueJSON(PATHPATTERN_PATTERN.Name, func(w *jsoniter.Stream) {
+	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
+		writeUntypedValueJSON(PATHPATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(patt))
+			return nil
 		}, w)
 		return nil
 	}
@@ -576,9 +596,10 @@ func (URL) HasJSONRepresentation(encountered map[uintptr]int, config JSONSeriali
 }
 
 func (u URL) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
-	if config.Pattern == nil {
-		writeUntypedValueJSON(URL_PATTERN.Name, func(w *jsoniter.Stream) {
+	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
+		writeUntypedValueJSON(URL_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(u))
+			return nil
 		}, w)
 		return nil
 	}
@@ -591,9 +612,10 @@ func (Host) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerial
 }
 
 func (host Host) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
-	if config.Pattern == nil {
-		writeUntypedValueJSON(HOST_PATTERN.Name, func(w *jsoniter.Stream) {
+	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
+		writeUntypedValueJSON(HOST_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(host))
+			return nil
 		}, w)
 		return nil
 	}
@@ -606,9 +628,10 @@ func (Scheme) HasJSONRepresentation(encountered map[uintptr]int, config JSONSeri
 }
 
 func (scheme Scheme) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
-	if config.Pattern == nil {
-		writeUntypedValueJSON(SCHEME_PATTERN.Name, func(w *jsoniter.Stream) {
+	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
+		writeUntypedValueJSON(SCHEME_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(scheme))
+			return nil
 		}, w)
 		return nil
 	}
@@ -621,9 +644,10 @@ func (HostPattern) HasJSONRepresentation(encountered map[uintptr]int, config JSO
 }
 
 func (patt HostPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
-	if config.Pattern == nil {
-		writeUntypedValueJSON(HOSTPATTERN_PATTERN.Name, func(w *jsoniter.Stream) {
+	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
+		writeUntypedValueJSON(HOSTPATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(patt))
+			return nil
 		}, w)
 		return nil
 	}
@@ -636,9 +660,10 @@ func (EmailAddress) HasJSONRepresentation(encountered map[uintptr]int, config JS
 }
 
 func (addr EmailAddress) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
-	if config.Pattern == nil {
-		writeUntypedValueJSON(EMAIL_ADDR_PATTERN.Name, func(w *jsoniter.Stream) {
+	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
+		writeUntypedValueJSON(EMAIL_ADDR_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(addr))
+			return nil
 		}, w)
 		return nil
 	}
@@ -651,9 +676,10 @@ func (URLPattern) HasJSONRepresentation(encountered map[uintptr]int, config JSON
 }
 
 func (patt URLPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
-	if config.Pattern == nil {
-		writeUntypedValueJSON(URLPATTERN_PATTERN.Name, func(w *jsoniter.Stream) {
+	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
+		writeUntypedValueJSON(URLPATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(patt))
+			return nil
 		}, w)
 		return nil
 	}
@@ -666,9 +692,10 @@ func (Identifier) HasJSONRepresentation(encountered map[uintptr]int, config JSON
 }
 
 func (i Identifier) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
-	if config.Pattern == nil {
-		writeUntypedValueJSON(IDENT_PATTERN.Name, func(w *jsoniter.Stream) {
+	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
+		writeUntypedValueJSON(IDENT_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(i))
+			return nil
 		}, w)
 		return nil
 	}
@@ -681,9 +708,10 @@ func (PropertyName) HasJSONRepresentation(encountered map[uintptr]int, config JS
 }
 
 func (p PropertyName) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
-	if config.Pattern == nil {
-		writeUntypedValueJSON(PROPNAME_PATTERN.Name, func(w *jsoniter.Stream) {
+	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
+		writeUntypedValueJSON(PROPNAME_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(p))
+			return nil
 		}, w)
 		return nil
 	}
@@ -709,9 +737,10 @@ func (count ByteCount) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream,
 		return err
 	}
 
-	if config.Pattern == nil {
-		writeUntypedValueJSON(BYTECOUNT_PATTERN.Name, func(w *jsoniter.Stream) {
+	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
+		writeUntypedValueJSON(BYTECOUNT_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(buff.String())
+			return nil
 		}, w)
 		return nil
 	}
@@ -732,9 +761,10 @@ func (count LineCount) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream,
 		return err
 	}
 
-	if config.Pattern == nil {
-		writeUntypedValueJSON(BYTECOUNT_PATTERN.Name, func(w *jsoniter.Stream) {
+	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
+		writeUntypedValueJSON(LINECOUNT_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(buff.String())
+			return nil
 		}, w)
 		return nil
 	}
@@ -762,9 +792,10 @@ func (count RuneCount) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream,
 		return err
 	}
 
-	if config.Pattern == nil {
-		writeUntypedValueJSON(RUNECOUNT_PATTERN.Name, func(w *jsoniter.Stream) {
+	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
+		writeUntypedValueJSON(RUNECOUNT_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(buff.String())
+			return nil
 		}, w)
 		return nil
 	}
@@ -792,9 +823,10 @@ func (rate ByteRate) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, e
 		return err
 	}
 
-	if config.Pattern == nil {
-		writeUntypedValueJSON(BYTERATE_PATTERN.Name, func(w *jsoniter.Stream) {
+	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
+		writeUntypedValueJSON(BYTERATE_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(buff.String())
+			return nil
 		}, w)
 		return nil
 	}
@@ -815,9 +847,10 @@ func (rate SimpleRate) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream,
 		return err
 	}
 
-	if config.Pattern == nil {
-		writeUntypedValueJSON(SIMPLERATE_PATTERN.Name, func(w *jsoniter.Stream) {
+	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
+		writeUntypedValueJSON(SIMPLERATE_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(buff.String())
+			return nil
 		}, w)
 		return nil
 	}
@@ -838,9 +871,10 @@ func (d Duration) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, enco
 		return err
 	}
 
-	if config.Pattern == nil {
-		writeUntypedValueJSON(DURATION_PATTERN.Name, func(w *jsoniter.Stream) {
+	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
+		writeUntypedValueJSON(DURATION_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(buff.String())
+			return nil
 		}, w)
 		return nil
 	}
@@ -859,9 +893,10 @@ func (d Date) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encounte
 		return err
 	}
 
-	if config.Pattern == nil {
-		writeUntypedValueJSON(DATE_PATTERN.Name, func(w *jsoniter.Stream) {
+	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
+		writeUntypedValueJSON(DATE_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(buff.String())
+			return nil
 		}, w)
 		return nil
 	}
@@ -882,16 +917,29 @@ func (RuneRange) HasJSONRepresentation(encountered map[uintptr]int, config JSONS
 }
 
 func (r RuneRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
-	w.WriteObjectStart()
+	write := func(w *jsoniter.Stream) error {
+		w.WriteObjectStart()
 
-	w.WriteObjectField("start")
-	w.WriteString(string(r.Start))
-	w.WriteMore()
+		w.WriteObjectField("start")
+		w.WriteString(string(r.Start))
+		w.WriteMore()
 
-	w.WriteObjectField("end")
-	w.WriteString(string(r.End))
+		w.WriteObjectField("end")
+		w.WriteString(string(r.End))
 
-	w.WriteObjectEnd()
+		w.WriteObjectEnd()
+		return nil
+	}
+
+	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
+		writeUntypedValueJSON(RUNE_RANGE_PATTERN.Name, func(w *jsoniter.Stream) error {
+			write(w)
+			return nil
+		}, w)
+		return nil
+	}
+
+	write(w)
 	return nil
 }
 
@@ -908,16 +956,30 @@ func (IntRange) HasJSONRepresentation(encountered map[uintptr]int, config JSONSe
 }
 
 func (r IntRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
-	w.WriteObjectStart()
+	write := func(w *jsoniter.Stream) error {
+		w.WriteObjectStart()
 
-	w.WriteObjectField("start")
-	w.WriteString(strconv.FormatInt(int64(r.Start), 10))
-	w.WriteMore()
+		if !r.unknownStart {
+			w.WriteObjectField("start")
+			w.WriteString(strconv.FormatInt(int64(r.Start), 10))
+			w.WriteMore()
+		}
 
-	w.WriteObjectField("end")
-	w.WriteString(strconv.FormatInt(int64(r.End), 10))
+		w.WriteObjectField("end")
+		w.WriteString(strconv.FormatInt(int64(r.End), 10))
 
-	w.WriteObjectEnd()
+		w.WriteObjectEnd()
+		return nil
+	}
+
+	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
+		writeUntypedValueJSON(INT_RANGE_PATTERN.Name, func(w *jsoniter.Stream) error {
+			return write(w)
+		}, w)
+		return nil
+	}
+
+	write(w)
 	return nil
 }
 
