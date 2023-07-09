@@ -186,7 +186,7 @@ func (patt *ObjectPattern) Random(ctx *Context, options ...Option) Value {
 	i := 0
 	for k, v := range patt.entryPatterns {
 		obj.keys[i] = k
-		obj.values[i] = v.Random(ctx, options...)
+		obj.values[i] = v.Random(ctx, options...).(Serializable)
 		i++
 	}
 	obj.sortProps()
@@ -199,13 +199,13 @@ func (patt *ObjectPattern) Random(ctx *Context, options ...Option) Value {
 func (patt *RecordPattern) Random(ctx *Context, options ...Option) Value {
 	rec := &Record{
 		keys:   make([]string, len(patt.entryPatterns)),
-		values: make([]Value, len(patt.entryPatterns)),
+		values: make([]Serializable, len(patt.entryPatterns)),
 	}
 
 	i := 0
 	for k, v := range patt.entryPatterns {
 		rec.keys[i] = k
-		rec.values[i] = v.Random(ctx, options...)
+		rec.values[i] = v.Random(ctx, options...).(Serializable)
 		i++
 	}
 	rec.sortProps()
@@ -220,10 +220,10 @@ func randListPattern(ctx *Context, tuple bool, generalElementPattern Pattern, el
 
 	if generalElementPattern != nil {
 		randLen := source.RandInt64Range(0, DEFAULT_MAX_RAND_LEN)
-		elements := make([]Value, randLen)
+		elements := make([]Serializable, randLen)
 
 		for i := 0; i < int(randLen); i++ {
-			elements[i] = generalElementPattern.Random(ctx, options...)
+			elements[i] = generalElementPattern.Random(ctx, options...).(Serializable)
 		}
 
 		if tuple {
@@ -232,10 +232,10 @@ func randListPattern(ctx *Context, tuple bool, generalElementPattern Pattern, el
 			return WrapUnderylingList(&ValueList{elements: elements})
 		}
 	} else {
-		elements := make([]Value, len(elementPatterns))
+		elements := make([]Serializable, len(elementPatterns))
 
 		for i, e := range elementPatterns {
-			elements[i] = e.Random(ctx, options...)
+			elements[i] = e.Random(ctx, options...).(Serializable)
 		}
 
 		if tuple {

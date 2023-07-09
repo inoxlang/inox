@@ -95,7 +95,7 @@ top:
 					return "", formatErr(fmt.Sprint("--env should have an object value", ENV_OPTION_NAME))
 				}
 
-				err := obj.ForEachEntry(func(k string, v core.Value) error {
+				err := obj.ForEachEntry(func(k string, v core.Serializable) error {
 					switch val := v.(type) {
 					case core.StringLike:
 						env = append(env, k+"="+val.GetOrBuildString())

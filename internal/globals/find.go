@@ -6,6 +6,7 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 func init() {
@@ -28,13 +29,13 @@ func _find(ctx *core.Context, pattern core.Pattern, location core.Value) (*core.
 				return nil, err
 			}
 
-			values := make([]core.Value, len(results))
+			values := make([]core.Serializable, len(results))
 			for i, e := range results {
 				values[i] = e
 			}
 			return core.NewWrappedValueList(values...), nil
 		} else {
-			results, err := stringPatt.FindMatches(ctx, location, core.MatchesFindConfig{Kind: core.FindAllMatches})
+			results, err := stringPatt.FindMatches(ctx, l, core.MatchesFindConfig{Kind: core.FindAllMatches})
 			if err != nil {
 				return nil, err
 			}
@@ -60,13 +61,16 @@ func _find(ctx *core.Context, pattern core.Pattern, location core.Value) (*core.
 		} else {
 			pathPattern = core.PathPattern(fls.Join(string(l), string(pathPattern)))
 		}
-		paths := fs_ns.Glob(ctx, pathPattern)
-		return core.NewWrappedValueListFrom(core.ToValueList(paths)), nil
+		paths := utils.MapSlice(fs_ns.Glob(ctx, pathPattern), func(p core.Path) core.Serializable {
+			return p
+		})
+
+		return core.NewWrappedValueListFrom(paths), nil
 	case core.Iterable:
 		it := l.Iterator(ctx, core.IteratorConfiguration{ValueFilter: pattern})
-		var values []core.Value
+		var values []core.Serializable
 		for it.Next(ctx) {
-			values = append(values, it.Value(ctx))
+			values = append(values, it.Value(ctx).(core.Serializable))
 		}
 
 		return core.NewWrappedValueList(values...), nil

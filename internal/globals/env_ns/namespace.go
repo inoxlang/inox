@@ -11,6 +11,10 @@ import (
 	parse "github.com/inoxlang/inox/internal/parse"
 )
 
+const (
+	NAMESPACE_NAME = "env"
+)
+
 func init() {
 
 	// register symbolic version of Go Functions
@@ -33,7 +37,7 @@ func init() {
 	})
 }
 
-func NewEnvNamespace(ctx *core.Context, envPattern *core.ObjectPattern, allowMissingEnvVars bool) (*core.Record, error) {
+func NewEnvNamespace(ctx *core.Context, envPattern *core.ObjectPattern, allowMissingEnvVars bool) (*core.Namespace, error) {
 	pth, ok := parse.ParsePath(config.USER_HOME)
 	HOME := core.Path(pth)
 
@@ -50,7 +54,7 @@ func NewEnvNamespace(ctx *core.Context, envPattern *core.ObjectPattern, allowMis
 	var initial *core.Record
 	if envPattern != nil {
 		var propNames []string
-		var values []core.Value
+		var values []core.Serializable
 
 		err := envPattern.ForEachEntry(func(propName string, propPattern core.Pattern, _ bool) error {
 			propNames = append(propNames, propName)
@@ -69,7 +73,7 @@ func NewEnvNamespace(ctx *core.Context, envPattern *core.ObjectPattern, allowMis
 				if err != nil {
 					return fmt.Errorf("invalid value provided for environment variable '%s'", propName)
 				}
-				values = append(values, val)
+				values = append(values, val.(core.Serializable))
 			case *core.SecretPattern:
 				val, err := patt.NewSecret(ctx, envVal)
 				if err != nil {
@@ -99,7 +103,7 @@ func NewEnvNamespace(ctx *core.Context, envPattern *core.ObjectPattern, allowMis
 	//PWD should not be provided by default because it is not necessary equal to the working directory.
 	//By providing it by default people could use it instead of properly getting the working directory.
 
-	return core.NewRecordFromMap(core.ValMap{
+	return core.NewNamespace(NAMESPACE_NAME, map[string]core.Value{
 		"HOME":    HOMEval,
 		"initial": initial,
 		"has":     core.ValOf(envHas),

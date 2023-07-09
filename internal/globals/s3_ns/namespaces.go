@@ -6,6 +6,10 @@ import (
 	s3_symbolic "github.com/inoxlang/inox/internal/globals/s3_ns/symbolic"
 )
 
+const (
+	NAMESPACE_NAME = "s3"
+)
+
 func init() {
 	core.RegisterSymbolicGoFunctions([]any{
 		S3Get, func(ctx *symbolic.Context, u *symbolic.URL) (*s3_symbolic.GetObjectResponse, *symbolic.Error) {
@@ -32,8 +36,8 @@ func init() {
 	})
 }
 
-func NewS3namespace() *core.Record {
-	return core.NewRecordFromMap(core.ValMap{
+func NewS3namespace() *core.Namespace {
+	return core.NewNamespace(NAMESPACE_NAME, map[string]core.Value{
 		"get":                  core.ValOf(S3Get),
 		"ls":                   core.ValOf(S3List),
 		"put":                  core.ValOf(S3put),

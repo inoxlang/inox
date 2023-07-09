@@ -34,19 +34,22 @@ type Value interface {
 
 	Clone(clones map[uintptr]map[int]Value) (Value, error)
 
-	//IXON representation
-	HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool
-	WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error
-
-	//JSON representation
-	HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool
-	WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error
-
 	//human readable representation
 	PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int)
 
 	//ToSymbolicValue should return a symbolic value that represents the value.
 	ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error)
+}
+
+// Serializable is the interface implemented by all values serializable to JSON and/or IXON.
+type Serializable interface {
+	Value
+
+	//IXON representation
+	WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error
+
+	//JSON representation
+	WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error
 }
 
 // A resource name is a string value that designates a resource, examples: URL, Path & Host are resource names.
@@ -181,6 +184,22 @@ func ToValueList[T Value](arg []T) []Value {
 		values[i] = val
 	}
 	return values
+}
+
+func ToSerializableSlice(values []Value) []Serializable {
+	serializable := make([]Serializable, len(values))
+	for i, val := range values {
+		values[i] = val.(Serializable)
+	}
+	return serializable
+}
+
+func ToSerializableValueMap(valMap map[string]Value) map[string]Serializable {
+	serializable := make(map[string]Serializable, len(valMap))
+	for k, val := range valMap {
+		serializable[k] = val.(Serializable)
+	}
+	return serializable
 }
 
 func coerceToBool(val Value) bool {

@@ -33,7 +33,7 @@ func RegisterDefaultPatternNamespace(s string, ns *PatternNamespace) {
 }
 
 type Pattern interface {
-	Value
+	Serializable
 	Iterable
 
 	//Test returns true if the argument matches the pattern.
@@ -41,7 +41,7 @@ type Pattern interface {
 
 	Random(ctx *Context, options ...Option) Value
 
-	Call(values []Value) (Pattern, error)
+	Call(values []Serializable) (Pattern, error)
 
 	StringPattern() (StringPattern, bool)
 }
@@ -59,8 +59,8 @@ type GroupMatchesFindConfig struct {
 
 type GroupPattern interface {
 	Pattern
-	MatchGroups(*Context, Value) (groups map[string]Value, ok bool, err error)
-	FindGroupMatches(*Context, Value, GroupMatchesFindConfig) (groups []*Object, err error)
+	MatchGroups(*Context, Serializable) (groups map[string]Serializable, ok bool, err error)
+	FindGroupMatches(*Context, Serializable, GroupMatchesFindConfig) (groups []*Object, err error)
 }
 
 // DefaultValuePattern is implemented by patterns that can provide
@@ -78,7 +78,7 @@ type PatternNamespace struct {
 type NotCallablePatternMixin struct {
 }
 
-func (NotCallablePatternMixin) Call(values []Value) (Pattern, error) {
+func (NotCallablePatternMixin) Call(values []Serializable) (Pattern, error) {
 	return nil, ErrPatternNotCallable
 }
 
@@ -87,21 +87,21 @@ type ExactValuePattern struct {
 	NotCallablePatternMixin
 	NoReprMixin
 
-	value Value //immutable in most cases
+	value Serializable //immutable in most cases
 }
 
-func NewExactValuePattern(value Value) *ExactValuePattern {
+func NewExactValuePattern(value Serializable) *ExactValuePattern {
 	if value.IsMutable() {
 		panic(ErrValueInExactPatternValueShouldBeImmutable)
 	}
 	return &ExactValuePattern{value: value}
 }
 
-func newExactValuePatternNoCheck(value Value) *ExactValuePattern {
+func newExactValuePatternNoCheck(value Serializable) *ExactValuePattern {
 	return &ExactValuePattern{value: value}
 }
 
-func NewMostAdaptedExactPattern(value Value) Pattern {
+func NewMostAdaptedExactPattern(value Serializable) Pattern {
 	if value.IsMutable() {
 		panic(ErrValueInExactPatternValueShouldBeImmutable)
 	}
@@ -130,7 +130,7 @@ type TypePattern struct {
 	SymbolicValue symbolic.SymbolicValue
 	RandomImpl    func(options ...Option) Value
 
-	CallImpl         func(pattern *TypePattern, values []Value) (Pattern, error)
+	CallImpl         func(pattern *TypePattern, values []Serializable) (Pattern, error)
 	SymbolicCallImpl func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error)
 
 	stringPattern         func() (StringPattern, bool)
@@ -144,7 +144,7 @@ func (pattern *TypePattern) Test(ctx *Context, v Value) bool {
 	return pattern.Type == reflect.TypeOf(v)
 }
 
-func (patt *TypePattern) Call(values []Value) (Pattern, error) {
+func (patt *TypePattern) Call(values []Serializable) (Pattern, error) {
 	if patt.CallImpl == nil {
 		return nil, ErrPatternNotCallable
 	}
@@ -588,7 +588,7 @@ func NewIncludedEndIntRangePattern(start, end int64) *IntRangePattern {
 		intRange: range_,
 		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
 			Callee: INT_PATTERN,
-			Params: []Value{range_},
+			Params: []Serializable{range_},
 		},
 	}
 }
@@ -599,7 +599,7 @@ func NewSingleElementIntRangePattern(n int64) *IntRangePattern {
 		intRange: range_,
 		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
 			Callee: INT_PATTERN,
-			Params: []Value{range_},
+			Params: []Serializable{range_},
 		},
 	}
 }

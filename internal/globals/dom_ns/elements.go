@@ -15,7 +15,7 @@ var (
 		Name:          "dom.node",
 		Type:          reflect.TypeOf(&Node{}),
 		SymbolicValue: _dom_symbolic.NewDomNode(&symbolic.Any{}),
-		CallImpl: func(typePattern *core.TypePattern, values []core.Value) (core.Pattern, error) {
+		CallImpl: func(typePattern *core.TypePattern, values []core.Serializable) (core.Pattern, error) {
 			if len(values) != 1 {
 				return nil, errors.New("missing description")
 			}

@@ -1134,7 +1134,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					$a[0] = 1
 					return a
 				`,
-				result: newList(&ValueList{elements: []Value{Int(1)}}),
+				result: newList(&ValueList{elements: []Serializable{Int(1)}}),
 			},
 			{
 				input: `
@@ -1142,7 +1142,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					$a[0] += 1
 					return a
 				`,
-				result: newList(&ValueList{elements: []Value{Int(2)}}),
+				result: newList(&ValueList{elements: []Serializable{Int(2)}}),
 			},
 			{
 				input: `
@@ -1212,7 +1212,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					$a[0:1] = [1]
 					return $a
 				`,
-				result: newList(&ValueList{elements: []Value{Int(1)}}),
+				result: newList(&ValueList{elements: []Serializable{Int(1)}}),
 			},
 		}
 
@@ -1246,7 +1246,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			})
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, newList(&ValueList{elements: []Value{Str("aaa"), Str("bbb")}}), res)
+			assert.Equal(t, newList(&ValueList{elements: []Serializable{Str("aaa"), Str("bbb")}}), res)
 		})
 	})
 
@@ -1333,7 +1333,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, newList(&ValueList{elements: []Value{Int(0)}}), res)
+			assert.Equal(t, newList(&ValueList{elements: []Serializable{Int(0)}}), res)
 		})
 
 		t.Run("string slice : end index is greater than the length of the string", func(t *testing.T) {
@@ -1366,7 +1366,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, newList(&ValueList{elements: []Value{Str("a")}}), res)
+			assert.Equal(t, newList(&ValueList{elements: []Serializable{Str("a")}}), res)
 		})
 
 		t.Run("only start specified", func(t *testing.T) {
@@ -1377,7 +1377,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, newList(&ValueList{elements: []Value{Str("a")}}), res)
+			assert.Equal(t, newList(&ValueList{elements: []Serializable{Str("a")}}), res)
 		})
 
 		t.Run("only end specified", func(t *testing.T) {
@@ -1388,7 +1388,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, newList(&ValueList{elements: []Value{Str("a")}}), res)
+			assert.Equal(t, newList(&ValueList{elements: []Serializable{Str("a")}}), res)
 		})
 
 		t.Run("start out ouf bounds", func(t *testing.T) {
@@ -1399,7 +1399,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, newList(&ValueList{elements: []Value{}}), res)
+			assert.Equal(t, newList(&ValueList{elements: []Serializable{}}), res)
 		})
 
 	})
@@ -1636,7 +1636,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, NewDictionary(map[string]Value{
+			assert.EqualValues(t, NewDictionary(map[string]Serializable{
 				`"name"`: Str(`foo`),
 				`./path`: Str(`bar`),
 			}), res)
@@ -1651,7 +1651,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, NewDictionary(map[string]Value{
+			assert.EqualValues(t, NewDictionary(map[string]Serializable{
 				`"name"`: Str(`foo`),
 				`1`:      Str(`bar`),
 			}), res)
@@ -1673,7 +1673,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, newList(&ValueList{elements: []Value{Int(1)}}), res)
+			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(1)}}), res)
 		})
 
 		t.Run("[integer,integer]", func(t *testing.T) {
@@ -1681,7 +1681,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, newList(&ValueList{elements: []Value{Int(1), Int(2)}}), res)
+			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(1), Int(2)}}), res)
 		})
 
 		t.Run("[...[integer]]", func(t *testing.T) {
@@ -1689,7 +1689,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, newList(&ValueList{elements: []Value{Int(1)}}), res)
+			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(1)}}), res)
 		})
 
 		t.Run("[integer, ...[integer]]", func(t *testing.T) {
@@ -1697,7 +1697,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, newList(&ValueList{elements: []Value{Int(0), Int(1)}}), res)
+			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}), res)
 		})
 	})
 
@@ -1707,7 +1707,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, &Tuple{elements: []Value{}}, res)
+			assert.EqualValues(t, &Tuple{elements: []Serializable{}}, res)
 		})
 
 		t.Run("[integer]", func(t *testing.T) {
@@ -1715,7 +1715,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, &Tuple{elements: []Value{Int(1)}}, res)
+			assert.EqualValues(t, &Tuple{elements: []Serializable{Int(1)}}, res)
 		})
 
 		t.Run("[integer,integer]", func(t *testing.T) {
@@ -1723,7 +1723,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, &Tuple{elements: []Value{Int(1), Int(2)}}, res)
+			assert.EqualValues(t, &Tuple{elements: []Serializable{Int(1), Int(2)}}, res)
 		})
 
 		t.Run("[...#[integer]]", func(t *testing.T) {
@@ -1731,7 +1731,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, &Tuple{elements: []Value{Int(1)}}, res)
+			assert.EqualValues(t, &Tuple{elements: []Serializable{Int(1)}}, res)
 		})
 
 		t.Run("[integer, ...#[integer]]", func(t *testing.T) {
@@ -1739,7 +1739,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, &Tuple{elements: []Value{Int(0), Int(1)}}, res)
+			assert.EqualValues(t, &Tuple{elements: []Serializable{Int(0), Int(1)}}, res)
 		})
 	})
 
@@ -1752,7 +1752,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, newList(&ValueList{elements: []Value{Int(1), Int(2)}}), res)
+			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(1), Int(2)}}), res)
 		})
 
 		t.Run("variable count > length", func(t *testing.T) {
@@ -1773,7 +1773,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.EqualValues(t, newList(&ValueList{elements: []Value{Int(1), Nil}}), res)
+			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(1), Nil}}), res)
 		})
 	})
 
@@ -1814,7 +1814,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, newList(&ValueList{elements: []Value{Int(0), Int(1)}}), res)
+			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}), res)
 		})
 
 	})
@@ -1872,7 +1872,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return [$c1, $c2]
 			`,
-				result: newList(&ValueList{elements: []Value{Int(0), Int(5)}}),
+				result: newList(&ValueList{elements: []Serializable{Int(0), Int(5)}}),
 			},
 			{
 				input: `
@@ -1894,7 +1894,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return [$c1, $c2]
 			`,
-				result: newList(&ValueList{elements: []Value{Int(1), Int(11)}}),
+				result: newList(&ValueList{elements: []Serializable{Int(1), Int(11)}}),
 			},
 			{
 				input: `
@@ -1906,7 +1906,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return [$c1, $c2]
 			`,
-				result: newList(&ValueList{elements: []Value{Int(1), Int(11)}}),
+				result: newList(&ValueList{elements: []Serializable{Int(1), Int(11)}}),
 			},
 			{
 				input: `
@@ -1921,7 +1921,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				};
 				return [$c1, $c2]
 			`,
-				result: newList(&ValueList{elements: []Value{Int(1), Int(5)}}),
+				result: newList(&ValueList{elements: []Serializable{Int(1), Int(5)}}),
 			},
 			{
 				input: `
@@ -1936,7 +1936,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				};
 				return [$c1, $c2]
 			`,
-				result: newList(&ValueList{elements: []Value{Int(1), Int(6)}}),
+				result: newList(&ValueList{elements: []Serializable{Int(1), Int(6)}}),
 			},
 			{
 				input: `
@@ -2163,7 +2163,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				input: GET_ENTRIES_CODE,
 				result: func(tempDir string, tempDirPath Path) Value {
 					return newList(&ValueList{
-						elements: []Value{
+						elements: []Serializable{
 							objFrom(ValMap{
 								"name":          Str(filepath.Base(tempDir)),
 								"path":          tempDirPath,
@@ -2186,7 +2186,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					regularFilePath := filepath.Join(tempDir, regularFilename)
 
 					return newList(&ValueList{
-						elements: []Value{
+						elements: []Serializable{
 							objFrom(ValMap{
 								"name":          Str(filepath.Base(tempDir)),
 								"path":          tempDirPath,
@@ -2220,7 +2220,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					subdirPath := filepath.Join(tempDir, subdirName)
 
 					return newList(&ValueList{
-						elements: []Value{
+						elements: []Serializable{
 							objFrom(ValMap{
 								"name":          Str(filepath.Base(tempDir)),
 								"path":          Path(tempDir + "/"),
@@ -2268,7 +2268,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					regularFilePath := filepath.Join(tempDir, regularFilename)
 
 					return newList(&ValueList{
-						elements: []Value{
+						elements: []Serializable{
 							objFrom(ValMap{
 								"name":          Str(filepath.Base(tempDir)),
 								"path":          Path(tempDir + "/"),
@@ -2314,7 +2314,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					subdir2Path := filepath.Join(tempDir, subdir2Name)
 
 					return newList(&ValueList{
-						elements: []Value{
+						elements: []Serializable{
 							objFrom(ValMap{
 								"name":          Str(filepath.Base(tempDir)),
 								"path":          Path(tempDir + "/"),
@@ -2366,7 +2366,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					subdir1Path := filepath.Join(tempDir, subdir1Name)
 
 					return newList(&ValueList{
-						elements: []Value{
+						elements: []Serializable{
 							objFrom(ValMap{
 								"name":          Str(filepath.Base(tempDir)),
 								"path":          Path(tempDir + "/"),
@@ -2468,7 +2468,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}; 
 				return [$a,$b]
 			`,
-				result: newList(&ValueList{elements: []Value{Int(1), Int(0)}}),
+				result: newList(&ValueList{elements: []Serializable{Int(1), Int(0)}}),
 			},
 			{
 				name: "two cases: second matches",
@@ -2481,7 +2481,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}; 
 				return [$a,$b]
 			`,
-				result: newList(&ValueList{elements: []Value{Int(0), Int(1)}}),
+				result: newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}),
 			},
 		}
 
@@ -2512,7 +2512,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}; 
 					return [$a,$b]
 				`,
-				result: newList(&ValueList{elements: []Value{Int(1), Int(0)}}),
+				result: newList(&ValueList{elements: []Serializable{Int(1), Int(0)}}),
 			},
 			{
 				name: "group patterns : two cases (first one matches)",
@@ -2525,7 +2525,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}; 
 					return [$a,$b]
 				`,
-				result: newList(&ValueList{elements: []Value{Str("user"), Int(0)}}),
+				result: newList(&ValueList{elements: []Serializable{Str("user"), Int(0)}}),
 			},
 			{
 				name: "group patterns : two cases (second one matches)",
@@ -2538,7 +2538,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					} 
 					return [$a,$b]
 				`,
-				result: newList(&ValueList{elements: []Value{Int(0), Int(1)}}),
+				result: newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}),
 			},
 			{
 				name: "equality : two cases (second one matches)",
@@ -2551,7 +2551,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 					return [$a, $b]
 				`,
-				result: newList(&ValueList{elements: []Value{Int(0), Int(1)}}),
+				result: newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}),
 			},
 			{
 				name: "seconde case is not a simple value but is statically known",
@@ -2564,7 +2564,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}; 
 					return [$a,$b]
 				`,
-				result: newList(&ValueList{elements: []Value{Int(0), Int(1)}}),
+				result: newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}),
 			},
 		}
 
@@ -2637,7 +2637,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.IsType(t, &InoxFunction{}, res)
 			if bytecodeEval {
-				assert.Equal(t, []Value{Int(1), Int(2)}, res.(*InoxFunction).capturedLocals)
+				assert.Equal(t, []Serializable{Int(1), Int(2)}, res.(*InoxFunction).capturedLocals)
 			} else {
 				assert.Equal(t, map[string]Value{
 					"a": Int(1),
@@ -2741,7 +2741,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return f(2)
 				`,
 				isolatedCaseArguments: func() []Value { return []Value{Int(2)} },
-				result:                newList(&ValueList{elements: []Value{Int(1), Int(2)}}),
+				result:                newList(&ValueList{elements: []Serializable{Int(1), Int(2)}}),
 			},
 			{
 				name: "declared function with two captured values",
@@ -2752,7 +2752,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return f()
 				`,
 				isolatedCaseArguments: noargs,
-				result:                newList(&ValueList{elements: []Value{Int(1), Int(2)}}),
+				result:                newList(&ValueList{elements: []Serializable{Int(1), Int(2)}}),
 			},
 			{
 				name: "declared function returning a function expression",
@@ -2802,7 +2802,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return f(2)
 				`,
 				isolatedCaseArguments: func() []Value { return []Value{Int(2)} },
-				result:                newList(&ValueList{elements: []Value{Int(1), Int(2)}}),
+				result:                newList(&ValueList{elements: []Serializable{Int(1), Int(2)}}),
 			},
 			{
 				name: "declared arrow function with two captured values",
@@ -2813,7 +2813,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return f()
 				`,
 				isolatedCaseArguments: noargs,
-				result:                newList(&ValueList{elements: []Value{Int(1), Int(2)}}),
+				result:                newList(&ValueList{elements: []Serializable{Int(1), Int(2)}}),
 			},
 			{
 				name: "declared arrow function returning a function expression",
@@ -2855,7 +2855,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 					return f(1)
 				`,
-				result: newList(&ValueList{elements: []Value{Int(1), newList(&ValueList{elements: []Value{}})}}),
+				result: newList(&ValueList{elements: []Serializable{Int(1), newList(&ValueList{elements: []Serializable{}})}}),
 			},
 			{
 				name: "variadic function with many arguments",
@@ -2866,7 +2866,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return f(1, 2, 3)
 				`,
 				result: newList(&ValueList{
-					elements: []Value{Int(1), newList(&ValueList{elements: []Value{Int(2), Int(3)}})},
+					elements: []Serializable{Int(1), newList(&ValueList{elements: []Serializable{Int(2), Int(3)}})},
 				}),
 			},
 			{
@@ -2898,7 +2898,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return f()
 				`,
 				isolatedCaseArguments: noargs,
-				result:                newList(&ValueList{elements: []Value{Int(1), Int(2)}}),
+				result:                newList(&ValueList{elements: []Serializable{Int(1), Int(2)}}),
 			},
 			{
 				name: "recursive function",
@@ -3321,7 +3321,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						return []Str{"string"}
 					}),
 				},
-				result: newList(&ValueList{elements: []Value{Str("string")}}),
+				result: newList(&ValueList{elements: []Serializable{Str("string")}}),
 			},
 			{
 				name:  "method",
@@ -3369,7 +3369,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 
-		expectedPattern, _ := NewRegexPattern(".*").Call([]Value{
+		expectedPattern, _ := NewRegexPattern(".*").Call([]Serializable{
 			IntRange{
 				Start:        1,
 				End:          10,
@@ -4865,7 +4865,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, NewTuple([]Value{Int(1), Str("a")}), res)
+			assert.Equal(t, NewTuple([]Serializable{Int(1), Str("a")}), res)
 		})
 
 		t.Run("string element followed by a spread element with a single item", func(t *testing.T) {
@@ -5970,8 +5970,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, true)
 			assert.NoError(t, err)
 			assert.EqualValues(t, NewWrappedValueList(
-				NewWrappedValueList(NewWrappedValueListFrom([]Value{}), NewWrappedValueListFrom([]Value{})),
-				NewWrappedValueList(NewWrappedValueListFrom([]Value{}), NewWrappedValueListFrom([]Value{})),
+				NewWrappedValueList(NewWrappedValueListFrom([]Serializable{}), NewWrappedValueListFrom([]Serializable{})),
+				NewWrappedValueList(NewWrappedValueListFrom([]Serializable{}), NewWrappedValueListFrom([]Serializable{})),
 			), res)
 		})
 
@@ -6005,8 +6005,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			assert.EqualValues(t, NewWrappedValueList(
-				NewWrappedValueList(NewWrappedValueListFrom([]Value{}), NewWrappedValueListFrom([]Value{})),
-				NewWrappedValueList(NewWrappedValueListFrom([]Value{}), NewWrappedValueListFrom([]Value{})),
+				NewWrappedValueList(NewWrappedValueListFrom([]Serializable{}), NewWrappedValueListFrom([]Serializable{})),
+				NewWrappedValueList(NewWrappedValueListFrom([]Serializable{}), NewWrappedValueListFrom([]Serializable{})),
 			), res)
 		})
 
@@ -6042,8 +6042,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			assert.EqualValues(t, NewWrappedValueList(
-				NewWrappedValueList(NewWrappedValueListFrom([]Value{}), NewWrappedValueListFrom([]Value{})),
-				NewWrappedValueList(NewWrappedValueListFrom([]Value{}), NewWrappedValueListFrom([]Value{})),
+				NewWrappedValueList(NewWrappedValueListFrom([]Serializable{}), NewWrappedValueListFrom([]Serializable{})),
+				NewWrappedValueList(NewWrappedValueListFrom([]Serializable{}), NewWrappedValueListFrom([]Serializable{})),
 			), res)
 		})
 	})
@@ -6053,8 +6053,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			return e
 		})
 
-		createNamespace := func() *Record {
-			return NewRecordFromMap(ValMap{symbolic.FROM_XML_FACTORY_NAME: __idt})
+		createNamespace := func() *Namespace {
+			return NewNamespace("x", map[string]Value{symbolic.FROM_XML_FACTORY_NAME: __idt})
 		}
 
 		t.Run("element", func(t *testing.T) {

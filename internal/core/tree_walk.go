@@ -491,14 +491,14 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return nil, err
 		}
 
-		args := make([]Value, len(n.Arguments))
+		args := make([]Serializable, len(n.Arguments))
 
 		for i, argNode := range n.Arguments {
 			arg, err := TreeWalkEval(argNode, state)
 			if err != nil {
 				return nil, err
 			}
-			args[i] = arg
+			args[i] = arg.(Serializable)
 		}
 
 		return callee.(Pattern).Call(args)
@@ -1134,7 +1134,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		udata := &UData{
-			Root:            rootVal,
+			Root:            rootVal.(Serializable),
 			HiearchyEntries: children,
 		}
 
@@ -1157,7 +1157,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		return UDataHiearchyEntry{
-			Value:    nodeVal,
+			Value:    nodeVal.(Serializable),
 			Children: children,
 		}, nil
 	case *parse.ObjectLiteral:
@@ -1190,7 +1190,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 
 			finalObj.keys = append(finalObj.keys, key)
-			finalObj.values = append(finalObj.values, v)
+			finalObj.values = append(finalObj.values, v.(Serializable))
 		}
 
 		for _, el := range n.SpreadElements {
@@ -1204,7 +1204,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			for _, key := range el.Expr.(*parse.ExtractionExpression).Keys.Keys {
 				name := key.(*parse.IdentifierLiteral).Name
 				finalObj.keys = append(finalObj.keys, name)
-				finalObj.values = append(finalObj.values, object.Prop(state.Global.Ctx, name))
+				finalObj.values = append(finalObj.values, object.Prop(state.Global.Ctx, name).(Serializable))
 			}
 		}
 
@@ -1254,7 +1254,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 
 			finalRecord.keys = append(finalRecord.keys, key)
-			finalRecord.values = append(finalRecord.values, v)
+			finalRecord.values = append(finalRecord.values, v.(Serializable))
 		}
 
 		for _, el := range n.SpreadElements {
@@ -1268,7 +1268,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			for _, key := range el.Expr.(*parse.ExtractionExpression).Keys.Keys {
 				name := key.(*parse.IdentifierLiteral).Name
 				finalRecord.keys = append(finalRecord.keys, name)
-				finalRecord.values = append(finalRecord.values, object.Prop(state.Global.Ctx, name))
+				finalRecord.values = append(finalRecord.values, object.Prop(state.Global.Ctx, name).(Serializable))
 			}
 		}
 		finalRecord.sortProps()
@@ -1279,10 +1279,10 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		return finalRecord, nil
 	case *parse.ListLiteral:
-		var elements []Value
+		var elements []Serializable
 
 		if len(n.Elements) > 0 {
-			elements = make([]Value, 0, len(n.Elements))
+			elements = make([]Serializable, 0, len(n.Elements))
 		}
 
 		for _, en := range n.Elements {
@@ -1299,7 +1299,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				if err != nil {
 					return nil, err
 				}
-				elements = append(elements, e)
+				elements = append(elements, e.(Serializable))
 			}
 		}
 
@@ -1316,7 +1316,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		return createBestSuitedList(state.Global.Ctx, elements, elemType), nil
 	case *parse.TupleLiteral:
 		tuple := &Tuple{
-			elements: make([]Value, 0),
+			elements: make([]Serializable, 0),
 		}
 
 		for _, en := range n.Elements {
@@ -1333,15 +1333,15 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				if err != nil {
 					return nil, err
 				}
-				tuple.elements = append(tuple.elements, e)
+				tuple.elements = append(tuple.elements, e.(Serializable))
 			}
 		}
 
 		return tuple, nil
 	case *parse.DictionaryLiteral:
 		dict := Dictionary{
-			Entries: map[string]Value{},
-			Keys:    map[string]Value{},
+			Entries: map[string]Serializable{},
+			Keys:    map[string]Serializable{},
 		}
 
 		for _, entry := range n.Entries {
@@ -1355,9 +1355,9 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				return nil, err
 			}
 
-			keyRepr := string(GetRepresentation(k, state.Global.Ctx))
-			dict.Entries[keyRepr] = v
-			dict.Keys[keyRepr] = k
+			keyRepr := string(GetRepresentation(k.(Serializable), state.Global.Ctx))
+			dict.Entries[keyRepr] = v.(Serializable)
+			dict.Keys[keyRepr] = k.(Serializable)
 		}
 
 		return &dict, nil
@@ -1650,14 +1650,14 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				pattern, ok := m.(Pattern)
 
 				if !ok { //if the value of the case is not a pattern we just check for equality
-					pattern = &ExactValuePattern{value: m}
+					pattern = &ExactValuePattern{value: m.(Serializable)}
 				}
 
 				if matchCase.GroupMatchingVariable != nil {
 					variable := matchCase.GroupMatchingVariable.(*parse.IdentifierLiteral)
 
 					groupPattern, _ := pattern.(GroupPattern)
-					groups, ok, err := groupPattern.MatchGroups(state.Global.Ctx, discriminant)
+					groups, ok, err := groupPattern.MatchGroups(state.Global.Ctx, discriminant.(Serializable))
 
 					if err != nil {
 						return nil, fmt.Errorf("match statement: group maching: %w", err)
@@ -1843,8 +1843,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			default:
 				return QuantityRange{
 					inclusiveEnd: n.Operator == parse.Range,
-					Start:        left,
-					End:          right,
+					Start:        left.(Serializable),
+					End:          right.(Serializable),
 				}, nil
 			}
 		case parse.And:
@@ -1861,7 +1861,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return Bool(strings.Contains(left.(WrappedString).UnderlyingString(), right.(WrappedString).UnderlyingString())), nil
 		case parse.SetDifference:
 			if _, ok := right.(Pattern); !ok {
-				right = &ExactValuePattern{value: right}
+				right = &ExactValuePattern{value: right.(Serializable)}
 			}
 			return &DifferencePattern{base: left.(Pattern), removed: right.(Pattern)}, nil
 		case parse.NilCoalescing:
@@ -1892,7 +1892,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return QuantityRange{
 				unknownStart: true,
 				inclusiveEnd: true,
-				End:          v,
+				End:          v.(Serializable),
 			}, nil
 		}
 	case *parse.IntegerRangeLiteral:
@@ -1984,7 +1984,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		if patt, ok := v.(Pattern); ok {
 			return patt, nil
 		}
-		return NewExactValuePattern(v), nil
+		return NewExactValuePattern(v.(Serializable)), nil
 	case *parse.LazyExpression:
 		return AstNode{
 			Node:  n.Expression,
@@ -2640,8 +2640,8 @@ func TreeWalkCallFunc(call TreeWalkCall) (Value, error) {
 	nonVariadicArgCount := 0
 	hasSpreadArg := false
 
-	if l, ok := arguments.(*List); ok {
-		for _, e := range l.GetOrBuildElements(state.Global.Ctx) {
+	if l, ok := arguments.([]Value); ok {
+		for _, e := range l {
 			args = append(args, e)
 		}
 	} else {
@@ -2664,7 +2664,7 @@ func TreeWalkCallFunc(call TreeWalkCall) (Value, error) {
 						if err != nil {
 							return nil, err
 						}
-						e = shared
+						e = shared.(Serializable)
 					}
 					args = append(args, e)
 				}
@@ -2790,7 +2790,7 @@ func TreeWalkCallFunc(call TreeWalkCall) (Value, error) {
 			variadicArgs = append(variadicArgs, e.(Value))
 		}
 		name := fn.Parameters[len(fn.Parameters)-1].Var.Name
-		currentScope[name] = NewWrappedValueList(variadicArgs...)
+		currentScope[name] = NewArray(variadicArgs...)
 	}
 
 	bodyResult, err := TreeWalkEval(fn.Body, state)

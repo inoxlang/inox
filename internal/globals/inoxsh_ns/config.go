@@ -30,7 +30,7 @@ func MakeREPLConfiguration(obj *core.Object) (REPLConfiguration, error) {
 
 	//use state.Out instead of stdout ?
 
-	for k, v := range obj.EntryMap() {
+	for k, v := range obj.ValueEntryMap() {
 		switch k {
 		case "builtin-commands":
 			const BUILTIN_COMMAND_LIST_ERR = "invalid configuration: .builtin-commands should be a list of identifiers"
@@ -86,7 +86,7 @@ func MakeREPLConfiguration(obj *core.Object) (REPLConfiguration, error) {
 							"invalid configuration: parts of type List should be three element long: [<desc.>, <color identifier>, <color identifier>]",
 						)
 					}
-					part = list.At(nil, 0)
+					part = list.At(nil, 0).(core.Serializable)
 				}
 
 				switch p := part.(type) {

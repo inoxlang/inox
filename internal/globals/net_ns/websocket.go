@@ -76,7 +76,7 @@ func (conn *WebsocketConnection) sendJSON(ctx *Context, msg Value) error {
 		return err
 	}
 
-	err := conn.conn.WriteJSON(core.ToJSONVal(ctx, msg))
+	err := conn.conn.WriteJSON(core.ToJSONVal(ctx, msg.(core.Serializable)))
 	conn.conn.SetWriteDeadline(time.Now().Add(DEFAULT_WS_WAIT_MESSAGE_TIMEOUT))
 	conn.closeIfNecessary(err)
 

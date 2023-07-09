@@ -80,8 +80,8 @@ func _mkurl(ctx *core.Context, arg core.Value) core.URL {
 	panic(fmt.Errorf("mkurl: a list is expected, not a(n) %T", arg))
 }
 
-func newInsecure() *core.Record {
-	return core.NewRecordFromMap(core.ValMap{
+func newInsecure() *core.Namespace {
+	return core.NewNamespace("insecure", map[string]core.Value{
 		"sha1":              core.ValOf(_sha1),
 		"md5":               core.ValOf(_sha2),
 		"mkpath":            core.ValOf(_mkpath),

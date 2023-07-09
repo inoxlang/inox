@@ -28,7 +28,7 @@ func init() {
 }
 
 type Set struct {
-	elements map[string]core.Value
+	elements map[string]core.Serializable
 	config   SetConfig
 
 	//persistence
@@ -48,7 +48,7 @@ func NewSet(ctx *core.Context, elements core.Iterable, configObject ...*core.Obj
 
 	if len(configObject) > 0 {
 		obj := configObject[0]
-		obj.ForEachEntry(func(k string, v core.Value) error {
+		obj.ForEachEntry(func(k string, v core.Serializable) error {
 			switch k {
 			case coll_symbolic.SET_CONFIG_ELEMENT_PATTERN_PROP_KEY:
 				pattern, ok := v.(core.Pattern)
@@ -174,7 +174,7 @@ func (c SetConfig) Equal(ctx *core.Context, otherConfig SetConfig, alreadyCompar
 
 func NewSetWithConfig(ctx *core.Context, elements core.Iterable, config SetConfig) *Set {
 	set := &Set{
-		elements: make(map[string]core.Value),
+		elements: make(map[string]core.Serializable),
 		config:   config,
 	}
 
@@ -182,7 +182,7 @@ func NewSetWithConfig(ctx *core.Context, elements core.Iterable, config SetConfi
 		it := elements.Iterator(ctx, core.IteratorConfiguration{})
 		for it.Next(ctx) {
 			e := it.Value(ctx)
-			set.Add(ctx, e)
+			set.Add(ctx, e.(core.Serializable))
 		}
 	}
 
@@ -200,7 +200,7 @@ func (set *Set) SetURLOnce(ctx *core.Context, url core.URL) error {
 	return core.ErrValueDoesNotAcceptURL
 }
 
-func (set *Set) Has(ctx *core.Context, elem core.Value) core.Bool {
+func (set *Set) Has(ctx *core.Context, elem core.Serializable) core.Bool {
 	if set.config.Element != nil && !set.config.Element.Test(ctx, elem) {
 		panic(ErrValueDoesMatchElementPattern)
 	}
@@ -210,7 +210,7 @@ func (set *Set) Has(ctx *core.Context, elem core.Value) core.Bool {
 	return core.Bool(ok)
 }
 
-func (set *Set) Add(ctx *core.Context, elem core.Value) {
+func (set *Set) Add(ctx *core.Context, elem core.Serializable) {
 	set.addNoPersist(ctx, elem)
 	//TODO: fully support transaction (in-memory changes)
 
@@ -219,7 +219,7 @@ func (set *Set) Add(ctx *core.Context, elem core.Value) {
 	}
 }
 
-func (set *Set) addNoPersist(ctx *core.Context, elem core.Value) {
+func (set *Set) addNoPersist(ctx *core.Context, elem core.Serializable) {
 	if set.config.Element != nil && !set.config.Element.Test(ctx, elem) {
 		panic(ErrValueDoesMatchElementPattern)
 	}
@@ -253,7 +253,7 @@ func (set *Set) addNoPersist(ctx *core.Context, elem core.Value) {
 	set.elements[key] = elem
 }
 
-func (set *Set) Remove(ctx *core.Context, elem core.Value) {
+func (set *Set) Remove(ctx *core.Context, elem core.Serializable) {
 	key := getUniqueKey(ctx, elem, set.config.Uniqueness)
 	delete(set.elements, key)
 

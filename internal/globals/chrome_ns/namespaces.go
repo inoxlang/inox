@@ -30,8 +30,8 @@ func init() {
 	})
 }
 
-func NewChromeNamespace() *core.Record {
-	return core.NewRecordFromMap(core.ValMap{
+func NewChromeNamespace() *core.Namespace {
+	return core.NewNamespace("chrome", map[string]core.Value{
 		"Handle": core.ValOf(NewHandle),
 	})
 }

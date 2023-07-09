@@ -142,7 +142,7 @@ func (c *HttpClient) GetHostCookies(h core.Host) []*http.Cookie {
 }
 
 func (c *HttpClient) GetHostCookieObjects(ctx *core.Context, h core.Host) *core.List {
-	var objects []core.Value
+	var objects []core.Serializable
 	for _, cookie := range c.GetHostCookies(h) {
 		objects = append(objects, createObjectFromCookie(ctx, *cookie))
 	}

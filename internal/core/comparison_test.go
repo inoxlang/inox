@@ -75,35 +75,35 @@ func TestCompareDictionaries(t *testing.T) {
 	})
 
 	t.Run("two equal dictionaries", func(t *testing.T) {
-		d1 := NewDictionary(map[string]Value{"\"a\"": Int(1)})
-		d2 := NewDictionary(map[string]Value{"\"a\"": Int(1)})
+		d1 := NewDictionary(map[string]Serializable{"\"a\"": Int(1)})
+		d2 := NewDictionary(map[string]Serializable{"\"a\"": Int(1)})
 
 		assert.True(t, d1.Equal(ctx, d2, map[uintptr]uintptr{}, 0))
 		assert.True(t, d2.Equal(ctx, d1, map[uintptr]uintptr{}, 0))
 	})
 
-	t.Run("two different dictionaries : same keys but different values", func(t *testing.T) {
-		d1 := NewDictionary(map[string]Value{"\"a\"": Int(0)})
-		d2 := NewDictionary(map[string]Value{"\"a\"": Int(1)})
+	t.Run("two different dictionaries : same keys but different Serializables", func(t *testing.T) {
+		d1 := NewDictionary(map[string]Serializable{"\"a\"": Int(0)})
+		d2 := NewDictionary(map[string]Serializable{"\"a\"": Int(1)})
 
 		assert.False(t, d1.Equal(ctx, d2, map[uintptr]uintptr{}, 0))
 		assert.False(t, d2.Equal(ctx, d1, map[uintptr]uintptr{}, 0))
 	})
 
 	t.Run("two different dictionaries : different keys", func(t *testing.T) {
-		d1 := NewDictionary(map[string]Value{"\"a\"": Int(0)})
-		d2 := NewDictionary(map[string]Value{"\"a\"": Int(1), "\"b\"": Int(2)})
+		d1 := NewDictionary(map[string]Serializable{"\"a\"": Int(0)})
+		d2 := NewDictionary(map[string]Serializable{"\"a\"": Int(1), "\"b\"": Int(2)})
 
 		assert.False(t, d1.Equal(ctx, d2, map[uintptr]uintptr{}, 0))
 		assert.False(t, d2.Equal(ctx, d1, map[uintptr]uintptr{}, 0))
 	})
 
 	t.Run("equal dictionaries with a cycle", func(t *testing.T) {
-		d1 := NewDictionary(map[string]Value{})
+		d1 := NewDictionary(map[string]Serializable{})
 		d1.Entries["\"self\""] = d1
 		d1.Keys["\"self\""] = Str("self")
 
-		d2 := NewDictionary(map[string]Value{})
+		d2 := NewDictionary(map[string]Serializable{})
 		d2.Entries["\"self\""] = d1
 		d2.Keys["\"self\""] = Str("self")
 
@@ -113,11 +113,11 @@ func TestCompareDictionaries(t *testing.T) {
 	})
 
 	t.Run("non-equal dictionaries with a cycle", func(t *testing.T) {
-		d1 := NewDictionary(map[string]Value{"\"a\"": Int(0)})
+		d1 := NewDictionary(map[string]Serializable{"\"a\"": Int(0)})
 		d1.Entries["\"self\""] = d1
 		d1.Keys["\"self\""] = Str("self")
 
-		d2 := NewDictionary(map[string]Value{"\"a\"": Int(1)})
+		d2 := NewDictionary(map[string]Serializable{"\"a\"": Int(1)})
 		d2.Entries["\"self\""] = d1
 		d2.Keys["\"self\""] = Str("self")
 
@@ -131,30 +131,30 @@ func TestCompareValueLists(t *testing.T) {
 	NewGlobalState(ctx)
 
 	t.Run("same list", func(t *testing.T) {
-		s := &ValueList{elements: []Value{Str("a")}}
+		s := &ValueList{elements: []Serializable{Str("a")}}
 
 		assert.True(t, s.Equal(ctx, s, map[uintptr]uintptr{}, 0))
 	})
 
 	t.Run("two equal lists", func(t *testing.T) {
-		s1 := &ValueList{elements: []Value{Str("a")}}
-		s2 := &ValueList{elements: []Value{Str("a")}}
+		s1 := &ValueList{elements: []Serializable{Str("a")}}
+		s2 := &ValueList{elements: []Serializable{Str("a")}}
 
 		assert.True(t, s1.Equal(ctx, s2, map[uintptr]uintptr{}, 0))
 		assert.True(t, s2.Equal(ctx, s1, map[uintptr]uintptr{}, 0))
 	})
 
 	t.Run("two different lists", func(t *testing.T) {
-		s1 := &ValueList{elements: []Value{Str("a")}}
-		s2 := &ValueList{elements: []Value{Str("a"), Str("b")}}
+		s1 := &ValueList{elements: []Serializable{Str("a")}}
+		s2 := &ValueList{elements: []Serializable{Str("a"), Str("b")}}
 
 		assert.False(t, s1.Equal(ctx, s2, map[uintptr]uintptr{}, 0))
 		assert.False(t, s2.Equal(ctx, s1, map[uintptr]uintptr{}, 0))
 	})
 
 	t.Run("equal lists with a cycle", func(t *testing.T) {
-		s1 := &ValueList{elements: []Value{Int(0)}}
-		s2 := &ValueList{elements: []Value{Int(0)}}
+		s1 := &ValueList{elements: []Serializable{Int(0)}}
+		s2 := &ValueList{elements: []Serializable{Int(0)}}
 
 		s1.elements[0] = s1
 		s2.elements[0] = s2
@@ -165,8 +165,8 @@ func TestCompareValueLists(t *testing.T) {
 	})
 
 	t.Run("non-equal lists with a cycle", func(t *testing.T) {
-		s1 := &ValueList{elements: []Value{Int(0), Int(1)}}
-		s2 := &ValueList{elements: []Value{Int(0)}}
+		s1 := &ValueList{elements: []Serializable{Int(0), Int(1)}}
+		s2 := &ValueList{elements: []Serializable{Int(0)}}
 
 		s1.elements[0] = s1
 		s2.elements[0] = s2

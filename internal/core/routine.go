@@ -228,7 +228,7 @@ func (r *Routine) Prop(ctx *Context, name string) Value {
 	case "steps":
 		r.lock.Lock()
 		defer r.lock.Unlock()
-		steps := make([]Value, len(r.executedSteps))
+		steps := make([]Serializable, len(r.executedSteps))
 
 		for i := 0; i < len(r.executedSteps); i++ {
 			steps[i] = r.executedSteps[i]
@@ -385,18 +385,18 @@ func (group *RoutineGroup) Add(newRt *Routine) {
 }
 
 // WaitAllResults waits for the results of all routines in the group and returns a list of results.
-func (group *RoutineGroup) WaitAllResults(ctx *Context) (*List, error) {
-	results := &ValueList{}
+func (group *RoutineGroup) WaitAllResults(ctx *Context) (*Array, error) {
+	results := Array{}
 
 	for _, rt := range group.routines {
 		rtRes, rtErr := rt.WaitResult(ctx)
 		if rtErr != nil {
 			return nil, rtErr
 		}
-		results.elements = append(results.elements, rtRes)
+		results = append(results, rtRes)
 	}
 
-	return WrapUnderylingList(results), nil
+	return &results, nil
 }
 
 // CancelAll stops the execution of all routines in the group.

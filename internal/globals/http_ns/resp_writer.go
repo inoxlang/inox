@@ -223,7 +223,7 @@ func (rw *HttpResponseWriter) WriteCSS(ctx *core.Context, v core.Value) (core.In
 	return core.Int(n), err
 }
 
-func (rw *HttpResponseWriter) WriteJSON(ctx *core.Context, v core.Value) (core.Int, error) {
+func (rw *HttpResponseWriter) WriteJSON(ctx *core.Context, v core.Serializable) (core.Int, error) {
 	rw.assertIsNotFinished()
 
 	if !rw.acceptHeader.Match(core.JSON_CTYPE) {
@@ -258,20 +258,16 @@ func (rw *HttpResponseWriter) WriteJSON(ctx *core.Context, v core.Value) (core.I
 	return core.Int(n), err
 }
 
-func (rw *HttpResponseWriter) WriteIXON(ctx *core.Context, v core.Value) error {
+func (rw *HttpResponseWriter) WriteIXON(ctx *core.Context, v core.Serializable) error {
 	rw.assertIsNotFinished()
 
 	if !rw.acceptHeader.Match(core.IXON_CTYPE) {
 		return fmt.Errorf("cannot write IXON: %w", ErrNotAcceptedContentType)
 	}
 
-	if !v.HasRepresentation(map[uintptr]int{}, &core.ReprConfig{}) {
-		return core.ErrNoRepresentation
-	}
-
 	rw.rw.Header().Set("Content-Type", core.IXON_CTYPE)
 
-	err := v.WriteRepresentation(ctx, rw.rw, map[uintptr]int{}, &core.ReprConfig{})
+	err := v.WriteRepresentation(ctx, rw.rw, &core.ReprConfig{})
 	return err
 }
 

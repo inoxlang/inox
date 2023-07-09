@@ -34,24 +34,24 @@ func init() {
 	})
 }
 
-func NewTcpNamespace() *core.Record {
-	return core.NewRecordFromMap(core.ValMap{
+func NewTcpNamespace() *core.Namespace {
+	return core.NewNamespace("tcp", map[string]core.Value{
 		"connect": core.ValOf(tcpConnect),
 	})
 }
 
-func NewDNSnamespace() *core.Record {
+func NewDNSnamespace() *core.Namespace {
 	f := func() (int, int) {
 		return 1, 1
 	}
 	_, _ = f()
-	return core.NewRecordFromMap(core.ValMap{
+	return core.NewNamespace("dns", map[string]core.Value{
 		"resolve": core.ValOf(dnsResolve),
 	})
 }
 
-func NewWebsocketNamespace() *core.Record {
-	return core.NewRecordFromMap(core.ValMap{
+func NewWebsocketNamespace() *core.Namespace {
+	return core.NewNamespace("ws", map[string]core.Value{
 		"connect": core.ValOf(websocketConnect),
 		"Server":  core.ValOf(NewWebsocketServer),
 	})

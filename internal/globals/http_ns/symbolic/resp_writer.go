@@ -91,11 +91,11 @@ func (resp *HttpResponseWriter) WriteHTML(ctx *symbolic.Context, v symbolic.Symb
 	return &symbolic.Int{}, nil
 }
 
-func (resp *HttpResponseWriter) WriteJSON(ctx *symbolic.Context, v symbolic.SymbolicValue) (*symbolic.Int, *symbolic.Error) {
+func (resp *HttpResponseWriter) WriteJSON(ctx *symbolic.Context, v symbolic.Serializable) (*symbolic.Int, *symbolic.Error) {
 	return &symbolic.Int{}, nil
 }
 
-func (resp *HttpResponseWriter) WriteIXON(ctx *symbolic.Context, v symbolic.SymbolicValue) *symbolic.Error {
+func (resp *HttpResponseWriter) WriteIXON(ctx *symbolic.Context, v symbolic.Serializable) *symbolic.Error {
 	return nil
 }
 

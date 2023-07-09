@@ -30,7 +30,7 @@ type DatabaseIL struct {
 	inner            Database
 	initialSchema    *ObjectPattern
 	propertyNames    []string
-	topLevelEntities map[string]Value
+	topLevelEntities map[string]Serializable
 
 	NoReprMixin
 	NotClonableMixin
@@ -56,7 +56,7 @@ type Database interface {
 	//The caller should always pass a schema whose ALL entry patterns have a loading function.
 	UpdateSchema(ctx *Context, schema *ObjectPattern) error
 
-	TopLevelEntities(ctx *Context) map[string]Value
+	TopLevelEntities(ctx *Context) map[string]Serializable
 	Close(ctx *Context) error
 }
 
@@ -201,7 +201,7 @@ func (db *FailedToOpenDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern
 	return ErrNotImplemented
 }
 
-func (db *FailedToOpenDatabase) TopLevelEntities(_ *Context) map[string]Value {
+func (db *FailedToOpenDatabase) TopLevelEntities(_ *Context) map[string]Serializable {
 	return nil
 }
 

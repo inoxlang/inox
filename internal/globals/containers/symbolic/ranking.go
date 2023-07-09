@@ -43,11 +43,11 @@ func (*Ranking) PropertyNames() []string {
 	return []string{"add", "remove"}
 }
 
-func (f *Ranking) Add(ctx *symbolic.Context, v symbolic.SymbolicValue, score *symbolic.Float) {
+func (f *Ranking) Add(ctx *symbolic.Context, v symbolic.Serializable, score *symbolic.Float) {
 
 }
 
-func (f *Ranking) Remove(ctx *symbolic.Context, v symbolic.SymbolicValue) {
+func (f *Ranking) Remove(ctx *symbolic.Context, v symbolic.Serializable) {
 
 }
 
@@ -61,7 +61,6 @@ func (a *Ranking) IsWidenable() bool {
 
 func (r *Ranking) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%ranking")))
-	return
 }
 
 func (r *Ranking) IteratorElementKey() symbolic.SymbolicValue {

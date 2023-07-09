@@ -696,7 +696,7 @@ func TestSystemGraphOnMutation(t *testing.T) {
 				Version: 1,
 				Kind:    SG_AddNode,
 				Depth:   ShallowWatching,
-			}, Str(".inner"), Str("Object"), Int(childPtr), Int(parentPtr), NewTuple([]Value{
+			}, Str(".inner"), Str("Object"), Int(childPtr), Int(parentPtr), NewTuple([]Serializable{
 				Str(DEFAULT_EDGE_TO_CHILD_TEXT), Int(EdgeChild), //first edge
 				Str(DEFAULT_EDGE_TO_WATCHED_CHILD_TEXT), Int(EdgeWatched), //second edge
 			}))

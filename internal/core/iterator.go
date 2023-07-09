@@ -559,11 +559,16 @@ func (obj *Object) Iterator(ctx *Context, config IteratorConfiguration) Iterator
 	obj.Lock(closestState)
 	defer obj.Unlock(closestState)
 
-	return NewIpropsIterator(ctx, utils.CopySlice(obj.keys), utils.CopySlice(obj.values), config)
+	values := make([]Value, len(obj.values))
+	for i, e := range obj.values {
+		values[i] = e
+	}
+
+	return NewIpropsIterator(ctx, utils.CopySlice(obj.keys), values, config)
 }
 
 func (rec *Record) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
-	return NewIpropsIterator(ctx, rec.keys, rec.values, config)
+	return NewIpropsIterator(ctx, rec.keys, ToValueList(rec.values), config)
 }
 
 type IntRangeIterator struct {
@@ -1125,11 +1130,11 @@ func (patt ObjectPattern) Iterator(ctx *Context, config IteratorConfiguration) I
 		value: func(_ *PatternIterator, ctx *Context) Value {
 			obj := &Object{
 				keys:   make([]string, len(iterators)),
-				values: make([]Value, len(iterators)),
+				values: make([]Serializable, len(iterators)),
 			}
 			for j, it := range iterators {
 				obj.keys[j] = keys[j]
-				obj.values[j] = it.Value(ctx)
+				obj.values[j] = it.Value(ctx).(Serializable)
 			}
 			return obj
 		},
@@ -1211,11 +1216,11 @@ func (patt *RecordPattern) Iterator(ctx *Context, config IteratorConfiguration) 
 		value: func(_ *PatternIterator, ctx *Context) Value {
 			obj := &Record{
 				keys:   make([]string, len(iterators)),
-				values: make([]Value, len(iterators)),
+				values: make([]Serializable, len(iterators)),
 			}
 			for j, it := range iterators {
 				obj.keys[j] = keys[j]
-				obj.values[j] = it.Value(ctx)
+				obj.values[j] = it.Value(ctx).(Serializable)
 			}
 			return obj
 		},
@@ -1306,7 +1311,7 @@ func (patt ListPattern) Iterator(ctx *Context, config IteratorConfiguration) Ite
 		list := &List{underylingList: valueList}
 
 		for _, it := range iterators {
-			valueList.append(ctx, it.Value(ctx))
+			valueList.append(ctx, it.Value(ctx).(Serializable))
 		}
 
 		return list
@@ -1318,7 +1323,7 @@ func (patt TuplePattern) Iterator(ctx *Context, config IteratorConfiguration) It
 		tuple := &Tuple{}
 
 		for _, it := range iterators {
-			tuple.elements = append(tuple.elements, it.Value(ctx))
+			tuple.elements = append(tuple.elements, it.Value(ctx).(Serializable))
 		}
 
 		return tuple

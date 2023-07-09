@@ -98,19 +98,19 @@ func (*Set) PropertyNames() []string {
 	return SET_PROPNAMES
 }
 
-func (s *Set) Has(ctx *symbolic.Context, v symbolic.SymbolicValue) {
+func (s *Set) Has(ctx *symbolic.Context, v symbolic.Serializable) {
 	ctx.SetSymbolicGoFunctionParameters(&[]symbolic.SymbolicValue{
 		s.elementPattern.SymbolicValue(),
 	}, SET_ADD_METHOD_PARAM_NAMES)
 }
 
-func (s *Set) Add(ctx *symbolic.Context, v symbolic.SymbolicValue) {
+func (s *Set) Add(ctx *symbolic.Context, v symbolic.Serializable) {
 	ctx.SetSymbolicGoFunctionParameters(&[]symbolic.SymbolicValue{
 		s.elementPattern.SymbolicValue(),
 	}, SET_ADD_METHOD_PARAM_NAMES)
 }
 
-func (s *Set) Remove(ctx *symbolic.Context, v symbolic.SymbolicValue) {
+func (s *Set) Remove(ctx *symbolic.Context, v symbolic.Serializable) {
 	ctx.SetSymbolicGoFunctionParameters(&[]symbolic.SymbolicValue{
 		s.elementPattern.SymbolicValue(),
 	}, SET_ADD_METHOD_PARAM_NAMES)

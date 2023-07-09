@@ -127,7 +127,7 @@ type SymbolicData struct {
 
 func (d *SymbolicData) ErrorTuple() *Tuple {
 	if d.errorsPropSet.CompareAndSwap(false, true) {
-		errors := make([]Value, len(d.SymbolicData.Errors()))
+		errors := make([]Serializable, len(d.SymbolicData.Errors()))
 		for i, err := range d.SymbolicData.Errors() {
 			data := createRecordFromSourcePositionStack(err.Location)
 			errors[i] = NewError(err, data)
@@ -244,6 +244,10 @@ func (p HostPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbo
 
 func (o Option) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	return symbolic.NewOption(o.Name), nil
+}
+
+func (*Array) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	return symbolic.ANY_ARRAY, nil
 }
 
 func (l *List) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
@@ -1201,4 +1205,18 @@ func (api *ApiIL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic
 	}
 
 	return symbolic.NewApiIL(pattern.(*symbolic.ObjectPattern)), nil
+}
+
+func (ns *Namespace) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	entries := map[string]symbolic.SymbolicValue{}
+
+	for key, val := range ns.entries {
+		symbolicVal, err := val.ToSymbolicValue(ctx, encountered)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert namespace entry .%s to symbolic: %w", key, err)
+		}
+		entries[key] = symbolicVal
+	}
+
+	return symbolic.NewNamespace(entries), nil
 }

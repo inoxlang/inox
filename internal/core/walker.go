@@ -76,7 +76,7 @@ func GetDirTreeData(fls afs.Filesystem, walkedDirPath Path) *UData {
 	var dirStack []*UDataHiearchyEntry
 
 	makeTreeDataItem := func(path, pathRelToOParent Path) *Record {
-		return NewRecordFromKeyValLists(FS_TREE_DATA_ITEM_PROPNAMES, []Value{path, pathRelToOParent})
+		return NewRecordFromKeyValLists(FS_TREE_DATA_ITEM_PROPNAMES, []Serializable{path, pathRelToOParent})
 	}
 
 	WalkDir(fls, walkedDirPath, func(path Path, d fs.DirEntry, err error) error {

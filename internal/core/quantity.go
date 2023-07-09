@@ -39,19 +39,19 @@ func (r SimpleRate) QuantityPerSecond() Value {
 type QuantityRange struct {
 	unknownStart bool
 	inclusiveEnd bool
-	Start        Value
-	End          Value
+	Start        Serializable
+	End          Serializable
 }
 
 // evalQuantity computes a quantity value (Duration, ByteCount, ...).
-func evalQuantity(values []float64, units []string) (Value, error) {
+func evalQuantity(values []float64, units []string) (Serializable, error) {
 
 	if len(values) != len(units) {
 		return nil, ErrInvalidQuantity
 	}
 
 	var totalResultF float64
-	var totalResult Value
+	var totalResult Serializable
 
 	for partIndex := 0; partIndex < len(units); partIndex++ {
 
@@ -152,7 +152,7 @@ func evalQuantity(values []float64, units []string) (Value, error) {
 	return totalResult, nil
 }
 
-func evalRate(q Value, unitName string) (Value, error) {
+func evalRate(q Value, unitName string) (Serializable, error) {
 	switch qv := q.(type) {
 	case ByteCount:
 		if unitName != "s" {

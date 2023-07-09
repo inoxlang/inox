@@ -74,7 +74,7 @@ func Map(ctx *Context, iterable Iterable, mapper Value) *List {
 			if err != nil {
 				panic(err)
 			}
-			result.elements = append(result.elements, res)
+			result.elements = append(result.elements, res.(Serializable))
 		}
 	case KeyList:
 		it := iterable.Iterator(ctx, IteratorConfiguration{})
@@ -92,7 +92,7 @@ func Map(ctx *Context, iterable Iterable, mapper Value) *List {
 		it := iterable.Iterator(ctx, IteratorConfiguration{})
 		for it.Next(ctx) {
 			element := it.Value(ctx).(IProps)
-			result.elements = append(result.elements, element.Prop(ctx, string(m)))
+			result.elements = append(result.elements, element.Prop(ctx, string(m)).(Serializable))
 		}
 	case *GoFunction:
 		state := ctx.GetClosestState()
@@ -104,7 +104,7 @@ func Map(ctx *Context, iterable Iterable, mapper Value) *List {
 			if err != nil {
 				panic(err)
 			}
-			result.elements = append(result.elements, callResult)
+			result.elements = append(result.elements, callResult.(Serializable))
 		}
 	case *InoxFunction:
 		state := ctx.GetClosestState()
@@ -124,7 +124,7 @@ func Map(ctx *Context, iterable Iterable, mapper Value) *List {
 			if ok, err := IsResultWithError(res); ok {
 				panic(err)
 			}
-			result.elements = append(result.elements, res)
+			result.elements = append(result.elements, res.(Serializable))
 		}
 	case AstNode:
 		state := ctx.GetClosestState()
@@ -141,13 +141,13 @@ func Map(ctx *Context, iterable Iterable, mapper Value) *List {
 			if err != nil {
 				panic(err)
 			}
-			result.elements = append(result.elements, res)
+			result.elements = append(result.elements, res.(Serializable))
 		}
 	case *Mapping:
 		it := iterable.Iterator(ctx, IteratorConfiguration{})
 		for it.Next(ctx) {
-			element := it.Value(ctx)
-			result.elements = append(result.elements, m.Compute(ctx, element))
+			element := it.Value(ctx).(Serializable)
+			result.elements = append(result.elements, m.Compute(ctx, element).(Serializable))
 		}
 	default:
 		panic(fmt.Errorf("invalid mapper argument : type is %T", m))

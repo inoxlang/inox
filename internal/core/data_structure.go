@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"sort"
@@ -14,6 +15,8 @@ import (
 
 var (
 	_ = []underylingList{&ValueList{}, &IntList{}}
+
+	_ Sequence = (*Array)(nil)
 )
 
 // Object implements Value.
@@ -40,7 +43,7 @@ type Object struct {
 	jobs *ValueLifetimeJobs
 
 	keys   []string
-	values []Value
+	values []Serializable
 
 	sysgraph SystemGraphPointer
 }
@@ -62,16 +65,16 @@ func NewObjectFromMap(valMap ValMap, ctx *Context) *Object {
 func newUnitializedObjectWithPropCount(count int) *Object {
 	return &Object{
 		keys:   make([]string, count),
-		values: make([]Value, count),
+		values: make([]Serializable, count),
 	}
 }
 
-type ValMap map[string]Value
+type ValMap map[string]Serializable
 
 // helper function to create an object, lifetime jobs and system parts are NOT initialized
 func objFrom(entryMap ValMap) *Object {
 	keys := make([]string, len(entryMap))
-	values := make([]Value, len(entryMap))
+	values := make([]Serializable, len(entryMap))
 
 	maxKeyIndex := -1
 
@@ -91,7 +94,7 @@ func objFrom(entryMap ValMap) *Object {
 	return obj
 }
 
-func objFromLists(keys []string, values []Value) *Object {
+func objFromLists(keys []string, values []Serializable) *Object {
 
 	//handle index keys ? or ignore
 
@@ -293,6 +296,12 @@ func (obj *Object) Prop(ctx *Context, name string) Value {
 }
 
 func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
+
+	serializableVal, ok := value.(Serializable)
+	if !ok {
+		fmt.Errorf("value is not serializable")
+	}
+
 	closestState := ctx.GetClosestState()
 
 	unlock := true
@@ -348,7 +357,7 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 				}
 			}
 
-			obj.values[i] = value
+			obj.values[i] = serializableVal
 
 			// check constraints
 
@@ -361,7 +370,7 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 
 			obj.sortProps()
 
-			mutation := NewUpdatePropMutation(ctx, name, value, ShallowWatching, Path("/"+name))
+			mutation := NewUpdatePropMutation(ctx, name, serializableVal, ShallowWatching, Path("/"+name))
 
 			obj.sysgraph.AddEvent(ctx, "prop updated: "+name, obj)
 
@@ -381,7 +390,7 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 
 	// add new property
 	obj.keys = append(obj.keys, name)
-	obj.values = append(obj.values, value)
+	obj.values = append(obj.values, serializableVal)
 
 	//check constraint
 	if constraint != nil && !constraint.(*ObjectPattern).Test(ctx, obj) {
@@ -403,7 +412,7 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 
 	//inform watchers & microtasks about the update
 
-	mutation := NewAddPropMutation(ctx, name, value, ShallowWatching, Path("/"+name))
+	mutation := NewAddPropMutation(ctx, name, serializableVal, ShallowWatching, Path("/"+name))
 	obj.sysgraph.AddEvent(ctx, "new prop: "+name, obj)
 
 	obj.watchers.InformAboutAsync(ctx, mutation, mutation.Depth, true)
@@ -449,7 +458,21 @@ func (obj *Object) HasPropValue(ctx *Context, value Value) bool {
 	return false
 }
 
-func (obj *Object) EntryMap() map[string]Value {
+func (obj *Object) EntryMap() map[string]Serializable {
+	if obj == nil {
+		return nil
+	}
+	obj.Lock(nil)
+	defer obj.Unlock(nil)
+
+	map_ := map[string]Serializable{}
+	for i, v := range obj.values {
+		map_[obj.keys[i]] = v
+	}
+	return map_
+}
+
+func (obj *Object) ValueEntryMap() map[string]Value {
 	if obj == nil {
 		return nil
 	}
@@ -464,12 +487,12 @@ func (obj *Object) EntryMap() map[string]Value {
 }
 
 // Indexed returns the list of indexed properties
-func (obj *Object) Indexed() []Value {
+func (obj *Object) Indexed() []Serializable {
 	if obj.IsShared() {
 		panic(errors.New("Object.Indexed() can only be called on objects that are not shared"))
 	}
 
-	values := make([]Value, obj.implicitPropCount)
+	values := make([]Serializable, obj.implicitPropCount)
 
 outer:
 	for i := 0; i < obj.implicitPropCount; i++ {
@@ -486,7 +509,7 @@ outer:
 	return values
 }
 
-func (obj *Object) ForEachEntry(fn func(k string, v Value) error) error {
+func (obj *Object) ForEachEntry(fn func(k string, v Serializable) error) error {
 	if obj.IsShared() {
 		panic(errors.New("Object.ForEachEntry() can only be called on objects that are not shared"))
 	}
@@ -535,7 +558,7 @@ type Record struct {
 	visibilityId      VisibilityId
 	url               URL //can be empty
 	keys              []string
-	values            []Value
+	values            []Serializable
 }
 
 func NewEmptyRecord() *Record {
@@ -544,7 +567,7 @@ func NewEmptyRecord() *Record {
 
 func NewRecordFromMap(entryMap ValMap) *Record {
 	keys := make([]string, len(entryMap))
-	values := make([]Value, len(entryMap))
+	values := make([]Serializable, len(entryMap))
 
 	maxKeyIndex := -1
 
@@ -566,7 +589,7 @@ func NewRecordFromMap(entryMap ValMap) *Record {
 	return rec
 }
 
-func NewRecordFromKeyValLists(keys []string, values []Value) *Record {
+func NewRecordFromKeyValLists(keys []string, values []Serializable) *Record {
 	maxKeyIndex := -1
 	i := 0
 	for ind, k := range keys {
@@ -640,11 +663,11 @@ func (rec *Record) Keys() []string {
 	return rec.keys
 }
 
-func (rec *Record) EntryMap() map[string]Value {
+func (rec *Record) EntryMap() map[string]Serializable {
 	if rec == nil {
 		return nil
 	}
-	map_ := map[string]Value{}
+	map_ := map[string]Serializable{}
 	for i, v := range rec.values {
 		map_[rec.keys[i]] = v
 	}
@@ -653,11 +676,13 @@ func (rec *Record) EntryMap() map[string]Value {
 
 // A Dictionnary maps representable values (keys) to any values, Dictionar implements Value.
 type Dictionary struct {
-	Entries map[string]Value
-	Keys    map[string]Value
+	Entries map[string]Serializable
+	Keys    map[string]Serializable
+
+	NoReprMixin
 }
 
-func convertKeyReprToValue(repr string) Value {
+func convertKeyReprToValue(repr string) Serializable {
 	keyNode, ok := parse.ParseExpression(repr)
 	if !ok {
 		panic(fmt.Errorf("invalid key representation: %s", repr))
@@ -667,13 +692,13 @@ func convertKeyReprToValue(repr string) Value {
 	if err != nil {
 		panic(err)
 	}
-	return key
+	return key.(Serializable)
 }
 
 func NewDictionary(entries ValMap) *Dictionary {
 	dict := &Dictionary{
-		Entries: map[string]Value{},
-		Keys:    map[string]Value{},
+		Entries: map[string]Serializable{},
+		Keys:    map[string]Serializable{},
 	}
 	for keyRepresentation, v := range entries {
 		dict.Entries[keyRepresentation] = v
@@ -683,12 +708,45 @@ func NewDictionary(entries ValMap) *Dictionary {
 	return dict
 }
 
-func (d *Dictionary) Value(ctx *Context, key Value) (Value, bool) {
-	if !key.HasRepresentation(map[uintptr]int{}, nil) {
-		return nil, false
-	}
+func (d *Dictionary) Value(ctx *Context, key Serializable) (Value, bool) {
 	v, ok := d.Entries[string(GetRepresentation(key, ctx))]
 	return v, ok
+}
+
+type Array []Value
+
+func NewArray(elements ...Value) *Array {
+	array := Array(elements)
+	return &array
+}
+
+func (a *Array) At(ctx *Context, i int) Value {
+	return (*a)[i]
+}
+
+// IsMutable implements Sequence.
+func (*Array) IsMutable() bool {
+	panic("unimplemented")
+}
+
+// Iterator implements Sequence.
+func (*Array) Iterator(*Context, IteratorConfiguration) Iterator {
+	panic("unimplemented")
+}
+
+// Len implements Sequence.
+func (*Array) Len() int {
+	panic("unimplemented")
+}
+
+// PrettyPrint implements Sequence.
+func (*Array) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	panic("unimplemented")
+}
+
+// slice implements Sequence.
+func (*Array) slice(start int, end int) Sequence {
+	panic("unimplemented")
 }
 
 type KeyList []string
@@ -723,12 +781,12 @@ func WrapUnderylingList(l underylingList) *List {
 }
 
 // the caller can modify the result.
-func (list *List) GetOrBuildElements(ctx *Context) []Value {
+func (list *List) GetOrBuildElements(ctx *Context) []Serializable {
 	entries := IterateAll(ctx, list.Iterator(ctx, IteratorConfiguration{}))
 
-	values := make([]Value, len(entries))
+	values := make([]Serializable, len(entries))
 	for i, e := range entries {
-		values[i] = e[1]
+		values[i] = e[1].(Serializable)
 	}
 	return values
 }
@@ -736,7 +794,7 @@ func (list *List) GetOrBuildElements(ctx *Context) []Value {
 func (l *List) set(ctx *Context, i int, v Value) {
 	l.underylingList.set(ctx, i, v)
 
-	mutation := NewSetElemAtIndexMutation(ctx, i, v, ShallowWatching, Path("/"+strconv.Itoa(i)))
+	mutation := NewSetElemAtIndexMutation(ctx, i, v.(Serializable), ShallowWatching, Path("/"+strconv.Itoa(i)))
 
 	//inform watchers & microtasks about the update
 	l.watchers.InformAboutAsync(ctx, mutation, mutation.Depth, true)
@@ -746,7 +804,7 @@ func (l *List) set(ctx *Context, i int, v Value) {
 func (l *List) insertElement(ctx *Context, v Value, i Int) {
 	l.underylingList.insertElement(ctx, v, i)
 
-	mutation := NewInsertElemAtIndexMutation(ctx, int(i), v, ShallowWatching, Path("/"+strconv.Itoa(int(i))))
+	mutation := NewInsertElemAtIndexMutation(ctx, int(i), v.(Serializable), ShallowWatching, Path("/"+strconv.Itoa(int(i))))
 
 	//inform watchers & microtasks about the update
 	l.watchers.InformAboutAsync(ctx, mutation, mutation.Depth, true)
@@ -755,11 +813,11 @@ func (l *List) insertElement(ctx *Context, v Value, i Int) {
 
 // Tuple is the immutable equivalent of a List, Tuple implements Value.
 type Tuple struct {
-	elements     []Value
+	elements     []Serializable
 	constraintId ConstraintId
 }
 
-func NewTuple(elements []Value) *Tuple {
+func NewTuple(elements []Serializable) *Tuple {
 	for i, e := range elements {
 		if e.IsMutable() {
 			panic(fmt.Errorf("value at index [%d] is mutable", i))
@@ -768,7 +826,7 @@ func NewTuple(elements []Value) *Tuple {
 	return &Tuple{elements: elements}
 }
 
-func NewTupleVariadic(elements ...Value) *Tuple {
+func NewTupleVariadic(elements ...Serializable) *Tuple {
 	for i, e := range elements {
 		if e.IsMutable() {
 			panic(fmt.Errorf("value at index [%d] is mutable", i))
@@ -778,7 +836,7 @@ func NewTupleVariadic(elements ...Value) *Tuple {
 }
 
 // the caller can modify the result
-func (tuple *Tuple) GetOrBuildElements(ctx *Context) []Value {
+func (tuple *Tuple) GetOrBuildElements(ctx *Context) []Serializable {
 	return utils.CopySlice(tuple.elements)
 }
 
@@ -808,7 +866,7 @@ func (tuple *Tuple) At(ctx *Context, i int) Value {
 }
 
 func (tuple *Tuple) Concat(other *Tuple) *Tuple {
-	elements := make([]Value, len(tuple.elements)+len(other.elements))
+	elements := make([]Serializable, len(tuple.elements)+len(other.elements))
 
 	copy(elements, tuple.elements)
 	copy(elements[len(tuple.elements):], other.elements)
@@ -819,7 +877,7 @@ func (tuple *Tuple) Concat(other *Tuple) *Tuple {
 // UData is used to represent any hiearchical data, UData implements Value and is immutable.
 type UData struct {
 	NoReprMixin
-	Root            Value
+	Root            Serializable
 	HiearchyEntries []UDataHiearchyEntry
 }
 
@@ -827,7 +885,7 @@ type UData struct {
 // UDataHiearchyEntry implements Value but is never accessible by Inox code.
 type UDataHiearchyEntry struct {
 	NoReprMixin
-	Value    Value
+	Value    Serializable
 	Children []UDataHiearchyEntry
 }
 
@@ -879,13 +937,13 @@ func (e UDataHiearchyEntry) walkEntries(ancestorChain *[]UDataHiearchyEntry, ind
 	return nil
 }
 
-func sortProps(keys []string, values []Value) ([]string, []Value) {
+func sortProps[V Value](keys []string, values []V) ([]string, []V) {
 	if len(keys) == 0 {
 		return nil, nil
 	}
 	newKeys := utils.CopySlice(keys)
 	sort.Strings(newKeys)
-	newValues := make([]Value, len(values))
+	newValues := make([]V, len(values))
 
 	for i := 0; i < len(keys); i++ {
 		newIndex := sort.SearchStrings(newKeys, keys[i])

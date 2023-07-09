@@ -17,7 +17,7 @@ var (
 func NewRanking(ctx *core.Context, flatEntries *core.List) *Ranking {
 
 	ranking := &Ranking{
-		map_: map[core.FastId]core.Value{},
+		map_: map[core.FastId]core.Serializable{},
 	}
 
 	if flatEntries.Len()%2 != 0 {
@@ -32,7 +32,7 @@ func NewRanking(ctx *core.Context, flatEntries *core.List) *Ranking {
 			panic(ErrRankingEntryListShouldHaveFloatScoresAtOddIndexes)
 		}
 
-		ranking.Add(ctx, value, valueScore)
+		ranking.Add(ctx, value.(core.Serializable), valueScore)
 	}
 
 	return ranking
@@ -40,11 +40,11 @@ func NewRanking(ctx *core.Context, flatEntries *core.List) *Ranking {
 
 type Ranking struct {
 	core.NoReprMixin
-	map_      map[core.FastId]core.Value
+	map_      map[core.FastId]core.Serializable
 	rankItems []RankItem
 }
 
-func (r *Ranking) Add(ctx *core.Context, value core.Value, score core.Float) {
+func (r *Ranking) Add(ctx *core.Context, value core.Serializable, score core.Float) {
 	id, ok := core.FastIdOf(ctx, value)
 	if !ok {
 		panic(ErrRankingCanOnlyContainValuesWithFastId)
@@ -95,7 +95,7 @@ func (r *Ranking) Add(ctx *core.Context, value core.Value, score core.Float) {
 	}
 }
 
-func (r *Ranking) Remove(ctx *core.Context, removedVal core.Value) {
+func (r *Ranking) Remove(ctx *core.Context, removedVal core.Serializable) {
 	panic(errors.New("removal not implemented yet"))
 }
 
@@ -144,7 +144,7 @@ func (r *Rank) Prop(ctx *core.Context, name string) core.Value {
 	switch name {
 	case "values":
 		valueIds := r.ranking.rankItems[r.rank].valueIds
-		values := make([]core.Value, len(valueIds))
+		values := make([]core.Serializable, len(valueIds))
 		for i, valueId := range valueIds {
 			values[i] = r.ranking.map_[valueId]
 		}

@@ -10,8 +10,8 @@ import (
 
 var ErrUnsupportedYamlNodeType = errors.New("unsupported YAML node type")
 
-func ConvertYamlParsedFileToInoxVal(ctx *Context, f *yaml.File, immutable bool) Value {
-	values := make([]Value, len(f.Docs))
+func ConvertYamlParsedFileToInoxVal(ctx *Context, f *yaml.File, immutable bool) Serializable {
+	values := make([]Serializable, len(f.Docs))
 	for i, doc := range f.Docs {
 		values[i] = ConvertYamlNodeToInoxVal(ctx, doc, immutable)
 	}
@@ -22,7 +22,7 @@ func ConvertYamlParsedFileToInoxVal(ctx *Context, f *yaml.File, immutable bool) 
 	return NewWrappedValueListFrom(values)
 }
 
-func ConvertYamlNodeToInoxVal(ctx *Context, n yaml.Node, immutable bool) Value {
+func ConvertYamlNodeToInoxVal(ctx *Context, n yaml.Node, immutable bool) Serializable {
 	switch n.Type() {
 	case yaml.UnknownNodeType:
 		panic(errors.New("unknown YAML node type"))
@@ -58,7 +58,7 @@ func ConvertYamlNodeToInoxVal(ctx *Context, n yaml.Node, immutable bool) Value {
 	case yaml.MappingType:
 		items := n.(*yaml.MappingNode).Values
 		keys := make([]string, len(items))
-		values := make([]Value, len(items))
+		values := make([]Serializable, len(items))
 
 		for i, item := range items {
 			keys[i] = item.Key.String() //TODO: what if the string is a number ?
@@ -71,7 +71,7 @@ func ConvertYamlNodeToInoxVal(ctx *Context, n yaml.Node, immutable bool) Value {
 		return objFromLists(keys, values)
 	case yaml.SequenceType:
 		items := n.(*yaml.SequenceNode).Values
-		values := make([]Value, len(items))
+		values := make([]Serializable, len(items))
 
 		for i, item := range items {
 			values[i] = ConvertYamlNodeToInoxVal(ctx, item, immutable)
@@ -88,7 +88,7 @@ func ConvertYamlNodeToInoxVal(ctx *Context, n yaml.Node, immutable bool) Value {
 
 		val := ConvertYamlNodeToInoxVal(ctx, node.Value, immutable)
 		keys := []string{node.Key.String()}
-		values := []Value{val}
+		values := []Serializable{val}
 
 		if immutable {
 			return NewRecordFromKeyValLists(keys, values)

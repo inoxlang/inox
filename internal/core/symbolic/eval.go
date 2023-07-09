@@ -40,6 +40,7 @@ var (
 	CTX_PTR_TYPE                    = reflect.TypeOf((*Context)(nil))
 	ERROR_TYPE                      = reflect.TypeOf((*Error)(nil))
 	SYMBOLIC_VALUE_INTERFACE_TYPE   = reflect.TypeOf((*SymbolicValue)(nil)).Elem()
+	SERIALIZABLE_INTERFACE_TYPE     = reflect.TypeOf((*Serializable)(nil)).Elem()
 	ITERABLE_INTERFACE_TYPE         = reflect.TypeOf((*Iterable)(nil)).Elem()
 	INDEXABLE_INTERFACE_TYPE        = reflect.TypeOf((*Indexable)(nil)).Elem()
 	SEQUENCE_INTERFACE_TYPE         = reflect.TypeOf((*Sequence)(nil)).Elem()
@@ -3503,6 +3504,8 @@ func converTypeToSymbolicValue(t reflect.Type) (SymbolicValue, error) {
 	switch t {
 	case SYMBOLIC_VALUE_INTERFACE_TYPE:
 		return ANY, nil
+	case SERIALIZABLE_INTERFACE_TYPE:
+		return ANY_SERIALIZABLE, nil
 	case ITERABLE_INTERFACE_TYPE:
 		return ANY_ITERABLE, nil
 	case INDEXABLE_INTERFACE_TYPE:

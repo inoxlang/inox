@@ -200,7 +200,7 @@ func _rsa_gen_key(ctx *core.Context) *core.Record {
 		Bytes: pubKeyBytes,
 	}))
 
-	return core.NewRecordFromKeyValLists(KEY_PAIR_RECORD_PROPNAMES, []core.Value{
+	return core.NewRecordFromKeyValLists(KEY_PAIR_RECORD_PROPNAMES, []core.Serializable{
 		core.Str(pubKeyPem), utils.Must(PEM_PRIVATE_KEY_PATTERN.NewSecret(ctx, privKeyPem)),
 	})
 }
@@ -259,8 +259,8 @@ func _rsa_decrypt_oaep(_ *core.Context, arg core.Readable, key *core.Secret) (*c
 	return core.NewByteSlice(decrypted, false, ""), nil
 }
 
-func newRSANamespace() *core.Record {
-	return core.NewRecordFromMap(core.ValMap{
+func newRSANamespace() *core.Namespace {
+	return core.NewNamespace("rsa", map[string]core.Value{
 		"encrypt_oaep": core.WrapGoFunction(_rsa_encrypt_oaep),
 		"decrypt_oaep": core.WrapGoFunction(_rsa_decrypt_oaep),
 		"gen_key":      core.WrapGoFunction(_rsa_gen_key),

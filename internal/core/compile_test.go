@@ -1535,7 +1535,7 @@ func TestCompileModule(t *testing.T) {
 			[]Value{
 				Str("foo"),
 				Str("/home/"),
-				&List{underylingList: &ValueList{elements: []Value{True, False}}},
+				&List{underylingList: &ValueList{elements: []Serializable{True, False}}},
 			},
 		)
 
@@ -1561,7 +1561,7 @@ func TestCompileModule(t *testing.T) {
 			[]Value{
 				Str("foo"),
 				Str("/home/"),
-				&List{underylingList: &ValueList{elements: []Value{True, False}}},
+				&List{underylingList: &ValueList{elements: []Serializable{True, False}}},
 			},
 		)
 
@@ -1592,7 +1592,7 @@ func TestCompileModule(t *testing.T) {
 				NewRecordFromMap(ValMap{
 					"path-slice-count":   Int(2),
 					"query-params":       &Tuple{},
-					"static-path-slices": &Tuple{elements: []Value{True, False}},
+					"static-path-slices": &Tuple{elements: []Serializable{True, False}},
 				}),
 			},
 		)
@@ -1629,8 +1629,8 @@ func TestCompileModule(t *testing.T) {
 				Str(""),
 				NewRecordFromMap(ValMap{
 					"path-slice-count":   Int(2),
-					"query-params":       &Tuple{elements: []Value{Str("x"), Int(2)}},
-					"static-path-slices": &Tuple{elements: []Value{True, False}},
+					"query-params":       &Tuple{elements: []Serializable{Str("x"), Int(2)}},
+					"static-path-slices": &Tuple{elements: []Serializable{True, False}},
 				}),
 			},
 		)
@@ -1661,8 +1661,8 @@ func TestCompileModule(t *testing.T) {
 				Str(""),
 				NewRecordFromMap(ValMap{
 					"path-slice-count":   Int(1),
-					"query-params":       &Tuple{elements: []Value{Str("x"), Int(2)}},
-					"static-path-slices": &Tuple{elements: []Value{True}},
+					"query-params":       &Tuple{elements: []Serializable{Str("x"), Int(2)}},
+					"static-path-slices": &Tuple{elements: []Serializable{True}},
 				}),
 			},
 		)

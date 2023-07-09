@@ -47,7 +47,7 @@ func deduplicateConstants(b *Bytecode, tracer io.Writer) {
 				if tracer != nil {
 					s := fmt.Sprintf(
 						"%s (%d) is equal to %s (%d), remapping %d -> %d\n",
-						GetRepresentation(c1, ctx), i, GetRepresentation(c2, ctx), j, j, newConstantIndex,
+						GetRepresentation(c1.(Serializable), ctx), i, GetRepresentation(c2.(Serializable), ctx), j, j, newConstantIndex,
 					)
 					tracer.Write([]byte(s))
 				}

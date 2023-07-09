@@ -53,7 +53,7 @@ func (p *htmlDocParser) Validate(ctx *core.Context, s string) bool {
 	return parsingErr == nil
 }
 
-func (p *htmlDocParser) Parse(ctx *core.Context, s string) (core.Value, error) {
+func (p *htmlDocParser) Parse(ctx *core.Context, s string) (core.Serializable, error) {
 	_res, parsingErr := html.Parse(strings.NewReader(s))
 	if parsingErr != nil {
 		return nil, parsingErr

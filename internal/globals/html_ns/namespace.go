@@ -55,8 +55,8 @@ func init() {
 	})
 }
 
-func NewHTMLNamespace() *core.Record {
-	return core.NewRecordFromMap(core.ValMap{
+func NewHTMLNamespace() *core.Namespace {
+	return core.NewNamespace("html", map[string]core.Value{
 		"find": core.WrapGoFunction(_html_find),
 
 		"Node": core.WrapGoFunction(NewNode),

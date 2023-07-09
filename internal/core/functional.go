@@ -44,7 +44,7 @@ func Filter(ctx *Context, iterable Iterable, condition Value) *List {
 				panic(err)
 			}
 			if res.(Bool) {
-				result.elements = append(result.elements, e)
+				result.elements = append(result.elements, e.(Serializable))
 			}
 		}
 	case Pattern:
@@ -52,7 +52,7 @@ func Filter(ctx *Context, iterable Iterable, condition Value) *List {
 		for it.Next(ctx) {
 			e := it.Value(ctx)
 			if fil.Test(ctx, e) {
-				result.elements = append(result.elements, e)
+				result.elements = append(result.elements, e.(Serializable))
 			}
 		}
 	default:

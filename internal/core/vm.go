@@ -444,8 +444,8 @@ func (v *VM) run() {
 			default:
 				res = QuantityRange{
 					inclusiveEnd: !exclEnd,
-					Start:        left,
-					End:          right,
+					Start:        left.(Serializable),
+					End:          right.(Serializable),
 				}
 			}
 			v.stack[v.sp-2] = res
@@ -547,7 +547,7 @@ func (v *VM) run() {
 			v.sp -= 2
 
 			pattern := right.(GroupPattern)
-			groups, ok, err := pattern.MatchGroups(v.global.Ctx, left)
+			groups, ok, err := pattern.MatchGroups(v.global.Ctx, left.(Serializable))
 			if err != nil {
 				v.err = err
 				return
@@ -615,7 +615,7 @@ func (v *VM) run() {
 			v.sp -= 2
 
 			if _, ok := right.(Pattern); !ok {
-				right = &ExactValuePattern{value: right}
+				right = &ExactValuePattern{value: right.(Serializable)}
 			}
 			v.stack[v.sp] = &DifferencePattern{base: left.(Pattern), removed: right.(Pattern)}
 			v.sp++
@@ -724,14 +724,14 @@ func (v *VM) run() {
 			v.ip += 2
 			numElements := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
 
-			var elements []Value
+			var elements []Serializable
 			if numElements > 0 {
-				elements = make([]Value, numElements)
+				elements = make([]Serializable, numElements)
 			}
 
 			ind := 0
 			for i := v.sp - numElements; i < v.sp; i++ {
-				elements[ind] = v.stack[i]
+				elements[ind] = v.stack[i].(Serializable)
 				ind++
 			}
 			v.sp -= numElements
@@ -744,9 +744,9 @@ func (v *VM) run() {
 			v.ip += 2
 			numElements := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
 
-			var elements = make([]Value, 0, numElements)
+			var elements = make([]Serializable, 0, numElements)
 			for i := v.sp - numElements; i < v.sp; i++ {
-				elements = append(elements, v.stack[i])
+				elements = append(elements, v.stack[i].(Serializable))
 			}
 			v.sp -= numElements
 
@@ -780,7 +780,7 @@ func (v *VM) run() {
 
 				propIndex := 0
 				for i := v.sp - numElements; i < v.sp; i += 2 {
-					obj.values[propIndex] = v.stack[i+1]
+					obj.values[propIndex] = v.stack[i+1].(Serializable)
 					obj.keys[propIndex] = string(v.stack[i].(Str))
 					propIndex++
 				}
@@ -814,12 +814,12 @@ func (v *VM) run() {
 			if numElements > 0 {
 				rec = &Record{
 					keys:   make([]string, numElements/2),
-					values: make([]Value, numElements/2),
+					values: make([]Serializable, numElements/2),
 				}
 
 				propIndex := 0
 				for i := v.sp - numElements; i < v.sp; i += 2 {
-					rec.values[propIndex] = v.stack[i+1]
+					rec.values[propIndex] = v.stack[i+1].(Serializable)
 					rec.keys[propIndex] = string(v.stack[i].(Str))
 					propIndex++
 				}
@@ -838,15 +838,15 @@ func (v *VM) run() {
 			v.ip += 2
 			numElements := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
 			var dict = &Dictionary{
-				Entries: make(map[string]Value, numElements/2),
-				Keys:    make(map[string]Value, numElements/2),
+				Entries: make(map[string]Serializable, numElements/2),
+				Keys:    make(map[string]Serializable, numElements/2),
 			}
 
 			for i := v.sp - numElements; i < v.sp; i += 2 {
-				key := v.stack[i]
+				key := v.stack[i].(Serializable)
 				keyRepr := string(GetRepresentation(key, v.global.Ctx))
 				value := v.stack[i+1]
-				dict.Entries[keyRepr] = value
+				dict.Entries[keyRepr] = value.(Serializable)
 				dict.Keys[keyRepr] = key
 			}
 			v.sp -= numElements
@@ -875,7 +875,7 @@ func (v *VM) run() {
 			}
 
 			v.sp -= numHiearchyEntries
-			udata.Root = v.stack[v.sp-1]
+			udata.Root = v.stack[v.sp-1].(Serializable)
 			v.stack[v.sp-1] = udata
 		case OpCreateUdataHiearchyEntry:
 			v.ip += 2
@@ -888,7 +888,7 @@ func (v *VM) run() {
 			}
 
 			v.sp -= numChildren
-			entry.Value = v.stack[v.sp-1]
+			entry.Value = v.stack[v.sp-1].(Serializable)
 			v.stack[v.sp-1] = entry
 		case OpSpreadObject:
 			object := v.stack[v.sp-1].(*Object)
@@ -1102,7 +1102,7 @@ func (v *VM) run() {
 			}
 			v.stack[v.sp-1] = val
 		case OpToPattern:
-			val := v.stack[v.sp-1]
+			val := v.stack[v.sp-1].(Serializable)
 
 			if _, ok := val.(Pattern); !ok {
 				v.stack[v.sp-1] = NewMostAdaptedExactPattern(val)
@@ -1289,7 +1289,7 @@ func (v *VM) run() {
 				v.stack[v.sp-1] = QuantityRange{
 					unknownStart: true,
 					inclusiveEnd: true,
-					End:          val,
+					End:          val.(Serializable),
 				}
 			}
 		case OpCreateTestSuite:
@@ -1572,8 +1572,10 @@ func (v *VM) run() {
 			numArgs := int(v.curInsts[v.ip+1])
 			v.ip += 1
 
-			args := make([]Value, numArgs)
-			copy(args, v.stack[v.sp-numArgs:v.sp])
+			args := make([]Serializable, numArgs)
+			for i, arg := range v.stack[v.sp-numArgs : v.sp] {
+				args[i] = arg.(Serializable)
+			}
 			v.sp -= numArgs
 
 			callee := v.stack[v.sp-1].(Pattern)
@@ -2228,16 +2230,18 @@ func (v *VM) fnCall(numArgs int, spread, must bool) bool {
 			varArgs := numArgs - realArgs
 			if varArgs >= 0 {
 				numArgs = realArgs + 1
-				args := make([]Value, varArgs)
+				args := make(Array, varArgs)
 				spStart := v.sp - varArgs
 				for i := spStart; i < v.sp; i++ {
 					args[i-spStart] = v.stack[i]
 				}
 				if spreadArg != nil {
-					args = append(args, spreadArg.GetOrBuildElements(v.global.Ctx)...)
+					for _, e := range spreadArg.GetOrBuildElements(v.global.Ctx) {
+						args = append(args, e)
+					}
 				}
 
-				v.stack[spStart] = &List{underylingList: &ValueList{elements: args}}
+				v.stack[spStart] = &args
 				v.sp = spStart + 1
 			}
 		}

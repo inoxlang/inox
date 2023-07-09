@@ -535,29 +535,29 @@ func TestParseRepr(t *testing.T) {
 		/*    */ {"#[\n\n,]", -1, NewTuple(nil)},
 		/*    */ {"#[,\n]", -1, NewTuple(nil)},
 		/*    */ {"#[,\n\n]", -1, NewTuple(nil)},
-		{`#[1]`, -1, NewTuple([]Value{Int(1)})},
-		/*    */ {"#[\n1]", -1, NewTuple([]Value{Int(1)})},
+		{`#[1]`, -1, NewTuple([]Serializable{Int(1)})},
+		/*    */ {"#[\n1]", -1, NewTuple([]Serializable{Int(1)})},
 		/*    */ {"#[1\n]", 3, nil},
-		{`#[ 1]`, -1, NewTuple([]Value{Int(1)})},
-		/*    */ {"#[\n 1]", -1, NewTuple([]Value{Int(1)})},
-		{`#[ 1 ]`, -1, NewTuple([]Value{Int(1)})},
-		{`#[1,]`, -1, NewTuple([]Value{Int(1)})},
-		/*    */ {"#[1,\n]", -1, NewTuple([]Value{Int(1)})},
-		/*    */ {"#[1,\n\n]", -1, NewTuple([]Value{Int(1)})},
+		{`#[ 1]`, -1, NewTuple([]Serializable{Int(1)})},
+		/*    */ {"#[\n 1]", -1, NewTuple([]Serializable{Int(1)})},
+		{`#[ 1 ]`, -1, NewTuple([]Serializable{Int(1)})},
+		{`#[1,]`, -1, NewTuple([]Serializable{Int(1)})},
+		/*    */ {"#[1,\n]", -1, NewTuple([]Serializable{Int(1)})},
+		/*    */ {"#[1,\n\n]", -1, NewTuple([]Serializable{Int(1)})},
 		{`#[a]`, 2, nil},
-		{`#[1,2]`, -1, NewTuple([]Value{Int(1), Int(2)})},
-		/*    */ {"#[1,\n2]", -1, NewTuple([]Value{Int(1), Int(2)})},
-		/*    */ {"#[1,\n\n2]", -1, NewTuple([]Value{Int(1), Int(2)})},
+		{`#[1,2]`, -1, NewTuple([]Serializable{Int(1), Int(2)})},
+		/*    */ {"#[1,\n2]", -1, NewTuple([]Serializable{Int(1), Int(2)})},
+		/*    */ {"#[1,\n\n2]", -1, NewTuple([]Serializable{Int(1), Int(2)})},
 		/*    */ {"#[1\n2]", 3, nil},
-		{`#[1 ,2]`, -1, NewTuple([]Value{Int(1), Int(2)})},
+		{`#[1 ,2]`, -1, NewTuple([]Serializable{Int(1), Int(2)})},
 		/*    */ {"#[1 \n,2]", 4, nil},
-		{`#[1, 2]`, -1, NewTuple([]Value{Int(1), Int(2)})},
-		/*    */ {"#[1,\n 2]", -1, NewTuple([]Value{Int(1), Int(2)})},
-		{`#[1,2,]`, -1, NewTuple([]Value{Int(1), Int(2)})},
-		/*    */ {`#[#[]]`, -1, NewTuple([]Value{NewTuple(nil)})},
-		/*    */ {`#[#[1]]`, -1, NewTuple([]Value{NewTuple([]Value{Int(1)})})},
+		{`#[1, 2]`, -1, NewTuple([]Serializable{Int(1), Int(2)})},
+		/*    */ {"#[1,\n 2]", -1, NewTuple([]Serializable{Int(1), Int(2)})},
+		{`#[1,2,]`, -1, NewTuple([]Serializable{Int(1), Int(2)})},
+		/*    */ {`#[#[]]`, -1, NewTuple([]Serializable{NewTuple(nil)})},
+		/*    */ {`#[#[1]]`, -1, NewTuple([]Serializable{NewTuple([]Serializable{Int(1)})})},
 		/*    */ {
-			`#[#[1],#[2]]`, -1, NewTuple([]Value{NewTuple([]Value{Int(1)}), NewTuple([]Value{Int(2)})}),
+			`#[#[1],#[2]]`, -1, NewTuple([]Serializable{NewTuple([]Serializable{Int(1)}), NewTuple([]Serializable{Int(2)})}),
 		},
 
 		//key lists
@@ -1082,7 +1082,7 @@ func TestParseRepr(t *testing.T) {
 
 }
 
-func exact(v Value) *ExactValuePattern {
+func exact(v Serializable) *ExactValuePattern {
 	return NewExactValuePattern(v)
 }
 

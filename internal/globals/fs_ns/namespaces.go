@@ -93,8 +93,8 @@ func init() {
 	})
 }
 
-func NewFsNamespace() *core.Record {
-	return core.NewRecordFromMap(core.ValMap{
+func NewFsNamespace() *core.Namespace {
+	return core.NewNamespace("fs", map[string]core.Value{
 		"mkfile":             core.WrapGoFunction(Mkfile),
 		"mkdir":              core.WrapGoFunction(Mkdir),
 		"read_file":          core.WrapGoFunction(ReadFile),

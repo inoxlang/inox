@@ -21,7 +21,7 @@ var (
 		Name:          "Set",
 		Type:          reflect.TypeOf((*Set)(nil)),
 		SymbolicValue: coll_symbolic.ANY_SET,
-		CallImpl: func(typePattern *core.TypePattern, values []core.Value) (core.Pattern, error) {
+		CallImpl: func(typePattern *core.TypePattern, values []core.Serializable) (core.Pattern, error) {
 			if len(values) == 0 {
 				return nil, commonfmt.FmtMissingArgument("element pattern")
 			}
@@ -121,8 +121,8 @@ func init() {
 	})
 }
 
-func NewContainersNamespace() *core.Record {
-	return core.NewRecordFromMap(core.ValMap{
+func NewContainersNamespace() map[string]core.Value {
+	return map[string]core.Value{
 		"Set":     core.ValOf(NewSet),
 		"Stack":   core.ValOf(NewStack),
 		"Queue":   core.ValOf(NewQueue),
@@ -131,5 +131,5 @@ func NewContainersNamespace() *core.Record {
 		"Graph":   core.ValOf(NewGraph),
 		"Tree":    core.ValOf(NewTree),
 		"Ranking": core.ValOf(NewRanking),
-	})
+	}
 }

@@ -36,6 +36,7 @@ type WrappedString interface {
 
 // A StringLike represents an abstract immutable string, it should behave exactly like a regular Str and have the same pseudo properties.
 type StringLike interface {
+	Serializable
 	Sequence
 	IProps
 	GetOrBuildString() string
@@ -367,7 +368,7 @@ func (slice *RuneSlice) set(ctx *Context, i int, v Value) {
 
 	slice.elements[i] = rune(v.(Rune))
 
-	mutation := NewSetElemAtIndexMutation(ctx, i, v, ShallowWatching, Path("/"+strconv.Itoa(i)))
+	mutation := NewSetElemAtIndexMutation(ctx, i, v.(Rune), ShallowWatching, Path("/"+strconv.Itoa(i)))
 
 	slice.mutationCallbacks.CallMicrotasks(ctx, mutation)
 	slice.watchers.InformAboutAsync(ctx, mutation, ShallowWatching, true)
@@ -414,7 +415,7 @@ func (s *RuneSlice) insertElement(ctx *Context, v Value, i Int) {
 	copy(s.elements[i+1:], s.elements[i:len(s.elements)-1])
 	s.elements[i] = rune(r)
 
-	mutation := NewInsertElemAtIndexMutation(ctx, int(i), v, ShallowWatching, Path("/"+strconv.Itoa(int(i))))
+	mutation := NewInsertElemAtIndexMutation(ctx, int(i), r, ShallowWatching, Path("/"+strconv.Itoa(int(i))))
 
 	s.mutationCallbacks.CallMicrotasks(ctx, mutation)
 	s.watchers.InformAboutAsync(ctx, mutation, ShallowWatching, true)

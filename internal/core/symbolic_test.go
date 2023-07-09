@@ -111,7 +111,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 func TestToSymbolicValue(t *testing.T) {
 
 	t.Run("dictionary", func(t *testing.T) {
-		dict := NewDictionary(map[string]Value{`"name"`: Str("foo"), `./file`: True})
+		dict := NewDictionary(map[string]Serializable{`"name"`: Str("foo"), `./file`: True})
 		v, err := ToSymbolicValue(nil, dict, false)
 		assert.NoError(t, err)
 

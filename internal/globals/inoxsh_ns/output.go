@@ -81,7 +81,7 @@ func sprintPrompt(state *core.TreeWalkState, config REPLConfiguration) (prompt s
 		list, isList := part.(*core.List)
 
 		if isList && list.Len() == 3 {
-			part = list.At(state.Global.Ctx, 0)
+			part = list.At(state.Global.Ctx, 0).(core.Serializable)
 
 			if colorize {
 				//choose one color among the two provided

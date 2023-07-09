@@ -305,9 +305,11 @@ func NewDynamicCall(ctx *Context, callee Value, args ...Value) *DynamicValue {
 		panic(fmt.Errorf("failed to create dynamic call: error on first call: %w", err))
 	}
 
+	//TODO: support any arg types
+
 	dyn := &DynamicValue{
 		value:             firstCallResult,
-		opData0:           NewWrappedValueList(args...),
+		opData0:           NewWrappedValueList(ToSerializableSlice(args)...),
 		op:                dynCall,
 		mutationCallbacks: NewMutationCallbackMicrotasks(),
 	}
@@ -340,7 +342,7 @@ func NewDynamicCall(ctx *Context, callee Value, args ...Value) *DynamicValue {
 		}
 	}
 
-	dyn.opData1 = NewWrappedValueList(watchables...)
+	dyn.opData1 = NewWrappedValueList(ToSerializableSlice(watchables)...)
 
 	return dyn
 }

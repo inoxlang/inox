@@ -3,31 +3,32 @@ package core
 import "github.com/bits-and-blooms/bitset"
 
 type underylingList interface {
+	Serializable
 	MutableLengthSequence
 	Iterable
-	ContainsSimple(ctx *Context, v Value) bool
-	append(ctx *Context, values ...Value)
+	ContainsSimple(ctx *Context, v Serializable) bool
+	append(ctx *Context, values ...Serializable)
 }
 
 // ValueList implements underylingList
 type ValueList struct {
-	elements     []Value
+	elements     []Serializable
 	constraintId ConstraintId
 }
 
-func NewWrappedValueList(elements ...Value) *List {
+func NewWrappedValueList(elements ...Serializable) *List {
 	return newList(&ValueList{elements: elements})
 }
 
-func NewWrappedValueListFrom(elements []Value) *List {
+func NewWrappedValueListFrom(elements []Serializable) *List {
 	return newList(&ValueList{elements: elements})
 }
 
-func newValueList(elements ...Value) *ValueList {
+func newValueList(elements ...Serializable) *ValueList {
 	return &ValueList{elements: elements}
 }
 
-func (list *ValueList) ContainsSimple(ctx *Context, v Value) bool {
+func (list *ValueList) ContainsSimple(ctx *Context, v Serializable) bool {
 	if !IsSimpleInoxVal(v) {
 		panic("only simple values are expected")
 	}
@@ -41,7 +42,7 @@ func (list *ValueList) ContainsSimple(ctx *Context, v Value) bool {
 }
 
 func (list *ValueList) set(ctx *Context, i int, v Value) {
-	list.elements[i] = v
+	list.elements[i] = v.(Serializable)
 }
 
 func (list *ValueList) setSlice(ctx *Context, start, end int, v Value) {
@@ -50,13 +51,13 @@ func (list *ValueList) setSlice(ctx *Context, start, end int, v Value) {
 
 	for it.Next(ctx) {
 		e := it.Value(ctx)
-		list.elements[i] = e
+		list.elements[i] = e.(Serializable)
 		i++
 	}
 }
 
 func (list *ValueList) slice(start, end int) Sequence {
-	sliceCopy := make([]Value, end-start)
+	sliceCopy := make([]Serializable, end-start)
 	copy(sliceCopy, list.elements[start:end])
 
 	return &List{underylingList: &ValueList{elements: sliceCopy}}
@@ -70,7 +71,7 @@ func (list *ValueList) At(ctx *Context, i int) Value {
 	return list.elements[i]
 }
 
-func (list *ValueList) append(ctx *Context, values ...Value) {
+func (list *ValueList) append(ctx *Context, values ...Serializable) {
 	list.elements = append(list.elements, values...)
 }
 
@@ -80,11 +81,11 @@ func (l *ValueList) insertElement(ctx *Context, v Value, i Int) {
 		panic(ErrInsertionIndexOutOfRange)
 	}
 	if i == length {
-		l.elements = append(l.elements, v)
+		l.elements = append(l.elements, v.(Serializable))
 	} else {
 		l.elements = append(l.elements, nil)
 		copy(l.elements[i+1:], l.elements[i:])
-		l.elements[i] = v
+		l.elements[i] = v.(Serializable)
 	}
 }
 
@@ -126,7 +127,7 @@ func newIntList(elements ...Int) *IntList {
 	return &IntList{Elements: elements}
 }
 
-func (list *IntList) ContainsSimple(ctx *Context, v Value) bool {
+func (list *IntList) ContainsSimple(ctx *Context, v Serializable) bool {
 	if !IsSimpleInoxVal(v) {
 		panic("only simple values are expected")
 	}
@@ -174,7 +175,7 @@ func (list *IntList) At(ctx *Context, i int) Value {
 	return list.Elements[i]
 }
 
-func (list *IntList) append(ctx *Context, values ...Value) {
+func (list *IntList) append(ctx *Context, values ...Serializable) {
 	for _, val := range values {
 		list.Elements = append(list.Elements, val.(Int))
 	}
@@ -232,7 +233,7 @@ func newStringList(elements ...StringLike) *StringList {
 	return &StringList{elements: elements}
 }
 
-func (list *StringList) ContainsSimple(ctx *Context, v Value) bool {
+func (list *StringList) ContainsSimple(ctx *Context, v Serializable) bool {
 	if !IsSimpleInoxVal(v) {
 		panic("only simple values are expected")
 	}
@@ -280,7 +281,7 @@ func (list *StringList) At(ctx *Context, i int) Value {
 	return list.elements[i]
 }
 
-func (list *StringList) append(ctx *Context, values ...Value) {
+func (list *StringList) append(ctx *Context, values ...Serializable) {
 	for _, val := range values {
 		list.elements = append(list.elements, val.(StringLike))
 	}
@@ -340,7 +341,7 @@ func newBoolList(elements ...Bool) *BoolList {
 	return &BoolList{elements: bitset}
 }
 
-func (list *BoolList) ContainsSimple(ctx *Context, v Value) bool {
+func (list *BoolList) ContainsSimple(ctx *Context, v Serializable) bool {
 	if !IsSimpleInoxVal(v) {
 		panic("only booleans are expected")
 	}
@@ -392,7 +393,7 @@ func (list *BoolList) At(ctx *Context, i int) Value {
 	panic(ErrNotImplementedYet)
 }
 
-func (list *BoolList) append(ctx *Context, values ...Value) {
+func (list *BoolList) append(ctx *Context, values ...Serializable) {
 	panic(ErrNotImplementedYet)
 }
 

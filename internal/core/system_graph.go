@@ -221,7 +221,7 @@ func (g *SystemGraph) addNodeWithEdgesNoLock(
 				ctx, mutationMetaData, Str(childNode.name), Str(childNode.typeName),
 				Int(childNode.valuePtr), Int(parentNode.valuePtr), Str(edgeText), Int(edgeKind))
 	} else {
-		tupleElements := make([]Value, 2+2*len(additionalEdgeKinds))
+		tupleElements := make([]Serializable, 2+2*len(additionalEdgeKinds))
 		tupleElements[0] = Str(edgeText)
 		tupleElements[1] = Int(edgeKind)
 
@@ -412,7 +412,7 @@ func (g *SystemGraph) Prop(ctx *Context, name string) Value {
 		defer g.eventLogLock.Unlock()
 
 		//TODO: refactor
-		events := make([]Value, len(g.eventLog))
+		events := make([]Serializable, len(g.eventLog))
 		for i, e := range g.eventLog {
 			events[i] = e
 		}
@@ -502,7 +502,7 @@ func (n *SystemGraphNode) Prop(ctx *Context, name string) Value {
 	case "value_id":
 		return Int(n.valuePtr)
 	case "edges":
-		values := make([]Value, len(n.edgesFrom))
+		values := make([]Serializable, len(n.edgesFrom))
 		for i, e := range n.edgesFrom {
 			values[i] = e
 		}

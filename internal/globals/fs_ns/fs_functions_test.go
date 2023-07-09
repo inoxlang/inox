@@ -260,9 +260,9 @@ func TestFsMkdir(t *testing.T) {
 
 		pth := filepath.Join(tmpDir, "dir") + "/"
 
-		err := Mkdir(ctx, core.Path(pth), core.NewDictionary(map[string]core.Value{
+		err := Mkdir(ctx, core.Path(pth), core.NewDictionary(map[string]core.Serializable{
 			`./subdir_1/`: core.NewWrappedValueList(core.Path("./file_a")),
-			`./subdir_2/`: core.NewDictionary(map[string]core.Value{
+			`./subdir_2/`: core.NewDictionary(map[string]core.Serializable{
 				`./subdir_3/`: core.NewWrappedValueList(core.Path("./file_b")),
 				`./file_c`:    core.Str("c"),
 			}),

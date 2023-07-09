@@ -5,6 +5,10 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 )
 
+const (
+	NAMESPACE_NAME = "strmanip"
+)
+
 func init() {
 	core.RegisterSymbolicGoFunctions([]any{
 		Titlecase, func(str symbolic.StringLike) symbolic.StringLike {
@@ -19,8 +23,8 @@ func init() {
 	})
 }
 
-func NewStrManipNnamespace() *core.Record {
-	return core.NewRecordFromMap(core.ValMap{
+func NewStrManipNnamespace() *core.Namespace {
+	return core.NewNamespace(NAMESPACE_NAME, map[string]core.Value{
 		"title_case": core.WrapGoFunction(Titlecase),
 		"lowercase":  core.WrapGoFunction(Lowercase),
 		"trim_space": core.WrapGoFunction(TrimSpace),

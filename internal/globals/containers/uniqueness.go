@@ -43,7 +43,7 @@ const (
 	UniquePropertyValue
 )
 
-func getUniqueKey(ctx *core.Context, v core.Value, config UniquenessConstraint) string {
+func getUniqueKey(ctx *core.Context, v core.Serializable, config UniquenessConstraint) string {
 	var key string
 	switch config.Type {
 	case UniqueRepr:
@@ -69,7 +69,7 @@ func getUniqueKey(ctx *core.Context, v core.Value, config UniquenessConstraint) 
 		}
 		//ToC / Tos ??
 		propVal := iprops.Prop(ctx, config.PropertyName.UnderlyingString())
-		repr := core.MustGetRepresentationWithConfig(propVal, UniqueKeyReprConfig, ctx)
+		repr := core.MustGetRepresentationWithConfig(propVal.(core.Serializable), UniqueKeyReprConfig, ctx)
 		key = string(repr)
 	}
 	return key

@@ -82,7 +82,7 @@ func (p *dateLayoutParser) Validate(ctx *Context, s string) bool {
 	return err == nil
 }
 
-func (p *dateLayoutParser) Parse(ctx *Context, s string) (Value, error) {
+func (p *dateLayoutParser) Parse(ctx *Context, s string) (Serializable, error) {
 	t, err := time.Parse(p.layout, s)
 	if err != nil {
 		return nil, err

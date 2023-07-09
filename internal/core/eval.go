@@ -163,7 +163,7 @@ func EvalBytecode(bytecode *Bytecode, state *GlobalState, self Value) (Value, er
 	return vm.Run()
 }
 
-func Append(ctx *Context, list *List, args ...Value) *List {
+func Append(ctx *Context, list *List, args ...Serializable) *List {
 	list.append(ctx, args...)
 	return list
 }
@@ -193,8 +193,7 @@ func CreateDirEntry(path, walkedDirPath string, addDotSlashPrefix bool, d fs.Dir
 }
 
 func CreatePatternNamespace(init Value) (*PatternNamespace, error) {
-
-	var entries = map[string]Value{}
+	var entries = map[string]Serializable{}
 	switch r := init.(type) {
 	case *Object:
 		entries = r.EntryMap()
@@ -337,7 +336,7 @@ func evalSimpleValueLiteral(n parse.SimpleValueLiteral, global *GlobalState) (Va
 	}
 }
 
-func createBestSuitedList(ctx *Context, values []Value, elemType Pattern) *List {
+func createBestSuitedList(ctx *Context, values []Serializable, elemType Pattern) *List {
 	switch t := elemType.(type) {
 	case *TypePattern:
 		if t.Type == INT_TYPE {
@@ -414,7 +413,7 @@ func concatValues(ctx *Context, values []Value) (Value, error) {
 			return values[0].(*Tuple), nil
 		}
 
-		var tupleElements []Value
+		var tupleElements []Serializable
 
 		for _, elem := range values {
 			if tuple, ok := elem.(*Tuple); !ok {
@@ -434,5 +433,5 @@ func toPattern(val Value) Pattern {
 	if patt, ok := val.(Pattern); ok {
 		return patt
 	}
-	return NewMostAdaptedExactPattern(val)
+	return NewMostAdaptedExactPattern(val.(Serializable))
 }

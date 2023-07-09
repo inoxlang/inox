@@ -114,7 +114,7 @@ func _stringify_ast(ctx *core.Context, arg core.AstNode) core.Str {
 	return core.Str(buf.String())
 }
 
-func _Error(ctx *core.Context, text core.Str, args ...core.Value) core.Error {
+func _Error(ctx *core.Context, text core.Str, args ...core.Serializable) core.Error {
 	goErr := errors.New(string(text))
 	if len(args) == 0 {
 		return core.NewError(goErr, core.Nil)
@@ -192,7 +192,7 @@ func _torstream(ctx *core.Context, v core.Value) core.ReadableStream {
 	return core.ToReadableStream(ctx, v, core.ANYVAL_PATTERN)
 }
 
-func _repr(ctx *core.Context, v core.Value) core.Str {
+func _repr(ctx *core.Context, v core.Serializable) core.Str {
 	return core.Str(core.GetRepresentation(v, ctx))
 }
 
@@ -234,7 +234,7 @@ func _split(ctx *core.Context, r core.Readable, sep core.Str, p core.Pattern) (c
 	}
 
 	substrings := strings.Split(utils.BytesAsString(bytes.Bytes), string(sep))
-	values := make([]core.Value, len(substrings))
+	values := make([]core.Serializable, len(substrings))
 	for i, substring := range substrings {
 		v, err := strPatt.Parse(ctx, substring)
 		if err != nil {
@@ -367,7 +367,7 @@ func _cancel_exec(ctx *core.Context) {
 }
 
 func _List(ctx *core.Context, args ...core.Value) *core.List {
-	var elements []core.Value
+	var elements []core.Serializable
 
 	for _, arg := range args {
 		switch a := arg.(type) {
@@ -376,9 +376,9 @@ func _List(ctx *core.Context, args ...core.Value) *core.List {
 				panic(commonfmt.FmtErrArgumentProvidedAtLeastTwice("elements"))
 			}
 			length := a.Len()
-			elements = make([]core.Value, length)
+			elements = make([]core.Serializable, length)
 			for i := 0; i < length; i++ {
-				elements[i] = a.At(ctx, i)
+				elements[i] = a.At(ctx, i).(core.Serializable)
 			}
 		case core.Iterable:
 			if elements != nil {
@@ -387,7 +387,7 @@ func _List(ctx *core.Context, args ...core.Value) *core.List {
 			it := a.Iterator(ctx, core.IteratorConfiguration{})
 			for it.Next(ctx) {
 				elem := it.Value(ctx)
-				elements = append(elements, elem)
+				elements = append(elements, elem.(core.Serializable))
 			}
 		default:
 			panic(core.FmtErrInvalidArgument(a))
@@ -439,6 +439,6 @@ func _get_system_graph(ctx *core.Context) (*core.SystemGraph, core.Bool) {
 
 func _propnames(ctx *core.Context, val core.Value) *core.List {
 	props := val.(core.IProps).PropertyNames(ctx)
-	values := utils.MapSlice(props, func(s string) core.Value { return core.Str(s) })
+	values := utils.MapSlice(props, func(s string) core.Serializable { return core.Str(s) })
 	return core.NewWrappedValueListFrom(values)
 }

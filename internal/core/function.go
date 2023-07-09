@@ -60,11 +60,12 @@ func (fn *InoxFunction) Call(globalState *GlobalState, self Value, args []Value,
 		return vm.Run()
 	} else {
 		newState := NewTreeWalkStateWithGlobal(globalState)
+
 		return TreeWalkCallFunc(TreeWalkCall{
 			callee:             fn,
 			self:               self,
 			state:              newState,
-			arguments:          newList(&ValueList{elements: args}),
+			arguments:          args,
 			disabledArgSharing: disabledArgSharing,
 		})
 	}
@@ -130,7 +131,6 @@ type GoFunction struct {
 	shared      atomic.Bool
 	originState *GlobalState // used for methods & closures, nil otherwise
 	NotClonableMixin
-	NoReprMixin
 }
 
 type GoFunctionKind int
@@ -294,7 +294,9 @@ func (goFunc *GoFunction) Call(args []any, globalState, extState *GlobalState, i
 		}
 	}
 
-	return newList(&ValueList{elements: results}), nil
+	//TODO: support any result types
+
+	return newList(&ValueList{elements: ToSerializableSlice(results)}), nil
 }
 
 func IsResultWithError(result Value) (bool, error) {
@@ -336,7 +338,7 @@ func ConvertReturnValue(rval reflect.Value) Value {
 
 		list := &List{underylingList: &ValueList{}}
 		for i := 0; i < rval.Len(); i++ {
-			list.append(nil, ValOf(rval.Index(i).Interface()))
+			list.append(nil, ValOf(rval.Index(i).Interface()).(Serializable))
 		}
 		return list
 	}

@@ -273,7 +273,7 @@ func (kv *SingleFileKV) Has(ctx *core.Context, key core.Path, db any) core.Bool 
 	return valueFound
 }
 
-func (kv *SingleFileKV) Insert(ctx *core.Context, key core.Path, value core.Value, db any) {
+func (kv *SingleFileKV) Insert(ctx *core.Context, key core.Path, value core.Serializable, db any) {
 	repr := core.GetRepresentation(value, ctx)
 
 	kv.InsertSerialized(ctx, key, string(repr), db)
@@ -315,7 +315,7 @@ func (kv *SingleFileKV) InsertSerialized(ctx *core.Context, key core.Path, seria
 	}
 }
 
-func (kv *SingleFileKV) Set(ctx *core.Context, key core.Path, value core.Value, db any) {
+func (kv *SingleFileKV) Set(ctx *core.Context, key core.Path, value core.Serializable, db any) {
 	repr := core.GetRepresentation(value, ctx)
 	kv.SetSerialized(ctx, key, string(repr), db)
 }
@@ -490,7 +490,7 @@ func (tx *DatabaseTx) GetSerialized(ctx *core.Context, key core.Path) (result st
 	return
 }
 
-func (tx *DatabaseTx) Set(ctx *core.Context, key core.Path, value core.Value) error {
+func (tx *DatabaseTx) Set(ctx *core.Context, key core.Path, value core.Serializable) error {
 	repr := core.GetRepresentation(value, ctx)
 	return tx.SetSerialized(ctx, key, string(repr))
 }
@@ -501,7 +501,7 @@ func (tx *DatabaseTx) SetSerialized(ctx *core.Context, key core.Path, serialized
 	return err
 }
 
-func (tx *DatabaseTx) Insert(ctx *core.Context, key core.Path, value core.Value) error {
+func (tx *DatabaseTx) Insert(ctx *core.Context, key core.Path, value core.Serializable) error {
 	repr := core.GetRepresentation(value, ctx)
 	return tx.InsertSerialized(ctx, key, string(repr))
 }

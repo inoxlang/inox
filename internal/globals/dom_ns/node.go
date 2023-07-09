@@ -203,7 +203,7 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *Node {
 	var modelReactionData core.Value
 	var class string
 
-	addChild := func(v core.Value) {
+	addChild := func(v core.Serializable) {
 		var child *Node
 		var html *html_ns.HTMLNode
 
@@ -247,7 +247,7 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *Node {
 			}
 			it := iterable.Iterator(ctx, core.IteratorConfiguration{})
 			for it.Next(ctx) {
-				elem := it.Value(ctx)
+				elem := it.Value(ctx).(core.Serializable)
 
 				child, ok := elem.(*html_ns.HTMLNode)
 				if ok {
@@ -316,7 +316,7 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *Node {
 	if length > 0 {
 		for i := 0; i < int(length); i++ {
 			k := strconv.Itoa(i)
-			v := desc.Prop(ctx, k)
+			v := desc.Prop(ctx, k).(core.Serializable)
 
 			if childrenAlreadyProvided {
 				panic(commonfmt.FmtUnexpectedElementAtIndeKeyXofArg(k, "description", S_CHILDREN_ALREADY_PROVIDED_WITH_CHILDREN_PROP))
@@ -372,7 +372,7 @@ func NewStaticNode(n *html_ns.HTMLNode) *Node {
 func NewAutoNode(ctx *core.Context, desc *core.Object) *Node {
 	node := &Node{kind: AutoNode}
 
-	desc.ForEachEntry(func(k string, v core.Value) error {
+	desc.ForEachEntry(func(k string, v core.Serializable) error {
 		switch {
 		case core.IsIndexKey(k) || k == MODEL_KEY:
 			if node.model != nil {

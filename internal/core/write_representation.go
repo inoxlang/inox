@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -30,27 +29,27 @@ func (r ValueRepresentation) Equal(r2 ValueRepresentation) bool {
 	return bytes.Equal([]byte(r), []byte(r2))
 }
 
-func GetRepresentation(v Value, ctx *Context) ValueRepresentation {
+func GetRepresentation(v Serializable, ctx *Context) ValueRepresentation {
 	return MustGetRepresentationWithConfig(v, &ReprConfig{}, ctx)
 }
 
-func MustGetRepresentationWithConfig(v Value, config *ReprConfig, ctx *Context) ValueRepresentation {
+func MustGetRepresentationWithConfig(v Serializable, config *ReprConfig, ctx *Context) ValueRepresentation {
 	return utils.Must(GetRepresentationWithConfig(v, config, ctx))
 }
 
-func GetRepresentationWithConfig(v Value, config *ReprConfig, ctx *Context) (ValueRepresentation, error) {
+func GetRepresentationWithConfig(v Serializable, config *ReprConfig, ctx *Context) (ValueRepresentation, error) {
 	buff := bytes.NewBuffer(nil)
-	encountered := map[uintptr]int{}
-	err := v.WriteRepresentation(ctx, buff, encountered, config)
+
+	err := v.WriteRepresentation(ctx, buff, config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get representation: %w", err)
 	}
 	return buff.Bytes(), nil
 }
 
-func WriteRepresentation(w io.Writer, v Value, config *ReprConfig, ctx *Context) error {
-	encountered := map[uintptr]int{}
-	err := v.WriteRepresentation(ctx, w, encountered, config)
+func WriteRepresentation(w io.Writer, v Serializable, config *ReprConfig, ctx *Context) error {
+
+	err := v.WriteRepresentation(ctx, w, config)
 	if err != nil {
 		return fmt.Errorf("failed to write representation: %w", err)
 	}
@@ -87,41 +86,26 @@ var ErrNoRepresentation = errors.New("no representation")
 type NoReprMixin struct {
 }
 
-func (n NoReprMixin) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (n NoReprMixin) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (n NoReprMixin) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	return ErrNoRepresentation
 }
 
-func (n NoReprMixin) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+func (n NoReprMixin) HasJSONRepresentation(config JSONSerializationConfig) bool {
 	return false
 }
 
-func (n NoReprMixin) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+func (n NoReprMixin) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
 	return ErrNoRepresentation
 }
 
 type CallBasedPatternReprMixin struct {
 	Callee Pattern
-	Params []Value
+	Params []Serializable
 }
 
-func (m CallBasedPatternReprMixin) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	for _, p := range m.Params {
-		if p.IsMutable() || !p.HasRepresentation(encountered, config) {
-			return false
-		}
-	}
-	return true
-}
+func (m CallBasedPatternReprMixin) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 
-func (m CallBasedPatternReprMixin) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	if encountered != nil && !m.HasRepresentation(encountered, config) {
-		return ErrNoRepresentation
-	}
-	err := m.Callee.WriteRepresentation(ctx, w, encountered, config)
+	err := m.Callee.WriteRepresentation(ctx, w, config)
 	if err != nil {
 		return err
 	}
@@ -137,7 +121,7 @@ func (m CallBasedPatternReprMixin) WriteRepresentation(ctx *Context, w io.Writer
 				return err
 			}
 		}
-		err := p.WriteRepresentation(ctx, w, encountered, config)
+		err := p.WriteRepresentation(ctx, w, config)
 		if err != nil {
 			return err
 		}
@@ -147,30 +131,22 @@ func (m CallBasedPatternReprMixin) WriteRepresentation(ctx *Context, w io.Writer
 	return err
 }
 
-func (m CallBasedPatternReprMixin) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+func (m CallBasedPatternReprMixin) HasJSONRepresentation(config JSONSerializationConfig) bool {
 	return false
 }
 
-func (m CallBasedPatternReprMixin) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+func (m CallBasedPatternReprMixin) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
 	return ErrNoRepresentation
 }
 
 // implementations
 
-func (Nil NilT) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (Nil NilT) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (Nil NilT) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	_, err := w.Write([]byte{'n', 'i', 'l'})
 	return err
 }
 
-func (b Bool) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (b Bool) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (b Bool) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	if b {
 		_, err := w.Write([]byte{'t', 'r', 'u', 'e'})
 		return err
@@ -178,10 +154,6 @@ func (b Bool) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uin
 		_, err := w.Write([]byte{'f', 'a', 'l', 's', 'e'})
 		return err
 	}
-}
-
-func (r Rune) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
 }
 
 func (r Rune) reprBytes() []byte {
@@ -211,33 +183,21 @@ func (r Rune) reprBytes() []byte {
 	return b
 }
 
-func (r Rune) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (r Rune) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	_, err := w.Write(r.reprBytes())
 	return err
 }
 
-func (Byte) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (b Byte) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (b Byte) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	return ErrNoRepresentation
 }
 
-func (Int) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (i Int) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (i Int) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	fmt.Fprint(w, i)
 	return nil
 }
 
-func (Float) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (f Float) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (f Float) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	s := strconv.FormatFloat(float64(f), 'f', -1, 64)
 	if _, err := w.Write(utils.StringAsBytes(s)); err != nil {
 		return err
@@ -250,11 +210,7 @@ func (f Float) WriteRepresentation(ctx *Context, w io.Writer, encountered map[ui
 	return nil
 }
 
-func (Str) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (s Str) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (s Str) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	jsonStr, err := utils.MarshalJsonNoHTMLEspace(string(s))
 	if err != nil {
 		return err
@@ -263,11 +219,7 @@ func (s Str) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uint
 	return err
 }
 
-func (*RuneSlice) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (slice *RuneSlice) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (slice *RuneSlice) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	jsonStr, err := utils.MarshalJsonNoHTMLEspace(string(slice.elements))
 	if err != nil {
 		return err
@@ -282,28 +234,7 @@ func (slice *RuneSlice) WriteRepresentation(ctx *Context, w io.Writer, encounter
 	return err
 }
 
-func (obj *Object) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-
-	ptr := reflect.ValueOf(obj).Pointer()
-	if _, ok := encountered[ptr]; ok {
-		return false
-	}
-	encountered[ptr] = -1
-
-	obj.Lock(nil)
-	defer obj.Unlock(nil)
-	for _, v := range obj.values {
-		if !v.HasRepresentation(encountered, config) {
-			return false
-		}
-	}
-	return true
-}
-
-func (obj *Object) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	if encountered != nil && !obj.HasRepresentation(encountered, config) {
-		return ErrNoRepresentation
-	}
+func (obj *Object) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 
 	closestState := ctx.GetClosestState()
 	obj.Lock(closestState)
@@ -326,7 +257,7 @@ func (obj *Object) WriteRepresentation(ctx *Context, w io.Writer, encountered ma
 			return err
 		}
 
-		err = obj.url.WriteRepresentation(ctx, w, nil, config)
+		err = obj.url.WriteRepresentation(ctx, w, config)
 		if err != nil {
 			return err
 		}
@@ -356,7 +287,7 @@ func (obj *Object) WriteRepresentation(ctx *Context, w io.Writer, encountered ma
 		if err != nil {
 			return err
 		}
-		err = v.WriteRepresentation(ctx, w, nil, config)
+		err = v.WriteRepresentation(ctx, w, config)
 		if err != nil {
 			return err
 		}
@@ -369,16 +300,8 @@ func (obj *Object) WriteRepresentation(ctx *Context, w io.Writer, encountered ma
 	return nil
 }
 
-func (rec Record) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (rec Record) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (rec Record) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	//TODO: prevent modification of the Object while this function is running
-
-	if encountered != nil && !rec.HasRepresentation(encountered, config) {
-		return ErrNoRepresentation
-	}
 
 	_, err := w.Write([]byte{'#', '{'})
 	if err != nil {
@@ -408,7 +331,7 @@ func (rec Record) WriteRepresentation(ctx *Context, w io.Writer, encountered map
 		if err != nil {
 			return err
 		}
-		err = v.WriteRepresentation(ctx, w, nil, config)
+		err = v.WriteRepresentation(ctx, w, config)
 		if err != nil {
 			return err
 		}
@@ -421,25 +344,7 @@ func (rec Record) WriteRepresentation(ctx *Context, w io.Writer, encountered map
 	return nil
 }
 
-func (dict *Dictionary) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	ptr := reflect.ValueOf(dict).Pointer()
-	if _, ok := encountered[ptr]; ok {
-		return false
-	}
-	encountered[ptr] = -1
-
-	for _, v := range dict.Entries {
-		if !v.HasRepresentation(encountered, config) {
-			return false
-		}
-	}
-	return true
-}
-
-func (dict *Dictionary) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	if encountered != nil && !dict.HasRepresentation(encountered, config) {
-		return ErrNoRepresentation
-	}
+func (dict *Dictionary) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 
 	_, err := w.Write([]byte{':', '{'})
 	if err != nil {
@@ -463,7 +368,7 @@ func (dict *Dictionary) WriteRepresentation(ctx *Context, w io.Writer, encounter
 			}
 		}
 		first = false
-		err = dict.Keys[k].WriteRepresentation(ctx, w, nil, config)
+		err = dict.Keys[k].WriteRepresentation(ctx, w, config)
 		if err != nil {
 			return err
 		}
@@ -471,7 +376,7 @@ func (dict *Dictionary) WriteRepresentation(ctx *Context, w io.Writer, encounter
 		if err != nil {
 			return err
 		}
-		err = v.WriteRepresentation(ctx, w, nil, config)
+		err = v.WriteRepresentation(ctx, w, config)
 		if err != nil {
 			return err
 		}
@@ -481,20 +386,7 @@ func (dict *Dictionary) WriteRepresentation(ctx *Context, w io.Writer, encounter
 	return nil
 }
 
-func (list KeyList) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	if len(list) == 0 {
-		return true
-	}
-	ptr := reflect.ValueOf(list).Pointer()
-	if data, ok := encountered[ptr]; ok && len(list) == data {
-		return false
-	}
-	encountered[ptr] = len(list)
-
-	return true
-}
-
-func (list KeyList) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (list KeyList) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	_, err := w.Write([]byte{'.', '{'})
 	if err != nil {
 		return err
@@ -519,33 +411,11 @@ func (list KeyList) WriteRepresentation(ctx *Context, w io.Writer, encountered m
 	return nil
 }
 
-func (list *List) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return list.underylingList.HasRepresentation(encountered, config)
+func (list *List) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+	return list.underylingList.WriteRepresentation(ctx, w, config)
 }
 
-func (list *List) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return list.underylingList.WriteRepresentation(ctx, w, encountered, config)
-}
-
-func (list *ValueList) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	ptr := reflect.ValueOf(list).Pointer()
-	if _, ok := encountered[ptr]; ok {
-		return false
-	}
-	encountered[ptr] = -1
-
-	for _, v := range list.elements {
-		if !v.HasRepresentation(encountered, config) {
-			return false
-		}
-	}
-	return true
-}
-
-func (list *ValueList) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	if encountered != nil && !list.HasRepresentation(encountered, config) {
-		return ErrNoRepresentation
-	}
+func (list *ValueList) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 
 	_, err := w.Write([]byte{'['})
 	if err != nil {
@@ -562,7 +432,7 @@ func (list *ValueList) WriteRepresentation(ctx *Context, w io.Writer, encountere
 			}
 		}
 		first = false
-		err = v.WriteRepresentation(ctx, w, nil, config)
+		err = v.WriteRepresentation(ctx, w, config)
 		if err != nil {
 			return err
 		}
@@ -572,14 +442,7 @@ func (list *ValueList) WriteRepresentation(ctx *Context, w io.Writer, encountere
 	return err
 }
 
-func (list *IntList) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (list *IntList) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	if encountered != nil && !list.HasRepresentation(encountered, config) {
-		return ErrNoRepresentation
-	}
+func (list *IntList) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 
 	_, err := w.Write([]byte{'['})
 	if err != nil {
@@ -594,7 +457,7 @@ func (list *IntList) WriteRepresentation(ctx *Context, w io.Writer, encountered 
 			}
 		}
 		first = false
-		err = v.WriteRepresentation(ctx, w, nil, config)
+		err = v.WriteRepresentation(ctx, w, config)
 		if err != nil {
 			return err
 		}
@@ -604,14 +467,7 @@ func (list *IntList) WriteRepresentation(ctx *Context, w io.Writer, encountered 
 	return err
 }
 
-func (list *BoolList) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (list *BoolList) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	if encountered != nil && !list.HasRepresentation(encountered, config) {
-		return ErrNoRepresentation
-	}
+func (list *BoolList) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 
 	_, err := w.Write(OPENING_BRACKET)
 	if err != nil {
@@ -670,14 +526,7 @@ func (list *BoolList) WriteRepresentation(ctx *Context, w io.Writer, encountered
 	return err
 }
 
-func (list *StringList) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (list *StringList) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	if encountered != nil && !list.HasRepresentation(encountered, config) {
-		return ErrNoRepresentation
-	}
+func (list *StringList) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 
 	_, err := w.Write([]byte{'['})
 	if err != nil {
@@ -692,7 +541,7 @@ func (list *StringList) WriteRepresentation(ctx *Context, w io.Writer, encounter
 			}
 		}
 		first = false
-		err = v.WriteRepresentation(ctx, w, nil, config)
+		err = v.WriteRepresentation(ctx, w, config)
 		if err != nil {
 			return err
 		}
@@ -702,14 +551,7 @@ func (list *StringList) WriteRepresentation(ctx *Context, w io.Writer, encounter
 	return err
 }
 
-func (tuple *Tuple) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (tuple *Tuple) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	if encountered != nil && !tuple.HasRepresentation(encountered, config) {
-		return ErrNoRepresentation
-	}
+func (tuple *Tuple) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 
 	_, err := w.Write([]byte{'#', '['})
 	if err != nil {
@@ -726,7 +568,7 @@ func (tuple *Tuple) WriteRepresentation(ctx *Context, w io.Writer, encountered m
 			}
 		}
 		first = false
-		err = v.WriteRepresentation(ctx, w, nil, config)
+		err = v.WriteRepresentation(ctx, w, config)
 		if err != nil {
 			return err
 		}
@@ -734,10 +576,6 @@ func (tuple *Tuple) WriteRepresentation(ctx *Context, w io.Writer, encountered m
 
 	_, err = w.Write([]byte{']'})
 	return err
-}
-
-func (*ByteSlice) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
 }
 
 func (slice *ByteSlice) write(w io.Writer) (int, error) {
@@ -757,20 +595,12 @@ func (slice *ByteSlice) write(w io.Writer) (int, error) {
 	return totalN, err
 }
 
-func (slice *ByteSlice) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (slice *ByteSlice) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	_, err := slice.write(w)
 	return err
 }
 
-func (opt Option) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	v, ok := opt.Value.(Bool)
-	return ok && v == True
-}
-
-func (opt Option) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	if encountered != nil && !opt.HasRepresentation(encountered, config) {
-		return ErrNoRepresentation
-	}
+func (opt Option) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 
 	if len(opt.Name) <= 1 {
 		_, err := w.Write([]byte{'-'})
@@ -793,17 +623,13 @@ func (opt Option) WriteRepresentation(ctx *Context, w io.Writer, encountered map
 	// if err != nil {
 	// 	return err
 	// }
-	// if err := opt.Value.WriteRepresentation(ctx, w, nil, config); err != nil {
+	// if err := opt.Value.WriteRepresentation(ctx, w, config); err != nil {
 	// 	return err
 	// }
 	return nil
 }
 
-func (Path) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (pth Path) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (pth Path) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	quote := parse.ContainsSpace(string(pth))
 	if !quote {
 		for _, r := range pth {
@@ -827,11 +653,7 @@ func (pth Path) WriteRepresentation(ctx *Context, w io.Writer, encountered map[u
 	return err
 }
 
-func (PathPattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (patt PathPattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (patt PathPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	quote := parse.ContainsSpace(string(patt))
 	if !quote {
 		for _, r := range patt {
@@ -855,38 +677,22 @@ func (patt PathPattern) WriteRepresentation(ctx *Context, w io.Writer, encounter
 	return err
 }
 
-func (URL) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (u URL) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (u URL) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	_, err := w.Write(utils.StringAsBytes(u))
 	return err
 }
 
-func (Host) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (host Host) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (host Host) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	_, err := w.Write(utils.StringAsBytes(host))
 	return err
 }
 
-func (Scheme) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (scheme Scheme) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (scheme Scheme) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	_, err := w.Write(utils.StringAsBytes(scheme + "://"))
 	return err
 }
 
-func (HostPattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (patt HostPattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (patt HostPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	var b = []byte{'%'}
 	b = append(b, patt...)
 
@@ -894,20 +700,12 @@ func (patt HostPattern) WriteRepresentation(ctx *Context, w io.Writer, encounter
 	return err
 }
 
-func (EmailAddress) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (addr EmailAddress) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (addr EmailAddress) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	_, err := w.Write(utils.StringAsBytes(addr))
 	return err
 }
 
-func (URLPattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (patt URLPattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (patt URLPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	var b = []byte{'%'}
 	b = append(b, patt...)
 
@@ -915,11 +713,7 @@ func (patt URLPattern) WriteRepresentation(ctx *Context, w io.Writer, encountere
 	return err
 }
 
-func (Identifier) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (i Identifier) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (i Identifier) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	_, err := w.Write([]byte{'#'})
 	if err != nil {
 		return err
@@ -931,11 +725,7 @@ func (i Identifier) WriteRepresentation(ctx *Context, w io.Writer, encountered m
 	return nil
 }
 
-func (PropertyName) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (p PropertyName) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (p PropertyName) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	_, err := w.Write([]byte{'.'})
 	if err != nil {
 		return err
@@ -947,11 +737,7 @@ func (p PropertyName) WriteRepresentation(ctx *Context, w io.Writer, encountered
 	return nil
 }
 
-func (CheckedString) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (str CheckedString) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (str CheckedString) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	_, err := w.Write([]byte{'%'})
 	if err != nil {
 		return err
@@ -971,10 +757,6 @@ func (str CheckedString) WriteRepresentation(ctx *Context, w io.Writer, encounte
 	}
 	_, err = w.Write([]byte{'`'})
 	return err
-}
-
-func (ByteCount) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
 }
 
 func (count ByteCount) Write(w io.Writer, _3digitGroupCount int) (int, error) {
@@ -1004,47 +786,35 @@ func (count ByteCount) Write(w io.Writer, _3digitGroupCount int) (int, error) {
 	return fmt.Fprintf(w, format, v)
 }
 
-func (count ByteCount) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (count ByteCount) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	_, err := count.Write(w, -1)
 	return err
-}
-
-func (LineCount) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
 }
 
 func (count LineCount) write(w io.Writer) (int, error) {
 	return fmt.Fprintf(w, "%dln", count)
 }
 
-func (count LineCount) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (count LineCount) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	if count < 0 {
 		return ErrNoRepresentation
 	}
 
 	_, err := count.write(w)
 	return err
-}
-
-func (RuneCount) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
 }
 
 func (count RuneCount) write(w io.Writer) (int, error) {
 	return fmt.Fprintf(w, "%drn", count)
 }
 
-func (count RuneCount) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (count RuneCount) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	if count < 0 {
 		return ErrNoRepresentation
 	}
 
 	_, err := count.write(w)
 	return err
-}
-
-func (ByteRate) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
 }
 
 func (rate ByteRate) write(w io.Writer) (int, error) {
@@ -1059,17 +829,13 @@ func (rate ByteRate) write(w io.Writer) (int, error) {
 	return totalN, err
 }
 
-func (rate ByteRate) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (rate ByteRate) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	if rate < 0 {
 		return ErrNoRepresentation
 	}
 
 	_, err := rate.write(w)
 	return err
-}
-
-func (SimpleRate) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
 }
 
 func (rate SimpleRate) write(w io.Writer) (int, error) {
@@ -1095,17 +861,13 @@ func (rate SimpleRate) write(w io.Writer) (int, error) {
 	return fmt.Fprintf(w, format, v)
 }
 
-func (rate SimpleRate) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (rate SimpleRate) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	if rate < 0 {
 		return ErrNoRepresentation
 	}
 
 	_, err := rate.write(w)
 	return err
-}
-
-func (Duration) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
 }
 
 func (d Duration) write(w io.Writer) (int, error) {
@@ -1148,13 +910,9 @@ func (d Duration) write(w io.Writer) (int, error) {
 	return w.Write(b)
 }
 
-func (d Duration) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (d Duration) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	_, err := d.write(w)
 	return err
-}
-
-func (Date) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
 }
 
 func (d Date) write(w io.Writer) (int, error) {
@@ -1168,16 +926,12 @@ func (d Date) write(w io.Writer) (int, error) {
 		t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), ms, us, t.Location().String())
 }
 
-func (d Date) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (d Date) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	_, err := d.write(w)
 	return err
 }
 
-func (FileMode) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (m FileMode) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (m FileMode) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	if _, err := w.Write(utils.StringAsBytes(FILEMODE_PRIMORDIAL_FUNCNAME)); err != nil {
 		return err
 	}
@@ -1194,10 +948,6 @@ func (m FileMode) WriteRepresentation(ctx *Context, w io.Writer, encountered map
 	return err
 }
 
-func (RuneRange) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
 func (r RuneRange) write(w io.Writer) (int, error) {
 	b := []byte{'\''}
 	b = append(b, string(r.Start)...)
@@ -1208,25 +958,15 @@ func (r RuneRange) write(w io.Writer) (int, error) {
 	return w.Write(b)
 }
 
-func (r RuneRange) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (r RuneRange) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	_, err := r.write(w)
 	return err
 }
 
-func (r QuantityRange) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	if r.Start != nil && !r.Start.HasRepresentation(encountered, config) {
-		return false
-	}
-	return r.End == nil || r.End.HasRepresentation(encountered, config)
-}
-
-func (r QuantityRange) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	if encountered != nil && !r.HasRepresentation(encountered, config) {
-		return ErrNoRepresentation
-	}
+func (r QuantityRange) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 
 	if r.Start != nil {
-		err := r.Start.WriteRepresentation(ctx, w, nil, config)
+		err := r.Start.WriteRepresentation(ctx, w, config)
 		if err != nil {
 			return err
 		}
@@ -1238,16 +978,12 @@ func (r QuantityRange) WriteRepresentation(ctx *Context, w io.Writer, encountere
 	}
 
 	if r.End != nil {
-		err := r.End.WriteRepresentation(ctx, w, nil, config)
+		err := r.End.WriteRepresentation(ctx, w, config)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
-}
-
-func (IntRange) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
 }
 
 func (r IntRange) write(w io.Writer) (int, error) {
@@ -1261,34 +997,21 @@ func (r IntRange) write(w io.Writer) (int, error) {
 	return w.Write(b)
 }
 
-func (r IntRange) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (r IntRange) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	_, err := r.write(w)
 	return err
 }
 
 //patterns
 
-func (p *ExactValuePattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	ptr := reflect.ValueOf(p).Pointer()
-	if _, ok := encountered[ptr]; ok {
-		return false
-	}
-	encountered[ptr] = -1
-
-	return p.value.HasRepresentation(encountered, config)
-}
-
-func (p *ExactValuePattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	if encountered != nil && !p.HasRepresentation(encountered, config) {
-		return ErrNoRepresentation
-	}
+func (p *ExactValuePattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 
 	_, err := w.Write([]byte{'%', '('})
 	if err != nil {
 		return err
 	}
 
-	err = p.value.WriteRepresentation(ctx, w, nil, config)
+	err = p.value.WriteRepresentation(ctx, w, config)
 	if err != nil {
 		return err
 	}
@@ -1300,119 +1023,53 @@ func (p *ExactValuePattern) WriteRepresentation(ctx *Context, w io.Writer, encou
 	return nil
 }
 
-func (p *TypePattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	_, ok := DEFAULT_NAMED_PATTERNS[p.Name]
-	return ok
-}
-
-func (pattern TypePattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	if !pattern.HasRepresentation(encountered, config) {
-		return ErrNoRepresentation
-	}
+func (pattern TypePattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	_, err := w.Write(utils.StringAsBytes("%" + pattern.Name))
 	return err
 }
 
-func (DifferencePattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (pattern DifferencePattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (pattern DifferencePattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	return ErrNoRepresentation
 }
 
-func (*OptionalPattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (pattern *OptionalPattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (pattern *OptionalPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	return ErrNoRepresentation
 }
 
-func (RegexPattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (patt RegexPattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (patt RegexPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	return ErrNoRepresentation
 }
 
-func (UnionPattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (patt UnionPattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (patt UnionPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	return ErrNoRepresentation
 }
 
-func (SequenceStringPattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (patt SequenceStringPattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (patt SequenceStringPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	return ErrNoRepresentation
 }
 
-func (UnionStringPattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (patt UnionStringPattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (patt UnionStringPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	return ErrNoRepresentation
 }
 
-func (RuneRangeStringPattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (patt RuneRangeStringPattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (patt RuneRangeStringPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	return ErrNoRepresentation
 }
 
-func (DynamicStringPatternElement) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (patt DynamicStringPatternElement) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (patt DynamicStringPatternElement) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	return ErrNoRepresentation
 }
 
-func (RepeatedPatternElement) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (patt *RepeatedPatternElement) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (patt *RepeatedPatternElement) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	return ErrNoRepresentation
 }
 
-func (NamedSegmentPathPattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (patt *NamedSegmentPathPattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (patt *NamedSegmentPathPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	_, err := w.Write(utils.StringAsBytes(patt.node.Raw))
 	return err
 }
 
-func (p *ObjectPattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	ptr := reflect.ValueOf(p).Pointer()
-	if _, ok := encountered[ptr]; ok {
-		return false
-	}
-	encountered[ptr] = -1
-
-	for _, entryPatt := range p.entryPatterns {
-		if !entryPatt.HasRepresentation(encountered, config) {
-			return false
-		}
-	}
-	return true
-}
-
-func (p *ObjectPattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	if encountered != nil && !p.HasRepresentation(encountered, config) {
-		return ErrNoRepresentation
-	}
+func (p *ObjectPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 
 	_, err := w.Write([]byte{'%', '{'})
 	if err != nil {
@@ -1456,7 +1113,7 @@ func (p *ObjectPattern) WriteRepresentation(ctx *Context, w io.Writer, encounter
 		}
 
 		//value
-		err = entryPattern.WriteRepresentation(ctx, w, nil, config)
+		err = entryPattern.WriteRepresentation(ctx, w, config)
 		if err != nil {
 			return err
 		}
@@ -1469,37 +1126,11 @@ func (p *ObjectPattern) WriteRepresentation(ctx *Context, w io.Writer, encounter
 	return nil
 }
 
-func (RecordPattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (patt RecordPattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (patt RecordPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	return ErrNoRepresentation
 }
 
-func (p *ListPattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	ptr := reflect.ValueOf(p).Pointer()
-	if _, ok := encountered[ptr]; ok {
-		return false
-	}
-	encountered[ptr] = -1
-
-	if p.elementPatterns != nil {
-		for _, e := range p.elementPatterns {
-			if !e.HasRepresentation(encountered, config) {
-				return false
-			}
-		}
-		return true
-	}
-
-	return p.generalElementPattern.HasRepresentation(encountered, config)
-}
-
-func (p *ListPattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	if encountered != nil && !p.HasRepresentation(encountered, config) {
-		return ErrNoRepresentation
-	}
+func (p *ListPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 
 	if p.elementPatterns != nil {
 		_, err := w.Write([]byte{'%', '['})
@@ -1508,7 +1139,7 @@ func (p *ListPattern) WriteRepresentation(ctx *Context, w io.Writer, encountered
 		}
 
 		for i, e := range p.elementPatterns {
-			err = e.WriteRepresentation(ctx, w, nil, config)
+			err = e.WriteRepresentation(ctx, w, config)
 			if err != nil {
 				return err
 			}
@@ -1536,7 +1167,7 @@ func (p *ListPattern) WriteRepresentation(ctx *Context, w io.Writer, encountered
 			return err
 		}
 
-		return generalElementPattern.WriteRepresentation(ctx, w, nil, config)
+		return generalElementPattern.WriteRepresentation(ctx, w, config)
 	default:
 		//surround the general element pattern with %( )
 
@@ -1545,7 +1176,7 @@ func (p *ListPattern) WriteRepresentation(ctx *Context, w io.Writer, encountered
 			return err
 		}
 
-		err = generalElementPattern.WriteRepresentation(ctx, w, nil, config)
+		err = generalElementPattern.WriteRepresentation(ctx, w, config)
 		if err != nil {
 			return err
 		}
@@ -1556,72 +1187,36 @@ func (p *ListPattern) WriteRepresentation(ctx *Context, w io.Writer, encountered
 
 }
 
-func (TuplePattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (patt TuplePattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (patt TuplePattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	return ErrNoRepresentation
 }
 
-func (OptionPattern) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (patt OptionPattern) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (patt OptionPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	return ErrNoRepresentation
 }
 
-func (Mimetype) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (mt Mimetype) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (mt Mimetype) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	return ErrNoRepresentation
 }
 
-func (FileInfo) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (i FileInfo) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (i FileInfo) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	return ErrNoRepresentation
 }
 
-func (*Routine) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (r *Routine) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (r *Routine) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	return ErrNoRepresentation
 }
 
-func (*RoutineGroup) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (g *RoutineGroup) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (g *RoutineGroup) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	return ErrNoRepresentation
 }
 
-func (f *InoxFunction) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (f *InoxFunction) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (f *InoxFunction) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	return ErrNoRepresentation
 }
 
-func (b *Bytecode) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return false
-}
-
-func (b *Bytecode) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (b *Bytecode) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	return ErrNoRepresentation
-}
-
-func (port Port) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
 }
 
 func (port Port) repr(quote bool) []byte {
@@ -1642,32 +1237,13 @@ func (port Port) repr(quote bool) []byte {
 	return b
 }
 
-func (port Port) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (port Port) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	_, err := w.Write(port.repr(false))
 	return err
 }
 
-func (udata *UData) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	ptr := reflect.ValueOf(udata).Pointer()
-	if _, ok := encountered[ptr]; ok {
-		return false
-	}
-	encountered[ptr] = -1
-
-	for _, entry := range udata.HiearchyEntries {
-		if !entry.HasRepresentation(encountered, config) {
-			return false
-		}
-	}
-	return true
-}
-
-func (udata *UData) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (udata *UData) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	//TODO: prevent modification of the Object while this function is running
-
-	if encountered != nil && !udata.HasRepresentation(encountered, config) {
-		return ErrNoRepresentation
-	}
 
 	_, err := w.Write([]byte{'u', 'd', 'a', 't', 'a', ' '})
 	if err != nil {
@@ -1675,7 +1251,7 @@ func (udata *UData) WriteRepresentation(ctx *Context, w io.Writer, encountered m
 	}
 
 	if udata.Root != nil {
-		err = udata.Root.WriteRepresentation(ctx, w, nil, config)
+		err = udata.Root.WriteRepresentation(ctx, w, config)
 		if err != nil {
 			return err
 		}
@@ -1690,7 +1266,7 @@ func (udata *UData) WriteRepresentation(ctx *Context, w io.Writer, encountered m
 		}
 		first = false
 
-		if err := entry.WriteRepresentation(ctx, w, encountered, config); err != nil {
+		if err := entry.WriteRepresentation(ctx, w, config); err != nil {
 			return err
 		}
 	}
@@ -1702,26 +1278,9 @@ func (udata *UData) WriteRepresentation(ctx *Context, w io.Writer, encountered m
 	return nil
 }
 
-func (entry UDataHiearchyEntry) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (entry UDataHiearchyEntry) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 
-	if !entry.Value.HasRepresentation(encountered, config) {
-		return false
-	}
-
-	for _, child := range entry.Children {
-		if !child.HasRepresentation(encountered, config) {
-			return false
-		}
-	}
-	return true
-}
-
-func (entry UDataHiearchyEntry) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	if encountered != nil && !entry.HasRepresentation(encountered, config) {
-		return ErrNoRepresentation
-	}
-
-	if err := entry.Value.WriteRepresentation(ctx, w, encountered, config); err != nil {
+	if err := entry.Value.WriteRepresentation(ctx, w, config); err != nil {
 		return err
 	}
 
@@ -1735,7 +1294,7 @@ func (entry UDataHiearchyEntry) WriteRepresentation(ctx *Context, w io.Writer, e
 			}
 			first = false
 
-			err := child.WriteRepresentation(ctx, w, nil, config)
+			err := child.WriteRepresentation(ctx, w, config)
 			if err != nil {
 				return err
 			}
@@ -1745,18 +1304,10 @@ func (entry UDataHiearchyEntry) WriteRepresentation(ctx *Context, w io.Writer, e
 	return nil
 }
 
-func (c *StringConcatenation) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
+func (c *StringConcatenation) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+	return Str(c.GetOrBuildString()).WriteRepresentation(ctx, w, config)
 }
 
-func (c *StringConcatenation) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	return Str(c.GetOrBuildString()).WriteRepresentation(ctx, w, encountered, config)
-}
-
-func (c Color) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (c Color) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (c Color) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	panic(ErrNotImplementedYet)
 }

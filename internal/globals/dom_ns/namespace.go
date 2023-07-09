@@ -70,8 +70,8 @@ func init() {
 
 }
 
-func NewDomNamespace() *core.Record {
-	return core.NewRecordFromMap(core.ValMap{
+func NewDomNamespace() *core.Namespace {
+	return core.NewNamespace("dom", map[string]core.Value{
 		"Node": core.WrapGoFunction(NewNode),
 		"auto": core.WrapGoFunction(NewAutoNode),
 		"a":    core.WrapGoFunction(_a),

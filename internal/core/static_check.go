@@ -2275,7 +2275,7 @@ func (d *StaticCheckData) Errors() []*StaticCheckError {
 
 func (d *StaticCheckData) ErrorTuple() *Tuple {
 	if d.errorsPropSet.CompareAndSwap(false, true) {
-		errors := make([]Value, len(d.errors))
+		errors := make([]Serializable, len(d.errors))
 		for i, err := range d.errors {
 			errors[i] = err.Err()
 		}

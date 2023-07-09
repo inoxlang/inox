@@ -88,7 +88,7 @@ func (s *wrappedWatcherStream) WaitNext(ctx *Context, filter Pattern, timeout ti
 func (s *wrappedWatcherStream) WaitNextChunk(ctx *Context, filter Pattern, sizeRange IntRange, timeout time.Duration) (*DataChunk, error) {
 	min := sizeRange.KnownStart()
 
-	chunkData := make([]Value, int(min))
+	chunkData := make([]Serializable, int(min))
 	startTime := time.Now()
 
 	//TODO: return chunk even if length < min ?
@@ -122,7 +122,7 @@ func (s *wrappedWatcherStream) WaitNextChunk(ctx *Context, filter Pattern, sizeR
 			return nil, err
 		}
 
-		chunkData[i] = next
+		chunkData[i] = next.(Serializable)
 	}
 
 	return newChunk(len(chunkData)), nil
@@ -255,14 +255,14 @@ func (s *ElementsStream) WaitNextChunk(ctx *Context, filter Pattern, sizeRange I
 		return nil, ErrEndOfStream
 	}
 
-	chunkData := make([]Value, sizeRange.KnownStart())
+	chunkData := make([]Serializable, sizeRange.KnownStart())
 	i := 0
 
 	for j := s.nextIndex; j < len(s.elements) && i < len(chunkData); j++ {
 		elem := s.elements[j]
 		s.nextIndex++
 		if (s.filter == nil || s.filter.Test(ctx, elem)) && (filter == nil || filter.Test(ctx, elem)) {
-			chunkData[i] = elem
+			chunkData[i] = elem.(Serializable)
 			i++
 		}
 	}

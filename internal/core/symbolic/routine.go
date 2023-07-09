@@ -123,8 +123,8 @@ func (g *RoutineGroup) Add(newRt *Routine) {
 
 }
 
-func (g *RoutineGroup) WaitAllResults(ctx *Context) (*List, *Error) {
-	return NewList(), nil
+func (g *RoutineGroup) WaitAllResults(ctx *Context) (*Array, *Error) {
+	return NewAnyArray(), nil
 }
 
 func (g *RoutineGroup) CancelAll(*Context) {

@@ -15,14 +15,16 @@ import (
 
 var (
 	_ = []Indexable{
-		&String{}, &List{}, &Tuple{}, &RuneSlice{}, &ByteSlice{}, &Object{}, &IntRange{},
+		&String{}, (*Array)(nil), &List{}, &Tuple{}, &RuneSlice{}, &ByteSlice{}, &Object{}, &IntRange{},
 		&AnyStringLike{},
 	}
 
 	ANY_INDEXABLE = &AnyIndexable{}
+	ANY_ARRAY     = &Array{}
 	ANY_TUPLE     = NewTupleOf(ANY)
 	ANY_OBJ       = &Object{}
 	ANY_REC       = &Record{}
+	ANY_NAMESPACE = NewAnyNamespace()
 )
 
 // An Indexable represents a symbolic Indexable.
@@ -32,6 +34,164 @@ type Indexable interface {
 	elementAt(i int) SymbolicValue
 	KnownLen() int
 	HasKnownLen() bool
+}
+
+// An Array represents a symbolic Array.
+type Array struct {
+	_        int
+	elements []SymbolicValue //if nil matches any
+}
+
+func NewArray(elements ...SymbolicValue) *Array {
+	if elements == nil {
+		elements = []SymbolicValue{}
+	}
+	return &Array{elements: elements}
+}
+
+func NewAnyArray() *Array {
+	return &Array{}
+}
+
+func (a *Array) Test(v SymbolicValue) bool {
+	otherArray, ok := v.(*Array)
+	if !ok {
+		return false
+	}
+
+	if a.elements == nil {
+		return true
+	}
+
+	if len(a.elements) != len(otherArray.elements) || otherArray.elements == nil {
+		return false
+	}
+
+	for i, e := range a.elements {
+		if !e.Test(otherArray.elements[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func (a *Array) Widen() (SymbolicValue, bool) {
+	if a.elements == nil {
+		return nil, false
+	}
+
+	return ANY_ARRAY, true
+}
+
+func (a *Array) IsWidenable() bool {
+	return a.elements != nil
+}
+
+func (a *Array) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	if a.elements != nil {
+		length := a.KnownLen()
+
+		if depth > config.MaxDepth && length > 0 {
+			utils.Must(w.Write(utils.StringAsBytes("Array(...)")))
+			return
+		}
+
+		utils.Must(w.Write(utils.StringAsBytes("Array(")))
+
+		indentCount := parentIndentCount + 1
+		indent := bytes.Repeat(config.Indent, indentCount)
+		printIndices := !config.Compact && length > 10
+
+		for i := 0; i < length; i++ {
+			v := a.elements[i]
+
+			if !config.Compact {
+				utils.Must(w.Write(LF_CR))
+				utils.Must(w.Write(indent))
+
+				//index
+				if printIndices {
+					if config.Colorize {
+						utils.Must(w.Write(config.Colors.DiscreteColor))
+					}
+					if i < 10 {
+						utils.PanicIfErr(w.WriteByte(' '))
+					}
+					utils.Must(w.Write(utils.StringAsBytes(strconv.FormatInt(int64(i), 10))))
+					utils.Must(w.Write(COLON_SPACE))
+					if config.Colorize {
+						utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+					}
+				}
+			}
+
+			//element
+			v.PrettyPrint(w, config, depth+1, indentCount)
+
+			//comma & indent
+			isLastEntry := i == length-1
+
+			if !isLastEntry {
+				utils.Must(w.Write(COMMA_SPACE))
+			}
+
+		}
+
+		var end []byte
+		if !config.Compact && length > 0 {
+			end = append(end, '\n', '\r')
+			end = append(end, bytes.Repeat(config.Indent, depth)...)
+		}
+		end = append(end, ')')
+
+		utils.Must(w.Write(end))
+		return
+	}
+	utils.Must(w.Write(utils.StringAsBytes("%array")))
+}
+
+func (a *Array) HasKnownLen() bool {
+	return a.elements != nil
+}
+
+func (a *Array) KnownLen() int {
+	if a.elements == nil {
+		panic("cannot get length of a symbolic array with no known length")
+	}
+
+	return len(a.elements)
+}
+
+func (a *Array) element() SymbolicValue {
+	if a.elements != nil {
+		if len(a.elements) == 0 {
+			return ANY
+		}
+		return joinValues(a.elements)
+	}
+	return ANY
+}
+
+func (t *Array) elementAt(i int) SymbolicValue {
+	if t.elements != nil {
+		if len(t.elements) == 0 || i >= len(t.elements) {
+			return ANY // return "never" ?
+		}
+		return t.elements[i]
+	}
+	return ANY
+}
+
+func (a *Array) IteratorElementKey() SymbolicValue {
+	return ANY_INT
+}
+
+func (a *Array) IteratorElementValue() SymbolicValue {
+	return a.element()
+}
+
+func (*Array) WidestOfType() SymbolicValue {
+	return ANY_ARRAY
 }
 
 // A List represents a symbolic List.
@@ -1063,17 +1223,13 @@ func (obj *Object) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 		return
 	}
 	utils.Must(w.Write(utils.StringAsBytes("%object")))
-	return
 }
 
 func (o *Object) WidestOfType() SymbolicValue {
 	return ANY_OBJ
 }
 
-//
-
-//
-
+// A Record represents a symbolic Record.
 type Record struct {
 	UnassignablePropsMixin
 	entries         map[string]SymbolicValue //if nil, matches any record

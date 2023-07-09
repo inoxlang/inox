@@ -14,9 +14,13 @@ import (
 	"github.com/inoxlang/inox/internal/project_server"
 )
 
+const (
+	NAMESPACE_NAME = "inoxlsp"
+)
+
 var (
 	LSP_SESSION_PATTERN = &core.TypePattern{
-		Name:          "inoxlsp.session",
+		Name:          NAMESPACE_NAME + ".session",
 		Type:          reflect.TypeOf((*LSPSession)(nil)),
 		SymbolicValue: symbolic_inoxlsp.ANY_LSP_SESSION,
 	}
@@ -27,15 +31,15 @@ func init() {
 		return nil
 	})
 
-	core.RegisterDefaultPatternNamespace("inoxlsp", &core.PatternNamespace{
+	core.RegisterDefaultPatternNamespace(NAMESPACE_NAME, &core.PatternNamespace{
 		Patterns: map[string]core.Pattern{
 			"session": LSP_SESSION_PATTERN,
 		},
 	})
 }
 
-func NewInoxLspNamespace() *core.Record {
-	return core.NewRecordFromMap(core.ValMap{
+func NewInoxLspNamespace() *core.Namespace {
+	return core.NewNamespace(NAMESPACE_NAME, map[string]core.Value{
 		"start_websocket_server": core.WrapGoFunction(StartLspServer),
 	})
 }
@@ -50,7 +54,7 @@ func StartLspServer(ctx *core.Context, config *core.Object) error {
 	var onSessionHandler *core.InoxFunction
 	var projectsDir core.Path
 
-	err := config.ForEachEntry(func(k string, v core.Value) error {
+	err := config.ForEachEntry(func(k string, v core.Serializable) error {
 		//TODO: add more checks + symbolic checks
 
 		switch k {

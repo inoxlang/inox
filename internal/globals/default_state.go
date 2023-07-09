@@ -94,14 +94,14 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 
 	//create value for the preinit-data global
 	var preinitFilesKeys []string
-	var preinitDataValues []core.Value
+	var preinitDataValues []core.Serializable
 	for _, preinitFile := range conf.PreinitFiles {
 		preinitFilesKeys = append(preinitFilesKeys, preinitFile.Name)
 		preinitDataValues = append(preinitDataValues, preinitFile.Parsed)
 	}
 
 	preinitData :=
-		core.NewRecordFromKeyValLists([]string{"files"}, []core.Value{core.NewRecordFromKeyValLists(preinitFilesKeys, preinitDataValues)})
+		core.NewRecordFromKeyValLists([]string{"files"}, []core.Serializable{core.NewRecordFromKeyValLists(preinitFilesKeys, preinitDataValues)})
 
 	//
 	constants := map[string]core.Value{
@@ -249,7 +249,6 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 
 		"typeof":    core.ValOf(_typeof),
 		"url_of":    core.ValOf(_url_of),
-		"id_of":     core.ValOf(core.IdOf),
 		"len":       core.ValOf(_len),
 		"len_range": core.ValOf(_len_range),
 
@@ -262,7 +261,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 		"help": core.ValOf(help_ns.Help),
 	}
 
-	for k, v := range containers.NewContainersNamespace().EntryMap() {
+	for k, v := range containers.NewContainersNamespace() {
 		constants[k] = v
 	}
 

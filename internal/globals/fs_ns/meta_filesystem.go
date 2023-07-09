@@ -228,7 +228,7 @@ func (fls *MetaFilesystem) setFileMetadata(metadata *metaFsFileMetadata, usedTx 
 		METAFS_MODIF_TIME_PROPNAME,
 	}
 
-	recordPropertyValues := []core.Value{
+	recordPropertyValues := []core.Serializable{
 
 		core.FileMode(metadata.mode),
 		metadata.creationTime,
@@ -236,7 +236,7 @@ func (fls *MetaFilesystem) setFileMetadata(metadata *metaFsFileMetadata, usedTx 
 	}
 
 	if metadata.mode.IsDir() {
-		var children []core.Value
+		var children []core.Serializable
 
 		for _, childName := range metadata.children {
 			children = append(children, childName)

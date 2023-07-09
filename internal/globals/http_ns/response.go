@@ -11,7 +11,7 @@ import (
 
 type HttpResponse struct {
 	wrapped *http.Response
-	cookies []core.Value
+	cookies []core.Serializable
 
 	core.NoReprMixin
 	core.NotClonableMixin
@@ -37,7 +37,7 @@ func (resp *HttpResponse) Prop(ctx *core.Context, name string) core.Value {
 			return core.NewWrappedValueList(resp.cookies...)
 		}
 		cookies := resp.wrapped.Cookies()
-		resp.cookies = make([]core.Value, len(cookies))
+		resp.cookies = make([]core.Serializable, len(cookies))
 
 		for i, c := range cookies {
 			resp.cookies[i] = createObjectFromCookie(ctx, *c)

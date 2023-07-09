@@ -1,7 +1,6 @@
 package core
 
 import (
-	"bytes"
 	"strconv"
 	"testing"
 
@@ -11,17 +10,16 @@ import (
 )
 
 func TestNilJSONRepresentation(t *testing.T) {
-	assert.True(t, Nil.HasJSONRepresentation(nil, JSONSerializationConfig{}))
+
 	assert.Equal(t, "null", getJSONRepr(t, Nil, reprTestCtx))
 }
 
 func TestBoolJSONRepresentation(t *testing.T) {
-	assert.True(t, True.HasJSONRepresentation(nil, JSONSerializationConfig{}))
+
 	assert.Equal(t, "true", getJSONRepr(t, True, reprTestCtx))
 }
 
 func TestRuneJSONRepresentation(t *testing.T) {
-	assert.True(t, Rune('a').HasJSONRepresentation(nil, JSONSerializationConfig{}))
 
 	assert.Equal(t, `{"rune__value":"a"}`, getJSONRepr(t, Rune('a'), reprTestCtx))
 	assert.Equal(t, `"a"`, getJSONRepr(t, Rune('a'), reprTestCtx, JSONSerializationConfig{
@@ -32,7 +30,7 @@ func TestRuneJSONRepresentation(t *testing.T) {
 }
 
 func TestIntJSONRepresentation(t *testing.T) {
-	assert.True(t, Int(2).HasJSONRepresentation(nil, JSONSerializationConfig{}))
+
 	assert.Equal(t, `{"int__value":"2"}`, getJSONRepr(t, Int(2), reprTestCtx))
 	assert.Equal(t, `"2"`, getJSONRepr(t, Int(2), reprTestCtx, JSONSerializationConfig{
 		Pattern: INT_PATTERN,
@@ -54,7 +52,6 @@ func TestFloatJSONRepresentation(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
-			assert.True(t, testCase.value.HasJSONRepresentation(nil, JSONSerializationConfig{}))
 
 			repr := getJSONRepr(t, testCase.value, reprTestCtx)
 			assert.Equal(t, testCase.representation, repr)
@@ -70,7 +67,6 @@ func TestFloatJSONRepresentation(t *testing.T) {
 func TestStrJSONRepresentation(t *testing.T) {
 	s := Str("a\nb")
 
-	assert.True(t, s.HasJSONRepresentation(nil, JSONSerializationConfig{}))
 	expectedRepr := `"a\nb"`
 	assert.Equal(t, expectedRepr, getJSONRepr(t, s, reprTestCtx))
 	assert.Equal(t, expectedRepr, getJSONRepr(t, s, reprTestCtx, JSONSerializationConfig{
@@ -84,7 +80,7 @@ func TestStrJSONRepresentation(t *testing.T) {
 func TestObjectJSONRepresentation(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		obj := &Object{}
-		assert.True(t, obj.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
+
 		assert.Equal(t, `{}`, getJSONRepr(t, obj, reprTestCtx))
 		assert.Equal(t, `{}`, getJSONRepr(t, obj, reprTestCtx, JSONSerializationConfig{
 			Pattern: OBJECT_PATTERN,
@@ -96,7 +92,7 @@ func TestObjectJSONRepresentation(t *testing.T) {
 
 	t.Run("single key: ambiguous value", func(t *testing.T) {
 		obj := objFrom(ValMap{"a\nb": Path("/")})
-		assert.True(t, obj.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
+
 		assert.Equal(t, `{"a\nb":{"path__value":"/"}}`, getJSONRepr(t, obj, reprTestCtx))
 		assert.Equal(t, `{"a\nb":{"path__value":"/"}}`, getJSONRepr(t, obj, reprTestCtx, JSONSerializationConfig{
 			Pattern: OBJECT_PATTERN,
@@ -110,7 +106,6 @@ func TestObjectJSONRepresentation(t *testing.T) {
 
 	t.Run("two keys", func(t *testing.T) {
 		obj := objFrom(ValMap{"a\nb": Int(1), "c\nd": Int(2)})
-		assert.True(t, obj.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
 
 		assert.Equal(t, `{"a\nb":"1","c\nd":"2"}`, getJSONRepr(t, obj, reprTestCtx, JSONSerializationConfig{
 			Pattern: NewInexactObjectPattern(map[string]Pattern{
@@ -120,16 +115,11 @@ func TestObjectJSONRepresentation(t *testing.T) {
 		}))
 	})
 
-	t.Run("one of entry's value has no representation", func(t *testing.T) {
-		obj := objFrom(ValMap{"a\nb": &Reader{wrapped: bytes.NewReader(nil)}})
-		assert.False(t, obj.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
-	})
-
 	t.Run("deep", func(t *testing.T) {
 		obj := objFrom(ValMap{
 			"a": NewWrappedValueList(Int(1), objFrom(ValMap{"b": Int(2)})),
 		})
-		assert.True(t, obj.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
+
 		assert.Equal(t, `{"a":["1",{"b":"2"}]}`, getJSONRepr(t, obj, reprTestCtx, JSONSerializationConfig{
 			Pattern: NewInexactObjectPattern(map[string]Pattern{
 				"a": NewListPattern([]Pattern{
@@ -145,7 +135,7 @@ func TestObjectJSONRepresentation(t *testing.T) {
 	t.Run("cycle", func(t *testing.T) {
 		obj := &Object{}
 		obj.SetProp(reprTestCtx, "self", obj)
-		assert.False(t, obj.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
+
 	})
 
 	t.Run("sensitive properties", func(t *testing.T) {
@@ -154,7 +144,6 @@ func TestObjectJSONRepresentation(t *testing.T) {
 			"password": Str("mypassword"),
 			"e":        EmailAddress("a@mail.com"),
 		})
-		assert.True(t, obj.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
 
 		assert.Equal(t, `{"a":{"int__value":"1"}}`, getJSONRepr(t, obj, reprTestCtx, JSONSerializationConfig{
 			ReprConfig: &ReprConfig{
@@ -169,7 +158,7 @@ func TestObjectJSONRepresentation(t *testing.T) {
 			"password": Str("mypassword"),
 			"e":        EmailAddress("a@mail.com"),
 		})
-		assert.True(t, obj.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
+
 		expectedRepr := `{"a":"1","e":{"emailaddr__value":"a@mail.com"},"password":"mypassword"}`
 
 		assert.Equal(t, expectedRepr, getJSONRepr(t, obj, reprTestCtx, JSONSerializationConfig{
@@ -190,7 +179,6 @@ func TestObjectJSONRepresentation(t *testing.T) {
 			publicKeys: []string{"a", "password", "e"},
 		})
 
-		assert.True(t, obj.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
 		expectedRepr := `{"a":"1","e":{"emailaddr__value":"a@mail.com"},"password":"mypassword"}`
 
 		assert.Equal(t, expectedRepr, getJSONRepr(t, obj, reprTestCtx, JSONSerializationConfig{
@@ -207,7 +195,6 @@ func TestObjectJSONRepresentation(t *testing.T) {
 		url := URL("https://example.com/objects/98484")
 		utils.PanicIfErr(obj.SetURLOnce(ctx, url))
 
-		assert.True(t, obj.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
 		expectedRepr := `{"_url_":"` + string(url) + `"}`
 		assert.Equal(t, expectedRepr, getJSONRepr(t, obj, reprTestCtx))
 	})
@@ -216,7 +203,6 @@ func TestObjectJSONRepresentation(t *testing.T) {
 func TestRecordJSONRepresentation(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		rec := NewRecordFromMap(nil)
-		assert.True(t, rec.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
 
 		assert.Equal(t, `{"rec__value":{}}`, getJSONRepr(t, rec, reprTestCtx))
 		assert.Equal(t, `{}`, getJSONRepr(t, rec, reprTestCtx, JSONSerializationConfig{
@@ -226,7 +212,7 @@ func TestRecordJSONRepresentation(t *testing.T) {
 
 	t.Run("single key: ambiguous value", func(t *testing.T) {
 		obj := NewRecordFromMap(ValMap{"a\nb": Path("/")})
-		assert.True(t, obj.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
+
 		assert.Equal(t, `{"rec__value":{"a\nb":{"path__value":"/"}}}`, getJSONRepr(t, obj, reprTestCtx))
 		assert.Equal(t, `{"a\nb":{"path__value":"/"}}`, getJSONRepr(t, obj, reprTestCtx, JSONSerializationConfig{
 			Pattern: RECORD_PATTERN,
@@ -240,7 +226,6 @@ func TestRecordJSONRepresentation(t *testing.T) {
 
 	t.Run("two keys", func(t *testing.T) {
 		rec := NewRecordFromMap(ValMap{"a\nb": Str("1"), "c\nd": Str("2")})
-		assert.True(t, rec.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
 
 		assert.Equal(t, `{"a\nb":"1","c\nd":"2"}`, getJSONRepr(t, rec, reprTestCtx, JSONSerializationConfig{
 			Pattern: RECORD_PATTERN,
@@ -250,10 +235,10 @@ func TestRecordJSONRepresentation(t *testing.T) {
 	t.Run("deep", func(t *testing.T) {
 		rec := NewRecordFromMap(ValMap{
 			"a": &Tuple{
-				elements: []Value{Int(1), NewRecordFromMap(ValMap{"b": Int(2)})},
+				elements: []Serializable{Int(1), NewRecordFromMap(ValMap{"b": Int(2)})},
 			},
 		})
-		assert.True(t, rec.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
+
 		assert.Equal(t, `{"a":["1",{"b":"2"}]}`, getJSONRepr(t, rec, reprTestCtx, JSONSerializationConfig{
 			Pattern: NewInexactRecordPattern(map[string]Pattern{
 				"a": NewTuplePattern([]Pattern{
@@ -272,7 +257,6 @@ func TestRecordJSONRepresentation(t *testing.T) {
 			"password": Str("mypassword"),
 			"e":        EmailAddress("a@mail.com"),
 		})
-		assert.True(t, rec.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
 
 		assert.Equal(t, `{"a":"1"}`, getJSONRepr(t, rec, reprTestCtx, JSONSerializationConfig{
 			ReprConfig: &ReprConfig{
@@ -289,20 +273,19 @@ func TestDictJSONRepresentation(t *testing.T) {
 	//TODO:
 	// 	t.Run("empty", func(t *testing.T) {
 	// 		dict := NewDictionary(nil)
-	// 		assert.True(t, dict.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
+
 	// 		assert.Equal(t, `:{}`, getJSONRepr(t, dict, reprTestCtx))
 	// 	})
 
 	// 	t.Run("single string key", func(t *testing.T) {
 	// 		dict := NewDictionary(map[string]Value{"\"a\\nb\"": Int(1)})
-	// 		assert.True(t, dict.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
+
 	// 		expectedRepr := `:{"a\nb":1}`
 	// 		assert.Equal(t, expectedRepr, getJSONRepr(t, dict, reprTestCtx))
 	// 	})
 
 	// 	t.Run("two keys: one string & a path", func(t *testing.T) {
 	// 		dict := NewDictionary(map[string]Value{"\"a\\nb\"": Int(1), "./path": Int(2)})
-	// 		assert.True(t, dict.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
 
 	// 		repr := getJSONRepr(t, dict, reprTestCtx)
 	// 		var expectedRepr = `:{"a\nb":1,./path:2}`
@@ -315,7 +298,7 @@ func TestDictJSONRepresentation(t *testing.T) {
 
 	// 	t.Run("one of entry's value has no representation", func(t *testing.T) {
 	// 		dict := NewDictionary(map[string]Value{"\"a\\nb\"": &Reader{wrapped: bytes.NewReader(nil)}})
-	// 		assert.False(t, dict.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
+
 	// 	})
 
 	// 	t.Run("cycle", func(t *testing.T) {
@@ -323,7 +306,6 @@ func TestDictJSONRepresentation(t *testing.T) {
 	// 		dict.Entries["self"] = dict
 	// 		dict.Keys["self"] = Str("self")
 
-	//		assert.False(t, dict.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
 	//	})
 }
 
@@ -331,20 +313,20 @@ func TestKeyListJSONRepresentation(t *testing.T) {
 	//TODO
 	// t.Run("empty", func(t *testing.T) {
 	// 	list := KeyList{}
-	// 	assert.True(t, list.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
+
 	// 	assert.Equal(t, `.{}`, getJSONRepr(t, list, reprTestCtx))
 	// })
 
 	// t.Run("single key", func(t *testing.T) {
 	// 	list := KeyList{"a"}
-	// 	assert.True(t, list.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
+
 	// 	expectedRepr := `.{a}`
 	// 	assert.Equal(t, expectedRepr, getJSONRepr(t, list, reprTestCtx))
 	// })
 
 	// t.Run("two keys: one string & a path", func(t *testing.T) {
 	// 	list := KeyList{"a", "b"}
-	// 	assert.True(t, list.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
+
 	// 	expectedRepr := `.{a,b}`
 	// 	assert.Equal(t, expectedRepr, getJSONRepr(t, list, reprTestCtx))
 	// })
@@ -354,14 +336,13 @@ func TestKeyListJSONRepresentation(t *testing.T) {
 func TestListJSONRepresentation(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		list := NewWrappedValueList()
-		assert.True(t, list.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
+
 		expectedRepr := `[]`
 		assert.Equal(t, expectedRepr, getJSONRepr(t, list, reprTestCtx))
 	})
 
 	t.Run("single element: ambiguous", func(t *testing.T) {
 		list := NewWrappedValueList(Path("/"))
-		assert.True(t, list.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
 
 		//untyped
 		assert.Equal(t, `[{"path__value":"/"}]`, getJSONRepr(t, list, reprTestCtx))
@@ -389,18 +370,13 @@ func TestListJSONRepresentation(t *testing.T) {
 
 	t.Run("two elements", func(t *testing.T) {
 		list := NewWrappedValueList(Str("2"), Str("a"))
-		assert.True(t, list.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
-		assert.Equal(t, `["2","a"]`, getJSONRepr(t, list, reprTestCtx))
-	})
 
-	t.Run("one element has no representation", func(t *testing.T) {
-		list := NewWrappedValueList(Int(2), &Reader{wrapped: bytes.NewReader(nil)})
-		assert.False(t, list.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
+		assert.Equal(t, `["2","a"]`, getJSONRepr(t, list, reprTestCtx))
 	})
 
 	t.Run("deep", func(t *testing.T) {
 		list := NewWrappedValueList(NewWrappedValueList(Int(2), objFrom(ValMap{"a": Int(1)})))
-		assert.True(t, list.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
+
 		expectedRepr := `[[2,{"a":1}]]`
 		assert.Equal(t, expectedRepr, getJSONRepr(t, list, reprTestCtx))
 	})
@@ -408,7 +384,7 @@ func TestListJSONRepresentation(t *testing.T) {
 	t.Run("cycle", func(t *testing.T) {
 		list := NewWrappedValueList(Int(0))
 		list.set(NewContext(ContextConfig{}), 0, list)
-		assert.False(t, list.HasJSONRepresentation(map[uintptr]int{}, JSONSerializationConfig{}))
+
 	})
 
 }
@@ -438,7 +414,6 @@ func TestPathJSONRepresentation(t *testing.T) {
 		t.Run(testCase.value, func(t *testing.T) {
 			pth := Path(testCase.value)
 
-			assert.True(t, pth.HasJSONRepresentation(nil, JSONSerializationConfig{}))
 			assert.Equal(t, `{"path__value":`+testCase.representation+"}", getJSONRepr(t, pth, reprTestCtx))
 			assert.Equal(t, testCase.representation, getJSONRepr(t, pth, reprTestCtx, JSONSerializationConfig{
 				Pattern: PATHPATTERN_PATTERN,
@@ -464,7 +439,6 @@ func TestPathPatternJSONRepresentation(t *testing.T) {
 		t.Run(testCase.value, func(t *testing.T) {
 			patt := PathPattern(testCase.value)
 
-			assert.True(t, patt.HasJSONRepresentation(nil, JSONSerializationConfig{}))
 			assert.Equal(t, `{"path_patt__value":`+testCase.representation+"}", getJSONRepr(t, patt, reprTestCtx))
 			assert.Equal(t, testCase.representation, getJSONRepr(t, patt, reprTestCtx, JSONSerializationConfig{
 				Pattern: PATHPATTERN_PATTERN,
@@ -476,7 +450,6 @@ func TestPathPatternJSONRepresentation(t *testing.T) {
 
 func TestURLRJSONepresentation(t *testing.T) {
 	url := URL("https://example.com/")
-	assert.True(t, url.HasJSONRepresentation(nil, JSONSerializationConfig{}))
 
 	assert.Equal(t, `{"url__value:"https://example.com/"}`, getJSONRepr(t, url, reprTestCtx))
 	assert.Equal(t, `"https://example.com/"`, getJSONRepr(t, url, reprTestCtx, JSONSerializationConfig{
@@ -496,8 +469,6 @@ func TestURLPatternJSONRepresentation(t *testing.T) {
 		t.Run(testCase.value, func(t *testing.T) {
 			patt := URLPattern(testCase.value)
 
-			assert.True(t, patt.HasJSONRepresentation(nil, JSONSerializationConfig{}))
-
 			assert.Equal(t, `{"url_patt__value":`+testCase.representation+"}", getJSONRepr(t, patt, reprTestCtx))
 			assert.Equal(t, testCase.representation, getJSONRepr(t, patt, reprTestCtx, JSONSerializationConfig{
 				Pattern: URLPATTERN_PATTERN,
@@ -508,7 +479,6 @@ func TestURLPatternJSONRepresentation(t *testing.T) {
 
 func TestHostJSONRepresentation(t *testing.T) {
 	host := Host("https://example.com")
-	assert.True(t, host.HasJSONRepresentation(nil, JSONSerializationConfig{}))
 
 	assert.Equal(t, `{"host__value":"https://example.com"}`, getJSONRepr(t, host, reprTestCtx))
 	assert.Equal(t, `"https://example.com"`, getJSONRepr(t, host, reprTestCtx, JSONSerializationConfig{
@@ -528,8 +498,6 @@ func TestHostPatternJSONRepresentation(t *testing.T) {
 		t.Run(testCase.value, func(t *testing.T) {
 			patt := HostPattern(testCase.value)
 
-			assert.True(t, patt.HasJSONRepresentation(nil, JSONSerializationConfig{}))
-
 			assert.Equal(t, `{"host_patt__value":`+testCase.representation+"}", getJSONRepr(t, patt, reprTestCtx))
 			assert.Equal(t, testCase.representation, getJSONRepr(t, patt, reprTestCtx, JSONSerializationConfig{
 				Pattern: HOSTPATTERN_PATTERN,
@@ -545,7 +513,6 @@ func TestEmailAddressJSONRepresentation(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase, func(t *testing.T) {
 			addr := EmailAddress(testCase)
-			assert.True(t, addr.HasJSONRepresentation(nil, JSONSerializationConfig{}))
 
 			assert.Equal(t, `{"emailaddr__value":"`+testCase+`"}`, getJSONRepr(t, addr, reprTestCtx))
 			assert.Equal(t, `"`+testCase+`"`, getJSONRepr(t, addr, reprTestCtx, JSONSerializationConfig{
@@ -558,7 +525,6 @@ func TestEmailAddressJSONRepresentation(t *testing.T) {
 
 func TestIdentifierJSONRepresentation(t *testing.T) {
 	ident := Identifier("a")
-	assert.True(t, ident.HasJSONRepresentation(nil, JSONSerializationConfig{}))
 
 	assert.Equal(t, `{"ident__value":"a"}`, getJSONRepr(t, ident, reprTestCtx))
 	assert.Equal(t, `"a"`, getJSONRepr(t, ident, reprTestCtx, JSONSerializationConfig{
@@ -572,11 +538,10 @@ func TestCheckedStringJSONRepresentation(t *testing.T) {
 
 func TestByteCountJSONRepresentation(t *testing.T) {
 	negative := ByteCount(-1)
-	assert.ErrorIs(t, negative.WriteRepresentation(reprTestCtx, nil, nil, nil), ErrNoRepresentation)
+	assert.ErrorIs(t, negative.WriteRepresentation(reprTestCtx, nil, nil), ErrNoRepresentation)
 
 	for _, testCase := range byteCountReprTestCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
-			assert.True(t, testCase.value.HasJSONRepresentation(nil, JSONSerializationConfig{}))
 
 			assert.Equal(t, `{"byte-count__value":"`+testCase.representation+`"}`, getJSONRepr(t, testCase.value, reprTestCtx))
 			assert.Equal(t, `"`+testCase.representation+`"`, getJSONRepr(t, testCase.value, reprTestCtx, JSONSerializationConfig{
@@ -588,7 +553,6 @@ func TestByteCountJSONRepresentation(t *testing.T) {
 
 func TestLineCountJSONRepresentation(t *testing.T) {
 	n := LineCount(3)
-	assert.True(t, n.HasJSONRepresentation(nil, JSONSerializationConfig{}))
 
 	assert.Equal(t, `{"line-count__value":"3ln"}`, getJSONRepr(t, n, reprTestCtx))
 	assert.Equal(t, `"3ln"`, getJSONRepr(t, n, reprTestCtx, JSONSerializationConfig{
@@ -598,11 +562,10 @@ func TestLineCountJSONRepresentation(t *testing.T) {
 
 func TestByteRateJSONRepresentation(t *testing.T) {
 	negative := ByteRate(-1)
-	assert.ErrorIs(t, negative.WriteRepresentation(reprTestCtx, nil, nil, nil), ErrNoRepresentation)
+	assert.ErrorIs(t, negative.WriteRepresentation(reprTestCtx, nil, nil), ErrNoRepresentation)
 
 	for _, testCase := range byteRateReprTestCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
-			assert.True(t, testCase.value.HasJSONRepresentation(nil, JSONSerializationConfig{}))
 
 			assert.Equal(t, `{"byte-rate__value":"`+testCase.representation+`"}`, getJSONRepr(t, testCase.value, reprTestCtx))
 			assert.Equal(t, `"`+testCase.representation+`"`, getJSONRepr(t, testCase.value, reprTestCtx, JSONSerializationConfig{
@@ -616,7 +579,6 @@ func TestSimpleRateJSONRepresentation(t *testing.T) {
 	for _, testCase := range simpleRateReprTestCases {
 
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
-			assert.True(t, testCase.value.HasJSONRepresentation(nil, JSONSerializationConfig{}))
 
 			assert.Equal(t, `{"simple-rate__value":"`+testCase.representation+`"}`, getJSONRepr(t, testCase.value, reprTestCtx))
 			assert.Equal(t, `"`+testCase.representation+`"`, getJSONRepr(t, testCase.value, reprTestCtx, JSONSerializationConfig{
@@ -630,7 +592,6 @@ func TestSimpleRateJSONRepresentation(t *testing.T) {
 func TestDurationJSONRepresentation(t *testing.T) {
 	for _, testCase := range durationReprTestCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
-			assert.True(t, testCase.value.HasJSONRepresentation(nil, JSONSerializationConfig{}))
 
 			assert.Equal(t, `{"duration__value":"`+testCase.representation+`"}`, getJSONRepr(t, testCase.value, reprTestCtx))
 			assert.Equal(t, `"`+testCase.representation+`"`, getJSONRepr(t, testCase.value, reprTestCtx, JSONSerializationConfig{
@@ -642,7 +603,6 @@ func TestDurationJSONRepresentation(t *testing.T) {
 
 func TestRuneRangeJSONRepresentation(t *testing.T) {
 	runeRange := RuneRange{Start: 'a', End: 'z'}
-	assert.True(t, runeRange.HasJSONRepresentation(nil, JSONSerializationConfig{}))
 
 	assert.Equal(t, `{"rune-range__value":{"start":"a","end":"z"}}`, getJSONRepr(t, runeRange, reprTestCtx))
 	assert.Equal(t, `{"start":"a","end":"z"}`, getJSONRepr(t, runeRange, reprTestCtx, JSONSerializationConfig{
@@ -657,7 +617,6 @@ func TestQuantityRangeJSONRepresentation(t *testing.T) {
 func TestIntRangeJSONRepresentation(t *testing.T) {
 	t.Run("known start", func(t *testing.T) {
 		intRange := IntRange{Start: 0, End: 100, inclusiveEnd: true, Step: 1}
-		assert.True(t, intRange.HasJSONRepresentation(nil, JSONSerializationConfig{}))
 
 		assert.Equal(t, `{"int-range__value":{"start":"0","end":"100"}}`, getJSONRepr(t, intRange, reprTestCtx))
 		assert.Equal(t, `{"start":"0","end":"100"}`, getJSONRepr(t, intRange, reprTestCtx, JSONSerializationConfig{
@@ -667,7 +626,6 @@ func TestIntRangeJSONRepresentation(t *testing.T) {
 
 	t.Run("unknown start", func(t *testing.T) {
 		intRange := IntRange{Start: 0, End: 100, unknownStart: true, inclusiveEnd: true, Step: 1}
-		assert.True(t, intRange.HasJSONRepresentation(nil, JSONSerializationConfig{}))
 
 		assert.Equal(t, `{"int-range__value":{"end":"100"}}`, getJSONRepr(t, intRange, reprTestCtx))
 		assert.Equal(t, `{"end":"100"}`, getJSONRepr(t, intRange, reprTestCtx, JSONSerializationConfig{
@@ -685,9 +643,7 @@ func TestNamedSegmentPathPatternJSONRepresentation(t *testing.T) {
 	//TODO
 }
 
-func getJSONRepr(t *testing.T, v Value, ctx *Context, reprConfig ...JSONSerializationConfig) string {
-	encountered := map[uintptr]int{}
-
+func getJSONRepr(t *testing.T, v Serializable, ctx *Context, reprConfig ...JSONSerializationConfig) string {
 	if reprConfig == nil {
 		reprConfig = append(reprConfig, JSONSerializationConfig{
 			ReprConfig: &ReprConfig{AllVisible: true},
@@ -695,7 +651,7 @@ func getJSONRepr(t *testing.T, v Value, ctx *Context, reprConfig ...JSONSerializ
 	}
 
 	stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, nil, 0)
-	err := v.WriteJSONRepresentation(ctx, stream, encountered, reprConfig[0])
+	err := v.WriteJSONRepresentation(ctx, stream, reprConfig[0])
 	if err != nil {
 		assert.FailNow(t, "failed to get representation: "+err.Error())
 	}

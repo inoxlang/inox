@@ -589,3 +589,7 @@ func (*DatabaseIL) IsMutable() bool {
 func (*ApiIL) IsMutable() bool {
 	return true
 }
+
+func (*Namespace) IsMutable() bool {
+	return false
+}

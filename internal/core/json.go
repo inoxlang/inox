@@ -10,7 +10,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 )
 
-func ToJSON(ctx *Context, v Value) Str {
+func ToJSON(ctx *Context, v Serializable) Str {
 	return ToJSONWithConfig(ctx, v, JSONSerializationConfig{
 		ReprConfig: &ReprConfig{},
 		Pattern:    ANYVAL_PATTERN,
@@ -18,18 +18,15 @@ func ToJSON(ctx *Context, v Value) Str {
 	})
 }
 
-func ToJSONWithConfig(ctx *Context, v Value, config JSONSerializationConfig) Str {
-	if v.HasJSONRepresentation(map[uintptr]int{}, config) {
-		stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, nil, 10)
-		if err := v.WriteJSONRepresentation(ctx, stream, map[uintptr]int{}, config); err != nil {
-			panic(err)
-		}
-		return Str(stream.Buffer())
+func ToJSONWithConfig(ctx *Context, v Serializable, config JSONSerializationConfig) Str {
+	stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, nil, 10)
+	if err := v.WriteJSONRepresentation(ctx, stream, config); err != nil {
+		panic(err)
 	}
-	panic(ErrNoRepresentation)
+	return Str(stream.Buffer())
 }
 
-func ToPrettyJSON(ctx *Context, v Value) Str {
+func ToPrettyJSON(ctx *Context, v Serializable) Str {
 	s := ToJSON(ctx, v)
 	var unmarshalled interface{}
 	json.Unmarshal([]byte(s), &unmarshalled)
@@ -41,8 +38,7 @@ func ToPrettyJSON(ctx *Context, v Value) Str {
 	return Str(b)
 }
 
-func ToJSONVal(ctx *Context, v Value) interface{} {
-
+func ToJSONVal(ctx *Context, v Serializable) interface{} {
 	s := ToJSON(ctx, v)
 	var jsonVal interface{}
 	err := json.Unmarshal([]byte(s), &jsonVal)
@@ -53,7 +49,7 @@ func ToJSONVal(ctx *Context, v Value) interface{} {
 	return jsonVal
 }
 
-func ConvertJSONValToInoxVal(ctx *Context, v any, immutable bool) Value {
+func ConvertJSONValToInoxVal(ctx *Context, v any, immutable bool) Serializable {
 	switch val := v.(type) {
 	case nil:
 		return Nil
@@ -72,7 +68,7 @@ func ConvertJSONValToInoxVal(ctx *Context, v any, immutable bool) Value {
 			return object
 		}
 	case []any:
-		l := make([]Value, len(val))
+		l := make([]Serializable, len(val))
 		for i, e := range val {
 			l[i] = ConvertJSONValToInoxVal(ctx, e, immutable)
 		}

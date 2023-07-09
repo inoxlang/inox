@@ -19,7 +19,7 @@ var (
 	ErrNonSupportedMetaProperty = errors.New("non-supported meta property")
 )
 
-func ParseRepr(ctx *Context, b []byte) (Value, error) {
+func ParseRepr(ctx *Context, b []byte) (Serializable, error) {
 	v, errIndex, err := _parseRepr(b, ctx)
 	if errIndex < 0 {
 		return v, nil
@@ -216,7 +216,7 @@ const (
 	CreateRunesInRepr InReprCall = iota + 1
 )
 
-func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int, specifiedError error) {
+func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, specifiedError error) {
 
 	if len(b) == 0 {
 		return nil, 0, nil
@@ -238,17 +238,17 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int, specifiedErr
 
 		stackIndex               = -1
 		stack                    [stackHeight]CompoundValueKind
-		compoundValueStack       [stackHeight]Value
+		compoundValueStack       [stackHeight]Serializable
 		objectKeyStack           [stackHeight]string
 		optionalPropStack        [stackHeight]bool
-		dictKeyStack             [stackHeight]Value
+		dictKeyStack             [stackHeight]Serializable
 		hieararchyEntryHasBraces [stackHeight]bool
 		inPattern                = []bool{false}
 		byteSliceDigits          []byte
 		quantityValues           []float64
 		quantityUnits            []string
-		callArguments            [][]Value //arguments for pattern calls & regular calls
-		lastCompoundValue        Value
+		callArguments            [][]Serializable //arguments for pattern calls & regular calls
+		lastCompoundValue        Serializable
 		i                        = -1
 		c                        = byte(0)
 	)
@@ -260,7 +260,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int, specifiedErr
 		}
 	}()
 
-	parseAtom := func() (Value, int, error) {
+	parseAtom := func() (Serializable, int, error) {
 		var end = i
 
 		if atomEndIndex > 0 {
@@ -269,7 +269,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int, specifiedErr
 
 		atomBytes := b[atomStartIndex:end]
 
-		var v Value
+		var v Serializable
 		var index int = -1
 
 		_state := state
@@ -587,7 +587,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int, specifiedErr
 		return -1, nil
 	}
 
-	getVal := func(i int) (Value, int, bool, error) {
+	getVal := func(i int) (Serializable, int, bool, error) {
 		switch state {
 		case rstateInt,
 			rstateFloatDecimalPart, rstateFloatExponentNumber,
@@ -2030,7 +2030,7 @@ func _parseRepr(b []byte, ctx *Context) (val Value, errorIndex int, specifiedErr
 				fn := compoundValueStack[stackIndex].(Str).UnderlyingString()
 
 				callArgs := callArguments[len(callArguments)-1]
-				var result Value
+				var result Serializable
 
 				switch fn {
 				case FILEMODE_PRIMORDIAL_FUNCNAME:
@@ -2438,7 +2438,7 @@ func _parseIntRepr(b []byte) (val Int, errorIndex int) {
 	return -1, len(b)
 }
 
-func _parseFloatRepr(b []byte) (val Value, errorIndex int) {
+func _parseFloatRepr(b []byte) (val Serializable, errorIndex int) {
 	f, err := strconv.ParseFloat(string(b), 64)
 	if err == nil {
 		return Float(f), -1
@@ -2446,7 +2446,7 @@ func _parseFloatRepr(b []byte) (val Value, errorIndex int) {
 	return nil, len(b)
 }
 
-func _parsePortRepr(b []byte) (val Value, errorIndex int) {
+func _parsePortRepr(b []byte) (val Serializable, errorIndex int) {
 
 	slashIndex := bytes.IndexRune(b, '/')
 	numberEndIndex := slashIndex

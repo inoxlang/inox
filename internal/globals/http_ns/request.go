@@ -221,13 +221,13 @@ func (req *HttpRequest) Prop(ctx *core.Context, name string) core.Value {
 			return req.headers
 		}
 		keys := make([]string, len(req.request.Header))
-		vals := make([]core.Value, len(req.request.Header))
+		vals := make([]core.Serializable, len(req.request.Header))
 
 		i := 0
 		for name, headerValues := range req.request.Header {
 			keys[i] = name
 
-			singleHeaderValues := make([]core.Value, len(headerValues))
+			singleHeaderValues := make([]core.Serializable, len(headerValues))
 			for i, val := range headerValues {
 				singleHeaderValues[i] = core.Str(val)
 			}

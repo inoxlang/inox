@@ -88,8 +88,8 @@ func init() {
 	})
 }
 
-func NewHttpNamespace() *core.Record {
-	return core.NewRecordFromMap(core.ValMap{
+func NewHttpNamespace() *core.Namespace {
+	return core.NewNamespace("http", map[string]core.Value{
 		"exists":         core.WrapGoFunction(httpExists),
 		"get":            core.WrapGoFunction(HttpGet),
 		"read":           core.WrapGoFunction(HttpRead),

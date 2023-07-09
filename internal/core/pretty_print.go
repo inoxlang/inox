@@ -81,7 +81,7 @@ func Stringify(v Value, ctx *Context) string {
 	}, 0, 0)
 
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("failed to stringify value of type %T: %w", v, err))
 	}
 
 	w.Flush()
@@ -886,7 +886,7 @@ func (pth Path) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth in
 		utils.Must(w.Write(config.Colors.PathLiteral))
 	}
 
-	utils.PanicIfErr(pth.WriteRepresentation(config.Context, w, nil, &ReprConfig{AllVisible: true}))
+	utils.PanicIfErr(pth.WriteRepresentation(config.Context, w, &ReprConfig{AllVisible: true}))
 
 	if config.Colorize {
 		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
@@ -898,7 +898,7 @@ func (patt PathPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, 
 		utils.Must(w.Write(config.Colors.PatternLiteral))
 	}
 
-	utils.PanicIfErr(patt.WriteRepresentation(config.Context, w, nil, &ReprConfig{AllVisible: true}))
+	utils.PanicIfErr(patt.WriteRepresentation(config.Context, w, &ReprConfig{AllVisible: true}))
 
 	if config.Colorize {
 		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
@@ -910,7 +910,7 @@ func (u URL) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, 
 		utils.Must(w.Write(config.Colors.PathLiteral))
 	}
 
-	utils.PanicIfErr(u.WriteRepresentation(config.Context, w, nil, &ReprConfig{AllVisible: true}))
+	utils.PanicIfErr(u.WriteRepresentation(config.Context, w, &ReprConfig{AllVisible: true}))
 
 	if config.Colorize {
 		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
@@ -922,7 +922,7 @@ func (scheme Scheme) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, dep
 		utils.Must(w.Write(config.Colors.PathLiteral))
 	}
 
-	utils.PanicIfErr(scheme.WriteRepresentation(config.Context, w, nil, &ReprConfig{AllVisible: true}))
+	utils.PanicIfErr(scheme.WriteRepresentation(config.Context, w, &ReprConfig{AllVisible: true}))
 
 	if config.Colorize {
 		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
@@ -934,7 +934,7 @@ func (host Host) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth i
 		utils.Must(w.Write(config.Colors.PathLiteral))
 	}
 
-	utils.PanicIfErr(host.WriteRepresentation(config.Context, w, nil, &ReprConfig{AllVisible: true}))
+	utils.PanicIfErr(host.WriteRepresentation(config.Context, w, &ReprConfig{AllVisible: true}))
 
 	if config.Colorize {
 		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
@@ -946,7 +946,7 @@ func (patt HostPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, 
 		utils.Must(w.Write(config.Colors.PatternLiteral))
 	}
 
-	utils.PanicIfErr(patt.WriteRepresentation(config.Context, w, nil, &ReprConfig{AllVisible: true}))
+	utils.PanicIfErr(patt.WriteRepresentation(config.Context, w, &ReprConfig{AllVisible: true}))
 
 	if config.Colorize {
 		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
@@ -958,7 +958,7 @@ func (addr EmailAddress) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig,
 		utils.Must(w.Write(config.Colors.PathLiteral))
 	}
 
-	utils.PanicIfErr(addr.WriteRepresentation(config.Context, w, nil, &ReprConfig{AllVisible: true}))
+	utils.PanicIfErr(addr.WriteRepresentation(config.Context, w, &ReprConfig{AllVisible: true}))
 
 	if config.Colorize {
 		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
@@ -970,7 +970,7 @@ func (patt URLPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, d
 		utils.Must(w.Write(config.Colors.PatternLiteral))
 	}
 
-	utils.PanicIfErr(patt.WriteRepresentation(config.Context, w, nil, &ReprConfig{AllVisible: true}))
+	utils.PanicIfErr(patt.WriteRepresentation(config.Context, w, &ReprConfig{AllVisible: true}))
 
 	if config.Colorize {
 		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
@@ -1125,20 +1125,16 @@ func (r RuneRange) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth
 func (r QuantityRange) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	reprConfig := &ReprConfig{}
 
-	if r.HasRepresentation(nil, reprConfig) {
-		if config.Colorize {
-			utils.Must(w.Write(config.Colors.NumberLiteral))
-		}
-
-		utils.PanicIfErr(r.WriteRepresentation(config.Context, w, nil, reprConfig))
-
-		if config.Colorize {
-			utils.Must(w.Write(ANSI_RESET_SEQUENCE))
-		}
-
-	} else {
-		InspectPrint(w, r)
+	if config.Colorize {
+		utils.Must(w.Write(config.Colors.NumberLiteral))
 	}
+
+	utils.PanicIfErr(r.WriteRepresentation(config.Context, w, reprConfig))
+
+	if config.Colorize {
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+	}
+
 }
 
 func (r IntRange) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -1901,6 +1897,58 @@ func (db *DatabaseIL) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, de
 
 func (api *ApiIL) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	PrintType(w, api)
+}
+
+func (ns *Namespace) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	if depth > config.MaxDepth && len(ns.names) > 0 {
+		utils.Must(w.Write(utils.StringAsBytes("(..namespace..)")))
+		return
+	}
+
+	indentCount := parentIndentCount + 1
+	indent := bytes.Repeat(config.Indent, indentCount)
+
+	utils.Must(w.Write(utils.StringAsBytes("namespace{")))
+
+	for i, k := range ns.names {
+
+		if !config.Compact {
+			utils.Must(w.Write(LF_CR))
+			utils.Must(w.Write(indent))
+		}
+
+		if config.Colorize {
+			utils.Must(w.Write(config.Colors.IdentifierLiteral))
+
+		}
+
+		utils.Must(w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(k))))
+
+		if config.Colorize {
+			utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+
+		}
+
+		//colon
+		utils.Must(w.Write(COLON_SPACE))
+
+		//value
+		v := ns.entries[k]
+		v.PrettyPrint(w, config, depth+1, indentCount)
+
+		//comma & indent
+		isLastEntry := i == len(ns.names)-1
+
+		if !isLastEntry {
+			utils.Must(w.Write(COMMA_SPACE))
+		}
+	}
+
+	if !config.Compact && len(ns.names) > 0 {
+		utils.Must(w.Write(LF_CR))
+	}
+
+	utils.MustWriteMany(w, bytes.Repeat(config.Indent, depth), []byte{'}'})
 }
 
 func InspectPrint[T any](w *bufio.Writer, v T) {

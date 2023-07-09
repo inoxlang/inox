@@ -77,14 +77,14 @@ func (obj *Object) Clone(clones map[uintptr]map[int]Value) (Value, error) {
 	clone := &Object{keys: utils.CopySlice(obj.keys)}
 	clones[ptr] = map[int]Value{0: clone}
 
-	values := make([]Value, len(obj.values))
+	values := make([]Serializable, len(obj.values))
 
 	for i, v := range obj.values {
 		valueClone, err := v.Clone(clones)
 		if err != nil {
 			return nil, err
 		}
-		values[i] = valueClone
+		values[i] = valueClone.(Serializable)
 	}
 
 	clone.values = values
@@ -103,8 +103,8 @@ func (dict *Dictionary) Clone(clones map[uintptr]map[int]Value) (Value, error) {
 	}
 
 	clone := &Dictionary{
-		Entries: make(map[string]Value, len(dict.Entries)),
-		Keys:    make(map[string]Value, len(dict.Entries)),
+		Entries: make(map[string]Serializable, len(dict.Entries)),
+		Keys:    make(map[string]Serializable, len(dict.Entries)),
 	}
 
 	clones[ptr] = make(map[int]Value, 1)
@@ -119,7 +119,7 @@ func (dict *Dictionary) Clone(clones map[uintptr]map[int]Value) (Value, error) {
 		if err != nil {
 			return nil, err
 		}
-		clone.Entries[k] = valueClone
+		clone.Entries[k] = valueClone.(Serializable)
 	}
 
 	return clone, nil
@@ -140,6 +140,10 @@ func (list KeyList) Clone(clones map[uintptr]map[int]Value) (Value, error) {
 
 	copy(clone, list)
 	return clone, nil
+}
+
+func (a *Array) Clone(clones map[uintptr]map[int]Value) (Value, error) {
+	return nil, ErrNotImplementedYet
 }
 
 func (list *List) Clone(clones map[uintptr]map[int]Value) (Value, error) {
@@ -173,7 +177,7 @@ func (list *ValueList) Clone(clones map[uintptr]map[int]Value) (Value, error) {
 	}
 
 	clone := &ValueList{}
-	elementClones := make([]Value, len(list.elements))
+	elementClones := make([]Serializable, len(list.elements))
 	clones[ptr] = map[int]Value{0: clone}
 
 	for i, e := range list.elements {
@@ -181,7 +185,7 @@ func (list *ValueList) Clone(clones map[uintptr]map[int]Value) (Value, error) {
 		if err != nil {
 			return nil, err
 		}
-		elementClones[i] = elemClone
+		elementClones[i] = elemClone.(Serializable)
 	}
 	clone.elements = elementClones
 

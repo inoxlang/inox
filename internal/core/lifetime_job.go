@@ -233,7 +233,7 @@ func NewValueLifetimeJobs(self Value, jobs []*LifetimeJob) *ValueLifetimeJobs {
 	}
 
 	for _, job := range jobs {
-		job.subjectPattern = newExactValuePatternNoCheck(self)
+		job.subjectPattern = newExactValuePatternNoCheck(self.(Serializable))
 	}
 
 	return valueJobs

@@ -12,6 +12,10 @@ import (
 	parse "github.com/inoxlang/inox/internal/parse"
 )
 
+const (
+	NAMESPACE_NAME = "inox"
+)
+
 var (
 	SYMB_PREPARATION_ERRORS_RECORD = symbolic.NewRecord(map[string]symbolic.SymbolicValue{
 		"parsing_errors":        symbolic.NewTupleOf(symbolic.NewError(symbolic.SOURCE_POSITION_RECORD)),
@@ -51,8 +55,8 @@ func init() {
 	})
 }
 
-func NewInoxNamespace() *core.Record {
-	return core.NewRecordFromMap(core.ValMap{
+func NewInoxNamespace() *core.Namespace {
+	return core.NewNamespace(NAMESPACE_NAME, map[string]core.Value{
 		"parse_chunk":            core.WrapGoFunction(_parse_chunk),
 		"parse_expr":             core.WrapGoFunction(_parse_expr),
 		"parse_local_script":     core.WrapGoFunction(_parse_local_script),
@@ -152,7 +156,7 @@ func _prepare_local_script(ctx *core.Context, src core.Path) (*core.Module, *cor
 func _run_local_script(ctx *core.Context, src core.Path, config *core.Object) (core.Value, *core.GlobalState, *core.Record, error) {
 	var out io.Writer = io.Discard
 
-	if err := config.ForEachEntry(func(k string, v core.Value) error {
+	if err := config.ForEachEntry(func(k string, v core.Serializable) error {
 
 		switch k {
 		case "out":

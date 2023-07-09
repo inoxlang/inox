@@ -479,7 +479,7 @@ func TestUpdateSchema(t *testing.T) {
 
 		setPattern :=
 			utils.Must(containers.SET_PATTERN.CallImpl(containers.SET_PATTERN,
-				[]core.Value{core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), containers.URL_UNIQUENESS_IDENT}))
+				[]core.Serializable{core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), containers.URL_UNIQUENESS_IDENT}))
 
 		schema := core.NewInexactObjectPattern(map[string]core.Pattern{
 			"users": setPattern,
@@ -509,7 +509,7 @@ func TestUpdateSchema(t *testing.T) {
 
 		setPattern :=
 			utils.Must(containers.SET_PATTERN.CallImpl(containers.SET_PATTERN,
-				[]core.Value{core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), containers.URL_UNIQUENESS_IDENT}))
+				[]core.Serializable{core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), containers.URL_UNIQUENESS_IDENT}))
 
 		schema := core.NewInexactObjectPattern(map[string]core.Pattern{
 			"users": setPattern,

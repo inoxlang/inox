@@ -58,12 +58,12 @@ func TestDictionaryClone(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, NewDictionary(nil), clone)
 
-	clone, err = NewDictionary(map[string]Value{"/": Int(1)}).Clone(map[uintptr]map[int]Value{})
+	clone, err = NewDictionary(map[string]Serializable{"/": Int(1)}).Clone(map[uintptr]map[int]Value{})
 	assert.NoError(t, err)
-	assert.Equal(t, NewDictionary(map[string]Value{"/": Int(1)}), clone)
+	assert.Equal(t, NewDictionary(map[string]Serializable{"/": Int(1)}), clone)
 
 	//not clonable
-	clone, err = NewDictionary(map[string]Value{"/": &ValueListIterator{}}).Clone(map[uintptr]map[int]Value{})
+	clone, err = NewDictionary(map[string]Serializable{"/": &ValueListIterator{}}).Clone(map[uintptr]map[int]Value{})
 	assert.Equal(t, ErrNotClonable, err)
 	assert.Nil(t, clone)
 
@@ -82,19 +82,19 @@ func TestDictionaryClone(t *testing.T) {
 func TestValueListClone(t *testing.T) {
 	clone, err := (&ValueList{}).Clone(map[uintptr]map[int]Value{})
 	assert.NoError(t, err)
-	assert.Equal(t, &ValueList{elements: []Value{}}, clone)
+	assert.Equal(t, &ValueList{elements: []Serializable{}}, clone)
 
-	clone, err = (&ValueList{elements: []Value{Int(1)}}).Clone(map[uintptr]map[int]Value{})
+	clone, err = (&ValueList{elements: []Serializable{Int(1)}}).Clone(map[uintptr]map[int]Value{})
 	assert.NoError(t, err)
-	assert.Equal(t, &ValueList{elements: []Value{Int(1)}}, clone)
+	assert.Equal(t, &ValueList{elements: []Serializable{Int(1)}}, clone)
 
 	//not clonable
-	clone, err = (&ValueList{elements: []Value{&ValueListIterator{}}}).Clone(map[uintptr]map[int]Value{})
+	clone, err = (&ValueList{elements: []Serializable{&ValueListIterator{}}}).Clone(map[uintptr]map[int]Value{})
 	assert.Equal(t, ErrNotClonable, err)
 	assert.Nil(t, clone)
 
 	//cycle
-	list := &ValueList{elements: []Value{Int(0)}}
+	list := &ValueList{elements: []Serializable{Int(0)}}
 	list.elements[0] = list
 	clone, err = list.Clone(map[uintptr]map[int]Value{})
 	assert.NoError(t, err)

@@ -84,7 +84,7 @@ var (
 	RECORD_PATTERN               = &TypePattern{
 		Type: RECORD_TYPE,
 		Name: "rec",
-		CallImpl: func(typePattern *TypePattern, values []Value) (Pattern, error) {
+		CallImpl: func(typePattern *TypePattern, values []Serializable) (Pattern, error) {
 			var recordPattern *RecordPattern
 
 			for _, val := range values {
@@ -145,7 +145,7 @@ var (
 	TUPLE_PATTERN = &TypePattern{
 		Type: TUPLE_TYPE,
 		Name: "tuple",
-		CallImpl: func(typePattern *TypePattern, values []Value) (Pattern, error) {
+		CallImpl: func(typePattern *TypePattern, values []Serializable) (Pattern, error) {
 			var elemPattern Pattern
 
 			for _, val := range values {
@@ -211,7 +211,7 @@ var (
 		Type:       INT_TYPE,
 		Name:       "int",
 		RandomImpl: RandInt,
-		CallImpl: func(typePattern *TypePattern, values []Value) (Pattern, error) {
+		CallImpl: func(typePattern *TypePattern, values []Serializable) (Pattern, error) {
 			intRangeProvided := false
 			var intRange IntRange
 
@@ -240,7 +240,7 @@ var (
 				intRange: intRange,
 				CallBasedPatternReprMixin: CallBasedPatternReprMixin{
 					Callee: typePattern,
-					Params: []Value{intRange},
+					Params: []Serializable{intRange},
 				},
 			}, nil
 		},
@@ -380,7 +380,7 @@ var (
 	EVENT_PATTERN = &TypePattern{
 		Type: EVENT_TYPE,
 		Name: "event",
-		CallImpl: func(typePattern *TypePattern, args []Value) (Pattern, error) {
+		CallImpl: func(typePattern *TypePattern, args []Serializable) (Pattern, error) {
 			var valuePattern Pattern
 
 			for _, arg := range args {
@@ -435,7 +435,7 @@ var (
 		Type:          MUTATION_TYPE,
 		Name:          "mutation",
 		SymbolicValue: symbolic.ANY_MUTATION,
-		CallImpl: func(typePattern *TypePattern, args []Value) (Pattern, error) {
+		CallImpl: func(typePattern *TypePattern, args []Serializable) (Pattern, error) {
 			switch len(args) {
 			case 2:
 			case 1:
@@ -548,7 +548,7 @@ var (
 	SECRET_PATTERN = &TypePattern{
 		Type: SECRET_TYPE,
 		Name: "secret",
-		CallImpl: func(typePattern *TypePattern, values []Value) (Pattern, error) {
+		CallImpl: func(typePattern *TypePattern, values []Serializable) (Pattern, error) {
 			var stringPattern StringPattern
 
 			if len(values) == 0 {

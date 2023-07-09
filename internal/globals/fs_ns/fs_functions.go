@@ -291,7 +291,7 @@ func Find(ctx *core.Context, dir core.Path, filters ...core.Pattern) (*core.List
 		}
 	}
 
-	var found []core.Value
+	var found []core.Serializable
 	var paths []string
 
 	//we first get matching paths

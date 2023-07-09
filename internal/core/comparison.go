@@ -246,6 +246,41 @@ func (list KeyList) Equal(ctx *Context, other Value, alreadyCompared map[uintptr
 	return true
 }
 
+func (a *Array) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	if depth > MAX_COMPARISON_DEPTH {
+		return false
+	}
+
+	otherArray, ok := other.(*Array)
+	if !ok {
+		return false
+	}
+
+	addr := reflect.ValueOf(a).Pointer()
+	otherAddr := reflect.ValueOf(otherArray).Pointer()
+
+	if a.Len() != otherArray.Len() {
+		return false
+	}
+
+	if alreadyCompared[addr] == otherAddr || alreadyCompared[otherAddr] == addr {
+		//we return true to prevent cycling
+		return true
+	}
+
+	if addr == otherAddr {
+		return true
+	}
+
+	for i, e := range *a {
+		if !(*otherArray)[i].Equal(ctx, e, alreadyCompared, depth+1) {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (list *List) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	return list.underylingList.Equal(ctx, other, alreadyCompared, depth)
 }
@@ -1933,4 +1968,13 @@ func (api *ApiIL) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]u
 	}
 
 	return api == otherAPI
+}
+
+func (ns *Namespace) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	if depth > MAX_COMPARISON_DEPTH {
+		return false
+	}
+
+	otherNS, ok := other.(*Namespace)
+	return ok && ns == otherNS
 }

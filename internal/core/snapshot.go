@@ -19,7 +19,7 @@ var (
 type Snapshot struct {
 	date     Date
 	repr     ValueRepresentation
-	inMemory Value //value should be either an InMemorySnapshotable or an immutable
+	inMemory Serializable //value should be either an InMemorySnapshotable or an immutable
 }
 
 func (s *Snapshot) Date() Date {
@@ -31,12 +31,13 @@ func (s *Snapshot) Date() Date {
 // after being unfreezed.
 type InMemorySnapshotable interface {
 	Watchable
+	Serializable
 	TakeInMemorySnapshot(ctx *Context) (*Snapshot, error)
 	IsFrozen() bool
 	Unfreeze(ctx *Context) error
 }
 
-func TakeSnapshot(ctx *Context, v Value, mustBeSerialized bool) (*Snapshot, error) {
+func TakeSnapshot(ctx *Context, v Serializable, mustBeSerialized bool) (*Snapshot, error) {
 	now := Date(time.Now())
 	if !v.IsMutable() {
 		return &Snapshot{date: now, inMemory: v}, nil
@@ -71,7 +72,7 @@ func TakeSnapshot(ctx *Context, v Value, mustBeSerialized bool) (*Snapshot, erro
 	}, nil
 }
 
-func (s *Snapshot) InstantiateValue(ctx *Context) (Value, error) {
+func (s *Snapshot) InstantiateValue(ctx *Context) (Serializable, error) {
 	if s.inMemory != nil {
 		if s.inMemory.IsMutable() {
 			snapshotable := s.inMemory.(InMemorySnapshotable)
@@ -133,7 +134,7 @@ func (r *RuneSlice) TakeInMemorySnapshot(ctx *Context) (*Snapshot, error) {
 
 	return &Snapshot{
 		date:     Date(time.Now()),
-		inMemory: sliceClone,
+		inMemory: sliceClone.(Serializable),
 	}, nil
 }
 

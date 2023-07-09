@@ -9,12 +9,12 @@ var (
 // An Error represents an error with some immutable data, Error implements Value.
 type Error struct {
 	goError error
-	data    Value
+	data    Serializable
 
 	NoReprMixin
 }
 
-func NewError(err error, data Value) Error {
+func NewError(err error, data Serializable) Error {
 	if data.IsMutable() {
 		panic(fmt.Errorf("failed to create error: data should be immutable: %T", data))
 	}

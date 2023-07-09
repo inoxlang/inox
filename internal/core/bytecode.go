@@ -37,12 +37,7 @@ func (b *Bytecode) FormatConstants(ctx *Context, leftPadding string) (output []s
 		case *Bytecode:
 			output = append(output, fmt.Sprintf("     %s", cn.Format(ctx, leftPadding+"    ")))
 		default:
-			repr := ""
-			if cn.HasRepresentation(map[uintptr]int{}, &ReprConfig{}) {
-				repr = string(GetRepresentation(cn, ctx))
-			} else {
-				repr = Stringify(cn, nil)
-			}
+			repr := Stringify(cn, nil)
 			output = append(output, fmt.Sprintf("%s[% 3d] %s", leftPadding, cidx, repr))
 		}
 	}
@@ -657,11 +652,7 @@ func FormatInstructions(ctx *Context, b []byte, posOffset int, leftPadding strin
 		var consts []string
 
 		for _, constant := range constants {
-			if constant.HasRepresentation(map[uintptr]int{}, &ReprConfig{}) {
-				consts = append(consts, string(GetRepresentation(constant, ctx)))
-			} else {
-				consts = append(consts, Stringify(constant, nil))
-			}
+			consts = append(consts, Stringify(constant, nil))
 		}
 
 		switch len(operands) {

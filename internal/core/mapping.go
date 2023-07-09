@@ -70,7 +70,7 @@ func NewMapping(expr *parse.MappingExpression, state *GlobalState) (*Mapping, er
 				return nil, err
 			}
 
-			repr := string(GetRepresentation(key, state.Ctx))
+			repr := string(GetRepresentation(key.(Serializable), state.Ctx))
 			mapping.keys[repr] = key
 
 			if valueLit, ok := e.Value.(parse.SimpleValueLiteral); ok && !parse.NodeIs(valueLit, (*parse.IdentifierLiteral)(nil)) {
@@ -108,7 +108,7 @@ func NewMapping(expr *parse.MappingExpression, state *GlobalState) (*Mapping, er
 				return nil, err
 			}
 
-			repr := string(GetRepresentation(key, state.Ctx))
+			repr := string(GetRepresentation(key.(Serializable), state.Ctx))
 			mapping.keys[repr] = key
 			mapping.dynamicEntries[repr] = e
 
@@ -124,7 +124,7 @@ func NewMapping(expr *parse.MappingExpression, state *GlobalState) (*Mapping, er
 	return mapping, nil
 }
 
-func (m *Mapping) Compute(ctx *Context, key Value) Value {
+func (m *Mapping) Compute(ctx *Context, key Serializable) Value {
 	repr := string(GetRepresentation(key, ctx))
 
 	if _, ok := key.(Pattern); ok {

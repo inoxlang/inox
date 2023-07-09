@@ -212,7 +212,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, _ *TreeWalkState
 			ctx.AddPatternNamespace(k, v)
 		}
 
-		global := NewGlobalState(ctx, getGlobalsAccessibleFromManifest().EntryMap())
+		global := NewGlobalState(ctx, getGlobalsAccessibleFromManifest().ValueEntryMap())
 		global.Module = m
 		state = NewTreeWalkStateWithGlobal(global)
 
@@ -272,7 +272,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, _ *TreeWalkState
 
 			obj := v.(*Object)
 
-			err = obj.ForEachEntry(func(k string, v Value) error {
+			err = obj.ForEachEntry(func(k string, v Serializable) error {
 				desc := v.(*Object)
 				propNames := desc.PropertyNames(ctx)
 
@@ -399,7 +399,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, _ *TreeWalkState
 
 func (m *Module) ParsingErrorTuple() *Tuple {
 	if m.errorsPropSet.CompareAndSwap(false, true) {
-		errors := make([]Value, len(m.ParsingErrors))
+		errors := make([]Serializable, len(m.ParsingErrors))
 		for i, err := range m.ParsingErrors {
 			errors[i] = err
 		}
@@ -797,19 +797,19 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 func createRecordFromSourcePosition(pos parse.SourcePositionRange) *Record {
 	rec := NewRecordFromKeyValLists(
 		SOURCE_POS_RECORD_PROPNAMES,
-		[]Value{Str(pos.SourceName), Int(pos.StartLine), Int(pos.StartColumn), Int(pos.Span.Start), Int(pos.Span.End)},
+		[]Serializable{Str(pos.SourceName), Int(pos.StartLine), Int(pos.StartColumn), Int(pos.Span.Start), Int(pos.Span.End)},
 	)
 	return rec
 }
 
 func createRecordFromSourcePositionStack(posStack parse.SourcePositionStack) *Record {
-	positionRecords := make([]Value, len(posStack))
+	positionRecords := make([]Serializable, len(posStack))
 
 	for i, pos := range posStack {
 		positionRecords[i] = createRecordFromSourcePosition(pos)
 	}
 
-	return NewRecordFromKeyValLists([]string{"position-stack"}, []Value{NewTuple(positionRecords)})
+	return NewRecordFromKeyValLists([]string{"position-stack"}, []Serializable{NewTuple(positionRecords)})
 }
 
 // FileStat tries to directly use the given file to get file information,

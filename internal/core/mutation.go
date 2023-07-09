@@ -63,7 +63,7 @@ type SpecificMutationAcceptor interface {
 	ApplySpecificMutation(ctx *Context, m Mutation) error
 }
 
-func WriteSingleRepresentation(ctx *Context, v Value) ([]byte, [6]int32, error) {
+func WriteSingleRepresentation(ctx *Context, v Serializable) ([]byte, [6]int32, error) {
 	buf := bytes.NewBuffer(nil)
 	config := &ReprConfig{AllVisible: true}
 	if err := WriteRepresentation(buf, v, config, ctx); err != nil {
@@ -72,7 +72,7 @@ func WriteSingleRepresentation(ctx *Context, v Value) ([]byte, [6]int32, error) 
 	return buf.Bytes(), [6]int32{int32(buf.Len())}, nil
 }
 
-func WriteConcatenatedRepresentations(ctx *Context, values ...Value) ([]byte, [6]int32, error) {
+func WriteConcatenatedRepresentations(ctx *Context, values ...Serializable) ([]byte, [6]int32, error) {
 	buf := bytes.NewBuffer(nil)
 	config := &ReprConfig{AllVisible: true}
 
@@ -105,7 +105,7 @@ func NewUnspecifiedMutation(depth WatchingDepth, path Path) Mutation {
 	}
 }
 
-func NewAddPropMutation(ctx *Context, name string, value Value, depth WatchingDepth, path Path) Mutation {
+func NewAddPropMutation(ctx *Context, name string, value Serializable, depth WatchingDepth, path Path) Mutation {
 	data, sizes, err := WriteConcatenatedRepresentations(ctx, Str(name), value)
 
 	return Mutation{
@@ -118,7 +118,7 @@ func NewAddPropMutation(ctx *Context, name string, value Value, depth WatchingDe
 	}
 }
 
-func NewUpdatePropMutation(ctx *Context, name string, newValue Value, depth WatchingDepth, path Path) Mutation {
+func NewUpdatePropMutation(ctx *Context, name string, newValue Serializable, depth WatchingDepth, path Path) Mutation {
 	data, sizes, err := WriteConcatenatedRepresentations(ctx, Str(name), newValue)
 
 	return Mutation{
@@ -132,7 +132,7 @@ func NewUpdatePropMutation(ctx *Context, name string, newValue Value, depth Watc
 	}
 }
 
-func NewSetElemAtIndexMutation(ctx *Context, index int, elem Value, depth WatchingDepth, path Path) Mutation {
+func NewSetElemAtIndexMutation(ctx *Context, index int, elem Serializable, depth WatchingDepth, path Path) Mutation {
 	data, sizes, err := WriteConcatenatedRepresentations(ctx, Int(index), elem)
 
 	return Mutation{
@@ -145,7 +145,7 @@ func NewSetElemAtIndexMutation(ctx *Context, index int, elem Value, depth Watchi
 	}
 }
 
-func NewInsertElemAtIndexMutation(ctx *Context, index int, elem Value, depth WatchingDepth, path Path) Mutation {
+func NewInsertElemAtIndexMutation(ctx *Context, index int, elem Serializable, depth WatchingDepth, path Path) Mutation {
 	data, sizes, err := WriteConcatenatedRepresentations(ctx, Int(index), elem)
 
 	return Mutation{
@@ -159,7 +159,7 @@ func NewInsertElemAtIndexMutation(ctx *Context, index int, elem Value, depth Wat
 }
 
 func NewInsertSequenceAtIndexMutation(ctx *Context, index int, seq Sequence, depth WatchingDepth, path Path) Mutation {
-	data, sizes, err := WriteConcatenatedRepresentations(ctx, Int(index), seq)
+	data, sizes, err := WriteConcatenatedRepresentations(ctx, Int(index), seq.(Serializable))
 
 	return Mutation{
 		Kind:               InsertElemAtIndex,
@@ -204,7 +204,7 @@ type SpecificMutationMetadata struct {
 	Path    Path
 }
 
-func NewSpecificMutation(ctx *Context, meta SpecificMutationMetadata, values ...Value) Mutation {
+func NewSpecificMutation(ctx *Context, meta SpecificMutationMetadata, values ...Serializable) Mutation {
 	data, sizes, err := WriteConcatenatedRepresentations(ctx, values...)
 
 	return Mutation{

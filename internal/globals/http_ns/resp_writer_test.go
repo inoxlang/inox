@@ -22,7 +22,7 @@ func TestHttpResponseWriter(t *testing.T) {
 		core.NewGlobalState(ctx)
 
 		testCases := []struct {
-			value      core.Value
+			value      core.Serializable
 			outputJSON string
 			ok         bool
 		}{

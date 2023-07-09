@@ -4,6 +4,10 @@ func (any Any) IsMutable() bool {
 	return true
 }
 
+func (*AnySerializable) IsMutable() bool {
+	return true
+}
+
 func (any AnyPattern) IsMutable() bool {
 	return false
 }
@@ -122,6 +126,10 @@ func (dict *Dictionary) IsMutable() bool {
 
 func (list KeyList) IsMutable() bool {
 	return false
+}
+
+func (*Array) IsMutable() bool {
+	return true
 }
 
 func (list *List) IsMutable() bool {
@@ -559,4 +567,8 @@ func (*DatabaseIL) IsMutable() bool {
 
 func (*ApiIL) IsMutable() bool {
 	return true
+}
+
+func (*Namespace) IsMutable() bool {
+	return false
 }

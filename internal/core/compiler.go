@@ -376,7 +376,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		info := ValMap{
 			"path-slice-count": Int(len(node.Path)),
 		}
-		var isStaticPathSliceList []Value
+		var isStaticPathSliceList []Serializable
 
 		for _, pathSlice := range node.Path {
 			_, isStaticPathSlice := pathSlice.(*parse.PathSlice)
@@ -389,7 +389,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		info["static-path-slices"] = NewTuple(isStaticPathSliceList)
 		//compile query
 
-		var queryParamInfo []Value
+		var queryParamInfo []Serializable
 
 		for _, p := range node.QueryParams {
 			param := p.(*parse.URLQueryParameter)

@@ -50,7 +50,7 @@ func NewValueHistory(ctx *Context, v InMemorySnapshotable, config *Object) *Valu
 		maxItemCount: DEFAULT_MAX_HISTORY_LEN,
 	}
 
-	config.ForEachEntry(func(k string, v Value) error {
+	config.ForEachEntry(func(k string, v Serializable) error {
 		switch k {
 		case "max-length":
 			history.maxItemCount = int(v.(Int))

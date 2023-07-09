@@ -248,13 +248,14 @@ func respondWithMappingResult(h handlingArguments) {
 
 			config := &core.ReprConfig{}
 
-			if !value.HasRepresentation(map[uintptr]int{}, config) {
+			serializable, ok := value.(core.Serializable)
+			if !ok {
 				rw.writeStatus(http.StatusNotAcceptable)
 				return
 			}
 
 			rw.WriteContentType(core.IXON_CTYPE)
-			value.WriteRepresentation(state.Ctx, rw.BodyWriter(), map[uintptr]int{}, config)
+			serializable.WriteRepresentation(state.Ctx, rw.BodyWriter(), config)
 			return
 
 		case req.ParsedAcceptHeader.Match(core.JSON_CTYPE):
@@ -267,14 +268,15 @@ func respondWithMappingResult(h handlingArguments) {
 				ReprConfig: &core.ReprConfig{},
 			}
 
-			if !value.HasJSONRepresentation(map[uintptr]int{}, config) {
+			serializable, ok := value.(core.Serializable)
+			if !ok {
 				rw.writeStatus(http.StatusNotAcceptable)
 				return
 			}
 
 			rw.WriteContentType(core.JSON_CTYPE)
 			stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, rw.BodyWriter(), 0)
-			value.WriteJSONRepresentation(state.Ctx, stream, map[uintptr]int{}, config)
+			serializable.WriteJSONRepresentation(state.Ctx, stream, config)
 			return
 		default:
 			break

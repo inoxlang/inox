@@ -95,7 +95,7 @@ type PreinitFile struct {
 	Pattern            Pattern
 	RequiredPermission FilesystemPermission
 	Content            []byte
-	Parsed             Value
+	Parsed             Serializable
 	ReadParseError     error
 }
 
@@ -109,7 +109,7 @@ type DatabaseConfig struct {
 
 func (p *ModuleParameters) GetArguments(ctx *Context, argObj *Object) (*Object, error) {
 	positionalArgs := argObj.Indexed()
-	resultEntries := map[string]Value{}
+	resultEntries := map[string]Serializable{}
 
 	restParam := false
 
@@ -129,7 +129,7 @@ func (p *ModuleParameters) GetArguments(ctx *Context, argObj *Object) (*Object, 
 			if !param.pattern.Test(ctx, arg) {
 				return nil, fmt.Errorf("invalid value for positional argument %s", param.name)
 			}
-			resultEntries[string(param.name)] = arg
+			resultEntries[string(param.name)] = arg.(Serializable)
 		}
 	}
 
@@ -137,7 +137,7 @@ func (p *ModuleParameters) GetArguments(ctx *Context, argObj *Object) (*Object, 
 		return nil, errors.New(fmtTooManyPositionalArgs(len(positionalArgs), len(p.positional)))
 	}
 
-	err := argObj.ForEachEntry(func(k string, arg Value) error {
+	err := argObj.ForEachEntry(func(k string, arg Serializable) error {
 		if IsIndexKey(k) { //positional arguments are already processed
 			return nil
 		}
@@ -170,7 +170,7 @@ func (p *ModuleParameters) GetArguments(ctx *Context, argObj *Object) (*Object, 
 
 func (p *ModuleParameters) GetArgumentsFromCliArgs(ctx *Context, cliArgs []string) (*Object, error) {
 	var positionalArgs []string
-	entries := map[string]Value{}
+	entries := map[string]Serializable{}
 
 	// non positional arguments
 outer:
@@ -213,7 +213,7 @@ outer:
 
 				return nil, fmt.Errorf("missing value for argument %s (%s)", param.name, param.CliArgNames())
 			}
-			entries[string(param.name)] = defaultVal
+			entries[string(param.name)] = defaultVal.(Serializable)
 		}
 	}
 
@@ -225,7 +225,7 @@ outer:
 			if err != nil {
 				return nil, fmt.Errorf("invalid value for rest argument %s: %w", param.name, err)
 			}
-			entries[string(param.name)] = paramValue
+			entries[string(param.name)] = paramValue.(Serializable)
 		} else {
 			if i >= len(positionalArgs) {
 				return nil, ErrNotEnoughCliArgs
@@ -314,7 +314,7 @@ func (p moduleParameter) CliArgNames() string {
 	return buf.String()
 }
 
-func (p moduleParameter) GetArgumentFromCliArg(ctx *Context, s string) (v Value, handled bool, err error) {
+func (p moduleParameter) GetArgumentFromCliArg(ctx *Context, s string) (v Serializable, handled bool, err error) {
 	if len(s) == 0 {
 		return nil, false, nil
 	}
@@ -347,7 +347,7 @@ func (p moduleParameter) GetArgumentFromCliArg(ctx *Context, s string) (v Value,
 			if err != nil {
 				return nil, true, err
 			}
-			return argValue, true, nil
+			return argValue.(Serializable), true, nil
 		default:
 			return nil, false, nil
 		}
@@ -364,7 +364,7 @@ func (p moduleParameter) GetArgumentFromCliArg(ctx *Context, s string) (v Value,
 		if err != nil {
 			return nil, true, err
 		}
-		return argValue, true, nil
+		return argValue.(Serializable), true, nil
 	}
 }
 
@@ -384,14 +384,14 @@ func (p moduleParameter) GetRestArgumentFromCliArgs(ctx *Context, args []string)
 		return nil, errors.New("parameter's pattern has no corresponding string pattern")
 	}
 
-	elements := make([]Value, len(args))
+	elements := make([]Serializable, len(args))
 
 	for i, arg := range args {
 		argValue, err := stringPatt.Parse(ctx, arg)
 		if err != nil {
 			return nil, err //TODO: improve error
 		}
-		elements[i] = argValue
+		elements[i] = argValue.(Serializable)
 	}
 
 	return NewWrappedValueListFrom(elements), nil
@@ -525,7 +525,7 @@ func EvaluatePermissionListingObjectNode(n *parse.ObjectLiteral, config PreinitA
 	//we create a temporary state to evaluate some parts of the permissions
 	if config.RunningState == nil {
 		ctx := NewContext(ContextConfig{Permissions: []Permission{GlobalVarPermission{permkind.Read, "*"}}})
-		state = NewTreeWalkState(ctx, getGlobalsAccessibleFromManifest().EntryMap())
+		state = NewTreeWalkState(ctx, getGlobalsAccessibleFromManifest().ValueEntryMap())
 
 		if config.GlobalConsts != nil {
 			for _, decl := range config.GlobalConsts.Declarations {
@@ -833,7 +833,7 @@ func getSingleKindPermissions(
 
 	var perms []Permission
 
-	var list []Value
+	var list []Serializable
 	switch v := desc.(type) {
 	case *List:
 		list = v.GetOrBuildElements(nil)
@@ -915,7 +915,7 @@ func getSingleKindPermissions(
 			}
 		}
 	default:
-		list = []Value{v}
+		list = []Serializable{v.(Serializable)}
 	}
 
 	for _, e := range list {
@@ -1000,7 +1000,7 @@ func getModuleParameters(v Value) (ModuleParameters, error) {
 	var params ModuleParameters
 	restParamFound := false
 
-	err := description.ForEachEntry(func(k string, v Value) error {
+	err := description.ForEachEntry(func(k string, v Serializable) error {
 		var param moduleParameter
 
 		if IsIndexKey(k) { //positional parameter
@@ -1009,7 +1009,7 @@ func getModuleParameters(v Value) (ModuleParameters, error) {
 				return errors.New("each positional parameter should be described with an object")
 			}
 
-			obj.ForEachEntry(func(propName string, propVal Value) error {
+			obj.ForEachEntry(func(propName string, propVal Serializable) error {
 				switch propName {
 				case "name":
 					param.name = propVal.(Identifier)
@@ -1052,7 +1052,7 @@ func getModuleParameters(v Value) (ModuleParameters, error) {
 				paramDesc := val
 				param.cliArgName = k
 
-				paramDesc.ForEachEntry(func(propName string, propVal Value) error {
+				paramDesc.ForEachEntry(func(propName string, propVal Serializable) error {
 					switch propName {
 					case "pattern":
 						patt := propVal.(Pattern)
@@ -1103,7 +1103,7 @@ func getDatabaseConfigurations(v Value) (DatabaseConfigs, error) {
 
 	var configs DatabaseConfigs
 
-	err := description.ForEachEntry(func(dbName string, desc Value) error {
+	err := description.ForEachEntry(func(dbName string, desc Serializable) error {
 		dbDesc, ok := desc.(*Object)
 		if !ok {
 			return errors.New("each database should be described with an object")
@@ -1111,7 +1111,7 @@ func getDatabaseConfigurations(v Value) (DatabaseConfigs, error) {
 
 		config := DatabaseConfig{Name: dbName}
 
-		err := dbDesc.ForEachEntry(func(propName string, propVal Value) error {
+		err := dbDesc.ForEachEntry(func(propName string, propVal Serializable) error {
 			switch propName {
 			case MANIFEST_DATABASE__RESOURCE_PROP_NAME:
 				switch val := propVal.(type) {
@@ -1151,13 +1151,13 @@ func getDnsPermissions(permKind PermissionKind, desc Value) ([]Permission, error
 	if permKind != permkind.Read {
 		return nil, fmt.Errorf("invalid manifest, 'dns' is only defined for 'read'")
 	}
-	dnsReqNodes := make([]Value, 0)
+	dnsReqNodes := make([]Serializable, 0)
 
 	switch v := desc.(type) {
 	case *List:
 		dnsReqNodes = append(dnsReqNodes, v.GetOrBuildElements(nil)...)
 	default:
-		dnsReqNodes = append(dnsReqNodes, v)
+		dnsReqNodes = append(dnsReqNodes, v.(Serializable))
 	}
 
 	for _, dnsReqNode := range dnsReqNodes {
@@ -1190,13 +1190,13 @@ func getDnsPermissions(permKind PermissionKind, desc Value) ([]Permission, error
 // getRawTcpPermissions gets a list RawTcpPermission from an AST node
 func getRawTcpPermissions(permKind PermissionKind, desc Value) ([]Permission, error) {
 	var perms []Permission
-	tcpRequirementNodes := make([]Value, 0)
+	tcpRequirementNodes := make([]Serializable, 0)
 
 	switch v := desc.(type) {
 	case *List:
 		tcpRequirementNodes = append(tcpRequirementNodes, v.GetOrBuildElements(nil)...)
 	default:
-		tcpRequirementNodes = append(tcpRequirementNodes, v)
+		tcpRequirementNodes = append(tcpRequirementNodes, v.(Serializable))
 	}
 
 	for _, dnsReqNode := range tcpRequirementNodes {
@@ -1229,13 +1229,13 @@ func getRawTcpPermissions(permKind PermissionKind, desc Value) ([]Permission, er
 func getGlobalVarPerms(permKind PermissionKind, desc Value, specifiedGlobalPermKinds map[PermissionKind]bool) ([]Permission, error) {
 
 	var perms []Permission
-	globalReqNodes := make([]Value, 0)
+	globalReqNodes := make([]Serializable, 0)
 
 	switch v := desc.(type) {
 	case *List:
 		globalReqNodes = append(globalReqNodes, v.GetOrBuildElements(nil)...)
 	default:
-		globalReqNodes = append(globalReqNodes, v)
+		globalReqNodes = append(globalReqNodes, v.(Serializable))
 	}
 
 	for _, gn := range globalReqNodes {
@@ -1258,13 +1258,13 @@ func getGlobalVarPerms(permKind PermissionKind, desc Value, specifiedGlobalPermK
 // getEnvVarPermissions gets a list EnvVarPermission from an AST node
 func getEnvVarPermissions(permKind PermissionKind, desc Value) ([]Permission, error) {
 	var perms []Permission
-	envReqNodes := make([]Value, 0)
+	envReqNodes := make([]Serializable, 0)
 
 	switch v := desc.(type) {
 	case *List:
 		envReqNodes = append(envReqNodes, v.GetOrBuildElements(nil)...)
 	default:
-		envReqNodes = append(envReqNodes, v)
+		envReqNodes = append(envReqNodes, v.(Serializable))
 	}
 
 	for _, n := range envReqNodes {
@@ -1390,13 +1390,13 @@ func getCommandPermissions(n Value) ([]Permission, error) {
 
 func getVisibilityPerms(desc Value) ([]Permission, error) {
 	var perms []Permission
-	values := make([]Value, 0)
+	values := make([]Serializable, 0)
 
 	switch v := desc.(type) {
 	case *List:
 		values = append(values, v.GetOrBuildElements(nil)...)
 	default:
-		values = append(values, v)
+		values = append(values, v.(Serializable))
 	}
 
 	for _, val := range values {

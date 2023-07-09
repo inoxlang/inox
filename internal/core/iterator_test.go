@@ -1025,13 +1025,13 @@ func TestListPatternIteration(t *testing.T) {
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(0), it.Key(ctx))
-		assert.Equal(t, newList(&ValueList{elements: []Value{Int(2)}}), it.Value(ctx))
+		assert.Equal(t, newList(&ValueList{elements: []Serializable{Int(2)}}), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(1), it.Key(ctx))
-		assert.Equal(t, newList(&ValueList{elements: []Value{Int(3)}}), it.Value(ctx))
+		assert.Equal(t, newList(&ValueList{elements: []Serializable{Int(3)}}), it.Value(ctx))
 
 		//next
 		assert.False(t, it.HasNext(ctx))
@@ -1063,25 +1063,25 @@ func TestListPatternIteration(t *testing.T) {
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(0), it.Key(ctx))
-		assert.Equal(t, newList(&ValueList{elements: []Value{Int(2), Int(2)}}), it.Value(ctx))
+		assert.Equal(t, newList(&ValueList{elements: []Serializable{Int(2), Int(2)}}), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(1), it.Key(ctx))
-		assert.Equal(t, newList(&ValueList{elements: []Value{Int(2), Int(3)}}), it.Value(ctx))
+		assert.Equal(t, newList(&ValueList{elements: []Serializable{Int(2), Int(3)}}), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(2), it.Key(ctx))
-		assert.Equal(t, newList(&ValueList{elements: []Value{Int(3), Int(2)}}), it.Value(ctx))
+		assert.Equal(t, newList(&ValueList{elements: []Serializable{Int(3), Int(2)}}), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(3), it.Key(ctx))
-		assert.Equal(t, newList(&ValueList{elements: []Value{Int(3), Int(3)}}), it.Value(ctx))
+		assert.Equal(t, newList(&ValueList{elements: []Serializable{Int(3), Int(3)}}), it.Value(ctx))
 
 		//next
 		assert.False(t, it.HasNext(ctx))

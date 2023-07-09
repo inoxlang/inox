@@ -41,7 +41,7 @@ type LocalDatabase struct {
 	schema   *core.ObjectPattern
 	logger   zerolog.Logger
 
-	topLevelValues     map[string]Value
+	topLevelValues     map[string]core.Serializable
 	topLevelValuesLock sync.Mutex
 
 	core.NoReprMixin
@@ -183,7 +183,7 @@ func (ldb *LocalDatabase) Resource() core.SchemeHolder {
 	return ldb.host
 }
 
-func (ldb *LocalDatabase) TopLevelEntities(ctx *core.Context) map[string]Value {
+func (ldb *LocalDatabase) TopLevelEntities(ctx *core.Context) map[string]core.Serializable {
 	ldb.topLevelValuesLock.Lock()
 	defer ldb.topLevelValuesLock.Unlock()
 
@@ -191,7 +191,7 @@ func (ldb *LocalDatabase) TopLevelEntities(ctx *core.Context) map[string]Value {
 		return ldb.topLevelValues
 	}
 
-	ldb.topLevelValues = make(map[string]core.Value, ldb.schema.EntryCount())
+	ldb.topLevelValues = make(map[string]core.Serializable, ldb.schema.EntryCount())
 
 	err := ldb.schema.ForEachEntry(func(propName string, propPattern core.Pattern, isOptional bool) error {
 		path := core.PathFrom("/" + propName)
@@ -259,7 +259,7 @@ func (ldb *LocalDatabase) Has(ctx *Context, key Path) bool {
 	return bool(ldb.mainKV.Has(ctx, key, ldb))
 }
 
-func (ldb *LocalDatabase) Set(ctx *Context, key Path, value Value) {
+func (ldb *LocalDatabase) Set(ctx *Context, key Path, value core.Serializable) {
 	ldb.mainKV.Set(ctx, key, value, ldb)
 }
 
@@ -267,7 +267,7 @@ func (ldb *LocalDatabase) SetSerialized(ctx *Context, key Path, serialized strin
 	ldb.mainKV.SetSerialized(ctx, key, serialized, ldb)
 }
 
-func (ldb *LocalDatabase) Insert(ctx *Context, key Path, value Value) {
+func (ldb *LocalDatabase) Insert(ctx *Context, key Path, value core.Serializable) {
 	ldb.mainKV.Insert(ctx, key, value, ldb)
 }
 

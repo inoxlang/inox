@@ -22,7 +22,7 @@ func init() {
 
 type StatelessParser interface {
 	Validate(ctx *Context, s string) bool
-	Parse(ctx *Context, s string) (Value, error)
+	Parse(ctx *Context, s string) (Serializable, error)
 }
 
 func RegisterParser(mime Mimetype, p StatelessParser) {
@@ -44,7 +44,7 @@ func (p *jsonParser) Validate(ctx *Context, s string) bool {
 	return json.Valid(utils.StringAsBytes(s))
 
 }
-func (p *jsonParser) Parse(ctx *Context, s string) (Value, error) {
+func (p *jsonParser) Parse(ctx *Context, s string) (Serializable, error) {
 	var jsonVal any
 	err := json.Unmarshal(utils.StringAsBytes(s), &jsonVal)
 	if err != nil {
@@ -61,7 +61,7 @@ func (p *inoxReprParser) Validate(ctx *Context, s string) bool {
 	return err == nil
 
 }
-func (p *inoxReprParser) Parse(ctx *Context, s string) (Value, error) {
+func (p *inoxReprParser) Parse(ctx *Context, s string) (Serializable, error) {
 	return ParseRepr(ctx, utils.StringAsBytes(s))
 }
 
@@ -74,7 +74,7 @@ func (p *yamlParser) Validate(ctx *Context, s string) bool {
 	return err == nil
 }
 
-func (p *yamlParser) Parse(ctx *Context, s string) (Value, error) {
+func (p *yamlParser) Parse(ctx *Context, s string) (Serializable, error) {
 	tokens := yamlLex.Tokenize(s)
 	yml, err := yamlParse.Parse(tokens, 0)
 

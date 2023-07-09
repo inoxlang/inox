@@ -213,7 +213,7 @@ func S3SetBucketPolicy(ctx *core.Context, u core.URL, policy core.Value) error {
 		config := core.JSONSerializationConfig{
 			ReprConfig: &core.ReprConfig{},
 		}
-		if err := p.WriteJSONRepresentation(ctx, stream, map[uintptr]int{}, config); err != nil {
+		if err := p.WriteJSONRepresentation(ctx, stream, config); err != nil {
 			return errors.New("invalid policy description: pass a string or an object with a JSON representation")
 		}
 		policyString = string(stream.Buffer())

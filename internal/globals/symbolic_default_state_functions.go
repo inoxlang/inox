@@ -49,7 +49,7 @@ func init() {
 		_fprint, func(ctx *symbolic.Context, out symbolic.Writable, arg ...symbolic.SymbolicValue) {},
 		_printvals, func(ctx *symbolic.Context, arg ...symbolic.SymbolicValue) {},
 		_stringify_ast, func(ctx *symbolic.Context, arg *symbolic.AstNode) {},
-		_Error, func(ctx *symbolic.Context, s *symbolic.String, args ...symbolic.SymbolicValue) *symbolic.Error {
+		_Error, func(ctx *symbolic.Context, s *symbolic.String, args ...symbolic.Serializable) *symbolic.Error {
 			if len(args) > 1 {
 				ctx.AddSymbolicGoFunctionError("at most two arguments were expected")
 			}
@@ -160,7 +160,7 @@ func init() {
 			return &symbolic.String{}
 		},
 
-		_repr, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) *symbolic.String {
+		_repr, func(ctx *symbolic.Context, arg symbolic.Serializable) *symbolic.String {
 			return &symbolic.String{}
 		},
 		_parse_repr, func(ctx *symbolic.Context, arg symbolic.Readable) (symbolic.SymbolicValue, *symbolic.Error) {
@@ -231,9 +231,6 @@ func init() {
 
 		_url_of, func(ctx *symbolic.Context, v symbolic.SymbolicValue) *symbolic.URL {
 			return &symbolic.URL{}
-		},
-		core.IdOf, func(ctx *symbolic.Context, v symbolic.SymbolicValue) *symbolic.Identifier {
-			return &symbolic.Identifier{}
 		},
 		//
 

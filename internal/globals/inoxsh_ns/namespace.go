@@ -54,7 +54,7 @@ func NewShell(ctx *core.Context, configObj *core.Object) (*shell, error) {
 		switch key {
 		case GLOBALS_KEY:
 			if obj, ok := value.(*core.Object); ok {
-				globals = obj.EntryMap()
+				globals = obj.ValueEntryMap()
 			} else if ident, ok := value.(core.Identifier); ok {
 				if ident == "default" {
 					globals = nil
@@ -111,8 +111,8 @@ func NewShell(ctx *core.Context, configObj *core.Object) (*shell, error) {
 	return newShell(config, shellState, in, out, preOut /*errOut*/), nil
 }
 
-func NewInoxshNamespace() *core.Record {
-	return core.NewRecordFromMap(core.ValMap{
+func NewInoxshNamespace() *core.Namespace {
+	return core.NewNamespace("inoxsh", map[string]core.Value{
 		"Shell": core.WrapGoFunction(NewShell),
 	})
 }
