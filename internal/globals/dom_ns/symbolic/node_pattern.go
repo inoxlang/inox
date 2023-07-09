@@ -16,6 +16,8 @@ var (
 type NodePattern struct {
 	symbolic.NotCallablePatternMixin
 	modelPattern symbolic.Pattern
+
+	symbolic.SerializableMixin
 }
 
 func NewDomNodePattern(modelPattern symbolic.Pattern) *NodePattern {
@@ -64,7 +66,7 @@ func (p *NodePattern) SymbolicValue() symbolic.SymbolicValue {
 	return &Node{model: p.modelPattern.SymbolicValue()}
 }
 
-func (p *NodePattern) StringPattern() (symbolic.StringPatternElement, bool) {
+func (p *NodePattern) StringPattern() (symbolic.StringPattern, bool) {
 	return nil, false
 }
 

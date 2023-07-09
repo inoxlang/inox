@@ -37,7 +37,6 @@ var (
 
 // A Module represents an Inox module, it does not hold any state and should NOT be modified. Module implements Value.
 type Module struct {
-	NoReprMixin
 	NotClonableMixin
 
 	ModuleKind

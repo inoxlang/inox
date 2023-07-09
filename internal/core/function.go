@@ -11,7 +11,6 @@ import (
 )
 
 type InoxFunction struct {
-	NoReprMixin
 	Node                   parse.Node
 	originState            *GlobalState
 	shared                 atomic.Bool

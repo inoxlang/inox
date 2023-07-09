@@ -121,7 +121,6 @@ type SymbolicData struct {
 	errorsPropSet atomic.Bool
 	errorsProp    *Tuple
 
-	NoReprMixin
 	NotClonableMixin
 }
 
@@ -407,7 +406,7 @@ func (p *RegexPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]sym
 }
 
 func (p *RuneRangeStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.AnyStringPatternElement{}, nil
+	return &symbolic.AnyStringPattern{}, nil
 }
 
 func (p *IntRangePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
@@ -415,11 +414,11 @@ func (p *IntRangePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]
 }
 
 func (p *UnionStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.AnyStringPatternElement{}, nil
+	return &symbolic.AnyStringPattern{}, nil
 }
 
 func (p *RepeatedPatternElement) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.AnyStringPatternElement{}, nil
+	return &symbolic.AnyStringPattern{}, nil
 }
 
 func (p *SequenceStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
@@ -604,7 +603,7 @@ func (p NamedSegmentPathPattern) ToSymbolicValue(ctx *Context, encountered map[u
 }
 
 func (p *DynamicStringPatternElement) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.AnyStringPatternElement{}, nil
+	return &symbolic.AnyStringPattern{}, nil
 }
 
 func (p *DifferencePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
@@ -671,7 +670,7 @@ func (p *MutationPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]
 	return symbolic.NewMutationPattern(&symbolic.Int{}, data0Pattern.(symbolic.Pattern)), nil
 }
 
-func (p *ParserBasedPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *ParserBasedPseudoPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	ptr := reflect.ValueOf(p).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
@@ -680,11 +679,11 @@ func (p *ParserBasedPattern) ToSymbolicValue(ctx *Context, encountered map[uintp
 }
 
 func (p *IntRangeStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return symbolic.ANY_STR_PATTERN_ELEM, nil
+	return symbolic.ANY_STR_PATTERN, nil
 }
 
 func (p *PathStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return symbolic.ANY_STR_PATTERN_ELEM, nil
+	return symbolic.ANY_STR_PATTERN, nil
 }
 
 func (f *GoFunction) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
@@ -1162,7 +1161,7 @@ func (s *Secret) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.
 func (p *SecretPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	stringPattern := utils.Must(p.stringPattern.ToSymbolicValue(ctx, encountered))
 
-	return symbolic.NewSecretPattern(stringPattern.(symbolic.StringPatternElement)), nil
+	return symbolic.NewSecretPattern(stringPattern.(symbolic.StringPattern)), nil
 }
 
 func (p *XMLElement) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {

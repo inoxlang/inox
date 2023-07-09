@@ -179,7 +179,7 @@ func init() {
 		_len, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) *symbolic.Int {
 			return &symbolic.Int{}
 		},
-		_len_range, func(ctx *symbolic.Context, arg symbolic.StringPatternElement) *symbolic.IntRange {
+		_len_range, func(ctx *symbolic.Context, arg symbolic.StringPattern) *symbolic.IntRange {
 			return &symbolic.IntRange{}
 		},
 

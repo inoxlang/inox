@@ -13,7 +13,6 @@ type HttpResponse struct {
 	wrapped *http.Response
 	cookies []core.Serializable
 
-	core.NoReprMixin
 	core.NotClonableMixin
 }
 

@@ -23,7 +23,6 @@ func init() {
 }
 
 type RingBuffer struct {
-	NoReprMixin
 	NotClonableMixin
 
 	data []byte

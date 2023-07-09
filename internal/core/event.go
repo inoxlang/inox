@@ -38,7 +38,6 @@ func GetEventSourceFactory(scheme Scheme) (EventSourceFactory, bool) {
 // An Event represents a generic event, Event implements Value.
 type Event struct {
 	NotClonableMixin
-	NoReprMixin
 	time              Date
 	affectedResources []ResourceName //can be empty
 	value             Value

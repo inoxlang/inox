@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"reflect"
 	"strconv"
@@ -13,7 +12,6 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
-	jsoniter "github.com/json-iterator/go"
 )
 
 const (
@@ -39,17 +37,6 @@ type Value interface {
 
 	//ToSymbolicValue should return a symbolic value that represents the value.
 	ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error)
-}
-
-// Serializable is the interface implemented by all values serializable to JSON and/or IXON.
-type Serializable interface {
-	Value
-
-	//IXON representation
-	WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error
-
-	//JSON representation
-	WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error
 }
 
 // A resource name is a string value that designates a resource, examples: URL, Path & Host are resource names.
@@ -239,5 +226,4 @@ type Port struct {
 
 type Type struct {
 	reflect.Type
-	NoReprMixin
 }

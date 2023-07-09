@@ -13,7 +13,6 @@ type FilesystemIL struct {
 	afs.Filesystem
 
 	core.NotClonableMixin
-	core.NoReprMixin
 }
 
 func NewMemFilesystemIL(maxTotalStorageSize core.ByteCount) *FilesystemIL {

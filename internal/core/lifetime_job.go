@@ -24,13 +24,12 @@ var (
 // A LifetimeJob represents a job associated with a value that runs while the value exists, this struct does not
 // hold any state, see LifetimeJobInstance. LifetimeJob implements Value.
 type LifetimeJob struct {
-	NoReprMixin
-	NotClonableMixin
-
 	meta           Value
 	module         *Module // module executed when running the job
 	parentModule   *Module
 	subjectPattern Pattern
+
+	NotClonableMixin
 }
 
 type LifetimeJobInstance struct {

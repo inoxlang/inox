@@ -28,7 +28,6 @@ type BucketMapItem = struct {
 }
 
 type Bucket struct {
-	core.NoReprMixin
 	closed uint32
 
 	s3Host         core.Host

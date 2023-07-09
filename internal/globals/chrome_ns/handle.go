@@ -19,8 +19,7 @@ var (
 )
 
 type Handle struct {
-	core.NoReprMixin
-	allocCtx       context.Context
+		allocCtx       context.Context
 	cancelAllocCtx context.CancelFunc
 
 	chromedpContext       context.Context

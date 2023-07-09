@@ -5,8 +5,10 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io"
 
 	"github.com/inoxlang/inox/internal/utils"
+	jsoniter "github.com/json-iterator/go"
 )
 
 var (
@@ -17,13 +19,20 @@ var (
 
 // A Secret represents a string such as a password, an API-Key or a PEM encoded key; a secret always return false when it is compared for equality.
 type Secret struct {
-	NoReprMixin
 	NotClonableMixin
 
 	value    StringLike
 	pemBlock *pem.Block //not nil if value is PEM encoded
 
 	pattern *SecretPattern
+}
+
+func (m *Secret) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+	return ErrNoRepresentation
+}
+
+func (m *Secret) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+	return ErrNoRepresentation
 }
 
 func (s *Secret) StringValue() StringLike {
@@ -52,12 +61,12 @@ func (s *Secret) AssertIsPattern(secret *SecretPattern) {
 }
 
 type SecretPattern struct {
-	NotCallablePatternMixin
-	NoReprMixin
-	NotClonableMixin
-
 	stringPattern StringPattern
 	pemEncoded    bool
+	CallBasedPatternReprMixin
+
+	NotCallablePatternMixin
+	NotClonableMixin
 }
 
 func NewSecretPattern(stringPattern StringPattern, pem bool) *SecretPattern {

@@ -7,10 +7,11 @@ var (
 )
 
 type NodePattern struct {
-	core.NoReprMixin
+	modelPattern core.Pattern
+	core.CallBasedPatternReprMixin
+
 	core.NotCallablePatternMixin
 	core.NotClonableMixin
-	modelPattern core.Pattern
 }
 
 func (p *NodePattern) Test(ctx *core.Context, v core.Value) bool {

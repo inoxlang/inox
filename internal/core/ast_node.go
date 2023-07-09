@@ -15,8 +15,6 @@ var (
 type AstNode struct {
 	Node  parse.Node
 	chunk *parse.ParsedChunk
-
-	NoReprMixin
 }
 
 func (AstNode) PropertyNames(ctx *Context) []string {
@@ -49,7 +47,6 @@ func (AstNode) SetProp(ctx *Context, name string, value Value) error {
 type Token struct {
 	value parse.Token
 
-	NoReprMixin
 	NotClonableMixin
 }
 

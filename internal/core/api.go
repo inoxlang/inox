@@ -13,7 +13,6 @@ type ApiIL struct {
 	initialSchema *ObjectPattern
 	data          *Object
 
-	NoReprMixin
 	NotClonableMixin
 }
 

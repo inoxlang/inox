@@ -9,8 +9,6 @@ import (
 )
 
 type GetObjectResponse struct {
-	core.NoReprMixin
-
 	output      any
 	fakeBackend bool
 }
@@ -51,8 +49,6 @@ func (*GetObjectResponse) PropertyNames(ctx *core.Context) []string {
 }
 
 type PutObjectResponse struct {
-	core.NoReprMixin
-
 	output      any
 	fakeBackend bool
 }
@@ -81,7 +77,6 @@ func (*PutObjectResponse) PropertyNames(ctx *core.Context) []string {
 }
 
 type GetBucketPolicyResponse struct {
-	core.NoReprMixin
 	s string
 }
 

@@ -8,7 +8,6 @@ import (
 
 // A PeriodicWatcher is Watcher that periodically checks if it has a value.
 type PeriodicWatcher struct {
-	NoReprMixin
 	NotClonableMixin
 
 	config WatcherConfiguration

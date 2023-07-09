@@ -45,7 +45,7 @@ type StringLike interface {
 // A String represents a symbolic Str.
 type String struct {
 	UnassignablePropsMixin
-	_ int
+	SerializableMixin
 }
 
 func (s *String) Test(v SymbolicValue) bool {
@@ -139,7 +139,7 @@ func (s *String) slice(start, end *Int) Sequence {
 // A Rune represents a symbolic Rune.
 type Rune struct {
 	UnassignablePropsMixin
-	_ int
+	SerializableMixin
 }
 
 func (r *Rune) Test(v SymbolicValue) bool {
@@ -227,7 +227,7 @@ func (s *CheckedString) WidestOfType() SymbolicValue {
 }
 
 type RuneSlice struct {
-	_ int
+	SerializableMixin
 }
 
 func (s *RuneSlice) Test(v SymbolicValue) bool {
@@ -335,7 +335,7 @@ func (s *RuneSlice) WatcherElement() SymbolicValue {
 // A StringConcatenation represents a symbolic StringConcatenation.
 type StringConcatenation struct {
 	UnassignablePropsMixin
-	_ int
+	SerializableMixin
 }
 
 func (c *StringConcatenation) Test(v SymbolicValue) bool {

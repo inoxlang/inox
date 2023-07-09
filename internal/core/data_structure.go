@@ -678,8 +678,6 @@ func (rec *Record) EntryMap() map[string]Serializable {
 type Dictionary struct {
 	Entries map[string]Serializable
 	Keys    map[string]Serializable
-
-	NoReprMixin
 }
 
 func convertKeyReprToValue(repr string) Serializable {
@@ -876,7 +874,6 @@ func (tuple *Tuple) Concat(other *Tuple) *Tuple {
 
 // UData is used to represent any hiearchical data, UData implements Value and is immutable.
 type UData struct {
-	NoReprMixin
 	Root            Serializable
 	HiearchyEntries []UDataHiearchyEntry
 }
@@ -884,7 +881,6 @@ type UData struct {
 // UDataHiearchyEntry represents a hiearchical entry in a Udata,
 // UDataHiearchyEntry implements Value but is never accessible by Inox code.
 type UDataHiearchyEntry struct {
-	NoReprMixin
 	Value    Serializable
 	Children []UDataHiearchyEntry
 }

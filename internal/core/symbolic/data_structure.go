@@ -25,6 +25,8 @@ var (
 	ANY_OBJ       = &Object{}
 	ANY_REC       = &Record{}
 	ANY_NAMESPACE = NewAnyNamespace()
+	ANY_DICT      = NewAnyDictionary()
+	ANY_KEYLIST   = NewAnyKeyList()
 )
 
 // An Indexable represents a symbolic Indexable.
@@ -198,6 +200,8 @@ func (*Array) WidestOfType() SymbolicValue {
 type List struct {
 	elements       []SymbolicValue
 	generalElement SymbolicValue
+
+	SerializableMixin
 }
 
 func NewList(elements ...SymbolicValue) *List {
@@ -433,6 +437,8 @@ func (l *List) WatcherElement() SymbolicValue {
 type Tuple struct {
 	elements       []SymbolicValue
 	generalElement SymbolicValue
+
+	SerializableMixin
 }
 
 func NewTuple(elements ...SymbolicValue) *Tuple {
@@ -592,10 +598,10 @@ func (t *Tuple) slice(start, end *Int) Sequence {
 	}
 }
 
-//
-
+// A KeyList represents a symbolic KeyList.
 type KeyList struct {
 	Keys []string //if nil, matches any
+	SerializableMixin
 }
 
 func NewAnyKeyList() *KeyList {
@@ -671,6 +677,8 @@ func (l *KeyList) WidestOfType() SymbolicValue {
 type Dictionary struct {
 	Entries map[string]SymbolicValue //if nil, matches any dictionary
 	Keys    map[string]SymbolicValue
+
+	SerializableMixin
 }
 
 func NewAnyDictionary() *Dictionary {
@@ -852,6 +860,8 @@ type Object struct {
 	static                     map[string]Pattern //key in .Static => key in .Entries, not reciprocal
 	complexPropertyConstraints []*ComplexPropertyConstraint
 	shared                     bool
+
+	SerializableMixin
 }
 
 func NewAnyObject() *Object {
@@ -1235,6 +1245,8 @@ type Record struct {
 	entries         map[string]SymbolicValue //if nil, matches any record
 	optionalEntries map[string]struct{}
 	valueOnly       SymbolicValue
+
+	SerializableMixin
 }
 
 func NewAnyrecord() *Record {

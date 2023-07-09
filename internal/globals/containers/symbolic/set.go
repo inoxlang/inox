@@ -147,6 +147,7 @@ type SetPattern struct {
 	elementPattern symbolic.Pattern
 
 	symbolic.NotCallablePatternMixin
+	symbolic.SerializableMixin
 }
 
 func NewSetPatternWithElementPattern(elementPattern symbolic.Pattern) *SetPattern {
@@ -174,7 +175,7 @@ func (p *SetPattern) HasUnderylingPattern() bool {
 	return true
 }
 
-func (p *SetPattern) StringPattern() (symbolic.StringPatternElement, bool) {
+func (p *SetPattern) StringPattern() (symbolic.StringPattern, bool) {
 	return nil, false
 }
 

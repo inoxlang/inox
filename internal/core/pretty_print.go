@@ -1511,7 +1511,7 @@ func (patt *MutationPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintCon
 	InspectPrint(w, patt)
 }
 
-func (patt *ParserBasedPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (patt *ParserBasedPseudoPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, patt)
 }
 

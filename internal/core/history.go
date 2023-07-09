@@ -41,7 +41,6 @@ type ValueHistory struct {
 	renderCurrentToHTMLFn *InoxFunction // can be nil
 
 	NotClonableMixin
-	NoReprMixin
 }
 
 func NewValueHistory(ctx *Context, v InMemorySnapshotable, config *Object) *ValueHistory {

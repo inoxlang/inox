@@ -22,7 +22,6 @@ type LSPSession struct {
 	lock       core.SmartLock
 
 	core.NotClonableMixin
-	core.NoReprMixin
 }
 
 func NewLspSession(rpcSession *jsonrpc.Session) *LSPSession {

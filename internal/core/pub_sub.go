@@ -74,7 +74,6 @@ type Publication struct {
 	publisher       Value
 	publicationDate Date
 
-	NoReprMixin
 	NotClonableMixin
 }
 

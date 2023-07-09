@@ -15,18 +15,20 @@ import (
 
 var (
 	_ = []Pattern{
-		&PathPattern{}, &URLPattern{}, &UnionPattern{}, &AnyStringPatternElement{}, &SequenceStringPattern{},
-		&HostPattern{}, &ListPattern{}, &ObjectPattern{}, &OptionPattern{},
-		&RegexPattern{}, &TypePattern{}, &AnyPattern{}, &FunctionPattern{},
+		(*PathPattern)(nil), (*URLPattern)(nil), (*UnionPattern)(nil), (*AnyStringPattern)(nil), (*SequenceStringPattern)(nil),
+		(*HostPattern)(nil), (*ListPattern)(nil), (*ObjectPattern)(nil), (*TuplePattern)(nil), (*RecordPattern)(nil),
+		(*OptionPattern)(nil), (*RegexPattern)(nil), (*TypePattern)(nil), (*AnyPattern)(nil), (*FunctionPattern)(nil),
+		(*ExactValuePattern)(nil), (*ExactStringPattern)(nil), (*ParserBasedPattern)(nil),
+		(*IntRangePattern)(nil), (*EventPattern)(nil), (*MutationPattern)(nil), (*OptionalPattern)(nil),
 	}
 	_ = []GroupPattern{
-		&NamedSegmentPathPattern{},
+		(*NamedSegmentPathPattern)(nil),
 	}
 
-	ANY_PATTERN          = &AnyPattern{}
-	ANY_STR_PATTERN_ELEM = &AnyStringPatternElement{}
-	ANY_LIST_PATTERN     = &ListPattern{generalElement: ANY_PATTERN}
-	ANY_TUPLE_PATTERN    = &TuplePattern{generalElement: ANY_PATTERN}
+	ANY_PATTERN       = &AnyPattern{}
+	ANY_STR_PATTERN   = &AnyStringPattern{}
+	ANY_LIST_PATTERN  = &ListPattern{generalElement: ANY_PATTERN}
+	ANY_TUPLE_PATTERN = &TuplePattern{generalElement: ANY_PATTERN}
 
 	ErrPatternNotCallable                        = errors.New("pattern is not callable")
 	ErrValueAlreadyInitialized                   = errors.New("value already initialized")
@@ -35,7 +37,7 @@ var (
 
 // A Pattern represents a symbolic Pattern.
 type Pattern interface {
-	SymbolicValue
+	Serializable
 	Iterable
 
 	HasUnderylingPattern() bool
@@ -48,7 +50,7 @@ type Pattern interface {
 	//returns a symbolic value that represent all concrete values that match against this pattern
 	SymbolicValue() SymbolicValue
 
-	StringPattern() (StringPatternElement, bool)
+	StringPattern() (StringPattern, bool)
 }
 
 type NotCallablePatternMixin struct {
@@ -72,7 +74,7 @@ func isAnyPattern(val SymbolicValue) bool {
 // An AnyPattern represents a symbolic Pattern we do not know the concrete type.
 type AnyPattern struct {
 	NotCallablePatternMixin
-	_ int
+	SerializableMixin
 }
 
 func (p *AnyPattern) Test(v SymbolicValue) bool {
@@ -105,7 +107,7 @@ func (p *AnyPattern) SymbolicValue() SymbolicValue {
 	return ANY
 }
 
-func (p *AnyPattern) StringPattern() (StringPatternElement, bool) {
+func (p *AnyPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
@@ -125,7 +127,7 @@ func (p *AnyPattern) WidestOfType() SymbolicValue {
 type PathPattern struct {
 	NotCallablePatternMixin
 	UnassignablePropsMixin
-	_ int
+	SerializableMixin
 }
 
 func (p *PathPattern) Test(v SymbolicValue) bool {
@@ -159,7 +161,7 @@ func (p *PathPattern) SymbolicValue() SymbolicValue {
 	return &Path{}
 }
 
-func (p *PathPattern) StringPattern() (StringPatternElement, bool) {
+func (p *PathPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
@@ -194,7 +196,7 @@ func (p *PathPattern) WidestOfType() SymbolicValue {
 type URLPattern struct {
 	NotCallablePatternMixin
 	UnassignablePropsMixin
-	_ int
+	SerializableMixin
 }
 
 func (p *URLPattern) Test(v SymbolicValue) bool {
@@ -228,7 +230,7 @@ func (p *URLPattern) SymbolicValue() SymbolicValue {
 	return &URL{}
 }
 
-func (p *URLPattern) StringPattern() (StringPatternElement, bool) {
+func (p *URLPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
@@ -263,7 +265,7 @@ func (p *URLPattern) WidestOfType() SymbolicValue {
 type HostPattern struct {
 	NotCallablePatternMixin
 	UnassignablePropsMixin
-	_ int
+	SerializableMixin
 }
 
 func (p *HostPattern) Test(v SymbolicValue) bool {
@@ -297,7 +299,7 @@ func (p *HostPattern) SymbolicValue() SymbolicValue {
 	return &Host{}
 }
 
-func (p *HostPattern) StringPattern() (StringPatternElement, bool) {
+func (p *HostPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
@@ -330,9 +332,11 @@ func (p *HostPattern) WidestOfType() SymbolicValue {
 
 // A NamedSegmentPathPattern represents a symbolic NamedSegmentPathPattern.
 type NamedSegmentPathPattern struct {
-	NotCallablePatternMixin
-	UnassignablePropsMixin
 	node *parse.NamedSegmentPathPatternLiteral //if nil, any node is matched
+
+	UnassignablePropsMixin
+	NotCallablePatternMixin
+	SerializableMixin
 }
 
 func NewNamedSegmentPathPattern(node *parse.NamedSegmentPathPatternLiteral) *NamedSegmentPathPattern {
@@ -380,7 +384,7 @@ func (p *NamedSegmentPathPattern) SymbolicValue() SymbolicValue {
 	return &Path{}
 }
 
-func (p *NamedSegmentPathPattern) StringPattern() (StringPatternElement, bool) {
+func (p *NamedSegmentPathPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
@@ -414,8 +418,10 @@ func (p *NamedSegmentPathPattern) WidestOfType() SymbolicValue {
 
 // An ExactValuePattern represents a symbolic ExactValuePattern.
 type ExactValuePattern struct {
-	NotCallablePatternMixin
 	value SymbolicValue
+
+	NotCallablePatternMixin
+	SerializableMixin
 }
 
 func NewExactValuePattern(v SymbolicValue) (*ExactValuePattern, error) {
@@ -496,7 +502,7 @@ func (p *ExactValuePattern) SymbolicValue() SymbolicValue {
 	return p.value
 }
 
-func (p *ExactValuePattern) StringPattern() (StringPatternElement, bool) {
+func (p *ExactValuePattern) StringPattern() (StringPattern, bool) {
 	return &ExactStringPattern{}, false
 }
 
@@ -514,7 +520,7 @@ func (p *ExactValuePattern) WidestOfType() SymbolicValue {
 
 // A RegexPattern represents a symbolic RegexPattern.
 type RegexPattern struct {
-	_ int
+	SerializableMixin
 }
 
 func (p *RegexPattern) Test(v SymbolicValue) bool {
@@ -555,7 +561,7 @@ func (p *RegexPattern) SymbolicValue() SymbolicValue {
 	return ANY_STR
 }
 
-func (p *RegexPattern) StringPattern() (StringPatternElement, bool) {
+func (p *RegexPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
@@ -573,11 +579,13 @@ func (p *RegexPattern) WidestOfType() SymbolicValue {
 
 // An ObjectPattern represents a symbolic ObjectPattern.
 type ObjectPattern struct {
-	NotCallablePatternMixin
 	entries                    map[string]Pattern
 	optionalEntries            map[string]struct{}
 	inexact                    bool
 	complexPropertyConstraints []*ComplexPropertyConstraint
+
+	NotCallablePatternMixin
+	SerializableMixin
 }
 
 func NewAnyObjectPattern() *ObjectPattern {
@@ -813,7 +821,7 @@ func (p *ObjectPattern) SymbolicValue() SymbolicValue {
 	return NewObject(entries, p.optionalEntries, static)
 }
 
-func (p *ObjectPattern) StringPattern() (StringPatternElement, bool) {
+func (p *ObjectPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
@@ -831,11 +839,13 @@ func (p *ObjectPattern) WidestOfType() SymbolicValue {
 
 // An RecordPattern represents a symbolic RecordPattern.
 type RecordPattern struct {
-	NotCallablePatternMixin
 	entries                    map[string]Pattern
 	optionalEntries            map[string]struct{}
 	inexact                    bool
 	complexPropertyConstraints []*ComplexPropertyConstraint
+
+	NotCallablePatternMixin
+	SerializableMixin
 }
 
 func NewAnyRecordPattern() *RecordPattern {
@@ -1056,7 +1066,7 @@ func (p *RecordPattern) SymbolicValue() SymbolicValue {
 	return rec
 }
 
-func (p *RecordPattern) StringPattern() (StringPatternElement, bool) {
+func (p *RecordPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
@@ -1081,9 +1091,11 @@ type ComplexPropertyConstraint struct {
 // A ListPattern represents a symbolic ListPattern.
 // .elements and .generalElement can never be both nil (nor both not nil).
 type ListPattern struct {
-	NotCallablePatternMixin
 	elements       []Pattern
 	generalElement Pattern
+
+	NotCallablePatternMixin
+	SerializableMixin
 }
 
 func NewListPattern(elements []Pattern) *ListPattern {
@@ -1303,7 +1315,7 @@ func (p *ListPattern) SymbolicValue() SymbolicValue {
 	return list
 }
 
-func (p *ListPattern) StringPattern() (StringPatternElement, bool) {
+func (p *ListPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
@@ -1322,9 +1334,11 @@ func (p *ListPattern) WidestOfType() SymbolicValue {
 // A TuplePattern represents a symbolic TuplePattern.
 // .elements and .generalElement can never be both nil (nor both not nil).
 type TuplePattern struct {
-	NotCallablePatternMixin
 	elements       []Pattern
 	generalElement Pattern
+
+	NotCallablePatternMixin
+	SerializableMixin
 }
 
 func NewTuplePattern(elements []Pattern) *TuplePattern {
@@ -1452,7 +1466,7 @@ func (p *TuplePattern) SymbolicValue() SymbolicValue {
 	return tuple
 }
 
-func (p *TuplePattern) StringPattern() (StringPatternElement, bool) {
+func (p *TuplePattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
@@ -1470,8 +1484,10 @@ func (p *TuplePattern) WidestOfType() SymbolicValue {
 
 // A UnionPattern represents a symbolic UnionPattern.
 type UnionPattern struct {
-	NotCallablePatternMixin
 	Cases []Pattern //if nil, any union pattern is matched
+
+	NotCallablePatternMixin
+	SerializableMixin
 }
 
 func (p *UnionPattern) Test(v SymbolicValue) bool {
@@ -1550,7 +1566,7 @@ func (p *UnionPattern) SymbolicValue() SymbolicValue {
 	return joinValues(values)
 }
 
-func (p *UnionPattern) StringPattern() (StringPatternElement, bool) {
+func (p *UnionPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
@@ -1642,7 +1658,7 @@ func (p *IntersectionPattern) SymbolicValue() SymbolicValue {
 	return ANY
 }
 
-func (p *IntersectionPattern) StringPattern() (StringPatternElement, bool) {
+func (p *IntersectionPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
@@ -1661,7 +1677,7 @@ func (p *IntersectionPattern) WidestOfType() SymbolicValue {
 // A OptionPattern represents a symbolic OptionPattern.
 type OptionPattern struct {
 	NotCallablePatternMixin
-	_ int
+	SerializableMixin
 }
 
 func (p *OptionPattern) Test(v SymbolicValue) bool {
@@ -1695,7 +1711,7 @@ func (p *OptionPattern) SymbolicValue() SymbolicValue {
 	return &Option{}
 }
 
-func (p *OptionPattern) StringPattern() (StringPatternElement, bool) {
+func (p *OptionPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
@@ -1748,12 +1764,14 @@ func symbolicallyEvalPatternNode(n parse.Node, state *State) (Pattern, error) {
 type TypePattern struct {
 	val           SymbolicValue //symbolic value that represents concrete values matching against the function
 	call          func(ctx *Context, values []SymbolicValue) (Pattern, error)
-	stringPattern func() (StringPatternElement, bool)
+	stringPattern func() (StringPattern, bool)
+
+	SerializableMixin
 }
 
 func NewTypePattern(
 	value SymbolicValue, call func(ctx *Context, values []SymbolicValue) (Pattern, error),
-	stringPattern func() (StringPatternElement, bool),
+	stringPattern func() (StringPattern, bool),
 ) *TypePattern {
 	return &TypePattern{
 		val:           value,
@@ -1800,7 +1818,7 @@ func (p *TypePattern) SymbolicValue() SymbolicValue {
 	return p.val
 }
 
-func (p *TypePattern) StringPattern() (StringPatternElement, bool) {
+func (p *TypePattern) StringPattern() (StringPattern, bool) {
 	if p.stringPattern == nil {
 		return nil, false
 	}
@@ -1859,7 +1877,7 @@ func (p *DifferencePattern) SymbolicValue() SymbolicValue {
 	panic(errors.New("SymbolicValue() not implement for DifferencePattern"))
 }
 
-func (p *DifferencePattern) StringPattern() (StringPatternElement, bool) {
+func (p *DifferencePattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
@@ -1877,8 +1895,10 @@ func (p *DifferencePattern) WidestOfType() SymbolicValue {
 }
 
 type OptionalPattern struct {
-	NotCallablePatternMixin
 	pattern Pattern
+
+	NotCallablePatternMixin
+	SerializableMixin
 }
 
 func NewOptionalPattern(p Pattern) *OptionalPattern {
@@ -1919,7 +1939,7 @@ func (p *OptionalPattern) SymbolicValue() SymbolicValue {
 	return NewMultivalue(p.pattern.SymbolicValue(), Nil)
 }
 
-func (p *OptionalPattern) StringPattern() (StringPatternElement, bool) {
+func (p *OptionalPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
@@ -1937,13 +1957,15 @@ func (p *OptionalPattern) WidestOfType() SymbolicValue {
 }
 
 type FunctionPattern struct {
-	NotCallablePatternMixin
 	parameters     []SymbolicValue
 	parameterNames []string
 	isVariadic     bool
 
 	node       *parse.FunctionPatternExpression //if nil, any function is matched
 	returnType SymbolicValue
+
+	NotCallablePatternMixin
+	SerializableMixin
 }
 
 func (fn *FunctionPattern) Test(v SymbolicValue) bool {
@@ -2040,7 +2062,7 @@ func (fn *FunctionPattern) SymbolicValue() SymbolicValue {
 	return &Function{fn.parameters, fn.parameterNames, nil, fn.isVariadic, fn}
 }
 
-func (p *FunctionPattern) StringPattern() (StringPatternElement, bool) {
+func (p *FunctionPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
@@ -2060,7 +2082,7 @@ func (fn *FunctionPattern) WidestOfType() SymbolicValue {
 type IntRangePattern struct {
 	NotCallablePatternMixin
 	UnassignablePropsMixin
-	_ int
+	SerializableMixin
 }
 
 func (p *IntRangePattern) Test(v SymbolicValue) bool {
@@ -2094,7 +2116,7 @@ func (p *IntRangePattern) SymbolicValue() SymbolicValue {
 	return &URL{}
 }
 
-func (p *IntRangePattern) StringPattern() (StringPatternElement, bool) {
+func (p *IntRangePattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
@@ -2127,8 +2149,10 @@ func (p *IntRangePattern) WidestOfType() SymbolicValue {
 
 // An EventPattern represents a symbolic EventPattern.
 type EventPattern struct {
-	NotCallablePatternMixin
 	ValuePattern Pattern
+
+	NotCallablePatternMixin
+	SerializableMixin
 }
 
 func NewEventPattern(valuePattern Pattern) (*EventPattern, error) {
@@ -2176,7 +2200,7 @@ func (p *EventPattern) SymbolicValue() SymbolicValue {
 	return utils.Must(NewEvent(p.ValuePattern.SymbolicValue()))
 }
 
-func (p *EventPattern) StringPattern() (StringPatternElement, bool) {
+func (p *EventPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
@@ -2195,9 +2219,11 @@ func (p *EventPattern) WidestOfType() SymbolicValue {
 
 // An Event
 type MutationPattern struct {
-	NotCallablePatternMixin
 	kind         *Int
 	data0Pattern Pattern
+
+	NotCallablePatternMixin
+	SerializableMixin
 }
 
 func NewMutationPattern(kind *Int, data0Pattern Pattern) *MutationPattern {
@@ -2243,7 +2269,7 @@ func (p *MutationPattern) SymbolicValue() SymbolicValue {
 	return &Mutation{}
 }
 
-func (p *MutationPattern) StringPattern() (StringPatternElement, bool) {
+func (p *MutationPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 

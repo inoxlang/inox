@@ -123,7 +123,6 @@ func (b Byte) Int64() (n int64, signed bool) {
 
 // BytesConcatenation is a lazy concatenation of values that can form a byte slice, BytesConcatenation implements BytesLike.
 type BytesConcatenation struct {
-	NoReprMixin
 	elements   []BytesLike
 	totalLen   int
 	finalBytes []byte // empty by default

@@ -2256,7 +2256,6 @@ type StaticCheckInput struct {
 
 // A StaticCheckData is the immutable data produced by statically checking a module.
 type StaticCheckData struct {
-	NoReprMixin
 	NotClonableMixin
 
 	errors      []*StaticCheckError

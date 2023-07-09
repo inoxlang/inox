@@ -12,7 +12,6 @@ import (
 
 type TcpConn struct {
 	core.NotClonableMixin
-	core.NoReprMixin
 	initialCtx *Context
 	host       Host
 	conn       *net.TCPConn

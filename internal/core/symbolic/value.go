@@ -16,6 +16,7 @@ var (
 	ErrUnassignablePropsMixin = errors.New("UnassignablePropsMixin")
 
 	ANY            = &Any{}
+	NEVER          = &Never{}
 	ANY_BOOL       = &Bool{}
 	ANY_RES_NAME   = &AnyResourceName{}
 	ANY_OPTION     = &Option{}
@@ -105,13 +106,36 @@ func (a *Any) WidestOfType() SymbolicValue {
 	return ANY
 }
 
-//
+// A Never represents a SymbolicValue that does not match against any value.
+type Never struct {
+	_ int
+}
+
+func (*Never) Test(v SymbolicValue) bool {
+	return false
+}
+
+func (*Never) Widen() (SymbolicValue, bool) {
+	return nil, false
+}
+
+func (*Never) IsWidenable() bool {
+	return false
+}
+
+func (*Never) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%never")))
+}
+
+func (*Never) WidestOfType() SymbolicValue {
+	return ANY
+}
 
 var Nil = &NilT{}
 
 // A NilT represents a symbolic NilT.
 type NilT struct {
-	_ int
+	SerializableMixin
 }
 
 func (n *NilT) Test(v SymbolicValue) bool {
@@ -137,7 +161,7 @@ func (n *NilT) WidestOfType() SymbolicValue {
 
 // A Bool represents a symbolic Bool.
 type Bool struct {
-	_ int
+	SerializableMixin
 }
 
 func (b *Bool) Test(v SymbolicValue) bool {
@@ -793,7 +817,7 @@ func (r *RuneRange) WidestOfType() SymbolicValue {
 //
 
 type ByteCount struct {
-	_ int
+	SerializableMixin
 }
 
 func (r *ByteCount) Test(v SymbolicValue) bool {
@@ -823,7 +847,7 @@ func (r *ByteCount) WidestOfType() SymbolicValue {
 //
 
 type ByteRate struct {
-	_ int
+	SerializableMixin
 }
 
 func (r *ByteRate) Test(v SymbolicValue) bool {
@@ -850,7 +874,7 @@ func (r *ByteRate) WidestOfType() SymbolicValue {
 
 // A LineCount represents a symbolic LineCount.
 type LineCount struct {
-	_ int
+	SerializableMixin
 }
 
 func (c *LineCount) Test(v SymbolicValue) bool {
@@ -904,7 +928,7 @@ func (c *RuneCount) WidestOfType() SymbolicValue {
 
 // A SimpleRate represents a symbolic SimpleRate.
 type SimpleRate struct {
-	_ int
+	SerializableMixin
 }
 
 func (r *SimpleRate) Test(v SymbolicValue) bool {

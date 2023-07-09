@@ -12,7 +12,6 @@ import (
 
 // A View represents the live view of a resource.
 type View struct {
-	core.NoReprMixin
 	core.NotClonableMixin
 
 	resource core.Path

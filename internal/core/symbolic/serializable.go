@@ -7,17 +7,28 @@ import (
 )
 
 var (
-	ANY_SERIALIZABLE               = &AnySerializable{}
-	_                SymbolicValue = (*AnySerializable)(nil)
+	ANY_SERIALIZABLE = &AnySerializable{}
+
+	_ = []Serializable{
+		(*Bool)(nil), (*Int)(nil), (*Float)(nil), Nil,
+		(*ByteCount)(nil), (*LineCount)(nil), (*ByteRate)(nil), (*SimpleRate)(nil),
+		(*Rune)(nil), (*String)(nil), (*Path)(nil), (*URL)(nil), (*Host)(nil),
+		(*RuneSlice)(nil), (*ByteSlice)(nil), (*StringConcatenation)(nil),
+		(*Object)(nil), (*Record)(nil), (*List)(nil), (*Tuple)(nil), (*KeyList)(nil), (*Dictionary)(nil),
+		Pattern(nil),
+
+		(*AnySerializable)(nil),
+	}
 )
 
 // A Serializable represents a symbolic Serializable.
 type Serializable interface {
 	SymbolicValue
-	AlwaysSerializable() bool
+	_serializable()
 }
 
 type AnySerializable struct {
+	SerializableMixin
 }
 
 func (*AnySerializable) Test(v SymbolicValue) bool {
@@ -40,4 +51,10 @@ func (*AnySerializable) Widen() (SymbolicValue, bool) {
 
 func (*AnySerializable) WidestOfType() SymbolicValue {
 	return ANY_SERIALIZABLE
+}
+
+type SerializableMixin struct {
+}
+
+func (SerializableMixin) _serializable() {
 }

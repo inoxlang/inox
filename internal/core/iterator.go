@@ -51,7 +51,6 @@ type Iterator interface {
 
 type KeyFilteredIterator struct {
 	NotClonableMixin
-	NoReprMixin
 	it           Iterator
 	keyFilter    Pattern
 	nextKey      Value
@@ -104,7 +103,6 @@ func (it *KeyFilteredIterator) Value(ctx *Context) Value {
 
 type ValueFilteredIterator struct {
 	NotClonableMixin
-	NoReprMixin
 	it           Iterator
 	valueFilter  Pattern
 	nextKey      Value
@@ -157,7 +155,6 @@ func (it *ValueFilteredIterator) Value(ctx *Context) Value {
 
 type KeyValueFilteredIterator struct {
 	NotClonableMixin
-	NoReprMixin
 	it           Iterator
 	keyFilter    Pattern
 	valueFilter  Pattern
@@ -212,7 +209,6 @@ func (it *KeyValueFilteredIterator) Value(ctx *Context) Value {
 
 // immutableSliceIterator iterates over an immutable slice.
 type immutableSliceIterator[T Value] struct {
-	NoReprMixin
 	NotClonableMixin
 
 	i        int
@@ -241,7 +237,6 @@ func (it *immutableSliceIterator[T]) Value(ctx *Context) Value {
 }
 
 type indexableIterator struct {
-	NoReprMixin
 	NotClonableMixin
 
 	i   int
@@ -311,7 +306,6 @@ func (c *StringConcatenation) Iterator(ctx *Context, config IteratorConfiguratio
 }
 
 type ValueListIterator struct {
-	NoReprMixin
 	NotClonableMixin
 
 	list *ValueList
@@ -348,7 +342,6 @@ func (list *List) Iterator(ctx *Context, config IteratorConfiguration) Iterator 
 }
 
 type IntListIterator struct {
-	NoReprMixin
 	NotClonableMixin
 
 	list *IntList
@@ -381,7 +374,6 @@ func (list *IntList) Iterator(ctx *Context, config IteratorConfiguration) Iterat
 }
 
 type BitSetIterator struct {
-	NoReprMixin
 	NotClonableMixin
 
 	set       *bitset.BitSet
@@ -414,7 +406,6 @@ func (list *BoolList) Iterator(ctx *Context, config IteratorConfiguration) Itera
 }
 
 type StrListIterator struct {
-	NoReprMixin
 	NotClonableMixin
 
 	list *StringList
@@ -447,7 +438,6 @@ func (list *StringList) Iterator(ctx *Context, config IteratorConfiguration) Ite
 }
 
 type TupleIterator struct {
-	NoReprMixin
 	NotClonableMixin
 
 	tuple Tuple
@@ -480,7 +470,6 @@ func (tuple Tuple) Iterator(ctx *Context, config IteratorConfiguration) Iterator
 }
 
 type indexedEntryIterator struct {
-	NoReprMixin
 	NotClonableMixin
 
 	i            int
@@ -516,7 +505,6 @@ func (it *indexedEntryIterator) Value(*Context) Value {
 
 type IpropsIterator struct {
 	NotClonableMixin
-	NoReprMixin
 	keys   []string
 	values []Value
 	i      int
@@ -572,7 +560,6 @@ func (rec *Record) Iterator(ctx *Context, config IteratorConfiguration) Iterator
 }
 
 type IntRangeIterator struct {
-	NoReprMixin
 	NotClonableMixin
 
 	range_ IntRange
@@ -614,7 +601,6 @@ func (r IntRange) Iterator(ctx *Context, config IteratorConfiguration) Iterator 
 }
 
 type RuneRangeIterator struct {
-	NoReprMixin
 	NotClonableMixin
 
 	range_ RuneRange
@@ -650,7 +636,6 @@ func (r RuneRange) Iterator(ctx *Context, config IteratorConfiguration) Iterator
 }
 
 type PatternIterator struct {
-	NoReprMixin
 	NotClonableMixin
 
 	hasNext func(*PatternIterator, *Context) bool
@@ -1427,7 +1412,6 @@ func (patt *FunctionPattern) Iterator(ctx *Context, config IteratorConfiguration
 }
 
 type EventSourceIterator struct {
-	NoReprMixin
 	NotClonableMixin
 
 	i        int
@@ -1577,7 +1561,7 @@ func (patt *MutationPattern) Iterator(ctx *Context, config IteratorConfiguration
 	// })
 }
 
-func (patt *ParserBasedPattern) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
+func (patt *ParserBasedPseudoPattern) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
 	return NewEmptyPatternIterator()
 }
 

@@ -7,7 +7,6 @@ var (
 )
 
 type GraphWalker struct {
-	core.NoReprMixin
 	hasNext func(*GraphWalker, *core.Context) bool
 	next    func(*GraphWalker, *core.Context) bool
 	prune   func(*GraphWalker, *core.Context)

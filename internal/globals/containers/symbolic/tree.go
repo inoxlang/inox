@@ -186,7 +186,6 @@ func (a *TreeNode) IsWidenable() bool {
 
 func (r *TreeNode) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%tree-node")))
-	return
 }
 
 func (r *TreeNode) WidestOfType() symbolic.SymbolicValue {
@@ -194,8 +193,10 @@ func (r *TreeNode) WidestOfType() symbolic.SymbolicValue {
 }
 
 type TreeNodePattern struct {
-	symbolic.NotCallablePatternMixin
 	valuePattern symbolic.Pattern
+
+	symbolic.NotCallablePatternMixin
+	symbolic.Serializable
 }
 
 func NewTreeNodePattern(valuePattern symbolic.Pattern) (*TreeNodePattern, error) {
@@ -236,7 +237,7 @@ func (p *TreeNodePattern) SymbolicValue() symbolic.SymbolicValue {
 	return ANY_TREE_NODE
 }
 
-func (p *TreeNodePattern) StringPattern() (symbolic.StringPatternElement, bool) {
+func (p *TreeNodePattern) StringPattern() (symbolic.StringPattern, bool) {
 	return nil, false
 }
 

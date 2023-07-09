@@ -11,6 +11,7 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	_dom_symbolic "github.com/inoxlang/inox/internal/globals/dom_ns/symbolic"
+	jsoniter "github.com/json-iterator/go"
 
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -74,7 +75,6 @@ func init() {
 }
 
 type ContentSecurityPolicy struct {
-	core.NoReprMixin
 	core.NotClonableMixin
 
 	directives map[string]CSPDirective
@@ -174,6 +174,14 @@ func (c *ContentSecurityPolicy) String() string {
 	buf := bytes.NewBuffer(nil)
 	c.writeToBuf(buf)
 	return buf.String()
+}
+
+func (c *ContentSecurityPolicy) WriteRepresentation(ctx *core.Context, w io.Writer, config *core.ReprConfig) error {
+	return core.ErrNotImplementedYet
+}
+
+func (c *ContentSecurityPolicy) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stream, config core.JSONSerializationConfig) error {
+	return core.ErrNotImplementedYet
 }
 
 type CSPDirective struct {

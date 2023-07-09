@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"reflect"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
@@ -35,8 +36,6 @@ type Set struct {
 	storage core.SerializedValueStorage //nillable
 	url     core.URL                    //set if .storage set
 	path    core.Path
-
-	core.NoReprMixin
 }
 
 func NewSet(ctx *core.Context, elements core.Iterable, configObject ...*core.Object) *Set {
@@ -134,6 +133,16 @@ func loadSet(ctx *core.Context, args core.InstanceLoadArgs) (core.UrlHolder, err
 }
 
 func persistSet(ctx *core.Context, set *Set, path core.Path, storage core.SerializedValueStorage) error {
+	buff := bytes.NewBuffer(nil)
+	set.WriteRepresentation(ctx, buff, &core.ReprConfig{
+		AllVisible: true,
+	})
+
+	storage.SetSerialized(ctx, path, buff.String())
+	return nil
+}
+
+func (set *Set) WriteRepresentation(ctx *core.Context, w io.Writer, config *core.ReprConfig) error {
 	buff := bytes.NewBufferString("[")
 
 	first := true
@@ -143,15 +152,36 @@ func persistSet(ctx *core.Context, set *Set, path core.Path, storage core.Serial
 		}
 		first = false
 
-		if err := core.WriteRepresentation(buff, e, &core.ReprConfig{AllVisible: true}, ctx); err != nil {
+		if err := e.WriteRepresentation(ctx, buff, config); err != nil {
 			return err
 		}
 	}
 
 	buff.WriteByte(']')
+	_, err := w.Write(buff.Bytes())
+	return err
+}
 
-	storage.SetSerialized(ctx, path, buff.String())
-	return nil
+func (set *Set) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stream, config core.JSONSerializationConfig) error {
+	buff := bytes.NewBufferString("[")
+
+	w.WriteArrayStart()
+
+	first := true
+	for _, e := range set.elements {
+		if !first {
+			w.WriteMore()
+		}
+		first = false
+
+		if err := e.WriteJSONRepresentation(ctx, w, config); err != nil {
+			return err
+		}
+	}
+
+	w.WriteArrayEnd()
+	_, err := w.Write(buff.Bytes())
+	return err
 }
 
 type SetConfig struct {

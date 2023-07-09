@@ -338,7 +338,6 @@ func NewGolangHttpServer(ctx *core.Context, config GolangHttpServerConfig) (*htt
 
 // HttpServer implements the GoValue interface.
 type HttpServer struct {
-	core.NoReprMixin
 	core.NotClonableMixin
 
 	host           core.Host

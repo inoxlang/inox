@@ -55,7 +55,6 @@ func NewGraph(ctx *core.Context, nodes *core.List, edges *core.List) *Graph {
 }
 
 type Graph struct {
-	core.NoReprMixin
 	graph  *simple.DirectedGraph
 	values map[int64]core.Value
 	roots  map[int64]bool
@@ -219,7 +218,6 @@ func (g *Graph) Walker(*core.Context) (core.Walker, error) {
 }
 
 type GraphNode struct {
-	core.NoReprMixin
 	node_ graph.Node
 	graph *Graph
 }

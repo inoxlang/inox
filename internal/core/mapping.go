@@ -9,7 +9,6 @@ import (
 )
 
 type Mapping struct {
-	NoReprMixin
 	//key representation (pattern or value) => key
 	keys map[string]Value
 

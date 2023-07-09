@@ -4,6 +4,10 @@ func (any Any) IsMutable() bool {
 	return true
 }
 
+func (Never) IsMutable() bool {
+	return true
+}
+
 func (*AnySerializable) IsMutable() bool {
 	return true
 }
@@ -12,7 +16,7 @@ func (any AnyPattern) IsMutable() bool {
 	return false
 }
 
-func (any AnyStringPatternElement) IsMutable() bool {
+func (any AnyStringPattern) IsMutable() bool {
 	return false
 }
 

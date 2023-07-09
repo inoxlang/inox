@@ -41,7 +41,6 @@ type GlobalState struct {
 	SymbolicData              *SymbolicData
 
 	NotClonableMixin
-	NoReprMixin
 }
 
 func NewGlobalState(ctx *Context, constants ...map[string]Value) *GlobalState {

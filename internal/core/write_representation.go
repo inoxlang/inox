@@ -83,21 +83,6 @@ func (r *ReprConfig) IsPropertyVisible(name string, v Value, info *ValueVisibili
 
 var ErrNoRepresentation = errors.New("no representation")
 
-type NoReprMixin struct {
-}
-
-func (n NoReprMixin) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (n NoReprMixin) HasJSONRepresentation(config JSONSerializationConfig) bool {
-	return false
-}
-
-func (n NoReprMixin) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	return ErrNoRepresentation
-}
-
 type CallBasedPatternReprMixin struct {
 	Callee Pattern
 	Params []Serializable
@@ -131,12 +116,23 @@ func (m CallBasedPatternReprMixin) WriteRepresentation(ctx *Context, w io.Writer
 	return err
 }
 
-func (m CallBasedPatternReprMixin) HasJSONRepresentation(config JSONSerializationConfig) bool {
-	return false
+func (m CallBasedPatternReprMixin) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+	return ErrNotImplementedYet
 }
 
-func (m CallBasedPatternReprMixin) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	return ErrNoRepresentation
+type NamespaceMemberPatternReprMixin struct {
+	NamespaceName string
+	MemberName    string
+}
+
+func (m NamespaceMemberPatternReprMixin) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+	repr := "%" + m.NamespaceName + "." + m.MemberName
+	_, err := w.Write(utils.StringAsBytes(repr))
+	return err
+}
+
+func (m NamespaceMemberPatternReprMixin) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+	return ErrNotImplementedYet
 }
 
 // implementations
@@ -1029,39 +1025,39 @@ func (pattern TypePattern) WriteRepresentation(ctx *Context, w io.Writer, config
 }
 
 func (pattern DifferencePattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (pattern *OptionalPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (patt RegexPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (patt UnionPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (patt SequenceStringPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (patt UnionStringPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (patt RuneRangeStringPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (patt DynamicStringPatternElement) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (patt *RepeatedPatternElement) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (patt *NamedSegmentPathPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
@@ -1127,7 +1123,7 @@ func (p *ObjectPattern) WriteRepresentation(ctx *Context, w io.Writer, config *R
 }
 
 func (patt RecordPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (p *ListPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
@@ -1188,30 +1184,24 @@ func (p *ListPattern) WriteRepresentation(ctx *Context, w io.Writer, config *Rep
 }
 
 func (patt TuplePattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (patt OptionPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
+
+func (patt PathStringPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+	return ErrNotImplementedYet
+}
+
+//
 
 func (mt Mimetype) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	return ErrNoRepresentation
 }
 
 func (i FileInfo) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (r *Routine) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (g *RoutineGroup) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
-	return ErrNoRepresentation
-}
-
-func (f *InoxFunction) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	return ErrNoRepresentation
 }
 
@@ -1309,5 +1299,41 @@ func (c *StringConcatenation) WriteRepresentation(ctx *Context, w io.Writer, con
 }
 
 func (c Color) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
-	panic(ErrNotImplementedYet)
+	return ErrNotImplementedYet
+}
+
+func (g *SystemGraph) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+	return ErrNotImplementedYet
+}
+
+func (e SystemGraphEvent) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+	return ErrNotImplementedYet
+}
+
+func (e SystemGraphEdge) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+	return ErrNotImplementedYet
+}
+
+func (v *DynamicValue) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+	return ErrNotImplementedYet
+}
+
+func (Error) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+	return ErrNotImplementedYet
+}
+
+func (*LifetimeJob) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+	return ErrNotImplementedYet
+}
+
+func (*SynchronousMessageHandler) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+	return ErrNotImplementedYet
+}
+
+func (f *InoxFunction) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+	return ErrNotImplementedYet
+}
+
+func (n AstNode) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+	return ErrNotImplementedYet
 }

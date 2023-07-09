@@ -1276,8 +1276,8 @@ func (patt *MutationPattern) Equal(ctx *Context, other Value, alreadyCompared ma
 	return patt.kind == otherPatt.kind && patt.data0.Equal(ctx, otherPatt.data0, alreadyCompared, depth+1)
 }
 
-func (patt *ParserBasedPattern) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherPatt, ok := other.(*ParserBasedPattern)
+func (patt *ParserBasedPseudoPattern) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherPatt, ok := other.(*ParserBasedPseudoPattern)
 	if !ok {
 		return false
 	}

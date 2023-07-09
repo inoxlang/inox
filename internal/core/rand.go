@@ -44,7 +44,6 @@ func (s cryptoRandomnessSource) Read(bytes []byte) (int, error) {
 }
 
 type RandomnessSource struct {
-	NoReprMixin
 	NotClonableMixin
 	source underlyingRandomnessSource
 }
@@ -476,7 +475,7 @@ func writeRandRegexElementRandTimes(r *syntax.Regexp, min, max int, buff *bytes.
 	return nil
 }
 
-func (pattern *ParserBasedPattern) Random(ctx *Context, options ...Option) Value {
+func (pattern *ParserBasedPseudoPattern) Random(ctx *Context, options ...Option) Value {
 	panic(ErrNotImplemented)
 }
 

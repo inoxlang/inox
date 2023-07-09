@@ -380,12 +380,24 @@ func (tuple *Tuple) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, co
 	return err
 }
 
+func (d *Dictionary) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+	return ErrNotImplementedYet
+}
+
+func (u *UData) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+	return ErrNotImplementedYet
+}
+
+func (u *UDataHiearchyEntry) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+	return ErrNotImplementedYet
+}
+
 func (slice *RuneSlice) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (slice *ByteSlice) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (opt Option) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
@@ -753,46 +765,46 @@ func (r IntRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, conf
 //patterns
 
 func (pattern ExactValuePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (pattern TypePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (pattern *DifferencePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 func (pattern *OptionalPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (patt RegexPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (patt UnionPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (patt SequenceStringPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (patt UnionStringPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (patt RuneRangeStringPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (patt DynamicStringPatternElement) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (patt *RepeatedPatternElement) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (patt *NamedSegmentPathPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
@@ -800,24 +812,30 @@ func (patt *NamedSegmentPathPattern) WriteJSONRepresentation(ctx *Context, w *js
 }
 
 func (patt ObjectPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (patt RecordPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (patt ListPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (patt TuplePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
 
 func (patt OptionPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	return ErrNoRepresentation
+	return ErrNotImplementedYet
 }
+
+func (patt *PathStringPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+	return ErrNotImplementedYet
+}
+
+//
 
 func (mt Mimetype) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
 	return ErrNoRepresentation
@@ -840,5 +858,41 @@ func (c *StringConcatenation) WriteJSONRepresentation(ctx *Context, w *jsoniter.
 }
 
 func (c Color) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	panic(ErrNotImplementedYet)
+	return ErrNotImplementedYet
+}
+
+func (g *SystemGraph) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+	return ErrNotImplementedYet
+}
+
+func (e SystemGraphEvent) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+	return ErrNotImplementedYet
+}
+
+func (e SystemGraphEdge) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+	return ErrNotImplementedYet
+}
+
+func (v *DynamicValue) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+	return ErrNotImplementedYet
+}
+
+func (v Error) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+	return ErrNotImplementedYet
+}
+
+func (j *LifetimeJob) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+	return ErrNotImplementedYet
+}
+
+func (h *SynchronousMessageHandler) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+	return ErrNotImplementedYet
+}
+
+func (f *InoxFunction) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+	return ErrNotImplementedYet
+}
+
+func (n AstNode) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+	return ErrNotImplementedYet
 }

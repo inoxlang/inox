@@ -38,7 +38,13 @@ var (
 				}
 			}
 
-			return &NodePattern{modelPattern: modelPattern}, nil
+			return &NodePattern{
+				modelPattern: modelPattern,
+				CallBasedPatternReprMixin: core.CallBasedPatternReprMixin{
+					Callee: typePattern,
+					Params: []core.Serializable{modelPattern},
+				},
+			}, nil
 		},
 		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error) {
 			if len(values) != 1 {

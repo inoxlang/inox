@@ -23,7 +23,7 @@ type Format interface {
 // An AnyFormat represents a symbolic Pattern we do not know the concrete type.
 type AnyFormat struct {
 	NotCallablePatternMixin
-	_ int
+	SerializableMixin
 }
 
 func (p *AnyFormat) Test(v SymbolicValue) bool {
@@ -56,7 +56,7 @@ func (p *AnyFormat) SymbolicValue() SymbolicValue {
 	return ANY
 }
 
-func (p *AnyFormat) StringPattern() (StringPatternElement, bool) {
+func (p *AnyFormat) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 

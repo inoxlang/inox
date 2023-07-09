@@ -35,7 +35,6 @@ type HttpResponseWriter struct {
 	finished bool
 	logger   zerolog.Logger
 
-	core.NoReprMixin
 	core.NotClonableMixin
 }
 

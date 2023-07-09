@@ -21,7 +21,6 @@ type Subscription struct {
 	creationDate Date
 	filter       Pattern
 
-	NoReprMixin
 	NotClonableMixin
 }
 

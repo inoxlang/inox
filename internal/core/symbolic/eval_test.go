@@ -3806,7 +3806,7 @@ func TestSymbolicEval(t *testing.T) {
 					return chunk
 				} 
 			`)
-			state.setGlobal("streamable", NewWatcher(ANY_STR_PATTERN_ELEM), GlobalConst)
+			state.setGlobal("streamable", NewWatcher(ANY_STR_PATTERN), GlobalConst)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)

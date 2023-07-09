@@ -12,7 +12,6 @@ import (
 
 // A TestSuite represents a test suite, TestSuite implements Value.
 type TestSuite struct {
-	NoReprMixin
 	NotClonableMixin
 
 	meta         Value
@@ -134,7 +133,6 @@ func (*TestSuite) PropertyNames(ctx *Context) []string {
 
 // A TestCase represents a test case, TestCase implements Value.
 type TestCase struct {
-	NoReprMixin
 	NotClonableMixin
 
 	meta         Value

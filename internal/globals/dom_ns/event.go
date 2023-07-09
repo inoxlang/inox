@@ -12,7 +12,6 @@ const EVENT_CHAN_SIZE = 100
 type DomEventSource struct {
 	core.EventSourceHandlerManagement
 	core.NotClonableMixin
-	core.NoReprMixin
 
 	events   chan string
 	lock     sync.RWMutex

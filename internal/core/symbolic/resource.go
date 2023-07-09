@@ -55,9 +55,11 @@ var (
 
 // A Path represents a symbolic Path.
 type Path struct {
-	UnassignablePropsMixin
 	absoluteness  PathAbsoluteness
 	dirConstraint DirPathConstraint
+
+	UnassignablePropsMixin
+	SerializableMixin
 }
 
 type PathAbsoluteness int
@@ -197,7 +199,7 @@ func (p *Path) WidestOfType() SymbolicValue {
 // A URL represents a symbolic URL.
 type URL struct {
 	UnassignablePropsMixin
-	_ int
+	SerializableMixin
 }
 
 func (u *URL) Test(v SymbolicValue) bool {
@@ -285,7 +287,7 @@ func (s *Scheme) WidestOfType() SymbolicValue {
 // A Host represents a symbolic Host.
 type Host struct {
 	UnassignablePropsMixin
-	_ int
+	SerializableMixin
 }
 
 func (h *Host) Test(v SymbolicValue) bool {

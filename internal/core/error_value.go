@@ -10,8 +10,6 @@ var (
 type Error struct {
 	goError error
 	data    Serializable
-
-	NoReprMixin
 }
 
 func NewError(err error, data Serializable) Error {

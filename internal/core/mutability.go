@@ -284,7 +284,7 @@ func (patt *MutationPattern) IsMutable() bool {
 	return false
 }
 
-func (patt *ParserBasedPattern) IsMutable() bool {
+func (patt *ParserBasedPseudoPattern) IsMutable() bool {
 	return false
 }
 

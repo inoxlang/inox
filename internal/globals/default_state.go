@@ -284,12 +284,11 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 	}
 
 	//add global containing databases
-	dbs := core.ValMap{}
+	dbs := map[string]core.Value{}
 	for name, db := range conf.Databases {
 		dbs[name] = db
 	}
-	//TODO: make object immutable
-	state.Globals.Set(default_state.DATABASES_GLOBAL_NAME, core.NewObjectFromMap(dbs, ctx))
+	state.Globals.Set(default_state.DATABASES_GLOBAL_NAME, core.NewNamespace("dbs", dbs))
 
 	return state, nil
 }

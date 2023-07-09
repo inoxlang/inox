@@ -71,7 +71,6 @@ type DefaultValuePattern interface {
 }
 
 type PatternNamespace struct {
-	NoReprMixin
 	Patterns map[string]Pattern
 }
 
@@ -84,21 +83,27 @@ func (NotCallablePatternMixin) Call(values []Serializable) (Pattern, error) {
 
 // ExactValuePattern matches values equal to .value: .value.Equal(...) returns true.
 type ExactValuePattern struct {
-	NotCallablePatternMixin
-	NoReprMixin
-
 	value Serializable //immutable in most cases
+	CallBasedPatternReprMixin
+
+	NotCallablePatternMixin
 }
 
 func NewExactValuePattern(value Serializable) *ExactValuePattern {
 	if value.IsMutable() {
 		panic(ErrValueInExactPatternValueShouldBeImmutable)
 	}
-	return &ExactValuePattern{value: value}
+	return newExactValuePatternNoCheck(value)
 }
 
 func newExactValuePatternNoCheck(value Serializable) *ExactValuePattern {
-	return &ExactValuePattern{value: value}
+	return &ExactValuePattern{
+		value: value,
+		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
+			Callee: getDefaultNamedPattern("__val"),
+			Params: []Serializable{utils.Must(value.Clone(map[uintptr]map[int]Value{})).(Serializable)},
+		},
+	}
 }
 
 func NewMostAdaptedExactPattern(value Serializable) Pattern {
@@ -134,7 +139,7 @@ type TypePattern struct {
 	SymbolicCallImpl func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error)
 
 	stringPattern         func() (StringPattern, bool)
-	symbolicStringPattern func() (symbolic.StringPatternElement, bool)
+	symbolicStringPattern func() (symbolic.StringPattern, bool)
 }
 
 func (pattern *TypePattern) Test(ctx *Context, v Value) bool {
@@ -184,7 +189,6 @@ func (patt *UnionPattern) StringPattern() (StringPattern, bool) {
 
 type IntersectionPattern struct {
 	NotCallablePatternMixin
-	NoReprMixin
 
 	node  parse.Node
 	cases []Pattern
@@ -510,7 +514,6 @@ func (patt *OptionalPattern) StringPattern() (StringPattern, bool) {
 }
 
 type FunctionPattern struct {
-	NoReprMixin
 	NotCallablePatternMixin
 	node *parse.FunctionPatternExpression //if nil, matches any function
 
@@ -618,15 +621,20 @@ func (patt *IntRangePattern) StringPattern() (StringPattern, bool) {
 }
 
 type EventPattern struct {
-	NoReprMixin
+	ValuePattern Pattern
+	CallBasedPatternReprMixin
+
 	NotClonableMixin
 	NotCallablePatternMixin
-	ValuePattern Pattern
 }
 
 func NewEventPattern(valuePattern Pattern) *EventPattern {
 	return &EventPattern{
 		ValuePattern: valuePattern,
+		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
+			Callee: getDefaultNamedPattern("event"),
+			Params: []Serializable{valuePattern},
+		},
 	}
 }
 
@@ -647,17 +655,22 @@ func (patt *EventPattern) StringPattern() (StringPattern, bool) {
 }
 
 type MutationPattern struct {
-	NoReprMixin
-	NotClonableMixin
-	NotCallablePatternMixin
 	kind  MutationKind
 	data0 Pattern
+	CallBasedPatternReprMixin
+
+	NotClonableMixin
+	NotCallablePatternMixin
 }
 
 func NewMutationPattern(kind MutationKind, data0Pattern Pattern) *MutationPattern {
 	return &MutationPattern{
 		kind:  kind,
 		data0: data0Pattern,
+		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
+			Callee: getDefaultNamedPattern("mutation"),
+			Params: []Serializable{Identifier(kind.String()), data0Pattern},
+		},
 	}
 }
 

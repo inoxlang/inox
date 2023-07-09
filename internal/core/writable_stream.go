@@ -38,7 +38,6 @@ type WritableStream interface {
 
 // A WritableByteStream represents a stream of bytes, ElementsStream implements Value.
 type WritableByteStream struct {
-	NoReprMixin
 	NotClonableMixin
 
 	stopped atomic.Bool

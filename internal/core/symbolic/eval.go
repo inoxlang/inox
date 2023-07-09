@@ -58,7 +58,7 @@ var (
 	VALUE_RECEIVER_INTERFACE_TYPE      = reflect.TypeOf((*MessageReceiver)(nil)).Elem()
 	STREAMABLE_INTERFACE_TYPE          = reflect.TypeOf((*StreamSource)(nil)).Elem()
 	WATCHABLE_INTERFACE_TYPE           = reflect.TypeOf((*Watchable)(nil)).Elem()
-	STR_PATTERN_ELEMENT_INTERFACE_TYPE = reflect.TypeOf((*StringPatternElement)(nil)).Elem()
+	STR_PATTERN_ELEMENT_INTERFACE_TYPE = reflect.TypeOf((*StringPattern)(nil)).Elem()
 	FORMAT_INTERFACE_TYPE              = reflect.TypeOf((*Format)(nil)).Elem()
 	IN_MEM_SNAPSHOTABLE                = reflect.TypeOf((*InMemorySnapshotable)(nil)).Elem()
 
@@ -3527,7 +3527,7 @@ func converTypeToSymbolicValue(t reflect.Type) (SymbolicValue, error) {
 	case WRITABLE_INTERFACE_TYPE:
 		return ANY_WRITABLE, nil
 	case STR_PATTERN_ELEMENT_INTERFACE_TYPE:
-		return ANY_STR_PATTERN_ELEM, nil
+		return ANY_STR_PATTERN, nil
 	case INTEGRAL_INTERFACE_TYPE:
 		return ANY_INTEGRAL, nil
 	case FORMAT_INTERFACE_TYPE:

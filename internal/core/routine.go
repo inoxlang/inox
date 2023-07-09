@@ -30,7 +30,6 @@ func init() {
 
 // A Routine is similar to a goroutine in Golang, it represents of the execution of a single module and can be cancelled at any time.
 type Routine struct {
-	NoReprMixin
 	NotClonableMixin
 
 	useBytecode bool
@@ -228,12 +227,12 @@ func (r *Routine) Prop(ctx *Context, name string) Value {
 	case "steps":
 		r.lock.Lock()
 		defer r.lock.Unlock()
-		steps := make([]Serializable, len(r.executedSteps))
+		steps := make([]Value, len(r.executedSteps))
 
 		for i := 0; i < len(r.executedSteps); i++ {
 			steps[i] = r.executedSteps[i]
 		}
-		return NewWrappedValueList(steps...)
+		return NewArray(steps...)
 	}
 	method, ok := r.GetGoMethod(name)
 	if !ok {
@@ -339,7 +338,6 @@ func (routine *Routine) WaitResult(ctx *Context) (Value, error) {
 
 // A RoutineGroup is a group of routines, it simplifies the interaction with the routines.
 type RoutineGroup struct {
-	NoReprMixin
 	NotClonableMixin
 
 	routines []*Routine
@@ -407,7 +405,6 @@ func (group *RoutineGroup) CancelAll(*Context) {
 }
 
 type ExecutedStep struct {
-	NoReprMixin
 	NotClonableMixin
 
 	result  Value

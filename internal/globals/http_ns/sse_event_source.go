@@ -41,7 +41,6 @@ func init() {
 
 type ServerSentEventSource struct {
 	core.NotClonableMixin
-	core.NoReprMixin
 
 	core.EventSourceHandlerManagement
 	isClosed bool

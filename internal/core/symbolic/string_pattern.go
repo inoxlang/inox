@@ -11,78 +11,79 @@ var (
 	ANY_EXACT_STR_PATTERN = NewExactStringPattern()
 )
 
-// A StringPatternElement represents a symbolic StringPatternElement.
-type StringPatternElement interface {
+// A StringPattern represents a symbolic StringPattern.
+type StringPattern interface {
 	Pattern
 	HasRegex() bool
 }
 
-// An AnyStringPatternElement represents a symbolic StringPatternElement we dont know the concrete type.
-type AnyStringPatternElement struct {
+// An AnyStringPattern represents a symbolic StringPatternElement we dont know the concrete type.
+type AnyStringPattern struct {
 	NotCallablePatternMixin
-	_ int
+	SerializableMixin
 }
 
-func (p *AnyStringPatternElement) Test(v SymbolicValue) bool {
-	_, ok := v.(StringPatternElement)
+func (p *AnyStringPattern) Test(v SymbolicValue) bool {
+	_, ok := v.(StringPattern)
 	return ok
 }
 
-func (p *AnyStringPatternElement) Widen() (SymbolicValue, bool) {
+func (p *AnyStringPattern) Widen() (SymbolicValue, bool) {
 	return nil, false
 }
 
-func (p *AnyStringPatternElement) IsWidenable() bool {
+func (p *AnyStringPattern) IsWidenable() bool {
 	return false
 }
 
-func (p *AnyStringPatternElement) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (p *AnyStringPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%string-pattern")))
 	return
 }
 
-func (p *AnyStringPatternElement) HasUnderylingPattern() bool {
+func (p *AnyStringPattern) HasUnderylingPattern() bool {
 	return true
 }
 
-func (p *AnyStringPatternElement) TestValue(v SymbolicValue) bool {
+func (p *AnyStringPattern) TestValue(v SymbolicValue) bool {
 	_, ok := v.(StringLike)
 	return ok
 }
 
-func (p *AnyStringPatternElement) MatchGroups(v SymbolicValue) (bool, map[string]SymbolicValue) {
+func (p *AnyStringPattern) MatchGroups(v SymbolicValue) (bool, map[string]SymbolicValue) {
 	//TODO
 	return false, nil
 }
 
-func (p *AnyStringPatternElement) SymbolicValue() SymbolicValue {
+func (p *AnyStringPattern) SymbolicValue() SymbolicValue {
 	return ANY_STR
 }
 
-func (p *AnyStringPatternElement) StringPattern() (StringPatternElement, bool) {
+func (p *AnyStringPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (p *AnyStringPatternElement) HasRegex() bool {
+func (p *AnyStringPattern) HasRegex() bool {
 	//TODO
 	return false
 }
 
-func (p *AnyStringPatternElement) IteratorElementKey() SymbolicValue {
+func (p *AnyStringPattern) IteratorElementKey() SymbolicValue {
 	return &Int{}
 }
 
-func (p *AnyStringPatternElement) IteratorElementValue() SymbolicValue {
+func (p *AnyStringPattern) IteratorElementValue() SymbolicValue {
 	return ANY
 }
 
-func (p *AnyStringPatternElement) WidestOfType() SymbolicValue {
-	return ANY_STR_PATTERN_ELEM
+func (p *AnyStringPattern) WidestOfType() SymbolicValue {
+	return ANY_STR_PATTERN
 }
 
 // An ExactStringPattern represents a symbolic ExactStringPattern.
 type ExactStringPattern struct {
 	NotCallablePatternMixin
+	SerializableMixin
 }
 
 func NewExactStringPattern() *ExactStringPattern {
@@ -119,7 +120,7 @@ func (p *ExactStringPattern) SymbolicValue() SymbolicValue {
 	return ANY_STR_LIKE
 }
 
-func (p *ExactStringPattern) StringPattern() (StringPatternElement, bool) {
+func (p *ExactStringPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
@@ -142,11 +143,11 @@ func (p *ExactStringPattern) HasRegex() bool {
 
 // An SequenceStringPattern represents a symbolic SequenceStringPattern
 type SequenceStringPattern struct {
-	_ int
+	SerializableMixin
 }
 
 func (p *SequenceStringPattern) Test(v SymbolicValue) bool {
-	_, ok := v.(StringPatternElement)
+	_, ok := v.(StringPattern)
 	return ok
 }
 
@@ -181,7 +182,7 @@ func (p *SequenceStringPattern) SymbolicValue() SymbolicValue {
 	return ANY_STR
 }
 
-func (p *SequenceStringPattern) StringPattern() (StringPatternElement, bool) {
+func (p *SequenceStringPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
@@ -203,12 +204,12 @@ func (p *SequenceStringPattern) IteratorElementValue() SymbolicValue {
 }
 
 func (p *SequenceStringPattern) WidestOfType() SymbolicValue {
-	return &AnyStringPatternElement{}
+	return &AnyStringPattern{}
 }
 
 // An ParserBasedPattern represents a symbolic ParserBasedPattern
 type ParserBasedPattern struct {
-	_ int
+	SerializableMixin
 }
 
 func NewParserBasedPattern() *ParserBasedPattern {
@@ -216,7 +217,7 @@ func NewParserBasedPattern() *ParserBasedPattern {
 }
 
 func (p *ParserBasedPattern) Test(v SymbolicValue) bool {
-	_, ok := v.(StringPatternElement)
+	_, ok := v.(StringPattern)
 	return ok
 }
 
@@ -246,7 +247,7 @@ func (p *ParserBasedPattern) SymbolicValue() SymbolicValue {
 	return ANY_STR
 }
 
-func (p *ParserBasedPattern) StringPattern() (StringPatternElement, bool) {
+func (p *ParserBasedPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
@@ -268,7 +269,7 @@ func (p *ParserBasedPattern) IteratorElementValue() SymbolicValue {
 }
 
 func (p *ParserBasedPattern) WidestOfType() SymbolicValue {
-	return &AnyStringPatternElement{}
+	return &AnyStringPattern{}
 }
 
 //

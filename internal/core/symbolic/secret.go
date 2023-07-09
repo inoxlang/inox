@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	ANY_SECRET_PATTERN = NewSecretPattern(ANY_STR_PATTERN_ELEM)
+	ANY_SECRET_PATTERN = NewSecretPattern(ANY_STR_PATTERN)
 	ANY_SECRET         = utils.Must(NewSecret(ANY_STR_LIKE, ANY_SECRET_PATTERN))
 
 	_ = []SymbolicValue{(*Secret)(nil)}
@@ -51,12 +51,14 @@ func (r *Secret) WidestOfType() SymbolicValue {
 }
 
 type SecretPattern struct {
+	stringPattern StringPattern
+
 	NotCallablePatternMixin
-	stringPattern StringPatternElement
+	SerializableMixin
 }
 
 // NewSecretPattern creates a SecretPattern from the given string pattern
-func NewSecretPattern(patt StringPatternElement) *SecretPattern {
+func NewSecretPattern(patt StringPattern) *SecretPattern {
 	return &SecretPattern{
 		stringPattern: patt,
 	}
@@ -113,6 +115,6 @@ func (pattern *SecretPattern) IteratorElementValue() SymbolicValue {
 	return ANY
 }
 
-func (pattern *SecretPattern) StringPattern() (StringPatternElement, bool) {
+func (pattern *SecretPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }

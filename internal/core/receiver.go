@@ -37,7 +37,6 @@ type Message struct {
 	sender       Value
 	sendindgDate Date
 
-	NoReprMixin
 	NotClonableMixin
 }
 
@@ -72,13 +71,12 @@ type SynchronousMessageHandler struct {
 	pattern Pattern
 	handler *InoxFunction
 
-	NoReprMixin
 	NotClonableMixin
 }
 
 func NewSynchronousMessageHandler(ctx *Context, fn *InoxFunction, pattern Pattern) *SynchronousMessageHandler {
 	if ok, expl := fn.IsSharable(fn.originState); !ok {
-		panic(fmt.Errorf("map iterable: only sharable functions are allowed: %s", expl))
+		panic(fmt.Errorf("only sharable functions are allowed: %s", expl))
 	}
 	fn.Share(ctx.GetClosestState())
 

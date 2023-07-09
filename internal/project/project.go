@@ -29,7 +29,6 @@ type Project struct {
 	projectFilesystem afs.Filesystem
 	lock              core.SmartLock
 
-	core.NoReprMixin
 	core.NotClonableMixin
 }
 

@@ -17,37 +17,102 @@ var (
 		SymbolicValue: &symbolic.Any{},
 	}
 
+	//TODO: improve (using a type pattern can create issues)
+	VAL_PATTERN = &TypePattern{
+		Type:          VALUE_TYPE,
+		Name:          "__val",
+		SymbolicValue: symbolic.NEVER,
+		CallImpl: func(typePattern *TypePattern, values []Serializable) (Pattern, error) {
+			if len(values) != 1 {
+				return nil, commonfmt.FmtErrNArgumentsExpected("1")
+			}
+
+			return NewExactValuePattern(values[0]), nil
+		},
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error) {
+			var recordPattern *symbolic.RecordPattern
+
+			if len(values) != 1 {
+				return nil, commonfmt.FmtErrNArgumentsExpected("1")
+			}
+
+			symbolic.NewExactValuePattern(values[0])
+
+			return recordPattern, nil
+		},
+	}
+	STR_PATTERN_PATTERN = &TypePattern{
+		Name:          "string-pattern",
+		SymbolicValue: symbolic.NEVER,
+		CallImpl: func(typePattern *TypePattern, values []Serializable) (Pattern, error) {
+			if len(values) != 1 {
+				return nil, commonfmt.FmtErrNArgumentsExpected("1")
+			}
+
+			pattern, ok := values[0].(Pattern)
+			if !ok {
+				return nil, fmt.Errorf("invalid argument")
+			}
+
+			stringPattern, ok := pattern.StringPattern()
+
+			if !ok {
+				return nil, fmt.Errorf("invalid argument")
+			}
+
+			return stringPattern, nil
+		},
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error) {
+			if len(values) != 1 {
+				return nil, commonfmt.FmtErrNArgumentsExpected("1")
+			}
+
+			pattern, ok := values[0].(symbolic.Pattern)
+			if !ok {
+				return nil, errors.New(symbolic.FmtInvalidArg(0, values[0], symbolic.ANY_PATTERN))
+			}
+
+			stringPattern, ok := pattern.StringPattern()
+			if !ok {
+				return nil, commonfmt.FmtErrInvalidArgumentAtPos(0, symbolic.Stringify(pattern)+" given but a pattern having an associated string pattern is expected")
+			}
+
+			return stringPattern, nil
+		},
+	}
+
 	IDENT_PATTERN = &TypePattern{
 		Type:          IDENTIFIER_TYPE,
 		Name:          "ident",
-		SymbolicValue: &symbolic.Identifier{},
+		SymbolicValue: symbolic.ANY_IDENTIFIER,
 	}
 	PROPNAME_PATTERN = &TypePattern{
 		Type:          PROPNAME_TYPE,
 		Name:          "propname",
-		SymbolicValue: &symbolic.PropertyName{},
+		SymbolicValue: symbolic.ANY_PROPNAME,
 	}
 	RUNE_PATTERN = &TypePattern{
 		Type:          RUNE_TYPE,
 		Name:          "rune",
-		SymbolicValue: &symbolic.Rune{},
+		SymbolicValue: symbolic.ANY_RUNE,
 	}
 	BYTE_PATTERN = &TypePattern{
 		Type:          BYTE_TYPE,
 		Name:          "byte",
-		SymbolicValue: &symbolic.Byte{},
+		SymbolicValue: symbolic.ANY_BYTE,
 	}
 	ANY_PATH_STRING_PATTERN = NewStringPathPattern("")
-	PATH_PATTERN            = &TypePattern{
+
+	PATH_PATTERN = &TypePattern{
 		Type:          PATH_TYPE,
 		Name:          "path",
-		SymbolicValue: &symbolic.Path{},
+		SymbolicValue: symbolic.ANY_PATH,
 		stringPattern: func() (StringPattern, bool) {
 			return ANY_PATH_STRING_PATTERN, true
 		},
-		symbolicStringPattern: func() (symbolic.StringPatternElement, bool) {
+		symbolicStringPattern: func() (symbolic.StringPattern, bool) {
 			//TODO
-			return symbolic.ANY_STR_PATTERN_ELEM, true
+			return symbolic.ANY_STR_PATTERN, true
 		},
 	}
 	STR_PATTERN = &TypePattern{
@@ -58,22 +123,22 @@ var (
 	URL_PATTERN = &TypePattern{
 		Type:          URL_TYPE,
 		Name:          "url",
-		SymbolicValue: &symbolic.URL{},
+		SymbolicValue: symbolic.ANY_URL,
 	}
 	SCHEME_PATTERN = &TypePattern{
 		Type:          SCHEME_TYPE,
 		Name:          "scheme",
-		SymbolicValue: &symbolic.Scheme{},
+		SymbolicValue: symbolic.ANY_SCHEME,
 	}
 	HOST_PATTERN = &TypePattern{
 		Type:          HOST_TYPE,
 		Name:          "host",
-		SymbolicValue: &symbolic.Host{},
+		SymbolicValue: symbolic.ANY_HOST,
 	}
 	EMAIL_ADDR_PATTERN = &TypePattern{
 		Type:          EMAIL_ADDR_TYPE,
 		Name:          "emailaddr",
-		SymbolicValue: &symbolic.EmailAddress{},
+		SymbolicValue: symbolic.ANY_EMAIL_ADDR,
 	}
 	OBJECT_PATTERN = &TypePattern{
 		Type:          OBJECT_TYPE,
@@ -184,28 +249,28 @@ var (
 	DICTIONARY_PATTERN = &TypePattern{
 		Type:          DICT_TYPE,
 		Name:          "dict",
-		SymbolicValue: symbolic.NewAnyDictionary(),
+		SymbolicValue: symbolic.ANY_DICT,
 	}
 	RUNESLICE_PATTERN = &TypePattern{
 		Type:          RUNE_SLICE_TYPE,
 		Name:          "runes",
-		SymbolicValue: &symbolic.RuneSlice{},
+		SymbolicValue: symbolic.ANY_RUNE_SLICE,
 	}
 	BYTESLICE_PATTERN = &TypePattern{
 		Type:          BYTE_SLICE_TYPE,
 		Name:          "bytes",
-		SymbolicValue: &symbolic.ByteSlice{},
+		SymbolicValue: symbolic.ANY_BYTE_SLICE,
 	}
 	KEYLIST_PATTERN = &TypePattern{
 		Type:          KEYLIST_TYPE,
 		Name:          "keylist",
-		SymbolicValue: symbolic.NewAnyKeyList(),
+		SymbolicValue: symbolic.ANY_KEYLIST,
 	}
 	BOOL_PATTERN = &TypePattern{
 		Type:          BOOL_TYPE,
 		Name:          "bool",
 		RandomImpl:    RandBool,
-		SymbolicValue: &symbolic.Bool{},
+		SymbolicValue: symbolic.ANY_BOOL,
 	}
 	INT_PATTERN = &TypePattern{
 		Type:       INT_TYPE,
@@ -253,9 +318,9 @@ var (
 			//TODO: use real range when int range string pattern supports any range
 			return NewIntRangeStringPattern(-999999999999999999, 999999999999999999, nil), true
 		},
-		symbolicStringPattern: func() (symbolic.StringPatternElement, bool) {
+		symbolicStringPattern: func() (symbolic.StringPattern, bool) {
 			//TODO
-			return symbolic.ANY_STR_PATTERN_ELEM, true
+			return symbolic.ANY_STR_PATTERN, true
 		},
 	}
 	FLOAT_PATTERN = &TypePattern{
@@ -568,10 +633,16 @@ var (
 				}
 			}
 
-			return &SecretPattern{stringPattern: stringPattern}, nil
+			return &SecretPattern{
+				stringPattern: stringPattern,
+				CallBasedPatternReprMixin: CallBasedPatternReprMixin{
+					Callee: typePattern,
+					Params: []Serializable{stringPattern},
+				},
+			}, nil
 		},
 		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error) {
-			var stringPattern symbolic.StringPatternElement
+			var stringPattern symbolic.StringPattern
 
 			if len(values) == 0 {
 				return nil, commonfmt.FmtMissingArgument("pattern")
@@ -579,14 +650,14 @@ var (
 
 			for _, val := range values {
 				switch v := val.(type) {
-				case symbolic.StringPatternElement:
+				case symbolic.StringPattern:
 					if stringPattern != nil {
 						return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("pattern")
 					}
 
 					stringPattern = v
 				default:
-					return nil, errors.New(symbolic.FmtInvalidArg(0, v, symbolic.ANY_STR_PATTERN_ELEM))
+					return nil, errors.New(symbolic.FmtInvalidArg(0, v, symbolic.ANY_STR_PATTERN))
 				}
 			}
 
@@ -598,41 +669,41 @@ var (
 	SECRET_PEM_STRING_PATTERN = NewSecretPattern(NewPEMRegexPattern(".*"), true)
 
 	DEFAULT_NAMED_PATTERNS = map[string]Pattern{
-		"ident":          IDENT_PATTERN,
-		"propname":       PROPNAME_PATTERN,
-		"rune":           RUNE_PATTERN,
-		"byte":           BYTE_PATTERN,
-		"str":            STR_PATTERN,
-		"path":           PATH_PATTERN,
-		"url":            URL_PATTERN,
-		"scheme":         SCHEME_PATTERN,
-		"host":           HOST_PATTERN,
-		"email_addr":     EMAIL_ADDR_PATTERN,
-		"secret":         SECRET_PATTERN,
-		"secret-string":  SECRET_STRING_PATTERN,
-		"obj":            OBJECT_PATTERN,
-		"rec":            RECORD_PATTERN,
-		"tuple":          TUPLE_PATTERN,
-		"list":           LIST_PATTERN,
-		"dict":           DICTIONARY_PATTERN,
-		"runes":          RUNESLICE_PATTERN,
-		"bytes":          BYTESLICE_PATTERN,
-		"key_list":       KEYLIST_PATTERN,
-		"bool":           BOOL_PATTERN,
-		"int":            INT_PATTERN,
-		"float":          FLOAT_PATTERN,
-		"filemode":       FILE_MODE_PATTERN,
-		"date":           DATE_PATTERN,
-		"pattern":        PATTERN_PATTERN,
-		"readable":       READABLE_PATTERN,
-		"iterable":       ITERABLE_PATTERN,
-		"indexable":      INDEXABLE_PATTERN,
-		"value-receiver": VALUE_RECEIVER_PATTERN,
-		"strlike":        STRLIKE_PATTERN,
-		"host_patt":      HOSTPATTERN_PATTERN,
-		"path_patt":      PATHPATTERN_PATTERN,
-		"url_patt":       URLPATTERN_PATTERN,
-		"opt":            OPTION_PATTERN,
+		IDENT_PATTERN.Name:          IDENT_PATTERN,
+		PROPNAME_PATTERN.Name:       PROPNAME_PATTERN,
+		RUNE_PATTERN.Name:           RUNE_PATTERN,
+		BYTE_PATTERN.Name:           BYTE_PATTERN,
+		STR_PATTERN.Name:            STR_PATTERN,
+		PATH_PATTERN.Name:           PATH_PATTERN,
+		URL_PATTERN.Name:            URL_PATTERN,
+		SCHEME_PATTERN.Name:         SCHEME_PATTERN,
+		HOST_PATTERN.Name:           HOST_PATTERN,
+		EMAIL_ADDR_PATTERN.Name:     EMAIL_ADDR_PATTERN,
+		SECRET_PATTERN.Name:         SECRET_PATTERN,
+		"secret-string":             SECRET_STRING_PATTERN,
+		OBJECT_PATTERN.Name:         OBJECT_PATTERN,
+		RECORD_PATTERN.Name:         RECORD_PATTERN,
+		TUPLE_PATTERN.Name:          TUPLE_PATTERN,
+		LIST_PATTERN.Name:           LIST_PATTERN,
+		DICTIONARY_PATTERN.Name:     DICTIONARY_PATTERN,
+		RUNESLICE_PATTERN.Name:      RUNESLICE_PATTERN,
+		BYTESLICE_PATTERN.Name:      BYTESLICE_PATTERN,
+		KEYLIST_PATTERN.Name:        KEYLIST_PATTERN,
+		BOOL_PATTERN.Name:           BOOL_PATTERN,
+		INT_PATTERN.Name:            INT_PATTERN,
+		FLOAT_PATTERN.Name:          FLOAT_PATTERN,
+		FILE_MODE_PATTERN.Name:      FILE_MODE_PATTERN,
+		DATE_PATTERN.Name:           DATE_PATTERN,
+		PATTERN_PATTERN.Name:        PATTERN_PATTERN,
+		READABLE_PATTERN.Name:       READABLE_PATTERN,
+		ITERABLE_PATTERN.Name:       ITERABLE_PATTERN,
+		INDEXABLE_PATTERN.Name:      INDEXABLE_PATTERN,
+		VALUE_RECEIVER_PATTERN.Name: VALUE_RECEIVER_PATTERN,
+		STRLIKE_PATTERN.Name:        STRLIKE_PATTERN,
+		HOSTPATTERN_PATTERN.Name:    HOSTPATTERN_PATTERN,
+		PATHPATTERN_PATTERN.Name:    PATHPATTERN_PATTERN,
+		URLPATTERN_PATTERN.Name:     URLPATTERN_PATTERN,
+		OPTION_PATTERN.Name:         OPTION_PATTERN,
 		"dir_entry": &ObjectPattern{
 			entryPatterns: map[string]Pattern{
 				"abs-path": PATH_PATTERN,
@@ -643,13 +714,14 @@ var (
 				"name":     STR_PATTERN,
 			},
 		},
-		"event":         EVENT_PATTERN,
-		"mutation":      MUTATION_PATTERN,
-		"message":       MSG_PATTERN,
-		"error":         ERROR_PATTERN,
-		"int-range":     INT_RANGE_PATTERN,
-		"value-history": VALUE_HISTORY_PATTERN,
-		"sysgraph":      SYSGRAPH_PATTERN,
+		EVENT_PATTERN.Name:         EVENT_PATTERN,
+		MUTATION_PATTERN.Name:      MUTATION_PATTERN,
+		MSG_PATTERN.Name:           MSG_PATTERN,
+		ERROR_PATTERN.Name:         ERROR_PATTERN,
+		INT_RANGE_PATTERN.Name:     INT_RANGE_PATTERN,
+		VALUE_HISTORY_PATTERN.Name: VALUE_HISTORY_PATTERN,
+		SYSGRAPH_PATTERN.Name:      SYSGRAPH_PATTERN,
+		VAL_PATTERN.Name:           VAL_PATTERN,
 	}
 
 	DEFAULT_PATTERN_NAMESPACES = map[string]*PatternNamespace{
@@ -660,11 +732,11 @@ var (
 				"source_position": SOURCE_POS_PATTERN,
 			},
 		},
-		"date_str": {
+		DATE_FORMAT_PATTERN_NAMESPACE: {
 			Patterns: map[string]Pattern{
-				"rfc822":    NewDateFormat(time.RFC822),
-				"date-only": NewDateFormat(time.DateOnly),
-				"time-only": NewDateFormat(time.TimeOnly),
+				"rfc822":    NewDateFormat(time.RFC822, "rfc822"),
+				"date-only": NewDateFormat(time.DateOnly, "date-only"),
+				"time-only": NewDateFormat(time.TimeOnly, "time-only"),
 			},
 		},
 		"sysgraph": {
@@ -673,4 +745,17 @@ var (
 			},
 		},
 	}
+
+	//used to prevent some cycles
+	getDefaultNamedPattern (func(name string) Pattern) = nil
 )
+
+func init() {
+	getDefaultNamedPattern = func(name string) Pattern {
+		p, ok := DEFAULT_NAMED_PATTERNS[name]
+		if !ok {
+			panic(fmt.Errorf("%s is not defined", name))
+		}
+		return p
+	}
+}

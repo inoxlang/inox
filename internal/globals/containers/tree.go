@@ -51,7 +51,13 @@ func init() {
 						}
 					}
 
-					return &TreeNodePattern{valuePattern: valuePattern}, nil
+					return &TreeNodePattern{
+						valuePattern: valuePattern,
+						CallBasedPatternReprMixin: core.CallBasedPatternReprMixin{
+							Callee: typePattern,
+							Params: []core.Serializable{valuePattern},
+						},
+					}, nil
 				},
 				SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error) {
 					return coll_symbolic.NewTreeNodePattern(symbolic.ANY_PATTERN)
@@ -62,7 +68,6 @@ func init() {
 }
 
 type Tree struct {
-	core.NoReprMixin
 	root *TreeNode
 
 	lock core.SmartLock
@@ -229,7 +234,6 @@ func (*Tree) PropertyNames(ctx *core.Context) []string {
 
 // TODO: store tree nodes in a pool
 type TreeNode struct {
-	core.NoReprMixin
 	data     core.Value
 	children []*TreeNode // TODO: use pool + make copy on write if tree is shared (see .Prop & tree node + tree iterator)
 	tree     *Tree
@@ -337,10 +341,11 @@ func (n *TreeNode) ForceUnlock() {
 }
 
 type TreeNodePattern struct {
-	core.NoReprMixin
+	valuePattern core.Pattern
+	core.CallBasedPatternReprMixin
+
 	core.NotClonableMixin
 	core.NotCallablePatternMixin
-	valuePattern core.Pattern
 }
 
 func (patt *TreeNodePattern) Test(ctx *core.Context, v core.Value) bool {

@@ -19,7 +19,6 @@ var (
 
 type Stack struct {
 	elements []core.Value
-	core.NoReprMixin
 }
 
 func NewStack(ctx *core.Context, elements core.Iterable) *Stack {

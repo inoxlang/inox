@@ -80,7 +80,6 @@ func init() {
 
 // a shell represents an instance of an Inox REPL, depending on its configuration it can behave like a real shell.
 type shell struct {
-	core.NoReprMixin
 	core.NotClonableMixin
 
 	config  REPLConfiguration

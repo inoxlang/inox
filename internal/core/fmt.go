@@ -10,6 +10,10 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+const (
+	DATE_FORMAT_PATTERN_NAMESPACE = "date-format"
+)
+
 var (
 	_ = []Format{(*DateFormat)(nil)}
 	_ = []StringFormat{(*DateFormat)(nil)}
@@ -51,14 +55,20 @@ type StringFormat interface {
 // }
 
 type DateFormat struct {
-	*ParserBasedPattern
+	*ParserBasedPseudoPattern
 	layout string
+
+	NamespaceMemberPatternReprMixin
 }
 
-func NewDateFormat(layout string) *DateFormat {
+func NewDateFormat(layout, namespaceMemberName string) *DateFormat {
 	fmt := &DateFormat{
-		layout:             layout,
-		ParserBasedPattern: NewParserBasePattern(&dateLayoutParser{layout: layout}),
+		layout:                   layout,
+		ParserBasedPseudoPattern: NewParserBasePattern(&dateLayoutParser{layout: layout}),
+		NamespaceMemberPatternReprMixin: NamespaceMemberPatternReprMixin{
+			NamespaceName: DATE_FORMAT_PATTERN_NAMESPACE,
+			MemberName:    namespaceMemberName,
+		},
 	}
 
 	return fmt

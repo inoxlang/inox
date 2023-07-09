@@ -1,14 +1,16 @@
 package html_ns
 
 import (
+	"io"
+
 	core "github.com/inoxlang/inox/internal/core"
+	jsoniter "github.com/json-iterator/go"
 	"golang.org/x/net/html"
 )
 
 var _ = []core.GoValue{&HTMLNode{}}
 
 type HTMLNode struct {
-	core.NoReprMixin
 	node         *html.Node // TODO: make private
 	render       []byte
 	cloneOnWrite bool
@@ -220,4 +222,12 @@ func (n *HTMLNode) RemoveAttribute(ctx *core.Context, name string) {
 		}
 	}
 
+}
+
+func (n *HTMLNode) WriteRepresentation(ctx *core.Context, w io.Writer, config *core.ReprConfig) error {
+	return core.ErrNotImplementedYet
+}
+
+func (n *HTMLNode) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stream, config core.JSONSerializationConfig) error {
+	return core.ErrNotImplementedYet
 }

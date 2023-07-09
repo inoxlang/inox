@@ -25,7 +25,6 @@ type Readable interface {
 // TODO: close wrapped. when closing Reader
 type Reader struct {
 	NotClonableMixin
-	NoReprMixin
 
 	wrapped      io.Reader
 	hasAllData   bool

@@ -17,7 +17,6 @@ type Writable interface {
 // A Writer is a Value wrapping an io.Writer.
 type Writer struct {
 	NotClonableMixin
-	NoReprMixin
 
 	wrapped      io.Writer
 	providedLock *sync.Mutex

@@ -1279,23 +1279,23 @@ func TestSymbolicOptionPattern(t *testing.T) {
 func TestSymbolicAnyStringPatternElement(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
-		pattern := &AnyStringPatternElement{}
+		pattern := &AnyStringPattern{}
 
-		assert.True(t, pattern.Test(&AnyStringPatternElement{}))
+		assert.True(t, pattern.Test(&AnyStringPattern{}))
 		assert.False(t, pattern.Test(&Int{}))
 		assert.False(t, pattern.Test(&String{}))
 	})
 
 	t.Run("TestValue() should return true for any symbolic Host", func(t *testing.T) {
-		pattern := &AnyStringPatternElement{}
+		pattern := &AnyStringPattern{}
 
 		assert.True(t, pattern.TestValue(&String{}))
 		assert.False(t, pattern.TestValue(&Int{}))
-		assert.False(t, pattern.TestValue(&AnyStringPatternElement{}))
+		assert.False(t, pattern.TestValue(&AnyStringPattern{}))
 	})
 
 	t.Run("Widen() & IsWidenable()", func(t *testing.T) {
-		pattern := &AnyStringPatternElement{}
+		pattern := &AnyStringPattern{}
 
 		assert.False(t, pattern.IsWidenable())
 

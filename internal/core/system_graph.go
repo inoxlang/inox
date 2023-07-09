@@ -51,7 +51,6 @@ type SystemGraph struct {
 	isFrozen          bool         // SystemGraph should not supported unfreezing
 	lastSnapshot      *SystemGraph // discarded when there is a mutation
 
-	NoReprMixin
 	NotClonableMixin
 }
 
@@ -71,7 +70,6 @@ type SystemGraphEdge struct {
 	to   uintptr
 	kind SystemGraphEdgeKind
 
-	NoReprMixin
 	NotClonableMixin
 }
 
@@ -124,7 +122,6 @@ type SystemGraphEvent struct {
 	date                 Date
 
 	NotClonableMixin
-	NoReprMixin
 }
 
 func (e SystemGraphEvent) Prop(ctx *Context, name string) Value {
@@ -456,7 +453,6 @@ type SystemGraphNodes struct {
 	availableNodes []*SystemGraphNode //TODO: replace with a bitset
 	graph          *SystemGraph
 
-	NoReprMixin
 	NotClonableMixin
 }
 
@@ -489,7 +485,6 @@ type SystemGraphNode struct {
 	available bool
 	version   uint64
 
-	NoReprMixin
 	NotClonableMixin
 }
 

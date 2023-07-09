@@ -148,7 +148,6 @@ func (d WatchingDepth) IsSpecified() bool {
 }
 
 type stoppedWatcher struct {
-	NoReprMixin
 	NotClonableMixin
 
 	config WatcherConfiguration
@@ -178,7 +177,6 @@ func (w stoppedWatcher) Config() WatcherConfiguration {
 }
 
 type joinedWatchers struct {
-	NoReprMixin
 	NotClonableMixin
 	config WatcherConfiguration
 
@@ -297,7 +295,6 @@ func (w *joinedWatchers) Config() WatcherConfiguration {
 }
 
 type GenericWatcher struct {
-	NoReprMixin
 	NotClonableMixin
 
 	config WatcherConfiguration

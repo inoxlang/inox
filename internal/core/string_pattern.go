@@ -24,7 +24,7 @@ var (
 	ErrInvalidInputString                               = errors.New("invalid input string")
 	ErrFailedToConvertValueToMatchingString             = errors.New("failed to convert value to matching string")
 
-	_ = []StringPattern{&ParserBasedPattern{}}
+	//_ = []StringPattern{&ParserBasedPseudoPattern{}}
 
 	_ = []ToStringConversionCapableStringPattern{(*IntRangeStringPattern)(nil)}
 )
@@ -62,11 +62,11 @@ type ToStringConversionCapableStringPattern interface {
 
 // ExactStringPattern matches values equal to .value: .value.Equal(...) returns true.
 type ExactStringPattern struct {
-	NotCallablePatternMixin
-	NoReprMixin
-
 	value  Str
 	regexp *regexp.Regexp
+
+	NotCallablePatternMixin
+	CallBasedPatternReprMixin
 }
 
 func NewExactStringPattern(value Str) *ExactStringPattern {
@@ -74,8 +74,9 @@ func NewExactStringPattern(value Str) *ExactStringPattern {
 	regexp := regexp.MustCompile(regex)
 
 	return &ExactStringPattern{
-		value:  value,
-		regexp: regexp,
+		value:                     value,
+		regexp:                    regexp,
+		CallBasedPatternReprMixin: CallBasedPatternReprMixin{},
 	}
 }
 
@@ -714,19 +715,20 @@ func (patt *RuneRangeStringPattern) StringPattern() (StringPattern, bool) {
 // -12_
 // -12a
 type IntRangeStringPattern struct {
-	NotCallablePatternMixin
-	NoReprMixin
-	NotClonableMixin
-
 	regexp             *regexp.Regexp
 	entireStringRegexp *regexp.Regexp
 
 	node        parse.Node
 	intRange    IntRange
 	lengthRange IntRange
+
+	CallBasedPatternReprMixin
+
+	NotCallablePatternMixin
+	NotClonableMixin
 }
 
-func NewIntRangeStringPattern(lower, upper int64, node parse.Node) *IntRangeStringPattern {
+func NewIntRangeStringPattern(lower, upperIncluded int64, node parse.Node) *IntRangeStringPattern {
 	entireRegex := ""
 
 	lengthRange := IntRange{
@@ -749,17 +751,17 @@ func NewIntRangeStringPattern(lower, upper int64, node parse.Node) *IntRangeStri
 				"for now integer range string patterns only support lower bounds with only '9' digits",
 			))
 		}
-		if !onlyNines(upper) {
+		if !onlyNines(upperIncluded) {
 			panic(errors.New("for now integer range string patterns only support upper bounds with only '9' digits"))
 		}
 
 		absLower := math.Abs(float64(lower))
-		absUpper := math.Abs(float64(upper))
+		absUpper := math.Abs(float64(upperIncluded))
 		negativeIntPart := ""
 		positiveIntPart := ""
 		digitsRegex := "(?:\\d{%d,%d})\\b"
 
-		if upper < 0 {
+		if upperIncluded < 0 {
 			max := utils.Max(absLower, absUpper)
 			min := utils.Min(absLower, absUpper)
 
@@ -773,8 +775,8 @@ func NewIntRangeStringPattern(lower, upper int64, node parse.Node) *IntRangeStri
 		} else {
 			negMaxDigitCount := int(math.Ceil(math.Log10(absLower)))
 			posMaxDigitCount := 1
-			if upper >= 1 {
-				posMaxDigitCount = int(math.Ceil(math.Log10(float64(upper))))
+			if upperIncluded >= 1 {
+				posMaxDigitCount = int(math.Ceil(math.Log10(float64(upperIncluded))))
 			}
 
 			negativeIntPart = fmt.Sprintf(digitsRegex, 0, negMaxDigitCount)
@@ -785,7 +787,7 @@ func NewIntRangeStringPattern(lower, upper int64, node parse.Node) *IntRangeStri
 		}
 		entireRegex = fmt.Sprintf("^(-%s|\\b%s)$", negativeIntPart, positiveIntPart)
 	} else {
-		if (upper % 9) != 0 {
+		if (upperIncluded % 9) != 0 {
 			panic(errors.New("for now integer range string patterns only support upper bounds with only '9' digits"))
 		}
 
@@ -796,8 +798,8 @@ func NewIntRangeStringPattern(lower, upper int64, node parse.Node) *IntRangeStri
 
 		maxDigitCount := 1
 
-		if upper >= 1 {
-			maxDigitCount = int(math.Ceil(math.Log10(float64(upper))))
+		if upperIncluded >= 1 {
+			maxDigitCount = int(math.Ceil(math.Log10(float64(upperIncluded))))
 		}
 
 		entireRegex = fmt.Sprintf("^\\b\\d{%d,%d}\\b$", minDigitCount, maxDigitCount)
@@ -813,10 +815,14 @@ func NewIntRangeStringPattern(lower, upper int64, node parse.Node) *IntRangeStri
 		intRange: IntRange{
 			inclusiveEnd: true,
 			Start:        lower,
-			End:          upper,
+			End:          upperIncluded,
 			Step:         1,
 		},
 		lengthRange: lengthRange,
+		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
+			Callee: STR_PATTERN_PATTERN,
+			Params: []Serializable{NewIncludedEndIntRange(lower, upperIncluded)},
+		},
 	}
 }
 
@@ -1092,19 +1098,18 @@ func (patt *RepeatedPatternElement) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-type ParserBasedPattern struct {
-	NotCallablePatternMixin
-	NoReprMixin
-	NotClonableMixin
-
+type ParserBasedPseudoPattern struct {
 	parser StatelessParser
+
+	NotClonableMixin
+	NotCallablePatternMixin
 }
 
-func NewParserBasePattern(parser StatelessParser) *ParserBasedPattern {
-	return &ParserBasedPattern{parser: parser}
+func NewParserBasePattern(parser StatelessParser) *ParserBasedPseudoPattern {
+	return &ParserBasedPseudoPattern{parser: parser}
 }
 
-func (patt *ParserBasedPattern) Test(ctx *Context, v Value) bool {
+func (patt *ParserBasedPseudoPattern) Test(ctx *Context, v Value) bool {
 	s, ok := v.(StringLike)
 	if !ok {
 		return false
@@ -1112,31 +1117,31 @@ func (patt *ParserBasedPattern) Test(ctx *Context, v Value) bool {
 	return patt.parser.Validate(ctx, s.GetOrBuildString())
 }
 
-func (pattern *ParserBasedPattern) Regex() string {
+func (pattern *ParserBasedPseudoPattern) Regex() string {
 	panic(ErrNotImplemented)
 }
 
-func (patt *ParserBasedPattern) CompiledRegex() *regexp.Regexp {
+func (patt *ParserBasedPseudoPattern) CompiledRegex() *regexp.Regexp {
 	panic(ErrNotImplemented)
 }
 
-func (pattern *ParserBasedPattern) HasRegex() bool {
+func (pattern *ParserBasedPseudoPattern) HasRegex() bool {
 	return false
 }
 
-func (patt *ParserBasedPattern) validate(s string, i *int) bool {
+func (patt *ParserBasedPseudoPattern) validate(s string, i *int) bool {
 	panic(ErrNotImplementedYet)
 }
 
-func (patt *ParserBasedPattern) Parse(ctx *Context, s string) (Serializable, error) {
+func (patt *ParserBasedPseudoPattern) Parse(ctx *Context, s string) (Serializable, error) {
 	return patt.parser.Parse(ctx, s)
 }
 
-func (patt *ParserBasedPattern) FindMatches(ctx *Context, val Serializable, config MatchesFindConfig) (groups []Serializable, err error) {
+func (patt *ParserBasedPseudoPattern) FindMatches(ctx *Context, val Serializable, config MatchesFindConfig) (groups []Serializable, err error) {
 	return nil, ErrNotImplementedYet
 }
 
-func (patt *ParserBasedPattern) LengthRange() IntRange {
+func (patt *ParserBasedPseudoPattern) LengthRange() IntRange {
 	return IntRange{
 		inclusiveEnd: true,
 		Start:        0,
@@ -1145,11 +1150,11 @@ func (patt *ParserBasedPattern) LengthRange() IntRange {
 	}
 }
 
-func (patt *ParserBasedPattern) EffectiveLengthRange() IntRange {
+func (patt *ParserBasedPseudoPattern) EffectiveLengthRange() IntRange {
 	return patt.LengthRange()
 }
 
-func (patt *ParserBasedPattern) StringPattern() (StringPattern, bool) {
+func (patt *ParserBasedPseudoPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
@@ -1429,9 +1434,8 @@ func (patt *RegexPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-// A PathStringPattern represents a string pattern for paths
+// A PathStringPattern represents a string pattern for paths.
 type PathStringPattern struct {
-	NoReprMixin
 	optionalPathPattern PathPattern
 
 	hasEffectiveLengthRange bool

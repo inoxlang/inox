@@ -36,7 +36,7 @@ type BytesLike interface {
 
 // A ByteSlice represents a symbolic ByteSlice.
 type ByteSlice struct {
-	_ int
+	SerializableMixin
 }
 
 func (s *ByteSlice) Test(v SymbolicValue) bool {

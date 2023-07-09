@@ -32,7 +32,6 @@ type DatabaseIL struct {
 	propertyNames    []string
 	topLevelEntities map[string]Serializable
 
-	NoReprMixin
 	NotClonableMixin
 }
 

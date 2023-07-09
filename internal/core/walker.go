@@ -123,7 +123,6 @@ func GetDirTreeData(fls afs.Filesystem, walkedDirPath Path) *UData {
 
 // DirWalker is a Walker, it iterates over a list of known entries.
 type DirWalker struct {
-	NoReprMixin
 	NotClonableMixin
 
 	dirIndex              int

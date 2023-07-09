@@ -6,7 +6,6 @@ import (
 )
 
 type CollectionIterator struct {
-	core.NoReprMixin
 	hasNext func(*CollectionIterator, *core.Context) bool
 	next    func(*CollectionIterator, *core.Context) bool
 	key     func(*CollectionIterator, *core.Context) core.Value
@@ -207,7 +206,6 @@ func (s *Thread) Iterator(ctx *core.Context, config core.IteratorConfiguration) 
 }
 
 type TreeIterator struct {
-	core.NoReprMixin
 	start         *TreeNode
 	children      []*TreeNode
 	childIndex    int

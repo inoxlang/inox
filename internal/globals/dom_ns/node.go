@@ -158,7 +158,6 @@ const (
 )
 
 type Node struct {
-	core.NoReprMixin
 	core.NotClonableMixin
 
 	lock sync.Mutex
@@ -213,11 +212,12 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) *Node {
 			child = NewStaticNode(html)
 		case *html_ns.HTMLNode:
 			child = NewStaticNode(val)
-		case *Node:
-			if val.view != nil {
-				panic(errors.New("failed to create DOM node: one of the children nodes already has an associated view"))
-			}
-			child = val
+		//TODO: fix (object does not accept non-serializable values)
+		// case *Node:
+		// 	if val.view != nil {
+		// 		panic(errors.New("failed to create DOM node: one of the children nodes already has an associated view"))
+		// 	}
+		// 	child = val
 		default:
 			child = NewAutoNode(ctx, core.NewObjectFromMap(core.ValMap{"0": val}, ctx))
 		}

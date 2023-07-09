@@ -40,7 +40,6 @@ type WebsocketConnection struct {
 	serverContext *Context
 
 	core.NotClonableMixin
-	core.NoReprMixin
 }
 
 func (conn *WebsocketConnection) GetGoMethod(name string) (*GoFunction, bool) {

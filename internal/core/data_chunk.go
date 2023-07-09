@@ -10,7 +10,6 @@ var (
 
 // A DataChunk represents a chunk of any kind of data, DataChunk implements Value.
 type DataChunk struct {
-	NoReprMixin
 	NotClonableMixin
 
 	data         Value

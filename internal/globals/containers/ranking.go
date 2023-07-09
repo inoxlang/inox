@@ -39,7 +39,6 @@ func NewRanking(ctx *core.Context, flatEntries *core.List) *Ranking {
 }
 
 type Ranking struct {
-	core.NoReprMixin
 	map_      map[core.FastId]core.Serializable
 	rankItems []RankItem
 }
@@ -131,7 +130,6 @@ type RankItem struct {
 }
 
 type Rank struct {
-	core.NoReprMixin
 	ranking *Ranking
 	rank    int
 }

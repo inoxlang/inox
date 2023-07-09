@@ -39,8 +39,6 @@ func init() {
 // A DynamicValue resolves to a Value by performing an operation on another value (getting a property, ...),
 // DynamicValue implements Value
 type DynamicValue struct {
-	NotClonableMixin
-	NoReprMixin
 	value    Value // value on which we apply the operation
 	innerDyn *DynamicValue
 
@@ -51,6 +49,8 @@ type DynamicValue struct {
 
 	lock              sync.Mutex
 	mutationCallbacks *MutationCallbacks
+
+	NotClonableMixin
 }
 
 type dynOp int
