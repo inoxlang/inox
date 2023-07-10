@@ -563,6 +563,37 @@ func (tuple *Tuple) Equal(ctx *Context, other Value, alreadyCompared map[uintptr
 	return true
 }
 
+func (s *Struct) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	if depth > MAX_COMPARISON_DEPTH {
+		return false
+	}
+
+	otherStruct, ok := other.(*Struct)
+	if !ok || s.structType != otherStruct.structType {
+		return false
+	}
+
+	addr := reflect.ValueOf(s).Pointer()
+	otherAddr := reflect.ValueOf(otherStruct).Pointer()
+
+	if alreadyCompared[addr] == otherAddr || alreadyCompared[otherAddr] == addr {
+		//we return true to prevent cycling
+		return true
+	}
+
+	if addr == otherAddr {
+		return true
+	}
+
+	for i, e := range s.values {
+		if !otherStruct.values[i].Equal(ctx, e, alreadyCompared, depth+1) {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (slice *RuneSlice) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	if depth > MAX_COMPARISON_DEPTH {
 		return false
@@ -1977,4 +2008,13 @@ func (ns *Namespace) Equal(ctx *Context, other Value, alreadyCompared map[uintpt
 
 	otherNS, ok := other.(*Namespace)
 	return ok && ns == otherNS
+}
+
+func (p *StructPattern) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	if depth > MAX_COMPARISON_DEPTH {
+		return false
+	}
+
+	otherPatt, ok := other.(*StructPattern)
+	return ok && p == otherPatt
 }

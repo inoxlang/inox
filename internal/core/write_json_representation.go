@@ -900,3 +900,7 @@ func (m *Mapping) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, conf
 func (n AstNode) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
 	return ErrNotImplementedYet
 }
+
+func (p *StructPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+	return ErrNotImplementedYet
+}

@@ -144,6 +144,10 @@ func (tuple *Tuple) IsMutable() bool {
 	return false
 }
 
+func (s *Struct) IsMutable() bool {
+	return true
+}
+
 func (slice *RuneSlice) IsMutable() bool {
 	return true
 }
@@ -574,5 +578,9 @@ func (*ApiIL) IsMutable() bool {
 }
 
 func (*Namespace) IsMutable() bool {
+	return false
+}
+
+func (*StructPattern) IsMutable() bool {
 	return false
 }

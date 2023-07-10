@@ -487,3 +487,7 @@ func (pattern *IntRangeStringPattern) Random(ctx *Context, options ...Option) Va
 func (pattern *PathStringPattern) Random(ctx *Context, options ...Option) Value {
 	panic(ErrNotImplementedYet)
 }
+
+func (patt *StructPattern) Random(ctx *Context, options ...Option) Value {
+	panic(ErrNotImplemented)
+}

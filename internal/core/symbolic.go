@@ -359,6 +359,23 @@ func (dict *Dictionary) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 	return symbolicDict, nil
 }
 
+func (s *Struct) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	ptr := reflect.ValueOf(s).Pointer()
+	if r, ok := encountered[ptr]; ok {
+		return r, nil
+	}
+
+	structPattern, err := s.structType.ToSymbolicValue(ctx, encountered)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert type of struct to symbolic: %w", err)
+	}
+
+	symbolicStruct := symbolic.NewStruct(structPattern.(*symbolic.StructPattern))
+	encountered[ptr] = symbolicStruct
+
+	return symbolicStruct, nil
+}
+
 func (p *UnionPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	ptr := reflect.ValueOf(p).Pointer()
 	if r, ok := encountered[ptr]; ok {
@@ -1207,6 +1224,11 @@ func (api *ApiIL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic
 }
 
 func (ns *Namespace) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	ptr := reflect.ValueOf(ns).Pointer()
+	if r, ok := encountered[ptr]; ok {
+		return r, nil
+	}
+
 	entries := map[string]symbolic.SymbolicValue{}
 
 	for key, val := range ns.entries {
@@ -1217,5 +1239,31 @@ func (ns *Namespace) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbo
 		entries[key] = symbolicVal
 	}
 
-	return symbolic.NewNamespace(entries), nil
+	result := symbolic.NewNamespace(entries)
+	encountered[ptr] = result
+	return result, nil
+}
+
+func (s *StructPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	ptr := reflect.ValueOf(s).Pointer()
+	if r, ok := encountered[ptr]; ok {
+		return r, nil
+	}
+
+	keys := utils.CopySlice(s.keys)
+	types := make([]symbolic.Pattern, len(keys))
+
+	symbolicStructPattern := new(symbolic.StructPattern)
+	encountered[ptr] = symbolicStructPattern
+
+	for i, t := range s.types {
+		symbolicPattern, err := t.ToSymbolicValue(ctx, encountered)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert field type .%s to symbolic: %w", keys[i], err)
+		}
+		types[i] = symbolicPattern.(symbolic.Pattern)
+	}
+
+	*symbolicStructPattern = symbolic.CreateStructPattern(s.name, s.tempId, keys, types)
+	return symbolicStructPattern, nil
 }

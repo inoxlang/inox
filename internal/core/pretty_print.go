@@ -825,6 +825,16 @@ func (tuple Tuple) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth
 	lst.PrettyPrint(w, config, depth, parentIndentCount)
 }
 
+func (s *Struct) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes(s.structType.name)))
+	utils.PanicIfErr(w.WriteByte('{'))
+
+	//TODO
+	utils.Must(w.Write(utils.StringAsBytes("...")))
+
+	utils.PanicIfErr(w.WriteByte('}'))
+}
+
 func (slice *RuneSlice) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, slice)
 }
@@ -1949,6 +1959,15 @@ func (ns *Namespace) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, dep
 	}
 
 	utils.MustWriteMany(w, bytes.Repeat(config.Indent, depth), []byte{'}'})
+}
+
+func (p *StructPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("struct-type {")))
+
+	//TODO
+	utils.Must(w.Write(utils.StringAsBytes("...")))
+
+	utils.PanicIfErr(w.WriteByte('}'))
 }
 
 func InspectPrint[T any](w *bufio.Writer, v T) {

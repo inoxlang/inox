@@ -1341,3 +1341,7 @@ func (m *Mapping) WriteRepresentation(ctx *Context, w io.Writer, config *ReprCon
 func (n AstNode) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	return ErrNotImplementedYet
 }
+
+func (p *StructPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+	return ErrNotImplementedYet
+}
