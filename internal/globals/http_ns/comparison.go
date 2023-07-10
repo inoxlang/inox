@@ -35,3 +35,25 @@ func (evs *ServerSentEventSource) Equal(ctx *core.Context, other core.Value, alr
 	otherSource, ok := other.(*ServerSentEventSource)
 	return ok && evs == otherSource
 }
+
+func (c *ContentSecurityPolicy) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherCSP, ok := other.(*ContentSecurityPolicy)
+	if !ok {
+		return false
+	}
+	if len(c.directives) != len(otherCSP.directives) {
+		return false
+	}
+	for name, directive := range c.directives {
+		otherDirective, ok := otherCSP.directives[name]
+		if !ok || len(directive.values) != len(otherDirective.values) {
+			return false
+		}
+		for i, val := range directive.values {
+			if otherDirective.values[i].raw != val.raw {
+				return false
+			}
+		}
+	}
+	return true
+}

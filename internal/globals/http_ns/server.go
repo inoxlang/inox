@@ -15,11 +15,9 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	dom_ns_symb "github.com/inoxlang/inox/internal/globals/dom_ns/symbolic"
 	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 	"golang.org/x/exp/slices"
 
-	"github.com/inoxlang/inox/internal/globals/dom_ns"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
@@ -67,7 +65,7 @@ var (
 			HTTP_ROUTING_SYMB_OBJ,
 		),
 		HANDLING_DESC_MIDDLEWARES_PROPNAME: symbolic.ANY_ITERABLE,
-		HANDLING_DESC_DEFAULT_CSP_PROPNAME: dom_ns_symb.ANY_CSP,
+		HANDLING_DESC_DEFAULT_CSP_PROPNAME: http_ns_symb.ANY_CSP,
 		HANDLING_DESC_CERTIFICATE_PROPNAME: symbolic.ANY_STR_LIKE,
 		HANDLING_DESC_KEY_PROPNAME:         symbolic.ANY_SECRET,
 	}, map[string]struct{}{
@@ -345,7 +343,7 @@ type HttpServer struct {
 	lock           sync.RWMutex
 	endChan        chan struct{}
 	state          *core.GlobalState
-	defaultCSP     *dom_ns.ContentSecurityPolicy
+	defaultCSP     *ContentSecurityPolicy
 	securityEngine *securityEngine
 	serverLogger   zerolog.Logger
 
@@ -559,7 +557,7 @@ func readHttpServerArgs(ctx *core.Context, server *HttpServer, host core.Host, a
 
 					userProvidedHandler = propVal
 				case HANDLING_DESC_DEFAULT_CSP_PROPNAME:
-					csp, ok := propVal.(*dom_ns.ContentSecurityPolicy)
+					csp, ok := propVal.(*ContentSecurityPolicy)
 					if !ok {
 						argErr = core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, propKey, HANDLING_ARG_NAME)
 						return

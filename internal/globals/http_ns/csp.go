@@ -1,4 +1,4 @@
-package dom_ns
+package http_ns
 
 import (
 	"bytes"
@@ -10,8 +10,9 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	_dom_symbolic "github.com/inoxlang/inox/internal/globals/dom_ns/symbolic"
 	jsoniter "github.com/json-iterator/go"
+
+	http_symbolic "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -46,7 +47,7 @@ func init() {
 	)
 
 	core.RegisterSymbolicGoFunction(NewCSP,
-		func(ctx *symbolic.Context, desc *symbolic.Object) (*_dom_symbolic.ContentSecurityPolicy, *symbolic.Error) {
+		func(ctx *symbolic.Context, desc *symbolic.Object) (*http_symbolic.ContentSecurityPolicy, *symbolic.Error) {
 			ctx.SetSymbolicGoFunctionParameters(&[]symbolic.SymbolicValue{
 				symbolic.NewObject(map[string]symbolic.SymbolicValue{
 					"default-src":     stringOrStringList,
@@ -69,7 +70,7 @@ func init() {
 				}, nil),
 			}, []string{"csp"})
 
-			return _dom_symbolic.NewCSP(), nil
+			return http_symbolic.NewCSP(), nil
 		},
 	)
 }

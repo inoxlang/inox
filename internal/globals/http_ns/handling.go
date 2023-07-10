@@ -1,15 +1,12 @@
 package http_ns
 
 import (
-	"encoding/json"
 	"fmt"
 	"html"
 	"net/http"
 	"strings"
-	"time"
 
 	core "github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/dom_ns"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
 	jsoniter "github.com/json-iterator/go"
@@ -22,7 +19,7 @@ const (
 )
 
 var (
-	DEFAULT_CSP, _ = dom_ns.NewCSPWithDirectives(nil)
+	DEFAULT_CSP, _ = NewCSPWithDirectives(nil)
 
 	HANDLER_DISABLED_ARGS = []bool{true, true}
 )
@@ -399,7 +396,7 @@ loop:
 
 			//TODO: use matching instead of equality
 			if contentType == core.HTML_CTYPE {
-				rw.AddHeader(state.Ctx, dom_ns.CSP_HEADER_NAME, core.Str(server.defaultCSP.String()))
+				rw.AddHeader(state.Ctx, CSP_HEADER_NAME, core.Str(server.defaultCSP.String()))
 			}
 
 			rw.WriteContentType(contentType)
@@ -407,7 +404,7 @@ loop:
 		case core.Renderable:
 
 			if !v.IsRecursivelyRenderable(state.Ctx, renderingConfig) { // get or create view
-				logger.Print("result is not renderable, attempt to get .view() for", req.Path)
+				logger.Print("result is not recursively renderable, attempt to get .view() for", req.Path)
 
 				model, ok := v.(*core.Object)
 				if !ok {
@@ -427,18 +424,36 @@ loop:
 				}
 
 				//TODO: pause parallel identical requests then give them the created view
-				view, ok := getOrCreateView(model, h)
-				if ok {
-					value = view //attempt to render with view as value
-					continue
+
+				properties := model.PropertyNames(state.Ctx)
+				var renderFn core.Value
+				for _, p := range properties {
+					if p == "render" {
+						renderFn = model.Prop(state.Ctx, "render")
+					}
 				}
 
-				if streamable, ok := v.(core.StreamSource); ok {
-					value = streamable
-					continue
+				fn, ok := renderFn.(*core.InoxFunction)
+				if !ok {
+					if streamable, ok := v.(core.StreamSource); ok {
+						value = streamable
+						continue
+					}
+
+					rw.writeStatus(http.StatusNotFound)
+					break loop
 				}
 
-				break loop
+				result, err := fn.Call(state, model, nil, nil)
+				if err != nil {
+					logger.Print("failed to create new view(): ", err.Error())
+					rw.writeStatus(http.StatusInternalServerError)
+					return
+				} else {
+					//TODO: prevent recursion
+					value = result
+					continue
+				}
 			} else {
 				if req.Method != "GET" {
 					rw.writeStatus(http.StatusMethodNotAllowed)
@@ -451,74 +466,12 @@ loop:
 				}
 
 				rw.WriteContentType(core.HTML_CTYPE)
-				rw.AddHeader(state.Ctx, dom_ns.CSP_HEADER_NAME, core.Str(server.defaultCSP.String()))
+				rw.AddHeader(state.Ctx, CSP_HEADER_NAME, core.Str(server.defaultCSP.String()))
 
 				_, err := core.Render(state.Ctx, rw.BodyWriter(), v, renderingConfig)
 				if err != nil {
 					logger.Print(err.Error())
 				}
-			}
-		case *dom_ns.View:
-			view := v
-			switch req.Method {
-			case "GET":
-				switch {
-				case req.ParsedAcceptHeader.Match(core.HTML_CTYPE):
-					rw.WriteContentType(core.HTML_CTYPE)
-					rw.AddHeader(state.Ctx, dom_ns.CSP_HEADER_NAME, core.Str(server.defaultCSP.String()))
-
-					_, err := v.Node().Render(state.Ctx, rw.BodyWriter(), renderingConfig)
-					if err != nil {
-						logger.Print(err.Error())
-					}
-
-				case req.ParsedAcceptHeader.Match(core.EVENT_STREAM_CTYPE):
-
-					if err := pushViewUpdates(v, h); err != nil {
-						logger.Print(err)
-						rw.writeStatus(http.StatusInternalServerError)
-						return
-					}
-				default:
-					rw.writeStatus(http.StatusNotAcceptable)
-					return
-				}
-			case "PATCH":
-				if !req.ContentType.MatchText(DOM_EVENT_CTYPE) {
-					rw.writeStatus(http.StatusBadRequest)
-					return
-				}
-
-				bytes, err := req.Body.ReadAllBytes()
-				if err != nil {
-					logger.Print(err)
-					rw.writeStatus(http.StatusBadRequest)
-					return
-				}
-
-				var unmarshalled any
-
-				if err := json.Unmarshal(bytes, &unmarshalled); err != nil {
-					logger.Print("failed ton parse DOM event:", err)
-					rw.writeStatus(http.StatusBadRequest)
-					return
-				}
-
-				data := core.ConvertJSONValToInoxVal(state.Ctx, unmarshalled, true)
-				eventData, ok := data.(*core.Record)
-				if !ok {
-					logger.Print("DOM event data should be a record")
-					rw.writeStatus(http.StatusBadRequest)
-					return
-				} else {
-					logger.Print("dom event received")
-				}
-
-				view.SendDOMEventToForwader(state.Ctx, eventData, time.Now())
-				return
-			default:
-				rw.writeStatus(http.StatusMethodNotAllowed)
-				return
 			}
 		case core.StreamSource, core.ReadableStream:
 
@@ -554,64 +507,4 @@ loop:
 		}
 		break
 	}
-}
-
-func getOrCreateView(model *core.Object, args handlingArguments) (view *dom_ns.View, viewOk bool) {
-	req := args.req
-	rw := args.rw
-	state := args.state
-	logger := args.logger
-
-	renderFn := model.Prop(state.Ctx, "render")
-
-	sessionView, found, set := req.Session.GetOrSetView(state.Ctx, req.Path, func() *dom_ns.View {
-
-		if renderFn == nil {
-			rw.writeStatus(http.StatusNotFound)
-			return nil
-		}
-
-		fn, ok := renderFn.(*core.InoxFunction)
-		if !ok {
-			rw.writeStatus(http.StatusNotFound)
-			return nil
-		}
-
-		html, err := fn.Call(state, model, nil, nil)
-		if err != nil {
-			logger.Print("failed to create new view(): ", err.Error())
-			rw.writeStatus(http.StatusInternalServerError)
-		} else {
-			//TODO: check if is error like result
-
-			switch h := html.(type) {
-			case *dom_ns.Node:
-				view = dom_ns.NewView(state.Ctx, req.Path, model, h)
-				state.ProposeSystemGraph(h, fmt.Sprintf("root node for view of %s", req.Path))
-				viewOk = true
-				state.Ctx.PromoteToLongLived()
-				return view
-			default:
-				rw.writeStatus(http.StatusNotAcceptable)
-			}
-		}
-
-		return nil
-	})
-
-	if found && sessionView.ModelIs(state.Ctx, model) {
-		logger.Print("view found in session for", req.Path)
-		view = sessionView
-		viewOk = true
-		return
-	}
-
-	if set {
-		logger.Print("new view created for", req.Path)
-		view = sessionView
-		viewOk = true
-		return
-	}
-
-	return nil, false
 }

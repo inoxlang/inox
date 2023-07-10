@@ -23,3 +23,7 @@ func (c *HttpClient) IsMutable() bool {
 func (*ServerSentEventSource) IsMutable() bool {
 	return true
 }
+
+func (*ContentSecurityPolicy) IsMutable() bool {
+	return false
+}

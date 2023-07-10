@@ -16,7 +16,6 @@ import (
 	"time"
 
 	core "github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/dom_ns"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
 	"github.com/inoxlang/inox/internal/permkind"
@@ -411,7 +410,6 @@ func setupAdvancedTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalS
 	}
 
 	state := core.NewGlobalState(ctx, map[string]core.Value{
-		"dom":   core.ValOf(dom_ns.NewDomNamespace()),
 		"html":  core.ValOf(html_ns.NewHTMLNamespace()),
 		"sleep": core.WrapGoFunction(core.Sleep),
 		"torstream": core.WrapGoFunction(func(ctx *core.Context, v core.Value) core.ReadableStream {

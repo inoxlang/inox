@@ -8,9 +8,6 @@ import (
 	"sync"
 
 	cmap "github.com/orcaman/concurrent-map/v2"
-
-	core "github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/dom_ns"
 )
 
 const (
@@ -30,48 +27,7 @@ var (
 type Session struct {
 	Id     string
 	lock   sync.Mutex
-	views  map[core.ResourceName]*dom_ns.View
 	server *HttpServer
-}
-
-func (s *Session) GetView(ctx *core.Context, r core.ResourceName) (*dom_ns.View, bool) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	if s.views == nil {
-		return nil, false
-	}
-	v, ok := s.views[r]
-	return v, ok
-}
-
-func (s *Session) SetView(ctx *core.Context, r core.ResourceName, v *dom_ns.View) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	if s.views == nil {
-		s.views = map[core.ResourceName]*dom_ns.View{}
-	}
-	s.views[r] = v
-}
-
-func (s *Session) GetOrSetView(
-	ctx *core.Context, r core.ResourceName, fn func() *dom_ns.View,
-) (view *dom_ns.View, found bool, set bool) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	if s.views == nil {
-		s.views = map[core.ResourceName]*dom_ns.View{}
-	}
-	v, ok := s.views[r]
-	if ok {
-		return v, true, false
-	}
-
-	v = fn()
-	if v == nil {
-		return v, false, false
-	}
-	s.views[r] = v
-	return v, false, true
 }
 
 func getSession(req *http.Request) (*Session, error) {

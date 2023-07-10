@@ -1,4 +1,4 @@
-package dom_ns
+package http_ns
 
 import (
 	"bufio"
