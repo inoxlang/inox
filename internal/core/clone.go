@@ -808,6 +808,10 @@ func (t Type) Clone(clones map[uintptr]map[int]Value) (Value, error) {
 	return nil, ErrNotClonable
 }
 
+func (j *LifetimeJob) Clone(clones map[uintptr]map[int]Value) (Value, error) {
+	return j, nil
+}
+
 func (m *Mapping) Clone(clones map[uintptr]map[int]Value) (Value, error) {
 	return nil, ErrNotClonable
 }

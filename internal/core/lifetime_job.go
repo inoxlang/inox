@@ -28,8 +28,6 @@ type LifetimeJob struct {
 	module         *Module // module executed when running the job
 	parentModule   *Module
 	subjectPattern Pattern
-
-	NotClonableMixin
 }
 
 type LifetimeJobInstance struct {
@@ -39,7 +37,7 @@ type LifetimeJobInstance struct {
 
 func NewLifetimeJob(meta Value, subjectPattern Pattern, mod *Module, parentState *GlobalState) (*LifetimeJob, error) {
 	return &LifetimeJob{
-		meta:           meta,
+		meta:           utils.Must(meta.Clone(map[uintptr]map[int]Value{})),
 		module:         mod,
 		subjectPattern: subjectPattern,
 		parentModule:   parentState.Module,
