@@ -28,17 +28,17 @@ func NewNamespace(entries map[string]SymbolicValue) *Namespace {
 	return &Namespace{entries: entries}
 }
 
-func (rec *Namespace) Test(v SymbolicValue) bool {
+func (ns *Namespace) Test(v SymbolicValue) bool {
 	otherNs, ok := v.(*Namespace)
 	if !ok {
 		return false
 	}
 
-	if rec.entries == nil {
+	if ns.entries == nil {
 		return true
 	}
 
-	for k, e := range rec.entries {
+	for k, e := range ns.entries {
 		other, ok := otherNs.entries[k]
 
 		if !ok || !e.Test(other) {
@@ -49,27 +49,27 @@ func (rec *Namespace) Test(v SymbolicValue) bool {
 	return true
 }
 
-func (rec *Namespace) Prop(name string) SymbolicValue {
-	v, ok := rec.entries[name]
+func (ns *Namespace) Prop(name string) SymbolicValue {
+	v, ok := ns.entries[name]
 	if !ok {
 		panic(fmt.Errorf("Namespace does not have a .%s property", name))
 	}
 	return v
 }
 
-func (rec *Namespace) PropertyNames() []string {
-	return utils.GetMapKeys(rec.entries)
+func (ns *Namespace) PropertyNames() []string {
+	return utils.GetMapKeys(ns.entries)
 }
 
-func (rec *Namespace) Widen() (SymbolicValue, bool) {
-	if rec.entries == nil {
+func (ns *Namespace) Widen() (SymbolicValue, bool) {
+	if ns.entries == nil {
 		return nil, false
 	}
 
 	widenedEntries := map[string]SymbolicValue{}
 	allAlreadyWidened := true
 
-	for k, v := range rec.entries {
+	for k, v := range ns.entries {
 		widened, ok := v.Widen()
 		if ok {
 			allAlreadyWidened = false
@@ -85,13 +85,13 @@ func (rec *Namespace) Widen() (SymbolicValue, bool) {
 	return &Namespace{entries: widenedEntries}, true
 }
 
-func (rec *Namespace) IsWidenable() bool {
-	return rec.entries != nil
+func (ns *Namespace) IsWidenable() bool {
+	return ns.entries != nil
 }
 
-func (rec *Namespace) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	if rec.entries != nil {
-		if depth > config.MaxDepth && len(rec.entries) > 0 {
+func (ns *Namespace) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	if ns.entries != nil {
+		if depth > config.MaxDepth && len(ns.entries) > 0 {
 			utils.Must(w.Write(utils.StringAsBytes("(..namespace..)")))
 			return
 		}
@@ -101,7 +101,7 @@ func (rec *Namespace) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 
 		utils.Must(w.Write(utils.StringAsBytes("namespace{")))
 
-		keys := utils.GetMapKeys(rec.entries)
+		keys := utils.GetMapKeys(ns.entries)
 		sort.Strings(keys)
 
 		for i, k := range keys {
@@ -125,7 +125,7 @@ func (rec *Namespace) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 			utils.Must(w.Write(COLON_SPACE))
 
 			//value
-			v := rec.entries[k]
+			v := ns.entries[k]
 			v.PrettyPrint(w, config, depth+1, indentCount)
 
 			//comma & indent
@@ -146,6 +146,6 @@ func (rec *Namespace) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 	utils.Must(w.Write(utils.StringAsBytes("%namespace")))
 }
 
-func (r *Namespace) WidestOfType() SymbolicValue {
+func (ns *Namespace) WidestOfType() SymbolicValue {
 	return ANY_REC
 }

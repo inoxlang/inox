@@ -3111,16 +3111,16 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			return nil, err
 		}
 
-		record, ok := namespace.(*Record)
+		ns, ok := namespace.(*Namespace)
 		if !ok {
 			state.addError(makeSymbolicEvalError(n.Namespace, state, NAMESPACE_APPLIED_TO_XML_ELEMENT_SHOUD_BE_A_RECORD))
 			return ANY, nil
 		} else {
-			if !record.hasProperty(FROM_XML_FACTORY_NAME) {
+			if _, ok := ns.entries[FROM_XML_FACTORY_NAME]; !ok {
 				state.addError(makeSymbolicEvalError(n.Namespace, state, MISSING_FACTORY_IN_NAMESPACE_APPLIED_TO_XML_ELEMENT))
 				return ANY, nil
 			}
-			factory := record.Prop(FROM_XML_FACTORY_NAME)
+			factory := ns.Prop(FROM_XML_FACTORY_NAME)
 			goFn, ok := factory.(*GoFunction)
 			if !ok {
 				state.addError(makeSymbolicEvalError(n.Namespace, state, FROM_XML_FACTORY_IS_NOT_A_GO_FUNCTION))

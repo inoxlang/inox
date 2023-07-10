@@ -5490,7 +5490,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("namespace has not the property for the factory", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`html<div></div>`)
-			state.setGlobal("html", NewRecord(map[string]SymbolicValue{}), GlobalConst)
+			state.setGlobal("html", NewNamespace(map[string]SymbolicValue{}), GlobalConst)
 			res, err := symbolicEval(n, state)
 
 			namespaceIdent := n.Statements[0].(*parse.XMLExpression).Namespace
@@ -5504,7 +5504,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("namespace's factory has not the right type", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`html<div></div>`)
-			state.setGlobal("html", NewRecord(map[string]SymbolicValue{
+			state.setGlobal("html", NewNamespace(map[string]SymbolicValue{
 				FROM_XML_FACTORY_NAME: Nil,
 			}), GlobalConst)
 			res, err := symbolicEval(n, state)
@@ -5520,7 +5520,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("namespace's factory has not the right signature", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`html<div></div>`)
-			state.setGlobal("html", NewRecord(map[string]SymbolicValue{
+			state.setGlobal("html", NewNamespace(map[string]SymbolicValue{
 				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context) *Object {
 					return NewEmptyObject()
 				}),
@@ -5538,7 +5538,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("namespace's factory is valid", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`html<div></div>`)
-			state.setGlobal("html", NewRecord(map[string]SymbolicValue{
+			state.setGlobal("html", NewNamespace(map[string]SymbolicValue{
 				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *XMLElement) *Identifier {
 					return &Identifier{name: elem.name}
 				}),
@@ -5552,7 +5552,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("self-closing element", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`html<div/>`)
-			state.setGlobal("html", NewRecord(map[string]SymbolicValue{
+			state.setGlobal("html", NewNamespace(map[string]SymbolicValue{
 				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *XMLElement) *Identifier {
 					return &Identifier{name: elem.name}
 				}),
@@ -5566,7 +5566,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("interpolation", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`html<div>{1}</div>`)
-			state.setGlobal("html", NewRecord(map[string]SymbolicValue{
+			state.setGlobal("html", NewNamespace(map[string]SymbolicValue{
 				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *XMLElement) *XMLElement {
 					return elem
 				}),
@@ -5583,7 +5583,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("attribute with value", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`a = "a"; return html<div a=a></div>`)
-			state.setGlobal("html", NewRecord(map[string]SymbolicValue{
+			state.setGlobal("html", NewNamespace(map[string]SymbolicValue{
 				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *XMLElement) *XMLElement {
 					return elem
 				}),
@@ -5601,7 +5601,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("attribute without value", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`a = "a"; return html<div a></div>`)
-			state.setGlobal("html", NewRecord(map[string]SymbolicValue{
+			state.setGlobal("html", NewNamespace(map[string]SymbolicValue{
 				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *XMLElement) *XMLElement {
 					return elem
 				}),
