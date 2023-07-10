@@ -36,8 +36,9 @@ const (
 	INVALID_QUANTITY = "invalid quantity"
 
 	//spawn expression
-	INVALID_SPAWN_EXPR_EXPR_SHOULD_BE_ONE_OF = "invalid spawn expression: the expression should be a simple function call or an embedded module (that can be global)"
-	INVALID_SPAWN_GLOBALS_SHOULD_BE          = "invalid spawn expression: the description of globals should be a key list literal or an object literal"
+	INVALID_SPAWN_EXPR_EXPR_SHOULD_BE_ONE_OF                             = "invalid spawn expression: the expression should be a simple function call or an embedded module (that can be global)"
+	INVALID_SPAWN_GLOBALS_SHOULD_BE                                      = "invalid spawn expression: the description of globals should be a key list literal or an object literal"
+	INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED = "invalid spawn expression: only object literals (with no spread elements) are supported for meta's value"
 
 	INVALID_ASSIGNMENT_ANONYMOUS_VAR_CANNOT_BE_ASSIGNED            = "invalid assignment: anonymous variable '$' cannot be assigned"
 	INVALID_FN_DECL_SHOULD_BE_TOP_LEVEL_STMT                       = "invalid function declaration: a function declaration should be a top level statement in a module (embedded or not)"

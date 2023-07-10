@@ -704,6 +704,32 @@ func TestCheck(t *testing.T) {
 			}))
 		})
 
+		t.Run("meta should be an object", func(t *testing.T) {
+			n, src := parseCode(`go true do {
+				return 1
+			}`)
+
+			boolLit := parse.FindNode(n, (*parse.BooleanLiteral)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := combineErrors(
+				makeError(boolLit, src, INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("meta should be an object with no spread elements", func(t *testing.T) {
+			n, src := parseCode(`obj = {a: 1}; go {...$obj.{a}} do {
+				return 1
+			}`)
+
+			objLits := parse.FindNodes(n, (*parse.ObjectLiteral)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := combineErrors(
+				makeError(objLits[1], src, INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
 		t.Run("no additional provided globals", func(t *testing.T) {
 			n, src := parseCode(`go {} do {
 				return a

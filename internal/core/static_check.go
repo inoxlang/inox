@@ -614,12 +614,16 @@ switch_:
 
 		// add globals passed by user
 		if obj, ok := node.Meta.(*parse.ObjectLiteral); ok {
+			if len(obj.SpreadElements) > 0 {
+				c.addError(node.Meta, INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED)
+			}
+
 			val, ok := obj.PropValue("globals")
 			if ok {
 				globalDescNode = val
 			}
 		} else if node.Meta != nil {
-			c.addError(node.Meta, "only object literals are supported as meta's value")
+			c.addError(node.Meta, INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED)
 		}
 
 		switch desc := globalDescNode.(type) {

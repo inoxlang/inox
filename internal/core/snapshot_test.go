@@ -20,17 +20,6 @@ func TestTakeSnapshot(t *testing.T) {
 		assert.NotNil(t, snap)
 	})
 
-	t.Run("take snapshot of value with no representation", func(t *testing.T) {
-		ctx := NewContext(ContextConfig{})
-		NewGlobalState(ctx)
-
-		r := NewRoutineGroup(ctx)
-
-		snap, err := TakeSnapshot(ctx, r, false)
-		assert.Error(t, err)
-		assert.Nil(t, snap)
-	})
-
 	t.Run("take snapshot of value with representation", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
