@@ -72,6 +72,8 @@ type Tree struct {
 
 	lock core.SmartLock
 	jobs *core.ValueLifetimeJobs
+
+	core.NotClonableMixin
 }
 
 func NewTree(ctx *core.Context, udata *core.UData, args ...core.Value) *Tree {
@@ -237,6 +239,8 @@ type TreeNode struct {
 	data     core.Value
 	children []*TreeNode // TODO: use pool + make copy on write if tree is shared (see .Prop & tree node + tree iterator)
 	tree     *Tree
+
+	core.NotClonableMixin
 }
 
 func (n *TreeNode) AddChild(ctx *core.Context, childData core.Value) {

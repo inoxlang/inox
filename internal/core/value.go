@@ -30,7 +30,8 @@ type Value interface {
 
 	Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool
 
-	Clone(clones map[uintptr]map[int]Value) (Value, error)
+	//Clone deeply clones the values, immutable values should return themselves.
+	Clone(clones map[uintptr]map[int]Value, depth int) (Value, error)
 
 	//human readable representation
 	PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int)
@@ -226,4 +227,5 @@ type Port struct {
 
 type Type struct {
 	reflect.Type
+	NotClonableMixin
 }

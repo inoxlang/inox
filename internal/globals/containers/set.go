@@ -36,6 +36,8 @@ type Set struct {
 	storage core.SerializedValueStorage //nillable
 	url     core.URL                    //set if .storage set
 	path    core.Path
+
+	core.NotClonableMixin
 }
 
 func NewSet(ctx *core.Context, elements core.Iterable, configObject ...*core.Object) *Set {

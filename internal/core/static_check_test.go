@@ -2597,6 +2597,6 @@ func (user testMutableGoValue) GetNameNoCtx() Str {
 	return Str(user.Name)
 }
 
-func (user testMutableGoValue) Clone(clones map[uintptr]map[int]Value) (Value, error) {
+func (user testMutableGoValue) Clone(clones map[uintptr]map[int]Value, depth int) (Value, error) {
 	return nil, ErrNotClonable
 }

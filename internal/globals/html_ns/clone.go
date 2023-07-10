@@ -8,7 +8,11 @@ import (
 	"golang.org/x/net/html"
 )
 
-func (n *HTMLNode) Clone(clones map[uintptr]map[int]core.Value) (core.Value, error) {
+func (n *HTMLNode) Clone(clones map[uintptr]map[int]core.Value, depth int) (core.Value, error) {
+	if depth > core.MAX_CLONING_DEPTH {
+		return nil, core.ErrMaximumCloningDepthReached
+	}
+
 	ptr := reflect.ValueOf(n).Pointer()
 
 	if obj, ok := clones[ptr][0]; ok {

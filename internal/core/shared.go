@@ -32,7 +32,7 @@ func ShareOrClone(v Value, originState *GlobalState) (Value, error) {
 		s.Share(originState)
 		return v, nil
 	}
-	return v.Clone(map[uintptr]map[int]Value{})
+	return v.Clone(map[uintptr]map[int]Value{}, 0)
 }
 
 func Share[T PotentiallySharable](v T, originState *GlobalState) T {

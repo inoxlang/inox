@@ -410,7 +410,7 @@ func (patt *SequenceStringPattern) Call(values []Serializable) (Pattern, error) 
 		return nil, err
 	}
 
-	clone, err := patt.Clone(map[uintptr]map[int]Value{})
+	clone, err := patt.Clone(map[uintptr]map[int]Value{}, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -1415,7 +1415,7 @@ func (patt *RegexPattern) Call(values []Serializable) (Pattern, error) {
 		return nil, err
 	}
 
-	clone, err := patt.Clone(map[uintptr]map[int]Value{})
+	clone, err := patt.Clone(map[uintptr]map[int]Value{}, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -1574,7 +1574,7 @@ func (patt *PathStringPattern) Call(values []Serializable) (Pattern, error) {
 		return nil, err
 	}
 
-	newPattern, err := patt.Clone(map[uintptr]map[int]Value{})
+	newPattern, err := patt.Clone(map[uintptr]map[int]Value{}, 0)
 	if err != nil {
 		return nil, err
 	}

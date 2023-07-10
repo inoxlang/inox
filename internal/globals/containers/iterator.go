@@ -10,6 +10,8 @@ type CollectionIterator struct {
 	next    func(*CollectionIterator, *core.Context) bool
 	key     func(*CollectionIterator, *core.Context) core.Value
 	value   func(*CollectionIterator, *core.Context) core.Value
+
+	core.NotClonableMixin
 }
 
 func (it *CollectionIterator) HasNext(ctx *core.Context) bool {
@@ -211,6 +213,8 @@ type TreeIterator struct {
 	childIndex    int
 	i             int
 	childIterator *TreeIterator
+
+	core.NotClonableMixin
 }
 
 func (it TreeIterator) HasNext(ctx *core.Context) bool {

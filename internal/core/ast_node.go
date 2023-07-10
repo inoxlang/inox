@@ -15,6 +15,8 @@ var (
 type AstNode struct {
 	Node  parse.Node
 	chunk *parse.ParsedChunk
+
+	NotClonableMixin
 }
 
 func (AstNode) PropertyNames(ctx *Context) []string {

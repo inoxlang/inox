@@ -10,6 +10,7 @@ type Thread struct {
 	elements []threadElement
 	//finite
 
+	core.NotClonableMixin
 }
 
 func NewThread(ctx *core.Context, elements core.Iterable) *Thread {

@@ -275,7 +275,7 @@ type moduleParameter struct {
 
 func (p moduleParameter) DefaultValue() (Value, bool) {
 	if p.defaultVal != nil {
-		return utils.Must(p.defaultVal.Clone(map[uintptr]map[int]Value{})), true
+		return utils.Must(p.defaultVal.Clone(map[uintptr]map[int]Value{}, 0)), true
 	}
 	if p.pattern == BOOL_PATTERN {
 		return False, true

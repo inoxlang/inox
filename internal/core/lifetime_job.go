@@ -37,7 +37,7 @@ type LifetimeJobInstance struct {
 
 func NewLifetimeJob(meta Value, subjectPattern Pattern, mod *Module, parentState *GlobalState) (*LifetimeJob, error) {
 	return &LifetimeJob{
-		meta:           utils.Must(meta.Clone(map[uintptr]map[int]Value{})),
+		meta:           utils.Must(meta.Clone(map[uintptr]map[int]Value{}, 0)),
 		module:         mod,
 		subjectPattern: subjectPattern,
 		parentModule:   parentState.Module,
