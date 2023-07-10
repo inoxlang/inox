@@ -681,13 +681,13 @@ func (ctx *Context) GetForbiddenPermissions() []Permission {
 }
 
 // ResolveHostAlias returns the Host associated with the passed alias name, if the alias does not exist nil is returned.
-func (ctx *Context) ResolveHostAlias(alias string) Value {
+func (ctx *Context) ResolveHostAlias(alias string) Host {
 	ctx.lock.RLock()
 	defer ctx.lock.RUnlock()
 
 	host, ok := ctx.hostAliases[alias]
 	if !ok {
-		return nil
+		return ""
 	}
 	return host
 }

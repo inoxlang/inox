@@ -893,6 +893,10 @@ func (f *InoxFunction) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream,
 	return ErrNotImplementedYet
 }
 
+func (m *Mapping) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+	return ErrNotImplementedYet
+}
+
 func (n AstNode) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
 	return ErrNotImplementedYet
 }

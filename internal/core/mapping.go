@@ -10,10 +10,10 @@ import (
 
 type Mapping struct {
 	//key representation (pattern or value) => key
-	keys map[string]Value
+	keys map[string]Serializable
 
 	//key representation (pattern or value) => value
-	preComputedStaticEntryValues map[string]Value
+	preComputedStaticEntryValues map[string]Serializable
 
 	//key representation (pattern or value) => value
 	staticEntries map[string]*parse.StaticMappingEntry
@@ -36,9 +36,9 @@ type Mapping struct {
 func NewMapping(expr *parse.MappingExpression, state *GlobalState) (*Mapping, error) {
 
 	mapping := &Mapping{
-		keys:                         map[string]Value{},
+		keys:                         map[string]Serializable{},
 		dynamicEntries:               map[string]*parse.DynamicMappingEntry{},
-		preComputedStaticEntryValues: map[string]Value{},
+		preComputedStaticEntryValues: map[string]Serializable{},
 		patterns: []struct {
 			string
 			Pattern
@@ -70,7 +70,7 @@ func NewMapping(expr *parse.MappingExpression, state *GlobalState) (*Mapping, er
 			}
 
 			repr := string(GetRepresentation(key.(Serializable), state.Ctx))
-			mapping.keys[repr] = key
+			mapping.keys[repr] = key.(Serializable)
 
 			if valueLit, ok := e.Value.(parse.SimpleValueLiteral); ok && !parse.NodeIs(valueLit, (*parse.IdentifierLiteral)(nil)) {
 				v, err := evalSimpleValueLiteral(valueLit, state)
@@ -108,7 +108,7 @@ func NewMapping(expr *parse.MappingExpression, state *GlobalState) (*Mapping, er
 			}
 
 			repr := string(GetRepresentation(key.(Serializable), state.Ctx))
-			mapping.keys[repr] = key
+			mapping.keys[repr] = key.(Serializable)
 			mapping.dynamicEntries[repr] = e
 
 			if patt, ok := key.(Pattern); ok {

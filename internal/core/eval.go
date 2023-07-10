@@ -250,7 +250,7 @@ func resolvePattern(n parse.Node, state *GlobalState) (Value, error) {
 }
 
 // evalSimpleValueLiteral evalutes a SimpleValueLiteral node (except IdentifierLiteral because it is ambiguous)
-func evalSimpleValueLiteral(n parse.SimpleValueLiteral, global *GlobalState) (Value, error) {
+func evalSimpleValueLiteral(n parse.SimpleValueLiteral, global *GlobalState) (Serializable, error) {
 	switch node := n.(type) {
 	case *parse.UnambiguousIdentifierLiteral:
 		return Identifier(node.Name), nil
@@ -284,7 +284,7 @@ func evalSimpleValueLiteral(n parse.SimpleValueLiteral, global *GlobalState) (Va
 		return EmailAddress(node.Value), nil
 	case *parse.AtHostLiteral:
 		res := global.Ctx.ResolveHostAlias(node.Value[1:])
-		if res == nil {
+		if res == "" {
 			return nil, fmt.Errorf("host alias '%s' is not defined", node.Value)
 		}
 		return res, nil

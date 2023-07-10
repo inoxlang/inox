@@ -1334,6 +1334,10 @@ func (f *InoxFunction) WriteRepresentation(ctx *Context, w io.Writer, config *Re
 	return ErrNotImplementedYet
 }
 
+func (m *Mapping) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+	return ErrNotImplementedYet
+}
+
 func (n AstNode) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
 	return ErrNotImplementedYet
 }
