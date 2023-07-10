@@ -1540,8 +1540,8 @@ func (v *VM) run() {
 		case OpCallFromXMLFactory:
 			xmlElem := v.stack[v.sp-2].(*XMLElement)
 
-			namespace := v.stack[v.sp-1].(*Record)
-			factory := namespace.Prop(v.global.Ctx, symbolic.FROM_XML_FACTORY_NAME).(*GoFunction)
+			ns := v.stack[v.sp-1].(*Namespace)
+			factory := ns.Prop(v.global.Ctx, symbolic.FROM_XML_FACTORY_NAME).(*GoFunction)
 
 			v.sp--
 

@@ -9,7 +9,6 @@ import (
 	"github.com/inoxlang/inox/internal/default_state"
 	"github.com/inoxlang/inox/internal/globals/chrome_ns"
 	"github.com/inoxlang/inox/internal/globals/containers"
-	"github.com/inoxlang/inox/internal/globals/dom_ns"
 	"github.com/inoxlang/inox/internal/globals/env_ns"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/help_ns"
@@ -122,7 +121,6 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 		"localdb":  local_db_ns.NewLocalDbNamespace(),
 		"env":      envNamespace,
 		"html":     html_ns.NewHTMLNamespace(),
-		"dom":      dom_ns.NewDomNamespace(),
 		"inox":     inox_ns.NewInoxNamespace(),
 		"inoxsh":   inoxsh_ns.NewInoxshNamespace(),
 		"inoxlsp":  inoxlsp_ns.NewInoxLspNamespace(),

@@ -2532,8 +2532,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return nil, err
 		}
 
-		record := namespace.(*Record)
-		factory := record.Prop(state.Global.Ctx, symbolic.FROM_XML_FACTORY_NAME).(*GoFunction)
+		ns := namespace.(*Namespace)
+		factory := ns.Prop(state.Global.Ctx, symbolic.FROM_XML_FACTORY_NAME).(*GoFunction)
 
 		return factory.Call([]any{xmlElem}, state.Global, nil, false, false)
 	case *parse.XMLElement:
