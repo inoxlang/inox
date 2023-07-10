@@ -2650,14 +2650,14 @@ func TreeWalkCallFunc(call TreeWalkCall) (Value, error) {
 			if spreadArg, ok := argn.(*parse.SpreadArgument); ok {
 				hasSpreadArg = true
 
-				list, err := TreeWalkEval(spreadArg.Expr, state)
+				array, err := TreeWalkEval(spreadArg.Expr, state)
 				if err != nil {
 					return nil, err
 				}
 
-				l := list.(*List)
+				a := array.(*Array)
 
-				for _, e := range l.GetOrBuildElements(state.Global.Ctx) {
+				for _, e := range *a {
 					//same logic for non spread arguments
 					if isSharedFunction {
 						shared, err := ShareOrClone(e, state.Global)

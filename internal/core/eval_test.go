@@ -4497,8 +4497,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, &Mapping{
-				keys:                         map[string]Value{},
-				preComputedStaticEntryValues: map[string]Value{},
+				keys:                         map[string]Serializable{},
+				preComputedStaticEntryValues: map[string]Serializable{},
 				dynamicEntries:               map[string]*parse.DynamicMappingEntry{},
 				patterns: []struct {
 					string
@@ -4523,12 +4523,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, &Mapping{
-				keys: map[string]Value{
+				keys: map[string]Serializable{
 					"0": Int(0),
 					"1": Int(1),
 					"2": Int(2),
 				},
-				preComputedStaticEntryValues: map[string]Value{
+				preComputedStaticEntryValues: map[string]Serializable{
 					"0": Int(1),
 				},
 				staticEntries: map[string]*parse.StaticMappingEntry{
@@ -4555,11 +4555,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, &Mapping{
-				keys: map[string]Value{
+				keys: map[string]Serializable{
 					"%str": STR_PATTERN,
 					"%int": INT_PATTERN,
 				},
-				preComputedStaticEntryValues: map[string]Value{
+				preComputedStaticEntryValues: map[string]Serializable{
 					"%str": Int(1),
 				},
 				dynamicEntries: map[string]*parse.DynamicMappingEntry{

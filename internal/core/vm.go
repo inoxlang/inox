@@ -2188,9 +2188,9 @@ func (v *VM) fnCall(numArgs int, spread, must bool) bool {
 	//get rid of callee & object
 	v.sp -= 2
 
-	var spreadArg *List
+	var spreadArg *Array
 	if spread {
-		spreadArg = v.stack[v.sp-1].(*List)
+		spreadArg = v.stack[v.sp-1].(*Array)
 		v.sp--
 	}
 
@@ -2217,7 +2217,7 @@ func (v *VM) fnCall(numArgs int, spread, must bool) bool {
 					v.err = fmt.Errorf("failed to share an element of a spread argument: %T: %w", elem, err)
 					return false
 				}
-				spreadArg.set(v.global.Ctx, i, shared)
+				(*spreadArg)[i] = shared
 			}
 		}
 	}
@@ -2236,7 +2236,7 @@ func (v *VM) fnCall(numArgs int, spread, must bool) bool {
 					args[i-spStart] = v.stack[i]
 				}
 				if spreadArg != nil {
-					for _, e := range spreadArg.GetOrBuildElements(v.global.Ctx) {
+					for _, e := range *spreadArg {
 						args = append(args, e)
 					}
 				}
@@ -2312,7 +2312,7 @@ func (v *VM) fnCall(numArgs int, spread, must bool) bool {
 			args = append(args, arg)
 		}
 		if spreadArg != nil {
-			for _, arg := range spreadArg.GetOrBuildElements(v.global.Ctx) {
+			for _, arg := range *spreadArg {
 				args = append(args, arg)
 			}
 		}
