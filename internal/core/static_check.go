@@ -618,6 +618,12 @@ switch_:
 				c.addError(node.Meta, INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED)
 			}
 
+			for _, prop := range obj.Properties {
+				if prop.HasImplicitKey() {
+					c.addError(node.Meta, INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED)
+				}
+			}
+
 			val, ok := obj.PropValue("globals")
 			if ok {
 				globalDescNode = val

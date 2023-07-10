@@ -730,6 +730,19 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
+		t.Run("meta should be an object with no implicit-key properties", func(t *testing.T) {
+			n, src := parseCode(`go {1} do {
+				return 1
+			}`)
+
+			objLit := parse.FindNode(n, (*parse.ObjectLiteral)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := combineErrors(
+				makeError(objLit, src, INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
 		t.Run("no additional provided globals", func(t *testing.T) {
 			n, src := parseCode(`go {} do {
 				return a
