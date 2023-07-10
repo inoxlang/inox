@@ -13,6 +13,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/oklog/ulid/v2"
 )
 
 type CompilationInput struct {
@@ -1566,9 +1567,26 @@ func (c *compiler) Compile(node parse.Node) error {
 		c.emit(node, OpImport, c.addConstant(Str(node.Identifier.Name)))
 	case *parse.SpawnExpression:
 		if node.Meta != nil {
-			if err := c.Compile(node.Meta); err != nil {
-				return err
+			objLit := node.Meta.(*parse.ObjectLiteral)
+			//we handle this case separately because objects cannot contain non-serializable values.
+
+			var keys []string
+			var types []Pattern
+
+			for _, property := range objLit.Properties {
+				propertyName := property.Name() //okay since implicit-key properties are not allowed
+				keys = append(keys, propertyName)
+				types = append(types, ANYVAL_PATTERN)
+
+				if err := c.Compile(property.Value); err != nil {
+					return err
+				}
 			}
+
+			anonStructType := NewStructPattern("", ulid.Make(), keys, types)
+			propCount := len(objLit.Properties)
+
+			c.emit(node.Meta, OpCreateStruct, c.addConstant(anonStructType), propCount)
 		} else {
 			c.emit(node, OpPushNil)
 		}

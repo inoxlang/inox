@@ -998,10 +998,20 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		)
 
 		if n.Meta != nil {
-			meta, err := TreeWalkEval(n.Meta, state)
-			if err != nil {
-				return nil, err
+			meta := map[string]Value{}
+			if objLit, ok := n.Meta.(*parse.ObjectLiteral); ok {
+				for _, property := range objLit.Properties {
+					propertyName := property.Name() //okay since implicit-key properties are not allowed
+					propertyVal, err := TreeWalkEval(property.Value, state)
+					if err != nil {
+						return nil, err
+					}
+					meta[propertyName] = propertyVal
+				}
+			} else {
+				return nil, errors.New("meta should be an object")
 			}
+
 			group, globalsDesc, permListing, err = readRoutineMeta(meta, state.Global.Ctx)
 			if err != nil {
 				return nil, err

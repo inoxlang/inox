@@ -890,6 +890,26 @@ func (v *VM) run() {
 			v.sp -= numChildren
 			entry.Value = v.stack[v.sp-1].(Serializable)
 			v.stack[v.sp-1] = entry
+		case OpCreateStruct:
+			v.ip += 3
+			structTypeIndex := int(v.curInsts[v.ip-1]) | int(v.curInsts[v.ip-2])<<8
+			numElements := int(v.curInsts[v.ip])
+
+			structType := v.constants[structTypeIndex].(*StructPattern)
+
+			var values []Value
+			fieldIndex := 0
+			for i := v.sp - numElements; i < v.sp; i += 2 {
+				values[fieldIndex] = v.stack[i+1]
+				fieldIndex++
+			}
+
+			v.sp -= numElements
+			v.stack[v.sp] = &Struct{
+				structType: structType,
+				values:     values,
+			}
+			v.sp++
 		case OpSpreadObject:
 			object := v.stack[v.sp-1].(*Object)
 			spreadObject := v.stack[v.sp-2].(*Object)
@@ -1853,7 +1873,9 @@ func (v *VM) run() {
 			)
 
 			if meta != nil && meta != Nil {
-				group, globalsDesc, permListing, v.err = readRoutineMeta(meta, v.global.Ctx)
+				metaMap := meta.(*Struct).ValueMap()
+
+				group, globalsDesc, permListing, v.err = readRoutineMeta(metaMap, v.global.Ctx)
 				if v.err != nil {
 					return
 				}
@@ -1876,8 +1898,9 @@ func (v *VM) run() {
 			// pass global variables
 
 			switch g := globalsDesc.(type) {
-			case *Object:
-				for k, v := range g.EntryMap() {
+			case *Struct:
+				for i, v := range g.values {
+					k := g.structType.keys[i]
 					actualGlobals[k] = v
 				}
 			case KeyList:

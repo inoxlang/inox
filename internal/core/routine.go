@@ -446,29 +446,23 @@ func Sleep(ctx *Context, d Duration) {
 	}
 }
 
-func readRoutineMeta(meta Value, ctx *Context) (group *RoutineGroup, globalsDesc Value, permListing *Object, err error) {
-	if obj, ok := meta.(*Object); ok {
-		if obj.HasProp(ctx, "group") {
-			val := obj.Prop(ctx, "group")
-			if rtGroup, ok := val.(*RoutineGroup); ok {
-				group = rtGroup
-			} else {
-				return nil, nil, nil, errors.New("<meta>.group should be a routine group")
-			}
+func readRoutineMeta(meta map[string]Value, ctx *Context) (group *RoutineGroup, globalsDesc Value, permListing *Object, err error) {
+	if val, ok := meta["group"]; ok {
+		if rtGroup, ok := val.(*RoutineGroup); ok {
+			group = rtGroup
+		} else {
+			return nil, nil, nil, errors.New("<meta>.group should be a routine group")
 		}
-		if obj.HasProp(ctx, "globals") {
-			globalsDesc = obj.Prop(ctx, "globals")
+	}
+	if val, ok := meta["globals"]; ok {
+		globalsDesc = val
+	}
+	if val, ok := meta["allow"]; ok {
+		if obj, ok := val.(*Object); ok {
+			permListing = obj
+		} else {
+			return nil, nil, nil, errors.New("<meta>.allow should be an object")
 		}
-		if obj.HasProp(ctx, "allow") {
-			val := obj.Prop(ctx, "allow")
-			if obj, ok := val.(*Object); ok {
-				permListing = obj
-			} else {
-				return nil, nil, nil, errors.New("<meta>.allow should be an object")
-			}
-		}
-	} else {
-		return nil, nil, nil, errors.New("<meta should be an object")
 	}
 
 	return

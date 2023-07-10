@@ -99,7 +99,7 @@ func (s *Struct) WidestOfType() SymbolicValue {
 
 // A StructPattern represents a symbolic StructPattern.
 type StructPattern struct {
-	name   string
+	name   string //empty if anonymous
 	tempId ulid.ULID
 	keys   []string //if nil matches any
 	types  []Pattern

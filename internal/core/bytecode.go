@@ -157,6 +157,7 @@ const (
 	OpCreateMapping
 	OpCreateUData
 	OpCreateUdataHiearchyEntry
+	OpCreateStruct
 	OpSpreadObject
 	OpExtractProps
 	OpSpreadList
@@ -277,6 +278,7 @@ var OpcodeNames = [...]string{
 	OpCreateMapping:                "CRT_MPG",
 	OpCreateUData:                  "CRT_UDAT",
 	OpCreateUdataHiearchyEntry:     "CRT_UDHE",
+	OpCreateStruct:                 "CRT_STRUCT",
 	OpSpreadObject:                 "SPREAD_OBJ",
 	OpExtractProps:                 "EXTR_PROPS",
 	OpSpreadList:                   "SPREAD_LST",
@@ -399,6 +401,7 @@ var OpcodeOperands = [...][]int{
 	OpCreateMapping:                {2},
 	OpCreateUData:                  {2},
 	OpCreateUdataHiearchyEntry:     {2},
+	OpCreateStruct:                 {2, 1},
 	OpSpreadObject:                 {},
 	OpExtractProps:                 {2},
 	OpSpreadList:                   {},
@@ -517,6 +520,7 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpCreateMapping:                {true},
 	OpCreateUData:                  {false},
 	OpCreateUdataHiearchyEntry:     {false},
+	OpCreateStruct:                 {true, false},
 	OpSpreadObject:                 {},
 	OpExtractProps:                 {true},
 	OpSpreadList:                   {},

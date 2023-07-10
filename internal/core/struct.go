@@ -38,15 +38,37 @@ func (s *Struct) SetProp(ctx *Context, name string, value Value) error {
 	return nil
 }
 
+func (s *Struct) ValueMap() map[string]Value {
+	valueMap := map[string]Value{}
+	for index, fieldVal := range s.values {
+		valueMap[s.structType.keys[index]] = fieldVal
+	}
+	return valueMap
+}
+
 // A StructPattern represents a struct type, it is nominal.
 type StructPattern struct {
-	name   string
+	name   string //empty if anonymous
 	tempId ulid.ULID
 	keys   []string
 	types  []Pattern
 
 	NotClonableMixin
 	NotCallablePatternMixin
+}
+
+func NewStructPattern(
+	name string,
+	tempId ulid.ULID,
+	keys []string,
+	types []Pattern,
+) *StructPattern {
+	return &StructPattern{
+		name:   name,
+		tempId: tempId,
+		keys:   keys,
+		types:  types,
+	}
 }
 
 func (p *StructPattern) Test(ctx *Context, v Value) bool {
