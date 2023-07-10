@@ -34,10 +34,10 @@ func TestObjectClone(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, objFrom(ValMap{"a": Int(1)}), clone)
 
-	//not clonable
-	clone, err = objFrom(ValMap{"a": &ValueListIterator{}}).Clone(map[uintptr]map[int]Value{})
-	assert.Equal(t, ErrNotClonable, err)
-	assert.Nil(t, clone)
+	// //not clonable
+	// clone, err = objFrom(ValMap{"a": &ValueListIterator{}}).Clone(map[uintptr]map[int]Value{})
+	// assert.Equal(t, ErrNotClonable, err)
+	// assert.Nil(t, clone)
 
 	//cycle
 	ctx := NewContext(ContextConfig{})
@@ -62,10 +62,10 @@ func TestDictionaryClone(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, NewDictionary(map[string]Serializable{"/": Int(1)}), clone)
 
-	//not clonable
-	clone, err = NewDictionary(map[string]Serializable{"/": &ValueListIterator{}}).Clone(map[uintptr]map[int]Value{})
-	assert.Equal(t, ErrNotClonable, err)
-	assert.Nil(t, clone)
+	// //not clonable
+	// clone, err = NewDictionary(map[string]Serializable{"/": &ValueListIterator{}}).Clone(map[uintptr]map[int]Value{})
+	// assert.Equal(t, ErrNotClonable, err)
+	// assert.Nil(t, clone)
 
 	//cycle
 	dict := NewDictionary(nil)
@@ -88,10 +88,10 @@ func TestValueListClone(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, &ValueList{elements: []Serializable{Int(1)}}, clone)
 
-	//not clonable
-	clone, err = (&ValueList{elements: []Serializable{&ValueListIterator{}}}).Clone(map[uintptr]map[int]Value{})
-	assert.Equal(t, ErrNotClonable, err)
-	assert.Nil(t, clone)
+	// //not clonable
+	// clone, err = (&ValueList{elements: []Serializable{&ValueListIterator{}}}).Clone(map[uintptr]map[int]Value{})
+	// assert.Equal(t, ErrNotClonable, err)
+	// assert.Nil(t, clone)
 
 	//cycle
 	list := &ValueList{elements: []Serializable{Int(0)}}

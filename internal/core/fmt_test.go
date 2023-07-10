@@ -12,7 +12,7 @@ func TestDateFormat(t *testing.T) {
 	NewGlobalState(ctx)
 
 	layout := time.UnixDate
-	format := NewDateFormat(layout)
+	format := NewDateFormat(layout, "unix-date")
 	date := Date(time.Date(2022, 1, 1, 1, 1, 1, 0, time.UTC))
 
 	//check formatting
