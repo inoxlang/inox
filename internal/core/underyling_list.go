@@ -390,7 +390,7 @@ func (list *BoolList) BoolAt(i int) bool {
 }
 
 func (list *BoolList) At(ctx *Context, i int) Value {
-	panic(ErrNotImplementedYet)
+	return Bool(list.BoolAt(i))
 }
 
 func (list *BoolList) append(ctx *Context, values ...Serializable) {
