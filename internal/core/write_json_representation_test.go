@@ -451,7 +451,7 @@ func TestPathPatternJSONRepresentation(t *testing.T) {
 func TestURLRJSONepresentation(t *testing.T) {
 	url := URL("https://example.com/")
 
-	assert.Equal(t, `{"url__value:"https://example.com/"}`, getJSONRepr(t, url, reprTestCtx))
+	assert.Equal(t, `{"url__value":"https://example.com/"}`, getJSONRepr(t, url, reprTestCtx))
 	assert.Equal(t, `"https://example.com/"`, getJSONRepr(t, url, reprTestCtx, JSONSerializationConfig{
 		Pattern: URL_PATTERN,
 	}))

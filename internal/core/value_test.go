@@ -69,12 +69,12 @@ func TestNamedSegmentPathPatternMatchGroups(t *testing.T) {
 	patt1 := res1.(*NamedSegmentPathPattern)
 
 	for _, testCase := range []struct {
-		groups map[string]Value
+		groups map[string]Serializable
 		path   Path
 	}{
 		{nil, "/home"},
 		{nil, "/home/"},
-		{map[string]Value{"0": Path("/home/user"), "username": Str("user")}, "/home/user"},
+		{map[string]Serializable{"0": Path("/home/user"), "username": Str("user")}, "/home/user"},
 		{nil, "/home/user/"},
 		{nil, "/home/user/e"},
 	} {
@@ -94,13 +94,13 @@ func TestNamedSegmentPathPatternMatchGroups(t *testing.T) {
 	patt2 := res2.(*NamedSegmentPathPattern)
 
 	for _, testCase := range []struct {
-		groups map[string]Value
+		groups map[string]Serializable
 		path   Path
 	}{
 		{nil, "/home"},
 		{nil, "/home/"},
 		{nil, "/home/user"},
-		{map[string]Value{"0": Path("/home/user/"), "username": Str("user")}, "/home/user/"},
+		{map[string]Serializable{"0": Path("/home/user/"), "username": Str("user")}, "/home/user/"},
 		{nil, "/home/user/e"},
 	} {
 		t.Run("pattern ends with slash, "+string(testCase.path), func(t *testing.T) {
