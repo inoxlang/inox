@@ -766,6 +766,39 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
+		t.Run("description of globals should not contain spread elements", func(t *testing.T) {
+			n, src := parseCode(`
+				obj = {a: 1}
+				$$global = 0
+				go {globals: {global: global, ...$obj.{a}}} do {
+					return global
+				}
+			`)
+			objLit := parse.FindNode(n, (*parse.ObjectLiteral)(nil), func(lit *parse.ObjectLiteral, _ bool) bool {
+				return len(lit.SpreadElements) > 0
+			})
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := combineErrors(
+				makeError(objLit, src, INVALID_SPAWN_GLOBALS_SHOULD_BE),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("description of globals should not contain implicit-key properties", func(t *testing.T) {
+			n, src := parseCode(`
+				$$global = 0
+				go {globals: {global: global, 1}} do {
+					return global
+				}
+			`)
+			objLit := parse.FindNode(n, (*parse.ObjectLiteral)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := combineErrors(
+				makeError(objLit, src, INVALID_SPAWN_GLOBALS_SHOULD_BE),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
 		t.Run("global key list contains the name of a undefined global", func(t *testing.T) {
 			n, src := parseCode(`
 				go {globals: .{global}} do {

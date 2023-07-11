@@ -642,7 +642,15 @@ switch_:
 				globals[globVarName] = globalVarInfo{isConst: true}
 			}
 		case *parse.ObjectLiteral:
+			if len(desc.SpreadElements) > 0 {
+				c.addError(desc, INVALID_SPAWN_GLOBALS_SHOULD_BE)
+			}
+
 			for _, prop := range desc.Properties {
+				if prop.HasImplicitKey() {
+					c.addError(desc, INVALID_SPAWN_GLOBALS_SHOULD_BE)
+					continue
+				}
 				globals[prop.Name()] = globalVarInfo{isConst: true}
 			}
 		case *parse.NilLiteral:
