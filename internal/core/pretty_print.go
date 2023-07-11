@@ -795,7 +795,6 @@ func PrettyPrintList(list underylingList, w *bufio.Writer, config *PrettyPrintCo
 	end = append(end, ']')
 
 	utils.Must(w.Write(end))
-
 }
 
 func (list *List) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -823,6 +822,66 @@ func (tuple Tuple) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth
 	utils.Must(w.Write([]byte{'#'}))
 
 	lst.PrettyPrint(w, config, depth, parentIndentCount)
+}
+
+func (a *Array) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	//TODO: prevent modification of the array while this function is running
+	length := a.Len()
+
+	if depth > config.MaxDepth && length > 0 {
+		utils.Must(w.Write(utils.StringAsBytes("Array(...)")))
+		return
+	}
+
+	utils.Must(w.Write(utils.StringAsBytes("Array(")))
+
+	indentCount := parentIndentCount + 1
+	indent := bytes.Repeat(config.Indent, indentCount)
+	printIndices := !config.Compact && length > 10
+
+	for i := 0; i < length; i++ {
+		v := (*a)[i]
+
+		if !config.Compact {
+			utils.Must(w.Write(LF_CR))
+			utils.Must(w.Write(indent))
+
+			//index
+			if printIndices {
+				if config.Colorize {
+					utils.Must(w.Write(config.Colors.DiscreteColor))
+				}
+				if i < 10 {
+					utils.PanicIfErr(w.WriteByte(' '))
+				}
+				utils.Must(w.Write(utils.StringAsBytes(strconv.FormatInt(int64(i), 10))))
+				utils.Must(w.Write(COLON_SPACE))
+				if config.Colorize {
+					utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+				}
+			}
+		}
+
+		//element
+		v.PrettyPrint(w, config, depth+1, indentCount)
+
+		//comma & indent
+		isLastEntry := i == length-1
+
+		if !isLastEntry {
+			utils.Must(w.Write(COMMA_SPACE))
+		}
+
+	}
+
+	var end []byte
+	if !config.Compact && length > 0 {
+		end = append(end, '\n', '\r')
+	}
+	end = append(end, bytes.Repeat(config.Indent, depth)...)
+	end = append(end, ')')
+
+	utils.Must(w.Write(end))
 }
 
 func (s *Struct) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -1570,6 +1629,10 @@ func (it *ValueFilteredIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrin
 }
 
 func (it *KeyValueFilteredIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	InspectPrint(w, it)
+}
+
+func (it *ArrayIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }
 

@@ -295,7 +295,7 @@ func (goFunc *GoFunction) Call(args []any, globalState, extState *GlobalState, i
 
 	//TODO: support any result types
 
-	return newList(&ValueList{elements: ToSerializableSlice(results)}), nil
+	return NewArray(results...), nil
 }
 
 func IsResultWithError(result Value) (bool, error) {

@@ -805,6 +805,10 @@ func (it *KeyValueFilteredIterator) ToSymbolicValue(ctx *Context, encountered ma
 	return &symbolic.Iterator{}, nil
 }
 
+func (it *ArrayIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	return &symbolic.Iterator{}, nil
+}
+
 func (it *indexableIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	return &symbolic.Iterator{}, nil
 }

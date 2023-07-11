@@ -3590,7 +3590,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 					dyn := actual.(*DynamicValue)
 
-					assert.Equal(t, map[string]Value{"v": Int(1)}, dyn.value.(*Object).EntryMap())
+					assert.Equal(t, map[string]Serializable{"v": Int(1)}, dyn.value.(*Object).EntryMap())
 					assert.Equal(t, Str("v"), dyn.opData0)
 				},
 			},
@@ -3603,7 +3603,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 					dyn := actual.(*DynamicValue)
 
-					assert.Equal(t, map[string]Value{"a": Int(1)}, dyn.value.(*Object).EntryMap())
+					assert.Equal(t, map[string]Serializable{"a": Int(1)}, dyn.value.(*Object).EntryMap())
 					assert.Equal(t, Str("a"), dyn.opData0)
 				},
 			},
@@ -3616,7 +3616,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 					dyn := actual.(*DynamicValue)
 
-					assert.Equal(t, map[string]Value{"a": Int(1)}, dyn.value.(*Object).EntryMap())
+					assert.Equal(t, map[string]Serializable{"a": Int(1)}, dyn.value.(*Object).EntryMap())
 					assert.Equal(t, Str("a"), dyn.opData0)
 				},
 			},
@@ -3644,7 +3644,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 					dyn := actual.(*DynamicValue)
 
-					assert.Equal(t, map[string]Value{"x": Int(1)}, dyn.value.(*Object).EntryMap())
+					assert.Equal(t, map[string]Serializable{"x": Int(1)}, dyn.value.(*Object).EntryMap())
 					assert.Equal(t, Str("x"), dyn.opData0)
 				},
 			},
@@ -3667,7 +3667,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					innerObj := NewObjectFromMap(nil, state.Ctx)
 					innerObj.Share(state)
 
-					assert.Equal(t, map[string]Value{"x": innerObj}, dyn.value.(*Object).EntryMap())
+					assert.Equal(t, map[string]Serializable{"x": innerObj}, dyn.value.(*Object).EntryMap())
 					assert.Equal(t, Str("x"), dyn.opData0)
 				},
 			},
@@ -4730,7 +4730,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.IsType(t, &List{}, res)
+			assert.IsType(t, &Array{}, res)
 			for _, e := range res.(*List).GetOrBuildElements(state.Ctx) {
 				if !assert.Equal(t, Int(0), e) {
 					return

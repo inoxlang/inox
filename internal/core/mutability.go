@@ -86,6 +86,10 @@ func (tuple *Tuple) IsMutable() bool {
 	return false
 }
 
+func (*Array) IsMutable() bool {
+	return true
+}
+
 func (s *Struct) IsMutable() bool {
 	return true
 }
@@ -341,6 +345,10 @@ func (it *ValueFilteredIterator) IsMutable() bool {
 }
 
 func (it *KeyValueFilteredIterator) IsMutable() bool {
+	return true
+}
+
+func (it *ArrayIterator) IsMutable() bool {
 	return true
 }
 

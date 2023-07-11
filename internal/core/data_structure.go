@@ -1,7 +1,6 @@
 package core
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"sort"
@@ -722,29 +721,13 @@ func (a *Array) At(ctx *Context, i int) Value {
 	return (*a)[i]
 }
 
-// IsMutable implements Sequence.
-func (*Array) IsMutable() bool {
-	panic("unimplemented")
+func (a *Array) Len() int {
+	return len(*a)
 }
 
-// Iterator implements Sequence.
-func (*Array) Iterator(*Context, IteratorConfiguration) Iterator {
-	panic("unimplemented")
-}
-
-// Len implements Sequence.
-func (*Array) Len() int {
-	panic("unimplemented")
-}
-
-// PrettyPrint implements Sequence.
-func (*Array) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	panic("unimplemented")
-}
-
-// slice implements Sequence.
-func (*Array) slice(start int, end int) Sequence {
-	panic("unimplemented")
+func (a *Array) slice(start int, end int) Sequence {
+	slice := (*a)[start:end]
+	return &slice
 }
 
 type KeyList []string

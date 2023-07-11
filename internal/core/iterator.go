@@ -506,6 +506,38 @@ func (it *indexedEntryIterator) Value(*Context) Value {
 	return it.currentValue
 }
 
+type ArrayIterator struct {
+	elements []Value
+	i        int
+
+	NotClonableMixin
+}
+
+func (it ArrayIterator) HasNext(*Context) bool {
+	return it.i < len(it.elements)-1
+}
+
+func (it *ArrayIterator) Next(ctx *Context) bool {
+	if !it.HasNext(ctx) {
+		return false
+	}
+
+	it.i++
+	return true
+}
+
+func (it *ArrayIterator) Key(ctx *Context) Value {
+	return Int(it.i)
+}
+
+func (it *ArrayIterator) Value(*Context) Value {
+	return it.elements[it.i]
+}
+
+func (a *Array) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
+	return config.CreateIterator(&ArrayIterator{elements: *a, i: -1})
+}
+
 type IpropsIterator struct {
 	keys   []string
 	values []Value

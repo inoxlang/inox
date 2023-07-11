@@ -1425,6 +1425,7 @@ func (it *ValueFilteredIterator) Equal(ctx *Context, other Value, alreadyCompare
 
 	return it == otherIterator
 }
+
 func (it *KeyValueFilteredIterator) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	otherIterator, ok := other.(*KeyValueFilteredIterator)
 	if !ok {
@@ -1436,6 +1437,15 @@ func (it *KeyValueFilteredIterator) Equal(ctx *Context, other Value, alreadyComp
 
 func (it *indexableIterator) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	otherIterator, ok := other.(*indexableIterator)
+	if !ok {
+		return false
+	}
+
+	return it == otherIterator
+}
+
+func (it *ArrayIterator) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherIterator, ok := other.(*ArrayIterator)
 	if !ok {
 		return false
 	}
