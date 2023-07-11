@@ -175,8 +175,8 @@ func fmtInvalidReturnValue(actual, expected SymbolicValue) string {
 	return fmt.Sprintf("invalid return value: type is %v, but a value matching %v was expected", Stringify(actual), Stringify(expected))
 }
 
-func fmtListExpectedButIs(value SymbolicValue) string {
-	return fmt.Sprintf("a list was expected but value is a(n) %s", Stringify(value))
+func fmtSeqExpectedButIs(value SymbolicValue) string {
+	return fmt.Sprintf("a sequence was expected but value is a(n) %s", Stringify(value))
 }
 
 func fmtXisNotIterable(v SymbolicValue) string {

@@ -2528,7 +2528,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			goFunc := &GoFunction{
 				fn: func(*Context) (*Int, *Int) {
-					return &Int{}, &Int{}
+					return ANY_INT, ANY_INT
 				},
 			}
 
@@ -2536,7 +2536,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
-			assert.Equal(t, NewList(&Int{}, &Int{}), res)
+			assert.Equal(t, NewArray(ANY_INT, ANY_INT), res)
 		})
 
 		t.Run("signature is func(*Context, *Int) *Int: missing argument", func(t *testing.T) {
@@ -3640,6 +3640,36 @@ func TestSymbolicEval(t *testing.T) {
 				NewMultivalue(ANY_INT, Nil),
 				NewMultivalue(ANY_INT, Nil),
 			), res)
+		})
+
+		t.Run("RHS is not a sequence", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				assign? first second = 1
+				return [first, second]
+			`)
+
+			multiAssignment := parse.FindNode(n, (*parse.MultiAssignment)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(multiAssignment, state, fmtSeqExpectedButIs(ANY_INT)),
+			}, state.errors)
+			assert.Equal(t, NewList(ANY, ANY), res)
+		})
+
+		t.Run("RHS is an array", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				assign? first second = array
+				return [first, second]
+			`)
+			state.setGlobal("array", NewArray(ANY_INT, ANY_INT), GlobalConst)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, NewList(ANY_INT, ANY_INT), res)
 		})
 	})
 

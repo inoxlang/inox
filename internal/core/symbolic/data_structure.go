@@ -15,8 +15,12 @@ import (
 
 var (
 	_ = []Indexable{
-		&String{}, (*Array)(nil), &List{}, &Tuple{}, &RuneSlice{}, &ByteSlice{}, &Object{}, &IntRange{},
-		&AnyStringLike{},
+		(*String)(nil), (*Array)(nil), (*List)(nil), (*Tuple)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*Object)(nil), (*IntRange)(nil),
+		(*AnyStringLike)(nil),
+	}
+
+	_ = []Sequence{
+		(*String)(nil), (*Array)(nil), (*List)(nil), (*Tuple)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil),
 	}
 
 	ANY_INDEXABLE = &AnyIndexable{}
@@ -174,14 +178,18 @@ func (a *Array) element() SymbolicValue {
 	return ANY
 }
 
-func (t *Array) elementAt(i int) SymbolicValue {
-	if t.elements != nil {
-		if len(t.elements) == 0 || i >= len(t.elements) {
+func (a *Array) elementAt(i int) SymbolicValue {
+	if a.elements != nil {
+		if len(a.elements) == 0 || i >= len(a.elements) {
 			return ANY // return "never" ?
 		}
-		return t.elements[i]
+		return a.elements[i]
 	}
 	return ANY
+}
+
+func (a *Array) slice(start, end *Int) Sequence {
+	return ANY_ARRAY
 }
 
 func (a *Array) IteratorElementKey() SymbolicValue {

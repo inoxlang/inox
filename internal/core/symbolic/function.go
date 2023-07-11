@@ -659,7 +659,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 		results = append(results, symbolicResultValues...)
 	}
 
-	return NewList(results...), true, enoughArgs, nil
+	return NewArray(results...), true, enoughArgs, nil
 }
 
 // An Function represents a symbolic function we do not know the concrete type.

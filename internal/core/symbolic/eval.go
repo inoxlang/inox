@@ -761,22 +761,23 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 	case *parse.MultiAssignment:
 		isNillable := n.Nillable
 		right, err := symbolicEval(n.Right, state)
+		startRight := right
 
 		if err != nil {
 			return nil, err
 		}
 
 		for !IsAny(right) {
-			if _, ok := right.(*List); !ok {
+			if _, ok := right.(Sequence); !ok {
 				right = widenOrAny(right)
 			} else {
 				break
 			}
 		}
 
-		list, ok := right.(*List)
+		seq, ok := right.(Sequence)
 		if !ok {
-			state.addError(makeSymbolicEvalError(node, state, fmtListExpectedButIs(right)))
+			state.addError(makeSymbolicEvalError(node, state, fmtSeqExpectedButIs(startRight)))
 			right = &List{generalElement: ANY}
 
 			for _, var_ := range n.Variables {
@@ -788,15 +789,15 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				state.symbolicData.SetMostSpecificNodeValue(var_, ANY)
 			}
 		} else {
-			if list.HasKnownLen() && list.KnownLen() < len(n.Variables) && !isNillable {
+			if seq.HasKnownLen() && seq.KnownLen() < len(n.Variables) && !isNillable {
 				state.addError(makeSymbolicEvalError(node, state, fmtListShouldHaveLengthGreaterOrEqualTo(len(n.Variables))))
 			}
 
 			for i, var_ := range n.Variables {
 				name := var_.(*parse.IdentifierLiteral).Name
 
-				val := list.elementAt(i)
-				if isNillable && (!list.HasKnownLen() || i >= list.KnownLen() && isNillable) {
+				val := seq.elementAt(i)
+				if isNillable && (!seq.HasKnownLen() || i >= seq.KnownLen() && isNillable) {
 					val = joinValues([]SymbolicValue{val, Nil})
 				}
 
