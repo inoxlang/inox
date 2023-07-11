@@ -5064,6 +5064,26 @@ func TestSymbolicEval(t *testing.T) {
 			) //we use contains because there is also a warning about a missing permission
 		})
 
+		t.Run("allow section", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				rt = go {allow: {}} do {
+					return 1
+				}
+				return rt.wait_result!()
+			`)
+
+			metadataNode := parse.FindNode(n, (*parse.ObjectLiteral)(nil), nil)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+
+			assert.NotContains(t,
+				state.warnings,
+				makeSymbolicEvalWarning(metadataNode, state, fmtUnknownSectionInCoroutineMetadata("allow")),
+			) //we use contains because there is also a warning about a missing permission
+		})
+
 	})
 
 	t.Run("reception handler expression", func(t *testing.T) {

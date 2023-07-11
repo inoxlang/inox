@@ -1039,6 +1039,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 					if !ok {
 						state.addError(makeSymbolicEvalError(n.Meta, state, fmtGroupPropertyNotRoutineGroup(v)))
 					}
+				case "allow":
 				default:
 					state.addWarning(makeSymbolicEvalWarning(n.Meta, state, fmtUnknownSectionInCoroutineMetadata(k)))
 				}
