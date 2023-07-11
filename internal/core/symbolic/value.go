@@ -392,7 +392,7 @@ func (o *Option) WidestOfType() SymbolicValue {
 
 // A Date represents a symbolic Date.
 type Date struct {
-	_ int
+	SerializableMixin
 }
 
 func (d *Date) Test(v SymbolicValue) bool {
@@ -418,7 +418,7 @@ func (d *Date) WidestOfType() SymbolicValue {
 
 // A Duration represents a symbolic Duration.
 type Duration struct {
-	_ int
+	SerializableMixin
 }
 
 func (d *Duration) Test(v SymbolicValue) bool {

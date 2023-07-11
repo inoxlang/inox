@@ -11,7 +11,7 @@ var (
 
 	_ = []Serializable{
 		(*Bool)(nil), (*Int)(nil), (*Float)(nil), Nil,
-		(*ByteCount)(nil), (*LineCount)(nil), (*ByteRate)(nil), (*SimpleRate)(nil),
+		(*ByteCount)(nil), (*LineCount)(nil), (*ByteRate)(nil), (*SimpleRate)(nil), (*Duration)(nil), (*Date)(nil),
 		(*Rune)(nil), (*String)(nil), (*Path)(nil), (*URL)(nil), (*Host)(nil),
 		(*RuneSlice)(nil), (*ByteSlice)(nil), (*StringConcatenation)(nil),
 		(*Object)(nil), (*Record)(nil), (*List)(nil), (*Tuple)(nil), (*KeyList)(nil), (*Dictionary)(nil),
