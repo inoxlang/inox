@@ -18,7 +18,13 @@ import (
 
 // this file contains the implementation of Value.HasRepresentation & Value.WriteRepresentation for core types.
 
+const (
+	MAX_REPR_WRITING_DEPTH = 20
+)
+
 var (
+	ErrMaximumReprWritingDepthReached = errors.New("maximum representation writing depth reached")
+
 	OPENING_BRACKET = []byte{'['}
 	CLOSING_BRACKET = []byte{']'}
 )
@@ -40,7 +46,7 @@ func MustGetRepresentationWithConfig(v Serializable, config *ReprConfig, ctx *Co
 func GetRepresentationWithConfig(v Serializable, config *ReprConfig, ctx *Context) (ValueRepresentation, error) {
 	buff := bytes.NewBuffer(nil)
 
-	err := v.WriteRepresentation(ctx, buff, config)
+	err := v.WriteRepresentation(ctx, buff, config, 0)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get representation: %w", err)
 	}
@@ -49,7 +55,7 @@ func GetRepresentationWithConfig(v Serializable, config *ReprConfig, ctx *Contex
 
 func WriteRepresentation(w io.Writer, v Serializable, config *ReprConfig, ctx *Context) error {
 
-	err := v.WriteRepresentation(ctx, w, config)
+	err := v.WriteRepresentation(ctx, w, config, 0)
 	if err != nil {
 		return fmt.Errorf("failed to write representation: %w", err)
 	}
@@ -88,9 +94,12 @@ type CallBasedPatternReprMixin struct {
 	Params []Serializable
 }
 
-func (m CallBasedPatternReprMixin) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (m CallBasedPatternReprMixin) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	if depth > MAX_REPR_WRITING_DEPTH {
+		return ErrMaximumReprWritingDepthReached
+	}
 
-	err := m.Callee.WriteRepresentation(ctx, w, config)
+	err := m.Callee.WriteRepresentation(ctx, w, config, depth+1)
 	if err != nil {
 		return err
 	}
@@ -106,7 +115,7 @@ func (m CallBasedPatternReprMixin) WriteRepresentation(ctx *Context, w io.Writer
 				return err
 			}
 		}
-		err := p.WriteRepresentation(ctx, w, config)
+		err := p.WriteRepresentation(ctx, w, config, depth+1)
 		if err != nil {
 			return err
 		}
@@ -125,7 +134,7 @@ type NamespaceMemberPatternReprMixin struct {
 	MemberName    string
 }
 
-func (m NamespaceMemberPatternReprMixin) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (m NamespaceMemberPatternReprMixin) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	repr := "%" + m.NamespaceName + "." + m.MemberName
 	_, err := w.Write(utils.StringAsBytes(repr))
 	return err
@@ -137,12 +146,12 @@ func (m NamespaceMemberPatternReprMixin) WriteJSONRepresentation(ctx *Context, w
 
 // implementations
 
-func (Nil NilT) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (Nil NilT) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	_, err := w.Write([]byte{'n', 'i', 'l'})
 	return err
 }
 
-func (b Bool) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (b Bool) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	if b {
 		_, err := w.Write([]byte{'t', 'r', 'u', 'e'})
 		return err
@@ -179,21 +188,21 @@ func (r Rune) reprBytes() []byte {
 	return b
 }
 
-func (r Rune) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (r Rune) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	_, err := w.Write(r.reprBytes())
 	return err
 }
 
-func (b Byte) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (b Byte) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNoRepresentation
 }
 
-func (i Int) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (i Int) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	fmt.Fprint(w, i)
 	return nil
 }
 
-func (f Float) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (f Float) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	s := strconv.FormatFloat(float64(f), 'f', -1, 64)
 	if _, err := w.Write(utils.StringAsBytes(s)); err != nil {
 		return err
@@ -206,7 +215,11 @@ func (f Float) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig
 	return nil
 }
 
-func (s Str) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (s Str) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	if depth > MAX_REPR_WRITING_DEPTH {
+		return ErrMaximumReprWritingDepthReached
+	}
+
 	jsonStr, err := utils.MarshalJsonNoHTMLEspace(string(s))
 	if err != nil {
 		return err
@@ -215,7 +228,11 @@ func (s Str) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) 
 	return err
 }
 
-func (slice *RuneSlice) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (slice *RuneSlice) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	if depth > MAX_REPR_WRITING_DEPTH {
+		return ErrMaximumReprWritingDepthReached
+	}
+
 	jsonStr, err := utils.MarshalJsonNoHTMLEspace(string(slice.elements))
 	if err != nil {
 		return err
@@ -230,7 +247,10 @@ func (slice *RuneSlice) WriteRepresentation(ctx *Context, w io.Writer, config *R
 	return err
 }
 
-func (obj *Object) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (obj *Object) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	if depth > MAX_REPR_WRITING_DEPTH {
+		return ErrMaximumReprWritingDepthReached
+	}
 
 	closestState := ctx.GetClosestState()
 	obj.Lock(closestState)
@@ -253,7 +273,7 @@ func (obj *Object) WriteRepresentation(ctx *Context, w io.Writer, config *ReprCo
 			return err
 		}
 
-		err = obj.url.WriteRepresentation(ctx, w, config)
+		err = obj.url.WriteRepresentation(ctx, w, config, depth+1)
 		if err != nil {
 			return err
 		}
@@ -283,7 +303,7 @@ func (obj *Object) WriteRepresentation(ctx *Context, w io.Writer, config *ReprCo
 		if err != nil {
 			return err
 		}
-		err = v.WriteRepresentation(ctx, w, config)
+		err = v.WriteRepresentation(ctx, w, config, depth+1)
 		if err != nil {
 			return err
 		}
@@ -296,8 +316,10 @@ func (obj *Object) WriteRepresentation(ctx *Context, w io.Writer, config *ReprCo
 	return nil
 }
 
-func (rec Record) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
-	//TODO: prevent modification of the Object while this function is running
+func (rec Record) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	if depth > MAX_REPR_WRITING_DEPTH {
+		return ErrMaximumReprWritingDepthReached
+	}
 
 	_, err := w.Write([]byte{'#', '{'})
 	if err != nil {
@@ -327,7 +349,7 @@ func (rec Record) WriteRepresentation(ctx *Context, w io.Writer, config *ReprCon
 		if err != nil {
 			return err
 		}
-		err = v.WriteRepresentation(ctx, w, config)
+		err = v.WriteRepresentation(ctx, w, config, depth+1)
 		if err != nil {
 			return err
 		}
@@ -340,7 +362,10 @@ func (rec Record) WriteRepresentation(ctx *Context, w io.Writer, config *ReprCon
 	return nil
 }
 
-func (dict *Dictionary) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (dict *Dictionary) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	if depth > MAX_REPR_WRITING_DEPTH {
+		return ErrMaximumReprWritingDepthReached
+	}
 
 	_, err := w.Write([]byte{':', '{'})
 	if err != nil {
@@ -364,7 +389,7 @@ func (dict *Dictionary) WriteRepresentation(ctx *Context, w io.Writer, config *R
 			}
 		}
 		first = false
-		err = dict.Keys[k].WriteRepresentation(ctx, w, config)
+		err = dict.Keys[k].WriteRepresentation(ctx, w, config, depth+1)
 		if err != nil {
 			return err
 		}
@@ -372,7 +397,7 @@ func (dict *Dictionary) WriteRepresentation(ctx *Context, w io.Writer, config *R
 		if err != nil {
 			return err
 		}
-		err = v.WriteRepresentation(ctx, w, config)
+		err = v.WriteRepresentation(ctx, w, config, depth+1)
 		if err != nil {
 			return err
 		}
@@ -382,7 +407,11 @@ func (dict *Dictionary) WriteRepresentation(ctx *Context, w io.Writer, config *R
 	return nil
 }
 
-func (list KeyList) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (list KeyList) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	if depth > MAX_REPR_WRITING_DEPTH {
+		return ErrMaximumReprWritingDepthReached
+	}
+
 	_, err := w.Write([]byte{'.', '{'})
 	if err != nil {
 		return err
@@ -407,12 +436,15 @@ func (list KeyList) WriteRepresentation(ctx *Context, w io.Writer, config *ReprC
 	return nil
 }
 
-func (list *List) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
-	return list.underylingList.WriteRepresentation(ctx, w, config)
+func (list *List) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	if depth > MAX_REPR_WRITING_DEPTH {
+		return ErrMaximumReprWritingDepthReached
+	}
+
+	return list.underylingList.WriteRepresentation(ctx, w, config, depth)
 }
 
-func (list *ValueList) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
-
+func (list *ValueList) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	_, err := w.Write([]byte{'['})
 	if err != nil {
 		return err
@@ -428,7 +460,7 @@ func (list *ValueList) WriteRepresentation(ctx *Context, w io.Writer, config *Re
 			}
 		}
 		first = false
-		err = v.WriteRepresentation(ctx, w, config)
+		err = v.WriteRepresentation(ctx, w, config, depth+1)
 		if err != nil {
 			return err
 		}
@@ -438,8 +470,7 @@ func (list *ValueList) WriteRepresentation(ctx *Context, w io.Writer, config *Re
 	return err
 }
 
-func (list *IntList) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
-
+func (list *IntList) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	_, err := w.Write([]byte{'['})
 	if err != nil {
 		return err
@@ -453,7 +484,7 @@ func (list *IntList) WriteRepresentation(ctx *Context, w io.Writer, config *Repr
 			}
 		}
 		first = false
-		err = v.WriteRepresentation(ctx, w, config)
+		err = v.WriteRepresentation(ctx, w, config, depth+1)
 		if err != nil {
 			return err
 		}
@@ -463,7 +494,7 @@ func (list *IntList) WriteRepresentation(ctx *Context, w io.Writer, config *Repr
 	return err
 }
 
-func (list *BoolList) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (list *BoolList) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 
 	_, err := w.Write(OPENING_BRACKET)
 	if err != nil {
@@ -522,8 +553,7 @@ func (list *BoolList) WriteRepresentation(ctx *Context, w io.Writer, config *Rep
 	return err
 }
 
-func (list *StringList) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
-
+func (list *StringList) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	_, err := w.Write([]byte{'['})
 	if err != nil {
 		return err
@@ -537,7 +567,7 @@ func (list *StringList) WriteRepresentation(ctx *Context, w io.Writer, config *R
 			}
 		}
 		first = false
-		err = v.WriteRepresentation(ctx, w, config)
+		err = v.WriteRepresentation(ctx, w, config, depth+1)
 		if err != nil {
 			return err
 		}
@@ -547,7 +577,10 @@ func (list *StringList) WriteRepresentation(ctx *Context, w io.Writer, config *R
 	return err
 }
 
-func (tuple *Tuple) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (tuple *Tuple) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	if depth > MAX_REPR_WRITING_DEPTH {
+		return ErrMaximumReprWritingDepthReached
+	}
 
 	_, err := w.Write([]byte{'#', '['})
 	if err != nil {
@@ -564,7 +597,7 @@ func (tuple *Tuple) WriteRepresentation(ctx *Context, w io.Writer, config *ReprC
 			}
 		}
 		first = false
-		err = v.WriteRepresentation(ctx, w, config)
+		err = v.WriteRepresentation(ctx, w, config, depth+1)
 		if err != nil {
 			return err
 		}
@@ -591,12 +624,15 @@ func (slice *ByteSlice) write(w io.Writer) (int, error) {
 	return totalN, err
 }
 
-func (slice *ByteSlice) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (slice *ByteSlice) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	if depth > MAX_REPR_WRITING_DEPTH {
+		return ErrMaximumReprWritingDepthReached
+	}
 	_, err := slice.write(w)
 	return err
 }
 
-func (opt Option) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (opt Option) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 
 	if len(opt.Name) <= 1 {
 		_, err := w.Write([]byte{'-'})
@@ -625,7 +661,7 @@ func (opt Option) WriteRepresentation(ctx *Context, w io.Writer, config *ReprCon
 	return nil
 }
 
-func (pth Path) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (pth Path) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	quote := parse.ContainsSpace(string(pth))
 	if !quote {
 		for _, r := range pth {
@@ -649,7 +685,7 @@ func (pth Path) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfi
 	return err
 }
 
-func (patt PathPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (patt PathPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	quote := parse.ContainsSpace(string(patt))
 	if !quote {
 		for _, r := range patt {
@@ -673,22 +709,22 @@ func (patt PathPattern) WriteRepresentation(ctx *Context, w io.Writer, config *R
 	return err
 }
 
-func (u URL) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (u URL) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	_, err := w.Write(utils.StringAsBytes(u))
 	return err
 }
 
-func (host Host) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (host Host) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	_, err := w.Write(utils.StringAsBytes(host))
 	return err
 }
 
-func (scheme Scheme) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (scheme Scheme) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	_, err := w.Write(utils.StringAsBytes(scheme + "://"))
 	return err
 }
 
-func (patt HostPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (patt HostPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	var b = []byte{'%'}
 	b = append(b, patt...)
 
@@ -696,12 +732,12 @@ func (patt HostPattern) WriteRepresentation(ctx *Context, w io.Writer, config *R
 	return err
 }
 
-func (addr EmailAddress) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (addr EmailAddress) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	_, err := w.Write(utils.StringAsBytes(addr))
 	return err
 }
 
-func (patt URLPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (patt URLPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	var b = []byte{'%'}
 	b = append(b, patt...)
 
@@ -709,7 +745,7 @@ func (patt URLPattern) WriteRepresentation(ctx *Context, w io.Writer, config *Re
 	return err
 }
 
-func (i Identifier) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (i Identifier) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	_, err := w.Write([]byte{'#'})
 	if err != nil {
 		return err
@@ -721,7 +757,7 @@ func (i Identifier) WriteRepresentation(ctx *Context, w io.Writer, config *ReprC
 	return nil
 }
 
-func (p PropertyName) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (p PropertyName) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	_, err := w.Write([]byte{'.'})
 	if err != nil {
 		return err
@@ -733,7 +769,7 @@ func (p PropertyName) WriteRepresentation(ctx *Context, w io.Writer, config *Rep
 	return nil
 }
 
-func (str CheckedString) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (str CheckedString) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	_, err := w.Write([]byte{'%'})
 	if err != nil {
 		return err
@@ -782,7 +818,7 @@ func (count ByteCount) Write(w io.Writer, _3digitGroupCount int) (int, error) {
 	return fmt.Fprintf(w, format, v)
 }
 
-func (count ByteCount) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (count ByteCount) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	_, err := count.Write(w, -1)
 	return err
 }
@@ -791,7 +827,7 @@ func (count LineCount) write(w io.Writer) (int, error) {
 	return fmt.Fprintf(w, "%dln", count)
 }
 
-func (count LineCount) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (count LineCount) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	if count < 0 {
 		return ErrNoRepresentation
 	}
@@ -804,7 +840,7 @@ func (count RuneCount) write(w io.Writer) (int, error) {
 	return fmt.Fprintf(w, "%drn", count)
 }
 
-func (count RuneCount) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (count RuneCount) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	if count < 0 {
 		return ErrNoRepresentation
 	}
@@ -825,7 +861,7 @@ func (rate ByteRate) write(w io.Writer) (int, error) {
 	return totalN, err
 }
 
-func (rate ByteRate) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (rate ByteRate) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	if rate < 0 {
 		return ErrNoRepresentation
 	}
@@ -857,7 +893,7 @@ func (rate SimpleRate) write(w io.Writer) (int, error) {
 	return fmt.Fprintf(w, format, v)
 }
 
-func (rate SimpleRate) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (rate SimpleRate) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	if rate < 0 {
 		return ErrNoRepresentation
 	}
@@ -906,7 +942,7 @@ func (d Duration) write(w io.Writer) (int, error) {
 	return w.Write(b)
 }
 
-func (d Duration) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (d Duration) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	_, err := d.write(w)
 	return err
 }
@@ -922,12 +958,12 @@ func (d Date) write(w io.Writer) (int, error) {
 		t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), ms, us, t.Location().String())
 }
 
-func (d Date) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (d Date) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	_, err := d.write(w)
 	return err
 }
 
-func (m FileMode) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (m FileMode) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	if _, err := w.Write(utils.StringAsBytes(FILEMODE_PRIMORDIAL_FUNCNAME)); err != nil {
 		return err
 	}
@@ -954,15 +990,18 @@ func (r RuneRange) write(w io.Writer) (int, error) {
 	return w.Write(b)
 }
 
-func (r RuneRange) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (r RuneRange) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	_, err := r.write(w)
 	return err
 }
 
-func (r QuantityRange) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (r QuantityRange) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	if depth > MAX_REPR_WRITING_DEPTH {
+		return ErrMaximumReprWritingDepthReached
+	}
 
 	if r.Start != nil {
-		err := r.Start.WriteRepresentation(ctx, w, config)
+		err := r.Start.WriteRepresentation(ctx, w, config, depth+1)
 		if err != nil {
 			return err
 		}
@@ -974,7 +1013,7 @@ func (r QuantityRange) WriteRepresentation(ctx *Context, w io.Writer, config *Re
 	}
 
 	if r.End != nil {
-		err := r.End.WriteRepresentation(ctx, w, config)
+		err := r.End.WriteRepresentation(ctx, w, config, depth+1)
 		if err != nil {
 			return err
 		}
@@ -993,21 +1032,24 @@ func (r IntRange) write(w io.Writer) (int, error) {
 	return w.Write(b)
 }
 
-func (r IntRange) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (r IntRange) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	_, err := r.write(w)
 	return err
 }
 
 //patterns
 
-func (p *ExactValuePattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (p *ExactValuePattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	if depth > MAX_REPR_WRITING_DEPTH {
+		return ErrMaximumReprWritingDepthReached
+	}
 
 	_, err := w.Write([]byte{'%', '('})
 	if err != nil {
 		return err
 	}
 
-	err = p.value.WriteRepresentation(ctx, w, config)
+	err = p.value.WriteRepresentation(ctx, w, config, depth+1)
 	if err != nil {
 		return err
 	}
@@ -1019,53 +1061,56 @@ func (p *ExactValuePattern) WriteRepresentation(ctx *Context, w io.Writer, confi
 	return nil
 }
 
-func (pattern TypePattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (pattern TypePattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	_, err := w.Write(utils.StringAsBytes("%" + pattern.Name))
 	return err
 }
 
-func (pattern DifferencePattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (pattern DifferencePattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (pattern *OptionalPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (pattern *OptionalPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (patt RegexPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (patt RegexPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (patt UnionPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (patt UnionPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (patt SequenceStringPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (patt SequenceStringPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (patt UnionStringPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (patt UnionStringPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (patt RuneRangeStringPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (patt RuneRangeStringPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (patt DynamicStringPatternElement) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (patt DynamicStringPatternElement) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (patt *RepeatedPatternElement) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (patt *RepeatedPatternElement) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (patt *NamedSegmentPathPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (patt *NamedSegmentPathPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	_, err := w.Write(utils.StringAsBytes(patt.node.Raw))
 	return err
 }
 
-func (p *ObjectPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (p *ObjectPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	if depth > MAX_REPR_WRITING_DEPTH {
+		return ErrMaximumReprWritingDepthReached
+	}
 
 	_, err := w.Write([]byte{'%', '{'})
 	if err != nil {
@@ -1109,7 +1154,7 @@ func (p *ObjectPattern) WriteRepresentation(ctx *Context, w io.Writer, config *R
 		}
 
 		//value
-		err = entryPattern.WriteRepresentation(ctx, w, config)
+		err = entryPattern.WriteRepresentation(ctx, w, config, depth+1)
 		if err != nil {
 			return err
 		}
@@ -1122,11 +1167,14 @@ func (p *ObjectPattern) WriteRepresentation(ctx *Context, w io.Writer, config *R
 	return nil
 }
 
-func (patt RecordPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (patt RecordPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (p *ListPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (p *ListPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	if depth > MAX_REPR_WRITING_DEPTH {
+		return ErrMaximumReprWritingDepthReached
+	}
 
 	if p.elementPatterns != nil {
 		_, err := w.Write([]byte{'%', '['})
@@ -1135,7 +1183,7 @@ func (p *ListPattern) WriteRepresentation(ctx *Context, w io.Writer, config *Rep
 		}
 
 		for i, e := range p.elementPatterns {
-			err = e.WriteRepresentation(ctx, w, config)
+			err = e.WriteRepresentation(ctx, w, config, depth+1)
 			if err != nil {
 				return err
 			}
@@ -1163,7 +1211,7 @@ func (p *ListPattern) WriteRepresentation(ctx *Context, w io.Writer, config *Rep
 			return err
 		}
 
-		return generalElementPattern.WriteRepresentation(ctx, w, config)
+		return generalElementPattern.WriteRepresentation(ctx, w, config, depth+1)
 	default:
 		//surround the general element pattern with %( )
 
@@ -1172,7 +1220,7 @@ func (p *ListPattern) WriteRepresentation(ctx *Context, w io.Writer, config *Rep
 			return err
 		}
 
-		err = generalElementPattern.WriteRepresentation(ctx, w, config)
+		err = generalElementPattern.WriteRepresentation(ctx, w, config, depth+1)
 		if err != nil {
 			return err
 		}
@@ -1183,29 +1231,29 @@ func (p *ListPattern) WriteRepresentation(ctx *Context, w io.Writer, config *Rep
 
 }
 
-func (patt TuplePattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (patt TuplePattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (patt OptionPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (patt OptionPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (patt PathStringPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (patt PathStringPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
 //
 
-func (mt Mimetype) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (mt Mimetype) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNoRepresentation
 }
 
-func (i FileInfo) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (i FileInfo) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNoRepresentation
 }
 
-func (b *Bytecode) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (b *Bytecode) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNoRepresentation
 }
 
@@ -1227,13 +1275,16 @@ func (port Port) repr(quote bool) []byte {
 	return b
 }
 
-func (port Port) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (port Port) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	_, err := w.Write(port.repr(false))
 	return err
 }
 
-func (udata *UData) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (udata *UData) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	//TODO: prevent modification of the Object while this function is running
+	if depth > MAX_REPR_WRITING_DEPTH {
+		return ErrMaximumReprWritingDepthReached
+	}
 
 	_, err := w.Write([]byte{'u', 'd', 'a', 't', 'a', ' '})
 	if err != nil {
@@ -1241,7 +1292,7 @@ func (udata *UData) WriteRepresentation(ctx *Context, w io.Writer, config *ReprC
 	}
 
 	if udata.Root != nil {
-		err = udata.Root.WriteRepresentation(ctx, w, config)
+		err = udata.Root.WriteRepresentation(ctx, w, config, depth+1)
 		if err != nil {
 			return err
 		}
@@ -1256,7 +1307,7 @@ func (udata *UData) WriteRepresentation(ctx *Context, w io.Writer, config *ReprC
 		}
 		first = false
 
-		if err := entry.WriteRepresentation(ctx, w, config); err != nil {
+		if err := entry.WriteRepresentation(ctx, w, config, depth+1); err != nil {
 			return err
 		}
 	}
@@ -1268,9 +1319,12 @@ func (udata *UData) WriteRepresentation(ctx *Context, w io.Writer, config *ReprC
 	return nil
 }
 
-func (entry UDataHiearchyEntry) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (entry UDataHiearchyEntry) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	if depth > MAX_REPR_WRITING_DEPTH {
+		return ErrMaximumReprWritingDepthReached
+	}
 
-	if err := entry.Value.WriteRepresentation(ctx, w, config); err != nil {
+	if err := entry.Value.WriteRepresentation(ctx, w, config, depth+1); err != nil {
 		return err
 	}
 
@@ -1284,7 +1338,7 @@ func (entry UDataHiearchyEntry) WriteRepresentation(ctx *Context, w io.Writer, c
 			}
 			first = false
 
-			err := child.WriteRepresentation(ctx, w, config)
+			err := child.WriteRepresentation(ctx, w, config, depth+1)
 			if err != nil {
 				return err
 			}
@@ -1294,54 +1348,54 @@ func (entry UDataHiearchyEntry) WriteRepresentation(ctx *Context, w io.Writer, c
 	return nil
 }
 
-func (c *StringConcatenation) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
-	return Str(c.GetOrBuildString()).WriteRepresentation(ctx, w, config)
+func (c *StringConcatenation) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	return Str(c.GetOrBuildString()).WriteRepresentation(ctx, w, config, depth)
 }
 
-func (c Color) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (c Color) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (g *SystemGraph) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (g *SystemGraph) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (e SystemGraphEvent) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (e SystemGraphEvent) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (e SystemGraphEdge) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (e SystemGraphEdge) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (v *DynamicValue) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (v *DynamicValue) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (Error) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (Error) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (*LifetimeJob) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (*LifetimeJob) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (*SynchronousMessageHandler) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (*SynchronousMessageHandler) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (f *InoxFunction) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (f *InoxFunction) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (m *Mapping) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (m *Mapping) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (n AstNode) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (n AstNode) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (p *StructPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (p *StructPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }

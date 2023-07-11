@@ -224,7 +224,7 @@ func (n *HTMLNode) RemoveAttribute(ctx *core.Context, name string) {
 
 }
 
-func (n *HTMLNode) WriteRepresentation(ctx *core.Context, w io.Writer, config *core.ReprConfig) error {
+func (n *HTMLNode) WriteRepresentation(ctx *core.Context, w io.Writer, config *core.ReprConfig, depth int) error {
 	return core.ErrNotImplementedYet
 }
 

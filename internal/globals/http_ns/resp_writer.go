@@ -266,7 +266,7 @@ func (rw *HttpResponseWriter) WriteIXON(ctx *core.Context, v core.Serializable) 
 
 	rw.rw.Header().Set("Content-Type", core.IXON_CTYPE)
 
-	err := v.WriteRepresentation(ctx, rw.rw, &core.ReprConfig{})
+	err := v.WriteRepresentation(ctx, rw.rw, &core.ReprConfig{}, 0)
 	return err
 }
 

@@ -252,7 +252,7 @@ func respondWithMappingResult(h handlingArguments) {
 			}
 
 			rw.WriteContentType(core.IXON_CTYPE)
-			serializable.WriteRepresentation(state.Ctx, rw.BodyWriter(), config)
+			serializable.WriteRepresentation(state.Ctx, rw.BodyWriter(), config, 0)
 			return
 
 		case req.ParsedAcceptHeader.Match(core.JSON_CTYPE):

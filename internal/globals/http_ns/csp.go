@@ -177,7 +177,7 @@ func (c *ContentSecurityPolicy) String() string {
 	return buf.String()
 }
 
-func (c *ContentSecurityPolicy) WriteRepresentation(ctx *core.Context, w io.Writer, config *core.ReprConfig) error {
+func (c *ContentSecurityPolicy) WriteRepresentation(ctx *core.Context, w io.Writer, config *core.ReprConfig, depth int) error {
 	return core.ErrNotImplementedYet
 }
 

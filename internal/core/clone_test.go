@@ -41,7 +41,6 @@ func TestObjectClone(t *testing.T) {
 	ctx := NewContext(ContextConfig{})
 	NewGlobalState(ctx)
 
-	t.Skip()
 	obj := &Object{}
 	obj.SetProp(ctx, "self", obj)
 	clone, err = obj.Clone(map[uintptr]map[int]Value{}, 0)

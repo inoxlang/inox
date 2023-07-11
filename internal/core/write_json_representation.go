@@ -312,7 +312,7 @@ func (list *IntList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, c
 func (list *BoolList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
 	return list.WriteRepresentation(ctx, w, &ReprConfig{
 		AllVisible: true,
-	})
+	}, 0)
 }
 
 func (list *StringList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {

@@ -726,7 +726,7 @@ var byteCountReprTestCases = []struct {
 
 func TestByteCountRepresentation(t *testing.T) {
 	negative := ByteCount(-1)
-	assert.ErrorIs(t, negative.WriteRepresentation(reprTestCtx, nil, nil), ErrNoRepresentation)
+	assert.ErrorIs(t, negative.WriteRepresentation(reprTestCtx, nil, nil, 0), ErrNoRepresentation)
 
 	for _, testCase := range byteCountReprTestCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
@@ -769,7 +769,7 @@ var byteRateReprTestCases = []struct {
 
 func TestByteRateRepresentation(t *testing.T) {
 	negative := ByteRate(-1)
-	assert.ErrorIs(t, negative.WriteRepresentation(reprTestCtx, nil, nil), ErrNoRepresentation)
+	assert.ErrorIs(t, negative.WriteRepresentation(reprTestCtx, nil, nil, 0), ErrNoRepresentation)
 
 	for _, testCase := range byteRateReprTestCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
@@ -801,7 +801,7 @@ var simpleRateReprTestCases = []struct {
 
 func TestSimpleRateRepresentation(t *testing.T) {
 	negative := SimpleRate(-1)
-	assert.ErrorIs(t, negative.WriteRepresentation(reprTestCtx, nil, nil), ErrNoRepresentation)
+	assert.ErrorIs(t, negative.WriteRepresentation(reprTestCtx, nil, nil, 0), ErrNoRepresentation)
 
 	for _, testCase := range simpleRateReprTestCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
@@ -1002,7 +1002,7 @@ func getRepr(t *testing.T, v Serializable, ctx *Context, reprConfig ...*ReprConf
 		reprConfig = append(reprConfig, &ReprConfig{AllVisible: true})
 	}
 
-	err := v.WriteRepresentation(ctx, buff, reprConfig[0])
+	err := v.WriteRepresentation(ctx, buff, reprConfig[0], 0)
 	if err != nil {
 		assert.FailNow(t, "failed to get representation: "+err.Error())
 	}

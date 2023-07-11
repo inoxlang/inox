@@ -138,13 +138,17 @@ func persistSet(ctx *core.Context, set *Set, path core.Path, storage core.Serial
 	buff := bytes.NewBuffer(nil)
 	set.WriteRepresentation(ctx, buff, &core.ReprConfig{
 		AllVisible: true,
-	})
+	}, 0)
 
 	storage.SetSerialized(ctx, path, buff.String())
 	return nil
 }
 
-func (set *Set) WriteRepresentation(ctx *core.Context, w io.Writer, config *core.ReprConfig) error {
+func (set *Set) WriteRepresentation(ctx *core.Context, w io.Writer, config *core.ReprConfig, depth int) error {
+	if depth > core.MAX_REPR_WRITING_DEPTH {
+		return core.ErrMaximumReprWritingDepthReached
+	}
+
 	buff := bytes.NewBufferString("[")
 
 	first := true
@@ -154,7 +158,7 @@ func (set *Set) WriteRepresentation(ctx *core.Context, w io.Writer, config *core
 		}
 		first = false
 
-		if err := e.WriteRepresentation(ctx, buff, config); err != nil {
+		if err := e.WriteRepresentation(ctx, buff, config, depth+1); err != nil {
 			return err
 		}
 	}

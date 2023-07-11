@@ -538,7 +538,7 @@ func TestCheckedStringJSONRepresentation(t *testing.T) {
 
 func TestByteCountJSONRepresentation(t *testing.T) {
 	negative := ByteCount(-1)
-	assert.ErrorIs(t, negative.WriteRepresentation(reprTestCtx, nil, nil), ErrNoRepresentation)
+	assert.ErrorIs(t, negative.WriteRepresentation(reprTestCtx, nil, nil, 0), ErrNoRepresentation)
 
 	for _, testCase := range byteCountReprTestCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
@@ -562,7 +562,7 @@ func TestLineCountJSONRepresentation(t *testing.T) {
 
 func TestByteRateJSONRepresentation(t *testing.T) {
 	negative := ByteRate(-1)
-	assert.ErrorIs(t, negative.WriteRepresentation(reprTestCtx, nil, nil), ErrNoRepresentation)
+	assert.ErrorIs(t, negative.WriteRepresentation(reprTestCtx, nil, nil, 0), ErrNoRepresentation)
 
 	for _, testCase := range byteRateReprTestCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {

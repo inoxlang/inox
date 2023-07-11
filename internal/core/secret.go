@@ -27,7 +27,7 @@ type Secret struct {
 	pattern *SecretPattern
 }
 
-func (m *Secret) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error {
+func (m *Secret) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNoRepresentation
 }
 

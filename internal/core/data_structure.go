@@ -299,7 +299,7 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 
 	serializableVal, ok := value.(Serializable)
 	if !ok {
-		fmt.Errorf("value is not serializable")
+		return fmt.Errorf("value is not serializable")
 	}
 
 	closestState := ctx.GetClosestState()

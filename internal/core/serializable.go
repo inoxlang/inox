@@ -23,7 +23,7 @@ type Serializable interface {
 	Value
 
 	//IXON representation
-	WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig) error
+	WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error
 
 	//JSON representation
 	WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error
