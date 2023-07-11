@@ -746,7 +746,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return nil, err
 		}
 
-		list := right.(*List)
+		list := right.(Sequence)
 		scope := state.CurrentLocalScope()
 
 		listLength := list.Len()
