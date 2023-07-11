@@ -493,8 +493,8 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		}
 
 		if must {
-			if list, isList := ret.(*List); isList && list.HasKnownLen() && list.KnownLen() != 0 {
-				lastElem := list.elements[len(list.elements)-1]
+			if array, isArray := ret.(*Array); isArray && array.HasKnownLen() && array.KnownLen() != 0 {
+				lastElem := array.elements[len(array.elements)-1]
 
 				if _, ok := lastElem.(*Error); ok {
 					panic("symbolic evaluation of 'must' calls not fully implemented")

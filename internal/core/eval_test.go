@@ -2857,23 +2857,21 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				name: "variadic function with just enough arguments",
 				input: `
 					fn f(x, ...y){
-						return [$x, $y]
+						return Array($x, $y)
 					}
 					return f(1)
 				`,
-				result: newList(&ValueList{elements: []Serializable{Int(1), newList(&ValueList{elements: []Serializable{}})}}),
+				result: NewArrayFrom(Int(1), NewArrayFrom()),
 			},
 			{
 				name: "variadic function with many arguments",
 				input: `
 					fn f(x, ...y){
-						return [$x, $y]
+						return Array($x, $y)
 					}
 					return f(1, 2, 3)
 				`,
-				result: newList(&ValueList{
-					elements: []Serializable{Int(1), newList(&ValueList{elements: []Serializable{Int(2), Int(3)}})},
-				}),
+				result: NewArrayFrom(Int(1), NewArrayFrom(Int(2), Int(3))),
 			},
 			{
 				name:  "non-variadic function with a spread argument",
@@ -3106,12 +3104,19 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		for _, testCase := range testCases {
 			t.Run(testCase.name, func(t *testing.T) {
 				state := NewGlobalState(NewDefaultTestContext())
+
+				state.Globals.Set("Array", WrapGoFunction(NewArray))
+
 				res, err := Eval(testCase.input, state, testCase.doSymbolicCheck)
 				if testCase.error {
-					assert.Error(t, err)
+					if !assert.Error(t, err) {
+						return
+					}
 					assert.Nil(t, res)
 				} else {
-					assert.NoError(t, err)
+					if !assert.NoError(t, err) {
+						return
+					}
 
 					if testCase.checkResult != nil {
 						testCase.checkResult(t, res, state)

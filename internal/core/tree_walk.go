@@ -2828,7 +2828,7 @@ func TreeWalkCallFunc(call TreeWalkCall) (Value, error) {
 			variadicArgs = append(variadicArgs, e.(Value))
 		}
 		name := fn.Parameters[len(fn.Parameters)-1].Var.Name
-		currentScope[name] = NewArray(variadicArgs...)
+		currentScope[name] = NewArrayFrom(variadicArgs...)
 	}
 
 	bodyResult, err := TreeWalkEval(fn.Body, state)

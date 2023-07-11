@@ -232,7 +232,7 @@ func (r *Routine) Prop(ctx *Context, name string) Value {
 		for i := 0; i < len(r.executedSteps); i++ {
 			steps[i] = r.executedSteps[i]
 		}
-		return NewArray(steps...)
+		return NewArrayFrom(steps...)
 	}
 	method, ok := r.GetGoMethod(name)
 	if !ok {

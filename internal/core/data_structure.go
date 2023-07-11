@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -17,6 +18,12 @@ var (
 
 	_ Sequence = (*Array)(nil)
 )
+
+func init() {
+	RegisterSymbolicGoFunction(NewArray, func(ctx *symbolic.Context, elements ...symbolic.SymbolicValue) *symbolic.Array {
+		return symbolic.NewArray()
+	})
+}
 
 // Object implements Value.
 type Object struct {
@@ -712,9 +719,16 @@ func (d *Dictionary) Value(ctx *Context, key Serializable) (Value, bool) {
 
 type Array []Value
 
-func NewArray(elements ...Value) *Array {
+func NewArrayFrom(elements ...Value) *Array {
+	if elements == nil {
+		elements = []Value{}
+	}
 	array := Array(elements)
 	return &array
+}
+
+func NewArray(ctx *Context, elements ...Value) *Array {
+	return NewArrayFrom(elements...)
 }
 
 func (a *Array) At(ctx *Context, i int) Value {

@@ -295,12 +295,12 @@ func (goFunc *GoFunction) Call(args []any, globalState, extState *GlobalState, i
 
 	//TODO: support any result types
 
-	return NewArray(results...), nil
+	return NewArrayFrom(results...), nil
 }
 
 func IsResultWithError(result Value) (bool, error) {
-	if list, isList := result.(*List); isList && list.Len() != 0 {
-		lastElem := reflect.ValueOf(list.Len() - 1)
+	if array, isArray := result.(*Array); isArray && array.Len() != 0 {
+		lastElem := reflect.ValueOf(array.Len() - 1)
 		if lastElem.Type().Implements(ERROR_INTERFACE_TYPE) && !lastElem.IsNil() {
 			return true, lastElem.Interface().(error)
 		}
