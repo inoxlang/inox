@@ -1260,7 +1260,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			patt := res.(*DifferencePattern)
 
 			assert.IsType(t, &UnionPattern{}, patt.base)
-			assert.Equal(t, &ExactValuePattern{value: Int(1)}, patt.removed)
+			assert.Equal(t, &ExactValuePattern{
+				value: Int(1),
+				CallBasedPatternReprMixin: CallBasedPatternReprMixin{
+					Callee: VAL_PATTERN,
+					Params: []Serializable{Int(1)},
+				},
+			}, patt.removed)
 		})
 	})
 
@@ -5093,7 +5099,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, map[string]*PatternNamespace{
 				"namespace": {
 					Patterns: map[string]Pattern{
-						"one": &ExactValuePattern{value: Int(1)},
+						"one": &ExactValuePattern{
+							value: Int(1),
+							CallBasedPatternReprMixin: CallBasedPatternReprMixin{
+								Callee: VAL_PATTERN,
+								Params: []Serializable{Int(1)},
+							},
+						},
 						"empty_obj": &ObjectPattern{
 							entryPatterns: map[string]Pattern{},
 							inexact:       true,
@@ -5113,7 +5125,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		res, err := Eval(code, state, false)
 
 		assert.NoError(t, err)
-		assert.Equal(t, &ExactValuePattern{value: Int(1)}, res)
+		assert.Equal(t, &ExactValuePattern{
+			value: Int(1),
+			CallBasedPatternReprMixin: CallBasedPatternReprMixin{
+				Callee: VAL_PATTERN,
+				Params: []Serializable{Int(1)},
+			},
+		}, res)
 	})
 
 	t.Run("object pattern literal", func(t *testing.T) {
@@ -5140,8 +5158,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, &ObjectPattern{
 				inexact: true,
 				entryPatterns: map[string]Pattern{
-					"name":  NewExactStringPattern(Str("s")),
-					"count": &ExactValuePattern{value: Int(2)},
+					"name": NewExactStringPattern(Str("s")),
+					"count": &ExactValuePattern{
+						value: Int(2),
+						CallBasedPatternReprMixin: CallBasedPatternReprMixin{
+							Callee: VAL_PATTERN,
+							Params: []Serializable{Int(2)},
+						},
+					},
 				},
 			}, res)
 		})
@@ -5222,7 +5246,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					entryPatterns: map[string]Pattern{
 						"s":    NewExactStringPattern(Str("s")),
 						"name": NewExactStringPattern(Str("foo")),
-						"age":  &ExactValuePattern{value: Int(30)},
+						"age": &ExactValuePattern{
+							value: Int(30),
+							CallBasedPatternReprMixin: CallBasedPatternReprMixin{
+								Callee: VAL_PATTERN,
+								Params: []Serializable{Int(30)},
+							},
+						},
 					},
 				}, res)
 			})
@@ -5263,7 +5293,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					entryPatterns: map[string]Pattern{
 						"s":    NewExactStringPattern(Str("s")),
 						"name": NewExactStringPattern(Str("foo")),
-						"age":  &ExactValuePattern{value: Int(30)},
+						"age": &ExactValuePattern{
+							value: Int(30),
+							CallBasedPatternReprMixin: CallBasedPatternReprMixin{
+								Callee: VAL_PATTERN,
+								Params: []Serializable{Int(30)},
+							},
+						},
 					},
 				}, res)
 			})
@@ -5328,7 +5364,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.NoError(t, err)
 			assert.Equal(t, &ListPattern{
 				elementPatterns: []Pattern{
-					&ExactValuePattern{value: Int(2)},
+					&ExactValuePattern{
+						value: Int(2),
+						CallBasedPatternReprMixin: CallBasedPatternReprMixin{
+							Callee: VAL_PATTERN,
+							Params: []Serializable{Int(2)},
+						},
+					},
 				},
 			}, res)
 		})
@@ -5433,8 +5475,20 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, []Pattern{
-			&ExactValuePattern{value: Int(1)},
-			&ExactValuePattern{value: Int(2)},
+			&ExactValuePattern{
+				value: Int(1),
+				CallBasedPatternReprMixin: CallBasedPatternReprMixin{
+					Callee: VAL_PATTERN,
+					Params: []Serializable{Int(1)},
+				},
+			},
+			&ExactValuePattern{
+				value: Int(2),
+				CallBasedPatternReprMixin: CallBasedPatternReprMixin{
+					Callee: VAL_PATTERN,
+					Params: []Serializable{Int(2)},
+				},
+			},
 		}, res.(*UnionPattern).cases)
 	})
 

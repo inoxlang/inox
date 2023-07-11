@@ -615,7 +615,7 @@ func (v *VM) run() {
 			v.sp -= 2
 
 			if _, ok := right.(Pattern); !ok {
-				right = &ExactValuePattern{value: right.(Serializable)}
+				right = NewExactValuePattern(right.(Serializable))
 			}
 			v.stack[v.sp] = &DifferencePattern{base: left.(Pattern), removed: right.(Pattern)}
 			v.sp++

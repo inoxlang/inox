@@ -1899,7 +1899,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return Bool(strings.Contains(left.(WrappedString).UnderlyingString(), right.(WrappedString).UnderlyingString())), nil
 		case parse.SetDifference:
 			if _, ok := right.(Pattern); !ok {
-				right = &ExactValuePattern{value: right.(Serializable)}
+				right = NewExactValuePattern(right.(Serializable))
 			}
 			return &DifferencePattern{base: left.(Pattern), removed: right.(Pattern)}, nil
 		case parse.NilCoalescing:
