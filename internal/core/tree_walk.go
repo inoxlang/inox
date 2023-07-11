@@ -14,6 +14,7 @@ import (
 	parse "github.com/inoxlang/inox/internal/parse"
 	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/oklog/ulid/v2"
 )
 
 func NewTreeWalkState(ctx *Context, constants ...map[string]Value) *TreeWalkState {
@@ -1000,8 +1001,35 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		if n.Meta != nil {
 			meta := map[string]Value{}
 			if objLit, ok := n.Meta.(*parse.ObjectLiteral); ok {
+
 				for _, property := range objLit.Properties {
 					propertyName := property.Name() //okay since implicit-key properties are not allowed
+
+					if propertyName == "globals" {
+						globalsObjectLit, ok := property.Value.(*parse.ObjectLiteral)
+						//handle description separately if it's an object literal because non-serializable value are not accepted.
+						if ok {
+							globals := &Struct{}
+							var keys []string
+							var types []Pattern
+
+							for _, prop := range globalsObjectLit.Properties {
+								globalName := prop.Name() //okay since implicit-key properties are not allowed
+								globalVal, err := TreeWalkEval(prop.Value, state)
+								if err != nil {
+									return nil, err
+								}
+
+								keys = append(keys, globalName)
+								globals.values = append(globals.values, globalVal)
+								types = append(types, ANYVAL_PATTERN)
+							}
+							globals.structType = NewStructPattern("", ulid.Make(), keys, types)
+							meta[propertyName] = globals
+							continue
+						}
+					}
+
 					propertyVal, err := TreeWalkEval(property.Value, state)
 					if err != nil {
 						return nil, err
@@ -1032,8 +1060,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		})
 
 		switch g := globalsDesc.(type) {
-		case *Object:
-			for k, v := range g.EntryMap() {
+		case *Struct:
+			for k, v := range g.ValueMap() {
 				actualGlobals[k] = v
 			}
 		case KeyList:

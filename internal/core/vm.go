@@ -897,10 +897,10 @@ func (v *VM) run() {
 
 			structType := v.constants[structTypeIndex].(*StructPattern)
 
-			var values []Value
+			values := make([]Value, numElements)
 			fieldIndex := 0
-			for i := v.sp - numElements; i < v.sp; i += 2 {
-				values[fieldIndex] = v.stack[i+1]
+			for i := v.sp - numElements; i < v.sp; i++ {
+				values[fieldIndex] = v.stack[i]
 				fieldIndex++
 			}
 

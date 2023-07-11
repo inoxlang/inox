@@ -1578,8 +1578,30 @@ func (c *compiler) Compile(node parse.Node) error {
 				keys = append(keys, propertyName)
 				types = append(types, ANYVAL_PATTERN)
 
-				if err := c.Compile(property.Value); err != nil {
-					return err
+				if propertyName != "globals" || !parse.NodeIs(property.Value, (*parse.ObjectLiteral)(nil)) {
+					if err := c.Compile(property.Value); err != nil {
+						return err
+					}
+				} else {
+					//handle description separately if it's an object literal because non-serializable value are not accepted.
+					globalsLit := property.Value.(*parse.ObjectLiteral)
+
+					var globalNames []string
+					var globalTypes []Pattern
+
+					for _, prop := range globalsLit.Properties {
+						globalName := prop.Name() //okay since implicit-key properties are not allowed
+						globalNames = append(globalNames, globalName)
+						globalTypes = append(types, ANYVAL_PATTERN)
+
+						if err := c.Compile(prop.Value); err != nil {
+							return err
+						}
+					}
+
+					anonGlobalsStructType := NewStructPattern("", ulid.Make(), globalNames, globalTypes)
+					globalCount := len(globalsLit.Properties)
+					c.emit(globalsLit, OpCreateStruct, c.addConstant(anonGlobalsStructType), globalCount)
 				}
 			}
 

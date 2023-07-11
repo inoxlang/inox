@@ -2637,7 +2637,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.IsType(t, &InoxFunction{}, res)
 			if bytecodeEval {
-				assert.Equal(t, []Serializable{Int(1), Int(2)}, res.(*InoxFunction).capturedLocals)
+				assert.Equal(t, []Value{Int(1), Int(2)}, res.(*InoxFunction).capturedLocals)
 			} else {
 				assert.Equal(t, map[string]Value{
 					"a": Int(1),
@@ -3204,7 +3204,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				makeGlobals: func(t *testing.T) map[string]Value {
 					return map[string]Value{
 						"gofunc": WrapGoFunction(func(ctx *Context, obj *Object) {
-							assert.Equal(t, map[string]Value{"a": Int(1)}, obj.EntryMap())
+							assert.Equal(t, map[string]Serializable{"a": Int(1)}, obj.EntryMap())
 						}),
 					}
 				},
@@ -3321,7 +3321,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						return []Str{"string"}
 					}),
 				},
-				result: newList(&ValueList{elements: []Serializable{Str("string")}}),
+				result: NewWrappedValueList(Str("string")),
 			},
 			{
 				name:  "method",
@@ -4731,7 +4731,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			assert.IsType(t, &Array{}, res)
-			for _, e := range res.(*List).GetOrBuildElements(state.Ctx) {
+			for _, e := range *res.(*Array) {
 				if !assert.Equal(t, Int(0), e) {
 					return
 				}
@@ -4765,8 +4765,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.IsType(t, &List{}, res)
-			for _, e := range res.(*List).GetOrBuildElements(state.Ctx) {
+			assert.IsType(t, &Array{}, res)
+			for _, e := range *res.(*Array) {
 				if !assert.Equal(t, Int(1), e) {
 					return
 				}
