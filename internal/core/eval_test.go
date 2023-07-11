@@ -7540,7 +7540,7 @@ func TestSpawnRoutine(t *testing.T) {
 		}
 		obj := res.(*Object)
 		assert.True(t, obj.IsShared())
-		assert.Equal(t, map[string]Value{"a": Int(1)}, obj.EntryMap())
+		assert.Equal(t, map[string]Serializable{"a": Int(1)}, obj.EntryMap())
 	})
 
 }

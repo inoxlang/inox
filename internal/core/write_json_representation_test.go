@@ -377,7 +377,7 @@ func TestListJSONRepresentation(t *testing.T) {
 	t.Run("deep", func(t *testing.T) {
 		list := NewWrappedValueList(NewWrappedValueList(Int(2), objFrom(ValMap{"a": Int(1)})))
 
-		expectedRepr := `[[2,{"a":1}]]`
+		expectedRepr := `[[{"int__value":"2"},{"a":{"int__value":"1"}}]]`
 		assert.Equal(t, expectedRepr, getJSONRepr(t, list, reprTestCtx))
 	})
 

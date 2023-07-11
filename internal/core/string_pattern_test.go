@@ -463,7 +463,7 @@ func TestSequenceStringPattern(t *testing.T) {
 			result, ok, err := patt.MatchGroups(nil, Str("12"))
 			assert.NoError(t, err)
 			assert.True(t, ok)
-			assert.Equal(t, map[string]Value{
+			assert.Equal(t, map[string]Serializable{
 				"0":      Str("12"),
 				"number": Str("12"),
 			}, result)
@@ -484,7 +484,7 @@ func TestSequenceStringPattern(t *testing.T) {
 			result, ok, err := patt.MatchGroups(nil, Str("1212"))
 			assert.NoError(t, err)
 			assert.True(t, ok)
-			assert.Equal(t, map[string]Value{
+			assert.Equal(t, map[string]Serializable{
 				"0":      Str("1212"),
 				"number": Str("1212"),
 			}, result)
@@ -502,7 +502,7 @@ func TestSequenceStringPattern(t *testing.T) {
 			result, ok, err := patt.MatchGroups(nil, Str("12AB"))
 			assert.NoError(t, err)
 			assert.True(t, ok)
-			assert.Equal(t, map[string]Value{
+			assert.Equal(t, map[string]Serializable{
 				"0":       Str("12AB"),
 				"digits":  Str("12"),
 				"letters": Str("AB"),
@@ -522,7 +522,7 @@ func TestSequenceStringPattern(t *testing.T) {
 			result, ok, err := patt.MatchGroups(nil, Str("12AB"))
 			assert.NoError(t, err)
 			assert.True(t, ok)
-			assert.Equal(t, map[string]Value{
+			assert.Equal(t, map[string]Serializable{
 				"0":      Str("12AB"),
 				"digits": Str("12"),
 			}, result)
@@ -586,7 +586,7 @@ func TestUnionStringPattern(t *testing.T) {
 			result, ok, err := patt.MatchGroups(nil, Str("12"))
 			assert.NoError(t, err)
 			assert.True(t, ok)
-			assert.Equal(t, map[string]Value{
+			assert.Equal(t, map[string]Serializable{
 				"0":      Str("12"),
 				"number": Str("12"),
 			}, result)

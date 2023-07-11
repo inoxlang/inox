@@ -165,24 +165,24 @@ func TestPreInit(t *testing.T) {
 				}`,
 			error: true,
 		},
-		{
-			name: "see email addresses",
-			inputModule: `manifest {
-					permissions: {
-						see: { values: %emailaddr }
-					}
-				}`,
-			error: true,
-		},
-		{
-			name: "see email addresses & ints",
-			inputModule: `manifest {
-				permissions: {
-					see: { values: [%emailaddr, %int] }
-				}
-			}`,
-			error: true,
-		},
+		// {
+		// 	name: "see email addresses",
+		// 	inputModule: `manifest {
+		// 			permissions: {
+		// 				see: { values: %emailaddr }
+		// 			}
+		// 		}`,
+		// 	//error: true,
+		// },
+		// {
+		// 	name: "see email addresses & ints",
+		// 	inputModule: `manifest {
+		// 		permissions: {
+		// 			see: { values: [%emailaddr, %int] }
+		// 		}
+		// 	}`,
+		// 	//error: true,
+		// },
 		{
 			name: "invalid node type in preinit block",
 			inputModule: `

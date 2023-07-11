@@ -141,7 +141,7 @@ func TestListOnMutation(t *testing.T) {
 		list.insertElement(ctx, Int(1), 0)
 
 		assert.True(t, called.Load())
-		assert.Equal(t, []Value{Int(1)}, list.GetOrBuildElements(ctx))
+		assert.Equal(t, []Serializable{Int(1)}, list.GetOrBuildElements(ctx))
 	})
 
 	t.Run("microtask should be called when an element is set", func(t *testing.T) {
@@ -171,7 +171,7 @@ func TestListOnMutation(t *testing.T) {
 		list.set(ctx, 0, Int(2))
 
 		assert.True(t, called.Load())
-		assert.Equal(t, []Value{Int(2)}, list.GetOrBuildElements(ctx))
+		assert.Equal(t, []Serializable{Int(2)}, list.GetOrBuildElements(ctx))
 	})
 
 	t.Run("dynamic map invocation: microtask should NOT be called when an element is inserted if callback has been removed", func(t *testing.T) {
