@@ -9,8 +9,10 @@ import (
 
 // A LifetimeJob represents a symbolic LifetimeJob.
 type LifetimeJob struct {
-	UnassignablePropsMixin
 	subjectPattern Pattern
+
+	UnassignablePropsMixin
+	SerializableMixin
 }
 
 func NewLifetimeJob(subjectPattern Pattern) *LifetimeJob {

@@ -25,7 +25,7 @@ var (
 
 	ANY_INDEXABLE = &AnyIndexable{}
 	ANY_ARRAY     = &Array{}
-	ANY_TUPLE     = NewTupleOf(ANY)
+	ANY_TUPLE     = NewTupleOf(ANY_SERIALIZABLE)
 	ANY_OBJ       = &Object{}
 	ANY_REC       = &Record{}
 	ANY_NAMESPACE = NewAnyNamespace()
@@ -44,8 +44,8 @@ type Indexable interface {
 
 // An Array represents a symbolic Array.
 type Array struct {
-	_        int
-	elements []SymbolicValue //if nil matches any
+	elements       []SymbolicValue
+	generalElement SymbolicValue
 }
 
 func NewArray(elements ...SymbolicValue) *Array {
@@ -53,6 +53,10 @@ func NewArray(elements ...SymbolicValue) *Array {
 		elements = []SymbolicValue{}
 	}
 	return &Array{elements: elements}
+}
+
+func NewArrayOf(generalElement SymbolicValue) *Array {
+	return &Array{generalElement: generalElement}
 }
 
 func NewAnyArray() *Array {
@@ -66,6 +70,15 @@ func (a *Array) Test(v SymbolicValue) bool {
 	}
 
 	if a.elements == nil {
+		if otherArray.elements == nil {
+			return a.generalElement.Test(otherArray.generalElement)
+		}
+
+		for _, elem := range otherArray.elements {
+			if !a.generalElement.Test(elem) {
+				return false
+			}
+		}
 		return true
 	}
 
@@ -83,14 +96,44 @@ func (a *Array) Test(v SymbolicValue) bool {
 
 func (a *Array) Widen() (SymbolicValue, bool) {
 	if a.elements == nil {
-		return nil, false
+		if _, ok := a.generalElement.(*Any); ok {
+			return nil, false
+		}
+		return &Array{generalElement: ANY}, true
 	}
 
-	return ANY_ARRAY, true
+	allAny := true
+
+	for _, elem := range a.elements {
+		if _, ok := elem.(*Any); !ok {
+			allAny = false
+			break
+		}
+	}
+
+	if allAny {
+		return &Array{generalElement: ANY}, true
+	}
+
+	widenedElements := make([]SymbolicValue, 0)
+	noWidening := true
+	for _, elem := range a.elements {
+		widened, ok := elem.Widen()
+		if ok {
+			noWidening = false
+			widenedElements = append(widenedElements, asSerializable(widened).(Serializable))
+		} else {
+			widenedElements = append(widenedElements, elem)
+		}
+	}
+	if noWidening {
+		return &Array{generalElement: joinValues(widenedElements)}, true
+	}
+	return &Array{elements: widenedElements}, true
 }
 
 func (a *Array) IsWidenable() bool {
-	return a.elements != nil
+	return a.elements != nil || !IsAny(a.generalElement)
 }
 
 func (a *Array) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -153,7 +196,10 @@ func (a *Array) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, d
 		utils.Must(w.Write(end))
 		return
 	}
-	utils.Must(w.Write(utils.StringAsBytes("%array")))
+
+	utils.Must(w.Write(utils.StringAsBytes("%array(")))
+	a.generalElement.PrettyPrint(w, config, depth, parentIndentCount)
+	utils.Must(w.Write(utils.StringAsBytes(")")))
 }
 
 func (a *Array) HasKnownLen() bool {
@@ -206,20 +252,20 @@ func (*Array) WidestOfType() SymbolicValue {
 
 // A List represents a symbolic List.
 type List struct {
-	elements       []SymbolicValue
-	generalElement SymbolicValue
+	elements       []Serializable
+	generalElement Serializable
 
 	SerializableMixin
 }
 
-func NewList(elements ...SymbolicValue) *List {
+func NewList(elements ...Serializable) *List {
 	if elements == nil {
-		elements = []SymbolicValue{}
+		elements = []Serializable{}
 	}
 	return &List{elements: elements}
 }
 
-func NewListOf(generalElement SymbolicValue) *List {
+func NewListOf(generalElement Serializable) *List {
 	return &List{generalElement: generalElement}
 }
 
@@ -256,44 +302,44 @@ func (list *List) Test(v SymbolicValue) bool {
 
 func (list *List) Widen() (SymbolicValue, bool) {
 	if list.elements == nil {
-		if _, ok := list.generalElement.(*Any); ok {
+		if _, ok := list.generalElement.(*AnySerializable); ok {
 			return nil, false
 		}
-		return &List{generalElement: ANY}, true
+		return &List{generalElement: ANY_SERIALIZABLE}, true
 	}
 
 	allAny := true
 
 	for _, elem := range list.elements {
-		if _, ok := elem.(*Any); !ok {
+		if _, ok := elem.(*AnySerializable); !ok {
 			allAny = false
 			break
 		}
 	}
 
 	if allAny {
-		return &List{generalElement: ANY}, true
+		return &List{generalElement: ANY_SERIALIZABLE}, true
 	}
 
-	widenedElements := make([]SymbolicValue, 0)
+	widenedElements := make([]Serializable, 0)
 	noWidening := true
 	for _, elem := range list.elements {
 		widened, ok := elem.Widen()
 		if ok {
 			noWidening = false
-			widenedElements = append(widenedElements, widened)
+			widenedElements = append(widenedElements, asSerializable(widened).(Serializable))
 		} else {
 			widenedElements = append(widenedElements, elem)
 		}
 	}
 	if noWidening {
-		return &List{generalElement: joinValues(widenedElements)}, true
+		return &List{generalElement: asSerializable(joinValues(SerializablesToValues(widenedElements))).(Serializable)}, true
 	}
 	return &List{elements: widenedElements}, true
 }
 
 func (list *List) IsWidenable() bool {
-	return list.elements != nil || !IsAny(list.generalElement)
+	return list.elements != nil || !IsAnySerializable(list.generalElement)
 }
 
 func (list *List) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -377,7 +423,7 @@ func (a *List) element() SymbolicValue {
 		if len(a.elements) == 0 {
 			return ANY
 		}
-		return joinValues(a.elements)
+		return joinValues(SerializablesToValues(a.elements))
 	}
 	return a.generalElement
 }
@@ -405,12 +451,12 @@ func (a *List) IteratorElementValue() SymbolicValue {
 }
 
 func (a *List) WidestOfType() SymbolicValue {
-	return &List{generalElement: ANY}
+	return &List{generalElement: ANY_SERIALIZABLE}
 }
 
 func (l *List) slice(start, end *Int) Sequence {
 	if l.HasKnownLen() {
-		return &List{generalElement: ANY}
+		return &List{generalElement: ANY_SERIALIZABLE}
 	}
 	return &List{
 		generalElement: l.generalElement,
@@ -443,21 +489,21 @@ func (l *List) WatcherElement() SymbolicValue {
 
 // A Tuple represents a symbolic Tuple.
 type Tuple struct {
-	elements       []SymbolicValue
-	generalElement SymbolicValue
+	elements       []Serializable
+	generalElement Serializable
 
 	SerializableMixin
 }
 
-func NewTuple(elements ...SymbolicValue) *Tuple {
-	l := &Tuple{elements: make([]SymbolicValue, 0)}
+func NewTuple(elements ...Serializable) *Tuple {
+	l := &Tuple{elements: make([]Serializable, 0)}
 	for _, e := range elements {
 		l.append(e)
 	}
 	return l
 }
 
-func NewTupleOf(generalElement SymbolicValue) *Tuple {
+func NewTupleOf(generalElement Serializable) *Tuple {
 	return &Tuple{generalElement: generalElement}
 }
 
@@ -494,38 +540,38 @@ func (t *Tuple) Test(v SymbolicValue) bool {
 
 func (t *Tuple) Widen() (SymbolicValue, bool) {
 	if t.elements == nil {
-		if _, ok := t.generalElement.(*Any); ok {
+		if _, ok := t.generalElement.(*AnySerializable); ok {
 			return nil, false
 		}
-		return &Tuple{generalElement: ANY}, true
+		return &Tuple{generalElement: ANY_SERIALIZABLE}, true
 	}
 
 	allAny := true
 
 	for _, elem := range t.elements {
-		if _, ok := elem.(*Any); !ok {
+		if _, ok := elem.(*AnySerializable); !ok {
 			allAny = false
 			break
 		}
 	}
 
 	if allAny {
-		return &Tuple{generalElement: ANY}, true
+		return &Tuple{generalElement: ANY_SERIALIZABLE}, true
 	}
 
-	widenedElements := make([]SymbolicValue, 0)
+	widenedElements := make([]Serializable, 0)
 	noWidening := true
 	for _, elem := range t.elements {
 		widened, ok := elem.Widen()
 		if ok {
 			noWidening = false
-			widenedElements = append(widenedElements, widened)
+			widenedElements = append(widenedElements, asSerializable(widened).(Serializable))
 		} else {
 			widenedElements = append(widenedElements, elem)
 		}
 	}
 	if noWidening {
-		return &Tuple{generalElement: joinValues(widenedElements)}, true
+		return &Tuple{generalElement: asSerializable(joinValues(SerializablesToValues(widenedElements))).(Serializable)}, true
 	}
 	return &Tuple{elements: widenedElements}, true
 }
@@ -547,10 +593,10 @@ func (t *Tuple) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, d
 
 func (t *Tuple) append(element SymbolicValue) {
 	if t.elements == nil {
-		t.elements = make([]SymbolicValue, 0)
+		t.elements = make([]Serializable, 0)
 	}
 
-	t.elements = append(t.elements, element)
+	t.elements = append(t.elements, asSerializable(element).(Serializable))
 }
 
 func (t *Tuple) HasKnownLen() bool {
@@ -570,7 +616,7 @@ func (t *Tuple) element() SymbolicValue {
 		if len(t.elements) == 0 {
 			return ANY // return "never" ?
 		}
-		return joinValues(t.elements)
+		return joinValues(SerializablesToValues(t.elements))
 	}
 	return t.generalElement
 }
@@ -594,12 +640,12 @@ func (t *Tuple) IteratorElementValue() SymbolicValue {
 }
 
 func (t *Tuple) WidestOfType() SymbolicValue {
-	return &Tuple{generalElement: ANY}
+	return &Tuple{generalElement: ANY_SERIALIZABLE}
 }
 
 func (t *Tuple) slice(start, end *Int) Sequence {
 	if t.HasKnownLen() {
-		return &Tuple{generalElement: ANY}
+		return &Tuple{generalElement: ANY_SERIALIZABLE}
 	}
 	return &Tuple{
 		generalElement: t.generalElement,
@@ -863,7 +909,7 @@ func (d *Dictionary) WidestOfType() SymbolicValue {
 //
 
 type Object struct {
-	entries                    map[string]SymbolicValue //if nil, matches any object
+	entries                    map[string]Serializable //if nil, matches any object
 	optionalEntries            map[string]struct{}
 	static                     map[string]Pattern //key in .Static => key in .Entries, not reciprocal
 	complexPropertyConstraints []*ComplexPropertyConstraint
@@ -877,10 +923,10 @@ func NewAnyObject() *Object {
 }
 
 func NewEmptyObject() *Object {
-	return &Object{entries: map[string]SymbolicValue{}}
+	return &Object{entries: map[string]Serializable{}}
 }
 
-func NewObject(entries map[string]SymbolicValue, optionalEntries map[string]struct{}, static map[string]Pattern) *Object {
+func NewObject(entries map[string]Serializable, optionalEntries map[string]struct{}, static map[string]Pattern) *Object {
 	obj := &Object{
 		entries:         entries,
 		optionalEntries: optionalEntries,
@@ -893,7 +939,7 @@ func NewUnitializedObject() *Object {
 	return &Object{}
 }
 
-func InitializeObject(obj *Object, entries map[string]SymbolicValue, static map[string]Pattern) {
+func InitializeObject(obj *Object, entries map[string]Serializable, static map[string]Pattern) {
 	if obj.entries != nil {
 		panic(errors.New("object is already initialized"))
 	}
@@ -901,9 +947,9 @@ func InitializeObject(obj *Object, entries map[string]SymbolicValue, static map[
 	obj.static = static
 }
 
-func (obj *Object) initNewProp(key string, value SymbolicValue, static Pattern) {
+func (obj *Object) initNewProp(key string, value Serializable, static Pattern) {
 	if obj.entries == nil {
-		obj.entries = make(map[string]SymbolicValue, 1)
+		obj.entries = make(map[string]Serializable, 1)
 	}
 	obj.entries[key] = value
 	if static != nil {
@@ -981,7 +1027,7 @@ func (obj *Object) Share(originState *State) PotentiallySharable {
 			panic(err)
 		}
 
-		shared.entries[k] = newVal
+		shared.entries[k] = newVal.(Serializable)
 	}
 
 	return shared
@@ -1012,6 +1058,14 @@ func (obj *Object) ForEachEntry(fn func(k string, v SymbolicValue) error) error 
 	return nil
 }
 
+func (obj *Object) ValueEntryMap() map[string]SymbolicValue {
+	entries := map[string]SymbolicValue{}
+	for k, v := range obj.entries {
+		entries[k] = v
+	}
+	return entries
+}
+
 func (obj *Object) SetProp(name string, value SymbolicValue) (IProps, error) {
 	if obj.entries == nil {
 		return ANY_OBJ, nil
@@ -1030,7 +1084,7 @@ func (obj *Object) SetProp(name string, value SymbolicValue) (IProps, error) {
 
 		modified := *obj
 		modified.entries = utils.CopyMap(obj.entries)
-		modified.entries[name] = value
+		modified.entries[name] = value.(Serializable)
 
 		return &modified, nil
 	}
@@ -1039,14 +1093,14 @@ func (obj *Object) SetProp(name string, value SymbolicValue) (IProps, error) {
 
 	modified := *obj
 	modified.entries = utils.CopyMap(obj.entries)
-	modified.entries[name] = value
+	modified.entries[name] = value.(Serializable)
 	return &modified, nil
 }
 
 func (obj *Object) WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error) {
 	modified := *obj
 	modified.entries = utils.CopyMap(obj.entries)
-	modified.entries[name] = value
+	modified.entries[name] = value.(Serializable)
 	return &modified, nil
 }
 
@@ -1158,14 +1212,14 @@ func (obj *Object) Widen() (SymbolicValue, bool) {
 		return nil, false
 	}
 
-	widenedEntries := map[string]SymbolicValue{}
+	widenedEntries := map[string]Serializable{}
 	allAlreadyWidened := true
 
 	for k, v := range obj.entries {
 		widened, ok := v.Widen()
 		if ok {
 			allAlreadyWidened = false
-			v = widened
+			v = widened.(Serializable)
 		}
 		widenedEntries[k] = v
 	}
@@ -1250,7 +1304,7 @@ func (o *Object) WidestOfType() SymbolicValue {
 // A Record represents a symbolic Record.
 type Record struct {
 	UnassignablePropsMixin
-	entries         map[string]SymbolicValue //if nil, matches any record
+	entries         map[string]Serializable //if nil, matches any record
 	optionalEntries map[string]struct{}
 	valueOnly       SymbolicValue
 
@@ -1262,10 +1316,10 @@ func NewAnyrecord() *Record {
 }
 
 func NewEmptyRecord() *Record {
-	return &Record{entries: map[string]SymbolicValue{}}
+	return &Record{entries: map[string]Serializable{}}
 }
 
-func NewRecord(entries map[string]SymbolicValue) *Record {
+func NewRecord(entries map[string]Serializable) *Record {
 	return &Record{entries: entries}
 }
 
@@ -1273,7 +1327,7 @@ func NewAnyKeyRecord(value SymbolicValue) *Record {
 	return &Record{valueOnly: value}
 }
 
-func NewBoundEntriesRecord(entries map[string]SymbolicValue) *Record {
+func NewBoundEntriesRecord(entries map[string]Serializable) *Record {
 	return &Record{entries: entries}
 }
 
@@ -1350,6 +1404,14 @@ func (rec *Record) OptionalPropertyNames() []string {
 	return utils.GetMapKeys(rec.optionalEntries)
 }
 
+func (rec *Record) ValueEntryMap() map[string]SymbolicValue {
+	entries := map[string]SymbolicValue{}
+	for k, v := range rec.entries {
+		entries[k] = v
+	}
+	return entries
+}
+
 func (rec *Record) hasProperty(name string) bool {
 	if rec.entries == nil {
 		return true
@@ -1394,14 +1456,14 @@ func (rec *Record) Widen() (SymbolicValue, bool) {
 		return nil, false
 	}
 
-	widenedEntries := map[string]SymbolicValue{}
+	widenedEntries := map[string]Serializable{}
 	allAlreadyWidened := true
 
 	for k, v := range rec.entries {
 		widened, ok := v.Widen()
 		if ok {
 			allAlreadyWidened = false
-			v = widened
+			v = widened.(Serializable)
 		}
 		widenedEntries[k] = v
 	}

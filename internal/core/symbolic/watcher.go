@@ -107,7 +107,7 @@ func (r *Watcher) ChunkedStreamElement() SymbolicValue {
 	if r.filter == nil {
 		return ANY
 	}
-	return NewTupleOf(r.filter.SymbolicValue())
+	return NewTupleOf(r.filter.SymbolicValue().(Serializable))
 }
 
 func (r *Watcher) WidestOfType() SymbolicValue {

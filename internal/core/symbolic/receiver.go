@@ -103,7 +103,7 @@ func (r *AnyMessageReceiver) ReceiveMessage(SymbolicValue) error {
 // A SynchronousMessageHandler represents a symbolic SynchronousMessageHandler.
 type SynchronousMessageHandler struct {
 	UnassignablePropsMixin
-	_ int
+	SerializableMixin
 }
 
 func NewMessageHandler() *SynchronousMessageHandler {

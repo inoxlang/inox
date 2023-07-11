@@ -505,7 +505,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		if n.Operator.Int() {
 			if _, ok := right.(*Int); !ok {
 				badIntOperationRHS = true
-				state.addError(makeSymbolicEvalError(n.Right, state, INVALID_INT_OPER_ASSIGN_RHS_NOT_INT))
+				state.addError(makeSymbolicEvalError(n.Right, state, INVALID_ASSIGN_INT_OPER_ASSIGN_RHS_NOT_INT))
 			}
 		}
 
@@ -518,7 +518,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 					info, _ := state.getLocal(name)
 
 					if _, ok := info.value.(*Int); !ok {
-						state.addError(makeSymbolicEvalError(node, state, INVALID_INT_OPER_ASSIGN_LHS_NOT_INT))
+						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
 					} else if !badIntOperationRHS {
 						state.updateLocal(name, right, node)
 					}
@@ -538,7 +538,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				if n.Operator.Int() {
 					info, _ := state.getLocal(name)
 					if _, ok := info.value.(*Int); !ok {
-						state.addError(makeSymbolicEvalError(node, state, INVALID_INT_OPER_ASSIGN_LHS_NOT_INT))
+						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
 					} else if !badIntOperationRHS {
 						state.updateLocal(name, right, node)
 					}
@@ -563,7 +563,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				if n.Operator.Int() {
 					info, _ := state.getGlobal(name)
 					if _, ok := info.value.(*Int); !ok {
-						state.addError(makeSymbolicEvalError(node, state, INVALID_INT_OPER_ASSIGN_LHS_NOT_INT))
+						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
 					} else if !badIntOperationRHS {
 						state.updateLocal(name, right, node)
 					}
@@ -598,6 +598,11 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 					iprops = val
 				case *Any:
 					return nil, nil //no check
+				case *AnySerializable:
+					if _, ok := right.(Serializable); !ok {
+						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
+						return nil, nil
+					}
 				case nil:
 					return nil, errors.New("nil value")
 				default:
@@ -610,11 +615,18 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			hasPrevValue := utils.SliceContains(iprops.PropertyNames(), propName)
 
 			if hasPrevValue {
+				if _, ok := iprops.(Serializable); ok {
+					if _, ok := right.(Serializable); !ok {
+						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
+						return nil, nil
+					}
+				}
+
 				prevValue := iprops.Prop(propName)
 
 				if n.Operator.Int() {
 					if _, ok := prevValue.(*Int); !ok {
-						state.addError(makeSymbolicEvalError(node, state, INVALID_INT_OPER_ASSIGN_LHS_NOT_INT))
+						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
 					}
 				} else if badIntOperationRHS {
 
@@ -627,6 +639,13 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				}
 
 			} else {
+				if _, ok := iprops.(Serializable); ok {
+					if _, ok := right.(Serializable); !ok {
+						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
+						right = ANY_SERIALIZABLE
+					}
+				}
+
 				if newIprops, err := iprops.SetProp(propName, right); err != nil {
 					state.addError(makeSymbolicEvalError(node, state, err.Error()))
 				} else {
@@ -655,6 +674,11 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 					iprops = val
 				case *Any:
 					return nil, nil //no check
+				case *AnySerializable:
+					if _, ok := right.(Serializable); !ok {
+						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
+						return nil, nil
+					}
 				case nil:
 					return nil, errors.New("nil value")
 				default:
@@ -667,10 +691,17 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			hasPrevValue := utils.SliceContains(iprops.PropertyNames(), lastPropName)
 
 			if hasPrevValue {
+				if _, ok := iprops.(Serializable); ok {
+					if _, ok := right.(Serializable); !ok {
+						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
+						return nil, nil
+					}
+				}
+
 				prevValue := iprops.Prop(lastPropName)
 
 				if _, ok := prevValue.(*Int); !ok && n.Operator.Int() {
-					state.addError(makeSymbolicEvalError(node, state, INVALID_INT_OPER_ASSIGN_LHS_NOT_INT))
+					state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
 				} else {
 					if newIprops, err := iprops.SetProp(lastPropName, right); err != nil {
 						state.addError(makeSymbolicEvalError(node, state, err.Error()))
@@ -679,6 +710,13 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 					}
 				}
 			} else {
+				if _, ok := iprops.(Serializable); ok {
+					if _, ok := right.(Serializable); !ok {
+						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
+						right = ANY_SERIALIZABLE
+					}
+				}
+
 				if newIprops, err := iprops.SetProp(lastPropName, right); err != nil {
 					state.addError(makeSymbolicEvalError(node, state, err.Error()))
 				} else {
@@ -693,11 +731,19 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 			if seq, ok := asIndexable(slice).(MutableSequence); ok {
 				if n.Operator.Int() && !(&Int{}).Test(seq.element()) {
-					state.addError(makeSymbolicEvalError(lhs, state, INVALID_INT_OPER_ASSIGN_LHS_NOT_INT))
+					state.addError(makeSymbolicEvalError(lhs, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
 				}
 			} else {
 				state.addError(makeSymbolicEvalError(lhs.Indexed, state, fmtXisNotAMutableSequence(slice)))
-				slice = &List{generalElement: ANY}
+				slice = &List{generalElement: ANY_SERIALIZABLE}
+			}
+
+			if _, ok := slice.(Serializable); ok {
+				if _, ok := right.(Serializable); !ok {
+					state.addError(makeSymbolicEvalError(node, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+					right = ANY_SERIALIZABLE
+					break
+				}
 			}
 
 			index, err := symbolicEval(lhs.Index, state)
@@ -723,10 +769,18 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 			if _, ok := slice.(MutableSequence); ok {
 				if n.Operator.Int() {
-					state.addError(makeSymbolicEvalError(lhs, state, INVALID_INT_OPER_ASSIGN_LHS_NOT_INT))
+					state.addError(makeSymbolicEvalError(lhs, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
 				}
 			} else {
 				state.addError(makeSymbolicEvalError(lhs.Indexed, state, fmtMutableSequenceExpectedButIs(slice)))
+			}
+
+			if _, ok := slice.(Serializable); ok {
+				if _, ok := right.(Serializable); !ok {
+					state.addError(makeSymbolicEvalError(node, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+					right = ANY_SERIALIZABLE
+					break
+				}
 			}
 
 			startIndex, err := symbolicEval(lhs.StartIndex, state)
@@ -778,7 +832,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		seq, ok := right.(Sequence)
 		if !ok {
 			state.addError(makeSymbolicEvalError(node, state, fmtSeqExpectedButIs(startRight)))
-			right = &List{generalElement: ANY}
+			right = &List{generalElement: ANY_SERIALIZABLE}
 
 			for _, var_ := range n.Variables {
 				name := var_.(*parse.IdentifierLiteral).Name
@@ -1178,7 +1232,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		return ANY, nil
 	case *parse.ObjectLiteral:
-		entries := map[string]SymbolicValue{}
+		entries := map[string]Serializable{}
 		indexKey := 0
 
 		var keys []string
@@ -1232,7 +1286,13 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				if !ok {
 					panic(fmt.Errorf("missing property %s", name))
 				}
-				entries[name] = v
+
+				serializable, ok := v.(Serializable)
+				if !ok {
+					state.addError(makeSymbolicEvalError(el, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
+					serializable = ANY_SERIALIZABLE
+				}
+				entries[name] = serializable
 			}
 		}
 
@@ -1392,7 +1452,13 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 					}
 				}
 
-				obj.initNewProp(key, propVal, static)
+				serializable, ok := propVal.(Serializable)
+				if !ok {
+					state.addError(makeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
+					serializable = ANY_SERIALIZABLE
+				}
+
+				obj.initNewProp(key, serializable, static)
 				state.symbolicData.SetMostSpecificNodeValue(p.Key, propVal)
 			}
 			state.unsetNextSelf()
@@ -1418,7 +1484,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		return obj, nil
 	case *parse.RecordLiteral:
-		entries := map[string]SymbolicValue{}
+		entries := map[string]Serializable{}
 		rec := NewBoundEntriesRecord(entries)
 
 		indexKey := 0
@@ -1449,9 +1515,9 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 			if v.IsMutable() {
 				state.addError(makeSymbolicEvalError(p.Value, state, fmtValuesOfRecordShouldBeImmutablePropHasMutable(key)))
-				entries[key] = ANY
+				entries[key] = ANY_SERIALIZABLE
 			} else {
-				entries[key] = v
+				entries[key] = v.(Serializable)
 			}
 		}
 
@@ -1477,7 +1543,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		return rec, nil
 	case *parse.ListLiteral:
-		elements := make([]SymbolicValue, 0)
+		elements := make([]Serializable, 0)
 
 		if n.TypeAnnotation != nil {
 			generalElemPattern, err := symbolicEval(n.TypeAnnotation, state)
@@ -1485,7 +1551,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				return nil, err
 			}
 
-			generalElem := generalElemPattern.(Pattern).SymbolicValue()
+			generalElem := generalElemPattern.(Pattern).SymbolicValue().(Serializable)
 
 			for _, elemNode := range n.Elements {
 				e, err := symbolicEval(elemNode, state)
@@ -1494,6 +1560,13 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				}
 				if !generalElem.Test(e) {
 					state.addError(makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListAnnotated(e, generalElemPattern.(Pattern))))
+				}
+
+				e = asSerializable(e)
+				_, ok := e.(Serializable)
+				if !ok {
+					state.addError(makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+					e = ANY_SERIALIZABLE
 				}
 			}
 
@@ -1506,14 +1579,22 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				if err != nil {
 					return nil, err
 				}
-				elements = append(elements, e)
+
+				e = asSerializable(e)
+				_, ok := e.(Serializable)
+				if !ok {
+					state.addError(makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+					e = ANY_SERIALIZABLE
+				}
+
+				elements = append(elements, asSerializable(e).(Serializable))
 			}
 			return NewList(elements...), nil
 		}
 
-		return NewListOf(ANY), nil
+		return NewListOf(ANY_SERIALIZABLE), nil
 	case *parse.TupleLiteral:
-		elements := make([]SymbolicValue, 0)
+		elements := make([]Serializable, 0)
 
 		if n.HasSpreadElements() {
 			return nil, errors.New("spread elements not supported yet in tuple literals")
@@ -1525,7 +1606,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				return nil, err
 			}
 
-			generalElem := generalElemPattern.(Pattern).SymbolicValue()
+			generalElem := generalElemPattern.(Pattern).SymbolicValue().(Serializable)
 
 			for _, elemNode := range n.Elements {
 				e, err := symbolicEval(elemNode, state)
@@ -1535,6 +1616,13 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				if e.IsMutable() {
 					state.addError(makeSymbolicEvalError(elemNode, state, ELEMS_OF_TUPLE_SHOUD_BE_IMMUTABLE))
 					e = ANY
+				}
+
+				e = asSerializable(e)
+				_, ok := e.(Serializable)
+				if !ok {
+					state.addError(makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+					e = ANY_SERIALIZABLE
 				}
 
 				if !generalElem.Test(e) {
@@ -1554,15 +1642,22 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 				if e.IsMutable() {
 					state.addError(makeSymbolicEvalError(elemNode, state, ELEMS_OF_TUPLE_SHOUD_BE_IMMUTABLE))
-					e = ANY
+					e = ANY_SERIALIZABLE
 				}
 
-				elements = append(elements, e)
+				e = asSerializable(e)
+				_, ok := e.(Serializable)
+				if !ok {
+					state.addError(makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+					e = ANY_SERIALIZABLE
+				}
+
+				elements = append(elements, asSerializable(e).(Serializable))
 			}
 			return NewTuple(elements...), nil
 		}
 
-		return NewTupleOf(ANY), nil
+		return NewTupleOf(ANY_SERIALIZABLE), nil
 	case *parse.DictionaryLiteral:
 		entries := make(map[string]SymbolicValue)
 		keys := make(map[string]SymbolicValue)
@@ -2149,7 +2244,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		if n.IsVariadic {
 			variadicParam := n.VariadicParameter()
-			stateFork.setLocal(variadicParam.Var.Name, &List{generalElement: ANY}, nil, variadicParam.Var)
+			stateFork.setLocal(variadicParam.Var.Name, &List{generalElement: ANY_SERIALIZABLE}, nil, variadicParam.Var)
 		}
 		stateFork.symbolicData.SetLocalScopeData(n.Body, stateFork.currentLocalScopeData())
 
@@ -2275,7 +2370,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		if n.IsVariadic {
 			variadicParam := n.VariadicParameter()
-			paramValue := &List{generalElement: ANY}
+			paramValue := &List{generalElement: ANY_SERIALIZABLE}
 			name := variadicParam.Var.Name
 
 			parameterTypes[len(parameterTypes)-1] = paramValue
@@ -2435,12 +2530,12 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			return nil, err
 		}
 		result := &Object{
-			entries: make(map[string]SymbolicValue),
+			entries: make(map[string]Serializable),
 		}
 
 		for _, key := range n.Keys.Keys {
 			name := key.(*parse.IdentifierLiteral).Name
-			result.entries[name] = symbolicMemb(left, name, false, n, state)
+			result.entries[name] = symbolicMemb(left, name, false, n, state).(Serializable)
 		}
 		return result, nil
 	case *parse.IndexExpression:
@@ -2810,7 +2905,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			}
 
 			var generalElements []SymbolicValue
-			var elements []SymbolicValue
+			var elements []Serializable
 
 			for i, concatElem := range values {
 				if tuple, ok := concatElem.(*Tuple); ok {
@@ -2825,7 +2920,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			}
 
 			if elements == nil {
-				return NewTupleOf(joinValues(generalElements)), nil
+				return NewTupleOf(asSerializable(joinValues(generalElements)).(Serializable)), nil
 			} else {
 				return NewTuple(elements...), nil
 			}

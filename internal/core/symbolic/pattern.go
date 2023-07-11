@@ -64,7 +64,7 @@ func (NotCallablePatternMixin) Call(ctx *Context, values []SymbolicValue) (Patte
 // A GroupPattern represents a symbolic GroupPattern.
 type GroupPattern interface {
 	Pattern
-	MatchGroups(SymbolicValue) (ok bool, groups map[string]SymbolicValue)
+	MatchGroups(SymbolicValue) (ok bool, groups map[string]Serializable)
 }
 
 func isAnyPattern(val SymbolicValue) bool {
@@ -389,7 +389,7 @@ func (p *NamedSegmentPathPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (p *NamedSegmentPathPattern) MatchGroups(v SymbolicValue) (bool, map[string]SymbolicValue) {
+func (p *NamedSegmentPathPattern) MatchGroups(v SymbolicValue) (bool, map[string]Serializable) {
 	//TODO
 	return false, nil
 }
@@ -809,12 +809,12 @@ func (p *ObjectPattern) TestValue(v SymbolicValue) bool {
 }
 
 func (p *ObjectPattern) SymbolicValue() SymbolicValue {
-	entries := map[string]SymbolicValue{}
+	entries := map[string]Serializable{}
 	static := map[string]Pattern{}
 
 	if p.entries != nil {
 		for key, valuePattern := range p.entries {
-			entries[key] = valuePattern.SymbolicValue()
+			entries[key] = asSerializable(valuePattern.SymbolicValue()).(Serializable)
 			static[key] = valuePattern
 		}
 	}
@@ -1055,12 +1055,12 @@ func (p *RecordPattern) TestValue(v SymbolicValue) bool {
 
 func (p *RecordPattern) SymbolicValue() SymbolicValue {
 	rec := &Record{
-		entries:         map[string]SymbolicValue{},
+		entries:         map[string]Serializable{},
 		optionalEntries: p.optionalEntries,
 	}
 	if p.entries != nil {
 		for key, valuePattern := range p.entries {
-			rec.entries[key] = valuePattern.SymbolicValue()
+			rec.entries[key] = valuePattern.SymbolicValue().(Serializable)
 		}
 	}
 
@@ -1306,12 +1306,12 @@ func (p *ListPattern) SymbolicValue() SymbolicValue {
 	list := &List{}
 
 	if p.elements != nil {
-		list.elements = make([]SymbolicValue, 0)
+		list.elements = make([]Serializable, 0)
 		for _, e := range p.elements {
-			list.elements = append(list.elements, e.SymbolicValue())
+			list.elements = append(list.elements, e.SymbolicValue().(Serializable))
 		}
 	} else {
-		list.generalElement = p.generalElement.SymbolicValue()
+		list.generalElement = p.generalElement.SymbolicValue().(Serializable)
 	}
 	return list
 }
@@ -1457,12 +1457,12 @@ func (p *TuplePattern) SymbolicValue() SymbolicValue {
 	tuple := &Tuple{}
 
 	if p.elements != nil {
-		tuple.elements = make([]SymbolicValue, 0)
+		tuple.elements = make([]Serializable, 0)
 		for _, e := range p.elements {
-			tuple.elements = append(tuple.elements, e.SymbolicValue())
+			tuple.elements = append(tuple.elements, e.SymbolicValue().(Serializable))
 		}
 	} else {
-		tuple.generalElement = p.generalElement.SymbolicValue()
+		tuple.generalElement = p.generalElement.SymbolicValue().(Serializable)
 	}
 	return tuple
 }

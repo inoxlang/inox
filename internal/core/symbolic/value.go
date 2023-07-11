@@ -59,6 +59,11 @@ func IsAny(val SymbolicValue) bool {
 	return ok
 }
 
+func IsAnySerializable(val SymbolicValue) bool {
+	_, ok := val.(*AnySerializable)
+	return ok
+}
+
 func deeplyEqual(v1, v2 SymbolicValue) bool {
 	return v1.Test(v2) && v2.Test(v1)
 }
@@ -230,6 +235,7 @@ func (e *EmailAddress) WidestOfType() SymbolicValue {
 // A Identifier represents a symbolic Identifier.
 type Identifier struct {
 	name string
+	SerializableMixin
 }
 
 func (i *Identifier) Test(v SymbolicValue) bool {

@@ -37,7 +37,7 @@ type WrappedString interface {
 
 // A StringLike represents a symbolic StringLike.
 type StringLike interface {
-	SymbolicValue
+	Serializable
 	PseudoPropsValue
 	GetOrBuildString() *String
 }
@@ -422,7 +422,7 @@ func isAnyStringLike(v SymbolicValue) bool {
 // A AnyStringLike represents a symbolic StringLike we don't know the concret type.
 type AnyStringLike struct {
 	UnassignablePropsMixin
-	_ int
+	Serializable
 }
 
 func (s *AnyStringLike) Test(v SymbolicValue) bool {

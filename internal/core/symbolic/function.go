@@ -28,6 +28,8 @@ type InoxFunction struct {
 	result         SymbolicValue
 	capturedLocals map[string]SymbolicValue
 	originState    *State
+
+	SerializableMixin
 }
 
 func (fn *InoxFunction) IsVariadic() bool {
@@ -151,7 +153,7 @@ type GoFunction struct {
 	parameters            []SymbolicValue
 	variadicElem          SymbolicValue
 	results               []SymbolicValue
-	resultList            *List
+	resultList            *Array
 	result                SymbolicValue
 }
 
@@ -392,7 +394,7 @@ func (goFunc *GoFunction) LoadSignatureData() (finalErr error) {
 			return errors.New(s)
 		}
 		goFunc.variadicElem = variadicElemType
-		goFunc.parameters = append(goFunc.nonVariadicParameters, NewListOf(goFunc.variadicElem))
+		goFunc.parameters = append(goFunc.nonVariadicParameters, NewArray(goFunc.variadicElem))
 	} else {
 		goFunc.parameters = goFunc.nonVariadicParameters
 	}
@@ -414,7 +416,7 @@ func (goFunc *GoFunction) LoadSignatureData() (finalErr error) {
 
 		goFunc.results = append(goFunc.results, symbolicResultValue)
 	}
-	goFunc.resultList = NewList(goFunc.results...)
+	goFunc.resultList = NewArray(goFunc.results...)
 
 	switch len(goFunc.resultList.elements) {
 	case 0:
@@ -777,7 +779,7 @@ func (f *Function) Test(v SymbolicValue) bool {
 		case 1:
 			result = f.results[0]
 		default:
-			result = NewList(f.results...)
+			result = NewArray(f.results...)
 		}
 		return deeplyEqual(result, inoxFn.result)
 	default:
@@ -824,7 +826,7 @@ func (f *Function) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 	case 1:
 		f.results[0].PrettyPrint(w, config, 0, 0)
 	default:
-		NewList(f.results...).PrettyPrint(w, config, 0, 0)
+		NewArray(f.results...).PrettyPrint(w, config, 0, 0)
 	}
 }
 

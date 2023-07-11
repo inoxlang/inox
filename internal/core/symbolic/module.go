@@ -13,7 +13,7 @@ import (
 var (
 	MODULE_PROP_NAMES      = []string{"parsing_errors", "main_chunk_node"}
 	ANY_MODULE             = &Module{}
-	SOURCE_POSITION_RECORD = NewRecord(map[string]SymbolicValue{
+	SOURCE_POSITION_RECORD = NewRecord(map[string]Serializable{
 		"source": ANY_STR_LIKE,
 		"line":   ANY_INT,
 		"column": ANY_INT,

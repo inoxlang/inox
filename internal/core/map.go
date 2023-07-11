@@ -25,29 +25,29 @@ func init() {
 
 			case *symbolic.KeyList:
 				obj := symbolic.NewUnitializedObject()
-				entries := map[string]symbolic.SymbolicValue{}
+				entries := map[string]symbolic.Serializable{}
 				for _, key := range m.Keys {
-					entries[key] = symbolic.ANY
+					entries[key] = symbolic.ANY_SERIALIZABLE
 				}
 
 				symbolic.InitializeObject(obj, entries, nil)
 				return symbolic.NewListOf(obj)
 			case *symbolic.PropertyName:
 			case *symbolic.GoFunction:
-				result := m.Result()
+				result := m.Result().(symbolic.Serializable)
 				ctx.SetSymbolicGoFunctionParameters(makeParams(result), MAP_PARAM_NAMES)
 				return symbolic.NewListOf(result)
 			case *symbolic.InoxFunction:
 				result := m.Result()
 				ctx.SetSymbolicGoFunctionParameters(makeParams(result), MAP_PARAM_NAMES)
-				return symbolic.NewListOf(m.Result())
+				return symbolic.NewListOf(m.Result().(symbolic.Serializable))
 			case *symbolic.AstNode:
 			case *symbolic.Mapping:
 			default:
 				ctx.AddSymbolicGoFunctionError("invalid mapper argument")
 			}
 
-			return symbolic.NewListOf(&symbolic.Any{})
+			return symbolic.NewListOf(symbolic.ANY_SERIALIZABLE)
 		},
 	})
 

@@ -20,12 +20,15 @@ const (
 	MISSING_RETURN_IN_FUNCTION                                                    = "missing return in function"
 	MISSING_UNCONDITIONAL_RETURN_IN_FUNCTION                                      = "missing unconditional return in function"
 	MISSING_RETURN_IN_FUNCTION_PATT                                               = "missing return in function pattern"
-	INVALID_INT_OPER_ASSIGN_LHS_NOT_INT                                           = "invalid assignment: left hand side is not an integer"
-	INVALID_INT_OPER_ASSIGN_RHS_NOT_INT                                           = "invalid assignment: right hand side is not an integer"
+	INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT                                    = "invalid assignment: left hand side is not an integer"
+	INVALID_ASSIGN_INT_OPER_ASSIGN_RHS_NOT_INT                                    = "invalid assignment: right hand side is not an integer"
+	INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE    = "invalid assignment: non-serializable values are not allowed as properties of serializable values"
 	PROP_SPREAD_IN_REC_NOT_SUPP_YET                                               = "property spread not supported in record yet"
 	CONSTRAINTS_INIT_BLOCK_EXPLANATION                                            = "invalid statement or expression in constraints' initialization block"
 
-	INVALID_KEY_IN_COMPUTE_EXPRESSION_ONLY_SIMPLE_VALUE_ARE_SUPPORTED = "invalid key in compute expression: only simple values are supported"
+	NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE = "non-serializable values are not allowed as initial values for properties of serializables"
+	NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE       = "non-serializable values are not allowed as elements of serializables"
+	INVALID_KEY_IN_COMPUTE_EXPRESSION_ONLY_SIMPLE_VALUE_ARE_SUPPORTED     = "invalid key in compute expression: only simple values are supported"
 
 	CANNOT_CREATE_OPTIONAL_PATTERN_WITH_PATT_MATCHING_NIL           = "cannot create optional pattern with pattern matching nil"
 	KEY_VAR_SHOULD_BE_PROVIDED_ONLY_WHEN_ITERATING_OVER_AN_ITERABLE = "a key variable should be provided only when iterating over an iterable"

@@ -11,6 +11,8 @@ import (
 
 var (
 	_ = []asInterface{&Multivalue{}, &indexableMultivalue{}, &iterableMultivalue{}, &ipropsMultivalue{}}
+
+	_ = []IMultivalue{(*indexableMultivalue)(nil), (*iterableMultivalue)(nil), (*ipropsMultivalue)(nil)}
 )
 
 // A Multivalue represents a set of possible values.
@@ -64,6 +66,17 @@ func (mv *Multivalue) as(itf reflect.Type) SymbolicValue {
 
 top_switch:
 	switch itf {
+	case SERIALIZABLE_INTERFACE_TYPE:
+		serializable := true
+		for _, val := range mv.values {
+			if _, ok := val.(Serializable); !ok {
+				serializable = false
+				break
+			}
+		}
+		if serializable {
+			result = &serializableMultivalue{Multivalue: mv}
+		}
 	case INDEXABLE_INTERFACE_TYPE:
 		indexable := true
 		for _, val := range mv.values {
@@ -161,6 +174,19 @@ func (mv *Multivalue) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 
 func (mv *Multivalue) WidestOfType() SymbolicValue {
 	return joinValues(mv.values)
+}
+
+func (m *Multivalue) OriginalMultivalue() *Multivalue {
+	return m
+}
+
+type IMultivalue interface {
+	OriginalMultivalue() *Multivalue
+}
+
+type serializableMultivalue struct {
+	*Multivalue
+	SerializableMixin
 }
 
 type indexableMultivalue struct {

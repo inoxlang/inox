@@ -551,7 +551,7 @@ func TestSymbolicAnyIterable(t *testing.T) {
 
 		assert.True(t, anyIterable.Test(anyIterable))
 		assert.True(t, anyIterable.Test(NewList()))
-		assert.True(t, anyIterable.Test(NewListOf(ANY)))
+		assert.True(t, anyIterable.Test(NewListOf(ANY_SERIALIZABLE)))
 		assert.True(t, anyIterable.Test(NewListOf(&Int{})))
 		assert.False(t, anyIterable.Test(&Int{}))
 	})

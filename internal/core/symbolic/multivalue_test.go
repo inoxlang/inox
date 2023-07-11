@@ -22,7 +22,7 @@ func TestMultiValue(t *testing.T) {
 		assert.False(t, intOrNil.Test(intOrStringOrNil))
 
 		intListOrStringList := NewMultivalue(NewListOf(&Int{}), NewListOf(&String{}))
-		anyList := NewListOf(ANY)
+		anyList := NewListOf(ANY_SERIALIZABLE)
 
 		assert.True(t, intListOrStringList.Test(intListOrStringList))
 		assert.False(t, intListOrStringList.Test(anyList))
@@ -46,19 +46,19 @@ func TestMultiValue(t *testing.T) {
 
 	t.Run("as Indexable", func(t *testing.T) {
 		assert.Implements(t, (*Indexable)(nil), NewMultivalue(
-			Indexable(NewListOf(ANY)),
+			Indexable(NewListOf(ANY_SERIALIZABLE)),
 			Indexable(NewListOf(&Int{})),
 		).as(INDEXABLE_INTERFACE_TYPE))
 
 		_, ok := NewMultivalue(
-			Indexable(NewListOf(ANY)),
+			Indexable(NewListOf(ANY_SERIALIZABLE)),
 			&Int{},
 		).as(INDEXABLE_INTERFACE_TYPE).(Indexable)
 		assert.False(t, ok)
 
 		_, ok = NewMultivalue(
 			&Int{},
-			Indexable(NewListOf(ANY)),
+			Indexable(NewListOf(ANY_SERIALIZABLE)),
 		).as(INDEXABLE_INTERFACE_TYPE).(Indexable)
 		assert.False(t, ok)
 	})
@@ -67,38 +67,38 @@ func TestMultiValue(t *testing.T) {
 		//TODO: test with iterable but not indexable values
 
 		assert.Implements(t, (*Iterable)(nil), NewMultivalue(
-			Iterable(NewListOf(ANY)),
+			Iterable(NewListOf(ANY_SERIALIZABLE)),
 			Iterable(NewListOf(&Int{})),
 		).as(ITERABLE_INTERFACE_TYPE))
 
 		_, ok := NewMultivalue(
-			Iterable(NewListOf(ANY)),
+			Iterable(NewListOf(ANY_SERIALIZABLE)),
 			&Int{},
 		).as(ITERABLE_INTERFACE_TYPE).(Iterable)
 		assert.False(t, ok)
 
 		_, ok = NewMultivalue(
 			&Int{},
-			Iterable(NewListOf(ANY)),
+			Iterable(NewListOf(ANY_SERIALIZABLE)),
 		).as(ITERABLE_INTERFACE_TYPE).(Iterable)
 		assert.False(t, ok)
 	})
 
 	t.Run("Iprops", func(t *testing.T) {
 		assert.Implements(t, (*IProps)(nil), NewMultivalue(
-			NewObject(map[string]SymbolicValue{"a": &Int{}}, nil, nil),
-			NewObject(map[string]SymbolicValue{"b": &Int{}}, nil, nil),
+			NewObject(map[string]Serializable{"a": &Int{}}, nil, nil),
+			NewObject(map[string]Serializable{"b": &Int{}}, nil, nil),
 		).as(IPROPS_INTERFACE_TYPE))
 
 		_, ok := NewMultivalue(
-			NewObject(map[string]SymbolicValue{"a": &Int{}}, nil, nil),
+			NewObject(map[string]Serializable{"a": &Int{}}, nil, nil),
 			&Bool{},
 		).as(IPROPS_INTERFACE_TYPE).(IProps)
 		assert.False(t, ok)
 
 		_, ok = NewMultivalue(
 			&Bool{},
-			NewObject(map[string]SymbolicValue{"a": &Int{}}, nil, nil),
+			NewObject(map[string]Serializable{"a": &Int{}}, nil, nil),
 		).as(IPROPS_INTERFACE_TYPE).(IProps)
 		assert.False(t, ok)
 	})

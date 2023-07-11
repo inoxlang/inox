@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	WALK_ELEM = NewObject(map[string]SymbolicValue{
+	WALK_ELEM = NewObject(map[string]Serializable{
 		"name":          &String{},
 		"path":          &Path{},
 		"is-dir":        &Bool{},

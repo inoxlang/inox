@@ -31,6 +31,7 @@ var (
 // An SystemGraph represents a symbolic SystemGraph.
 type SystemGraph struct {
 	_ int
+	SerializableMixin
 }
 
 func NewSystemGraph() *SystemGraph {
@@ -234,6 +235,7 @@ func (n *SystemGraphNode) WidestOfType() SymbolicValue {
 // An SystemGraphEvent represents a symbolic SystemGraphEvent.
 type SystemGraphEvent struct {
 	_ int
+	SerializableMixin
 }
 
 func NewSystemGraphEvent() *SystemGraphEvent {
@@ -303,6 +305,7 @@ func (n *SystemGraphEvent) WidestOfType() SymbolicValue {
 // A SystemGraphEdge represents a symbolic SystemGraphEdge.
 type SystemGraphEdge struct {
 	_ int
+	SerializableMixin
 }
 
 func NewSystemGraphEdge() *SystemGraphEdge {

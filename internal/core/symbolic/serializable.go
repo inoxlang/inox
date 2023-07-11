@@ -11,11 +11,23 @@ var (
 
 	_ = []Serializable{
 		(*Bool)(nil), (*Int)(nil), (*Float)(nil), Nil,
+
 		(*ByteCount)(nil), (*LineCount)(nil), (*ByteRate)(nil), (*SimpleRate)(nil), (*Duration)(nil), (*Date)(nil),
-		(*Rune)(nil), (*String)(nil), (*Path)(nil), (*URL)(nil), (*Host)(nil),
-		(*RuneSlice)(nil), (*ByteSlice)(nil), (*StringConcatenation)(nil),
+
+		(*Rune)(nil), (*String)(nil), (StringLike)(nil), (*AnyStringLike)(nil), (*Path)(nil), (*URL)(nil), (*Host)(nil), (*Identifier)(nil),
+		(*StringConcatenation)(nil),
+
+		(*RuneSlice)(nil), (*ByteSlice)(nil),
+
 		(*Object)(nil), (*Record)(nil), (*List)(nil), (*Tuple)(nil), (*KeyList)(nil), (*Dictionary)(nil),
+
 		Pattern(nil),
+
+		(*InoxFunction)(nil), (*LifetimeJob)(nil), (*SynchronousMessageHandler)(nil),
+
+		(*SystemGraph)(nil), (*SystemGraphEvent)(nil), (*SystemGraphEdge)(nil),
+
+		(*Error)(nil),
 
 		(*AnySerializable)(nil),
 	}
@@ -25,6 +37,22 @@ var (
 type Serializable interface {
 	SymbolicValue
 	_serializable()
+}
+
+func SerializablesToValues(serializables []Serializable) []SymbolicValue {
+	var values []SymbolicValue
+	for _, e := range serializables {
+		values = append(values, e)
+	}
+	return values
+}
+
+func ValuesToSerializable(values []SymbolicValue) []Serializable {
+	var serializables []Serializable
+	for _, e := range values {
+		serializables = append(serializables, e.(Serializable))
+	}
+	return serializables
 }
 
 type AnySerializable struct {

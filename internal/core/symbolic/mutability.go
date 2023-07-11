@@ -454,7 +454,9 @@ func (mv *Multivalue) IsMutable() bool {
 }
 
 func (e *LifetimeJob) IsMutable() bool {
-	return true
+	// a lifetime job is not truly "immutable" but the only mutation that can happen
+	// is the modification of .subjectPattern during job initialization by an object.
+	return false
 }
 
 func (w *Watcher) IsMutable() bool {

@@ -107,6 +107,8 @@ func narrowOut(narrowedOut SymbolicValue, toNarrow SymbolicValue) SymbolicValue 
 		}
 
 		return NewMultivalue(remainingValues...)
+	case IMultivalue:
+		return narrowOut(narrowedOut, n.OriginalMultivalue())
 	}
 
 	return toNarrow

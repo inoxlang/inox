@@ -49,7 +49,7 @@ func (r *Routine) GetGoMethod(name string) (*GoFunction, bool) {
 func (r *Routine) Prop(name string) SymbolicValue {
 	switch name {
 	case "steps":
-		return NewListOf(&ExecutedStep{})
+		return NewArrayOf(&ExecutedStep{})
 	}
 	method, ok := r.GetGoMethod(name)
 	if !ok {

@@ -88,7 +88,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 							state.addError(makeSymbolicEvalError(argn, state, err.Error()))
 							shared = ANY
 						}
-						e = shared
+						e = shared.(Serializable)
 					}
 					args = append(args, e)
 				}
@@ -100,7 +100,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			nonSpreadArgCount++
 
 			if ident, ok := argn.(*parse.IdentifierLiteral); ok && cmdLineSyntax {
-				args = append(args, &Identifier{ident.Name})
+				args = append(args, &Identifier{name: ident.Name})
 			} else {
 				arg, err := symbolicEval(argn, state)
 				if err != nil {
@@ -176,7 +176,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			}
 
 			if list, ok := result.(*List); ok && multipleResults {
-				function.results = list.elements
+				function.results = SerializablesToValues(list.elements)
 			} else {
 				function.results = []SymbolicValue{result}
 			}
@@ -431,7 +431,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 	}
 
 	if isVariadic {
-		variadicArgs := NewList(args[nonVariadicParamCount:]...)
+		variadicArgs := NewArray(args[nonVariadicParamCount:]...)
 		name := variadicParamNode.Var.Name
 		state.setLocal(name, variadicArgs, nil)
 	}
@@ -605,7 +605,7 @@ func addBadPropertyErrorsInLiteral(arg SymbolicValue, argNode parse.Node, param 
 			return
 		}
 
-		addErrors(actualObject.entries, p.entries, objLit.Properties)
+		addErrors(actualObject.ValueEntryMap(), p.ValueEntryMap(), objLit.Properties)
 	case *Record:
 		recordLit, ok := argNode.(*parse.RecordLiteral)
 		if !ok {
@@ -617,7 +617,7 @@ func addBadPropertyErrorsInLiteral(arg SymbolicValue, argNode parse.Node, param 
 			return
 		}
 
-		addErrors(actualRecord.entries, p.entries, recordLit.Properties)
+		addErrors(actualRecord.ValueEntryMap(), p.ValueEntryMap(), recordLit.Properties)
 	}
 	return
 }

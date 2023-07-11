@@ -187,7 +187,7 @@ func TestSymbolicExactValuePattern(t *testing.T) {
 		pattern := &ExactValuePattern{value: &Int{}}
 
 		assert.True(t, pattern.TestValue(&Int{}))
-		assert.False(t, pattern.TestValue(ANY))
+		assert.False(t, pattern.TestValue(ANY_SERIALIZABLE))
 		assert.False(t, pattern.TestValue(pattern))
 	})
 
@@ -197,7 +197,7 @@ func TestSymbolicExactValuePattern(t *testing.T) {
 
 		widened, ok := pattern.Widen()
 		assert.True(t, ok)
-		assert.Equal(t, &ExactValuePattern{value: ANY}, widened)
+		assert.Equal(t, &ExactValuePattern{value: ANY_SERIALIZABLE}, widened)
 	})
 }
 
@@ -240,7 +240,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 		}{
 			//symbolic object
 			{&ObjectPattern{entries: nil}, &Object{entries: nil}, false},
-			{&ObjectPattern{entries: nil}, &Object{entries: map[string]SymbolicValue{}}, false},
+			{&ObjectPattern{entries: nil}, &Object{entries: map[string]Serializable{}}, false},
 
 			//symbolic object pattern
 			{&ObjectPattern{entries: nil}, &ObjectPattern{entries: nil}, true},
@@ -314,11 +314,11 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			//symbolic object
 			{&ObjectPattern{entries: nil}, &Object{entries: nil}, true},
 			{&ObjectPattern{entries: map[string]Pattern{}}, &Object{entries: nil}, false},
-			{&ObjectPattern{entries: nil}, &Object{entries: map[string]SymbolicValue{}}, true},
+			{&ObjectPattern{entries: nil}, &Object{entries: map[string]Serializable{}}, true},
 
 			{
 				&ObjectPattern{entries: map[string]Pattern{}},
-				&Object{entries: map[string]SymbolicValue{}},
+				&Object{entries: map[string]Serializable{}},
 				true,
 			},
 			{
@@ -326,7 +326,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
 				},
 				&Object{
-					entries: map[string]SymbolicValue{},
+					entries: map[string]Serializable{},
 				},
 				false,
 			},
@@ -336,7 +336,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					optionalEntries: map[string]struct{}{"a": {}},
 				},
 				&Object{
-					entries: map[string]SymbolicValue{},
+					entries: map[string]Serializable{},
 				},
 				true,
 			},
@@ -345,7 +345,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					entries: map[string]Pattern{},
 				},
 				&Object{
-					entries: map[string]SymbolicValue{"a": &Int{}},
+					entries: map[string]Serializable{"a": &Int{}},
 				},
 				false,
 			},
@@ -354,7 +354,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
 				},
 				&Object{
-					entries: map[string]SymbolicValue{"a": &Int{}},
+					entries: map[string]Serializable{"a": &Int{}},
 				},
 				true,
 			},
@@ -363,7 +363,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					entries: map[string]Pattern{"a": &AnyPattern{}},
 				},
 				&Object{
-					entries: map[string]SymbolicValue{"a": &Int{}},
+					entries: map[string]Serializable{"a": &Int{}},
 				},
 				true,
 			},
@@ -372,7 +372,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
 				},
 				&Object{
-					entries: map[string]SymbolicValue{"a": ANY},
+					entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
 				},
 				false,
 			},
@@ -423,7 +423,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				&ObjectPattern{
 					inexact: false,
 					entries: map[string]Pattern{
-						"name": &ExactValuePattern{value: ANY},
+						"name": &ExactValuePattern{value: ANY_SERIALIZABLE},
 					},
 				},
 				true,
@@ -439,7 +439,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				&ObjectPattern{
 					inexact: true,
 					entries: map[string]Pattern{
-						"name": &ExactValuePattern{value: ANY},
+						"name": &ExactValuePattern{value: ANY_SERIALIZABLE},
 					},
 				}, true,
 			},
@@ -447,7 +447,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				&ObjectPattern{
 					inexact: true,
 					entries: map[string]Pattern{
-						"any": &ExactValuePattern{value: ANY},
+						"any": &ExactValuePattern{value: ANY_SERIALIZABLE},
 					},
 				},
 				//entries cannot be widened and the pattern is already inexact
@@ -458,14 +458,14 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				&ObjectPattern{
 					inexact: false,
 					entries: map[string]Pattern{
-						"any": &ExactValuePattern{value: ANY},
+						"any": &ExactValuePattern{value: ANY_SERIALIZABLE},
 					},
 				},
 				//entries cannot be widened so the object pattern becomes inexact
 				&ObjectPattern{
 					inexact: true,
 					entries: map[string]Pattern{
-						"any": &ExactValuePattern{value: ANY},
+						"any": &ExactValuePattern{value: ANY_SERIALIZABLE},
 					},
 				},
 				true,
@@ -499,7 +499,7 @@ func TestSymbolicRecordPattern(t *testing.T) {
 		}{
 			//symbolic object
 			{&RecordPattern{entries: nil}, &Object{entries: nil}, false},
-			{&RecordPattern{entries: nil}, &Object{entries: map[string]SymbolicValue{}}, false},
+			{&RecordPattern{entries: nil}, &Object{entries: map[string]Serializable{}}, false},
 
 			//symbolic object pattern
 			{&RecordPattern{entries: nil}, &RecordPattern{entries: nil}, true},
@@ -573,11 +573,11 @@ func TestSymbolicRecordPattern(t *testing.T) {
 			//symbolic object
 			{&RecordPattern{entries: nil}, &Record{entries: nil}, true},
 			{&RecordPattern{entries: map[string]Pattern{}}, &Record{entries: nil}, false},
-			{&RecordPattern{entries: nil}, &Record{entries: map[string]SymbolicValue{}}, true},
+			{&RecordPattern{entries: nil}, &Record{entries: map[string]Serializable{}}, true},
 
 			{
 				&RecordPattern{entries: map[string]Pattern{}},
-				&Record{entries: map[string]SymbolicValue{}},
+				&Record{entries: map[string]Serializable{}},
 				true,
 			},
 			{
@@ -585,7 +585,7 @@ func TestSymbolicRecordPattern(t *testing.T) {
 					entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
 				},
 				&Record{
-					entries: map[string]SymbolicValue{},
+					entries: map[string]Serializable{},
 				},
 				false,
 			},
@@ -595,7 +595,7 @@ func TestSymbolicRecordPattern(t *testing.T) {
 					optionalEntries: map[string]struct{}{"a": {}},
 				},
 				&Record{
-					entries: map[string]SymbolicValue{},
+					entries: map[string]Serializable{},
 				},
 				true,
 			},
@@ -604,7 +604,7 @@ func TestSymbolicRecordPattern(t *testing.T) {
 					entries: map[string]Pattern{},
 				},
 				&Record{
-					entries: map[string]SymbolicValue{"a": &Int{}},
+					entries: map[string]Serializable{"a": &Int{}},
 				},
 				false,
 			},
@@ -613,7 +613,7 @@ func TestSymbolicRecordPattern(t *testing.T) {
 					entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
 				},
 				&Record{
-					entries: map[string]SymbolicValue{"a": &Int{}},
+					entries: map[string]Serializable{"a": &Int{}},
 				},
 				true,
 			},
@@ -622,7 +622,7 @@ func TestSymbolicRecordPattern(t *testing.T) {
 					entries: map[string]Pattern{"a": &AnyPattern{}},
 				},
 				&Record{
-					entries: map[string]SymbolicValue{"a": &Int{}},
+					entries: map[string]Serializable{"a": &Int{}},
 				},
 				true,
 			},
@@ -631,7 +631,7 @@ func TestSymbolicRecordPattern(t *testing.T) {
 					entries: map[string]Pattern{"a": &ExactValuePattern{value: &Int{}}},
 				},
 				&Record{
-					entries: map[string]SymbolicValue{"a": ANY},
+					entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
 				},
 				false,
 			},
@@ -682,7 +682,7 @@ func TestSymbolicRecordPattern(t *testing.T) {
 				&RecordPattern{
 					inexact: false,
 					entries: map[string]Pattern{
-						"name": &ExactValuePattern{value: ANY},
+						"name": &ExactValuePattern{value: ANY_SERIALIZABLE},
 					},
 				},
 				true,
@@ -698,7 +698,7 @@ func TestSymbolicRecordPattern(t *testing.T) {
 				&RecordPattern{
 					inexact: true,
 					entries: map[string]Pattern{
-						"name": &ExactValuePattern{value: ANY},
+						"name": &ExactValuePattern{value: ANY_SERIALIZABLE},
 					},
 				}, true,
 			},
@@ -706,7 +706,7 @@ func TestSymbolicRecordPattern(t *testing.T) {
 				&RecordPattern{
 					inexact: true,
 					entries: map[string]Pattern{
-						"any": &ExactValuePattern{value: ANY},
+						"any": &ExactValuePattern{value: ANY_SERIALIZABLE},
 					},
 				},
 				//entries cannot be widened and the pattern is already inexact
@@ -717,14 +717,14 @@ func TestSymbolicRecordPattern(t *testing.T) {
 				&RecordPattern{
 					inexact: false,
 					entries: map[string]Pattern{
-						"any": &ExactValuePattern{value: ANY},
+						"any": &ExactValuePattern{value: ANY_SERIALIZABLE},
 					},
 				},
 				//entries cannot be widened so the object pattern becomes inexact
 				&RecordPattern{
 					inexact: true,
 					entries: map[string]Pattern{
-						"any": &ExactValuePattern{value: ANY},
+						"any": &ExactValuePattern{value: ANY_SERIALIZABLE},
 					},
 				},
 				true,
@@ -759,7 +759,7 @@ func TestSymbolicListPattern(t *testing.T) {
 
 			{
 				&ListPattern{generalElement: &AnyPattern{}},
-				&List{generalElement: ANY},
+				&List{generalElement: ANY_SERIALIZABLE},
 				false,
 			},
 
@@ -806,7 +806,7 @@ func TestSymbolicListPattern(t *testing.T) {
 			//[]any
 			{
 				&ListPattern{generalElement: &AnyPattern{}},
-				&List{elements: []SymbolicValue{}}, //empty list
+				&List{elements: []Serializable{}}, //empty list
 				true,
 			},
 			{
@@ -816,36 +816,36 @@ func TestSymbolicListPattern(t *testing.T) {
 			},
 			{
 				&ListPattern{generalElement: &AnyPattern{}},
-				&List{generalElement: ANY}, //[]any
+				&List{generalElement: ANY_SERIALIZABLE}, //[]any
 				true,
 			},
 			{
 				&ListPattern{generalElement: &AnyPattern{}},
-				&List{elements: []SymbolicValue{ANY}}, //[any]
+				&List{elements: []Serializable{ANY_SERIALIZABLE}}, //[any]
 				true,
 			},
 
 			//[any]
 			{
 				&ListPattern{elements: []Pattern{&AnyPattern{}}},
-				&List{generalElement: ANY}, //[any]
+				&List{generalElement: ANY_SERIALIZABLE}, //[any]
 				false,
 			},
 			{
 				&ListPattern{elements: []Pattern{&AnyPattern{}}},
-				&List{elements: []SymbolicValue{&Int{}}}, //[string]
+				&List{elements: []Serializable{&Int{}}}, //[string]
 				true,
 			},
 			{
 				&ListPattern{elements: []Pattern{&AnyPattern{}}},
-				&List{elements: []SymbolicValue{}}, //empty list
+				&List{elements: []Serializable{}}, //empty list
 				false,
 			},
 
 			//[]int
 			{
 				&ListPattern{generalElement: &TypePattern{val: &Int{}}},
-				&List{elements: []SymbolicValue{}}, //empty list
+				&List{elements: []Serializable{}}, //empty list
 				true,
 			},
 			{
@@ -855,12 +855,12 @@ func TestSymbolicListPattern(t *testing.T) {
 			},
 			{
 				&ListPattern{generalElement: &TypePattern{val: &Int{}}},
-				&List{elements: []SymbolicValue{&Int{}}}, //[int]
+				&List{elements: []Serializable{&Int{}}}, //[int]
 				true,
 			},
 			{
 				&ListPattern{generalElement: &TypePattern{val: &Int{}}},
-				&List{generalElement: ANY}, //[]any
+				&List{generalElement: ANY_SERIALIZABLE}, //[]any
 				false,
 			},
 			{
@@ -870,7 +870,7 @@ func TestSymbolicListPattern(t *testing.T) {
 			},
 			{
 				&ListPattern{generalElement: &TypePattern{val: &Int{}}},
-				&List{elements: []SymbolicValue{&Int{}, &String{}}}, //[int, string]
+				&List{elements: []Serializable{&Int{}, &String{}}}, //[int, string]
 				false,
 			},
 		}
@@ -901,7 +901,7 @@ func TestSymbolicListPattern(t *testing.T) {
 
 			{
 				&ListPattern{elements: []Pattern{&ExactValuePattern{value: &Int{}}}},
-				&ListPattern{elements: []Pattern{&ExactValuePattern{value: ANY}}},
+				&ListPattern{elements: []Pattern{&ExactValuePattern{value: ANY_SERIALIZABLE}}},
 				false,
 			},
 		}
@@ -928,13 +928,13 @@ func TestSymbolicTuplePattern(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		cases := []struct {
 			pattern *TuplePattern
-			value   SymbolicValue
+			value   Serializable
 			ok      bool
 		}{
 
 			{
 				&TuplePattern{generalElement: &AnyPattern{}},
-				&Tuple{generalElement: ANY},
+				&Tuple{generalElement: ANY_SERIALIZABLE},
 				false,
 			},
 
@@ -975,13 +975,13 @@ func TestSymbolicTuplePattern(t *testing.T) {
 	t.Run("TestValue()", func(t *testing.T) {
 		cases := []struct {
 			pattern *TuplePattern
-			value   SymbolicValue
+			value   Serializable
 			ok      bool
 		}{
 			//[]any
 			{
 				&TuplePattern{generalElement: &AnyPattern{}},
-				&Tuple{elements: []SymbolicValue{}}, //empty tuple
+				&Tuple{elements: []Serializable{}}, //empty tuple
 				true,
 			},
 			{
@@ -991,36 +991,36 @@ func TestSymbolicTuplePattern(t *testing.T) {
 			},
 			{
 				&TuplePattern{generalElement: &AnyPattern{}},
-				&Tuple{generalElement: ANY}, //[]any
+				&Tuple{generalElement: ANY_SERIALIZABLE}, //[]any
 				true,
 			},
 			{
 				&TuplePattern{generalElement: &AnyPattern{}},
-				&Tuple{elements: []SymbolicValue{ANY}}, //[any]
+				&Tuple{elements: []Serializable{ANY_SERIALIZABLE}}, //[any]
 				true,
 			},
 
 			//[any]
 			{
 				&TuplePattern{elements: []Pattern{&AnyPattern{}}},
-				&Tuple{generalElement: ANY}, //[any]
+				&Tuple{generalElement: ANY_SERIALIZABLE}, //[any]
 				false,
 			},
 			{
 				&TuplePattern{elements: []Pattern{&AnyPattern{}}},
-				&Tuple{elements: []SymbolicValue{&Int{}}}, //[string]
+				&Tuple{elements: []Serializable{&Int{}}}, //[string]
 				true,
 			},
 			{
 				&TuplePattern{elements: []Pattern{&AnyPattern{}}},
-				&Tuple{elements: []SymbolicValue{}}, //empty tuple
+				&Tuple{elements: []Serializable{}}, //empty tuple
 				false,
 			},
 
 			//[]int
 			{
 				&TuplePattern{generalElement: &TypePattern{val: &Int{}}},
-				&Tuple{elements: []SymbolicValue{}}, //empty tuple
+				&Tuple{elements: []Serializable{}}, //empty tuple
 				true,
 			},
 			{
@@ -1030,12 +1030,12 @@ func TestSymbolicTuplePattern(t *testing.T) {
 			},
 			{
 				&TuplePattern{generalElement: &TypePattern{val: &Int{}}},
-				&Tuple{elements: []SymbolicValue{&Int{}}}, //[int]
+				&Tuple{elements: []Serializable{&Int{}}}, //[int]
 				true,
 			},
 			{
 				&TuplePattern{generalElement: &TypePattern{val: &Int{}}},
-				&Tuple{generalElement: ANY}, //[]any
+				&Tuple{generalElement: ANY_SERIALIZABLE}, //[]any
 				false,
 			},
 			{
@@ -1045,7 +1045,7 @@ func TestSymbolicTuplePattern(t *testing.T) {
 			},
 			{
 				&TuplePattern{generalElement: &TypePattern{val: &Int{}}},
-				&Tuple{elements: []SymbolicValue{&Int{}, &String{}}}, //[int, string]
+				&Tuple{elements: []Serializable{&Int{}, &String{}}}, //[int, string]
 				false,
 			},
 		}
@@ -1076,7 +1076,7 @@ func TestSymbolicTuplePattern(t *testing.T) {
 
 			{
 				&TuplePattern{elements: []Pattern{&ExactValuePattern{value: &Int{}}}},
-				&TuplePattern{elements: []Pattern{&ExactValuePattern{value: ANY}}},
+				&TuplePattern{elements: []Pattern{&ExactValuePattern{value: ANY_SERIALIZABLE}}},
 				false,
 			},
 		}
@@ -1194,7 +1194,7 @@ func TestSymbolicUnionPattern(t *testing.T) {
 						&ExactValuePattern{value: &String{}},
 					},
 				},
-				ANY,
+				ANY_SERIALIZABLE,
 				false,
 			},
 		}
@@ -1309,7 +1309,7 @@ func TestTypePattern(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
 		{
-			_any := &TypePattern{val: ANY}
+			_any := &TypePattern{val: ANY_SERIALIZABLE}
 
 			assert.True(t, _any.Test(_any))
 			assert.True(t, _any.Test(&TypePattern{val: &Int{}}))
@@ -1330,7 +1330,7 @@ func TestTypePattern(t *testing.T) {
 	})
 
 	t.Run("TestValue() should return true for any symbolic Host", func(t *testing.T) {
-		_any := &TypePattern{val: ANY}
+		_any := &TypePattern{val: ANY_SERIALIZABLE}
 		specific := &TypePattern{val: &String{}}
 
 		assert.True(t, _any.TestValue(&String{}))
@@ -1342,7 +1342,7 @@ func TestTypePattern(t *testing.T) {
 
 	t.Run("Widen() & IsWidenable()", func(t *testing.T) {
 		{
-			_any := &TypePattern{val: ANY}
+			_any := &TypePattern{val: ANY_SERIALIZABLE}
 
 			assert.False(t, _any.IsWidenable())
 			widened, ok := _any.Widen()

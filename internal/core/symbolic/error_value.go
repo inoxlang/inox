@@ -13,8 +13,9 @@ var (
 )
 
 type Error struct {
-	UnassignablePropsMixin
 	data SymbolicValue
+	UnassignablePropsMixin
+	SerializableMixin
 }
 
 func NewError(data SymbolicValue) *Error {
