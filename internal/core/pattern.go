@@ -514,10 +514,10 @@ func (patt *OptionalPattern) StringPattern() (StringPattern, bool) {
 }
 
 type FunctionPattern struct {
-	NotCallablePatternMixin
-	node *parse.FunctionPatternExpression //if nil, matches any function
+	node          *parse.FunctionPatternExpression //if nil, matches any function
+	symbolicValue *symbolic.FunctionPattern        //used for checking functions
 
-	symbolicValue *symbolic.FunctionPattern //used for checking functions
+	NotCallablePatternMixin
 }
 
 func (patt *FunctionPattern) Test(ctx *Context, v Value) bool {

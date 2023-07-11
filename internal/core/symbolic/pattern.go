@@ -20,6 +20,7 @@ var (
 		(*OptionPattern)(nil), (*RegexPattern)(nil), (*TypePattern)(nil), (*AnyPattern)(nil), (*FunctionPattern)(nil),
 		(*ExactValuePattern)(nil), (*ExactStringPattern)(nil), (*ParserBasedPattern)(nil),
 		(*IntRangePattern)(nil), (*EventPattern)(nil), (*MutationPattern)(nil), (*OptionalPattern)(nil),
+		(*FunctionPattern)(nil),
 	}
 	_ = []GroupPattern{
 		(*NamedSegmentPathPattern)(nil),

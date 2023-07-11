@@ -1243,6 +1243,10 @@ func (patt PathStringPattern) WriteRepresentation(ctx *Context, w io.Writer, con
 	return ErrNotImplementedYet
 }
 
+func (patt *FunctionPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	return ErrNotImplementedYet
+}
+
 //
 
 func (mt Mimetype) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
