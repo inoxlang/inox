@@ -31,7 +31,7 @@ func (m *Secret) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConf
 	return ErrNoRepresentation
 }
 
-func (m *Secret) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (m *Secret) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	return ErrNoRepresentation
 }
 

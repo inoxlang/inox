@@ -125,7 +125,7 @@ func (m CallBasedPatternReprMixin) WriteRepresentation(ctx *Context, w io.Writer
 	return err
 }
 
-func (m CallBasedPatternReprMixin) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (m CallBasedPatternReprMixin) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
@@ -140,7 +140,7 @@ func (m NamespaceMemberPatternReprMixin) WriteRepresentation(ctx *Context, w io.
 	return err
 }
 
-func (m NamespaceMemberPatternReprMixin) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (m NamespaceMemberPatternReprMixin) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 

@@ -26,5 +26,5 @@ type Serializable interface {
 	WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error
 
 	//JSON representation
-	WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error
+	WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error
 }

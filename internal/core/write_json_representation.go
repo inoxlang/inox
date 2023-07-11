@@ -11,10 +11,12 @@ import (
 )
 
 const (
-	JSON_UNTYPED_VALUE_SUFFIX = "__value"
+	JSON_UNTYPED_VALUE_SUFFIX   = "__value"
+	MAX_JSON_REPR_WRITING_DEPTH = 20
 )
 
 var (
+	ErrMaximumJSONReprWritingDepthReached  = errors.New("maximum JSON representation writing depth reached")
 	ErrPatternDoesNotMatchValueToSerialize = errors.New("pattern does not match value to serialize")
 	ErrPatternRequiredToSerialize          = errors.New("pattern required to serialize")
 )
@@ -33,7 +35,7 @@ func GetJSONRepresentation(v Serializable, ctx *Context) string {
 	buff := bytes.NewBuffer(nil)
 	stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, nil, 0)
 
-	err := v.WriteJSONRepresentation(ctx, stream, JSONSerializationConfig{})
+	err := v.WriteJSONRepresentation(ctx, stream, JSONSerializationConfig{}, 0)
 	if err != nil {
 		panic(fmt.Errorf("%s: %w", Stringify(v, ctx), err))
 	}
@@ -54,17 +56,17 @@ func fmtErrPatternDoesNotMatchValueToSerialize(ctx *Context, config JSONSerializ
 	return fmt.Errorf("%w at /%s, pattern: %s", ErrPatternDoesNotMatchValueToSerialize, config.Location, Stringify(config.Pattern, ctx))
 }
 
-func (Nil NilT) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (Nil NilT) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	w.WriteNil()
 	return nil
 }
 
-func (b Bool) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (b Bool) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	w.WriteBool(bool(b))
 	return nil
 }
 
-func (r Rune) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (r Rune) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
 		writeUntypedValueJSON(RUNE_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(r))
@@ -77,11 +79,11 @@ func (r Rune) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config J
 	return nil
 }
 
-func (b Byte) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (b Byte) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	return ErrNoRepresentation
 }
 
-func (i Int) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (i Int) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
 		writeUntypedValueJSON(INT_PATTERN.Name, func(w *jsoniter.Stream) error {
 			fmt.Fprintf(w, `"%d"`, i)
@@ -94,18 +96,20 @@ func (i Int) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JS
 	return nil
 }
 
-func (f Float) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (f Float) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	w.WriteFloat64(float64(f))
 	return w.Error
 }
 
-func (s Str) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (s Str) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	w.WriteString(string(s))
 	return nil
 }
 
-func (obj *Object) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	//TODO: prevent modification of the Object while this function is running
+func (obj *Object) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
 
 	var entryPatterns map[string]Pattern
 
@@ -155,7 +159,7 @@ func (obj *Object) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, con
 		err = v.WriteJSONRepresentation(ctx, w, JSONSerializationConfig{
 			ReprConfig: config.ReprConfig,
 			Pattern:    entryPatterns[k],
-		})
+		}, depth+1)
 		if err != nil {
 			return err
 		}
@@ -165,7 +169,11 @@ func (obj *Object) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, con
 	return nil
 }
 
-func (rec *Record) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (rec *Record) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
 	write := func(w *jsoniter.Stream) error {
 		var entryPatterns map[string]Pattern
 
@@ -199,7 +207,7 @@ func (rec *Record) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, con
 			err = v.WriteJSONRepresentation(ctx, w, JSONSerializationConfig{
 				ReprConfig: config.ReprConfig,
 				Pattern:    entryPatterns[k],
-			})
+			}, depth+1)
 			if err != nil {
 				return err
 			}
@@ -221,16 +229,24 @@ func (rec *Record) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, con
 	return write(w)
 }
 
-func (list KeyList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (list KeyList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
 	return ErrNoRepresentation
 
 }
 
-func (list *List) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	return list.underylingList.WriteJSONRepresentation(ctx, w, config)
+func (list *List) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
+	return list.underylingList.WriteJSONRepresentation(ctx, w, config, depth)
 }
 
-func (list *ValueList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (list *ValueList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	listPattern, _ := config.Pattern.(*ListPattern)
 
 	_, err := w.Write([]byte{'['})
@@ -260,7 +276,7 @@ func (list *ValueList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream,
 			}
 		}
 
-		err = v.WriteJSONRepresentation(ctx, w, elementConfig)
+		err = v.WriteJSONRepresentation(ctx, w, elementConfig, depth+1)
 		if err != nil {
 			return err
 		}
@@ -270,7 +286,7 @@ func (list *ValueList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream,
 	return err
 }
 
-func (list *IntList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (list *IntList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	listPattern, _ := config.Pattern.(*ListPattern)
 
 	_, err := w.Write([]byte{'['})
@@ -299,7 +315,7 @@ func (list *IntList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, c
 			}
 		}
 
-		err = v.WriteJSONRepresentation(ctx, w, elementConfig)
+		err = v.WriteJSONRepresentation(ctx, w, elementConfig, depth+1)
 		if err != nil {
 			return err
 		}
@@ -309,13 +325,13 @@ func (list *IntList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, c
 	return err
 }
 
-func (list *BoolList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (list *BoolList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	return list.WriteRepresentation(ctx, w, &ReprConfig{
 		AllVisible: true,
 	}, 0)
 }
 
-func (list *StringList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (list *StringList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	_, err := w.Write([]byte{'['})
 	if err != nil {
 		return err
@@ -331,7 +347,7 @@ func (list *StringList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream
 		first = false
 		err = v.WriteJSONRepresentation(ctx, w, JSONSerializationConfig{
 			ReprConfig: config.ReprConfig,
-		})
+		}, depth+1)
 		if err != nil {
 			return err
 		}
@@ -341,7 +357,11 @@ func (list *StringList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream
 	return err
 }
 
-func (tuple *Tuple) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (tuple *Tuple) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
 	tuplePattern := config.Pattern.(*TuplePattern)
 
 	_, err := w.Write([]byte{'['})
@@ -370,7 +390,7 @@ func (tuple *Tuple) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, co
 			elementConfig.Pattern = tuplePattern.elementPatterns[i]
 		}
 
-		err = v.WriteJSONRepresentation(ctx, w, elementConfig)
+		err = v.WriteJSONRepresentation(ctx, w, elementConfig, depth+1)
 		if err != nil {
 			return err
 		}
@@ -380,27 +400,47 @@ func (tuple *Tuple) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, co
 	return err
 }
 
-func (d *Dictionary) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (d *Dictionary) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
 	return ErrNotImplementedYet
 }
 
-func (u *UData) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (u *UData) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
 	return ErrNotImplementedYet
 }
 
-func (u *UDataHiearchyEntry) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (u *UDataHiearchyEntry) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
 	return ErrNotImplementedYet
 }
 
-func (slice *RuneSlice) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (slice *RuneSlice) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
 	return ErrNotImplementedYet
 }
 
-func (slice *ByteSlice) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (slice *ByteSlice) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (opt Option) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (opt Option) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
 	b := make([]byte, 0, len(opt.Name)+4)
 
 	if len(opt.Name) <= 1 {
@@ -426,7 +466,7 @@ func (opt Option) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, conf
 	return nil
 }
 
-func (pth Path) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (pth Path) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
 		writeUntypedValueJSON(PATH_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(pth))
@@ -438,7 +478,7 @@ func (pth Path) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config
 	return nil
 }
 
-func (patt PathPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (patt PathPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
 		writeUntypedValueJSON(PATHPATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(patt))
@@ -451,7 +491,7 @@ func (patt PathPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream
 	return nil
 }
 
-func (u URL) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (u URL) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
 		writeUntypedValueJSON(URL_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(u))
@@ -463,7 +503,7 @@ func (u URL) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JS
 	return nil
 }
 
-func (host Host) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (host Host) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
 		writeUntypedValueJSON(HOST_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(host))
@@ -475,7 +515,7 @@ func (host Host) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, confi
 	return nil
 }
 
-func (scheme Scheme) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (scheme Scheme) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
 		writeUntypedValueJSON(SCHEME_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(scheme))
@@ -487,7 +527,7 @@ func (scheme Scheme) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, c
 	return nil
 }
 
-func (patt HostPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (patt HostPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
 		writeUntypedValueJSON(HOSTPATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(patt))
@@ -499,7 +539,7 @@ func (patt HostPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream
 	return nil
 }
 
-func (addr EmailAddress) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (addr EmailAddress) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
 		writeUntypedValueJSON(EMAIL_ADDR_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(addr))
@@ -511,7 +551,7 @@ func (addr EmailAddress) WriteJSONRepresentation(ctx *Context, w *jsoniter.Strea
 	return nil
 }
 
-func (patt URLPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (patt URLPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
 		writeUntypedValueJSON(URLPATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(patt))
@@ -522,7 +562,7 @@ func (patt URLPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream,
 	w.WriteString(string(patt))
 	return nil
 }
-func (i Identifier) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (i Identifier) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
 		writeUntypedValueJSON(IDENT_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(i))
@@ -534,7 +574,7 @@ func (i Identifier) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, co
 	return nil
 }
 
-func (p PropertyName) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (p PropertyName) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if config.Pattern == nil || config.Pattern == ANYVAL_PATTERN {
 		writeUntypedValueJSON(PROPNAME_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(p))
@@ -546,11 +586,11 @@ func (p PropertyName) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, 
 	return nil
 }
 
-func (str CheckedString) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (str CheckedString) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	return ErrNoRepresentation
 }
 
-func (count ByteCount) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (count ByteCount) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	var buff bytes.Buffer
 	if _, err := count.Write(&buff, -1); err != nil {
 		return err
@@ -567,7 +607,7 @@ func (count ByteCount) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream,
 	return nil
 }
 
-func (count LineCount) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (count LineCount) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	var buff bytes.Buffer
 	if count < 0 {
 		return ErrNoRepresentation
@@ -594,7 +634,7 @@ func (count RuneCount) writeJSON(w *jsoniter.Stream) (int, error) {
 	return w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
 }
 
-func (count RuneCount) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (count RuneCount) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	var buff bytes.Buffer
 	if count < 0 {
 		return ErrNoRepresentation
@@ -621,7 +661,7 @@ func (rate ByteRate) writeJSON(w *jsoniter.Stream) (int, error) {
 	return w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
 }
 
-func (rate ByteRate) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (rate ByteRate) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	var buff bytes.Buffer
 	if rate < 0 {
 		return ErrNoRepresentation
@@ -641,7 +681,7 @@ func (rate ByteRate) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, c
 	return nil
 }
 
-func (rate SimpleRate) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (rate SimpleRate) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	var buff bytes.Buffer
 	if rate < 0 {
 		return ErrNoRepresentation
@@ -661,7 +701,7 @@ func (rate SimpleRate) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream,
 	return nil
 }
 
-func (d Duration) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (d Duration) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	var buff bytes.Buffer
 	if d < 0 {
 		return ErrNoRepresentation
@@ -681,7 +721,7 @@ func (d Duration) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, conf
 	return nil
 }
 
-func (d Date) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (d Date) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	var buff bytes.Buffer
 
 	if _, err := d.write(&buff); err != nil {
@@ -699,11 +739,11 @@ func (d Date) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config J
 	return nil
 }
 
-func (m FileMode) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (m FileMode) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	return ErrNoRepresentation
 }
 
-func (r RuneRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (r RuneRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	write := func(w *jsoniter.Stream) error {
 		w.WriteObjectStart()
 
@@ -730,11 +770,11 @@ func (r RuneRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, con
 	return nil
 }
 
-func (r QuantityRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (r QuantityRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (r IntRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (r IntRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	write := func(w *jsoniter.Stream) error {
 		w.WriteObjectStart()
 
@@ -764,143 +804,241 @@ func (r IntRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, conf
 
 //patterns
 
-func (pattern ExactValuePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (pattern ExactValuePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
 	return ErrNotImplementedYet
 }
 
-func (pattern TypePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (pattern TypePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
 	return ErrNotImplementedYet
 }
 
-func (pattern *DifferencePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (pattern *DifferencePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
 	return ErrNotImplementedYet
 }
-func (pattern *OptionalPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	return ErrNotImplementedYet
-}
-
-func (patt RegexPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	return ErrNotImplementedYet
-}
-
-func (patt UnionPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	return ErrNotImplementedYet
-}
-
-func (patt SequenceStringPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (pattern *OptionalPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
 	return ErrNotImplementedYet
 }
 
-func (patt UnionStringPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (patt RegexPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
 	return ErrNotImplementedYet
 }
 
-func (patt RuneRangeStringPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (patt UnionPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
 	return ErrNotImplementedYet
 }
 
-func (patt DynamicStringPatternElement) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (patt SequenceStringPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
 	return ErrNotImplementedYet
 }
 
-func (patt *RepeatedPatternElement) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (patt UnionStringPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
 	return ErrNotImplementedYet
 }
 
-func (patt *NamedSegmentPathPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (patt RuneRangeStringPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
 	return ErrNotImplementedYet
 }
 
-func (patt ObjectPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (patt DynamicStringPatternElement) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
 	return ErrNotImplementedYet
 }
 
-func (patt RecordPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (patt *RepeatedPatternElement) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
 	return ErrNotImplementedYet
 }
 
-func (patt ListPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (patt *NamedSegmentPathPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
 	return ErrNotImplementedYet
 }
 
-func (patt TuplePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (patt ObjectPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
 	return ErrNotImplementedYet
 }
 
-func (patt OptionPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (patt RecordPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
 	return ErrNotImplementedYet
 }
 
-func (patt *PathStringPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (patt ListPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+	return ErrNotImplementedYet
+}
+
+func (patt TuplePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+	return ErrNotImplementedYet
+}
+
+func (patt OptionPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+	return ErrNotImplementedYet
+}
+
+func (patt *PathStringPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
 	return ErrNotImplementedYet
 }
 
 //
 
-func (mt Mimetype) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (mt Mimetype) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	return ErrNoRepresentation
 }
 
-func (i FileInfo) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (i FileInfo) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	return ErrNoRepresentation
 }
 
-func (b *Bytecode) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (b *Bytecode) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	return ErrNoRepresentation
 }
 
-func (port Port) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (port Port) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (c *StringConcatenation) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
-	return Str(c.GetOrBuildString()).WriteJSONRepresentation(ctx, w, config)
+func (c *StringConcatenation) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	return Str(c.GetOrBuildString()).WriteJSONRepresentation(ctx, w, config, depth+1)
 }
 
-func (c Color) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (c Color) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 
-func (g *SystemGraph) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (g *SystemGraph) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
 	return ErrNotImplementedYet
 }
 
-func (e SystemGraphEvent) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (e SystemGraphEvent) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
 	return ErrNotImplementedYet
 }
 
-func (e SystemGraphEdge) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (e SystemGraphEdge) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
 	return ErrNotImplementedYet
 }
 
-func (v *DynamicValue) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (v *DynamicValue) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
 	return ErrNotImplementedYet
 }
 
-func (v Error) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (v Error) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
 	return ErrNotImplementedYet
 }
 
-func (j *LifetimeJob) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (j *LifetimeJob) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
 	return ErrNotImplementedYet
 }
 
-func (h *SynchronousMessageHandler) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (h *SynchronousMessageHandler) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
 	return ErrNotImplementedYet
 }
 
-func (f *InoxFunction) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (f *InoxFunction) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
 	return ErrNotImplementedYet
 }
 
-func (m *Mapping) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (m *Mapping) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
 	return ErrNotImplementedYet
 }
 
-func (n AstNode) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (n AstNode) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
 	return ErrNotImplementedYet
 }
 
-func (p *StructPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig) error {
+func (p *StructPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
 	return ErrNotImplementedYet
 }

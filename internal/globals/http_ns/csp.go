@@ -181,7 +181,7 @@ func (c *ContentSecurityPolicy) WriteRepresentation(ctx *core.Context, w io.Writ
 	return core.ErrNotImplementedYet
 }
 
-func (c *ContentSecurityPolicy) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stream, config core.JSONSerializationConfig) error {
+func (c *ContentSecurityPolicy) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stream, config core.JSONSerializationConfig, depth int) error {
 	return core.ErrNotImplementedYet
 }
 

@@ -20,7 +20,7 @@ func ToJSON(ctx *Context, v Serializable) Str {
 
 func ToJSONWithConfig(ctx *Context, v Serializable, config JSONSerializationConfig) Str {
 	stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, nil, 10)
-	if err := v.WriteJSONRepresentation(ctx, stream, config); err != nil {
+	if err := v.WriteJSONRepresentation(ctx, stream, config, 0); err != nil {
 		panic(err)
 	}
 	return Str(stream.Buffer())

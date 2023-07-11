@@ -168,7 +168,7 @@ func (set *Set) WriteRepresentation(ctx *core.Context, w io.Writer, config *core
 	return err
 }
 
-func (set *Set) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stream, config core.JSONSerializationConfig) error {
+func (set *Set) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stream, config core.JSONSerializationConfig, depth int) error {
 	buff := bytes.NewBufferString("[")
 
 	w.WriteArrayStart()
@@ -180,7 +180,7 @@ func (set *Set) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stream, c
 		}
 		first = false
 
-		if err := e.WriteJSONRepresentation(ctx, w, config); err != nil {
+		if err := e.WriteJSONRepresentation(ctx, w, config, depth+1); err != nil {
 			return err
 		}
 	}

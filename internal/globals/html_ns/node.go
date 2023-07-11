@@ -228,6 +228,6 @@ func (n *HTMLNode) WriteRepresentation(ctx *core.Context, w io.Writer, config *c
 	return core.ErrNotImplementedYet
 }
 
-func (n *HTMLNode) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stream, config core.JSONSerializationConfig) error {
+func (n *HTMLNode) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stream, config core.JSONSerializationConfig, depth int) error {
 	return core.ErrNotImplementedYet
 }

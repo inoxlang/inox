@@ -651,7 +651,7 @@ func getJSONRepr(t *testing.T, v Serializable, ctx *Context, reprConfig ...JSONS
 	}
 
 	stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, nil, 0)
-	err := v.WriteJSONRepresentation(ctx, stream, reprConfig[0])
+	err := v.WriteJSONRepresentation(ctx, stream, reprConfig[0], 0)
 	if err != nil {
 		assert.FailNow(t, "failed to get representation: "+err.Error())
 	}
