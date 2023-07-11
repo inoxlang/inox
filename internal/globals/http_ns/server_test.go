@@ -104,7 +104,7 @@ func TestHttpServerUserHandler(t *testing.T) {
 
 			body := string(utils.Must(io.ReadAll(resp.Body)))
 			//we check the response
-			assert.Equal(t, `"1"`, body)
+			assert.Equal(t, `{"int__value":"1"}`, body)
 			assert.Equal(t, 200, resp.StatusCode)
 		})
 	}
@@ -165,7 +165,7 @@ func TestHttpServerMapping(t *testing.T) {
 						%/... => handle
 					}
 				`,
-			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":"1"}`}},
+			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":{"int__value":"1"}}`}},
 		},
 		"handler accessing a global function": {
 			input: `
@@ -179,7 +179,7 @@ func TestHttpServerMapping(t *testing.T) {
 						%/... => handle
 					}
 				`,
-			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":"1"}`}},
+			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":{"int__value":"1"}}`}},
 		},
 		"JSON for model": {
 			input: `$$model = {a: 1}
@@ -187,7 +187,7 @@ func TestHttpServerMapping(t *testing.T) {
 				return Mapping {
 					%/... => model
 				}`,
-			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":"1"}`}},
+			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":{"int__value":"1"}}`}},
 		},
 		"JSON for model with sensitive data, no defined visibility": {
 			input: `
@@ -200,7 +200,7 @@ func TestHttpServerMapping(t *testing.T) {
 				return Mapping {
 					%/... => model
 				}`,
-			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":"1"}`}},
+			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":{"int__value":"1"}}`}},
 		},
 		"JSON for model with all fields set as public": {
 			input: `$$model = {
@@ -218,7 +218,7 @@ func TestHttpServerMapping(t *testing.T) {
 				return Mapping {
 					%/... => model
 				}`,
-			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":"1","e":"a@mail.com","password":"mypassword"}`}},
+			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":{"int__value":"1"},"e":{"emailaddr__value":"a@mail.com"},"password":"mypassword"}`}},
 		},
 		"IXON for model with no defined visibility": {
 			input: ` $$model = {

@@ -274,6 +274,7 @@ func respondWithMappingResult(h handlingArguments) {
 			rw.WriteContentType(core.JSON_CTYPE)
 			stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, rw.BodyWriter(), 0)
 			serializable.WriteJSONRepresentation(state.Ctx, stream, config, 0)
+			stream.Flush()
 			return
 		default:
 			break
