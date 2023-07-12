@@ -2874,6 +2874,26 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				result: NewArrayFrom(Int(1), NewArrayFrom(Int(2), Int(3))),
 			},
 			{
+				name: "variadic function with many arguments from a list spread argument",
+				input: `
+					fn f(x, ...y){
+						return Array($x, $y)
+					}
+					return f(1, ...[2, 3])
+				`,
+				result: NewArrayFrom(Int(1), NewArrayFrom(Int(2), Int(3))),
+			},
+			{
+				name: "variadic function with many arguments from an array spread argument",
+				input: `
+					fn f(x, ...y){
+						return Array($x, $y)
+					}
+					return f(1, ...Array(2, 3))
+				`,
+				result: NewArrayFrom(Int(1), NewArrayFrom(Int(2), Int(3))),
+			},
+			{
 				name:  "non-variadic function with a spread argument",
 				error: true,
 				input: `

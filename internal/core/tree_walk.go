@@ -2693,9 +2693,12 @@ func TreeWalkCallFunc(call TreeWalkCall) (Value, error) {
 					return nil, err
 				}
 
-				a := array.(*Array)
+				a := array.(Iterable)
+				it := a.Iterator(state.Global.Ctx, IteratorConfiguration{KeysNeverRead: true})
 
-				for _, e := range *a {
+				for it.Next(state.Global.Ctx) {
+					e := it.Value(state.Global.Ctx)
+
 					//same logic for non spread arguments
 					if isSharedFunction {
 						shared, err := ShareOrClone(e, state.Global)

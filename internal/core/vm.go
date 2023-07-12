@@ -2212,8 +2212,10 @@ func (v *VM) fnCall(numArgs int, spread, must bool) bool {
 	v.sp -= 2
 
 	var spreadArg *Array
+	var passedSpreadArg Iterable
+
 	if spread {
-		spreadArg = v.stack[v.sp-1].(*Array)
+		passedSpreadArg = v.stack[v.sp-1].(Iterable)
 		v.sp--
 	}
 
@@ -2232,16 +2234,27 @@ func (v *VM) fnCall(numArgs int, spread, must bool) bool {
 		}
 
 		if spread {
-			for i := 0; i < spreadArg.Len(); i++ {
-				elem := spreadArg.At(v.global.Ctx, i)
+			spreadArg = &Array{}
+			it := passedSpreadArg.Iterator(v.global.Ctx, IteratorConfiguration{KeysNeverRead: true})
+
+			for it.Next(v.global.Ctx) {
+				elem := it.Value(v.global.Ctx)
 
 				shared, err := ShareOrClone(elem, v.global)
 				if err != nil {
 					v.err = fmt.Errorf("failed to share an element of a spread argument: %T: %w", elem, err)
 					return false
 				}
-				(*spreadArg)[i] = shared
+				*spreadArg = append(*spreadArg, shared)
 			}
+		}
+	} else if spread {
+		spreadArg = &Array{}
+		it := passedSpreadArg.Iterator(v.global.Ctx, IteratorConfiguration{KeysNeverRead: true})
+
+		for it.Next(v.global.Ctx) {
+			elem := it.Value(v.global.Ctx)
+			*spreadArg = append(*spreadArg, elem)
 		}
 	}
 
