@@ -6014,8 +6014,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	t.Run("map fn", func(t *testing.T) {
 		t.Run("recursive map calls", func(t *testing.T) {
 			code := `
-				fn rec(list %iterable){
-				    assert (list match %[]%iterable)
+				fn rec(list %serializable-iterable){
+				    assert (list match %[]%serializable-iterable)
 					return map(list, rec)
 				}
 
@@ -6024,7 +6024,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"map": WrapGoFunction(Map),
 			})
-			state.Ctx.AddNamedPattern("iterable", ITERABLE_PATTERN)
+			state.Ctx.AddNamedPattern("serializable-iterable", SERIALIZABLE_ITERABLE_PATTERN)
 
 			res, err := Eval(code, state, true)
 			assert.NoError(t, err)
@@ -6036,8 +6036,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("recursive map calls witin a function called in isolation", func(t *testing.T) {
 			code := `
-				fn rec(list %iterable){
-				    assert (list match %[]%iterable)
+				fn rec(list %serializable-iterable){
+				    assert (list match %[]%serializable-iterable)
 					return map(list, rec)
 				}
 
@@ -6050,7 +6050,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"map": WrapGoFunction(Map),
 			})
-			state.Ctx.AddNamedPattern("iterable", ITERABLE_PATTERN)
+			state.Ctx.AddNamedPattern("serializable-iterable", SERIALIZABLE_ITERABLE_PATTERN)
 
 			val, err := Eval(code, state, true)
 			if !assert.NoError(t, err) {
@@ -6071,8 +6071,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("recursive map calls witin a method called in isolation", func(t *testing.T) {
 			code := `
-				fn rec(list %iterable){
-				    assert (list match %[]%iterable)
+				fn rec(list %serializable-iterable){
+				    assert (list match %[]%serializable-iterable)
 					return map(list, rec)
 				}
 
@@ -6087,7 +6087,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"map": WrapGoFunction(Map),
 			})
-			state.Ctx.AddNamedPattern("iterable", ITERABLE_PATTERN)
+			state.Ctx.AddNamedPattern("serializable-iterable", SERIALIZABLE_ITERABLE_PATTERN)
 
 			val, err := Eval(code, state, true)
 			if !assert.NoError(t, err) {
