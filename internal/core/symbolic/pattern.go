@@ -813,7 +813,7 @@ func (p *ObjectPattern) SymbolicValue() SymbolicValue {
 
 	if p.entries != nil {
 		for key, valuePattern := range p.entries {
-			entries[key] = asSerializable(valuePattern.SymbolicValue()).(Serializable)
+			entries[key] = AsSerializable(valuePattern.SymbolicValue()).(Serializable)
 			static[key] = valuePattern
 		}
 	}

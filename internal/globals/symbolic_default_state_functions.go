@@ -170,7 +170,7 @@ func init() {
 			return p.SymbolicValue(), nil
 		},
 		_split, func(ctx *symbolic.Context, arg symbolic.Readable, sep *symbolic.String, p symbolic.Pattern) (symbolic.SymbolicValue, *symbolic.Error) {
-			return symbolic.NewListOf(p.SymbolicValue()), nil
+			return symbolic.NewListOf(p.SymbolicValue().(symbolic.Serializable)), nil
 		},
 
 		_idt, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) symbolic.SymbolicValue {
@@ -239,7 +239,7 @@ func init() {
 		},
 
 		_List, func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) *symbolic.List {
-			return symbolic.NewListOf(symbolic.ANY)
+			return symbolic.NewListOf(symbolic.ANY_SERIALIZABLE)
 		},
 		_Event, func(ctx *symbolic.Context, value symbolic.SymbolicValue) *symbolic.Event {
 			event, err := symbolic.NewEvent(value)

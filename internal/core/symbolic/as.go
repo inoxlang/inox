@@ -16,7 +16,7 @@ func as(v SymbolicValue, itf reflect.Type) SymbolicValue {
 	return val.as(itf)
 }
 
-func asSerializable(v SymbolicValue) SymbolicValue {
+func AsSerializable(v SymbolicValue) SymbolicValue {
 	return as(v, SERIALIZABLE_INTERFACE_TYPE)
 }
 

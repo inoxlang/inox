@@ -1586,7 +1586,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 					state.addError(makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListAnnotated(e, generalElemPattern.(Pattern))))
 				}
 
-				e = asSerializable(e)
+				e = AsSerializable(e)
 				_, ok := e.(Serializable)
 				if !ok {
 					state.addError(makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
@@ -1604,14 +1604,14 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 					return nil, err
 				}
 
-				e = asSerializable(e)
+				e = AsSerializable(e)
 				_, ok := e.(Serializable)
 				if !ok {
 					state.addError(makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
 					e = ANY_SERIALIZABLE
 				}
 
-				elements = append(elements, asSerializable(e).(Serializable))
+				elements = append(elements, AsSerializable(e).(Serializable))
 			}
 			return NewList(elements...), nil
 		}
@@ -1642,7 +1642,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 					e = ANY
 				}
 
-				e = asSerializable(e)
+				e = AsSerializable(e)
 				_, ok := e.(Serializable)
 				if !ok {
 					state.addError(makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
@@ -1669,14 +1669,14 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 					e = ANY_SERIALIZABLE
 				}
 
-				e = asSerializable(e)
+				e = AsSerializable(e)
 				_, ok := e.(Serializable)
 				if !ok {
 					state.addError(makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
 					e = ANY_SERIALIZABLE
 				}
 
-				elements = append(elements, asSerializable(e).(Serializable))
+				elements = append(elements, AsSerializable(e).(Serializable))
 			}
 			return NewTuple(elements...), nil
 		}
@@ -2961,7 +2961,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			}
 
 			if elements == nil {
-				return NewTupleOf(asSerializable(joinValues(generalElements)).(Serializable)), nil
+				return NewTupleOf(AsSerializable(joinValues(generalElements)).(Serializable)), nil
 			} else {
 				return NewTuple(elements...), nil
 			}

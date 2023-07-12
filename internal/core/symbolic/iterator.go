@@ -8,8 +8,10 @@ import (
 )
 
 var (
-	ANY_ITERABLE = &AnyIterable{}
-	_            = []Iterable{
+	ANY_ITERABLE              = &AnyIterable{}
+	ANY_SERIALIZABLE_ITERABLE = &AnySerializableIterable{}
+
+	_ = []Iterable{
 		(*List)(nil), (*Tuple)(nil), (*Object)(nil), (*Record)(nil), (*IntRange)(nil), (*RuneRange)(nil), Pattern(nil), (*EventSource)(nil),
 	}
 )
@@ -42,11 +44,10 @@ func (a *AnyIterable) IsWidenable() bool {
 
 func (r *AnyIterable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%iterable")))
-	return
 }
 
 func (r *AnyIterable) WidestOfType() SymbolicValue {
-	return &AnyIterable{}
+	return ANY_ITERABLE
 }
 
 func (r *AnyIterable) IteratorElementKey() SymbolicValue {
@@ -54,6 +55,43 @@ func (r *AnyIterable) IteratorElementKey() SymbolicValue {
 }
 
 func (r *AnyIterable) IteratorElementValue() SymbolicValue {
+	return ANY
+}
+
+// An AnySerializableIterable represents a symbolic Iterable+Serializable we do not know the concrete type.
+type AnySerializableIterable struct {
+	_ int
+	SerializableMixin
+}
+
+func (r *AnySerializableIterable) Test(v SymbolicValue) bool {
+	_, isIterable := v.(Iterable)
+	_, isSerializable := v.(Serializable)
+
+	return isIterable && isSerializable
+}
+
+func (r *AnySerializableIterable) Widen() (SymbolicValue, bool) {
+	return nil, false
+}
+
+func (a *AnySerializableIterable) IsWidenable() bool {
+	return false
+}
+
+func (r *AnySerializableIterable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%serializable-iterable")))
+}
+
+func (r *AnySerializableIterable) WidestOfType() SymbolicValue {
+	return ANY_SERIALIZABLE_ITERABLE
+}
+
+func (r *AnySerializableIterable) IteratorElementKey() SymbolicValue {
+	return ANY
+}
+
+func (r *AnySerializableIterable) IteratorElementValue() SymbolicValue {
 	return ANY
 }
 

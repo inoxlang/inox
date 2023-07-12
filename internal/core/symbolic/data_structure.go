@@ -121,7 +121,7 @@ func (a *Array) Widen() (SymbolicValue, bool) {
 		widened, ok := elem.Widen()
 		if ok {
 			noWidening = false
-			widenedElements = append(widenedElements, asSerializable(widened).(Serializable))
+			widenedElements = append(widenedElements, AsSerializable(widened).(Serializable))
 		} else {
 			widenedElements = append(widenedElements, elem)
 		}
@@ -327,13 +327,13 @@ func (list *List) Widen() (SymbolicValue, bool) {
 		widened, ok := elem.Widen()
 		if ok {
 			noWidening = false
-			widenedElements = append(widenedElements, asSerializable(widened).(Serializable))
+			widenedElements = append(widenedElements, AsSerializable(widened).(Serializable))
 		} else {
 			widenedElements = append(widenedElements, elem)
 		}
 	}
 	if noWidening {
-		return &List{generalElement: asSerializable(joinValues(SerializablesToValues(widenedElements))).(Serializable)}, true
+		return &List{generalElement: AsSerializable(joinValues(SerializablesToValues(widenedElements))).(Serializable)}, true
 	}
 	return &List{elements: widenedElements}, true
 }
@@ -565,13 +565,13 @@ func (t *Tuple) Widen() (SymbolicValue, bool) {
 		widened, ok := elem.Widen()
 		if ok {
 			noWidening = false
-			widenedElements = append(widenedElements, asSerializable(widened).(Serializable))
+			widenedElements = append(widenedElements, AsSerializable(widened).(Serializable))
 		} else {
 			widenedElements = append(widenedElements, elem)
 		}
 	}
 	if noWidening {
-		return &Tuple{generalElement: asSerializable(joinValues(SerializablesToValues(widenedElements))).(Serializable)}, true
+		return &Tuple{generalElement: AsSerializable(joinValues(SerializablesToValues(widenedElements))).(Serializable)}, true
 	}
 	return &Tuple{elements: widenedElements}, true
 }
@@ -596,7 +596,7 @@ func (t *Tuple) append(element SymbolicValue) {
 		t.elements = make([]Serializable, 0)
 	}
 
-	t.elements = append(t.elements, asSerializable(element).(Serializable))
+	t.elements = append(t.elements, AsSerializable(element).(Serializable))
 }
 
 func (t *Tuple) HasKnownLen() bool {

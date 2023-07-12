@@ -11,7 +11,7 @@ import (
 
 type ObjectInfo struct {
 	symbolic.UnassignablePropsMixin
-	_ int
+	symbolic.SerializableMixin
 }
 
 func (r *ObjectInfo) Test(v symbolic.SymbolicValue) bool {

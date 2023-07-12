@@ -41,15 +41,15 @@ var (
 
 func init() {
 
-	stringOrStringList := symbolic.NewMultivalue(
+	stringOrStringList := symbolic.AsSerializable(symbolic.NewMultivalue(
 		symbolic.NewListOf(symbolic.ANY_STR_LIKE),
 		symbolic.ANY_STR_LIKE,
-	)
+	)).(symbolic.Serializable)
 
 	core.RegisterSymbolicGoFunction(NewCSP,
 		func(ctx *symbolic.Context, desc *symbolic.Object) (*http_symbolic.ContentSecurityPolicy, *symbolic.Error) {
 			ctx.SetSymbolicGoFunctionParameters(&[]symbolic.SymbolicValue{
-				symbolic.NewObject(map[string]symbolic.SymbolicValue{
+				symbolic.NewObject(map[string]symbolic.Serializable{
 					"default-src":     stringOrStringList,
 					"frame-ancestors": stringOrStringList,
 					"frame-src":       stringOrStringList,

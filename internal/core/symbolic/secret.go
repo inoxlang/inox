@@ -20,6 +20,7 @@ var (
 type Secret struct {
 	pattern *SecretPattern
 	value   SymbolicValue
+	SerializableMixin
 }
 
 func NewSecret(value SymbolicValue, pattern *SecretPattern) (*Secret, error) {

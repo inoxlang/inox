@@ -12,7 +12,7 @@ import (
 
 type HTMLNode struct {
 	symbolic.UnassignablePropsMixin
-	_ int
+	symbolic.SerializableMixin
 }
 
 func NewHTMLNode() *HTMLNode {

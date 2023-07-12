@@ -411,7 +411,7 @@ func TestSymbolicList(t *testing.T) {
 			},
 			{
 				&List{elements: []Serializable{&Int{}, &String{}}, generalElement: nil},
-				&List{elements: nil, generalElement: asSerializable(NewMultivalue(&Int{}, &String{})).(Serializable)},
+				&List{elements: nil, generalElement: AsSerializable(NewMultivalue(&Int{}, &String{})).(Serializable)},
 				true,
 			},
 			{
@@ -541,7 +541,7 @@ func TestSymbolicTuple(t *testing.T) {
 			},
 			{
 				&Tuple{elements: []Serializable{&Int{}, &String{}}, generalElement: nil},
-				&Tuple{elements: nil, generalElement: asSerializable(NewMultivalue(&Int{}, &String{})).(Serializable)},
+				&Tuple{elements: nil, generalElement: AsSerializable(NewMultivalue(&Int{}, &String{})).(Serializable)},
 				true,
 			},
 			{

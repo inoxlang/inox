@@ -27,7 +27,13 @@ var (
 
 		(*SystemGraph)(nil), (*SystemGraphEvent)(nil), (*SystemGraphEdge)(nil),
 
+		(*Mapping)(nil),
+
 		Error{},
+
+		(*Secret)(nil),
+
+		FileInfo{},
 	}
 )
 

@@ -13,6 +13,7 @@ import (
 // A Mapping represents a symbolic Mapping.
 type Mapping struct {
 	shared bool
+	SerializableMixin
 }
 
 func NewMapping() *Mapping {

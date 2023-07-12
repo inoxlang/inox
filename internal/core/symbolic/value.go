@@ -486,7 +486,7 @@ func (m *FileMode) WidestOfType() SymbolicValue {
 // A FileInfo represents a symbolic FileInfo.
 type FileInfo struct {
 	UnassignablePropsMixin
-	_ int
+	SerializableMixin
 }
 
 func (f *FileInfo) Test(v SymbolicValue) bool {

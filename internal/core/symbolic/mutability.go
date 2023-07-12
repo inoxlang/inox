@@ -40,6 +40,10 @@ func (any AnyIterable) IsMutable() bool {
 	return true
 }
 
+func (any AnySerializableIterable) IsMutable() bool {
+	return true
+}
+
 func (any AnyWatchable) IsMutable() bool {
 	return true
 }

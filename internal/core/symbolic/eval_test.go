@@ -3867,8 +3867,8 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
 			assert.Equal(t, NewList(
-				asSerializable(NewMultivalue(ANY_INT, Nil)).(Serializable),
-				asSerializable(NewMultivalue(ANY_INT, Nil)).(Serializable),
+				AsSerializable(NewMultivalue(ANY_INT, Nil)).(Serializable),
+				AsSerializable(NewMultivalue(ANY_INT, Nil)).(Serializable),
 			), res)
 		})
 
@@ -3969,7 +3969,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 
 			expectedResultFromForStmt := NewList(
-				&Int{}, asSerializable(NewMultivalue(NewList(&String{}), NewList(&Int{}))).(Serializable),
+				&Int{}, AsSerializable(NewMultivalue(NewList(&String{}), NewList(&Int{}))).(Serializable),
 			)
 
 			assert.Equal(t, NewMultivalue(expectedResultFromForStmt, Nil), res)
@@ -5450,7 +5450,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 			assert.Equal(t, NewList(
 				//we also check that elem has the right because the test case depends on that
-				asSerializable(NewMultivalue(ANY_STR, ANY_STR_CONCAT)).(Serializable),
+				AsSerializable(NewMultivalue(ANY_STR, ANY_STR_CONCAT)).(Serializable),
 				ANY_STR_CONCAT,
 			), res)
 		})
@@ -5472,7 +5472,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 			assert.Equal(t, NewList(
 				//we also check that elem has the right because the test case depends on that
-				asSerializable(NewMultivalue(ANY_STR, ANY_STR_CONCAT)).(Serializable),
+				AsSerializable(NewMultivalue(ANY_STR, ANY_STR_CONCAT)).(Serializable),
 				ANY_STR_CONCAT,
 			), res)
 		})
@@ -5522,7 +5522,7 @@ func TestSymbolicEval(t *testing.T) {
 				node:           fnExpr,
 				parameters:     []SymbolicValue{NewTupleOf(&Int{}), NewTupleOf(&String{})},
 				parameterNames: []string{"a", "b"},
-				result:         NewTupleOf(asSerializable(NewMultivalue(ANY_INT, ANY_STR)).(Serializable)),
+				result:         NewTupleOf(AsSerializable(NewMultivalue(ANY_INT, ANY_STR)).(Serializable)),
 			}
 			assert.Equal(t, expectedFn, res)
 		})
@@ -5727,7 +5727,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 			assert.Equal(t, NewList(
 				//we also check that elem has the right because the test case depends on that
-				asSerializable(NewMultivalue(ANY_STR, ANY_STR_CONCAT)).(Serializable),
+				AsSerializable(NewMultivalue(ANY_STR, ANY_STR_CONCAT)).(Serializable),
 				ANY_STR,
 			), res)
 		})

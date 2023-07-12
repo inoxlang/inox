@@ -96,7 +96,7 @@ func (r *Rank) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 func (r *Rank) Prop(name string) symbolic.SymbolicValue {
 	switch name {
 	case "values":
-		return symbolic.NewListOf(&symbolic.Any{})
+		return symbolic.NewListOf(symbolic.ANY_SERIALIZABLE)
 	}
 	return symbolic.GetGoMethodOrPanic(name, r)
 }

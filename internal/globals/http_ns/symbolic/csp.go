@@ -16,6 +16,7 @@ var (
 
 type ContentSecurityPolicy struct {
 	_ int
+	symbolic.SerializableMixin
 }
 
 func NewCSP() *ContentSecurityPolicy {
