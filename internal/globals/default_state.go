@@ -242,6 +242,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 		"clone_val":    core.ValOf(_clone_val),
 		"propnames":    core.WrapGoFunction(_propnames),
 
+		"Array":  core.ValOf(core.NewArray),
 		"List":   core.ValOf(_List),
 		"append": core.ValOf(core.Append),
 
