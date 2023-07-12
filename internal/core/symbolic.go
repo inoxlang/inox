@@ -32,6 +32,13 @@ func init() {
 		GetQuantity: func(values []float64, units []string) (any, error) {
 			return evalQuantity(values, units)
 		},
+		GetRate: func(values []float64, units []string, divUnit string) (any, error) {
+			q, err := evalQuantity(values, units)
+			if err != nil {
+				return nil, err
+			}
+			return evalRate(q, divUnit)
+		},
 		ConvertKeyReprToValue: func(s string) any {
 			return convertKeyReprToValue(s)
 		},

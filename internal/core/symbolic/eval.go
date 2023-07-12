@@ -209,7 +209,13 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 	case *parse.DateLiteral:
 		return &Date{}, nil
 	case *parse.RateLiteral:
-		return ANY, nil
+		values := make([]float64, len(n.Units))
+
+		v, err := extData.GetRate(values, n.Units, n.DivUnit)
+		if err != nil {
+			return nil, err
+		}
+		return extData.ToSymbolicValue(v, false)
 	case *parse.QuotedStringLiteral, *parse.UnquotedStringLiteral, *parse.MultilineStringLiteral:
 		return &String{}, nil
 	case *parse.RuneLiteral:
