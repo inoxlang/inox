@@ -9,7 +9,7 @@ import (
 func init() {
 	RegisterSymbolicGoFunctions([]any{
 		Filter, func(ctx *symbolic.Context, iterable symbolic.Iterable, cond symbolic.SymbolicValue) *symbolic.List {
-			return symbolic.NewListOf(&symbolic.Any{})
+			return symbolic.NewListOf(symbolic.ANY_SERIALIZABLE)
 		},
 		Some, func(ctx *symbolic.Context, iterable symbolic.Iterable, cond symbolic.SymbolicValue) *symbolic.Bool {
 			return &symbolic.Bool{}

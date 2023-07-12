@@ -8,6 +8,9 @@ func widenOrAny(value SymbolicValue) SymbolicValue {
 		widened, _ := value.Widen()
 		return widened
 	}
+	if _, ok := value.(Serializable); ok {
+		return ANY_SERIALIZABLE
+	}
 	return ANY
 }
 

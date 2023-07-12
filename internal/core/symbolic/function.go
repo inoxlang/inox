@@ -530,7 +530,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 			// }
 
 			widenedArg := arg
-			for !IsAny(widenedArg) && !param.Test(widenedArg) {
+			for !IsAnyOrAnySerializable(widenedArg) && !param.Test(widenedArg) {
 				widenedArg = widenOrAny(widenedArg)
 			}
 
@@ -566,7 +566,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 
 		for i, arg := range variadicArgs {
 			widenedArg := arg.(SymbolicValue)
-			for !IsAny(widenedArg) && !goFunc.variadicElem.Test(widenedArg) {
+			for !IsAnyOrAnySerializable(widenedArg) && !goFunc.variadicElem.Test(widenedArg) {
 				widenedArg = widenOrAny(widenedArg)
 			}
 

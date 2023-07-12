@@ -246,17 +246,17 @@ outer:
 }
 
 func (p *ModuleParameters) GetSymbolicArguments() *symbolic.Object {
-	resultEntries := map[string]symbolic.SymbolicValue{}
+	resultEntries := map[string]symbolic.Serializable{}
 	encountered := map[uintptr]symbolic.SymbolicValue{}
 
 	for _, param := range p.others {
 		symbolicPatt := utils.Must(param.pattern.ToSymbolicValue(nil, encountered)).(symbolic.Pattern)
-		resultEntries[string(param.name)] = symbolicPatt.SymbolicValue()
+		resultEntries[string(param.name)] = symbolicPatt.SymbolicValue().(symbolic.Serializable)
 	}
 
 	for _, param := range p.positional {
 		symbolicPatt := utils.Must(param.pattern.ToSymbolicValue(nil, encountered)).(symbolic.Pattern)
-		resultEntries[string(param.name)] = symbolicPatt.SymbolicValue()
+		resultEntries[string(param.name)] = symbolicPatt.SymbolicValue().(symbolic.Serializable)
 	}
 
 	return symbolic.NewObject(resultEntries, nil, nil)

@@ -64,6 +64,15 @@ func IsAnySerializable(val SymbolicValue) bool {
 	return ok
 }
 
+func IsAnyOrAnySerializable(val SymbolicValue) bool {
+	switch val.(type) {
+	case *Any, *AnySerializable:
+		return true
+	default:
+		return false
+	}
+}
+
 func deeplyEqual(v1, v2 SymbolicValue) bool {
 	return v1.Test(v2) && v2.Test(v1)
 }

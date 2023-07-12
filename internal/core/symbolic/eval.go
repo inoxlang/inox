@@ -473,7 +473,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				static = type_.(Pattern)
 
 				widenedRight := right
-				for !IsAny(widenedRight) && !static.TestValue(widenedRight) {
+				for !IsAnyOrAnySerializable(widenedRight) && !static.TestValue(widenedRight) {
 					widenedRight = widenOrAny(widenedRight)
 				}
 
@@ -821,7 +821,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			return nil, err
 		}
 
-		for !IsAny(right) {
+		for !IsAnyOrAnySerializable(right) {
 			if _, ok := right.(Sequence); !ok {
 				right = widenOrAny(right)
 			} else {
@@ -1059,18 +1059,46 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		var actualGlobals = map[string]SymbolicValue{}
 		var embeddedModule *parse.Chunk
 
-		var meta SymbolicValue
+		var meta map[string]SymbolicValue
+		var globals any
 
 		if !state.ctx.HasAPermissionWithKindAndType(permkind.Create, permkind.ROUTINE_PERM_TYPENAME) {
 			state.addWarning(makeSymbolicEvalWarning(n, state, POSSIBLE_MISSING_PERM_TO_CREATE_A_COROUTINE))
 		}
 
 		if n.Meta != nil {
-			v, err := symbolicEval(n.Meta, state)
-			if err != nil {
-				return nil, err
+			meta = map[string]SymbolicValue{}
+			if objLit, ok := n.Meta.(*parse.ObjectLiteral); ok {
+
+				for _, property := range objLit.Properties {
+					propertyName := property.Name() //okay since implicit-key properties are not allowed
+
+					if propertyName == "globals" {
+						globalsObjectLit, ok := property.Value.(*parse.ObjectLiteral)
+						//handle description separately if it's an object literal because non-serializable value are not accepted.
+						if ok {
+							globalMap := map[string]SymbolicValue{}
+							globals = globalMap
+
+							for _, prop := range globalsObjectLit.Properties {
+								globalName := prop.Name() //okay since implicit-key properties are not allowed
+								globalVal, err := symbolicEval(prop.Value, state)
+								if err != nil {
+									return nil, err
+								}
+								globalMap[globalName] = globalVal
+							}
+							continue
+						}
+					}
+
+					propertyVal, err := symbolicEval(property.Value, state)
+					if err != nil {
+						return nil, err
+					}
+					meta[propertyName] = propertyVal
+				}
 			}
-			meta = v
 		}
 
 		// add constant globals from parent
@@ -1081,29 +1109,25 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		})
 
 		// add globals defined in the 'globals' section
-		var globals SymbolicValue
 
-		if obj, ok := meta.(*Object); ok {
-			obj.ForEachEntry(func(k string, v SymbolicValue) error {
-				switch k {
-				case "globals":
-					globals = v
-				case "group":
-					_, ok := v.(*RoutineGroup)
-					if !ok {
-						state.addError(makeSymbolicEvalError(n.Meta, state, fmtGroupPropertyNotRoutineGroup(v)))
-					}
-				case "allow":
-				default:
-					state.addWarning(makeSymbolicEvalWarning(n.Meta, state, fmtUnknownSectionInCoroutineMetadata(k)))
+		for k, v := range meta {
+			switch k {
+			case "globals":
+				globals = v
+			case "group":
+				_, ok := v.(*RoutineGroup)
+				if !ok {
+					state.addError(makeSymbolicEvalError(n.Meta, state, fmtGroupPropertyNotRoutineGroup(v)))
 				}
-				return nil
-			})
+			case "allow":
+			default:
+				state.addWarning(makeSymbolicEvalWarning(n.Meta, state, fmtUnknownSectionInCoroutineMetadata(k)))
+			}
 		}
 
 		switch g := globals.(type) {
-		case *Object:
-			for k, v := range g.entries {
+		case map[string]SymbolicValue:
+			for k, v := range g {
 				symVal, err := ShareOrClone(v, state)
 				if err != nil {
 					state.addError(makeSymbolicEvalError(n.Meta, state, err.Error()))
@@ -1659,8 +1683,8 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		return NewTupleOf(ANY_SERIALIZABLE), nil
 	case *parse.DictionaryLiteral:
-		entries := make(map[string]SymbolicValue)
-		keys := make(map[string]SymbolicValue)
+		entries := make(map[string]Serializable)
+		keys := make(map[string]Serializable)
 
 		for _, entry := range n.Entries {
 			keyRepr := parse.SPrint(entry.Key, parse.PrintConfig{TrimStart: true})
@@ -1670,7 +1694,13 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				return nil, err
 			}
 
-			entries[keyRepr] = v
+			_, ok := v.(Serializable)
+			if !ok {
+				state.addError(makeSymbolicEvalError(entry.Value, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+				v = ANY_SERIALIZABLE
+			}
+
+			entries[keyRepr] = v.(Serializable)
 
 			node, ok := parse.ParseExpression(keyRepr)
 			if !ok {
@@ -1678,7 +1708,14 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			}
 			//TODO: refactor
 			key, _ := symbolicEval(node, newSymbolicState(NewSymbolicContext(nil), nil))
-			keys[keyRepr] = key
+
+			_, ok = key.(Serializable)
+			if !ok {
+				state.addError(makeSymbolicEvalError(entry.Value, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+				key = ANY_SERIALIZABLE
+			}
+
+			keys[keyRepr] = key.(Serializable)
 			state.symbolicData.SetMostSpecificNodeValue(entry.Key, key)
 		}
 
@@ -1924,6 +1961,10 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		for _, matchCase := range n.Cases {
 			for _, valNode := range matchCase.Values { //TODO: fix handling of multi cases
+				if valNode.Base().Err != nil {
+					continue
+				}
+
 				val, err := symbolicEval(valNode, state)
 				if err != nil {
 					return nil, err
@@ -1932,7 +1973,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				pattern, ok := val.(Pattern)
 
 				if !ok { //if the value of the case is not a pattern we just check for equality
-					patt, err := NewExactValuePattern(val)
+					patt, err := NewExactValuePattern(val.(Serializable))
 					if err == nil {
 						pattern = patt
 					} else {
@@ -2219,7 +2260,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				node:           n,
 				parameters:     params,
 				parameterNames: paramNames,
-				result:         ANY,
+				result:         ANY_SERIALIZABLE,
 			}
 
 			state.overrideGlobal(state.recursiveFunctionName, tempFn)
@@ -2316,7 +2357,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		funcName := n.Name.Name
 
 		//declare the function before checking it
-		state.setGlobal(funcName, &InoxFunction{node: n.Function, result: ANY}, GlobalConst, n.Name)
+		state.setGlobal(funcName, &InoxFunction{node: n.Function, result: ANY_SERIALIZABLE}, GlobalConst, n.Name)
 		if state.recursiveFunctionName != "" {
 			state.addError(makeSymbolicEvalError(n, state, NESTED_RECURSIVE_FUNCTION_DECLARATION))
 		} else {
@@ -2449,7 +2490,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		if patt, ok := v.(Pattern); ok {
 			return patt, nil
 		}
-		return &ExactValuePattern{value: v}, nil
+		return &ExactValuePattern{value: v.(Serializable)}, nil
 	case *parse.LazyExpression:
 		return &AstNode{Node: n}, nil
 	case *parse.MemberExpression:

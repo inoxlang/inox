@@ -93,7 +93,6 @@ func (p *AnyPattern) IsWidenable() bool {
 
 func (p *AnyPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%pattern")))
-	return
 }
 
 func (p *AnyPattern) HasUnderylingPattern() bool {
@@ -419,20 +418,20 @@ func (p *NamedSegmentPathPattern) WidestOfType() SymbolicValue {
 
 // An ExactValuePattern represents a symbolic ExactValuePattern.
 type ExactValuePattern struct {
-	value SymbolicValue
+	value Serializable
 
 	NotCallablePatternMixin
 	SerializableMixin
 }
 
-func NewExactValuePattern(v SymbolicValue) (*ExactValuePattern, error) {
+func NewExactValuePattern(v Serializable) (*ExactValuePattern, error) {
 	if !IsAny(v) && v.IsMutable() {
 		return nil, ErrValueInExactPatternValueShouldBeImmutable
 	}
 	return &ExactValuePattern{value: v}, nil
 }
 
-func NewMostAdaptedExactPattern(value SymbolicValue) (Pattern, error) {
+func NewMostAdaptedExactPattern(value Serializable) (Pattern, error) {
 	if !IsAny(value) && value.IsMutable() {
 		return nil, ErrValueInExactPatternValueShouldBeImmutable
 	}
@@ -442,7 +441,7 @@ func NewMostAdaptedExactPattern(value SymbolicValue) (Pattern, error) {
 	return NewExactValuePattern(value)
 }
 
-func (p *ExactValuePattern) SetVal(v SymbolicValue) {
+func (p *ExactValuePattern) SetVal(v Serializable) {
 	if p.value != nil {
 		panic(errors.New("value already set"))
 	}
@@ -464,14 +463,14 @@ func (p *ExactValuePattern) Test(v SymbolicValue) bool {
 }
 
 func (p *ExactValuePattern) Widen() (SymbolicValue, bool) {
-	if _, ok := p.value.(*Any); ok {
+	if _, ok := p.value.(*AnySerializable); ok {
 		return nil, false
 	}
-	return &ExactValuePattern{value: widenOrAny(p.value)}, true
+	return &ExactValuePattern{value: widenOrAny(p.value).(Serializable)}, true
 }
 
 func (p *ExactValuePattern) IsWidenable() bool {
-	_, ok := p.value.(*Any)
+	_, ok := p.value.(*AnySerializable)
 	return !ok
 }
 
@@ -516,7 +515,7 @@ func (p *ExactValuePattern) IteratorElementValue() SymbolicValue {
 }
 
 func (p *ExactValuePattern) WidestOfType() SymbolicValue {
-	return &ExactValuePattern{value: ANY}
+	return &ExactValuePattern{value: ANY_SERIALIZABLE}
 }
 
 // A RegexPattern represents a symbolic RegexPattern.
@@ -1758,7 +1757,7 @@ func symbolicallyEvalPatternNode(n parse.Node, state *State) (Pattern, error) {
 			return p, nil
 		}
 
-		return &ExactValuePattern{value: v}, nil
+		return &ExactValuePattern{value: v.(Serializable)}, nil
 	}
 }
 

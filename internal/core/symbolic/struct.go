@@ -105,6 +105,11 @@ type StructPattern struct {
 	types  []Pattern
 }
 
+func NewStructPattern(name string, id ulid.ULID, keys []string, types []Pattern) *StructPattern {
+	patt := CreateStructPattern(name, id, keys, types)
+	return &patt
+}
+
 // CreateStructPattern does not return a pointer on purpose.
 func CreateStructPattern(name string, id ulid.ULID, keys []string, types []Pattern) StructPattern {
 	//it's okay if severals StructPattern are created with the same id since

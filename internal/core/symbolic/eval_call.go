@@ -207,7 +207,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 				paramType := paramTypes[i]
 
-				for !IsAny(widenedArg) && !paramType.Test(widenedArg) {
+				for !IsAnyOrAnySerializable(widenedArg) && !paramType.Test(widenedArg) {
 					widenedArg = widenOrAny(widenedArg)
 				}
 
@@ -361,7 +361,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			argNode = argNodes[i]
 		}
 
-		for !IsAny(widenedArg) && !paramType.Test(widenedArg) {
+		for !IsAnyOrAnySerializable(widenedArg) && !paramType.Test(widenedArg) {
 			widenedArg = widenOrAny(widenedArg)
 		}
 

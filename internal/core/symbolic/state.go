@@ -314,7 +314,7 @@ func (state *State) updateLocal(name string, value SymbolicValue, node parse.Nod
 
 		widenedValue := value
 
-		for !IsAny(widenedValue) && !info.static.TestValue(widenedValue) {
+		for !IsAnyOrAnySerializable(widenedValue) && !info.static.TestValue(widenedValue) {
 			widenedValue = widenOrAny(widenedValue)
 		}
 
@@ -335,7 +335,7 @@ func (state *State) updateGlobal(name string, value SymbolicValue, node parse.No
 
 		widenedValue := value
 
-		for !IsAny(widenedValue) && !info.static.TestValue(widenedValue) {
+		for !IsAnyOrAnySerializable(widenedValue) && !info.static.TestValue(widenedValue) {
 			widenedValue = widenOrAny(widenedValue)
 		}
 

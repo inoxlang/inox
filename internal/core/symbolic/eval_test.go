@@ -154,7 +154,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE),
 			}, state.errors)
-			assert.Equal(t, NewListOf(ANY_INT), res)
+			assert.Equal(t, NewList(ANY_SERIALIZABLE), res)
 		})
 
 		t.Run("two elements of different type", func(t *testing.T) {
@@ -203,6 +203,10 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewTuple(&Int{}), res)
 		})
 
+		t.Run("non-serializable element", func(t *testing.T) {
+			//TODO
+		})
+
 		t.Run("mutable element", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk("#[{}]")
 			res, err := symbolicEval(n, state)
@@ -236,6 +240,72 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewTupleOf(ANY_INT), res)
 		})
 
+	})
+
+	t.Run("dictionary literal", func(t *testing.T) {
+		t.Run("empty", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(":{}")
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, NewDictionary(map[string]Serializable{}, map[string]Serializable{}), res)
+		})
+
+		t.Run("singe entry", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`:{./a: "b"}`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, NewDictionary(map[string]Serializable{
+				"./a": ANY_STR,
+			}, map[string]Serializable{
+				"./a": ANY_REL_NON_DIR_PATH,
+			}), res)
+		})
+
+		t.Run("non-serializable value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`:{./a: go do {}}`)
+			entryValueNode := parse.FindNode(n, (*parse.SpawnExpression)(nil), nil)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(entryValueNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE),
+			}, state.errors)
+			assert.Equal(t, NewDictionary(map[string]Serializable{
+				"./a": ANY_SERIALIZABLE,
+			}, map[string]Serializable{
+				"./a": ANY_REL_NON_DIR_PATH,
+			}), res)
+		})
+
+		t.Run("two elements of different type", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`[1, "a'"]`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, NewList(ANY_INT, ANY_STR), res)
+		})
+
+		t.Run("type annotation and element of invalid type", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk("[]%int[true]")
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			elemNode := parse.FindNode(n, (*parse.BooleanLiteral)(nil), nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListAnnotated(ANY_BOOL, state.ctx.ResolveNamedPattern("int"))),
+			}, state.errors)
+			assert.Equal(t, NewListOf(ANY_INT), res)
+		})
+
+		t.Run("type annotation and element of valid type", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk("[]%int[1]")
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, NewListOf(ANY_INT), res)
+		})
 	})
 
 	t.Run("constant declarations", func(t *testing.T) {
@@ -2155,7 +2225,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
-			assert.Equal(t, NewList(&Int{}), res)
+			assert.Equal(t, NewArray(ANY_INT), res)
 		})
 
 		t.Run("no variadic parameter: spread argument (known length)", func(t *testing.T) {
@@ -2210,24 +2280,26 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
-			assert.Equal(t, NewList(&Int{}, &String{}, &Bool{}), res)
+			assert.Equal(t, NewArray(ANY_INT, ANY_STR, ANY_BOOL), res)
 		})
 
 		t.Run("non variadic parameter + variadic parameter: spread argument", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(first, ...rest){
-					return [first, $rest]
+					return Array(first, $rest)
 				}
 	
 				list = ["2", true]
 				return f(1, ...list)
 			`)
+			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
 			res, err := symbolicEval(n, state)
+
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
-			assert.Equal(t, NewList(
-				&Int{},
-				NewList(&String{}, &Bool{}),
+			assert.Equal(t, NewArray(
+				ANY_INT,
+				NewArray(ANY_STR, ANY_BOOL),
 			), res)
 		})
 
@@ -2492,13 +2564,13 @@ func TestSymbolicEval(t *testing.T) {
 				makeSymbolicEvalError(call, state, fmtInvalidNumberOfNonSpreadArgs(0, 1)),
 			}, state.errors)
 
-			assert.Equal(t, NewArray(ANY, NewList()), res)
+			assert.Equal(t, NewArray(ANY, NewArray()), res)
 		})
 
 		t.Run("variadic function fn(a, b, ...rest): not enough arguments", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(a, b, ...rest){
-					return [a, b, rest]
+					return Array(a, b, rest)
 				}
 	
 				return f(1)
@@ -2512,7 +2584,7 @@ func TestSymbolicEval(t *testing.T) {
 				makeSymbolicEvalError(call, state, fmtInvalidNumberOfNonSpreadArgs(1, 2)),
 			}, state.errors)
 
-			assert.Equal(t, NewArray(&Int{}, ANY, NewList()), res)
+			assert.Equal(t, NewArray(ANY_INT, ANY, NewArray()), res)
 		})
 
 		t.Run("direct recursion of a function with no return type", func(t *testing.T) {
@@ -3711,6 +3783,36 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &List{elements: []Serializable{}}, res)
 		})
 
+		t.Run("index expression LHS", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				list = [0]
+				list[0] = 1
+				return list
+			`)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, NewList(ANY_INT), res)
+		})
+
+		t.Run("index expression LHS: non-serializable RHS", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var list = [serializable]
+				list[0] = go do {}
+				return list
+			`)
+			state.setGlobal("serializable", ANY_SERIALIZABLE, GlobalConst)
+			assignement := parse.FindNode(n.Statements[1], (*parse.Assignment)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(assignement, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE),
+			}, state.errors)
+			assert.Equal(t, NewList(ANY_SERIALIZABLE), res)
+		})
 	})
 
 	t.Run("multi assignment", func(t *testing.T) {
@@ -3773,9 +3875,9 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("RHS is not a sequence", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				assign? first second = 1
-				return [first, second]
+				return Array(first, second)
 			`)
-
+			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
 			multiAssignment := parse.FindNode(n, (*parse.MultiAssignment)(nil), nil)
 
 			res, err := symbolicEval(n, state)
@@ -3784,7 +3886,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(multiAssignment, state, fmtSeqExpectedButIs(ANY_INT)),
 			}, state.errors)
-			assert.Equal(t, NewList(ANY_SERIALIZABLE, ANY_SERIALIZABLE), res)
+			assert.Equal(t, NewArray(ANY, ANY), res)
 		})
 
 		t.Run("RHS is an array", func(t *testing.T) {
@@ -4039,15 +4141,16 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("meta", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				walk ./ meta, entry {
-					return [meta, entry]
+					return Array(meta, entry)
 				}
 			`)
+			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
 
-			expectedResultFromWalkStmt := NewList(ANY_SERIALIZABLE, WALK_ELEM)
+			expectedResultFromWalkStmt := NewArray(ANY, WALK_ELEM)
 			assert.Equal(t, NewMultivalue(expectedResultFromWalkStmt, Nil), res)
 		})
 

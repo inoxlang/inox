@@ -671,70 +671,70 @@ func TestSymbolicDictionary(t *testing.T) {
 			true,
 		},
 		{
-			&Dictionary{Entries: map[string]SymbolicValue{}},
+			&Dictionary{Entries: map[string]Serializable{}},
 			&Dictionary{Entries: nil},
 			false,
 		},
 		{
 			&Dictionary{Entries: nil},
-			&Dictionary{Entries: map[string]SymbolicValue{}},
+			&Dictionary{Entries: map[string]Serializable{}},
 			true,
 		},
 		{
-			&Dictionary{Entries: map[string]SymbolicValue{}, Keys: map[string]SymbolicValue{}},
-			&Dictionary{Entries: map[string]SymbolicValue{}, Keys: map[string]SymbolicValue{}},
+			&Dictionary{Entries: map[string]Serializable{}, Keys: map[string]Serializable{}},
+			&Dictionary{Entries: map[string]Serializable{}, Keys: map[string]Serializable{}},
 			true,
 		},
 		{
 			&Dictionary{
-				Entries: map[string]SymbolicValue{"./a": &Int{}},
-				Keys:    map[string]SymbolicValue{"./a": &Path{}},
+				Entries: map[string]Serializable{"./a": &Int{}},
+				Keys:    map[string]Serializable{"./a": &Path{}},
 			},
 			&Dictionary{
-				Entries: map[string]SymbolicValue{},
+				Entries: map[string]Serializable{},
 			},
 			false,
 		},
 		{
 			&Dictionary{
-				Entries: map[string]SymbolicValue{},
+				Entries: map[string]Serializable{},
 			},
 			&Dictionary{
-				Entries: map[string]SymbolicValue{"./a": &Int{}},
-				Keys:    map[string]SymbolicValue{"./a": &Path{}},
+				Entries: map[string]Serializable{"./a": &Int{}},
+				Keys:    map[string]Serializable{"./a": &Path{}},
 			},
 			false,
 		},
 		{
 			&Dictionary{
-				Entries: map[string]SymbolicValue{"./a": &Int{}},
-				Keys:    map[string]SymbolicValue{"./a": &Path{}},
+				Entries: map[string]Serializable{"./a": &Int{}},
+				Keys:    map[string]Serializable{"./a": &Path{}},
 			},
 			&Dictionary{
-				Entries: map[string]SymbolicValue{"./a": &Int{}},
-				Keys:    map[string]SymbolicValue{"./a": &Path{}},
-			},
-			true,
-		},
-		{
-			&Dictionary{
-				Entries: map[string]SymbolicValue{"./a": ANY},
-				Keys:    map[string]SymbolicValue{"./a": &Path{}},
-			},
-			&Dictionary{
-				Entries: map[string]SymbolicValue{"./a": &Int{}},
-				Keys:    map[string]SymbolicValue{"./a": &Path{}},
+				Entries: map[string]Serializable{"./a": &Int{}},
+				Keys:    map[string]Serializable{"./a": &Path{}},
 			},
 			true,
 		},
 		{
 			&Dictionary{
-				Entries: map[string]SymbolicValue{"./a": &Int{}},
-				Keys:    map[string]SymbolicValue{"./a": &Path{}},
+				Entries: map[string]Serializable{"./a": ANY_SERIALIZABLE},
+				Keys:    map[string]Serializable{"./a": &Path{}},
 			},
 			&Dictionary{
-				Entries: map[string]SymbolicValue{"./a": ANY},
-				Keys:    map[string]SymbolicValue{"./a": &Path{}},
+				Entries: map[string]Serializable{"./a": &Int{}},
+				Keys:    map[string]Serializable{"./a": &Path{}},
+			},
+			true,
+		},
+		{
+			&Dictionary{
+				Entries: map[string]Serializable{"./a": &Int{}},
+				Keys:    map[string]Serializable{"./a": &Path{}},
+			},
+			&Dictionary{
+				Entries: map[string]Serializable{"./a": ANY_SERIALIZABLE},
+				Keys:    map[string]Serializable{"./a": &Path{}},
 			},
 			false,
 		},
@@ -759,18 +759,18 @@ func TestSymbolicDictionary(t *testing.T) {
 			},
 			{
 				&Dictionary{
-					Entries: make(map[string]SymbolicValue),
-					Keys:    make(map[string]SymbolicValue),
+					Entries: make(map[string]Serializable),
+					Keys:    make(map[string]Serializable),
 				},
 				&Dictionary{},
 				true,
 			},
 			{
 				&Dictionary{
-					Entries: map[string]SymbolicValue{
+					Entries: map[string]Serializable{
 						"\"name\"": &String{},
 					},
-					Keys: map[string]SymbolicValue{
+					Keys: map[string]Serializable{
 						"\"name\"": &String{},
 					},
 				},
@@ -779,10 +779,10 @@ func TestSymbolicDictionary(t *testing.T) {
 			},
 			{
 				&Dictionary{
-					Entries: map[string]SymbolicValue{
-						"\"any\"": ANY,
+					Entries: map[string]Serializable{
+						"\"any\"": ANY_SERIALIZABLE,
 					},
-					Keys: map[string]SymbolicValue{
+					Keys: map[string]Serializable{
 						"\"any\"": &String{},
 					},
 				},
@@ -791,10 +791,10 @@ func TestSymbolicDictionary(t *testing.T) {
 			},
 			{
 				&Dictionary{
-					Entries: map[string]SymbolicValue{
+					Entries: map[string]Serializable{
 						"\"list\"": &List{generalElement: ANY_SERIALIZABLE},
 					},
-					Keys: map[string]SymbolicValue{
+					Keys: map[string]Serializable{
 						"\"list\"": &String{},
 					},
 				},
@@ -803,10 +803,10 @@ func TestSymbolicDictionary(t *testing.T) {
 			},
 			{
 				&Dictionary{
-					Entries: map[string]SymbolicValue{
-						"\"list\"": ANY,
+					Entries: map[string]Serializable{
+						"\"list\"": ANY_SERIALIZABLE,
 					},
-					Keys: map[string]SymbolicValue{
+					Keys: map[string]Serializable{
 						"\"list\"": &String{},
 					},
 				},

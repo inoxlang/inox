@@ -120,8 +120,8 @@ func TestToSymbolicValue(t *testing.T) {
 		assert.Len(t, symbolicDict.Entries, len(dict.Entries))
 
 		assert.Equal(t, &symbolic.Dictionary{
-			Entries: map[string]symbolic.SymbolicValue{`"name"`: &symbolic.String{}, `./file`: &symbolic.Bool{}},
-			Keys:    map[string]symbolic.SymbolicValue{`"name"`: &symbolic.String{}, `./file`: &symbolic.Path{}},
+			Entries: map[string]symbolic.Serializable{`"name"`: &symbolic.String{}, `./file`: &symbolic.Bool{}},
+			Keys:    map[string]symbolic.Serializable{`"name"`: &symbolic.String{}, `./file`: &symbolic.Path{}},
 		}, symbolicDict)
 	})
 

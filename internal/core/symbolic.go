@@ -254,7 +254,7 @@ func (l *List) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Sy
 }
 
 func (l *ValueList) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return symbolic.NewListOf(symbolic.ANY), nil
+	return symbolic.NewListOf(symbolic.ANY_SERIALIZABLE), nil
 }
 
 func (l *IntList) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
@@ -277,7 +277,7 @@ func (l KeyList) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.
 
 func (t Tuple) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	//TODO
-	return symbolic.NewTupleOf(&symbolic.Any{}), nil
+	return symbolic.NewTupleOf(symbolic.ANY_SERIALIZABLE), nil
 }
 
 func (obj *Object) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
@@ -289,7 +289,7 @@ func (obj *Object) ToSymbolicValue(ctx *Context, encountered map[uintptr]symboli
 	symbolicObj := symbolic.NewUnitializedObject()
 	encountered[ptr] = symbolicObj
 
-	entries := map[string]symbolic.SymbolicValue{}
+	entries := map[string]symbolic.Serializable{}
 
 	obj.Lock(nil)
 	defer obj.Unlock(nil)
@@ -299,7 +299,7 @@ func (obj *Object) ToSymbolicValue(ctx *Context, encountered map[uintptr]symboli
 		if err != nil {
 			return nil, err
 		}
-		entries[k] = symbolicVal
+		entries[k] = symbolicVal.(symbolic.Serializable)
 	}
 
 	symbolic.InitializeObject(symbolicObj, entries, nil)
@@ -312,7 +312,7 @@ func (rec *Record) ToSymbolicValue(ctx *Context, encountered map[uintptr]symboli
 		return r, nil
 	}
 
-	entries := make(map[string]symbolic.SymbolicValue)
+	entries := make(map[string]symbolic.Serializable)
 	symbolicRec := symbolic.NewBoundEntriesRecord(entries)
 	encountered[ptr] = symbolicRec
 
@@ -323,7 +323,7 @@ func (rec *Record) ToSymbolicValue(ctx *Context, encountered map[uintptr]symboli
 		if err != nil {
 			return nil, err
 		}
-		entries[k] = symbolicVal
+		entries[k] = symbolicVal.(symbolic.Serializable)
 	}
 
 	return symbolicRec, nil
@@ -336,8 +336,8 @@ func (dict *Dictionary) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 	}
 
 	symbolicDict := &symbolic.Dictionary{
-		Entries: make(map[string]symbolic.SymbolicValue),
-		Keys:    make(map[string]symbolic.SymbolicValue),
+		Entries: make(map[string]symbolic.Serializable),
+		Keys:    make(map[string]symbolic.Serializable),
 	}
 	encountered[ptr] = symbolicDict
 
@@ -352,8 +352,8 @@ func (dict *Dictionary) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 		if err != nil {
 			return nil, err
 		}
-		symbolicDict.Entries[keyRepresentation] = symbolicVal
-		symbolicDict.Keys[keyRepresentation] = symbolicKey
+		symbolicDict.Entries[keyRepresentation] = symbolicVal.(symbolic.Serializable)
+		symbolicDict.Keys[keyRepresentation] = symbolicKey.(symbolic.Serializable)
 	}
 
 	return symbolicDict, nil
@@ -454,7 +454,7 @@ func (p *ExactValuePattern) ToSymbolicValue(ctx *Context, encountered map[uintpt
 	if err != nil {
 		return nil, err
 	}
-	exactValPattern.SetVal(symbolicVal)
+	exactValPattern.SetVal(symbolicVal.(symbolic.Serializable))
 	return exactValPattern, nil
 }
 

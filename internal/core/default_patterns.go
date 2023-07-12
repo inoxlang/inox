@@ -36,7 +36,7 @@ var (
 				return nil, commonfmt.FmtErrNArgumentsExpected("1")
 			}
 
-			symbolic.NewExactValuePattern(values[0])
+			symbolic.NewExactValuePattern(values[0].(symbolic.Serializable))
 
 			return recordPattern, nil
 		},
@@ -205,7 +205,7 @@ var (
 	LIST_PATTERN = &TypePattern{
 		Type:          LIST_PTR_TYPE,
 		Name:          "list",
-		SymbolicValue: symbolic.NewListOf(&symbolic.Any{}),
+		SymbolicValue: symbolic.NewListOf(symbolic.ANY_SERIALIZABLE),
 	}
 	TUPLE_PATTERN = &TypePattern{
 		Type: TUPLE_TYPE,
@@ -478,7 +478,7 @@ var (
 					if valuePattern != nil {
 						return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("value pattern")
 					}
-					p, err := symbolic.NewExactValuePattern(a)
+					p, err := symbolic.NewExactValuePattern(a.(symbolic.Serializable))
 					if err != nil {
 						return nil, fmt.Errorf("argument should be immutable")
 					}
@@ -556,7 +556,7 @@ var (
 			if len(args) > 1 {
 				patt, ok := args[1].(symbolic.Pattern)
 				if !ok {
-					p, err := symbolic.NewExactValuePattern(args[1])
+					p, err := symbolic.NewExactValuePattern(args[1].(symbolic.Serializable))
 					if err != nil {
 						return nil, fmt.Errorf("second argument should be immutable")
 					}

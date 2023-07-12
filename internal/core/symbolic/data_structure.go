@@ -577,7 +577,7 @@ func (t *Tuple) Widen() (SymbolicValue, bool) {
 }
 
 func (t *Tuple) IsWidenable() bool {
-	return t.elements != nil || !IsAny(t.generalElement)
+	return t.elements != nil || !IsAnySerializable(t.generalElement)
 }
 
 func (t *Tuple) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -729,8 +729,8 @@ func (l *KeyList) WidestOfType() SymbolicValue {
 //
 
 type Dictionary struct {
-	Entries map[string]SymbolicValue //if nil, matches any dictionary
-	Keys    map[string]SymbolicValue
+	Entries map[string]Serializable //if nil, matches any dictionary
+	Keys    map[string]Serializable
 
 	SerializableMixin
 }
@@ -739,7 +739,7 @@ func NewAnyDictionary() *Dictionary {
 	return &Dictionary{}
 }
 
-func NewDictionary(entries map[string]SymbolicValue, keys map[string]SymbolicValue) *Dictionary {
+func NewDictionary(entries map[string]Serializable, keys map[string]Serializable) *Dictionary {
 	return &Dictionary{
 		Entries: entries,
 		Keys:    keys,
@@ -811,15 +811,15 @@ func (dict *Dictionary) Widen() (SymbolicValue, bool) {
 		return nil, false
 	}
 
-	widenedEntries := map[string]SymbolicValue{}
-	keys := map[string]SymbolicValue{}
+	widenedEntries := map[string]Serializable{}
+	keys := map[string]Serializable{}
 	allAlreadyWidened := true
 
 	for keyRepr, v := range dict.Entries {
 		widened, ok := v.Widen()
 		if ok {
 			allAlreadyWidened = false
-			v = widened
+			v = widened.(Serializable)
 		}
 		widenedEntries[keyRepr] = v
 		keys[keyRepr] = dict.Keys[keyRepr]
