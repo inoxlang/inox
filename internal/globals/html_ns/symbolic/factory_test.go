@@ -11,7 +11,7 @@ func TestSymbolicCreateHTMLNodeFromXMLElement(t *testing.T) {
 
 	globals := func() map[string]symbolic.SymbolicValue {
 		return map[string]symbolic.SymbolicValue{
-			"html": symbolic.NewRecord(map[string]symbolic.SymbolicValue{
+			"html": symbolic.NewNamespace(map[string]symbolic.SymbolicValue{
 				symbolic.FROM_XML_FACTORY_NAME: symbolic.WrapGoFunction(CreateHTMLNodeFromXMLElement),
 			}),
 		}
