@@ -30,6 +30,11 @@ func init() {
 		},
 	})
 
+	stringOrStringList := symbolic.AsSerializable(symbolic.NewMultivalue(
+		symbolic.NewListOf(symbolic.ANY_STR_LIKE),
+		symbolic.ANY_STR_LIKE,
+	)).(symbolic.Serializable)
+
 	// register symbolic version of Go functions
 	core.RegisterSymbolicGoFunctions([]any{
 		httpExists, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) *symbolic.Bool {
@@ -72,6 +77,31 @@ func init() {
 		PercentDecode, func(ctx *symbolic.Context, s symbolic.StringLike) (symbolic.StringLike, *symbolic.Error) {
 			return symbolic.ANY_STR_LIKE, nil
 		},
+		NewCSP, func(ctx *symbolic.Context, desc *symbolic.Object) (*http_symbolic.ContentSecurityPolicy, *symbolic.Error) {
+			ctx.SetSymbolicGoFunctionParameters(&[]symbolic.SymbolicValue{
+				symbolic.NewObject(map[string]symbolic.Serializable{
+					"default-src":     stringOrStringList,
+					"frame-ancestors": stringOrStringList,
+					"frame-src":       stringOrStringList,
+					"script-src-elem": stringOrStringList,
+					"connect-src":     stringOrStringList,
+					"font-src":        stringOrStringList,
+					"img-src":         stringOrStringList,
+					"style-src":       stringOrStringList,
+				}, map[string]struct{}{
+					"default-src":     {},
+					"frame-ancestors": {},
+					"frame-src":       {},
+					"script-src-elem": {},
+					"connect-src":     {},
+					"font-src":        {},
+					"img-src":         {},
+					"style-src":       {},
+				}, nil),
+			}, []string{"csp"})
+
+			return http_symbolic.NewCSP(), nil
+		},
 	})
 
 	help_ns.RegisterHelpValues(map[string]any{
@@ -85,6 +115,7 @@ func init() {
 		"http.FileServer": NewFileServer,
 		"http.servefile":  serveFile,
 		"http.Client":     NewClient,
+		"http.CSP":        NewCSP,
 	})
 }
 
@@ -102,5 +133,6 @@ func NewHttpNamespace() *core.Namespace {
 		"Client":         core.WrapGoFunction(NewClient),
 		"percent_encode": core.WrapGoFunction(PercentEncode),
 		"percent_decode": core.WrapGoFunction(PercentDecode),
+		"CSP":            core.WrapGoFunction(NewCSP),
 	})
 }

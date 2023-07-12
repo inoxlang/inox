@@ -196,14 +196,14 @@ Thread([{message: "hello", author-id: "5958"}])
 
 ### hash_password
 
-the hash_password function hashes a password string using the Argon2id algorithm, it returns a string containing the hash and a random salt. You can find the implementation in this file: https://github.com/inoxlang/inox/blob/master/internal/globals/crypto.go.
+the hash_password function hashes a password string using the Argon2id algorithm, it returns a string containing: the hash, a random salt and parameters. You can find the implementation in this file: https://github.com/inoxlang/inox/blob/master/internal/globals/crypto.go.
 
 **examples**
 
 ```inox
 hash_password("password")
 # output: 
-497YcpQY5qZWKZ0v2VefkEM6KIX0t+NoSsseL2bU9rk=|6bXjry/BYcokXTpLakw2ySzGJfNtAb0sKMctpEV1lyg=
+$argon2id$v=19$m=65536,t=1,p=1$xDLqbPJUrCURnSiVYuy/Qg$OhEJCObGgJ2EbcH0a7oE2sfD1+5T2BPRs8SRWkreE00
 ```
 ### check_password
 
@@ -212,7 +212,7 @@ the check_password verifies that a password matches a Argon2id hash.
 **examples**
 
 ```inox
-check_password("password", "497YcpQY5qZWKZ0v2VefkEM6KIX0t+NoSsseL2bU9rk=|6bXjry/BYcokXTpLakw2ySzGJfNtAb0sKMctpEV1lyg=")
+check_password("password", "$argon2id$v=19$m=65536,t=1,p=1$xDLqbPJUrCURnSiVYuy/Qg$OhEJCObGgJ2EbcH0a7oE2sfD1+5T2BPRs8SRWkreE00")
 # output: 
 true
 ```
@@ -693,6 +693,23 @@ http.FileServer!(https://localhost:8080, ./examples/static/)
 ### http.servefile
 
 
+### http.CSP
+
+the http.CSP function creates a Content Security Policy with the passed directives and the following default directives:
+  default-src 'none';
+  frame-ancestors 'none';
+  frame-src 'none';
+  script-src-elem 'self';
+  connect-src 'self';
+  font-src 'self';
+  img-src 'self';
+  style-src 'self'.
+
+**examples**
+
+```inox
+http.CSP{default-src: "'self'"}
+```
 
 ## rand
 

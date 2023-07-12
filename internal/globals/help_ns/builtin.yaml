@@ -583,7 +583,19 @@ http:
 
   - topic: http.servefile
 
-
+  - topic: http.CSP
+    text: |
+      the http.CSP function creates a Content Security Policy with the passed directives and the following default directives:
+        default-src 'none';
+        frame-ancestors 'none';
+        frame-src 'none';
+        script-src-elem 'self';
+        connect-src 'self';
+        font-src 'self';
+        img-src 'self';
+        style-src 'self'
+    examples:
+    - code: "http.CSP{default-src: \"'self'\"}"
 Errors:
   namespace: false
   elements:
