@@ -77,10 +77,21 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 				return nil, err
 			}
 
-			list, ok := v.(*List)
+			iterable, ok := v.(Iterable)
 
 			if ok {
-				for _, e := range list.elements {
+				var elements []SymbolicValue
+
+				indexable, ok := v.(Indexable)
+				if ok && indexable.HasKnownLen() {
+					for i := 0; i < indexable.KnownLen(); i++ {
+						elements = append(elements, indexable.elementAt(i))
+					}
+				} else { //add single element
+					elements = append(elements, iterable.IteratorElementValue())
+				}
+
+				for _, e := range elements {
 					//same logic for non spread arguments
 					if isSharedFunction {
 						shared, err := ShareOrClone(e, state)
@@ -93,7 +104,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 					args = append(args, e)
 				}
 			} else {
-				state.addError(makeSymbolicEvalError(argn, state, fmtSpreadArgumentShouldBeList(v)))
+				state.addError(makeSymbolicEvalError(argn, state, fmtSpreadArgumentShouldBeIterable(v)))
 			}
 
 		} else {

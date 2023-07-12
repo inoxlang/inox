@@ -81,6 +81,14 @@ func (*String) elementAt(i int) SymbolicValue {
 	return ANY_BYTE
 }
 
+func (s *String) IteratorElementKey() SymbolicValue {
+	return ANY_INT
+}
+
+func (s *String) IteratorElementValue() SymbolicValue {
+	return ANY_BYTE
+}
+
 func (s *String) underylingString() *String {
 	return &String{}
 }
@@ -261,6 +269,14 @@ func (s *RuneSlice) element() SymbolicValue {
 }
 
 func (*RuneSlice) elementAt(i int) SymbolicValue {
+	return ANY_RUNE
+}
+
+func (s *RuneSlice) IteratorElementKey() SymbolicValue {
+	return ANY_INT
+}
+
+func (s *RuneSlice) IteratorElementValue() SymbolicValue {
 	return ANY_RUNE
 }
 
@@ -449,6 +465,14 @@ func (s *AnyStringLike) element() SymbolicValue {
 
 func (s *AnyStringLike) elementAt(i int) SymbolicValue {
 	return &Byte{}
+}
+
+func (s *AnyStringLike) IteratorElementKey() SymbolicValue {
+	return ANY_INT
+}
+
+func (s *AnyStringLike) IteratorElementValue() SymbolicValue {
+	return ANY_BYTE
 }
 
 func (s *AnyStringLike) KnownLen() int {

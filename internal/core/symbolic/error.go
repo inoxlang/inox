@@ -247,8 +247,8 @@ func fmtValueOfVarShouldBeAModuleNode(name string) string {
 	return fmt.Sprintf("%s should be a module node", name)
 }
 
-func fmtSpreadArgumentShouldBeList(v interface{}) string {
-	return fmt.Sprintf("a spread argument should be a list not a(n) %T", v)
+func fmtSpreadArgumentShouldBeIterable(v SymbolicValue) string {
+	return fmt.Sprintf("a spread argument should be iterable but is a(n) %s", Stringify(v))
 }
 
 func fmtCannotInterpolatePatternNamespaceDoesNotExist(name string) string {

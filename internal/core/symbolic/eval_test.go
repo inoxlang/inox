@@ -2228,7 +2228,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewArray(ANY_INT), res)
 		})
 
-		t.Run("no variadic parameter: spread argument (known length)", func(t *testing.T) {
+		t.Run("no variadic parameter: list spread argument (known length)", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(a){
 					return $a
@@ -2237,6 +2237,26 @@ func TestSymbolicEval(t *testing.T) {
 				list = ["2"]
 				return f(...list)
 			`)
+			call := parse.FindNode(n, (*parse.CallExpression)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(call, state, SPREAD_ARGS_NOT_SUPPORTED_FOR_NON_VARIADIC_FUNCS),
+			}, state.errors)
+			assert.Equal(t, &String{}, res)
+		})
+
+		t.Run("no variadic parameter: array spread argument (known length)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(a){
+					return $a
+				}
+	
+				array = Array("2")
+				return f(...array)
+			`)
+			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
 			call := parse.FindNode(n, (*parse.CallExpression)(nil), nil)
 
 			res, err := symbolicEval(n, state)
@@ -2257,7 +2277,6 @@ func TestSymbolicEval(t *testing.T) {
 			`)
 
 			state.setGlobal("list", &List{generalElement: ANY_SERIALIZABLE}, GlobalConst)
-
 			call := parse.FindNode(n, (*parse.CallExpression)(nil), nil)
 
 			res, err := symbolicEval(n, state)
@@ -2265,10 +2284,10 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(call, state, SPREAD_ARGS_NOT_SUPPORTED_FOR_NON_VARIADIC_FUNCS),
 			}, state.errors)
-			assert.Equal(t, ANY, res)
+			assert.Equal(t, ANY_SERIALIZABLE, res)
 		})
 
-		t.Run("single, variadic parameter: spread argument", func(t *testing.T) {
+		t.Run("single, variadic parameter: list spread argument", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(...rest){
 					return $rest
@@ -2277,6 +2296,23 @@ func TestSymbolicEval(t *testing.T) {
 				list = ["2", true]
 				return f(1, ...list)
 			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, NewArray(ANY_INT, ANY_STR, ANY_BOOL), res)
+		})
+
+		t.Run("single, variadic parameter: array spread argument", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(...rest){
+					return $rest
+				}
+	
+				array = Array("2", true)
+				return f(1, ...array)
+			`)
+			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
+
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
@@ -2966,7 +3002,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			state.setGlobal("list", &List{generalElement: ANY_SERIALIZABLE}, GlobalConst)
 			goFunc := &GoFunction{
-				fn: func(*Context, *Any, ...*Int) *Int {
+				fn: func(*Context, SymbolicValue, ...*Int) *Int {
 					return &Int{}
 				},
 			}
@@ -2986,7 +3022,7 @@ func TestSymbolicEval(t *testing.T) {
 				return f(...list)
 			`)
 
-			state.setGlobal("list", &List{generalElement: ANY_SERIALIZABLE}, GlobalConst)
+			state.setGlobal("list", &List{generalElement: ANY_INT}, GlobalConst)
 			goFunc := &GoFunction{
 				fn: func(*Context, ...*Int) *Int {
 					return &Int{}

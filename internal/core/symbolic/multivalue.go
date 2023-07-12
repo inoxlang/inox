@@ -215,6 +215,14 @@ func (mv *indexableMultivalue) elementAt(i int) SymbolicValue {
 	return joinValues(elements)
 }
 
+func (mv *indexableMultivalue) IteratorElementKey() SymbolicValue {
+	return ANY_INT
+}
+
+func (mv *indexableMultivalue) IteratorElementValue() SymbolicValue {
+	return mv.element()
+}
+
 func (mv *indexableMultivalue) KnownLen() int {
 	return mv.values[0].(Indexable).KnownLen()
 }

@@ -35,7 +35,7 @@ var (
 
 // An Indexable represents a symbolic Indexable.
 type Indexable interface {
-	SymbolicValue
+	Iterable
 	element() SymbolicValue
 	elementAt(i int) SymbolicValue
 	KnownLen() int
