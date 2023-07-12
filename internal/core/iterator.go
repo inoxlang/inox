@@ -21,6 +21,11 @@ type Iterable interface {
 	Iterator(*Context, IteratorConfiguration) Iterator
 }
 
+type SerializableIterable interface {
+	Iterable
+	Serializable
+}
+
 type IteratorConfiguration struct {
 	KeyFilter     Pattern
 	ValueFilter   Pattern

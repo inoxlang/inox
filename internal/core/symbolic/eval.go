@@ -37,18 +37,19 @@ const (
 )
 
 var (
-	CTX_PTR_TYPE                    = reflect.TypeOf((*Context)(nil))
-	ERROR_TYPE                      = reflect.TypeOf((*Error)(nil))
-	SYMBOLIC_VALUE_INTERFACE_TYPE   = reflect.TypeOf((*SymbolicValue)(nil)).Elem()
-	SERIALIZABLE_INTERFACE_TYPE     = reflect.TypeOf((*Serializable)(nil)).Elem()
-	ITERABLE_INTERFACE_TYPE         = reflect.TypeOf((*Iterable)(nil)).Elem()
-	INDEXABLE_INTERFACE_TYPE        = reflect.TypeOf((*Indexable)(nil)).Elem()
-	SEQUENCE_INTERFACE_TYPE         = reflect.TypeOf((*Sequence)(nil)).Elem()
-	MUTABLE_SEQUENCE_INTERFACE_TYPE = reflect.TypeOf((*MutableSequence)(nil)).Elem()
-	INTEGRAL_INTERFACE_TYPE         = reflect.TypeOf((*Integral)(nil)).Elem()
-	WRITABLE_INTERFACE_TYPE         = reflect.TypeOf((*Writable)(nil)).Elem()
-	STRLIKE_INTERFACE_TYPE          = reflect.TypeOf((*StringLike)(nil)).Elem()
-	BYTESLIKE_INTERFACE_TYPE        = reflect.TypeOf((*BytesLike)(nil)).Elem()
+	CTX_PTR_TYPE                         = reflect.TypeOf((*Context)(nil))
+	ERROR_TYPE                           = reflect.TypeOf((*Error)(nil))
+	SYMBOLIC_VALUE_INTERFACE_TYPE        = reflect.TypeOf((*SymbolicValue)(nil)).Elem()
+	SERIALIZABLE_INTERFACE_TYPE          = reflect.TypeOf((*Serializable)(nil)).Elem()
+	ITERABLE_INTERFACE_TYPE              = reflect.TypeOf((*Iterable)(nil)).Elem()
+	SERIALIZABLE_ITERABLE_INTERFACE_TYPE = reflect.TypeOf((*Iterable)(nil)).Elem()
+	INDEXABLE_INTERFACE_TYPE             = reflect.TypeOf((*Indexable)(nil)).Elem()
+	SEQUENCE_INTERFACE_TYPE              = reflect.TypeOf((*Sequence)(nil)).Elem()
+	MUTABLE_SEQUENCE_INTERFACE_TYPE      = reflect.TypeOf((*MutableSequence)(nil)).Elem()
+	INTEGRAL_INTERFACE_TYPE              = reflect.TypeOf((*Integral)(nil)).Elem()
+	WRITABLE_INTERFACE_TYPE              = reflect.TypeOf((*Writable)(nil)).Elem()
+	STRLIKE_INTERFACE_TYPE               = reflect.TypeOf((*StringLike)(nil)).Elem()
+	BYTESLIKE_INTERFACE_TYPE             = reflect.TypeOf((*BytesLike)(nil)).Elem()
 
 	IPROPS_INTERFACE_TYPE              = reflect.TypeOf((*IProps)(nil)).Elem()
 	PROTOCOL_CLIENT_INTERFACE_TYPE     = reflect.TypeOf((*ProtocolClient)(nil)).Elem()
@@ -3644,6 +3645,8 @@ func converTypeToSymbolicValue(t reflect.Type) (SymbolicValue, error) {
 		return ANY, nil
 	case SERIALIZABLE_INTERFACE_TYPE:
 		return ANY_SERIALIZABLE, nil
+	case SERIALIZABLE_ITERABLE_INTERFACE_TYPE:
+		return ANY_SERIALIZABLE_ITERABLE, nil
 	case ITERABLE_INTERFACE_TYPE:
 		return ANY_ITERABLE, nil
 	case INDEXABLE_INTERFACE_TYPE:

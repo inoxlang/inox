@@ -23,6 +23,11 @@ type Iterable interface {
 	IteratorElementValue() SymbolicValue
 }
 
+type SerializableIterable interface {
+	Iterable
+	Serializable
+}
+
 // An AnyIterable represents a symbolic Iterable we do not know the concrete type.
 type AnyIterable struct {
 	_ int
