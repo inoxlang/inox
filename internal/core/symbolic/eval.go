@@ -1701,14 +1701,9 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				v = ANY_SERIALIZABLE
 			}
 
-			entries[keyRepr] = v.(Serializable)
-
-			node, ok := parse.ParseExpression(keyRepr)
-			if !ok {
-				panic(fmt.Errorf("invalid key representation '%s'", keyRepr))
-			}
 			//TODO: refactor
-			key, _ := symbolicEval(node, newSymbolicState(NewSymbolicContext(nil), nil))
+			key, err := symbolicEval(entry.Key, state)
+			_ = err
 
 			_, ok = key.(Serializable)
 			if !ok {
@@ -1716,6 +1711,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				key = ANY_SERIALIZABLE
 			}
 
+			entries[keyRepr] = v.(Serializable)
 			keys[keyRepr] = key.(Serializable)
 			state.symbolicData.SetMostSpecificNodeValue(entry.Key, key)
 		}

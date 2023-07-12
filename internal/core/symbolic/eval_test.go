@@ -251,7 +251,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewDictionary(map[string]Serializable{}, map[string]Serializable{}), res)
 		})
 
-		t.Run("singe entry", func(t *testing.T) {
+		t.Run("single entry", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`:{./a: "b"}`)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -279,33 +279,18 @@ func TestSymbolicEval(t *testing.T) {
 			}), res)
 		})
 
-		t.Run("two elements of different type", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`[1, "a'"]`)
+		t.Run("variable key", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`v = ./a; return :{v: "b"}`)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
-			assert.Equal(t, NewList(ANY_INT, ANY_STR), res)
+			assert.Equal(t, NewDictionary(map[string]Serializable{
+				"v": ANY_STR,
+			}, map[string]Serializable{
+				"v": ANY_REL_NON_DIR_PATH,
+			}), res)
 		})
 
-		t.Run("type annotation and element of invalid type", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk("[]%int[true]")
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			elemNode := parse.FindNode(n, (*parse.BooleanLiteral)(nil), nil)
-
-			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListAnnotated(ANY_BOOL, state.ctx.ResolveNamedPattern("int"))),
-			}, state.errors)
-			assert.Equal(t, NewListOf(ANY_INT), res)
-		})
-
-		t.Run("type annotation and element of valid type", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk("[]%int[1]")
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors)
-			assert.Equal(t, NewListOf(ANY_INT), res)
-		})
 	})
 
 	t.Run("constant declarations", func(t *testing.T) {
