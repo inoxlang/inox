@@ -570,8 +570,12 @@ switch_:
 
 		// also look for duplicate keys
 		for _, element := range node.SpreadElements {
+			extractionExpr, ok := element.Expr.(*parse.ExtractionExpression)
+			if !ok {
+				continue
+			}
 
-			for _, key := range element.Expr.(*parse.ExtractionExpression).Keys.Keys {
+			for _, key := range extractionExpr.Keys.Keys {
 				name := key.(*parse.IdentifierLiteral).Name
 
 				_, found := keys[name]

@@ -333,7 +333,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("duplicate keys", func(t *testing.T) {
-			n, src := parseCode(`#{"0":1, "0": 1}`)
+			n, src := parseCode(`%{"0":1, "0": 1}`)
 
 			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -343,8 +343,17 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("duplicate keys : spread", func(t *testing.T) {
-			//TODO
+		t.Run("duplicate keys", func(t *testing.T) {
+			n, src := parseCode(`%p = %{a: 1}; %{a:1, ...(%p).{a}}`)
+
+			keyNodes := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), func(l *parse.IdentifierLiteral) bool {
+				return l.Name == "a"
+			})
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := combineErrors(
+				makeError(keyNodes[2], src, fmtDuplicateKey("a")),
+			)
+			assert.Equal(t, expectedErr, err)
 		})
 
 		t.Run("key is too long", func(t *testing.T) {
