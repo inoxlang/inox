@@ -17273,6 +17273,55 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("{ prop with keylist value } ", func(t *testing.T) {
+			n := mustparseChunk(t, "%{keys: .{a}}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 13},
+							nil,
+							[]Token{
+								{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
+								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{12, 13}},
+							},
+						},
+						Exact: false,
+						Properties: []*ObjectPatternProperty{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{2, 12},
+									nil,
+									[]Token{{Type: COLON, Span: NodeSpan{6, 7}}},
+								},
+								Key: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 6}, nil, nil},
+									Name:     "keys",
+								},
+								Value: &KeyListExpression{
+									NodeBase: NodeBase{
+										NodeSpan{Start: 8, End: 12},
+										nil,
+										[]Token{
+											{Type: OPENING_KEYLIST_BRACKET, Span: NodeSpan{8, 10}},
+											{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{11, 12}},
+										},
+									},
+									Keys: []Node{
+										&IdentifierLiteral{
+											NodeBase: NodeBase{Span: NodeSpan{10, 11}},
+											Name:     "a",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("{ optional prop } ", func(t *testing.T) {
 			n := mustparseChunk(t, "%{ name?: %str }")
 			assert.EqualValues(t, &Chunk{

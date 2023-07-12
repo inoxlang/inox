@@ -2325,6 +2325,15 @@ func (p *parser) parseKeyList() *KeyListExpression {
 			continue
 		}
 
+		if p.inPattern {
+			if patternIdent, ok := e.(*PatternIdentifierLiteral); ok {
+				e = &IdentifierLiteral{
+					NodeBase: e.Base(),
+					Name:     patternIdent.Name,
+				}
+			}
+		}
+
 		idents = append(idents, e)
 
 		if _, ok := e.(IIdentifierLiteral); !ok {
