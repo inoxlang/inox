@@ -81,7 +81,7 @@ func TestObjectJSONRepresentation(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		obj := &Object{}
 
-		assert.Equal(t, `{"obj__value":{}}`, getJSONRepr(t, obj, reprTestCtx))
+		assert.Equal(t, `{"object__value":{}}`, getJSONRepr(t, obj, reprTestCtx))
 		assert.Equal(t, `{}`, getJSONRepr(t, obj, reprTestCtx, JSONSerializationConfig{
 			Pattern: OBJECT_PATTERN,
 		}))
@@ -93,7 +93,7 @@ func TestObjectJSONRepresentation(t *testing.T) {
 	t.Run("single key: ambiguous value", func(t *testing.T) {
 		obj := objFrom(ValMap{"a\nb": Path("/")})
 
-		assert.Equal(t, `{"obj__value":{"a\nb":{"path__value":"/"}}}`, getJSONRepr(t, obj, reprTestCtx))
+		assert.Equal(t, `{"object__value":{"a\nb":{"path__value":"/"}}}`, getJSONRepr(t, obj, reprTestCtx))
 		assert.Equal(t, `{"a\nb":{"path__value":"/"}}`, getJSONRepr(t, obj, reprTestCtx, JSONSerializationConfig{
 			Pattern: OBJECT_PATTERN,
 		}))
@@ -145,7 +145,7 @@ func TestObjectJSONRepresentation(t *testing.T) {
 			"e":        EmailAddress("a@mail.com"),
 		})
 
-		assert.Equal(t, `{"obj__value":{"a":{"int__value":"1"}}}`, getJSONRepr(t, obj, reprTestCtx, JSONSerializationConfig{
+		assert.Equal(t, `{"object__value":{"a":{"int__value":"1"}}}`, getJSONRepr(t, obj, reprTestCtx, JSONSerializationConfig{
 			ReprConfig: &ReprConfig{
 				AllVisible: false,
 			},
@@ -159,7 +159,7 @@ func TestObjectJSONRepresentation(t *testing.T) {
 			"e":        EmailAddress("a@mail.com"),
 		})
 
-		expectedRepr := `{"obj__value":{"a":"1","e":{"emailaddr__value":"a@mail.com"},"password":"mypassword"}}`
+		expectedRepr := `{"object__value":{"a":"1","e":{"emailaddr__value":"a@mail.com"},"password":"mypassword"}}`
 
 		assert.Equal(t, expectedRepr, getJSONRepr(t, obj, reprTestCtx, JSONSerializationConfig{
 			ReprConfig: &ReprConfig{
@@ -179,7 +179,7 @@ func TestObjectJSONRepresentation(t *testing.T) {
 			publicKeys: []string{"a", "password", "e"},
 		})
 
-		expectedRepr := `{"obj__value":{"a":"1","e":{"emailaddr__value":"a@mail.com"},"password":"mypassword"}}`
+		expectedRepr := `{"object__value":{"a":"1","e":{"emailaddr__value":"a@mail.com"},"password":"mypassword"}}`
 
 		assert.Equal(t, expectedRepr, getJSONRepr(t, obj, reprTestCtx, JSONSerializationConfig{
 			ReprConfig: &ReprConfig{
@@ -195,7 +195,7 @@ func TestObjectJSONRepresentation(t *testing.T) {
 		url := URL("https://example.com/objects/98484")
 		utils.PanicIfErr(obj.SetURLOnce(ctx, url))
 
-		expectedRepr := `{"obj__value":{"_url_":"` + string(url) + `"}}`
+		expectedRepr := `{"object__value":{"_url_":"` + string(url) + `"}}`
 		assert.Equal(t, expectedRepr, getJSONRepr(t, obj, reprTestCtx))
 	})
 }
@@ -204,7 +204,7 @@ func TestRecordJSONRepresentation(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		rec := NewRecordFromMap(nil)
 
-		assert.Equal(t, `{"rec__value":{}}`, getJSONRepr(t, rec, reprTestCtx))
+		assert.Equal(t, `{"record__value":{}}`, getJSONRepr(t, rec, reprTestCtx))
 		assert.Equal(t, `{}`, getJSONRepr(t, rec, reprTestCtx, JSONSerializationConfig{
 			Pattern: RECORD_PATTERN,
 		}))
@@ -213,7 +213,7 @@ func TestRecordJSONRepresentation(t *testing.T) {
 	t.Run("single key: ambiguous value", func(t *testing.T) {
 		obj := NewRecordFromMap(ValMap{"a\nb": Path("/")})
 
-		assert.Equal(t, `{"rec__value":{"a\nb":{"path__value":"/"}}}`, getJSONRepr(t, obj, reprTestCtx))
+		assert.Equal(t, `{"record__value":{"a\nb":{"path__value":"/"}}}`, getJSONRepr(t, obj, reprTestCtx))
 		assert.Equal(t, `{"a\nb":{"path__value":"/"}}`, getJSONRepr(t, obj, reprTestCtx, JSONSerializationConfig{
 			Pattern: RECORD_PATTERN,
 		}))
@@ -377,7 +377,7 @@ func TestListJSONRepresentation(t *testing.T) {
 	t.Run("deep", func(t *testing.T) {
 		list := NewWrappedValueList(NewWrappedValueList(Int(2), objFrom(ValMap{"a": Int(1)})))
 
-		expectedRepr := `{"list__value":[{"list__value":[{"int__value":"2"},{"obj__value":{"a":{"int__value":"1"}}}]}]}`
+		expectedRepr := `{"list__value":[{"list__value":[{"int__value":"2"},{"object__value":{"a":{"int__value":"1"}}}]}]}`
 		assert.Equal(t, expectedRepr, getJSONRepr(t, list, reprTestCtx))
 	})
 
@@ -439,7 +439,7 @@ func TestPathPatternJSONRepresentation(t *testing.T) {
 		t.Run(testCase.value, func(t *testing.T) {
 			patt := PathPattern(testCase.value)
 
-			assert.Equal(t, `{"path_patt__value":`+testCase.representation+"}", getJSONRepr(t, patt, reprTestCtx))
+			assert.Equal(t, `{"path-pattern__value":`+testCase.representation+"}", getJSONRepr(t, patt, reprTestCtx))
 			assert.Equal(t, testCase.representation, getJSONRepr(t, patt, reprTestCtx, JSONSerializationConfig{
 				Pattern: PATHPATTERN_PATTERN,
 			}))
@@ -469,7 +469,7 @@ func TestURLPatternJSONRepresentation(t *testing.T) {
 		t.Run(testCase.value, func(t *testing.T) {
 			patt := URLPattern(testCase.value)
 
-			assert.Equal(t, `{"url_patt__value":`+testCase.representation+"}", getJSONRepr(t, patt, reprTestCtx))
+			assert.Equal(t, `{"url-pattern__value":`+testCase.representation+"}", getJSONRepr(t, patt, reprTestCtx))
 			assert.Equal(t, testCase.representation, getJSONRepr(t, patt, reprTestCtx, JSONSerializationConfig{
 				Pattern: URLPATTERN_PATTERN,
 			}))
@@ -498,7 +498,7 @@ func TestHostPatternJSONRepresentation(t *testing.T) {
 		t.Run(testCase.value, func(t *testing.T) {
 			patt := HostPattern(testCase.value)
 
-			assert.Equal(t, `{"host_patt__value":`+testCase.representation+"}", getJSONRepr(t, patt, reprTestCtx))
+			assert.Equal(t, `{"host-pattern__value":`+testCase.representation+"}", getJSONRepr(t, patt, reprTestCtx))
 			assert.Equal(t, testCase.representation, getJSONRepr(t, patt, reprTestCtx, JSONSerializationConfig{
 				Pattern: HOSTPATTERN_PATTERN,
 			}))

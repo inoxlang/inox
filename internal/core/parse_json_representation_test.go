@@ -133,7 +133,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		}
 
 		//path pattern
-		v, err = ParseJSONRepresentation(ctx, `{"path-patt__value":"/..."}`, nil)
+		v, err = ParseJSONRepresentation(ctx, `{"path-pattern__value":"/..."}`, nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, PathPattern("/..."), v)
 		}
@@ -144,7 +144,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		}
 
 		//host pattern
-		v, err = ParseJSONRepresentation(ctx, `{"host-patt__value":"https://*.com"}`, nil)
+		v, err = ParseJSONRepresentation(ctx, `{"host-pattern__value":"https://*.com"}`, nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, HostPattern("https://*.com"), v)
 		}
@@ -155,7 +155,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		}
 
 		//url pattern
-		v, err = ParseJSONRepresentation(ctx, `{"url-patt__value":"https://example.com/..."}`, nil)
+		v, err = ParseJSONRepresentation(ctx, `{"url-pattern__value":"https://example.com/..."}`, nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, URLPattern("https://example.com/..."), v)
 		}
@@ -170,17 +170,17 @@ func TestParseJSONRepresentation(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 
 		//no pattern
-		obj, err := ParseJSONRepresentation(ctx, `{"obj__value":{}}`, nil)
+		obj, err := ParseJSONRepresentation(ctx, `{"object__value":{}}`, nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, map[string]Value{}, obj.(*Object).ValueEntryMap())
 		}
 
-		obj, err = ParseJSONRepresentation(ctx, `{"obj__value":{"a":"1"}}`, nil)
+		obj, err = ParseJSONRepresentation(ctx, `{"object__value":{"a":"1"}}`, nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, map[string]Value{"a": Str("1")}, obj.(*Object).ValueEntryMap())
 		}
 
-		//%obj patteren
+		//%object patteren
 		obj, err = ParseJSONRepresentation(ctx, `{}`, OBJECT_PATTERN)
 		if assert.NoError(t, err) {
 			assert.Equal(t, map[string]Value{}, obj.(*Object).ValueEntryMap())
@@ -230,17 +230,17 @@ func TestParseJSONRepresentation(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 
 		//no pattern
-		rec, err := ParseJSONRepresentation(ctx, `{"rec__value":{}}`, nil)
+		rec, err := ParseJSONRepresentation(ctx, `{"record__value":{}}`, nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, map[string]Value{}, rec.(*Record).ValueEntryMap())
 		}
 
-		rec, err = ParseJSONRepresentation(ctx, `{"rec__value":{"a":"1"}}`, nil)
+		rec, err = ParseJSONRepresentation(ctx, `{"record__value":{"a":"1"}}`, nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, map[string]Value{"a": Str("1")}, rec.(*Record).ValueEntryMap())
 		}
 
-		//%rec patteren
+		//%record patteren
 		rec, err = ParseJSONRepresentation(ctx, `{}`, RECORD_PATTERN)
 		if assert.NoError(t, err) {
 			assert.Equal(t, map[string]Value{}, rec.(*Record).ValueEntryMap())

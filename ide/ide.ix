@@ -49,7 +49,7 @@ $$ide = {
             data = msg.data
 
             match data {
-                %rec(%{ide-action: #run-script, path: path}) {
+                %record(%{ide-action: #run-script, path: path}) {
                     fprint self.output concat "\n[run " tostr(data.path) "]"
 
                     assign result state errors err = inox.run_local_script(data.path, {

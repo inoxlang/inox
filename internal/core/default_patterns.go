@@ -148,14 +148,14 @@ var (
 	EMPTY_INEXACT_OBJECT_PATTERN = NewInexactObjectPattern(map[string]Pattern{})
 	OBJECT_PATTERN               = &TypePattern{
 		Type:          OBJECT_TYPE,
-		Name:          "obj",
+		Name:          "object",
 		SymbolicValue: symbolic.NewAnyObject(),
 	}
 	EMPTY_INEXACT_RECORD_PATTERN = NewInexactRecordPattern(map[string]Pattern{})
 
 	RECORD_PATTERN = &TypePattern{
 		Type: RECORD_TYPE,
-		Name: "rec",
+		Name: "record",
 		CallImpl: func(typePattern *TypePattern, values []Serializable) (Pattern, error) {
 			var recordPattern *RecordPattern
 
@@ -396,17 +396,17 @@ var (
 	}
 	HOSTPATTERN_PATTERN = &TypePattern{
 		Type:          HOST_PATT_TYPE,
-		Name:          "host-patt",
+		Name:          "host-pattern",
 		SymbolicValue: &symbolic.HostPattern{},
 	}
 	PATHPATTERN_PATTERN = &TypePattern{
 		Type:          PATH_PATT_TYPE,
-		Name:          "path-patt",
+		Name:          "path-pattern",
 		SymbolicValue: &symbolic.PathPattern{},
 	}
 	URLPATTERN_PATTERN = &TypePattern{
 		Type:          URL_PATT_TYPE,
-		Name:          "url-patt",
+		Name:          "url-pattern",
 		SymbolicValue: &symbolic.URLPattern{},
 	}
 	OPTION_PATTERN = &TypePattern{

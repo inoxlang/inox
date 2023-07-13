@@ -70,7 +70,7 @@ fn create_dynamic_tree(){
 
             # TODO: fix 
             evs = EventSource!(%./examples/project/...)
-            create_event_pattern = %event(%rec(%{create_op: true, path: %path}))
+            create_event_pattern = %event(%record(%{create_op: true, path: %path}))
             
             for %(create_event_pattern) event in evs {
                 dir_node = find!(%tree.node(event.value.path.dir) self)

@@ -1,4 +1,4 @@
-%set-edited-file = %rec(%{
+%set-edited-file = %record(%{
     ide-action: #set-edited-file, 
     path: %path, 
     ...
@@ -243,11 +243,12 @@ $$editor = {
         var range %int-range? = nil
 
         match value {
-            %rec(%{
+            %record(%{
                 anchorOffset: %str
                 focusOffset: %str
-                anchorElemData: %rec(%{span: %str})
-                focusElemData: %rec(%{span: %str})
+                anchorElemData: %record(%{span: %str})
+                focusElemData: %                anchorElemData: %record(%{span: %str})
+(%{span: %str})
                 ...
             }) {
 

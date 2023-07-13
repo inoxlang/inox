@@ -2094,7 +2094,7 @@ func TestCheck(t *testing.T) {
 		t.Run("lifetime job should have access to parent module's patterns ", func(t *testing.T) {
 			n, src := parseCode(`
 				%p = 1
-				lifetimejob #job for %obj {
+				lifetimejob #job for %object {
 					[%p, %int, %dom.]
 				}
 			`)
@@ -2103,8 +2103,8 @@ func TestCheck(t *testing.T) {
 				Node:  n,
 				Chunk: src,
 				Patterns: map[string]Pattern{
-					"int": INT_PATTERN,
-					"obj": OBJECT_PATTERN,
+					"int":    INT_PATTERN,
+					"object": OBJECT_PATTERN,
 				},
 				PatternNamespaces: map[string]*PatternNamespace{"dom": {}},
 			}))

@@ -5,7 +5,7 @@ print "--- object pattern ---"
 print "{} match %{a: 1}:" ({} match %{a: 1})
 print "{a: 1} match %{a: 1}:" ({a: 1} match %{a: 1})
 print ""
-# %obj matches any object pattern
+# %object matches any object pattern
 
 print "--- list pattern ---"
 print "[] match %[1]:" ([] match %[1])
@@ -16,8 +16,8 @@ print "\n"
 # %list matches any list pattern
 
 print "--- option pattern ---"
-print "--data match %--data=obj" (--data match %--data=obj)
-print "--data={} match %--data=obj" (--data={} match %--data=obj)
+print "--data match %--data=object" (--data match %--data=object)
+print "--data={} match %--data=object" (--data={} match %--data=object)
 print "\n"
 # %opt matches any option pattern
 

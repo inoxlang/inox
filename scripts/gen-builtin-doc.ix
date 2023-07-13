@@ -77,7 +77,7 @@ fn fmt_topic_markdown(topic leaf-topic-data, is_leaf bool){
 }
 
 help_data = read!(DATA_FILE)
-assert (help_data match %[%obj])
+assert (help_data match %[%object])
 
 
 groups = help_data[0]

@@ -3428,7 +3428,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("join", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				var a %obj = {}
+				var a %object = {}
 				if true {
 					a = {a: 1}
 				} else {
@@ -3630,8 +3630,8 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("binary match expression narrows the type of a variable: (list pattern literal)", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				if (a match %[]%obj){
-					var b %[]%obj = a
+				if (a match %[]%object){
+					var b %[]%object = a
 				}
 			`)
 
@@ -4256,7 +4256,7 @@ func TestSymbolicEval(t *testing.T) {
 	t.Run("match statement", func(t *testing.T) {
 		t.Run("join", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				var v %obj = {}
+				var v %object = {}
 				match 1 {
 					%int {
 						v = {a: 1}
@@ -4985,7 +4985,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("binary match expression narrows the type of a variable: (list pattern literal)", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				assert (a match %[]%obj)
+				assert (a match %[]%object)
 			`)
 
 			state.setGlobal("a", ANY, GlobalConst)
@@ -5215,7 +5215,7 @@ func TestSymbolicEval(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				%p = 1
 				fn createJob(){
-					return lifetimejob "name" for %obj { [%p, %int]  } 
+					return lifetimejob "name" for %object { [%p, %int]  } 
 				}
 			`)
 
