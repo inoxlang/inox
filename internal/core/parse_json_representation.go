@@ -59,22 +59,29 @@ func parseJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Patter
 		}
 
 	case *IntRangePattern:
-		return parseIntergerJSONRepresentation(ctx, it, pattern)
+		return parseIntegerJSONRepresentation(ctx, it, pattern)
 	case *ObjectPattern:
 		return parseObjectJSONrepresentation(ctx, it, p)
 	case *RecordPattern:
 		return parseRecordJSONrepresentation(ctx, it, p)
 	case *ListPattern:
+		return parseListJSONrepresentation(ctx, it, p)
 	case *TuplePattern:
-
+		return parseTupleJSONrepresentation(ctx, it, p)
 	case *TypePattern:
 		switch p {
+		case SERIALIZABLE_PATTERN:
+			return parseJSONRepresentation(ctx, it, nil)
 		case OBJECT_PATTERN:
 			return parseObjectJSONrepresentation(ctx, it, EMPTY_INEXACT_OBJECT_PATTERN)
 		case RECORD_PATTERN:
 			return parseRecordJSONrepresentation(ctx, it, EMPTY_INEXACT_RECORD_PATTERN)
+		case LIST_PATTERN:
+			return parseListJSONrepresentation(ctx, it, ANY_ELEM_LIST_PATTERN)
+		case TUPLE_PATTERN:
+			return parseTupleJSONrepresentation(ctx, it, ANY_ELEM_TUPLE_PATTERN)
 		case INT_PATTERN:
-			return parseIntergerJSONRepresentation(ctx, it, nil)
+			return parseIntegerJSONRepresentation(ctx, it, nil)
 		}
 	}
 
@@ -171,7 +178,7 @@ func parseRecordJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 	return rec, nil
 }
 
-func parseIntergerJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pattern) (_ Int, finalErr error) {
+func parseIntegerJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pattern) (_ Int, finalErr error) {
 	s := it.ReadString()
 	if it.Error != nil {
 		return 0, fmt.Errorf("failed to parse integer: %w", it.Error)
@@ -181,4 +188,66 @@ func parseIntergerJSONRepresentation(ctx *Context, it *jsoniter.Iterator, patter
 		return 0, fmt.Errorf("failed to parse integer: %w", err)
 	}
 	return Int(i), nil
+}
+
+func parseListJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *ListPattern) (_ *List, finalErr error) {
+	var elements []Serializable
+	index := 0
+	it.ReadArrayCB(func(i *jsoniter.Iterator) bool {
+		elementPattern, ok := pattern.ElementPatternAt(index)
+		if !ok {
+			finalErr = fmt.Errorf("JSON array has too many elements, %d elements were expected", len(pattern.elementPatterns))
+			return false
+		}
+
+		val, err := parseJSONRepresentation(ctx, it, elementPattern)
+		if err != nil {
+			finalErr = fmt.Errorf("failed to parse element %d of array: %w", index, err)
+			return false
+		}
+		elements = append(elements, val)
+		index++
+		return true
+	})
+
+	if finalErr != nil {
+		return nil, finalErr
+	}
+
+	if pattern.elementPatterns != nil && len(elements) < len(pattern.elementPatterns) {
+		return nil, fmt.Errorf("JSON array has not enough elements, %d elements were expected", len(pattern.elementPatterns))
+	}
+
+	return NewWrappedValueList(elements...), nil
+}
+
+func parseTupleJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *TuplePattern) (_ *Tuple, finalErr error) {
+	var elements []Serializable
+	index := 0
+	it.ReadArrayCB(func(i *jsoniter.Iterator) bool {
+		elementPattern, ok := pattern.ElementPatternAt(index)
+		if !ok {
+			finalErr = fmt.Errorf("JSON array has too many elements, %d elements were expected", len(pattern.elementPatterns))
+			return false
+		}
+
+		val, err := parseJSONRepresentation(ctx, it, elementPattern)
+		if err != nil {
+			finalErr = fmt.Errorf("failed to parse element %d of array: %w", index, err)
+			return false
+		}
+		elements = append(elements, val)
+		index++
+		return true
+	})
+
+	if finalErr != nil {
+		return nil, finalErr
+	}
+
+	if pattern.elementPatterns != nil && len(elements) < len(pattern.elementPatterns) {
+		return nil, fmt.Errorf("JSON array has not enough elements, %d elements were expected", len(pattern.elementPatterns))
+	}
+
+	return NewTuple(elements), nil
 }

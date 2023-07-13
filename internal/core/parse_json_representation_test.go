@@ -66,6 +66,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 			}
 		}
 	})
+
 	t.Run("record", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 
@@ -123,6 +124,198 @@ func TestParseJSONRepresentation(t *testing.T) {
 			if assert.Contains(t, entries, "a") {
 				assert.Equal(t, map[string]Value{"b": Int(1)}, entries["a"].(*Record).ValueEntryMap())
 			}
+		}
+	})
+
+	t.Run("list", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		//no pattern
+		list, err := ParseJSONRepresentation(ctx, `{"list__value":[]}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []Serializable{}, list.(*List).GetOrBuildElements(ctx))
+		}
+
+		list, err = ParseJSONRepresentation(ctx, `{"list__value":["1"]}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []Serializable{Str("1")}, list.(*List).GetOrBuildElements(ctx))
+		}
+
+		//%list patteren
+		list, err = ParseJSONRepresentation(ctx, `{}`, LIST_PATTERN)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []Serializable{}, list.(*List).GetOrBuildElements(ctx))
+		}
+
+		list, err = ParseJSONRepresentation(ctx, `["1"]`, LIST_PATTERN)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []Serializable{Str("1")}, list.(*List).GetOrBuildElements(ctx))
+		}
+
+		//[]int pattern
+		pattern := NewListPatternOf(INT_PATTERN)
+
+		list, err = ParseJSONRepresentation(ctx, `[]`, pattern)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []Serializable{}, list.(*List).GetOrBuildElements(ctx))
+		}
+
+		list, err = ParseJSONRepresentation(ctx, `["1"]`, pattern)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []Serializable{Int(1)}, list.(*List).GetOrBuildElements(ctx))
+		}
+
+		//[] pattern
+		pattern = NewListPattern([]Pattern{})
+
+		list, err = ParseJSONRepresentation(ctx, `[]`, pattern)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []Serializable{}, list.(*List).GetOrBuildElements(ctx))
+		}
+
+		list, err = ParseJSONRepresentation(ctx, `["1"]`, pattern)
+		if assert.ErrorContains(t, err, "JSON array has too many elements, 0 elements were expected") {
+			assert.Nil(t, list)
+		}
+
+		//[int] pattern
+		pattern = NewListPattern([]Pattern{INT_PATTERN})
+
+		list, err = ParseJSONRepresentation(ctx, `[]`, pattern)
+		if assert.ErrorContains(t, err, "JSON array has not enough elements, 1 elements were expected") {
+			assert.Nil(t, list)
+		}
+
+		list, err = ParseJSONRepresentation(ctx, `["1"]`, pattern)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []Serializable{Int(1)}, list.(*List).GetOrBuildElements(ctx))
+		}
+
+		//[int, int] pattern
+		pattern = NewListPattern([]Pattern{INT_PATTERN, INT_PATTERN})
+
+		list, err = ParseJSONRepresentation(ctx, `[]`, pattern)
+		if assert.ErrorContains(t, err, "JSON array has not enough elements, 2 elements were expected") {
+			assert.Nil(t, list)
+		}
+
+		list, err = ParseJSONRepresentation(ctx, `["1"]`, pattern)
+		if assert.ErrorContains(t, err, "JSON array has not enough elements, 2 elements were expected") {
+			assert.Nil(t, list)
+		}
+
+		list, err = ParseJSONRepresentation(ctx, `["1", "2"]`, pattern)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []Serializable{Int(1), Int(2)}, list.(*List).GetOrBuildElements(ctx))
+		}
+
+		//[[int]] pattern
+		pattern = NewListPattern([]Pattern{NewListPattern([]Pattern{INT_PATTERN})})
+
+		list, err = ParseJSONRepresentation(ctx, `[]`, pattern)
+		if assert.ErrorContains(t, err, "JSON array has not enough elements, 1 elements were expected") {
+			assert.Nil(t, list)
+		}
+
+		list, err = ParseJSONRepresentation(ctx, `[["1"]]`, pattern)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []Serializable{NewWrappedValueList(Int(1))}, list.(*List).GetOrBuildElements(ctx))
+		}
+	})
+
+	t.Run("tuple", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		//no pattern
+		tuple, err := ParseJSONRepresentation(ctx, `{"tuple__value":[]}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []Serializable{}, tuple.(*Tuple).GetOrBuildElements(ctx))
+		}
+
+		tuple, err = ParseJSONRepresentation(ctx, `{"tuple__value":["1"]}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []Serializable{Str("1")}, tuple.(*Tuple).GetOrBuildElements(ctx))
+		}
+
+		//%tuple patteren
+		tuple, err = ParseJSONRepresentation(ctx, `{}`, TUPLE_PATTERN)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []Serializable{}, tuple.(*Tuple).GetOrBuildElements(ctx))
+		}
+
+		tuple, err = ParseJSONRepresentation(ctx, `["1"]`, TUPLE_PATTERN)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []Serializable{Str("1")}, tuple.(*Tuple).GetOrBuildElements(ctx))
+		}
+
+		//[]int pattern
+		pattern := NewTuplePatternOf(INT_PATTERN)
+
+		tuple, err = ParseJSONRepresentation(ctx, `[]`, pattern)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []Serializable{}, tuple.(*Tuple).GetOrBuildElements(ctx))
+		}
+
+		tuple, err = ParseJSONRepresentation(ctx, `["1"]`, pattern)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []Serializable{Int(1)}, tuple.(*Tuple).GetOrBuildElements(ctx))
+		}
+
+		//[] pattern
+		pattern = NewTuplePattern([]Pattern{})
+
+		tuple, err = ParseJSONRepresentation(ctx, `[]`, pattern)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []Serializable{}, tuple.(*Tuple).GetOrBuildElements(ctx))
+		}
+
+		tuple, err = ParseJSONRepresentation(ctx, `["1"]`, pattern)
+		if assert.ErrorContains(t, err, "JSON array has too many elements, 0 elements were expected") {
+			assert.Nil(t, tuple)
+		}
+
+		//[int] pattern
+		pattern = NewTuplePattern([]Pattern{INT_PATTERN})
+
+		tuple, err = ParseJSONRepresentation(ctx, `[]`, pattern)
+		if assert.ErrorContains(t, err, "JSON array has not enough elements, 1 elements were expected") {
+			assert.Nil(t, tuple)
+		}
+
+		tuple, err = ParseJSONRepresentation(ctx, `["1"]`, pattern)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []Serializable{Int(1)}, tuple.(*Tuple).GetOrBuildElements(ctx))
+		}
+
+		//[int, int] pattern
+		pattern = NewTuplePattern([]Pattern{INT_PATTERN, INT_PATTERN})
+
+		tuple, err = ParseJSONRepresentation(ctx, `[]`, pattern)
+		if assert.ErrorContains(t, err, "JSON array has not enough elements, 2 elements were expected") {
+			assert.Nil(t, tuple)
+		}
+
+		tuple, err = ParseJSONRepresentation(ctx, `["1"]`, pattern)
+		if assert.ErrorContains(t, err, "JSON array has not enough elements, 2 elements were expected") {
+			assert.Nil(t, tuple)
+		}
+
+		tuple, err = ParseJSONRepresentation(ctx, `["1", "2"]`, pattern)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []Serializable{Int(1), Int(2)}, tuple.(*Tuple).GetOrBuildElements(ctx))
+		}
+
+		//[[int]] pattern
+		pattern = NewTuplePattern([]Pattern{NewTuplePattern([]Pattern{INT_PATTERN})})
+
+		tuple, err = ParseJSONRepresentation(ctx, `[]`, pattern)
+		if assert.ErrorContains(t, err, "JSON array has not enough elements, 1 elements were expected") {
+			assert.Nil(t, tuple)
+		}
+
+		tuple, err = ParseJSONRepresentation(ctx, `[["1"]]`, pattern)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []Serializable{NewTuple([]Serializable{Int(1)})}, tuple.(*Tuple).GetOrBuildElements(ctx))
 		}
 	})
 

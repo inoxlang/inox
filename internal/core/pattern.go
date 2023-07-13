@@ -422,6 +422,16 @@ func (patt *ListPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
+func (patt *ListPattern) ElementPatternAt(i int) (Pattern, bool) {
+	if patt.elementPatterns != nil {
+		if i < 0 || i >= len(patt.elementPatterns) {
+			return nil, false
+		}
+		return patt.elementPatterns[i], true
+	}
+	return patt.generalElementPattern, true
+}
+
 type TuplePattern struct {
 	NotCallablePatternMixin
 	elementPatterns       []Pattern
@@ -463,6 +473,16 @@ func (patt *TuplePattern) Test(ctx *Context, v Value) bool {
 		}
 	}
 	return true
+}
+
+func (patt *TuplePattern) ElementPatternAt(i int) (Pattern, bool) {
+	if patt.elementPatterns != nil {
+		if i < 0 || i >= len(patt.elementPatterns) {
+			return nil, false
+		}
+		return patt.elementPatterns[i], true
+	}
+	return patt.generalElementPattern, true
 }
 
 func (patt *TuplePattern) StringPattern() (StringPattern, bool) {

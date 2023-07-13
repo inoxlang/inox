@@ -145,12 +145,12 @@ var (
 		Name:          "emailaddr",
 		SymbolicValue: symbolic.ANY_EMAIL_ADDR,
 	}
-	OBJECT_PATTERN = &TypePattern{
+	EMPTY_INEXACT_OBJECT_PATTERN = NewInexactObjectPattern(map[string]Pattern{})
+	OBJECT_PATTERN               = &TypePattern{
 		Type:          OBJECT_TYPE,
 		Name:          "obj",
 		SymbolicValue: symbolic.NewAnyObject(),
 	}
-	EMPTY_INEXACT_OBJECT_PATTERN = NewInexactObjectPattern(map[string]Pattern{})
 	EMPTY_INEXACT_RECORD_PATTERN = NewInexactRecordPattern(map[string]Pattern{})
 
 	RECORD_PATTERN = &TypePattern{
@@ -209,11 +209,17 @@ var (
 		},
 		SymbolicValue: symbolic.NewAnyrecord(),
 	}
+
+	ANY_ELEM_LIST_PATTERN = NewListPatternOf(SERIALIZABLE_PATTERN)
+
 	LIST_PATTERN = &TypePattern{
 		Type:          LIST_PTR_TYPE,
 		Name:          "list",
 		SymbolicValue: symbolic.NewListOf(symbolic.ANY_SERIALIZABLE),
 	}
+
+	ANY_ELEM_TUPLE_PATTERN = NewTuplePatternOf(SERIALIZABLE_PATTERN)
+
 	TUPLE_PATTERN = &TypePattern{
 		Type: TUPLE_TYPE,
 		Name: "tuple",
