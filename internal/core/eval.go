@@ -25,9 +25,8 @@ var (
 	EMPTY_INTERFACE_TYPE = reflect.TypeOf((*interface{})(nil)).Elem()
 	CTX_PTR_TYPE         = reflect.TypeOf(&Context{})
 
-	VALUE_TYPE = reflect.TypeOf((*Value)(nil)).Elem()
+	VALUE_TYPE        = reflect.TypeOf((*Value)(nil)).Elem()
 	SERIALIZABLE_TYPE = reflect.TypeOf((*Serializable)(nil)).Elem()
-
 
 	ERROR_INTERFACE_TYPE                 = reflect.TypeOf((*error)(nil)).Elem()
 	READABLE_INTERFACE_TYPE              = reflect.TypeOf((*Readable)(nil)).Elem()
@@ -52,6 +51,13 @@ var (
 	CHECKED_STR_TYPE        = reflect.TypeOf(CheckedString{})
 	BOOL_TYPE               = reflect.TypeOf(Bool(true))
 	INT_TYPE                = reflect.TypeOf(Int(1))
+	PORT_TYPE               = reflect.TypeOf(Port{})
+	BYTERATE_TYPE           = reflect.TypeOf(ByteRate(1))
+	SIMPLERATE_TYPE         = reflect.TypeOf(SimpleRate(1))
+	LINECOUNT_TYPE          = reflect.TypeOf(LineCount(1))
+	RUNECOUNT_TYPE          = reflect.TypeOf(RuneCount(1))
+	BYTECOUNT_TYPE          = reflect.TypeOf(ByteCount(1))
+	DURATION_TYPE           = reflect.TypeOf(Duration(1))
 	FLOAT64_TYPE            = reflect.TypeOf(Float(0))
 	OBJECT_TYPE             = reflect.TypeOf(&Object{})
 	RECORD_TYPE             = reflect.TypeOf(&Record{})

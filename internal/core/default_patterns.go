@@ -343,43 +343,43 @@ var (
 	}
 
 	PORT_PATTERN = &TypePattern{
-		Type:          INT_TYPE,
+		Type:          PORT_TYPE,
 		Name:          "port",
 		SymbolicValue: symbolic.ANY_PORT,
 	}
 
 	BYTECOUNT_PATTERN = &TypePattern{
-		Type:          INT_TYPE,
+		Type:          BYTECOUNT_TYPE,
 		Name:          "byte-count",
 		SymbolicValue: symbolic.ANY_BYTECOUNT,
 	}
 
 	LINECOUNT_PATTERN = &TypePattern{
-		Type:          INT_TYPE,
+		Type:          LINECOUNT_TYPE,
 		Name:          "line-count",
 		SymbolicValue: symbolic.ANY_LINECOUNT,
 	}
 
 	RUNECOUNT_PATTERN = &TypePattern{
-		Type:          INT_TYPE,
+		Type:          RUNECOUNT_TYPE,
 		Name:          "rune-count",
 		SymbolicValue: symbolic.ANY_RUNECOUNT,
 	}
 
 	BYTERATE_PATTERN = &TypePattern{
-		Type:          INT_TYPE,
+		Type:          BYTERATE_TYPE,
 		Name:          "byte-rate",
 		SymbolicValue: symbolic.ANY_BYTERATE,
 	}
 
 	SIMPLERATE_PATTERN = &TypePattern{
-		Type:          INT_TYPE,
+		Type:          SIMPLERATE_TYPE,
 		Name:          "simple-rate",
 		SymbolicValue: symbolic.ANY_SIMPLERATE,
 	}
 
 	DURATION_PATTERN = &TypePattern{
-		Type:          INT_TYPE,
+		Type:          DURATION_TYPE,
 		Name:          "duration",
 		SymbolicValue: symbolic.ANY_DURATION,
 	}
@@ -709,6 +709,9 @@ var (
 		KEYLIST_PATTERN.Name:               KEYLIST_PATTERN,
 		BOOL_PATTERN.Name:                  BOOL_PATTERN,
 		INT_PATTERN.Name:                   INT_PATTERN,
+		LINECOUNT_PATTERN.Name:             LINECOUNT_PATTERN,
+		RUNECOUNT_PATTERN.Name:             RUNECOUNT_PATTERN,
+		BYTECOUNT_PATTERN.Name:             BYTECOUNT_PATTERN,
 		FLOAT_PATTERN.Name:                 FLOAT_PATTERN,
 		FILE_MODE_PATTERN.Name:             FILE_MODE_PATTERN,
 		DATE_PATTERN.Name:                  DATE_PATTERN,
