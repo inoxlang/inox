@@ -492,6 +492,12 @@ func (s *RuneSlice) insertSequence(ctx *Context, seq Sequence, i Int) {
 	for ind := 0; ind < seqLen; ind++ {
 		s.elements[int(i)+ind] = rune(seq.At(ctx, ind).(Rune))
 	}
+
+	path := Path("/" + strconv.Itoa(int(i)))
+	mutation := NewInsertSequenceAtIndexMutation(ctx, int(i), seq, ShallowWatching, path)
+
+	s.mutationCallbacks.CallMicrotasks(ctx, mutation)
+	s.watchers.InformAboutAsync(ctx, mutation, ShallowWatching, true)
 }
 
 func (s *RuneSlice) appendSequence(ctx *Context, seq Sequence) {

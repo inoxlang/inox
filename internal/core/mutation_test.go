@@ -234,6 +234,38 @@ func TestRuneSliceOnMutation(t *testing.T) {
 		assert.Equal(t, []rune("a"), slice.elements)
 	})
 
+	t.Run("microtask should be called when a sequence is inserted", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		slice := NewRuneSlice(nil)
+		called := atomic.Bool{}
+
+		insertedSlice := NewRuneSlice([]rune{'a'})
+
+		_, err := slice.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			if !assert.False(t, called.Load()) {
+				return
+			}
+			called.Store(true)
+
+			assert.Equal(t, NewInsertSequenceAtIndexMutation(ctx, 0, insertedSlice, ShallowWatching, "/0"), mutation)
+
+			return true
+		}, MutationWatchingConfiguration{})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// we modify the list in the same goroutine since List is not sharable
+		time.Sleep(time.Microsecond)
+		slice.insertSequence(ctx, insertedSlice, 0)
+
+		assert.True(t, called.Load())
+		assert.Equal(t, []rune("a"), slice.elements)
+	})
+
 	t.Run("microtask should be called when an element is set", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
