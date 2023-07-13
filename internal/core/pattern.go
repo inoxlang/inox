@@ -576,6 +576,7 @@ func (patt *FunctionPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
+// An IntRangePattern represents a pattern matching integers in a given range.
 type IntRangePattern struct {
 	intRange IntRange
 	CallBasedPatternReprMixin
