@@ -643,6 +643,17 @@ func (rec *Record) HasProp(ctx *Context, name string) bool {
 	return false
 }
 
+func (rec *Record) ValueEntryMap() map[string]Value {
+	if rec == nil {
+		return nil
+	}
+	map_ := map[string]Value{}
+	for i, v := range rec.values {
+		map_[rec.keys[i]] = v
+	}
+	return map_
+}
+
 func (rec *Record) ForEachEntry(fn func(k string, v Value) error) error {
 	for i, v := range rec.values {
 		if err := fn(rec.keys[i], v); err != nil {

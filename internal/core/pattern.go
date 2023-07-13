@@ -352,6 +352,16 @@ func (patt *RecordPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
+func (patt *RecordPattern) ForEachEntry(fn func(propName string, propPattern Pattern, isOptional bool) error) error {
+	for propName, propPattern := range patt.entryPatterns {
+		_, isOptional := patt.optionalEntries[propName]
+		if err := fn(propName, propPattern, isOptional); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 type ComplexPropertyConstraint struct {
 	NotCallablePatternMixin
 	Properties []string

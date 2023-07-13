@@ -151,7 +151,9 @@ var (
 		SymbolicValue: symbolic.NewAnyObject(),
 	}
 	EMPTY_INEXACT_OBJECT_PATTERN = NewInexactObjectPattern(map[string]Pattern{})
-	RECORD_PATTERN               = &TypePattern{
+	EMPTY_INEXACT_RECORD_PATTERN = NewInexactRecordPattern(map[string]Pattern{})
+
+	RECORD_PATTERN = &TypePattern{
 		Type: RECORD_TYPE,
 		Name: "rec",
 		CallImpl: func(typePattern *TypePattern, values []Serializable) (Pattern, error) {
