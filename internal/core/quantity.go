@@ -7,6 +7,12 @@ import (
 	"time"
 )
 
+const (
+	LINE_COUNT_UNIT = "ln"
+	RUNE_COUNT_UNIT = "rn"
+	BYTE_COUNT_UNIT = "B"
+)
+
 // ByteCount implements Value.
 type ByteCount int64
 
@@ -126,15 +132,15 @@ func evalQuantity(values []float64, units []string) (Serializable, error) {
 			}
 			partResult = partValue / 100
 			totalResult = Float(partResult)
-		case "ln":
+		case LINE_COUNT_UNIT:
 			isInt = true
 			partResult = partValue * multiplier
 			totalResult = LineCount(partResult)
-		case "rn":
+		case RUNE_COUNT_UNIT:
 			isInt = true
 			partResult = partValue * multiplier
 			totalResult = RuneCount(partResult)
-		case "B":
+		case BYTE_COUNT_UNIT:
 			isInt = true
 			partResult = partValue * multiplier
 			totalResult = ByteCount(partResult)

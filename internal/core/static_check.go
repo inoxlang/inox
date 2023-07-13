@@ -427,7 +427,7 @@ switch_:
 			unit := node.Units[partIndex][i:]
 
 			switch unit {
-			case "x", "ln", "rn", "B":
+			case "x", LINE_COUNT_UNIT, RUNE_COUNT_UNIT, BYTE_COUNT_UNIT:
 				if partIndex != 0 || prevUnit != "" {
 					c.addError(node, INVALID_QUANTITY)
 					return parse.Continue
@@ -493,7 +493,7 @@ switch_:
 			default:
 			}
 			switch lastUnit1[i:] {
-			case "x", "B":
+			case "x", BYTE_COUNT_UNIT:
 				return parse.Continue
 			}
 		}

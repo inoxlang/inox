@@ -10,6 +10,10 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+var (
+	IncorrectJSONRepresentation = errors.New("incorrect JSON representation")
+)
+
 func ParseJSONRepresentation(ctx *Context, s string, pattern Pattern) (Serializable, error) {
 	//TODO: add checks
 
@@ -54,6 +58,8 @@ func parseJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Patter
 			return Bool(v.ToBool()), nil
 		case jsoniter.StringValue:
 			return Str(v.ToString()), nil
+		case jsoniter.NumberValue:
+			return Float(v.ToFloat64()), nil
 		case jsoniter.NilValue:
 			return Nil, nil
 		}
@@ -72,6 +78,21 @@ func parseJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Patter
 		switch p {
 		case SERIALIZABLE_PATTERN:
 			return parseJSONRepresentation(ctx, it, nil)
+		case STR_PATTERN:
+			if it.WhatIsNext() != jsoniter.StringValue {
+				return nil, IncorrectJSONRepresentation
+			}
+			return Str(it.ReadString()), nil
+		case BOOL_PATTERN:
+			if it.WhatIsNext() != jsoniter.BoolValue {
+				return nil, IncorrectJSONRepresentation
+			}
+			return Bool(it.ReadBool()), nil
+		case FLOAT_PATTERN:
+			if it.WhatIsNext() != jsoniter.NumberValue {
+				return nil, IncorrectJSONRepresentation
+			}
+			return Float(it.ReadFloat64()), nil
 		case OBJECT_PATTERN:
 			return parseObjectJSONrepresentation(ctx, it, EMPTY_INEXACT_OBJECT_PATTERN)
 		case RECORD_PATTERN:
@@ -82,6 +103,30 @@ func parseJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Patter
 			return parseTupleJSONrepresentation(ctx, it, ANY_ELEM_TUPLE_PATTERN)
 		case INT_PATTERN:
 			return parseIntegerJSONRepresentation(ctx, it, nil)
+		case LINECOUNT_PATTERN:
+			return parseLineCountJSONRepresentation(ctx, it, nil)
+		case BYTECOUNT_PATTERN:
+			return parseByteCountJSONRepresentation(ctx, it, nil)
+		case RUNECOUNT_PATTERN:
+			return parseRuneCountJSONRepresentation(ctx, it, nil)
+		case SIMPLERATE_PATTERN:
+			//TODO
+		case BYTERATE_PATTERN:
+			//TODO
+		case PATH_PATTERN:
+			return parsePathJSONRepresentation(ctx, it)
+		case SCHEME_PATTERN:
+			return parseSchemeJSONRepresentation(ctx, it)
+		case HOST_PATTERN:
+			return parseHostJSONRepresentation(ctx, it)
+		case URL_PATTERN:
+			return parseURLJSONRepresentation(ctx, it)
+		case PATHPATTERN_PATTERN:
+			return parsePathPatternJSONRepresentation(ctx, it)
+		case HOSTPATTERN_PATTERN:
+			return parseHostPatternJSONRepresentation(ctx, it)
+		case URLPATTERN_PATTERN:
+			return parseURLPatternJSONRepresentation(ctx, it)
 		}
 	}
 
@@ -188,6 +233,119 @@ func parseIntegerJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern
 		return 0, fmt.Errorf("failed to parse integer: %w", err)
 	}
 	return Int(i), nil
+}
+
+func parseLineCountJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pattern) (_ LineCount, finalErr error) {
+	s := it.ReadString()
+
+	if !strings.HasSuffix(s, LINE_COUNT_UNIT) {
+		return 0, fmt.Errorf("invalid unit")
+	}
+
+	s = strings.TrimSuffix(s, LINE_COUNT_UNIT)
+
+	if it.Error != nil {
+		return 0, fmt.Errorf("failed to parse line count: %w", it.Error)
+	}
+	i, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse line count: %w", err)
+	}
+	return LineCount(i), nil
+}
+
+func parseByteCountJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pattern) (_ ByteCount, finalErr error) {
+	s := it.ReadString()
+
+	if !strings.HasSuffix(s, BYTE_COUNT_UNIT) {
+		return 0, fmt.Errorf("invalid unit")
+	}
+
+	s = strings.TrimSuffix(s, BYTE_COUNT_UNIT)
+
+	if it.Error != nil {
+		return 0, fmt.Errorf("failed to parse byte count: %w", it.Error)
+	}
+	i, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse byte count: %w", err)
+	}
+	return ByteCount(i), nil
+}
+
+func parseRuneCountJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pattern) (_ RuneCount, finalErr error) {
+	s := it.ReadString()
+
+	if !strings.HasSuffix(s, RUNE_COUNT_UNIT) {
+		return 0, fmt.Errorf("invalid unit")
+	}
+
+	s = strings.TrimSuffix(s, RUNE_COUNT_UNIT)
+
+	if it.Error != nil {
+		return 0, fmt.Errorf("failed to parse rune count: %w", it.Error)
+	}
+	i, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse rune count: %w", err)
+	}
+	return RuneCount(i), nil
+}
+
+func parsePathJSONRepresentation(ctx *Context, it *jsoniter.Iterator) (_ Path, finalErr error) {
+	if it.WhatIsNext() != jsoniter.StringValue {
+		return "", IncorrectJSONRepresentation
+	}
+
+	return Path(it.ReadString()), nil
+}
+
+func parseSchemeJSONRepresentation(ctx *Context, it *jsoniter.Iterator) (_ Scheme, finalErr error) {
+	if it.WhatIsNext() != jsoniter.StringValue {
+		return "", IncorrectJSONRepresentation
+	}
+
+	return Scheme(it.ReadString()), nil
+}
+
+func parseHostJSONRepresentation(ctx *Context, it *jsoniter.Iterator) (_ Host, finalErr error) {
+	if it.WhatIsNext() != jsoniter.StringValue {
+		return "", IncorrectJSONRepresentation
+	}
+
+	return Host(it.ReadString()), nil
+}
+
+func parseURLJSONRepresentation(ctx *Context, it *jsoniter.Iterator) (_ URL, finalErr error) {
+	if it.WhatIsNext() != jsoniter.StringValue {
+		return "", IncorrectJSONRepresentation
+	}
+
+	return URL(it.ReadString()), nil
+}
+
+func parsePathPatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator) (_ PathPattern, finalErr error) {
+	if it.WhatIsNext() != jsoniter.StringValue {
+		return "", IncorrectJSONRepresentation
+	}
+
+	return PathPattern(it.ReadString()), nil
+}
+
+func parseHostPatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator) (_ HostPattern, finalErr error) {
+	if it.WhatIsNext() != jsoniter.StringValue {
+		return "", IncorrectJSONRepresentation
+	}
+
+	return HostPattern(it.ReadString()), nil
+}
+
+func parseURLPatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator) (_ URLPattern, finalErr error) {
+	if it.WhatIsNext() != jsoniter.StringValue {
+		return "", IncorrectJSONRepresentation
+	}
+
+	return URLPattern(it.ReadString()), nil
 }
 
 func parseListJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *ListPattern) (_ *List, finalErr error) {

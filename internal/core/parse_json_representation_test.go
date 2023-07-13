@@ -7,6 +7,165 @@ import (
 )
 
 func TestParseJSONRepresentation(t *testing.T) {
+
+	t.Run("simple values", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		//string
+		v, err := ParseJSONRepresentation(ctx, `{"str__value":"a"}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, Str("a"), v)
+		}
+
+		v, err = ParseJSONRepresentation(ctx, `"a"`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, Str("a"), v)
+		}
+
+		//boolean
+		v, err = ParseJSONRepresentation(ctx, `{"bool__value":true}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, True, v)
+		}
+
+		v, err = ParseJSONRepresentation(ctx, `true`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, True, v)
+		}
+
+		//float
+		v, err = ParseJSONRepresentation(ctx, `{"float__value":1}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, Float(1), v)
+		}
+
+		v, err = ParseJSONRepresentation(ctx, `1`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, Float(1), v)
+		}
+
+		//int
+		v, err = ParseJSONRepresentation(ctx, `{"int__value":"1"}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, Int(1), v)
+		}
+
+		v, err = ParseJSONRepresentation(ctx, `"1"`, INT_PATTERN)
+		if assert.NoError(t, err) {
+			assert.Equal(t, Int(1), v)
+		}
+
+		//line count
+		v, err = ParseJSONRepresentation(ctx, `{"line-count__value":"1ln"}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, LineCount(1), v)
+		}
+
+		v, err = ParseJSONRepresentation(ctx, `"1ln"`, LINECOUNT_PATTERN)
+		if assert.NoError(t, err) {
+			assert.Equal(t, LineCount(1), v)
+		}
+
+		//byte count
+		v, err = ParseJSONRepresentation(ctx, `{"byte-count__value":"1B"}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, ByteCount(1), v)
+		}
+
+		v, err = ParseJSONRepresentation(ctx, `"1B"`, BYTECOUNT_PATTERN)
+		if assert.NoError(t, err) {
+			assert.Equal(t, ByteCount(1), v)
+		}
+
+		//rune count
+		v, err = ParseJSONRepresentation(ctx, `{"rune-count__value":"1rn"}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, RuneCount(1), v)
+		}
+
+		v, err = ParseJSONRepresentation(ctx, `"1rn"`, RUNECOUNT_PATTERN)
+		if assert.NoError(t, err) {
+			assert.Equal(t, RuneCount(1), v)
+		}
+
+		//path
+		v, err = ParseJSONRepresentation(ctx, `{"path__value":"/"}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, Path("/"), v)
+		}
+
+		v, err = ParseJSONRepresentation(ctx, `"/"`, PATH_PATTERN)
+		if assert.NoError(t, err) {
+			assert.Equal(t, Path("/"), v)
+		}
+
+		//scheme
+		v, err = ParseJSONRepresentation(ctx, `{"scheme__value":"https"}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, Scheme("https"), v)
+		}
+
+		v, err = ParseJSONRepresentation(ctx, `"https"`, SCHEME_PATTERN)
+		if assert.NoError(t, err) {
+			assert.Equal(t, Scheme("https"), v)
+		}
+
+		//host
+		v, err = ParseJSONRepresentation(ctx, `{"host__value":"https://example.com"}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, Host("https://example.com"), v)
+		}
+
+		v, err = ParseJSONRepresentation(ctx, `"https://example.com"`, HOST_PATTERN)
+		if assert.NoError(t, err) {
+			assert.Equal(t, Host("https://example.com"), v)
+		}
+
+		//url
+		v, err = ParseJSONRepresentation(ctx, `{"url__value":"https://example.com/"}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, URL("https://example.com/"), v)
+		}
+
+		v, err = ParseJSONRepresentation(ctx, `"https://example.com/"`, URL_PATTERN)
+		if assert.NoError(t, err) {
+			assert.Equal(t, URL("https://example.com/"), v)
+		}
+
+		//path pattern
+		v, err = ParseJSONRepresentation(ctx, `{"path-patt__value":"/..."}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, PathPattern("/..."), v)
+		}
+
+		v, err = ParseJSONRepresentation(ctx, `"/..."`, PATHPATTERN_PATTERN)
+		if assert.NoError(t, err) {
+			assert.Equal(t, PathPattern("/..."), v)
+		}
+
+		//host pattern
+		v, err = ParseJSONRepresentation(ctx, `{"host-patt__value":"https://*.com"}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, HostPattern("https://*.com"), v)
+		}
+
+		v, err = ParseJSONRepresentation(ctx, `"https://*.com"`, HOSTPATTERN_PATTERN)
+		if assert.NoError(t, err) {
+			assert.Equal(t, HostPattern("https://*.com"), v)
+		}
+
+		//url pattern
+		v, err = ParseJSONRepresentation(ctx, `{"url-patt__value":"https://example.com/..."}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, URLPattern("https://example.com/..."), v)
+		}
+
+		v, err = ParseJSONRepresentation(ctx, `"https://example.com/..."`, URLPATTERN_PATTERN)
+		if assert.NoError(t, err) {
+			assert.Equal(t, URLPattern("https://example.com/..."), v)
+		}
+	})
+
 	t.Run("object", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 
