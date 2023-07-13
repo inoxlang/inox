@@ -21,6 +21,41 @@ type UniquenessConstraint struct {
 	PropertyName core.PropertyName //set if UniquePropertyValue
 }
 
+func UniquenessConstraintFromValue(val core.Value) (UniquenessConstraint, bool) {
+	var uniqueness UniquenessConstraint
+	switch u := val.(type) {
+	case core.Identifier:
+		switch u {
+		case URL_UNIQUENESS_IDENT:
+			uniqueness.Type = UniqueURL
+		case REPR_UNIQUENESS_IDENT:
+			uniqueness.Type = UniqueRepr
+		default:
+			return UniquenessConstraint{}, false
+		}
+	case core.PropertyName:
+		uniqueness.Type = UniquePropertyValue
+		uniqueness.PropertyName = u
+	default:
+		return UniquenessConstraint{}, false
+	}
+
+	return uniqueness, true
+}
+
+func (c UniquenessConstraint) ToValue() core.Serializable {
+	switch c.Type {
+	case UniqueRepr:
+		return REPR_UNIQUENESS_IDENT
+	case UniqueURL:
+		return URL_UNIQUENESS_IDENT
+	case UniquePropertyValue:
+		return c.PropertyName
+	default:
+		panic(core.ErrUnreachable)
+	}
+}
+
 func (c UniquenessConstraint) Equal(otherConstraint UniquenessConstraint) bool {
 	if c.Type != otherConstraint.Type {
 		return false

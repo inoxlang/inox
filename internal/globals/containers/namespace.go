@@ -13,7 +13,8 @@ import (
 )
 
 const (
-	URL_UNIQUENESS_IDENT = core.Identifier("url")
+	URL_UNIQUENESS_IDENT  = core.Identifier("url")
+	REPR_UNIQUENESS_IDENT = core.Identifier("repr")
 )
 
 var (
@@ -34,19 +35,14 @@ var (
 				return nil, core.FmtErrInvalidArgumentAtPos(elementPattern, 0)
 			}
 
-			var uniqueness UniquenessConstraint
-			switch u := values[1].(type) {
-			case core.Identifier:
-				if u != URL_UNIQUENESS_IDENT {
-					return nil, core.FmtErrInvalidArgumentAtPos(elementPattern, 0)
-				}
-				uniqueness.Type = UniqueURL
-			case core.PropertyName:
-			default:
-				return nil, core.FmtErrInvalidArgumentAtPos(elementPattern, 0)
+			uniqueness, ok := UniquenessConstraintFromValue(values[1])
+			if !ok {
+				return nil, core.FmtErrInvalidArgumentAtPos(elementPattern, 1)
 			}
+
 			return NewSetPattern(SetConfig{
-				Element: elementPattern,
+				Element:    elementPattern,
+				Uniqueness: uniqueness,
 			}, core.CallBasedPatternReprMixin{
 				Callee: typePattern,
 				Params: utils.CopySlice(values),
@@ -68,13 +64,13 @@ var (
 			var uniqueness UniquenessConstraint
 			switch u := values[1].(type) {
 			case *symbolic.Identifier:
-				if u.HasConcreteName() && u.Name() != "url" {
-					return nil, commonfmt.FmtErrInvalidArgumentAtPos(1, "#url or a property name is expected")
+				if u.HasConcreteName() && (u.Name() != "url" && u.Name() != "repr") {
+					return nil, commonfmt.FmtErrInvalidArgumentAtPos(1, "#url, #repr or a property name is expected")
 				}
 				uniqueness.Type = UniqueURL
 			case *symbolic.PropertyName:
 			default:
-				return nil, commonfmt.FmtErrInvalidArgumentAtPos(1, "#url or a property name is expected")
+				return nil, commonfmt.FmtErrInvalidArgumentAtPos(1, "#url, #repr or a property name is expected")
 			}
 			return coll_symbolic.NewSetPatternWithElementPattern(elementPattern), nil
 		},
