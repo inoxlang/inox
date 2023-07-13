@@ -586,7 +586,6 @@ func (obj *Object) addPropMutationCallbackNoLock(ctx *Context, index int, val Va
 			obj.Unlock(state)
 
 			if !objWatchingDepth.IsSpecified() { //defensive check
-				obj.Unlock(state)
 				return
 			}
 
