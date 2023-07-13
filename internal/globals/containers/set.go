@@ -31,6 +31,7 @@ func init() {
 type Set struct {
 	elements map[string]core.Serializable
 	config   SetConfig
+	pattern  *SetPattern
 
 	//persistence
 	storage core.SerializedValueStorage //nillable
@@ -45,6 +46,7 @@ func NewSet(ctx *core.Context, elements core.Iterable, configObject ...*core.Obj
 		Uniqueness: UniquenessConstraint{
 			Type: UniqueRepr,
 		},
+		Element: core.SERIALIZABLE_PATTERN,
 	}
 
 	if len(configObject) > 0 {
@@ -78,7 +80,9 @@ func NewSet(ctx *core.Context, elements core.Iterable, configObject ...*core.Obj
 		})
 	}
 
-	return NewSetWithConfig(ctx, elements, config)
+	set := NewSetWithConfig(ctx, elements, config)
+	set.pattern = utils.Must(SET_PATTERN.Call([]core.Serializable{set.config.Element, set.config.Uniqueness.ToValue()})).(*SetPattern)
+	return set
 }
 
 func loadSet(ctx *core.Context, args core.InstanceLoadArgs) (core.UrlHolder, error) {
@@ -97,6 +101,7 @@ func loadSet(ctx *core.Context, args core.InstanceLoadArgs) (core.UrlHolder, err
 	}
 
 	set := NewSetWithConfig(ctx, nil, setPattern.config)
+	set.pattern = setPattern
 	set.storage = storage
 	set.path = path
 	set.url = storage.BaseURL().AppendAbsolutePath(path)
@@ -135,12 +140,15 @@ func loadSet(ctx *core.Context, args core.InstanceLoadArgs) (core.UrlHolder, err
 }
 
 func persistSet(ctx *core.Context, set *Set, path core.Path, storage core.SerializedValueStorage) error {
-	buff := bytes.NewBuffer(nil)
-	set.WriteRepresentation(ctx, buff, &core.ReprConfig{
-		AllVisible: true,
-	}, 0)
+	stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, nil, 0)
+	set.WriteJSONRepresentation(ctx, stream, core.JSONSerializationConfig{
+		ReprConfig: &core.ReprConfig{
+			AllVisible: true,
+		},
+		Pattern: set.pattern,
+	}, 9)
 
-	storage.SetSerialized(ctx, path, buff.String())
+	storage.SetSerialized(ctx, path, string(stream.Buffer()))
 	return nil
 }
 
@@ -169,8 +177,6 @@ func (set *Set) WriteRepresentation(ctx *core.Context, w io.Writer, config *core
 }
 
 func (set *Set) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stream, config core.JSONSerializationConfig, depth int) error {
-	buff := bytes.NewBufferString("[")
-
 	w.WriteArrayStart()
 
 	first := true
@@ -186,12 +192,11 @@ func (set *Set) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stream, c
 	}
 
 	w.WriteArrayEnd()
-	_, err := w.Write(buff.Bytes())
-	return err
+	return nil
 }
 
 type SetConfig struct {
-	Element    core.Pattern //optional
+	Element    core.Pattern
 	Uniqueness UniquenessConstraint
 }
 
@@ -338,6 +343,9 @@ type SetPattern struct {
 }
 
 func NewSetPattern(config SetConfig, callData core.CallBasedPatternReprMixin) *SetPattern {
+	if config.Element == nil {
+		config.Element = core.SERIALIZABLE_PATTERN
+	}
 	return &SetPattern{
 		config:                    config,
 		CallBasedPatternReprMixin: callData,

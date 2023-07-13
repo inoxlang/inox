@@ -24,6 +24,7 @@ func TestNewSet(t *testing.T) {
 			Uniqueness: UniquenessConstraint{
 				Type: UniqueRepr,
 			},
+			Element: core.SERIALIZABLE_PATTERN,
 		}, set.config)
 	})
 
@@ -35,6 +36,7 @@ func TestNewSet(t *testing.T) {
 			Uniqueness: UniquenessConstraint{
 				Type: UniqueRepr,
 			},
+			Element: core.SERIALIZABLE_PATTERN,
 		}, set.config)
 	})
 
@@ -77,6 +79,7 @@ func TestNewSet(t *testing.T) {
 			Uniqueness: UniquenessConstraint{
 				Type: UniqueURL,
 			},
+			Element: core.SERIALIZABLE_PATTERN,
 		}, set.config)
 	})
 
@@ -110,6 +113,7 @@ func TestNewSet(t *testing.T) {
 				Type:         UniquePropertyValue,
 				PropertyName: "id",
 			},
+			Element: core.SERIALIZABLE_PATTERN,
 		}, set.config)
 	})
 
@@ -232,7 +236,7 @@ func TestPersistLoadSet(t *testing.T) {
 			if !assert.True(t, ok) {
 				return
 			}
-			assert.Equal(t, "[1]", serialized)
+			assert.Equal(t, "[\"1\"]", serialized)
 		}
 
 		loadedSet, err := loadSet(ctx, core.InstanceLoadArgs{
@@ -266,7 +270,7 @@ func TestPersistLoadSet(t *testing.T) {
 			if !assert.True(t, ok) {
 				return
 			}
-			assert.Regexp(t, "(\\[1,2]|\\[2,1])", serialized)
+			assert.Regexp(t, `(\["1","2"]|\["2","1"])`, serialized)
 		}
 
 		loadedSet, err := loadSet(ctx, core.InstanceLoadArgs{
