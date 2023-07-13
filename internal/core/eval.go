@@ -26,6 +26,8 @@ var (
 	CTX_PTR_TYPE         = reflect.TypeOf(&Context{})
 
 	VALUE_TYPE = reflect.TypeOf((*Value)(nil)).Elem()
+	SERIALIZABLE_TYPE = reflect.TypeOf((*Serializable)(nil)).Elem()
+
 
 	ERROR_INTERFACE_TYPE                 = reflect.TypeOf((*error)(nil)).Elem()
 	READABLE_INTERFACE_TYPE              = reflect.TypeOf((*Readable)(nil)).Elem()

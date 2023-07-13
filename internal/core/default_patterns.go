@@ -14,7 +14,12 @@ var (
 	ANYVAL_PATTERN = &TypePattern{
 		Type:          VALUE_TYPE,
 		Name:          "any",
-		SymbolicValue: &symbolic.Any{},
+		SymbolicValue: symbolic.ANY,
+	}
+	SERIALIZABLE_PATTERN = &TypePattern{
+		Type:          SERIALIZABLE_TYPE,
+		Name:          "serializable",
+		SymbolicValue: symbolic.ANY_SERIALIZABLE,
 	}
 
 	//TODO: improve (using a type pattern can create issues)
