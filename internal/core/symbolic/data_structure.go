@@ -17,7 +17,7 @@ var (
 	DICTIONARY_PROPNAMES = []string{"get", "set"}
 
 	ANY_INDEXABLE = &AnyIndexable{}
-	ANY_ARRAY     = &Array{}
+	ANY_ARRAY     = NewArrayOf(ANY_SERIALIZABLE)
 	ANY_TUPLE     = NewTupleOf(ANY_SERIALIZABLE)
 	ANY_OBJ       = &Object{}
 	ANY_REC       = &Record{}
