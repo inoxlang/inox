@@ -13,7 +13,7 @@ type Sequence interface {
 type MutableSequence interface {
 	Sequence
 	set(i *Int, v SymbolicValue)
-	setSlice(start, end *Int, v SymbolicValue)
+	SetSlice(start, end *Int, v Sequence)
 }
 
 type MutableLengthSequence interface {

@@ -706,7 +706,7 @@ func (v *VM) run() {
 				endIndex = utils.Min(endIndex, Int(slice.Len()))
 			}
 
-			slice.setSlice(v.global.Ctx, int(startIndex), int(endIndex), val)
+			slice.SetSlice(v.global.Ctx, int(startIndex), int(endIndex), val.(Sequence))
 		case OpGetGlobal:
 			v.ip += 2
 			globalNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8

@@ -374,22 +374,21 @@ func (slice *RuneSlice) set(ctx *Context, i int, v Value) {
 	slice.watchers.InformAboutAsync(ctx, mutation, ShallowWatching, true)
 }
 
-func (slice *RuneSlice) setSlice(ctx *Context, start, end int, v Value) {
+func (slice *RuneSlice) SetSlice(ctx *Context, start, end int, seq Sequence) {
 	if slice.frozen {
 		panic(ErrAttemptToMutateFrozenValue)
 	}
 
-	indexable := v.(Indexable)
-	if indexable.Len() != end-start {
+	if seq.Len() != end-start {
 		panic(errors.New(FormatIndexableShouldHaveLen(end - start)))
 	}
 
 	for i := start; i < end; i++ {
-		slice.elements[i] = rune(indexable.At(ctx, i-start).(Rune))
+		slice.elements[i] = rune(seq.At(ctx, i-start).(Rune))
 	}
 
 	path := Path("/" + strconv.Itoa(int(start)) + ".." + strconv.Itoa(int(end-1)))
-	mutation := NewSetSliceAtRangeMutation(ctx, NewIncludedEndIntRange(int64(start), int64(end-1)), v.(Serializable), ShallowWatching, path)
+	mutation := NewSetSliceAtRangeMutation(ctx, NewIncludedEndIntRange(int64(start), int64(end-1)), seq.(Serializable), ShallowWatching, path)
 
 	slice.mutationCallbacks.CallMicrotasks(ctx, mutation)
 	slice.watchers.InformAboutAsync(ctx, mutation, ShallowWatching, true)

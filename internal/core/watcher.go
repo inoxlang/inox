@@ -14,8 +14,8 @@ const (
 )
 
 var (
-	_                               = []Watchable{&Object{}, &List{}, &RuneSlice{}, &DynamicValue{}}
-	_                               = []Watcher{stoppedWatcher{}, &GenericWatcher{}, &joinedWatchers{}, &PeriodicWatcher{}}
+	_                               = []Watchable{(*Object)(nil), (*List)(nil), (*RuneSlice)(nil), (*DynamicValue)(nil)}
+	_                               = []Watcher{stoppedWatcher{}, (*GenericWatcher)(nil), (*joinedWatchers)(nil), (*PeriodicWatcher)(nil)}
 	periodicWatcherGoroutineStarted = atomic.Bool{}
 	periodicWatcherSubscribeChan    = make(chan *PeriodicWatcher)
 	periodicWatcherUnsuscribeChan   = make(chan *PeriodicWatcher)
@@ -401,6 +401,29 @@ func (list *List) Watcher(ctx *Context, config WatcherConfiguration) Watcher {
 }
 
 func (s *RuneSlice) Watcher(ctx *Context, config WatcherConfiguration) Watcher {
+	if config.Depth == UnspecifiedWatchingDepth {
+		config.Depth = ShallowWatching
+	}
+
+	if config.Depth >= IntermediateDepthWatching {
+		panic(ErrIntermediateDepthWatchingNotSupported)
+	}
+
+	watcher := NewGenericWatcher(config)
+
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if s.watchers == nil {
+		s.watchers = NewValueWatchers()
+	}
+
+	s.watchers.Add(watcher)
+
+	return watcher
+}
+
+func (s *ByteSlice) Watcher(ctx *Context, config WatcherConfiguration) Watcher {
 	if config.Depth == UnspecifiedWatchingDepth {
 		config.Depth = ShallowWatching
 	}

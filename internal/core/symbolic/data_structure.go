@@ -463,7 +463,7 @@ func (l *List) slice(start, end *Int) Sequence {
 	}
 }
 
-func (l *List) setSlice(start, end *Int, v SymbolicValue) {
+func (l *List) SetSlice(start, end *Int, v Sequence) {
 
 }
 

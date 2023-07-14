@@ -3,6 +3,8 @@ package core
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"sync"
 )
 
 var (
@@ -31,6 +33,10 @@ type ByteSlice struct {
 	IsDataMutable bool
 	contentType   Mimetype
 	constraintId  ConstraintId
+
+	lock              sync.Mutex // exclusive access for initializing .watchers & .mutationCallbacks
+	watchers          *ValueWatchers
+	mutationCallbacks *MutationCallbacks
 }
 
 func NewByteSlice(bytes []byte, mutable bool, contentType Mimetype) *ByteSlice {
@@ -80,17 +86,24 @@ func (slice *ByteSlice) set(ctx *Context, i int, v Value) {
 		panic(fmt.Errorf("attempt to write a readonly byte slice"))
 	}
 	slice.Bytes[i] = byte(v.(Byte))
+
+	mutation := NewSetElemAtIndexMutation(ctx, i, v.(Byte), ShallowWatching, Path("/"+strconv.Itoa(i)))
+
+	slice.mutationCallbacks.CallMicrotasks(ctx, mutation)
+	slice.watchers.InformAboutAsync(ctx, mutation, ShallowWatching, true)
 }
 
-func (slice *ByteSlice) setSlice(ctx *Context, start, end int, v Value) {
+func (slice *ByteSlice) SetSlice(ctx *Context, start, end int, seq Sequence) {
 	if !slice.IsDataMutable {
 		panic(fmt.Errorf("attempt to write a readonly byte slice"))
 	}
-	i := start
 
-	for _, e := range v.(*ByteSlice).Bytes {
-		slice.Bytes[i] = e
-		i++
+	if seq.Len() != end-start {
+		panic(errors.New(FormatIndexableShouldHaveLen(end - start)))
+	}
+
+	for i := start; i < end; i++ {
+		slice.Bytes[i] = byte(seq.At(ctx, i-start).(Byte))
 	}
 }
 
@@ -156,7 +169,7 @@ func (c *BytesConcatenation) set(ctx *Context, i int, v Value) {
 	panic(fmt.Errorf("cannot mutate bytes concatenation %w", ErrNotImplementedYet))
 }
 
-func (c *BytesConcatenation) setSlice(ctx *Context, start, end int, v Value) {
+func (c *BytesConcatenation) SetSlice(ctx *Context, start, end int, seq Sequence) {
 	if !c.Mutable() {
 		panic(fmt.Errorf("attempt to write a readonly bytes concatenation"))
 	}

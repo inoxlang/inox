@@ -291,7 +291,7 @@ func (s *RuneSlice) slice(start, end *Int) Sequence {
 func (s *RuneSlice) set(i *Int, v SymbolicValue) {
 
 }
-func (s *RuneSlice) setSlice(start, end *Int, v SymbolicValue) {
+func (s *RuneSlice) SetSlice(start, end *Int, v Sequence) {
 
 }
 

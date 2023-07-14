@@ -1,6 +1,10 @@
 package core
 
-import "github.com/bits-and-blooms/bitset"
+import (
+	"errors"
+
+	"github.com/bits-and-blooms/bitset"
+)
 
 type underylingList interface {
 	Serializable
@@ -45,14 +49,13 @@ func (list *ValueList) set(ctx *Context, i int, v Value) {
 	list.elements[i] = v.(Serializable)
 }
 
-func (list *ValueList) setSlice(ctx *Context, start, end int, v Value) {
-	i := start
-	it := v.(*List).Iterator(ctx, IteratorConfiguration{})
+func (list *ValueList) SetSlice(ctx *Context, start, end int, seq Sequence) {
+	if seq.Len() != end-start {
+		panic(errors.New(FormatIndexableShouldHaveLen(end - start)))
+	}
 
-	for it.Next(ctx) {
-		e := it.Value(ctx)
-		list.elements[i] = e.(Serializable)
-		i++
+	for i := start; i < end; i++ {
+		list.elements[i] = seq.At(ctx, i-start).(Serializable)
 	}
 }
 
@@ -149,14 +152,13 @@ func (list *IntList) set(ctx *Context, i int, v Value) {
 	list.Elements[i] = v.(Int)
 }
 
-func (list *IntList) setSlice(ctx *Context, start, end int, v Value) {
-	i := start
-	it := v.(*List).Iterator(ctx, IteratorConfiguration{})
+func (list *IntList) SetSlice(ctx *Context, start, end int, seq Sequence) {
+	if seq.Len() != end-start {
+		panic(errors.New(FormatIndexableShouldHaveLen(end - start)))
+	}
 
-	for it.Next(ctx) {
-		e := it.Value(ctx)
-		list.Elements[i] = e.(Int)
-		i++
+	for i := start; i < end; i++ {
+		list.Elements[i] = seq.At(ctx, i-start).(Int)
 	}
 }
 
@@ -255,14 +257,13 @@ func (list *StringList) set(ctx *Context, i int, v Value) {
 	list.elements[i] = v.(StringLike)
 }
 
-func (list *StringList) setSlice(ctx *Context, start, end int, v Value) {
-	i := start
-	it := v.(*List).Iterator(ctx, IteratorConfiguration{})
+func (list *StringList) SetSlice(ctx *Context, start, end int, seq Sequence) {
+	if seq.Len() != end-start {
+		panic(errors.New(FormatIndexableShouldHaveLen(end - start)))
+	}
 
-	for it.Next(ctx) {
-		e := it.Value(ctx)
-		list.elements[i] = e.(StringLike)
-		i++
+	for i := start; i < end; i++ {
+		list.elements[i] = seq.At(ctx, i-start).(Str)
 	}
 }
 
@@ -365,15 +366,13 @@ func (list *BoolList) set(ctx *Context, i int, v Value) {
 	list.elements.SetTo(uint(i), bool(boolean))
 }
 
-func (list *BoolList) setSlice(ctx *Context, start, end int, v Value) {
-	i := start
-	it := v.(*List).Iterator(ctx, IteratorConfiguration{})
+func (list *BoolList) SetSlice(ctx *Context, start, end int, seq Sequence) {
+	if seq.Len() != end-start {
+		panic(errors.New(FormatIndexableShouldHaveLen(end - start)))
+	}
 
-	for it.Next(ctx) {
-		e := it.Value(ctx)
-		boolean := e.(Bool)
-		list.elements.SetTo(uint(i), bool(boolean))
-		i++
+	for i := start; i < end; i++ {
+		list.elements.SetTo(uint(i), bool(seq.At(ctx, i-start).(Bool)))
 	}
 }
 

@@ -100,7 +100,7 @@ func (s *ByteSlice) set(i *Int, v SymbolicValue) {
 
 }
 
-func (s *ByteSlice) setSlice(start, end *Int, v SymbolicValue) {
+func (s *ByteSlice) SetSlice(start, end *Int, v Sequence) {
 
 }
 
@@ -190,7 +190,7 @@ func (b *AnyBytesLike) slice(start, end *Int) Sequence {
 	return ANY_BYTE_SLICE
 }
 
-func (c *AnyBytesLike) setSlice(start, end *Int, v SymbolicValue) {
+func (c *AnyBytesLike) SetSlice(start, end *Int, v Sequence) {
 
 }
 
@@ -244,7 +244,7 @@ func (c *BytesConcatenation) set(i *Int, v SymbolicValue) {
 
 }
 
-func (c *BytesConcatenation) setSlice(start, end *Int, v SymbolicValue) {
+func (c *BytesConcatenation) SetSlice(start, end *Int, v Sequence) {
 
 }
 

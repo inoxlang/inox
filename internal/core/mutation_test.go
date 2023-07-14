@@ -292,7 +292,7 @@ func TestRuneSliceOnMutation(t *testing.T) {
 
 		// we modify the slice in the same goroutine since *RuneSlice is not sharable
 		time.Sleep(time.Microsecond)
-		slice.setSlice(ctx, 0, 2, setSlice)
+		slice.SetSlice(ctx, 0, 2, setSlice)
 
 		assert.True(t, called.Load())
 		assert.Equal(t, []rune("12c"), slice.elements)

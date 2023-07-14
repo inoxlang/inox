@@ -15,7 +15,7 @@ type MutableSequence interface {
 	// after the modification, set should inform the watchers about a mutation of kind SetElemAtIndex (if the MutableSequence is watchable)
 	set(ctx *Context, i int, v Value)
 
-	setSlice(ctx *Context, start, end int, v Value)
+	SetSlice(ctx *Context, start, end int, v Sequence)
 }
 
 type MutableLengthSequence interface {

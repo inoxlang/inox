@@ -731,7 +731,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 
 			if s, ok := slice.(MutableSequence); ok {
-				s.setSlice(state.Global.Ctx, int(startIndex.(Int)), int(endIndex.(Int)), right)
+				s.SetSlice(state.Global.Ctx, int(startIndex.(Int)), int(endIndex.(Int)), right.(Sequence))
 			}
 
 		default:
