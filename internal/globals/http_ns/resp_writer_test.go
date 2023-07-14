@@ -35,14 +35,14 @@ func TestHttpResponseWriter(t *testing.T) {
 				value: obj(core.ValMap{
 					"name": core.Str("foo"),
 				}, ctx),
-				outputJSON: `{"name":"foo"}`,
+				outputJSON: `{"object__value":{"name":"foo"}}`,
 				ok:         true,
 			},
 			{
 				value: list(obj(core.ValMap{
 					"name": core.Str("foo"),
 				}, ctx)),
-				outputJSON: `[{"name":"foo"}]`,
+				outputJSON: `{"list__value":[{"object__value":{"name":"foo"}}]}`,
 				ok:         true,
 			},
 			{

@@ -165,7 +165,7 @@ func TestHttpServerMapping(t *testing.T) {
 						%/... => handle
 					}
 				`,
-			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":{"int__value":"1"}}`}},
+			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`}},
 		},
 		"handler accessing a global function": {
 			input: `
@@ -179,7 +179,7 @@ func TestHttpServerMapping(t *testing.T) {
 						%/... => handle
 					}
 				`,
-			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":{"int__value":"1"}}`}},
+			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`}},
 		},
 		"JSON for model": {
 			input: `$$model = {a: 1}
@@ -187,7 +187,7 @@ func TestHttpServerMapping(t *testing.T) {
 				return Mapping {
 					%/... => model
 				}`,
-			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":{"int__value":"1"}}`}},
+			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`}},
 		},
 		"JSON for model with sensitive data, no defined visibility": {
 			input: `
@@ -200,7 +200,7 @@ func TestHttpServerMapping(t *testing.T) {
 				return Mapping {
 					%/... => model
 				}`,
-			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":{"int__value":"1"}}`}},
+			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`}},
 		},
 		"JSON for model with all fields set as public": {
 			input: `$$model = {
@@ -218,7 +218,12 @@ func TestHttpServerMapping(t *testing.T) {
 				return Mapping {
 					%/... => model
 				}`,
-			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"a":{"int__value":"1"},"e":{"emailaddr__value":"a@mail.com"},"password":"mypassword"}`}},
+			requests: []requestTestInfo{
+				{
+					acceptedContentType: core.JSON_CTYPE,
+					result:              `{"object__value":{"a":{"int__value":"1"},"e":{"emailaddr__value":"a@mail.com"},"password":"mypassword"}}`,
+				},
+			},
 		},
 		"IXON for model with no defined visibility": {
 			input: ` $$model = {
