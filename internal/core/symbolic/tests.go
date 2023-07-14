@@ -26,7 +26,7 @@ func _makeStateAndChunk(code string, includedFiles map[string]string, globals ..
 		},
 	}, false)
 	state.ctx.AddNamedPattern("str", &TypePattern{val: ANY_STR_LIKE}, false)
-	state.ctx.AddNamedPattern("obj", &TypePattern{val: NewAnyObject()}, false)
+	state.ctx.AddNamedPattern("object", &TypePattern{val: NewAnyObject()}, false)
 	state.ctx.AddNamedPattern("list", &TypePattern{val: NewListOf(ANY_SERIALIZABLE)}, false)
 	state.ctx.AddPatternNamespace("myns", NewPatternNamespace(map[string]Pattern{
 		"int": state.ctx.ResolveNamedPattern("int"),
