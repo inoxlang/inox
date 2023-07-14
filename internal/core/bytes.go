@@ -106,6 +106,12 @@ func (slice *ByteSlice) SetSlice(ctx *Context, start, end int, seq Sequence) {
 	for i := start; i < end; i++ {
 		slice.Bytes[i] = byte(seq.At(ctx, i-start).(Byte))
 	}
+
+	path := Path("/" + strconv.Itoa(int(start)) + ".." + strconv.Itoa(int(end-1)))
+	mutation := NewSetSliceAtRangeMutation(ctx, NewIncludedEndIntRange(int64(start), int64(end-1)), seq.(Serializable), ShallowWatching, path)
+
+	slice.mutationCallbacks.CallMicrotasks(ctx, mutation)
+	slice.watchers.InformAboutAsync(ctx, mutation, ShallowWatching, true)
 }
 
 func (s *ByteSlice) insertElement(ctx *Context, v Value, i Int) {
@@ -117,6 +123,11 @@ func (s *ByteSlice) insertElement(ctx *Context, v Value, i Int) {
 	s.Bytes = append(s.Bytes, 0)
 	copy(s.Bytes[i+1:], s.Bytes[i:len(s.Bytes)-1])
 	s.Bytes[i] = byte(b)
+
+	mutation := NewInsertElemAtIndexMutation(ctx, int(i), b, ShallowWatching, Path("/"+strconv.Itoa(int(i))))
+
+	s.mutationCallbacks.CallMicrotasks(ctx, mutation)
+	s.watchers.InformAboutAsync(ctx, mutation, ShallowWatching, true)
 }
 
 func (s *ByteSlice) removePosition(ctx *Context, i Int) {
@@ -134,6 +145,11 @@ func (s *ByteSlice) removePosition(ctx *Context, i Int) {
 		copy(s.Bytes[i:], s.Bytes[i+1:])
 		s.Bytes = s.Bytes[:len(s.Bytes)-1]
 	}
+
+	mutation := NewRemovePositionMutation(ctx, int(i), ShallowWatching, Path("/"+strconv.Itoa(int(i))))
+
+	s.mutationCallbacks.CallMicrotasks(ctx, mutation)
+	s.watchers.InformAboutAsync(ctx, mutation, ShallowWatching, true)
 }
 
 func (s *ByteSlice) removePositionRange(ctx *Context, r IntRange) {
@@ -154,6 +170,12 @@ func (s *ByteSlice) removePositionRange(ctx *Context, r IntRange) {
 		copy(s.Bytes[start:], s.Bytes[end+1:])
 		s.Bytes = s.Bytes[:len(s.Bytes)-r.Len()]
 	}
+
+	path := Path("/" + strconv.Itoa(int(r.KnownStart())) + ".." + strconv.Itoa(int(r.InclusiveEnd())))
+	mutation := NewRemovePositionRangeMutation(ctx, r, ShallowWatching, path)
+
+	s.mutationCallbacks.CallMicrotasks(ctx, mutation)
+	s.watchers.InformAboutAsync(ctx, mutation, ShallowWatching, true)
 }
 
 func (s *ByteSlice) insertSequence(ctx *Context, seq Sequence, i Int) {
@@ -179,17 +201,16 @@ func (s *ByteSlice) insertSequence(ctx *Context, seq Sequence, i Int) {
 	for ind := 0; ind < seqLen; ind++ {
 		s.Bytes[int(i)+ind] = byte(seq.At(ctx, ind).(Byte))
 	}
+
+	path := Path("/" + strconv.Itoa(int(i)))
+	mutation := NewInsertSequenceAtIndexMutation(ctx, int(i), seq, ShallowWatching, path)
+
+	s.mutationCallbacks.CallMicrotasks(ctx, mutation)
+	s.watchers.InformAboutAsync(ctx, mutation, ShallowWatching, true)
 }
 
 func (s *ByteSlice) appendSequence(ctx *Context, seq Sequence) {
-	if !s.IsDataMutable {
-		panic(ErrAttemptToMutateReadonlyByteSlice)
-	}
-
-	length := seq.Len()
-	for i := 0; i < length; i++ {
-		s.Bytes = append(s.Bytes, byte(seq.At(ctx, i).(Byte)))
-	}
+	s.insertSequence(ctx, seq, Int(s.Len()))
 }
 
 // Byte implements Value.

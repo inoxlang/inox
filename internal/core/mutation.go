@@ -722,6 +722,45 @@ func (s *RuneSlice) RemoveMutationCallback(ctx *Context, handle CallbackHandle) 
 	s.mutationCallbacks.RemoveMicrotask(handle)
 }
 
+func (s *ByteSlice) OnMutation(ctx *Context, microtask MutationCallbackMicrotask, config MutationWatchingConfiguration) (CallbackHandle, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if config.Depth == UnspecifiedWatchingDepth {
+		config.Depth = ShallowWatching
+	}
+
+	if config.Depth >= IntermediateDepthWatching {
+		return 0, ErrIntermediateDepthWatchingNotSupported
+	}
+
+	if s.mutationCallbacks == nil {
+		s.mutationCallbacks = NewMutationCallbackMicrotasks()
+	}
+
+	handle := s.mutationCallbacks.AddMicrotask(microtask, config)
+
+	return handle, nil
+}
+
+func (s *ByteSlice) RemoveMutationCallbackMicrotasks(ctx *Context) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if s.mutationCallbacks == nil {
+		return
+	}
+
+	s.mutationCallbacks.RemoveMicrotasks()
+}
+
+func (s *ByteSlice) RemoveMutationCallback(ctx *Context, handle CallbackHandle) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	s.mutationCallbacks.RemoveMicrotask(handle)
+}
+
 func (dyn *DynamicValue) OnMutation(ctx *Context, microtask MutationCallbackMicrotask, config MutationWatchingConfiguration) (CallbackHandle, error) {
 	dyn.lock.Lock()
 	defer dyn.lock.Unlock()

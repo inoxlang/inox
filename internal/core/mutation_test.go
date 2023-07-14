@@ -356,6 +356,160 @@ func TestRuneSliceOnMutation(t *testing.T) {
 	})
 }
 
+func TestByteSliceOnMutation(t *testing.T) {
+
+	t.Run("microtask should be called when an element is inserted", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		slice := NewByteSlice(nil, true, "")
+		called := atomic.Bool{}
+
+		_, err := slice.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			if !assert.False(t, called.Load()) {
+				return
+			}
+			called.Store(true)
+
+			assert.Equal(t, NewInsertElemAtIndexMutation(ctx, 0, Byte('a'), ShallowWatching, "/0"), mutation)
+
+			return true
+		}, MutationWatchingConfiguration{})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// we modify the list in the same goroutine since List is not sharable
+		time.Sleep(time.Microsecond)
+		slice.insertElement(ctx, Byte('a'), 0)
+
+		assert.True(t, called.Load())
+		assert.Equal(t, []byte("a"), slice.Bytes)
+	})
+
+	t.Run("microtask should be called when a sequence is inserted", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		slice := NewByteSlice(nil, true, "")
+		called := atomic.Bool{}
+
+		insertedSlice := NewByteSlice([]byte{'a'}, true, "")
+
+		_, err := slice.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			if !assert.False(t, called.Load()) {
+				return
+			}
+			called.Store(true)
+
+			assert.Equal(t, NewInsertSequenceAtIndexMutation(ctx, 0, insertedSlice, ShallowWatching, "/0"), mutation)
+
+			return true
+		}, MutationWatchingConfiguration{})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// we modify the slice in the same goroutine since *RuneSlice is not sharable
+		time.Sleep(time.Microsecond)
+		slice.insertSequence(ctx, insertedSlice, 0)
+
+		assert.True(t, called.Load())
+		assert.Equal(t, []byte("a"), slice.Bytes)
+	})
+
+	t.Run("microtask should be called when a slice is set", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		slice := NewByteSlice([]byte("abc"), true, "")
+		called := atomic.Bool{}
+
+		setSlice := NewByteSlice([]byte("12"), true, "")
+
+		_, err := slice.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			if !assert.False(t, called.Load()) {
+				return
+			}
+			called.Store(true)
+
+			assert.Equal(t, NewSetSliceAtRangeMutation(ctx, NewIncludedEndIntRange(0, 1), setSlice, ShallowWatching, "/0..1"), mutation)
+
+			return true
+		}, MutationWatchingConfiguration{})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// we modify the slice in the same goroutine since *RuneSlice is not sharable
+		time.Sleep(time.Microsecond)
+		slice.SetSlice(ctx, 0, 2, setSlice)
+
+		assert.True(t, called.Load())
+		assert.Equal(t, []byte("12c"), slice.Bytes)
+	})
+
+	t.Run("microtask should be called when an element is set", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		slice := NewByteSlice([]byte("a"), true, "")
+		called := atomic.Bool{}
+
+		_, err := slice.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			if !assert.False(t, called.Load()) {
+				return
+			}
+			called.Store(true)
+
+			assert.Equal(t, NewSetElemAtIndexMutation(ctx, 0, Byte('b'), ShallowWatching, "/0"), mutation)
+
+			return true
+		}, MutationWatchingConfiguration{})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// we modify the slice in the same goroutine since *RuneSlice is not sharable
+		time.Sleep(time.Microsecond)
+		slice.set(ctx, 0, Byte('b'))
+
+		assert.True(t, called.Load())
+		assert.Equal(t, []byte("b"), slice.Bytes)
+	})
+
+	t.Run("dynamic map invocation: microtask should NOT be called when an element is inserted if callback has been removed", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		slice := NewByteSlice(nil, true, "")
+		called := atomic.Bool{}
+
+		handle, err := slice.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			if !assert.False(t, called.Load()) {
+				return
+			}
+			called.Store(true)
+
+			return true
+		}, MutationWatchingConfiguration{})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// we modify the slice in the same goroutine since *RuneSlice is not sharable
+		slice.RemoveMutationCallback(ctx, handle)
+		slice.insertElement(ctx, Byte('a'), 0)
+
+		assert.False(t, called.Load())
+	})
+}
+
 func TestDynamicMemberOnMutation(t *testing.T) {
 
 	t.Run("dynamic member of object: microtask should be called when member is set", func(t *testing.T) {

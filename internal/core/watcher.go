@@ -14,7 +14,7 @@ const (
 )
 
 var (
-	_                               = []Watchable{(*Object)(nil), (*List)(nil), (*RuneSlice)(nil), (*DynamicValue)(nil)}
+	_                               = []Watchable{(*Object)(nil), (*List)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*DynamicValue)(nil)}
 	_                               = []Watcher{stoppedWatcher{}, (*GenericWatcher)(nil), (*joinedWatchers)(nil), (*PeriodicWatcher)(nil)}
 	periodicWatcherGoroutineStarted = atomic.Bool{}
 	periodicWatcherSubscribeChan    = make(chan *PeriodicWatcher)
@@ -298,7 +298,7 @@ type GenericWatcher struct {
 	NotClonableMixin
 
 	config WatcherConfiguration
-	values chan Value // watchable valie writes interesting values to this channel by calling .AddValueAsync
+	values chan Value // watchable value writes interesting values to this channel by calling .InformAboutAsync
 
 	stopped atomic.Bool
 }
