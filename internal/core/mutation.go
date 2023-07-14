@@ -17,6 +17,7 @@ var (
 		UpdateProp:            "update-prop",
 		InsertElemAtIndex:     "insert-elem-at-index",
 		SetElemAtIndex:        "set-elem-at-index",
+		SetSliceAtRange:       "set-slice-at-range",
 		InsertSequenceAtIndex: "insert-seq-at-index",
 		RemovePosition:        "remove-pos",
 		RemovePositionRange:   "remove-pos-range",
@@ -136,6 +137,19 @@ func NewSetElemAtIndexMutation(ctx *Context, index int, elem Serializable, depth
 
 	return Mutation{
 		Kind:               SetElemAtIndex,
+		Complete:           err == nil,
+		Data:               data,
+		DataElementLengths: sizes,
+		Depth:              depth,
+		Path:               path,
+	}
+}
+
+func NewSetSliceAtRangeMutation(ctx *Context, intRange IntRange, slice Serializable, depth WatchingDepth, path Path) Mutation {
+	data, sizes, err := WriteConcatenatedRepresentations(ctx, intRange, slice)
+
+	return Mutation{
+		Kind:               SetSliceAtRange,
 		Complete:           err == nil,
 		Data:               data,
 		DataElementLengths: sizes,
@@ -271,7 +285,7 @@ func (m Mutation) AffectedIndex(ctx *Context) Int {
 
 func (m Mutation) AffectedRange(ctx *Context) IntRange {
 	switch m.Kind {
-	case InsertElemAtIndex, SetElemAtIndex, InsertSequenceAtIndex, RemovePosition:
+	case SetSliceAtRange, RemovePositionRange:
 		return m.DataElem(ctx, 0).(IntRange)
 	default:
 		panic(ErrUnreachable)
@@ -317,6 +331,9 @@ func (m Mutation) ApplyTo(ctx *Context, v Value) error {
 		v.(IProps).SetProp(ctx, m.AffectedProperty(ctx), m.PropValue(ctx))
 	case SetElemAtIndex:
 		v.(MutableLengthSequence).set(ctx, int(m.AffectedIndex(ctx)), m.Element(ctx))
+	case SetSliceAtRange:
+		intRange := m.AffectedRange(ctx)
+		v.(MutableLengthSequence).setSlice(ctx, int(intRange.Start), int(intRange.End), m.Element(ctx))
 	case InsertElemAtIndex:
 		v.(MutableLengthSequence).insertElement(ctx, m.Element(ctx), Int(m.AffectedIndex(ctx)))
 	case InsertSequenceAtIndex:
@@ -341,6 +358,7 @@ const (
 	UpdateProp
 	InsertElemAtIndex
 	SetElemAtIndex
+	SetSliceAtRange
 	InsertSequenceAtIndex
 	RemovePosition
 	RemovePositionRange
