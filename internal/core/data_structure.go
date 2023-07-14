@@ -723,9 +723,32 @@ func NewDictionary(entries ValMap) *Dictionary {
 	return dict
 }
 
-func (d *Dictionary) Value(ctx *Context, key Serializable) (Value, bool) {
+func (d *Dictionary) Value(ctx *Context, key Serializable) (Value, Bool) {
 	v, ok := d.Entries[string(GetRepresentation(key, ctx))]
-	return v, ok
+	return v, Bool(ok)
+}
+
+func (d *Dictionary) SetValue(ctx *Context, key, value Serializable) {
+	d.Entries[string(GetRepresentation(key, ctx))] = value
+}
+
+func (d *Dictionary) Prop(ctx *Context, name string) Value {
+	switch name {
+	case "get":
+		return WrapGoMethod(d.Value)
+	case "set":
+		return WrapGoMethod(d.SetValue)
+	default:
+		panic(FormatErrPropertyDoesNotExist(name, d))
+	}
+}
+
+func (*Dictionary) SetProp(ctx *Context, name string, value Value) error {
+	return ErrCannotSetProp
+}
+
+func (*Dictionary) PropertyNames(ctx *Context) []string {
+	return symbolic.DICTIONARY_PROPNAMES
 }
 
 type Array []Value

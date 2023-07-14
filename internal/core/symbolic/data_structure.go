@@ -14,14 +14,7 @@ import (
 )
 
 var (
-	_ = []Indexable{
-		(*String)(nil), (*Array)(nil), (*List)(nil), (*Tuple)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*Object)(nil), (*IntRange)(nil),
-		(*AnyStringLike)(nil),
-	}
-
-	_ = []Sequence{
-		(*String)(nil), (*Array)(nil), (*List)(nil), (*Tuple)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil),
-	}
+	DICTIONARY_PROPNAMES = []string{"get", "set"}
 
 	ANY_INDEXABLE = &AnyIndexable{}
 	ANY_ARRAY     = &Array{}
@@ -31,6 +24,17 @@ var (
 	ANY_NAMESPACE = NewAnyNamespace()
 	ANY_DICT      = NewAnyDictionary()
 	ANY_KEYLIST   = NewAnyKeyList()
+
+	_ = []Indexable{
+		(*String)(nil), (*Array)(nil), (*List)(nil), (*Tuple)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*Object)(nil), (*IntRange)(nil),
+		(*AnyStringLike)(nil),
+	}
+
+	_ = []Sequence{
+		(*String)(nil), (*Array)(nil), (*List)(nil), (*Tuple)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil),
+	}
+
+	_ = []IProps{(*Object)(nil), (*Record)(nil), (*Namespace)(nil), (*Dictionary)(nil)}
 )
 
 // An Indexable represents a symbolic Indexable.
@@ -729,21 +733,41 @@ func (l *KeyList) WidestOfType() SymbolicValue {
 //
 
 type Dictionary struct {
-	Entries map[string]Serializable //if nil, matches any dictionary
-	Keys    map[string]Serializable
+	entries map[string]Serializable //if nil, matches any dictionary
+	keys    map[string]Serializable
 
 	SerializableMixin
+
+	UnassignablePropsMixin
 }
 
 func NewAnyDictionary() *Dictionary {
 	return &Dictionary{}
 }
 
+func NewUnitializedDictionary() *Dictionary {
+	return &Dictionary{}
+}
+
 func NewDictionary(entries map[string]Serializable, keys map[string]Serializable) *Dictionary {
-	return &Dictionary{
-		Entries: entries,
-		Keys:    keys,
+	if entries == nil {
+		entries = map[string]Serializable{}
 	}
+	return &Dictionary{
+		entries: entries,
+		keys:    keys,
+	}
+}
+
+func InitializeDictionary(d *Dictionary, entries map[string]Serializable, keys map[string]Serializable) {
+	if d.entries != nil || d.keys != nil {
+		panic(errors.New("dictionary is already initialized"))
+	}
+	if entries == nil {
+		entries = map[string]Serializable{}
+	}
+	d.entries = entries
+	d.keys = keys
 }
 
 func (dict *Dictionary) Test(v SymbolicValue) bool {
@@ -752,50 +776,81 @@ func (dict *Dictionary) Test(v SymbolicValue) bool {
 		return false
 	}
 
-	if dict.Entries == nil {
+	if dict.entries == nil {
 		return true
 	}
 
-	if len(dict.Entries) != len(otherDict.Entries) || otherDict.Entries == nil {
+	if len(dict.entries) != len(otherDict.entries) || otherDict.entries == nil {
 		return false
 	}
 
-	for i, e := range dict.Entries {
-		if !e.Test(otherDict.Entries[i]) {
+	for i, e := range dict.entries {
+		if !e.Test(otherDict.entries[i]) {
 			return false
 		}
 	}
 	return true
 }
 
+func (dict *Dictionary) Entries() map[string]Serializable {
+	return utils.CopyMap(dict.entries)
+}
+
+func (dict *Dictionary) Keys() map[string]Serializable {
+	return utils.CopyMap(dict.keys)
+}
+
 func (dict *Dictionary) hasKey(keyRepr string) bool {
-	if dict.Entries == nil {
+	if dict.entries == nil {
 		return true
 	}
-	_, ok := dict.Keys[keyRepr]
+	_, ok := dict.keys[keyRepr]
 	return ok
 }
 
 func (dict *Dictionary) get(keyRepr string) (SymbolicValue, bool) {
-	if dict.Entries == nil {
+	if dict.entries == nil {
 		return ANY, true
 	}
-	v, ok := dict.Entries[keyRepr]
+	v, ok := dict.entries[keyRepr]
 	return v, ok
 }
 
+func (dict *Dictionary) Get(ctx *Context, key Serializable) (SymbolicValue, *Bool) {
+	return ANY_SERIALIZABLE, ANY_BOOL
+}
+
+func (dict *Dictionary) SetValue(ctx *Context, key, value Serializable) {
+
+}
+
 func (dict *Dictionary) key() SymbolicValue {
-	if dict.Entries != nil {
-		if len(dict.Entries) == 0 {
+	if dict.entries != nil {
+		if len(dict.entries) == 0 {
 			return ANY
 		}
 		var keys []SymbolicValue
-		for _, k := range dict.Keys {
+		for _, k := range dict.keys {
 			keys = append(keys, k)
 		}
 		return joinValues(keys)
 	}
 	return ANY
+}
+
+func (dict *Dictionary) Prop(name string) SymbolicValue {
+	switch name {
+	case "get":
+		return WrapGoMethod(dict.Get)
+	case "set":
+		return WrapGoMethod(dict.SetValue)
+	default:
+		panic(FormatErrPropertyDoesNotExist(name, dict))
+	}
+}
+
+func (dict *Dictionary) PropertyNames() []string {
+	return DICTIONARY_PROPNAMES
 }
 
 func (dict *Dictionary) IteratorElementKey() SymbolicValue {
@@ -807,7 +862,7 @@ func (dict *Dictionary) IteratorElementValue() SymbolicValue {
 }
 
 func (dict *Dictionary) Widen() (SymbolicValue, bool) {
-	if dict.Entries == nil {
+	if dict.entries == nil {
 		return nil, false
 	}
 
@@ -815,21 +870,21 @@ func (dict *Dictionary) Widen() (SymbolicValue, bool) {
 	keys := map[string]Serializable{}
 	allAlreadyWidened := true
 
-	for keyRepr, v := range dict.Entries {
+	for keyRepr, v := range dict.entries {
 		widened, ok := v.Widen()
 		if ok {
 			allAlreadyWidened = false
 			v = widened.(Serializable)
 		}
 		widenedEntries[keyRepr] = v
-		keys[keyRepr] = dict.Keys[keyRepr]
+		keys[keyRepr] = dict.keys[keyRepr]
 	}
 
 	if allAlreadyWidened {
 		return &Dictionary{}, true
 	}
 
-	return &Dictionary{Entries: widenedEntries, Keys: keys}, true
+	return &Dictionary{entries: widenedEntries, keys: keys}, true
 }
 
 func (dict *Dictionary) IsWidenable() bool {
@@ -838,8 +893,8 @@ func (dict *Dictionary) IsWidenable() bool {
 }
 
 func (dict *Dictionary) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	if dict.Entries != nil {
-		if depth > config.MaxDepth && len(dict.Entries) > 0 {
+	if dict.entries != nil {
+		if depth > config.MaxDepth && len(dict.entries) > 0 {
 			utils.Must(w.Write(utils.StringAsBytes(":{(...)}")))
 			return
 		}
@@ -850,7 +905,7 @@ func (dict *Dictionary) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 		utils.Must(w.Write(utils.StringAsBytes(":{")))
 
 		var keys []string
-		for k := range dict.Entries {
+		for k := range dict.entries {
 			keys = append(keys, k)
 		}
 
@@ -877,7 +932,7 @@ func (dict *Dictionary) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 			utils.Must(w.Write(COLON_SPACE))
 
 			//value
-			v := dict.Entries[k]
+			v := dict.entries[k]
 
 			v.PrettyPrint(w, config, depth+1, indentCount)
 
@@ -895,7 +950,7 @@ func (dict *Dictionary) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 			utils.Must(w.Write(LF_CR))
 		}
 		utils.Must(w.Write(bytes.Repeat(config.Indent, depth)))
-		utils.PanicIfErr(w.WriteByte(']'))
+		utils.PanicIfErr(w.WriteByte('}'))
 		return
 	}
 	utils.Must(w.Write(utils.StringAsBytes("%dictionary")))

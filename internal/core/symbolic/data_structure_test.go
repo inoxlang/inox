@@ -666,75 +666,75 @@ func TestSymbolicDictionary(t *testing.T) {
 		oneTestTwoResult bool
 	}{
 		{
-			&Dictionary{Entries: nil},
-			&Dictionary{Entries: nil},
+			&Dictionary{entries: nil},
+			&Dictionary{entries: nil},
 			true,
 		},
 		{
-			&Dictionary{Entries: map[string]Serializable{}},
-			&Dictionary{Entries: nil},
+			&Dictionary{entries: map[string]Serializable{}},
+			&Dictionary{entries: nil},
 			false,
 		},
 		{
-			&Dictionary{Entries: nil},
-			&Dictionary{Entries: map[string]Serializable{}},
+			&Dictionary{entries: nil},
+			&Dictionary{entries: map[string]Serializable{}},
 			true,
 		},
 		{
-			&Dictionary{Entries: map[string]Serializable{}, Keys: map[string]Serializable{}},
-			&Dictionary{Entries: map[string]Serializable{}, Keys: map[string]Serializable{}},
+			&Dictionary{entries: map[string]Serializable{}, keys: map[string]Serializable{}},
+			&Dictionary{entries: map[string]Serializable{}, keys: map[string]Serializable{}},
 			true,
 		},
 		{
 			&Dictionary{
-				Entries: map[string]Serializable{"./a": &Int{}},
-				Keys:    map[string]Serializable{"./a": &Path{}},
+				entries: map[string]Serializable{"./a": &Int{}},
+				keys:    map[string]Serializable{"./a": &Path{}},
 			},
 			&Dictionary{
-				Entries: map[string]Serializable{},
-			},
-			false,
-		},
-		{
-			&Dictionary{
-				Entries: map[string]Serializable{},
-			},
-			&Dictionary{
-				Entries: map[string]Serializable{"./a": &Int{}},
-				Keys:    map[string]Serializable{"./a": &Path{}},
+				entries: map[string]Serializable{},
 			},
 			false,
 		},
 		{
 			&Dictionary{
-				Entries: map[string]Serializable{"./a": &Int{}},
-				Keys:    map[string]Serializable{"./a": &Path{}},
+				entries: map[string]Serializable{},
 			},
 			&Dictionary{
-				Entries: map[string]Serializable{"./a": &Int{}},
-				Keys:    map[string]Serializable{"./a": &Path{}},
+				entries: map[string]Serializable{"./a": &Int{}},
+				keys:    map[string]Serializable{"./a": &Path{}},
+			},
+			false,
+		},
+		{
+			&Dictionary{
+				entries: map[string]Serializable{"./a": &Int{}},
+				keys:    map[string]Serializable{"./a": &Path{}},
+			},
+			&Dictionary{
+				entries: map[string]Serializable{"./a": &Int{}},
+				keys:    map[string]Serializable{"./a": &Path{}},
 			},
 			true,
 		},
 		{
 			&Dictionary{
-				Entries: map[string]Serializable{"./a": ANY_SERIALIZABLE},
-				Keys:    map[string]Serializable{"./a": &Path{}},
+				entries: map[string]Serializable{"./a": ANY_SERIALIZABLE},
+				keys:    map[string]Serializable{"./a": &Path{}},
 			},
 			&Dictionary{
-				Entries: map[string]Serializable{"./a": &Int{}},
-				Keys:    map[string]Serializable{"./a": &Path{}},
+				entries: map[string]Serializable{"./a": &Int{}},
+				keys:    map[string]Serializable{"./a": &Path{}},
 			},
 			true,
 		},
 		{
 			&Dictionary{
-				Entries: map[string]Serializable{"./a": &Int{}},
-				Keys:    map[string]Serializable{"./a": &Path{}},
+				entries: map[string]Serializable{"./a": &Int{}},
+				keys:    map[string]Serializable{"./a": &Path{}},
 			},
 			&Dictionary{
-				Entries: map[string]Serializable{"./a": ANY_SERIALIZABLE},
-				Keys:    map[string]Serializable{"./a": &Path{}},
+				entries: map[string]Serializable{"./a": ANY_SERIALIZABLE},
+				keys:    map[string]Serializable{"./a": &Path{}},
 			},
 			false,
 		},
@@ -759,18 +759,18 @@ func TestSymbolicDictionary(t *testing.T) {
 			},
 			{
 				&Dictionary{
-					Entries: make(map[string]Serializable),
-					Keys:    make(map[string]Serializable),
+					entries: make(map[string]Serializable),
+					keys:    make(map[string]Serializable),
 				},
 				&Dictionary{},
 				true,
 			},
 			{
 				&Dictionary{
-					Entries: map[string]Serializable{
+					entries: map[string]Serializable{
 						"\"name\"": &String{},
 					},
-					Keys: map[string]Serializable{
+					keys: map[string]Serializable{
 						"\"name\"": &String{},
 					},
 				},
@@ -779,10 +779,10 @@ func TestSymbolicDictionary(t *testing.T) {
 			},
 			{
 				&Dictionary{
-					Entries: map[string]Serializable{
+					entries: map[string]Serializable{
 						"\"any\"": ANY_SERIALIZABLE,
 					},
-					Keys: map[string]Serializable{
+					keys: map[string]Serializable{
 						"\"any\"": &String{},
 					},
 				},
@@ -791,10 +791,10 @@ func TestSymbolicDictionary(t *testing.T) {
 			},
 			{
 				&Dictionary{
-					Entries: map[string]Serializable{
+					entries: map[string]Serializable{
 						"\"list\"": &List{generalElement: ANY_SERIALIZABLE},
 					},
-					Keys: map[string]Serializable{
+					keys: map[string]Serializable{
 						"\"list\"": &String{},
 					},
 				},
@@ -803,10 +803,10 @@ func TestSymbolicDictionary(t *testing.T) {
 			},
 			{
 				&Dictionary{
-					Entries: map[string]Serializable{
+					entries: map[string]Serializable{
 						"\"list\"": ANY_SERIALIZABLE,
 					},
-					Keys: map[string]Serializable{
+					keys: map[string]Serializable{
 						"\"list\"": &String{},
 					},
 				},

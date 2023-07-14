@@ -342,11 +342,11 @@ func (dict *Dictionary) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 		return r, nil
 	}
 
-	symbolicDict := &symbolic.Dictionary{
-		Entries: make(map[string]symbolic.Serializable),
-		Keys:    make(map[string]symbolic.Serializable),
-	}
+	symbolicDict := symbolic.NewUnitializedDictionary()
 	encountered[ptr] = symbolicDict
+
+	entries := make(map[string]symbolic.Serializable)
+	keys := make(map[string]symbolic.Serializable)
 
 	for keyRepresentation, v := range dict.Entries {
 		symbolicVal, err := _toSymbolicValue(ctx, v, false, encountered)
@@ -359,10 +359,11 @@ func (dict *Dictionary) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 		if err != nil {
 			return nil, err
 		}
-		symbolicDict.Entries[keyRepresentation] = symbolicVal.(symbolic.Serializable)
-		symbolicDict.Keys[keyRepresentation] = symbolicKey.(symbolic.Serializable)
+		entries[keyRepresentation] = symbolicVal.(symbolic.Serializable)
+		keys[keyRepresentation] = symbolicKey.(symbolic.Serializable)
 	}
 
+	symbolic.InitializeDictionary(symbolicDict, entries, keys)
 	return symbolicDict, nil
 }
 

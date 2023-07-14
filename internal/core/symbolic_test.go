@@ -117,12 +117,10 @@ func TestToSymbolicValue(t *testing.T) {
 
 		assert.IsType(t, &symbolic.Dictionary{}, v)
 		symbolicDict := v.(*symbolic.Dictionary)
-		assert.Len(t, symbolicDict.Entries, len(dict.Entries))
+		assert.Len(t, symbolicDict.Entries(), len(dict.Entries))
 
-		assert.Equal(t, &symbolic.Dictionary{
-			Entries: map[string]symbolic.Serializable{`"name"`: &symbolic.String{}, `./file`: &symbolic.Bool{}},
-			Keys:    map[string]symbolic.Serializable{`"name"`: &symbolic.String{}, `./file`: &symbolic.Path{}},
-		}, symbolicDict)
+		assert.Equal(t, map[string]symbolic.Serializable{`"name"`: &symbolic.String{}, `./file`: &symbolic.Bool{}}, symbolicDict.Entries())
+		assert.Equal(t, map[string]symbolic.Serializable{`"name"`: &symbolic.String{}, `./file`: &symbolic.Path{}}, symbolicDict.Keys())
 	})
 
 	t.Run("cycles", func(t *testing.T) {
