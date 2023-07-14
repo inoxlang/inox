@@ -185,7 +185,7 @@ func (dict *Dictionary) Equal(ctx *Context, other Value, alreadyCompared map[uin
 	alreadyCompared[addr] = otherAddr
 	alreadyCompared[otherAddr] = addr
 
-	if len(dict.Entries) != len(otherDict.Entries) {
+	if len(dict.entries) != len(otherDict.entries) {
 		return false
 	}
 
@@ -194,8 +194,8 @@ func (dict *Dictionary) Equal(ctx *Context, other Value, alreadyCompared map[uin
 	}
 
 	//check that all properties are equal
-	for k, v := range dict.Entries {
-		if !v.Equal(ctx, otherDict.Entries[k], alreadyCompared, depth+1) {
+	for k, v := range dict.entries {
+		if !v.Equal(ctx, otherDict.entries[k], alreadyCompared, depth+1) {
 			return false
 		}
 	}

@@ -14,7 +14,8 @@ const (
 )
 
 var (
-	_                               = []Watchable{(*Object)(nil), (*List)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*DynamicValue)(nil)}
+	_ = []Watchable{
+		(*Object)(nil), (*List)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*Dictionary)(nil), (*DynamicValue)(nil)}
 	_                               = []Watcher{stoppedWatcher{}, (*GenericWatcher)(nil), (*joinedWatchers)(nil), (*PeriodicWatcher)(nil)}
 	periodicWatcherGoroutineStarted = atomic.Bool{}
 	periodicWatcherSubscribeChan    = make(chan *PeriodicWatcher)

@@ -110,23 +110,23 @@ func (dict *Dictionary) Clone(clones map[uintptr]map[int]Value, depth int) (Valu
 	}
 
 	clone := &Dictionary{
-		Entries: make(map[string]Serializable, len(dict.Entries)),
-		Keys:    make(map[string]Serializable, len(dict.Entries)),
+		entries: make(map[string]Serializable, len(dict.entries)),
+		keys:    make(map[string]Serializable, len(dict.entries)),
 	}
 
 	clones[ptr] = make(map[int]Value, 1)
 	clones[ptr][0] = clone
 
-	for k, v := range dict.Keys {
-		clone.Keys[k] = v
+	for k, v := range dict.keys {
+		clone.keys[k] = v
 	}
 
-	for k, v := range dict.Entries {
+	for k, v := range dict.entries {
 		valueClone, err := v.Clone(clones, depth+1)
 		if err != nil {
 			return nil, err
 		}
-		clone.Entries[k] = valueClone.(Serializable)
+		clone.entries[k] = valueClone.(Serializable)
 	}
 
 	return clone, nil

@@ -1378,8 +1378,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		return tuple, nil
 	case *parse.DictionaryLiteral:
 		dict := Dictionary{
-			Entries: map[string]Serializable{},
-			Keys:    map[string]Serializable{},
+			entries: map[string]Serializable{},
+			keys:    map[string]Serializable{},
 		}
 
 		for _, entry := range n.Entries {
@@ -1394,8 +1394,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 
 			keyRepr := string(GetRepresentation(k.(Serializable), state.Global.Ctx))
-			dict.Entries[keyRepr] = v.(Serializable)
-			dict.Keys[keyRepr] = k.(Serializable)
+			dict.entries[keyRepr] = v.(Serializable)
+			dict.keys[keyRepr] = k.(Serializable)
 		}
 
 		return &dict, nil

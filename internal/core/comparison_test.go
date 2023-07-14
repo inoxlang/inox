@@ -100,12 +100,12 @@ func TestCompareDictionaries(t *testing.T) {
 
 	t.Run("equal dictionaries with a cycle", func(t *testing.T) {
 		d1 := NewDictionary(map[string]Serializable{})
-		d1.Entries["\"self\""] = d1
-		d1.Keys["\"self\""] = Str("self")
+		d1.entries["\"self\""] = d1
+		d1.keys["\"self\""] = Str("self")
 
 		d2 := NewDictionary(map[string]Serializable{})
-		d2.Entries["\"self\""] = d1
-		d2.Keys["\"self\""] = Str("self")
+		d2.entries["\"self\""] = d1
+		d2.keys["\"self\""] = Str("self")
 
 		assert.True(t, d1.Equal(ctx, d1, map[uintptr]uintptr{}, 0))
 		assert.True(t, d1.Equal(ctx, d2, map[uintptr]uintptr{}, 0))
@@ -114,12 +114,12 @@ func TestCompareDictionaries(t *testing.T) {
 
 	t.Run("non-equal dictionaries with a cycle", func(t *testing.T) {
 		d1 := NewDictionary(map[string]Serializable{"\"a\"": Int(0)})
-		d1.Entries["\"self\""] = d1
-		d1.Keys["\"self\""] = Str("self")
+		d1.entries["\"self\""] = d1
+		d1.keys["\"self\""] = Str("self")
 
 		d2 := NewDictionary(map[string]Serializable{"\"a\"": Int(1)})
-		d2.Entries["\"self\""] = d1
-		d2.Keys["\"self\""] = Str("self")
+		d2.entries["\"self\""] = d1
+		d2.keys["\"self\""] = Str("self")
 
 		assert.False(t, d1.Equal(ctx, d2, map[uintptr]uintptr{}, 0))
 		assert.False(t, d2.Equal(ctx, d1, map[uintptr]uintptr{}, 0))

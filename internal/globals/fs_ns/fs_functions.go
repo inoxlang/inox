@@ -82,15 +82,18 @@ func makeFileHierarchy(ctx *core.Context, key core.Path, content core.Value, dep
 		if !key.IsDirPath() {
 			return fmt.Errorf("value for file keys (key %s) should not be a dictionary", key)
 		}
-		for keyRepr, val := range v.Entries {
-			k := v.Keys[keyRepr].(core.Path)
+		err := v.ForEachEntry(ctx, func(keyRepr string, k, v core.Serializable) error {
 			pth := fls.Join(string(key), keyRepr)
-			if k.IsDirPath() {
+			if k.(core.Path).IsDirPath() {
 				pth += "/"
 			}
-			if err := makeFileHierarchy(ctx, core.Path(pth), val, depth+1); err != nil {
+			if err := makeFileHierarchy(ctx, core.Path(pth), v, depth+1); err != nil {
 				return err
 			}
+			return nil
+		})
+		if err != nil {
+			return err
 		}
 	case nil: //file with not specified content
 		return Mkfile(ctx, key)
@@ -136,10 +139,11 @@ func Mkdir(ctx *core.Context, args ...core.Value) error {
 				return parse.Continue, nil
 			}
 
-			for _, e := range contentDesc.Entries {
-				if err := core.Traverse(e, visit, core.TraversalConfiguration{MaxDepth: MAX_FILE_HIERARCHY_DEPTH}); err != nil {
-					return err
-				}
+			err := contentDesc.ForEachEntry(ctx, func(keyRepr string, key, v core.Serializable) error {
+				return core.Traverse(v, visit, core.TraversalConfiguration{MaxDepth: MAX_FILE_HIERARCHY_DEPTH})
+			})
+			if err != nil {
+				return err
 			}
 			//TODO: check that the hiearchy is not too deep
 		default:

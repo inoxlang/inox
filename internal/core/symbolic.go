@@ -348,13 +348,13 @@ func (dict *Dictionary) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 	entries := make(map[string]symbolic.Serializable)
 	keys := make(map[string]symbolic.Serializable)
 
-	for keyRepresentation, v := range dict.Entries {
+	for keyRepresentation, v := range dict.entries {
 		symbolicVal, err := _toSymbolicValue(ctx, v, false, encountered)
 		if err != nil {
 			return nil, err
 		}
 
-		key := dict.Keys[keyRepresentation]
+		key := dict.keys[keyRepresentation]
 		symbolicKey, err := _toSymbolicValue(ctx, key, false, encountered)
 		if err != nil {
 			return nil, err

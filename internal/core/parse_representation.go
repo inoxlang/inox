@@ -1273,8 +1273,8 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 						}
 						keyRepr := string(GetRepresentation(key, ctx)) // representation is context-dependent -> possible issues
 						dict := compoundValueStack[stackIndex].(*Dictionary)
-						dict.Keys[keyRepr] = key
-						dict.Entries[keyRepr] = val
+						dict.keys[keyRepr] = key
+						dict.entries[keyRepr] = val
 						dictKeyStack[stackIndex] = nil
 					} else {
 						return nil, i, nil
@@ -1715,8 +1715,8 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 					}
 					keyRepr := string(GetRepresentation(key, ctx)) // representation is context-dependent -> possible issues
 					dict := compoundValueStack[stackIndex].(*Dictionary)
-					dict.Keys[keyRepr] = key
-					dict.Entries[keyRepr] = val
+					dict.keys[keyRepr] = key
+					dict.entries[keyRepr] = val
 					dictKeyStack[stackIndex] = nil
 					state = rstateDictComma
 					continue

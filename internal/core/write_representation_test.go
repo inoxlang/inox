@@ -303,8 +303,8 @@ func TestDictRepresentation(t *testing.T) {
 
 	t.Run("cycle", func(t *testing.T) {
 		dict := NewDictionary(nil)
-		dict.Entries["self"] = dict
-		dict.Keys["self"] = Str("self")
+		dict.entries["self"] = dict
+		dict.keys["self"] = Str("self")
 
 	})
 }

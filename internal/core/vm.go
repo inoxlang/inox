@@ -838,16 +838,16 @@ func (v *VM) run() {
 			v.ip += 2
 			numElements := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
 			var dict = &Dictionary{
-				Entries: make(map[string]Serializable, numElements/2),
-				Keys:    make(map[string]Serializable, numElements/2),
+				entries: make(map[string]Serializable, numElements/2),
+				keys:    make(map[string]Serializable, numElements/2),
 			}
 
 			for i := v.sp - numElements; i < v.sp; i += 2 {
 				key := v.stack[i].(Serializable)
 				keyRepr := string(GetRepresentation(key, v.global.Ctx))
 				value := v.stack[i+1]
-				dict.Entries[keyRepr] = value.(Serializable)
-				dict.Keys[keyRepr] = key
+				dict.entries[keyRepr] = value.(Serializable)
+				dict.keys[keyRepr] = key
 			}
 			v.sp -= numElements
 			v.stack[v.sp] = dict

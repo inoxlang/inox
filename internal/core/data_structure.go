@@ -693,8 +693,8 @@ func (rec *Record) EntryMap() map[string]Serializable {
 
 // A Dictionnary maps representable values (keys) to any values, Dictionar implements Value.
 type Dictionary struct {
-	Entries map[string]Serializable
-	Keys    map[string]Serializable
+	entries map[string]Serializable
+	keys    map[string]Serializable
 }
 
 func convertKeyReprToValue(repr string) Serializable {
@@ -712,24 +712,34 @@ func convertKeyReprToValue(repr string) Serializable {
 
 func NewDictionary(entries ValMap) *Dictionary {
 	dict := &Dictionary{
-		Entries: map[string]Serializable{},
-		Keys:    map[string]Serializable{},
+		entries: map[string]Serializable{},
+		keys:    map[string]Serializable{},
 	}
 	for keyRepresentation, v := range entries {
-		dict.Entries[keyRepresentation] = v
-		dict.Keys[keyRepresentation] = convertKeyReprToValue(keyRepresentation)
+		dict.entries[keyRepresentation] = v
+		dict.keys[keyRepresentation] = convertKeyReprToValue(keyRepresentation)
 	}
 
 	return dict
 }
 
+func (d *Dictionary) ForEachEntry(ctx *Context, fn func(keyRepr string, key Serializable, v Serializable) error) error {
+	for keyRepr, val := range d.entries {
+		key := d.keys[keyRepr]
+		if err := fn(keyRepr, key, val); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (d *Dictionary) Value(ctx *Context, key Serializable) (Value, Bool) {
-	v, ok := d.Entries[string(GetRepresentation(key, ctx))]
+	v, ok := d.entries[string(GetRepresentation(key, ctx))]
 	return v, Bool(ok)
 }
 
 func (d *Dictionary) SetValue(ctx *Context, key, value Serializable) {
-	d.Entries[string(GetRepresentation(key, ctx))] = value
+	d.entries[string(GetRepresentation(key, ctx))] = value
 }
 
 func (d *Dictionary) Prop(ctx *Context, name string) Value {

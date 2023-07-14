@@ -656,7 +656,7 @@ func (rec Record) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth 
 func (dict *Dictionary) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	//TODO: prevent modification of the dictionary while this function is running
 
-	if depth > config.MaxDepth && len(dict.Entries) > 0 {
+	if depth > config.MaxDepth && len(dict.entries) > 0 {
 		utils.Must(w.Write(utils.StringAsBytes(":{(...)}")))
 		return
 	}
@@ -667,7 +667,7 @@ func (dict *Dictionary) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, 
 	utils.Must(w.Write(utils.StringAsBytes(":{")))
 
 	var keys []string
-	for k := range dict.Entries {
+	for k := range dict.entries {
 		keys = append(keys, k)
 	}
 
@@ -694,7 +694,7 @@ func (dict *Dictionary) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, 
 		utils.Must(w.Write(COLON_SPACE))
 
 		//value
-		v := dict.Entries[k]
+		v := dict.entries[k]
 
 		v.PrettyPrint(w, config, depth+1, indentCount)
 

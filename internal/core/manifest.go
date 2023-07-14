@@ -808,8 +808,8 @@ func getHostResolutions(desc Value) (map[Host]Value, error) {
 		return nil, fmt.Errorf("invalid manifest, description of host_resolution should be an object")
 	}
 
-	for k, v := range dict.Entries {
-		host, ok := dict.Keys[k].(Host)
+	for k, v := range dict.entries {
+		host, ok := dict.keys[k].(Host)
 		if !ok {
 			return nil, fmt.Errorf("invalid manifest, keys of of host_resolution should be hosts")
 		}

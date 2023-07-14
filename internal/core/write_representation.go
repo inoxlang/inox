@@ -373,7 +373,7 @@ func (dict *Dictionary) WriteRepresentation(ctx *Context, w io.Writer, config *R
 	}
 
 	var keys []string
-	for k := range dict.Entries {
+	for k := range dict.entries {
 		keys = append(keys, k)
 	}
 
@@ -381,7 +381,7 @@ func (dict *Dictionary) WriteRepresentation(ctx *Context, w io.Writer, config *R
 
 	first := true
 	for _, k := range keys {
-		v := dict.Entries[k]
+		v := dict.entries[k]
 		if !first {
 			_, err := w.Write([]byte{','})
 			if err != nil {
@@ -389,7 +389,7 @@ func (dict *Dictionary) WriteRepresentation(ctx *Context, w io.Writer, config *R
 			}
 		}
 		first = false
-		err = dict.Keys[k].WriteRepresentation(ctx, w, config, depth+1)
+		err = dict.keys[k].WriteRepresentation(ctx, w, config, depth+1)
 		if err != nil {
 			return err
 		}

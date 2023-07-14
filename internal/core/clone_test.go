@@ -67,14 +67,14 @@ func TestDictionaryClone(t *testing.T) {
 
 	//cycle
 	dict := NewDictionary(nil)
-	dict.Entries["\"self\""] = dict
-	dict.Keys["\"self\""] = Str("self")
+	dict.entries["\"self\""] = dict
+	dict.keys["\"self\""] = Str("self")
 	clone, err = dict.Clone(map[uintptr]map[int]Value{}, 0)
 	assert.NoError(t, err)
 	assert.IsType(t, &Dictionary{}, clone)
 	dictClone := clone.(*Dictionary)
-	assert.Equal(t, 1, len(dictClone.Entries))
-	assert.True(t, SamePointer(dictClone, dictClone.Entries["\"self\""].(*Dictionary)))
+	assert.Equal(t, 1, len(dictClone.entries))
+	assert.True(t, SamePointer(dictClone, dictClone.entries["\"self\""].(*Dictionary)))
 }
 
 func TestValueListClone(t *testing.T) {

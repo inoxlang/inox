@@ -118,12 +118,12 @@ func traverse(v Value, fn traverseVisitFn, config TraversalConfiguration, visite
 			}
 		}
 	case *Dictionary:
-		for _, elem := range val.Entries {
+		for _, elem := range val.entries {
 			if err := traverse(elem, fn, config, visited, depth+1); err != nil {
 				return err
 			}
 		}
-		for _, key := range val.Keys {
+		for _, key := range val.keys {
 			if err := traverse(key, fn, config, visited, depth+1); err != nil {
 				return err
 			}
