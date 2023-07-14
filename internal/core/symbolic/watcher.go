@@ -10,7 +10,7 @@ import (
 var (
 	ANY_WATCHABLE = &AnyWatchable{}
 
-	_ = []Watchable{&Object{}, &List{}, &RuneSlice{}, &DynamicValue{}}
+	_ = []Watchable{(*Object)(nil), (*List)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*DynamicValue)(nil)}
 	_ = []StreamSource{&Watcher{}}
 )
 

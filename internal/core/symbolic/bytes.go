@@ -36,6 +36,7 @@ type BytesLike interface {
 
 // A ByteSlice represents a symbolic ByteSlice.
 type ByteSlice struct {
+	_ int
 	SerializableMixin
 }
 
@@ -115,6 +116,10 @@ func (s *ByteSlice) insertSequence(seq Sequence, i *Int) *Error {
 }
 func (s *ByteSlice) appendSequence(seq Sequence) *Error {
 	return nil
+}
+
+func (s *ByteSlice) WatcherElement() SymbolicValue {
+	return ANY
 }
 
 // A Byte represents a symbolic Byte.
