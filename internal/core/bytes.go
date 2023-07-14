@@ -8,8 +8,9 @@ import (
 )
 
 var (
-	_ = []WrappedBytes{&ByteSlice{}}
-	_ = []BytesLike{&ByteSlice{}, &BytesConcatenation{}}
+	ErrAttemptToMutateReadonlyByteSlice = errors.New("attempt to write a readonly byte slice")
+	_                                   = []WrappedBytes{&ByteSlice{}}
+	_                                   = []BytesLike{&ByteSlice{}, &BytesConcatenation{}}
 )
 
 // A WrappedBytes represents a value that wraps a byte slice []byte.
@@ -83,7 +84,7 @@ func (slice *ByteSlice) At(ctx *Context, i int) Value {
 
 func (slice *ByteSlice) set(ctx *Context, i int, v Value) {
 	if !slice.IsDataMutable {
-		panic(fmt.Errorf("attempt to write a readonly byte slice"))
+		panic(ErrAttemptToMutateReadonlyByteSlice)
 	}
 	slice.Bytes[i] = byte(v.(Byte))
 
@@ -95,7 +96,7 @@ func (slice *ByteSlice) set(ctx *Context, i int, v Value) {
 
 func (slice *ByteSlice) SetSlice(ctx *Context, start, end int, seq Sequence) {
 	if !slice.IsDataMutable {
-		panic(fmt.Errorf("attempt to write a readonly byte slice"))
+		panic(ErrAttemptToMutateReadonlyByteSlice)
 	}
 
 	if seq.Len() != end-start {
@@ -108,23 +109,87 @@ func (slice *ByteSlice) SetSlice(ctx *Context, start, end int, seq Sequence) {
 }
 
 func (s *ByteSlice) insertElement(ctx *Context, v Value, i Int) {
-	panic(ErrNotImplementedYet)
+	if !s.IsDataMutable {
+		panic(ErrAttemptToMutateReadonlyByteSlice)
+	}
+
+	b := v.(Byte)
+	s.Bytes = append(s.Bytes, 0)
+	copy(s.Bytes[i+1:], s.Bytes[i:len(s.Bytes)-1])
+	s.Bytes[i] = byte(b)
 }
 
 func (s *ByteSlice) removePosition(ctx *Context, i Int) {
-	panic(ErrNotImplementedYet)
+	if !s.IsDataMutable {
+		panic(ErrAttemptToMutateReadonlyByteSlice)
+	}
+
+	if int(i) > len(s.Bytes) || i < 0 {
+		panic(ErrIndexOutOfRange)
+	}
+
+	if int(i) == len(s.Bytes)-1 { // remove last position
+		s.Bytes = s.Bytes[:len(s.Bytes)-1]
+	} else {
+		copy(s.Bytes[i:], s.Bytes[i+1:])
+		s.Bytes = s.Bytes[:len(s.Bytes)-1]
+	}
 }
 
 func (s *ByteSlice) removePositionRange(ctx *Context, r IntRange) {
-	panic(ErrNotImplementedYet)
+	if !s.IsDataMutable {
+		panic(ErrAttemptToMutateReadonlyByteSlice)
+	}
+
+	start := int(r.KnownStart())
+	end := int(r.InclusiveEnd())
+
+	if start > len(s.Bytes) || start < 0 || end >= len(s.Bytes) || end < 0 {
+		panic(ErrIndexOutOfRange)
+	}
+
+	if end == len(s.Bytes)-1 { // remove trailing sub slice
+		s.Bytes = s.Bytes[:len(s.Bytes)-r.Len()]
+	} else {
+		copy(s.Bytes[start:], s.Bytes[end+1:])
+		s.Bytes = s.Bytes[:len(s.Bytes)-r.Len()]
+	}
 }
 
 func (s *ByteSlice) insertSequence(ctx *Context, seq Sequence, i Int) {
-	panic(ErrNotImplementedYet)
+	if !s.IsDataMutable {
+		panic(ErrAttemptToMutateReadonlyByteSlice)
+	}
+
+	// TODO: lock sequence
+	seqLen := seq.Len()
+	if seqLen == 0 {
+		return
+	}
+
+	if cap(s.Bytes)-len(s.Bytes) < seqLen {
+		newSlice := make([]byte, len(s.Bytes)+seqLen)
+		copy(newSlice, s.Bytes)
+		s.Bytes = newSlice
+	} else {
+		s.Bytes = s.Bytes[:len(s.Bytes)+seqLen]
+	}
+
+	copy(s.Bytes[int(i)+seqLen:], s.Bytes[i:])
+	for ind := 0; ind < seqLen; ind++ {
+		s.Bytes[int(i)+ind] = byte(seq.At(ctx, ind).(Byte))
+	}
 }
 
 func (s *ByteSlice) appendSequence(ctx *Context, seq Sequence) {
-	panic(ErrNotImplementedYet)
+	if !s.IsDataMutable {
+		panic(ErrAttemptToMutateReadonlyByteSlice)
+	}
+
+	length := seq.Len()
+	for i := 0; i < length; i++ {
+		s.Bytes = append(s.Bytes, byte(seq.At(ctx, i).(Byte)))
+	}
 }
 
 // Byte implements Value.
