@@ -258,12 +258,44 @@ func TestRuneSliceOnMutation(t *testing.T) {
 			return
 		}
 
-		// we modify the list in the same goroutine since List is not sharable
+		// we modify the slice in the same goroutine since *RuneSlice is not sharable
 		time.Sleep(time.Microsecond)
 		slice.insertSequence(ctx, insertedSlice, 0)
 
 		assert.True(t, called.Load())
 		assert.Equal(t, []rune("a"), slice.elements)
+	})
+
+	t.Run("microtask should be called when a slice is set", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		slice := NewRuneSlice([]rune{'a', 'b', 'c'})
+		called := atomic.Bool{}
+
+		setSlice := NewRuneSlice([]rune{'1', '2'})
+
+		_, err := slice.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			if !assert.False(t, called.Load()) {
+				return
+			}
+			called.Store(true)
+
+			assert.Equal(t, NewSetSliceAtRangeMutation(ctx, NewIncludedEndIntRange(0, 1), setSlice, ShallowWatching, "/0..1"), mutation)
+
+			return true
+		}, MutationWatchingConfiguration{})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// we modify the slice in the same goroutine since *RuneSlice is not sharable
+		time.Sleep(time.Microsecond)
+		slice.setSlice(ctx, 0, 2, setSlice)
+
+		assert.True(t, called.Load())
+		assert.Equal(t, []rune("12c"), slice.elements)
 	})
 
 	t.Run("microtask should be called when an element is set", func(t *testing.T) {
@@ -288,7 +320,7 @@ func TestRuneSliceOnMutation(t *testing.T) {
 			return
 		}
 
-		// we modify the list in the same goroutine since List is not sharable
+		// we modify the slice in the same goroutine since *RuneSlice is not sharable
 		time.Sleep(time.Microsecond)
 		slice.set(ctx, 0, Rune('b'))
 
@@ -316,7 +348,7 @@ func TestRuneSliceOnMutation(t *testing.T) {
 			return
 		}
 
-		// we modify the list in the same goroutine since List is not sharable
+		// we modify the slice in the same goroutine since *RuneSlice is not sharable
 		slice.RemoveMutationCallback(ctx, handle)
 		slice.insertElement(ctx, Rune('a'), 0)
 

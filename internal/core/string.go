@@ -379,12 +379,20 @@ func (slice *RuneSlice) setSlice(ctx *Context, start, end int, v Value) {
 		panic(ErrAttemptToMutateFrozenValue)
 	}
 
-	i := start
-
-	for _, e := range v.(*RuneSlice).elements {
-		slice.elements[i] = e
-		i++
+	indexable := v.(Indexable)
+	if indexable.Len() != end-start {
+		panic(errors.New(FormatIndexableShouldHaveLen(end - start)))
 	}
+
+	for i := start; i < end; i++ {
+		slice.elements[i] = rune(indexable.At(ctx, i-start).(Rune))
+	}
+
+	path := Path("/" + strconv.Itoa(int(start)) + ".." + strconv.Itoa(int(end-1)))
+	mutation := NewSetSliceAtRangeMutation(ctx, NewIncludedEndIntRange(int64(start), int64(end-1)), v.(Serializable), ShallowWatching, path)
+
+	slice.mutationCallbacks.CallMicrotasks(ctx, mutation)
+	slice.watchers.InformAboutAsync(ctx, mutation, ShallowWatching, true)
 }
 
 func (slice *RuneSlice) Len() int {

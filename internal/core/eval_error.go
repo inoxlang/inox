@@ -72,7 +72,7 @@ var (
 
 	ErrValueHasNoProperties = errors.New("value has no properties")
 
-	ErrNotInDebugMode      = errors.New("not in debug mode")
+	ErrNotInDebugMode       = errors.New("not in debug mode")
 	ErrStepNonPausedProgram = errors.New("impossible to step in the execution of a non-paused program")
 )
 
@@ -90,6 +90,10 @@ func fmtTooManyPositionalArgs(positionalArgCount, positionalParamCount int) stri
 
 func fmtUnknownArgument(name string) string {
 	return fmt.Sprintf("unknown argument -%s", name)
+}
+
+func FormatIndexableShouldHaveLen(length int) string {
+	return fmt.Sprintf("indexable should have a length of %d", length)
 }
 
 type LocatedEvalError struct {
