@@ -712,7 +712,7 @@ func (dict *Dictionary) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, 
 		utils.Must(w.Write(LF_CR))
 	}
 	utils.Must(w.Write(bytes.Repeat(config.Indent, depth)))
-	utils.PanicIfErr(w.WriteByte(']'))
+	utils.PanicIfErr(w.WriteByte('}'))
 }
 
 func (list KeyList) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
