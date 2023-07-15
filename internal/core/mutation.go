@@ -717,6 +717,15 @@ func (d *Dictionary) OnMutation(ctx *Context, microtask MutationCallbackMicrotas
 	return handle, nil
 }
 
+func (d *Dictionary) removeEntryMutationCallbackNoLock(ctx *Context, keyRepr string, previousValue Serializable) {
+	if watchable, ok := previousValue.(Watchable); ok {
+		if previousHandle := d.entryMutationCallbacks[keyRepr]; previousHandle.Valid() {
+			watchable.RemoveMutationCallback(ctx, previousHandle)
+			d.entryMutationCallbacks[keyRepr] = FIRST_VALID_CALLBACK_HANDLE - 1
+		}
+	}
+}
+
 func (d *Dictionary) addEntryMutationCallbackNoLock(ctx *Context, keyRepr string, val Value) error {
 	if watchable, ok := val.(Watchable); ok {
 		config := MutationWatchingConfiguration{
