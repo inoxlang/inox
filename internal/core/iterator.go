@@ -357,7 +357,7 @@ type IntListIterator struct {
 }
 
 func (it IntListIterator) HasNext(*Context) bool {
-	return it.i < len(it.list.Elements)-1
+	return it.i < len(it.list.elements)-1
 }
 
 func (it *IntListIterator) Next(ctx *Context) bool {
@@ -374,7 +374,7 @@ func (it *IntListIterator) Key(ctx *Context) Value {
 }
 
 func (it *IntListIterator) Value(*Context) Value {
-	return it.list.Elements[it.i]
+	return it.list.elements[it.i]
 }
 
 func (list *IntList) Iterator(ctx *Context, config IteratorConfiguration) Iterator {

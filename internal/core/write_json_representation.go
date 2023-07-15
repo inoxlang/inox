@@ -305,7 +305,7 @@ func (list *IntList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, c
 	write := func(w *jsoniter.Stream) error {
 		w.WriteArrayStart()
 		first := true
-		for i, v := range list.Elements {
+		for i, v := range list.elements {
 			if !first {
 				w.WriteMore()
 			}

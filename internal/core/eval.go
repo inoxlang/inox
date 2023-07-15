@@ -353,7 +353,7 @@ func createBestSuitedList(ctx *Context, values []Serializable, elemType Pattern)
 			for i, e := range values {
 				integers[i] = e.(Int)
 			}
-			return WrapUnderylingList(&IntList{Elements: integers})
+			return WrapUnderylingList(&IntList{elements: integers})
 		}
 	}
 

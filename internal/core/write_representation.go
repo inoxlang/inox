@@ -476,7 +476,7 @@ func (list *IntList) WriteRepresentation(ctx *Context, w io.Writer, config *Repr
 		return err
 	}
 	first := true
-	for _, v := range list.Elements {
+	for _, v := range list.elements {
 		if !first {
 			_, err = w.Write([]byte{','})
 			if err != nil {

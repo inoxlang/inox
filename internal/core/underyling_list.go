@@ -110,7 +110,6 @@ func (l *ValueList) removePositionRange(ctx *Context, r IntRange) {
 }
 
 func (l *ValueList) insertSequence(ctx *Context, seq Sequence, i Int) {
-	// TODO: lock sequence
 	seqLen := seq.Len()
 	if seqLen == 0 {
 		return
@@ -137,7 +136,7 @@ func (l *ValueList) appendSequence(ctx *Context, seq Sequence) {
 
 // IntList implements underylingList
 type IntList struct {
-	Elements     []Int
+	elements     []Int
 	constraintId ConstraintId
 }
 
@@ -146,11 +145,11 @@ func NewWrappedIntList(elements ...Int) *List {
 }
 
 func NewWrappedIntListFrom(elements []Int) *List {
-	return &List{underylingList: &IntList{Elements: elements}}
+	return &List{underylingList: &IntList{elements: elements}}
 }
 
 func newIntList(elements ...Int) *IntList {
-	return &IntList{Elements: elements}
+	return &IntList{elements: elements}
 }
 
 func (list *IntList) ContainsSimple(ctx *Context, v Serializable) bool {
@@ -163,7 +162,7 @@ func (list *IntList) ContainsSimple(ctx *Context, v Serializable) bool {
 		return false
 	}
 
-	for _, n := range list.Elements {
+	for _, n := range list.elements {
 		if n == integer {
 			return true
 		}
@@ -172,7 +171,7 @@ func (list *IntList) ContainsSimple(ctx *Context, v Serializable) bool {
 }
 
 func (list *IntList) set(ctx *Context, i int, v Value) {
-	list.Elements[i] = v.(Int)
+	list.elements[i] = v.(Int)
 }
 
 func (list *IntList) SetSlice(ctx *Context, start, end int, seq Sequence) {
@@ -181,28 +180,28 @@ func (list *IntList) SetSlice(ctx *Context, start, end int, seq Sequence) {
 	}
 
 	for i := start; i < end; i++ {
-		list.Elements[i] = seq.At(ctx, i-start).(Int)
+		list.elements[i] = seq.At(ctx, i-start).(Int)
 	}
 }
 
 func (list *IntList) slice(start, end int) Sequence {
 	sliceCopy := make([]Int, end-start)
-	copy(sliceCopy, list.Elements[start:end])
+	copy(sliceCopy, list.elements[start:end])
 
-	return &List{underylingList: &IntList{Elements: sliceCopy}}
+	return &List{underylingList: &IntList{elements: sliceCopy}}
 }
 
 func (list *IntList) Len() int {
-	return len(list.Elements)
+	return len(list.elements)
 }
 
 func (list *IntList) At(ctx *Context, i int) Value {
-	return list.Elements[i]
+	return list.elements[i]
 }
 
 func (list *IntList) append(ctx *Context, values ...Serializable) {
 	for _, val := range values {
-		list.Elements = append(list.Elements, val.(Int))
+		list.elements = append(list.elements, val.(Int))
 	}
 }
 
@@ -212,32 +211,54 @@ func (l *IntList) insertElement(ctx *Context, v Value, i Int) {
 		panic(ErrInsertionIndexOutOfRange)
 	}
 	if i == length {
-		l.Elements = append(l.Elements, v.(Int))
+		l.elements = append(l.elements, v.(Int))
 	} else {
-		l.Elements = append(l.Elements, 0)
-		copy(l.Elements[i+1:], l.Elements[i:])
-		l.Elements[i] = v.(Int)
+		l.elements = append(l.elements, 0)
+		copy(l.elements[i+1:], l.elements[i:])
+		l.elements[i] = v.(Int)
 	}
 }
 
 func (l *IntList) removePosition(ctx *Context, i Int) {
-	panic(ErrNotImplementedYet)
-	// if i <= len(l.Elements)-1 {
-	// 	copy(l.Elements[i:], l.Elements[i+1:])
-	// }
-	// l.Elements = l.Elements[:len(l.Elements)-1]
+	if int(i) <= len(l.elements)-1 {
+		copy(l.elements[i:], l.elements[i+1:])
+	}
+	l.elements = l.elements[:len(l.elements)-1]
 }
 
 func (l *IntList) removePositionRange(ctx *Context, r IntRange) {
-	panic(ErrNotImplementedYet)
+	end := int(r.InclusiveEnd())
+	start := int(r.Start)
+
+	if end <= len(l.elements)-1 {
+		copy(l.elements[start:], l.elements[end+1:])
+	}
+	l.elements = l.elements[:len(l.elements)-r.Len()]
 }
 
 func (l *IntList) insertSequence(ctx *Context, seq Sequence, i Int) {
-	panic(ErrNotImplementedYet)
+	seqLen := seq.Len()
+	if seqLen == 0 {
+		return
+	}
+
+	if cap(l.elements)-len(l.elements) < seqLen {
+		newSlice := make([]Int, len(l.elements)+seqLen)
+		copy(newSlice, l.elements)
+		l.elements = newSlice
+	} else {
+		l.elements = l.elements[:len(l.elements)+seqLen]
+	}
+
+	copy(l.elements[int(i)+seqLen:], l.elements[i:])
+
+	for ind := 0; ind < seqLen; ind++ {
+		l.elements[int(i)+ind] = seq.At(ctx, ind).(Int)
+	}
 }
 
 func (l *IntList) appendSequence(ctx *Context, seq Sequence) {
-	panic(ErrNotImplementedYet)
+	l.insertSequence(ctx, seq, Int(l.Len()))
 }
 
 // StringList implements underylingList

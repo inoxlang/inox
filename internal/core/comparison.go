@@ -381,8 +381,8 @@ func (list *IntList) Equal(ctx *Context, other Value, alreadyCompared map[uintpt
 	switch other := otherList.(type) {
 	case *IntList:
 		//check that all elements are equal
-		for i, v := range list.Elements {
-			if v != other.Elements[i] {
+		for i, v := range list.elements {
+			if v != other.elements[i] {
 				return false
 			}
 		}
@@ -390,7 +390,7 @@ func (list *IntList) Equal(ctx *Context, other Value, alreadyCompared map[uintpt
 		it := other.Iterator(ctx, IteratorConfiguration{})
 
 		//check that all elements are equal
-		for _, v := range list.Elements {
+		for _, v := range list.elements {
 			it.Next(ctx)
 			otherElem := it.Value(ctx)
 			if integer, ok := otherElem.(Int); !ok || v != integer {

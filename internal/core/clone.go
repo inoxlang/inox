@@ -213,7 +213,7 @@ func (list *IntList) Clone(clones map[uintptr]map[int]Value, depth int) (Value, 
 	}
 
 	clone := &IntList{
-		Elements: make([]Int, list.Len()),
+		elements: make([]Int, list.Len()),
 	}
 	clones[ptr] = map[int]Value{0: clone}
 
@@ -260,7 +260,7 @@ func (list *StringList) Clone(clones map[uintptr]map[int]Value, depth int) (Valu
 	}
 
 	clone := &IntList{
-		Elements: make([]Int, list.Len()),
+		elements: make([]Int, list.Len()),
 	}
 	clones[ptr] = map[int]Value{0: clone}
 
