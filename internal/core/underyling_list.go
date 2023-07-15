@@ -443,7 +443,14 @@ func (list *BoolList) SetSlice(ctx *Context, start, end int, seq Sequence) {
 }
 
 func (list *BoolList) slice(start, end int) Sequence {
-	panic(ErrNotImplementedYet)
+	bitSet := bitset.New(uint(end - start))
+	newIndex := uint(0)
+
+	for i := uint(start); i < uint(end); i, newIndex = i+1, newIndex+1 {
+		bitSet.SetTo(newIndex, list.elements.Test(i))
+	}
+
+	return &BoolList{elements: bitSet,}
 }
 
 func (list *BoolList) Len() int {
@@ -459,29 +466,38 @@ func (list *BoolList) At(ctx *Context, i int) Value {
 }
 
 func (list *BoolList) append(ctx *Context, values ...Serializable) {
-	panic(ErrNotImplementedYet)
+	newLength := list.Len() + len(values)
+	newBitSet := bitset.New(uint(newLength))
+	copied := list.elements.Copy(newBitSet)
+	if copied != uint(list.Len()) {
+		panic(ErrUnreachable)
+	}
+	list.elements = newBitSet
 }
 
 func (l *BoolList) insertElement(ctx *Context, v Value, i Int) {
-	panic(ErrNotImplementedYet)
+	l.elements.InsertAt(uint(i))
+	l.set(ctx, int(i), v)
 }
 
 func (l *BoolList) removePosition(ctx *Context, i Int) {
-	panic(ErrNotImplementedYet)
-	// if i <= len(l.Elements)-1 {
-	// 	copy(l.Elements[i:], l.Elements[i+1:])
-	// }
-	// l.Elements = l.Elements[:len(l.Elements)-1]
+	l.elements.DeleteAt(uint(i))
 }
 
 func (l *BoolList) removePositionRange(ctx *Context, r IntRange) {
-	panic(ErrNotImplementedYet)
+	index := int(r.Start)
+	for i := 0; i < r.Len(); i++ {
+		l.elements.DeleteAt(uint(index))
+	}
 }
 
 func (l *BoolList) insertSequence(ctx *Context, seq Sequence, i Int) {
-	panic(ErrNotImplementedYet)
+	seqLen := seq.Len()
+	for ind := seqLen - 1; ind >= 0; ind-- {
+		l.insertElement(ctx, seq.At(ctx, ind).(Serializable), i)
+	}
 }
 
 func (l *BoolList) appendSequence(ctx *Context, seq Sequence) {
-	panic(ErrNotImplementedYet)
+	l.insertSequence(ctx, seq, Int(l.Len()))
 }

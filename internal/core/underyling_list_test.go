@@ -245,3 +245,112 @@ func TestStringList(t *testing.T) {
 		})
 	})
 }
+
+func TestBoolList(t *testing.T) {
+
+	//TODO: add more cases
+
+	t.Run("set", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		list := newBoolList(False)
+		list.set(ctx, 0, True)
+
+		if assert.Equal(t, 1, list.Len()) {
+			assert.Equal(t, True, list.At(ctx, 0))
+		}
+	})
+
+	t.Run("setSlice", func(t *testing.T) {
+		t.Run("single element", func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			list := newBoolList(False)
+			list.SetSlice(ctx, 0, 1, newBoolList(True))
+
+			if assert.Equal(t, 1, list.Len()) {
+				assert.Equal(t, True, list.At(ctx, 0))
+			}
+		})
+
+		t.Run("several elements", func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			list := newBoolList(False, True)
+			list.SetSlice(ctx, 0, 2, newBoolList(True, False))
+
+			if assert.Equal(t, 2, list.Len()) {
+				assert.Equal(t, True, list.At(ctx, 0))
+				assert.Equal(t, False, list.At(ctx, 1))
+			}
+		})
+	})
+
+	t.Run("insertElement", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		list := newBoolList(False)
+		list.insertElement(ctx, True, 0)
+
+		if assert.Equal(t, 2, list.Len()) {
+			assert.Equal(t, True, list.At(ctx, 0))
+			assert.Equal(t, False, list.At(ctx, 1))
+		}
+	})
+
+	t.Run("insertSequence", func(t *testing.T) {
+		t.Run("at existing index", func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			list := newBoolList(False)
+			list.insertSequence(ctx, newBoolList(True, True), 0)
+
+			if assert.Equal(t, 3, list.Len()) {
+				assert.Equal(t, True, list.At(ctx, 0))
+				assert.Equal(t, True, list.At(ctx, 1))
+				assert.Equal(t, False, list.At(ctx, 2))
+			}
+		})
+		t.Run("at exclusive end", func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			list := newBoolList(False)
+			list.insertSequence(ctx, newBoolList(True, True), 1)
+
+			if assert.Equal(t, 3, list.Len()) {
+				assert.Equal(t, False, list.At(ctx, 0))
+				assert.Equal(t, True, list.At(ctx, 1))
+				assert.Equal(t, True, list.At(ctx, 2))
+			}
+		})
+	})
+
+	t.Run("appendSequence", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		list := newBoolList(False)
+		list.appendSequence(ctx, newBoolList(True, True))
+
+		if assert.Equal(t, 3, list.Len()) {
+			assert.Equal(t, False, list.At(ctx, 0))
+			assert.Equal(t, True, list.At(ctx, 1))
+			assert.Equal(t, True, list.At(ctx, 2))
+		}
+	})
+
+	t.Run("removePosition", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		list := newBoolList(False)
+		list.removePosition(ctx, 0)
+		assert.Equal(t, 0, list.Len())
+	})
+
+	t.Run("removePositionRange", func(t *testing.T) {
+		t.Run("single element", func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			list := newBoolList(False)
+			list.removePositionRange(ctx, NewIncludedEndIntRange(0, 0))
+			assert.Equal(t, 0, list.Len())
+		})
+
+		t.Run("several elements", func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			list := newBoolList(False, True)
+			list.removePositionRange(ctx, NewIncludedEndIntRange(0, 1))
+			assert.Equal(t, 0, list.Len())
+		})
+	})
+}
