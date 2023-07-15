@@ -93,23 +93,46 @@ func (l *ValueList) insertElement(ctx *Context, v Value, i Int) {
 }
 
 func (l *ValueList) removePosition(ctx *Context, i Int) {
-	panic(ErrNotImplementedYet)
-	// if i <= len(l.Elements)-1 {
-	// 	copy(l.Elements[i:], l.Elements[i+1:])
-	// }
-	// l.Elements = l.Elements[:len(l.Elements)-1]
+	if int(i) <= len(l.elements)-1 {
+		copy(l.elements[i:], l.elements[i+1:])
+	}
+	l.elements = l.elements[:len(l.elements)-1]
 }
 
 func (l *ValueList) removePositionRange(ctx *Context, r IntRange) {
-	panic(ErrNotImplementedYet)
+	end := int(r.InclusiveEnd())
+	start := int(r.Start)
+
+	if end <= len(l.elements)-1 {
+		copy(l.elements[start:], l.elements[end+1:])
+	}
+	l.elements = l.elements[:len(l.elements)-r.Len()]
 }
 
 func (l *ValueList) insertSequence(ctx *Context, seq Sequence, i Int) {
-	panic(ErrNotImplementedYet)
+	// TODO: lock sequence
+	seqLen := seq.Len()
+	if seqLen == 0 {
+		return
+	}
+
+	if cap(l.elements)-len(l.elements) < seqLen {
+		newSlice := make([]Serializable, len(l.elements)+seqLen)
+		copy(newSlice, l.elements)
+		l.elements = newSlice
+	} else {
+		l.elements = l.elements[:len(l.elements)+seqLen]
+	}
+
+	copy(l.elements[int(i)+seqLen:], l.elements[i:])
+
+	for ind := 0; ind < seqLen; ind++ {
+		l.elements[int(i)+ind] = seq.At(ctx, ind).(Serializable)
+	}
 }
 
 func (l *ValueList) appendSequence(ctx *Context, seq Sequence) {
-	panic(ErrNotImplementedYet)
+	l.insertSequence(ctx, seq, Int(l.Len()))
 }
 
 // IntList implements underylingList
