@@ -112,6 +112,55 @@ func TestObjectOnMutation(t *testing.T) {
 	})
 }
 
+func TestDictionaryOnMutation(t *testing.T) {
+	t.Run("callback microtask should be called after additional property is set", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		dict := NewDictionary(ValMap{})
+		called := atomic.Bool{}
+
+		_, err := dict.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			called.Store(true)
+
+			assert.Equal(t, NewAddEntryMutation(ctx, Str("a"), Int(1), ShallowWatching, `/"a"`), mutation)
+			return true
+		}, MutationWatchingConfiguration{Depth: ShallowWatching})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		dict.SetValue(ctx, Str("a"), Int(1))
+
+		assert.True(t, called.Load())
+	})
+
+	t.Run("callback microtask should be called when an existing property is set", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		dict := NewDictionary(ValMap{`"a"`: Int(1)})
+		called := atomic.Bool{}
+
+		_, err := dict.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			called.Store(true)
+
+			assert.Equal(t, NewUpdateEntryMutation(ctx, Str("a"), Int(2), ShallowWatching, `/"a"`), mutation)
+			return true
+		}, MutationWatchingConfiguration{Depth: ShallowWatching})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		dict.SetValue(ctx, Str("a"), Int(2))
+
+		assert.True(t, called.Load())
+	})
+
+}
+
 func TestListOnMutation(t *testing.T) {
 
 	t.Run("microtask should be called when an element is inserted", func(t *testing.T) {

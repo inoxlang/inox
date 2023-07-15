@@ -157,6 +157,61 @@ func TestObjectWatcher(t *testing.T) {
 
 }
 
+func TestDictionaryWatcher(t *testing.T) {
+
+	t.Run("mutations", func(t *testing.T) {
+		t.Run("watcher should be informed about new property", func(t *testing.T) {
+			ctx := NewContext(ContextConfig{})
+			NewGlobalState(ctx)
+
+			dict := NewDictionary(ValMap{})
+			w := dict.Watcher(ctx, WatcherConfiguration{Filter: MUTATION_PATTERN}).(*GenericWatcher)
+			defer w.Stop()
+
+			go func() {
+				time.Sleep(time.Microsecond)
+				dict.SetValue(ctx, Str("a"), Int(1))
+			}()
+
+			v, err := w.WaitNext(ctx, nil, time.Second)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, NewAddEntryMutation(ctx, Str("a"), Int(1), ShallowWatching, `/"a"`), v)
+			w.Stop()
+
+			_, err = w.WaitNext(ctx, nil, time.Second)
+			assert.ErrorIs(t, err, ErrStoppedWatcher)
+		})
+
+		t.Run("watcher should be informed about an existing property being set", func(t *testing.T) {
+			ctx := NewContext(ContextConfig{})
+			NewGlobalState(ctx)
+
+			dict := NewDictionary(ValMap{`"a"`: Int(1)})
+			w := dict.Watcher(ctx, WatcherConfiguration{Filter: MUTATION_PATTERN}).(*GenericWatcher)
+			defer w.Stop()
+
+			go func() {
+				time.Sleep(time.Microsecond)
+				dict.SetValue(ctx, Str("a"), Int(2))
+			}()
+
+			v, err := w.WaitNext(ctx, nil, time.Second)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, NewUpdateEntryMutation(ctx, Str("a"), Int(2), ShallowWatching, `/"a"`), v)
+			w.Stop()
+
+			_, err = w.WaitNext(ctx, nil, time.Second)
+			assert.ErrorIs(t, err, ErrStoppedWatcher)
+		})
+	})
+}
+
 func TestDynamicMemberWatcher(t *testing.T) {
 
 	t.Run("dynamic member of object should inform about mutation when member is set", func(t *testing.T) {

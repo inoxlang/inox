@@ -15,6 +15,8 @@ var (
 		UnspecifiedMutation:   "unspecified-mutation",
 		AddProp:               "add-prop",
 		UpdateProp:            "update-prop",
+		AddEntry:              "add-entry",
+		UpdateEntry:           "update-entry",
 		InsertElemAtIndex:     "insert-elem-at-index",
 		SetElemAtIndex:        "set-elem-at-index",
 		SetSliceAtRange:       "set-slice-at-range",
@@ -123,6 +125,33 @@ func NewUpdatePropMutation(ctx *Context, name string, newValue Serializable, dep
 
 	return Mutation{
 		Kind:               UpdateProp,
+		Complete:           err == nil,
+		Data:               data,
+		DataElementLengths: sizes,
+		Depth:              depth,
+		//TODO: Data1
+		Path: path,
+	}
+}
+
+func NewAddEntryMutation(ctx *Context, key, value Serializable, depth WatchingDepth, path Path) Mutation {
+	data, sizes, err := WriteConcatenatedRepresentations(ctx, key, value)
+
+	return Mutation{
+		Kind:               AddEntry,
+		Complete:           err == nil,
+		Data:               data,
+		DataElementLengths: sizes,
+		Depth:              depth,
+		Path:               path,
+	}
+}
+
+func NewUpdateEntryMutation(ctx *Context, key, newValue Serializable, depth WatchingDepth, path Path) Mutation {
+	data, sizes, err := WriteConcatenatedRepresentations(ctx, key, newValue)
+
+	return Mutation{
+		Kind:               UpdateEntry,
 		Complete:           err == nil,
 		Data:               data,
 		DataElementLengths: sizes,
@@ -356,6 +385,8 @@ const (
 	UnspecifiedMutation MutationKind = iota + 1
 	AddProp
 	UpdateProp
+	AddEntry
+	UpdateEntry
 	InsertElemAtIndex
 	SetElemAtIndex
 	SetSliceAtRange
@@ -642,6 +673,91 @@ func (obj *Object) RemoveMutationCallback(ctx *Context, handle CallbackHandle) {
 	defer obj.Unlock(state)
 
 	obj.mutationCallbacks.RemoveMicrotask(handle)
+}
+
+func (d *Dictionary) OnMutation(ctx *Context, microtask MutationCallbackMicrotask, config MutationWatchingConfiguration) (CallbackHandle, error) {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
+	if config.Depth == UnspecifiedWatchingDepth {
+		config.Depth = ShallowWatching
+	}
+
+	if config.Depth >= IntermediateDepthWatching {
+		if config.Depth > d.watchingDepth {
+			d.watchingDepth = config.Depth
+
+			if d.entryMutationCallbacks == nil {
+				d.entryMutationCallbacks = make(map[string]CallbackHandle, len(d.keys))
+			}
+
+			for keyRepr, val := range d.entries {
+				if err := d.addEntryMutationCallbackNoLock(ctx, keyRepr, val); err != nil {
+					return -1, err
+				}
+			}
+		}
+	}
+
+	if d.mutationCallbacks == nil {
+		d.mutationCallbacks = NewMutationCallbackMicrotasks()
+	}
+
+	handle := d.mutationCallbacks.AddMicrotask(microtask, config)
+
+	return handle, nil
+}
+
+func (d *Dictionary) addEntryMutationCallbackNoLock(ctx *Context, keyRepr string, val Value) error {
+	if watchable, ok := val.(Watchable); ok {
+		config := MutationWatchingConfiguration{
+			Depth: d.watchingDepth.MustMinusOne(), // depth at which we watch the property
+		}
+		path := Path("/" + keyRepr)
+
+		handle, err := watchable.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			registerAgain = true
+
+			callbacks := d.mutationCallbacks
+			objWatchingDepth := d.watchingDepth
+
+			if !objWatchingDepth.IsSpecified() { //defensive check
+				return
+			}
+
+			if mutation.Depth > objWatchingDepth { //defensive check
+				return
+			}
+
+			callbacks.CallMicrotasks(ctx, mutation.Relocalized(path))
+
+			return
+		}, config)
+
+		if err != nil {
+			return fmt.Errorf("failed to add mutation callback to dictionary key %s: %w", keyRepr, err)
+		}
+		d.entryMutationCallbacks[keyRepr] = handle
+	}
+	return nil
+}
+
+func (d *Dictionary) RemoveMutationCallbackMicrotasks(ctx *Context) {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
+	if d.mutationCallbacks == nil {
+		return
+	}
+
+	d.mutationCallbacks.RemoveMicrotasks()
+}
+
+func (d *Dictionary) RemoveMutationCallback(ctx *Context, handle CallbackHandle) {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
+	d.mutationCallbacks.RemoveMicrotask(handle)
 }
 
 func (l *List) OnMutation(ctx *Context, microtask MutationCallbackMicrotask, config MutationWatchingConfiguration) (CallbackHandle, error) {

@@ -695,6 +695,12 @@ func (rec *Record) EntryMap() map[string]Serializable {
 type Dictionary struct {
 	entries map[string]Serializable
 	keys    map[string]Serializable
+
+	lock                   sync.Mutex // exclusive access for initializing .watchers & .mutationCallbacks
+	watchingDepth          WatchingDepth
+	watchers               *ValueWatchers
+	mutationCallbacks      *MutationCallbacks
+	entryMutationCallbacks map[string]CallbackHandle
 }
 
 func convertKeyReprToValue(repr string) Serializable {
@@ -739,7 +745,29 @@ func (d *Dictionary) Value(ctx *Context, key Serializable) (Value, Bool) {
 }
 
 func (d *Dictionary) SetValue(ctx *Context, key, value Serializable) {
-	d.entries[string(GetRepresentation(key, ctx))] = value
+	keyRepr := string(GetRepresentation(key, ctx))
+
+	_, alreadyPresent := d.entries[keyRepr]
+	d.entries[keyRepr] = value
+	if alreadyPresent {
+		mutation := NewUpdateEntryMutation(ctx, key, value, ShallowWatching, Path("/"+keyRepr))
+
+		//inform watchers & microtasks about the update
+		d.watchers.InformAboutAsync(ctx, mutation, mutation.Depth, true)
+
+		if d.mutationCallbacks != nil {
+			d.mutationCallbacks.CallMicrotasks(ctx, mutation)
+		}
+	} else {
+		mutation := NewAddEntryMutation(ctx, key, value, ShallowWatching, Path("/"+keyRepr))
+
+		d.watchers.InformAboutAsync(ctx, mutation, mutation.Depth, true)
+
+		if d.mutationCallbacks != nil {
+			d.mutationCallbacks.CallMicrotasks(ctx, mutation)
+		}
+	}
+
 }
 
 func (d *Dictionary) Prop(ctx *Context, name string) Value {
@@ -806,7 +834,7 @@ type List struct {
 	underylingList
 	elemType Pattern
 
-	lock              sync.Mutex
+	lock              sync.Mutex // exclusive access for initializing .watchers & .mutationCallbacks
 	mutationCallbacks *MutationCallbacks
 	watchers          *ValueWatchers
 }
