@@ -601,7 +601,7 @@ func (obj *Object) OnMutation(ctx *Context, microtask MutationCallbackMicrotask,
 
 			for i, val := range obj.values {
 				if err := obj.addPropMutationCallbackNoLock(ctx, i, val); err != nil {
-					return -1, err
+					return FIRST_VALID_CALLBACK_HANDLE - 1, err
 				}
 			}
 		}
@@ -614,6 +614,15 @@ func (obj *Object) OnMutation(ctx *Context, microtask MutationCallbackMicrotask,
 	handle := obj.mutationCallbacks.AddMicrotask(microtask, config)
 
 	return handle, nil
+}
+
+func (obj *Object) removePropMutationCallbackNoLock(ctx *Context, index int, previousValue Serializable) {
+	if watchable, ok := previousValue.(Watchable); ok {
+		if previousHandle := obj.propMutationCallbacks[index]; previousHandle.Valid() {
+			watchable.RemoveMutationCallback(ctx, previousHandle)
+			obj.propMutationCallbacks[index] = FIRST_VALID_CALLBACK_HANDLE - 1
+		}
+	}
 }
 
 func (obj *Object) addPropMutationCallbackNoLock(ctx *Context, index int, val Value) error {

@@ -86,6 +86,107 @@ func TestObjectOnMutation(t *testing.T) {
 		assert.True(t, called.Load())
 	})
 
+	t.Run("callback microtask should be called after value of property added after OnMutation call has a shallow change", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		innerObj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx)
+		obj := NewObjectFromMap(ValMap{}, ctx)
+		called := atomic.Bool{}
+		addInner := atomic.Bool{}
+
+		_, err := obj.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			if addInner.CompareAndSwap(false, true) { //ignore first mutation
+				return true
+			}
+			called.Store(true)
+
+			assert.Equal(t, NewUpdatePropMutation(ctx, "a", Int(2), IntermediateDepthWatching, "/inner/a"), mutation)
+			return true
+		}, MutationWatchingConfiguration{Depth: IntermediateDepthWatching})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.NoError(t, obj.SetProp(ctx, "inner", innerObj)) {
+			return
+		}
+
+		if !assert.NoError(t, innerObj.SetProp(ctx, "a", Int(2))) {
+			return
+		}
+
+		assert.True(t, called.Load())
+	})
+
+	t.Run("callback microtask should be called after value of property updated after OnMutation call has a shallow change", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		innerObj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx)
+		obj := NewObjectFromMap(ValMap{"inner": innerObj}, ctx)
+		called := atomic.Bool{}
+
+		_, err := obj.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			if mutation.Path == "/inner" { //ignore some mutations
+				return true
+			}
+			called.Store(true)
+
+			assert.Equal(t, NewUpdatePropMutation(ctx, "a", Int(2), IntermediateDepthWatching, "/inner/a"), mutation)
+			return true
+		}, MutationWatchingConfiguration{Depth: IntermediateDepthWatching})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		newInnerObj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx)
+		if !assert.NoError(t, obj.SetProp(ctx, "inner", newInnerObj)) {
+			return
+		}
+
+		if !assert.NoError(t, newInnerObj.SetProp(ctx, "a", Int(2))) {
+			return
+		}
+
+		assert.True(t, called.Load())
+	})
+
+	t.Run("callback microtask should NOT be called after previous value of property has a shallow change", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		innerObj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx)
+		obj := NewObjectFromMap(ValMap{"inner": innerObj}, ctx)
+		called := atomic.Bool{}
+
+		_, err := obj.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			if mutation.Path == "/inner" { //ignore some mutations
+				return true
+			}
+			called.Store(true)
+
+			assert.Equal(t, NewUpdatePropMutation(ctx, "a", Int(2), IntermediateDepthWatching, "/inner/a"), mutation)
+			return true
+		}, MutationWatchingConfiguration{Depth: IntermediateDepthWatching})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		newInnerObj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx)
+		if !assert.NoError(t, obj.SetProp(ctx, "inner", newInnerObj)) {
+			return
+		}
+
+		if !assert.NoError(t, innerObj.SetProp(ctx, "a", Int(2))) {
+			return
+		}
+
+		assert.False(t, called.Load())
+	})
+
 	t.Run("callback microtask should be NOT called after additional property is set if callback has been removed", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)

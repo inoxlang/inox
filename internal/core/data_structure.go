@@ -110,7 +110,30 @@ func objFromLists(keys []string, values []Serializable) *Object {
 }
 
 func (obj *Object) sortProps() {
-	obj.keys, obj.values = sortProps(obj.keys, obj.values)
+	if obj.propMutationCallbacks != nil {
+		for len(obj.propMutationCallbacks) < len(obj.keys) {
+			obj.propMutationCallbacks = append(obj.propMutationCallbacks, FIRST_VALID_CALLBACK_HANDLE-1)
+		}
+	}
+
+	keys, values, newIndexes := sortProps(obj.keys, obj.values)
+	obj.keys, obj.values = keys, values
+
+	if obj.propMutationCallbacks != nil {
+		newPropMutationCallbacks := make([]CallbackHandle, len(obj.propMutationCallbacks))
+		for i, newIndex := range newIndexes {
+			newPropMutationCallbacks[newIndex] = obj.propMutationCallbacks[i]
+		}
+	}
+}
+
+func (obj *Object) indexOfKey(k string) int {
+	for i, key := range obj.keys {
+		if key == k {
+			return i
+		}
+	}
+	panic(fmt.Errorf("unknown key %s", k))
 }
 
 // this function is called during object creation
@@ -376,6 +399,14 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 
 			obj.sortProps()
 
+			if obj.propMutationCallbacks != nil {
+				index := obj.indexOfKey(name)
+				obj.removePropMutationCallbackNoLock(ctx, index, prevValue)
+				if err := obj.addPropMutationCallbackNoLock(ctx, index, serializableVal); err != nil {
+					return fmt.Errorf("failed to add mutation callback for updated object property %s: %w", name, err)
+				}
+			}
+
 			mutation := NewUpdatePropMutation(ctx, name, serializableVal, ShallowWatching, Path("/"+name))
 
 			obj.sysgraph.AddEvent(ctx, "prop updated: "+name, obj)
@@ -413,6 +444,12 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 			if err := part.AttachToSystem(obj); err != nil {
 				panic(err)
 			}
+		}
+	}
+
+	if obj.propMutationCallbacks != nil {
+		if err := obj.addPropMutationCallbackNoLock(ctx, len(obj.keys)-1, serializableVal); err != nil {
+			return fmt.Errorf("failed to add mutation callback for new object property %s: %w", name, err)
 		}
 	}
 
@@ -664,7 +701,7 @@ func (rec *Record) ForEachEntry(fn func(k string, v Value) error) error {
 }
 
 func (rec *Record) sortProps() {
-	rec.keys, rec.values = sortProps(rec.keys, rec.values)
+	rec.keys, rec.values, _ = sortProps(rec.keys, rec.values)
 }
 
 // len returns the number of implicit properties
@@ -1002,18 +1039,20 @@ func (e UDataHiearchyEntry) walkEntries(ancestorChain *[]UDataHiearchyEntry, ind
 	return nil
 }
 
-func sortProps[V Value](keys []string, values []V) ([]string, []V) {
+func sortProps[V Value](keys []string, values []V) ([]string, []V, []int) {
 	if len(keys) == 0 {
-		return nil, nil
+		return nil, nil, nil
 	}
 	newKeys := utils.CopySlice(keys)
 	sort.Strings(newKeys)
 	newValues := make([]V, len(values))
+	newIndexes := make([]int, len(values))
 
 	for i := 0; i < len(keys); i++ {
 		newIndex := sort.SearchStrings(newKeys, keys[i])
 		newValues[newIndex] = values[i]
+		newIndexes[i] = newIndex
 	}
 
-	return newKeys, newValues
+	return newKeys, newValues, newIndexes
 }

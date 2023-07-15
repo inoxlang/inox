@@ -12,6 +12,42 @@ import (
 
 func TestObject(t *testing.T) {
 
+	t.Run("", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		{
+			obj := NewObjectFromMap(ValMap{}, ctx)
+			obj.SetProp(ctx, "a", Int(1))
+			obj.SetProp(ctx, "b", Int(2))
+			assert.Equal(t, []string{"a", "b"}, obj.keys)
+			assert.Equal(t, []Serializable{Int(1), Int(2)}, obj.values)
+		}
+
+		{
+			obj := NewObjectFromMap(ValMap{}, ctx)
+			obj.SetProp(ctx, "b", NewObjectFromMap(ValMap{}, ctx))
+
+			obj.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+				return true
+			}, MutationWatchingConfiguration{Depth: IntermediateDepthWatching})
+
+			if !assert.Len(t, obj.propMutationCallbacks, 1) {
+				return
+			}
+
+			handleB := obj.propMutationCallbacks[0]
+
+			obj.SetProp(ctx, "a", NewObjectFromMap(ValMap{}, ctx))
+
+			if !assert.Len(t, obj.propMutationCallbacks, 2) {
+				return
+			}
+
+			//the handle of B should have moved to the second position
+			assert.Equal(t, handleB, obj.propMutationCallbacks[1])
+		}
+	})
+
 	t.Run("lifetime jobs", func(t *testing.T) {
 		// the operation duration depends on the time required to pause a job, that depends on the routine's interpreter.
 		MAX_OPERATION_DURATION := 500 * time.Microsecond
