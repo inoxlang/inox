@@ -861,6 +861,10 @@ func (dict *Dictionary) IteratorElementValue() SymbolicValue {
 	return ANY
 }
 
+func (dict *Dictionary) WatcherElement() SymbolicValue {
+	return ANY
+}
+
 func (dict *Dictionary) Widen() (SymbolicValue, bool) {
 	if dict.entries == nil {
 		return nil, false
