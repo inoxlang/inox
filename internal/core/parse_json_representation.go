@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	parse "github.com/inoxlang/inox/internal/parse"
 	jsoniter "github.com/json-iterator/go"
 	"golang.org/x/exp/slices"
 )
@@ -18,10 +19,10 @@ func ParseJSONRepresentation(ctx *Context, s string, pattern Pattern) (Serializa
 	//TODO: add checks
 
 	it := jsoniter.ParseString(jsoniter.ConfigCompatibleWithStandardLibrary, s)
-	return parseJSONRepresentation(ctx, it, pattern)
+	return ParseNextJSONRepresentation(ctx, it, pattern)
 }
 
-func parseJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pattern) (_ Serializable, finalErr error) {
+func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pattern) (_ Serializable, finalErr error) {
 	switch p := pattern.(type) {
 	case nil:
 		if it.WhatIsNext() == jsoniter.ObjectValue {
@@ -41,7 +42,7 @@ func parseJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Patter
 					return false
 				}
 
-				value, finalErr = parseJSONRepresentation(ctx, it, pattern)
+				value, finalErr = ParseNextJSONRepresentation(ctx, it, pattern)
 				return finalErr == nil
 			})
 
@@ -77,7 +78,7 @@ func parseJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Patter
 	case *TypePattern:
 		switch p {
 		case SERIALIZABLE_PATTERN:
-			return parseJSONRepresentation(ctx, it, nil)
+			return ParseNextJSONRepresentation(ctx, it, nil)
 		case STR_PATTERN:
 			if it.WhatIsNext() != jsoniter.StringValue {
 				return nil, IncorrectJSONRepresentation
@@ -136,6 +137,16 @@ func parseJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Patter
 func parseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *ObjectPattern) (_ *Object, finalErr error) {
 	obj := &Object{}
 	it.ReadObjectCB(func(i *jsoniter.Iterator, key string) bool {
+		if parse.IsMetadataKey(key) && key != URL_METADATA_KEY {
+			finalErr = fmt.Errorf("%w: %s", ErrNonSupportedMetaProperty, key)
+			return false
+		}
+
+		if key == URL_METADATA_KEY {
+			obj.url = URL(it.ReadString())
+			return true
+		}
+
 		obj.keys = append(obj.keys, key)
 
 		var entryPattern Pattern
@@ -143,7 +154,7 @@ func parseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 			entryPattern = pattern.entryPatterns[key]
 		}
 
-		val, err := parseJSONRepresentation(ctx, it, entryPattern)
+		val, err := ParseNextJSONRepresentation(ctx, it, entryPattern)
 		if err != nil {
 			finalErr = fmt.Errorf("failed to parse value of object property %s: %w", key, err)
 			return false
@@ -185,6 +196,10 @@ func parseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 func parseRecordJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *RecordPattern) (_ *Record, finalErr error) {
 	rec := &Record{}
 	it.ReadObjectCB(func(i *jsoniter.Iterator, key string) bool {
+		if parse.IsMetadataKey(key) {
+			finalErr = fmt.Errorf("%w: %s", ErrNonSupportedMetaProperty, key)
+			return false
+		}
 		rec.keys = append(rec.keys, key)
 
 		var entryPattern Pattern
@@ -192,7 +207,7 @@ func parseRecordJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 			entryPattern = pattern.entryPatterns[key]
 		}
 
-		val, err := parseJSONRepresentation(ctx, it, entryPattern)
+		val, err := ParseNextJSONRepresentation(ctx, it, entryPattern)
 		if err != nil {
 			finalErr = fmt.Errorf("failed to parse value of record property %s: %w", key, err)
 			return false
@@ -358,7 +373,7 @@ func parseListJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *L
 			return false
 		}
 
-		val, err := parseJSONRepresentation(ctx, it, elementPattern)
+		val, err := ParseNextJSONRepresentation(ctx, it, elementPattern)
 		if err != nil {
 			finalErr = fmt.Errorf("failed to parse element %d of array: %w", index, err)
 			return false
@@ -389,7 +404,7 @@ func parseTupleJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *
 			return false
 		}
 
-		val, err := parseJSONRepresentation(ctx, it, elementPattern)
+		val, err := ParseNextJSONRepresentation(ctx, it, elementPattern)
 		if err != nil {
 			finalErr = fmt.Errorf("failed to parse element %d of array: %w", index, err)
 			return false

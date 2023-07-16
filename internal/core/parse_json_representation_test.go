@@ -180,6 +180,21 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Equal(t, map[string]Value{"a": Str("1")}, obj.(*Object).ValueEntryMap())
 		}
 
+		obj, err = ParseJSONRepresentation(ctx, `{"object__value":{"_url_":"ldb://main/users/0"}}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, map[string]Value{}, obj.(*Object).ValueEntryMap())
+		}
+
+		url, ok := obj.(*Object).URL()
+		if assert.True(t, ok) {
+			assert.Equal(t, URL("ldb://main/users/0"), url)
+		}
+
+		obj, err = ParseJSONRepresentation(ctx, `{"object__value":{"_x_":"0"}}`, nil)
+		if assert.ErrorIs(t, err, ErrNonSupportedMetaProperty) {
+			assert.Nil(t, obj)
+		}
+
 		//%object patteren
 		obj, err = ParseJSONRepresentation(ctx, `{}`, OBJECT_PATTERN)
 		if assert.NoError(t, err) {
@@ -238,6 +253,11 @@ func TestParseJSONRepresentation(t *testing.T) {
 		rec, err = ParseJSONRepresentation(ctx, `{"record__value":{"a":"1"}}`, nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, map[string]Value{"a": Str("1")}, rec.(*Record).ValueEntryMap())
+		}
+
+		rec, err = ParseJSONRepresentation(ctx, `{"record__value":{"_x_":"0"}}`, nil)
+		if assert.ErrorIs(t, err, ErrNonSupportedMetaProperty) {
+			assert.Nil(t, rec)
 		}
 
 		//%record patteren
