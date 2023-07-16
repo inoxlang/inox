@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -787,7 +788,19 @@ func (l *List) OnMutation(ctx *Context, microtask MutationCallbackMicrotask, con
 	}
 
 	if config.Depth >= IntermediateDepthWatching {
-		return 0, ErrIntermediateDepthWatchingNotSupported
+		if config.Depth > l.watchingDepth {
+			l.watchingDepth = config.Depth
+
+			if l.elementMutationCallbacks == nil {
+				l.elementMutationCallbacks = make([]CallbackHandle, l.Len())
+			}
+
+			for index, elem := range l.GetOrBuildElements(ctx) {
+				if err := l.addElementMutationCallbackNoLock(ctx, index, elem); err != nil {
+					return -1, err
+				}
+			}
+		}
 	}
 
 	if l.mutationCallbacks == nil {
@@ -797,6 +810,49 @@ func (l *List) OnMutation(ctx *Context, microtask MutationCallbackMicrotask, con
 	handle := l.mutationCallbacks.AddMicrotask(microtask, config)
 
 	return handle, nil
+}
+
+func (l *List) removeElementMutationCallbackNoLock(ctx *Context, index int, previousValue Serializable) {
+	if watchable, ok := previousValue.(Watchable); ok {
+		if previousHandle := l.elementMutationCallbacks[index]; CallbackHandle(previousHandle).Valid() {
+			watchable.RemoveMutationCallback(ctx, CallbackHandle(previousHandle))
+			l.elementMutationCallbacks[index] = FIRST_VALID_CALLBACK_HANDLE - 1
+		}
+	}
+}
+
+func (l *List) addElementMutationCallbackNoLock(ctx *Context, index int, elem Value) error {
+	if watchable, ok := elem.(Watchable); ok {
+		config := MutationWatchingConfiguration{
+			Depth: l.watchingDepth.MustMinusOne(), // depth at which we watch the property
+		}
+		path := Path("/" + strconv.Itoa(index))
+
+		handle, err := watchable.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			registerAgain = true
+
+			callbacks := l.mutationCallbacks
+			listWatchingDepth := l.watchingDepth
+
+			if !listWatchingDepth.IsSpecified() { //defensive check
+				return
+			}
+
+			if mutation.Depth > listWatchingDepth { //defensive check
+				return
+			}
+
+			callbacks.CallMicrotasks(ctx, mutation.Relocalized(path))
+
+			return
+		}, config)
+
+		if err != nil {
+			return fmt.Errorf("failed to add mutation callback to element %d: %w", index, err)
+		}
+		l.elementMutationCallbacks[index] = handle
+	}
+	return nil
 }
 
 func (l *List) RemoveMutationCallbackMicrotasks(ctx *Context) {
@@ -1054,4 +1110,13 @@ func (g *SystemGraph) ApplySpecificMutation(ctx *Context, m Mutation) error {
 	g.mutationCallbacks.CallMicrotasks(ctx, m)
 	return nil
 
+}
+
+func makeMutationCallbackHandles(length int) []CallbackHandle {
+	mutationCallbacks := make([]CallbackHandle, length)
+	for i := range mutationCallbacks {
+		mutationCallbacks[i] = FIRST_VALID_CALLBACK_HANDLE - 1
+	}
+
+	return mutationCallbacks
 }

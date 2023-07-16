@@ -361,36 +361,6 @@ func TestDictionaryOnMutation(t *testing.T) {
 
 func TestListOnMutation(t *testing.T) {
 
-	t.Run("microtask should be called when an element is inserted", func(t *testing.T) {
-		ctx := NewContext(ContextConfig{})
-		NewGlobalState(ctx)
-
-		list := NewWrappedValueList()
-		called := atomic.Bool{}
-
-		_, err := list.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
-			if !assert.False(t, called.Load()) {
-				return
-			}
-			called.Store(true)
-
-			assert.Equal(t, NewInsertElemAtIndexMutation(ctx, 0, Int(1), ShallowWatching, "/0"), mutation)
-
-			return true
-		}, MutationWatchingConfiguration{})
-
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		// we modify the list in the same goroutine since List is not sharable
-		time.Sleep(time.Microsecond)
-		list.insertElement(ctx, Int(1), 0)
-
-		assert.True(t, called.Load())
-		assert.Equal(t, []Serializable{Int(1)}, list.GetOrBuildElements(ctx))
-	})
-
 	t.Run("microtask should be called when an element is set", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
@@ -421,6 +391,132 @@ func TestListOnMutation(t *testing.T) {
 		assert.Equal(t, []Serializable{Int(2)}, list.GetOrBuildElements(ctx))
 	})
 
+	t.Run("microtask should NOT be called when a replaced element has a shallow change", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		obj := NewObjectFromMap(ValMap{}, ctx)
+		list := NewWrappedValueList(obj)
+		called := atomic.Bool{}
+
+		_, err := list.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			if mutation.Kind == SetElemAtIndex { //ignore replacement
+				return true
+			}
+			called.Store(true)
+
+			return true
+		}, MutationWatchingConfiguration{})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// we modify the list in the same goroutine since List is not sharable
+		time.Sleep(time.Microsecond)
+		list.set(ctx, 0, Int(2))
+
+		obj.SetProp(ctx, "prop", Int(1))
+
+		assert.False(t, called.Load())
+		assert.Equal(t, []Serializable{Int(2)}, list.GetOrBuildElements(ctx))
+	})
+
+	t.Run("microtask should be called when a slice is set", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		list := NewWrappedValueList(Int(1))
+		called := atomic.Bool{}
+
+		_, err := list.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			if !assert.False(t, called.Load()) {
+				return
+			}
+			called.Store(true)
+
+			assert.Equal(t, NewSetSliceAtRangeMutation(ctx, NewIncludedEndIntRange(0, 0), NewWrappedValueList(Int(2)), ShallowWatching, "/0..0"), mutation)
+
+			return true
+		}, MutationWatchingConfiguration{})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// we modify the list in the same goroutine since List is not sharable
+		time.Sleep(time.Microsecond)
+		list.SetSlice(ctx, 0, 1, NewWrappedValueList(Int(2)))
+
+		if !assert.True(t, called.Load()) {
+			return
+		}
+		assert.Equal(t, []Serializable{Int(2)}, list.GetOrBuildElements(ctx))
+	})
+
+	t.Run("microtask should NOT be called when a element replaced by SetSlice has a shallow change", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		obj := NewObjectFromMap(ValMap{}, ctx)
+		list := NewWrappedValueList(obj)
+		called := atomic.Bool{}
+
+		_, err := list.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			if mutation.Kind == SetSliceAtRange { //ignore replacement
+				return true
+			}
+			called.Store(true)
+
+			return true
+		}, MutationWatchingConfiguration{})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// we modify the list in the same goroutine since List is not sharable
+		time.Sleep(time.Microsecond)
+		list.SetSlice(ctx, 0, 1, NewWrappedValueList(Int(2)))
+
+		obj.SetProp(ctx, "prop", Int(1))
+
+		if !assert.False(t, called.Load()) {
+			return
+		}
+		assert.Equal(t, []Serializable{Int(2)}, list.GetOrBuildElements(ctx))
+	})
+
+	t.Run("microtask should be called when an element is inserted", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		list := NewWrappedValueList()
+		called := atomic.Bool{}
+
+		_, err := list.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			if !assert.False(t, called.Load()) {
+				return
+			}
+			called.Store(true)
+
+			assert.Equal(t, NewInsertElemAtIndexMutation(ctx, 0, Int(1), ShallowWatching, "/0"), mutation)
+
+			return true
+		}, MutationWatchingConfiguration{})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// we modify the list in the same goroutine since List is not sharable
+		time.Sleep(time.Microsecond)
+		list.insertElement(ctx, Int(1), 0)
+
+		assert.True(t, called.Load())
+		assert.Equal(t, []Serializable{Int(1)}, list.GetOrBuildElements(ctx))
+	})
+
 	t.Run("dynamic map invocation: microtask should NOT be called when an element is inserted if callback has been removed", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
@@ -446,6 +542,98 @@ func TestListOnMutation(t *testing.T) {
 		list.insertElement(ctx, Int(1), 0)
 
 		assert.False(t, called.Load())
+	})
+
+	t.Run("microtask should be called when a sequence is inserted", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		list := NewWrappedValueList()
+		called := atomic.Bool{}
+
+		_, err := list.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			if !assert.False(t, called.Load()) {
+				return
+			}
+			called.Store(true)
+
+			assert.Equal(t, NewInsertSequenceAtIndexMutation(ctx, 0, NewWrappedValueList(Int(1)), ShallowWatching, "/0"), mutation)
+
+			return true
+		}, MutationWatchingConfiguration{})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// we modify the list in the same goroutine since List is not sharable
+		time.Sleep(time.Microsecond)
+		list.insertSequence(ctx, NewWrappedValueList(Int(1)), 0)
+
+		assert.True(t, called.Load())
+		assert.Equal(t, []Serializable{Int(1)}, list.GetOrBuildElements(ctx))
+	})
+
+	t.Run("microtask should NOT be called when a removed element has a shallow change", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		obj := NewObjectFromMap(ValMap{}, ctx)
+		list := NewWrappedValueList(obj)
+		called := atomic.Bool{}
+
+		_, err := list.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			if mutation.Kind == RemovePosition { //ignore removal
+				return true
+			}
+			called.Store(true)
+
+			return true
+		}, MutationWatchingConfiguration{})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// we modify the list in the same goroutine since List is not sharable
+		time.Sleep(time.Microsecond)
+		list.removePosition(ctx, 0)
+
+		obj.SetProp(ctx, "prop", Int(1))
+
+		assert.False(t, called.Load())
+		assert.Equal(t, []Serializable{}, list.GetOrBuildElements(ctx))
+	})
+
+	t.Run("microtask should NOT be called when a element removed by removePositionRange has a shallow change", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		obj := NewObjectFromMap(ValMap{}, ctx)
+		list := NewWrappedValueList(obj)
+		called := atomic.Bool{}
+
+		_, err := list.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			if mutation.Kind == RemovePositionRange { //ignore removal
+				return true
+			}
+			called.Store(true)
+
+			return true
+		}, MutationWatchingConfiguration{})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// we modify the list in the same goroutine since List is not sharable
+		time.Sleep(time.Microsecond)
+		list.removePositionRange(ctx, NewIncludedEndIntRange(0, 0))
+
+		obj.SetProp(ctx, "prop", Int(1))
+
+		assert.False(t, called.Load())
+		assert.Equal(t, []Serializable{}, list.GetOrBuildElements(ctx))
 	})
 }
 

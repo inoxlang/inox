@@ -11,6 +11,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
+	"golang.org/x/exp/slices"
 )
 
 var (
@@ -882,9 +883,11 @@ type List struct {
 	underylingList
 	elemType Pattern
 
-	lock              sync.Mutex // exclusive access for initializing .watchers & .mutationCallbacks
-	mutationCallbacks *MutationCallbacks
-	watchers          *ValueWatchers
+	lock                     sync.Mutex // exclusive access for initializing .watchers & .mutationCallbacks
+	mutationCallbacks        *MutationCallbacks
+	watchers                 *ValueWatchers
+	watchingDepth            WatchingDepth
+	elementMutationCallbacks []CallbackHandle
 }
 
 func newList(underylingList underylingList) *List {
@@ -907,7 +910,13 @@ func (list *List) GetOrBuildElements(ctx *Context) []Serializable {
 }
 
 func (l *List) set(ctx *Context, i int, v Value) {
+	prevElement := l.underylingList.At(ctx, i)
 	l.underylingList.set(ctx, i, v)
+
+	if l.elementMutationCallbacks != nil {
+		l.removeElementMutationCallbackNoLock(ctx, i, prevElement.(Serializable))
+		l.addElementMutationCallbackNoLock(ctx, i, v)
+	}
 
 	mutation := NewSetElemAtIndexMutation(ctx, i, v.(Serializable), ShallowWatching, Path("/"+strconv.Itoa(i)))
 
@@ -916,10 +925,95 @@ func (l *List) set(ctx *Context, i int, v Value) {
 	l.mutationCallbacks.CallMicrotasks(ctx, mutation)
 }
 
+func (l *List) SetSlice(ctx *Context, start, end int, seq Sequence) {
+	if l.elementMutationCallbacks != nil {
+		for i := start; i < end; i++ {
+			prevElement := l.underylingList.At(ctx, i)
+			l.removeElementMutationCallbackNoLock(ctx, i, prevElement.(Serializable))
+		}
+	}
+
+	l.underylingList.SetSlice(ctx, start, end, seq)
+
+	if l.elementMutationCallbacks != nil {
+		for i := start; i < end; i++ {
+			l.addElementMutationCallbackNoLock(ctx, i, l.underylingList.At(ctx, i))
+		}
+	}
+
+	path := Path("/" + strconv.Itoa(int(start)) + ".." + strconv.Itoa(int(end-1)))
+	mutation := NewSetSliceAtRangeMutation(ctx, NewIncludedEndIntRange(int64(start), int64(end-1)), seq.(Serializable), ShallowWatching, path)
+
+	l.mutationCallbacks.CallMicrotasks(ctx, mutation)
+	l.watchers.InformAboutAsync(ctx, mutation, ShallowWatching, true)
+}
+
 func (l *List) insertElement(ctx *Context, v Value, i Int) {
 	l.underylingList.insertElement(ctx, v, i)
 
+	if l.elementMutationCallbacks != nil {
+		l.elementMutationCallbacks = slices.Insert(l.elementMutationCallbacks, int(i), FIRST_VALID_CALLBACK_HANDLE-1)
+		l.addElementMutationCallbackNoLock(ctx, int(i), v)
+	}
+
 	mutation := NewInsertElemAtIndexMutation(ctx, int(i), v.(Serializable), ShallowWatching, Path("/"+strconv.Itoa(int(i))))
+
+	//inform watchers & microtasks about the update
+	l.watchers.InformAboutAsync(ctx, mutation, mutation.Depth, true)
+	l.mutationCallbacks.CallMicrotasks(ctx, mutation)
+}
+
+func (l *List) insertSequence(ctx *Context, seq Sequence, i Int) {
+	l.underylingList.insertSequence(ctx, seq, i)
+
+	if l.elementMutationCallbacks != nil {
+		seqLen := seq.Len()
+		l.elementMutationCallbacks = slices.Insert(l.elementMutationCallbacks, int(i), makeMutationCallbackHandles(seqLen)...)
+
+		for index := i; index < i+Int(seqLen); i++ {
+			l.addElementMutationCallbackNoLock(ctx, int(i), seq.At(ctx, int(index)))
+		}
+	}
+
+	mutation := NewInsertSequenceAtIndexMutation(ctx, int(i), seq, ShallowWatching, Path("/"+strconv.Itoa(int(i))))
+
+	//inform watchers & microtasks about the update
+	l.watchers.InformAboutAsync(ctx, mutation, mutation.Depth, true)
+	l.mutationCallbacks.CallMicrotasks(ctx, mutation)
+}
+
+func (l *List) appendSequence(ctx *Context, seq Sequence) {
+	l.insertSequence(ctx, seq, Int(l.Len()))
+}
+
+func (l *List) removePosition(ctx *Context, i Int) {
+	l.underylingList.removePosition(ctx, i)
+
+	if l.elementMutationCallbacks != nil {
+		l.removeElementMutationCallbackNoLock(ctx, int(i), l.underylingList.At(ctx, int(i)).(Serializable))
+		l.elementMutationCallbacks = slices.Replace(l.elementMutationCallbacks, int(i), int(i+1))
+	}
+
+	mutation := NewRemovePositionMutation(ctx, int(i), ShallowWatching, Path("/"+strconv.Itoa(int(i))))
+
+	//inform watchers & microtasks about the update
+	l.watchers.InformAboutAsync(ctx, mutation, mutation.Depth, true)
+	l.mutationCallbacks.CallMicrotasks(ctx, mutation)
+}
+
+func (l *List) removePositionRange(ctx *Context, r IntRange) {
+	l.underylingList.removePositionRange(ctx, r)
+
+	if l.elementMutationCallbacks != nil {
+		for index := int(r.Start); index < int(r.End); index++ {
+			l.removeElementMutationCallbackNoLock(ctx, index, l.underylingList.At(ctx, index).(Serializable))
+		}
+
+		l.elementMutationCallbacks = slices.Replace(l.elementMutationCallbacks, int(r.Start), int(r.End))
+	}
+
+	path := Path("/" + strconv.Itoa(int(r.KnownStart())) + ".." + strconv.Itoa(int(r.InclusiveEnd())))
+	mutation := NewRemovePositionRangeMutation(ctx, r, ShallowWatching, path)
 
 	//inform watchers & microtasks about the update
 	l.watchers.InformAboutAsync(ctx, mutation, mutation.Depth, true)
