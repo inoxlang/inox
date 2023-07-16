@@ -57,7 +57,7 @@ func (any AnyWalkable) IsMutable() bool {
 }
 
 func (any AnyStringLike) IsMutable() bool {
-	return true
+	return false
 }
 
 func (any AnyResourceName) IsMutable() bool {
@@ -409,7 +409,7 @@ func (e UDataHiearchyEntry) IsMutable() bool {
 }
 
 func (c *StringConcatenation) IsMutable() bool {
-	return true
+	return false
 }
 
 func (c *BytesConcatenation) IsMutable() bool {

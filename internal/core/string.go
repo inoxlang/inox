@@ -556,12 +556,12 @@ func (p PropertyName) UnderlyingString() string {
 	return string(p)
 }
 
-// StringConcatenation is a lazy concatenation of values that can form a string, StringConcatenation implements StringLike.
+// StringConcatenation is a lazy concatenation of values that can form a string, StringConcatenation implements StringLike and is
+// therefore immutable.
 type StringConcatenation struct {
 	elements    []StringLike
 	totalLen    int
 	finalString string // empty by default
-
 }
 
 func (c *StringConcatenation) GetOrBuildString() string {
