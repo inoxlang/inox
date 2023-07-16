@@ -1163,11 +1163,10 @@ func (f *InoxFunction) addCapturedValueMutationCallback(ctx *Context, watchable 
 	return watchable.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
 		registerAgain = true
 
-		state := ctx.GetClosestState()
-		f.Lock(state)
+		f.mutationFieldsLock.Lock()
 		callbacks := f.mutationCallbacks
 		functionWatchingDepth := f.watchingDepth
-		f.Unlock(state)
+		f.mutationFieldsLock.Unlock()
 
 		if !functionWatchingDepth.IsSpecified() { //defensive check
 			return
@@ -1199,6 +1198,69 @@ func (f *InoxFunction) RemoveMutationCallback(ctx *Context, handle CallbackHandl
 	defer f.mutationFieldsLock.Unlock()
 
 	f.mutationCallbacks.RemoveMicrotask(handle)
+}
+
+func (h *SynchronousMessageHandler) OnMutation(ctx *Context, microtask MutationCallbackMicrotask, config MutationWatchingConfiguration) (CallbackHandle, error) {
+	h.mutationFieldsLock.Lock()
+	defer h.mutationFieldsLock.Unlock()
+
+	if config.Depth == UnspecifiedWatchingDepth {
+		config.Depth = ShallowWatching
+	}
+
+	if config.Depth >= IntermediateDepthWatching {
+		if config.Depth > h.watchingDepth {
+			h.watchingDepth = config.Depth
+
+			path := Path("/handler")
+			h.handler.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+				registerAgain = true
+
+				h.mutationFieldsLock.Lock()
+				callbacks := h.mutationCallbacks
+				handlerWatchingDepth := h.watchingDepth
+				h.mutationFieldsLock.Unlock()
+
+				if !handlerWatchingDepth.IsSpecified() { //defensive check
+					return
+				}
+
+				if mutation.Depth > handlerWatchingDepth { //defensive check
+					return
+				}
+
+				callbacks.CallMicrotasks(ctx, mutation.Relocalized(path))
+
+				return
+			}, config)
+		}
+	}
+
+	if h.mutationCallbacks == nil {
+		h.mutationCallbacks = NewMutationCallbackMicrotasks()
+	}
+
+	handle := h.mutationCallbacks.AddMicrotask(microtask, config)
+
+	return handle, nil
+}
+
+func (h *SynchronousMessageHandler) RemoveMutationCallbackMicrotasks(ctx *Context) {
+	h.mutationFieldsLock.Lock()
+	defer h.mutationFieldsLock.Unlock()
+
+	if h.mutationCallbacks == nil {
+		return
+	}
+
+	h.mutationCallbacks.RemoveMicrotasks()
+}
+
+func (h *SynchronousMessageHandler) RemoveMutationCallback(ctx *Context, handle CallbackHandle) {
+	h.mutationFieldsLock.Lock()
+	defer h.mutationFieldsLock.Unlock()
+
+	h.mutationCallbacks.RemoveMicrotask(handle)
 }
 
 func makeMutationCallbackHandles(length int) []CallbackHandle {

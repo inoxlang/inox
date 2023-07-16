@@ -145,6 +145,10 @@ func (m *SynchronousMessageHandler) PropertyNames() []string {
 	return nil
 }
 
+func (m *SynchronousMessageHandler) WatcherElement() SymbolicValue {
+	return ANY
+}
+
 //
 
 func (*Object) ReceiveMessage(SymbolicValue) error {

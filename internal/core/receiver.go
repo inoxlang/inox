@@ -3,6 +3,7 @@ package core
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
@@ -70,6 +71,11 @@ func (Message) PropertyNames(ctx *Context) []string {
 type SynchronousMessageHandler struct {
 	pattern Pattern
 	handler *InoxFunction
+
+	mutationFieldsLock sync.Mutex // exclusive access for initializing .watchers & .mutationCallbacks
+	watchers           *ValueWatchers
+	mutationCallbacks  *MutationCallbacks
+	watchingDepth      WatchingDepth
 
 	NotClonableMixin
 }

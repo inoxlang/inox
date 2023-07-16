@@ -1526,3 +1526,104 @@ func TestInoxFunctionOnMutation(t *testing.T) {
 		assert.True(t, called.Load())
 	})
 }
+
+func TestSynchronousMessageHandlerOnMutation(t *testing.T) {
+	t.Run("callback microtask should be called after function's captured local (tree walk) has shallow change", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		obj := NewObjectFromMap(ValMap{}, ctx)
+
+		handler := &SynchronousMessageHandler{
+			pattern: ANYVAL_PATTERN,
+			handler: &InoxFunction{
+				Node:                   parse.MustParseExpression("fn[a](){}"),
+				treeWalkCapturedLocals: map[string]Value{"a": obj},
+			},
+		}
+		called := atomic.Bool{}
+
+		_, err := handler.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			called.Store(true)
+
+			assert.Equal(t, NewAddPropMutation(ctx, "prop", Int(1), DeepWatching, "/handler/a/prop"), mutation)
+			return true
+		}, MutationWatchingConfiguration{Depth: DeepWatching})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.NoError(t, obj.SetProp(ctx, "prop", Int(1))) {
+			return
+		}
+
+		assert.True(t, called.Load())
+	})
+
+	t.Run("callback microtask should be called after function's captured local has shallow change", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		obj := NewObjectFromMap(ValMap{}, ctx)
+
+		handler := &SynchronousMessageHandler{
+			pattern: ANYVAL_PATTERN,
+			handler: &InoxFunction{
+				Node:                   parse.MustParseExpression("fn[a](){}"),
+				treeWalkCapturedLocals: map[string]Value{"a": obj},
+			},
+		}
+		called := atomic.Bool{}
+
+		_, err := handler.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			called.Store(true)
+
+			assert.Equal(t, NewAddPropMutation(ctx, "prop", Int(1), DeepWatching, "/handler/a/prop"), mutation)
+			return true
+		}, MutationWatchingConfiguration{Depth: DeepWatching})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.NoError(t, obj.SetProp(ctx, "prop", Int(1))) {
+			return
+		}
+
+		assert.True(t, called.Load())
+	})
+
+	t.Run("callback microtask should be called after function's captured global has shallow change", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		obj := NewObjectFromMap(ValMap{}, ctx)
+
+		handler := &SynchronousMessageHandler{
+			pattern: ANYVAL_PATTERN,
+			handler: &InoxFunction{
+				Node:                   parse.MustParseExpression("fn[a](){}"),
+				treeWalkCapturedLocals: map[string]Value{"a": obj},
+			},
+		}
+		called := atomic.Bool{}
+
+		_, err := handler.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			called.Store(true)
+
+			assert.Equal(t, NewAddPropMutation(ctx, "prop", Int(1), DeepWatching, "/handler/a/prop"), mutation)
+			return true
+		}, MutationWatchingConfiguration{Depth: DeepWatching})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.NoError(t, obj.SetProp(ctx, "prop", Int(1))) {
+			return
+		}
+
+		assert.True(t, called.Load())
+	})
+}
