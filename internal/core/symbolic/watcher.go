@@ -12,6 +12,7 @@ var (
 
 	_ = []Watchable{
 		(*Object)(nil), (*Dictionary)(nil), (*List)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*DynamicValue)(nil),
+		(*InoxFunction)(nil),
 	}
 	_ = []StreamSource{&Watcher{}}
 )

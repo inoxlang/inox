@@ -110,6 +110,10 @@ func (fn *InoxFunction) IsWidenable() bool {
 	return fn.node != nil
 }
 
+func (fn *InoxFunction) WatcherElement() SymbolicValue {
+	return ANY
+}
+
 func (fn *InoxFunction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if fn.node == nil {
 		utils.Must(w.Write(utils.StringAsBytes("fn")))
