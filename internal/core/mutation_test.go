@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -1431,4 +1432,97 @@ func TestSystemGraphOnMutation(t *testing.T) {
 		assert.True(t, called)
 	})
 
+}
+
+func TestInoxFunctionOnMutation(t *testing.T) {
+	t.Run("callback microtask should be called after captured local (tree walk) has shallow change", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		obj := NewObjectFromMap(ValMap{}, ctx)
+
+		fn := &InoxFunction{
+			Node:                   parse.MustParseExpression("fn[a](){}"),
+			treeWalkCapturedLocals: map[string]Value{"a": obj},
+		}
+		called := atomic.Bool{}
+
+		_, err := fn.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			called.Store(true)
+
+			assert.Equal(t, NewAddPropMutation(ctx, "prop", Int(1), IntermediateDepthWatching, "/a/prop"), mutation)
+			return true
+		}, MutationWatchingConfiguration{Depth: DeepWatching})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.NoError(t, obj.SetProp(ctx, "prop", Int(1))) {
+			return
+		}
+
+		assert.True(t, called.Load())
+	})
+
+	t.Run("callback microtask should be called after captured local has shallow change", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		obj := NewObjectFromMap(ValMap{}, ctx)
+
+		fn := &InoxFunction{
+			Node:             parse.MustParseExpression("fn[a](){}"),
+			capturedLocals:   []Value{obj},
+			compiledFunction: &CompiledFunction{}, //set to non-nil so that the function is considered compiled.
+		}
+		called := atomic.Bool{}
+
+		_, err := fn.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			called.Store(true)
+
+			assert.Equal(t, NewAddPropMutation(ctx, "prop", Int(1), IntermediateDepthWatching, "/0/prop"), mutation)
+			return true
+		}, MutationWatchingConfiguration{Depth: DeepWatching})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.NoError(t, obj.SetProp(ctx, "prop", Int(1))) {
+			return
+		}
+
+		assert.True(t, called.Load())
+	})
+
+	t.Run("callback microtask should be called after captured global has shallow change", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		obj := NewObjectFromMap(ValMap{}, ctx)
+
+		fn := &InoxFunction{
+			Node:            parse.MustParseExpression("fn[a](){}"),
+			capturedGlobals: []capturedGlobal{{name: "a", value: obj}},
+		}
+		called := atomic.Bool{}
+
+		_, err := fn.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			called.Store(true)
+
+			assert.Equal(t, NewAddPropMutation(ctx, "prop", Int(1), IntermediateDepthWatching, "/a/prop"), mutation)
+			return true
+		}, MutationWatchingConfiguration{Depth: DeepWatching})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.NoError(t, obj.SetProp(ctx, "prop", Int(1))) {
+			return
+		}
+
+		assert.True(t, called.Load())
+	})
 }

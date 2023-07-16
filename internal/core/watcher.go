@@ -16,6 +16,7 @@ const (
 var (
 	_ = []Watchable{
 		(*Object)(nil), (*Dictionary)(nil), (*List)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*DynamicValue)(nil),
+		(*InoxFunction)(nil),
 	}
 	_                               = []Watcher{stoppedWatcher{}, (*GenericWatcher)(nil), (*joinedWatchers)(nil), (*PeriodicWatcher)(nil)}
 	periodicWatcherGoroutineStarted = atomic.Bool{}
@@ -513,4 +514,23 @@ func (*SystemGraph) Watcher(ctx *Context, config WatcherConfiguration) Watcher {
 	}
 
 	panic(ErrNotImplementedYet)
+}
+
+func (f *InoxFunction) Watcher(ctx *Context, config WatcherConfiguration) Watcher {
+	if config.Depth == UnspecifiedWatchingDepth {
+		config.Depth = ShallowWatching
+	}
+
+	watcher := NewGenericWatcher(config)
+
+	f.mutationFieldsLock.Lock()
+	defer f.mutationFieldsLock.Unlock()
+
+	if f.watchers == nil {
+		f.watchers = NewValueWatchers()
+	}
+
+	f.watchers.Add(watcher)
+
+	return watcher
 }

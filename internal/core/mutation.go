@@ -1112,6 +1112,95 @@ func (g *SystemGraph) ApplySpecificMutation(ctx *Context, m Mutation) error {
 
 }
 
+func (f *InoxFunction) OnMutation(ctx *Context, microtask MutationCallbackMicrotask, config MutationWatchingConfiguration) (CallbackHandle, error) {
+	f.mutationFieldsLock.Lock()
+	defer f.mutationFieldsLock.Unlock()
+
+	if config.Depth == UnspecifiedWatchingDepth {
+		config.Depth = ShallowWatching
+	}
+
+	if config.Depth >= IntermediateDepthWatching {
+		if config.Depth > f.watchingDepth {
+			f.watchingDepth = config.Depth
+
+			if f.compiledFunction != nil {
+				for index, localValue := range f.capturedLocals {
+					if watchable, ok := localValue.(Watchable); ok {
+						//TODO: use variable name instead (if possible)
+						path := Path("/" + strconv.Itoa(index))
+						f.addCapturedValueMutationCallback(ctx, watchable, path, config)
+					}
+				}
+			} else {
+				for varName, localValue := range f.treeWalkCapturedLocals {
+					if watchable, ok := localValue.(Watchable); ok {
+						path := Path("/" + varName)
+						f.addCapturedValueMutationCallback(ctx, watchable, path, config)
+					}
+				}
+			}
+
+			for _, capturedGlobal := range f.capturedGlobals {
+				if watchable, ok := capturedGlobal.value.(Watchable); ok {
+					path := Path("/" + capturedGlobal.name)
+					f.addCapturedValueMutationCallback(ctx, watchable, path, config)
+				}
+			}
+		}
+	}
+
+	if f.mutationCallbacks == nil {
+		f.mutationCallbacks = NewMutationCallbackMicrotasks()
+	}
+
+	handle := f.mutationCallbacks.AddMicrotask(microtask, config)
+
+	return handle, nil
+}
+
+func (f *InoxFunction) addCapturedValueMutationCallback(ctx *Context, watchable Watchable, path Path, config MutationWatchingConfiguration) (CallbackHandle, error) {
+	return watchable.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+		registerAgain = true
+
+		state := ctx.GetClosestState()
+		f.Lock(state)
+		callbacks := f.mutationCallbacks
+		functionWatchingDepth := f.watchingDepth
+		f.Unlock(state)
+
+		if !functionWatchingDepth.IsSpecified() { //defensive check
+			return
+		}
+
+		if mutation.Depth > functionWatchingDepth { //defensive check
+			return
+		}
+
+		callbacks.CallMicrotasks(ctx, mutation.Relocalized(path))
+
+		return
+	}, config)
+}
+
+func (f *InoxFunction) RemoveMutationCallbackMicrotasks(ctx *Context) {
+	f.mutationFieldsLock.Lock()
+	defer f.mutationFieldsLock.Unlock()
+
+	if f.mutationCallbacks == nil {
+		return
+	}
+
+	f.mutationCallbacks.RemoveMicrotasks()
+}
+
+func (f *InoxFunction) RemoveMutationCallback(ctx *Context, handle CallbackHandle) {
+	f.mutationFieldsLock.Lock()
+	defer f.mutationFieldsLock.Unlock()
+
+	f.mutationCallbacks.RemoveMicrotask(handle)
+}
+
 func makeMutationCallbackHandles(length int) []CallbackHandle {
 	mutationCallbacks := make([]CallbackHandle, length)
 	for i := range mutationCallbacks {

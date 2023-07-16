@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"sync"
 	"sync/atomic"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
@@ -22,6 +23,11 @@ type InoxFunction struct {
 
 	symbolicValue *symbolic.InoxFunction
 	staticData    *FunctionStaticData
+
+	mutationFieldsLock sync.Mutex // exclusive access for initializing .watchers & .mutationCallbacks
+	watchers           *ValueWatchers
+	mutationCallbacks  *MutationCallbacks
+	watchingDepth      WatchingDepth
 }
 
 type capturedGlobal struct {
