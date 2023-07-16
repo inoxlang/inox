@@ -36,6 +36,10 @@ func asStreamable(v SymbolicValue) SymbolicValue {
 	return as(v, STREAMABLE_INTERFACE_TYPE)
 }
 
+func asWatchable(v SymbolicValue) SymbolicValue {
+	return as(v, WATCHABLE_INTERFACE_TYPE)
+}
+
 func asIprops(v SymbolicValue) SymbolicValue {
 	return as(v, IPROPS_INTERFACE_TYPE)
 }

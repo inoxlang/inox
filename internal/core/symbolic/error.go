@@ -23,11 +23,14 @@ const (
 	INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT                                    = "invalid assignment: left hand side is not an integer"
 	INVALID_ASSIGN_INT_OPER_ASSIGN_RHS_NOT_INT                                    = "invalid assignment: right hand side is not an integer"
 	INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE    = "invalid assignment: non-serializable values are not allowed as properties of serializable values"
+	INVALID_ASSIGN_MUTABLE_NON_WATCHABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_WATCHABLE  = "invalid assignment: mutable values that are not watchable are not allowed as properties of watchable values"
 	PROP_SPREAD_IN_REC_NOT_SUPP_YET                                               = "property spread not supported in record yet"
 	CONSTRAINTS_INIT_BLOCK_EXPLANATION                                            = "invalid statement or expression in constraints' initialization block"
 
-	NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE = "non-serializable values are not allowed as initial values for properties of serializables"
-	NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE       = "non-serializable values are not allowed as elements of serializables"
+	NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE   = "non-serializable values are not allowed as initial values for properties of serializables"
+	MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_WATCHABLE = "mutable values that are not watchable are not allowed as initial values for properties of watchables"
+	NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE         = "non-serializable values are not allowed as elements of serializables"
+	MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE       = "mutables values that are not watchable values are not allowed as elements of watchables"
 
 	INVALID_KEY_IN_COMPUTE_EXPRESSION_ONLY_SIMPLE_VALUE_ARE_SUPPORTED = "invalid key in compute expression: only simple values are supported"
 

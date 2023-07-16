@@ -13,6 +13,8 @@ var (
 	_ = []asInterface{&Multivalue{}, &indexableMultivalue{}, &iterableMultivalue{}, &ipropsMultivalue{}}
 
 	_ = []IMultivalue{(*indexableMultivalue)(nil), (*iterableMultivalue)(nil), (*ipropsMultivalue)(nil)}
+
+	enableMultivalueCaching = true
 )
 
 // A Multivalue represents a set of possible values.
@@ -99,6 +101,17 @@ top_switch:
 		if iterable {
 			result = &iterableMultivalue{mv}
 		}
+	case WATCHABLE_INTERFACE_TYPE:
+		watchable := true
+		for _, val := range mv.values {
+			if _, ok := val.(Watchable); !ok {
+				watchable = false
+				break
+			}
+		}
+		if watchable {
+			result = &watchableMultivalue{mv}
+		}
 	case IPROPS_INTERFACE_TYPE:
 		iprops := true
 		for _, val := range mv.values {
@@ -126,11 +139,14 @@ top_switch:
 		return mv
 	}
 
-	if mv.cache == nil {
-		mv.cache = make(map[reflect.Type]SymbolicValue)
+	if enableMultivalueCaching {
+		if mv.cache == nil {
+			mv.cache = make(map[reflect.Type]SymbolicValue)
+		}
+
+		mv.cache[itf] = result
 	}
 
-	mv.cache[itf] = result
 	return result
 }
 
@@ -275,6 +291,18 @@ func (mv *iterableMultivalue) IteratorElementValue() SymbolicValue {
 }
 
 func (mv *iterableMultivalue) as(itf reflect.Type) SymbolicValue {
+	return mv.as(itf)
+}
+
+type watchableMultivalue struct {
+	*Multivalue
+}
+
+func (mv *watchableMultivalue) WatcherElement() SymbolicValue {
+	return ANY
+}
+
+func (mv *watchableMultivalue) as(itf reflect.Type) SymbolicValue {
 	return mv.as(itf)
 }
 

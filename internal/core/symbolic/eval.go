@@ -610,6 +610,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
 						return nil, nil
 					}
+					//no check for watchable ?
 				case nil:
 					return nil, errors.New("nil value")
 				default:
@@ -626,6 +627,12 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 					if _, ok := right.(Serializable); !ok {
 						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
 						return nil, nil
+					}
+				}
+
+				if _, ok := asWatchable(iprops).(Watchable); ok {
+					if _, ok := asWatchable(right).(Watchable); !ok && right.IsMutable() {
+						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_MUTABLE_NON_WATCHABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_WATCHABLE))
 					}
 				}
 
@@ -646,10 +653,19 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				}
 
 			} else {
+				nonSerializableErr := false
 				if _, ok := iprops.(Serializable); ok {
 					if _, ok := right.(Serializable); !ok {
+						nonSerializableErr = true
 						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
 						right = ANY_SERIALIZABLE
+					}
+
+				}
+
+				if _, ok := asWatchable(iprops).(Watchable); ok && !nonSerializableErr {
+					if _, ok := asWatchable(right).(Watchable); !ok && right.IsMutable() {
+						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_MUTABLE_NON_WATCHABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_WATCHABLE))
 					}
 				}
 
@@ -686,6 +702,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
 						return nil, nil
 					}
+					//no check for watchable ?
 				case nil:
 					return nil, errors.New("nil value")
 				default:
@@ -705,6 +722,12 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 					}
 				}
 
+				if _, ok := asWatchable(iprops).(Watchable); ok {
+					if _, ok := asWatchable(right).(Watchable); !ok && right.IsMutable() {
+						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_MUTABLE_NON_WATCHABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_WATCHABLE))
+					}
+				}
+
 				prevValue := iprops.Prop(lastPropName)
 
 				if _, ok := prevValue.(*Int); !ok && n.Operator.Int() {
@@ -717,10 +740,18 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 					}
 				}
 			} else {
+				nonSerializableErr := false
 				if _, ok := iprops.(Serializable); ok {
 					if _, ok := right.(Serializable); !ok {
+						nonSerializableErr = true
 						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
 						right = ANY_SERIALIZABLE
+					}
+				}
+
+				if _, ok := asWatchable(iprops).(Watchable); ok && !nonSerializableErr {
+					if _, ok := asWatchable(right).(Watchable); !ok && right.IsMutable() {
+						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_MUTABLE_NON_WATCHABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_WATCHABLE))
 					}
 				}
 
@@ -750,6 +781,12 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 					state.addError(makeSymbolicEvalError(node, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
 					right = ANY_SERIALIZABLE
 					break
+				}
+			}
+
+			if _, ok := asWatchable(slice).(Watchable); ok {
+				if _, ok := asWatchable(right).(Watchable); !ok && right.IsMutable() {
+					state.addError(makeSymbolicEvalError(node, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
 				}
 			}
 
@@ -787,6 +824,12 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 					state.addError(makeSymbolicEvalError(node, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
 					right = ANY_SERIALIZABLE
 					break
+				}
+			}
+
+			if _, ok := asWatchable(slice).(Watchable); ok {
+				if _, ok := asWatchable(right).(Watchable); !ok && right.IsMutable() {
+					state.addError(makeSymbolicEvalError(node, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
 				}
 			}
 
@@ -1322,7 +1365,10 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				if !ok {
 					state.addError(makeSymbolicEvalError(el, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
 					serializable = ANY_SERIALIZABLE
+				} else if _, ok := asWatchable(v).(Watchable); !ok && v.IsMutable() {
+					state.addError(makeSymbolicEvalError(el, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_WATCHABLE))
 				}
+
 				entries[name] = serializable
 			}
 		}
@@ -1487,6 +1533,8 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				if !ok {
 					state.addError(makeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
 					serializable = ANY_SERIALIZABLE
+				} else if _, ok := asWatchable(propVal).(Watchable); !ok && propVal.IsMutable() {
+					state.addError(makeSymbolicEvalError(p, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_WATCHABLE))
 				}
 
 				obj.initNewProp(key, serializable, static)
@@ -1598,6 +1646,8 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				if !ok {
 					state.addError(makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
 					e = ANY_SERIALIZABLE
+				} else if _, ok := asWatchable(e).(Watchable); !ok && e.IsMutable() {
+					state.addError(makeSymbolicEvalError(elemNode, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
 				}
 			}
 
@@ -1616,6 +1666,8 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				if !ok {
 					state.addError(makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
 					e = ANY_SERIALIZABLE
+				} else if _, ok := asWatchable(e).(Watchable); !ok && e.IsMutable() {
+					state.addError(makeSymbolicEvalError(elemNode, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
 				}
 
 				elements = append(elements, AsSerializable(e).(Serializable))
@@ -1705,6 +1757,8 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			if !ok {
 				state.addError(makeSymbolicEvalError(entry.Value, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
 				v = ANY_SERIALIZABLE
+			} else if _, ok := asWatchable(v).(Watchable); !ok && v.IsMutable() {
+				state.addError(makeSymbolicEvalError(entry.Value, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
 			}
 
 			//TODO: refactor
@@ -1715,6 +1769,8 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			if !ok {
 				state.addError(makeSymbolicEvalError(entry.Value, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
 				key = ANY_SERIALIZABLE
+			} else if _, ok := asWatchable(key).(Watchable); !ok && key.IsMutable() {
+				state.addError(makeSymbolicEvalError(entry.Value, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
 			}
 
 			entries[keyRepr] = v.(Serializable)

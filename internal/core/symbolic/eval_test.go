@@ -11,6 +11,7 @@ import (
 )
 
 func TestSymbolicEval(t *testing.T) {
+	enableMultivalueCaching = false
 
 	symbolicMap := func(ctx *Context, iterable Iterable, mapper SymbolicValue) *List {
 		var MAP_PARAM_NAMES = []string{"iterable", "mapper"}
@@ -157,6 +158,20 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewList(ANY_SERIALIZABLE), res)
 		})
 
+		t.Run("non-watchable mutable element", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk("[val]")
+			state.setGlobal("val", ANY_SERIALIZABLE, GlobalConst)
+			elemNode := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(elemNode, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE),
+			}, state.errors)
+			assert.Equal(t, NewList(ANY_SERIALIZABLE), res)
+		})
+
 		t.Run("two elements of different type", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`[1, "a'"]`)
 			res, err := symbolicEval(n, state)
@@ -271,6 +286,23 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(entryValueNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE),
+			}, state.errors)
+			assert.Equal(t, NewDictionary(map[string]Serializable{
+				"./a": ANY_SERIALIZABLE,
+			}, map[string]Serializable{
+				"./a": ANY_REL_NON_DIR_PATH,
+			}), res)
+		})
+
+		t.Run("non-watchable mutable value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`:{./a: val}`)
+			state.setGlobal("val", ANY_SERIALIZABLE, GlobalConst)
+			entryValueNode := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), nil)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(entryValueNode, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE),
 			}, state.errors)
 			assert.Equal(t, NewDictionary(map[string]Serializable{
 				"./a": ANY_SERIALIZABLE,
@@ -668,6 +700,30 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
+		t.Run("set new property of an object with non-watchable mutable value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				obj = {}
+				$obj.prop = val
+				return obj
+			`)
+			state.setGlobal("val", ANY_SERIALIZABLE, GlobalConst)
+			assignment := n.Statements[1]
+
+			res, err := symbolicEval(n, state)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(assignment, state, INVALID_ASSIGN_MUTABLE_NON_WATCHABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_WATCHABLE),
+			}, state.errors)
+			assert.Equal(t, &Object{
+				entries: map[string]Serializable{
+					"prop": ANY_SERIALIZABLE,
+				},
+			}, res)
+		})
+
 		t.Run("set new property of an object with non-serializable value: identifier member LHS", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				obj = {}
@@ -684,6 +740,30 @@ func TestSymbolicEval(t *testing.T) {
 			}
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(assignment, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE),
+			}, state.errors)
+			assert.Equal(t, &Object{
+				entries: map[string]Serializable{
+					"routine": ANY_SERIALIZABLE,
+				},
+			}, res)
+		})
+
+		t.Run("set new property of an object with non-watchable mutable value: identifier member LHS", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				obj = {}
+				obj.routine = val
+				return obj
+			`)
+			state.setGlobal("val", ANY_SERIALIZABLE, GlobalConst)
+			assignment := n.Statements[1]
+
+			res, err := symbolicEval(n, state)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(assignment, state, INVALID_ASSIGN_MUTABLE_NON_WATCHABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_WATCHABLE),
 			}, state.errors)
 			assert.Equal(t, &Object{
 				entries: map[string]Serializable{
@@ -926,6 +1006,24 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(propNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE),
+			}, state.errors)
+			assert.Equal(t, &Object{
+				entries: map[string]Serializable{
+					"routine": ANY_SERIALIZABLE,
+				},
+			}, res)
+		})
+
+		t.Run("non-watchable mutable values not allowed in initialization", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`{routine: val}`)
+			state.setGlobal("val", ANY_SERIALIZABLE, GlobalConst)
+			propNode := parse.FindNode(n, (*parse.ObjectProperty)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(propNode, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_WATCHABLE),
 			}, state.errors)
 			assert.Equal(t, &Object{
 				entries: map[string]Serializable{
@@ -3823,7 +3921,7 @@ func TestSymbolicEval(t *testing.T) {
 				list[0] = go do {}
 				return list
 			`)
-			state.setGlobal("serializable", ANY_SERIALIZABLE, GlobalConst)
+			state.setGlobal("serializable", ANY_INT, GlobalConst)
 			assignement := parse.FindNode(n.Statements[1], (*parse.Assignment)(nil), nil)
 
 			res, err := symbolicEval(n, state)
@@ -3832,7 +3930,26 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(assignement, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE),
 			}, state.errors)
-			assert.Equal(t, NewList(ANY_SERIALIZABLE), res)
+			assert.Equal(t, NewList(ANY_INT), res)
+		})
+
+		t.Run("index expression LHS: non-watchable mutable RHS", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var list = [serializable]
+				list[0] = val
+				return list
+			`)
+			state.setGlobal("serializable", ANY_INT, GlobalConst)
+			state.setGlobal("val", ANY_SERIALIZABLE, GlobalConst)
+			assignement := parse.FindNode(n.Statements[1], (*parse.Assignment)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(assignement, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE),
+			}, state.errors)
+			assert.Equal(t, NewList(ANY_INT), res)
 		})
 	})
 
@@ -3985,6 +4102,7 @@ func TestSymbolicEval(t *testing.T) {
 					return [i, e]
 				} 
 			`)
+
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
