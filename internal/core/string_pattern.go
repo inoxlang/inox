@@ -301,7 +301,7 @@ func (patt *SequenceStringPattern) MatchGroups(ctx *Context, v Serializable) (ma
 
 	obj, ok, err := patt.constructGroupMatchingResult(ctx, submatches)
 	if ok {
-		return obj.EntryMap(), true, nil
+		return obj.EntryMap(nil), true, nil
 	}
 	return nil, ok, err
 }

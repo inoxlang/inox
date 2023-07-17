@@ -16,10 +16,11 @@ const (
 )
 
 var (
-	ErrTransactionAlreadyStarted   = errors.New("transaction has already started")
-	ErrCannotAddIrreversibleEffect = errors.New("cannot add irreversible effect to transaction")
-	ErrCtxAlreadyHasTransaction    = errors.New("context already has a transaction")
-	ErrFinishedTransaction         = errors.New("transaction is finished")
+	ErrTransactionAlreadyStarted        = errors.New("transaction has already started")
+	ErrCannotAddIrreversibleEffect      = errors.New("cannot add irreversible effect to transaction")
+	ErrCtxAlreadyHasTransaction         = errors.New("context already has a transaction")
+	ErrFinishedTransaction              = errors.New("transaction is finished")
+	ErrAlreadySetTransactionEndCallback = errors.New("transaction end callback is already set")
 )
 
 // A Transaction represents a series of effects that are applied atomically.
@@ -128,13 +129,18 @@ func (tx *Transaction) GetValue(k any) (any, error) {
 	return tx.values[k], nil
 }
 
-func (tx *Transaction) OnEnd(k any, fn func(*Transaction, bool)) error {
+func (tx *Transaction) OnEnd(k any, fn func(tx *Transaction, success bool)) error {
 	if tx.IsFinished() {
 		return ErrFinishedTransaction
 	}
 
 	tx.lock.Lock()
 	defer tx.lock.Unlock()
+
+	_, ok := tx.endCallbackFns[k]
+	if ok {
+		return ErrAlreadySetTransactionEndCallback
+	}
 
 	tx.endCallbackFns[k] = fn
 	return nil
@@ -208,6 +214,18 @@ func (tx *Transaction) Rollback(ctx *Context) error {
 	}
 
 	return nil
+}
+
+func (tx *Transaction) WaitFinished() <-chan struct{} {
+	if tx.IsFinished() {
+		return nil
+	}
+	finishedChan := make(chan struct{})
+
+	tx.OnEnd(finishedChan, func(tx *Transaction, success bool) {
+		finishedChan <- struct{}{}
+	})
+	return finishedChan
 }
 
 func (tx *Transaction) Prop(ctx *Context, name string) Value {

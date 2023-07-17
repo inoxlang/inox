@@ -285,7 +285,7 @@ func (rw *HttpResponseWriter) SetCookie(ctx *core.Context, obj *core.Object) err
 
 	cookie := &http.Cookie{}
 
-	cookie, err := createCookieFromObject(obj)
+	cookie, err := createCookieFromObject(ctx, obj)
 	if err != nil {
 		return err
 	}

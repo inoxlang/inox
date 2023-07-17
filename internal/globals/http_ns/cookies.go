@@ -67,7 +67,7 @@ func (jar *cookiejar) AllCookies() map[string][]*http.Cookie {
 	return result
 }
 
-func createCookieFromObject(obj *core.Object) (*http.Cookie, error) {
+func createCookieFromObject(ctx *core.Context, obj *core.Object) (*http.Cookie, error) {
 	const ERROR_PREFIX = "create cookie:"
 
 	cookie := &http.Cookie{
@@ -76,7 +76,7 @@ func createCookieFromObject(obj *core.Object) (*http.Cookie, error) {
 		SameSite: http.SameSiteStrictMode,
 	}
 
-	for k, v := range obj.EntryMap() {
+	for k, v := range obj.EntryMap(ctx) {
 		switch k {
 		case "domain":
 			host, ok := v.(core.Host)

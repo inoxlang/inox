@@ -67,7 +67,7 @@ func buildImportConfig(obj *Object, source Value, parentState *GlobalState) (Imp
 		ParentState: parentState,
 	}
 
-	for k, v := range obj.EntryMap() {
+	for k, v := range obj.EntryMap(nil) {
 		switch k {
 		case "validation":
 			config.ValidationString = v.(Str)

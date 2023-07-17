@@ -525,7 +525,7 @@ func EvaluatePermissionListingObjectNode(n *parse.ObjectLiteral, config PreinitA
 	//we create a temporary state to evaluate some parts of the permissions
 	if config.RunningState == nil {
 		ctx := NewContext(ContextConfig{Permissions: []Permission{GlobalVarPermission{permkind.Read, "*"}}})
-		state = NewTreeWalkState(ctx, getGlobalsAccessibleFromManifest().ValueEntryMap())
+		state = NewTreeWalkState(ctx, getGlobalsAccessibleFromManifest().ValueEntryMap(nil))
 
 		if config.GlobalConsts != nil {
 			for _, decl := range config.GlobalConsts.Declarations {
@@ -572,7 +572,7 @@ func createManifest(object *Object, config manifestObjectConfig) (*Manifest, err
 	defaultLimitationsToNotSet := make(map[string]bool)
 	specifiedGlobalPermKinds := map[PermissionKind]bool{}
 
-	for k, v := range object.EntryMap() {
+	for k, v := range object.EntryMap(nil) {
 		switch k {
 		case MANIFEST_LIMITS_SECTION_NAME:
 			l, err := getLimitations(v, defaultLimitationsToNotSet)
@@ -687,7 +687,7 @@ func getPermissionsFromListing(
 		specifiedGlobalPermKinds = make(map[PermissionKind]bool)
 	}
 
-	for propName, propValue := range permDescriptions.EntryMap() {
+	for propName, propValue := range permDescriptions.EntryMap(nil) {
 		permKind, ok := permkind.PermissionKindFromString(propName)
 
 		if ok {
@@ -731,7 +731,7 @@ func getLimitations(desc Value, defaultLimitationsToNotSet map[string]bool) ([]L
 
 	//add limits
 
-	for limitName, limitPropValue := range limitObj.EntryMap() {
+	for limitName, limitPropValue := range limitObj.EntryMap(nil) {
 
 		var limitation Limitation
 		defaultLimitationsToNotSet[limitName] = true
@@ -838,7 +838,7 @@ func getSingleKindPermissions(
 	case *List:
 		list = v.GetOrBuildElements(nil)
 	case *Object:
-		for propKey, propVal := range v.EntryMap() {
+		for propKey, propVal := range v.EntryMap(nil) {
 
 			if _, err := strconv.Atoi(propKey); err == nil {
 				list = append(list, propVal)
@@ -1295,7 +1295,7 @@ func getCommandPermissions(n Value) ([]Permission, error) {
 		return nil, errors.New(ERR)
 	}
 
-	for name, propValue := range topObject.EntryMap() {
+	for name, propValue := range topObject.EntryMap(nil) {
 
 		if IsIndexKey(name) {
 			return nil, errors.New(ERR_PREFIX + "implicit/index keys are not allowed")
@@ -1340,7 +1340,7 @@ func getCommandPermissions(n Value) ([]Permission, error) {
 			continue
 		}
 
-		for subcmdName, cmdDescPropVal := range cmdDesc.EntryMap() {
+		for subcmdName, cmdDescPropVal := range cmdDesc.EntryMap(nil) {
 
 			if _, err := strconv.Atoi(subcmdName); err == nil {
 				return nil, errors.New(ERR_PREFIX + "implicit keys are not allowed")
@@ -1360,7 +1360,7 @@ func getCommandPermissions(n Value) ([]Permission, error) {
 				continue
 			}
 
-			for deepSubCmdName, subCmdDescPropVal := range subCmdDesc.EntryMap() {
+			for deepSubCmdName, subCmdDescPropVal := range subCmdDesc.EntryMap(nil) {
 
 				if _, err := strconv.Atoi(deepSubCmdName); err == nil {
 					return nil, errors.New(ERR)

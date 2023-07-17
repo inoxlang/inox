@@ -201,11 +201,11 @@ func CreateDirEntry(path, walkedDirPath string, addDotSlashPrefix bool, d fs.Dir
 	})
 }
 
-func CreatePatternNamespace(init Value) (*PatternNamespace, error) {
+func CreatePatternNamespace(ctx *Context, init Value) (*PatternNamespace, error) {
 	var entries = map[string]Serializable{}
 	switch r := init.(type) {
 	case *Object:
-		entries = r.EntryMap()
+		entries = r.EntryMap(ctx)
 	case *Record:
 		entries = r.EntryMap()
 	default:

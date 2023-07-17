@@ -39,7 +39,7 @@ type HttpClient struct {
 func NewClient(ctx *core.Context, configObject *core.Object) (*HttpClient, error) {
 	config := HttpClientConfig{}
 
-	for name, value := range configObject.EntryMap() {
+	for name, value := range configObject.EntryMap(ctx) {
 		switch name {
 		case "save-cookies":
 			saveCookies, ok := value.(core.Bool)
@@ -212,7 +212,7 @@ func (c *HttpClient) MakeRequest(ctx *core.Context, method string, u core.URL, b
 		if ok {
 			headers, ok := obj.Prop(ctx, "add-headers").(*core.Object)
 			if ok {
-				for _, k := range headers.Keys() {
+				for _, k := range headers.Keys(ctx) {
 					v := headers.Prop(ctx, k)
 
 					s, ok := v.(core.Str)

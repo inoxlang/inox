@@ -211,7 +211,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, _ *TreeWalkState
 			ctx.AddPatternNamespace(k, v)
 		}
 
-		global := NewGlobalState(ctx, getGlobalsAccessibleFromManifest().ValueEntryMap())
+		global := NewGlobalState(ctx, getGlobalsAccessibleFromManifest().ValueEntryMap(nil))
 		global.Module = m
 		state = NewTreeWalkStateWithGlobal(global)
 

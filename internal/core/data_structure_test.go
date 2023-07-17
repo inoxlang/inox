@@ -12,7 +12,7 @@ import (
 
 func TestObject(t *testing.T) {
 
-	t.Run("", func(t *testing.T) {
+	t.Run("SetProp", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 
 		{
@@ -46,6 +46,50 @@ func TestObject(t *testing.T) {
 			//the handle of B should have moved to the second position
 			assert.Equal(t, handleB, obj.propMutationCallbacks[1])
 		}
+
+		t.Run("sould wait current transaction to be finished", func(t *testing.T) {
+			ctx1 := NewContexWithEmptyState(ContextConfig{}, nil)
+			tx1 := StartNewTransaction(ctx1)
+			ctx2 := NewContexWithEmptyState(ContextConfig{}, nil)
+
+			obj := NewObjectFromMap(ValMap{}, ctx1)
+
+			signal := make(chan struct{}, 1)
+
+			go func() {
+				StartNewTransaction(ctx2)
+
+				<-signal
+				obj.SetProp(ctx2, "b", Int(2))
+				signal <- struct{}{}
+			}()
+
+			obj.SetProp(ctx1, "a", Int(1))
+
+			signal <- struct{}{}
+
+			if !assert.Equal(t, Int(1), obj.Prop(ctx1, "a")) {
+				<-signal
+				return
+			}
+
+			//at this point tx1 is not finished so the 'b' property should not be set because .SetProp is waiting.
+
+			time.Sleep(time.Millisecond)
+
+			if !assert.NoError(t, tx1.Commit(ctx1)) {
+				return
+			}
+			<-signal
+
+			if !assert.Equal(t, Int(1), obj.Prop(ctx2, "a")) {
+				return
+			}
+
+			if !assert.Equal(t, Int(2), obj.Prop(ctx2, "b")) {
+				return
+			}
+		})
 	})
 
 	t.Run("lifetime jobs", func(t *testing.T) {

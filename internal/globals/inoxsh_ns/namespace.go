@@ -49,12 +49,12 @@ func NewShell(ctx *core.Context, configObj *core.Object) (*shell, error) {
 		bgColor core.Color
 	)
 
-	for _, key := range configObj.Keys() {
+	for _, key := range configObj.Keys(ctx) {
 		value := configObj.Prop(ctx, key)
 		switch key {
 		case GLOBALS_KEY:
 			if obj, ok := value.(*core.Object); ok {
-				globals = obj.ValueEntryMap()
+				globals = obj.ValueEntryMap(ctx)
 			} else if ident, ok := value.(core.Identifier); ok {
 				if ident == "default" {
 					globals = nil

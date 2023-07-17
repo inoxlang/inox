@@ -491,7 +491,7 @@ func readHttpServerArgs(ctx *core.Context, server *HttpServer, host core.Host, a
 			handlerValProvided = true
 
 			// extract routing handler, middlewares, ... from description
-			for propKey, propVal := range v.EntryMap() {
+			for propKey, propVal := range v.EntryMap(ctx) {
 				switch propKey {
 				case HANDLING_DESC_MIDDLEWARES_PROPNAME:
 					iterable, ok := propVal.(core.Iterable)

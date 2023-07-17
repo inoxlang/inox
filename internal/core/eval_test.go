@@ -3235,7 +3235,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				makeGlobals: func(t *testing.T) map[string]Value {
 					return map[string]Value{
 						"gofunc": WrapGoFunction(func(ctx *Context, obj *Object) {
-							assert.Equal(t, map[string]Serializable{"a": Int(1)}, obj.EntryMap())
+							assert.Equal(t, map[string]Serializable{"a": Int(1)}, obj.EntryMap(nil))
 						}),
 					}
 				},
@@ -3621,7 +3621,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 					dyn := actual.(*DynamicValue)
 
-					assert.Equal(t, map[string]Serializable{"v": Int(1)}, dyn.value.(*Object).EntryMap())
+					assert.Equal(t, map[string]Serializable{"v": Int(1)}, dyn.value.(*Object).EntryMap(nil))
 					assert.Equal(t, Str("v"), dyn.opData0)
 				},
 			},
@@ -3634,7 +3634,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 					dyn := actual.(*DynamicValue)
 
-					assert.Equal(t, map[string]Serializable{"a": Int(1)}, dyn.value.(*Object).EntryMap())
+					assert.Equal(t, map[string]Serializable{"a": Int(1)}, dyn.value.(*Object).EntryMap(nil))
 					assert.Equal(t, Str("a"), dyn.opData0)
 				},
 			},
@@ -3647,7 +3647,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 					dyn := actual.(*DynamicValue)
 
-					assert.Equal(t, map[string]Serializable{"a": Int(1)}, dyn.value.(*Object).EntryMap())
+					assert.Equal(t, map[string]Serializable{"a": Int(1)}, dyn.value.(*Object).EntryMap(nil))
 					assert.Equal(t, Str("a"), dyn.opData0)
 				},
 			},
@@ -3675,7 +3675,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 					dyn := actual.(*DynamicValue)
 
-					assert.Equal(t, map[string]Serializable{"x": Int(1)}, dyn.value.(*Object).EntryMap())
+					assert.Equal(t, map[string]Serializable{"x": Int(1)}, dyn.value.(*Object).EntryMap(nil))
 					assert.Equal(t, Str("x"), dyn.opData0)
 				},
 			},
@@ -3698,7 +3698,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					innerObj := NewObjectFromMap(nil, state.Ctx)
 					innerObj.Share(state)
 
-					assert.Equal(t, map[string]Serializable{"x": innerObj}, dyn.value.(*Object).EntryMap())
+					assert.Equal(t, map[string]Serializable{"x": innerObj}, dyn.value.(*Object).EntryMap(nil))
 					assert.Equal(t, Str("x"), dyn.opData0)
 				},
 			},
@@ -7560,7 +7560,7 @@ func TestSpawnRoutine(t *testing.T) {
 		}
 		obj := res.(*Object)
 		assert.True(t, obj.IsShared())
-		assert.Equal(t, map[string]Serializable{"a": Int(1)}, obj.EntryMap())
+		assert.Equal(t, map[string]Serializable{"a": Int(1)}, obj.EntryMap(nil))
 	})
 
 }

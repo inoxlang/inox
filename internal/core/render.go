@@ -267,7 +267,7 @@ func (obj *Object) Render(ctx *Context, w io.Writer, config RenderingInput) (int
 			return totalN, err
 		}
 
-		keys := obj.Keys()
+		keys := obj.Keys(nil)
 		sort.Strings(keys)
 
 		for i, k := range keys {

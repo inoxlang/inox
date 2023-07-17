@@ -45,7 +45,7 @@ type ContentSecurityPolicy struct {
 func NewCSP(ctx *core.Context, desc *core.Object) (*ContentSecurityPolicy, error) {
 	var directives []CSPDirective
 
-	for k, v := range desc.EntryMap() {
+	for k, v := range desc.EntryMap(ctx) {
 		directive := CSPDirective{name: k}
 
 		switch directiveDesc := v.(type) {

@@ -172,17 +172,17 @@ func TestParseJSONRepresentation(t *testing.T) {
 		//no pattern
 		obj, err := ParseJSONRepresentation(ctx, `{"object__value":{}}`, nil)
 		if assert.NoError(t, err) {
-			assert.Equal(t, map[string]Value{}, obj.(*Object).ValueEntryMap())
+			assert.Equal(t, map[string]Value{}, obj.(*Object).ValueEntryMap(nil))
 		}
 
 		obj, err = ParseJSONRepresentation(ctx, `{"object__value":{"a":"1"}}`, nil)
 		if assert.NoError(t, err) {
-			assert.Equal(t, map[string]Value{"a": Str("1")}, obj.(*Object).ValueEntryMap())
+			assert.Equal(t, map[string]Value{"a": Str("1")}, obj.(*Object).ValueEntryMap(nil))
 		}
 
 		obj, err = ParseJSONRepresentation(ctx, `{"object__value":{"_url_":"ldb://main/users/0"}}`, nil)
 		if assert.NoError(t, err) {
-			assert.Equal(t, map[string]Value{}, obj.(*Object).ValueEntryMap())
+			assert.Equal(t, map[string]Value{}, obj.(*Object).ValueEntryMap(nil))
 		}
 
 		url, ok := obj.(*Object).URL()
@@ -198,12 +198,12 @@ func TestParseJSONRepresentation(t *testing.T) {
 		//%object patteren
 		obj, err = ParseJSONRepresentation(ctx, `{}`, OBJECT_PATTERN)
 		if assert.NoError(t, err) {
-			assert.Equal(t, map[string]Value{}, obj.(*Object).ValueEntryMap())
+			assert.Equal(t, map[string]Value{}, obj.(*Object).ValueEntryMap(nil))
 		}
 
 		obj, err = ParseJSONRepresentation(ctx, `{"a":"1"}`, OBJECT_PATTERN)
 		if assert.NoError(t, err) {
-			assert.Equal(t, map[string]Value{"a": Str("1")}, obj.(*Object).ValueEntryMap())
+			assert.Equal(t, map[string]Value{"a": Str("1")}, obj.(*Object).ValueEntryMap(nil))
 		}
 
 		//{a: int} pattern
@@ -216,7 +216,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 		obj, err = ParseJSONRepresentation(ctx, `{"a":"1"}`, pattern)
 		if assert.NoError(t, err) {
-			assert.Equal(t, map[string]Value{"a": Int(1)}, obj.(*Object).ValueEntryMap())
+			assert.Equal(t, map[string]Value{"a": Int(1)}, obj.(*Object).ValueEntryMap(nil))
 		}
 
 		//{a: {b: int}} pattern
@@ -234,9 +234,9 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 		obj, err = ParseJSONRepresentation(ctx, `{"a":{"b": "1"}}`, pattern)
 		if assert.NoError(t, err) {
-			entries := obj.(*Object).ValueEntryMap()
+			entries := obj.(*Object).ValueEntryMap(nil)
 			if assert.Contains(t, entries, "a") {
-				assert.Equal(t, map[string]Value{"b": Int(1)}, entries["a"].(*Object).ValueEntryMap())
+				assert.Equal(t, map[string]Value{"b": Int(1)}, entries["a"].(*Object).ValueEntryMap(nil))
 			}
 		}
 	})

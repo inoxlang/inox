@@ -41,11 +41,13 @@ type Object struct {
 	supersys    PotentialSystem // can be nil
 	systemParts []SystemPart
 
-	watchers              *ValueWatchers
-	mutationCallbacks     *MutationCallbacks
-	messageHandlers       *SynchronousMessageHandlers
-	watchingDepth         WatchingDepth
-	propMutationCallbacks []CallbackHandle
+	watchers               *ValueWatchers
+	mutationCallbacks      *MutationCallbacks
+	messageHandlers        *SynchronousMessageHandlers
+	watchingDepth          WatchingDepth
+	propMutationCallbacks  []CallbackHandle
+	currentTransaction     *Transaction
+	currentTransactionLock sync.Mutex
 
 	jobs *ValueLifetimeJobs
 
@@ -312,7 +314,47 @@ func (obj *Object) System() (PotentialSystem, error) {
 	return obj.supersys, nil
 }
 
+func (obj *Object) waitIfOtherTransaction(ctx *Context) error {
+	//TODO: wait when accessing methods implementing the System interface ?
+
+	obj.currentTransactionLock.Lock()
+
+	tx := ctx.GetTx()
+
+	if obj.currentTransaction != nil && obj.currentTransaction.IsFinished() {
+		obj.currentTransaction = nil
+	}
+
+	if obj.currentTransaction == nil {
+		if tx != nil && !tx.IsFinished() {
+			obj.currentTransaction = tx
+		}
+		obj.currentTransactionLock.Unlock()
+		return nil
+	}
+
+	if tx != obj.currentTransaction {
+		select {
+		case <-obj.currentTransaction.WaitFinished():
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+
+		obj.currentTransaction = nil
+		obj.currentTransactionLock.Unlock()
+
+		return obj.waitIfOtherTransaction(ctx)
+	}
+	obj.currentTransactionLock.Unlock()
+
+	return nil
+}
+
 func (obj *Object) Prop(ctx *Context, name string) Value {
+	if err := obj.waitIfOtherTransaction(ctx); err != nil {
+		panic(err)
+	}
+
 	closestState := ctx.GetClosestState()
 	obj.Lock(closestState)
 	defer obj.Unlock(closestState)
@@ -330,6 +372,10 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 	serializableVal, ok := value.(Serializable)
 	if !ok {
 		return fmt.Errorf("value is not serializable")
+	}
+
+	if err := obj.waitIfOtherTransaction(ctx); err != nil {
+		return err
 	}
 
 	closestState := ctx.GetClosestState()
@@ -472,6 +518,10 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 }
 
 func (obj *Object) PropertyNames(ctx *Context) []string {
+	if err := obj.waitIfOtherTransaction(ctx); err != nil {
+		panic(err)
+	}
+
 	closestState := ctx.GetClosestState()
 	obj.Lock(closestState)
 	defer obj.Unlock(closestState)
@@ -479,6 +529,10 @@ func (obj *Object) PropertyNames(ctx *Context) []string {
 }
 
 func (obj *Object) HasProp(ctx *Context, name string) bool {
+	if err := obj.waitIfOtherTransaction(ctx); err != nil {
+		panic(err)
+	}
+
 	closestState := ctx.GetClosestState()
 	obj.Lock(closestState)
 	defer obj.Unlock(closestState)
@@ -491,6 +545,10 @@ func (obj *Object) HasProp(ctx *Context, name string) bool {
 }
 
 func (obj *Object) HasPropValue(ctx *Context, value Value) bool {
+	if err := obj.waitIfOtherTransaction(ctx); err != nil {
+		panic(err)
+	}
+
 	closestState := ctx.GetClosestState()
 	obj.Lock(closestState)
 	defer obj.Unlock(closestState)
@@ -502,12 +560,23 @@ func (obj *Object) HasPropValue(ctx *Context, value Value) bool {
 	return false
 }
 
-func (obj *Object) EntryMap() map[string]Serializable {
+func (obj *Object) EntryMap(ctx *Context) map[string]Serializable {
 	if obj == nil {
 		return nil
 	}
-	obj.Lock(nil)
-	defer obj.Unlock(nil)
+
+	if ctx != nil {
+		if err := obj.waitIfOtherTransaction(ctx); err != nil {
+			panic(err)
+		}
+
+		closestState := ctx.GetClosestState()
+		obj.Lock(closestState)
+		defer obj.Unlock(closestState)
+	} else {
+		obj.Lock(nil)
+		defer obj.Unlock(nil)
+	}
 
 	map_ := map[string]Serializable{}
 	for i, v := range obj.values {
@@ -516,12 +585,23 @@ func (obj *Object) EntryMap() map[string]Serializable {
 	return map_
 }
 
-func (obj *Object) ValueEntryMap() map[string]Value {
+func (obj *Object) ValueEntryMap(ctx *Context) map[string]Value {
 	if obj == nil {
 		return nil
 	}
-	obj.Lock(nil)
-	defer obj.Unlock(nil)
+
+	if ctx != nil {
+		if err := obj.waitIfOtherTransaction(ctx); err != nil {
+			panic(err)
+		}
+
+		closestState := ctx.GetClosestState()
+		obj.Lock(closestState)
+		defer obj.Unlock(closestState)
+	} else {
+		obj.Lock(nil)
+		defer obj.Unlock(nil)
+	}
 
 	map_ := map[string]Value{}
 	for i, v := range obj.values {
@@ -557,6 +637,7 @@ func (obj *Object) ForEachEntry(fn func(k string, v Serializable) error) error {
 	if obj.IsShared() {
 		panic(errors.New("Object.ForEachEntry() can only be called on objects that are not shared"))
 	}
+
 	for i, v := range obj.values {
 		if err := fn(obj.keys[i], v); err != nil {
 			return err
@@ -592,7 +673,15 @@ func (obj *Object) At(ctx *Context, i int) Value {
 	return obj.Prop(ctx, strconv.Itoa(i))
 }
 
-func (obj *Object) Keys() []string {
+func (obj *Object) Keys(ctx *Context) []string {
+	if err := obj.waitIfOtherTransaction(ctx); err != nil {
+		panic(err)
+	}
+
+	closestState := ctx.GetClosestState()
+	obj.Lock(closestState)
+	defer obj.Unlock(closestState)
+
 	return obj.keys
 }
 

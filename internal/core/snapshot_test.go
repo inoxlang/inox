@@ -84,9 +84,9 @@ func TestSnapshot(t *testing.T) {
 			assert.NotSame(t, snap, newSnap)
 
 			//check that previous snapshot has not been changed
-			assert.Equal(t, map[string]Serializable{}, utils.Must(snap.InstantiateValue(ctx)).(*Object).EntryMap())
+			assert.Equal(t, map[string]Serializable{}, utils.Must(snap.InstantiateValue(ctx)).(*Object).EntryMap(nil))
 
-			assert.Equal(t, map[string]Serializable{"a": Int(1)}, utils.Must(newSnap.InstantiateValue(ctx)).(*Object).EntryMap())
+			assert.Equal(t, map[string]Serializable{"a": Int(1)}, utils.Must(newSnap.InstantiateValue(ctx)).(*Object).EntryMap(nil))
 		})
 	})
 }

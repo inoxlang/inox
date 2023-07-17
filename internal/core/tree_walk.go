@@ -2168,7 +2168,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return nil, err
 		}
 
-		ns, err := CreatePatternNamespace(right)
+		ns, err := CreatePatternNamespace(state.Global.Ctx, right)
 		if err != nil {
 			return nil, err
 		}

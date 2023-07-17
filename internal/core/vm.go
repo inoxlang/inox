@@ -1107,7 +1107,7 @@ func (v *VM) run() {
 		case OpCreatePatternNamespace:
 			init := v.stack[v.sp-1]
 
-			val, err := CreatePatternNamespace(init)
+			val, err := CreatePatternNamespace(v.global.Ctx, init)
 			if err != nil {
 				v.err = err
 				return

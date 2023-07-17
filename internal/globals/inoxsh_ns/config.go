@@ -30,7 +30,7 @@ func MakeREPLConfiguration(obj *core.Object) (REPLConfiguration, error) {
 
 	//use state.Out instead of stdout ?
 
-	for k, v := range obj.ValueEntryMap() {
+	for k, v := range obj.ValueEntryMap(nil) {
 		switch k {
 		case "builtin-commands":
 			const BUILTIN_COMMAND_LIST_ERR = "invalid configuration: .builtin-commands should be a list of identifiers"
@@ -68,7 +68,7 @@ func MakeREPLConfiguration(obj *core.Object) (REPLConfiguration, error) {
 				return config, errors.New(GLOBALS_ERR)
 			}
 
-			for k, v := range obj.EntryMap() {
+			for k, v := range obj.EntryMap(nil) {
 				config.additionalGlobals[k] = v
 			}
 		case "prompt":
