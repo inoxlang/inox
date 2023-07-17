@@ -128,6 +128,19 @@ func loadSet(ctx *core.Context, args core.InstanceLoadArgs) (core.UrlHolder, err
 			}
 		}()
 		set.addNoPersist(ctx, val)
+		if val.IsMutable() {
+			watchable, ok := val.(core.Watchable)
+			if !ok {
+				finalErr = fmt.Errorf("element should either be immutable or watchable")
+				cont = false
+				return
+			}
+			watchable.OnMutation(ctx, func(ctx *core.Context, mutation core.Mutation) (registerAgain bool) {
+				persistSet(ctx, set, set.path, set.storage)
+				registerAgain = true
+				return
+			}, core.MutationWatchingConfiguration{Depth: core.DeepWatching})
+		}
 		return true
 	})
 
@@ -253,6 +266,16 @@ func (set *Set) Has(ctx *core.Context, elem core.Serializable) core.Bool {
 	return core.Bool(ok)
 }
 
+func (set *Set) Get(ctx *core.Context, keyVal core.StringLike) (core.Value, core.Bool) {
+	key := keyVal.GetOrBuildString()
+	elem, ok := set.elements[key]
+	if !ok {
+		return nil, false
+	}
+
+	return elem, true
+}
+
 func (set *Set) Add(ctx *core.Context, elem core.Serializable) {
 	set.addNoPersist(ctx, elem)
 	//TODO: fully support transaction (in-memory changes)
@@ -315,6 +338,8 @@ func (f *Set) GetGoMethod(name string) (*core.GoFunction, bool) {
 		return core.WrapGoMethod(f.Add), true
 	case "remove":
 		return core.WrapGoMethod(f.Remove), true
+	case "get":
+		return core.WrapGoMethod(f.Get), true
 	}
 	return nil, false
 }

@@ -508,6 +508,77 @@ func TestSetAddToPersistedSet(t *testing.T) {
 
 }
 
+func TestInteractWithElementsOfLoadedSet(t *testing.T) {
+	setup := func() (*core.Context, core.SerializedValueStorage) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		kv := utils.Must(filekv.OpenSingleFileKV(filekv.KvStoreConfig{
+			InMemory: true,
+		}))
+		storage := filekv.NewSerializedValueStorage(kv, "ldb://main/")
+		return ctx, storage
+	}
+
+	t.Run("adding a simple value property to an element should trigger a persistence", func(t *testing.T) {
+		ctx, storage := setup()
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: UniquenessConstraint{
+				Type: UniqueURL,
+			},
+		}, core.CallBasedPatternReprMixin{})
+
+		storage.SetSerialized(ctx, "/set", `[]`)
+		set, err := loadSet(ctx, core.InstanceLoadArgs{
+			Key: "/set", Storage: storage, Pattern: pattern,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		newElem := core.NewObjectFromMap(core.ValMap{}, ctx)
+		set.(*Set).Add(ctx, newElem)
+
+		url, _ := newElem.URL()
+
+		//load again
+
+		loadedSet, err := loadSet(ctx, core.InstanceLoadArgs{
+			Key: "/set", Storage: storage, Pattern: pattern,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.NotSame(t, set, loadedSet) //future-proofing the test
+
+		elem, _ := loadedSet.(*Set).Get(ctx, core.Str(url.UnderlyingString()))
+		obj := elem.(*core.Object)
+		if !assert.NoError(t, obj.SetProp(ctx, "prop", core.Int(1))) {
+			return
+		}
+
+		//load again
+
+		loadedSet, err = loadSet(ctx, core.InstanceLoadArgs{
+			Key: "/set", Storage: storage, Pattern: pattern,
+		})
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		loadedElem, _ := loadedSet.(*Set).Get(ctx, core.Str(url.UnderlyingString()))
+		loadedObj := loadedElem.(*core.Object)
+
+		if !assert.Equal(t, []string{"prop"}, loadedObj.PropertyNames(ctx)) {
+			return
+		}
+
+		assert.Equal(t, core.Int(1), loadedObj.Prop(ctx, "prop"))
+	})
+}
+
 func TestSetRemoveFromPersistedSet(t *testing.T) {
 
 	setup := func() (*core.Context, core.SerializedValueStorage) {

@@ -13,11 +13,12 @@ import (
 var (
 	_ = []symbolic.Iterable{&Set{}}
 
-	SET_PROPNAMES                       = []string{"has", "add", "remove"}
+	SET_PROPNAMES                       = []string{"has", "add", "remove", "get"}
 	SET_CONFIG_ELEMENT_PATTERN_PROP_KEY = "element"
 	SET_CONFIG_UNIQUE_PROP_KEY          = "unique"
 
 	SET_ADD_METHOD_PARAM_NAMES = []string{"element"}
+	SET_GET_METHOD_PARAM_NAMES = []string{"key"}
 
 	ANY_SET         = NewSetWithPattern(symbolic.ANY_PATTERN)
 	ANY_SET_PATTERN = NewSetWithPattern(symbolic.ANY_PATTERN)
@@ -86,6 +87,8 @@ func (s *Set) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 		return symbolic.WrapGoMethod(s.Add), true
 	case "remove":
 		return symbolic.WrapGoMethod(s.Remove), true
+	case "get":
+		return symbolic.WrapGoMethod(s.Get), true
 	}
 	return nil, false
 }
@@ -114,6 +117,10 @@ func (s *Set) Remove(ctx *symbolic.Context, v symbolic.Serializable) {
 	ctx.SetSymbolicGoFunctionParameters(&[]symbolic.SymbolicValue{
 		s.elementPattern.SymbolicValue(),
 	}, SET_ADD_METHOD_PARAM_NAMES)
+}
+
+func (s *Set) Get(ctx *symbolic.Context, k symbolic.StringLike) (symbolic.SymbolicValue, *symbolic.Bool) {
+	return s.elementPattern.SymbolicValue(), symbolic.ANY_BOOL
 }
 
 func (*Set) Widen() (symbolic.SymbolicValue, bool) {
