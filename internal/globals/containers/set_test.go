@@ -236,7 +236,7 @@ func TestPersistLoadSet(t *testing.T) {
 			if !assert.True(t, ok) {
 				return
 			}
-			assert.Equal(t, "[\"1\"]", serialized)
+			assert.Equal(t, `[{"int__value":"1"}]`, serialized)
 		}
 
 		loadedSet, err := loadSet(ctx, core.InstanceLoadArgs{
@@ -270,7 +270,7 @@ func TestPersistLoadSet(t *testing.T) {
 			if !assert.True(t, ok) {
 				return
 			}
-			assert.Regexp(t, `(\["1","2"]|\["2","1"])`, serialized)
+			assert.Regexp(t, `(\[{"int__value":"1"},{"int__value":"2"}]|\[{"int__value":"2"},{"int__value":"1"}])`, serialized)
 		}
 
 		loadedSet, err := loadSet(ctx, core.InstanceLoadArgs{
@@ -295,7 +295,7 @@ func TestPersistLoadSet(t *testing.T) {
 
 		//a mutable object is not considered to have a unique representation.
 
-		storage.SetSerialized(ctx, "/set", `[{}]`)
+		storage.SetSerialized(ctx, "/set", `[{"object__value":{}}]`)
 		set, err := loadSet(ctx, core.InstanceLoadArgs{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
@@ -316,7 +316,7 @@ func TestPersistLoadSet(t *testing.T) {
 			},
 		}, core.CallBasedPatternReprMixin{})
 
-		storage.SetSerialized(ctx, "/set", `[{}]`)
+		storage.SetSerialized(ctx, "/set", `[{"object__value":{}}]`)
 		set, err := loadSet(ctx, core.InstanceLoadArgs{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
@@ -348,7 +348,7 @@ func TestPersistLoadSet(t *testing.T) {
 			if !assert.True(t, ok) {
 				return
 			}
-			assert.Equal(t, `[{"id":"a"}]`, serialized)
+			assert.Equal(t, `[{"object__value":{"id":"a"}}]`, serialized)
 		}
 
 		loadedSet, err := loadSet(ctx, core.InstanceLoadArgs{
@@ -384,9 +384,9 @@ func TestPersistLoadSet(t *testing.T) {
 				return
 			}
 			if strings.Index(serialized, `"a"`) < strings.Index(serialized, `"b"`) {
-				assert.Equal(t, `[{"id":"a"},{"id":"b"}]`, serialized)
+				assert.Equal(t, `[{"object__value":{"id":"a"}},{"object__value":{"id":"b"}}]`, serialized)
 			} else {
-				assert.Equal(t, `[{"id":"b"},{"id":"a"}]`, serialized)
+				assert.Equal(t, `[{"object__value":{"id":"b"}},{"object__value":{"id":"a"}}]`, serialized)
 			}
 		}
 
@@ -410,7 +410,7 @@ func TestPersistLoadSet(t *testing.T) {
 			},
 		}, core.CallBasedPatternReprMixin{})
 
-		storage.SetSerialized(ctx, "/set", `[{"id": "a"}, {"id": "a"}]`)
+		storage.SetSerialized(ctx, "/set", `[{"object__value":{"id": "a"}}, {"object__value":{"id": "a"}}]`)
 		set, err := loadSet(ctx, core.InstanceLoadArgs{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
