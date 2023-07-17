@@ -16,7 +16,7 @@ var (
 
 		(*watchableMultivalue)(nil),
 	}
-	_ = []StreamSource{&Watcher{}}
+	_ = []StreamSource{(*Watcher)(nil)}
 )
 
 // An Watchable represents a symbolic Watchable.

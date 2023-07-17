@@ -9,7 +9,7 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-var _ = []symbolic.Iterable{&Thread{}}
+var _ = []symbolic.Iterable{(*Thread)(nil)}
 
 type Thread struct {
 	symbolic.UnassignablePropsMixin

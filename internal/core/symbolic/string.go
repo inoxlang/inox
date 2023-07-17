@@ -10,12 +10,12 @@ import (
 
 var (
 	_ = []WrappedString{
-		&String{}, &Identifier{}, &Path{}, &PathPattern{}, &Host{},
-		&HostPattern{}, &URLPattern{}, &CheckedString{},
+		(*String)(nil), (*Identifier)(nil), (*Path)(nil), (*PathPattern)(nil), (*Host)(nil),
+		(*HostPattern)(nil), (*URLPattern)(nil), (*CheckedString)(nil),
 	}
 
 	_ = []StringLike{
-		&String{}, &StringConcatenation{},
+		(*String)(nil), (*StringConcatenation)(nil),
 	}
 
 	ANY_STR         = &String{}

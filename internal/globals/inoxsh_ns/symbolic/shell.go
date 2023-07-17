@@ -12,8 +12,8 @@ import (
 var (
 	SHELL_PROPNAMES = []string{"start", "stop"}
 
-	_ = []symbolic.Readable{&Shell{}}
-	_ = []symbolic.Writable{&Shell{}}
+	_ = []symbolic.Readable{(*Shell)(nil)}
+	_ = []symbolic.Writable{(*Shell)(nil)}
 )
 
 // A Shell represents a symbolic Shell.

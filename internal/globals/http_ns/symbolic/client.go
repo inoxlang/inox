@@ -12,7 +12,7 @@ import (
 var (
 	HTTP_CLIENT_PROPNAMES = []string{"get_host_cookies"}
 
-	_ = []symbolic.ProtocolClient{&HttpClient{}}
+	_ = []symbolic.ProtocolClient{(*HttpClient)(nil)}
 )
 
 type HttpClient struct {

@@ -1,8 +1,8 @@
 package symbolic
 
 var (
-	_ = []Sequence{&String{}, &Tuple{}}
-	_ = []MutableLengthSequence{&List{}, &ByteSlice{}, &RuneSlice{}}
+	_ = []Sequence{(*String)(nil), (*Tuple)(nil)}
+	_ = []MutableLengthSequence{(*List)(nil), (*ByteSlice)(nil), (*RuneSlice)(nil)}
 )
 
 type Sequence interface {

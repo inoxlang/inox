@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	_ = []symbolic.Iterable{&Tree{}, &TreeNode{}}
-	_ = []symbolic.PotentiallySharable{&Tree{}, &TreeNode{}}
+	_ = []symbolic.Iterable{(*Tree)(nil), (*TreeNode)(nil)}
+	_ = []symbolic.PotentiallySharable{(*Tree)(nil), (*TreeNode)(nil)}
 
 	ANY_TREE      = NewTree(false)
 	ANY_TREE_NODE = NewTreeNode(ANY_TREE)

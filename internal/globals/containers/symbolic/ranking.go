@@ -9,7 +9,7 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-var _ = []symbolic.Iterable{&Ranking{}, &Rank{}}
+var _ = []symbolic.Iterable{(*Ranking)(nil), (*Rank)(nil)}
 
 type Ranking struct {
 	symbolic.UnassignablePropsMixin

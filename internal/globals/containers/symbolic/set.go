@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	_ = []symbolic.Iterable{&Set{}}
+	_ = []symbolic.Iterable{(*Set)(nil)}
 
 	SET_PROPNAMES                       = []string{"has", "add", "remove", "get"}
 	SET_CONFIG_ELEMENT_PATTERN_PROP_KEY = "element"

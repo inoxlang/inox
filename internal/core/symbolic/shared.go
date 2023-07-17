@@ -8,8 +8,8 @@ import (
 
 var (
 	_ = []PotentiallySharable{
-		&Object{}, &InoxFunction{}, &GoFunction{}, &RingBuffer{},
-		&Mapping{}, &ValueHistory{},
+		(*Object)(nil), (*InoxFunction)(nil), (*GoFunction)(nil), (*RingBuffer)(nil),
+		(*Mapping)(nil), (*ValueHistory)(nil),
 	}
 )
 

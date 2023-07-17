@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	_            = []Integral{&Int{}, &Byte{}, &AnyIntegral{}}
+	_            = []Integral{(*Int)(nil), (*Byte)(nil), (*AnyIntegral)(nil)}
 	ANY_INTEGRAL = &AnyIntegral{}
 	ANY_INT      = &Int{}
 	ANY_FLOAT    = &Float{}

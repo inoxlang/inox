@@ -9,7 +9,7 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-var _ = []symbolic.Iterable{&Queue{}}
+var _ = []symbolic.Iterable{(*Queue)(nil)}
 
 type Queue struct {
 	symbolic.UnassignablePropsMixin

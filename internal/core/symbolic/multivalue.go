@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	_ = []asInterface{&Multivalue{}, &indexableMultivalue{}, &iterableMultivalue{}, &ipropsMultivalue{}}
+	_ = []asInterface{(*Multivalue)(nil), (*indexableMultivalue)(nil), (*iterableMultivalue)(nil), (*ipropsMultivalue)(nil)}
 
 	_ = []IMultivalue{(*indexableMultivalue)(nil), (*iterableMultivalue)(nil), (*ipropsMultivalue)(nil)}
 

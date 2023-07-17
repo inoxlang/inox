@@ -14,7 +14,7 @@ var (
 
 	MSG_PROPNAMES = []string{"data"}
 
-	_ = []MessageReceiver{&Object{}}
+	_ = []MessageReceiver{(*Object)(nil)}
 )
 
 // An MessageReceiver represents a symbolic MessageReceiver.

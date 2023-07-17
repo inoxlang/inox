@@ -9,11 +9,11 @@ import (
 
 var (
 	_ = []WrappedString{
-		&String{}, &Identifier{}, &Path{}, &PathPattern{}, &Host{},
-		&HostPattern{}, &URLPattern{}, &CheckedString{},
+		(*String)(nil), (*Identifier)(nil), (*Path)(nil), (*PathPattern)(nil), (*Host)(nil),
+		(*HostPattern)(nil), (*URLPattern)(nil), (*CheckedString)(nil),
 	}
 
-	_ = []BytesLike{&AnyBytesLike{}, &ByteSlice{}, &BytesConcatenation{}}
+	_ = []BytesLike{(*AnyBytesLike)(nil), (*ByteSlice)(nil), (*BytesConcatenation)(nil)}
 
 	ANY_BYTES_LIKE   = &AnyBytesLike{}
 	ANY_BYTE_SLICE   = &ByteSlice{}
