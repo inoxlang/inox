@@ -410,19 +410,14 @@ func (patt *SequenceStringPattern) Call(values []Serializable) (Pattern, error) 
 		return nil, err
 	}
 
-	clone, err := patt.Clone(map[uintptr]map[int]Value{}, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	pattClone := clone.(*SequenceStringPattern)
-
 	if found {
-		pattClone.effectiveLengthRange = lenRange
-		pattClone.hasEffectiveLengthRange = true
+		newPattern := *patt
+		newPattern.effectiveLengthRange = lenRange
+		newPattern.hasEffectiveLengthRange = true
+		return &newPattern, nil
 	}
 
-	return pattClone, nil
+	return patt, nil
 }
 
 func (patt *SequenceStringPattern) StringPattern() (StringPattern, bool) {
@@ -1415,19 +1410,14 @@ func (patt *RegexPattern) Call(values []Serializable) (Pattern, error) {
 		return nil, err
 	}
 
-	clone, err := patt.Clone(map[uintptr]map[int]Value{}, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	pattClone := clone.(*RegexPattern)
-
 	if found {
-		pattClone.effectiveLengthRange = lenRange
-		pattClone.hasEffectiveLengthRange = true
+		newPattern := *patt
+		newPattern.effectiveLengthRange = lenRange
+		newPattern.hasEffectiveLengthRange = true
+		return &newPattern, nil
 	}
 
-	return pattClone, nil
+	return patt, nil
 }
 
 func (patt *RegexPattern) StringPattern() (StringPattern, bool) {
@@ -1574,19 +1564,14 @@ func (patt *PathStringPattern) Call(values []Serializable) (Pattern, error) {
 		return nil, err
 	}
 
-	newPattern, err := patt.Clone(map[uintptr]map[int]Value{}, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	pattClone := newPattern.(*PathStringPattern)
-
 	if found {
-		pattClone.effectiveLengthRange = lenRange
-		pattClone.hasEffectiveLengthRange = true
+		newPattern := *patt
+		newPattern.effectiveLengthRange = lenRange
+		newPattern.hasEffectiveLengthRange = true
+		return &newPattern, nil
 	}
 
-	return pattClone, nil
+	return patt, nil
 }
 
 func (patt *PathStringPattern) StringPattern() (StringPattern, bool) {
