@@ -46,6 +46,10 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 				return finalErr == nil
 			})
 
+			if value == nil {
+				finalErr = errors.New("impossible to determine type")
+			}
+
 			if finalErr != nil {
 				return nil, finalErr
 			}
