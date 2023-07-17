@@ -4,16 +4,17 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core"
+	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSetPattern(t *testing.T) {
 	//
-	patt, err := SET_PATTERN.Call([]core.Serializable{core.INT_PATTERN, REPR_UNIQUENESS_IDENT})
+	patt, err := SET_PATTERN.Call([]core.Serializable{core.INT_PATTERN, containers_common.REPR_UNIQUENESS_IDENT})
 
 	if assert.NoError(t, err) {
-		uniqueness := UniquenessConstraint{
-			Type: UniqueRepr,
+		uniqueness := containers_common.UniquenessConstraint{
+			Type: containers_common.UniqueRepr,
 		}
 
 		expectedPattern := NewSetPattern(SetConfig{
@@ -32,11 +33,11 @@ func TestSetPattern(t *testing.T) {
 	})
 
 	//
-	patt, err = SET_PATTERN.Call([]core.Serializable{objectPattern, URL_UNIQUENESS_IDENT})
+	patt, err = SET_PATTERN.Call([]core.Serializable{objectPattern, containers_common.URL_UNIQUENESS_IDENT})
 
 	if assert.NoError(t, err) {
-		uniqueness := UniquenessConstraint{
-			Type: UniqueURL,
+		uniqueness := containers_common.UniquenessConstraint{
+			Type: containers_common.UniqueURL,
 		}
 
 		expectedPattern := NewSetPattern(SetConfig{
@@ -54,8 +55,8 @@ func TestSetPattern(t *testing.T) {
 	patt, err = SET_PATTERN.Call([]core.Serializable{objectPattern, core.PropertyName("a")})
 
 	if assert.NoError(t, err) {
-		uniqueness := UniquenessConstraint{
-			Type:         UniquePropertyValue,
+		uniqueness := containers_common.UniquenessConstraint{
+			Type:         containers_common.UniquePropertyValue,
 			PropertyName: core.PropertyName("a"),
 		}
 

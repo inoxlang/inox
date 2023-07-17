@@ -247,6 +247,10 @@ type Identifier struct {
 	SerializableMixin
 }
 
+func NewIdentifier(name string) *Identifier {
+	return &Identifier{name: name}
+}
+
 func (i *Identifier) Test(v SymbolicValue) bool {
 	other, ok := v.(*Identifier)
 	if !ok {
@@ -293,6 +297,14 @@ func (i *Identifier) WidestOfType() SymbolicValue {
 // A PropertyName represents a symbolic PropertyName.
 type PropertyName struct {
 	name string
+}
+
+func NewPropertyName(name string) *PropertyName {
+	return &PropertyName{name: name}
+}
+
+func (n *PropertyName) Name() string {
+	return n.name
 }
 
 func (p *PropertyName) Test(v SymbolicValue) bool {

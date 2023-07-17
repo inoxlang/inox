@@ -11,6 +11,7 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 
+	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
 )
 
@@ -21,8 +22,8 @@ func TestNewSet(t *testing.T) {
 		set := NewSet(ctx, core.NewWrappedValueList())
 
 		assert.Equal(t, SetConfig{
-			Uniqueness: UniquenessConstraint{
-				Type: UniqueRepr,
+			Uniqueness: containers_common.UniquenessConstraint{
+				Type: containers_common.UniqueRepr,
 			},
 			Element: core.SERIALIZABLE_PATTERN,
 		}, set.config)
@@ -33,8 +34,8 @@ func TestNewSet(t *testing.T) {
 		set := NewSet(ctx, core.NewWrappedValueList(core.Int(1)))
 
 		assert.Equal(t, SetConfig{
-			Uniqueness: UniquenessConstraint{
-				Type: UniqueRepr,
+			Uniqueness: containers_common.UniquenessConstraint{
+				Type: containers_common.UniqueRepr,
 			},
 			Element: core.SERIALIZABLE_PATTERN,
 		}, set.config)
@@ -76,8 +77,8 @@ func TestNewSet(t *testing.T) {
 		set := NewSet(ctx, core.NewWrappedValueList(), config)
 
 		assert.Equal(t, SetConfig{
-			Uniqueness: UniquenessConstraint{
-				Type: UniqueURL,
+			Uniqueness: containers_common.UniquenessConstraint{
+				Type: containers_common.UniqueURL,
 			},
 			Element: core.SERIALIZABLE_PATTERN,
 		}, set.config)
@@ -92,7 +93,7 @@ func TestNewSet(t *testing.T) {
 
 		func() {
 			defer func() {
-				assert.ErrorContains(t, recover().(error), ErrFailedGetUniqueKeyNoURL.Error())
+				assert.ErrorContains(t, recover().(error), containers_common.ErrFailedGetUniqueKeyNoURL.Error())
 			}()
 			NewSet(ctx, core.NewWrappedValueList(core.NewObjectFromMap(nil, ctx)), config)
 		}()
@@ -109,8 +110,8 @@ func TestNewSet(t *testing.T) {
 		set := NewSet(ctx, core.NewWrappedValueList(), config)
 
 		assert.Equal(t, SetConfig{
-			Uniqueness: UniquenessConstraint{
-				Type:         UniquePropertyValue,
+			Uniqueness: containers_common.UniquenessConstraint{
+				Type:         containers_common.UniquePropertyValue,
 				PropertyName: "id",
 			},
 			Element: core.SERIALIZABLE_PATTERN,
@@ -126,7 +127,7 @@ func TestNewSet(t *testing.T) {
 
 		func() {
 			defer func() {
-				assert.ErrorContains(t, recover().(error), ErrFailedGetUniqueKeyNoProps.Error())
+				assert.ErrorContains(t, recover().(error), containers_common.ErrFailedGetUniqueKeyNoProps.Error())
 			}()
 			NewSet(ctx, core.NewWrappedValueList(core.Int(1)), config)
 		}()
@@ -146,8 +147,8 @@ func TestNewSet(t *testing.T) {
 		set := NewSet(ctx, core.NewWrappedValueList(), config)
 
 		assert.Equal(t, SetConfig{
-			Uniqueness: UniquenessConstraint{
-				Type: UniqueRepr,
+			Uniqueness: containers_common.UniquenessConstraint{
+				Type: containers_common.UniqueRepr,
 			},
 			Element: elementPattern,
 		}, set.config)
@@ -189,8 +190,8 @@ func TestPersistLoadSet(t *testing.T) {
 		ctx, storage := setup()
 
 		pattern := NewSetPattern(SetConfig{
-			Uniqueness: UniquenessConstraint{
-				Type: UniqueRepr,
+			Uniqueness: containers_common.UniquenessConstraint{
+				Type: containers_common.UniqueRepr,
 			},
 		}, core.CallBasedPatternReprMixin{})
 		set := NewSetWithConfig(ctx, nil, pattern.config)
@@ -220,8 +221,8 @@ func TestPersistLoadSet(t *testing.T) {
 		ctx, storage := setup()
 
 		pattern := NewSetPattern(SetConfig{
-			Uniqueness: UniquenessConstraint{
-				Type: UniqueRepr,
+			Uniqueness: containers_common.UniquenessConstraint{
+				Type: containers_common.UniqueRepr,
 			},
 		}, core.CallBasedPatternReprMixin{})
 		set := NewSetWithConfig(ctx, nil, pattern.config)
@@ -253,8 +254,8 @@ func TestPersistLoadSet(t *testing.T) {
 		ctx, storage := setup()
 
 		pattern := NewSetPattern(SetConfig{
-			Uniqueness: UniquenessConstraint{
-				Type: UniqueRepr,
+			Uniqueness: containers_common.UniquenessConstraint{
+				Type: containers_common.UniqueRepr,
 			},
 		}, core.CallBasedPatternReprMixin{})
 		set := NewSetWithConfig(ctx, nil, pattern.config)
@@ -288,8 +289,8 @@ func TestPersistLoadSet(t *testing.T) {
 		ctx, storage := setup()
 
 		pattern := NewSetPattern(SetConfig{
-			Uniqueness: UniquenessConstraint{
-				Type: UniqueRepr,
+			Uniqueness: containers_common.UniquenessConstraint{
+				Type: containers_common.UniqueRepr,
 			},
 		}, core.CallBasedPatternReprMixin{})
 
@@ -310,8 +311,8 @@ func TestPersistLoadSet(t *testing.T) {
 		ctx, storage := setup()
 
 		pattern := NewSetPattern(SetConfig{
-			Uniqueness: UniquenessConstraint{
-				Type:         UniquePropertyValue,
+			Uniqueness: containers_common.UniquenessConstraint{
+				Type:         containers_common.UniquePropertyValue,
 				PropertyName: "id",
 			},
 		}, core.CallBasedPatternReprMixin{})
@@ -320,7 +321,7 @@ func TestPersistLoadSet(t *testing.T) {
 		set, err := loadSet(ctx, core.InstanceLoadArgs{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
-		if !assert.ErrorIs(t, err, ErrFailedGetUniqueKeyPropMissing) {
+		if !assert.ErrorIs(t, err, containers_common.ErrFailedGetUniqueKeyPropMissing) {
 			return
 		}
 
@@ -331,8 +332,8 @@ func TestPersistLoadSet(t *testing.T) {
 		ctx, storage := setup()
 
 		pattern := NewSetPattern(SetConfig{
-			Uniqueness: UniquenessConstraint{
-				Type:         UniquePropertyValue,
+			Uniqueness: containers_common.UniquenessConstraint{
+				Type:         containers_common.UniquePropertyValue,
 				PropertyName: "id",
 			},
 		}, core.CallBasedPatternReprMixin{})
@@ -365,8 +366,8 @@ func TestPersistLoadSet(t *testing.T) {
 		ctx, storage := setup()
 
 		pattern := NewSetPattern(SetConfig{
-			Uniqueness: UniquenessConstraint{
-				Type:         UniquePropertyValue,
+			Uniqueness: containers_common.UniquenessConstraint{
+				Type:         containers_common.UniquePropertyValue,
 				PropertyName: "id",
 			},
 		}, core.CallBasedPatternReprMixin{})
@@ -404,8 +405,8 @@ func TestPersistLoadSet(t *testing.T) {
 		ctx, storage := setup()
 
 		pattern := NewSetPattern(SetConfig{
-			Uniqueness: UniquenessConstraint{
-				Type:         UniquePropertyValue,
+			Uniqueness: containers_common.UniquenessConstraint{
+				Type:         containers_common.UniquePropertyValue,
 				PropertyName: "id",
 			},
 		}, core.CallBasedPatternReprMixin{})
@@ -438,8 +439,8 @@ func TestSetAddToPersistedSet(t *testing.T) {
 		ctx, storage := setup()
 
 		pattern := NewSetPattern(SetConfig{
-			Uniqueness: UniquenessConstraint{
-				Type: UniqueRepr,
+			Uniqueness: containers_common.UniquenessConstraint{
+				Type: containers_common.UniqueRepr,
 			},
 		}, core.CallBasedPatternReprMixin{})
 
@@ -481,8 +482,8 @@ func TestSetAddToPersistedSet(t *testing.T) {
 		ctx, storage := setup()
 
 		pattern := NewSetPattern(SetConfig{
-			Uniqueness: UniquenessConstraint{
-				Type: UniqueURL,
+			Uniqueness: containers_common.UniquenessConstraint{
+				Type: containers_common.UniqueURL,
 			},
 		}, core.CallBasedPatternReprMixin{})
 
@@ -522,8 +523,8 @@ func TestInteractWithElementsOfLoadedSet(t *testing.T) {
 		ctx, storage := setup()
 
 		pattern := NewSetPattern(SetConfig{
-			Uniqueness: UniquenessConstraint{
-				Type: UniqueURL,
+			Uniqueness: containers_common.UniquenessConstraint{
+				Type: containers_common.UniqueURL,
 			},
 		}, core.CallBasedPatternReprMixin{})
 
@@ -594,8 +595,8 @@ func TestSetRemoveFromPersistedSet(t *testing.T) {
 		ctx, storage := setup()
 
 		pattern := NewSetPattern(SetConfig{
-			Uniqueness: UniquenessConstraint{
-				Type: UniqueRepr,
+			Uniqueness: containers_common.UniquenessConstraint{
+				Type: containers_common.UniqueRepr,
 			},
 		}, core.CallBasedPatternReprMixin{})
 

@@ -1,4 +1,4 @@
-package containers
+package containers_common
 
 import (
 	"testing"

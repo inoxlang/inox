@@ -5,6 +5,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 
 	"github.com/inoxlang/inox/internal/utils"
@@ -20,17 +21,19 @@ var (
 	SET_ADD_METHOD_PARAM_NAMES = []string{"element"}
 	SET_GET_METHOD_PARAM_NAMES = []string{"key"}
 
-	ANY_SET         = NewSetWithPattern(symbolic.ANY_PATTERN)
-	ANY_SET_PATTERN = NewSetWithPattern(symbolic.ANY_PATTERN)
+	ANY_SET         = NewSetWithPattern(symbolic.ANY_PATTERN, nil)
+	ANY_SET_PATTERN = NewSetWithPattern(symbolic.ANY_PATTERN, nil)
 )
 
 type Set struct {
 	symbolic.UnassignablePropsMixin
 	elementPattern symbolic.Pattern
+	uniqueness     *containers_common.UniquenessConstraint
 }
 
 func NewSet(ctx *symbolic.Context, elements symbolic.Iterable, config ...*symbolic.Object) *Set {
 	var patt symbolic.Pattern = symbolic.ANY_PATTERN
+	var uniqueness *containers_common.UniquenessConstraint
 
 	if len(config) > 0 {
 		configObject := config[0]
@@ -47,36 +50,32 @@ func NewSet(ctx *symbolic.Context, elements symbolic.Iterable, config ...*symbol
 					patt = pattern
 				}
 			case SET_CONFIG_UNIQUE_PROP_KEY:
-				ok := false
-				switch val := propVal.(type) {
-				case *symbolic.PropertyName:
-					ok = true
-				case *symbolic.Identifier:
-					ok = !val.HasConcreteName() || val.Name() == "url"
-				}
+				u, ok := containers_common.UniquenessConstraintFromSymbolicValue(propVal)
 				if !ok {
 					err := commonfmt.FmtInvalidValueForPropXOfArgY(SET_CONFIG_UNIQUE_PROP_KEY, "configuration", "#url or a property name is expected")
 					ctx.AddSymbolicGoFunctionError(err.Error())
+				} else {
+					uniqueness = &u
 				}
 			}
 
 			return nil
 		})
 	}
-	return NewSetWithPattern(patt)
+	return NewSetWithPattern(patt, uniqueness)
 }
 
-func NewSetWithPattern(elementPattern symbolic.Pattern) *Set {
-	return &Set{elementPattern: elementPattern}
+func NewSetWithPattern(elementPattern symbolic.Pattern, uniqueness *containers_common.UniquenessConstraint) *Set {
+	return &Set{elementPattern: elementPattern, uniqueness: uniqueness}
 }
 
 func (s *Set) Test(v symbolic.SymbolicValue) bool {
 	otherSet, ok := v.(*Set)
-	if !ok {
+	if !ok || !s.elementPattern.Test(otherSet.elementPattern) {
 		return false
 	}
 
-	return s.elementPattern.Test(otherSet.elementPattern)
+	return s.uniqueness == nil || s.uniqueness == otherSet.uniqueness
 }
 
 func (s *Set) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
@@ -134,6 +133,10 @@ func (*Set) IsWidenable() bool {
 func (s *Set) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%Set(")))
 	s.elementPattern.SymbolicValue().PrettyPrint(w, config, depth, parentIndentCount)
+	if s.uniqueness != nil {
+		utils.PanicIfErr(w.WriteByte(','))
+		s.uniqueness.ToSymbolicValue().PrettyPrint(w, config, depth, 0)
+	}
 	utils.Must(w.Write(utils.StringAsBytes(")")))
 }
 
@@ -152,6 +155,7 @@ func (*Set) WidestOfType() symbolic.SymbolicValue {
 type SetPattern struct {
 	symbolic.UnassignablePropsMixin
 	elementPattern symbolic.Pattern
+	uniqueness     *containers_common.UniquenessConstraint
 
 	symbolic.NotCallablePatternMixin
 	symbolic.SerializableMixin
@@ -163,11 +167,11 @@ func NewSetPatternWithElementPattern(elementPattern symbolic.Pattern) *SetPatter
 
 func (p *SetPattern) Test(v symbolic.SymbolicValue) bool {
 	otherPattern, ok := v.(*SetPattern)
-	if !ok {
+	if !ok || !p.elementPattern.Test(otherPattern.elementPattern) {
 		return false
 	}
 
-	return p.elementPattern.Test(otherPattern.elementPattern)
+	return p.uniqueness == nil || p.uniqueness == otherPattern.uniqueness
 }
 
 func (p *SetPattern) TestValue(v symbolic.SymbolicValue) bool {
@@ -187,11 +191,17 @@ func (p *SetPattern) StringPattern() (symbolic.StringPattern, bool) {
 }
 
 func (p *SetPattern) SymbolicValue() symbolic.SymbolicValue {
-	return NewSetWithPattern(p.elementPattern)
+	return NewSetWithPattern(p.elementPattern, p.uniqueness)
 }
 
 func (p *SetPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%set-pattern")))
+	utils.Must(w.Write(utils.StringAsBytes("%set-pattern(")))
+	p.elementPattern.SymbolicValue().PrettyPrint(w, config, depth, parentIndentCount)
+	if p.uniqueness != nil {
+		utils.PanicIfErr(w.WriteByte(','))
+		p.uniqueness.ToSymbolicValue().PrettyPrint(w, config, depth, 0)
+	}
+	utils.Must(w.Write(utils.StringAsBytes(")")))
 }
 
 func (*SetPattern) Widen() (symbolic.SymbolicValue, bool) {

@@ -13,7 +13,8 @@ func (s *Set) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symboli
 		return nil, err
 	}
 	elementPattern := p.(symbolic.Pattern)
-	return coll_symbolic.NewSetWithPattern(elementPattern), nil
+	uniqueness := s.config.Uniqueness
+	return coll_symbolic.NewSetWithPattern(elementPattern, &uniqueness), nil
 }
 
 func (p *SetPattern) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {

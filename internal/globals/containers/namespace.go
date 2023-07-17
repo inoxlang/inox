@@ -6,15 +6,11 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
 
 	"github.com/inoxlang/inox/internal/globals/help_ns"
-)
-
-const (
-	URL_UNIQUENESS_IDENT  = core.Identifier("url")
-	REPR_UNIQUENESS_IDENT = core.Identifier("repr")
 )
 
 var (
@@ -35,7 +31,7 @@ var (
 				return nil, core.FmtErrInvalidArgumentAtPos(elementPattern, 0)
 			}
 
-			uniqueness, ok := UniquenessConstraintFromValue(values[1])
+			uniqueness, ok := containers_common.UniquenessConstraintFromValue(values[1])
 			if !ok {
 				return nil, core.FmtErrInvalidArgumentAtPos(elementPattern, 1)
 			}
@@ -61,13 +57,13 @@ var (
 				return nil, commonfmt.FmtErrInvalidArgumentAtPos(0, "a pattern is expected")
 			}
 
-			var uniqueness UniquenessConstraint
+			var uniqueness containers_common.UniquenessConstraint
 			switch u := values[1].(type) {
 			case *symbolic.Identifier:
 				if u.HasConcreteName() && (u.Name() != "url" && u.Name() != "repr") {
 					return nil, commonfmt.FmtErrInvalidArgumentAtPos(1, "#url, #repr or a property name is expected")
 				}
-				uniqueness.Type = UniqueURL
+				uniqueness.Type = containers_common.UniqueURL
 			case *symbolic.PropertyName:
 			default:
 				return nil, commonfmt.FmtErrInvalidArgumentAtPos(1, "#url, #repr or a property name is expected")

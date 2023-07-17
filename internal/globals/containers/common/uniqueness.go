@@ -1,11 +1,17 @@
-package containers
+package containers_common
 
 import (
 	"errors"
 	"fmt"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
+)
+
+const (
+	URL_UNIQUENESS_IDENT  = core.Identifier("url")
+	REPR_UNIQUENESS_IDENT = core.Identifier("repr")
 )
 
 var (
@@ -14,6 +20,9 @@ var (
 	ErrFailedGetUniqueKeyPropMissing = errors.New("failed to get unique key for value since the property is missing")
 
 	UniqueKeyReprConfig = &core.ReprConfig{AllVisible: true}
+
+	URL_UNIQUENESS_SYMB_IDENT  = symbolic.NewIdentifier("url")
+	REPR_UNIQUENESS_SYMB_IDENT = symbolic.NewIdentifier("repr")
 )
 
 type UniquenessConstraint struct {
@@ -43,6 +52,24 @@ func UniquenessConstraintFromValue(val core.Value) (UniquenessConstraint, bool) 
 	return uniqueness, true
 }
 
+func UniquenessConstraintFromSymbolicValue(val symbolic.SymbolicValue) (UniquenessConstraint, bool) {
+	switch val := val.(type) {
+	case *symbolic.PropertyName:
+		if val.Name() == "" {
+			return UniquenessConstraint{}, false
+		}
+		return UniquenessConstraint{Type: UniquePropertyValue, PropertyName: core.PropertyName(val.Name())}, true
+	case *symbolic.Identifier:
+		switch val.Name() {
+		case "url":
+			return UniquenessConstraint{Type: UniqueURL}, true
+		case "repr":
+			return UniquenessConstraint{Type: UniqueRepr}, true
+		}
+	}
+	return UniquenessConstraint{}, false
+}
+
 func (c UniquenessConstraint) ToValue() core.Serializable {
 	switch c.Type {
 	case UniqueRepr:
@@ -51,6 +78,19 @@ func (c UniquenessConstraint) ToValue() core.Serializable {
 		return URL_UNIQUENESS_IDENT
 	case UniquePropertyValue:
 		return c.PropertyName
+	default:
+		panic(core.ErrUnreachable)
+	}
+}
+
+func (c UniquenessConstraint) ToSymbolicValue() symbolic.SymbolicValue {
+	switch c.Type {
+	case UniqueRepr:
+		return REPR_UNIQUENESS_SYMB_IDENT
+	case UniqueURL:
+		return URL_UNIQUENESS_SYMB_IDENT
+	case UniquePropertyValue:
+		return symbolic.NewPropertyName(string(c.PropertyName))
 	default:
 		panic(core.ErrUnreachable)
 	}
@@ -78,7 +118,7 @@ const (
 	UniquePropertyValue
 )
 
-func getUniqueKey(ctx *core.Context, v core.Serializable, config UniquenessConstraint) string {
+func GetUniqueKey(ctx *core.Context, v core.Serializable, config UniquenessConstraint) string {
 	var key string
 	switch config.Type {
 	case UniqueRepr:

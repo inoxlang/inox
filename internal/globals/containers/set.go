@@ -13,6 +13,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/oklog/ulid/v2"
 
+	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
 )
 
@@ -43,8 +44,8 @@ type Set struct {
 
 func NewSet(ctx *core.Context, elements core.Iterable, configObject ...*core.Object) *Set {
 	config := SetConfig{
-		Uniqueness: UniquenessConstraint{
-			Type: UniqueRepr,
+		Uniqueness: containers_common.UniquenessConstraint{
+			Type: containers_common.UniqueRepr,
 		},
 		Element: core.SERIALIZABLE_PATTERN,
 	}
@@ -63,12 +64,12 @@ func NewSet(ctx *core.Context, elements core.Iterable, configObject ...*core.Obj
 				switch val := v.(type) {
 				case core.Identifier:
 					if val == "url" {
-						config.Uniqueness.Type = UniqueURL
+						config.Uniqueness.Type = containers_common.UniqueURL
 					} else {
 						panic(commonfmt.FmtInvalidValueForPropXOfArgY(k, "configuration", "?"))
 					}
 				case core.PropertyName:
-					config.Uniqueness.Type = UniquePropertyValue
+					config.Uniqueness.Type = containers_common.UniquePropertyValue
 					config.Uniqueness.PropertyName = val
 				default:
 					panic(commonfmt.FmtInvalidValueForPropXOfArgY(k, "configuration", "?"))
@@ -212,7 +213,7 @@ func (set *Set) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stream, c
 
 type SetConfig struct {
 	Element    core.Pattern
-	Uniqueness UniquenessConstraint
+	Uniqueness containers_common.UniquenessConstraint
 }
 
 func (c SetConfig) Equal(ctx *core.Context, otherConfig SetConfig, alreadyCompared map[uintptr]uintptr, depth int) bool {
@@ -261,7 +262,7 @@ func (set *Set) Has(ctx *core.Context, elem core.Serializable) core.Bool {
 		panic(ErrValueDoesMatchElementPattern)
 	}
 
-	key := getUniqueKey(ctx, elem, set.config.Uniqueness)
+	key := containers_common.GetUniqueKey(ctx, elem, set.config.Uniqueness)
 	_, ok := set.elements[key]
 	return core.Bool(ok)
 }
@@ -290,7 +291,7 @@ func (set *Set) addNoPersist(ctx *core.Context, elem core.Serializable) {
 		panic(ErrValueDoesMatchElementPattern)
 	}
 
-	if set.config.Uniqueness.Type == UniqueURL {
+	if set.config.Uniqueness.Type == containers_common.UniqueURL {
 		holder, ok := elem.(core.UrlHolder)
 		if !ok {
 			panic(errors.New("elements should be URL holders"))
@@ -299,7 +300,7 @@ func (set *Set) addNoPersist(ctx *core.Context, elem core.Serializable) {
 		_, ok = holder.URL()
 		if !ok {
 			if set.storage == nil {
-				panic(ErrFailedGetUniqueKeyNoURL)
+				panic(containers_common.ErrFailedGetUniqueKeyNoURL)
 			}
 
 			//if the Set is persisted & the elements are unique by URL
@@ -310,7 +311,7 @@ func (set *Set) addNoPersist(ctx *core.Context, elem core.Serializable) {
 		}
 	}
 
-	key := getUniqueKey(ctx, elem, set.config.Uniqueness)
+	key := containers_common.GetUniqueKey(ctx, elem, set.config.Uniqueness)
 
 	curr, ok := set.elements[key]
 	if ok && elem != curr {
@@ -320,7 +321,7 @@ func (set *Set) addNoPersist(ctx *core.Context, elem core.Serializable) {
 }
 
 func (set *Set) Remove(ctx *core.Context, elem core.Serializable) {
-	key := getUniqueKey(ctx, elem, set.config.Uniqueness)
+	key := containers_common.GetUniqueKey(ctx, elem, set.config.Uniqueness)
 	delete(set.elements, key)
 
 	//TODO: fully support transaction (in-memory changes)
