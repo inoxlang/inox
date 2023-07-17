@@ -129,6 +129,23 @@ func (tx *Transaction) GetValue(k any) (any, error) {
 	return tx.values[k], nil
 }
 
+func (tx *Transaction) GetSetValue(k any, getVal func() any) (any, error) {
+	if tx.IsFinished() {
+		return nil, ErrFinishedTransaction
+	}
+
+	tx.lock.Lock()
+	defer tx.lock.Unlock()
+
+	val, ok := tx.values[k]
+	if !ok {
+		val = getVal()
+		tx.values[k] = val
+	}
+
+	return val, nil
+}
+
 func (tx *Transaction) OnEnd(k any, fn func(tx *Transaction, success bool)) error {
 	if tx.IsFinished() {
 		return ErrFinishedTransaction

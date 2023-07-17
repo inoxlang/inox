@@ -10,6 +10,7 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/containers"
+	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
@@ -188,8 +189,12 @@ func TestOpenDatabase(t *testing.T) {
 			}
 
 			setPattern :=
-				utils.Must(containers.SET_PATTERN.CallImpl(containers.SET_PATTERN,
-					[]core.Serializable{core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), containers.URL_UNIQUENESS_IDENT}))
+				utils.Must(containers.SET_PATTERN.CallImpl(
+					containers.SET_PATTERN,
+					[]core.Serializable{
+						core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), containers_common.URL_UNIQUENESS_IDENT,
+					}),
+				)
 
 			schema := core.NewInexactObjectPattern(map[string]core.Pattern{
 				"users": setPattern,
@@ -479,7 +484,7 @@ func TestUpdateSchema(t *testing.T) {
 
 		setPattern :=
 			utils.Must(containers.SET_PATTERN.CallImpl(containers.SET_PATTERN,
-				[]core.Serializable{core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), containers.URL_UNIQUENESS_IDENT}))
+				[]core.Serializable{core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), containers_common.URL_UNIQUENESS_IDENT}))
 
 		schema := core.NewInexactObjectPattern(map[string]core.Pattern{
 			"users": setPattern,
@@ -508,8 +513,11 @@ func TestUpdateSchema(t *testing.T) {
 		assert.Empty(t, topLevelValues)
 
 		setPattern :=
-			utils.Must(containers.SET_PATTERN.CallImpl(containers.SET_PATTERN,
-				[]core.Serializable{core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), containers.URL_UNIQUENESS_IDENT}))
+			utils.Must(containers.SET_PATTERN.CallImpl(
+				containers.SET_PATTERN,
+				[]core.Serializable{
+					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), containers_common.URL_UNIQUENESS_IDENT,
+				}))
 
 		schema := core.NewInexactObjectPattern(map[string]core.Pattern{
 			"users": setPattern,

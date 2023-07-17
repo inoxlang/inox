@@ -387,7 +387,9 @@ func (kv *SingleFileKV) Delete(ctx *core.Context, key core.Path, db any) {
 
 func (kv *SingleFileKV) getCreateDatabaseTxn(db any, tx *core.Transaction) *DatabaseTx {
 	//if there is already a database transaction in the core.Transaction we return it.
-	v, err := tx.GetValue(db)
+	v, err := tx.GetSetValue(kv, func() any {
+		return map[any]*Tx{}
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -410,12 +412,9 @@ func (kv *SingleFileKV) getCreateDatabaseTxn(db any, tx *core.Transaction) *Data
 		panic(err)
 	}
 
-	if !hasTxMap {
-		txMap = map[any]*Tx{}
-	}
 	txMap[kv] = dbTx
 
-	if err = tx.SetValue(db, txMap); err != nil {
+	if err = tx.SetValue(kv, txMap); err != nil {
 		panic(err)
 	}
 
@@ -424,7 +423,7 @@ func (kv *SingleFileKV) getCreateDatabaseTxn(db any, tx *core.Transaction) *Data
 	kv.transactions[tx] = dbTx
 	kv.transactionMapLock.Unlock()
 
-	if err = tx.OnEnd(db, makeTxEndcallbackFn(dbTx, tx, kv)); err != nil {
+	if err = tx.OnEnd(kv, makeTxEndcallbackFn(dbTx, tx, kv)); err != nil {
 		panic(err)
 	}
 
