@@ -1,6 +1,7 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -19,12 +20,14 @@ var (
 	lifetimeJobSchedulerSpawned = atomic.Bool{}
 	lifetimeJobsRegistrations   = make(chan *ValueLifetimeJobs, 1000)
 	lifetimeJobsUnregistrations = make(chan *ValueLifetimeJobs, 1000)
+
+	ErrLifetimeJobMetaValueShouldBeImmutable = errors.New("meta value of lifetime job should be immutable")
 )
 
 // A LifetimeJob represents a job associated with a value that runs while the value exists, this struct does not
 // hold any state, see LifetimeJobInstance. LifetimeJob implements Value.
 type LifetimeJob struct {
-	meta           Value
+	meta           Value   //immutable
 	module         *Module // module executed when running the job
 	parentModule   *Module
 	subjectPattern Pattern
@@ -36,8 +39,11 @@ type LifetimeJobInstance struct {
 }
 
 func NewLifetimeJob(meta Value, subjectPattern Pattern, mod *Module, parentState *GlobalState) (*LifetimeJob, error) {
+	if meta.IsMutable() {
+		panic(ErrLifetimeJobMetaValueShouldBeImmutable)
+	}
 	return &LifetimeJob{
-		meta:           utils.Must(meta.Clone(map[uintptr]map[int]Value{}, 0)),
+		meta:           meta,
 		module:         mod,
 		subjectPattern: subjectPattern,
 		parentModule:   parentState.Module,

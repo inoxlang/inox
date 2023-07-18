@@ -5342,6 +5342,19 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 		})
 
+		t.Run("meta value should be immutable", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				lifetimejob {} for %object {  } 
+			`)
+			objLit := parse.FindNode(n, (*parse.ObjectLiteral)(nil), nil)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(objLit, state, META_VAL_OF_LIFETIMEJOB_SHOULD_BE_IMMUTABLE),
+			}, state.errors)
+		})
+
 		//TODO: add tests on globals
 
 	})

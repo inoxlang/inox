@@ -55,6 +55,8 @@ const (
 
 	//permissions
 	POSSIBLE_MISSING_PERM_TO_CREATE_A_COROUTINE = "missing permission to create a coroutine"
+
+	META_VAL_OF_LIFETIMEJOB_SHOULD_BE_IMMUTABLE = "meta value of lifetime job should be immutable"
 )
 
 var (

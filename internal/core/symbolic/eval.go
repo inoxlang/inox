@@ -3130,9 +3130,13 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		return &TestCase{}, nil
 	case *parse.LifetimejobExpression:
-		_, err := symbolicEval(n.Meta, state)
+		meta, err := symbolicEval(n.Meta, state)
 		if err != nil {
 			return nil, err
+		}
+
+		if meta.IsMutable() {
+			state.addError(makeSymbolicEvalError(n.Meta, state, META_VAL_OF_LIFETIMEJOB_SHOULD_BE_IMMUTABLE))
 		}
 
 		var subject SymbolicValue = ANY
