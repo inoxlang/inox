@@ -65,19 +65,11 @@ func NewSet(ctx *core.Context, elements core.Iterable, configObject ...*core.Obj
 				}
 				config.Element = pattern
 			case coll_symbolic.SET_CONFIG_UNIQUE_PROP_KEY:
-				switch val := v.(type) {
-				case core.Identifier:
-					if val == "url" {
-						config.Uniqueness.Type = containers_common.UniqueURL
-					} else {
-						panic(commonfmt.FmtInvalidValueForPropXOfArgY(k, "configuration", "?"))
-					}
-				case core.PropertyName:
-					config.Uniqueness.Type = containers_common.UniquePropertyValue
-					config.Uniqueness.PropertyName = val
-				default:
+				uniqueness, ok := containers_common.UniquenessConstraintFromValue(v)
+				if !ok {
 					panic(commonfmt.FmtInvalidValueForPropXOfArgY(k, "configuration", "?"))
 				}
+				config.Uniqueness = uniqueness
 			default:
 				panic(commonfmt.FmtUnexpectedPropInArgX(k, "configuration"))
 			}

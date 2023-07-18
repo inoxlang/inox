@@ -297,6 +297,7 @@ func (i *Identifier) WidestOfType() SymbolicValue {
 // A PropertyName represents a symbolic PropertyName.
 type PropertyName struct {
 	name string
+	SerializableMixin
 }
 
 func NewPropertyName(name string) *PropertyName {

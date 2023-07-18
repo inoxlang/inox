@@ -14,7 +14,7 @@ var (
 
 		ByteCount(0), LineCount(0), ByteRate(0), SimpleRate(0), Duration(0), Date(time.Time{}),
 
-		Rune('a'), Str(""), Path(""), URL(""), Host(""), Identifier(""),
+		Rune('a'), Str(""), Path(""), URL(""), Host(""), Identifier(""), PropertyName(""),
 		(*StringConcatenation)(nil),
 
 		(*RuneSlice)(nil), (*ByteSlice)(nil),

@@ -15,6 +15,8 @@ var (
 		(*ByteCount)(nil), (*LineCount)(nil), (*ByteRate)(nil), (*SimpleRate)(nil), (*Duration)(nil), (*Date)(nil),
 
 		(*Rune)(nil), (*String)(nil), (StringLike)(nil), (*AnyStringLike)(nil), (*Path)(nil), (*URL)(nil), (*Host)(nil), (*Identifier)(nil),
+		(*PropertyName)(nil),
+
 		(*StringConcatenation)(nil),
 
 		(*RuneSlice)(nil), (*ByteSlice)(nil),

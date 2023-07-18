@@ -52,7 +52,7 @@ func NewSet(ctx *symbolic.Context, elements symbolic.Iterable, config ...*symbol
 			case SET_CONFIG_UNIQUE_PROP_KEY:
 				u, ok := containers_common.UniquenessConstraintFromSymbolicValue(propVal)
 				if !ok {
-					err := commonfmt.FmtInvalidValueForPropXOfArgY(SET_CONFIG_UNIQUE_PROP_KEY, "configuration", "#url or a property name is expected")
+					err := commonfmt.FmtInvalidValueForPropXOfArgY(SET_CONFIG_UNIQUE_PROP_KEY, "configuration", "#url, #repr or a property name is expected")
 					ctx.AddSymbolicGoFunctionError(err.Error())
 				} else {
 					uniqueness = &u
@@ -62,6 +62,14 @@ func NewSet(ctx *symbolic.Context, elements symbolic.Iterable, config ...*symbol
 			return nil
 		})
 	}
+
+	if uniqueness != nil && uniqueness.Type == containers_common.UniquePropertyValue {
+		if iprops, ok := patt.(symbolic.IProps); !ok || !symbolic.HasRequiredOrOptionalProperty(iprops, uniqueness.PropertyName.UnderlyingString()) {
+			err := commonfmt.FmtInvalidValueForPropXOfArgY(SET_CONFIG_UNIQUE_PROP_KEY, "configuration", "uniqueness is based on the value of a given property but elements do not have such property")
+			ctx.AddSymbolicGoFunctionError(err.Error())
+		}
+	}
+
 	return NewSetWithPattern(patt, uniqueness)
 }
 
