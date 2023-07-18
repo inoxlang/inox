@@ -208,7 +208,7 @@ outer:
 	for _, param := range p.others {
 		_, ok := entries[string(param.name)]
 		if !ok {
-			defaultVal, ok := param.DefaultValue()
+			defaultVal, ok := param.DefaultValue(ctx)
 			if !ok {
 
 				return nil, fmt.Errorf("missing value for argument %s (%s)", param.name, param.CliArgNames())
@@ -270,12 +270,12 @@ type moduleParameter struct {
 	positional             bool
 	pattern                Pattern
 	description            string
-	defaultVal             Value
+	defaultVal             Serializable
 }
 
-func (p moduleParameter) DefaultValue() (Value, bool) {
+func (p moduleParameter) DefaultValue(ctx *Context) (Value, bool) {
 	if p.defaultVal != nil {
-		return utils.Must(p.defaultVal.Clone(map[uintptr]map[int]Value{}, 0)), true
+		return utils.Must(RepresentationBasedClone(ctx, p.defaultVal)), true
 	}
 	if p.pattern == BOOL_PATTERN {
 		return False, true
@@ -283,8 +283,8 @@ func (p moduleParameter) DefaultValue() (Value, bool) {
 	return nil, false
 }
 
-func (p moduleParameter) Required() bool {
-	_, hasDefault := p.DefaultValue()
+func (p moduleParameter) Required(ctx *Context) bool {
+	_, hasDefault := p.DefaultValue(ctx)
 	return !hasDefault
 }
 
@@ -428,7 +428,7 @@ func (m *Manifest) ArePermsGranted(grantedPerms []Permission, forbiddenPermissio
 	return len(missingPermissions) == 0, missingPermissions
 }
 
-func (m *Manifest) Usage() string {
+func (m *Manifest) Usage(ctx *Context) string {
 	buf := bytes.NewBuffer(nil)
 
 	if len(m.Parameters.positional) == 0 && len(m.Parameters.others) == 0 {
@@ -450,7 +450,7 @@ func (m *Manifest) Usage() string {
 	}
 
 	for _, param := range m.Parameters.others {
-		if !param.Required() {
+		if !param.Required(ctx) {
 			buf.WriteString(" [")
 		} else {
 			buf.WriteByte(' ')
@@ -463,7 +463,7 @@ func (m *Manifest) Usage() string {
 			buf.WriteString(param.StringifiedPatternNoPercent())
 		}
 
-		if !param.Required() {
+		if !param.Required(ctx) {
 			buf.WriteByte(']')
 		}
 	}
@@ -484,7 +484,7 @@ func (m *Manifest) Usage() string {
 		}
 
 		for _, param := range m.Parameters.others {
-			if !param.Required() {
+			if !param.Required(ctx) {
 				continue
 			}
 			buf.WriteString(
@@ -496,7 +496,7 @@ func (m *Manifest) Usage() string {
 		buf.WriteString("\noptions:\n")
 
 		for _, param := range m.Parameters.others {
-			if param.Required() {
+			if param.Required(ctx) {
 				continue
 			}
 			buf.WriteString(
@@ -558,7 +558,7 @@ type manifestObjectConfig struct {
 
 // createManifest gets permissions and limitations by evaluating an object literal.
 // Custom permissions are handled by config.HandleCustomType
-func createManifest(object *Object, config manifestObjectConfig) (*Manifest, error) {
+func createManifest(ctx *Context, object *Object, config manifestObjectConfig) (*Manifest, error) {
 
 	var (
 		perms        []Permission
@@ -598,7 +598,7 @@ func createManifest(object *Object, config manifestObjectConfig) (*Manifest, err
 				return nil, fmt.Errorf("missing pre-evaluated environment pattern")
 			}
 		case MANIFEST_PARAMS_SECTION_NAME:
-			params, err := getModuleParameters(v)
+			params, err := getModuleParameters(ctx, v)
 			if err != nil {
 				return nil, err
 			}
@@ -991,7 +991,7 @@ func getSingleKindPermissions(
 	return perms, nil
 }
 
-func getModuleParameters(v Value) (ModuleParameters, error) {
+func getModuleParameters(ctx *Context, v Value) (ModuleParameters, error) {
 	description, ok := v.(*Object)
 	if !ok {
 		return ModuleParameters{}, fmt.Errorf("invalid manifest, the '%s' section should have a value of type object", MANIFEST_PARAMS_SECTION_NAME)
@@ -1073,7 +1073,7 @@ func getModuleParameters(v Value) (ModuleParameters, error) {
 			if param.pattern == nil {
 				return errors.New("missing .pattern in description of non positional parameter")
 			}
-			if param.Required() {
+			if param.Required(ctx) {
 				params.hasRequiredParams = true
 			} else {
 				params.hasOptions = true

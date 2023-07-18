@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"github.com/inoxlang/inox/internal/utils"
+	jsoniter "github.com/json-iterator/go"
 )
 
 const (
@@ -16,6 +17,19 @@ var (
 	ErrNotClonable                = errors.New("not clonable")
 	ErrMaximumCloningDepthReached = errors.New("maximum cloning depth reached")
 )
+
+func RepresentationBasedClone(ctx *Context, val Serializable) (Value, error) {
+	stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, nil, 0)
+	err := val.WriteJSONRepresentation(ctx, stream, JSONSerializationConfig{
+		ReprConfig: &ReprConfig{AllVisible: true},
+	}, 0)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return ParseJSONRepresentation(ctx, string(stream.Buffer()), nil)
+}
 
 type NotClonableMixin struct {
 }

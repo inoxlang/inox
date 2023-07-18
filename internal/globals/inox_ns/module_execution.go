@@ -221,7 +221,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	} else if args.CliArgs != nil {
 		args, err := manifest.Parameters.GetArgumentsFromCliArgs(ctx, args.CliArgs)
 		if err != nil {
-			modArgsError = fmt.Errorf("%w\nusage: %s", err, manifest.Usage())
+			modArgsError = fmt.Errorf("%w\nusage: %s", err, manifest.Usage(state.Ctx))
 		} else {
 			modArgs = args
 		}

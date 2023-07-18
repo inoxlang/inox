@@ -383,7 +383,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, _ *TreeWalkState
 
 	manifestObj := v.(*Object)
 
-	manifest, err := createManifest(manifestObj, manifestObjectConfig{
+	manifest, err := createManifest(state.Global.Ctx, manifestObj, manifestObjectConfig{
 		defaultLimitations:    preinitArgs.DefaultLimitations,
 		handleCustomType:      preinitArgs.HandleCustomType,
 		addDefaultPermissions: preinitArgs.AddDefaultPermissions,
