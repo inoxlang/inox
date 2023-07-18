@@ -4,19 +4,24 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"sync"
 )
 
 type ParsedChunk struct {
-	Node   *Chunk
-	Source ChunkSource
-	runes  []rune
+	Node      *Chunk
+	Source    ChunkSource
+	runes     []rune
+	runesLock sync.Mutex
 }
 
-func (c ParsedChunk) Name() string {
+func (c *ParsedChunk) Name() string {
 	return c.Source.Name()
 }
 
 func (c *ParsedChunk) getRunes() []rune {
+	c.runesLock.Lock()
+	defer c.runesLock.Unlock()
+
 	runes := c.runes
 	if c.Source.Code() != "" && len(runes) == 0 {
 		c.runes = []rune(c.Source.Code())
