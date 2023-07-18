@@ -239,7 +239,6 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 		// other functions
 		"add_ctx_data": core.ValOf(_add_ctx_data),
 		"ctx_data":     core.ValOf(_ctx_data),
-		"clone_val":    core.ValOf(_clone_val),
 		"propnames":    core.WrapGoFunction(_propnames),
 
 		"Array":  core.ValOf(core.NewArray),

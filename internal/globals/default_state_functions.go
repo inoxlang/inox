@@ -30,10 +30,6 @@ func _get_current_tx(ctx *core.Context) *core.Transaction {
 	return ctx.GetTx()
 }
 
-func _clone_val(ctx *core.Context, arg core.Value) core.Value {
-	return utils.Must(arg.Clone(map[uintptr]map[int]core.Value{}, 0))
-}
-
 func _logvals(ctx *core.Context, args ...core.Value) {
 	buff := bytes.NewBuffer(nil)
 	for _, arg := range args {

@@ -39,9 +39,6 @@ func init() {
 		_rand, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) symbolic.SymbolicValue {
 			return symbolic.ANY
 		},
-		_clone_val, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) symbolic.SymbolicValue {
-			return arg
-		},
 
 		_logvals, func(ctx *symbolic.Context, arg ...symbolic.SymbolicValue) {},
 		_log, func(ctx *symbolic.Context, arg ...symbolic.SymbolicValue) {},
