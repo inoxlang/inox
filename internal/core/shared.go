@@ -15,6 +15,7 @@ var (
 	}
 
 	ErrValueNotSharableNorClonable = errors.New("value is not sharable nor pseudo clonable")
+	ErrValueIsNotShared            = errors.New("value is not shared")
 )
 
 type PotentiallySharable interface {
@@ -52,6 +53,24 @@ func ShareOrCloneDepth(v Value, originState *GlobalState, sharableValues *[]Pote
 	}
 
 	return nil, ErrValueNotSharableNorClonable
+}
+
+func CheckSharedOrClone(v Value, depth int) (Value, error) {
+	if !v.IsMutable() {
+		return v, nil
+	}
+	if s, ok := v.(PotentiallySharable); ok {
+		if !s.IsShared() {
+			return nil, ErrValueIsNotShared
+		}
+		return s, nil
+	}
+
+	if clonable, ok := v.(PseudoClonable); ok {
+		return clonable.PseudoClone(nil, nil, depth)
+	}
+
+	return v, nil
 }
 
 func Share[T PotentiallySharable](v T, originState *GlobalState) T {

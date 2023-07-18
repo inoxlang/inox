@@ -24,7 +24,8 @@ var (
 type PseudoClonable interface {
 	Serializable
 
-	//PseudoClone clones the value, properties/elements are cloned by calling ShareOrClone.
+	//PseudoClone clones the value, properties/elements are cloned by calling ShareOrClone if both originState and sharableValues are nil,
+	//CheckSharedOrClone otherwise
 	PseudoClone(originState *GlobalState, sharableValues *[]PotentiallySharable, depth int) (Serializable, error)
 }
 
@@ -56,10 +57,21 @@ func (dict *Dictionary) PseudoClone(originState *GlobalState, sharableValues *[]
 	}
 
 	for k, v := range dict.entries {
-		valueClone, err := ShareOrCloneDepth(v, originState, sharableValues, depth+1)
+		var (
+			valueClone Value
+			err        error
+		)
+
+		if originState == nil && sharableValues == nil {
+			valueClone, err = CheckSharedOrClone(v, depth+1)
+		} else {
+			valueClone, err = ShareOrCloneDepth(v, originState, sharableValues, depth+1)
+		}
+
 		if err != nil {
 			return nil, err
 		}
+
 		clone.entries[k] = valueClone.(Serializable)
 	}
 
@@ -94,7 +106,17 @@ func (list *ValueList) PseudoClone(originState *GlobalState, sharableValues *[]P
 	elementClones := make([]Serializable, len(list.elements))
 
 	for i, e := range list.elements {
-		elemClone, err := ShareOrCloneDepth(e, originState, sharableValues, depth+1)
+		var (
+			elemClone Value
+			err       error
+		)
+
+		if originState == nil && sharableValues == nil {
+			elemClone, err = CheckSharedOrClone(e, depth+1)
+		} else {
+			elemClone, err = ShareOrCloneDepth(e, originState, sharableValues, depth+1)
+		}
+
 		if err != nil {
 			return nil, err
 		}
@@ -189,9 +211,18 @@ func (opt Option) PseudoClone(originState *GlobalState, sharableValues *[]Potent
 		return nil, ErrMaximumPseudoCloningDepthReached
 	}
 
-	valueClone, err := ShareOrCloneDepth(opt.Value, originState, sharableValues, depth+1)
+	var (
+		valueClone Value
+		err        error
+	)
+	if originState == nil && sharableValues == nil {
+		valueClone, err = CheckSharedOrClone(opt.Value, depth+1)
+	} else {
+		valueClone, err = ShareOrCloneDepth(opt.Value, originState, sharableValues, depth+1)
+	}
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to clone value of option: %w", err)
+		return nil, fmt.Errorf("failed to share/clone value of option: %w", err)
 	}
 	return Option{
 		Name:  opt.Name,

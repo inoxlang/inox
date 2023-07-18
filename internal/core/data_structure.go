@@ -359,7 +359,12 @@ func (obj *Object) Prop(ctx *Context, name string) Value {
 
 	for i, key := range obj.keys {
 		if key == name {
-			return obj.values[i]
+			v := obj.values[i]
+
+			if obj.IsShared() {
+				return utils.Must(CheckSharedOrClone(v, 0)).(Serializable)
+			}
+			return v
 		}
 	}
 	panic(FormatErrPropertyDoesNotExist(name, obj))
@@ -378,13 +383,13 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 
 	closestState := ctx.GetClosestState()
 
-	// if obj.IsShared() {
-	// 	newVal, err := ShareOrClone(value, closestState)
-	// 	if err != nil {
-	// 		return fmt.Errorf("failed to share/clone value when setting property %s: %w", name, err)
-	// 	}
-	// 	value = newVal
-	// }
+	if obj.IsShared() {
+		newVal, err := ShareOrClone(value, closestState)
+		if err != nil {
+			return fmt.Errorf("failed to share/clone value when setting property %s: %w", name, err)
+		}
+		value = newVal
+	}
 
 	unlock := true
 	obj.Lock(closestState)
@@ -584,8 +589,13 @@ func (obj *Object) EntryMap(ctx *Context) map[string]Serializable {
 		defer obj.Unlock(nil)
 	}
 
+	isShared := obj.IsShared()
+
 	map_ := map[string]Serializable{}
 	for i, v := range obj.values {
+		if isShared {
+			v = utils.Must(CheckSharedOrClone(v, 0)).(Serializable)
+		}
 		map_[obj.keys[i]] = v
 	}
 	return map_
@@ -609,8 +619,13 @@ func (obj *Object) ValueEntryMap(ctx *Context) map[string]Value {
 		defer obj.Unlock(nil)
 	}
 
+	isShared := obj.IsShared()
+
 	map_ := map[string]Value{}
 	for i, v := range obj.values {
+		if isShared {
+			v = utils.Must(CheckSharedOrClone(v, 0)).(Serializable)
+		}
 		map_[obj.keys[i]] = v
 	}
 	return map_
