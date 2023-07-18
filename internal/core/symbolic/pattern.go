@@ -418,7 +418,7 @@ func (p *NamedSegmentPathPattern) WidestOfType() SymbolicValue {
 
 // An ExactValuePattern represents a symbolic ExactValuePattern.
 type ExactValuePattern struct {
-	value Serializable
+	value Serializable //immutable in most cases
 
 	NotCallablePatternMixin
 	SerializableMixin
@@ -428,6 +428,10 @@ func NewExactValuePattern(v Serializable) (*ExactValuePattern, error) {
 	if !IsAny(v) && v.IsMutable() {
 		return nil, ErrValueInExactPatternValueShouldBeImmutable
 	}
+	return &ExactValuePattern{value: v}, nil
+}
+
+func NewUncheckedExactValuePattern(v Serializable) (*ExactValuePattern, error) {
 	return &ExactValuePattern{value: v}, nil
 }
 

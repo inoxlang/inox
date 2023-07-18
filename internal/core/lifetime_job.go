@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -27,10 +28,11 @@ var (
 // A LifetimeJob represents a job associated with a value that runs while the value exists, this struct does not
 // hold any state, see LifetimeJobInstance. LifetimeJob implements Value.
 type LifetimeJob struct {
-	meta           Value   //immutable
-	module         *Module // module executed when running the job
-	parentModule   *Module
-	subjectPattern Pattern
+	meta                         Value   //immutable
+	module                       *Module // module executed when running the job
+	parentModule                 *Module
+	subjectPattern               Pattern //nil if symbolicSubjectObjectPattern is set
+	symbolicSubjectObjectPattern symbolic.Pattern
 }
 
 type LifetimeJobInstance struct {
@@ -225,7 +227,7 @@ type ValueLifetimeJobs struct {
 	lock      sync.Mutex
 }
 
-func NewValueLifetimeJobs(self Value, jobs []*LifetimeJob) *ValueLifetimeJobs {
+func NewValueLifetimeJobs(ctx *Context, self Value, jobs []*LifetimeJob) *ValueLifetimeJobs {
 	//TODO: check that value is sharable
 
 	valueJobs := &ValueLifetimeJobs{
@@ -236,7 +238,11 @@ func NewValueLifetimeJobs(self Value, jobs []*LifetimeJob) *ValueLifetimeJobs {
 	}
 
 	for _, job := range jobs {
-		job.subjectPattern = newExactValuePatternNoCheck(self.(Serializable))
+		symbolicSubject, err := self.(Serializable).ToSymbolicValue(ctx, map[uintptr]symbolic.SymbolicValue{})
+		if err != nil {
+			panic(err)
+		}
+		job.symbolicSubjectObjectPattern = utils.Must(symbolic.NewUncheckedExactValuePattern(symbolicSubject.(symbolic.Serializable)))
 	}
 
 	return valueJobs

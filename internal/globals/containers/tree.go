@@ -138,7 +138,7 @@ func NewTree(ctx *core.Context, udata *core.UData, args ...core.Value) *Tree {
 			panic(errors.New(expl))
 		}
 		tree.Share(state)
-		jobs := core.NewValueLifetimeJobs(tree, jobs)
+		jobs := core.NewValueLifetimeJobs(ctx, tree, jobs)
 		if err := jobs.InstantiateJobs(ctx); err != nil {
 			panic(err)
 		}

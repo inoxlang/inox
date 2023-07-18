@@ -93,15 +93,11 @@ func NewExactValuePattern(value Serializable) *ExactValuePattern {
 	if value.IsMutable() {
 		panic(ErrValueInExactPatternValueShouldBeImmutable)
 	}
-	return newExactValuePatternNoCheck(value)
-}
-
-func newExactValuePatternNoCheck(value Serializable) *ExactValuePattern {
 	return &ExactValuePattern{
 		value: value,
 		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
 			Callee: getDefaultNamedPattern("__val"),
-			Params: []Serializable{utils.Must(value.Clone(map[uintptr]map[int]Value{}, 0)).(Serializable)},
+			Params: []Serializable{value},
 		},
 	}
 }
