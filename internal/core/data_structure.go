@@ -194,7 +194,7 @@ func (obj *Object) instantiateLifetimeJobs(ctx *Context) error {
 
 	if len(jobs) != 0 {
 		obj.Share(state)
-		jobs := NewValueLifetimeJobs(obj, jobs)
+		jobs := NewValueLifetimeJobs(ctx, obj, jobs)
 		if err := jobs.InstantiateJobs(ctx); err != nil {
 			return err
 		}
@@ -379,6 +379,14 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 	}
 
 	closestState := ctx.GetClosestState()
+
+	// if obj.IsShared() {
+	// 	newVal, err := ShareOrClone(value, closestState)
+	// 	if err != nil {
+	// 		return fmt.Errorf("failed to share/clone value when setting property %s: %w", name, err)
+	// 	}
+	// 	value = newVal
+	// }
 
 	unlock := true
 	obj.Lock(closestState)
