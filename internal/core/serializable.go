@@ -34,6 +34,8 @@ var (
 		(*Secret)(nil),
 
 		FileInfo{},
+
+		(*Option)(nil),
 	}
 )
 

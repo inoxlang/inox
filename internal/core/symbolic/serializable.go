@@ -31,9 +31,11 @@ var (
 
 		(*Error)(nil),
 
+		(*Secret)(nil),
+
 		(*FileInfo)(nil),
 
-		(*Secret)(nil),
+		(*Option)(nil),
 
 		(*AnySerializable)(nil),
 	}

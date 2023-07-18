@@ -38,6 +38,7 @@ type BytesLike interface {
 type ByteSlice struct {
 	_ int
 	SerializableMixin
+	PseudoClonableMixin
 }
 
 func (s *ByteSlice) Test(v SymbolicValue) bool {

@@ -15,6 +15,10 @@ const (
 var (
 	ErrNotClonable                      = errors.New("not clonable")
 	ErrMaximumPseudoCloningDepthReached = errors.New("maximum pseudo cloning depth reached, there is probably a cycle")
+
+	_ = []PseudoClonable{
+		(*List)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*Option)(nil), (*Dictionary)(nil),
+	}
 )
 
 type PseudoClonable interface {

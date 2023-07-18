@@ -234,7 +234,7 @@ func (obj *Object) IsSharable(originState *GlobalState) (bool, string) {
 	}
 	for i, v := range obj.values {
 		k := obj.keys[i]
-		if ok, expl := IsSharable(v, originState); !ok {
+		if ok, expl := IsSharableOrClonable(v, originState); !ok {
 			return false, commonfmt.FmtNotSharableBecausePropertyNotSharable(k, expl)
 		}
 	}
@@ -243,10 +243,8 @@ func (obj *Object) IsSharable(originState *GlobalState) (bool, string) {
 
 func (obj *Object) Share(originState *GlobalState) {
 	obj.lock.Share(originState, func() {
-		for _, v := range obj.values {
-			if potentiallySharable, ok := v.(PotentiallySharable); ok && v.IsMutable() {
-				potentiallySharable.Share(originState)
-			}
+		for i, v := range obj.values {
+			obj.values[i] = utils.Must(ShareOrClone(v, originState)).(Serializable)
 		}
 	})
 }

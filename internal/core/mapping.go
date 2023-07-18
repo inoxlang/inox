@@ -264,13 +264,13 @@ func (m *Mapping) Compute(ctx *Context, key Serializable) Value {
 
 func (m *Mapping) IsSharable(originState *GlobalState) (bool, string) {
 	if !m.staticCheck {
-		return false, fmt.Sprintf("mapping is not sharable because static data is missing")
+		return false, "mapping is not sharable because static data is missing"
 	}
 	if m.staticData != nil && len(m.staticData.referencedGlobals) > 0 {
 		staticData := m.staticData
 		for _, name := range staticData.referencedGlobals {
-			if ok, expl := IsSharable(originState.Globals.Get(name), originState); !ok { // TODO: fix: globals could change after call to .IsSharable()
-				return false, fmt.Sprintf("mapping is not sharable because referenced global %s is not sharable: %s", name, expl)
+			if ok, expl := IsSharableOrClonable(originState.Globals.Get(name), originState); !ok { // TODO: fix: globals could change after call to .IsSharable()
+				return false, fmt.Sprintf("mapping is not sharable because referenced global %s is not sharable/clonable: %s", name, expl)
 			}
 		}
 	}

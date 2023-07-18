@@ -49,6 +49,17 @@ func IsSharable(v SymbolicValue) (bool, string) {
 	return false, ""
 }
 
+func IsSharableOrClonable(v SymbolicValue) (bool, string) {
+	if !v.IsMutable() {
+		return true, ""
+	}
+	if s, ok := v.(PotentiallySharable); ok {
+		return s.IsSharable()
+	}
+	_, ok := v.(PseudoClonable)
+	return ok, ""
+}
+
 func IsShared(v SymbolicValue) bool {
 	if s, ok := v.(PotentiallySharable); ok && s.IsShared() {
 		return true

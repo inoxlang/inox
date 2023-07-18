@@ -74,6 +74,17 @@ func IsSharable(v Value, originState *GlobalState) (bool, string) {
 	return false, ""
 }
 
+func IsSharableOrClonable(v Value, originState *GlobalState) (bool, string) {
+	if !v.IsMutable() {
+		return true, ""
+	}
+	if s, ok := v.(PotentiallySharable); ok {
+		return s.IsSharable(originState)
+	}
+	_, ok := v.(PseudoClonable)
+	return ok, ""
+}
+
 func IsShared(v Value) bool {
 	if s, ok := v.(PotentiallySharable); ok && s.IsShared() {
 		return true

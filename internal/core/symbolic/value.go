@@ -373,6 +373,8 @@ func (m *Mimetype) WidestOfType() SymbolicValue {
 type Option struct {
 	name string //if "", any name is matched
 	_    int
+	SerializableMixin
+	PseudoClonableMixin
 }
 
 func NewOption(name string) *Option {

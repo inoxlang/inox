@@ -260,6 +260,7 @@ type List struct {
 	generalElement Serializable
 
 	SerializableMixin
+	PseudoClonableMixin
 }
 
 func NewList(elements ...Serializable) *List {
@@ -737,6 +738,7 @@ type Dictionary struct {
 	keys    map[string]Serializable
 
 	SerializableMixin
+	PseudoClonableMixin
 
 	UnassignablePropsMixin
 }
@@ -1063,7 +1065,7 @@ func (obj *Object) IsSharable() (bool, string) {
 		return true, ""
 	}
 	for k, v := range obj.entries {
-		if ok, expl := IsSharable(v); !ok {
+		if ok, expl := IsSharableOrClonable(v); !ok {
 			return false, commonfmt.FmtNotSharableBecausePropertyNotSharable(k, expl)
 		}
 	}
