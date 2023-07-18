@@ -21,10 +21,6 @@ func (r *Graph) Test(v symbolic.SymbolicValue) bool {
 	return ok
 }
 
-func (r Graph) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &Graph{}
-}
-
 func (f *Graph) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
 	case "insert_node":
@@ -101,10 +97,6 @@ type GraphNode struct {
 func (r *GraphNode) Test(v symbolic.SymbolicValue) bool {
 	_, ok := v.(*GraphNode)
 	return ok
-}
-
-func (r GraphNode) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &GraphNode{}
 }
 
 func (f *GraphNode) GetGoMethod(name string) (*symbolic.GoFunction, bool) {

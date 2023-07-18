@@ -31,10 +31,6 @@ func (r *Shell) Test(v symbolic.SymbolicValue) bool {
 	}
 }
 
-func (r *Shell) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &Shell{}
-}
-
 func (r *Shell) WidestOfType() symbolic.SymbolicValue {
 	return &Shell{}
 }

@@ -21,10 +21,6 @@ func (r *Ranking) Test(v symbolic.SymbolicValue) bool {
 	return ok
 }
 
-func (r *Ranking) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &Ranking{}
-}
-
 func (r *Ranking) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
 	case "add":
@@ -83,10 +79,6 @@ type Rank struct {
 func (r *Rank) Test(v symbolic.SymbolicValue) bool {
 	_, ok := v.(*Rank)
 	return ok
-}
-
-func (r *Rank) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &Rank{}
 }
 
 func (r *Rank) GetGoMethod(name string) (*symbolic.GoFunction, bool) {

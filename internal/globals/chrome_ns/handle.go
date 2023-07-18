@@ -24,8 +24,6 @@ type Handle struct {
 
 	chromedpContext       context.Context
 	cancelChromedpContext context.CancelFunc
-
-	core.NotClonableMixin
 }
 
 func NewHandle(ctx *core.Context) (*Handle, error) {

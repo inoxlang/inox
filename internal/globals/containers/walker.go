@@ -12,8 +12,6 @@ type GraphWalker struct {
 	prune   func(*GraphWalker, *core.Context)
 	key     func(*GraphWalker, *core.Context) core.Value
 	value   func(*GraphWalker, *core.Context) core.Value
-
-	core.NotClonableMixin
 }
 
 func (wk *GraphWalker) HasNext(ctx *core.Context) bool {

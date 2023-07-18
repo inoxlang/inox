@@ -30,8 +30,6 @@ const (
 type File struct {
 	f    afs.File
 	path core.Path
-
-	core.NotClonableMixin
 }
 
 func openExistingFile(ctx *core.Context, pth core.Path, write bool) (*File, error) {

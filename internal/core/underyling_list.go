@@ -7,7 +7,7 @@ import (
 )
 
 type underylingList interface {
-	Serializable
+	PseudoClonable
 	MutableLengthSequence
 	Iterable
 	ContainsSimple(ctx *Context, v Serializable) bool
@@ -450,7 +450,7 @@ func (list *BoolList) slice(start, end int) Sequence {
 		bitSet.SetTo(newIndex, list.elements.Test(i))
 	}
 
-	return &BoolList{elements: bitSet,}
+	return &BoolList{elements: bitSet}
 }
 
 func (list *BoolList) Len() int {

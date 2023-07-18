@@ -12,8 +12,6 @@ type ApiIL struct {
 	inner         API
 	initialSchema *ObjectPattern
 	data          *Object
-
-	NotClonableMixin
 }
 
 func WrapAPI(inner API) *ApiIL {

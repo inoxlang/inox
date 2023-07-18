@@ -25,10 +25,6 @@ func (r *HttpResponse) Test(v symbolic.SymbolicValue) bool {
 	return ok
 }
 
-func (r HttpResponse) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &HttpResponse{}
-}
-
 func (resp *HttpResponse) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }

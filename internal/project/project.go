@@ -28,8 +28,6 @@ type Project struct {
 	id                ProjectID
 	projectFilesystem afs.Filesystem
 	lock              core.SmartLock
-
-	core.NotClonableMixin
 }
 
 type ProjectID string

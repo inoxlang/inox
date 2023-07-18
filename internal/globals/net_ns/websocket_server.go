@@ -38,7 +38,6 @@ var (
 
 // WebsocketServer is a LSP server that uses Websocket to exchange messages with the client.
 type WebsocketServer struct {
-	core.NotClonableMixin
 	upgrader        *websocket.Upgrader
 	closingOrClosed atomic.Bool
 

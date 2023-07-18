@@ -34,8 +34,6 @@ type HttpResponseWriter struct {
 	status   int //do not use, call Status() to get the status
 	finished bool
 	logger   zerolog.Logger
-
-	core.NotClonableMixin
 }
 
 func NewResponseWriter(req *HttpRequest, rw http.ResponseWriter, serverLogger zerolog.Logger) *HttpResponseWriter {

@@ -31,8 +31,6 @@ type Mapping struct {
 	staticCheck     bool //TODO: remove at some point, static checks should be mandatory
 	staticData      *MappingStaticData
 	capturedGlobals map[string]Value
-
-	NotClonableMixin
 }
 
 func NewMapping(expr *parse.MappingExpression, state *GlobalState) (*Mapping, error) {

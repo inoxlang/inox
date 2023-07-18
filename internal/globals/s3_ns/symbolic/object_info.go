@@ -19,10 +19,6 @@ func (r *ObjectInfo) Test(v symbolic.SymbolicValue) bool {
 	return ok
 }
 
-func (r ObjectInfo) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &ObjectInfo{}
-}
-
 func (resp *ObjectInfo) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }

@@ -18,10 +18,6 @@ func (r *TcpConn) Test(v symbolic.SymbolicValue) bool {
 	return ok
 }
 
-func (r TcpConn) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &TcpConn{}
-}
-
 func (conn *TcpConn) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
 	case "read":

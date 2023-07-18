@@ -19,8 +19,6 @@ var (
 
 type Stack struct {
 	elements []core.Value
-
-	core.NotClonableMixin
 }
 
 func NewStack(ctx *core.Context, elements core.Iterable) *Stack {

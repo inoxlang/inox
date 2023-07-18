@@ -20,8 +20,6 @@ var (
 type LSPSession struct {
 	rpcSession *jsonrpc.Session
 	lock       core.SmartLock
-
-	core.NotClonableMixin
 }
 
 func NewLspSession(rpcSession *jsonrpc.Session) *LSPSession {

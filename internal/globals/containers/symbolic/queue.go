@@ -21,10 +21,6 @@ func (*Queue) Test(v symbolic.SymbolicValue) bool {
 	return ok
 }
 
-func (r Queue) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &Queue{}
-}
-
 func (q *Queue) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
 	case "enqueue":

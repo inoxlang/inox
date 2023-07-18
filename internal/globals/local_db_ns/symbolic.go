@@ -22,10 +22,6 @@ func (ldb *SymbolicLocalDatabase) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (r SymbolicLocalDatabase) Clone(clones map[uintptr]SymbolicValue) symbolic.SymbolicValue {
-	return &SymbolicLocalDatabase{}
-}
-
 func (ldb *SymbolicLocalDatabase) Widen() (symbolic.SymbolicValue, bool) {
 	return nil, false
 }

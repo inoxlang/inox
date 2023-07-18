@@ -15,8 +15,6 @@ var (
 type AstNode struct {
 	Node  parse.Node
 	chunk *parse.ParsedChunk
-
-	NotClonableMixin
 }
 
 func (AstNode) PropertyNames(ctx *Context) []string {
@@ -48,8 +46,6 @@ func (AstNode) SetProp(ctx *Context, name string, value Value) error {
 // An AstNode is a Value wrapping a token.
 type Token struct {
 	value parse.Token
-
-	NotClonableMixin
 }
 
 func (Token) PropertyNames(ctx *Context) []string {

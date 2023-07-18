@@ -28,8 +28,6 @@ var (
 
 // A HttpClient represents a high level http client, HttpClient implements core.ProtocolClient.
 type HttpClient struct {
-	core.NotClonableMixin
-
 	config  HttpClientConfig
 	options HttpRequestOptions
 

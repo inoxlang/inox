@@ -67,8 +67,6 @@ type ReadableStream interface {
 
 // all watchers should return this stream.
 type wrappedWatcherStream struct {
-	NotClonableMixin
-
 	watcher Watcher
 }
 
@@ -165,8 +163,6 @@ func (w *joinedWatchers) Stream(ctx *Context, config *ReadableStreamConfiguratio
 
 // An ElementsStream represents a stream of known elements, ElementsStream implements Value.
 type ElementsStream struct {
-	NotClonableMixin
-
 	filter    Pattern
 	nextIndex int
 	stopped   atomic.Bool
@@ -295,8 +291,6 @@ func (s *ElementsStream) ChunkDataType() Pattern {
 
 // A ReadableByteStream represents a stream of bytes, ElementsStream implements Value.
 type ReadableByteStream struct {
-	NotClonableMixin
-
 	filter  Pattern
 	stopped atomic.Bool
 
@@ -527,8 +521,6 @@ func (r *RingBuffer) Stream(ctx *Context, config *ReadableStreamConfiguration) R
 // ConfluenceStream was developped to combine the output & error output streams of the inox REPL but the current implementation is somewhat incorrect.
 // TODO: change the way the data is read, one possibility is to make the streams PUSH their data in a buffer.
 type ConfluenceStream struct {
-	NotClonableMixin
-
 	status atomic.Int32 //0: not started, 1: started, 2: stopped
 
 	streams       []ReadableStream

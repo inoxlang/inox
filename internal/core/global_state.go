@@ -39,8 +39,6 @@ type GlobalState struct {
 	FirstDatabaseOpeningError error
 	StaticCheckData           *StaticCheckData
 	SymbolicData              *SymbolicData
-
-	NotClonableMixin
 }
 
 func NewGlobalState(ctx *Context, constants ...map[string]Value) *GlobalState {

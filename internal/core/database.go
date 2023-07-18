@@ -31,8 +31,6 @@ type DatabaseIL struct {
 	initialSchema    *ObjectPattern
 	propertyNames    []string
 	topLevelEntities map[string]Serializable
-
-	NotClonableMixin
 }
 
 type DbOpenConfiguration struct {

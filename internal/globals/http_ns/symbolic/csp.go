@@ -2,7 +2,6 @@ package http_ns
 
 import (
 	"bufio"
-	"reflect"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
@@ -29,13 +28,6 @@ func (n *ContentSecurityPolicy) Test(v symbolic.SymbolicValue) bool {
 		return false
 	}
 	return true
-}
-
-func (n *ContentSecurityPolicy) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	clone := new(ContentSecurityPolicy)
-	clones[reflect.ValueOf(n).Pointer()] = clone
-
-	return clone
 }
 
 func (r *ContentSecurityPolicy) Widen() (symbolic.SymbolicValue, bool) {

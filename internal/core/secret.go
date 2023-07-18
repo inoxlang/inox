@@ -19,8 +19,6 @@ var (
 
 // A Secret represents a string such as a password, an API-Key or a PEM encoded key; a secret always return false when it is compared for equality.
 type Secret struct {
-	NotClonableMixin
-
 	value    StringLike
 	pemBlock *pem.Block //not nil if value is PEM encoded
 
@@ -66,7 +64,6 @@ type SecretPattern struct {
 	CallBasedPatternReprMixin
 
 	NotCallablePatternMixin
-	NotClonableMixin
 }
 
 func NewSecretPattern(stringPattern StringPattern, pem bool) *SecretPattern {

@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	SSE_SOURCE_PROPNAMES =   []string{"close"}
+	SSE_SOURCE_PROPNAMES = []string{"close"}
 )
 
 type ServerSentEventSource struct {
@@ -21,10 +21,6 @@ type ServerSentEventSource struct {
 func (r *ServerSentEventSource) Test(v symbolic.SymbolicValue) bool {
 	_, ok := v.(*ServerSentEventSource)
 	return ok
-}
-
-func (r ServerSentEventSource) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &ServerSentEventSource{}
 }
 
 func (serv *ServerSentEventSource) GetGoMethod(name string) (*symbolic.GoFunction, bool) {

@@ -2,7 +2,6 @@ package html_ns
 
 import (
 	"bufio"
-	"reflect"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
@@ -26,13 +25,6 @@ func (n *HTMLNode) Test(v symbolic.SymbolicValue) bool {
 	}
 
 	return true
-}
-
-func (n *HTMLNode) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	clone := new(HTMLNode)
-	clones[reflect.ValueOf(n).Pointer()] = clone
-
-	return clone
 }
 
 func (n *HTMLNode) Prop(name string) symbolic.SymbolicValue {

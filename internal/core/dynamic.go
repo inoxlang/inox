@@ -49,8 +49,6 @@ type DynamicValue struct {
 
 	lock              sync.Mutex
 	mutationCallbacks *MutationCallbacks
-
-	NotClonableMixin
 }
 
 type dynOp int

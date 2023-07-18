@@ -25,8 +25,6 @@ type FilesystemEventSource struct {
 	watcher  fsWatcher
 	lock     sync.RWMutex
 	isClosed bool
-
-	core.NotClonableMixin
 }
 
 func (evs *FilesystemEventSource) GetGoMethod(name string) (*core.GoFunction, bool) {

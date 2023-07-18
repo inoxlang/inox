@@ -41,8 +41,6 @@ func NewRanking(ctx *core.Context, flatEntries *core.List) *Ranking {
 type Ranking struct {
 	map_      map[core.FastId]core.Serializable
 	rankItems []RankItem
-
-	core.NotClonableMixin
 }
 
 func (r *Ranking) Add(ctx *core.Context, value core.Serializable, score core.Float) {
@@ -134,8 +132,6 @@ type RankItem struct {
 type Rank struct {
 	ranking *Ranking
 	rank    int
-
-	core.NotClonableMixin
 }
 
 func (r *Rank) GetGoMethod(name string) (*core.GoFunction, bool) {

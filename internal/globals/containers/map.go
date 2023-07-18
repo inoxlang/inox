@@ -43,8 +43,6 @@ func NewMap(ctx *core.Context, flatEntries *core.List) *Map {
 type Map struct {
 	values map[core.FastId]core.Value
 	keys   map[core.FastId]core.Value
-
-	core.NotClonableMixin
 }
 
 func (set *Map) Insert(ctx *core.Context, k, v core.Value) {

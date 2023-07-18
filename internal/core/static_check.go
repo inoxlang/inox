@@ -2278,8 +2278,6 @@ type StaticCheckInput struct {
 
 // A StaticCheckData is the immutable data produced by statically checking a module.
 type StaticCheckData struct {
-	NotClonableMixin
-
 	errors      []*StaticCheckError
 	fnData      map[*parse.FunctionExpression]*FunctionStaticData
 	mappingData map[*parse.MappingExpression]*MappingStaticData

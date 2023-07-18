@@ -987,6 +987,10 @@ func (c *StringConcatenation) WriteJSONRepresentation(ctx *Context, w *jsoniter.
 	return Str(c.GetOrBuildString()).WriteJSONRepresentation(ctx, w, config, depth+1)
 }
 
+func (c *BytesConcatenation) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	return ErrNotImplementedYet
+}
+
 func (c Color) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	return ErrNotImplementedYet
 }

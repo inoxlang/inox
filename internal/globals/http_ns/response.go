@@ -12,8 +12,6 @@ import (
 type HttpResponse struct {
 	wrapped *http.Response
 	cookies []core.Serializable
-
-	core.NotClonableMixin
 }
 
 func (resp *HttpResponse) GetGoMethod(name string) (*core.GoFunction, bool) {

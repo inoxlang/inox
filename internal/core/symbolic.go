@@ -127,8 +127,6 @@ type SymbolicData struct {
 	//.errors property accessible from scripts
 	errorsPropSet atomic.Bool
 	errorsProp    *Tuple
-
-	NotClonableMixin
 }
 
 func (d *SymbolicData) ErrorTuple() *Tuple {

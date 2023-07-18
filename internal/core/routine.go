@@ -30,8 +30,6 @@ func init() {
 
 // A Routine is similar to a goroutine in Golang, it represents of the execution of a single module and can be cancelled at any time.
 type Routine struct {
-	NotClonableMixin
-
 	useBytecode bool
 	module      *Module
 	state       *GlobalState
@@ -338,8 +336,6 @@ func (routine *Routine) WaitResult(ctx *Context) (Value, error) {
 
 // A RoutineGroup is a group of routines, it simplifies the interaction with the routines.
 type RoutineGroup struct {
-	NotClonableMixin
-
 	routines []*Routine
 }
 
@@ -405,8 +401,6 @@ func (group *RoutineGroup) CancelAll(*Context) {
 }
 
 type ExecutedStep struct {
-	NotClonableMixin
-
 	result  Value
 	endTime time.Time
 }

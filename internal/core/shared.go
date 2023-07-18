@@ -10,9 +10,11 @@ const SYNC_CHAN_SIZE = 100
 
 var (
 	_ = []PotentiallySharable{
-		&Object{}, &InoxFunction{}, &GoFunction{}, &Mapping{},
-		&RingBuffer{}, &ValueHistory{},
+		(*Object)(nil), (*InoxFunction)(nil), (*GoFunction)(nil), (*Mapping)(nil),
+		(*RingBuffer)(nil), (*ValueHistory)(nil),
 	}
+
+	ErrValueNotSharableNorClonable = errors.New("value is not sharable nor pseudo clonable")
 )
 
 type PotentiallySharable interface {
@@ -25,14 +27,31 @@ type PotentiallySharable interface {
 }
 
 func ShareOrClone(v Value, originState *GlobalState) (Value, error) {
+	sharableValues := new([]PotentiallySharable)
+	return ShareOrCloneDepth(v, originState, sharableValues, 0)
+}
+
+func ShareOrCloneDepth(v Value, originState *GlobalState, sharableValues *[]PotentiallySharable, depth int) (Value, error) {
+	if depth > MAX_CLONING_DEPTH {
+		return nil, ErrMaximumPseudoCloningDepthReached
+	}
+
 	if !v.IsMutable() {
 		return v, nil
 	}
 	if s, ok := v.(PotentiallySharable); ok && utils.Ret0(s.IsSharable(originState)) {
-		s.Share(originState)
+		*sharableValues = append(*sharableValues, s)
+		if !s.IsShared() {
+			s.Share(originState)
+		}
 		return v, nil
 	}
-	return v.Clone(map[uintptr]map[int]Value{}, 0)
+
+	if clonable, ok := v.(PseudoClonable); ok {
+		return clonable.PseudoClone(originState, sharableValues, depth)
+	}
+
+	return nil, ErrValueNotSharableNorClonable
 }
 
 func Share[T PotentiallySharable](v T, originState *GlobalState) T {

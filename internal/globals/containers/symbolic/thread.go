@@ -21,10 +21,6 @@ func (*Thread) Test(v symbolic.SymbolicValue) bool {
 	return ok
 }
 
-func (Thread) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &Thread{}
-}
-
 func (t *Thread) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
 	case "push":

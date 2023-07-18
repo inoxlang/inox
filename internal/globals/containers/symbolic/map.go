@@ -21,10 +21,6 @@ func (*Map) Test(v symbolic.SymbolicValue) bool {
 	return ok
 }
 
-func (r Map) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &Map{}
-}
-
 func (m *Map) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
 	case "insert":

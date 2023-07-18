@@ -61,8 +61,6 @@ type KeyFilteredIterator struct {
 	nextValue    Value
 	currentKey   Value
 	currentValue Value
-
-	NotClonableMixin
 }
 
 func (it *KeyFilteredIterator) HasNext(ctx *Context) bool {
@@ -114,8 +112,6 @@ type ValueFilteredIterator struct {
 	nextValue    Value
 	currentKey   Value
 	currentValue Value
-
-	NotClonableMixin
 }
 
 func (it *ValueFilteredIterator) HasNext(ctx *Context) bool {
@@ -168,8 +164,6 @@ type KeyValueFilteredIterator struct {
 	nextValue    Value
 	currentKey   Value
 	currentValue Value
-
-	NotClonableMixin
 }
 
 func (it *KeyValueFilteredIterator) HasNext(ctx *Context) bool {
@@ -219,8 +213,6 @@ func (it *KeyValueFilteredIterator) Value(ctx *Context) Value {
 type immutableSliceIterator[T Value] struct {
 	i        int
 	elements []T
-
-	NotClonableMixin
 }
 
 func (it *immutableSliceIterator[T]) HasNext(*Context) bool {
@@ -248,8 +240,6 @@ type indexableIterator struct {
 	i   int
 	len int
 	val Indexable
-
-	NotClonableMixin
 }
 
 func (it *indexableIterator) HasNext(*Context) bool {
@@ -316,8 +306,6 @@ func (c *StringConcatenation) Iterator(ctx *Context, config IteratorConfiguratio
 type ValueListIterator struct {
 	list *ValueList
 	i    int
-
-	NotClonableMixin
 }
 
 func (it ValueListIterator) HasNext(*Context) bool {
@@ -352,8 +340,6 @@ func (list *List) Iterator(ctx *Context, config IteratorConfiguration) Iterator 
 type IntListIterator struct {
 	list *IntList
 	i    int
-
-	NotClonableMixin
 }
 
 func (it IntListIterator) HasNext(*Context) bool {
@@ -385,7 +371,6 @@ type BitSetIterator struct {
 	set       *bitset.BitSet
 	nextIndex uint //start at 0
 
-	NotClonableMixin
 }
 
 func (it BitSetIterator) HasNext(*Context) bool {
@@ -416,8 +401,6 @@ func (list *BoolList) Iterator(ctx *Context, config IteratorConfiguration) Itera
 type StrListIterator struct {
 	list *StringList
 	i    int
-
-	NotClonableMixin
 }
 
 func (it StrListIterator) HasNext(*Context) bool {
@@ -448,8 +431,6 @@ func (list *StringList) Iterator(ctx *Context, config IteratorConfiguration) Ite
 type TupleIterator struct {
 	tuple Tuple
 	i     int
-
-	NotClonableMixin
 }
 
 func (it TupleIterator) HasNext(*Context) bool {
@@ -482,8 +463,6 @@ type indexedEntryIterator struct {
 	len          int
 	entries      map[string]Value
 	currentValue Value
-
-	NotClonableMixin
 }
 
 func (it *indexedEntryIterator) HasNext(*Context) bool {
@@ -514,8 +493,6 @@ func (it *indexedEntryIterator) Value(*Context) Value {
 type ArrayIterator struct {
 	elements []Value
 	i        int
-
-	NotClonableMixin
 }
 
 func (it ArrayIterator) HasNext(*Context) bool {
@@ -547,8 +524,6 @@ type IpropsIterator struct {
 	keys   []string
 	values []Value
 	i      int
-
-	NotClonableMixin
 }
 
 // NewIpropsIterator creates an IpropsIterator, the provided keys slice and values slice should not be modified.
@@ -603,8 +578,6 @@ func (rec *Record) Iterator(ctx *Context, config IteratorConfiguration) Iterator
 type IntRangeIterator struct {
 	range_ IntRange
 	next   int64
-
-	NotClonableMixin
 }
 
 func (it *IntRangeIterator) HasNext(*Context) bool {
@@ -644,8 +617,6 @@ func (r IntRange) Iterator(ctx *Context, config IteratorConfiguration) Iterator 
 type RuneRangeIterator struct {
 	range_ RuneRange
 	next   rune
-
-	NotClonableMixin
 }
 
 func (it *RuneRangeIterator) HasNext(*Context) bool {
@@ -681,8 +652,6 @@ type PatternIterator struct {
 	next    func(*PatternIterator, *Context) bool
 	key     func(*PatternIterator, *Context) Value
 	value   func(*PatternIterator, *Context) Value
-
-	NotClonableMixin
 }
 
 func (it *PatternIterator) HasNext(ctx *Context) bool {
@@ -1459,8 +1428,6 @@ type EventSourceIterator struct {
 	queue    *aq.Queue
 	waitNext chan (struct{})
 	current  *Event
-
-	NotClonableMixin
 }
 
 func NewEventSourceIterator(source EventSource, config IteratorConfiguration) Iterator {

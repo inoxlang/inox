@@ -38,8 +38,6 @@ type WritableStream interface {
 
 // A WritableByteStream represents a stream of bytes, ElementsStream implements Value.
 type WritableByteStream struct {
-	NotClonableMixin
-
 	stopped atomic.Bool
 
 	writeByteToSink func(s *WritableByteStream, b byte) error

@@ -25,10 +25,6 @@ func (c *HttpClient) Test(v symbolic.SymbolicValue) bool {
 	return ok
 }
 
-func (c HttpClient) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &HttpClient{}
-}
-
 func (c *HttpClient) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
 	case "get_host_cookies":

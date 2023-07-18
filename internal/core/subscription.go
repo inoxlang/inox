@@ -20,8 +20,6 @@ type Subscription struct {
 	subscriber   Subscriber
 	creationDate Date
 	filter       Pattern
-
-	NotClonableMixin
 }
 
 type Subscriptions struct {

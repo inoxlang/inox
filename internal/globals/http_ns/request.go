@@ -24,8 +24,6 @@ const DEFAULT_ACCEPT_HEADER = "*/*"
 
 // HttpRequest is considered immutable from the viewpoint of Inox code, it should NOT be mutated.
 type HttpRequest struct {
-	core.NotClonableMixin
-
 	isClientSide bool
 	ULID         ulid.ULID
 	ULIDString   string

@@ -37,8 +37,6 @@ var (
 )
 
 type ContentSecurityPolicy struct {
-	core.NotClonableMixin
-
 	directives map[string]CSPDirective
 }
 

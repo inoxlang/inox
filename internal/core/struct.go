@@ -12,8 +12,6 @@ var (
 type Struct struct {
 	structType *StructPattern
 	values     []Value
-
-	NotClonableMixin
 }
 
 func (s *Struct) Prop(ctx *Context, name string) Value {
@@ -53,7 +51,6 @@ type StructPattern struct {
 	keys   []string
 	types  []Pattern
 
-	NotClonableMixin
 	NotCallablePatternMixin
 }
 

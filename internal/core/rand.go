@@ -44,7 +44,6 @@ func (s cryptoRandomnessSource) Read(bytes []byte) (int, error) {
 }
 
 type RandomnessSource struct {
-	NotClonableMixin
 	source underlyingRandomnessSource
 }
 

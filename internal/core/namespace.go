@@ -10,8 +10,6 @@ type Namespace struct {
 	name    string
 	entries map[string]Value
 	names   []string
-
-	NotClonableMixin
 }
 
 func NewNamespace(name string, entries map[string]Value) *Namespace {

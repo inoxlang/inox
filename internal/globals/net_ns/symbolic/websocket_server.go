@@ -19,10 +19,6 @@ func (s *WebsocketServer) Test(v symbolic.SymbolicValue) bool {
 	return ok
 }
 
-func (s WebsocketServer) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &WebsocketServer{}
-}
-
 func (s *WebsocketServer) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
 	case "upgrade":

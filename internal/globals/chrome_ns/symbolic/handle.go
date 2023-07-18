@@ -25,10 +25,6 @@ func (r *Handle) Test(v symbolic.SymbolicValue) bool {
 	return ok
 }
 
-func (r Handle) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &Handle{}
-}
-
 func (r *Handle) Widen() (symbolic.SymbolicValue, bool) {
 	return nil, false
 }

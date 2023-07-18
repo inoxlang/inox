@@ -19,10 +19,6 @@ func (r *File) Test(v symbolic.SymbolicValue) bool {
 	return ok
 }
 
-func (r File) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &File{}
-}
-
 func (f *File) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
 	case "read":

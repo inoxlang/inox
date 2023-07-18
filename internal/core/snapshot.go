@@ -129,12 +129,12 @@ func (s *Snapshot) WithChangeApplied(ctx *Context, c Change) (*Snapshot, error) 
 //
 
 func (r *RuneSlice) TakeInMemorySnapshot(ctx *Context) (*Snapshot, error) {
-	sliceClone, _ := r.Clone(map[uintptr]map[int]Value{}, 0)
-	sliceClone.(*RuneSlice).frozen = true
+	sliceClone, _ := r.clone()
+	sliceClone.frozen = true
 
 	return &Snapshot{
 		date:     Date(time.Now()),
-		inMemory: sliceClone.(Serializable),
+		inMemory: sliceClone,
 	}, nil
 }
 

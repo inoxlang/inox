@@ -43,8 +43,6 @@ const (
 
 // A Mutation stores the data (or part of the data) about the modification of a value, it is immutable and implements Value.
 type Mutation struct {
-	NotClonableMixin
-
 	Kind                    MutationKind
 	Complete                bool                    // true if the Mutation contains all the data necessary to be applied
 	SpecificMutationVersion SpecificMutationVersion // set only if specific mutation

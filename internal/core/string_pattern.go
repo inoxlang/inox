@@ -720,7 +720,6 @@ type IntRangeStringPattern struct {
 	CallBasedPatternReprMixin
 
 	NotCallablePatternMixin
-	NotClonableMixin
 }
 
 func NewIntRangeStringPattern(lower, upperIncluded int64, node parse.Node) *IntRangeStringPattern {
@@ -1096,7 +1095,6 @@ func (patt *RepeatedPatternElement) StringPattern() (StringPattern, bool) {
 type ParserBasedPseudoPattern struct {
 	parser StatelessParser
 
-	NotClonableMixin
 	NotCallablePatternMixin
 }
 

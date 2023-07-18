@@ -12,8 +12,6 @@ import (
 
 // A TestSuite represents a test suite, TestSuite implements Value.
 type TestSuite struct {
-	NotClonableMixin
-
 	meta         Value
 	module       *Module // module executed when running the test suite
 	parentModule *Module
@@ -133,8 +131,6 @@ func (*TestSuite) PropertyNames(ctx *Context) []string {
 
 // A TestCase represents a test case, TestCase implements Value.
 type TestCase struct {
-	NotClonableMixin
-
 	meta         Value
 	module       *Module // module executed when running the test case
 	parentModule *Module

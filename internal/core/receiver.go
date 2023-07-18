@@ -37,8 +37,6 @@ type Message struct {
 	data         Value // immutable value
 	sender       Value
 	sendindgDate Date
-
-	NotClonableMixin
 }
 
 func (m Message) Data() Value {
@@ -76,8 +74,6 @@ type SynchronousMessageHandler struct {
 	watchers           *ValueWatchers
 	mutationCallbacks  *MutationCallbacks
 	watchingDepth      WatchingDepth
-
-	NotClonableMixin
 }
 
 func NewSynchronousMessageHandler(ctx *Context, fn *InoxFunction, pattern Pattern) *SynchronousMessageHandler {

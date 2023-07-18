@@ -51,7 +51,6 @@ type SystemGraph struct {
 	isFrozen          bool         // SystemGraph should not supported unfreezing
 	lastSnapshot      *SystemGraph // discarded when there is a mutation
 
-	NotClonableMixin
 }
 
 func NewSystemGraph() *SystemGraph {
@@ -69,8 +68,6 @@ type SystemGraphEdge struct {
 	text string
 	to   uintptr
 	kind SystemGraphEdgeKind
-
-	NotClonableMixin
 }
 
 func (e SystemGraphEdge) Prop(ctx *Context, name string) Value {
@@ -120,8 +117,6 @@ type SystemGraphEvent struct {
 	value0Ptr, value1Ptr uintptr
 	text                 string
 	date                 Date
-
-	NotClonableMixin
 }
 
 func (e SystemGraphEvent) Prop(ctx *Context, name string) Value {
@@ -452,8 +447,6 @@ type SystemGraphNodes struct {
 	ptrToNode      map[uintptr]*SystemGraphNode
 	availableNodes []*SystemGraphNode //TODO: replace with a bitset
 	graph          *SystemGraph
-
-	NotClonableMixin
 }
 
 func (n *SystemGraphNodes) IsSharable(originState *GlobalState) (bool, string) {
@@ -484,8 +477,6 @@ type SystemGraphNode struct {
 	edgesFrom []SystemGraphEdge
 	available bool
 	version   uint64
-
-	NotClonableMixin
 }
 
 func (n *SystemGraphNode) Prop(ctx *Context, name string) Value {

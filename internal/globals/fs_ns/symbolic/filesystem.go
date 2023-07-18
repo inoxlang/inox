@@ -23,10 +23,6 @@ func (fls *Filesystem) Test(v symbolic.SymbolicValue) bool {
 	return ok
 }
 
-func (r Filesystem) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &Filesystem{}
-}
-
 func (fls *Filesystem) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }

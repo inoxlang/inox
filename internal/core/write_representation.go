@@ -1356,6 +1356,10 @@ func (c *StringConcatenation) WriteRepresentation(ctx *Context, w io.Writer, con
 	return Str(c.GetOrBuildString()).WriteRepresentation(ctx, w, config, depth)
 }
 
+func (c *BytesConcatenation) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	return ErrNotImplementedYet
+}
+
 func (c Color) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }

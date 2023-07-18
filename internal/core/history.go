@@ -40,7 +40,6 @@ type ValueHistory struct {
 	maxItemCount          int
 	renderCurrentToHTMLFn *InoxFunction // can be nil
 
-	NotClonableMixin
 }
 
 func NewValueHistory(ctx *Context, v InMemorySnapshotable, config *Object) *ValueHistory {

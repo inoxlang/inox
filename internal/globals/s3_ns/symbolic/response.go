@@ -19,10 +19,6 @@ func (r *GetObjectResponse) Test(v symbolic.SymbolicValue) bool {
 	return ok
 }
 
-func (r GetObjectResponse) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &GetObjectResponse{}
-}
-
 func (resp *GetObjectResponse) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }
@@ -67,10 +63,6 @@ func (r *PutObjectResponse) Test(v symbolic.SymbolicValue) bool {
 	return ok
 }
 
-func (r PutObjectResponse) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &PutObjectResponse{}
-}
-
 func (resp *PutObjectResponse) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }
@@ -113,10 +105,6 @@ type GetBucketPolicyResponse struct {
 func (r *GetBucketPolicyResponse) Test(v symbolic.SymbolicValue) bool {
 	_, ok := v.(*GetBucketPolicyResponse)
 	return ok
-}
-
-func (r GetBucketPolicyResponse) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &GetBucketPolicyResponse{}
 }
 
 func (resp *GetBucketPolicyResponse) GetGoMethod(name string) (*symbolic.GoFunction, bool) {

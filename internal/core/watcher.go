@@ -151,8 +151,6 @@ func (d WatchingDepth) IsSpecified() bool {
 }
 
 type stoppedWatcher struct {
-	NotClonableMixin
-
 	config WatcherConfiguration
 }
 
@@ -180,7 +178,6 @@ func (w stoppedWatcher) Config() WatcherConfiguration {
 }
 
 type joinedWatchers struct {
-	NotClonableMixin
 	config WatcherConfiguration
 
 	watchers  []Watcher
@@ -298,8 +295,6 @@ func (w *joinedWatchers) Config() WatcherConfiguration {
 }
 
 type GenericWatcher struct {
-	NotClonableMixin
-
 	config WatcherConfiguration
 	values chan Value // watchable value writes interesting values to this channel by calling .InformAboutAsync
 

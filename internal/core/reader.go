@@ -24,8 +24,6 @@ type Readable interface {
 // A Reader is a Value wrapping an io.Reader.
 // TODO: close wrapped. when closing Reader
 type Reader struct {
-	NotClonableMixin
-
 	wrapped      io.Reader
 	hasAllData   bool
 	data         any //[]byte or string

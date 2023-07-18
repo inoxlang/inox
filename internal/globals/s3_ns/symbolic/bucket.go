@@ -19,10 +19,6 @@ func (r *Bucket) Test(v symbolic.SymbolicValue) bool {
 	return ok
 }
 
-func (r Bucket) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &Bucket{}
-}
-
 func (serv *Bucket) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }

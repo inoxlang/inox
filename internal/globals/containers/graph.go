@@ -58,8 +58,6 @@ type Graph struct {
 	graph  *simple.DirectedGraph
 	values map[int64]core.Value
 	roots  map[int64]bool
-
-	core.NotClonableMixin
 }
 
 func (g *Graph) InsertNode(ctx *core.Context, v core.Value) GraphNode {
@@ -222,8 +220,6 @@ func (g *Graph) Walker(*core.Context) (core.Walker, error) {
 type GraphNode struct {
 	node_ graph.Node
 	graph *Graph
-
-	core.NotClonableMixin
 }
 
 func (n GraphNode) GetGoMethod(name string) (*core.GoFunction, bool) {

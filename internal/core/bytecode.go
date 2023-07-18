@@ -9,8 +9,6 @@ import (
 )
 
 type Bytecode struct {
-	NotClonableMixin
-
 	module    *Module
 	constants []Value
 	main      *CompiledFunction

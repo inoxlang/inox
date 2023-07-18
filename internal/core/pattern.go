@@ -651,7 +651,6 @@ type EventPattern struct {
 	ValuePattern Pattern
 	CallBasedPatternReprMixin
 
-	NotClonableMixin
 	NotCallablePatternMixin
 }
 
@@ -686,7 +685,6 @@ type MutationPattern struct {
 	data0 Pattern
 	CallBasedPatternReprMixin
 
-	NotClonableMixin
 	NotCallablePatternMixin
 }
 

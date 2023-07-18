@@ -4,8 +4,6 @@ const DEFAULT_XML_ATTR_VALUE = Str("")
 
 // A XMLElement represents the result of the evaluation of an XMLElement node in Inox code.
 type XMLElement struct {
-	NotClonableMixin
-
 	name       string //if "" matches any node value
 	attributes []XMLAttribute
 	children   []Value

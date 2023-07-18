@@ -43,10 +43,6 @@ func (s *LSPSession) Test(v symbolic.SymbolicValue) bool {
 	return *s.shared == *other.shared
 }
 
-func (s *LSPSession) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &LSPSession{}
-}
-
 func (s *LSPSession) IsSharable() (bool, string) {
 	return true, ""
 }

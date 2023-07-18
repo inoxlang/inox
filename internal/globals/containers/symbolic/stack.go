@@ -21,10 +21,6 @@ func (*Stack) Test(v symbolic.SymbolicValue) bool {
 	return ok
 }
 
-func (Stack) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &Stack{}
-}
-
 func (s *Stack) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
 	case "push":

@@ -73,8 +73,6 @@ type Publication struct {
 	data            Value // immutable value
 	publisher       Value
 	publicationDate Date
-
-	NotClonableMixin
 }
 
 type InternalPublicationId int64

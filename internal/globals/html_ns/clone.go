@@ -10,7 +10,7 @@ import (
 
 func (n *HTMLNode) Clone(clones map[uintptr]map[int]core.Value, depth int) (core.Value, error) {
 	if depth > core.MAX_CLONING_DEPTH {
-		return nil, core.ErrMaximumCloningDepthReached
+		return nil, core.ErrMaximumPseudoCloningDepthReached
 	}
 
 	ptr := reflect.ValueOf(n).Pointer()

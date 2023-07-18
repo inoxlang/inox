@@ -25,8 +25,6 @@ var (
 
 // A Transaction represents a series of effects that are applied atomically.
 type Transaction struct {
-	NotClonableMixin
-
 	ulid           ulid.ULID
 	ctx            *Context
 	lock           sync.RWMutex

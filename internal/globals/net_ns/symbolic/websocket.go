@@ -18,10 +18,6 @@ func (r *WebsocketConnection) Test(v symbolic.SymbolicValue) bool {
 	return ok
 }
 
-func (r WebsocketConnection) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &WebsocketConnection{}
-}
-
 func (conn *WebsocketConnection) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
 	case "sendJSON":

@@ -38,8 +38,6 @@ type WebsocketConnection struct {
 	server *WebsocketServer //nil on client side
 
 	serverContext *Context
-
-	core.NotClonableMixin
 }
 
 func (conn *WebsocketConnection) GetGoMethod(name string) (*GoFunction, bool) {

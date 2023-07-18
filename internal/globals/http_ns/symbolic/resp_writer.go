@@ -26,10 +26,6 @@ func (r *HttpResponseWriter) Test(v symbolic.SymbolicValue) bool {
 	return ok
 }
 
-func (r HttpResponseWriter) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &HttpResponseWriter{}
-}
-
 func (resp *HttpResponseWriter) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
 	case "write_text":

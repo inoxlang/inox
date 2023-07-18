@@ -23,10 +23,6 @@ func (r *HttpServer) Test(v symbolic.SymbolicValue) bool {
 	return ok
 }
 
-func (r HttpServer) Clone(clones map[uintptr]symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &HttpServer{}
-}
-
 func (serv *HttpServer) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
 	case "wait_closed":
