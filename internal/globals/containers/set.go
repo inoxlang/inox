@@ -23,6 +23,7 @@ var (
 	ErrValueWithSameKeyAlreadyPresent       = errors.New("provided value has the same key as an already present element")
 
 	_ core.DefaultValuePattern = (*SetPattern)(nil)
+	_ core.PotentiallySharable = (*Set)(nil)
 )
 
 func init() {
@@ -30,9 +31,14 @@ func init() {
 }
 
 type Set struct {
-	elements map[string]core.Serializable
-	config   SetConfig
-	pattern  *SetPattern
+	elements                          map[string]core.Serializable
+	pendingInclusions                 map[*core.Transaction]map[string]core.Serializable
+	pendingRemovals                   map[*core.Transaction]map[string]struct{}
+	setPersistenceOnMutationCallbacks map[*core.Transaction]struct{}
+	lock                              core.SmartLock
+
+	config  SetConfig
+	pattern *SetPattern
 
 	//persistence
 	storage core.SerializedValueStorage //nillable
@@ -136,11 +142,7 @@ func loadSet(ctx *core.Context, args core.InstanceLoadArgs) (core.UrlHolder, err
 				cont = false
 				return
 			}
-			watchable.OnMutation(ctx, func(ctx *core.Context, mutation core.Mutation) (registerAgain bool) {
-				persistSet(ctx, set, set.path, set.storage)
-				registerAgain = true
-				return
-			}, core.MutationWatchingConfiguration{Depth: core.DeepWatching})
+			watchable.OnMutation(ctx, set.makePersistOnMutationCallback(val), core.MutationWatchingConfiguration{Depth: core.DeepWatching})
 		}
 		return true
 	})
@@ -231,8 +233,11 @@ func (c SetConfig) Equal(ctx *core.Context, otherConfig SetConfig, alreadyCompar
 
 func NewSetWithConfig(ctx *core.Context, elements core.Iterable, config SetConfig) *Set {
 	set := &Set{
-		elements: make(map[string]core.Serializable),
-		config:   config,
+		elements:                          make(map[string]core.Serializable),
+		pendingInclusions:                 make(map[*core.Transaction]map[string]core.Serializable, 0),
+		pendingRemovals:                   make(map[*core.Transaction]map[string]struct{}, 0),
+		setPersistenceOnMutationCallbacks: make(map[*core.Transaction]struct{}, 0),
+		config:                            config,
 	}
 
 	if elements != nil {
@@ -244,6 +249,34 @@ func NewSetWithConfig(ctx *core.Context, elements core.Iterable, config SetConfi
 	}
 
 	return set
+}
+
+func (s *Set) IsSharable(originState *core.GlobalState) (bool, string) {
+	return true, ""
+}
+
+func (s *Set) Share(originState *core.GlobalState) {
+	s.lock.Share(originState, func() {})
+}
+
+func (s *Set) IsShared() bool {
+	return s.lock.IsValueShared()
+}
+
+func (s *Set) Lock(state *core.GlobalState) {
+	s.lock.Lock(state, s)
+}
+
+func (s *Set) Unlock(state *core.GlobalState) {
+	s.lock.Unlock(state, s)
+}
+
+func (s *Set) ForceLock() {
+	s.lock.ForceLock()
+}
+
+func (s *Set) ForceUnlock() {
+	s.lock.ForceUnlock()
 }
 
 func (set *Set) URL() (core.URL, bool) {
@@ -258,11 +291,36 @@ func (set *Set) SetURLOnce(ctx *core.Context, url core.URL) error {
 }
 
 func (set *Set) Has(ctx *core.Context, elem core.Serializable) core.Bool {
+	closestState := ctx.GetClosestState()
+	set.lock.Lock(closestState, set)
+	defer set.lock.Unlock(closestState, set)
+
+	return set.hasNoLock(ctx, elem)
+}
+
+func (set *Set) hasNoLock(ctx *core.Context, elem core.Serializable) core.Bool {
 	if set.config.Element != nil && !set.config.Element.Test(ctx, elem) {
 		panic(ErrValueDoesMatchElementPattern)
 	}
 
 	key := containers_common.GetUniqueKey(ctx, elem, set.config.Uniqueness)
+
+	tx := ctx.GetTx()
+
+	if tx != nil {
+		pendingRemovals := set.pendingRemovals[tx]
+		_, removed := pendingRemovals[key]
+		if removed {
+			return false
+		}
+
+		pendingInclusions := set.pendingInclusions[tx]
+		_, added := pendingInclusions[key]
+		if added {
+			return true
+		}
+	}
+
 	_, ok := set.elements[key]
 	return core.Bool(ok)
 }
@@ -281,8 +339,21 @@ func (set *Set) Add(ctx *core.Context, elem core.Serializable) {
 	set.addNoPersist(ctx, elem)
 	//TODO: fully support transaction (in-memory changes)
 
+	tx := ctx.GetTx()
+
 	if set.storage != nil {
-		utils.PanicIfErr(persistSet(ctx, set, set.path, set.storage))
+		if tx == nil {
+			utils.PanicIfErr(persistSet(ctx, set, set.path, set.storage))
+		} else if _, ok := set.setPersistenceOnMutationCallbacks[tx]; !ok {
+			closestState := ctx.GetClosestState()
+			set.lock.Lock(closestState, set)
+			defer set.lock.Unlock(closestState, set)
+
+			tx.OnEnd(set, func(tx *core.Transaction, success bool) {
+				utils.PanicIfErr(persistSet(ctx, set, set.path, set.storage))
+			})
+			set.setPersistenceOnMutationCallbacks[tx] = struct{}{}
+		}
 	}
 }
 
@@ -290,6 +361,9 @@ func (set *Set) addNoPersist(ctx *core.Context, elem core.Serializable) {
 	if set.config.Element != nil && !set.config.Element.Test(ctx, elem) {
 		panic(ErrValueDoesMatchElementPattern)
 	}
+
+	closestState := ctx.GetClosestState()
+	elem = utils.Must(core.ShareOrClone(elem, closestState)).(core.Serializable)
 
 	if set.config.Uniqueness.Type == containers_common.UniqueURL {
 		holder, ok := elem.(core.UrlHolder)
@@ -313,21 +387,102 @@ func (set *Set) addNoPersist(ctx *core.Context, elem core.Serializable) {
 
 	key := containers_common.GetUniqueKey(ctx, elem, set.config.Uniqueness)
 
-	curr, ok := set.elements[key]
-	if ok && elem != curr {
-		panic(ErrValueWithSameKeyAlreadyPresent)
+	set.lock.Lock(closestState, set)
+	defer set.lock.Unlock(closestState, set)
+
+	tx := ctx.GetTx()
+
+	if tx == nil {
+		if _, ok := set.elements[key]; ok {
+			panic(ErrValueWithSameKeyAlreadyPresent)
+		}
+		set.elements[key] = elem
+	} else {
+		pendingInclusions := set.pendingInclusions[tx]
+		_, added := pendingInclusions[key]
+		if added {
+			panic(ErrValueWithSameKeyAlreadyPresent)
+		}
+
+		curr, ok := set.elements[key]
+		if ok && elem != curr {
+			panic(ErrValueWithSameKeyAlreadyPresent)
+		}
+
+		pendingRemovals := set.pendingRemovals[tx]
+		_, removed := pendingRemovals[key]
+		if removed {
+			delete(pendingRemovals, key)
+		} else if _, ok := set.elements[key]; ok {
+			panic(ErrValueWithSameKeyAlreadyPresent)
+		}
+
+		//add the element
+
+		if pendingInclusions == nil {
+			pendingInclusions = make(map[string]core.Serializable)
+			set.pendingInclusions[tx] = pendingInclusions
+		}
+
+		pendingInclusions[key] = elem
 	}
-	set.elements[key] = elem
+
 }
 
 func (set *Set) Remove(ctx *core.Context, elem core.Serializable) {
 	key := containers_common.GetUniqueKey(ctx, elem, set.config.Uniqueness)
-	delete(set.elements, key)
 
-	//TODO: fully support transaction (in-memory changes)
+	closestState := ctx.GetClosestState()
+	set.lock.Lock(closestState, set)
+	defer set.lock.Unlock(closestState, set)
 
-	if set.storage != nil {
+	tx := ctx.GetTx()
+
+	if tx == nil {
+		delete(set.elements, key)
+		if set.storage != nil {
+			utils.PanicIfErr(persistSet(ctx, set, set.path, set.storage))
+		}
+	} else {
+		pendingRemovals, ok := set.pendingRemovals[tx]
+		if !ok {
+			pendingRemovals = make(map[string]struct{})
+			set.pendingRemovals[tx] = pendingRemovals
+		}
+
+		pendingRemovals[key] = struct{}{}
+
+		if _, ok := set.setPersistenceOnMutationCallbacks[tx]; !ok {
+			tx.OnEnd(set, func(tx *core.Transaction, success bool) {
+				utils.PanicIfErr(persistSet(ctx, set, set.path, set.storage))
+			})
+			set.setPersistenceOnMutationCallbacks[tx] = struct{}{}
+		}
+	}
+}
+
+func (set *Set) makePersistOnMutationCallback(elem core.Serializable) core.MutationCallbackMicrotask {
+	return func(ctx *core.Context, mutation core.Mutation) (registerAgain bool) {
+		registerAgain = true
+
+		tx := ctx.GetTx()
+		if tx != nil {
+			//if there is a transaction the set will be persisted when the transaction is finished.
+			return
+		}
+
+		closestState := ctx.GetClosestState()
+		set.lock.Lock(closestState, set)
+		defer set.lock.Unlock(closestState, set)
+
+		if !set.hasNoLock(ctx, elem) {
+			registerAgain = false
+			return
+		}
+
 		utils.PanicIfErr(persistSet(ctx, set, set.path, set.storage))
+
+		return
 	}
 }
 

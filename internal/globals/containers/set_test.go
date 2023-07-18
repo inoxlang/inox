@@ -424,7 +424,7 @@ func TestPersistLoadSet(t *testing.T) {
 
 }
 
-func TestSetAddToPersistedSet(t *testing.T) {
+func TestSetAddRemove(t *testing.T) {
 
 	setup := func() (*core.Context, core.SerializedValueStorage) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
@@ -434,6 +434,106 @@ func TestSetAddToPersistedSet(t *testing.T) {
 		storage := filekv.NewSerializedValueStorage(kv, "ldb://main/")
 		return ctx, storage
 	}
+
+	t.Run("add different elements during separate transactions", func(t *testing.T) {
+		ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		core.StartNewTransaction(ctx1)
+
+		ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		core.StartNewTransaction(ctx2)
+
+		set := NewSetWithConfig(ctx1, nil, SetConfig{
+			Element: core.INT_PATTERN,
+			Uniqueness: containers_common.UniquenessConstraint{
+				Type: containers_common.UniqueRepr,
+			},
+		})
+
+		set.Add(ctx1, core.Int(1))
+		//check that 2 is only added from ctx1's POV
+		assert.True(t, bool(set.Has(ctx1, core.Int(1))))
+		assert.False(t, bool(set.Has(ctx2, core.Int(1))))
+
+		set.Add(ctx2, core.Int(2))
+		//check that 2 is only added from ctx2's POV
+		assert.True(t, bool(set.Has(ctx2, core.Int(2))))
+		assert.False(t, bool(set.Has(ctx1, core.Int(2))))
+
+		//check that 1 is still only added from ctx1's POV
+		assert.True(t, bool(set.Has(ctx1, core.Int(1))))
+		assert.False(t, bool(set.Has(ctx2, core.Int(1))))
+	})
+
+	t.Run("add then remove different elements during separate transactions", func(t *testing.T) {
+		ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		core.StartNewTransaction(ctx1)
+
+		ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		core.StartNewTransaction(ctx2)
+
+		set := NewSetWithConfig(ctx1, nil, SetConfig{
+			Element: core.INT_PATTERN,
+			Uniqueness: containers_common.UniquenessConstraint{
+				Type: containers_common.UniqueRepr,
+			},
+		})
+
+		set.Add(ctx1, core.Int(1))
+		//check that 2 is only added from ctx1's POV
+		assert.True(t, bool(set.Has(ctx1, core.Int(1))))
+		assert.False(t, bool(set.Has(ctx2, core.Int(1))))
+
+		set.Add(ctx2, core.Int(2))
+		//check that 2 is only added from ctx2's POV
+		assert.True(t, bool(set.Has(ctx2, core.Int(2))))
+		assert.False(t, bool(set.Has(ctx1, core.Int(2))))
+
+		//check that 1 is still only added from ctx1's POV
+		assert.True(t, bool(set.Has(ctx1, core.Int(1))))
+		assert.False(t, bool(set.Has(ctx2, core.Int(1))))
+
+		set.Remove(ctx1, core.Int(1))
+		assert.False(t, bool(set.Has(ctx1, core.Int(1))))
+		assert.False(t, bool(set.Has(ctx2, core.Int(1))))
+
+		set.Remove(ctx2, core.Int(2))
+		assert.False(t, bool(set.Has(ctx2, core.Int(2))))
+		assert.False(t, bool(set.Has(ctx1, core.Int(2))))
+
+		assert.False(t, bool(set.Has(ctx1, core.Int(1))))
+		assert.False(t, bool(set.Has(ctx2, core.Int(1))))
+	})
+
+	t.Run("remove different elements during separate transactions", func(t *testing.T) {
+		ctx0 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+
+		ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		core.StartNewTransaction(ctx1)
+
+		ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		core.StartNewTransaction(ctx2)
+
+		set := NewSetWithConfig(ctx0, core.NewWrappedValueList(core.Int(1), core.Int(2)), SetConfig{
+			Element: core.INT_PATTERN,
+			Uniqueness: containers_common.UniquenessConstraint{
+				Type: containers_common.UniqueRepr,
+			},
+		})
+
+		set.Remove(ctx1, core.Int(1))
+		//check that 2 is only removed from ctx1's POV
+		assert.False(t, bool(set.Has(ctx1, core.Int(1))))
+		assert.True(t, bool(set.Has(ctx2, core.Int(1))))
+
+		set.Remove(ctx2, core.Int(2))
+		//check that 2 is only removed from ctx2's POV
+		assert.False(t, bool(set.Has(ctx2, core.Int(2))))
+		assert.True(t, bool(set.Has(ctx1, core.Int(2))))
+
+		//check that 1 is still removed added from ctx1's POV
+		assert.False(t, bool(set.Has(ctx1, core.Int(1))))
+		assert.True(t, bool(set.Has(ctx2, core.Int(1))))
+	})
 
 	t.Run("representation uniqueness: Set should be persisted during call to .Add", func(t *testing.T) {
 		ctx, storage := setup()
@@ -478,7 +578,44 @@ func TestSetAddToPersistedSet(t *testing.T) {
 		assert.Equal(t, core.Int(1), val)
 	})
 
-	t.Run("url holder with no URL should get one", func(t *testing.T) {
+	t.Run("representation uniqueness: Set should be persisted during call to .Remove", func(t *testing.T) {
+		ctx, storage := setup()
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: containers_common.UniquenessConstraint{
+				Type: containers_common.UniqueRepr,
+			},
+		}, core.CallBasedPatternReprMixin{})
+
+		storage.SetSerialized(ctx, "/set", `[{"int__value":"1"}]`)
+		set, err := loadSet(ctx, core.InstanceLoadArgs{
+			Key: "/set", Storage: storage, Pattern: pattern,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		set.(*Set).Remove(ctx, core.Int(1))
+
+		//check that the Set is persised
+
+		persisted, err := loadSet(ctx, core.InstanceLoadArgs{
+			Key: "/set", Storage: storage, Pattern: pattern,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		//future-proofing the test
+		assert.NotSame(t, persisted, set)
+
+		vals := core.IterateAllValuesOnly(ctx, set.(*Set).Iterator(ctx, core.IteratorConfiguration{}))
+		assert.Len(t, vals, 0)
+	})
+
+	t.Run("url holder with no URL should get one if Set is persistent", func(t *testing.T) {
 		ctx, storage := setup()
 
 		pattern := NewSetPattern(SetConfig{
