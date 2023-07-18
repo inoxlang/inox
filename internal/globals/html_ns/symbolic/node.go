@@ -9,6 +9,12 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+var (
+	HTML_NODE_PROPNAMES = []string{"first-child", "data"}
+
+	_ symbolic.Watchable = (*HTMLNode)(nil)
+)
+
 type HTMLNode struct {
 	symbolic.UnassignablePropsMixin
 	symbolic.SerializableMixin
@@ -47,20 +53,23 @@ func (n *HTMLNode) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 }
 
 func (n *HTMLNode) PropertyNames() []string {
-	return []string{"first-child", "data"}
+	return HTML_NODE_PROPNAMES
 }
 
-func (r *HTMLNode) Widen() (symbolic.SymbolicValue, bool) {
+func (n *HTMLNode) Widen() (symbolic.SymbolicValue, bool) {
 	return nil, false
 }
 
-func (r *HTMLNode) IsWidenable() bool {
+func (n *HTMLNode) IsWidenable() bool {
 	return false
 }
 
-func (r *HTMLNode) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (n *HTMLNode) WatcherElement() symbolic.SymbolicValue {
+	return symbolic.ANY
+}
+
+func (n *HTMLNode) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%html-node")))
-	return
 }
 
 func (r *HTMLNode) WidestOfType() symbolic.SymbolicValue {

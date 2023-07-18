@@ -2,10 +2,14 @@ package html_ns
 
 import (
 	"io"
+	"strconv"
+	"sync"
 
 	core "github.com/inoxlang/inox/internal/core"
 	jsoniter "github.com/json-iterator/go"
 	"golang.org/x/net/html"
+
+	_html_symbolic "github.com/inoxlang/inox/internal/globals/html_ns/symbolic"
 )
 
 var _ = []core.GoValue{&HTMLNode{}}
@@ -14,6 +18,12 @@ type HTMLNode struct {
 	node         *html.Node // TODO: make private
 	render       []byte
 	cloneOnWrite bool
+
+	mutationFieldsLock     sync.Mutex // exclusive access for initializing .watchers & .mutationCallbacks
+	watchingDepth          core.WatchingDepth
+	watchers               *core.ValueWatchers
+	mutationCallbacks      *core.MutationCallbacks
+	entryMutationCallbacks map[string]core.CallbackHandle
 }
 
 func NewHTMLNode(n *html.Node) *HTMLNode {
@@ -44,7 +54,7 @@ func (n *HTMLNode) GetGoMethod(name string) (*core.GoFunction, bool) {
 }
 
 func (n *HTMLNode) PropertyNames(ctx *core.Context) []string {
-	return []string{"first-child", "data"}
+	return _html_symbolic.HTML_NODE_PROPNAMES
 }
 
 func (n *HTMLNode) IsRecursivelyRenderable(ctx *core.Context, input core.RenderingInput) bool {
@@ -127,8 +137,11 @@ func (n *HTMLNode) ReplaceChildHTML(ctx *core.Context, prevHTMLNode *HTMLNode, c
 	newHTMLnode := child.node
 	current := n.node.FirstChild
 
+	childIndex := 0
+
 	for current != nil && current != prevHTMLNode.node {
 		current = current.NextSibling
+		childIndex++
 	}
 
 	if current == nil { // prev child not found
@@ -157,6 +170,14 @@ func (n *HTMLNode) ReplaceChildHTML(ctx *core.Context, prevHTMLNode *HTMLNode, c
 		n.node.FirstChild = newHTMLnode
 	}
 
+	//inform watchers & microtasks about the update
+
+	mutation := core.NewUnspecifiedMutation(core.ShallowWatching, core.Path("/children/"+strconv.Itoa(childIndex)))
+	n.watchers.InformAboutAsync(ctx, mutation, mutation.Depth, true)
+
+	if n.mutationCallbacks != nil {
+		n.mutationCallbacks.CallMicrotasks(ctx, mutation)
+	}
 }
 
 func (n *HTMLNode) SetAttribute(ctx *core.Context, newAttr html.Attribute) {
@@ -166,6 +187,17 @@ func (n *HTMLNode) SetAttribute(ctx *core.Context, newAttr html.Attribute) {
 		n.cloneOnWrite = false
 		n.replaceByClone()
 	}
+
+	defer func() {
+		//inform watchers & microtasks about the update
+
+		mutation := core.NewUnspecifiedMutation(core.ShallowWatching, core.Path("/attributes/"+newAttr.Key))
+		n.watchers.InformAboutAsync(ctx, mutation, mutation.Depth, true)
+
+		if n.mutationCallbacks != nil {
+			n.mutationCallbacks.CallMicrotasks(ctx, mutation)
+		}
+	}()
 
 	for _, attr := range n.node.Attr {
 		if attr.Key == newAttr.Key {
@@ -193,6 +225,15 @@ func (n *HTMLNode) AppendToAttribute(ctx *core.Context, newAttr html.Attribute) 
 	}
 
 	n.node.Attr = append(n.node.Attr, newAttr)
+
+	//inform watchers & microtasks about the update
+
+	mutation := core.NewUnspecifiedMutation(core.ShallowWatching, core.Path("/attributes/"+newAttr.Key))
+	n.watchers.InformAboutAsync(ctx, mutation, mutation.Depth, true)
+
+	if n.mutationCallbacks != nil {
+		n.mutationCallbacks.CallMicrotasks(ctx, mutation)
+	}
 }
 
 func (n *HTMLNode) SetId(ctx *core.Context, id core.Str) {
@@ -208,7 +249,7 @@ func (n *HTMLNode) RemoveAttribute(ctx *core.Context, name string) {
 	}
 
 	for i, attr := range n.node.Attr {
-		if attr.Key == name {
+		if attr.Key == name { //found
 			if i == len(n.node.Attr)-1 {
 				n.node.Attr = n.node.Attr[:len(n.node.Attr)-1]
 			} else {
@@ -218,6 +259,16 @@ func (n *HTMLNode) RemoveAttribute(ctx *core.Context, name string) {
 			if len(n.node.Attr) == 0 {
 				n.node.Attr = nil
 			}
+
+			//inform watchers & microtasks about the update
+
+			mutation := core.NewUnspecifiedMutation(core.ShallowWatching, core.Path("/attributes/"+name))
+			n.watchers.InformAboutAsync(ctx, mutation, mutation.Depth, true)
+
+			if n.mutationCallbacks != nil {
+				n.mutationCallbacks.CallMicrotasks(ctx, mutation)
+			}
+
 			return
 		}
 	}
