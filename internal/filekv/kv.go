@@ -124,10 +124,10 @@ func (kv *SingleFileKV) GetSerialized(ctx *core.Context, key core.Path, db any) 
 	var (
 		valueFound = core.True
 		serialized string
-		tx         = ctx.GetTx()
+		dbtx       = kv.getCreateDatabaseTxn(db, ctx.GetTx())
 	)
 
-	if tx == nil {
+	if dbtx == nil {
 		err := kv.db.View(func(txn *Tx) error {
 			item, err := txn.Get(string(key))
 			if err == errNotFound {
@@ -145,8 +145,6 @@ func (kv *SingleFileKV) GetSerialized(ctx *core.Context, key core.Path, db any) 
 		}
 
 	} else {
-		dbtx := kv.getCreateDatabaseTxn(db, tx)
-
 		var err error
 		serialized, valueFound, err = dbtx.GetSerialized(ctx, key)
 		if err != nil {
@@ -171,8 +169,6 @@ func (kv *SingleFileKV) ForEach(ctx *core.Context, fn func(key core.Path, getVal
 	if fn == nil {
 		return errors.New("iteration function is nil")
 	}
-
-	tx := ctx.GetTx()
 
 	handleItem := func(key, value string) (cont bool) {
 		if key == "" || key[0] != '/' {
@@ -200,10 +196,11 @@ func (kv *SingleFileKV) ForEach(ctx *core.Context, fn func(key core.Path, getVal
 		})
 	}
 
-	if tx == nil {
+	dbTx := kv.getCreateDatabaseTxn(db, ctx.GetTx())
+
+	if dbTx == nil {
 		return kv.db.View(iterWithTx)
 	} else {
-		dbTx := kv.getCreateDatabaseTxn(db, tx)
 		return iterWithTx(dbTx.tx)
 	}
 }
@@ -243,10 +240,10 @@ func (kv *SingleFileKV) Has(ctx *core.Context, key core.Path, db any) core.Bool 
 
 	var (
 		valueFound = core.True
-		tx         = ctx.GetTx()
+		dbTx       = kv.getCreateDatabaseTxn(db, ctx.GetTx())
 	)
 
-	if tx == nil {
+	if dbTx == nil {
 		err := kv.db.View(func(txn *Tx) error {
 			_, err := txn.Get(string(key))
 			if err == errNotFound {
@@ -261,10 +258,8 @@ func (kv *SingleFileKV) Has(ctx *core.Context, key core.Path, db any) core.Bool 
 		}
 
 	} else {
-		dbtx := kv.getCreateDatabaseTxn(db, tx)
-
 		var err error
-		_, valueFound, err = dbtx.Get(ctx, key)
+		_, valueFound, err = dbTx.Get(ctx, key)
 		if err != nil {
 			panic(err)
 		}
@@ -290,9 +285,9 @@ func (kv *SingleFileKV) InsertSerialized(ctx *core.Context, key core.Path, seria
 		panic(ErrInvalidPathKey)
 	}
 
-	tx := ctx.GetTx()
+	dbTx := kv.getCreateDatabaseTxn(db, ctx.GetTx())
 
-	if tx == nil {
+	if dbTx == nil {
 		err := kv.db.Update(func(txn *Tx) error {
 			_, replaced, err := txn.Set(string(key), serialized, nil)
 			if replaced {
@@ -306,8 +301,7 @@ func (kv *SingleFileKV) InsertSerialized(ctx *core.Context, key core.Path, seria
 		}
 
 	} else {
-		dbtx := kv.getCreateDatabaseTxn(db, tx)
-		err := dbtx.InsertSerialized(ctx, key, serialized)
+		err := dbTx.InsertSerialized(ctx, key, serialized)
 
 		if err != nil {
 			panic(err)
@@ -331,9 +325,9 @@ func (kv *SingleFileKV) SetSerialized(ctx *core.Context, key core.Path, serializ
 		panic(ErrInvalidPathKey)
 	}
 
-	tx := ctx.GetTx()
+	dbtx := kv.getCreateDatabaseTxn(db, ctx.GetTx())
 
-	if tx == nil {
+	if dbtx == nil {
 		err := kv.db.Update(func(txn *Tx) error {
 			_, _, err := txn.Set(string(key), serialized, nil)
 			return err
@@ -344,7 +338,6 @@ func (kv *SingleFileKV) SetSerialized(ctx *core.Context, key core.Path, serializ
 		}
 
 	} else {
-		dbtx := kv.getCreateDatabaseTxn(db, tx)
 		err := dbtx.SetSerialized(ctx, key, serialized)
 
 		if err != nil {
@@ -362,9 +355,9 @@ func (kv *SingleFileKV) Delete(ctx *core.Context, key core.Path, db any) {
 		panic(ErrInvalidPathKey)
 	}
 
-	tx := ctx.GetTx()
+	dbTx := kv.getCreateDatabaseTxn(db, ctx.GetTx())
 
-	if tx == nil {
+	if dbTx == nil {
 		err := kv.db.Update(func(dbTx *Tx) error {
 			_, err := dbTx.Delete(string(key))
 			return err
@@ -375,8 +368,6 @@ func (kv *SingleFileKV) Delete(ctx *core.Context, key core.Path, db any) {
 		}
 
 	} else {
-		dbTx := kv.getCreateDatabaseTxn(db, tx)
-
 		err := dbTx.Delete(ctx, key)
 		if err != nil {
 			panic(err)
@@ -384,7 +375,13 @@ func (kv *SingleFileKV) Delete(ctx *core.Context, key core.Path, db any) {
 	}
 }
 
+// getCreateDatabaseTxn gets or creates a DatabaseTx associated with tx, if tx is nil or is already finished
+// and no DatabaseTx is associated with it nil is returned.
 func (kv *SingleFileKV) getCreateDatabaseTxn(db any, tx *core.Transaction) *DatabaseTx {
+	if tx == nil {
+		return nil
+	}
+
 	kv.transactionMapLock.Lock()
 	defer kv.transactionMapLock.Unlock()
 	dbTx, ok := kv.transactions[tx]
@@ -399,10 +396,15 @@ func (kv *SingleFileKV) getCreateDatabaseTxn(db any, tx *core.Transaction) *Data
 		panic(err)
 	}
 
+	if tx.IsFinished() {
+		dbTx.Rollback()
+		return nil
+	}
+
 	//add core.Transaction to KV.
 	kv.transactions[tx] = dbTx
 
-	if err = tx.OnEnd(kv, makeTxEndcallbackFn(dbTx, tx, kv)); err != nil {
+	if err = tx.OnEnd(kv, makeTxEndcallbackFn(dbTx, tx, kv)); err != nil && err != core.ErrFinishedTransaction {
 		panic(err)
 	}
 
@@ -412,6 +414,9 @@ func (kv *SingleFileKV) getCreateDatabaseTxn(db any, tx *core.Transaction) *Data
 func makeTxEndcallbackFn(dbtx *Tx, tx *core.Transaction, kv *SingleFileKV) func(t *core.Transaction, success bool) {
 	return func(t *core.Transaction, success bool) {
 		kv.transactionMapLock.Lock()
+		if _, ok := kv.transactions[tx]; !ok {
+			return
+		}
 		delete(kv.transactions, tx)
 		kv.transactionMapLock.Unlock()
 

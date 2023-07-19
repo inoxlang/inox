@@ -141,7 +141,7 @@ func (tx *Transaction) AddEffect(ctx *Context, effect Effect) error {
 }
 
 func (tx *Transaction) Commit(ctx *Context) error {
-	if tx.finished.CompareAndSwap(false, true) {
+	if !tx.finished.CompareAndSwap(false, true) {
 		return ErrFinishedTransaction
 	}
 

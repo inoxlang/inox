@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,41 +14,92 @@ func TestKvSet(t *testing.T) {
 
 	for _, serialized := range []string{"not_serialized", "serialized"} {
 		t.Run(serialized, func(t *testing.T) {
+			for _, txCase := range []string{"no_tx", "tx", "finished_tx"} {
+				t.Run(txCase, func(t *testing.T) {
 
-			fls := newMemFilesystem()
+					fls := newMemFilesystem()
 
-			kv, err := OpenSingleFileKV(KvStoreConfig{
-				Path:       "/data.kv",
-				Filesystem: fls,
-			})
+					kv, err := OpenSingleFileKV(KvStoreConfig{
+						Path:       "/data.kv",
+						Filesystem: fls,
+					})
 
-			if !assert.NoError(t, err) {
-				return
+					if !assert.NoError(t, err) {
+						return
+					}
+
+					ctx := core.NewContext(core.ContextConfig{
+						Permissions: []core.Permission{core.CreateFsReadPerm(core.PathPattern("/..."))},
+					})
+
+					var tx *core.Transaction
+					if txCase != "no_tx" {
+						tx = core.StartNewTransaction(ctx)
+						if txCase == "finished_tx" {
+							utils.PanicIfErr(tx.Commit(ctx))
+						}
+					}
+
+					//create item
+					if serialized == "not_serialized" {
+						kv.Set(ctx, "/data", core.Int(1), kv)
+					} else {
+						kv.SetSerialized(ctx, "/data", "1", kv)
+					}
+
+					//check item exists
+					val, ok, err := kv.Get(ctx, "/data", kv)
+
+					if !assert.NoError(t, err) {
+						return
+					}
+
+					if !assert.True(t, bool(ok)) {
+						return
+					}
+
+					assert.Equal(t, core.Int(1), val)
+
+					//check item is persisted
+					if txCase != "tx" {
+						kv.db.View(func(tx *Tx) error {
+							val, err := tx.Get("/data")
+							if assert.NoError(t, err) {
+								assert.Equal(t, "1", val)
+							}
+							return nil
+						})
+					}
+
+					if txCase == "tx" {
+						utils.PanicIfErr(tx.Commit(ctx))
+
+						//check item exists
+						val, ok, err := kv.Get(ctx, "/data", kv)
+
+						if !assert.NoError(t, err) {
+							return
+						}
+
+						if !assert.True(t, bool(ok)) {
+							return
+						}
+
+						assert.Equal(t, core.Int(1), val)
+
+						//check item is persisted
+						if txCase != "tx" {
+							kv.db.View(func(tx *Tx) error {
+								val, err := tx.Get("/data")
+								if assert.NoError(t, err) {
+									assert.Equal(t, "1", val)
+								}
+								return nil
+							})
+						}
+					}
+				})
 			}
-
-			ctx := core.NewContext(core.ContextConfig{
-				Permissions: []core.Permission{core.CreateFsReadPerm(core.PathPattern("/..."))},
-			})
-
-			//create item
-			if serialized == "not_serialized" {
-				kv.Set(ctx, "/data", core.Int(1), kv)
-			} else {
-				kv.SetSerialized(ctx, "/data", "1", kv)
-			}
-
-			//check item exists
-			val, ok, err := kv.Get(ctx, "/data", kv)
-
-			if !assert.NoError(t, err) {
-				return
-			}
-
-			if !assert.True(t, bool(ok)) {
-				return
-			}
-
-			assert.Equal(t, core.Int(1), val)
 		})
 	}
 
