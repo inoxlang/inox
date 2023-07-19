@@ -18,7 +18,8 @@ func (c *ParsedChunk) Name() string {
 	return c.Source.Name()
 }
 
-func (c *ParsedChunk) getRunes() []rune {
+// result should not be modified.
+func (c *ParsedChunk) Runes() []rune {
 	c.runesLock.Lock()
 	defer c.runesLock.Unlock()
 
@@ -104,9 +105,30 @@ func (chunk *ParsedChunk) GetSpanLineColumn(span NodeSpan) (int32, int32) {
 	col := int32(1)
 	i := 0
 
-	runes := chunk.getRunes()
+	runes := chunk.Runes()
 
 	for i < int(span.Start) && i < len(runes) {
+		if runes[i] == '\n' {
+			line++
+			col = 1
+		} else {
+			col++
+		}
+
+		i++
+	}
+
+	return line, col
+}
+
+func (chunk *ParsedChunk) GetIncludedEndSpanLineColumn(span NodeSpan) (int32, int32) {
+	line := int32(1)
+	col := int32(1)
+	i := 0
+
+	runes := chunk.Runes()
+
+	for i < int(span.End-1) && i < len(runes) {
 		if runes[i] == '\n' {
 			line++
 			col = 1
@@ -130,7 +152,7 @@ func (chunk *ParsedChunk) GetLineColumnSingeCharSpan(line, column int32) NodeSpa
 
 func (chunk *ParsedChunk) GetLineColumnPosition(line, column int32) int32 {
 	i := int32(0)
-	runes := chunk.getRunes()
+	runes := chunk.Runes()
 	length := len32(runes)
 
 	line -= 1
@@ -190,7 +212,7 @@ func (chunk *ParsedChunk) GetNodeAtSpan(target NodeSpan) (foundNode Node, ok boo
 
 func (chunk *ParsedChunk) FindFirstStatementAndChainOnLine(line int) (foundNode Node, ancestors []Node, ok bool) {
 	i := int32(0)
-	runes := chunk.getRunes()
+	runes := chunk.Runes()
 	length := len32(runes)
 
 	line -= 1
@@ -256,6 +278,10 @@ func (chunk *ParsedChunk) FindFirstStatementAndChainOnLine(line int) (foundNode 
 	}
 
 	return nil, nil, false
+}
+
+func (c *ParsedChunk) EstimatedIndentationUnit() string {
+	return EstimateIndentationUnit(c.Runes(), c.Node)
 }
 
 type SourcePositionRange struct {
