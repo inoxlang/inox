@@ -38,6 +38,8 @@ type Transaction struct {
 	isReadonly     bool
 }
 
+type TransactionEndCallbackFn func(tx *Transaction, success bool)
+
 func newTransaction(ctx *Context, options ...Option) *Transaction {
 	tx := &Transaction{
 		ctx:            ctx,
@@ -107,7 +109,10 @@ func (tx *Transaction) Start(ctx *Context) error {
 	return nil
 }
 
-func (tx *Transaction) OnEnd(k any, fn func(tx *Transaction, success bool)) error {
+// OnEnd associates with k the callback function fn that will be called on the end of the transacion (success or failure),
+// IMPORTANT NOTE: fn may be called in a goroutine different from the one that registered it.
+// If a function is already associated with k the error ErrAlreadySetTransactionEndCallback is returned
+func (tx *Transaction) OnEnd(k any, fn TransactionEndCallbackFn) error {
 	if tx.IsFinished() {
 		return ErrFinishedTransaction
 	}
@@ -169,7 +174,7 @@ func (tx *Transaction) Commit(ctx *Context) error {
 }
 
 func (tx *Transaction) Rollback(ctx *Context) error {
-	if tx.finished.CompareAndSwap(false, true) {
+	if !tx.finished.CompareAndSwap(false, true) {
 		return ErrFinishedTransaction
 	}
 

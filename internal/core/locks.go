@@ -1,6 +1,7 @@
 package core
 
 import (
+	"errors"
 	"sync"
 	"sync/atomic"
 )
@@ -12,6 +13,12 @@ type SmartLock struct {
 
 func (lock *SmartLock) IsValueShared() bool {
 	return lock.valueShared.Load()
+}
+
+func (lock *SmartLock) AssertValueShared() {
+	if !lock.valueShared.Load() {
+		panic(errors.New("value is not shared"))
+	}
 }
 
 func (lock *SmartLock) Share(originState *GlobalState, fn func()) {
