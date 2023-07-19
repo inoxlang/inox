@@ -31,11 +31,11 @@ func init() {
 }
 
 type Set struct {
-	elements                          map[string]core.Serializable
-	pendingInclusions                 map[*core.Transaction]map[string]core.Serializable
-	pendingRemovals                   map[*core.Transaction]map[string]struct{}
-	setPersistenceOnMutationCallbacks map[*core.Transaction]struct{}
-	lock                              core.SmartLock
+	elements                       map[string]core.Serializable
+	pendingInclusions              map[*core.Transaction]map[string]core.Serializable
+	pendingRemovals                map[*core.Transaction]map[string]struct{}
+	transactionsWithSetEndCallback map[*core.Transaction]struct{}
+	lock                           core.SmartLock
 
 	config  SetConfig
 	pattern *SetPattern
@@ -223,11 +223,11 @@ func (c SetConfig) Equal(ctx *core.Context, otherConfig SetConfig, alreadyCompar
 
 func NewSetWithConfig(ctx *core.Context, elements core.Iterable, config SetConfig) *Set {
 	set := &Set{
-		elements:                          make(map[string]core.Serializable),
-		pendingInclusions:                 make(map[*core.Transaction]map[string]core.Serializable, 0),
-		pendingRemovals:                   make(map[*core.Transaction]map[string]struct{}, 0),
-		setPersistenceOnMutationCallbacks: make(map[*core.Transaction]struct{}, 0),
-		config:                            config,
+		elements:                       make(map[string]core.Serializable),
+		pendingInclusions:              make(map[*core.Transaction]map[string]core.Serializable, 0),
+		pendingRemovals:                make(map[*core.Transaction]map[string]struct{}, 0),
+		transactionsWithSetEndCallback: make(map[*core.Transaction]struct{}, 0),
+		config:                         config,
 	}
 
 	if elements != nil {
@@ -317,6 +317,23 @@ func (set *Set) hasNoLock(ctx *core.Context, elem core.Serializable) core.Bool {
 
 func (set *Set) Get(ctx *core.Context, keyVal core.StringLike) (core.Value, core.Bool) {
 	key := keyVal.GetOrBuildString()
+
+	tx := ctx.GetTx()
+
+	if tx != nil {
+		pendingRemovals := set.pendingRemovals[tx]
+		_, removed := pendingRemovals[key]
+		if removed {
+			return nil, false
+		}
+
+		pendingInclusions := set.pendingInclusions[tx]
+		elem, added := pendingInclusions[key]
+		if added {
+			return elem, true
+		}
+	}
+
 	elem, ok := set.elements[key]
 	if !ok {
 		return nil, false
@@ -327,23 +344,20 @@ func (set *Set) Get(ctx *core.Context, keyVal core.StringLike) (core.Value, core
 
 func (set *Set) Add(ctx *core.Context, elem core.Serializable) {
 	set.addNoPersist(ctx, elem)
-	//TODO: fully support transaction (in-memory changes)
 
 	tx := ctx.GetTx()
 
-	if set.storage != nil {
-		if tx == nil {
+	if tx == nil {
+		if set.storage != nil {
 			utils.PanicIfErr(persistSet(ctx, set, set.path, set.storage))
-		} else if _, ok := set.setPersistenceOnMutationCallbacks[tx]; !ok {
-			closestState := ctx.GetClosestState()
-			set.lock.Lock(closestState, set)
-			defer set.lock.Unlock(closestState, set)
-
-			tx.OnEnd(set, func(tx *core.Transaction, success bool) {
-				utils.PanicIfErr(persistSet(ctx, set, set.path, set.storage))
-			})
-			set.setPersistenceOnMutationCallbacks[tx] = struct{}{}
 		}
+	} else if _, ok := set.transactionsWithSetEndCallback[tx]; !ok {
+		closestState := ctx.GetClosestState()
+		set.lock.Lock(closestState, set)
+		defer set.lock.Unlock(closestState, set)
+
+		tx.OnEnd(set, set.makeTransactionEndCallback(ctx, closestState))
+		set.transactionsWithSetEndCallback[tx] = struct{}{}
 	}
 }
 
@@ -442,11 +456,43 @@ func (set *Set) Remove(ctx *core.Context, elem core.Serializable) {
 
 		pendingRemovals[key] = struct{}{}
 
-		if _, ok := set.setPersistenceOnMutationCallbacks[tx]; !ok {
-			tx.OnEnd(set, func(tx *core.Transaction, success bool) {
-				utils.PanicIfErr(persistSet(ctx, set, set.path, set.storage))
-			})
-			set.setPersistenceOnMutationCallbacks[tx] = struct{}{}
+		if _, ok := set.transactionsWithSetEndCallback[tx]; !ok {
+			tx.OnEnd(set, set.makeTransactionEndCallback(ctx, closestState))
+			set.transactionsWithSetEndCallback[tx] = struct{}{}
+		}
+	}
+}
+
+func (set *Set) makeTransactionEndCallback(ctx *core.Context, closestState *core.GlobalState) core.TransactionEndCallbackFn {
+	return func(tx *core.Transaction, success bool) {
+
+		//note: closestState is passed instead of being retrieved from ctx because ctx.GetClosestState()
+		//will panic if the context is done.
+
+		set.lock.AssertValueShared()
+
+		set.lock.Lock(closestState, set)
+		defer set.lock.Unlock(closestState, set)
+
+		defer func() {
+			delete(set.pendingInclusions, tx)
+			delete(set.pendingRemovals, tx)
+		}()
+
+		if !success {
+			return
+		}
+
+		for key, value := range set.pendingInclusions[tx] {
+			set.elements[key] = value
+		}
+
+		for key := range set.pendingRemovals[tx] {
+			delete(set.elements, key)
+		}
+
+		if set.storage != nil {
+			utils.PanicIfErr(persistSet(ctx, set, set.path, set.storage))
 		}
 	}
 }
