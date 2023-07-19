@@ -354,7 +354,6 @@ func (kv *SingleFileKV) SetSerialized(ctx *core.Context, key core.Path, serializ
 }
 
 func (kv *SingleFileKV) Delete(ctx *core.Context, key core.Path, db any) {
-
 	if kv.db.isClosed() {
 		panic(errDatabaseClosed)
 	}
@@ -386,42 +385,22 @@ func (kv *SingleFileKV) Delete(ctx *core.Context, key core.Path, db any) {
 }
 
 func (kv *SingleFileKV) getCreateDatabaseTxn(db any, tx *core.Transaction) *DatabaseTx {
-	//if there is already a database transaction in the core.Transaction we return it.
-	v, err := tx.GetSetValue(kv, func() any {
-		return map[any]*Tx{}
-	})
-	if err != nil {
-		panic(err)
-	}
+	kv.transactionMapLock.Lock()
+	defer kv.transactionMapLock.Unlock()
+	dbTx, ok := kv.transactions[tx]
 
-	var dbTx *Tx
-	var hasTx bool
-
-	txMap, hasTxMap := v.(map[any]*Tx)
-	if hasTxMap {
-		dbTx, hasTx = txMap[kv]
-	}
-
-	if hasTx {
+	if ok {
 		return NewDatabaseTxIL(dbTx)
 	}
 
 	//begin a new database transaction & add it to the core.Transaction.
-	dbTx, err = kv.db.Begin(true)
+	dbTx, err := kv.db.Begin(true)
 	if err != nil {
 		panic(err)
 	}
 
-	txMap[kv] = dbTx
-
-	if err = tx.SetValue(kv, txMap); err != nil {
-		panic(err)
-	}
-
 	//add core.Transaction to KV.
-	kv.transactionMapLock.Lock()
 	kv.transactions[tx] = dbTx
-	kv.transactionMapLock.Unlock()
 
 	if err = tx.OnEnd(kv, makeTxEndcallbackFn(dbTx, tx, kv)); err != nil {
 		panic(err)

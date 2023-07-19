@@ -41,6 +41,7 @@ type Transaction struct {
 func newTransaction(ctx *Context, options ...Option) *Transaction {
 	tx := &Transaction{
 		ctx:            ctx,
+		ulid:           ulid.Make(),
 		values:         make(map[any]any),
 		endCallbackFns: make(map[any]func(*Transaction, bool)),
 		timeout:        DEFAULT_TRANSACTION_TIMEOUT,
@@ -104,44 +105,6 @@ func (tx *Transaction) Start(ctx *Context) error {
 	tx.startTime = time.Now()
 	tx.ctx.setTx(tx)
 	return nil
-}
-
-func (tx *Transaction) SetValue(k, v any) error {
-	if tx.IsFinished() {
-		return ErrFinishedTransaction
-	}
-
-	tx.lock.Lock()
-	defer tx.lock.Unlock()
-	tx.values[k] = v
-	return nil
-}
-
-func (tx *Transaction) GetValue(k any) (any, error) {
-	if tx.IsFinished() {
-		return nil, ErrFinishedTransaction
-	}
-
-	tx.lock.RLock()
-	defer tx.lock.RUnlock()
-	return tx.values[k], nil
-}
-
-func (tx *Transaction) GetSetValue(k any, getVal func() any) (any, error) {
-	if tx.IsFinished() {
-		return nil, ErrFinishedTransaction
-	}
-
-	tx.lock.Lock()
-	defer tx.lock.Unlock()
-
-	val, ok := tx.values[k]
-	if !ok {
-		val = getVal()
-		tx.values[k] = val
-	}
-
-	return val, nil
 }
 
 func (tx *Transaction) OnEnd(k any, fn func(tx *Transaction, success bool)) error {

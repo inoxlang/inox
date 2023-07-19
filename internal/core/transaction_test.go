@@ -78,25 +78,6 @@ func TestTransaction(t *testing.T) {
 			assert.ErrorIs(t, tx.Rollback(ctx), ErrFinishedTransaction)
 		})
 
-		t.Run("SetValue", func(t *testing.T) {
-			ctx := NewContext(ContextConfig{})
-			tx := newTransaction(ctx)
-			tx.Start(ctx)
-			assert.NoError(t, tx.Commit(ctx))
-
-			assert.ErrorIs(t, tx.SetValue(1, 2), ErrFinishedTransaction)
-		})
-
-		t.Run("GetValue", func(t *testing.T) {
-			ctx := NewContext(ContextConfig{})
-			tx := newTransaction(ctx)
-			tx.Start(ctx)
-			assert.NoError(t, tx.Commit(ctx))
-
-			v, err := tx.GetValue(1)
-			assert.Nil(t, v)
-			assert.ErrorIs(t, err, ErrFinishedTransaction)
-		})
 	})
 
 	t.Run("once transaction is rollbacked calling one of a transaction's methods is invalid", func(t *testing.T) {
@@ -128,25 +109,6 @@ func TestTransaction(t *testing.T) {
 			assert.ErrorIs(t, tx.Rollback(ctx), ErrFinishedTransaction)
 		})
 
-		t.Run("SetValue", func(t *testing.T) {
-			ctx := NewContext(ContextConfig{})
-			tx := newTransaction(ctx)
-			tx.Start(ctx)
-			assert.NoError(t, tx.Rollback(ctx))
-
-			assert.ErrorIs(t, tx.SetValue(1, 2), ErrFinishedTransaction)
-		})
-
-		t.Run("GetValue", func(t *testing.T) {
-			ctx := NewContext(ContextConfig{})
-			tx := newTransaction(ctx)
-			tx.Start(ctx)
-			assert.NoError(t, tx.Rollback(ctx))
-
-			v, err := tx.GetValue(1)
-			assert.Nil(t, v)
-			assert.ErrorIs(t, err, ErrFinishedTransaction)
-		})
 	})
 
 	t.Run("transaction timeout", func(t *testing.T) {
