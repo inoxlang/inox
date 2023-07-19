@@ -12,7 +12,7 @@ const (
 	//manifest
 	NO_SPREAD_IN_MANIFEST                           = "objects & lists in the manifest cannot contain spread elements"
 	IMPLICIT_KEY_PROPS_NOT_ALLOWED_IN_MANIFEST      = "implicit key properties are not allowed in the manifest object"
-	PERMS_SECTION_SHOULD_BE_AN_OBJECT               = "the 'permissions' section of the manifest should be an object"
+	PERMS_SECTION_SHOULD_BE_AN_OBJECT               = "the '" + MANIFEST_PERMS_SECTION_NAME + "' section of the manifest should be an object"
 	IMPLICIT_KEY_PROPS_NOT_ALLOWED_IN_PERMS_SECTION = "implicit key properties are not allowed in the 'permissions' section"
 
 	LIMITS_SECTION_SHOULD_BE_AN_OBJECT      = "the '" + MANIFEST_LIMITS_SECTION_NAME + "' section of the manifest should be an object"

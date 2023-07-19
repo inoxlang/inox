@@ -101,6 +101,9 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 		s.Capabilities.HoverProvider = true
 		s.Capabilities.WorkspaceSymbolProvider = true
 		s.Capabilities.DefinitionProvider = true
+		s.Capabilities.CodeActionProvider = &defines.CodeActionOptions{
+			CodeActionKinds: &[]defines.CodeActionKind{defines.CodeActionKindQuickFix},
+		}
 
 		if *req.Capabilities.TextDocument.Synchronization.DidSave && *req.Capabilities.TextDocument.Synchronization.DynamicRegistration {
 			s.Capabilities.TextDocumentSync = defines.TextDocumentSyncKindIncremental
@@ -218,6 +221,29 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 			}
 		})
 		return &lspCompletions, nil
+	})
+
+	server.OnCodeActionWithSliceCodeAction(func(ctx context.Context, req *defines.CodeActionParams) (result *[]defines.CodeAction, err error) {
+		fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
+		if err != nil {
+			return nil, err
+		}
+
+		session := jsonrpc.GetSession(ctx)
+		fls, ok := getLspFilesystem(session)
+		if !ok {
+			return nil, nil
+		}
+
+		actions, err := getCodeActions(session, req.Context.Diagnostics, req.Range, req.TextDocument, fpath, fls)
+
+		if err != nil {
+			return nil, jsonrpc.ResponseError{
+				Code:    jsonrpc.InternalError.Code,
+				Message: fmt.Sprintf("failed to get code actions: %s", err),
+			}
+		}
+		return actions, nil
 	})
 
 	server.OnDidOpenTextDocument(func(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err error) {
@@ -573,50 +599,6 @@ func getPath(uri defines.URI, usingInoxFS bool) (string, error) {
 		return "", fmt.Errorf("%w, actual is: %s", ErrFileURIExpected, string(uri))
 	}
 	return u.Path, nil
-}
-
-func getCompletions(fpath string, line, column int32, session *jsonrpc.Session) []compl.Completion {
-	fls, ok := getLspFilesystem(session)
-	if !ok {
-		return nil
-	}
-
-	handlingCtx := session.Context().BoundChildWithOptions(core.BoundChildContextOptions{
-		Filesystem: fls,
-	})
-
-	state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
-		Fpath:                     fpath,
-		ParsingCompilationContext: handlingCtx,
-		ParentContext:             nil,
-		Out:                       io.Discard,
-		DevMode:                   true,
-		AllowMissingEnvVars:       true,
-		ScriptContextFileSystem:   fls,
-		PreinitFilesystem:         fls,
-	})
-
-	if mod == nil { //unrecoverable parsing error
-		logs.Println("unrecoverable parsing error", err.Error())
-		session.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
-		return nil
-	}
-
-	if state == nil {
-		logs.Println("error", err.Error())
-		session.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
-		return nil
-	}
-
-	chunk := mod.MainChunk
-	pos := chunk.GetLineColumnPosition(line, column)
-
-	return compl.FindCompletions(compl.CompletionSearchArgs{
-		State:       core.NewTreeWalkStateWithGlobal(state),
-		Chunk:       chunk,
-		CursorIndex: int(pos),
-		Mode:        compl.LspCompletions,
-	})
 }
 
 func rangeToLspRange(r parse.SourcePositionRange) defines.Range {
