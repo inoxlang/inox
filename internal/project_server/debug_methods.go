@@ -1234,6 +1234,7 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 		PreinitFilesystem:         fls,
 		AllowMissingEnvVars:       false,
 		IgnoreHighRiskScore:       true,
+		FullAccessToDatabases:     true,
 		Out:                       programOut,
 
 		Debugger:     debugSession.debugger,
