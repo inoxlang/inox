@@ -33,7 +33,7 @@ type Transaction struct {
 	effects        []Effect
 	values         map[any]any
 	endCallbackFns map[any]func(*Transaction, bool)
-	finished       uint32
+	finished       atomic.Bool
 	timeout        Duration
 	isReadonly     bool
 }
@@ -65,7 +65,7 @@ func StartNewTransaction(ctx *Context, options ...Option) *Transaction {
 }
 
 func (tx *Transaction) IsFinished() bool {
-	return atomic.LoadUint32(&tx.finished) == 1
+	return tx.finished.Load()
 }
 
 func (tx *Transaction) Start(ctx *Context) error {
@@ -141,7 +141,7 @@ func (tx *Transaction) AddEffect(ctx *Context, effect Effect) error {
 }
 
 func (tx *Transaction) Commit(ctx *Context) error {
-	if !atomic.CompareAndSwapUint32(&tx.finished, 0, 1) {
+	if tx.finished.CompareAndSwap(false, true) {
 		return ErrFinishedTransaction
 	}
 
@@ -169,7 +169,7 @@ func (tx *Transaction) Commit(ctx *Context) error {
 }
 
 func (tx *Transaction) Rollback(ctx *Context) error {
-	if !atomic.CompareAndSwapUint32(&tx.finished, 0, 1) {
+	if tx.finished.CompareAndSwap(false, true) {
 		return ErrFinishedTransaction
 	}
 
