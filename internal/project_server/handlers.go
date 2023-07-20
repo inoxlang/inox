@@ -238,6 +238,10 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 		actions, err := getCodeActions(session, req.Context.Diagnostics, req.Range, req.TextDocument, fpath, fls)
 
 		if err != nil {
+			logs.Println("failed to get code actions", err)
+			return nil, nil
+		}
+		return actions, nil
 			return nil, jsonrpc.ResponseError{
 				Code:    jsonrpc.InternalError.Code,
 				Message: fmt.Sprintf("failed to get code actions: %s", err),
