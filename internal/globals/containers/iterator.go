@@ -10,6 +10,9 @@ type CollectionIterator struct {
 	next    func(*CollectionIterator, *core.Context) bool
 	key     func(*CollectionIterator, *core.Context) core.Value
 	value   func(*CollectionIterator, *core.Context) core.Value
+
+	_key   core.Value
+	_value core.Value
 }
 
 func (it *CollectionIterator) HasNext(ctx *core.Context) bool {
@@ -143,6 +146,13 @@ func (s *Map) Iterator(ctx *core.Context, config core.IteratorConfiguration) cor
 
 func (s *Set) Iterator(ctx *core.Context, config core.IteratorConfiguration) core.Iterator {
 	i := -1
+
+	closestState := ctx.GetClosestState()
+	s.lock.Lock(closestState, s)
+	defer s.lock.Unlock(closestState, s)
+
+	elements := utils.CopyMap(s.elements)
+
 	var keys []string
 	for k := range s.elements {
 		keys = append(keys, k)
@@ -160,7 +170,7 @@ func (s *Set) Iterator(ctx *core.Context, config core.IteratorConfiguration) cor
 			return core.Str(keys[i])
 		},
 		value: func(ci *CollectionIterator, ctx *core.Context) core.Value {
-			return s.elements[keys[i]]
+			return elements[keys[i]]
 		},
 	})
 }
