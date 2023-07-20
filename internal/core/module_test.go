@@ -139,7 +139,7 @@ func TestParseLocalModule(t *testing.T) {
 		modpath := writeModuleAndIncludedFiles(t, moduleName, `
 			manifest {}
 			import ./dep.ix
-		`, map[string]string{"./dep.ix": ""})
+		`, map[string]string{"./dep.ix": "includable-chunk"})
 
 		mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
 		assert.NoError(t, err)
@@ -159,7 +159,7 @@ func TestParseLocalModule(t *testing.T) {
 		modpath := writeModuleAndIncludedFiles(t, moduleName, `
 			manifest {}
 			import ./dep.ix
-		`, map[string]string{"./dep.ix": "("})
+		`, map[string]string{"./dep.ix": "includable-chunk\n("})
 
 		mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
 		assert.Error(t, err)
@@ -182,8 +182,8 @@ func TestParseLocalModule(t *testing.T) {
 			manifest {}
 			import ./dep2.ix
 		`, map[string]string{
-			"./dep2.ix": "import ./dep1.ix \"\"",
-			"./dep1.ix": "",
+			"./dep2.ix": "includable-chunk \nimport ./dep1.ix \"\"",
+			"./dep1.ix": "includable-chunk",
 		})
 
 		mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
@@ -209,8 +209,8 @@ func TestParseLocalModule(t *testing.T) {
 			manifest {}
 			import ./dep2.ix
 		`, map[string]string{
-			"./dep2.ix": "import ./dep1.ix \"\"",
-			"./dep1.ix": "(",
+			"./dep2.ix": "includable-chunk \nimport ./dep1.ix \"\"",
+			"./dep1.ix": "includable-chunk \n(",
 		})
 
 		mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
@@ -240,8 +240,8 @@ func TestParseLocalModule(t *testing.T) {
 			import ./dep1.ix
 			import ./dep2.ix
 		`, map[string]string{
-			"./dep1.ix": "",
-			"./dep2.ix": "",
+			"./dep1.ix": "includable-chunk",
+			"./dep2.ix": "includable-chunk",
 		})
 
 		mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
@@ -321,7 +321,7 @@ func TestParseLocalModule(t *testing.T) {
 				manifest {}
 				import ./dep1.ix
 				import ./dep2.ix
-			`, map[string]string{"./dep2.ix": ""})
+			`, map[string]string{"./dep2.ix": "includable-chunk"})
 
 			mod, err := ParseLocalModule(LocalModuleParsingConfig{
 				ModuleFilepath:                      modpath,

@@ -866,6 +866,8 @@ manifest {}
 import ./patterns.ix
 
 # patterns.ix
+includable-chunk
+
 %user = {
     name: str
     profile-picture: url

@@ -1670,7 +1670,7 @@ func TestCheck(t *testing.T) {
 				manifest {}
 				import ./dep.ix
 				return a
-			`, map[string]string{"./dep.ix": "a = 1"})
+			`, map[string]string{"./dep.ix": "includable-chunk\n a = 1"})
 
 			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
 			assert.NoError(t, err)
@@ -1688,7 +1688,7 @@ func TestCheck(t *testing.T) {
 				manifest {}
 				import ./dep.ix
 				return a
-			`, map[string]string{"./dep.ix": "a = b"})
+			`, map[string]string{"./dep.ix": "includable-chunk\n a = b"})
 
 			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
 			assert.NoError(t, err)
@@ -1707,8 +1707,8 @@ func TestCheck(t *testing.T) {
 					},
 					parse.SourcePositionRange{
 						SourceName:  mod.FlattenedIncludedChunkList[0].ParsedChunk.Name(),
-						StartLine:   1,
-						StartColumn: 5,
+						StartLine:   2,
+						StartColumn: 6,
 					},
 				}),
 			)
@@ -1722,7 +1722,7 @@ func TestCheck(t *testing.T) {
 				manifest {}
 				import ./dep.ix
 				return a
-			`, map[string]string{"./dep.ix": "const a = 2"})
+			`, map[string]string{"./dep.ix": "includable-chunk\n const a = 2"})
 
 			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
 			assert.NoError(t, err)
@@ -1752,9 +1752,13 @@ func TestCheck(t *testing.T) {
 				return a
 			`, map[string]string{
 				"./dep2.ix": `
+					includable-chunk
 					import ./dep1.ix
 				`,
-				"./dep1.ix": "a = 1",
+				"./dep1.ix": `
+					includable-chunk
+					a = 1
+				`,
 			})
 
 			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
@@ -1774,8 +1778,14 @@ func TestCheck(t *testing.T) {
 				import ./dep2.ix
 				return (a + b)
 			`, map[string]string{
-				"./dep1.ix": "a = 1",
-				"./dep2.ix": "b = 2",
+				"./dep1.ix": `
+					includable-chunk
+					a = 1
+				`,
+				"./dep2.ix": `
+					includable-chunk
+					b = 2
+				`,
 			})
 
 			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})

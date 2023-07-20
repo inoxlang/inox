@@ -1,3 +1,5 @@
+includable-chunk
+
 %user = %{
     name: %str
 }

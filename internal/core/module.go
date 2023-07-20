@@ -760,6 +760,11 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 			NewError(fmt.Errorf("included chunk files should not contain a manifest: %s", fpath), Path(fpath)),
 		)
 		includedChunk.ParsingErrorPositions = append(includedChunk.ParsingErrorPositions, config.ImportPosition)
+	} else if existenceError == nil && chunk.Node.IncludableChunkDesc == nil {
+		includedChunk.ParsingErrors = append(includedChunk.ParsingErrors,
+			NewError(fmt.Errorf("included chunk files should start with the %s keyword: %s", parse.INCLUDABLE_CHUNK_KEYWORD_STR, fpath), Path(fpath)),
+		)
+		includedChunk.ParsingErrorPositions = append(includedChunk.ParsingErrorPositions, config.ImportPosition)
 	}
 
 	mod.IncludedChunkMap[absPath] = includedChunk

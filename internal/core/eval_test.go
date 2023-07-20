@@ -3788,7 +3788,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				manifest {}
 				import ./dep.ix
 				return a
-			`, map[string]string{"./dep.ix": "a = 1"})
+			`, map[string]string{"./dep.ix": "includable-chunk \n a = 1"})
 
 			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
@@ -3810,9 +3810,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return a
 			`, map[string]string{
 				"./dep2.ix": `
+					includable-chunk
 					import ./dep1.ix
 				`,
-				"./dep1.ix": "a = 1",
+				"./dep1.ix": `
+					includable-chunk
+					a = 1
+				`,
 			})
 
 			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
@@ -3835,8 +3839,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				import ./dep2.ix
 				return (a + b)
 			`, map[string]string{
-				"./dep1.ix": "a = 1",
-				"./dep2.ix": "b = 2",
+				"./dep1.ix": "includable-chunk\n a = 1",
+				"./dep2.ix": "includable-chunk\n b = 2",
 			})
 
 			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
@@ -3857,7 +3861,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				manifest {}
 				import ./dep.ix
 				return a
-			`, map[string]string{"./dep.ix": "a = myglobal"})
+			`, map[string]string{"./dep.ix": "includable-chunk\n a = myglobal"})
 
 			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
@@ -3880,6 +3884,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				import ./dep.ix
 				return f()
 			`, map[string]string{"./dep.ix": `
+				includable-chunk
 				fn f(){
 					return myglobal
 				}
@@ -3907,6 +3912,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				sleep 10ms
 				return obj.a
 			`, map[string]string{"./dep.ix": `
+				includable-chunk
 				obj = {
 					a: 0
 					lifetimejob #job {
@@ -3936,7 +3942,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				manifest {}
 				import ./dep.ix
 				return %p
-			`, map[string]string{"./dep.ix": "%p = %str"})
+			`, map[string]string{"./dep.ix": `
+				includable-chunk
+				%p = %str
+			`})
 
 			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
