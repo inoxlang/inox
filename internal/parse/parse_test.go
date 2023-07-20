@@ -526,6 +526,39 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("includable-chunk", func(t *testing.T) {
+			n := mustparseChunk(t, "includable-chunk")
+			assert.EqualValues(t, &Chunk{
+				NodeBase:   NodeBase{NodeSpan{0, 16}, nil, nil},
+				Statements: nil,
+				IncludableChunkDesc: &IncludableChunkDescription{
+					NodeBase: NodeBase{
+						Span:            NodeSpan{0, 16},
+						ValuelessTokens: []Token{{Type: INCLUDABLE_CHUNK_KEYWORD, Span: NodeSpan{0, 16}}},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("empty manifest after newline", func(t *testing.T) {
+			n := mustparseChunk(t, "\nincludable-chunk")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					NodeSpan{0, 17},
+					nil,
+					[]Token{
+						{Type: NEWLINE, Span: NodeSpan{0, 1}},
+					},
+				},
+				Statements: nil,
+				IncludableChunkDesc: &IncludableChunkDescription{
+					NodeBase: NodeBase{
+						Span:            NodeSpan{1, 17},
+						ValuelessTokens: []Token{{Type: INCLUDABLE_CHUNK_KEYWORD, Span: NodeSpan{1, 17}}},
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("top level constant declarations", func(t *testing.T) {

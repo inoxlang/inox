@@ -13,6 +13,10 @@ func TestPrint(t *testing.T) {
 		"manifest {",
 		"manifest",
 		"manifest ",
+		//
+		"includable-chunk",
+		"includable-chunk {",
+		"includable-chunk {}",
 		//simple literals
 		"1",
 		" 1",

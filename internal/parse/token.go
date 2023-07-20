@@ -47,6 +47,7 @@ const (
 	ELSE_KEYWORD
 	PREINIT_KEYWORD
 	MANIFEST_KEYWORD
+	INCLUDABLE_CHUNK_KEYWORD
 	DROP_PERMS_KEYWORD
 	ASSIGN_KEYWORD
 	CONST_KEYWORD
@@ -252,6 +253,7 @@ var tokenStrings = [...]string{
 	ELSE_KEYWORD:                   "else",
 	PREINIT_KEYWORD:                "preinit",
 	MANIFEST_KEYWORD:               "manifest",
+	INCLUDABLE_CHUNK_KEYWORD:       "includable-chunk",
 	DROP_PERMS_KEYWORD:             "drop-perms",
 	ASSIGN_KEYWORD:                 "assign",
 	CONST_KEYWORD:                  "const",
@@ -405,6 +407,7 @@ var tokenTypenames = [...]string{
 	ELSE_KEYWORD:                   "ELSE_KEYWORD",
 	PREINIT_KEYWORD:                "PREINIT_KEYWORD",
 	MANIFEST_KEYWORD:               "MANIFEST_KEYWORD",
+	INCLUDABLE_CHUNK_KEYWORD:       "INCLUDABLE_CHUNK_KEYWORD",
 	DROP_PERMS_KEYWORD:             "DROP_PERMS_KEYWORD",
 	ASSIGN_KEYWORD:                 "ASSIGN_KEYWORD",
 	CONST_KEYWORD:                  "CONST_KEYWORD",

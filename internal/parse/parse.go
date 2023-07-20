@@ -38,10 +38,11 @@ const (
 )
 
 var (
-	KEYWORDS             = tokenStrings[IF_KEYWORD : OR_KEYWORD+1]
-	PREINIT_KEYWORD_STR  = tokenStrings[PREINIT_KEYWORD]
-	MANIFEST_KEYWORD_STR = tokenStrings[MANIFEST_KEYWORD]
-	SCHEMES              = []string{"http", "https", "ws", "wss", "ldb", "file", "mem", "s3"}
+	KEYWORDS                     = tokenStrings[IF_KEYWORD : OR_KEYWORD+1]
+	PREINIT_KEYWORD_STR          = tokenStrings[PREINIT_KEYWORD]
+	MANIFEST_KEYWORD_STR         = tokenStrings[MANIFEST_KEYWORD]
+	INCLUDABLE_CHUNK_KEYWORD_STR = tokenStrings[INCLUDABLE_CHUNK_KEYWORD]
+	SCHEMES                      = []string{"http", "https", "ws", "wss", "ldb", "file", "mem", "s3"}
 
 	//regexes
 	URL_REGEX                  = regexp.MustCompile(URL_PATTERN)
@@ -6537,6 +6538,29 @@ func (p *parser) parsePreInitIfPresent() *PreinitStatement {
 }
 
 // can return nil
+func (p *parser) parseIncludaleChunkDescIfPresent() *IncludableChunkDescription {
+	p.panicIfContextDone()
+
+	var includableChunk *IncludableChunkDescription
+	if p.i < p.len && strings.HasPrefix(string(p.s[p.i:]), INCLUDABLE_CHUNK_KEYWORD_STR) {
+		start := p.i
+
+		tokens := []Token{{Type: INCLUDABLE_CHUNK_KEYWORD, Span: NodeSpan{p.i, p.i + int32(len(INCLUDABLE_CHUNK_KEYWORD_STR))}}}
+		p.i += int32(len(INCLUDABLE_CHUNK_KEYWORD_STR))
+
+		p.eatSpace()
+
+		includableChunk = &IncludableChunkDescription{
+			NodeBase: NodeBase{
+				Span:            NodeSpan{start, tokens[0].Span.End},
+				ValuelessTokens: tokens,
+			},
+		}
+	}
+	return includableChunk
+}
+
+// can return nil
 func (p *parser) parseManifestIfPresent() *Manifest {
 	p.panicIfContextDone()
 
@@ -10124,13 +10148,21 @@ func (p *parser) parseChunk() (*Chunk, error) {
 	}
 
 	p.eatSpaceNewlineSemicolonComment(&valuelessTokens)
+	includableChunkDesc := p.parseIncludaleChunkDescIfPresent()
+
+	p.eatSpaceNewlineSemicolonComment(&valuelessTokens)
 	globalConstDecls := p.parseGlobalConstantDeclarations()
 
-	p.eatSpaceNewlineSemicolonComment(&valuelessTokens)
-	preinit := p.parsePreInitIfPresent()
+	var preinit *PreinitStatement
+	var manifest *Manifest
 
-	p.eatSpaceNewlineSemicolonComment(&valuelessTokens)
-	manifest := p.parseManifestIfPresent()
+	if includableChunkDesc == nil {
+		p.eatSpaceNewlineSemicolonComment(&valuelessTokens)
+		preinit = p.parsePreInitIfPresent()
+
+		p.eatSpaceNewlineSemicolonComment(&valuelessTokens)
+		manifest = p.parseManifestIfPresent()
+	}
 
 	p.eatSpaceNewlineSemicolonComment(&valuelessTokens)
 
@@ -10179,6 +10211,7 @@ func (p *parser) parseChunk() (*Chunk, error) {
 
 	chunk.Preinit = preinit
 	chunk.Manifest = manifest
+	chunk.IncludableChunkDesc = includableChunkDesc
 	chunk.Statements = stmts
 	chunk.GlobalConstantDeclarations = globalConstDecls
 	chunk.ValuelessTokens = valuelessTokens

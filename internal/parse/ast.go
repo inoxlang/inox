@@ -158,7 +158,8 @@ type Chunk struct {
 	NodeBase
 	GlobalConstantDeclarations *GlobalConstantDeclarations //nil if no const declarations at the top of the module
 	Preinit                    *PreinitStatement           //nil if no preinit block at the top of the module
-	Manifest                   *Manifest                   //nil if no require at the top of the module
+	Manifest                   *Manifest                   //nil if no manifest at the top of the module
+	IncludableChunkDesc        *IncludableChunkDescription //nil if no manifest at the top of the module
 	Statements                 []Node
 	IsShellChunk               bool
 }
@@ -1675,6 +1676,10 @@ type Manifest struct {
 	Object Node
 }
 
+type IncludableChunkDescription struct {
+	NodeBase
+}
+
 type PermissionDroppingStatement struct {
 	NodeBase
 	Object *ObjectLiteral
@@ -1700,7 +1705,7 @@ func (stmt *ImportStatement) SourceString() (string, bool) {
 	case *RelativePathLiteral:
 		return src.Value, true
 	default:
-		return "",false
+		return "", false
 	}
 }
 
@@ -2184,6 +2189,7 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 	switch n := node.(type) {
 	case *Chunk:
 		walk(n.GlobalConstantDeclarations, node, ancestorChain, fn, afterFn)
+		walk(n.IncludableChunkDesc, node, ancestorChain, fn, afterFn)
 		walk(n.Preinit, node, ancestorChain, fn, afterFn)
 		walk(n.Manifest, node, ancestorChain, fn, afterFn)
 
