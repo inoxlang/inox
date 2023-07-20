@@ -116,11 +116,26 @@ func ParseChunk2(str string, fpath string, opts ...parserOptions) (runes []rune,
 					i++
 				}
 
+				endLine := line
+				endCol := col
+
+				for i < nodeBase.Span.End {
+					if p.s[i] == '\n' {
+						endLine++
+						endCol = 1
+					} else {
+						endCol++
+					}
+					i++
+				}
+
 				aggregation.Errors = append(aggregation.Errors, parsingErr)
 				aggregation.ErrorPositions = append(aggregation.ErrorPositions, SourcePositionRange{
 					SourceName:  fpath,
 					StartLine:   line,
 					StartColumn: col,
+					EndLine:     endLine,
+					EndColumn:   endCol,
 					Span:        nodeBase.Span,
 				})
 

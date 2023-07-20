@@ -142,6 +142,27 @@ func (chunk *ParsedChunk) GetIncludedEndSpanLineColumn(span NodeSpan) (int32, in
 	return line, col
 }
 
+func (chunk *ParsedChunk) GetEndSpanLineColumn(span NodeSpan) (int32, int32) {
+	line := int32(1)
+	col := int32(1)
+	i := 0
+
+	runes := chunk.Runes()
+
+	for i < int(span.End) && i < len(runes) {
+		if runes[i] == '\n' {
+			line++
+			col = 1
+		} else {
+			col++
+		}
+
+		i++
+	}
+
+	return line, col
+}
+
 func (chunk *ParsedChunk) GetLineColumnSingeCharSpan(line, column int32) NodeSpan {
 	pos := chunk.GetLineColumnPosition(line, column)
 	return NodeSpan{
@@ -169,12 +190,15 @@ func (chunk *ParsedChunk) GetLineColumnPosition(line, column int32) int32 {
 }
 
 func (chunk *ParsedChunk) GetSourcePosition(span NodeSpan) SourcePositionRange {
-	l, c := chunk.GetSpanLineColumn(span)
+	line, col := chunk.GetSpanLineColumn(span)
+	endLine, endCol := chunk.GetEndSpanLineColumn(span)
 
 	return SourcePositionRange{
 		SourceName:  chunk.Name(),
-		StartLine:   l,
-		StartColumn: c,
+		StartLine:   line,
+		StartColumn: col,
+		EndLine:     endLine,
+		EndColumn:   endCol,
 		Span:        span,
 	}
 }
@@ -288,6 +312,8 @@ type SourcePositionRange struct {
 	SourceName  string   `json:"sourceName"`
 	StartLine   int32    `json:"line"`
 	StartColumn int32    `json:"column"`
+	EndLine     int32    `json:"endLine"`
+	EndColumn   int32    `json:"endColumn"`
 	Span        NodeSpan `json:"span"`
 }
 

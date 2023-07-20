@@ -65,6 +65,8 @@ func (fn *CompiledFunction) GetSourcePositionRange(ip int) parse.SourcePositionR
 			SourceName:  "??",
 			StartLine:   1,
 			StartColumn: 1,
+			EndLine:     1,
+			EndColumn:   2,
 			Span:        parse.NodeSpan{Start: 0, End: 1},
 		}
 	}

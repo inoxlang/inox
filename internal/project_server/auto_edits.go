@@ -40,15 +40,10 @@ func getAutoEditForChange(documentText string, replacement string, rangeStart, r
 		if slices.Contains(html_ns.VOID_HTML_TAG_NAMES, tagName.Name) {
 			elemEnd := node.Base().Span.End
 			span := parse.NodeSpan{Start: elemEnd - 1, End: elemEnd}
-			line, col := chunk.GetSpanLineColumn(span)
+			posRange := chunk.GetSourcePosition(span)
 
 			edit = defines.TextEdit{
-				Range: rangeToLspRange(parse.SourcePositionRange{
-					SourceName:  "", //not used
-					Span:        span,
-					StartLine:   line,
-					StartColumn: col,
-				}),
+				Range:   rangeToLspRange(posRange),
 				NewText: "/>",
 			}
 			hasEdit = true
@@ -56,15 +51,10 @@ func getAutoEditForChange(documentText string, replacement string, rangeStart, r
 		} else { //add closing tag
 			elemEnd := node.Base().Span.End
 			afterOpeningElem := parse.NodeSpan{Start: elemEnd, End: elemEnd}
-			line, col := chunk.GetSpanLineColumn(afterOpeningElem)
+			posRange := chunk.GetSourcePosition(afterOpeningElem)
 
 			edit = defines.TextEdit{
-				Range: rangeToLspRange(parse.SourcePositionRange{
-					SourceName:  "", //not used
-					Span:        afterOpeningElem,
-					StartLine:   line,
-					StartColumn: col,
-				}),
+				Range:   rangeToLspRange(posRange),
 				NewText: "</" + tagName.Name + ">",
 			}
 			hasEdit = true

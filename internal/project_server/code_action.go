@@ -67,9 +67,13 @@ func tryGetMissingPermissionAction(doc defines.TextDocumentIdentifier, diagnosti
 						}
 
 						line, col := chunk.GetIncludedEndSpanLineColumn(objSpan)
+						endLine, endCol := chunk.GetEndSpanLineColumn(objSpan)
+
 						textEdit.Range = rangeToLspRange(parse.SourcePositionRange{
 							StartLine:   line,
 							StartColumn: col,
+							EndLine:     endLine,
+							EndColumn:   endCol,
 							Span:        parse.NodeSpan{Start: objSpan.End - 1, End: objSpan.End},
 						})
 						textEdit.NewText = "\n" + indentUnit + indentUnit + "routines: {}" + indentUnit + "}\n" + indentUnit
@@ -83,9 +87,13 @@ func tryGetMissingPermissionAction(doc defines.TextDocumentIdentifier, diagnosti
 					}
 
 					line, col := chunk.GetIncludedEndSpanLineColumn(permsSpan)
+					endLine, endCol := chunk.GetEndSpanLineColumn(permsSpan)
+
 					textEdit.Range = rangeToLspRange(parse.SourcePositionRange{
 						StartLine:   line,
 						StartColumn: col,
+						EndLine:     endLine,
+						EndColumn:   endCol,
 						Span:        parse.NodeSpan{Start: permsSpan.End - 1, End: permsSpan.End},
 					})
 					textEdit.NewText = indentUnit + "create: {routines: {}}\n" + indentUnit + "}"
@@ -116,6 +124,8 @@ func tryGetMissingPermissionAction(doc defines.TextDocumentIdentifier, diagnosti
 				textEdit.Range = rangeToLspRange(parse.SourcePositionRange{
 					StartLine:   editLine,
 					StartColumn: editCol,
+					EndLine:     editLine,
+					EndColumn:   editCol + 1,
 					Span:        editSpan,
 				})
 			}

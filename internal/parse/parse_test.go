@@ -181,7 +181,9 @@ func testParse(
 
 			aggregation := err.(*ParsingErrorAggregation)
 			assert.Equal(t, []*ParsingError{{UnspecifiedParsingError, UNTERMINATED_IDENTIFIER_LIT}}, aggregation.Errors)
-			assert.Equal(t, []SourcePositionRange{{StartLine: 1, StartColumn: 1, Span: NodeSpan{0, 1}}}, aggregation.ErrorPositions)
+			assert.Equal(t, []SourcePositionRange{
+				{StartLine: 1, StartColumn: 1, EndLine: 1, EndColumn: 2, Span: NodeSpan{0, 1}},
+			}, aggregation.ErrorPositions)
 		})
 
 		t.Run("shebang", func(t *testing.T) {

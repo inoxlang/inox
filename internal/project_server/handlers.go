@@ -550,6 +550,8 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 					SourceName:  path,
 					StartLine:   1,
 					StartColumn: 1,
+					EndLine:     1,
+					EndColumn:   2,
 					Span:        parse.NodeSpan{Start: 0, End: 1},
 				}
 				ok = true
@@ -607,9 +609,10 @@ func rangeToLspRange(r parse.SourcePositionRange) defines.Range {
 			Line:      uint(r.StartLine) - 1,
 			Character: uint(r.StartColumn - 1),
 		},
+		//exclusive end
 		End: defines.Position{
-			Line:      uint(r.StartLine) - 1,
-			Character: uint(r.StartColumn - 1 + r.Span.End - r.Span.Start),
+			Line:      uint(r.EndLine - 1),
+			Character: uint(r.EndColumn - 1),
 		},
 	}
 }
@@ -618,6 +621,8 @@ func firstCharsLspRange(count int32) defines.Range {
 	return rangeToLspRange(parse.SourcePositionRange{
 		StartLine:   1,
 		StartColumn: 1,
+		EndLine:     1,
+		EndColumn:   1,
 		Span:        parse.NodeSpan{Start: 0, End: count},
 	})
 }

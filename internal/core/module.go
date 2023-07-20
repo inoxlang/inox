@@ -596,6 +596,8 @@ func ParseLocalModule(config LocalModuleParsingConfig) (*Module, error) {
 			SourceName:  fpath,
 			StartLine:   1,
 			StartColumn: 1,
+			EndLine:     1,
+			EndColumn:   2,
 			Span:        parse.NodeSpan{Start: 0, End: 1},
 		})
 	}
