@@ -104,6 +104,7 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 		s.Capabilities.CodeActionProvider = &defines.CodeActionOptions{
 			CodeActionKinds: &[]defines.CodeActionKind{defines.CodeActionKindQuickFix},
 		}
+		s.Capabilities.DocumentFormattingProvider = true
 
 		if *req.Capabilities.TextDocument.Synchronization.DidSave && *req.Capabilities.TextDocument.Synchronization.DynamicRegistration {
 			s.Capabilities.TextDocumentSync = defines.TextDocumentSyncKindIncremental
@@ -242,12 +243,37 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 			return nil, nil
 		}
 		return actions, nil
+	})
+
+	server.OnDocumentFormatting(func(ctx context.Context, req *defines.DocumentFormattingParams) (result *[]defines.TextEdit, err error) {
+		fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
+		if err != nil {
+			return nil, err
+		}
+
+		session := jsonrpc.GetSession(ctx)
+		fls, ok := getLspFilesystem(session)
+		if !ok {
+			return nil, nil
+		}
+
+		chunk, err := core.ParseFileChunk(fpath, fls)
+		if chunk == nil { //unrecoverable error
 			return nil, jsonrpc.ResponseError{
 				Code:    jsonrpc.InternalError.Code,
-				Message: fmt.Sprintf("failed to get code actions: %s", err),
+				Message: fmt.Sprintf("failed to parse file: %s", err),
 			}
 		}
-		return actions, nil
+
+		formatted := format(chunk, req.Options)
+		fullRange := rangeToLspRange(chunk.GetSourcePosition(chunk.Node.Span))
+
+		return &[]defines.TextEdit{
+			{
+				Range:   fullRange,
+				NewText: formatted,
+			},
+		}, nil
 	})
 
 	server.OnDidOpenTextDocument(func(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err error) {

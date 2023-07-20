@@ -378,8 +378,9 @@ func ParseFileChunk(absoluteSourcePath string, fls afs.Filesystem) (*parse.Parse
 	}
 
 	chunk, parsingErr := parse.ParseChunkSource(src)
+
 	if parsingErr != nil {
-		return nil, fmt.Errorf("failed to parse %s: %w", absoluteSourcePath, parsingErr)
+		return chunk, fmt.Errorf("failed to parse %s: %w", absoluteSourcePath, parsingErr)
 	}
 	return chunk, nil
 }
