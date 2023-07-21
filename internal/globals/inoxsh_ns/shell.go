@@ -1181,6 +1181,10 @@ func (sh *shell) parseModule(inputString string) (*core.Module, error) {
 		CodeString: inputString,
 	})
 
+	if chunk == nil {
+		return nil, err
+	}
+
 	if chunk.Node != nil {
 		chunk.Node.IsShellChunk = true
 	}
