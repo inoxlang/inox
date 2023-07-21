@@ -8677,7 +8677,7 @@ func (p *parser) parseFunctionPattern(start int32) Node {
 func (p *parser) parseIfStatement(ifIdent *IdentifierLiteral) *IfStatement {
 	p.panicIfContextDone()
 
-	var alternate *Block
+	var alternate Node
 	var blk *Block
 	var end int32
 	var parsingErr *ParsingError
@@ -8709,13 +8709,33 @@ func (p *parser) parseIfStatement(ifIdent *IdentifierLiteral) *IfStatement {
 			p.i += 4
 			p.eatSpace()
 
-			if p.i >= p.len {
+			switch {
+			case p.i >= p.len:
 				parsingErr = &ParsingError{MissingBlock, UNTERMINATED_IF_STMT_MISSING_BLOCK_AFTER_ELSE}
-			} else if p.s[p.i] != '{' {
-				parsingErr = &ParsingError{MissingBlock, fmtUnterminatedIfStmtElseShouldBeFollowedByBlock(p.s[p.i])}
-			} else {
+			case p.s[p.i] == '{':
 				alternate = p.parseBlock()
-				end = alternate.Span.End
+				end = alternate.(*Block).Span.End
+			case p.i < p.len-2 && p.s[p.i] == 'i' && p.s[p.i+1] == 'f':
+
+				e := func() (n Node) {
+					defer func() {
+						if recover() != nil {
+							n = nil
+						}
+					}()
+					expr, _ := parseExpression(p.s[p.i:], true)
+					return expr
+				}()
+
+				if ident, ok := e.(*IdentifierLiteral); ok && ident.Name == tokenStrings[IF_KEYWORD] {
+					ident, _ := p.parseExpression(false)
+					alternate = p.parseIfStatement(ident.(*IdentifierLiteral))
+					end = alternate.(*IfStatement).Span.End
+					break
+				}
+				fallthrough
+			default:
+				parsingErr = &ParsingError{MissingBlock, fmtUnterminatedIfStmtElseShouldBeFollowedByBlock(p.s[p.i])}
 			}
 		}
 	}
@@ -10229,12 +10249,24 @@ func (p *parser) parseChunk() (*Chunk, error) {
 	return chunk, nil
 }
 
+func ParseFirstExpression(u string) (n Node, ok bool) {
+	if len(u) > MAX_MODULE_BYTE_LEN {
+		return nil, false
+	}
+
+	return parseExpression([]rune(u), true)
+}
+
 func ParseExpression(u string) (n Node, ok bool) {
 	if len(u) > MAX_MODULE_BYTE_LEN {
 		return nil, false
 	}
 
-	p := newParser([]rune(u))
+	return parseExpression([]rune(u), false)
+}
+
+func parseExpression(runes []rune, firstOnly bool) (n Node, ok bool) {
+	p := newParser(runes)
 	expr, isMissingExpr := p.parseExpression()
 
 	noError := true
@@ -10246,7 +10278,7 @@ func ParseExpression(u string) (n Node, ok bool) {
 		return Continue, nil
 	}, nil)
 
-	return expr, noError && !isMissingExpr && p.i >= p.len
+	return expr, noError && !isMissingExpr && (firstOnly || p.i >= p.len)
 }
 
 func ParsePath(pth string) (path string, ok bool) {

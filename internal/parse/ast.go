@@ -1249,7 +1249,7 @@ type IfStatement struct {
 	NodeBase
 	Test       Node
 	Consequent *Block
-	Alternate  *Block //can be nil
+	Alternate  Node //can be nil, *Block | *IfStatement
 }
 
 func (IfStatement) Kind() NodeKind {

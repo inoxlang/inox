@@ -11289,11 +11289,64 @@ func testParse(
 
 			outerIfStmt := n.Statements[0].(*IfStatement)
 			assert.IsType(t, &IdentifierLiteral{}, outerIfStmt.Test)
-			assert.IsType(t, &IdentifierLiteral{}, outerIfStmt.Alternate.Statements[0])
+			assert.IsType(t, &IdentifierLiteral{}, outerIfStmt.Alternate.(*Block).Statements[0])
 
 			innerIfStmt := FindNode(outerIfStmt, &IfStatement{}, nil)
 			assert.IsType(t, &BooleanLiteral{}, innerIfStmt.Test)
-			assert.IsType(t, &BooleanLiteral{}, innerIfStmt.Alternate.Statements[0])
+			assert.IsType(t, &BooleanLiteral{}, innerIfStmt.Alternate.(*Block).Statements[0])
+		})
+
+		t.Run("if-else-if", func(t *testing.T) {
+			n := mustparseChunk(t, "if true { } else if true {}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 27}, nil, nil},
+				Statements: []Node{
+					&IfStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 27},
+							nil,
+							[]Token{
+								{Type: IF_KEYWORD, Span: NodeSpan{0, 2}},
+								{Type: ELSE_KEYWORD, Span: NodeSpan{12, 16}},
+							},
+						}, Test: &BooleanLiteral{
+							NodeBase: NodeBase{NodeSpan{3, 7}, nil, nil},
+							Value:    true,
+						},
+						Consequent: &Block{
+							NodeBase: NodeBase{
+								NodeSpan{8, 11},
+								nil,
+								[]Token{
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
+								},
+							},
+							Statements: nil,
+						},
+						Alternate: &IfStatement{
+							NodeBase: NodeBase{
+								NodeSpan{17, 27},
+								nil,
+								[]Token{{Type: IF_KEYWORD, Span: NodeSpan{17, 19}}},
+							}, Test: &BooleanLiteral{
+								NodeBase: NodeBase{NodeSpan{20, 24}, nil, nil},
+								Value:    true,
+							},
+							Consequent: &Block{
+								NodeBase: NodeBase{
+									NodeSpan{25, 27},
+									nil,
+									[]Token{
+										{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{25, 26}},
+										{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{26, 27}},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
 		})
 
 	})
