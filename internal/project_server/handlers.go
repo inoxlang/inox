@@ -8,6 +8,7 @@ import (
 	"io"
 	"path/filepath"
 	"sync"
+	"time"
 
 	fsutil "github.com/go-git/go-billy/v5/util"
 	"github.com/google/uuid"
@@ -479,22 +480,36 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 			textEdit, ok := getAutoEditForChange(fullDocumentText, lastReplacementStirng, lastRangeStart, lastRangeExlusiveEnd)
 
 			if ok {
-				//the response can be sefaly ignored because if the edit is applied a textDocument/didSave request
+				//the response can be safely ignored because if the edit is applied a textDocument/didSave request
 				//will be sent by the client.
-				go session.SendRequest(jsonrpc.RequestMessage{
-					BaseMessage: jsonrpc.BaseMessage{
-						Jsonrpc: JSONRPC_VERSION,
-					},
-					Method: "workspace/applyEdit",
-					ID:     uuid.New(),
-					Params: utils.Must(json.Marshal(defines.ApplyWorkspaceEditParams{
-						Edit: defines.WorkspaceEdit{
-							Changes: &map[string][]defines.TextEdit{
-								string(req.TextDocument.Uri): {textEdit},
-							},
+				go func() {
+					session.SendRequest(jsonrpc.RequestMessage{
+						BaseMessage: jsonrpc.BaseMessage{
+							Jsonrpc: JSONRPC_VERSION,
 						},
-					})),
-				})
+						Method: "workspace/applyEdit",
+						ID:     uuid.New(),
+						Params: utils.Must(json.Marshal(defines.ApplyWorkspaceEditParams{
+							Edit: defines.WorkspaceEdit{
+								Changes: &map[string][]defines.TextEdit{string(req.TextDocument.Uri): {textEdit}},
+							},
+						})),
+					})
+
+					time.Sleep(100 * time.Millisecond)
+
+					session.SendRequest(jsonrpc.RequestMessage{
+						BaseMessage: jsonrpc.BaseMessage{
+							Jsonrpc: JSONRPC_VERSION,
+						},
+						Method: "cursor/setPosition",
+						ID:     uuid.New(),
+						Params: utils.Must(json.Marshal(defines.Range{
+							Start: textEdit.Range.Start,
+							End:   textEdit.Range.Start,
+						})),
+					})
+				}()
 			}
 		}
 
