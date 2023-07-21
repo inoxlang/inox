@@ -2,6 +2,20 @@ package symbolic
 
 import "github.com/inoxlang/inox/internal/utils"
 
+func widenIfSimple(value SymbolicValue) SymbolicValue {
+	if IsSimpleSymbolicInoxVal(value) {
+		if value.IsWidenable() {
+			widened, ok := value.Widen()
+
+			if !ok {
+				panic(ErrUnreachable)
+			}
+			return widened
+		}
+	}
+	return value
+}
+
 // widenOrAny returns the widened value of the passed value, if widening is not possible any is returned.
 func widenOrAny(value SymbolicValue) SymbolicValue {
 	if value.IsWidenable() {

@@ -216,8 +216,12 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			return nil, err
 		}
 		return extData.ToSymbolicValue(v, false)
-	case *parse.QuotedStringLiteral, *parse.UnquotedStringLiteral, *parse.MultilineStringLiteral:
-		return &String{}, nil
+	case *parse.QuotedStringLiteral:
+		return NewStringWithValue(n.Value), nil
+	case *parse.UnquotedStringLiteral:
+		return NewStringWithValue(n.Value), nil
+	case *parse.MultilineStringLiteral:
+		return NewStringWithValue(n.Value), nil
 	case *parse.RuneLiteral:
 		return &Rune{}, nil
 	case *parse.IdentifierLiteral:

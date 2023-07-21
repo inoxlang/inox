@@ -25,6 +25,8 @@ var (
 	ANY_RUNE        = &Rune{}
 	ANY_RUNE_SLICE  = &RuneSlice{}
 
+	EMPTY_STRING = NewStringWithValue("")
+
 	STRING_LIKE_PSEUDOPROPS = []string{"replace", "trim_space", "has_prefix", "has_suffix"}
 	RUNE_SLICE_PROPNAMES    = []string{"insert", "remove_position", "remove_position_range"}
 )
@@ -44,25 +46,48 @@ type StringLike interface {
 
 // A String represents a symbolic Str.
 type String struct {
+	hasValue bool
+	value    string
 	UnassignablePropsMixin
 	SerializableMixin
 }
 
+func NewStringWithValue(v string) *String {
+	return &String{
+		hasValue: true,
+		value:    v,
+	}
+}
+
 func (s *String) Test(v SymbolicValue) bool {
-	_, ok := v.(*String)
-	return ok
+	otherString, ok := v.(*String)
+	if !ok {
+		return false
+	}
+	if !s.hasValue {
+		return true
+	}
+	return s.value == otherString.value
 }
 
 func (s *String) Widen() (SymbolicValue, bool) {
+	if s.hasValue {
+		return ANY_STR, true
+	}
 	return nil, false
 }
 
-func (a *String) IsWidenable() bool {
-	return false
+func (s *String) IsWidenable() bool {
+	return s.hasValue
 }
 
 func (s *String) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%string")))
+	if s.hasValue {
+		jsonString := utils.Must(utils.MarshalJsonNoHTMLEspace(s.value))
+		utils.Must(w.Write(jsonString))
+	} else {
+		utils.Must(w.Write(utils.StringAsBytes("%string")))
+	}
 }
 
 func (s *String) HasKnownLen() bool {
