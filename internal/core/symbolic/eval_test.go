@@ -3589,6 +3589,22 @@ func TestSymbolicEval(t *testing.T) {
 				assert.Empty(t, state.errors)
 			})
 
+			t.Run("parameter (negated)", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					return fn(arg %int?){
+						if !arg? {
+							//TODO
+						} else {
+							var a %int = arg
+						}
+					}
+				`)
+
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors)
+			})
+
 			t.Run("parameter's property", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					return fn(arg %{prop: %int?}){
@@ -3736,64 +3752,81 @@ func TestSymbolicEval(t *testing.T) {
 			})
 		})
 
-		//type narrowing
+		t.Run("type narrowing", func(t *testing.T) {
 
-		t.Run("binary match expression narrows the type of a variable (%int)", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				if (a match %int) {
-					var b %int = a
-				}
-			`)
+			t.Run("binary match expression narrows the type of a variable (%int)", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					if (a match %int) {
+						var b %int = a
+					}
+				`)
 
-			state.setGlobal("a", ANY, GlobalConst)
+				state.setGlobal("a", ANY, GlobalConst)
 
-			_, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors)
-		})
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors)
+			})
 
-		t.Run("binary match expression narrows the type of a variable: (object pattern literal)", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				if (a match %{a: 1, b: [3]}){
-					var b %{a: 1, b: [3]} = a
-				}
-			`)
+			t.Run("negated binary match expression narrows the type of a variable (%int)", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					if !(a match %int) {
 
-			state.setGlobal("a", ANY, GlobalConst)
+					} else {
+						var b %int = a
+					}
+				`)
 
-			_, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors)
-		})
+				state.setGlobal("a", ANY, GlobalConst)
 
-		t.Run("binary match expression narrows the type of a variable: (list pattern literal)", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				if (a match %[]%object){
-					var b %[]%object = a
-				}
-			`)
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors)
+			})
 
-			state.setGlobal("a", ANY, GlobalConst)
+			t.Run("binary match expression narrows the type of a variable: (object pattern literal)", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					if (a match %{a: 1, b: [3]}){
+						var b %{a: 1, b: [3]} = a
+					}
+				`)
 
-			_, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors)
-		})
+				state.setGlobal("a", ANY, GlobalConst)
 
-		t.Run("binary match expression narrows the type of a property (%int)", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				if (a.prop match %int) {
-					var b %int = a.prop
-				}
-			`)
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors)
+			})
 
-			object := NewObject(map[string]Serializable{"prop": ANY_SERIALIZABLE}, nil, nil)
+			t.Run("binary match expression narrows the type of a variable: (list pattern literal)", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					if (a match %[]%object){
+						var b %[]%object = a
+					}
+				`)
 
-			state.setGlobal("a", object, GlobalConst)
+				state.setGlobal("a", ANY, GlobalConst)
 
-			_, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors)
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors)
+			})
+
+			t.Run("binary match expression narrows the type of a property (%int)", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					if (a.prop match %int) {
+						var b %int = a.prop
+					}
+				`)
+
+				object := NewObject(map[string]Serializable{"prop": ANY_SERIALIZABLE}, nil, nil)
+
+				state.setGlobal("a", object, GlobalConst)
+
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors)
+			})
 		})
 	})
 
@@ -3864,6 +3897,19 @@ func TestSymbolicEval(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Empty(t, state.errors)
 				assert.Equal(t, NewMultivalue(ANY_INT, ANY_BOOL), res.(*InoxFunction).result)
+			})
+
+			t.Run("parameter (negated)", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					return fn(arg %int?){
+						return (if !arg? false else arg)
+					}
+				`)
+
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors)
+				assert.Equal(t, NewMultivalue(ANY_BOOL, ANY_INT), res.(*InoxFunction).result)
 			})
 
 			t.Run("parameter field", func(t *testing.T) {
