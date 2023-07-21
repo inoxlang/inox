@@ -1951,7 +1951,8 @@ func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Nod
 		case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression,
 			*parse.ObjectProperty, *parse.ObjectPatternProperty, *parse.ObjectLiteral, *parse.ListLiteral,
 			*parse.OptionPatternLiteral, *parse.OptionExpression, *parse.ListPatternLiteral, *parse.OptionalPatternExpression,
-			*parse.PatternCallExpression, parse.SimpleValueLiteral, *parse.GlobalVariable:
+			*parse.PatternCallExpression, parse.SimpleValueLiteral, *parse.GlobalVariable,
+			*parse.ObjectPatternLiteral:
 		default:
 			onError(n, fmtForbiddenNodeInParametersSection(n))
 		}
@@ -1996,9 +1997,10 @@ func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Nod
 					switch name {
 					case "pattern":
 						switch paramDescProp.Value.(type) {
-						case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression:
+						case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression,
+							*parse.ObjectPatternLiteral, *parse.ListPatternLiteral:
 						default:
-							onError(paramDescProp, "the .pattern of a non positional parameter should be a named pattern (%path, %str, ...)")
+							onError(paramDescProp, "the .pattern of a non positional parameter should either be a named pattern (%path, %str, ...), a list pattern literal or an object pattern literal")
 						}
 					case "default":
 					case "char-name":
@@ -2079,7 +2081,7 @@ func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Nod
 						switch paramDescProp.Value.(type) {
 						case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression:
 						default:
-							onError(paramDescProp, "the .pattern of a non positional parameter should be a named pattern (ex: %path, %str, ...)")
+							onError(paramDescProp, "the .pattern of a positional parameter should be a named pattern (ex: %path, %str, ...)")
 						}
 					}
 				}

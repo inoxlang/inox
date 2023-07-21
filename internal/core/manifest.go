@@ -1034,7 +1034,7 @@ func getModuleParameters(ctx *Context, v Value) (ModuleParameters, error) {
 			}
 
 			params.positional = append(params.positional, param)
-		} else { // non positional parameyer
+		} else { // non positional parameter
 			param.name = Identifier(k)
 
 			switch val := v.(type) {
