@@ -3605,6 +3605,22 @@ func TestSymbolicEval(t *testing.T) {
 				assert.Empty(t, state.errors)
 			})
 
+			t.Run("parameter's optional property", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					return fn(arg %{prop?: %int}){
+						if arg.?prop? {
+							var a %int = arg.prop
+						} else {
+							//TODO
+						}
+					}
+				`)
+
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors)
+			})
+
 			t.Run("inexisting parameter's property", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					return fn(arg %{}){

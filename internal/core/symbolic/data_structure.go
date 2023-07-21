@@ -1161,7 +1161,10 @@ func (obj *Object) SetProp(name string, value SymbolicValue) (IProps, error) {
 func (obj *Object) WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error) {
 	modified := *obj
 	modified.entries = utils.CopyMap(obj.entries)
+	modified.optionalEntries = utils.CopyMap(obj.optionalEntries)
 	modified.entries[name] = value.(Serializable)
+	delete(modified.optionalEntries, name)
+
 	return &modified, nil
 }
 

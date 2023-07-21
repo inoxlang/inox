@@ -652,7 +652,7 @@ func IsPropertyOptional(v IProps, name string) bool {
 }
 
 func HasRequiredOrOptionalProperty(v IProps, name string) bool {
-	for _, current := range v.PropertyNames() {
+	for _, current := range GetAllPropertyNames(v) {
 		if name == current {
 			return true
 		}
