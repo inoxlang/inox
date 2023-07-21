@@ -3545,6 +3545,30 @@ func TestSymbolicEval(t *testing.T) {
 			), res)
 		})
 
+		t.Run("join else-if", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var a %object = {}
+				if true {
+					a = {a: 1}
+				} else if true {
+					a = {b: 1}
+				} else {
+					a = {c: 1}
+				}
+				return a
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, NewMultivalue(
+				NewEmptyObject(),
+				NewObject(map[string]Serializable{"a": ANY_INT}, nil, nil),
+				NewObject(map[string]Serializable{"b": ANY_INT}, nil, nil),
+				NewObject(map[string]Serializable{"c": ANY_INT}, nil, nil),
+			), res)
+		})
+
 		//TODO: add test about joining that checks that the state in alternate is not already joined with the consequent's fork
 
 		t.Run("truthiness narrowing", func(t *testing.T) {
