@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -110,7 +111,7 @@ func newInMemoryStorageFromSnapshot(snapshot FilesystemSnapshot, maxStorageSize 
 
 		for _, child := range metadata.ChildNames {
 			childPath := filepath.Join(path, child)
-			children[childPath] = storage.files[childPath]
+			children[child] = storage.files[childPath]
 		}
 	}
 	return storage
@@ -193,7 +194,7 @@ func (s *inMemStorage) createParentNoLock(path string, mode os.FileMode, f *inMe
 		s.children[base] = make(map[string]*inMemfile, 0)
 	}
 
-	s.children[base][f.Name()] = f
+	s.children[base][f.basename] = f
 	return nil
 }
 
@@ -263,7 +264,7 @@ func (s *inMemStorage) Rename(from, to string) error {
 	move := [][2]string{{from, to}}
 
 	for pathFrom := range s.files {
-		if pathFrom == from || !filepath.HasPrefix(pathFrom, from) {
+		if pathFrom == from || !strings.HasPrefix(pathFrom, from) {
 			continue
 		}
 

@@ -634,7 +634,7 @@ func (fls *MetaFilesystem) Rename(from, to string) error {
 		// remove moved file from children of previous parent
 		indexFound := false
 		for index, child := range fromDirMetadata.children {
-			if normalizeAsAbsolute(string(child)) == normalizeAsAbsolute(string(fromPath)) {
+			if child == fromPath.Basename() {
 				indexFound = true
 				fromDirMetadata.children = utils.RemoveIndexOfSlice(fromDirMetadata.children, index)
 				break
