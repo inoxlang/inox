@@ -2,6 +2,7 @@ package symbolic
 
 import (
 	"bufio"
+	"strconv"
 
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
@@ -47,28 +48,43 @@ func (f *Float) WidestOfType() SymbolicValue {
 // An Int represents a symbolic Int.
 type Int struct {
 	SerializableMixin
+	value    int64
+	hasValue bool
 }
 
 func (i *Int) Test(v SymbolicValue) bool {
-	_, ok := v.(*Int)
-	return ok
+	otherInt, ok := v.(*Int)
+	if !ok {
+		return false
+	}
+	if !i.hasValue {
+		return true
+	}
+	return i.value == otherInt.value
 }
 
-func (a *Int) Widen() (SymbolicValue, bool) {
+func (i *Int) Widen() (SymbolicValue, bool) {
+	if i.hasValue {
+		return ANY_INT, true
+	}
 	return nil, false
 }
 
 func (i *Int) IsWidenable() bool {
-	return false
+	return i.hasValue
 }
 
 func (i *Int) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%int")))
-	return
+	if i.hasValue {
+		utils.PanicIfErr(w.WriteByte('('))
+		utils.Must(w.Write(utils.StringAsBytes(strconv.FormatInt(i.value, 10))))
+		utils.PanicIfErr(w.WriteByte(')'))
+	}
 }
 
 func (i *Int) WidestOfType() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (i *Int) Int64() (n *Int, signed bool) {

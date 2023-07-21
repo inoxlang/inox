@@ -193,7 +193,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 	case *parse.BooleanLiteral:
 		return &Bool{}, nil
 	case *parse.IntLiteral:
-		return &Int{}, nil
+		return &Int{value: n.Value, hasValue: true}, nil
 	case *parse.FloatLiteral:
 		return &Float{}, nil
 	case *parse.PortLiteral:

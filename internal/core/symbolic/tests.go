@@ -15,6 +15,7 @@ func _makeStateAndChunk(code string, includedFiles map[string]string, globals ..
 
 	state := newSymbolicState(NewSymbolicContext(nil), chunk)
 	state.symbolicData = NewSymbolicData()
+	state.setGlobal("int", ANY_INT, GlobalConst)
 
 	state.ctx.AddNamedPattern("int", &TypePattern{
 		val: &Int{},
