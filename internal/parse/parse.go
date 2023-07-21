@@ -1216,7 +1216,7 @@ func (p *parser) parseDashStartingExpression() Node {
 	}
 
 	if !isAlpha(p.s[p.i]) && !isDecDigit(p.s[p.i]) {
-		if unicode.IsSpace(p.s[p.i]) || isUnquotedStringChar(p.s[p.i]) {
+		if unicode.IsSpace(p.s[p.i]) || isValidUnquotedStringChar(p.s, p.i) {
 			return p.parseUnquotedStringLiteralAndEmailAddress(__start)
 		}
 		return &FlagLiteral{
@@ -1426,6 +1426,8 @@ func (p *parser) parseUnquotedStringLiteralAndEmailAddress(start int32) Node {
 		(isUnquotedStringChar(p.s[p.i]) || (p.s[p.i] == '\\' && p.i < p.len-1 && p.s[p.i+1] == ':')) {
 		if p.s[p.i] == '\\' {
 			p.i++
+		} else if p.s[p.i] == '/' && p.i < p.len-1 && p.s[p.i+1] == '>' {
+			break
 		}
 		p.i++
 	}
@@ -2170,17 +2172,25 @@ func (p *parser) parseIdentStartingExpression() Node {
 				isDynamic = true
 				p.i++
 				nameStart = p.i
-			} else if !isAlpha(p.s[p.i]) && p.s[p.i] != '_' && p.s[p.i] != '(' {
+			} else if p.s[p.i] == '(' {
+				isComputed = true
+			} else if isAlpha(p.s[p.i]) || p.s[p.i] == '_' {
+				isDynamic = false
+			} else if isValidUnquotedStringChar(p.s, p.i) {
 				return p.parseUnquotedStringLiteralAndEmailAddress(start)
 				//memberExpr.NodeBase.Err = &ParsingError{UnspecifiedParsingError, makePropNameShouldStartWithAletterNot(p.s[p.i])}
 				//return memberExpr
-			} else if p.s[p.i] == '(' {
-				isComputed = true
 			} else {
-				isDynamic = false
+				base := memberExpr.BasePtr()
+				base.Span.End = p.i
+
+				base.Err = &ParsingError{UnterminatedMemberExpr, UNTERMINATED_IDENT_MEMB_EXPR}
+				base.ValuelessTokens = append(base.ValuelessTokens, Token{Type: DOT, Span: NodeSpan{p.i - 1, p.i}})
+				return memberExpr
 			}
 
 			if isComputed {
+
 				p.i++
 				propNameNode = p.parseUnaryBinaryAndParenthesizedExpression(p.i-1, -1)
 			} else {
@@ -2261,7 +2271,7 @@ func (p *parser) parseIdentStartingExpression() Node {
 
 		memberExpr.BasePtr().Span.End = p.i
 
-		if p.i < p.len && (p.s[p.i] == '\\' || (isUnquotedStringChar(p.s[p.i]) && p.s[p.i] != ':' && p.s[p.i] != '<')) {
+		if p.i < p.len && (p.s[p.i] == '\\' || (isValidUnquotedStringChar(p.s, p.i) && p.s[p.i] != ':')) {
 			return p.parseUnquotedStringLiteralAndEmailAddress(start)
 		}
 		return memberExpr
@@ -2269,7 +2279,7 @@ func (p *parser) parseIdentStartingExpression() Node {
 
 	isProtocol := p.i < p.len-2 && string(p.s[p.i:p.i+3]) == "://"
 
-	if !isProtocol && p.i < p.len && (p.s[p.i] == '\\' || isUnquotedStringChar(p.s[p.i]) && p.s[p.i] != ':') {
+	if !isProtocol && p.i < p.len && (p.s[p.i] == '\\' || (isValidUnquotedStringChar(p.s, p.i) && p.s[p.i] != ':')) {
 		return p.parseUnquotedStringLiteralAndEmailAddress(start)
 	}
 
@@ -10332,6 +10342,10 @@ func isInterpolationAllowedChar(r rune) bool {
 
 func isUnquotedStringChar(r rune) bool {
 	return isIdentChar(r) || r == '+' || r == '~' || r == '/' || r == '^' || r == '@' || r == '.' || r == '%'
+}
+
+func isValidUnquotedStringChar(runes []rune, i int32) bool {
+	return isUnquotedStringChar(runes[i]) && (runes[i] != '/' || i == len32(runes)-1 || runes[i+1] != '>')
 }
 
 func isSpaceNotLF(r rune) bool {
