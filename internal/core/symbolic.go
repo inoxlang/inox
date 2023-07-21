@@ -551,7 +551,7 @@ func (p *ObjectPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 
 	//TODO: initialize constraints
 
-	symbolic.InitializeObjectPattern(objPattern, entries, p.inexact)
+	symbolic.InitializeObjectPattern(objPattern, entries, p.optionalEntries, p.inexact)
 	return objPattern, nil
 }
 

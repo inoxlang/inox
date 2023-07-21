@@ -123,6 +123,32 @@ func TestToSymbolicValue(t *testing.T) {
 		assert.Equal(t, map[string]symbolic.Serializable{`"name"`: &symbolic.String{}, `./file`: &symbolic.Path{}}, symbolicDict.Keys())
 	})
 
+	t.Run("object pattern", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		patt := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
+		symb, err := patt.ToSymbolicValue(ctx, map[uintptr]symbolic.SymbolicValue{})
+		if assert.NoError(t, err) {
+			expected := symbolic.NewInexactObjectPattern(
+				map[string]symbolic.Pattern{
+					"a": utils.Must(INT_PATTERN.ToSymbolicValue(ctx, map[uintptr]symbolic.SymbolicValue{})).(symbolic.Pattern),
+				}, nil)
+
+			assert.Equal(t, symbolic.Stringify(expected), symbolic.Stringify(symb))
+		}
+
+		patt = NewInexactObjectPatternWithOptionalProps(map[string]Pattern{"a": INT_PATTERN}, map[string]struct{}{"a": {}})
+		symb, err = patt.ToSymbolicValue(ctx, map[uintptr]symbolic.SymbolicValue{})
+		if assert.NoError(t, err) {
+			expected := symbolic.NewInexactObjectPattern(
+				map[string]symbolic.Pattern{
+					"a": utils.Must(INT_PATTERN.ToSymbolicValue(ctx, map[uintptr]symbolic.SymbolicValue{})).(symbolic.Pattern),
+				}, map[string]struct{}{"a": {}})
+
+			assert.Equal(t, symbolic.Stringify(expected), symbolic.Stringify(symb))
+		}
+	})
+
 	t.Run("cycles", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)

@@ -604,11 +604,20 @@ func NewUnitializedObjectPattern() *ObjectPattern {
 	return &ObjectPattern{}
 }
 
-func InitializeObjectPattern(patt *ObjectPattern, entries map[string]Pattern, inexact bool) {
+func NewInexactObjectPattern(entries map[string]Pattern, optionalEntries map[string]struct{}) *ObjectPattern {
+	return &ObjectPattern{
+		inexact:         true,
+		entries:         entries,
+		optionalEntries: optionalEntries,
+	}
+}
+
+func InitializeObjectPattern(patt *ObjectPattern, entries map[string]Pattern, optionalEntries map[string]struct{}, inexact bool) {
 	if patt.entries != nil || patt.complexPropertyConstraints != nil {
 		panic(ErrValueAlreadyInitialized)
 	}
 	patt.entries = entries
+	patt.optionalEntries = optionalEntries
 	patt.inexact = inexact
 }
 
