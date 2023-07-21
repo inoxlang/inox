@@ -1823,6 +1823,41 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}), res)
 		})
 
+		t.Run("if-else-if, condition is false, condition of inner if is true", func(t *testing.T) {
+			code := `
+				a = 0
+				b = 0
+				if false { 
+					$a = 1 
+				} else if true { 
+					$b = 1 
+				}
+				return [$a, $b]
+			`
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+			assert.NoError(t, err)
+			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}), res)
+		})
+
+		t.Run("if-else-if-else, condition is false, condition of inner if is false", func(t *testing.T) {
+			code := `
+				a = 0
+				b = 0
+				if false { 
+					$a = 1 
+				} else if false { 
+					$b = -1
+				} else {
+					$b = 1
+				}
+				return [$a, $b]
+			`
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+			assert.NoError(t, err)
+			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}), res)
+		})
 	})
 
 	t.Run("if expression", func(t *testing.T) {
