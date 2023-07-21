@@ -19,9 +19,9 @@ An archive with a Linux binary and some examples is available in [release assets
   ```
 ### Editor Support
 
-- [VSCode](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox)
-- [Vim](https://github.com/inoxlang/inox-vim)
-- [Sublime Text](https://github.com/inoxlang/inox-sublime)
+- [VSCode](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox) : LSP, colorization, snippets
+- [Vim](https://github.com/inoxlang/inox-vim) : colorization
+- [Sublime Text](https://github.com/inoxlang/inox-sublime) : colorization
 
 ## Learning Inox
 
