@@ -746,8 +746,8 @@ func (h Host) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Sym
 	return symbolic.ANY_HOST, nil
 }
 
-func (hddr EmailAddress) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return symbolic.ANY_EMAIL_ADDR, nil
+func (addr EmailAddress) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	return symbolic.NewEmailAddress(addr.UnderlyingString()), nil
 }
 
 func (n AstNode) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
@@ -889,7 +889,7 @@ func (i FileInfo) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic
 }
 
 func (t Mimetype) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return symbolic.ANY_MIMETYPE, nil
+	return symbolic.NewMimetype(t.UnderlyingString()), nil
 }
 
 func (fn *InoxFunction) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {

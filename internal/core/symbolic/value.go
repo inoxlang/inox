@@ -233,21 +233,38 @@ func (b *Bool) WidestOfType() SymbolicValue {
 
 // A EmailAddress represents a symbolic EmailAddress.
 type EmailAddress struct {
-	UnassignablePropsMixin
-	_ int
+	SerializableMixin
+	value    string
+	hasValue bool
+}
+
+func NewEmailAddress(v string) *EmailAddress {
+	return &EmailAddress{
+		value:    v,
+		hasValue: true,
+	}
 }
 
 func (e *EmailAddress) Test(v SymbolicValue) bool {
-	_, ok := v.(*EmailAddress)
-	return ok
+	other, ok := v.(*EmailAddress)
+	if !ok {
+		return false
+	}
+	if !e.hasValue {
+		return true
+	}
+	return other.hasValue && e.value == other.value
 }
 
 func (e *EmailAddress) Widen() (SymbolicValue, bool) {
+	if e.hasValue {
+		return ANY_EMAIL_ADDR, true
+	}
 	return nil, false
 }
 
 func (e *EmailAddress) IsWidenable() bool {
-	return false
+	return e.hasValue
 }
 
 func (e *EmailAddress) Static() Pattern {
@@ -256,6 +273,11 @@ func (e *EmailAddress) Static() Pattern {
 
 func (e *EmailAddress) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%email-address")))
+	if e.hasValue {
+		utils.PanicIfErr(w.WriteByte('('))
+		utils.Must(w.Write(utils.StringAsBytes(e.value)))
+		utils.PanicIfErr(w.WriteByte(')'))
+	}
 }
 
 func (e *EmailAddress) PropertyNames() []string {
@@ -389,21 +411,40 @@ func (s *PropertyName) WidestOfType() SymbolicValue {
 }
 
 // A Mimetype represents a symbolic Mimetype.
+// A EmailAddress represents a symbolic EmailAddress.
 type Mimetype struct {
-	_ int
+	SerializableMixin
+	value    string
+	hasValue bool
+}
+
+func NewMimetype(v string) *Mimetype {
+	return &Mimetype{
+		value:    v,
+		hasValue: true,
+	}
 }
 
 func (m *Mimetype) Test(v SymbolicValue) bool {
-	_, ok := v.(*Mimetype)
-	return ok
+	other, ok := v.(*Mimetype)
+	if !ok {
+		return false
+	}
+	if !m.hasValue {
+		return true
+	}
+	return other.hasValue && m.value == other.value
 }
 
 func (m *Mimetype) Widen() (SymbolicValue, bool) {
+	if m.hasValue {
+		return ANY_MIMETYPE, true
+	}
 	return nil, false
 }
 
 func (m *Mimetype) IsWidenable() bool {
-	return false
+	return m.hasValue
 }
 
 func (m *Mimetype) Static() Pattern {
@@ -412,6 +453,11 @@ func (m *Mimetype) Static() Pattern {
 
 func (m *Mimetype) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%mimetype")))
+	if m.hasValue {
+		utils.PanicIfErr(w.WriteByte('('))
+		utils.Must(w.Write(utils.StringAsBytes(m.value)))
+		utils.PanicIfErr(w.WriteByte(')'))
+	}
 }
 
 func (m *Mimetype) WidestOfType() SymbolicValue {
@@ -1015,7 +1061,7 @@ func (r *ByteRate) WidestOfType() SymbolicValue {
 type LineCount struct {
 	hasValue bool
 	value    int64
-SerializableMixin
+	SerializableMixin
 }
 
 func NewLineCount(v int64) *LineCount {
