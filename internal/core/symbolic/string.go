@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 
+	"github.com/inoxlang/inox/internal/commonfmt"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -177,23 +178,44 @@ func (s *String) slice(start, end *Int) Sequence {
 type Rune struct {
 	UnassignablePropsMixin
 	SerializableMixin
+	hasValue bool
+	value    rune
+}
+
+func Newrune(r rune) *Rune {
+	return &Rune{
+		hasValue: true,
+		value:    r,
+	}
 }
 
 func (r *Rune) Test(v SymbolicValue) bool {
-	_, ok := v.(*Rune)
-
-	return ok
+	otherRune, ok := v.(*Rune)
+	if !ok {
+		return false
+	}
+	if !r.hasValue {
+		return true
+	}
+	return otherRune.hasValue && r.value == otherRune.value
 }
 
 func (r *Rune) Widen() (SymbolicValue, bool) {
+	if r.hasValue {
+		return ANY_RUNE, true
+	}
 	return nil, false
 }
 
-func (a *Rune) IsWidenable() bool {
-	return false
+func (r *Rune) IsWidenable() bool {
+	return r.hasValue
 }
 
 func (r *Rune) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	if r.hasValue {
+		utils.Must(w.Write(utils.StringAsBytes(commonfmt.FmtRune(r.value))))
+		return
+	}
 	utils.Must(w.Write(utils.StringAsBytes("%rune")))
 }
 

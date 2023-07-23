@@ -25,15 +25,6 @@ const (
 var (
 	ANSI_RESET_SEQUENCE = []byte(termenv.CSI + termenv.ResetSeq + "m")
 
-	QUOTED_BELL_RUNE   = []byte("'\\b'")
-	QUOTED_FFEED_RUNE  = []byte("'\\f'")
-	QUOTED_NL_RUNE     = []byte("'\\n'")
-	QUOTED_CR_RUNE     = []byte("'\\r'")
-	QUOTED_TAB_RUNE    = []byte("'\\t'")
-	QUOTED_VTAB_RUNE   = []byte("'\\v'")
-	QUOTED_SQUOTE_RUNE = []byte("'\\''")
-	QUOTED_ASLASH_RUNE = []byte("'\\\\'")
-
 	COMMA                               = []byte{','}
 	LF_CR                               = []byte{'\n', '\r'}
 	DASH_DASH                           = []byte{'-', '-'}

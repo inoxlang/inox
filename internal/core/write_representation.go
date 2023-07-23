@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/inoxlang/inox/internal/commonfmt"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	jsoniter "github.com/json-iterator/go"
@@ -162,30 +163,7 @@ func (b Bool) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig,
 }
 
 func (r Rune) reprBytes() []byte {
-	var b []byte
-
-	switch r {
-	case '\b':
-		b = QUOTED_BELL_RUNE
-	case '\f':
-		b = QUOTED_FFEED_RUNE
-	case '\n':
-		b = QUOTED_NL_RUNE
-	case '\r':
-		b = QUOTED_CR_RUNE
-	case '\t':
-		b = QUOTED_TAB_RUNE
-	case '\v':
-		b = QUOTED_VTAB_RUNE
-	case '\'':
-		b = QUOTED_SQUOTE_RUNE
-	case '\\':
-		b = QUOTED_ASLASH_RUNE
-	default:
-		b = utils.StringAsBytes(fmt.Sprintf("'%c'", r))
-	}
-
-	return b
+	return []byte(commonfmt.FmtRune(rune(r)))
 }
 
 func (r Rune) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
