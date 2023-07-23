@@ -423,6 +423,8 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		return patt.(Pattern).SymbolicValue(), nil
 	} //else Inox function
 
+	inoxFn := callee.(*InoxFunction)
+
 	//declare parameters
 
 	state.pushScope()
@@ -434,7 +436,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 	for i, p := range parameterNodes[:nonVariadicParamCount] {
 		name := p.Var.Name
-		state.setLocal(name, args[i], nil)
+		state.setLocal(name, args[i], &TypePattern{val: inoxFn.parameters[i]})
 	}
 
 	for name, val := range capturedLocals {
