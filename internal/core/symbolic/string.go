@@ -67,7 +67,7 @@ func (s *String) Test(v SymbolicValue) bool {
 	if !s.hasValue {
 		return true
 	}
-	return s.value == otherString.value
+	return otherString.hasValue && s.value == otherString.value
 }
 
 func (s *String) Widen() (SymbolicValue, bool) {
@@ -155,13 +155,13 @@ func (s *String) Prop(name string) SymbolicValue {
 	case "has_prefix":
 		return &GoFunction{
 			fn: func(ctx *Context, s *AnyStringLike) *Bool {
-				return &Bool{}
+				return ANY_BOOL
 			},
 		}
 	case "has_suffix":
 		return &GoFunction{
 			fn: func(ctx *Context, s *AnyStringLike) *Bool {
-				return &Bool{}
+				return ANY_BOOL
 			},
 		}
 	default:
@@ -208,11 +208,11 @@ func (r *Rune) PropertyNames() []string {
 func (r *Rune) Prop(name string) SymbolicValue {
 	switch name {
 	case "is_space":
-		return &Bool{}
+		return ANY_BOOL
 	case "is_printable":
-		return &Bool{}
+		return ANY_BOOL
 	case "is_letter":
-		return &Bool{}
+		return ANY_BOOL
 	default:
 		panic(FormatErrPropertyDoesNotExist(name, r))
 	}
@@ -446,13 +446,13 @@ func (s *StringConcatenation) Prop(name string) SymbolicValue {
 	case "has_prefix":
 		return &GoFunction{
 			fn: func(ctx *Context, s *AnyStringLike) *Bool {
-				return &Bool{}
+				return ANY_BOOL
 			},
 		}
 	case "has_suffix":
 		return &GoFunction{
 			fn: func(ctx *Context, s *AnyStringLike) *Bool {
-				return &Bool{}
+				return ANY_BOOL
 			},
 		}
 	default:
@@ -545,13 +545,13 @@ func (s *AnyStringLike) Prop(name string) SymbolicValue {
 	case "has_prefix":
 		return &GoFunction{
 			fn: func(ctx *Context, s *AnyStringLike) *Bool {
-				return &Bool{}
+				return ANY_BOOL
 			},
 		}
 	case "has_suffix":
 		return &GoFunction{
 			fn: func(ctx *Context, s *AnyStringLike) *Bool {
-				return &Bool{}
+				return ANY_BOOL
 			},
 		}
 	default:

@@ -356,7 +356,7 @@ func TestSymbolicList(t *testing.T) {
 			},
 			{
 				&List{elements: nil, generalElement: &Int{}},
-				&List{elements: []Serializable{&Int{}, &Bool{}}, generalElement: nil},
+				&List{elements: []Serializable{&Int{}, ANY_BOOL}, generalElement: nil},
 				false,
 			},
 			{
@@ -371,12 +371,12 @@ func TestSymbolicList(t *testing.T) {
 			},
 			{
 				&List{elements: []Serializable{&Int{}}, generalElement: nil},
-				&List{elements: []Serializable{&Bool{}}, generalElement: nil},
+				&List{elements: []Serializable{ANY_BOOL}, generalElement: nil},
 				false,
 			},
 			{
 				&List{elements: []Serializable{&Int{}, &Int{}}, generalElement: nil},
-				&List{elements: []Serializable{&Int{}, &Bool{}}, generalElement: nil},
+				&List{elements: []Serializable{&Int{}, ANY_BOOL}, generalElement: nil},
 				false,
 			},
 		}
@@ -486,7 +486,7 @@ func TestSymbolicTuple(t *testing.T) {
 			},
 			{
 				&Tuple{elements: nil, generalElement: &Int{}},
-				&Tuple{elements: []Serializable{&Int{}, &Bool{}}, generalElement: nil},
+				&Tuple{elements: []Serializable{&Int{}, ANY_BOOL}, generalElement: nil},
 				false,
 			},
 			{
@@ -501,12 +501,12 @@ func TestSymbolicTuple(t *testing.T) {
 			},
 			{
 				&Tuple{elements: []Serializable{&Int{}}, generalElement: nil},
-				&Tuple{elements: []Serializable{&Bool{}}, generalElement: nil},
+				&Tuple{elements: []Serializable{ANY_BOOL}, generalElement: nil},
 				false,
 			},
 			{
 				&Tuple{elements: []Serializable{&Int{}, &Int{}}, generalElement: nil},
-				&Tuple{elements: []Serializable{&Int{}, &Bool{}}, generalElement: nil},
+				&Tuple{elements: []Serializable{&Int{}, ANY_BOOL}, generalElement: nil},
 				false,
 			},
 		}

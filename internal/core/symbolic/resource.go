@@ -11,9 +11,9 @@ var (
 	WALK_ELEM = NewObject(map[string]Serializable{
 		"name":          &String{},
 		"path":          &Path{},
-		"is-dir":        &Bool{},
-		"is-regular":    &Bool{},
-		"is-walk-start": &Bool{},
+		"is-dir":        ANY_BOOL,
+		"is-regular":    ANY_BOOL,
+		"is-walk-start": ANY_BOOL,
 	}, nil, nil)
 
 	ANY_PATH     = &Path{}

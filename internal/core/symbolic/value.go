@@ -18,6 +18,8 @@ var (
 	ANY            = &Any{}
 	NEVER          = &Never{}
 	ANY_BOOL       = &Bool{}
+	TRUE           = NewBool(true)
+	FALSE          = NewBool(false)
 	ANY_RES_NAME   = &AnyResourceName{}
 	ANY_OPTION     = &Option{}
 	ANY_INT_RANGE  = &IntRange{}
@@ -176,19 +178,37 @@ func (n *NilT) WidestOfType() SymbolicValue {
 // A Bool represents a symbolic Bool.
 type Bool struct {
 	SerializableMixin
+	value    bool
+	hasValue bool
+}
+
+func NewBool(v bool) *Bool {
+	return &Bool{
+		value:    v,
+		hasValue: true,
+	}
 }
 
 func (b *Bool) Test(v SymbolicValue) bool {
-	_, ok := v.(*Bool)
-	return ok
+	other, ok := v.(*Bool)
+	if !ok {
+		return false
+	}
+	if !b.hasValue {
+		return true
+	}
+	return other.hasValue && b.value == other.value
 }
 
 func (b *Bool) Widen() (SymbolicValue, bool) {
+	if b.hasValue {
+		return ANY_BOOL, true
+	}
 	return nil, false
 }
 
 func (b *Bool) IsWidenable() bool {
-	return false
+	return b.hasValue
 }
 
 func (b *Bool) Static() Pattern {
@@ -196,7 +216,15 @@ func (b *Bool) Static() Pattern {
 }
 
 func (b *Bool) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%boolean")))
+	if b.hasValue {
+		if b.value {
+			utils.Must(w.Write(utils.StringAsBytes("true")))
+		} else {
+			utils.Must(w.Write(utils.StringAsBytes("false")))
+		}
+	} else {
+		utils.Must(w.Write(utils.StringAsBytes("%boolean")))
+	}
 }
 
 func (b *Bool) WidestOfType() SymbolicValue {

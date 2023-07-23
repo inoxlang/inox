@@ -92,12 +92,12 @@ func TestMultiValue(t *testing.T) {
 
 		_, ok := NewMultivalue(
 			NewObject(map[string]Serializable{"a": &Int{}}, nil, nil),
-			&Bool{},
+			ANY_BOOL,
 		).as(IPROPS_INTERFACE_TYPE).(IProps)
 		assert.False(t, ok)
 
 		_, ok = NewMultivalue(
-			&Bool{},
+			ANY_BOOL,
 			NewObject(map[string]Serializable{"a": &Int{}}, nil, nil),
 		).as(IPROPS_INTERFACE_TYPE).(IProps)
 		assert.False(t, ok)

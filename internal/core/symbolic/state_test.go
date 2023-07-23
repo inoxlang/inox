@@ -117,7 +117,7 @@ func TestSymbolicState(t *testing.T) {
 
 			state.setGlobal("g", &Int{}, GlobalConst)
 			state.pushScope()
-			state.setLocal("local", &Bool{}, nil)
+			state.setLocal("local", ANY_BOOL, nil)
 
 			fork := state.fork()
 

@@ -1132,7 +1132,7 @@ func TestSymbolicUnionPattern(t *testing.T) {
 					Cases: []Pattern{
 						&ExactValuePattern{value: &Int{}},
 						&ExactValuePattern{value: &String{}},
-						&ExactValuePattern{value: &Bool{}},
+						&ExactValuePattern{value: ANY_BOOL},
 					},
 				},
 				false,

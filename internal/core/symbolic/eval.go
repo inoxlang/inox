@@ -191,7 +191,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 	switch n := node.(type) {
 	case *parse.BooleanLiteral:
-		return &Bool{}, nil
+		return NewBool(n.Value), nil
 	case *parse.IntLiteral:
 		return &Int{value: n.Value, hasValue: true}, nil
 	case *parse.FloatLiteral:
@@ -2164,7 +2164,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				state.addError(makeSymbolicEvalError(node, state, fmtOperandOfBoolNegateShouldBeBool(operand)))
 			}
 
-			return &Bool{}, nil
+			return ANY_BOOL, nil
 		default:
 			return nil, fmt.Errorf("invalid unary operator %d", n.Operator)
 		}
@@ -2193,7 +2193,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				case parse.Add, parse.Sub, parse.Mul, parse.Div:
 					return ANY_INT, nil
 				default:
-					return &Bool{}, nil
+					return ANY_BOOL, nil
 				}
 			} else if _, ok := left.(*Float); ok {
 				_, ok = right.(*Float)
@@ -2204,7 +2204,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				case parse.Add, parse.Sub, parse.Mul, parse.Div:
 					return ANY_FLOAT, nil
 				default:
-					return &Bool{}, nil
+					return ANY_BOOL, nil
 				}
 			} else {
 				state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "int or float", Stringify(left))))
@@ -2224,7 +2224,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				case parse.Add, parse.Sub, parse.Mul, parse.Div:
 					return arithmeticReturnVal, nil
 				default:
-					return &Bool{}, nil
+					return ANY_BOOL, nil
 				}
 			}
 
@@ -2232,21 +2232,21 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			state.addError(makeSymbolicEvalError(node, state, "operator not implemented yet"))
 			return ANY, nil
 		case parse.Equal, parse.NotEqual, parse.Is, parse.IsNot:
-			return &Bool{}, nil
+			return ANY_BOOL, nil
 		case parse.In:
 			switch right.(type) {
 			case *List, *Object:
 			default:
 				state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "iterable", Stringify(right))))
 			}
-			return &Bool{}, nil
+			return ANY_BOOL, nil
 		case parse.NotIn:
 			switch right.(type) {
 			case *List, *Object:
 			default:
 				state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "iterable", Stringify(right))))
 			}
-			return &Bool{}, nil
+			return ANY_BOOL, nil
 		case parse.Keyof:
 			_, ok := left.(*String)
 			if !ok {
@@ -2258,7 +2258,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			default:
 				state.addError(makeSymbolicEvalError(n.Right, state, fmtInvalidBinExprCannnotCheckNonObjectHasKey(rightVal)))
 			}
-			return &Bool{}, nil
+			return ANY_BOOL, nil
 		case parse.Range, parse.ExclEndRange:
 			return &IntRange{}, nil
 		case parse.And, parse.Or:
@@ -2272,14 +2272,14 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			if !ok {
 				state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "boolean", Stringify(right))))
 			}
-			return &Bool{}, nil
+			return ANY_BOOL, nil
 		case parse.Match, parse.NotMatch:
 			_, ok := right.(Pattern)
 			if !ok {
 				state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "pattern", Stringify(right))))
 			}
 
-			return &Bool{}, nil
+			return ANY_BOOL, nil
 		case parse.Substrof:
 
 			switch left.(type) {
@@ -2689,11 +2689,13 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		}
 		result := &Object{
 			entries: make(map[string]Serializable),
+			static:  make(map[string]Pattern),
 		}
 
 		for _, key := range n.Keys.Keys {
 			name := key.(*parse.IdentifierLiteral).Name
 			result.entries[name] = symbolicMemb(left, name, false, n, state).(Serializable)
+			result.static[name] = getStatic(result.entries[name])
 		}
 		return result, nil
 	case *parse.IndexExpression:
@@ -2773,7 +2775,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			return nil, err
 		}
 
-		return &Bool{}, nil
+		return ANY_BOOL, nil
 	case *parse.PatternIdentifierLiteral:
 		patt := state.ctx.ResolveNamedPattern(n.Name)
 		if patt == nil {

@@ -58,18 +58,18 @@ func TestSymbolicNil(t *testing.T) {
 func TestSymbolicBool(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
-		bool := &Bool{}
+		bool := ANY_BOOL
 
 		assert.True(t, bool.Test(bool))
-		assert.True(t, bool.Test(&Bool{}))
+		assert.True(t, bool.Test(ANY_BOOL))
 		assert.False(t, bool.Test(&Int{}))
 	})
 	t.Run("IsWidenable()", func(t *testing.T) {
-		assert.False(t, (&Bool{}).IsWidenable())
+		assert.False(t, (ANY_BOOL).IsWidenable())
 	})
 
 	t.Run("Widen()", func(t *testing.T) {
-		_nil := &Bool{}
+		_nil := ANY_BOOL
 
 		assert.False(t, _nil.IsWidenable())
 

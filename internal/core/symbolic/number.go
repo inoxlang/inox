@@ -71,7 +71,7 @@ func (i *Int) Test(v SymbolicValue) bool {
 	if !i.hasValue {
 		return true
 	}
-	return i.value == otherInt.value
+	return otherInt.hasValue && i.value == otherInt.value
 }
 
 func (i *Int) Widen() (SymbolicValue, bool) {
