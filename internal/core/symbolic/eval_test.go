@@ -125,7 +125,9 @@ func TestSymbolicEval(t *testing.T) {
 		res, err := symbolicEval(n, state)
 		assert.NoError(t, err)
 		assert.Empty(t, state.errors)
-		assert.Equal(t, &Date{}, res)
+
+		expectedDate, _ := parse.ParseDateLiteral([]byte("2020y-UTC"))
+		assert.Equal(t, NewDate(expectedDate), res)
 	})
 
 	t.Run("list literal", func(t *testing.T) {
