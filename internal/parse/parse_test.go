@@ -5257,7 +5257,35 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("float literal with positive exponent", func(t *testing.T) {
+		t.Run("underscore in whole part", func(t *testing.T) {
+			n := mustparseChunk(t, "1_000.0")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
+				Statements: []Node{
+					&FloatLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
+						Raw:      "1_000.0",
+						Value:    1_000.0,
+					},
+				},
+			}, n)
+		})
+
+		t.Run("underscore in fractionam part", func(t *testing.T) {
+			n := mustparseChunk(t, "1.000_000")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
+				Statements: []Node{
+					&FloatLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
+						Raw:      "1.000_000",
+						Value:    1.0,
+					},
+				},
+			}, n)
+		})
+
+		t.Run("positive exponent", func(t *testing.T) {
 			n := mustparseChunk(t, "12.0e2")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
@@ -5271,7 +5299,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("float literal with negative exponent", func(t *testing.T) {
+		t.Run("negative exponent", func(t *testing.T) {
 			n := mustparseChunk(t, "12.0e-2")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},

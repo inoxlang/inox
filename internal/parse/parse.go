@@ -5497,7 +5497,7 @@ func (p *parser) parseNumberAndNumberRange() Node {
 		}
 
 		//else float
-		for p.i < p.len && (isDecDigit(p.s[p.i]) || p.s[p.i] == '-') {
+		for p.i < p.len && (isDecDigit(p.s[p.i]) || p.s[p.i] == '-' || p.s[p.i] == '_') {
 			p.i++
 		}
 	} else if p.i < p.len-1 && p.s[p.i] == 'x' && isHexDigit(p.s[p.i+1]) { //hexa decimal
@@ -5533,7 +5533,7 @@ func (p *parser) parseNumberAndNumberRange() Node {
 			raw = string(p.s[start:p.i])
 		}
 
-		float, err := strconv.ParseFloat(raw, 64)
+		float, err := strconv.ParseFloat(strings.ReplaceAll(raw, "_", ""), 64)
 		if err != nil {
 			parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_FLOAT_LIT}
 		}
