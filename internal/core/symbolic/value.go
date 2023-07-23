@@ -912,24 +912,42 @@ func (r *RuneRange) WidestOfType() SymbolicValue {
 	return &RuneRange{}
 }
 
-//
-
+// A ByteCount represents a symbolic ByteCount.
 type ByteCount struct {
+	hasValue bool
+	value    int64
 	SerializableMixin
 }
 
-func (c *ByteCount) Test(v SymbolicValue) bool {
-	_, ok := v.(*ByteCount)
+func NewByteCount(v int64) *ByteCount {
+	return &ByteCount{
+		hasValue: true,
+		value:    v,
+	}
+}
 
-	return ok
+func (c *ByteCount) Test(v SymbolicValue) bool {
+	otherCount, ok := v.(*ByteCount)
+	if !ok {
+		return false
+	}
+
+	if !c.hasValue {
+		return true
+	}
+
+	return otherCount.hasValue && c.value == otherCount.value
 }
 
 func (c *ByteCount) Widen() (SymbolicValue, bool) {
+	if c.hasValue {
+		return ANY_BYTECOUNT, true
+	}
 	return nil, false
 }
 
 func (c *ByteCount) IsWidenable() bool {
-	return false
+	return c.hasValue
 }
 
 func (c *ByteCount) Static() Pattern {
@@ -946,21 +964,40 @@ func (c *ByteCount) WidestOfType() SymbolicValue {
 
 // A ByteRate represents a symbolic ByteRate.
 type ByteRate struct {
+	hasValue bool
+	value    int64
 	SerializableMixin
 }
 
-func (r *ByteRate) Test(v SymbolicValue) bool {
-	_, ok := v.(*ByteRate)
-
-	return ok
+func NewByteRate(v int64) *ByteRate {
+	return &ByteRate{
+		hasValue: true,
+		value:    v,
+	}
 }
 
-func (r *ByteRate) Widen() (SymbolicValue, bool) {
+func (c *ByteRate) Test(v SymbolicValue) bool {
+	otherRate, ok := v.(*ByteRate)
+	if !ok {
+		return false
+	}
+
+	if !c.hasValue {
+		return true
+	}
+
+	return otherRate.hasValue && c.value == otherRate.value
+}
+
+func (c *ByteRate) Widen() (SymbolicValue, bool) {
+	if c.hasValue {
+		return ANY_BYTERATE, true
+	}
 	return nil, false
 }
 
-func (r *ByteRate) IsWidenable() bool {
-	return false
+func (c *ByteRate) IsWidenable() bool {
+	return c.hasValue
 }
 
 func (r *ByteRate) Static() Pattern {
@@ -975,23 +1012,41 @@ func (r *ByteRate) WidestOfType() SymbolicValue {
 	return ANY_BYTERATE
 }
 
-// A LineCount represents a symbolic LineCount.
 type LineCount struct {
-	SerializableMixin
+	hasValue bool
+	value    int64
+SerializableMixin
+}
+
+func NewLineCount(v int64) *LineCount {
+	return &LineCount{
+		hasValue: true,
+		value:    v,
+	}
 }
 
 func (c *LineCount) Test(v SymbolicValue) bool {
-	_, ok := v.(*LineCount)
+	otherCount, ok := v.(*LineCount)
+	if !ok {
+		return false
+	}
 
-	return ok
+	if !c.hasValue {
+		return true
+	}
+
+	return otherCount.hasValue && c.value == otherCount.value
 }
 
 func (c *LineCount) Widen() (SymbolicValue, bool) {
+	if c.hasValue {
+		return ANY_LINECOUNT, true
+	}
 	return nil, false
 }
 
 func (c *LineCount) IsWidenable() bool {
-	return false
+	return c.hasValue
 }
 
 func (c *LineCount) Static() Pattern {
@@ -1008,21 +1063,40 @@ func (c *LineCount) WidestOfType() SymbolicValue {
 
 // A RuneCount represents a symbolic RuneCount.
 type RuneCount struct {
-	_ int
+	hasValue bool
+	value    int64
+	SerializableMixin
+}
+
+func NewRuneCount(v int64) *RuneCount {
+	return &RuneCount{
+		hasValue: true,
+		value:    v,
+	}
 }
 
 func (c *RuneCount) Test(v SymbolicValue) bool {
-	_, ok := v.(*RuneCount)
+	otherCount, ok := v.(*RuneCount)
+	if !ok {
+		return false
+	}
 
-	return ok
+	if !c.hasValue {
+		return true
+	}
+
+	return otherCount.hasValue && c.value == otherCount.value
 }
 
 func (c *RuneCount) Widen() (SymbolicValue, bool) {
+	if c.hasValue {
+		return ANY_RUNECOUNT, true
+	}
 	return nil, false
 }
 
 func (c *RuneCount) IsWidenable() bool {
-	return false
+	return c.hasValue
 }
 
 func (c *RuneCount) Static() Pattern {
@@ -1039,23 +1113,41 @@ func (c *RuneCount) WidestOfType() SymbolicValue {
 
 // A SimpleRate represents a symbolic SimpleRate.
 type SimpleRate struct {
+	hasValue bool
+	value    int64
 	SerializableMixin
 }
 
-func (r *SimpleRate) Test(v SymbolicValue) bool {
-	_, ok := v.(*SimpleRate)
-
-	return ok
+func NewSimpleRate(v int64) *SimpleRate {
+	return &SimpleRate{
+		hasValue: true,
+		value:    v,
+	}
 }
 
-func (r *SimpleRate) Widen() (SymbolicValue, bool) {
+func (c *SimpleRate) Test(v SymbolicValue) bool {
+	otherRate, ok := v.(*SimpleRate)
+	if !ok {
+		return false
+	}
+
+	if !c.hasValue {
+		return true
+	}
+
+	return otherRate.hasValue && c.value == otherRate.value
+}
+
+func (c *SimpleRate) Widen() (SymbolicValue, bool) {
+	if c.hasValue {
+		return ANY_SIMPLERATE, true
+	}
 	return nil, false
 }
 
-func (r *SimpleRate) IsWidenable() bool {
-	return false
+func (c *SimpleRate) IsWidenable() bool {
+	return c.hasValue
 }
-
 func (r *SimpleRate) Static() Pattern {
 	return &TypePattern{val: r.WidestOfType()}
 }

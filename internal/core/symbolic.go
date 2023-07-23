@@ -775,23 +775,23 @@ func (r RuneRange) ToSymbolicValue(ctx *Context, encountered map[uintptr]symboli
 }
 
 func (c ByteCount) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return symbolic.ANY_BYTECOUNT, nil
+	return symbolic.NewByteCount(int64(c)), nil
 }
 
 func (c LineCount) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return symbolic.ANY_LINECOUNT, nil
+	return symbolic.NewLineCount(int64(c)), nil
 }
 
 func (c RuneCount) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return symbolic.ANY_RUNECOUNT, nil
+	return symbolic.NewRuneCount(int64(c)), nil
 }
 
 func (r ByteRate) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return symbolic.ANY_BYTERATE, nil
+	return symbolic.NewByteRate(int64(r)), nil
 }
 
 func (r SimpleRate) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return symbolic.ANY_SIMPLERATE, nil
+	return symbolic.NewSimpleRate(int64(r)), nil
 }
 
 func (r *Reader) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
