@@ -223,7 +223,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 	case *parse.MultilineStringLiteral:
 		return NewString(n.Value), nil
 	case *parse.RuneLiteral:
-		return Newrune(n.Value), nil
+		return NewRune(n.Value), nil
 	case *parse.IdentifierLiteral:
 		info, ok := state.get(n.Name)
 		if !ok {

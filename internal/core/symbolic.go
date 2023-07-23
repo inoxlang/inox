@@ -183,31 +183,34 @@ func (n NilT) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Sym
 }
 
 func (i Int) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.Int{}, nil
+	return symbolic.NewInt(int64(i)), nil
 }
 
 func (b Bool) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.Bool{}, nil
+	if b {
+		return symbolic.TRUE, nil
+	}
+	return symbolic.FALSE, nil
 }
 
-func (b Float) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.Float{}, nil
+func (f Float) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	return symbolic.NewFloat(float64(f)), nil
 }
 
 func (r Rune) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.Rune{}, nil
+	return symbolic.NewRune(rune(r)), nil
 }
 
 func (s Str) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.String{}, nil
+	return symbolic.NewString(string(s)), nil
 }
 
 func (s CheckedString) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.CheckedString{}, nil
+	return symbolic.ANY_CHECKED_STR, nil
 }
 
 func (s *RuneSlice) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.RuneSlice{}, nil
+	return symbolic.ANY_RUNE_SLICE, nil
 }
 
 func (e Error) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
@@ -219,31 +222,31 @@ func (e Error) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Sy
 }
 
 func (i Identifier) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.Identifier{}, nil
+	return symbolic.NewIdentifier(i.UnderlyingString()), nil
 }
 
 func (p PropertyName) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return symbolic.ANY_PROPNAME, nil
+	return symbolic.NewPropertyName(p.UnderlyingString()), nil
 }
 
 func (p Path) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.Path{}, nil
+	return symbolic.ANY_PATH, nil
 }
 
 func (p PathPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.PathPattern{}, nil
+	return symbolic.ANY_PATH_PATTERN, nil
 }
 
 func (u URL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.URL{}, nil
+	return symbolic.ANY_URL, nil
 }
 
 func (u URLPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.URLPattern{}, nil
+	return symbolic.ANY_URL_PATTERN, nil
 }
 
 func (p HostPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.HostPattern{}, nil
+	return symbolic.ANY_HOST_PATTERN, nil
 }
 
 func (o Option) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {

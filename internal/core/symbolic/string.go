@@ -182,7 +182,7 @@ type Rune struct {
 	value    rune
 }
 
-func Newrune(r rune) *Rune {
+func NewRune(r rune) *Rune {
 	return &Rune{
 		hasValue: true,
 		value:    r,
