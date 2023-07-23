@@ -324,6 +324,7 @@ const (
 	INVALID_RATE_LIT_DIV_SYMBOL_SHOULD_BE_FOLLOWED_BY_UNIT                        = "invalid rate literal: '/' should be immeditately followed by a unit"
 	UNTERMINATED_DATE_LITERAL                                                     = "unterminated date literal"
 	INVALID_DATE_LITERAL                                                          = "invalid date literal"
+	INVALID_DATE_LITERAL_MISSING_LOCATION_PART_AT_THE_END                         = "invalid date literal: missing location part at the end (`-UTC`, `-America/Los_Angeles`)"
 
 	//synchronized
 	SYNCHRONIZED_KEYWORD_SHOULD_BE_FOLLOWED_BY_SYNC_VALUES = "synchronized keyword should be followed by synchronized values"

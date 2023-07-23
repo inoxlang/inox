@@ -26,12 +26,14 @@ const (
 	MAX_OBJECT_KEY_BYTE_LEN = 64
 	MAX_SCHEME_NAME_LEN     = 5
 
-	LOOSE_URL_EXPR_PATTERN       = "^(@[a-zA-Z0-9_-]+|https?:\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,32}\\.[a-zA-Z0-9]{1,6}\\b|\\{[$]{0,2}[-\\w]+\\}))([{?#/][-a-zA-Z0-9@:%_+.~#?&//=${}]*)$"
-	LOOSE_HOST_PATTERN_PATTERN   = "^([a-z0-9+]+)?:\\/\\/([-\\w]+|[*]+|(www\\.)?[-a-zA-Z0-9.*]{1,32}\\.[a-zA-Z0-9*]{1,6})(:[0-9]{1,5})?$"
-	LOOSE_HOST_PATTERN           = "^([a-z0-9+]+)?:\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9.]{1,32}\\.[a-zA-Z0-9]{1,6})(:[0-9]{1,5})?$"
-	URL_PATTERN                  = "^([a-z0-9+]+):\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,32}\\.[a-zA-Z0-9]{1,6})\\b([-a-zA-Z0-9@:%_+.~#?&//=]*)$"
-	DATE_LITERAL_PATTERN         = "^(\\d+y)(-\\d{1,2}mt)?(-\\d{1,2}d)?(-\\d{1,2}h)?(-\\d{1,2}m)?(-\\d{1,2}s)?(-\\d{1,3}ms)?(-\\d{1,3}us)?(-[a-zA-Z_/]+[a-zA-Z_])$"
-	STRICT_EMAIL_ADDRESS_PATTERN = "(?i)(^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,24}$)"
+	LOOSE_URL_EXPR_PATTERN            = "^(@[a-zA-Z0-9_-]+|https?:\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,32}\\.[a-zA-Z0-9]{1,6}\\b|\\{[$]{0,2}[-\\w]+\\}))([{?#/][-a-zA-Z0-9@:%_+.~#?&//=${}]*)$"
+	LOOSE_HOST_PATTERN_PATTERN        = "^([a-z0-9+]+)?:\\/\\/([-\\w]+|[*]+|(www\\.)?[-a-zA-Z0-9.*]{1,32}\\.[a-zA-Z0-9*]{1,6})(:[0-9]{1,5})?$"
+	LOOSE_HOST_PATTERN                = "^([a-z0-9+]+)?:\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9.]{1,32}\\.[a-zA-Z0-9]{1,6})(:[0-9]{1,5})?$"
+	URL_PATTERN                       = "^([a-z0-9+]+):\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,32}\\.[a-zA-Z0-9]{1,6})\\b([-a-zA-Z0-9@:%_+.~#?&//=]*)$"
+	NO_LOCATION_DATE_LITERAL_PATTERN  = "^(\\d+y)(-\\d{1,2}mt)?(-\\d{1,2}d)?(-\\d{1,2}h)?(-\\d{1,2}m)?(-\\d{1,2}s)?(-\\d{1,3}ms)?(-\\d{1,3}us)?"
+	_NO_LOCATION_DATE_LITERAL_PATTERN = NO_LOCATION_DATE_LITERAL_PATTERN + "$"
+	DATE_LITERAL_PATTERN              = NO_LOCATION_DATE_LITERAL_PATTERN + "(-[a-zA-Z_/]+[a-zA-Z_])$"
+	STRICT_EMAIL_ADDRESS_PATTERN      = "(?i)(^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,24}$)"
 
 	CONST_KEYWORD_STR = "const"
 	VAR_KEYWORD_STR   = "var"
@@ -45,13 +47,14 @@ var (
 	SCHEMES                      = []string{"http", "https", "ws", "wss", "ldb", "file", "mem", "s3"}
 
 	//regexes
-	URL_REGEX                  = regexp.MustCompile(URL_PATTERN)
-	LOOSE_HOST_REGEX           = regexp.MustCompile(LOOSE_HOST_PATTERN)
-	LOOSE_HOST_PATTERN_REGEX   = regexp.MustCompile(LOOSE_HOST_PATTERN_PATTERN)
-	LOOSE_URL_EXPR_REGEX       = regexp.MustCompile(LOOSE_URL_EXPR_PATTERN)
-	ContainsSpace              = regexp.MustCompile(`\s`).MatchString
-	DATE_LITERAL_REGEX         = regexp.MustCompile(DATE_LITERAL_PATTERN)
-	STRICT_EMAIL_ADDRESS_REGEX = regexp.MustCompile(STRICT_EMAIL_ADDRESS_PATTERN)
+	URL_REGEX                      = regexp.MustCompile(URL_PATTERN)
+	LOOSE_HOST_REGEX               = regexp.MustCompile(LOOSE_HOST_PATTERN)
+	LOOSE_HOST_PATTERN_REGEX       = regexp.MustCompile(LOOSE_HOST_PATTERN_PATTERN)
+	LOOSE_URL_EXPR_REGEX           = regexp.MustCompile(LOOSE_URL_EXPR_PATTERN)
+	ContainsSpace                  = regexp.MustCompile(`\s`).MatchString
+	NO_LOCATION_DATE_LITERAL_REGEX = regexp.MustCompile(_NO_LOCATION_DATE_LITERAL_PATTERN)
+	DATE_LITERAL_REGEX             = regexp.MustCompile(DATE_LITERAL_PATTERN)
+	STRICT_EMAIL_ADDRESS_REGEX     = regexp.MustCompile(STRICT_EMAIL_ADDRESS_PATTERN)
 )
 
 // parses a file module, resultErr is either a non-syntax error or an aggregation of syntax errors (*ParsingErrorAggregation).
@@ -5252,7 +5255,14 @@ func (p *parser) parseCallArgsNoParenthesis(call *CallExpression) {
 }
 
 func ParseDateLiteral(braw []byte) (date time.Time, parsingErr *ParsingError) {
-	if len(braw) > 70 || !DATE_LITERAL_REGEX.Match(braw) {
+	if len(braw) > 70 {
+		return time.Time{}, &ParsingError{UnspecifiedParsingError, INVALID_DATE_LITERAL}
+	}
+
+	if !DATE_LITERAL_REGEX.Match(braw) {
+		if NO_LOCATION_DATE_LITERAL_REGEX.Match(braw) {
+			return time.Time{}, &ParsingError{UnspecifiedParsingError, INVALID_DATE_LITERAL_MISSING_LOCATION_PART_AT_THE_END}
+		}
 		return time.Time{}, &ParsingError{UnspecifiedParsingError, INVALID_DATE_LITERAL}
 	}
 

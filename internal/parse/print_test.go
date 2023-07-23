@@ -50,6 +50,10 @@ func TestPrint(t *testing.T) {
 		"https://example.com/?x={1}&&y=2",
 		"https://example.com/?x={1}&=&y=2",
 		"@site/",
+		//date literas
+		"2020y-5mt-UTC",
+		"2020y-5mt-06d-UTC",
+		"2020y-5mt",
 		"#a",
 		//variable
 		"(f)",

@@ -5419,7 +5419,7 @@ func testParse(
 	})
 
 	t.Run("date literal", func(t *testing.T) {
-		t.Run("date literal : year only", func(t *testing.T) {
+		t.Run("year only", func(t *testing.T) {
 			n := mustparseChunk(t, "2020y-UTC")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
@@ -5433,7 +5433,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("date literal : year and month", func(t *testing.T) {
+		t.Run("year and month", func(t *testing.T) {
 			n := mustparseChunk(t, "2020y-5mt-UTC")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
@@ -5447,7 +5447,25 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("date literal : year and microseconds", func(t *testing.T) {
+		t.Run("missing location part", func(t *testing.T) {
+			n, err := parseChunk(t, "2020y-5mt", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
+				Statements: []Node{
+					&DateLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 9},
+							&ParsingError{UnspecifiedParsingError, INVALID_DATE_LITERAL_MISSING_LOCATION_PART_AT_THE_END},
+							nil,
+						},
+						Raw: "2020y-5mt",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("year and microseconds", func(t *testing.T) {
 			n := mustparseChunk(t, "2020y-5us-UTC")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
@@ -5461,7 +5479,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("date literal : up to minutes", func(t *testing.T) {
+		t.Run("up to minutes", func(t *testing.T) {
 			n := mustparseChunk(t, "2020y-10mt-5d-5h-4m-UTC")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 23}, nil, nil},
@@ -5475,7 +5493,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("date literal : up to microseconds", func(t *testing.T) {
+		t.Run("up to microseconds", func(t *testing.T) {
 			n := mustparseChunk(t, "2020y-10mt-5d-5h-4m-5s-400ms-100us-UTC")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 38}, nil, nil},
@@ -5489,7 +5507,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("date literal : up to microseconds (longer)", func(t *testing.T) {
+		t.Run("up to microseconds (longer)", func(t *testing.T) {
 			n := mustparseChunk(t, "2020y-6mt-12d-18h-4m-4s-349ms-665us-Local")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 41}, nil, nil},
@@ -5503,7 +5521,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("date literal : up to microseconds (long location)", func(t *testing.T) {
+		t.Run("up to microseconds (long location)", func(t *testing.T) {
 			n := mustparseChunk(t, "2020y-6mt-12d-18h-4m-4s-349ms-665us-America/Los_Angeles")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 55}, nil, nil},
