@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"time"
 
+	"github.com/inoxlang/inox/internal/commonfmt"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -517,23 +519,46 @@ func (o *Option) WidestOfType() SymbolicValue {
 // A Date represents a symbolic Date.
 type Date struct {
 	SerializableMixin
+	value    time.Time
+	hasValue bool
+}
+
+func NewDate(v time.Time) *Date {
+	return &Date{
+		value:    v,
+		hasValue: true,
+	}
 }
 
 func (d *Date) Test(v SymbolicValue) bool {
-	_, ok := v.(*Date)
-	return ok
-}
-
-func (d *Date) IsWidenable() bool {
-	return false
+	other, ok := v.(*Date)
+	if !ok {
+		return false
+	}
+	if !d.hasValue {
+		return true
+	}
+	return other.hasValue && d.value == other.value
 }
 
 func (d *Date) Widen() (SymbolicValue, bool) {
+	if d.hasValue {
+		return ANY_DATE, true
+	}
 	return nil, false
+}
+
+func (d *Date) IsWidenable() bool {
+	return d.hasValue
 }
 
 func (d *Date) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%date")))
+	if d.hasValue {
+		utils.PanicIfErr(w.WriteByte('('))
+		utils.Must(w.Write(utils.StringAsBytes(commonfmt.FmtInoxDate(d.value))))
+		utils.PanicIfErr(w.WriteByte(')'))
+	}
 }
 
 func (d *Date) WidestOfType() SymbolicValue {
@@ -543,19 +568,37 @@ func (d *Date) WidestOfType() SymbolicValue {
 // A Duration represents a symbolic Duration.
 type Duration struct {
 	SerializableMixin
+	value    time.Duration
+	hasValue bool
+}
+
+func NewDuration(v time.Duration) *Duration {
+	return &Duration{
+		value:    v,
+		hasValue: true,
+	}
 }
 
 func (d *Duration) Test(v SymbolicValue) bool {
-	_, ok := v.(*Duration)
-	return ok
-}
-
-func (d *Duration) IsWidenable() bool {
-	return false
+	other, ok := v.(*Duration)
+	if !ok {
+		return false
+	}
+	if !d.hasValue {
+		return true
+	}
+	return other.hasValue && d.value == other.value
 }
 
 func (d *Duration) Widen() (SymbolicValue, bool) {
+	if d.hasValue {
+		return ANY_DURATION, true
+	}
 	return nil, false
+}
+
+func (d *Duration) IsWidenable() bool {
+	return d.hasValue
 }
 
 func (d *Duration) Static() Pattern {
@@ -564,6 +607,11 @@ func (d *Duration) Static() Pattern {
 
 func (d *Duration) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%duration")))
+	if d.hasValue {
+		utils.PanicIfErr(w.WriteByte('('))
+		utils.Must(w.Write(utils.StringAsBytes(commonfmt.FmtInoxDuration(d.value))))
+		utils.PanicIfErr(w.WriteByte(')'))
+	}
 }
 
 func (d *Duration) WidestOfType() SymbolicValue {

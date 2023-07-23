@@ -881,43 +881,7 @@ func (rate SimpleRate) WriteRepresentation(ctx *Context, w io.Writer, config *Re
 }
 
 func (d Duration) write(w io.Writer) (int, error) {
-	if d == 0 {
-		return w.Write(utils.StringAsBytes("0s"))
-	}
-
-	v := time.Duration(d)
-	b := make([]byte, 0, 32)
-
-	for v != 0 {
-		switch {
-		case v >= time.Hour:
-			b = strconv.AppendUint(b, uint64(v/time.Hour), 10)
-			b = append(b, 'h')
-			v %= time.Hour
-		case v >= time.Minute:
-			b = strconv.AppendUint(b, uint64(v/time.Minute), 10)
-			b = append(b, "mn"...)
-			v %= time.Minute
-		case v >= time.Second:
-			b = strconv.AppendUint(b, uint64(v/time.Second), 10)
-			b = append(b, 's')
-			v %= time.Second
-		case v >= time.Millisecond:
-			b = strconv.AppendUint(b, uint64(v/time.Millisecond), 10)
-			b = append(b, "ms"...)
-			v %= time.Millisecond
-		case v >= time.Microsecond:
-			b = strconv.AppendUint(b, uint64(v/time.Microsecond), 10)
-			b = append(b, "us"...)
-			v %= time.Microsecond
-		default:
-			b = strconv.AppendUint(b, uint64(v), 10)
-			b = append(b, "ns"...)
-			v = 0
-		}
-	}
-
-	return w.Write(b)
+	return w.Write(utils.StringAsBytes(commonfmt.FmtInoxDuration(time.Duration(d))))
 }
 
 func (d Duration) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
@@ -926,14 +890,7 @@ func (d Duration) WriteRepresentation(ctx *Context, w io.Writer, config *ReprCon
 }
 
 func (d Date) write(w io.Writer) (int, error) {
-	// TODO: change
-	t := time.Time(d).UTC()
-	ns := t.Nanosecond()
-	ms := ns / 1_000_000
-	us := (ns % 1_000_000) / 1000
-
-	return fmt.Fprintf(w, "%dy-%dmt-%dd-%dh-%dm-%ds-%dms-%dus-%s",
-		t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), ms, us, t.Location().String())
+	return w.Write(utils.StringAsBytes(commonfmt.FmtInoxDate(time.Time(d))))
 }
 
 func (d Date) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {

@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"runtime"
 	"sync/atomic"
+	"time"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
@@ -723,11 +724,11 @@ func (f *GoFunction) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbo
 }
 
 func (d Date) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return symbolic.ANY_DATE, nil
+	return symbolic.NewDate(time.Time(d)), nil
 }
 
 func (d Duration) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return symbolic.ANY_DURATION, nil
+	return symbolic.NewDuration(time.Duration(d)), nil
 }
 
 func (b Byte) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {

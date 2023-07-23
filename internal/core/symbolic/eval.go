@@ -199,15 +199,13 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 	case *parse.PortLiteral:
 		return &Port{}, nil
 	case *parse.QuantityLiteral:
-		values := make([]float64, len(n.Units))
-
-		v, err := extData.GetQuantity(values, n.Units)
+		v, err := extData.GetQuantity(n.Values, n.Units)
 		if err != nil {
 			return nil, err
 		}
 		return extData.ToSymbolicValue(v, false)
 	case *parse.DateLiteral:
-		return &Date{}, nil
+		return NewDate(n.Value), nil
 	case *parse.RateLiteral:
 		values := make([]float64, len(n.Units))
 
