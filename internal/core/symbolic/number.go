@@ -22,18 +22,36 @@ type Integral interface {
 // A Float represents a symbolic Float.
 type Float struct {
 	SerializableMixin
+	value    float64
+	hasValue bool
 }
 
 func (f *Float) Test(v SymbolicValue) bool {
-	_, ok := v.(*Float)
-	return ok
+	otherFloat, ok := v.(*Float)
+	if !ok {
+		return false
+	}
+	if !f.hasValue {
+		return true
+	}
+	return otherFloat.hasValue && f.value == otherFloat.value
+}
+
+func NewFloat(v float64) *Float {
+	return &Float{
+		value:    v,
+		hasValue: true,
+	}
 }
 
 func (f *Float) IsWidenable() bool {
-	return false
+	return f.hasValue
 }
 
 func (f *Float) Widen() (SymbolicValue, bool) {
+	if f.hasValue {
+		return ANY_FLOAT, true
+	}
 	return nil, false
 }
 
@@ -56,7 +74,7 @@ type Int struct {
 	hasValue bool
 }
 
-func NewIntWithValue(v int64) *Int {
+func NewInt(v int64) *Int {
 	return &Int{
 		value:    v,
 		hasValue: true,

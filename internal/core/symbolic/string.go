@@ -25,7 +25,7 @@ var (
 	ANY_RUNE        = &Rune{}
 	ANY_RUNE_SLICE  = &RuneSlice{}
 
-	EMPTY_STRING = NewStringWithValue("")
+	EMPTY_STRING = NewString("")
 
 	STRING_LIKE_PSEUDOPROPS = []string{"replace", "trim_space", "has_prefix", "has_suffix"}
 	RUNE_SLICE_PROPNAMES    = []string{"insert", "remove_position", "remove_position_range"}
@@ -52,7 +52,7 @@ type String struct {
 	SerializableMixin
 }
 
-func NewStringWithValue(v string) *String {
+func NewString(v string) *String {
 	return &String{
 		hasValue: true,
 		value:    v,
