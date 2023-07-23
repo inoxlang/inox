@@ -347,6 +347,24 @@ func (list *List) IsWidenable() bool {
 	return list.elements != nil || !IsAnySerializable(list.generalElement)
 }
 
+func (list *List) Static() Pattern {
+	if list.generalElement != nil {
+		return NewListPatternOf(&TypePattern{val: list.generalElement})
+	}
+
+	var elements []SymbolicValue
+	for _, e := range list.elements {
+		elements = append(elements, getStatic(e).SymbolicValue())
+	}
+
+	if len(elements) == 0 {
+		return NewListPatternOf(&TypePattern{val: ANY_SERIALIZABLE})
+	}
+
+	elem := AsSerializable(joinValues(elements))
+	return NewListPatternOf(&TypePattern{val: elem})
+}
+
 func (list *List) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if list.elements != nil {
 		length := list.KnownLen()
@@ -411,51 +429,51 @@ func (list *List) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig,
 	list.generalElement.PrettyPrint(w, config, depth, parentIndentCount)
 }
 
-func (a *List) HasKnownLen() bool {
-	return a.elements != nil
+func (l *List) HasKnownLen() bool {
+	return l.elements != nil
 }
 
-func (a *List) KnownLen() int {
-	if a.elements == nil {
+func (l *List) KnownLen() int {
+	if l.elements == nil {
 		panic("cannot get length of a symbolic list with no known length")
 	}
 
-	return len(a.elements)
+	return len(l.elements)
 }
 
-func (a *List) element() SymbolicValue {
-	if a.elements != nil {
-		if len(a.elements) == 0 {
-			return ANY
+func (l *List) element() SymbolicValue {
+	if l.elements != nil {
+		if len(l.elements) == 0 {
+			return ANY_SERIALIZABLE
 		}
-		return joinValues(SerializablesToValues(a.elements))
+		return AsSerializable(joinValues(SerializablesToValues(l.elements)))
 	}
-	return a.generalElement
+	return l.generalElement
 }
 
-func (t *List) elementAt(i int) SymbolicValue {
-	if t.elements != nil {
-		if len(t.elements) == 0 || i >= len(t.elements) {
+func (l *List) elementAt(i int) SymbolicValue {
+	if l.elements != nil {
+		if len(l.elements) == 0 || i >= len(l.elements) {
 			return ANY // return "never" ?
 		}
-		return t.elements[i]
+		return l.elements[i]
 	}
-	return t.generalElement
+	return l.generalElement
 }
 
 func (l *List) set(i *Int, v SymbolicValue) {
 
 }
 
-func (a *List) IteratorElementKey() SymbolicValue {
+func (l *List) IteratorElementKey() SymbolicValue {
 	return &Int{}
 }
 
-func (a *List) IteratorElementValue() SymbolicValue {
-	return a.element()
+func (l *List) IteratorElementValue() SymbolicValue {
+	return l.element()
 }
 
-func (a *List) WidestOfType() SymbolicValue {
+func (l *List) WidestOfType() SymbolicValue {
 	return &List{generalElement: ANY_SERIALIZABLE}
 }
 
@@ -585,6 +603,24 @@ func (t *Tuple) IsWidenable() bool {
 	return t.elements != nil || !IsAnySerializable(t.generalElement)
 }
 
+func (t *Tuple) Static() Pattern {
+	if t.generalElement != nil {
+		return NewListPatternOf(&TypePattern{val: t.generalElement})
+	}
+
+	var elements []SymbolicValue
+	for _, e := range t.elements {
+		elements = append(elements, getStatic(e).SymbolicValue())
+	}
+
+	if len(elements) == 0 {
+		return NewListPatternOf(&TypePattern{val: ANY_SERIALIZABLE})
+	}
+
+	elem := AsSerializable(joinValues(elements))
+	return NewListPatternOf(&TypePattern{val: elem})
+}
+
 func (t *Tuple) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if t.elements != nil {
 		lst := NewList(t.elements...)
@@ -619,9 +655,9 @@ func (t *Tuple) KnownLen() int {
 func (t *Tuple) element() SymbolicValue {
 	if t.elements != nil {
 		if len(t.elements) == 0 {
-			return ANY // return "never" ?
+			return ANY_SERIALIZABLE // return "never" ?
 		}
-		return joinValues(SerializablesToValues(t.elements))
+		return AsSerializable(joinValues(SerializablesToValues(t.elements)))
 	}
 	return t.generalElement
 }
@@ -835,7 +871,7 @@ func (dict *Dictionary) key() SymbolicValue {
 		for _, k := range dict.keys {
 			keys = append(keys, k)
 		}
-		return joinValues(keys)
+		return AsSerializable(joinValues(keys))
 	}
 	return ANY
 }
@@ -1013,13 +1049,15 @@ func (obj *Object) initNewProp(key string, value Serializable, static Pattern) {
 		obj.entries = make(map[string]Serializable, 1)
 	}
 	obj.entries[key] = value
-	if static != nil {
-		if obj.static == nil {
-			obj.static = make(map[string]Pattern, 1)
-		}
-		obj.static[key] = static
+
+	if static == nil {
+		static = getStatic(value)
 	}
 
+	if obj.static == nil {
+		obj.static = make(map[string]Pattern, 1)
+	}
+	obj.static[key] = static
 }
 
 func (obj *Object) Test(v SymbolicValue) bool {
@@ -1292,12 +1330,30 @@ func (obj *Object) Widen() (SymbolicValue, bool) {
 		return &Object{}, true
 	}
 
-	return &Object{entries: widenedEntries}, true
+	return &Object{
+		entries:         widenedEntries,
+		optionalEntries: obj.optionalEntries,
+	}, true
 }
 
 func (obj *Object) IsWidenable() bool {
 	_, ok := obj.Widen()
 	return ok
+}
+
+func (obj *Object) Static() Pattern {
+	entries := map[string]Pattern{}
+
+	for k, v := range obj.entries {
+		static, ok := obj.static[k]
+		if ok {
+			entries[k] = static
+		} else {
+			entries[k] = getStatic(v)
+		}
+	}
+
+	return NewInexactObjectPattern(entries, obj.optionalEntries)
 }
 
 func (obj *Object) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -1542,6 +1598,16 @@ func (rec *Record) Widen() (SymbolicValue, bool) {
 func (rec *Record) IsWidenable() bool {
 	_, ok := rec.Widen()
 	return ok
+}
+
+func (rec *Record) Static() Pattern {
+	entries := map[string]Pattern{}
+
+	for k, v := range rec.entries {
+		entries[k] = getStatic(v)
+	}
+
+	return NewInexactObjectPattern(entries, rec.optionalEntries)
 }
 
 func (rec *Record) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

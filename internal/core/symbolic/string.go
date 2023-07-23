@@ -81,6 +81,10 @@ func (s *String) IsWidenable() bool {
 	return s.hasValue
 }
 
+func (s *String) Static() Pattern {
+	return &TypePattern{val: ANY_STR}
+}
+
 func (s *String) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if s.hasValue {
 		jsonString := utils.Must(utils.MarshalJsonNoHTMLEspace(s.value))

@@ -105,6 +105,10 @@ func (p *Path) IsWidenable() bool {
 	return p.absoluteness != UnspecifiedPathAbsoluteness || p.dirConstraint != UnspecifiedDirOrFilePath
 }
 
+func (p *Path) Static() Pattern {
+	return ANY_PATH_PATTERN
+}
+
 func (p *Path) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	s := "%path"
 
@@ -215,9 +219,12 @@ func (u *URL) IsWidenable() bool {
 	return false
 }
 
+func (u *URL) Static() Pattern {
+	return ANY_URL_PATTERN
+}
+
 func (u *URL) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%url")))
-	return
 }
 
 func (u *URL) underylingString() *String {
@@ -269,9 +276,12 @@ func (s *Scheme) IsWidenable() bool {
 	return false
 }
 
+func (s *Scheme) Static() Pattern {
+	return &TypePattern{val: ANY_SCHEME}
+}
+
 func (s *Scheme) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%scheme")))
-	return
 }
 
 func (s *Scheme) underylingString() *String {
@@ -301,6 +311,10 @@ func (h *Host) Widen() (SymbolicValue, bool) {
 
 func (h *Host) IsWidenable() bool {
 	return false
+}
+
+func (h *Host) Static() Pattern {
+	return ANY_HOST_PATTERN
 }
 
 func (h *Host) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

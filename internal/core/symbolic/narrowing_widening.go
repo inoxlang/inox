@@ -2,18 +2,20 @@ package symbolic
 
 import "github.com/inoxlang/inox/internal/utils"
 
-func widenIfSimple(value SymbolicValue) SymbolicValue {
-	if IsSimpleSymbolicInoxVal(value) {
-		if value.IsWidenable() {
-			widened, ok := value.Widen()
+var (
+	_ = []IToStatic{(*Object)(nil), (*Record)(nil), (*List)(nil), (*Tuple)(nil)}
+)
 
-			if !ok {
-				panic(ErrUnreachable)
-			}
-			return widened
-		}
+type IToStatic interface {
+	Static() Pattern
+}
+
+func getStatic(value SymbolicValue) Pattern {
+	itf, ok := value.(IToStatic)
+	if ok {
+		return itf.Static()
 	}
-	return value
+	return &TypePattern{val: value}
 }
 
 // widenOrAny returns the widened value of the passed value, if widening is not possible any is returned.

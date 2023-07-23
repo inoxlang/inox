@@ -27,6 +27,9 @@ var (
 	}
 
 	ANY_PATTERN       = &AnyPattern{}
+	ANY_PATH_PATTERN  = &PathPattern{}
+	ANY_URL_PATTERN   = &URLPattern{}
+	ANY_HOST_PATTERN  = &HostPattern{}
 	ANY_STR_PATTERN   = &AnyStringPattern{}
 	ANY_LIST_PATTERN  = &ListPattern{generalElement: ANY_PATTERN}
 	ANY_TUPLE_PATTERN = &TuplePattern{generalElement: ANY_PATTERN}
@@ -143,9 +146,12 @@ func (p *PathPattern) IsWidenable() bool {
 	return false
 }
 
+func (p *PathPattern) Static() Pattern {
+	return &TypePattern{val: p.WidestOfType()}
+}
+
 func (p *PathPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%path-pattern")))
-	return
 }
 
 func (p *PathPattern) HasUnderylingPattern() bool {
@@ -189,7 +195,7 @@ func (p *PathPattern) underylingString() *String {
 }
 
 func (p *PathPattern) WidestOfType() SymbolicValue {
-	return &PathPattern{}
+	return ANY_PATH_PATTERN
 }
 
 // A URLPattern represents a symbolic URLPattern.
@@ -212,9 +218,12 @@ func (p *URLPattern) IsWidenable() bool {
 	return false
 }
 
+func (p *URLPattern) Static() Pattern {
+	return &TypePattern{val: p.WidestOfType()}
+}
+
 func (p *URLPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%url-pattern")))
-	return
 }
 
 func (p *URLPattern) HasUnderylingPattern() bool {
@@ -258,7 +267,7 @@ func (p *URLPattern) underylingString() *String {
 }
 
 func (p *URLPattern) WidestOfType() SymbolicValue {
-	return &URLPattern{}
+	return ANY_URL_PATTERN
 }
 
 // A HostPattern represents a symbolic HostPattern.
@@ -281,9 +290,12 @@ func (p *HostPattern) IsWidenable() bool {
 	return false
 }
 
+func (p *HostPattern) Static() Pattern {
+	return &TypePattern{val: p.WidestOfType()}
+}
+
 func (p *HostPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%host-pattern")))
-	return
 }
 
 func (p *HostPattern) HasUnderylingPattern() bool {
@@ -327,7 +339,7 @@ func (p *HostPattern) underylingString() *String {
 }
 
 func (p *HostPattern) WidestOfType() SymbolicValue {
-	return &HostPattern{}
+	return ANY_HOST_PATTERN
 }
 
 // A NamedSegmentPathPattern represents a symbolic NamedSegmentPathPattern.
@@ -1775,7 +1787,7 @@ func symbolicallyEvalPatternNode(n parse.Node, state *State) (Pattern, error) {
 }
 
 type TypePattern struct {
-	val           SymbolicValue //symbolic value that represents concrete values matching against the function
+	val           SymbolicValue //symbolic value that represents concrete values matching
 	call          func(ctx *Context, values []SymbolicValue) (Pattern, error)
 	stringPattern func() (StringPattern, bool)
 

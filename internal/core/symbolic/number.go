@@ -37,6 +37,10 @@ func (f *Float) Widen() (SymbolicValue, bool) {
 	return nil, false
 }
 
+func (f *Float) Static() Pattern {
+	return &TypePattern{val: ANY_FLOAT}
+}
+
 func (f *Float) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%float")))
 }
@@ -50,6 +54,13 @@ type Int struct {
 	SerializableMixin
 	value    int64
 	hasValue bool
+}
+
+func NewIntWithValue(v int64) *Int {
+	return &Int{
+		value:    v,
+		hasValue: true,
+	}
 }
 
 func (i *Int) Test(v SymbolicValue) bool {
@@ -72,6 +83,10 @@ func (i *Int) Widen() (SymbolicValue, bool) {
 
 func (i *Int) IsWidenable() bool {
 	return i.hasValue
+}
+
+func (i *Int) Static() Pattern {
+	return &TypePattern{val: ANY_INT}
 }
 
 func (i *Int) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

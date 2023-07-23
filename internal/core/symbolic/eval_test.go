@@ -546,24 +546,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Fail(t, "variable not found in scope data")
 		})
 
-		t.Run("RHS has incompatible type", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				v = []
-				v = 3
-				return v
-			`)
-			res, err := symbolicEval(n, state)
-			assignement := n.Statements[1]
-			assert.NoError(t, err)
-
-			type_ := &TypePattern{val: &List{generalElement: ANY_SERIALIZABLE}}
-			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(assignement, state, fmtNotAssignableToVarOftype(&Int{hasValue: true, value: 3}, type_)),
-			}, state.errors)
-			assert.Equal(t, NewList(), res)
-		})
-
-		t.Run("RHS has type incompatible with static type of the variable", func(t *testing.T) {
+		t.Run("RHS has type incompatible with explicit static type of the variable", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				%p = %| %int | %str
 				var v %p = int
@@ -582,6 +565,39 @@ func TestSymbolicEval(t *testing.T) {
 				})),
 			}, state.errors)
 			assert.Equal(t, ANY_INT, res)
+		})
+
+		t.Run("RHS has type incompatible with implicit static type of the variable (int)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var v = 1
+				v = true
+				return v
+			`)
+			res, err := symbolicEval(n, state)
+			assignement := n.Statements[1]
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(assignement, state, fmtNotAssignableToVarOftype(&Bool{}, &TypePattern{val: ANY_INT})),
+			}, state.errors)
+			assert.Equal(t, NewIntWithValue(1), res)
+		})
+
+		t.Run("RHS has type incompatible with implicit static type of the variable ([]int)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var v = [1, 2, 3]
+				v = true
+				return v
+			`)
+			res, err := symbolicEval(n, state)
+			assignement := n.Statements[1]
+			assert.NoError(t, err)
+
+			staticType := NewListPatternOf(&TypePattern{val: ANY_INT})
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(assignement, state, fmtNotAssignableToVarOftype(&Bool{}, staticType)),
+			}, state.errors)
+			assert.Equal(t, NewList(NewIntWithValue(1), NewIntWithValue(2), NewIntWithValue(3)), res)
 		})
 
 		t.Run("+= assignment, LHS has incompatible type", func(t *testing.T) {
@@ -789,25 +805,8 @@ func TestSymbolicEval(t *testing.T) {
 				entries: map[string]Serializable{
 					"name": NewStringWithValue("foo"),
 				},
-			}, res)
-		})
-
-		t.Run("existing property of an object: RHS has incompatible type, identifier member LHS", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				obj = {name: "foo"}
-				obj.name = int
-				return obj
-			`)
-			assignment := n.Statements[1]
-			res, err := symbolicEval(n, state)
-
-			assert.NoError(t, err)
-			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(assignment, state, fmtNotAssignableToPropOfType(ANY_INT, &TypePattern{val: ANY_STR})),
-			}, state.errors)
-			assert.Equal(t, &Object{
-				entries: map[string]Serializable{
-					"name": &String{},
+				static: map[string]Pattern{
+					"name": ANY_STR.Static(),
 				},
 			}, res)
 		})
@@ -828,6 +827,32 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &Object{
 				entries: map[string]Serializable{
 					"name": NewStringWithValue("foo"),
+				},
+				static: map[string]Pattern{
+					"name": ANY_STR.Static(),
+				},
+			}, res)
+		})
+
+		t.Run("existing property of an object: RHS has incompatible type, identifier member LHS", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				obj = {name: "foo"}
+				obj.name = int
+				return obj
+			`)
+			assignment := n.Statements[1]
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(assignment, state, fmtNotAssignableToPropOfType(ANY_INT, &TypePattern{val: ANY_STR})),
+			}, state.errors)
+			assert.Equal(t, &Object{
+				entries: map[string]Serializable{
+					"name": NewStringWithValue("foo"),
+				},
+				static: map[string]Pattern{
+					"name": ANY_STR.Static(),
 				},
 			}, res)
 		})
@@ -904,6 +929,9 @@ func TestSymbolicEval(t *testing.T) {
 				entries: map[string]Serializable{
 					"name": NewStringWithValue("foo"),
 				},
+				static: map[string]Pattern{
+					"name": ANY_STR.Static(),
+				},
 			}, res)
 		})
 
@@ -923,6 +951,9 @@ func TestSymbolicEval(t *testing.T) {
 				entries: map[string]Serializable{
 					"count": ANY_INT,
 				},
+				static: map[string]Pattern{
+					"count": ANY_INT.Static(),
+				},
 			}, res)
 		})
 
@@ -938,6 +969,9 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &Object{
 				entries: map[string]Serializable{
 					"name": NewStringWithValue("foo"),
+				},
+				static: map[string]Pattern{
+					"name": ANY_STR.Static(),
 				},
 			}, res)
 		})
@@ -994,6 +1028,9 @@ func TestSymbolicEval(t *testing.T) {
 						entries: map[string]Serializable{},
 					},
 				},
+				static: map[string]Pattern{
+					"v": NewEmptyObject().Static(),
+				},
 			}, res)
 		})
 
@@ -1010,6 +1047,9 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &Object{
 				entries: map[string]Serializable{
 					"routine": ANY_SERIALIZABLE,
+				},
+				static: map[string]Pattern{
+					"routine": getStatic(ANY_SERIALIZABLE),
 				},
 			}, res)
 		})
@@ -1028,6 +1068,9 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &Object{
 				entries: map[string]Serializable{
 					"routine": ANY_SERIALIZABLE,
+				},
+				static: map[string]Pattern{
+					"routine": getStatic(ANY_SERIALIZABLE),
 				},
 			}, res)
 		})
@@ -1049,8 +1092,12 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 			assert.Equal(t, &Object{
 				entries: map[string]Serializable{
-					"a": &Int{hasValue: true, value: 1},
-					"b": &Int{hasValue: true, value: 2},
+					"a": NewIntWithValue(1),
+					"b": NewIntWithValue(2),
+				},
+				static: map[string]Pattern{
+					"a": ANY_INT.Static(),
+					"b": ANY_INT.Static(),
 				},
 				complexPropertyConstraints: []*ComplexPropertyConstraint{
 					{
@@ -2053,13 +2100,20 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
+
+			expectedFunc := &InoxFunction{
+				node:   fnExpr,
+				result: ANY_INT,
+			}
+
 			assert.Equal(t, &Object{
 				entries: map[string]Serializable{
 					"a": ANY_INT,
-					"f": &InoxFunction{
-						node:   fnExpr,
-						result: ANY_INT,
-					},
+					"f": expectedFunc,
+				},
+				static: map[string]Pattern{
+					"a": ANY_INT.Static(),
+					"f": getStatic(expectedFunc),
 				},
 			}, res)
 		})
@@ -2075,15 +2129,23 @@ func TestSymbolicEval(t *testing.T) {
 			fnExpr := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
 
 			res, err := symbolicEval(n, state)
+
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors)
+
+			expectedFunction := &InoxFunction{
+				node:   fnExpr,
+				result: NewDynamicValue(ANY_INT),
+			}
+
 			assert.Equal(t, &Object{
 				entries: map[string]Serializable{
 					"a": ANY_INT,
-					"f": &InoxFunction{
-						node:   fnExpr,
-						result: NewDynamicValue(ANY_INT),
-					},
+					"f": expectedFunction,
+				},
+				static: map[string]Pattern{
+					"a": ANY_INT.Static(),
+					"f": getStatic(expectedFunction),
 				},
 			}, res)
 		})
@@ -2107,17 +2169,26 @@ func TestSymbolicEval(t *testing.T) {
 			obj := res.(*Object)
 			g, _, _ := obj.GetProperty("g")
 
+			expectedF := &InoxFunction{
+				node:   fFnExpr,
+				result: g,
+			}
+
+			expectedG := &InoxFunction{
+				node:   gFnExpr,
+				result: ANY_INT,
+			}
+
 			assert.Equal(t, &Object{
 				entries: map[string]Serializable{
 					"a": ANY_INT,
-					"f": &InoxFunction{
-						node:   fFnExpr,
-						result: g,
-					},
-					"g": &InoxFunction{
-						node:   gFnExpr,
-						result: ANY_INT,
-					},
+					"f": expectedF,
+					"g": expectedG,
+				},
+				static: map[string]Pattern{
+					"a": ANY_INT.Static(),
+					"f": getStatic(expectedF),
+					"g": getStatic(expectedG),
 				},
 			}, obj)
 		})
@@ -2141,17 +2212,26 @@ func TestSymbolicEval(t *testing.T) {
 			obj := res.(*Object)
 			g, _, _ := obj.GetProperty("g")
 
+			expectedF := &InoxFunction{
+				node:   fFnExpr,
+				result: g,
+			}
+
+			expectedG := &InoxFunction{
+				node:   gFnExpr,
+				result: ANY_INT,
+			}
+
 			assert.Equal(t, &Object{
 				entries: map[string]Serializable{
 					"a": ANY_INT,
-					"f": &InoxFunction{
-						node:   fFnExpr,
-						result: g,
-					},
-					"g": &InoxFunction{
-						node:   gFnExpr,
-						result: ANY_INT,
-					},
+					"f": expectedF,
+					"g": expectedG,
+				},
+				static: map[string]Pattern{
+					"a": ANY_INT.Static(),
+					"f": getStatic(expectedF),
+					"g": getStatic(expectedG),
 				},
 			}, obj)
 		})
@@ -3540,8 +3620,8 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 			assert.Equal(t, NewMultivalue(
 				NewEmptyObject(),
-				NewObject(map[string]Serializable{"a": ANY_INT}, nil, nil),
-				NewObject(map[string]Serializable{"b": ANY_INT}, nil, nil),
+				NewObject(map[string]Serializable{"a": ANY_INT}, nil, map[string]Pattern{"a": ANY_INT.Static()}),
+				NewObject(map[string]Serializable{"b": ANY_INT}, nil, map[string]Pattern{"b": ANY_INT.Static()}),
 			), res)
 		})
 
@@ -3563,9 +3643,9 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 			assert.Equal(t, NewMultivalue(
 				NewEmptyObject(),
-				NewObject(map[string]Serializable{"a": ANY_INT}, nil, nil),
-				NewObject(map[string]Serializable{"b": ANY_INT}, nil, nil),
-				NewObject(map[string]Serializable{"c": ANY_INT}, nil, nil),
+				NewObject(map[string]Serializable{"a": ANY_INT}, nil, map[string]Pattern{"a": ANY_INT.Static()}),
+				NewObject(map[string]Serializable{"b": ANY_INT}, nil, map[string]Pattern{"b": ANY_INT.Static()}),
+				NewObject(map[string]Serializable{"c": ANY_INT}, nil, map[string]Pattern{"c": ANY_INT.Static()}),
 			), res)
 		})
 
@@ -4480,8 +4560,8 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 			assert.Equal(t, NewMultivalue(
 				NewEmptyObject(),
-				NewObject(map[string]Serializable{"a": &Int{hasValue: true, value: 1}}, nil, nil),
-				NewObject(map[string]Serializable{"b": &Int{hasValue: true, value: 1}}, nil, nil),
+				NewObject(map[string]Serializable{"a": NewIntWithValue(1)}, nil, map[string]Pattern{"a": ANY_INT.Static()}),
+				NewObject(map[string]Serializable{"b": NewIntWithValue(1)}, nil, map[string]Pattern{"b": ANY_INT.Static()}),
 			), res)
 		})
 
@@ -5569,7 +5649,7 @@ func TestSymbolicEval(t *testing.T) {
 		assert.Empty(t, state.errors)
 		assert.Equal(t, NewObject(map[string]Serializable{
 			"0": ANY_SYNC_MSG_HANDLER,
-		}, nil, nil), res)
+		}, nil, map[string]Pattern{"0": getStatic(ANY_SYNC_MSG_HANDLER)}), res)
 
 	})
 

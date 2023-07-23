@@ -134,7 +134,7 @@ func (state *State) setGlobal(name string, value SymbolicValue, constness Global
 
 		info = varSymbolicInfo{
 			isConstant:         constness == GlobalConst,
-			static:             &TypePattern{val: value.WidestOfType()},
+			static:             getStatic(value),
 			value:              value,
 			definitionPosition: definitionPosition,
 		}
@@ -163,7 +163,7 @@ func (state *State) setLocal(name string, value SymbolicValue, static Pattern, o
 	scope := state.scopeStack[len(state.scopeStack)-1]
 
 	if static == nil {
-		static = &TypePattern{val: value.WidestOfType()}
+		static = getStatic(value)
 	}
 
 	var definitionPosition parse.SourcePositionRange
