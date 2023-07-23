@@ -1417,7 +1417,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(indexExpr, state, fmtIndexIsNotAnIntButA(NewStringWithValue("a"))),
+				makeSymbolicEvalError(indexExpr, state, fmtIndexIsNotAnIntButA(NewStringWithValue("0"))),
 			}, state.errors)
 			assert.Equal(t, NewStringWithValue("a"), res)
 		})
@@ -1509,7 +1509,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(indexExpr, state, fmtEndIndexIsNotAnIntButA(NewStringWithValue("a"))),
+				makeSymbolicEvalError(indexExpr, state, fmtEndIndexIsNotAnIntButA(NewStringWithValue("1"))),
 			}, state.errors)
 			assert.Equal(t, NewListOf(ANY_SERIALIZABLE), res)
 		})
@@ -1812,7 +1812,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, &InoxFunction{
 				node:   fnExpr,
-				result: NewList(ANY_INT, &String{}),
+				result: NewList(ANY_INT, NewStringWithValue("1")),
 				capturedLocals: map[string]SymbolicValue{
 					"a": ANY_INT,
 					"b": NewStringWithValue("1"),
@@ -2486,7 +2486,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(call.Arguments[0], state, FmtInvalidArg(0, &String{}, ANY_INT)),
+				makeSymbolicEvalError(call.Arguments[0], state, FmtInvalidArg(0, NewStringWithValue("a"), ANY_INT)),
 			}, state.errors)
 			assert.Equal(t, ANY_INT, res)
 		})
@@ -5690,7 +5690,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 			assert.Equal(t, NewList(
 				//we also check that elem has the right because the test case depends on that
-				AsSerializable(NewMultivalue(ANY_STR, ANY_STR_CONCAT)).(Serializable),
+				AsSerializable(NewMultivalue(NewStringWithValue("a"), ANY_STR_CONCAT)).(Serializable),
 				ANY_STR_CONCAT,
 			), res)
 		})
@@ -5712,7 +5712,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 			assert.Equal(t, NewList(
 				//we also check that elem has the right because the test case depends on that
-				AsSerializable(NewMultivalue(ANY_STR, ANY_STR_CONCAT)).(Serializable),
+				AsSerializable(NewMultivalue(NewStringWithValue("a"), ANY_STR_CONCAT)).(Serializable),
 				ANY_STR_CONCAT,
 			), res)
 		})
@@ -5967,7 +5967,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 			assert.Equal(t, NewList(
 				//we also check that elem has the right because the test case depends on that
-				AsSerializable(NewMultivalue(ANY_STR, ANY_STR_CONCAT)).(Serializable),
+				AsSerializable(NewMultivalue(NewStringWithValue("a"), ANY_STR_CONCAT)).(Serializable),
 				ANY_STR,
 			), res)
 		})
@@ -6116,7 +6116,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &XMLElement{
 				name:       "div",
 				attributes: map[string]SymbolicValue{"a": NewStringWithValue("a")},
-				children:   []SymbolicValue{EMPTY_STRING},
+				children:   []SymbolicValue{ANY_STR},
 			}, res)
 		})
 
