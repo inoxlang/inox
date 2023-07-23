@@ -770,30 +770,11 @@ func (str CheckedString) WriteRepresentation(ctx *Context, w io.Writer, config *
 }
 
 func (count ByteCount) Write(w io.Writer, _3digitGroupCount int) (int, error) {
-	format := "%dB"
-	var v = int64(count)
-
-	singleGroup := _3digitGroupCount == 1
-	if _3digitGroupCount != 1 && _3digitGroupCount > 0 {
-		return -1, errors.New("only one 3-digit group is supported for now")
+	s, err := commonfmt.FmtByteCount(int64(count), _3digitGroupCount)
+	if err != nil {
+		return 0, err
 	}
-
-	switch {
-	case count >= 1_000_000_000 && (singleGroup || count%1_000_000_000 == 0):
-		format = "%dGB"
-		v /= 1_000_000_000
-	case count >= 1_000_000 && (singleGroup || count%1_000_000 == 0):
-		format = "%dMB"
-		v /= 1_000_000
-	case count >= 1000 && (singleGroup || count%1_000 == 0):
-		format = "%dkB"
-		v /= 1_000
-	case count >= 0:
-		break
-	case count < 0:
-		return 0, ErrNoRepresentation
-	}
-	return fmt.Fprintf(w, format, v)
+	return w.Write(utils.StringAsBytes(s))
 }
 
 func (count ByteCount) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {

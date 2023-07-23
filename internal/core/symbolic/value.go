@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 	"time"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
@@ -1050,6 +1051,11 @@ func (c *ByteCount) Static() Pattern {
 
 func (c *ByteCount) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%byte-count")))
+	if c.hasValue {
+		utils.PanicIfErr(w.WriteByte('('))
+		utils.Must(w.Write(utils.StringAsBytes(utils.Must(commonfmt.FmtByteCount(c.value, -1)))))
+		utils.PanicIfErr(w.WriteByte(')'))
+	}
 }
 
 func (c *ByteCount) WidestOfType() SymbolicValue {
@@ -1100,6 +1106,12 @@ func (r *ByteRate) Static() Pattern {
 
 func (r *ByteRate) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%byte-rate")))
+	if r.hasValue {
+		utils.PanicIfErr(w.WriteByte('('))
+		utils.Must(w.Write(utils.StringAsBytes(utils.Must(commonfmt.FmtByteCount(r.value, -1)))))
+		utils.Must(w.Write(utils.StringAsBytes("/s")))
+		utils.PanicIfErr(w.WriteByte(')'))
+	}
 }
 
 func (r *ByteRate) WidestOfType() SymbolicValue {
@@ -1149,6 +1161,11 @@ func (c *LineCount) Static() Pattern {
 
 func (c *LineCount) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%line-count")))
+	if c.hasValue {
+		utils.PanicIfErr(w.WriteByte('('))
+		utils.Must(w.Write(utils.StringAsBytes(strconv.FormatInt(c.value, 10))))
+		utils.PanicIfErr(w.WriteByte(')'))
+	}
 }
 
 func (c *LineCount) WidestOfType() SymbolicValue {
@@ -1199,6 +1216,11 @@ func (c *RuneCount) Static() Pattern {
 
 func (c *RuneCount) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%rune-count")))
+	if c.hasValue {
+		utils.PanicIfErr(w.WriteByte('('))
+		utils.Must(w.Write(utils.StringAsBytes(strconv.FormatInt(c.value, 10))))
+		utils.PanicIfErr(w.WriteByte(')'))
+	}
 }
 
 func (c *RuneCount) WidestOfType() SymbolicValue {
@@ -1248,6 +1270,12 @@ func (r *SimpleRate) Static() Pattern {
 
 func (r *SimpleRate) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%simple-rate")))
+	if r.hasValue {
+		utils.PanicIfErr(w.WriteByte('('))
+		utils.Must(w.Write(utils.StringAsBytes(strconv.FormatInt(r.value, 10))))
+		utils.Must(w.Write(utils.StringAsBytes("x/s")))
+		utils.PanicIfErr(w.WriteByte(')'))
+	}
 }
 
 func (r *SimpleRate) WidestOfType() SymbolicValue {
