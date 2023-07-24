@@ -124,10 +124,12 @@ func narrowOut(narrowedOut SymbolicValue, toNarrow SymbolicValue) SymbolicValue 
 			remainingValues = append(remainingValues, val)
 		}
 
-		if len(remainingValues) == 1 {
+		switch len(remainingValues) {
+		case 1:
 			return remainingValues[0]
+		case len(n.values):
+			return toNarrow
 		}
-
 		return NewMultivalue(remainingValues...)
 	case IMultivalue:
 		return narrowOut(narrowedOut, n.OriginalMultivalue())
@@ -153,12 +155,14 @@ func narrow(positive bool, n parse.Node, state *State, targetState *State) {
 	if binExpr, ok := n.(*parse.BinaryExpression); ok && state.symbolicData != nil {
 		switch {
 		case binExpr.Operator == parse.Match:
-			//we narrow the left operand
-
 			right, _ := state.symbolicData.GetMostSpecificNodeValue(binExpr.Right)
-
 			if pattern, ok := right.(Pattern); ok {
-				narrowPath(binExpr.Left, setExactValue, pattern.SymbolicValue(), targetState, 0)
+				//we narrow the left operand
+				if positive {
+					narrowPath(binExpr.Left, setExactValue, pattern.SymbolicValue(), targetState, 0)
+				} else {
+					narrowPath(binExpr.Left, removePossibleValue, pattern.SymbolicValue(), targetState, 0)
+				}
 			}
 
 		// (==) or negated (!=)

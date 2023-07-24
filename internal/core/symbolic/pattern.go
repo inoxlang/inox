@@ -1571,14 +1571,27 @@ func (p *UnionPattern) HasUnderylingPattern() bool {
 }
 
 func (p *UnionPattern) TestValue(v SymbolicValue) bool {
-	for _, case_ := range p.Cases {
-		if case_.TestValue(v) {
-			return true
+	var values []SymbolicValue
+	if multi, ok := v.(*Multivalue); ok {
+		values = multi.values
+	} else {
+		values = []SymbolicValue{v}
+	}
+
+	for _, val := range values {
+		ok := false
+		for _, case_ := range p.Cases {
+			if case_.TestValue(val) {
+				ok = true
+				break
+			}
+		}
+		if !ok {
+			return false
 		}
 	}
 
-	return false
-
+	return true
 }
 
 func (p *UnionPattern) SymbolicValue() SymbolicValue {

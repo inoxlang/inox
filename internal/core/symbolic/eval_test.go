@@ -3844,10 +3844,28 @@ func TestSymbolicEval(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					if (a match %int) {
 						var b %int = a
+					} else {
+						var b %bool = a
 					}
 				`)
 
-				state.setGlobal("a", ANY, GlobalConst)
+				state.setGlobal("a", NewMultivalue(ANY_INT, ANY_BOOL), GlobalConst)
+
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors)
+			})
+
+			t.Run("binary match expression narrows the type of a variable (%(1))", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					if (a match %(1)) {
+						var b %int = a
+					} else {
+						var b %| int | bool = a
+					}
+				`)
+
+				state.setGlobal("a", NewMultivalue(ANY_INT, ANY_BOOL), GlobalConst)
 
 				_, err := symbolicEval(n, state)
 				assert.NoError(t, err)
@@ -3857,13 +3875,13 @@ func TestSymbolicEval(t *testing.T) {
 			t.Run("negated binary match expression narrows the type of a variable (%int)", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					if !(a match %int) {
-
+						var b %bool = a
 					} else {
 						var b %int = a
 					}
 				`)
 
-				state.setGlobal("a", ANY, GlobalConst)
+				state.setGlobal("a", NewMultivalue(ANY_INT, ANY_BOOL), GlobalConst)
 
 				_, err := symbolicEval(n, state)
 				assert.NoError(t, err)
