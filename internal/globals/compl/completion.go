@@ -382,7 +382,7 @@ func handleIdentifierAndKeywordCompletions(
 		if argIndex >= 0 {
 			calleeIdent, ok := deepestCall.Callee.(*parse.IdentifierLiteral)
 			if !ok {
-				return nil
+				goto after_subcommand_completions
 			}
 
 			subcommandIdentChain := make([]*parse.IdentifierLiteral, 0)
@@ -419,6 +419,8 @@ func handleIdentifierAndKeywordCompletions(
 			}
 		}
 	}
+
+after_subcommand_completions:
 
 	//if in object
 	if len(ancestors) > 2 &&
