@@ -2337,8 +2337,14 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		}
 
 		if n.IsVariadic {
+			index := n.NonVariadicParamCount()
 			variadicParam := n.VariadicParameter()
-			stateFork.setLocal(variadicParam.Var.Name, &List{generalElement: ANY_SERIALIZABLE}, nil, variadicParam.Var)
+			paramNames[index] = variadicParam.Var.Name
+
+			param := NewListOf(ANY_SERIALIZABLE)
+			params[index] = param
+
+			stateFork.setLocal(variadicParam.Var.Name, param, nil, variadicParam.Var)
 		}
 		stateFork.symbolicData.SetLocalScopeData(n.Body, stateFork.currentLocalScopeData())
 

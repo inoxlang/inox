@@ -1832,6 +1832,24 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
+		t.Run("variadic parameter", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(...a){
+					return a
+				}
+				return f
+			`)
+			fnExpr := n.Statements[0].(*parse.FunctionDeclaration).Function
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, &InoxFunction{
+				node:           fnExpr,
+				parameters:     []SymbolicValue{NewListOf(ANY_SERIALIZABLE)},
+				parameterNames: []string{"a"},
+				result:         NewListOf(ANY_SERIALIZABLE),
+			}, res)
+		})
+
 		t.Run("no params, single captured local", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				a = int
