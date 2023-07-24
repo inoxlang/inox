@@ -538,7 +538,7 @@ func TestCheckedStringJSONRepresentation(t *testing.T) {
 
 func TestByteCountJSONRepresentation(t *testing.T) {
 	negative := ByteCount(-1)
-	assert.ErrorIs(t, negative.WriteRepresentation(reprTestCtx, nil, nil, 0), ErrNoRepresentation)
+	assert.ErrorContains(t, negative.WriteRepresentation(reprTestCtx, nil, nil, 0), "invalid byte rate")
 
 	for _, testCase := range byteCountReprTestCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
