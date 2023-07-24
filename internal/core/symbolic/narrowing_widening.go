@@ -1,6 +1,9 @@
 package symbolic
 
-import "github.com/inoxlang/inox/internal/utils"
+import (
+	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
+)
 
 var (
 	_ = []IToStatic{(*Object)(nil), (*Record)(nil), (*List)(nil), (*Tuple)(nil)}
@@ -131,4 +134,56 @@ func narrowOut(narrowedOut SymbolicValue, toNarrow SymbolicValue) SymbolicValue 
 	}
 
 	return toNarrow
+}
+
+func narrow(positive bool, n parse.Node, state *State, targetState *State) {
+
+	if unaryExpr, ok := n.(*parse.UnaryExpression); ok && unaryExpr.Operator == parse.BoolNegate {
+		positive = !positive
+		n = unaryExpr.Operand
+	}
+
+	//if the expression is a boolean conversion we remove nil from possible values
+	if boolConvExpr, ok := n.(*parse.BooleanConversionExpression); ok {
+		if positive {
+			narrowPath(boolConvExpr.Expr, removePossibleValue, Nil, targetState, 0)
+		}
+	}
+
+	if binExpr, ok := n.(*parse.BinaryExpression); ok && state.symbolicData != nil {
+		switch {
+		case binExpr.Operator == parse.Match:
+			//we narrow the left operand
+
+			right, _ := state.symbolicData.GetMostSpecificNodeValue(binExpr.Right)
+
+			if pattern, ok := right.(Pattern); ok {
+				narrowPath(binExpr.Left, setExactValue, pattern.SymbolicValue(), targetState, 0)
+			}
+
+		// (==) or negated (!=)
+		case (positive && binExpr.Operator == parse.Equal) || (!positive && binExpr.Operator == parse.NotEqual):
+			//we narrow one of the operands
+
+			left, _ := state.symbolicData.GetMostSpecificNodeValue(binExpr.Left)
+			right, _ := state.symbolicData.GetMostSpecificNodeValue(binExpr.Right)
+			if left.Test(right) {
+				narrowPath(binExpr.Left, setExactValue, right, targetState, 0)
+			} else if right.Test(left) {
+				narrowPath(binExpr.Right, setExactValue, left, targetState, 0)
+			} else {
+				state.addError(makeSymbolicEvalError(binExpr, state, fmtVal1Val2HaveNoOverlap(left, right)))
+			}
+
+		// (!=) or negated (==)
+		case (positive && binExpr.Operator == parse.NotEqual) || (!positive && binExpr.Operator == parse.Equal):
+			//we narrow one of the operands
+
+			left, _ := state.symbolicData.GetMostSpecificNodeValue(binExpr.Left)
+			right, _ := state.symbolicData.GetMostSpecificNodeValue(binExpr.Right)
+
+			narrowPath(binExpr.Left, removePossibleValue, right, targetState, 0)
+			narrowPath(binExpr.Right, removePossibleValue, left, targetState, 0)
+		}
+	}
 }

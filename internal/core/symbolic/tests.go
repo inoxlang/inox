@@ -18,13 +18,16 @@ func _makeStateAndChunk(code string, includedFiles map[string]string, globals ..
 	state.setGlobal("int", ANY_INT, GlobalConst)
 
 	state.ctx.AddNamedPattern("int", &TypePattern{
-		val: &Int{},
+		val: ANY_INT,
 		call: func(ctx *Context, values []SymbolicValue) (Pattern, error) {
 			if len(values) == 0 {
 				return nil, errors.New("missing argument")
 			}
 			return &IntRangePattern{}, nil
 		},
+	}, false)
+	state.ctx.AddNamedPattern("bool", &TypePattern{
+		val: ANY_BOOL,
 	}, false)
 	state.ctx.AddNamedPattern("str", &TypePattern{val: ANY_STR_LIKE}, false)
 	state.ctx.AddNamedPattern("object", &TypePattern{val: NewAnyObject()}, false)

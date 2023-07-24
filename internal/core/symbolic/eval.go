@@ -1794,23 +1794,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			var consequentStateFork *State
 			{
 				consequentStateFork = state.fork()
-
-				//if the expression is a boolean conversion we remove nil from possibile values
-				if boolConvExpr, ok := n.Test.(*parse.BooleanConversionExpression); ok {
-					narrowPath(boolConvExpr.Expr, removePossibleValue, Nil, consequentStateFork, 0)
-				}
-
-				// if the test expression is a match operation we narrow the left operand
-				if binExpr, ok := n.Test.(*parse.BinaryExpression); ok && state.symbolicData != nil {
-					switch binExpr.Operator {
-					case parse.Match:
-						right, _ := state.symbolicData.GetMostSpecificNodeValue(binExpr.Right)
-
-						if pattern, ok := right.(Pattern); ok {
-							narrowPath(binExpr.Left, setExactValue, pattern.SymbolicValue(), consequentStateFork, 0)
-						}
-					}
-				}
+				narrow(true, n.Test, state, consequentStateFork)
 
 				_, err = symbolicEval(n.Consequent, consequentStateFork)
 				if err != nil {
@@ -1821,25 +1805,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			var alternateStateFork *State
 			if n.Alternate != nil {
 				alternateStateFork = state.fork()
-
-				if unaryExpr, ok := n.Test.(*parse.UnaryExpression); ok && unaryExpr.Operator == parse.BoolNegate {
-					//if the expression is a negated boolean conversion we remove nil from possibile values
-					if boolConvExpr, ok := unaryExpr.Operand.(*parse.BooleanConversionExpression); ok {
-						narrowPath(boolConvExpr.Expr, removePossibleValue, Nil, alternateStateFork, 0)
-					}
-
-					// if the test expression is a negated match operation we narrow the left operand
-					if binExpr, ok := unaryExpr.Operand.(*parse.BinaryExpression); ok && state.symbolicData != nil {
-						switch binExpr.Operator {
-						case parse.Match:
-							right, _ := state.symbolicData.GetMostSpecificNodeValue(binExpr.Right)
-
-							if pattern, ok := right.(Pattern); ok {
-								narrowPath(binExpr.Left, setExactValue, pattern.SymbolicValue(), alternateStateFork, 0)
-							}
-						}
-					}
-				}
+				narrow(false, n.Test, state, alternateStateFork)
 
 				_, err = symbolicEval(n.Alternate, alternateStateFork)
 				if err != nil {
@@ -1867,23 +1833,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		if _, ok := test.(*Bool); ok {
 			if n.Consequent != nil {
 				consequentStateFork := state.fork()
-
-				//if the expression is a boolean conversion we remove nil from possibile values
-				if boolConvExpr, ok := n.Test.(*parse.BooleanConversionExpression); ok {
-					narrowPath(boolConvExpr.Expr, removePossibleValue, Nil, consequentStateFork, 0)
-				}
-
-				// if the test expression is a match operation we narrow the left operand
-				if binExpr, ok := n.Test.(*parse.BinaryExpression); ok && state.symbolicData != nil {
-					switch binExpr.Operator {
-					case parse.Match:
-						right, _ := state.symbolicData.GetMostSpecificNodeValue(binExpr.Right)
-
-						if pattern, ok := right.(Pattern); ok {
-							narrowPath(binExpr.Left, setExactValue, pattern.SymbolicValue(), consequentStateFork, 0)
-						}
-					}
-				}
+				narrow(true, n.Test, state, consequentStateFork)
 
 				consequentValue, err = symbolicEval(n.Consequent, consequentStateFork)
 				if err != nil {
@@ -1893,25 +1843,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				var alternateStateFork *State
 				if n.Alternate != nil {
 					alternateStateFork := state.fork()
-
-					if unaryExpr, ok := n.Test.(*parse.UnaryExpression); ok && unaryExpr.Operator == parse.BoolNegate {
-						//if the expression is a negated boolean conversion we remove nil from possibile values
-						if boolConvExpr, ok := unaryExpr.Operand.(*parse.BooleanConversionExpression); ok {
-							narrowPath(boolConvExpr.Expr, removePossibleValue, Nil, alternateStateFork, 0)
-						}
-
-						// if the test expression is a negated match operation we narrow the left operand
-						if binExpr, ok := unaryExpr.Operand.(*parse.BinaryExpression); ok && state.symbolicData != nil {
-							switch binExpr.Operator {
-							case parse.Match:
-								right, _ := state.symbolicData.GetMostSpecificNodeValue(binExpr.Right)
-
-								if pattern, ok := right.(Pattern); ok {
-									narrowPath(binExpr.Left, setExactValue, pattern.SymbolicValue(), alternateStateFork, 0)
-								}
-							}
-						}
-					}
+					narrow(false, n.Test, state, alternateStateFork)
 
 					atlernateValue, err = symbolicEval(n.Alternate, alternateStateFork)
 					if err != nil {
@@ -2174,6 +2106,14 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		right, err := symbolicEval(n.Right, state)
 		if err != nil {
 			return nil, err
+		}
+
+		if multi, ok := left.(*Multivalue); ok {
+			left = multi.WidenSimpleValues()
+		}
+
+		if multi, ok := right.(*Multivalue); ok {
+			right = multi.WidenSimpleValues()
 		}
 
 		switch n.Operator {

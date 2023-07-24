@@ -3913,6 +3913,146 @@ func TestSymbolicEval(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Empty(t, state.errors)
 			})
+
+			t.Run("binary == expression narrows the type of a variable (%int)", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					if (a == 1) {
+						var b %int = a
+					} else {
+						var b %bool = a
+					}
+				`)
+
+				state.setGlobal("a", NewMultivalue(NewInt(1), TRUE), GlobalConst)
+
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors)
+			})
+
+			t.Run("negated binary == expression narrows the type of a variable (%int)", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					if (a != 1) {
+						var b %bool = a
+					} else {
+						var b %int = a
+					}
+				`)
+
+				state.setGlobal("a", NewMultivalue(NewInt(1), TRUE), GlobalConst)
+
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors)
+			})
+
+			t.Run("binary != expression narrows the type of a variable (%int)", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					if (a != 1) {
+						var b %bool = a
+					} else {
+						var b %int = a
+					}
+				`)
+
+				state.setGlobal("a", NewMultivalue(NewInt(1), TRUE), GlobalConst)
+
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors)
+			})
+
+			t.Run("negated binary != expression narrows the type of a variable (%int)", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					if !(a != 1) {
+						var b %int = a
+					} else {
+						var b %bool = a
+					}
+				`)
+
+				state.setGlobal("a", NewMultivalue(NewInt(1), TRUE), GlobalConst)
+
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors)
+			})
+
+			t.Run("binary == expression narrows the type of a property (%int)", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					if (a.prop == 1) {
+						var b %int = a.prop
+					} else {
+						var b %bool = a.prop
+					}
+				`)
+
+				object := NewObject(map[string]Serializable{
+					"prop": AsSerializable(NewMultivalue(NewInt(1), TRUE)).(Serializable)}, nil, nil)
+
+				state.setGlobal("a", object, GlobalConst)
+
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors)
+			})
+
+			t.Run("negated binary == expression narrows the type of a property (%int)", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					if !(a.prop == 1) {
+						var b %bool = a.prop
+					} else {
+						var b %int = a.prop
+					}
+				`)
+
+				object := NewObject(map[string]Serializable{
+					"prop": AsSerializable(NewMultivalue(NewInt(1), TRUE)).(Serializable)}, nil, nil)
+
+				state.setGlobal("a", object, GlobalConst)
+
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors)
+			})
+
+			t.Run("binary != expression narrows the type of a property (%int)", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					if (a.prop != 1) {
+						var b %bool = a.prop
+					} else {
+						var b %int = a.prop
+					}
+				`)
+
+				object := NewObject(map[string]Serializable{
+					"prop": AsSerializable(NewMultivalue(NewInt(1), TRUE)).(Serializable)}, nil, nil)
+
+				state.setGlobal("a", object, GlobalConst)
+
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors)
+			})
+
+			t.Run("negated binary != expression narrows the type of a property (%int)", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					if !(a.prop != 1) {
+						var b %int = a.prop
+					} else {
+						var b %bool = a.prop
+					}
+				`)
+
+				object := NewObject(map[string]Serializable{
+					"prop": AsSerializable(NewMultivalue(NewInt(1), TRUE)).(Serializable)}, nil, nil)
+
+				state.setGlobal("a", object, GlobalConst)
+
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors)
+			})
 		})
 	})
 

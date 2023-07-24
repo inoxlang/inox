@@ -154,6 +154,22 @@ func (mv *Multivalue) getValues() []SymbolicValue {
 	return mv.values
 }
 
+func (mv *Multivalue) WidenSimpleValues() SymbolicValue {
+	first := mv.values[0]
+	if IsSimpleSymbolicInoxVal(first) {
+		widened := first.WidestOfType()
+
+		for _, other := range mv.values[1:] {
+			if !widened.Test(other) {
+				return mv
+			}
+		}
+
+		return widened
+	}
+	return mv
+}
+
 func (mv *Multivalue) Widen() (SymbolicValue, bool) {
 	widenedValues := make([]SymbolicValue, len(mv.values))
 

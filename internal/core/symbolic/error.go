@@ -350,3 +350,7 @@ func fmtUnknownSectionInCoroutineMetadata(name string) string {
 func fmtValueNotStringifiableToQueryParamValue(val SymbolicValue) string {
 	return fmt.Sprintf("value of type %s is not stringifiable to a query param value: only strings, integers & booleans are accepted", Stringify(val))
 }
+
+func fmtVal1Val2HaveNoOverlap(val1, val2 SymbolicValue) string {
+	return fmt.Sprintf("%s and %s have no overlap", Stringify(val1), Stringify(val2))
+}
