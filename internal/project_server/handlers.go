@@ -176,7 +176,7 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 			Filesystem: fls,
 		})
 
-		return getHoverContent(fpath, line, column, handlingCtx)
+		return getHoverContent(fpath, line, column, handlingCtx, session)
 	})
 
 	server.OnCompletion(func(ctx context.Context, req *defines.CompletionParams) (result *[]defines.CompletionItem, err error) {

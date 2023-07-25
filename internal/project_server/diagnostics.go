@@ -3,11 +3,9 @@ package project_server
 import (
 	"encoding/json"
 	"errors"
-	"io"
 
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	"github.com/inoxlang/inox/internal/globals/inox_ns"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/project_server/logs"
 
@@ -29,19 +27,9 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usi
 	errSeverity := defines.DiagnosticSeverityError
 	warningSeverity := defines.DiagnosticSeverityWarning
 
-	state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
-		Fpath:                     fpath,
-		ParsingCompilationContext: ctx,
-		ParentContext:             nil,
-		Out:                       io.Discard,
-		DevMode:                   true,
-		AllowMissingEnvVars:       true,
-		ScriptContextFileSystem:   fls,
-		PreinitFilesystem:         fls,
-	})
+	state, mod, ok := prepareSourceFile(fpath, ctx, session)
 
-	if mod == nil { //unrecoverable parsing error
-		session.Notify(NewShowMessage(defines.MessageTypeError, "failed to prepare script: "+err.Error()))
+	if !ok {
 		return nil
 	}
 

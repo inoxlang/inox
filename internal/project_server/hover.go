@@ -3,33 +3,24 @@ package project_server
 import (
 	"bufio"
 	"bytes"
-	"io"
 	"strings"
 
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/help_ns"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
-	"github.com/inoxlang/inox/internal/globals/inox_ns"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/project_server/logs"
 	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-func getHoverContent(fpath string, line, column int32, handlingCtx *core.Context) (*defines.Hover, error) {
-	fls := handlingCtx.GetFileSystem()
-
-	state, mod, _, _ := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
-		Fpath:                     fpath,
-		ParsingCompilationContext: handlingCtx,
-		ParentContext:             nil,
-		Out:                       io.Discard,
-		DevMode:                   true,
-		AllowMissingEnvVars:       true,
-		PreinitFilesystem:         fls,
-		ScriptContextFileSystem:   fls,
-	})
+func getHoverContent(fpath string, line, column int32, handlingCtx *core.Context, session *jsonrpc.Session) (*defines.Hover, error) {
+	state, mod, ok := prepareSourceFile(fpath, handlingCtx, session)
+	if !ok {
+		return &defines.Hover{}, nil
+	}
 
 	if state == nil || state.SymbolicData == nil {
 		logs.Println("no data")
