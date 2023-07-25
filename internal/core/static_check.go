@@ -2236,8 +2236,8 @@ func combineErrors(errs ...error) error {
 	return errors.New(strings.TrimRight(finalErrBuff.String(), "\n"))
 }
 
-// combineParsingErrorValues combines errors into a single error with a multiline message.
-func combineParsingErrorValues(errs []Error, positions []parse.SourcePositionRange) error {
+// CombineParsingErrorValues combines errors into a single error with a multiline message.
+func CombineParsingErrorValues(errs []Error, positions []parse.SourcePositionRange) error {
 
 	if len(errs) == 0 {
 		return nil

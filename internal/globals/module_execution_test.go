@@ -914,6 +914,103 @@ func TestPrepareLocalScript(t *testing.T) {
 
 }
 
+func TestPrepareDevModeIncludableChunkFile(t *testing.T) {
+
+	t.Run("recoverable parsing error", func(t *testing.T) {
+		fs := fs_ns.NewMemFilesystem(10000)
+
+		util.WriteFile(fs, "/included.ix", []byte(`
+			includable-chunk
+
+			a = ;
+			b = 1
+			c = d 		  	# static check error
+			(b + "string") 	# symbolic check error
+		
+		`), 0o600)
+
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs,
+		}, nil)
+
+		state, _, _, err := inox_ns.PrepareDevModeIncludableChunkfile(inox_ns.IncludableChunkfilePreparationArgs{
+			Fpath:                          "/included.ix",
+			ParsingContext:                 ctx,
+			LogOut:                         io.Discard,
+			Out:                            io.Discard,
+			IncludedChunkContextFileSystem: fs,
+		})
+
+		if !assert.Error(t, err) {
+			return
+		}
+
+		// the state should be present because we can still make perform static check
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		if !assert.NotEmpty(t, state.Module.ParsingErrors) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.NotEmpty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should not have been performed
+		assert.True(t, state.SymbolicData.IsEmpty())
+	})
+
+	t.Run("static check error", func(t *testing.T) {
+		fs := fs_ns.NewMemFilesystem(10000)
+
+		util.WriteFile(fs, "/included.ix", []byte(`
+			includable-chunk
+
+			b = 1
+			c = d 		  	# static check error
+			(b + "string") 	# symbolic check error
+		`), 0o600)
+
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs,
+		}, nil)
+
+		state, _, _, err := inox_ns.PrepareDevModeIncludableChunkfile(inox_ns.IncludableChunkfilePreparationArgs{
+			Fpath:                          "/included.ix",
+			ParsingContext:                 ctx,
+			LogOut:                         io.Discard,
+			Out:                            io.Discard,
+			IncludedChunkContextFileSystem: fs,
+		})
+
+		if !assert.Error(t, err) {
+			return
+		}
+
+		// the state should be present because we can still make perform static check
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		if !assert.Empty(t, state.Module.ParsingErrors) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.NotEmpty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
+	})
+}
+
 func TestRunLocalScript(t *testing.T) {
 
 	createEvaluationCtx := func(dir string) *core.Context {

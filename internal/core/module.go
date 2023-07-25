@@ -489,7 +489,7 @@ func ParseInMemoryModule(codeString Str, config InMemoryModuleParsingConfig) (*M
 		//TODO: add position
 	}
 
-	return mod, combineParsingErrorValues(mod.ParsingErrors, mod.ParsingErrorPositions)
+	return mod, CombineParsingErrorValues(mod.ParsingErrors, mod.ParsingErrorPositions)
 }
 
 type LocalModuleParsingConfig struct {
@@ -604,9 +604,18 @@ func ParseLocalModule(config LocalModuleParsingConfig) (*Module, error) {
 		})
 	}
 
-	// parse included files
+	err = ParseLocalIncludedFiles(mod, ctx, fls, config.RecoverFromNonExistingIncludedFiles)
+	if err != nil {
+		return nil, err
+	}
 
-	inclusionStmts := parse.FindNodes(code.Node, &parse.InclusionImportStatement{}, nil)
+	return mod, CombineParsingErrorValues(mod.ParsingErrors, mod.ParsingErrorPositions)
+}
+
+func ParseLocalIncludedFiles(mod *Module, ctx *Context, fls afs.Filesystem, recoverFromNonExistingIncludedFiles bool) error {
+	src := mod.MainChunk.Source.(parse.SourceFile)
+
+	inclusionStmts := parse.FindNodes(mod.MainChunk.Node, &parse.InclusionImportStatement{}, nil)
 
 	for _, stmt := range inclusionStmts {
 		relativePath := stmt.PathSource().Value
@@ -617,11 +626,11 @@ func ParseLocalModule(config LocalModuleParsingConfig) (*Module, error) {
 			Module:                              mod,
 			Context:                             ctx,
 			ImportPosition:                      stmtPos,
-			RecoverFromNonExistingIncludedFiles: config.RecoverFromNonExistingIncludedFiles,
+			RecoverFromNonExistingIncludedFiles: recoverFromNonExistingIncludedFiles,
 		})
 
 		if err != nil && chunk == nil {
-			return nil, err
+			return err
 		}
 
 		mod.OriginalErrors = append(mod.OriginalErrors, chunk.OriginalErrors...)
@@ -630,8 +639,7 @@ func ParseLocalModule(config LocalModuleParsingConfig) (*Module, error) {
 		mod.InclusionStatementMap[stmt] = chunk
 		mod.IncludedChunkForest = append(mod.IncludedChunkForest, chunk)
 	}
-
-	return mod, combineParsingErrorValues(mod.ParsingErrors, mod.ParsingErrorPositions)
+	return nil
 }
 
 // An IncludedChunk represents an Inox chunk that is included in another chunk,

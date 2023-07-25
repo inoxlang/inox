@@ -5,12 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/parse"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/default_state"
@@ -52,7 +55,7 @@ type ScriptPreparationArgs struct {
 	ScriptContextFileSystem afs.Filesystem
 }
 
-// PrepareLocalScript parses & checks a script located in the filesystem and initialize its state.
+// PrepareLocalScript parses & checks a script located in the filesystem and initializes its state.
 func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mod *core.Module, manif *core.Manifest, finalErr error) {
 	// parse module
 
@@ -60,12 +63,11 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		return nil, nil, nil, errors.New(".ParentContextRequired is set to true but passed .ParentContext is nil")
 	}
 
-	absPath, pathErr := filepath.Abs(args.Fpath)
-	if pathErr != nil {
-		finalErr = fmt.Errorf("failed to get absolute path of script: %w", pathErr)
+	absPath, err := args.ParsingCompilationContext.GetFileSystem().Absolute(args.Fpath)
+	if err != nil {
+		finalErr = fmt.Errorf("failed to get absolute path of module: %w", err)
 		return
 	}
-
 	args.Fpath = absPath
 
 	module, parsingErr := core.ParseLocalModule(core.LocalModuleParsingConfig{
@@ -341,6 +343,170 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	}
 
 	return state, mod, manifest, finalErr
+}
+
+type IncludableChunkfilePreparationArgs struct {
+	Fpath string //path of the file in the .ParsingCompilationContext's filesystem.
+
+	ParsingContext *core.Context
+
+	Out    io.Writer //defaults to os.Stdout
+	LogOut io.Writer //defaults to Out
+
+	//used to create the context
+	IncludedChunkContextFileSystem afs.Filesystem
+}
+
+// PrepareDevModeIncludableChunkfile parses & checks an includable-chunk file located in the filesystem and initializes its state.
+func PrepareDevModeIncludableChunkfile(args IncludableChunkfilePreparationArgs) (state *core.GlobalState, _ *core.Module, _ *core.IncludedChunk, finalErr error) {
+	// parse module
+
+	absPath, err := args.ParsingContext.GetFileSystem().Absolute(args.Fpath)
+	if err != nil {
+		finalErr = fmt.Errorf("failed to get absolute path of includable chunk: %w", err)
+		return
+	}
+	args.Fpath = absPath
+
+	includedChunkBaseName := filepath.Base(absPath)
+	includedChunkDir := filepath.Dir(absPath)
+
+	fakeModPath := filepath.Join(includedChunkDir, strconv.FormatInt(rand.Int63(), 16)+"-mod.ix")
+
+	modSource := parse.SourceFile{
+		NameString:  fakeModPath,
+		CodeString:  `import ./` + includedChunkBaseName,
+		Resource:    fakeModPath,
+		ResourceDir: includedChunkDir,
+	}
+
+	mod := &core.Module{
+		MainChunk:             utils.Must(parse.ParseChunkSource(modSource)),
+		InclusionStatementMap: make(map[*parse.InclusionImportStatement]*core.IncludedChunk),
+		IncludedChunkMap:      map[string]*core.IncludedChunk{},
+	}
+
+	criticalParsingError := core.ParseLocalIncludedFiles(mod, args.ParsingContext, args.IncludedChunkContextFileSystem, true)
+	if criticalParsingError != nil {
+		finalErr = criticalParsingError
+		return
+	}
+
+	includedChunk := mod.IncludedChunkMap[absPath]
+
+	var parsingErr error
+	if len(mod.ParsingErrors) > 0 {
+		parsingErr = core.CombineParsingErrorValues(mod.ParsingErrors, mod.ParsingErrorPositions)
+	}
+
+	//create context and state
+
+	ctx, ctxErr := default_state.NewDefaultContext(default_state.DefaultContextConfig{
+		Permissions:     nil,
+		Limitations:     nil,
+		HostResolutions: nil,
+		Filesystem:      args.IncludedChunkContextFileSystem,
+	})
+
+	if ctxErr != nil {
+		finalErr = ctxErr
+		return
+	}
+
+	defer func() {
+		if finalErr != nil {
+			ctx.Cancel()
+		}
+	}()
+
+	out := args.Out
+	if out == nil {
+		out = os.Stdout
+	}
+
+	// create the included chunk's state
+
+	globalState, err := default_state.NewDefaultGlobalState(ctx, default_state.DefaultGlobalStateConfig{
+		AllowMissingEnvVars: false,
+		Out:                 out,
+		LogOut:              args.LogOut,
+	})
+	if err != nil {
+		finalErr = fmt.Errorf("failed to create global state: %w", err)
+		return
+	}
+	state = globalState
+	state.Module = mod
+	state.Manifest = core.NewEmptyManifest()
+	state.MainState = state
+
+	// static check
+
+	staticCheckData, staticCheckErr := core.StaticCheck(core.StaticCheckInput{
+		Module:            mod,
+		Node:              mod.MainChunk.Node,
+		Chunk:             mod.MainChunk,
+		Globals:           state.Globals,
+		Patterns:          state.Ctx.GetNamedPatterns(),
+		PatternNamespaces: state.Ctx.GetPatternNamespaces(),
+	})
+
+	state.StaticCheckData = staticCheckData
+
+	if finalErr == nil && staticCheckErr != nil && staticCheckData == nil {
+		finalErr = staticCheckErr
+		return
+	}
+
+	if parsingErr != nil {
+		if len(mod.OriginalErrors) > 1 ||
+			(len(mod.OriginalErrors) == 1 && !utils.SliceContains(symbolic.SUPPORTED_PARSING_ERRORS, mod.OriginalErrors[0].Kind())) {
+			finalErr = parsingErr
+			return state, mod, includedChunk, finalErr
+		}
+		//we continue if there is a single error AND the error is supported by the symbolic evaluation
+	}
+
+	// symbolic check
+
+	globals := map[string]symbolic.ConcreteGlobalValue{}
+	state.Globals.Foreach(func(k string, v core.Value, isConst bool) error {
+		globals[k] = symbolic.ConcreteGlobalValue{
+			Value:      v,
+			IsConstant: isConst,
+		}
+		return nil
+	})
+
+	symbolicCtx, err_ := state.Ctx.ToSymbolicValue()
+	if err_ != nil {
+		finalErr = parsingErr
+		return
+	}
+
+	symbolicData, err_ := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
+		Node:    mod.MainChunk.Node,
+		Module:  state.Module.ToSymbolic(),
+		Globals: globals,
+		Context: symbolicCtx,
+	})
+
+	if symbolicData != nil {
+		state.SymbolicData.AddData(symbolicData)
+	}
+
+	if parsingErr != nil { //priority to parsing error
+		finalErr = parsingErr
+	} else if finalErr == nil {
+		switch {
+		case err_ != nil:
+			finalErr = err_
+		case staticCheckErr != nil:
+			finalErr = staticCheckErr
+		}
+	}
+
+	return state, mod, includedChunk, finalErr
 }
 
 type RunScriptArgs struct {
