@@ -116,6 +116,7 @@ type PreinitArgs struct {
 	PreinitStatement *parse.PreinitStatement           //only used if no running state
 
 	RunningState *TreeWalkState //optional
+	ParentState  *GlobalState   //optional
 
 	//if RunningState is nil .PreinitFilesystem is used to create the temporary context.
 	PreinitFilesystem afs.Filesystem
@@ -141,7 +142,7 @@ type PreinitArgs struct {
 // 11) create the manifest.
 //
 // If an error occurs at any step, the function returns.
-func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, _ *TreeWalkState, _ []*StaticCheckError, preinitErr error) {
+func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState *TreeWalkState, _ []*StaticCheckError, preinitErr error) {
 	defer func() {
 		if preinitErr != nil && m.ManifestTemplate != nil {
 			preinitErr = LocatedEvalError{
@@ -195,7 +196,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, _ *TreeWalkState
 	var envPattern *ObjectPattern
 	preinitFiles := make(PreinitFiles, 0)
 
-	//we create a temporary state to evaluate some parts of the permissions
+	//we create a temporary state to pre-evaluate some parts of the manifest
 	if preinitArgs.RunningState == nil {
 		ctx := NewContext(ContextConfig{
 			Permissions: []Permission{GlobalVarPermission{permkind.Read, "*"}},
@@ -381,7 +382,8 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, _ *TreeWalkState
 
 	manifestObj := v.(*Object)
 
-	manifest, err := createManifest(state.Global.Ctx, manifestObj, manifestObjectConfig{
+	manifest, err := m.createManifest(state.Global.Ctx, manifestObj, manifestObjectConfig{
+		parentState:           preinitArgs.ParentState,
 		defaultLimitations:    preinitArgs.DefaultLimitations,
 		handleCustomType:      preinitArgs.HandleCustomType,
 		addDefaultPermissions: preinitArgs.AddDefaultPermissions,

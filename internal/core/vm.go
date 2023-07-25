@@ -1840,7 +1840,7 @@ func (v *VM) run() {
 				return
 			}
 
-			config, err := buildImportConfig(configObject, source, v.global)
+			config, err := buildImportConfig(configObject, source.(ResourceName), v.global)
 			if err != nil {
 				v.err = err
 				return

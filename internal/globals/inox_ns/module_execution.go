@@ -37,6 +37,7 @@ type ScriptPreparationArgs struct {
 	ParsingCompilationContext *core.Context
 	ParentContext             *core.Context
 	ParentContextRequired     bool
+	UseParentStateAsMainState bool
 	DevMode                   bool
 	AllowMissingEnvVars       bool
 	FullAccessToDatabases     bool
@@ -86,14 +87,22 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 
 	parentContext := args.ParentContext
 
-	var manifest *core.Manifest
-	var preinitState *core.TreeWalkState
-	var preinitErr error
-	var preinitStaticCheckErrors []*core.StaticCheckError
+	var (
+		parentState              *core.GlobalState
+		manifest                 *core.Manifest
+		preinitState             *core.TreeWalkState
+		preinitErr               error
+		preinitStaticCheckErrors []*core.StaticCheckError
+	)
+
+	if parentContext != nil {
+		parentState = parentContext.GetClosestState()
+	}
 
 	if mod != nil {
 		manifest, preinitState, preinitStaticCheckErrors, preinitErr = mod.PreInit(core.PreinitArgs{
 			GlobalConsts:          mod.MainChunk.Node.GlobalConstantDeclarations,
+			ParentState:           parentState,
 			PreinitStatement:      mod.MainChunk.Node.Preinit,
 			PreinitFilesystem:     args.PreinitFilesystem,
 			DefaultLimitations:    default_state.GetDefaultScriptLimitations(),
@@ -188,10 +197,19 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	}
 	state = globalState
 	state.Module = mod
+	state.Manifest = manifest
 	state.PrenitStaticCheckErrors = preinitStaticCheckErrors
 	state.MainPreinitError = preinitErr
 	state.FirstDatabaseOpeningError = dbOpeningError
 	state.Databases = dbs
+	if args.UseParentStateAsMainState {
+		if parentState == nil {
+			panic(core.ErrUnreachable)
+		}
+		state.MainState = parentState
+	} else {
+		state.MainState = state
+	}
 
 	//pass patterns & host aliases of the preinit state to the state
 	if preinitState != nil {

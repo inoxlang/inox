@@ -90,6 +90,7 @@ func (j *LifetimeJob) Instantiate(ctx *Context, self Value) (*LifetimeJobInstanc
 
 	manifest, _, _, err := j.module.PreInit(PreinitArgs{
 		RunningState:          NewTreeWalkStateWithGlobal(spawnerState),
+		ParentState:           spawnerState,
 		AddDefaultPermissions: true,
 	})
 
@@ -133,6 +134,7 @@ func (j *LifetimeJob) Instantiate(ctx *Context, self Value) (*LifetimeJobInstanc
 		RoutineCtx:   routineCtx,
 		Globals:      spawnerState.Globals,
 		Module:       j.module,
+		Manifest: manifest,
 		UseBytecode:  j.module.Bytecode != nil,
 
 		StartPaused: true,

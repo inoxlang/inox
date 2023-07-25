@@ -68,6 +68,7 @@ func (s *TestSuite) Run(ctx *Context, options ...Option) (*Routine, error) {
 
 	manifest, _, _, err := s.module.PreInit(PreinitArgs{
 		RunningState: NewTreeWalkStateWithGlobal(spawnerState),
+		ParentState:  spawnerState,
 	})
 
 	if err != nil {
@@ -96,6 +97,7 @@ func (s *TestSuite) Run(ctx *Context, options ...Option) (*Routine, error) {
 		RoutineCtx:   routineCtx,
 		Globals:      spawnerState.Globals,
 		Module:       s.module,
+		Manifest:     manifest,
 		Timeout:      timeout,
 	})
 
@@ -229,6 +231,7 @@ func (s *TestCase) Run(ctx *Context, options ...Option) (*Routine, error) {
 
 	manifest, _, _, err := s.module.PreInit(PreinitArgs{
 		RunningState: NewTreeWalkStateWithGlobal(spawnerState),
+		ParentState:  spawnerState,
 	})
 
 	if err != nil {
@@ -254,6 +257,7 @@ func (s *TestCase) Run(ctx *Context, options ...Option) (*Routine, error) {
 		RoutineCtx:   routineCtx,
 		Globals:      spawnerState.Globals,
 		Module:       s.module,
+		Manifest:     manifest,
 		Timeout:      timeout,
 	})
 

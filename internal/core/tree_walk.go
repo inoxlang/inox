@@ -942,6 +942,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 	case *parse.PermissionDroppingStatement:
 		permissionListing, err := EvaluatePermissionListingObjectNode(n.Object, PreinitArgs{
 			RunningState: state,
+			ParentState:  state.Global,
 		})
 		if err != nil {
 			return nil, err
@@ -979,7 +980,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return nil, err
 		}
 
-		config, err := buildImportConfig(configObj.(*Object), src, state.Global)
+		config, err := buildImportConfig(configObj.(*Object), src.(ResourceName), state.Global)
 		if err != nil {
 			return nil, err
 		}

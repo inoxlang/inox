@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -25,23 +26,30 @@ func TestPreInit(t *testing.T) {
 	LimRegistry.RegisterLimitation("b", ByteRateLimitation, 0)
 
 	type testCase struct {
-		name                       string
-		inputModule                string
-		setupFilesystem            func(fls afs.Filesystem)
+		//input
+		name                string
+		module              string
+		setupFilesystem     func(fls afs.Filesystem)
+		parentModule        string
+		parentModuleAbsPath string
+
+		//output
 		expectedPermissions        []Permission
 		expectedLimitations        []Limitation
 		expectedResolutions        map[Host]Value
 		expectedPreinitFileConfigs PreinitFiles
 		expectedDatabaseConfigs    DatabaseConfigs
-		error                      bool
-		expectedStaticCheckErrors  []string
-		expectedPreinitFileErrors  []string
+
+		//errors
+		error                     bool
+		expectedStaticCheckErrors []string
+		expectedPreinitFileErrors []string
 	}
 
 	var testCases = []testCase{
 		{
 			name: "host resolution",
-			inputModule: `
+			module: `
 				manifest {
 					host_resolution: :{
 						ldb://main : /mydb
@@ -54,7 +62,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name:                "empty manifest",
-			inputModule:         `manifest {}`,
+			module:              `manifest {}`,
 			expectedPermissions: []Permission{},
 			expectedLimitations: []Limitation{},
 			expectedResolutions: nil,
@@ -62,7 +70,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "read_any_global",
-			inputModule: `manifest {
+			module: `manifest {
 					permissions: { read: {globals: "*"} }
 				}`,
 			expectedPermissions: []Permission{GlobalVarPermission{permkind.Read, "*"}},
@@ -72,7 +80,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "create_routine",
-			inputModule: `manifest {
+			module: `manifest {
 					permissions: {
 						create: {routines: {}}
 					}
@@ -84,7 +92,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "create_routine",
-			inputModule: `manifest {
+			module: `manifest {
 					permissions: {
 						create: {routines: {}}
 					}
@@ -96,7 +104,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "read_@const_var",
-			inputModule: `
+			module: `
 				const (
 					URL = https://example.com/
 				)
@@ -110,7 +118,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "limitations",
-			inputModule: `manifest {
+			module: `manifest {
 					limits: {
 						"a": 100ms
 					}
@@ -124,7 +132,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "host_with_unsupported_scheme",
-			inputModule: `manifest {
+			module: `manifest {
 					permissions: {
 						read: mem://a.com
 					}
@@ -133,14 +141,14 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "host_pattern_with_unsupported_scheme",
-			inputModule: `manifest {
+			module: `manifest {
 					permissions: { read: %ws://*.com }
 				}`,
 			error: true,
 		},
 		{
 			name: "dns",
-			inputModule: `manifest {
+			module: `manifest {
 					permissions: {
 						read: {
 							dns: %://**.com
@@ -156,7 +164,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "dns_host_pattern_literal_with_scheme",
-			inputModule: `manifest {
+			module: `manifest {
 					permissions: {
 						read: {
 							dns: %https://**.com
@@ -185,7 +193,7 @@ func TestPreInit(t *testing.T) {
 		// },
 		{
 			name: "invalid node type in preinit block",
-			inputModule: `
+			module: `
 			preinit {
 				go {} do {}
 			}
@@ -202,7 +210,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "invalid value for permissions section",
-			inputModule: `
+			module: `
 			manifest {
 				permissions: 1
 			}`,
@@ -215,7 +223,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "empty_preinit_files",
-			inputModule: `manifest {
+			module: `manifest {
 					preinit-files: {}
 				}`,
 			expectedPermissions: []Permission{},
@@ -225,7 +233,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "correct_preinit_file",
-			inputModule: `manifest {
+			module: `manifest {
 					preinit-files: {
 						F: {
 							path: /file.txt
@@ -251,7 +259,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "correct_preinit_file",
-			inputModule: `manifest {
+			module: `manifest {
 					preinit-files: {
 						F: {
 							path: /file.txt
@@ -278,7 +286,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "correct_preinit_file_but_not_existing",
-			inputModule: `manifest {
+			module: `manifest {
 					preinit-files: {
 						F: {
 							path: /file.txt
@@ -302,7 +310,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "correct_preinit_file_but_content_not_matching_pattern",
-			inputModule: `
+			module: `
 				preinit {
 					%p = %str("a"+)
 				}
@@ -334,7 +342,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "several_correct_preinit_files",
-			inputModule: `manifest {
+			module: `manifest {
 					preinit-files: {
 						F1: {
 							path: /file1.txt
@@ -371,7 +379,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "preinit-files_section_should_be_an_object",
-			inputModule: `manifest { 
+			module: `manifest { 
 					preinit-files: 1
 				}`,
 			error:                     true,
@@ -379,7 +387,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "empty_databases",
-			inputModule: `manifest { 
+			module: `manifest { 
 					databases: {}
 				}`,
 			expectedPermissions: []Permission{},
@@ -389,7 +397,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "correct_database",
-			inputModule: `manifest { 
+			module: `manifest { 
 					databases: {
 						main: {
 							resource: ldb://main
@@ -411,7 +419,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "database_with_invalid_resource",
-			inputModule: `manifest { 
+			module: `manifest { 
 					databases: {
 						main: {
 							resource: 1
@@ -423,7 +431,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "database_with_invalid_resolution_data",
-			inputModule: `manifest { 
+			module: `manifest { 
 					databases: {
 						main: {
 							resource: ldb://main
@@ -436,7 +444,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "database_description_should_be_an_object",
-			inputModule: `manifest { 
+			module: `manifest { 
 					databases: {
 						main: 1
 					}
@@ -446,11 +454,38 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "databases_section_should_be_an_object",
-			inputModule: `manifest { 
+			module: `manifest { 
 					databases: 1
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{DATABASES_SECTION_SHOULD_BE_AN_OBJECT},
+			expectedStaticCheckErrors: []string{DATABASES_SECTION_SHOULD_BE_AN_OBJECT_OR_ABS_PATH},
+		},
+
+		{
+			name: "databases_path_value",
+			parentModule: `manifest { 
+				databases: {
+					main: {
+						resource: ldb://main
+						resolution-data: /tmp/mydb/
+					}
+				}
+			}`,
+			parentModuleAbsPath: "/main.ix",
+			module: `manifest { 
+					databases: /main.ix
+				}`,
+			expectedPermissions: []Permission{},
+			expectedLimitations: []Limitation{},
+			expectedDatabaseConfigs: DatabaseConfigs{
+				{
+					Name:           "main",
+					Resource:       Host("ldb://main"),
+					ResolutionData: Path("/tmp/mydb/"),
+				},
+			},
+			expectedResolutions: nil,
+			error:               false,
 		},
 
 		//TODO: improve tests.
@@ -474,12 +509,48 @@ func TestPreInit(t *testing.T) {
 				testCase.setupFilesystem(fls)
 			}
 
-			chunk := parse.MustParseChunk(testCase.inputModule)
+			var parentState *GlobalState
+
+			if testCase.parentModule != "" {
+				chunk := parse.MustParseChunk(testCase.parentModule)
+
+				srcFile := parse.SourceFile{
+					NameString:  testCase.parentModuleAbsPath,
+					Resource:    testCase.parentModuleAbsPath,
+					ResourceDir: filepath.Dir(testCase.parentModuleAbsPath),
+					CodeString:  testCase.parentModule,
+				}
+
+				mod := &Module{
+					MainChunk:        parse.NewParsedChunk(chunk, srcFile),
+					ManifestTemplate: chunk.Manifest,
+				}
+
+				parentState = NewGlobalState(NewContext(ContextConfig{}))
+				parentState.Module = mod
+				parentState.MainState = parentState
+
+				manifest, _, _, err := mod.PreInit(PreinitArgs{
+					PreinitFilesystem:     fls,
+					GlobalConsts:          chunk.GlobalConstantDeclarations,
+					PreinitStatement:      chunk.Preinit,
+					RunningState:          nil,
+					AddDefaultPermissions: true,
+				})
+
+				if !assert.NoError(t, err) {
+					return
+				}
+
+				parentState.Manifest = manifest
+			}
+
+			chunk := parse.MustParseChunk(testCase.module)
 
 			mod := &Module{
 				MainChunk: parse.NewParsedChunk(chunk, parse.InMemorySource{
 					NameString: "test",
-					CodeString: testCase.inputModule,
+					CodeString: testCase.module,
 				}),
 				ManifestTemplate: chunk.Manifest,
 			}
@@ -489,6 +560,7 @@ func TestPreInit(t *testing.T) {
 				GlobalConsts:          chunk.GlobalConstantDeclarations,
 				PreinitStatement:      chunk.Preinit,
 				RunningState:          nil,
+				ParentState:           parentState,
 				AddDefaultPermissions: true,
 			})
 

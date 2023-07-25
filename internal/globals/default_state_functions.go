@@ -321,7 +321,7 @@ func _dynimport(ctx *core.Context, src core.Value, argObj *core.Object, manifest
 		return nil, errors.New("invalid options")
 	}
 	return core.ImportModule(core.ImportConfig{
-		Src:                src,
+		Src:                src.(core.ResourceName),
 		ArgObj:             argObj,
 		GrantedPermListing: manifestObj,
 		ParentState:        state,

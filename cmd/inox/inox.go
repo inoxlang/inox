@@ -489,7 +489,9 @@ func runStartupScript(startupScriptPath string, outW io.Writer) (*core.Object, *
 	if err != nil {
 		panic(fmt.Errorf("failed to startup script's global state: %w", err))
 	}
+	state.Manifest = startupManifest
 	state.Module = startupMod
+	state.MainState = state
 
 	//
 

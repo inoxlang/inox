@@ -25,7 +25,7 @@ const (
 	PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_ABS_PATH = "the ." + MANIFEST_PREINIT_FILE__PATH_PROP_NAME + " of each file in the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section (manifest) should be an absolute path"
 
 	//databases section
-	DATABASES_SECTION_SHOULD_BE_AN_OBJECT              = "the '" + MANIFEST_DATABASES_SECTION_NAME + "' section of the manifest should be an object literal"
+	DATABASES_SECTION_SHOULD_BE_AN_OBJECT_OR_ABS_PATH              = "the '" + MANIFEST_DATABASES_SECTION_NAME + "' section of the manifest should be an object literal or an absolute path literal"
 	DATABASES__DB_CONFIG_SHOULD_BE_AN_OBJECT           = "the description of each database in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section of the manifest should be an object literal"
 	DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL       = "the ." + MANIFEST_DATABASE__RESOURCE_PROP_NAME + " of each database in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section (manifest) should be a Host or a URL"
 	DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED = "paths are the only supported values for ." + MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME + "in a database description"
@@ -110,7 +110,7 @@ func fmtForbiddenNodeInPreinitFilesSection(n parse.Node) string {
 func fmtForbiddenNodeInDatabasesSection(n parse.Node) string {
 	return fmt.Sprintf(
 		"invalid %s section: invalid node %T, only variables, simple literals, path expressions & named patterns are allowed",
-		DATABASES_SECTION_SHOULD_BE_AN_OBJECT, n)
+		DATABASES_SECTION_SHOULD_BE_AN_OBJECT_OR_ABS_PATH, n)
 }
 
 func fmtForbiddenNodeInHostResolutionSection(n parse.Node) string {

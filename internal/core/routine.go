@@ -53,6 +53,7 @@ type RoutineSpawnArgs struct {
 	SpawnerState *GlobalState
 	Globals      GlobalVariables
 	Module       *Module
+	Manifest     *Manifest
 	RoutineCtx   *Context
 	PreinitState *GlobalState
 
@@ -118,6 +119,8 @@ func SpawnRoutine(args RoutineSpawnArgs) (*Routine, error) {
 	}
 
 	modState.Module = args.Module
+	modState.Manifest = args.Manifest
+	modState.MainState = args.SpawnerState.MainState
 	modState.Logger = args.SpawnerState.Logger
 	modState.Out = args.SpawnerState.Out
 	modState.StaticCheckData = staticCheckData

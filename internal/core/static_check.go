@@ -1765,14 +1765,13 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 
 			checkPreinitFilesObject(obj, onError)
 		case MANIFEST_DATABASES_SECTION_NAME:
-			obj, ok := p.Value.(*parse.ObjectLiteral)
-
-			if !ok {
-				onError(p, DATABASES_SECTION_SHOULD_BE_AN_OBJECT)
-				continue
+			switch propVal := p.Value.(type) {
+			case *parse.ObjectLiteral:
+				checkDatabasesObject(propVal, onError)
+			case *parse.AbsolutePathLiteral:
+			default:
+				onError(p, DATABASES_SECTION_SHOULD_BE_AN_OBJECT_OR_ABS_PATH)
 			}
-
-			checkDatabasesObject(obj, onError)
 		case MANIFEST_PARAMS_SECTION_NAME:
 			obj, ok := p.Value.(*parse.ObjectLiteral)
 

@@ -52,7 +52,7 @@ func ImportWaitModule(config ImportConfig) (Value, error) {
 }
 
 type ImportConfig struct {
-	Src                Value
+	Src                ResourceName
 	ValidationString   Str     //hash of the imported module
 	ArgObj             *Object //arguments for the evaluation of the imported module
 	GrantedPermListing *Object
@@ -61,7 +61,7 @@ type ImportConfig struct {
 	Timeout            time.Duration //total timeout for combined fetching + evaluation of the imported module
 }
 
-func buildImportConfig(obj *Object, source Value, parentState *GlobalState) (ImportConfig, error) {
+func buildImportConfig(obj *Object, source ResourceName, parentState *GlobalState) (ImportConfig, error) {
 	config := ImportConfig{
 		Src:         source,
 		ParentState: parentState,
@@ -161,6 +161,7 @@ func ImportModule(config ImportConfig) (*Routine, error) {
 	}
 
 	manifest, preinitState, _, err := mod.PreInit(PreinitArgs{
+		ParentState:           config.ParentState,
 		GlobalConsts:          mod.MainChunk.Node.GlobalConstantDeclarations,
 		PreinitStatement:      mod.MainChunk.Node.Preinit,
 		AddDefaultPermissions: true,
@@ -243,6 +244,7 @@ func ImportModule(config ImportConfig) (*Routine, error) {
 		SpawnerState: config.ParentState,
 		Globals:      globals,
 		Module:       mod,
+		Manifest:     manifest,
 		RoutineCtx:   routineCtx,
 		//AbsScriptDir: absScriptDir,
 		//bytecode: //TODO
@@ -252,6 +254,9 @@ func ImportModule(config ImportConfig) (*Routine, error) {
 	if err != nil {
 		return nil, fmt.Errorf("import: %s", err.Error())
 	}
+
+	config.ParentState.SetDescendantState(config.Src, routine.state)
+	
 
 	return routine, nil
 }

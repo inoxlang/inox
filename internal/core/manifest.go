@@ -105,6 +105,8 @@ type DatabaseConfig struct {
 	Name           string       //declared name, this is NOT the basename.
 	Resource       SchemeHolder //URL or Host
 	ResolutionData Path
+
+	Provided *DatabaseIL //optional (can be provided by parent state)
 }
 
 func (p *ModuleParameters) GetArguments(ctx *Context, argObj *Object) (*Object, error) {
@@ -554,12 +556,12 @@ type manifestObjectConfig struct {
 	envPattern            *ObjectPattern              //pre-evaluated
 	preinitFileConfigs    PreinitFiles                //pre-evaluated
 	ignoreUnkownSections  bool
+	parentState           *GlobalState //optional
 }
 
 // createManifest gets permissions and limitations by evaluating an object literal.
 // Custom permissions are handled by config.HandleCustomType
-func createManifest(ctx *Context, object *Object, config manifestObjectConfig) (*Manifest, error) {
-
+func (m *Module) createManifest(ctx *Context, object *Object, config manifestObjectConfig) (*Manifest, error) {
 	var (
 		perms        []Permission
 		envPattern   *ObjectPattern
@@ -609,7 +611,7 @@ func createManifest(ctx *Context, object *Object, config manifestObjectConfig) (
 				return nil, fmt.Errorf("missing pre-evaluated description of %s", MANIFEST_PREINIT_FILES_SECTION_NAME)
 			}
 		case MANIFEST_DATABASES_SECTION_NAME:
-			configs, err := getDatabaseConfigurations(v)
+			configs, err := getDatabaseConfigurations(v, config.parentState)
 			if err != nil {
 				return nil, err
 			}
@@ -1095,13 +1097,36 @@ func getModuleParameters(ctx *Context, v Value) (ModuleParameters, error) {
 	return params, nil
 }
 
-func getDatabaseConfigurations(v Value) (DatabaseConfigs, error) {
-	description, ok := v.(*Object)
-	if !ok {
-		return nil, fmt.Errorf("invalid manifest, the '%s' section should have a value of type object", MANIFEST_DATABASES_SECTION_NAME)
+func getDatabaseConfigurations(v Value, parentState *GlobalState) (DatabaseConfigs, error) {
+	var configs DatabaseConfigs
+
+	if path, ok := v.(Path); ok {
+		var provider *GlobalState
+
+		if parentState != nil {
+			if parentState.Module.MainChunk.Source.Name() == path.UnderlyingString() {
+				provider = parentState
+			} else {
+				provider = parentState.MainState.descendantStates[path]
+			}
+		}
+
+		if provider == nil {
+			return nil, fmt.Errorf("state of %s not found", path.UnderlyingString())
+		}
+
+		for _, dbConfig := range provider.Manifest.Databases {
+			dbConfig.Provided = provider.Databases[dbConfig.Name]
+			configs = append(configs, dbConfig)
+		}
+
+		return configs, nil
 	}
 
-	var configs DatabaseConfigs
+	description, ok := v.(*Object)
+	if !ok {
+		return nil, fmt.Errorf("invalid manifest, the '%s' section should have a value of type object or path", MANIFEST_DATABASES_SECTION_NAME)
+	}
 
 	err := description.ForEachEntry(func(dbName string, desc Serializable) error {
 		dbDesc, ok := desc.(*Object)

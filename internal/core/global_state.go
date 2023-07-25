@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sync"
 	"sync/atomic"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
@@ -20,7 +21,8 @@ var (
 // A GlobalState represents the global state for the evaluation of a single module or the shell's loop.
 type GlobalState struct {
 	Ctx          *Context
-	Module       *Module                //nil in some cases (shell, mapping entry's state), TODO: check for usage
+	Module       *Module //nil in some cases (shell, mapping entry's state), TODO: check for usage
+	Manifest     *Manifest
 	Globals      GlobalVariables        //global variables
 	Routine      *Routine               //not nil if running in a routine
 	Databases    map[string]*DatabaseIL //the map should never change
@@ -32,6 +34,10 @@ type GlobalState struct {
 	Out                              io.Writer                                                       //nil by default
 	Logger                           zerolog.Logger                                                  //nil by default
 	Debugger                         atomic.Value                                                    //nil or (nillable) *Debugger
+
+	MainState            *GlobalState //never nil
+	descendantStates     map[ResourceName]*GlobalState
+	descendantStatesLock sync.Mutex
 
 	//errors & check data
 	PrenitStaticCheckErrors   []*StaticCheckError
@@ -47,8 +53,9 @@ func NewGlobalState(ctx *Context, constants ...map[string]Value) *GlobalState {
 	}
 
 	state := &GlobalState{
-		Ctx:          ctx,
-		SymbolicData: &SymbolicData{SymbolicData: symbolic.NewSymbolicData()},
+		Ctx:              ctx,
+		SymbolicData:     &SymbolicData{SymbolicData: symbolic.NewSymbolicData()},
+		descendantStates: make(map[ResourceName]*GlobalState, 0),
 	}
 	ctx.state = state
 
@@ -66,6 +73,27 @@ func NewGlobalState(ctx *Context, constants ...map[string]Value) *GlobalState {
 	state.Globals = GlobalVariablesFromMap(globals, utils.GetMapKeys(globals))
 
 	return state
+}
+
+func (g *GlobalState) IsMain() bool {
+	if g.MainState == nil {
+		panic(ErrUnreachable)
+	}
+
+	return g.MainState == g
+}
+
+func (g *GlobalState) SetDescendantState(src ResourceName, state *GlobalState) {
+	g.descendantStatesLock.Lock()
+	defer g.descendantStatesLock.Unlock()
+
+	if _, ok := g.descendantStates[src]; ok {
+		panic(fmt.Errorf("descendant state of %s already set", src.ResourceName()))
+	}
+	g.descendantStates[src] = state
+	if g.MainState != nil && g.MainState != g {
+		g.MainState.SetDescendantState(src, state)
+	}
 }
 
 func (g *GlobalState) InitSystemGraph() {
