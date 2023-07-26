@@ -7,7 +7,6 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
-	"github.com/inoxlang/inox/internal/project_server/logs"
 
 	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
@@ -27,22 +26,12 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usi
 	errSeverity := defines.DiagnosticSeverityError
 	warningSeverity := defines.DiagnosticSeverityWarning
 
-	state, mod, ok := prepareSourceFile(fpath, ctx, session)
-
-	if !ok {
-		return nil
-	}
+	state, mod, _, ok := prepareSourceFile(fpath, ctx, session, false)
 
 	//we need the diagnostics list to be present in the notification so diagnostics should not be nil
 	diagnostics := make([]defines.Diagnostic, 0)
 
-	if err == nil {
-		logs.Println("no errors")
-		goto send_diagnostics
-	}
-
-	if err != nil && state == nil && mod == nil {
-		logs.Println("err", err)
+	if !ok {
 		goto send_diagnostics
 	}
 
@@ -73,7 +62,7 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usi
 				return defines.Diagnostic{
 					Message:  err.Message,
 					Severity: &errSeverity,
-					Range:    rangeToLspRange(err.Location[0]),
+					Range:    rangeToLspRange(getPositionInPositionStackOrFirst(err.Location, fpath)),
 				}
 			})
 
@@ -88,7 +77,7 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usi
 
 			if errors.As(state.MainPreinitError, &locatedEvalError) {
 				msg = locatedEvalError.Message
-				_range = rangeToLspRange(locatedEvalError.Location[0])
+				_range = rangeToLspRange(getPositionInPositionStackOrFirst(locatedEvalError.Location, fpath))
 			} else {
 				_range = firstCharsLspRange(5)
 				msg = state.MainPreinitError.Error()
@@ -114,7 +103,7 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usi
 				return defines.Diagnostic{
 					Message:  err.Message,
 					Severity: &errSeverity,
-					Range:    rangeToLspRange(err.Location[0]),
+					Range:    rangeToLspRange(getPositionInPositionStackOrFirst(err.Location, fpath)),
 				}
 			})
 
@@ -127,7 +116,7 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usi
 				return defines.Diagnostic{
 					Message:  err.Message,
 					Severity: &errSeverity,
-					Range:    rangeToLspRange(err.Location[0]),
+					Range:    rangeToLspRange(getPositionInPositionStackOrFirst(err.Location, fpath)),
 				}
 			})
 
@@ -139,16 +128,12 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usi
 				return defines.Diagnostic{
 					Message:  err.Message,
 					Severity: &warningSeverity,
-					Range:    rangeToLspRange(err.Location[0]),
+					Range:    rangeToLspRange(getPositionInPositionStackOrFirst(err.Location, fpath)),
 				}
 			})
 
 			diagnostics = append(diagnostics, symbolicCheckWarningDiagnostics...)
 		}
-	}
-
-	if len(diagnostics) == 0 && err != nil {
-		logs.Println("unexpected error", err)
 	}
 
 send_diagnostics:

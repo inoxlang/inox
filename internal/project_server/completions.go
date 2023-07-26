@@ -16,12 +16,11 @@ func getCompletions(fpath string, line, column int32, session *jsonrpc.Session) 
 		Filesystem: fls,
 	})
 
-	state, mod, ok := prepareSourceFile(fpath, handlingCtx, session)
+	state, _, chunk, ok := prepareSourceFile(fpath, handlingCtx, session, true)
 	if !ok {
 		return nil
 	}
 
-	chunk := mod.MainChunk
 	pos := chunk.GetLineColumnPosition(line, column)
 
 	return compl.FindCompletions(compl.CompletionSearchArgs{

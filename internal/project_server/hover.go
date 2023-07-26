@@ -17,7 +17,7 @@ import (
 )
 
 func getHoverContent(fpath string, line, column int32, handlingCtx *core.Context, session *jsonrpc.Session) (*defines.Hover, error) {
-	state, mod, ok := prepareSourceFile(fpath, handlingCtx, session)
+	state, _, chunk, ok := prepareSourceFile(fpath, handlingCtx, session, true)
 	if !ok {
 		return &defines.Hover{}, nil
 	}
@@ -27,8 +27,8 @@ func getHoverContent(fpath string, line, column int32, handlingCtx *core.Context
 		return &defines.Hover{}, nil
 	}
 
-	span := mod.MainChunk.GetLineColumnSingeCharSpan(line, column)
-	foundNode, ancestors, ok := mod.MainChunk.GetNodeAndChainAtSpan(span)
+	span := chunk.GetLineColumnSingeCharSpan(line, column)
+	foundNode, ancestors, ok := chunk.GetNodeAndChainAtSpan(span)
 
 	if !ok || foundNode == nil {
 		logs.Println("no data")
