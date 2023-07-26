@@ -3,16 +3,22 @@ package symbolic
 import (
 	"testing"
 
+	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSymbolicState(t *testing.T) {
+	emptyChunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+		NameString: "",
+		CodeString: "",
+	}))
 
 	t.Run("setLocal()", func(t *testing.T) {
 
 		t.Run("no locals", func(t *testing.T) {
 			ctx := NewSymbolicContext(nil)
-			state := newSymbolicState(ctx, nil)
+			state := newSymbolicState(ctx, emptyChunk)
 
 			assert.Panics(t, func() {
 				state.setLocal("local", &Identifier{}, nil)
@@ -21,7 +27,7 @@ func TestSymbolicState(t *testing.T) {
 
 		t.Run("static provided", func(t *testing.T) {
 			ctx := NewSymbolicContext(nil)
-			state := newSymbolicState(ctx, nil)
+			state := newSymbolicState(ctx, emptyChunk)
 			state.pushScope()
 
 			static := &TypePattern{val: &Identifier{}}
@@ -40,7 +46,7 @@ func TestSymbolicState(t *testing.T) {
 
 		t.Run("no static provided", func(t *testing.T) {
 			ctx := NewSymbolicContext(nil)
-			state := newSymbolicState(ctx, nil)
+			state := newSymbolicState(ctx, emptyChunk)
 			state.pushScope()
 
 			state.setLocal("local", &Identifier{}, nil)
@@ -59,7 +65,7 @@ func TestSymbolicState(t *testing.T) {
 
 	t.Run("setGlobal()", func(t *testing.T) {
 		ctx := NewSymbolicContext(nil)
-		state := newSymbolicState(ctx, nil)
+		state := newSymbolicState(ctx, emptyChunk)
 
 		state.setGlobal("g", &Identifier{}, GlobalVar)
 		info, ok := state.getGlobal("g")
@@ -78,7 +84,7 @@ func TestSymbolicState(t *testing.T) {
 	t.Run("updateGlobal", func(t *testing.T) {
 		t.Run("updating the value of a global should change its varSymbolicInfo.value but not its varSymbolicInfo.static", func(t *testing.T) {
 			ctx := NewSymbolicContext(nil)
-			state := newSymbolicState(ctx, nil)
+			state := newSymbolicState(ctx, emptyChunk)
 
 			state.setGlobal("g", &Identifier{}, GlobalVar)
 			state.updateGlobal("g", &Identifier{name: "foo"}, nil)
@@ -95,7 +101,7 @@ func TestSymbolicState(t *testing.T) {
 	t.Run("updateLocal()", func(t *testing.T) {
 		t.Run("updating the value of a local should change its varSymbolicInfo.value but not its varSymbolicInfo.static", func(t *testing.T) {
 			ctx := NewSymbolicContext(nil)
-			state := newSymbolicState(ctx, nil)
+			state := newSymbolicState(ctx, emptyChunk)
 			state.pushScope()
 
 			state.setLocal("local", &Identifier{}, nil)
@@ -113,7 +119,7 @@ func TestSymbolicState(t *testing.T) {
 	t.Run("forking", func(t *testing.T) {
 		t.Run("forked state's globals and locals are not shared with the parent, but have the same values", func(t *testing.T) {
 			ctx := NewSymbolicContext(nil)
-			state := newSymbolicState(ctx, nil)
+			state := newSymbolicState(ctx, emptyChunk)
 
 			state.setGlobal("g", &Int{}, GlobalConst)
 			state.pushScope()
@@ -142,7 +148,7 @@ func TestSymbolicState(t *testing.T) {
 
 		t.Run("setting a new global in the fork does not modify the parent", func(t *testing.T) {
 			ctx := NewSymbolicContext(nil)
-			state := newSymbolicState(ctx, nil)
+			state := newSymbolicState(ctx, emptyChunk)
 
 			fork := state.fork()
 			assert.True(t, fork.setGlobal("g", &String{}, GlobalConst))
@@ -164,7 +170,7 @@ func TestSymbolicState(t *testing.T) {
 
 		t.Run("updating a global in the fork does not modify the parent", func(t *testing.T) {
 			ctx := NewSymbolicContext(nil)
-			state := newSymbolicState(ctx, nil)
+			state := newSymbolicState(ctx, emptyChunk)
 			state.setGlobal("g", &Identifier{}, GlobalConst)
 			infoInParent, _ := state.getGlobal("g")
 
@@ -184,7 +190,7 @@ func TestSymbolicState(t *testing.T) {
 
 		t.Run("setting a new local in the fork does not modify the parent", func(t *testing.T) {
 			ctx := NewSymbolicContext(nil)
-			state := newSymbolicState(ctx, nil)
+			state := newSymbolicState(ctx, emptyChunk)
 			state.pushScope()
 
 			fork := state.fork()
@@ -206,7 +212,7 @@ func TestSymbolicState(t *testing.T) {
 
 		t.Run("updating a local in the fork does not modify the parent", func(t *testing.T) {
 			ctx := NewSymbolicContext(nil)
-			state := newSymbolicState(ctx, nil)
+			state := newSymbolicState(ctx, emptyChunk)
 			state.pushScope()
 
 			state.setLocal("local", &Identifier{}, nil)
@@ -227,7 +233,7 @@ func TestSymbolicState(t *testing.T) {
 
 		t.Run("the fork state ignores the local scope of the parent", func(t *testing.T) {
 			ctx := NewSymbolicContext(nil)
-			state := newSymbolicState(ctx, nil)
+			state := newSymbolicState(ctx, emptyChunk)
 			state.pushScope()
 
 			state.setLocal("local", &Identifier{}, nil)

@@ -12,8 +12,9 @@ import (
 type State struct {
 	parent *State //can be nil
 
-	ctx        *Context
-	chunkStack []*parse.ParsedChunk
+	ctx                      *Context
+	chunkStack               []*parse.ParsedChunk
+	inclusionImportPositions []parse.SourcePositionRange
 
 	// first scope is the global scope, forks start with a global scope copy & a copy of the deepest local scope
 	scopeStack            []*scopeInfo
@@ -49,11 +50,9 @@ type tempSymbolicGoFunctionSignature struct {
 	returnTypes []SymbolicValue
 }
 
-func newSymbolicState(ctx *Context, optionalChunk *parse.ParsedChunk) *State {
-	var chunkStack []*parse.ParsedChunk
-	if optionalChunk != nil {
-		chunkStack = append(chunkStack, optionalChunk)
-	}
+func newSymbolicState(ctx *Context, chunk *parse.ParsedChunk) *State {
+	chunkStack := []*parse.ParsedChunk{chunk}
+
 	if ctx.associatedState != nil {
 		panic(errors.New("cannot create new state: passed context already has an associated state"))
 	}
@@ -75,10 +74,8 @@ func newSymbolicState(ctx *Context, optionalChunk *parse.ParsedChunk) *State {
 }
 
 func (state *State) getErrorMesssageLocation(node parse.Node) parse.SourcePositionStack {
-	var sourcePositionStack parse.SourcePositionStack
-	for _, chunk := range state.chunkStack {
-		sourcePositionStack = append(sourcePositionStack, chunk.GetSourcePosition(node.Base().Span))
-	}
+	sourcePositionStack := utils.CopySlice(state.inclusionImportPositions)
+	sourcePositionStack = append(sourcePositionStack, state.currentChunk().GetSourcePosition(node.Base().Span))
 	return sourcePositionStack
 }
 
@@ -96,12 +93,14 @@ func (state *State) currentChunk() *parse.ParsedChunk {
 	return state.chunkStack[len(state.chunkStack)-1]
 }
 
-func (state *State) pushChunk(chunk *parse.ParsedChunk) {
+func (state *State) pushChunk(chunk *parse.ParsedChunk, stmt *parse.InclusionImportStatement) {
+	state.inclusionImportPositions = append(state.inclusionImportPositions, state.currentChunk().GetSourcePosition(stmt.Span))
 	state.chunkStack = append(state.chunkStack, chunk)
 }
 
 func (state *State) popChunk() {
 	state.chunkStack = state.chunkStack[:len(state.chunkStack)-1]
+	state.inclusionImportPositions = state.inclusionImportPositions[:len(state.inclusionImportPositions)-1]
 }
 
 func (state *State) assertHasLocals() {

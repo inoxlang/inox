@@ -1441,7 +1441,12 @@ func TestFunctionPattern(t *testing.T) {
 	}
 
 	makeState := func() *State {
-		state := newSymbolicState(NewSymbolicContext(nil), nil)
+		emptyChunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+			NameString: "",
+			CodeString: "",
+		}))
+
+		state := newSymbolicState(NewSymbolicContext(nil), emptyChunk)
 		state.ctx.AddNamedPattern("int", &TypePattern{val: ANY_INT}, false)
 		state.ctx.AddNamedPattern("str", &TypePattern{val: ANY_STR}, false)
 		state.ctx.AddNamedPattern("obj", &TypePattern{val: NewAnyObject()}, false)

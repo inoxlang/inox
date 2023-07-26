@@ -6474,6 +6474,43 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors)
 			assert.Equal(t, ANY_INT, res)
 		})
+
+		t.Run("error in included file", func(t *testing.T) {
+			n, state := MakeTestStateAndChunks(`
+				manifest {}
+				import ./lib.ix
+				return a
+			`, map[string]string{"./lib.ix": "a = b"})
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			if !assert.Len(t, state.errors, 1) {
+				return
+			}
+			evalErr := state.errors[0]
+
+			importStmt := parse.FindNode(n, (*parse.InclusionImportStatement)(nil), nil)
+
+			assert.Equal(t, parse.SourcePositionRange{
+				SourceName:  "",
+				StartLine:   3,
+				StartColumn: 5,
+				EndLine:     3,
+				EndColumn:   20,
+				Span:        importStmt.Span,
+			}, evalErr.Location[0])
+
+			assert.Equal(t, parse.SourcePositionRange{
+				SourceName:  "./lib.ix",
+				StartLine:   1,
+				StartColumn: 5,
+				EndLine:     1,
+				EndColumn:   6,
+				Span:        parse.NodeSpan{Start: 4, End: 5},
+			}, evalErr.Location[1])
+
+			assert.Equal(t, ANY, res)
+		})
 	})
 }
 

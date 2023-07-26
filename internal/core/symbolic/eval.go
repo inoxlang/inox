@@ -1072,7 +1072,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		if !ok { //included file does not exist or is a folder
 			return nil, nil
 		}
-		state.pushChunk(chunk.ParsedChunk)
+		state.pushChunk(chunk.ParsedChunk, n)
 		defer state.popChunk()
 
 		_, err := symbolicEval(chunk.Node, state)
