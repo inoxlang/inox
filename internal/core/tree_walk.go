@@ -963,6 +963,17 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		state.pushChunk(chunk.ParsedChunk)
 		defer state.popChunk()
 
+		frameCount := len(state.frameInfo)
+		prevChunk := state.frameInfo[frameCount-1].Chunk
+		prevName := state.frameInfo[frameCount-1].Name
+
+		state.frameInfo[frameCount-1].Chunk = chunk.ParsedChunk
+		state.frameInfo[frameCount-1].Name = chunk.Name()
+		defer func() {
+			state.frameInfo[frameCount-1].Chunk = prevChunk
+			state.frameInfo[frameCount-1].Name = prevName
+		}()
+
 		return TreeWalkEval(chunk.Node, state)
 	case *parse.ImportStatement:
 		varPerm := GlobalVarPermission{permkind.Create, n.Identifier.Name}
