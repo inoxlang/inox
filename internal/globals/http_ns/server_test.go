@@ -15,7 +15,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/inoxlang/inox/internal/afs"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/default_state"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
 	"github.com/inoxlang/inox/internal/permkind"
@@ -41,6 +43,28 @@ var (
 
 func init() {
 	port.Store(8080)
+	if !default_state.IsDefaultScriptLimitationsSet() {
+		default_state.SetDefaultScriptLimitations([]core.Limitation{})
+	}
+
+	if default_state.NewDefaultContext == nil {
+		default_state.SetNewDefaultContext(func(config default_state.DefaultContextConfig) (*core.Context, error) {
+			return core.NewContext(core.ContextConfig{
+				Permissions: []core.Permission{
+					core.GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
+					core.GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
+					core.GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
+					core.RoutinePermission{Kind_: permkind.Create},
+					core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+				},
+				ParentContext: config.ParentContext,
+			}), nil
+		})
+
+		default_state.SetNewDefaultGlobalStateFn(func(ctx *core.Context, conf default_state.DefaultGlobalStateConfig) (*core.GlobalState, error) {
+			return core.NewGlobalState(ctx), nil
+		})
+	}
 }
 
 func TestHttpServerMissingProvidePermission(t *testing.T) {
@@ -394,6 +418,12 @@ func TestHttpServerMapping(t *testing.T) {
 func setupAdvancedTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *core.Context, *parse.Chunk, core.Host, error) {
 	host := core.Host("https://localhost:" + strconv.Itoa(int(port.Add(1))))
 
+	var fls afs.Filesystem = fs_ns.GetOsFilesystem()
+
+	if testCase.makeFilesystem != nil {
+		fls = testCase.makeFilesystem()
+	}
+
 	// create state & context
 	ctx := core.NewContext(core.ContextConfig{
 		Permissions: []core.Permission{
@@ -402,8 +432,9 @@ func setupAdvancedTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalS
 			core.GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
 			core.GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
 			core.RoutinePermission{Kind_: permkind.Create},
+			core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
 		},
-		Filesystem: fs_ns.GetOsFilesystem(),
+		Filesystem: fls,
 	})
 
 	for k, v := range core.DEFAULT_NAMED_PATTERNS {
@@ -709,6 +740,7 @@ type serverTestCase struct {
 	input          string
 	requests       []requestTestInfo
 	outWriter      io.Writer
+	makeFilesystem func() afs.Filesystem
 	createClientFn func() func() *http.Client
 }
 

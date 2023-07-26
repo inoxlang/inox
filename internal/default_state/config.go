@@ -59,6 +59,10 @@ func GetDefaultScriptLimitations() []core.Limitation {
 	return defaultScriptLimitations
 }
 
+func IsDefaultScriptLimitationsSet() bool {
+	return defaultScriptLimitations != nil
+}
+
 type DefaultContextConfig struct {
 	Permissions          []core.Permission
 	ForbiddenPermissions []core.Permission

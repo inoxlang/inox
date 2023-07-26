@@ -7,7 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-git/go-billy/v5/util"
+	"github.com/inoxlang/inox/internal/afs"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/publicsuffix"
@@ -57,7 +60,25 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 					{acceptedContentType: core.PLAIN_TEXT_CTYPE, path: "/b", result: `b`, status: 200},
 				},
 			},
-			//add test on default-csp
+			"filesystem routing": {
+				input: `return {
+					routing: /routes/
+				}`,
+				makeFilesystem: func() afs.Filesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/x.ix", []byte(`
+						manifest {}
+
+						return "hello"
+					`), fs_ns.DEFAULT_FILE_FMODE)
+
+					return fls
+				},
+				requests: []requestTestInfo{
+					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
+				},
+			},
 		}
 
 		for name, testCase := range testCases {
