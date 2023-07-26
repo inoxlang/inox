@@ -154,6 +154,11 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	var dbOpeningError error
 	dbs := map[string]*core.DatabaseIL{}
 	for _, config := range manifest.Databases {
+		if config.Provided != nil {
+			dbs[config.Name] = config.Provided
+			continue
+		}
+
 		if host, ok := config.Resource.(core.Host); ok {
 			ctx.AddHostResolutionData(host, config.ResolutionData)
 		}
