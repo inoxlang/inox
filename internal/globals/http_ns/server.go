@@ -179,6 +179,9 @@ func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*Http
 		handlerGlobalState.Logger = _server.state.Logger
 		handlerGlobalState.Out = _server.state.Out
 		handlerGlobalState.Module = _server.state.Module
+		handlerGlobalState.MainState = _server.state.MainState
+		handlerGlobalState.Manifest = _server.state.Manifest
+		handlerGlobalState.Databases = _server.state.Databases
 		handlerGlobalState.SystemGraph = _server.state.SystemGraph
 
 		//
