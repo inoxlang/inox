@@ -58,6 +58,16 @@ type DebugNextParams struct {
 	Request   dap.ContinueRequest `json:"request"`
 }
 
+type DebugStepInParams struct {
+	SessionId string              `json:"sessionID"`
+	Request   dap.ContinueRequest `json:"request"`
+}
+
+type DebugStepOutParams struct {
+	SessionId string              `json:"sessionID"`
+	Request   dap.ContinueRequest `json:"request"`
+}
+
 type DebugThreadsParams struct {
 	SessionId string             `json:"sessionID"`
 	Request   dap.ThreadsRequest `json:"request"`
@@ -1004,6 +1014,68 @@ func registerDebugMethodHandlers(
 	})
 
 	server.OnCustom(jsonrpc.MethodInfo{
+		Name: "debug/stepIn",
+		NewRequest: func() interface{} {
+			return &DebugStepInParams{}
+		},
+		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+			session := jsonrpc.GetSession(ctx)
+			params := req.(*DebugStepInParams)
+			dapRequest := params.Request
+
+			debugSession := getDebugSession(session, params.SessionId)
+
+			debugger := debugSession.debugger
+			if !debugger.Closed() {
+				debugger.ControlChan() <- core.DebugCommandStepIn{}
+			}
+
+			return dap.StepInResponse{
+				Response: dap.Response{
+					RequestSeq: dapRequest.Seq,
+					Success:    true,
+					ProtocolMessage: dap.ProtocolMessage{
+						Seq:  debugSession.NextSeq(),
+						Type: "response",
+					},
+					Command: dapRequest.Command,
+				},
+			}, nil
+		},
+	})
+
+	server.OnCustom(jsonrpc.MethodInfo{
+		Name: "debug/stepOut",
+		NewRequest: func() interface{} {
+			return &DebugStepOutParams{}
+		},
+		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+			session := jsonrpc.GetSession(ctx)
+			params := req.(*DebugStepOutParams)
+			dapRequest := params.Request
+
+			debugSession := getDebugSession(session, params.SessionId)
+
+			debugger := debugSession.debugger
+			if !debugger.Closed() {
+				debugger.ControlChan() <- core.DebugCommandStepOut{}
+			}
+
+			return dap.StepOutResponse{
+				Response: dap.Response{
+					RequestSeq: dapRequest.Seq,
+					Success:    true,
+					ProtocolMessage: dap.ProtocolMessage{
+						Seq:  debugSession.NextSeq(),
+						Type: "response",
+					},
+					Command: dapRequest.Command,
+				},
+			}, nil
+		},
+	})
+
+	server.OnCustom(jsonrpc.MethodInfo{
 		Name: "debug/disconnect",
 		NewRequest: func() interface{} {
 			return &DebugDisconnectParams{}
@@ -1286,7 +1358,7 @@ func stopReasonToDapStopReason(reason core.ProgramStopReason) string {
 	switch reason {
 	case core.PauseStop:
 		return "pause"
-	case core.StepStop:
+	case core.NextStepStop, core.StepInStop, core.StepOutStop:
 		return "step"
 	case core.BreakpointStop:
 		return "breakpoint"
