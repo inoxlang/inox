@@ -51,15 +51,31 @@ func prepareSourceFile(fpath string, ctx *core.Context, session *jsonrpc.Session
 
 		return state, mod, includedChunk.ParsedChunk, true
 	} else {
+		var parentCtx *core.Context
+
+		if obj, ok := chunk.Node.Manifest.Object.(*parse.ObjectLiteral); ok {
+			node, _ := obj.PropValue(core.MANIFEST_DATABASES_SECTION_NAME)
+			if pathLiteral, ok := node.(*parse.AbsolutePathLiteral); ok {
+				state, _, _, ok := prepareSourceFile(pathLiteral.Value, ctx, session, true)
+				if ok {
+					parentCtx = state.Ctx
+				}
+			}
+		}
+
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     fpath,
 			ParsingCompilationContext: ctx,
-			ParentContext:             nil,
-			Out:                       io.Discard,
-			DevMode:                   true,
-			AllowMissingEnvVars:       true,
-			ScriptContextFileSystem:   fls,
-			PreinitFilesystem:         fls,
+
+			//set if the module uses databases from another module.
+			ParentContext:         parentCtx,
+			ParentContextRequired: parentCtx != nil,
+
+			Out:                     io.Discard,
+			DevMode:                 true,
+			AllowMissingEnvVars:     true,
+			ScriptContextFileSystem: fls,
+			PreinitFilesystem:       fls,
 		})
 
 		if mod == nil {
