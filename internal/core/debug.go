@@ -285,7 +285,7 @@ func (d *Debugger) beforeInstruction(n parse.Node, trace []StackFrameInfo, excep
 		return
 	}
 
-	trace = utils.CopySlice(trace)
+	trace = utils.ReversedSlice(trace)
 
 	var (
 		stopReason     ProgramStopReason

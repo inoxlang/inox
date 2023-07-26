@@ -41,7 +41,7 @@ func NewTreeWalkStateWithGlobal(global *GlobalState) *TreeWalkState {
 type TreeWalkState struct {
 	Global          *GlobalState
 	LocalScopeStack []map[string]Value
-	frameInfo       []StackFrameInfo //used for debugging only
+	frameInfo       []StackFrameInfo //used for debugging only, the frame is reversed
 	chunkStack      []*parse.ParsedChunk
 	constantVars    map[string]bool
 	postHandle      func(node parse.Node, val Value, err error) (Value, error)
