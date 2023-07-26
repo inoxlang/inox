@@ -53,6 +53,11 @@ type DebugContinueParams struct {
 	Request   dap.ContinueRequest `json:"request"`
 }
 
+type DebugNextParams struct {
+	SessionId string              `json:"sessionID"`
+	Request   dap.ContinueRequest `json:"request"`
+}
+
 type DebugThreadsParams struct {
 	SessionId string             `json:"sessionID"`
 	Request   dap.ThreadsRequest `json:"request"`
@@ -962,6 +967,37 @@ func registerDebugMethodHandlers(
 				},
 				Body: dap.ContinueResponseBody{
 					AllThreadsContinued: true,
+				},
+			}, nil
+		},
+	})
+
+	server.OnCustom(jsonrpc.MethodInfo{
+		Name: "debug/next",
+		NewRequest: func() interface{} {
+			return &DebugNextParams{}
+		},
+		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+			session := jsonrpc.GetSession(ctx)
+			params := req.(*DebugNextParams)
+			dapRequest := params.Request
+
+			debugSession := getDebugSession(session, params.SessionId)
+
+			debugger := debugSession.debugger
+			if !debugger.Closed() {
+				debugger.ControlChan() <- core.DebugCommandNextStep{}
+			}
+
+			return dap.NextResponse{
+				Response: dap.Response{
+					RequestSeq: dapRequest.Seq,
+					Success:    true,
+					ProtocolMessage: dap.ProtocolMessage{
+						Seq:  debugSession.NextSeq(),
+						Type: "response",
+					},
+					Command: dapRequest.Command,
 				},
 			}, nil
 		},
