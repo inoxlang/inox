@@ -46,6 +46,9 @@ type Debugger struct {
 	stoppedProgramChan        chan ProgramStoppedEvent
 	stoppedProgram            atomic.Bool
 	stopBeforeNextStatement   atomic.Value //non-breakpoint ProgramStopReason
+	stackFrameDepth           atomic.Int32
+	steppingDepth             atomic.Int32
+	stepOutDepth              atomic.Int32
 	breakpoints               map[parse.NodeSpan]BreakpointInfo
 	exceptionBreakpointsId    atomic.Int32
 
@@ -96,6 +99,8 @@ func NewDebugger(args DebuggerArgs) *Debugger {
 		nextBreakpointId: INITIAL_BREAKPOINT_ID,
 		breakpoints:      initialBreakpoints,
 	}
+
+	debugger.steppingDepth.Store(1)
 
 	if args.ExceptionBreakpointId >= INITIAL_BREAKPOINT_ID {
 		debugger.exceptionBreakpointsId.Store(args.ExceptionBreakpointId)
@@ -252,13 +257,33 @@ func (d *Debugger) startGoroutine() {
 				case DebugCommandContinue:
 					if d.stoppedProgram.Load() {
 						d.logger.Info().Msg("continue")
+						depth := d.stackFrameDepth.Load()
+						d.steppingDepth.Store(depth)
 						d.resumeExecutionChan <- struct{}{}
 					}
 				case DebugCommandNextStep:
 					if !d.stoppedProgram.Load() {
 						continue
 					}
-					d.stopBeforeNextStatement.Store(StepStop)
+					depth := d.stackFrameDepth.Load()
+					d.steppingDepth.Store(depth)
+					d.stopBeforeNextStatement.Store(NextStepStop)
+					d.resumeExecutionChan <- struct{}{}
+				case DebugCommandStepIn:
+					if !d.stoppedProgram.Load() {
+						continue
+					}
+					d.stopBeforeNextStatement.Store(StepInStop)
+					depth := d.stackFrameDepth.Load()
+					d.steppingDepth.Store(depth + 1)
+					d.resumeExecutionChan <- struct{}{}
+				case DebugCommandStepOut:
+					if !d.stoppedProgram.Load() {
+						continue
+					}
+					d.stopBeforeNextStatement.Store(StepOutStop)
+					depth := d.stackFrameDepth.Load()
+					d.steppingDepth.Store(depth - 1)
 					d.resumeExecutionChan <- struct{}{}
 				case DebugCommandGetScopes, DebugCommandGetStackTrace:
 					if d.stoppedProgram.Load() {
@@ -287,6 +312,17 @@ func (d *Debugger) beforeInstruction(n parse.Node, trace []StackFrameInfo, excep
 
 	trace = utils.ReversedSlice(trace)
 
+	depthIncrease := false
+	depthDecrease := false
+
+	{
+		prevDepth := d.stackFrameDepth.Swap(int32(len(trace)))
+		if prevDepth != 0 {
+			depthIncrease = prevDepth < int32(len(trace))
+			depthDecrease = prevDepth > int32(len(trace))
+		}
+	}
+
 	var (
 		stopReason     ProgramStopReason
 		breakpointInfo BreakpointInfo
@@ -301,7 +337,22 @@ func (d *Debugger) beforeInstruction(n parse.Node, trace []StackFrameInfo, excep
 		if hasBreakpoint {
 			stopReason = BreakpointStop
 		} else {
+			steppingDepth := d.steppingDepth.Load()
+
 			stopReason, _ = d.stopBeforeNextStatement.Swap(ProgramStopReason(0)).(ProgramStopReason)
+
+			switch stopReason {
+			case StepOutStop:
+				if !depthDecrease || len(trace) > int(steppingDepth) {
+					stopReason = 0
+					d.stopBeforeNextStatement.CompareAndSwap(ProgramStopReason(0), StepOutStop) //okay if fail
+				}
+			case NextStepStop:
+				if depthIncrease || len(trace) > int(steppingDepth) {
+					stopReason = 0
+					d.stopBeforeNextStatement.CompareAndSwap(ProgramStopReason(0), NextStepStop) //okay if fail
+				}
+			}
 		}
 	} else if id, enabled := d.ExceptionBreakpointsId(); enabled {
 		stopReason = ExceptionBreakpointStop

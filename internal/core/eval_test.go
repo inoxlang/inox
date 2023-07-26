@@ -7124,11 +7124,136 @@ func testDebugModeEval(
 
 			assert.Equal(t, []ProgramStoppedEvent{
 				{Reason: BreakpointStop},
-				{Reason: StepStop},
-				{Reason: StepStop},
+				{Reason: NextStepStop},
+				{Reason: NextStepStop},
 			}, stoppedEvents)
 
 			assert.Equal(t, []map[string]Value{{}, {}}, globalScopes)
+
+			assert.Equal(t, []map[string]Value{
+				{"a": Int(1)}, {"a": Int(2)},
+			}, localScopes)
+
+			assert.Equal(t, [][]StackFrameInfo{
+				{
+					{
+						Name:                 "core-test",
+						Node:                 chunk.Node.Statements[1],
+						Chunk:                chunk,
+						Id:                   1,
+						StartLine:            1,
+						StartColumn:          1,
+						StatementStartLine:   3,
+						StatementStartColumn: 5,
+					},
+				},
+				{
+					{
+						Name:                 "core-test",
+						Node:                 chunk.Node.Statements[2],
+						Chunk:                chunk,
+						Id:                   1,
+						StartLine:            1,
+						StartColumn:          1,
+						StatementStartLine:   4,
+						StatementStartColumn: 5,
+					},
+				},
+			}, stackTraces)
+		})
+
+		t.Run("breakpoint & two steps in", func(t *testing.T) {
+			state, ctx, chunk, debugger := setup(`
+				a = 1
+				a = 2
+				a = 3
+				return a
+			`)
+
+			controlChan := debugger.ControlChan()
+			stoppedChan := debugger.StoppedChan()
+
+			defer ctx.Cancel()
+
+			controlChan <- DebugCommandSetBreakpoints{
+				Chunk: chunk,
+				BreakpointsAtNode: map[parse.Node]struct{}{
+					chunk.Node.Statements[0]: {}, //a = 1
+				},
+			}
+
+			time.Sleep(10 * time.Millisecond) //wait for the debugger to set the breakpoints
+
+			var stoppedEvents []ProgramStoppedEvent
+			var globalScopes []map[string]Value
+			var localScopes []map[string]Value
+			var stackTraces [][]StackFrameInfo
+
+			go func() {
+				event := <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+				stoppedEvents = append(stoppedEvents, event)
+
+				controlChan <- DebugCommandStepIn{}
+
+				event = <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+				stoppedEvents = append(stoppedEvents, event)
+
+				//get scopes while stopped at 'a = 2'
+				controlChan <- DebugCommandGetScopes{
+					func(globalScope, localScope map[string]Value) {
+						globalScopes = append(globalScopes, globalScope)
+						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				//get stack trace while stopped at 'a = 2'
+				controlChan <- DebugCommandGetStackTrace{
+					func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
+					},
+				}
+
+				controlChan <- DebugCommandStepIn{}
+
+				event = <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+				stoppedEvents = append(stoppedEvents, event)
+
+				//get scopes while stopped at 'a = 3'
+				controlChan <- DebugCommandGetScopes{
+					func(globalScope, localScope map[string]Value) {
+						globalScopes = append(globalScopes, globalScope)
+						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				//get stack trace while stopped at 'a = 3'
+				controlChan <- DebugCommandGetStackTrace{
+					func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
+					},
+				}
+
+				controlChan <- DebugCommandContinue{}
+			}()
+
+			result, err := eval(chunk.Node, state)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, Int(3), result)
+
+			if !assert.Equal(t, []ProgramStoppedEvent{
+				{Reason: BreakpointStop},
+				{Reason: StepInStop},
+				{Reason: StepInStop},
+			}, stoppedEvents) {
+				return
+			}
 
 			assert.Equal(t, []map[string]Value{
 				{"a": Int(1)}, {"a": Int(2)},
@@ -7449,6 +7574,862 @@ func testDebugModeEval(
 
 			assert.Equal(t, Int(2), result)
 		})
+	})
+
+	t.Run("function call", func(t *testing.T) {
+
+		t.Run("breakpoint & two steps in function call (step after return)", func(t *testing.T) {
+			state, ctx, chunk, debugger := setup(`
+				fn f(a){
+					b = 3
+					return b
+				}
+				result = f(2)
+				return result
+			`)
+
+			controlChan := debugger.ControlChan()
+			stoppedChan := debugger.StoppedChan()
+
+			defer ctx.Cancel()
+
+			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
+			returnStmts := parse.FindNodes(chunk.Node, (*parse.ReturnStatement)(nil), nil)
+
+			controlChan <- DebugCommandSetBreakpoints{
+				Chunk: chunk,
+				BreakpointsAtNode: map[parse.Node]struct{}{
+					assignments[0]: {}, //b = 3
+				},
+			}
+
+			time.Sleep(10 * time.Millisecond) //wait for the debugger to set the breakpoints
+
+			var stoppedEvents []ProgramStoppedEvent
+			var globalScopes []map[string]Value
+			var localScopes []map[string]Value
+			var stackTraces [][]StackFrameInfo
+
+			go func() {
+				event := <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+				stoppedEvents = append(stoppedEvents, event)
+
+				controlChan <- DebugCommandNextStep{}
+
+				event = <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+				stoppedEvents = append(stoppedEvents, event)
+
+				//get scopes while stopped at 'return b'
+				controlChan <- DebugCommandGetScopes{
+					func(globalScope, localScope map[string]Value) {
+						globalScopes = append(globalScopes, globalScope)
+						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				//get stack trace while stopped at 'return b'
+				controlChan <- DebugCommandGetStackTrace{
+					func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
+					},
+				}
+
+				controlChan <- DebugCommandNextStep{}
+
+				event = <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+				stoppedEvents = append(stoppedEvents, event)
+
+				//get scopes while stopped at 'return result'
+				controlChan <- DebugCommandGetScopes{
+					func(globalScope, localScope map[string]Value) {
+						globalScopes = append(globalScopes, globalScope)
+						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				//get stack trace while stopped at 'return result'
+				controlChan <- DebugCommandGetStackTrace{
+					func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
+					},
+				}
+
+				controlChan <- DebugCommandContinue{}
+			}()
+
+			result, err := eval(chunk.Node, state)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, Int(3), result)
+
+			assert.Equal(t, []ProgramStoppedEvent{
+				{Reason: BreakpointStop},
+				{Reason: NextStepStop},
+				{Reason: NextStepStop},
+			}, stoppedEvents)
+
+			assert.Equal(t, []map[string]Value{
+				{"a": Int(2), "b": Int(3)},
+				{"result": Int(3)},
+			}, localScopes)
+
+			assert.Equal(t, [][]StackFrameInfo{
+				{
+					{
+						Name:                 "(fn) core-test:2:5:",
+						Node:                 returnStmts[0],
+						Chunk:                chunk,
+						Id:                   2,
+						StartLine:            2,
+						StartColumn:          5,
+						StatementStartLine:   4,
+						StatementStartColumn: 6,
+					},
+					{
+						Name:                 "core-test",
+						Node:                 assignments[1],
+						Chunk:                chunk,
+						Id:                   1,
+						StartLine:            1,
+						StartColumn:          1,
+						StatementStartLine:   6,
+						StatementStartColumn: 5,
+					},
+				},
+				{
+					{
+						Name:                 "core-test",
+						Node:                 returnStmts[1],
+						Chunk:                chunk,
+						Id:                   1,
+						StartLine:            1,
+						StartColumn:          1,
+						StatementStartLine:   7,
+						StatementStartColumn: 5,
+					},
+				},
+			}, stackTraces)
+		})
+
+		t.Run("breakpoint & step over function call", func(t *testing.T) {
+			state, ctx, chunk, debugger := setup(`
+				fn f(a){
+					b = 3
+					return b
+				}
+				result = f(2)
+				return result
+			`)
+
+			controlChan := debugger.ControlChan()
+			stoppedChan := debugger.StoppedChan()
+
+			defer ctx.Cancel()
+
+			returnStmts := parse.FindNodes(chunk.Node, (*parse.ReturnStatement)(nil), nil)
+
+			controlChan <- DebugCommandSetBreakpoints{
+				Chunk: chunk,
+				BreakpointsAtNode: map[parse.Node]struct{}{
+					chunk.Node.Statements[1]: {}, //result = f(2)
+				},
+			}
+
+			time.Sleep(10 * time.Millisecond) //wait for the debugger to set the breakpoints
+
+			var stoppedEvents []ProgramStoppedEvent
+			var globalScopes []map[string]Value
+			var localScopes []map[string]Value
+			var stackTraces [][]StackFrameInfo
+
+			go func() {
+				event := <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+				stoppedEvents = append(stoppedEvents, event)
+
+				controlChan <- DebugCommandNextStep{}
+
+				event = <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+				stoppedEvents = append(stoppedEvents, event)
+
+				//get scopes while stopped at 'return result'
+				controlChan <- DebugCommandGetScopes{
+					func(globalScope, localScope map[string]Value) {
+						globalScopes = append(globalScopes, globalScope)
+						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				//get stack trace while stopped at 'return result'
+				controlChan <- DebugCommandGetStackTrace{
+					func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
+					},
+				}
+
+				controlChan <- DebugCommandContinue{}
+			}()
+
+			result, err := eval(chunk.Node, state)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, Int(3), result)
+
+			assert.Equal(t, []ProgramStoppedEvent{
+				{Reason: BreakpointStop},
+				{Reason: NextStepStop},
+			}, stoppedEvents)
+
+			assert.Equal(t, []map[string]Value{{"result": Int(3)}}, localScopes)
+
+			assert.Equal(t, [][]StackFrameInfo{
+				{
+					{
+						Name:                 "core-test",
+						Node:                 returnStmts[1],
+						Chunk:                chunk,
+						Id:                   1,
+						StartLine:            1,
+						StartColumn:          1,
+						StatementStartLine:   7,
+						StatementStartColumn: 5,
+					},
+				},
+			}, stackTraces)
+		})
+
+		t.Run("breakpoint & step in function call", func(t *testing.T) {
+			state, ctx, chunk, debugger := setup(`
+				fn f(a){
+					b = 3
+					return b
+				}
+				result = f(2)
+				return result
+			`)
+
+			controlChan := debugger.ControlChan()
+			stoppedChan := debugger.StoppedChan()
+
+			defer ctx.Cancel()
+
+			controlChan <- DebugCommandSetBreakpoints{
+				Chunk: chunk,
+				BreakpointsAtNode: map[parse.Node]struct{}{
+					chunk.Node.Statements[1]: {}, //result = f()
+				},
+			}
+
+			time.Sleep(10 * time.Millisecond) //wait for the debugger to set the breakpoints
+
+			var stoppedEvents []ProgramStoppedEvent
+			var globalScopes []map[string]Value
+			var localScopes []map[string]Value
+			var stackTraces [][]StackFrameInfo
+
+			go func() {
+				event := <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+				stoppedEvents = append(stoppedEvents, event)
+
+				controlChan <- DebugCommandStepIn{}
+
+				event = <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+				stoppedEvents = append(stoppedEvents, event)
+
+				//get scopes while stopped at 'a = 1'
+				controlChan <- DebugCommandGetScopes{
+					func(globalScope, localScope map[string]Value) {
+						globalScopes = append(globalScopes, globalScope)
+						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				//get stack trace while stopped at 'a = 1'
+				controlChan <- DebugCommandGetStackTrace{
+					func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
+					},
+				}
+
+				controlChan <- DebugCommandContinue{}
+			}()
+
+			result, err := eval(chunk.Node, state)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, Int(3), result)
+
+			assert.Equal(t, []ProgramStoppedEvent{
+				{Reason: BreakpointStop},
+				{Reason: StepInStop},
+			}, stoppedEvents)
+
+			assert.Equal(t, []map[string]Value{{"a": Int(2)}}, localScopes)
+
+			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
+
+			assert.Equal(t, [][]StackFrameInfo{
+				{
+					{
+						Name:                 "(fn) core-test:2:5:",
+						Node:                 assignments[0],
+						Chunk:                chunk,
+						Id:                   2,
+						StartLine:            2,
+						StartColumn:          5,
+						StatementStartLine:   3,
+						StatementStartColumn: 6,
+					},
+					{
+						Name:                 "core-test",
+						Node:                 assignments[1],
+						Chunk:                chunk,
+						Id:                   1,
+						StartLine:            1,
+						StartColumn:          1,
+						StatementStartLine:   6,
+						StatementStartColumn: 5,
+					},
+				},
+			}, stackTraces)
+		})
+
+		t.Run("breakpoint & step in function call then step out", func(t *testing.T) {
+			state, ctx, chunk, debugger := setup(`
+				fn f(a){
+					b = 3
+					return b
+				}
+				result = f(2)
+				return result
+			`)
+
+			controlChan := debugger.ControlChan()
+			stoppedChan := debugger.StoppedChan()
+
+			defer ctx.Cancel()
+
+			returnStmts := parse.FindNodes(chunk.Node, (*parse.ReturnStatement)(nil), nil)
+
+			controlChan <- DebugCommandSetBreakpoints{
+				Chunk: chunk,
+				BreakpointsAtNode: map[parse.Node]struct{}{
+					chunk.Node.Statements[1]: {}, //result = f()
+				},
+			}
+
+			time.Sleep(10 * time.Millisecond) //wait for the debugger to set the breakpoints
+
+			var stoppedEvents []ProgramStoppedEvent
+			var globalScopes []map[string]Value
+			var localScopes []map[string]Value
+			var stackTraces [][]StackFrameInfo
+
+			go func() {
+				event := <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+				stoppedEvents = append(stoppedEvents, event)
+
+				controlChan <- DebugCommandStepIn{}
+
+				event = <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+				stoppedEvents = append(stoppedEvents, event)
+
+				//get scopes while stopped at 'b = 3'
+				controlChan <- DebugCommandGetScopes{
+					func(globalScope, localScope map[string]Value) {
+						globalScopes = append(globalScopes, globalScope)
+						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				//get stack trace while stopped at 'b = 3'
+				controlChan <- DebugCommandGetStackTrace{
+					func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
+					},
+				}
+
+				controlChan <- DebugCommandStepOut{}
+
+				event = <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+				stoppedEvents = append(stoppedEvents, event)
+
+				//get scopes while stopped at 'return result'
+				controlChan <- DebugCommandGetScopes{
+					func(globalScope, localScope map[string]Value) {
+						globalScopes = append(globalScopes, globalScope)
+						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				//get stack trace while stopped at 'return result'
+				controlChan <- DebugCommandGetStackTrace{
+					func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
+					},
+				}
+
+				controlChan <- DebugCommandContinue{}
+			}()
+
+			result, err := eval(chunk.Node, state)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, Int(3), result)
+
+			assert.Equal(t, []ProgramStoppedEvent{
+				{Reason: BreakpointStop},
+				{Reason: StepInStop},
+				{Reason: StepOutStop},
+			}, stoppedEvents)
+
+			assert.Equal(t, []map[string]Value{
+				{"a": Int(2)},
+				{"result": Int(3)},
+			}, localScopes)
+
+			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
+
+			assert.Equal(t, [][]StackFrameInfo{
+				{
+					{
+						Name:                 "(fn) core-test:2:5:",
+						Node:                 assignments[0],
+						Chunk:                chunk,
+						Id:                   2,
+						StartLine:            2,
+						StartColumn:          5,
+						StatementStartLine:   3,
+						StatementStartColumn: 6,
+					},
+					{
+						Name:                 "core-test",
+						Node:                 assignments[1],
+						Chunk:                chunk,
+						Id:                   1,
+						StartLine:            1,
+						StartColumn:          1,
+						StatementStartLine:   6,
+						StatementStartColumn: 5,
+					},
+				},
+				{
+					{
+						Name:                 "core-test",
+						Node:                 returnStmts[1],
+						Chunk:                chunk,
+						Id:                   1,
+						StartLine:            1,
+						StartColumn:          1,
+						StatementStartLine:   7,
+						StatementStartColumn: 5,
+					},
+				},
+			}, stackTraces)
+		})
+	})
+
+	t.Run("function call within function call", func(t *testing.T) {
+
+		t.Run("breakpoint & step in deepest function call", func(t *testing.T) {
+			state, ctx, chunk, debugger := setup(`
+				fn g(x){
+					a = 3
+					return a
+				}
+				fn f(a){
+					b = g(a)
+					return b
+				}
+				result = f(2)
+				return result
+			`)
+
+			controlChan := debugger.ControlChan()
+			stoppedChan := debugger.StoppedChan()
+
+			defer ctx.Cancel()
+
+			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
+
+			controlChan <- DebugCommandSetBreakpoints{
+				Chunk: chunk,
+				BreakpointsAtNode: map[parse.Node]struct{}{
+					assignments[1]: {}, //b = g()
+				},
+			}
+
+			time.Sleep(10 * time.Millisecond) //wait for the debugger to set the breakpoints
+
+			var stoppedEvents []ProgramStoppedEvent
+			var globalScopes []map[string]Value
+			var localScopes []map[string]Value
+			var stackTraces [][]StackFrameInfo
+
+			go func() {
+				event := <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+				stoppedEvents = append(stoppedEvents, event)
+
+				controlChan <- DebugCommandStepIn{}
+
+				event = <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+				stoppedEvents = append(stoppedEvents, event)
+
+				//get scopes while stopped at 'a = 3'
+				controlChan <- DebugCommandGetScopes{
+					func(globalScope, localScope map[string]Value) {
+						globalScopes = append(globalScopes, globalScope)
+						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				//get stack trace while stopped at 'a = 3'
+				controlChan <- DebugCommandGetStackTrace{
+					func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
+					},
+				}
+
+				controlChan <- DebugCommandContinue{}
+			}()
+
+			result, err := eval(chunk.Node, state)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, Int(3), result)
+
+			assert.Equal(t, []ProgramStoppedEvent{
+				{Reason: BreakpointStop},
+				{Reason: StepInStop},
+			}, stoppedEvents)
+
+			assert.Equal(t, []map[string]Value{
+				{"x": Int(2)},
+			}, localScopes)
+
+			assert.Equal(t, [][]StackFrameInfo{
+				{
+					{
+						Name:                 "(fn) core-test:2:5:",
+						Node:                 assignments[0],
+						Chunk:                chunk,
+						Id:                   3,
+						StartLine:            2,
+						StartColumn:          5,
+						StatementStartLine:   3,
+						StatementStartColumn: 6,
+					},
+					{
+						Name:                 "(fn) core-test:6:5:",
+						Node:                 assignments[1],
+						Chunk:                chunk,
+						Id:                   2,
+						StartLine:            6,
+						StartColumn:          5,
+						StatementStartLine:   7,
+						StatementStartColumn: 6,
+					},
+					{
+						Name:                 "core-test",
+						Node:                 assignments[2],
+						Chunk:                chunk,
+						Id:                   1,
+						StartLine:            1,
+						StartColumn:          1,
+						StatementStartLine:   10,
+						StatementStartColumn: 5,
+					},
+				},
+			}, stackTraces)
+		})
+
+		t.Run("breakpoint & step in deepest function call then step out", func(t *testing.T) {
+			state, ctx, chunk, debugger := setup(`
+				fn g(x){
+					a = 3
+					return a
+				}
+				fn f(a){
+					b = g(a)
+					return b
+				}
+				result = f(2)
+				return result
+			`)
+
+			controlChan := debugger.ControlChan()
+			stoppedChan := debugger.StoppedChan()
+
+			defer ctx.Cancel()
+
+			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
+			returnStmts := parse.FindNodes(chunk.Node, (*parse.ReturnStatement)(nil), nil)
+
+			controlChan <- DebugCommandSetBreakpoints{
+				Chunk: chunk,
+				BreakpointsAtNode: map[parse.Node]struct{}{
+					assignments[1]: {}, //b = g()
+				},
+			}
+
+			time.Sleep(10 * time.Millisecond) //wait for the debugger to set the breakpoints
+
+			var stoppedEvents []ProgramStoppedEvent
+			var globalScopes []map[string]Value
+			var localScopes []map[string]Value
+			var stackTraces [][]StackFrameInfo
+
+			go func() {
+				event := <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+				stoppedEvents = append(stoppedEvents, event)
+
+				controlChan <- DebugCommandStepIn{}
+
+				event = <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+				stoppedEvents = append(stoppedEvents, event)
+
+				//get scopes while stopped at 'a = 3'
+				controlChan <- DebugCommandGetScopes{
+					func(globalScope, localScope map[string]Value) {
+						globalScopes = append(globalScopes, globalScope)
+						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				//get stack trace while stopped at 'a = 3'
+				controlChan <- DebugCommandGetStackTrace{
+					func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
+					},
+				}
+
+				controlChan <- DebugCommandStepOut{}
+
+				event = <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+				stoppedEvents = append(stoppedEvents, event)
+
+				//get scopes while stopped at 'return b'
+				controlChan <- DebugCommandGetScopes{
+					func(globalScope, localScope map[string]Value) {
+						globalScopes = append(globalScopes, globalScope)
+						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				//get stack trace while stopped at 'return b'
+				controlChan <- DebugCommandGetStackTrace{
+					func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
+					},
+				}
+
+				controlChan <- DebugCommandContinue{}
+			}()
+
+			result, err := eval(chunk.Node, state)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, Int(3), result)
+
+			assert.Equal(t, []ProgramStoppedEvent{
+				{Reason: BreakpointStop},
+				{Reason: StepInStop},
+				{Reason: StepOutStop},
+			}, stoppedEvents)
+
+			assert.Equal(t, []map[string]Value{
+				{"x": Int(2)},
+				{"a": Int(2), "b": Int(3)},
+			}, localScopes)
+
+			assert.Equal(t, [][]StackFrameInfo{
+				{
+					{
+						Name:                 "(fn) core-test:2:5:",
+						Node:                 assignments[0],
+						Chunk:                chunk,
+						Id:                   3,
+						StartLine:            2,
+						StartColumn:          5,
+						StatementStartLine:   3,
+						StatementStartColumn: 6,
+					},
+					{
+						Name:                 "(fn) core-test:6:5:",
+						Node:                 assignments[1],
+						Chunk:                chunk,
+						Id:                   2,
+						StartLine:            6,
+						StartColumn:          5,
+						StatementStartLine:   7,
+						StatementStartColumn: 6,
+					},
+					{
+						Name:                 "core-test",
+						Node:                 assignments[2],
+						Chunk:                chunk,
+						Id:                   1,
+						StartLine:            1,
+						StartColumn:          1,
+						StatementStartLine:   10,
+						StatementStartColumn: 5,
+					},
+				},
+				{
+					{
+						Name:                 "(fn) core-test:6:5:",
+						Node:                 returnStmts[1],
+						Chunk:                chunk,
+						Id:                   2,
+						StartLine:            6,
+						StartColumn:          5,
+						StatementStartLine:   8,
+						StatementStartColumn: 6,
+					},
+					{
+						Name:                 "core-test",
+						Node:                 assignments[2],
+						Chunk:                chunk,
+						Id:                   1,
+						StartLine:            1,
+						StartColumn:          1,
+						StatementStartLine:   10,
+						StatementStartColumn: 5,
+					},
+				},
+			}, stackTraces)
+		})
+
+		t.Run("breakpoint & step out before deepest function call", func(t *testing.T) {
+			state, ctx, chunk, debugger := setup(`
+				fn g(x){
+					a = 3
+					return a
+				}
+				fn f(a){
+					b = g(a)
+					return b
+				}
+				result = f(2)
+				return result
+			`)
+
+			controlChan := debugger.ControlChan()
+			stoppedChan := debugger.StoppedChan()
+
+			defer ctx.Cancel()
+
+			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
+			returnStatements := parse.FindNodes(chunk.Node, (*parse.ReturnStatement)(nil), nil)
+
+			controlChan <- DebugCommandSetBreakpoints{
+				Chunk: chunk,
+				BreakpointsAtNode: map[parse.Node]struct{}{
+					assignments[1]: {}, //b = g()
+				},
+			}
+
+			time.Sleep(10 * time.Millisecond) //wait for the debugger to set the breakpoints
+
+			var stoppedEvents []ProgramStoppedEvent
+			var globalScopes []map[string]Value
+			var localScopes []map[string]Value
+			var stackTraces [][]StackFrameInfo
+
+			go func() {
+				event := <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+				stoppedEvents = append(stoppedEvents, event)
+
+				controlChan <- DebugCommandStepOut{}
+
+				event = <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+				stoppedEvents = append(stoppedEvents, event)
+
+				//get scopes while stopped at 'return result'
+				controlChan <- DebugCommandGetScopes{
+					func(globalScope, localScope map[string]Value) {
+						globalScopes = append(globalScopes, globalScope)
+						localScopes = append(localScopes, localScope)
+					},
+				}
+
+				//get stack trace while stopped at 'return result'
+				controlChan <- DebugCommandGetStackTrace{
+					func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
+					},
+				}
+
+				controlChan <- DebugCommandContinue{}
+			}()
+
+			result, err := eval(chunk.Node, state)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, Int(3), result)
+
+			assert.Equal(t, []ProgramStoppedEvent{
+				{Reason: BreakpointStop},
+				{Reason: StepOutStop},
+			}, stoppedEvents)
+
+			assert.Equal(t, []map[string]Value{
+				{"result": Int(3)},
+			}, localScopes)
+
+			assert.Equal(t, [][]StackFrameInfo{
+				{
+					{
+						Name:                 "core-test",
+						Node:                 returnStatements[2],
+						Chunk:                chunk,
+						Id:                   1,
+						StartLine:            1,
+						StartColumn:          1,
+						StatementStartLine:   11,
+						StatementStartColumn: 5,
+					},
+				},
+			}, stackTraces)
+		})
+
 	})
 
 	t.Run("secondary event", func(t *testing.T) {

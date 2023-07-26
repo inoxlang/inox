@@ -43,7 +43,9 @@ type ProgramStopReason int
 
 const (
 	PauseStop ProgramStopReason = 1 + iota
-	StepStop
+	NextStepStop
+	StepInStop
+	StepOutStop
 	BreakpointStop
 	ExceptionBreakpointStop
 )
@@ -105,6 +107,12 @@ type DebugCommandContinue struct {
 }
 
 type DebugCommandNextStep struct {
+}
+
+type DebugCommandStepIn struct {
+}
+
+type DebugCommandStepOut struct {
 }
 
 type DebugCommandGetScopes struct {
