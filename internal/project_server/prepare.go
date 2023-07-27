@@ -53,12 +53,14 @@ func prepareSourceFile(fpath string, ctx *core.Context, session *jsonrpc.Session
 	} else {
 		var parentCtx *core.Context
 
-		if obj, ok := chunk.Node.Manifest.Object.(*parse.ObjectLiteral); ok {
-			node, _ := obj.PropValue(core.MANIFEST_DATABASES_SECTION_NAME)
-			if pathLiteral, ok := node.(*parse.AbsolutePathLiteral); ok {
-				state, _, _, ok := prepareSourceFile(pathLiteral.Value, ctx, session, true)
-				if ok {
-					parentCtx = state.Ctx
+		if chunk.Node.Manifest != nil {
+			if obj, ok := chunk.Node.Manifest.Object.(*parse.ObjectLiteral); ok {
+				node, _ := obj.PropValue(core.MANIFEST_DATABASES_SECTION_NAME)
+				if pathLiteral, ok := node.(*parse.AbsolutePathLiteral); ok {
+					state, _, _, ok := prepareSourceFile(pathLiteral.Value, ctx, session, true)
+					if ok {
+						parentCtx = state.Ctx
+					}
 				}
 			}
 		}
