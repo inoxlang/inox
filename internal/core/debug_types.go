@@ -31,6 +31,11 @@ type StackFrameInfo struct {
 	StatementStartColumn int32
 }
 
+type ThreadInfo struct {
+	Name string
+	Id StateId
+}
+
 // Primary Events
 
 type ProgramStoppedEvent struct {

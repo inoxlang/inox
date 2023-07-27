@@ -246,6 +246,20 @@ func (d *Debugger) sendCommandToRootDebugger(cmd any) {
 	}
 }
 
+func (d *Debugger) Threads() (threads []ThreadInfo) {
+	d.shared.debuggersLock.Lock()
+	defer d.shared.debuggersLock.Unlock()
+
+	for _, debugger := range d.shared.debuggers {
+		threads = append(threads, ThreadInfo{
+			Name: debugger.globalState.Module.Name(),
+			Id:   d.threadId(),
+		})
+	}
+
+	return
+}
+
 func (d *Debugger) startGoroutine() {
 	d.logger.Info().Msg("start debugging")
 

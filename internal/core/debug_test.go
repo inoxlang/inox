@@ -2129,6 +2129,7 @@ func testDebugModeEval(
 			var globalScopes []map[string]Value
 			var localScopes []map[string]Value
 			var stackTraces [][]StackFrameInfo
+			var threadCount atomic.Int32
 
 			go func() {
 				event := <-stoppedChan
@@ -2142,6 +2143,7 @@ func testDebugModeEval(
 				routineDebugger := debugger.shared.getDebuggerOfThread(routineThreadId)
 				routineChunk.Store(routineDebugger.globalState.Module.MainChunk)
 				routineDebugger_.Store(routineDebugger)
+				threadCount.Store(int32(len(debugger.Threads())))
 
 				//get scopes while stopped at 'a = 2'
 				controlChan <- DebugCommandGetScopes{
@@ -2194,6 +2196,8 @@ func testDebugModeEval(
 			}
 
 			assert.Equal(t, Int(3), result)
+
+			assert.Equal(t, int32(2), threadCount.Load())
 
 			assert.Equal(t, []ProgramStoppedEvent{
 				{Reason: BreakpointStop, ThreadId: routineDebugger_.Load().(*Debugger).threadId()},
@@ -2254,6 +2258,7 @@ func testDebugModeEval(
 			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
 			var routineChunk atomic.Value
 			var routineDebugger_ atomic.Value
+			var threadCount atomic.Int32
 
 			controlChan <- DebugCommandSetBreakpoints{
 				Chunk: chunk,
@@ -2280,6 +2285,7 @@ func testDebugModeEval(
 				routineDebugger := debugger.shared.getDebuggerOfThread(routineThreadId)
 				routineChunk.Store(routineDebugger.globalState.Module.MainChunk)
 				routineDebugger_.Store(routineDebugger)
+				threadCount.Store(int32(len(debugger.Threads())))
 
 				controlChan <- DebugCommandNextStep{
 					ThreadId: routineThreadId,
@@ -2341,6 +2347,8 @@ func testDebugModeEval(
 			}
 
 			assert.Equal(t, Int(3), result)
+
+			assert.Equal(t, int32(2), threadCount.Load())
 
 			assert.Equal(t, []ProgramStoppedEvent{
 				{Reason: BreakpointStop, ThreadId: routineDebugger_.Load().(*Debugger).threadId()},
@@ -2408,6 +2416,7 @@ func testDebugModeEval(
 			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
 			var routineChunk atomic.Value
 			var routineDebugger_ atomic.Value
+			var threadCount atomic.Int32
 
 			controlChan <- DebugCommandSetBreakpoints{
 				Chunk: chunk,
@@ -2436,6 +2445,7 @@ func testDebugModeEval(
 				routineDebugger := debugger.shared.getDebuggerOfThread(routineThreadId)
 				routineChunk.Store(routineDebugger.globalState.Module.MainChunk)
 				routineDebugger_.Store(routineDebugger)
+				threadCount.Store(int32(len(debugger.Threads())))
 
 				//get scopes while stopped at 'a = 2'
 				controlChan <- DebugCommandGetScopes{
@@ -2488,6 +2498,8 @@ func testDebugModeEval(
 			}
 
 			assert.Equal(t, Int(3), result)
+
+			assert.Equal(t, int32(3), threadCount.Load())
 
 			assert.Equal(t, []ProgramStoppedEvent{
 				{Reason: BreakpointStop, ThreadId: routineDebugger_.Load().(*Debugger).threadId()},
@@ -2551,6 +2563,7 @@ func testDebugModeEval(
 			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
 			var routineChunk atomic.Value
 			var routineDebugger_ atomic.Value
+			var threadCount atomic.Int32
 
 			controlChan <- DebugCommandSetBreakpoints{
 				Chunk: chunk,
@@ -2578,6 +2591,7 @@ func testDebugModeEval(
 				routineDebugger := debugger.shared.getDebuggerOfThread(routineThreadId)
 				routineChunk.Store(routineDebugger.globalState.Module.MainChunk)
 				routineDebugger_.Store(routineDebugger)
+				threadCount.Store(int32(len(debugger.Threads())))
 
 				controlChan <- DebugCommandNextStep{
 					ThreadId: routineThreadId,
@@ -2639,6 +2653,8 @@ func testDebugModeEval(
 			}
 
 			assert.Equal(t, Int(3), result)
+
+			assert.Equal(t, int32(3), threadCount.Load())
 
 			assert.Equal(t, []ProgramStoppedEvent{
 				{Reason: BreakpointStop, ThreadId: routineDebugger_.Load().(*Debugger).threadId()},
