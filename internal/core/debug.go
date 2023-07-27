@@ -67,7 +67,9 @@ type sharedDebuggerFields struct {
 	breakpoints            map[parse.NodeSpan]BreakpointInfo
 	exceptionBreakpointsId atomic.Int32
 
-	stackFrameId atomic.Int32 //incremented by debuggees
+	stackFrameId       atomic.Int32 //incremented by debuggees
+	threadIdToFrameIds map[StateId]*[]int32
+	frameIdMappingLock sync.Mutex
 
 	stoppedEventChan chan ProgramStoppedEvent
 
@@ -80,6 +82,30 @@ func (f *sharedDebuggerFields) getDebuggerOfThread(id StateId) *Debugger {
 	defer f.debuggersLock.Unlock()
 
 	return f.debuggers[id]
+}
+
+func (f *sharedDebuggerFields) getNextStackFrameId() int32 {
+	return f.stackFrameId.Add(1)
+}
+
+func (f *sharedDebuggerFields) updateFrameIdMapping(threadId StateId, trace []StackFrameInfo) {
+	f.frameIdMappingLock.Lock()
+	defer f.frameIdMappingLock.Unlock()
+
+	frameIds := f.threadIdToFrameIds[threadId]
+
+	if frameIds == nil {
+		frameIds = new([]int32)
+		f.threadIdToFrameIds[threadId] = frameIds
+	}
+
+	for i, frame := range trace {
+		if i >= len(*frameIds) {
+			*frameIds = append(*frameIds, frame.Id)
+		} else {
+			(*frameIds)[i] = frame.Id
+		}
+	}
 }
 
 type DebuggerArgs struct {
@@ -128,10 +154,11 @@ func NewDebugger(args DebuggerArgs) *Debugger {
 		}
 
 		debugger.shared = &sharedDebuggerFields{
-			nextBreakpointId: nextBreakpointId,
-			breakpoints:      initialBreakpoints,
-			stoppedEventChan: make(chan ProgramStoppedEvent, runtime.NumCPU()),
-			debuggers:        make(map[StateId]*Debugger),
+			nextBreakpointId:   nextBreakpointId,
+			breakpoints:        initialBreakpoints,
+			stoppedEventChan:   make(chan ProgramStoppedEvent, runtime.NumCPU()),
+			debuggers:          make(map[StateId]*Debugger),
+			threadIdToFrameIds: make(map[StateId]*[]int32, 0),
 		}
 
 		if args.ExceptionBreakpointId >= INITIAL_BREAKPOINT_ID {
@@ -189,6 +216,20 @@ func (d *Debugger) ExceptionBreakpointsId() (_ int32, enabled bool) {
 	id := d.shared.exceptionBreakpointsId.Load()
 	if id >= INITIAL_BREAKPOINT_ID {
 		return id, true
+	}
+	return 0, false
+}
+
+func (d *Debugger) ThreadIfOfStackFrame(stackFrameId int32) (StateId, bool) {
+	d.shared.frameIdMappingLock.Lock()
+	defer d.shared.frameIdMappingLock.Unlock()
+
+	for threadId, frameIds := range d.shared.threadIdToFrameIds {
+		for _, frameId := range *frameIds {
+			if frameId == stackFrameId {
+				return threadId, true
+			}
+		}
 	}
 	return 0, false
 }
@@ -253,7 +294,7 @@ func (d *Debugger) Threads() (threads []ThreadInfo) {
 	for _, debugger := range d.shared.debuggers {
 		threads = append(threads, ThreadInfo{
 			Name: debugger.globalState.Module.Name(),
-			Id:   d.threadId(),
+			Id:   debugger.threadId(),
 		})
 	}
 
@@ -488,6 +529,8 @@ func (d *Debugger) beforeInstruction(n parse.Node, trace []StackFrameInfo, excep
 			depthDecrease = prevDepth > int32(len(trace))
 		}
 	}
+
+	d.shared.updateFrameIdMapping(d.threadId(), trace)
 
 	var (
 		stopReason     ProgramStopReason
