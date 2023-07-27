@@ -525,7 +525,11 @@ func (d *Debugger) beforeInstruction(n parse.Node, trace []StackFrameInfo, excep
 
 	if stopReason > 0 {
 		d.stoppedProgram.Store(true)
-		event := ProgramStoppedEvent{Reason: stopReason, ExceptionError: exceptionError}
+		event := ProgramStoppedEvent{
+			ThreadId:       d.threadId(),
+			Reason:         stopReason,
+			ExceptionError: exceptionError,
+		}
 		if hasBreakpoint {
 			event.Breakpoint = &breakpointInfo
 		}

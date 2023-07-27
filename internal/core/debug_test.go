@@ -152,8 +152,8 @@ func testDebugModeEval(
 			assert.Equal(t, Int(3), result)
 
 			assert.Equal(t, []ProgramStoppedEvent{
-				{Reason: BreakpointStop},
-				{Reason: BreakpointStop},
+				{Reason: BreakpointStop, ThreadId: debugger.threadId()},
+				{Reason: BreakpointStop, ThreadId: debugger.threadId()},
 			}, stoppedEvents)
 
 			assert.Equal(t, []map[string]Value{{}, {}}, globalScopes)
@@ -274,8 +274,8 @@ func testDebugModeEval(
 			assert.Equal(t, Int(3), result)
 
 			assert.Equal(t, []ProgramStoppedEvent{
-				{Reason: BreakpointStop},
-				{Reason: BreakpointStop},
+				{Reason: BreakpointStop, ThreadId: debugger.threadId()},
+				{Reason: BreakpointStop, ThreadId: debugger.threadId()},
 			}, stoppedEvents)
 
 			assert.Equal(t, []map[string]Value{{}, {}}, globalScopes)
@@ -401,8 +401,8 @@ func testDebugModeEval(
 			assert.Equal(t, Int(3), result)
 
 			assert.Equal(t, []ProgramStoppedEvent{
-				{Reason: BreakpointStop},
-				{Reason: BreakpointStop},
+				{Reason: BreakpointStop, ThreadId: debugger.threadId()},
+				{Reason: BreakpointStop, ThreadId: debugger.threadId()},
 			}, stoppedEvents)
 
 			assert.Equal(t, []map[string]Value{{}, {}}, globalScopes)
@@ -556,8 +556,8 @@ func testDebugModeEval(
 			assert.Equal(t, Int(3), result)
 
 			assert.Equal(t, []ProgramStoppedEvent{
-				{Reason: BreakpointStop},
-				{Reason: BreakpointStop},
+				{Reason: BreakpointStop, ThreadId: debugger.threadId()},
+				{Reason: BreakpointStop, ThreadId: debugger.threadId()},
 			}, stoppedEvents)
 
 			assert.Equal(t, []map[string]Value{{}, {}}, globalScopes)
@@ -684,9 +684,9 @@ func testDebugModeEval(
 			assert.Equal(t, Int(3), result)
 
 			assert.Equal(t, []ProgramStoppedEvent{
-				{Reason: BreakpointStop},
-				{Reason: NextStepStop},
-				{Reason: NextStepStop},
+				{Reason: BreakpointStop, ThreadId: debugger.threadId()},
+				{Reason: NextStepStop, ThreadId: debugger.threadId()},
+				{Reason: NextStepStop, ThreadId: debugger.threadId()},
 			}, stoppedEvents)
 
 			assert.Equal(t, []map[string]Value{{}, {}}, globalScopes)
@@ -815,9 +815,9 @@ func testDebugModeEval(
 			assert.Equal(t, Int(3), result)
 
 			if !assert.Equal(t, []ProgramStoppedEvent{
-				{Reason: BreakpointStop},
-				{Reason: StepInStop},
-				{Reason: StepInStop},
+				{Reason: BreakpointStop, ThreadId: debugger.threadId()},
+				{Reason: StepInStop, ThreadId: debugger.threadId()},
+				{Reason: StepInStop, ThreadId: debugger.threadId()},
 			}, stoppedEvents) {
 				return
 			}
@@ -1086,7 +1086,9 @@ func testDebugModeEval(
 
 			assert.Equal(t, Int(2), result)
 
-			assert.Equal(t, []ProgramStoppedEvent{{Reason: PauseStop}}, stoppedEvents)
+			assert.Equal(t, []ProgramStoppedEvent{
+				{Reason: PauseStop, ThreadId: debugger.threadId()},
+			}, stoppedEvents)
 
 			assert.Equal(t, []map[string]Value{
 				{"sleep": global},
@@ -1250,9 +1252,9 @@ func testDebugModeEval(
 			assert.Equal(t, Int(3), result)
 
 			assert.Equal(t, []ProgramStoppedEvent{
-				{Reason: BreakpointStop},
-				{Reason: NextStepStop},
-				{Reason: NextStepStop},
+				{Reason: BreakpointStop, ThreadId: debugger.threadId()},
+				{Reason: NextStepStop, ThreadId: debugger.threadId()},
+				{Reason: NextStepStop, ThreadId: debugger.threadId()},
 			}, stoppedEvents)
 
 			assert.Equal(t, []map[string]Value{
@@ -1369,8 +1371,8 @@ func testDebugModeEval(
 			assert.Equal(t, Int(3), result)
 
 			assert.Equal(t, []ProgramStoppedEvent{
-				{Reason: BreakpointStop},
-				{Reason: NextStepStop},
+				{Reason: BreakpointStop, ThreadId: debugger.threadId()},
+				{Reason: NextStepStop, ThreadId: debugger.threadId()},
 			}, stoppedEvents)
 
 			assert.Equal(t, []map[string]Value{{"result": Int(3)}}, localScopes)
@@ -1460,8 +1462,8 @@ func testDebugModeEval(
 			assert.Equal(t, Int(3), result)
 
 			assert.Equal(t, []ProgramStoppedEvent{
-				{Reason: BreakpointStop},
-				{Reason: StepInStop},
+				{Reason: BreakpointStop, ThreadId: debugger.threadId()},
+				{Reason: StepInStop, ThreadId: debugger.threadId()},
 			}, stoppedEvents)
 
 			assert.Equal(t, []map[string]Value{{"a": Int(2)}}, localScopes)
@@ -1588,9 +1590,9 @@ func testDebugModeEval(
 			assert.Equal(t, Int(3), result)
 
 			assert.Equal(t, []ProgramStoppedEvent{
-				{Reason: BreakpointStop},
-				{Reason: StepInStop},
-				{Reason: StepOutStop},
+				{Reason: BreakpointStop, ThreadId: debugger.threadId()},
+				{Reason: StepInStop, ThreadId: debugger.threadId()},
+				{Reason: StepOutStop, ThreadId: debugger.threadId()},
 			}, stoppedEvents)
 
 			assert.Equal(t, []map[string]Value{
@@ -1716,8 +1718,8 @@ func testDebugModeEval(
 			assert.Equal(t, Int(3), result)
 
 			assert.Equal(t, []ProgramStoppedEvent{
-				{Reason: BreakpointStop},
-				{Reason: StepInStop},
+				{Reason: BreakpointStop, ThreadId: debugger.threadId()},
+				{Reason: StepInStop, ThreadId: debugger.threadId()},
 			}, stoppedEvents)
 
 			assert.Equal(t, []map[string]Value{
@@ -1859,9 +1861,9 @@ func testDebugModeEval(
 			assert.Equal(t, Int(3), result)
 
 			assert.Equal(t, []ProgramStoppedEvent{
-				{Reason: BreakpointStop},
-				{Reason: StepInStop},
-				{Reason: StepOutStop},
+				{Reason: BreakpointStop, ThreadId: debugger.threadId()},
+				{Reason: StepInStop, ThreadId: debugger.threadId()},
+				{Reason: StepOutStop, ThreadId: debugger.threadId()},
 			}, stoppedEvents)
 
 			assert.Equal(t, []map[string]Value{
@@ -2003,8 +2005,8 @@ func testDebugModeEval(
 			assert.Equal(t, Int(3), result)
 
 			assert.Equal(t, []ProgramStoppedEvent{
-				{Reason: BreakpointStop},
-				{Reason: StepOutStop},
+				{Reason: BreakpointStop, ThreadId: debugger.threadId()},
+				{Reason: StepOutStop, ThreadId: debugger.threadId()},
 			}, stoppedEvents)
 
 			assert.Equal(t, []map[string]Value{
@@ -2111,6 +2113,7 @@ func testDebugModeEval(
 
 			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
 			var routineChunk atomic.Value
+			var routineDebugger_ atomic.Value
 
 			controlChan <- DebugCommandSetBreakpoints{
 				Chunk: chunk,
@@ -2138,6 +2141,7 @@ func testDebugModeEval(
 				routineThreadId := secondaryEvent.(RoutineSpawnedEvent).StateId
 				routineDebugger := debugger.shared.getDebuggerOfThread(routineThreadId)
 				routineChunk.Store(routineDebugger.globalState.Module.MainChunk)
+				routineDebugger_.Store(routineDebugger)
 
 				//get scopes while stopped at 'a = 2'
 				controlChan <- DebugCommandGetScopes{
@@ -2192,8 +2196,8 @@ func testDebugModeEval(
 			assert.Equal(t, Int(3), result)
 
 			assert.Equal(t, []ProgramStoppedEvent{
-				{Reason: BreakpointStop},
-				{Reason: BreakpointStop},
+				{Reason: BreakpointStop, ThreadId: routineDebugger_.Load().(*Debugger).threadId()},
+				{Reason: BreakpointStop, ThreadId: routineDebugger_.Load().(*Debugger).threadId()},
 			}, stoppedEvents)
 
 			assert.Equal(t, []map[string]Value{{}, {}}, globalScopes)
@@ -2249,6 +2253,7 @@ func testDebugModeEval(
 
 			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
 			var routineChunk atomic.Value
+			var routineDebugger_ atomic.Value
 
 			controlChan <- DebugCommandSetBreakpoints{
 				Chunk: chunk,
@@ -2274,6 +2279,7 @@ func testDebugModeEval(
 				routineThreadId := secondaryEvent.(RoutineSpawnedEvent).StateId
 				routineDebugger := debugger.shared.getDebuggerOfThread(routineThreadId)
 				routineChunk.Store(routineDebugger.globalState.Module.MainChunk)
+				routineDebugger_.Store(routineDebugger)
 
 				controlChan <- DebugCommandNextStep{
 					ThreadId: routineThreadId,
@@ -2337,9 +2343,9 @@ func testDebugModeEval(
 			assert.Equal(t, Int(3), result)
 
 			assert.Equal(t, []ProgramStoppedEvent{
-				{Reason: BreakpointStop},
-				{Reason: NextStepStop},
-				{Reason: NextStepStop},
+				{Reason: BreakpointStop, ThreadId: routineDebugger_.Load().(*Debugger).threadId()},
+				{Reason: NextStepStop, ThreadId: routineDebugger_.Load().(*Debugger).threadId()},
+				{Reason: NextStepStop, ThreadId: routineDebugger_.Load().(*Debugger).threadId()},
 			}, stoppedEvents)
 
 			assert.Equal(t, []map[string]Value{{}, {}}, globalScopes)
@@ -2401,6 +2407,7 @@ func testDebugModeEval(
 
 			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
 			var routineChunk atomic.Value
+			var routineDebugger_ atomic.Value
 
 			controlChan <- DebugCommandSetBreakpoints{
 				Chunk: chunk,
@@ -2428,6 +2435,7 @@ func testDebugModeEval(
 				routineThreadId := secondaryEvent.(RoutineSpawnedEvent).StateId
 				routineDebugger := debugger.shared.getDebuggerOfThread(routineThreadId)
 				routineChunk.Store(routineDebugger.globalState.Module.MainChunk)
+				routineDebugger_.Store(routineDebugger)
 
 				//get scopes while stopped at 'a = 2'
 				controlChan <- DebugCommandGetScopes{
@@ -2482,8 +2490,8 @@ func testDebugModeEval(
 			assert.Equal(t, Int(3), result)
 
 			assert.Equal(t, []ProgramStoppedEvent{
-				{Reason: BreakpointStop},
-				{Reason: BreakpointStop},
+				{Reason: BreakpointStop, ThreadId: routineDebugger_.Load().(*Debugger).threadId()},
+				{Reason: BreakpointStop, ThreadId: routineDebugger_.Load().(*Debugger).threadId()},
 			}, stoppedEvents)
 
 			assert.Equal(t, []map[string]Value{{}, {}}, globalScopes)
@@ -2542,6 +2550,7 @@ func testDebugModeEval(
 
 			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
 			var routineChunk atomic.Value
+			var routineDebugger_ atomic.Value
 
 			controlChan <- DebugCommandSetBreakpoints{
 				Chunk: chunk,
@@ -2568,6 +2577,7 @@ func testDebugModeEval(
 				routineThreadId := secondaryEvent.(RoutineSpawnedEvent).StateId
 				routineDebugger := debugger.shared.getDebuggerOfThread(routineThreadId)
 				routineChunk.Store(routineDebugger.globalState.Module.MainChunk)
+				routineDebugger_.Store(routineDebugger)
 
 				controlChan <- DebugCommandNextStep{
 					ThreadId: routineThreadId,
@@ -2631,9 +2641,9 @@ func testDebugModeEval(
 			assert.Equal(t, Int(3), result)
 
 			assert.Equal(t, []ProgramStoppedEvent{
-				{Reason: BreakpointStop},
-				{Reason: NextStepStop},
-				{Reason: NextStepStop},
+				{Reason: BreakpointStop, ThreadId: routineDebugger_.Load().(*Debugger).threadId()},
+				{Reason: NextStepStop, ThreadId: routineDebugger_.Load().(*Debugger).threadId()},
+				{Reason: NextStepStop, ThreadId: routineDebugger_.Load().(*Debugger).threadId()},
 			}, stoppedEvents)
 
 			assert.Equal(t, []map[string]Value{{}, {}}, globalScopes)

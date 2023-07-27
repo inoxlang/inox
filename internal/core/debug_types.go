@@ -34,6 +34,7 @@ type StackFrameInfo struct {
 // Primary Events
 
 type ProgramStoppedEvent struct {
+	ThreadId       StateId
 	Reason         ProgramStopReason
 	Breakpoint     *BreakpointInfo
 	ExceptionError error
@@ -68,7 +69,7 @@ func (t SecondaryDebugEventType) String() string {
 	case IncomingMessageReceivedEventType:
 		return "incomingMessageReceived"
 	case RoutineSpawnedEventType:
-		return "routineSpawnedEventType"
+		return "routineSpawnedEvent"
 	default:
 		panic(ErrUnreachable)
 	}
@@ -84,7 +85,7 @@ func (e IncomingMessageReceivedEvent) SecondaryDebugEventType() SecondaryDebugEv
 }
 
 type RoutineSpawnedEvent struct {
-	StateId StateId
+	StateId StateId `json:"threadId,omitempty"`
 }
 
 func (e RoutineSpawnedEvent) SecondaryDebugEventType() SecondaryDebugEventType {
