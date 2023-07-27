@@ -205,6 +205,20 @@ func SpawnRoutine(args RoutineSpawnArgs) (*Routine, error) {
 		} else {
 			state := NewTreeWalkStateWithGlobal(modState)
 			state.self = args.Self
+
+			parentDebugger, ok := args.SpawnerState.Debugger.Load().(*Debugger)
+			if ok && !parentDebugger.Closed() {
+				debugger := parentDebugger.NewChild()
+
+				parentDebugger.ControlChan() <- DebugCommandInformAboutSecondaryEvent{
+					Event: RoutineSpawnedEvent{
+						StateId: modState.id,
+					},
+				}
+				debugger.AttachAndStart(state)
+				modState.Debugger.Store(debugger)
+			}
+
 			res, err = TreeWalkEval(chunk, state)
 		}
 

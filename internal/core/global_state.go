@@ -12,10 +12,15 @@ import (
 	"github.com/rs/zerolog"
 )
 
+const (
+	MINIMAL_STATE_ID = 1
+)
+
 var (
 	ErrContextInUse = errors.New("cannot create a new global state with a context that already has an associated state")
 
 	GLOBAL_STATE_PROPNAMES = []string{"module"}
+	previousStateId        atomic.Int64
 )
 
 // A GlobalState represents the global state for the evaluation of a single module or the shell's loop.
@@ -36,6 +41,7 @@ type GlobalState struct {
 	Debugger                         atomic.Value                                                    //nil or (nillable) *Debugger
 
 	MainState            *GlobalState //never nil
+	id                   StateId
 	descendantStates     map[ResourceName]*GlobalState
 	descendantStatesLock sync.Mutex
 
@@ -47,12 +53,15 @@ type GlobalState struct {
 	SymbolicData              *SymbolicData
 }
 
+type StateId int64
+
 func NewGlobalState(ctx *Context, constants ...map[string]Value) *GlobalState {
 	if ctx.state != nil {
 		panic(ErrContextInUse)
 	}
 
 	state := &GlobalState{
+		id:               StateId(previousStateId.Add(1)),
 		Ctx:              ctx,
 		SymbolicData:     &SymbolicData{SymbolicData: symbolic.NewSymbolicData()},
 		descendantStates: make(map[ResourceName]*GlobalState, 0),

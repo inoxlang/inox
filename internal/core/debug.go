@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"sync/atomic"
 
@@ -43,45 +44,66 @@ type Debugger struct {
 	controlChan               chan any
 	secondaryEventChan        chan SecondaryDebugEvent
 	stoppedProgramCommandChan chan any
-	stoppedProgramChan        chan ProgramStoppedEvent
 	stoppedProgram            atomic.Bool
 	stopBeforeNextStatement   atomic.Value //non-breakpoint ProgramStopReason
 	stackFrameDepth           atomic.Int32
 	steppingDepth             atomic.Int32
-	stepOutDepth              atomic.Int32
-	breakpoints               map[parse.NodeSpan]BreakpointInfo
-	exceptionBreakpointsId    atomic.Int32
 
-	nextBreakpointId    int32
-	breakpointsLock     sync.Mutex
+	shared              *sharedDebuggerFields
 	resumeExecutionChan chan struct{}
 
-	stackFrameId atomic.Int32 //incremented by debuggees
-
 	evaluationState EvaluationState
-	globalState     *GlobalState
+	globalState     *GlobalState //evaluationState's GlobalState
 	logger          zerolog.Logger
+
+	parent *Debugger //nil if root debugger
 
 	closed atomic.Bool //closed debugger
 }
 
+type sharedDebuggerFields struct {
+	nextBreakpointId       int32
+	breakpointsLock        sync.Mutex
+	breakpoints            map[parse.NodeSpan]BreakpointInfo
+	exceptionBreakpointsId atomic.Int32
+
+	stackFrameId atomic.Int32 //incremented by debuggees
+
+	stoppedEventChan chan ProgramStoppedEvent
+
+	debuggers     map[StateId]*Debugger
+	debuggersLock sync.Mutex
+}
+
+func (f *sharedDebuggerFields) getDebuggerOfThread(id StateId) *Debugger {
+	f.debuggersLock.Lock()
+	defer f.debuggersLock.Unlock()
+
+	return f.debuggers[id]
+}
+
 type DebuggerArgs struct {
-	Logger                zerolog.Logger //ok if not set
-	InitialBreakpoints    []BreakpointInfo
-	ExceptionBreakpointId int32 //if not set exception breakpoints are not enabled
+	Logger             zerolog.Logger //ok if not set
+	InitialBreakpoints []BreakpointInfo
+
+	//if not set exception breakpoints are not enabled,
+	// this argument is ignored if parent is set
+	ExceptionBreakpointId int32
 
 	//cancelling this context will cause the debugger to close.
 	//the debugger uses this context's filesystem.
 	Context *Context
+
+	parent *Debugger
 }
 
 func NewDebugger(args DebuggerArgs) *Debugger {
 
 	initialBreakpoints := map[parse.NodeSpan]BreakpointInfo{}
-	nextBreakpointId := 1
+	nextBreakpointId := int32(1)
 
 	for _, breakpoint := range args.InitialBreakpoints {
-		nextBreakpointId = utils.Max(nextBreakpointId, int(breakpoint.Id)+1)
+		nextBreakpointId = utils.Max(nextBreakpointId, breakpoint.Id+1)
 		if breakpoint.NodeSpan != (parse.NodeSpan{}) {
 			initialBreakpoints[breakpoint.NodeSpan] = breakpoint
 		}
@@ -92,26 +114,60 @@ func NewDebugger(args DebuggerArgs) *Debugger {
 		controlChan:               make(chan any),
 		secondaryEventChan:        make(chan SecondaryDebugEvent, SECONDARY_EVENT_CHAN_CAP),
 		stoppedProgramCommandChan: make(chan any),
-		stoppedProgramChan:        make(chan ProgramStoppedEvent, 1),
 		resumeExecutionChan:       make(chan struct{}),
 		logger:                    args.Logger,
-
-		nextBreakpointId: INITIAL_BREAKPOINT_ID,
-		breakpoints:      initialBreakpoints,
 	}
-
 	debugger.steppingDepth.Store(1)
 
-	if args.ExceptionBreakpointId >= INITIAL_BREAKPOINT_ID {
-		debugger.exceptionBreakpointsId.Store(args.ExceptionBreakpointId)
+	if args.parent != nil {
+		debugger.shared = args.parent.shared
+		debugger.parent = args.parent
+	} else { //root debugger
+		if args.ExceptionBreakpointId > nextBreakpointId {
+			nextBreakpointId = args.ExceptionBreakpointId + 1
+		}
+
+		debugger.shared = &sharedDebuggerFields{
+			nextBreakpointId: nextBreakpointId,
+			breakpoints:      initialBreakpoints,
+			stoppedEventChan: make(chan ProgramStoppedEvent, runtime.NumCPU()),
+			debuggers:        make(map[StateId]*Debugger),
+		}
+
+		if args.ExceptionBreakpointId >= INITIAL_BREAKPOINT_ID {
+			debugger.shared.exceptionBreakpointsId.Store(args.ExceptionBreakpointId)
+		}
 	}
 
 	return debugger
 }
 
+func (d *Debugger) threadId() StateId {
+	return d.globalState.id
+}
+
+func (d *Debugger) isRoot() bool {
+	return d.parent == nil
+}
+
+func (d *Debugger) NewChild() *Debugger {
+	d.shared.breakpointsLock.Lock()
+	breakpoints := utils.GetMapValues(d.shared.breakpoints)
+	defer d.shared.breakpointsLock.Unlock()
+
+	child := NewDebugger(DebuggerArgs{
+		Logger:             d.logger,
+		InitialBreakpoints: breakpoints,
+		Context:            d.ctx,
+		parent:             d,
+	})
+
+	return child
+}
+
 // StoppedChan returns a channel that sends an item each time the program stops.
 func (d *Debugger) StoppedChan() chan ProgramStoppedEvent {
-	return d.stoppedProgramChan
+	return d.shared.stoppedEventChan
 }
 
 // ControlChan returns a channel to which debug commands should be sent.
@@ -130,7 +186,7 @@ func (d *Debugger) Closed() bool {
 }
 
 func (d *Debugger) ExceptionBreakpointsId() (_ int32, enabled bool) {
-	id := d.exceptionBreakpointsId.Load()
+	id := d.shared.exceptionBreakpointsId.Load()
 	if id >= INITIAL_BREAKPOINT_ID {
 		return id, true
 	}
@@ -142,7 +198,52 @@ func (d *Debugger) AttachAndStart(state EvaluationState) {
 	state.AttachDebugger(d)
 	d.globalState = state.GetGlobalState()
 	d.evaluationState = state
+
+	d.shared.debuggersLock.Lock()
+	d.shared.debuggers[d.threadId()] = d
+	d.shared.debuggersLock.Unlock()
+
 	d.startGoroutine()
+}
+
+func (d *Debugger) broadcastCommand(cmd any) {
+	d.shared.debuggersLock.Lock()
+	defer d.shared.debuggersLock.Unlock()
+
+	for _, debugger := range d.shared.debuggers {
+		if debugger == d {
+			continue
+		}
+		debugger.controlChan <- cmd
+	}
+}
+
+func (d *Debugger) sendCommandToTargetDebugger(cmd any, threadId StateId) {
+	if threadId < MINIMAL_STATE_ID {
+		return
+	}
+
+	d.shared.debuggersLock.Lock()
+	defer d.shared.debuggersLock.Unlock()
+
+	for _, debugger := range d.shared.debuggers {
+		if debugger.threadId() == threadId {
+			debugger.controlChan <- cmd
+			break
+		}
+	}
+}
+
+func (d *Debugger) sendCommandToRootDebugger(cmd any) {
+	d.shared.debuggersLock.Lock()
+	defer d.shared.debuggersLock.Unlock()
+
+	for _, debugger := range d.shared.debuggers {
+		if debugger.isRoot() {
+			debugger.controlChan <- cmd
+			break
+		}
+	}
 }
 
 func (d *Debugger) startGoroutine() {
@@ -156,9 +257,9 @@ func (d *Debugger) startGoroutine() {
 			d.logger.Info().Msg("stop debugging")
 			d.closed.Store(true)
 
-			d.breakpointsLock.Lock()
-			d.breakpoints = nil
-			d.breakpointsLock.Unlock()
+			d.shared.breakpointsLock.Lock()
+			d.shared.breakpoints = nil
+			d.shared.breakpointsLock.Unlock()
 
 			close(d.stoppedProgramCommandChan)
 			close(d.secondaryEventChan)
@@ -173,136 +274,187 @@ func (d *Debugger) startGoroutine() {
 			}
 		}()
 
-		for {
-			//TODO: empty stoppedProgramCommandChan if program not stopped
+		d.loop(&done, &cancelExecution)
+	}()
+}
 
-			select {
-			case <-d.globalState.Ctx.Done():
-				return
-			case cmd := <-d.controlChan:
+func (d *Debugger) loop(done *func(), cancelExecution *bool) {
+	for {
+		//TODO: empty stoppedProgramCommandChan if program not stopped
+
+		select {
+		case <-d.globalState.Ctx.Done():
+			return
+		case cmd := <-d.controlChan:
+			if d.isRoot() {
 				switch c := cmd.(type) {
-				case DebugCommandCloseDebugger:
-					done = c.Done
-					cancelExecution = c.CancelExecution
-					return
-				case DebugCommandSetBreakpoints:
-					var (
-						breakpoints          = map[parse.NodeSpan]BreakpointInfo{}
-						breakpointsSetByLine []BreakpointInfo
-						chunk                = c.Chunk
-					)
-
-					func() {
-						d.breakpointsLock.Lock()
-						defer d.breakpointsLock.Unlock()
-
-						for node := range c.BreakpointsAtNode {
-							id := d.nextBreakpointId
-							d.nextBreakpointId++
-
-							line, col := chunk.GetLineColumn(node)
-
-							breakpoints[node.Base().Span] = BreakpointInfo{
-								NodeSpan:    node.Base().Span,
-								Chunk:       chunk,
-								Id:          id,
-								StartLine:   line,
-								StartColumn: col,
-							}
-						}
-
-						breakpointsFromLines, err := GetBreakpointsFromLines(c.BreakPointsByLine, chunk, &d.nextBreakpointId)
-
-						if err == nil {
-							for _, breakpoint := range breakpointsFromLines {
-								if breakpoint.NodeSpan != (parse.NodeSpan{}) {
-									breakpoints[breakpoint.NodeSpan] = breakpoint
-								}
-							}
-							breakpointsSetByLine = append(breakpointsSetByLine, breakpointsFromLines...)
-						} else {
-							d.logger.Err(err).Msg("failed to get breakpoints from lines")
-						}
-
-						d.breakpoints = breakpoints
-					}()
-
-					if c.GetBreakpointsSetByLine != nil {
-						c.GetBreakpointsSetByLine(breakpointsSetByLine)
-					}
-
-				case DebugCommandSetExceptionBreakpoints:
-					if c.Disable {
-						d.exceptionBreakpointsId.Store(0)
-						continue
-					}
-					//enable
-
-					d.breakpointsLock.Lock()
-					id := d.nextBreakpointId
-					d.nextBreakpointId++
-					d.breakpointsLock.Unlock()
-
-					d.exceptionBreakpointsId.Store(id)
-
-					if c.GetExceptionBreakpointId != nil {
-						c.GetExceptionBreakpointId(id)
-					}
-				case DebugCommandPause:
-					if d.stoppedProgram.Load() {
-						continue
-					}
-					d.logger.Info().Msg("pause")
-					d.stopBeforeNextStatement.Store(PauseStop)
 				case DebugCommandContinue:
-					if d.stoppedProgram.Load() {
-						d.logger.Info().Msg("continue")
-						depth := d.stackFrameDepth.Load()
-						d.steppingDepth.Store(depth)
-						d.resumeExecutionChan <- struct{}{}
+					if c.ResumeAllThreads {
+						d.broadcastCommand(c)
+					} else if c.ThreadId != d.threadId() {
+						d.sendCommandToTargetDebugger(c, c.ThreadId)
+						continue
+					}
+				case DebugCommandGetStackTrace:
+					if c.ThreadId != d.threadId() {
+						d.sendCommandToTargetDebugger(c, c.ThreadId)
+						continue
+					}
+				case DebugCommandGetScopes:
+					if c.ThreadId != d.threadId() {
+						d.sendCommandToTargetDebugger(c, c.ThreadId)
+						continue
 					}
 				case DebugCommandNextStep:
-					if !d.stoppedProgram.Load() {
+					if c.ResumeAllThreads {
+						d.broadcastCommand(c)
+					} else if c.ThreadId != d.threadId() {
+						d.sendCommandToTargetDebugger(c, c.ThreadId)
 						continue
 					}
-					depth := d.stackFrameDepth.Load()
-					d.steppingDepth.Store(depth)
-					d.stopBeforeNextStatement.Store(NextStepStop)
-					d.resumeExecutionChan <- struct{}{}
 				case DebugCommandStepIn:
-					if !d.stoppedProgram.Load() {
+					if c.ResumeAllThreads {
+						d.broadcastCommand(c)
+					} else if c.ThreadId != d.threadId() {
+						d.sendCommandToTargetDebugger(c, c.ThreadId)
 						continue
 					}
-					d.stopBeforeNextStatement.Store(StepInStop)
-					depth := d.stackFrameDepth.Load()
-					d.steppingDepth.Store(depth + 1)
-					d.resumeExecutionChan <- struct{}{}
 				case DebugCommandStepOut:
-					if !d.stoppedProgram.Load() {
+					if c.ResumeAllThreads {
+						d.broadcastCommand(c)
+					} else if c.ThreadId != d.threadId() {
+						d.sendCommandToTargetDebugger(c, c.ThreadId)
 						continue
 					}
-					d.stopBeforeNextStatement.Store(StepOutStop)
-					depth := d.stackFrameDepth.Load()
-					d.steppingDepth.Store(depth - 1)
-					d.resumeExecutionChan <- struct{}{}
-				case DebugCommandGetScopes, DebugCommandGetStackTrace:
-					if d.stoppedProgram.Load() {
-						d.stoppedProgramCommandChan <- c
-					}
-				case DebugCommandInformAboutSecondaryEvent:
-					//if the channel is full we drop the event.
-					//note: this kind of check can be done because:
-					// - there is a single piece of code that write to this channel.
-					// - if the channels happens to be read just after the check it's okay.
-					if len(d.secondaryEventChan) == cap(d.secondaryEventChan) {
-						return
-					}
-
-					d.secondaryEventChan <- c.Event
 				}
 			}
+
+			switch c := cmd.(type) {
+			case DebugCommandCloseDebugger:
+				*done = c.Done
+				*cancelExecution = c.CancelExecution
+				return
+			case DebugCommandSetBreakpoints:
+				var (
+					breakpoints          = map[parse.NodeSpan]BreakpointInfo{}
+					breakpointsSetByLine []BreakpointInfo
+					chunk                = c.Chunk
+				)
+
+				func() {
+					d.shared.breakpointsLock.Lock()
+					defer d.shared.breakpointsLock.Unlock()
+
+					for node := range c.BreakpointsAtNode {
+						id := d.shared.nextBreakpointId
+						d.shared.nextBreakpointId++
+
+						line, col := chunk.GetLineColumn(node)
+
+						breakpoints[node.Base().Span] = BreakpointInfo{
+							NodeSpan:    node.Base().Span,
+							Chunk:       chunk,
+							Id:          id,
+							StartLine:   line,
+							StartColumn: col,
+						}
+					}
+
+					breakpointsFromLines, err := GetBreakpointsFromLines(c.BreakPointsByLine, chunk, &d.shared.nextBreakpointId)
+
+					if err == nil {
+						for _, breakpoint := range breakpointsFromLines {
+							if breakpoint.NodeSpan != (parse.NodeSpan{}) {
+								breakpoints[breakpoint.NodeSpan] = breakpoint
+							}
+						}
+						breakpointsSetByLine = append(breakpointsSetByLine, breakpointsFromLines...)
+					} else {
+						d.logger.Err(err).Msg("failed to get breakpoints from lines")
+					}
+
+					d.shared.breakpoints = breakpoints
+				}()
+
+				if c.GetBreakpointsSetByLine != nil {
+					c.GetBreakpointsSetByLine(breakpointsSetByLine)
+				}
+
+			case DebugCommandSetExceptionBreakpoints:
+				if c.Disable {
+					d.shared.exceptionBreakpointsId.Store(0)
+					continue
+				}
+				//enable
+
+				d.shared.breakpointsLock.Lock()
+				id := d.shared.nextBreakpointId
+				d.shared.nextBreakpointId++
+				d.shared.breakpointsLock.Unlock()
+
+				d.shared.exceptionBreakpointsId.Store(id)
+
+				if c.GetExceptionBreakpointId != nil {
+					c.GetExceptionBreakpointId(id)
+				}
+			case DebugCommandPause:
+				if d.stoppedProgram.Load() {
+					continue
+				}
+				d.logger.Info().Msg("pause")
+				d.stopBeforeNextStatement.Store(PauseStop)
+			case DebugCommandContinue:
+				if d.stoppedProgram.Load() {
+					d.logger.Info().Msg("continue")
+					depth := d.stackFrameDepth.Load()
+					d.steppingDepth.Store(depth)
+					d.resumeExecutionChan <- struct{}{}
+				}
+			case DebugCommandNextStep:
+				if !d.stoppedProgram.Load() {
+					continue
+				}
+				depth := d.stackFrameDepth.Load()
+				d.steppingDepth.Store(depth)
+				d.stopBeforeNextStatement.Store(NextStepStop)
+				d.resumeExecutionChan <- struct{}{}
+			case DebugCommandStepIn:
+				if !d.stoppedProgram.Load() {
+					continue
+				}
+				d.stopBeforeNextStatement.Store(StepInStop)
+				depth := d.stackFrameDepth.Load()
+				d.steppingDepth.Store(depth + 1)
+				d.resumeExecutionChan <- struct{}{}
+			case DebugCommandStepOut:
+				if !d.stoppedProgram.Load() {
+					continue
+				}
+				d.stopBeforeNextStatement.Store(StepOutStop)
+				depth := d.stackFrameDepth.Load()
+				d.steppingDepth.Store(depth - 1)
+				d.resumeExecutionChan <- struct{}{}
+			case DebugCommandGetScopes, DebugCommandGetStackTrace:
+				if d.stoppedProgram.Load() {
+					d.stoppedProgramCommandChan <- c
+				}
+			case DebugCommandInformAboutSecondaryEvent:
+				if !d.isRoot() {
+					d.sendCommandToRootDebugger(c)
+					continue
+				}
+				//if the channel is full we drop the event.
+				//note: this kind of check can be done because:
+				// - there is a single piece of code that write to this channel.
+				// - if the channels happens to be read just after the check it's okay.
+				if len(d.secondaryEventChan) == cap(d.secondaryEventChan) {
+					continue
+				}
+
+				d.secondaryEventChan <- c.Event
+			}
 		}
-	}()
+	}
 }
 
 func (d *Debugger) beforeInstruction(n parse.Node, trace []StackFrameInfo, exceptionError error) {
@@ -330,9 +482,9 @@ func (d *Debugger) beforeInstruction(n parse.Node, trace []StackFrameInfo, excep
 	)
 
 	if exceptionError == nil {
-		d.breakpointsLock.Lock()
-		breakpointInfo, hasBreakpoint = d.breakpoints[n.Base().Span]
-		d.breakpointsLock.Unlock()
+		d.shared.breakpointsLock.Lock()
+		breakpointInfo, hasBreakpoint = d.shared.breakpoints[n.Base().Span]
+		d.shared.breakpointsLock.Unlock()
 
 		if hasBreakpoint {
 			stopReason = BreakpointStop
@@ -377,7 +529,7 @@ func (d *Debugger) beforeInstruction(n parse.Node, trace []StackFrameInfo, excep
 		if hasBreakpoint {
 			event.Breakpoint = &breakpointInfo
 		}
-		d.stoppedProgramChan <- event
+		d.shared.stoppedEventChan <- event
 
 		//while the program is stopped we handle commands
 		//such as DebugCommandGetScopes or DebugCommandGetStackTrace.
@@ -389,14 +541,18 @@ func (d *Debugger) beforeInstruction(n parse.Node, trace []StackFrameInfo, excep
 				d.stoppedProgram.Store(false)
 				if !ok { //debugger closed
 					d.evaluationState.DetachDebugger()
-					close(d.stoppedProgramChan)
+					if d.isRoot() {
+						close(d.shared.stoppedEventChan)
+					}
 				}
 
 				return
 			case cmd, ok := <-d.stoppedProgramCommandChan:
 				if !ok { //debugger closed
 					d.evaluationState.DetachDebugger()
-					close(d.stoppedProgramChan)
+					if d.isRoot() {
+						close(d.shared.stoppedEventChan)
+					}
 					return
 				}
 

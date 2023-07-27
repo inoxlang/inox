@@ -23,7 +23,7 @@ type StackFrameInfo struct {
 	Node parse.Node
 
 	Chunk       *parse.ParsedChunk
-	Id          int32 //set if debugging, unique for a given debugger
+	Id          int32 //set if debugging, unique for a given debugger tree (~ session)
 	StartLine   int32
 	StartColumn int32
 
@@ -60,12 +60,15 @@ type SecondaryDebugEventType int
 
 const (
 	IncomingMessageReceivedEventType = iota + 1
+	RoutineSpawnedEventType
 )
 
 func (t SecondaryDebugEventType) String() string {
 	switch t {
 	case IncomingMessageReceivedEventType:
 		return "incomingMessageReceived"
+	case RoutineSpawnedEventType:
+		return "routineSpawnedEventType"
 	default:
 		panic(ErrUnreachable)
 	}
@@ -78,6 +81,14 @@ type IncomingMessageReceivedEvent struct {
 
 func (e IncomingMessageReceivedEvent) SecondaryDebugEventType() SecondaryDebugEventType {
 	return IncomingMessageReceivedEventType
+}
+
+type RoutineSpawnedEvent struct {
+	StateId StateId
+}
+
+func (e RoutineSpawnedEvent) SecondaryDebugEventType() SecondaryDebugEventType {
+	return RoutineSpawnedEventType
 }
 
 // Commands
@@ -101,26 +112,41 @@ type DebugCommandSetExceptionBreakpoints struct {
 }
 
 type DebugCommandPause struct {
+	ThreadId StateId
+}
+
+func (c DebugCommandPause) GetThreadId() StateId {
+	return c.ThreadId
 }
 
 type DebugCommandContinue struct {
+	ThreadId         StateId
+	ResumeAllThreads bool
 }
 
 type DebugCommandNextStep struct {
+	ThreadId         StateId
+	ResumeAllThreads bool
 }
 
 type DebugCommandStepIn struct {
+	ThreadId         StateId
+	ResumeAllThreads bool
 }
 
 type DebugCommandStepOut struct {
+	ThreadId         StateId
+	ResumeAllThreads bool
 }
 
 type DebugCommandGetScopes struct {
-	Get func(globalScope map[string]Value, localScope map[string]Value)
+	Get      func(globalScope map[string]Value, localScope map[string]Value)
+	ThreadId StateId
 }
 
 type DebugCommandGetStackTrace struct {
-	Get func(trace []StackFrameInfo)
+	Get      func(trace []StackFrameInfo)
+	ThreadId StateId
 }
 
 type DebugCommandCloseDebugger struct {

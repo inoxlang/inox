@@ -794,7 +794,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 					Chunk:       chunk,
 					StartLine:   line,
 					StartColumn: col,
-					Id:          state.debug.stackFrameId.Add(1),
+					Id:          state.debug.shared.stackFrameId.Add(1),
 
 					StatementStartLine:   1,
 					StatementStartColumn: 1,
@@ -963,16 +963,18 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		state.pushChunk(chunk.ParsedChunk)
 		defer state.popChunk()
 
-		frameCount := len(state.frameInfo)
-		prevChunk := state.frameInfo[frameCount-1].Chunk
-		prevName := state.frameInfo[frameCount-1].Name
+		if state.debug != nil {
+			frameCount := len(state.frameInfo)
+			prevChunk := state.frameInfo[frameCount-1].Chunk
+			prevName := state.frameInfo[frameCount-1].Name
 
-		state.frameInfo[frameCount-1].Chunk = chunk.ParsedChunk
-		state.frameInfo[frameCount-1].Name = chunk.Name()
-		defer func() {
-			state.frameInfo[frameCount-1].Chunk = prevChunk
-			state.frameInfo[frameCount-1].Name = prevName
-		}()
+			state.frameInfo[frameCount-1].Chunk = chunk.ParsedChunk
+			state.frameInfo[frameCount-1].Name = chunk.Name()
+			defer func() {
+				state.frameInfo[frameCount-1].Chunk = prevChunk
+				state.frameInfo[frameCount-1].Name = prevName
+			}()
+		}
 
 		return TreeWalkEval(chunk.Node, state)
 	case *parse.ImportStatement:
@@ -2815,7 +2817,7 @@ func TreeWalkCallFunc(call TreeWalkCall) (Value, error) {
 			Chunk:       chunk,
 			StartLine:   line,
 			StartColumn: col,
-			Id:          state.debug.stackFrameId.Add(1),
+			Id:          state.debug.shared.stackFrameId.Add(1),
 		})
 
 		defer func() {
