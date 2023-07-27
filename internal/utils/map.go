@@ -20,6 +20,16 @@ func GetMapKeys[K comparable, V any](m map[K]V) []K {
 	return keys
 }
 
+func GetMapValues[K comparable, V any](m map[K]V) []V {
+	var values []V
+
+	for _, v := range m {
+		values = append(values, v)
+	}
+
+	return values
+}
+
 func SameKeys[K comparable, V any](m1 map[K]V, m2 map[K]V) bool {
 	if len(m1) != len(m2) {
 		return false

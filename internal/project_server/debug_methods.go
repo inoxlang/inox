@@ -125,30 +125,73 @@ func (sessions *DebugSessions) AddSession(s *DebugSession) {
 }
 
 type DebugSession struct {
-	id      string
-	nextSeq atomic.Int32
-
+	id                             string
 	programPath                    string
 	columnsStartAt1, lineStartsAt1 bool
 	configurationDone              atomic.Bool
 
+	//initial breakpoints
 	//this field is set to nil during launch to remove some unecessary references
 	sourcePathToInitialBreakpoints map[string][]core.BreakpointInfo
-	exceptionBreakpointsId         int32
+	initialExceptionBreakpointsId  int32
 	nextInitialBreakpointId        int32
 	initialBreakpointsLock         sync.Mutex
 
-	debugger                      *core.Debugger
-	wasAttached                   bool       //debugger was attached to a running debuggee
+	debugger                *core.Debugger
+	nextSeq                 atomic.Int32
+	variablesReferences     map[core.StateId]*variablesReferences
+	variablesReference      atomic.Int32
+	variablesReferencesLock sync.Mutex
+
 	programDoneChan               chan error //ok if error is nil
 	programPreparedOrFailedToChan chan error
+	wasAttached                   bool //debugger was attached to a running debuggee
 	finished                      atomic.Bool
+}
+
+type variablesReferences struct {
+	//set at creation, access does not require locking
+	localScope  int
+	globalScope int
+
+	//
+	lock sync.Mutex
 }
 
 func (s *DebugSession) NextSeq() int {
 	next := s.nextSeq.Add(1)
 
 	return int(next - 1)
+}
+
+func (s *DebugSession) getThreadVariablesReferences(id core.StateId) *variablesReferences {
+	s.variablesReferencesLock.Lock()
+	defer s.variablesReferencesLock.Unlock()
+
+	refs := s.variablesReferences[id]
+	if refs == nil {
+		refs = &variablesReferences{
+			localScope:  int(s.variablesReference.Add(1)),
+			globalScope: int(s.variablesReference.Add(1)),
+		}
+		s.variablesReferences[id] = refs
+	}
+
+	return refs
+}
+
+func (s *DebugSession) getThreadOfVariablesReference(varsRef int) (core.StateId, *variablesReferences, bool) {
+	s.variablesReferencesLock.Lock()
+	defer s.variablesReferencesLock.Unlock()
+
+	for threadId, refs := range s.variablesReferences {
+
+		if refs.localScope == varsRef || refs.globalScope == varsRef {
+			return threadId, refs, true
+		}
+
+	}
+	return 0, nil, false
 }
 
 func registerDebugMethodHandlers(
@@ -177,6 +220,8 @@ func registerDebugMethodHandlers(
 				id:                             sessionId,
 				sourcePathToInitialBreakpoints: make(map[string][]core.BreakpointInfo),
 				nextInitialBreakpointId:        core.INITIAL_BREAKPOINT_ID,
+
+				variablesReferences: make(map[core.StateId]*variablesReferences, 0),
 			}
 			debugSession.nextSeq.Store(1)
 			debugSessions.AddSession(debugSession)
@@ -211,7 +256,8 @@ func registerDebugMethodHandlers(
 					Command: dapRequest.Command,
 				},
 				Body: dap.Capabilities{
-					SupportsConfigurationDoneRequest: true,
+					SupportsConfigurationDoneRequest:      true,
+					SupportsSingleThreadExecutionRequests: true,
 					ExceptionBreakpointFilters: []dap.ExceptionBreakpointsFilter{
 						{
 							Filter: EXCEPTION_ERROR_FILTER,
@@ -390,10 +436,12 @@ func registerDebugMethodHandlers(
 
 			var threads []dap.Thread
 
-			threads = append(threads, dap.Thread{
-				Id:   1,
-				Name: debugSession.programPath,
-			})
+			for _, thread := range debugSession.debugger.Threads() {
+				threads = append(threads, dap.Thread{
+					Id:   int(thread.Id),
+					Name: thread.Name,
+				})
+			}
 
 			return dap.ThreadsResponse{
 				Response: dap.Response{
@@ -428,6 +476,7 @@ func registerDebugMethodHandlers(
 			framesChan := make(chan []dap.StackFrame)
 
 			debugSession.debugger.ControlChan() <- core.DebugCommandGetStackTrace{
+				ThreadId: core.StateId(params.Request.Arguments.ThreadId),
 				Get: func(trace []core.StackFrameInfo) {
 					var frames []dap.StackFrame
 
@@ -511,19 +560,40 @@ func registerDebugMethodHandlers(
 			var scopes []dap.Scope
 			scopesChan := make(chan []dap.Scope)
 
+			threadId, ok := debugSession.debugger.ThreadIfOfStackFrame(int32(params.Request.Arguments.FrameId))
+
+			if !ok {
+				return dap.ScopesResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  debugSession.NextSeq(),
+							Type: "response",
+						},
+						Message: "failed to get scopes: failed to find thread of stack frame",
+						Command: dapRequest.Command,
+					},
+				}, nil
+			}
+
 			debugSession.debugger.ControlChan() <- core.DebugCommandGetScopes{
+				ThreadId: threadId,
 				Get: func(globalScope, localScope map[string]core.Value) {
+
+					refs := debugSession.getThreadVariablesReferences(threadId)
+
 					scopesChan <- []dap.Scope{
 						{
 							Name:               "Local Scope",
 							PresentationHint:   "locals",
 							NamedVariables:     len(localScope),
-							VariablesReference: 1000,
+							VariablesReference: refs.localScope,
 						},
 						{
 							Name:               "Global Scope",
 							NamedVariables:     len(globalScope),
-							VariablesReference: 1,
+							VariablesReference: refs.globalScope,
 						},
 					}
 				},
@@ -579,8 +649,25 @@ func registerDebugMethodHandlers(
 			varsChan := make(chan []dap.Variable)
 
 			ref := dapRequest.Arguments.VariablesReference
+			threadId, refs, ok := debugSession.getThreadOfVariablesReference(params.Request.Arguments.VariablesReference)
+
+			if !ok {
+				return dap.VariablesResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  debugSession.NextSeq(),
+							Type: "response",
+						},
+						Message: "failed to get variables: failed to find thread",
+						Command: dapRequest.Command,
+					},
+				}, nil
+			}
 
 			debugSession.debugger.ControlChan() <- core.DebugCommandGetScopes{
+				ThreadId: threadId,
 				Get: func(globalScope, localScope map[string]core.Value) {
 					var variables []dap.Variable
 
@@ -589,9 +676,9 @@ func registerDebugMethodHandlers(
 					var scope map[string]core.Value
 
 					switch ref {
-					case 1:
+					case refs.globalScope:
 						scope = globalScope
-					case 1000:
+					case refs.localScope:
 						scope = localScope
 					default:
 						//invalid reference
@@ -831,7 +918,7 @@ func registerDebugMethodHandlers(
 				id := debugSession.nextInitialBreakpointId
 				debugSession.nextInitialBreakpointId++
 
-				debugSession.exceptionBreakpointsId = id
+				debugSession.initialExceptionBreakpointsId = id
 				debugSession.initialBreakpointsLock.Unlock()
 
 				return dap.SetBreakpointsResponse{
@@ -930,7 +1017,9 @@ func registerDebugMethodHandlers(
 
 			debugger := debugSession.debugger
 			if !debugger.Closed() {
-				debugger.ControlChan() <- core.DebugCommandPause{}
+				debugger.ControlChan() <- core.DebugCommandPause{
+					ThreadId: core.StateId(params.Request.Arguments.ThreadId),
+				}
 			}
 
 			return dap.PauseResponse{
@@ -962,7 +1051,10 @@ func registerDebugMethodHandlers(
 			debugger := debugSession.debugger
 			if !debugger.Closed() {
 				//TODO: support continuing a specific thread (see params)
-				debugger.ControlChan() <- core.DebugCommandContinue{}
+				debugger.ControlChan() <- core.DebugCommandContinue{
+					ThreadId:         core.StateId(params.Request.Arguments.ThreadId),
+					ResumeAllThreads: !params.Request.Arguments.SingleThread,
+				}
 			}
 
 			return dap.ContinueResponse{
@@ -996,7 +1088,10 @@ func registerDebugMethodHandlers(
 
 			debugger := debugSession.debugger
 			if !debugger.Closed() {
-				debugger.ControlChan() <- core.DebugCommandNextStep{}
+				debugger.ControlChan() <- core.DebugCommandNextStep{
+					ThreadId:         core.StateId(params.Request.Arguments.ThreadId),
+					ResumeAllThreads: !params.Request.Arguments.SingleThread,
+				}
 			}
 
 			return dap.NextResponse{
@@ -1027,7 +1122,10 @@ func registerDebugMethodHandlers(
 
 			debugger := debugSession.debugger
 			if !debugger.Closed() {
-				debugger.ControlChan() <- core.DebugCommandStepIn{}
+				debugger.ControlChan() <- core.DebugCommandStepIn{
+					ThreadId:         core.StateId(params.Request.Arguments.ThreadId),
+					ResumeAllThreads: !params.Request.Arguments.SingleThread,
+				}
 			}
 
 			return dap.StepInResponse{
@@ -1058,7 +1156,10 @@ func registerDebugMethodHandlers(
 
 			debugger := debugSession.debugger
 			if !debugger.Closed() {
-				debugger.ControlChan() <- core.DebugCommandStepOut{}
+				debugger.ControlChan() <- core.DebugCommandStepOut{
+					ThreadId:         core.StateId(params.Request.Arguments.ThreadId),
+					ResumeAllThreads: !params.Request.Arguments.SingleThread,
+				}
 			}
 
 			return dap.StepOutResponse{
@@ -1230,7 +1331,7 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 		initialBreakpoints = append(initialBreakpoints, breakpoints...)
 	}
 	debugSession.sourcePathToInitialBreakpoints = nil
-	exceptionBreakpointsId := debugSession.exceptionBreakpointsId
+	exceptionBreakpointsId := debugSession.initialExceptionBreakpointsId
 	debugSession.initialBreakpointsLock.Unlock()
 
 	debugSession.debugger = core.NewDebugger(core.DebuggerArgs{
@@ -1256,7 +1357,7 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 
 				body := dap.StoppedEventBody{
 					Reason:   stopReasonToDapStopReason(stop.Reason),
-					ThreadId: 1,
+					ThreadId: int(stop.ThreadId),
 				}
 
 				if stop.ExceptionError != nil {
@@ -1306,17 +1407,39 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 				}
 
 				eventType := debugEvent.SecondaryDebugEventType().String()
+
+				commonEventData := dap.Event{
+					ProtocolMessage: dap.ProtocolMessage{
+						Seq:  debugSession.NextSeq(),
+						Type: "event",
+					},
+					Event: eventType,
+				}
+
+				//handle some events separately
+				switch e := debugEvent.(type) {
+				case core.RoutineSpawnedEvent:
+					session.Notify(jsonrpc.NotificationMessage{
+						BaseMessage: jsonrpc.BaseMessage{
+							Jsonrpc: JSONRPC_VERSION,
+						},
+						Method: "debug/threadEvent",
+						Params: utils.Must(json.Marshal(dap.ThreadEvent{
+							Event: commonEventData,
+							Body: dap.ThreadEventBody{
+								Reason:   "started",
+								ThreadId: int(e.StateId),
+							},
+						})),
+					})
+					continue
+				}
+
 				//TODO: check format of event type
 
 				dapEvent := DebugSecondaryEvent{
-					Event: dap.Event{
-						ProtocolMessage: dap.ProtocolMessage{
-							Seq:  debugSession.NextSeq(),
-							Type: "event",
-						},
-						Event: eventType,
-					},
-					Body: debugEvent,
+					Event: commonEventData,
+					Body:  debugEvent,
 				}
 
 				session.Notify(jsonrpc.NotificationMessage{

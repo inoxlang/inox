@@ -284,6 +284,8 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			core.HttpPermission{Kind_: permkind.Provide, Entity: DEFAULT_ALLOWED_DEV_HOST},
 			core.HttpPermission{Kind_: permkind.Read, Entity: DEFAULT_ALLOWED_DEV_HOST},
 			core.HttpPermission{Kind_: permkind.Write, Entity: DEFAULT_ALLOWED_DEV_HOST},
+
+			core.RoutinePermission{Kind_: permkind.Create},
 		}
 
 		perms = append(perms, core.GetDefaultGlobalVarPermissions()...)
