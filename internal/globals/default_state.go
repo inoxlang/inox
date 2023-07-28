@@ -2,6 +2,7 @@ package internal
 
 import (
 	"io"
+	"path/filepath"
 
 	"github.com/inoxlang/inox/internal/config"
 	core "github.com/inoxlang/inox/internal/core"
@@ -261,6 +262,11 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 
 	for k, v := range containers.NewContainersNamespace() {
 		constants[k] = v
+	}
+
+	if conf.AbsoluteModulePath != "" {
+		constants[default_state.MODULE_DIRPATH_GLOBAL_NAME] = core.DirPathFrom(filepath.Dir(conf.AbsoluteModulePath))
+		constants[default_state.MODULE_FILEPATH_GLOBAL_NAME] = core.PathFrom(conf.AbsoluteModulePath)
 	}
 
 	state := core.NewGlobalState(ctx, constants)

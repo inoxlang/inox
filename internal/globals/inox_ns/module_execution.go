@@ -191,6 +191,8 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	// create the script's state
 
 	globalState, err := default_state.NewDefaultGlobalState(ctx, default_state.DefaultGlobalStateConfig{
+		AbsoluteModulePath: absPath,
+
 		EnvPattern:          manifest.EnvPattern,
 		PreinitFiles:        manifest.PreinitFiles,
 		Databases:           dbs,

@@ -10,8 +10,10 @@ import (
 )
 
 const (
-	PREINIT_DATA_GLOBAL_NAME = "preinit-data"
-	DATABASES_GLOBAL_NAME    = "dbs"
+	PREINIT_DATA_GLOBAL_NAME    = "preinit-data"
+	DATABASES_GLOBAL_NAME       = "dbs"
+	MODULE_DIRPATH_GLOBAL_NAME  = "__mod-dir"
+	MODULE_FILEPATH_GLOBAL_NAME = "__mod-file"
 )
 
 var (
@@ -21,12 +23,16 @@ var (
 )
 
 type DefaultGlobalStateConfig struct {
+	//if set MODULE_DIRPATH_GLOBAL_NAME & MODULE_FILEPATH_GLOBAL_NAME should be defined.
+	AbsoluteModulePath string
+
 	EnvPattern          *core.ObjectPattern
 	PreinitFiles        core.PreinitFiles
 	Databases           map[string]*core.DatabaseIL
 	AllowMissingEnvVars bool
-	Out                 io.Writer
-	LogOut              io.Writer
+
+	Out    io.Writer
+	LogOut io.Writer
 }
 
 type NewDefaultGlobalStateFn func(ctx *core.Context, conf DefaultGlobalStateConfig) (*core.GlobalState, error)
