@@ -1122,6 +1122,121 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("single declaration without parenthesis and with unprefixed pattern call (object pattern argument shorthand)", func(t *testing.T) {
+			n := mustparseChunk(t, "var a int{} = 1")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 15}, nil, nil},
+				Statements: []Node{
+					&LocalVariableDeclarations{
+						NodeBase: NodeBase{
+							NodeSpan{0, 15},
+							nil,
+							[]Token{{Type: VAR_KEYWORD, Span: NodeSpan{0, 3}}},
+						},
+						Declarations: []*LocalVariableDeclaration{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{4, 15},
+									nil,
+									[]Token{{Type: EQUAL, Span: NodeSpan{12, 13}}},
+								},
+								Left: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{4, 5}, nil, nil},
+									Name:     "a",
+								},
+								Type: &PatternCallExpression{
+									NodeBase: NodeBase{Span: NodeSpan{6, 11}},
+									Callee: &PatternIdentifierLiteral{
+										NodeBase: NodeBase{
+											Span: NodeSpan{6, 9},
+										},
+										Unprefixed: true,
+										Name:       "int",
+									},
+									Arguments: []Node{
+										&ObjectPatternLiteral{
+											NodeBase: NodeBase{
+												Span: NodeSpan{9, 11},
+												ValuelessTokens: []Token{
+													{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
+													{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
+												},
+											},
+										},
+									},
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{14, 15}, nil, nil},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+
+			t.Run("single declaration without parenthesis and with unprefixed pattern call (namespace member, object pattern argument shorthand))", func(t *testing.T) {
+				n := mustparseChunk(t, "var a a.b{} = 1")
+				assert.EqualValues(t, &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 15}, nil, nil},
+					Statements: []Node{
+						&LocalVariableDeclarations{
+							NodeBase: NodeBase{
+								NodeSpan{0, 15},
+								nil,
+								[]Token{{Type: VAR_KEYWORD, Span: NodeSpan{0, 3}}},
+							},
+							Declarations: []*LocalVariableDeclaration{
+								{
+									NodeBase: NodeBase{
+										NodeSpan{4, 15},
+										nil,
+										[]Token{{Type: EQUAL, Span: NodeSpan{12, 13}}},
+									},
+									Left: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{4, 5}, nil, nil},
+										Name:     "a",
+									},
+									Type: &PatternCallExpression{
+										NodeBase: NodeBase{Span: NodeSpan{6, 11}},
+										Callee: &PatternNamespaceMemberExpression{
+											NodeBase: NodeBase{NodeSpan{6, 9}, nil, nil},
+											Namespace: &PatternNamespaceIdentifierLiteral{
+												NodeBase:   NodeBase{NodeSpan{6, 8}, nil, nil},
+												Unprefixed: true,
+												Name:       "a",
+											},
+											MemberName: &IdentifierLiteral{
+												NodeBase: NodeBase{NodeSpan{8, 9}, nil, nil},
+												Name:     "b",
+											},
+										},
+										Arguments: []Node{
+											&ObjectPatternLiteral{
+												NodeBase: NodeBase{
+													Span: NodeSpan{9, 11},
+													ValuelessTokens: []Token{
+														{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
+														{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
+													},
+												},
+											},
+										},
+									},
+									Right: &IntLiteral{
+										NodeBase: NodeBase{NodeSpan{14, 15}, nil, nil},
+										Raw:      "1",
+										Value:    1,
+									},
+								},
+							},
+						},
+					},
+				}, n)
+			})
+		})
+
 		t.Run("var keyword at end of file", func(t *testing.T) {
 			n, err := parseChunk(t, "var", "")
 			assert.Error(t, err)
@@ -18791,6 +18906,33 @@ func testParse(
 									Span:            NodeSpan{6, 7},
 									Err:             &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInPatternCallArguments(':')},
 									ValuelessTokens: []Token{{Type: UNEXPECTED_CHAR, Span: NodeSpan{6, 7}, Raw: string(':')}},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("shorthand syntax for object pattern argument", func(t *testing.T) {
+			n := mustparseChunk(t, `%text{}`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
+				Statements: []Node{
+					&PatternCallExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 7}},
+						Callee: &PatternIdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{0, 5}},
+							Name:     "text",
+						},
+						Arguments: []Node{
+							&ObjectPatternLiteral{
+								NodeBase: NodeBase{
+									Span: NodeSpan{5, 7},
+									ValuelessTokens: []Token{
+										{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{5, 6}},
+										{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{6, 7}},
+									},
 								},
 							},
 						},

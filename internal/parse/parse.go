@@ -2465,8 +2465,8 @@ func (p *parser) parsePercentAlphaStartingExpr() Node {
 		}
 
 		switch {
-		case p.s[p.i] == '(':
-			if left == ident && ident.Name == "str" {
+		case p.s[p.i] == '(' || p.s[p.i] == '{':
+			if left == ident && ident.Name == "str" && p.s[p.i] == '(' {
 				p.i++
 				return p.parseComplexStringPatternPiece(ident.Span.Start, ident)
 			}
@@ -2730,38 +2730,52 @@ func (p *parser) parseComplexStringPatternPiece(start int32, ident *PatternIdent
 func (p *parser) parsePatternCall(callee Node) *PatternCallExpression {
 	p.panicIfContextDone()
 
-	valuelessTokens := []Token{{Type: OPENING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}}}
-	p.i++
-	p.eatSpaceComma(&valuelessTokens)
+	var (
+		args            []Node
+		parsingErr      *ParsingError
+		valuelessTokens []Token
+	)
 
-	var args []Node
+	switch p.s[p.i] {
+	case '(':
+		valuelessTokens = []Token{{Type: OPENING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}}}
+		p.i++
+		p.eatSpaceComma(&valuelessTokens)
 
-	for p.i < p.len && p.s[p.i] != ')' {
-		arg, isMissingExpr := p.parseExpression()
+		for p.i < p.len && p.s[p.i] != ')' {
+			arg, isMissingExpr := p.parseExpression()
 
-		if isMissingExpr {
-			span := NodeSpan{p.i, p.i + 1}
-			arg = &UnknownNode{
-				NodeBase: NodeBase{
-					span,
-					&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInPatternCallArguments(p.s[p.i])},
-					[]Token{{Type: UNEXPECTED_CHAR, Span: span, Raw: string(p.s[p.i])}},
-				},
+			if isMissingExpr {
+				span := NodeSpan{p.i, p.i + 1}
+				arg = &UnknownNode{
+					NodeBase: NodeBase{
+						span,
+						&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInPatternCallArguments(p.s[p.i])},
+						[]Token{{Type: UNEXPECTED_CHAR, Span: span, Raw: string(p.s[p.i])}},
+					},
+				}
+				p.i++
 			}
-			p.i++
+
+			args = append(args, arg)
+			p.eatSpaceComma(&valuelessTokens)
 		}
 
-		args = append(args, arg)
-		p.eatSpaceComma(&valuelessTokens)
-	}
-
-	var parsingErr *ParsingError
-
-	if p.i >= p.len || p.s[p.i] != ')' {
-		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_PATTERN_CALL_MISSING_CLOSING_PAREN}
-	} else {
-		valuelessTokens = append(valuelessTokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
-		p.i++
+		if p.i >= p.len || p.s[p.i] != ')' {
+			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_PATTERN_CALL_MISSING_CLOSING_PAREN}
+		} else {
+			valuelessTokens = append(valuelessTokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
+			p.i++
+		}
+	case '{':
+		prev := p.inPattern
+		p.inPattern = true
+		defer func() {
+			p.inPattern = prev
+		}()
+		args = append(args, utils.Ret0(p.parseExpression()))
+	default:
+		panic(errors.New("unreachable"))
 	}
 
 	return &PatternCallExpression{
@@ -6058,11 +6072,13 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 					Unprefixed: true,
 					Name:       v.Name,
 				}
-				if p.i < p.len && p.s[p.i] == '(' {
-					return p.parsePatternCall(result), false
-				} else {
-					return result, false
+				if p.i < p.len {
+					switch p.s[p.i] {
+					case '(', '{':
+						return p.parsePatternCall(result), false
+					}
 				}
+				return result, false
 			}
 		case *IdentifierMemberExpression:
 			if p.inPattern && len(v.PropertyNames) == 1 {
@@ -6078,11 +6094,13 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 					},
 					MemberName: v.PropertyNames[0],
 				}
-				if p.i < p.len && p.s[p.i] == '(' {
-					return p.parsePatternCall(result), false
-				} else {
-					return result, false
+				if p.i < p.len {
+					switch p.s[p.i] {
+					case '(', '{':
+						return p.parsePatternCall(result), false
+					}
 				}
+				return result, false
 			}
 
 			name = v.Left.Name
