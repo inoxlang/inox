@@ -233,6 +233,26 @@ func TestHttpServerMapping(t *testing.T) {
 		)
 	})
 
+	t.Run("POST /x: html node", func(t *testing.T) {
+
+		runMappingTestCase(t,
+			serverTestCase{
+				input: `return Mapping {
+					%/... => html.div{}
+				}`,
+				requests: []requestTestInfo{
+					{
+						method:              "POST",
+						header:              http.Header{"Content-Type": []string{core.PLAIN_TEXT_CTYPE}},
+						acceptedContentType: core.HTML_CTYPE,
+						result:              `<div></div>`,
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
 	t.Run("GET /x: handler", func(t *testing.T) {
 
 		runMappingTestCase(t,
