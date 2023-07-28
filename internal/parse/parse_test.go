@@ -18306,6 +18306,53 @@ func testParse(
 		}, n)
 	})
 
+	t.Run("record pattern", func(t *testing.T) {
+
+		t.Run("{ ...named-pattern } ", func(t *testing.T) {
+			n := mustparseChunk(t, "%p = #{ ...%patt }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 18}, nil, nil},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{
+							NodeSpan{0, 18},
+							nil,
+							[]Token{{Type: EQUAL, Span: NodeSpan{3, 4}}},
+						},
+						Left: &PatternIdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+							Name:     "p",
+						},
+						Right: &RecordPatternLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{5, 18},
+								nil,
+								[]Token{
+									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{5, 7}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{17, 18}},
+								},
+							},
+							Exact: false,
+							SpreadElements: []*PatternPropertySpreadElement{
+								{
+									NodeBase: NodeBase{
+										NodeSpan{8, 16},
+										nil,
+										[]Token{{Type: THREE_DOTS, Span: NodeSpan{8, 11}}},
+									},
+									Expr: &PatternIdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{11, 16}, nil, nil},
+										Name:     "patt",
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+	})
+
 	t.Run("pattern namespace member expression", func(t *testing.T) {
 		n := mustparseChunk(t, "%mynamespace.a")
 		assert.EqualValues(t, &Chunk{

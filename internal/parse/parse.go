@@ -55,6 +55,8 @@ var (
 	NO_LOCATION_DATE_LITERAL_REGEX = regexp.MustCompile(_NO_LOCATION_DATE_LITERAL_PATTERN)
 	DATE_LITERAL_REGEX             = regexp.MustCompile(DATE_LITERAL_PATTERN)
 	STRICT_EMAIL_ADDRESS_REGEX     = regexp.MustCompile(STRICT_EMAIL_ADDRESS_PATTERN)
+
+	ErrUnreachable = errors.New("unreachable")
 )
 
 // parses a file module, resultErr is either a non-syntax error or an aggregation of syntax errors (*ParsingErrorAggregation).
@@ -2775,7 +2777,7 @@ func (p *parser) parsePatternCall(callee Node) *PatternCallExpression {
 		}()
 		args = append(args, utils.Ret0(p.parseExpression()))
 	default:
-		panic(errors.New("unreachable"))
+		panic(ErrUnreachable)
 	}
 
 	return &PatternCallExpression{
@@ -2789,7 +2791,7 @@ func (p *parser) parsePatternCall(callee Node) *PatternCallExpression {
 	}
 }
 
-func (p *parser) parseObjectPatternLiteral(percentPrefixed bool) *ObjectPatternLiteral {
+func (p *parser) parseObjectRecordPatternLiteral(percentPrefixed, isRecordPattern bool) Node {
 	p.panicIfContextDone()
 
 	var (
@@ -2803,14 +2805,22 @@ func (p *parser) parseObjectPatternLiteral(percentPrefixed bool) *ObjectPatternL
 	)
 
 	if percentPrefixed {
+		if isRecordPattern {
+			panic(ErrUnreachable)
+		}
 		tokens = []Token{{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{p.i - 1, p.i + 1}}}
 		objectPatternStart = p.i - 1
+		p.i++
 	} else {
-		tokens = []Token{{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}}}
 		objectPatternStart = p.i
+		if isRecordPattern {
+			tokens = []Token{{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{p.i, p.i + 2}}}
+			p.i += 2
+		} else {
+			tokens = []Token{{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}}}
+			p.i++
+		}
 	}
-
-	p.i++
 
 	//entry
 	var (
@@ -2929,7 +2939,7 @@ object_pattern_top_loop:
 					keyName = k.Value
 				default:
 					implicitKey = true
-					propParsingErr = &ParsingError{UnspecifiedParsingError, IMPLICIT_KEY_PROPS_ARE_NOT_ALLOWED_IN_OBJECT_PATTERNS}
+					propParsingErr = &ParsingError{UnspecifiedParsingError, IMPLICIT_KEY_PROPS_ARE_NOT_ALLOWED_IN_OBJECT_RECORD_PATTERNS}
 					keyName = strconv.Itoa(unamedPropCount)
 					v = key
 					propSpanEnd = v.Base().Span.End
@@ -2946,7 +2956,7 @@ object_pattern_top_loop:
 			case isValidEntryEnd(p.s, p.i):
 				implicitKey = true
 				if propParsingErr == nil {
-					propParsingErr = &ParsingError{UnspecifiedParsingError, IMPLICIT_KEY_PROPS_ARE_NOT_ALLOWED_IN_OBJECT_PATTERNS}
+					propParsingErr = &ParsingError{UnspecifiedParsingError, IMPLICIT_KEY_PROPS_ARE_NOT_ALLOWED_IN_OBJECT_RECORD_PATTERNS}
 				}
 				properties = append(properties, &ObjectPatternProperty{
 					NodeBase: NodeBase{
@@ -3003,7 +3013,7 @@ object_pattern_top_loop:
 
 			if implicitKey { // implicit key property not followed by a valid entry end
 				if propParsingErr == nil {
-					propParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION}
+					propParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_OBJ_PATT_LIT_ENTRY_SEPARATION}
 				}
 				properties = append(properties, &ObjectPatternProperty{
 					NodeBase: NodeBase{
@@ -3078,7 +3088,7 @@ object_pattern_top_loop:
 				p.eatSpace()
 
 				if !isMissingExpr && p.i < p.len && !isValidEntryEnd(p.s, p.i) {
-					propParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION}
+					propParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_OBJ_PATT_LIT_ENTRY_SEPARATION}
 				}
 
 				properties = append(properties, &ObjectPatternProperty{
@@ -3120,7 +3130,11 @@ object_pattern_top_loop:
 	}
 
 	if p.i >= p.len {
-		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_PATTERN_MISSING_CLOSING_BRACE}
+		if isRecordPattern {
+			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_REC_PATTERN_MISSING_CLOSING_BRACE}
+		} else {
+			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_PATTERN_MISSING_CLOSING_BRACE}
+		}
 	} else {
 		tokens = append(tokens, Token{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 		p.i++
@@ -3130,6 +3144,15 @@ object_pattern_top_loop:
 		Span:            NodeSpan{objectPatternStart, p.i},
 		Err:             parsingErr,
 		ValuelessTokens: tokens,
+	}
+
+	if isRecordPattern {
+		return &RecordPatternLiteral{
+			NodeBase:       base,
+			Properties:     properties,
+			SpreadElements: spreadElements,
+			Exact:          exact,
+		}
 	}
 
 	return &ObjectPatternLiteral{
@@ -3977,7 +4000,7 @@ func (p *parser) parsePercentPrefixedPattern() Node {
 		}()
 		p.inPattern = true
 
-		return p.parseObjectPatternLiteral(true)
+		return p.parseObjectRecordPatternLiteral(true, false)
 	case '[':
 		prev := p.inPattern
 		defer func() {
@@ -6133,7 +6156,7 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 		return p.parseNumberAndRangeAndRateLiterals(), false
 	case '{':
 		if p.inPattern {
-			return p.parseObjectPatternLiteral(false), false
+			return p.parseObjectRecordPatternLiteral(false, false), false
 		}
 		return p.parseObjectOrRecordLiteral(false), false
 	case '[':
@@ -6169,6 +6192,9 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 		if p.i < p.len-1 {
 			switch p.s[p.i+1] {
 			case '{':
+				if p.inPattern {
+					return p.parseObjectRecordPatternLiteral(false, true), false
+				}
 				return p.parseObjectOrRecordLiteral(true), false
 			case '[':
 				return p.parseListOrTupleLiteral(true), false
@@ -8602,7 +8628,8 @@ func (p *parser) parseFunctionPattern(start int32) Node {
 					IsVariadic: isVariadic,
 				})
 			case *PatternCallExpression, *PatternNamespaceMemberExpression, *PatternIdentifierLiteral,
-				*ObjectPatternLiteral, *ListPatternLiteral, *ComplexStringPatternPiece, *RegularExpressionLiteral:
+				*ObjectPatternLiteral, *ListPatternLiteral, *RecordPatternLiteral,
+				*ComplexStringPatternPiece, *RegularExpressionLiteral:
 
 				typ = varNode
 
