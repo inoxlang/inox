@@ -138,17 +138,21 @@ func TestHttpServerUserHandler(t *testing.T) {
 
 func TestHttpServerMapping(t *testing.T) {
 
-	testCases := map[string]serverTestCase{
-		"string": {
+	runMappingTestCase(t, "string",
+		serverTestCase{
 			input: `return Mapping {
-					%/... => "hello"
-				}
-				`,
+						%/... => "hello"
+					}
+					`,
 			requests: []requestTestInfo{
 				{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
 			},
 		},
-		"string: */* is accepted": {
+		createClient,
+	)
+
+	runMappingTestCase(t, "string: */* is accepted",
+		serverTestCase{
 			input: `return Mapping {
 					%/... => "hello"
 				}
@@ -157,14 +161,22 @@ func TestHttpServerMapping(t *testing.T) {
 				{acceptedContentType: core.ANY_CTYPE, result: `hello`},
 			},
 		},
-		"bytes": {
+		createClient,
+	)
+
+	runMappingTestCase(t, "bytes",
+		serverTestCase{
 			input: `return Mapping {
 					%/... => 0d[65] # 'A'
 				}
 				`,
 			requests: []requestTestInfo{{acceptedContentType: core.APP_OCTET_STREAM_CTYPE, result: `A`}},
 		},
-		"html node": {
+		createClient,
+	)
+
+	runMappingTestCase(t, "html node",
+		serverTestCase{
 			input: `return Mapping {
 					%/... => html.div{}
 				}`,
@@ -172,7 +184,11 @@ func TestHttpServerMapping(t *testing.T) {
 				{acceptedContentType: core.HTML_CTYPE, result: `<div></div>`},
 			},
 		},
-		"html node: */* is accepted": {
+		createClient,
+	)
+
+	runMappingTestCase(t, "html node: */* is accepted",
+		serverTestCase{
 			input: `return Mapping {
 					%/... => html.div{}
 				}`,
@@ -180,7 +196,11 @@ func TestHttpServerMapping(t *testing.T) {
 				{acceptedContentType: core.ANY_CTYPE, result: `<div></div>`},
 			},
 		},
-		"handler": {
+		createClient,
+	)
+
+	runMappingTestCase(t, "handler",
+		serverTestCase{
 			input: `
 					fn handle(rw %http.resp_writer, r %http.req){
 						rw.write_json({ a: 1 })
@@ -189,9 +209,15 @@ func TestHttpServerMapping(t *testing.T) {
 						%/... => handle
 					}
 				`,
-			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`}},
+			requests: []requestTestInfo{
+				{acceptedContentType: core.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`},
+			},
 		},
-		"handler accessing a global function": {
+		createClient,
+	)
+
+	runMappingTestCase(t, "handler accessing a global function",
+		serverTestCase{
 			input: `
 					fn helper(rw %http.resp_writer, r %http.req){
 						rw.write_json({ a: 1 })
@@ -203,17 +229,29 @@ func TestHttpServerMapping(t *testing.T) {
 						%/... => handle
 					}
 				`,
-			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`}},
+			requests: []requestTestInfo{
+				{acceptedContentType: core.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`},
+			},
 		},
-		"JSON for model": {
+		createClient,
+	)
+
+	runMappingTestCase(t, "JSON of model",
+		serverTestCase{
 			input: `$$model = {a: 1}
 
 				return Mapping {
 					%/... => model
 				}`,
-			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`}},
+			requests: []requestTestInfo{
+				{acceptedContentType: core.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`},
+			},
 		},
-		"JSON for model with sensitive data, no defined visibility": {
+		createClient,
+	)
+
+	runMappingTestCase(t, "JSON of model with sensitive data, no defined visibility",
+		serverTestCase{
 			input: `
 				$$model = {
 					a: 1
@@ -224,9 +262,15 @@ func TestHttpServerMapping(t *testing.T) {
 				return Mapping {
 					%/... => model
 				}`,
-			requests: []requestTestInfo{{acceptedContentType: core.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`}},
+			requests: []requestTestInfo{
+				{acceptedContentType: core.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`},
+			},
 		},
-		"JSON for model with all fields set as public": {
+		createClient,
+	)
+
+	runMappingTestCase(t, "JSON of model with all fields set as public",
+		serverTestCase{
 			input: `$$model = {
 					a: 1
 					password: "mypassword"
@@ -249,7 +293,11 @@ func TestHttpServerMapping(t *testing.T) {
 				},
 			},
 		},
-		"IXON for model with no defined visibility": {
+		createClient,
+	)
+
+	runMappingTestCase(t, "IXON of model with no defined visibility",
+		serverTestCase{
 			input: ` $$model = {
 					a: 1
 					password: "mypassword"
@@ -259,9 +307,15 @@ func TestHttpServerMapping(t *testing.T) {
 				return Mapping {
 					%/... => model
 				}`,
-			requests: []requestTestInfo{{acceptedContentType: core.IXON_CTYPE, result: `{"a":1}`}},
+			requests: []requestTestInfo{
+				{acceptedContentType: core.IXON_CTYPE, result: `{"a":1}`},
+			},
 		},
-		"IXON for model with all fields set as public": {
+		createClient,
+	)
+
+	runMappingTestCase(t, "IXON of model with all fields set as public",
+		serverTestCase{
 			input: `$$model = {
 					a: 1
 					password: "mypassword"
@@ -277,10 +331,15 @@ func TestHttpServerMapping(t *testing.T) {
 				return Mapping {
 					%/... => model
 				}`,
-			requests: []requestTestInfo{{acceptedContentType: core.IXON_CTYPE, result: `{"a":1,"e":a@mail.com,"password":"mypassword"}`}},
+			requests: []requestTestInfo{
+				{acceptedContentType: core.IXON_CTYPE, result: `{"a":1,"e":a@mail.com,"password":"mypassword"}`},
+			},
 		},
+		createClient,
+	)
 
-		"large binary stream: event stream request": {
+	runMappingTestCase(t, "large binary stream: event stream request",
+		serverTestCase{
 			input: strings.Replace(`
 					return Mapping {
 						%/... => torstream(mkbytes(<size>))
@@ -311,108 +370,9 @@ func TestHttpServerMapping(t *testing.T) {
 				},
 			},
 		},
-	}
+		createClient,
+	)
 
-	for name, testCase := range testCases {
-		runMappingTestCase(t, name, testCase, createClient)
-	}
-
-	t.Run("reactive rendering", func(t *testing.T) {
-
-		t.Skip()
-
-		testCases := map[string]serverTestCase{
-			"HTML for model": {
-				input: `$$model = {
-						render: fn() => dom.div{class:"a"}
-					}
-					return Mapping {
-						/ => "hello"
-						%/... => model
-					}`,
-				requests: []requestTestInfo{
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, path: "/"}, // get session
-					{
-						pause:                         10 * time.Millisecond,
-						acceptedContentType:           core.HTML_CTYPE,
-						resultRegex:                   `<div class="a".*?></div>`,
-						checkIdenticalParallelRequest: true,
-					},
-				},
-			},
-			"HTML for self updating model: 2 requests": {
-				input: `
-					$$model = {
-						count: 1
-						sleep: sleep
-						render: fn() => dom.div{class:"a", self.<count}
-
-						lifetimejob #increment {
-							self.sleep(100ms)
-							self.count = 2
-						}
-					}
-
-					return Mapping {
-						%/... => model
-					}`,
-				requests: []requestTestInfo{
-					{acceptedContentType: core.HTML_CTYPE, resultRegex: `<div class="a".*?>1</div>`},
-					{acceptedContentType: core.HTML_CTYPE, resultRegex: `<div class="a".*?>2</div>`, preDelay: time.Second / 2},
-				},
-			},
-			"event stream request for a model with an invalid view": {
-				input: `
-						$$model = {
-							count: 1
-							sleep: sleep
-							render: fn() => 1
-						}
-
-						return Mapping {
-							%/... => model
-						}`,
-				requests: []requestTestInfo{
-					{
-						acceptedContentType: core.EVENT_STREAM_CTYPE,
-						// no events because fail
-					},
-				},
-			},
-			"self updating model: event stream request": {
-				input: ` $$model = {
-						count: 1
-						sleep: sleep
-						render: fn() => dom.div{class:"a", self.<count}
-
-						lifetimejob #increment {
-							self.sleep(100ms)
-							self.count += 1
-						}
-					}
-
-					return Mapping {
-						%/... => model
-					}`,
-				requests: []requestTestInfo{
-					{acceptedContentType: core.HTML_CTYPE, resultRegex: `<div class="a".*?>1</div>`},
-					{
-						acceptedContentType: core.EVENT_STREAM_CTYPE,
-						events: []*core.Event{
-							(&ServerSentEvent{
-								Data: []byte(`<div class="a".*?>2</div>`),
-							}).ToEvent(),
-						},
-						preDelay: 10 * time.Millisecond,
-					},
-				},
-			},
-		}
-
-		for name, testCase := range testCases {
-			runMappingTestCase(t, name, testCase, createClient)
-		}
-	})
 }
 
 func setupAdvancedTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *core.Context, *parse.Chunk, core.Host, error) {
@@ -580,8 +540,13 @@ func runAdvancedServerTestCase(
 			}
 
 			if info.acceptedContentType != core.EVENT_STREAM_CTYPE {
+				method := "GET"
+				if info.method != "" {
+					method = info.method
+				}
+
 				// we send a request to the server
-				req, _ := http.NewRequest("GET", url, nil)
+				req, _ := http.NewRequest(method, url, nil)
 
 				if info.acceptedContentType != "" {
 					req.Header.Add("Accept", string(info.acceptedContentType))
@@ -724,6 +689,7 @@ type requestTestInfo struct {
 	preDelay            time.Duration
 	acceptedContentType core.Mimetype
 	path                string
+	method              string
 
 	result                        string // ignore if content type is event stream
 	resultRegex                   string // ignore if content type is event stream

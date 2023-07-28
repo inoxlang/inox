@@ -14,10 +14,6 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-const (
-	DOM_EVENT_CTYPE = "dom/event"
-)
-
 var (
 	DEFAULT_CSP, _ = NewCSPWithDirectives(nil)
 
@@ -238,11 +234,6 @@ func respondWithMappingResult(h handlingArguments) {
 		case req.AcceptAny():
 			break
 		case req.ParsedAcceptHeader.Match(core.IXON_CTYPE):
-			if !req.IsGetOrHead() {
-				rw.writeStatus(http.StatusMethodNotAllowed)
-				return
-			}
-
 			config := &core.ReprConfig{}
 
 			serializable, ok := value.(core.Serializable)
@@ -256,11 +247,6 @@ func respondWithMappingResult(h handlingArguments) {
 			return
 
 		case req.ParsedAcceptHeader.Match(core.JSON_CTYPE):
-			if !req.IsGetOrHead() {
-				rw.writeStatus(http.StatusMethodNotAllowed)
-				return
-			}
-
 			config := core.JSONSerializationConfig{
 				ReprConfig: &core.ReprConfig{},
 			}
@@ -281,8 +267,6 @@ func respondWithMappingResult(h handlingArguments) {
 		}
 	case "PATCH":
 		switch {
-		case req.ContentType.MatchText(DOM_EVENT_CTYPE):
-			break // handled further below
 		case req.ContentType.MatchText(core.APP_OCTET_STREAM_CTYPE):
 
 			getData := func() ([]byte, bool) {
@@ -418,8 +402,7 @@ loop:
 					break loop
 				}
 
-				if !req.ParsedAcceptHeader.Match(core.HTML_CTYPE) && !req.ParsedAcceptHeader.Match(core.EVENT_STREAM_CTYPE) &&
-					!req.ContentType.MatchText(DOM_EVENT_CTYPE) {
+				if !req.ParsedAcceptHeader.Match(core.HTML_CTYPE) && !req.ParsedAcceptHeader.Match(core.EVENT_STREAM_CTYPE) {
 					rw.writeStatus(http.StatusNotAcceptable)
 					return
 				}

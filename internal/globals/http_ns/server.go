@@ -130,6 +130,7 @@ func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*Http
 		if err != nil {
 			serverLogger.Print(err)
 			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
 
 		rw := NewResponseWriter(req, w, serverLogger)
