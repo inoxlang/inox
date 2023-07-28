@@ -16,6 +16,7 @@ const (
 	STR_TEMPL_LITS_WITH_INTERP_SHOULD_BE_PRECEDED_BY_PATTERN_WICH_NAME_HAS_PREFIX = "string template literals with interpolations should be preceded by a pattern which name has a prefix"
 	FUNCS_CALLED_RECU_SHOULD_HAVE_RET_TYPE                                        = "functions called recursively should have a return type"
 	CANNOT_SPREAD_OBJ_PATTERN_THAT_MATCHES_ANY_OBJECT                             = "cannot spread an object pattern that matches any object"
+	CANNOT_SPREAD_REC_PATTERN_THAT_MATCHES_ANY_RECORD                             = "cannot spread an record pattern that matches any record"
 	CANNOT_SPREAD_OBJ_PATTERN_THAT_IS_INEXACT                                     = "cannot spread an object pattern that is inexact"
 	MISSING_RETURN_IN_FUNCTION                                                    = "missing return in function"
 	MISSING_UNCONDITIONAL_RETURN_IN_FUNCTION                                      = "missing unconditional return in function"
@@ -285,6 +286,10 @@ func fmtPropertyIsOptionalUseOptionalMembExpr(name string) string {
 
 func fmtPatternSpreadInObjectPatternShouldBeAnObjectPatternNot(v SymbolicValue) string {
 	return fmt.Sprintf("a pattern that is a spread in an object pattern should be an object pattern not a(n) %s", Stringify(v))
+}
+
+func fmtPatternSpreadInRecordPatternShouldBeAnRecordPatternNot(v SymbolicValue) string {
+	return fmt.Sprintf("a pattern that is a spread in an record pattern should be an record pattern not a(n) %s", Stringify(v))
 }
 
 func fmtCannotCreateHostAliasWithA(value SymbolicValue) string {

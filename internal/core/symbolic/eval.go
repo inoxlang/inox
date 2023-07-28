@@ -2889,6 +2889,52 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		}
 
 		return pattern, nil
+	case *parse.RecordPatternLiteral:
+		pattern := &RecordPattern{
+			entries: make(map[string]Pattern),
+			inexact: !n.Exact,
+		}
+		for _, p := range n.Properties {
+			name := p.Name()
+			var err error
+			pattern.entries[name], err = symbolicallyEvalPatternNode(p.Value, state)
+			if err != nil {
+				return nil, err
+			}
+			if state.symbolicData != nil {
+				val, ok := state.symbolicData.GetMostSpecificNodeValue(p.Value)
+				if ok {
+					state.symbolicData.SetMostSpecificNodeValue(p.Key, val)
+				}
+			}
+			if p.Optional {
+				if pattern.optionalEntries == nil {
+					pattern.optionalEntries = make(map[string]struct{}, 1)
+				}
+				pattern.optionalEntries[name] = struct{}{}
+			}
+		}
+
+		for _, el := range n.SpreadElements {
+			compiledElement, err := symbolicallyEvalPatternNode(el.Expr, state)
+			if err != nil {
+				return nil, err
+			}
+
+			if recPattern, ok := compiledElement.(*RecordPattern); ok {
+				if recPattern.entries == nil {
+					state.addError(makeSymbolicEvalError(el, state, CANNOT_SPREAD_REC_PATTERN_THAT_MATCHES_ANY_RECORD))
+				} else {
+					for name, vpattern := range recPattern.entries {
+						pattern.entries[name] = vpattern
+					}
+				}
+			} else {
+				state.addError(makeSymbolicEvalError(el, state, fmtPatternSpreadInRecordPatternShouldBeAnRecordPatternNot(compiledElement)))
+			}
+		}
+
+		return pattern, nil
 	case *parse.ListPatternLiteral:
 		pattern := &ListPattern{}
 

@@ -5040,6 +5040,171 @@ func TestSymbolicEval(t *testing.T) {
 
 	})
 
+	t.Run("record pattern literal", func(t *testing.T) {
+
+		t.Run("spread pattern that is not an record pattern", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return %{x: #{...1}}
+			`)
+
+			spreadElem := parse.FindNode(n, (*parse.PatternPropertySpreadElement)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(spreadElem, state, fmtPatternSpreadInRecordPatternShouldBeAnRecordPatternNot(&ExactValuePattern{value: &Int{hasValue: true, value: 1}})),
+			}, state.errors)
+			assert.Equal(t, &RecordPattern{
+				entries: map[string]Pattern{},
+				inexact: true,
+			}, res.(*ObjectPattern).entries["x"])
+		})
+
+		t.Run("spread record pattern", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return %{x: #{...#{}}}
+			`)
+
+			//spreadElem := parse.FindNode(n, (*parse.PatternPropertySpreadElement)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+
+			// assert.Equal(t, []SymbolicEvaluationError{
+			// 	makeSymbolicEvalError(spreadElem, state, CANNOT_SPREAD_OBJ_PATTERN_THAT_IS_INEXACT),
+			// }, state.errors)
+			assert.Equal(t, &RecordPattern{
+				entries: map[string]Pattern{},
+				inexact: true,
+			}, res.(*ObjectPattern).entries["x"])
+		})
+
+		t.Run("spread object pattern matching all objects", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return %{x: #{...%p}}
+			`)
+
+			state.ctx.AddNamedPattern("p", &RecordPattern{}, false)
+
+			spreadElem := parse.FindNode(n, (*parse.PatternPropertySpreadElement)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(spreadElem, state, CANNOT_SPREAD_REC_PATTERN_THAT_MATCHES_ANY_RECORD),
+			}, state.errors)
+			assert.Equal(t, &RecordPattern{
+				entries: map[string]Pattern{},
+				inexact: true,
+			}, res.(*ObjectPattern).entries["x"])
+		})
+
+		t.Run("spread valid record pattern", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return %{x: #{...#{name: %str}}}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, &RecordPattern{
+				entries: map[string]Pattern{"name": state.ctx.ResolveNamedPattern("str")},
+				inexact: true,
+			}, res.(*ObjectPattern).entries["x"])
+		})
+
+		t.Run("pattern call", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return %{x: #{a: %int(0..1)}}
+			`)
+
+			patt, _ := state.ctx.ResolveNamedPattern("int").Call(nil, []SymbolicValue{&IntRange{}})
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, &RecordPattern{
+				entries: map[string]Pattern{"a": patt},
+				inexact: true,
+			}, res.(*ObjectPattern).entries["x"])
+		})
+
+		t.Run("pattern call: invalid/missing arguments", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return %{x: #{a: %int()}}
+			`)
+
+			patternCallExpr := parse.FindNode(n, (*parse.PatternCallExpression)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(patternCallExpr, state, "missing argument"),
+			}, state.errors)
+			assert.Equal(t, &RecordPattern{
+				entries: map[string]Pattern{"a": ANY_PATTERN},
+				inexact: true,
+			}, res.(*ObjectPattern).entries["x"])
+		})
+
+		t.Run("pattern namespace's member", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return %{x: #{a: %myns.int}}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, &RecordPattern{
+				entries: map[string]Pattern{"a": state.ctx.ResolveNamedPattern("int")},
+				inexact: true,
+			}, res.(*ObjectPattern).entries["x"])
+		})
+
+		t.Run("deep record pattern", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return %{x: #{
+					a: #{name: %str}
+					b: #{
+						c: {count: %int}
+						d: 1
+					}
+					e: 2
+					f: %(#{})
+				}}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, &RecordPattern{
+				entries: map[string]Pattern{
+					"a": &RecordPattern{
+						entries: map[string]Pattern{"name": state.ctx.ResolveNamedPattern("str")},
+						inexact: true,
+					},
+					"b": &RecordPattern{
+						entries: map[string]Pattern{
+							"c": &ObjectPattern{
+								entries: map[string]Pattern{
+									"count": state.ctx.ResolveNamedPattern("int"),
+								},
+								inexact: true,
+							},
+							"d": utils.Must(NewExactValuePattern(&Int{hasValue: true, value: 1})),
+						},
+						inexact: true,
+					},
+					"e": utils.Must(NewExactValuePattern(&Int{hasValue: true, value: 2})),
+					"f": utils.Must(NewExactValuePattern(NewEmptyRecord())),
+				},
+				inexact: true,
+			}, res.(*ObjectPattern).entries["x"])
+		})
+
+	})
+
 	t.Run("list pattern literal", func(t *testing.T) {
 		n, state := MakeTestStateAndChunk(`
 			return %[ %{} ]
