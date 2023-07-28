@@ -535,7 +535,10 @@ type RunScriptArgs struct {
 	AllowMissingEnvVars bool
 	IgnoreHighRiskScore bool
 
-	Debugger *core.Debugger //if not nil the script is executed in debug mode with this debugger
+	//if not nil AND UseBytecode is false the script is executed in debug mode with this debugger.
+	//Debugger.AttachAndStart is called before starting the evaluation.
+	//if nil the parent state's debugger is used if present.
+	Debugger *core.Debugger
 
 	//output for execution, if nil os.Stdout is used
 	Out io.Writer
@@ -647,8 +650,16 @@ func RunLocalScript(args RunScriptArgs) (
 	}
 
 	treeWalkState := core.NewTreeWalkStateWithGlobal(state)
-	if args.Debugger != nil {
-		args.Debugger.AttachAndStart(treeWalkState)
+	debugger := args.Debugger
+	if debugger == nil && args.ParentContext != nil {
+		closestState := args.ParentContext.GetClosestState()
+		parentDebugger, _ := closestState.Debugger.Load().(*core.Debugger)
+		if parentDebugger != nil {
+			debugger = parentDebugger.NewChild()
+		}
+	}
+	if debugger != nil {
+		debugger.AttachAndStart(treeWalkState)
 	}
 
 	res, err := core.TreeWalkEval(state.Module.MainChunk.Node, treeWalkState)
