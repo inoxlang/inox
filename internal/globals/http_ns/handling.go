@@ -264,6 +264,10 @@ func respondWithMappingResult(h handlingArguments) {
 			return
 		}
 	default:
+		//TODO:
+		// https://developer.mozilla.org/en-US/docs/web/http/status/405:
+		// The server must generate an Allow header field in a 405 status code response.
+		// The field must contain a list of methods that the target resource currently supports.
 		rw.writeStatus(http.StatusMethodNotAllowed)
 		return
 	}

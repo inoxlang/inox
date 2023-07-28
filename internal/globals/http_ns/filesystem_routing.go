@@ -2,6 +2,7 @@ package http_ns
 
 import (
 	"net/http"
+	"path/filepath"
 	"strings"
 
 	core "github.com/inoxlang/inox/internal/core"
@@ -13,6 +14,8 @@ func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn
 	return func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
 		fls := server.state.Ctx.GetFileSystem()
 		path := req.Path
+		method := req.Method.UnderlyingString()
+
 		if !path.IsAbsolute() {
 			panic(core.ErrUnreachable)
 		}
@@ -27,9 +30,20 @@ func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn
 			return
 		}
 
-		modulePath := fls.Join(string(routingDirPath), string(path)+".ix")
+		if strings.Contains(method, "/") {
+			rw.writeStatus(http.StatusNotFound)
+			return
+		}
+
+		pathDir, pathBasename := filepath.Split(string(path))
+		modulePath := fls.Join(string(routingDirPath), pathDir, "/"+string(req.Method)+"-"+pathBasename+".ix")
 
 		_, err := fls.Stat(modulePath)
+		if err != nil {
+			modulePath = fls.Join(string(routingDirPath), string(path)+".ix")
+		}
+
+		_, err = fls.Stat(modulePath)
 		if err != nil {
 			modulePath = fls.Join(string(routingDirPath), string(path), "index.ix")
 		}
