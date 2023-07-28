@@ -178,6 +178,7 @@ func testExample(t *testing.T, config exampleTestConfig) {
 
 		_, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 			Fpath:                     fpath,
+			PassedArgs:                core.NewObject(),
 			UseBytecode:               useBytecode,
 			OptimizeBytecode:          optimizeBytecode,
 			ParsingCompilationContext: parsingCompilationContext,

@@ -87,6 +87,10 @@ type ModuleParameters struct {
 	hasOptions        bool //true if at least one optional non-positional parameter
 }
 
+func (p ModuleParameters) NoParameters() bool {
+	return len(p.positional) == 0 && len(p.others) == 0
+}
+
 type PreinitFiles []*PreinitFile
 
 type PreinitFile struct {

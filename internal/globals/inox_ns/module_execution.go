@@ -252,8 +252,12 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		} else {
 			modArgs = args
 		}
-	} else {
-		modArgs = core.NewObject()
+	} else { // no arguments provided
+		if args.DevMode || manifest.Parameters.NoParameters() {
+			modArgs = core.NewObject()
+		} else {
+			modArgsError = errors.New("module arguments not provided")
+		}
 	}
 
 	if modArgsError == nil {
