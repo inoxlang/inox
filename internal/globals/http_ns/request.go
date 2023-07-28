@@ -100,6 +100,12 @@ func NewServerSideRequest(r *http.Request, logger zerolog.Logger, server *HttpSe
 		method = "GET"
 	}
 
+	switch method {
+	case "GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE":
+	default:
+		return nil, fmt.Errorf("unknown method: %s", method)
+	}
+
 	// full URL
 	url := r.URL.String()
 	if !strings.Contains(url, "://") {

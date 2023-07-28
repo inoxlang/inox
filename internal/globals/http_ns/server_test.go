@@ -138,6 +138,25 @@ func TestHttpServerUserHandler(t *testing.T) {
 
 func TestHttpServerMapping(t *testing.T) {
 
+	t.Run("CUSTOMMETHOD /x", func(t *testing.T) {
+		runMappingTestCase(t,
+			serverTestCase{
+				input: `return Mapping {
+							%/... => "hello"
+						}
+						`,
+				requests: []requestTestInfo{
+					{
+						method:              "CUSTOMMETHOD",
+						acceptedContentType: core.PLAIN_TEXT_CTYPE,
+						status:              http.StatusBadRequest,
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
 	t.Run("GET /x: string result", func(t *testing.T) {
 		runMappingTestCase(t,
 			serverTestCase{
