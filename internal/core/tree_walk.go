@@ -2261,6 +2261,48 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		return pattern, nil
+	case *parse.RecordPatternLiteral:
+		pattern := &RecordPattern{
+			entryPatterns: make(map[string]Pattern),
+			inexact:       !n.Exact,
+		}
+		for _, p := range n.Properties {
+			name := p.Name()
+			var err error
+			pattern.entryPatterns[name], err = evalPatternNode(p.Value, state)
+			if p.Optional {
+				if pattern.optionalEntries == nil {
+					pattern.optionalEntries = make(map[string]struct{}, 1)
+				}
+				pattern.optionalEntries[name] = struct{}{}
+			}
+			if err != nil {
+				return nil, fmt.Errorf("failed to compile record pattern literal, error when evaluating value for '%s': %s", name, err.Error())
+			}
+		}
+
+		for _, el := range n.SpreadElements {
+			evaluatedElement, err := evalPatternNode(el.Expr, state)
+			if err != nil {
+				return nil, err
+			}
+
+			object := evaluatedElement.(*RecordPattern)
+
+			for name, vpattern := range object.entryPatterns {
+				pattern.entryPatterns[name] = vpattern
+				if _, ok := object.optionalEntries[name]; !ok {
+					continue
+				}
+				//set as optional
+				if pattern.optionalEntries == nil {
+					pattern.optionalEntries = map[string]struct{}{}
+				}
+				pattern.optionalEntries[name] = struct{}{}
+			}
+		}
+
+		return pattern, nil
 	case *parse.ListPatternLiteral:
 
 		var pattern *ListPattern

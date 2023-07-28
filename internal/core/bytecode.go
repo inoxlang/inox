@@ -165,6 +165,7 @@ const (
 	OpAppend
 	OpCreateListPattern
 	OpCreateObjectPattern
+	OpCreateRecordPattern
 	OpCreateOptionPattern
 	OpCreateUnionPattern
 	OpCreateStringUnionPattern
@@ -190,6 +191,7 @@ const (
 	OpCreateXMLelem
 	OpSendValue
 	OpSpreadObjectPattern
+	OpSpreadRecordPattern
 	BindCapturedLocals
 	OpCall
 	OpReturn
@@ -285,7 +287,8 @@ var OpcodeNames = [...]string{
 	OpSpreadTuple:                  "SPREAD_TPL",
 	OpAppend:                       "APPEND",
 	OpCreateListPattern:            "CRT_LSTP",
-	OpCreateObjectPattern:          "CRT_LSTP",
+	OpCreateObjectPattern:          "CRT_OBJP",
+	OpCreateRecordPattern:          "CRT_RECP",
 	OpCreateOptionPattern:          "CRT_OPTP",
 	OpCreateUnionPattern:           "CRT_UP",
 	OpCreateStringUnionPattern:     "CRT_SUP",
@@ -311,6 +314,7 @@ var OpcodeNames = [...]string{
 	OpCreateXMLelem:                "CRT_XML_ELEM",
 	OpSendValue:                    "SEND_VAL",
 	OpSpreadObjectPattern:          "SPRD_OBJP",
+	OpSpreadRecordPattern:          "SPRD_RECP",
 	BindCapturedLocals:             "BIND_LOCS",
 	OpGetGlobal:                    "GET_GLOBAL",
 	OpSetGlobal:                    "SET_GLOBAL",
@@ -409,6 +413,7 @@ var OpcodeOperands = [...][]int{
 	OpAppend:                       {2},
 	OpCreateListPattern:            {2, 1},
 	OpCreateObjectPattern:          {2, 1},
+	OpCreateRecordPattern:          {2, 1},
 	OpCreateOptionPattern:          {2},
 	OpCreateUnionPattern:           {2},
 	OpCreateStringUnionPattern:     {2},
@@ -434,6 +439,7 @@ var OpcodeOperands = [...][]int{
 	OpCreateXMLelem:                {2, 1, 1},
 	OpSendValue:                    {},
 	OpSpreadObjectPattern:          {},
+	OpSpreadRecordPattern:          {},
 	BindCapturedLocals:             {1},
 	OpCall:                         {1, 1, 1},
 	OpReturn:                       {1},
@@ -528,6 +534,7 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpAppend:                       {false},
 	OpCreateListPattern:            {false, false},
 	OpCreateObjectPattern:          {false, false},
+	OpCreateRecordPattern:          {false, false},
 	OpCreateOptionPattern:          {true},
 	OpCreateUnionPattern:           {false},
 	OpCreateStringUnionPattern:     {false},
@@ -553,6 +560,7 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpCreateXMLelem:                {true, false, false},
 	OpSendValue:                    {},
 	OpSpreadObjectPattern:          {},
+	OpSpreadRecordPattern:          {},
 	BindCapturedLocals:             {false},
 	OpCall:                         {false, false, false},
 	OpReturn:                       {false},

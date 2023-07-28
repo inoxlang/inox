@@ -938,6 +938,22 @@ func (v *VM) run() {
 				patt.optionalEntries[k] = struct{}{}
 			}
 			v.sp--
+		case OpSpreadRecordPattern:
+			patt := v.stack[v.sp-2].(*RecordPattern)
+			spreadObjectPatt := v.stack[v.sp-1].(*RecordPattern)
+
+			for k, v := range spreadObjectPatt.entryPatterns {
+				patt.entryPatterns[k] = v
+				if _, ok := spreadObjectPatt.optionalEntries[k]; !ok {
+					continue
+				}
+				//set as optional
+				if patt.optionalEntries == nil {
+					patt.optionalEntries = map[string]struct{}{}
+				}
+				patt.optionalEntries[k] = struct{}{}
+			}
+			v.sp--
 		case BindCapturedLocals:
 			v.ip++
 			numCaptured := int(v.curInsts[v.ip])
@@ -1004,28 +1020,43 @@ func (v *VM) run() {
 				v.stack[v.sp] = patt
 				v.sp++
 			}
-		case OpCreateObjectPattern:
+		case OpCreateObjectPattern, OpCreateRecordPattern:
+			op := v.curInsts[v.ip]
 			v.ip += 3
 			numElements := int(v.curInsts[v.ip-1]) | int(v.curInsts[v.ip-2])<<8
 			isInexact := int(v.curInsts[v.ip])
 
-			pattern := &ObjectPattern{
-				entryPatterns: make(map[string]Pattern),
-				inexact:       isInexact == 1,
-			}
+			entryPatterns := make(map[string]Pattern)
+			var optionalEntries map[string]struct{}
 
 			for i := v.sp - numElements; i < v.sp; i += 3 {
 				key := v.stack[i].(Str)
 				value := v.stack[i+1].(Pattern)
 				isOptional := v.stack[i+2].(Bool)
-				pattern.entryPatterns[string(key)] = value
+				entryPatterns[string(key)] = value
 				if isOptional {
-					if pattern.optionalEntries == nil {
-						pattern.optionalEntries = make(map[string]struct{}, 1)
+					if optionalEntries == nil {
+						optionalEntries = make(map[string]struct{}, 1)
 					}
-					pattern.optionalEntries[string(key)] = struct{}{}
+					optionalEntries[string(key)] = struct{}{}
 				}
 			}
+
+			var pattern Pattern
+			if op == OpCreateObjectPattern {
+				pattern = &ObjectPattern{
+					entryPatterns:   entryPatterns,
+					optionalEntries: optionalEntries,
+					inexact:         isInexact == 1,
+				}
+			} else {
+				pattern = &RecordPattern{
+					entryPatterns:   entryPatterns,
+					optionalEntries: optionalEntries,
+					inexact:         isInexact == 1,
+				}
+			}
+
 			v.sp -= numElements
 			v.stack[v.sp] = pattern
 			v.sp++

@@ -5409,6 +5409,220 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 	})
 
+	t.Run("record pattern literal", func(t *testing.T) {
+		t.Run("empty", func(t *testing.T) {
+			code := `%p = #{}; return %p`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, &RecordPattern{
+				inexact:       true,
+				entryPatterns: map[string]Pattern{},
+			}, res)
+		})
+
+		t.Run("not empty", func(t *testing.T) {
+			code := `%s = "s"; %p = #{name: %s, count: 2}; return %p`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, &RecordPattern{
+				inexact: true,
+				entryPatterns: map[string]Pattern{
+					"name": NewExactStringPattern(Str("s")),
+					"count": &ExactValuePattern{
+						value: Int(2),
+						CallBasedPatternReprMixin: CallBasedPatternReprMixin{
+							Callee: VAL_PATTERN,
+							Params: []Serializable{Int(2)},
+						},
+					},
+				},
+			}, res)
+		})
+
+		t.Run("unprefixed named pattern", func(t *testing.T) {
+			code := `%s = "s"; %p = #{name: s}; return %p`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, &RecordPattern{
+				inexact: true,
+				entryPatterns: map[string]Pattern{
+					"name": NewExactStringPattern(Str("s")),
+				},
+			}, res)
+		})
+
+		t.Run("spread", func(t *testing.T) {
+
+			//TODO: add tests with several spread
+
+			t.Run("single-property object pattern after properties", func(t *testing.T) {
+				code := `
+					%s = "s"
+					%user = #{name: "foo"}
+					%p = #{s: %s, ...%user}
+					return %p
+				`
+
+				state := NewGlobalState(NewDefaultTestContext())
+				res, err := Eval(code, state, false)
+
+				assert.NoError(t, err)
+				assert.Equal(t, &RecordPattern{
+					inexact: true,
+					entryPatterns: map[string]Pattern{
+						"s":    NewExactStringPattern(Str("s")),
+						"name": NewExactStringPattern(Str("foo")),
+					},
+				}, res)
+			})
+
+			t.Run("single-optional-property object pattern after properties", func(t *testing.T) {
+				code := `
+					%s = "s"
+					%user = #{name?: "foo"}
+					%p = #{s: %s, ...%user}
+					return %p
+				`
+
+				state := NewGlobalState(NewDefaultTestContext())
+				res, err := Eval(code, state, false)
+
+				assert.NoError(t, err)
+				assert.Equal(t, &RecordPattern{
+					inexact: true,
+					entryPatterns: map[string]Pattern{
+						"s":    NewExactStringPattern(Str("s")),
+						"name": NewExactStringPattern(Str("foo")),
+					},
+					optionalEntries: map[string]struct{}{"name": {}},
+				}, res)
+			})
+
+			t.Run("two-property object pattern after properties", func(t *testing.T) {
+				code := `
+					%s = "s"
+					%user = #{name: "foo", age: 30}
+					%p = #{s: %s, ...%user}
+					return %p
+				`
+
+				state := NewGlobalState(NewDefaultTestContext())
+				res, err := Eval(code, state, false)
+
+				assert.NoError(t, err)
+				assert.Equal(t, &RecordPattern{
+					inexact: true,
+					entryPatterns: map[string]Pattern{
+						"s":    NewExactStringPattern(Str("s")),
+						"name": NewExactStringPattern(Str("foo")),
+						"age": &ExactValuePattern{
+							value: Int(30),
+							CallBasedPatternReprMixin: CallBasedPatternReprMixin{
+								Callee: VAL_PATTERN,
+								Params: []Serializable{Int(30)},
+							},
+						},
+					},
+				}, res)
+			})
+
+			t.Run("single-property object pattern before properties", func(t *testing.T) {
+				code := `
+					%s = "s"
+					%user = #{name: "foo"}
+					%p = #{...%user, s: %s}
+					return %p
+				`
+
+				state := NewGlobalState(NewDefaultTestContext())
+				res, err := Eval(code, state, false)
+
+				assert.NoError(t, err)
+				assert.Equal(t, &RecordPattern{
+					inexact: true,
+					entryPatterns: map[string]Pattern{
+						"s":    NewExactStringPattern(Str("s")),
+						"name": NewExactStringPattern(Str("foo")),
+					},
+				}, res)
+			})
+
+			t.Run("two-property object pattern before properties", func(t *testing.T) {
+				code := `
+					%s = "s"
+					%user = #{name: "foo", age: 30}
+					%p = #{...%user, s: %s}
+					return %p
+				`
+
+				state := NewGlobalState(NewDefaultTestContext())
+				res, err := Eval(code, state, false)
+
+				assert.NoError(t, err)
+				assert.Equal(t, &RecordPattern{
+					inexact: true,
+					entryPatterns: map[string]Pattern{
+						"s":    NewExactStringPattern(Str("s")),
+						"name": NewExactStringPattern(Str("foo")),
+						"age": &ExactValuePattern{
+							value: Int(30),
+							CallBasedPatternReprMixin: CallBasedPatternReprMixin{
+								Callee: VAL_PATTERN,
+								Params: []Serializable{Int(30)},
+							},
+						},
+					},
+				}, res)
+			})
+
+			t.Run("complex", func(t *testing.T) {
+				code := `
+					%s = "s"
+					%user = #{name: "foo"}
+					%p = #{...%user, friends: %[]%user}
+					return %p
+				`
+
+				state := NewGlobalState(NewDefaultTestContext())
+				res, err := Eval(code, state, false)
+
+				assert.NoError(t, err)
+				assert.Equal(t, &RecordPattern{
+					inexact: true,
+					entryPatterns: map[string]Pattern{
+						"friends": NewListPatternOf(&RecordPattern{
+							entryPatterns: map[string]Pattern{
+								"name": NewExactStringPattern(Str("foo")),
+							},
+							inexact: true,
+						}),
+						"name": NewExactStringPattern(Str("foo")),
+					},
+				}, res)
+			})
+
+			t.Run("spread element is not an record pattern", func(t *testing.T) {
+				code := `%s = "s"; %p = #{...%s}; return %p`
+
+				state := NewGlobalState(NewDefaultTestContext())
+				res, err := Eval(code, state, false)
+
+				assert.Error(t, err)
+				assert.Nil(t, res)
+			})
+		})
+
+	})
+
 	t.Run("list pattern literal", func(t *testing.T) {
 		t.Run("empty", func(t *testing.T) {
 			code := `%[]`

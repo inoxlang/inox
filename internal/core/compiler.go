@@ -1183,6 +1183,39 @@ func (c *compiler) Compile(node parse.Node) error {
 			c.emit(node, OpSpreadObjectPattern)
 		}
 
+	case *parse.RecordPatternLiteral:
+		isInexact := 1
+
+		if node.Exact {
+			isInexact = 0
+		}
+
+		for _, p := range node.Properties {
+			name := p.Name()
+
+			c.emit(node, OpPushConstant, c.addConstant(Str(name)))
+
+			if err := c.Compile(p.Value); err != nil {
+				return err
+			}
+			c.emit(p.Value, OpToPattern)
+
+			if p.Optional {
+				c.emit(node, OpPushTrue)
+			} else {
+				c.emit(node, OpPushFalse)
+			}
+		}
+
+		c.emit(node, OpCreateRecordPattern, 3*len(node.Properties), isInexact)
+
+		for _, e := range node.SpreadElements {
+			if err := c.Compile(e.Expr); err != nil {
+				return err
+			}
+			c.emit(node, OpSpreadRecordPattern)
+		}
+
 	case *parse.OptionPatternLiteral:
 		if err := c.Compile(node.Value); err != nil {
 			return err
