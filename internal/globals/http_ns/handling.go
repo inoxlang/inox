@@ -226,49 +226,64 @@ func respondWithMappingResult(h handlingArguments) {
 			logger.Print("error when calling returned inox function:", err)
 		}
 		return
+	case core.Identifier:
+		switch v {
+		case "notfound":
+			rw.writeStatus(http.StatusNotFound)
+			return
+		case "continue":
+			if h.isMiddleware {
+				return
+			}
+			rw.writeStatus(http.StatusNotFound)
+			return
+		default:
+			logger.Print("unknwon identifier " + string(v))
+			rw.writeStatus(http.StatusNotFound)
+			return
+		}
+	}
+
+	//if JSON/IXON is accepted we serialize if possible.
+	switch {
+	case req.AcceptAny():
+		break
+	case req.ParsedAcceptHeader.Match(core.IXON_CTYPE):
+		config := &core.ReprConfig{}
+
+		serializable, ok := value.(core.Serializable)
+		if !ok {
+			rw.writeStatus(http.StatusNotAcceptable)
+			return
+		}
+
+		rw.WriteContentType(core.IXON_CTYPE)
+		serializable.WriteRepresentation(state.Ctx, rw.BodyWriter(), config, 0)
+		return
+	case req.ParsedAcceptHeader.Match(core.JSON_CTYPE):
+		config := core.JSONSerializationConfig{
+			ReprConfig: &core.ReprConfig{},
+		}
+
+		serializable, ok := value.(core.Serializable)
+		if !ok {
+			rw.writeStatus(http.StatusNotAcceptable)
+			return
+		}
+
+		rw.WriteContentType(core.JSON_CTYPE)
+		stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, rw.BodyWriter(), 0)
+		serializable.WriteJSONRepresentation(state.Ctx, stream, config, 0)
+		stream.Flush()
+		return
 	}
 
 	switch req.Method {
-	case "GET", "HEAD":
-		switch {
-		case req.AcceptAny():
-			break
-		case req.ParsedAcceptHeader.Match(core.IXON_CTYPE):
-			config := &core.ReprConfig{}
-
-			serializable, ok := value.(core.Serializable)
-			if !ok {
-				rw.writeStatus(http.StatusNotAcceptable)
-				return
-			}
-
-			rw.WriteContentType(core.IXON_CTYPE)
-			serializable.WriteRepresentation(state.Ctx, rw.BodyWriter(), config, 0)
-			return
-
-		case req.ParsedAcceptHeader.Match(core.JSON_CTYPE):
-			config := core.JSONSerializationConfig{
-				ReprConfig: &core.ReprConfig{},
-			}
-
-			serializable, ok := value.(core.Serializable)
-			if !ok {
-				rw.writeStatus(http.StatusNotAcceptable)
-				return
-			}
-
-			rw.WriteContentType(core.JSON_CTYPE)
-			stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, rw.BodyWriter(), 0)
-			serializable.WriteJSONRepresentation(state.Ctx, stream, config, 0)
-			stream.Flush()
-			return
-		default:
-			break
-		}
-	case "PATCH":
+	case "GET", "HEAD", "OPTIONS":
+		break
+	case "POST", "PATCH":
 		switch {
 		case req.ContentType.MatchText(core.APP_OCTET_STREAM_CTYPE):
-
 			getData := func() ([]byte, bool) {
 				b, err := req.Body.ReadAllBytes()
 
@@ -315,49 +330,22 @@ func respondWithMappingResult(h handlingArguments) {
 			}
 
 			return
-		default:
-			rw.writeStatus(http.StatusMethodNotAllowed)
-			return
 		}
-	case "POST":
-		rw.writeStatus(http.StatusMethodNotAllowed)
-		return
 	default:
 		rw.writeStatus(http.StatusMethodNotAllowed)
 		return
 	}
 
-	// rendering | event stream | dom event forwarding
+	// rendering | event stream
 loop:
 	for {
 		switch v := value.(type) {
-		//values
-		case core.Identifier:
-			switch v {
-			case "notfound":
-				rw.writeStatus(http.StatusNotFound)
-				return
-			case "continue":
-				if h.isMiddleware {
-					return
-				}
-				rw.writeStatus(http.StatusNotFound)
-			default:
-				logger.Print("unknwon identifier " + string(v))
-				rw.writeStatus(http.StatusNotFound)
-			}
-
 		case core.NilT, nil:
 			logger.Print("nil result")
 			rw.writeStatus(http.StatusNotFound)
 			return
 
 		case core.StringLike:
-			if req.Method != "GET" {
-				rw.writeStatus(http.StatusMethodNotAllowed)
-				return
-			}
-
 			if !req.ParsedAcceptHeader.Match(core.PLAIN_TEXT_CTYPE) {
 				rw.writeStatus(http.StatusNotAcceptable)
 				return
@@ -368,11 +356,6 @@ loop:
 
 			rw.WritePlainText(h.state.Ctx, &core.ByteSlice{Bytes: []byte(escaped)})
 		case *core.ByteSlice:
-			if req.Method != "GET" {
-				rw.writeStatus(http.StatusMethodNotAllowed)
-				return
-			}
-
 			contentType := string(v.ContentType())
 			if !req.ParsedAcceptHeader.Match(contentType) {
 				rw.writeStatus(http.StatusNotAcceptable)

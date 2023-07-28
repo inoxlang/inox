@@ -20,8 +20,8 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 
 	t.Run("handling description", func(t *testing.T) {
 
-		testCases := map[string]serverTestCase{
-			"routing only": {
+		t.Run("routing only", func(t *testing.T) {
+			runHandlingDescTestCase(t, serverTestCase{
 				input: `return {
 					routing: Mapping {
 						%/... => "hello"
@@ -30,8 +30,11 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 				requests: []requestTestInfo{
 					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
 				},
-			},
-			"empty middleware list": {
+			}, createClient)
+		})
+
+		t.Run("empty middleware list", func(t *testing.T) {
+			runHandlingDescTestCase(t, serverTestCase{
 				input: `return {
 					middlewares: []
 					routing: Mapping {
@@ -41,8 +44,11 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 				requests: []requestTestInfo{
 					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
 				},
-			},
-			"a middleware filtering based on path": {
+			}, createClient)
+		})
+
+		t.Run("a middleware filtering based on path", func(t *testing.T) {
+			runHandlingDescTestCase(t, serverTestCase{
 				input: ` return {
 					middlewares: [
 						Mapping {
@@ -59,8 +65,11 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 					{acceptedContentType: core.PLAIN_TEXT_CTYPE, path: "/a", status: 404},
 					{acceptedContentType: core.PLAIN_TEXT_CTYPE, path: "/b", result: `b`, status: 200},
 				},
-			},
-			"filesystem routing": {
+			}, createClient)
+		})
+
+		t.Run("filesystem routing", func(t *testing.T) {
+			runHandlingDescTestCase(t, serverTestCase{
 				input: `return {
 					routing: /routes/
 				}`,
@@ -78,12 +87,8 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 				requests: []requestTestInfo{
 					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
 				},
-			},
-		}
-
-		for name, testCase := range testCases {
-			runHandlingDescTestCase(t, name, testCase, createClient)
-		}
+			}, createClient)
+		})
 	})
 
 	t.Run("certificate & key", func(t *testing.T) {
@@ -124,7 +129,7 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 
 		//run the test
 
-		runAdvancedServerTestCase(t, t.Name(), testCase, createClient, func() (*HttpServer, *core.Context, core.Host, error) {
+		runAdvancedServerTestCase(t, testCase, createClient, func() (*HttpServer, *core.Context, core.Host, error) {
 			server, err := NewHttpServer(ctx, host, desc)
 
 			return server, ctx, host, err
@@ -143,8 +148,9 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 
 		//improve + add new tests
 
-		testCases := map[string]serverTestCase{
-			"server should block burst: same client (HTTP2)": {
+		t.Run("server should block burst: same client (HTTP2)", func(t *testing.T) {
+
+			runHandlingDescTestCase(t, serverTestCase{
 				input: HELLO,
 				requests: []requestTestInfo{
 					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
@@ -170,8 +176,12 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 
 					return utils.Ret(client)
 				},
-			},
-			"server should block burst : same client (HTTP2) + small pause beween requests": {
+			}, createClient)
+		})
+
+		t.Run("server should block burst : same client (HTTP2) + small pause beween requests", func(t *testing.T) {
+
+			runHandlingDescTestCase(t, serverTestCase{
 				input: HELLO,
 				requests: []requestTestInfo{
 					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
@@ -197,11 +207,8 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 
 					return utils.Ret(client)
 				},
-			},
-		}
+			}, createClient)
+		})
 
-		for name, testCase := range testCases {
-			runHandlingDescTestCase(t, name, testCase, createClient)
-		}
 	})
 }

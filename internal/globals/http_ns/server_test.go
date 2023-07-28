@@ -138,70 +138,106 @@ func TestHttpServerUserHandler(t *testing.T) {
 
 func TestHttpServerMapping(t *testing.T) {
 
-	runMappingTestCase(t, "string",
-		serverTestCase{
-			input: `return Mapping {
-						%/... => "hello"
-					}
-					`,
-			requests: []requestTestInfo{
-				{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
+	t.Run("GET /x: string result", func(t *testing.T) {
+		runMappingTestCase(t,
+			serverTestCase{
+				input: `return Mapping {
+							%/... => "hello"
+						}
+						`,
+				requests: []requestTestInfo{
+					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
+				},
 			},
-		},
-		createClient,
-	)
+			createClient,
+		)
+	})
 
-	runMappingTestCase(t, "string: */* is accepted",
-		serverTestCase{
-			input: `return Mapping {
+	t.Run("GET /x */* is accepted: string result", func(t *testing.T) {
+
+		runMappingTestCase(t,
+			serverTestCase{
+				input: `return Mapping {
 					%/... => "hello"
 				}
 				`,
-			requests: []requestTestInfo{
-				{acceptedContentType: core.ANY_CTYPE, result: `hello`},
+				requests: []requestTestInfo{
+					{acceptedContentType: core.ANY_CTYPE, result: `hello`},
+				},
 			},
-		},
-		createClient,
-	)
+			createClient,
+		)
+	})
 
-	runMappingTestCase(t, "bytes",
-		serverTestCase{
-			input: `return Mapping {
+	t.Run("POST /x: string result", func(t *testing.T) {
+		runMappingTestCase(t,
+			serverTestCase{
+				input: `return Mapping {
+							%/... => "hello"
+						}
+						`,
+				requests: []requestTestInfo{
+					{
+						method:              "POST",
+						header:              http.Header{"Content-Type": []string{core.PLAIN_TEXT_CTYPE}},
+						acceptedContentType: core.PLAIN_TEXT_CTYPE,
+						result:              `hello`,
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
+	t.Run("GET /x: bytes result", func(t *testing.T) {
+
+		runMappingTestCase(t,
+			serverTestCase{
+				input: `return Mapping {
 					%/... => 0d[65] # 'A'
 				}
 				`,
-			requests: []requestTestInfo{{acceptedContentType: core.APP_OCTET_STREAM_CTYPE, result: `A`}},
-		},
-		createClient,
-	)
+				requests: []requestTestInfo{{acceptedContentType: core.APP_OCTET_STREAM_CTYPE, result: `A`}},
+			},
+			createClient,
+		)
+	})
 
-	runMappingTestCase(t, "html node",
-		serverTestCase{
-			input: `return Mapping {
+	t.Run("GET /x: html node", func(t *testing.T) {
+
+		runMappingTestCase(t,
+			serverTestCase{
+				input: `return Mapping {
 					%/... => html.div{}
 				}`,
-			requests: []requestTestInfo{
-				{acceptedContentType: core.HTML_CTYPE, result: `<div></div>`},
+				requests: []requestTestInfo{
+					{acceptedContentType: core.HTML_CTYPE, result: `<div></div>`},
+				},
 			},
-		},
-		createClient,
-	)
+			createClient,
+		)
+	})
 
-	runMappingTestCase(t, "html node: */* is accepted",
-		serverTestCase{
-			input: `return Mapping {
+	t.Run("GET /x */* is accepted: html node", func(t *testing.T) {
+
+		runMappingTestCase(t,
+			serverTestCase{
+				input: `return Mapping {
 					%/... => html.div{}
 				}`,
-			requests: []requestTestInfo{
-				{acceptedContentType: core.ANY_CTYPE, result: `<div></div>`},
+				requests: []requestTestInfo{
+					{acceptedContentType: core.ANY_CTYPE, result: `<div></div>`},
+				},
 			},
-		},
-		createClient,
-	)
+			createClient,
+		)
+	})
 
-	runMappingTestCase(t, "handler",
-		serverTestCase{
-			input: `
+	t.Run("GET /x: handler", func(t *testing.T) {
+
+		runMappingTestCase(t,
+			serverTestCase{
+				input: `
 					fn handle(rw %http.resp_writer, r %http.req){
 						rw.write_json({ a: 1 })
 					}
@@ -209,16 +245,81 @@ func TestHttpServerMapping(t *testing.T) {
 						%/... => handle
 					}
 				`,
-			requests: []requestTestInfo{
-				{acceptedContentType: core.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`},
+				requests: []requestTestInfo{
+					{acceptedContentType: core.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`},
+				},
 			},
-		},
-		createClient,
-	)
+			createClient)
+	})
 
-	runMappingTestCase(t, "handler accessing a global function",
-		serverTestCase{
-			input: `
+	t.Run("GET /x JSON is accepted: nil", func(t *testing.T) {
+
+		runMappingTestCase(t,
+			serverTestCase{
+				input: `return Mapping {
+				%/... => nil
+			}
+			`,
+				requests: []requestTestInfo{
+					{acceptedContentType: core.JSON_CTYPE, result: "null"},
+				},
+			},
+			createClient,
+		)
+	})
+
+	t.Run("GET /x */* is accepted: nil", func(t *testing.T) {
+		runMappingTestCase(t,
+			serverTestCase{
+				input: `return Mapping {
+				%/... => nil
+			}
+			`,
+				requests: []requestTestInfo{
+					{acceptedContentType: core.ANY_CTYPE, status: 404},
+				},
+			},
+			createClient,
+		)
+	})
+
+	t.Run("GET /x JSON is accepted: notfound identifier", func(t *testing.T) {
+
+		runMappingTestCase(t,
+			serverTestCase{
+				input: `return Mapping {
+			%/... => #notfound
+		}
+		`,
+				requests: []requestTestInfo{
+					{acceptedContentType: core.JSON_CTYPE, status: http.StatusNotFound},
+				},
+			},
+			createClient,
+		)
+	})
+
+	t.Run("GET /x */* is accepted: notfound identifier", func(t *testing.T) {
+
+		runMappingTestCase(t,
+			serverTestCase{
+				input: `return Mapping {
+			%/... => #notfound
+		}
+		`,
+				requests: []requestTestInfo{
+					{acceptedContentType: core.ANY_CTYPE, status: http.StatusNotFound},
+				},
+			},
+			createClient,
+		)
+	})
+
+	t.Run("handler accessing a global function", func(t *testing.T) {
+
+		runMappingTestCase(t,
+			serverTestCase{
+				input: `
 					fn helper(rw %http.resp_writer, r %http.req){
 						rw.write_json({ a: 1 })
 					}
@@ -229,30 +330,36 @@ func TestHttpServerMapping(t *testing.T) {
 						%/... => handle
 					}
 				`,
-			requests: []requestTestInfo{
-				{acceptedContentType: core.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`},
+				requests: []requestTestInfo{
+					{acceptedContentType: core.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`},
+				},
 			},
-		},
-		createClient,
-	)
+			createClient,
+		)
+	})
 
-	runMappingTestCase(t, "JSON of model",
-		serverTestCase{
-			input: `$$model = {a: 1}
+	t.Run("JSON of model", func(t *testing.T) {
+
+		runMappingTestCase(t,
+			serverTestCase{
+				input: `$$model = {a: 1}
 
 				return Mapping {
 					%/... => model
 				}`,
-			requests: []requestTestInfo{
-				{acceptedContentType: core.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`},
+				requests: []requestTestInfo{
+					{acceptedContentType: core.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`},
+				},
 			},
-		},
-		createClient,
-	)
+			createClient,
+		)
+	})
 
-	runMappingTestCase(t, "JSON of model with sensitive data, no defined visibility",
-		serverTestCase{
-			input: `
+	t.Run("JSON of model with sensitive data, no defined visibility", func(t *testing.T) {
+
+		runMappingTestCase(t,
+			serverTestCase{
+				input: `
 				$$model = {
 					a: 1
 					password: "mypassword"
@@ -262,16 +369,19 @@ func TestHttpServerMapping(t *testing.T) {
 				return Mapping {
 					%/... => model
 				}`,
-			requests: []requestTestInfo{
-				{acceptedContentType: core.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`},
+				requests: []requestTestInfo{
+					{acceptedContentType: core.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`},
+				},
 			},
-		},
-		createClient,
-	)
+			createClient,
+		)
+	})
 
-	runMappingTestCase(t, "JSON of model with all fields set as public",
-		serverTestCase{
-			input: `$$model = {
+	t.Run("JSON of model with all fields set as public", func(t *testing.T) {
+
+		runMappingTestCase(t,
+			serverTestCase{
+				input: `$$model = {
 					a: 1
 					password: "mypassword"
 					e: a@mail.com
@@ -286,19 +396,22 @@ func TestHttpServerMapping(t *testing.T) {
 				return Mapping {
 					%/... => model
 				}`,
-			requests: []requestTestInfo{
-				{
-					acceptedContentType: core.JSON_CTYPE,
-					result:              `{"object__value":{"a":{"int__value":"1"},"e":{"emailaddr__value":"a@mail.com"},"password":"mypassword"}}`,
+				requests: []requestTestInfo{
+					{
+						acceptedContentType: core.JSON_CTYPE,
+						result:              `{"object__value":{"a":{"int__value":"1"},"e":{"emailaddr__value":"a@mail.com"},"password":"mypassword"}}`,
+					},
 				},
 			},
-		},
-		createClient,
-	)
+			createClient,
+		)
+	})
 
-	runMappingTestCase(t, "IXON of model with no defined visibility",
-		serverTestCase{
-			input: ` $$model = {
+	t.Run("IXON of model with no defined visibility", func(t *testing.T) {
+
+		runMappingTestCase(t,
+			serverTestCase{
+				input: ` $$model = {
 					a: 1
 					password: "mypassword"
 					e: foo@mail.com
@@ -307,16 +420,18 @@ func TestHttpServerMapping(t *testing.T) {
 				return Mapping {
 					%/... => model
 				}`,
-			requests: []requestTestInfo{
-				{acceptedContentType: core.IXON_CTYPE, result: `{"a":1}`},
+				requests: []requestTestInfo{
+					{acceptedContentType: core.IXON_CTYPE, result: `{"a":1}`},
+				},
 			},
-		},
-		createClient,
-	)
+			createClient,
+		)
+	})
 
-	runMappingTestCase(t, "IXON of model with all fields set as public",
-		serverTestCase{
-			input: `$$model = {
+	t.Run("IXON of model with all fields set as public", func(t *testing.T) {
+		runMappingTestCase(t,
+			serverTestCase{
+				input: `$$model = {
 					a: 1
 					password: "mypassword"
 					e: a@mail.com
@@ -331,47 +446,52 @@ func TestHttpServerMapping(t *testing.T) {
 				return Mapping {
 					%/... => model
 				}`,
-			requests: []requestTestInfo{
-				{acceptedContentType: core.IXON_CTYPE, result: `{"a":1,"e":a@mail.com,"password":"mypassword"}`},
+				requests: []requestTestInfo{
+					{acceptedContentType: core.IXON_CTYPE, result: `{"a":1,"e":a@mail.com,"password":"mypassword"}`},
+				},
 			},
-		},
-		createClient,
-	)
+			createClient,
+		)
+	})
 
-	runMappingTestCase(t, "large binary stream: event stream request",
-		serverTestCase{
-			input: strings.Replace(`
+	t.Run("large binary stream: event stream request", func(t *testing.T) {
+
+		runMappingTestCase(t,
+
+			serverTestCase{
+				input: strings.Replace(`
 					return Mapping {
 						%/... => torstream(mkbytes(<size>))
 					}`, "<size>", strconv.Itoa(int(10*DEFAULT_PUSHED_BYTESTREAM_CHUNK_SIZE_RANGE.InclusiveEnd())), 1),
-			requests: []requestTestInfo{
-				{
-					acceptedContentType: core.EVENT_STREAM_CTYPE,
-					events: func() []*core.Event {
-						chunkMaxSize := DEFAULT_PUSHED_BYTESTREAM_CHUNK_SIZE_RANGE.InclusiveEnd()
-						size := int(10 * chunkMaxSize)
+				requests: []requestTestInfo{
+					{
+						acceptedContentType: core.EVENT_STREAM_CTYPE,
+						events: func() []*core.Event {
+							chunkMaxSize := DEFAULT_PUSHED_BYTESTREAM_CHUNK_SIZE_RANGE.InclusiveEnd()
+							size := int(10 * chunkMaxSize)
 
-						b := bytes.Repeat([]byte{0}, size)
-						encoded := []byte(hex.EncodeToString(b))
-						encodedSize := 2 * size
-						// 10 chunks of equal size
-						encodedDataChunkSize := encodedSize / 10
+							b := bytes.Repeat([]byte{0}, size)
+							encoded := []byte(hex.EncodeToString(b))
+							encodedSize := 2 * size
+							// 10 chunks of equal size
+							encodedDataChunkSize := encodedSize / 10
 
-						var events []*core.Event
+							var events []*core.Event
 
-						for i := 0; i < 10; i++ {
-							events = append(events, (&ServerSentEvent{
-								Data: []byte(encoded[i*encodedDataChunkSize : (i+1)*encodedDataChunkSize]),
-							}).ToEvent())
-						}
+							for i := 0; i < 10; i++ {
+								events = append(events, (&ServerSentEvent{
+									Data: []byte(encoded[i*encodedDataChunkSize : (i+1)*encodedDataChunkSize]),
+								}).ToEvent())
+							}
 
-						return events
-					}(),
+							return events
+						}(),
+					},
 				},
 			},
-		},
-		createClient,
-	)
+			createClient,
+		)
+	})
 
 }
 
@@ -448,7 +568,7 @@ func setupAdvancedTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalS
 	return state, ctx, chunk, host, nil
 }
 
-func runMappingTestCase(t *testing.T, name string, testCase serverTestCase, defaultCreateClient func() *http.Client) {
+func runMappingTestCase(t *testing.T, testCase serverTestCase, defaultCreateClient func() *http.Client) {
 
 	state, ctx, chunk, host, err := setupAdvancedTestCase(t, testCase)
 	if !assert.NoError(t, err) {
@@ -462,14 +582,14 @@ func runMappingTestCase(t *testing.T, name string, testCase serverTestCase, defa
 		return
 	}
 
-	runAdvancedServerTestCase(t, name, testCase, defaultCreateClient, func() (*HttpServer, *core.Context, core.Host, error) {
+	runAdvancedServerTestCase(t, testCase, defaultCreateClient, func() (*HttpServer, *core.Context, core.Host, error) {
 		server, err := NewHttpServer(ctx, host, mapping)
 
 		return server, ctx, host, err
 	})
 }
 
-func runHandlingDescTestCase(t *testing.T, name string, testCase serverTestCase, defaultCreateClientFn func() *http.Client) {
+func runHandlingDescTestCase(t *testing.T, testCase serverTestCase, defaultCreateClientFn func() *http.Client) {
 	state, ctx, chunk, host, err := setupAdvancedTestCase(t, testCase)
 	if !assert.NoError(t, err) {
 		return
@@ -482,7 +602,7 @@ func runHandlingDescTestCase(t *testing.T, name string, testCase serverTestCase,
 		return
 	}
 
-	runAdvancedServerTestCase(t, name, testCase, defaultCreateClientFn, func() (*HttpServer, *core.Context, core.Host, error) {
+	runAdvancedServerTestCase(t, testCase, defaultCreateClientFn, func() (*HttpServer, *core.Context, core.Host, error) {
 		server, err := NewHttpServer(ctx, host, desc)
 
 		return server, ctx, host, err
@@ -490,198 +610,195 @@ func runHandlingDescTestCase(t *testing.T, name string, testCase serverTestCase,
 }
 
 func runAdvancedServerTestCase(
-	t *testing.T, name string, testCase serverTestCase,
+	t *testing.T, testCase serverTestCase,
 	defaultCreateClient func() *http.Client, setup func() (*HttpServer, *core.Context, core.Host, error),
 ) {
 
-	t.Run(name, func(t *testing.T) {
+	server, ctx, host, err := setup()
+	if !assert.NoError(t, err) {
+		return
+	}
 
-		server, ctx, host, err := setup()
-		if !assert.NoError(t, err) {
-			return
+	defer server.Close(ctx)
+	time.Sleep(time.Millisecond)
+
+	//send requests
+	createClient := defaultCreateClient
+	if testCase.createClientFn != nil {
+		createClient = testCase.createClientFn()
+	}
+	client := createClient()
+
+	ctx.SetProtocolClientForHost(host, NewHttpClientFromPreExistingClient(client, true))
+
+	responseLock := sync.Mutex{}
+	responses := make([]*http.Response, len(testCase.requests))
+	responseErrors := make([]error, len(testCase.requests))
+
+	secondaryRequestResponses := make([][]*http.Response, len(testCase.requests))
+	secondaryRequestResponseErrors := make([][]error, len(testCase.requests))
+
+	receivedEvents := make([][]*core.Event, len(testCase.requests))
+
+	wg := new(sync.WaitGroup)
+	wg.Add(len(testCase.requests))
+
+	sendReq := func(i int, info requestTestInfo, isPrimary bool, secondaryReqIndex int) {
+		defer wg.Done()
+
+		if info.preDelay != 0 {
+			time.Sleep(info.preDelay)
 		}
 
-		defer server.Close(ctx)
-		time.Sleep(time.Millisecond)
-
-		//send requests
-		createClient := defaultCreateClient
-		if testCase.createClientFn != nil {
-			createClient = testCase.createClientFn()
+		url := string(host)
+		if info.path == "" {
+			url += "/x"
+		} else {
+			url += info.path
 		}
-		client := createClient()
 
-		ctx.SetProtocolClientForHost(host, NewHttpClientFromPreExistingClient(client, true))
-
-		responseLock := sync.Mutex{}
-		responses := make([]*http.Response, len(testCase.requests))
-		responseErrors := make([]error, len(testCase.requests))
-
-		secondaryRequestResponses := make([][]*http.Response, len(testCase.requests))
-		secondaryRequestResponseErrors := make([][]error, len(testCase.requests))
-
-		receivedEvents := make([][]*core.Event, len(testCase.requests))
-
-		wg := new(sync.WaitGroup)
-		wg.Add(len(testCase.requests))
-
-		sendReq := func(i int, info requestTestInfo, isPrimary bool, secondaryReqIndex int) {
-			defer wg.Done()
-
-			if info.preDelay != 0 {
-				time.Sleep(info.preDelay)
+		if info.acceptedContentType != core.EVENT_STREAM_CTYPE {
+			method := "GET"
+			if info.method != "" {
+				method = info.method
 			}
 
-			url := string(host)
-			if info.path == "" {
-				url += "/x"
+			// we send a request to the server
+			req, _ := http.NewRequest(method, url, nil)
+
+			if info.acceptedContentType != "" {
+				req.Header.Add("Accept", string(info.acceptedContentType))
+			}
+
+			for k, values := range info.header {
+				for _, val := range values {
+					req.Header.Add(k, val)
+				}
+			}
+
+			resp, err := client.Do(req)
+
+			responseLock.Lock()
+			if isPrimary {
+				responses[i], responseErrors[i] = resp, err
 			} else {
-				url += info.path
+				secondaryRequestResponses[i][secondaryReqIndex], secondaryRequestResponseErrors[i][secondaryReqIndex] =
+					resp, err
 			}
-
-			if info.acceptedContentType != core.EVENT_STREAM_CTYPE {
-				method := "GET"
-				if info.method != "" {
-					method = info.method
-				}
-
-				// we send a request to the server
-				req, _ := http.NewRequest(method, url, nil)
-
-				if info.acceptedContentType != "" {
-					req.Header.Add("Accept", string(info.acceptedContentType))
-				}
-
-				for k, values := range info.header {
-					for _, val := range values {
-						req.Header.Add(k, val)
-					}
-				}
-
-				resp, err := client.Do(req)
-
-				responseLock.Lock()
-				if isPrimary {
-					responses[i], responseErrors[i] = resp, err
-				} else {
-					secondaryRequestResponses[i][secondaryReqIndex], secondaryRequestResponseErrors[i][secondaryReqIndex] =
-						resp, err
-				}
-				responseLock.Unlock()
+			responseLock.Unlock()
+		} else {
+			evs, err := NewEventSource(ctx, core.URL(url))
+			if err != nil {
+				responseErrors[i] = err
+				return
 			} else {
-				evs, err := NewEventSource(ctx, core.URL(url))
-				if err != nil {
-					responseErrors[i] = err
-					return
-				} else {
-					evs.OnEvent(func(event *core.Event) {
-						responseLock.Lock()
-						receivedEvents[i] = append(receivedEvents[i], event)
-						responseLock.Unlock()
-					})
-					<-time.After(time.Duration(len(info.events)) * 300 * time.Millisecond)
-					evs.Close()
-				}
-			}
-
-		}
-
-		//send requests, add specified delays
-		for i, req := range testCase.requests {
-			if req.pause != 0 {
-				time.Sleep(req.pause)
-			}
-			if req.checkIdenticalParallelRequest {
-				wg.Add(IDENTIDAL_SECONDARY_REQ_COUNT)
-
-				secondaryRequestResponses[i] = make([]*http.Response, IDENTIDAL_SECONDARY_REQ_COUNT)
-				secondaryRequestResponseErrors[i] = make([]error, IDENTIDAL_SECONDARY_REQ_COUNT)
-
-				go sendReq(i, req, true, -1)
-				for j := 0; j < IDENTIDAL_SECONDARY_REQ_COUNT; j++ {
-					go sendReq(i, req, false, j)
-				}
-			} else {
-				go sendReq(i, req, true, -1)
+				evs.OnEvent(func(event *core.Event) {
+					responseLock.Lock()
+					receivedEvents[i] = append(receivedEvents[i], event)
+					responseLock.Unlock()
+				})
+				<-time.After(time.Duration(len(info.events)) * 300 * time.Millisecond)
+				evs.Close()
 			}
 		}
 
-		wg.Wait()
-		responseLock.Lock() //prevent ininteresting race conditions
+	}
 
-		server.Close(ctx)
+	//send requests, add specified delays
+	for i, req := range testCase.requests {
+		if req.pause != 0 {
+			time.Sleep(req.pause)
+		}
+		if req.checkIdenticalParallelRequest {
+			wg.Add(IDENTIDAL_SECONDARY_REQ_COUNT)
 
-		//check responses
-		for i, info := range testCase.requests {
-			resp := responses[i]
-			err := responseErrors[i]
+			secondaryRequestResponses[i] = make([]*http.Response, IDENTIDAL_SECONDARY_REQ_COUNT)
+			secondaryRequestResponseErrors[i] = make([]error, IDENTIDAL_SECONDARY_REQ_COUNT)
 
-			if info.err == nil {
-				if !assert.NoError(t, err) {
-					return
-				}
+			go sendReq(i, req, true, -1)
+			for j := 0; j < IDENTIDAL_SECONDARY_REQ_COUNT; j++ {
+				go sendReq(i, req, false, j)
+			}
+		} else {
+			go sendReq(i, req, true, -1)
+		}
+	}
 
-			} else if info.err != anyErr {
-				assert.ErrorIs(t, err, info.err)
-			} else if !assert.Error(t, err) {
+	wg.Wait()
+	responseLock.Lock() //prevent ininteresting race conditions
+
+	server.Close(ctx)
+
+	//check responses
+	for i, info := range testCase.requests {
+		resp := responses[i]
+		err := responseErrors[i]
+
+		if info.err == nil {
+			if !assert.NoError(t, err) {
 				return
 			}
 
-			if info.acceptedContentType != core.EVENT_STREAM_CTYPE { //normal request
-				if info.err != nil {
-					if info.checkIdenticalParallelRequest {
-						for _, secondaryErr := range secondaryRequestResponseErrors[i] {
-							assert.ErrorIs(t, secondaryErr, info.err, "(secondary request)")
-						}
-					}
-					continue
-				}
-
-				//check response
-
-				if info.status == 0 {
-					if info.okayIf429 && resp.StatusCode == 429 {
-						goto check_body
-					}
-					if !assert.Equal(t, 200, resp.StatusCode) {
-						return
-					}
-				} else {
-					if !assert.Equal(t, info.status, resp.StatusCode, "request"+strconv.Itoa(i)) {
-						return
-					}
-				}
-			check_body:
-
-				body := string(utils.Must(io.ReadAll(resp.Body)))
-
-				switch {
-				case info.result != "":
-					if !assert.Equal(t, info.result, body) {
-						return
-					}
-				case info.resultRegex != "":
-					if !assert.Regexp(t, info.resultRegex, body) {
-						return
-					}
-				default:
-					continue
-				}
-
-				if info.checkIdenticalParallelRequest {
-					for index, secondaryResp := range secondaryRequestResponses[i] {
-						secondaryBody := string(utils.Must(io.ReadAll(secondaryResp.Body)))
-						if !assert.Equal(t, body, secondaryBody, "secondary body should be equal to primary body, secondary request "+strconv.Itoa(index)) {
-							return
-						}
-					}
-				}
-
-			} else { //check events
-				assert.Len(t, receivedEvents[i], len(info.events))
-			}
+		} else if info.err != anyErr {
+			assert.ErrorIs(t, err, info.err)
+		} else if !assert.Error(t, err) {
+			return
 		}
-	})
+
+		if info.acceptedContentType != core.EVENT_STREAM_CTYPE { //normal request
+			if info.err != nil {
+				if info.checkIdenticalParallelRequest {
+					for _, secondaryErr := range secondaryRequestResponseErrors[i] {
+						assert.ErrorIs(t, secondaryErr, info.err, "(secondary request)")
+					}
+				}
+				continue
+			}
+
+			//check response
+
+			if info.status == 0 {
+				if info.okayIf429 && resp.StatusCode == 429 {
+					goto check_body
+				}
+				if !assert.Equal(t, 200, resp.StatusCode) {
+					return
+				}
+			} else {
+				if !assert.Equal(t, info.status, resp.StatusCode, "request"+strconv.Itoa(i)) {
+					return
+				}
+			}
+		check_body:
+
+			body := string(utils.Must(io.ReadAll(resp.Body)))
+
+			switch {
+			case info.result != "":
+				if !assert.Equal(t, info.result, body) {
+					return
+				}
+			case info.resultRegex != "":
+				if !assert.Regexp(t, info.resultRegex, body) {
+					return
+				}
+			default:
+				continue
+			}
+
+			if info.checkIdenticalParallelRequest {
+				for index, secondaryResp := range secondaryRequestResponses[i] {
+					secondaryBody := string(utils.Must(io.ReadAll(secondaryResp.Body)))
+					if !assert.Equal(t, body, secondaryBody, "secondary body should be equal to primary body, secondary request "+strconv.Itoa(index)) {
+						return
+					}
+				}
+			}
+
+		} else { //check events
+			assert.Len(t, receivedEvents[i], len(info.events))
+		}
+	}
 }
 
 type requestTestInfo struct {
