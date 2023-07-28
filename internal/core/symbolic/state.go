@@ -35,6 +35,7 @@ type State struct {
 
 	warnings        []SymbolicEvaluationWarning
 	errors          []SymbolicEvaluationError
+	lastErrorNode   parse.Node
 	errorMessageSet map[string]bool
 	symbolicData    *SymbolicData
 }

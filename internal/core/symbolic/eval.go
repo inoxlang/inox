@@ -2897,10 +2897,25 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		for _, p := range n.Properties {
 			name := p.Name()
 			var err error
-			pattern.entries[name], err = symbolicallyEvalPatternNode(p.Value, state)
+
+			prevErrCount := len(state.errors)
+
+			entryPattern, err := symbolicallyEvalPatternNode(p.Value, state)
 			if err != nil {
 				return nil, err
 			}
+
+			if _, ok := entryPattern.(*AnyPattern); ok && len(state.errors) > prevErrCount {
+				//AnyPattern may be present due to an issue (invalid pattern call) so
+				//we handle this case separately
+				pattern.entries[name] = &TypePattern{val: ANY_SERIALIZABLE}
+			} else if entryPattern.SymbolicValue().IsMutable() {
+				state.addError(makeSymbolicEvalError(p.Value, state, fmtEntriesOfRecordPatternShouldMatchOnlyImmutableValues(name)))
+				pattern.entries[name] = &TypePattern{val: ANY_SERIALIZABLE}
+			} else {
+				pattern.entries[name] = entryPattern
+			}
+
 			if state.symbolicData != nil {
 				val, ok := state.symbolicData.GetMostSpecificNodeValue(p.Value)
 				if ok {

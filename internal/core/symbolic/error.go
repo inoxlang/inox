@@ -121,6 +121,10 @@ func fmtValuesOfRecordShouldBeImmutablePropHasMutable(k string) string {
 	return fmt.Sprintf("invalid value for key '%s', values of a record should be immutable", k)
 }
 
+func fmtEntriesOfRecordPatternShouldMatchOnlyImmutableValues(k string) string {
+	return fmt.Sprintf("invalid value for key '%s', entry patterns of a record pattern should match only immutable values", k)
+}
+
 func fmtIfStmtTestNotBoolBut(test SymbolicValue) string {
 	return fmt.Sprintf("if statement test is not a boolean but a %T", test)
 }

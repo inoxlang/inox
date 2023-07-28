@@ -5114,6 +5114,26 @@ func TestSymbolicEval(t *testing.T) {
 			}, res.(*ObjectPattern).entries["x"])
 		})
 
+		t.Run("the entry patterns should match only immutable values", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return %{x: #{a: {}}}
+			`)
+
+			objectPatternLiteral := parse.FindNode(n, (*parse.ObjectPatternLiteral)(nil), func(lit *parse.ObjectPatternLiteral, _ bool) bool {
+				return len(lit.Properties) == 0
+			})
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(objectPatternLiteral, state, fmtEntriesOfRecordPatternShouldMatchOnlyImmutableValues("a")),
+			}, state.errors)
+			assert.Equal(t, &RecordPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_SERIALIZABLE}},
+				inexact: true,
+			}, res.(*ObjectPattern).entries["x"])
+		})
+
 		t.Run("pattern call", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return %{x: #{a: %int(0..1)}}
@@ -5143,7 +5163,7 @@ func TestSymbolicEval(t *testing.T) {
 				makeSymbolicEvalError(patternCallExpr, state, "missing argument"),
 			}, state.errors)
 			assert.Equal(t, &RecordPattern{
-				entries: map[string]Pattern{"a": ANY_PATTERN},
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_SERIALIZABLE}},
 				inexact: true,
 			}, res.(*ObjectPattern).entries["x"])
 		})
@@ -5167,7 +5187,7 @@ func TestSymbolicEval(t *testing.T) {
 				return %{x: #{
 					a: #{name: %str}
 					b: #{
-						c: {count: %int}
+						c: #{count: %int}
 						d: 1
 					}
 					e: 2
@@ -5186,7 +5206,7 @@ func TestSymbolicEval(t *testing.T) {
 					},
 					"b": &RecordPattern{
 						entries: map[string]Pattern{
-							"c": &ObjectPattern{
+							"c": &RecordPattern{
 								entries: map[string]Pattern{
 									"count": state.ctx.ResolveNamedPattern("int"),
 								},
