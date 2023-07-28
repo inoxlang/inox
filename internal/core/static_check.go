@@ -375,7 +375,8 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 	if closestAssertion != nil {
 		switch n.(type) {
 		case *parse.Variable, *parse.GlobalVariable, *parse.IdentifierLiteral, *parse.BinaryExpression,
-			*parse.PatternIdentifierLiteral, *parse.ObjectPatternLiteral, *parse.ObjectProperty, *parse.ObjectPatternProperty,
+			*parse.PatternIdentifierLiteral, *parse.ObjectPatternLiteral, *parse.RecordPatternLiteral,
+			*parse.ObjectProperty, *parse.ObjectPatternProperty,
 			*parse.ListPatternLiteral, *parse.ObjectLiteral, *parse.ListLiteral, *parse.FunctionPatternExpression,
 			*parse.PatternNamespaceIdentifierLiteral, *parse.PatternNamespaceMemberExpression,
 			*parse.OptionPatternLiteral, *parse.OptionalPatternExpression, *parse.MemberExpression, *parse.IdentifierMemberExpression:
@@ -537,12 +538,24 @@ switch_:
 		if action != parse.Continue {
 			return action
 		}
-	case *parse.ObjectPatternLiteral:
+	case *parse.ObjectPatternLiteral, *parse.RecordPatternLiteral:
 		indexKey := 0
 		keys := map[string]struct{}{}
 
+		var propertyNodes []*parse.ObjectPatternProperty
+		var spreadElementsNodes []*parse.PatternPropertySpreadElement
+
+		switch node := node.(type) {
+		case *parse.ObjectPatternLiteral:
+			propertyNodes = node.Properties
+			spreadElementsNodes = node.SpreadElements
+		case *parse.RecordPatternLiteral:
+			propertyNodes = node.Properties
+			spreadElementsNodes = node.SpreadElements
+		}
+
 		// look for duplicate keys
-		for _, prop := range node.Properties {
+		for _, prop := range propertyNodes {
 			var k string
 
 			switch n := prop.Key.(type) {
@@ -569,7 +582,7 @@ switch_:
 		}
 
 		// also look for duplicate keys
-		for _, element := range node.SpreadElements {
+		for _, element := range spreadElementsNodes {
 			extractionExpr, ok := element.Expr.(*parse.ExtractionExpression)
 			if !ok {
 				continue

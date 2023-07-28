@@ -380,6 +380,60 @@ func TestCheck(t *testing.T) {
 		})
 	})
 
+	t.Run("record pattern literal", func(t *testing.T) {
+		t.Run("identifier keys", func(t *testing.T) {
+			n, src := parseCode(`%p = #{keyOne:1, keyTwo:2}`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("duplicate keys", func(t *testing.T) {
+			n, src := parseCode(`%p = #{"0":1, "0": 1}`)
+
+			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := combineErrors(
+				makeError(keyNode, src, fmtDuplicateKey("0")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("duplicate keys", func(t *testing.T) {
+			n, src := parseCode(`%p = %{a: 1}; %e = #{a:1, ...(%p).{a}}`)
+
+			keyNodes := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), func(l *parse.IdentifierLiteral) bool {
+				return l.Name == "a"
+			})
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := combineErrors(
+				makeError(keyNodes[2], src, fmtDuplicateKey("a")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("key is too long", func(t *testing.T) {
+			name := strings.Repeat("a", MAX_NAME_BYTE_LEN+1)
+			code := strings.Replace(`%p = #{"a":1}`, "a", name, 1)
+			n, src := parseCode(code)
+
+			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := combineErrors(
+				makeError(keyNode, src, fmtNameIsTooLong(name)),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("metaproperty key", func(t *testing.T) {
+			n, src := parseCode(`%p = #{_url_: https://example.com/}`)
+			keyNode := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := combineErrors(
+				makeError(keyNode, src, OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+	})
+
 	t.Run("self expression", func(t *testing.T) {
 		t.Run("in top level", func(t *testing.T) {
 			n, src := parseCode(`self`)
