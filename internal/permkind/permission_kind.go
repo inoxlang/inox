@@ -54,15 +54,15 @@ const (
 )
 
 func (k PermissionKind) Major() PermissionKind {
-	return k & 0xff
+	return k & 0xffff
 }
 
 func (k PermissionKind) IsMajor() bool {
-	return k == (k & 0xff)
+	return k == (k & 0xffff)
 }
 
 func (k PermissionKind) IsMinor() bool {
-	return k != (k & 0xff)
+	return !k.IsMajor()
 }
 
 func (k PermissionKind) Includes(otherKind PermissionKind) bool {
