@@ -1835,17 +1835,13 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return Bool(!Same(left, right)), nil
 		case parse.In:
 			switch rightVal := right.(type) {
-			case *List:
-				length := rightVal.Len()
-				for i := 0; i < length; i++ {
-					e := rightVal.At(state.Global.Ctx, i)
+			case Iterable:
+				it := rightVal.Iterator(state.Global.Ctx, IteratorConfiguration{})
+				for it.Next(state.Global.Ctx) {
+					e := it.Value(state.Global.Ctx)
 					if left.Equal(state.Global.Ctx, e, map[uintptr]uintptr{}, 0) {
 						return True, nil
 					}
-				}
-			case *Object:
-				if rightVal.HasPropValue(state.Global.Ctx, left) {
-					return True, nil
 				}
 			default:
 				return nil, fmt.Errorf("invalid binary expression: cannot check if value is inside a %T", rightVal)
@@ -1853,17 +1849,13 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return False, nil
 		case parse.NotIn:
 			switch rightVal := right.(type) {
-			case *List:
-				length := rightVal.Len()
-				for i := 0; i < length; i++ {
-					e := rightVal.At(state.Global.Ctx, i)
+			case Iterable:
+				it := rightVal.Iterator(state.Global.Ctx, IteratorConfiguration{})
+				for it.Next(state.Global.Ctx) {
+					e := it.Value(state.Global.Ctx)
 					if left.Equal(state.Global.Ctx, e, map[uintptr]uintptr{}, 0) {
 						return False, nil
 					}
-				}
-			case *Object:
-				if rightVal.HasPropValue(state.Global.Ctx, left) {
-					return False, nil
 				}
 			default:
 				return nil, fmt.Errorf("invalid binary expression: cannot check if value is inside a %T", rightVal)

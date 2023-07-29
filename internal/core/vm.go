@@ -569,17 +569,11 @@ func (v *VM) run() {
 			var val Value
 
 			switch rightVal := right.(type) {
-			case *List:
+			case Iterable:
 				it := rightVal.Iterator(v.global.Ctx, IteratorConfiguration{})
 				for it.Next(v.global.Ctx) {
 					e := it.Value(v.global.Ctx)
 					if left.Equal(v.global.Ctx, e, map[uintptr]uintptr{}, 0) {
-						val = True
-					}
-				}
-			case *Object:
-				for _, _v := range rightVal.values {
-					if left.Equal(v.global.Ctx, _v, map[uintptr]uintptr{}, 0) {
 						val = True
 					}
 				}

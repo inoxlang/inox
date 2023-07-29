@@ -870,6 +870,42 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		}
 	})
 
+	t.Run("binary in/not-in", func(t *testing.T) {
+		testCases := []struct {
+			code   string
+			result Bool
+			err    error
+		}{
+			{"(1 in 1..2)", True, nil},
+			{"(1 not-in 1..2)", False, nil},
+			{"(0 in 1..2)", False, nil},
+			{"(0 not-in 1..2)", True, nil},
+
+			{"(1 in [1, 2])", True, nil},
+			{"(1 not-in [1, 2])", False, nil},
+			{"(0 in [1, 2])", False, nil},
+			{"(0 not-in [1, 2])", True, nil},
+
+			{"(1 in {1, 2})", True, nil},
+			{"(1 not-in {1, 2})", False, nil},
+			{"(0 in {1, 2})", False, nil},
+			{"(0 not-in {1, 2})", True, nil},
+		}
+
+		for _, testCase := range testCases {
+			t.Run(testCase.code, func(t *testing.T) {
+				res, err := Eval(testCase.code, NewGlobalState(NewDefaultTestContext(), nil), false)
+				if testCase.err == nil {
+					assert.NoError(t, err)
+					assert.Equal(t, testCase.result, res)
+				} else {
+					assert.ErrorIs(t, err, testCase.err)
+					assert.Nil(t, res)
+				}
+			})
+		}
+	})
+
 	t.Run("range expression", func(t *testing.T) {
 		testCases := []struct {
 			code   string
