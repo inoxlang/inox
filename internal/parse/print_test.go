@@ -26,8 +26,13 @@ func TestPrint(t *testing.T) {
 		"https://example.com/",
 		"1..2",
 		"1..",
+		"1..$a",
 		"'a'..'b'",
 		"'a'..",
+		"1x..2x",
+		"1x..2",
+		"1x..",
+		"1x..$a",
 		//upper-bound range expression
 		"..1",
 		"..12",

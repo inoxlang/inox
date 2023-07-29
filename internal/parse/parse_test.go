@@ -13343,25 +13343,146 @@ func testParse(
 	})
 
 	t.Run("integer range literal", func(t *testing.T) {
-		n := mustparseChunk(t, "1..2")
-		assert.EqualValues(t, &Chunk{
-			NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
-			Statements: []Node{
-				&IntegerRangeLiteral{
-					NodeBase: NodeBase{NodeSpan{0, 4}, nil, []Token{{Type: TWO_DOTS, Span: NodeSpan{1, 3}}}},
-					LowerBound: &IntLiteral{
-						NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
-						Raw:      "1",
-						Value:    1,
-					},
-					UpperBound: &IntLiteral{
-						NodeBase: NodeBase{NodeSpan{3, 4}, nil, nil},
-						Raw:      "2",
-						Value:    2,
+		t.Run("ok", func(t *testing.T) {
+			n := mustparseChunk(t, "1..2")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
+				Statements: []Node{
+					&IntegerRangeLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 4}, nil, []Token{{Type: TWO_DOTS, Span: NodeSpan{1, 3}}}},
+						LowerBound: &IntLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+							Raw:      "1",
+							Value:    1,
+						},
+						UpperBound: &IntLiteral{
+							NodeBase: NodeBase{NodeSpan{3, 4}, nil, nil},
+							Raw:      "2",
+							Value:    2,
+						},
 					},
 				},
-			},
-		}, n)
+			}, n)
+		})
+
+		t.Run("no upper bound", func(t *testing.T) {
+			n := mustparseChunk(t, "1..")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
+				Statements: []Node{
+					&IntegerRangeLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 3}, nil, []Token{{Type: TWO_DOTS, Span: NodeSpan{1, 3}}}},
+						LowerBound: &IntLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+							Raw:      "1",
+							Value:    1,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("invalid upper bound", func(t *testing.T) {
+			n, err := parseChunk(t, "1..$a", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
+				Statements: []Node{
+					&IntegerRangeLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 5},
+							&ParsingError{UnspecifiedParsingError, UPPER_BOUND_OF_INT_RANGE_LIT_SHOULD_BE_INT_LIT},
+							[]Token{{Type: TWO_DOTS, Span: NodeSpan{1, 3}}},
+						},
+						LowerBound: &IntLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+							Raw:      "1",
+							Value:    1,
+						},
+						UpperBound: &Variable{
+							NodeBase: NodeBase{Span: NodeSpan{3, 5}},
+							Name:     "a",
+						},
+					},
+				},
+			}, n)
+		})
+	})
+
+	t.Run("quantity range literal", func(t *testing.T) {
+		t.Run("ok", func(t *testing.T) {
+			n := mustparseChunk(t, "1x..2x")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
+				Statements: []Node{
+					&QuantityRangeLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 6}, nil, []Token{{Type: TWO_DOTS, Span: NodeSpan{2, 4}}}},
+						LowerBound: &QuantityLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+							Raw:      "1x",
+							Values:   []float64{1},
+							Units:    []string{"x"},
+						},
+						UpperBound: &QuantityLiteral{
+							NodeBase: NodeBase{NodeSpan{4, 6}, nil, nil},
+							Raw:      "2x",
+							Values:   []float64{2},
+							Units:    []string{"x"},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("no upper bound", func(t *testing.T) {
+			n := mustparseChunk(t, "1x..")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
+				Statements: []Node{
+					&QuantityRangeLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 4},
+							nil,
+							[]Token{{Type: TWO_DOTS, Span: NodeSpan{2, 4}}},
+						},
+						LowerBound: &QuantityLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+							Raw:      "1x",
+							Values:   []float64{1},
+							Units:    []string{"x"},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("invalid upper bound", func(t *testing.T) {
+			n, err := parseChunk(t, "1x..$a", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
+				Statements: []Node{
+					&QuantityRangeLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 6},
+							&ParsingError{UnspecifiedParsingError, UPPER_BOUND_OF_QTY_RANGE_LIT_SHOULD_BE_QTY_LIT},
+							[]Token{{Type: TWO_DOTS, Span: NodeSpan{2, 4}}},
+						},
+						LowerBound: &QuantityLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+							Raw:      "1x",
+							Values:   []float64{1},
+							Units:    []string{"x"},
+						},
+						UpperBound: &Variable{
+							NodeBase: NodeBase{Span: NodeSpan{4, 6}},
+							Name:     "a",
+						},
+					},
+				},
+			}, n)
+		})
+
 	})
 
 	t.Run("rune range expression", func(t *testing.T) {

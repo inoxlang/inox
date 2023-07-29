@@ -5521,11 +5521,14 @@ func (p *parser) parseNumberAndNumberRange() Node {
 			tokens := []Token{{Type: TWO_DOTS, Span: NodeSpan{p.i - 1, p.i + 1}}}
 
 			p.i++
-			if p.i >= p.len || !isDecDigit(p.s[p.i]) {
+
+			upperBound, isMissingExpr := p.parseExpression()
+
+			if isMissingExpr {
 				return &IntegerRangeLiteral{
 					NodeBase: NodeBase{
 						NodeSpan{start, p.i},
-						&ParsingError{UnspecifiedParsingError, UNTERMINATED_INT_RANGE_LIT},
+						nil,
 						tokens,
 					},
 					LowerBound: lowerIntLiteral,
@@ -5533,23 +5536,19 @@ func (p *parser) parseNumberAndNumberRange() Node {
 				}
 			}
 
-			upperStart := p.i
-
-			for p.i < p.len && (isDecDigit(p.s[p.i]) || p.s[p.i] == '-' || p.s[p.i] == '_') {
-				p.i++
+			var parsingError *ParsingError
+			if _, ok := upperBound.(*IntLiteral); !ok {
+				parsingError = &ParsingError{UnspecifiedParsingError, UPPER_BOUND_OF_INT_RANGE_LIT_SHOULD_BE_INT_LIT}
 			}
 
-			upper := string(p.s[upperStart:p.i])
-
-			upperIntLiteral, _ := parseIntegerLiteral(upper, upperStart, p.i, 10)
 			return &IntegerRangeLiteral{
 				NodeBase: NodeBase{
-					NodeSpan{lowerIntLiteral.Base().Span.Start, upperIntLiteral.Base().Span.End},
-					nil,
+					NodeSpan{lowerIntLiteral.Base().Span.Start, upperBound.Base().Span.End},
+					parsingError,
 					tokens,
 				},
 				LowerBound: lowerIntLiteral,
-				UpperBound: upperIntLiteral,
+				UpperBound: upperBound,
 			}
 		}
 
@@ -5848,13 +5847,50 @@ func (p *parser) parseNumberAndRangeAndRateLiterals() Node {
 	}
 
 	if p.i < p.len && (isAlpha(p.s[p.i]) || p.s[p.i] == '%') { //quantity literal or rate literal
-		node := p.parseQuantityOrRateLiteral(start, fValue, isFloat)
+		qtyOrRateLiteral := p.parseQuantityOrRateLiteral(start, fValue, isFloat)
 		if isHexInt {
-			node.BasePtr().Err = &ParsingError{UnspecifiedParsingError, QUANTITY_LIT_NOT_ALLOWED_WITH_HEXADECIMAL_NUM}
+			qtyOrRateLiteral.BasePtr().Err = &ParsingError{UnspecifiedParsingError, QUANTITY_LIT_NOT_ALLOWED_WITH_HEXADECIMAL_NUM}
 		} else if isOctalInt {
-			node.BasePtr().Err = &ParsingError{UnspecifiedParsingError, QUANTITY_LIT_NOT_ALLOWED_WITH_OCTAL_NUM}
+			qtyOrRateLiteral.BasePtr().Err = &ParsingError{UnspecifiedParsingError, QUANTITY_LIT_NOT_ALLOWED_WITH_OCTAL_NUM}
 		}
-		return node
+
+		qtyLiteral, ok := qtyOrRateLiteral.(*QuantityLiteral)
+		//quantity range literal
+		if ok && p.i < p.len-1 && p.s[p.i] == '.' && p.s[p.i+1] == '.' {
+			tokens := []Token{{Type: TWO_DOTS, Span: NodeSpan{p.i, p.i + 2}}}
+			p.i += 2
+
+			upperBound, isMissingExpr := p.parseExpression()
+
+			if isMissingExpr {
+				return &QuantityRangeLiteral{
+					NodeBase: NodeBase{
+						NodeSpan{start, p.i},
+						nil,
+						tokens,
+					},
+					LowerBound: qtyLiteral,
+					UpperBound: nil,
+				}
+			}
+
+			var parsingError *ParsingError
+
+			if _, ok := upperBound.(*QuantityLiteral); !ok {
+				parsingError = &ParsingError{UnspecifiedParsingError, UPPER_BOUND_OF_QTY_RANGE_LIT_SHOULD_BE_QTY_LIT}
+			}
+
+			return &QuantityRangeLiteral{
+				NodeBase: NodeBase{
+					NodeSpan{qtyLiteral.Span.Start, upperBound.Base().Span.End},
+					parsingError,
+					tokens,
+				},
+				LowerBound: qtyLiteral,
+				UpperBound: upperBound,
+			}
+		}
+		return qtyOrRateLiteral
 	}
 
 	return e

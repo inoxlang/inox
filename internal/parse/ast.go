@@ -1542,10 +1542,20 @@ func (BinaryExpression) Kind() NodeKind {
 type IntegerRangeLiteral struct {
 	NodeBase
 	LowerBound *IntLiteral
-	UpperBound *IntLiteral
+	UpperBound Node //can be nil
 }
 
 func (IntegerRangeLiteral) Kind() NodeKind {
+	return Expr
+}
+
+type QuantityRangeLiteral struct {
+	NodeBase
+	LowerBound *QuantityLiteral
+	UpperBound Node //can be nil
+}
+
+func (QuantityRangeLiteral) Kind() NodeKind {
 	return Expr
 }
 
@@ -2512,6 +2522,9 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 	case *UpperBoundRangeExpression:
 		walk(n.UpperBound, node, ancestorChain, fn, afterFn)
 	case *IntegerRangeLiteral:
+		walk(n.LowerBound, node, ancestorChain, fn, afterFn)
+		walk(n.UpperBound, node, ancestorChain, fn, afterFn)
+	case *QuantityRangeLiteral:
 		walk(n.LowerBound, node, ancestorChain, fn, afterFn)
 		walk(n.UpperBound, node, ancestorChain, fn, afterFn)
 	case *RuneRangeExpression:
