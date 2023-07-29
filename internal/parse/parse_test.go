@@ -18177,6 +18177,47 @@ func testParse(
 				},
 			}, n)
 		})
+
+		t.Run("general element: empty tuple pattern", func(t *testing.T) {
+			n := mustparseChunk(t, "%p = #[]#{}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{
+							NodeSpan{0, 11},
+							nil,
+							[]Token{{Type: EQUAL, Span: NodeSpan{3, 4}}},
+						},
+						Left: &PatternIdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+							Name:     "p",
+						},
+						Right: &TuplePatternLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{5, 11},
+								nil,
+								[]Token{
+									{Type: OPENING_TUPLE_BRACKET, Span: NodeSpan{5, 7}},
+									{Type: CLOSING_BRACKET, Span: NodeSpan{7, 8}},
+								},
+							},
+							Elements: nil,
+							GeneralElement: &RecordPatternLiteral{
+								NodeBase: NodeBase{
+									NodeSpan{8, 11},
+									nil,
+									[]Token{
+										{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{8, 10}},
+										{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("pattern definition", func(t *testing.T) {

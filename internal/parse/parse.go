@@ -3221,7 +3221,7 @@ func (p *parser) parseListTuplePatternLiteral(percentPrefixed, isTuplePattern bo
 	}
 
 	var generalElement Node
-	if p.i < p.len && (p.s[p.i] == '%' || isFirstIdentChar(p.s[p.i]) || isOpeningDelim(p.s[p.i])) {
+	if p.i < p.len && (p.s[p.i] == '%' || isFirstIdentChar(p.s[p.i]) || isOpeningDelim(p.s[p.i]) || p.s[p.i] == '#') {
 		if len32(elements) > 0 {
 			parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_LIST_TUPLE_PATT_GENERAL_ELEMENT_IF_ELEMENTS}
 		} else {
