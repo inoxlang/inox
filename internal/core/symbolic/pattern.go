@@ -21,6 +21,7 @@ var (
 		(*ExactValuePattern)(nil), (*ExactStringPattern)(nil), (*ParserBasedPattern)(nil),
 		(*IntRangePattern)(nil), (*EventPattern)(nil), (*MutationPattern)(nil), (*OptionalPattern)(nil),
 		(*FunctionPattern)(nil),
+		(*DifferencePattern)(nil),
 	}
 	_ = []GroupPattern{
 		(*NamedSegmentPathPattern)(nil),
@@ -1878,9 +1879,10 @@ func (p *TypePattern) WidestOfType() SymbolicValue {
 }
 
 type DifferencePattern struct {
-	NotCallablePatternMixin
 	Base    Pattern
 	Removed Pattern
+	NotCallablePatternMixin
+	SerializableMixin
 }
 
 func (p *DifferencePattern) Test(v SymbolicValue) bool {
