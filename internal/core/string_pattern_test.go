@@ -3,6 +3,7 @@ package core
 import (
 	"math"
 	"regexp/syntax"
+	"strconv"
 	"testing"
 
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -552,6 +553,8 @@ func TestRuneRangeStringPattern(t *testing.T) {
 
 func TestIntRangeStringPattern(t *testing.T) {
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	max := int64(math.MaxInt64)
+	//min := int64(math.MinInt64)
 
 	pattern := NewIntRangeStringPattern(0, 0, nil)
 	assert.Equal(t, NewIncludedEndIntRange(1, 1), pattern.LengthRange())
@@ -623,6 +626,30 @@ func TestIntRangeStringPattern(t *testing.T) {
 	assert.True(t, pattern.Test(ctx, Str("11")))
 	assert.True(t, pattern.Test(ctx, Str("99")))
 	assert.True(t, pattern.Test(ctx, Str("100")))
+
+	pattern = NewIntRangeStringPattern(1, max, nil)
+	assert.Equal(t, NewIncludedEndIntRange(1, int64(utils.CountDigits(max))), pattern.LengthRange())
+	assert.False(t, pattern.Test(ctx, Str("0")))
+	assert.True(t, pattern.Test(ctx, Str("1")))
+	assert.False(t, pattern.Test(ctx, Str("-0")))
+	assert.False(t, pattern.Test(ctx, Str("-1")))
+	assert.True(t, pattern.Test(ctx, Str("2")))
+	assert.True(t, pattern.Test(ctx, Str("9")))
+	assert.True(t, pattern.Test(ctx, Str("10")))
+	assert.True(t, pattern.Test(ctx, Str("11")))
+	assert.True(t, pattern.Test(ctx, Str("99")))
+	assert.True(t, pattern.Test(ctx, Str("100")))
+	assert.True(t, pattern.Test(ctx, Str(strconv.FormatInt(max, 10))))
+
+	// pattern = NewIntRangeStringPattern(min, -1, nil)
+	// assert.Equal(t, NewIncludedEndIntRange(2, int64(1+utils.CountDigits(min))), pattern.LengthRange())
+	// assert.False(t, pattern.Test(ctx, Str("0")))
+	// assert.False(t, pattern.Test(ctx, Str("1")))
+	// assert.False(t, pattern.Test(ctx, Str("-0")))
+	// assert.True(t, pattern.Test(ctx, Str("-1")))
+	// assert.True(t, pattern.Test(ctx, Str("-100")))
+	// assert.False(t, pattern.Test(ctx, Str(strconv.FormatInt(min, 10))))
+	// assert.True(t, pattern.Test(ctx, Str(strconv.FormatInt(min+1, 10))))
 
 	pattern = NewIntRangeStringPattern(-1, 1, nil)
 	assert.Equal(t, NewIncludedEndIntRange(1, 2), pattern.LengthRange())

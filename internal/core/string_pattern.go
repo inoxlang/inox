@@ -723,6 +723,10 @@ type IntRangeStringPattern struct {
 }
 
 func NewIntRangeStringPattern(lower, upperIncluded int64, node parse.Node) *IntRangeStringPattern {
+	if lower == math.MinInt64 {
+		panic(fmt.Errorf("minimum int64 not supported yet"))
+	}
+
 	entireRegex := "^" + utils.RegexForRange(lower, upperIncluded, utils.IntegerRangeRegexConfig{
 		CapturingGroup:     false,
 		NegativeOnlyPrefix: "-",
