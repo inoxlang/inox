@@ -377,7 +377,8 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 		case *parse.Variable, *parse.GlobalVariable, *parse.IdentifierLiteral, *parse.BinaryExpression,
 			*parse.PatternIdentifierLiteral, *parse.ObjectPatternLiteral, *parse.RecordPatternLiteral,
 			*parse.ObjectProperty, *parse.ObjectPatternProperty,
-			*parse.ListPatternLiteral, *parse.ObjectLiteral, *parse.ListLiteral, *parse.FunctionPatternExpression,
+			*parse.ListPatternLiteral, *parse.TuplePatternLiteral,
+			*parse.ObjectLiteral, *parse.ListLiteral, *parse.FunctionPatternExpression,
 			*parse.PatternNamespaceIdentifierLiteral, *parse.PatternNamespaceMemberExpression,
 			*parse.OptionPatternLiteral, *parse.OptionalPatternExpression, *parse.MemberExpression, *parse.IdentifierMemberExpression:
 		default:
