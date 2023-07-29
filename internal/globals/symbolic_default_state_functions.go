@@ -173,8 +173,8 @@ func init() {
 		_idt, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) symbolic.SymbolicValue {
 			return arg
 		},
-		_len, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) *symbolic.Int {
-			return &symbolic.Int{}
+		_len, func(ctx *symbolic.Context, arg symbolic.Indexable) *symbolic.Int {
+			return symbolic.ANY_INT
 		},
 		_len_range, func(ctx *symbolic.Context, arg symbolic.StringPattern) *symbolic.IntRange {
 			return &symbolic.IntRange{}

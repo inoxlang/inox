@@ -246,8 +246,8 @@ func _idt(ctx *core.Context, v core.Value) core.Value {
 	return v
 }
 
-func _len(ctx *core.Context, v core.Value) core.Int {
-	return core.Int(v.(core.Indexable).Len())
+func _len(ctx *core.Context, v core.Indexable) core.Int {
+	return core.Int(v.Len())
 }
 
 func _len_range(ctx *core.Context, p core.StringPattern) core.IntRange {
