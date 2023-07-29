@@ -2653,6 +2653,38 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		}
 	})
 
+	t.Run("integer range literal ", func(t *testing.T) {
+		t.Run("with upper bound", func(t *testing.T) {
+			code := `return 1..2`
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, IntRange{
+				unknownStart: false,
+				inclusiveEnd: true,
+				Start:        1,
+				End:          2,
+				Step:         1,
+			}, res)
+		})
+
+		t.Run("without upper bound", func(t *testing.T) {
+			code := `return 1..`
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, IntRange{
+				unknownStart: false,
+				inclusiveEnd: true,
+				Start:        1,
+				End:          math.MaxInt64,
+				Step:         1,
+			}, res)
+		})
+	})
+
 	t.Run("upper bound range expression ", func(t *testing.T) {
 		t.Run("integer ", func(t *testing.T) {
 			code := `return ..10`
@@ -2688,6 +2720,46 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 		assert.Equal(t, RuneRange{'a', 'z'}, res)
+	})
+
+	t.Run("string pattern", func(t *testing.T) {
+
+		t.Run("single element", func(t *testing.T) {
+			code := `
+				%s = %str( 'a'..'z' )
+				return %s
+			`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.IsType(t, (*SequenceStringPattern)(nil), res)
+			patt := res.(*SequenceStringPattern)
+			assert.Len(t, patt.elements, 1)
+		})
+
+		t.Run("single element: integer range with no upper bound", func(t *testing.T) {
+			code := `
+				%s = %str( 1.. )
+				return %s
+			`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.IsType(t, (*SequenceStringPattern)(nil), res)
+			patt := res.(*SequenceStringPattern)
+			assert.Len(t, patt.elements, 1)
+
+			expectedPattern := NewIntRangeStringPattern(
+				1,
+				math.MaxInt64,
+				parse.FindNode(state.Module.MainChunk.Node, (*parse.IntegerRangeLiteral)(nil), nil),
+			)
+			assert.Equal(t, expectedPattern, patt.elements[0])
+		})
 	})
 
 	t.Run("function expression", func(t *testing.T) {

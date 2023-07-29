@@ -1940,11 +1940,17 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}, nil
 		}
 	case *parse.IntegerRangeLiteral:
+		upperBound := int64(math.MaxInt64)
+
+		if n.UpperBound != nil {
+			upperBound = n.UpperBound.(*parse.IntLiteral).Value
+		}
+
 		return IntRange{
 			unknownStart: false,
 			inclusiveEnd: true,
 			Start:        n.LowerBound.Value,
-			End:          n.UpperBound.Value,
+			End:          upperBound,
 			Step:         1,
 		}, nil
 	case *parse.RuneRangeExpression:
@@ -2972,7 +2978,12 @@ func evalStringPatternNode(node parse.Node, state *TreeWalkState, lazy bool) (St
 	case *parse.RuneRangeExpression:
 		return NewRuneRangeStringPattern(v.Lower.Value, v.Upper.Value, node), nil
 	case *parse.IntegerRangeLiteral:
-		return NewIntRangeStringPattern(v.LowerBound.Value, v.UpperBound.Value, node), nil
+		upperBound := int64(math.MaxInt64)
+
+		if v.UpperBound != nil {
+			upperBound = v.UpperBound.(*parse.IntLiteral).Value
+		}
+		return NewIntRangeStringPattern(v.LowerBound.Value, upperBound, node), nil
 	case *parse.PatternIdentifierLiteral:
 		pattern := state.Global.Ctx.ResolveNamedPattern(v.Name)
 		if pattern == nil {

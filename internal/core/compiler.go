@@ -213,7 +213,9 @@ func (c *compiler) Compile(node parse.Node) error {
 		if err := c.Compile(node.LowerBound); err != nil {
 			return err
 		}
-		if err := c.Compile(node.UpperBound); err != nil {
+		if node.UpperBound == nil {
+			c.emit(node, OpPushConstant, c.addConstant(Int(math.MaxInt64)))
+		} else if err := c.Compile(node.UpperBound); err != nil {
 			return err
 		}
 		c.emit(node, OpCreateIntRange)
@@ -2192,7 +2194,13 @@ func (c *compiler) CompileStringPatternNode(node parse.Node) error {
 		patt := NewRuneRangeStringPattern(v.Lower.Value, v.Upper.Value, node)
 		c.emit(node, OpPushConstant, c.addConstant(patt))
 	case *parse.IntegerRangeLiteral:
-		patt := NewIntRangeStringPattern(v.LowerBound.Value, v.UpperBound.Value, node)
+		var patt Pattern
+		upperBound := int64(math.MaxInt64)
+
+		if v.UpperBound != nil {
+			upperBound = v.UpperBound.(*parse.IntLiteral).Value
+		}
+		patt = NewIntRangeStringPattern(v.LowerBound.Value, upperBound, node)
 		c.emit(node, OpPushConstant, c.addConstant(patt))
 	case *parse.PatternIdentifierLiteral:
 		c.emit(node, OpResolvePattern, c.addConstant(Str(v.Name)))
