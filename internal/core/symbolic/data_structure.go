@@ -27,7 +27,7 @@ var (
 
 	_ = []Indexable{
 		(*String)(nil), (*Array)(nil), (*List)(nil), (*Tuple)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*Object)(nil), (*IntRange)(nil),
-		(*AnyStringLike)(nil),
+		(*AnyStringLike)(nil), (*AnyIndexable)(nil),
 	}
 
 	_ = []Sequence{
@@ -1692,6 +1692,30 @@ func (r *AnyIndexable) Test(v SymbolicValue) bool {
 	return ok
 }
 
+func (i *AnyIndexable) IteratorElementKey() SymbolicValue {
+	return ANY
+}
+
+func (i *AnyIndexable) IteratorElementValue() SymbolicValue {
+	return ANY
+}
+
+func (i *AnyIndexable) element() SymbolicValue {
+	return ANY
+}
+
+func (i *AnyIndexable) elementAt(index int) SymbolicValue {
+	return ANY
+}
+
+func (i *AnyIndexable) KnownLen() int {
+	return -1
+}
+
+func (i *AnyIndexable) HasKnownLen() bool {
+	return false
+}
+
 func (r *AnyIndexable) Widen() (SymbolicValue, bool) {
 	return nil, false
 }
@@ -1702,13 +1726,8 @@ func (a *AnyIndexable) IsWidenable() bool {
 
 func (r *AnyIndexable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%indexable")))
-	return
 }
 
 func (r *AnyIndexable) WidestOfType() SymbolicValue {
 	return ANY_INDEXABLE
-}
-
-func (r *AnyIndexable) IteratorElementValue() SymbolicValue {
-	return ANY
 }
