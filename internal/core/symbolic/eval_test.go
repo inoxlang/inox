@@ -5243,6 +5243,62 @@ func TestSymbolicEval(t *testing.T) {
 		}, res)
 	})
 
+	t.Run("tuple pattern literal", func(t *testing.T) {
+		t.Run("ok", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+			%p = #[ #[] ]
+			return %p
+		`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, &TuplePattern{
+				elements: []Pattern{
+					&TuplePattern{
+						elements: []Pattern{},
+					},
+				},
+			}, res)
+		})
+
+		t.Run("element patterns should match only immutable values", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				%p = #[ %{} ]
+				return %p
+			`)
+
+			objectPatternLit := parse.FindNode(n, (*parse.ObjectPatternLiteral)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(objectPatternLit, state, ELEM_PATTERNS_OF_TUPLE_SHOUD_MATCH_ONLY_IMMUTABLES),
+			}, state.errors)
+			assert.Equal(t, &TuplePattern{
+				elements: []Pattern{&TypePattern{val: ANY_SERIALIZABLE}},
+			}, res)
+		})
+
+		t.Run("general element pattern should match only immutable values", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				%p = #[]%{}
+				return %p
+			`)
+
+			objectPatternLit := parse.FindNode(n, (*parse.ObjectPatternLiteral)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(objectPatternLit, state, ELEM_PATTERNS_OF_TUPLE_SHOUD_MATCH_ONLY_IMMUTABLES),
+			}, state.errors)
+			assert.Equal(t, &TuplePattern{
+				generalElement: &TypePattern{val: ANY_SERIALIZABLE},
+			}, res)
+		})
+	})
+
 	t.Run("union pattern", func(t *testing.T) {
 		n, state := MakeTestStateAndChunk(`
 			return %| 1 | "1"

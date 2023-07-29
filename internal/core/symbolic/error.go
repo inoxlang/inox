@@ -38,8 +38,9 @@ const (
 	CANNOT_CREATE_OPTIONAL_PATTERN_WITH_PATT_MATCHING_NIL           = "cannot create optional pattern with pattern matching nil"
 	KEY_VAR_SHOULD_BE_PROVIDED_ONLY_WHEN_ITERATING_OVER_AN_ITERABLE = "a key variable should be provided only when iterating over an iterable"
 
-	ELEMS_OF_TUPLE_SHOUD_BE_IMMUTABLE            = "elements of a tuple should be immutable"
-	UNSUPPORTED_PARAM_TYPE_FOR_RUNTIME_TYPECHECK = "unsupported parameter type for runtime typecheck"
+	ELEMS_OF_TUPLE_SHOUD_BE_IMMUTABLE                  = "elements of a tuple should be immutable"
+	ELEM_PATTERNS_OF_TUPLE_SHOUD_MATCH_ONLY_IMMUTABLES = "element patterns of a tuple pattern should match only immutable values"
+	UNSUPPORTED_PARAM_TYPE_FOR_RUNTIME_TYPECHECK       = "unsupported parameter type for runtime typecheck"
 
 	CONCATENATION_SUPPORTED_TYPES_EXPLANATION = "only string, bytes & tuple concatenations are supported for now"
 	SPREAD_ELEMENT_IS_NOT_ITERABLE            = "spread element is not iterabe"

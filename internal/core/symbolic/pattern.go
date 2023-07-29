@@ -1770,6 +1770,7 @@ func symbolicallyEvalPatternNode(n parse.Node, state *State) (Pattern, error) {
 	case *parse.ObjectPatternLiteral,
 		*parse.RecordPatternLiteral,
 		*parse.ListPatternLiteral,
+		*parse.TuplePatternLiteral,
 		*parse.OptionPatternLiteral,
 		*parse.RegularExpressionLiteral,
 

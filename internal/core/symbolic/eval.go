@@ -2973,6 +2973,40 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		}
 
 		return pattern, nil
+	case *parse.TuplePatternLiteral:
+		pattern := &TuplePattern{}
+
+		if n.GeneralElement != nil {
+			var err error
+			pattern.generalElement, err = symbolicallyEvalPatternNode(n.GeneralElement, state)
+			if err != nil {
+				return nil, err
+			}
+
+			if pattern.generalElement.SymbolicValue().IsMutable() {
+				state.addError(makeSymbolicEvalError(n.GeneralElement, state, ELEM_PATTERNS_OF_TUPLE_SHOUD_MATCH_ONLY_IMMUTABLES))
+				pattern.generalElement = &TypePattern{val: ANY_SERIALIZABLE}
+			}
+
+		} else {
+			pattern.elements = make([]Pattern, 0)
+
+			for _, e := range n.Elements {
+				elemPattern, err := symbolicallyEvalPatternNode(e, state)
+				if err != nil {
+					return nil, err
+				}
+
+				if elemPattern.SymbolicValue().IsMutable() {
+					state.addError(makeSymbolicEvalError(e, state, ELEM_PATTERNS_OF_TUPLE_SHOUD_MATCH_ONLY_IMMUTABLES))
+					elemPattern = &TypePattern{val: ANY_SERIALIZABLE}
+				}
+
+				pattern.elements = append(pattern.elements, elemPattern)
+			}
+		}
+
+		return pattern, nil
 	case *parse.OptionPatternLiteral:
 		return &OptionPattern{}, nil
 	case *parse.ByteSliceLiteral:
