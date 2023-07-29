@@ -1,6 +1,9 @@
 package utils
 
 import (
+	"fmt"
+	"math"
+
 	"golang.org/x/exp/constraints"
 )
 
@@ -20,13 +23,19 @@ func Max[T constraints.Ordered](a, b T) T {
 
 func Abs[T constraints.Integer](a T) T {
 	if a < 0 {
+		if a == -a {
+			panic(fmt.Errorf("%d has no absolute value", a))
+		}
 		return -a
 	}
 	return a
 }
 
-func CountDigits[I constraints.Integer](n I) int {
+func CountDigits(n int64) int {
 	count := 0
+	if n == math.MinInt64 {
+		n += 1
+	}
 	if n < 0 {
 		n = -n
 	}
