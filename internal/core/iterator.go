@@ -13,7 +13,7 @@ import (
 )
 
 var _ = []Iterable{
-	&List{}, &Tuple{}, &Object{}, &Record{}, IntRange{}, &RuneRange{}, Pattern(nil), EventSource(nil),
+	(*List)(nil), (*Tuple)(nil), (*Object)(nil), (*Record)(nil), IntRange{}, (*RuneRange)(nil), Pattern(nil), EventSource(nil),
 }
 
 type Iterable interface {
