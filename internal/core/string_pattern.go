@@ -723,80 +723,52 @@ type IntRangeStringPattern struct {
 }
 
 func NewIntRangeStringPattern(lower, upperIncluded int64, node parse.Node) *IntRangeStringPattern {
-	entireRegex := ""
+	entireRegex := "^" + utils.RegexForRange(lower, upperIncluded, utils.IntegerRangeRegexConfig{
+		CapturingGroup:     false,
+		NegativeOnlyPrefix: "-",
+		PositiveOnlyPrefix: "\\b",
+		IntersectedPrefix:  "(?:-|\\b)",
+	}) + "$"
 
 	lengthRange := IntRange{
 		Step:         1,
 		inclusiveEnd: true,
 	}
 
-	onlyNines := func(i int64) bool {
-		for _, digit := range strconv.FormatInt(utils.Abs(i), 10) {
-			if digit != '9' {
-				return false
-			}
-		}
-		return true
-	}
-
 	if lower < 0 {
-		if !onlyNines(lower) {
-			panic(errors.New(
-				"for now integer range string patterns only support lower bounds with only '9' digits",
-			))
-		}
-		if !onlyNines(upperIncluded) {
-			panic(errors.New("for now integer range string patterns only support upper bounds with only '9' digits"))
-		}
-
-		absLower := math.Abs(float64(lower))
-		absUpper := math.Abs(float64(upperIncluded))
-		negativeIntPart := ""
-		positiveIntPart := ""
-		digitsRegex := "(?:\\d{%d,%d})\\b"
+		absLower := utils.Abs(lower)
+		absUpper := utils.Abs(upperIncluded)
 
 		if upperIncluded < 0 {
 			max := utils.Max(absLower, absUpper)
 			min := utils.Min(absLower, absUpper)
 
-			maxDigitCount := int(math.Ceil(math.Log10(max)))
-			minDigitCount := int(math.Ceil(math.Log10(min)))
-
-			negativeIntPart = fmt.Sprintf(digitsRegex, minDigitCount, maxDigitCount)
+			maxDigitCount := utils.CountDigits(max)
+			minDigitCount := utils.CountDigits(min)
 
 			lengthRange.Start = 1 + int64(minDigitCount)
 			lengthRange.End = 1 + int64(maxDigitCount)
 		} else {
-			negMaxDigitCount := int(math.Ceil(math.Log10(absLower)))
+			negMaxDigitCount := utils.CountDigits(absLower)
 			posMaxDigitCount := 1
 			if upperIncluded >= 1 {
-				posMaxDigitCount = int(math.Ceil(math.Log10(float64(upperIncluded))))
+				posMaxDigitCount = utils.CountDigits(upperIncluded)
 			}
-
-			negativeIntPart = fmt.Sprintf(digitsRegex, 0, negMaxDigitCount)
-			positiveIntPart = fmt.Sprintf(digitsRegex, 0, posMaxDigitCount)
 
 			lengthRange.Start = 1 // zero
 			lengthRange.End = int64(utils.Max(1+negMaxDigitCount, posMaxDigitCount))
 		}
-		entireRegex = fmt.Sprintf("^(-%s|\\b%s)$", negativeIntPart, positiveIntPart)
 	} else {
-		if (upperIncluded % 9) != 0 {
-			panic(errors.New("for now integer range string patterns only support upper bounds with only '9' digits"))
-		}
-
 		minDigitCount := 1
 		if lower >= 1 {
-			minDigitCount = int(math.Ceil(math.Log10(float64(lower))))
+			minDigitCount = utils.CountDigits(lower)
 		}
 
 		maxDigitCount := 1
 
 		if upperIncluded >= 1 {
-			maxDigitCount = int(math.Ceil(math.Log10(float64(upperIncluded))))
+			maxDigitCount = utils.CountDigits(upperIncluded)
 		}
-
-		entireRegex = fmt.Sprintf("^\\b\\d{%d,%d}\\b$", minDigitCount, maxDigitCount)
 
 		lengthRange.Start = int64(minDigitCount)
 		lengthRange.End = int64(maxDigitCount)
