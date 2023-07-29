@@ -2344,6 +2344,40 @@ func TestCheck(t *testing.T) {
 
 	})
 
+	t.Run("integer range literal", func(t *testing.T) {
+		t.Run("ok", func(t *testing.T) {
+			n, src := parseCode(`1..2`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("no upper bound", func(t *testing.T) {
+			n, src := parseCode(`1..`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("upper bound should be smaller than lower bound", func(t *testing.T) {
+			n, src := parseCode(`1..0`)
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := combineErrors(
+				makeError(n.Statements[0], src, LOWER_BOUND_OF_INT_RANGE_LIT_SHOULD_BE_SMALLER_THAN_UPPER_BOUND),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+	})
+
+	t.Run("quantity range literal", func(t *testing.T) {
+		t.Run("ok", func(t *testing.T) {
+			n, src := parseCode(`1x..2x`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("no upper bound", func(t *testing.T) {
+			n, src := parseCode(`1x..`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+	})
+
 	t.Run("match statement", func(t *testing.T) {
 		t.Run("group matching variable shadows a global", func(t *testing.T) {
 			n, src := parseCode(`

@@ -393,7 +393,7 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 switch_:
 	switch node := n.(type) {
 	case *parse.IntegerRangeLiteral:
-		if node.LowerBound.Value > node.UpperBound.Value {
+		if upperBound, ok := node.UpperBound.(*parse.IntLiteral); ok && node.LowerBound.Value > upperBound.Value {
 			c.addError(n, LOWER_BOUND_OF_INT_RANGE_LIT_SHOULD_BE_SMALLER_THAN_UPPER_BOUND)
 		}
 	case *parse.QuantityLiteral:
