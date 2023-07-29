@@ -906,6 +906,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		}
 	})
 
+	t.Run("integer unary expression", func(t *testing.T) {
+		t.Run("negating the smallest integer should throw an error", func(t *testing.T) {
+			res, err := Eval("(- -9223372036854775808)", NewGlobalState(NewDefaultTestContext(), nil), false)
+			assert.ErrorIs(t, err, ErrNegationWithOverflow)
+			assert.Nil(t, res)
+		})
+	})
+
 	t.Run("range expression", func(t *testing.T) {
 		testCases := []struct {
 			code   string

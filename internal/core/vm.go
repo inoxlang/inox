@@ -507,6 +507,10 @@ func (v *VM) run() {
 
 			switch x := operand.(type) {
 			case Int:
+				if x == -x {
+					v.err = ErrNegationWithOverflow
+					return
+				}
 				var res Value = -x
 				v.stack[v.sp] = res
 				v.sp++

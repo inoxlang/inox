@@ -28,9 +28,10 @@ var (
 	ErrUnreachable              = errors.New("unreachable")
 
 	//integer
-	ErrIntOverflow       = errors.New("integer overflow")
-	ErrIntUnderflow      = errors.New("integer underflow")
-	ErrIntDivisionByZero = errors.New("integer division by zero")
+	ErrIntOverflow          = errors.New("integer overflow")
+	ErrIntUnderflow         = errors.New("integer underflow")
+	ErrNegationWithOverflow = errors.New("integer negation with overflow")
+	ErrIntDivisionByZero    = errors.New("integer division by zero")
 
 	//floating point
 	ErrFloatOverflow      = errors.New("float overflow")
