@@ -2332,6 +2332,35 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		return pattern, nil
+	case *parse.TuplePatternLiteral:
+
+		var pattern *TuplePattern
+		if n.GeneralElement != nil {
+			pattern = &TuplePattern{}
+
+			elementPattern, err := evalPatternNode(n.GeneralElement, state)
+			if err != nil {
+				return nil, fmt.Errorf("failed to evaluate tuple pattern literal, error when evaluating element: %s", err.Error())
+			}
+			pattern.generalElementPattern = elementPattern
+		} else {
+			pattern = &TuplePattern{
+				elementPatterns: []Pattern{},
+			}
+
+			for _, e := range n.Elements {
+				var err error
+				elementPattern, err := evalPatternNode(e, state)
+
+				if err != nil {
+					return nil, fmt.Errorf("failed to evaluate tuple pattern literal, error when evaluating an element: %s", err.Error())
+				}
+
+				pattern.elementPatterns = append(pattern.elementPatterns, elementPattern)
+			}
+		}
+
+		return pattern, nil
 	case *parse.OptionPatternLiteral:
 		valuePattern, err := evalPatternNode(n.Value, state)
 

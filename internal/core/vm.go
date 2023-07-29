@@ -1020,6 +1020,24 @@ func (v *VM) run() {
 				v.stack[v.sp] = patt
 				v.sp++
 			}
+		case OpCreateTuplePattern:
+			v.ip += 3
+			numElements := int(v.curInsts[v.ip-1]) | int(v.curInsts[v.ip-2])<<8
+			hasGeneralElem := int(v.curInsts[v.ip])
+
+			patt := &TuplePattern{}
+			if hasGeneralElem == 1 {
+				patt.generalElementPattern = v.stack[v.sp-1].(Pattern)
+				v.stack[v.sp-1] = patt
+			} else {
+				patt.elementPatterns = make([]Pattern, 0, numElements)
+				for i := v.sp - numElements; i < v.sp; i++ {
+					patt.elementPatterns = append(patt.elementPatterns, v.stack[i].(Pattern))
+				}
+				v.sp -= numElements
+				v.stack[v.sp] = patt
+				v.sp++
+			}
 		case OpCreateObjectPattern, OpCreateRecordPattern:
 			op := v.curInsts[v.ip]
 			v.ip += 3

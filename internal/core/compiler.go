@@ -1150,6 +1150,25 @@ func (c *compiler) Compile(node parse.Node) error {
 		}
 
 		c.emit(node, OpCreateListPattern, len(node.Elements), hasGeneralElem)
+	case *parse.TuplePatternLiteral:
+		hasGeneralElem := 0
+
+		if node.GeneralElement != nil {
+			hasGeneralElem = 1
+
+			if err := c.Compile(node.GeneralElement); err != nil {
+				return err
+			}
+		} else {
+			for _, e := range node.Elements {
+				if err := c.Compile(e); err != nil {
+					return err
+				}
+				c.emit(e, OpToPattern)
+			}
+		}
+
+		c.emit(node, OpCreateTuplePattern, len(node.Elements), hasGeneralElem)
 	case *parse.ObjectPatternLiteral:
 		isInexact := 1
 

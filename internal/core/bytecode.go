@@ -164,6 +164,7 @@ const (
 	OpSpreadTuple
 	OpAppend
 	OpCreateListPattern
+	OpCreateTuplePattern
 	OpCreateObjectPattern
 	OpCreateRecordPattern
 	OpCreateOptionPattern
@@ -287,6 +288,7 @@ var OpcodeNames = [...]string{
 	OpSpreadTuple:                  "SPREAD_TPL",
 	OpAppend:                       "APPEND",
 	OpCreateListPattern:            "CRT_LSTP",
+	OpCreateTuplePattern:           "CRT_TPLP",
 	OpCreateObjectPattern:          "CRT_OBJP",
 	OpCreateRecordPattern:          "CRT_RECP",
 	OpCreateOptionPattern:          "CRT_OPTP",
@@ -412,6 +414,7 @@ var OpcodeOperands = [...][]int{
 	OpSpreadTuple:                  {},
 	OpAppend:                       {2},
 	OpCreateListPattern:            {2, 1},
+	OpCreateTuplePattern:           {2, 1},
 	OpCreateObjectPattern:          {2, 1},
 	OpCreateRecordPattern:          {2, 1},
 	OpCreateOptionPattern:          {2},
@@ -533,6 +536,7 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpSpreadTuple:                  {},
 	OpAppend:                       {false},
 	OpCreateListPattern:            {false, false},
+	OpCreateTuplePattern:           {false, false},
 	OpCreateObjectPattern:          {false, false},
 	OpCreateRecordPattern:          {false, false},
 	OpCreateOptionPattern:          {true},

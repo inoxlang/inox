@@ -5748,6 +5748,131 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 	})
 
+	t.Run("tuple pattern literal", func(t *testing.T) {
+		t.Run("empty", func(t *testing.T) {
+			code := `%p = #[]; return %p`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, &TuplePattern{
+				elementPatterns: make([]Pattern, 0),
+			}, res)
+		})
+
+		t.Run("single element: integer literal", func(t *testing.T) {
+			code := `%p = #[ 2 ]; return %p`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, &TuplePattern{
+				elementPatterns: []Pattern{
+					&ExactValuePattern{
+						value: Int(2),
+						CallBasedPatternReprMixin: CallBasedPatternReprMixin{
+							Callee: VAL_PATTERN,
+							Params: []Serializable{Int(2)},
+						},
+					},
+				},
+			}, res)
+		})
+
+		t.Run("single element: empty record pattern", func(t *testing.T) {
+			code := `%p = #[ #{} ]; return %p`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, &TuplePattern{
+				elementPatterns: []Pattern{
+					NewInexactRecordPattern(map[string]Pattern{}),
+				},
+			}, res)
+		})
+
+		t.Run("single element: empty record", func(t *testing.T) {
+			code := `%p = #[ %(#{}) ]; return %p`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, &TuplePattern{
+				elementPatterns: []Pattern{
+					NewExactValuePattern(NewEmptyRecord()),
+				},
+			}, res)
+		})
+
+		t.Run("single element: an object pattern literal", func(t *testing.T) {
+			code := `%p = #[ #{} ]; return %p`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, &TuplePattern{
+				elementPatterns: []Pattern{
+					&RecordPattern{
+						inexact:       true,
+						entryPatterns: map[string]Pattern{},
+					},
+				},
+			}, res)
+		})
+
+		t.Run("general element is an record pattern literal", func(t *testing.T) {
+			code := `%p = #[]#{}; return %p`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, &TuplePattern{
+				elementPatterns: nil,
+				generalElementPattern: &RecordPattern{
+					inexact:       true,
+					entryPatterns: map[string]Pattern{},
+				},
+			}, res)
+		})
+
+		t.Run("general element is an unprefixed object pattern literal", func(t *testing.T) {
+			code := `%p = #[]#{}; return %p`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, &TuplePattern{
+				elementPatterns: nil,
+				generalElementPattern: &RecordPattern{
+					inexact:       true,
+					entryPatterns: map[string]Pattern{},
+				},
+			}, res)
+		})
+
+		t.Run("general element is an unprefixed named pattern", func(t *testing.T) {
+			code := `%p = #[]int; return %p`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.Ctx.AddNamedPattern("int", INT_PATTERN)
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, &TuplePattern{
+				elementPatterns:       nil,
+				generalElementPattern: INT_PATTERN,
+			}, res)
+		})
+	})
+
 	t.Run("union pattern", func(t *testing.T) {
 		code := `%| 1 | 2`
 
