@@ -11,37 +11,42 @@ import (
 func TestRegexForRange(t *testing.T) {
 
 	t.Run("", func(t *testing.T) {
-		assert.Equal(t, "(1)", RegexForRange(1, 1))
-		assert.Equal(t, "([0-1])", RegexForRange(0, 1))
-		assert.Equal(t, "(-1)", RegexForRange(-1, -1))
-		assert.Equal(t, "(-1|0)", RegexForRange(-1, 0))
-		assert.Equal(t, "(-1|[0-1])", RegexForRange(-1, 1))
-		assert.Equal(t, "(-[2-4])", RegexForRange(-4, -2))
-		assert.Equal(t, "(-[1-3]|[0-1])", RegexForRange(-3, 1))
-		assert.Equal(t, "(-[1-2]|0)", RegexForRange(-2, 0))
-		assert.Equal(t, "([0-2])", RegexForRange(0, 2))
-		assert.Equal(t, "(-1|[0-3])", RegexForRange(-1, 3))
-		assert.Equal(t, "(6566[6-7])", RegexForRange(65666, 65667))
-		assert.Equal(t, `(1[2-9]|[2-9]\d|[1-9]\d{2}|[1-2]\d{3}|3[0-3]\d{2}|34[0-4]\d|345[0-6])`, RegexForRange(12, 3456))
-		assert.Equal(t, `([1-9]|1\d)`, RegexForRange(1, 19))
-		assert.Equal(t, `([1-9]|[1-9]\d)`, RegexForRange(1, 99))
+		assert.Equal(t, "(?:1)", RegexForRange(1, 1))
+		assert.Equal(t, "(?:[0-1])", RegexForRange(0, 1))
+		assert.Equal(t, "(?:-1)", RegexForRange(-1, -1))
+		assert.Equal(t, "(?:-1|0)", RegexForRange(-1, 0))
+		assert.Equal(t, "(?:-1|[0-1])", RegexForRange(-1, 1))
+		assert.Equal(t, "(?:-[2-4])", RegexForRange(-4, -2))
+		assert.Equal(t, "(?:-[1-3]|[0-1])", RegexForRange(-3, 1))
+		assert.Equal(t, "(?:-[1-2]|0)", RegexForRange(-2, 0))
+		assert.Equal(t, "(?:[0-2])", RegexForRange(0, 2))
+		assert.Equal(t, "(?:-1|[0-3])", RegexForRange(-1, 3))
+		assert.Equal(t, "(?:6566[6-7])", RegexForRange(65666, 65667))
+		assert.Equal(t, `(?:1[2-9]|[2-9]\d|[1-9]\d{2}|[1-2]\d{3}|3[0-3]\d{2}|34[0-4]\d|345[0-6])`, RegexForRange(12, 3456))
+		assert.Equal(t, `(?:[1-9]|1\d)`, RegexForRange(1, 19))
+		assert.Equal(t, `(?:[1-9]|[1-9]\d)`, RegexForRange(1, 99))
 
-		assert.Equal(t, `(-[1-9]|\d)`, RegexForRange(-9, 9))
-		assert.Equal(t, `(-[1-9]|-?1\d|\d)`, RegexForRange(-19, 19))
-		assert.Equal(t, `(-[1-9]|-?[1-2]\d|\d)`, RegexForRange(-29, 29))
-		assert.Equal(t, `(-[1-9]|-?[1-9]\d|\d)`, RegexForRange(-99, 99))
-		assert.Equal(t, `(-[1-9]|-?[1-9]\d|-?[1-9]\d{2}|\d)`, RegexForRange(-999, 999))
-		assert.Equal(t, `(-[1-9]|-?[1-9]\d|-?[1-9]\d{2}|-?[1-9]\d{3}|\d)`, RegexForRange(-9999, 9999))
+		assert.Equal(t, `(?:-[1-9]|\d)`, RegexForRange(-9, 9))
+		assert.Equal(t, `(?:-[1-9]|-?1\d|\d)`, RegexForRange(-19, 19))
+		assert.Equal(t, `(?:-[1-9]|-?[1-2]\d|\d)`, RegexForRange(-29, 29))
+		assert.Equal(t, `(?:-[1-9]|-?[1-9]\d|\d)`, RegexForRange(-99, 99))
+		assert.Equal(t, `(?:-[1-9]|-?[1-9]\d|-?[1-9]\d{2}|\d)`, RegexForRange(-999, 999))
+		assert.Equal(t, `(?:-[1-9]|-?[1-9]\d|-?[1-9]\d{2}|-?[1-9]\d{3}|\d)`, RegexForRange(-9999, 9999))
+
+		assert.Equal(t, "(1)", RegexForRange(1, 1, IntegerRangeRegexConfig{CapturingGroup: true}))
+		assert.Equal(t, "(?:@1)", RegexForRange(1, 1, IntegerRangeRegexConfig{PositiveOnlyPrefix: "@"}))
+		assert.Equal(t, "(?:@1)", RegexForRange(-1, -1, IntegerRangeRegexConfig{NegativeOnlyPrefix: "@"}))
+		assert.Equal(t, `(?:-[1-9]|@1\d|\d)`, RegexForRange(-19, 19, IntegerRangeRegexConfig{IntersectedPrefix: "@"}))
 	})
 
-	checkMatches := func(t *testing.T, regex string, min int, max int, from_min int, to_max int) {
+	checkMatches := func(t *testing.T, regex string, min int64, max int64, from_min int64, to_max int64) {
 		compiledRegex := regexp.MustCompile("^" + regex + "$")
 
 		for nr := from_min; nr <= to_max; nr++ {
 			if min <= nr && nr <= max {
-				assert.Regexp(t, compiledRegex, strconv.Itoa(nr))
+				assert.Regexp(t, compiledRegex, strconv.FormatInt(nr, 10))
 			} else {
-				assert.NotRegexp(t, compiledRegex, strconv.Itoa(nr))
+				assert.NotRegexp(t, compiledRegex, strconv.FormatInt(nr, 10))
 			}
 		}
 	}
@@ -108,24 +113,24 @@ func TestRegexForRange(t *testing.T) {
 }
 
 func TestReplaceEndWithNines(t *testing.T) {
-	assert.Equal(t, 99, replaceEndWithNines(10, 2))
-	assert.Equal(t, 999, replaceEndWithNines(10, 3))
-	assert.Equal(t, 9999, replaceEndWithNines(10, 4))
+	assert.Equal(t, int64(99), replaceEndWithNines(10, 2))
+	assert.Equal(t, int64(999), replaceEndWithNines(10, 3))
+	assert.Equal(t, int64(9999), replaceEndWithNines(10, 4))
 
-	assert.Equal(t, 199, replaceEndWithNines(100, 2))
-	assert.Equal(t, 299, replaceEndWithNines(200, 2))
-	assert.Equal(t, 1099, replaceEndWithNines(1000, 2))
-	assert.Equal(t, 1999, replaceEndWithNines(1000, 3))
+	assert.Equal(t, int64(199), replaceEndWithNines(100, 2))
+	assert.Equal(t, int64(299), replaceEndWithNines(200, 2))
+	assert.Equal(t, int64(1099), replaceEndWithNines(1000, 2))
+	assert.Equal(t, int64(1999), replaceEndWithNines(1000, 3))
 }
 
 func TestReplaceEndWithZeros(t *testing.T) {
-	assert.Equal(t, 0, replaceEndWithZeros(19, 2))
-	assert.Equal(t, 0, replaceEndWithZeros(19, 3))
+	assert.Equal(t, int64(0), replaceEndWithZeros(19, 2))
+	assert.Equal(t, int64(0), replaceEndWithZeros(19, 3))
 
-	assert.Equal(t, 100, replaceEndWithZeros(199, 2))
-	assert.Equal(t, 200, replaceEndWithZeros(299, 2))
-	assert.Equal(t, 1900, replaceEndWithZeros(1999, 2))
-	assert.Equal(t, 1000, replaceEndWithZeros(1999, 3))
+	assert.Equal(t, int64(100), replaceEndWithZeros(199, 2))
+	assert.Equal(t, int64(200), replaceEndWithZeros(299, 2))
+	assert.Equal(t, int64(1900), replaceEndWithZeros(1999, 2))
+	assert.Equal(t, int64(1000), replaceEndWithZeros(1999, 3))
 }
 
 func TestValueExistsInBoth(t *testing.T) {
