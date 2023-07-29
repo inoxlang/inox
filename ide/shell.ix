@@ -1,7 +1,0 @@
-$$shell = inoxsh.Shell{
-    foreground-color: Color(#ansi-white),
-    background-color:  Color(#ansi-black),
-    globals: #default
-}
-
-shell.start()
