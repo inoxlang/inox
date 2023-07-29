@@ -1153,6 +1153,16 @@ func (RecordPatternLiteral) Kind() NodeKind {
 	return Expr
 }
 
+type TuplePatternLiteral struct {
+	NodeBase
+	Elements       []Node
+	GeneralElement Node //GeneralElement and Elements cannot be non-nil at the same time
+}
+
+func (TuplePatternLiteral) Kind() NodeKind {
+	return Expr
+}
+
 type OptionPatternLiteral struct {
 	NodeBase
 	SingleDash bool
@@ -2383,6 +2393,11 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		for _, el := range n.SpreadElements {
 			walk(el, node, ancestorChain, fn, afterFn)
 		}
+	case *TuplePatternLiteral:
+		for _, elem := range n.Elements {
+			walk(elem, node, ancestorChain, fn, afterFn)
+		}
+		walk(n.GeneralElement, node, ancestorChain, fn, afterFn)
 	case *DictionaryLiteral:
 		for _, entry := range n.Entries {
 			walk(entry, node, ancestorChain, fn, afterFn)

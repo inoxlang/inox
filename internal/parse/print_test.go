@@ -206,6 +206,9 @@ func TestPrint(t *testing.T) {
 		"%p = #{a",
 		"%p = #{a:",
 		"%p = #{a: 1",
+		"%p = #[]",
+		"%p = #[1]",
+		"%p = #[1",
 		//string template literals
 		"%p``",
 		"%p`",

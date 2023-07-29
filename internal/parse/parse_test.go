@@ -18081,7 +18081,7 @@ func testParse(
 					&ListPatternLiteral{
 						NodeBase: NodeBase{
 							NodeSpan{0, 8},
-							&ParsingError{UnspecifiedParsingError, INVALID_LIST_PATT_GENERAL_ELEMENT_IF_ELEMENTS},
+							&ParsingError{UnspecifiedParsingError, INVALID_LIST_TUPLE_PATT_GENERAL_ELEMENT_IF_ELEMENTS},
 							[]Token{
 								{Type: OPENING_LIST_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
 								{Type: CLOSING_BRACKET, Span: NodeSpan{3, 4}},
@@ -18097,6 +18097,81 @@ func testParse(
 						GeneralElement: &PatternIdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{4, 8}, nil, nil},
 							Name:     "int",
+						},
+					},
+				},
+			}, n)
+		})
+	})
+
+	t.Run("tuple pattern", func(t *testing.T) {
+		t.Run("single element", func(t *testing.T) {
+			n := mustparseChunk(t, "%p = #[ 1 ]")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{
+							NodeSpan{0, 11},
+							nil,
+							[]Token{{Type: EQUAL, Span: NodeSpan{3, 4}}},
+						},
+						Left: &PatternIdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+							Name:     "p",
+						},
+						Right: &TuplePatternLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{5, 11},
+								nil,
+								[]Token{
+									{Type: OPENING_TUPLE_BRACKET, Span: NodeSpan{5, 7}},
+									{Type: CLOSING_BRACKET, Span: NodeSpan{10, 11}},
+								},
+							},
+							Elements: []Node{
+								&IntLiteral{
+									NodeBase: NodeBase{NodeSpan{8, 9}, nil, nil},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("general element", func(t *testing.T) {
+			n := mustparseChunk(t, "%p = #[]int")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{
+							NodeSpan{0, 11},
+							nil,
+							[]Token{{Type: EQUAL, Span: NodeSpan{3, 4}}},
+						},
+						Left: &PatternIdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+							Name:     "p",
+						},
+						Right: &TuplePatternLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{5, 11},
+								nil,
+								[]Token{
+									{Type: OPENING_TUPLE_BRACKET, Span: NodeSpan{5, 7}},
+									{Type: CLOSING_BRACKET, Span: NodeSpan{7, 8}},
+								},
+							},
+							Elements: nil,
+							GeneralElement: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{8, 11}, nil, nil},
+								Name:       "int",
+								Unprefixed: true,
+							},
 						},
 					},
 				},

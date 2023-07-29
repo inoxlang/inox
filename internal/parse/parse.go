@@ -3163,7 +3163,7 @@ object_pattern_top_loop:
 	}
 }
 
-func (p *parser) parseListPatternLiteral(percentPrefixed bool) Node {
+func (p *parser) parseListTuplePatternLiteral(percentPrefixed, isTuplePattern bool) Node {
 	p.panicIfContextDone()
 
 	openingBracketIndex := p.i
@@ -3176,10 +3176,18 @@ func (p *parser) parseListPatternLiteral(percentPrefixed bool) Node {
 	)
 
 	if percentPrefixed {
+		if isTuplePattern {
+			panic(ErrUnreachable)
+		}
 		valuelessTokens = []Token{{Type: OPENING_LIST_PATTERN_BRACKET, Span: NodeSpan{openingBracketIndex - 1, openingBracketIndex + 1}}}
 		start = openingBracketIndex - 1
 	} else {
-		valuelessTokens = []Token{{Type: OPENING_BRACKET, Span: NodeSpan{openingBracketIndex, openingBracketIndex + 1}}}
+		if isTuplePattern {
+			valuelessTokens = []Token{{Type: OPENING_TUPLE_BRACKET, Span: NodeSpan{openingBracketIndex, openingBracketIndex + 2}}}
+			p.i++
+		} else {
+			valuelessTokens = []Token{{Type: OPENING_BRACKET, Span: NodeSpan{openingBracketIndex, openingBracketIndex + 1}}}
+		}
 		start = openingBracketIndex
 	}
 
@@ -3206,7 +3214,7 @@ func (p *parser) parseListPatternLiteral(percentPrefixed bool) Node {
 	var parsingErr *ParsingError
 
 	if p.i >= p.len || p.s[p.i] != ']' {
-		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_LIST_PATT_LIT_MISSING_BRACE}
+		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_LIST_TUPLE_PATT_LIT_MISSING_BRACE}
 	} else {
 		valuelessTokens = append(valuelessTokens, Token{Type: CLOSING_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 		p.i++
@@ -3215,11 +3223,23 @@ func (p *parser) parseListPatternLiteral(percentPrefixed bool) Node {
 	var generalElement Node
 	if p.i < p.len && (p.s[p.i] == '%' || isFirstIdentChar(p.s[p.i]) || isOpeningDelim(p.s[p.i])) {
 		if len32(elements) > 0 {
-			parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_LIST_PATT_GENERAL_ELEMENT_IF_ELEMENTS}
+			parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_LIST_TUPLE_PATT_GENERAL_ELEMENT_IF_ELEMENTS}
 		} else {
 			elements = nil
 		}
 		generalElement, _ = p.parseExpression()
+	}
+
+	if isTuplePattern {
+		return &TuplePatternLiteral{
+			NodeBase: NodeBase{
+				Span:            NodeSpan{start, p.i},
+				Err:             parsingErr,
+				ValuelessTokens: valuelessTokens,
+			},
+			Elements:       elements,
+			GeneralElement: generalElement,
+		}
 	}
 
 	return &ListPatternLiteral{
@@ -4008,7 +4028,7 @@ func (p *parser) parsePercentPrefixedPattern() Node {
 		}()
 		p.inPattern = true
 
-		return p.parseListPatternLiteral(true)
+		return p.parseListTuplePatternLiteral(true, false)
 	case '(': //pattern conversion expresison
 		prev := p.inPattern
 		p.inPattern = false
@@ -6161,7 +6181,7 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 		return p.parseObjectOrRecordLiteral(false), false
 	case '[':
 		if p.inPattern {
-			return p.parseListPatternLiteral(false), false
+			return p.parseListTuplePatternLiteral(false, false), false
 		}
 		return p.parseListOrTupleLiteral(false), false
 	case '|':
@@ -6197,6 +6217,9 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 				}
 				return p.parseObjectOrRecordLiteral(true), false
 			case '[':
+				if p.inPattern {
+					return p.parseListTuplePatternLiteral(false, true), false
+				}
 				return p.parseListOrTupleLiteral(true), false
 			}
 		}

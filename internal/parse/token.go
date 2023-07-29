@@ -312,6 +312,7 @@ var tokenStrings = [...]string{
 	OPENING_DICTIONARY_BRACKET:     ":{",
 	OPENING_KEYLIST_BRACKET:        ".{",
 	OPENING_RECORD_BRACKET:         "#{",
+	OPENING_TUPLE_BRACKET:          "#[",
 	OPENING_OBJECT_PATTERN_BRACKET: "%{",
 	OPENING_LIST_PATTERN_BRACKET:   "%[",
 	OPENING_PARENTHESIS:            "(",
