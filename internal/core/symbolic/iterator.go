@@ -33,33 +33,33 @@ type AnyIterable struct {
 	_ int
 }
 
-func (r *AnyIterable) Test(v SymbolicValue) bool {
+func (*AnyIterable) Test(v SymbolicValue) bool {
 	_, ok := v.(Iterable)
 
 	return ok
 }
 
-func (r *AnyIterable) Widen() (SymbolicValue, bool) {
+func (*AnyIterable) Widen() (SymbolicValue, bool) {
 	return nil, false
 }
 
-func (a *AnyIterable) IsWidenable() bool {
+func (*AnyIterable) IsWidenable() bool {
 	return false
 }
 
-func (r *AnyIterable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (*AnyIterable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%iterable")))
 }
 
-func (r *AnyIterable) WidestOfType() SymbolicValue {
+func (*AnyIterable) WidestOfType() SymbolicValue {
 	return ANY_ITERABLE
 }
 
-func (r *AnyIterable) IteratorElementKey() SymbolicValue {
+func (*AnyIterable) IteratorElementKey() SymbolicValue {
 	return ANY
 }
 
-func (r *AnyIterable) IteratorElementValue() SymbolicValue {
+func (*AnyIterable) IteratorElementValue() SymbolicValue {
 	return ANY
 }
 

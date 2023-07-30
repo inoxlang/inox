@@ -710,7 +710,6 @@ func (obj *Object) Keys(ctx *Context) []string {
 type Record struct {
 	implicitPropCount int //TODO: rename to indexedPropCount ? forbid explicit index keys ?
 	visibilityId      VisibilityId
-	url               URL //can be empty
 	keys              []string
 	values            []Serializable
 }
@@ -1157,19 +1156,6 @@ func NewTupleVariadic(elements ...Serializable) *Tuple {
 // the caller can modify the result
 func (tuple *Tuple) GetOrBuildElements(ctx *Context) []Serializable {
 	return utils.CopySlice(tuple.elements)
-}
-
-func (tuple *Tuple) ContainsSimple(ctx *Context, v Value) bool {
-	if !IsSimpleInoxVal(v) {
-		panic("only simple values are expected")
-	}
-
-	for _, e := range tuple.elements {
-		if v.Equal(nil, e, map[uintptr]uintptr{}, 0) {
-			return true
-		}
-	}
-	return false
 }
 
 func (tuple *Tuple) slice(start, end int) Sequence {

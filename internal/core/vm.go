@@ -573,16 +573,11 @@ func (v *VM) run() {
 			var val Value
 
 			switch rightVal := right.(type) {
-			case Iterable:
-				it := rightVal.Iterator(v.global.Ctx, IteratorConfiguration{})
-				for it.Next(v.global.Ctx) {
-					e := it.Value(v.global.Ctx)
-					if left.Equal(v.global.Ctx, e, map[uintptr]uintptr{}, 0) {
-						val = True
-					}
-				}
+			case Container:
+				val = Bool(rightVal.Contains(v.global.Ctx, left))
 			default:
-				v.err = fmt.Errorf("invalid binary expression: cannot check if value is inside a %T", rightVal)
+				v.err = fmt.Errorf("invalid binary expression: cannot check if value is inside a(n) %T", rightVal)
+				return
 			}
 
 			if val == nil {

@@ -461,6 +461,27 @@ func (l *List) elementAt(i int) SymbolicValue {
 	return l.generalElement
 }
 
+func (l *List) Contains(ctx *Context, value SymbolicValue) (bool, bool) {
+	if l.elements == nil {
+		if l.generalElement.Test(value) {
+			return false, true
+		}
+		return false, false
+	}
+
+	possible := false
+
+	for _, e := range l.elements {
+		if e.Test(value) {
+			possible = true
+			if value.Test(e) {
+				return true, true
+			}
+		}
+	}
+	return false, possible
+}
+
 func (l *List) set(i *Int, v SymbolicValue) {
 
 }
@@ -670,6 +691,27 @@ func (t *Tuple) elementAt(i int) SymbolicValue {
 		return t.elements[i]
 	}
 	return t.generalElement
+}
+
+func (t *Tuple) Contains(ctx *Context, value SymbolicValue) (bool, bool) {
+	if t.elements == nil {
+		if t.generalElement.Test(value) {
+			return false, true
+		}
+		return false, false
+	}
+
+	possible := false
+
+	for _, e := range t.elements {
+		if e.Test(value) {
+			possible = true
+			if value.Test(e) {
+				return true, true
+			}
+		}
+	}
+	return false, possible
 }
 
 func (t *Tuple) IteratorElementKey() SymbolicValue {
@@ -1297,6 +1339,24 @@ func (*Object) elementAt(i int) SymbolicValue {
 	return ANY
 }
 
+func (o *Object) Contains(ctx *Context, value SymbolicValue) (bool, bool) {
+	if o.entries == nil {
+		return false, true
+	}
+
+	possible := false
+
+	for _, e := range o.entries {
+		if e.Test(value) {
+			possible = true
+			if value.Test(e) {
+				return true, true
+			}
+		}
+	}
+	return false, possible
+}
+
 func (o *Object) IteratorElementKey() SymbolicValue {
 	return &String{}
 }
@@ -1558,6 +1618,24 @@ func (rec *Record) KnownLen() int {
 
 func (rec *Record) element() SymbolicValue {
 	return ANY
+}
+
+func (r *Record) Contains(ctx *Context, value SymbolicValue) (bool, bool) {
+	if r.entries == nil {
+		return false, true
+	}
+
+	possible := false
+
+	for _, e := range r.entries {
+		if e.Test(value) {
+			possible = true
+			if value.Test(e) {
+				return true, true
+			}
+		}
+	}
+	return false, possible
 }
 
 func (rec *Record) IteratorElementKey() SymbolicValue {

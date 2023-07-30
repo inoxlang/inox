@@ -901,10 +901,10 @@ func (r *QuantityRange) WidestOfType() SymbolicValue {
 	return &QuantityRange{}
 }
 
-//
-
+// An IntRange represents a symbolic IntRange.
 type IntRange struct {
 	_ int
+	SerializableMixin
 }
 
 func (r *IntRange) Test(v SymbolicValue) bool {
@@ -933,11 +933,19 @@ func (r *IntRange) KnownLen() int {
 }
 
 func (r *IntRange) element() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (*IntRange) elementAt(i int) SymbolicValue {
-	return &Int{}
+	return ANY_INT
+}
+
+func (r *IntRange) Contains(ctx *Context, value SymbolicValue) (bool, bool) {
+	if _, ok := value.(*Int); ok {
+		return false, true
+	}
+
+	return false, false
 }
 
 func (r *IntRange) HasKnownLen() bool {
@@ -945,21 +953,21 @@ func (r *IntRange) HasKnownLen() bool {
 }
 
 func (r *IntRange) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (r *IntRange) IteratorElementValue() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (r *IntRange) WidestOfType() SymbolicValue {
 	return ANY_INT_RANGE
 }
 
-//
-
+// A RuneRange represents a symbolic RuneRange.
 type RuneRange struct {
 	_ int
+	SerializableMixin
 }
 
 func (r *RuneRange) Test(v SymbolicValue) bool {
@@ -991,20 +999,28 @@ func (r *RuneRange) element() SymbolicValue {
 	return &Rune{}
 }
 
+func (r *RuneRange) Contains(ctx *Context, value SymbolicValue) (bool, bool) {
+	if _, ok := value.(*Rune); ok {
+		return false, true
+	}
+
+	return false, false
+}
+
 func (r *RuneRange) HasKnownLen() bool {
 	return false
 }
 
 func (r *RuneRange) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (r *RuneRange) IteratorElementValue() SymbolicValue {
-	return &Rune{}
+	return ANY_RUNE
 }
 
 func (r *RuneRange) WidestOfType() SymbolicValue {
-	return &RuneRange{}
+	return ANY_RUNE_RANGE
 }
 
 // A ByteCount represents a symbolic ByteCount.

@@ -1773,6 +1773,32 @@ func TestSymbolicEval(t *testing.T) {
 				Removed: &AnyPattern{},
 			}, res)
 		})
+
+		t.Run("binary in/not-in", func(t *testing.T) {
+
+			t.Run("right operand is not a container", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk("(1 in [])")
+				res, err := symbolicEval(n, state)
+
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors)
+				assert.Equal(t, ANY_BOOL, res)
+			})
+
+			t.Run("right operand is not a container", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk("(1 in true)")
+				res, err := symbolicEval(n, state)
+
+				booleanLit := parse.FindNode(n, (*parse.BooleanLiteral)(nil), nil)
+
+				assert.NoError(t, err)
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(booleanLit, state, fmtRightOperandOfBinaryShouldBe(parse.In, "container", Stringify(TRUE))),
+				}, state.errors)
+				assert.Equal(t, ANY_BOOL, res)
+			})
+		})
+
 	})
 
 	t.Run("unary expression: !: operand is a string", func(t *testing.T) {

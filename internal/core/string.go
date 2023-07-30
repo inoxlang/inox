@@ -160,6 +160,10 @@ type RuneRange struct {
 	End   rune
 }
 
+func (r RuneRange) Includes(ctx *Context, i Rune) bool {
+	return r.Start <= rune(i) && rune(i) <= r.End
+}
+
 func (r RuneRange) At(ctx *Context, i int) Value {
 	if i >= r.Len() {
 		panic(ErrIndexOutOfRange)

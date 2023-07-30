@@ -2171,16 +2171,16 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			return ANY_BOOL, nil
 		case parse.In:
 			switch right.(type) {
-			case Iterable:
+			case Container:
 			default:
-				state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "iterable", Stringify(right))))
+				state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "container", Stringify(right))))
 			}
 			return ANY_BOOL, nil
 		case parse.NotIn:
 			switch right.(type) {
-			case Iterable:
+			case Container:
 			default:
-				state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "iterable", Stringify(right))))
+				state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "container", Stringify(right))))
 			}
 			return ANY_BOOL, nil
 		case parse.Keyof:

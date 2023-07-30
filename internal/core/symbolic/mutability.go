@@ -44,6 +44,10 @@ func (any AnySerializableIterable) IsMutable() bool {
 	return true
 }
 
+func (any AnyContainer) IsMutable() bool {
+	return true
+}
+
 func (any AnyWatchable) IsMutable() bool {
 	return true
 }
