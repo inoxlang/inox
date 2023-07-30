@@ -15,6 +15,9 @@ func FmtByteCount(count int64, _3digitGroupCount int) (string, error) {
 	}
 
 	switch {
+	case count >= 1_000_000_000_000 && (singleGroup || count%1_000_000_000_000 == 0):
+		format = "%dTB"
+		v /= 1_000_000_000_000
 	case count >= 1_000_000_000 && (singleGroup || count%1_000_000_000 == 0):
 		format = "%dGB"
 		v /= 1_000_000_000
