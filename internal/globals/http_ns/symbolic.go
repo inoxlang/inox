@@ -33,3 +33,7 @@ func (evs *ServerSentEventSource) ToSymbolicValue(ctx *core.Context, encountered
 func (*ContentSecurityPolicy) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	return http_symbolic.NewCSP(), nil
 }
+
+func (*HttpRequestPattern) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	return nil, core.ErrNotImplementedYet
+}

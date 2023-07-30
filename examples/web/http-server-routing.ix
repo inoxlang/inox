@@ -6,7 +6,7 @@ manifest {
 }
 
 
-fn handle(rw http.resp_writer, r http.req){
+fn handle(rw http.resp-writer, r http.req){
     rw.write_json({ a: 1 })
 }
 

@@ -277,7 +277,7 @@ func TestHttpServerMapping(t *testing.T) {
 		runMappingTestCase(t,
 			serverTestCase{
 				input: `
-					fn handle(rw %http.resp_writer, r %http.req){
+					fn handle(rw %http.resp-writer, r %http.req){
 						rw.write_json({ a: 1 })
 					}
 					return Mapping {
@@ -359,10 +359,10 @@ func TestHttpServerMapping(t *testing.T) {
 		runMappingTestCase(t,
 			serverTestCase{
 				input: `
-					fn helper(rw %http.resp_writer, r %http.req){
+					fn helper(rw %http.resp-writer, r %http.req){
 						rw.write_json({ a: 1 })
 					}
-					fn handle(rw %http.resp_writer, r %http.req){
+					fn handle(rw %http.resp-writer, r %http.req){
 						helper(rw, r)
 					}
 					return Mapping {

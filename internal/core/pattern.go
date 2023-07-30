@@ -116,6 +116,13 @@ func (pattern *ExactValuePattern) Test(ctx *Context, v Value) bool {
 	return pattern.value.Equal(ctx, v, map[uintptr]uintptr{}, 0)
 }
 
+func (pattern *ExactValuePattern) Value() Serializable {
+	if pattern.value.IsMutable() {
+		panic(errors.New("retrieving a mutable value is forbidden"))
+	}
+	return pattern.value
+}
+
 func (patt *ExactValuePattern) StringPattern() (StringPattern, bool) {
 	if str, ok := patt.value.(StringLike); ok {
 		stringPattern := NewExactStringPattern(Str(str.GetOrBuildString()))
@@ -177,6 +184,11 @@ func (patt *UnionPattern) Test(ctx *Context, v Value) bool {
 		}
 	}
 	return false
+}
+
+// the result should not be modified.
+func (patt *UnionPattern) Cases() []Pattern {
+	return patt.cases
 }
 
 func (patt *UnionPattern) StringPattern() (StringPattern, bool) {

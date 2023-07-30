@@ -656,7 +656,7 @@ the http.Server function creates a listening HTTP server with a given host & han
 **examples**
 
 ```inox
-fn handle(rw http.resp_writer, r http.req){
+fn handle(rw http.resp-writer, r http.req){
   rw.write_json({ a: 1 })
 }
 
@@ -667,7 +667,7 @@ server = http.Server!(https://localhost:8080, Mapping {
 
 ```
 ```inox
-fn handle(rw http.resp_writer, r http.req){
+fn handle(rw http.resp-writer, r http.req){
     match r.path {
       / {
           rw.write_json({ a: 1 })

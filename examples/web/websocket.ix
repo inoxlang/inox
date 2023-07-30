@@ -21,7 +21,7 @@ manifest {
 
 $$ws_server = ws.Server!()
 
-fn handle(rw http.resp_writer, r http.req){
+fn handle(rw http.resp-writer, r http.req){
     conn = ws_server.upgrade!(rw, r)
 
     # echo

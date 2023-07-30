@@ -669,6 +669,16 @@ func (p *ObjectPattern) Test(v SymbolicValue) bool {
 	return true
 }
 
+func (patt *ObjectPattern) ForEachEntry(fn func(propName string, propPattern Pattern, isOptional bool) error) error {
+	for propName, propPattern := range patt.entries {
+		_, isOptional := patt.optionalEntries[propName]
+		if err := fn(propName, propPattern, isOptional); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (p *ObjectPattern) Widen() (SymbolicValue, bool) {
 	if p.entries == nil {
 		return nil, false
@@ -1514,6 +1524,10 @@ type UnionPattern struct {
 
 	NotCallablePatternMixin
 	SerializableMixin
+}
+
+func NewUnionPattern(cases []Pattern) *UnionPattern {
+	return &UnionPattern{Cases: cases}
 }
 
 func (p *UnionPattern) Test(v SymbolicValue) bool {

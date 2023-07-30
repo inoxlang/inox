@@ -546,7 +546,7 @@ http:
       or a Mapping that routes requests. When you send a request to a server listening to https://localhost add the --insecure flag to ignore certificate errors.
     examples:
     - code: |
-        fn handle(rw http.resp_writer, r http.req){
+        fn handle(rw http.resp-writer, r http.req){
           rw.write_json({ a: 1 })
         }
 
@@ -559,7 +559,7 @@ http:
         be handled by the 'handle' function.
 
     - code: |
-        fn handle(rw http.resp_writer, r http.req){
+        fn handle(rw http.resp-writer, r http.req){
             match r.path {
               / {
                   rw.write_json({ a: 1 })

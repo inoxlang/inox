@@ -19,6 +19,7 @@ import (
 )
 
 var METHODS_WITH_NO_BODY = []string{"GET", "HEAD", "OPTIONS"}
+var METHODS = []string{"GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"}
 
 const DEFAULT_ACCEPT_HEADER = "*/*"
 

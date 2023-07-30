@@ -8,7 +8,7 @@ manifest {
 }
 
 
-fn handle(rw http.resp_writer, r http.req){
+fn handle(rw http.resp-writer, r http.req){
     print "access to http from handler:" (http != nil)
 
     match r.path {

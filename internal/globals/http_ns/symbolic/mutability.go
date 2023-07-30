@@ -27,3 +27,7 @@ func (*ServerSentEventSource) IsMutable() bool {
 func (*ContentSecurityPolicy) IsMutable() bool {
 	return false
 }
+
+func (*HttpRequestPattern) IsMutable() bool {
+	return false
+}

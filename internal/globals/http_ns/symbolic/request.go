@@ -11,6 +11,7 @@ import (
 
 var (
 	HTTP_REQUEST_PROPNAMES = []string{"method", "url", "path", "body" /*"cookies"*/, "headers"}
+	ANY_HTTP_REQUEST       = &HttpRequest{}
 )
 
 type HttpRequest struct {

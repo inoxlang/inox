@@ -17,16 +17,12 @@ func init() {
 	//register patterns
 	core.RegisterDefaultPatternNamespace("http", &core.PatternNamespace{
 		Patterns: map[string]core.Pattern{
-			"resp_writer": &core.TypePattern{
-				Name:          "http.resp_writer",
+			"resp-writer": &core.TypePattern{
+				Name:          "http.resp-writer",
 				Type:          reflect.TypeOf(&HttpResponseWriter{}),
 				SymbolicValue: &http_symbolic.HttpResponseWriter{},
 			},
-			"req": &core.TypePattern{
-				Name:          "http.req",
-				Type:          reflect.TypeOf(&HttpRequest{}),
-				SymbolicValue: &http_symbolic.HttpRequest{},
-			},
+			"req": CALLABLE_HTTP_REQUEST_PATTERN,
 		},
 	})
 

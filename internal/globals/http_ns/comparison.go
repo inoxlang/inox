@@ -1,6 +1,9 @@
 package http_ns
 
-import "github.com/inoxlang/inox/internal/core"
+import (
+	"github.com/inoxlang/inox/internal/core"
+	"golang.org/x/exp/slices"
+)
 
 func (s *HttpServer) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	otherServer, ok := other.(*HttpServer)
@@ -56,4 +59,13 @@ func (c *ContentSecurityPolicy) Equal(ctx *core.Context, other core.Value, alrea
 		}
 	}
 	return true
+}
+
+func (p *HttpRequestPattern) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherPattern, ok := other.(*HttpRequestPattern)
+	if !ok || !slices.Equal(p.methods, otherPattern.methods) {
+		return false
+	}
+
+	return p.headers.Equal(ctx, otherPattern.headers, alreadyCompared, depth+1)
 }

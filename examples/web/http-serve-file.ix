@@ -11,7 +11,7 @@ manifest {
 
 @host = HOST
 
-fn handle(rw http.resp_writer, r http.req){
+fn handle(rw http.resp-writer, r http.req){
     path = r.path
 
     match path {
