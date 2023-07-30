@@ -861,7 +861,7 @@ func TestRuneRangeRepresentation(t *testing.T) {
 
 func TestQuantityRangeRepresentation(t *testing.T) {
 	t.Run("unknown start", func(t *testing.T) {
-		qtyRange := QuantityRange{Start: nil, End: Duration(time.Hour), inclusiveEnd: true, unknownStart: true}
+		qtyRange := QuantityRange{start: nil, end: Duration(time.Hour), inclusiveEnd: true, unknownStart: true}
 
 		expectedRepr := "..1h"
 		assert.Equal(t, expectedRepr, getRepr(t, qtyRange, reprTestCtx))

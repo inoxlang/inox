@@ -59,7 +59,7 @@ top:
 			break top
 		case core.QuantityRange:
 
-			switch end := a.End.(type) {
+			switch end := a.InclusiveEnd().(type) {
 			case core.Duration:
 				if noTimeout {
 					return "", fmt.Errorf(TIMEOUT_INCONSISTENCY_ERROR)

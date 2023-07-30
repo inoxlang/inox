@@ -658,6 +658,9 @@ type QuantityRangeIterator struct {
 }
 
 func (it *QuantityRangeIterator) HasNext(*Context) bool {
+	if it.index == -1 {
+		return true
+	}
 	if it.float {
 		return it.floatNext <= it.floatEnd
 	}
@@ -669,7 +672,7 @@ func (it *QuantityRangeIterator) Next(ctx *Context) bool {
 		return false
 	}
 
-	if it.index > 0 {
+	if it.index >= 0 {
 		if it.float {
 			it.current.SetFloat(it.floatNext)
 			it.floatNext += math.Nextafter(it.floatNext, math.MaxFloat64)
@@ -693,20 +696,27 @@ func (it *QuantityRangeIterator) Value(*Context) Value {
 
 func (r QuantityRange) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
 	it := &QuantityRangeIterator{
-		index: 0,
+		index: -1,
 	}
 
-	start := reflect.ValueOf(r.Start)
+	var startVal Serializable
+	if r.unknownStart {
+		startVal = getQuantityTypeStart(r.end)
+	} else {
+		startVal = r.start
+	}
+
+	start := reflect.ValueOf(startVal)
 	ptr := reflect.New(start.Type())
 	ptr.Elem().Set(start)
 	it.current = ptr.Elem()
 
 	if start.Kind() == reflect.Float64 {
 		it.float = true
-		it.floatEnd = reflect.ValueOf(r.End).Float()
-		it.floatNext = start.Float() + 1
+		it.floatEnd = reflect.ValueOf(r.InclusiveEnd()).Float()
+		it.floatNext = math.Nextafter(start.Float(), math.MaxFloat64)
 	} else {
-		it.intEnd = reflect.ValueOf(r.End).Int()
+		it.intEnd = reflect.ValueOf(r.InclusiveEnd()).Int()
 		it.intNext = start.Int() + 1
 	}
 

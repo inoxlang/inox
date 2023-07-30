@@ -916,8 +916,8 @@ func (r QuantityRange) WriteRepresentation(ctx *Context, w io.Writer, config *Re
 		return ErrMaximumReprWritingDepthReached
 	}
 
-	if r.Start != nil {
-		err := r.Start.WriteRepresentation(ctx, w, config, depth+1)
+	if r.start != nil {
+		err := r.start.WriteRepresentation(ctx, w, config, depth+1)
 		if err != nil {
 			return err
 		}
@@ -928,8 +928,8 @@ func (r QuantityRange) WriteRepresentation(ctx *Context, w io.Writer, config *Re
 		return err
 	}
 
-	if r.End != nil {
-		err := r.End.WriteRepresentation(ctx, w, config, depth+1)
+	if r.end != nil {
+		err := r.InclusiveEnd().WriteRepresentation(ctx, w, config, depth+1)
 		if err != nil {
 			return err
 		}

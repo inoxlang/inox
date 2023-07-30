@@ -849,11 +849,11 @@ func (r QuantityRange) Equal(ctx *Context, other Value, alreadyCompared map[uint
 		return false
 	}
 
-	if !r.unknownStart && !r.Start.Equal(ctx, otherRange.Start, alreadyCompared, depth+1) {
+	if !r.unknownStart && !r.start.Equal(ctx, otherRange.start, alreadyCompared, depth+1) {
 		return false
 	}
 
-	return r.End.Equal(ctx, otherRange.End, alreadyCompared, depth+1)
+	return r.end.Equal(ctx, otherRange.end, alreadyCompared, depth+1)
 }
 
 func (r IntRange) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {

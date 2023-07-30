@@ -49,8 +49,22 @@ func (r SimpleRate) QuantityPerSecond() Value {
 type QuantityRange struct {
 	unknownStart bool
 	inclusiveEnd bool
-	Start        Serializable
-	End          Serializable
+	start        Serializable
+	end          Serializable
+}
+
+func (r QuantityRange) KnownStart() Serializable {
+	if r.unknownStart {
+		panic(errors.New("range has unknown start"))
+	}
+	return r.start
+}
+
+func (r QuantityRange) InclusiveEnd() Serializable {
+	if r.inclusiveEnd {
+		return r.end
+	}
+	return nextInt64Float64(reflect.ValueOf(r.end)).Interface().(Serializable)
 }
 
 // evalQuantity computes a quantity value (Duration, ByteCount, ...).
@@ -192,8 +206,23 @@ func mustEvalQuantityRange(n *parse.QuantityRangeLiteral) QuantityRange {
 	return QuantityRange{
 		unknownStart: false,
 		inclusiveEnd: true,
-		Start:        lowerBound,
-		End:          upperBound,
+		start:        lowerBound,
+		end:          upperBound,
+	}
+}
+
+func getQuantityTypeStart(v Serializable) Serializable {
+	switch v.(type) {
+	case ByteCount:
+		return ByteCount(0)
+	case RuneCount:
+		return RuneCount(0)
+	case LineCount:
+		return LineCount(0)
+	case Duration:
+		return Duration(0)
+	default:
+		panic(ErrUnreachable)
 	}
 }
 
@@ -205,6 +234,8 @@ func getQuantityTypeMaxValue(v Serializable) Serializable {
 		return RuneCount(math.MaxInt64)
 	case LineCount:
 		return LineCount(math.MaxInt64)
+	case Duration:
+		return Duration(math.MaxInt64)
 	default:
 		panic(ErrUnreachable)
 	}
@@ -238,4 +269,16 @@ func quantityLessOrEqual(a, b reflect.Value) bool {
 	default:
 		panic(ErrUnreachable)
 	}
+}
+
+func nextInt64Float64(v reflect.Value) reflect.Value {
+	ptr := reflect.New(v.Type())
+	ptr.Elem().Set(v)
+
+	if v.Kind() == reflect.Float64 {
+		ptr.SetFloat(math.Nextafter(v.Float(), math.MaxFloat64))
+	} else {
+		ptr.SetInt(v.Int() + 1)
+	}
+	return ptr
 }

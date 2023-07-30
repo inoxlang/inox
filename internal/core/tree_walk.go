@@ -1877,8 +1877,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			default:
 				return QuantityRange{
 					inclusiveEnd: n.Operator == parse.Range,
-					Start:        left.(Serializable),
-					End:          right.(Serializable),
+					start:        left.(Serializable),
+					end:          right.(Serializable),
 				}, nil
 			}
 		case parse.And:
@@ -1926,7 +1926,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return QuantityRange{
 				unknownStart: true,
 				inclusiveEnd: true,
-				End:          v.(Serializable),
+				end:          v.(Serializable),
 			}, nil
 		}
 	case *parse.IntegerRangeLiteral:

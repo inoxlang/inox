@@ -131,7 +131,7 @@ func (r RuneRange) Contains(ctx *Context, v Value) bool {
 
 func (r QuantityRange) Contains(ctx *Context, v Value) bool {
 	val := reflect.ValueOf(v)
-	endReflVal := reflect.ValueOf(r.End)
+	endReflVal := reflect.ValueOf(r.InclusiveEnd())
 
 	if val.Type() != endReflVal.Type() {
 		return false
@@ -139,12 +139,12 @@ func (r QuantityRange) Contains(ctx *Context, v Value) bool {
 
 	switch endReflVal.Kind() {
 	case reflect.Float64:
-		if !r.unknownStart && quantityLessThan(val, reflect.ValueOf(r.Start)) {
+		if !r.unknownStart && quantityLessThan(val, reflect.ValueOf(r.start)) {
 			return false
 		}
 		return quantityLessOrEqual(val, endReflVal)
 	case reflect.Int64:
-		if !r.unknownStart && quantityLessThan(val, reflect.ValueOf(r.Start)) {
+		if !r.unknownStart && quantityLessThan(val, reflect.ValueOf(r.start)) {
 			return false
 		}
 		return quantityLessOrEqual(val, endReflVal)

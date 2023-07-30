@@ -22,11 +22,11 @@ func getClientAndOptions(ctx *core.Context, u core.URL, requestOptionArgs ...cor
 			if options.Timeout != DEFAULT_HTTP_CLIENT_TIMEOUT {
 				return nil, nil, errors.New("http option object: timeout provided already at least twice")
 			}
-			if d, ok := optVal.End.(core.Duration); ok {
+			if d, ok := optVal.InclusiveEnd().(core.Duration); ok {
 				options.Timeout = time.Duration(d)
 				specifiedOptionNames["timeout"] = 1
 			} else {
-				return nil, nil, fmt.Errorf("invalid http option: a quantity range with end of type %T", optVal.End)
+				return nil, nil, fmt.Errorf("invalid http option: a quantity range with end of type %T", optVal.InclusiveEnd())
 			}
 		case core.Option:
 			switch optVal.Name {

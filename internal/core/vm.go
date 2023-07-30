@@ -444,8 +444,8 @@ func (v *VM) run() {
 			default:
 				res = QuantityRange{
 					inclusiveEnd: !exclEnd,
-					Start:        left.(Serializable),
-					End:          right.(Serializable),
+					start:        left.(Serializable),
+					end:          right.(Serializable),
 				}
 			}
 			v.stack[v.sp-2] = res
@@ -1351,7 +1351,7 @@ func (v *VM) run() {
 				v.stack[v.sp-1] = QuantityRange{
 					unknownStart: true,
 					inclusiveEnd: true,
-					End:          val.(Serializable),
+					end:          val.(Serializable),
 				}
 			}
 		case OpCreateTestSuite:

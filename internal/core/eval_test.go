@@ -923,8 +923,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			//addition
 			{"(1 .. 2)", IntRange{Start: 1, End: 2, Step: 1, inclusiveEnd: true}, nil},
 			{"(1 ..< 2)", IntRange{Start: 1, End: 2, Step: 1, inclusiveEnd: false}, nil},
-			{"(1B .. 2B)", QuantityRange{Start: ByteCount(1), End: ByteCount(2), inclusiveEnd: true}, nil},
-			{"(1B ..< 2B)", QuantityRange{Start: ByteCount(1), End: ByteCount(2), inclusiveEnd: false}, nil},
+			{"(1B .. 2B)", QuantityRange{start: ByteCount(1), end: ByteCount(2), inclusiveEnd: true}, nil},
+			{"(1B ..< 2B)", QuantityRange{start: ByteCount(1), end: ByteCount(2), inclusiveEnd: false}, nil},
 		}
 
 		for _, testCase := range testCases {
@@ -2703,8 +2703,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, QuantityRange{
 				unknownStart: false,
 				inclusiveEnd: true,
-				Start:        ByteCount(1),
-				End:          ByteCount(2),
+				start:        ByteCount(1),
+				end:          ByteCount(2),
 			}, res)
 		})
 
@@ -2717,8 +2717,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, QuantityRange{
 				unknownStart: false,
 				inclusiveEnd: true,
-				Start:        ByteCount(1),
-				End:          getQuantityTypeMaxValue(ByteCount(0)),
+				start:        ByteCount(1),
+				end:          getQuantityTypeMaxValue(ByteCount(0)),
 			}, res)
 		})
 	})
@@ -2746,8 +2746,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, QuantityRange{
 				unknownStart: true,
 				inclusiveEnd: true,
-				Start:        nil,
-				End:          Duration(10 * time.Second),
+				start:        nil,
+				end:          Duration(10 * time.Second),
 			}, res)
 		})
 	})

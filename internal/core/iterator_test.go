@@ -7,6 +7,145 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestIntegerQuantityRangeIteration(t *testing.T) {
+
+	t.Run("known start", func(t *testing.T) {
+		t.Run("end == start", func(t *testing.T) {
+			ctx := NewContext(ContextConfig{})
+			NewGlobalState(ctx)
+
+			byteCountRange := QuantityRange{
+				unknownStart: false,
+				inclusiveEnd: true,
+				start:        ByteCount(0),
+				end:          ByteCount(0),
+			}
+			it := byteCountRange.Iterator(ctx, IteratorConfiguration{})
+
+			//next
+			assert.True(t, it.HasNext(ctx))
+			assert.True(t, it.Next(ctx))
+			assert.Equal(t, Int(0), it.Key(ctx))
+			assert.Equal(t, ByteCount(0), it.Value(ctx))
+
+			assert.False(t, it.HasNext(ctx))
+			assert.False(t, it.Next(ctx))
+		})
+
+		t.Run("end == start + 1", func(t *testing.T) {
+			ctx := NewContext(ContextConfig{})
+			NewGlobalState(ctx)
+
+			byteCountRange := QuantityRange{
+				unknownStart: false,
+				inclusiveEnd: true,
+				start:        ByteCount(0),
+				end:          ByteCount(1),
+			}
+			it := byteCountRange.Iterator(ctx, IteratorConfiguration{})
+
+			//next
+			assert.True(t, it.HasNext(ctx))
+			assert.True(t, it.Next(ctx))
+			assert.Equal(t, Int(0), it.Key(ctx))
+			assert.Equal(t, ByteCount(0), it.Value(ctx))
+
+			//next
+			assert.True(t, it.HasNext(ctx))
+			assert.True(t, it.Next(ctx))
+			assert.Equal(t, Int(1), it.Key(ctx))
+			assert.Equal(t, ByteCount(1), it.Value(ctx))
+
+			assert.False(t, it.HasNext(ctx))
+			assert.False(t, it.Next(ctx))
+		})
+
+		t.Run("end == start + 2", func(t *testing.T) {
+			ctx := NewContext(ContextConfig{})
+			NewGlobalState(ctx)
+
+			byteCountRange := QuantityRange{
+				unknownStart: false,
+				inclusiveEnd: true,
+				start:        ByteCount(0),
+				end:          ByteCount(2),
+			}
+			it := byteCountRange.Iterator(ctx, IteratorConfiguration{})
+
+			//next
+			assert.True(t, it.HasNext(ctx))
+			assert.True(t, it.Next(ctx))
+			assert.Equal(t, Int(0), it.Key(ctx))
+			assert.Equal(t, ByteCount(0), it.Value(ctx))
+
+			//next
+			assert.True(t, it.HasNext(ctx))
+			assert.True(t, it.Next(ctx))
+			assert.Equal(t, Int(1), it.Key(ctx))
+			assert.Equal(t, ByteCount(1), it.Value(ctx))
+
+			//next
+			assert.True(t, it.HasNext(ctx))
+			assert.True(t, it.Next(ctx))
+			assert.Equal(t, Int(2), it.Key(ctx))
+			assert.Equal(t, ByteCount(2), it.Value(ctx))
+
+			assert.False(t, it.HasNext(ctx))
+			assert.False(t, it.Next(ctx))
+		})
+	})
+
+	t.Run("unknown start", func(t *testing.T) {
+		t.Run("end == general start", func(t *testing.T) {
+			ctx := NewContext(ContextConfig{})
+			NewGlobalState(ctx)
+
+			byteCountRange := QuantityRange{
+				unknownStart: true,
+				inclusiveEnd: true,
+				end:          ByteCount(0),
+			}
+			it := byteCountRange.Iterator(ctx, IteratorConfiguration{})
+
+			//next
+			assert.True(t, it.HasNext(ctx))
+			assert.True(t, it.Next(ctx))
+			assert.Equal(t, Int(0), it.Key(ctx))
+			assert.Equal(t, ByteCount(0), it.Value(ctx))
+
+			assert.False(t, it.HasNext(ctx))
+			assert.False(t, it.Next(ctx))
+		})
+
+		t.Run("end == general start + 1", func(t *testing.T) {
+			ctx := NewContext(ContextConfig{})
+			NewGlobalState(ctx)
+
+			byteCountRange := QuantityRange{
+				unknownStart: true,
+				inclusiveEnd: true,
+				end:          ByteCount(1),
+			}
+			it := byteCountRange.Iterator(ctx, IteratorConfiguration{})
+
+			//next
+			assert.True(t, it.HasNext(ctx))
+			assert.True(t, it.Next(ctx))
+			assert.Equal(t, Int(0), it.Key(ctx))
+			assert.Equal(t, ByteCount(0), it.Value(ctx))
+
+			//next
+			assert.True(t, it.HasNext(ctx))
+			assert.True(t, it.Next(ctx))
+			assert.Equal(t, Int(1), it.Key(ctx))
+			assert.Equal(t, ByteCount(1), it.Value(ctx))
+
+			assert.False(t, it.HasNext(ctx))
+			assert.False(t, it.Next(ctx))
+		})
+	})
+}
+
 func TestByteSliceIteration(t *testing.T) {
 
 	t.Run("single byte", func(t *testing.T) {
