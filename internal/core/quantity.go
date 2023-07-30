@@ -4,7 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"reflect"
 	"time"
+
+	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
@@ -173,4 +177,65 @@ func evalRate(q Value, unitName string) (Serializable, error) {
 	}
 
 	return nil, fmt.Errorf("invalid quantity type: %T", q)
+}
+
+func mustEvalQuantityRange(n *parse.QuantityRangeLiteral) QuantityRange {
+	lowerBound := utils.Must(evalQuantity(n.LowerBound.Values, n.LowerBound.Units))
+
+	var upperBound Serializable
+	if n.UpperBound != nil {
+		upperBound = utils.Must(evalQuantity(n.UpperBound.(*parse.QuantityLiteral).Values, n.UpperBound.(*parse.QuantityLiteral).Units))
+	} else {
+		upperBound = getQuantityTypeMaxValue(lowerBound)
+	}
+
+	return QuantityRange{
+		unknownStart: false,
+		inclusiveEnd: true,
+		Start:        lowerBound,
+		End:          upperBound,
+	}
+}
+
+func getQuantityTypeMaxValue(v Serializable) Serializable {
+	switch v.(type) {
+	case ByteCount:
+		return ByteCount(math.MaxInt64)
+	case RuneCount:
+		return RuneCount(math.MaxInt64)
+	case LineCount:
+		return LineCount(math.MaxInt64)
+	default:
+		panic(ErrUnreachable)
+	}
+}
+
+func quantityLessThan(a, b reflect.Value) bool {
+	if a.Type() != b.Type() {
+		panic(ErrUnreachable)
+	}
+
+	switch a.Kind() {
+	case reflect.Float64:
+		return a.Float() < b.Float()
+	case reflect.Int64:
+		return a.Int() < b.Int()
+	default:
+		panic(ErrUnreachable)
+	}
+}
+
+func quantityLessOrEqual(a, b reflect.Value) bool {
+	if a.Type() != b.Type() {
+		panic(ErrUnreachable)
+	}
+
+	switch a.Kind() {
+	case reflect.Float64:
+		return a.Float() <= b.Float()
+	case reflect.Int64:
+		return a.Int() <= b.Int()
+	default:
+		panic(ErrUnreachable)
+	}
 }

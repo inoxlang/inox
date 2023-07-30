@@ -1943,6 +1943,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			End:          upperBound,
 			Step:         1,
 		}, nil
+	case *parse.QuantityRangeLiteral:
+		return mustEvalQuantityRange(n), nil
 	case *parse.RuneRangeExpression:
 		return RuneRange{
 			Start: n.Lower.Value,

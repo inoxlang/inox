@@ -1643,6 +1643,10 @@ func (it RuneRangeIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConf
 	InspectPrint(w, it)
 }
 
+func (it QuantityRangeIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	InspectPrint(w, it)
+}
+
 func (it *PatternIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }

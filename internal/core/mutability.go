@@ -368,6 +368,10 @@ func (it RuneRangeIterator) IsMutable() bool {
 	return true
 }
 
+func (it QuantityRangeIterator) IsMutable() bool {
+	return true
+}
+
 func (it *PatternIterator) IsMutable() bool {
 	return true
 }

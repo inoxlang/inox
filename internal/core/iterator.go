@@ -3,6 +3,8 @@ package core
 import (
 	"bytes"
 	"log"
+	"math"
+	"reflect"
 	"sort"
 	"strconv"
 	"sync"
@@ -645,6 +647,70 @@ func (r RuneRange) Iterator(ctx *Context, config IteratorConfiguration) Iterator
 		range_: r,
 		next:   r.Start,
 	})
+}
+
+type QuantityRangeIterator struct {
+	intNext, intEnd     int64
+	floatNext, floatEnd float64
+	current             reflect.Value
+	float               bool
+	index               int
+}
+
+func (it *QuantityRangeIterator) HasNext(*Context) bool {
+	if it.float {
+		return it.floatNext <= it.floatEnd
+	}
+	return it.intNext <= it.intEnd
+}
+
+func (it *QuantityRangeIterator) Next(ctx *Context) bool {
+	if !it.HasNext(ctx) {
+		return false
+	}
+
+	if it.index > 0 {
+		if it.float {
+			it.current.SetFloat(it.floatNext)
+			it.floatNext += math.Nextafter(it.floatNext, math.MaxFloat64)
+		} else {
+			it.current.SetInt(it.intNext)
+			it.intNext++
+		}
+	}
+	it.index++
+
+	return true
+}
+
+func (it *QuantityRangeIterator) Key(ctx *Context) Value {
+	return Int(it.index)
+}
+
+func (it *QuantityRangeIterator) Value(*Context) Value {
+	return it.current.Interface().(Serializable)
+}
+
+func (r QuantityRange) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
+	it := &QuantityRangeIterator{
+		index: 0,
+	}
+
+	start := reflect.ValueOf(r.Start)
+	ptr := reflect.New(start.Type())
+	ptr.Elem().Set(start)
+	it.current = ptr.Elem()
+
+	if start.Kind() == reflect.Float64 {
+		it.float = true
+		it.floatEnd = reflect.ValueOf(r.End).Float()
+		it.floatNext = start.Float() + 1
+	} else {
+		it.intEnd = reflect.ValueOf(r.End).Int()
+		it.intNext = start.Int() + 1
+	}
+
+	return config.CreateIterator(it)
 }
 
 type PatternIterator struct {

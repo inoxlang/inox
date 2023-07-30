@@ -839,6 +839,10 @@ func (it RuneRangeIterator) ToSymbolicValue(ctx *Context, encountered map[uintpt
 	return &symbolic.Iterator{}, nil
 }
 
+func (it QuantityRangeIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	return &symbolic.Iterator{}, nil
+}
+
 func (it PatternIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	return &symbolic.Iterator{}, nil
 }

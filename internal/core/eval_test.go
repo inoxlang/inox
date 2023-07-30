@@ -2693,6 +2693,36 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 	})
 
+	t.Run("quantity range literal ", func(t *testing.T) {
+		t.Run("with upper bound", func(t *testing.T) {
+			code := `return 1B..2B`
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, QuantityRange{
+				unknownStart: false,
+				inclusiveEnd: true,
+				Start:        ByteCount(1),
+				End:          ByteCount(2),
+			}, res)
+		})
+
+		t.Run("without upper bound", func(t *testing.T) {
+			code := `return 1B..`
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, QuantityRange{
+				unknownStart: false,
+				inclusiveEnd: true,
+				Start:        ByteCount(1),
+				End:          getQuantityTypeMaxValue(ByteCount(0)),
+			}, res)
+		})
+	})
+
 	t.Run("upper bound range expression ", func(t *testing.T) {
 		t.Run("integer ", func(t *testing.T) {
 			code := `return ..10`

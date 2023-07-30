@@ -1,12 +1,15 @@
 package core
 
-import "errors"
+import (
+	"errors"
+	"reflect"
+)
 
 var (
 	ErrCannotAddNonSharableToSharedContainer = errors.New("cannot add a non sharable element to a shared container")
 
 	_ = []Container{
-		(*List)(nil), (*Tuple)(nil), (*Object)(nil), (*Record)(nil), IntRange{}, RuneRange{},
+		(*List)(nil), (*Tuple)(nil), (*Object)(nil), (*Record)(nil), IntRange{}, RuneRange{}, QuantityRange{},
 	}
 )
 
@@ -124,4 +127,28 @@ func (r IntRange) Contains(ctx *Context, v Value) bool {
 func (r RuneRange) Contains(ctx *Context, v Value) bool {
 	i, ok := v.(Rune)
 	return ok && r.Includes(ctx, i)
+}
+
+func (r QuantityRange) Contains(ctx *Context, v Value) bool {
+	val := reflect.ValueOf(v)
+	endReflVal := reflect.ValueOf(r.End)
+
+	if val.Type() != endReflVal.Type() {
+		return false
+	}
+
+	switch endReflVal.Kind() {
+	case reflect.Float64:
+		if !r.unknownStart && quantityLessThan(val, reflect.ValueOf(r.Start)) {
+			return false
+		}
+		return quantityLessOrEqual(val, endReflVal)
+	case reflect.Int64:
+		if !r.unknownStart && quantityLessThan(val, reflect.ValueOf(r.Start)) {
+			return false
+		}
+		return quantityLessOrEqual(val, endReflVal)
+	default:
+		panic(ErrUnreachable)
+	}
 }

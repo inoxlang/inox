@@ -219,6 +219,9 @@ func (c *compiler) Compile(node parse.Node) error {
 			return err
 		}
 		c.emit(node, OpCreateIntRange)
+	case *parse.QuantityRangeLiteral:
+		qtyRange := mustEvalQuantityRange(node)
+		c.emit(node, OpPushConstant, c.addConstant(qtyRange))
 	case *parse.RuneRangeExpression:
 		if err := c.Compile(node.Lower); err != nil {
 			return err
