@@ -120,6 +120,57 @@ func TestSymbolicEval(t *testing.T) {
 		assert.Equal(t, &Int{hasValue: true, value: 1}, res)
 	})
 
+	t.Run("integer range literal", func(t *testing.T) {
+		n, state := MakeTestStateAndChunk("1..2")
+		res, err := symbolicEval(n, state)
+		assert.NoError(t, err)
+		assert.Empty(t, state.errors)
+		assert.Equal(t, ANY_INT_RANGE, res)
+	})
+
+	t.Run("quantity range literal", func(t *testing.T) {
+		getQuantity := extData.GetQuantity
+		ToSymbolicValue := extData.ToSymbolicValue
+
+		defer func() {
+			extData.GetQuantity = getQuantity
+			extData.ToSymbolicValue = ToSymbolicValue
+		}()
+		extData.GetQuantity = func(values []float64, units []string) (any, error) {
+			if units[0] == "x" {
+				return NewInt(int64(values[0])), nil
+			}
+			if units[0] == "B" {
+				return NewByteCount(int64(values[0])), nil
+			}
+			panic(ErrUnreachable)
+		}
+		extData.ToSymbolicValue = func(v any, wide bool) (SymbolicValue, error) {
+			return v.(SymbolicValue), nil
+		}
+
+		t.Run("no upper bound", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk("1B..")
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Equal(t, NewQuantityRange(ANY_BYTECOUNT), res)
+		})
+
+		t.Run("upper bound has invalid type", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk("1B..1x")
+			res, err := symbolicEval(n, state)
+
+			upperBound := parse.FindNodes(n, (*parse.QuantityLiteral)(nil), nil)[1]
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(upperBound, state, UPPER_BOUND_OF_QTY_RANGE_LIT_SHOULD_OF_SAME_TYPE_AS_LOWER_BOUND),
+			}, state.errors)
+			assert.Equal(t, NewQuantityRange(ANY_BYTECOUNT), res)
+		})
+	})
+
 	t.Run("date literal", func(t *testing.T) {
 		n, state := MakeTestStateAndChunk("2020y-UTC")
 		res, err := symbolicEval(n, state)

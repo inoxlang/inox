@@ -14,7 +14,7 @@ var (
 	ANY_CONTAINER = &AnyContainer{}
 
 	_ = []Container{
-		(*List)(nil), (*Tuple)(nil), (*Object)(nil), (*Record)(nil), (*IntRange)(nil), (*RuneRange)(nil),
+		(*List)(nil), (*Tuple)(nil), (*Object)(nil), (*Record)(nil), (*IntRange)(nil), (*RuneRange)(nil), (*QuantityRange)(nil),
 
 		(*AnyContainer)(nil),
 	}
@@ -23,7 +23,7 @@ var (
 type Container interface {
 	Serializable
 	Iterable
-	Contains(ctx *Context, value SymbolicValue) (yes bool, possible bool)
+	Contains(value SymbolicValue) (yes bool, possible bool)
 }
 
 // An AnyContainer represents a symbolic Iterable we do not know the concrete type.
@@ -50,7 +50,7 @@ func (*AnyContainer) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConf
 	utils.Must(w.Write(utils.StringAsBytes("%container")))
 }
 
-func (*AnyContainer) Contains(ctx *Context, value SymbolicValue) (yes bool, possible bool) {
+func (*AnyContainer) Contains(value SymbolicValue) (yes bool, possible bool) {
 	return false, true
 }
 

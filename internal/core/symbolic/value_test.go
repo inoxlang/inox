@@ -472,23 +472,40 @@ func TestSymbolicRuneSlice(t *testing.T) {
 func TestSymbolicQuantityRange(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
-		qtyRange := &QuantityRange{}
+		anyQtyRange := &QuantityRange{element: ANY_SERIALIZABLE}
+
+		assert.True(t, anyQtyRange.Test(anyQtyRange))
+		assert.True(t, anyQtyRange.Test(&QuantityRange{element: ANY_SERIALIZABLE}))
+		assert.True(t, anyQtyRange.Test(NewQuantityRange(ANY_BYTECOUNT)))
+		assert.False(t, anyQtyRange.Test(ANY_STR))
+		assert.False(t, anyQtyRange.Test(ANY_INT))
+
+		qtyRange := NewQuantityRange(ANY_BYTECOUNT)
 
 		assert.True(t, qtyRange.Test(qtyRange))
-		assert.True(t, qtyRange.Test(&QuantityRange{}))
-		assert.False(t, qtyRange.Test(&String{}))
-		assert.False(t, qtyRange.Test(&Int{}))
+		assert.True(t, qtyRange.Test(NewQuantityRange(ANY_BYTECOUNT)))
+		assert.False(t, qtyRange.Test(&QuantityRange{element: ANY_SERIALIZABLE}))
+		assert.False(t, qtyRange.Test(ANY_STR))
+		assert.False(t, qtyRange.Test(ANY_INT))
 	})
 
 	t.Run("IsWidenable()", func(t *testing.T) {
-		assert.False(t, (&QuantityRange{}).IsWidenable())
+		assert.False(t, (&QuantityRange{element: ANY_SERIALIZABLE}).IsWidenable())
+		assert.False(t, NewQuantityRange(ANY_BYTECOUNT).IsWidenable())
 	})
 
 	t.Run("Widen()", func(t *testing.T) {
-		qtyRange := &QuantityRange{}
+		anyQtyRange := NewQuantityRange(ANY_BYTECOUNT)
+
+		assert.False(t, anyQtyRange.IsWidenable())
+		widened, ok := anyQtyRange.Widen()
+		assert.False(t, ok)
+		assert.Nil(t, widened)
+
+		qtyRange := NewQuantityRange(ANY_BYTECOUNT)
 
 		assert.False(t, qtyRange.IsWidenable())
-		widened, ok := qtyRange.Widen()
+		widened, ok = qtyRange.Widen()
 		assert.False(t, ok)
 		assert.Nil(t, widened)
 	})

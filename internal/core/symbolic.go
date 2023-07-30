@@ -764,7 +764,11 @@ func (m FileMode) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic
 }
 
 func (r QuantityRange) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.QuantityRange{}, nil
+	elem, err := r.Start.ToSymbolicValue(ctx, encountered)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert lower bound of quantity range to symbolic: %w", err)
+	}
+	return symbolic.NewQuantityRange(elem.(symbolic.Serializable)), nil
 }
 
 func (r IntRange) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {

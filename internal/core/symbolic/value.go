@@ -18,28 +18,29 @@ var (
 	ErrNoSymbolicValue        = errors.New("no symbolic value")
 	ErrUnassignablePropsMixin = errors.New("UnassignablePropsMixin")
 
-	ANY            = &Any{}
-	NEVER          = &Never{}
-	ANY_BOOL       = &Bool{}
-	TRUE           = NewBool(true)
-	FALSE          = NewBool(false)
-	ANY_RES_NAME   = &AnyResourceName{}
-	ANY_OPTION     = &Option{}
-	ANY_INT_RANGE  = &IntRange{}
-	ANY_RUNE_RANGE = &RuneRange{}
-	ANY_FILEMODE   = &FileMode{}
-	ANY_DATE       = &Date{}
-	ANY_DURATION   = &Duration{}
-	ANY_BYTECOUNT  = &ByteCount{}
-	ANY_LINECOUNT  = &LineCount{}
-	ANY_RUNECOUNT  = &RuneCount{}
-	ANY_BYTERATE   = &ByteRate{}
-	ANY_SIMPLERATE = &SimpleRate{}
-	ANY_IDENTIFIER = &Identifier{}
-	ANY_PROPNAME   = &PropertyName{}
-	ANY_EMAIL_ADDR = &EmailAddress{}
-	ANY_FILEINFO   = &FileInfo{}
-	ANY_MIMETYPE   = &Mimetype{}
+	ANY                = &Any{}
+	NEVER              = &Never{}
+	ANY_BOOL           = &Bool{}
+	TRUE               = NewBool(true)
+	FALSE              = NewBool(false)
+	ANY_RES_NAME       = &AnyResourceName{}
+	ANY_OPTION         = &Option{}
+	ANY_INT_RANGE      = &IntRange{}
+	ANY_RUNE_RANGE     = &RuneRange{}
+	ANY_QUANTITY_RANGE = &QuantityRange{element: ANY_SERIALIZABLE}
+	ANY_FILEMODE       = &FileMode{}
+	ANY_DATE           = &Date{}
+	ANY_DURATION       = &Duration{}
+	ANY_BYTECOUNT      = &ByteCount{}
+	ANY_LINECOUNT      = &LineCount{}
+	ANY_RUNECOUNT      = &RuneCount{}
+	ANY_BYTERATE       = &ByteRate{}
+	ANY_SIMPLERATE     = &SimpleRate{}
+	ANY_IDENTIFIER     = &Identifier{}
+	ANY_PROPNAME       = &PropertyName{}
+	ANY_EMAIL_ADDR     = &EmailAddress{}
+	ANY_FILEINFO       = &FileInfo{}
+	ANY_MIMETYPE       = &Mimetype{}
 
 	FILEINFO_PROPNAMES = []string{"name", "abs-path", "size", "mode", "mod-time", "is-dir"}
 )
@@ -877,19 +878,42 @@ func (b *Bytecode) WidestOfType() SymbolicValue {
 
 // A QuantityRange represents a symbolic QuantityRange.
 type QuantityRange struct {
-	_ int
+	element Serializable
+	SerializableMixin
+}
+
+func NewQuantityRange(element Serializable) *QuantityRange {
+	return &QuantityRange{element: element}
 }
 
 func (r *QuantityRange) Test(v SymbolicValue) bool {
-	_, ok := v.(*QuantityRange)
-	return ok
+	other, ok := v.(*QuantityRange)
+	return ok && r.element.Test(other.element)
+}
+
+func (r *QuantityRange) IteratorElementKey() SymbolicValue {
+	return ANY_INT
+}
+
+func (r *QuantityRange) IteratorElementValue() SymbolicValue {
+	return r.element
+}
+
+func (r QuantityRange) Contains(value SymbolicValue) (yes bool, possible bool) {
+	if !r.element.Test(value) {
+		return false, false
+	}
+
+	return false, true
 }
 
 func (r *QuantityRange) Widen() (SymbolicValue, bool) {
+	//ok
 	return nil, false
 }
 
 func (s *QuantityRange) IsWidenable() bool {
+	//ok
 	return false
 }
 
@@ -940,7 +964,7 @@ func (*IntRange) elementAt(i int) SymbolicValue {
 	return ANY_INT
 }
 
-func (r *IntRange) Contains(ctx *Context, value SymbolicValue) (bool, bool) {
+func (r *IntRange) Contains(value SymbolicValue) (bool, bool) {
 	if _, ok := value.(*Int); ok {
 		return false, true
 	}
@@ -999,7 +1023,7 @@ func (r *RuneRange) element() SymbolicValue {
 	return &Rune{}
 }
 
-func (r *RuneRange) Contains(ctx *Context, value SymbolicValue) (bool, bool) {
+func (r *RuneRange) Contains(value SymbolicValue) (bool, bool) {
 	if _, ok := value.(*Rune); ok {
 		return false, true
 	}

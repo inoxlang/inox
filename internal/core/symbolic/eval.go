@@ -2256,16 +2256,36 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		switch upperBound.(type) {
 		case *Int:
-			return &IntRange{}, nil
+			return ANY_INT_RANGE, nil
 		case *Float:
 			return nil, fmt.Errorf("floating point ranges not supported")
 		default:
-			return &QuantityRange{}, nil
+			return ANY_QUANTITY_RANGE, nil
 		}
 	case *parse.IntegerRangeLiteral:
-		return &IntRange{}, nil
+		return ANY_INT_RANGE, nil
+	case *parse.QuantityRangeLiteral:
+		lowerBound, err := symbolicEval(n.LowerBound, state)
+		if err != nil {
+			return nil, err
+		}
+
+		element := lowerBound.WidestOfType()
+
+		if n.UpperBound != nil {
+			upperBound, err := symbolicEval(n.UpperBound, state)
+			if err != nil {
+				return nil, err
+			}
+
+			if !element.Test(upperBound) {
+				state.addError(makeSymbolicEvalError(n.UpperBound, state, UPPER_BOUND_OF_QTY_RANGE_LIT_SHOULD_OF_SAME_TYPE_AS_LOWER_BOUND))
+			}
+		}
+
+		return NewQuantityRange(element.(Serializable)), nil
 	case *parse.RuneRangeExpression:
-		return &RuneRange{}, nil
+		return ANY_RUNE_RANGE, nil
 	case *parse.FunctionExpression:
 		stateFork := state.fork()
 

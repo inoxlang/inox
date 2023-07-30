@@ -12,7 +12,8 @@ var (
 	ANY_SERIALIZABLE_ITERABLE = &AnySerializableIterable{}
 
 	_ = []Iterable{
-		(*List)(nil), (*Tuple)(nil), (*Object)(nil), (*Record)(nil), (*IntRange)(nil), (*RuneRange)(nil), Pattern(nil), (*EventSource)(nil),
+		(*List)(nil), (*Tuple)(nil), (*Object)(nil), (*Record)(nil), (*IntRange)(nil), (*RuneRange)(nil), (*QuantityRange)(nil),
+		Pattern(nil), (*EventSource)(nil),
 	}
 )
 
