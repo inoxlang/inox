@@ -7,6 +7,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/help_ns"
 	http_symbolic "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 func init() {
@@ -23,6 +24,9 @@ func init() {
 				SymbolicValue: &http_symbolic.HttpResponseWriter{},
 			},
 			"req": CALLABLE_HTTP_REQUEST_PATTERN,
+			"method": core.NewUnionPattern(utils.MapSlice(METHODS, func(s string) core.Pattern {
+				return core.NewExactValuePattern(core.Identifier(s))
+			}), nil),
 		},
 	})
 
