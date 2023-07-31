@@ -201,12 +201,13 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 				Span:          n.Base().Span,
 				ColorSequence: colors.InvalidNode,
 			})
-			// other nodes
-		case *parse.IfStatement, *parse.IfExpression, *parse.SwitchStatement, *parse.MatchStatement, *parse.ForStatement, *parse.WalkStatement,
-			*parse.ReturnStatement, *parse.BreakStatement, *parse.ContinueStatement, *parse.PruneStatement, *parse.YieldStatement,
-			*parse.AssertionStatement, *parse.ComputeExpression:
+		case *parse.IfStatement, *parse.IfExpression, *parse.SwitchStatement, *parse.MatchStatement, *parse.DefaultCase,
+			*parse.ForStatement, *parse.WalkStatement, *parse.ReturnStatement, *parse.BreakStatement, *parse.ContinueStatement,
+			*parse.PruneStatement, *parse.YieldStatement, *parse.AssertionStatement, *parse.ComputeExpression:
 			for _, tok := range n.Base().ValuelessTokens {
-				if tok.Type == parse.OPENING_PARENTHESIS || tok.Type == parse.CLOSING_PARENTHESIS {
+				switch tok.Type {
+				case parse.OPENING_PARENTHESIS, parse.CLOSING_PARENTHESIS,
+					parse.OPENING_CURLY_BRACKET, parse.CLOSING_CURLY_BRACKET:
 					continue
 				}
 				colorizations = append(colorizations, ColorizationInfo{
