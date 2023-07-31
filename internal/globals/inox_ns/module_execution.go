@@ -34,8 +34,9 @@ var (
 type ScriptPreparationArgs struct {
 	Fpath string //path of the script in the .ParsingCompilationContext's filesystem.
 
-	CliArgs []string
-	Args    *core.Object
+	CliArgs      []string
+	Args         *core.Object
+	GetArguments func(*core.Manifest) (*core.Object, error)
 
 	ParsingCompilationContext *core.Context
 	ParentContext             *core.Context
@@ -242,6 +243,13 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	// CLI arguments | arguments of imported module
 	var modArgs *core.Object
 	var modArgsError error
+
+	if args.GetArguments != nil {
+		args.Args, err = args.GetArguments(manifest)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+	}
 
 	if args.Args != nil {
 		modArgs, modArgsError = manifest.Parameters.GetArguments(ctx, args.Args)
@@ -564,7 +572,7 @@ func RunLocalScript(args RunScriptArgs) (
 		return nil, nil, nil, false, errors.New(".ParentContextRequired is set to true but passed .ParentContext is nil")
 	}
 
-	state, mod, manifest, err := PrepareLocalScript(ScriptPreparationArgs{
+	state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
 		Fpath:                     args.Fpath,
 		CliArgs:                   args.PassedCLIArgs,
 		Args:                      args.PassedArgs,
@@ -589,7 +597,47 @@ func RunLocalScript(args RunScriptArgs) (
 		return nil, state, mod, false, err
 	}
 
+	return RunPreparedScript(RunPreparedScriptArgs{
+		State:                     state,
+		ParsingCompilationContext: args.ParsingCompilationContext,
+		ParentContext:             args.ParentContext,
+		IgnoreHighRiskScore:       args.IgnoreHighRiskScore,
+
+		UseBytecode:      args.UseBytecode,
+		OptimizeBytecode: args.OptimizeBytecode,
+		ShowBytecode:     args.ShowBytecode,
+
+		Debugger: args.Debugger,
+	})
+}
+
+type RunPreparedScriptArgs struct {
+	State                     *core.GlobalState
+	ParsingCompilationContext *core.Context
+	ParentContext             *core.Context
+
+	IgnoreHighRiskScore bool
+
+	UseBytecode      bool
+	OptimizeBytecode bool
+	ShowBytecode     bool
+
+	Debugger *core.Debugger
+}
+
+// RunPreparedScript runs a script located in the filesystem.
+func RunPreparedScript(args RunPreparedScriptArgs) (
+	scriptResult core.Value, scriptState *core.GlobalState, scriptModule *core.Module,
+	preparationSuccess bool, _err error,
+) {
+
+	state := args.State
 	out := state.Out
+	mod := state.Module
+	if mod == nil {
+		return nil, nil, nil, true, errors.New("no module found")
+	}
+	manifest := state.Manifest
 
 	//show warnings
 	warnings := state.SymbolicData.Warnings()
