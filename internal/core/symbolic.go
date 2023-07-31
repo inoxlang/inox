@@ -380,7 +380,7 @@ func (s *Struct) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.
 		return nil, fmt.Errorf("failed to convert type of struct to symbolic: %w", err)
 	}
 
-	symbolicStruct := symbolic.NewStruct(structPattern.(*symbolic.StructPattern))
+	symbolicStruct := symbolic.NewStruct(structPattern.(*symbolic.StructPattern), nil)
 	encountered[ptr] = symbolicStruct
 
 	return symbolicStruct, nil

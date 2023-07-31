@@ -34,9 +34,10 @@ var (
 type ScriptPreparationArgs struct {
 	Fpath string //path of the script in the .ParsingCompilationContext's filesystem.
 
-	CliArgs      []string
-	Args         *core.Object
-	GetArguments func(*core.Manifest) (*core.Object, error)
+	CliArgs []string
+	Args    *core.Struct
+	//if set the result of the function is used instead of .Args
+	GetArguments func(*core.Manifest) (*core.Struct, error)
 
 	ParsingCompilationContext *core.Context
 	ParentContext             *core.Context
@@ -241,7 +242,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	}
 
 	// CLI arguments | arguments of imported module
-	var modArgs *core.Object
+	var modArgs *core.Struct
 	var modArgsError error
 
 	if args.GetArguments != nil {
@@ -252,7 +253,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	}
 
 	if args.Args != nil {
-		modArgs, modArgsError = manifest.Parameters.GetArguments(ctx, args.Args)
+		modArgs, modArgsError = manifest.Parameters.GetArgumentsFromStruct(ctx, args.Args)
 	} else if args.CliArgs != nil {
 		args, err := manifest.Parameters.GetArgumentsFromCliArgs(ctx, args.CliArgs)
 		if err != nil {
@@ -262,7 +263,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		}
 	} else { // no arguments provided
 		if args.DevMode || manifest.Parameters.NoParameters() {
-			modArgs = core.NewObject()
+			modArgs = core.NewEmptyStruct()
 		} else {
 			modArgsError = errors.New("module arguments not provided")
 		}
@@ -323,7 +324,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 
 	delete(globals, core.MOD_ARGS_VARNAME)
 	additionalSymbolicGlobals := map[string]symbolic.SymbolicValue{
-		core.MOD_ARGS_VARNAME: manifest.Parameters.GetSymbolicArguments(),
+		core.MOD_ARGS_VARNAME: manifest.Parameters.GetSymbolicArguments(ctx),
 	}
 
 	symbolicCtx, err_ := state.Ctx.ToSymbolicValue()
@@ -531,7 +532,7 @@ func PrepareDevModeIncludableChunkfile(args IncludableChunkfilePreparationArgs) 
 type RunScriptArgs struct {
 	Fpath                     string
 	PassedCLIArgs             []string
-	PassedArgs                *core.Object
+	PassedArgs                *core.Struct
 	ParsingCompilationContext *core.Context
 	ParentContext             *core.Context
 	ParentContextRequired     bool

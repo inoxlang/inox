@@ -154,7 +154,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 	}()
 
 	if m.ManifestTemplate == nil {
-		return &Manifest{}, nil, nil, nil
+		return NewEmptyManifest(), nil, nil, nil
 	}
 
 	manifestObjLiteral, ok := m.ManifestTemplate.Object.(*parse.ObjectLiteral)

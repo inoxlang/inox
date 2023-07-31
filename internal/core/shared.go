@@ -29,10 +29,11 @@ type PotentiallySharable interface {
 
 func ShareOrClone(v Value, originState *GlobalState) (Value, error) {
 	sharableValues := new([]PotentiallySharable)
-	return ShareOrCloneDepth(v, originState, sharableValues, 0)
+	clones := map[uintptr]Clonable{}
+	return ShareOrCloneDepth(v, originState, sharableValues, clones, 0)
 }
 
-func ShareOrCloneDepth(v Value, originState *GlobalState, sharableValues *[]PotentiallySharable, depth int) (Value, error) {
+func ShareOrCloneDepth(v Value, originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Value, error) {
 	if depth > MAX_CLONING_DEPTH {
 		return nil, ErrMaximumPseudoCloningDepthReached
 	}
@@ -49,13 +50,21 @@ func ShareOrCloneDepth(v Value, originState *GlobalState, sharableValues *[]Pote
 	}
 
 	if clonable, ok := v.(PseudoClonable); ok {
-		return clonable.PseudoClone(originState, sharableValues, depth)
+		return clonable.PseudoClone(originState, sharableValues, clones, depth)
+	}
+
+	if clonable, ok := v.(Clonable); ok {
+		return clonable.Clone(originState, sharableValues, clones, depth)
 	}
 
 	return nil, ErrValueNotSharableNorClonable
 }
 
-func CheckSharedOrClone(v Value, depth int) (Value, error) {
+func CheckSharedOrClone(v Value, clones map[uintptr]Clonable, depth int) (Value, error) {
+	if depth > MAX_CLONING_DEPTH {
+		return nil, ErrMaximumPseudoCloningDepthReached
+	}
+
 	if !v.IsMutable() {
 		return v, nil
 	}
@@ -67,7 +76,11 @@ func CheckSharedOrClone(v Value, depth int) (Value, error) {
 	}
 
 	if clonable, ok := v.(PseudoClonable); ok {
-		return clonable.PseudoClone(nil, nil, depth)
+		return clonable.PseudoClone(nil, nil, clones, depth)
+	}
+
+	if clonable, ok := v.(Clonable); ok {
+		return clonable.Clone(nil, nil, clones, depth)
 	}
 
 	return v, nil

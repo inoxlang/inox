@@ -2,6 +2,7 @@ package symbolic
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
@@ -18,11 +19,12 @@ var (
 
 // A Struct represents a symbolic Struct.
 type Struct struct {
-	structType *StructPattern //if nil matches any struct
+	structType  *StructPattern //if nil matches any struct
+	fieldValues map[string]SymbolicValue
 }
 
-func NewStruct(structType *StructPattern) *Struct {
-	return &Struct{structType: structType}
+func NewStruct(structType *StructPattern, fieldValues map[string]SymbolicValue) *Struct {
+	return &Struct{structType: structType, fieldValues: fieldValues}
 }
 
 func (s *Struct) Test(v SymbolicValue) bool {
@@ -46,8 +48,14 @@ func (s *Struct) Prop(name string) SymbolicValue {
 	if s.structType == nil {
 		return ANY
 	}
+
+	fieldValue, ok := s.fieldValues[name]
+	if ok {
+		return fieldValue
+	}
+
 	if fieldType, ok := s.structType.typeOfField(name); ok {
-		return fieldType
+		return fieldType.SymbolicValue()
 	} else {
 		panic(FormatErrPropertyDoesNotExist(name, s))
 	}
@@ -85,12 +93,64 @@ func (s *Struct) IsWidenable() bool {
 }
 
 func (s *Struct) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("struct-type ")))
-	utils.Must(w.Write(utils.StringAsBytes(s.structType.name)))
-	utils.Must(w.Write(utils.StringAsBytes(" {")))
+	if s.structType != nil {
+		utils.Must(w.Write(utils.StringAsBytes("struct")))
+		utils.Must(w.Write(utils.StringAsBytes(s.structType.name)))
+		utils.Must(w.Write(utils.StringAsBytes(" {")))
+	} else {
+		utils.Must(w.Write(utils.StringAsBytes("struct {")))
+	}
 
-	utils.Must(w.Write(utils.StringAsBytes("...")))
-	w.WriteByte('}')
+	if depth > config.MaxDepth {
+		if len(s.structType.keys) > 0 {
+			utils.Must(w.Write(utils.StringAsBytes("{(...)}")))
+		} else {
+			utils.Must(w.Write(utils.StringAsBytes(" }")))
+		}
+		return
+	}
+
+	indentCount := parentIndentCount + 1
+	indent := bytes.Repeat(config.Indent, indentCount)
+
+	propertyNames := s.PropertyNames()
+	for i, name := range propertyNames {
+
+		if !config.Compact {
+			utils.Must(w.Write(LF_CR))
+			utils.Must(w.Write(indent))
+		}
+
+		if config.Colorize {
+			utils.Must(w.Write(config.Colors.IdentifierLiteral))
+		}
+
+		utils.Must(w.Write(utils.StringAsBytes(name)))
+
+		if config.Colorize {
+			utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+		}
+
+		//colon
+		utils.Must(w.Write(COLON_SPACE))
+
+		//value
+		v := s.Prop(name)
+		v.PrettyPrint(w, config, depth+1, indentCount)
+
+		//comma & indent
+		isLastEntry := i == len(propertyNames)-1
+
+		if !isLastEntry {
+			utils.Must(w.Write(COMMA_SPACE))
+		}
+	}
+
+	if !config.Compact && len(propertyNames) > 0 {
+		utils.Must(w.Write(LF_CR))
+	}
+
+	utils.MustWriteMany(w, bytes.Repeat(config.Indent, depth), []byte{'}'})
 }
 
 func (s *Struct) WidestOfType() SymbolicValue {

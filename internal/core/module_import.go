@@ -230,7 +230,7 @@ func ImportModule(config ImportConfig) (*Routine, error) {
 	}
 
 	if config.ArgObj != nil {
-		args, err := manifest.Parameters.GetArguments(routineCtx, config.ArgObj)
+		args, err := manifest.Parameters.GetArgumentsFromObject(routineCtx, config.ArgObj)
 		if err != nil {
 			return nil, fmt.Errorf("invalid arguments: %w", err)
 		}
@@ -256,7 +256,6 @@ func ImportModule(config ImportConfig) (*Routine, error) {
 	}
 
 	config.ParentState.SetDescendantState(config.Src, routine.state)
-	
 
 	return routine, nil
 }

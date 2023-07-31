@@ -615,7 +615,7 @@ func TestPrepareLocalScript(t *testing.T) {
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
-			Args:                      core.NewObjectFromMap(core.ValMap{}, ctx),
+			Args:                      core.NewStructFromMap(map[string]core.Value{}),
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
 			ParentContextRequired:     true,
@@ -660,9 +660,9 @@ func TestPrepareLocalScript(t *testing.T) {
 
 		res, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath: file,
-			Args: core.NewObjectFromMap(core.ValMap{
+			Args: core.NewStructFromMap(map[string]core.Value{
 				"0": core.Path("./a.txt"),
-			}, state),
+			}),
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             state,
 			ParentContextRequired:     true,
@@ -706,9 +706,9 @@ func TestPrepareLocalScript(t *testing.T) {
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath: file,
-			Args: core.NewObjectFromMap(core.ValMap{
+			Args: core.NewStructFromMap(map[string]core.Value{
 				"0": core.True,
-			}, ctx),
+			}),
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
 			ParentContextRequired:     true,
@@ -750,9 +750,9 @@ func TestPrepareLocalScript(t *testing.T) {
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath: file,
-			Args: core.NewObjectFromMap(core.ValMap{
+			Args: core.NewStructFromMap(map[string]core.Value{
 				"0": core.True,
-			}, ctx),
+			}),
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
 			ParentContextRequired:     true,
@@ -797,10 +797,10 @@ func TestPrepareLocalScript(t *testing.T) {
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath: file,
-			Args: core.NewObjectFromMap(core.ValMap{
+			Args: core.NewStructFromMap(map[string]core.Value{
 				"0":      core.Path("./a.txt"),
 				"output": core.True,
-			}, ctx),
+			}),
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
 			ParentContextRequired:     true,
@@ -844,9 +844,9 @@ func TestPrepareLocalScript(t *testing.T) {
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath: file,
-			Args: core.NewObjectFromMap(core.ValMap{
+			Args: core.NewStructFromMap(map[string]core.Value{
 				"outpu": core.True, //unknown argument
-			}, ctx),
+			}),
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
 			ParentContextRequired:     true,
@@ -888,9 +888,9 @@ func TestPrepareLocalScript(t *testing.T) {
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath: file,
-			Args: core.NewObjectFromMap(core.ValMap{
+			Args: core.NewStructFromMap(map[string]core.Value{
 				"x": core.True, //unknown argument
-			}, ctx),
+			}),
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
 			ParentContextRequired:     true,

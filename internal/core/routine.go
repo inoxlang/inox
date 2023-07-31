@@ -107,6 +107,7 @@ func SpawnRoutine(args RoutineSpawnArgs) (*Routine, error) {
 		if isConstant {
 			return nil
 		}
+
 		shared, err := ShareOrClone(v, args.SpawnerState)
 		if err != nil {
 			return fmt.Errorf("failed to share/clone provided global '%s': %w", name, err)

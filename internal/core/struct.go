@@ -7,11 +7,32 @@ import (
 var (
 	_ IProps  = (*Struct)(nil)
 	_ Pattern = (*StructPattern)(nil)
+
+	ANON_EMPTY_STRUCT_TYPE = NewStructPattern("", ulid.Make(), nil, nil)
 )
 
 type Struct struct {
 	structType *StructPattern
 	values     []Value
+}
+
+func NewEmptyStruct() *Struct {
+	return &Struct{structType: ANON_EMPTY_STRUCT_TYPE}
+}
+func NewStructFromMap(fields map[string]Value) *Struct {
+	var keys []string
+	var patterns []Pattern
+	var values []Value
+
+	for k, v := range fields {
+		keys = append(keys, k)
+		patterns = append(patterns, ANYVAL_PATTERN)
+		values = append(values, v)
+	}
+	return &Struct{
+		structType: NewStructPattern("", ulid.Make(), keys, patterns),
+		values:     values,
+	}
 }
 
 func (s *Struct) Prop(ctx *Context, name string) Value {
@@ -42,6 +63,16 @@ func (s *Struct) ValueMap() map[string]Value {
 		valueMap[s.structType.keys[index]] = fieldVal
 	}
 	return valueMap
+}
+
+func (s *Struct) ForEachField(fn func(fieldName string, fieldValue Value) error) error {
+	for i, v := range s.values {
+		fieldName := s.structType.keys[i]
+		if err := fn(fieldName, v); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // A StructPattern represents a struct type, it is nominal.

@@ -877,6 +877,7 @@ func (a *Array) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth in
 }
 
 func (s *Struct) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("struct ")))
 	utils.Must(w.Write(utils.StringAsBytes(s.structType.name)))
 	utils.PanicIfErr(w.WriteByte('{'))
 

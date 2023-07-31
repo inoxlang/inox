@@ -362,7 +362,7 @@ func (obj *Object) Prop(ctx *Context, name string) Value {
 			v := obj.values[i]
 
 			if obj.IsShared() {
-				return utils.Must(CheckSharedOrClone(v, 0)).(Serializable)
+				return utils.Must(CheckSharedOrClone(v, map[uintptr]Clonable{}, 0)).(Serializable)
 			}
 			return v
 		}
@@ -594,7 +594,7 @@ func (obj *Object) EntryMap(ctx *Context) map[string]Serializable {
 	map_ := map[string]Serializable{}
 	for i, v := range obj.values {
 		if isShared {
-			v = utils.Must(CheckSharedOrClone(v, 0)).(Serializable)
+			v = utils.Must(CheckSharedOrClone(v, map[uintptr]Clonable{}, 0)).(Serializable)
 		}
 		map_[obj.keys[i]] = v
 	}
@@ -624,7 +624,7 @@ func (obj *Object) ValueEntryMap(ctx *Context) map[string]Value {
 	map_ := map[string]Value{}
 	for i, v := range obj.values {
 		if isShared {
-			v = utils.Must(CheckSharedOrClone(v, 0)).(Serializable)
+			v = utils.Must(CheckSharedOrClone(v, map[uintptr]Clonable{}, 0)).(Serializable)
 		}
 		map_[obj.keys[i]] = v
 	}
