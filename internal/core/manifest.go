@@ -81,8 +81,8 @@ func NewEmptyManifest() *Manifest {
 }
 
 type ModuleParameters struct {
-	positional        []moduleParameter
-	others            []moduleParameter
+	positional        []ModuleParameter
+	others            []ModuleParameter
 	hasRequiredParams bool //true if at least one positional parameter or one required non-positional parameter
 	hasOptions        bool //true if at least one optional non-positional parameter
 }
@@ -111,6 +111,14 @@ type DatabaseConfig struct {
 	ResolutionData Path
 
 	Provided *DatabaseIL //optional (can be provided by parent state)
+}
+
+func (p *ModuleParameters) PositionalParameters() []ModuleParameter {
+	return utils.CopySlice(p.positional)
+}
+
+func (p *ModuleParameters) NonPositionalParameters() []ModuleParameter {
+	return utils.CopySlice(p.others)
 }
 
 func (p *ModuleParameters) GetArguments(ctx *Context, argObj *Object) (*Object, error) {
@@ -268,7 +276,7 @@ func (p *ModuleParameters) GetSymbolicArguments() *symbolic.Object {
 	return symbolic.NewObject(resultEntries, nil, nil)
 }
 
-type moduleParameter struct {
+type ModuleParameter struct {
 	name                   Identifier
 	singleLetterCliArgName rune
 	cliArgName             string
@@ -279,7 +287,7 @@ type moduleParameter struct {
 	defaultVal             Serializable
 }
 
-func (p moduleParameter) DefaultValue(ctx *Context) (Value, bool) {
+func (p ModuleParameter) DefaultValue(ctx *Context) (Value, bool) {
 	if p.defaultVal != nil {
 		return utils.Must(RepresentationBasedClone(ctx, p.defaultVal)), true
 	}
@@ -289,21 +297,29 @@ func (p moduleParameter) DefaultValue(ctx *Context) (Value, bool) {
 	return nil, false
 }
 
-func (p moduleParameter) Required(ctx *Context) bool {
+func (p ModuleParameter) Required(ctx *Context) bool {
 	_, hasDefault := p.DefaultValue(ctx)
 	return !hasDefault
 }
 
-func (p moduleParameter) StringifiedPattern() string {
+func (p ModuleParameter) StringifiedPattern() string {
 	symb := utils.Must(p.pattern.ToSymbolicValue(nil, map[uintptr]symbolic.SymbolicValue{}))
 	return symbolic.Stringify(symb.(symbolic.Pattern).SymbolicValue())
 }
 
-func (p moduleParameter) StringifiedPatternNoPercent() string {
+func (p ModuleParameter) StringifiedPatternNoPercent() string {
 	return strings.ReplaceAll(p.StringifiedPattern(), "%", "")
 }
 
-func (p moduleParameter) CliArgNames() string {
+func (p ModuleParameter) Name() string {
+	return string(p.name)
+}
+
+func (p ModuleParameter) Pattern() Pattern {
+	return p.pattern
+}
+
+func (p ModuleParameter) CliArgNames() string {
 	buf := bytes.NewBuffer(nil)
 	if p.singleLetterCliArgName != 0 {
 		buf.WriteByte('-')
@@ -320,7 +336,7 @@ func (p moduleParameter) CliArgNames() string {
 	return buf.String()
 }
 
-func (p moduleParameter) GetArgumentFromCliArg(ctx *Context, s string) (v Serializable, handled bool, err error) {
+func (p ModuleParameter) GetArgumentFromCliArg(ctx *Context, s string) (v Serializable, handled bool, err error) {
 	if len(s) == 0 {
 		return nil, false, nil
 	}
@@ -374,7 +390,7 @@ func (p moduleParameter) GetArgumentFromCliArg(ctx *Context, s string) (v Serial
 	}
 }
 
-func (p moduleParameter) GetRestArgumentFromCliArgs(ctx *Context, args []string) (v Value, err error) {
+func (p ModuleParameter) GetRestArgumentFromCliArgs(ctx *Context, args []string) (v Value, err error) {
 	if !p.rest {
 		return nil, errors.New("not a rest parameter")
 	}
@@ -1007,7 +1023,7 @@ func getModuleParameters(ctx *Context, v Value) (ModuleParameters, error) {
 	restParamFound := false
 
 	err := description.ForEachEntry(func(k string, v Serializable) error {
-		var param moduleParameter
+		var param ModuleParameter
 
 		if IsIndexKey(k) { //positional parameter
 			obj, ok := v.(*Object)

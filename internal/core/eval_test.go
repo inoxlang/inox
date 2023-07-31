@@ -2541,6 +2541,30 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				result: Int(1),
 			},
 			{
+				name: "single case (that matches) and defaultcase",
+				input: `
+				a = 0
+				switch 0 { 
+					0 { a = 1 } 
+					defaultcase { a = 2 }
+				}
+				return a
+			`,
+				result: Int(1),
+			},
+			{
+				name: "single case (that does not match) and defaultcase",
+				input: `
+				a = 0
+				switch 0 { 
+					1 { a = 1 } 
+					defaultcase { a = 2 }
+				}
+				return a
+			`,
+				result: Int(2),
+			},
+			{
 				name: "two cases: first matches",
 				input: `
 				a = 0; 
@@ -2554,6 +2578,34 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				result: newList(&ValueList{elements: []Serializable{Int(1), Int(0)}}),
 			},
 			{
+				name: "two cases and defaultcase: first matches",
+				input: `
+				a = 0; 
+				b = 0; 
+				switch 0 { 
+					0 { a = 1 } 
+					1 { b = 1} 
+					defaultcase { a = 2; b = 2 }
+				}; 
+				return [$a,$b]
+			`,
+				result: newList(&ValueList{elements: []Serializable{Int(1), Int(0)}}),
+			},
+			{
+				name: "two cases and defaultcase: no match",
+				input: `
+				a = 0; 
+				b = 0; 
+				switch 0 { 
+					1 { a = 1 } 
+					2 { b = 1} 
+					defaultcase { a = 2; b = 2 }
+				}; 
+				return [$a,$b]
+			`,
+				result: newList(&ValueList{elements: []Serializable{Int(2), Int(2)}}),
+			},
+			{
 				name: "two cases: second matches",
 				input: `
 				a = 0
@@ -2565,6 +2617,34 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return [$a,$b]
 			`,
 				result: newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}),
+			},
+			{
+				name: "two cases and defaultcase: second matches",
+				input: `
+				a = 0
+				b = 0 
+				switch 1 { 
+					0 { a = 1 } 
+					1 { b = 1 } 
+					defaultcase { a = 2; b = 2 }
+				}; 
+				return [$a,$b]
+			`,
+				result: newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}),
+			},
+			{
+				name: "two cases and defaultcase: no match",
+				input: `
+				a = 0
+				b = 0 
+				switch 1 { 
+					2 { a = 1 } 
+					3 { b = 1 } 
+					defaultcase { a = 2; b = 2 }
+				}; 
+				return [$a,$b]
+			`,
+				result: newList(&ValueList{elements: []Serializable{Int(2), Int(2)}}),
 			},
 		}
 

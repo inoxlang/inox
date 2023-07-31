@@ -694,6 +694,12 @@ func (c *compiler) Compile(node parse.Node) error {
 			}
 		}
 
+		if len(node.DefaultCases) > 0 {
+			if err := c.Compile(node.DefaultCases[0].Block); err != nil {
+				return err
+			}
+		}
+
 		curPos := len(c.currentInstructions())
 		for _, jump := range jumpAfterStmtPositions {
 			c.changeOperand(jump, curPos)
@@ -746,10 +752,17 @@ func (c *compiler) Compile(node parse.Node) error {
 			}
 		}
 
-		curPos := len(c.currentInstructions())
-		for _, jump := range jumpAfterStmtPositions {
-			c.changeOperand(jump, curPos)
+		if len(node.DefaultCases) > 0 {
+			if err := c.Compile(node.DefaultCases[0].Block); err != nil {
+				return err
+			}
 		}
+
+		afterStmtPos := len(c.currentInstructions())
+		for _, jump := range jumpAfterStmtPositions {
+			c.changeOperand(jump, afterStmtPos)
+		}
+
 	case *parse.Block:
 		if len(node.Statements) == 0 {
 			return nil

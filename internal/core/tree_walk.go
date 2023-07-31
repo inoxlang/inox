@@ -1667,7 +1667,6 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		if err != nil {
 			return nil, err
 		}
-	switch_loop:
 		for _, switchCase := range n.Cases {
 			for _, valNode := range switchCase.Values {
 				val, err := TreeWalkEval(valNode, state)
@@ -1679,10 +1678,19 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 					if err != nil {
 						return nil, err
 					}
-					break switch_loop
+					goto switch_end
 				}
 			}
 		}
+		//if we are here there was no match
+		if len(n.DefaultCases) > 0 {
+			_, err := TreeWalkEval(n.DefaultCases[0].Block, state)
+			if err != nil {
+				return nil, err
+			}
+		}
+	switch_end:
+
 		return Nil, nil
 	case *parse.MatchStatement:
 		discriminant, err := TreeWalkEval(n.Discriminant, state)
@@ -1690,7 +1698,6 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return nil, err
 		}
 
-	match_loop:
 		for _, matchCase := range n.Cases {
 
 			for _, valNode := range matchCase.Values {
@@ -1721,7 +1728,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 						if err != nil {
 							return nil, err
 						}
-						break match_loop
+						goto match_end
 					}
 
 				} else if pattern.Test(state.Global.Ctx, discriminant) {
@@ -1729,10 +1736,20 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 					if err != nil {
 						return nil, err
 					}
-					break match_loop
+					goto match_end
 				}
 			}
 		}
+
+		//if we are here there was no match
+		if len(n.DefaultCases) > 0 {
+			_, err := TreeWalkEval(n.DefaultCases[0].Block, state)
+			if err != nil {
+				return nil, err
+			}
+		}
+	match_end:
+
 		return Nil, nil
 	case *parse.UnaryExpression:
 
