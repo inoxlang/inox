@@ -3838,14 +3838,30 @@ func TestSymbolicEval(t *testing.T) {
 				}, state.errors)
 			})
 
-			t.Run("variable of static type %int? and nil value", func(t *testing.T) {
+			t.Run("variable of static type %int? with nil value", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					var v %int? = nil
 
 					if v? {
-						var a %int = v
+						var a %never = v
 					} else {
-						
+						var a %(nil) = v
+					}
+				`)
+
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors)
+			})
+
+			t.Run("variable of static type %int? with unknown value", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					fn(v %int?){
+						if v? {
+							var a %int = v
+						} else {
+							# TODO var a %(nil) = v
+						}
 					}
 				`)
 
@@ -4264,7 +4280,7 @@ func TestSymbolicEval(t *testing.T) {
 				assert.Equal(t, NewMultivalue(ANY_INT, FALSE), res.(*InoxFunction).result)
 			})
 
-			t.Run("variable of static type %int? and nil value", func(t *testing.T) {
+			t.Run("variable of static type %int? with nil value", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					var v %int? = nil
 
@@ -4274,7 +4290,28 @@ func TestSymbolicEval(t *testing.T) {
 				res, err := symbolicEval(n, state)
 				assert.NoError(t, err)
 				assert.Empty(t, state.errors)
-				assert.Equal(t, NewMultivalue(ANY_INT, FALSE), res)
+				assert.Equal(t, NewMultivalue(NEVER, FALSE), res)
+			})
+
+			t.Run("variable of static type %int? with unknown value", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					return fn(v %int?){
+						return (if v? v else false)
+					}
+				`)
+
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors)
+
+				fnExpr := n.Statements[0].(*parse.ReturnStatement).Expr
+				expectedFn := &InoxFunction{
+					node:           fnExpr,
+					parameters:     []SymbolicValue{NewMultivalue(ANY_INT, Nil)},
+					parameterNames: []string{"v"},
+					result:         NewMultivalue(ANY_INT, FALSE),
+				}
+				assert.Equal(t, expectedFn, res)
 			})
 
 			t.Run("non existing variable (identifier)", func(t *testing.T) {
@@ -4752,20 +4789,20 @@ func TestSymbolicEval(t *testing.T) {
 		})
 	})
 
-	t.Run("switch statement: error in every block", func(t *testing.T) {
+	t.Run("switch statement", func(t *testing.T) {
 
-		t.Run("error in every block", func(t *testing.T) {
+		t.Run("error in every block (no default case)", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-			v = int
-			switch v {
-				0 {
-					!"s"
+				v = int
+				switch v {
+					0 {
+						!"s"
+					}
+					int {
+						!"s"
+					}
 				}
-				int {
-					!"s"
-				}
-			}
-		`)
+			`)
 			unaryExprs := parse.FindNodes(n, (*parse.UnaryExpression)(nil), nil)
 
 			res, err := symbolicEval(n, state)
@@ -4773,6 +4810,33 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(unaryExprs[0], state, fmtOperandOfBoolNegateShouldBeBool(NewString("s"))),
 				makeSymbolicEvalError(unaryExprs[1], state, fmtOperandOfBoolNegateShouldBeBool(NewString("s"))),
+			}, state.errors)
+			assert.Nil(t, res)
+		})
+
+		t.Run("error in every block (with default case)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				v = int
+				switch v {
+					0 {
+						!"s"
+					}
+					int {
+						!"s"
+					}
+					defaultcase {
+						!"s"
+					}
+				}
+			`)
+			unaryExprs := parse.FindNodes(n, (*parse.UnaryExpression)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(unaryExprs[0], state, fmtOperandOfBoolNegateShouldBeBool(NewString("s"))),
+				makeSymbolicEvalError(unaryExprs[1], state, fmtOperandOfBoolNegateShouldBeBool(NewString("s"))),
+				makeSymbolicEvalError(unaryExprs[2], state, fmtOperandOfBoolNegateShouldBeBool(NewString("s"))),
 			}, state.errors)
 			assert.Nil(t, res)
 		})
@@ -4796,6 +4860,50 @@ func TestSymbolicEval(t *testing.T) {
 			}, state.errors)
 			assert.Nil(t, res)
 		})
+
+		t.Run("narrowing of variable's value (no default case)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(v){
+					switch v {
+						1 {
+							var int %(1) = v
+						}
+						"1" {
+							var string %("1") = v
+						}
+					}
+				}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Nil(t, res)
+		})
+
+		t.Run("narrowing of variable's value (with default case)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(v %| int | str | bool){
+					match v {
+						1 {
+							var int %(1) = v
+						}
+						"1" {
+							var string %("1") = v
+						}
+						defaultcase {
+							var bool %| int | str | bool = v
+						}
+					}
+				}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Nil(t, res)
+		})
+
 	})
 
 	t.Run("match statement", func(t *testing.T) {
@@ -4881,7 +4989,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Nil(t, res)
 		})
 
-		t.Run("narrowing of variable's value", func(t *testing.T) {
+		t.Run("narrowing of variable's value (no default case)", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(v){
 					match v {
@@ -4890,6 +4998,29 @@ func TestSymbolicEval(t *testing.T) {
 						}
 						%str {
 							var string %str = v
+						}
+					}
+				}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors)
+			assert.Nil(t, res)
+		})
+
+		t.Run("narrowing of variable's value (with default case)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(v %| int | str | bool){
+					match v {
+						%int {
+							var int %int = v
+						}
+						%str {
+							var string %str = v
+						}
+						defaultcase {
+							var bool %bool = v
 						}
 					}
 				}

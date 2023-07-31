@@ -312,15 +312,17 @@ func (state *State) updateLocal(name string, value SymbolicValue, node parse.Nod
 	if info, ok := scope.variables[name]; ok {
 		info.value = value
 
-		widenedValue := value
+		if !isNever(value) {
+			widenedValue := value
 
-		for !IsAnyOrAnySerializable(widenedValue) && !info.static.TestValue(widenedValue) {
-			widenedValue = widenOrAny(widenedValue)
-		}
+			for !IsAnyOrAnySerializable(widenedValue) && !info.static.TestValue(widenedValue) {
+				widenedValue = widenOrAny(widenedValue)
+			}
 
-		if !info.static.TestValue(widenedValue) {
-			state.addError(makeSymbolicEvalError(node, state, fmtNotAssignableToVarOftype(value, info.static)))
-			return false
+			if !info.static.TestValue(widenedValue) {
+				state.addError(makeSymbolicEvalError(node, state, fmtNotAssignableToVarOftype(value, info.static)))
+				return false
+			}
 		}
 		scope.variables[name] = info
 		return true
@@ -333,16 +335,19 @@ func (state *State) updateGlobal(name string, value SymbolicValue, node parse.No
 	if info, ok := scope.variables[name]; ok {
 		info.value = value
 
-		widenedValue := value
+		if !isNever(value) {
+			widenedValue := value
 
-		for !IsAnyOrAnySerializable(widenedValue) && !info.static.TestValue(widenedValue) {
-			widenedValue = widenOrAny(widenedValue)
+			for !IsAnyOrAnySerializable(widenedValue) && !info.static.TestValue(widenedValue) {
+				widenedValue = widenOrAny(widenedValue)
+			}
+
+			if !info.static.TestValue(widenedValue) {
+				state.addError(makeSymbolicEvalError(node, state, fmtNotAssignableToVarOftype(value, info.static)))
+				return false
+			}
 		}
 
-		if !info.static.TestValue(widenedValue) {
-			state.addError(makeSymbolicEvalError(node, state, fmtNotAssignableToVarOftype(value, info.static)))
-			return false
-		}
 		scope.variables[name] = info
 		return true
 	}

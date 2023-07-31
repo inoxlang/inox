@@ -79,6 +79,11 @@ func IsAnyOrAnySerializable(val SymbolicValue) bool {
 	}
 }
 
+func isNever(val SymbolicValue) bool {
+	_, ok := val.(*Never)
+	return ok
+}
+
 func deeplyEqual(v1, v2 SymbolicValue) bool {
 	return v1.Test(v2) && v2.Test(v1)
 }
@@ -132,7 +137,8 @@ type Never struct {
 }
 
 func (*Never) Test(v SymbolicValue) bool {
-	return false
+	_, ok := v.(*Never)
+	return ok
 }
 
 func (*Never) Widen() (SymbolicValue, bool) {
@@ -148,7 +154,7 @@ func (*Never) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, dep
 }
 
 func (*Never) WidestOfType() SymbolicValue {
-	return ANY
+	return NEVER
 }
 
 var Nil = &NilT{}

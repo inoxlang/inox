@@ -1978,23 +1978,46 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		if err != nil {
 			return nil, err
 		}
+
+		var forks []*State
+
 		for _, switchCase := range n.Cases {
 			for _, valNode := range switchCase.Values {
-				_, err := symbolicEval(valNode, state)
+				caseValue, err := symbolicEval(valNode, state)
 				if err != nil {
 					return nil, err
 				}
 
-				blockStateFork := state.fork()
-				if switchCase.Block != nil {
-					_, err = symbolicEval(switchCase.Block, blockStateFork)
-					if err != nil {
-						return nil, err
-					}
+				if switchCase.Block == nil {
+					continue
 				}
 
+				blockStateFork := state.fork()
+				forks = append(forks, blockStateFork)
+				narrowPath(n.Discriminant, setExactValue, caseValue, blockStateFork, 0)
+
+				_, err = symbolicEval(switchCase.Block, blockStateFork)
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
+
+		for _, defaultCase := range n.DefaultCases {
+			if defaultCase.Block == nil {
+				continue
+			}
+
+			blockStateFork := state.fork()
+			forks = append(forks, blockStateFork)
+			_, err = symbolicEval(defaultCase.Block, blockStateFork)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		state.join(forks...)
+
 		return nil, nil
 	case *parse.MatchStatement:
 		discriminant, err := symbolicEval(n.Discriminant, state)
@@ -2003,6 +2026,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		}
 
 		var forks []*State
+		var possibleValues []SymbolicValue
 
 		for _, matchCase := range n.Cases {
 			for _, valNode := range matchCase.Values { //TODO: fix handling of multi cases
@@ -2033,7 +2057,10 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 				blockStateFork := state.fork()
 				forks = append(forks, blockStateFork)
-				narrowPath(n.Discriminant, setExactValue, pattern.SymbolicValue(), blockStateFork, 0)
+				patternMatchingValue := pattern.SymbolicValue()
+				possibleValues = append(possibleValues, patternMatchingValue)
+
+				narrowPath(n.Discriminant, setExactValue, patternMatchingValue, blockStateFork, 0)
 
 				if matchCase.GroupMatchingVariable != nil {
 					variable := matchCase.GroupMatchingVariable.(*parse.IdentifierLiteral)
@@ -2060,6 +2087,20 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 						return nil, err
 					}
 				}
+			}
+		}
+
+		for _, defaultCase := range n.DefaultCases {
+			blockStateFork := state.fork()
+			forks = append(forks, blockStateFork)
+
+			for _, val := range possibleValues {
+				narrowPath(n.Discriminant, removePossibleValue, val, blockStateFork, 0)
+			}
+
+			_, err = symbolicEval(defaultCase.Block, blockStateFork)
+			if err != nil {
+				return nil, err
 			}
 		}
 
@@ -3583,7 +3624,7 @@ func narrowPath(path parse.Node, action pathNarrowing, value SymbolicValue, stat
 		case removePossibleValue:
 			prev, ok := state.getLocal(node.Name)
 			if ok {
-				state.updateLocal(node.Name, narrowOut(value, prev.static.SymbolicValue()), path)
+				state.updateLocal(node.Name, narrowOut(value, prev.value), path)
 			}
 		}
 	case *parse.GlobalVariable:
@@ -3593,7 +3634,7 @@ func narrowPath(path parse.Node, action pathNarrowing, value SymbolicValue, stat
 		case removePossibleValue:
 			prev, ok := state.getGlobal(node.Name)
 			if ok {
-				state.updateGlobal(node.Name, narrowOut(value, prev.static.SymbolicValue()), path)
+				state.updateGlobal(node.Name, narrowOut(value, prev.value), path)
 			}
 		}
 	case *parse.IdentifierLiteral:
@@ -3607,10 +3648,10 @@ func narrowPath(path parse.Node, action pathNarrowing, value SymbolicValue, stat
 		case removePossibleValue:
 			if state.hasLocal(node.Name) {
 				prev, _ := state.getLocal(node.Name)
-				state.updateLocal(node.Name, narrowOut(value, prev.static.SymbolicValue()), path)
+				state.updateLocal(node.Name, narrowOut(value, prev.value), path)
 			} else if state.hasGlobal(node.Name) {
 				prev, _ := state.getGlobal(node.Name)
-				state.updateGlobal(node.Name, narrowOut(value, prev.static.SymbolicValue()), path)
+				state.updateGlobal(node.Name, narrowOut(value, prev.value), path)
 			}
 		}
 	case *parse.IdentifierMemberExpression:

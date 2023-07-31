@@ -17,6 +17,11 @@ func _makeStateAndChunk(code string, includedFiles map[string]string, globals ..
 	state.symbolicData = NewSymbolicData()
 	state.setGlobal("int", ANY_INT, GlobalConst)
 
+	//this pattern is added for testing purposes only
+	state.ctx.AddNamedPattern("never", &TypePattern{
+		val: NEVER,
+	}, false)
+
 	state.ctx.AddNamedPattern("int", &TypePattern{
 		val: ANY_INT,
 		call: func(ctx *Context, values []SymbolicValue) (Pattern, error) {

@@ -125,6 +125,8 @@ func narrowOut(narrowedOut SymbolicValue, toNarrow SymbolicValue) SymbolicValue 
 		}
 
 		switch len(remainingValues) {
+		case 0:
+			return NEVER
 		case 1:
 			return remainingValues[0]
 		case len(n.values):
@@ -133,6 +135,10 @@ func narrowOut(narrowedOut SymbolicValue, toNarrow SymbolicValue) SymbolicValue 
 		return NewMultivalue(remainingValues...)
 	case IMultivalue:
 		return narrowOut(narrowedOut, n.OriginalMultivalue())
+	}
+
+	if narrowedOut.Test(toNarrow) {
+		return NEVER
 	}
 
 	return toNarrow
@@ -146,6 +152,7 @@ func narrow(positive bool, n parse.Node, state *State, targetState *State) {
 	}
 
 	//if the expression is a boolean conversion we remove nil from possible values
+	//TODO: remove all falsy values
 	if boolConvExpr, ok := n.(*parse.BooleanConversionExpression); ok {
 		if positive {
 			narrowPath(boolConvExpr.Expr, removePossibleValue, Nil, targetState, 0)
