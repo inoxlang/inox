@@ -881,10 +881,49 @@ func (s *Struct) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth i
 	utils.Must(w.Write(utils.StringAsBytes(s.structType.name)))
 	utils.PanicIfErr(w.WriteByte('{'))
 
-	//TODO
-	utils.Must(w.Write(utils.StringAsBytes("...")))
+	indentCount := parentIndentCount + 1
+	indent := bytes.Repeat(config.Indent, indentCount)
 
-	utils.PanicIfErr(w.WriteByte('}'))
+	keys := s.structType.keys
+
+	for i, k := range keys {
+
+		if !config.Compact {
+			utils.Must(w.Write(LF_CR))
+			utils.Must(w.Write(indent))
+		}
+
+		if config.Colorize {
+			utils.Must(w.Write(config.Colors.IdentifierLiteral))
+
+		}
+
+		utils.Must(w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(k))))
+
+		if config.Colorize {
+			utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+		}
+
+		//colon
+		utils.Must(w.Write(COLON_SPACE))
+
+		//value
+		v := s.values[i]
+		v.PrettyPrint(w, config, depth+1, indentCount)
+
+		//comma & indent
+		isLastEntry := i == len(keys)-1
+
+		if !isLastEntry {
+			utils.Must(w.Write(COMMA_SPACE))
+		}
+	}
+
+	if !config.Compact && len(keys) > 0 {
+		utils.Must(w.Write(LF_CR))
+	}
+
+	utils.MustWriteMany(w, bytes.Repeat(config.Indent, depth), []byte{'}'})
 }
 
 func (slice *RuneSlice) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
