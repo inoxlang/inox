@@ -16,12 +16,25 @@ var (
 
 type HttpRequest struct {
 	symbolic.UnassignablePropsMixin
-	_ int
+	symbolic.SerializableMixin
+	symbolic.PotentiallySharable
 }
 
 func (r *HttpRequest) Test(v symbolic.SymbolicValue) bool {
 	_, ok := v.(*HttpRequest)
 	return ok
+}
+
+func (req *HttpRequest) IsSharable() (bool, string) {
+	return true, ""
+}
+
+func (req *HttpRequest) Share(originState *symbolic.State) symbolic.PotentiallySharable {
+	return req
+}
+
+func (req *HttpRequest) IsShared() bool {
+	return true
 }
 
 func (req *HttpRequest) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
@@ -62,7 +75,6 @@ func (a *HttpRequest) IsWidenable() bool {
 
 func (r *HttpRequest) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%http.req")))
-	return
 }
 
 func (r *HttpRequest) WidestOfType() symbolic.SymbolicValue {

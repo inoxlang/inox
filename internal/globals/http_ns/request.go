@@ -2,6 +2,7 @@ package http_ns
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/aohorodnyk/mimeheader"
+	jsoniter "github.com/json-iterator/go"
 
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/utils"
@@ -18,10 +20,15 @@ import (
 	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 )
 
-var METHODS_WITH_NO_BODY = []string{"GET", "HEAD", "OPTIONS"}
-var METHODS = []string{"GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"}
-
 const DEFAULT_ACCEPT_HEADER = "*/*"
+
+var (
+	METHODS_WITH_NO_BODY = []string{"GET", "HEAD", "OPTIONS"}
+	METHODS              = []string{"GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"}
+
+	_ core.Serializable        = (*HttpRequest)(nil)
+	_ core.PotentiallySharable = (*HttpRequest)(nil)
+)
 
 // HttpRequest is considered immutable from the viewpoint of Inox code, it should NOT be mutated.
 type HttpRequest struct {
@@ -160,7 +167,7 @@ func NewServerSideRequest(r *http.Request, logger zerolog.Logger, server *HttpSe
 		Path:               core.Path(r.URL.Path),
 		RemoteAddrAndPort:  addrAndPort,
 		RemoteIpAddr:       RemoteIpAddr(ip),
-		Body:               core.WrapReader(r.Body, nil),
+		Body:               core.WrapReader(r.Body, &sync.Mutex{}),
 		Cookies:            r.Cookies(),
 		request:            r,
 		ParsedAcceptHeader: mimeheader.ParseAcceptHeader(acceptHeaderValue),
@@ -202,6 +209,26 @@ func (req *HttpRequest) AcceptAny() bool {
 		}
 	}
 	return false
+}
+
+func (req *HttpRequest) IsSharable(originState *core.GlobalState) (bool, string) {
+	return true, ""
+}
+
+func (req *HttpRequest) Share(originState *core.GlobalState) {
+	//no op
+}
+
+func (req *HttpRequest) IsShared() bool {
+	return true
+}
+
+func (req *HttpRequest) ForceLock() {
+	//no op
+}
+
+func (req *HttpRequest) ForceUnlock() {
+	//no op
 }
 
 func (req *HttpRequest) GetGoMethod(name string) (*core.GoFunction, bool) {
@@ -259,4 +286,11 @@ func (*HttpRequest) SetProp(ctx *core.Context, name string, value core.Value) er
 
 func (*HttpRequest) PropertyNames(ctx *core.Context) []string {
 	return http_ns_symb.HTTP_REQUEST_PROPNAMES
+}
+
+func (r *HttpRequest) WriteRepresentation(ctx *core.Context, w io.Writer, config *core.ReprConfig, depth int) error {
+	return core.ErrNotImplementedYet
+}
+func (r *HttpRequest) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stream, config core.JSONSerializationConfig, depth int) error {
+	return core.ErrNotImplementedYet
 }
