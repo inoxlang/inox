@@ -271,19 +271,25 @@ const (
 	UNTERMINATED_IF_STMT_MISSING_BLOCK                      = "unterminated if statement, missing block"
 	UNTERMINATED_LIST_TUPLE_PATT_LIT_MISSING_BRACE          = "unterminated list/tuple pattern literal, missing closing bracket ']'"
 	INVALID_LIST_TUPLE_PATT_GENERAL_ELEMENT_IF_ELEMENTS     = "invalid list/tuple pattern literal, the general element (after ']') should not be specified if elements are specified"
-	UNTERMINATED_SWITCH_CASE_MISSING_BLOCK                  = "invalid switch case : missing block"
-	UNTERMINATED_MATCH_CASE_MISSING_BLOCK                   = "invalid match case : missing block"
-	UNTERMINATED_SWITCH_STMT_MISSING_CLOSING_BRACE          = "unterminated switch statement : missing closing body brace '}'"
-	UNTERMINATED_MATCH_STMT_MISSING_CLOSING_BRACE           = "unterminated match statement : missing closing body brace '}'"
-	INVALID_SWITCH_CASE_VALUE_EXPLANATION                   = "invalid switch case : only simple value literals are supported (1, 1.0, /home, ..)"
-	INVALID_MATCH_CASE_VALUE_EXPLANATION                    = "invalid match case : only values that are statically known can be used"
-	UNTERMINATED_MATCH_STMT                                 = "unterminated match statement"
-	UNTERMINATED_SWITCH_STMT                                = "unterminated switch statement"
-	UNTERMINATED_SWITCH_STMT_MISSING_BODY                   = "unterminated switch statement: missing body"
-	UNTERMINATED_MATCH_STMT_MISSING_BODY                    = "unterminated match statement: missing body"
-	UNTERMINATED_SWITCH_STMT_MISSING_VALUE                  = "unterminated switch statement: missing value"
-	UNTERMINATED_MATCH_STMT_MISSING_VALUE                   = "unterminated match statement: missing value"
-	DROP_PERM_KEYWORD_SHOULD_BE_FOLLOWED_BY                 = "permission dropping statement: 'drop-perms' keyword should be followed by an object literal (permissions)"
+
+	UNTERMINATED_SWITCH_CASE_MISSING_BLOCK  = "invalid switch case : missing block"
+	UNTERMINATED_MATCH_CASE_MISSING_BLOCK   = "invalid match case : missing block"
+	UNTERMINATED_DEFAULT_CASE_MISSING_BLOCK = "invalid default case : missing block"
+
+	DEFAULT_CASE_SHOULD_BE_UNIQUE = "default case should be unique"
+
+	UNTERMINATED_SWITCH_STMT_MISSING_CLOSING_BRACE = "unterminated switch statement : missing closing body brace '}'"
+	UNTERMINATED_MATCH_STMT_MISSING_CLOSING_BRACE  = "unterminated match statement : missing closing body brace '}'"
+
+	INVALID_SWITCH_CASE_VALUE_EXPLANATION   = "invalid switch case : only simple value literals are supported (1, 1.0, /home, ..)"
+	INVALID_MATCH_CASE_VALUE_EXPLANATION    = "invalid match case : only values that are statically known can be used"
+	UNTERMINATED_MATCH_STMT                 = "unterminated match statement"
+	UNTERMINATED_SWITCH_STMT                = "unterminated switch statement"
+	UNTERMINATED_SWITCH_STMT_MISSING_BODY   = "unterminated switch statement: missing body"
+	UNTERMINATED_MATCH_STMT_MISSING_BODY    = "unterminated match statement: missing body"
+	UNTERMINATED_SWITCH_STMT_MISSING_VALUE  = "unterminated switch statement: missing value"
+	UNTERMINATED_MATCH_STMT_MISSING_VALUE   = "unterminated match statement: missing value"
+	DROP_PERM_KEYWORD_SHOULD_BE_FOLLOWED_BY = "permission dropping statement: 'drop-perms' keyword should be followed by an object literal (permissions)"
 
 	//import
 	IMPORT_STMT_IMPORT_KEYWORD_SHOULD_BE_FOLLOWED_BY_IDENT  = "import statement: import should be followed by an identifier"

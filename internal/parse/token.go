@@ -63,6 +63,7 @@ const (
 	PERCENT_FN
 	SWITCH_KEYWORD
 	MATCH_KEYWORD
+	DEFAULTCASE_KEYWORD
 	RETURN_KEYWORD
 	YIELD_KEYWORD
 	BREAK_KEYWORD
@@ -267,6 +268,7 @@ var tokenStrings = [...]string{
 	FN_KEYWORD:                     "fn",
 	SWITCH_KEYWORD:                 "switch",
 	MATCH_KEYWORD:                  "match",
+	DEFAULTCASE_KEYWORD:            "defaultcase",
 	RETURN_KEYWORD:                 "return",
 	YIELD_KEYWORD:                  "yield",
 	BREAK_KEYWORD:                  "break",
@@ -424,6 +426,7 @@ var tokenTypenames = [...]string{
 	PERCENT_FN:                     "PERCENT_FN",
 	SWITCH_KEYWORD:                 "SWITCH_KEYWORD",
 	MATCH_KEYWORD:                  "MATCH_KEYWORD",
+	DEFAULTCASE_KEYWORD:            "DEFAULTCASE_KEYWORD",
 	RETURN_KEYWORD:                 "RETURN_KEYWORD",
 	YIELD_KEYWORD:                  "YIELD_KEYWORD",
 	BREAK_KEYWORD:                  "BREAK_KEYWORD",

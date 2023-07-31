@@ -1381,6 +1381,7 @@ type SwitchStatement struct {
 	NodeBase
 	Discriminant Node
 	Cases        []*SwitchCase
+	DefaultCases []*DefaultCase
 }
 
 func (SwitchStatement) Kind() NodeKind {
@@ -1397,6 +1398,7 @@ type MatchStatement struct {
 	NodeBase
 	Discriminant Node
 	Cases        []*MatchCase
+	DefaultCases []*DefaultCase
 }
 
 func (MatchStatement) Kind() NodeKind {
@@ -1408,6 +1410,11 @@ type MatchCase struct {
 	Values                []Node
 	GroupMatchingVariable Node //can be nil
 	Block                 *Block
+}
+
+type DefaultCase struct {
+	NodeBase
+	Block *Block
 }
 
 type UnaryOperator int
@@ -2490,8 +2497,11 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		walk(n.Label, node, ancestorChain, fn, afterFn)
 	case *SwitchStatement:
 		walk(n.Discriminant, node, ancestorChain, fn, afterFn)
-		for _, switcCase := range n.Cases {
-			walk(switcCase, node, ancestorChain, fn, afterFn)
+		for _, switchCase := range n.Cases {
+			walk(switchCase, node, ancestorChain, fn, afterFn)
+		}
+		for _, defaultCase := range n.DefaultCases {
+			walk(defaultCase, node, ancestorChain, fn, afterFn)
 		}
 	case *SwitchCase:
 		for _, val := range n.Values {
@@ -2500,14 +2510,19 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		walk(n.Block, node, ancestorChain, fn, afterFn)
 	case *MatchStatement:
 		walk(n.Discriminant, node, ancestorChain, fn, afterFn)
-		for _, switcCase := range n.Cases {
-			walk(switcCase, node, ancestorChain, fn, afterFn)
+		for _, matchCase := range n.Cases {
+			walk(matchCase, node, ancestorChain, fn, afterFn)
+		}
+		for _, defaultCase := range n.DefaultCases {
+			walk(defaultCase, node, ancestorChain, fn, afterFn)
 		}
 	case *MatchCase:
 		walk(n.GroupMatchingVariable, node, ancestorChain, fn, afterFn)
 		for _, val := range n.Values {
 			walk(val, node, ancestorChain, fn, afterFn)
 		}
+		walk(n.Block, node, ancestorChain, fn, afterFn)
+	case *DefaultCase:
 		walk(n.Block, node, ancestorChain, fn, afterFn)
 	case *LazyExpression:
 		walk(n.Expression, node, ancestorChain, fn, afterFn)

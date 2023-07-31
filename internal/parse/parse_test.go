@@ -14970,6 +14970,51 @@ func testParse(
 				},
 			},
 			{
+				input:    "switch 1 { defaultcase { } }",
+				hasError: false,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 28}, nil, nil},
+					Statements: []Node{
+						&SwitchStatement{
+							NodeBase: NodeBase{
+								NodeSpan{0, 28},
+								nil,
+								[]Token{
+									{Type: SWITCH_KEYWORD, Span: NodeSpan{0, 6}},
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{27, 28}},
+								},
+							},
+							Discriminant: &IntLiteral{
+								NodeBase: NodeBase{NodeSpan{7, 8}, nil, nil},
+								Raw:      "1",
+								Value:    1,
+							},
+							Cases: []*SwitchCase{},
+							DefaultCases: []*DefaultCase{
+								{
+									NodeBase: NodeBase{
+										NodeSpan{11, 26},
+										nil,
+										[]Token{{Type: DEFAULTCASE_KEYWORD, Span: NodeSpan{11, 22}}},
+									},
+									Block: &Block{
+										NodeBase: NodeBase{
+											NodeSpan{23, 26},
+											nil,
+											[]Token{
+												{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{23, 24}},
+												{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{25, 26}},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
 				input:    "switch 1 { 1 { } 2 { } }",
 				hasError: false,
 				result: &Chunk{
@@ -15140,6 +15185,50 @@ func testParse(
 				},
 			},
 			{
+				input:    "switch 1 { defaultcase { }",
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 26}, nil, nil},
+					Statements: []Node{
+						&SwitchStatement{
+							NodeBase: NodeBase{
+								NodeSpan{0, 26},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_SWITCH_STMT_MISSING_CLOSING_BRACE},
+								[]Token{
+									{Type: SWITCH_KEYWORD, Span: NodeSpan{0, 6}},
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
+								},
+							},
+							Discriminant: &IntLiteral{
+								NodeBase: NodeBase{NodeSpan{7, 8}, nil, nil},
+								Raw:      "1",
+								Value:    1,
+							},
+							Cases: []*SwitchCase{},
+							DefaultCases: []*DefaultCase{
+								{
+									NodeBase: NodeBase{
+										NodeSpan{11, 26},
+										nil,
+										[]Token{{Type: DEFAULTCASE_KEYWORD, Span: NodeSpan{11, 22}}},
+									},
+									Block: &Block{
+										NodeBase: NodeBase{
+											NodeSpan{23, 26},
+											nil,
+											[]Token{
+												{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{23, 24}},
+												{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{25, 26}},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
 				input:    "switch 1 { 1 {",
 				hasError: true,
 				result: &Chunk{
@@ -15253,6 +15342,22 @@ func testParse(
 			},
 			{
 				input:    "switch 1 { $a { } }",
+				hasError: true,
+			},
+			{
+				input:    "switch 1 { defaultcase ) }",
+				hasError: true,
+			},
+			{
+				input:    "switch 1 { defaultcase ) {} }",
+				hasError: true,
+			},
+			{
+				input:    "switch 1 { defaultcase {} ) }",
+				hasError: true,
+			},
+			{
+				input:    "switch 1 { defaultcase {}\n defaultcase {} }",
 				hasError: true,
 			},
 		}

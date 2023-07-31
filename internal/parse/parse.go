@@ -9215,6 +9215,7 @@ func (p *parser) parseSwitchMatchStatement(keywordIdent *IdentifierLiteral) Node
 	discriminant, _ := p.parseExpression()
 	var switchCases []*SwitchCase
 	var matchCases []*MatchCase
+	var defaultCases []*DefaultCase
 
 	p.eatSpace()
 
@@ -9284,6 +9285,7 @@ top_loop:
 
 			var switchCase *SwitchCase
 			var matchCase *MatchCase
+			var defaultCase *DefaultCase
 
 			if isMatchStmt {
 				matchCase = &MatchCase{
@@ -9325,6 +9327,34 @@ top_loop:
 					continue top_loop
 				}
 				//if ok
+
+				//default case
+				if ident, ok := valueNode.(*IdentifierLiteral); ok && ident.Name == tokenStrings[DEFAULTCASE_KEYWORD] {
+
+					//remove case
+					if isMatchStmt {
+						matchCases = matchCases[:len(matchCases)-1]
+					} else {
+						switchCases = switchCases[:len(switchCases)-1]
+					}
+
+					defaultCase = &DefaultCase{
+						NodeBase: NodeBase{
+							Span:            NodeSpan{ident.Span.Start, ident.Span.End},
+							ValuelessTokens: []Token{{Type: DEFAULTCASE_KEYWORD, Span: NodeSpan{ident.Span.Start, ident.Span.End}}},
+						},
+					}
+
+					defaultCases = append(defaultCases, defaultCase)
+
+					if len(defaultCases) > 1 {
+						defaultCase.Err = &ParsingError{UnspecifiedParsingError, DEFAULT_CASE_SHOULD_BE_UNIQUE}
+					}
+
+					p.eatSpace()
+
+					goto parse_block
+				}
 
 				if isMatchStmt && !hasStaticallyKnownValue(valueNode) {
 					matchCase.Err = &ParsingError{UnspecifiedParsingError, INVALID_MATCH_CASE_VALUE_EXPLANATION}
@@ -9393,7 +9423,9 @@ top_loop:
 			end := p.i
 
 			if p.i >= p.len || p.s[p.i] != '{' { // missing block
-				if isMatchStmt {
+				if defaultCase != nil {
+					defaultCase.Err = &ParsingError{MissingBlock, UNTERMINATED_DEFAULT_CASE_MISSING_BLOCK}
+				} else if isMatchStmt {
 					matchCase.Err = &ParsingError{MissingBlock, UNTERMINATED_MATCH_CASE_MISSING_BLOCK}
 				} else {
 					switchCase.Err = &ParsingError{MissingBlock, UNTERMINATED_SWITCH_CASE_MISSING_BLOCK}
@@ -9403,7 +9435,10 @@ top_loop:
 				end = blk.Span.End
 			}
 
-			if isMatchStmt {
+			if defaultCase != nil {
+				defaultCase.Span.End = end
+				defaultCase.Block = blk
+			} else if isMatchStmt {
 				matchCase.Span.End = end
 				matchCase.Block = blk
 			} else {
@@ -9437,6 +9472,7 @@ top_loop:
 			},
 			Discriminant: discriminant,
 			Cases:        matchCases,
+			DefaultCases: defaultCases,
 		}
 	}
 
@@ -9448,6 +9484,7 @@ top_loop:
 		},
 		Discriminant: discriminant,
 		Cases:        switchCases,
+		DefaultCases: defaultCases,
 	}
 }
 

@@ -259,6 +259,9 @@ func TestPrint(t *testing.T) {
 		"switch 1 { 1 {} 2 {}",
 		"switch 1 { 1 {} 2 {} }",
 		"switch 1 { 1, 2 {} }",
+		"switch 1 { 1 {} 2 {} defaultcase {} }",
+		"switch 1 { defaultcase { }",
+		"switch 1 { defaultcase ) }",
 		//match statement
 		"match",
 		"match 1",
@@ -270,6 +273,9 @@ func TestPrint(t *testing.T) {
 		"match 1 { 1 {} 2 {}",
 		"match 1 { 1 {} 2 {} }",
 		"match 1 { 1, 2 {} }",
+		"match 1 { 1 {} 2 {} defaultcase {} }",
+		"match 1 { defaultcase { }",
+		"match 1 { defaultcase ) }",
 		//function expressions
 		"fn(){}",
 		"fn(arg){}",
