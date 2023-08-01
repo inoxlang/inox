@@ -2135,6 +2135,23 @@ func NodeIsSimpleValueLiteral(node Node) bool {
 	return ok
 }
 
+func NodeIsPattern(node Node) bool {
+	switch node.(type) {
+	case *PatternCallExpression,
+		*ListPatternLiteral, *TuplePatternLiteral,
+		*ObjectPatternLiteral, *RecordPatternLiteral,
+		*PatternIdentifierLiteral, *PatternNamespaceMemberExpression,
+		*ComplexStringPatternPiece, //not 100% correct since it can be included in another *ComplexStringPatternPiece,
+		*PatternConversionExpression,
+		*PatternUnion,
+		*PathPatternExpression, *AbsolutePathPatternLiteral, *RelativePathPatternLiteral,
+		*URLPatternLiteral, *HostPatternLiteral, *OptionalPatternExpression,
+		*OptionPatternLiteral, *FunctionPatternExpression, *NamedSegmentPathPatternLiteral:
+		return true
+	}
+	return false
+}
+
 func NodeIs[T Node](node Node, typ T) bool {
 	return reflect.TypeOf(typ) == reflect.TypeOf(node)
 }
