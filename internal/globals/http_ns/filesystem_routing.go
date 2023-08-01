@@ -126,7 +126,6 @@ func getHandlerModuleArguments(req *HttpRequest, manifest *core.Manifest, handle
 		return nil, http.StatusNotFound, errors.New("there should not be positional parameters")
 	}
 
-	params := manifest.Parameters.NonPositionalParameters()
 	handlerModuleParams, err := getHandlerModuleParameters(handlerCtx, manifest, methodSpecificModule)
 	if err != nil {
 		return nil, http.StatusNotFound, err
@@ -145,30 +144,27 @@ func getHandlerModuleArguments(req *HttpRequest, manifest *core.Manifest, handle
 	if handlerModuleParams.bodyReader {
 		moduleArguments["_body"] = req.Body
 	} else if handlerModuleParams.jsonBodyPattern != nil {
-		// if there is no request parameter the parameters are assumed to describe the JSON content of the body.
+		if !req.ContentType.MatchText(core.JSON_CTYPE) {
+			return nil, http.StatusBadRequest, errors.New("unsupported content type")
+		}
 		bytes, err := req.Body.ReadAll()
 		if err != nil {
 			return nil, http.StatusBadRequest, fmt.Errorf("failed to get arguments from body: %w", err)
 		}
 
-		entries := make(map[string]core.Pattern, len(params))
-		for _, param := range params {
-			if param.Name()[0] == '_' {
-				continue
-			}
-			entries[param.Name()] = param.Pattern()
-		}
-
-		parsed, err := core.ParseJSONRepresentation(handlerCtx, string(bytes.Bytes), handlerModuleParams.jsonBodyPattern)
+		v, err := core.ParseJSONRepresentation(handlerCtx, string(bytes.Bytes), handlerModuleParams.jsonBodyPattern)
 		if err != nil {
 			return nil, http.StatusBadRequest, fmt.Errorf("failed to get arguments from body: %w", err)
 		}
 
-		if !handlerModuleParams.jsonBodyPattern.Test(handlerCtx, parsed) {
-			return nil, http.StatusBadRequest, errors.New("request's body does not match module parameters")
+		obj, ok := v.(*core.Object)
+		if !ok {
+			return nil, http.StatusBadRequest, errors.New("JSON body should be an object")
 		}
 
-		obj := parsed.(*core.Object)
+		if !handlerModuleParams.jsonBodyPattern.Test(handlerCtx, obj) {
+			return nil, http.StatusBadRequest, errors.New("request's body does not match module parameters")
+		}
 
 		handlerModuleParams.jsonBodyPattern.ForEachEntry(func(propName string, propPattern core.Pattern, isOptional bool) error {
 			moduleArguments[propName] = obj.Prop(handlerCtx, propName)
