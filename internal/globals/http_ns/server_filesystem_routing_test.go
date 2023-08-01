@@ -101,4 +101,160 @@ func TestFilesystemRouting(t *testing.T) {
 			createClient,
 		)
 	})
+
+	t.Run("an error should be returned if a method-aspecific handler module has a non-injectable parameter", func(t *testing.T) {
+		runMappingTestCase(t,
+			serverTestCase{
+				input: `return {
+						routing: /routes/
+					}`,
+				makeFilesystem: func() afs.Filesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/x.ix", []byte(`
+							manifest {
+								parameters: {
+									name: %str
+								}
+							}
+	
+							return concat "name is " mod-args.name
+						`), fs_ns.DEFAULT_FILE_FMODE)
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						method:      "POST",
+						requestBody: `{"name": "foo"}`,
+						header:      http.Header{"Content-Type": []string{core.JSON_CTYPE}},
+
+						acceptedContentType: core.PLAIN_TEXT_CTYPE,
+						status:              http.StatusNotFound,
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
+	t.Run("method-specific handler module with parameters describing the body", func(t *testing.T) {
+		runMappingTestCase(t,
+			serverTestCase{
+				input: `return {
+						routing: /routes/
+					}`,
+				makeFilesystem: func() afs.Filesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/POST-x.ix", []byte(`
+							manifest {
+								parameters: {
+									name: %str
+								}
+							}
+	
+							return concat "name is " mod-args.name
+						`), fs_ns.DEFAULT_FILE_FMODE)
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						method:      "POST",
+						requestBody: `{"name": "foo"}`,
+						header:      http.Header{"Content-Type": []string{core.JSON_CTYPE}},
+
+						acceptedContentType: core.PLAIN_TEXT_CTYPE,
+						result:              `name is foo`,
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
+	t.Run("method-aspecific handler module with %(#POST) _method parameter should only accept POST requests", func(t *testing.T) {
+		runMappingTestCase(t,
+			serverTestCase{
+				input: `return {
+						routing: /routes/
+					}`,
+				makeFilesystem: func() afs.Filesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/x.ix", []byte(`
+							manifest {
+								parameters: {
+									_method: %(#POST)
+								}
+							}
+	
+							return "hello"
+						`), fs_ns.DEFAULT_FILE_FMODE)
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						method:      "POST",
+						requestBody: `{"name": "foo"}`,
+						header:      http.Header{"Content-Type": []string{core.JSON_CTYPE}},
+
+						acceptedContentType: core.PLAIN_TEXT_CTYPE,
+						result:              `hello`,
+					},
+					{
+						method:      "PATCH",
+						requestBody: `{"name": "foo"}`,
+						header:      http.Header{"Content-Type": []string{core.JSON_CTYPE}},
+
+						acceptedContentType: core.PLAIN_TEXT_CTYPE,
+						status:              http.StatusBadRequest,
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
+	t.Run("method-aspecific handler module with %reader _body parameter", func(t *testing.T) {
+		runMappingTestCase(t,
+			serverTestCase{
+				input: `return {
+						routing: /routes/
+					}`,
+				makeFilesystem: func() afs.Filesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/x.ix", []byte(`
+							manifest {
+								parameters: {
+									_body: %reader
+								}
+							}
+	
+							return mod-args._body.read_all!()
+						`), fs_ns.DEFAULT_FILE_FMODE)
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						method:      "POST",
+						requestBody: `body1`,
+						header:      http.Header{"Content-Type": []string{core.PLAIN_TEXT_CTYPE}},
+
+						acceptedContentType: core.APP_OCTET_STREAM_CTYPE,
+						result:              `body1`,
+					},
+					{
+						method:      "PATCH",
+						requestBody: `body2`,
+						header:      http.Header{"Content-Type": []string{core.PLAIN_TEXT_CTYPE}},
+
+						acceptedContentType: core.APP_OCTET_STREAM_CTYPE,
+						result:              `body2`,
+					},
+				},
+			},
+			createClient,
+		)
+	})
 }

@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	_cookiejar "net/http/cookiejar"
@@ -17,11 +18,13 @@ import (
 
 	"github.com/inoxlang/inox/internal/afs"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/default_state"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/rs/zerolog"
+	"golang.org/x/exp/slices"
 	"golang.org/x/net/publicsuffix"
 
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -39,6 +42,8 @@ var (
 	anyErr = errors.New("any")
 
 	port = atomic.Int32{}
+
+	toStr func(ctx *core.Context, arg core.Value) core.StringLike
 )
 
 func init() {
@@ -49,7 +54,7 @@ func init() {
 
 	if default_state.NewDefaultContext == nil {
 		default_state.SetNewDefaultContext(func(config default_state.DefaultContextConfig) (*core.Context, error) {
-			return core.NewContext(core.ContextConfig{
+			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
 					core.GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
 					core.GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
@@ -58,13 +63,50 @@ func init() {
 					core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
 				},
 				ParentContext: config.ParentContext,
-			}), nil
+			})
+
+			for k, v := range core.DEFAULT_NAMED_PATTERNS {
+				ctx.AddNamedPattern(k, v)
+			}
+
+			for k, v := range core.DEFAULT_PATTERN_NAMESPACES {
+				ctx.AddPatternNamespace(k, v)
+			}
+
+			return ctx, nil
 		})
 
 		default_state.SetNewDefaultGlobalStateFn(func(ctx *core.Context, conf default_state.DefaultGlobalStateConfig) (*core.GlobalState, error) {
 			return core.NewGlobalState(ctx), nil
 		})
 	}
+
+	toStr := func(ctx *core.Context, arg core.Value) core.StringLike {
+		switch a := arg.(type) {
+		case core.Bool:
+			if a {
+				return core.Str("true")
+			}
+			return core.Str("false")
+		case core.Integral:
+			return core.Str(core.Stringify(a, ctx))
+		case core.StringLike:
+			return a
+		case *core.ByteSlice:
+			return core.Str(a.Bytes) //TODO: panic if invalid characters ?
+		case *core.RuneSlice:
+			return core.Str(a.ElementsDoNotModify())
+		case core.ResourceName:
+			return core.Str(a.ResourceName())
+		default:
+			panic(fmt.Errorf("cannot convert value of type %T to string", a))
+		}
+	}
+
+	core.RegisterSymbolicGoFunction(toStr, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) symbolic.StringLike {
+		return symbolic.ANY_STR_LIKE
+	})
+
 }
 
 func TestHttpServerMissingProvidePermission(t *testing.T) {
@@ -573,6 +615,7 @@ func setupAdvancedTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalS
 		"mkbytes": core.WrapGoFunction(func(ctx *core.Context, size core.Int) *core.ByteSlice {
 			return &core.ByteSlice{Bytes: make([]byte, size), IsDataMutable: true}
 		}),
+		"tostr": core.WrapGoFunction(toStr),
 	})
 
 	// create logger
@@ -702,8 +745,17 @@ func runAdvancedServerTestCase(
 				method = info.method
 			}
 
+			var body io.Reader
+			if info.requestBody != "" {
+				if slices.Contains(METHODS_WITH_NO_BODY, method) {
+					assert.Fail(t, fmt.Sprintf("body provided but method is %s", method))
+					return
+				}
+				body = strings.NewReader(info.requestBody)
+			}
+
 			// we send a request to the server
-			req, _ := http.NewRequest(method, url, nil)
+			req, _ := http.NewRequest(method, url, body)
 
 			if info.acceptedContentType != "" {
 				req.Header.Add("Accept", string(info.acceptedContentType))
@@ -846,16 +898,17 @@ type requestTestInfo struct {
 	acceptedContentType core.Mimetype
 	path                string
 	method              string
+	header              http.Header
+	requestBody         string
 
+	//expected
 	result                        string // ignore if content type is event stream
 	resultRegex                   string // ignore if content type is event stream
 	checkIdenticalParallelRequest bool
-	header                        http.Header
-
-	events    []*core.Event
-	err       error
-	status    int //defaults to 200
-	okayIf429 bool
+	events                        []*core.Event
+	err                           error
+	status                        int //defaults to 200
+	okayIf429                     bool
 }
 
 type serverTestCase struct {

@@ -1,6 +1,8 @@
 package http_ns
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -35,12 +37,16 @@ func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn
 			return
 		}
 
+		//test different paths for the module
+
 		pathDir, pathBasename := filepath.Split(string(path))
 		modulePath := fls.Join(string(routingDirPath), pathDir, "/"+string(req.Method)+"-"+pathBasename+".ix")
+		methodSpecificModule := true
 
 		_, err := fls.Stat(modulePath)
 		if err != nil {
 			modulePath = fls.Join(string(routingDirPath), string(path)+".ix")
+			methodSpecificModule = false
 		}
 
 		_, err = fls.Stat(modulePath)
@@ -58,17 +64,38 @@ func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn
 
 		//TODO: check the file is not writable
 
-		result, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
-			Fpath:                     modulePath,
-			ParentContext:             handlerCtx,
-			ParentContextRequired:     true,
+		state, _, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+			Fpath:                 modulePath,
+			ParentContext:         handlerCtx,
+			ParentContextRequired: true,
+
 			ParsingCompilationContext: handlerCtx,
 			Out:                       handlerGlobalState.Out,
 			LogOut:                    handlerGlobalState.Logger,
 
 			FullAccessToDatabases: false, //databases should be passed by parent state
-			IgnoreHighRiskScore:   true,
 			PreinitFilesystem:     handlerCtx.GetFileSystem(),
+
+			GetArguments: func(manifest *core.Manifest) (*core.Struct, error) {
+				args, errStatusCode, err := getHandlerModuleArguments(req, manifest, handlerCtx, methodSpecificModule)
+				if err != nil {
+					rw.writeStatus(core.Int(errStatusCode))
+				}
+				return args, err
+			},
+		})
+
+		if err != nil {
+			handlerGlobalState.Logger.Err(err).Str("handler-module", modulePath).Send()
+			return
+		}
+
+		result, _, _, _, err := inox_ns.RunPreparedScript(inox_ns.RunPreparedScriptArgs{
+			State: state,
+
+			ParentContext:             handlerCtx,
+			ParsingCompilationContext: handlerCtx,
+			IgnoreHighRiskScore:       true,
 		})
 
 		if err != nil {
@@ -87,4 +114,130 @@ func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn
 			isMiddleware: false,
 		})
 	}
+}
+
+func getHandlerModuleArguments(req *HttpRequest, manifest *core.Manifest, handlerCtx *core.Context, methodSpecificModule bool) (
+	_ *core.Struct,
+	errStatusCode int,
+	_ error,
+) {
+
+	if len(manifest.Parameters.PositionalParameters()) > 0 {
+		return nil, http.StatusNotFound, errors.New("there should not be positional parameters")
+	}
+
+	params := manifest.Parameters.NonPositionalParameters()
+	handlerModuleParams, err := getHandlerModuleParameters(handlerCtx, manifest, methodSpecificModule)
+	if err != nil {
+		return nil, http.StatusNotFound, err
+	}
+
+	moduleArguments := map[string]core.Value{}
+	method := core.Identifier(req.Method)
+
+	if handlerModuleParams.methodPattern != nil {
+		if !handlerModuleParams.methodPattern.Test(handlerCtx, method) {
+			return nil, http.StatusBadRequest, errors.New("method is not accepted")
+		}
+		moduleArguments["_method"] = method
+	}
+
+	if handlerModuleParams.bodyReader {
+		moduleArguments["_body"] = req.Body
+	} else if handlerModuleParams.jsonBodyPattern != nil {
+		// if there is no request parameter the parameters are assumed to describe the JSON content of the body.
+		bytes, err := req.Body.ReadAll()
+		if err != nil {
+			return nil, http.StatusBadRequest, fmt.Errorf("failed to get arguments from body: %w", err)
+		}
+
+		entries := make(map[string]core.Pattern, len(params))
+		for _, param := range params {
+			if param.Name()[0] == '_' {
+				continue
+			}
+			entries[param.Name()] = param.Pattern()
+		}
+
+		parsed, err := core.ParseJSONRepresentation(handlerCtx, string(bytes.Bytes), handlerModuleParams.jsonBodyPattern)
+		if err != nil {
+			return nil, http.StatusBadRequest, fmt.Errorf("failed to get arguments from body: %w", err)
+		}
+
+		if !handlerModuleParams.jsonBodyPattern.Test(handlerCtx, parsed) {
+			return nil, http.StatusBadRequest, errors.New("request's body does not match module parameters")
+		}
+
+		obj := parsed.(*core.Object)
+
+		handlerModuleParams.jsonBodyPattern.ForEachEntry(func(propName string, propPattern core.Pattern, isOptional bool) error {
+			moduleArguments[propName] = obj.Prop(handlerCtx, propName)
+			return nil
+		})
+	}
+	return core.NewStructFromMap(moduleArguments), 0, nil
+}
+
+func getHandlerModuleParameters(ctx *core.Context, manifest *core.Manifest, methodSpecificModule bool) (handlerModuleParameters, error) {
+	if len(manifest.Parameters.PositionalParameters()) > 0 {
+		return handlerModuleParameters{}, errors.New("there should not be positional parameters")
+	}
+
+	var handlerModuleParams handlerModuleParameters
+	var jsonBodyParams []core.ModuleParameter
+	nonPositionalParams := manifest.Parameters.NonPositionalParameters()
+
+	for _, param := range nonPositionalParams {
+		paramName := param.Name()
+
+		if paramName[0] == '_' {
+			switch paramName {
+			case "_method":
+				handlerModuleParams.methodPattern = param.Pattern()
+			case "_body":
+				if param.Pattern() != core.READER_PATTERN {
+					return handlerModuleParameters{}, fmt.Errorf("parameter '%s' should have %%reader as pattern", paramName)
+				}
+				handlerModuleParams.bodyReader = true
+				if jsonBodyParams != nil {
+					return handlerModuleParameters{}, errors.New("parameter _body should not be present since some body parameters are specified")
+				}
+			default:
+				return handlerModuleParameters{}, fmt.Errorf("unknown parameter name '%s'", paramName)
+			}
+			continue
+		}
+
+		if !methodSpecificModule {
+			return handlerModuleParameters{}, fmt.Errorf("unexpected body parameter '%s': handler module is not method specific", paramName)
+		}
+
+		if handlerModuleParams.bodyReader {
+			return handlerModuleParameters{}, errors.New("parameter _body should not be present since some body parameters are specified")
+		}
+
+		jsonBodyParams = append(jsonBodyParams, param)
+	}
+
+	if jsonBodyParams != nil {
+		entries := map[string]core.Pattern{}
+		optionalEntries := map[string]struct{}{}
+
+		for _, param := range jsonBodyParams {
+			entries[param.Name()] = param.Pattern()
+			if !param.Required(ctx) {
+				optionalEntries[param.Name()] = struct{}{}
+			}
+		}
+
+		handlerModuleParams.jsonBodyPattern = core.NewInexactObjectPatternWithOptionalProps(entries, optionalEntries)
+	}
+
+	return handlerModuleParams, nil
+}
+
+type handlerModuleParameters struct {
+	methodPattern   core.Pattern
+	bodyReader      bool
+	jsonBodyPattern *core.ObjectPattern //only for method-specific modules
 }
