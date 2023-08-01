@@ -350,7 +350,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		assert.Equal(t, core.Host("ldb://main"), state.Databases["local"].Resource())
 	})
 
-	t.Run("manifest & symbolic eval should be ignored when there is a preinit check error", func(t *testing.T) {
+	t.Run("manifest & symbolic eval should be ignored when there is a preinit check error: dev mode", func(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
@@ -381,6 +381,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			ParentContext:             ctx,
 			ParentContextRequired:     true,
 			Out:                       io.Discard,
+			DevMode:                   true,
 		})
 
 		if !assert.Error(t, err) {
@@ -411,7 +412,54 @@ func TestPrepareLocalScript(t *testing.T) {
 		assert.True(t, state.SymbolicData.IsEmpty())
 	})
 
-	t.Run("manifest & symbolic eval should be ignored when there is a manifest check error", func(t *testing.T) {
+	t.Run("manifest & symbolic eval should be ignored when there is a preinit check error: regular mode", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+
+		os.WriteFile(file, []byte(`
+			preinit {
+				go do {}
+			}
+			manifest {
+				permissions: {
+					read: https://localhost
+				}
+			}
+		`), 0o600)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(
+				core.GetDefaultGlobalVarPermissions(),
+				core.CreateHttpReadPerm(core.Host("https://localhost")),
+			),
+			Filesystem: fs_ns.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx)
+
+		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+			DevMode:                   false,
+		})
+
+		if !assert.Error(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should not be present as we are not in dev mode
+		assert.Nil(t, state)
+	})
+
+	t.Run("manifest & symbolic eval should be ignored when there is a manifest check error: dev mode", func(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
@@ -440,6 +488,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			ParentContext:             ctx,
 			ParentContextRequired:     true,
 			Out:                       io.Discard,
+			DevMode:                   true,
 		})
 
 		if !assert.Error(t, err) {
@@ -463,6 +512,51 @@ func TestPrepareLocalScript(t *testing.T) {
 
 		// symbolic check should not have been performed
 		assert.True(t, state.SymbolicData.IsEmpty())
+	})
+
+	t.Run("manifest & symbolic eval should be ignored when there is a manifest check error: regular mode", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				permissions: {
+					read: https://localhost
+				}
+				env: 1
+			}
+		`), 0o600)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(
+				core.GetDefaultGlobalVarPermissions(),
+				core.CreateHttpReadPerm(core.Host("https://localhost")),
+			),
+			Filesystem: fs_ns.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx)
+
+		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+			DevMode:                   false,
+		})
+
+		if !assert.Error(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should not be present as we are not in dev mode
+		assert.Nil(t, state)
 	})
 
 	t.Run("invalid CLI arguments: missing positional argument", func(t *testing.T) {

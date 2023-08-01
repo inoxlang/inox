@@ -115,6 +115,11 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			IgnoreConstDeclErrors: args.DevMode,
 		})
 
+		if !args.DevMode && preinitErr != nil {
+			finalErr = preinitErr
+			return
+		}
+
 		if manifest == nil {
 			manifest = core.NewEmptyManifest()
 		}
