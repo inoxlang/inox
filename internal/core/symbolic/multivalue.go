@@ -170,28 +170,6 @@ func (mv *Multivalue) WidenSimpleValues() SymbolicValue {
 	return mv
 }
 
-func (mv *Multivalue) Widen() (SymbolicValue, bool) {
-	widenedValues := make([]SymbolicValue, len(mv.values))
-
-	for i, val := range mv.values {
-		if !val.IsWidenable() {
-			return nil, false
-		}
-		widenedValues[i], _ = val.Widen()
-	}
-
-	return joinValues(widenedValues), true
-}
-
-func (mv *Multivalue) IsWidenable() bool {
-	for _, val := range mv.values {
-		if !val.IsWidenable() {
-			return false
-		}
-	}
-	return true
-}
-
 func (mv *Multivalue) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.PanicIfErr(w.WriteByte('('))
 

@@ -17,18 +17,6 @@ func TestSymbolicByteSlice(t *testing.T) {
 		assert.False(t, slice.Test(&Int{}))
 	})
 
-	t.Run("IsWidenable()", func(t *testing.T) {
-		assert.False(t, (&ByteSlice{}).IsWidenable())
-	})
-
-	t.Run("Widen()", func(t *testing.T) {
-		slice := &ByteSlice{}
-
-		assert.False(t, slice.IsWidenable())
-		widened, ok := slice.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }
 
 func TestSymbolicByte(t *testing.T) {
@@ -41,19 +29,6 @@ func TestSymbolicByte(t *testing.T) {
 		assert.False(t, byte.Test(&Int{}))
 	})
 
-	t.Run("IsWidenable()", func(t *testing.T) {
-		assert.False(t, (&Byte{}).IsWidenable())
-	})
-
-	t.Run("Widen()", func(t *testing.T) {
-		byte := &Byte{}
-
-		assert.False(t, byte.IsWidenable())
-
-		widened, ok := byte.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }
 
 func TestSymbolicAnyByteLike(t *testing.T) {
@@ -68,16 +43,4 @@ func TestSymbolicAnyByteLike(t *testing.T) {
 		assert.False(t, bytesLike.Test(&Int{}))
 	})
 
-	t.Run("IsWidenable()", func(t *testing.T) {
-		assert.False(t, (&AnyBytesLike{}).IsWidenable())
-	})
-
-	t.Run("Widen()", func(t *testing.T) {
-		bytesLike := &AnyBytesLike{}
-
-		assert.False(t, bytesLike.IsWidenable())
-		widened, ok := bytesLike.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }

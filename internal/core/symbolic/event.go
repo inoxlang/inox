@@ -59,14 +59,6 @@ func (*EventSource) PropertyNames() []string {
 func (s *EventSource) Close() {
 }
 
-func (s *EventSource) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (s *EventSource) IsWidenable() bool {
-	return false
-}
-
 func (s *EventSource) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%event-source")))
 	return
@@ -114,14 +106,6 @@ func (e *Event) Prop(name string) SymbolicValue {
 	default:
 		panic(FormatErrPropertyDoesNotExist(name, e))
 	}
-}
-
-func (r *Event) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (r *Event) IsWidenable() bool {
-	return false
 }
 
 func (r *Event) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

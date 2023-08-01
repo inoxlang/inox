@@ -67,14 +67,6 @@ func (t *Tree) Get(ctx *symbolic.Context, k symbolic.SymbolicValue) symbolic.Sym
 	return &symbolic.Any{}
 }
 
-func (t *Tree) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (t *Tree) IsWidenable() bool {
-	return false
-}
-
 func (t *Tree) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%tree")))
 	return
@@ -176,14 +168,6 @@ func (n *TreeNode) IteratorElementValue() symbolic.SymbolicValue {
 	return n
 }
 
-func (r *TreeNode) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *TreeNode) IsWidenable() bool {
-	return false
-}
-
 func (r *TreeNode) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%tree-node")))
 }
@@ -219,14 +203,6 @@ func (p *TreeNodePattern) TestValue(v symbolic.SymbolicValue) bool {
 	}
 	return false
 	//TODO: test nodes's value
-}
-
-func (p *TreeNodePattern) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (p *TreeNodePattern) IsWidenable() bool {
-	return false
 }
 
 func (p *TreeNodePattern) HasUnderylingPattern() bool {

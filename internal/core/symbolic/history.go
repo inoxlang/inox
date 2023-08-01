@@ -93,14 +93,6 @@ func (*ValueHistory) PropertyNames() []string {
 	return VALUE_HISTORY_PROPNAMES
 }
 
-func (h *ValueHistory) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (h *ValueHistory) IsWidenable() bool {
-	return false
-}
-
 func (h *ValueHistory) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%value-history")))
 	return

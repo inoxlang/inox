@@ -53,14 +53,6 @@ func (*Stack) Peek(ctx *symbolic.Context) symbolic.SymbolicValue {
 	return &symbolic.Any{}
 }
 
-func (*Stack) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (*Stack) IsWidenable() bool {
-	return false
-}
-
 func (*Stack) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%set")))
 	return

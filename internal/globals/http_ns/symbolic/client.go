@@ -45,14 +45,6 @@ func (*HttpClient) Schemes() []string {
 	return []string{"http", "https"}
 }
 
-func (c *HttpClient) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (c *HttpClient) IsWidenable() bool {
-	return false
-}
-
 func (c *HttpClient) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%http-client")))
 	return

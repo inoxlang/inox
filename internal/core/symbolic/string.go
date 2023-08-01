@@ -71,17 +71,6 @@ func (s *String) Test(v SymbolicValue) bool {
 	return otherString.hasValue && s.value == otherString.value
 }
 
-func (s *String) Widen() (SymbolicValue, bool) {
-	if s.hasValue {
-		return ANY_STR, true
-	}
-	return nil, false
-}
-
-func (s *String) IsWidenable() bool {
-	return s.hasValue
-}
-
 func (s *String) Static() Pattern {
 	return &TypePattern{val: ANY_STR}
 }
@@ -124,15 +113,15 @@ func (s *String) underylingString() *String {
 }
 
 func (s *String) GetOrBuildString() *String {
-	return &String{}
+	return s
 }
 
 func (f *String) WidestOfType() SymbolicValue {
-	return &String{}
+	return ANY_STR
 }
 
 func (s *String) Reader() *Reader {
-	return &Reader{}
+	return ANY_READER
 }
 
 func (p *String) PropertyNames() []string {
@@ -200,17 +189,6 @@ func (r *Rune) Test(v SymbolicValue) bool {
 	return otherRune.hasValue && r.value == otherRune.value
 }
 
-func (r *Rune) Widen() (SymbolicValue, bool) {
-	if r.hasValue {
-		return ANY_RUNE, true
-	}
-	return nil, false
-}
-
-func (r *Rune) IsWidenable() bool {
-	return r.hasValue
-}
-
 func (r *Rune) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if r.hasValue {
 		utils.Must(w.Write(utils.StringAsBytes(commonfmt.FmtRune(r.value))))
@@ -250,14 +228,6 @@ func (s *CheckedString) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (s *CheckedString) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *CheckedString) IsWidenable() bool {
-	return false
-}
-
 func (s *CheckedString) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%checked-string")))
 }
@@ -293,14 +263,6 @@ type RuneSlice struct {
 func (s *RuneSlice) Test(v SymbolicValue) bool {
 	_, ok := v.(*RuneSlice)
 	return ok
-}
-
-func (s *RuneSlice) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (s *RuneSlice) IsWidenable() bool {
-	return false
 }
 
 func (s *RuneSlice) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -411,14 +373,6 @@ func (c *StringConcatenation) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (c *StringConcatenation) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (c *StringConcatenation) IsWidenable() bool {
-	return false
-}
-
 func (c *StringConcatenation) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%string-concatenation")))
 }
@@ -496,14 +450,6 @@ type AnyStringLike struct {
 func (s *AnyStringLike) Test(v SymbolicValue) bool {
 	_, ok := v.(StringLike)
 	return ok
-}
-
-func (s *AnyStringLike) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (s *AnyStringLike) IsWidenable() bool {
-	return false
 }
 
 func (s *AnyStringLike) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

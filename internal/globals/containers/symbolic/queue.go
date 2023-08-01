@@ -53,14 +53,6 @@ func (*Queue) Peek(ctx *symbolic.Context) (symbolic.SymbolicValue, *symbolic.Boo
 	return &symbolic.Any{}, nil
 }
 
-func (*Queue) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (*Queue) IsWidenable() bool {
-	return false
-}
-
 func (*Queue) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%queue")))
 	return

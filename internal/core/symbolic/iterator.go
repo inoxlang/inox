@@ -40,14 +40,6 @@ func (*AnyIterable) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (*AnyIterable) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (*AnyIterable) IsWidenable() bool {
-	return false
-}
-
 func (*AnyIterable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%iterable")))
 }
@@ -75,14 +67,6 @@ func (r *AnySerializableIterable) Test(v SymbolicValue) bool {
 	_, isSerializable := v.(Serializable)
 
 	return isIterable && isSerializable
-}
-
-func (r *AnySerializableIterable) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *AnySerializableIterable) IsWidenable() bool {
-	return false
 }
 
 func (r *AnySerializableIterable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -116,17 +100,6 @@ func (r *Iterator) Test(v SymbolicValue) bool {
 		return true
 	}
 	return r.ElementValue.Test(it.ElementValue)
-}
-
-func (r *Iterator) Widen() (SymbolicValue, bool) {
-	if !r.IsWidenable() {
-		return nil, false
-	}
-	return &Iterator{}, true
-}
-
-func (r *Iterator) IsWidenable() bool {
-	return r.ElementValue != nil
 }
 
 func (r *Iterator) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

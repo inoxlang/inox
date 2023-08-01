@@ -99,17 +99,6 @@ func (fn *InoxFunction) IsShared() bool {
 	return fn.originState != nil
 }
 
-func (fn *InoxFunction) Widen() (SymbolicValue, bool) {
-	if fn.node == nil {
-		return nil, false
-	}
-	return &InoxFunction{}, true
-}
-
-func (fn *InoxFunction) IsWidenable() bool {
-	return fn.node != nil
-}
-
 func (fn *InoxFunction) WatcherElement() SymbolicValue {
 	return ANY
 }
@@ -239,17 +228,6 @@ func (fn *GoFunction) Share(originState *State) PotentiallySharable {
 
 func (fn *GoFunction) IsShared() bool {
 	return fn.originState != nil
-}
-
-func (fn *GoFunction) Widen() (SymbolicValue, bool) {
-	if fn.fn == nil {
-		return nil, false
-	}
-	return &GoFunction{}, true
-}
-
-func (fn *GoFunction) IsWidenable() bool {
-	return fn.fn != nil
 }
 
 func (fn *GoFunction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -533,12 +511,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 			// 	arg = extVal.value
 			// }
 
-			widenedArg := arg
-			for !IsAnyOrAnySerializable(widenedArg) && !param.Test(widenedArg) {
-				widenedArg = widenOrAny(widenedArg)
-			}
-
-			if !param.Test(widenedArg) {
+			if !param.Test(arg) {
 				if _, ok := argNode.(*parse.RuntimeTypeCheckExpression); ok {
 					args[paramIndex] = param
 					pattern, ok := extData.SymbolicToPattern(param)
@@ -557,7 +530,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 				if _, ok := argNode.(*parse.RuntimeTypeCheckExpression); ok {
 					state.symbolicData.SetRuntimeTypecheckPattern(argNode, nil)
 				}
-				args[paramIndex] = widenedArg
+				args[paramIndex] = arg
 			}
 		} else { //if not enough arguments
 			enoughArgs = false
@@ -569,12 +542,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 		variadicArgs := args[nonVariadicParamCount:]
 
 		for i, arg := range variadicArgs {
-			widenedArg := arg.(SymbolicValue)
-			for !IsAnyOrAnySerializable(widenedArg) && !goFunc.variadicElem.Test(widenedArg) {
-				widenedArg = widenOrAny(widenedArg)
-			}
-
-			if !goFunc.variadicElem.Test(widenedArg) {
+			if !goFunc.variadicElem.Test(arg.(SymbolicValue)) {
 				position := i + nonVariadicParamCount
 				if goFunc.isfirstArgCtx {
 					position -= 1
@@ -582,7 +550,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 				state.addError(makeSymbolicEvalError(callLikeNode, state, FmtInvalidArg(position, arg.(SymbolicValue), goFunc.variadicElem)))
 				variadicArgs[i] = goFunc.variadicElem
 			} else {
-				variadicArgs[i] = widenedArg
+				variadicArgs[i] = arg
 			}
 		}
 	}
@@ -789,14 +757,6 @@ func (f *Function) Test(v SymbolicValue) bool {
 	default:
 		return false
 	}
-}
-
-func (f *Function) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (f *Function) IsWidenable() bool {
-	return false
 }
 
 func (f *Function) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

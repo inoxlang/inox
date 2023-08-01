@@ -49,14 +49,6 @@ func (r *XMLElement) Test(v SymbolicValue) bool {
 	}
 }
 
-func (r *XMLElement) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (r *XMLElement) IsWidenable() bool {
-	return false
-}
-
 func (r *XMLElement) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%xml-element")))
 	return

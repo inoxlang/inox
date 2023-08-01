@@ -90,14 +90,6 @@ func (g *SystemGraph) IsShared() bool {
 	return true
 }
 
-func (g *SystemGraph) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (g *SystemGraph) IsWidenable() bool {
-	return false
-}
-
 func (g *SystemGraph) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%system-graph")))
 	return
@@ -135,14 +127,6 @@ func (n *SystemGraphNodes) Share(originState *State) PotentiallySharable {
 
 func (n *SystemGraphNodes) IsShared() bool {
 	return true
-}
-
-func (d *SystemGraphNodes) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (d *SystemGraphNodes) IsWidenable() bool {
-	return false
 }
 
 func (d *SystemGraphNodes) IteratorElementKey() SymbolicValue {
@@ -215,14 +199,6 @@ func (n *SystemGraphNode) IsShared() bool {
 	return true
 }
 
-func (n *SystemGraphNode) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (n *SystemGraphNode) IsWidenable() bool {
-	return false
-}
-
 func (n *SystemGraphNode) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%system-graph-node")))
 	return
@@ -285,14 +261,6 @@ func (n *SystemGraphEvent) IsShared() bool {
 	return true
 }
 
-func (n *SystemGraphEvent) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (n *SystemGraphEvent) IsWidenable() bool {
-	return false
-}
-
 func (n *SystemGraphEvent) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%system-graph-event")))
 	return
@@ -341,14 +309,6 @@ func (e *SystemGraphEdge) WithExistingPropReplaced(name string, value SymbolicVa
 
 func (e *SystemGraphEdge) PropertyNames() []string {
 	return SYSTEM_GRAP_EDGE_PROPNAMES
-}
-
-func (e *SystemGraphEdge) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (e *SystemGraphEdge) IsWidenable() bool {
-	return false
 }
 
 func (e *SystemGraphEdge) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

@@ -65,14 +65,6 @@ func (HttpRequest) PropertyNames() []string {
 	return HTTP_REQUEST_PROPNAMES
 }
 
-func (r *HttpRequest) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *HttpRequest) IsWidenable() bool {
-	return false
-}
-
 func (r *HttpRequest) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%http.req")))
 }

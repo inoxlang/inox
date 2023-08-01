@@ -210,7 +210,6 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 			for i, arg := range currentArgs {
 
-				widenedArg := arg
 				var argNode parse.Node
 				if i < nonSpreadArgCount {
 					argNode = argNodes[i]
@@ -218,11 +217,11 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 				paramType := paramTypes[i]
 
-				for !IsAnyOrAnySerializable(widenedArg) && !paramType.Test(widenedArg) {
-					widenedArg = widenOrAny(widenedArg)
-				}
+				// for !IsAnyOrAnySerializable(widenedArg) && !paramType.Test(widenedArg) {
+				// 	widenedArg = widenOrAny(widenedArg)
+				// }
 
-				if !paramType.Test(widenedArg) {
+				if !paramType.Test(arg) {
 					if argNode != nil {
 						//if the argument node is a runtime check expression we store
 						//the pattern that will be used at runtime to perform the check
@@ -257,7 +256,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 					if _, ok := argNode.(*parse.RuntimeTypeCheckExpression); ok {
 						state.symbolicData.SetRuntimeTypecheckPattern(argNode, nil)
 					}
-					args[i] = widenedArg
+					args[i] = arg
 				}
 			}
 
@@ -366,17 +365,16 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		paramType := pattern.SymbolicValue()
 		params = append(params, paramType)
 
-		widenedArg := arg
 		var argNode parse.Node
 		if i < nonSpreadArgCount {
 			argNode = argNodes[i]
 		}
 
-		for !IsAnyOrAnySerializable(widenedArg) && !paramType.Test(widenedArg) {
-			widenedArg = widenOrAny(widenedArg)
-		}
+		// for !IsAnyOrAnySerializable(widenedArg) && !paramType.Test(widenedArg) {
+		// 	widenedArg = widenOrAny(widenedArg)
+		// }
 
-		if !paramType.Test(widenedArg) {
+		if !paramType.Test(arg) {
 			if argNode != nil {
 				if _, ok := argNode.(*parse.RuntimeTypeCheckExpression); ok {
 					args[i] = paramType
@@ -409,7 +407,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			if _, ok := argNode.(*parse.RuntimeTypeCheckExpression); ok {
 				state.symbolicData.SetRuntimeTypecheckPattern(argNode, nil)
 			}
-			args[i] = widenedArg
+			args[i] = arg
 		}
 	}
 

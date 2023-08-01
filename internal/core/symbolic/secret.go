@@ -35,14 +35,6 @@ func (r *Secret) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (r *Secret) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (r *Secret) IsWidenable() bool {
-	return false
-}
-
 func (r *Secret) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%secret")))
 }
@@ -94,14 +86,6 @@ func (pattern *SecretPattern) PrettyPrint(w *bufio.Writer, config *pprint.Pretty
 	utils.Must(w.Write(utils.StringAsBytes("%secret-pattern(")))
 	pattern.stringPattern.PrettyPrint(w, config, 0, 0)
 	utils.Must(w.Write(utils.StringAsBytes(")")))
-}
-
-func (secret *SecretPattern) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (pattern *SecretPattern) IsWidenable() bool {
-	return false
 }
 
 func (pattern *SecretPattern) WidestOfType() SymbolicValue {

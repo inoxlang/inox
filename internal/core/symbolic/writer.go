@@ -31,14 +31,6 @@ func (r *AnyWritable) Test(v SymbolicValue) bool {
 	}
 }
 
-func (r *AnyWritable) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (r *AnyWritable) IsWidenable() bool {
-	return false
-}
-
 func (r *AnyWritable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%writable")))
 	return
@@ -98,14 +90,6 @@ func (Writer *Writer) Writer() *Writer {
 
 func (Writer) PropertyNames() []string {
 	return []string{"write"}
-}
-
-func (w *Writer) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (*Writer) IsWidenable() bool {
-	return false
 }
 
 func (*Writer) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

@@ -73,14 +73,6 @@ func (*LSPSession) PropertyNames() []string {
 	return LSP_SESSION_PROPNAMES
 }
 
-func (r *LSPSession) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (s *LSPSession) IsWidenable() bool {
-	return false
-}
-
 func (r *LSPSession) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%lsp-session")))
 }

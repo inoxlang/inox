@@ -65,14 +65,6 @@ func (r *Shell) Writer() *symbolic.Writer {
 	return &symbolic.Writer{}
 }
 
-func (r *Shell) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (r *Shell) IsWidenable() bool {
-	return false
-}
-
 func (r *Shell) IsMutable() bool {
 	return true
 }

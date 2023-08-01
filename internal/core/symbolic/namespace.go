@@ -61,34 +61,6 @@ func (ns *Namespace) PropertyNames() []string {
 	return utils.GetMapKeys(ns.entries)
 }
 
-func (ns *Namespace) Widen() (SymbolicValue, bool) {
-	if ns.entries == nil {
-		return nil, false
-	}
-
-	widenedEntries := map[string]SymbolicValue{}
-	allAlreadyWidened := true
-
-	for k, v := range ns.entries {
-		widened, ok := v.Widen()
-		if ok {
-			allAlreadyWidened = false
-			v = widened
-		}
-		widenedEntries[k] = v
-	}
-
-	if allAlreadyWidened {
-		return &Namespace{}, true
-	}
-
-	return &Namespace{entries: widenedEntries}, true
-}
-
-func (ns *Namespace) IsWidenable() bool {
-	return ns.entries != nil
-}
-
 func (ns *Namespace) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if ns.entries != nil {
 		if depth > config.MaxDepth && len(ns.entries) > 0 {

@@ -59,14 +59,6 @@ func (*Map) Get(ctx *symbolic.Context, k symbolic.SymbolicValue) symbolic.Symbol
 	return &symbolic.Any{}
 }
 
-func (*Map) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *Map) IsWidenable() bool {
-	return false
-}
-
 func (*Map) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%map")))
 	return

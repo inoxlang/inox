@@ -28,22 +28,6 @@ func TestMultiValue(t *testing.T) {
 		assert.False(t, intListOrStringList.Test(anyList))
 	})
 
-	t.Run("Widen() & IsWidenable()", func(t *testing.T) {
-		intOrNil := NewMultivalue(&Int{}, Nil)
-		assert.False(t, intOrNil.IsWidenable())
-
-		widened, ok := intOrNil.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-
-		identAOrIdentB := NewMultivalue(&Identifier{name: "a"}, &Identifier{name: "b"})
-		assert.True(t, identAOrIdentB.IsWidenable())
-
-		widened, ok = identAOrIdentB.Widen()
-		assert.True(t, ok)
-		assert.Equal(t, &Identifier{}, widened)
-	})
-
 	t.Run("as Indexable", func(t *testing.T) {
 		assert.Implements(t, (*Indexable)(nil), NewMultivalue(
 			Indexable(NewListOf(ANY_SERIALIZABLE)),

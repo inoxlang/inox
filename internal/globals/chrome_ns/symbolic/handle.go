@@ -25,14 +25,6 @@ func (r *Handle) Test(v symbolic.SymbolicValue) bool {
 	return ok
 }
 
-func (r *Handle) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *Handle) IsWidenable() bool {
-	return false
-}
-
 func (r *Handle) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%browser-handle")))
 }

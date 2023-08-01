@@ -49,14 +49,6 @@ func (conn *TcpConn) write(ctx *symbolic.Context, data symbolic.Readable) *symbo
 func (conn *TcpConn) close(ctx *symbolic.Context) {
 }
 
-func (r *TcpConn) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *TcpConn) IsWidenable() bool {
-	return false
-}
-
 func (r *TcpConn) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%tcp-conn")))
 }

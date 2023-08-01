@@ -50,14 +50,6 @@ func (r *RandomnessSource) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (r *RandomnessSource) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (r *RandomnessSource) IsWidenable() bool {
-	return false
-}
-
 func (r *RandomnessSource) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%random-source")))
 	return

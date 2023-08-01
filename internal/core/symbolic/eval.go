@@ -479,12 +479,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				}
 				static = type_.(Pattern)
 
-				widenedRight := right
-				for !IsAnyOrAnySerializable(widenedRight) && !static.TestValue(widenedRight) {
-					widenedRight = widenOrAny(widenedRight)
-				}
-
-				if !static.TestValue(widenedRight) {
+				if !static.TestValue(right) {
 					state.addError(makeSymbolicEvalError(decl.Right, state, fmtNotAssignableToVarOftype(right, static)))
 					right = ANY
 				} else {
@@ -869,14 +864,6 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		if err != nil {
 			return nil, err
-		}
-
-		for !IsAnyOrAnySerializable(right) {
-			if _, ok := right.(Sequence); !ok {
-				right = widenOrAny(right)
-			} else {
-				break
-			}
 		}
 
 		seq, ok := right.(Sequence)

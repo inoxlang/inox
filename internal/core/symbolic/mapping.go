@@ -26,14 +26,6 @@ func (m *Mapping) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (m *Mapping) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (m *Mapping) IsWidenable() bool {
-	return false
-}
-
 func (m *Mapping) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%mapping")))
 	return

@@ -39,17 +39,6 @@ func (n *AstNode) Test(v SymbolicValue) bool {
 	}
 }
 
-func (n *AstNode) Widen() (SymbolicValue, bool) {
-	if n.Node == nil {
-		return nil, false
-	}
-	return &AstNode{}, true
-}
-
-func (n *AstNode) IsWidenable() bool {
-	return n.Node != nil
-}
-
 func (n *AstNode) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if n.Node == nil {
 		utils.Must(w.Write(utils.StringAsBytes("%ast-node")))
@@ -91,14 +80,6 @@ func (n *Token) Test(v SymbolicValue) bool {
 		return false
 	}
 	return ok
-}
-
-func (t *Token) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (t *Token) IsWidenable() bool {
-	return false
 }
 
 func (t *Token) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

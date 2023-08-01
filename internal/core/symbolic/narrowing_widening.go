@@ -21,18 +21,6 @@ func getStatic(value SymbolicValue) Pattern {
 	return &TypePattern{val: value}
 }
 
-// widenOrAny returns the widened value of the passed value, if widening is not possible any is returned.
-func widenOrAny(value SymbolicValue) SymbolicValue {
-	if value.IsWidenable() {
-		widened, _ := value.Widen()
-		return widened
-	}
-	if _, ok := value.(Serializable); ok {
-		return ANY_SERIALIZABLE
-	}
-	return ANY
-}
-
 // join values joins a list of values into a single value by searching for equality/inclusion, the passed list is never modified.
 func joinValues(values []SymbolicValue) SymbolicValue {
 

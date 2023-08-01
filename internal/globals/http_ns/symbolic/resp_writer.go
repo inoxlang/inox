@@ -59,14 +59,6 @@ func (*HttpResponseWriter) PropertyNames() []string {
 	return HTTP_RESP_WRITER_PROPNAMES
 }
 
-func (r *HttpResponseWriter) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *HttpResponseWriter) IsWidenable() bool {
-	return false
-}
-
 func (r *HttpResponseWriter) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%http-response-writer")))
 }

@@ -313,13 +313,7 @@ func (state *State) updateLocal(name string, value SymbolicValue, node parse.Nod
 		info.value = value
 
 		if !isNever(value) {
-			widenedValue := value
-
-			for !IsAnyOrAnySerializable(widenedValue) && !info.static.TestValue(widenedValue) {
-				widenedValue = widenOrAny(widenedValue)
-			}
-
-			if !info.static.TestValue(widenedValue) {
+			if !info.static.TestValue(value) {
 				state.addError(makeSymbolicEvalError(node, state, fmtNotAssignableToVarOftype(value, info.static)))
 				return false
 			}
@@ -336,13 +330,7 @@ func (state *State) updateGlobal(name string, value SymbolicValue, node parse.No
 		info.value = value
 
 		if !isNever(value) {
-			widenedValue := value
-
-			for !IsAnyOrAnySerializable(widenedValue) && !info.static.TestValue(widenedValue) {
-				widenedValue = widenOrAny(widenedValue)
-			}
-
-			if !info.static.TestValue(widenedValue) {
+			if !info.static.TestValue(value) {
 				state.addError(makeSymbolicEvalError(node, state, fmtNotAssignableToVarOftype(value, info.static)))
 				return false
 			}

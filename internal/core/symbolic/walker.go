@@ -29,14 +29,6 @@ func (r *AnyWalkable) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (r *AnyWalkable) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *AnyWalkable) IsWidenable() bool {
-	return false
-}
-
 func (r *AnyWalkable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%walkable")))
 	return
@@ -59,14 +51,6 @@ func (r *Walker) Test(v SymbolicValue) bool {
 	_, ok := v.(*Walker)
 
 	return ok
-}
-
-func (r *Walker) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *Walker) IsWidenable() bool {
-	return false
 }
 
 func (r *Walker) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

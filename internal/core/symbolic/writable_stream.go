@@ -30,14 +30,6 @@ func (r *AnyStreamSink) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (r *AnyStreamSink) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *AnyStreamSink) IsWidenable() bool {
-	return false
-}
-
 func (r *AnyStreamSink) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%stream-sink")))
 }
@@ -74,17 +66,6 @@ func (r *WritableStream) Test(v SymbolicValue) bool {
 		return true
 	}
 	return r.element.Test(it.element)
-}
-
-func (r *WritableStream) Widen() (SymbolicValue, bool) {
-	if !r.IsWidenable() {
-		return nil, false
-	}
-	return &WritableStream{}, true
-}
-
-func (r *WritableStream) IsWidenable() bool {
-	return r.element != nil
 }
 
 func (r *WritableStream) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

@@ -30,14 +30,6 @@ func (n *ContentSecurityPolicy) Test(v symbolic.SymbolicValue) bool {
 	return true
 }
 
-func (r *ContentSecurityPolicy) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (r *ContentSecurityPolicy) IsWidenable() bool {
-	return false
-}
-
 func (r *ContentSecurityPolicy) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%content-security-policy")))
 	return

@@ -70,14 +70,6 @@ func (routine *Routine) Cancel(*Context) {
 
 }
 
-func (r *Routine) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (r *Routine) IsWidenable() bool {
-	return false
-}
-
 func (r *Routine) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%routine")))
 }
@@ -129,14 +121,6 @@ func (g *RoutineGroup) WaitAllResults(ctx *Context) (*Array, *Error) {
 
 func (g *RoutineGroup) CancelAll(*Context) {
 
-}
-
-func (g *RoutineGroup) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (g *RoutineGroup) IsWidenable() bool {
-	return false
 }
 
 func (g *RoutineGroup) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -194,14 +178,6 @@ func (s *ExecutedStep) WaitResult(ctx *Context) (SymbolicValue, *Error) {
 }
 
 func (s *ExecutedStep) Cancel(*Context) {
-}
-
-func (s *ExecutedStep) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (s *ExecutedStep) IsWidenable() bool {
-	return false
 }
 
 func (s *ExecutedStep) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

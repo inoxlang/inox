@@ -31,14 +31,6 @@ func (*Bucket) PropertyNames() []string {
 	return nil
 }
 
-func (r *Bucket) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *Bucket) IsWidenable() bool {
-	return false
-}
-
 func (r *Bucket) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%s3-bucket")))
 	return

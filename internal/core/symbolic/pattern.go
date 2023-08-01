@@ -87,14 +87,6 @@ func (p *AnyPattern) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (p *AnyPattern) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (p *AnyPattern) IsWidenable() bool {
-	return false
-}
-
 func (p *AnyPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%pattern")))
 }
@@ -137,14 +129,6 @@ type PathPattern struct {
 func (p *PathPattern) Test(v SymbolicValue) bool {
 	_, ok := v.(*PathPattern)
 	return ok
-}
-
-func (p *PathPattern) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (p *PathPattern) IsWidenable() bool {
-	return false
 }
 
 func (p *PathPattern) Static() Pattern {
@@ -211,14 +195,6 @@ func (p *URLPattern) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (p *URLPattern) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (p *URLPattern) IsWidenable() bool {
-	return false
-}
-
 func (p *URLPattern) Static() Pattern {
 	return &TypePattern{val: p.WidestOfType()}
 }
@@ -281,14 +257,6 @@ type HostPattern struct {
 func (p *HostPattern) Test(v SymbolicValue) bool {
 	_, ok := v.(*HostPattern)
 	return ok
-}
-
-func (p *HostPattern) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (p *HostPattern) IsWidenable() bool {
-	return false
 }
 
 func (p *HostPattern) Static() Pattern {
@@ -373,17 +341,6 @@ func (p *NamedSegmentPathPattern) PrettyPrint(w *bufio.Writer, config *pprint.Pr
 	utils.Must(fmt.Fprintf(w, "%%named-segment-path-pattern(%p)", p.node))
 }
 
-func (p *NamedSegmentPathPattern) Widen() (SymbolicValue, bool) {
-	if p.IsWidenable() {
-		return &NamedSegmentPathPattern{node: nil}, true
-	}
-	return nil, false
-}
-
-func (p *NamedSegmentPathPattern) IsWidenable() bool {
-	return p.node != nil
-}
-
 func (p NamedSegmentPathPattern) HasUnderylingPattern() bool {
 	return true
 }
@@ -438,7 +395,7 @@ type ExactValuePattern struct {
 }
 
 func NewExactValuePattern(v Serializable) (*ExactValuePattern, error) {
-	if !IsAny(v) && v.IsMutable() {
+	if !IsAnySerializable(v) && v.IsMutable() {
 		return nil, ErrValueInExactPatternValueShouldBeImmutable
 	}
 	return &ExactValuePattern{value: v}, nil
@@ -452,8 +409,8 @@ func NewMostAdaptedExactPattern(value Serializable) (Pattern, error) {
 	if !IsAny(value) && value.IsMutable() {
 		return nil, ErrValueInExactPatternValueShouldBeImmutable
 	}
-	if _, ok := value.(StringLike); ok {
-		return NewExactStringPattern(), nil
+	if s, ok := value.(StringLike); ok {
+		return NewExactStringPattern(s.GetOrBuildString()), nil
 	}
 	return NewExactValuePattern(value)
 }
@@ -479,18 +436,6 @@ func (p *ExactValuePattern) Test(v SymbolicValue) bool {
 	return p.value.Test(other.value)
 }
 
-func (p *ExactValuePattern) Widen() (SymbolicValue, bool) {
-	if _, ok := p.value.(*AnySerializable); ok {
-		return nil, false
-	}
-	return &ExactValuePattern{value: widenOrAny(p.value).(Serializable)}, true
-}
-
-func (p *ExactValuePattern) IsWidenable() bool {
-	_, ok := p.value.(*AnySerializable)
-	return !ok
-}
-
 func (p *ExactValuePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%exact-value-pattern(\n")))
 	indentCount := parentIndentCount + 1
@@ -512,7 +457,7 @@ func (p *ExactValuePattern) HasUnderylingPattern() bool {
 }
 
 func (p *ExactValuePattern) TestValue(v SymbolicValue) bool {
-	return p.value.Test(v)
+	return p.value.Test(v) && v.Test(p.value)
 }
 
 func (p *ExactValuePattern) SymbolicValue() SymbolicValue {
@@ -520,11 +465,11 @@ func (p *ExactValuePattern) SymbolicValue() SymbolicValue {
 }
 
 func (p *ExactValuePattern) StringPattern() (StringPattern, bool) {
-	return &ExactStringPattern{}, false
+	return nil, false
 }
 
 func (p *ExactValuePattern) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (p *ExactValuePattern) IteratorElementValue() SymbolicValue {
@@ -543,14 +488,6 @@ type RegexPattern struct {
 func (p *RegexPattern) Test(v SymbolicValue) bool {
 	_, ok := v.(*RegexPattern)
 	return ok
-}
-
-func (p *RegexPattern) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (p *RegexPattern) IsWidenable() bool {
-	return false
 }
 
 func (p *RegexPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -677,45 +614,6 @@ func (patt *ObjectPattern) ForEachEntry(fn func(propName string, propPattern Pat
 		}
 	}
 	return nil
-}
-
-func (p *ObjectPattern) Widen() (SymbolicValue, bool) {
-	if p.entries == nil {
-		return nil, false
-	}
-
-	if len(p.entries) == 0 {
-		return &ObjectPattern{}, true
-	}
-
-	widenedEntries := make(map[string]Pattern)
-	allAlreadyWidened := true
-
-	for k, v := range p.entries {
-		if val, ok := v.Widen(); ok {
-			allAlreadyWidened = false
-			widenedEntries[k] = val.(Pattern)
-		}
-	}
-
-	if allAlreadyWidened {
-		if !p.inexact {
-			entries := make(map[string]Pattern)
-
-			for k, v := range p.entries {
-				entries[k] = v
-			}
-			return &ObjectPattern{entries: entries, inexact: true}, true
-		}
-
-		return &ObjectPattern{}, true
-	}
-
-	return &ObjectPattern{entries: widenedEntries, inexact: p.inexact}, true
-}
-
-func (p *ObjectPattern) IsWidenable() bool {
-	return p.entries != nil
 }
 
 func (p *ObjectPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -924,45 +822,6 @@ func (p *RecordPattern) Test(v SymbolicValue) bool {
 	}
 
 	return true
-}
-
-func (p *RecordPattern) Widen() (SymbolicValue, bool) {
-	if p.entries == nil {
-		return nil, false
-	}
-
-	if len(p.entries) == 0 {
-		return &RecordPattern{}, true
-	}
-
-	widenedEntries := make(map[string]Pattern)
-	allAlreadyWidened := true
-
-	for k, v := range p.entries {
-		if val, ok := v.Widen(); ok {
-			allAlreadyWidened = false
-			widenedEntries[k] = val.(Pattern)
-		}
-	}
-
-	if allAlreadyWidened {
-		if !p.inexact {
-			entries := make(map[string]Pattern)
-
-			for k, v := range p.entries {
-				entries[k] = v
-			}
-			return &RecordPattern{entries: entries, inexact: true}, true
-		}
-
-		return &RecordPattern{}, true
-	}
-
-	return &RecordPattern{entries: widenedEntries, inexact: p.inexact}, true
-}
-
-func (p *RecordPattern) IsWidenable() bool {
-	return p.entries != nil
 }
 
 func (p *RecordPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -1187,14 +1046,6 @@ func (p *ListPattern) Test(v SymbolicValue) bool {
 		}
 		return true
 	}
-}
-
-func (p *ListPattern) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (p *ListPattern) IsWidenable() bool {
-	return false
 }
 
 func prettyPrintListPattern(
@@ -1432,14 +1283,6 @@ func (p *TuplePattern) Test(v SymbolicValue) bool {
 	}
 }
 
-func (p *TuplePattern) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (p *TuplePattern) IsWidenable() bool {
-	return false
-}
-
 func (p *TuplePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if p.elements != nil {
 		prettyPrintListPattern(w, true, p.generalElement, p.elements, config, depth, parentIndentCount)
@@ -1447,7 +1290,6 @@ func (p *TuplePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCo
 	}
 	utils.Must(w.Write(utils.StringAsBytes("%#[]")))
 	p.generalElement.PrettyPrint(w, config, 0, parentIndentCount)
-	return
 }
 
 func (p *TuplePattern) HasUnderylingPattern() bool {
@@ -1554,17 +1396,6 @@ func (p *UnionPattern) Test(v SymbolicValue) bool {
 	return true
 }
 
-func (p *UnionPattern) Widen() (SymbolicValue, bool) {
-	if p.IsWidenable() {
-		return &UnionPattern{Cases: nil}, true
-	}
-	return nil, false
-}
-
-func (p *UnionPattern) IsWidenable() bool {
-	return p.Cases != nil
-}
-
 func (p *UnionPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("(%| ")))
 	indentCount := parentIndentCount + 1
@@ -1665,17 +1496,6 @@ func (p *IntersectionPattern) Test(v SymbolicValue) bool {
 	return true
 }
 
-func (p *IntersectionPattern) Widen() (SymbolicValue, bool) {
-	if p.IsWidenable() {
-		return &IntersectionPattern{Cases: nil}, true
-	}
-	return nil, false
-}
-
-func (p *IntersectionPattern) IsWidenable() bool {
-	return p.Cases != nil
-}
-
 func (p *IntersectionPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("(%& ")))
 	indentCount := parentIndentCount + 1
@@ -1736,14 +1556,6 @@ type OptionPattern struct {
 func (p *OptionPattern) Test(v SymbolicValue) bool {
 	_, ok := v.(*OptionPattern)
 	return ok
-}
-
-func (p *OptionPattern) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (p *OptionPattern) IsWidenable() bool {
-	return false
 }
 
 func (p *OptionPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -1840,14 +1652,6 @@ func (p *TypePattern) Test(v SymbolicValue) bool {
 	return ok && p.val.Test(other.val)
 }
 
-func (p *TypePattern) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (p *TypePattern) IsWidenable() bool {
-	return false
-}
-
 func (p *TypePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%type-pattern(")))
 	p.val.PrettyPrint(w, config, depth+1, parentIndentCount)
@@ -1904,14 +1708,6 @@ func (p *DifferencePattern) Test(v SymbolicValue) bool {
 	return ok && p.Base.Test(other.Base) && other.Removed.Test(other.Removed)
 }
 
-func (p *DifferencePattern) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (p *DifferencePattern) IsWidenable() bool {
-	return false
-}
-
 func (p *DifferencePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("(")))
 	p.Base.PrettyPrint(w, config, depth+1, parentIndentCount)
@@ -1964,14 +1760,6 @@ func NewOptionalPattern(p Pattern) *OptionalPattern {
 func (p *OptionalPattern) Test(v SymbolicValue) bool {
 	other, ok := v.(*OptionalPattern)
 	return ok && p.pattern.Test(other.pattern)
-}
-
-func (p *OptionalPattern) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (p *OptionalPattern) IsWidenable() bool {
-	return false
 }
 
 func (p *OptionalPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -2094,17 +1882,6 @@ func (fn *FunctionPattern) HasUnderylingPattern() bool {
 	return true
 }
 
-func (fn *FunctionPattern) Widen() (SymbolicValue, bool) {
-	if fn.node == nil {
-		return nil, false
-	}
-	return &FunctionPattern{}, true
-}
-
-func (fn *FunctionPattern) IsWidenable() bool {
-	return fn.node != nil
-}
-
 func (p *FunctionPattern) IteratorElementKey() SymbolicValue {
 	return &Int{}
 }
@@ -2144,14 +1921,6 @@ type IntRangePattern struct {
 func (p *IntRangePattern) Test(v SymbolicValue) bool {
 	_, ok := v.(*IntRangePattern)
 	return ok
-}
-
-func (p *IntRangePattern) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (p *IntRangePattern) IsWidenable() bool {
-	return false
 }
 
 func (p *IntRangePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -2226,14 +1995,6 @@ func (p *EventPattern) Test(v SymbolicValue) bool {
 	return ok && p.ValuePattern.Test(other.ValuePattern)
 }
 
-func (p *EventPattern) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (p *EventPattern) IsWidenable() bool {
-	return false
-}
-
 func (p *EventPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%%event(")))
 	p.ValuePattern.PrettyPrint(w, config, depth, 0)
@@ -2292,14 +2053,6 @@ func NewMutationPattern(kind *Int, data0Pattern Pattern) *MutationPattern {
 func (p *MutationPattern) Test(v SymbolicValue) bool {
 	other, ok := v.(*MutationPattern)
 	return ok && p.kind.Test(other.kind) && p.data0Pattern.Test(other.data0Pattern)
-}
-
-func (p *MutationPattern) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (p *MutationPattern) IsWidenable() bool {
-	return false
 }
 
 func (p *MutationPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -2382,35 +2135,6 @@ func (ns *PatternNamespace) Test(v SymbolicValue) bool {
 		}
 	}
 	return true
-}
-
-func (ns *PatternNamespace) Widen() (SymbolicValue, bool) {
-	if ns.entries == nil {
-		return nil, false
-	}
-
-	widenedPatterns := map[string]Pattern{}
-	allAlreadyWidened := true
-
-	for k, v := range ns.entries {
-		widened, ok := v.Widen()
-		if ok {
-			allAlreadyWidened = false
-			v = widened.(Pattern)
-		}
-		widenedPatterns[k] = v
-	}
-
-	if allAlreadyWidened {
-		return &PatternNamespace{}, true
-	}
-
-	return &PatternNamespace{entries: widenedPatterns}, true
-}
-
-func (ns *PatternNamespace) IsWidenable() bool {
-	_, ok := ns.Widen()
-	return ok
 }
 
 func (ns *PatternNamespace) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

@@ -47,14 +47,6 @@ func (serv *HttpServer) wait_closed(ctx *symbolic.Context) {
 func (serv *HttpServer) close(ctx *symbolic.Context) {
 }
 
-func (r *HttpServer) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *HttpServer) IsWidenable() bool {
-	return false
-}
-
 func (r *HttpServer) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%http-server")))
 	return

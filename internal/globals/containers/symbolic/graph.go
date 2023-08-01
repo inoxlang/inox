@@ -57,14 +57,6 @@ func (f *Graph) Get(ctx *symbolic.Context, k symbolic.SymbolicValue) symbolic.Sy
 	return &symbolic.Any{}
 }
 
-func (r *Graph) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *Graph) IsWidenable() bool {
-	return false
-}
-
 func (r *Graph) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%graph")))
 	return
@@ -119,14 +111,6 @@ func (n *GraphNode) Prop(name string) symbolic.SymbolicValue {
 
 func (*GraphNode) PropertyNames() []string {
 	return []string{"data", "children", "parents"}
-}
-
-func (r *GraphNode) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *GraphNode) IsWidenable() bool {
-	return false
 }
 
 func (r *GraphNode) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

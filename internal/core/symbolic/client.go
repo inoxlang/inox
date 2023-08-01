@@ -32,14 +32,6 @@ func (*AnyProtocolClient) Schemes() []string {
 	return nil
 }
 
-func (r *AnyProtocolClient) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *AnyProtocolClient) IsWidenable() bool {
-	return false
-}
-
 func (r *AnyProtocolClient) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%protocol-client")))
 }

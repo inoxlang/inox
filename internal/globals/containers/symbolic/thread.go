@@ -41,14 +41,6 @@ func (*Thread) Push(ctx *symbolic.Context, elems ...symbolic.SymbolicValue) {
 
 }
 
-func (*Thread) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *Thread) IsWidenable() bool {
-	return false
-}
-
 func (*Thread) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%thread")))
 	return

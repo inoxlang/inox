@@ -45,14 +45,6 @@ func (s *WebsocketServer) Close(ctx *symbolic.Context) *symbolic.Error {
 	return nil
 }
 
-func (s *WebsocketServer) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (s *WebsocketServer) IsWidenable() bool {
-	return false
-}
-
 func (s *WebsocketServer) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%websocket-server")))
 }

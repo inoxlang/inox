@@ -35,14 +35,6 @@ func (m *Message) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (m *Message) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (m *Message) IsWidenable() bool {
-	return false
-}
-
 func (m *Message) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%message")))
 	return
@@ -79,14 +71,6 @@ func (r *AnyMessageReceiver) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (r *AnyMessageReceiver) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (r *AnyMessageReceiver) IsWidenable() bool {
-	return false
-}
-
 func (r *AnyMessageReceiver) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%message-receiver")))
 	return
@@ -114,14 +98,6 @@ func (l *SynchronousMessageHandler) Test(v SymbolicValue) bool {
 	_, ok := v.(*SynchronousMessageHandler)
 
 	return ok
-}
-
-func (l *SynchronousMessageHandler) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (l *SynchronousMessageHandler) IsWidenable() bool {
-	return false
 }
 
 func (l *SynchronousMessageHandler) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

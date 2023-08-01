@@ -28,18 +28,6 @@ func (e *Error) Test(v SymbolicValue) bool {
 	return ok && e.data.Test(otherError.data)
 }
 
-func (e *Error) Widen() (SymbolicValue, bool) {
-	if !e.data.IsWidenable() {
-		return nil, false
-	}
-	widenedData, _ := e.data.Widen()
-	return &Error{data: widenedData}, true
-}
-
-func (e *Error) IsWidenable() bool {
-	return e.data.IsWidenable()
-}
-
 func (e *Error) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%error")))
 	return

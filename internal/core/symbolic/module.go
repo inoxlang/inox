@@ -54,14 +54,6 @@ func (m *Module) Test(v SymbolicValue) bool {
 	return m.MainChunk == otherMod.MainChunk && reflect.ValueOf(m.InclusionStatementMap).Pointer() == reflect.ValueOf(otherMod.InclusionStatementMap).Pointer()
 }
 
-func (m *Module) Widen() (SymbolicValue, bool) {
-	return ANY_MODULE, false
-}
-
-func (m *Module) IsWidenable() bool {
-	return m.MainChunk != nil
-}
-
 func (m *Module) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%module")))
 	return

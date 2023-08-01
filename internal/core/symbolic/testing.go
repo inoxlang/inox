@@ -50,14 +50,6 @@ func (*TestSuite) PropertyNames() []string {
 	return []string{"run"}
 }
 
-func (s *TestSuite) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (s *TestSuite) IsWidenable() bool {
-	return false
-}
-
 func (s *TestSuite) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%test-suite")))
 	return
@@ -96,14 +88,6 @@ func (s *TestCase) Prop(name string) SymbolicValue {
 
 func (*TestCase) PropertyNames() []string {
 	return nil
-}
-
-func (s *TestCase) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (s *TestCase) IsWidenable() bool {
-	return false
 }
 
 func (s *TestCase) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

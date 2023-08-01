@@ -176,14 +176,6 @@ func (d *SymbolicData) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (d *SymbolicData) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (d *SymbolicData) IsWidenable() bool {
-	return false
-}
-
 func (d *SymbolicData) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%symbolic-data")))
 }

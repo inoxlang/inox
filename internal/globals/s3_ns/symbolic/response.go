@@ -36,14 +36,6 @@ func (*GetObjectResponse) PropertyNames() []string {
 	return []string{"body"}
 }
 
-func (r *GetObjectResponse) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *GetObjectResponse) IsWidenable() bool {
-	return false
-}
-
 func (r *GetObjectResponse) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%get-object-response")))
 	return
@@ -80,14 +72,6 @@ func (*PutObjectResponse) PropertyNames() []string {
 	return []string{"body"}
 }
 
-func (r *PutObjectResponse) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *PutObjectResponse) IsWidenable() bool {
-	return false
-}
-
 func (r *PutObjectResponse) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%put-object-response")))
 	return
@@ -122,14 +106,6 @@ func (resp *GetBucketPolicyResponse) Prop(name string) symbolic.SymbolicValue {
 
 func (*GetBucketPolicyResponse) PropertyNames() []string {
 	return []string{"body"}
-}
-
-func (r *GetBucketPolicyResponse) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *GetBucketPolicyResponse) IsWidenable() bool {
-	return false
 }
 
 func (r *GetBucketPolicyResponse) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

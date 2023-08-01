@@ -40,14 +40,6 @@ func (r *HttpRequestPattern) HasUnderylingPattern() bool {
 	return true
 }
 
-func (r *HttpRequestPattern) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (r *HttpRequestPattern) IsWidenable() bool {
-	return false
-}
-
 func (r *HttpRequestPattern) IteratorElementKey() symbolic.SymbolicValue {
 	return symbolic.ANY
 }

@@ -94,17 +94,6 @@ func (p *Path) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (p *Path) Widen() (SymbolicValue, bool) {
-	if p.IsWidenable() {
-		return ANY_PATH, true
-	}
-	return nil, false
-}
-
-func (p *Path) IsWidenable() bool {
-	return p.absoluteness != UnspecifiedPathAbsoluteness || p.dirConstraint != UnspecifiedDirOrFilePath
-}
-
 func (p *Path) Static() Pattern {
 	return ANY_PATH_PATTERN
 }
@@ -211,14 +200,6 @@ func (u *URL) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (u *URL) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (u *URL) IsWidenable() bool {
-	return false
-}
-
 func (u *URL) Static() Pattern {
 	return ANY_URL_PATTERN
 }
@@ -268,14 +249,6 @@ func (s *Scheme) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (s *Scheme) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (s *Scheme) IsWidenable() bool {
-	return false
-}
-
 func (s *Scheme) Static() Pattern {
 	return &TypePattern{val: ANY_SCHEME}
 }
@@ -303,14 +276,6 @@ type Host struct {
 func (h *Host) Test(v SymbolicValue) bool {
 	_, ok := v.(*Host)
 	return ok
-}
-
-func (h *Host) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (h *Host) IsWidenable() bool {
-	return false
 }
 
 func (h *Host) Static() Pattern {

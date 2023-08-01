@@ -36,14 +36,6 @@ func (m *Snapshot) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (m *Snapshot) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (m *Snapshot) IsWidenable() bool {
-	return false
-}
-
 func (m *Snapshot) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%snapshot")))
 	return
@@ -76,14 +68,6 @@ func (s *AnyInMemorySnapshotable) Test(v SymbolicValue) bool {
 	_, ok := v.(InMemorySnapshotable)
 
 	return ok
-}
-
-func (s *AnyInMemorySnapshotable) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (s *AnyInMemorySnapshotable) IsWidenable() bool {
-	return false
 }
 
 func (s *AnyInMemorySnapshotable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

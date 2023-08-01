@@ -130,14 +130,6 @@ func (s *Set) Get(ctx *symbolic.Context, k symbolic.StringLike) (symbolic.Symbol
 	return s.elementPattern.SymbolicValue(), symbolic.ANY_BOOL
 }
 
-func (*Set) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (*Set) IsWidenable() bool {
-	return false
-}
-
 func (s *Set) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%Set(")))
 	s.elementPattern.SymbolicValue().PrettyPrint(w, config, depth, parentIndentCount)
@@ -210,14 +202,6 @@ func (p *SetPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConf
 		p.uniqueness.ToSymbolicValue().PrettyPrint(w, config, depth, 0)
 	}
 	utils.Must(w.Write(utils.StringAsBytes(")")))
-}
-
-func (*SetPattern) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (*SetPattern) IsWidenable() bool {
-	return false
 }
 
 func (*SetPattern) IteratorElementKey() symbolic.SymbolicValue {

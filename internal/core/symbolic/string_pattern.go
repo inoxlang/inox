@@ -2,13 +2,15 @@ package symbolic
 
 import (
 	"bufio"
+	"errors"
 
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
-	ANY_EXACT_STR_PATTERN = NewExactStringPattern()
+	ANY_EXACT_STR_PATTERN = NewExactStringPattern(nil) //this pattern does not match any string
+
 )
 
 // A StringPattern represents a symbolic StringPattern.
@@ -26,14 +28,6 @@ type AnyStringPattern struct {
 func (p *AnyStringPattern) Test(v SymbolicValue) bool {
 	_, ok := v.(StringPattern)
 	return ok
-}
-
-func (p *AnyStringPattern) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (p *AnyStringPattern) IsWidenable() bool {
-	return false
 }
 
 func (p *AnyStringPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -82,29 +76,31 @@ func (p *AnyStringPattern) WidestOfType() SymbolicValue {
 
 // An ExactStringPattern represents a symbolic ExactStringPattern.
 type ExactStringPattern struct {
+	value *String //if nil any string is matched
 	NotCallablePatternMixin
 	SerializableMixin
 }
 
-func NewExactStringPattern() *ExactStringPattern {
-	return &ExactStringPattern{}
+func NewExactStringPattern(value *String) *ExactStringPattern {
+	if value != nil && !value.hasValue {
+		panic(errors.New("string should have a value"))
+	}
+	return &ExactStringPattern{value: value}
 }
 
 func (p *ExactStringPattern) Test(v SymbolicValue) bool {
-	_, ok := v.(*ExactStringPattern)
-	return ok
-}
-
-func (p *ExactStringPattern) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (p *ExactStringPattern) IsWidenable() bool {
-	return false
+	otherPattern, ok := v.(*ExactStringPattern)
+	return ok && (p.value == nil || (otherPattern.value != nil && p.value.value == otherPattern.value.value))
 }
 
 func (p *ExactStringPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%exact-string-pattern")))
+
+	if p.value != nil {
+		utils.Must(w.Write(utils.StringAsBytes("(")))
+		p.value.PrettyPrint(w, config, depth+1, parentIndentCount)
+		utils.Must(w.Write(utils.StringAsBytes(")")))
+	}
 }
 
 func (p *ExactStringPattern) HasUnderylingPattern() bool {
@@ -112,12 +108,16 @@ func (p *ExactStringPattern) HasUnderylingPattern() bool {
 }
 
 func (p *ExactStringPattern) TestValue(v SymbolicValue) bool {
-	_, ok := v.(StringLike)
-	return ok
+	stringLike, ok := v.(StringLike)
+	if !ok || !stringLike.GetOrBuildString().hasValue || p.value == nil {
+		return false
+	}
+
+	return p.value.value == stringLike.GetOrBuildString().value
 }
 
 func (p *ExactStringPattern) SymbolicValue() SymbolicValue {
-	return ANY_STR_LIKE
+	return p.value
 }
 
 func (p *ExactStringPattern) StringPattern() (StringPattern, bool) {
@@ -125,11 +125,11 @@ func (p *ExactStringPattern) StringPattern() (StringPattern, bool) {
 }
 
 func (p *ExactStringPattern) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (p *ExactStringPattern) IteratorElementValue() SymbolicValue {
-	return ANY_STR_LIKE
+	return p.value
 }
 
 func (p *ExactStringPattern) WidestOfType() SymbolicValue {
@@ -149,14 +149,6 @@ type SequenceStringPattern struct {
 func (p *SequenceStringPattern) Test(v SymbolicValue) bool {
 	_, ok := v.(StringPattern)
 	return ok
-}
-
-func (p *SequenceStringPattern) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (p *SequenceStringPattern) IsWidenable() bool {
-	return false
 }
 
 func (p *SequenceStringPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -219,14 +211,6 @@ func NewParserBasedPattern() *ParserBasedPattern {
 func (p *ParserBasedPattern) Test(v SymbolicValue) bool {
 	_, ok := v.(StringPattern)
 	return ok
-}
-
-func (p *ParserBasedPattern) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (p *ParserBasedPattern) IsWidenable() bool {
-	return false
 }
 
 func (p *ParserBasedPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

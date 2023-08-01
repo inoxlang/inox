@@ -36,14 +36,6 @@ func (*ObjectInfo) PropertyNames() []string {
 	return []string{"key"}
 }
 
-func (r *ObjectInfo) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *ObjectInfo) IsWidenable() bool {
-	return false
-}
-
 func (r *ObjectInfo) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%object-info")))
 	return

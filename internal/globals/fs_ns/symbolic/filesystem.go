@@ -35,14 +35,6 @@ func (fls *Filesystem) Prop(name string) symbolic.SymbolicValue {
 	return method
 }
 
-func (fls *Filesystem) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (fls *Filesystem) IsWidenable() bool {
-	return false
-}
-
 func (fls *Filesystem) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%filesystem")))
 }

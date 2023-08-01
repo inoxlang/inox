@@ -81,17 +81,6 @@ func (s *Struct) WithExistingPropReplaced(name string, value SymbolicValue) (IPr
 	panic(ErrNotImplementedYet)
 }
 
-func (s *Struct) Widen() (SymbolicValue, bool) {
-	if s.IsWidenable() {
-		return ANY_STRUCT, true
-	}
-	return nil, false
-}
-
-func (s *Struct) IsWidenable() bool {
-	return s.structType != nil
-}
-
 func (s *Struct) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if s.structType != nil {
 		utils.Must(w.Write(utils.StringAsBytes("struct")))
@@ -217,14 +206,6 @@ func (s *StructPattern) indexOfField(name string) (int, bool) {
 		}
 	}
 	return -1, false
-}
-
-func (s *StructPattern) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (s *StructPattern) IsWidenable() bool {
-	return false
 }
 
 func (s *StructPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

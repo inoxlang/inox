@@ -22,10 +22,6 @@ func (ldb *SymbolicLocalDatabase) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (ldb *SymbolicLocalDatabase) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
 func (ldb *SymbolicLocalDatabase) UpdateSchema(ctx *symbolic.Context, schema *symbolic.ObjectPattern) {
 
 }
@@ -58,10 +54,6 @@ func (ldb *SymbolicLocalDatabase) GetGoMethod(name string) (*symbolic.GoFunction
 
 func (ldb *SymbolicLocalDatabase) PropertyNames() []string {
 	return LOCAL_DB_PROPNAMES
-}
-
-func (ldb *SymbolicLocalDatabase) IsWidenable() bool {
-	return false
 }
 
 func (ldb *SymbolicLocalDatabase) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

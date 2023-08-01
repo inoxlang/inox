@@ -48,14 +48,6 @@ func (*HttpResponse) PropertyNames() []string {
 	return HTTP_RESPONSE_PROPNAMES
 }
 
-func (r *HttpResponse) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *HttpResponse) IsWidenable() bool {
-	return false
-}
-
 func (r *HttpResponse) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%http-response")))
 	return

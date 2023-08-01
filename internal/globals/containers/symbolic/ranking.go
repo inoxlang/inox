@@ -47,14 +47,6 @@ func (f *Ranking) Remove(ctx *symbolic.Context, v symbolic.Serializable) {
 
 }
 
-func (r *Ranking) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *Ranking) IsWidenable() bool {
-	return false
-}
-
 func (r *Ranking) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%ranking")))
 }
@@ -95,14 +87,6 @@ func (r *Rank) Prop(name string) symbolic.SymbolicValue {
 
 func (*Rank) PropertyNames() []string {
 	return []string{"values"}
-}
-
-func (r *Rank) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *Rank) IsWidenable() bool {
-	return false
 }
 
 func (r *Rank) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

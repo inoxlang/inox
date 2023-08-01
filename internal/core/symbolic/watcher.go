@@ -36,14 +36,6 @@ func (r *AnyWatchable) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (r *AnyWatchable) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *AnyWatchable) IsWidenable() bool {
-	return false
-}
-
 func (r *AnyWatchable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%watchable")))
 	return
@@ -76,17 +68,6 @@ func (r *Watcher) Test(v SymbolicValue) bool {
 		return true
 	}
 	return r.filter.Test(it.filter)
-}
-
-func (r *Watcher) Widen() (SymbolicValue, bool) {
-	if !r.IsWidenable() {
-		return nil, false
-	}
-	return &Watcher{}, true
-}
-
-func (r *Watcher) IsWidenable() bool {
-	return r.filter != nil
 }
 
 func (r *Watcher) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

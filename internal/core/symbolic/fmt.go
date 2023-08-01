@@ -31,14 +31,6 @@ func (p *AnyFormat) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (p *AnyFormat) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (p *AnyFormat) IsWidenable() bool {
-	return false
-}
-
 func (p *AnyFormat) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%format")))
 	return

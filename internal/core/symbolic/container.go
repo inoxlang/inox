@@ -38,14 +38,6 @@ func (*AnyContainer) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (*AnyContainer) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (*AnyContainer) IsWidenable() bool {
-	return false
-}
-
 func (*AnyContainer) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%container")))
 }

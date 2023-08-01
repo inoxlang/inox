@@ -60,14 +60,6 @@ func (f *File) info(ctx *symbolic.Context) (*symbolic.FileInfo, *symbolic.Error)
 	return &symbolic.FileInfo{}, nil
 }
 
-func (r *File) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *File) IsWidenable() bool {
-	return false
-}
-
 func (r *File) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%file")))
 	return

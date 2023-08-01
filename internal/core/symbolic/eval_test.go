@@ -509,7 +509,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("multivalue LHS", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return fn(v %| %[]%int | %[]%str){
-					var a %list = v; 
+					var a %| %[]%int | %[]%str = v; 
 					return a
 				}
 			`)
@@ -701,8 +701,8 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("multi value RHS", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				fn f(v %| %[]%int | %[]%str){
-					list = []
+				fn f(v %| %int | %str){
+					var list %| %int | %str = 1
 					list = v
 				}
 			`)
@@ -2789,7 +2789,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("multi value argument", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return fn(list %| %[]%int | %[]%str){
-					f = fn(list %list){
+					f = fn(v %| %[]%int | %[]%str){
 						
 					}
 					return f(list)
@@ -3105,7 +3105,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY_INT, res)
 		})
 
-		t.Run("signature is func(*Context, *List) *Int: pass multivalue of 2 lists", func(t *testing.T) {
+		t.Run("signature is func(*Context, *List) *Int: passing multivalue of 2 lists should be an error", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return fn(list %| %[]%str | %[]%int){
 					return f(list)
@@ -3113,6 +3113,7 @@ func TestSymbolicEval(t *testing.T) {
 			`)
 
 			fnExpr := n.Statements[0].(*parse.ReturnStatement).Expr
+			call := parse.FindNode(n, (*parse.CallExpression)(nil), nil)
 
 			goFunc := &GoFunction{
 				fn: func(ctx *Context, list *List) *List {
@@ -3123,7 +3124,17 @@ func TestSymbolicEval(t *testing.T) {
 			state.setGlobal("f", goFunc, GlobalConst)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.Empty(t, state.errors)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(call.Arguments[0], state,
+					FmtInvalidArg(
+						0,
+						NewMultivalue(NewListOf(ANY_STR_LIKE), NewListOf(ANY_INT)),
+						NewListOf(ANY_SERIALIZABLE),
+					),
+				),
+			}, state.errors)
+
 			assert.Equal(t, &InoxFunction{
 				node:           fnExpr,
 				parameters:     []SymbolicValue{NewMultivalue(NewListOf(ANY_STR_LIKE), NewListOf(ANY_INT))},
@@ -3132,7 +3143,7 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
-		t.Run("signature is func(*Context, ...*List) *Int: pass multivalue of 2 lists", func(t *testing.T) {
+		t.Run("signature is func(*Context, ...*List) *Int: pass multivalue of 2 lists should be an error", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return fn(list %| %[]%str | %[]%int){
 					return f(list)
@@ -3140,17 +3151,27 @@ func TestSymbolicEval(t *testing.T) {
 			`)
 
 			fnExpr := n.Statements[0].(*parse.ReturnStatement).Expr
+			call := parse.FindNode(n, (*parse.CallExpression)(nil), nil)
 
 			goFunc := &GoFunction{
-				fn: func(ctx *Context, lists ...*List) *List {
-					return lists[0]
+				fn: func(ctx *Context, list ...*List) Iterable {
+					return list[0]
 				},
 			}
-
 			state.setGlobal("f", goFunc, GlobalConst)
 			res, err := symbolicEval(n, state)
+
 			assert.NoError(t, err)
-			assert.Empty(t, state.errors)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(call, state,
+					FmtInvalidArg(
+						0,
+						NewMultivalue(NewListOf(ANY_STR_LIKE), NewListOf(ANY_INT)),
+						NewListOf(ANY_SERIALIZABLE),
+					),
+				),
+			}, state.errors)
+
 			assert.Equal(t, &InoxFunction{
 				node:           fnExpr,
 				parameters:     []SymbolicValue{NewMultivalue(NewListOf(ANY_STR_LIKE), NewListOf(ANY_INT))},

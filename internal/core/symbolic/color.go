@@ -40,14 +40,6 @@ func (*Color) PropertyNames() []string {
 	return []string{}
 }
 
-func (*Color) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (c *Color) IsWidenable() bool {
-	return false
-}
-
 func (c *Color) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%color")))
 	return

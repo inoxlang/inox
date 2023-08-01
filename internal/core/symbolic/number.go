@@ -44,17 +44,6 @@ func NewFloat(v float64) *Float {
 	}
 }
 
-func (f *Float) IsWidenable() bool {
-	return f.hasValue
-}
-
-func (f *Float) Widen() (SymbolicValue, bool) {
-	if f.hasValue {
-		return ANY_FLOAT, true
-	}
-	return nil, false
-}
-
 func (f *Float) Static() Pattern {
 	return &TypePattern{val: ANY_FLOAT}
 }
@@ -92,17 +81,6 @@ func (i *Int) Test(v SymbolicValue) bool {
 	return otherInt.hasValue && i.value == otherInt.value
 }
 
-func (i *Int) Widen() (SymbolicValue, bool) {
-	if i.hasValue {
-		return ANY_INT, true
-	}
-	return nil, false
-}
-
-func (i *Int) IsWidenable() bool {
-	return i.hasValue
-}
-
 func (i *Int) Static() Pattern {
 	return &TypePattern{val: ANY_INT}
 }
@@ -133,14 +111,6 @@ func (*AnyIntegral) Test(v SymbolicValue) bool {
 	_, ok := v.(Integral)
 
 	return ok
-}
-
-func (*AnyIntegral) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (*AnyIntegral) IsWidenable() bool {
-	return false
 }
 
 func (*AnyIntegral) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

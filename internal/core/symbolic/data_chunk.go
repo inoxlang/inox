@@ -58,14 +58,6 @@ func (*DataChunk) PropertyNames() []string {
 	return DATA_CHUNK_PROPNAMES
 }
 
-func (r *DataChunk) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (r *DataChunk) IsWidenable() bool {
-	return false
-}
-
 func (r *DataChunk) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%chunk")))
 	return

@@ -31,14 +31,6 @@ func (r *AnyReadable) Test(v SymbolicValue) bool {
 	}
 }
 
-func (r *AnyReadable) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (r *AnyReadable) IsWidenable() bool {
-	return false
-}
-
 func (r *AnyReadable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%readable")))
 	return
@@ -100,14 +92,6 @@ func (reader *Reader) Reader() *Reader {
 
 func (Reader) PropertyNames() []string {
 	return []string{"read", "read_all"}
-}
-
-func (r *Reader) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (r *Reader) IsWidenable() bool {
-	return false
 }
 
 func (r *Reader) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

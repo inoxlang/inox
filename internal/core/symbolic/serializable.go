@@ -75,16 +75,9 @@ func (*AnySerializable) Test(v SymbolicValue) bool {
 }
 
 // IsWidenable implements SymbolicValue.
-func (*AnySerializable) IsWidenable() bool {
-	return false
-}
 
 func (*AnySerializable) PrettyPrint(w *bufio.Writer, config *internal.PrettyPrintConfig, depth int, parentIndentCount int) {
 	w.WriteString("%serializable")
-}
-
-func (*AnySerializable) Widen() (SymbolicValue, bool) {
-	return nil, false
 }
 
 func (*AnySerializable) WidestOfType() SymbolicValue {

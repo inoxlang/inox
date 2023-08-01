@@ -42,14 +42,6 @@ func (*ServerSentEventSource) PropertyNames() []string {
 func (serv *ServerSentEventSource) close(ctx *symbolic.Context) {
 }
 
-func (r *ServerSentEventSource) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *ServerSentEventSource) IsWidenable() bool {
-	return false
-}
-
 func (r *ServerSentEventSource) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%event-source")))
 	return

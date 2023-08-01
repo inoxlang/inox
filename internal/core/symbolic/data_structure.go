@@ -98,48 +98,6 @@ func (a *Array) Test(v SymbolicValue) bool {
 	return true
 }
 
-func (a *Array) Widen() (SymbolicValue, bool) {
-	if a.elements == nil {
-		if _, ok := a.generalElement.(*Any); ok {
-			return nil, false
-		}
-		return &Array{generalElement: ANY}, true
-	}
-
-	allAny := true
-
-	for _, elem := range a.elements {
-		if _, ok := elem.(*Any); !ok {
-			allAny = false
-			break
-		}
-	}
-
-	if allAny {
-		return &Array{generalElement: ANY}, true
-	}
-
-	widenedElements := make([]SymbolicValue, 0)
-	noWidening := true
-	for _, elem := range a.elements {
-		widened, ok := elem.Widen()
-		if ok {
-			noWidening = false
-			widenedElements = append(widenedElements, AsSerializable(widened).(Serializable))
-		} else {
-			widenedElements = append(widenedElements, elem)
-		}
-	}
-	if noWidening {
-		return &Array{generalElement: joinValues(widenedElements)}, true
-	}
-	return &Array{elements: widenedElements}, true
-}
-
-func (a *Array) IsWidenable() bool {
-	return a.elements != nil || !IsAny(a.generalElement)
-}
-
 func (a *Array) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if a.elements != nil {
 		length := a.KnownLen()
@@ -303,48 +261,6 @@ func (list *List) Test(v SymbolicValue) bool {
 		}
 	}
 	return true
-}
-
-func (list *List) Widen() (SymbolicValue, bool) {
-	if list.elements == nil {
-		if _, ok := list.generalElement.(*AnySerializable); ok {
-			return nil, false
-		}
-		return &List{generalElement: ANY_SERIALIZABLE}, true
-	}
-
-	allAny := true
-
-	for _, elem := range list.elements {
-		if _, ok := elem.(*AnySerializable); !ok {
-			allAny = false
-			break
-		}
-	}
-
-	if allAny {
-		return &List{generalElement: ANY_SERIALIZABLE}, true
-	}
-
-	widenedElements := make([]Serializable, 0)
-	noWidening := true
-	for _, elem := range list.elements {
-		widened, ok := elem.Widen()
-		if ok {
-			noWidening = false
-			widenedElements = append(widenedElements, AsSerializable(widened).(Serializable))
-		} else {
-			widenedElements = append(widenedElements, elem)
-		}
-	}
-	if noWidening {
-		return &List{generalElement: AsSerializable(joinValues(SerializablesToValues(widenedElements))).(Serializable)}, true
-	}
-	return &List{elements: widenedElements}, true
-}
-
-func (list *List) IsWidenable() bool {
-	return list.elements != nil || !IsAnySerializable(list.generalElement)
 }
 
 func (list *List) Static() Pattern {
@@ -582,48 +498,6 @@ func (t *Tuple) Test(v SymbolicValue) bool {
 	return true
 }
 
-func (t *Tuple) Widen() (SymbolicValue, bool) {
-	if t.elements == nil {
-		if _, ok := t.generalElement.(*AnySerializable); ok {
-			return nil, false
-		}
-		return &Tuple{generalElement: ANY_SERIALIZABLE}, true
-	}
-
-	allAny := true
-
-	for _, elem := range t.elements {
-		if _, ok := elem.(*AnySerializable); !ok {
-			allAny = false
-			break
-		}
-	}
-
-	if allAny {
-		return &Tuple{generalElement: ANY_SERIALIZABLE}, true
-	}
-
-	widenedElements := make([]Serializable, 0)
-	noWidening := true
-	for _, elem := range t.elements {
-		widened, ok := elem.Widen()
-		if ok {
-			noWidening = false
-			widenedElements = append(widenedElements, AsSerializable(widened).(Serializable))
-		} else {
-			widenedElements = append(widenedElements, elem)
-		}
-	}
-	if noWidening {
-		return &Tuple{generalElement: AsSerializable(joinValues(SerializablesToValues(widenedElements))).(Serializable)}, true
-	}
-	return &Tuple{elements: widenedElements}, true
-}
-
-func (t *Tuple) IsWidenable() bool {
-	return t.elements != nil || !IsAnySerializable(t.generalElement)
-}
-
 func (t *Tuple) Static() Pattern {
 	if t.generalElement != nil {
 		return NewListPatternOf(&TypePattern{val: t.generalElement})
@@ -762,17 +636,6 @@ func (list *KeyList) Test(v SymbolicValue) bool {
 		}
 	}
 	return true
-}
-
-func (a *KeyList) Widen() (SymbolicValue, bool) {
-	if a.Keys == nil {
-		return nil, false
-	}
-	return &KeyList{}, true
-}
-
-func (list *KeyList) IsWidenable() bool {
-	return list.Keys != nil
 }
 
 func (list *KeyList) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -943,37 +806,6 @@ func (dict *Dictionary) IteratorElementValue() SymbolicValue {
 
 func (dict *Dictionary) WatcherElement() SymbolicValue {
 	return ANY
-}
-
-func (dict *Dictionary) Widen() (SymbolicValue, bool) {
-	if dict.entries == nil {
-		return nil, false
-	}
-
-	widenedEntries := map[string]Serializable{}
-	keys := map[string]Serializable{}
-	allAlreadyWidened := true
-
-	for keyRepr, v := range dict.entries {
-		widened, ok := v.Widen()
-		if ok {
-			allAlreadyWidened = false
-			v = widened.(Serializable)
-		}
-		widenedEntries[keyRepr] = v
-		keys[keyRepr] = dict.keys[keyRepr]
-	}
-
-	if allAlreadyWidened {
-		return &Dictionary{}, true
-	}
-
-	return &Dictionary{entries: widenedEntries, keys: keys}, true
-}
-
-func (dict *Dictionary) IsWidenable() bool {
-	_, ok := dict.Widen()
-	return ok
 }
 
 func (dict *Dictionary) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -1369,38 +1201,6 @@ func (o *Object) WatcherElement() SymbolicValue {
 	return ANY
 }
 
-func (obj *Object) Widen() (SymbolicValue, bool) {
-	if obj.entries == nil {
-		return nil, false
-	}
-
-	widenedEntries := map[string]Serializable{}
-	allAlreadyWidened := true
-
-	for k, v := range obj.entries {
-		widened, ok := v.Widen()
-		if ok {
-			allAlreadyWidened = false
-			v = widened.(Serializable)
-		}
-		widenedEntries[k] = v
-	}
-
-	if allAlreadyWidened {
-		return &Object{}, true
-	}
-
-	return &Object{
-		entries:         widenedEntries,
-		optionalEntries: obj.optionalEntries,
-	}, true
-}
-
-func (obj *Object) IsWidenable() bool {
-	_, ok := obj.Widen()
-	return ok
-}
-
 func (obj *Object) Static() Pattern {
 	entries := map[string]Pattern{}
 
@@ -1646,38 +1446,6 @@ func (rec *Record) IteratorElementValue() SymbolicValue {
 	return rec.element()
 }
 
-func (rec *Record) Widen() (SymbolicValue, bool) {
-	if rec.entries == nil {
-		if rec.valueOnly != nil {
-			return &Record{}, true
-		}
-		return nil, false
-	}
-
-	widenedEntries := map[string]Serializable{}
-	allAlreadyWidened := true
-
-	for k, v := range rec.entries {
-		widened, ok := v.Widen()
-		if ok {
-			allAlreadyWidened = false
-			v = widened.(Serializable)
-		}
-		widenedEntries[k] = v
-	}
-
-	if allAlreadyWidened {
-		return &Record{}, true
-	}
-
-	return &Record{entries: widenedEntries}, true
-}
-
-func (rec *Record) IsWidenable() bool {
-	_, ok := rec.Widen()
-	return ok
-}
-
 func (rec *Record) Static() Pattern {
 	entries := map[string]Pattern{}
 
@@ -1791,14 +1559,6 @@ func (i *AnyIndexable) KnownLen() int {
 }
 
 func (i *AnyIndexable) HasKnownLen() bool {
-	return false
-}
-
-func (r *AnyIndexable) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *AnyIndexable) IsWidenable() bool {
 	return false
 }
 

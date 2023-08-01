@@ -49,14 +49,6 @@ func (*LifetimeJob) PropertyNames() []string {
 	return []string{}
 }
 
-func (j *LifetimeJob) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (j *LifetimeJob) IsWidenable() bool {
-	return false
-}
-
 func (r *LifetimeJob) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if IsAny(r.subjectPattern) {
 		utils.Must(w.Write(utils.StringAsBytes("%lifetime-job")))

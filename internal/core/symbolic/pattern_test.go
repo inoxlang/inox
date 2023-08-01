@@ -25,15 +25,6 @@ func TestSymbolicAnyPattern(t *testing.T) {
 		assert.True(t, pattern.TestValue(ANY_INT))
 	})
 
-	t.Run("Widen() & IsWidenable()", func(t *testing.T) {
-		pattern := ANY_PATTERN
-
-		assert.False(t, pattern.IsWidenable())
-
-		widened, ok := pattern.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }
 
 func TestSymbolicPathPattern(t *testing.T) {
@@ -54,15 +45,6 @@ func TestSymbolicPathPattern(t *testing.T) {
 		assert.False(t, pattern.TestValue(&PathPattern{}))
 	})
 
-	t.Run("Widen() & IsWidenable()", func(t *testing.T) {
-		pattern := &PathPattern{}
-
-		assert.False(t, pattern.IsWidenable())
-
-		widened, ok := pattern.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }
 
 func TestSymbolicURLPattern(t *testing.T) {
@@ -84,15 +66,6 @@ func TestSymbolicURLPattern(t *testing.T) {
 		assert.False(t, pattern.TestValue(&URLPattern{}))
 	})
 
-	t.Run("Widen() & IsWidenable()", func(t *testing.T) {
-		pattern := &URLPattern{}
-
-		assert.False(t, pattern.IsWidenable())
-
-		widened, ok := pattern.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }
 
 func TestSymbolicHostPattern(t *testing.T) {
@@ -114,15 +87,6 @@ func TestSymbolicHostPattern(t *testing.T) {
 		assert.False(t, pattern.TestValue(&HostPattern{}))
 	})
 
-	t.Run("Widen() & IsWidenable()", func(t *testing.T) {
-		pattern := &HostPattern{}
-
-		assert.False(t, pattern.IsWidenable())
-
-		widened, ok := pattern.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }
 
 func TestSymbolicNamedSegmentPathPattern(t *testing.T) {
@@ -158,23 +122,9 @@ func TestSymbolicNamedSegmentPathPattern(t *testing.T) {
 		assert.False(t, specificNamedPathPattern.TestValue(&NamedSegmentPathPattern{node: &parse.NamedSegmentPathPatternLiteral{}}))
 	})
 
-	t.Run("Widen() & IsWidenable()", func(t *testing.T) {
-		namedPathPattern := &NamedSegmentPathPattern{}
-		assert.False(t, namedPathPattern.IsWidenable())
-		widened, ok := namedPathPattern.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-
-		specificNamedPathPattern := &NamedSegmentPathPattern{node: &parse.NamedSegmentPathPatternLiteral{}}
-		assert.True(t, specificNamedPathPattern.IsWidenable())
-		widened, ok = specificNamedPathPattern.Widen()
-		assert.True(t, ok)
-		assert.Equal(t, &NamedSegmentPathPattern{node: nil}, widened)
-	})
 }
 
 func TestSymbolicExactValuePattern(t *testing.T) {
-
 	t.Run("Test()", func(t *testing.T) {
 		pattern := &ExactValuePattern{value: ANY_INT}
 
@@ -191,14 +141,6 @@ func TestSymbolicExactValuePattern(t *testing.T) {
 		assert.False(t, pattern.TestValue(pattern))
 	})
 
-	t.Run("Widen() & IsWidenable()", func(t *testing.T) {
-		pattern := &ExactValuePattern{value: ANY_INT}
-		assert.True(t, pattern.IsWidenable())
-
-		widened, ok := pattern.Widen()
-		assert.True(t, ok)
-		assert.Equal(t, &ExactValuePattern{value: ANY_SERIALIZABLE}, widened)
-	})
 }
 
 func TestSymbolicRegexPattern(t *testing.T) {
@@ -219,15 +161,6 @@ func TestSymbolicRegexPattern(t *testing.T) {
 		assert.False(t, pattern.TestValue(&RegexPattern{}))
 	})
 
-	t.Run("Widen() & IsWidenable()", func(t *testing.T) {
-		pattern := &RegexPattern{}
-
-		assert.False(t, pattern.IsWidenable())
-
-		widened, ok := pattern.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }
 
 func TestSymbolicObjectPattern(t *testing.T) {
@@ -250,7 +183,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			{&ObjectPattern{entries: map[string]Pattern{}}, &ObjectPattern{entries: map[string]Pattern{}}, true},
 			{
 				&ObjectPattern{
-					entries: map[string]Pattern{"a": &ExactValuePattern{value: ANY_INT}},
+					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
 				},
 				&ObjectPattern{
 					entries: map[string]Pattern{},
@@ -262,16 +195,16 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					entries: map[string]Pattern{},
 				},
 				&ObjectPattern{
-					entries: map[string]Pattern{"a": &ExactValuePattern{value: ANY_INT}},
+					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
 				},
 				false,
 			},
 			{
 				&ObjectPattern{
-					entries: map[string]Pattern{"a": &ExactValuePattern{value: ANY_INT}},
+					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
 				},
 				&ObjectPattern{
-					entries: map[string]Pattern{"a": &ExactValuePattern{value: ANY_INT}},
+					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
 				},
 				true,
 			},
@@ -280,13 +213,13 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					entries: map[string]Pattern{"a": ANY_PATTERN},
 				},
 				&ObjectPattern{
-					entries: map[string]Pattern{"a": &ExactValuePattern{value: ANY_INT}},
+					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
 				},
 				true,
 			},
 			{
 				&ObjectPattern{
-					entries: map[string]Pattern{"a": &ExactValuePattern{value: ANY_INT}},
+					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
 				},
 				&ObjectPattern{
 					entries: map[string]Pattern{"a": ANY_PATTERN},
@@ -323,7 +256,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			},
 			{
 				&ObjectPattern{
-					entries: map[string]Pattern{"a": &ExactValuePattern{value: ANY_INT}},
+					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
 				},
 				&Object{
 					entries: map[string]Serializable{},
@@ -332,7 +265,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			},
 			{
 				&ObjectPattern{
-					entries:         map[string]Pattern{"a": &ExactValuePattern{value: ANY_INT}},
+					entries:         map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
 					optionalEntries: map[string]struct{}{"a": {}},
 				},
 				&Object{
@@ -351,7 +284,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			},
 			{
 				&ObjectPattern{
-					entries: map[string]Pattern{"a": &ExactValuePattern{value: ANY_INT}},
+					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
 				},
 				&Object{
 					entries: map[string]Serializable{"a": ANY_INT},
@@ -369,7 +302,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			},
 			{
 				&ObjectPattern{
-					entries: map[string]Pattern{"a": &ExactValuePattern{value: ANY_INT}},
+					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
 				},
 				&Object{
 					entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
@@ -385,108 +318,6 @@ func TestSymbolicObjectPattern(t *testing.T) {
 		}
 	})
 
-	t.Run("Widen() and IsWidenable()", func(t *testing.T) {
-		cases := []struct {
-			pattern *ObjectPattern
-			widened *ObjectPattern
-			ok      bool
-		}{
-			{
-				&ObjectPattern{},
-				nil,
-				false,
-			},
-			{
-				&ObjectPattern{
-					inexact: true,
-					entries: make(map[string]Pattern),
-				},
-				&ObjectPattern{},
-				true,
-			},
-			{
-				&ObjectPattern{
-					inexact: false,
-					entries: make(map[string]Pattern),
-				},
-				&ObjectPattern{},
-				true,
-			},
-			{
-				&ObjectPattern{
-					inexact: false,
-					entries: map[string]Pattern{
-						"name": &ExactValuePattern{value: ANY_INT},
-					},
-				},
-				//the entries can be widened
-				&ObjectPattern{
-					inexact: false,
-					entries: map[string]Pattern{
-						"name": &ExactValuePattern{value: ANY_SERIALIZABLE},
-					},
-				},
-				true,
-			},
-			{
-				&ObjectPattern{
-					inexact: true,
-					entries: map[string]Pattern{
-						"name": &ExactValuePattern{value: ANY_INT},
-					},
-				},
-				//the entries can be widened
-				&ObjectPattern{
-					inexact: true,
-					entries: map[string]Pattern{
-						"name": &ExactValuePattern{value: ANY_SERIALIZABLE},
-					},
-				}, true,
-			},
-			{
-				&ObjectPattern{
-					inexact: true,
-					entries: map[string]Pattern{
-						"any": &ExactValuePattern{value: ANY_SERIALIZABLE},
-					},
-				},
-				//entries cannot be widened and the pattern is already inexact
-				&ObjectPattern{},
-				true,
-			},
-			{
-				&ObjectPattern{
-					inexact: false,
-					entries: map[string]Pattern{
-						"any": &ExactValuePattern{value: ANY_SERIALIZABLE},
-					},
-				},
-				//entries cannot be widened so the object pattern becomes inexact
-				&ObjectPattern{
-					inexact: true,
-					entries: map[string]Pattern{
-						"any": &ExactValuePattern{value: ANY_SERIALIZABLE},
-					},
-				},
-				true,
-			},
-		}
-
-		for _, testCase := range cases {
-			t.Run(fmt.Sprint(testCase.pattern), func(t *testing.T) {
-
-				widened, ok := testCase.pattern.Widen()
-				assert.Equal(t, testCase.ok, ok)
-				assert.Equal(t, testCase.pattern.IsWidenable(), ok, "widen() is inconsistent with IsWidenable()")
-
-				if !ok {
-					assert.Nil(t, widened)
-				} else {
-					assert.Equal(t, testCase.widened, widened)
-				}
-			})
-		}
-	})
 }
 
 func TestSymbolicRecordPattern(t *testing.T) {
@@ -509,7 +340,7 @@ func TestSymbolicRecordPattern(t *testing.T) {
 			{&RecordPattern{entries: map[string]Pattern{}}, &RecordPattern{entries: map[string]Pattern{}}, true},
 			{
 				&RecordPattern{
-					entries: map[string]Pattern{"a": &ExactValuePattern{value: ANY_INT}},
+					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
 				},
 				&RecordPattern{
 					entries: map[string]Pattern{},
@@ -521,16 +352,16 @@ func TestSymbolicRecordPattern(t *testing.T) {
 					entries: map[string]Pattern{},
 				},
 				&RecordPattern{
-					entries: map[string]Pattern{"a": &ExactValuePattern{value: ANY_INT}},
+					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
 				},
 				false,
 			},
 			{
 				&RecordPattern{
-					entries: map[string]Pattern{"a": &ExactValuePattern{value: ANY_INT}},
+					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
 				},
 				&RecordPattern{
-					entries: map[string]Pattern{"a": &ExactValuePattern{value: ANY_INT}},
+					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
 				},
 				true,
 			},
@@ -539,13 +370,13 @@ func TestSymbolicRecordPattern(t *testing.T) {
 					entries: map[string]Pattern{"a": ANY_PATTERN},
 				},
 				&RecordPattern{
-					entries: map[string]Pattern{"a": &ExactValuePattern{value: ANY_INT}},
+					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
 				},
 				true,
 			},
 			{
 				&RecordPattern{
-					entries: map[string]Pattern{"a": &ExactValuePattern{value: ANY_INT}},
+					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
 				},
 				&RecordPattern{
 					entries: map[string]Pattern{"a": ANY_PATTERN},
@@ -582,7 +413,7 @@ func TestSymbolicRecordPattern(t *testing.T) {
 			},
 			{
 				&RecordPattern{
-					entries: map[string]Pattern{"a": &ExactValuePattern{value: ANY_INT}},
+					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
 				},
 				&Record{
 					entries: map[string]Serializable{},
@@ -591,7 +422,7 @@ func TestSymbolicRecordPattern(t *testing.T) {
 			},
 			{
 				&RecordPattern{
-					entries:         map[string]Pattern{"a": &ExactValuePattern{value: ANY_INT}},
+					entries:         map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
 					optionalEntries: map[string]struct{}{"a": {}},
 				},
 				&Record{
@@ -610,7 +441,7 @@ func TestSymbolicRecordPattern(t *testing.T) {
 			},
 			{
 				&RecordPattern{
-					entries: map[string]Pattern{"a": &ExactValuePattern{value: ANY_INT}},
+					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
 				},
 				&Record{
 					entries: map[string]Serializable{"a": ANY_INT},
@@ -628,7 +459,7 @@ func TestSymbolicRecordPattern(t *testing.T) {
 			},
 			{
 				&RecordPattern{
-					entries: map[string]Pattern{"a": &ExactValuePattern{value: ANY_INT}},
+					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
 				},
 				&Record{
 					entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
@@ -644,108 +475,6 @@ func TestSymbolicRecordPattern(t *testing.T) {
 		}
 	})
 
-	t.Run("Widen() and IsWidenable()", func(t *testing.T) {
-		cases := []struct {
-			pattern *RecordPattern
-			widened *RecordPattern
-			ok      bool
-		}{
-			{
-				&RecordPattern{},
-				nil,
-				false,
-			},
-			{
-				&RecordPattern{
-					inexact: true,
-					entries: make(map[string]Pattern),
-				},
-				&RecordPattern{},
-				true,
-			},
-			{
-				&RecordPattern{
-					inexact: false,
-					entries: make(map[string]Pattern),
-				},
-				&RecordPattern{},
-				true,
-			},
-			{
-				&RecordPattern{
-					inexact: false,
-					entries: map[string]Pattern{
-						"name": &ExactValuePattern{value: ANY_INT},
-					},
-				},
-				//the entries can be widened
-				&RecordPattern{
-					inexact: false,
-					entries: map[string]Pattern{
-						"name": &ExactValuePattern{value: ANY_SERIALIZABLE},
-					},
-				},
-				true,
-			},
-			{
-				&RecordPattern{
-					inexact: true,
-					entries: map[string]Pattern{
-						"name": &ExactValuePattern{value: ANY_INT},
-					},
-				},
-				//the entries can be widened
-				&RecordPattern{
-					inexact: true,
-					entries: map[string]Pattern{
-						"name": &ExactValuePattern{value: ANY_SERIALIZABLE},
-					},
-				}, true,
-			},
-			{
-				&RecordPattern{
-					inexact: true,
-					entries: map[string]Pattern{
-						"any": &ExactValuePattern{value: ANY_SERIALIZABLE},
-					},
-				},
-				//entries cannot be widened and the pattern is already inexact
-				&RecordPattern{},
-				true,
-			},
-			{
-				&RecordPattern{
-					inexact: false,
-					entries: map[string]Pattern{
-						"any": &ExactValuePattern{value: ANY_SERIALIZABLE},
-					},
-				},
-				//entries cannot be widened so the object pattern becomes inexact
-				&RecordPattern{
-					inexact: true,
-					entries: map[string]Pattern{
-						"any": &ExactValuePattern{value: ANY_SERIALIZABLE},
-					},
-				},
-				true,
-			},
-		}
-
-		for _, testCase := range cases {
-			t.Run(fmt.Sprint(testCase.pattern), func(t *testing.T) {
-
-				widened, ok := testCase.pattern.Widen()
-				assert.Equal(t, testCase.ok, ok)
-				assert.Equal(t, testCase.pattern.IsWidenable(), ok, "widen() is inconsistent with IsWidenable()")
-
-				if !ok {
-					assert.Nil(t, widened)
-				} else {
-					assert.Equal(t, testCase.widened, widened)
-				}
-			})
-		}
-	})
 }
 
 func TestSymbolicListPattern(t *testing.T) {
@@ -770,7 +499,7 @@ func TestSymbolicListPattern(t *testing.T) {
 			},
 			{
 				&ListPattern{generalElement: ANY_PATTERN},
-				&ListPattern{generalElement: &ExactValuePattern{value: ANY_INT}},
+				&ListPattern{generalElement: &TypePattern{val: ANY_INT}},
 				true,
 			},
 			{
@@ -882,45 +611,6 @@ func TestSymbolicListPattern(t *testing.T) {
 		}
 	})
 
-	t.Run("Widen() and IsWidenable()", func(t *testing.T) {
-		cases := []struct {
-			pattern *ListPattern
-			widened *ListPattern
-			ok      bool
-		}{
-			{
-				&ListPattern{generalElement: ANY_PATTERN},
-				nil,
-				false,
-			},
-			{
-				&ListPattern{elements: []Pattern{ANY_PATTERN}},
-				&ListPattern{generalElement: ANY_PATTERN},
-				false,
-			},
-
-			{
-				&ListPattern{elements: []Pattern{&ExactValuePattern{value: ANY_INT}}},
-				&ListPattern{elements: []Pattern{&ExactValuePattern{value: ANY_SERIALIZABLE}}},
-				false,
-			},
-		}
-
-		for _, testCase := range cases {
-			t.Run(fmt.Sprint(testCase.pattern), func(t *testing.T) {
-
-				widened, ok := testCase.pattern.Widen()
-				assert.Equal(t, testCase.ok, ok)
-				assert.Equal(t, testCase.pattern.IsWidenable(), ok, "widen() is inconsistent with IsWidenable()")
-
-				if !ok {
-					assert.Nil(t, widened)
-				} else {
-					assert.Equal(t, testCase.widened, widened)
-				}
-			})
-		}
-	})
 }
 
 func TestSymbolicTuplePattern(t *testing.T) {
@@ -945,7 +635,7 @@ func TestSymbolicTuplePattern(t *testing.T) {
 			},
 			{
 				&TuplePattern{generalElement: ANY_PATTERN},
-				&TuplePattern{generalElement: &ExactValuePattern{value: ANY_INT}},
+				&TuplePattern{generalElement: &TypePattern{val: ANY_INT}},
 				true,
 			},
 			{
@@ -1057,45 +747,6 @@ func TestSymbolicTuplePattern(t *testing.T) {
 		}
 	})
 
-	t.Run("Widen() and IsWidenable()", func(t *testing.T) {
-		cases := []struct {
-			pattern *TuplePattern
-			widened *TuplePattern
-			ok      bool
-		}{
-			{
-				&TuplePattern{generalElement: ANY_PATTERN},
-				nil,
-				false,
-			},
-			{
-				&TuplePattern{elements: []Pattern{ANY_PATTERN}},
-				&TuplePattern{generalElement: ANY_PATTERN},
-				false,
-			},
-
-			{
-				&TuplePattern{elements: []Pattern{&ExactValuePattern{value: ANY_INT}}},
-				&TuplePattern{elements: []Pattern{&ExactValuePattern{value: ANY_SERIALIZABLE}}},
-				false,
-			},
-		}
-
-		for _, testCase := range cases {
-			t.Run(fmt.Sprint(testCase.pattern), func(t *testing.T) {
-
-				widened, ok := testCase.pattern.Widen()
-				assert.Equal(t, testCase.ok, ok)
-				assert.Equal(t, testCase.pattern.IsWidenable(), ok, "widen() is inconsistent with IsWidenable()")
-
-				if !ok {
-					assert.Nil(t, widened)
-				} else {
-					assert.Equal(t, testCase.widened, widened)
-				}
-			})
-		}
-	})
 }
 
 func TestSymbolicUnionPattern(t *testing.T) {
@@ -1115,8 +766,8 @@ func TestSymbolicUnionPattern(t *testing.T) {
 				},
 				&UnionPattern{
 					Cases: []Pattern{
-						&ExactValuePattern{value: ANY_INT},
-						&ExactValuePattern{value: ANY_STR},
+						&TypePattern{val: ANY_INT},
+						&TypePattern{val: ANY_STR},
 					},
 				},
 				true,
@@ -1130,9 +781,9 @@ func TestSymbolicUnionPattern(t *testing.T) {
 				},
 				&UnionPattern{
 					Cases: []Pattern{
-						&ExactValuePattern{value: ANY_INT},
-						&ExactValuePattern{value: ANY_STR},
-						&ExactValuePattern{value: ANY_BOOL},
+						&TypePattern{val: ANY_INT},
+						&TypePattern{val: ANY_STR},
+						&TypePattern{val: ANY_BOOL},
 					},
 				},
 				false,
@@ -1140,8 +791,8 @@ func TestSymbolicUnionPattern(t *testing.T) {
 			{
 				&UnionPattern{
 					Cases: []Pattern{
-						&ExactValuePattern{value: ANY_INT},
-						&ExactValuePattern{value: ANY_STR},
+						&TypePattern{val: ANY_INT},
+						&TypePattern{val: ANY_STR},
 					},
 				},
 				&UnionPattern{
@@ -1170,8 +821,8 @@ func TestSymbolicUnionPattern(t *testing.T) {
 			{
 				&UnionPattern{
 					Cases: []Pattern{
-						&ExactValuePattern{value: ANY_INT},
-						&ExactValuePattern{value: ANY_STR},
+						&TypePattern{val: ANY_INT},
+						&TypePattern{val: ANY_STR},
 					},
 				},
 				ANY_INT,
@@ -1180,8 +831,8 @@ func TestSymbolicUnionPattern(t *testing.T) {
 			{
 				&UnionPattern{
 					Cases: []Pattern{
-						&ExactValuePattern{value: ANY_INT},
-						&ExactValuePattern{value: ANY_STR},
+						&TypePattern{val: ANY_INT},
+						&TypePattern{val: ANY_STR},
 					},
 				},
 				ANY_STR,
@@ -1190,8 +841,8 @@ func TestSymbolicUnionPattern(t *testing.T) {
 			{
 				&UnionPattern{
 					Cases: []Pattern{
-						&ExactValuePattern{value: ANY_INT},
-						&ExactValuePattern{value: ANY_STR},
+						&TypePattern{val: ANY_INT},
+						&TypePattern{val: ANY_STR},
 					},
 				},
 				NewMultivalue(ANY_INT, ANY_STR),
@@ -1200,8 +851,8 @@ func TestSymbolicUnionPattern(t *testing.T) {
 			{
 				&UnionPattern{
 					Cases: []Pattern{
-						&ExactValuePattern{value: ANY_INT},
-						&ExactValuePattern{value: ANY_STR},
+						&TypePattern{val: ANY_INT},
+						&TypePattern{val: ANY_STR},
 					},
 				},
 				NewMultivalue(ANY_STR, ANY_INT),
@@ -1210,8 +861,8 @@ func TestSymbolicUnionPattern(t *testing.T) {
 			{
 				&UnionPattern{
 					Cases: []Pattern{
-						&ExactValuePattern{value: ANY_INT},
-						&ExactValuePattern{value: ANY_STR},
+						&TypePattern{val: ANY_INT},
+						&TypePattern{val: ANY_STR},
 					},
 				},
 				NewMultivalue(ANY_STR, NewInt(1)),
@@ -1220,8 +871,8 @@ func TestSymbolicUnionPattern(t *testing.T) {
 			{
 				&UnionPattern{
 					Cases: []Pattern{
-						&ExactValuePattern{value: ANY_INT},
-						&ExactValuePattern{value: ANY_STR},
+						&TypePattern{val: ANY_INT},
+						&TypePattern{val: ANY_STR},
 					},
 				},
 				ANY_SERIALIZABLE,
@@ -1236,41 +887,6 @@ func TestSymbolicUnionPattern(t *testing.T) {
 		}
 	})
 
-	t.Run("Widen() and IsWidenable()", func(t *testing.T) {
-		cases := []struct {
-			pattern *UnionPattern
-			widened *UnionPattern
-			ok      bool
-		}{
-			{
-				&UnionPattern{
-					Cases: []Pattern{
-						&ExactValuePattern{value: ANY_INT},
-						&ExactValuePattern{value: ANY_STR},
-					},
-				},
-				&UnionPattern{
-					Cases: nil,
-				},
-				true,
-			},
-		}
-
-		for _, testCase := range cases {
-			t.Run(fmt.Sprint(testCase.pattern), func(t *testing.T) {
-
-				widened, ok := testCase.pattern.Widen()
-				assert.Equal(t, testCase.ok, ok)
-				assert.Equal(t, testCase.pattern.IsWidenable(), ok, "widen() is inconsistent with IsWidenable()")
-
-				if !ok {
-					assert.Nil(t, widened)
-				} else {
-					assert.Equal(t, testCase.widened, widened)
-				}
-			})
-		}
-	})
 }
 
 func TestSymbolicIntersectionPattern(t *testing.T) {
@@ -1295,15 +911,6 @@ func TestSymbolicOptionPattern(t *testing.T) {
 		assert.False(t, pattern.TestValue(&OptionPattern{}))
 	})
 
-	t.Run("Widen() & IsWidenable()", func(t *testing.T) {
-		pattern := &OptionPattern{}
-
-		assert.False(t, pattern.IsWidenable())
-
-		widened, ok := pattern.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }
 
 func TestSymbolicAnyStringPatternElement(t *testing.T) {
@@ -1324,15 +931,6 @@ func TestSymbolicAnyStringPatternElement(t *testing.T) {
 		assert.False(t, pattern.TestValue(&AnyStringPattern{}))
 	})
 
-	t.Run("Widen() & IsWidenable()", func(t *testing.T) {
-		pattern := &AnyStringPattern{}
-
-		assert.False(t, pattern.IsWidenable())
-
-		widened, ok := pattern.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }
 
 func TestTypePattern(t *testing.T) {
@@ -1370,25 +968,6 @@ func TestTypePattern(t *testing.T) {
 		assert.False(t, specific.TestValue(ANY_INT))
 	})
 
-	t.Run("Widen() & IsWidenable()", func(t *testing.T) {
-		{
-			_any := &TypePattern{val: ANY_SERIALIZABLE}
-
-			assert.False(t, _any.IsWidenable())
-			widened, ok := _any.Widen()
-			assert.False(t, ok)
-			assert.Nil(t, widened)
-		}
-
-		{
-			specific := &TypePattern{val: ANY_STR}
-
-			assert.False(t, specific.IsWidenable())
-			widened, ok := specific.Widen()
-			assert.False(t, ok)
-			assert.Nil(t, widened)
-		}
-	})
 }
 
 func TestFunctionPattern(t *testing.T) {
@@ -1414,15 +993,6 @@ func TestFunctionPattern(t *testing.T) {
 			}))
 			assert.False(t, anyFnPatt.TestValue(ANY_STR))
 			assert.False(t, anyFnPatt.TestValue(anyFnPatt))
-		})
-
-		t.Run("Widen() & IsWidenable()", func(t *testing.T) {
-			anyFnPatt := &FunctionPattern{}
-
-			assert.False(t, anyFnPatt.IsWidenable())
-			widened, ok := anyFnPatt.Widen()
-			assert.False(t, ok)
-			assert.Nil(t, widened)
 		})
 	})
 
@@ -1496,15 +1066,6 @@ func TestFunctionPattern(t *testing.T) {
 				assert.False(t, fnPatt.TestValue(ANY_STR))
 			})
 
-			t.Run("Widen() & IsWidenable()", func(t *testing.T) {
-				node, _ := parse.ParseExpression(pattCode)
-				fnPatt := utils.Must(symbolicEval(node, makeState())).(*FunctionPattern)
-
-				assert.True(t, fnPatt.IsWidenable())
-				widened, ok := fnPatt.Widen()
-				assert.True(t, ok)
-				assert.Equal(t, &FunctionPattern{}, widened)
-			})
 		})
 	}
 

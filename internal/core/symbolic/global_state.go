@@ -62,14 +62,6 @@ func (GlobalState *GlobalState) Cancel(*Context) {
 
 }
 
-func (r *GlobalState) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (r *GlobalState) IsWidenable() bool {
-	return false
-}
-
 func (r *GlobalState) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%global-state")))
 	return

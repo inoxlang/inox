@@ -36,14 +36,6 @@ func (r *Publication) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (r *Publication) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *Publication) IsWidenable() bool {
-	return false
-}
-
 func (r *Publication) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%publication")))
 	return
@@ -73,14 +65,6 @@ func (r *Subscription) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (r *Subscription) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *Subscription) IsWidenable() bool {
-	return false
-}
-
 func (r *Subscription) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%subscription")))
 	return
@@ -101,21 +85,13 @@ func (r *AnySubscriber) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (r *AnySubscriber) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (a *AnySubscriber) IsWidenable() bool {
-	return false
-}
-
 func (r *AnySubscriber) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%subscriber")))
 	return
 }
 
 func (r *AnySubscriber) WidestOfType() SymbolicValue {
-	return &AnySubscriber{}
+	return ANY_SUBSCRIBER
 }
 
 func (r *AnySubscriber) ReceivePublication(SymbolicValue) error {

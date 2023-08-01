@@ -16,19 +16,6 @@ func TestSymbolicAny(t *testing.T) {
 		assert.True(t, any.Test(&Int{}))
 	})
 
-	t.Run("IsWidenable()", func(t *testing.T) {
-		assert.False(t, (ANY).IsWidenable())
-	})
-
-	t.Run("Widen()", func(t *testing.T) {
-		any := ANY
-
-		assert.False(t, any.IsWidenable())
-
-		widened, ok := any.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }
 
 func TestSymbolicNil(t *testing.T) {
@@ -40,19 +27,6 @@ func TestSymbolicNil(t *testing.T) {
 		assert.False(t, _nil.Test(&Int{}))
 	})
 
-	t.Run("IsWidenable()", func(t *testing.T) {
-		assert.False(t, (&NilT{}).IsWidenable())
-	})
-
-	t.Run("Widen()", func(t *testing.T) {
-		_nil := &NilT{}
-
-		assert.False(t, _nil.IsWidenable())
-
-		widened, ok := _nil.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }
 
 func TestSymbolicBool(t *testing.T) {
@@ -64,19 +38,7 @@ func TestSymbolicBool(t *testing.T) {
 		assert.True(t, bool.Test(ANY_BOOL))
 		assert.False(t, bool.Test(&Int{}))
 	})
-	t.Run("IsWidenable()", func(t *testing.T) {
-		assert.False(t, (ANY_BOOL).IsWidenable())
-	})
 
-	t.Run("Widen()", func(t *testing.T) {
-		_nil := ANY_BOOL
-
-		assert.False(t, _nil.IsWidenable())
-
-		widened, ok := _nil.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }
 
 func TestSymbolicFloat(t *testing.T) {
@@ -89,19 +51,6 @@ func TestSymbolicFloat(t *testing.T) {
 		assert.False(t, float.Test(&Int{}))
 	})
 
-	t.Run("IsWidenable()", func(t *testing.T) {
-		assert.False(t, (&Float{}).IsWidenable())
-	})
-
-	t.Run("Widen()", func(t *testing.T) {
-		_nil := &Float{}
-
-		assert.False(t, _nil.IsWidenable())
-
-		widened, ok := _nil.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }
 
 func TestSymbolicInt(t *testing.T) {
@@ -114,19 +63,6 @@ func TestSymbolicInt(t *testing.T) {
 		assert.False(t, int.Test(&Float{}))
 	})
 
-	t.Run("IsWidenable()", func(t *testing.T) {
-		assert.False(t, (&Int{}).IsWidenable())
-	})
-
-	t.Run("Widen()", func(t *testing.T) {
-		int := &Int{}
-
-		assert.False(t, int.IsWidenable())
-
-		widened, ok := int.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }
 
 func TestSymbolicRune(t *testing.T) {
@@ -139,19 +75,6 @@ func TestSymbolicRune(t *testing.T) {
 		assert.False(t, rune.Test(&Int{}))
 	})
 
-	t.Run("IsWidenable()", func(t *testing.T) {
-		assert.False(t, (&Rune{}).IsWidenable())
-	})
-
-	t.Run("Widen()", func(t *testing.T) {
-		rune := &Rune{}
-
-		assert.False(t, rune.IsWidenable())
-
-		widened, ok := rune.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }
 
 func TestSymbolicPath(t *testing.T) {
@@ -177,43 +100,6 @@ func TestSymbolicPath(t *testing.T) {
 		assert.False(t, anyDirPath.Test(anyAbsPath))
 	})
 
-	t.Run("IsWidenable()", func(t *testing.T) {
-		assert.False(t, (&Path{}).IsWidenable())
-		assert.True(t, (&Path{dirConstraint: DirPath}).IsWidenable())
-		assert.True(t, (&Path{absoluteness: AbsolutePath}).IsWidenable())
-	})
-
-	t.Run("Widen()", func(t *testing.T) {
-		t.Run("non specific", func(t *testing.T) {
-			path := &Path{}
-
-			assert.False(t, path.IsWidenable())
-
-			widened, ok := path.Widen()
-			assert.False(t, ok)
-			assert.Nil(t, widened)
-		})
-
-		t.Run("dir path", func(t *testing.T) {
-			path := &Path{dirConstraint: DirPath}
-
-			assert.True(t, path.IsWidenable())
-
-			widened, ok := path.Widen()
-			assert.True(t, ok)
-			assert.Equal(t, ANY_PATH, widened)
-		})
-
-		t.Run("absolute path", func(t *testing.T) {
-			path := &Path{absoluteness: AbsolutePath}
-
-			assert.True(t, path.IsWidenable())
-
-			widened, ok := path.Widen()
-			assert.True(t, ok)
-			assert.Equal(t, ANY_PATH, widened)
-		})
-	})
 }
 
 func TestSymbolicURL(t *testing.T) {
@@ -227,19 +113,6 @@ func TestSymbolicURL(t *testing.T) {
 		assert.False(t, url.Test(&Int{}))
 	})
 
-	t.Run("IsWidenable()", func(t *testing.T) {
-		assert.False(t, (&URL{}).IsWidenable())
-	})
-
-	t.Run("Widen()", func(t *testing.T) {
-		url := &URL{}
-
-		assert.False(t, url.IsWidenable())
-
-		widened, ok := url.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }
 
 func TestSymbolicHost(t *testing.T) {
@@ -253,19 +126,6 @@ func TestSymbolicHost(t *testing.T) {
 		assert.False(t, host.Test(&Int{}))
 	})
 
-	t.Run("IsWidenable()", func(t *testing.T) {
-		assert.False(t, (&Host{}).IsWidenable())
-	})
-
-	t.Run("Widen()", func(t *testing.T) {
-		host := &Host{}
-
-		assert.False(t, host.IsWidenable())
-
-		widened, ok := host.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }
 
 func TestSymbolicIdentifier(t *testing.T) {
@@ -281,26 +141,6 @@ func TestSymbolicIdentifier(t *testing.T) {
 		assert.True(t, ident.Test(specificIdent))
 	})
 
-	t.Run("IsWidenable()", func(t *testing.T) {
-		specificIdent := &Identifier{name: "foo"}
-		ident := &Identifier{}
-
-		assert.True(t, specificIdent.IsWidenable())
-		assert.False(t, ident.IsWidenable())
-	})
-
-	t.Run("Widen()", func(t *testing.T) {
-		specificIdent := &Identifier{name: "foo"}
-		ident := &Identifier{}
-
-		widened, ok := specificIdent.Widen()
-		assert.True(t, ok)
-		assert.Equal(t, &Identifier{}, widened)
-
-		widened, ok = ident.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }
 
 func TestSymbolicOption(t *testing.T) {
@@ -314,19 +154,6 @@ func TestSymbolicOption(t *testing.T) {
 		assert.False(t, option.Test(&Int{}))
 	})
 
-	t.Run("IsWidenable()", func(t *testing.T) {
-		assert.False(t, (&Option{}).IsWidenable())
-	})
-
-	t.Run("Widen()", func(t *testing.T) {
-		option := &Option{}
-
-		assert.False(t, option.IsWidenable())
-
-		widened, ok := option.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }
 
 func TestSymbolicNode(t *testing.T) {
@@ -342,26 +169,6 @@ func TestSymbolicNode(t *testing.T) {
 		assert.True(t, node.Test(specificNode))
 	})
 
-	t.Run("IsWidenable()", func(t *testing.T) {
-		specificNode := &AstNode{Node: &parse.ContinueStatement{}}
-		node := &AstNode{}
-
-		assert.True(t, specificNode.IsWidenable())
-		assert.False(t, node.IsWidenable())
-	})
-
-	t.Run("Widen()", func(t *testing.T) {
-		specificNode := &AstNode{Node: &parse.ContinueStatement{}}
-		node := &AstNode{}
-
-		widened, ok := specificNode.Widen()
-		assert.True(t, ok)
-		assert.Equal(t, &AstNode{}, widened)
-
-		widened, ok = node.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }
 
 func TestSymbolicError(t *testing.T) {
@@ -374,30 +181,6 @@ func TestSymbolicError(t *testing.T) {
 		assert.False(t, err.Test(&Int{}))
 	})
 
-	t.Run("IsWidenable()", func(t *testing.T) {
-		assert.False(t, (&Error{data: ANY}).IsWidenable())
-		assert.True(t, (&Error{data: &Identifier{name: "i"}}).IsWidenable())
-	})
-
-	t.Run("Widen()", func(t *testing.T) {
-		anyDataErr := &Error{data: ANY}
-
-		assert.False(t, anyDataErr.IsWidenable())
-
-		widened, ok := anyDataErr.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-
-		//
-
-		intDataErr := &Error{data: &Identifier{name: "i"}}
-
-		assert.True(t, intDataErr.IsWidenable())
-
-		widened, ok = intDataErr.Widen()
-		assert.True(t, ok)
-		assert.Equal(t, &Error{data: &Identifier{}}, widened)
-	})
 }
 
 func TestSymbolicGoFunction(t *testing.T) {
@@ -418,30 +201,6 @@ func TestSymbolicGoFunction(t *testing.T) {
 		}
 	})
 
-	t.Run("IsWidenable()", func(t *testing.T) {
-		assert.False(t, (&GoFunction{}).IsWidenable())
-		assert.True(t, (&GoFunction{fn: symbolicGoFn}).IsWidenable())
-	})
-
-	t.Run("Widen()", func(t *testing.T) {
-		{
-			anyFunc := &GoFunction{}
-
-			assert.False(t, anyFunc.IsWidenable())
-			widened, ok := anyFunc.Widen()
-			assert.False(t, ok)
-			assert.Nil(t, widened)
-		}
-
-		{
-			specificFunc := &GoFunction{fn: symbolicGoFn}
-
-			assert.True(t, specificFunc.IsWidenable())
-			widened, ok := specificFunc.Widen()
-			assert.True(t, ok)
-			assert.Equal(t, &GoFunction{}, widened)
-		}
-	})
 }
 
 func TestSymbolicRuneSlice(t *testing.T) {
@@ -455,18 +214,6 @@ func TestSymbolicRuneSlice(t *testing.T) {
 		assert.False(t, slice.Test(&Int{}))
 	})
 
-	t.Run("IsWidenable()", func(t *testing.T) {
-		assert.False(t, (&RuneSlice{}).IsWidenable())
-	})
-
-	t.Run("Widen()", func(t *testing.T) {
-		slice := &RuneSlice{}
-
-		assert.False(t, slice.IsWidenable())
-		widened, ok := slice.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }
 
 func TestSymbolicQuantityRange(t *testing.T) {
@@ -489,26 +236,6 @@ func TestSymbolicQuantityRange(t *testing.T) {
 		assert.False(t, qtyRange.Test(ANY_INT))
 	})
 
-	t.Run("IsWidenable()", func(t *testing.T) {
-		assert.False(t, (&QuantityRange{element: ANY_SERIALIZABLE}).IsWidenable())
-		assert.False(t, NewQuantityRange(ANY_BYTECOUNT).IsWidenable())
-	})
-
-	t.Run("Widen()", func(t *testing.T) {
-		anyQtyRange := NewQuantityRange(ANY_BYTECOUNT)
-
-		assert.False(t, anyQtyRange.IsWidenable())
-		widened, ok := anyQtyRange.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-
-		qtyRange := NewQuantityRange(ANY_BYTECOUNT)
-
-		assert.False(t, qtyRange.IsWidenable())
-		widened, ok = qtyRange.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }
 
 func TestSymbolicIntRange(t *testing.T) {
@@ -522,18 +249,6 @@ func TestSymbolicIntRange(t *testing.T) {
 		assert.False(t, intRange.Test(&Int{}))
 	})
 
-	t.Run("IsWidenable()", func(t *testing.T) {
-		assert.False(t, (&IntRange{}).IsWidenable())
-	})
-
-	t.Run("Widen()", func(t *testing.T) {
-		intRange := &IntRange{}
-
-		assert.False(t, intRange.IsWidenable())
-		widened, ok := intRange.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }
 
 func TestSymbolicRuneRange(t *testing.T) {
@@ -547,18 +262,6 @@ func TestSymbolicRuneRange(t *testing.T) {
 		assert.False(t, runeRange.Test(&Int{}))
 	})
 
-	t.Run("IsWidenable()", func(t *testing.T) {
-		assert.False(t, (&RuneRange{}).IsWidenable())
-	})
-
-	t.Run("Widen()", func(t *testing.T) {
-		runeRange := &RuneRange{}
-
-		assert.False(t, runeRange.IsWidenable())
-		widened, ok := runeRange.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }
 
 func TestSymbolicAnyIterable(t *testing.T) {
@@ -573,19 +276,6 @@ func TestSymbolicAnyIterable(t *testing.T) {
 		assert.False(t, anyIterable.Test(&Int{}))
 	})
 
-	t.Run("IsWidenable()", func(t *testing.T) {
-		assert.False(t, (&AnyIterable{}).IsWidenable())
-	})
-
-	t.Run("Widen()", func(t *testing.T) {
-		anyIterable := ANY
-
-		assert.False(t, anyIterable.IsWidenable())
-
-		widened, ok := anyIterable.Widen()
-		assert.False(t, ok)
-		assert.Nil(t, widened)
-	})
 }
 
 func symbolicGoFn(ctx *Context, list *List, args ...SymbolicValue) *List {

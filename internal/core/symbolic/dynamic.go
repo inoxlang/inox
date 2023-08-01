@@ -41,18 +41,6 @@ func (d *DynamicValue) PropertyNames() []string {
 	return d.val.(IProps).PropertyNames()
 }
 
-func (d *DynamicValue) Widen() (SymbolicValue, bool) {
-	if d.IsWidenable() {
-		return nil, false
-	}
-	widened, _ := d.val.Widen()
-	return &DynamicValue{val: widened}, true
-}
-
-func (d *DynamicValue) IsWidenable() bool {
-	return d.val.IsWidenable()
-}
-
 func (d *DynamicValue) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%dyn")))
 	return

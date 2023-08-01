@@ -91,14 +91,6 @@ func (ApiIL *ApiIL) Close(*Context) *Error {
 	return nil
 }
 
-func (r *ApiIL) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (r *ApiIL) IsWidenable() bool {
-	return false
-}
-
 func (r *ApiIL) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%api")))
 }

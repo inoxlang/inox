@@ -46,14 +46,6 @@ func (s *ByteSlice) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (s *ByteSlice) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (s *ByteSlice) IsWidenable() bool {
-	return false
-}
-
 func (s *ByteSlice) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%byte-slice")))
 }
@@ -134,14 +126,6 @@ func (b *Byte) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (b *Byte) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (b *Byte) IsWidenable() bool {
-	return false
-}
-
 func (b *Byte) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%byte")))
 }
@@ -198,14 +182,6 @@ func (b *AnyBytesLike) slice(start, end *Int) Sequence {
 
 func (c *AnyBytesLike) SetSlice(start, end *Int, v Sequence) {
 
-}
-
-func (b *AnyBytesLike) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (b *AnyBytesLike) IsWidenable() bool {
-	return false
 }
 
 func (b *AnyBytesLike) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -272,14 +248,6 @@ func (*BytesConcatenation) elementAt(i int) SymbolicValue {
 
 func (c *BytesConcatenation) slice(start, end *Int) Sequence {
 	return ANY_BYTE_SLICE
-}
-
-func (c *BytesConcatenation) Widen() (SymbolicValue, bool) {
-	return nil, false
-}
-
-func (c *BytesConcatenation) IsWidenable() bool {
-	return false
 }
 
 func (c *BytesConcatenation) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

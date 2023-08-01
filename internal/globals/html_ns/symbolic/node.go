@@ -56,14 +56,6 @@ func (n *HTMLNode) PropertyNames() []string {
 	return HTML_NODE_PROPNAMES
 }
 
-func (n *HTMLNode) Widen() (symbolic.SymbolicValue, bool) {
-	return nil, false
-}
-
-func (n *HTMLNode) IsWidenable() bool {
-	return false
-}
-
 func (n *HTMLNode) WatcherElement() symbolic.SymbolicValue {
 	return symbolic.ANY
 }
