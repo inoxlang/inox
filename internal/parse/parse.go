@@ -6155,6 +6155,14 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 					switch p.s[p.i] {
 					case '(', '{':
 						return p.parsePatternCall(result), false
+					case '?':
+						p.i++
+						return &OptionalPatternExpression{
+							NodeBase: NodeBase{
+								Span: NodeSpan{result.Base().Span.Start, p.i},
+							},
+							Pattern: result,
+						}, false
 					}
 				}
 				return result, false
@@ -6177,6 +6185,14 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 					switch p.s[p.i] {
 					case '(', '{':
 						return p.parsePatternCall(result), false
+					case '?':
+						p.i++
+						return &OptionalPatternExpression{
+							NodeBase: NodeBase{
+								Span: NodeSpan{result.Base().Span.Start, p.i},
+							},
+							Pattern: result,
+						}, false
 					}
 				}
 				return result, false

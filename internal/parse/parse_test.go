@@ -1067,6 +1067,50 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("single declaration without parenthesis with an optional pattern expression as type", func(t *testing.T) {
+			n := mustparseChunk(t, "var a int? = 1")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 14}, nil, nil},
+				Statements: []Node{
+					&LocalVariableDeclarations{
+						NodeBase: NodeBase{
+							NodeSpan{0, 14},
+							nil,
+							[]Token{{Type: VAR_KEYWORD, Span: NodeSpan{0, 3}}},
+						},
+						Declarations: []*LocalVariableDeclaration{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{4, 14},
+									nil,
+									[]Token{{Type: EQUAL, Span: NodeSpan{11, 12}}},
+								},
+								Left: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{4, 5}, nil, nil},
+									Name:     "a",
+								},
+								Type: &OptionalPatternExpression{
+									NodeBase: NodeBase{
+										Span: NodeSpan{6, 10},
+									},
+									Pattern: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{6, 9}, nil, nil},
+										Unprefixed: true,
+										Name:       "int",
+									},
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{13, 14}, nil, nil},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("single declaration without parenthesis and with unprefixed pattern call (namespace member)", func(t *testing.T) {
 			n := mustparseChunk(t, "var a a.b() = 1")
 			assert.EqualValues(t, &Chunk{
