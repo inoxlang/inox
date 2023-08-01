@@ -355,12 +355,12 @@ func (p *ModuleParameters) GetSymbolicArguments(ctx *Context) *symbolic.Struct {
 
 	for _, param := range p.others {
 		symbolicPatt := utils.Must(param.pattern.ToSymbolicValue(nil, encountered)).(symbolic.Pattern)
-		resultEntries[string(param.name)] = symbolicPatt.SymbolicValue().(symbolic.Serializable)
+		resultEntries[string(param.name)] = symbolicPatt.SymbolicValue()
 	}
 
 	for _, param := range p.positional {
 		symbolicPatt := utils.Must(param.pattern.ToSymbolicValue(nil, encountered)).(symbolic.Pattern)
-		resultEntries[string(param.name)] = symbolicPatt.SymbolicValue().(symbolic.Serializable)
+		resultEntries[string(param.name)] = symbolicPatt.SymbolicValue()
 	}
 
 	symbolicStructType := utils.Must(p.structType.ToSymbolicValue(ctx, encountered)).(*symbolic.StructPattern)
