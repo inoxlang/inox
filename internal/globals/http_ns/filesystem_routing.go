@@ -90,12 +90,19 @@ func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn
 			return
 		}
 
+		var debugger *core.Debugger
+
+		if parentDebugger, _ := server.state.Debugger.Load().(*core.Debugger); parentDebugger != nil {
+			debugger = parentDebugger.NewChild()
+		}
+
 		result, _, _, _, err := inox_ns.RunPreparedScript(inox_ns.RunPreparedScriptArgs{
 			State: state,
 
 			ParentContext:             handlerCtx,
 			ParsingCompilationContext: handlerCtx,
 			IgnoreHighRiskScore:       true,
+			Debugger:                  debugger,
 		})
 
 		if err != nil {
