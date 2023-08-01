@@ -435,6 +435,11 @@ var (
 		Name:          "readable",
 		SymbolicValue: symbolic.ANY_READABLE,
 	}
+	READER_PATTERN = &TypePattern{
+		Type:          READER_INTERFACE_TYPE,
+		Name:          "reader",
+		SymbolicValue: symbolic.ANY_READER,
+	}
 	ITERABLE_PATTERN = &TypePattern{
 		Type:          ITERABLE_INTERFACE_TYPE,
 		Name:          "iterable",
@@ -717,6 +722,7 @@ var (
 		DATE_PATTERN.Name:                  DATE_PATTERN,
 		PATTERN_PATTERN.Name:               PATTERN_PATTERN,
 		READABLE_PATTERN.Name:              READABLE_PATTERN,
+		READER_PATTERN.Name:                READER_PATTERN,
 		ITERABLE_PATTERN.Name:              ITERABLE_PATTERN,
 		SERIALIZABLE_ITERABLE_PATTERN.Name: SERIALIZABLE_ITERABLE_PATTERN,
 		INDEXABLE_PATTERN.Name:             INDEXABLE_PATTERN,
