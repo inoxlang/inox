@@ -302,23 +302,29 @@ func (d *Debugger) Threads() (threads []ThreadInfo) {
 }
 
 func (d *Debugger) startGoroutine() {
-	d.logger.Info().Msg("start debugging")
+	d.logger.Info().Msgf("start debugging thread %d (%s)", d.threadId(), d.globalState.Module.Name())
 
 	go func() {
 		var done func()
 		cancelExecution := false
 
 		defer func() {
-			d.logger.Info().Msg("stop debugging")
+			d.logger.Info().Msgf("stop debugging thread %d (%s)", d.threadId(), d.globalState.Module.Name())
 			d.closed.Store(true)
 
-			d.shared.breakpointsLock.Lock()
-			d.shared.breakpoints = nil
-			d.shared.breakpointsLock.Unlock()
+			if d.isRoot() {
+				d.shared.breakpointsLock.Lock()
+				d.shared.breakpoints = nil
+				d.shared.breakpointsLock.Unlock()
+			}
 
 			close(d.stoppedProgramCommandChan)
 			close(d.secondaryEventChan)
 			close(d.resumeExecutionChan)
+
+			d.shared.debuggersLock.Lock()
+			delete(d.shared.debuggers, d.threadId())
+			d.shared.debuggersLock.Unlock()
 
 			if cancelExecution {
 				d.logger.Info().Msg("cancel execution of debuggee")

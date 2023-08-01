@@ -41,9 +41,10 @@ func TestTreeWalkDebug(t *testing.T) {
 			InitialBreakpoints:    breakpoints,
 			ExceptionBreakpointId: options.exceptionBreakpointId,
 		})
-		debugger.AttachAndStart(treeWalkState)
 
 		state.Module = &Module{MainChunk: chunk}
+		debugger.AttachAndStart(treeWalkState)
+
 		return treeWalkState, state.Ctx, chunk, debugger
 	}, func(n parse.Node, state any) (Value, error) {
 		result, err := TreeWalkEval(n, state.(*TreeWalkState))
@@ -2197,7 +2198,11 @@ func testDebugModeEval(
 
 			assert.Equal(t, Int(3), result)
 
-			routineThreadId := routineDebugger_.Load().(*Debugger).threadId()
+			time.Sleep(time.Millisecond)
+			routineDebugger := routineDebugger_.Load().(*Debugger)
+			assert.True(t, routineDebugger.Closed())
+
+			routineThreadId := routineDebugger.threadId()
 
 			assert.ElementsMatch(t, []ThreadInfo{
 				{Name: "core-test", Id: debugger.threadId()},
@@ -2238,6 +2243,146 @@ func testDebugModeEval(
 						StartColumn:          15,
 						StatementStartLine:   5,
 						StatementStartColumn: 6,
+					},
+				},
+			}, stackTraces)
+		})
+
+		t.Run("successive breakpoints in & after routine", func(t *testing.T) {
+			state, ctx, chunk, debugger := setup(`
+				r = go do {
+					a = 1
+					return a
+				}
+
+				result = r.wait_result!()
+				return result
+			`)
+
+			controlChan := debugger.ControlChan()
+			stoppedChan := debugger.StoppedChan()
+
+			defer ctx.Cancel()
+
+			returnStmts := parse.FindNodes(chunk.Node, (*parse.ReturnStatement)(nil), nil)
+			var routineChunk atomic.Value
+			var routineDebugger_ atomic.Value
+
+			controlChan <- DebugCommandSetBreakpoints{
+				Chunk: chunk,
+				BreakpointsAtNode: map[parse.Node]struct{}{
+					returnStmts[0]: {}, //return a
+					returnStmts[1]: {}, //return result
+				},
+			}
+
+			time.Sleep(10 * time.Millisecond) //wait for the debugger to set the breakpoints
+
+			var stoppedEvents []ProgramStoppedEvent
+			var stackTraces [][]StackFrameInfo
+			var threads atomic.Value
+			var routineDebuggerClosed atomic.Bool
+
+			go func() {
+				event := <-stoppedChan
+				//stopped at 'return a'
+				event.Breakpoint = nil //not checked yet
+				stoppedEvents = append(stoppedEvents, event)
+
+				var threadsList [][]ThreadInfo
+
+				secondaryEvent := <-debugger.SecondaryEvents()
+
+				routineThreadId := secondaryEvent.(RoutineSpawnedEvent).StateId
+				routineDebugger := debugger.shared.getDebuggerOfThread(routineThreadId)
+				routineChunk.Store(routineDebugger.globalState.Module.MainChunk)
+				routineDebugger_.Store(routineDebugger)
+				threadsList = append(threadsList, debugger.Threads())
+
+				//get stack trace while stopped at  'return a'
+				controlChan <- DebugCommandGetStackTrace{
+					Get: func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
+					},
+					ThreadId: routineThreadId,
+				}
+
+				controlChan <- DebugCommandContinue{ThreadId: routineThreadId}
+
+				event = <-stoppedChan
+				//stopped at 'return result'
+
+				event.Breakpoint = nil //not checked yet
+				stoppedEvents = append(stoppedEvents, event)
+
+				time.Sleep(time.Millisecond)
+				//routine debugger should be closed
+				threadsList = append(threadsList, debugger.Threads())
+				threads.Store(threadsList)
+				routineDebuggerClosed.Store(routineDebugger.Closed())
+
+				//get stack trace while stopped at  'return result'
+				controlChan <- DebugCommandGetStackTrace{
+					Get: func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
+					},
+					ThreadId: debugger.threadId(),
+				}
+
+				controlChan <- DebugCommandContinue{ThreadId: debugger.threadId()}
+			}()
+
+			result, err := eval(chunk.Node, state)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, Int(1), result)
+
+			routineDebugger := routineDebugger_.Load().(*Debugger)
+			routineThreadId := routineDebugger.threadId()
+
+			assert.ElementsMatch(t, [][]ThreadInfo{
+				{
+					{Name: "core-test", Id: debugger.threadId()},
+					{Name: "core-test", Id: routineThreadId},
+				},
+				{
+					{Name: "core-test", Id: debugger.threadId()},
+				},
+			}, threads.Load())
+
+			assert.True(t, routineDebuggerClosed.Load())
+
+			assert.Equal(t, []ProgramStoppedEvent{
+				{Reason: BreakpointStop, ThreadId: routineThreadId},
+				{Reason: BreakpointStop, ThreadId: debugger.threadId()},
+			}, stoppedEvents)
+
+			assert.Equal(t, [][]StackFrameInfo{
+				{
+					{
+						Name:                 "core-test",
+						Node:                 returnStmts[0],
+						Chunk:                routineChunk.Load().(*parse.ParsedChunk),
+						Id:                   2,
+						StartLine:            2,
+						StartColumn:          15,
+						StatementStartLine:   4,
+						StatementStartColumn: 6,
+					},
+				},
+				{
+					{
+						Name:                 "core-test",
+						Node:                 returnStmts[1],
+						Chunk:                chunk,
+						Id:                   1,
+						StartLine:            1,
+						StartColumn:          1,
+						StatementStartLine:   8,
+						StatementStartColumn: 5,
 					},
 				},
 			}, stackTraces)

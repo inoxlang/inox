@@ -218,6 +218,10 @@ func SpawnRoutine(args RoutineSpawnArgs) (*Routine, error) {
 				}
 				debugger.AttachAndStart(state)
 				modState.Debugger.Store(debugger)
+
+				defer func() {
+					debugger.ControlChan() <- DebugCommandCloseDebugger{}
+				}()
 			}
 
 			res, err = TreeWalkEval(chunk, state)

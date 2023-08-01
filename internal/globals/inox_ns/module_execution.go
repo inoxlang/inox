@@ -718,6 +718,11 @@ func RunPreparedScript(args RunPreparedScriptArgs) (
 	}
 	if debugger != nil {
 		debugger.AttachAndStart(treeWalkState)
+		defer func() {
+			go func() {
+				debugger.ControlChan() <- core.DebugCommandCloseDebugger{}
+			}()
+		}()
 	}
 
 	res, err := core.TreeWalkEval(state.Module.MainChunk.Node, treeWalkState)
