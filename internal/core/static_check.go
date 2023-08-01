@@ -1961,11 +1961,20 @@ func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Nod
 		}
 
 		switch n := node.(type) {
-		case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression,
-			*parse.ObjectProperty, *parse.ObjectPatternProperty, *parse.ObjectLiteral, *parse.ListLiteral,
-			*parse.OptionPatternLiteral, *parse.OptionExpression, *parse.ListPatternLiteral, *parse.OptionalPatternExpression,
-			*parse.PatternCallExpression, parse.SimpleValueLiteral, *parse.GlobalVariable,
-			*parse.ObjectPatternLiteral:
+		case
+			*parse.ObjectProperty, *parse.ObjectLiteral, *parse.ListLiteral,
+			*parse.OptionExpression,
+			parse.SimpleValueLiteral, *parse.GlobalVariable,
+			//patterns
+			*parse.PatternCallExpression,
+			*parse.ListPatternLiteral, *parse.TuplePatternLiteral,
+			*parse.ObjectPatternLiteral, *parse.ObjectPatternProperty, *parse.RecordPatternLiteral,
+			*parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression,
+			*parse.PatternConversionExpression,
+			*parse.PatternUnion,
+			*parse.PathPatternExpression, *parse.AbsolutePathPatternLiteral, *parse.RelativePathPatternLiteral,
+			*parse.URLPatternLiteral, *parse.HostPatternLiteral, *parse.OptionalPatternExpression,
+			*parse.OptionPatternLiteral, *parse.FunctionPatternExpression, *parse.NamedSegmentPathPatternLiteral:
 		default:
 			onError(n, fmtForbiddenNodeInParametersSection(n))
 		}
@@ -1986,8 +1995,6 @@ func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Nod
 			}
 
 			switch propVal := propValue.(type) {
-			case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression:
-				//ok
 			case *parse.ObjectLiteral:
 				if isOptionPattern {
 					break
@@ -2009,11 +2016,8 @@ func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Nod
 
 					switch name {
 					case "pattern":
-						switch paramDescProp.Value.(type) {
-						case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression,
-							*parse.ObjectPatternLiteral, *parse.ListPatternLiteral:
-						default:
-							onError(paramDescProp, "the .pattern of a non positional parameter should either be a named pattern (%path, %str, ...), a list pattern literal or an object pattern literal")
+						if !parse.NodeIsPattern(paramDescProp.Value) {
+							onError(paramDescProp, "the .pattern of a non positional parameter should be a named pattern or a pattern literal")
 						}
 					case "default":
 					case "char-name":
@@ -2036,10 +2040,9 @@ func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Nod
 					onError(prop, "missing properties in description of non positional parameter: "+strings.Join(missingPropertyNames, ", "))
 				}
 			default:
-				onError(prop,
-					"the description of a non positional parameter should be a named pattern (%path, %str, ...) or "+
-						"an option pattern (%-o=%path, ...)",
-				)
+				if !parse.NodeIsPattern(prop.Value) {
+					onError(prop, "the description of a non positional parameter should be a named pattern or a pattern literal")
+				}
 			}
 
 		} else if positionalParamsEnd {
@@ -2088,14 +2091,8 @@ func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Nod
 						onError(paramDescProp, "the .description property of a positional parameter should be an identifier (ex: #dir)")
 					}
 				case "pattern":
-					switch paramDescProp.Value.(type) {
-					case *parse.UnambiguousIdentifierLiteral:
-					default:
-						switch paramDescProp.Value.(type) {
-						case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression:
-						default:
-							onError(paramDescProp, "the .pattern of a positional parameter should be a named pattern (ex: %path, %str, ...)")
-						}
+					if !parse.NodeIsPattern(paramDescProp.Value) {
+						onError(paramDescProp, "the .pattern of a positional parameter should be a named pattern or a pattern literal")
 					}
 				}
 			}
