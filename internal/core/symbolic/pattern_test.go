@@ -178,7 +178,8 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			//symbolic object pattern
 			{&ObjectPattern{entries: nil}, &ObjectPattern{entries: nil}, true},
 			{&ObjectPattern{entries: map[string]Pattern{}}, &ObjectPattern{entries: nil}, false},
-			{&ObjectPattern{entries: nil}, &ObjectPattern{entries: map[string]Pattern{}}, true},
+			{&ObjectPattern{entries: nil}, &ObjectPattern{entries: map[string]Pattern{}, inexact: true}, true},
+			{&ObjectPattern{entries: nil}, &ObjectPattern{entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}}}, true},
 
 			{&ObjectPattern{entries: map[string]Pattern{}}, &ObjectPattern{entries: map[string]Pattern{}}, true},
 			{
@@ -332,9 +333,10 @@ func TestSymbolicRecordPattern(t *testing.T) {
 			{&RecordPattern{entries: nil}, &Object{entries: nil}, false},
 			{&RecordPattern{entries: nil}, &Object{entries: map[string]Serializable{}}, false},
 
-			//symbolic object pattern
+			//symbolic record pattern
 			{&RecordPattern{entries: nil}, &RecordPattern{entries: nil}, true},
 			{&RecordPattern{entries: map[string]Pattern{}}, &RecordPattern{entries: nil}, false},
+			{&RecordPattern{entries: nil}, &RecordPattern{entries: map[string]Pattern{}, inexact: true}, true},
 			{&RecordPattern{entries: nil}, &RecordPattern{entries: map[string]Pattern{}}, true},
 
 			{&RecordPattern{entries: map[string]Pattern{}}, &RecordPattern{entries: map[string]Pattern{}}, true},

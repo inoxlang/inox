@@ -411,7 +411,7 @@ func (l *List) IteratorElementValue() SymbolicValue {
 }
 
 func (l *List) WidestOfType() SymbolicValue {
-	return &List{generalElement: ANY_SERIALIZABLE}
+	return WIDEST_LIST_PATTERN
 }
 
 func (l *List) slice(start, end *Int) Sequence {
@@ -597,7 +597,7 @@ func (t *Tuple) IteratorElementValue() SymbolicValue {
 }
 
 func (t *Tuple) WidestOfType() SymbolicValue {
-	return &Tuple{generalElement: ANY_SERIALIZABLE}
+	return WIDEST_TUPLE_PATTERN
 }
 
 func (t *Tuple) slice(start, end *Int) Sequence {

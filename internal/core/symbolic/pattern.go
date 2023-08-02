@@ -35,6 +35,12 @@ var (
 	ANY_LIST_PATTERN  = &ListPattern{generalElement: ANY_PATTERN}
 	ANY_TUPLE_PATTERN = &TuplePattern{generalElement: ANY_PATTERN}
 
+	ANY_OBJECT_PATTERN = &ObjectPattern{}
+	ANY_RECORD_PATTERN = &RecordPattern{}
+
+	WIDEST_LIST_PATTERN  = NewListOf(ANY_SERIALIZABLE)
+	WIDEST_TUPLE_PATTERN = NewTupleOf(ANY_SERIALIZABLE)
+
 	ErrPatternNotCallable                        = errors.New("pattern is not callable")
 	ErrValueAlreadyInitialized                   = errors.New("value already initialized")
 	ErrValueInExactPatternValueShouldBeImmutable = errors.New("the value in an exact value pattern should be immutable")
@@ -533,7 +539,7 @@ func (p *RegexPattern) WidestOfType() SymbolicValue {
 
 // An ObjectPattern represents a symbolic ObjectPattern.
 type ObjectPattern struct {
-	entries                    map[string]Pattern
+	entries                    map[string]Pattern //if nil any object is matched
 	optionalEntries            map[string]struct{}
 	inexact                    bool
 	complexPropertyConstraints []*ComplexPropertyConstraint
@@ -584,7 +590,7 @@ func (p *ObjectPattern) ToRecordPattern() *RecordPattern {
 func (p *ObjectPattern) Test(v SymbolicValue) bool {
 	other, ok := v.(*ObjectPattern)
 
-	if !ok || p.inexact != other.inexact {
+	if !ok {
 		return false
 	}
 
@@ -592,7 +598,7 @@ func (p *ObjectPattern) Test(v SymbolicValue) bool {
 		return true
 	}
 
-	if other.entries == nil || len(p.entries) != len(other.entries) {
+	if p.inexact != other.inexact || other.entries == nil || len(p.entries) != len(other.entries) {
 		return false
 	}
 
@@ -760,20 +766,20 @@ func (p *ObjectPattern) StringPattern() (StringPattern, bool) {
 }
 
 func (p *ObjectPattern) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (p *ObjectPattern) IteratorElementValue() SymbolicValue {
-	return &Object{}
+	return p.SymbolicValue()
 }
 
 func (p *ObjectPattern) WidestOfType() SymbolicValue {
-	return &ObjectPattern{}
+	return ANY_OBJECT_PATTERN
 }
 
 // An RecordPattern represents a symbolic RecordPattern.
 type RecordPattern struct {
-	entries                    map[string]Pattern
+	entries                    map[string]Pattern //if nil any record is matched
 	optionalEntries            map[string]struct{}
 	inexact                    bool
 	complexPropertyConstraints []*ComplexPropertyConstraint
@@ -802,7 +808,7 @@ func InitializeRecordPattern(patt *RecordPattern, entries map[string]Pattern, op
 func (p *RecordPattern) Test(v SymbolicValue) bool {
 	other, ok := v.(*RecordPattern)
 
-	if !ok || p.inexact != other.inexact {
+	if !ok {
 		return false
 	}
 
@@ -810,7 +816,7 @@ func (p *RecordPattern) Test(v SymbolicValue) bool {
 		return true
 	}
 
-	if other.entries == nil || len(p.entries) != len(other.entries) {
+	if p.inexact != other.inexact || other.entries == nil || len(p.entries) != len(other.entries) {
 		return false
 	}
 
@@ -966,15 +972,15 @@ func (p *RecordPattern) StringPattern() (StringPattern, bool) {
 }
 
 func (p *RecordPattern) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (p *RecordPattern) IteratorElementValue() SymbolicValue {
-	return &Object{}
+	return p.SymbolicValue()
 }
 
 func (p *RecordPattern) WidestOfType() SymbolicValue {
-	return &RecordPattern{}
+	return ANY_RECORD_PATTERN
 }
 
 type ComplexPropertyConstraint struct {
@@ -1147,7 +1153,6 @@ func (p *ListPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 	}
 	utils.Must(w.Write(utils.StringAsBytes("%[]")))
 	p.generalElement.PrettyPrint(w, config, depth, parentIndentCount)
-	return
 }
 
 func (p *ListPattern) HasUnderylingPattern() bool {
@@ -1207,11 +1212,11 @@ func (p *ListPattern) StringPattern() (StringPattern, bool) {
 }
 
 func (p *ListPattern) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (p *ListPattern) IteratorElementValue() SymbolicValue {
-	return &List{}
+	return p.SymbolicValue()
 }
 
 func (p *ListPattern) WidestOfType() SymbolicValue {
