@@ -215,6 +215,7 @@ const (
 	QUERY_PARAM_KEY_EQUAL
 	QUERY_PARAM_SLICE
 	XML_TEXT_SLICE
+	OCCURRENCE_MODIFIER
 )
 
 type TokenMeta uint16
@@ -575,6 +576,7 @@ var tokenTypenames = [...]string{
 	QUERY_PARAM_SEP:                "QUERY_PARAM_SEP",
 	QUERY_PARAM_SLICE:              "QUERY_PARAM_SLICE",
 	XML_TEXT_SLICE:                 "XML_TEXT_SLICE",
+	OCCURRENCE_MODIFIER:            "OCCURRENCE_MODIFIER",
 }
 
 func (t TokenType) String() string {
@@ -613,7 +615,7 @@ func GetTokens(node Node, addMeta bool) []Token {
 
 	tokens := make([]Token, 0)
 	Walk(node, func(node, parentNode, _ Node, ancestorChain []Node, _ bool) (TraversalAction, error) {
-		tokens = append(tokens, node.Base().ValuelessTokens...)
+		tokens = append(tokens, node.Base().Tokens...)
 
 		//TODO: avoid allocating strings if original code string is available
 

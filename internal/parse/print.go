@@ -11,6 +11,7 @@ import (
 type PrintConfig struct {
 	//Compact   bool
 	TrimStart bool
+	TrimEnd   bool
 }
 
 func Print(node Node, w io.Writer, config PrintConfig) (int, error) {
@@ -51,11 +52,13 @@ func Print(node Node, w io.Writer, config PrintConfig) (int, error) {
 		}
 	}()
 
-	space := bytes.Repeat([]byte{' '}, int(node.Base().Span.End)-end)
-	n, err := w.Write(space)
-	totalN += n
-	if err != nil {
-		return totalN, err
+	if !config.TrimEnd {
+		space := bytes.Repeat([]byte{' '}, int(node.Base().Span.End)-end)
+		n, err := w.Write(space)
+		totalN += n
+		if err != nil {
+			return totalN, err
+		}
 	}
 
 	return totalN, nil

@@ -130,7 +130,7 @@ func format(chunk *parse.ParsedChunk, options defines.FormattingOptions) (result
 		if doesNodeIncreaseDepth(node) {
 			depth--
 		}
-		for _, token := range node.Base().ValuelessTokens {
+		for _, token := range node.Base().Tokens {
 			switch token.Type {
 			case parse.CLOSING_BRACKET, parse.CLOSING_PARENTHESIS, parse.CLOSING_CURLY_BRACKET:
 				replaceIfLeadingSpace(token.Span)

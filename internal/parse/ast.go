@@ -36,7 +36,7 @@ func (s NodeSpan) HasPositionEndIncluded(i int32) bool {
 type NodeBase struct {
 	Span            NodeSpan
 	Err             *ParsingError
-	ValuelessTokens []Token
+	Tokens []Token
 }
 
 func (base NodeBase) Base() NodeBase {
@@ -56,9 +56,9 @@ func (base NodeBase) IncludedIn(node Node) bool {
 }
 
 func (base NodeBase) IsParenthesized() bool {
-	return len(base.ValuelessTokens) >= 2 &&
-		base.ValuelessTokens[0].Type == OPENING_PARENTHESIS &&
-		base.ValuelessTokens[len(base.ValuelessTokens)-1].Type == CLOSING_PARENTHESIS
+	return len(base.Tokens) >= 2 &&
+		base.Tokens[0].Type == OPENING_PARENTHESIS &&
+		base.Tokens[len(base.Tokens)-1].Type == CLOSING_PARENTHESIS
 }
 
 type NodeKind uint8
@@ -2164,7 +2164,7 @@ func shiftNodeSpans(node Node, offset int32) {
 		node.BasePtr().Span.Start += offset
 		node.BasePtr().Span.End += offset
 
-		tokens := node.BasePtr().ValuelessTokens
+		tokens := node.BasePtr().Tokens
 		for i, token := range tokens {
 			token.Span.Start += offset
 			token.Span.End += offset
@@ -2879,7 +2879,7 @@ func GetInteriorSpan(node Node) (interiorSpan NodeSpan, err error) {
 // the fist token matching the opening token is taken as the starting token (the span starts just after the token),
 // the last token matching the closingToken is as taken as the ending token (the span ends just before this token).
 func getInteriorSpan(node Node, openingToken, closingToken TokenType) (interiorSpan NodeSpan, err error) {
-	tokens := node.Base().ValuelessTokens
+	tokens := node.Base().Tokens
 	if len(tokens) == 0 {
 		err = ErrMissingTokens
 		return

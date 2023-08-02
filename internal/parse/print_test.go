@@ -180,6 +180,8 @@ func TestPrint(t *testing.T) {
 		"%[1]a.b",
 		"%[1]a.b?",
 		"%str('a')",
+		"%str('a'+)",
+		"%str('a'=3)",
 		"%str('a' 'b')",
 		`%str((| "a"))`,
 		`%str((| "a" | "b" ))`,

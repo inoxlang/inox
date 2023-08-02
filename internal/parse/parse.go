@@ -721,9 +721,9 @@ func (p *parser) parseBlock() *Block {
 		if IsForbiddenSpaceCharacter(p.s[p.i]) {
 			stmts = append(stmts, &UnknownNode{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{p.i, p.i + 1},
-					Err:             &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInBlockOrModule(p.s[p.i])},
-					ValuelessTokens: []Token{{Type: UNEXPECTED_CHAR, Span: NodeSpan{p.i, p.i + 1}, Raw: string(p.s[p.i])}},
+					Span:   NodeSpan{p.i, p.i + 1},
+					Err:    &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInBlockOrModule(p.s[p.i])},
+					Tokens: []Token{{Type: UNEXPECTED_CHAR, Span: NodeSpan{p.i, p.i + 1}, Raw: string(p.s[p.i])}},
 				},
 			})
 			p.i++
@@ -771,9 +771,9 @@ func (p *parser) parseBlock() *Block {
 
 	return &Block{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{openingBraceIndex, end},
-			Err:             parsingErr,
-			ValuelessTokens: valuelessTokens,
+			Span:   NodeSpan{openingBraceIndex, end},
+			Err:    parsingErr,
+			Tokens: valuelessTokens,
 		},
 		Statements: stmts,
 	}
@@ -1162,9 +1162,9 @@ func (p *parser) parseDotStartingExpression() Node {
 	p.i++
 	return &UnknownNode{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{p.i - 1, p.i},
-			Err:             &ParsingError{UnspecifiedParsingError, DOT_SHOULD_BE_FOLLOWED_BY},
-			ValuelessTokens: []Token{{Type: UNEXPECTED_CHAR, Span: NodeSpan{p.i - 1, p.i}, Raw: "."}},
+			Span:   NodeSpan{p.i - 1, p.i},
+			Err:    &ParsingError{UnspecifiedParsingError, DOT_SHOULD_BE_FOLLOWED_BY},
+			Tokens: []Token{{Type: UNEXPECTED_CHAR, Span: NodeSpan{p.i - 1, p.i}, Raw: "."}},
 		},
 	}
 }
@@ -1258,9 +1258,9 @@ func (p *parser) parseDashStartingExpression() Node {
 	if p.i >= p.len {
 		return &OptionExpression{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{__start, p.i},
-				Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_OPION_EXPR_EQUAL_ASSIGN_SHOULD_BE_FOLLOWED_BY_EXPR},
-				ValuelessTokens: tokens,
+				Span:   NodeSpan{__start, p.i},
+				Err:    &ParsingError{UnspecifiedParsingError, UNTERMINATED_OPION_EXPR_EQUAL_ASSIGN_SHOULD_BE_FOLLOWED_BY_EXPR},
+				Tokens: tokens,
 			},
 			Name:       name,
 			SingleDash: singleDash,
@@ -1271,8 +1271,8 @@ func (p *parser) parseDashStartingExpression() Node {
 
 	return &OptionExpression{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{__start, p.i},
-			ValuelessTokens: tokens,
+			Span:   NodeSpan{__start, p.i},
+			Tokens: tokens,
 		},
 		Name:       name,
 		Value:      value,
@@ -1288,9 +1288,9 @@ func (p *parser) parseLazyAndHostAliasStuff() Node {
 	if p.i >= p.len {
 		return &UnknownNode{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{start, p.i},
-				Err:             &ParsingError{UnspecifiedParsingError, AT_SYMBOL_SHOULD_BE_FOLLOWED_BY},
-				ValuelessTokens: []Token{{Type: UNEXPECTED_CHAR, Span: NodeSpan{start, p.i}, Raw: "@"}},
+				Span:   NodeSpan{start, p.i},
+				Err:    &ParsingError{UnspecifiedParsingError, AT_SYMBOL_SHOULD_BE_FOLLOWED_BY},
+				Tokens: []Token{{Type: UNEXPECTED_CHAR, Span: NodeSpan{start, p.i}, Raw: "@"}},
 			},
 		}
 	}
@@ -1301,8 +1301,8 @@ func (p *parser) parseLazyAndHostAliasStuff() Node {
 		e, _ := p.parseExpression()
 		return &LazyExpression{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{start, p.i},
-				ValuelessTokens: []Token{{Type: AT_SIGN, Span: NodeSpan{start, start + 1}}},
+				Span:   NodeSpan{start, p.i},
+				Tokens: []Token{{Type: AT_SIGN, Span: NodeSpan{start, start + 1}}},
 			},
 			Expression: e,
 		}
@@ -1376,9 +1376,9 @@ func (p *parser) parseLazyAndHostAliasStuff() Node {
 
 	return &UnknownNode{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{start, p.i},
-			Err:             &ParsingError{UnspecifiedParsingError, AT_SYMBOL_SHOULD_BE_FOLLOWED_BY},
-			ValuelessTokens: []Token{{Type: UNEXPECTED_CHAR, Span: NodeSpan{start, p.i}, Raw: "@"}},
+			Span:   NodeSpan{start, p.i},
+			Err:    &ParsingError{UnspecifiedParsingError, AT_SYMBOL_SHOULD_BE_FOLLOWED_BY},
+			Tokens: []Token{{Type: UNEXPECTED_CHAR, Span: NodeSpan{start, p.i}, Raw: "@"}},
 		},
 	}
 }
@@ -1529,7 +1529,7 @@ func (p *parser) parsePathLikeExpression(isPattern bool) Node {
 		Span: NodeSpan{start, p.i},
 	}
 
-	slices := p.parsePathExpressionSlices(pathStart, p.i, &base.ValuelessTokens)
+	slices := p.parsePathExpressionSlices(pathStart, p.i, &base.Tokens)
 	hasInterpolationsOrNamedSegments := len32(slices) > 1
 	hasGlobbing := false
 
@@ -1577,7 +1577,7 @@ search_for_globbing:
 			}
 		}
 
-		base.ValuelessTokens = append([]Token{{Type: PERCENT_SYMBOL, Span: NodeSpan{start, start + 1}}}, base.ValuelessTokens...)
+		base.Tokens = append([]Token{{Type: PERCENT_SYMBOL, Span: NodeSpan{start, start + 1}}}, base.Tokens...)
 
 		//named segment path pattern literal & path pattern expressions
 		containNamedSegments := false
@@ -2169,7 +2169,7 @@ func (p *parser) parseIdentStartingExpression() Node {
 				base.Span.End = p.i
 
 				base.Err = &ParsingError{UnterminatedMemberExpr, UNTERMINATED_IDENT_MEMB_EXPR}
-				base.ValuelessTokens = append(base.ValuelessTokens, Token{Type: DOT, Span: NodeSpan{p.i - 1, p.i}})
+				base.Tokens = append(base.Tokens, Token{Type: DOT, Span: NodeSpan{p.i - 1, p.i}})
 				return memberExpr
 			}
 
@@ -2190,7 +2190,7 @@ func (p *parser) parseIdentStartingExpression() Node {
 				base.Span.End = p.i
 
 				base.Err = &ParsingError{UnterminatedMemberExpr, UNTERMINATED_IDENT_MEMB_EXPR}
-				base.ValuelessTokens = append(base.ValuelessTokens, Token{Type: DOT, Span: NodeSpan{p.i - 1, p.i}})
+				base.Tokens = append(base.Tokens, Token{Type: DOT, Span: NodeSpan{p.i - 1, p.i}})
 				return memberExpr
 			}
 
@@ -2666,14 +2666,20 @@ func (p *parser) parseComplexStringPatternPiece(start int32, ident *PatternIdent
 				ocurrenceModifier = AtLeastOneOcurrence
 				elementEnd++
 				p.i++
+
+				elemValuelessTokens = append(elemValuelessTokens, Token{Type: OCCURRENCE_MODIFIER, Span: NodeSpan{p.i - 1, p.i}, Raw: "+"})
 			case '*':
 				ocurrenceModifier = ZeroOrMoreOcurrence
 				elementEnd++
 				p.i++
+
+				elemValuelessTokens = append(elemValuelessTokens, Token{Type: OCCURRENCE_MODIFIER, Span: NodeSpan{p.i - 1, p.i}, Raw: "*"})
 			case '?':
 				ocurrenceModifier = OptionalOcurrence
 				elementEnd++
 				p.i++
+
+				elemValuelessTokens = append(elemValuelessTokens, Token{Type: OCCURRENCE_MODIFIER, Span: NodeSpan{p.i - 1, p.i}, Raw: "?"})
 			case '=':
 				p.i++
 				numberStart := p.i
@@ -2694,6 +2700,9 @@ func (p *parser) parseComplexStringPatternPiece(start int32, ident *PatternIdent
 				count = int(_count)
 				ocurrenceModifier = ExactOcurrence
 				elementEnd = p.i
+
+				raw := string(p.s[numberStart-1 : p.i])
+				elemValuelessTokens = append(elemValuelessTokens, Token{Type: OCCURRENCE_MODIFIER, Span: NodeSpan{numberStart - 1, p.i}, Raw: raw})
 			}
 		}
 
@@ -2783,9 +2792,9 @@ func (p *parser) parsePatternCall(callee Node) *PatternCallExpression {
 	return &PatternCallExpression{
 		Callee: callee,
 		NodeBase: NodeBase{
-			Span:            NodeSpan{callee.Base().Span.Start, p.i},
-			ValuelessTokens: valuelessTokens,
-			Err:             parsingErr,
+			Span:   NodeSpan{callee.Base().Span.Start, p.i},
+			Tokens: valuelessTokens,
+			Err:    parsingErr,
 		},
 		Arguments: args,
 	}
@@ -2906,9 +2915,9 @@ object_pattern_top_loop:
 				p.i++
 				properties = append(properties, &ObjectPatternProperty{
 					NodeBase: NodeBase{
-						Span:            NodeSpan{propSpanStart, p.i - 1},
-						Err:             propParsingErr,
-						ValuelessTokens: entryTokens,
+						Span:   NodeSpan{propSpanStart, p.i - 1},
+						Err:    propParsingErr,
+						Tokens: entryTokens,
 					},
 					Key:   nil,
 					Value: nil,
@@ -2925,7 +2934,7 @@ object_pattern_top_loop:
 
 			propSpanStart = key.Base().Span.Start
 
-			if len32(key.Base().ValuelessTokens) > 0 && key.Base().ValuelessTokens[0].Type == OPENING_PARENTHESIS {
+			if len32(key.Base().Tokens) > 0 && key.Base().Tokens[0].Type == OPENING_PARENTHESIS {
 				implicitKey = true
 				keyName = strconv.Itoa(unamedPropCount)
 				v = key
@@ -2960,9 +2969,9 @@ object_pattern_top_loop:
 				}
 				properties = append(properties, &ObjectPatternProperty{
 					NodeBase: NodeBase{
-						Span:            NodeSpan{propSpanStart, p.i},
-						Err:             propParsingErr,
-						ValuelessTokens: entryTokens,
+						Span:   NodeSpan{propSpanStart, p.i},
+						Err:    propParsingErr,
+						Tokens: entryTokens,
 					},
 					Value: keyOrVal,
 				})
@@ -2981,9 +2990,9 @@ object_pattern_top_loop:
 
 					properties = append(properties, &ObjectPatternProperty{
 						NodeBase: NodeBase{
-							Span:            NodeSpan{propSpanStart, propSpanEnd},
-							Err:             propParsingErr,
-							ValuelessTokens: entryTokens,
+							Span:   NodeSpan{propSpanStart, propSpanEnd},
+							Err:    propParsingErr,
+							Tokens: entryTokens,
 						},
 						Value: keyOrVal,
 						Type:  type_,
@@ -3017,9 +3026,9 @@ object_pattern_top_loop:
 				}
 				properties = append(properties, &ObjectPatternProperty{
 					NodeBase: NodeBase{
-						Span:            NodeSpan{propSpanStart, p.i},
-						Err:             propParsingErr,
-						ValuelessTokens: entryTokens,
+						Span:   NodeSpan{propSpanStart, p.i},
+						Err:    propParsingErr,
+						Tokens: entryTokens,
 					},
 					Value: keyOrVal,
 				})
@@ -3035,9 +3044,9 @@ object_pattern_top_loop:
 				}
 				properties = append(properties, &ObjectPatternProperty{
 					NodeBase: NodeBase{
-						Span:            NodeSpan{propSpanStart, p.i},
-						Err:             propParsingErr,
-						ValuelessTokens: entryTokens,
+						Span:   NodeSpan{propSpanStart, p.i},
+						Err:    propParsingErr,
+						Tokens: entryTokens,
 					},
 					Key:  key,
 					Type: type_,
@@ -3093,9 +3102,9 @@ object_pattern_top_loop:
 
 				properties = append(properties, &ObjectPatternProperty{
 					NodeBase: NodeBase{
-						Span:            NodeSpan{propSpanStart, propSpanEnd},
-						Err:             propParsingErr,
-						ValuelessTokens: entryTokens,
+						Span:   NodeSpan{propSpanStart, propSpanEnd},
+						Err:    propParsingErr,
+						Tokens: entryTokens,
 					},
 					Key:      key,
 					Type:     type_,
@@ -3120,9 +3129,9 @@ object_pattern_top_loop:
 
 		properties = append(properties, &ObjectPatternProperty{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{propSpanStart, propSpanEnd},
-				Err:             propParsingErr,
-				ValuelessTokens: entryTokens,
+				Span:   NodeSpan{propSpanStart, propSpanEnd},
+				Err:    propParsingErr,
+				Tokens: entryTokens,
 			},
 			Key:   key,
 			Value: v,
@@ -3141,9 +3150,9 @@ object_pattern_top_loop:
 	}
 
 	base := NodeBase{
-		Span:            NodeSpan{objectPatternStart, p.i},
-		Err:             parsingErr,
-		ValuelessTokens: tokens,
+		Span:   NodeSpan{objectPatternStart, p.i},
+		Err:    parsingErr,
+		Tokens: tokens,
 	}
 
 	if isRecordPattern {
@@ -3233,9 +3242,9 @@ func (p *parser) parseListTuplePatternLiteral(percentPrefixed, isTuplePattern bo
 	if isTuplePattern {
 		return &TuplePatternLiteral{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{start, p.i},
-				Err:             parsingErr,
-				ValuelessTokens: valuelessTokens,
+				Span:   NodeSpan{start, p.i},
+				Err:    parsingErr,
+				Tokens: valuelessTokens,
 			},
 			Elements:       elements,
 			GeneralElement: generalElement,
@@ -3244,9 +3253,9 @@ func (p *parser) parseListTuplePatternLiteral(percentPrefixed, isTuplePattern bo
 
 	return &ListPatternLiteral{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{start, p.i},
-			Err:             parsingErr,
-			ValuelessTokens: valuelessTokens,
+			Span:   NodeSpan{start, p.i},
+			Err:    parsingErr,
+			Tokens: valuelessTokens,
 		},
 		Elements:       elements,
 		GeneralElement: generalElement,
@@ -3354,9 +3363,9 @@ object_literal_top_loop:
 			p.i++
 			properties = append(properties, &ObjectProperty{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{propSpanStart, p.i - 1},
-					Err:             propParsingErr,
-					ValuelessTokens: entryTokens,
+					Span:   NodeSpan{propSpanStart, p.i - 1},
+					Err:    propParsingErr,
+					Tokens: entryTokens,
 				},
 				Key:   nil,
 				Value: nil,
@@ -3366,7 +3375,7 @@ object_literal_top_loop:
 
 		propSpanStart = key.Base().Span.Start
 
-		if len32(key.Base().ValuelessTokens) > 0 && key.Base().ValuelessTokens[0].Type == OPENING_PARENTHESIS {
+		if len32(key.Base().Tokens) > 0 && key.Base().Tokens[0].Type == OPENING_PARENTHESIS {
 			implicitKey = true
 			keyName = strconv.Itoa(unamedPropCount)
 			v = key
@@ -3397,9 +3406,9 @@ object_literal_top_loop:
 			implicitKey = true
 			properties = append(properties, &ObjectProperty{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{propSpanStart, p.i},
-					Err:             propParsingErr,
-					ValuelessTokens: entryTokens,
+					Span:   NodeSpan{propSpanStart, p.i},
+					Err:    propParsingErr,
+					Tokens: entryTokens,
 				},
 				Value: keyOrVal,
 			})
@@ -3418,9 +3427,9 @@ object_literal_top_loop:
 
 				properties = append(properties, &ObjectProperty{
 					NodeBase: NodeBase{
-						Span:            NodeSpan{propSpanStart, propSpanEnd},
-						Err:             propParsingErr,
-						ValuelessTokens: entryTokens,
+						Span:   NodeSpan{propSpanStart, propSpanEnd},
+						Err:    propParsingErr,
+						Tokens: entryTokens,
 					},
 					Value: keyOrVal,
 					Type:  type_,
@@ -3430,9 +3439,9 @@ object_literal_top_loop:
 			case isRecord: //explicit key properties of record cannot be annotated
 				properties = append(properties, &ObjectProperty{
 					NodeBase: NodeBase{
-						Span:            NodeSpan{propSpanStart, p.i},
-						Err:             propParsingErr,
-						ValuelessTokens: entryTokens,
+						Span:   NodeSpan{propSpanStart, p.i},
+						Err:    propParsingErr,
+						Tokens: entryTokens,
 					},
 					Key: keyOrVal,
 				})
@@ -3443,9 +3452,9 @@ object_literal_top_loop:
 				}
 				metaProperties = append(metaProperties, &ObjectMetaProperty{
 					NodeBase: NodeBase{
-						Span:            NodeSpan{propSpanStart, p.i},
-						Err:             propParsingErr,
-						ValuelessTokens: entryTokens,
+						Span:   NodeSpan{propSpanStart, p.i},
+						Err:    propParsingErr,
+						Tokens: entryTokens,
 					},
 					Key: keyOrVal,
 				})
@@ -3473,9 +3482,9 @@ object_literal_top_loop:
 
 			metaProperties = append(metaProperties, &ObjectMetaProperty{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{propSpanStart, propSpanEnd},
-					Err:             propParsingErr,
-					ValuelessTokens: entryTokens,
+					Span:   NodeSpan{propSpanStart, propSpanEnd},
+					Err:    propParsingErr,
+					Tokens: entryTokens,
 				},
 				Key: key,
 				Initialization: &InitializationBlock{
@@ -3495,9 +3504,9 @@ object_literal_top_loop:
 			}
 			properties = append(properties, &ObjectProperty{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{propSpanStart, p.i},
-					Err:             propParsingErr,
-					ValuelessTokens: entryTokens,
+					Span:   NodeSpan{propSpanStart, p.i},
+					Err:    propParsingErr,
+					Tokens: entryTokens,
 				},
 				Value: keyOrVal,
 			})
@@ -3514,9 +3523,9 @@ object_literal_top_loop:
 			}
 			properties = append(properties, &ObjectProperty{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{propSpanStart, p.i},
-					Err:             propParsingErr,
-					ValuelessTokens: entryTokens,
+					Span:   NodeSpan{propSpanStart, p.i},
+					Err:    propParsingErr,
+					Tokens: entryTokens,
 				},
 				Key:  key,
 				Type: type_,
@@ -3572,9 +3581,9 @@ object_literal_top_loop:
 
 			properties = append(properties, &ObjectProperty{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{propSpanStart, propSpanEnd},
-					Err:             propParsingErr,
-					ValuelessTokens: entryTokens,
+					Span:   NodeSpan{propSpanStart, propSpanEnd},
+					Err:    propParsingErr,
+					Tokens: entryTokens,
 				},
 				Key:   key,
 				Type:  type_,
@@ -3595,9 +3604,9 @@ object_literal_top_loop:
 	if !implicitKey && keyName != "" || v != nil {
 		properties = append(properties, &ObjectProperty{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{propSpanStart, propSpanEnd},
-				Err:             propParsingErr,
-				ValuelessTokens: entryTokens,
+				Span:   NodeSpan{propSpanStart, propSpanEnd},
+				Err:    propParsingErr,
+				Tokens: entryTokens,
 			},
 			Key:   key,
 			Type:  type_,
@@ -3613,9 +3622,9 @@ object_literal_top_loop:
 	}
 
 	base := NodeBase{
-		Span:            NodeSpan{openingBraceIndex, p.i},
-		Err:             parsingErr,
-		ValuelessTokens: tokens,
+		Span:   NodeSpan{openingBraceIndex, p.i},
+		Err:    parsingErr,
+		Tokens: tokens,
 	}
 
 	if isRecord {
@@ -3717,9 +3726,9 @@ func (p *parser) parseListOrTupleLiteral(isTuple bool) Node {
 	if isTuple {
 		return &TupleLiteral{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{openingBracketIndex, p.i},
-				Err:             parsingErr,
-				ValuelessTokens: valuelessTokens,
+				Span:   NodeSpan{openingBracketIndex, p.i},
+				Err:    parsingErr,
+				Tokens: valuelessTokens,
 			},
 			TypeAnnotation: type_,
 			Elements:       elements,
@@ -3728,9 +3737,9 @@ func (p *parser) parseListOrTupleLiteral(isTuple bool) Node {
 
 	return &ListLiteral{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{openingBracketIndex, p.i},
-			Err:             parsingErr,
-			ValuelessTokens: valuelessTokens,
+			Span:   NodeSpan{openingBracketIndex, p.i},
+			Err:    parsingErr,
+			Tokens: valuelessTokens,
 		},
 		TypeAnnotation: type_,
 		Elements:       elements,
@@ -3835,9 +3844,9 @@ dictionary_literal_top_loop:
 
 	return &DictionaryLiteral{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{openingIndex, p.i},
-			Err:             parsingErr,
-			ValuelessTokens: tokens,
+			Span:   NodeSpan{openingIndex, p.i},
+			Err:    parsingErr,
+			Tokens: tokens,
 		},
 		Entries: entries,
 	}
@@ -4037,8 +4046,8 @@ func (p *parser) parsePercentPrefixedPattern() Node {
 		p.inPattern = prev
 		return &PatternConversionExpression{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{start, e.Base().Span.End},
-				ValuelessTokens: []Token{percentSymbol},
+				Span:   NodeSpan{start, e.Base().Span.End},
+				Tokens: []Token{percentSymbol},
 			},
 			Value: e,
 		}
@@ -4482,9 +4491,9 @@ func (p *parser) parseIfExpression(openingParenIndex int32, ifIdent *IdentifierL
 
 	return &IfExpression{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{openingParenIndex, end},
-			Err:             parsingErr,
-			ValuelessTokens: tokens,
+			Span:   NodeSpan{openingParenIndex, end},
+			Err:    parsingErr,
+			Tokens: tokens,
 		},
 		Test:       test,
 		Consequent: consequent,
@@ -4515,7 +4524,7 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 	p.eatSpaceNewlineCommaComment(&tokens)
 
 	if isMissingExpr {
-		left.BasePtr().ValuelessTokens = append(tokens, left.BasePtr().ValuelessTokens...)
+		left.BasePtr().Tokens = append(tokens, left.BasePtr().Tokens...)
 
 		if p.i >= p.len {
 			if hasPreviousOperator {
@@ -4586,9 +4595,9 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 		}
 		return &UnaryExpression{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{startIndex, p.i},
-				Err:             parsingErr,
-				ValuelessTokens: tokens,
+				Span:   NodeSpan{startIndex, p.i},
+				Err:    parsingErr,
+				Tokens: tokens,
 			},
 			Operator: NumberNegate,
 			Operand:  operand,
@@ -4599,11 +4608,11 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 		if !hasPreviousOperator {
 			base := left.BasePtr()
 			p.i++
-			tokens := left.Base().ValuelessTokens
-			base.ValuelessTokens = append([]Token{
+			tokens := left.Base().Tokens
+			base.Tokens = append([]Token{
 				{Type: OPENING_PARENTHESIS, Span: NodeSpan{startIndex, startIndex + 1}},
 			}, tokens...)
-			base.ValuelessTokens = append(base.ValuelessTokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i - 1, p.i}})
+			base.Tokens = append(base.Tokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i - 1, p.i}})
 		}
 		return left
 	}
@@ -4613,9 +4622,9 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 			if left.Base().Err == nil {
 				left.BasePtr().Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_PARENTHESIZED_EXPR_MISSING_CLOSING_PAREN}
 			}
-			tokens := left.Base().ValuelessTokens
+			tokens := left.Base().Tokens
 			base := left.BasePtr()
-			base.ValuelessTokens = append([]Token{
+			base.Tokens = append([]Token{
 				{Type: OPENING_PARENTHESIS, Span: NodeSpan{startIndex, startIndex + 1}},
 			}, tokens...)
 		}
@@ -4625,9 +4634,9 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 	makeInvalidOperatorMissingRightOperand := func(operator BinaryOperator) Node {
 		return &BinaryExpression{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{startIndex, p.i},
-				Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_OPERAND_OR_INVALID_OPERATOR},
-				ValuelessTokens: tokens,
+				Span:   NodeSpan{startIndex, p.i},
+				Err:    &ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_OPERAND_OR_INVALID_OPERATOR},
+				Tokens: tokens,
 			},
 			Operator: operator,
 			Left:     left,
@@ -5003,7 +5012,7 @@ _switch:
 		}
 
 		if !moveRightOperand {
-			newLeft.BasePtr().ValuelessTokens = tokens
+			newLeft.BasePtr().Tokens = tokens
 		}
 
 		var newOperator BinaryOperator = And
@@ -5023,9 +5032,9 @@ _switch:
 		}
 
 		if !hasPreviousOperator {
-			newBinExpr.ValuelessTokens = []Token{openingParenToken, andOrToken}
+			newBinExpr.Tokens = []Token{openingParenToken, andOrToken}
 		} else {
-			newBinExpr.ValuelessTokens = []Token{andOrToken}
+			newBinExpr.Tokens = []Token{andOrToken}
 		}
 
 		p.eatSpace()
@@ -5042,7 +5051,7 @@ _switch:
 				}
 				newBinExpr.Span.End = newRight.Base().Span.End
 			} else {
-				newBinExpr.ValuelessTokens = append(newBinExpr.ValuelessTokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
+				newBinExpr.Tokens = append(newBinExpr.Tokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
 				p.i++
 				newBinExpr.Span.End = p.i
 			}
@@ -5078,9 +5087,9 @@ _switch:
 
 	return &BinaryExpression{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{startIndex, chainElementEnd},
-			Err:             parsingErr,
-			ValuelessTokens: tokens,
+			Span:   NodeSpan{startIndex, chainElementEnd},
+			Err:    parsingErr,
+			Tokens: tokens,
 		},
 		Operator: operator,
 		Left:     left,
@@ -5181,7 +5190,7 @@ func (p *parser) parseParenthesizedCallArgs(call *CallExpression) *CallExpressio
 
 	//parse arguments
 	for p.i < p.len && p.s[p.i] != ')' {
-		p.eatSpaceNewlineComma(&call.ValuelessTokens)
+		p.eatSpaceNewlineComma(&call.Tokens)
 
 		if p.i >= p.len || p.s[p.i] == ')' {
 			break
@@ -5194,9 +5203,9 @@ func (p *parser) parseParenthesizedCallArgs(call *CallExpression) *CallExpressio
 		if p.i < p.len-2 && p.s[p.i] == '.' && p.s[p.i+1] == '.' && p.s[p.i+2] == '.' {
 			lastSpreadArg = &SpreadArgument{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{p.i, 0},
-					ValuelessTokens: []Token{{Type: THREE_DOTS, Span: NodeSpan{p.i, p.i + 3}}},
-					Err:             argErr,
+					Span:   NodeSpan{p.i, 0},
+					Tokens: []Token{{Type: THREE_DOTS, Span: NodeSpan{p.i, p.i + 3}}},
+					Err:    argErr,
 				},
 			}
 			p.i += 3
@@ -5229,7 +5238,7 @@ func (p *parser) parseParenthesizedCallArgs(call *CallExpression) *CallExpressio
 		}
 
 		call.Arguments = append(call.Arguments, arg)
-		p.eatSpaceNewlineComma(&call.ValuelessTokens)
+		p.eatSpaceNewlineComma(&call.Tokens)
 	}
 
 	var parsingErr *ParsingError
@@ -5237,7 +5246,7 @@ func (p *parser) parseParenthesizedCallArgs(call *CallExpression) *CallExpressio
 	if p.i >= p.len || p.s[p.i] != ')' {
 		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_CALL_MISSING_CLOSING_PAREN}
 	} else {
-		call.ValuelessTokens = append(call.ValuelessTokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
+		call.Tokens = append(call.Tokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
 		p.i++
 	}
 
@@ -5253,7 +5262,7 @@ func (p *parser) parseCallArgsNoParenthesis(call *CallExpression) {
 	var lastSpreadArg *SpreadArgument = nil
 
 	for p.i < p.len && (!isUnpairedOrIsClosingDelim(p.s[p.i]) || p.s[p.i] == ':') {
-		p.eatSpaceComments(&call.ValuelessTokens)
+		p.eatSpaceComments(&call.Tokens)
 
 		if p.i >= p.len || (isUnpairedOrIsClosingDelim(p.s[p.i]) && p.s[p.i] != ':') {
 			break
@@ -5269,9 +5278,9 @@ func (p *parser) parseCallArgsNoParenthesis(call *CallExpression) {
 
 			lastSpreadArg = &SpreadArgument{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{p.i, 0},
-					ValuelessTokens: []Token{{Type: THREE_DOTS, Span: NodeSpan{p.i, p.i + 3}}},
-					Err:             argErr,
+					Span:   NodeSpan{p.i, 0},
+					Tokens: []Token{{Type: THREE_DOTS, Span: NodeSpan{p.i, p.i + 3}}},
+					Err:    argErr,
 				},
 			}
 			p.i += 3
@@ -5307,7 +5316,7 @@ func (p *parser) parseCallArgsNoParenthesis(call *CallExpression) {
 
 		call.Arguments = append(call.Arguments, arg)
 
-		p.eatSpaceComments(&call.ValuelessTokens)
+		p.eatSpaceComments(&call.Tokens)
 	}
 }
 
@@ -6070,8 +6079,8 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 
 		return &UnaryExpression{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{__start, operand.Base().Span.End},
-				ValuelessTokens: []Token{{Type: EXCLAMATION_MARK, Span: NodeSpan{__start, __start + 1}}},
+				Span:   NodeSpan{__start, operand.Base().Span.End},
+				Tokens: []Token{{Type: EXCLAMATION_MARK, Span: NodeSpan{__start, __start + 1}}},
 			},
 			Operator: BoolNegate,
 			Operand:  operand,
@@ -6082,8 +6091,8 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 
 		return &RuntimeTypeCheckExpression{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{__start, expr.Base().Span.End},
-				ValuelessTokens: []Token{{Type: TILDE, Span: NodeSpan{__start, __start + 1}}},
+				Span:   NodeSpan{__start, expr.Base().Span.End},
+				Tokens: []Token{{Type: TILDE, Span: NodeSpan{__start, __start + 1}}},
 			},
 			Expr: expr,
 		}, false
@@ -6666,9 +6675,9 @@ func (p *parser) parsePreInitIfPresent() *PreinitStatement {
 
 		preinit = &PreinitStatement{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{start, preinitBlock.Base().Span.End},
-				Err:             parsingErr,
-				ValuelessTokens: tokens,
+				Span:   NodeSpan{start, preinitBlock.Base().Span.End},
+				Err:    parsingErr,
+				Tokens: tokens,
 			},
 			Block: preinitBlock,
 		}
@@ -6691,8 +6700,8 @@ func (p *parser) parseIncludaleChunkDescIfPresent() *IncludableChunkDescription 
 
 		includableChunk = &IncludableChunkDescription{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{start, tokens[0].Span.End},
-				ValuelessTokens: tokens,
+				Span:   NodeSpan{start, tokens[0].Span.End},
+				Tokens: tokens,
 			},
 		}
 	}
@@ -6720,9 +6729,9 @@ func (p *parser) parseManifestIfPresent() *Manifest {
 
 		manifest = &Manifest{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{start, manifestObject.Base().Span.End},
-				Err:             err,
-				ValuelessTokens: tokens,
+				Span:   NodeSpan{start, manifestObject.Base().Span.End},
+				Err:    err,
+				Tokens: tokens,
 			},
 			Object: manifestObject,
 		}
@@ -7034,9 +7043,9 @@ func (p *parser) parseEmbeddedModule() *EmbeddedModule {
 		if IsForbiddenSpaceCharacter(p.s[p.i]) {
 			stmts = append(stmts, &UnknownNode{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{p.i, p.i + 1},
-					Err:             &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInBlockOrModule(p.s[p.i])},
-					ValuelessTokens: []Token{{Type: UNEXPECTED_CHAR, Span: NodeSpan{p.i, p.i + 1}, Raw: string(p.s[p.i])}},
+					Span:   NodeSpan{p.i, p.i + 1},
+					Err:    &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInBlockOrModule(p.s[p.i])},
+					Tokens: []Token{{Type: UNEXPECTED_CHAR, Span: NodeSpan{p.i, p.i + 1}, Raw: string(p.s[p.i])}},
 				},
 			})
 			p.i++
@@ -7174,7 +7183,7 @@ parse_embedded_module:
 	}
 
 	return &SpawnExpression{
-		NodeBase: NodeBase{Span: NodeSpan{spawnExprStart, p.i}, ValuelessTokens: tokens},
+		NodeBase: NodeBase{Span: NodeSpan{spawnExprStart, p.i}, Tokens: tokens},
 		Meta:     meta,
 		Module:   emod,
 	}
@@ -7191,9 +7200,9 @@ func (p *parser) parseMappingExpression(mappingIdent Node) *MappingExpression {
 	if p.i >= p.len || p.s[p.i] != '{' {
 		return &MappingExpression{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{start, p.i},
-				ValuelessTokens: valuelessTokens,
-				Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_MAPPING_EXPRESSION_MISSING_BODY},
+				Span:   NodeSpan{start, p.i},
+				Tokens: valuelessTokens,
+				Err:    &ParsingError{UnspecifiedParsingError, UNTERMINATED_MAPPING_EXPRESSION_MISSING_BODY},
 			},
 		}
 	}
@@ -7245,9 +7254,9 @@ func (p *parser) parseMappingExpression(mappingIdent Node) *MappingExpression {
 
 			return &MappingExpression{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{start, p.i},
-					ValuelessTokens: valuelessTokens,
-					Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_MAPPING_ENTRY},
+					Span:   NodeSpan{start, p.i},
+					Tokens: valuelessTokens,
+					Err:    &ParsingError{UnspecifiedParsingError, UNTERMINATED_MAPPING_ENTRY},
 				},
 				Entries: entries,
 			}
@@ -7309,9 +7318,9 @@ func (p *parser) parseMappingExpression(mappingIdent Node) *MappingExpression {
 		if !isDynamicEntry {
 			entries = append(entries, &StaticMappingEntry{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{key.Base().Span.Start, end},
-					ValuelessTokens: entryTokens,
-					Err:             entryParsingErr,
+					Span:   NodeSpan{key.Base().Span.Start, end},
+					Tokens: entryTokens,
+					Err:    entryParsingErr,
 				},
 				Key:   key,
 				Value: value,
@@ -7319,9 +7328,9 @@ func (p *parser) parseMappingExpression(mappingIdent Node) *MappingExpression {
 		} else {
 			entries = append(entries, &DynamicMappingEntry{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{dynamicEntryVar.Base().Span.Start, end},
-					ValuelessTokens: entryTokens,
-					Err:             entryParsingErr,
+					Span:   NodeSpan{dynamicEntryVar.Base().Span.Start, end},
+					Tokens: entryTokens,
+					Err:    entryParsingErr,
 				},
 				Key:                   key,
 				KeyVar:                dynamicEntryVar,
@@ -7343,9 +7352,9 @@ func (p *parser) parseMappingExpression(mappingIdent Node) *MappingExpression {
 
 	return &MappingExpression{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{start, p.i},
-			ValuelessTokens: valuelessTokens,
-			Err:             parsingErr,
+			Span:   NodeSpan{start, p.i},
+			Tokens: valuelessTokens,
+			Err:    parsingErr,
 		},
 		Entries: entries,
 	}
@@ -7361,8 +7370,8 @@ func (p *parser) parseComputeExpression(compIdent Node) *ComputeExpression {
 
 	return &ComputeExpression{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{start, p.i},
-			ValuelessTokens: []Token{{Type: COMP_KEYWORD, Span: compIdent.Base().Span}},
+			Span:   NodeSpan{start, p.i},
+			Tokens: []Token{{Type: COMP_KEYWORD, Span: compIdent.Base().Span}},
 		},
 		Arg: arg,
 	}
@@ -7380,8 +7389,8 @@ func (p *parser) parseUdataLiteral(udataIdent Node) *UDataLiteral {
 	if p.i >= p.len || p.s[p.i] != '{' {
 		return &UDataLiteral{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{start, p.i},
-				ValuelessTokens: valuelessTokens,
+				Span:   NodeSpan{start, p.i},
+				Tokens: valuelessTokens,
 			},
 			Root: root,
 		}
@@ -7400,8 +7409,8 @@ func (p *parser) parseUdataLiteral(udataIdent Node) *UDataLiteral {
 		if !cont {
 			return &UDataLiteral{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{start, p.i},
-					ValuelessTokens: valuelessTokens,
+					Span:   NodeSpan{start, p.i},
+					Tokens: valuelessTokens,
 				},
 				Root:     root,
 				Children: children,
@@ -7421,9 +7430,9 @@ func (p *parser) parseUdataLiteral(udataIdent Node) *UDataLiteral {
 
 	return &UDataLiteral{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{start, p.i},
-			Err:             parsingErr,
-			ValuelessTokens: valuelessTokens,
+			Span:   NodeSpan{start, p.i},
+			Err:    parsingErr,
+			Tokens: valuelessTokens,
 		},
 		Root:     root,
 		Children: children,
@@ -7506,9 +7515,9 @@ func (p *parser) parseTreeStructureEntry() (entry *UDataEntry, cont bool) {
 	}
 	return &UDataEntry{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{start, p.i},
-			Err:             parsingErr,
-			ValuelessTokens: valuelessTokens,
+			Span:   NodeSpan{start, p.i},
+			Err:    parsingErr,
+			Tokens: valuelessTokens,
 		},
 		Value:    node,
 		Children: children,
@@ -7538,8 +7547,8 @@ func (p *parser) parseConcatenationExpression(concatIdent Node, precededByOpenin
 
 			elem = &ElementSpreadElement{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{spreadStart, e.Base().Span.End},
-					ValuelessTokens: []Token{{Type: THREE_DOTS, Span: threeDotsSpan}},
+					Span:   NodeSpan{spreadStart, e.Base().Span.End},
+					Tokens: []Token{{Type: THREE_DOTS, Span: threeDotsSpan}},
 				},
 				Expr: e,
 			}
@@ -7563,9 +7572,9 @@ func (p *parser) parseConcatenationExpression(concatIdent Node, precededByOpenin
 
 	return &ConcatenationExpression{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{start, p.i},
-			Err:             parsingErr,
-			ValuelessTokens: valuelessTokens,
+			Span:   NodeSpan{start, p.i},
+			Err:    parsingErr,
+			Tokens: valuelessTokens,
 		},
 		Elements: elements,
 	}
@@ -7581,9 +7590,9 @@ func (p *parser) parseTestSuiteExpression(ident *IdentifierLiteral) *TestSuiteEx
 	if p.i >= p.len {
 		return &TestSuiteExpression{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{start, p.i},
-				ValuelessTokens: valuelessTokens,
-				Err:             &ParsingError{MissingBlock, UNTERMINATED_TESTSUITE_EXPRESSION_MISSING_BLOCK},
+				Span:   NodeSpan{start, p.i},
+				Tokens: valuelessTokens,
+				Err:    &ParsingError{MissingBlock, UNTERMINATED_TESTSUITE_EXPRESSION_MISSING_BLOCK},
 			},
 		}
 	}
@@ -7598,9 +7607,9 @@ func (p *parser) parseTestSuiteExpression(ident *IdentifierLiteral) *TestSuiteEx
 	if p.i >= p.len || p.s[p.i] != '{' {
 		return &TestSuiteExpression{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{start, p.i},
-				ValuelessTokens: valuelessTokens,
-				Err:             &ParsingError{MissingBlock, UNTERMINATED_TESTSUITE_EXPRESSION_MISSING_BLOCK},
+				Span:   NodeSpan{start, p.i},
+				Tokens: valuelessTokens,
+				Err:    &ParsingError{MissingBlock, UNTERMINATED_TESTSUITE_EXPRESSION_MISSING_BLOCK},
 			},
 			Meta: meta,
 		}
@@ -7610,8 +7619,8 @@ func (p *parser) parseTestSuiteExpression(ident *IdentifierLiteral) *TestSuiteEx
 
 	return &TestSuiteExpression{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{start, p.i},
-			ValuelessTokens: valuelessTokens,
+			Span:   NodeSpan{start, p.i},
+			Tokens: valuelessTokens,
 		},
 		Meta:   meta,
 		Module: emod,
@@ -7629,9 +7638,9 @@ func (p *parser) parseTestCaseExpression(ident *IdentifierLiteral) *TestCaseExpr
 	if p.i >= p.len {
 		return &TestCaseExpression{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{start, p.i},
-				ValuelessTokens: valuelessTokens,
-				Err:             &ParsingError{MissingBlock, UNTERMINATED_TESTCASE_EXPRESSION_MISSING_BLOCK},
+				Span:   NodeSpan{start, p.i},
+				Tokens: valuelessTokens,
+				Err:    &ParsingError{MissingBlock, UNTERMINATED_TESTCASE_EXPRESSION_MISSING_BLOCK},
 			},
 		}
 	}
@@ -7646,9 +7655,9 @@ func (p *parser) parseTestCaseExpression(ident *IdentifierLiteral) *TestCaseExpr
 	if p.i >= p.len || p.s[p.i] != '{' {
 		return &TestCaseExpression{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{start, p.i},
-				ValuelessTokens: valuelessTokens,
-				Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_TESTCASE_EXPRESSION_MISSING_BLOCK},
+				Span:   NodeSpan{start, p.i},
+				Tokens: valuelessTokens,
+				Err:    &ParsingError{UnspecifiedParsingError, UNTERMINATED_TESTCASE_EXPRESSION_MISSING_BLOCK},
 			},
 			Meta: meta,
 		}
@@ -7658,8 +7667,8 @@ func (p *parser) parseTestCaseExpression(ident *IdentifierLiteral) *TestCaseExpr
 
 	return &TestCaseExpression{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{start, p.i},
-			ValuelessTokens: valuelessTokens,
+			Span:   NodeSpan{start, p.i},
+			Tokens: valuelessTokens,
 		},
 		Meta:   meta,
 		Module: emod,
@@ -7676,9 +7685,9 @@ func (p *parser) parseLifetimeJobExpression(ident *IdentifierLiteral) *Lifetimej
 	if p.i >= p.len {
 		return &LifetimejobExpression{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{start, p.i},
-				ValuelessTokens: valuelessTokens,
-				Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_LIFETIMEJOB_EXPRESSION_MISSING_META},
+				Span:   NodeSpan{start, p.i},
+				Tokens: valuelessTokens,
+				Err:    &ParsingError{UnspecifiedParsingError, UNTERMINATED_LIFETIMEJOB_EXPRESSION_MISSING_META},
 			},
 		}
 	}
@@ -7702,9 +7711,9 @@ func (p *parser) parseLifetimeJobExpression(ident *IdentifierLiteral) *Lifetimej
 	if p.i >= p.len || p.s[p.i] != '{' {
 		return &LifetimejobExpression{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{start, p.i},
-				ValuelessTokens: valuelessTokens,
-				Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_LIFETIMEJOB_EXPRESSION_MISSING_EMBEDDED_MODULE},
+				Span:   NodeSpan{start, p.i},
+				Tokens: valuelessTokens,
+				Err:    &ParsingError{UnspecifiedParsingError, UNTERMINATED_LIFETIMEJOB_EXPRESSION_MISSING_EMBEDDED_MODULE},
 			},
 			Meta:    meta,
 			Subject: subject,
@@ -7715,8 +7724,8 @@ func (p *parser) parseLifetimeJobExpression(ident *IdentifierLiteral) *Lifetimej
 
 	return &LifetimejobExpression{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{start, p.i},
-			ValuelessTokens: valuelessTokens,
+			Span:   NodeSpan{start, p.i},
+			Tokens: valuelessTokens,
 		},
 		Meta:    meta,
 		Subject: subject,
@@ -7781,7 +7790,7 @@ func (p *parser) parseReceptionHandlerExpression(onIdent Node) Node {
 	p.eatSpace()
 
 	return &ReceptionHandlerExpression{
-		NodeBase: NodeBase{Span: NodeSpan{exprStart, p.i}, ValuelessTokens: tokens, Err: missingReceivedKeywordError},
+		NodeBase: NodeBase{Span: NodeSpan{exprStart, p.i}, Tokens: tokens, Err: missingReceivedKeywordError},
 		Pattern:  pattern,
 		Handler:  handler,
 	}
@@ -7797,9 +7806,9 @@ func (p *parser) parseSendValueExpression(ident *IdentifierLiteral) *SendValueEx
 	if p.isExpressionEnd() {
 		return &SendValueExpression{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{start, p.i},
-				ValuelessTokens: valuelessTokens,
-				Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_SENDVALUE_EXPRESSION_MISSING_VALUE},
+				Span:   NodeSpan{start, p.i},
+				Tokens: valuelessTokens,
+				Err:    &ParsingError{UnspecifiedParsingError, UNTERMINATED_SENDVALUE_EXPRESSION_MISSING_VALUE},
 			},
 		}
 	}
@@ -7825,9 +7834,9 @@ func (p *parser) parseSendValueExpression(ident *IdentifierLiteral) *SendValueEx
 
 	return &SendValueExpression{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{start, p.i},
-			ValuelessTokens: valuelessTokens,
-			Err:             parsingErr,
+			Span:   NodeSpan{start, p.i},
+			Tokens: valuelessTokens,
+			Err:    parsingErr,
 		},
 		Value:    value,
 		Receiver: receiver,
@@ -7894,8 +7903,8 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 
 	openingElement := &XMLOpeningElement{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{start, p.i},
-			ValuelessTokens: openingElemValuelessTokens,
+			Span:   NodeSpan{start, p.i},
+			Tokens: openingElemValuelessTokens,
 		},
 		Name: openingIdent,
 	}
@@ -7930,8 +7939,8 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 
 			openingElement.Attributes = append(openingElement.Attributes, &XMLAttribute{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{name.Base().Span.Start, p.i},
-					ValuelessTokens: []Token{token},
+					Span:   NodeSpan{name.Base().Span.Start, p.i},
+					Tokens: []Token{token},
 				},
 				Name:  name,
 				Value: value,
@@ -7974,7 +7983,7 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 			openingElemValuelessTokens = append(openingElemValuelessTokens, Token{Type: SLASH, Span: NodeSpan{p.i, p.i + 1}})
 			p.i++
 			openingElement.Span.End = p.i
-			openingElement.ValuelessTokens = openingElemValuelessTokens
+			openingElement.Tokens = openingElemValuelessTokens
 
 			openingElement.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_SELF_CLOSING_XML_TAG_MISSING_CLOSING}
 
@@ -7992,7 +8001,7 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 		p.i += 2
 
 		openingElement.Span.End = p.i
-		openingElement.ValuelessTokens = openingElemValuelessTokens
+		openingElement.Tokens = openingElemValuelessTokens
 
 		return &XMLElement{
 			NodeBase: NodeBase{
@@ -8009,7 +8018,7 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 	openingElemValuelessTokens = append(openingElemValuelessTokens, Token{Type: GREATER_THAN, Span: NodeSpan{p.i, p.i + 1}})
 	p.i++
 	openingElement.Span.End = p.i
-	openingElement.ValuelessTokens = openingElemValuelessTokens
+	openingElement.Tokens = openingElemValuelessTokens
 
 	//children
 	var valuelessTokens []Token
@@ -8038,8 +8047,8 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 
 	closingElement := &XMLClosingElement{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{closingElemStart, p.i},
-			ValuelessTokens: closingElemValuelessTokens,
+			Span:   NodeSpan{closingElemStart, p.i},
+			Tokens: closingElemValuelessTokens,
 		},
 		Name: closingName,
 	}
@@ -8070,7 +8079,7 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 	closingElemValuelessTokens = append(closingElemValuelessTokens, Token{Type: GREATER_THAN, Span: NodeSpan{p.i, p.i + 1}})
 	p.i++
 	closingElement.Span.End = p.i
-	closingElement.ValuelessTokens = closingElemValuelessTokens
+	closingElement.Tokens = closingElemValuelessTokens
 
 	return &XMLElement{
 		NodeBase: NodeBase{
@@ -8320,8 +8329,8 @@ func (p *parser) parseFunction(start int32) Node {
 	createNodeWithError := func() Node {
 		fn := FunctionExpression{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{start, p.i},
-				ValuelessTokens: tokens,
+				Span:   NodeSpan{start, p.i},
+				Tokens: tokens,
 			},
 			CaptureList: capturedLocals,
 		}
@@ -8332,9 +8341,9 @@ func (p *parser) parseFunction(start int32) Node {
 			}
 			return &FunctionDeclaration{
 				NodeBase: NodeBase{
-					Span:            fn.Span,
-					Err:             parsingErr,
-					ValuelessTokens: tokens,
+					Span:   fn.Span,
+					Err:    parsingErr,
+					Tokens: tokens,
 				},
 				Function: &fn,
 				Name:     ident,
@@ -8395,9 +8404,9 @@ func (p *parser) parseFunction(start int32) Node {
 		if ident, ok = identLike.(*IdentifierLiteral); !ok {
 			return &FunctionDeclaration{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{start, p.i},
-					Err:             &ParsingError{UnspecifiedParsingError, fmtFuncNameShouldBeAnIndentNot(identLike)},
-					ValuelessTokens: tokens,
+					Span:   NodeSpan{start, p.i},
+					Err:    &ParsingError{UnspecifiedParsingError, fmtFuncNameShouldBeAnIndentNot(identLike)},
+					Tokens: tokens,
 				},
 				Function: nil,
 				Name:     nil,
@@ -8567,9 +8576,9 @@ func (p *parser) parseFunction(start int32) Node {
 
 	fn := FunctionExpression{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{start, end},
-			Err:             parsingErr,
-			ValuelessTokens: tokens,
+			Span:   NodeSpan{start, end},
+			Err:    parsingErr,
+			Tokens: tokens,
 		},
 		CaptureList:            capturedLocals,
 		Parameters:             parameters,
@@ -8582,7 +8591,7 @@ func (p *parser) parseFunction(start int32) Node {
 
 	if ident != nil {
 		fn.Err = nil
-		fn.ValuelessTokens = nil
+		fn.Tokens = nil
 
 		if parsingErr == nil && isKeyword(ident.Name) {
 			parsingErr = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_AS_FN_NAMES}
@@ -8590,9 +8599,9 @@ func (p *parser) parseFunction(start int32) Node {
 
 		return &FunctionDeclaration{
 			NodeBase: NodeBase{
-				Span:            fn.Span,
-				Err:             parsingErr,
-				ValuelessTokens: tokens,
+				Span:   fn.Span,
+				Err:    parsingErr,
+				Tokens: tokens,
 			},
 			Function: &fn,
 			Name:     ident,
@@ -8618,8 +8627,8 @@ func (p *parser) parseFunctionPattern(start int32) Node {
 	createNodeWithError := func() Node {
 		fn := FunctionExpression{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{start, p.i},
-				ValuelessTokens: tokens,
+				Span:   NodeSpan{start, p.i},
+				Tokens: tokens,
 			},
 			CaptureList: capturedLocals,
 		}
@@ -8789,9 +8798,9 @@ func (p *parser) parseFunctionPattern(start int32) Node {
 
 	fn := FunctionPatternExpression{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{start, end},
-			Err:             parsingErr,
-			ValuelessTokens: tokens,
+			Span:   NodeSpan{start, end},
+			Err:    parsingErr,
+			Tokens: tokens,
 		},
 		Parameters:             parameters,
 		AdditionalInvalidNodes: additionalInvalidNodes,
@@ -8872,9 +8881,9 @@ func (p *parser) parseIfStatement(ifIdent *IdentifierLiteral) *IfStatement {
 
 	return &IfStatement{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{ifIdent.Span.Start, end},
-			Err:             parsingErr,
-			ValuelessTokens: tokens,
+			Span:   NodeSpan{ifIdent.Span.Start, end},
+			Err:    parsingErr,
+			Tokens: tokens,
 		},
 		Test:       test,
 		Consequent: blk,
@@ -8911,9 +8920,9 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 
 		return &ForStatement{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{forIdent.Span.Start, end},
-				Err:             parsingErr,
-				ValuelessTokens: tokens,
+				Span:   NodeSpan{forIdent.Span.Start, end},
+				Err:    parsingErr,
+				Tokens: tokens,
 			},
 			KeyIndexIdent:  nil,
 			ValueElemIdent: nil,
@@ -8949,9 +8958,9 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 		if p.i >= p.len {
 			return &ForStatement{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{forIdent.Span.Start, p.i},
-					Err:             &ParsingError{UnspecifiedParsingError, INVALID_FOR_STMT},
-					ValuelessTokens: tokens,
+					Span:   NodeSpan{forIdent.Span.Start, p.i},
+					Err:    &ParsingError{UnspecifiedParsingError, INVALID_FOR_STMT},
+					Tokens: tokens,
 				},
 				Chunked:       chunked,
 				KeyPattern:    firstPattern,
@@ -8976,9 +8985,9 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 			if p.i >= p.len {
 				return &ForStatement{
 					NodeBase: NodeBase{
-						Span:            NodeSpan{forIdent.Span.Start, p.i},
-						Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_STMT},
-						ValuelessTokens: tokens,
+						Span:   NodeSpan{forIdent.Span.Start, p.i},
+						Err:    &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_STMT},
+						Tokens: tokens,
 					},
 					Chunked:       chunked,
 					KeyPattern:    firstPattern,
@@ -9004,9 +9013,9 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 			if p.i >= p.len {
 				return &ForStatement{
 					NodeBase: NodeBase{
-						Span:            NodeSpan{forIdent.Span.Start, p.i},
-						Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_STMT},
-						ValuelessTokens: tokens,
+						Span:   NodeSpan{forIdent.Span.Start, p.i},
+						Err:    &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_STMT},
+						Tokens: tokens,
 					},
 					KeyPattern:    firstPattern,
 					KeyIndexIdent: v,
@@ -9018,9 +9027,9 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 			if p.s[p.i] != 'i' || p.i > p.len-2 || p.s[p.i+1] != 'n' {
 				return &ForStatement{
 					NodeBase: NodeBase{
-						Span:            NodeSpan{forIdent.Span.Start, p.i},
-						Err:             &ParsingError{UnspecifiedParsingError, INVALID_FOR_STMT_MISSING_IN_KEYWORD},
-						ValuelessTokens: tokens,
+						Span:   NodeSpan{forIdent.Span.Start, p.i},
+						Err:    &ParsingError{UnspecifiedParsingError, INVALID_FOR_STMT_MISSING_IN_KEYWORD},
+						Tokens: tokens,
 					},
 					KeyPattern:     keyPattern,
 					KeyIndexIdent:  keyIndexIdent,
@@ -9042,9 +9051,9 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 
 			return &ForStatement{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{forIdent.Span.Start, p.i},
-					Err:             &ParsingError{UnspecifiedParsingError, INVALID_FOR_STMT_IN_KEYWORD_SHOULD_BE_FOLLOWED_BY_SPACE},
-					ValuelessTokens: tokens,
+					Span:   NodeSpan{forIdent.Span.Start, p.i},
+					Err:    &ParsingError{UnspecifiedParsingError, INVALID_FOR_STMT_IN_KEYWORD_SHOULD_BE_FOLLOWED_BY_SPACE},
+					Tokens: tokens,
 				},
 				KeyPattern:     keyPattern,
 				KeyIndexIdent:  keyIndexIdent,
@@ -9058,9 +9067,9 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 		if p.i >= p.len {
 			return &ForStatement{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{forIdent.Span.Start, p.i},
-					Err:             &ParsingError{UnspecifiedParsingError, INVALID_FOR_STMT_MISSING_VALUE_AFTER_IN},
-					ValuelessTokens: tokens,
+					Span:   NodeSpan{forIdent.Span.Start, p.i},
+					Err:    &ParsingError{UnspecifiedParsingError, INVALID_FOR_STMT_MISSING_VALUE_AFTER_IN},
+					Tokens: tokens,
 				},
 				KeyPattern:     firstPattern,
 				KeyIndexIdent:  keyIndexIdent,
@@ -9085,9 +9094,9 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 
 		return &ForStatement{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{forIdent.Span.Start, end},
-				Err:             parsingErr,
-				ValuelessTokens: tokens,
+				Span:   NodeSpan{forIdent.Span.Start, end},
+				Err:    parsingErr,
+				Tokens: tokens,
 			},
 			KeyPattern:     keyPattern,
 			KeyIndexIdent:  keyIndexIdent,
@@ -9116,9 +9125,9 @@ func (p *parser) parseWalkStatement(walkIdent *IdentifierLiteral) *WalkStatement
 	if isMissingExpr {
 		return &WalkStatement{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{walkIdent.Span.Start, p.i},
-				Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_WALK_STMT_MISSING_WALKED_VALUE},
-				ValuelessTokens: tokens,
+				Span:   NodeSpan{walkIdent.Span.Start, p.i},
+				Err:    &ParsingError{UnspecifiedParsingError, UNTERMINATED_WALK_STMT_MISSING_WALKED_VALUE},
+				Tokens: tokens,
 			},
 			Walked: walked,
 		}
@@ -9131,9 +9140,9 @@ func (p *parser) parseWalkStatement(walkIdent *IdentifierLiteral) *WalkStatement
 	if entryIdent, ok = e.(*IdentifierLiteral); !ok {
 		return &WalkStatement{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{walkIdent.Span.Start, e.Base().Span.End},
-				Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_WALK_STMT_MISSING_ENTRY_VARIABLE_NAME},
-				ValuelessTokens: tokens,
+				Span:   NodeSpan{walkIdent.Span.Start, e.Base().Span.End},
+				Err:    &ParsingError{UnspecifiedParsingError, UNTERMINATED_WALK_STMT_MISSING_ENTRY_VARIABLE_NAME},
+				Tokens: tokens,
 			},
 			Walked: walked,
 		}
@@ -9157,9 +9166,9 @@ func (p *parser) parseWalkStatement(walkIdent *IdentifierLiteral) *WalkStatement
 			if entryIdent, ok = e.(*IdentifierLiteral); !ok {
 				return &WalkStatement{
 					NodeBase: NodeBase{
-						Span:            NodeSpan{walkIdent.Span.Start, e.Base().Span.End},
-						Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_WALK_STMT_MISSING_ENTRY_VARIABLE_NAME},
-						ValuelessTokens: tokens,
+						Span:   NodeSpan{walkIdent.Span.Start, e.Base().Span.End},
+						Err:    &ParsingError{UnspecifiedParsingError, UNTERMINATED_WALK_STMT_MISSING_ENTRY_VARIABLE_NAME},
+						Tokens: tokens,
 					},
 					MetaIdent: metaIdent,
 					Walked:    walked,
@@ -9182,9 +9191,9 @@ func (p *parser) parseWalkStatement(walkIdent *IdentifierLiteral) *WalkStatement
 
 	return &WalkStatement{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{walkIdent.Span.Start, end},
-			Err:             parsingErr,
-			ValuelessTokens: tokens,
+			Span:   NodeSpan{walkIdent.Span.Start, end},
+			Err:    parsingErr,
+			Tokens: tokens,
 		},
 		Walked:     walked,
 		MetaIdent:  metaIdent,
@@ -9212,18 +9221,18 @@ func (p *parser) parseSwitchMatchStatement(keywordIdent *IdentifierLiteral) Node
 		if keywordIdent.Name == "switch" {
 			return &SwitchStatement{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{keywordIdent.Span.Start, p.i},
-					Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_SWITCH_STMT_MISSING_VALUE},
-					ValuelessTokens: tokens,
+					Span:   NodeSpan{keywordIdent.Span.Start, p.i},
+					Err:    &ParsingError{UnspecifiedParsingError, UNTERMINATED_SWITCH_STMT_MISSING_VALUE},
+					Tokens: tokens,
 				},
 			}
 		}
 
 		return &SwitchStatement{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{keywordIdent.Span.Start, p.i},
-				Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_MATCH_STMT_MISSING_VALUE},
-				ValuelessTokens: tokens,
+				Span:   NodeSpan{keywordIdent.Span.Start, p.i},
+				Err:    &ParsingError{UnspecifiedParsingError, UNTERMINATED_MATCH_STMT_MISSING_VALUE},
+				Tokens: tokens,
 			},
 		}
 	}
@@ -9239,9 +9248,9 @@ func (p *parser) parseSwitchMatchStatement(keywordIdent *IdentifierLiteral) Node
 		if !isMatchStmt {
 			return &SwitchStatement{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{keywordIdent.Span.Start, p.i},
-					Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_SWITCH_STMT_MISSING_BODY},
-					ValuelessTokens: tokens,
+					Span:   NodeSpan{keywordIdent.Span.Start, p.i},
+					Err:    &ParsingError{UnspecifiedParsingError, UNTERMINATED_SWITCH_STMT_MISSING_BODY},
+					Tokens: tokens,
 				},
 				Discriminant: discriminant,
 			}
@@ -9249,9 +9258,9 @@ func (p *parser) parseSwitchMatchStatement(keywordIdent *IdentifierLiteral) Node
 
 		return &MatchStatement{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{keywordIdent.Span.Start, p.i},
-				Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_MATCH_STMT_MISSING_BODY},
-				ValuelessTokens: tokens,
+				Span:   NodeSpan{keywordIdent.Span.Start, p.i},
+				Err:    &ParsingError{UnspecifiedParsingError, UNTERMINATED_MATCH_STMT_MISSING_BODY},
+				Tokens: tokens,
 			},
 			Discriminant: discriminant,
 		}
@@ -9356,8 +9365,8 @@ top_loop:
 
 					defaultCase = &DefaultCase{
 						NodeBase: NodeBase{
-							Span:            NodeSpan{ident.Span.Start, ident.Span.End},
-							ValuelessTokens: []Token{{Type: DEFAULTCASE_KEYWORD, Span: NodeSpan{ident.Span.Start, ident.Span.End}}},
+							Span:   NodeSpan{ident.Span.Start, ident.Span.End},
+							Tokens: []Token{{Type: DEFAULTCASE_KEYWORD, Span: NodeSpan{ident.Span.Start, ident.Span.End}}},
 						},
 					}
 
@@ -9393,9 +9402,9 @@ top_loop:
 				switch {
 				case p.s[p.i] == ',': //comma before next value
 					if isMatchStmt {
-						matchCase.ValuelessTokens = append(matchCase.ValuelessTokens, Token{Type: COMMA, Span: NodeSpan{p.i, p.i + 1}})
+						matchCase.Tokens = append(matchCase.Tokens, Token{Type: COMMA, Span: NodeSpan{p.i, p.i + 1}})
 					} else {
-						switchCase.ValuelessTokens = append(switchCase.ValuelessTokens, Token{Type: COMMA, Span: NodeSpan{p.i, p.i + 1}})
+						switchCase.Tokens = append(switchCase.Tokens, Token{Type: COMMA, Span: NodeSpan{p.i, p.i + 1}})
 					}
 					p.i++
 
@@ -9628,8 +9637,8 @@ func (p *parser) parseReturnStatement(returnIdent *IdentifierLiteral) *ReturnSta
 
 	return &ReturnStatement{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{returnIdent.Span.Start, end},
-			ValuelessTokens: []Token{{Type: RETURN_KEYWORD, Span: returnIdent.Span}},
+			Span:   NodeSpan{returnIdent.Span.Start, end},
+			Tokens: []Token{{Type: RETURN_KEYWORD, Span: returnIdent.Span}},
 		},
 		Expr: returnValue,
 	}
@@ -9650,8 +9659,8 @@ func (p *parser) parseYieldStatement(yieldIdent *IdentifierLiteral) *YieldStatem
 
 	return &YieldStatement{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{yieldIdent.Span.Start, end},
-			ValuelessTokens: []Token{{Type: YIELD_KEYWORD, Span: yieldIdent.Span}},
+			Span:   NodeSpan{yieldIdent.Span.Start, end},
+			Tokens: []Token{{Type: YIELD_KEYWORD, Span: yieldIdent.Span}},
 		},
 		Expr: returnValue,
 	}
@@ -9666,9 +9675,9 @@ func (p *parser) parseSynchronizedBlock(synchronizedIdent *IdentifierLiteral) *S
 	if p.i >= p.len {
 		return &SynchronizedBlockStatement{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{synchronizedIdent.Span.Start, p.i},
-				Err:             &ParsingError{UnspecifiedParsingError, SYNCHRONIZED_KEYWORD_SHOULD_BE_FOLLOWED_BY_SYNC_VALUES},
-				ValuelessTokens: tokens,
+				Span:   NodeSpan{synchronizedIdent.Span.Start, p.i},
+				Err:    &ParsingError{UnspecifiedParsingError, SYNCHRONIZED_KEYWORD_SHOULD_BE_FOLLOWED_BY_SYNC_VALUES},
+				Tokens: tokens,
 			},
 		}
 	}
@@ -9703,9 +9712,9 @@ func (p *parser) parseSynchronizedBlock(synchronizedIdent *IdentifierLiteral) *S
 
 	return &SynchronizedBlockStatement{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{synchronizedIdent.Span.Start, p.i},
-			Err:             parsingErr,
-			ValuelessTokens: tokens,
+			Span:   NodeSpan{synchronizedIdent.Span.Start, p.i},
+			Err:    parsingErr,
+			Tokens: tokens,
 		},
 		SynchronizedValues: synchronizedValues,
 		Block:              block,
@@ -9784,9 +9793,9 @@ func (p *parser) parseMultiAssignmentStatement(assignIdent *IdentifierLiteral) *
 
 	return &MultiAssignment{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{assignIdent.Span.Start, end},
-			Err:             keywordLHSError,
-			ValuelessTokens: tokens,
+			Span:   NodeSpan{assignIdent.Span.Start, end},
+			Err:    keywordLHSError,
+			Tokens: tokens,
 		},
 		Variables: vars,
 		Right:     right,
@@ -9958,9 +9967,9 @@ func (p *parser) parseAssignmentAndPatternDefinition(left Node) (result Node) {
 	default:
 		return &Assignment{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{left.Base().Span.Start, p.i},
-				Err:             &ParsingError{UnspecifiedParsingError, fmtInvalidAssignmentInvalidLHS(left)},
-				ValuelessTokens: tokens,
+				Span:   NodeSpan{left.Base().Span.Start, p.i},
+				Err:    &ParsingError{UnspecifiedParsingError, fmtInvalidAssignmentInvalidLHS(left)},
+				Tokens: tokens,
 			},
 			Left:     left,
 			Operator: assignmentOperator,
@@ -9970,9 +9979,9 @@ func (p *parser) parseAssignmentAndPatternDefinition(left Node) (result Node) {
 	if p.i >= p.len {
 		return &Assignment{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{left.Base().Span.Start, p.i},
-				Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_ASSIGNMENT_MISSING_VALUE_AFTER_EQL_SIGN},
-				ValuelessTokens: tokens,
+				Span:   NodeSpan{left.Base().Span.Start, p.i},
+				Err:    &ParsingError{UnspecifiedParsingError, UNTERMINATED_ASSIGNMENT_MISSING_VALUE_AFTER_EQL_SIGN},
+				Tokens: tokens,
 			},
 			Left:     left,
 			Operator: assignmentOperator,
@@ -9992,9 +10001,9 @@ func (p *parser) parseAssignmentAndPatternDefinition(left Node) (result Node) {
 		if !ok {
 			return &Assignment{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{left.Base().Span.Start, p.i},
-					Err:             &ParsingError{UnspecifiedParsingError, INVALID_ASSIGN_A_PIPELINE_EXPR_WAS_EXPECTED_AFTER_PIPE},
-					ValuelessTokens: tokens,
+					Span:   NodeSpan{left.Base().Span.Start, p.i},
+					Err:    &ParsingError{UnspecifiedParsingError, INVALID_ASSIGN_A_PIPELINE_EXPR_WAS_EXPECTED_AFTER_PIPE},
+					Tokens: tokens,
 				},
 				Left:     left,
 				Right:    right,
@@ -10012,9 +10021,9 @@ func (p *parser) parseAssignmentAndPatternDefinition(left Node) (result Node) {
 
 	return &Assignment{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{left.Base().Span.Start, right.Base().Span.End},
-			ValuelessTokens: tokens,
-			Err:             keywordLHSError,
+			Span:   NodeSpan{left.Base().Span.Start, right.Base().Span.End},
+			Tokens: tokens,
+			Err:    keywordLHSError,
 		},
 		Left:     left,
 		Right:    right,
@@ -10063,7 +10072,7 @@ func (p *parser) parseCommandLikeStatement(expr Node) Node {
 		},
 	}
 
-	stmt.ValuelessTokens = append(stmt.ValuelessTokens, Token{Type: PIPE, Span: NodeSpan{p.i, p.i + 1}})
+	stmt.Tokens = append(stmt.Tokens, Token{Type: PIPE, Span: NodeSpan{p.i, p.i + 1}})
 	p.i++
 	p.eatSpace()
 
@@ -10117,7 +10126,7 @@ func (p *parser) parseCommandLikeStatement(expr Node) Node {
 
 			switch p.s[p.i] {
 			case '|':
-				stmt.ValuelessTokens = append(stmt.ValuelessTokens, Token{Type: PIPE, Span: NodeSpan{p.i, p.i + 1}})
+				stmt.Tokens = append(stmt.Tokens, Token{Type: PIPE, Span: NodeSpan{p.i, p.i + 1}})
 				p.i++
 				continue //we parse the next stage
 			case '\n':
@@ -10186,7 +10195,7 @@ func (p *parser) parseStatement() Node {
 			NodeBase: NodeBase{
 				NodeSpan{expr.Base().Span.Start, p.i},
 				&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInBlockOrModule(p.s[p.i-1])},
-				append(expr.Base().ValuelessTokens, Token{
+				append(expr.Base().Tokens, Token{
 					Type: UNEXPECTED_CHAR,
 					Raw:  string(p.s[p.i-1]),
 					Span: NodeSpan{p.i - 1, p.i},
@@ -10256,24 +10265,24 @@ func (p *parser) parseStatement() Node {
 		case "break":
 			return &BreakStatement{
 				NodeBase: NodeBase{
-					Span:            ev.Span,
-					ValuelessTokens: []Token{{Type: BREAK_KEYWORD, Span: ev.Span}},
+					Span:   ev.Span,
+					Tokens: []Token{{Type: BREAK_KEYWORD, Span: ev.Span}},
 				},
 				Label: nil,
 			}
 		case "continue":
 			return &ContinueStatement{
 				NodeBase: NodeBase{
-					Span:            ev.Span,
-					ValuelessTokens: []Token{{Type: CONTINUE_KEYWORD, Span: ev.Span}},
+					Span:   ev.Span,
+					Tokens: []Token{{Type: CONTINUE_KEYWORD, Span: ev.Span}},
 				},
 				Label: nil,
 			}
 		case "prune":
 			return &PruneStatement{
 				NodeBase: NodeBase{
-					Span:            ev.Span,
-					ValuelessTokens: []Token{{Type: PRUNE_KEYWORD, Span: ev.Span}},
+					Span:   ev.Span,
+					Tokens: []Token{{Type: PRUNE_KEYWORD, Span: ev.Span}},
 				},
 			}
 		case "assign":
@@ -10372,9 +10381,9 @@ func (p *parser) parseChunk() (*Chunk, error) {
 		if IsForbiddenSpaceCharacter(p.s[p.i]) {
 			stmts = append(stmts, &UnknownNode{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{p.i, p.i + 1},
-					Err:             &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInBlockOrModule(p.s[p.i])},
-					ValuelessTokens: []Token{{Type: UNEXPECTED_CHAR, Span: NodeSpan{p.i, p.i + 1}, Raw: string(p.s[p.i])}},
+					Span:   NodeSpan{p.i, p.i + 1},
+					Err:    &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInBlockOrModule(p.s[p.i])},
+					Tokens: []Token{{Type: UNEXPECTED_CHAR, Span: NodeSpan{p.i, p.i + 1}, Raw: string(p.s[p.i])}},
 				},
 			})
 			p.i++
@@ -10411,7 +10420,7 @@ func (p *parser) parseChunk() (*Chunk, error) {
 	chunk.IncludableChunkDesc = includableChunkDesc
 	chunk.Statements = stmts
 	chunk.GlobalConstantDeclarations = globalConstDecls
-	chunk.ValuelessTokens = valuelessTokens
+	chunk.Tokens = valuelessTokens
 
 	return chunk, nil
 }

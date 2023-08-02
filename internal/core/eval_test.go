@@ -4027,7 +4027,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			Node: &parse.IntLiteral{
 				NodeBase: parse.NodeBase{
 					Span: parse.NodeSpan{Start: 2, End: 3},
-					ValuelessTokens: []parse.Token{
+					Tokens: []parse.Token{
 						{Type: parse.OPENING_PARENTHESIS, Span: parse.NodeSpan{Start: 1, End: 2}},
 						{Type: parse.CLOSING_PARENTHESIS, Span: parse.NodeSpan{Start: 3, End: 4}},
 					},

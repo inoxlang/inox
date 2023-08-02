@@ -144,7 +144,7 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 			})
 		case *parse.StringTemplateInterpolation:
 			colorizations = append(colorizations, ColorizationInfo{
-				Span:          n.ValuelessTokens[0].Span,
+				Span:          n.Tokens[0].Span,
 				ColorSequence: colors.PatternIdentifier,
 			})
 		case *parse.QuotedStringLiteral, *parse.UnquotedStringLiteral, *parse.MultilineStringLiteral, *parse.FlagLiteral,
@@ -175,7 +175,7 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 			})
 		case *parse.HostExpression:
 			colorizations = append(colorizations, ColorizationInfo{
-				Span:          n.ValuelessTokens[0].Span,
+				Span:          n.Tokens[0].Span,
 				ColorSequence: colors.StringLiteral,
 			})
 		case *parse.URLLiteral, *parse.SchemeLiteral, *parse.HostLiteral, *parse.EmailAddressLiteral, *parse.AbsolutePathLiteral,
@@ -204,7 +204,7 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 		case *parse.IfStatement, *parse.IfExpression, *parse.SwitchStatement, *parse.MatchStatement, *parse.DefaultCase,
 			*parse.ForStatement, *parse.WalkStatement, *parse.ReturnStatement, *parse.BreakStatement, *parse.ContinueStatement,
 			*parse.PruneStatement, *parse.YieldStatement, *parse.AssertionStatement, *parse.ComputeExpression:
-			for _, tok := range n.Base().ValuelessTokens {
+			for _, tok := range n.Base().Tokens {
 				switch tok.Type {
 				case parse.OPENING_PARENTHESIS, parse.CLOSING_PARENTHESIS,
 					parse.OPENING_CURLY_BRACKET, parse.CLOSING_CURLY_BRACKET:
@@ -216,7 +216,7 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 				})
 			}
 		case *parse.SpawnExpression:
-			for _, token := range n.ValuelessTokens {
+			for _, token := range n.Tokens {
 				if token.Type != parse.GO_KEYWORD && token.Type != parse.DO_KEYWORD {
 					continue
 				}
@@ -227,7 +227,7 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 				})
 			}
 		case *parse.MappingExpression, *parse.UDataLiteral:
-			for _, tok := range n.Base().ValuelessTokens {
+			for _, tok := range n.Base().Tokens {
 				colorizations = append(colorizations, ColorizationInfo{
 					Span:          tok.Span,
 					ColorSequence: colors.OtherKeyword,
@@ -236,7 +236,7 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 		case *parse.MultiAssignment, *parse.GlobalConstantDeclarations, *parse.LocalVariableDeclarations, *parse.ImportStatement,
 			*parse.InclusionImportStatement,
 			*parse.PermissionDroppingStatement:
-			for _, tok := range n.Base().ValuelessTokens {
+			for _, tok := range n.Base().Tokens {
 				colorizations = append(colorizations, ColorizationInfo{
 					Span:          tok.Span,
 					ColorSequence: colors.OtherKeyword,
@@ -279,10 +279,10 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 				ColorSequence: colors.OtherKeyword,
 			})
 		case *parse.FunctionDeclaration, *parse.FunctionExpression:
-			if len(n.Base().ValuelessTokens) == 0 {
+			if len(n.Base().Tokens) == 0 {
 				break
 			}
-			for _, token := range n.Base().ValuelessTokens {
+			for _, token := range n.Base().Tokens {
 				if token.Type != parse.FN_KEYWORD {
 					continue
 				}
@@ -293,10 +293,10 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 				})
 			}
 		case *parse.FunctionPatternExpression:
-			if len(n.Base().ValuelessTokens) == 0 {
+			if len(n.Base().Tokens) == 0 {
 				break
 			}
-			for _, token := range n.ValuelessTokens {
+			for _, token := range n.Tokens {
 				if token.Type != parse.PERCENT_FN {
 					continue
 				}
@@ -313,11 +313,11 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 				ColorSequence: colors.Constant,
 			})
 		case *parse.ConcatenationExpression:
-			if len(n.ValuelessTokens) == 0 {
+			if len(n.Tokens) == 0 {
 				break
 			}
 
-			for _, token := range n.ValuelessTokens {
+			for _, token := range n.Tokens {
 				if token.Type != parse.CONCAT_KEYWORD {
 					continue
 				}
@@ -327,11 +327,11 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 				})
 			}
 		case *parse.TestSuiteExpression, *parse.TestCaseExpression:
-			if len(n.Base().ValuelessTokens) == 0 {
+			if len(n.Base().Tokens) == 0 {
 				break
 			}
 
-			for _, token := range n.Base().ValuelessTokens {
+			for _, token := range n.Base().Tokens {
 				if token.Type != parse.TESTSUITE_KEYWORD && token.Type != parse.TESTCASE_KEYWORD {
 					continue
 				}
@@ -341,11 +341,11 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 				})
 			}
 		case *parse.LifetimejobExpression:
-			if len(n.Base().ValuelessTokens) == 0 {
+			if len(n.Base().Tokens) == 0 {
 				break
 			}
 
-			for _, token := range n.Base().ValuelessTokens {
+			for _, token := range n.Base().Tokens {
 				if token.Type != parse.LIFETIMEJOB_KEYWORD && token.Type != parse.FOR_KEYWORD {
 					continue
 				}
@@ -355,11 +355,11 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 				})
 			}
 		case *parse.SendValueExpression:
-			if len(n.Base().ValuelessTokens) == 0 {
+			if len(n.Base().Tokens) == 0 {
 				break
 			}
 
-			for _, token := range n.Base().ValuelessTokens {
+			for _, token := range n.Base().Tokens {
 				if token.Type != parse.SENDVAL_KEYWORD && token.Type != parse.TO_KEYWORD {
 					continue
 				}
@@ -369,7 +369,7 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 				})
 			}
 		case *parse.SynchronizedBlockStatement:
-			for _, token := range n.Base().ValuelessTokens {
+			for _, token := range n.Base().Tokens {
 				if token.Type != parse.SYNCHRONIZED_KEYWORD {
 					continue
 				}
@@ -379,7 +379,7 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 				})
 			}
 		case *parse.XMLOpeningElement, *parse.XMLClosingElement:
-			for _, token := range n.Base().ValuelessTokens {
+			for _, token := range n.Base().Tokens {
 				colorizations = append(colorizations, ColorizationInfo{
 					Span:          token.Span,
 					ColorSequence: colors.DiscreteColor,

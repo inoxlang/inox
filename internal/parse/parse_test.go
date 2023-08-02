@@ -367,7 +367,7 @@ func testParse(
 				Preinit: &PreinitStatement{
 					NodeBase: NodeBase{
 						Span: NodeSpan{0, 10},
-						ValuelessTokens: []Token{
+						Tokens: []Token{
 							{Type: PREINIT_KEYWORD, Span: NodeSpan{0, 7}},
 						},
 					},
@@ -397,7 +397,7 @@ func testParse(
 				Preinit: &PreinitStatement{
 					NodeBase: NodeBase{
 						Span: NodeSpan{1, 11},
-						ValuelessTokens: []Token{
+						Tokens: []Token{
 							{Type: PREINIT_KEYWORD, Span: NodeSpan{1, 8}},
 						},
 					},
@@ -423,7 +423,7 @@ func testParse(
 				Manifest: &Manifest{
 					NodeBase: NodeBase{
 						Span: NodeSpan{0, 11},
-						ValuelessTokens: []Token{
+						Tokens: []Token{
 							{Type: MANIFEST_KEYWORD, Span: NodeSpan{0, 8}},
 						},
 					},
@@ -456,7 +456,7 @@ func testParse(
 				Manifest: &Manifest{
 					NodeBase: NodeBase{
 						Span: NodeSpan{1, 12},
-						ValuelessTokens: []Token{
+						Tokens: []Token{
 							{Type: MANIFEST_KEYWORD, Span: NodeSpan{1, 9}},
 						},
 					},
@@ -489,7 +489,7 @@ func testParse(
 				Preinit: &PreinitStatement{
 					NodeBase: NodeBase{
 						Span: NodeSpan{0, 10},
-						ValuelessTokens: []Token{
+						Tokens: []Token{
 							{Type: PREINIT_KEYWORD, Span: NodeSpan{0, 7}},
 						},
 					},
@@ -507,7 +507,7 @@ func testParse(
 				Manifest: &Manifest{
 					NodeBase: NodeBase{
 						Span: NodeSpan{11, 22},
-						ValuelessTokens: []Token{
+						Tokens: []Token{
 							{Type: MANIFEST_KEYWORD, Span: NodeSpan{11, 19}},
 						},
 					},
@@ -533,8 +533,8 @@ func testParse(
 				Statements: nil,
 				IncludableChunkDesc: &IncludableChunkDescription{
 					NodeBase: NodeBase{
-						Span:            NodeSpan{0, 16},
-						ValuelessTokens: []Token{{Type: INCLUDABLE_CHUNK_KEYWORD, Span: NodeSpan{0, 16}}},
+						Span:   NodeSpan{0, 16},
+						Tokens: []Token{{Type: INCLUDABLE_CHUNK_KEYWORD, Span: NodeSpan{0, 16}}},
 					},
 				},
 			}, n)
@@ -553,8 +553,8 @@ func testParse(
 				Statements: nil,
 				IncludableChunkDesc: &IncludableChunkDescription{
 					NodeBase: NodeBase{
-						Span:            NodeSpan{1, 17},
-						ValuelessTokens: []Token{{Type: INCLUDABLE_CHUNK_KEYWORD, Span: NodeSpan{1, 17}}},
+						Span:   NodeSpan{1, 17},
+						Tokens: []Token{{Type: INCLUDABLE_CHUNK_KEYWORD, Span: NodeSpan{1, 17}}},
 					},
 				},
 			}, n)
@@ -787,7 +787,7 @@ func testParse(
 				Manifest: &Manifest{
 					NodeBase: NodeBase{
 						Span: NodeSpan{6, 17},
-						ValuelessTokens: []Token{
+						Tokens: []Token{
 							{Type: MANIFEST_KEYWORD, Span: NodeSpan{6, 14}},
 						},
 					},
@@ -1042,7 +1042,7 @@ func testParse(
 								Type: &PatternCallExpression{
 									NodeBase: NodeBase{
 										Span: NodeSpan{6, 11},
-										ValuelessTokens: []Token{
+										Tokens: []Token{
 											{Type: OPENING_PARENTHESIS, Span: NodeSpan{9, 10}},
 											{Type: CLOSING_PARENTHESIS, Span: NodeSpan{10, 11}},
 										},
@@ -1136,7 +1136,7 @@ func testParse(
 								Type: &PatternCallExpression{
 									NodeBase: NodeBase{
 										Span: NodeSpan{6, 11},
-										ValuelessTokens: []Token{
+										Tokens: []Token{
 											{Type: OPENING_PARENTHESIS, Span: NodeSpan{9, 10}},
 											{Type: CLOSING_PARENTHESIS, Span: NodeSpan{10, 11}},
 										},
@@ -1201,7 +1201,7 @@ func testParse(
 										&ObjectPatternLiteral{
 											NodeBase: NodeBase{
 												Span: NodeSpan{9, 11},
-												ValuelessTokens: []Token{
+												Tokens: []Token{
 													{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
 													{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
 												},
@@ -1260,7 +1260,7 @@ func testParse(
 											&ObjectPatternLiteral{
 												NodeBase: NodeBase{
 													Span: NodeSpan{9, 11},
-													ValuelessTokens: []Token{
+													Tokens: []Token{
 														{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
 														{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
 													},
@@ -5313,7 +5313,7 @@ func testParse(
 					&ListLiteral{
 						NodeBase: NodeBase{
 							Span: NodeSpan{0, 4},
-							ValuelessTokens: []Token{
+							Tokens: []Token{
 								{Type: OPENING_BRACKET, Span: NodeSpan{0, 1}},
 								{Type: CLOSING_BRACKET, Span: NodeSpan{3, 4}},
 							},
@@ -15777,7 +15777,7 @@ func testParse(
 							Manifest: &Manifest{
 								NodeBase: NodeBase{
 									Span: NodeSpan{12, 23},
-									ValuelessTokens: []Token{
+									Tokens: []Token{
 										{Type: MANIFEST_KEYWORD, Span: NodeSpan{12, 20}},
 									},
 								},
@@ -16565,7 +16565,7 @@ func testParse(
 							Manifest: &Manifest{
 								NodeBase: NodeBase{
 									Span: NodeSpan{12, 23},
-									ValuelessTokens: []Token{
+									Tokens: []Token{
 										{Type: MANIFEST_KEYWORD, Span: NodeSpan{12, 20}},
 									},
 								},
@@ -17457,8 +17457,8 @@ func testParse(
 						Elements: []Node{
 							&ElementSpreadElement{
 								NodeBase: NodeBase{
-									Span:            NodeSpan{7, 11},
-									ValuelessTokens: []Token{{Type: THREE_DOTS, Span: NodeSpan{7, 10}}},
+									Span:   NodeSpan{7, 11},
+									Tokens: []Token{{Type: THREE_DOTS, Span: NodeSpan{7, 10}}},
 								},
 								Expr: &IdentifierLiteral{
 									NodeBase: NodeBase{Span: NodeSpan{10, 11}},
@@ -18904,7 +18904,11 @@ func testParse(
 						},
 						Elements: []*PatternPieceElement{
 							{
-								NodeBase:  NodeBase{NodeSpan{5, 11}, nil, nil},
+								NodeBase: NodeBase{
+									NodeSpan{5, 11},
+									nil,
+									[]Token{{Type: OCCURRENCE_MODIFIER, Span: NodeSpan{10, 11}, Raw: "*"}},
+								},
 								Ocurrence: ZeroOrMoreOcurrence,
 								Expr: &ComplexStringPatternPiece{
 									NodeBase: NodeBase{
@@ -18951,7 +18955,11 @@ func testParse(
 						},
 						Elements: []*PatternPieceElement{
 							{
-								NodeBase:            NodeBase{NodeSpan{5, 12}, nil, nil},
+								NodeBase: NodeBase{
+									NodeSpan{5, 12},
+									nil,
+									[]Token{{Type: OCCURRENCE_MODIFIER, Span: NodeSpan{10, 12}, Raw: "=2"}},
+								},
 								Ocurrence:           ExactOcurrence,
 								ExactOcurrenceCount: 2,
 								Expr: &ComplexStringPatternPiece{
@@ -19001,7 +19009,11 @@ func testParse(
 							{
 								Ocurrence:           ExactOcurrence,
 								ExactOcurrenceCount: 2,
-								NodeBase:            NodeBase{NodeSpan{5, 9}, nil, nil},
+								NodeBase: NodeBase{
+									NodeSpan{5, 9},
+									nil,
+									[]Token{{Type: OCCURRENCE_MODIFIER, Span: NodeSpan{7, 9}, Raw: "=2"}},
+								},
 								Expr: &PatternIdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{5, 7}, nil, nil},
 									Name:     "s",
@@ -19192,7 +19204,7 @@ func testParse(
 					&PatternCallExpression{
 						NodeBase: NodeBase{
 							Span: NodeSpan{0, 7},
-							ValuelessTokens: []Token{
+							Tokens: []Token{
 								{Type: OPENING_PARENTHESIS, Span: NodeSpan{5, 6}},
 								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{6, 7}},
 							},
@@ -19216,7 +19228,7 @@ func testParse(
 					&PatternCallExpression{
 						NodeBase: NodeBase{
 							Span: NodeSpan{0, 11},
-							ValuelessTokens: []Token{
+							Tokens: []Token{
 								{Type: OPENING_PARENTHESIS, Span: NodeSpan{9, 10}},
 								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{10, 11}},
 							},
@@ -19247,7 +19259,7 @@ func testParse(
 					&PatternCallExpression{
 						NodeBase: NodeBase{
 							Span: NodeSpan{0, 8},
-							ValuelessTokens: []Token{
+							Tokens: []Token{
 								{Type: OPENING_PARENTHESIS, Span: NodeSpan{5, 6}},
 								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{7, 8}},
 							},
@@ -19280,7 +19292,7 @@ func testParse(
 					&PatternCallExpression{
 						NodeBase: NodeBase{
 							Span: NodeSpan{0, 10},
-							ValuelessTokens: []Token{
+							Tokens: []Token{
 								{Type: OPENING_PARENTHESIS, Span: NodeSpan{5, 6}},
 								{Type: COMMA, Span: NodeSpan{7, 8}},
 								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{9, 10}},
@@ -19322,7 +19334,7 @@ func testParse(
 					&PatternCallExpression{
 						NodeBase: NodeBase{
 							Span: NodeSpan{0, 8},
-							ValuelessTokens: []Token{
+							Tokens: []Token{
 								{Type: OPENING_PARENTHESIS, Span: NodeSpan{5, 6}},
 								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{7, 8}},
 							},
@@ -19336,9 +19348,9 @@ func testParse(
 						Arguments: []Node{
 							&UnknownNode{
 								NodeBase: NodeBase{
-									Span:            NodeSpan{6, 7},
-									Err:             &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInPatternCallArguments(':')},
-									ValuelessTokens: []Token{{Type: UNEXPECTED_CHAR, Span: NodeSpan{6, 7}, Raw: string(':')}},
+									Span:   NodeSpan{6, 7},
+									Err:    &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInPatternCallArguments(':')},
+									Tokens: []Token{{Type: UNEXPECTED_CHAR, Span: NodeSpan{6, 7}, Raw: string(':')}},
 								},
 							},
 						},
@@ -19362,7 +19374,7 @@ func testParse(
 							&ObjectPatternLiteral{
 								NodeBase: NodeBase{
 									Span: NodeSpan{5, 7},
-									ValuelessTokens: []Token{
+									Tokens: []Token{
 										{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{5, 6}},
 										{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{6, 7}},
 									},
