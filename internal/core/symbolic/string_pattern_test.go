@@ -43,3 +43,25 @@ func TestSymbolicExactStringValuePattern(t *testing.T) {
 	})
 
 }
+
+func TestSequenceStringPattern(t *testing.T) {
+
+	t.Run("Test()", func(t *testing.T) {
+		anySeqStr := ANY_SEQ_STRING_PATTERN
+
+		assert.True(t, anySeqStr.Test(ANY_SEQ_STRING_PATTERN))
+		assert.False(t, anySeqStr.Test(ANY_STR_PATTERN))
+		assert.False(t, anySeqStr.Test(ANY_INT))
+		assert.False(t, anySeqStr.Test(ANY_PATTERN))
+	})
+
+	t.Run("TestValue()", func(t *testing.T) {
+		anySeqStr := ANY_SEQ_STRING_PATTERN
+
+		assert.False(t, anySeqStr.TestValue(NewString("")))
+		assert.False(t, anySeqStr.TestValue(NewString("1")))
+		assert.False(t, anySeqStr.TestValue(ANY_SERIALIZABLE))
+		assert.False(t, anySeqStr.TestValue(anySeqStr))
+	})
+
+}

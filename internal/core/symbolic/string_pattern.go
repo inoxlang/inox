@@ -3,7 +3,9 @@ package symbolic
 import (
 	"bufio"
 	"errors"
+	"strings"
 
+	parse "github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -11,6 +13,8 @@ import (
 var (
 	ANY_EXACT_STR_PATTERN = NewExactStringPattern(nil) //this pattern does not match any string
 
+	ANY_SEQ_STRING_PATTERN          = &SequenceStringPattern{}
+	ANY_PARSED_BASED_STRING_PATTERN = &ParserBasedPattern{}
 )
 
 // A StringPattern represents a symbolic StringPattern.
@@ -32,7 +36,6 @@ func (p *AnyStringPattern) Test(v SymbolicValue) bool {
 
 func (p *AnyStringPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%string-pattern")))
-	return
 }
 
 func (p *AnyStringPattern) HasUnderylingPattern() bool {
@@ -144,16 +147,42 @@ func (p *ExactStringPattern) HasRegex() bool {
 // An SequenceStringPattern represents a symbolic SequenceStringPattern
 type SequenceStringPattern struct {
 	SerializableMixin
+	NotCallablePatternMixin
+	node            *parse.ComplexStringPatternPiece //if nil any sequence string pattern is matched
+	stringifiedNode string
+}
+
+func NewSequenceStringPattern(node *parse.ComplexStringPatternPiece) *SequenceStringPattern {
+	var elements []string
+
+	for _, e := range node.Elements {
+		elements = append(elements, parse.SPrint(e, parse.PrintConfig{TrimStart: true, TrimEnd: true}))
+	}
+
+	return &SequenceStringPattern{
+		node:            node,
+		stringifiedNode: strings.Join(elements, " "),
+	}
 }
 
 func (p *SequenceStringPattern) Test(v SymbolicValue) bool {
-	_, ok := v.(StringPattern)
-	return ok
+	otherPatt, ok := v.(*SequenceStringPattern)
+	if !ok {
+		return false
+	}
+	if p.node == nil {
+		return true
+	}
+	return p.node == otherPatt.node
 }
 
 func (p *SequenceStringPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%sequence-string-pattern")))
-	return
+	if p.node != nil {
+		utils.Must(w.Write(utils.StringAsBytes("(")))
+		utils.Must(w.Write(utils.StringAsBytes(p.stringifiedNode)))
+		utils.Must(w.Write(utils.StringAsBytes(")")))
+	}
 }
 
 func (p *SequenceStringPattern) HasUnderylingPattern() bool {
@@ -161,17 +190,18 @@ func (p *SequenceStringPattern) HasUnderylingPattern() bool {
 }
 
 func (p *SequenceStringPattern) TestValue(v SymbolicValue) bool {
-	_, ok := v.(StringLike)
-	return ok
+	strLike, ok := v.(StringLike)
+	return ok && strLike.GetOrBuildString().pattern == p
 }
 
 func (p *SequenceStringPattern) MatchGroups(v SymbolicValue) (bool, map[string]SymbolicValue) {
-	//TODO
+	//it's not possible to know if a string matches the sequence pattern.
 	return false, nil
 }
 
 func (p *SequenceStringPattern) SymbolicValue() SymbolicValue {
-	return ANY_STR
+	//it's not possible to know if a string matches the sequence pattern.
+	return NewStringMatchingPattern(p)
 }
 
 func (p *SequenceStringPattern) StringPattern() (StringPattern, bool) {
@@ -183,25 +213,22 @@ func (p *SequenceStringPattern) HasRegex() bool {
 	return false
 }
 
-func (p *SequenceStringPattern) Call(ctx *Context, values []SymbolicValue) (Pattern, error) {
-	return &SequenceStringPattern{}, nil
-}
-
 func (p *SequenceStringPattern) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (p *SequenceStringPattern) IteratorElementValue() SymbolicValue {
-	return ANY
+	return ANY_STR
 }
 
 func (p *SequenceStringPattern) WidestOfType() SymbolicValue {
-	return &AnyStringPattern{}
+	return ANY_SEQ_STRING_PATTERN
 }
 
 // An ParserBasedPattern represents a symbolic ParserBasedPattern
 type ParserBasedPattern struct {
 	SerializableMixin
+	NotCallablePatternMixin
 }
 
 func NewParserBasedPattern() *ParserBasedPattern {
@@ -215,7 +242,6 @@ func (p *ParserBasedPattern) Test(v SymbolicValue) bool {
 
 func (p *ParserBasedPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%parser-based-pattern")))
-	return
 }
 
 func (p *ParserBasedPattern) HasUnderylingPattern() bool {
@@ -240,20 +266,16 @@ func (p *ParserBasedPattern) HasRegex() bool {
 	return false
 }
 
-func (p *ParserBasedPattern) Call(ctx *Context, values []SymbolicValue) (Pattern, error) {
-	return &ParserBasedPattern{}, nil
-}
-
 func (p *ParserBasedPattern) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (p *ParserBasedPattern) IteratorElementValue() SymbolicValue {
-	return ANY
+	return ANY_STR
 }
 
 func (p *ParserBasedPattern) WidestOfType() SymbolicValue {
-	return &AnyStringPattern{}
+	return ANY_PARSED_BASED_STRING_PATTERN
 }
 
 //

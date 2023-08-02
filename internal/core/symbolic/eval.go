@@ -2873,7 +2873,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		return &OptionalPattern{pattern: patt}, nil
 	case *parse.ComplexStringPatternPiece:
-		return &SequenceStringPattern{}, nil
+		return NewSequenceStringPattern(n), nil
 	case *parse.PatternUnion:
 		patt := &UnionPattern{}
 

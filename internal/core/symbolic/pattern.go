@@ -489,6 +489,7 @@ func (p *ExactValuePattern) WidestOfType() SymbolicValue {
 // A RegexPattern represents a symbolic RegexPattern.
 type RegexPattern struct {
 	SerializableMixin
+	NotCallablePatternMixin
 }
 
 func (p *RegexPattern) Test(v SymbolicValue) bool {
@@ -511,10 +512,6 @@ func (p *RegexPattern) TestValue(v SymbolicValue) bool {
 
 func (p *RegexPattern) HasRegex() bool {
 	return true
-}
-
-func (p *RegexPattern) Call(ctx *Context, values []SymbolicValue) (Pattern, error) {
-	return &RegexPattern{}, nil
 }
 
 func (p *RegexPattern) SymbolicValue() SymbolicValue {
@@ -1618,7 +1615,7 @@ func symbolicallyEvalPatternNode(n parse.Node, state *State) (Pattern, error) {
 
 		return pattern.(Pattern), nil
 	case *parse.ComplexStringPatternPiece:
-		return &SequenceStringPattern{}, nil
+		return NewSequenceStringPattern(node), nil
 	default:
 		v, err := symbolicEval(n, state)
 		if err != nil {

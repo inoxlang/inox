@@ -129,7 +129,7 @@ func (p *Path) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, de
 }
 
 func (p *Path) ResourceName() *String {
-	return &String{}
+	return ANY_STR
 }
 
 func (p *Path) PropertyNames() []string {
@@ -174,7 +174,7 @@ func (p *Path) Prop(name string) SymbolicValue {
 }
 
 func (p *Path) underylingString() *String {
-	return &String{}
+	return ANY_STR
 }
 
 func (p *Path) WalkerElement() SymbolicValue {
@@ -209,11 +209,11 @@ func (u *URL) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, dep
 }
 
 func (u *URL) underylingString() *String {
-	return &String{}
+	return ANY_STR
 }
 
 func (u *URL) ResourceName() *String {
-	return &String{}
+	return ANY_STR
 }
 
 func (u *URL) PropertyNames() []string {
@@ -223,13 +223,13 @@ func (u *URL) PropertyNames() []string {
 func (u *URL) Prop(name string) SymbolicValue {
 	switch name {
 	case "scheme":
-		return &String{}
+		return ANY_STR
 	case "host":
 		return &Host{}
 	case "path":
 		return &Path{}
 	case "raw_query":
-		return &String{}
+		return ANY_STR
 	default:
 		return nil
 	}
@@ -258,7 +258,7 @@ func (s *Scheme) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, 
 }
 
 func (s *Scheme) underylingString() *String {
-	return &String{}
+	return ANY_STR
 }
 
 func (s *Scheme) WidestOfType() SymbolicValue {
@@ -287,7 +287,7 @@ func (h *Host) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, de
 }
 
 func (h *Host) ResourceName() *String {
-	return &String{}
+	return ANY_STR
 }
 
 func (s *Host) PropertyNames() []string {
@@ -297,7 +297,7 @@ func (s *Host) PropertyNames() []string {
 func (*Host) Prop(name string) SymbolicValue {
 	switch name {
 	case "scheme":
-		return &String{}
+		return ANY_STR
 	case "explicit_port":
 		return &Int{}
 	case "without_port":
@@ -308,7 +308,7 @@ func (*Host) Prop(name string) SymbolicValue {
 }
 
 func (h *Host) underylingString() *String {
-	return &String{}
+	return ANY_STR
 }
 
 func (h *Host) WidestOfType() SymbolicValue {

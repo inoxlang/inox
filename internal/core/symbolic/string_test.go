@@ -3,17 +3,48 @@ package symbolic
 import (
 	"testing"
 
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSymbolicString(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
-		str := &String{}
+		anyStr := &String{}
 
-		assert.True(t, str.Test(str))
-		assert.True(t, str.Test(&String{}))
-		assert.False(t, str.Test(&Int{}))
+		assert.True(t, anyStr.Test(anyStr))
+		assert.True(t, anyStr.Test(&String{}))
+		assert.True(t, anyStr.Test(NewString("x")))
+		assert.False(t, anyStr.Test(&Int{}))
+
+		strX := NewString("x")
+
+		assert.True(t, strX.Test(strX))
+		assert.True(t, strX.Test(NewString("x")))
+		assert.False(t, strX.Test(NewString("xx")))
+		assert.False(t, strX.Test(&String{}))
+		assert.False(t, strX.Test(&Int{}))
+
+		strMatchingSeq1 := NewStringMatchingPattern(ANY_SEQ_STRING_PATTERN)
+
+		assert.True(t, strMatchingSeq1.Test(strMatchingSeq1))
+		assert.False(t, strMatchingSeq1.Test(NewStringMatchingPattern(NewExactStringPattern(NewString("x")))))
+		assert.False(t, strMatchingSeq1.Test(NewString("x")))
+		assert.False(t, strMatchingSeq1.Test(NewString("xx")))
+		assert.False(t, strMatchingSeq1.Test(&String{}))
+		assert.False(t, strMatchingSeq1.Test(&Int{}))
+
+		strMatchingSeq2 := NewStringMatchingPattern(NewSequenceStringPattern(&parse.ComplexStringPatternPiece{}))
+
+		assert.True(t, strMatchingSeq2.Test(strMatchingSeq2))
+		assert.True(t, strMatchingSeq2.Test(NewStringMatchingPattern(strMatchingSeq2.pattern)))
+		assert.False(t, strMatchingSeq2.Test(strMatchingSeq1))
+		assert.False(t, strMatchingSeq2.Test(NewStringMatchingPattern(NewExactStringPattern(NewString("x")))))
+		assert.False(t, strMatchingSeq2.Test(NewStringMatchingPattern(NewExactStringPattern(NewString("x")))))
+		assert.False(t, strMatchingSeq2.Test(NewString("x")))
+		assert.False(t, strMatchingSeq2.Test(NewString("xx")))
+		assert.False(t, strMatchingSeq2.Test(&String{}))
+		assert.False(t, strMatchingSeq2.Test(&Int{}))
 	})
 }
 

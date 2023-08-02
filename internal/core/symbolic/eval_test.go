@@ -5575,11 +5575,12 @@ func TestSymbolicEval(t *testing.T) {
 		n, state := MakeTestStateAndChunk(`
 			return %str( "a" )
 		`)
+		complexStringPatternPiece := parse.FindNode(n, (*parse.ComplexStringPatternPiece)(nil), nil)
 
 		res, err := symbolicEval(n, state)
 		assert.NoError(t, err)
 		assert.Empty(t, state.errors)
-		assert.Equal(t, &SequenceStringPattern{}, res)
+		assert.Equal(t, NewSequenceStringPattern(complexStringPatternPiece), res)
 	})
 
 	t.Run("pattern definition", func(t *testing.T) {

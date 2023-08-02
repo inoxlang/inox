@@ -16,7 +16,7 @@ var (
 	}
 
 	_ = []StringLike{
-		(*String)(nil), (*StringConcatenation)(nil),
+		(*String)(nil), (*StringConcatenation)(nil), (*AnyStringLike)(nil),
 	}
 
 	ANY_STR         = &String{}
@@ -41,6 +41,7 @@ type WrappedString interface {
 // A StringLike represents a symbolic StringLike.
 type StringLike interface {
 	Serializable
+	Sequence
 	PseudoPropsValue
 	GetOrBuildString() *String
 }
@@ -49,6 +50,9 @@ type StringLike interface {
 type String struct {
 	hasValue bool
 	value    string
+
+	pattern StringPattern
+
 	UnassignablePropsMixin
 	SerializableMixin
 }
@@ -60,10 +64,19 @@ func NewString(v string) *String {
 	}
 }
 
+func NewStringMatchingPattern(p StringPattern) *String {
+	return &String{
+		pattern: p,
+	}
+}
+
 func (s *String) Test(v SymbolicValue) bool {
 	otherString, ok := v.(*String)
 	if !ok {
 		return false
+	}
+	if s.pattern != nil {
+		return otherString.pattern != nil && otherString.pattern.Test(s.pattern) && s.pattern.Test(otherString.pattern)
 	}
 	if !s.hasValue {
 		return true
@@ -81,6 +94,19 @@ func (s *String) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, 
 		utils.Must(w.Write(jsonString))
 	} else {
 		utils.Must(w.Write(utils.StringAsBytes("%string")))
+
+		if s.pattern != nil {
+
+			if seqPattern, ok := s.pattern.(*SequenceStringPattern); ok {
+				utils.Must(w.Write(utils.StringAsBytes("(")))
+				utils.Must(w.Write(utils.StringAsBytes(seqPattern.stringifiedNode)))
+				utils.Must(w.Write(utils.StringAsBytes(")")))
+			} else {
+				utils.Must(w.Write(utils.StringAsBytes("(matching ")))
+				s.pattern.PrettyPrint(w, config, depth, 0)
+				utils.Must(w.Write(utils.StringAsBytes(")")))
+			}
+		}
 	}
 }
 
@@ -109,7 +135,7 @@ func (s *String) IteratorElementValue() SymbolicValue {
 }
 
 func (s *String) underylingString() *String {
-	return &String{}
+	return ANY_STR
 }
 
 func (s *String) GetOrBuildString() *String {
@@ -160,7 +186,7 @@ func (s *String) Prop(name string) SymbolicValue {
 }
 
 func (s *String) slice(start, end *Int) Sequence {
-	return &String{}
+	return ANY_STR
 }
 
 // A Rune represents a symbolic Rune.
@@ -239,16 +265,16 @@ func (p *CheckedString) PropertyNames() []string {
 func (s *CheckedString) Prop(name string) SymbolicValue {
 	switch name {
 	case "pattern_name":
-		return &String{}
+		return ANY_STR
 	case "pattern":
-		return &AnyPattern{}
+		return ANY_STR_PATTERN
 	default:
 		panic(FormatErrPropertyDoesNotExist(name, s))
 	}
 }
 
 func (s *CheckedString) underylingString() *String {
-	return &String{}
+	return ANY_STR
 }
 
 func (s *CheckedString) WidestOfType() SymbolicValue {
@@ -267,7 +293,6 @@ func (s *RuneSlice) Test(v SymbolicValue) bool {
 
 func (s *RuneSlice) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%rune-slice")))
-	return
 }
 
 func (s *RuneSlice) HasKnownLen() bool {
@@ -377,6 +402,14 @@ func (c *StringConcatenation) PrettyPrint(w *bufio.Writer, config *pprint.Pretty
 	utils.Must(w.Write(utils.StringAsBytes("%string-concatenation")))
 }
 
+func (c *StringConcatenation) IteratorElementKey() SymbolicValue {
+	return ANY_STR.IteratorElementKey()
+}
+
+func (c *StringConcatenation) IteratorElementValue() SymbolicValue {
+	return ANY_STR.IteratorElementKey()
+}
+
 func (c *StringConcatenation) HasKnownLen() bool {
 	return false
 }
@@ -386,7 +419,15 @@ func (c *StringConcatenation) KnownLen() int {
 }
 
 func (c *StringConcatenation) element() SymbolicValue {
-	return ANY_RUNE
+	return ANY_STR.element()
+}
+
+func (c *StringConcatenation) elementAt(i int) SymbolicValue {
+	return ANY_STR.elementAt(i)
+}
+
+func (c *StringConcatenation) slice(start, end *Int) Sequence {
+	return ANY_STR.slice(start, end)
 }
 
 func (c *StringConcatenation) GetOrBuildString() *String {
@@ -401,22 +442,22 @@ func (c *StringConcatenation) Reader() *Reader {
 	return ANY_READER
 }
 
-func (p *StringConcatenation) PropertyNames() []string {
+func (c *StringConcatenation) PropertyNames() []string {
 	return STRING_LIKE_PSEUDOPROPS
 }
 
-func (s *StringConcatenation) Prop(name string) SymbolicValue {
+func (c *StringConcatenation) Prop(name string) SymbolicValue {
 	switch name {
 	case "replace":
 		return &GoFunction{
 			fn: func(ctx *Context, old, new *AnyStringLike) *String {
-				return &String{}
+				return ANY_STR
 			},
 		}
 	case "trim_space":
 		return &GoFunction{
 			fn: func(ctx *Context) *AnyStringLike {
-				return &AnyStringLike{}
+				return ANY_STR_LIKE
 			},
 		}
 	case "has_prefix":
@@ -432,7 +473,7 @@ func (s *StringConcatenation) Prop(name string) SymbolicValue {
 			},
 		}
 	default:
-		panic(FormatErrPropertyDoesNotExist(name, s))
+		panic(FormatErrPropertyDoesNotExist(name, c))
 	}
 }
 
@@ -454,7 +495,6 @@ func (s *AnyStringLike) Test(v SymbolicValue) bool {
 
 func (s *AnyStringLike) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%string-like")))
-	return
 }
 
 func (s *AnyStringLike) element() SymbolicValue {
@@ -473,6 +513,10 @@ func (s *AnyStringLike) IteratorElementValue() SymbolicValue {
 	return ANY_BYTE
 }
 
+func (s *AnyStringLike) slice(start, end *Int) Sequence {
+	return ANY_STR_LIKE
+}
+
 func (s *AnyStringLike) KnownLen() int {
 	return -1
 }
@@ -481,15 +525,15 @@ func (s *AnyStringLike) HasKnownLen() bool {
 }
 
 func (s *AnyStringLike) GetOrBuildString() *String {
-	return &String{}
+	return ANY_STR
 }
 
 func (s *AnyStringLike) WidestOfType() SymbolicValue {
-	return &String{}
+	return ANY_STR
 }
 
 func (s *AnyStringLike) Reader() *Reader {
-	return &Reader{}
+	return ANY_READER
 }
 
 func (p *AnyStringLike) PropertyNames() []string {
