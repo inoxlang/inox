@@ -2,7 +2,7 @@
 
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
 
-🛡️ Inox is a [secure](#injection-prevention) programming language for Web development and [scripting](#declaration-of-cli-parameters--environment-variables). It features a powerful [shell](./docs/shell-basics.md) with colorization & completions.
+🛡️ Inox is a [secure](#injection-prevention) programming language for [Web Application Development] and [scripting](#declaration-of-cli-parameters--environment-variables). It features a powerful [shell](./docs/shell-basics.md) with colorization & completions.
 
 🔍 [Main Features](#features)
 
@@ -34,6 +34,10 @@ View [Shell Basics](./docs/shell-basics.md) to learn how to use Inox interactive
 
 ## Features
 
+Web Application:
+- [XML Expressions](#xml-expressions)
+- [HTTP Server - Filesystem Routing](#http-server---filesystem-routing)
+
 Security:
 - [Injection Prevention](#injection-prevention-wip)
 - [Permission system](#permission-system)
@@ -54,6 +58,61 @@ Other:
   - [Lifetime jobs](#lifetime-jobs)
 - [Many Built-in Functions](#built-in-functions)
 - [Communication](#communication)
+
+### XML expressions
+
+HTML elements can be created without imports using the built-in **html** namespace and a JSX-like syntax:
+
+```
+manifest {}
+
+return html<div> Hello world ! </div>
+```
+
+### HTTP Server - Filesystem Routing
+
+Inox comes with a built-in HTTP server that supports filesystem routing:
+```
+# main.ix
+const (
+    HOST = https://localhost:8080
+)
+
+manifest {
+    permissions: {
+        provide: HOST
+        read: %/...
+    }
+}
+
+server = http.Server!(HOST, {
+    routing: {
+        static: /static/
+        dynamic: /routes/
+    }
+})
+```
+
+Each request is processed in an isolated module for maximum security:
+```
+# /routes/api/POST-users.ix
+
+manifest {
+    parameters: {
+        # JSON body parameter
+        name: {
+            pattern: %str
+        }
+    }
+    permissions: {
+        create: %https://internal-service/users/...
+    }
+}
+
+username = mod-args.name
+...
+```
+
 
 ### Injection Prevention (WIP)
 
@@ -93,25 +152,6 @@ In the example if the path `/data?admin=true` is received the Inox runtime will 
 ```
 URL expression: result of a path interpolation should not contain any of the following substrings: "..", "\" , "*", "?"
 ```
-
-#### **Checked Strings (SQL..)**
-
-<!-- code that appear in the image
-> path="/data?admin=true"
-> public_data=read!(https://private-service{path}?admin=false
-URL expression: result of a path interpolation should not contain any of the following substrings: "..", "\" , "*", "?"'>
--->
-
-Checked strings are strings that are validated against a pattern. When you dynamically
-create a checked string all the interpolations must be explicitly **typed**.
-
-<img src="./docs/img/query-injection.png"></img>
-
-<!-- code that appear in the image
-> id = "1 or 1=1"
-> query=%sql.query`SELECT * FROM users WHERE id = {{int:id}}`
-runtime check error: 0 or 1=1 does not match %sql.int
--->
 
 ### Permission System
 
