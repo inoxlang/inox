@@ -2,7 +2,7 @@
 
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
 
-🛡️ Inox is a [secure](#injection-prevention) programming language for [Web Application Development] and [scripting](#declaration-of-cli-parameters--environment-variables). It features a powerful [shell](./docs/shell-basics.md) with colorization & completions.
+🛡️ Inox is a [secure](#injection-prevention) programming language for [Web Application Development](#xml-expressions) and [scripting](#declaration-of-cli-parameters--environment-variables). It features a powerful [shell](./docs/shell-basics.md) with colorization & completions.
 
 🔍 [Main Features](#features)
 
@@ -37,6 +37,8 @@ View [Shell Basics](./docs/shell-basics.md) to learn how to use Inox interactive
 Web Application:
 - [XML Expressions](#xml-expressions)
 - [HTTP Server - Filesystem Routing](#http-server---filesystem-routing)
+- [Built-in Database](#built-in-database)
+- [Project & Virtual Filesystem](#project--virtual-filesystem)
 
 Security:
 - [Injection Prevention](#injection-prevention-wip)
@@ -113,6 +115,91 @@ username = mod-args.name
 ...
 ```
 
+### Built-in Database
+
+Inox includes an embedded database backed by a Key-Value store.
+Databases are described in the manifest at the top of the module:
+
+```
+manifest {
+    permissions: {
+        read: %/...
+        write: %/...
+    }
+    databases: {
+        main: {
+            resource: ldb://main  #ldb stands for Local Database
+            resolution-data: /databases/main/
+        }
+    }
+}
+
+# define the pattern for user data
+%user = {
+  name: str
+}
+
+dbs.main.update_schema(%{
+    users: Set(user, #url)
+})
+```
+
+Since most Inox types are constrained to be [serializable](#serializability) no translation layer is
+needed to add/retrieve objects to/from the database.
+
+```
+new_user = {name: "John"}
+dbs.main.users.add(new_user)
+
+# true
+dbs.main.users.has(new_user) 
+```
+
+### Serializability
+
+Most Inox types (objects, lists, Sets) are serializable so they cannot contain transient values.
+```
+object = {
+  # error: non-serializable values are not allowed as initial values for properties of serializables
+  routine: go do {
+    return 1
+  }
+}
+
+# same error
+list = [  
+  go do { return 1 }
+]
+```
+
+(Work in progress)
+The transient equivalents of objects are structs:
+
+```
+struct Task {
+  name: str
+}
+
+task1 = Task{name: "0"}
+task2 = Task{name: "1"}
+
+array = Array(task1, task2)
+```
+
+### Project & Virtual Filesystem
+
+The Inox binary provides a **project server** that is used for development, 
+it will soon provide automatic infrastructure management.
+
+```mermaid
+graph TD
+    A[Project Server] 
+    A ---|Development| B[VsCode]
+    A -->|Manages| C[Infrastructure]
+```
+ 
+An Inox project lives in a **virtual filesystem** (container) for better security & reproducibility.
+Note that this virtual filesystem only exists in-process, there is no FUSE filesystem and Docker is not involved.
 
 ### Injection Prevention (WIP)
 
