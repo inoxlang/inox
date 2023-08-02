@@ -43,3 +43,37 @@ func TestRuneSlice(t *testing.T) {
 		})
 	})
 }
+
+func TestStringConcatenation(t *testing.T) {
+	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+	t.Run("At", func(t *testing.T) {
+		concatenation := &StringConcatenation{
+			elements: []StringLike{Str("a"), Str("b")},
+			totalLen: 2,
+		}
+
+		assert.Equal(t, Byte('a'), concatenation.At(ctx, 0))
+		assert.Equal(t, Byte('b'), concatenation.At(ctx, 1))
+
+		concatenation = &StringConcatenation{
+			elements: []StringLike{Str("ab"), Str("c")},
+			totalLen: 2,
+		}
+
+		assert.Equal(t, Byte('a'), concatenation.At(ctx, 0))
+		assert.Equal(t, Byte('b'), concatenation.At(ctx, 1))
+		assert.Equal(t, Byte('c'), concatenation.At(ctx, 2))
+
+		concatenation = &StringConcatenation{
+			elements: []StringLike{Str("ab"), Str("cd")},
+			totalLen: 2,
+		}
+
+		assert.Equal(t, Byte('a'), concatenation.At(ctx, 0))
+		assert.Equal(t, Byte('b'), concatenation.At(ctx, 1))
+		assert.Equal(t, Byte('c'), concatenation.At(ctx, 2))
+		assert.Equal(t, Byte('d'), concatenation.At(ctx, 3))
+	})
+
+}

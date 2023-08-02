@@ -589,9 +589,9 @@ func (c *StringConcatenation) Len() int {
 func (c *StringConcatenation) At(ctx *Context, i int) Value {
 	elementIndex := 0
 	pos := 0
-	for pos < i {
+	for pos <= i {
 		element := c.elements[elementIndex]
-		if pos+element.Len() >= i {
+		if pos+element.Len() > i {
 			return element.At(ctx, i-pos)
 		}
 		elementIndex++
