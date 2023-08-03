@@ -34,6 +34,7 @@
     - [Named patterns](#named-patterns)
     - [Pattern namespaces](#pattern-namespaces)
     - [String patterns](#string-patterns)
+- [XML Expressions](#xml-expressions)
 - [Modules](#modules)
     - [Module Parameters](#module-parameters)
     - [Execution Phases](#execution-phases)
@@ -41,6 +42,9 @@
     - [Module Imports](#module-imports)
 - [Static check](#static-check)
 - [Symbolic evaluation](#symbolic-evaluation)
+- [Databases](#databases)
+    - [Schema](#database-schema)
+    - [Serialization](#serialization)
 
 # Literals
 
@@ -1014,3 +1018,65 @@ how they work, just remember that:
 - the bytecode interpreter is the default when running a script with `inox run`
 - the REPL always use the tree walking interpreter
 - the tree walking intepreter is much slower (filesystem & network operations are not affected)
+
+
+# Databases
+
+Inox comes with an embedded database engine, you can define databases in the manifest:
+```
+manifest {
+    # permissions required by the database
+    permissions: {
+        read: %/databases/...
+        write: %/databases/...
+    }
+    databases: {
+        main: {
+            resource: ldb://main  #ldb stands for Local Database
+            resolution-data: /databases/main/
+        }
+    }
+}
+```
+
+## Database Schema
+
+The schema of an Inox Database is an [object pattern](#object-patterns), it can be
+set by calling the **update_schema** method on the database:
+```
+%user = {
+  name: str
+}
+
+dbs.main.update_schema(%{
+    users: Set(user, #url)
+})
+```
+
+## Serialization
+
+Most Inox types (objects, lists, Sets) are serializable so no translation layer is
+needed to add/retrieve objects to/from the database. 
+
+```
+new_user = {name: "John"}
+dbs.main.users.add(new_user)
+
+# true
+dbs.main.users.has(new_user) 
+```
+
+Since most Inox types are serializable they cannot contain transient values.
+```
+object = {
+  # error: non-serializable values are not allowed as initial values for properties of serializables
+  routine: go do {
+    return 1
+  }
+}
+
+# same error
+list = [  
+  go do { return 1 }
+]
+```
