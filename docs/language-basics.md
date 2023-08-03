@@ -47,7 +47,8 @@
 Here are the most commonly used literals in Inox: 
 
 - numbers with a point (.) are floating point numbers: `1.0, 2.0e3`
-- numbers without a point are integers: `1, -200`
+- numbers without a point are integers: `1, -200, 1_000`
+- integer range literals: `1..3, 1..`
 - boolean literals are `true` and `false`
 - nil literal (it represents the absence of value): `nil`
 - single line strings have double quotes: `"hello !"`
@@ -89,9 +90,10 @@ Here are the most commonly used literals in Inox:
 - port literals: `:80, :80/http`
 - date literals represent a specific point in time: `2020y-10mt-5d-CET`, `2020y-10mt-5d-5h-4m-CET`
     - The location part (CET | UTC | Local | ...) at the end is mandatory.
-- quantity literals: `1B`, `2kB`, `10%`
-- rate literals: `5B/s`, `10kB/s`
-- byte slice literals: `0x[0a b3]`, `0b[1111 0000]`, `0d[120 250]`
+- quantity literals: `1B 2kB 10%`
+- quantity range literals `1kB..1MB 1kB..`
+- rate literals: `5B/s 10kB/s`
+- byte slice literals: `0x[0a b3]  0b[1111 0000] 0d[120 250]`
 
 </details>
 
@@ -536,6 +538,7 @@ switch 1 {
     2 {
         print 2
     }
+    defaultcase { }
 }
 
 output:
@@ -557,6 +560,7 @@ match value {
     %/... {
         print "any absolute path"
     }
+    defaultcase { }
 }
 
 output:
@@ -744,7 +748,7 @@ Pattern definitions allow you to declare a pattern.
 # true
 ([1, 2, 3] match %int_list) 
 
-# the % symbol can be omitted in front of the top list/object pattern:
+# the % symbol in front of the pattern can be omitted:
 %int_list = []int
 
 %user = {
@@ -798,6 +802,17 @@ String patterns can be composed thanks to named patterns:
 ```
 %domain = "@mail.com"
 %email-address = (("user1" | "user2") %domain)
+```
+
+# XML Expressions
+
+An XML expression is the interpretation of a XML-like value by a namespace:
+```
+string = "world"
+element = html<div> Hello {string} ! </div>
+
+# self closing tag
+html<img src="..."/>
 ```
 
 # Modules
@@ -997,5 +1012,5 @@ TODO
 The evaluation is performed by either a **bytecode interpreter or** a **tree walking interpreter**. You don't really need to understand
 how they work, just remember that:
 - the bytecode interpreter is the default when running a script with `inox run`
-- the tree walking interpreter is always used when using the REPL
+- the REPL always use the tree walking interpreter
 - the tree walking intepreter is much slower (filesystem & network operations are not affected)
