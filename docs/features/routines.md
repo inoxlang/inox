@@ -2,21 +2,19 @@
 
 ### Routines
 
-Routines are mainly used for concurrent work and isolation. Each routine has its own goroutine and state.
+Routines are mainly used for concurrent work and isolation. Each routine has its own Goroutine and state.
 
 Embedded module:
 
 ````
-routine = go {http: http} {
-    return http.get!(https://example.com/)
-} allow { 
-    use: {globals: ["http"]} 
+routine = go {globals: .{read}, allow: {read: %https://example.com/...}} do {
+    return read!(https://example.com/)
 }
 ````
 
 Call syntax (all permissions are inherited).
 ````
-routine = go nil f()
+routine = go do f()
 ````
 
 Routines can optionally be part of a "routine group" that allows easier control of multiple routines.
@@ -25,7 +23,7 @@ Routines can optionally be part of a "routine group" that allows easier control 
 req_group = RoutineGroup()
 
 for (1 .. 10) {
-    go req_group nil read!(https://jsonplaceholder.typicode.com/posts)
+    go {group: req_group} read!(https://jsonplaceholder.typicode.com/posts)
 }
 
 results = req_group.wait_results!()
