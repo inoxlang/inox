@@ -1,4 +1,4 @@
-[Install Inox](../README.md#installation) | [Language Basics](./language-basics.md) | [Shell Basics](./shell-basics.md) | [Built-in Functions](./builtin.md) | [Project](./project.md)
+[Install Inox](../README.md#installation) | [Language Basics](./language-basics.md) |  [Built-in Functions](./builtin.md) | [Project](./project.md) | [Web App Development](./web-app-development.md) | [Shell Basics](./shell-basics.md)
 
 -----
 
