@@ -15680,8 +15680,31 @@ func testParse(
 	})
 
 	t.Run("inclusion import statement", func(t *testing.T) {
-		t.Run("ok", func(t *testing.T) {
+		t.Run("relative path literal", func(t *testing.T) {
 			n := mustparseChunk(t, `import ./file.ix`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
+				Statements: []Node{
+					&InclusionImportStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 16},
+							nil,
+							[]Token{
+								{Type: IMPORT_KEYWORD, Span: NodeSpan{0, 6}},
+							},
+						},
+						Source: &RelativePathLiteral{
+							NodeBase: NodeBase{NodeSpan{7, 16}, nil, nil},
+							Value:    "./file.ix",
+							Raw:      "./file.ix",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("absolute path literal", func(t *testing.T) {
+			n := mustparseChunk(t, `import /file.ix`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
 				Statements: []Node{

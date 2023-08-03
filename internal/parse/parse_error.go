@@ -292,11 +292,11 @@ const (
 	DROP_PERM_KEYWORD_SHOULD_BE_FOLLOWED_BY = "permission dropping statement: 'drop-perms' keyword should be followed by an object literal (permissions)"
 
 	//import
-	IMPORT_STMT_IMPORT_KEYWORD_SHOULD_BE_FOLLOWED_BY_IDENT  = "import statement: import should be followed by an identifier"
-	IMPORT_STMT_SRC_SHOULD_BE_AN_URL_OR_PATH_LIT            = "import statement: source should be a URL literal or Path literal"
-	IMPORT_STMT_CONFIG_SHOULD_BE_AN_OBJ_LIT                 = "import statement: configuration should be an object literal"
-	INCLUSION_IMPORT_STMT_SRC_SHOULD_BE_A_RELATIVE_PATH_LIT = "inclusion import statement: source should be a relative path literal"
-	INCLUSION_IMPORT_STMT_VALID_STR_SHOULD_BE_A_STRING_LIT  = "inclusion import statement: validation should be a string literal"
+	IMPORT_STMT_IMPORT_KEYWORD_SHOULD_BE_FOLLOWED_BY_IDENT = "import statement: import should be followed by an identifier"
+	IMPORT_STMT_SRC_SHOULD_BE_AN_URL_OR_PATH_LIT           = "import statement: source should be a URL literal or Path literal"
+	IMPORT_STMT_CONFIG_SHOULD_BE_AN_OBJ_LIT                = "import statement: configuration should be an object literal"
+	INCLUSION_IMPORT_STMT_SRC_SHOULD_BE_A_PATH_LIT         = "inclusion import statement: source should be path literal (/file.ix, ./file.ix, ...)"
+	INCLUSION_IMPORT_STMT_VALID_STR_SHOULD_BE_A_STRING_LIT = "inclusion import statement: validation should be a string literal"
 
 	UNTERMINATED_EMBEDDED_MODULE                            = "unterminated embedded module"
 	INVALID_FOR_STMT                                        = "invalid for statement"

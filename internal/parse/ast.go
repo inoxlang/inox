@@ -34,8 +34,8 @@ func (s NodeSpan) HasPositionEndIncluded(i int32) bool {
 
 // NodeBase implements Node interface
 type NodeBase struct {
-	Span            NodeSpan
-	Err             *ParsingError
+	Span   NodeSpan
+	Err    *ParsingError
 	Tokens []Token
 }
 
@@ -1760,11 +1760,14 @@ func (InclusionImportStatement) Kind() NodeKind {
 	return Stmt
 }
 
-func (stmt *InclusionImportStatement) PathSource() *RelativePathLiteral {
-	if pathLit, ok := stmt.Source.(*RelativePathLiteral); ok {
-		return pathLit
+func (stmt *InclusionImportStatement) PathSource() (_ string, absolute bool) {
+	switch n := stmt.Source.(type) {
+	case *RelativePathLiteral:
+		return n.Value, false
+	case *AbsolutePathLiteral:
+		return n.Value, true
 	}
-	panic(errors.New(".Source of InclusionImportStatement is not a *RelativePathLiteral"))
+	panic(errors.New(".Source of InclusionImportStatement is not a *RelativePathLiteral nor *AbsolutePathLiteral"))
 }
 
 type LazyExpression struct {

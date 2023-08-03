@@ -9556,7 +9556,7 @@ func (p *parser) parseImportStatement(importIdent *IdentifierLiteral) Node {
 	var identifier *IdentifierLiteral
 
 	switch node := e.(type) {
-	case *RelativePathLiteral:
+	case *RelativePathLiteral, *AbsolutePathLiteral:
 		return &InclusionImportStatement{
 			NodeBase: NodeBase{
 				NodeSpan{importIdent.Span.Start, p.i},
@@ -9565,18 +9565,20 @@ func (p *parser) parseImportStatement(importIdent *IdentifierLiteral) Node {
 			},
 			Source: node,
 		}
-	case *AbsolutePathLiteral:
-		return &InclusionImportStatement{
-			NodeBase: NodeBase{
-				NodeSpan{importIdent.Span.Start, p.i},
-				&ParsingError{UnspecifiedParsingError, INCLUSION_IMPORT_STMT_SRC_SHOULD_BE_A_RELATIVE_PATH_LIT},
-				tokens,
-			},
-			Source: node,
-		}
 	case *IdentifierLiteral:
 		identifier = node
 	default:
+		if NodeIsSimpleValueLiteral(node) {
+			return &InclusionImportStatement{
+				NodeBase: NodeBase{
+					NodeSpan{importIdent.Span.Start, p.i},
+					&ParsingError{UnspecifiedParsingError, INCLUSION_IMPORT_STMT_SRC_SHOULD_BE_A_PATH_LIT},
+					tokens,
+				},
+				Source: node,
+			}
+		}
+
 		return &ImportStatement{
 			NodeBase: NodeBase{
 				NodeSpan{importIdent.Span.Start, p.i},
