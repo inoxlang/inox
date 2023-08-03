@@ -6663,19 +6663,24 @@ func (p *parser) parsePreInitIfPresent() *PreinitStatement {
 		tokens := []Token{{Type: PREINIT_KEYWORD, Span: NodeSpan{p.i, p.i + int32(len(PREINIT_KEYWORD_STR))}}}
 		p.i += int32(len(PREINIT_KEYWORD_STR))
 
+		var end = p.i
+
 		p.eatSpace()
 
-		var parsingErr *ParsingError
-		var preinitBlock *Block
+		var (
+			parsingErr   *ParsingError
+			preinitBlock *Block
+		)
 		if p.i >= p.len || p.s[p.i] != '{' {
 			parsingErr = &ParsingError{UnspecifiedParsingError, PREINIT_KEYWORD_SHOULD_BE_FOLLOWED_BY_A_BLOCK}
 		} else {
 			preinitBlock = p.parseBlock()
+			end = preinitBlock.Span.End
 		}
 
 		preinit = &PreinitStatement{
 			NodeBase: NodeBase{
-				Span:   NodeSpan{start, preinitBlock.Base().Span.End},
+				Span:   NodeSpan{start, end},
 				Err:    parsingErr,
 				Tokens: tokens,
 			},

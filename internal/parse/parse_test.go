@@ -415,6 +415,24 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("preinit with missing block", func(t *testing.T) {
+			n, err := parseChunk(t, "preinit", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase:   NodeBase{NodeSpan{0, 7}, nil, nil},
+				Statements: nil,
+				Preinit: &PreinitStatement{
+					NodeBase: NodeBase{
+						Span: NodeSpan{0, 7},
+						Err:  &ParsingError{UnspecifiedParsingError, PREINIT_KEYWORD_SHOULD_BE_FOLLOWED_BY_A_BLOCK},
+						Tokens: []Token{
+							{Type: PREINIT_KEYWORD, Span: NodeSpan{0, 7}},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("empty manifest", func(t *testing.T) {
 			n := mustparseChunk(t, "manifest {}")
 			assert.EqualValues(t, &Chunk{
@@ -15706,20 +15724,20 @@ func testParse(
 		t.Run("absolute path literal", func(t *testing.T) {
 			n := mustparseChunk(t, `import /file.ix`)
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
+				NodeBase: NodeBase{NodeSpan{0, 15}, nil, nil},
 				Statements: []Node{
 					&InclusionImportStatement{
 						NodeBase: NodeBase{
-							NodeSpan{0, 16},
+							NodeSpan{0, 15},
 							nil,
 							[]Token{
 								{Type: IMPORT_KEYWORD, Span: NodeSpan{0, 6}},
 							},
 						},
-						Source: &RelativePathLiteral{
-							NodeBase: NodeBase{NodeSpan{7, 16}, nil, nil},
-							Value:    "./file.ix",
-							Raw:      "./file.ix",
+						Source: &AbsolutePathLiteral{
+							NodeBase: NodeBase{NodeSpan{7, 15}, nil, nil},
+							Value:    "/file.ix",
+							Raw:      "/file.ix",
 						},
 					},
 				},
