@@ -40,24 +40,37 @@ func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn
 		//test different paths for the module
 
 		pathDir, pathBasename := filepath.Split(string(path))
+		//example: /about -> /GET-about.ix
 		modulePath := fls.Join(string(routingDirPath), pathDir, "/"+string(req.Method)+"-"+pathBasename+".ix")
 		methodSpecificModule := true
 
 		_, err := fls.Stat(modulePath)
 		if err != nil {
+			//example: /about -> /about/GET.ix
+			modulePath = fls.Join(string(routingDirPath), string(path), string(req.Method)+".ix")
+			_, err = fls.Stat(modulePath)
+			if err == nil {
+				goto module_path_resolved
+			}
+
+			//example: /about -> /about.ix
 			modulePath = fls.Join(string(routingDirPath), string(path)+".ix")
 			methodSpecificModule = false
 
 			_, err = fls.Stat(modulePath)
+			if err == nil {
+				goto module_path_resolved
+			}
+
+			//example: /about -> /about/index.ix
+			modulePath = fls.Join(string(routingDirPath), string(path), "index.ix")
+			_, err = fls.Stat(modulePath)
 			if err != nil {
-				modulePath = fls.Join(string(routingDirPath), string(path), "index.ix")
-				_, err = fls.Stat(modulePath)
-				if err != nil {
-					rw.writeStatus(http.StatusNotFound)
-					return
-				}
+				rw.writeStatus(http.StatusNotFound)
+				return
 			}
 		}
+	module_path_resolved:
 
 		handlerCtx := handlerGlobalState.Ctx
 

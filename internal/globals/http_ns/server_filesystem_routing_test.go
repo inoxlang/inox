@@ -30,14 +30,47 @@ func TestFilesystemRouting(t *testing.T) {
 					return fls
 				},
 				requests: []requestTestInfo{
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
+					{
+						path:                "/x",
+						acceptedContentType: core.PLAIN_TEXT_CTYPE,
+						result:              `hello`,
+					},
 				},
 			},
 			createClient,
 		)
 	})
 
-	t.Run("POST /x should return the result of :/routes/POST-x.ix even if /routes/x.ix is present", func(t *testing.T) {
+	t.Run("GET /x should return the result of /routes/x/index.ix", func(t *testing.T) {
+		runMappingTestCase(t,
+			serverTestCase{
+				input: `return {
+						routing: /routes/
+					}`,
+				makeFilesystem: func() afs.Filesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes/x", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/x/index.ix", []byte(`
+							manifest {}
+	
+							return "hello"
+						`), fs_ns.DEFAULT_FILE_FMODE)
+
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						path:                "/x",
+						acceptedContentType: core.PLAIN_TEXT_CTYPE,
+						result:              `hello`,
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
+	t.Run("GET /x should return the result of /routes/GET-x.ix even if /routes/x.ix is present", func(t *testing.T) {
 		runMappingTestCase(t,
 			serverTestCase{
 				input: `return {
@@ -46,7 +79,7 @@ func TestFilesystemRouting(t *testing.T) {
 				makeFilesystem: func() afs.Filesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
-					util.WriteFile(fls, "/routes/POST-x.ix", []byte(`
+					util.WriteFile(fls, "/routes/GET-x.ix", []byte(`
 							manifest {}
 	
 							return "hello"
@@ -61,8 +94,41 @@ func TestFilesystemRouting(t *testing.T) {
 				},
 				requests: []requestTestInfo{
 					{
-						method:              "POST",
-						header:              http.Header{"Content-Type": []string{core.PLAIN_TEXT_CTYPE}},
+						method:              "GET",
+						acceptedContentType: core.PLAIN_TEXT_CTYPE,
+						result:              `hello`,
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
+	t.Run("GET /x should return the result of /routes/x/GET.ix even if /routes/x/index.ix is present", func(t *testing.T) {
+		runMappingTestCase(t,
+			serverTestCase{
+				input: `return {
+						routing: /routes/
+					}`,
+				makeFilesystem: func() afs.Filesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes/x", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/x/GET.ix", []byte(`
+							manifest {}
+	
+							return "hello"
+						`), fs_ns.DEFAULT_FILE_FMODE)
+
+					util.WriteFile(fls, "/routes/x/index.ix", []byte(`
+						manifest {}
+
+						return "default"
+					`), fs_ns.DEFAULT_FILE_FMODE)
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						method:              "GET",
 						acceptedContentType: core.PLAIN_TEXT_CTYPE,
 						result:              `hello`,
 					},
