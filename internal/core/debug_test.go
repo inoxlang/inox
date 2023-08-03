@@ -64,6 +64,89 @@ func testDebugModeEval(
 	eval func(n parse.Node, state any) (Value, error),
 ) {
 
+	t.Run("single instruction module", func(t *testing.T) {
+		t.Run("breakpoint", func(t *testing.T) {
+			state, ctx, chunk, debugger := setup(`1`)
+
+			controlChan := debugger.ControlChan()
+			stoppedChan := debugger.StoppedChan()
+
+			defer ctx.Cancel()
+
+			controlChan <- DebugCommandSetBreakpoints{
+				Chunk: chunk,
+				BreakpointsAtNode: map[parse.Node]struct{}{
+					chunk.Node.Statements[0]: {}, //1
+				},
+			}
+
+			time.Sleep(10 * time.Millisecond) //wait for the debugger to set the breakpoints
+
+			var stoppedEvents []ProgramStoppedEvent
+			var globalScopes []map[string]Value
+			var localScopes []map[string]Value
+			var stackTraces [][]StackFrameInfo
+
+			go func() {
+				event := <-stoppedChan
+				event.Breakpoint = nil //not checked yet
+
+				stoppedEvents = append(stoppedEvents, event)
+
+				//get scopes
+				controlChan <- DebugCommandGetScopes{
+					Get: func(globalScope, localScope map[string]Value) {
+						globalScopes = append(globalScopes, globalScope)
+						localScopes = append(localScopes, localScope)
+					},
+					ThreadId: debugger.threadId(),
+				}
+
+				//get stack trace
+				controlChan <- DebugCommandGetStackTrace{
+					Get: func(trace []StackFrameInfo) {
+						stackTraces = append(stackTraces, trace)
+					},
+					ThreadId: debugger.threadId(),
+				}
+
+				controlChan <- DebugCommandContinue{ThreadId: debugger.threadId()}
+			}()
+
+			result, err := eval(chunk.Node, state)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, Int(1), result)
+
+			assert.Equal(t, []ProgramStoppedEvent{
+				{Reason: BreakpointStop, ThreadId: debugger.threadId()},
+			}, stoppedEvents)
+
+			assert.Equal(t, []map[string]Value{{}}, globalScopes)
+
+			assert.Equal(t, []map[string]Value{{}}, localScopes)
+
+			assert.Equal(t, [][]StackFrameInfo{
+				{
+					{
+						Name:                 "core-test",
+						Node:                 chunk.Node.Statements[0],
+						Chunk:                chunk,
+						Id:                   1,
+						StartLine:            1,
+						StartColumn:          1,
+						StatementStartLine:   1,
+						StatementStartColumn: 1,
+					},
+				},
+			}, stackTraces)
+		})
+
+	})
+
 	t.Run("shallow", func(t *testing.T) {
 
 		t.Run("successive breakpoints", func(t *testing.T) {
