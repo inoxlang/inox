@@ -618,11 +618,17 @@ func ParseLocalIncludedFiles(mod *Module, ctx *Context, fls afs.Filesystem, reco
 	inclusionStmts := parse.FindNodes(mod.MainChunk.Node, &parse.InclusionImportStatement{}, nil)
 
 	for _, stmt := range inclusionStmts {
-		relativePath := stmt.PathSource().Value
+		path, isAbsolute := stmt.PathSource()
+		chunkFilepath := path
+
+		if !isAbsolute {
+			chunkFilepath = fls.Join(src.ResourceDir, path)
+		}
+
 		stmtPos := mod.MainChunk.GetSourcePosition(stmt.Span)
 
 		chunk, err := ParseLocalSecondaryChunk(LocalSecondaryChunkParsingConfig{
-			ChunkFilepath:                       fls.Join(src.ResourceDir, relativePath),
+			ChunkFilepath:                       chunkFilepath,
 			Module:                              mod,
 			Context:                             ctx,
 			ImportPosition:                      stmtPos,
@@ -782,11 +788,17 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 	inclusionStmts := parse.FindNodes(chunk.Node, &parse.InclusionImportStatement{}, nil)
 
 	for _, stmt := range inclusionStmts {
-		relativePath := stmt.PathSource().Value
+		path, isAbsolute := stmt.PathSource()
+		chunkFilepath := path
+
+		if !isAbsolute {
+			chunkFilepath = fls.Join(src.ResourceDir, path)
+		}
+
 		stmtPos := chunk.GetSourcePosition(stmt.Span)
 
 		chunk, err := ParseLocalSecondaryChunk(LocalSecondaryChunkParsingConfig{
-			ChunkFilepath:                       fls.Join(src.ResourceDir, relativePath),
+			ChunkFilepath:                       chunkFilepath,
 			Module:                              mod,
 			Context:                             config.Context,
 			ImportPosition:                      stmtPos,
