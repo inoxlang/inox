@@ -18,6 +18,10 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+const (
+	ANY_HTTPS_HOST_PATTERN = HostPattern("https://**")
+)
+
 var (
 	ErrCannotReleaseUnregisteredResource   = errors.New("cannot release unregistered resource")
 	ErrFailedToAcquireResurce              = errors.New("failed to acquire resource")
