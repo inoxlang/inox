@@ -246,7 +246,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		}
 	}
 
-	// CLI arguments | arguments of imported module
+	// CLI arguments | arguments of imported/invoked module
 	var modArgs *core.Struct
 	var modArgsError error
 

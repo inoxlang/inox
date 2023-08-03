@@ -74,8 +74,8 @@ func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn
 
 			FullAccessToDatabases: false, //databases should be passed by parent state
 			PreinitFilesystem:     handlerCtx.GetFileSystem(),
-
 			GetArguments: func(manifest *core.Manifest) (*core.Struct, error) {
+
 				args, errStatusCode, err := getHandlerModuleArguments(req, manifest, handlerCtx, methodSpecificModule)
 				if err != nil {
 					rw.writeStatus(core.Int(errStatusCode))
@@ -176,6 +176,10 @@ func getHandlerModuleArguments(req *HttpRequest, manifest *core.Manifest, handle
 			moduleArguments[propName] = obj.Prop(handlerCtx, propName)
 			return nil
 		})
+	} else { //body is not required by the handler
+		if !methodSpecificModule && handlerModuleParams.methodPattern == nil && !req.IsGetOrHead() {
+			return nil, http.StatusBadRequest, errors.New("only GET & HEAD requests are supported by the handler")
+		}
 	}
 	return core.NewStructFromMap(moduleArguments), 0, nil
 }
