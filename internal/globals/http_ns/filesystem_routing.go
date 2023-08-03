@@ -47,17 +47,16 @@ func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn
 		if err != nil {
 			modulePath = fls.Join(string(routingDirPath), string(path)+".ix")
 			methodSpecificModule = false
-		}
 
-		_, err = fls.Stat(modulePath)
-		if err != nil {
-			modulePath = fls.Join(string(routingDirPath), string(path), "index.ix")
-		}
-
-		_, err = fls.Stat(modulePath)
-		if err != nil {
-			rw.writeStatus(http.StatusNotFound)
-			return
+			_, err = fls.Stat(modulePath)
+			if err != nil {
+				modulePath = fls.Join(string(routingDirPath), string(path), "index.ix")
+				_, err = fls.Stat(modulePath)
+				if err != nil {
+					rw.writeStatus(http.StatusNotFound)
+					return
+				}
+			}
 		}
 
 		handlerCtx := handlerGlobalState.Ctx
