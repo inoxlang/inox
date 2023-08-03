@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -223,8 +224,7 @@ func (s *Session) cancelJob(id interface{}) {
 }
 
 func (s *Session) execute(mtdInfo MethodInfo, req RequestMessage, args interface{}) {
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancel(s.ctx)
 	ctx = context.WithValue(ctx, sessionKey, s)
 	exec := &executor{
 		id:     req.ID,
@@ -235,12 +235,20 @@ func (s *Session) execute(mtdInfo MethodInfo, req RequestMessage, args interface
 	}
 	go func() {
 		defer s.removeExecutor(exec)
+		defer func() {
+			if err, ok := recover().(error); ok {
+				logs.Println(fmt.Errorf("%w: %s", err, string(debug.Stack())))
+			}
+		}()
+
 		resp, err := mtdInfo.Handler(ctx, args)
+
 		select {
 		case <-ctx.Done():
 			return
 		default:
 		}
+
 		if isNil(resp) && isNil(err) && isNil(req.ID) {
 			return
 		}
