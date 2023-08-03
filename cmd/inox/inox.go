@@ -281,9 +281,9 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			core.FilesystemPermission{Kind_: permkind.Delete, Entity: core.PathPattern("/...")},
 
 			core.WebsocketPermission{Kind_: permkind.Provide},
-			core.HttpPermission{Kind_: permkind.Provide, Entity: DEFAULT_ALLOWED_DEV_HOST},
-			core.HttpPermission{Kind_: permkind.Read, Entity: DEFAULT_ALLOWED_DEV_HOST},
-			core.HttpPermission{Kind_: permkind.Write, Entity: DEFAULT_ALLOWED_DEV_HOST},
+			core.HttpPermission{Kind_: permkind.Provide, Entity: core.ANY_HTTPS_HOST_PATTERN},
+			core.HttpPermission{Kind_: permkind.Read, Entity: core.ANY_HTTPS_HOST_PATTERN},
+			core.HttpPermission{Kind_: permkind.Write, Entity: core.ANY_HTTPS_HOST_PATTERN},
 
 			core.RoutinePermission{Kind_: permkind.Create},
 		}
