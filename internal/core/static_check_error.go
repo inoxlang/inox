@@ -9,6 +9,8 @@ import (
 )
 
 const (
+	MODULE_IMPORTS_NOT_ALLOWED_IN_INCLUDED_CHUNK = "modules imports are no allowed in included chunks"
+
 	//manifest
 	NO_SPREAD_IN_MANIFEST                           = "objects & lists in the manifest cannot contain spread elements"
 	IMPLICIT_KEY_PROPS_NOT_ALLOWED_IN_MANIFEST      = "implicit key properties are not allowed in the manifest object"
@@ -25,7 +27,7 @@ const (
 	PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_ABS_PATH = "the ." + MANIFEST_PREINIT_FILE__PATH_PROP_NAME + " of each file in the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section (manifest) should be an absolute path"
 
 	//databases section
-	DATABASES_SECTION_SHOULD_BE_AN_OBJECT_OR_ABS_PATH              = "the '" + MANIFEST_DATABASES_SECTION_NAME + "' section of the manifest should be an object literal or an absolute path literal"
+	DATABASES_SECTION_SHOULD_BE_AN_OBJECT_OR_ABS_PATH  = "the '" + MANIFEST_DATABASES_SECTION_NAME + "' section of the manifest should be an object literal or an absolute path literal"
 	DATABASES__DB_CONFIG_SHOULD_BE_AN_OBJECT           = "the description of each database in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section of the manifest should be an object literal"
 	DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL       = "the ." + MANIFEST_DATABASE__RESOURCE_PROP_NAME + " of each database in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section (manifest) should be a Host or a URL"
 	DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED = "paths are the only supported values for ." + MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME + "in a database description"

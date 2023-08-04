@@ -1718,7 +1718,7 @@ func TestCheck(t *testing.T) {
 	})
 
 	t.Run("inclusion import statement", func(t *testing.T) {
-		t.Run("single included file with no dependecies", func(t *testing.T) {
+		t.Run("single included file with no dependencies", func(t *testing.T) {
 			moduleName := "mymod.ix"
 			modpath := writeModuleAndIncludedFiles(t, moduleName, `
 				manifest {}
@@ -1736,7 +1736,7 @@ func TestCheck(t *testing.T) {
 			}))
 		})
 
-		t.Run("single included file with no dependecies: error in included file", func(t *testing.T) {
+		t.Run("single included file with no dependencies: error in included file", func(t *testing.T) {
 			moduleName := "mymod.ix"
 			modpath := writeModuleAndIncludedFiles(t, moduleName, `
 				manifest {}
@@ -1769,7 +1769,7 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("single included file with no dependecies: duplicate constant declaration", func(t *testing.T) {
+		t.Run("single included file with no dependencies: duplicate constant declaration", func(t *testing.T) {
 			moduleName := "mymod.ix"
 			modpath := writeModuleAndIncludedFiles(t, moduleName, `
 				const a = 1
@@ -1822,6 +1822,42 @@ func TestCheck(t *testing.T) {
 				Node:   mod.MainChunk.Node,
 				Chunk:  mod.MainChunk,
 			}))
+		})
+
+		t.Run("included file should not import modules", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import ./dep.ix
+			`, map[string]string{
+				"./dep.ix": `
+					includable-chunk
+					import res ./lib.ix {}
+				`,
+			})
+
+			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
+			assert.NoError(t, err)
+			err = staticCheckNoData(StaticCheckInput{
+				Module: mod,
+				Node:   mod.MainChunk.Node,
+				Chunk:  mod.MainChunk,
+			})
+			expectedErr := combineErrors(
+				NewStaticCheckError(MODULE_IMPORTS_NOT_ALLOWED_IN_INCLUDED_CHUNK, parse.SourcePositionStack{
+					parse.SourcePositionRange{
+						SourceName:  mod.MainChunk.Name(),
+						StartLine:   3,
+						StartColumn: 5,
+					},
+					parse.SourcePositionRange{
+						SourceName:  mod.IncludedChunkForest[0].Name(),
+						StartLine:   3,
+						StartColumn: 6,
+					},
+				}),
+			)
+			assert.Equal(t, expectedErr, err)
 		})
 
 		t.Run("two included files with no dependecies", func(t *testing.T) {

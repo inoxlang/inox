@@ -898,6 +898,9 @@ switch_:
 
 	//ok
 	case *parse.ImportStatement:
+		if c.inclusionImportStatement != nil {
+			c.addError(node, MODULE_IMPORTS_NOT_ALLOWED_IN_INCLUDED_CHUNK)
+		}
 		name := node.Identifier.Name
 		variables := c.getModGlobalVars(closestModule)
 
