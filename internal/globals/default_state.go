@@ -224,7 +224,6 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 
 		// concurrency & execution
 		"RoutineGroup": core.ValOf(core.NewRoutineGroup),
-		"dynimport":    core.ValOf(_dynimport),
 		"run":          core.ValOf(_run),
 		"ex":           core.ValOf(_execute),
 		"cancel_exec":  core.ValOf(_cancel_exec),
