@@ -43,9 +43,8 @@ func TestAddModuleTreeToResourceGraph(t *testing.T) {
 			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 		}, nil)
 
-		mod := utils.Must(ParseLocalModule(LocalModuleParsingConfig{
-			ModuleFilepath: "/main.ix",
-			Context:        ctx,
+		mod := utils.Must(ParseLocalModule("/main.ix", ModuleParsingConfig{
+			Context: ctx,
 		}))
 
 		g := NewResourceGraph()
@@ -95,9 +94,8 @@ func TestAddModuleTreeToResourceGraph(t *testing.T) {
 			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 		}, nil)
 
-		mod := utils.Must(ParseLocalModule(LocalModuleParsingConfig{
-			ModuleFilepath: "/main.ix",
-			Context:        ctx,
+		mod := utils.Must(ParseLocalModule("/main.ix", ModuleParsingConfig{
+			Context: ctx,
 		}))
 
 		g := NewResourceGraph()
@@ -163,9 +161,8 @@ func TestAddModuleTreeToResourceGraph(t *testing.T) {
 			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 		}, nil)
 
-		mod := utils.Must(ParseLocalModule(LocalModuleParsingConfig{
-			ModuleFilepath: "/main.ix",
-			Context:        ctx,
+		mod := utils.Must(ParseLocalModule("/main.ix", ModuleParsingConfig{
+			Context: ctx,
 		}))
 
 		g := NewResourceGraph()
@@ -230,9 +227,8 @@ func TestAddModuleTreeToResourceGraph(t *testing.T) {
 			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 		}, nil)
 
-		mod := utils.Must(ParseLocalModule(LocalModuleParsingConfig{
-			ModuleFilepath: "/main.ix",
-			Context:        ctx,
+		mod := utils.Must(ParseLocalModule("/main.ix", ModuleParsingConfig{
+			Context: ctx,
 		}))
 
 		g := NewResourceGraph()

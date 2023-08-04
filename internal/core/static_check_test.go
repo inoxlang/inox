@@ -1726,7 +1726,7 @@ func TestCheck(t *testing.T) {
 				return a
 			`, map[string]string{"./dep.ix": "includable-chunk\n a = 1"})
 
-			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			assert.NoError(t, err)
 
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
@@ -1744,7 +1744,7 @@ func TestCheck(t *testing.T) {
 				return a
 			`, map[string]string{"./dep.ix": "includable-chunk\n a = b"})
 
-			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			assert.NoError(t, err)
 			err = staticCheckNoData(StaticCheckInput{
 				Module: mod,
@@ -1778,7 +1778,7 @@ func TestCheck(t *testing.T) {
 				return a
 			`, map[string]string{"./dep.ix": "includable-chunk\n const a = 2"})
 
-			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			assert.NoError(t, err)
 			err = staticCheckNoData(StaticCheckInput{
 				Module: mod,
@@ -1815,7 +1815,7 @@ func TestCheck(t *testing.T) {
 				`,
 			})
 
-			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			assert.NoError(t, err)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				Module: mod,
@@ -1836,7 +1836,7 @@ func TestCheck(t *testing.T) {
 				`,
 			})
 
-			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			assert.NoError(t, err)
 			err = staticCheckNoData(StaticCheckInput{
 				Module: mod,
@@ -1878,7 +1878,7 @@ func TestCheck(t *testing.T) {
 				`,
 			})
 
-			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			assert.NoError(t, err)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				Module: mod,

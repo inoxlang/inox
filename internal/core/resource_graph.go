@@ -78,8 +78,7 @@ func AddModuleTreeToResourceGraph(m *Module, g *ResourceGraph, ctx *Context, ign
 			continue
 		}
 
-		importedMod, err := ParseLocalModule(LocalModuleParsingConfig{
-			ModuleFilepath:                      importModRes.(Path).UnderlyingString(),
+		importedMod, err := ParseLocalModule(importModRes.(Path).UnderlyingString(), ModuleParsingConfig{
 			Context:                             ctx,
 			RecoverFromNonExistingIncludedFiles: ignoreBadImports,
 		})

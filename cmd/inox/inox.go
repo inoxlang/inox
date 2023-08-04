@@ -459,8 +459,7 @@ func runStartupScript(startupScriptPath string, outW io.Writer) (*core.Object, *
 	}
 	startupScriptPath = absPath
 
-	startupMod, err := core.ParseLocalModule(core.LocalModuleParsingConfig{
-		ModuleFilepath: startupScriptPath,
+	startupMod, err := core.ParseLocalModule(startupScriptPath, core.ModuleParsingConfig{
 		Context: core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{core.CreateFsReadPerm(core.Path(startupScriptPath))},
 			Filesystem:  fs_ns.GetOsFilesystem(),

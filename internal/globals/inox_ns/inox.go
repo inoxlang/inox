@@ -99,9 +99,8 @@ func _parse_local_script(ctx *core.Context, src core.Path) (*core.Module, error)
 		return nil, err
 	}
 
-	mod, err := core.ParseLocalModule(core.LocalModuleParsingConfig{
-		ModuleFilepath: absPath,
-		Context:        ctx,
+	mod, err := core.ParseLocalModule(absPath, core.ModuleParsingConfig{
+		Context: ctx,
 	})
 
 	return mod, err

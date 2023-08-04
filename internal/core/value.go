@@ -41,6 +41,7 @@ type Value interface {
 // The meaning of resource is broad and should not be confused with HTTP Resources.
 type ResourceName interface {
 	WrappedString
+	Serializable
 	ResourceName() string
 }
 

@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
 	permkind "github.com/inoxlang/inox/internal/permkind"
@@ -23,7 +24,7 @@ import (
 )
 
 const (
-	RETURN_1_MODULE_HASH               = "SG2a/7YNuwBjsD2OI6bM9jZM4gPcOp9W8g51DrQeyt4="
+	RETURN_1_MODULE_HASH               = "gtY+/Y/VOxkFgAmefByH5GU8j+b7xtpLu1QLY39BqkE="
 	RETURN_NON_POS_ARG_A_MODULE_HASH   = "15Njs+OhmiW9843cgnlMib7AiUzZbGx6gn3GAebWMOA="
 	RETURN_POS_ARG_A_MODULE_HASH       = "QNJpkgQeB5MA23yXpJ8L5XWLzUQIi6eDwi2HOnPTO3w="
 	RETURN_PATTERN_INT_TWO_MODULE_HASH = "D9SSw63q6VesJ6tTYZZ1EJzyAW5L3FCTPxQjWfOi8F4="
@@ -31,7 +32,7 @@ const (
 )
 
 func init() {
-	moduleCache[RETURN_1_MODULE_HASH] = "return 1"
+	moduleCache[RETURN_1_MODULE_HASH] = "manifest{}; return 1"
 	moduleCache[RETURN_NON_POS_ARG_A_MODULE_HASH] = "manifest {parameters: {a: %int}}\nreturn mod-args.a"
 	moduleCache[RETURN_POS_ARG_A_MODULE_HASH] = "manifest {parameters: {{name: #a, pattern: %int}}}\nreturn mod-args.a"
 	moduleCache[RETURN_PATTERN_INT_TWO_MODULE_HASH] = "manifest {}\n%two = 2; return %two"
@@ -46,6 +47,7 @@ func TestTreeWalkEval(t *testing.T) {
 		switch val := c.(type) {
 		case *Module:
 			mod = val
+			s.Module = mod
 		case string:
 			chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
 				NameString: "core-test",
@@ -4049,7 +4051,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return a
 			`, map[string]string{"./dep.ix": "includable-chunk \n a = 1"})
 
-			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -4078,7 +4080,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`,
 			})
 
-			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -4102,7 +4104,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				"./dep2.ix": "includable-chunk\n b = 2",
 			})
 
-			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -4122,7 +4124,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return a
 			`, map[string]string{"./dep.ix": "includable-chunk\n a = myglobal"})
 
-			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -4149,7 +4151,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			`})
 
-			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -4180,7 +4182,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			`})
 
-			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -4206,7 +4208,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				%p = %str
 			`})
 
-			mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -4223,57 +4225,96 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("import statement", func(t *testing.T) {
+		getModule := func(code string) (*Module, error) {
+			fls := newMemFilesystem()
+			err := util.WriteFile(fls, "/mod.ix", []byte(code), 0600)
+			if err != nil {
+				return nil, err
+			}
+
+			ctx := NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{
+					CreateFsReadPerm(PathPattern("/...")),
+					CreateHttpReadPerm(ANY_HTTPS_HOST_PATTERN),
+				},
+				Filesystem: fls,
+			}, nil)
+
+			mod, err := ParseLocalModule("/mod.ix", ModuleParsingConfig{
+				Context: ctx,
+			})
+
+			return mod, err
+		}
+
 		t.Run("no globals, no required permissions", func(t *testing.T) {
-			code := strings.ReplaceAll(`
+			mod, err := getModule(strings.ReplaceAll(`
+				manifest {}
 				import importname https://modules.com/return_1.ix {
 					validation: "<hash>"
 				}
 				return $$importname
-			`, "<hash>", RETURN_1_MODULE_HASH)
+			`, "<hash>", RETURN_1_MODULE_HASH))
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
 			state := NewGlobalState(NewDefaultTestContext())
-			res, err := Eval(code, state, false)
+			res, err := Eval(mod, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, Int(1), res)
 		})
 
 		t.Run("imported module returns the positional 'a' argument", func(t *testing.T) {
-			code := strings.ReplaceAll(`
+			mod, err := getModule(strings.ReplaceAll(`
+				manifest {}
 				import importname https://modules.com/return_global_a.ix {
 					validation: "<hash>"
 					arguments: {1}
 				}
 				return $$importname
-			`, "<hash>", RETURN_POS_ARG_A_MODULE_HASH)
+			`, "<hash>", RETURN_POS_ARG_A_MODULE_HASH))
+
+			if !assert.NoError(t, err) {
+				return
+			}
 
 			ctx := NewDefaultTestContext()
 			ctx.AddNamedPattern("int", INT_PATTERN)
 
 			state := NewGlobalState(ctx)
-			res, err := Eval(code, state, false)
+			res, err := Eval(mod, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, Int(1), res)
 		})
 
 		t.Run("imported module returns the non-positional 'a' argument", func(t *testing.T) {
-			code := strings.ReplaceAll(`
+			mod, err := getModule(strings.ReplaceAll(`
+				manifest {}
 				import importname https://modules.com/return_global_a.ix {
 					validation: "<hash>"
 					arguments: {a: 1}
 				}
 				return $$importname
-			`, "<hash>", RETURN_NON_POS_ARG_A_MODULE_HASH)
+			`, "<hash>", RETURN_NON_POS_ARG_A_MODULE_HASH))
+
+			if !assert.NoError(t, err) {
+				return
+			}
 
 			ctx := NewDefaultTestContext()
 			ctx.AddNamedPattern("int", INT_PATTERN)
 
 			state := NewGlobalState(ctx)
-			res, err := Eval(code, state, false)
+			res, err := Eval(mod, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, Int(1), res)
 		})
 
 		t.Run("imported module returns the %two pattern (same pattern is defined in module)", func(t *testing.T) {
-			code := strings.ReplaceAll(`
+			mod, err := getModule(strings.ReplaceAll(`
+				manifest {}
 				%two = 1
 
 				import two_patt https://modules.com/return_global_a.ix {
@@ -4281,43 +4322,57 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					arguments: {}
 				}
 				return $$two_patt
-			`, "<hash>", RETURN_PATTERN_INT_TWO_MODULE_HASH)
+			`, "<hash>", RETURN_PATTERN_INT_TWO_MODULE_HASH))
+
+			if !assert.NoError(t, err) {
+				return
+			}
 
 			ctx := NewDefaultTestContext()
 			ctx.AddNamedPattern("int", INT_PATTERN)
 
 			state := NewGlobalState(ctx)
-			res, err := Eval(code, state, false)
+			res, err := Eval(mod, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, NewExactValuePattern(Int(2)), res)
 		})
 
 		t.Run("imported module returns the %two pattern", func(t *testing.T) {
-			code := strings.ReplaceAll(`
+			mod, err := getModule(strings.ReplaceAll(`
+				manifest {}
 				import two_patt https://modules.com/return_global_a.ix {
 					validation: "<hash>"
 					arguments: {}
 				}
 				return $$two_patt
-			`, "<hash>", RETURN_PATTERN_INT_TWO_MODULE_HASH)
+			`, "<hash>", RETURN_PATTERN_INT_TWO_MODULE_HASH))
+
+			if !assert.NoError(t, err) {
+				return
+			}
 
 			ctx := NewDefaultTestContext()
 			ctx.AddNamedPattern("int", INT_PATTERN)
 
 			state := NewGlobalState(ctx)
-			res, err := Eval(code, state, false)
+			res, err := Eval(mod, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, NewExactValuePattern(Int(2)), res)
 		})
 
 		t.Run("imported module returns the %int pattern (base pattern)", func(t *testing.T) {
-			code := strings.ReplaceAll(`
+			mod, err := getModule(strings.ReplaceAll(`
+				manifest {}
 				import int_pattern https://modules.com/return_global_a.ix {
 					validation: "<hash>"
 					arguments: {}
 				}
 				return $$int_pattern
-			`, "<hash>", RETURN_INT_PATTERN_MODULE_HASH)
+			`, "<hash>", RETURN_INT_PATTERN_MODULE_HASH))
+
+			if !assert.NoError(t, err) {
+				return
+			}
 
 			ctx := NewDefaultTestContext()
 			ctx.AddNamedPattern("int", INT_PATTERN)
@@ -4330,30 +4385,31 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return map[string]Pattern{"int": &intPatternCopy}, nil
 			}
 
-			res, err := Eval(code, state, false)
+			res, err := Eval(mod, state, false)
 			assert.NoError(t, err)
 			assert.Same(t, &intPatternCopy, res)
 		})
 
-		t.Run("local module", func(t *testing.T) {
-			code := strings.ReplaceAll(`
+		t.Run("local module that includes a file", func(t *testing.T) {
+			mod, err := getModule(strings.ReplaceAll(`
+				manifest {}
 				import importname ./return_a.ix  {
 					validation: "<hash>"
 					arguments: {a: 1}
 				}
 				return $$importname
-			`, "<hash>", RETURN_NON_POS_ARG_A_MODULE_HASH)
+			`, "<hash>", RETURN_NON_POS_ARG_A_MODULE_HASH))
+
+			if !assert.NoError(t, err) {
+				return
+			}
 
 			ctx := NewContext(ContextConfig{
-				Permissions: []Permission{
-					GlobalVarPermission{permkind.Read, "*"},
-					GlobalVarPermission{permkind.Update, "*"},
-					GlobalVarPermission{permkind.Create, "*"},
-					GlobalVarPermission{permkind.Use, "*"},
-
+				Permissions: append(
+					GetDefaultGlobalVarPermissions(),
 					FilesystemPermission{permkind.Read, PathPattern("/...")},
 					RoutinePermission{permkind.Create},
-				},
+				),
 				Filesystem: newOsFilesystem(),
 			})
 			ctx.AddNamedPattern("int", INT_PATTERN)
@@ -4368,10 +4424,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return DEFAULT_NAMED_PATTERNS, DEFAULT_PATTERN_NAMESPACES
 			}
 
-			res, err := Eval(code, state, false)
+			res, err := Eval(mod, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, Int(1), res)
 		})
+
 	})
 
 	t.Run("spawn expression", func(t *testing.T) {

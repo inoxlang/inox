@@ -28,7 +28,7 @@ var (
 
 // A StringLike represents a value that wraps a Go string.
 type WrappedString interface {
-	Value
+	Serializable
 
 	//UnderlyingString() should instantly retrieves the wrapped string
 	UnderlyingString() string

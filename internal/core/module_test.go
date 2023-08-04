@@ -11,55 +11,103 @@ import (
 	"github.com/go-git/go-billy/v5/util"
 
 	afs "github.com/inoxlang/inox/internal/afs"
+	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/stretchr/testify/assert"
 )
 
-// writeModuleAndIncludedFiles write a module & it's included files in a temporary directory on the OS filesystem.
-func writeModuleAndIncludedFiles(t *testing.T, mod string, modContent string, dependencies map[string]string) string {
-	dir := t.TempDir()
-	modPath := filepath.Join(dir, mod)
+func TestParseModuleFromSource(t *testing.T) {
+	t.Run("no imports", func(t *testing.T) {
+		fls := newMemFilesystem()
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+			Filesystem:  fls,
+		}, nil)
 
-	assert.NoError(t, os.WriteFile(modPath, []byte(modContent), 0o400))
+		mod, err := ParseModuleFromSource(parse.SourceFile{
+			NameString:  "/mod.ix",
+			Resource:    "/mod.ix",
+			ResourceDir: "/",
+			CodeString:  "manifest {}",
+		}, Path("/mod.ix"), ModuleParsingConfig{
+			Context: ctx,
+		})
 
-	for name, content := range dependencies {
-		assert.NoError(t, os.WriteFile(filepath.Join(dir, name), []byte(content), 0o400))
-	}
-
-	return modPath
-}
-
-func createParsingContext(modpath string) *Context {
-	pathPattern := PathPattern(Path(modpath).DirPath() + "...")
-	return NewContext(ContextConfig{
-		Permissions: []Permission{CreateFsReadPerm(pathPattern)},
-		Filesystem:  newOsFilesystem(),
-	})
-}
-
-func createParsingContextWithMemFilesystem(modpath string) *Context {
-	pathPattern := PathPattern(Path(modpath).DirPath() + "...")
-	return NewContext(ContextConfig{
-		Permissions: []Permission{CreateFsReadPerm(pathPattern)},
-		Filesystem:  newMemFilesystem(),
-	})
-}
-
-func newOsFilesystem() afs.Filesystem {
-	fs := polyfill.New(osfs.Default)
-
-	return afs.AddAbsoluteFeature(fs, func(path string) (string, error) {
-		return filepath.Abs(path)
-	})
-}
-
-func newMemFilesystem() afs.Filesystem {
-	fs := memfs.New()
-
-	return afs.AddAbsoluteFeature(fs, func(path string) (string, error) {
-		if path[0] == '/' {
-			return path, nil
+		if !assert.NoError(t, err) {
+			return
 		}
-		return "", ErrNotImplemented
+		if !assert.NotNil(t, mod) {
+			return
+		}
+	})
+
+	t.Run("module import", func(t *testing.T) {
+		t.Run("absolute path", func(t *testing.T) {
+			fls := newMemFilesystem()
+			util.WriteFile(fls, "/lib.ix", []byte("manifest {}"), 0600)
+			ctx := NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+				Filesystem:  fls,
+			}, nil)
+
+			mod, err := ParseModuleFromSource(parse.SourceFile{
+				NameString:  "/mod.ix",
+				Resource:    "/mod.ix",
+				ResourceDir: "/",
+				CodeString:  "manifest {}\nimport res /lib.ix {}",
+			}, Path("/mod.ix"), ModuleParsingConfig{
+				Context: ctx,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+			if !assert.NotNil(t, mod) {
+				return
+			}
+
+			if assert.Contains(t, mod.DirectlyImportedModules, "/lib.ix") {
+				return
+			}
+
+			importedMod := mod.DirectlyImportedModules["/lib.ix"]
+			if !assert.NotNil(t, importedMod) {
+				return
+			}
+		})
+
+		t.Run("relative path", func(t *testing.T) {
+			fls := newMemFilesystem()
+			util.WriteFile(fls, "/lib.ix", []byte("manifest {}"), 0600)
+			ctx := NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+				Filesystem:  fls,
+			}, nil)
+
+			mod, err := ParseModuleFromSource(parse.SourceFile{
+				NameString:  "/mod.ix",
+				Resource:    "/mod.ix",
+				ResourceDir: "/",
+				CodeString:  "manifest {}\nimport res ./lib.ix {}",
+			}, Path("/mod.ix"), ModuleParsingConfig{
+				Context: ctx,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+			if !assert.NotNil(t, mod) {
+				return
+			}
+
+			if !assert.Contains(t, mod.DirectlyImportedModules, "/lib.ix") {
+				return
+			}
+
+			importedMod := mod.DirectlyImportedModules["/lib.ix"]
+			if !assert.NotNil(t, importedMod) {
+				return
+			}
+		})
 	})
 }
 
@@ -69,7 +117,12 @@ func TestParseLocalModule(t *testing.T) {
 	t.Run("no dependencies", func(t *testing.T) {
 		modpath := writeModuleAndIncludedFiles(t, moduleName, `manifest {}`, nil)
 
-		mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
+		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
+			Context: NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{CreateFsReadPerm(Path(modpath))},
+				Filesystem:  newOsFilesystem(),
+			}, nil),
+		})
 		assert.NoError(t, err)
 
 		assert.NotNil(t, mod.MainChunk)
@@ -80,7 +133,13 @@ func TestParseLocalModule(t *testing.T) {
 	t.Run("missing manifest", func(t *testing.T) {
 		modpath := writeModuleAndIncludedFiles(t, moduleName, ``, nil)
 
-		mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
+		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
+			Context: NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{CreateFsReadPerm(Path(modpath))},
+				Filesystem:  newOsFilesystem(),
+			}, nil),
+		})
+
 		assert.ErrorContains(t, err, "missing manifest")
 		assert.NotNil(t, mod.MainChunk)
 		assert.Len(t, mod.ParsingErrors, 1)
@@ -90,13 +149,15 @@ func TestParseLocalModule(t *testing.T) {
 
 	t.Run("the file should read in the context's filesystem", func(t *testing.T) {
 		modPath := "/" + moduleName
-		ctx1 := createParsingContextWithMemFilesystem(modPath)
+		ctx1 := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{CreateFsReadPerm(Path(modPath))},
+			Filesystem:  newMemFilesystem(),
+		}, nil)
 
 		//NOTE: we do not write the file on purpose.
 
-		mod, err := ParseLocalModule(LocalModuleParsingConfig{
-			ModuleFilepath: modPath,
-			Context:        ctx1,
+		mod, err := ParseLocalModule(modPath, ModuleParsingConfig{
+			Context: ctx1,
 		})
 
 		if !assert.ErrorIs(t, err, os.ErrNotExist) {
@@ -106,15 +167,17 @@ func TestParseLocalModule(t *testing.T) {
 
 		//this time we create an empty file in the memory filesystem.
 
-		ctx2 := createParsingContextWithMemFilesystem(modPath)
+		ctx2 := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{CreateFsReadPerm(Path(modPath))},
+			Filesystem:  newMemFilesystem(),
+		}, nil)
 
 		if !assert.NoError(t, util.WriteFile(ctx2.GetFileSystem(), modPath, []byte(""), 0o700)) {
 			return
 		}
 
-		mod, err = ParseLocalModule(LocalModuleParsingConfig{
-			ModuleFilepath: modPath,
-			Context:        ctx2,
+		mod, err = ParseLocalModule(modPath, ModuleParsingConfig{
+			Context: ctx2,
 		})
 
 		if !assert.ErrorContains(t, err, ErrMissingManifest.Error()) {
@@ -126,8 +189,20 @@ func TestParseLocalModule(t *testing.T) {
 	t.Run("no dependencies + parsing error", func(t *testing.T) {
 		modpath := writeModuleAndIncludedFiles(t, moduleName, "manifest {}\n(", nil)
 
-		mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
-		assert.Error(t, err)
+		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
+			Context: NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{CreateFsReadPerm(Path(modpath))},
+				Filesystem:  newOsFilesystem(),
+			}, nil),
+		})
+
+		if !assert.Error(t, err) {
+			return
+		}
+
+		if !assert.NotNil(t, mod) {
+			return
+		}
 
 		assert.NotNil(t, mod.MainChunk)
 		assert.Empty(t, mod.IncludedChunkForest)
@@ -141,7 +216,17 @@ func TestParseLocalModule(t *testing.T) {
 			import ./dep.ix
 		`, map[string]string{"./dep.ix": "includable-chunk"})
 
-		mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
+		importedModPath := filepath.Join(filepath.Dir(modpath), "/dep.ix")
+
+		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
+			Context: NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{
+					CreateFsReadPerm(Path(modpath)),
+					CreateFsReadPerm(Path(importedModPath)),
+				},
+				Filesystem: newOsFilesystem(),
+			}, nil),
+		})
 		assert.NoError(t, err)
 
 		assert.NotNil(t, mod.MainChunk)
@@ -161,8 +246,16 @@ func TestParseLocalModule(t *testing.T) {
 			import ./dep.ix
 		`, map[string]string{"./dep.ix": "includable-chunk\n("})
 
-		mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
+		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
+			Context: NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+				Filesystem:  newOsFilesystem(),
+			}, nil),
+		})
 		assert.Error(t, err)
+		if !assert.NotNil(t, mod) {
+			return
+		}
 
 		assert.NotNil(t, mod.MainChunk)
 		assert.Len(t, mod.IncludedChunkForest, 1)
@@ -186,8 +279,15 @@ func TestParseLocalModule(t *testing.T) {
 			"./dep1.ix": "includable-chunk",
 		})
 
-		mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
-		assert.NoError(t, err)
+		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
+			Context: NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+				Filesystem:  newOsFilesystem(),
+			}, nil),
+		})
+		if !assert.NoError(t, err) {
+			return
+		}
 
 		assert.NotNil(t, mod.MainChunk)
 		assert.Len(t, mod.IncludedChunkForest, 1)
@@ -213,7 +313,12 @@ func TestParseLocalModule(t *testing.T) {
 			"./dep1.ix": "includable-chunk \n(",
 		})
 
-		mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
+		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
+			Context: NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+				Filesystem:  newOsFilesystem(),
+			}, nil),
+		})
 		assert.Error(t, err)
 
 		assert.NotNil(t, mod.MainChunk)
@@ -244,7 +349,12 @@ func TestParseLocalModule(t *testing.T) {
 			"./dep2.ix": "includable-chunk",
 		})
 
-		mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
+		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
+			Context: NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+				Filesystem:  newOsFilesystem(),
+			}, nil),
+		})
 		assert.NoError(t, err)
 
 		assert.NotNil(t, mod.MainChunk)
@@ -268,7 +378,12 @@ func TestParseLocalModule(t *testing.T) {
 			import ./dep.ix
 		`, map[string]string{"./dep.ix": "manifest {}"})
 
-		mod, err := ParseLocalModule(LocalModuleParsingConfig{ModuleFilepath: modpath, Context: createParsingContext(modpath)})
+		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
+			Context: NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+				Filesystem:  newOsFilesystem(),
+			}, nil),
+		})
 		assert.Error(t, err)
 
 		assert.Len(t, mod.ParsingErrors, 1)
@@ -285,6 +400,247 @@ func TestParseLocalModule(t *testing.T) {
 		assert.Equal(t, []*IncludedChunk{includedChunk1}, mod.FlattenedIncludedChunkList)
 	})
 
+	t.Run("module import", func(t *testing.T) {
+		t.Run("relative path", func(t *testing.T) {
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import res ./lib.ix {}
+			`, map[string]string{"./lib.ix": "manifest {}"})
+
+			importedModPath := filepath.Join(filepath.Dir(modpath), "/lib.ix")
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
+				Context: NewContexWithEmptyState(ContextConfig{
+					Permissions: []Permission{
+						CreateFsReadPerm(Path(modpath)),
+						CreateFsReadPerm(Path(importedModPath)),
+					},
+					Filesystem: newOsFilesystem(),
+				}, nil),
+			})
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Len(t, mod.ParsingErrors, 0)
+			assert.Len(t, mod.ParsingErrorPositions, 0)
+
+			assert.NotNil(t, mod.MainChunk)
+			assert.Len(t, mod.IncludedChunkForest, 0)
+			assert.NotNil(t, mod.ManifestTemplate)
+
+			if !assert.Len(t, mod.DirectlyImportedModules, 1) || !assert.Contains(t, mod.DirectlyImportedModules, importedModPath) {
+				return
+			}
+
+			importedMod := mod.DirectlyImportedModules[importedModPath]
+			if !assert.NotNil(t, importedMod) {
+				return
+			}
+		})
+
+		t.Run("absolute path", func(t *testing.T) {
+			modpath := "/" + moduleName
+			fls := newMemFilesystem()
+			util.WriteFile(fls, modpath, []byte(`
+				manifest {}
+				import res ./lib.ix {}
+			`), 0600)
+
+			util.WriteFile(fls, "/lib.ix", []byte(`manifest {}`), 0600)
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
+				Context: NewContexWithEmptyState(ContextConfig{
+					Permissions: []Permission{
+						CreateFsReadPerm(Path(modpath)),
+						CreateFsReadPerm(Path("/lib.ix")),
+					},
+					Filesystem: fls,
+				}, nil),
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Len(t, mod.ParsingErrors, 0)
+			assert.Len(t, mod.ParsingErrorPositions, 0)
+
+			assert.NotNil(t, mod.MainChunk)
+			assert.Len(t, mod.IncludedChunkForest, 0)
+			assert.NotNil(t, mod.ManifestTemplate)
+
+			if !assert.Len(t, mod.DirectlyImportedModules, 1) || !assert.Contains(t, mod.DirectlyImportedModules, "/lib.ix") {
+				return
+			}
+
+			importedMod := mod.DirectlyImportedModules["/lib.ix"]
+			if !assert.NotNil(t, importedMod) {
+				return
+			}
+		})
+
+		t.Run("imported module with a parsing error", func(t *testing.T) {
+			modpath := "/" + moduleName
+			fls := newMemFilesystem()
+			util.WriteFile(fls, modpath, []byte(`
+				manifest {}
+				import res ./lib.ix {}
+			`), 0600)
+
+			util.WriteFile(fls, "/lib.ix", []byte("manifest {}\n; a ="), 0600)
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
+				Context: NewContexWithEmptyState(ContextConfig{
+					Permissions: []Permission{
+						CreateFsReadPerm(Path(modpath)),
+						CreateFsReadPerm(Path("/lib.ix")),
+						CreateFsReadPerm(Path("/included.ix")),
+					},
+					Filesystem: fls,
+				}, nil),
+			})
+
+			if !assert.Error(t, err) {
+				return
+			}
+
+			if !assert.NotNil(t, mod) {
+				return
+			}
+
+			assert.Len(t, mod.OriginalErrors, 1)
+			assert.Len(t, mod.ParsingErrors, 1)
+			assert.Len(t, mod.ParsingErrorPositions, 1)
+
+			assert.NotNil(t, mod.MainChunk)
+			assert.Len(t, mod.IncludedChunkForest, 0)
+			assert.NotNil(t, mod.ManifestTemplate)
+
+			if !assert.Len(t, mod.DirectlyImportedModules, 1) || !assert.Contains(t, mod.DirectlyImportedModules, "/lib.ix") {
+				return
+			}
+
+			importedMod := mod.DirectlyImportedModules["/lib.ix"]
+			if !assert.NotNil(t, importedMod) {
+				return
+			}
+
+			assert.Equal(t, mod.OriginalErrors, importedMod.OriginalErrors)
+			assert.Equal(t, mod.ParsingErrors, importedMod.ParsingErrors)
+			assert.Equal(t, mod.ParsingErrorPositions, importedMod.ParsingErrorPositions)
+		})
+
+		t.Run("imported module includes a file", func(t *testing.T) {
+			modpath := "/" + moduleName
+			fls := newMemFilesystem()
+			util.WriteFile(fls, modpath, []byte(`
+				manifest {}
+				import res ./lib.ix {}
+			`), 0600)
+
+			util.WriteFile(fls, "/lib.ix", []byte("manifest {}\nimport /included.ix"), 0600)
+			util.WriteFile(fls, "/included.ix", []byte(`includable-chunk`), 0600)
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
+				Context: NewContexWithEmptyState(ContextConfig{
+					Permissions: []Permission{
+						CreateFsReadPerm(Path(modpath)),
+						CreateFsReadPerm(Path("/lib.ix")),
+						CreateFsReadPerm(Path("/included.ix")),
+					},
+					Filesystem: fls,
+				}, nil),
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Len(t, mod.ParsingErrors, 0)
+			assert.Len(t, mod.ParsingErrorPositions, 0)
+
+			assert.NotNil(t, mod.MainChunk)
+			assert.Len(t, mod.IncludedChunkForest, 0)
+			assert.NotNil(t, mod.ManifestTemplate)
+
+			if !assert.Len(t, mod.DirectlyImportedModules, 1) || !assert.Contains(t, mod.DirectlyImportedModules, "/lib.ix") {
+				return
+			}
+
+			importedMod := mod.DirectlyImportedModules["/lib.ix"]
+			if !assert.NotNil(t, importedMod) {
+				return
+			}
+
+			if !assert.Len(t, importedMod.IncludedChunkMap, 1) || !assert.Contains(t, importedMod.IncludedChunkMap, "/included.ix") {
+				return
+			}
+		})
+
+		t.Run("imported module includes a fil e containing an error", func(t *testing.T) {
+			modpath := "/" + moduleName
+			fls := newMemFilesystem()
+			util.WriteFile(fls, modpath, []byte(`
+				manifest {}
+				import res ./lib.ix {}
+			`), 0600)
+
+			util.WriteFile(fls, "/lib.ix", []byte("manifest {}\nimport /included.ix"), 0600)
+			util.WriteFile(fls, "/included.ix", []byte("includable-chunk\na ="), 0600)
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
+				Context: NewContexWithEmptyState(ContextConfig{
+					Permissions: []Permission{
+						CreateFsReadPerm(Path(modpath)),
+						CreateFsReadPerm(Path("/lib.ix")),
+						CreateFsReadPerm(Path("/included.ix")),
+					},
+					Filesystem: fls,
+				}, nil),
+			})
+
+			if !assert.Error(t, err) {
+				return
+			}
+
+			if !assert.NotNil(t, mod) {
+				return
+			}
+
+			assert.Len(t, mod.OriginalErrors, 1)
+			assert.Len(t, mod.ParsingErrors, 1)
+			assert.Len(t, mod.ParsingErrorPositions, 1)
+
+			assert.NotNil(t, mod.MainChunk)
+			assert.Len(t, mod.IncludedChunkForest, 0)
+			assert.NotNil(t, mod.ManifestTemplate)
+
+			if !assert.Len(t, mod.DirectlyImportedModules, 1) || !assert.Contains(t, mod.DirectlyImportedModules, "/lib.ix") {
+				return
+			}
+
+			importedMod := mod.DirectlyImportedModules["/lib.ix"]
+			if !assert.NotNil(t, importedMod) {
+				return
+			}
+
+			if !assert.Len(t, importedMod.IncludedChunkMap, 1) || !assert.Contains(t, importedMod.IncludedChunkMap, "/included.ix") {
+				return
+			}
+
+			includedChunk := importedMod.IncludedChunkMap["/included.ix"]
+
+			assert.Equal(t, mod.OriginalErrors, importedMod.OriginalErrors)
+			assert.Equal(t, mod.ParsingErrors, importedMod.ParsingErrors)
+			assert.Equal(t, mod.ParsingErrorPositions, importedMod.ParsingErrorPositions)
+
+			assert.Equal(t, importedMod.OriginalErrors, includedChunk.OriginalErrors)
+			assert.Equal(t, importedMod.ParsingErrors, includedChunk.ParsingErrors)
+			assert.Equal(t, importedMod.ParsingErrorPositions, includedChunk.ParsingErrorPositions)
+		})
+	})
+
 	t.Run("recovery from non existing files", func(t *testing.T) {
 		t.Run("single included file that does not exist", func(t *testing.T) {
 			modpath := writeModuleAndIncludedFiles(t, moduleName, `
@@ -292,12 +648,19 @@ func TestParseLocalModule(t *testing.T) {
 				import ./dep.ix
 			`, nil)
 
-			mod, err := ParseLocalModule(LocalModuleParsingConfig{
-				ModuleFilepath:                      modpath,
-				Context:                             createParsingContext(modpath),
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
+				Context: NewContexWithEmptyState(ContextConfig{
+					Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+					Filesystem:  newOsFilesystem(),
+				}, nil),
 				RecoverFromNonExistingIncludedFiles: true,
 			})
+
 			if !assert.Error(t, err) {
+				return
+			}
+
+			if !assert.NotNil(t, mod) {
 				return
 			}
 
@@ -323,12 +686,19 @@ func TestParseLocalModule(t *testing.T) {
 				import ./dep2.ix
 			`, map[string]string{"./dep2.ix": "includable-chunk"})
 
-			mod, err := ParseLocalModule(LocalModuleParsingConfig{
-				ModuleFilepath:                      modpath,
-				Context:                             createParsingContext(modpath),
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
+				Context: NewContexWithEmptyState(ContextConfig{
+					Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+					Filesystem:  newOsFilesystem(),
+				}, nil),
 				RecoverFromNonExistingIncludedFiles: true,
 			})
+
 			if !assert.Error(t, err) {
+				return
+			}
+
+			if !assert.NotNil(t, mod) {
 				return
 			}
 
@@ -358,12 +728,19 @@ func TestParseLocalModule(t *testing.T) {
 				import ./dep2.ix
 			`, nil)
 
-			mod, err := ParseLocalModule(LocalModuleParsingConfig{
-				ModuleFilepath:                      modpath,
-				Context:                             createParsingContext(modpath),
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
+				Context: NewContexWithEmptyState(ContextConfig{
+					Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+					Filesystem:  newOsFilesystem(),
+				}, nil),
 				RecoverFromNonExistingIncludedFiles: true,
 			})
+
 			if !assert.Error(t, err) {
+				return
+			}
+
+			if !assert.NotNil(t, mod) {
 				return
 			}
 
@@ -393,4 +770,45 @@ func TestParseLocalModule(t *testing.T) {
 
 func TestManifestPreinit(t *testing.T) {
 	//TODO
+}
+
+// writeModuleAndIncludedFiles write a module & it's included files in a temporary directory on the OS filesystem.
+func writeModuleAndIncludedFiles(t *testing.T, mod string, modContent string, dependencies map[string]string) string {
+	dir := t.TempDir()
+	modPath := filepath.Join(dir, mod)
+
+	assert.NoError(t, os.WriteFile(modPath, []byte(modContent), 0o400))
+
+	for name, content := range dependencies {
+		assert.NoError(t, os.WriteFile(filepath.Join(dir, name), []byte(content), 0o400))
+	}
+
+	return modPath
+}
+
+func createParsingContext(modpath string) *Context {
+	pathPattern := PathPattern(Path(modpath).DirPath() + "...")
+	return NewContexWithEmptyState(ContextConfig{
+		Permissions: []Permission{CreateFsReadPerm(pathPattern)},
+		Filesystem:  newOsFilesystem(),
+	}, nil)
+}
+
+func newOsFilesystem() afs.Filesystem {
+	fs := polyfill.New(osfs.Default)
+
+	return afs.AddAbsoluteFeature(fs, func(path string) (string, error) {
+		return filepath.Abs(path)
+	})
+}
+
+func newMemFilesystem() afs.Filesystem {
+	fs := memfs.New()
+
+	return afs.AddAbsoluteFeature(fs, func(path string) (string, error) {
+		if path[0] == '/' {
+			return path, nil
+		}
+		return "", ErrNotImplemented
+	})
 }

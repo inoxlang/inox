@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/go-git/go-billy/v5"
 
@@ -25,6 +26,8 @@ const (
 	MOD_ARGS_VARNAME                        = "mod-args"
 	MAX_PREINIT_FILE_SIZE                   = int32(100_000)
 	DEFAULT_MAX_READ_FILE_SIZE              = int32(100_000_000)
+
+	MOD_IMPORT_FETCH_TIMEOUT = 5 * time.Second
 )
 
 var (
@@ -38,16 +41,20 @@ var (
 // A Module represents an Inox module, it does not hold any state and should NOT be modified. Module implements Value.
 type Module struct {
 	ModuleKind
+
 	MainChunk                  *parse.ParsedChunk
 	IncludedChunkForest        []*IncludedChunk
 	FlattenedIncludedChunkList []*IncludedChunk
 	InclusionStatementMap      map[*parse.InclusionImportStatement]*IncludedChunk
 	IncludedChunkMap           map[string]*IncludedChunk
-	ManifestTemplate           *parse.Manifest
-	Bytecode                   *Bytecode
-	ParsingErrors              []Error
-	ParsingErrorPositions      []parse.SourcePositionRange
-	OriginalErrors             []*parse.ParsingError //len(.OriginalErrors) <= len(.ParsingErrors)
+
+	DirectlyImportedModules map[string]*Module
+
+	ManifestTemplate      *parse.Manifest
+	Bytecode              *Bytecode
+	ParsingErrors         []Error
+	ParsingErrorPositions []parse.SourcePositionRange
+	OriginalErrors        []*parse.ParsingError //len(.OriginalErrors) <= len(.ParsingErrors)
 
 	//.errors property accessible from scripts
 	errorsPropSet atomic.Bool
@@ -175,7 +182,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 		}
 	}
 
-	// check object literal
+	// check manifest
 	{
 		var checkErrs []*StaticCheckError
 		checkManifestObject(manifestStaticCheckArguments{
@@ -492,16 +499,7 @@ func ParseInMemoryModule(codeString Str, config InMemoryModuleParsingConfig) (*M
 	return mod, CombineParsingErrorValues(mod.ParsingErrors, mod.ParsingErrorPositions)
 }
 
-type LocalModuleParsingConfig struct {
-	ModuleFilepath                      string
-	Context                             *Context //this context is used for checking permissions & getting the filesystem
-	RecoverFromNonExistingIncludedFiles bool
-	//DefaultLimitations          []Limitation
-	//CustomPermissionTypeHandler CustomPermissionTypeHandler
-}
-
-func ParseLocalModule(config LocalModuleParsingConfig) (*Module, error) {
-	fpath := config.ModuleFilepath
+func ParseLocalModule(fpath string, config ModuleParsingConfig) (*Module, error) {
 	ctx := config.Context
 	fls := ctx.GetFileSystem()
 	absPath, err := fls.Absolute(fpath)
@@ -556,9 +554,22 @@ func ParseLocalModule(config LocalModuleParsingConfig) (*Module, error) {
 		IsResourceURL: false,
 	}
 
+	return ParseModuleFromSource(src, Path(fpath), config)
+}
+
+type ModuleParsingConfig struct {
+	Context                             *Context //this context is used for checking permissions & getting the filesystem
+	RecoverFromNonExistingIncludedFiles bool
+	IgnoreBadlyConfiguredModuleImports  bool
+	InsecureModImports                  bool
+	//DefaultLimitations          []Limitation
+	//CustomPermissionTypeHandler CustomPermissionTypeHandler
+}
+
+func ParseModuleFromSource(src parse.ChunkSource, resource ResourceName, config ModuleParsingConfig) (*Module, error) {
 	code, err := parse.ParseChunkSource(src)
 	if err != nil && code == nil {
-		return nil, fmt.Errorf("failed to parse %s: %w", fpath, err)
+		return nil, fmt.Errorf("failed to parse %s: %w", resource.ResourceName(), err)
 	}
 
 	if err != nil {
@@ -592,10 +603,10 @@ func ParseLocalModule(config LocalModuleParsingConfig) (*Module, error) {
 
 	// add error if manifest is missing
 	if code.Node.Manifest == nil {
-		err := NewError(fmt.Errorf("missing manifest in module %s: the file should start with 'manifest {}'", fpath), Path(fpath))
+		err := NewError(fmt.Errorf("missing manifest in module %s: the file should start with 'manifest {}'", src.Name()), resource)
 		mod.ParsingErrors = append(mod.ParsingErrors, err)
 		mod.ParsingErrorPositions = append(mod.ParsingErrorPositions, parse.SourcePositionRange{
-			SourceName:  fpath,
+			SourceName:  src.Name(),
 			StartLine:   1,
 			StartColumn: 1,
 			EndLine:     1,
@@ -604,15 +615,30 @@ func ParseLocalModule(config LocalModuleParsingConfig) (*Module, error) {
 		})
 	}
 
-	err = ParseLocalIncludedFiles(mod, ctx, fls, config.RecoverFromNonExistingIncludedFiles)
-	if err != nil {
-		return nil, err
+	ctx := config.Context
+	fls := ctx.GetFileSystem()
+
+	unrecoverableError := ParseLocalIncludedFiles(mod, ctx, fls, config.RecoverFromNonExistingIncludedFiles)
+	if unrecoverableError != nil {
+		return nil, unrecoverableError
+	}
+
+	unrecoverableError = fetchParseImportedModules(mod, ctx, fls, importedModulesFetchConfig{
+		recoverFromNonExistingFiles:  config.RecoverFromNonExistingIncludedFiles,
+		ignoreBadlyConfiguredImports: config.IgnoreBadlyConfiguredModuleImports,
+		timeout:                      MOD_IMPORT_FETCH_TIMEOUT,
+		insecure:                     config.InsecureModImports,
+		subModuleParsing:             config,
+	})
+
+	if unrecoverableError != nil {
+		return nil, unrecoverableError
 	}
 
 	return mod, CombineParsingErrorValues(mod.ParsingErrors, mod.ParsingErrorPositions)
 }
 
-func ParseLocalIncludedFiles(mod *Module, ctx *Context, fls afs.Filesystem, recoverFromNonExistingIncludedFiles bool) error {
+func ParseLocalIncludedFiles(mod *Module, ctx *Context, fls afs.Filesystem, recoverFromNonExistingIncludedFiles bool) (unrecoverableError error) {
 	src := mod.MainChunk.Source.(parse.SourceFile)
 
 	inclusionStmts := parse.FindNodes(mod.MainChunk.Node, &parse.InclusionImportStatement{}, nil)
@@ -785,7 +811,7 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 
 	mod.IncludedChunkMap[absPath] = includedChunk
 
-	inclusionStmts := parse.FindNodes(chunk.Node, &parse.InclusionImportStatement{}, nil)
+	inclusionStmts := parse.FindNodes(chunk.Node, (*parse.InclusionImportStatement)(nil), nil)
 
 	for _, stmt := range inclusionStmts {
 		path, isAbsolute := stmt.PathSource()

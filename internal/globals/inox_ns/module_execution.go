@@ -72,8 +72,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	}
 	args.Fpath = absPath
 
-	module, parsingErr := core.ParseLocalModule(core.LocalModuleParsingConfig{
-		ModuleFilepath:                      args.Fpath,
+	module, parsingErr := core.ParseLocalModule(args.Fpath, core.ModuleParsingConfig{
 		Context:                             args.ParsingCompilationContext,
 		RecoverFromNonExistingIncludedFiles: args.DevMode,
 	})
