@@ -938,7 +938,8 @@ switch_:
 			}
 			src, err := getSourceFromImportSource(value, c.currentModule, c.checkInput.State.Ctx)
 			if err != nil {
-				panic(err)
+				c.addError(node, fmt.Sprintf("failed to resolve location of imported module: %s", err.Error()))
+				return parse.Continue
 			}
 			importedModuleSource = src
 		default:
