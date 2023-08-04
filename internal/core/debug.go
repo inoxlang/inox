@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"sync"
 	"sync/atomic"
 
@@ -297,6 +298,10 @@ func (d *Debugger) Threads() (threads []ThreadInfo) {
 			Id:   debugger.threadId(),
 		})
 	}
+
+	sort.Slice(threads, func(i, j int) bool {
+		return threads[i].Id < threads[j].Id
+	})
 
 	return
 }
