@@ -280,6 +280,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	// static check
 
 	staticCheckData, staticCheckErr := core.StaticCheck(core.StaticCheckInput{
+		State:   state,
 		Module:  mod,
 		Node:    mod.MainChunk.Node,
 		Chunk:   mod.MainChunk,
@@ -467,6 +468,7 @@ func PrepareDevModeIncludableChunkfile(args IncludableChunkfilePreparationArgs) 
 	// static check
 
 	staticCheckData, staticCheckErr := core.StaticCheck(core.StaticCheckInput{
+		State:             state,
 		Module:            mod,
 		Node:              mod.MainChunk.Node,
 		Chunk:             mod.MainChunk,

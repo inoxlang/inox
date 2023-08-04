@@ -636,6 +636,7 @@ func setupAdvancedTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalS
 	}
 
 	staticData, err := core.StaticCheck(core.StaticCheckInput{
+		State:             state,
 		Node:              state.Module.MainChunk.Node,
 		Module:            state.Module,
 		Chunk:             state.Module.MainChunk,
@@ -929,6 +930,7 @@ func createHandlers(t *testing.T, code string) (*core.InoxFunction, *core.InoxFu
 	}
 
 	staticCheckData, err := core.StaticCheck(core.StaticCheckInput{
+		State:  core.NewGlobalState(core.NewContext(core.ContextConfig{})),
 		Node:   chunk.Node,
 		Module: module,
 		Chunk:  module.MainChunk,

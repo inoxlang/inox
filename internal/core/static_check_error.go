@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	MODULE_IMPORTS_NOT_ALLOWED_IN_INCLUDED_CHUNK = "modules imports are no allowed in included chunks"
+	MODULE_IMPORTS_NOT_ALLOWED_IN_INCLUDED_CHUNK = "modules imports are not allowed in included chunks"
 
 	//manifest
 	NO_SPREAD_IN_MANIFEST                           = "objects & lists in the manifest cannot contain spread elements"

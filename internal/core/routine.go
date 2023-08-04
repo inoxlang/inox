@@ -90,6 +90,7 @@ func SpawnRoutine(args RoutineSpawnArgs) (*Routine, error) {
 	}
 
 	staticCheckData, err := StaticCheck(StaticCheckInput{
+		State:             args.SpawnerState,
 		Node:              args.Module.MainChunk.Node,
 		Module:            args.Module,
 		Chunk:             args.Module.MainChunk,

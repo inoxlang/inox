@@ -70,6 +70,7 @@ func TestTreeWalkEval(t *testing.T) {
 
 		if doSymbolicCheck {
 			staticCheckData, err := StaticCheck(StaticCheckInput{
+				State:             s,
 				Node:              mod.MainChunk.Node,
 				Module:            mod,
 				Chunk:             mod.MainChunk,
@@ -156,6 +157,7 @@ func bytecodeTest(t *testing.T, optimize bool) {
 
 		if doCheck { // TODO: enable checks by default ?
 			staticCheckData, err := StaticCheck(StaticCheckInput{
+				State:             s,
 				Node:              mod.MainChunk.Node,
 				Module:            mod,
 				Chunk:             mod.MainChunk,

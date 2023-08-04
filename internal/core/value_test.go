@@ -228,6 +228,7 @@ func parseEval(t *testing.T, s string) Value {
 	mod, err := parse.ParseChunk(s, "")
 	assert.NoError(t, err)
 	_, err = StaticCheck(StaticCheckInput{
+		State: NewGlobalState(NewContext(ContextConfig{})),
 		Node:  mod,
 		Chunk: chunk,
 	})

@@ -34,11 +34,12 @@ type GlobalState struct {
 	SystemGraph  *SystemGraph
 	lockedValues []PotentiallySharable
 
-	GetBaseGlobalsForImportedModule  func(ctx *Context, manifest *Manifest) (GlobalVariables, error) // ok if nil
-	GetBasePatternsForImportedModule func() (map[string]Pattern, map[string]*PatternNamespace)       // ok if nil
-	Out                              io.Writer                                                       //nil by default
-	Logger                           zerolog.Logger                                                  //nil by default
-	Debugger                         atomic.Value                                                    //nil or (nillable) *Debugger
+	GetBaseGlobalsForImportedModule      func(ctx *Context, manifest *Manifest) (GlobalVariables, error) // ok if nil
+	GetBasePatternsForImportedModule     func() (map[string]Pattern, map[string]*PatternNamespace)       // ok if nil
+	SymbolicBaseGlobalsForImportedModule map[string]symbolic.SymbolicValue                               // ok if nil, should not be modified
+	Out                                  io.Writer                                                       //io.Discard by default
+	Logger                               zerolog.Logger                                                  //zerolog.Logger(io.Discard) by default
+	Debugger                             atomic.Value                                                    //nil or (nillable) *Debugger
 
 	MainState            *GlobalState //never nil
 	id                   StateId
@@ -65,6 +66,9 @@ func NewGlobalState(ctx *Context, constants ...map[string]Value) *GlobalState {
 		Ctx:              ctx,
 		SymbolicData:     &SymbolicData{SymbolicData: symbolic.NewSymbolicData()},
 		descendantStates: make(map[ResourceName]*GlobalState, 0),
+
+		Out:    io.Discard,
+		Logger: zerolog.New(io.Discard),
 	}
 	ctx.state = state
 

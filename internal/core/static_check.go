@@ -30,6 +30,10 @@ var (
 // StaticCheck performs various checks on an AST, like checking duplicate declarations and keys or checking that statements like return,
 // break and continue are not misplaced. No type checks are performed.
 func StaticCheck(input StaticCheckInput) (*StaticCheckData, error) {
+	if input.State == nil {
+		return nil, errors.New("missing state")
+	}
+
 	globals := make(map[parse.Node]map[string]globalVarInfo)
 
 	var module parse.Node //ok if nil
@@ -100,6 +104,7 @@ type checker struct {
 	currentModule            *Module //can be nil
 	chunk                    *parse.ParsedChunk
 	inclusionImportStatement *parse.InclusionImportStatement // can be nil
+	moduleImportStatement    *parse.ImportStatement          //can be nil
 	parentChecker            *checker                        //can be nil
 	checkInput               StaticCheckInput
 
@@ -122,7 +127,7 @@ type checker struct {
 
 	shellLocalVars map[string]bool
 
-	store map[parse.Node]interface{}
+	store map[parse.Node]any
 
 	data *StaticCheckData
 }
@@ -185,7 +190,13 @@ func (checker *checker) getSourcePositionStack(node parse.Node) parse.SourcePosi
 	var sourcePositionStack parse.SourcePositionStack
 
 	if checker.parentChecker != nil {
-		sourcePositionStack = checker.parentChecker.getSourcePositionStack(checker.inclusionImportStatement)
+		var importStmt parse.Node
+		if checker.inclusionImportStatement != nil {
+			importStmt = checker.inclusionImportStatement
+		} else if checker.moduleImportStatement != nil {
+			importStmt = checker.moduleImportStatement
+		}
+		sourcePositionStack = checker.parentChecker.getSourcePositionStack(importStmt)
 	}
 
 	sourcePositionStack = append(sourcePositionStack, checker.chunk.GetSourcePosition(node.Base().Span))
@@ -778,11 +789,13 @@ switch_:
 		globals := make(map[parse.Node]map[string]globalVarInfo)
 		globals[includedChunk.Node] = map[string]globalVarInfo{}
 
+		//add globals to child checker
 		c.checkInput.Globals.Foreach(func(name string, v Value, isStartConstant bool) error {
 			globals[includedChunk.Node][name] = globalVarInfo{isConst: isStartConstant}
 			return nil
 		})
 
+		//add defined patterns & pattern namespaces to child checker
 		patterns := make(map[parse.Node]map[string]int)
 		patterns[includedChunk.Node] = map[string]int{}
 		for k := range c.checkInput.Patterns {
@@ -807,7 +820,7 @@ switch_:
 			currentModule:            c.currentModule,
 			chunk:                    includedChunk.ParsedChunk,
 			inclusionImportStatement: node,
-			store:                    make(map[parse.Node]interface{}),
+			store:                    make(map[parse.Node]any),
 			data: &StaticCheckData{
 				fnData:      map[*parse.FunctionExpression]*FunctionStaticData{},
 				mappingData: map[*parse.MappingExpression]*MappingStaticData{},
@@ -910,6 +923,92 @@ switch_:
 			return parse.Continue
 		}
 		variables[name] = globalVarInfo{isConst: true}
+
+		if c.inclusionImportStatement != nil || node.Source == nil {
+			return parse.Continue
+		}
+
+		var importedModuleSource WrappedString
+
+		switch node.Source.(type) {
+		case *parse.URLLiteral, *parse.AbsolutePathLiteral, *parse.RelativePathLiteral:
+			value, err := evalSimpleValueLiteral(node.Source.(parse.SimpleValueLiteral), nil)
+			if err != nil {
+				panic(ErrUnreachable)
+			}
+			src, err := getSourceFromImportSource(value, c.currentModule, c.checkInput.State.Ctx)
+			if err != nil {
+				panic(err)
+			}
+			importedModuleSource = src
+		default:
+			return parse.Continue
+		}
+
+		importedModule := c.currentModule.DirectlyImportedModules[importedModuleSource.UnderlyingString()]
+		importModuleNode := importedModule.MainChunk.Node
+
+		globals := make(map[parse.Node]map[string]globalVarInfo)
+		globals[importModuleNode] = map[string]globalVarInfo{}
+
+		//add base globals to child checker
+		for globalName := range c.checkInput.State.SymbolicBaseGlobalsForImportedModule {
+			globals[importModuleNode][globalName] = globalVarInfo{isConst: true}
+		}
+
+		//add base patterns & pattern namespaces to child checker
+		var (
+			basePatterns          map[string]Pattern
+			basePatternNamespaces map[string]*PatternNamespace
+		)
+		if c.checkInput.State.GetBasePatternsForImportedModule != nil {
+			basePatterns, basePatternNamespaces = c.checkInput.State.GetBasePatternsForImportedModule()
+		}
+
+		patterns := make(map[parse.Node]map[string]int)
+		patterns[importModuleNode] = map[string]int{}
+		for k := range basePatterns {
+			patterns[importModuleNode][k] = 0
+		}
+
+		patternNamespaces := make(map[parse.Node]map[string]int)
+		patternNamespaces[importModuleNode] = map[string]int{}
+		for k := range basePatternNamespaces {
+			patternNamespaces[importModuleNode][k] = 0
+		}
+
+		chunkChecker := &checker{
+			parentChecker:         c,
+			checkInput:            c.checkInput,
+			fnDecls:               make(map[parse.Node]map[string]int),
+			globalVars:            globals,
+			localVars:             make(map[parse.Node]map[string]localVarInfo),
+			properties:            make(map[*parse.ObjectLiteral]*propertyInfo),
+			patterns:              patterns,
+			patternNamespaces:     patternNamespaces,
+			currentModule:         importedModule,
+			chunk:                 importedModule.MainChunk,
+			moduleImportStatement: node,
+			store:                 make(map[parse.Node]any),
+			data: &StaticCheckData{
+				fnData:      map[*parse.FunctionExpression]*FunctionStaticData{},
+				mappingData: map[*parse.MappingExpression]*MappingStaticData{},
+			},
+		}
+
+		err := chunkChecker.check(importModuleNode)
+		if err != nil {
+			panic(err)
+		}
+
+		if len(chunkChecker.data.errors) != 0 {
+			c.data.errors = append(c.data.errors, chunkChecker.data.errors...)
+		}
+
+		if v, ok := chunkChecker.store[importModuleNode]; ok {
+			panic(fmt.Errorf("data stored for included chunk %#v : %#v", importModuleNode, v))
+		}
+
 	case *parse.GlobalConstantDeclarations:
 		globalVars := c.getModGlobalVars(closestModule)
 
@@ -2284,6 +2383,7 @@ func combineStaticCheckErrors(errs ...*StaticCheckError) error {
 }
 
 type StaticCheckInput struct {
+	State                  *GlobalState //mainly used when checking imported modules
 	Node                   parse.Node
 	Module                 *Module
 	Chunk                  *parse.ParsedChunk

@@ -1196,6 +1196,7 @@ func (sh *shell) parseModule(inputString string) (*core.Module, error) {
 
 func (sh *shell) checkModule(mod *core.Module) (*core.StaticCheckData, *symbolic.SymbolicData, error) {
 	staticCheckData, checkErr := core.StaticCheck(core.StaticCheckInput{
+		State:             sh.state.Global,
 		Node:              mod.MainChunk.Node,
 		Chunk:             mod.MainChunk,
 		Module:            mod,

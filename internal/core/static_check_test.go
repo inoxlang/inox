@@ -4,11 +4,13 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	jsoniter "github.com/json-iterator/go"
 
@@ -31,6 +33,9 @@ func TestCheck(t *testing.T) {
 	}
 
 	staticCheckNoData := func(input StaticCheckInput) error {
+		if input.State == nil {
+			input.State = NewGlobalState(NewContext(ContextConfig{}))
+		}
 		_, err := StaticCheck(input)
 		return err
 	}
@@ -928,6 +933,7 @@ func TestCheck(t *testing.T) {
 			`)
 
 			data, err := StaticCheck(StaticCheckInput{
+				State:    NewGlobalState(NewContext(ContextConfig{})),
 				Node:     n,
 				Chunk:    src,
 				Patterns: map[string]Pattern{"int": INT_PATTERN},
@@ -997,6 +1003,7 @@ func TestCheck(t *testing.T) {
 			`)
 
 			data, err := StaticCheck(StaticCheckInput{
+				State:    NewGlobalState(NewContext(ContextConfig{})),
 				Node:     n,
 				Chunk:    src,
 				Patterns: map[string]Pattern{"int": INT_PATTERN},
@@ -1082,7 +1089,11 @@ func TestCheck(t *testing.T) {
 			`)
 
 			fnExpr := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
-			data, err := StaticCheck(StaticCheckInput{Node: n, Chunk: src})
+			data, err := StaticCheck(StaticCheckInput{
+				State: NewGlobalState(NewContext(ContextConfig{})),
+				Node:  n,
+				Chunk: src,
+			})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -1104,7 +1115,11 @@ func TestCheck(t *testing.T) {
 			`)
 
 			fnExpr := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
-			data, err := StaticCheck(StaticCheckInput{Node: n, Chunk: src})
+			data, err := StaticCheck(StaticCheckInput{
+				State: NewGlobalState(NewContext(ContextConfig{})),
+				Node:  n,
+				Chunk: src,
+			})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -1123,7 +1138,11 @@ func TestCheck(t *testing.T) {
 			`)
 
 			fnExpr := parse.FindNodes(n, (*parse.FunctionExpression)(nil), nil)[1]
-			data, err := StaticCheck(StaticCheckInput{Node: n, Chunk: src})
+			data, err := StaticCheck(StaticCheckInput{
+				State: NewGlobalState(NewContext(ContextConfig{})),
+				Node:  n,
+				Chunk: src,
+			})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -1145,7 +1164,11 @@ func TestCheck(t *testing.T) {
 			`)
 
 			fnExpr := parse.FindNodes(n, (*parse.FunctionExpression)(nil), nil)[2]
-			data, err := StaticCheck(StaticCheckInput{Node: n, Chunk: src})
+			data, err := StaticCheck(StaticCheckInput{
+				State: NewGlobalState(NewContext(ContextConfig{})),
+				Node:  n,
+				Chunk: src,
+			})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -1166,7 +1189,11 @@ func TestCheck(t *testing.T) {
 			`)
 
 			fnExpr := parse.FindNodes(n, (*parse.FunctionExpression)(nil), nil)[1]
-			data, err := StaticCheck(StaticCheckInput{Node: n, Chunk: src})
+			data, err := StaticCheck(StaticCheckInput{
+				State: NewGlobalState(NewContext(ContextConfig{})),
+				Node:  n,
+				Chunk: src,
+			})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -1190,7 +1217,11 @@ func TestCheck(t *testing.T) {
 			`)
 
 			fnExpr := parse.FindNodes(n, (*parse.FunctionExpression)(nil), nil)[2]
-			data, err := StaticCheck(StaticCheckInput{Node: n, Chunk: src})
+			data, err := StaticCheck(StaticCheckInput{
+				State: NewGlobalState(NewContext(ContextConfig{})),
+				Node:  n,
+				Chunk: src,
+			})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -1206,7 +1237,11 @@ func TestCheck(t *testing.T) {
 			`)
 
 			fnExpr := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
-			data, err := StaticCheck(StaticCheckInput{Node: n, Chunk: src})
+			data, err := StaticCheck(StaticCheckInput{
+				State: NewGlobalState(NewContext(ContextConfig{})),
+				Node:  n,
+				Chunk: src,
+			})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -1226,7 +1261,11 @@ func TestCheck(t *testing.T) {
 			`)
 
 			fnExpr := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
-			data, err := StaticCheck(StaticCheckInput{Node: n, Chunk: src})
+			data, err := StaticCheck(StaticCheckInput{
+				State: NewGlobalState(NewContext(ContextConfig{})),
+				Node:  n,
+				Chunk: src,
+			})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -1610,11 +1649,36 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("global variable defined by import statement", func(t *testing.T) {
-			n, src := parseCode(`
-				import result https://example.com/script.ix {}
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import result ./dep.ix {}
 				$$result
-			`)
-			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+			`, map[string]string{
+				"./dep.ix": `
+					manifest {}
+				`,
+			})
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			state := NewGlobalState(NewContext(ContextConfig{
+				Permissions: []Permission{
+					FilesystemPermission{Kind_: permkind.Read, Entity: PathPattern("/...")},
+				},
+				Filesystem: newOsFilesystem(),
+			}))
+			state.Module = mod
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				State:  state,
+				Module: mod,
+				Node:   mod.MainChunk.Node,
+				Chunk:  mod.MainChunk,
+			}))
 		})
 	})
 
@@ -1729,6 +1793,33 @@ func TestCheck(t *testing.T) {
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			assert.NoError(t, err)
 
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				Module: mod,
+				Node:   mod.MainChunk.Node,
+				Chunk:  mod.MainChunk,
+			}))
+		})
+
+		t.Run("two included files with no dependecies", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import ./dep1.ix
+				import ./dep2.ix
+				return (a + b)
+			`, map[string]string{
+				"./dep1.ix": `
+					includable-chunk
+					a = 1
+				`,
+				"./dep2.ix": `
+					includable-chunk
+					b = 2
+				`,
+			})
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			assert.NoError(t, err)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				Module: mod,
 				Node:   mod.MainChunk.Node,
@@ -1860,20 +1951,110 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("two included files with no dependecies", func(t *testing.T) {
+	})
+
+	t.Run("import statement", func(t *testing.T) {
+		createState := func(mod *Module) *GlobalState {
+			state := NewGlobalState(NewContext(ContextConfig{
+				Permissions: []Permission{
+					FilesystemPermission{Kind_: permkind.Read, Entity: PathPattern("/...")},
+				},
+				Filesystem: newOsFilesystem(),
+			}))
+			state.Module = mod
+			return state
+		}
+
+		t.Run("single imported module with no dependencies", func(t *testing.T) {
 			moduleName := "mymod.ix"
 			modpath := writeModuleAndIncludedFiles(t, moduleName, `
 				manifest {}
-				import ./dep1.ix
-				import ./dep2.ix
-				return (a + b)
+				import res ./dep.ix {}
+				return res
+			`, map[string]string{"./dep.ix": "manifest {}\n a = 1"})
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			assert.NoError(t, err)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				State:  createState(mod),
+				Module: mod,
+				Node:   mod.MainChunk.Node,
+				Chunk:  mod.MainChunk,
+			}))
+		})
+
+		t.Run("single imported module should have access to base patterns if set", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import res ./dep.ix {}
+				return res
+			`, map[string]string{"./dep.ix": `
+				manifest {}
+				a = 1
+				pattern = %x
+				namespace = %ix.
+			`})
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			assert.NoError(t, err)
+
+			state := createState(mod)
+			state.GetBasePatternsForImportedModule = func() (map[string]Pattern, map[string]*PatternNamespace) {
+				return map[string]Pattern{
+						"x": INT_PATTERN,
+					}, map[string]*PatternNamespace{
+						"ix": DEFAULT_PATTERN_NAMESPACES["inox"],
+					}
+			}
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				State:  state,
+				Module: mod,
+				Node:   mod.MainChunk.Node,
+				Chunk:  mod.MainChunk,
+			}))
+		})
+
+		t.Run("single imported module should have access to base globals if set", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import res ./dep.ix {}
+				return res
+			`, map[string]string{"./dep.ix": `
+				manifest {}
+				b = $$a
+			`})
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			assert.NoError(t, err)
+
+			state := createState(mod)
+			state.SymbolicBaseGlobalsForImportedModule = map[string]symbolic.SymbolicValue{"a": symbolic.NewInt(1)}
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				State:  state,
+				Module: mod,
+				Node:   mod.MainChunk.Node,
+				Chunk:  mod.MainChunk,
+			}))
+		})
+
+		t.Run("two imported module with no dependecies", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import res1 ./dep1.ix {}
+				import res2 ./dep2.ix {}
 			`, map[string]string{
 				"./dep1.ix": `
-					includable-chunk
+					manifest {}
 					a = 1
 				`,
 				"./dep2.ix": `
-					includable-chunk
+					manifest {}
 					b = 2
 				`,
 			})
@@ -1881,6 +2062,162 @@ func TestCheck(t *testing.T) {
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			assert.NoError(t, err)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				State:  createState(mod),
+				Module: mod,
+				Node:   mod.MainChunk.Node,
+				Chunk:  mod.MainChunk,
+			}))
+		})
+
+		t.Run("single imported module with no dependencies: error in imported module", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import res ./dep.ix {}
+			`, map[string]string{"./dep.ix": "manifest {}\n a = b"})
+			importedModulePath := filepath.Join(filepath.Dir(modpath), "dep.ix")
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			assert.NoError(t, err)
+
+			err = staticCheckNoData(StaticCheckInput{
+				State:  createState(mod),
+				Module: mod,
+				Node:   mod.MainChunk.Node,
+				Chunk:  mod.MainChunk,
+			})
+
+			expectedErr := combineErrors(
+				NewStaticCheckError(fmtVarIsNotDeclared("b"), parse.SourcePositionStack{
+					parse.SourcePositionRange{
+						SourceName:  mod.MainChunk.Name(),
+						StartLine:   3,
+						StartColumn: 5,
+					},
+					parse.SourcePositionRange{
+						SourceName:  importedModulePath,
+						StartLine:   2,
+						StartColumn: 6,
+					},
+				}),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("single imported module with no dependencies: same constant declaration", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				const a = 1
+				manifest {}
+				import res ./dep.ix {}
+			`, map[string]string{"./dep.ix": "const a = 2\nmanifest {}"})
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			assert.NoError(t, err)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				State:  createState(mod),
+				Module: mod,
+				Node:   mod.MainChunk.Node,
+				Chunk:  mod.MainChunk,
+			}))
+		})
+
+		t.Run("single imported module which includes a file", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import res ./dep2.ix {}
+			`, map[string]string{
+				"./dep2.ix": `
+					manifest {}
+					import ./dep1.ix
+				`,
+				"./dep1.ix": `
+					includable-chunk
+					a = 1
+				`,
+			})
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			assert.NoError(t, err)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				State:  createState(mod),
+				Module: mod,
+				Node:   mod.MainChunk.Node,
+				Chunk:  mod.MainChunk,
+			}))
+		})
+
+		t.Run("single imported module which includes a file with a static check error", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import res ./dep2.ix {}
+			`, map[string]string{
+				"./dep2.ix": `
+					manifest {}
+					import ./dep1.ix
+				`,
+				"./dep1.ix": `
+					includable-chunk
+					a = b
+				`,
+			})
+			importedModulePath := filepath.Join(filepath.Dir(modpath), "dep2.ix")
+			includedFilePath := filepath.Join(filepath.Dir(modpath), "dep1.ix")
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			assert.NoError(t, err)
+
+			err = staticCheckNoData(StaticCheckInput{
+				State:  createState(mod),
+				Module: mod,
+				Node:   mod.MainChunk.Node,
+				Chunk:  mod.MainChunk,
+			})
+
+			expectedErr := combineErrors(
+				NewStaticCheckError(fmtVarIsNotDeclared("b"), parse.SourcePositionStack{
+					parse.SourcePositionRange{
+						SourceName:  modpath,
+						StartLine:   3,
+						StartColumn: 5,
+					},
+					parse.SourcePositionRange{
+						SourceName:  importedModulePath,
+						StartLine:   3,
+						StartColumn: 6,
+					},
+					parse.SourcePositionRange{
+						SourceName:  includedFilePath,
+						StartLine:   3,
+						StartColumn: 10,
+					},
+				}),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("imported module which itself imports a module", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import res ./dep.ix {}
+			`, map[string]string{
+				"./dep.ix": `
+					manifest {}
+					import res ./lib.ix {}
+				`,
+				"./lib.ix": `
+					manifest {}
+				`,
+			})
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			assert.NoError(t, err)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				State:  createState(mod),
 				Module: mod,
 				Node:   mod.MainChunk.Node,
 				Chunk:  mod.MainChunk,

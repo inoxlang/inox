@@ -497,6 +497,7 @@ func runStartupScript(startupScriptPath string, outW io.Writer) (*core.Object, *
 	//
 
 	staticCheckData, err := core.StaticCheck(core.StaticCheckInput{
+		State:             state,
 		Node:              startupMod.MainChunk.Node,
 		Chunk:             startupMod.MainChunk,
 		Patterns:          state.Ctx.GetNamedPatterns(),
