@@ -282,6 +282,8 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 
 			core.WebsocketPermission{Kind_: permkind.Provide},
 			core.HttpPermission{Kind_: permkind.Provide, Entity: core.ANY_HTTPS_HOST_PATTERN},
+			core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("https://**:8080")},
+
 			core.HttpPermission{Kind_: permkind.Read, Entity: core.ANY_HTTPS_HOST_PATTERN},
 			core.HttpPermission{Kind_: permkind.Write, Entity: core.ANY_HTTPS_HOST_PATTERN},
 
