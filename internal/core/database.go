@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
@@ -19,6 +20,10 @@ var (
 	ErrNonUniqueDbOpenFnRegistration                = errors.New("non unique open DB function registration")
 	ErrNameCollisionWithInitialDatabasePropertyName = errors.New("name collision with initial database property name")
 	ErrTopLevelEntitiesAlreadyLoaded                = errors.New("top-level entities already loaded")
+	ErrDatabaseSchemaOnlyUpdatableByOwnerState      = errors.New("database schema can only be updated by owner state")
+	ErrNoneDatabaseSchemaUpdateExpected             = errors.New("none database schema update is expected")
+	ErrDatabaseSchemaAlreadyUpdatedOrNotAllowed     = errors.New("database schema already updated or no longer allowed")
+	ErrInvalidAccessSchemaNotUpdatedYet             = errors.New("access to database is not allowed because schema is not updated yet")
 
 	DATABASE_PROPNAMES = []string{"update_schema", "close", "schema"}
 
@@ -27,8 +32,13 @@ var (
 )
 
 type DatabaseIL struct {
-	inner            Database
-	initialSchema    *ObjectPattern
+	inner                Database
+	initialSchema        *ObjectPattern
+	schemaUpdateExpected bool
+	schemaUpdated        atomic.Bool
+	schemaUpdateLock     sync.Mutex
+	ownerState           *GlobalState
+
 	propertyNames    []string
 	topLevelEntities map[string]Serializable
 }
@@ -57,8 +67,14 @@ type Database interface {
 	Close(ctx *Context) error
 }
 
-func WrapDatabase(ctx *Context, inner Database) *DatabaseIL {
-	schema := inner.Schema()
+type DatabaseWrappingArgs struct {
+	Inner                Database
+	OwnerState           *GlobalState
+	ExpectedSchemaUpdate bool
+}
+
+func WrapDatabase(ctx *Context, args DatabaseWrappingArgs) *DatabaseIL {
+	schema := args.Inner.Schema()
 
 	propertyNames := utils.CopySlice(DATABASE_PROPNAMES)
 	schema.ForEachEntry(func(propName string, propPattern Pattern, isOptional bool) error {
@@ -69,12 +85,19 @@ func WrapDatabase(ctx *Context, inner Database) *DatabaseIL {
 		return nil
 	})
 
-	return &DatabaseIL{
-		inner:            inner,
-		initialSchema:    schema,
-		propertyNames:    propertyNames,
-		topLevelEntities: inner.TopLevelEntities(ctx),
+	db := &DatabaseIL{
+		inner:                args.Inner,
+		initialSchema:        schema,
+		propertyNames:        propertyNames,
+		schemaUpdateExpected: args.ExpectedSchemaUpdate,
+		ownerState:           args.OwnerState,
 	}
+
+	if !args.ExpectedSchemaUpdate {
+		db.topLevelEntities = args.Inner.TopLevelEntities(ctx)
+	}
+
+	return db
 }
 
 func RegisterOpenDbFn(scheme Scheme, fn OpenDBFn) {
@@ -125,6 +148,23 @@ func (db *DatabaseIL) Resource() SchemeHolder {
 }
 
 func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern) {
+	if !db.schemaUpdateExpected {
+		panic(ErrNoneDatabaseSchemaUpdateExpected)
+	}
+
+	if ctx.GetClosestState() != db.ownerState {
+		panic(ErrDatabaseSchemaOnlyUpdatableByOwnerState)
+	}
+
+	db.schemaUpdateLock.Lock()
+	defer db.schemaUpdateLock.Unlock()
+
+	if db.schemaUpdated.Load() {
+		panic(ErrDatabaseSchemaAlreadyUpdatedOrNotAllowed)
+	}
+
+	defer db.schemaUpdated.Store(true)
+
 	err := schema.ForEachEntry(func(propName string, propPattern Pattern, isOptional bool) error {
 		if !hasTypeLoadingFunction(propPattern) {
 			return fmt.Errorf("failed to update schema: pattern of .%s has no loading function: %w", propName, ErrNoLoadInstanceFnRegistered)
@@ -158,6 +198,12 @@ func (db *DatabaseIL) Prop(ctx *Context, name string) Value {
 		return db.initialSchema
 	}
 
+	if db.schemaUpdateExpected {
+		if !db.schemaUpdated.Load() {
+			panic(ErrInvalidAccessSchemaNotUpdatedYet)
+		}
+	}
+
 	val, ok := db.topLevelEntities[name]
 	if ok {
 		return val
@@ -182,8 +228,8 @@ type FailedToOpenDatabase struct {
 	resource SchemeHolder
 }
 
-func NewFailedToOpenDatabase() *FailedToOpenDatabase {
-	return &FailedToOpenDatabase{}
+func NewFailedToOpenDatabase(resource SchemeHolder) *FailedToOpenDatabase {
+	return &FailedToOpenDatabase{resource: resource}
 }
 
 func (db *FailedToOpenDatabase) Resource() SchemeHolder {
@@ -203,5 +249,34 @@ func (db *FailedToOpenDatabase) TopLevelEntities(_ *Context) map[string]Serializ
 }
 
 func (db *FailedToOpenDatabase) Close(ctx *Context) error {
+	return ErrNotImplemented
+}
+
+type dummyDatabase struct {
+	resource         SchemeHolder
+	schemaUpdated    bool
+	topLevelEntities map[string]Serializable
+}
+
+func (db *dummyDatabase) Resource() SchemeHolder {
+	return db.resource
+}
+
+func (db *dummyDatabase) Schema() *ObjectPattern {
+	return EMPTY_INEXACT_OBJECT_PATTERN
+}
+
+func (db *dummyDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern) {
+	if db.schemaUpdated {
+		panic(errors.New("schema already updated"))
+	}
+	db.schemaUpdated = true
+}
+
+func (db *dummyDatabase) TopLevelEntities(_ *Context) map[string]Serializable {
+	return db.topLevelEntities
+}
+
+func (db *dummyDatabase) Close(ctx *Context) error {
 	return ErrNotImplemented
 }
