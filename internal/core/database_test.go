@@ -1,17 +1,32 @@
 package core
 
 import (
+	"bufio"
+	"io"
+	"reflect"
+	"strconv"
 	"testing"
 
+	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/utils"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDatabaseIL(t *testing.T) {
+
+	RegisterLoadInstanceFn(reflect.TypeOf(LOADABLE_TEST_VALUE_PATTERN), func(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
+		assert.Fail(t, "should never be called")
+		return nil, nil
+	})
+
 	t.Run("", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		db := &dummyDatabase{
-			resource:         Host("ldb://main"),
-			topLevelEntities: map[string]Serializable{"a": Int(1)},
+			resource: Host("ldb://main"),
+			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
+				value: 1,
+			}},
 		}
 
 		dbIL := WrapDatabase(ctx, DatabaseWrappingArgs{
@@ -19,14 +34,18 @@ func TestDatabaseIL(t *testing.T) {
 			OwnerState: ctx.state,
 		})
 
-		assert.Equal(t, map[string]Serializable{"a": Int(1)}, dbIL.topLevelEntities)
+		assert.Equal(t, map[string]Serializable{"a": &loadableTestValue{
+			value: 1,
+		}}, dbIL.topLevelEntities)
 	})
 
 	t.Run("if a schema update is expected top level entiries should not be loaded", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		db := &dummyDatabase{
-			resource:         Host("ldb://main"),
-			topLevelEntities: map[string]Serializable{"a": Int(1)},
+			resource: Host("ldb://main"),
+			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
+				value: 1,
+			}},
 		}
 
 		dbIL := WrapDatabase(ctx, DatabaseWrappingArgs{
@@ -93,7 +112,7 @@ func TestDatabaseIL(t *testing.T) {
 
 		assert.PanicsWithValue(t, ErrDatabaseSchemaAlreadyUpdatedOrNotAllowed, func() {
 			dbIL.UpdateSchema(ctx, NewInexactObjectPattern(map[string]Pattern{
-				"a": INT_PATTERN,
+				"a": LOADABLE_TEST_VALUE_PATTERN,
 			}))
 		})
 	})
@@ -101,8 +120,10 @@ func TestDatabaseIL(t *testing.T) {
 	t.Run("accessing the database while its schema is not yet updated should cause a panic", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		db := &dummyDatabase{
-			resource:         Host("ldb://main"),
-			topLevelEntities: map[string]Serializable{"a": Int(1)},
+			resource: Host("ldb://main"),
+			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
+				value: 1,
+			}},
 		}
 
 		dbIL := WrapDatabase(ctx, DatabaseWrappingArgs{
@@ -115,4 +136,118 @@ func TestDatabaseIL(t *testing.T) {
 			dbIL.Prop(ctx, "a")
 		})
 	})
+
+	t.Run("accessing the database after its schema is updated should work", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		db := &dummyDatabase{
+			resource: Host("ldb://main"),
+			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
+				value: 1,
+			}},
+		}
+
+		dbIL := WrapDatabase(ctx, DatabaseWrappingArgs{
+			Inner:                db,
+			OwnerState:           ctx.state,
+			ExpectedSchemaUpdate: true,
+		})
+
+		dbIL.UpdateSchema(ctx, NewInexactObjectPattern(map[string]Pattern{
+			"a": LOADABLE_TEST_VALUE_PATTERN,
+		}))
+
+		val := dbIL.Prop(ctx, "a")
+		assert.Same(t, db.topLevelEntities["a"], val)
+	})
+}
+
+var (
+	_ UrlHolder = (*loadableTestValue)(nil)
+	_ Pattern   = (*loadableTestValuePattern)(nil)
+
+	LOADABLE_TEST_VALUE_PATTERN = &loadableTestValuePattern{}
+)
+
+type loadableTestValue struct {
+	value int32
+	url   URL
+}
+
+func (*loadableTestValue) SetURLOnce(ctx *Context, u URL) error {
+	panic(ErrNotImplemented)
+}
+
+func (v *loadableTestValue) URL() (URL, bool) {
+	panic(ErrNotImplemented)
+}
+
+func (*loadableTestValue) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	panic(ErrNotImplemented)
+}
+
+func (*loadableTestValue) IsMutable() bool {
+	return true
+}
+
+func (*loadableTestValue) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	panic(ErrNotImplemented)
+}
+
+func (*loadableTestValue) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	panic(ErrNotImplemented)
+}
+
+func (v *loadableTestValue) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	w.WriteInt(int(v.value))
+	return nil
+}
+
+func (v *loadableTestValue) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	w.Write(utils.StringAsBytes(strconv.FormatInt(int64(v.value), 10)))
+	return nil
+}
+
+type loadableTestValuePattern struct {
+	NotCallablePatternMixin
+}
+
+func (*loadableTestValuePattern) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	panic(ErrNotImplemented)
+}
+
+func (*loadableTestValuePattern) IsMutable() bool {
+	return false
+}
+
+func (*loadableTestValuePattern) Iterator(*Context, IteratorConfiguration) Iterator {
+	panic(ErrNotImplemented)
+}
+
+func (*loadableTestValuePattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	panic(ErrNotImplemented)
+}
+
+func (*loadableTestValuePattern) Random(ctx *Context, options ...Option) Value {
+	panic(ErrNotImplemented)
+}
+
+func (*loadableTestValuePattern) StringPattern() (StringPattern, bool) {
+	return nil, false
+}
+
+func (*loadableTestValuePattern) Test(ctx *Context, val Value) bool {
+	_, ok := val.(*loadableTestValue)
+	return ok
+}
+
+func (*loadableTestValuePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	panic(ErrNotImplemented)
+}
+
+func (*loadableTestValuePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	panic(ErrNotImplemented)
+}
+
+func (*loadableTestValuePattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	panic(ErrNotImplemented)
 }

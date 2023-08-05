@@ -175,7 +175,9 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern) {
 	if err != nil {
 		panic(err)
 	}
+
 	db.inner.UpdateSchema(ctx, schema)
+	db.topLevelEntities = db.inner.TopLevelEntities(ctx)
 }
 
 func (db *DatabaseIL) Close(ctx *Context) error {
