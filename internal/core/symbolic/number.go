@@ -50,6 +50,11 @@ func (f *Float) Static() Pattern {
 
 func (f *Float) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%float")))
+	if f.hasValue {
+		utils.PanicIfErr(w.WriteByte('('))
+		utils.Must(w.Write(utils.StringAsBytes(strconv.FormatFloat(f.value, 'g', -1, 64))))
+		utils.PanicIfErr(w.WriteByte(')'))
+	}
 }
 
 func (f *Float) WidestOfType() SymbolicValue {
