@@ -954,8 +954,11 @@ switch_:
 
 		//add base globals to child checker
 		for globalName := range c.checkInput.State.SymbolicBaseGlobalsForImportedModule {
-			globals[importModuleNode][globalName] = globalVarInfo{isConst: true}
+			globals[importModuleNode][globalName] = globalVarInfo{isConst: true, isStartConstant: true}
 		}
+
+		//add module arguments variable to child checker
+		globals[importModuleNode][MOD_ARGS_VARNAME] = globalVarInfo{isConst: true, isStartConstant: true}
 
 		//add base patterns & pattern namespaces to child checker
 		var (

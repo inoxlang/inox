@@ -1984,6 +1984,37 @@ func TestCheck(t *testing.T) {
 			}))
 		})
 
+		t.Run("single imported module with parameter", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import res ./dep.ix {}
+				return res
+			`, map[string]string{"./dep.ix": `
+					manifest {
+						parameters: {
+							a: %str
+						}
+					}
+					b = mod-args
+			`})
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			assert.NoError(t, err)
+
+			state := createState(mod)
+			state.GetBasePatternsForImportedModule = func() (map[string]Pattern, map[string]*PatternNamespace) {
+				return map[string]Pattern{"str": STR_PATTERN}, nil
+			}
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				State:  state,
+				Module: mod,
+				Node:   mod.MainChunk.Node,
+				Chunk:  mod.MainChunk,
+			}))
+		})
+
 		t.Run("single imported module should have access to base patterns if set", func(t *testing.T) {
 			moduleName := "mymod.ix"
 			modpath := writeModuleAndIncludedFiles(t, moduleName, `
