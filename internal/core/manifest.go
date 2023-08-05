@@ -1234,7 +1234,9 @@ func getDatabaseConfigurations(v Value, parentState *GlobalState) (DatabaseConfi
 			if parentState.Module.MainChunk.Source.Name() == path.UnderlyingString() {
 				provider = parentState
 			} else {
+				parentState.MainState.descendantStatesLock.Lock()
 				provider = parentState.MainState.descendantStates[path]
+				parentState.MainState.descendantStatesLock.Unlock()
 			}
 		}
 
