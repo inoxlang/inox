@@ -214,6 +214,7 @@ const (
 	PATTERN_GROUP_NAME
 	QUERY_PARAM_KEY_EQUAL
 	QUERY_PARAM_SLICE
+	OPTION_NAME
 	XML_TEXT_SLICE
 	OCCURRENCE_MODIFIER
 )
@@ -575,6 +576,7 @@ var tokenTypenames = [...]string{
 	QUERY_PARAM_KEY_EQUAL:          "QUERY_PARAM_KEY_EQUAL",
 	QUERY_PARAM_SEP:                "QUERY_PARAM_SEP",
 	QUERY_PARAM_SLICE:              "QUERY_PARAM_SLICE",
+	OPTION_NAME:                    "OPTION_NAME",
 	XML_TEXT_SLICE:                 "XML_TEXT_SLICE",
 	OCCURRENCE_MODIFIER:            "OCCURRENCE_MODIFIER",
 }
@@ -700,6 +702,48 @@ func GetTokens(node Node, addMeta bool) []Token {
 			tokens = append(tokens, Token{
 				Type: QUESTION_MARK,
 				Span: NodeSpan{n.Span.End - 1, n.Span.End},
+			})
+
+		case *OptionExpression:
+			namePart := "-"
+			if !n.SingleDash {
+				namePart = "--"
+			}
+
+			namePart += n.Name
+			nameEnd := n.Span.Start + int32(utf8.RuneCountInString(namePart))
+
+			tokens = append(tokens, Token{
+				Type: OPTION_NAME,
+				Span: NodeSpan{n.Span.Start, nameEnd},
+				Raw:  namePart,
+			})
+			tokens = append(tokens, Token{
+				Type: EQUAL,
+				Span: NodeSpan{nameEnd, nameEnd + 1},
+			})
+		case *OptionPatternLiteral:
+			namePart := "%-"
+			if n.Unprefixed {
+				namePart = "-"
+				if !n.SingleDash {
+					namePart = "--"
+				}
+			} else if !n.SingleDash {
+				namePart = "%--"
+			}
+
+			namePart += n.Name
+			nameEnd := n.Span.Start + int32(utf8.RuneCountInString(namePart))
+
+			tokens = append(tokens, Token{
+				Type: OPTION_NAME,
+				Span: NodeSpan{n.Span.Start, nameEnd},
+				Raw:  namePart,
+			})
+			tokens = append(tokens, Token{
+				Type: EQUAL,
+				Span: NodeSpan{nameEnd, nameEnd + 1},
 			})
 		}
 

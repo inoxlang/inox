@@ -24,6 +24,9 @@ func TestPrint(t *testing.T) {
 		"1x/s",
 		"https://example.com",
 		"https://example.com/",
+		"-x",
+		"--x",
+		"--name",
 		"1..2",
 		"1..",
 		"1..$a",
@@ -55,11 +58,14 @@ func TestPrint(t *testing.T) {
 		"https://example.com/?x={1}&&y=2",
 		"https://example.com/?x={1}&=&y=2",
 		"@site/",
-		//date literas
+		//date literals
 		"2020y-5mt-UTC",
 		"2020y-5mt-06d-UTC",
 		"2020y-5mt",
 		"#a",
+		//option expression
+		"-x=1",
+		"--x=1",
 		//variable
 		"(f)",
 		"a",
@@ -232,6 +238,12 @@ func TestPrint(t *testing.T) {
 		"%https://**",
 		"%https://example.com/...",
 		"%https://**.example.com",
+		"%-x=1",
+		"%--x=1",
+		"%--name=\"foo\"",
+		"%p = -x=1",
+		"%p = --x=1",
+		"%p = --name=\"foo\"",
 		//udata literal
 		"udata",
 		"udata 0",

@@ -1168,6 +1168,7 @@ type OptionPatternLiteral struct {
 	SingleDash bool
 	Name       string
 	Value      Node
+	Unprefixed bool
 }
 
 func (OptionPatternLiteral) Kind() NodeKind {

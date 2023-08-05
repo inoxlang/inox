@@ -1658,6 +1658,35 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("unprefixed", func(t *testing.T) {
+			n := mustparseChunk(t, `%p = --name=int`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 15}, nil, nil},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{
+							Span:   NodeSpan{0, 15},
+							Tokens: []Token{{Type: EQUAL, Span: NodeSpan{3, 4}}},
+						},
+						Left: &PatternIdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{0, 2}},
+							Name:     "p",
+						},
+						Right: &OptionPatternLiteral{
+							NodeBase:   NodeBase{NodeSpan{5, 15}, nil, nil},
+							Name:       "name",
+							SingleDash: false,
+							Unprefixed: true,
+							Value: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{12, 15}, nil, nil},
+								Name:       "int",
+								Unprefixed: true,
+							},
+						},
+					},
+				},
+			}, n)
+		})
 	})
 	t.Run("path literal", func(t *testing.T) {
 

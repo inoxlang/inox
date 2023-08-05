@@ -1252,6 +1252,10 @@ func (p *parser) parseDashStartingExpression() Node {
 		}
 	}
 
+	if p.inPattern {
+		return p.parseOptionPatternLiteral(__start, name, singleDash)
+	}
+
 	tokens := []Token{{Type: EQUAL, Span: NodeSpan{p.i, p.i + 1}}}
 	p.i++
 
@@ -4087,11 +4091,37 @@ func (p *parser) parsePercentPrefixedPattern() Node {
 			Raw:   raw,
 		}
 	case '-':
-		prev := p.inPattern
-		defer func() {
-			p.inPattern = prev
-		}()
-		p.inPattern = true
+		return p.parseOptionPatternLiteral(start, "", false)
+	default:
+		if isAlpha(p.s[p.i]) {
+			p.i--
+			return p.parsePercentAlphaStartingExpr()
+		}
+
+		//TODO: fix, error based on next char ?
+
+		return &UnknownNode{
+			NodeBase: NodeBase{
+				NodeSpan{start, p.i},
+				&ParsingError{UnspecifiedParsingError, UNTERMINATED_PATT},
+				[]Token{percentSymbol},
+			},
+		}
+	}
+}
+
+func (p *parser) parseOptionPatternLiteral(start int32, unprefixedOptionPatternName string, singleDashUnprefixedOptionPattern bool) *OptionPatternLiteral {
+	prev := p.inPattern
+	defer func() {
+		p.inPattern = prev
+	}()
+	p.inPattern = true
+
+	name := unprefixedOptionPatternName
+	unprefixed := unprefixedOptionPatternName != ""
+	singleDash := singleDashUnprefixedOptionPattern
+
+	if !unprefixed {
 
 		p.i++
 		if p.i >= p.len {
@@ -4104,7 +4134,7 @@ func (p *parser) parsePercentPrefixedPattern() Node {
 			}
 		}
 
-		singleDash := true
+		singleDash = true
 
 		if p.s[p.i] == '-' {
 			singleDash = false
@@ -4137,56 +4167,43 @@ func (p *parser) parsePercentPrefixedPattern() Node {
 			p.i++
 		}
 
-		name := string(p.s[nameStart:p.i])
+		name = string(p.s[nameStart:p.i])
+	}
 
-		if p.i >= p.len || p.s[p.i] != '=' {
-
-			return &OptionPatternLiteral{
-				NodeBase: NodeBase{
-					Span: NodeSpan{start, p.i},
-					Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_OPION_PATTERN_A_VALUE_IS_EXPECTED},
-				},
-				Name:       name,
-				SingleDash: singleDash,
-			}
-		}
-
-		p.i++
-
-		if p.i >= p.len {
-			return &OptionPatternLiteral{
-				NodeBase: NodeBase{
-					Span: NodeSpan{start, p.i},
-					Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_OPION_PATT_EQUAL_ASSIGN_SHOULD_BE_FOLLOWED_BY_EXPR},
-				},
-				Name:       name,
-				SingleDash: singleDash,
-			}
-		}
-
-		value, _ := p.parseExpression()
-
+	if p.i >= p.len || p.s[p.i] != '=' {
 		return &OptionPatternLiteral{
-			NodeBase:   NodeBase{Span: NodeSpan{start, p.i}},
-			Name:       name,
-			Value:      value,
-			SingleDash: singleDash,
-		}
-	default:
-		if isAlpha(p.s[p.i]) {
-			p.i--
-			return p.parsePercentAlphaStartingExpr()
-		}
-
-		//TODO: fix, error based on next char ?
-
-		return &UnknownNode{
 			NodeBase: NodeBase{
-				NodeSpan{start, p.i},
-				&ParsingError{UnspecifiedParsingError, UNTERMINATED_PATT},
-				[]Token{percentSymbol},
+				Span: NodeSpan{start, p.i},
+				Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_OPION_PATTERN_A_VALUE_IS_EXPECTED},
 			},
+			Name:       name,
+			SingleDash: singleDash,
+			Unprefixed: unprefixed,
 		}
+	}
+
+	p.i++
+
+	if p.i >= p.len {
+		return &OptionPatternLiteral{
+			NodeBase: NodeBase{
+				Span: NodeSpan{start, p.i},
+				Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_OPION_PATT_EQUAL_ASSIGN_SHOULD_BE_FOLLOWED_BY_EXPR},
+			},
+			Name:       name,
+			SingleDash: singleDash,
+			Unprefixed: unprefixed,
+		}
+	}
+
+	value, _ := p.parseExpression()
+
+	return &OptionPatternLiteral{
+		NodeBase:   NodeBase{Span: NodeSpan{start, p.i}},
+		Name:       name,
+		Value:      value,
+		SingleDash: singleDash,
+		Unprefixed: unprefixed,
 	}
 }
 
