@@ -13,6 +13,7 @@ import (
 
 var (
 	_ = []symbolic.Iterable{(*Set)(nil)}
+	_ = []symbolic.Serializable{(*Set)(nil)}
 
 	SET_PROPNAMES                       = []string{"has", "add", "remove", "get"}
 	SET_CONFIG_ELEMENT_PATTERN_PROP_KEY = "element"
@@ -26,9 +27,11 @@ var (
 )
 
 type Set struct {
-	symbolic.UnassignablePropsMixin
 	elementPattern symbolic.Pattern
 	uniqueness     *containers_common.UniquenessConstraint
+
+	symbolic.UnassignablePropsMixin
+	symbolic.SerializableMixin
 }
 
 func NewSet(ctx *symbolic.Context, elements symbolic.Iterable, config ...*symbolic.Object) *Set {

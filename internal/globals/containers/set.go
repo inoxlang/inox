@@ -24,6 +24,7 @@ var (
 
 	_ core.DefaultValuePattern = (*SetPattern)(nil)
 	_ core.PotentiallySharable = (*Set)(nil)
+	_ core.SerializableIterable = (*Set)(nil)
 )
 
 func init() {
