@@ -2006,6 +2006,8 @@ func checkDatabasesObject(obj *parse.ObjectLiteral, onError func(n parse.Node, m
 		if p.Value == nil {
 			continue
 		}
+		dbName := p.Name()
+
 		fileDesc, ok := p.Value.(*parse.ObjectLiteral)
 		if !ok {
 			onError(p.Value, DATABASES__DB_CONFIG_SHOULD_BE_AN_OBJECT)
@@ -2016,7 +2018,7 @@ func checkDatabasesObject(obj *parse.ObjectLiteral, onError func(n parse.Node, m
 		var scheme Scheme
 
 		if !ok {
-			onError(p, fmtMissingPropInDatabaseDescription(MANIFEST_DATABASE__RESOURCE_PROP_NAME, p.Name()))
+			onError(p, fmtMissingPropInDatabaseDescription(MANIFEST_DATABASE__RESOURCE_PROP_NAME, dbName))
 		} else {
 			switch res := resourceNode.(type) {
 			case *parse.HostLiteral:
@@ -2050,6 +2052,8 @@ func checkDatabasesObject(obj *parse.ObjectLiteral, onError func(n parse.Node, m
 			default:
 				onError(p, DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED)
 			}
+		} else {
+			onError(p, fmtMissingPropInDatabaseDescription(MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME, dbName))
 		}
 
 	}

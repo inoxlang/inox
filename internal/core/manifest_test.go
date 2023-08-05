@@ -423,6 +423,7 @@ func TestPreInit(t *testing.T) {
 					databases: {
 						main: {
 							resource: 1
+							resolution-data: /db/
 						}
 					}
 				}`,
@@ -441,6 +442,30 @@ func TestPreInit(t *testing.T) {
 				}`,
 			error:                     true,
 			expectedStaticCheckErrors: []string{DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED},
+		},
+		{
+			name: "database_with_missing_resource",
+			module: `manifest { 
+					databases: {
+						main: {
+							resolution-data: /db/
+						}
+					}
+				}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtMissingPropInDatabaseDescription(MANIFEST_DATABASE__RESOURCE_PROP_NAME, "main")},
+		},
+		{
+			name: "database_with_missing_resolution_data",
+			module: `manifest { 
+					databases: {
+						main: {
+							resource: ldb://main
+						}
+					}
+				}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtMissingPropInDatabaseDescription(MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME, "main")},
 		},
 		{
 			name: "database_description_should_be_an_object",
