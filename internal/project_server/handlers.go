@@ -581,16 +581,22 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 
 		case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceIdentifierLiteral:
 			position, ok = state.SymbolicData.GetNamedPatternOrPatternNamespacePositionDefinition(foundNode, ancestors)
-		case *parse.RelativePathLiteral:
+		case *parse.RelativePathLiteral, *parse.AbsolutePathLiteral:
+
 			parent := ancestors[len(ancestors)-1]
 			switch parent.(type) {
-			case *parse.InclusionImportStatement:
+			case *parse.InclusionImportStatement, *parse.ImportStatement:
+
 				file, isFile := chunk.Source.(parse.SourceFile)
 				if !isFile || file.IsResourceURL || file.ResourceDir == "" {
 					break
 				}
 
-				path := filepath.Join(file.ResourceDir, n.Value)
+				path := n.(parse.SimpleValueLiteral).ValueString()
+				if path[0] != '/' { //relative
+					path = filepath.Join(file.ResourceDir, path)
+				}
+
 				position = parse.SourcePositionRange{
 					SourceName:  path,
 					StartLine:   1,
@@ -647,5 +653,3 @@ func getPath(uri defines.URI, usingInoxFS bool) (string, error) {
 	}
 	return u.Path, nil
 }
-
-
