@@ -30,9 +30,10 @@ const (
 	MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME = "pattern"
 	MANIFEST_PREINIT_FILE__PATH_PROP_NAME    = "path"
 
-	MANIFEST_DATABASES_SECTION_NAME              = "databases"
-	MANIFEST_DATABASE__RESOURCE_PROP_NAME        = "resource"
-	MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME = "resolution-data"
+	MANIFEST_DATABASES_SECTION_NAME                     = "databases"
+	MANIFEST_DATABASE__RESOURCE_PROP_NAME               = "resource"
+	MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME        = "resolution-data"
+	MANIFEST_DATABASE__EXPECTED_SCHEMA_UPDATE_PROP_NAME = "expected-schema-update"
 
 	INITIAL_WORKING_DIR_VARNAME        = "IWD"
 	INITIAL_WORKING_DIR_PREFIX_VARNAME = "IWD_PREFIX"
@@ -114,9 +115,10 @@ type PreinitFile struct {
 type DatabaseConfigs []DatabaseConfig
 
 type DatabaseConfig struct {
-	Name           string       //declared name, this is NOT the basename.
-	Resource       SchemeHolder //URL or Host
-	ResolutionData Path
+	Name                 string       //declared name, this is NOT the basename.
+	Resource             SchemeHolder //URL or Host
+	ResolutionData       Path
+	ExpectedSchemaUpdate bool
 
 	Provided *DatabaseIL //optional (can be provided by parent state)
 }
@@ -1280,6 +1282,13 @@ func getDatabaseConfigurations(v Value, parentState *GlobalState) (DatabaseConfi
 				switch val := propVal.(type) {
 				case Path:
 					config.ResolutionData = val
+				default:
+					return fmt.Errorf("invalid value found for the .%s of a database description", MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME)
+				}
+			case MANIFEST_DATABASE__EXPECTED_SCHEMA_UPDATE_PROP_NAME:
+				switch val := propVal.(type) {
+				case Bool:
+					config.ExpectedSchemaUpdate = bool(val)
 				default:
 					return fmt.Errorf("invalid value found for the .%s of a database description", MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME)
 				}

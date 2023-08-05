@@ -189,9 +189,13 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			}
 			dbOpeningError = err
 			//TODO: use cached schema
-			db = core.NewFailedToOpenDatabase()
+			db = core.NewFailedToOpenDatabase(config.Resource)
 		}
-		dbs[config.Name] = core.WrapDatabase(ctx, db)
+		dbs[config.Name] = core.WrapDatabase(ctx, core.DatabaseWrappingArgs{
+			Inner:                db,
+			OwnerState:           state,
+			ExpectedSchemaUpdate: config.ExpectedSchemaUpdate,
+		})
 	}
 
 	// create the script's state

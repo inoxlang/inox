@@ -2008,54 +2008,75 @@ func checkDatabasesObject(obj *parse.ObjectLiteral, onError func(n parse.Node, m
 		}
 		dbName := p.Name()
 
-		fileDesc, ok := p.Value.(*parse.ObjectLiteral)
+		dbDesc, ok := p.Value.(*parse.ObjectLiteral)
 		if !ok {
 			onError(p.Value, DATABASES__DB_CONFIG_SHOULD_BE_AN_OBJECT)
 			continue
 		}
 
-		resourceNode, ok := fileDesc.PropValue(MANIFEST_DATABASE__RESOURCE_PROP_NAME)
 		var scheme Scheme
+		var resourceFound bool
+		var resolutionDataFound bool
 
-		if !ok {
-			onError(p, fmtMissingPropInDatabaseDescription(MANIFEST_DATABASE__RESOURCE_PROP_NAME, dbName))
-		} else {
-			switch res := resourceNode.(type) {
-			case *parse.HostLiteral:
-				u, _ := url.Parse(res.Value)
-				if u != nil {
-					scheme = Scheme(u.Scheme)
+		for _, prop := range dbDesc.Properties {
+			if prop.HasImplicitKey() {
+				continue
+			}
+
+			switch prop.Name() {
+			case MANIFEST_DATABASE__RESOURCE_PROP_NAME:
+				resourceFound = true
+
+				switch res := prop.Value.(type) {
+				case *parse.HostLiteral:
+					u, _ := url.Parse(res.Value)
+					if u != nil {
+						scheme = Scheme(u.Scheme)
+					}
+				case *parse.URLLiteral:
+					u, _ := url.Parse(res.Value)
+					if u != nil {
+						scheme = Scheme(u.Scheme)
+					}
+				default:
+					onError(p, DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL)
 				}
-			case *parse.URLLiteral:
-				u, _ := url.Parse(res.Value)
-				if u != nil {
-					scheme = Scheme(u.Scheme)
+			case MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME:
+				resolutionDataFound = true
+
+				switch prop.Value.(type) {
+				case *parse.RelativePathLiteral, *parse.AbsolutePathLiteral, *parse.AbsolutePathExpression, *parse.RelativePathExpression:
+					if scheme == "" {
+						break
+					}
+					checkData, ok := GetStaticallyCheckDbResolutionDataFn(scheme)
+					if ok {
+						errMsg := checkData(prop.Value)
+						if errMsg != "" {
+							onError(prop.Value, errMsg)
+						}
+					}
+				default:
+					onError(p, DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED)
+				}
+			case MANIFEST_DATABASE__EXPECTED_SCHEMA_UPDATE_PROP_NAME:
+				switch prop.Value.(type) {
+				case *parse.BooleanLiteral:
+				default:
+					onError(p, DATABASES__DB_EXPECTED_SCHEMA_UPDATE_SHOULD_BE_BOOL_LIT)
 				}
 			default:
-				onError(p, DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL)
+				onError(p, fmtUnexpectedPropOfDatabaseDescription(prop.Name()))
 			}
 		}
 
-		if resolutionDataNode, ok := fileDesc.PropValue(MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME); ok {
-			switch resolutionDataNode.(type) {
-			case *parse.RelativePathLiteral, *parse.AbsolutePathLiteral, *parse.AbsolutePathExpression, *parse.RelativePathExpression:
-				if scheme == "" {
-					break
-				}
-				checkData, ok := GetStaticallyCheckDbResolutionDataFn(scheme)
-				if ok {
-					errMsg := checkData(resolutionDataNode)
-					if errMsg != "" {
-						onError(resolutionDataNode, errMsg)
-					}
-				}
-			default:
-				onError(p, DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED)
-			}
-		} else {
+		if !resourceFound {
+			onError(p, fmtMissingPropInDatabaseDescription(MANIFEST_DATABASE__RESOURCE_PROP_NAME, dbName))
+		}
+
+		if !resolutionDataFound {
 			onError(p, fmtMissingPropInDatabaseDescription(MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME, dbName))
 		}
-
 	}
 }
 

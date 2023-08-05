@@ -2965,7 +2965,9 @@ func TestCheckDatabasesObject(t *testing.T) {
 	t.Run("database with missing resource property", func(t *testing.T) {
 		objLiteral := parseObject(`
 			{
-				main: {}
+				main: {
+					resolution-data: /db/
+				}
 			}
 		`)
 
@@ -2984,6 +2986,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 			{
 				main: {
 					resource: 1
+					resolution-data: /db/
 				}
 			}
 		`)

@@ -27,9 +27,11 @@ const (
 	PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_ABS_PATH = "the ." + MANIFEST_PREINIT_FILE__PATH_PROP_NAME + " of each file in the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section (manifest) should be an absolute path"
 
 	//databases section
-	DATABASES_SECTION_SHOULD_BE_AN_OBJECT_OR_ABS_PATH  = "the '" + MANIFEST_DATABASES_SECTION_NAME + "' section of the manifest should be an object literal or an absolute path literal"
-	DATABASES__DB_CONFIG_SHOULD_BE_AN_OBJECT           = "the description of each database in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section of the manifest should be an object literal"
-	DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL       = "the ." + MANIFEST_DATABASE__RESOURCE_PROP_NAME + " of each database in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section (manifest) should be a Host or a URL"
+	DATABASES_SECTION_SHOULD_BE_AN_OBJECT_OR_ABS_PATH       = "the '" + MANIFEST_DATABASES_SECTION_NAME + "' section of the manifest should be an object literal or an absolute path literal"
+	DATABASES__DB_CONFIG_SHOULD_BE_AN_OBJECT                = "the description of each database in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section of the manifest should be an object literal"
+	DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL            = "the ." + MANIFEST_DATABASE__RESOURCE_PROP_NAME + " of each database in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section (manifest) should be a Host or a URL"
+	DATABASES__DB_EXPECTED_SCHEMA_UPDATE_SHOULD_BE_BOOL_LIT = "the ." + MANIFEST_DATABASE__EXPECTED_SCHEMA_UPDATE_PROP_NAME + " of each database in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section (manifest) should be a boolean literal (the property is optional)"
+
 	DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED = "paths are the only supported values for ." + MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME + "in a database description"
 
 	HOST_RESOL_SECTION_SHOULD_BE_A_DICT = "the '" + MANIFEST_HOST_RESOLUTION_SECTION_NAME + "' section of the manifest should be a dictionary"
@@ -131,6 +133,10 @@ func fmtMissingPropInPreinitFileDescription(propName, name string) string {
 
 func fmtMissingPropInDatabaseDescription(propName, name string) string {
 	return fmt.Sprintf("missing .%s property in description of database %s", propName, name)
+}
+
+func fmtUnexpectedPropOfDatabaseDescription(name string) string {
+	return fmt.Sprintf("unexpected property '%s' of database description", name)
 }
 
 func fmtFollowingNodeTypeNotAllowedInAssertions(n parse.Node) string {

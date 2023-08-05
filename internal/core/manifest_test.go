@@ -418,6 +418,30 @@ func TestPreInit(t *testing.T) {
 			error:               false,
 		},
 		{
+			name: "correct_database_with_expected_schema_update",
+			module: `manifest { 
+					databases: {
+						main: {
+							resource: ldb://main
+							resolution-data: /tmp/mydb/
+							expected-schema-update: true
+						}
+					}
+				}`,
+			expectedPermissions: []Permission{},
+			expectedLimitations: []Limitation{},
+			expectedDatabaseConfigs: DatabaseConfigs{
+				{
+					Name:                 "main",
+					Resource:             Host("ldb://main"),
+					ResolutionData:       Path("/tmp/mydb/"),
+					ExpectedSchemaUpdate: true,
+				},
+			},
+			expectedResolutions: nil,
+			error:               false,
+		},
+		{
 			name: "database_with_invalid_resource",
 			module: `manifest { 
 					databases: {
@@ -442,6 +466,20 @@ func TestPreInit(t *testing.T) {
 				}`,
 			error:                     true,
 			expectedStaticCheckErrors: []string{DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED},
+		},
+		{
+			name: "database_with_invalid_expected_schema_udapte_value",
+			module: `manifest { 
+					databases: {
+						main: {
+							resource: ldb://main
+							resolution-data: /db/
+							expected-schema-update: 1
+						}
+					}
+				}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{DATABASES__DB_EXPECTED_SCHEMA_UPDATE_SHOULD_BE_BOOL_LIT},
 		},
 		{
 			name: "database_with_missing_resource",
