@@ -109,6 +109,45 @@ func TestParseModuleFromSource(t *testing.T) {
 			}
 		})
 	})
+
+	t.Run("parameters", func(t *testing.T) {
+		fls := newMemFilesystem()
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+			Filesystem:  fls,
+		}, nil)
+
+		mod, err := ParseModuleFromSource(parse.SourceFile{
+			NameString:  "/mod.ix",
+			Resource:    "/mod.ix",
+			ResourceDir: "/",
+			CodeString: `manifest {
+				parameters: {
+					{
+						name: #a
+						pattern: %str
+					}
+					b: {
+						pattern: %str
+					}
+					"c": {
+						pattern: %str
+					}
+				}
+			}`,
+		}, Path("/mod.ix"), ModuleParsingConfig{
+			Context: ctx,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		assert.Equal(t, []string{"a", "b", "c"}, mod.ParameterNames())
+	})
 }
 
 func TestParseLocalModule(t *testing.T) {

@@ -118,6 +118,45 @@ func (mod *Module) ToSymbolic() *symbolic.Module {
 	return symbolic.NewModule(mod.MainChunk, inclusionStmtMap)
 }
 
+func (mod *Module) ParameterNames() (names []string) {
+	if mod.ManifestTemplate == nil {
+		return nil
+	}
+	objLit, ok := mod.ManifestTemplate.Object.(*parse.ObjectLiteral)
+	if !ok {
+		return nil
+	}
+
+	propValue, _ := objLit.PropValue(MANIFEST_PARAMS_SECTION_NAME)
+	paramsObject, ok := propValue.(*parse.ObjectLiteral)
+
+	if !ok {
+		return nil
+	}
+
+	for _, prop := range paramsObject.Properties {
+		if prop.HasImplicitKey() {
+			positionalParamDesc, ok := prop.Value.(*parse.ObjectLiteral)
+
+			if !ok {
+				continue
+			}
+
+			nameValue, _ := positionalParamDesc.PropValue("name")
+			switch nameValue := nameValue.(type) {
+			case *parse.UnambiguousIdentifierLiteral:
+				names = append(names, nameValue.Name)
+			default:
+				//invalid
+			}
+		} else {
+			names = append(names, prop.Name())
+		}
+	}
+
+	return
+}
+
 type PreinitArgs struct {
 	GlobalConsts     *parse.GlobalConstantDeclarations //only used if no running state
 	PreinitStatement *parse.PreinitStatement           //only used if no running state
