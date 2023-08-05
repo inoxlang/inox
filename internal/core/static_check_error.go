@@ -112,7 +112,7 @@ func fmtForbiddenNodeInPreinitFilesSection(n parse.Node) string {
 func fmtForbiddenNodeInDatabasesSection(n parse.Node) string {
 	return fmt.Sprintf(
 		"invalid %s section: invalid node %T, only variables, simple literals, path expressions & named patterns are allowed",
-		DATABASES_SECTION_SHOULD_BE_AN_OBJECT_OR_ABS_PATH, n)
+		MANIFEST_DATABASES_SECTION_NAME, n)
 }
 
 func fmtForbiddenNodeInHostResolutionSection(n parse.Node) string {
