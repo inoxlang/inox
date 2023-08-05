@@ -572,8 +572,7 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 		}
 
 		var position parse.SourcePositionRange
-
-		ok = false
+		positionSet := false
 
 		switch n := foundNode.(type) {
 		case *parse.Variable, *parse.GlobalVariable, *parse.IdentifierLiteral:
@@ -584,7 +583,8 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 		case *parse.RelativePathLiteral, *parse.AbsolutePathLiteral:
 
 			parent := ancestors[len(ancestors)-1]
-			switch parent.(type) {
+
+			switch p := parent.(type) {
 			case *parse.InclusionImportStatement, *parse.ImportStatement:
 
 				file, isFile := chunk.Source.(parse.SourceFile)
@@ -605,11 +605,36 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 					EndColumn:   2,
 					Span:        parse.NodeSpan{Start: 0, End: 1},
 				}
-				ok = true
+				positionSet = true
+			case *parse.ObjectProperty:
+				absPathLit, ok := n.(*parse.AbsolutePathLiteral)
+
+				if !ok || len(ancestors) < 4 || p.HasImplicitKey() || p.Name() != "databases" {
+					break
+				}
+
+				_, ok = ancestors[len(ancestors)-2].(*parse.ObjectLiteral)
+				if !ok {
+					break
+				}
+				_, ok = ancestors[len(ancestors)-3].(*parse.Manifest)
+				if !ok {
+					break
+				}
+
+				position = parse.SourcePositionRange{
+					SourceName:  absPathLit.Value,
+					StartLine:   1,
+					StartColumn: 1,
+					EndLine:     1,
+					EndColumn:   2,
+					Span:        parse.NodeSpan{Start: 0, End: 1},
+				}
+				positionSet = true
 			}
 		}
 
-		if !ok {
+		if !positionSet {
 			logs.Println("no data")
 			return nil, nil
 		}
