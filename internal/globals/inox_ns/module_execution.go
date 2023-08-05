@@ -338,12 +338,29 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		return
 	}
 
+	basePatterns, basePatternNamespaces := state.GetBasePatternsForImportedModule()
+	symbolicBasePatterns := map[string]symbolic.Pattern{}
+	symbolicBasePatternNamespaces := map[string]*symbolic.PatternNamespace{}
+
+	encountered := map[uintptr]symbolic.SymbolicValue{}
+	for k, v := range basePatterns {
+		symbolicBasePatterns[k] = utils.Must(v.ToSymbolicValue(ctx, encountered)).(symbolic.Pattern)
+	}
+	for k, v := range basePatternNamespaces {
+		symbolicBasePatternNamespaces[k] = utils.Must(v.ToSymbolicValue(ctx, encountered)).(*symbolic.PatternNamespace)
+	}
+
 	symbolicData, err_ := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
 		Node:                           mod.MainChunk.Node,
 		Module:                         state.Module.ToSymbolic(),
 		Globals:                        globals,
 		AdditionalSymbolicGlobalConsts: additionalSymbolicGlobals,
-		Context:                        symbolicCtx,
+
+		SymbolicBaseGlobals:           state.SymbolicBaseGlobalsForImportedModule,
+		SymbolicBasePatterns:          symbolicBasePatterns,
+		SymbolicBasePatternNamespaces: symbolicBasePatternNamespaces,
+
+		Context: symbolicCtx,
 	})
 
 	if symbolicData != nil {

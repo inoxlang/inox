@@ -48,7 +48,8 @@ type Module struct {
 	InclusionStatementMap      map[*parse.InclusionImportStatement]*IncludedChunk
 	IncludedChunkMap           map[string]*IncludedChunk
 
-	DirectlyImportedModules map[string]*Module
+	DirectlyImportedModules            map[string]*Module
+	DirectlyImportedModulesByStatement map[*parse.ImportStatement]*Module
 
 	ManifestTemplate      *parse.Manifest
 	Bytecode              *Bytecode
@@ -109,13 +110,19 @@ func (mod *Module) ImportStatements() (imports []*parse.ImportStatement) {
 
 func (mod *Module) ToSymbolic() *symbolic.Module {
 	inclusionStmtMap := make(map[*parse.InclusionImportStatement]*symbolic.IncludedChunk, len(mod.IncludedChunkMap))
+	importedModuleMap := make(map[*parse.ImportStatement]*symbolic.Module)
 
 	for k, v := range mod.InclusionStatementMap {
 		inclusionStmtMap[k] = &symbolic.IncludedChunk{
 			ParsedChunk: v.ParsedChunk,
 		}
 	}
-	return symbolic.NewModule(mod.MainChunk, inclusionStmtMap)
+
+	for k, v := range mod.DirectlyImportedModulesByStatement {
+		importedModuleMap[k] = v.ToSymbolic()
+	}
+
+	return symbolic.NewModule(mod.MainChunk, inclusionStmtMap, importedModuleMap)
 }
 
 func (mod *Module) ParameterNames() (names []string) {

@@ -82,15 +82,24 @@ func (v ConcreteGlobalValue) Constness() GlobalConstness {
 }
 
 type SymbolicEvalCheckInput struct {
-	Node                           *parse.Chunk
-	Module                         *Module
+	Node   *parse.Chunk
+	Module *Module
+
+	//should not be set if UseBaseGlobals is true
 	Globals                        map[string]ConcreteGlobalValue
 	AdditionalSymbolicGlobalConsts map[string]SymbolicValue
+
+	UseBaseGlobals                bool
+	SymbolicBaseGlobals           map[string]SymbolicValue
+	SymbolicBasePatterns          map[string]Pattern
+	SymbolicBasePatternNamespaces map[string]*PatternNamespace
 
 	IsShellChunk   bool
 	ShellLocalVars map[string]any
 	Context        *Context
-	//InitialSymbolicData *SymbolicData
+
+	importPositions     []parse.SourcePositionRange
+	initialSymbolicData *SymbolicData
 }
 
 // SymbolicEvalCheck performs various checks on an AST, most checks are type checks.
@@ -100,19 +109,35 @@ type SymbolicEvalCheckInput struct {
 // StaticCheck() should be runned before this function.
 func SymbolicEvalCheck(input SymbolicEvalCheckInput) (*SymbolicData, error) {
 
-	state := newSymbolicState(input.Context, input.Module.MainChunk)
+	state := newSymbolicState(input.Context, input.Module.mainChunk)
 	state.Module = input.Module
+	state.baseGlobals = input.SymbolicBaseGlobals
+	state.basePatterns = input.SymbolicBasePatterns
+	state.basePatternNamespaces = input.SymbolicBasePatternNamespaces
+	state.importPositions = utils.CopySlice(input.importPositions)
 
-	for k, concreteGlobal := range input.Globals {
-		symbolicVal, err := extData.ToSymbolicValue(concreteGlobal.Value, false)
-		if err != nil {
-			return nil, fmt.Errorf("cannot convert global %s: %s", k, err)
+	if input.UseBaseGlobals {
+		if input.Globals != nil {
+			return nil, errors.New(".Globals should not be set")
 		}
-		state.setGlobal(k, symbolicVal, concreteGlobal.Constness())
-	}
+		if input.AdditionalSymbolicGlobalConsts != nil {
+			return nil, errors.New(".AdditionalSymbolicGlobalConsts should not be set")
+		}
+		for k, v := range input.SymbolicBaseGlobals {
+			state.setGlobal(k, v, GlobalConst)
+		}
+	} else {
+		for k, concreteGlobal := range input.Globals {
+			symbolicVal, err := extData.ToSymbolicValue(concreteGlobal.Value, false)
+			if err != nil {
+				return nil, fmt.Errorf("cannot convert global %s: %s", k, err)
+			}
+			state.setGlobal(k, symbolicVal, concreteGlobal.Constness())
+		}
 
-	for k, v := range input.AdditionalSymbolicGlobalConsts {
-		state.setGlobal(k, v, GlobalConst)
+		for k, v := range input.AdditionalSymbolicGlobalConsts {
+			state.setGlobal(k, v, GlobalConst)
+		}
 	}
 
 	if input.IsShellChunk {
@@ -130,33 +155,29 @@ func SymbolicEvalCheck(input SymbolicEvalCheckInput) (*SymbolicData, error) {
 		}
 	}
 
-	//
-
-	data := NewSymbolicData()
-	state.symbolicData = data
+	if input.initialSymbolicData != nil {
+		state.symbolicData = input.initialSymbolicData
+	} else {
+		state.symbolicData = NewSymbolicData()
+	}
 
 	_, err := symbolicEval(input.Node, state)
 
 	finalErrBuff := bytes.NewBuffer(nil)
 	if err != nil { //unexpected error
-		finalErrBuff.WriteString(err.Error())
-		finalErrBuff.WriteRune('\n')
 		return nil, err
 	}
 
-	data.errors = state.errors
-	data.warnings = state.warnings
-
-	if len(state.errors) == 0 { //no error in checked code
-		return data, nil
+	if len(state.errors()) == 0 { //no error in checked code
+		return state.symbolicData, nil
 	}
 
-	for _, err := range state.errors {
+	for _, err := range state.errors() {
 		finalErrBuff.WriteString(err.Error())
 		finalErrBuff.WriteRune('\n')
 	}
 
-	return data, errors.New(finalErrBuff.String())
+	return state.symbolicData, errors.New(finalErrBuff.String())
 }
 
 func SymbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr error) {
@@ -414,7 +435,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		args := make([]SymbolicValue, len(n.Arguments))
 
-		errCount := len(state.errors)
+		errCount := len(state.errors())
 
 		for i, argNode := range n.Arguments {
 			arg, err := symbolicEval(argNode, state)
@@ -424,7 +445,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			args[i] = arg
 		}
 
-		if len(state.errors) == errCount {
+		if len(state.errors()) == errCount {
 			patt, err := callee.(Pattern).Call(state.ctx, args)
 			state.consumeSymbolicGoFunctionErrors(func(msg string) {
 				state.addError(makeSymbolicEvalError(n, state, msg))
@@ -1055,7 +1076,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		if state.Module == nil {
 			panic(fmt.Errorf("cannot evaluate inclusion import statement: global state's module is nil"))
 		}
-		chunk, ok := state.Module.InclusionStatementMap[n]
+		chunk, ok := state.Module.inclusionStatementMap[n]
 		if !ok { //included file does not exist or is a folder
 			return nil, nil
 		}
@@ -1089,6 +1110,42 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		if !strings.HasSuffix(pathOrURL, ".ix") {
 			state.addError(makeSymbolicEvalError(n.Source, state, IMPORTED_MOD_PATH_MUST_END_WITH_IX))
+			return nil, nil
+		}
+
+		importedModule, ok := state.Module.directlyImportedModules[n]
+		if !ok {
+			return nil, nil
+		}
+
+		//TODO: use concrete context with permissions of imported module
+		importedModuleContext := NewSymbolicContext(state.ctx.startingConcreteContext)
+		for name, basePattern := range state.basePatterns {
+			importedModuleContext.AddNamedPattern(name, basePattern, false)
+		}
+
+		for name, basePatternNamespace := range state.basePatternNamespaces {
+			importedModuleContext.AddPatternNamespace(name, basePatternNamespace, false)
+		}
+
+		importPositions := append(utils.CopySlice(state.importPositions), state.getErrorMesssageLocation(n)...)
+
+		data, err := SymbolicEvalCheck(SymbolicEvalCheckInput{
+			Node:   importedModule.mainChunk.Node,
+			Module: importedModule,
+
+			UseBaseGlobals:                true,
+			SymbolicBaseGlobals:           state.baseGlobals,
+			SymbolicBasePatterns:          state.basePatterns,
+			SymbolicBasePatternNamespaces: state.basePatternNamespaces,
+			Context:                       importedModuleContext,
+
+			initialSymbolicData: state.symbolicData,
+			importPositions:     importPositions,
+		})
+
+		if data == nil && err != nil {
+			return nil, err
 		}
 
 		return nil, nil
@@ -1230,7 +1287,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			return nil, err
 		}
 
-		for _, err := range modState.errors {
+		for _, err := range modState.errors() {
 			state.addError(err)
 		}
 
@@ -2946,14 +3003,14 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			name := p.Name()
 			var err error
 
-			prevErrCount := len(state.errors)
+			prevErrCount := len(state.errors())
 
 			entryPattern, err := symbolicallyEvalPatternNode(p.Value, state)
 			if err != nil {
 				return nil, err
 			}
 
-			if _, ok := entryPattern.(*AnyPattern); ok && len(state.errors) > prevErrCount {
+			if _, ok := entryPattern.(*AnyPattern); ok && len(state.errors()) > prevErrCount {
 				//AnyPattern may be present due to an issue (invalid pattern call) so
 				//we handle this case separately
 				pattern.entries[name] = &TypePattern{val: ANY_SERIALIZABLE}
@@ -3235,7 +3292,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			return nil, err
 		}
 
-		for _, err := range modState.errors {
+		for _, err := range modState.errors() {
 			state.addError(err)
 		}
 
@@ -3269,7 +3326,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			return nil, err
 		}
 
-		for _, err := range modState.errors {
+		for _, err := range modState.errors() {
 			state.addError(err)
 		}
 
@@ -3348,7 +3405,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			return nil, err
 		}
 
-		for _, err := range modState.errors {
+		for _, err := range modState.errors() {
 			state.addError(err)
 		}
 

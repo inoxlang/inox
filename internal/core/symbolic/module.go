@@ -22,23 +22,29 @@ var (
 
 // A Module represents a symbolic Module.
 type Module struct {
-	MainChunk             *parse.ParsedChunk // if nil, any module is matched
-	InclusionStatementMap map[*parse.InclusionImportStatement]*IncludedChunk
+	mainChunk               *parse.ParsedChunk // if nil, any module is matched
+	inclusionStatementMap   map[*parse.InclusionImportStatement]*IncludedChunk
+	directlyImportedModules map[*parse.ImportStatement]*Module
 }
 
-func NewModule(chunk *parse.ParsedChunk, inclusionStatementMap map[*parse.InclusionImportStatement]*IncludedChunk) *Module {
+func NewModule(
+	chunk *parse.ParsedChunk,
+	inclusionStatementMap map[*parse.InclusionImportStatement]*IncludedChunk,
+	importedModuleMap map[*parse.ImportStatement]*Module,
+) *Module {
 	return &Module{
-		MainChunk:             chunk,
-		InclusionStatementMap: inclusionStatementMap,
+		mainChunk:               chunk,
+		inclusionStatementMap:   inclusionStatementMap,
+		directlyImportedModules: importedModuleMap,
 	}
 }
 
 func (mod *Module) Name() string {
-	return mod.MainChunk.Name()
+	return mod.mainChunk.Name()
 }
 
 func (mod *Module) GetLineColumn(node parse.Node) (int32, int32) {
-	return mod.MainChunk.GetLineColumn(node)
+	return mod.mainChunk.GetLineColumn(node)
 }
 
 func (m *Module) Test(v SymbolicValue) bool {
@@ -47,16 +53,15 @@ func (m *Module) Test(v SymbolicValue) bool {
 	if !ok {
 		return false
 	}
-	if m.MainChunk == nil {
+	if m.mainChunk == nil {
 		return true
 	}
 
-	return m.MainChunk == otherMod.MainChunk && reflect.ValueOf(m.InclusionStatementMap).Pointer() == reflect.ValueOf(otherMod.InclusionStatementMap).Pointer()
+	return m.mainChunk == otherMod.mainChunk && reflect.ValueOf(m.inclusionStatementMap).Pointer() == reflect.ValueOf(otherMod.inclusionStatementMap).Pointer()
 }
 
 func (m *Module) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%module")))
-	return
 }
 
 func (m *Module) WidestOfType() SymbolicValue {

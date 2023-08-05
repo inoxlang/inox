@@ -12,9 +12,10 @@ import (
 type State struct {
 	parent *State //can be nil
 
-	ctx                      *Context
-	chunkStack               []*parse.ParsedChunk
-	inclusionImportPositions []parse.SourcePositionRange
+	ctx        *Context
+	chunkStack []*parse.ParsedChunk
+	//positions of module/chunk import statements
+	importPositions []parse.SourcePositionRange
 
 	// first scope is the global scope, forks start with a global scope copy & a copy of the deepest local scope
 	scopeStack            []*scopeInfo
@@ -29,15 +30,16 @@ type State struct {
 	iterationChange   IterationChange
 	Module            *Module
 
+	baseGlobals           map[string]SymbolicValue
+	basePatterns          map[string]Pattern
+	basePatternNamespaces map[string]*PatternNamespace
+
 	tempSymbolicGoFunctionErrors         []string
 	tempSymbolicGoFunctionParameters     *[]SymbolicValue
 	tempSymbolicGoFunctionParameterNames []string
 
-	warnings        []SymbolicEvaluationWarning
-	errors          []SymbolicEvaluationError
-	lastErrorNode   parse.Node
-	errorMessageSet map[string]bool
-	symbolicData    *SymbolicData
+	lastErrorNode parse.Node
+	symbolicData  *SymbolicData
 }
 
 type scopeInfo struct {
@@ -67,7 +69,6 @@ func newSymbolicState(ctx *Context, chunk *parse.ParsedChunk) *State {
 		},
 		returnValue:     nil,
 		iterationChange: NoIterationChange,
-		errorMessageSet: map[string]bool{},
 	}
 	ctx.associatedState = state
 
@@ -75,7 +76,7 @@ func newSymbolicState(ctx *Context, chunk *parse.ParsedChunk) *State {
 }
 
 func (state *State) getErrorMesssageLocation(node parse.Node) parse.SourcePositionStack {
-	sourcePositionStack := utils.CopySlice(state.inclusionImportPositions)
+	sourcePositionStack := utils.CopySlice(state.importPositions)
 	sourcePositionStack = append(sourcePositionStack, state.currentChunk().GetSourcePosition(node.Base().Span))
 	return sourcePositionStack
 }
@@ -89,19 +90,19 @@ func (state *State) topChunk() *parse.ParsedChunk {
 
 func (state *State) currentChunk() *parse.ParsedChunk {
 	if len(state.chunkStack) == 0 {
-		state.chunkStack = append(state.chunkStack, state.Module.MainChunk)
+		state.chunkStack = append(state.chunkStack, state.Module.mainChunk)
 	}
 	return state.chunkStack[len(state.chunkStack)-1]
 }
 
 func (state *State) pushChunk(chunk *parse.ParsedChunk, stmt *parse.InclusionImportStatement) {
-	state.inclusionImportPositions = append(state.inclusionImportPositions, state.currentChunk().GetSourcePosition(stmt.Span))
+	state.importPositions = append(state.importPositions, state.currentChunk().GetSourcePosition(stmt.Span))
 	state.chunkStack = append(state.chunkStack, chunk)
 }
 
 func (state *State) popChunk() {
 	state.chunkStack = state.chunkStack[:len(state.chunkStack)-1]
-	state.inclusionImportPositions = state.inclusionImportPositions[:len(state.inclusionImportPositions)-1]
+	state.importPositions = state.importPositions[:len(state.importPositions)-1]
 }
 
 func (state *State) assertHasLocals() {
@@ -419,6 +420,9 @@ func (state *State) fork() *State {
 	child.chunkStack = utils.CopySlice(state.chunkStack)
 	child.symbolicData = state.symbolicData
 	child.returnType = state.returnType
+	child.baseGlobals = state.baseGlobals
+	child.basePatterns = state.basePatterns
+	child.basePatternNamespaces = state.basePatternNamespaces
 
 	globalScopeCopy := &scopeInfo{
 		variables: make(map[string]varSymbolicInfo, 0),
@@ -480,22 +484,11 @@ func (state *State) join(forks ...*State) {
 }
 
 func (state *State) addError(err SymbolicEvaluationError) {
-	if state.errorMessageSet[err.Error()] {
-		return
-	}
-	state.errorMessageSet[err.Error()] = true
-
-	state.errors = append(state.errors, err)
-	if state.parent != nil {
-		state.parent.addError(err)
-	}
+	state.symbolicData.AddError(err)
 }
 
 func (state *State) addWarning(warning SymbolicEvaluationWarning) {
-	state.warnings = append(state.warnings, warning)
-	if state.parent != nil {
-		state.parent.addWarning(warning)
-	}
+	state.symbolicData.AddWarning(warning)
 }
 
 func (state *State) addSymbolicGoFunctionError(msg string) {
@@ -529,12 +522,19 @@ func (state *State) consumeSymbolicGoFunctionParameters() ([]SymbolicValue, []st
 	return *state.tempSymbolicGoFunctionParameters, state.tempSymbolicGoFunctionParameterNames, true
 }
 
+func (state *State) errors() []SymbolicEvaluationError {
+	return state.symbolicData.errors
+}
+func (state *State) warnings() []SymbolicEvaluationWarning {
+	return state.symbolicData.warnings
+}
+
 func (state *State) Errors() []SymbolicEvaluationError {
-	return utils.CopySlice(state.errors)
+	return utils.CopySlice(state.symbolicData.errors)
 }
 
 func (state *State) Warnings() []SymbolicEvaluationWarning {
-	return utils.CopySlice(state.warnings)
+	return utils.CopySlice(state.symbolicData.warnings)
 }
 
 type varSymbolicInfo struct {

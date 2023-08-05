@@ -41,7 +41,7 @@ func _makeStateAndChunk(code string, includedFiles map[string]string, globals ..
 		"int": state.ctx.ResolveNamedPattern("int"),
 	}), false)
 	state.Module = &Module{
-		MainChunk: chunk,
+		mainChunk: chunk,
 	}
 
 	if len(globals) > 1 {
@@ -51,8 +51,9 @@ func _makeStateAndChunk(code string, includedFiles map[string]string, globals ..
 	}
 
 	if len(includedFiles) > 0 {
-		state.Module.InclusionStatementMap = make(map[*parse.InclusionImportStatement]*IncludedChunk, len(includedFiles))
+		state.Module.inclusionStatementMap = make(map[*parse.InclusionImportStatement]*IncludedChunk, len(includedFiles))
 	}
+
 	for file, content := range includedFiles {
 		importStmt := parse.FindNode(chunk.Node, (*parse.InclusionImportStatement)(nil), func(stmt *parse.InclusionImportStatement, _ bool) bool {
 			pathLit, ok := stmt.Source.(*parse.RelativePathLiteral)
@@ -68,7 +69,7 @@ func _makeStateAndChunk(code string, includedFiles map[string]string, globals ..
 			return nil, nil, fmt.Errorf("failed to parse included chunk %s", file)
 		}
 
-		state.Module.InclusionStatementMap[importStmt] = &IncludedChunk{ParsedChunk: includedChunk}
+		state.Module.inclusionStatementMap[importStmt] = &IncludedChunk{ParsedChunk: includedChunk}
 	}
 
 	return chunk.Node, state, err

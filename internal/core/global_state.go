@@ -35,7 +35,7 @@ type GlobalState struct {
 	lockedValues []PotentiallySharable
 
 	GetBaseGlobalsForImportedModule      func(ctx *Context, manifest *Manifest) (GlobalVariables, error) // ok if nil
-	GetBasePatternsForImportedModule     func() (map[string]Pattern, map[string]*PatternNamespace)       // ok if nil
+	GetBasePatternsForImportedModule     func() (map[string]Pattern, map[string]*PatternNamespace)       // return nil maps by default
 	SymbolicBaseGlobalsForImportedModule map[string]symbolic.SymbolicValue                               // ok if nil, should not be modified
 	Out                                  io.Writer                                                       //io.Discard by default
 	Logger                               zerolog.Logger                                                  //zerolog.Logger(io.Discard) by default
@@ -69,6 +69,10 @@ func NewGlobalState(ctx *Context, constants ...map[string]Value) *GlobalState {
 
 		Out:    io.Discard,
 		Logger: zerolog.New(io.Discard),
+
+		GetBasePatternsForImportedModule: func() (map[string]Pattern, map[string]*PatternNamespace) {
+			return nil, nil
+		},
 	}
 	ctx.state = state
 

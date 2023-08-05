@@ -143,15 +143,13 @@ func ImportModule(config ImportConfig) (*Routine, error) {
 	// add base patterns
 	var basePatterns map[string]Pattern
 	var basePatternNamespaces map[string]*PatternNamespace
-	if config.ParentState.GetBasePatternsForImportedModule != nil {
-		basePatterns, basePatternNamespaces = config.ParentState.GetBasePatternsForImportedModule()
+	basePatterns, basePatternNamespaces = config.ParentState.GetBasePatternsForImportedModule()
 
-		for name, patt := range basePatterns {
-			routineCtx.AddNamedPattern(name, patt)
-		}
-		for name, ns := range basePatternNamespaces {
-			routineCtx.AddPatternNamespace(name, ns)
-		}
+	for name, patt := range basePatterns {
+		routineCtx.AddNamedPattern(name, patt)
+	}
+	for name, ns := range basePatternNamespaces {
+		routineCtx.AddPatternNamespace(name, ns)
 	}
 
 	// add base globals
@@ -267,11 +265,12 @@ func fetchParseImportedModules(mod *Module, ctx *Context, fls afs.Filesystem, co
 	}
 
 	var (
-		wg                 = new(sync.WaitGroup)
-		lock               sync.Mutex
-		importedModules    = map[string]*Module{}
-		errors             []error
-		unrecoverableErors []error
+		wg                          = new(sync.WaitGroup)
+		lock                        sync.Mutex
+		importedModules             = map[string]*Module{}
+		importedModulesByImportStmt = map[*parse.ImportStatement]*Module{}
+		errors                      []error
+		unrecoverableErors          []error
 	)
 
 	wg.Add(len(stmtSources))
@@ -294,6 +293,7 @@ func fetchParseImportedModules(mod *Module, ctx *Context, fls afs.Filesystem, co
 
 					if importedMod != nil {
 						importedModules[importedMod.Name()] = importedMod
+						importedModulesByImportStmt[stmtSources[src]] = importedMod
 						if err != nil {
 							errors = append(errors, err)
 						}
@@ -323,6 +323,7 @@ func fetchParseImportedModules(mod *Module, ctx *Context, fls afs.Filesystem, co
 	}
 
 	mod.DirectlyImportedModules = importedModules
+	mod.DirectlyImportedModulesByStatement = importedModulesByImportStmt
 
 	for _, importedMod := range importedModules {
 		mod.OriginalErrors = append(mod.OriginalErrors, importedMod.OriginalErrors...)

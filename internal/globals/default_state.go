@@ -1,11 +1,13 @@
 package internal
 
 import (
+	"fmt"
 	"io"
 	"path/filepath"
 
 	"github.com/inoxlang/inox/internal/config"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 
 	"github.com/inoxlang/inox/internal/default_state"
 	"github.com/inoxlang/inox/internal/globals/chrome_ns"
@@ -108,8 +110,6 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 		// constants
 		core.INITIAL_WORKING_DIR_VARNAME:        core.INITIAL_WORKING_DIR_PATH,
 		core.INITIAL_WORKING_DIR_PREFIX_VARNAME: core.INITIAL_WORKING_DIR_PATH_PATTERN,
-
-		default_state.PREINIT_DATA_GLOBAL_NAME: preinitData,
 
 		// namespaces
 		"fs":       fs_ns.NewFsNamespace(),
@@ -268,11 +268,26 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 		constants[default_state.MODULE_FILEPATH_GLOBAL_NAME] = core.PathFrom(conf.AbsoluteModulePath)
 	}
 
+	baseGlobals := utils.CopyMap(constants)
+	constants[default_state.PREINIT_DATA_GLOBAL_NAME] = preinitData
+
+	symbolicBaseGlobals := map[string]symbolic.SymbolicValue{}
+	{
+		encountered := map[uintptr]symbolic.SymbolicValue{}
+		for k, v := range baseGlobals {
+			symbolicValue, err := v.ToSymbolicValue(ctx, encountered)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert base global '%s' to symbolic: %w", k, err)
+			}
+			symbolicBaseGlobals[k] = symbolicValue
+		}
+	}
+
 	state := core.NewGlobalState(ctx, constants)
 	state.Out = conf.Out
 	state.Logger = logger
 	state.GetBaseGlobalsForImportedModule = func(ctx *core.Context, manifest *core.Manifest) (core.GlobalVariables, error) {
-		importedModuleGlobals := utils.CopyMap(constants)
+		importedModuleGlobals := utils.CopyMap(baseGlobals)
 		env, err := env_ns.NewEnvNamespace(ctx, nil, conf.AllowMissingEnvVars)
 		if err != nil {
 			return core.GlobalVariables{}, err
@@ -285,6 +300,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 	state.GetBasePatternsForImportedModule = func() (map[string]core.Pattern, map[string]*core.PatternNamespace) {
 		return utils.CopyMap(core.DEFAULT_NAMED_PATTERNS), utils.CopyMap(core.DEFAULT_PATTERN_NAMESPACES)
 	}
+	state.SymbolicBaseGlobalsForImportedModule = symbolicBaseGlobals
 
 	//add global containing databases
 	dbs := map[string]core.Value{}

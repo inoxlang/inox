@@ -86,10 +86,8 @@ func TestFindCompletions(t *testing.T) {
 					})
 
 					data, _ := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
-						Node: chunk.Node,
-						Module: &symbolic.Module{
-							MainChunk: chunk,
-						},
+						Node:         chunk.Node,
+						Module:       symbolic.NewModule(chunk, nil, nil),
 						Globals:      globals,
 						IsShellChunk: false,
 						Context:      utils.Must(state.Ctx.ToSymbolicValue()),

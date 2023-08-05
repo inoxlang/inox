@@ -961,13 +961,7 @@ switch_:
 		globals[importModuleNode][MOD_ARGS_VARNAME] = globalVarInfo{isConst: true, isStartConstant: true}
 
 		//add base patterns & pattern namespaces to child checker
-		var (
-			basePatterns          map[string]Pattern
-			basePatternNamespaces map[string]*PatternNamespace
-		)
-		if c.checkInput.State.GetBasePatternsForImportedModule != nil {
-			basePatterns, basePatternNamespaces = c.checkInput.State.GetBasePatternsForImportedModule()
-		}
+		basePatterns, basePatternNamespaces := c.checkInput.State.GetBasePatternsForImportedModule()
 
 		patterns := make(map[parse.Node]map[string]int)
 		patterns[importModuleNode] = map[string]int{}

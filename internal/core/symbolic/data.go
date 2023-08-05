@@ -23,8 +23,10 @@ type SymbolicData struct {
 	contextData                 map[parse.Node]ContextData
 	allowedNonPresentProperties map[parse.Node][]string
 	runtimeTypeCheckPatterns    map[parse.Node]any //concrete Pattern or nil (nil means the check is disabled)
-	errors                      []SymbolicEvaluationError
-	warnings                    []SymbolicEvaluationWarning
+
+	errorMessageSet map[string]bool
+	errors          []SymbolicEvaluationError
+	warnings        []SymbolicEvaluationWarning
 }
 
 func NewSymbolicData() *SymbolicData {
@@ -36,11 +38,26 @@ func NewSymbolicData() *SymbolicData {
 		allowedNonPresentProperties: make(map[parse.Node][]string, 0),
 		contextData:                 make(map[parse.Node]ContextData),
 		runtimeTypeCheckPatterns:    make(map[parse.Node]any, 0),
+
+		errorMessageSet: make(map[string]bool, 0),
 	}
 }
 
 func (data *SymbolicData) IsEmpty() bool {
 	return len(data.mostSpecificNodeValues) == 0 && len(data.errors) == 0
+}
+
+func (data *SymbolicData) AddError(err SymbolicEvaluationError) {
+	if data.errorMessageSet[err.Error()] {
+		return
+	}
+	data.errorMessageSet[err.Error()] = true
+
+	data.errors = append(data.errors, err)
+}
+
+func (data *SymbolicData) AddWarning(warning SymbolicEvaluationWarning) {
+	data.warnings = append(data.warnings, warning)
 }
 
 func (data *SymbolicData) SetMostSpecificNodeValue(node parse.Node, v SymbolicValue) {

@@ -1229,10 +1229,8 @@ func (sh *shell) checkModule(mod *core.Module) (*core.StaticCheckData, *symbolic
 	}
 
 	symbData, err := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
-		Node: mod.MainChunk.Node,
-		Module: &symbolic.Module{
-			MainChunk: mod.MainChunk,
-		},
+		Node:    mod.MainChunk.Node,
+		Module:  symbolic.NewModule(mod.MainChunk, nil, nil),
 		Globals: globals,
 
 		IsShellChunk:   true,
