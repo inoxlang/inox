@@ -18,6 +18,8 @@ var (
 	staticallyCheckDbResolutionDataFnRegistryLock sync.Mutex
 
 	ErrNonUniqueDbOpenFnRegistration                = errors.New("non unique open DB function registration")
+	ErrOwnerStateAlreadySet                         = errors.New("owner state already set")
+	ErrOwnerStateNotSet                             = errors.New("owner state not set")
 	ErrNameCollisionWithInitialDatabasePropertyName = errors.New("name collision with initial database property name")
 	ErrTopLevelEntitiesAlreadyLoaded                = errors.New("top-level entities already loaded")
 	ErrDatabaseSchemaOnlyUpdatableByOwnerState      = errors.New("database schema can only be updated by owner state")
@@ -37,7 +39,7 @@ type DatabaseIL struct {
 	schemaUpdateExpected bool
 	schemaUpdated        atomic.Bool
 	schemaUpdateLock     sync.Mutex
-	ownerState           *GlobalState
+	ownerState           *GlobalState //optional, can be set later using .SetOwnerStateOnce
 
 	propertyNames    []string
 	topLevelEntities map[string]Serializable
@@ -143,11 +145,22 @@ func GetStaticallyCheckDbResolutionDataFn(scheme Scheme) (StaticallyCheckDbResol
 	return fn, ok
 }
 
+func (db *DatabaseIL) SetOwnerStateOnce(state *GlobalState) {
+	if db.ownerState != nil {
+		panic(ErrOwnerStateAlreadySet)
+	}
+	db.ownerState = state
+}
+
 func (db *DatabaseIL) Resource() SchemeHolder {
 	return db.inner.Resource()
 }
 
 func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern) {
+	if db.ownerState == nil {
+		panic(ErrOwnerStateNotSet)
+	}
+
 	if !db.schemaUpdateExpected {
 		panic(ErrNoneDatabaseSchemaUpdateExpected)
 	}
@@ -181,6 +194,9 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern) {
 }
 
 func (db *DatabaseIL) Close(ctx *Context) error {
+	if db.ownerState == nil {
+		panic(ErrOwnerStateNotSet)
+	}
 	return db.inner.Close(ctx)
 }
 
@@ -195,20 +211,25 @@ func (db *DatabaseIL) GetGoMethod(name string) (*GoFunction, bool) {
 }
 
 func (db *DatabaseIL) Prop(ctx *Context, name string) Value {
+	if db.ownerState == nil {
+		panic(ErrOwnerStateNotSet)
+	}
+
 	switch name {
 	case "schema":
 		return db.initialSchema
-	}
-
-	if db.schemaUpdateExpected {
-		if !db.schemaUpdated.Load() {
-			panic(ErrInvalidAccessSchemaNotUpdatedYet)
+	case "update_schema", "close":
+	default:
+		if db.schemaUpdateExpected {
+			if !db.schemaUpdated.Load() {
+				panic(ErrInvalidAccessSchemaNotUpdatedYet)
+			}
 		}
-	}
 
-	val, ok := db.topLevelEntities[name]
-	if ok {
-		return val
+		val, ok := db.topLevelEntities[name]
+		if ok {
+			return val
+		}
 	}
 
 	method, ok := db.GetGoMethod(name)

@@ -193,7 +193,6 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		}
 		dbs[config.Name] = core.WrapDatabase(ctx, core.DatabaseWrappingArgs{
 			Inner:                db,
-			OwnerState:           state,
 			ExpectedSchemaUpdate: config.ExpectedSchemaUpdate,
 		})
 	}
@@ -210,10 +209,12 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		Out:                 out,
 		LogOut:              args.LogOut,
 	})
+
 	if err != nil {
 		finalErr = fmt.Errorf("failed to create global state: %w", err)
 		return
 	}
+
 	state = globalState
 	state.Module = mod
 	state.Manifest = manifest
@@ -228,6 +229,10 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		state.MainState = parentState
 	} else {
 		state.MainState = state
+	}
+
+	for _, db := range dbs {
+		db.SetOwnerStateOnce(state)
 	}
 
 	//pass patterns & host aliases of the preinit state to the state
