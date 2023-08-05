@@ -81,8 +81,8 @@ func (db *DatabaseIL) PropertyNames() []string {
 	return db.propertyNames
 }
 
-func (DatabaseIL *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern) *Error {
-	return nil
+func (DatabaseIL *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern) {
+
 }
 
 func (DatabaseIL *DatabaseIL) Close(*Context) *Error {
@@ -91,5 +91,4 @@ func (DatabaseIL *DatabaseIL) Close(*Context) *Error {
 
 func (r *DatabaseIL) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%database")))
-	return
 }

@@ -220,20 +220,19 @@ func (ldb *LocalDatabase) BaseURL() core.URL {
 	return core.URL(ldb.host + "/")
 }
 
-func (ldb *LocalDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern) error {
+func (ldb *LocalDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern) {
 	ldb.topLevelValuesLock.Lock()
 	defer ldb.topLevelValuesLock.Unlock()
 
 	if ldb.topLevelValues != nil {
-		return core.ErrTopLevelEntitiesAlreadyLoaded
+		panic(core.ErrTopLevelEntitiesAlreadyLoaded)
 	}
 
 	if ldb.schema.Equal(ctx, schema, map[uintptr]uintptr{}, 0) {
-		return nil
+		return
 	}
 	ldb.schemaKV.Set(ctx, "/", schema, ldb)
 	ldb.schema = schema
-	return nil
 }
 
 func (ldb *LocalDatabase) Close(ctx *core.Context) error {

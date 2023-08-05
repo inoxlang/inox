@@ -200,7 +200,7 @@ func TestOpenDatabase(t *testing.T) {
 				"users": setPattern,
 			})
 
-			utils.PanicIfErr(db.UpdateSchema(ctx, schema))
+			db.UpdateSchema(ctx, schema)
 
 			err = db.Close(ctx)
 			if !assert.NoError(t, err) {
@@ -490,7 +490,7 @@ func TestUpdateSchema(t *testing.T) {
 			"users": setPattern,
 		})
 
-		utils.PanicIfErr(ldb.UpdateSchema(ctx, schema))
+		ldb.UpdateSchema(ctx, schema)
 
 		topLevelValues := ldb.TopLevelEntities(ctx)
 
@@ -523,7 +523,9 @@ func TestUpdateSchema(t *testing.T) {
 			"users": setPattern,
 		})
 
-		assert.Error(t, core.ErrTopLevelEntitiesAlreadyLoaded, ldb.UpdateSchema(ctx, schema))
+		assert.PanicsWithError(t, core.ErrTopLevelEntitiesAlreadyLoaded.Error(), func() {
+			ldb.UpdateSchema(ctx, schema)
+		})
 	})
 
 	t.Run("updating with the same schema should be ignored", func(t *testing.T) {
@@ -537,7 +539,7 @@ func TestUpdateSchema(t *testing.T) {
 			"a": core.INT_PATTERN,
 		})
 
-		utils.PanicIfErr(ldb.UpdateSchema(ctx, schema))
+		ldb.UpdateSchema(ctx, schema)
 
 		err := ldb.Close(ctx)
 		if !assert.NoError(t, err) {
@@ -555,10 +557,7 @@ func TestUpdateSchema(t *testing.T) {
 			"a": core.INT_PATTERN,
 		})
 
-		err = ldb.UpdateSchema(ctx, schemaCopy)
-		if !assert.NoError(t, err) {
-			return
-		}
+		ldb.UpdateSchema(ctx, schemaCopy)
 
 		//should not have changed
 		assert.Same(t, currentSchema, ldb.schema)

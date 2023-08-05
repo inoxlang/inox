@@ -51,7 +51,7 @@ type Database interface {
 	//UpdateSchema updates the schema and validates the content of the database,
 	//this method should return ErrTopLevelEntitiesAlreadyLoaded if it is called after .TopLevelEntities.
 	//The caller should always pass a schema whose ALL entry patterns have a loading function.
-	UpdateSchema(ctx *Context, schema *ObjectPattern) error
+	UpdateSchema(ctx *Context, schema *ObjectPattern)
 
 	TopLevelEntities(ctx *Context) map[string]Serializable
 	Close(ctx *Context) error
@@ -124,7 +124,7 @@ func (db *DatabaseIL) Resource() SchemeHolder {
 	return db.inner.Resource()
 }
 
-func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern) error {
+func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern) {
 	err := schema.ForEachEntry(func(propName string, propPattern Pattern, isOptional bool) error {
 		if !hasTypeLoadingFunction(propPattern) {
 			return fmt.Errorf("failed to update schema: pattern of .%s has no loading function: %w", propName, ErrNoLoadInstanceFnRegistered)
@@ -133,9 +133,9 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern) error {
 	})
 
 	if err != nil {
-		return err
+		panic(err)
 	}
-	return db.inner.UpdateSchema(ctx, schema)
+	db.inner.UpdateSchema(ctx, schema)
 }
 
 func (db *DatabaseIL) Close(ctx *Context) error {
@@ -194,8 +194,8 @@ func (db *FailedToOpenDatabase) Schema() *ObjectPattern {
 	return EMPTY_INEXACT_OBJECT_PATTERN
 }
 
-func (db *FailedToOpenDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern) error {
-	return ErrNotImplemented
+func (db *FailedToOpenDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern) {
+	panic(ErrNotImplemented)
 }
 
 func (db *FailedToOpenDatabase) TopLevelEntities(_ *Context) map[string]Serializable {
