@@ -412,7 +412,7 @@ var (
 	OPTION_PATTERN = &TypePattern{
 		Type:          OPTION_TYPE,
 		Name:          "opt",
-		SymbolicValue: &symbolic.OptionPattern{},
+		SymbolicValue: symbolic.ANY_OPTION,
 	}
 	FILE_MODE_PATTERN = &TypePattern{
 		Type:          FILE_MODE_TYPE,

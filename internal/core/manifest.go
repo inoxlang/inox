@@ -1156,12 +1156,12 @@ func getModuleParameters(ctx *Context, v Value) (ModuleParameters, error) {
 
 			switch val := v.(type) {
 			case *OptionPattern:
-				if len(val.Name) == 1 {
-					param.singleLetterCliArgName = rune(val.Name[0])
+				if len(val.name) == 1 {
+					param.singleLetterCliArgName = rune(val.name[0])
 				} else {
-					param.cliArgName = val.Name
+					param.cliArgName = val.name
 				}
-				param.pattern = val.Value
+				param.pattern = val.value
 			case Pattern:
 				param.cliArgName = string(param.name)
 				param.pattern = val

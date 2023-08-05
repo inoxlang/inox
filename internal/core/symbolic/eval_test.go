@@ -104,6 +104,22 @@ func TestSymbolicEval(t *testing.T) {
 		assert.Equal(t, EMPTY_STRING, res)
 	})
 
+	t.Run("flag literal", func(t *testing.T) {
+		n, state := MakeTestStateAndChunk("--verbose")
+		res, err := symbolicEval(n, state)
+		assert.NoError(t, err)
+		assert.Empty(t, state.errors())
+		assert.Equal(t, NewOption("verbose", TRUE), res)
+	})
+
+	t.Run("option expression", func(t *testing.T) {
+		n, state := MakeTestStateAndChunk(`--name="foo"`)
+		res, err := symbolicEval(n, state)
+		assert.NoError(t, err)
+		assert.Empty(t, state.errors())
+		assert.Equal(t, NewOption("name", NewString("foo")), res)
+	})
+
 	t.Run("byte slice literal", func(t *testing.T) {
 		n, state := MakeTestStateAndChunk("0x[01]")
 		res, err := symbolicEval(n, state)
@@ -5568,7 +5584,7 @@ func TestSymbolicEval(t *testing.T) {
 		res, err := symbolicEval(n, state)
 		assert.NoError(t, err)
 		assert.Empty(t, state.errors())
-		assert.Equal(t, &OptionPattern{}, res)
+		assert.Equal(t, NewOptionPattern("name", state.ctx.ResolveNamedPattern("str")), res)
 	})
 
 	t.Run("string pattern", func(t *testing.T) {

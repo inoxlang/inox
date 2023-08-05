@@ -146,12 +146,20 @@ func TestSymbolicIdentifier(t *testing.T) {
 func TestSymbolicOption(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
-		option := &Option{}
+		option := NewOption("a", NewInt(1))
 
-		assert.True(t, option.Test(option))
-		assert.True(t, option.Test(&Option{}))
+		assert.True(t, option.Test(NewOption("a", NewInt(1))))
+		assert.False(t, option.Test(NewOption("a", NewInt(2))))
+		assert.False(t, option.Test(NewOption("b", NewInt(1))))
 		assert.False(t, option.Test(&String{}))
 		assert.False(t, option.Test(&Int{}))
+
+		assert.True(t, ANY_OPTION.Test(ANY_OPTION))
+		assert.True(t, ANY_OPTION.Test(NewOption("a", NewInt(1))))
+		assert.True(t, ANY_OPTION.Test(NewOption("a", NewInt(2))))
+		assert.True(t, ANY_OPTION.Test(NewOption("b", NewInt(1))))
+		assert.False(t, ANY_OPTION.Test(&String{}))
+		assert.False(t, ANY_OPTION.Test(&Int{}))
 	})
 
 }

@@ -24,7 +24,7 @@ var (
 	TRUE               = NewBool(true)
 	FALSE              = NewBool(false)
 	ANY_RES_NAME       = &AnyResourceName{}
-	ANY_OPTION         = &Option{}
+	ANY_OPTION         = &Option{name: "", value: ANY_SERIALIZABLE}
 	ANY_INT_RANGE      = &IntRange{}
 	ANY_RUNE_RANGE     = &RuneRange{}
 	ANY_QUANTITY_RANGE = &QuantityRange{element: ANY_SERIALIZABLE}
@@ -349,7 +349,6 @@ func (s *PropertyName) WidestOfType() SymbolicValue {
 }
 
 // A Mimetype represents a symbolic Mimetype.
-// A EmailAddress represents a symbolic EmailAddress.
 type Mimetype struct {
 	SerializableMixin
 	value    string
@@ -393,14 +392,21 @@ func (m *Mimetype) WidestOfType() SymbolicValue {
 
 // An Option represents a symbolic Option.
 type Option struct {
-	name string //if "", any name is matched
-	_    int
+	name  string //if "", any name is matched
+	value SymbolicValue
 	SerializableMixin
 	PseudoClonableMixin
 }
 
-func NewOption(name string) *Option {
-	return &Option{name: name}
+func NewOption(name string, value SymbolicValue) *Option {
+	if name == "" {
+		panic(errors.New("name should not be empty"))
+	}
+	return &Option{name: name, value: value}
+}
+
+func NewAnyNameOption(value SymbolicValue) *Option {
+	return &Option{value: value}
 }
 
 func (o *Option) Name() (string, bool) {
@@ -412,18 +418,21 @@ func (o *Option) Name() (string, bool) {
 
 func (o *Option) Test(v SymbolicValue) bool {
 	otherOpt, ok := v.(*Option)
-	if !ok {
+	if !ok || (o.name != "" && o.name != otherOpt.name) {
 		return false
 	}
-	return o.name == "" || o.name == otherOpt.name
+
+	return o.value.Test(otherOpt.value)
 }
 
 func (o *Option) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	if o.name == "" {
-		utils.Must(w.Write(utils.StringAsBytes("%option")))
-		return
+	utils.Must(w.Write(utils.StringAsBytes("%option(")))
+	if o.name != "" {
+		NewString(o.name).PrettyPrint(w, config, depth, 0)
+		utils.Must(w.Write(utils.StringAsBytes(", ")))
 	}
-	utils.Must(w.Write(utils.StringAsBytes("%--" + o.name + "(...)")))
+	o.value.PrettyPrint(w, config, depth, 0)
+	utils.PanicIfErr(w.WriteByte(')'))
 }
 
 func (o *Option) WidestOfType() SymbolicValue {

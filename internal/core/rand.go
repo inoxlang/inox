@@ -274,7 +274,7 @@ func (patt *FunctionPattern) Random(ctx *Context, options ...Option) Value {
 }
 
 func (patt OptionPattern) Random(ctx *Context, options ...Option) Value {
-	return Option{Name: patt.Name, Value: patt.Value.Random(ctx, options...)}
+	return Option{Name: patt.name, Value: patt.value.Random(ctx, options...)}
 }
 
 func (patt *RepeatedPatternElement) Random(ctx *Context, options ...Option) Value {

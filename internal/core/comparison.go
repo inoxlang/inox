@@ -1256,8 +1256,8 @@ func (patt *OptionPattern) Equal(ctx *Context, other Value, alreadyCompared map[
 	alreadyCompared[addr] = otherAddr
 	alreadyCompared[otherAddr] = addr
 
-	return patt.Name == otherPatt.Name &&
-		patt.Value.Equal(ctx, otherPatt.Value, alreadyCompared, depth+1)
+	return patt.name == otherPatt.name &&
+		patt.value.Equal(ctx, otherPatt.value, alreadyCompared, depth+1)
 }
 
 func (patt *EventPattern) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {

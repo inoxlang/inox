@@ -1077,7 +1077,7 @@ func (v *VM) run() {
 			name := v.constants[nameIndex].(Str)
 
 			value := v.stack[v.sp-1].(Pattern)
-			v.stack[v.sp-1] = &OptionPattern{Name: string(name), Value: value}
+			v.stack[v.sp-1] = &OptionPattern{name: string(name), value: value}
 		case OpCreateUnionPattern:
 			v.ip += 2
 			numElements := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8

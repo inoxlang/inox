@@ -2385,7 +2385,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return nil, fmt.Errorf("failed to evaluate an option pattern literal: %s", err.Error())
 		}
 
-		return &OptionPattern{Name: n.Name, Value: valuePattern}, nil
+		return &OptionPattern{name: n.Name, value: valuePattern}, nil
 	case *parse.ConcatenationExpression:
 		var values []Value
 		ctx := state.Global.Ctx

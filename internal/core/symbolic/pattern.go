@@ -37,6 +37,7 @@ var (
 
 	ANY_OBJECT_PATTERN = &ObjectPattern{}
 	ANY_RECORD_PATTERN = &RecordPattern{}
+	ANY_OPTION_PATTERN = &OptionPattern{name: "", pattern: ANY_PATTERN}
 
 	WIDEST_LIST_PATTERN  = NewListOf(ANY_SERIALIZABLE)
 	WIDEST_TUPLE_PATTERN = NewTupleOf(ANY_SERIALIZABLE)
@@ -1551,18 +1552,36 @@ func (p *IntersectionPattern) WidestOfType() SymbolicValue {
 
 // A OptionPattern represents a symbolic OptionPattern.
 type OptionPattern struct {
+	name    string
+	pattern Pattern
+
 	NotCallablePatternMixin
 	SerializableMixin
 }
 
+func NewOptionPattern(name string, pattern Pattern) *OptionPattern {
+	if name == "" {
+		panic(errors.New("name should not be empty"))
+	}
+	return &OptionPattern{name: name, pattern: pattern}
+}
+
 func (p *OptionPattern) Test(v SymbolicValue) bool {
-	_, ok := v.(*OptionPattern)
-	return ok
+	other, ok := v.(*OptionPattern)
+	if !ok || (p.name != "" && other.name != p.name) {
+		return false
+	}
+	return p.pattern.Test(other.pattern)
 }
 
 func (p *OptionPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%option-pattern")))
-	return
+	utils.Must(w.Write(utils.StringAsBytes("%option-pattern(")))
+	if p.name != "" {
+		NewString(p.name).PrettyPrint(w, config, depth, 0)
+		utils.Must(w.Write(utils.StringAsBytes(", ")))
+	}
+	p.pattern.PrettyPrint(w, config, depth, 0)
+	utils.PanicIfErr(w.WriteByte(')'))
 }
 
 func (p *OptionPattern) HasUnderylingPattern() bool {
@@ -1570,12 +1589,18 @@ func (p *OptionPattern) HasUnderylingPattern() bool {
 }
 
 func (p *OptionPattern) TestValue(v SymbolicValue) bool {
-	_, ok := v.(*Option)
-	return ok
+	opt, ok := v.(*Option)
+	if !ok || (p.name != "" && opt.name != p.name) {
+		return false
+	}
+	return p.pattern.TestValue(opt.value)
 }
 
 func (p *OptionPattern) SymbolicValue() SymbolicValue {
-	return &Option{}
+	if p.name == "" {
+		return NewAnyNameOption(p.pattern.SymbolicValue())
+	}
+	return NewOption(p.name, p.pattern.SymbolicValue())
 }
 
 func (p *OptionPattern) StringPattern() (StringPattern, bool) {
@@ -1583,15 +1608,15 @@ func (p *OptionPattern) StringPattern() (StringPattern, bool) {
 }
 
 func (p *OptionPattern) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (p *OptionPattern) IteratorElementValue() SymbolicValue {
-	return &Option{}
+	return p.SymbolicValue()
 }
 
 func (p *OptionPattern) WidestOfType() SymbolicValue {
-	return &OptionPattern{}
+	return ANY_OPTION_PATTERN
 }
 
 func symbolicallyEvalPatternNode(n parse.Node, state *State) (Pattern, error) {

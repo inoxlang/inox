@@ -499,13 +499,13 @@ func (patt *TuplePattern) StringPattern() (StringPattern, bool) {
 
 type OptionPattern struct {
 	NotCallablePatternMixin
-	Name  string
-	Value Pattern
+	name  string
+	value Pattern
 }
 
 func (patt OptionPattern) Test(ctx *Context, v Value) bool {
 	opt, ok := v.(Option)
-	return ok && opt.Name == patt.Name && patt.Value.Test(ctx, opt.Value)
+	return ok && opt.Name == patt.name && patt.value.Test(ctx, opt.Value)
 }
 
 func (patt *OptionPattern) StringPattern() (StringPattern, bool) {
@@ -569,7 +569,7 @@ func (patt *FunctionPattern) Test(ctx *Context, v Value) bool {
 			return false
 		}
 
-		panic(errors.New("testing a go function against a function pattern is not supported yet"))
+		panic(errors.New("testing a Go function against a function pattern is not supported yet"))
 
 	case *InoxFunction:
 

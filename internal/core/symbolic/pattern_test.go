@@ -898,19 +898,40 @@ func TestSymbolicIntersectionPattern(t *testing.T) {
 func TestSymbolicOptionPattern(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
-		pattern := &OptionPattern{}
+		pattern := NewOptionPattern("a", ANY_STR_PATTERN)
 
-		assert.True(t, pattern.Test(&OptionPattern{}))
+		assert.True(t, pattern.Test(NewOptionPattern("a", ANY_STR_PATTERN)))
+		assert.False(t, pattern.Test(NewOptionPattern("b", ANY_PATTERN)))
+		assert.False(t, pattern.Test(ANY_OPTION_PATTERN))
 		assert.False(t, pattern.Test(ANY_INT))
-		assert.False(t, pattern.Test(&Option{}))
+		assert.False(t, pattern.Test(NewOption("x", EMPTY_STRING)))
+
+		anyOptionPattern := ANY_OPTION_PATTERN
+		assert.True(t, anyOptionPattern.Test(NewOptionPattern("a", ANY_STR_PATTERN)))
+		assert.True(t, anyOptionPattern.Test(NewOptionPattern("b", ANY_PATTERN)))
+		assert.True(t, anyOptionPattern.Test(ANY_OPTION_PATTERN))
+		assert.False(t, anyOptionPattern.Test(ANY_INT))
+		assert.False(t, anyOptionPattern.Test(NewOption("x", EMPTY_STRING)))
 	})
 
 	t.Run("TestValue()", func(t *testing.T) {
-		pattern := &OptionPattern{}
+		pattern := NewOptionPattern("a", ANY_STR_PATTERN)
 
-		assert.True(t, pattern.TestValue(&Option{}))
+		assert.True(t, pattern.TestValue(NewOption("a", EMPTY_STRING)))
+		assert.False(t, pattern.TestValue(NewOption("a", NewInt(1))))
+		assert.False(t, pattern.TestValue(NewOption("b", EMPTY_STRING)))
 		assert.False(t, pattern.TestValue(ANY_INT))
-		assert.False(t, pattern.TestValue(&OptionPattern{}))
+		assert.False(t, pattern.TestValue(ANY_OPTION_PATTERN))
+
+		anyOptionPattern := ANY_OPTION_PATTERN
+
+		assert.True(t, anyOptionPattern.TestValue(ANY_OPTION))
+		assert.True(t, anyOptionPattern.TestValue(NewOption("a", EMPTY_STRING)))
+		assert.True(t, anyOptionPattern.TestValue(NewOption("a", NewInt(1))))
+		assert.True(t, anyOptionPattern.TestValue(NewOption("b", EMPTY_STRING)))
+		assert.False(t, anyOptionPattern.TestValue(ANY_INT))
+		assert.False(t, anyOptionPattern.TestValue(ANY_OPTION_PATTERN))
+
 	})
 
 }

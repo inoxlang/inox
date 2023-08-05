@@ -273,9 +273,14 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 	case *parse.URLQueryParameterValueSlice:
 		return &String{}, nil
 	case *parse.FlagLiteral:
-		return NewOption(n.Name), nil
+		return NewOption(n.Name, TRUE), nil
 	case *parse.OptionExpression:
-		return NewOption(n.Name), nil
+		v, err := symbolicEval(n.Value, state)
+		if err != nil {
+			return nil, err
+		}
+
+		return NewOption(n.Name, v), nil
 	case *parse.AbsolutePathExpression, *parse.RelativePathExpression:
 		var slices []parse.Node
 
@@ -3113,7 +3118,12 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		return pattern, nil
 	case *parse.OptionPatternLiteral:
-		return &OptionPattern{}, nil
+		pattern, err := symbolicallyEvalPatternNode(n.Value, state)
+		if err != nil {
+			return nil, err
+		}
+
+		return NewOptionPattern(n.Name, pattern), nil
 	case *parse.ByteSliceLiteral:
 		return &ByteSlice{}, nil
 	case *parse.ConcatenationExpression:

@@ -59,9 +59,12 @@ func init() {
 			_, ok := v.(Writer)
 			return ok
 		},
-		IMPLICIT_KEY_LEN_KEY: IMPLICIT_KEY_LEN_KEY,
-		CONSTRAINTS_KEY:      CONSTRAINTS_KEY,
-		VISIBILITY_KEY:       VISIBILITY_KEY,
+		IsIndexKey:                              IsIndexKey,
+		IMPLICIT_KEY_LEN_KEY:                    IMPLICIT_KEY_LEN_KEY,
+		CONSTRAINTS_KEY:                         CONSTRAINTS_KEY,
+		VISIBILITY_KEY:                          VISIBILITY_KEY,
+		MANIFEST_POSITIONAL_PARAM_NAME_FIELD:    "name",
+		MANIFEST_POSITIONAL_PARAM_PATTERN_FIELD: "pattern",
 
 		DEFAULT_PATTERN_NAMESPACES: func() map[string]*symbolic.PatternNamespace {
 			result := make(map[string]*symbolic.PatternNamespace)
@@ -251,7 +254,11 @@ func (p HostPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbo
 }
 
 func (o Option) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return symbolic.NewOption(o.Name), nil
+	value, err := o.Value.ToSymbolicValue(ctx, encountered)
+	if err != nil {
+		return nil, err
+	}
+	return symbolic.NewOption(o.Name, value), nil
 }
 
 func (*Array) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
@@ -592,7 +599,12 @@ func (p *OptionPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
 	}
-	return &symbolic.OptionPattern{}, nil
+
+	pattern, err := p.value.ToSymbolicValue(ctx, encountered)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert value pattern of option pattern to symbolic: %w", err)
+	}
+	return symbolic.NewOptionPattern(p.name, pattern.(symbolic.Pattern)), nil
 }
 
 func (p *TypePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
