@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"reflect"
+	"strconv"
 
 	parse "github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
@@ -96,4 +97,91 @@ func (*Module) PropertyNames() []string {
 
 type IncludedChunk struct {
 	*parse.ParsedChunk
+}
+
+type moduleParameter struct {
+	name    string
+	pattern Pattern
+}
+
+func getModuleParameters(manifestObject *Object, manifestObjectLiteral *parse.ObjectLiteral) []moduleParameter {
+	parametersDesc, _, ok := manifestObject.GetProperty(extData.MANIFEST_PARAMS_SECTION_NAME)
+	if !ok {
+		return nil
+	}
+
+	obj, ok := parametersDesc.(*Object)
+	if !ok {
+		return nil
+	}
+
+	moduleParams := []moduleParameter{}
+	implicitKeyIndex := 0
+
+	parametersNode, _ := manifestObjectLiteral.PropValue(extData.MANIFEST_PARAMS_SECTION_NAME)
+	parametersObjectNode, ok := parametersNode.(*parse.ObjectLiteral)
+
+	if !ok {
+		return nil
+	}
+
+	for _, prop := range parametersObjectNode.Properties {
+		if prop.HasImplicitKey() { //positional parameter
+			index := implicitKeyIndex
+			implicitKeyIndex++
+
+			paramDesc, ok := obj.Prop(strconv.Itoa(index)).(*Object)
+			if !ok {
+				return nil
+			}
+			paramNameVal, _, _ := paramDesc.GetProperty(extData.MANIFEST_POSITIONAL_PARAM_NAME_FIELD)
+			paramName, ok := paramNameVal.(*Identifier)
+			if !ok || !paramName.HasConcreteName() {
+				return nil
+			}
+
+			paramPatternVal, _, _ := paramDesc.GetProperty(extData.MANIFEST_POSITIONAL_PARAM_PATTERN_FIELD)
+
+			paramPattern, ok := paramPatternVal.(Pattern)
+			if !ok {
+				return nil
+			}
+
+			moduleParams = append(moduleParams, moduleParameter{
+				name:    paramName.Name(),
+				pattern: paramPattern,
+			})
+		} else { //non-positional parameter
+			paramName := prop.Name()
+			propValue := obj.Prop(paramName)
+
+			switch val := propValue.(type) {
+			case *OptionPattern:
+				moduleParams = append(moduleParams, moduleParameter{
+					name:    paramName,
+					pattern: val.pattern,
+				})
+			case Pattern:
+				moduleParams = append(moduleParams, moduleParameter{
+					name:    paramName,
+					pattern: val,
+				})
+			case *Object:
+				paramDesc := val
+
+				paramDesc.ForEachEntry(func(k string, v SymbolicValue) error {
+					switch k {
+					case extData.MANIFEST_POSITIONAL_PARAM_PATTERN_FIELD:
+						moduleParams = append(moduleParams, moduleParameter{
+							name:    paramName,
+							pattern: v.(Pattern),
+						})
+					}
+					return nil
+				})
+			}
+		}
+	}
+
+	return moduleParams
 }

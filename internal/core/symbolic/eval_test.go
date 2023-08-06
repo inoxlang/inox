@@ -6888,6 +6888,47 @@ func TestSymbolicEval(t *testing.T) {
 		})
 	})
 
+	t.Run("module parameters ", func(t *testing.T) {
+		n, state := MakeTestStateAndChunk(strings.ReplaceAll(`
+			manifest {
+				parameters: {
+					{
+						name: #a	
+						pattern: %bool
+					}
+					b: %str
+					c: {
+						pattern: %int
+					}
+				}
+			}
+
+			return args
+		`, "args", extData.MOD_ARGS_VARNAME))
+
+		res, err := symbolicEval(n, state)
+		assert.NoError(t, err)
+		assert.Empty(t, state.errors())
+
+		if !assert.IsType(t, (*Struct)(nil), res) {
+			return
+		}
+
+		structVal := res.(*Struct)
+		structType := structVal.structType
+
+		assert.Equal(t, NewStructPattern("", structType.tempId, []string{"a", "b", "c"}, []Pattern{
+			state.ctx.ResolveNamedPattern("bool"),
+			state.ctx.ResolveNamedPattern("str"),
+			state.ctx.ResolveNamedPattern("int"),
+		}), structType)
+
+		assert.Equal(t, NewStruct(structType, map[string]SymbolicValue{
+			"a": ANY_BOOL,
+			"b": ANY_STR_LIKE,
+			"c": ANY_INT,
+		}), structVal)
+	})
 	t.Run("module import statement ", func(t *testing.T) {
 
 		t.Run("ok", func(t *testing.T) {

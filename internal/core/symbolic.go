@@ -65,6 +65,8 @@ func init() {
 		VISIBILITY_KEY:                          VISIBILITY_KEY,
 		MANIFEST_POSITIONAL_PARAM_NAME_FIELD:    "name",
 		MANIFEST_POSITIONAL_PARAM_PATTERN_FIELD: "pattern",
+		MANIFEST_PARAMS_SECTION_NAME:            MANIFEST_PARAMS_SECTION_NAME,
+		MOD_ARGS_VARNAME:                        MOD_ARGS_VARNAME,
 
 		DEFAULT_PATTERN_NAMESPACES: func() map[string]*symbolic.PatternNamespace {
 			result := make(map[string]*symbolic.PatternNamespace)

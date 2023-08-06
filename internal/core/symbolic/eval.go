@@ -13,6 +13,7 @@ import (
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/oklog/ulid/v2"
 	"gonum.org/v1/gonum/graph/simple"
 )
 
@@ -997,9 +998,31 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		// evaluation of manifest, this is performed only to get symbolic data
 		if n.Manifest != nil {
-			_, err := symbolicEval(n.Manifest.Object, state)
+			manifestObject, err := symbolicEval(n.Manifest.Object, state)
 			if err != nil {
 				return nil, err
+			}
+
+			//if the manifest object has the correct AND the module arguments variable is not already defined
+			//we read the type & name of parameters and we set the module arguments variable.
+			if object, ok := manifestObject.(*Object); ok && !state.hasGlobal(extData.MOD_ARGS_VARNAME) {
+				parameters := getModuleParameters(object, n.Manifest.Object.(*parse.ObjectLiteral))
+				args := make(map[string]SymbolicValue)
+
+				var paramNames []string
+				var paramPatterns []Pattern
+
+				for _, param := range parameters {
+					paramNames = append(paramNames, param.name)
+					paramPatterns = append(paramPatterns, param.pattern)
+					args[param.name] = param.pattern.SymbolicValue()
+				}
+
+				structType := NewStructPattern("", ulid.Make(), paramNames, paramPatterns)
+
+				if !state.setGlobal(extData.MOD_ARGS_VARNAME, NewStruct(structType, args), GlobalConst) {
+					panic(ErrUnreachable)
+				}
 			}
 		}
 
