@@ -939,6 +939,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		if host, ok := value.(*Host); ok {
 			state.ctx.AddHostAlias(name, host, state.inPreinit)
+			state.symbolicData.SetMostSpecificNodeValue(n.Left, host)
 		} else {
 			state.addError(makeSymbolicEvalError(node, state, fmtCannotCreateHostAliasWithA(value)))
 			state.ctx.AddHostAlias(name, &Host{}, state.inPreinit)
@@ -974,6 +975,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				if err != nil {
 					return nil, err
 				}
+				state.symbolicData.SetMostSpecificNodeValue(decl.Left, constVal)
 				if !state.setGlobal(decl.Ident().Name, constVal, GlobalConst, decl.Left) {
 					return nil, fmt.Errorf("failed to set global '%s'", decl.Ident().Name)
 				}
