@@ -350,6 +350,98 @@ func TestPrepareLocalScript(t *testing.T) {
 		assert.Equal(t, core.Host("ldb://main"), state.Databases["local"].Resource())
 	})
 
+	t.Run("local database set by main module and accessed by external module", func(t *testing.T) {
+		fls := fs_ns.NewMemFilesystem(10_000)
+
+		util.WriteFile(fls, "/main.ix", []byte(`
+			manifest {
+				permissions: {
+					read: %/...
+					write: %/...
+				}
+				databases: {
+					local: {
+						resource: ldb://main
+						resolution-data: /
+					}
+				}
+			}
+		`), 0o600)
+
+		util.WriteFile(fls, "/executed.ix", []byte(`
+			manifest {
+				databases: /main.ix
+			}
+		`), 0o600)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(
+				core.GetDefaultGlobalVarPermissions(),
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+				core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
+			),
+			Filesystem: fls,
+		})
+		core.NewGlobalState(ctx)
+
+		mainState, _, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+			Fpath:                     "/main.ix",
+			ParsingCompilationContext: ctx,
+			ParentContext:             ctx,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			PreinitFilesystem:     fls,
+			FullAccessToDatabases: true,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+			Fpath:                     "/executed.ix",
+			ParsingCompilationContext: mainState.Ctx,
+			ParentContext:             mainState.Ctx,
+			UseParentStateAsMainState: true,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			PreinitFilesystem:     fls,
+			FullAccessToDatabases: true,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.Empty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
+
+		//the state should contain the database.
+
+		if !assert.Contains(t, state.Databases, "local") {
+			return
+		}
+
+		assert.Equal(t, core.Host("ldb://main"), state.Databases["local"].Resource())
+	})
+
 	t.Run("manifest & symbolic eval should be ignored when there is a preinit check error: dev mode", func(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")

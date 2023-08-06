@@ -159,6 +159,8 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 
 	var dbOpeningError error
 	dbs := map[string]*core.DatabaseIL{}
+	ownedDatabases := map[string]struct{}{}
+
 	for _, config := range manifest.Databases {
 		if config.Provided != nil {
 			dbs[config.Name] = config.Provided
@@ -195,6 +197,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			Inner:                db,
 			ExpectedSchemaUpdate: config.ExpectedSchemaUpdate,
 		})
+		ownedDatabases[config.Name] = struct{}{}
 	}
 
 	// create the script's state
@@ -231,8 +234,10 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		state.MainState = state
 	}
 
-	for _, db := range dbs {
-		db.SetOwnerStateOnce(state)
+	for dbName, db := range dbs {
+		if _, ok := ownedDatabases[dbName]; ok {
+			db.SetOwnerStateOnce(state)
+		}
 	}
 
 	//pass patterns & host aliases of the preinit state to the state
