@@ -42,6 +42,35 @@ var (
 	WIDEST_LIST_PATTERN  = NewListOf(ANY_SERIALIZABLE)
 	WIDEST_TUPLE_PATTERN = NewTupleOf(ANY_SERIALIZABLE)
 
+	ANY_DIR_PATH_PATTERN = &PathPattern{
+		dirConstraint: DirPath,
+	}
+	ANY_NON_DIR_PATH_PATTERN = &PathPattern{
+		dirConstraint: NonDirPath,
+	}
+	ANY_ABS_PATH_PATTERN = &PathPattern{
+		absoluteness: AbsolutePath,
+	}
+	ANY_REL_PATH_PATTERN = &PathPattern{
+		absoluteness: RelativePath,
+	}
+	ANY_ABS_DIR_PATH_PATTERN = &PathPattern{
+		absoluteness:  AbsolutePath,
+		dirConstraint: DirPath,
+	}
+	ANY_ABS_NON_DIR_PATH_PATTERN = &PathPattern{
+		absoluteness:  AbsolutePath,
+		dirConstraint: NonDirPath,
+	}
+	ANY_REL_DIR_PATH_PATTERN = &PathPattern{
+		absoluteness:  RelativePath,
+		dirConstraint: DirPath,
+	}
+	ANY_REL_NON_DIR_PATH_PATTERN = &PathPattern{
+		absoluteness:  RelativePath,
+		dirConstraint: NonDirPath,
+	}
+
 	ErrPatternNotCallable                        = errors.New("pattern is not callable")
 	ErrValueAlreadyInitialized                   = errors.New("value already initialized")
 	ErrValueInExactPatternValueShouldBeImmutable = errors.New("the value in an exact value pattern should be immutable")
@@ -115,7 +144,7 @@ func (p *AnyPattern) StringPattern() (StringPattern, bool) {
 }
 
 func (p *AnyPattern) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (p *AnyPattern) IteratorElementValue() SymbolicValue {
@@ -131,32 +160,148 @@ type PathPattern struct {
 	NotCallablePatternMixin
 	UnassignablePropsMixin
 	SerializableMixin
+
+	//at most one of the following field group should be set
+	absoluteness  PathAbsoluteness
+	dirConstraint DirPathConstraint
+
+	hasValue bool
+	value    string
+
+	node            parse.Node
+	stringifiedNode string
+}
+
+func NewPathPattern(v string) *PathPattern {
+	if v == "" {
+		panic(errors.New("string should not be empty"))
+	}
+
+	return &PathPattern{
+		hasValue: true,
+		value:    v,
+	}
+}
+
+func NewPathPatternFromNode(n parse.Node) *PathPattern {
+	return &PathPattern{
+		node:            n,
+		stringifiedNode: parse.SPrint(n, parse.PrintConfig{TrimStart: true, TrimEnd: true}),
+	}
 }
 
 func (p *PathPattern) Test(v SymbolicValue) bool {
-	_, ok := v.(*PathPattern)
-	return ok
+	otherPattern, ok := v.(*PathPattern)
+
+	if !ok {
+		return false
+	}
+
+	if p.node != nil {
+		return otherPattern.node == p.node
+	}
+
+	if p.hasValue {
+		return otherPattern.hasValue && otherPattern.value == p.value
+	}
+
+	if p.absoluteness != UnspecifiedPathAbsoluteness && otherPattern.absoluteness != p.absoluteness {
+		return false
+	}
+
+	if p.dirConstraint != UnspecifiedDirOrFilePath && otherPattern.dirConstraint != p.dirConstraint {
+		return false
+	}
+
+	return true
 }
 
 func (p *PathPattern) Static() Pattern {
 	return &TypePattern{val: p.WidestOfType()}
 }
 
+func (p *PathPattern) TestValue(v SymbolicValue) bool {
+	path, ok := v.(*Path)
+	if !ok {
+		return false
+	}
+
+	if path.pattern == p {
+		return true
+	}
+
+	if p.node != nil {
+		//false is returned because it's difficult to know if the path matches
+		return false
+	}
+
+	if p.hasValue {
+		return extData.PathMatch(path.value, p.value)
+	}
+
+	if path.hasValue {
+		if p.absoluteness != UnspecifiedPathAbsoluteness && (p.absoluteness == AbsolutePath) != (path.value[0] == '/') {
+			return false
+		}
+
+		if p.dirConstraint != UnspecifiedDirOrFilePath && (p.dirConstraint == DirPath) != (path.value[len(path.value)-1] == '/') {
+			return false
+		}
+	}
+
+	return p.absoluteness == UnspecifiedPathAbsoluteness && p.dirConstraint == UnspecifiedDirOrFilePath
+}
+
 func (p *PathPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%path-pattern")))
+
+	if p.hasValue {
+		utils.Must(w.Write(utils.StringAsBytes("%" + p.value)))
+		return
+	}
+
+	s := "%path-pattern"
+
+	if p.node != nil {
+		utils.Must(w.Write(utils.StringAsBytes(s)))
+		utils.Must(w.Write(utils.StringAsBytes("(")))
+		utils.Must(w.Write(utils.StringAsBytes(p.stringifiedNode)))
+		utils.Must(w.Write(utils.StringAsBytes(")")))
+		return
+	}
+
+	switch p.absoluteness {
+	case AbsolutePath:
+		s += "(#abs"
+	case RelativePath:
+		s += "(#rel"
+	}
+
+	if p.absoluteness != UnspecifiedPathAbsoluteness && p.dirConstraint != UnspecifiedDirOrFilePath {
+		s += ","
+	} else if p.dirConstraint != UnspecifiedDirOrFilePath {
+		s += "("
+	}
+
+	switch p.dirConstraint {
+	case DirPath:
+		s += "#dir"
+	case NonDirPath:
+		s += "#non-dir"
+	}
+
+	if p.absoluteness != UnspecifiedPathAbsoluteness || p.dirConstraint != UnspecifiedDirOrFilePath {
+		s += ")"
+	}
+
+	utils.Must(w.Write(utils.StringAsBytes(s)))
 }
 
 func (p *PathPattern) HasUnderylingPattern() bool {
 	return true
 }
 
-func (p *PathPattern) TestValue(v SymbolicValue) bool {
-	_, ok := v.(*Path)
-	return ok
-}
-
 func (p *PathPattern) SymbolicValue() SymbolicValue {
-	return &Path{}
+	return NewPathMatchingPattern(p)
 }
 
 func (p *PathPattern) StringPattern() (StringPattern, bool) {
@@ -179,11 +324,11 @@ func (p *PathPattern) IteratorElementKey() SymbolicValue {
 }
 
 func (p *PathPattern) IteratorElementValue() SymbolicValue {
-	return &Path{}
+	return p.SymbolicValue()
 }
 
 func (p *PathPattern) underylingString() *String {
-	return &String{}
+	return ANY_STR
 }
 
 func (p *PathPattern) WidestOfType() SymbolicValue {
@@ -1632,7 +1777,12 @@ func symbolicallyEvalPatternNode(n parse.Node, state *State) (Pattern, error) {
 		*parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression,
 		*parse.FunctionPatternExpression,
 		*parse.PatternCallExpression,
-		*parse.OptionalPatternExpression:
+		*parse.OptionalPatternExpression,
+
+		*parse.AbsolutePathPatternLiteral, *parse.RelativePathPatternLiteral,
+		*parse.NamedSegmentPathPatternLiteral,
+		*parse.URLPatternLiteral, *parse.HostPatternLiteral,
+		*parse.PathPatternExpression:
 		pattern, err := symbolicEval(node, state)
 		if err != nil {
 			return nil, err

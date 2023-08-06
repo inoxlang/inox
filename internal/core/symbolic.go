@@ -59,6 +59,9 @@ func init() {
 			_, ok := v.(Writer)
 			return ok
 		},
+		PathMatch: func(path, pattern string) bool {
+			return PathPattern(pattern).Test(nil, Path(path))
+		},
 		IsIndexKey:                              IsIndexKey,
 		IMPLICIT_KEY_LEN_KEY:                    IMPLICIT_KEY_LEN_KEY,
 		CONSTRAINTS_KEY:                         CONSTRAINTS_KEY,
@@ -236,11 +239,11 @@ func (p PropertyName) ToSymbolicValue(ctx *Context, encountered map[uintptr]symb
 }
 
 func (p Path) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return symbolic.ANY_PATH, nil
+	return symbolic.NewPath(p.UnderlyingString()), nil
 }
 
 func (p PathPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return symbolic.ANY_PATH_PATTERN, nil
+	return symbolic.NewPathPattern(p.UnderlyingString()), nil
 }
 
 func (u URL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {

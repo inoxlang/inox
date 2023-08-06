@@ -86,18 +86,35 @@ func TestSymbolicPath(t *testing.T) {
 		assert.False(t, anyPath.Test(&String{}))
 		assert.False(t, anyPath.Test(&Int{}))
 
-		anyAbsPath := &Path{absoluteness: AbsolutePath}
+		anyAbsPath := ANY_ABS_PATH
 		assert.True(t, anyAbsPath.Test(anyAbsPath))
-		assert.True(t, anyAbsPath.Test(&Path{absoluteness: AbsolutePath}))
-		assert.True(t, anyPath.Test(anyAbsPath))
 		assert.False(t, anyAbsPath.Test(anyPath))
+		assert.False(t, anyAbsPath.Test(&String{}))
 
-		anyDirPath := &Path{dirConstraint: DirPath}
+		anyDirPath := ANY_DIR_PATH
 		assert.True(t, anyDirPath.Test(anyDirPath))
-		assert.True(t, anyDirPath.Test(&Path{dirConstraint: DirPath}))
-		assert.True(t, anyPath.Test(anyDirPath))
 		assert.False(t, anyDirPath.Test(anyPath))
 		assert.False(t, anyDirPath.Test(anyAbsPath))
+
+		pathMatchingPatternWithValue := NewPathMatchingPattern(NewPathPattern("/..."))
+		assert.True(t, pathMatchingPatternWithValue.Test(pathMatchingPatternWithValue))
+		assert.True(t, pathMatchingPatternWithValue.Test(NewPath("/")))
+		assert.True(t, pathMatchingPatternWithValue.Test(NewPath("/1")))
+		assert.True(t, pathMatchingPatternWithValue.Test(NewPath("/1/")))
+		assert.False(t, pathMatchingPatternWithValue.Test(NewPath("./")))
+		assert.False(t, pathMatchingPatternWithValue.Test(anyDirPath))
+		assert.False(t, pathMatchingPatternWithValue.Test(anyPath))
+		assert.False(t, pathMatchingPatternWithValue.Test(anyAbsPath))
+
+		pathMatchingPatternWithNode := NewPathMatchingPattern(&PathPattern{node: &parse.PathPatternExpression{}})
+		assert.True(t, pathMatchingPatternWithNode.Test(pathMatchingPatternWithNode))
+		assert.False(t, pathMatchingPatternWithNode.Test(NewPath("/")))
+		assert.False(t, pathMatchingPatternWithNode.Test(NewPath("/1")))
+		assert.False(t, pathMatchingPatternWithNode.Test(NewPath("/1/")))
+		assert.False(t, pathMatchingPatternWithValue.Test(NewPath("./")))
+		assert.False(t, pathMatchingPatternWithNode.Test(anyPath))
+		assert.False(t, pathMatchingPatternWithNode.Test(anyAbsPath))
+		assert.False(t, pathMatchingPatternWithNode.Test(anyDirPath))
 	})
 
 }

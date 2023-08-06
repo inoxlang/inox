@@ -197,6 +197,36 @@ func TestSymbolicEval(t *testing.T) {
 		assert.Equal(t, NewDate(expectedDate), res)
 	})
 
+	t.Run("path literal", func(t *testing.T) {
+		n, state := MakeTestStateAndChunk("/")
+		res, err := symbolicEval(n, state)
+		assert.NoError(t, err)
+		assert.Empty(t, state.errors())
+		assert.Equal(t, NewPath("/"), res)
+	})
+
+	t.Run("path pattern literal", func(t *testing.T) {
+		n, state := MakeTestStateAndChunk("%/...")
+		res, err := symbolicEval(n, state)
+		assert.NoError(t, err)
+		assert.Empty(t, state.errors())
+		assert.Equal(t, NewPathPattern("/..."), res)
+	})
+
+	t.Run("path pattern expression", func(t *testing.T) {
+		n, state := MakeTestStateAndChunk("a = 1; return %/{a}/...")
+		res, err := symbolicEval(n, state)
+
+		pathPatternExpr := parse.FindNode(n, (*parse.PathPatternExpression)(nil), nil)
+		if !assert.NotNil(t, pathPatternExpr) {
+			return
+		}
+
+		assert.NoError(t, err)
+		assert.Empty(t, state.errors())
+		assert.Equal(t, NewPathPatternFromNode(pathPatternExpr), res)
+	})
+
 	t.Run("list literal", func(t *testing.T) {
 		t.Run("empty", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk("[]")
@@ -343,7 +373,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewDictionary(map[string]Serializable{
 				"./a": NewString("b"),
 			}, map[string]Serializable{
-				"./a": ANY_REL_NON_DIR_PATH,
+				"./a": NewPath("./a"),
 			}), res)
 		})
 
@@ -359,7 +389,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewDictionary(map[string]Serializable{
 				"./a": ANY_SERIALIZABLE,
 			}, map[string]Serializable{
-				"./a": ANY_REL_NON_DIR_PATH,
+				"./a": NewPath("./a"),
 			}), res)
 		})
 
@@ -376,7 +406,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewDictionary(map[string]Serializable{
 				"./a": ANY_SERIALIZABLE,
 			}, map[string]Serializable{
-				"./a": ANY_REL_NON_DIR_PATH,
+				"./a": NewPath("./a"),
 			}), res)
 		})
 
@@ -388,7 +418,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewDictionary(map[string]Serializable{
 				"v": NewString("b"),
 			}, map[string]Serializable{
-				"v": ANY_REL_NON_DIR_PATH,
+				"v": NewPath("./a"),
 			}), res)
 		})
 
@@ -4637,7 +4667,12 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 
-			assert.Equal(t, NewMultivalue(ANY_REL_NON_DIR_PATH, Nil), res)
+			s := Stringify(res)
+			if strings.Index(s, "./a") < strings.Index(s, "./b") {
+				assert.Equal(t, NewMultivalue(AsSerializable(NewMultivalue(NewPath("./a"), NewPath("./b"))), Nil), res)
+			} else {
+				assert.Equal(t, NewMultivalue(AsSerializable(NewMultivalue(NewPath("./b"), NewPath("./a"))), Nil), res)
+			}
 		})
 
 		t.Run("int range iteration: keys and values are integers", func(t *testing.T) {

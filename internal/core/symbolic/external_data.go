@@ -1,6 +1,10 @@
 package symbolic
 
-import "strconv"
+import (
+	"path"
+	"strconv"
+	"strings"
+)
 
 var (
 	extData = ExternalData{
@@ -20,6 +24,13 @@ var (
 			_, err := strconv.ParseUint(key, 10, 32)
 			return err == nil
 		},
+		PathMatch: func(pth, pattern string) bool {
+			if strings.HasSuffix(pattern, "/...") {
+				return strings.HasPrefix(pth, pattern[:len(pattern)-len("...")])
+			}
+			ok, err := path.Match(pattern, pth)
+			return err == nil && ok
+		},
 	} // default data for tests
 )
 
@@ -32,6 +43,7 @@ type ExternalData struct {
 	IsReadable            func(v any) bool
 	IsWritable            func(v any) bool
 	IsIndexKey            func(k string) bool
+	PathMatch             func(path, pattern string) bool
 
 	DEFAULT_PATTERN_NAMESPACES map[string]*PatternNamespace
 

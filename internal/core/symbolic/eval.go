@@ -254,25 +254,21 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 	case *parse.PropertyNameLiteral:
 		return &PropertyName{name: n.Name}, nil
 	case *parse.AbsolutePathLiteral:
-		if strings.HasSuffix(n.Value, "/") {
-			return ANY_ABS_DIR_PATH, nil
-		}
-		return ANY_ABS_NON_DIR_PATH, nil
+		return NewPath(n.Value), nil
 	case *parse.RelativePathLiteral:
-		if strings.HasSuffix(n.Value, "/") {
-			return ANY_REL_DIR_PATH, nil
-		}
-		return ANY_REL_NON_DIR_PATH, nil
-	case *parse.AbsolutePathPatternLiteral, *parse.RelativePathPatternLiteral:
-		return &PathPattern{}, nil
+		return NewPath(n.Value), nil
+	case *parse.AbsolutePathPatternLiteral:
+		return NewPathPattern(n.Value), nil
+	case *parse.RelativePathPatternLiteral:
+		return NewPathPattern(n.Value), nil
 	case *parse.NamedSegmentPathPatternLiteral:
 		return &NamedSegmentPathPattern{node: n}, nil
 	case *parse.RegularExpressionLiteral:
 		return &RegexPattern{}, nil
 	case *parse.PathSlice, *parse.PathPatternSlice:
-		return &String{}, nil
+		return ANY_STR, nil
 	case *parse.URLQueryParameterValueSlice:
-		return &String{}, nil
+		return ANY_STR, nil
 	case *parse.FlagLiteral:
 		return NewOption(n.Name, TRUE), nil
 	case *parse.OptionExpression:
@@ -306,7 +302,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		return ANY_PATH, nil
 	case *parse.PathPatternExpression:
-		return &PathPattern{}, nil
+		return NewPathPatternFromNode(n), nil
 	case *parse.URLLiteral:
 		return &URL{}, nil
 	case *parse.SchemeLiteral:
@@ -3537,7 +3533,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		return &CheckedString{}, nil
 	case *parse.CssSelectorExpression:
-		return &String{}, nil
+		return ANY_STR, nil
 	case *parse.XMLExpression:
 		namespace, err := symbolicEval(n.Namespace, state)
 		if err != nil {

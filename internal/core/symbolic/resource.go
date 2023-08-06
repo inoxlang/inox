@@ -2,6 +2,7 @@ package symbolic
 
 import (
 	"bufio"
+	"errors"
 
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
@@ -16,47 +17,29 @@ var (
 		"is-walk-start": ANY_BOOL,
 	}, nil, nil)
 
-	ANY_PATH     = &Path{}
-	ANY_DIR_PATH = &Path{
-		dirConstraint: DirPath,
-	}
-	ANY_NON_DIR_PATH = &Path{
-		dirConstraint: NonDirPath,
-	}
-	ANY_ABS_PATH = &Path{
-		absoluteness: AbsolutePath,
-	}
-	ANY_REL_PATH = &Path{
-		absoluteness: RelativePath,
-	}
-	ANY_ABS_DIR_PATH = &Path{
-		absoluteness:  AbsolutePath,
-		dirConstraint: DirPath,
-	}
-	ANY_ABS_NON_DIR_PATH = &Path{
-		absoluteness:  AbsolutePath,
-		dirConstraint: NonDirPath,
-	}
-	ANY_REL_DIR_PATH = &Path{
-		absoluteness:  RelativePath,
-		dirConstraint: DirPath,
-	}
-	ANY_REL_NON_DIR_PATH = &Path{
-		absoluteness:  RelativePath,
-		dirConstraint: NonDirPath,
-	}
-	ANY_URL    = &URL{}
-	ANY_SCHEME = &Scheme{}
-	ANY_HOST   = &Host{}
-	ANY_PORT   = &Port{}
+	ANY_PATH             = &Path{}
+	ANY_DIR_PATH         = &Path{pattern: ANY_DIR_PATH_PATTERN}
+	ANY_NON_DIR_PATH     = &Path{pattern: ANY_NON_DIR_PATH_PATTERN}
+	ANY_ABS_PATH         = &Path{pattern: ANY_ABS_PATH_PATTERN}
+	ANY_REL_PATH         = &Path{pattern: ANY_REL_PATH_PATTERN}
+	ANY_ABS_DIR_PATH     = &Path{pattern: ANY_ABS_DIR_PATH_PATTERN}
+	ANY_ABS_NON_DIR_PATH = &Path{pattern: ANY_ABS_NON_DIR_PATH_PATTERN}
+	ANY_REL_DIR_PATH     = &Path{pattern: ANY_REL_DIR_PATH_PATTERN}
+	ANY_REL_NON_DIR_PATH = &Path{pattern: ANY_REL_NON_DIR_PATH_PATTERN}
+	ANY_URL              = &URL{}
+	ANY_SCHEME           = &Scheme{}
+	ANY_HOST             = &Host{}
+	ANY_PORT             = &Port{}
 
 	PATH_PROPNAMES = []string{"segments", "extension", "name", "dir", "ends_with_slash", "rel_equiv", "change_extension", "join"}
 )
 
 // A Path represents a symbolic Path.
 type Path struct {
-	absoluteness  PathAbsoluteness
-	dirConstraint DirPathConstraint
+	hasValue bool
+	value    string
+
+	pattern *PathPattern
 
 	UnassignablePropsMixin
 	SerializableMixin
@@ -77,21 +60,37 @@ const (
 	NonDirPath
 )
 
+func NewPath(v string) *Path {
+	if v == "" {
+		panic(errors.New("string should not be empty"))
+	}
+
+	return &Path{
+		hasValue: true,
+		value:    v,
+	}
+}
+
+func NewPathMatchingPattern(p *PathPattern) *Path {
+	return &Path{
+		pattern: p,
+	}
+}
+
 func (p *Path) Test(v SymbolicValue) bool {
 	otherPath, ok := v.(*Path)
 	if !ok {
 		return false
 	}
 
-	if p.absoluteness != UnspecifiedPathAbsoluteness && otherPath.absoluteness != p.absoluteness {
-		return false
+	if p.pattern != nil {
+		return p.pattern.TestValue(v)
 	}
 
-	if p.dirConstraint != UnspecifiedDirOrFilePath && otherPath.dirConstraint != p.dirConstraint {
-		return false
+	if !p.hasValue {
+		return true
 	}
-
-	return ok
+	return otherPath.hasValue && p.value == otherPath.value
 }
 
 func (p *Path) Static() Pattern {
@@ -99,33 +98,24 @@ func (p *Path) Static() Pattern {
 }
 
 func (p *Path) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	s := "%path"
-
-	switch p.absoluteness {
-	case AbsolutePath:
-		s += "(#abs"
-	case RelativePath:
-		s += "(#rel"
+	if p.hasValue {
+		utils.Must(w.Write(utils.StringAsBytes(p.value)))
+		return
 	}
 
-	if p.absoluteness != UnspecifiedPathAbsoluteness && p.dirConstraint != UnspecifiedDirOrFilePath {
-		s += ","
-	} else if p.dirConstraint != UnspecifiedDirOrFilePath {
-		s += "("
-	}
+	utils.Must(w.Write(utils.StringAsBytes("%path")))
 
-	switch p.dirConstraint {
-	case DirPath:
-		s += "#dir"
-	case NonDirPath:
-		s += "#non-dir"
-	}
+	if p.pattern != nil {
+		utils.Must(w.Write(utils.StringAsBytes("(matching ")))
 
-	if p.absoluteness != UnspecifiedPathAbsoluteness || p.dirConstraint != UnspecifiedDirOrFilePath {
-		s += ")"
-	}
+		if p.pattern.node != nil {
+			utils.Must(w.Write(utils.StringAsBytes(p.pattern.stringifiedNode)))
+		} else {
+			p.pattern.PrettyPrint(w, config, depth, 0)
+		}
 
-	utils.Must(w.Write(utils.StringAsBytes(s)))
+		utils.PanicIfErr(w.WriteByte(')'))
+	}
 }
 
 func (p *Path) ResourceName() *String {
@@ -139,18 +129,21 @@ func (p *Path) PropertyNames() []string {
 func (p *Path) Prop(name string) SymbolicValue {
 	switch name {
 	case "segments":
-		return &List{generalElement: &String{}}
+		return NewListOf(ANY_STR)
 	case "extension":
 		return ANY_STR
 	case "name":
 		return ANY_STR
 	case "dir":
-		switch p.absoluteness {
-		case AbsolutePath:
-			return ANY_ABS_DIR_PATH
-		case RelativePath:
-			return ANY_REL_DIR_PATH
+		if p.pattern != nil {
+			switch p.pattern.absoluteness {
+			case AbsolutePath:
+				return ANY_ABS_DIR_PATH
+			case RelativePath:
+				return ANY_REL_DIR_PATH
+			}
 		}
+
 		return ANY_DIR_PATH
 	case "ends_with_slash":
 		return ANY_BOOL

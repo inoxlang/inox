@@ -30,19 +30,55 @@ func TestSymbolicAnyPattern(t *testing.T) {
 func TestSymbolicPathPattern(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
-		pattern := &PathPattern{}
+		anyPathPattern := &PathPattern{}
 
-		assert.True(t, pattern.Test(&PathPattern{}))
-		assert.False(t, pattern.Test(ANY_INT))
-		assert.False(t, pattern.Test(ANY_PATTERN))
+		assert.True(t, anyPathPattern.Test(&PathPattern{}))
+		assert.False(t, anyPathPattern.Test(ANY_INT))
+		assert.False(t, anyPathPattern.Test(ANY_PATTERN))
+
+		pathPatternWithValue := NewPathPattern("/...")
+		assert.True(t, pathPatternWithValue.Test(pathPatternWithValue))
+		assert.False(t, pathPatternWithValue.Test(anyPathPattern))
+		assert.False(t, pathPatternWithValue.Test(ANY_INT))
+		assert.False(t, pathPatternWithValue.Test(ANY_PATTERN))
+
+		pathPatternWithNode := &PathPattern{node: &parse.PathPatternExpression{}}
+		assert.True(t, pathPatternWithNode.Test(pathPatternWithNode))
+		assert.False(t, pathPatternWithNode.Test(&PathPattern{node: &parse.PathPatternExpression{}}))
+		assert.False(t, pathPatternWithNode.Test(anyPathPattern))
+		assert.False(t, pathPatternWithNode.Test(pathPatternWithValue))
+		assert.False(t, pathPatternWithNode.Test(ANY_INT))
+		assert.False(t, pathPatternWithNode.Test(ANY_PATTERN))
 	})
 
-	t.Run("TestValue() should return true for any symbolic path", func(t *testing.T) {
-		pattern := &PathPattern{}
+	t.Run("TestValue()", func(t *testing.T) {
+		anyPathPattern := ANY_PATH_PATTERN
 
-		assert.True(t, pattern.TestValue(&Path{}))
-		assert.False(t, pattern.TestValue(ANY_INT))
-		assert.False(t, pattern.TestValue(&PathPattern{}))
+		assert.True(t, anyPathPattern.TestValue(&Path{}))
+		assert.True(t, anyPathPattern.TestValue(NewPath("/")))
+		assert.True(t, anyPathPattern.TestValue(NewPath("./")))
+		assert.True(t, anyPathPattern.TestValue(NewPathMatchingPattern(&PathPattern{node: &parse.PathPatternExpression{}})))
+		assert.False(t, anyPathPattern.TestValue(ANY_INT))
+		assert.False(t, anyPathPattern.TestValue(ANY_PATH_PATTERN))
+
+		pathPatternWithValue := NewPathPattern("/...")
+		assert.True(t, pathPatternWithValue.TestValue(NewPath("/")))
+		assert.True(t, pathPatternWithValue.TestValue(NewPath("/1")))
+		assert.True(t, pathPatternWithValue.TestValue(NewPath("/1/")))
+		assert.False(t, pathPatternWithValue.TestValue(NewPath("./")))
+		assert.False(t, pathPatternWithValue.TestValue(NewPathMatchingPattern(&PathPattern{node: &parse.PathPatternExpression{}})))
+		assert.False(t, pathPatternWithValue.TestValue(&Path{}))
+		assert.False(t, pathPatternWithValue.TestValue(ANY_INT))
+		assert.False(t, pathPatternWithValue.TestValue(ANY_PATH_PATTERN))
+
+		pathPatternWithNode := &PathPattern{node: &parse.PathPatternExpression{}}
+		assert.True(t, pathPatternWithNode.TestValue(NewPathMatchingPattern(pathPatternWithNode)))
+		assert.False(t, pathPatternWithNode.TestValue(NewPathMatchingPattern(&PathPattern{node: &parse.PathPatternExpression{}})))
+		assert.False(t, pathPatternWithNode.TestValue(NewPath("/")))
+		assert.False(t, pathPatternWithNode.TestValue(NewPath("./")))
+		assert.False(t, pathPatternWithNode.TestValue(&Path{}))
+		assert.False(t, pathPatternWithNode.TestValue(ANY_INT))
+		assert.False(t, pathPatternWithNode.TestValue(ANY_PATH_PATTERN))
 	})
 
 }
