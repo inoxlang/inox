@@ -317,6 +317,12 @@ func TestPrint(t *testing.T) {
 		`h<div "a"="b"/>`,
 		"h<div></span></span></div>",
 		"h<div></span>1</span>2</div>",
+		//imports
+		"import",
+		"import res",
+		"import res /a",
+		"import res /a {}",
+		"import /a",
 		//others
 		"@(1)",
 	}

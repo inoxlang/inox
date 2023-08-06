@@ -9615,16 +9615,12 @@ func (p *parser) parseImportStatement(importIdent *IdentifierLiteral) Node {
 
 	src, _ := p.parseExpression()
 
+	var parsingError *ParsingError
+
 	switch src.(type) {
 	case *URLLiteral, *RelativePathLiteral, *AbsolutePathLiteral:
 	default:
-		return &ImportStatement{
-			NodeBase: NodeBase{
-				NodeSpan{importIdent.Span.Start, p.i},
-				&ParsingError{UnspecifiedParsingError, IMPORT_STMT_SRC_SHOULD_BE_AN_URL_OR_PATH_LIT},
-				nil,
-			},
-		}
+		parsingError = &ParsingError{UnspecifiedParsingError, IMPORT_STMT_SRC_SHOULD_BE_AN_URL_OR_PATH_LIT}
 	}
 
 	p.eatSpace()
@@ -9637,7 +9633,7 @@ func (p *parser) parseImportStatement(importIdent *IdentifierLiteral) Node {
 	return &ImportStatement{
 		NodeBase: NodeBase{
 			NodeSpan{importIdent.Span.Start, p.i},
-			nil,
+			parsingError,
 			tokens,
 		},
 		Identifier:    identifier,

@@ -15687,7 +15687,7 @@ func testParse(
 	})
 
 	t.Run("import statement", func(t *testing.T) {
-		t.Run("validation string", func(t *testing.T) {
+		t.Run("ok", func(t *testing.T) {
 			n := mustparseChunk(t, `import a https://example.com/a.ix {}`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 36}, nil, nil},
@@ -15715,6 +15715,48 @@ func testParse(
 								[]Token{
 									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{34, 35}},
 									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{35, 36}},
+								},
+							},
+							Properties: nil,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("invalid URL as source", func(t *testing.T) {
+			n, err := parseChunk(t, `import res https://.ix {}`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 25}, nil, nil},
+				Statements: []Node{
+					&ImportStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 25},
+							&ParsingError{UnspecifiedParsingError, IMPORT_STMT_SRC_SHOULD_BE_AN_URL_OR_PATH_LIT},
+							[]Token{
+								{Type: IMPORT_KEYWORD, Span: NodeSpan{0, 6}},
+							},
+						},
+						Identifier: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{7, 10}, nil, nil},
+							Name:     "res",
+						},
+						Source: &InvalidURL{
+							NodeBase: NodeBase{
+								NodeSpan{11, 22},
+								&ParsingError{UnspecifiedParsingError, INVALID_URL_OR_HOST},
+								nil,
+							},
+							Value: "https://.ix",
+						},
+						Configuration: &ObjectLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{23, 25},
+								nil,
+								[]Token{
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{23, 24}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{24, 25}},
 								},
 							},
 							Properties: nil,
