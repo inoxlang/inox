@@ -216,6 +216,10 @@ func (p *PathPattern) Test(v SymbolicValue) bool {
 	return true
 }
 
+func (p *PathPattern) IsConcretizable() bool {
+	return p.hasValue
+}
+
 func (p *PathPattern) Static() Pattern {
 	return &TypePattern{val: p.WidestOfType()}
 }
@@ -389,6 +393,10 @@ func (p *URLPattern) Test(v SymbolicValue) bool {
 	return true
 }
 
+func (p *URLPattern) IsConcretizable() bool {
+	return p.hasValue
+}
+
 func (p *URLPattern) Static() Pattern {
 	return &TypePattern{val: p.WidestOfType()}
 }
@@ -519,6 +527,10 @@ func (p *HostPattern) Test(v SymbolicValue) bool {
 	}
 
 	return true
+}
+
+func (p *HostPattern) IsConcretizable() bool {
+	return p.hasValue
 }
 
 func (p *HostPattern) Static() Pattern {
@@ -1369,7 +1381,8 @@ func (p *ListPattern) Test(v SymbolicValue) bool {
 
 func (p *ListPattern) IsConcretizable() bool {
 	if p.generalElement != nil {
-		return false
+		potentiallyConcretizable, ok := p.generalElement.(PotentiallyConcretizable)
+		return ok && potentiallyConcretizable.IsConcretizable()
 	}
 
 	for _, v := range p.elements {
@@ -1617,7 +1630,8 @@ func (p *TuplePattern) Test(v SymbolicValue) bool {
 
 func (p *TuplePattern) IsConcretizable() bool {
 	if p.generalElement != nil {
-		return false
+		potentiallyConcretizable, ok := p.generalElement.(PotentiallyConcretizable)
+		return ok && potentiallyConcretizable.IsConcretizable()
 	}
 
 	for _, v := range p.elements {
@@ -2004,27 +2018,33 @@ func symbolicallyEvalPatternNode(n parse.Node, state *State) (Pattern, error) {
 }
 
 type TypePattern struct {
-	val           SymbolicValue //symbolic value that represents concrete values matching
-	call          func(ctx *Context, values []SymbolicValue) (Pattern, error)
-	stringPattern func() (StringPattern, bool)
+	val                 SymbolicValue //symbolic value that represents concrete values matching
+	call                func(ctx *Context, values []SymbolicValue) (Pattern, error)
+	stringPattern       func() (StringPattern, bool)
+	concreteTypePattern any //we play safe
 
 	SerializableMixin
 }
 
 func NewTypePattern(
 	value SymbolicValue, call func(ctx *Context, values []SymbolicValue) (Pattern, error),
-	stringPattern func() (StringPattern, bool),
+	stringPattern func() (StringPattern, bool), concrete any,
 ) *TypePattern {
 	return &TypePattern{
-		val:           value,
-		call:          call,
-		stringPattern: stringPattern,
+		val:                 value,
+		call:                call,
+		stringPattern:       stringPattern,
+		concreteTypePattern: concrete,
 	}
 }
 
 func (p *TypePattern) Test(v SymbolicValue) bool {
 	other, ok := v.(*TypePattern)
 	return ok && p.val.Test(other.val)
+}
+
+func (patt *TypePattern) IsConcretizable() bool {
+	return patt.concreteTypePattern != nil
 }
 
 func (p *TypePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

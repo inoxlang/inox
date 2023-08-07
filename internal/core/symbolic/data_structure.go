@@ -264,6 +264,7 @@ func (list *List) Test(v SymbolicValue) bool {
 }
 
 func (list *List) IsConcretizable() bool {
+	//TODO: support constraints
 	if list.generalElement != nil {
 		return false
 	}
@@ -513,6 +514,8 @@ func (t *Tuple) Test(v SymbolicValue) bool {
 }
 
 func (t *Tuple) IsConcretizable() bool {
+	//TODO: support constraints
+
 	if t.generalElement != nil {
 		return false
 	}
@@ -772,6 +775,8 @@ func (dict *Dictionary) Test(v SymbolicValue) bool {
 }
 
 func (dict *Dictionary) IsConcretizable() bool {
+	//TODO: support constraints
+
 	if dict.entries == nil {
 		return false
 	}
@@ -1029,6 +1034,7 @@ func (obj *Object) Test(v SymbolicValue) bool {
 }
 
 func (o *Object) IsConcretizable() bool {
+	//TODO: support constraints
 	if o.entries == nil || len(o.optionalEntries) > 0 || o.shared {
 		return false
 	}
@@ -1427,6 +1433,8 @@ func (rec *Record) Test(v SymbolicValue) bool {
 }
 
 func (r *Record) IsConcretizable() bool {
+	//TODO: support constraints
+
 	if r.entries == nil || len(r.optionalEntries) > 0 || r.valueOnly != nil {
 		return false
 	}

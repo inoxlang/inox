@@ -17,6 +17,7 @@ var (
 		(*Object)(nil), (*Record)(nil), (*List)(nil), (*Tuple)(nil), (*KeyList)(nil), (*Dictionary)(nil),
 
 		(*ObjectPattern)(nil), (*RecordPattern)(nil), (*ListPattern)(nil), (*TuplePattern)(nil),
+		(*TypePattern)(nil),
 
 		(*InoxFunction)(nil),
 

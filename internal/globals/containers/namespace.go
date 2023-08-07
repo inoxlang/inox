@@ -68,7 +68,7 @@ var (
 			default:
 				return nil, commonfmt.FmtErrInvalidArgumentAtPos(1, "#url, #repr or a property name is expected")
 			}
-			return coll_symbolic.NewSetPatternWithElementPattern(elementPattern), nil
+			return coll_symbolic.NewSetPatternWithElementPatternAndUniqueness(elementPattern, &uniqueness), nil
 		},
 	}
 )

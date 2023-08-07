@@ -631,6 +631,7 @@ func (p *TypePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symb
 					p.SymbolicValue,
 					p.SymbolicCallImpl,
 					p.symbolicStringPattern,
+					p,
 				), nil
 			}
 		}
@@ -644,6 +645,7 @@ func (p *TypePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symb
 						p.SymbolicValue,
 						p.SymbolicCallImpl,
 						p.symbolicStringPattern,
+						p,
 					), nil
 				}
 			}

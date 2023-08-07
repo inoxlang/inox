@@ -14,6 +14,7 @@ import (
 var (
 	_ = []symbolic.Iterable{(*Set)(nil)}
 	_ = []symbolic.Serializable{(*Set)(nil)}
+	_ = []symbolic.PotentiallyConcretizable{(*SetPattern)(nil)}
 
 	SET_PROPNAMES                       = []string{"has", "add", "remove", "get"}
 	SET_CONFIG_ELEMENT_PATTERN_PROP_KEY = "element"
@@ -168,6 +169,10 @@ func NewSetPatternWithElementPattern(elementPattern symbolic.Pattern) *SetPatter
 	return &SetPattern{elementPattern: elementPattern}
 }
 
+func NewSetPatternWithElementPatternAndUniqueness(elementPattern symbolic.Pattern, uniqueness *containers_common.UniquenessConstraint) *SetPattern {
+	return &SetPattern{elementPattern: elementPattern, uniqueness: uniqueness}
+}
+
 func (p *SetPattern) Test(v symbolic.SymbolicValue) bool {
 	otherPattern, ok := v.(*SetPattern)
 	if !ok || !p.elementPattern.Test(otherPattern.elementPattern) {
@@ -175,6 +180,14 @@ func (p *SetPattern) Test(v symbolic.SymbolicValue) bool {
 	}
 
 	return p.uniqueness == nil || p.uniqueness == otherPattern.uniqueness
+}
+
+func (p *SetPattern) IsConcretizable() bool {
+	if p.uniqueness == nil {
+		return false
+	}
+	potentiallyConcretizable, ok := p.elementPattern.(symbolic.PotentiallyConcretizable)
+	return ok && potentiallyConcretizable.IsConcretizable()
 }
 
 func (p *SetPattern) TestValue(v symbolic.SymbolicValue) bool {
