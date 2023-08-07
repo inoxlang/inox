@@ -152,7 +152,7 @@ func (perm FilesystemPermission) Includes(otherPerm Permission) bool {
 		otherPath, ok := otherFsPerm.Entity.(Path)
 		return ok && e == otherPath
 	case PathPattern:
-		return e.Test(nil, otherFsPerm.Entity)
+		return e.Includes(nil, otherFsPerm.Entity)
 	}
 
 	return false
@@ -196,7 +196,7 @@ func (perm CommandPermission) Includes(otherPerm Permission) bool {
 	case PathPattern:
 		switch otherCmdPerm.CommandName.(type) {
 		case Path, PathPattern:
-			if !cmdName.Test(nil, otherCmdPerm.CommandName) {
+			if !cmdName.Includes(nil, otherCmdPerm.CommandName) {
 				return false
 			}
 		default:
@@ -282,7 +282,7 @@ func (perm HttpPermission) Includes(otherPerm Permission) bool {
 			return true
 		}
 
-		return e.Test(nil, otherHttpPerm.Entity)
+		return e.Includes(nil, otherHttpPerm.Entity)
 	case Host:
 		host := e.WithoutScheme()
 		switch other := otherHttpPerm.Entity.(type) {
@@ -302,7 +302,7 @@ func (perm HttpPermission) Includes(otherPerm Permission) bool {
 			return e == other
 		}
 	case HostPattern:
-		return e.Test(nil, otherHttpPerm.Entity)
+		return e.Includes(nil, otherHttpPerm.Entity)
 	}
 
 	return false
@@ -414,7 +414,7 @@ func (perm RawTcpPermission) Includes(otherPerm Permission) bool {
 	case HostPattern:
 		switch otherDomain := otherTcpPerm.Domain.(type) {
 		case Host:
-			return domain.Test(nil, otherDomain)
+			return domain.Includes(nil, otherDomain)
 		case HostPattern:
 			return domain.includesPattern(otherDomain)
 		}

@@ -423,6 +423,14 @@ func (patt PathPattern) ToAbs(fls afs.Filesystem) PathPattern {
 }
 
 func (patt PathPattern) Test(ctx *Context, v Value) bool {
+	p, ok := v.(Path)
+	if !ok {
+		return false
+	}
+	return patt.Includes(ctx, p)
+}
+
+func (patt PathPattern) Includes(ctx *Context, v Value) bool {
 	switch other := v.(type) {
 	case Path:
 		if patt.IsPrefixPattern() {
@@ -916,6 +924,14 @@ func (patt HostPattern) WithoutScheme() string {
 }
 
 func (patt HostPattern) Test(ctx *Context, v Value) bool {
+	h, ok := v.(Host)
+	if !ok {
+		return false
+	}
+	return patt.Includes(ctx, h)
+}
+
+func (patt HostPattern) Includes(ctx *Context, v Value) bool {
 	//TODO: cache built regex
 
 	if !patt.HasScheme() {
@@ -925,7 +941,7 @@ func (patt HostPattern) Test(ctx *Context, v Value) bool {
 
 	switch other := v.(type) {
 	case HostPattern:
-		return patt == other
+		return patt.includesPattern(other)
 	case Host:
 		urlString = string(other)
 	case URL:
@@ -987,6 +1003,15 @@ func (patt HostPattern) includesPattern(otherPattern HostPattern) bool {
 }
 
 func (patt URLPattern) Test(ctx *Context, v Value) bool {
+	u, ok := v.(URL)
+	if !ok {
+		return false
+	}
+
+	return patt.Includes(ctx, u)
+}
+
+func (patt URLPattern) Includes(ctx *Context, v Value) bool {
 	switch other := v.(type) {
 	case HostPattern, Host:
 		return false
