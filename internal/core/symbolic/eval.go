@@ -2927,18 +2927,30 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		}
 		return namespace, nil
 	case *parse.PatternNamespaceMemberExpression:
-		namespace := state.ctx.ResolvePatternNamespace(n.Namespace.Name)
+		v, err := symbolicEval(n.Namespace, state)
+		if err != nil {
+			return nil, err
+		}
+
+		namespace := v.(*PatternNamespace)
+
+		defer func() {
+			if result != nil && state.symbolicData != nil {
+				state.symbolicData.SetMostSpecificNodeValue(n.MemberName, result)
+			}
+		}()
+
 		if namespace == nil {
 			state.addError(makeSymbolicEvalError(node, state, fmtPatternNamespaceIsNotDeclared(n.Namespace.Name)))
-			return &AnyPattern{}, nil
+			return ANY_PATTERN, nil
 		} else {
 			if namespace.entries == nil {
-				return &AnyPattern{}, nil
+				return ANY_PATTERN, nil
 			}
 			patt := namespace.entries[n.MemberName.Name]
 
 			if patt == nil {
-				return &AnyPattern{}, nil
+				return ANY_PATTERN, nil
 			}
 			return patt, nil
 		}
