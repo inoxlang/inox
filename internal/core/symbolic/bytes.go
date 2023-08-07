@@ -46,6 +46,10 @@ func (s *ByteSlice) Test(v SymbolicValue) bool {
 	return ok
 }
 
+func (s *ByteSlice) IsConcretizable() bool {
+	return false
+}
+
 func (s *ByteSlice) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%byte-slice")))
 }

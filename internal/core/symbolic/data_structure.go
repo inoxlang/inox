@@ -263,6 +263,20 @@ func (list *List) Test(v SymbolicValue) bool {
 	return true
 }
 
+func (list *List) IsConcretizable() bool {
+	if list.generalElement != nil {
+		return false
+	}
+
+	for _, elem := range list.elements {
+		if potentiallyConcretizable, ok := elem.(PotentiallyConcretizable); !ok || !potentiallyConcretizable.IsConcretizable() {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (list *List) Static() Pattern {
 	if list.generalElement != nil {
 		return NewListPatternOf(&TypePattern{val: list.generalElement})
@@ -498,6 +512,20 @@ func (t *Tuple) Test(v SymbolicValue) bool {
 	return true
 }
 
+func (t *Tuple) IsConcretizable() bool {
+	if t.generalElement != nil {
+		return false
+	}
+
+	for _, elem := range t.elements {
+		if potentiallyConcretizable, ok := elem.(PotentiallyConcretizable); !ok || !potentiallyConcretizable.IsConcretizable() {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (t *Tuple) Static() Pattern {
 	if t.generalElement != nil {
 		return NewListPatternOf(&TypePattern{val: t.generalElement})
@@ -638,6 +666,14 @@ func (list *KeyList) Test(v SymbolicValue) bool {
 	return true
 }
 
+func (list *KeyList) IsConcretizable() bool {
+	if list.Keys == nil {
+		return false
+	}
+
+	return true
+}
+
 func (list *KeyList) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if list.Keys != nil {
 		if depth > config.MaxDepth && len(list.Keys) > 0 {
@@ -732,6 +768,26 @@ func (dict *Dictionary) Test(v SymbolicValue) bool {
 			return false
 		}
 	}
+	return true
+}
+
+func (dict *Dictionary) IsConcretizable() bool {
+	if dict.entries == nil {
+		return false
+	}
+
+	for _, v := range dict.entries {
+		if potentiallyConcretizable, ok := v.(PotentiallyConcretizable); !ok || !potentiallyConcretizable.IsConcretizable() {
+			return false
+		}
+	}
+
+	for _, key := range dict.entries {
+		if potentiallyConcretizable, ok := key.(PotentiallyConcretizable); !ok || !potentiallyConcretizable.IsConcretizable() {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -965,6 +1021,20 @@ func (obj *Object) Test(v SymbolicValue) bool {
 			return false
 		}
 		if !e.Test(other) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (o *Object) IsConcretizable() bool {
+	if o.entries == nil || len(o.optionalEntries) > 0 || o.shared {
+		return false
+	}
+
+	for _, v := range o.entries {
+		if potentiallyConcretizable, ok := v.(PotentiallyConcretizable); !ok || !potentiallyConcretizable.IsConcretizable() {
 			return false
 		}
 	}
@@ -1349,6 +1419,20 @@ func (rec *Record) Test(v SymbolicValue) bool {
 			return false
 		}
 		if !e.Test(other) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (r *Record) IsConcretizable() bool {
+	if r.entries == nil || len(r.optionalEntries) > 0 || r.valueOnly != nil {
+		return false
+	}
+
+	for _, v := range r.entries {
+		if potentiallyConcretizable, ok := v.(PotentiallyConcretizable); !ok || !potentiallyConcretizable.IsConcretizable() {
 			return false
 		}
 	}

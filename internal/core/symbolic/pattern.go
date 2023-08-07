@@ -897,6 +897,20 @@ func (p *ObjectPattern) Test(v SymbolicValue) bool {
 	return true
 }
 
+func (patt *ObjectPattern) IsConcretizable() bool {
+	if patt.entries == nil {
+		return false
+	}
+
+	for _, v := range patt.entries {
+		if potentiallyConcretizable, ok := v.(PotentiallyConcretizable); !ok || !potentiallyConcretizable.IsConcretizable() {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (patt *ObjectPattern) ForEachEntry(fn func(propName string, propPattern Pattern, isOptional bool) error) error {
 	for propName, propPattern := range patt.entries {
 		_, isOptional := patt.optionalEntries[propName]
@@ -1108,6 +1122,20 @@ func (p *RecordPattern) Test(v SymbolicValue) bool {
 	for k, v := range p.entries {
 		otherV, ok := other.entries[k]
 		if !ok || !v.Test(otherV) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (p *RecordPattern) IsConcretizable() bool {
+	if p.entries == nil {
+		return false
+	}
+
+	for _, v := range p.entries {
+		if potentiallyConcretizable, ok := v.(PotentiallyConcretizable); !ok || !potentiallyConcretizable.IsConcretizable() {
 			return false
 		}
 	}
@@ -1337,6 +1365,20 @@ func (p *ListPattern) Test(v SymbolicValue) bool {
 		}
 		return true
 	}
+}
+
+func (p *ListPattern) IsConcretizable() bool {
+	if p.generalElement != nil {
+		return false
+	}
+
+	for _, v := range p.elements {
+		if potentiallyConcretizable, ok := v.(PotentiallyConcretizable); !ok || !potentiallyConcretizable.IsConcretizable() {
+			return false
+		}
+	}
+
+	return true
 }
 
 func prettyPrintListPattern(
@@ -1571,6 +1613,20 @@ func (p *TuplePattern) Test(v SymbolicValue) bool {
 		}
 		return true
 	}
+}
+
+func (p *TuplePattern) IsConcretizable() bool {
+	if p.generalElement != nil {
+		return false
+	}
+
+	for _, v := range p.elements {
+		if potentiallyConcretizable, ok := v.(PotentiallyConcretizable); !ok || !potentiallyConcretizable.IsConcretizable() {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (p *TuplePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

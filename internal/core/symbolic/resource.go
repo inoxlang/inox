@@ -93,6 +93,10 @@ func (p *Path) Test(v SymbolicValue) bool {
 	return otherPath.hasValue && p.value == otherPath.value
 }
 
+func (p *Path) IsConcretizable() bool {
+	return p.hasValue
+}
+
 func (p *Path) Static() Pattern {
 	return ANY_PATH_PATTERN
 }
@@ -226,6 +230,10 @@ func (u *URL) Test(v SymbolicValue) bool {
 	return otherURL.hasValue && u.value == otherURL.value
 }
 
+func (u *URL) IsConcretizable() bool {
+	return u.hasValue
+}
+
 func (u *URL) Static() Pattern {
 	return ANY_URL_PATTERN
 }
@@ -310,6 +318,10 @@ func (s *Scheme) Test(v SymbolicValue) bool {
 	return otherScheme.hasValue && s.value == otherScheme.value
 }
 
+func (s *Scheme) IsConcretizable() bool {
+	return s.hasValue
+}
+
 func (s *Scheme) Static() Pattern {
 	return &TypePattern{val: ANY_SCHEME}
 }
@@ -372,6 +384,10 @@ func (h *Host) Test(v SymbolicValue) bool {
 	}
 
 	return otherHost.hasValue && h.value == otherHost.value
+}
+
+func (h *Host) IsConcretizable() bool {
+	return h.hasValue
 }
 
 func (h *Host) Static() Pattern {

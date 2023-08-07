@@ -80,6 +80,10 @@ func (fn *InoxFunction) Test(v SymbolicValue) bool {
 	return utils.SamePointer(fn.node, other.node)
 }
 
+func (fn *InoxFunction) IsConcretizable() bool {
+	return false
+}
+
 func (fn *InoxFunction) IsSharable() (bool, string) {
 	//TODO: reconciliate with concrete version
 	return true, ""

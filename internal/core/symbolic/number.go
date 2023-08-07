@@ -26,6 +26,13 @@ type Float struct {
 	hasValue bool
 }
 
+func NewFloat(v float64) *Float {
+	return &Float{
+		value:    v,
+		hasValue: true,
+	}
+}
+
 func (f *Float) Test(v SymbolicValue) bool {
 	otherFloat, ok := v.(*Float)
 	if !ok {
@@ -37,11 +44,8 @@ func (f *Float) Test(v SymbolicValue) bool {
 	return otherFloat.hasValue && f.value == otherFloat.value
 }
 
-func NewFloat(v float64) *Float {
-	return &Float{
-		value:    v,
-		hasValue: true,
-	}
+func (f *Float) IsConcretizable() bool {
+	return f.hasValue
 }
 
 func (f *Float) Static() Pattern {
@@ -84,6 +88,10 @@ func (i *Int) Test(v SymbolicValue) bool {
 		return true
 	}
 	return otherInt.hasValue && i.value == otherInt.value
+}
+
+func (i *Int) IsConcretizable() bool {
+	return i.hasValue
 }
 
 func (i *Int) Static() Pattern {

@@ -84,6 +84,10 @@ func (s *String) Test(v SymbolicValue) bool {
 	return otherString.hasValue && s.value == otherString.value
 }
 
+func (s *String) IsConcretizable() bool {
+	return s.hasValue
+}
+
 func (s *String) Static() Pattern {
 	return &TypePattern{val: ANY_STR}
 }
@@ -215,6 +219,10 @@ func (r *Rune) Test(v SymbolicValue) bool {
 	return otherRune.hasValue && r.value == otherRune.value
 }
 
+func (r *Rune) IsConcretizable() bool {
+	return r.hasValue
+}
+
 func (r *Rune) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if r.hasValue {
 		utils.Must(w.Write(utils.StringAsBytes(commonfmt.FmtRune(r.value))))
@@ -289,6 +297,10 @@ type RuneSlice struct {
 func (s *RuneSlice) Test(v SymbolicValue) bool {
 	_, ok := v.(*RuneSlice)
 	return ok
+}
+
+func (s *RuneSlice) IsConcretizable() bool {
+	return false
 }
 
 func (s *RuneSlice) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -396,6 +408,10 @@ type StringConcatenation struct {
 func (c *StringConcatenation) Test(v SymbolicValue) bool {
 	_, ok := v.(*StringConcatenation)
 	return ok
+}
+
+func (c *StringConcatenation) IsConcretizable() bool {
+	return false
 }
 
 func (c *StringConcatenation) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

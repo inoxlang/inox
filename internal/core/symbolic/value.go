@@ -149,6 +149,10 @@ func (n *NilT) Test(v SymbolicValue) bool {
 	return ok
 }
 
+func (*NilT) IsConcretizable() bool {
+	return true
+}
+
 func (n *NilT) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("nil")))
 }
@@ -180,6 +184,10 @@ func (b *Bool) Test(v SymbolicValue) bool {
 		return true
 	}
 	return other.hasValue && b.value == other.value
+}
+
+func (b *Bool) IsConcretizable() bool {
+	return b.hasValue
 }
 
 func (b *Bool) Static() Pattern {
@@ -277,6 +285,10 @@ func (i *Identifier) Test(v SymbolicValue) bool {
 	return i.name == "" || i.name == other.name
 }
 
+func (i *Identifier) IsConcretizable() bool {
+	return i.HasConcreteName()
+}
+
 func (i *Identifier) HasConcreteName() bool {
 	return i.name != ""
 }
@@ -325,6 +337,10 @@ func (p *PropertyName) Test(v SymbolicValue) bool {
 		return false
 	}
 	return p.name == "" || p.name == other.name
+}
+
+func (n *PropertyName) IsConcretizable() bool {
+	return n.name != ""
 }
 
 func (p *PropertyName) Static() Pattern {
@@ -425,6 +441,15 @@ func (o *Option) Test(v SymbolicValue) bool {
 	return o.value.Test(otherOpt.value)
 }
 
+func (o *Option) IsConcretizable() bool {
+	if o.name == "" {
+		return false
+	}
+	potentiallyConcretizable, ok := o.value.(PotentiallyConcretizable)
+
+	return ok && potentiallyConcretizable.IsConcretizable()
+}
+
 func (o *Option) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%option(")))
 	if o.name != "" {
@@ -464,6 +489,10 @@ func (d *Date) Test(v SymbolicValue) bool {
 	return other.hasValue && d.value == other.value
 }
 
+func (d *Date) IsConcretizable() bool {
+	return d.hasValue
+}
+
 func (d *Date) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%date")))
 	if d.hasValue {
@@ -500,6 +529,10 @@ func (d *Duration) Test(v SymbolicValue) bool {
 		return true
 	}
 	return other.hasValue && d.value == other.value
+}
+
+func (d *Duration) IsConcretizable() bool {
+	return d.hasValue
 }
 
 func (d *Duration) Static() Pattern {
@@ -550,6 +583,10 @@ type FileInfo struct {
 func (f *FileInfo) Test(v SymbolicValue) bool {
 	_, ok := v.(*FileInfo)
 	return ok
+}
+
+func (f *FileInfo) IsConcretizable() bool {
+	return false
 }
 
 func (f FileInfo) GetGoMethod(name string) (*GoFunction, bool) {
@@ -909,6 +946,10 @@ func (c *ByteCount) Test(v SymbolicValue) bool {
 	return otherCount.hasValue && c.value == otherCount.value
 }
 
+func (c *ByteCount) IsConcretizable() bool {
+	return c.hasValue
+}
+
 func (c *ByteCount) Static() Pattern {
 	return &TypePattern{val: c.WidestOfType()}
 }
@@ -951,6 +992,10 @@ func (c *ByteRate) Test(v SymbolicValue) bool {
 	}
 
 	return otherRate.hasValue && c.value == otherRate.value
+}
+
+func (r *ByteRate) IsConcretizable() bool {
+	return r.hasValue
 }
 
 func (r *ByteRate) Static() Pattern {
@@ -997,6 +1042,10 @@ func (c *LineCount) Test(v SymbolicValue) bool {
 	return otherCount.hasValue && c.value == otherCount.value
 }
 
+func (c *LineCount) IsConcretizable() bool {
+	return c.hasValue
+}
+
 func (c *LineCount) Static() Pattern {
 	return &TypePattern{val: c.WidestOfType()}
 }
@@ -1041,6 +1090,10 @@ func (c *RuneCount) Test(v SymbolicValue) bool {
 	return otherCount.hasValue && c.value == otherCount.value
 }
 
+func (c *RuneCount) IsConcretizable() bool {
+	return c.hasValue
+}
+
 func (c *RuneCount) Static() Pattern {
 	return &TypePattern{val: c.WidestOfType()}
 }
@@ -1083,6 +1136,10 @@ func (c *SimpleRate) Test(v SymbolicValue) bool {
 	}
 
 	return otherRate.hasValue && c.value == otherRate.value
+}
+
+func (r *SimpleRate) IsConcretizable() bool {
+	return r.hasValue
 }
 
 func (r *SimpleRate) Static() Pattern {
