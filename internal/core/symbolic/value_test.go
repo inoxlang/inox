@@ -96,6 +96,16 @@ func TestSymbolicPath(t *testing.T) {
 		assert.False(t, anyDirPath.Test(anyPath))
 		assert.False(t, anyDirPath.Test(anyAbsPath))
 
+		pathWithValue := NewPath("/")
+		assert.True(t, pathWithValue.Test(pathWithValue))
+		assert.True(t, pathWithValue.Test(NewPath("/")))
+		assert.False(t, pathWithValue.Test(NewPath("/1")))
+		assert.False(t, pathWithValue.Test(NewPath("./")))
+		assert.False(t, pathWithValue.Test(NewPathMatchingPattern(NewPathPattern("/..."))))
+		assert.False(t, pathWithValue.Test(anyDirPath))
+		assert.False(t, pathWithValue.Test(anyPath))
+		assert.False(t, pathWithValue.Test(anyAbsPath))
+
 		pathMatchingPatternWithValue := NewPathMatchingPattern(NewPathPattern("/..."))
 		assert.True(t, pathMatchingPatternWithValue.Test(pathMatchingPatternWithValue))
 		assert.True(t, pathMatchingPatternWithValue.Test(NewPath("/")))
@@ -128,6 +138,13 @@ func TestSymbolicURL(t *testing.T) {
 		assert.False(t, anyURL.Test(&String{}))
 		assert.False(t, anyURL.Test(&Int{}))
 
+		urlWithValue := NewUrl("https://example.com/")
+		assert.True(t, urlWithValue.Test(urlWithValue))
+		assert.True(t, urlWithValue.Test(NewUrl("https://example.com/")))
+		assert.False(t, urlWithValue.Test(NewUrl("https://example.com/1")))
+		assert.False(t, urlWithValue.Test(NewUrl("https://localhost/")))
+		assert.False(t, urlWithValue.Test(NewUrlMatchingPattern(NewUrlPattern("https://example.com/"))))
+
 		urlMatchingPatternWithValue := NewUrlMatchingPattern(NewUrlPattern("https://example.com/..."))
 		assert.True(t, urlMatchingPatternWithValue.Test(urlMatchingPatternWithValue))
 		assert.True(t, urlMatchingPatternWithValue.Test(NewUrl("https://example.com/")))
@@ -141,16 +158,27 @@ func TestSymbolicURL(t *testing.T) {
 func TestSymbolicHost(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
-		host := &Host{}
+		anyHost := &Host{}
+		assert.True(t, anyHost.Test(anyHost))
+		assert.True(t, anyHost.Test(&Host{}))
+		assert.False(t, anyHost.Test(&String{}))
+		assert.False(t, anyHost.Test(&Int{}))
 
-		assert.True(t, host.Test(host))
-		assert.True(t, host.Test(&Host{}))
-		assert.False(t, host.Test(&String{}))
-		assert.False(t, host.Test(&Int{}))
+		hostWithValue := NewHost("https://example.com")
+		assert.True(t, hostWithValue.Test(hostWithValue))
+		assert.True(t, hostWithValue.Test(NewHost("https://example.com")))
+		assert.False(t, hostWithValue.Test(NewHost("https://localhost")))
+		assert.False(t, hostWithValue.Test(NewHostMatchingPattern(NewHostPattern("https://example.com"))))
+
+		hostMatchingPatternWithValue := NewHostMatchingPattern(NewHostPattern("https://example.com"))
+		assert.True(t, hostMatchingPatternWithValue.Test(hostMatchingPatternWithValue))
+		assert.True(t, hostMatchingPatternWithValue.Test(NewHost("https://example.com")))
+		assert.False(t, hostMatchingPatternWithValue.Test(NewHost("https://exemple.com")))
+		assert.False(t, hostMatchingPatternWithValue.Test(NewHost("https://localhost/")))
+		assert.False(t, hostMatchingPatternWithValue.Test(anyHost))
 	})
 
 }
-
 func TestSymbolicIdentifier(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {

@@ -423,7 +423,7 @@ func (p *URLPattern) TestValue(v SymbolicValue) bool {
 	}
 
 	if p.node != nil {
-		//false is returned because it's difficult to know if the path matches
+		//false is returned because it's difficult to know if the url matches
 		return false
 	}
 
@@ -473,14 +473,50 @@ func (p *URLPattern) WidestOfType() SymbolicValue {
 
 // A HostPattern represents a symbolic HostPattern.
 type HostPattern struct {
+	hasValue bool
+	value    string
+
+	node            parse.Node
+	stringifiedNode string
+
 	NotCallablePatternMixin
 	UnassignablePropsMixin
 	SerializableMixin
 }
 
+func NewHostPattern(v string) *HostPattern {
+	if v == "" {
+		panic(errors.New("string should not be empty"))
+	}
+	return &HostPattern{
+		hasValue: true,
+		value:    v,
+	}
+}
+
+func NewHostPatternFromNode(n parse.Node) *HostPattern {
+	return &HostPattern{
+		node:            n,
+		stringifiedNode: parse.SPrint(n, parse.PrintConfig{TrimStart: true, TrimEnd: true}),
+	}
+}
+
 func (p *HostPattern) Test(v SymbolicValue) bool {
-	_, ok := v.(*HostPattern)
-	return ok
+	otherPattern, ok := v.(*HostPattern)
+
+	if !ok {
+		return false
+	}
+
+	if p.node != nil {
+		return otherPattern.node == p.node
+	}
+
+	if p.hasValue {
+		return otherPattern.hasValue && otherPattern.value == p.value
+	}
+
+	return true
 }
 
 func (p *HostPattern) Static() Pattern {
@@ -488,7 +524,20 @@ func (p *HostPattern) Static() Pattern {
 }
 
 func (p *HostPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%host-pattern")))
+	if p.hasValue {
+		utils.Must(w.Write(utils.StringAsBytes("%" + p.value)))
+		return
+	}
+
+	s := "%host-pattern"
+
+	if p.node != nil {
+		utils.Must(w.Write(utils.StringAsBytes(s)))
+		utils.Must(w.Write(utils.StringAsBytes("(")))
+		utils.Must(w.Write(utils.StringAsBytes(p.stringifiedNode)))
+		utils.Must(w.Write(utils.StringAsBytes(")")))
+		return
+	}
 }
 
 func (p *HostPattern) HasUnderylingPattern() bool {
@@ -496,12 +545,31 @@ func (p *HostPattern) HasUnderylingPattern() bool {
 }
 
 func (p *HostPattern) TestValue(v SymbolicValue) bool {
-	_, ok := v.(*Host)
-	return ok
+	h, ok := v.(*Host)
+	if !ok {
+		return false
+	}
+
+	if h.pattern == p {
+		return true
+	}
+
+	if p.node != nil {
+		//false is returned because it's difficult to know if the host matches
+		return false
+	}
+
+	if h.hasValue {
+		if p.hasValue {
+			return extData.HostMatch(h.value, p.value)
+		}
+	}
+
+	return !p.hasValue
 }
 
 func (p *HostPattern) SymbolicValue() SymbolicValue {
-	return &Host{}
+	return NewHostMatchingPattern(p)
 }
 
 func (p *HostPattern) StringPattern() (StringPattern, bool) {
@@ -520,15 +588,15 @@ func (*HostPattern) Prop(name string) SymbolicValue {
 }
 
 func (p *HostPattern) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (p *HostPattern) IteratorElementValue() SymbolicValue {
-	return &Host{}
+	return p.SymbolicValue()
 }
 
 func (p *HostPattern) underylingString() *String {
-	return &String{}
+	return ANY_STR
 }
 
 func (p *HostPattern) WidestOfType() SymbolicValue {

@@ -243,6 +243,30 @@ func TestSymbolicEval(t *testing.T) {
 		assert.Equal(t, NewUrl("https://example.com/"), res)
 	})
 
+	t.Run("url pattern literal", func(t *testing.T) {
+		n, state := MakeTestStateAndChunk("%https://example.com/...")
+		res, err := symbolicEval(n, state)
+		assert.NoError(t, err)
+		assert.Empty(t, state.errors())
+		assert.Equal(t, NewUrlPattern("https://example.com/..."), res)
+	})
+
+	t.Run("host literal", func(t *testing.T) {
+		n, state := MakeTestStateAndChunk("https://example.com")
+		res, err := symbolicEval(n, state)
+		assert.NoError(t, err)
+		assert.Empty(t, state.errors())
+		assert.Equal(t, NewHost("https://example.com"), res)
+	})
+
+	t.Run("host pattern literal", func(t *testing.T) {
+		n, state := MakeTestStateAndChunk("%https://**.com")
+		res, err := symbolicEval(n, state)
+		assert.NoError(t, err)
+		assert.Empty(t, state.errors())
+		assert.Equal(t, NewHostPattern("https://**.com"), res)
+	})
+
 	t.Run("list literal", func(t *testing.T) {
 		t.Run("empty", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk("[]")

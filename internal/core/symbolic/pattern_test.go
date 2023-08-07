@@ -140,20 +140,51 @@ func TestSymbolicUrlPattern(t *testing.T) {
 func TestSymbolicHostPattern(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
-		pattern := &HostPattern{}
+		anyHostPattern := &HostPattern{}
 
-		assert.True(t, pattern.Test(&HostPattern{}))
-		assert.False(t, pattern.Test(&Host{}))
-		assert.False(t, pattern.Test(ANY_INT))
-		assert.False(t, pattern.Test(ANY_PATTERN))
+		assert.True(t, anyHostPattern.Test(&HostPattern{}))
+		assert.False(t, anyHostPattern.Test(ANY_INT))
+		assert.False(t, anyHostPattern.Test(ANY_PATTERN))
+
+		hostPatternWithValue := NewHostPattern("https://example.com")
+		assert.True(t, hostPatternWithValue.Test(hostPatternWithValue))
+		assert.False(t, hostPatternWithValue.Test(anyHostPattern))
+		assert.False(t, hostPatternWithValue.Test(ANY_INT))
+		assert.False(t, hostPatternWithValue.Test(ANY_PATTERN))
+
+		hostPatternWithNode := NewHostPatternFromNode(&parse.PathPatternExpression{})
+		assert.True(t, hostPatternWithNode.Test(hostPatternWithNode))
+		assert.False(t, hostPatternWithNode.Test(NewHostPatternFromNode(&parse.PathPatternExpression{})))
+		assert.False(t, hostPatternWithNode.Test(anyHostPattern))
+		assert.False(t, hostPatternWithNode.Test(hostPatternWithValue))
+		assert.False(t, hostPatternWithNode.Test(ANY_INT))
+		assert.False(t, hostPatternWithNode.Test(ANY_PATTERN))
 	})
 
-	t.Run("TestValue() should return true for any symbolic Host", func(t *testing.T) {
-		pattern := &HostPattern{}
+	t.Run("TestValue()", func(t *testing.T) {
+		anyHostPattern := ANY_HOST_PATTERN
 
-		assert.True(t, pattern.TestValue(&Host{}))
-		assert.False(t, pattern.TestValue(ANY_INT))
-		assert.False(t, pattern.TestValue(&HostPattern{}))
+		assert.True(t, anyHostPattern.TestValue(&Host{}))
+		assert.True(t, anyHostPattern.TestValue(NewHost("https://example.com")))
+		assert.True(t, anyHostPattern.TestValue(NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{}))))
+		assert.False(t, anyHostPattern.TestValue(ANY_INT))
+		assert.False(t, anyHostPattern.TestValue(ANY_HOST_PATTERN))
+
+		hostPatternWithValue := NewHostPattern("https://example.com")
+		assert.True(t, hostPatternWithValue.TestValue(NewHost("https://example.com")))
+		assert.False(t, hostPatternWithValue.TestValue(NewHost("https://localhost")))
+		assert.False(t, hostPatternWithValue.TestValue(NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{}))))
+		assert.False(t, hostPatternWithValue.TestValue(&Host{}))
+		assert.False(t, hostPatternWithValue.TestValue(ANY_INT))
+		assert.False(t, hostPatternWithValue.TestValue(ANY_HOST_PATTERN))
+
+		hostPatternWithNode := NewHostPatternFromNode(&parse.HostPatternLiteral{}) //the node will never be a parse.HostPatternLiteral
+		assert.True(t, hostPatternWithNode.TestValue(NewHostMatchingPattern(hostPatternWithNode)))
+		assert.False(t, hostPatternWithNode.TestValue(NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{}))))
+		assert.False(t, hostPatternWithNode.TestValue(NewHost("https://example.com")))
+		assert.False(t, hostPatternWithNode.TestValue(&Host{}))
+		assert.False(t, hostPatternWithNode.TestValue(ANY_INT))
+		assert.False(t, hostPatternWithNode.TestValue(ANY_HOST_PATTERN))
 	})
 
 }

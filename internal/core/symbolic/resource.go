@@ -332,13 +332,46 @@ func (s *Scheme) WidestOfType() SymbolicValue {
 
 // A Host represents a symbolic Host.
 type Host struct {
+	hasValue bool
+	value    string
+
+	pattern *HostPattern
+
 	UnassignablePropsMixin
 	SerializableMixin
 }
 
+func NewHost(v string) *Host {
+	if v == "" {
+		panic(errors.New("string should not be empty"))
+	}
+	return &Host{
+		hasValue: true,
+		value:    v,
+	}
+}
+
+func NewHostMatchingPattern(p *HostPattern) *Host {
+	return &Host{
+		pattern: p,
+	}
+}
+
 func (h *Host) Test(v SymbolicValue) bool {
-	_, ok := v.(*Host)
-	return ok
+	otherHost, ok := v.(*Host)
+	if !ok {
+		return false
+	}
+
+	if h.pattern != nil {
+		return h.pattern.TestValue(v)
+	}
+
+	if !h.hasValue {
+		return true
+	}
+
+	return otherHost.hasValue && h.value == otherHost.value
 }
 
 func (h *Host) Static() Pattern {
@@ -346,7 +379,24 @@ func (h *Host) Static() Pattern {
 }
 
 func (h *Host) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	if h.hasValue {
+		utils.Must(w.Write(utils.StringAsBytes(h.value)))
+		return
+	}
+
 	utils.Must(w.Write(utils.StringAsBytes("%host")))
+
+	if h.pattern != nil {
+		utils.Must(w.Write(utils.StringAsBytes("(matching ")))
+
+		if h.pattern.node != nil {
+			utils.Must(w.Write(utils.StringAsBytes(h.pattern.stringifiedNode)))
+		} else {
+			h.pattern.PrettyPrint(w, config, depth, 0)
+		}
+
+		utils.PanicIfErr(w.WriteByte(')'))
+	}
 }
 
 func (h *Host) ResourceName() *String {

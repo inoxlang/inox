@@ -2,8 +2,11 @@ package symbolic
 
 import (
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -34,6 +37,11 @@ var (
 		URLMatch: func(url, pattern string) bool {
 			return strings.HasPrefix(url, pattern[:len(pattern)-len("...")])
 		},
+		HostMatch: func(host, pattern string) bool {
+			regex := "^" + strings.ReplaceAll(pattern, "*", "[-a-zA-Z0-9]{0,}") + "$"
+
+			return utils.Must(regexp.Match(regex, []byte(host)))
+		},
 	} // default data for tests
 )
 
@@ -48,6 +56,7 @@ type ExternalData struct {
 	IsIndexKey            func(k string) bool
 	PathMatch             func(path, pattern string) bool
 	URLMatch              func(url, pattern string) bool
+	HostMatch             func(host, pattern string) bool
 
 	DEFAULT_PATTERN_NAMESPACES map[string]*PatternNamespace
 

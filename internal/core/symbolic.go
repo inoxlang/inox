@@ -65,6 +65,9 @@ func init() {
 		URLMatch: func(url, pattern string) bool {
 			return URLPattern(pattern).Test(nil, URL(url))
 		},
+		HostMatch: func(host, pattern string) bool {
+			return HostPattern(pattern).Test(nil, Host(host))
+		},
 		IsIndexKey:                              IsIndexKey,
 		IMPLICIT_KEY_LEN_KEY:                    IMPLICIT_KEY_LEN_KEY,
 		CONSTRAINTS_KEY:                         CONSTRAINTS_KEY,
