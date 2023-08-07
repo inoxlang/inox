@@ -2458,22 +2458,59 @@ func (ns *PatternNamespace) Test(v SymbolicValue) bool {
 
 func (ns *PatternNamespace) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if ns.entries != nil {
+		if depth > config.MaxDepth && len(ns.entries) > 0 {
+			utils.Must(w.Write(utils.StringAsBytes("(..pattern-namespace..)")))
+			return
+		}
+
+		indentCount := parentIndentCount + 1
+		indent := bytes.Repeat(config.Indent, indentCount)
+
 		utils.Must(w.Write(utils.StringAsBytes("pattern-namespace{")))
 
-		i := 0
-		for k, pattern := range ns.entries {
-			if i > 0 {
-				utils.Must(w.Write(utils.StringAsBytes(",")))
+		keys := utils.GetMapKeys(ns.entries)
+		sort.Strings(keys)
+
+		for i, k := range keys {
+
+			if !config.Compact {
+				utils.Must(w.Write(LF_CR))
+				utils.Must(w.Write(indent))
 			}
-			utils.Must(w.Write(utils.StringAsBytes(k)))
-			utils.Must(w.Write(utils.StringAsBytes(":")))
-			pattern.PrettyPrint(w, config, depth+1, parentIndentCount)
-			i++
+
+			if config.Colorize {
+				utils.Must(w.Write(config.Colors.IdentifierLiteral))
+			}
+
+			utils.Must(w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(k))))
+
+			if config.Colorize {
+				utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+			}
+
+			//colon
+			utils.Must(w.Write(COLON_SPACE))
+
+			//value
+			v := ns.entries[k]
+			v.PrettyPrint(w, config, depth+1, indentCount)
+
+			//comma & indent
+			isLastEntry := i == len(keys)-1
+
+			if !isLastEntry {
+				utils.Must(w.Write(COMMA_SPACE))
+			}
 		}
-		utils.Must(w.Write(utils.StringAsBytes("}")))
+
+		if !config.Compact && len(keys) > 0 {
+			utils.Must(w.Write(LF_CR))
+		}
+
+		utils.MustWriteMany(w, bytes.Repeat(config.Indent, depth), []byte{'}'})
 		return
 	}
-	utils.Must(w.Write(utils.StringAsBytes("pattern-namespace")))
+	utils.Must(w.Write(utils.StringAsBytes("%pattern-namespace")))
 }
 
 func (ns *PatternNamespace) WidestOfType() SymbolicValue {
