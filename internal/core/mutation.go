@@ -203,7 +203,7 @@ func NewInsertSequenceAtIndexMutation(ctx *Context, index int, seq Sequence, dep
 	data, sizes, err := WriteConcatenatedRepresentations(ctx, Int(index), seq.(Serializable))
 
 	return Mutation{
-		Kind:               InsertElemAtIndex,
+		Kind:               InsertSequenceAtIndex,
 		Complete:           err == nil,
 		Data:               data,
 		DataElementLengths: sizes,
