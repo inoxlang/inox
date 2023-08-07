@@ -247,6 +247,8 @@ func (p *PathPattern) TestValue(v SymbolicValue) bool {
 		if p.dirConstraint != UnspecifiedDirOrFilePath && (p.dirConstraint == DirPath) != (path.value[len(path.value)-1] == '/') {
 			return false
 		}
+
+		return true
 	}
 
 	if p.hasValue {

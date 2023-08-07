@@ -88,11 +88,19 @@ func TestSymbolicPath(t *testing.T) {
 
 		anyAbsPath := ANY_ABS_PATH
 		assert.True(t, anyAbsPath.Test(anyAbsPath))
+		assert.True(t, anyAbsPath.Test(NewPath("/")))
+		assert.True(t, anyAbsPath.Test(NewPath("/1")))
+		assert.False(t, anyAbsPath.Test(NewPath("./1")))
 		assert.False(t, anyAbsPath.Test(anyPath))
 		assert.False(t, anyAbsPath.Test(&String{}))
 
 		anyDirPath := ANY_DIR_PATH
 		assert.True(t, anyDirPath.Test(anyDirPath))
+		assert.True(t, anyDirPath.Test(NewPath("/")))
+		assert.True(t, anyDirPath.Test(NewPath("./")))
+		assert.True(t, anyDirPath.Test(NewPath("./dir/")))
+		assert.False(t, anyDirPath.Test(NewPath("/1")))
+		assert.False(t, anyDirPath.Test(NewPath("./1")))
 		assert.False(t, anyDirPath.Test(anyPath))
 		assert.False(t, anyDirPath.Test(anyAbsPath))
 
