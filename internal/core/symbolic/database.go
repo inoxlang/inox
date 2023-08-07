@@ -82,7 +82,9 @@ func (db *DatabaseIL) PropertyNames() []string {
 }
 
 func (DatabaseIL *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern) {
-
+	if !schema.IsConcretizable() {
+		ctx.AddSymbolicGoFunctionError("schema is not concretizable, it should only contain values/patterns that can be known at check time")
+	}
 }
 
 func (DatabaseIL *DatabaseIL) Close(*Context) *Error {
