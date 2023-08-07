@@ -227,6 +227,14 @@ func TestSymbolicEval(t *testing.T) {
 		assert.Equal(t, NewPathPatternFromNode(pathPatternExpr), res)
 	})
 
+	t.Run("scheme literal", func(t *testing.T) {
+		n, state := MakeTestStateAndChunk("https://")
+		res, err := symbolicEval(n, state)
+		assert.NoError(t, err)
+		assert.Empty(t, state.errors())
+		assert.Equal(t, NewScheme("https://"), res)
+	})
+
 	t.Run("list literal", func(t *testing.T) {
 		t.Run("empty", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk("[]")

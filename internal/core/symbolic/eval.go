@@ -306,7 +306,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 	case *parse.URLLiteral:
 		return &URL{}, nil
 	case *parse.SchemeLiteral:
-		return &Host{}, nil
+		return NewScheme(n.ValueString()), nil
 	case *parse.HostLiteral:
 		return &Host{}, nil
 	case *parse.AtHostLiteral:

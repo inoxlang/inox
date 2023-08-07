@@ -234,12 +234,30 @@ func (u *URL) WidestOfType() SymbolicValue {
 
 // A Scheme represents a symbolic Scheme.
 type Scheme struct {
-	_ int
+	hasValue bool
+	value    string
+	SerializableMixin
+}
+
+func NewScheme(v string) *Scheme {
+	if v == "" {
+		panic(errors.New("string should not be empty"))
+	}
+	return &Scheme{
+		hasValue: true,
+		value:    v,
+	}
 }
 
 func (s *Scheme) Test(v SymbolicValue) bool {
-	_, ok := v.(*Scheme)
-	return ok
+	otherScheme, ok := v.(*Scheme)
+	if !ok {
+		return false
+	}
+	if !s.hasValue {
+		return true
+	}
+	return otherScheme.hasValue && s.value == otherScheme.value
 }
 
 func (s *Scheme) Static() Pattern {
@@ -247,7 +265,11 @@ func (s *Scheme) Static() Pattern {
 }
 
 func (s *Scheme) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%scheme")))
+	if s.hasValue {
+		utils.Must(w.Write(utils.StringAsBytes(s.value)))
+	} else {
+		utils.Must(w.Write(utils.StringAsBytes("%scheme")))
+	}
 }
 
 func (s *Scheme) underylingString() *String {
@@ -257,8 +279,6 @@ func (s *Scheme) underylingString() *String {
 func (s *Scheme) WidestOfType() SymbolicValue {
 	return ANY_SCHEME
 }
-
-//
 
 // A Host represents a symbolic Host.
 type Host struct {
