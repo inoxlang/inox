@@ -184,13 +184,46 @@ func (p *Path) WidestOfType() SymbolicValue {
 
 // A URL represents a symbolic URL.
 type URL struct {
+	hasValue bool
+	value    string
+
+	pattern *URLPattern
+
 	UnassignablePropsMixin
 	SerializableMixin
 }
 
+func NewUrl(v string) *URL {
+	if v == "" {
+		panic(errors.New("string should not be empty"))
+	}
+	return &URL{
+		hasValue: true,
+		value:    v,
+	}
+}
+
+func NewUrlMatchingPattern(p *URLPattern) *URL {
+	return &URL{
+		pattern: p,
+	}
+}
+
 func (u *URL) Test(v SymbolicValue) bool {
-	_, ok := v.(*URL)
-	return ok
+	otherURL, ok := v.(*URL)
+	if !ok {
+		return false
+	}
+
+	if u.pattern != nil {
+		return u.pattern.TestValue(v)
+	}
+
+	if !u.hasValue {
+		return true
+	}
+
+	return otherURL.hasValue && u.value == otherURL.value
 }
 
 func (u *URL) Static() Pattern {
@@ -198,7 +231,24 @@ func (u *URL) Static() Pattern {
 }
 
 func (u *URL) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	if u.hasValue {
+		utils.Must(w.Write(utils.StringAsBytes(u.value)))
+		return
+	}
+
 	utils.Must(w.Write(utils.StringAsBytes("%url")))
+
+	if u.pattern != nil {
+		utils.Must(w.Write(utils.StringAsBytes("(matching ")))
+
+		if u.pattern.node != nil {
+			utils.Must(w.Write(utils.StringAsBytes(u.pattern.stringifiedNode)))
+		} else {
+			u.pattern.PrettyPrint(w, config, depth, 0)
+		}
+
+		utils.PanicIfErr(w.WriteByte(')'))
+	}
 }
 
 func (u *URL) underylingString() *String {

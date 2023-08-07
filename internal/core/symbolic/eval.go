@@ -304,7 +304,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 	case *parse.PathPatternExpression:
 		return NewPathPatternFromNode(n), nil
 	case *parse.URLLiteral:
-		return &URL{}, nil
+		return NewUrl(n.Value), nil
 	case *parse.SchemeLiteral:
 		return NewScheme(n.ValueString()), nil
 	case *parse.HostLiteral:
@@ -316,7 +316,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 	case *parse.HostPatternLiteral:
 		return &HostPattern{}, nil
 	case *parse.URLPatternLiteral:
-		return &URLPattern{}, nil
+		return NewUrlPattern(n.Value), nil
 	case *parse.URLExpression:
 		_, err := _symbolicEval(n.HostPart, state, true)
 		if err != nil {

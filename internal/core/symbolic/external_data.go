@@ -31,6 +31,9 @@ var (
 			ok, err := path.Match(pattern, pth)
 			return err == nil && ok
 		},
+		URLMatch: func(url, pattern string) bool {
+			return strings.HasPrefix(url, pattern[:len(pattern)-len("...")])
+		},
 	} // default data for tests
 )
 
@@ -44,6 +47,7 @@ type ExternalData struct {
 	IsWritable            func(v any) bool
 	IsIndexKey            func(k string) bool
 	PathMatch             func(path, pattern string) bool
+	URLMatch              func(url, pattern string) bool
 
 	DEFAULT_PATTERN_NAMESPACES map[string]*PatternNamespace
 

@@ -83,23 +83,56 @@ func TestSymbolicPathPattern(t *testing.T) {
 
 }
 
-func TestSymbolicURLPattern(t *testing.T) {
+func TestSymbolicUrlPattern(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
-		pattern := &URLPattern{}
+		anyUrlPattern := &URLPattern{}
 
-		assert.True(t, pattern.Test(&URLPattern{}))
-		assert.False(t, pattern.Test(&URL{}))
-		assert.False(t, pattern.Test(ANY_INT))
-		assert.False(t, pattern.Test(ANY_PATTERN))
+		assert.True(t, anyUrlPattern.Test(&URLPattern{}))
+		assert.False(t, anyUrlPattern.Test(ANY_INT))
+		assert.False(t, anyUrlPattern.Test(ANY_PATTERN))
+
+		urlPatternWithValue := NewUrlPattern("https://example.com/...")
+		assert.True(t, urlPatternWithValue.Test(urlPatternWithValue))
+		assert.False(t, urlPatternWithValue.Test(anyUrlPattern))
+		assert.False(t, urlPatternWithValue.Test(ANY_INT))
+		assert.False(t, urlPatternWithValue.Test(ANY_PATTERN))
+
+		urlPatternWithNode := NewUrlPatternFromNode(&parse.PathPatternExpression{})
+		assert.True(t, urlPatternWithNode.Test(urlPatternWithNode))
+		assert.False(t, urlPatternWithNode.Test(NewUrlPatternFromNode(&parse.PathPatternExpression{})))
+		assert.False(t, urlPatternWithNode.Test(anyUrlPattern))
+		assert.False(t, urlPatternWithNode.Test(urlPatternWithValue))
+		assert.False(t, urlPatternWithNode.Test(ANY_INT))
+		assert.False(t, urlPatternWithNode.Test(ANY_PATTERN))
 	})
 
-	t.Run("TestValue() should return true for any symbolic URL", func(t *testing.T) {
-		pattern := &URLPattern{}
+	t.Run("TestValue()", func(t *testing.T) {
+		anyUrlPattern := ANY_URL_PATTERN
 
-		assert.True(t, pattern.TestValue(&URL{}))
-		assert.False(t, pattern.TestValue(ANY_INT))
-		assert.False(t, pattern.TestValue(&URLPattern{}))
+		assert.True(t, anyUrlPattern.TestValue(&URL{}))
+		assert.True(t, anyUrlPattern.TestValue(NewUrl("https://example.com/")))
+		assert.True(t, anyUrlPattern.TestValue(NewUrlMatchingPattern(NewUrlPatternFromNode(&parse.URLPatternLiteral{}))))
+		assert.False(t, anyUrlPattern.TestValue(ANY_INT))
+		assert.False(t, anyUrlPattern.TestValue(ANY_URL_PATTERN))
+
+		urlPatternWithValue := NewUrlPattern("https://example.com/...")
+		assert.True(t, urlPatternWithValue.TestValue(NewUrl("https://example.com/")))
+		assert.True(t, urlPatternWithValue.TestValue(NewUrl("https://example.com/1")))
+		assert.True(t, urlPatternWithValue.TestValue(NewUrl("https://example.com/1/")))
+		assert.False(t, urlPatternWithValue.TestValue(NewUrl("https://localhost/")))
+		assert.False(t, urlPatternWithValue.TestValue(NewUrlMatchingPattern(NewUrlPatternFromNode(&parse.URLPatternLiteral{}))))
+		assert.False(t, urlPatternWithValue.TestValue(&URL{}))
+		assert.False(t, urlPatternWithValue.TestValue(ANY_INT))
+		assert.False(t, urlPatternWithValue.TestValue(ANY_URL_PATTERN))
+
+		urlPatternWithNode := NewUrlPatternFromNode(&parse.URLPatternLiteral{}) //the node will never be a parse.URLPatternLiteral
+		assert.True(t, urlPatternWithNode.TestValue(NewUrlMatchingPattern(urlPatternWithNode)))
+		assert.False(t, urlPatternWithNode.TestValue(NewUrlMatchingPattern(NewUrlPatternFromNode(&parse.URLPatternLiteral{}))))
+		assert.False(t, urlPatternWithNode.TestValue(NewUrl("https://example.com/")))
+		assert.False(t, urlPatternWithNode.TestValue(&URL{}))
+		assert.False(t, urlPatternWithNode.TestValue(ANY_INT))
+		assert.False(t, urlPatternWithNode.TestValue(ANY_URL_PATTERN))
 	})
 
 }

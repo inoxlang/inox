@@ -235,6 +235,14 @@ func TestSymbolicEval(t *testing.T) {
 		assert.Equal(t, NewScheme("https://"), res)
 	})
 
+	t.Run("url literal", func(t *testing.T) {
+		n, state := MakeTestStateAndChunk("https://example.com/")
+		res, err := symbolicEval(n, state)
+		assert.NoError(t, err)
+		assert.Empty(t, state.errors())
+		assert.Equal(t, NewUrl("https://example.com/"), res)
+	})
+
 	t.Run("list literal", func(t *testing.T) {
 		t.Run("empty", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk("[]")

@@ -122,12 +122,18 @@ func TestSymbolicPath(t *testing.T) {
 func TestSymbolicURL(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
-		url := &URL{}
+		anyURL := &URL{}
+		assert.True(t, anyURL.Test(anyURL))
+		assert.True(t, anyURL.Test(&URL{}))
+		assert.False(t, anyURL.Test(&String{}))
+		assert.False(t, anyURL.Test(&Int{}))
 
-		assert.True(t, url.Test(url))
-		assert.True(t, url.Test(&URL{}))
-		assert.False(t, url.Test(&String{}))
-		assert.False(t, url.Test(&Int{}))
+		urlMatchingPatternWithValue := NewUrlMatchingPattern(NewUrlPattern("https://example.com/..."))
+		assert.True(t, urlMatchingPatternWithValue.Test(urlMatchingPatternWithValue))
+		assert.True(t, urlMatchingPatternWithValue.Test(NewUrl("https://example.com/")))
+		assert.True(t, urlMatchingPatternWithValue.Test(NewUrl("https://example.com/1")))
+		assert.False(t, urlMatchingPatternWithValue.Test(NewUrl("https://localhost/")))
+		assert.False(t, urlMatchingPatternWithValue.Test(anyURL))
 	})
 
 }

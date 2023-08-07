@@ -235,11 +235,11 @@ func (p *PathPattern) TestValue(v SymbolicValue) bool {
 		return false
 	}
 
-	if p.hasValue {
-		return extData.PathMatch(path.value, p.value)
-	}
-
 	if path.hasValue {
+		if p.hasValue {
+			return extData.PathMatch(path.value, p.value)
+		}
+
 		if p.absoluteness != UnspecifiedPathAbsoluteness && (p.absoluteness == AbsolutePath) != (path.value[0] == '/') {
 			return false
 		}
@@ -247,6 +247,10 @@ func (p *PathPattern) TestValue(v SymbolicValue) bool {
 		if p.dirConstraint != UnspecifiedDirOrFilePath && (p.dirConstraint == DirPath) != (path.value[len(path.value)-1] == '/') {
 			return false
 		}
+	}
+
+	if p.hasValue {
+		return false
 	}
 
 	return p.absoluteness == UnspecifiedPathAbsoluteness && p.dirConstraint == UnspecifiedDirOrFilePath
@@ -320,7 +324,7 @@ func (*PathPattern) Prop(name string) SymbolicValue {
 }
 
 func (p *PathPattern) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (p *PathPattern) IteratorElementValue() SymbolicValue {
@@ -337,14 +341,50 @@ func (p *PathPattern) WidestOfType() SymbolicValue {
 
 // A URLPattern represents a symbolic URLPattern.
 type URLPattern struct {
+	hasValue bool
+	value    string
+
+	node            parse.Node
+	stringifiedNode string
+
 	NotCallablePatternMixin
 	UnassignablePropsMixin
 	SerializableMixin
 }
 
+func NewUrlPattern(v string) *URLPattern {
+	if v == "" {
+		panic(errors.New("string should not be empty"))
+	}
+	return &URLPattern{
+		hasValue: true,
+		value:    v,
+	}
+}
+
+func NewUrlPatternFromNode(n parse.Node) *URLPattern {
+	return &URLPattern{
+		node:            n,
+		stringifiedNode: parse.SPrint(n, parse.PrintConfig{TrimStart: true, TrimEnd: true}),
+	}
+}
+
 func (p *URLPattern) Test(v SymbolicValue) bool {
-	_, ok := v.(*URLPattern)
-	return ok
+	otherPattern, ok := v.(*URLPattern)
+
+	if !ok {
+		return false
+	}
+
+	if p.node != nil {
+		return otherPattern.node == p.node
+	}
+
+	if p.hasValue {
+		return otherPattern.hasValue && otherPattern.value == p.value
+	}
+
+	return true
 }
 
 func (p *URLPattern) Static() Pattern {
@@ -352,7 +392,20 @@ func (p *URLPattern) Static() Pattern {
 }
 
 func (p *URLPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%url-pattern")))
+	if p.hasValue {
+		utils.Must(w.Write(utils.StringAsBytes("%" + p.value)))
+		return
+	}
+
+	s := "%url-pattern"
+
+	if p.node != nil {
+		utils.Must(w.Write(utils.StringAsBytes(s)))
+		utils.Must(w.Write(utils.StringAsBytes("(")))
+		utils.Must(w.Write(utils.StringAsBytes(p.stringifiedNode)))
+		utils.Must(w.Write(utils.StringAsBytes(")")))
+		return
+	}
 }
 
 func (p *URLPattern) HasUnderylingPattern() bool {
@@ -360,12 +413,31 @@ func (p *URLPattern) HasUnderylingPattern() bool {
 }
 
 func (p *URLPattern) TestValue(v SymbolicValue) bool {
-	_, ok := v.(*URL)
-	return ok
+	u, ok := v.(*URL)
+	if !ok {
+		return false
+	}
+
+	if u.pattern == p {
+		return true
+	}
+
+	if p.node != nil {
+		//false is returned because it's difficult to know if the path matches
+		return false
+	}
+
+	if u.hasValue {
+		if p.hasValue {
+			return extData.URLMatch(u.value, p.value)
+		}
+	}
+
+	return !p.hasValue
 }
 
 func (p *URLPattern) SymbolicValue() SymbolicValue {
-	return &URL{}
+	return NewUrlMatchingPattern(p)
 }
 
 func (p *URLPattern) StringPattern() (StringPattern, bool) {
@@ -384,15 +456,15 @@ func (*URLPattern) Prop(name string) SymbolicValue {
 }
 
 func (p *URLPattern) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (p *URLPattern) IteratorElementValue() SymbolicValue {
-	return &URL{}
+	return p.SymbolicValue()
 }
 
 func (p *URLPattern) underylingString() *String {
-	return &String{}
+	return ANY_STR
 }
 
 func (p *URLPattern) WidestOfType() SymbolicValue {

@@ -62,6 +62,9 @@ func init() {
 		PathMatch: func(path, pattern string) bool {
 			return PathPattern(pattern).Test(nil, Path(path))
 		},
+		URLMatch: func(url, pattern string) bool {
+			return URLPattern(pattern).Test(nil, URL(url))
+		},
 		IsIndexKey:                              IsIndexKey,
 		IMPLICIT_KEY_LEN_KEY:                    IMPLICIT_KEY_LEN_KEY,
 		CONSTRAINTS_KEY:                         CONSTRAINTS_KEY,
