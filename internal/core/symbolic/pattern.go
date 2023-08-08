@@ -1241,14 +1241,14 @@ func (p *RecordPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 			}
 		}
 
-		if p.inexact {
-			if !config.Compact {
-				utils.Must(w.Write(LF_CR))
-				utils.Must(w.Write(indent))
-			}
+		// if p.inexact {
+		// 	if !config.Compact {
+		// 		utils.Must(w.Write(LF_CR))
+		// 		utils.Must(w.Write(indent))
+		// 	}
 
-			utils.Must(w.Write(THREE_DOTS))
-		}
+		// 	utils.Must(w.Write(THREE_DOTS))
+		// }
 
 		if !config.Compact && len(keys) > 0 {
 			utils.Must(w.Write(LF_CR))
