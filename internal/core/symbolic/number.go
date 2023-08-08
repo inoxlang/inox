@@ -143,5 +143,5 @@ func (*AnyIntegral) IteratorElementValue() SymbolicValue {
 }
 
 func (*AnyIntegral) Int64() (i *Int, signed bool) {
-	return &Int{}, true
+	return ANY_INT, true
 }

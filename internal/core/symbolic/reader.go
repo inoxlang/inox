@@ -61,7 +61,7 @@ func (r *Reader) Test(v SymbolicValue) bool {
 }
 
 func (reader *Reader) ReadCtx(ctx *Context, b *ByteSlice) (*Int, *Error) {
-	return &Int{}, nil
+	return ANY_INT, nil
 }
 
 func (reader *Reader) ReadAll() (*ByteSlice, *Error) {

@@ -38,7 +38,7 @@ func (RingBuffer *RingBuffer) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
 	case "read":
 		return WrapGoMethod(func(ctx *Context, s *ByteSlice) (n *Int, err *Error) {
-			return &Int{}, nil
+			return ANY_INT, nil
 		}), true
 	case "write":
 		return WrapGoMethod(func(ctx *Context, readable Readable) (*ByteSlice, *Error) {

@@ -61,7 +61,7 @@ func (w *Writer) Test(v SymbolicValue) bool {
 }
 
 func (w *Writer) write(b *ByteSlice) (*Int, *Error) {
-	return &Int{}, nil
+	return ANY_INT, nil
 }
 
 func (w *Writer) ReadAll() (*ByteSlice, *Error) {

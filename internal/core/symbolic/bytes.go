@@ -139,7 +139,7 @@ func (b *Byte) WidestOfType() SymbolicValue {
 }
 
 func (b *Byte) Int64() (n *Int, signed bool) {
-	return &Int{}, false
+	return ANY_INT, false
 }
 
 // A AnyBytesLike represents a symbolic BytesLike we don't know the concrete type.

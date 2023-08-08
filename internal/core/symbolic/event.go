@@ -65,7 +65,7 @@ func (s *EventSource) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 }
 
 func (s *EventSource) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (s *EventSource) IteratorElementValue() SymbolicValue {

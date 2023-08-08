@@ -13,14 +13,21 @@ func TestSymbolicObject(t *testing.T) {
 		object2 *Object
 		ok      bool
 	}{
+		//an any object should match an any object
 		{&Object{entries: nil}, &Object{entries: nil}, true},
+
+		//an empty object should not match an any object
 		{&Object{entries: map[string]Serializable{}}, &Object{entries: nil}, false},
+
+		//an any object should match an empty object
 		{&Object{entries: nil}, &Object{entries: map[string]Serializable{}}, true},
 
+		//an empty object should match an empty object
 		{&Object{entries: map[string]Serializable{}}, &Object{entries: map[string]Serializable{}}, true},
+
 		{
 			&Object{
-				entries: map[string]Serializable{"a": &Int{}},
+				entries: map[string]Serializable{"a": ANY_INT},
 			},
 			&Object{
 				entries: map[string]Serializable{},
@@ -32,13 +39,13 @@ func TestSymbolicObject(t *testing.T) {
 				entries: map[string]Serializable{},
 			},
 			&Object{
-				entries: map[string]Serializable{"a": &Int{}},
+				entries: map[string]Serializable{"a": ANY_INT},
 			},
 			false,
 		},
 		{
 			&Object{
-				entries:         map[string]Serializable{"a": &Int{}},
+				entries:         map[string]Serializable{"a": ANY_INT},
 				optionalEntries: map[string]struct{}{"a": {}},
 			},
 			&Object{
@@ -48,19 +55,19 @@ func TestSymbolicObject(t *testing.T) {
 		},
 		{
 			&Object{
-				entries: map[string]Serializable{"a": &Int{}},
+				entries: map[string]Serializable{"a": ANY_INT},
 			},
 			&Object{
-				entries: map[string]Serializable{"a": &Int{}},
+				entries: map[string]Serializable{"a": ANY_INT},
 			},
 			true,
 		},
 		{
 			&Object{
-				entries: map[string]Serializable{"a": &Int{}},
+				entries: map[string]Serializable{"a": ANY_INT},
 			},
 			&Object{
-				entries:         map[string]Serializable{"a": &Int{}},
+				entries:         map[string]Serializable{"a": ANY_INT},
 				optionalEntries: map[string]struct{}{"a": {}},
 			},
 			false,
@@ -70,13 +77,13 @@ func TestSymbolicObject(t *testing.T) {
 				entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
 			},
 			&Object{
-				entries: map[string]Serializable{"a": &Int{}},
+				entries: map[string]Serializable{"a": ANY_INT},
 			},
 			true,
 		},
 		{
 			&Object{
-				entries: map[string]Serializable{"a": &Int{}},
+				entries: map[string]Serializable{"a": ANY_INT},
 			},
 			&Object{
 				entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
@@ -99,14 +106,20 @@ func TestSymbolicRecord(t *testing.T) {
 		record2 *Record
 		ok      bool
 	}{
+		//an any object should match an any object
 		{&Record{entries: nil}, &Record{entries: nil}, true},
+
+		//an empty object should not match an any object
 		{&Record{entries: map[string]Serializable{}}, &Record{entries: nil}, false},
+
+		//an any object should match an empty object
 		{&Record{entries: nil}, &Record{entries: map[string]Serializable{}}, true},
 
+		//an empty object should match an empty object
 		{&Record{entries: map[string]Serializable{}}, &Record{entries: map[string]Serializable{}}, true},
 		{
 			&Record{
-				entries: map[string]Serializable{"a": &Int{}},
+				entries: map[string]Serializable{"a": ANY_INT},
 			},
 			&Record{
 				entries: map[string]Serializable{},
@@ -118,13 +131,13 @@ func TestSymbolicRecord(t *testing.T) {
 				entries: map[string]Serializable{},
 			},
 			&Record{
-				entries: map[string]Serializable{"a": &Int{}},
+				entries: map[string]Serializable{"a": ANY_INT},
 			},
 			false,
 		},
 		{
 			&Record{
-				entries:         map[string]Serializable{"a": &Int{}},
+				entries:         map[string]Serializable{"a": ANY_INT},
 				optionalEntries: map[string]struct{}{"a": {}},
 			},
 			&Record{
@@ -134,19 +147,19 @@ func TestSymbolicRecord(t *testing.T) {
 		},
 		{
 			&Record{
-				entries: map[string]Serializable{"a": &Int{}},
+				entries: map[string]Serializable{"a": ANY_INT},
 			},
 			&Record{
-				entries: map[string]Serializable{"a": &Int{}},
+				entries: map[string]Serializable{"a": ANY_INT},
 			},
 			true,
 		},
 		{
 			&Record{
-				entries: map[string]Serializable{"a": &Int{}},
+				entries: map[string]Serializable{"a": ANY_INT},
 			},
 			&Record{
-				entries:         map[string]Serializable{"a": &Int{}},
+				entries:         map[string]Serializable{"a": ANY_INT},
 				optionalEntries: map[string]struct{}{"a": {}},
 			},
 			false,
@@ -156,13 +169,13 @@ func TestSymbolicRecord(t *testing.T) {
 				entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
 			},
 			&Record{
-				entries: map[string]Serializable{"a": &Int{}},
+				entries: map[string]Serializable{"a": ANY_INT},
 			},
 			true,
 		},
 		{
 			&Record{
-				entries: map[string]Serializable{"a": &Int{}},
+				entries: map[string]Serializable{"a": ANY_INT},
 			},
 			&Record{
 				entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
@@ -194,47 +207,47 @@ func TestSymbolicList(t *testing.T) {
 			},
 			{
 				&List{elements: nil, generalElement: ANY_SERIALIZABLE},
-				&List{elements: nil, generalElement: &Int{}},
+				&List{elements: nil, generalElement: ANY_INT},
 				true,
 			},
 			{
-				&List{elements: nil, generalElement: &Int{}},
+				&List{elements: nil, generalElement: ANY_INT},
 				&List{elements: nil, generalElement: ANY_SERIALIZABLE},
 				false,
 			},
 			{
-				&List{elements: nil, generalElement: &Int{}},
-				&List{elements: nil, generalElement: &Int{}},
+				&List{elements: nil, generalElement: ANY_INT},
+				&List{elements: nil, generalElement: ANY_INT},
 				true,
 			},
 			{
-				&List{elements: nil, generalElement: &Int{}},
-				&List{elements: []Serializable{&Int{}}, generalElement: nil},
+				&List{elements: nil, generalElement: ANY_INT},
+				&List{elements: []Serializable{ANY_INT}, generalElement: nil},
 				true,
 			},
 			{
-				&List{elements: nil, generalElement: &Int{}},
-				&List{elements: []Serializable{&Int{}, ANY_BOOL}, generalElement: nil},
+				&List{elements: nil, generalElement: ANY_INT},
+				&List{elements: []Serializable{ANY_INT, ANY_BOOL}, generalElement: nil},
 				false,
 			},
 			{
-				&List{elements: []Serializable{&Int{}}, generalElement: nil},
-				&List{elements: nil, generalElement: &Int{}},
+				&List{elements: []Serializable{ANY_INT}, generalElement: nil},
+				&List{elements: nil, generalElement: ANY_INT},
 				false,
 			},
 			{
-				&List{elements: []Serializable{&Int{}}, generalElement: nil},
-				&List{elements: []Serializable{&Int{}}, generalElement: nil},
+				&List{elements: []Serializable{ANY_INT}, generalElement: nil},
+				&List{elements: []Serializable{ANY_INT}, generalElement: nil},
 				true,
 			},
 			{
-				&List{elements: []Serializable{&Int{}}, generalElement: nil},
+				&List{elements: []Serializable{ANY_INT}, generalElement: nil},
 				&List{elements: []Serializable{ANY_BOOL}, generalElement: nil},
 				false,
 			},
 			{
-				&List{elements: []Serializable{&Int{}, &Int{}}, generalElement: nil},
-				&List{elements: []Serializable{&Int{}, ANY_BOOL}, generalElement: nil},
+				&List{elements: []Serializable{ANY_INT, ANY_INT}, generalElement: nil},
+				&List{elements: []Serializable{ANY_INT, ANY_BOOL}, generalElement: nil},
 				false,
 			},
 		}
@@ -263,47 +276,47 @@ func TestSymbolicTuple(t *testing.T) {
 			},
 			{
 				&Tuple{elements: nil, generalElement: ANY_SERIALIZABLE},
-				&Tuple{elements: nil, generalElement: &Int{}},
+				&Tuple{elements: nil, generalElement: ANY_INT},
 				true,
 			},
 			{
-				&Tuple{elements: nil, generalElement: &Int{}},
+				&Tuple{elements: nil, generalElement: ANY_INT},
 				&Tuple{elements: nil, generalElement: ANY_SERIALIZABLE},
 				false,
 			},
 			{
-				&Tuple{elements: nil, generalElement: &Int{}},
-				&Tuple{elements: nil, generalElement: &Int{}},
+				&Tuple{elements: nil, generalElement: ANY_INT},
+				&Tuple{elements: nil, generalElement: ANY_INT},
 				true,
 			},
 			{
-				&Tuple{elements: nil, generalElement: &Int{}},
-				&Tuple{elements: []Serializable{&Int{}}, generalElement: nil},
+				&Tuple{elements: nil, generalElement: ANY_INT},
+				&Tuple{elements: []Serializable{ANY_INT}, generalElement: nil},
 				true,
 			},
 			{
-				&Tuple{elements: nil, generalElement: &Int{}},
-				&Tuple{elements: []Serializable{&Int{}, ANY_BOOL}, generalElement: nil},
+				&Tuple{elements: nil, generalElement: ANY_INT},
+				&Tuple{elements: []Serializable{ANY_INT, ANY_BOOL}, generalElement: nil},
 				false,
 			},
 			{
-				&Tuple{elements: []Serializable{&Int{}}, generalElement: nil},
-				&Tuple{elements: nil, generalElement: &Int{}},
+				&Tuple{elements: []Serializable{ANY_INT}, generalElement: nil},
+				&Tuple{elements: nil, generalElement: ANY_INT},
 				false,
 			},
 			{
-				&Tuple{elements: []Serializable{&Int{}}, generalElement: nil},
-				&Tuple{elements: []Serializable{&Int{}}, generalElement: nil},
+				&Tuple{elements: []Serializable{ANY_INT}, generalElement: nil},
+				&Tuple{elements: []Serializable{ANY_INT}, generalElement: nil},
 				true,
 			},
 			{
-				&Tuple{elements: []Serializable{&Int{}}, generalElement: nil},
+				&Tuple{elements: []Serializable{ANY_INT}, generalElement: nil},
 				&Tuple{elements: []Serializable{ANY_BOOL}, generalElement: nil},
 				false,
 			},
 			{
-				&Tuple{elements: []Serializable{&Int{}, &Int{}}, generalElement: nil},
-				&Tuple{elements: []Serializable{&Int{}, ANY_BOOL}, generalElement: nil},
+				&Tuple{elements: []Serializable{ANY_INT, ANY_INT}, generalElement: nil},
+				&Tuple{elements: []Serializable{ANY_INT, ANY_BOOL}, generalElement: nil},
 				false,
 			},
 		}
@@ -389,7 +402,7 @@ func TestSymbolicDictionary(t *testing.T) {
 		},
 		{
 			&Dictionary{
-				entries: map[string]Serializable{"./a": &Int{}},
+				entries: map[string]Serializable{"./a": ANY_INT},
 				keys:    map[string]Serializable{"./a": &Path{}},
 			},
 			&Dictionary{
@@ -402,18 +415,18 @@ func TestSymbolicDictionary(t *testing.T) {
 				entries: map[string]Serializable{},
 			},
 			&Dictionary{
-				entries: map[string]Serializable{"./a": &Int{}},
+				entries: map[string]Serializable{"./a": ANY_INT},
 				keys:    map[string]Serializable{"./a": &Path{}},
 			},
 			false,
 		},
 		{
 			&Dictionary{
-				entries: map[string]Serializable{"./a": &Int{}},
+				entries: map[string]Serializable{"./a": ANY_INT},
 				keys:    map[string]Serializable{"./a": &Path{}},
 			},
 			&Dictionary{
-				entries: map[string]Serializable{"./a": &Int{}},
+				entries: map[string]Serializable{"./a": ANY_INT},
 				keys:    map[string]Serializable{"./a": &Path{}},
 			},
 			true,
@@ -424,14 +437,14 @@ func TestSymbolicDictionary(t *testing.T) {
 				keys:    map[string]Serializable{"./a": &Path{}},
 			},
 			&Dictionary{
-				entries: map[string]Serializable{"./a": &Int{}},
+				entries: map[string]Serializable{"./a": ANY_INT},
 				keys:    map[string]Serializable{"./a": &Path{}},
 			},
 			true,
 		},
 		{
 			&Dictionary{
-				entries: map[string]Serializable{"./a": &Int{}},
+				entries: map[string]Serializable{"./a": ANY_INT},
 				keys:    map[string]Serializable{"./a": &Path{}},
 			},
 			&Dictionary{

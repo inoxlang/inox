@@ -53,7 +53,7 @@ func (p *AnyFormat) StringPattern() (StringPattern, bool) {
 }
 
 func (p *AnyFormat) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (p *AnyFormat) IteratorElementValue() SymbolicValue {

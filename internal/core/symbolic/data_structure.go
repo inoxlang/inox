@@ -418,7 +418,7 @@ func (l *List) set(i *Int, v SymbolicValue) {
 }
 
 func (l *List) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (l *List) IteratorElementValue() SymbolicValue {
@@ -620,7 +620,7 @@ func (t *Tuple) Contains(value SymbolicValue) (bool, bool) {
 }
 
 func (t *Tuple) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (t *Tuple) IteratorElementValue() SymbolicValue {

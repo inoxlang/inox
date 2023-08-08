@@ -66,7 +66,7 @@ func (p *AnyStringPattern) HasRegex() bool {
 }
 
 func (p *AnyStringPattern) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (p *AnyStringPattern) IteratorElementValue() SymbolicValue {

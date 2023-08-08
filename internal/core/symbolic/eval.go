@@ -2186,7 +2186,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		case parse.NumberNegate:
 			switch operand.(type) {
 			case *Int:
-				return &Int{}, nil
+				return ANY_INT, nil
 			case *Float:
 				return &Float{}, nil
 			default:

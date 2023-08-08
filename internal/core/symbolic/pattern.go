@@ -681,7 +681,7 @@ func (*NamedSegmentPathPattern) Prop(name string) SymbolicValue {
 }
 
 func (p *NamedSegmentPathPattern) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (p *NamedSegmentPathPattern) IteratorElementValue() SymbolicValue {
@@ -823,7 +823,7 @@ func (p *RegexPattern) StringPattern() (StringPattern, bool) {
 }
 
 func (p *RegexPattern) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (p *RegexPattern) IteratorElementValue() SymbolicValue {
@@ -1709,7 +1709,7 @@ func (p *TuplePattern) StringPattern() (StringPattern, bool) {
 }
 
 func (p *TuplePattern) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (p *TuplePattern) IteratorElementValue() SymbolicValue {
@@ -1815,7 +1815,7 @@ func (p *UnionPattern) StringPattern() (StringPattern, bool) {
 }
 
 func (p *UnionPattern) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (p *UnionPattern) IteratorElementValue() SymbolicValue {
@@ -1896,7 +1896,7 @@ func (p *IntersectionPattern) StringPattern() (StringPattern, bool) {
 }
 
 func (p *IntersectionPattern) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (p *IntersectionPattern) IteratorElementValue() SymbolicValue {
@@ -2080,7 +2080,7 @@ func (p *TypePattern) StringPattern() (StringPattern, bool) {
 }
 
 func (p *TypePattern) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (p *TypePattern) IteratorElementValue() SymbolicValue {
@@ -2129,7 +2129,7 @@ func (p *DifferencePattern) StringPattern() (StringPattern, bool) {
 }
 
 func (p *DifferencePattern) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (p *DifferencePattern) IteratorElementValue() SymbolicValue {
@@ -2183,7 +2183,7 @@ func (p *OptionalPattern) StringPattern() (StringPattern, bool) {
 }
 
 func (p *OptionalPattern) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (p *OptionalPattern) IteratorElementValue() SymbolicValue {
@@ -2278,7 +2278,7 @@ func (fn *FunctionPattern) HasUnderylingPattern() bool {
 }
 
 func (p *FunctionPattern) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (fn *FunctionPattern) IteratorElementValue() SymbolicValue {
@@ -2352,7 +2352,7 @@ func (*IntRangePattern) Prop(name string) SymbolicValue {
 }
 
 func (p *IntRangePattern) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (p *IntRangePattern) IteratorElementValue() SymbolicValue {
@@ -2417,7 +2417,7 @@ func (p *EventPattern) StringPattern() (StringPattern, bool) {
 }
 
 func (p *EventPattern) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (p *EventPattern) IteratorElementValue() SymbolicValue {
@@ -2478,7 +2478,7 @@ func (p *MutationPattern) StringPattern() (StringPattern, bool) {
 }
 
 func (p *MutationPattern) IteratorElementKey() SymbolicValue {
-	return &Int{}
+	return ANY_INT
 }
 
 func (p *MutationPattern) IteratorElementValue() SymbolicValue {

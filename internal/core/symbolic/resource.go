@@ -430,7 +430,7 @@ func (*Host) Prop(name string) SymbolicValue {
 	case "explicit_port":
 		return &Int{}
 	case "without_port":
-		return &Host{}
+		return ANY_HOST
 	default:
 		return nil
 	}
