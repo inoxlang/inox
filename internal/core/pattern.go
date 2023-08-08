@@ -231,6 +231,10 @@ func NewExactObjectPattern(entries map[string]Pattern) *ObjectPattern {
 	return &ObjectPattern{entryPatterns: entries}
 }
 
+func NewExactObjectPatternWithOptionalProps(entries map[string]Pattern, optionalProperties map[string]struct{}) *ObjectPattern {
+	return &ObjectPattern{entryPatterns: entries, optionalEntries: optionalProperties, inexact: false}
+}
+
 func NewInexactObjectPattern(entries map[string]Pattern) *ObjectPattern {
 	return &ObjectPattern{entryPatterns: entries, inexact: true}
 }
@@ -325,6 +329,10 @@ func NewInexactRecordPattern(entries map[string]Pattern) *RecordPattern {
 
 func NewInexactRecordPatternWithOptionalProps(entries map[string]Pattern, optionalProperties map[string]struct{}) *RecordPattern {
 	return &RecordPattern{entryPatterns: entries, optionalEntries: optionalProperties, inexact: true}
+}
+
+func NewExactRecordPatternWithOptionalProps(entries map[string]Pattern, optionalProperties map[string]struct{}) *RecordPattern {
+	return &RecordPattern{entryPatterns: entries, optionalEntries: optionalProperties, inexact: false}
 }
 
 func (patt *RecordPattern) Test(ctx *Context, v Value) bool {

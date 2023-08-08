@@ -24,6 +24,26 @@ var (
 func init() {
 
 	symbolic.SetExternalData(symbolic.ExternalData{
+		IMPLICIT_KEY_LEN_KEY:                    IMPLICIT_KEY_LEN_KEY,
+		CONSTRAINTS_KEY:                         CONSTRAINTS_KEY,
+		VISIBILITY_KEY:                          VISIBILITY_KEY,
+		MANIFEST_POSITIONAL_PARAM_NAME_FIELD:    "name",
+		MANIFEST_POSITIONAL_PARAM_PATTERN_FIELD: "pattern",
+		MANIFEST_PARAMS_SECTION_NAME:            MANIFEST_PARAMS_SECTION_NAME,
+		MOD_ARGS_VARNAME:                        MOD_ARGS_VARNAME,
+
+		DEFAULT_PATTERN_NAMESPACES: func() map[string]*symbolic.PatternNamespace {
+			result := make(map[string]*symbolic.PatternNamespace)
+			for name, ns := range DEFAULT_PATTERN_NAMESPACES {
+				symbolicNamespace, err := ns.ToSymbolicValue(nil, map[uintptr]symbolic.SymbolicValue{})
+				if err != nil {
+					panic(err)
+				}
+				result[name] = symbolicNamespace.(*symbolic.PatternNamespace)
+			}
+			return result
+		}(),
+
 		ToSymbolicValue: func(v any, wide bool) (symbolic.SymbolicValue, error) {
 			return ToSymbolicValue(nil, v.(Value), wide)
 		},
@@ -68,26 +88,51 @@ func init() {
 		HostMatch: func(host, pattern string) bool {
 			return HostPattern(pattern).Test(nil, Host(host))
 		},
-		IsIndexKey:                              IsIndexKey,
-		IMPLICIT_KEY_LEN_KEY:                    IMPLICIT_KEY_LEN_KEY,
-		CONSTRAINTS_KEY:                         CONSTRAINTS_KEY,
-		VISIBILITY_KEY:                          VISIBILITY_KEY,
-		MANIFEST_POSITIONAL_PARAM_NAME_FIELD:    "name",
-		MANIFEST_POSITIONAL_PARAM_PATTERN_FIELD: "pattern",
-		MANIFEST_PARAMS_SECTION_NAME:            MANIFEST_PARAMS_SECTION_NAME,
-		MOD_ARGS_VARNAME:                        MOD_ARGS_VARNAME,
-
-		DEFAULT_PATTERN_NAMESPACES: func() map[string]*symbolic.PatternNamespace {
-			result := make(map[string]*symbolic.PatternNamespace)
-			for name, ns := range DEFAULT_PATTERN_NAMESPACES {
-				symbolicNamespace, err := ns.ToSymbolicValue(nil, map[uintptr]symbolic.SymbolicValue{})
-				if err != nil {
-					panic(err)
+		IsIndexKey: IsIndexKey,
+		ConcreteValueFactories: symbolic.ConcreteValueFactories{
+			CreateObjectPattern: func(inexact bool, concretePropertyPatterns map[string]any, optionalProperties map[string]struct{}) any {
+				propertyPatterns := map[string]Pattern{}
+				for k, v := range concretePropertyPatterns {
+					propertyPatterns[k] = v.(Pattern)
 				}
-				result[name] = symbolicNamespace.(*symbolic.PatternNamespace)
-			}
-			return result
-		}(),
+
+				if inexact {
+					return NewInexactObjectPatternWithOptionalProps(propertyPatterns, optionalProperties)
+				}
+
+				return NewExactObjectPatternWithOptionalProps(propertyPatterns, optionalProperties)
+			},
+			CreateRecordPattern: func(inexact bool, concretePropertyPatterns map[string]any, optionalProperties map[string]struct{}) any {
+				propertyPatterns := map[string]Pattern{}
+				for k, v := range concretePropertyPatterns {
+					propertyPatterns[k] = v.(Pattern)
+				}
+
+				if inexact {
+					return NewInexactRecordPatternWithOptionalProps(propertyPatterns, optionalProperties)
+				}
+
+				return NewExactRecordPatternWithOptionalProps(propertyPatterns, optionalProperties)
+			},
+
+			CreateListPattern: func(generalElementPattern any, elementPatterns []any) any {
+				if generalElementPattern != nil {
+					return NewListPatternOf(generalElementPattern.(Pattern))
+				}
+				return NewListPattern(utils.MapSlice(elementPatterns, func(e any) Pattern {
+					return e.(Pattern)
+				}))
+			},
+
+			CreateTuplePattern: func(generalElementPattern any, elementPatterns []any) any {
+				if generalElementPattern != nil {
+					return NewTuplePatternOf(generalElementPattern.(Pattern))
+				}
+				return NewTuplePattern(utils.MapSlice(elementPatterns, func(e any) Pattern {
+					return e.(Pattern)
+				}))
+			},
+		},
 	})
 
 }

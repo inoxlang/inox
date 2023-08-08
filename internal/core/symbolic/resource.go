@@ -97,6 +97,13 @@ func (p *Path) IsConcretizable() bool {
 	return p.hasValue
 }
 
+func (p *Path) Concretize() any {
+	if !p.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+	return extData.ConcreteValueFactories.CreatePath(p.value)
+}
+
 func (p *Path) Static() Pattern {
 	return ANY_PATH_PATTERN
 }
@@ -234,6 +241,13 @@ func (u *URL) IsConcretizable() bool {
 	return u.hasValue
 }
 
+func (u *URL) Concretize() any {
+	if !u.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+	return extData.ConcreteValueFactories.CreateURL(u.value)
+}
+
 func (u *URL) Static() Pattern {
 	return ANY_URL_PATTERN
 }
@@ -322,6 +336,13 @@ func (s *Scheme) IsConcretizable() bool {
 	return s.hasValue
 }
 
+func (s *Scheme) Concretize() any {
+	if !s.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+	return extData.ConcreteValueFactories.CreateScheme(s.value)
+}
+
 func (s *Scheme) Static() Pattern {
 	return &TypePattern{val: ANY_SCHEME}
 }
@@ -388,6 +409,13 @@ func (h *Host) Test(v SymbolicValue) bool {
 
 func (h *Host) IsConcretizable() bool {
 	return h.hasValue
+}
+
+func (h *Host) Concretize() any {
+	if !h.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+	return extData.ConcreteValueFactories.CreateHost(h.value)
 }
 
 func (h *Host) Static() Pattern {

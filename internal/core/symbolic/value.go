@@ -153,6 +153,10 @@ func (*NilT) IsConcretizable() bool {
 	return true
 }
 
+func (*NilT) Concretize() any {
+	return extData.ConcreteValueFactories.CreateNil()
+}
+
 func (n *NilT) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("nil")))
 }
@@ -188,6 +192,13 @@ func (b *Bool) Test(v SymbolicValue) bool {
 
 func (b *Bool) IsConcretizable() bool {
 	return b.hasValue
+}
+
+func (b *Bool) Concretize() any {
+	if !b.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+	return extData.ConcreteValueFactories.CreateBool(b.value)
 }
 
 func (b *Bool) Static() Pattern {
@@ -289,6 +300,13 @@ func (i *Identifier) IsConcretizable() bool {
 	return i.HasConcreteName()
 }
 
+func (i *Identifier) Concretize() any {
+	if !i.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+	return extData.ConcreteValueFactories.CreateIdentifier(i.name)
+}
+
 func (i *Identifier) HasConcreteName() bool {
 	return i.name != ""
 }
@@ -341,6 +359,13 @@ func (p *PropertyName) Test(v SymbolicValue) bool {
 
 func (n *PropertyName) IsConcretizable() bool {
 	return n.name != ""
+}
+
+func (p *PropertyName) Concretize() any {
+	if !p.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+	return extData.ConcreteValueFactories.CreatePropertyName(p.name)
 }
 
 func (p *PropertyName) Static() Pattern {
@@ -450,6 +475,15 @@ func (o *Option) IsConcretizable() bool {
 	return ok && potentiallyConcretizable.IsConcretizable()
 }
 
+func (o *Option) Concretize() any {
+	if !o.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+
+	concreteValue := utils.Must(Concretize(o.value))
+	return extData.ConcreteValueFactories.CreateOption(o.name, concreteValue)
+}
+
 func (o *Option) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%option(")))
 	if o.name != "" {
@@ -493,6 +527,13 @@ func (d *Date) IsConcretizable() bool {
 	return d.hasValue
 }
 
+func (d *Date) Concretize() any {
+	if !d.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+	return extData.ConcreteValueFactories.CreateDate(d.value)
+}
+
 func (d *Date) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%date")))
 	if d.hasValue {
@@ -533,6 +574,13 @@ func (d *Duration) Test(v SymbolicValue) bool {
 
 func (d *Duration) IsConcretizable() bool {
 	return d.hasValue
+}
+
+func (d *Duration) Concretize() any {
+	if !d.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+	return extData.ConcreteValueFactories.CreateDuration(d.value)
 }
 
 func (d *Duration) Static() Pattern {
@@ -587,6 +635,10 @@ func (f *FileInfo) Test(v SymbolicValue) bool {
 
 func (f *FileInfo) IsConcretizable() bool {
 	return false
+}
+
+func (f *FileInfo) Concretize() any {
+	panic(ErrNotConcretizable)
 }
 
 func (f FileInfo) GetGoMethod(name string) (*GoFunction, bool) {
@@ -950,6 +1002,13 @@ func (c *ByteCount) IsConcretizable() bool {
 	return c.hasValue
 }
 
+func (c *ByteCount) Concretize() any {
+	if !c.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+	return extData.ConcreteValueFactories.CreateByteCount(c.value)
+}
+
 func (c *ByteCount) Static() Pattern {
 	return &TypePattern{val: c.WidestOfType()}
 }
@@ -998,6 +1057,13 @@ func (r *ByteRate) IsConcretizable() bool {
 	return r.hasValue
 }
 
+func (r *ByteRate) Concretize() any {
+	if !r.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+	return extData.ConcreteValueFactories.CreateByteRate(r.value)
+}
+
 func (r *ByteRate) Static() Pattern {
 	return &TypePattern{val: r.WidestOfType()}
 }
@@ -1044,6 +1110,13 @@ func (c *LineCount) Test(v SymbolicValue) bool {
 
 func (c *LineCount) IsConcretizable() bool {
 	return c.hasValue
+}
+
+func (c *LineCount) Concretize() any {
+	if !c.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+	return extData.ConcreteValueFactories.CreateLineCount(c.value)
 }
 
 func (c *LineCount) Static() Pattern {
@@ -1140,6 +1213,13 @@ func (c *SimpleRate) Test(v SymbolicValue) bool {
 
 func (r *SimpleRate) IsConcretizable() bool {
 	return r.hasValue
+}
+
+func (r *SimpleRate) Concretize() any {
+	if !r.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+	return extData.ConcreteValueFactories.CreateSimpleRate(r.value)
 }
 
 func (r *SimpleRate) Static() Pattern {

@@ -108,7 +108,6 @@ func RemoveIndexOfSlice[T any](s []T, index int) []T {
 	return append(s[:index], s[index+1:]...)
 }
 
-
 func BytesAsString(b []byte) string {
 	if len(b) == 0 {
 		return ""

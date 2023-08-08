@@ -46,17 +46,18 @@ var (
 )
 
 type ExternalData struct {
-	ToSymbolicValue       func(v any, wide bool) (SymbolicValue, error)
-	SymbolicToPattern     func(v SymbolicValue) (any, bool)
-	GetQuantity           func(values []float64, units []string) (any, error)
-	GetRate               func(values []float64, units []string, divUnit string) (any, error)
-	ConvertKeyReprToValue func(string) any
-	IsReadable            func(v any) bool
-	IsWritable            func(v any) bool
-	IsIndexKey            func(k string) bool
-	PathMatch             func(path, pattern string) bool
-	URLMatch              func(url, pattern string) bool
-	HostMatch             func(host, pattern string) bool
+	ToSymbolicValue        func(v any, wide bool) (SymbolicValue, error)
+	SymbolicToPattern      func(v SymbolicValue) (any, bool)
+	GetQuantity            func(values []float64, units []string) (any, error)
+	GetRate                func(values []float64, units []string, divUnit string) (any, error)
+	ConvertKeyReprToValue  func(string) any
+	IsReadable             func(v any) bool
+	IsWritable             func(v any) bool
+	IsIndexKey             func(k string) bool
+	PathMatch              func(path, pattern string) bool
+	URLMatch               func(url, pattern string) bool
+	HostMatch              func(host, pattern string) bool
+	ConcreteValueFactories ConcreteValueFactories
 
 	DEFAULT_PATTERN_NAMESPACES map[string]*PatternNamespace
 

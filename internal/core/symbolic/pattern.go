@@ -887,7 +887,7 @@ func (p *ObjectPattern) ToRecordPattern() *RecordPattern {
 func (p *ObjectPattern) Test(v SymbolicValue) bool {
 	other, ok := v.(*ObjectPattern)
 
-	if !ok {
+	if !ok || len(p.complexPropertyConstraints) > 0 {
 		return false
 	}
 
@@ -907,6 +907,21 @@ func (p *ObjectPattern) Test(v SymbolicValue) bool {
 	}
 
 	return true
+}
+
+func (p *ObjectPattern) Concretize() any {
+	if !p.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+
+	concretePropertyPatterns := make(map[string]any, len(p.entries))
+
+	for k, v := range p.entries {
+		concretePropPattern := utils.Must(Concretize(v))
+		concretePropertyPatterns[k] = concretePropPattern
+	}
+
+	return extData.ConcreteValueFactories.CreateObjectPattern(p.inexact, concretePropertyPatterns, utils.CopyMap(p.optionalEntries))
 }
 
 func (patt *ObjectPattern) IsConcretizable() bool {
@@ -1119,7 +1134,7 @@ func InitializeRecordPattern(patt *RecordPattern, entries map[string]Pattern, op
 func (p *RecordPattern) Test(v SymbolicValue) bool {
 	other, ok := v.(*RecordPattern)
 
-	if !ok {
+	if !ok || len(p.complexPropertyConstraints) > 0 {
 		return false
 	}
 
@@ -1153,6 +1168,21 @@ func (p *RecordPattern) IsConcretizable() bool {
 	}
 
 	return true
+}
+
+func (p *RecordPattern) Concretize() any {
+	if !p.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+
+	concretePropertyPatterns := make(map[string]any, len(p.entries))
+
+	for k, v := range p.entries {
+		concretePropPattern := utils.Must(Concretize(v))
+		concretePropertyPatterns[k] = concretePropPattern
+	}
+
+	return extData.ConcreteValueFactories.CreateObjectPattern(p.inexact, concretePropertyPatterns, utils.CopyMap(p.optionalEntries))
 }
 
 func (p *RecordPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -1392,6 +1422,26 @@ func (p *ListPattern) IsConcretizable() bool {
 	}
 
 	return true
+}
+
+func (p *ListPattern) Concretize() any {
+	if !p.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+
+	if p.generalElement != nil {
+		concreteGeneralElement := utils.Must(Concretize(p.generalElement))
+		return extData.ConcreteValueFactories.CreateListPattern(concreteGeneralElement, nil)
+	}
+
+	concreteElementPatterns := make([]any, len(p.elements))
+
+	for i, e := range p.elements {
+		concreteElemPattern := utils.Must(Concretize(e))
+		concreteElementPatterns[i] = concreteElemPattern
+	}
+
+	return extData.ConcreteValueFactories.CreateListPattern(nil, concreteElementPatterns)
 }
 
 func prettyPrintListPattern(
@@ -1643,6 +1693,26 @@ func (p *TuplePattern) IsConcretizable() bool {
 	return true
 }
 
+func (p *TuplePattern) Concretize() any {
+	if !p.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+
+	if p.generalElement != nil {
+		concreteGeneralElement := utils.Must(Concretize(p.generalElement))
+		return extData.ConcreteValueFactories.CreateListPattern(concreteGeneralElement, nil)
+	}
+
+	concreteElementPatterns := make([]any, len(p.elements))
+
+	for i, e := range p.elements {
+		concreteElemPattern := utils.Must(Concretize(e))
+		concreteElementPatterns[i] = concreteElemPattern
+	}
+
+	return extData.ConcreteValueFactories.CreateListPattern(nil, concreteElementPatterns)
+}
+
 func (p *TuplePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if p.elements != nil {
 		prettyPrintListPattern(w, true, p.generalElement, p.elements, config, depth, parentIndentCount)
@@ -1713,11 +1783,11 @@ func (p *TuplePattern) IteratorElementKey() SymbolicValue {
 }
 
 func (p *TuplePattern) IteratorElementValue() SymbolicValue {
-	return &List{}
+	return p.SymbolicValue()
 }
 
 func (p *TuplePattern) WidestOfType() SymbolicValue {
-	return &TuplePattern{}
+	return ANY_TUPLE_PATTERN
 }
 
 // A UnionPattern represents a symbolic UnionPattern.
@@ -2045,6 +2115,14 @@ func (p *TypePattern) Test(v SymbolicValue) bool {
 
 func (patt *TypePattern) IsConcretizable() bool {
 	return patt.concreteTypePattern != nil
+}
+
+func (patt *TypePattern) Concretize() any {
+	if !patt.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+
+	return patt.concreteTypePattern
 }
 
 func (p *TypePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

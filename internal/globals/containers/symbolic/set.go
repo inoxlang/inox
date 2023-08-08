@@ -190,6 +190,15 @@ func (p *SetPattern) IsConcretizable() bool {
 	return ok && potentiallyConcretizable.IsConcretizable()
 }
 
+func (p *SetPattern) Concretize() any {
+	if !p.IsConcretizable() {
+		panic(symbolic.ErrNotConcretizable)
+	}
+
+	concreteElementPattern := utils.Must(symbolic.Concretize(p.elementPattern))
+	return externalData.CreateConcreteSetPattern(*p.uniqueness, concreteElementPattern)
+}
+
 func (p *SetPattern) TestValue(v symbolic.SymbolicValue) bool {
 	if otherPatt, ok := v.(*SetPattern); ok {
 		return p.elementPattern.TestValue(otherPatt.elementPattern)

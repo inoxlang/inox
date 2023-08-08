@@ -84,6 +84,10 @@ func (fn *InoxFunction) IsConcretizable() bool {
 	return false
 }
 
+func (fn *InoxFunction) Concretize() any {
+	panic(ErrNotConcretizable)
+}
+
 func (fn *InoxFunction) IsSharable() (bool, string) {
 	//TODO: reconciliate with concrete version
 	return true, ""

@@ -48,6 +48,13 @@ func (f *Float) IsConcretizable() bool {
 	return f.hasValue
 }
 
+func (f *Float) Concretize() any {
+	if !f.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+	return extData.ConcreteValueFactories.CreateFloat(f.value)
+}
+
 func (f *Float) Static() Pattern {
 	return &TypePattern{val: ANY_FLOAT}
 }
@@ -92,6 +99,13 @@ func (i *Int) Test(v SymbolicValue) bool {
 
 func (i *Int) IsConcretizable() bool {
 	return i.hasValue
+}
+
+func (i *Int) Concretize() any {
+	if !i.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+	return extData.ConcreteValueFactories.CreateInt(i.value)
 }
 
 func (i *Int) Static() Pattern {

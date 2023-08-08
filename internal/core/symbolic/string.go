@@ -88,6 +88,13 @@ func (s *String) IsConcretizable() bool {
 	return s.hasValue
 }
 
+func (s *String) Concretize() any {
+	if !s.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+	return extData.ConcreteValueFactories.CreateString(s.value)
+}
+
 func (s *String) Static() Pattern {
 	return &TypePattern{val: ANY_STR}
 }
@@ -223,6 +230,13 @@ func (r *Rune) IsConcretizable() bool {
 	return r.hasValue
 }
 
+func (r *Rune) Concretize() any {
+	if !r.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+	return extData.ConcreteValueFactories.CreateRune(r.value)
+}
+
 func (r *Rune) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if r.hasValue {
 		utils.Must(w.Write(utils.StringAsBytes(commonfmt.FmtRune(r.value))))
@@ -301,6 +315,10 @@ func (s *RuneSlice) Test(v SymbolicValue) bool {
 
 func (s *RuneSlice) IsConcretizable() bool {
 	return false
+}
+
+func (s *RuneSlice) Concretize() any {
+	panic(ErrNotConcretizable)
 }
 
 func (s *RuneSlice) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -412,6 +430,10 @@ func (c *StringConcatenation) Test(v SymbolicValue) bool {
 
 func (c *StringConcatenation) IsConcretizable() bool {
 	return false
+}
+
+func (c *StringConcatenation) Concretize() any {
+	panic(ErrNotConcretizable)
 }
 
 func (c *StringConcatenation) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

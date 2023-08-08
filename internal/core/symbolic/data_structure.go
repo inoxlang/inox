@@ -278,6 +278,18 @@ func (list *List) IsConcretizable() bool {
 	return true
 }
 
+func (list *List) Concretize() any {
+	if !list.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+
+	concreteElements := make([]any, len(list.elements))
+	for i, e := range list.elements {
+		concreteElements[i] = utils.Must(Concretize(e))
+	}
+	return extData.ConcreteValueFactories.CreateList(concreteElements)
+}
+
 func (list *List) Static() Pattern {
 	if list.generalElement != nil {
 		return NewListPatternOf(&TypePattern{val: list.generalElement})
@@ -529,6 +541,18 @@ func (t *Tuple) IsConcretizable() bool {
 	return true
 }
 
+func (t *Tuple) Concretize() any {
+	if !t.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+
+	concreteElements := make([]any, len(t.elements))
+	for i, e := range t.elements {
+		concreteElements[i] = utils.Must(Concretize(e))
+	}
+	return extData.ConcreteValueFactories.CreateList(concreteElements)
+}
+
 func (t *Tuple) Static() Pattern {
 	if t.generalElement != nil {
 		return NewListPatternOf(&TypePattern{val: t.generalElement})
@@ -677,6 +701,14 @@ func (list *KeyList) IsConcretizable() bool {
 	return true
 }
 
+func (list *KeyList) Concretize() any {
+	if !list.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+
+	return extData.ConcreteValueFactories.CreateKeyList(utils.CopySlice(list.Keys))
+}
+
 func (list *KeyList) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if list.Keys != nil {
 		if depth > config.MaxDepth && len(list.Keys) > 0 {
@@ -714,8 +746,10 @@ func (l *KeyList) WidestOfType() SymbolicValue {
 //
 
 type Dictionary struct {
-	entries map[string]Serializable //if nil, matches any dictionary
-	keys    map[string]Serializable
+	//if nil, matches any dictionary, map (approximate key representation) -> value
+	entries map[string]Serializable
+	//map (approximate key representation) -> key
+	keys map[string]Serializable
 
 	SerializableMixin
 	PseudoClonableMixin
@@ -782,18 +816,37 @@ func (dict *Dictionary) IsConcretizable() bool {
 	}
 
 	for _, v := range dict.entries {
-		if potentiallyConcretizable, ok := v.(PotentiallyConcretizable); !ok || !potentiallyConcretizable.IsConcretizable() {
+		if !IsConcretizable(v) {
 			return false
 		}
 	}
 
 	for _, key := range dict.entries {
-		if potentiallyConcretizable, ok := key.(PotentiallyConcretizable); !ok || !potentiallyConcretizable.IsConcretizable() {
+		if !IsConcretizable(key) {
 			return false
 		}
 	}
 
 	return true
+}
+
+func (dict *Dictionary) Concretize() any {
+	if !dict.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+
+	concreteValues := make([]any, len(dict.entries))
+	concreteKeys := make([]any, len(dict.entries))
+
+	i := 0
+	for keyRepr, value := range dict.entries {
+		concreteValue := utils.Must(Concretize(value))
+		concreteKey := utils.Must(Concretize(dict.keys[keyRepr]))
+
+		concreteValues[i] = concreteValue
+		concreteKeys[i] = concreteKey
+	}
+	return extData.ConcreteValueFactories.CreateDictionary(concreteKeys, concreteValues)
 }
 
 func (dict *Dictionary) Entries() map[string]Serializable {
@@ -1046,6 +1099,18 @@ func (o *Object) IsConcretizable() bool {
 	}
 
 	return true
+}
+
+func (o *Object) Concretize() any {
+	if !o.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+
+	concreteProperties := make(map[string]any, len(o.entries))
+	for k, v := range o.entries {
+		concreteProperties[k] = utils.Must(Concretize(v))
+	}
+	return extData.ConcreteValueFactories.CreateObject(concreteProperties)
 }
 
 func (obj *Object) IsSharable() (bool, string) {
@@ -1446,6 +1511,18 @@ func (r *Record) IsConcretizable() bool {
 	}
 
 	return true
+}
+
+func (rec *Record) Concretize() any {
+	if !rec.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+
+	concreteProperties := make(map[string]any, len(rec.entries))
+	for k, v := range rec.entries {
+		concreteProperties[k] = utils.Must(Concretize(v))
+	}
+	return extData.ConcreteValueFactories.CreateObject(concreteProperties)
 }
 
 func (rec *Record) Prop(name string) SymbolicValue {
