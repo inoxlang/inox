@@ -30,3 +30,8 @@ var (
 type PotentiallyConcretizable interface {
 	IsConcretizable() bool
 }
+
+func IsConcretizable(v SymbolicValue) bool {
+	potentiallyConcretizable, ok := v.(PotentiallyConcretizable)
+	return ok && potentiallyConcretizable.IsConcretizable()
+}

@@ -1,11 +1,17 @@
 package core
 
-import "path/filepath"
+import (
+	"path/filepath"
+	"strconv"
+
+	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/utils"
+)
 
 // TODO: improve name
 type MigrationAwarePattern interface {
 	Pattern
-	GetMigrationOperations(next Pattern, pseudoPath string) ([]MigrationOp, error)
+	GetMigrationOperations(ctx *Context, next Pattern, pseudoPath string) ([]MigrationOp, error)
 }
 
 type MigrationOp interface {
@@ -41,7 +47,7 @@ type InclusionMigrationOp struct {
 	migrationMixin
 }
 
-func (patt *ObjectPattern) GetMigrationOperations(next Pattern, pseudoPath string) (migrations []MigrationOp, _ error) {
+func (patt *ObjectPattern) GetMigrationOperations(ctx *Context, next Pattern, pseudoPath string) (migrations []MigrationOp, _ error) {
 	nextObject, ok := next.(*ObjectPattern)
 	if !ok {
 		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, migrationMixin: migrationMixin{pseudoPath: pseudoPath}}}, nil
@@ -70,7 +76,7 @@ func (patt *ObjectPattern) GetMigrationOperations(next Pattern, pseudoPath strin
 			continue
 		}
 
-		list, err := GetMigrationOperations(propPattern, nextPropPattern, propPseudoPath)
+		list, err := GetMigrationOperations(ctx, propPattern, nextPropPattern, propPseudoPath)
 		if err != nil {
 			return nil, err
 		}
@@ -104,7 +110,7 @@ func (patt *ObjectPattern) GetMigrationOperations(next Pattern, pseudoPath strin
 	return migrations, nil
 }
 
-func (patt *RecordPattern) GetMigrationOperations(next Pattern, pseudoPath string) (migrations []MigrationOp, _ error) {
+func (patt *RecordPattern) GetMigrationOperations(ctx *Context, next Pattern, pseudoPath string) (migrations []MigrationOp, _ error) {
 	nextRecord, ok := next.(*RecordPattern)
 	if !ok {
 		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, migrationMixin: migrationMixin{pseudoPath: pseudoPath}}}, nil
@@ -133,7 +139,7 @@ func (patt *RecordPattern) GetMigrationOperations(next Pattern, pseudoPath strin
 			continue
 		}
 
-		list, err := GetMigrationOperations(propPattern, nextPropPattern, propPseudoPath)
+		list, err := GetMigrationOperations(ctx, propPattern, nextPropPattern, propPseudoPath)
 		if err != nil {
 			return nil, err
 		}
@@ -167,15 +173,83 @@ func (patt *RecordPattern) GetMigrationOperations(next Pattern, pseudoPath strin
 	return migrations, nil
 }
 
-func GetMigrationOperations(current, next Pattern, pseudoPath string) ([]MigrationOp, error) {
-	if current == next {
+func (patt *ListPattern) GetMigrationOperations(ctx *Context, next Pattern, pseudoPath string) (migrations []MigrationOp, _ error) {
+	nextList, ok := next.(*ListPattern)
+	if !ok {
+		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, migrationMixin: migrationMixin{pseudoPath: pseudoPath}}}, nil
+	}
+
+	anyElemPseudoPath := filepath.Join(pseudoPath, "*")
+
+	if patt.generalElementPattern != nil {
+		if nextList.generalElementPattern != nil {
+			return GetMigrationOperations(ctx, patt.generalElementPattern, nextList.generalElementPattern, anyElemPseudoPath)
+		}
+		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, migrationMixin: migrationMixin{pseudoPath: pseudoPath}}}, nil
+	}
+	//else pattern has element patterns
+
+	if nextList.generalElementPattern != nil {
+		//add operation for each current element that does not match the next general element pattern
+		for i, currentElemPattern := range patt.elementPatterns {
+			elemPseudoPath := filepath.Join(pseudoPath, strconv.Itoa(i))
+
+			list, err := GetMigrationOperations(ctx, currentElemPattern, nextList.generalElementPattern, elemPseudoPath)
+			if err != nil {
+				return nil, err
+			}
+			migrations = append(migrations, list...)
+		}
+	} else {
+		if len(nextList.elementPatterns) != len(patt.elementPatterns) {
+			return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, migrationMixin: migrationMixin{pseudoPath: pseudoPath}}}, nil
+		}
+
+		//add operation for each current element that does not match the element pattern at the corresponding index
+		for i, nextElemPattern := range nextList.elementPatterns {
+			elemPseudoPath := filepath.Join(pseudoPath, strconv.Itoa(i))
+			currentElemPattern := patt.elementPatterns[i]
+
+			list, err := GetMigrationOperations(ctx, currentElemPattern, nextElemPattern, elemPseudoPath)
+			if err != nil {
+				return nil, err
+			}
+			migrations = append(migrations, list...)
+		}
+	}
+
+	return migrations, nil
+}
+
+func GetMigrationOperations(ctx *Context, current, next Pattern, pseudoPath string) ([]MigrationOp, error) {
+	if current == next || isSubType(current, next, ctx, map[uintptr]symbolic.SymbolicValue{}) {
 		return nil, nil
 	}
 
 	m1, ok := current.(MigrationAwarePattern)
+
 	if !ok {
 		return []MigrationOp{ReplacementMigrationOp{Current: current, Next: next, migrationMixin: migrationMixin{pseudoPath: pseudoPath}}}, nil
 	}
 
-	return m1.GetMigrationOperations(next, pseudoPath)
+	return m1.GetMigrationOperations(ctx, next, pseudoPath)
+}
+
+func isSubType(sub, super Pattern, ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) bool {
+	symbolicSub := utils.Must(sub.ToSymbolicValue(ctx, encountered))
+	symbolicSuper := utils.Must(super.ToSymbolicValue(ctx, encountered))
+
+	if !symbolic.IsConcretizable(symbolicSub) {
+		panic(ErrUnreachable)
+	}
+
+	if !symbolic.IsConcretizable(symbolicSuper) {
+		panic(ErrUnreachable)
+	}
+
+	return symbolicSuper.Test(symbolicSub)
+}
+
+func isSuperType(super, sub Pattern, ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) bool {
+	return isSubType(sub, super, ctx, encountered)
 }

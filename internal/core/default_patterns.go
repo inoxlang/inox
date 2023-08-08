@@ -774,6 +774,11 @@ var (
 		},
 	}
 
+	//TODO: complete
+	NOT_ACCESSIBLE_PATTERNS = map[string]Pattern{
+		"any":          ANYVAL_PATTERN,
+		"serializable": SERIALIZABLE_PATTERN,
+	}
 	//used to prevent some cycles
 	getDefaultNamedPattern (func(name string) Pattern) = nil
 )

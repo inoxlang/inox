@@ -651,7 +651,20 @@ func (p *TypePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symb
 			}
 		}
 	}
-	return &symbolic.AnyPattern{}, nil
+	for _, patt := range NOT_ACCESSIBLE_PATTERNS {
+		switch patt.(type) {
+		case *TypePattern:
+			if SamePointer(p, patt) {
+				return symbolic.NewTypePattern(
+					p.SymbolicValue,
+					p.SymbolicCallImpl,
+					p.symbolicStringPattern,
+					p,
+				), nil
+			}
+		}
+	}
+	return symbolic.ANY_PATTERN, nil
 }
 
 func (p NamedSegmentPathPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
