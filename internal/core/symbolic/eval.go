@@ -14,6 +14,7 @@ import (
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/oklog/ulid/v2"
+	"golang.org/x/exp/slices"
 	"gonum.org/v1/gonum/graph/simple"
 )
 
@@ -186,10 +187,10 @@ func SymbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 }
 
 func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr error) {
-	return _symbolicEval(node, state, false)
+	return _symbolicEval(node, state, false, nil)
 }
 
-func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result SymbolicValue, finalErr error) {
+func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool, _expectedValue SymbolicValue) (result SymbolicValue, finalErr error) {
 	defer func() {
 
 		e := recover()
@@ -290,7 +291,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		for _, node := range slices {
 			_, isStaticPathSlice := node.(*parse.PathSlice)
-			_, err := _symbolicEval(node, state, isStaticPathSlice)
+			_, err := _symbolicEval(node, state, isStaticPathSlice, nil)
 			if err != nil {
 				return nil, err
 			}
@@ -318,7 +319,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 	case *parse.URLPatternLiteral:
 		return NewUrlPattern(n.Value), nil
 	case *parse.URLExpression:
-		_, err := _symbolicEval(n.HostPart, state, true)
+		_, err := _symbolicEval(n.HostPart, state, true, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -329,7 +330,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		for _, node := range n.Path {
 			_, isStaticPathSlice := node.(*parse.PathSlice)
-			_, err := _symbolicEval(node, state, isStaticPathSlice)
+			_, err := _symbolicEval(node, state, isStaticPathSlice, nil)
 			if err != nil {
 				return nil, err
 			}
@@ -347,7 +348,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			state.symbolicData.SetMostSpecificNodeValue(param, ANY_URL)
 
 			for _, slice := range param.Value {
-				val, err := _symbolicEval(slice, state, false)
+				val, err := _symbolicEval(slice, state, false, nil)
 				if err != nil {
 					return nil, err
 				}
@@ -489,10 +490,6 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 	case *parse.LocalVariableDeclarations:
 		for _, decl := range n.Declarations {
 			name := decl.Left.(*parse.IdentifierLiteral).Name
-			right, err := symbolicEval(decl.Right, state)
-			if err != nil {
-				return nil, err
-			}
 
 			var static Pattern
 			if decl.Type != nil {
@@ -501,7 +498,14 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 					return nil, err
 				}
 				static = type_.(Pattern)
+			}
 
+			right, err := _symbolicEval(decl.Right, state, false, static.SymbolicValue())
+			if err != nil {
+				return nil, err
+			}
+
+			if static != nil {
 				if !static.TestValue(right) {
 					state.addError(makeSymbolicEvalError(decl.Right, state, fmtNotAssignableToVarOftype(right, static)))
 					right = ANY
@@ -982,7 +986,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		if n.Preinit != nil {
 			state.inPreinit = true
 			for _, stmt := range n.Preinit.Block.Statements {
-				_, err := _symbolicEval(stmt, state, false)
+				_, err := _symbolicEval(stmt, state, false, nil)
 
 				if err != nil {
 					return nil, err
@@ -1569,51 +1573,68 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 
 		if len(cycles) > 0 {
 			state.addError(makeSymbolicEvalError(node, state, fmtMethodCyclesDetected(cycles)))
-			return &Object{}, nil
+			return ANY_OBJ, nil
+		}
+
+		prevNextSelf, restoreNextSelf := state.getNextSelf()
+		if restoreNextSelf {
+			state.unsetNextSelf()
+		}
+		state.setNextSelf(obj)
+
+		expectedObj, ok := _expectedValue.(*Object)
+		if ok && expectedObj.entries != nil {
+			var properties []string
+			expectedObj.ForEachEntry(func(propName string, _ SymbolicValue) error {
+				if slices.Contains(keys, propName) {
+					return nil
+				}
+				properties = append(properties, propName)
+				return nil
+			})
+
+			state.symbolicData.SetAllowedNonPresentProperties(n, properties)
 		} else {
-			prevNextSelf, restoreNextSelf := state.getNextSelf()
-			if restoreNextSelf {
-				state.unsetNextSelf()
+			expectedObj = &Object{}
+		}
+
+		//evaluate properties
+		for _, key := range keys {
+			p := keyToProp[key]
+
+			var static Pattern
+
+			propVal, err := _symbolicEval(p.Value, state, false, expectedObj.entries[key])
+			if err != nil {
+				return nil, err
 			}
-			state.setNextSelf(obj)
 
-			for _, key := range keys {
-				p := keyToProp[key]
-
-				var static Pattern
-
-				propVal, err := symbolicEval(p.Value, state)
+			if p.Type != nil {
+				_propType, err := symbolicEval(p.Type, state)
 				if err != nil {
 					return nil, err
 				}
-
-				if p.Type != nil {
-					_propType, err := symbolicEval(p.Type, state)
-					if err != nil {
-						return nil, err
-					}
-					static = _propType.(Pattern)
-					if !static.TestValue(propVal) {
-						state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(propVal, static)))
-						propVal = static.SymbolicValue()
-					}
+				static = _propType.(Pattern)
+				if !static.TestValue(propVal) {
+					state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(propVal, static)))
+					propVal = static.SymbolicValue()
 				}
-
-				serializable, ok := propVal.(Serializable)
-				if !ok {
-					state.addError(makeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
-					serializable = ANY_SERIALIZABLE
-				} else if _, ok := asWatchable(propVal).(Watchable); !ok && propVal.IsMutable() {
-					state.addError(makeSymbolicEvalError(p, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_WATCHABLE))
-				}
-
-				obj.initNewProp(key, serializable, static)
-				state.symbolicData.SetMostSpecificNodeValue(p.Key, propVal)
 			}
-			state.unsetNextSelf()
-			if restoreNextSelf {
-				state.setNextSelf(prevNextSelf)
+
+			serializable, ok := propVal.(Serializable)
+			if !ok {
+				state.addError(makeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
+				serializable = ANY_SERIALIZABLE
+			} else if _, ok := asWatchable(propVal).(Watchable); !ok && propVal.IsMutable() {
+				state.addError(makeSymbolicEvalError(p, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_WATCHABLE))
 			}
+
+			obj.initNewProp(key, serializable, static)
+			state.symbolicData.SetMostSpecificNodeValue(p.Key, propVal)
+		}
+		state.unsetNextSelf()
+		if restoreNextSelf {
+			state.setNextSelf(prevNextSelf)
 		}
 
 		// evaluate meta properties
@@ -1636,13 +1657,12 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		entries := map[string]Serializable{}
 		rec := NewBoundEntriesRecord(entries)
 
+		var keys []string
+
+		//get keys
+
 		indexKey := 0
 		for _, p := range n.Properties {
-			v, err := symbolicEval(p.Value, state)
-			if err != nil {
-				return nil, err
-			}
-
 			var key string
 
 			switch n := p.Key.(type) {
@@ -1660,6 +1680,34 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 				indexKey++
 			default:
 				return nil, fmt.Errorf("invalid key type %T", n)
+			}
+
+			keys = append(keys, key)
+		}
+
+		expectedRecord, ok := _expectedValue.(*Record)
+		if ok && expectedRecord.entries != nil {
+			var properties []string
+			expectedRecord.ForEachEntry(func(propName string, _ SymbolicValue) error {
+				if slices.Contains(keys, propName) {
+					return nil
+				}
+				properties = append(properties, propName)
+				return nil
+			})
+
+			state.symbolicData.SetAllowedNonPresentProperties(n, properties)
+		} else {
+			expectedRecord = &Record{}
+		}
+
+		//evaluate values
+		for i, p := range n.Properties {
+			key := keys[i]
+
+			v, err := _symbolicEval(p.Value, state, false, expectedRecord.entries[key])
+			if err != nil {
+				return nil, err
 			}
 
 			if v.IsMutable() {
@@ -1703,7 +1751,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			generalElem := generalElemPattern.(Pattern).SymbolicValue().(Serializable)
 
 			for _, elemNode := range n.Elements {
-				e, err := symbolicEval(elemNode, state)
+				e, err := _symbolicEval(elemNode, state, false, generalElem)
 				if err != nil {
 					return nil, err
 				}
@@ -1724,9 +1772,15 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			return NewListOf(generalElem), nil
 		}
 
+		expectedList, ok := _expectedValue.(*List)
+		var expectedElement SymbolicValue = nil
+		if ok {
+			expectedElement = expectedList.element()
+		}
+
 		if !n.HasSpreadElements() {
 			for _, elemNode := range n.Elements {
-				e, err := symbolicEval(elemNode, state)
+				e, err := _symbolicEval(elemNode, state, false, expectedElement)
 				if err != nil {
 					return nil, err
 				}
@@ -1762,7 +1816,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 			generalElem := generalElemPattern.(Pattern).SymbolicValue().(Serializable)
 
 			for _, elemNode := range n.Elements {
-				e, err := symbolicEval(elemNode, state)
+				e, err := _symbolicEval(elemNode, state, false, generalElem)
 				if err != nil {
 					return nil, err
 				}
@@ -1787,8 +1841,14 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool) (result 
 		}
 
 		if len(n.Elements) > 0 {
+			expectedList, ok := _expectedValue.(*Tuple)
+			var expectedElement SymbolicValue = nil
+			if ok {
+				expectedElement = expectedList.element()
+			}
+
 			for _, elemNode := range n.Elements {
-				e, err := symbolicEval(elemNode, state)
+				e, err := _symbolicEval(elemNode, state, false, expectedElement)
 				if err != nil {
 					return nil, err
 				}

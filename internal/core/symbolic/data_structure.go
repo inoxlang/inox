@@ -1577,6 +1577,15 @@ func (rec *Record) getProperty(name string) (SymbolicValue, bool) {
 	return v, ok
 }
 
+func (rec *Record) ForEachEntry(fn func(k string, v SymbolicValue) error) error {
+	for k, v := range rec.entries {
+		if err := fn(k, v); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (rec *Record) HasKnownLen() bool {
 	return false
 }
