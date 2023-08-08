@@ -1392,6 +1392,11 @@ func testParse(
 			assert.NotNil(t, mod)
 			assert.Error(t, err)
 		})
+
+		t.Run("miscellaneous", func(t *testing.T) {
+			_, err := parseChunk(t, "var a #{} = 1", "")
+			assert.NoError(t, err)
+		})
 	})
 
 	t.Run("variable", func(t *testing.T) {

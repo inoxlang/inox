@@ -6906,7 +6906,7 @@ func (p *parser) parseSingleLocalVarDeclaration(declarations *[]*LocalVariableDe
 	p.eatSpace()
 
 	isAcceptedFirstTypeChar := func(r rune) bool {
-		return r == '%' || isFirstIdentChar(r) || isOpeningDelim(r)
+		return r == '%' || r == '#' || isFirstIdentChar(r) || isOpeningDelim(r)
 	}
 
 	if p.i >= p.len || (p.s[p.i] != '=' && !isAcceptedFirstTypeChar(p.s[p.i])) {
