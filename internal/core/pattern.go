@@ -323,6 +323,10 @@ func NewInexactRecordPattern(entries map[string]Pattern) *RecordPattern {
 	}
 }
 
+func NewInexactRecordPatternWithOptionalProps(entries map[string]Pattern, optionalProperties map[string]struct{}) *RecordPattern {
+	return &RecordPattern{entryPatterns: entries, optionalEntries: optionalProperties, inexact: true}
+}
+
 func (patt *RecordPattern) Test(ctx *Context, v Value) bool {
 	rec, ok := v.(*Record)
 	if !ok {
