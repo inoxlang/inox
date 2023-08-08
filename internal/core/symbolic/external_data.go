@@ -57,6 +57,8 @@ type ExternalData struct {
 	PathMatch              func(path, pattern string) bool
 	URLMatch               func(url, pattern string) bool
 	HostMatch              func(host, pattern string) bool
+	GetMigrationOperations func(concreteCtx any, current, next any, pseudoPath string) ([]MigrationOp, error)
+
 	ConcreteValueFactories ConcreteValueFactories
 
 	DEFAULT_PATTERN_NAMESPACES map[string]*PatternNamespace

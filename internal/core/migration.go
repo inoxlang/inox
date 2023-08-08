@@ -16,6 +16,7 @@ type MigrationAwarePattern interface {
 
 type MigrationOp interface {
 	GetPseudoPath() string
+	ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) symbolic.MigrationOp
 }
 
 type MigrationMixin struct {
@@ -31,9 +32,24 @@ type ReplacementMigrationOp struct {
 	MigrationMixin
 }
 
+func (op ReplacementMigrationOp) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) symbolic.MigrationOp {
+	return symbolic.ReplacementMigrationOp{
+		Current:        utils.Must(op.Current.ToSymbolicValue(ctx, encountered)).(symbolic.Pattern),
+		Next:           utils.Must(op.Current.ToSymbolicValue(ctx, encountered)).(symbolic.Pattern),
+		MigrationMixin: symbolic.MigrationMixin{PseudoPath: op.PseudoPath},
+	}
+}
+
 type RemovalMigrationOp struct {
 	Value Pattern
 	MigrationMixin
+}
+
+func (op RemovalMigrationOp) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) symbolic.MigrationOp {
+	return symbolic.RemovalMigrationOp{
+		Value:          utils.Must(op.Value.ToSymbolicValue(ctx, encountered)).(symbolic.Pattern),
+		MigrationMixin: symbolic.MigrationMixin{PseudoPath: op.PseudoPath},
+	}
 }
 
 type NillableInitializationMigrationOp struct {
@@ -41,10 +57,24 @@ type NillableInitializationMigrationOp struct {
 	MigrationMixin
 }
 
+func (op NillableInitializationMigrationOp) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) symbolic.MigrationOp {
+	return symbolic.NillableInitializationMigrationOp{
+		Value:          utils.Must(op.Value.ToSymbolicValue(ctx, encountered)).(symbolic.Pattern),
+		MigrationMixin: symbolic.MigrationMixin{PseudoPath: op.PseudoPath},
+	}
+}
+
 type InclusionMigrationOp struct {
 	Value    Pattern
 	Optional bool
 	MigrationMixin
+}
+
+func (op InclusionMigrationOp) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) symbolic.MigrationOp {
+	return symbolic.NillableInitializationMigrationOp{
+		Value:          utils.Must(op.Value.ToSymbolicValue(ctx, encountered)).(symbolic.Pattern),
+		MigrationMixin: symbolic.MigrationMixin{PseudoPath: op.PseudoPath},
+	}
 }
 
 func (patt *ObjectPattern) GetMigrationOperations(ctx *Context, next Pattern, pseudoPath string) (migrations []MigrationOp, _ error) {

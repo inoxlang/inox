@@ -89,6 +89,21 @@ func init() {
 			return HostPattern(pattern).Test(nil, Host(host))
 		},
 		IsIndexKey: IsIndexKey,
+		GetMigrationOperations: func(concreteCtx any, current, next any, pseudoPath string) ([]symbolic.MigrationOp, error) {
+			ctx := concreteCtx.(*Context)
+			concreteMigrationOps, err := GetMigrationOperations(ctx, current.(Pattern), next.(Pattern), pseudoPath)
+			if err != nil {
+				return nil, err
+			}
+			symbolicMigrationOps := make([]symbolic.MigrationOp, len(concreteMigrationOps))
+			encountered := map[uintptr]symbolic.SymbolicValue{}
+
+			for i, op := range concreteMigrationOps {
+				symbolicMigrationOps[i] = op.ToSymbolicValue(ctx, encountered)
+			}
+
+			return symbolicMigrationOps, nil
+		},
 		ConcreteValueFactories: symbolic.ConcreteValueFactories{
 			CreateObjectPattern: func(inexact bool, concretePropertyPatterns map[string]any, optionalProperties map[string]struct{}) any {
 				propertyPatterns := map[string]Pattern{}

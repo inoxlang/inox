@@ -45,7 +45,7 @@ func (db *DatabaseIL) Test(v SymbolicValue) bool {
 	}
 }
 
-func (r *DatabaseIL) WidestOfType() SymbolicValue {
+func (*DatabaseIL) WidestOfType() SymbolicValue {
 	return ANY_DATABASE
 }
 
@@ -81,16 +81,35 @@ func (db *DatabaseIL) PropertyNames() []string {
 	return db.propertyNames
 }
 
-func (DatabaseIL *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern) {
+func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern) {
+	if !db.schema.IsConcretizable() {
+		ctx.AddSymbolicGoFunctionError("previous schema is not concretizable, it should only contain values/patterns that can be known at check time")
+		return
+	}
+
 	if !schema.IsConcretizable() {
-		ctx.AddSymbolicGoFunctionError("schema is not concretizable, it should only contain values/patterns that can be known at check time")
+		ctx.AddSymbolicGoFunctionError("new schema is not concretizable, it should only contain values/patterns that can be known at check time")
+		return
+	}
+
+	currentConcreteSchema := db.schema.Concretize()
+	nextConcreteSchema := schema.Concretize()
+
+	ops, err := extData.GetMigrationOperations(ctx.startingConcreteContext, currentConcreteSchema, nextConcreteSchema, "/")
+	if err != nil {
+		ctx.AddSymbolicGoFunctionError(err.Error())
+		return
+	}
+
+	if len(ops) > 0 {
+		ctx.AddSymbolicGoFunctionError("migration logic is required")
 	}
 }
 
-func (DatabaseIL *DatabaseIL) Close(*Context) *Error {
+func (db *DatabaseIL) Close(*Context) *Error {
 	return nil
 }
 
-func (r *DatabaseIL) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (db *DatabaseIL) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%database")))
 }
