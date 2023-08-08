@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 	"reflect"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
@@ -22,9 +23,10 @@ var (
 	ErrValueDoesMatchElementPattern         = errors.New("provided value does not match the element pattern")
 	ErrValueWithSameKeyAlreadyPresent       = errors.New("provided value has the same key as an already present element")
 
-	_ core.DefaultValuePattern = (*SetPattern)(nil)
-	_ core.PotentiallySharable = (*Set)(nil)
-	_ core.SerializableIterable = (*Set)(nil)
+	_ core.DefaultValuePattern   = (*SetPattern)(nil)
+	_ core.MigrationAwarePattern = (*SetPattern)(nil)
+	_ core.PotentiallySharable   = (*Set)(nil)
+	_ core.SerializableIterable  = (*Set)(nil)
 )
 
 func init() {
@@ -593,4 +595,17 @@ func (p *SetPattern) StringPattern() (core.StringPattern, bool) {
 
 func (p *SetPattern) DefaultValue(ctx *core.Context) (core.Value, error) {
 	return NewSetWithConfig(ctx, nil, p.config), nil
+}
+
+func (p *SetPattern) GetMigrationOperations(ctx *core.Context, next core.Pattern, pseudoPath string) ([]core.MigrationOp, error) {
+	nextSet, ok := next.(*SetPattern)
+	if !ok || nextSet.config.Uniqueness != p.config.Uniqueness {
+		return []core.MigrationOp{core.ReplacementMigrationOp{
+			Current:        p,
+			Next:           next,
+			MigrationMixin: core.MigrationMixin{PseudoPath: pseudoPath},
+		}}, nil
+	}
+
+	return core.GetMigrationOperations(ctx, p.config.Element, nextSet.config.Element, filepath.Join(pseudoPath, "*"))
 }

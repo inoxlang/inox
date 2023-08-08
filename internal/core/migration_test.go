@@ -35,7 +35,7 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 			InclusionMigrationOp{
 				Value:          INT_PATTERN,
 				Optional:       false,
-				migrationMixin: migrationMixin{"/a"},
+				MigrationMixin: MigrationMixin{"/a"},
 			},
 		}, migrations)
 	})
@@ -65,7 +65,7 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 			InclusionMigrationOp{
 				Value:          INT_PATTERN,
 				Optional:       true,
-				migrationMixin: migrationMixin{"/a"},
+				MigrationMixin: MigrationMixin{"/a"},
 			},
 		}, migrations)
 	})
@@ -82,7 +82,7 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 		assert.Equal(t, []MigrationOp{
 			RemovalMigrationOp{
 				Value:          INT_PATTERN,
-				migrationMixin: migrationMixin{"/a"},
+				MigrationMixin: MigrationMixin{"/a"},
 			},
 		}, migrations)
 	})
@@ -99,7 +99,7 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 		assert.Equal(t, []MigrationOp{
 			RemovalMigrationOp{
 				Value:          INT_PATTERN,
-				migrationMixin: migrationMixin{"/a"},
+				MigrationMixin: MigrationMixin{"/a"},
 			},
 		}, migrations)
 	})
@@ -116,7 +116,7 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 		assert.Equal(t, []MigrationOp{
 			NillableInitializationMigrationOp{
 				Value:          INT_PATTERN,
-				migrationMixin: migrationMixin{"/a"},
+				MigrationMixin: MigrationMixin{"/a"},
 			},
 		}, migrations)
 	})
@@ -146,7 +146,7 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 			ReplacementMigrationOp{
 				Current:        INT_PATTERN,
 				Next:           STR_PATTERN,
-				migrationMixin: migrationMixin{"/a"},
+				MigrationMixin: MigrationMixin{"/a"},
 			},
 		}, migrations)
 	})
@@ -164,7 +164,7 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 			ReplacementMigrationOp{
 				Current:        INT_PATTERN,
 				Next:           STR_PATTERN,
-				migrationMixin: migrationMixin{"/a"},
+				MigrationMixin: MigrationMixin{"/a"},
 			},
 		}, migrations)
 	})
@@ -182,7 +182,7 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 			ReplacementMigrationOp{
 				Current:        INT_PATTERN,
 				Next:           STR_PATTERN,
-				migrationMixin: migrationMixin{"/a"},
+				MigrationMixin: MigrationMixin{"/a"},
 			},
 		}, migrations)
 	})
@@ -202,7 +202,7 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 			InclusionMigrationOp{
 				Value:          INT_PATTERN,
 				Optional:       false,
-				migrationMixin: migrationMixin{"/a/b"},
+				MigrationMixin: MigrationMixin{"/a/b"},
 			},
 		}, migrations)
 	})
@@ -236,7 +236,7 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 			InclusionMigrationOp{
 				Value:          INT_PATTERN,
 				Optional:       false,
-				migrationMixin: migrationMixin{"/a"},
+				MigrationMixin: MigrationMixin{"/a"},
 			},
 		}, migrations)
 	})
@@ -254,7 +254,7 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 			InclusionMigrationOp{
 				Value:          INT_PATTERN,
 				Optional:       true,
-				migrationMixin: migrationMixin{"/a"},
+				MigrationMixin: MigrationMixin{"/a"},
 			},
 		}, migrations)
 	})
@@ -283,7 +283,7 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 		assert.Equal(t, []MigrationOp{
 			RemovalMigrationOp{
 				Value:          INT_PATTERN,
-				migrationMixin: migrationMixin{"/a"},
+				MigrationMixin: MigrationMixin{"/a"},
 			},
 		}, migrations)
 	})
@@ -300,7 +300,7 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 		assert.Equal(t, []MigrationOp{
 			RemovalMigrationOp{
 				Value:          INT_PATTERN,
-				migrationMixin: migrationMixin{"/a"},
+				MigrationMixin: MigrationMixin{"/a"},
 			},
 		}, migrations)
 	})
@@ -317,7 +317,7 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 		assert.Equal(t, []MigrationOp{
 			NillableInitializationMigrationOp{
 				Value:          INT_PATTERN,
-				migrationMixin: migrationMixin{"/a"},
+				MigrationMixin: MigrationMixin{"/a"},
 			},
 		}, migrations)
 	})
@@ -347,7 +347,7 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 			ReplacementMigrationOp{
 				Current:        INT_PATTERN,
 				Next:           STR_PATTERN,
-				migrationMixin: migrationMixin{"/a"},
+				MigrationMixin: MigrationMixin{"/a"},
 			},
 		}, migrations)
 	})
@@ -365,7 +365,7 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 			ReplacementMigrationOp{
 				Current:        INT_PATTERN,
 				Next:           STR_PATTERN,
-				migrationMixin: migrationMixin{"/a"},
+				MigrationMixin: MigrationMixin{"/a"},
 			},
 		}, migrations)
 	})
@@ -383,7 +383,7 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 			ReplacementMigrationOp{
 				Current:        INT_PATTERN,
 				Next:           STR_PATTERN,
-				migrationMixin: migrationMixin{"/a"},
+				MigrationMixin: MigrationMixin{"/a"},
 			},
 		}, migrations)
 	})
@@ -403,7 +403,7 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 			InclusionMigrationOp{
 				Value:          INT_PATTERN,
 				Optional:       false,
-				migrationMixin: migrationMixin{"/a/b"},
+				MigrationMixin: MigrationMixin{"/a/b"},
 			},
 		}, migrations)
 	})
@@ -438,7 +438,7 @@ func TestListPatternGetMigrationOperations(t *testing.T) {
 			ReplacementMigrationOp{
 				Current:        INT_PATTERN,
 				Next:           STR_PATTERN,
-				migrationMixin: migrationMixin{"/*"},
+				MigrationMixin: MigrationMixin{"/*"},
 			},
 		}, migrations)
 	})
@@ -469,7 +469,7 @@ func TestListPatternGetMigrationOperations(t *testing.T) {
 			ReplacementMigrationOp{
 				Current:        SERIALIZABLE_PATTERN,
 				Next:           INT_PATTERN,
-				migrationMixin: migrationMixin{"/*"},
+				MigrationMixin: MigrationMixin{"/*"},
 			},
 		}, migrations)
 	})
@@ -487,7 +487,7 @@ func TestListPatternGetMigrationOperations(t *testing.T) {
 			ReplacementMigrationOp{
 				Current:        intList,
 				Next:           emptyList,
-				migrationMixin: migrationMixin{"/"},
+				MigrationMixin: MigrationMixin{"/"},
 			},
 		}, migrations)
 	})
@@ -505,7 +505,7 @@ func TestListPatternGetMigrationOperations(t *testing.T) {
 			ReplacementMigrationOp{
 				Current:        intList,
 				Next:           singleItemList,
-				migrationMixin: migrationMixin{"/"},
+				MigrationMixin: MigrationMixin{"/"},
 			},
 		}, migrations)
 	})
@@ -523,7 +523,7 @@ func TestListPatternGetMigrationOperations(t *testing.T) {
 			ReplacementMigrationOp{
 				Current:        intList,
 				Next:           singleItemList,
-				migrationMixin: migrationMixin{"/"},
+				MigrationMixin: MigrationMixin{"/"},
 			},
 		}, migrations)
 	})
@@ -553,7 +553,7 @@ func TestListPatternGetMigrationOperations(t *testing.T) {
 			ReplacementMigrationOp{
 				Current:        INT_PATTERN,
 				Next:           STR_PATTERN,
-				migrationMixin: migrationMixin{"/0"},
+				MigrationMixin: MigrationMixin{"/0"},
 			},
 		}, migrations)
 	})
@@ -595,7 +595,7 @@ func TestListPatternGetMigrationOperations(t *testing.T) {
 			ReplacementMigrationOp{
 				Current:        SERIALIZABLE_PATTERN,
 				Next:           INT_PATTERN,
-				migrationMixin: migrationMixin{"/0"},
+				MigrationMixin: MigrationMixin{"/0"},
 			},
 		}, migrations)
 	})

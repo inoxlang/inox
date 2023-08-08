@@ -15,46 +15,46 @@ type MigrationAwarePattern interface {
 }
 
 type MigrationOp interface {
-	PseudPath()
+	GetPseudoPath() string
 }
 
-type migrationMixin struct {
-	pseudoPath string
+type MigrationMixin struct {
+	PseudoPath string
 }
 
-func (m migrationMixin) PseudPath() {
-
+func (m MigrationMixin) GetPseudoPath() string {
+	return m.PseudoPath
 }
 
 type ReplacementMigrationOp struct {
 	Current, Next Pattern
-	migrationMixin
+	MigrationMixin
 }
 
 type RemovalMigrationOp struct {
 	Value Pattern
-	migrationMixin
+	MigrationMixin
 }
 
 type NillableInitializationMigrationOp struct {
 	Value Pattern
-	migrationMixin
+	MigrationMixin
 }
 
 type InclusionMigrationOp struct {
 	Value    Pattern
 	Optional bool
-	migrationMixin
+	MigrationMixin
 }
 
 func (patt *ObjectPattern) GetMigrationOperations(ctx *Context, next Pattern, pseudoPath string) (migrations []MigrationOp, _ error) {
 	nextObject, ok := next.(*ObjectPattern)
 	if !ok {
-		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, migrationMixin: migrationMixin{pseudoPath: pseudoPath}}}, nil
+		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, MigrationMixin: MigrationMixin{PseudoPath: pseudoPath}}}, nil
 	}
 
 	if patt.entryPatterns == nil {
-		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, migrationMixin: migrationMixin{pseudoPath: pseudoPath}}}, nil
+		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, MigrationMixin: MigrationMixin{PseudoPath: pseudoPath}}}, nil
 	}
 
 	if nextObject.entryPatterns == nil {
@@ -71,7 +71,7 @@ func (patt *ObjectPattern) GetMigrationOperations(ctx *Context, next Pattern, ps
 		if !presentInOther {
 			migrations = append(migrations, RemovalMigrationOp{
 				Value:          propPattern,
-				migrationMixin: migrationMixin{propPseudoPath},
+				MigrationMixin: MigrationMixin{propPseudoPath},
 			})
 			continue
 		}
@@ -84,7 +84,7 @@ func (patt *ObjectPattern) GetMigrationOperations(ctx *Context, next Pattern, ps
 		if len(list) == 0 && isOptional && !isOptionalInOther {
 			list = append(list, NillableInitializationMigrationOp{
 				Value:          propPattern,
-				migrationMixin: migrationMixin{propPseudoPath},
+				MigrationMixin: MigrationMixin{propPseudoPath},
 			})
 		}
 		migrations = append(migrations, list...)
@@ -103,7 +103,7 @@ func (patt *ObjectPattern) GetMigrationOperations(ctx *Context, next Pattern, ps
 		migrations = append(migrations, InclusionMigrationOp{
 			Value:          nextPropPattern,
 			Optional:       isOptional,
-			migrationMixin: migrationMixin{propPseudoPath},
+			MigrationMixin: MigrationMixin{propPseudoPath},
 		})
 	}
 
@@ -113,11 +113,11 @@ func (patt *ObjectPattern) GetMigrationOperations(ctx *Context, next Pattern, ps
 func (patt *RecordPattern) GetMigrationOperations(ctx *Context, next Pattern, pseudoPath string) (migrations []MigrationOp, _ error) {
 	nextRecord, ok := next.(*RecordPattern)
 	if !ok {
-		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, migrationMixin: migrationMixin{pseudoPath: pseudoPath}}}, nil
+		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, MigrationMixin: MigrationMixin{PseudoPath: pseudoPath}}}, nil
 	}
 
 	if patt.entryPatterns == nil {
-		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, migrationMixin: migrationMixin{pseudoPath: pseudoPath}}}, nil
+		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, MigrationMixin: MigrationMixin{PseudoPath: pseudoPath}}}, nil
 	}
 
 	if nextRecord.entryPatterns == nil {
@@ -134,7 +134,7 @@ func (patt *RecordPattern) GetMigrationOperations(ctx *Context, next Pattern, ps
 		if !presentInOther {
 			migrations = append(migrations, RemovalMigrationOp{
 				Value:          propPattern,
-				migrationMixin: migrationMixin{propPseudoPath},
+				MigrationMixin: MigrationMixin{propPseudoPath},
 			})
 			continue
 		}
@@ -147,7 +147,7 @@ func (patt *RecordPattern) GetMigrationOperations(ctx *Context, next Pattern, ps
 		if len(list) == 0 && isOptional && !isOptionalInOther {
 			list = append(list, NillableInitializationMigrationOp{
 				Value:          propPattern,
-				migrationMixin: migrationMixin{propPseudoPath},
+				MigrationMixin: MigrationMixin{propPseudoPath},
 			})
 		}
 		migrations = append(migrations, list...)
@@ -166,7 +166,7 @@ func (patt *RecordPattern) GetMigrationOperations(ctx *Context, next Pattern, ps
 		migrations = append(migrations, InclusionMigrationOp{
 			Value:          nextPropPattern,
 			Optional:       isOptional,
-			migrationMixin: migrationMixin{propPseudoPath},
+			MigrationMixin: MigrationMixin{propPseudoPath},
 		})
 	}
 
@@ -176,7 +176,7 @@ func (patt *RecordPattern) GetMigrationOperations(ctx *Context, next Pattern, ps
 func (patt *ListPattern) GetMigrationOperations(ctx *Context, next Pattern, pseudoPath string) (migrations []MigrationOp, _ error) {
 	nextList, ok := next.(*ListPattern)
 	if !ok {
-		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, migrationMixin: migrationMixin{pseudoPath: pseudoPath}}}, nil
+		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, MigrationMixin: MigrationMixin{PseudoPath: pseudoPath}}}, nil
 	}
 
 	anyElemPseudoPath := filepath.Join(pseudoPath, "*")
@@ -185,7 +185,7 @@ func (patt *ListPattern) GetMigrationOperations(ctx *Context, next Pattern, pseu
 		if nextList.generalElementPattern != nil {
 			return GetMigrationOperations(ctx, patt.generalElementPattern, nextList.generalElementPattern, anyElemPseudoPath)
 		}
-		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, migrationMixin: migrationMixin{pseudoPath: pseudoPath}}}, nil
+		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, MigrationMixin: MigrationMixin{PseudoPath: pseudoPath}}}, nil
 	}
 	//else pattern has element patterns
 
@@ -202,7 +202,7 @@ func (patt *ListPattern) GetMigrationOperations(ctx *Context, next Pattern, pseu
 		}
 	} else {
 		if len(nextList.elementPatterns) != len(patt.elementPatterns) {
-			return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, migrationMixin: migrationMixin{pseudoPath: pseudoPath}}}, nil
+			return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, MigrationMixin: MigrationMixin{PseudoPath: pseudoPath}}}, nil
 		}
 
 		//add operation for each current element that does not match the element pattern at the corresponding index
@@ -229,7 +229,7 @@ func GetMigrationOperations(ctx *Context, current, next Pattern, pseudoPath stri
 	m1, ok := current.(MigrationAwarePattern)
 
 	if !ok {
-		return []MigrationOp{ReplacementMigrationOp{Current: current, Next: next, migrationMixin: migrationMixin{pseudoPath: pseudoPath}}}, nil
+		return []MigrationOp{ReplacementMigrationOp{Current: current, Next: next, MigrationMixin: MigrationMixin{PseudoPath: pseudoPath}}}, nil
 	}
 
 	return m1.GetMigrationOperations(ctx, next, pseudoPath)
