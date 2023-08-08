@@ -63,8 +63,8 @@ type GroupPattern interface {
 	FindGroupMatches(*Context, Serializable, GroupMatchesFindConfig) (groups []*Object, err error)
 }
 
-// DefaultValuePattern is implemented by patterns that can provide
-// a default value that matches them in most cases. ErrNoDefaultValue should be returned if it's not possible.
+// DefaultValuePattern is implemented by patterns that in most cases can provide
+// a default value that matches them. ErrNoDefaultValue should be returned if it's not possible.
 type DefaultValuePattern interface {
 	Pattern
 	DefaultValue(ctx *Context) (Value, error)
