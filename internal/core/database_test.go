@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	internal "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
@@ -162,8 +163,9 @@ func TestDatabaseIL(t *testing.T) {
 }
 
 var (
-	_ UrlHolder = (*loadableTestValue)(nil)
-	_ Pattern   = (*loadableTestValuePattern)(nil)
+	_ UrlHolder        = (*loadableTestValue)(nil)
+	_ Pattern          = (*loadableTestValuePattern)(nil)
+	_ symbolic.Pattern = (*symbolicLoadableTestValuePattern)(nil)
 
 	LOADABLE_TEST_VALUE_PATTERN = &loadableTestValuePattern{}
 )
@@ -241,7 +243,7 @@ func (*loadableTestValuePattern) Test(ctx *Context, val Value) bool {
 }
 
 func (*loadableTestValuePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	panic(ErrNotImplemented)
+	return &symbolicLoadableTestValuePattern{}, nil
 }
 
 func (*loadableTestValuePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
@@ -250,4 +252,56 @@ func (*loadableTestValuePattern) WriteJSONRepresentation(ctx *Context, w *jsonit
 
 func (*loadableTestValuePattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	panic(ErrNotImplemented)
+}
+
+type symbolicLoadableTestValuePattern struct {
+	symbolic.NotCallablePatternMixin
+	symbolic.SerializableMixin
+}
+
+func (*symbolicLoadableTestValuePattern) IsConcretizable() bool {
+	return true
+}
+func (*symbolicLoadableTestValuePattern) Concretize() any {
+	return &loadableTestValuePattern{}
+}
+
+func (*symbolicLoadableTestValuePattern) HasUnderylingPattern() bool {
+	return true
+}
+
+func (*symbolicLoadableTestValuePattern) IsMutable() bool {
+	return false
+}
+
+func (*symbolicLoadableTestValuePattern) IteratorElementKey() symbolic.SymbolicValue {
+	return symbolic.ANY_INT
+}
+
+func (*symbolicLoadableTestValuePattern) IteratorElementValue() symbolic.SymbolicValue {
+	return symbolic.ANY
+}
+
+func (*symbolicLoadableTestValuePattern) PrettyPrint(w *bufio.Writer, config *internal.PrettyPrintConfig, depth int, parentIndentCount int) {
+	w.WriteString("symbolicLoadableTestValuePattern")
+}
+
+func (*symbolicLoadableTestValuePattern) StringPattern() (symbolic.StringPattern, bool) {
+	return nil, false
+}
+
+func (*symbolicLoadableTestValuePattern) SymbolicValue() symbolic.SymbolicValue {
+	panic(ErrNotImplementedYet)
+}
+
+func (*symbolicLoadableTestValuePattern) Test(v symbolic.SymbolicValue) bool {
+	panic(ErrNotImplementedYet)
+}
+
+func (*symbolicLoadableTestValuePattern) TestValue(v symbolic.SymbolicValue) bool {
+	panic(ErrNotImplementedYet)
+}
+
+func (*symbolicLoadableTestValuePattern) WidestOfType() symbolic.SymbolicValue {
+	return &symbolicLoadableTestValuePattern{}
 }
