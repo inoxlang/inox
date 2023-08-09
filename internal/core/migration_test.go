@@ -206,6 +206,24 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 			},
 		}, migrations)
 	})
+
+	t.Run("new property & all previous properties removed", func(t *testing.T) {
+		singleProp := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
+		nextSingleProp := NewInexactObjectPattern(map[string]Pattern{"b": INT_PATTERN})
+
+		migrations, err := singleProp.GetMigrationOperations(ctx, nextSingleProp, "/")
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Equal(t, []MigrationOp{
+			ReplacementMigrationOp{
+				Current:        singleProp,
+				Next:           nextSingleProp,
+				MigrationMixin: MigrationMixin{"/"},
+			},
+		}, migrations)
+	})
 }
 
 func TestRecordPatternGetMigrationOperations(t *testing.T) {
@@ -404,6 +422,24 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 				Value:          INT_PATTERN,
 				Optional:       false,
 				MigrationMixin: MigrationMixin{"/a/b"},
+			},
+		}, migrations)
+	})
+
+	t.Run("new property & all previous properties removed", func(t *testing.T) {
+		singleProp := NewInexactRecordPattern(map[string]Pattern{"a": INT_PATTERN})
+		nextSingleProp := NewInexactRecordPattern(map[string]Pattern{"b": INT_PATTERN})
+
+		migrations, err := singleProp.GetMigrationOperations(ctx, nextSingleProp, "/")
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Equal(t, []MigrationOp{
+			ReplacementMigrationOp{
+				Current:        singleProp,
+				Next:           nextSingleProp,
+				MigrationMixin: MigrationMixin{"/"},
 			},
 		}, migrations)
 	})

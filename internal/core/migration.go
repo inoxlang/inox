@@ -71,7 +71,7 @@ type InclusionMigrationOp struct {
 }
 
 func (op InclusionMigrationOp) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) symbolic.MigrationOp {
-	return symbolic.NillableInitializationMigrationOp{
+	return symbolic.InclusionMigrationOp{
 		Value:          utils.Must(op.Value.ToSymbolicValue(ctx, encountered)).(symbolic.Pattern),
 		MigrationMixin: symbolic.MigrationMixin{PseudoPath: op.PseudoPath},
 	}
@@ -89,6 +89,19 @@ func (patt *ObjectPattern) GetMigrationOperations(ctx *Context, next Pattern, ps
 
 	if nextObject.entryPatterns == nil {
 		return nil, nil
+	}
+
+	removedPropertyCount := 0
+
+	for propName := range patt.entryPatterns {
+		_, presentInOther := nextObject.entryPatterns[propName]
+		if !presentInOther {
+			removedPropertyCount++
+		}
+	}
+
+	if removedPropertyCount == len(patt.entryPatterns) && removedPropertyCount > 0 && len(nextObject.entryPatterns) != 0 {
+		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, MigrationMixin: MigrationMixin{PseudoPath: pseudoPath}}}, nil
 	}
 
 	for propName, propPattern := range patt.entryPatterns {
@@ -152,6 +165,19 @@ func (patt *RecordPattern) GetMigrationOperations(ctx *Context, next Pattern, ps
 
 	if nextRecord.entryPatterns == nil {
 		return nil, nil
+	}
+
+	removedPropertyCount := 0
+
+	for propName := range patt.entryPatterns {
+		_, presentInOther := nextRecord.entryPatterns[propName]
+		if !presentInOther {
+			removedPropertyCount++
+		}
+	}
+
+	if removedPropertyCount == len(patt.entryPatterns) && removedPropertyCount > 0 && len(nextRecord.entryPatterns) != 0 {
+		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, MigrationMixin: MigrationMixin{PseudoPath: pseudoPath}}}, nil
 	}
 
 	for propName, propPattern := range patt.entryPatterns {
