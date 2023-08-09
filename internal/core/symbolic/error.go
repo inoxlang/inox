@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	CALLEE_HAS_NODE_BUT_NOT_DEFINED                                               = "callee is a node but has not defined type"
+	CALLEE_HAS_NODE_BUT_NOT_DEFINED                                               = "callee is a node but has no defined type"
 	CANNOT_CALL_GO_FUNC_NO_CONCRETE_VALUE                                         = "cannot call go function with no concrete value"
 	SPREAD_ARGS_NOT_SUPPORTED_FOR_NON_VARIADIC_FUNCS                              = "spread arguments are not supported when calling non-variadic functions"
 	STR_TEMPL_LITS_WITH_INTERP_SHOULD_BE_PRECEDED_BY_PATTERN_WICH_NAME_HAS_PREFIX = "string template literals with interpolations should be preceded by a pattern which name has a prefix"

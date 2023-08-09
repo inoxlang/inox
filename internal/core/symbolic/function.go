@@ -14,18 +14,17 @@ import (
 )
 
 var (
-	ANY_INOX_FUNC = &InoxFunction{
-		node: nil,
-	}
+	ANY_INOX_FUNC = &InoxFunction{}
 )
 
 // An InoxFunction represents a symbolic InoxFunction.
 // TODO: keep in sync with concrete InoxFunction
 type InoxFunction struct {
-	node           parse.Node //if nil, any function is matched
+	node           parse.Node //optional but required for calle evaluation
 	parameters     []SymbolicValue
 	parameterNames []string
-	result         SymbolicValue
+	noNodeVariadic bool
+	result         SymbolicValue //if nil any function is matched
 	capturedLocals map[string]SymbolicValue
 	originState    *State
 
@@ -34,7 +33,7 @@ type InoxFunction struct {
 
 func (fn *InoxFunction) IsVariadic() bool {
 	if fn.node == nil {
-		panic(errors.New("node is nil"))
+		return fn.noNodeVariadic
 	}
 	return fn.FuncExpr().IsVariadic
 }
@@ -44,9 +43,6 @@ func (fn *InoxFunction) Parameters() []SymbolicValue {
 }
 
 func (fn *InoxFunction) Result() SymbolicValue {
-	if fn.node == nil {
-		panic(errors.New("node is nil"))
-	}
 	return fn.result
 }
 
@@ -69,15 +65,36 @@ func (fn *InoxFunction) Test(v SymbolicValue) bool {
 	if !ok {
 		return false
 	}
-	if fn.node == nil {
+
+	if fn.result == nil {
 		return true
 	}
 
-	if other.node == nil {
+	if (fn.node == nil) != (other.node == nil) ||
+		(fn.node != nil && !utils.SamePointer(fn.node, other.node)) ||
+		other.result == nil ||
+		(len(fn.parameters) != len(other.parameters)) ||
+		!reflect.DeepEqual(fn.parameterNames, other.parameterNames) ||
+		(len(fn.capturedLocals) != len(other.capturedLocals)) ||
+		fn.originState != other.originState {
 		return false
 	}
 
-	return utils.SamePointer(fn.node, other.node)
+	for i, paramVal := range fn.parameters {
+		otherParamVal := other.parameters[i]
+		if !deeplyEqual(paramVal, otherParamVal) {
+			return false
+		}
+	}
+
+	for name, val := range fn.capturedLocals {
+		otherVal, found := other.capturedLocals[name]
+		if !found || !deeplyEqual(val, otherVal) {
+			return false
+		}
+	}
+
+	return fn.result.Test(other.result)
 }
 
 func (fn *InoxFunction) IsConcretizable() bool {
@@ -112,7 +129,7 @@ func (fn *InoxFunction) WatcherElement() SymbolicValue {
 }
 
 func (fn *InoxFunction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	if fn.node == nil {
+	if fn.result == nil {
 		utils.Must(w.Write(utils.StringAsBytes("fn")))
 		return
 	}
@@ -137,7 +154,7 @@ func (fn *InoxFunction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 }
 
 func (fn *InoxFunction) WidestOfType() SymbolicValue {
-	return &InoxFunction{}
+	return ANY_INOX_FUNC
 }
 
 // A GoFunction represents a symbolic GoFunction.
@@ -741,7 +758,7 @@ func (f *Function) Test(v SymbolicValue) bool {
 		return true
 	case *InoxFunction:
 		inoxFn := fn
-		if inoxFn.node == nil || f.variadic != inoxFn.IsVariadic() || len(f.parameters) != len(inoxFn.parameters) {
+		if inoxFn.result == nil || f.variadic != inoxFn.IsVariadic() || len(f.parameters) != len(inoxFn.parameters) {
 			return false
 		}
 
