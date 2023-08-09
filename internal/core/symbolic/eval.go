@@ -492,15 +492,18 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool, _expecte
 			name := decl.Left.(*parse.IdentifierLiteral).Name
 
 			var static Pattern
+			var staticMatching SymbolicValue
+
 			if decl.Type != nil {
 				type_, err := symbolicEval(decl.Type, state)
 				if err != nil {
 					return nil, err
 				}
 				static = type_.(Pattern)
+				staticMatching = static.SymbolicValue()
 			}
 
-			right, err := _symbolicEval(decl.Right, state, false, static.SymbolicValue())
+			right, err := _symbolicEval(decl.Right, state, false, staticMatching)
 			if err != nil {
 				return nil, err
 			}
