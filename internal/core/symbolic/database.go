@@ -8,6 +8,13 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+const (
+	DB_MIGRATION__DELETIONS_PROP_NAME       = "deletions"
+	DB_MIGRATION__INCLUSIONS_PROP_NAME      = "inclusions"
+	DB_MIGRATION__REPLACEMENTS_PROP_NAME    = "replacements"
+	DB_MIGRATION__INITIALIZATIONS_PROP_NAME = "initializations"
+)
+
 var (
 	DATABASE_PROPNAMES = []string{"update_schema", "close", "schema"}
 
@@ -81,7 +88,7 @@ func (db *DatabaseIL) PropertyNames() []string {
 	return db.propertyNames
 }
 
-func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern) {
+func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, additionalArgs ...*Object) {
 	if !db.schema.IsConcretizable() {
 		ctx.AddSymbolicGoFunctionError("previous schema is not concretizable, it should only contain values/patterns that can be known at check time")
 		return
@@ -102,7 +109,95 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern) {
 	}
 
 	if len(ops) > 0 {
-		ctx.AddSymbolicGoFunctionError("migration logic is required")
+		if len(additionalArgs) == 0 {
+			ctx.AddSymbolicGoFunctionError("migration logic argument is required")
+			return
+		}
+		replacements := utils.FilterSliceByType(ops, ReplacementMigrationOp{})
+		deletions := utils.FilterSliceByType(ops, RemovalMigrationOp{})
+		inclusions := utils.FilterSliceByType(ops, InclusionMigrationOp{})
+		initializations := utils.FilterSliceByType(ops, NillableInitializationMigrationOp{})
+
+		expectedObject := &Object{
+			entries: map[string]Serializable{},
+			exact:   true,
+		}
+
+		if len(replacements) > 0 {
+			dict := &Dictionary{
+				entries: map[string]Serializable{},
+				keys:    map[string]Serializable{},
+			}
+
+			for _, op := range replacements {
+				pathPattern := "%" + op.PseudoPath
+
+				dict.entries[pathPattern] = &InoxFunction{
+					parameters:     []SymbolicValue{op.Current.SymbolicValue()},
+					parameterNames: []string{"previous-value"},
+					result:         op.Next.SymbolicValue(),
+				}
+			}
+
+			expectedObject.entries[DB_MIGRATION__REPLACEMENTS_PROP_NAME] = dict
+		}
+
+		if len(deletions) > 0 {
+			dict := &Dictionary{
+				entries: map[string]Serializable{},
+				keys:    map[string]Serializable{},
+			}
+
+			for _, op := range deletions {
+				pathPattern := "%" + op.PseudoPath
+				dict.entries[pathPattern] = &InoxFunction{
+					parameters:     []SymbolicValue{op.Value.SymbolicValue()},
+					parameterNames: []string{"removed-value"},
+					result:         Nil,
+				}
+			}
+
+			expectedObject.entries[DB_MIGRATION__DELETIONS_PROP_NAME] = dict
+		}
+
+		if len(inclusions) > 0 {
+			dict := &Dictionary{
+				entries: map[string]Serializable{},
+				keys:    map[string]Serializable{},
+			}
+
+			for _, op := range inclusions {
+				pathPattern := "%" + op.PseudoPath
+				dict.entries[pathPattern] = &InoxFunction{
+					parameters:     []SymbolicValue{},
+					parameterNames: []string{},
+					result:         op.Value.SymbolicValue(),
+				}
+			}
+
+			expectedObject.entries[DB_MIGRATION__INCLUSIONS_PROP_NAME] = dict
+		}
+
+		if len(initializations) > 0 {
+			dict := &Dictionary{
+				entries: map[string]Serializable{},
+				keys:    map[string]Serializable{},
+			}
+
+			for _, op := range initializations {
+				pathPattern := "%" + op.PseudoPath
+				dict.entries[pathPattern] = &InoxFunction{
+					parameters:     []SymbolicValue{},
+					parameterNames: []string{},
+					result:         op.Value.SymbolicValue(),
+				}
+			}
+
+			expectedObject.entries[DB_MIGRATION__INITIALIZATIONS_PROP_NAME] = dict
+		}
+
+		ctx.SetSymbolicGoFunctionParameters(&[]SymbolicValue{ANY_OBJECT_PATTERN, expectedObject}, []string{"new-schema", "migrations"})
+		return
 	}
 }
 
