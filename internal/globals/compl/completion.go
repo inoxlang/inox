@@ -346,6 +346,8 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 		completions = findObjectInteriorCompletions(n, _ancestorChain, _parent, int32(cursorIndex), chunk, state.Global)
 	case *parse.RecordLiteral:
 		completions = findRecordInteriorCompletions(n, _ancestorChain, _parent, int32(cursorIndex), chunk, state.Global)
+	case *parse.DictionaryLiteral:
+		completions = findDictionaryInteriorCompletions(n, _ancestorChain, _parent, int32(cursorIndex), chunk, state.Global)
 	}
 
 	for i, completion := range completions {
@@ -1105,5 +1107,35 @@ func findRecordInteriorCompletions(
 			})
 		}
 	}
+	return
+}
+
+func findDictionaryInteriorCompletions(
+	n *parse.DictionaryLiteral, ancestors []parse.Node, parent parse.Node, cursorIndex int32,
+	chunk *parse.ParsedChunk, state *core.GlobalState,
+) (completions []Completion) {
+	interiorSpan, err := parse.GetInteriorSpan(n)
+	if err != nil {
+		return nil
+	}
+
+	if !interiorSpan.HasPositionEndIncluded(cursorIndex) {
+		return nil
+	}
+
+	pos := chunk.GetSourcePosition(parse.NodeSpan{Start: cursorIndex, End: cursorIndex})
+
+	properties, ok := state.SymbolicData.GetAllowedNonPresentKeys(n)
+	if ok {
+		for _, name := range properties {
+			completions = append(completions, Completion{
+				ShownString:   name,
+				Value:         name,
+				Kind:          defines.CompletionItemKindProperty,
+				ReplacedRange: pos,
+			})
+		}
+	}
+
 	return
 }
