@@ -10934,7 +10934,11 @@ func testParse(
 							},
 							Entries: []*DictionaryEntry{
 								{
-									NodeBase: NodeBase{NodeSpan{3, 10}, nil, nil},
+									NodeBase: NodeBase{
+										NodeSpan{3, 10},
+										nil,
+										[]Token{{Type: COLON, Span: NodeSpan{7, 8}}},
+									},
 									Key: &QuotedStringLiteral{
 										NodeBase: NodeBase{NodeSpan{3, 6}, nil, nil},
 										Raw:      `"a"`,
@@ -10968,7 +10972,11 @@ func testParse(
 							},
 							Entries: []*DictionaryEntry{
 								{
-									NodeBase: NodeBase{NodeSpan{3, 12}, nil, nil},
+									NodeBase: NodeBase{
+										NodeSpan{3, 12},
+										nil,
+										[]Token{{Type: COLON, Span: NodeSpan{7, 8}}},
+									},
 									Key: &QuotedStringLiteral{
 										NodeBase: NodeBase{NodeSpan{3, 6}, nil, nil},
 										Raw:      `"a"`,
@@ -10984,6 +10992,103 @@ func testParse(
 											nil,
 										},
 									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    `:{ "a"   }`,
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
+					Statements: []Node{
+						&DictionaryLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{0, 10},
+								nil,
+								[]Token{
+									{Type: OPENING_DICTIONARY_BRACKET, Span: NodeSpan{0, 2}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
+								},
+							},
+							Entries: []*DictionaryEntry{
+								{
+									NodeBase: NodeBase{
+										NodeSpan{3, 9},
+										&ParsingError{UnspecifiedParsingError, INVALID_DICT_ENTRY_MISSING_COLON_AFTER_KEY},
+										nil,
+									},
+									Key: &QuotedStringLiteral{
+										NodeBase: NodeBase{NodeSpan{3, 6}, nil, nil},
+										Raw:      `"a"`,
+										Value:    "a",
+									},
+									Value: nil,
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    `:{ a   }`,
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
+					Statements: []Node{
+						&DictionaryLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{0, 8},
+								nil,
+								[]Token{
+									{Type: OPENING_DICTIONARY_BRACKET, Span: NodeSpan{0, 2}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{7, 8}},
+								},
+							},
+							Entries: []*DictionaryEntry{
+								{
+									NodeBase: NodeBase{
+										NodeSpan{3, 7},
+										&ParsingError{UnspecifiedParsingError, INVALID_DICT_ENTRY_MISSING_COLON_AFTER_KEY},
+										nil,
+									},
+									Key: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{3, 4}, nil, nil},
+										Name:     "a",
+									},
+									Value: nil,
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    `:{ a  `,
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
+					Statements: []Node{
+						&DictionaryLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{0, 6},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_DICT_MISSING_CLOSING_BRACE},
+								[]Token{{Type: OPENING_DICTIONARY_BRACKET, Span: NodeSpan{0, 2}}},
+							},
+							Entries: []*DictionaryEntry{
+								{
+									NodeBase: NodeBase{
+										NodeSpan{3, 6},
+										&ParsingError{UnspecifiedParsingError, INVALID_DICT_ENTRY_MISSING_COLON_AFTER_KEY},
+										nil,
+									},
+									Key: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{3, 4}, nil, nil},
+										Name:     "a",
+									},
+									Value: nil,
 								},
 							},
 						},
@@ -11010,7 +11115,7 @@ func testParse(
 									NodeBase: NodeBase{
 										NodeSpan{3, 10},
 										&ParsingError{UnspecifiedParsingError, INVALID_DICT_LIT_ENTRY_SEPARATION},
-										nil,
+										[]Token{{Type: COLON, Span: NodeSpan{7, 8}}},
 									},
 									Key: &QuotedStringLiteral{
 										NodeBase: NodeBase{NodeSpan{3, 6}, nil, nil},
@@ -11024,7 +11129,11 @@ func testParse(
 									},
 								},
 								{
-									NodeBase: NodeBase{NodeSpan{12, 19}, nil, nil},
+									NodeBase: NodeBase{
+										NodeSpan{12, 19},
+										nil,
+										[]Token{{Type: COLON, Span: NodeSpan{16, 17}}},
+									},
 									Key: &QuotedStringLiteral{
 										NodeBase: NodeBase{NodeSpan{12, 15}, nil, nil},
 										Raw:      `"b"`,
@@ -11059,7 +11168,11 @@ func testParse(
 							},
 							Entries: []*DictionaryEntry{
 								{
-									NodeBase: NodeBase{NodeSpan{3, 10}, nil, nil},
+									NodeBase: NodeBase{
+										NodeSpan{3, 10},
+										nil,
+										[]Token{{Type: COLON, Span: NodeSpan{7, 8}}},
+									},
 									Key: &QuotedStringLiteral{
 										NodeBase: NodeBase{NodeSpan{3, 6}, nil, nil},
 										Raw:      `"a"`,
@@ -11072,7 +11185,11 @@ func testParse(
 									},
 								},
 								{
-									NodeBase: NodeBase{NodeSpan{13, 20}, nil, nil},
+									NodeBase: NodeBase{
+										NodeSpan{13, 20},
+										nil,
+										[]Token{{Type: COLON, Span: NodeSpan{17, 18}}},
+									},
 									Key: &QuotedStringLiteral{
 										NodeBase: NodeBase{NodeSpan{13, 16}, nil, nil},
 										Raw:      `"b"`,
@@ -11107,7 +11224,11 @@ func testParse(
 							},
 							Entries: []*DictionaryEntry{
 								{
-									NodeBase: NodeBase{NodeSpan{3, 10}, nil, nil},
+									NodeBase: NodeBase{
+										NodeSpan{3, 10},
+										nil,
+										[]Token{{Type: COLON, Span: NodeSpan{7, 8}}},
+									},
 									Key: &QuotedStringLiteral{
 										NodeBase: NodeBase{NodeSpan{3, 6}, nil, nil},
 										Raw:      `"a"`,
@@ -11142,7 +11263,11 @@ func testParse(
 							},
 							Entries: []*DictionaryEntry{
 								{
-									NodeBase: NodeBase{NodeSpan{5, 12}, nil, nil},
+									NodeBase: NodeBase{
+										NodeSpan{5, 12},
+										nil,
+										[]Token{{Type: COLON, Span: NodeSpan{9, 10}}},
+									},
 									Key: &QuotedStringLiteral{
 										NodeBase: NodeBase{NodeSpan{5, 8}, nil, nil},
 										Raw:      `"a"`,
@@ -11177,7 +11302,11 @@ func testParse(
 							},
 							Entries: []*DictionaryEntry{
 								{
-									NodeBase: NodeBase{NodeSpan{3, 10}, nil, nil},
+									NodeBase: NodeBase{
+										NodeSpan{3, 10},
+										nil,
+										[]Token{{Type: COLON, Span: NodeSpan{7, 8}}},
+									},
 									Key: &QuotedStringLiteral{
 										NodeBase: NodeBase{NodeSpan{3, 6}, nil, nil},
 										Raw:      `"a"`,
@@ -11190,7 +11319,11 @@ func testParse(
 									},
 								},
 								{
-									NodeBase: NodeBase{NodeSpan{13, 20}, nil, nil},
+									NodeBase: NodeBase{
+										NodeSpan{13, 20},
+										nil,
+										[]Token{{Type: COLON, Span: NodeSpan{17, 18}}},
+									},
 									Key: &QuotedStringLiteral{
 										NodeBase: NodeBase{NodeSpan{13, 16}, nil, nil},
 										Raw:      `"b"`,

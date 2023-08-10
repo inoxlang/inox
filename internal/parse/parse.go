@@ -3775,6 +3775,7 @@ dictionary_literal_top_loop:
 				nil,
 			},
 		}
+		entries = append(entries, entry)
 
 		key, isMissingExpr := p.parseExpression()
 		entry.Key = key
@@ -3793,12 +3794,16 @@ dictionary_literal_top_loop:
 
 		p.eatSpace()
 
-		if p.i >= p.len {
+		if p.i >= p.len || p.s[p.i] == '}' {
+			if entry.Err == nil {
+				entry.Err = &ParsingError{UnspecifiedParsingError, INVALID_DICT_ENTRY_MISSING_COLON_AFTER_KEY}
+				entry.Span.End = p.i
+			}
 			break
 		}
 
 		if p.s[p.i] != ':' {
-			if p.s[p.i] != ',' && p.s[p.i] != '}' {
+			if p.s[p.i] != ',' {
 				entry.Span.End = p.i
 				entry.Err = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInDictionary(p.s[p.i])}
 				entries = append(entries, entry)
@@ -3807,13 +3812,8 @@ dictionary_literal_top_loop:
 				continue
 			}
 		} else {
+			entry.Tokens = []Token{{Type: COLON, Span: NodeSpan{p.i, p.i + 1}}}
 			p.i++
-		}
-
-		if p.i >= p.len || p.s[p.i] == '}' {
-			entry.Span.End = p.i
-			entries = append(entries, entry)
-			break
 		}
 
 		p.eatSpace()
@@ -3821,7 +3821,6 @@ dictionary_literal_top_loop:
 		value, isMissingExpr := p.parseExpression()
 		entry.Value = value
 		entry.Span.End = value.Base().Span.End
-		entries = append(entries, entry)
 
 		for isMissingExpr && p.i < p.len && p.s[p.i] != '}' && p.s[p.i] != ',' {
 			if entry.Err == nil {
