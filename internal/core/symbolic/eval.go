@@ -419,14 +419,25 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			return nil, nil
 		}
 
-		value, err := symbolicEval(n.Expr, state)
+		var deeperMismatch *bool
+		if state.returnType != nil {
+			deeperMismatch = new(bool)
+		}
+
+		value, err := _symbolicEval(n.Expr, state, evalOptions{
+			expectedValue:       state.returnType,
+			actualValueMismatch: deeperMismatch,
+		})
+
 		if err != nil {
 			return nil, err
 		}
 		v := value
 
 		if state.returnType != nil && !state.returnType.Test(v) {
-			state.addError(makeSymbolicEvalError(n, state, fmtInvalidReturnValue(v, state.returnType)))
+			if !*deeperMismatch {
+				state.addError(makeSymbolicEvalError(n, state, fmtInvalidReturnValue(v, state.returnType)))
+			}
 			state.returnValue = state.returnType
 		}
 

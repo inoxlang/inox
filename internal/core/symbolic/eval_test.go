@@ -2188,6 +2188,25 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Nil(t, res)
 		})
 
+		t.Run("invalid return value (deep mismatch)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f() ({a: %int}) {
+					return {
+						a: "a"
+					}
+				}
+			`)
+
+			objectProp := parse.FindNode(n, (*parse.ObjectProperty)(nil), nil)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(objectProp.Value, state, fmtNotAssignableToPropOfExpectedValue(NewString("a"), ANY_INT)),
+			}, state.errors())
+			assert.Nil(t, res)
+		})
+
 		t.Run("missing unconditional return", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(a) %int {
