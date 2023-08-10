@@ -153,7 +153,11 @@ func fmtNotAssignableToEntryOfExpectedValue(a SymbolicValue, b SymbolicValue) st
 }
 
 func fmtUnexpectedProperty(name string) string {
-	return fmt.Sprintf("unexpected  property '%s'", name)
+	return fmt.Sprintf("unexpected property '%s'", name)
+}
+
+func fmtUnexpectedPropertyDidYouMeanElse(name string, suggestion string) string {
+	return fmt.Sprintf("unexpected property '%s', did you mean '%s' ?", name, suggestion)
 }
 
 func fmtUnexpectedElemInListAnnotated(e SymbolicValue, elemType Pattern) string {

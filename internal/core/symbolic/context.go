@@ -1,6 +1,7 @@
 package symbolic
 
 import (
+	"context"
 	"fmt"
 
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -177,6 +178,7 @@ func (ctx *Context) fork() *Context {
 }
 
 type ConcreteContext interface {
+	context.Context
 	HasPermissionUntyped(perm any) bool
 	HasAPermissionWithKindAndType(kind permkind.PermissionKind, typename permkind.InternalPermissionTypename) bool
 }

@@ -1642,8 +1642,17 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			deeperMismatch := false
 
 			if p.Key != nil && expectedObj.exact && expectedPropVal == nil {
+				closest, _, ok := utils.FindClosestString(state.ctx.startingConcreteContext, utils.GetMapKeys(expectedObj.entries), p.Name(), 2)
 				options.setActualValueMismatchIfNotNil()
-				state.addError(makeSymbolicEvalError(p.Key, state, fmtUnexpectedProperty(key)))
+
+				msg := ""
+				if ok {
+					msg = fmtUnexpectedPropertyDidYouMeanElse(key, closest)
+				} else {
+					msg = fmtUnexpectedProperty(key)
+				}
+
+				state.addError(makeSymbolicEvalError(p.Key, state, msg))
 			}
 
 			propVal, err := _symbolicEval(p.Value, state, evalOptions{expectedValue: expectedPropVal, actualValueMismatch: &deeperMismatch})
