@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"reflect"
 	"unsafe"
 
 	"golang.org/x/exp/constraints"
@@ -68,6 +69,20 @@ func FilterSlice[T any](s []T, filter func(e T) bool) []T {
 	for _, e := range s {
 		if filter(e) {
 			result = append(result, e)
+		}
+	}
+
+	return result
+}
+
+func FilterSliceByType[T any, V any](s []T, filter V) []V {
+	result := make([]V, 0)
+
+	filterType := reflect.TypeOf(filter)
+
+	for _, e := range s {
+		if reflect.TypeOf(e) == filterType {
+			result = append(result, any(e).(V))
 		}
 	}
 
