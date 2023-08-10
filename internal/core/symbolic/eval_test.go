@@ -533,6 +533,91 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY, res)
 		})
 
+		t.Run("value not assignable to type (deep mismatch: object property)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var a %{a: str} = {a: 1}; 
+				return a
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			objectProp := parse.FindNode(n, (*parse.ObjectProperty)(nil), nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(objectProp.Value, state,
+					fmtNotAssignableToPropOfExpectedValue(NewInt(1), ANY_STR_LIKE)),
+			}, state.errors())
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("value not assignable to type (deep mismatch: record property)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var a #{a: str} = #{a: 1}; 
+				return a
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			objectProp := parse.FindNode(n, (*parse.ObjectProperty)(nil), nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(objectProp.Value, state,
+					fmtNotAssignableToPropOfExpectedValue(NewInt(1), ANY_STR_LIKE)),
+			}, state.errors())
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("value not assignable to type (deep mismatch: dictionary entry)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var a %(:{"a": "str"}) = :{"a": 1}; 
+				return a
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			intLiteral := parse.FindNode(n, (*parse.IntLiteral)(nil), nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(intLiteral, state,
+					fmtNotAssignableToEntryOfExpectedValue(NewInt(1), NewString("str"))),
+			}, state.errors())
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("value not assignable to type (deep mismatch: list element)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var a []str = [1]; 
+				return a
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			intLiteral := parse.FindNode(n, (*parse.IntLiteral)(nil), nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(intLiteral, state,
+					fmtUnexpectedElemInListofValues(NewInt(1), ANY_STR_LIKE)),
+			}, state.errors())
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("value not assignable to type (deep mismatch: tuple element)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var a #[]str = #[1]; 
+				return a
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			intLiteral := parse.FindNode(n, (*parse.IntLiteral)(nil), nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(intLiteral, state,
+					fmtUnexpectedElemInListofValues(NewInt(1), ANY_STR_LIKE)),
+			}, state.errors())
+			assert.Equal(t, ANY, res)
+		})
+
 		t.Run("value not assignable to type (unprefixed named pattern)", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				var a str = int; 
@@ -2836,7 +2921,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(argNode, state, FmtInvalidArg(0, argVal, param)),
-				makeSymbolicEvalError(propertyKeyNode, state, fmtNotAssignableToPropOfValue(NewString("a"), ANY_INT)),
+				makeSymbolicEvalError(propertyKeyNode, state, fmtNotAssignableToPropOfExpectedValue(NewString("a"), ANY_INT)),
 			}, state.errors())
 
 			assert.Equal(t, ANY_INT, res)
@@ -3544,7 +3629,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(argNode, state, FmtInvalidArg(0, argVal, param)),
-				makeSymbolicEvalError(propertyKeyNode, state, fmtNotAssignableToPropOfValue(NewString("a"), ANY_INT)),
+				makeSymbolicEvalError(propertyKeyNode, state, fmtNotAssignableToPropOfExpectedValue(NewString("a"), ANY_INT)),
 			}, state.errors())
 
 			assert.Equal(t, ANY_INT, res)

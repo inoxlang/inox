@@ -37,6 +37,7 @@ func NewSymbolicData() *SymbolicData {
 		localScopeData:              make(map[parse.Node]ScopeData),
 		globalScopeData:             make(map[parse.Node]ScopeData),
 		allowedNonPresentProperties: make(map[parse.Node][]string, 0),
+		allowedNonPresentKeys:       make(map[parse.Node][]string),
 		contextData:                 make(map[parse.Node]ContextData),
 		runtimeTypeCheckPatterns:    make(map[parse.Node]any, 0),
 

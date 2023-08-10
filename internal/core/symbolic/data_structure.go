@@ -895,6 +895,15 @@ func (dict *Dictionary) key() SymbolicValue {
 	return ANY
 }
 
+func (dict *Dictionary) ForEachEntry(fn func(k string, v SymbolicValue) error) error {
+	for k, v := range dict.entries {
+		if err := fn(k, v); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (dict *Dictionary) Prop(name string) SymbolicValue {
 	switch name {
 	case "get":

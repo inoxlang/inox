@@ -600,7 +600,7 @@ func addBadPropertyErrorsInLiteral(arg SymbolicValue, argNode parse.Node, param 
 				continue
 			}
 
-			state.addError(makeSymbolicEvalError(propNode.Key, state, fmtNotAssignableToPropOfValue(actual, expected)))
+			state.addError(makeSymbolicEvalError(propNode.Key, state, fmtNotAssignableToPropOfExpectedValue(actual, expected)))
 		}
 	}
 

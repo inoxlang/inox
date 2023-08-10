@@ -144,12 +144,20 @@ func fmtNotAssignableToPropOfType(a SymbolicValue, b Pattern) string {
 	return fmt.Sprintf("a(n) %s is not assignable to a property of type %s", Stringify(a), Stringify(b.SymbolicValue()))
 }
 
-func fmtNotAssignableToPropOfValue(a SymbolicValue, b SymbolicValue) string {
-	return fmt.Sprintf("a(n) %s is not assignable to a property of type %s", Stringify(a), Stringify(b))
+func fmtNotAssignableToPropOfExpectedValue(a SymbolicValue, b SymbolicValue) string {
+	return fmt.Sprintf("a(n) %s is not assignable to a property of expected value %s", Stringify(a), Stringify(b))
+}
+
+func fmtNotAssignableToEntryOfExpectedValue(a SymbolicValue, b SymbolicValue) string {
+	return fmt.Sprintf("a(n) %s is not assignable to an entry of expected value %s", Stringify(a), Stringify(b))
 }
 
 func fmtUnexpectedElemInListAnnotated(e SymbolicValue, elemType Pattern) string {
 	return fmt.Sprintf("unexpected element of type %s in a list of %s (annotation)", Stringify(e), Stringify(elemType.SymbolicValue()))
+}
+
+func fmtUnexpectedElemInListofValues(e SymbolicValue, elemType SymbolicValue) string {
+	return fmt.Sprintf("unexpected element of type %s in a list of %s", Stringify(e), Stringify(elemType))
 }
 
 func fmtUnexpectedElemInTupleAnnotated(e SymbolicValue, elemType Pattern) string {

@@ -187,10 +187,22 @@ func SymbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr
 }
 
 func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr error) {
-	return _symbolicEval(node, state, false, nil)
+	return _symbolicEval(node, state, evalOptions{})
 }
 
-func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool, _expectedValue SymbolicValue) (result SymbolicValue, finalErr error) {
+type evalOptions struct {
+	ignoreNodeValue     bool
+	expectedValue       SymbolicValue
+	actualValueMismatch *bool
+}
+
+func (opts evalOptions) setActualValueMismatchIfNotNil() {
+	if opts.actualValueMismatch != nil {
+		*opts.actualValueMismatch = true
+	}
+}
+
+func _symbolicEval(node parse.Node, state *State, options evalOptions) (result SymbolicValue, finalErr error) {
 	defer func() {
 
 		e := recover()
@@ -207,7 +219,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool, _expecte
 			return
 		}
 
-		if !ignoreNodeValue && finalErr == nil && result != nil && state.symbolicData != nil {
+		if !options.ignoreNodeValue && finalErr == nil && result != nil && state.symbolicData != nil {
 			state.symbolicData.SetMostSpecificNodeValue(node, result)
 		}
 	}()
@@ -291,7 +303,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool, _expecte
 
 		for _, node := range slices {
 			_, isStaticPathSlice := node.(*parse.PathSlice)
-			_, err := _symbolicEval(node, state, isStaticPathSlice, nil)
+			_, err := _symbolicEval(node, state, evalOptions{ignoreNodeValue: isStaticPathSlice})
 			if err != nil {
 				return nil, err
 			}
@@ -319,7 +331,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool, _expecte
 	case *parse.URLPatternLiteral:
 		return NewUrlPattern(n.Value), nil
 	case *parse.URLExpression:
-		_, err := _symbolicEval(n.HostPart, state, true, nil)
+		_, err := _symbolicEval(n.HostPart, state, evalOptions{ignoreNodeValue: true})
 		if err != nil {
 			return nil, err
 		}
@@ -330,7 +342,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool, _expecte
 
 		for _, node := range n.Path {
 			_, isStaticPathSlice := node.(*parse.PathSlice)
-			_, err := _symbolicEval(node, state, isStaticPathSlice, nil)
+			_, err := _symbolicEval(node, state, evalOptions{ignoreNodeValue: isStaticPathSlice})
 			if err != nil {
 				return nil, err
 			}
@@ -348,7 +360,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool, _expecte
 			state.symbolicData.SetMostSpecificNodeValue(param, ANY_URL)
 
 			for _, slice := range param.Value {
-				val, err := _symbolicEval(slice, state, false, nil)
+				val, err := symbolicEval(slice, state)
 				if err != nil {
 					return nil, err
 				}
@@ -503,14 +515,17 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool, _expecte
 				staticMatching = static.SymbolicValue()
 			}
 
-			right, err := _symbolicEval(decl.Right, state, false, staticMatching)
+			deeperMismatch := false
+			right, err := _symbolicEval(decl.Right, state, evalOptions{expectedValue: staticMatching, actualValueMismatch: &deeperMismatch})
 			if err != nil {
 				return nil, err
 			}
 
 			if static != nil {
 				if !static.TestValue(right) {
-					state.addError(makeSymbolicEvalError(decl.Right, state, fmtNotAssignableToVarOftype(right, static)))
+					if !deeperMismatch {
+						state.addError(makeSymbolicEvalError(decl.Right, state, fmtNotAssignableToVarOftype(right, static)))
+					}
 					right = ANY
 				} else {
 					if holder, ok := right.(StaticDataHolder); ok {
@@ -989,7 +1004,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool, _expecte
 		if n.Preinit != nil {
 			state.inPreinit = true
 			for _, stmt := range n.Preinit.Block.Statements {
-				_, err := _symbolicEval(stmt, state, false, nil)
+				_, err := symbolicEval(stmt, state)
 
 				if err != nil {
 					return nil, err
@@ -1585,7 +1600,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool, _expecte
 		}
 		state.setNextSelf(obj)
 
-		expectedObj, ok := _expectedValue.(*Object)
+		expectedObj, ok := options.expectedValue.(*Object)
 		if ok && expectedObj.entries != nil {
 			var properties []string
 			expectedObj.ForEachEntry(func(propName string, _ SymbolicValue) error {
@@ -1607,7 +1622,10 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool, _expecte
 
 			var static Pattern
 
-			propVal, err := _symbolicEval(p.Value, state, false, expectedObj.entries[key])
+			expectedPropVal := expectedObj.entries[key]
+			deeperMismatch := false
+
+			propVal, err := _symbolicEval(p.Value, state, evalOptions{expectedValue: expectedPropVal, actualValueMismatch: &deeperMismatch})
 			if err != nil {
 				return nil, err
 			}
@@ -1622,6 +1640,13 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool, _expecte
 					state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(propVal, static)))
 					propVal = static.SymbolicValue()
 				}
+			} else if deeperMismatch {
+				options.setActualValueMismatchIfNotNil()
+			} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(propVal) {
+				if options.actualValueMismatch != nil {
+					*options.actualValueMismatch = true
+				}
+				state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfExpectedValue(propVal, expectedPropVal)))
 			}
 
 			serializable, ok := propVal.(Serializable)
@@ -1688,7 +1713,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool, _expecte
 			keys = append(keys, key)
 		}
 
-		expectedRecord, ok := _expectedValue.(*Record)
+		expectedRecord, ok := options.expectedValue.(*Record)
 		if ok && expectedRecord.entries != nil {
 			var properties []string
 			expectedRecord.ForEachEntry(func(propName string, _ SymbolicValue) error {
@@ -1708,9 +1733,19 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool, _expecte
 		for i, p := range n.Properties {
 			key := keys[i]
 
-			v, err := _symbolicEval(p.Value, state, false, expectedRecord.entries[key])
+			expectedPropVal := expectedRecord.entries[key]
+			deeperMismatch := false
+
+			v, err := _symbolicEval(p.Value, state, evalOptions{expectedValue: expectedPropVal, actualValueMismatch: &deeperMismatch})
 			if err != nil {
 				return nil, err
+			}
+
+			if deeperMismatch {
+				options.setActualValueMismatchIfNotNil()
+			} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(v) {
+				options.setActualValueMismatchIfNotNil()
+				state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfExpectedValue(v, expectedPropVal)))
 			}
 
 			if v.IsMutable() {
@@ -1752,13 +1787,14 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool, _expecte
 			}
 
 			generalElem := generalElemPattern.(Pattern).SymbolicValue().(Serializable)
+			deeperMismatch := false
 
 			for _, elemNode := range n.Elements {
-				e, err := _symbolicEval(elemNode, state, false, generalElem)
+				e, err := _symbolicEval(elemNode, state, evalOptions{expectedValue: generalElem, actualValueMismatch: &deeperMismatch})
 				if err != nil {
 					return nil, err
 				}
-				if !generalElem.Test(e) {
+				if !generalElem.Test(e) && !deeperMismatch {
 					state.addError(makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListAnnotated(e, generalElemPattern.(Pattern))))
 				}
 
@@ -1775,7 +1811,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool, _expecte
 			return NewListOf(generalElem), nil
 		}
 
-		expectedList, ok := _expectedValue.(*List)
+		expectedList, ok := options.expectedValue.(*List)
 		var expectedElement SymbolicValue = nil
 		if ok {
 			expectedElement = expectedList.element()
@@ -1783,9 +1819,16 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool, _expecte
 
 		if !n.HasSpreadElements() {
 			for _, elemNode := range n.Elements {
-				e, err := _symbolicEval(elemNode, state, false, expectedElement)
+				deeperMismatch := false
+				e, err := _symbolicEval(elemNode, state, evalOptions{expectedValue: expectedElement, actualValueMismatch: &deeperMismatch})
 				if err != nil {
 					return nil, err
+				}
+				if deeperMismatch {
+					options.setActualValueMismatchIfNotNil()
+				} else if expectedElement != nil && !expectedElement.Test(e) && !deeperMismatch {
+					options.setActualValueMismatchIfNotNil()
+					state.addError(makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListofValues(e, expectedElement)))
 				}
 
 				e = AsSerializable(e)
@@ -1817,12 +1860,14 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool, _expecte
 			}
 
 			generalElem := generalElemPattern.(Pattern).SymbolicValue().(Serializable)
+			deeperMismatch := false
 
 			for _, elemNode := range n.Elements {
-				e, err := _symbolicEval(elemNode, state, false, generalElem)
+				e, err := _symbolicEval(elemNode, state, evalOptions{expectedValue: generalElem, actualValueMismatch: &deeperMismatch})
 				if err != nil {
 					return nil, err
 				}
+
 				if e.IsMutable() {
 					state.addError(makeSymbolicEvalError(elemNode, state, ELEMS_OF_TUPLE_SHOUD_BE_IMMUTABLE))
 					e = ANY
@@ -1844,16 +1889,24 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool, _expecte
 		}
 
 		if len(n.Elements) > 0 {
-			expectedList, ok := _expectedValue.(*Tuple)
+			expectedList, ok := options.expectedValue.(*Tuple)
 			var expectedElement SymbolicValue = nil
 			if ok {
 				expectedElement = expectedList.element()
 			}
 
 			for _, elemNode := range n.Elements {
-				e, err := _symbolicEval(elemNode, state, false, expectedElement)
+				deeperMismatch := false
+				e, err := _symbolicEval(elemNode, state, evalOptions{expectedValue: expectedElement, actualValueMismatch: &deeperMismatch})
 				if err != nil {
 					return nil, err
+				}
+
+				if deeperMismatch {
+					options.setActualValueMismatchIfNotNil()
+				} else if expectedElement != nil && !expectedElement.Test(e) && !deeperMismatch {
+					options.setActualValueMismatchIfNotNil()
+					state.addError(makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListofValues(e, expectedElement)))
 				}
 
 				if e.IsMutable() {
@@ -1878,7 +1931,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool, _expecte
 		entries := make(map[string]Serializable)
 		keys := make(map[string]Serializable)
 
-		expectedDictionary, ok := _expectedValue.(*Dictionary)
+		expectedDictionary, ok := options.expectedValue.(*Dictionary)
 		if ok && expectedDictionary.entries != nil {
 			var keys []string
 			expectedDictionary.ForEachEntry(func(keyRepr string, _ SymbolicValue) error {
@@ -1898,12 +1951,18 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool, _expecte
 			keyRepr := parse.SPrint(entry.Key, parse.PrintConfig{TrimStart: true})
 
 			expectedEntryValue, _ := expectedDictionary.get(keyRepr)
+			deeperMismatch := false
 
-			v, err := _symbolicEval(entry.Value, state, false, expectedEntryValue)
+			v, err := _symbolicEval(entry.Value, state, evalOptions{expectedValue: expectedEntryValue, actualValueMismatch: &deeperMismatch})
 			if err != nil {
 				return nil, err
 			}
-
+			if deeperMismatch {
+				options.setActualValueMismatchIfNotNil()
+			} else if expectedEntryValue != nil && !deeperMismatch && !expectedEntryValue.Test(v) {
+				options.setActualValueMismatchIfNotNil()
+				state.addError(makeSymbolicEvalError(entry.Value, state, fmtNotAssignableToEntryOfExpectedValue(v, expectedEntryValue)))
+			}
 			_, ok := v.(Serializable)
 			if !ok {
 				state.addError(makeSymbolicEvalError(entry.Value, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
@@ -3380,7 +3439,7 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool, _expecte
 		}
 		return nil, nil
 	case *parse.RuntimeTypeCheckExpression:
-		ignoreNodeValue = true
+		options.ignoreNodeValue = true
 		val, err := symbolicEval(n.Expr, state)
 		if err != nil {
 			return nil, err
