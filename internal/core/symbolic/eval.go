@@ -1878,10 +1878,28 @@ func _symbolicEval(node parse.Node, state *State, ignoreNodeValue bool, _expecte
 		entries := make(map[string]Serializable)
 		keys := make(map[string]Serializable)
 
+		expectedDictionary, ok := _expectedValue.(*Dictionary)
+		if ok && expectedDictionary.entries != nil {
+			var keys []string
+			expectedDictionary.ForEachEntry(func(keyRepr string, _ SymbolicValue) error {
+				if slices.Contains(keys, keyRepr) {
+					return nil
+				}
+				keys = append(keys, keyRepr)
+				return nil
+			})
+
+			state.symbolicData.SetAllowedNonPresentKeys(n, keys)
+		} else {
+			expectedDictionary = &Dictionary{}
+		}
+
 		for _, entry := range n.Entries {
 			keyRepr := parse.SPrint(entry.Key, parse.PrintConfig{TrimStart: true})
 
-			v, err := symbolicEval(entry.Value, state)
+			expectedEntryValue, _ := expectedDictionary.get(keyRepr)
+
+			v, err := _symbolicEval(entry.Value, state, false, expectedEntryValue)
 			if err != nil {
 				return nil, err
 			}

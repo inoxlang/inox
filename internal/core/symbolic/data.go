@@ -22,6 +22,7 @@ type SymbolicData struct {
 	globalScopeData             map[parse.Node]ScopeData
 	contextData                 map[parse.Node]ContextData
 	allowedNonPresentProperties map[parse.Node][]string
+	allowedNonPresentKeys       map[parse.Node][]string
 	runtimeTypeCheckPatterns    map[parse.Node]any //concrete Pattern or nil (nil means the check is disabled)
 
 	errorMessageSet map[string]bool
@@ -143,6 +144,19 @@ func (data *SymbolicData) SetAllowedNonPresentProperties(node parse.Node, proper
 
 func (data *SymbolicData) GetAllowedNonPresentProperties(node parse.Node) ([]string, bool) {
 	v, ok := data.allowedNonPresentProperties[node]
+	return v, ok
+}
+
+func (data *SymbolicData) SetAllowedNonPresentKeys(node parse.Node, keys []string) {
+	if data == nil {
+		return
+	}
+	sort.Strings(keys)
+	data.allowedNonPresentKeys[node] = keys
+}
+
+func (data *SymbolicData) GetAllowedNonPresentKeys(node parse.Node) ([]string, bool) {
+	v, ok := data.allowedNonPresentKeys[node]
 	return v, ok
 }
 
