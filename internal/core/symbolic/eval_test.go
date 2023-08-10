@@ -1,7 +1,6 @@
 package symbolic
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -2853,7 +2852,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			argNode := n.Statements[1].(*parse.ReturnStatement).Expr.(*parse.CallExpression).Arguments[0]
 
-			param := NewObject(map[string]Serializable{
+			param := NewInexactObject(map[string]Serializable{
 				"a": ANY_INT,
 			}, nil, nil)
 
@@ -2880,7 +2879,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			argNode := n.Statements[1].(*parse.ReturnStatement).Expr.(*parse.CallExpression).Arguments[0]
 
-			param := NewObject(map[string]Serializable{
+			param := NewInexactObject(map[string]Serializable{
 				"a": ANY_INT,
 				"b": ANY_INT,
 			}, nil, nil)
@@ -2907,21 +2906,12 @@ func TestSymbolicEval(t *testing.T) {
 			`)
 
 			argNode := n.Statements[1].(*parse.ReturnStatement).Expr.(*parse.CallExpression).Arguments[0]
-			propertyKeyNode := argNode.(*parse.ObjectLiteral).Properties[0].Key
-
-			param := NewObject(map[string]Serializable{
-				"a": ANY_INT,
-			}, nil, nil)
-
-			argVal := NewObject(map[string]Serializable{
-				"a": NewString("a"),
-			}, nil, nil)
+			propertyValue := argNode.(*parse.ObjectLiteral).Properties[0].Value
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(argNode, state, FmtInvalidArg(0, argVal, param)),
-				makeSymbolicEvalError(propertyKeyNode, state, fmtNotAssignableToPropOfExpectedValue(NewString("a"), ANY_INT)),
+				makeSymbolicEvalError(propertyValue, state, fmtNotAssignableToPropOfExpectedValue(NewString("a"), ANY_INT)),
 			}, state.errors())
 
 			assert.Equal(t, ANY_INT, res)
@@ -3544,7 +3534,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			argNode := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.CallExpression).Arguments[0]
 
-			param := NewObject(map[string]Serializable{
+			param := NewInexactObject(map[string]Serializable{
 				"prop": ANY_INT,
 			}, nil, nil)
 
@@ -3607,14 +3597,10 @@ func TestSymbolicEval(t *testing.T) {
 			`)
 
 			argNode := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.CallExpression).Arguments[0]
-			propertyKeyNode := argNode.(*parse.ObjectLiteral).Properties[0].Key
+			propertyValue := argNode.(*parse.ObjectLiteral).Properties[0].Value
 
-			param := NewObject(map[string]Serializable{
+			param := NewInexactObject(map[string]Serializable{
 				"a": ANY_INT,
-			}, nil, nil)
-
-			argVal := NewObject(map[string]Serializable{
-				"a": NewString("a"),
 			}, nil, nil)
 
 			goFunc := &GoFunction{
@@ -3628,8 +3614,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(argNode, state, FmtInvalidArg(0, argVal, param)),
-				makeSymbolicEvalError(propertyKeyNode, state, fmtNotAssignableToPropOfExpectedValue(NewString("a"), ANY_INT)),
+				makeSymbolicEvalError(propertyValue, state, fmtNotAssignableToPropOfExpectedValue(NewString("a"), ANY_INT)),
 			}, state.errors())
 
 			assert.Equal(t, ANY_INT, res)
@@ -3913,8 +3898,8 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 			assert.Equal(t, NewMultivalue(
 				NewEmptyObject(),
-				NewObject(map[string]Serializable{"a": ANY_INT}, nil, map[string]Pattern{"a": ANY_INT.Static()}),
-				NewObject(map[string]Serializable{"b": ANY_INT}, nil, map[string]Pattern{"b": ANY_INT.Static()}),
+				NewInexactObject(map[string]Serializable{"a": ANY_INT}, nil, map[string]Pattern{"a": ANY_INT.Static()}),
+				NewInexactObject(map[string]Serializable{"b": ANY_INT}, nil, map[string]Pattern{"b": ANY_INT.Static()}),
 			), res)
 		})
 
@@ -3936,9 +3921,9 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 			assert.Equal(t, NewMultivalue(
 				NewEmptyObject(),
-				NewObject(map[string]Serializable{"a": ANY_INT}, nil, map[string]Pattern{"a": ANY_INT.Static()}),
-				NewObject(map[string]Serializable{"b": ANY_INT}, nil, map[string]Pattern{"b": ANY_INT.Static()}),
-				NewObject(map[string]Serializable{"c": ANY_INT}, nil, map[string]Pattern{"c": ANY_INT.Static()}),
+				NewInexactObject(map[string]Serializable{"a": ANY_INT}, nil, map[string]Pattern{"a": ANY_INT.Static()}),
+				NewInexactObject(map[string]Serializable{"b": ANY_INT}, nil, map[string]Pattern{"b": ANY_INT.Static()}),
+				NewInexactObject(map[string]Serializable{"c": ANY_INT}, nil, map[string]Pattern{"c": ANY_INT.Static()}),
 			), res)
 		})
 
@@ -4226,7 +4211,7 @@ func TestSymbolicEval(t *testing.T) {
 					}
 				`)
 
-				object := NewObject(map[string]Serializable{"prop": ANY_SERIALIZABLE}, nil, nil)
+				object := NewInexactObject(map[string]Serializable{"prop": ANY_SERIALIZABLE}, nil, nil)
 
 				state.setGlobal("a", object, GlobalConst)
 
@@ -4308,7 +4293,7 @@ func TestSymbolicEval(t *testing.T) {
 					}
 				`)
 
-				object := NewObject(map[string]Serializable{
+				object := NewInexactObject(map[string]Serializable{
 					"prop": AsSerializable(NewMultivalue(NewInt(1), TRUE)).(Serializable)}, nil, nil)
 
 				state.setGlobal("a", object, GlobalConst)
@@ -4327,7 +4312,7 @@ func TestSymbolicEval(t *testing.T) {
 					}
 				`)
 
-				object := NewObject(map[string]Serializable{
+				object := NewInexactObject(map[string]Serializable{
 					"prop": AsSerializable(NewMultivalue(NewInt(1), TRUE)).(Serializable)}, nil, nil)
 
 				state.setGlobal("a", object, GlobalConst)
@@ -4346,7 +4331,7 @@ func TestSymbolicEval(t *testing.T) {
 					}
 				`)
 
-				object := NewObject(map[string]Serializable{
+				object := NewInexactObject(map[string]Serializable{
 					"prop": AsSerializable(NewMultivalue(NewInt(1), TRUE)).(Serializable)}, nil, nil)
 
 				state.setGlobal("a", object, GlobalConst)
@@ -4365,7 +4350,7 @@ func TestSymbolicEval(t *testing.T) {
 					}
 				`)
 
-				object := NewObject(map[string]Serializable{
+				object := NewInexactObject(map[string]Serializable{
 					"prop": AsSerializable(NewMultivalue(NewInt(1), TRUE)).(Serializable)}, nil, nil)
 
 				state.setGlobal("a", object, GlobalConst)
@@ -5124,8 +5109,8 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 			assert.Equal(t, NewMultivalue(
 				NewEmptyObject(),
-				NewObject(map[string]Serializable{"a": NewInt(1)}, nil, map[string]Pattern{"a": ANY_INT.Static()}),
-				NewObject(map[string]Serializable{"b": NewInt(1)}, nil, map[string]Pattern{"b": ANY_INT.Static()}),
+				NewInexactObject(map[string]Serializable{"a": NewInt(1)}, nil, map[string]Pattern{"a": ANY_INT.Static()}),
+				NewInexactObject(map[string]Serializable{"b": NewInt(1)}, nil, map[string]Pattern{"b": ANY_INT.Static()}),
 			), res)
 		})
 
@@ -6124,7 +6109,7 @@ func TestSymbolicEval(t *testing.T) {
 				}
 			`)
 
-			object := NewObject(map[string]Serializable{"prop": ANY_SERIALIZABLE}, nil, nil)
+			object := NewInexactObject(map[string]Serializable{"prop": ANY_SERIALIZABLE}, nil, nil)
 			state.setGlobal("a", object, GlobalConst)
 
 			_, err := symbolicEval(n, state)
@@ -6476,7 +6461,7 @@ func TestSymbolicEval(t *testing.T) {
 		res, err := symbolicEval(n, state)
 		assert.NoError(t, err)
 		assert.Empty(t, state.errors())
-		assert.Equal(t, NewObject(map[string]Serializable{
+		assert.Equal(t, NewInexactObject(map[string]Serializable{
 			"0": ANY_SYNC_MSG_HANDLER,
 		}, nil, map[string]Pattern{"0": getStatic(ANY_SYNC_MSG_HANDLER)}), res)
 
@@ -7375,30 +7360,30 @@ func TestWidenValues(t *testing.T) {
 		{[]SymbolicValue{&Identifier{}, &Identifier{name: "foo"}}, &Identifier{}},
 		{
 			[]SymbolicValue{
-				NewObject(map[string]Serializable{"a": ANY_INT}, nil, nil),
-				NewObject(map[string]Serializable{}, nil, nil),
+				NewInexactObject(map[string]Serializable{"a": ANY_INT}, nil, nil),
+				NewInexactObject(map[string]Serializable{}, nil, nil),
 			},
 			NewMultivalue(
-				NewObject(map[string]Serializable{"a": ANY_INT}, nil, nil),
-				NewObject(map[string]Serializable{}, nil, nil),
+				NewInexactObject(map[string]Serializable{"a": ANY_INT}, nil, nil),
+				NewInexactObject(map[string]Serializable{}, nil, nil),
 			),
 		},
 		{
 			[]SymbolicValue{
-				NewObject(map[string]Serializable{}, nil, nil),
-				NewObject(map[string]Serializable{"a": ANY_INT}, nil, nil),
+				NewInexactObject(map[string]Serializable{}, nil, nil),
+				NewInexactObject(map[string]Serializable{"a": ANY_INT}, nil, nil),
 			},
 			NewMultivalue(
-				NewObject(map[string]Serializable{}, nil, nil),
-				NewObject(map[string]Serializable{"a": ANY_INT}, nil, nil),
+				NewInexactObject(map[string]Serializable{}, nil, nil),
+				NewInexactObject(map[string]Serializable{"a": ANY_INT}, nil, nil),
 			),
 		},
 		{
 			[]SymbolicValue{
-				NewObject(map[string]Serializable{"a": ANY_SERIALIZABLE}, nil, nil),
-				NewObject(map[string]Serializable{"a": ANY_INT}, nil, nil),
+				NewInexactObject(map[string]Serializable{"a": ANY_SERIALIZABLE}, nil, nil),
+				NewInexactObject(map[string]Serializable{"a": ANY_INT}, nil, nil),
 			},
-			NewObject(map[string]Serializable{"a": ANY_SERIALIZABLE}, nil, nil),
+			NewInexactObject(map[string]Serializable{"a": ANY_SERIALIZABLE}, nil, nil),
 		},
 		{
 			[]SymbolicValue{
@@ -7422,9 +7407,9 @@ func TestWidenValues(t *testing.T) {
 		},
 	}
 	for _, testCase := range cases {
-		t.Run(t.Name()+"_"+fmt.Sprint(testCase.input), func(t *testing.T) {
+		t.Run(t.Name()+"_"+strings.Join(utils.MapSlice(testCase.input, Stringify), " "), func(t *testing.T) {
 			output := joinValues(testCase.input)
-			assert.Equal(t, testCase.output, output, fmt.Sprint(output))
+			assert.Equal(t, testCase.output, output, Stringify(output))
 		})
 	}
 }

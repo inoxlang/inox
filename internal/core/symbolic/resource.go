@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	WALK_ELEM = NewObject(map[string]Serializable{
+	WALK_ELEM = NewInexactObject(map[string]Serializable{
 		"name":          &String{},
 		"path":          &Path{},
 		"is-dir":        ANY_BOOL,

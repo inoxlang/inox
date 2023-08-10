@@ -79,7 +79,7 @@ func init() {
 		},
 		NewCSP, func(ctx *symbolic.Context, desc *symbolic.Object) (*http_symbolic.ContentSecurityPolicy, *symbolic.Error) {
 			ctx.SetSymbolicGoFunctionParameters(&[]symbolic.SymbolicValue{
-				symbolic.NewObject(map[string]symbolic.Serializable{
+				symbolic.NewInexactObject(map[string]symbolic.Serializable{
 					"default-src":     stringOrStringList,
 					"frame-ancestors": stringOrStringList,
 					"frame-src":       stringOrStringList,

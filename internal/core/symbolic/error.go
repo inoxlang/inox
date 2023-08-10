@@ -152,6 +152,10 @@ func fmtNotAssignableToEntryOfExpectedValue(a SymbolicValue, b SymbolicValue) st
 	return fmt.Sprintf("a(n) %s is not assignable to an entry of expected value %s", Stringify(a), Stringify(b))
 }
 
+func fmtUnexpectedProperty(name string) string {
+	return fmt.Sprintf("unexpected  property '%s'", name)
+}
+
 func fmtUnexpectedElemInListAnnotated(e SymbolicValue, elemType Pattern) string {
 	return fmt.Sprintf("unexpected element of type %s in a list of %s (annotation)", Stringify(e), Stringify(elemType.SymbolicValue()))
 }

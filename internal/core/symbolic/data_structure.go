@@ -35,6 +35,7 @@ var (
 	}
 
 	_ = []IProps{(*Object)(nil), (*Record)(nil), (*Namespace)(nil), (*Dictionary)(nil)}
+	_ = []InexactCapable{(*Object)(nil)}
 )
 
 // An Indexable represents a symbolic Indexable.
@@ -44,6 +45,14 @@ type Indexable interface {
 	elementAt(i int) SymbolicValue
 	KnownLen() int
 	HasKnownLen() bool
+}
+
+type InexactCapable interface {
+	SymbolicValue
+
+	//TestExact should behave like Test() at the only difference that inexactness should be ignored.
+	//For example an inexact object should not match an another object that has additional properties.
+	TestExact(v SymbolicValue) bool
 }
 
 // An Array represents a symbolic Array.
@@ -1008,6 +1017,7 @@ type Object struct {
 	static                     map[string]Pattern //key in .Static => key in .Entries, not reciprocal
 	complexPropertyConstraints []*ComplexPropertyConstraint
 	shared                     bool
+	exact                      bool
 
 	SerializableMixin
 }
@@ -1020,11 +1030,21 @@ func NewEmptyObject() *Object {
 	return &Object{entries: map[string]Serializable{}}
 }
 
-func NewObject(entries map[string]Serializable, optionalEntries map[string]struct{}, static map[string]Pattern) *Object {
+func NewInexactObject(entries map[string]Serializable, optionalEntries map[string]struct{}, static map[string]Pattern) *Object {
 	obj := &Object{
 		entries:         entries,
 		optionalEntries: optionalEntries,
 		static:          static,
+	}
+	return obj
+}
+
+func NewExactObject(entries map[string]Serializable, optionalEntries map[string]struct{}, static map[string]Pattern) *Object {
+	obj := &Object{
+		entries:         entries,
+		optionalEntries: optionalEntries,
+		static:          static,
+		exact:           true,
 	}
 	return obj
 }
@@ -1057,7 +1077,15 @@ func (obj *Object) initNewProp(key string, value Serializable, static Pattern) {
 	obj.static[key] = static
 }
 
+func (obj *Object) TestExact(v SymbolicValue) bool {
+	return obj.test(v, true)
+}
+
 func (obj *Object) Test(v SymbolicValue) bool {
+	return obj.test(v, obj.exact)
+}
+
+func (obj *Object) test(v SymbolicValue, exact bool) bool {
 	otherObj, ok := v.(*Object)
 	if !ok {
 		return false
@@ -1067,7 +1095,7 @@ func (obj *Object) Test(v SymbolicValue) bool {
 		return true
 	}
 
-	if (len(obj.optionalEntries) == 0 && len(obj.entries) != len(otherObj.entries)) || otherObj.entries == nil {
+	if (exact && len(obj.optionalEntries) == 0 && len(obj.entries) != len(otherObj.entries)) || otherObj.entries == nil {
 		return false
 	}
 
@@ -1092,7 +1120,20 @@ func (obj *Object) Test(v SymbolicValue) bool {
 		}
 	}
 
+	if exact {
+		for k := range otherObj.entries {
+			_, ok := obj.entries[k]
+			if !ok {
+				return false
+			}
+		}
+	}
+
 	return true
+}
+
+func (o *Object) IsInexact() bool {
+	return !o.exact
 }
 
 func (o *Object) IsConcretizable() bool {

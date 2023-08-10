@@ -41,6 +41,16 @@ func TestSymbolicObject(t *testing.T) {
 			&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
 			},
+			true,
+		},
+		{
+			&Object{
+				entries: map[string]Serializable{},
+				exact:   true,
+			},
+			&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+			},
 			false,
 		},
 		{
@@ -65,6 +75,27 @@ func TestSymbolicObject(t *testing.T) {
 		{
 			&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
+				exact:   true,
+			},
+			&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+			},
+			true,
+		},
+		{
+			&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+			},
+			&Object{
+				entries:         map[string]Serializable{"a": ANY_INT},
+				optionalEntries: map[string]struct{}{"a": {}},
+			},
+			false,
+		},
+		{
+			&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+				exact:   true,
 			},
 			&Object{
 				entries:         map[string]Serializable{"a": ANY_INT},

@@ -51,14 +51,14 @@ const (
 var (
 	ErrHandlerNotSharable = errors.New("handler is not sharable")
 
-	HTTP_ROUTING_SYMB_OBJ = symbolic.NewObject(map[string]symbolic.Serializable{
+	HTTP_ROUTING_SYMB_OBJ = symbolic.NewInexactObject(map[string]symbolic.Serializable{
 		"static":  symbolic.ANY_DIR_PATH,
 		"dynamic": symbolic.ANY_DIR_PATH,
 	}, map[string]struct{}{
 		"static": {}, "dynamic": {},
 	}, nil)
 
-	SYMBOLIC_HANDLING_DESC = symbolic.NewObject(map[string]symbolic.Serializable{
+	SYMBOLIC_HANDLING_DESC = symbolic.NewInexactObject(map[string]symbolic.Serializable{
 		HANDLING_DESC_ROUTING_PROPNAME: symbolic.AsSerializable(symbolic.NewMultivalue(
 			symbolic.ANY_INOX_FUNC,
 			symbolic.ANY_DIR_PATH,

@@ -70,19 +70,19 @@ func TestMultiValue(t *testing.T) {
 
 	t.Run("Iprops", func(t *testing.T) {
 		assert.Implements(t, (*IProps)(nil), NewMultivalue(
-			NewObject(map[string]Serializable{"a": &Int{}}, nil, nil),
-			NewObject(map[string]Serializable{"b": &Int{}}, nil, nil),
+			NewInexactObject(map[string]Serializable{"a": &Int{}}, nil, nil),
+			NewInexactObject(map[string]Serializable{"b": &Int{}}, nil, nil),
 		).as(IPROPS_INTERFACE_TYPE))
 
 		_, ok := NewMultivalue(
-			NewObject(map[string]Serializable{"a": &Int{}}, nil, nil),
+			NewInexactObject(map[string]Serializable{"a": &Int{}}, nil, nil),
 			ANY_BOOL,
 		).as(IPROPS_INTERFACE_TYPE).(IProps)
 		assert.False(t, ok)
 
 		_, ok = NewMultivalue(
 			ANY_BOOL,
-			NewObject(map[string]Serializable{"a": &Int{}}, nil, nil),
+			NewInexactObject(map[string]Serializable{"a": &Int{}}, nil, nil),
 		).as(IPROPS_INTERFACE_TYPE).(IProps)
 		assert.False(t, ok)
 	})

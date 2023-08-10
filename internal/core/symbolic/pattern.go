@@ -1084,7 +1084,10 @@ func (p *ObjectPattern) SymbolicValue() SymbolicValue {
 		}
 	}
 
-	return NewObject(entries, p.optionalEntries, static)
+	if p.inexact {
+		return NewInexactObject(entries, p.optionalEntries, static)
+	}
+	return NewExactObject(entries, p.optionalEntries, static)
 }
 
 func (p *ObjectPattern) StringPattern() (StringPattern, bool) {

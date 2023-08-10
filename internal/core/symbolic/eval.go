@@ -1603,7 +1603,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			return getDependencyChainDepth(idA, nil) < getDependencyChainDepth(idB, nil)
 		})
 
-		obj := NewObject(entries, nil, nil)
+		obj := NewInexactObject(entries, nil, nil)
 
 		if len(cycles) > 0 {
 			state.addError(makeSymbolicEvalError(node, state, fmtMethodCyclesDetected(cycles)))
@@ -1641,6 +1641,11 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			expectedPropVal := expectedObj.entries[key]
 			deeperMismatch := false
 
+			if p.Key != nil && expectedObj.exact && expectedPropVal == nil {
+				options.setActualValueMismatchIfNotNil()
+				state.addError(makeSymbolicEvalError(p.Key, state, fmtUnexpectedProperty(key)))
+			}
+
 			propVal, err := _symbolicEval(p.Value, state, evalOptions{expectedValue: expectedPropVal, actualValueMismatch: &deeperMismatch})
 			if err != nil {
 				return nil, err
@@ -1659,9 +1664,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			} else if deeperMismatch {
 				options.setActualValueMismatchIfNotNil()
 			} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(propVal) {
-				if options.actualValueMismatch != nil {
-					*options.actualValueMismatch = true
-				}
+				options.setActualValueMismatchIfNotNil()
 				state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfExpectedValue(propVal, expectedPropVal)))
 			}
 
@@ -2297,7 +2300,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 					} else {
 						ok, groups := groupPattern.MatchGroups(discriminant)
 						if ok {
-							groupsObj := NewObject(groups, nil, nil)
+							groupsObj := NewInexactObject(groups, nil, nil)
 							blockStateFork.setLocal(variable.Name, groupsObj, nil, matchCase.GroupMatchingVariable)
 							state.symbolicData.SetMostSpecificNodeValue(variable, groupsObj)
 

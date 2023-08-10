@@ -68,10 +68,14 @@ func joinValues(values []SymbolicValue) SymbolicValue {
 				}
 
 				for j, val2 := range values {
-					if i != j && val1.Test(val2) {
-						if !utils.SliceContains(removed, j) {
-							removed = append(removed, j)
-						}
+					if i == j {
+						continue
+					}
+
+					inexactCapable, ok := val1.(InexactCapable)
+					if (ok && inexactCapable.TestExact(val2)) ||
+						(!ok && val1.Test(val2)) {
+						removed = append(removed, j)
 					}
 				}
 			}
