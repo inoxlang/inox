@@ -70,11 +70,10 @@ func (fn *InoxFunction) Test(v SymbolicValue) bool {
 		return true
 	}
 
-	if (fn.node == nil) != (other.node == nil) ||
+	if (fn.node != nil && other.node == nil) ||
 		(fn.node != nil && !utils.SamePointer(fn.node, other.node)) ||
 		other.result == nil ||
 		(len(fn.parameters) != len(other.parameters)) ||
-		!reflect.DeepEqual(fn.parameterNames, other.parameterNames) ||
 		(len(fn.capturedLocals) != len(other.capturedLocals)) ||
 		fn.originState != other.originState {
 		return false
