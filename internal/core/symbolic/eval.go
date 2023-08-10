@@ -194,6 +194,7 @@ type evalOptions struct {
 	ignoreNodeValue     bool
 	expectedValue       SymbolicValue
 	actualValueMismatch *bool
+	reEval              bool
 }
 
 func (opts evalOptions) setActualValueMismatchIfNotNil() {
@@ -219,10 +220,25 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			return
 		}
 
-		if !options.ignoreNodeValue && finalErr == nil && result != nil && state.symbolicData != nil {
+		if !options.ignoreNodeValue && !options.reEval && finalErr == nil && result != nil && state.symbolicData != nil {
 			state.symbolicData.SetMostSpecificNodeValue(node, result)
 		}
 	}()
+
+	if options.reEval {
+		//note: re-evaluation should aways be side-effect free, its main purpose
+		//is having better error locations & better completions.
+		switch node.(type) {
+		case *parse.ObjectLiteral, *parse.RecordLiteral, *parse.DictionaryLiteral,
+			*parse.ListLiteral, *parse.TupleLiteral:
+		default:
+			nodeValue, ok := state.symbolicData.GetMostSpecificNodeValue(node)
+			if !ok {
+				return nil, fmt.Errorf("no value for node of type %T", nodeValue)
+			}
+			return nodeValue, nil
+		}
+	}
 
 	switch n := node.(type) {
 	case *parse.BooleanLiteral:
