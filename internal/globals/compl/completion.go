@@ -118,7 +118,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 	case *parse.PatternIdentifierLiteral:
 		if mode == ShellCompletions {
 			for name, patt := range state.Global.Ctx.GetNamedPatterns() {
-				if !strings.HasPrefix(name, n.Name) {
+				if !hasPrefixCaseInsensitive(name, n.Name) {
 					continue
 				}
 				detail, _ := core.GetStringifiedSymbolicValue(ctx, patt, false)
@@ -139,7 +139,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 			for name, namespace := range state.Global.Ctx.GetPatternNamespaces() {
 				detail, _ := core.GetStringifiedSymbolicValue(ctx, namespace, false)
 
-				if !strings.HasPrefix(name, n.Name) {
+				if !hasPrefixCaseInsensitive(name, n.Name) {
 					continue
 				}
 
@@ -159,7 +159,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 		} else {
 			contextData, _ := state.Global.SymbolicData.GetContextData(n, _ancestorChain)
 			for _, patternData := range contextData.Patterns {
-				if !strings.HasPrefix(patternData.Name, n.Name) {
+				if !hasPrefixCaseInsensitive(patternData.Name, n.Name) {
 					continue
 				}
 
@@ -175,7 +175,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 				})
 			}
 			for _, namespaceData := range contextData.PatternNamespaces {
-				if !strings.HasPrefix(namespaceData.Name, n.Name) {
+				if !hasPrefixCaseInsensitive(namespaceData.Name, n.Name) {
 					continue
 				}
 
@@ -213,7 +213,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 			}
 
 			for patternName, patternValue := range namespace.Patterns {
-				if !strings.HasPrefix(patternName, memberName) {
+				if !hasPrefixCaseInsensitive(patternName, memberName) {
 					continue
 				}
 
@@ -244,7 +244,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 			}
 
 			namespace.ForEachPattern(func(patternName string, patternValue symbolic.Pattern) error {
-				if !strings.HasPrefix(patternName, memberName) {
+				if !hasPrefixCaseInsensitive(patternName, memberName) {
 					return nil
 				}
 
@@ -268,7 +268,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 		if args.Mode == ShellCompletions {
 			for name, varVal := range state.CurrentLocalScope() {
 
-				if strings.HasPrefix(name, n.Name) {
+				if hasPrefixCaseInsensitive(name, n.Name) {
 					names = append(names, name)
 
 					detail, _ := core.GetStringifiedSymbolicValue(ctx, varVal, false)
@@ -278,7 +278,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 		} else {
 			scopeData, _ := state.Global.SymbolicData.GetLocalScopeData(n, _ancestorChain)
 			for _, varData := range scopeData.Variables {
-				if strings.HasPrefix(varData.Name, n.Name) {
+				if hasPrefixCaseInsensitive(varData.Name, n.Name) {
 					names = append(names, varData.Name)
 
 					details = append(details, symbolic.Stringify(varData.Value))
@@ -297,7 +297,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 	case *parse.GlobalVariable:
 		if mode == ShellCompletions {
 			state.Global.Globals.Foreach(func(name string, varVal core.Value, _ bool) error {
-				if strings.HasPrefix(name, n.Name) {
+				if hasPrefixCaseInsensitive(name, n.Name) {
 					detail, _ := core.GetStringifiedSymbolicValue(ctx, varVal, false)
 					completions = append(completions, Completion{
 						ShownString: name,
@@ -312,7 +312,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 			scopeData, _ := state.Global.SymbolicData.GetGlobalScopeData(n, _ancestorChain)
 
 			for _, varData := range scopeData.Variables {
-				if strings.HasPrefix(varData.Name, n.Name) {
+				if hasPrefixCaseInsensitive(varData.Name, n.Name) {
 					completions = append(completions, Completion{
 						ShownString: varData.Name,
 						Value:       "$$" + varData.Name,
@@ -434,7 +434,7 @@ after_subcommand_completions:
 		//suggest sections of the manifest
 		if parse.NodeIs(ancestors[len(ancestors)-3], (*parse.Manifest)(nil)) {
 			for _, sectionName := range core.MANIFEST_SECTION_NAMES {
-				if strings.HasPrefix(sectionName, ident.Name) {
+				if hasPrefixCaseInsensitive(sectionName, ident.Name) {
 					completions = append(completions, Completion{
 						ShownString: sectionName,
 						Value:       sectionName,
@@ -470,7 +470,7 @@ after_subcommand_completions:
 				switch manifestObjProp.Name() {
 				case core.MANIFEST_PERMS_SECTION_NAME:
 					for _, info := range permkind.PERMISSION_KINDS {
-						if !strings.HasPrefix(info.Name, ident.Name) {
+						if !hasPrefixCaseInsensitive(info.Name, ident.Name) {
 							continue
 						}
 
@@ -497,7 +497,7 @@ after_subcommand_completions:
 			}
 
 			for _, name := range properties {
-				if strings.HasPrefix(name, ident.Name) {
+				if hasPrefixCaseInsensitive(name, ident.Name) {
 					completions = append(completions, Completion{
 						ShownString: name,
 						Value:       name,
@@ -518,7 +518,7 @@ after_subcommand_completions:
 		properties, ok := state.Global.SymbolicData.GetAllowedNonPresentProperties(recordLiteral)
 		if ok {
 			for _, name := range properties {
-				if strings.HasPrefix(name, ident.Name) {
+				if hasPrefixCaseInsensitive(name, ident.Name) {
 					completions = append(completions, Completion{
 						ShownString: name,
 						Value:       name,
@@ -544,7 +544,7 @@ after_subcommand_completions:
 
 	if mode == ShellCompletions {
 		for name, varVal := range state.CurrentLocalScope() {
-			if strings.HasPrefix(name, ident.Name) {
+			if hasPrefixCaseInsensitive(name, ident.Name) {
 				detail, _ := core.GetStringifiedSymbolicValue(state.Global.Ctx, varVal, false)
 
 				completions = append(completions, Completion{
@@ -558,7 +558,7 @@ after_subcommand_completions:
 	} else {
 		scopeData, _ := state.Global.SymbolicData.GetLocalScopeData(ident, ancestors)
 		for _, varData := range scopeData.Variables {
-			if strings.HasPrefix(varData.Name, ident.Name) {
+			if hasPrefixCaseInsensitive(varData.Name, ident.Name) {
 				completions = append(completions, Completion{
 					ShownString: varData.Name,
 					Value:       varData.Name,
@@ -574,7 +574,7 @@ after_subcommand_completions:
 	if mode == ShellCompletions {
 
 		state.Global.Globals.Foreach(func(name string, varVal core.Value, _ bool) error {
-			if strings.HasPrefix(name, ident.Name) {
+			if hasPrefixCaseInsensitive(name, ident.Name) {
 				detail, _ := core.GetStringifiedSymbolicValue(state.Global.Ctx, varVal, false)
 
 				completions = append(completions, Completion{
@@ -590,7 +590,7 @@ after_subcommand_completions:
 		scopeData, _ := state.Global.SymbolicData.GetGlobalScopeData(ident, ancestors)
 
 		for _, varData := range scopeData.Variables {
-			if strings.HasPrefix(varData.Name, ident.Name) {
+			if hasPrefixCaseInsensitive(varData.Name, ident.Name) {
 				completions = append(completions, Completion{
 					ShownString: varData.Name,
 					Value:       varData.Name,
@@ -613,7 +613,7 @@ after_subcommand_completions:
 			switch parent.(type) {
 			case *parse.Block:
 				for _, keyword := range []string{"break", "continue"} {
-					if strings.HasPrefix(keyword, ident.Name) {
+					if hasPrefixCaseInsensitive(keyword, ident.Name) {
 						completions = append(completions, Completion{
 							ShownString: keyword,
 							Value:       keyword,
@@ -626,7 +626,7 @@ after_subcommand_completions:
 
 			switch parent.(type) {
 			case *parse.Block:
-				if strings.HasPrefix("prune", ident.Name) {
+				if hasPrefixCaseInsensitive("prune", ident.Name) {
 					completions = append(completions, Completion{
 						ShownString: "prune",
 						Value:       "prune",
@@ -643,7 +643,7 @@ after_subcommand_completions:
 	case *parse.Block, *parse.InitializationBlock, *parse.EmbeddedModule, *parse.Chunk:
 		for _, keyword := range CONTEXT_INDEPENDENT_STMT_STARTING_KEYWORDS {
 
-			if strings.HasPrefix(keyword, ident.Name) {
+			if hasPrefixCaseInsensitive(keyword, ident.Name) {
 				completions = append(completions, Completion{
 					ShownString: keyword,
 					Value:       keyword,
@@ -656,7 +656,7 @@ after_subcommand_completions:
 	//suggest some expression-starting keywords
 
 	for _, keyword := range []string{"udata", "Mapping", "concat"} {
-		if strings.HasPrefix(keyword, ident.Name) {
+		if hasPrefixCaseInsensitive(keyword, ident.Name) {
 			completions = append(completions, Completion{
 				ShownString: keyword,
 				Value:       keyword,
@@ -907,7 +907,7 @@ func suggestPropertyNames(
 
 		for i, propName := range propNames {
 
-			if !strings.HasPrefix(propName, propNamePrefix) {
+			if !hasPrefixCaseInsensitive(propName, propNamePrefix) {
 				continue
 			}
 
@@ -1138,4 +1138,8 @@ func findDictionaryInteriorCompletions(
 	}
 
 	return
+}
+
+func hasPrefixCaseInsensitive(s, prefix string) bool {
+	return strings.HasPrefix(strings.ToLower(s), strings.ToLower(prefix))
 }

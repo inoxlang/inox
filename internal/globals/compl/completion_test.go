@@ -117,6 +117,17 @@ func TestFindCompletions(t *testing.T) {
 					}, completions)
 				})
 
+				t.Run("local variable in top level module: different letter casse", func(t *testing.T) {
+					state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+					chunk, _ := parseChunkSource("val = 1; V", "")
+
+					doSymbolicCheck(chunk, state.Global)
+					completions := findCompletions(state, chunk, 10)
+					assert.EqualValues(t, []Completion{
+						{ShownString: "val", Value: "val", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 9, End: 10}}},
+					}, completions)
+				})
+
 				t.Run("local variable within a function", func(t *testing.T) {
 					state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
 					chunk, _ := parseChunkSource("fn(val){v}", "")
@@ -709,6 +720,7 @@ func TestFindCompletions(t *testing.T) {
 					doSymbolicCheck(chunk, state.Global)
 					completions := findCompletions(state, chunk, 1)
 					assert.EqualValues(t, []Completion{
+						{ShownString: "match", Value: "match", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 1}}},
 						{ShownString: "Mapping", Value: "Mapping", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 1}}},
 					}, completions)
 				})
