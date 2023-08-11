@@ -313,6 +313,14 @@ func (patt *ObjectPattern) EntryCount() int {
 	return len(patt.entryPatterns)
 }
 
+func (patt *ObjectPattern) Entry(name string) (pattern Pattern, optional bool, yes bool) {
+	for propName, propPattern := range patt.entryPatterns {
+		_, isOptional := patt.optionalEntries[propName]
+		return propPattern, isOptional, true
+	}
+	return nil, false, false
+}
+
 type RecordPattern struct {
 	NotCallablePatternMixin
 	entryPatterns   map[string]Pattern

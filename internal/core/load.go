@@ -26,10 +26,17 @@ type SerializedValueStorage interface {
 }
 
 type InstanceLoadArgs struct {
-	Key          Path
-	Storage      SerializedValueStorage
-	Pattern      Pattern
-	AllowMissing bool
+	Key               Path
+	Storage           SerializedValueStorage
+	Pattern           Pattern
+	MigrationHandlers MigrationHandlers
+	AllowMissing      bool
+	Migration         *InstanceMigrationArgs
+}
+
+type InstanceMigrationArgs struct {
+	NextPattern       Pattern //can be nil
+	MigrationHandlers MigrationHandlers
 }
 
 type LoadInstanceFn func(ctx *Context, args InstanceLoadArgs) (UrlHolder, error)

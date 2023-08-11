@@ -181,6 +181,14 @@ func (ldb *LocalDatabase) Resource() core.SchemeHolder {
 	return ldb.host
 }
 
+func (ldb *LocalDatabase) Schema() *core.ObjectPattern {
+	return ldb.schema
+}
+
+func (ldb *LocalDatabase) BaseURL() core.URL {
+	return core.URL(ldb.host + "/")
+}
+
 func (ldb *LocalDatabase) TopLevelEntities(ctx *core.Context) map[string]core.Serializable {
 	ldb.topLevelValuesLock.Lock()
 	defer ldb.topLevelValuesLock.Unlock()
@@ -190,34 +198,9 @@ func (ldb *LocalDatabase) TopLevelEntities(ctx *core.Context) map[string]core.Se
 	}
 
 	ldb.topLevelValues = make(map[string]core.Serializable, ldb.schema.EntryCount())
+	ldb.load(ctx, nil, core.MigrationHandlers{})
 
-	err := ldb.schema.ForEachEntry(func(propName string, propPattern core.Pattern, isOptional bool) error {
-		path := core.PathFrom("/" + propName)
-		value, err := core.LoadInstance(ctx, core.InstanceLoadArgs{
-			Pattern:      propPattern,
-			Key:          path,
-			Storage:      ldb,
-			AllowMissing: true,
-		})
-		if err != nil {
-			return err
-		}
-		ldb.topLevelValues[propName] = value
-		return nil
-	})
-
-	if err != nil {
-		panic(err)
-	}
 	return ldb.topLevelValues
-}
-
-func (ldb *LocalDatabase) Schema() *core.ObjectPattern {
-	return ldb.schema
-}
-
-func (ldb *LocalDatabase) BaseURL() core.URL {
-	return core.URL(ldb.host + "/")
 }
 
 func (ldb *LocalDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handlers core.MigrationHandlers) {
@@ -231,8 +214,43 @@ func (ldb *LocalDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, hand
 	if ldb.schema.Equal(ctx, schema, map[uintptr]uintptr{}, 0) {
 		return
 	}
+
+	ldb.load(ctx, schema, handlers)
+
 	ldb.schemaKV.Set(ctx, "/", schema, ldb)
 	ldb.schema = schema
+}
+
+func (ldb *LocalDatabase) load(ctx *Context, migrationNextPattern *ObjectPattern, handlers core.MigrationHandlers) {
+	err := ldb.schema.ForEachEntry(func(propName string, propPattern core.Pattern, isOptional bool) error {
+		path := core.PathFrom("/" + propName)
+		args := core.InstanceLoadArgs{
+			Pattern:      propPattern,
+			Key:          path,
+			Storage:      ldb,
+			AllowMissing: true,
+		}
+
+		if migrationNextPattern != nil {
+			args.Migration = &core.InstanceMigrationArgs{
+				MigrationHandlers: handlers,
+			}
+			if propPattern, _, ok := migrationNextPattern.Entry(propName); ok {
+				args.Migration.NextPattern = propPattern
+			}
+		}
+
+		value, err := core.LoadInstance(ctx, args)
+		if err != nil {
+			return err
+		}
+		ldb.topLevelValues[propName] = value
+		return nil
+	})
+
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (ldb *LocalDatabase) Close(ctx *core.Context) error {
