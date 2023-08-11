@@ -150,11 +150,15 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 
 			for _, op := range deletions {
 				pathPattern := "%" + op.PseudoPath
-				dict.entries[pathPattern] = &InoxFunction{
-					parameters:     []SymbolicValue{op.Value.SymbolicValue()},
-					parameterNames: []string{"removed-value"},
-					result:         Nil,
-				}
+				dict.entries[pathPattern] = AsSerializable(NewMultivalue(
+					&InoxFunction{
+						parameters:     []SymbolicValue{op.Value.SymbolicValue()},
+						parameterNames: []string{"removed-value"},
+						result:         Nil,
+					},
+					Nil,
+				)).(Serializable)
+
 			}
 
 			expectedObject.entries[DB_MIGRATION__DELETIONS_PROP_NAME] = dict

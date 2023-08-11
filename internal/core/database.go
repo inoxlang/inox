@@ -159,10 +159,10 @@ func (db *DatabaseIL) Resource() SchemeHolder {
 }
 
 type MigrationHandlers struct {
-	deletions       map[PathPattern]*InoxFunction
-	inclusions      map[PathPattern]*InoxFunction
-	replacements    map[PathPattern]*InoxFunction
-	initializations map[PathPattern]*InoxFunction
+	Deletions       map[PathPattern]*InoxFunction //function can be nil
+	Inclusions      map[PathPattern]*InoxFunction
+	Replacements    map[PathPattern]*InoxFunction
+	Initializations map[PathPattern]*InoxFunction
 }
 
 func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migrations ...*Object) {
@@ -217,27 +217,33 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migr
 
 			switch k {
 			case symbolic.DB_MIGRATION__DELETIONS_PROP_NAME:
-				migrationHandlers.deletions = map[PathPattern]*InoxFunction{}
+				migrationHandlers.Deletions = map[PathPattern]*InoxFunction{}
 				dict.ForEachEntry(ctx, func(keyRepr string, key, v Serializable) error {
-					migrationHandlers.deletions[key.(PathPattern)] = v.(*InoxFunction)
+
+					if _, ok := v.(NilT); ok {
+						migrationHandlers.Deletions[key.(PathPattern)] = nil
+					} else {
+						migrationHandlers.Deletions[key.(PathPattern)] = v.(*InoxFunction)
+					}
+
 					return nil
 				})
 			case symbolic.DB_MIGRATION__REPLACEMENTS_PROP_NAME:
-				migrationHandlers.replacements = map[PathPattern]*InoxFunction{}
+				migrationHandlers.Replacements = map[PathPattern]*InoxFunction{}
 				dict.ForEachEntry(ctx, func(keyRepr string, key, v Serializable) error {
-					migrationHandlers.replacements[key.(PathPattern)] = v.(*InoxFunction)
+					migrationHandlers.Replacements[key.(PathPattern)] = v.(*InoxFunction)
 					return nil
 				})
 			case symbolic.DB_MIGRATION__INCLUSIONS_PROP_NAME:
-				migrationHandlers.inclusions = map[PathPattern]*InoxFunction{}
+				migrationHandlers.Inclusions = map[PathPattern]*InoxFunction{}
 				dict.ForEachEntry(ctx, func(keyRepr string, key, v Serializable) error {
-					migrationHandlers.inclusions[key.(PathPattern)] = v.(*InoxFunction)
+					migrationHandlers.Inclusions[key.(PathPattern)] = v.(*InoxFunction)
 					return nil
 				})
 			case symbolic.DB_MIGRATION__INITIALIZATIONS_PROP_NAME:
-				migrationHandlers.initializations = map[PathPattern]*InoxFunction{}
+				migrationHandlers.Initializations = map[PathPattern]*InoxFunction{}
 				dict.ForEachEntry(ctx, func(keyRepr string, key, v Serializable) error {
-					migrationHandlers.initializations[key.(PathPattern)] = v.(*InoxFunction)
+					migrationHandlers.Initializations[key.(PathPattern)] = v.(*InoxFunction)
 					return nil
 				})
 			default:
@@ -355,11 +361,11 @@ func (db *dummyDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handl
 
 	state := ctx.GetClosestState()
 
-	if len(handlers.deletions)+len(handlers.initializations)+len(handlers.replacements) > 0 {
+	if len(handlers.Deletions)+len(handlers.Initializations)+len(handlers.Replacements) > 0 {
 		panic(errors.New("only inclusion handlers are supported"))
 	}
 
-	for pattern, handler := range handlers.inclusions {
+	for pattern, handler := range handlers.Inclusions {
 		if strings.Count(string(pattern), "/") != 1 {
 			panic(errors.New("only shallow inclusion handlers are supported"))
 		}
