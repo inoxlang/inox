@@ -220,7 +220,7 @@ func (ldb *LocalDatabase) BaseURL() core.URL {
 	return core.URL(ldb.host + "/")
 }
 
-func (ldb *LocalDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern) {
+func (ldb *LocalDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handlers core.MigrationHandlers) {
 	ldb.topLevelValuesLock.Lock()
 	defer ldb.topLevelValuesLock.Unlock()
 

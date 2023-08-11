@@ -200,7 +200,7 @@ func TestOpenDatabase(t *testing.T) {
 				"users": setPattern,
 			})
 
-			db.UpdateSchema(ctx, schema)
+			db.UpdateSchema(ctx, schema, core.MigrationHandlers{})
 
 			err = db.Close(ctx)
 			if !assert.NoError(t, err) {
@@ -490,7 +490,7 @@ func TestUpdateSchema(t *testing.T) {
 			"users": setPattern,
 		})
 
-		ldb.UpdateSchema(ctx, schema)
+		ldb.UpdateSchema(ctx, schema, core.MigrationHandlers{})
 
 		topLevelValues := ldb.TopLevelEntities(ctx)
 
@@ -524,7 +524,7 @@ func TestUpdateSchema(t *testing.T) {
 		})
 
 		assert.PanicsWithError(t, core.ErrTopLevelEntitiesAlreadyLoaded.Error(), func() {
-			ldb.UpdateSchema(ctx, schema)
+			ldb.UpdateSchema(ctx, schema, core.MigrationHandlers{})
 		})
 	})
 
@@ -539,7 +539,7 @@ func TestUpdateSchema(t *testing.T) {
 			"a": core.INT_PATTERN,
 		})
 
-		ldb.UpdateSchema(ctx, schema)
+		ldb.UpdateSchema(ctx, schema, core.MigrationHandlers{})
 
 		err := ldb.Close(ctx)
 		if !assert.NoError(t, err) {
@@ -557,7 +557,7 @@ func TestUpdateSchema(t *testing.T) {
 			"a": core.INT_PATTERN,
 		})
 
-		ldb.UpdateSchema(ctx, schemaCopy)
+		ldb.UpdateSchema(ctx, schemaCopy, core.MigrationHandlers{})
 
 		//should not have changed
 		assert.Same(t, currentSchema, ldb.schema)

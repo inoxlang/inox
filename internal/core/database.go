@@ -3,9 +3,11 @@ package core
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -63,7 +65,7 @@ type Database interface {
 	//UpdateSchema updates the schema and validates the content of the database,
 	//this method should return ErrTopLevelEntitiesAlreadyLoaded if it is called after .TopLevelEntities.
 	//The caller should always pass a schema whose ALL entry patterns have a loading function.
-	UpdateSchema(ctx *Context, schema *ObjectPattern)
+	UpdateSchema(ctx *Context, schema *ObjectPattern, migrationHandlers MigrationHandlers)
 
 	TopLevelEntities(ctx *Context) map[string]Serializable
 	Close(ctx *Context) error
@@ -156,7 +158,14 @@ func (db *DatabaseIL) Resource() SchemeHolder {
 	return db.inner.Resource()
 }
 
-func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern) {
+type MigrationHandlers struct {
+	deletions       map[PathPattern]*InoxFunction
+	inclusions      map[PathPattern]*InoxFunction
+	replacements    map[PathPattern]*InoxFunction
+	initializations map[PathPattern]*InoxFunction
+}
+
+func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migrations ...*Object) {
 	if db.ownerState == nil {
 		panic(ErrOwnerStateNotSet)
 	}
@@ -178,7 +187,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern) {
 
 	defer db.schemaUpdated.Store(true)
 
-	err := schema.ForEachEntry(func(propName string, propPattern Pattern, isOptional bool) error {
+	err := nextSchema.ForEachEntry(func(propName string, propPattern Pattern, isOptional bool) error {
 		if !hasTypeLoadingFunction(propPattern) {
 			return fmt.Errorf("failed to update schema: pattern of .%s has no loading function: %w", propName, ErrNoLoadInstanceFnRegistered)
 		}
@@ -189,7 +198,56 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern) {
 		panic(err)
 	}
 
-	db.inner.UpdateSchema(ctx, schema)
+	migrationOps, err := GetMigrationOperations(ctx, db.initialSchema, nextSchema, "/")
+	if err != nil {
+		panic(err)
+	}
+
+	var migrationHandlers MigrationHandlers
+
+	//TODO: make sure concrete migration handlers match concretized symbolic expected migration handlers
+	if len(migrationOps) > 0 {
+		if len(migrations) != 1 {
+			panic(ErrUnreachable)
+		}
+
+		migrationObject := migrations[0]
+		migrationObject.ForEachEntry(func(k string, v Serializable) error {
+			dict := v.(*Dictionary)
+
+			switch k {
+			case symbolic.DB_MIGRATION__DELETIONS_PROP_NAME:
+				migrationHandlers.deletions = map[PathPattern]*InoxFunction{}
+				dict.ForEachEntry(ctx, func(keyRepr string, key, v Serializable) error {
+					migrationHandlers.deletions[key.(PathPattern)] = v.(*InoxFunction)
+					return nil
+				})
+			case symbolic.DB_MIGRATION__REPLACEMENTS_PROP_NAME:
+				migrationHandlers.replacements = map[PathPattern]*InoxFunction{}
+				dict.ForEachEntry(ctx, func(keyRepr string, key, v Serializable) error {
+					migrationHandlers.replacements[key.(PathPattern)] = v.(*InoxFunction)
+					return nil
+				})
+			case symbolic.DB_MIGRATION__INCLUSIONS_PROP_NAME:
+				migrationHandlers.inclusions = map[PathPattern]*InoxFunction{}
+				dict.ForEachEntry(ctx, func(keyRepr string, key, v Serializable) error {
+					migrationHandlers.inclusions[key.(PathPattern)] = v.(*InoxFunction)
+					return nil
+				})
+			case symbolic.DB_MIGRATION__INITIALIZATIONS_PROP_NAME:
+				migrationHandlers.initializations = map[PathPattern]*InoxFunction{}
+				dict.ForEachEntry(ctx, func(keyRepr string, key, v Serializable) error {
+					migrationHandlers.initializations[key.(PathPattern)] = v.(*InoxFunction)
+					return nil
+				})
+			default:
+				return fmt.Errorf("unexpected property '%s' in migration object", k)
+			}
+			return nil
+		})
+	}
+
+	db.inner.UpdateSchema(ctx, nextSchema, migrationHandlers)
 	db.topLevelEntities = db.inner.TopLevelEntities(ctx)
 }
 
@@ -263,7 +321,7 @@ func (db *FailedToOpenDatabase) Schema() *ObjectPattern {
 	return EMPTY_INEXACT_OBJECT_PATTERN
 }
 
-func (db *FailedToOpenDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern) {
+func (db *FailedToOpenDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handlers MigrationHandlers) {
 	panic(ErrNotImplemented)
 }
 
@@ -289,11 +347,25 @@ func (db *dummyDatabase) Schema() *ObjectPattern {
 	return EMPTY_INEXACT_OBJECT_PATTERN
 }
 
-func (db *dummyDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern) {
+func (db *dummyDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handlers MigrationHandlers) {
 	if db.schemaUpdated {
 		panic(errors.New("schema already updated"))
 	}
 	db.schemaUpdated = true
+
+	state := ctx.GetClosestState()
+
+	if len(handlers.deletions)+len(handlers.initializations)+len(handlers.replacements) > 0 {
+		panic(errors.New("only inclusion handlers are supported"))
+	}
+
+	for pattern, handler := range handlers.inclusions {
+		if strings.Count(string(pattern), "/") != 1 {
+			panic(errors.New("only shallow inclusion handlers are supported"))
+		}
+		result := utils.Must(handler.Call(state, nil, []Value{}, nil))
+		db.topLevelEntities[string(pattern[1:])] = result.(Serializable)
+	}
 }
 
 func (db *dummyDatabase) TopLevelEntities(_ *Context) map[string]Serializable {

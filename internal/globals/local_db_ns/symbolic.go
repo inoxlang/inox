@@ -22,7 +22,7 @@ func (ldb *SymbolicLocalDatabase) Test(v SymbolicValue) bool {
 	return ok
 }
 
-func (ldb *SymbolicLocalDatabase) UpdateSchema(ctx *symbolic.Context, schema *symbolic.ObjectPattern) {
+func (ldb *SymbolicLocalDatabase) UpdateSchema(ctx *symbolic.Context, schema *symbolic.ObjectPattern, handlers symbolic.SymbolicValue) {
 
 }
 

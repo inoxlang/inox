@@ -31,6 +31,20 @@ type InoxFunction struct {
 	SerializableMixin
 }
 
+func NewInoxFunction(parameters map[string]SymbolicValue, capturedLocals map[string]SymbolicValue, result SymbolicValue) *InoxFunction {
+	fn := &InoxFunction{
+		capturedLocals: capturedLocals,
+		result:         result,
+	}
+
+	for name, val := range parameters {
+		fn.parameterNames = append(fn.parameterNames, name)
+		fn.parameters = append(fn.parameters, val)
+	}
+
+	return fn
+}
+
 func (fn *InoxFunction) IsVariadic() bool {
 	if fn.node == nil {
 		return fn.noNodeVariadic

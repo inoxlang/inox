@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/parse"
 	internal "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
 	jsoniter "github.com/json-iterator/go"
@@ -141,10 +142,8 @@ func TestDatabaseIL(t *testing.T) {
 	t.Run("accessing the database after its schema is updated should work", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		db := &dummyDatabase{
-			resource: Host("ldb://main"),
-			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
-				value: 1,
-			}},
+			resource:         Host("ldb://main"),
+			topLevelEntities: map[string]Serializable{},
 		}
 
 		dbIL := WrapDatabase(ctx, DatabaseWrappingArgs{
@@ -153,9 +152,30 @@ func TestDatabaseIL(t *testing.T) {
 			ExpectedSchemaUpdate: true,
 		})
 
+		migrationHandlerReturnedVal := &loadableTestValue{value: 1}
+
+		symbolicFn := symbolic.NewInoxFunction(nil, nil, &symbolicLoadableTestValue{})
+		handler := &InoxFunction{
+			Node: &parse.FunctionExpression{
+				IsBodyExpression: true,
+				Body: &parse.IdentifierLiteral{
+					Name: "val",
+				},
+			},
+			treeWalkCapturedLocals: map[string]Value{
+				"val": migrationHandlerReturnedVal,
+			},
+			symbolicValue: symbolicFn,
+			staticData:    &FunctionStaticData{},
+		}
+
 		dbIL.UpdateSchema(ctx, NewInexactObjectPattern(map[string]Pattern{
 			"a": LOADABLE_TEST_VALUE_PATTERN,
-		}))
+		}), NewObjectFromMap(ValMap{
+			symbolic.DB_MIGRATION__INCLUSIONS_PROP_NAME: NewDictionary(ValMap{
+				"%/a": handler,
+			}),
+		}, ctx))
 
 		val := dbIL.Prop(ctx, "a")
 		assert.Same(t, db.topLevelEntities["a"], val)
@@ -163,9 +183,10 @@ func TestDatabaseIL(t *testing.T) {
 }
 
 var (
-	_ UrlHolder        = (*loadableTestValue)(nil)
-	_ Pattern          = (*loadableTestValuePattern)(nil)
-	_ symbolic.Pattern = (*symbolicLoadableTestValuePattern)(nil)
+	_ UrlHolder              = (*loadableTestValue)(nil)
+	_ Pattern                = (*loadableTestValuePattern)(nil)
+	_ symbolic.Pattern       = (*symbolicLoadableTestValuePattern)(nil)
+	_ symbolic.SymbolicValue = (*symbolicLoadableTestValue)(nil)
 
 	LOADABLE_TEST_VALUE_PATTERN = &loadableTestValuePattern{}
 )
@@ -252,6 +273,36 @@ func (*loadableTestValuePattern) WriteJSONRepresentation(ctx *Context, w *jsonit
 
 func (*loadableTestValuePattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	panic(ErrNotImplemented)
+}
+
+type symbolicLoadableTestValue struct {
+}
+
+func (*symbolicLoadableTestValue) IsConcretizable() bool {
+	return true
+}
+func (*symbolicLoadableTestValue) Concretize() any {
+	return &loadableTestValue{}
+}
+
+func (*symbolicLoadableTestValue) IsMutable() bool {
+	return false
+}
+
+func (*symbolicLoadableTestValue) PrettyPrint(w *bufio.Writer, config *internal.PrettyPrintConfig, depth int, parentIndentCount int) {
+	w.WriteString("symbolicLoadableTestValue")
+}
+
+func (*symbolicLoadableTestValue) StringPattern() (symbolic.StringPattern, bool) {
+	return nil, false
+}
+
+func (*symbolicLoadableTestValue) Test(v symbolic.SymbolicValue) bool {
+	panic(ErrNotImplementedYet)
+}
+
+func (*symbolicLoadableTestValue) WidestOfType() symbolic.SymbolicValue {
+	return &symbolicLoadableTestValue{}
 }
 
 type symbolicLoadableTestValuePattern struct {
