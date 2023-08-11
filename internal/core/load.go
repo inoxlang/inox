@@ -53,6 +53,8 @@ type InstanceMigrationArgs struct {
 	MigrationHandlers MigrationOpHandlers
 }
 
+// LoadInstanceFn should load the associated value & call the corresponding migration handlers, in the case
+// of a deletion (nil, nil) should be returned.
 type LoadInstanceFn func(ctx *Context, args InstanceLoadArgs) (UrlHolder, error)
 
 func RegisterLoadInstanceFn(patternType reflect.Type, fn LoadInstanceFn) {

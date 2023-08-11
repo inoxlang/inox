@@ -159,16 +159,73 @@ func (db *DatabaseIL) Resource() SchemeHolder {
 }
 
 type MigrationOpHandlers struct {
-	Deletions       map[PathPattern]*MigrationOpHandler //can be nil
+	Deletions       map[PathPattern]*MigrationOpHandler //handler can be nil
 	Inclusions      map[PathPattern]*MigrationOpHandler
 	Replacements    map[PathPattern]*MigrationOpHandler
 	Initializations map[PathPattern]*MigrationOpHandler
+}
+
+func (handlers MigrationOpHandlers) FilterByPrefix(path Path) MigrationOpHandlers {
+	filtered := MigrationOpHandlers{}
+
+	prefix := string(path)
+	prefixSlash := string(prefix) + "/"
+
+	for pattern, handler := range handlers.Deletions {
+		// if prefix is /users:
+		// /users will match
+		// /users/x will match
+		// /users-x will not match
+		if string(pattern) == prefix || strings.HasPrefix(string(pattern), prefixSlash) {
+			if filtered.Deletions == nil {
+				filtered.Deletions = map[PathPattern]*MigrationOpHandler{}
+			}
+			filtered.Deletions[pattern] = handler
+		}
+	}
+
+	for pattern, handler := range handlers.Inclusions {
+		if string(pattern) == prefix || strings.HasPrefix(string(pattern), prefixSlash) {
+			if filtered.Inclusions == nil {
+				filtered.Inclusions = map[PathPattern]*MigrationOpHandler{}
+			}
+			filtered.Inclusions[pattern] = handler
+		}
+	}
+
+	for pattern, handler := range handlers.Replacements {
+		if string(pattern) == prefix || strings.HasPrefix(string(pattern), prefixSlash) {
+			if filtered.Replacements == nil {
+				filtered.Replacements = map[PathPattern]*MigrationOpHandler{}
+			}
+			filtered.Replacements[pattern] = handler
+		}
+	}
+
+	for pattern, handler := range handlers.Initializations {
+		if string(pattern) == prefix || strings.HasPrefix(string(pattern), prefixSlash) {
+			if filtered.Initializations == nil {
+				filtered.Initializations = map[PathPattern]*MigrationOpHandler{}
+			}
+			filtered.Initializations[pattern] = handler
+		}
+	}
+
+	return filtered
 }
 
 type MigrationOpHandler struct {
 	//ignored if InitialValue is set
 	Function     *InoxFunction
 	InitialValue Serializable
+}
+
+func (h MigrationOpHandler) GetResult(ctx *Context, state *GlobalState) Value {
+	if h.Function != nil {
+		return utils.Must(h.Function.Call(state, nil, []Value{}, nil))
+	} else {
+		return utils.Must(RepresentationBasedClone(ctx, h.InitialValue))
+	}
 }
 
 func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migrations ...*Object) {
@@ -406,12 +463,7 @@ func (db *dummyDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handl
 		if strings.Count(string(pattern), "/") != 1 {
 			panic(errors.New("only shallow inclusion handlers are supported"))
 		}
-		var result Value
-		if handler.Function != nil {
-			result = utils.Must(handler.Function.Call(state, nil, []Value{}, nil))
-		} else {
-			result = utils.Must(RepresentationBasedClone(ctx, handler.InitialValue))
-		}
+		result := handler.GetResult(ctx, state)
 		db.topLevelEntities[string(pattern[1:])] = result.(Serializable)
 	}
 }

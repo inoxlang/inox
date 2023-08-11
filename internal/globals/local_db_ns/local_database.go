@@ -234,7 +234,7 @@ func (ldb *LocalDatabase) load(ctx *Context, migrationNextPattern *ObjectPattern
 
 		if migrationNextPattern != nil {
 			args.Migration = &core.InstanceMigrationArgs{
-				MigrationHandlers: handlers,
+				MigrationHandlers: handlers.FilterByPrefix(path),
 			}
 			if propPattern, _, ok := migrationNextPattern.Entry(propName); ok {
 				args.Migration.NextPattern = propPattern
