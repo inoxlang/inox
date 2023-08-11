@@ -131,12 +131,21 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 
 			for _, op := range replacements {
 				pathPattern := "%" + op.PseudoPath
-
-				dict.entries[pathPattern] = &InoxFunction{
+				var entryValue Serializable = &InoxFunction{
 					parameters:     []SymbolicValue{op.Current.SymbolicValue()},
 					parameterNames: []string{"previous-value"},
 					result:         op.Next.SymbolicValue(),
 				}
+
+				capable, ok := op.Next.(MigrationInitialValueCapablePattern)
+				if ok {
+					acceptedInitialValue, ok := capable.MigrationInitialValue()
+					if ok {
+						entryValue = AsSerializable(joinValues([]SymbolicValue{entryValue, acceptedInitialValue})).(Serializable)
+					}
+				}
+
+				dict.entries[pathPattern] = entryValue
 			}
 
 			expectedObject.entries[DB_MIGRATION__REPLACEMENTS_PROP_NAME] = dict
@@ -172,11 +181,21 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 
 			for _, op := range inclusions {
 				pathPattern := "%" + op.PseudoPath
-				dict.entries[pathPattern] = &InoxFunction{
+				var entryValue Serializable = &InoxFunction{
 					parameters:     []SymbolicValue{},
 					parameterNames: []string{},
 					result:         op.Value.SymbolicValue(),
 				}
+
+				capable, ok := op.Value.(MigrationInitialValueCapablePattern)
+				if ok {
+					acceptedInitialValue, ok := capable.MigrationInitialValue()
+					if ok {
+						entryValue = AsSerializable(joinValues([]SymbolicValue{entryValue, acceptedInitialValue})).(Serializable)
+					}
+				}
+
+				dict.entries[pathPattern] = entryValue
 			}
 
 			expectedObject.entries[DB_MIGRATION__INCLUSIONS_PROP_NAME] = dict
@@ -190,11 +209,21 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 
 			for _, op := range initializations {
 				pathPattern := "%" + op.PseudoPath
-				dict.entries[pathPattern] = &InoxFunction{
+				var entryValue Serializable = &InoxFunction{
 					parameters:     []SymbolicValue{},
 					parameterNames: []string{},
 					result:         op.Value.SymbolicValue(),
 				}
+
+				capable, ok := op.Value.(MigrationInitialValueCapablePattern)
+				if ok {
+					acceptedInitialValue, ok := capable.MigrationInitialValue()
+					if ok {
+						entryValue = AsSerializable(joinValues([]SymbolicValue{entryValue, acceptedInitialValue})).(Serializable)
+					}
+				}
+
+				dict.entries[pathPattern] = entryValue
 			}
 
 			expectedObject.entries[DB_MIGRATION__INITIALIZATIONS_PROP_NAME] = dict

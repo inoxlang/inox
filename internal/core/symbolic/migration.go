@@ -32,3 +32,8 @@ type InclusionMigrationOp struct {
 	Optional bool
 	MigrationMixin
 }
+
+type MigrationInitialValueCapablePattern interface {
+	//MigrationInitialValue returns the initial value accepted by the pattern for initialization.
+	MigrationInitialValue() (Serializable, bool)
+}

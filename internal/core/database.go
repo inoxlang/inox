@@ -65,7 +65,7 @@ type Database interface {
 	//UpdateSchema updates the schema and validates the content of the database,
 	//this method should return ErrTopLevelEntitiesAlreadyLoaded if it is called after .TopLevelEntities.
 	//The caller should always pass a schema whose ALL entry patterns have a loading function.
-	UpdateSchema(ctx *Context, schema *ObjectPattern, migrationHandlers MigrationHandlers)
+	UpdateSchema(ctx *Context, schema *ObjectPattern, migrationHandlers MigrationOpHandlers)
 
 	TopLevelEntities(ctx *Context) map[string]Serializable
 	Close(ctx *Context) error
@@ -158,11 +158,17 @@ func (db *DatabaseIL) Resource() SchemeHolder {
 	return db.inner.Resource()
 }
 
-type MigrationHandlers struct {
-	Deletions       map[PathPattern]*InoxFunction //function can be nil
-	Inclusions      map[PathPattern]*InoxFunction
-	Replacements    map[PathPattern]*InoxFunction
-	Initializations map[PathPattern]*InoxFunction
+type MigrationOpHandlers struct {
+	Deletions       map[PathPattern]*MigrationOpHandler //can be nil
+	Inclusions      map[PathPattern]*MigrationOpHandler
+	Replacements    map[PathPattern]*MigrationOpHandler
+	Initializations map[PathPattern]*MigrationOpHandler
+}
+
+type MigrationOpHandler struct {
+	//ignored if InitialValue is set
+	Function     *InoxFunction
+	InitialValue Serializable
 }
 
 func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migrations ...*Object) {
@@ -203,7 +209,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migr
 		panic(err)
 	}
 
-	var migrationHandlers MigrationHandlers
+	var migrationHandlers MigrationOpHandlers
 
 	//TODO: make sure concrete migration handlers match concretized symbolic expected migration handlers
 	if len(migrationOps) > 0 {
@@ -217,33 +223,64 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migr
 
 			switch k {
 			case symbolic.DB_MIGRATION__DELETIONS_PROP_NAME:
-				migrationHandlers.Deletions = map[PathPattern]*InoxFunction{}
+				migrationHandlers.Deletions = map[PathPattern]*MigrationOpHandler{}
 				dict.ForEachEntry(ctx, func(keyRepr string, key, v Serializable) error {
+					var handler *MigrationOpHandler
 
-					if _, ok := v.(NilT); ok {
-						migrationHandlers.Deletions[key.(PathPattern)] = nil
-					} else {
-						migrationHandlers.Deletions[key.(PathPattern)] = v.(*InoxFunction)
+					switch val := v.(type) {
+					case NilT:
+					case *InoxFunction:
+						handler = &MigrationOpHandler{Function: val}
+					default:
+						panic(parse.ErrUnreachable)
 					}
 
+					migrationHandlers.Deletions[key.(PathPattern)] = handler
 					return nil
 				})
 			case symbolic.DB_MIGRATION__REPLACEMENTS_PROP_NAME:
-				migrationHandlers.Replacements = map[PathPattern]*InoxFunction{}
+				migrationHandlers.Replacements = map[PathPattern]*MigrationOpHandler{}
 				dict.ForEachEntry(ctx, func(keyRepr string, key, v Serializable) error {
-					migrationHandlers.Replacements[key.(PathPattern)] = v.(*InoxFunction)
+					var handler *MigrationOpHandler
+
+					switch val := v.(type) {
+					case *InoxFunction:
+						handler = &MigrationOpHandler{Function: val}
+					case Serializable:
+						handler = &MigrationOpHandler{InitialValue: val}
+					}
+
+					migrationHandlers.Replacements[key.(PathPattern)] = handler
 					return nil
 				})
 			case symbolic.DB_MIGRATION__INCLUSIONS_PROP_NAME:
-				migrationHandlers.Inclusions = map[PathPattern]*InoxFunction{}
+				migrationHandlers.Inclusions = map[PathPattern]*MigrationOpHandler{}
 				dict.ForEachEntry(ctx, func(keyRepr string, key, v Serializable) error {
-					migrationHandlers.Inclusions[key.(PathPattern)] = v.(*InoxFunction)
+					var handler *MigrationOpHandler
+
+					switch val := v.(type) {
+					case *InoxFunction:
+						handler = &MigrationOpHandler{Function: val}
+					case Serializable:
+						handler = &MigrationOpHandler{InitialValue: val}
+					}
+
+					migrationHandlers.Inclusions[key.(PathPattern)] = handler
 					return nil
 				})
 			case symbolic.DB_MIGRATION__INITIALIZATIONS_PROP_NAME:
-				migrationHandlers.Initializations = map[PathPattern]*InoxFunction{}
+				migrationHandlers.Initializations = map[PathPattern]*MigrationOpHandler{}
 				dict.ForEachEntry(ctx, func(keyRepr string, key, v Serializable) error {
-					migrationHandlers.Initializations[key.(PathPattern)] = v.(*InoxFunction)
+					var handler *MigrationOpHandler
+
+					switch val := v.(type) {
+					case *InoxFunction:
+						handler = &MigrationOpHandler{Function: val}
+					case Serializable:
+						handler = &MigrationOpHandler{InitialValue: val}
+					}
+
+					migrationHandlers.Initializations[key.(PathPattern)] = handler
 					return nil
 				})
 			default:
@@ -327,7 +364,7 @@ func (db *FailedToOpenDatabase) Schema() *ObjectPattern {
 	return EMPTY_INEXACT_OBJECT_PATTERN
 }
 
-func (db *FailedToOpenDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handlers MigrationHandlers) {
+func (db *FailedToOpenDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handlers MigrationOpHandlers) {
 	panic(ErrNotImplemented)
 }
 
@@ -353,7 +390,7 @@ func (db *dummyDatabase) Schema() *ObjectPattern {
 	return EMPTY_INEXACT_OBJECT_PATTERN
 }
 
-func (db *dummyDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handlers MigrationHandlers) {
+func (db *dummyDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handlers MigrationOpHandlers) {
 	if db.schemaUpdated {
 		panic(errors.New("schema already updated"))
 	}
@@ -369,7 +406,12 @@ func (db *dummyDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handl
 		if strings.Count(string(pattern), "/") != 1 {
 			panic(errors.New("only shallow inclusion handlers are supported"))
 		}
-		result := utils.Must(handler.Call(state, nil, []Value{}, nil))
+		var result Value
+		if handler.Function != nil {
+			result = utils.Must(handler.Function.Call(state, nil, []Value{}, nil))
+		} else {
+			result = utils.Must(RepresentationBasedClone(ctx, handler.InitialValue))
+		}
 		db.topLevelEntities[string(pattern[1:])] = result.(Serializable)
 	}
 }

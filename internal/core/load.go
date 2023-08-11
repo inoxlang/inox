@@ -7,14 +7,15 @@ import (
 )
 
 var (
-	loadInstanceFnregistry     = map[reflect.Type] /* pattern type*/ LoadInstanceFn{}
+	loadInstanceFnregistry     = map[reflect.Type] /*pattern type*/ LoadInstanceFn{}
 	loadInstanceFnRegistryLock sync.Mutex
 
-	ErrNonUniqueLoadInstanceFnRegistration = errors.New("non unique loading function registration")
-	ErrNoLoadInstanceFnRegistered          = errors.New("no loading function registered for given type")
-	ErrLoadingRequireTransaction           = errors.New("loading a value requires a transaction")
-	ErrTransactionsNotSupportedYet         = errors.New("transactions not supported yet")
-	ErrFailedToLoadNonExistingValue        = errors.New("failed to load non-existing value")
+	ErrNonUniqueLoadInstanceFnRegistration            = errors.New("non unique loading function registration")
+	ErrNonUniqueGetSymbolicInitialFactoryRegistration = errors.New("non unique symbolic initial value factory registration")
+	ErrNoLoadInstanceFnRegistered                     = errors.New("no loading function registered for given type")
+	ErrLoadingRequireTransaction                      = errors.New("loading a value requires a transaction")
+	ErrTransactionsNotSupportedYet                    = errors.New("transactions not supported yet")
+	ErrFailedToLoadNonExistingValue                   = errors.New("failed to load non-existing value")
 )
 
 type SerializedValueStorage interface {
@@ -29,14 +30,27 @@ type InstanceLoadArgs struct {
 	Key               Path
 	Storage           SerializedValueStorage
 	Pattern           Pattern
-	MigrationHandlers MigrationHandlers
+	MigrationHandlers MigrationOpHandlers
 	AllowMissing      bool
 	Migration         *InstanceMigrationArgs
 }
 
+func (a InstanceLoadArgs) IsDeletion(ctx *Context) bool {
+	if a.Migration == nil {
+		return false
+	}
+
+	for pathPattern := range a.Migration.MigrationHandlers.Deletions {
+		if pathPattern.Test(ctx, a.Key) {
+			return true
+		}
+	}
+	return false
+}
+
 type InstanceMigrationArgs struct {
 	NextPattern       Pattern //can be nil
-	MigrationHandlers MigrationHandlers
+	MigrationHandlers MigrationOpHandlers
 }
 
 type LoadInstanceFn func(ctx *Context, args InstanceLoadArgs) (UrlHolder, error)

@@ -24,6 +24,7 @@ var (
 	ANY_NAMESPACE = NewAnyNamespace()
 	ANY_DICT      = NewAnyDictionary()
 	ANY_KEYLIST   = NewAnyKeyList()
+	EMPTY_LIST    = NewList()
 
 	_ = []Indexable{
 		(*String)(nil), (*Array)(nil), (*List)(nil), (*Tuple)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*Object)(nil), (*IntRange)(nil),
