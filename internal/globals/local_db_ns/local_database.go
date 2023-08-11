@@ -197,13 +197,12 @@ func (ldb *LocalDatabase) TopLevelEntities(ctx *core.Context) map[string]core.Se
 		return ldb.topLevelValues
 	}
 
-	ldb.topLevelValues = make(map[string]core.Serializable, ldb.schema.EntryCount())
-	ldb.load(ctx, nil, core.MigrationHandlers{})
+	ldb.load(ctx, nil, core.MigrationOpHandlers{})
 
 	return ldb.topLevelValues
 }
 
-func (ldb *LocalDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handlers core.MigrationHandlers) {
+func (ldb *LocalDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handlers core.MigrationOpHandlers) {
 	ldb.topLevelValuesLock.Lock()
 	defer ldb.topLevelValuesLock.Unlock()
 
@@ -221,7 +220,9 @@ func (ldb *LocalDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, hand
 	ldb.schema = schema
 }
 
-func (ldb *LocalDatabase) load(ctx *Context, migrationNextPattern *ObjectPattern, handlers core.MigrationHandlers) {
+func (ldb *LocalDatabase) load(ctx *Context, migrationNextPattern *ObjectPattern, handlers core.MigrationOpHandlers) {
+	ldb.topLevelValues = make(map[string]core.Serializable, ldb.schema.EntryCount())
+
 	err := ldb.schema.ForEachEntry(func(propName string, propPattern core.Pattern, isOptional bool) error {
 		path := core.PathFrom("/" + propName)
 		args := core.InstanceLoadArgs{
@@ -244,13 +245,45 @@ func (ldb *LocalDatabase) load(ctx *Context, migrationNextPattern *ObjectPattern
 		if err != nil {
 			return err
 		}
-		ldb.topLevelValues[propName] = value
+
+		if !args.IsDeletion(ctx) {
+			ldb.topLevelValues[propName] = value
+		}
 		return nil
 	})
 
 	if err != nil {
 		panic(err)
 	}
+
+	if migrationNextPattern != nil {
+		//load new top level entities
+		err := migrationNextPattern.ForEachEntry(func(propName string, propPattern core.Pattern, isOptional bool) error {
+			_, alreadyLoaded := ldb.topLevelValues[propName]
+			if alreadyLoaded {
+				return nil
+			}
+
+			path := core.PathFrom("/" + propName)
+			args := core.InstanceLoadArgs{
+				Pattern:      propPattern,
+				Key:          path,
+				Storage:      ldb,
+				AllowMissing: true,
+			}
+			value, err := core.LoadInstance(ctx, args)
+			if err != nil {
+				return err
+			}
+			ldb.topLevelValues[propName] = value
+			return nil
+		})
+
+		if err != nil {
+			panic(err)
+		}
+	}
+
 }
 
 func (ldb *LocalDatabase) Close(ctx *core.Context) error {

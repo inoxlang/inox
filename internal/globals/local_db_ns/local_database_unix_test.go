@@ -443,7 +443,7 @@ func TestLocalDatabase(t *testing.T) {
 func TestUpdateSchema(t *testing.T) {
 	HOST := core.Host("ldb://main")
 
-	openDB := func(tempdir string, filesystem afs.Filesystem) (*LocalDatabase, *Context) {
+	openDB := func(tempdir string, filesystem afs.Filesystem) (*LocalDatabase, *Context, bool) {
 		//core.ResetResourceMap()
 
 		config := LocalDatabaseConfig{}
@@ -468,18 +468,25 @@ func TestUpdateSchema(t *testing.T) {
 
 		ctx := core.NewContexWithEmptyState(ctxConfig, nil)
 		ctx.AddNamedPattern("int", core.INT_PATTERN)
+		ctx.AddNamedPattern("str", core.STR_PATTERN)
+		ctx.AddNamedPattern("Set", containers.SET_PATTERN)
 
 		ldb, err := openLocalDatabaseWithConfig(ctx, config)
-		assert.NoError(t, err)
+		if !assert.NoError(t, err) {
+			return nil, nil, false
+		}
 
-		return ldb, ctx
+		return ldb, ctx, true
 	}
 
 	t.Run("complex top-level entity", func(t *testing.T) {
 		tempdir := t.TempDir()
 		fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)
 
-		ldb, ctx := openDB(tempdir, fls)
+		ldb, ctx, ok := openDB(tempdir, fls)
+		if !ok {
+			return
+		}
 		defer ldb.Close(ctx)
 
 		setPattern :=
@@ -506,7 +513,10 @@ func TestUpdateSchema(t *testing.T) {
 		tempdir := t.TempDir()
 		fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)
 
-		ldb, ctx := openDB(tempdir, fls)
+		ldb, ctx, ok := openDB(tempdir, fls)
+		if !ok {
+			return
+		}
 		defer ldb.Close(ctx)
 
 		topLevelValues := ldb.TopLevelEntities(ctx)
@@ -533,10 +543,22 @@ func TestUpdateSchema(t *testing.T) {
 		tempdir := t.TempDir()
 		fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)
 
-		ldb, ctx := openDB(tempdir, fls)
+		ldb, ctx, ok := openDB(tempdir, fls)
+		if !ok {
+			return
+		}
 
-		schema := core.NewInexactObjectPattern(map[string]core.Pattern{
-			"a": core.INT_PATTERN,
+		setPattern :=
+			utils.Must(containers.SET_PATTERN.CallImpl(
+				containers.SET_PATTERN,
+				[]core.Serializable{
+					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}),
+					containers_common.URL_UNIQUENESS_IDENT,
+				}),
+			)
+
+		initialSchema := core.NewInexactObjectPattern(map[string]core.Pattern{
+			"users": setPattern,
 		})
 
 		ldb.UpdateSchema(ctx, initialSchema, core.MigrationOpHandlers{})
@@ -548,19 +570,124 @@ func TestUpdateSchema(t *testing.T) {
 
 		//re open
 
-		ldb, ctx = openDB(tempdir, fls)
+		ldb, ctx, ok = openDB(tempdir, fls)
+		if !ok {
+			return
+		}
 		defer ldb.Close(ctx)
 
 		currentSchema := ldb.schema
 
 		schemaCopy := core.NewInexactObjectPattern(map[string]core.Pattern{
-			"a": core.INT_PATTERN,
+			"users": setPattern,
 		})
 
-		ldb.UpdateSchema(ctx, schemaCopy, core.MigrationHandlers{})
+		ldb.UpdateSchema(ctx, schemaCopy, core.MigrationOpHandlers{})
 
 		//should not have changed
 		assert.Same(t, currentSchema, ldb.schema)
+	})
+
+	t.Run("top level entity removed during migration should not be present", func(t *testing.T) {
+		tempdir := t.TempDir()
+		fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)
+
+		ldb, ctx, ok := openDB(tempdir, fls)
+		if !ok {
+			return
+		}
+
+		setPattern :=
+			utils.Must(containers.SET_PATTERN.CallImpl(
+				containers.SET_PATTERN,
+				[]core.Serializable{
+					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}),
+					containers_common.URL_UNIQUENESS_IDENT,
+				}),
+			)
+
+		initialSchema := core.NewInexactObjectPattern(map[string]core.Pattern{
+			"users": setPattern,
+		})
+
+		ldb.UpdateSchema(ctx, initialSchema, core.MigrationOpHandlers{})
+
+		err := ldb.Close(ctx)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		//re open with next schema
+
+		ldb, ctx, ok = openDB(tempdir, fls)
+		if !ok {
+			return
+		}
+		defer ldb.Close(ctx)
+
+		nextSchema := core.NewInexactObjectPattern(map[string]core.Pattern{})
+
+		ldb.UpdateSchema(ctx, nextSchema, core.MigrationOpHandlers{
+			Deletions: map[core.PathPattern]*core.MigrationOpHandler{
+				"/users": nil,
+			},
+		})
+
+		assert.Same(t, nextSchema, ldb.schema)
+		topLevelValues := ldb.TopLevelEntities(ctx)
+		assert.NotContains(t, topLevelValues, "users")
+	})
+
+	t.Run("top level entity added during migration should be present", func(t *testing.T) {
+		tempdir := t.TempDir()
+		fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)
+
+		ldb, ctx, ok := openDB(tempdir, fls)
+		if !ok {
+			return
+		}
+
+		setPattern :=
+			utils.Must(containers.SET_PATTERN.CallImpl(
+				containers.SET_PATTERN,
+				[]core.Serializable{
+					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}),
+					containers_common.URL_UNIQUENESS_IDENT,
+				}),
+			)
+
+		initialSchema := core.NewInexactObjectPattern(map[string]core.Pattern{})
+
+		ldb.UpdateSchema(ctx, initialSchema, core.MigrationOpHandlers{})
+
+		err := ldb.Close(ctx)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		//re open with next schema
+
+		ldb, ctx, ok = openDB(tempdir, fls)
+		if !ok {
+			return
+		}
+		defer ldb.Close(ctx)
+
+		nextSchema := core.NewInexactObjectPattern(map[string]core.Pattern{
+			"users": setPattern,
+		})
+
+		ldb.UpdateSchema(ctx, nextSchema, core.MigrationOpHandlers{
+			Inclusions: map[core.PathPattern]*core.MigrationOpHandler{
+				"/users": {
+					InitialValue: core.NewWrappedValueList(),
+				},
+			},
+		})
+
+		assert.Same(t, nextSchema, ldb.schema)
+		topLevelValues := ldb.TopLevelEntities(ctx)
+		assert.Contains(t, topLevelValues, "users")
 	})
 
 }
