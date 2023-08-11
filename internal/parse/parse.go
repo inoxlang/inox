@@ -8567,8 +8567,14 @@ func (p *parser) parseFunction(start int32) Node {
 		}
 
 		p.eatSpace()
-		if p.i >= p.len {
-			parsingErr = &ParsingError{InvalidNext, PARAM_LIST_OF_FUNC_SHOULD_BE_FOLLOWED_BY_BLOCK_OR_ARROW}
+
+		var error = &ParsingError{InvalidNext, PARAM_LIST_OF_FUNC_SHOULD_BE_FOLLOWED_BY_BLOCK_OR_ARROW}
+		if returnType != nil {
+			error = &ParsingError{UnspecifiedParsingError, RETURN_TYPE_OF_FUNC_SHOULD_BE_FOLLOWED_BY_BLOCK_OR_ARROW}
+		}
+
+		if p.i >= p.len || p.s[p.i] == '\n' {
+			parsingErr = error
 			end = p.i
 		} else {
 			switch p.s[p.i] {
@@ -8577,7 +8583,7 @@ func (p *parser) parseFunction(start int32) Node {
 				end = body.Base().Span.End
 			case '=':
 				if p.i >= p.len+1 || p.s[p.i+1] != '>' {
-					parsingErr = &ParsingError{InvalidNext, PARAM_LIST_OF_FUNC_SHOULD_BE_FOLLOWED_BY_BLOCK_OR_ARROW}
+					parsingErr = error
 					end = p.i
 				} else {
 					tokens = append(tokens, Token{Type: ARROW, Span: NodeSpan{p.i, p.i + 2}})
@@ -8588,7 +8594,7 @@ func (p *parser) parseFunction(start int32) Node {
 					isBodyExpression = true
 				}
 			default:
-				parsingErr = &ParsingError{InvalidNext, PARAM_LIST_OF_FUNC_SHOULD_BE_FOLLOWED_BY_BLOCK_OR_ARROW}
+				parsingErr = error
 				end = p.i
 			}
 		}
