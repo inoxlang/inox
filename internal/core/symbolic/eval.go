@@ -1010,6 +1010,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			return nil, fmt.Errorf("invalid assignment: left hand side is a(n) %T", n.Left)
 		}
 
+		state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
+		state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
+
 		return nil, nil
 	case *parse.MultiAssignment:
 		isNillable := n.Nillable
