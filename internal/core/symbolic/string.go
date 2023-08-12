@@ -357,18 +357,18 @@ func (s *RuneSlice) slice(start, end *Int) Sequence {
 	return &RuneSlice{}
 }
 
-func (s *RuneSlice) set(i *Int, v SymbolicValue) {
+func (s *RuneSlice) set(ctx *Context, i *Int, v SymbolicValue) {
 
 }
-func (s *RuneSlice) SetSlice(start, end *Int, v Sequence) {
+func (s *RuneSlice) SetSlice(ctx *Context, start, end *Int, v Sequence) {
 
 }
 
-func (s *RuneSlice) insertElement(v SymbolicValue, i *Int) *Error {
+func (s *RuneSlice) insertElement(ctx *Context, v SymbolicValue, i *Int) *Error {
 	return nil
 }
 
-func (s *RuneSlice) removePosition(i *Int) *Error {
+func (s *RuneSlice) removePosition(ctx *Context, i *Int) *Error {
 	return nil
 }
 
@@ -376,11 +376,11 @@ func (s *RuneSlice) removePositions(r *IntRange) *Error {
 	return nil
 }
 
-func (s *RuneSlice) insertSequence(seq Sequence, i *Int) *Error {
+func (s *RuneSlice) insertSequence(ctx *Context, seq Sequence, i *Int) *Error {
 	return nil
 }
 
-func (s *RuneSlice) appendSequence(seq Sequence) *Error {
+func (s *RuneSlice) appendSequence(ctx *Context, seq Sequence) *Error {
 	return nil
 }
 

@@ -98,24 +98,24 @@ func (s *ByteSlice) slice(start, end *Int) Sequence {
 	return ANY_BYTE_SLICE
 }
 
-func (s *ByteSlice) set(i *Int, v SymbolicValue) {
+func (s *ByteSlice) set(ctx *Context, i *Int, v SymbolicValue) {
 
 }
 
-func (s *ByteSlice) SetSlice(start, end *Int, v Sequence) {
+func (s *ByteSlice) SetSlice(ctx *Context, start, end *Int, v Sequence) {
 
 }
 
-func (s *ByteSlice) insertElement(v SymbolicValue, i *Int) *Error {
+func (s *ByteSlice) insertElement(ctx *Context, v SymbolicValue, i *Int) *Error {
 	return nil
 }
-func (s *ByteSlice) removePosition(i *Int) *Error {
+func (s *ByteSlice) removePosition(ctx *Context, i *Int) *Error {
 	return nil
 }
-func (s *ByteSlice) insertSequence(seq Sequence, i *Int) *Error {
+func (s *ByteSlice) insertSequence(ctx *Context, seq Sequence, i *Int) *Error {
 	return nil
 }
-func (s *ByteSlice) appendSequence(seq Sequence) *Error {
+func (s *ByteSlice) appendSequence(ctx *Context, seq Sequence) *Error {
 	return nil
 }
 
@@ -164,7 +164,7 @@ func (b *AnyBytesLike) IteratorElementValue() SymbolicValue {
 	return ANY_BYTE
 }
 
-func (b *AnyBytesLike) set(i *Int, v SymbolicValue) {
+func (b *AnyBytesLike) set(ctx *Context, i *Int, v SymbolicValue) {
 
 }
 
@@ -188,7 +188,7 @@ func (b *AnyBytesLike) slice(start, end *Int) Sequence {
 	return ANY_BYTE_SLICE
 }
 
-func (c *AnyBytesLike) SetSlice(start, end *Int, v Sequence) {
+func (c *AnyBytesLike) SetSlice(ctx *Context, start, end *Int, v Sequence) {
 
 }
 
@@ -230,11 +230,11 @@ func (c *BytesConcatenation) IteratorElementValue() SymbolicValue {
 	return ANY_BYTE
 }
 
-func (c *BytesConcatenation) set(i *Int, v SymbolicValue) {
+func (c *BytesConcatenation) set(ctx *Context, i *Int, v SymbolicValue) {
 
 }
 
-func (c *BytesConcatenation) SetSlice(start, end *Int, v Sequence) {
+func (c *BytesConcatenation) SetSlice(ctx *Context, start, end *Int, v Sequence) {
 
 }
 

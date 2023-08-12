@@ -435,7 +435,7 @@ func (l *List) Contains(value SymbolicValue) (bool, bool) {
 	return false, possible
 }
 
-func (l *List) set(i *Int, v SymbolicValue) {
+func (l *List) set(ctx *Context, i *Int, v SymbolicValue) {
 
 }
 
@@ -460,23 +460,23 @@ func (l *List) slice(start, end *Int) Sequence {
 	}
 }
 
-func (l *List) SetSlice(start, end *Int, v Sequence) {
+func (l *List) SetSlice(ctx *Context, start, end *Int, v Sequence) {
 
 }
 
-func (l *List) insertElement(v SymbolicValue, i *Int) *Error {
+func (l *List) insertElement(ctx *Context, v SymbolicValue, i *Int) *Error {
 	panic(ErrNotImplementedYet)
 }
 
-func (l *List) removePosition(i *Int) *Error {
+func (l *List) removePosition(ctx *Context, i *Int) *Error {
 	panic(ErrNotImplementedYet)
 }
 
-func (l *List) insertSequence(seq Sequence, i *Int) *Error {
+func (l *List) insertSequence(ctx *Context, seq Sequence, i *Int) *Error {
 	panic(ErrNotImplementedYet)
 
 }
-func (l *List) appendSequence(seq Sequence) *Error {
+func (l *List) appendSequence(ctx *Context, seq Sequence) *Error {
 	panic(ErrNotImplementedYet)
 }
 

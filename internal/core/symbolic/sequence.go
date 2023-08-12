@@ -12,15 +12,15 @@ type Sequence interface {
 
 type MutableSequence interface {
 	Sequence
-	set(i *Int, v SymbolicValue)
-	SetSlice(start, end *Int, v Sequence)
+	set(ctx *Context, i *Int, v SymbolicValue)
+	SetSlice(ctx *Context, start, end *Int, v Sequence)
 }
 
 type MutableLengthSequence interface {
 	MutableSequence
-	insertElement(v SymbolicValue, i *Int) *Error
-	removePosition(i *Int) *Error
+	insertElement(ctx *Context, v SymbolicValue, i *Int) *Error
+	removePosition(ctx *Context, i *Int) *Error
 	//TODO: add removePositiontRange
-	insertSequence(seq Sequence, i *Int) *Error
-	appendSequence(seq Sequence) *Error
+	insertSequence(ctx *Context, seq Sequence, i *Int) *Error
+	appendSequence(ctx *Context, seq Sequence) *Error
 }
