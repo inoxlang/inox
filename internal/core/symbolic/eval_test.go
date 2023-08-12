@@ -4870,6 +4870,27 @@ func TestSymbolicEval(t *testing.T) {
 			}
 		})
 
+		t.Run("key & element variables should be present in local scope data: statement preceded by assignment", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				a = 1
+				for k, v in {a: int} {
+					return k
+				} 
+			`)
+
+			symbolicEval(n, state)
+
+			stmt, chain := parse.FindNodeAndChain(n, (*parse.ReturnStatement)(nil), nil)
+			data, ok := state.symbolicData.GetLocalScopeData(stmt, chain)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			if !assert.Len(t, data.Variables, 3) {
+				return
+			}
+		})
+
 		t.Run("list iteration: keys are integers and values have type of element", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				for i, e in [["a"], [int]] {

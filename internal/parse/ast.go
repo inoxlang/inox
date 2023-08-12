@@ -2778,11 +2778,11 @@ func FindClosest[T Node](ancestorChain []Node, typ T) (node T, index int, ok boo
 }
 
 func FindPreviousStatement(n Node, ancestorChain []Node) (stmt Node, ok bool) {
-	stmt, _, ok = FindPreviousStatementAndChain(n, ancestorChain)
+	stmt, _, ok = FindPreviousStatementAndChain(n, ancestorChain, true)
 	return
 }
 
-func FindPreviousStatementAndChain(n Node, ancestorChain []Node) (stmt Node, chain []Node, ok bool) {
+func FindPreviousStatementAndChain(n Node, ancestorChain []Node, climbBlocks bool) (stmt Node, chain []Node, ok bool) {
 	if len(ancestorChain) == 0 || IsScopeContainerNode(n) {
 		return nil, nil, false
 	}
@@ -2793,10 +2793,16 @@ func FindPreviousStatementAndChain(n Node, ancestorChain []Node) (stmt Node, cha
 		for i, stmt := range parent.Statements {
 			if stmt == n {
 				if i == 0 {
-					return FindPreviousStatementAndChain(parent, ancestorChain[:len(ancestorChain)-1])
+					if !climbBlocks {
+						return nil, nil, false
+					}
+					return FindPreviousStatementAndChain(parent, ancestorChain[:len(ancestorChain)-1], climbBlocks)
 				}
 				return parent.Statements[i-1], ancestorChain, true
 			}
+		}
+		if !climbBlocks {
+			return nil, nil, false
 		}
 	case *Chunk:
 		for i, stmt := range parent.Statements {
@@ -2817,7 +2823,7 @@ func FindPreviousStatementAndChain(n Node, ancestorChain []Node) (stmt Node, cha
 			}
 		}
 	}
-	return FindPreviousStatementAndChain(p, ancestorChain[:len(ancestorChain)-1])
+	return FindPreviousStatementAndChain(p, ancestorChain[:len(ancestorChain)-1], climbBlocks)
 }
 
 func GetTreeView(n Node) string {

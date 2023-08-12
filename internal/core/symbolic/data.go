@@ -274,7 +274,7 @@ func (d *SymbolicData) getScopeData(n parse.Node, ancestorChain []parse.Node, gl
 		if ok {
 			return scopeData, true
 		} else {
-			n, newAncestorChain, ok = parse.FindPreviousStatementAndChain(n, ancestorChain)
+			n, newAncestorChain, ok = parse.FindPreviousStatementAndChain(n, ancestorChain, false)
 			if ok {
 				ancestorChain = newAncestorChain
 				continue
@@ -441,7 +441,7 @@ func (d *SymbolicData) GetContextData(n parse.Node, ancestorChain []parse.Node) 
 		if ok {
 			return contextData, true
 		} else {
-			n, newAncestorChain, ok = parse.FindPreviousStatementAndChain(n, ancestorChain)
+			n, newAncestorChain, ok = parse.FindPreviousStatementAndChain(n, ancestorChain, true)
 			if ok {
 				ancestorChain = newAncestorChain
 				continue
