@@ -2129,6 +2129,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			{
 				consequentStateFork = state.fork()
 				narrow(true, n.Test, state, consequentStateFork)
+				state.symbolicData.SetLocalScopeData(n.Consequent, consequentStateFork.currentLocalScopeData())
+				state.symbolicData.SetGlobalScopeData(n.Consequent, consequentStateFork.currentGlobalScopeData())
 
 				_, err = symbolicEval(n.Consequent, consequentStateFork)
 				if err != nil {
@@ -2140,6 +2142,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			if n.Alternate != nil {
 				alternateStateFork = state.fork()
 				narrow(false, n.Test, state, alternateStateFork)
+				state.symbolicData.SetLocalScopeData(n.Alternate, alternateStateFork.currentLocalScopeData())
+				state.symbolicData.SetGlobalScopeData(n.Alternate, alternateStateFork.currentGlobalScopeData())
 
 				_, err = symbolicEval(n.Alternate, alternateStateFork)
 				if err != nil {
@@ -2168,6 +2172,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			if n.Consequent != nil {
 				consequentStateFork := state.fork()
 				narrow(true, n.Test, state, consequentStateFork)
+				state.symbolicData.SetLocalScopeData(n.Consequent, consequentStateFork.currentLocalScopeData())
+				state.symbolicData.SetGlobalScopeData(n.Consequent, consequentStateFork.currentGlobalScopeData())
 
 				consequentValue, err = symbolicEval(n.Consequent, consequentStateFork)
 				if err != nil {
@@ -2178,6 +2184,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				if n.Alternate != nil {
 					alternateStateFork := state.fork()
 					narrow(false, n.Test, state, alternateStateFork)
+					state.symbolicData.SetLocalScopeData(n.Alternate, alternateStateFork.currentLocalScopeData())
+					state.symbolicData.SetGlobalScopeData(n.Alternate, alternateStateFork.currentGlobalScopeData())
 
 					atlernateValue, err = symbolicEval(n.Alternate, alternateStateFork)
 					if err != nil {
@@ -3561,6 +3569,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				}
 			}
 		}
+		state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
+		state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
+
 		return nil, nil
 	case *parse.RuntimeTypeCheckExpression:
 		options.ignoreNodeValue = true
