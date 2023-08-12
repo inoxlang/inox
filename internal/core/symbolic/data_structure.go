@@ -464,19 +464,19 @@ func (l *List) SetSlice(ctx *Context, start, end *Int, v Sequence) {
 
 }
 
-func (l *List) insertElement(ctx *Context, v SymbolicValue, i *Int) *Error {
+func (l *List) insertElement(ctx *Context, v SymbolicValue, i *Int) {
 	panic(ErrNotImplementedYet)
 }
 
-func (l *List) removePosition(ctx *Context, i *Int) *Error {
+func (l *List) removePosition(ctx *Context, i *Int) {
 	panic(ErrNotImplementedYet)
 }
 
-func (l *List) insertSequence(ctx *Context, seq Sequence, i *Int) *Error {
+func (l *List) insertSequence(ctx *Context, seq Sequence, i *Int) {
 	panic(ErrNotImplementedYet)
 
 }
-func (l *List) appendSequence(ctx *Context, seq Sequence) *Error {
+func (l *List) appendSequence(ctx *Context, seq Sequence) {
 	panic(ErrNotImplementedYet)
 }
 

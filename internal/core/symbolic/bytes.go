@@ -106,17 +106,17 @@ func (s *ByteSlice) SetSlice(ctx *Context, start, end *Int, v Sequence) {
 
 }
 
-func (s *ByteSlice) insertElement(ctx *Context, v SymbolicValue, i *Int) *Error {
-	return nil
+func (s *ByteSlice) insertElement(ctx *Context, v SymbolicValue, i *Int) {
+
 }
-func (s *ByteSlice) removePosition(ctx *Context, i *Int) *Error {
-	return nil
+func (s *ByteSlice) removePosition(ctx *Context, i *Int) {
+
 }
-func (s *ByteSlice) insertSequence(ctx *Context, seq Sequence, i *Int) *Error {
-	return nil
+func (s *ByteSlice) insertSequence(ctx *Context, seq Sequence, i *Int) {
+
 }
-func (s *ByteSlice) appendSequence(ctx *Context, seq Sequence) *Error {
-	return nil
+func (s *ByteSlice) appendSequence(ctx *Context, seq Sequence) {
+
 }
 
 func (s *ByteSlice) WatcherElement() SymbolicValue {

@@ -364,24 +364,24 @@ func (s *RuneSlice) SetSlice(ctx *Context, start, end *Int, v Sequence) {
 
 }
 
-func (s *RuneSlice) insertElement(ctx *Context, v SymbolicValue, i *Int) *Error {
-	return nil
+func (s *RuneSlice) insertElement(ctx *Context, v SymbolicValue, i *Int) {
+
 }
 
-func (s *RuneSlice) removePosition(ctx *Context, i *Int) *Error {
-	return nil
+func (s *RuneSlice) removePosition(ctx *Context, i *Int) {
+
 }
 
-func (s *RuneSlice) removePositions(r *IntRange) *Error {
-	return nil
+func (s *RuneSlice) removePositions(r *IntRange) {
+
 }
 
-func (s *RuneSlice) insertSequence(ctx *Context, seq Sequence, i *Int) *Error {
-	return nil
+func (s *RuneSlice) insertSequence(ctx *Context, seq Sequence, i *Int) {
+
 }
 
-func (s *RuneSlice) appendSequence(ctx *Context, seq Sequence) *Error {
-	return nil
+func (s *RuneSlice) appendSequence(ctx *Context, seq Sequence) {
+
 }
 
 func (s *RuneSlice) TakeInMemorySnapshot() (*Snapshot, error) {

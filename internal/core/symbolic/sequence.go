@@ -18,9 +18,9 @@ type MutableSequence interface {
 
 type MutableLengthSequence interface {
 	MutableSequence
-	insertElement(ctx *Context, v SymbolicValue, i *Int) *Error
-	removePosition(ctx *Context, i *Int) *Error
-	//TODO: add removePositiontRange
-	insertSequence(ctx *Context, seq Sequence, i *Int) *Error
-	appendSequence(ctx *Context, seq Sequence) *Error
+	insertElement(ctx *Context, v SymbolicValue, i *Int)
+	removePosition(ctx *Context, i *Int)
+	//TODO: add removePositionRange
+	insertSequence(ctx *Context, seq Sequence, i *Int)
+	appendSequence(ctx *Context, seq Sequence)
 }
