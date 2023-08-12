@@ -4562,7 +4562,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &List{elements: []Serializable{}}, res)
 		})
 
-		t.Run("index expression LHS", func(t *testing.T) {
+		t.Run("index expression LHS: super type RHS", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				list = [0]
 				list[0] = int
@@ -4572,6 +4572,35 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
+			assert.Equal(t, NewListOf(ANY_INT), res)
+		})
+
+		t.Run("index expression LHS: sub type RHS", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				list = [int]
+				list[0] = 1
+				return list
+			`)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewList(ANY_INT), res)
+		})
+
+		t.Run("index expression LHS: RHS of invalid type", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				list = [0]
+				list[0] = 'a'
+				return list
+			`)
+			res, err := symbolicEval(n, state)
+			assignement := parse.FindNode(n.Statements[1], (*parse.Assignment)(nil), nil)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(assignement.Right, state, fmtNotAssignableToElementOfValue(NewRune('a'), ANY_INT)),
+			}, state.errors())
 			assert.Equal(t, NewList(&Int{hasValue: true, value: 0}), res)
 		})
 
@@ -4597,6 +4626,91 @@ func TestSymbolicEval(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				var list = [serializable]
 				list[0] = val
+				return list
+			`)
+			state.setGlobal("serializable", ANY_INT, GlobalConst)
+			state.setGlobal("val", ANY_SERIALIZABLE, GlobalConst)
+			assignement := parse.FindNode(n.Statements[1], (*parse.Assignment)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(assignement, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE),
+			}, state.errors())
+			assert.Equal(t, NewList(ANY_INT), res)
+		})
+
+		t.Run("slice expression LHS: super type RHS element", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				list = [0]
+				list[0:1] = [int]
+				return list
+			`)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewListOf(ANY_INT), res)
+		})
+
+		t.Run("slice expression LHS: sub type RHS element", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				list = [int]
+				list[0:1] = [1]
+				return list
+			`)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewList(ANY_INT), res)
+		})
+
+		t.Run("slice expression LHS: RHS element of invalid type", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				list = [0]
+				list[0:1] = ['a']
+				return list
+			`)
+			res, err := symbolicEval(n, state)
+			assignement := parse.FindNode(n.Statements[1], (*parse.Assignment)(nil), nil)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(assignement.Right, state,
+					fmtSeqOfXNotAssignableToSliceOfValue(NewRune('a'), NewListOf(ANY_INT))),
+			}, state.errors())
+			assert.Equal(t, NewList(&Int{hasValue: true, value: 0}), res)
+		})
+
+		t.Run("slice expression LHS: non-serializable RHS element", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var list = [serializable]
+				list[0:1] = Array(go do {})
+				return list
+			`)
+			state.setGlobal("serializable", ANY_INT, GlobalConst)
+			state.setGlobal("Array", WrapGoFunction(func(ctx *Context, elements ...SymbolicValue) *Array {
+				return NewArray()
+			}), GlobalConst)
+			assignement := parse.FindNode(n.Statements[1], (*parse.Assignment)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(assignement, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE),
+			}, state.errors())
+			assert.Equal(t, NewList(ANY_INT), res)
+		})
+
+		t.Run("slice expression LHS: non-watchable mutable RHS element", func(t *testing.T) {
+			//TODO: fix
+			t.Skip()
+			n, state := MakeTestStateAndChunk(`
+				var list = [serializable]
+				list[0:1] = [val]
 				return list
 			`)
 			state.setGlobal("serializable", ANY_INT, GlobalConst)

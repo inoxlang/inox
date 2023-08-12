@@ -152,6 +152,14 @@ func fmtNotAssignableToEntryOfExpectedValue(a SymbolicValue, b SymbolicValue) st
 	return fmt.Sprintf("a(n) %s is not assignable to an entry of expected value %s", Stringify(a), Stringify(b))
 }
 
+func fmtNotAssignableToElementOfValue(a SymbolicValue, b SymbolicValue) string {
+	return fmt.Sprintf("a(n) %s is not assignable to an element of value %s", Stringify(a), Stringify(b))
+}
+
+func fmtSeqOfXNotAssignableToSliceOfValue(a SymbolicValue, b SymbolicValue) string {
+	return fmt.Sprintf("a sequence of %s is not assignable to a slice of value %s", Stringify(a), Stringify(b))
+}
+
 func fmtUnexpectedProperty(name string) string {
 	return fmt.Sprintf("unexpected property '%s'", name)
 }

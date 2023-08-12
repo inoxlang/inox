@@ -829,40 +829,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				}
 			}
 		case *parse.IndexExpression:
-			slice, err := symbolicEval(lhs.Indexed, state)
-			if err != nil {
-				return nil, err
-			}
-
-			if seq, ok := asIndexable(slice).(MutableSequence); ok {
-				if n.Operator.Int() && !(&Int{}).Test(seq.element()) {
-					state.addError(makeSymbolicEvalError(lhs, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
-				}
-			} else {
-				state.addError(makeSymbolicEvalError(lhs.Indexed, state, fmtXisNotAMutableSequence(slice)))
-				slice = &List{generalElement: ANY_SERIALIZABLE}
-			}
-
-			if _, ok := slice.(Serializable); ok {
-				if _, ok := right.(Serializable); !ok {
-					state.addError(makeSymbolicEvalError(node, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
-					right = ANY_SERIALIZABLE
-					break
-				}
-			}
-
-			if _, ok := asWatchable(slice).(Watchable); ok {
-				if _, ok := asWatchable(right).(Watchable); !ok && right.IsMutable() {
-					state.addError(makeSymbolicEvalError(node, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
-				}
-			}
-
 			index, err := symbolicEval(lhs.Index, state)
-			if err != nil {
-				return nil, err
-			}
-
-			_, err = symbolicEval(n.Right, state)
 			if err != nil {
 				return nil, err
 			}
@@ -871,25 +838,14 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				state.addError(makeSymbolicEvalError(node, state, fmtIndexIsNotAnIntButA(index)))
 			}
 
-			return nil, nil
-		case *parse.SliceExpression:
 			slice, err := symbolicEval(lhs.Indexed, state)
 			if err != nil {
 				return nil, err
 			}
 
-			if _, ok := slice.(MutableSequence); ok {
-				if n.Operator.Int() {
-					state.addError(makeSymbolicEvalError(lhs, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
-				}
-			} else {
-				state.addError(makeSymbolicEvalError(lhs.Indexed, state, fmtMutableSequenceExpectedButIs(slice)))
-			}
-
 			if _, ok := slice.(Serializable); ok {
 				if _, ok := right.(Serializable); !ok {
 					state.addError(makeSymbolicEvalError(node, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
-					right = ANY_SERIALIZABLE
 					break
 				}
 			}
@@ -897,9 +853,65 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			if _, ok := asWatchable(slice).(Watchable); ok {
 				if _, ok := asWatchable(right).(Watchable); !ok && right.IsMutable() {
 					state.addError(makeSymbolicEvalError(node, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
+					break
 				}
 			}
 
+			if seq, ok := asIndexable(slice).(MutableSequence); ok {
+				seqElement := seq.element()
+				if n.Operator.Int() {
+					if !ANY_INT.Test(seqElement) {
+						state.addError(makeSymbolicEvalError(lhs, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
+					}
+				} else if !seqElement.Test(right) {
+					assignable := false
+					var staticSeq MutableLengthSequence
+
+					switch indexed := lhs.Indexed.(type) {
+					case *parse.Variable:
+						info, ok := state.getLocal(indexed.Name)
+						if !ok {
+							break
+						}
+						if staticSeq, ok = info.static.SymbolicValue().(MutableLengthSequence); ok && !info.isConstant && staticSeq.element().Test(right) {
+							assignable = true
+							narrowPath(lhs.Indexed, setExactValue, staticSeq, state, 0)
+						}
+					case *parse.GlobalVariable:
+						info, ok := state.getGlobal(indexed.Name)
+						if !ok {
+							break
+						}
+						if staticSeq, ok = info.static.SymbolicValue().(MutableLengthSequence); ok && !info.isConstant && staticSeq.element().Test(right) {
+							assignable = true
+							narrowPath(lhs.Indexed, setExactValue, staticSeq, state, 0)
+						}
+					case *parse.IdentifierLiteral:
+						info, ok := state.get(indexed.Name)
+						if !ok {
+							break
+						}
+						if staticSeq, ok = info.static.SymbolicValue().(MutableLengthSequence); ok && !info.isConstant && staticSeq.element().Test(right) {
+							assignable = true
+							narrowPath(lhs.Indexed, setExactValue, staticSeq, state, 0)
+						}
+					}
+
+					if !assignable {
+						if staticSeq != nil {
+							state.addError(makeSymbolicEvalError(n.Right, state, fmtNotAssignableToElementOfValue(right, staticSeq.element())))
+						} else {
+							state.addError(makeSymbolicEvalError(n.Right, state, fmtNotAssignableToElementOfValue(right, seqElement)))
+						}
+					}
+				}
+			} else {
+				state.addError(makeSymbolicEvalError(lhs.Indexed, state, fmtXisNotAMutableSequence(slice)))
+				slice = NewListOf(ANY_SERIALIZABLE)
+			}
+
+			return nil, nil
+		case *parse.SliceExpression:
 			startIndex, err := symbolicEval(lhs.StartIndex, state)
 			if err != nil {
 				return nil, err
@@ -910,17 +922,87 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				return nil, err
 			}
 
-			_, err = symbolicEval(n.Right, state)
-			if err != nil {
-				return nil, err
-			}
-
 			if _, ok := startIndex.(*Int); !ok {
 				state.addError(makeSymbolicEvalError(node, state, fmtStartIndexIsNotAnIntButA(startIndex)))
 			}
 
 			if _, ok := endIndex.(*Int); !ok {
 				state.addError(makeSymbolicEvalError(node, state, fmtEndIndexIsNotAnIntButA(endIndex)))
+			}
+
+			slice, err := symbolicEval(lhs.Indexed, state)
+			if err != nil {
+				return nil, err
+			}
+
+			if _, ok := slice.(Serializable); ok {
+				if _, ok := right.(Serializable); !ok {
+					state.addError(makeSymbolicEvalError(node, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+					break
+				}
+			}
+
+			if _, ok := asWatchable(slice).(Watchable); ok {
+				if _, ok := asWatchable(right).(Watchable); !ok && right.IsMutable() {
+					state.addError(makeSymbolicEvalError(node, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
+					break
+				}
+			}
+
+			rightSeq, ok := right.(Sequence)
+			if !ok {
+				state.addError(makeSymbolicEvalError(n.Right, state, fmtSequenceExpectedButIs(right)))
+			}
+
+			if seq, ok := slice.(MutableSequence); ok {
+				if n.Operator.Int() {
+					state.addError(makeSymbolicEvalError(lhs, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
+				} else if rightSeq != nil && !seq.element().Test(rightSeq.element()) {
+					rightSeqElement := rightSeq.element()
+					assignable := false
+					var staticSeq MutableLengthSequence
+
+					switch indexed := lhs.Indexed.(type) {
+					case *parse.Variable:
+						info, ok := state.getLocal(indexed.Name)
+						if !ok {
+							break
+						}
+						if staticSeq, ok = info.static.SymbolicValue().(MutableLengthSequence); ok && !info.isConstant && staticSeq.element().Test(rightSeqElement) {
+							assignable = true
+							narrowPath(lhs.Indexed, setExactValue, staticSeq, state, 0)
+						}
+					case *parse.GlobalVariable:
+						info, ok := state.getGlobal(indexed.Name)
+						if !ok {
+							break
+						}
+						if staticSeq, ok = info.static.SymbolicValue().(MutableLengthSequence); ok && !info.isConstant && staticSeq.element().Test(rightSeqElement) {
+							assignable = true
+							narrowPath(lhs.Indexed, setExactValue, staticSeq, state, 0)
+						}
+					case *parse.IdentifierLiteral:
+						info, ok := state.get(indexed.Name)
+						if !ok {
+							break
+						}
+						if staticSeq, ok = info.static.SymbolicValue().(MutableLengthSequence); ok && !info.isConstant && staticSeq.element().Test(rightSeqElement) {
+							assignable = true
+							narrowPath(lhs.Indexed, setExactValue, staticSeq, state, 0)
+						}
+					}
+
+					if !assignable {
+						if staticSeq != nil {
+							state.addError(makeSymbolicEvalError(n.Right, state, fmtSeqOfXNotAssignableToSliceOfValue(rightSeqElement, staticSeq)))
+						} else {
+							state.addError(makeSymbolicEvalError(n.Right, state, fmtSeqOfXNotAssignableToSliceOfValue(rightSeqElement, seq)))
+						}
+					}
+				}
+			} else {
+				state.addError(makeSymbolicEvalError(lhs.Indexed, state, fmtMutableSequenceExpectedButIs(slice)))
+				slice = NewListOf(ANY_SERIALIZABLE)
 			}
 
 			return nil, nil
