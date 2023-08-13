@@ -9,9 +9,10 @@ import (
 
 func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, state *State, argNodes []parse.Node, must bool, cmdLineSyntax bool) (SymbolicValue, error) {
 	var (
-		callee SymbolicValue
-		err    error
-		self   SymbolicValue
+		callee          SymbolicValue
+		err             error
+		self            SymbolicValue
+		selfPartialNode parse.Node //not necessarily a node from the evaluated code
 	)
 
 	//we first get the callee
@@ -28,11 +29,19 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 				self = ANY
 			case 1:
 				self, _ = state.symbolicData.GetMostSpecificNodeValue(_c.Left)
+				selfPartialNode = _c.Left
 			default:
 				self, _ = state.symbolicData.GetMostSpecificNodeValue(_c.PropertyNames[len(_c.PropertyNames)-2])
+				selfPartialNode = &parse.IdentifierMemberExpression{
+					Left:          _c.Left,
+					PropertyNames: _c.PropertyNames[:len(_c.PropertyNames)-1],
+				}
 			}
 		case *parse.MemberExpression:
 			self, _ = state.symbolicData.GetMostSpecificNodeValue(_c.Left)
+			selfPartialNode = _c.Left
+		default:
+			selfPartialNode = c
 		}
 	case *parse.FunctionDeclaration, *parse.FunctionExpression:
 		callee = &AstNode{Node: c}
@@ -155,7 +164,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 				return ANY, nil
 			}
 		}
-		//evaluation is peformed further in the code
+		//evaluation of the Inox function is performed further in the code
 	case *GoFunction:
 
 		result, multipleResults, enoughArgs, err := f.Call(goFunctionCallInput{
@@ -172,6 +181,20 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		state.consumeSymbolicGoFunctionErrors(func(msg string) {
 			state.addError(makeSymbolicEvalError(callNode, state, msg))
 		})
+
+		updatedSelf, ok := state.consumeUpdatedSelf()
+		if ok && self != nil {
+			static, _ := state.getStaticOfNode(selfPartialNode)
+
+			if (static != nil && !static.TestValue(updatedSelf)) ||
+				(static == nil && !callee.Test(updatedSelf)) {
+				state.addError(makeSymbolicEvalError(callNode, state, INVALID_MUTATION))
+			} else { //ok
+				narrowPath(selfPartialNode, setExactValue, updatedSelf, state, 0)
+				state.symbolicData.SetLocalScopeData(callNode, state.currentLocalScopeData())
+				state.symbolicData.SetGlobalScopeData(callNode, state.currentGlobalScopeData())
+			}
+		}
 
 		if f.fn != nil {
 			utils.PanicIfErr(f.LoadSignatureData())

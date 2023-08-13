@@ -2636,6 +2636,102 @@ func TestSymbolicEval(t *testing.T) {
 			}, state.errors())
 			assert.Equal(t, &Object{}, res)
 		})
+
+		t.Run("invalid mutation", func(t *testing.T) {
+			t.Run("", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					var l = [1]
+					l.append(true)
+					return l
+				`)
+
+				callExpr := n.Statements[1]
+				res, err := symbolicEval(n, state)
+
+				assert.NoError(t, err)
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(callExpr, state, INVALID_MUTATION),
+				}, state.errors())
+				assert.Equal(t, NewList(NewInt(1)), res)
+			})
+			t.Run("", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					var l [1] = [1]
+					l.append(1)
+					return l
+				`)
+
+				callExpr := n.Statements[1]
+				res, err := symbolicEval(n, state)
+
+				assert.NoError(t, err)
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(callExpr, state, INVALID_MUTATION),
+				}, state.errors())
+				assert.Equal(t, NewList(NewInt(1)), res)
+			})
+
+			t.Run("", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					var l []%(1) = [1]
+					l.append(2)
+					return l
+				`)
+
+				callExpr := n.Statements[1]
+				res, err := symbolicEval(n, state)
+
+				assert.NoError(t, err)
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(callExpr, state, INVALID_MUTATION),
+				}, state.errors())
+				assert.Equal(t, NewList(NewInt(1)), res)
+			})
+		})
+
+		t.Run("valid mutation", func(t *testing.T) {
+			t.Run("", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					var l = [1]
+					l.append(2)
+					return l
+				`)
+
+				res, err := symbolicEval(n, state)
+
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+				assert.Equal(t, NewListOf(ANY_INT), res)
+			})
+
+			t.Run("", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					var l []int = [1]
+					l.append(2)
+					return l
+				`)
+
+				res, err := symbolicEval(n, state)
+
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+				assert.Equal(t, NewListOf(ANY_INT), res)
+			})
+
+			t.Run("", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					var l []%(1) = [1]
+					l.append(1)
+					return l
+				`)
+
+				res, err := symbolicEval(n, state)
+
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+				assert.Equal(t, NewListOf(NewInt(1)), res)
+			})
+		})
 	})
 
 	t.Run("call Inox function", func(t *testing.T) {

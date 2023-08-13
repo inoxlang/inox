@@ -358,6 +358,63 @@ func (state *State) deleteLocal(name string) {
 	delete(scope.variables, name)
 }
 
+func (state *State) getStaticOfNode(partialNode parse.Node) (Pattern, bool) {
+	//TODO: retrieve static from object
+
+	switch node := partialNode.(type) {
+	case *parse.Variable:
+		info, ok := state.getLocal(node.Name)
+		if !ok {
+			return nil, false
+		}
+		return info.static, true
+	case *parse.GlobalVariable:
+		info, ok := state.getGlobal(node.Name)
+		if !ok {
+			return nil, false
+		}
+		return info.static, true
+	case *parse.IdentifierLiteral:
+		info, ok := state.get(node.Name)
+		if !ok {
+			return nil, false
+		}
+		return info.static, true
+	case *parse.MemberExpression:
+		leftStatic, _ := state.getStaticOfNode(node.Left)
+		iprops, ok := leftStatic.(IPropsPattern)
+
+		if !ok {
+			return nil, false
+		}
+
+		propPattern, _, ok := iprops.ValuePropPattern(node.PropertyName.Name)
+		if !ok {
+			return nil, false
+		}
+		return propPattern, true
+	case *parse.IdentifierMemberExpression:
+		static, _ := state.getStaticOfNode(node.Left)
+
+		for _, name := range node.PropertyNames {
+			iprops, ok := static.(IPropsPattern)
+			if !ok {
+				return nil, false
+			}
+
+			propPattern, _, ok := iprops.ValuePropPattern(name.Name)
+			if !ok {
+				return nil, false
+			}
+			static = propPattern
+		}
+
+		return static, static != nil
+	}
+
+	return nil, false
+}
+
 func (state *State) pushScope() {
 	state.scopeStack = append(state.scopeStack, &scopeInfo{
 		variables: make(map[string]varSymbolicInfo),

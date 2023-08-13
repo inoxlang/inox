@@ -112,6 +112,15 @@ func isAnyPattern(val SymbolicValue) bool {
 	return ok
 }
 
+type IPropsPattern interface {
+	SymbolicValue
+	//ValuePropPattern should return the pattern of the property (name).
+	ValuePropPattern(name string) (propPattern Pattern, isOptional bool, ok bool)
+
+	//ValuePropertyNames should return the list of all property names (optional or not) of values matching the pattern.
+	ValuePropertyNames() []string
+}
+
 // An AnyPattern represents a symbolic Pattern we do not know the concrete type.
 type AnyPattern struct {
 	NotCallablePatternMixin
@@ -1090,6 +1099,19 @@ func (p *ObjectPattern) SymbolicValue() SymbolicValue {
 	return NewExactObject(entries, p.optionalEntries, static)
 }
 
+func (p *ObjectPattern) ValuePropPattern(name string) (propPattern Pattern, isOptional bool, ok bool) {
+	if p.entries == nil {
+		return nil, false, false
+	}
+	propPattern, ok = p.entries[name]
+	_, isOptional = p.optionalEntries[name]
+	return
+}
+
+func (p *ObjectPattern) ValuePropertyNames(name string) []string {
+	return utils.GetMapKeys(p.entries)
+}
+
 func (p *ObjectPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
@@ -1323,6 +1345,19 @@ func (p *RecordPattern) SymbolicValue() SymbolicValue {
 	}
 
 	return rec
+}
+
+func (p *RecordPattern) ValuePropPattern(name string) (propPattern Pattern, isOptional bool, ok bool) {
+	if p.entries == nil {
+		return nil, false, false
+	}
+	propPattern, ok = p.entries[name]
+	_, isOptional = p.optionalEntries[name]
+	return
+}
+
+func (p *RecordPattern) ValuePropertyNames() []string {
+	return utils.GetMapKeys(p.entries)
 }
 
 func (p *RecordPattern) StringPattern() (StringPattern, bool) {
