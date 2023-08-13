@@ -152,6 +152,10 @@ func (b *Byte) Test(v SymbolicValue) bool {
 	return ok
 }
 
+func (b *Byte) Static() Pattern {
+	return &TypePattern{val: ANY_BYTE}
+}
+
 func (b *Byte) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%byte")))
 }

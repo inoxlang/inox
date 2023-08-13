@@ -56,6 +56,10 @@ func (any AnyIndexable) IsMutable() bool {
 	return true
 }
 
+func (*AnySequenceOf) IsMutable() bool {
+	return true
+}
+
 func (any AnyWalkable) IsMutable() bool {
 	return true
 }

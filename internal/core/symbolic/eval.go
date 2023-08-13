@@ -4348,6 +4348,8 @@ func converTypeToSymbolicValue(t reflect.Type) (SymbolicValue, error) {
 		return ANY_ITERABLE, nil
 	case INDEXABLE_INTERFACE_TYPE:
 		return ANY_INDEXABLE, nil
+	case SEQUENCE_INTERFACE_TYPE:
+		return ANY_SEQ_OF_ANY, nil
 	case RESOURCE_NAME_INTERFACE_TYPE:
 		return ANY_RES_NAME, nil
 	case READABLE_INTERFACE_TYPE:

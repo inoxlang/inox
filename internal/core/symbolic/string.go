@@ -30,6 +30,9 @@ var (
 
 	STRING_LIKE_PSEUDOPROPS = []string{"replace", "trim_space", "has_prefix", "has_suffix"}
 	RUNE_SLICE_PROPNAMES    = []string{"insert", "remove_position", "remove_position_range"}
+
+	RUNE_SLICE__INSERT_PARAMS      = &[]SymbolicValue{NewMultivalue(ANY_RUNE, NewAnySequenceOf(ANY_RUNE))}
+	RUNE_SLICE__INSERT_PARAM_NAMES = []string{"rune", "index"}
 )
 
 // An WrappedString represents a symbolic WrappedString.
@@ -237,6 +240,10 @@ func (r *Rune) Concretize() any {
 	return extData.ConcreteValueFactories.CreateRune(r.value)
 }
 
+func (r *Rune) Static() Pattern {
+	return &TypePattern{val: ANY_RUNE}
+}
+
 func (r *Rune) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if r.hasValue {
 		utils.Must(w.Write(utils.StringAsBytes(commonfmt.FmtRune(r.value))))
@@ -369,7 +376,10 @@ func (s *RuneSlice) SetSlice(ctx *Context, start, end *Int, v Sequence) {
 }
 
 func (s *RuneSlice) insertElement(ctx *Context, v SymbolicValue, i *Int) {
+}
 
+func (s *RuneSlice) Insert(ctx *Context, v SymbolicValue, i *Int) {
+	ctx.SetSymbolicGoFunctionParameters(RUNE_SLICE__INSERT_PARAMS, RUNE_SLICE__INSERT_PARAM_NAMES)
 }
 
 func (s *RuneSlice) removePosition(ctx *Context, i *Int) {
@@ -409,7 +419,7 @@ func (s *RuneSlice) PropertyNames() []string {
 func (s *RuneSlice) Prop(name string) SymbolicValue {
 	switch name {
 	case "insert":
-		return WrapGoMethod(s.insertElement)
+		return WrapGoMethod(s.Insert)
 	case "remove_position":
 		return WrapGoMethod(s.removePosition)
 	case "remove_position_range":
