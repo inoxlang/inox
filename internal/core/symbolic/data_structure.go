@@ -450,10 +450,6 @@ func (l *List) Contains(value SymbolicValue) (bool, bool) {
 	return false, possible
 }
 
-func (l *List) set(ctx *Context, i *Int, v SymbolicValue) {
-
-}
-
 func (l *List) IteratorElementKey() SymbolicValue {
 	return ANY_INT
 }
@@ -473,6 +469,11 @@ func (l *List) slice(start, end *Int) Sequence {
 	return &List{
 		generalElement: l.generalElement,
 	}
+}
+
+func (l *List) set(ctx *Context, i *Int, v SymbolicValue) {
+	ctx.SetUpdatedSelf(l.Static())
+	l.Static()
 }
 
 func (l *List) SetSlice(ctx *Context, start, end *Int, v Sequence) {

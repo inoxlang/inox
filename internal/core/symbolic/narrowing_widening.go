@@ -3,6 +3,7 @@ package symbolic
 import (
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
+	"golang.org/x/exp/slices"
 )
 
 var (
@@ -101,6 +102,55 @@ func joinValues(values []SymbolicValue) SymbolicValue {
 		}
 		return NewMultivalue(values...)
 	}
+}
+
+func widenToSameStaticTypeInMultivalue(v SymbolicValue) SymbolicValue {
+	val, ok := v.(IMultivalue)
+	if !ok {
+		return v
+	}
+
+	multiValue := val.OriginalMultivalue()
+	static := make([]Pattern, len(multiValue.values))
+	for i, e := range multiValue.values {
+		static[i] = getStatic(e)
+	}
+
+	var removedIndexes []int
+	var processedIndexes []int
+	replacements := make([]SymbolicValue, len(multiValue.values))
+
+	for patternIndex, pattern := range static {
+		for otherPatternIndex, otherPattern := range static {
+			if patternIndex == otherPatternIndex ||
+				slices.Contains(removedIndexes, otherPatternIndex) ||
+				slices.Contains(processedIndexes, otherPatternIndex) {
+				continue
+			}
+
+			if deeplyEqual(pattern, otherPattern) {
+				replacements[patternIndex] = pattern.SymbolicValue()
+				removedIndexes = append(removedIndexes, otherPatternIndex)
+			}
+		}
+		processedIndexes = append(processedIndexes, patternIndex)
+	}
+
+	var remainingValues []SymbolicValue
+
+	for i, e := range multiValue.values {
+		if slices.Contains(removedIndexes, i) {
+			continue
+		}
+
+		replacement := replacements[i]
+		if replacement != nil {
+			e = replacement
+		}
+		remainingValues = append(remainingValues, e)
+	}
+
+	return joinValues(remainingValues)
 }
 
 // narrowOut narrows out narrowedOut of toNarrow

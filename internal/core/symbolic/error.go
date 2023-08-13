@@ -33,6 +33,12 @@ const (
 	NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE         = "non-serializable values are not allowed as elements of serializables"
 	MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE       = "mutables values that are not watchable values are not allowed as elements of watchables"
 
+	INDEX_IS_OUT_OF_BOUNDS                        = "index is out of bounds"
+	START_INDEX_IS_OUT_OF_BOUNDS                  = "start index is out of bounds"
+	END_INDEX_SHOULD_BE_LESS_OR_EQUAL_START_INDEX = "(exclusive) end index should be less or equal to start index"
+	IMPOSSIBLE_TO_KNOW_UPDATED_ELEMENT            = "impossible to know updated element"
+	IMPOSSIBLE_TO_KNOW_UPDATED_ELEMENTS           = "impossible to know updated elements"
+
 	UPPER_BOUND_OF_QTY_RANGE_LIT_SHOULD_OF_SAME_TYPE_AS_LOWER_BOUND = "the upper bound of a quantity range literal should be of the same type as the lower bound"
 
 	INVALID_KEY_IN_COMPUTE_EXPRESSION_ONLY_SIMPLE_VALUE_ARE_SUPPORTED = "invalid key in compute expression: only simple values are supported"
@@ -156,8 +162,8 @@ func fmtNotAssignableToElementOfValue(a SymbolicValue, b SymbolicValue) string {
 	return fmt.Sprintf("a(n) %s is not assignable to an element of value %s", Stringify(a), Stringify(b))
 }
 
-func fmtSeqOfXNotAssignableToSliceOfValue(a SymbolicValue, b SymbolicValue) string {
-	return fmt.Sprintf("a sequence of %s is not assignable to a slice of value %s", Stringify(a), Stringify(b))
+func fmtSeqOfXNotAssignableToSliceOfTheValue(a SymbolicValue, b SymbolicValue) string {
+	return fmt.Sprintf("a sequence of %s is not assignable to a slice of value %s, try to have a less specific sequence on the left", Stringify(a), Stringify(b))
 }
 
 func fmtUnexpectedProperty(name string) string {
@@ -246,6 +252,10 @@ func fmtSequenceExpectedButIs(value SymbolicValue) string {
 
 func fmtMutableSequenceExpectedButIs(value SymbolicValue) string {
 	return fmt.Sprintf("a mutable sequence was expected but value is a(n) %s", Stringify(value))
+}
+
+func fmtRHSSequenceShouldHaveLenOf(length int) string {
+	return fmt.Sprintf("sequence on the right hand side should have a length of %d", length)
 }
 
 func fmtPatternIsNotDeclared(name string) string {
