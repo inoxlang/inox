@@ -412,8 +412,8 @@ func writeRandForRegexElement(r *syntax.Regexp, buff *bytes.Buffer, source *Rand
 		_, err = buff.WriteString(string(r.Rune))
 
 	case syntax.OpCharClass:
-		randPairIndex := source.RandUint64Range(0, uint64(len(r.Rune)/2))
-		writeRandRune(r.Rune[randPairIndex*2], r.Rune[randPairIndex*2+1], buff, source)
+		randIndex := source.RandUint64Range(0, uint64(len(r.Rune)-1))
+		writeRandRune(r.Rune[randIndex], r.Rune[randIndex], buff, source)
 
 	case syntax.OpQuest:
 		if source.RandBit() {

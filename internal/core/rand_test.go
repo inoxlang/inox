@@ -56,3 +56,32 @@ func TestObjectPatternRandom(t *testing.T) {
 		}, ctx), twoPropObj.Random(ctx))
 	}
 }
+
+func TestRegexPatternRandom(t *testing.T) {
+
+	t.Run("2-elem character class", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		r := NewRegexPattern("[ab]")
+
+		for i := 0; i < RAND_TESTS_COUNT; i++ {
+			s := r.Random(ctx)
+			assert.True(t, s.Equal(ctx, Str("a"), nil, 0) || s.Equal(ctx, Str("b"), nil, 0))
+		}
+	})
+
+	t.Run("3-elem character class", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		r := NewRegexPattern("[abc]")
+
+		for i := 0; i < RAND_TESTS_COUNT; i++ {
+			s := r.Random(ctx)
+			assert.True(t,
+				s.Equal(ctx, Str("a"), nil, 0) ||
+					s.Equal(ctx, Str("b"), nil, 0) ||
+					s.Equal(ctx, Str("c"), nil, 0),
+			)
+		}
+	})
+}
