@@ -10,7 +10,7 @@ import (
 var (
 	//to keep in sync with symbolic/serializable.go
 	_ = []Serializable{
-		Bool(false), Int(0), Float(0), Nil,
+		Bool(false), Int(0), Float(0), Byte(0), Nil,
 
 		ByteCount(0), LineCount(0), ByteRate(0), SimpleRate(0), Duration(0), Date(time.Time{}),
 

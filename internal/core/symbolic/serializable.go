@@ -10,7 +10,7 @@ var (
 	ANY_SERIALIZABLE = &AnySerializable{}
 
 	_ = []Serializable{
-		(*Bool)(nil), (*Int)(nil), (*Float)(nil), Nil,
+		(*Bool)(nil), (*Int)(nil), (*Float)(nil), (*Byte)(nil), Nil,
 
 		(*ByteCount)(nil), (*LineCount)(nil), (*ByteRate)(nil), (*SimpleRate)(nil), (*Duration)(nil), (*Date)(nil),
 
