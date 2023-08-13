@@ -990,7 +990,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				state.addError(makeSymbolicEvalError(node, state, fmtEndIndexIsNotAnIntButA(endIndex)))
 			}
 
-			if startIntIndex != nil && endIndex != nil && startIntIndex.hasValue && endIntIndex.hasValue &&
+			if startIntIndex != nil && endIntIndex != nil && startIntIndex.hasValue && endIntIndex.hasValue &&
 				endIntIndex.value < startIntIndex.value {
 				state.addError(makeSymbolicEvalError(lhs.EndIndex, state, END_INDEX_SHOULD_BE_LESS_OR_EQUAL_START_INDEX))
 			}
@@ -3201,12 +3201,22 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			}
 		}
 
+		if startIndex != nil && startIndex.hasValue {
+			if endIndex != nil && endIndex.hasValue && endIndex.value < startIndex.value {
+				state.addError(makeSymbolicEvalError(n.EndIndex, state, END_INDEX_SHOULD_BE_LESS_OR_EQUAL_START_INDEX))
+			}
+		}
+
 		if seq, ok := slice.(Sequence); ok {
+			if startIndex != nil && startIndex.hasValue && seq.HasKnownLen() && (startIndex.value < 0 || startIndex.value >= int64(seq.KnownLen())) {
+				state.addError(makeSymbolicEvalError(n.StartIndex, state, START_INDEX_IS_OUT_OF_BOUNDS))
+			}
 			return seq.slice(startIndex, endIndex), nil
 		} else {
 			state.addError(makeSymbolicEvalError(node, state, fmtSequenceExpectedButIs(slice)))
 			return ANY, nil
 		}
+
 	case *parse.KeyListExpression:
 		list := &KeyList{}
 
