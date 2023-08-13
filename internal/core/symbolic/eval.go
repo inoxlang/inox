@@ -3155,12 +3155,16 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			return nil, err
 		}
 
-		if _, ok := index.(*Int); !ok {
+		intIndex, ok := index.(*Int)
+		if !ok {
 			state.addError(makeSymbolicEvalError(node, state, fmtIndexIsNotAnIntButA(index)))
 			index = &Int{}
 		}
 
 		if indexable, ok := asIndexable(val).(Indexable); ok {
+			if intIndex != nil && intIndex.hasValue && indexable.HasKnownLen() && (intIndex.value < 0 || intIndex.value >= int64(indexable.KnownLen())) {
+				state.addError(makeSymbolicEvalError(n.Index, state, INDEX_IS_OUT_OF_BOUNDS))
+			}
 			return indexable.element(), nil
 		}
 

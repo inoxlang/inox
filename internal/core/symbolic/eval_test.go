@@ -1718,6 +1718,36 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewString("a"), res)
 		})
 
+		t.Run("start index is out of bounds (negative)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				v = ["a"]
+				return $v[-1]
+			`)
+			res, err := symbolicEval(n, state)
+			intLit := parse.FindNode(n, (*parse.IntLiteral)(nil), nil)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(intLit, state, INDEX_IS_OUT_OF_BOUNDS),
+			}, state.errors())
+			assert.Equal(t, NewString("a"), res)
+		})
+
+		t.Run("start index is out of bounds (positive)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				v = ["a"]
+				return $v[1]
+			`)
+			res, err := symbolicEval(n, state)
+			intLit := parse.FindNode(n, (*parse.IntLiteral)(nil), nil)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(intLit, state, INDEX_IS_OUT_OF_BOUNDS),
+			}, state.errors())
+			assert.Equal(t, NewString("a"), res)
+		})
+
 		t.Run("list of unknown length", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return $$v[0]
