@@ -44,7 +44,9 @@ const (
 	INVALID_SPAWN_GLOBALS_SHOULD_BE                                      = "invalid spawn expression: the description of globals should be a key list literal or an object literal with no implicit-key properties nor spread elements"
 	INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED = "invalid spawn expression: only object literals with no spread elements nor implicit-key properties are supported for meta's value"
 
-	INVALID_ASSIGNMENT_ANONYMOUS_VAR_CANNOT_BE_ASSIGNED            = "invalid assignment: anonymous variable '$' cannot be assigned"
+	INVALID_ASSIGNMENT_ANONYMOUS_VAR_CANNOT_BE_ASSIGNED                         = "invalid assignment: anonymous variable '$' cannot be assigned"
+	INVALID_ASSIGNMENT_EQUAL_ONLY_SUPPORTED_ASSIGNMENT_OPERATOR_FOR_SLICE_EXPRS = "invalid assignment: '=' is the only supported assignment operators for slice expressions"
+
 	INVALID_FN_DECL_SHOULD_BE_TOP_LEVEL_STMT                       = "invalid function declaration: a function declaration should be a top level statement in a module (embedded or not)"
 	INVALID_BREAK_OR_CONTINUE_STMT_SHOULD_BE_IN_A_FOR_OR_WALK_STMT = "invalid break/continue statement: should be in a for or walk statement"
 	INVALID_PRUNE_STMT_SHOULD_BE_IN_WALK_STMT                      = "invalid prune statement: should be in a walk statement"

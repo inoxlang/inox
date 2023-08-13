@@ -1137,6 +1137,10 @@ switch_:
 						break
 					}
 				}
+			case *parse.SliceExpression:
+				if assignment.Operator != parse.Assign {
+					c.addError(node, INVALID_ASSIGNMENT_EQUAL_ONLY_SUPPORTED_ASSIGNMENT_OPERATOR_FOR_SLICE_EXPRS)
+				}
 			}
 		} else {
 			assignment := n.(*parse.MultiAssignment)

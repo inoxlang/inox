@@ -1590,6 +1590,20 @@ func TestCheck(t *testing.T) {
 			)
 			assert.Equal(t, expectedErr, err)
 		})
+
+		t.Run("slice expression LHS: += assignment", func(t *testing.T) {
+			n, src := parseCode(`
+				var s = [1, 2]
+				s[0:1] += 2
+			`)
+
+			assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := combineErrors(
+				makeError(assignment, src, INVALID_ASSIGNMENT_EQUAL_ONLY_SUPPORTED_ASSIGNMENT_OPERATOR_FOR_SLICE_EXPRS),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
 	})
 
 	t.Run("multi assignment", func(t *testing.T) {
