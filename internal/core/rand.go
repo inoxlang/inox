@@ -437,7 +437,7 @@ func writeRandForRegexElement(r *syntax.Regexp, buff *bytes.Buffer, source *Rand
 		buff.WriteRune('?')
 
 	case syntax.OpAlternate:
-		randIndex := int(source.RandUint64Range(0, uint64(len(r.Sub))))
+		randIndex := int(source.RandUint64Range(0, uint64(len(r.Sub)-1)))
 		err = writeRandForRegexElement(r.Sub[randIndex], buff, source)
 
 	case syntax.OpEmptyMatch:

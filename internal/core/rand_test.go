@@ -84,4 +84,30 @@ func TestRegexPatternRandom(t *testing.T) {
 			)
 		}
 	})
+
+	t.Run("2-elem alternate", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		r := NewRegexPattern("(a1|b2)")
+
+		for i := 0; i < RAND_TESTS_COUNT; i++ {
+			s := r.Random(ctx)
+			assert.True(t, s.Equal(ctx, Str("a1"), nil, 0) || s.Equal(ctx, Str("b2"), nil, 0))
+		}
+	})
+
+	t.Run("3-elem altenate", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		r := NewRegexPattern("(a1|b2|c3)")
+
+		for i := 0; i < RAND_TESTS_COUNT; i++ {
+			s := r.Random(ctx)
+			assert.True(t,
+				s.Equal(ctx, Str("a1"), nil, 0) ||
+					s.Equal(ctx, Str("b2"), nil, 0) ||
+					s.Equal(ctx, Str("c3"), nil, 0),
+			)
+		}
+	})
 }
