@@ -41,6 +41,10 @@ type ByteSlice struct {
 	PseudoClonableMixin
 }
 
+func NewByteSlice() *ByteSlice {
+	return &ByteSlice{}
+}
+
 func (s *ByteSlice) Test(v SymbolicValue) bool {
 	_, ok := v.(*ByteSlice)
 	return ok
@@ -109,14 +113,27 @@ func (s *ByteSlice) SetSlice(ctx *Context, start, end *Int, v Sequence) {
 func (s *ByteSlice) insertElement(ctx *Context, v SymbolicValue, i *Int) {
 
 }
+
 func (s *ByteSlice) removePosition(ctx *Context, i *Int) {
 
 }
+
 func (s *ByteSlice) insertSequence(ctx *Context, seq Sequence, i *Int) {
-
+	if seq.HasKnownLen() && seq.KnownLen() == 0 {
+		return
+	}
+	if _, ok := widenToSameStaticTypeInMultivalue(seq.element()).(*Byte); !ok {
+		ctx.AddSymbolicGoFunctionError(fmtHasElementsOfType(s, ANY_BYTE))
+	}
 }
-func (s *ByteSlice) appendSequence(ctx *Context, seq Sequence) {
 
+func (s *ByteSlice) appendSequence(ctx *Context, seq Sequence) {
+	if seq.HasKnownLen() && seq.KnownLen() == 0 {
+		return
+	}
+	if _, ok := widenToSameStaticTypeInMultivalue(seq.element()).(*Byte); !ok {
+		ctx.AddSymbolicGoFunctionError(fmtHasElementsOfType(s, ANY_BYTE))
+	}
 }
 
 func (s *ByteSlice) WatcherElement() SymbolicValue {

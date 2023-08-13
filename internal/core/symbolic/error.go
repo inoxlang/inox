@@ -63,6 +63,8 @@ const (
 
 	IMPORTED_MOD_PATH_MUST_END_WITH_IX = "imported module's path must end with '.ix'"
 
+	INVALID_MUTATION = "invalid mutation"
+
 	//permissions
 	POSSIBLE_MISSING_PERM_TO_CREATE_A_COROUTINE = "missing permission to create a coroutine"
 
@@ -164,6 +166,10 @@ func fmtNotAssignableToElementOfValue(a SymbolicValue, b SymbolicValue) string {
 
 func fmtSeqOfXNotAssignableToSliceOfTheValue(a SymbolicValue, b SymbolicValue) string {
 	return fmt.Sprintf("a sequence of %s is not assignable to a slice of value %s, try to have a less specific sequence on the left", Stringify(a), Stringify(b))
+}
+
+func fmtHasElementsOfType(val Sequence, typ SymbolicValue) string {
+	return fmt.Sprintf("%s has elements of type: %s", Stringify(val), Stringify(typ))
 }
 
 func fmtUnexpectedProperty(name string) string {

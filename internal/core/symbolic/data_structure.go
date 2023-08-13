@@ -472,28 +472,61 @@ func (l *List) slice(start, end *Int) Sequence {
 }
 
 func (l *List) set(ctx *Context, i *Int, v SymbolicValue) {
-	ctx.SetUpdatedSelf(l.Static())
-	l.Static()
+	//TODO
 }
 
 func (l *List) SetSlice(ctx *Context, start, end *Int, v Sequence) {
-
+	//TODO
 }
 
 func (l *List) insertElement(ctx *Context, v SymbolicValue, i *Int) {
-
+	//TODO
 }
 
 func (l *List) removePosition(ctx *Context, i *Int) {
-
+	//TODO
 }
 
 func (l *List) insertSequence(ctx *Context, seq Sequence, i *Int) {
-
+	if seq.HasKnownLen() && seq.KnownLen() == 0 {
+		return
+	}
+	if l.HasKnownLen() && l.KnownLen() == 0 {
+		element := seq.element()
+		if serializable, ok := element.(Serializable); ok {
+			ctx.SetUpdatedSelf(NewList(serializable))
+		} else {
+			ctx.AddSymbolicGoFunctionError(NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE)
+		}
+		return
+	}
+	element := AsSerializable(widenToSameStaticTypeInMultivalue(joinValues([]SymbolicValue{l.element(), seq.element()})))
+	if serializable, ok := element.(Serializable); ok {
+		ctx.SetUpdatedSelf(NewListOf(serializable))
+	} else {
+		ctx.AddSymbolicGoFunctionError(NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE)
+	}
 }
 
 func (l *List) appendSequence(ctx *Context, seq Sequence) {
-
+	if seq.HasKnownLen() && seq.KnownLen() == 0 {
+		return
+	}
+	if l.HasKnownLen() && l.KnownLen() == 0 {
+		element := seq.element()
+		if serializable, ok := element.(Serializable); ok {
+			ctx.SetUpdatedSelf(NewList(serializable))
+		} else {
+			ctx.AddSymbolicGoFunctionError(NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE)
+		}
+		return
+	}
+	element := AsSerializable(widenToSameStaticTypeInMultivalue(joinValues([]SymbolicValue{l.element(), seq.element()})))
+	if serializable, ok := element.(Serializable); ok {
+		ctx.SetUpdatedSelf(NewListOf(serializable))
+	} else {
+		ctx.AddSymbolicGoFunctionError(NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE)
+	}
 }
 
 func (l *List) Append(ctx *Context, elements ...Serializable) {

@@ -308,6 +308,10 @@ type RuneSlice struct {
 	PseudoClonableMixin
 }
 
+func NewRuneSlice() *RuneSlice {
+	return &RuneSlice{}
+}
+
 func (s *RuneSlice) Test(v SymbolicValue) bool {
 	_, ok := v.(*RuneSlice)
 	return ok
@@ -377,11 +381,21 @@ func (s *RuneSlice) removePositions(r *IntRange) {
 }
 
 func (s *RuneSlice) insertSequence(ctx *Context, seq Sequence, i *Int) {
-
+	if seq.HasKnownLen() && seq.KnownLen() == 0 {
+		return
+	}
+	if _, ok := widenToSameStaticTypeInMultivalue(seq.element()).(*Rune); !ok {
+		ctx.AddSymbolicGoFunctionError(fmtHasElementsOfType(s, ANY_RUNE))
+	}
 }
 
 func (s *RuneSlice) appendSequence(ctx *Context, seq Sequence) {
-
+	if seq.HasKnownLen() && seq.KnownLen() == 0 {
+		return
+	}
+	if _, ok := widenToSameStaticTypeInMultivalue(seq.element()).(*Rune); !ok {
+		ctx.AddSymbolicGoFunctionError(fmtHasElementsOfType(s, ANY_RUNE))
+	}
 }
 
 func (s *RuneSlice) TakeInMemorySnapshot() (*Snapshot, error) {

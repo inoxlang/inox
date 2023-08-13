@@ -37,6 +37,7 @@ type State struct {
 	tempSymbolicGoFunctionErrors         []string
 	tempSymbolicGoFunctionParameters     *[]SymbolicValue
 	tempSymbolicGoFunctionParameterNames []string
+	tempUpdatedSelf                      SymbolicValue
 
 	lastErrorNode parse.Node
 	symbolicData  *SymbolicData
@@ -520,6 +521,23 @@ func (state *State) consumeSymbolicGoFunctionParameters() ([]SymbolicValue, []st
 		state.tempSymbolicGoFunctionParameterNames = nil
 	}()
 	return *state.tempSymbolicGoFunctionParameters, state.tempSymbolicGoFunctionParameterNames, true
+}
+
+func (state *State) setUpdatedSelf(v SymbolicValue) {
+	if state.tempUpdatedSelf != nil {
+		panic(errors.New("an updated self is already present"))
+	}
+	state.tempUpdatedSelf = v
+}
+
+func (state *State) consumeUpdatedSelf() (SymbolicValue, bool) {
+	defer func() {
+		state.tempUpdatedSelf = nil
+	}()
+	if state.tempUpdatedSelf == nil {
+		return nil, false
+	}
+	return state.tempUpdatedSelf, true
 }
 
 func (state *State) errors() []SymbolicEvaluationError {

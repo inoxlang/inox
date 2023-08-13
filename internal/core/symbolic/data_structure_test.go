@@ -1,9 +1,11 @@
 package symbolic
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -290,6 +292,59 @@ func TestSymbolicList(t *testing.T) {
 		}
 	})
 
+	t.Run("Append()", func(t *testing.T) {
+		t.Run("adding no elements to empty list", func(t *testing.T) {
+			ctx := NewSymbolicContext(testConcreteContext{context.Background()})
+			state := newSymbolicState(ctx, nil)
+
+			list := NewList()
+			list.Append(ctx)
+
+			_, ok := state.consumeUpdatedSelf()
+			assert.False(t, ok)
+		})
+
+		t.Run("adding element to empty list", func(t *testing.T) {
+			ctx := NewSymbolicContext(testConcreteContext{context.Background()})
+			state := newSymbolicState(ctx, nil)
+
+			list := NewList()
+			list.Append(ctx, NewInt(1))
+
+			updatedSelf, ok := state.consumeUpdatedSelf()
+			if !assert.True(t, ok) {
+				return
+			}
+
+			assert.Equal(t, NewList(NewInt(1)), updatedSelf)
+		})
+
+		t.Run("adding no element to list with single element", func(t *testing.T) {
+			ctx := NewSymbolicContext(testConcreteContext{context.Background()})
+			state := newSymbolicState(ctx, nil)
+
+			list := NewList(NewInt(1))
+			list.Append(ctx)
+
+			_, ok := state.consumeUpdatedSelf()
+			assert.False(t, ok)
+		})
+
+		t.Run("adding same type element to list with single element", func(t *testing.T) {
+			ctx := NewSymbolicContext(testConcreteContext{context.Background()})
+			state := newSymbolicState(ctx, nil)
+
+			list := NewList(NewInt(1))
+			list.Append(ctx, NewInt(2))
+
+			updatedSelf, ok := state.consumeUpdatedSelf()
+			if !assert.True(t, ok) {
+				return
+			}
+
+			assert.Equal(t, NewListOf(ANY_INT), updatedSelf)
+		})
+	})
 }
 
 func TestSymbolicTuple(t *testing.T) {
@@ -492,4 +547,15 @@ func TestSymbolicDictionary(t *testing.T) {
 		})
 	}
 
+}
+
+type testConcreteContext struct {
+	context.Context
+}
+
+func (ctx testConcreteContext) HasPermissionUntyped(perm any) bool {
+	return false
+}
+func (ctx testConcreteContext) HasAPermissionWithKindAndType(kind permkind.PermissionKind, typename permkind.InternalPermissionTypename) bool {
+	return false
 }

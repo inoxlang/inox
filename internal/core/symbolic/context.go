@@ -134,6 +134,10 @@ func (ctx *Context) SetSymbolicGoFunctionParameters(parameters *[]SymbolicValue,
 	ctx.associatedState.setSymbolicGoFunctionParameters(parameters, names)
 }
 
+func (ctx *Context) SetUpdatedSelf(v SymbolicValue) {
+	ctx.associatedState.setUpdatedSelf(v)
+}
+
 func (ctx *Context) HasPermission(perm any) bool {
 	if ctx.startingConcreteContext == nil {
 		return false
