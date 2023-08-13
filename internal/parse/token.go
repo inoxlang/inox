@@ -56,7 +56,6 @@ const (
 	WALK_KEYWORD
 	IN_KEYWORD
 	GO_KEYWORD
-	ALLOW_KEYWORD
 	WITH_CONF_KEYWORD
 	IMPORT_KEYWORD
 	FN_KEYWORD
@@ -265,7 +264,6 @@ var tokenStrings = [...]string{
 	WALK_KEYWORD:                   "walk",
 	IN_KEYWORD:                     "in",
 	GO_KEYWORD:                     "go",
-	ALLOW_KEYWORD:                  "allow",
 	IMPORT_KEYWORD:                 "import",
 	FN_KEYWORD:                     "fn",
 	SWITCH_KEYWORD:                 "switch",
@@ -421,7 +419,6 @@ var tokenTypenames = [...]string{
 	WALK_KEYWORD:                   "WALK_KEYWORD",
 	IN_KEYWORD:                     "IN_KEYWORD",
 	GO_KEYWORD:                     "GO_KEYWORD",
-	ALLOW_KEYWORD:                  "ALLOW_KEYWORD",
 	WITH_CONF_KEYWORD:              "WITH_CONF_KEYWORD",
 	IMPORT_KEYWORD:                 "IMPORT_KEYWORD",
 	FN_KEYWORD:                     "FN_KEYWORD",
