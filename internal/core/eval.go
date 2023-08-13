@@ -173,11 +173,6 @@ func EvalBytecode(bytecode *Bytecode, state *GlobalState, self Value) (Value, er
 	return vm.Run()
 }
 
-func Append(ctx *Context, list *List, args ...Serializable) *List {
-	list.append(ctx, args...)
-	return list
-}
-
 func CreateDirEntry(path, walkedDirPath string, addDotSlashPrefix bool, d fs.DirEntry) *Object {
 	isWalkStart := path == walkedDirPath
 

@@ -241,9 +241,8 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 		"ctx_data":     core.ValOf(_ctx_data),
 		"propnames":    core.WrapGoFunction(_propnames),
 
-		"Array":  core.ValOf(core.NewArray),
-		"List":   core.ValOf(_List),
-		"append": core.ValOf(core.Append),
+		"Array": core.ValOf(core.NewArray),
+		"List":  core.ValOf(_List),
 
 		"typeof":    core.ValOf(_typeof),
 		"url_of":    core.ValOf(_url_of),

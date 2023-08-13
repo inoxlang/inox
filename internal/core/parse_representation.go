@@ -1728,7 +1728,7 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 					}
 					list := compoundValueStack[stackIndex].(*List)
 
-					list.append(nil, val)
+					list.underylingList.append(nil, val)
 					state = rstateListComma
 					continue
 				}
@@ -1903,7 +1903,7 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 							if errIndex >= 0 {
 								return nil, errIndex, specifiedError
 							}
-							list.append(nil, val)
+							list.underylingList.append(nil, val)
 						}
 					}
 

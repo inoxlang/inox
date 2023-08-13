@@ -2091,7 +2091,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				input: `
 					elements = []
 					for e in streamable {
-						append(elements, e)
+						elements.append(e)
 					}
 					return elements
 				`,
@@ -2106,7 +2106,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}()
 					return map[string]Value{
 						"streamable": StreamSource(watcher),
-						"append":     ValOf(Append),
 					}
 				},
 				result: NewWrappedValueList(Str("a"), Str("b")),
@@ -2115,7 +2114,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				input: `
 					elements = []
 					for e in streamable {
-						append(elements, e)
+						elements.append(e)
 						break
 					}
 					return elements
@@ -2131,7 +2130,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}()
 					return map[string]Value{
 						"streamable": StreamSource(watcher),
-						"append":     ValOf(Append),
 					}
 				},
 				result: NewWrappedValueList(Str("a")),
@@ -2153,7 +2151,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}()
 					return map[string]Value{
 						"streamable": StreamSource(watcher),
-						"append":     ValOf(Append),
 					}
 				},
 				result: NewWrappedValueList(Str("a"), Str("b")),
@@ -2178,7 +2175,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}()
 					return map[string]Value{
 						"streamable": StreamSource(watcher),
-						"append":     ValOf(Append),
 					}
 				},
 				result: NewWrappedValueList(Str("a"), Str("b")),
@@ -2187,7 +2183,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				input: `
 					data = []
 					for chunked chunk in streamable {
-						append(data, chunk.data)
+						data.append(chunk.data)
 					}
 					return data
 				`,
@@ -2197,7 +2193,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 							[]Value{Str("a"), Str("b"), Str("c"), Str("d")},
 							nil,
 						),
-						"append": ValOf(Append),
 					}
 				},
 				result: NewWrappedValueList(
@@ -2229,7 +2224,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		GET_ENTRIES_CODE := `
 			entries = []
 			walk $$dir entry {
-				entries = append($entries, $entry)
+				$entries.append($entry)
 			}
 			return $entries
 		`
@@ -2338,7 +2333,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				input: `
 					entries = []
 					walk $$dir entry {
-						entries = append($entries, $entry)
+						$entries.append($entry)
 						if $entry.is-regular {
 							prune
 						}
@@ -2379,7 +2374,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				input: `
 					entries = []
 					walk $$dir entry {
-						entries = append($entries, $entry)
+						$entries.append($entry)
 						if $entry.is-walk-start {
 							continue
 						}
@@ -2432,7 +2427,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				input: `
 					entries = []
 					walk $$dir entry {
-						entries = append($entries, $entry)
+						$entries.append($entry)
 						if $entry.is-walk-start {
 							continue
 						}
@@ -2514,8 +2509,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				})
 
 				state := NewGlobalState(ctx, map[string]Value{
-					"dir":    tempDirPath,
-					"append": ValOf(Append),
+					"dir": tempDirPath,
 				})
 				res, err := Eval(testCase.input, state, false)
 				assert.NoError(t, err)
@@ -4762,13 +4756,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 				step_results = []
 				for step in rt.steps {
-					append(step_results, step.result)
+					step_results.append(step.result)
 				}
 				return [result, step_results]
 			`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"append": ValOf(Append),
-			})
+			state := NewGlobalState(NewDefaultTestContext())
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, NewWrappedValueList(
@@ -4789,13 +4781,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 				step_results = []
 				for step in rt.steps {
-					append(step_results, step.result)
+					step_results.append(step.result)
 				}
 				return [result, step_results]
 			`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"append": ValOf(Append),
-			})
+			state := NewGlobalState(NewDefaultTestContext())
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, NewWrappedValueList(
@@ -4815,13 +4805,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 				step_results = []
 				for step in rt.steps {
-					append(step_results, step.result)
+					step_results.append(step.result)
 				}
 				return [result, step_results]
 			`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"append": ValOf(Append),
-			})
+			state := NewGlobalState(NewDefaultTestContext())
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, NewWrappedValueList(

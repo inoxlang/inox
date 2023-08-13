@@ -15,6 +15,7 @@ import (
 
 var (
 	DICTIONARY_PROPNAMES = []string{"get", "set"}
+	LIST_PROPNAMES       = []string{"append"}
 
 	ANY_INDEXABLE = &AnyIndexable{}
 	ANY_ARRAY     = NewArrayOf(ANY_SERIALIZABLE)
@@ -35,7 +36,7 @@ var (
 		(*String)(nil), (*Array)(nil), (*List)(nil), (*Tuple)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil),
 	}
 
-	_ = []IProps{(*Object)(nil), (*Record)(nil), (*Namespace)(nil), (*Dictionary)(nil)}
+	_ = []IProps{(*Object)(nil), (*Record)(nil), (*Namespace)(nil), (*Dictionary)(nil), (*List)(nil)}
 	_ = []InexactCapable{(*Object)(nil)}
 )
 
@@ -229,6 +230,7 @@ type List struct {
 
 	SerializableMixin
 	PseudoClonableMixin
+	UnassignablePropsMixin
 }
 
 func NewList(elements ...Serializable) *List {
@@ -316,6 +318,19 @@ func (list *List) Static() Pattern {
 
 	elem := AsSerializable(joinValues(elements))
 	return NewListPatternOf(&TypePattern{val: elem})
+}
+
+func (list *List) Prop(name string) SymbolicValue {
+	switch name {
+	case "append":
+		return WrapGoMethod(list.Append)
+	default:
+		panic(FormatErrPropertyDoesNotExist(name, list))
+	}
+}
+
+func (list *List) PropertyNames() []string {
+	return LIST_PROPNAMES
 }
 
 func (list *List) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -465,19 +480,23 @@ func (l *List) SetSlice(ctx *Context, start, end *Int, v Sequence) {
 }
 
 func (l *List) insertElement(ctx *Context, v SymbolicValue, i *Int) {
-	panic(ErrNotImplementedYet)
+
 }
 
 func (l *List) removePosition(ctx *Context, i *Int) {
-	panic(ErrNotImplementedYet)
+
 }
 
 func (l *List) insertSequence(ctx *Context, seq Sequence, i *Int) {
-	panic(ErrNotImplementedYet)
 
 }
+
 func (l *List) appendSequence(ctx *Context, seq Sequence) {
-	panic(ErrNotImplementedYet)
+
+}
+
+func (l *List) Append(ctx *Context, elements ...Serializable) {
+	l.appendSequence(ctx, NewList(elements...))
 }
 
 func (l *List) WatcherElement() SymbolicValue {

@@ -575,6 +575,36 @@ func TestListOnMutation(t *testing.T) {
 		assert.Equal(t, []Serializable{Int(1)}, list.GetOrBuildElements(ctx))
 	})
 
+	t.Run("microtask should be called when an element is added with append", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		list := NewWrappedValueList()
+		called := atomic.Bool{}
+
+		_, err := list.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+			if !assert.False(t, called.Load()) {
+				return
+			}
+			called.Store(true)
+
+			assert.Equal(t, NewInsertSequenceAtIndexMutation(ctx, 0, NewWrappedValueList(Int(1)), ShallowWatching, "/0"), mutation)
+
+			return true
+		}, MutationWatchingConfiguration{})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// we modify the list in the same goroutine since List is not sharable
+		time.Sleep(time.Microsecond)
+		list.append(ctx, Int(1))
+
+		assert.True(t, called.Load())
+		assert.Equal(t, []Serializable{Int(1)}, list.GetOrBuildElements(ctx))
+	})
+
 	t.Run("microtask should NOT be called when a removed element has a shallow change", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)

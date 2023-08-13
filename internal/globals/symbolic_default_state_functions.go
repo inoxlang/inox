@@ -209,14 +209,6 @@ func init() {
 			return &symbolic.Bool{}
 		},
 		//
-		core.Append, func(ctx *symbolic.Context, slice *symbolic.List, args ...symbolic.SymbolicValue) *symbolic.List {
-			if slice.HasKnownLen() {
-				//TODO: update elements
-			}
-			return slice
-		},
-
-		//
 
 		core.NewEventSource, func(ctx *symbolic.Context, resourceNameOrPattern symbolic.SymbolicValue) (*symbolic.EventSource, *symbolic.Error) {
 			return symbolic.NewEventSource(), nil

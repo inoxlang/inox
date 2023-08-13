@@ -16,6 +16,7 @@ import (
 
 var (
 	_ = []underylingList{&ValueList{}, &IntList{}}
+	_ = []IProps{(*Object)(nil), (*Record)(nil), (*Namespace)(nil), (*Dictionary)(nil), (*List)(nil)}
 
 	_ Sequence = (*Array)(nil)
 )
@@ -1018,6 +1019,23 @@ func (list *List) GetOrBuildElements(ctx *Context) []Serializable {
 	return values
 }
 
+func (l *List) Prop(ctx *Context, name string) Value {
+	switch name {
+	case "append":
+		return WrapGoMethod(l.append)
+	default:
+		panic(FormatErrPropertyDoesNotExist(name, l))
+	}
+}
+
+func (*List) SetProp(ctx *Context, name string, value Value) error {
+	return ErrCannotSetProp
+}
+
+func (*List) PropertyNames(ctx *Context) []string {
+	return symbolic.LIST_PROPNAMES
+}
+
 func (l *List) set(ctx *Context, i int, v Value) {
 	prevElement := l.underylingList.At(ctx, i)
 	l.underylingList.set(ctx, i, v)
@@ -1080,7 +1098,7 @@ func (l *List) insertSequence(ctx *Context, seq Sequence, i Int) {
 		l.elementMutationCallbacks = slices.Insert(l.elementMutationCallbacks, int(i), makeMutationCallbackHandles(seqLen)...)
 
 		for index := i; index < i+Int(seqLen); i++ {
-			l.addElementMutationCallbackNoLock(ctx, int(i), seq.At(ctx, int(index)))
+			l.addElementMutationCallbackNoLock(ctx, int(index), seq.At(ctx, int(index)))
 		}
 	}
 
@@ -1093,6 +1111,28 @@ func (l *List) insertSequence(ctx *Context, seq Sequence, i Int) {
 
 func (l *List) appendSequence(ctx *Context, seq Sequence) {
 	l.insertSequence(ctx, seq, Int(l.Len()))
+}
+
+func (l *List) append(ctx *Context, elements ...Serializable) {
+	index := l.Len()
+	l.underylingList.append(ctx, elements...)
+
+	seq := NewWrappedValueList(elements...)
+
+	if l.elementMutationCallbacks != nil {
+		seqLen := seq.Len()
+		l.elementMutationCallbacks = slices.Insert(l.elementMutationCallbacks, index, makeMutationCallbackHandles(seqLen)...)
+
+		for i := index; i < index+len(elements); i++ {
+			l.addElementMutationCallbackNoLock(ctx, int(i), seq.At(ctx, int(index)))
+		}
+	}
+
+	mutation := NewInsertSequenceAtIndexMutation(ctx, index, seq, ShallowWatching, Path("/"+strconv.Itoa(index)))
+
+	//inform watchers & microtasks about the update
+	l.watchers.InformAboutAsync(ctx, mutation, mutation.Depth, true)
+	l.mutationCallbacks.CallMicrotasks(ctx, mutation)
 }
 
 func (l *List) removePosition(ctx *Context, i Int) {
