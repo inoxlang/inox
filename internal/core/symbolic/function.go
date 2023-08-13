@@ -2,7 +2,6 @@ package symbolic
 
 import (
 	"bufio"
-	"bytes"
 	"errors"
 	"fmt"
 	"reflect"
@@ -285,7 +284,6 @@ func (fn *GoFunction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 
 	utils.Must(w.Write(utils.StringAsBytes("fn(")))
 
-	buf := bytes.NewBufferString("fn(")
 	for i := start; i < fnValType.NumIn(); i++ {
 		if i != start {
 			utils.Must(w.Write(utils.StringAsBytes(", ")))
@@ -294,11 +292,11 @@ func (fn *GoFunction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 		reflectParamType := fnValType.In(i)
 
 		if i == fnValType.NumIn()-1 && isVariadic {
-			buf.WriteString("...%[]")
+			w.WriteString("...%[]")
 
 			param, err := converTypeToSymbolicValue(reflectParamType.Elem())
 			if err != nil {
-				buf.WriteString("???" + err.Error())
+				w.WriteString("???" + err.Error())
 			} else {
 				param.PrettyPrint(w, config, 0, 0)
 			}
@@ -306,7 +304,7 @@ func (fn *GoFunction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 		} else {
 			param, err := converTypeToSymbolicValue(reflectParamType)
 			if err != nil {
-				buf.WriteString("???" + err.Error())
+				w.WriteString("???" + err.Error())
 			} else {
 				param.PrettyPrint(w, config, 0, 0)
 			}
@@ -329,7 +327,7 @@ func (fn *GoFunction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 
 		ret, err := converTypeToSymbolicValue(reflectReturnType)
 		if err != nil {
-			buf.WriteString("???" + err.Error())
+			w.WriteString("???" + err.Error())
 		} else {
 			ret.PrettyPrint(w, config, 0, 0)
 		}
