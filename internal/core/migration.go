@@ -289,7 +289,7 @@ func GetMigrationOperations(ctx *Context, current, next Pattern, pseudoPath stri
 	}
 
 	for _, segment := range strings.Split(pseudoPath, "/") {
-		if strings.ContainsAny(segment, "*?[]") && len(segment) > 1 {
+		if strings.ContainsAny(segment, "*?[]") && segment != "*" {
 			return nil, ErrInvalidMigrationPseudoPath
 		}
 	}

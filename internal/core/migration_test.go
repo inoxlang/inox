@@ -654,6 +654,19 @@ func TestGetMigrationOperations(t *testing.T) {
 	ops, err = GetMigrationOperations(ctx, intIntList, serializableList, "/users/*")
 	assert.NoError(t, err)
 	assert.NotEmpty(t, ops)
+
+	ops, err = GetMigrationOperations(ctx, intIntList, serializableList, "/users?")
+	assert.ErrorIs(t, err, ErrInvalidMigrationPseudoPath)
+	assert.Nil(t, ops)
+
+	ops, err = GetMigrationOperations(ctx, intIntList, serializableList, "/users/x?")
+	assert.ErrorIs(t, err, ErrInvalidMigrationPseudoPath)
+	assert.Nil(t, ops)
+
+	ops, err = GetMigrationOperations(ctx, intIntList, serializableList, "/users/?")
+	assert.ErrorIs(t, err, ErrInvalidMigrationPseudoPath)
+	assert.Nil(t, ops)
+
 }
 
 func TestMigrationOpHandlersFilterByPrefix(t *testing.T) {
