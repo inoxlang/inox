@@ -2467,7 +2467,7 @@ func (p *parser) parsePercentAlphaStartingExpr() Node {
 	if p.i < p.len {
 
 		if left == ident && ident.Name == "fn" {
-			return p.parseFunctionPattern(ident.Span.Start)
+			return p.parseFunctionPattern(ident.Span.Start, true)
 		}
 
 		switch {
@@ -6142,6 +6142,9 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 			case "go":
 				return p.parseSpawnExpression(identStartingExpr), false
 			case "fn":
+				if p.inPattern {
+					return p.parseFunctionPattern(identStartingExpr.Base().Span.Start, false), false
+				}
 				return p.parseFunction(identStartingExpr.Base().Span.Start), false
 			case "s":
 				if p.i < p.len && p.s[p.i] == '!' {
@@ -8553,11 +8556,7 @@ func (p *parser) parseFunction(start int32) Node {
 
 		p.eatSpace()
 
-		isAcceptedFirstTypeChar := func(r rune) bool {
-			return r == '%' || isFirstIdentChar(r) || r == '(' || r == '['
-		}
-
-		if p.i < p.len && isAcceptedFirstTypeChar(p.s[p.i]) {
+		if p.i < p.len && isAcceptedFirstReturnTypeChar(p.s[p.i]) {
 			prev := p.inPattern
 			p.inPattern = true
 
@@ -8638,11 +8637,17 @@ func (p *parser) parseFunction(start int32) Node {
 	return &fn
 }
 
-// parseFunction parses function declarations and function expressions
-func (p *parser) parseFunctionPattern(start int32) Node {
+// parseFunctionPattern parses function patterns
+func (p *parser) parseFunctionPattern(start int32, percentPrefixed bool) Node {
 	p.panicIfContextDone()
 
-	tokens := []Token{{Type: PERCENT_FN, Span: NodeSpan{p.i - 3, p.i}}}
+	var tokens []Token
+	if percentPrefixed {
+		tokens = []Token{{Type: PERCENT_FN, Span: NodeSpan{p.i - 3, p.i}}}
+	} else {
+		tokens = []Token{{Type: FN_KEYWORD, Span: NodeSpan{p.i - 2, p.i}}}
+	}
+
 	p.eatSpace()
 
 	var (
@@ -8718,7 +8723,15 @@ func (p *parser) parseFunctionPattern(start int32) Node {
 					paramErr = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_AS_PARAM_NAMES}
 				}
 
-				typ, isMissingExpr = p.parseExpression()
+				{
+					prev := p.inPattern
+					p.inPattern = true
+
+					typ, isMissingExpr = p.parseExpression()
+
+					p.inPattern = prev
+				}
+
 				if isMissingExpr {
 					typ = nil
 				}
@@ -8788,22 +8801,34 @@ func (p *parser) parseFunctionPattern(start int32) Node {
 
 		p.eatSpace()
 
-		if p.i < p.len && p.s[p.i] == '%' {
-			returnType = p.parsePercentPrefixedPattern()
+		if p.i < p.len && isAcceptedFirstReturnTypeChar(p.s[p.i]) {
+			prev := p.inPattern
+			p.inPattern = true
+
+			returnType, _ = p.parseExpression()
+
+			p.inPattern = prev
 		}
 
 		p.eatSpace()
 
 		//optional body
 
-		if p.i < p.len {
+		var error = &ParsingError{InvalidNext, PARAM_LIST_OF_FUNC_PATT_SHOULD_BE_FOLLOWED_BY_BLOCK_OR_ARROW}
+		if returnType != nil {
+			error = &ParsingError{UnspecifiedParsingError, RETURN_TYPE_OF_FUNC_SHOULD_BE_FOLLOWED_BY_BLOCK_OR_ARROW}
+		}
+
+		end = p.i
+
+		if p.i < p.len && p.s[p.i] != '\n' {
 			switch p.s[p.i] {
 			case '{':
 				body = p.parseBlock()
 				end = body.Base().Span.End
 			case '=':
 				if p.i >= p.len+1 || p.s[p.i+1] != '>' {
-					parsingErr = &ParsingError{InvalidNext, PARAM_LIST_OF_FUNC_PATT_SHOULD_BE_FOLLOWED_BY_BLOCK_OR_ARROW}
+					parsingErr = error
 					end = p.i
 				} else {
 					tokens = append(tokens, Token{Type: ARROW, Span: NodeSpan{p.i, p.i + 2}})
@@ -8815,9 +8840,7 @@ func (p *parser) parseFunctionPattern(start int32) Node {
 				}
 			default:
 				if !isUnpairedOrIsClosingDelim(p.s[p.i]) {
-
-					parsingErr = &ParsingError{InvalidNext, PARAM_LIST_OF_FUNC_PATT_SHOULD_BE_FOLLOWED_BY_BLOCK_OR_ARROW}
-					end = p.i
+					parsingErr = error
 				}
 			}
 		}
@@ -10721,6 +10744,10 @@ func isNonIdentBinaryOperatorChar(r rune) bool {
 	default:
 		return false
 	}
+}
+
+func isAcceptedFirstReturnTypeChar(r rune) bool {
+	return r == '%' || isFirstIdentChar(r) || r == '(' || r == '['
 }
 
 func IsAnyVariableIdentifier(node Node) bool {

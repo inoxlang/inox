@@ -14613,6 +14613,43 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("no parameters, empty body, unprefixed return type", func(t *testing.T) {
+			n := mustparseChunk(t, "%fn() int {}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, nil},
+				Statements: []Node{
+					&FunctionPatternExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 12},
+							nil,
+							[]Token{
+								{Type: PERCENT_FN, Span: NodeSpan{0, 3}},
+								{Type: OPENING_PARENTHESIS, Span: NodeSpan{3, 4}},
+								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{4, 5}},
+							},
+						},
+						Parameters: nil,
+						ReturnType: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{6, 9}, nil, nil},
+							Name:       "int",
+							Unprefixed: true,
+						},
+						Body: &Block{
+							NodeBase: NodeBase{
+								NodeSpan{10, 12},
+								nil,
+								[]Token{
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{11, 12}},
+								},
+							},
+							Statements: nil,
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("single parameter, empty body ", func(t *testing.T) {
 			n := mustparseChunk(t, "%fn(x){}")
 			assert.EqualValues(t, &Chunk{
@@ -14688,6 +14725,51 @@ func testParse(
 								[]Token{
 									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{11, 12}},
 									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{12, 13}},
+								},
+							},
+							Statements: nil,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single typed parameter with unprefixed type, empty body ", func(t *testing.T) {
+			n := mustparseChunk(t, "%fn(x int){}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, nil},
+				Statements: []Node{
+					&FunctionPatternExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 12},
+							nil,
+							[]Token{
+								{Type: PERCENT_FN, Span: NodeSpan{0, 3}},
+								{Type: OPENING_PARENTHESIS, Span: NodeSpan{3, 4}},
+								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{9, 10}},
+							},
+						},
+						Parameters: []*FunctionParameter{
+							{
+								NodeBase: NodeBase{NodeSpan{4, 9}, nil, nil},
+								Var: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{4, 5}, nil, nil},
+									Name:     "x",
+								},
+								Type: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{6, 9}, nil, nil},
+									Name:       "int",
+									Unprefixed: true,
+								},
+							},
+						},
+						Body: &Block{
+							NodeBase: NodeBase{
+								NodeSpan{10, 12},
+								nil,
+								[]Token{
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{11, 12}},
 								},
 							},
 							Statements: nil,
