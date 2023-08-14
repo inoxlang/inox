@@ -3,11 +3,23 @@ package core
 import (
 	"errors"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
+	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
+)
+
+var (
+	_ = []MigrationAwarePattern{
+		(*ObjectPattern)(nil), (*RecordPattern)(nil), (*ListPattern)(nil),
+	}
+
+	_ = []MigrationCapable{
+		(*Object)(nil), //(*Record)(nil), (*List)(nil),
+	}
 )
 
 var (
@@ -20,10 +32,30 @@ type MigrationAwarePattern interface {
 	GetMigrationOperations(ctx *Context, next Pattern, pseudoPath string) ([]MigrationOp, error)
 }
 
+type MigrationCapable interface {
+	Serializable
+
+	//Migrate recursively perfoms a migration, it calls the passed handlers,
+	//if a migration operation is a deletion of the MigrationCapable nil should be returned.
+	//This method should be called before any change to the MigrationCapable.
+	//If a property/element of the MigrationCapable is already present AND the kind is InclusionMigrationOperation
+	// or InitializationMigrationOperation the
+	Migrate(ctx *Context, key Path, migration *InstanceMigrationArgs) (Value, error)
+}
+
 type MigrationOp interface {
 	GetPseudoPath() string
 	ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) symbolic.MigrationOp
 }
+
+type MigrationOpKind int
+
+const (
+	RemovalMigrationOperation MigrationOpKind = iota + 1
+	ReplacementMigrationOperation
+	InclusionMigrationOperation
+	InitializationMigrationOperation
+)
 
 type MigrationMixin struct {
 	PseudoPath string
@@ -305,6 +337,266 @@ func GetMigrationOperations(ctx *Context, current, next Pattern, pseudoPath stri
 	}
 
 	return m1.GetMigrationOperations(ctx, next, pseudoPath)
+}
+
+func (o *Object) Migrate(ctx *Context, key Path, migration *InstanceMigrationArgs) (Value, error) {
+	if o.IsShared() {
+		panic(ErrUnreachable)
+	}
+
+	if o.mutationCallbacks != nil {
+		panic(ErrUnreachable)
+	}
+
+	if o.currentTransaction != nil {
+		panic(ErrUnreachable)
+	}
+
+	if o.jobs != nil {
+		panic(ErrNotImplementedYet)
+	}
+
+	return migrateObjectOrRecord(ctx, o, &o.keys, &o.values, key, migration)
+}
+
+func migrateObjectOrRecord(
+	ctx *Context, o Value, propKeys *[]string, propValues *[]Serializable,
+	key Path, migration *InstanceMigrationArgs) (Value, error) {
+	depth := len(GetPathSegments(string(key)))
+	migrationHanders := migration.MigrationHandlers
+	state := ctx.GetClosestState()
+
+	for pathPattern, handler := range migrationHanders.Deletions {
+		pathPatternSegments := GetPathSegments(string(pathPattern))
+		pathPatternDepth := len(pathPatternSegments)
+
+		lastSegment := ""
+		if pathPatternDepth == 0 {
+			if string(pathPattern) != string(key) {
+				panic(ErrUnreachable)
+			}
+		} else {
+			lastSegment = pathPatternSegments[pathPatternDepth-1]
+		}
+
+		switch {
+		case string(pathPattern) == string(key): //Object deletion
+			if handler == nil {
+				return nil, nil
+			}
+
+			if handler.Function != nil {
+				_, err := handler.Function.Call(state, nil, []Value{o}, nil)
+				return nil, err
+			} else {
+				panic(ErrUnreachable)
+			}
+		case pathPatternDepth == 1+depth: //property deletion
+			if lastSegment == "*" {
+				if o, ok := o.(*Object); ok {
+					obj := NewObjectFromMap(nil, ctx)
+					obj.url = o.url
+					return obj, nil
+				}
+
+				return NewEmptyRecord(), nil
+			} else {
+				propIndex := -1
+
+				for i, key := range *propKeys {
+					if key == lastSegment {
+						propIndex = i
+						break
+					}
+				}
+
+				if propIndex < 0 {
+					return nil, commonfmt.FmtValueAtPathSegmentsDoesNotExist(pathPatternSegments[:pathPatternDepth])
+				}
+
+				*propKeys = slices.Delete(*propKeys, propIndex, propIndex+1)
+				*propValues = slices.Delete(*propValues, propIndex, propIndex+1)
+			}
+		case pathPatternDepth > 1+depth: //deletion inside property value
+			propertyName := pathPatternSegments[depth]
+
+			propIndex := -1
+
+			for i, key := range *propKeys {
+				if key == propertyName {
+					propIndex = i
+					break
+				}
+			}
+
+			if propIndex < 0 {
+				return nil, commonfmt.FmtValueAtPathSegmentsDoesNotExist(pathPatternSegments[:depth+1])
+			}
+
+			propValue := (*propValues)[propIndex]
+			migrationCapable, ok := propValue.(MigrationCapable)
+			if !ok {
+				return nil, commonfmt.FmtValueAtPathSegmentsIsNotMigrationCapable(pathPatternSegments[:depth+1])
+			}
+
+			propertyValuePath := "/" + Path(strings.Join(pathPatternSegments[:depth+1], ""))
+			migrationCapable.Migrate(ctx, propertyValuePath, &InstanceMigrationArgs{
+				NextPattern:       nil,
+				MigrationHandlers: migrationHanders.FilterByPrefix(propertyValuePath),
+			})
+		default:
+			panic(ErrUnreachable)
+		}
+	}
+
+	handle := func(pathPattern PathPattern, handler *MigrationOpHandler, kind MigrationOpKind) (outerFunctionResult Value, outerFunctionError error) {
+		pathPatternSegments := GetPathSegments(string(pathPattern))
+		pathPatternDepth := len(pathPatternSegments)
+		lastSegment := ""
+		if pathPatternDepth == 0 {
+			if string(pathPattern) != string(key) {
+				panic(ErrUnreachable)
+			}
+		} else {
+			lastSegment = pathPatternSegments[pathPatternDepth-1]
+		}
+
+		switch {
+		case string(pathPattern) == string(key): //Object replacement
+			if kind != ReplacementMigrationOperation {
+				panic(ErrUnreachable)
+			}
+
+			if handler.Function != nil {
+				return handler.Function.Call(state, nil, []Value{o}, nil)
+			} else {
+				clone, err := RepresentationBasedClone(ctx, handler.InitialValue.(*Object))
+				if err != nil {
+					return nil, commonfmt.FmtErrWhileCloningValueFor(pathPatternSegments, err)
+				}
+
+				return clone, nil
+			}
+		case pathPatternDepth == 1+depth: //property replacement|inclusion|init
+			if lastSegment == "*" {
+				panic(ErrUnreachable)
+			} else {
+				propIndex := -1
+
+				for i, key := range *propKeys {
+					if key == lastSegment {
+						propIndex = i
+						break
+					}
+				}
+
+				propertyPathSegments := pathPatternSegments[:pathPatternDepth]
+
+				if propIndex < 0 { //previous value not found
+					if kind == ReplacementMigrationOperation {
+						return nil, commonfmt.FmtValueAtPathSegmentsDoesNotExist(propertyPathSegments)
+					}
+
+					prevValue := Nil
+					if handler.Function != nil {
+						replacement, err := handler.Function.Call(state, nil, []Value{prevValue}, nil)
+						if err != nil {
+							return nil, commonfmt.FmtErrWhileCallingMigrationHandler(propertyPathSegments, err)
+						}
+						(*propValues)[propIndex] = replacement.(Serializable)
+					} else {
+						clone, err := RepresentationBasedClone(ctx, handler.InitialValue)
+						if err != nil {
+							return nil, commonfmt.FmtErrWhileCloningValueFor(propertyPathSegments, err)
+						}
+
+						(*propValues)[propIndex] = clone
+					}
+					return nil, nil
+				}
+
+				prevPropValue := (*propValues)[propIndex]
+				var nextPropValue Value
+				var err error
+
+				if handler.Function != nil {
+					nextPropValue, err = handler.Function.Call(state, nil, []Value{prevPropValue}, nil)
+					if err != nil {
+						return nil, commonfmt.FmtErrWhileCallingMigrationHandler(propertyPathSegments, err)
+					}
+					(*propValues)[propIndex] = nextPropValue.(Serializable)
+				} else {
+					clone, err := RepresentationBasedClone(ctx, handler.InitialValue)
+					if err != nil {
+						return nil, commonfmt.FmtErrWhileCloningValueFor(propertyPathSegments, err)
+					}
+
+					(*propValues)[propIndex] = clone
+				}
+			}
+		case pathPatternDepth > 1+depth: //migration inside property value
+			propertyName := pathPatternSegments[depth]
+
+			propIndex := -1
+
+			for i, key := range *propKeys {
+				if key == propertyName {
+					propIndex = i
+					break
+				}
+			}
+
+			if propIndex < 0 {
+				return nil, commonfmt.FmtValueAtPathSegmentsDoesNotExist(pathPatternSegments[:depth+1])
+			}
+
+			propValue := (*propValues)[propIndex]
+			migrationCapable, ok := propValue.(MigrationCapable)
+			if !ok {
+				return nil, commonfmt.FmtValueAtPathSegmentsIsNotMigrationCapable(pathPatternSegments[:depth+1])
+			}
+
+			propertyValuePath := Path("/" + strings.Join(pathPatternSegments[:depth+1], ""))
+			migrationCapable.Migrate(ctx, propertyValuePath, &InstanceMigrationArgs{
+				NextPattern:       nil,
+				MigrationHandlers: migrationHanders.FilterByPrefix(propertyValuePath),
+			})
+		}
+
+		return nil, nil
+	}
+
+	for pathPattern, handler := range migrationHanders.Replacements {
+		result, err := handle(pathPattern, handler, ReplacementMigrationOperation)
+		if err != nil {
+			return nil, err
+		}
+		if result != nil {
+			return result, nil
+		}
+	}
+
+	for pathPattern, handler := range migrationHanders.Inclusions {
+		result, err := handle(pathPattern, handler, InclusionMigrationOperation)
+		if err != nil {
+			return nil, err
+		}
+		if result != nil {
+			return result, nil
+		}
+	}
+
+	for pathPattern, handler := range migrationHanders.Initializations {
+		result, err := handle(pathPattern, handler, InitializationMigrationOperation)
+		if err != nil {
+			return nil, err
+		}
+		if result != nil {
+			return result, nil
+		}
+	}
+
+	return o, nil
 }
 
 func isSubType(sub, super Pattern, ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) bool {

@@ -3,6 +3,7 @@ package core
 import (
 	"testing"
 
+	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -634,6 +635,224 @@ func TestListPatternGetMigrationOperations(t *testing.T) {
 				MigrationMixin: MigrationMixin{"/0"},
 			},
 		}, migrations)
+	})
+}
+
+func TestObjectMigrate(t *testing.T) {
+
+	t.Run("delete object: / key", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		object := NewObjectFromMap(nil, ctx)
+		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Deletions: map[PathPattern]*MigrationOpHandler{
+					"/": nil,
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Nil(t, val)
+	})
+
+	t.Run("delete object: /x key", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		object := NewObjectFromMap(nil, ctx)
+		val, err := object.Migrate(ctx, "/x", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Deletions: map[PathPattern]*MigrationOpHandler{
+					"/x": nil,
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Nil(t, val)
+	})
+
+	t.Run("delete property", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		object := NewObjectFromMap(ValMap{"x": Int(0)}, ctx)
+		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Deletions: map[PathPattern]*MigrationOpHandler{
+					"/x": nil,
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Same(t, object, val)
+		assert.Equal(t, map[string]Serializable{}, object.EntryMap(ctx))
+	})
+
+	t.Run("delete inexisting property", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		object := NewObjectFromMap(ValMap{}, ctx)
+		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Deletions: map[PathPattern]*MigrationOpHandler{
+					"/x": nil,
+				},
+			},
+		})
+
+		if !assert.Equal(t, err, commonfmt.FmtValueAtPathSegmentsDoesNotExist([]string{"x"})) {
+			return
+		}
+		assert.Nil(t, val)
+	})
+
+	t.Run("delete property of property", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		object := NewObjectFromMap(ValMap{"a": NewObjectFromMap(ValMap{"b": Int(0)}, ctx)}, ctx)
+		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Deletions: map[PathPattern]*MigrationOpHandler{
+					"/a/b": nil,
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Same(t, object, val)
+		expectedInner := NewObjectFromMap(ValMap{}, ctx)
+		expectedInner.keys = []string{}
+		expectedInner.values = []Serializable{}
+		assert.Equal(t, map[string]Serializable{"a": expectedInner}, object.EntryMap(ctx))
+	})
+
+	t.Run("replace object: / key", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		object := NewObjectFromMap(nil, ctx)
+
+		replacement := NewObjectFromMap(nil, ctx)
+
+		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Replacements: map[PathPattern]*MigrationOpHandler{
+					"/": {InitialValue: replacement},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Equal(t, replacement, val) {
+			return
+		}
+		assert.NotSame(t, replacement, val)
+	})
+
+	t.Run("replace object: /x key", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		object := NewObjectFromMap(nil, ctx)
+
+		replacement := NewObjectFromMap(nil, ctx)
+
+		val, err := object.Migrate(ctx, "/x", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Replacements: map[PathPattern]*MigrationOpHandler{
+					"/x": {InitialValue: replacement},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Equal(t, replacement, val) {
+			return
+		}
+		assert.NotSame(t, replacement, val)
+	})
+
+	t.Run("replace property", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		replacement := NewObjectFromMap(nil, ctx)
+
+		object := NewObjectFromMap(ValMap{"a": NewObjectFromMap(ValMap{"b": Int(0)}, ctx)}, ctx)
+		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Replacements: map[PathPattern]*MigrationOpHandler{
+					"/a": {InitialValue: replacement},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Same(t, object, val) {
+			return
+		}
+		if !assert.Equal(t, map[string]Serializable{"a": replacement}, object.EntryMap(ctx)) {
+			return
+		}
+
+		assert.NotSame(t, replacement, object.Prop(ctx, "a"))
+	})
+
+	t.Run("replace inexisting property", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		replacement := NewObjectFromMap(nil, ctx)
+
+		object := NewObjectFromMap(ValMap{}, ctx)
+		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Replacements: map[PathPattern]*MigrationOpHandler{
+					"/a": {InitialValue: replacement},
+				},
+			},
+		})
+
+		if !assert.Equal(t, err, commonfmt.FmtValueAtPathSegmentsDoesNotExist([]string{"a"})) {
+			return
+		}
+		assert.Nil(t, val)
+	})
+
+	t.Run("replace property of property", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		object := NewObjectFromMap(ValMap{"a": NewObjectFromMap(ValMap{"b": Int(0)}, ctx)}, ctx)
+		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Replacements: map[PathPattern]*MigrationOpHandler{
+					"/a/b": {InitialValue: Int(1)},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Same(t, object, val) {
+			return
+		}
+		expectedInner := NewObjectFromMap(ValMap{"b": Int(1)}, ctx)
+		assert.Equal(t, map[string]Serializable{"a": expectedInner}, object.EntryMap(ctx))
 	})
 }
 

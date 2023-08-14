@@ -279,15 +279,14 @@ func (pth Path) Prop(ctx *Context, name string) Value {
 
 	switch name {
 	case "segments":
-		split := strings.Split(string(pth), "/")
-		var segments ValueList
+		segments := GetPathSegments(string(pth))
 
-		for _, segment := range split {
-			if segment != "" {
-				segments.elements = append(segments.elements, Str(segment))
-			}
+		var valueList []Serializable
+
+		for _, segment := range segments {
+			valueList = append(valueList, Str(segment))
 		}
-		return WrapUnderylingList(&segments)
+		return NewWrappedValueList(valueList...)
 	case "extension":
 		return Str(pth.Extension())
 	case "name":
@@ -1071,4 +1070,16 @@ func ParseOrValidateResourceContent(ctx *Context, resourceContent []byte, ctype 
 		}
 	}
 	return
+}
+
+func GetPathSegments(pth string) []string {
+	split := strings.Split(string(pth), "/")
+	var segments []string
+
+	for _, segment := range split {
+		if segment != "" {
+			segments = append(segments, segment)
+		}
+	}
+	return segments
 }

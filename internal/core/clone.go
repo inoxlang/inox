@@ -41,6 +41,9 @@ type Clonable interface {
 }
 
 func RepresentationBasedClone(ctx *Context, val Serializable) (Serializable, error) {
+	if !val.IsMutable() {
+		return val, nil
+	}
 	stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, nil, 0)
 	err := val.WriteJSONRepresentation(ctx, stream, JSONSerializationConfig{
 		ReprConfig: &ReprConfig{AllVisible: true},
