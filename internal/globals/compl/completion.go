@@ -341,7 +341,10 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 		completions = findHostCompletions(state.Global.Ctx, n.Value, _parent)
 	case *parse.SchemeLiteral:
 		completions = findHostCompletions(state.Global.Ctx, n.Name, _parent)
-
+	case *parse.InvalidAliasRelatedNode:
+		if len(n.Raw) > 0 && !strings.Contains(n.Raw, "/") {
+			completions = findHostAliasCompletions(state.Global.Ctx, n.Raw[1:], _parent)
+		}
 	case *parse.ObjectLiteral:
 		completions = findObjectInteriorCompletions(n, _ancestorChain, _parent, int32(cursorIndex), chunk, state.Global)
 	case *parse.RecordLiteral:
