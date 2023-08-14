@@ -284,6 +284,10 @@ func (patt *ListPattern) GetMigrationOperations(ctx *Context, next Pattern, pseu
 }
 
 func GetMigrationOperations(ctx *Context, current, next Pattern, pseudoPath string) ([]MigrationOp, error) {
+	if pseudoPath != "/" && pseudoPath[len(pseudoPath)-1] == '/' {
+		return nil, ErrInvalidMigrationPseudoPath
+	}
+
 	for _, segment := range strings.Split(pseudoPath, "/") {
 		if strings.ContainsAny(segment, "*?[]") && len(segment) > 1 {
 			return nil, ErrInvalidMigrationPseudoPath

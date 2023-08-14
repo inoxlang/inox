@@ -87,5 +87,9 @@ func LoadInstance(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
 		panic(ErrNoLoadInstanceFnRegistered)
 	}
 
+	if args.Key[len(args.Key)-1] == '/' {
+		return nil, errors.New("instance key should not end with '/'")
+	}
+
 	return fn(ctx, args)
 }
