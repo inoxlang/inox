@@ -1,11 +1,17 @@
 package core
 
 import (
+	"errors"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
+)
+
+var (
+	ErrInvalidMigrationPseudoPath = errors.New("invalid migration pseudo path")
 )
 
 // TODO: improve name
@@ -278,6 +284,12 @@ func (patt *ListPattern) GetMigrationOperations(ctx *Context, next Pattern, pseu
 }
 
 func GetMigrationOperations(ctx *Context, current, next Pattern, pseudoPath string) ([]MigrationOp, error) {
+	for _, segment := range strings.Split(pseudoPath, "/") {
+		if strings.ContainsAny(segment, "*?[]") && len(segment) > 1 {
+			return nil, ErrInvalidMigrationPseudoPath
+		}
+	}
+
 	if current == next || isSubType(current, next, ctx, map[uintptr]symbolic.SymbolicValue{}) {
 		return nil, nil
 	}

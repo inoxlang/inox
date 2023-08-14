@@ -169,7 +169,10 @@ func (handlers MigrationOpHandlers) FilterByPrefix(path Path) MigrationOpHandler
 	filtered := MigrationOpHandlers{}
 
 	prefix := string(path)
-	prefixSlash := string(prefix) + "/"
+	prefixSlash := string(prefix)
+	if prefixSlash[len(prefixSlash)-1] != '/' {
+		prefixSlash += "/"
+	}
 
 	for pattern, handler := range handlers.Deletions {
 		// if prefix is /users:

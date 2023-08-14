@@ -27,12 +27,11 @@ type SerializedValueStorage interface {
 }
 
 type InstanceLoadArgs struct {
-	Key               Path
-	Storage           SerializedValueStorage
-	Pattern           Pattern
-	MigrationHandlers MigrationOpHandlers
-	AllowMissing      bool
-	Migration         *InstanceMigrationArgs
+	Key          Path
+	Storage      SerializedValueStorage
+	Pattern      Pattern
+	AllowMissing bool
+	Migration    *InstanceMigrationArgs
 }
 
 func (a InstanceLoadArgs) IsDeletion(ctx *Context) bool {

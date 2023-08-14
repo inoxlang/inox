@@ -636,3 +636,73 @@ func TestListPatternGetMigrationOperations(t *testing.T) {
 		}, migrations)
 	})
 }
+
+func TestGetMigrationOperations(t *testing.T) {
+	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+	intIntList := NewListPattern([]Pattern{SERIALIZABLE_PATTERN})
+	serializableList := NewListPatternOf(INT_PATTERN)
+
+	ops, err := GetMigrationOperations(ctx, intIntList, serializableList, "/users*")
+	assert.ErrorIs(t, err, ErrInvalidMigrationPseudoPath)
+	assert.Nil(t, ops)
+
+	ops, err = GetMigrationOperations(ctx, intIntList, serializableList, "/users/x*")
+	assert.ErrorIs(t, err, ErrInvalidMigrationPseudoPath)
+	assert.Nil(t, ops)
+
+	ops, err = GetMigrationOperations(ctx, intIntList, serializableList, "/users/*")
+	assert.NoError(t, err)
+	assert.NotEmpty(t, ops)
+}
+
+func TestMigrationOpHandlersFilterByPrefix(t *testing.T) {
+
+	t.Run("root", func(t *testing.T) {
+		handlers := MigrationOpHandlers{
+			Deletions: map[PathPattern]*MigrationOpHandler{
+				"/users/*": nil,
+			},
+		}
+
+		filtered := handlers.FilterByPrefix("/")
+		assert.Equal(t, MigrationOpHandlers{
+			Deletions: map[PathPattern]*MigrationOpHandler{
+				"/users/*": nil,
+			},
+		}, filtered)
+	})
+
+	t.Run("shallow", func(t *testing.T) {
+		handlers := MigrationOpHandlers{
+			Deletions: map[PathPattern]*MigrationOpHandler{
+				"/users/*":    nil,
+				"/messages/*": nil,
+			},
+		}
+
+		filtered := handlers.FilterByPrefix("/users")
+		assert.Equal(t, MigrationOpHandlers{
+			Deletions: map[PathPattern]*MigrationOpHandler{
+				"/users/*": nil,
+			},
+		}, filtered)
+	})
+
+	t.Run("deep", func(t *testing.T) {
+		handlers := MigrationOpHandlers{
+			Deletions: map[PathPattern]*MigrationOpHandler{
+				"/users/x":    nil,
+				"/users/y":    nil,
+				"/messages/*": nil,
+			},
+		}
+
+		filtered := handlers.FilterByPrefix("/users/x")
+		assert.Equal(t, MigrationOpHandlers{
+			Deletions: map[PathPattern]*MigrationOpHandler{
+				"/users/x": nil,
+			},
+		}, filtered)
+	})
+}
