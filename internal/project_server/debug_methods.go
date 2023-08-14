@@ -524,7 +524,7 @@ func registerDebugMethodHandlers(
 			stackFrames = stackFrames[dapRequest.Arguments.StartFrame:]
 			maxFrames := dapRequest.Arguments.Levels
 			if maxFrames > 0 {
-				stackFrames = stackFrames[:utils.Min(len(stackFrames), maxFrames)]
+				stackFrames = stackFrames[:min(len(stackFrames), maxFrames)]
 			}
 
 			return dap.StackTraceResponse{

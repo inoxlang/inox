@@ -7,18 +7,12 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
-func Min[T constraints.Ordered](a, b T) T {
-	if a < b {
-		return a
-	}
-	return b
+func Min[T constraints.Ordered](a T, b T) T {
+	return min(a, b)
 }
 
 func Max[T constraints.Ordered](a, b T) T {
-	if a > b {
-		return a
-	}
-	return b
+	return max(a, b)
 }
 
 func Abs[T constraints.Integer](a T) T {

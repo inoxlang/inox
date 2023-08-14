@@ -91,7 +91,7 @@ func objFrom(entryMap ValMap) *Object {
 	i := 0
 	for k, v := range entryMap {
 		if IsIndexKey(k) {
-			maxKeyIndex = utils.Max(maxKeyIndex, utils.Must(strconv.Atoi(k)))
+			maxKeyIndex = max(maxKeyIndex, utils.Must(strconv.Atoi(k)))
 		}
 		keys[i] = k
 		values[i] = v
@@ -731,7 +731,7 @@ func NewRecordFromMap(entryMap ValMap) *Record {
 			panic(fmt.Errorf("value of provided property .%s is mutable", k))
 		}
 		if IsIndexKey(k) {
-			maxKeyIndex = utils.Max(maxKeyIndex, utils.Must(strconv.Atoi(k)))
+			maxKeyIndex = max(maxKeyIndex, utils.Must(strconv.Atoi(k)))
 		}
 		keys[i] = k
 		values[i] = v
@@ -753,7 +753,7 @@ func NewRecordFromKeyValLists(keys []string, values []Serializable) *Record {
 		}
 
 		if IsIndexKey(k) {
-			maxKeyIndex = utils.Max(maxKeyIndex, utils.Must(strconv.Atoi(k)))
+			maxKeyIndex = max(maxKeyIndex, utils.Must(strconv.Atoi(k)))
 		}
 		keys[i] = k
 		values[i] = v

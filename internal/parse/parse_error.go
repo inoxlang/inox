@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strconv"
 	"unicode"
-
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
@@ -410,7 +408,7 @@ func fmtSlashDotDotDotCanOnlyBePresentAtEndOfPathPattern(value string) string {
 }
 
 func fmtAPatternWasExpected(s []rune, i int32) string {
-	before := string(s[utils.Max(0, i-5):utils.Max(i, len32(s))])
+	before := string(s[max(0, i-5):max(i, len32(s))])
 
 	return fmt.Sprintf("a pattern was expected: ...%s<<here>>", before)
 }
@@ -460,30 +458,30 @@ func fmtInvalidStringLitJSON(jsonErr string) string {
 }
 
 func fmtExprExpectedHere(s []rune, i int32, showRight bool) string {
-	left := string(s[utils.Max(0, i-5):i])
+	left := string(s[max(0, i-5):i])
 
 	var right = ""
 	if showRight {
-		right = string(s[i:utils.Min(len32(s), i+5)])
+		right = string(s[i:min(len32(s), i+5)])
 	}
 
 	return fmt.Sprintf("an expression was expected: ...%s<<here>>%s...", left, right)
 }
 
 func fmtCaseValueExpectedHere(s []rune, i int32, showRight bool) string {
-	left := string(s[utils.Max(0, i-5):i])
+	left := string(s[max(0, i-5):i])
 
 	var right = ""
 	if showRight {
-		right = string(s[i:utils.Min(len(s), int(i+5))])
+		right = string(s[i:min(len(s), int(i+5))])
 	}
 
 	return fmt.Sprintf("a value was expected: ...%s<<here>>%s..., object literals should be surrounded by parenthesis", left, right)
 }
 
 func fmtAPatternWasExpectedHere(s []rune, i int32) string {
-	left := string(s[utils.Max(0, i-5):i])
-	right := string(s[i:utils.Min(len(s), int(i+5))])
+	left := string(s[max(0, i-5):i])
+	right := string(s[i:min(len(s), int(i+5))])
 
 	return fmt.Sprintf("a pattern was expected: ...%s<<here>>%s...", left, right)
 }

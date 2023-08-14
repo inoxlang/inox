@@ -582,8 +582,8 @@ func (patt *UnionStringPattern) lengthRange(effective bool) IntRange {
 			lenRange = case_.LengthRange()
 		}
 
-		minLen = utils.Min(minLen, lenRange.Start)
-		maxLen = utils.Max(maxLen, lenRange.InclusiveEnd())
+		minLen = min(minLen, lenRange.Start)
+		maxLen = max(maxLen, lenRange.InclusiveEnd())
 	}
 
 	return IntRange{
@@ -744,8 +744,8 @@ func NewIntRangeStringPattern(lower, upperIncluded int64, node parse.Node) *IntR
 		absUpper := utils.Abs(upperIncluded)
 
 		if upperIncluded < 0 {
-			max := utils.Max(absLower, absUpper)
-			min := utils.Min(absLower, absUpper)
+			max := max(absLower, absUpper)
+			min := min(absLower, absUpper)
 
 			maxDigitCount := utils.CountDigits(max)
 			minDigitCount := utils.CountDigits(min)
@@ -760,7 +760,7 @@ func NewIntRangeStringPattern(lower, upperIncluded int64, node parse.Node) *IntR
 			}
 
 			lengthRange.Start = 1 // zero
-			lengthRange.End = int64(utils.Max(1+negMaxDigitCount, posMaxDigitCount))
+			lengthRange.End = int64(max(1+negMaxDigitCount, posMaxDigitCount))
 		}
 	} else {
 		minDigitCount := 1
@@ -1349,8 +1349,8 @@ func (patt *RegexPattern) LengthRange() IntRange {
 
 			for _, sub := range r.Sub {
 				subLenRange := computeLenRange(sub)
-				minLen = utils.Min(minLen, subLenRange.Start)
-				maxLen = utils.Max(maxLen, subLenRange.End)
+				minLen = min(minLen, subLenRange.Start)
+				maxLen = max(maxLen, subLenRange.End)
 			}
 
 			lenRange.Start = minLen

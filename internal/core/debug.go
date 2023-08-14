@@ -130,7 +130,7 @@ func NewDebugger(args DebuggerArgs) *Debugger {
 	nextBreakpointId := int32(1)
 
 	for _, breakpoint := range args.InitialBreakpoints {
-		nextBreakpointId = utils.Max(nextBreakpointId, breakpoint.Id+1)
+		nextBreakpointId = max(nextBreakpointId, breakpoint.Id+1)
 		if breakpoint.NodeSpan != (parse.NodeSpan{}) {
 			initialBreakpoints[breakpoint.NodeSpan] = breakpoint
 		}

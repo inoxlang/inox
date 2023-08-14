@@ -727,7 +727,7 @@ func __createFile(ctx *core.Context, fpath core.Path, b []byte, fmode fs.FileMod
 			return err
 		}
 		b = b[chunkSize:]
-		chunkSize = utils.Min(len(b), chunkSize)
+		chunkSize = min(len(b), chunkSize)
 	}
 
 	return nil
@@ -1077,7 +1077,7 @@ func computeChunkSize(rate core.ByteRate, fileSize int) int {
 	chunkSize := int(rate / 10)
 
 	//we cannot read more bytes than the size of file | write more bytes than the final file's size
-	chunkSize = utils.Min(fileSize, chunkSize)
+	chunkSize = min(fileSize, chunkSize)
 
 	return chunkSize
 }

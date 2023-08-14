@@ -752,7 +752,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		listLength := list.Len()
 		valueReceivingVars := len(n.Variables)
 		if n.Nillable {
-			valueReceivingVars = utils.Min(listLength, len(n.Variables))
+			valueReceivingVars = min(listLength, len(n.Variables))
 		}
 		//for now we don't check the length + fast fail because we need to have the same behaviour
 		//as the bytecode interpreter
@@ -2160,7 +2160,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		end := int(endIndex.(Int))
 		s := slice.(Sequence)
-		end = utils.Min(end, s.Len())
+		end = min(end, s.Len())
 		return s.slice(start, end), nil
 	case *parse.KeyListExpression:
 		list := KeyList{}

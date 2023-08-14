@@ -5,8 +5,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
@@ -117,7 +115,7 @@ func (tb *tokenBucket) GiveBack(count int64) {
 	defer tb.tokenMutex.Unlock()
 
 	tb.available += ScaledTokenCount(count * TOKEN_BUCKET_CAPACITY_SCALE)
-	tb.available = utils.Min(tb.capacity, tb.available)
+	tb.available = min(tb.capacity, tb.available)
 }
 
 // TakeMaxDuration tasks specified count tokens from the bucket, if there are
@@ -242,7 +240,7 @@ func startTokenBucketManagerGoroutine() {
 			return
 		}
 
-		tb.available = utils.Max(0, tb.available)
+		tb.available = max(0, tb.available)
 		tb.lastDecrementTime = time.Now()
 
 		func() {

@@ -1074,7 +1074,7 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 		//replace the incomplete element with replacement
 		if replacement != "" {
 			beforeElem := sh.input[:replacedSpan.Start]
-			afterElem := utils.CopySlice(sh.input[utils.Min(len(sh.input), int(replacedSpan.End)):])
+			afterElem := utils.CopySlice(sh.input[min(len(sh.input), int(replacedSpan.End)):])
 
 			prevLen := len(sh.input)
 			sh.input = append(beforeElem, []rune(replacement)...)

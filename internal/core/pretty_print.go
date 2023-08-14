@@ -417,7 +417,7 @@ func PrintColorizedChunk(w io.Writer, chunk *parse.Chunk, code []rune, lightMode
 		w.Write([]byte(string(code[prevColorizationEndIndex:colorization.Span.Start])))
 
 		w.Write(colorization.ColorSequence)
-		w.Write([]byte(string(code[colorization.Span.Start:utils.Min(len(code), int(colorization.Span.End))])))
+		w.Write([]byte(string(code[colorization.Span.Start:min(len(code), int(colorization.Span.End))])))
 		w.Write(ANSI_RESET_SEQUENCE)
 
 		prevColorizationEndIndex = int(colorization.Span.End)

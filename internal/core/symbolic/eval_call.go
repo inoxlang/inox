@@ -559,9 +559,9 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 func setAllowedNonPresentProperties(argNodes []parse.Node, nonSpreadArgCount int, params []SymbolicValue, state *State) {
 	//ignore spread arg
-	argNodes = argNodes[:utils.Min(len(argNodes), nonSpreadArgCount)]
+	argNodes = argNodes[:min(len(argNodes), nonSpreadArgCount)]
 	//ignore additional arguments
-	argNodes = argNodes[:utils.Min(len(argNodes), len(params))]
+	argNodes = argNodes[:min(len(argNodes), len(params))]
 
 	removePropertiesAlreadyPresent := func(allowedNonPresentProperties []string, propNodes []*parse.ObjectProperty) []string {
 		//remove properties already present

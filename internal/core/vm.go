@@ -696,7 +696,7 @@ func (v *VM) run() {
 
 			endIndex, ok := endIndexVal.(Int)
 			if !ok {
-				endIndex = utils.Min(endIndex, Int(slice.Len()))
+				endIndex = min(endIndex, Int(slice.Len()))
 			}
 
 			slice.SetSlice(v.global.Ctx, int(startIndex), int(endIndex), val.(Sequence))
@@ -1488,7 +1488,7 @@ func (v *VM) run() {
 			if high != Nil {
 				highIdx = int(high.(Int))
 			}
-			highIdx = utils.Min(highIdx, int(slice.Len()))
+			highIdx = min(highIdx, int(slice.Len()))
 
 			val := slice.slice(lowIdx, highIdx)
 

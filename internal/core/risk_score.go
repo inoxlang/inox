@@ -146,7 +146,7 @@ func ComputeProgramRiskScore(mod *Module, manifest *Manifest) (totalScore RiskSc
 			if combinedHttpWsScore <= 1 {
 				combinedHttpWsScore = score
 			} else {
-				combinedHttpWsScore = utils.Max(score, combinedHttpWsScore) + utils.Min(score, combinedHttpWsScore)
+				combinedHttpWsScore = max(score, combinedHttpWsScore) + min(score, combinedHttpWsScore)
 			}
 			continue
 		}
@@ -239,7 +239,7 @@ func GetPathPatternSensitivityMultiplier(patt PathPattern) int {
 	var maxMultiplier int = UNKNOW_FILE_PATTERN_SENSITIVITY_MUTLIPLIER
 	for _, sensitivity := range FILE_SENSITIVITY_MULTIPLIERS {
 		if sensitivity.PathPattern == patt {
-			maxMultiplier = utils.Max(maxMultiplier, sensitivity.Multiplier)
+			maxMultiplier = max(maxMultiplier, sensitivity.Multiplier)
 		}
 	}
 

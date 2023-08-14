@@ -1,7 +1,6 @@
 package html_ns
 
 import (
-	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/net/html"
 )
 
@@ -43,7 +42,7 @@ func computeNodeHeight(root *html.Node) int {
 	child := root.FirstChild
 
 	for child != nil {
-		highestChildHeight = utils.Max(highestChildHeight, computeNodeHeight(child))
+		highestChildHeight = max(highestChildHeight, computeNodeHeight(child))
 		child = child.NextSibling
 	}
 
@@ -70,7 +69,7 @@ func computeNodeWidth(root *html.Node) int {
 		queue = queue[1:]
 
 		if _node.level != currentLevel {
-			maxWidth = utils.Max(maxWidth, levelCount)
+			maxWidth = max(maxWidth, levelCount)
 			levelCount = 0
 			currentLevel = _node.level
 		}
@@ -81,6 +80,6 @@ func computeNodeWidth(root *html.Node) int {
 		}
 	}
 
-	maxWidth = utils.Max(maxWidth, levelCount)
+	maxWidth = max(maxWidth, levelCount)
 	return maxWidth
 }

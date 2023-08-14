@@ -1599,7 +1599,7 @@ type FunctionExpression struct {
 
 func (expr FunctionExpression) NonVariadicParamCount() int {
 	if expr.IsVariadic {
-		return utils.Max(0, len(expr.Parameters)-1)
+		return max(0, len(expr.Parameters)-1)
 	}
 
 	return len(expr.Parameters)
@@ -1662,7 +1662,7 @@ type FunctionPatternExpression struct {
 
 func (expr FunctionPatternExpression) NonVariadicParamCount() int {
 	if expr.IsVariadic {
-		return utils.Max(0, len(expr.Parameters)-1)
+		return max(0, len(expr.Parameters)-1)
 	}
 
 	return len(expr.Parameters)
