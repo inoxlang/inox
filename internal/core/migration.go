@@ -35,7 +35,7 @@ type ReplacementMigrationOp struct {
 func (op ReplacementMigrationOp) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) symbolic.MigrationOp {
 	return symbolic.ReplacementMigrationOp{
 		Current:        utils.Must(op.Current.ToSymbolicValue(ctx, encountered)).(symbolic.Pattern),
-		Next:           utils.Must(op.Current.ToSymbolicValue(ctx, encountered)).(symbolic.Pattern),
+		Next:           utils.Must(op.Next.ToSymbolicValue(ctx, encountered)).(symbolic.Pattern),
 		MigrationMixin: symbolic.MigrationMixin{PseudoPath: op.PseudoPath},
 	}
 }
