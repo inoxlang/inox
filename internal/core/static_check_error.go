@@ -65,6 +65,8 @@ const (
 	MISPLACED_RUNTIME_TYPECHECK_EXPRESSION                         = "misplaced runtime typecheck expression: for now runtime typechecks are only supported as arguments in function calls (ex: map ~$ .title)"
 	MISPLACED_COMPUTE_EXPR_SHOULD_BE_IN_DYNAMIC_MAPPING_EXPR_ENTRY = "misplaced compute expression: compute expressions are only allowed on the right side of a dynamic Mapping entry"
 	MISPLACE_YIELD_STATEMENT_ONLY_ALLOWED_IN_EMBEDDED_MODULES      = "misplaced yield statement: yield statements are only allowed in embedded modules"
+	MISPLACED_INCLUSION_IMPORT_STATEMENT_TOP_LEVEL_STMT            = "misplaced inclusion import statement: it's a top level statement"
+	MISPLACED_MOD_IMPORT_STATEMENT_TOP_LEVEL_STMT                  = "misplaced module import statement: it's a top level statement"
 
 	INVALID_MEM_HOST_ONLY_VALID_VALUE                               = "invalid mem:// host, only valid value is " + MEM_HOSTNAME
 	LOWER_BOUND_OF_INT_RANGE_LIT_SHOULD_BE_SMALLER_THAN_UPPER_BOUND = "the lower bound of an integer range literal should be smaller than the upper bound"

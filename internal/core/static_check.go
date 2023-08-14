@@ -784,6 +784,10 @@ switch_:
 		}
 
 	case *parse.InclusionImportStatement:
+		if _, ok := parent.(*parse.Chunk); !ok {
+			c.addError(node, MISPLACED_INCLUSION_IMPORT_STATEMENT_TOP_LEVEL_STMT)
+			return parse.Continue
+		}
 		includedChunk := c.currentModule.InclusionStatementMap[node]
 
 		globals := make(map[parse.Node]map[string]globalVarInfo)
@@ -913,7 +917,14 @@ switch_:
 	case *parse.ImportStatement:
 		if c.inclusionImportStatement != nil {
 			c.addError(node, MODULE_IMPORTS_NOT_ALLOWED_IN_INCLUDED_CHUNK)
+			return parse.Prune
 		}
+
+		if _, ok := parent.(*parse.Chunk); !ok {
+			c.addError(node, MISPLACED_MOD_IMPORT_STATEMENT_TOP_LEVEL_STMT)
+			return parse.Prune
+		}
+
 		name := node.Identifier.Name
 		variables := c.getModGlobalVars(closestModule)
 

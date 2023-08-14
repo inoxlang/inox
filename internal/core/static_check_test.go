@@ -1796,6 +1796,35 @@ func TestCheck(t *testing.T) {
 	})
 
 	t.Run("inclusion import statement", func(t *testing.T) {
+		t.Run("not allowed in functions", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				fn f(){
+					import ./dep.ix
+					return $a
+				}
+			`, map[string]string{"./dep.ix": "includable-chunk\n a = 1"})
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			assert.NoError(t, err)
+
+			err = staticCheckNoData(StaticCheckInput{
+				Module: mod,
+				Node:   mod.MainChunk.Node,
+				Chunk:  mod.MainChunk,
+			})
+
+			importStmt := parse.FindNode(mod.MainChunk.Node, (*parse.InclusionImportStatement)(nil), nil)
+			variable := parse.FindNode(mod.MainChunk.Node, (*parse.Variable)(nil), nil)
+
+			expectedErr := combineErrors(
+				makeError(importStmt, mod.MainChunk, MISPLACED_INCLUSION_IMPORT_STATEMENT_TOP_LEVEL_STMT),
+				makeError(variable, mod.MainChunk, fmtLocalVarIsNotDeclared("a")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
 		t.Run("single included file with no dependencies", func(t *testing.T) {
 			moduleName := "mymod.ix"
 			modpath := writeModuleAndIncludedFiles(t, moduleName, `
@@ -1978,6 +2007,35 @@ func TestCheck(t *testing.T) {
 			state.Module = mod
 			return state
 		}
+
+		t.Run("not allowed in functions", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				fn f(){
+					import res ./dep.ix {}
+					return $$res
+				}
+			`, map[string]string{"./dep.ix": "manifest {}\n a = 1"})
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			assert.NoError(t, err)
+
+			err = staticCheckNoData(StaticCheckInput{
+				Module: mod,
+				Node:   mod.MainChunk.Node,
+				Chunk:  mod.MainChunk,
+			})
+
+			importStmt := parse.FindNode(mod.MainChunk.Node, (*parse.ImportStatement)(nil), nil)
+			globalVariable := parse.FindNode(mod.MainChunk.Node, (*parse.GlobalVariable)(nil), nil)
+
+			expectedErr := combineErrors(
+				makeError(importStmt, mod.MainChunk, MISPLACED_MOD_IMPORT_STATEMENT_TOP_LEVEL_STMT),
+				makeError(globalVariable, mod.MainChunk, fmtGlobalVarIsNotDeclared("res")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
 
 		t.Run("single imported module with no dependencies", func(t *testing.T) {
 			moduleName := "mymod.ix"
