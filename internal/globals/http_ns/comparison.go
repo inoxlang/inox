@@ -1,8 +1,9 @@
 package http_ns
 
 import (
+	"slices"
+
 	"github.com/inoxlang/inox/internal/core"
-	"golang.org/x/exp/slices"
 )
 
 func (s *HttpServer) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {

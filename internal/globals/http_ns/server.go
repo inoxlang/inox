@@ -16,8 +16,9 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 
+	"slices"
+
 	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
-	"golang.org/x/exp/slices"
 
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"

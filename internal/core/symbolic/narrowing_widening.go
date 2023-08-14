@@ -1,9 +1,10 @@
 package symbolic
 
 import (
+	"slices"
+
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
-	"golang.org/x/exp/slices"
 )
 
 var (

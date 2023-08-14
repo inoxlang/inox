@@ -7,9 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"slices"
+
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
-	"golang.org/x/exp/slices"
 )
 
 func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn {

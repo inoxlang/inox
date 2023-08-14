@@ -5,11 +5,12 @@ import (
 	"html"
 	"net/http"
 
+	"slices"
+
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/rs/zerolog"
-	"golang.org/x/exp/slices"
 )
 
 var (

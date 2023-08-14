@@ -7,11 +7,12 @@ import (
 	"strconv"
 	"sync"
 
+	"slices"
+
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
-	"golang.org/x/exp/slices"
 )
 
 var (

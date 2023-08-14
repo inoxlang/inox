@@ -1,10 +1,11 @@
 package project_server
 
 import (
+	"slices"
+
 	"github.com/inoxlang/inox/internal/globals/html_ns"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
-	"golang.org/x/exp/slices"
 )
 
 var ()

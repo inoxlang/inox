@@ -12,8 +12,9 @@ import (
 
 	http_symbolic "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 
+	"slices"
+
 	"github.com/inoxlang/inox/internal/utils"
-	"golang.org/x/exp/slices"
 )
 
 var (

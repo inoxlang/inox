@@ -9,9 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"slices"
+
 	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/oklog/ulid/v2"
-	"golang.org/x/exp/slices"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"

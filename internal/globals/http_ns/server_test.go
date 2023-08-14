@@ -16,6 +16,8 @@ import (
 	"testing"
 	"time"
 
+	"slices"
+
 	"github.com/inoxlang/inox/internal/afs"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
@@ -24,7 +26,6 @@ import (
 	"github.com/inoxlang/inox/internal/globals/html_ns"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/rs/zerolog"
-	"golang.org/x/exp/slices"
 	"golang.org/x/net/publicsuffix"
 
 	parse "github.com/inoxlang/inox/internal/parse"

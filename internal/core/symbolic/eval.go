@@ -10,11 +10,12 @@ import (
 	"strconv"
 	"strings"
 
+	"slices"
+
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/oklog/ulid/v2"
-	"golang.org/x/exp/slices"
 	"gonum.org/v1/gonum/graph/simple"
 )
 

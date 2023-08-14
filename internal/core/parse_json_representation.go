@@ -6,9 +6,10 @@ import (
 	"strconv"
 	"strings"
 
+	"slices"
+
 	parse "github.com/inoxlang/inox/internal/parse"
 	jsoniter "github.com/json-iterator/go"
-	"golang.org/x/exp/slices"
 )
 
 var (

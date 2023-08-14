@@ -8,8 +8,9 @@ import (
 	"sync"
 	"unicode/utf8"
 
+	"slices"
+
 	"github.com/inoxlang/inox/internal/utils"
-	"golang.org/x/exp/slices"
 )
 
 const (
