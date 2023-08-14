@@ -7,7 +7,7 @@ require (
 	github.com/adrg/xdg v0.4.0
 	github.com/alecthomas/chroma/v2 v2.7.0
 	github.com/aohorodnyk/mimeheader v0.0.6
-	github.com/bits-and-blooms/bitset v1.5.0
+	github.com/bits-and-blooms/bitset v1.8.0
 	github.com/buger/jsonparser v1.1.2-0.20220418200129-61b32cfdfa0f
 	github.com/caddyserver/certmagic v0.17.2
 	github.com/chromedp/chromedp v0.8.6
