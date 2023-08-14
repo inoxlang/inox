@@ -182,7 +182,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 			for _, op := range inclusions {
 				pathPattern := "%" + op.PseudoPath
 				var entryValue Serializable = &InoxFunction{
-					parameters:     []SymbolicValue{},
+					parameters:     []SymbolicValue{ANY},
 					parameterNames: []string{},
 					result:         op.Value.SymbolicValue(),
 				}
@@ -209,10 +209,12 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 
 			for _, op := range initializations {
 				pathPattern := "%" + op.PseudoPath
+				value := op.Value.SymbolicValue()
+
 				var entryValue Serializable = &InoxFunction{
-					parameters:     []SymbolicValue{},
+					parameters:     []SymbolicValue{joinValues([]SymbolicValue{value, Nil})},
 					parameterNames: []string{},
-					result:         op.Value.SymbolicValue(),
+					result:         value,
 				}
 
 				capable, ok := op.Value.(MigrationInitialValueCapablePattern)
