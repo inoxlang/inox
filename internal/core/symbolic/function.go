@@ -185,6 +185,9 @@ func (fn *InoxFunction) WatcherElement() SymbolicValue {
 }
 
 func (fn *InoxFunction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	if fn.visitCheckNode != nil {
+		utils.Must(w.Write(utils.StringAsBytes("[restricted stmts] ")))
+	}
 	if fn.result == nil {
 		utils.Must(w.Write(utils.StringAsBytes("fn")))
 		return
