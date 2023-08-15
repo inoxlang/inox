@@ -24,3 +24,11 @@ func FmtErrWhileCallingMigrationHandler(pth []string, err error) error {
 func FmtErrWhileCloningValueFor(pth []string, err error) error {
 	return fmt.Errorf("error while cloning value for %s", "/"+strings.Join(pth, "/"))
 }
+
+func FmtInvalidLastSegmentOfMigrationPathShouldbeAnInteger(pth []string) error {
+	return fmt.Errorf("last segment of migration path %s should be an integer instead", "/"+strings.Join(pth, "/"))
+}
+
+func FmtLastSegmentOfMigrationPathIsOutOfBounds(pth []string) error {
+	return fmt.Errorf("last segment of migration path %s is out of bounds", "/"+strings.Join(pth, "/"))
+}

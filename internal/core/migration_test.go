@@ -1073,6 +1073,261 @@ func TestRecordMigrate(t *testing.T) {
 	})
 }
 
+func TestListMigrate(t *testing.T) {
+
+	t.Run("delete list: / key", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		list := NewWrappedValueList()
+		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Deletions: map[PathPattern]*MigrationOpHandler{
+					"/": nil,
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Nil(t, val)
+	})
+
+	t.Run("delete list: /x key", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		list := NewObjectFromMap(nil, ctx)
+		val, err := list.Migrate(ctx, "/x", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Deletions: map[PathPattern]*MigrationOpHandler{
+					"/x": nil,
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Nil(t, val)
+	})
+
+	t.Run("delete element", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		list := NewWrappedValueList(Int(0))
+		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Deletions: map[PathPattern]*MigrationOpHandler{
+					"/0": nil,
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Same(t, list, val)
+		assert.Equal(t, []Serializable{}, list.GetOrBuildElements(ctx))
+	})
+
+	t.Run("delete inexisting element (index >= len)", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		list := NewWrappedValueList(Int(0))
+		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Deletions: map[PathPattern]*MigrationOpHandler{
+					"/1": nil,
+				},
+			},
+		})
+
+		if !assert.Equal(t, err, commonfmt.FmtLastSegmentOfMigrationPathIsOutOfBounds([]string{"1"})) {
+			return
+		}
+		assert.Nil(t, val)
+	})
+
+	t.Run("delete inexisting element (index < 0)", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		list := NewWrappedValueList(Int(0))
+		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Deletions: map[PathPattern]*MigrationOpHandler{
+					"/-1": nil,
+				},
+			},
+		})
+
+		if !assert.Equal(t, err, commonfmt.FmtLastSegmentOfMigrationPathIsOutOfBounds([]string{"-1"})) {
+			return
+		}
+		assert.Nil(t, val)
+	})
+
+	t.Run("delete property of element", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		list := NewWrappedValueList(NewObjectFromMap(ValMap{"b": Int(0)}, ctx))
+		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Deletions: map[PathPattern]*MigrationOpHandler{
+					"/0/b": nil,
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Same(t, list, val)
+		expectedInner := NewObjectFromMap(ValMap{}, ctx)
+		expectedInner.keys = []string{}
+		expectedInner.values = []Serializable{}
+		assert.Equal(t, []Serializable{expectedInner}, list.GetOrBuildElements(ctx))
+	})
+
+	t.Run("replace list: / key", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		list := NewWrappedValueList()
+		replacement := NewWrappedValueList()
+
+		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Replacements: map[PathPattern]*MigrationOpHandler{
+					"/": {InitialValue: replacement},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Equal(t, replacement, val) {
+			return
+		}
+		assert.NotSame(t, replacement, val)
+	})
+
+	t.Run("replace list: /x key", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		list := NewWrappedValueList()
+		replacement := NewWrappedValueList()
+
+		val, err := list.Migrate(ctx, "/x", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Replacements: map[PathPattern]*MigrationOpHandler{
+					"/x": {InitialValue: replacement},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Equal(t, replacement, val) {
+			return
+		}
+		assert.NotSame(t, replacement, val)
+	})
+
+	t.Run("replace element", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		replacement := NewObjectFromMap(nil, ctx)
+
+		list := NewWrappedValueList(NewObjectFromMap(ValMap{"b": Int(0)}, ctx))
+		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Replacements: map[PathPattern]*MigrationOpHandler{
+					"/0": {InitialValue: replacement},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Same(t, list, val) {
+			return
+		}
+		if !assert.Equal(t, []Serializable{replacement}, list.GetOrBuildElements(ctx)) {
+			return
+		}
+
+		assert.NotSame(t, replacement, list.At(ctx, 0))
+	})
+
+	t.Run("replace inexisting element (index >= len)", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		replacement := NewWrappedValueList()
+		list := NewWrappedValueList()
+
+		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Replacements: map[PathPattern]*MigrationOpHandler{
+					"/0": {InitialValue: replacement},
+				},
+			},
+		})
+
+		if !assert.Equal(t, err, commonfmt.FmtLastSegmentOfMigrationPathIsOutOfBounds([]string{"0"})) {
+			return
+		}
+		assert.Nil(t, val)
+	})
+
+	t.Run("replace inexisting element (index < 0)", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		replacement := NewWrappedValueList()
+		list := NewWrappedValueList()
+
+		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Replacements: map[PathPattern]*MigrationOpHandler{
+					"/-1": {InitialValue: replacement},
+				},
+			},
+		})
+
+		if !assert.Equal(t, err, commonfmt.FmtLastSegmentOfMigrationPathIsOutOfBounds([]string{"-1"})) {
+			return
+		}
+		assert.Nil(t, val)
+	})
+
+	t.Run("replace property of element", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		list := NewWrappedValueList(NewObjectFromMap(ValMap{"b": Int(0)}, ctx))
+		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Replacements: map[PathPattern]*MigrationOpHandler{
+					"/0/b": {InitialValue: Int(1)},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Same(t, list, val) {
+			return
+		}
+		expectedInner := NewObjectFromMap(ValMap{"b": Int(1)}, ctx)
+		assert.Equal(t, []Serializable{expectedInner}, list.GetOrBuildElements(ctx))
+	})
+}
+
 func TestGetMigrationOperations(t *testing.T) {
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 

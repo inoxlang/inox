@@ -537,18 +537,18 @@ func migrateObjectOrRecord(
 					if err != nil {
 						return nil, commonfmt.FmtErrWhileCallingMigrationHandler(propertyPathSegments, err)
 					}
-					(*propValues)[propIndex] = nextPropValue.(Serializable)
 				} else {
 					clone, err := RepresentationBasedClone(ctx, handler.InitialValue)
 					if err != nil {
 						return nil, commonfmt.FmtErrWhileCloningValueFor(propertyPathSegments, err)
 					}
-
-					(*propValues)[propIndex] = clone
+					nextPropValue = clone
 				}
+				(*propValues)[propIndex] = nextPropValue.(Serializable)
 			}
 		case pathPatternDepth > 1+depth: //migration inside property value
 			propertyName := pathPatternSegments[depth]
+			propertyPathPatternSegments := pathPatternSegments[:depth+1]
 
 			propIndex := -1
 
@@ -560,16 +560,258 @@ func migrateObjectOrRecord(
 			}
 
 			if propIndex < 0 {
-				return nil, commonfmt.FmtValueAtPathSegmentsDoesNotExist(pathPatternSegments[:depth+1])
+				return nil, commonfmt.FmtValueAtPathSegmentsDoesNotExist(propertyPathPatternSegments)
 			}
 
 			propValue := (*propValues)[propIndex]
 			migrationCapable, ok := propValue.(MigrationCapable)
 			if !ok {
-				return nil, commonfmt.FmtValueAtPathSegmentsIsNotMigrationCapable(pathPatternSegments[:depth+1])
+				return nil, commonfmt.FmtValueAtPathSegmentsIsNotMigrationCapable(propertyPathPatternSegments)
 			}
 
-			propertyValuePath := Path("/" + strings.Join(pathPatternSegments[:depth+1], ""))
+			propertyValuePath := Path("/" + strings.Join(propertyPathPatternSegments, ""))
+			migrationCapable.Migrate(ctx, propertyValuePath, &InstanceMigrationArgs{
+				NextPattern:       nil,
+				MigrationHandlers: migrationHanders.FilterByPrefix(propertyValuePath),
+			})
+		}
+
+		return nil, nil
+	}
+
+	for pathPattern, handler := range migrationHanders.Replacements {
+		result, err := handle(pathPattern, handler, ReplacementMigrationOperation)
+		if err != nil {
+			return nil, err
+		}
+		if result != nil {
+			return result, nil
+		}
+	}
+
+	for pathPattern, handler := range migrationHanders.Inclusions {
+		result, err := handle(pathPattern, handler, InclusionMigrationOperation)
+		if err != nil {
+			return nil, err
+		}
+		if result != nil {
+			return result, nil
+		}
+	}
+
+	for pathPattern, handler := range migrationHanders.Initializations {
+		result, err := handle(pathPattern, handler, InitializationMigrationOperation)
+		if err != nil {
+			return nil, err
+		}
+		if result != nil {
+			return result, nil
+		}
+	}
+
+	return o, nil
+}
+
+func (list *List) Migrate(ctx *Context, key Path, migration *InstanceMigrationArgs) (Value, error) {
+	if list.mutationCallbacks != nil {
+		panic(ErrUnreachable)
+	}
+
+	return migrateListOrTuple(ctx, list, true, key, migration)
+}
+
+func migrateListOrTuple(
+	ctx *Context, o Sequence, isList bool,
+	key Path, migration *InstanceMigrationArgs) (Value, error) {
+	depth := len(GetPathSegments(string(key)))
+
+	migrationHanders := migration.MigrationHandlers
+	state := ctx.GetClosestState()
+
+	getIndex := func(elementPath []string) (int, error) {
+		index, err := strconv.Atoi(elementPath[len(elementPath)-1])
+
+		if err != nil {
+			return -1, commonfmt.FmtInvalidLastSegmentOfMigrationPathShouldbeAnInteger(elementPath)
+		}
+
+		if index < 0 || index >= o.Len() {
+			return -1, commonfmt.FmtLastSegmentOfMigrationPathIsOutOfBounds(elementPath)
+		}
+
+		return index, nil
+	}
+
+	for pathPattern, handler := range migrationHanders.Deletions {
+		pathPatternSegments := GetPathSegments(string(pathPattern))
+		pathPatternDepth := len(pathPatternSegments)
+
+		lastSegment := ""
+		if pathPatternDepth == 0 {
+			if string(pathPattern) != string(key) {
+				panic(ErrUnreachable)
+			}
+		} else {
+			lastSegment = pathPatternSegments[pathPatternDepth-1]
+		}
+
+		switch {
+		case string(pathPattern) == string(key): //list deletion
+			if handler == nil {
+				return nil, nil
+			}
+
+			if handler.Function != nil {
+				_, err := handler.Function.Call(state, nil, []Value{o}, nil)
+				return nil, err
+			} else {
+				panic(ErrUnreachable)
+			}
+		case pathPatternDepth == 1+depth: //element deletion
+			if lastSegment == "*" {
+				if o, ok := o.(*List); ok {
+					list := newValueList()
+					list.constraintId = o.ConstraintId()
+					return WrapUnderylingList(list), nil
+				}
+
+				tuple := NewTuple(nil)
+				tuple.constraintId = o.(*Tuple).constraintId
+				return tuple, nil
+			} else {
+				index, err := getIndex(pathPatternSegments)
+				if err != nil {
+					return nil, err
+				}
+
+				if o, ok := o.(*List); ok {
+					o.removePosition(ctx, Int(index))
+					return o, nil
+				}
+
+				elements := utils.CopySlice(o.(*Tuple).elements)
+				elements = slices.Delete(elements, index, index+1)
+				tuple := NewTuple(elements)
+				tuple.constraintId = o.(*Tuple).constraintId
+				return tuple, nil
+			}
+		case pathPatternDepth > 1+depth: //deletion inside element value
+			elementPathPattern := pathPatternSegments[:depth+1]
+			index, err := getIndex(elementPathPattern)
+			if err != nil {
+				return nil, err
+			}
+
+			elementValue := o.At(ctx, index)
+			migrationCapable, ok := elementValue.(MigrationCapable)
+			if !ok {
+				return nil, commonfmt.FmtValueAtPathSegmentsIsNotMigrationCapable(elementPathPattern)
+			}
+
+			propertyValuePath := "/" + Path(strings.Join(elementPathPattern, ""))
+			migrationCapable.Migrate(ctx, propertyValuePath, &InstanceMigrationArgs{
+				NextPattern:       nil,
+				MigrationHandlers: migrationHanders.FilterByPrefix(propertyValuePath),
+			})
+		default:
+			panic(ErrUnreachable)
+		}
+	}
+
+	handle := func(pathPattern PathPattern, handler *MigrationOpHandler, kind MigrationOpKind) (outerFunctionResult Value, outerFunctionError error) {
+		pathPatternSegments := GetPathSegments(string(pathPattern))
+		pathPatternDepth := len(pathPatternSegments)
+		lastSegment := ""
+		if pathPatternDepth == 0 {
+			if string(pathPattern) != string(key) {
+				panic(ErrUnreachable)
+			}
+		} else {
+			lastSegment = pathPatternSegments[pathPatternDepth-1]
+		}
+
+		switch {
+		case string(pathPattern) == string(key): //list replacement
+			if kind != ReplacementMigrationOperation {
+				panic(ErrUnreachable)
+			}
+
+			if handler.Function != nil {
+				return handler.Function.Call(state, nil, []Value{o}, nil)
+			} else {
+				var initialValue Serializable
+				if isList {
+					initialValue = handler.InitialValue.(*List)
+				} else {
+					initialValue = handler.InitialValue.(*Tuple)
+				}
+				clone, err := RepresentationBasedClone(ctx, initialValue)
+				if err != nil {
+					return nil, commonfmt.FmtErrWhileCloningValueFor(pathPatternSegments, err)
+				}
+
+				return clone, nil
+			}
+		case pathPatternDepth == 1+depth: //element replacement
+			if kind != ReplacementMigrationOperation {
+				panic(ErrUnreachable)
+			}
+
+			if lastSegment == "*" {
+				panic(ErrUnreachable)
+			} else {
+				elementPathSegments := pathPatternSegments[:pathPatternDepth]
+
+				index, err := getIndex(elementPathSegments)
+				if err != nil {
+					return nil, err
+				}
+
+				prevElementValue := o.At(ctx, index)
+
+				var nextElementValue Value
+
+				if handler.Function != nil {
+					nextElementValue, err = handler.Function.Call(state, nil, []Value{prevElementValue}, nil)
+					if err != nil {
+						return nil, commonfmt.FmtErrWhileCallingMigrationHandler(elementPathSegments, err)
+					}
+				} else {
+					clone, err := RepresentationBasedClone(ctx, handler.InitialValue)
+					if err != nil {
+						return nil, commonfmt.FmtErrWhileCloningValueFor(elementPathSegments, err)
+					}
+					nextElementValue = clone
+				}
+				if isList {
+					o.(*List).set(ctx, index, nextElementValue)
+					return o, nil
+				} else {
+					elements := utils.CopySlice(o.(*Tuple).elements)
+					elements[index] = nextElementValue.(Serializable)
+					tuple := NewTuple(elements)
+					tuple.constraintId = o.(*Tuple).constraintId
+					return tuple, nil
+				}
+			}
+		case pathPatternDepth > 1+depth: //migration inside property value
+			if !isList { //tuple
+				panic(ErrUnreachable)
+			}
+			elementPathSegments := pathPatternSegments[:depth+1]
+
+			index, err := getIndex(elementPathSegments)
+			if err != nil {
+				return nil, err
+			}
+
+			elementValue := o.At(ctx, index)
+			migrationCapable, ok := elementValue.(MigrationCapable)
+			if !ok {
+				return nil, commonfmt.FmtValueAtPathSegmentsIsNotMigrationCapable(elementPathSegments)
+			}
+
+			propertyValuePath := Path("/" + strings.Join(elementPathSegments, ""))
 			migrationCapable.Migrate(ctx, propertyValuePath, &InstanceMigrationArgs{
 				NextPattern:       nil,
 				MigrationHandlers: migrationHanders.FilterByPrefix(propertyValuePath),

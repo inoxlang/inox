@@ -12,6 +12,7 @@ type underylingList interface {
 	Iterable
 	ContainsSimple(ctx *Context, v Serializable) bool
 	append(ctx *Context, values ...Serializable)
+	ConstraintId() ConstraintId
 }
 
 // ValueList implements underylingList
@@ -30,6 +31,10 @@ func NewWrappedValueListFrom(elements []Serializable) *List {
 
 func newValueList(elements ...Serializable) *ValueList {
 	return &ValueList{elements: elements}
+}
+
+func (list *ValueList) ConstraintId() ConstraintId {
+	return list.constraintId
 }
 
 func (list *ValueList) ContainsSimple(ctx *Context, v Serializable) bool {
@@ -150,6 +155,10 @@ func NewWrappedIntListFrom(elements []Int) *List {
 
 func newIntList(elements ...Int) *IntList {
 	return &IntList{elements: elements}
+}
+
+func (list *IntList) ConstraintId() ConstraintId {
+	return list.constraintId
 }
 
 func (list *IntList) ContainsSimple(ctx *Context, v Serializable) bool {
@@ -279,6 +288,10 @@ func newStringList(elements ...StringLike) *StringList {
 	return &StringList{elements: elements}
 }
 
+func (list *StringList) ConstraintId() ConstraintId {
+	return list.constraintId
+}
+
 func (list *StringList) ContainsSimple(ctx *Context, v Serializable) bool {
 	if !IsSimpleInoxVal(v) {
 		panic("only simple values are expected")
@@ -406,6 +419,10 @@ func newBoolList(elements ...Bool) *BoolList {
 		}
 	}
 	return &BoolList{elements: bitset}
+}
+
+func (list *BoolList) ConstraintId() ConstraintId {
+	return list.constraintId
 }
 
 func (list *BoolList) ContainsSimple(ctx *Context, v Serializable) bool {
