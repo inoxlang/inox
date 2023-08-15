@@ -370,6 +370,12 @@ func migrateObjectOrRecord(
 	migrationHanders := migration.MigrationHandlers
 	state := ctx.GetClosestState()
 
+	//a record is immutable so it cannot be updated in-place
+	var nextRecordKeys []string
+	var nextRecordValues []Serializable
+	//note: nextRecordKeys should not be use to check for the presence of a next record because it could be nil
+	var nextRecord bool
+
 	for pathPattern, handler := range migrationHanders.Deletions {
 		pathPatternSegments := GetPathSegments(string(pathPattern))
 		pathPatternDepth := len(pathPatternSegments)
@@ -421,8 +427,18 @@ func migrateObjectOrRecord(
 					return nil, commonfmt.FmtValueAtPathSegmentsDoesNotExist(pathPatternSegments[:pathPatternDepth])
 				}
 
-				*propKeys = slices.Delete(*propKeys, propIndex, propIndex+1)
-				*propValues = slices.Delete(*propValues, propIndex, propIndex+1)
+				if isObject {
+					*propKeys = slices.Delete(*propKeys, propIndex, propIndex+1)
+					*propValues = slices.Delete(*propValues, propIndex, propIndex+1)
+				} else {
+					if !nextRecord {
+						nextRecord = true
+						nextRecordKeys = utils.CopySlice(*propKeys)
+						nextRecordValues = utils.CopySlice(*propValues)
+					}
+					nextRecordKeys = slices.Delete(nextRecordKeys, propIndex, propIndex+1)
+					nextRecordValues = slices.Delete(nextRecordValues, propIndex, propIndex+1)
+				}
 			}
 		case pathPatternDepth > 1+depth: //deletion inside property value
 			propertyName := pathPatternSegments[depth]
@@ -447,10 +463,23 @@ func migrateObjectOrRecord(
 			}
 
 			propertyValuePath := "/" + Path(strings.Join(pathPatternSegments[:depth+1], ""))
-			migrationCapable.Migrate(ctx, propertyValuePath, &InstanceMigrationArgs{
+			nextPropValue, err := migrationCapable.Migrate(ctx, propertyValuePath, &InstanceMigrationArgs{
 				NextPattern:       nil,
 				MigrationHandlers: migrationHanders.FilterByPrefix(propertyValuePath),
 			})
+			if err != nil {
+				return nil, err
+			}
+
+			//if o is a record a new record with the updated property has to be created
+			if !isObject {
+				if !nextRecord {
+					nextRecord = true
+					nextRecordKeys = utils.CopySlice(*propKeys)
+					nextRecordValues = utils.CopySlice(*propValues)
+				}
+				nextRecordValues[propIndex] = nextPropValue.(Serializable)
+			}
 		default:
 			panic(ErrUnreachable)
 		}
@@ -494,6 +523,12 @@ func migrateObjectOrRecord(
 			if lastSegment == "*" {
 				panic(ErrUnreachable)
 			} else {
+				if !isObject && !nextRecord {
+					nextRecord = true
+					nextRecordKeys = utils.CopySlice(*propKeys)
+					nextRecordValues = utils.CopySlice(*propValues)
+				}
+
 				propIndex := -1
 
 				for i, key := range *propKeys {
@@ -510,20 +545,28 @@ func migrateObjectOrRecord(
 						return nil, commonfmt.FmtValueAtPathSegmentsDoesNotExist(propertyPathSegments)
 					}
 
+					var newPropValue Value
 					prevValue := Nil
+
 					if handler.Function != nil {
-						replacement, err := handler.Function.Call(state, nil, []Value{prevValue}, nil)
+						val, err := handler.Function.Call(state, nil, []Value{prevValue}, nil)
 						if err != nil {
 							return nil, commonfmt.FmtErrWhileCallingMigrationHandler(propertyPathSegments, err)
 						}
-						(*propValues)[propIndex] = replacement.(Serializable)
+						newPropValue = val
 					} else {
 						clone, err := RepresentationBasedClone(ctx, handler.InitialValue)
 						if err != nil {
 							return nil, commonfmt.FmtErrWhileCloningValueFor(propertyPathSegments, err)
 						}
-
-						(*propValues)[propIndex] = clone
+						newPropValue = clone
+					}
+					if isObject {
+						*propKeys = append(*propKeys, lastSegment)
+						*propValues = append(*propValues, newPropValue.(Serializable))
+					} else {
+						nextRecordKeys = append(nextRecordKeys, lastSegment)
+						nextRecordValues = append(nextRecordValues, newPropValue.(Serializable))
 					}
 					return nil, nil
 				}
@@ -544,7 +587,12 @@ func migrateObjectOrRecord(
 					}
 					nextPropValue = clone
 				}
-				(*propValues)[propIndex] = nextPropValue.(Serializable)
+
+				if isObject {
+					(*propValues)[propIndex] = nextPropValue.(Serializable)
+				} else {
+					nextRecordValues[propIndex] = nextPropValue.(Serializable)
+				}
 			}
 		case pathPatternDepth > 1+depth: //migration inside property value
 			propertyName := pathPatternSegments[depth]
@@ -570,10 +618,22 @@ func migrateObjectOrRecord(
 			}
 
 			propertyValuePath := Path("/" + strings.Join(propertyPathPatternSegments, ""))
-			migrationCapable.Migrate(ctx, propertyValuePath, &InstanceMigrationArgs{
+			nextPropValue, err := migrationCapable.Migrate(ctx, propertyValuePath, &InstanceMigrationArgs{
 				NextPattern:       nil,
 				MigrationHandlers: migrationHanders.FilterByPrefix(propertyValuePath),
 			})
+			if err != nil {
+				return nil, err
+			}
+			//if o is a record a new record with the updated property has to be created
+			if !isObject {
+				if !nextRecord {
+					nextRecord = true
+					nextRecordKeys = utils.CopySlice(*propKeys)
+					nextRecordValues = utils.CopySlice(*propValues)
+				}
+				nextRecordValues[propIndex] = nextPropValue.(Serializable)
+			}
 		}
 
 		return nil, nil
@@ -609,6 +669,9 @@ func migrateObjectOrRecord(
 		}
 	}
 
+	if nextRecord {
+		return NewRecordFromKeyValLists(nextRecordKeys, nextRecordValues), nil
+	}
 	return o, nil
 }
 

@@ -745,6 +745,12 @@ func NewRecordFromMap(entryMap ValMap) *Record {
 }
 
 func NewRecordFromKeyValLists(keys []string, values []Serializable) *Record {
+	if keys == nil {
+		keys = []string{}
+	}
+	if values == nil {
+		values = []Serializable{}
+	}
 	maxKeyIndex := -1
 	i := 0
 	for ind, k := range keys {

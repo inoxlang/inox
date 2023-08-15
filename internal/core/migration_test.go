@@ -854,6 +854,26 @@ func TestObjectMigrate(t *testing.T) {
 		expectedInner := NewObjectFromMap(ValMap{"b": Int(1)}, ctx)
 		assert.Equal(t, map[string]Serializable{"a": expectedInner}, object.EntryMap(ctx))
 	})
+
+	t.Run("include property", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		object := NewObjectFromMap(ValMap{}, ctx)
+		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Inclusions: map[PathPattern]*MigrationOpHandler{
+					"/a": {InitialValue: Int(1)},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Equal(t, map[string]Serializable{"a": Int(1)}, val.(*Object).EntryMap(ctx))
+	})
 }
 
 func TestRecordMigrate(t *testing.T) {
@@ -896,8 +916,8 @@ func TestRecordMigrate(t *testing.T) {
 
 	t.Run("delete property", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
-		object := NewObjectFromMap(ValMap{"x": Int(0)}, ctx)
-		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
+		record := NewRecordFromMap(ValMap{"x": Int(0)})
+		val, err := record.Migrate(ctx, "/", &InstanceMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Deletions: map[PathPattern]*MigrationOpHandler{
@@ -909,8 +929,10 @@ func TestRecordMigrate(t *testing.T) {
 		if !assert.NoError(t, err) {
 			return
 		}
-		assert.Same(t, object, val)
-		assert.Equal(t, map[string]Serializable{}, object.EntryMap(ctx))
+		assert.NotSame(t, record, val)
+		assert.Equal(t, map[string]Serializable{}, val.(*Record).EntryMap())
+		//original record should not have changed
+		assert.Equal(t, map[string]Serializable{"x": Int(0)}, record.EntryMap())
 	})
 
 	t.Run("delete inexisting property", func(t *testing.T) {
@@ -946,11 +968,11 @@ func TestRecordMigrate(t *testing.T) {
 		if !assert.NoError(t, err) {
 			return
 		}
-		assert.Same(t, record, val)
+		assert.NotSame(t, record, val)
 		expectedInner := NewRecordFromMap(ValMap{})
-		expectedInner.keys = []string{}
-		expectedInner.values = []Serializable{}
-		assert.Equal(t, map[string]Serializable{"a": expectedInner}, record.EntryMap())
+		assert.Equal(t, map[string]Serializable{"a": expectedInner}, val.(*Record).EntryMap())
+		//original record should not have changed
+		assert.Equal(t, map[string]Serializable{"a": NewRecordFromMap(ValMap{"b": Int(0)})}, record.EntryMap())
 	})
 
 	t.Run("replace record: / key", func(t *testing.T) {
@@ -1018,14 +1040,16 @@ func TestRecordMigrate(t *testing.T) {
 		if !assert.NoError(t, err) {
 			return
 		}
-		if !assert.Same(t, record, val) {
+		if !assert.NotSame(t, record, val) {
 			return
 		}
-		if assert.Equal(t, map[string]Serializable{"a": replacement}, record.EntryMap()) {
+		if assert.Equal(t, map[string]Serializable{"a": replacement}, val.(*Record).EntryMap()) {
 			return
 		}
 
 		assert.Same(t, replacement, record.Prop(ctx, "a"))
+		//original record should not have changed
+		assert.Equal(t, map[string]Serializable{"a": NewRecordFromMap(ValMap{"b": Int(0)})}, record.EntryMap())
 	})
 
 	t.Run("replace inexisting property", func(t *testing.T) {
@@ -1065,11 +1089,35 @@ func TestRecordMigrate(t *testing.T) {
 		if !assert.NoError(t, err) {
 			return
 		}
-		if !assert.Same(t, record, val) {
+		if !assert.NotSame(t, record, val) {
 			return
 		}
 		expectedInner := NewRecordFromMap(ValMap{"b": Int(1)})
-		assert.Equal(t, map[string]Serializable{"a": expectedInner}, record.EntryMap())
+		assert.Equal(t, map[string]Serializable{"a": expectedInner}, val.(*Record).EntryMap())
+		//original record should not have changed
+		assert.Equal(t, map[string]Serializable{"a": NewRecordFromMap(ValMap{"b": Int(0)})}, record.EntryMap())
+	})
+
+	t.Run("include property", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		record := NewRecordFromMap(ValMap{})
+		val, err := record.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Inclusions: map[PathPattern]*MigrationOpHandler{
+					"/a": {InitialValue: Int(1)},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Equal(t, map[string]Serializable{"a": Int(1)}, val.(*Record).EntryMap())
+		//original record should not have been updated
+		assert.Equal(t, map[string]Serializable{}, record.EntryMap())
 	})
 }
 
