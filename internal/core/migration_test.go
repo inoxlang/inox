@@ -856,6 +856,223 @@ func TestObjectMigrate(t *testing.T) {
 	})
 }
 
+func TestRecordMigrate(t *testing.T) {
+
+	t.Run("delete record: / key", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		record := NewRecordFromMap(nil)
+		val, err := record.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Deletions: map[PathPattern]*MigrationOpHandler{
+					"/": nil,
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Nil(t, val)
+	})
+
+	t.Run("delete record: /x key", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		record := NewEmptyRecord()
+		val, err := record.Migrate(ctx, "/x", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Deletions: map[PathPattern]*MigrationOpHandler{
+					"/x": nil,
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Nil(t, val)
+	})
+
+	t.Run("delete property", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		object := NewObjectFromMap(ValMap{"x": Int(0)}, ctx)
+		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Deletions: map[PathPattern]*MigrationOpHandler{
+					"/x": nil,
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Same(t, object, val)
+		assert.Equal(t, map[string]Serializable{}, object.EntryMap(ctx))
+	})
+
+	t.Run("delete inexisting property", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		record := NewRecordFromMap(ValMap{})
+		val, err := record.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Deletions: map[PathPattern]*MigrationOpHandler{
+					"/x": nil,
+				},
+			},
+		})
+
+		if !assert.Equal(t, err, commonfmt.FmtValueAtPathSegmentsDoesNotExist([]string{"x"})) {
+			return
+		}
+		assert.Nil(t, val)
+	})
+
+	t.Run("delete property of property", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		record := NewRecordFromMap(ValMap{"a": NewRecordFromMap(ValMap{"b": Int(0)})})
+		val, err := record.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Deletions: map[PathPattern]*MigrationOpHandler{
+					"/a/b": nil,
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Same(t, record, val)
+		expectedInner := NewRecordFromMap(ValMap{})
+		expectedInner.keys = []string{}
+		expectedInner.values = []Serializable{}
+		assert.Equal(t, map[string]Serializable{"a": expectedInner}, record.EntryMap())
+	})
+
+	t.Run("replace record: / key", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		record := NewEmptyRecord()
+		replacement := NewEmptyRecord()
+
+		val, err := record.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Replacements: map[PathPattern]*MigrationOpHandler{
+					"/": {InitialValue: replacement},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Equal(t, replacement, val) {
+			return
+		}
+		assert.Same(t, replacement, val)
+	})
+
+	t.Run("replace record: /x key", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		record := NewEmptyRecord()
+
+		replacement := NewEmptyRecord()
+
+		val, err := record.Migrate(ctx, "/x", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Replacements: map[PathPattern]*MigrationOpHandler{
+					"/x": {InitialValue: replacement},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Equal(t, replacement, val) {
+			return
+		}
+		assert.Same(t, replacement, val)
+	})
+
+	t.Run("replace property", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		replacement := NewEmptyRecord()
+
+		record := NewRecordFromMap(ValMap{"a": NewRecordFromMap(ValMap{"b": Int(0)})})
+		val, err := record.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Replacements: map[PathPattern]*MigrationOpHandler{
+					"/a": {InitialValue: replacement},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Same(t, record, val) {
+			return
+		}
+		if assert.Equal(t, map[string]Serializable{"a": replacement}, record.EntryMap()) {
+			return
+		}
+
+		assert.Same(t, replacement, record.Prop(ctx, "a"))
+	})
+
+	t.Run("replace inexisting property", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		replacement := NewEmptyRecord()
+
+		record := NewRecordFromMap(ValMap{})
+		val, err := record.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Replacements: map[PathPattern]*MigrationOpHandler{
+					"/a": {InitialValue: replacement},
+				},
+			},
+		})
+
+		if !assert.Equal(t, err, commonfmt.FmtValueAtPathSegmentsDoesNotExist([]string{"a"})) {
+			return
+		}
+		assert.Nil(t, val)
+	})
+
+	t.Run("replace property of property", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		record := NewRecordFromMap(ValMap{"a": NewRecordFromMap(ValMap{"b": Int(0)})})
+		val, err := record.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Replacements: map[PathPattern]*MigrationOpHandler{
+					"/a/b": {InitialValue: Int(1)},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Same(t, record, val) {
+			return
+		}
+		expectedInner := NewRecordFromMap(ValMap{"b": Int(1)})
+		assert.Equal(t, map[string]Serializable{"a": expectedInner}, record.EntryMap())
+	})
+}
+
 func TestGetMigrationOperations(t *testing.T) {
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 

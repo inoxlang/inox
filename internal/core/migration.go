@@ -18,7 +18,7 @@ var (
 	}
 
 	_ = []MigrationCapable{
-		(*Object)(nil), //(*Record)(nil), (*List)(nil),
+		(*Object)(nil), (*Record)(nil), //(*List)(nil),
 	}
 )
 
@@ -356,11 +356,15 @@ func (o *Object) Migrate(ctx *Context, key Path, migration *InstanceMigrationArg
 		panic(ErrNotImplementedYet)
 	}
 
-	return migrateObjectOrRecord(ctx, o, &o.keys, &o.values, key, migration)
+	return migrateObjectOrRecord(ctx, o, true, &o.keys, &o.values, key, migration)
+}
+
+func (o *Record) Migrate(ctx *Context, key Path, migration *InstanceMigrationArgs) (Value, error) {
+	return migrateObjectOrRecord(ctx, o, false, &o.keys, &o.values, key, migration)
 }
 
 func migrateObjectOrRecord(
-	ctx *Context, o Value, propKeys *[]string, propValues *[]Serializable,
+	ctx *Context, o Value, isObject bool, propKeys *[]string, propValues *[]Serializable,
 	key Path, migration *InstanceMigrationArgs) (Value, error) {
 	depth := len(GetPathSegments(string(key)))
 	migrationHanders := migration.MigrationHandlers
@@ -396,10 +400,13 @@ func migrateObjectOrRecord(
 				if o, ok := o.(*Object); ok {
 					obj := NewObjectFromMap(nil, ctx)
 					obj.url = o.url
+					obj.visibilityId = o.visibilityId
 					return obj, nil
 				}
 
-				return NewEmptyRecord(), nil
+				rec := NewEmptyRecord()
+				rec.visibilityId = o.(*Record).visibilityId
+				return rec, nil
 			} else {
 				propIndex := -1
 
@@ -470,7 +477,13 @@ func migrateObjectOrRecord(
 			if handler.Function != nil {
 				return handler.Function.Call(state, nil, []Value{o}, nil)
 			} else {
-				clone, err := RepresentationBasedClone(ctx, handler.InitialValue.(*Object))
+				var initialValue Serializable
+				if isObject {
+					initialValue = handler.InitialValue.(*Object)
+				} else {
+					initialValue = handler.InitialValue.(*Record)
+				}
+				clone, err := RepresentationBasedClone(ctx, initialValue)
 				if err != nil {
 					return nil, commonfmt.FmtErrWhileCloningValueFor(pathPatternSegments, err)
 				}
