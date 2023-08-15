@@ -183,7 +183,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 				pathPattern := "%" + op.PseudoPath
 				var entryValue Serializable = &InoxFunction{
 					parameters:     []SymbolicValue{ANY},
-					parameterNames: []string{},
+					parameterNames: []string{"previous-value"},
 					result:         op.Value.SymbolicValue(),
 				}
 
@@ -213,7 +213,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 
 				var entryValue Serializable = &InoxFunction{
 					parameters:     []SymbolicValue{joinValues([]SymbolicValue{value, Nil})},
-					parameterNames: []string{},
+					parameterNames: []string{"previous-value"},
 					result:         value,
 				}
 
