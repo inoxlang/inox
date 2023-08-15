@@ -116,8 +116,8 @@ func (n *HTMLNode) AttrOrEmpty(name string) string {
 	return ""
 }
 
-func (n *HTMLNode) Walk(fn func(n HTMLNode) error) error {
-	if err := fn(*n); err != nil {
+func (n *HTMLNode) Walk(fn func(n *HTMLNode) error) error {
+	if err := fn(n); err != nil {
 		return err
 	}
 
