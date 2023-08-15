@@ -16,6 +16,7 @@ import (
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/oklog/ulid/v2"
+	"golang.org/x/exp/maps"
 	"gonum.org/v1/gonum/graph/simple"
 )
 
@@ -1840,7 +1841,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			deeperMismatch := false
 
 			if p.Key != nil && expectedObj.exact && expectedPropVal == nil {
-				closest, _, ok := utils.FindClosestString(state.ctx.startingConcreteContext, utils.GetMapKeys(expectedObj.entries), p.Name(), 2)
+				closest, _, ok := utils.FindClosestString(state.ctx.startingConcreteContext, maps.Keys(expectedObj.entries), p.Name(), 2)
 				options.setActualValueMismatchIfNotNil()
 
 				msg := ""

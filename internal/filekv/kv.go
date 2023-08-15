@@ -3,6 +3,7 @@ package filekv
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"runtime/debug"
 	"sync"
 
@@ -69,7 +70,7 @@ func (kv *SingleFileKV) Close(ctx *core.Context) {
 	logger.Print("close KV store")
 
 	kv.transactionMapLock.Lock()
-	transactions := utils.CopyMap(kv.transactions)
+	transactions := maps.Clone(kv.transactions)
 	kv.transactionMapLock.Unlock()
 
 	logger.Print("number of transactions to close: ", len(transactions))

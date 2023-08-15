@@ -15,6 +15,7 @@ import (
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	jsoniter "github.com/json-iterator/go"
+	"golang.org/x/exp/maps"
 )
 
 // this file contains the implementation of Value.HasRepresentation & Value.WriteRepresentation for core types.
@@ -1033,7 +1034,7 @@ func (p *ObjectPattern) WriteRepresentation(ctx *Context, w io.Writer, config *R
 		return err
 	}
 
-	keys := utils.GetMapKeys(p.entryPatterns)
+	keys := maps.Keys(p.entryPatterns)
 	sort.Strings(keys)
 
 	first := true

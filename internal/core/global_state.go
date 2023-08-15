@@ -10,6 +10,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
+	"golang.org/x/exp/maps"
 )
 
 const (
@@ -87,7 +88,7 @@ func NewGlobalState(ctx *Context, constants ...map[string]Value) *GlobalState {
 		}
 	}
 
-	state.Globals = GlobalVariablesFromMap(globals, utils.GetMapKeys(globals))
+	state.Globals = GlobalVariablesFromMap(globals, maps.Keys(globals))
 
 	return state
 }
@@ -250,7 +251,7 @@ func (g *GlobalVariables) PopCapturedGlobals() {
 }
 
 func (g *GlobalVariables) Entries() map[string]Value {
-	_map := utils.CopyMap(g.permanent)
+	_map := maps.Clone(g.permanent)
 
 	if len(g.capturedGlobalsStack) != 0 {
 		for _, captured := range g.capturedGlobalsStack[len(g.capturedGlobalsStack)-1] {

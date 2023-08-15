@@ -1,6 +1,8 @@
 package containers
 
 import (
+	"maps"
+
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -151,7 +153,7 @@ func (s *Set) Iterator(ctx *core.Context, config core.IteratorConfiguration) cor
 	s.lock.Lock(closestState, s)
 	defer s.lock.Unlock(closestState, s)
 
-	elements := utils.CopyMap(s.elements)
+	elements := maps.Clone(s.elements)
 
 	var keys []string
 	for k := range s.elements {

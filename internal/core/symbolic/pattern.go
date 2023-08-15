@@ -11,6 +11,7 @@ import (
 	parse "github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
+	"golang.org/x/exp/maps"
 )
 
 var (
@@ -930,7 +931,7 @@ func (p *ObjectPattern) Concretize() any {
 		concretePropertyPatterns[k] = concretePropPattern
 	}
 
-	return extData.ConcreteValueFactories.CreateObjectPattern(p.inexact, concretePropertyPatterns, utils.CopyMap(p.optionalEntries))
+	return extData.ConcreteValueFactories.CreateObjectPattern(p.inexact, concretePropertyPatterns, maps.Clone(p.optionalEntries))
 }
 
 func (patt *ObjectPattern) IsConcretizable() bool {
@@ -1109,7 +1110,7 @@ func (p *ObjectPattern) ValuePropPattern(name string) (propPattern Pattern, isOp
 }
 
 func (p *ObjectPattern) ValuePropertyNames(name string) []string {
-	return utils.GetMapKeys(p.entries)
+	return maps.Keys(p.entries)
 }
 
 func (p *ObjectPattern) StringPattern() (StringPattern, bool) {
@@ -1207,7 +1208,7 @@ func (p *RecordPattern) Concretize() any {
 		concretePropertyPatterns[k] = concretePropPattern
 	}
 
-	return extData.ConcreteValueFactories.CreateRecordPattern(p.inexact, concretePropertyPatterns, utils.CopyMap(p.optionalEntries))
+	return extData.ConcreteValueFactories.CreateRecordPattern(p.inexact, concretePropertyPatterns, maps.Clone(p.optionalEntries))
 }
 
 func (p *RecordPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -1357,7 +1358,7 @@ func (p *RecordPattern) ValuePropPattern(name string) (propPattern Pattern, isOp
 }
 
 func (p *RecordPattern) ValuePropertyNames() []string {
-	return utils.GetMapKeys(p.entries)
+	return maps.Keys(p.entries)
 }
 
 func (p *RecordPattern) StringPattern() (StringPattern, bool) {
@@ -2613,7 +2614,7 @@ type PatternNamespace struct {
 
 func NewPatternNamespace(patterns map[string]Pattern) *PatternNamespace {
 	return &PatternNamespace{
-		entries: utils.CopyMap(patterns),
+		entries: maps.Clone(patterns),
 	}
 }
 
@@ -2660,7 +2661,7 @@ func (ns *PatternNamespace) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPr
 
 		utils.Must(w.Write(utils.StringAsBytes("pattern-namespace{")))
 
-		keys := utils.GetMapKeys(ns.entries)
+		keys := maps.Keys(ns.entries)
 		sort.Strings(keys)
 
 		for i, k := range keys {

@@ -1,35 +1,5 @@
 package utils
 
-func CopyMap[K comparable, V any](m map[K]V) map[K]V {
-	mapCopy := make(map[K]V, len(m))
-
-	for k, v := range m {
-		mapCopy[k] = v
-	}
-
-	return mapCopy
-}
-
-func GetMapKeys[K comparable, V any](m map[K]V) []K {
-	var keys []K
-
-	for k := range m {
-		keys = append(keys, k)
-	}
-
-	return keys
-}
-
-func GetMapValues[K comparable, V any](m map[K]V) []V {
-	var values []V
-
-	for _, v := range m {
-		values = append(values, v)
-	}
-
-	return values
-}
-
 func SameKeys[K comparable, V any](m1 map[K]V, m2 map[K]V) bool {
 	if len(m1) != len(m2) {
 		return false

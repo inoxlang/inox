@@ -8,6 +8,7 @@ import (
 
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
+	"golang.org/x/exp/maps"
 )
 
 // A Namespace represents a symbolic Namespace.
@@ -58,7 +59,7 @@ func (ns *Namespace) Prop(name string) SymbolicValue {
 }
 
 func (ns *Namespace) PropertyNames() []string {
-	return utils.GetMapKeys(ns.entries)
+	return maps.Keys(ns.entries)
 }
 
 func (ns *Namespace) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -73,7 +74,7 @@ func (ns *Namespace) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConf
 
 		utils.Must(w.Write(utils.StringAsBytes("namespace{")))
 
-		keys := utils.GetMapKeys(ns.entries)
+		keys := maps.Keys(ns.entries)
 		sort.Strings(keys)
 
 		for i, k := range keys {

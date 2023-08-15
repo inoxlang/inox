@@ -8,6 +8,7 @@ import (
 	"github.com/inoxlang/inox/internal/config"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"golang.org/x/exp/maps"
 
 	"github.com/inoxlang/inox/internal/default_state"
 	"github.com/inoxlang/inox/internal/globals/chrome_ns"
@@ -267,7 +268,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 		constants[default_state.MODULE_FILEPATH_GLOBAL_NAME] = core.PathFrom(conf.AbsoluteModulePath)
 	}
 
-	baseGlobals := utils.CopyMap(constants)
+	baseGlobals := maps.Clone(constants)
 	constants[default_state.PREINIT_DATA_GLOBAL_NAME] = preinitData
 
 	symbolicBaseGlobals := map[string]symbolic.SymbolicValue{}
@@ -286,18 +287,18 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 	state.Out = conf.Out
 	state.Logger = logger
 	state.GetBaseGlobalsForImportedModule = func(ctx *core.Context, manifest *core.Manifest) (core.GlobalVariables, error) {
-		importedModuleGlobals := utils.CopyMap(baseGlobals)
+		importedModuleGlobals := maps.Clone(baseGlobals)
 		env, err := env_ns.NewEnvNamespace(ctx, nil, conf.AllowMissingEnvVars)
 		if err != nil {
 			return core.GlobalVariables{}, err
 		}
 
 		importedModuleGlobals["env"] = env
-		baseGlobalKeys := utils.GetMapKeys(importedModuleGlobals)
+		baseGlobalKeys := maps.Keys(importedModuleGlobals)
 		return core.GlobalVariablesFromMap(importedModuleGlobals, baseGlobalKeys), nil
 	}
 	state.GetBasePatternsForImportedModule = func() (map[string]core.Pattern, map[string]*core.PatternNamespace) {
-		return utils.CopyMap(core.DEFAULT_NAMED_PATTERNS), utils.CopyMap(core.DEFAULT_PATTERN_NAMESPACES)
+		return maps.Clone(core.DEFAULT_NAMED_PATTERNS), maps.Clone(core.DEFAULT_PATTERN_NAMESPACES)
 	}
 	state.SymbolicBaseGlobalsForImportedModule = symbolicBaseGlobals
 

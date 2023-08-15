@@ -3,7 +3,7 @@ package core
 import (
 	"sort"
 
-	"github.com/inoxlang/inox/internal/utils"
+	"golang.org/x/exp/maps"
 )
 
 type Namespace struct {
@@ -15,8 +15,8 @@ type Namespace struct {
 func NewNamespace(name string, entries map[string]Value) *Namespace {
 	ns := &Namespace{
 		name:    name,
-		entries: utils.CopyMap(entries),
-		names:   utils.GetMapKeys(entries),
+		entries: maps.Clone(entries),
+		names:   maps.Keys(entries),
 	}
 
 	sort.Strings(ns.names)

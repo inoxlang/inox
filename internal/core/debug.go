@@ -13,6 +13,7 @@ import (
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
+	"golang.org/x/exp/maps"
 )
 
 const (
@@ -180,7 +181,7 @@ func (d *Debugger) isRoot() bool {
 
 func (d *Debugger) NewChild() *Debugger {
 	d.shared.breakpointsLock.Lock()
-	breakpoints := utils.GetMapValues(d.shared.breakpoints)
+	breakpoints := maps.Values(d.shared.breakpoints)
 	defer d.shared.breakpointsLock.Unlock()
 
 	child := NewDebugger(DebuggerArgs{
@@ -631,7 +632,7 @@ func (d *Debugger) beforeInstruction(n parse.Node, trace []StackFrameInfo, excep
 				switch c := cmd.(type) {
 				case DebugCommandGetScopes:
 					globals := d.globalState.Globals.Entries()
-					locals := utils.CopyMap(d.evaluationState.CurrentLocalScope())
+					locals := maps.Clone(d.evaluationState.CurrentLocalScope())
 					c.Get(globals, locals)
 				case DebugCommandGetStackTrace:
 					c.Get(trace)

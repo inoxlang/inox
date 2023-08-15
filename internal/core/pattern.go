@@ -3,12 +3,11 @@ package core
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"reflect"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
-
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -330,7 +329,7 @@ type RecordPattern struct {
 
 func NewInexactRecordPattern(entries map[string]Pattern) *RecordPattern {
 	return &RecordPattern{
-		entryPatterns: utils.CopyMap(entries),
+		entryPatterns: maps.Clone(entries),
 		inexact:       true,
 	}
 }

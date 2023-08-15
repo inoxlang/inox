@@ -11,6 +11,7 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
+	"golang.org/x/exp/maps"
 )
 
 var (
@@ -913,11 +914,11 @@ func (dict *Dictionary) Concretize() any {
 }
 
 func (dict *Dictionary) Entries() map[string]Serializable {
-	return utils.CopyMap(dict.entries)
+	return maps.Clone(dict.entries)
 }
 
 func (dict *Dictionary) Keys() map[string]Serializable {
-	return utils.CopyMap(dict.keys)
+	return maps.Clone(dict.keys)
 }
 
 func (dict *Dictionary) hasKey(keyRepr string) bool {
@@ -1234,7 +1235,7 @@ func (obj *Object) Share(originState *State) PotentiallySharable {
 		return obj
 	}
 	shared := &Object{
-		entries: utils.CopyMap(obj.entries),
+		entries: maps.Clone(obj.entries),
 		static:  obj.static,
 		shared:  true,
 	}
@@ -1301,7 +1302,7 @@ func (obj *Object) SetProp(name string, value SymbolicValue) (IProps, error) {
 		}
 
 		modified := *obj
-		modified.entries = utils.CopyMap(obj.entries)
+		modified.entries = maps.Clone(obj.entries)
 		modified.entries[name] = value.(Serializable)
 
 		return &modified, nil
@@ -1310,15 +1311,15 @@ func (obj *Object) SetProp(name string, value SymbolicValue) (IProps, error) {
 	//new property
 
 	modified := *obj
-	modified.entries = utils.CopyMap(obj.entries)
+	modified.entries = maps.Clone(obj.entries)
 	modified.entries[name] = value.(Serializable)
 	return &modified, nil
 }
 
 func (obj *Object) WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error) {
 	modified := *obj
-	modified.entries = utils.CopyMap(obj.entries)
-	modified.optionalEntries = utils.CopyMap(obj.optionalEntries)
+	modified.entries = maps.Clone(obj.entries)
+	modified.optionalEntries = maps.Clone(obj.optionalEntries)
 	modified.entries[name] = value.(Serializable)
 	delete(modified.optionalEntries, name)
 
@@ -1342,7 +1343,7 @@ func (obj *Object) PropertyNames() []string {
 }
 
 func (obj *Object) OptionalPropertyNames() []string {
-	return utils.GetMapKeys(obj.optionalEntries)
+	return maps.Keys(obj.optionalEntries)
 }
 
 // func (obj *Object) SetNewProperty(name string, value SymbolicValue, static Pattern) {
@@ -1473,7 +1474,7 @@ func (obj *Object) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 
 		utils.Must(w.Write(utils.StringAsBytes("{")))
 
-		keys := utils.GetMapKeys(obj.entries)
+		keys := maps.Keys(obj.entries)
 		sort.Strings(keys)
 
 		for i, k := range keys {
@@ -1654,7 +1655,7 @@ func (rec *Record) PropertyNames() []string {
 }
 
 func (rec *Record) OptionalPropertyNames() []string {
-	return utils.GetMapKeys(rec.optionalEntries)
+	return maps.Keys(rec.optionalEntries)
 }
 
 func (rec *Record) ValueEntryMap() map[string]SymbolicValue {
@@ -1750,7 +1751,7 @@ func (rec *Record) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 
 		utils.Must(w.Write(utils.StringAsBytes("#{")))
 
-		keys := utils.GetMapKeys(rec.entries)
+		keys := maps.Keys(rec.entries)
 		sort.Strings(keys)
 
 		for i, k := range keys {

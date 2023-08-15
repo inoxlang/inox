@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -200,7 +201,7 @@ func NewContext(config ContextConfig) *Context {
 		}
 	}
 
-	hostResolutions := utils.CopyMap(config.HostResolutions)
+	hostResolutions := maps.Clone(config.HostResolutions)
 
 	*ctx = Context{
 		kind:                 config.Kind,
@@ -522,13 +523,13 @@ func (ctx *Context) New() *Context {
 		WaitConfirmPrompt: ctx.waitConfirmPrompt,
 	})
 
-	clone.namedPatterns = utils.CopyMap(ctx.namedPatterns)
-	clone.patternNamespaces = utils.CopyMap(ctx.patternNamespaces)
-	clone.hostAliases = utils.CopyMap(ctx.hostAliases)
+	clone.namedPatterns = maps.Clone(ctx.namedPatterns)
+	clone.patternNamespaces = maps.Clone(ctx.patternNamespaces)
+	clone.hostAliases = maps.Clone(ctx.hostAliases)
 	//TODO: clone clients ?
-	clone.hostProtocolClients = utils.CopyMap(ctx.hostProtocolClients)
-	clone.urlProtocolClients = utils.CopyMap(ctx.urlProtocolClients)
-	clone.userData = utils.CopyMap(ctx.userData)
+	clone.hostProtocolClients = maps.Clone(ctx.hostProtocolClients)
+	clone.urlProtocolClients = maps.Clone(ctx.urlProtocolClients)
+	clone.userData = maps.Clone(ctx.userData)
 
 	return clone
 }
@@ -709,7 +710,7 @@ func (ctx *Context) GetHostAliases() map[string]Host {
 	ctx.lock.RLock()
 	defer ctx.lock.RUnlock()
 
-	return utils.CopyMap(ctx.hostAliases)
+	return maps.Clone(ctx.hostAliases)
 }
 
 // ResolveNamedPattern returns the pattern associated with the passed name, if the pattern does not exist nil is returned.
@@ -728,7 +729,7 @@ func (ctx *Context) GetNamedPatterns() map[string]Pattern {
 	ctx.lock.RLock()
 	defer ctx.lock.RUnlock()
 
-	return utils.CopyMap(ctx.namedPatterns)
+	return maps.Clone(ctx.namedPatterns)
 }
 
 // AddNamedPattern associates a Pattern with the passed pattern name, if the pattern is already defined the function will panic.
@@ -776,7 +777,7 @@ func (ctx *Context) GetPatternNamespaces() map[string]*PatternNamespace {
 	ctx.lock.RLock()
 	defer ctx.lock.RUnlock()
 
-	return utils.CopyMap(ctx.patternNamespaces)
+	return maps.Clone(ctx.patternNamespaces)
 }
 
 func (ctx *Context) SetProtocolClientForURL(u URL, client ProtocolClient) error {
@@ -855,7 +856,7 @@ func (ctx *Context) GetAllHostResolutionData() map[Host]Value {
 	ctx.lock.RLock()
 	defer ctx.lock.RUnlock()
 
-	return utils.CopyMap(ctx.hostResolutionData)
+	return maps.Clone(ctx.hostResolutionData)
 }
 
 // AddHostResolutionData associates data to a host in
