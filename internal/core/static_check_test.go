@@ -2679,6 +2679,37 @@ func TestCheck(t *testing.T) {
 
 	})
 
+	t.Run("host alias definition", func(t *testing.T) {
+		t.Run("redeclaration", func(t *testing.T) {
+			n, src := parseCode(`
+				@host = https://localhost
+				@host = https://localhost
+			`)
+			def := parse.FindNodes(n, (*parse.HostAliasDefinition)(nil), nil)[1]
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := combineErrors(
+				makeError(def, src, fmtHostAliasAlreadyDeclared("host")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("misplaced", func(t *testing.T) {
+			n, src := parseCode(`
+				fn f(){
+					@host = https://localhost
+				}
+			`)
+			def := parse.FindNode(n, (*parse.HostAliasDefinition)(nil), nil)
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := combineErrors(
+				makeError(def, src, MISPLACED_HOST_ALIAS_DEF_STATEMENT_TOP_LEVEL_STMT),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+	})
+
 	t.Run("pattern definition", func(t *testing.T) {
 		t.Run("redeclaration", func(t *testing.T) {
 			n, src := parseCode(`
@@ -2694,23 +2725,51 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
+		t.Run("misplaced", func(t *testing.T) {
+			n, src := parseCode(`
+				fn f(){
+					%p = 0
+				}
+			`)
+			def := parse.FindNode(n, (*parse.PatternDefinition)(nil), nil)
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := combineErrors(
+				makeError(def, src, MISPLACED_PATTERN_DEF_STATEMENT_TOP_LEVEL_STMT),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
 	})
 
 	t.Run("pattern namespace definition", func(t *testing.T) {
 		t.Run("redeclaration", func(t *testing.T) {
 			n, src := parseCode(`
-				%p = 0
-				%p = 1
+				%p. = {}
+				%p. = {}
 			`)
-			def := parse.FindNodes(n, (*parse.PatternDefinition)(nil), nil)[1]
+			def := parse.FindNodes(n, (*parse.PatternNamespaceDefinition)(nil), nil)[1]
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := combineErrors(
-				makeError(def, src, fmtPatternAlreadyDeclared("p")),
+				makeError(def, src, fmtPatternNamespaceAlreadyDeclared("p")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
 
+		t.Run("misplaced", func(t *testing.T) {
+			n, src := parseCode(`
+				fn f(){
+					%p. = {}
+				}
+			`)
+			def := parse.FindNode(n, (*parse.PatternNamespaceDefinition)(nil), nil)
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := combineErrors(
+				makeError(def, src, MISPLACED_PATTERN_NS_DEF_STATEMENT_TOP_LEVEL_STMT),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
 	})
 
 	t.Run("pattern identifier", func(t *testing.T) {

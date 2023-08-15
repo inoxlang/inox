@@ -81,6 +81,7 @@ func StaticCheck(input StaticCheckInput) (*StaticCheckData, error) {
 		localVars:         localVars,
 		shellLocalVars:    shellLocalVars,
 		properties:        make(map[*parse.ObjectLiteral]*propertyInfo),
+		hostAliases:       make(map[parse.Node]map[string]int),
 		patterns:          patterns,
 		patternNamespaces: patternNamespaces,
 		currentModule:     input.Module,
@@ -118,6 +119,9 @@ type checker struct {
 	localVars map[parse.Node]map[string]localVarInfo
 
 	properties map[*parse.ObjectLiteral]*propertyInfo
+
+	//key: *parse.Chunk|*parse.EmbeddedModule
+	hostAliases map[parse.Node]map[string]int
 
 	//key: *parse.Chunk|*parse.EmbeddedModule
 	patterns map[parse.Node]map[string]int
@@ -308,6 +312,15 @@ func (checker *checker) getModFunctionDecls(mod parse.Node) map[string]int {
 		checker.fnDecls[mod] = fns
 	}
 	return fns
+}
+
+func (checker *checker) geHostAliases(mod parse.Node) map[string]int {
+	aliases, ok := checker.hostAliases[mod]
+	if !ok {
+		aliases = make(map[string]int)
+		checker.hostAliases[mod] = aliases
+	}
+	return aliases
 }
 
 func (checker *checker) getModPatterns(mod parse.Node) map[string]int {
@@ -1656,7 +1669,30 @@ switch_:
 			}
 		}
 
+	case *parse.HostAliasDefinition:
+		switch parent.(type) {
+		case *parse.Chunk, *parse.EmbeddedModule:
+		default:
+			c.addError(node, MISPLACED_HOST_ALIAS_DEF_STATEMENT_TOP_LEVEL_STMT)
+			return parse.Prune
+		}
+		aliasName := node.Left.Value[1:]
+		hostAliases := c.geHostAliases(closestModule)
+
+		if _, alreadyDefined := hostAliases[aliasName]; alreadyDefined && !inPreinitBlock {
+			c.addError(node, fmtHostAliasAlreadyDeclared(aliasName))
+		} else {
+			hostAliases[aliasName] = 0
+		}
+
 	case *parse.PatternDefinition:
+		switch parent.(type) {
+		case *parse.Chunk, *parse.EmbeddedModule:
+		default:
+			c.addError(node, MISPLACED_PATTERN_DEF_STATEMENT_TOP_LEVEL_STMT)
+			return parse.Prune
+		}
+
 		patternName := node.Left.Name
 		patterns := c.getModPatterns(closestModule)
 
@@ -1666,10 +1702,17 @@ switch_:
 			patterns[patternName] = 0
 		}
 	case *parse.PatternNamespaceDefinition:
+		switch parent.(type) {
+		case *parse.Chunk, *parse.EmbeddedModule:
+		default:
+			c.addError(node, MISPLACED_PATTERN_NS_DEF_STATEMENT_TOP_LEVEL_STMT)
+			return parse.Prune
+		}
+
 		namespaceName := node.Left.Name
 		namespaces := c.getModPatternNamespaces(closestModule)
 		if _, alreadyDefined := namespaces[namespaceName]; alreadyDefined && !inPreinitBlock {
-			c.addError(node, fmtPatternAlreadyDeclared(namespaceName))
+			c.addError(node, fmtPatternNamespaceAlreadyDeclared(namespaceName))
 		} else {
 			namespaces[namespaceName] = 0
 		}
