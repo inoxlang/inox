@@ -2866,7 +2866,7 @@ object_pattern_top_loop:
 		propParsingErr = nil
 		implicitKey = false
 
-		if p.i < p.len && p.s[p.i] == '}' {
+		if p.i >= p.len || p.s[p.i] == '}' {
 			break object_pattern_top_loop
 		}
 

@@ -7903,6 +7903,47 @@ func testParse(
 				},
 			},
 			{
+				input:    "{,}",
+				hasError: false,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
+					Statements: []Node{
+						&ObjectLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{0, 3},
+								nil,
+								[]Token{
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{0, 1}},
+									{Type: COMMA, Span: NodeSpan{1, 2}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{2, 3}},
+								},
+							},
+							Properties: nil,
+						},
+					},
+				},
+			},
+			{
+				input:    "{,",
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+					Statements: []Node{
+						&ObjectLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{0, 2},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_REC_MISSING_CLOSING_BRACE},
+								[]Token{
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{0, 1}},
+									{Type: COMMA, Span: NodeSpan{1, 2}},
+								},
+							},
+							Properties: nil,
+						},
+					},
+				},
+			},
+			{
 				input:    "{ a: 1 }",
 				hasError: false,
 				result: &Chunk{
@@ -18124,6 +18165,58 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("{  ...named-pattern, prop with unprefixed named pattern } ", func(t *testing.T) {
+			n := mustparseChunk(t, "%{ ...%patt, name: str }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 24}, nil, nil},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 24},
+							nil,
+							[]Token{
+								{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
+								{Type: COMMA, Span: NodeSpan{11, 12}},
+								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{23, 24}},
+							},
+						},
+						Exact: false,
+						Properties: []*ObjectPatternProperty{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{13, 22},
+									nil,
+									[]Token{{Type: COLON, Span: NodeSpan{17, 18}}},
+								},
+								Key: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{13, 17}, nil, nil},
+									Name:     "name",
+								},
+								Value: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{19, 22}, nil, nil},
+									Unprefixed: true,
+									Name:       "str",
+								},
+							},
+						},
+						SpreadElements: []*PatternPropertySpreadElement{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{3, 11},
+									nil,
+									[]Token{{Type: THREE_DOTS, Span: NodeSpan{3, 6}}},
+								},
+								Expr: &PatternIdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{6, 11}, nil, nil},
+									Name:     "patt",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("{ prop with keylist value } ", func(t *testing.T) {
 			n := mustparseChunk(t, "%{keys: .{a}}")
 			assert.EqualValues(t, &Chunk{
@@ -18427,6 +18520,47 @@ func testParse(
 								},
 							},
 						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("%{,", func(t *testing.T) {
+			n, err := parseChunk(t, "%{,", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 3},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_PATTERN_MISSING_CLOSING_BRACE},
+							[]Token{
+								{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
+								{Type: COMMA, Span: NodeSpan{2, 3}},
+							},
+						},
+						Exact: false,
+					},
+				},
+			}, n)
+		})
+		t.Run("%{,}", func(t *testing.T) {
+			n := mustparseChunk(t, "%{,}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 4},
+							nil,
+							[]Token{
+								{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
+								{Type: COMMA, Span: NodeSpan{2, 3}},
+								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{3, 4}},
+							},
+						},
+						Exact: false,
 					},
 				},
 			}, n)
