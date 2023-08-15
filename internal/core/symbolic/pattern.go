@@ -1207,7 +1207,7 @@ func (p *RecordPattern) Concretize() any {
 		concretePropertyPatterns[k] = concretePropPattern
 	}
 
-	return extData.ConcreteValueFactories.CreateObjectPattern(p.inexact, concretePropertyPatterns, utils.CopyMap(p.optionalEntries))
+	return extData.ConcreteValueFactories.CreateRecordPattern(p.inexact, concretePropertyPatterns, utils.CopyMap(p.optionalEntries))
 }
 
 func (p *RecordPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -1748,7 +1748,7 @@ func (p *TuplePattern) Concretize() any {
 		concreteElementPatterns[i] = concreteElemPattern
 	}
 
-	return extData.ConcreteValueFactories.CreateListPattern(nil, concreteElementPatterns)
+	return extData.ConcreteValueFactories.CreateTuplePattern(nil, concreteElementPatterns)
 }
 
 func (p *TuplePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
