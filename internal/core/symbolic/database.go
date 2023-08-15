@@ -135,6 +135,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 					parameters:     []SymbolicValue{op.Current.SymbolicValue()},
 					parameterNames: []string{"previous-value"},
 					result:         op.Next.SymbolicValue(),
+					visitCheckNode: isNodeAllowedInMigrationHandler,
 				}
 
 				capable, ok := op.Next.(MigrationInitialValueCapablePattern)
@@ -164,6 +165,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 						parameters:     []SymbolicValue{op.Value.SymbolicValue()},
 						parameterNames: []string{"removed-value"},
 						result:         Nil,
+						visitCheckNode: isNodeAllowedInMigrationHandler,
 					},
 					Nil,
 				)).(Serializable)
@@ -185,6 +187,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 					parameters:     []SymbolicValue{ANY},
 					parameterNames: []string{"previous-value"},
 					result:         op.Value.SymbolicValue(),
+					visitCheckNode: isNodeAllowedInMigrationHandler,
 				}
 
 				capable, ok := op.Value.(MigrationInitialValueCapablePattern)
@@ -215,6 +218,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 					parameters:     []SymbolicValue{joinValues([]SymbolicValue{value, Nil})},
 					parameterNames: []string{"previous-value"},
 					result:         value,
+					visitCheckNode: isNodeAllowedInMigrationHandler,
 				}
 
 				capable, ok := op.Value.(MigrationInitialValueCapablePattern)
