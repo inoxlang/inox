@@ -683,6 +683,10 @@ func (list *List) Migrate(ctx *Context, key Path, migration *InstanceMigrationAr
 	return migrateListOrTuple(ctx, list, true, key, migration)
 }
 
+func (tuple *Tuple) Migrate(ctx *Context, key Path, migration *InstanceMigrationArgs) (Value, error) {
+	return migrateListOrTuple(ctx, tuple, false, key, migration)
+}
+
 func migrateListOrTuple(
 	ctx *Context, o Sequence, isList bool,
 	key Path, migration *InstanceMigrationArgs) (Value, error) {
@@ -690,6 +694,11 @@ func migrateListOrTuple(
 
 	migrationHanders := migration.MigrationHandlers
 	state := ctx.GetClosestState()
+
+	//a tuple is immutable so it cannot be updated in-place
+	var nextTupleElements []Serializable
+	//note: nextRecordKeys should not be use to check for the presence of a next record because it could be nil
+	var nextTuple bool
 
 	getIndex := func(elementPath []string) (int, error) {
 		index, err := strconv.Atoi(elementPath[len(elementPath)-1])
@@ -747,16 +756,15 @@ func migrateListOrTuple(
 					return nil, err
 				}
 
-				if o, ok := o.(*List); ok {
-					o.removePosition(ctx, Int(index))
-					return o, nil
+				if list, ok := o.(*List); ok {
+					list.removePosition(ctx, Int(index))
+				} else {
+					if !nextTuple {
+						nextTuple = true
+						nextTupleElements = utils.CopySlice(o.(*Tuple).elements)
+					}
+					nextTupleElements = slices.Delete(nextTupleElements, index, index+1)
 				}
-
-				elements := utils.CopySlice(o.(*Tuple).elements)
-				elements = slices.Delete(elements, index, index+1)
-				tuple := NewTuple(elements)
-				tuple.constraintId = o.(*Tuple).constraintId
-				return tuple, nil
 			}
 		case pathPatternDepth > 1+depth: //deletion inside element value
 			elementPathPattern := pathPatternSegments[:depth+1]
@@ -771,11 +779,23 @@ func migrateListOrTuple(
 				return nil, commonfmt.FmtValueAtPathSegmentsIsNotMigrationCapable(elementPathPattern)
 			}
 
-			propertyValuePath := "/" + Path(strings.Join(elementPathPattern, ""))
-			migrationCapable.Migrate(ctx, propertyValuePath, &InstanceMigrationArgs{
+			elementValuePath := "/" + Path(strings.Join(elementPathPattern, ""))
+			nextElementValue, err := migrationCapable.Migrate(ctx, elementValuePath, &InstanceMigrationArgs{
 				NextPattern:       nil,
-				MigrationHandlers: migrationHanders.FilterByPrefix(propertyValuePath),
+				MigrationHandlers: migrationHanders.FilterByPrefix(elementValuePath),
 			})
+
+			if err != nil {
+				return nil, err
+			}
+			//if o is a tuple a new tuple with the element removed has to be created
+			if !isList {
+				if !nextTuple {
+					nextTuple = true
+					nextTupleElements = utils.CopySlice(o.(*Tuple).elements)
+				}
+				nextTupleElements[index] = nextElementValue.(Serializable)
+			}
 		default:
 			panic(ErrUnreachable)
 		}
@@ -846,21 +866,18 @@ func migrateListOrTuple(
 					}
 					nextElementValue = clone
 				}
+
 				if isList {
 					o.(*List).set(ctx, index, nextElementValue)
-					return o, nil
 				} else {
-					elements := utils.CopySlice(o.(*Tuple).elements)
-					elements[index] = nextElementValue.(Serializable)
-					tuple := NewTuple(elements)
-					tuple.constraintId = o.(*Tuple).constraintId
-					return tuple, nil
+					if !nextTuple {
+						nextTuple = true
+						nextTupleElements = utils.CopySlice(o.(*Tuple).elements)
+					}
+					nextTupleElements[index] = nextElementValue.(Serializable)
 				}
 			}
 		case pathPatternDepth > 1+depth: //migration inside property value
-			if !isList { //tuple
-				panic(ErrUnreachable)
-			}
 			elementPathSegments := pathPatternSegments[:depth+1]
 
 			index, err := getIndex(elementPathSegments)
@@ -875,10 +892,23 @@ func migrateListOrTuple(
 			}
 
 			propertyValuePath := Path("/" + strings.Join(elementPathSegments, ""))
-			migrationCapable.Migrate(ctx, propertyValuePath, &InstanceMigrationArgs{
+			nextElementValue, err := migrationCapable.Migrate(ctx, propertyValuePath, &InstanceMigrationArgs{
 				NextPattern:       nil,
 				MigrationHandlers: migrationHanders.FilterByPrefix(propertyValuePath),
 			})
+
+			if err != nil {
+				return nil, err
+			}
+
+			//if o is a tuple a new tuple with the element replacement has to be created
+			if !isList {
+				if !nextTuple {
+					nextTuple = true
+					nextTupleElements = utils.CopySlice(o.(*Tuple).elements)
+				}
+				nextTupleElements[index] = nextElementValue.(Serializable)
+			}
 		}
 
 		return nil, nil
@@ -912,6 +942,12 @@ func migrateListOrTuple(
 		if result != nil {
 			return result, nil
 		}
+	}
+
+	if nextTuple {
+		nextTuple := NewTuple(nextTupleElements)
+		nextTuple.constraintId = o.(*Tuple).constraintId
+		return nextTuple, nil
 	}
 
 	return o, nil

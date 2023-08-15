@@ -1123,10 +1123,10 @@ func TestRecordMigrate(t *testing.T) {
 
 func TestListMigrate(t *testing.T) {
 
-	t.Run("delete list: / key", func(t *testing.T) {
+	t.Run("delete tuple: / key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
-		list := NewWrappedValueList()
-		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
+		tuple := NewTuple(nil)
+		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Deletions: map[PathPattern]*MigrationOpHandler{
@@ -1143,7 +1143,7 @@ func TestListMigrate(t *testing.T) {
 
 	t.Run("delete list: /x key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
-		list := NewObjectFromMap(nil, ctx)
+		list := NewWrappedValueList()
 		val, err := list.Migrate(ctx, "/x", &InstanceMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
@@ -1373,6 +1373,306 @@ func TestListMigrate(t *testing.T) {
 		}
 		expectedInner := NewObjectFromMap(ValMap{"b": Int(1)}, ctx)
 		assert.Equal(t, []Serializable{expectedInner}, list.GetOrBuildElements(ctx))
+	})
+
+	t.Run("element inclusion should panic", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		list := NewWrappedValueList()
+
+		assert.PanicsWithError(t, ErrUnreachable.Error(), func() {
+			list.Migrate(ctx, "/", &InstanceMigrationArgs{
+				NextPattern: nil,
+				MigrationHandlers: MigrationOpHandlers{
+					Inclusions: map[PathPattern]*MigrationOpHandler{
+						"/0": {InitialValue: Int(1)},
+					},
+				},
+			})
+		})
+	})
+}
+
+func TestTupleMigrate(t *testing.T) {
+
+	t.Run("delete tuple: / key", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		tuple := NewTuple(nil)
+		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Deletions: map[PathPattern]*MigrationOpHandler{
+					"/": nil,
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Nil(t, val)
+	})
+
+	t.Run("delete tuple: /x key", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		tuple := NewTuple(nil)
+		val, err := tuple.Migrate(ctx, "/x", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Deletions: map[PathPattern]*MigrationOpHandler{
+					"/x": nil,
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Nil(t, val)
+	})
+
+	t.Run("delete element", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		tuple := NewTuple([]Serializable{Int(0)})
+		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Deletions: map[PathPattern]*MigrationOpHandler{
+					"/0": nil,
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.NotSame(t, tuple, val)
+		assert.Equal(t, []Serializable{}, val.(*Tuple).GetOrBuildElements(ctx))
+		//original tuple should not have changed
+		assert.Equal(t, []Serializable{Int(0)}, tuple.GetOrBuildElements(ctx))
+	})
+
+	t.Run("delete inexisting element (index >= len)", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		tuple := NewTuple([]Serializable{Int(0)})
+		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Deletions: map[PathPattern]*MigrationOpHandler{
+					"/1": nil,
+				},
+			},
+		})
+
+		if !assert.Equal(t, err, commonfmt.FmtLastSegmentOfMigrationPathIsOutOfBounds([]string{"1"})) {
+			return
+		}
+		assert.Nil(t, val)
+		//original tuple should not have changed
+		assert.Equal(t, []Serializable{Int(0)}, tuple.GetOrBuildElements(ctx))
+	})
+
+	t.Run("delete inexisting element (index < 0)", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		tuple := NewTuple([]Serializable{Int(0)})
+		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Deletions: map[PathPattern]*MigrationOpHandler{
+					"/-1": nil,
+				},
+			},
+		})
+
+		if !assert.Equal(t, err, commonfmt.FmtLastSegmentOfMigrationPathIsOutOfBounds([]string{"-1"})) {
+			return
+		}
+		assert.Nil(t, val)
+		//original tuple should not have changed
+		assert.Equal(t, []Serializable{Int(0)}, tuple.GetOrBuildElements(ctx))
+	})
+
+	t.Run("delete property of element", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		tuple := NewTuple([]Serializable{NewRecordFromMap(ValMap{"b": Int(0)})})
+		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Deletions: map[PathPattern]*MigrationOpHandler{
+					"/0/b": nil,
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.NotSame(t, tuple, val)
+		expectedInner := NewRecordFromMap(ValMap{})
+		assert.Equal(t, []Serializable{expectedInner}, val.(*Tuple).GetOrBuildElements(ctx))
+		//original tuple should not have changed
+		assert.Equal(t, []Serializable{NewRecordFromMap(ValMap{"b": Int(0)})}, tuple.GetOrBuildElements(ctx))
+	})
+
+	t.Run("replace tuple: / key", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		tuple := NewTuple(nil)
+		replacement := NewTuple(nil)
+
+		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Replacements: map[PathPattern]*MigrationOpHandler{
+					"/": {InitialValue: replacement},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Equal(t, replacement, val) {
+			return
+		}
+		assert.Same(t, replacement, val)
+	})
+
+	t.Run("replace tuple: /x key", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		tuple := NewTuple(nil)
+		replacement := NewTuple(nil)
+
+		val, err := tuple.Migrate(ctx, "/x", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Replacements: map[PathPattern]*MigrationOpHandler{
+					"/x": {InitialValue: replacement},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Equal(t, replacement, val) {
+			return
+		}
+		assert.Same(t, replacement, val)
+	})
+
+	t.Run("replace element", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		replacement := NewRecordFromMap(nil)
+
+		tuple := NewTuple([]Serializable{NewRecordFromMap(ValMap{"b": Int(0)})})
+		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Replacements: map[PathPattern]*MigrationOpHandler{
+					"/0": {InitialValue: replacement},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.NotSame(t, tuple, val) {
+			return
+		}
+		if !assert.Equal(t, []Serializable{replacement}, val.(*Tuple).GetOrBuildElements(ctx)) {
+			return
+		}
+
+		assert.Same(t, replacement, val.(*Tuple).At(ctx, 0))
+
+		//original tuple should not have changed
+		assert.Equal(t, []Serializable{NewRecordFromMap(ValMap{"b": Int(0)})}, tuple.GetOrBuildElements(ctx))
+	})
+
+	t.Run("replace inexisting element (index >= len)", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		replacement := NewWrappedValueList()
+		tuple := NewTuple(nil)
+
+		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Replacements: map[PathPattern]*MigrationOpHandler{
+					"/0": {InitialValue: replacement},
+				},
+			},
+		})
+
+		if !assert.Equal(t, err, commonfmt.FmtLastSegmentOfMigrationPathIsOutOfBounds([]string{"0"})) {
+			return
+		}
+		assert.Nil(t, val)
+	})
+
+	t.Run("replace inexisting element (index < 0)", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		replacement := NewTuple(nil)
+		tuple := NewTuple(nil)
+
+		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Replacements: map[PathPattern]*MigrationOpHandler{
+					"/-1": {InitialValue: replacement},
+				},
+			},
+		})
+
+		if !assert.Equal(t, err, commonfmt.FmtLastSegmentOfMigrationPathIsOutOfBounds([]string{"-1"})) {
+			return
+		}
+		assert.Nil(t, val)
+	})
+
+	t.Run("replace property of element", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		tuple := NewTuple([]Serializable{NewRecordFromMap(ValMap{"b": Int(0)})})
+		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Replacements: map[PathPattern]*MigrationOpHandler{
+					"/0/b": {InitialValue: Int(1)},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.NotSame(t, tuple, val) {
+			return
+		}
+		expectedInner := NewRecordFromMap(ValMap{"b": Int(1)})
+		assert.Equal(t, []Serializable{expectedInner}, val.(*Tuple).GetOrBuildElements(ctx))
+		//original tuple should not have changed
+		assert.Equal(t, []Serializable{NewRecordFromMap(ValMap{"b": Int(0)})}, tuple.GetOrBuildElements(ctx))
+	})
+
+	t.Run("element inclusion should panic", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		tuple := NewTuple(nil)
+
+		assert.PanicsWithError(t, ErrUnreachable.Error(), func() {
+			tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
+				NextPattern: nil,
+				MigrationHandlers: MigrationOpHandlers{
+					Inclusions: map[PathPattern]*MigrationOpHandler{
+						"/0": {InitialValue: Int(1)},
+					},
+				},
+			})
+		})
 	})
 }
 
