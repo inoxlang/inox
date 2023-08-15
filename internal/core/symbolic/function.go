@@ -19,7 +19,7 @@ var (
 // An InoxFunction represents a symbolic InoxFunction.
 // TODO: keep in sync with concrete InoxFunction
 type InoxFunction struct {
-	node           parse.Node //optional but required for calle evaluation
+	node           parse.Node //optional but required for call evaluation
 	parameters     []SymbolicValue
 	parameterNames []string
 	noNodeVariadic bool
@@ -27,7 +27,17 @@ type InoxFunction struct {
 	capturedLocals map[string]SymbolicValue
 	originState    *State
 
+	//optional, should not be present if node is not present
+	visitCheckNode    func(visit visitArgs, globalsAtCreation map[string]SymbolicValue) (parse.TraversalAction, bool, error)
+	globalsAtCreation map[string]SymbolicValue
+
 	SerializableMixin
+}
+
+type visitArgs struct {
+	node, parent, scopeNode parse.Node
+	ancestorChain           []parse.Node
+	after                   bool
 }
 
 func NewInoxFunction(parameters map[string]SymbolicValue, capturedLocals map[string]SymbolicValue, result SymbolicValue) *InoxFunction {
@@ -81,6 +91,40 @@ func (fn *InoxFunction) Test(v SymbolicValue) bool {
 
 	if fn.result == nil {
 		return true
+	}
+
+	if fn.visitCheckNode != nil {
+		if other.node == nil {
+			//impossible to check
+			return false
+		}
+		atLeastOneNodeNotAllowed := false
+
+		body := other.FuncExpr().Body
+
+		parse.Walk(
+			body,
+			func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
+				if _, isBody := node.(*parse.Block); isBody && node == body {
+					return parse.Continue, nil
+				}
+
+				action, allowed, err := fn.visitCheckNode(visitArgs{node, parent, scopeNode, ancestorChain, after}, fn.capturedLocals)
+				if err != nil {
+					return parse.StopTraversal, err
+				}
+				if !allowed {
+					atLeastOneNodeNotAllowed = true
+					return parse.StopTraversal, nil
+				}
+				return action, nil
+			},
+			nil,
+		)
+
+		if atLeastOneNodeNotAllowed {
+			return false
+		}
 	}
 
 	if (fn.node != nil && other.node == nil) ||
