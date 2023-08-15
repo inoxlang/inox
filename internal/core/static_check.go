@@ -1673,8 +1673,10 @@ switch_:
 		switch parent.(type) {
 		case *parse.Chunk, *parse.EmbeddedModule:
 		default:
-			c.addError(node, MISPLACED_HOST_ALIAS_DEF_STATEMENT_TOP_LEVEL_STMT)
-			return parse.Prune
+			if !inPreinitBlock {
+				c.addError(node, MISPLACED_HOST_ALIAS_DEF_STATEMENT_TOP_LEVEL_STMT)
+				return parse.Prune
+			}
 		}
 		aliasName := node.Left.Value[1:]
 		hostAliases := c.geHostAliases(closestModule)
@@ -1689,8 +1691,10 @@ switch_:
 		switch parent.(type) {
 		case *parse.Chunk, *parse.EmbeddedModule:
 		default:
-			c.addError(node, MISPLACED_PATTERN_DEF_STATEMENT_TOP_LEVEL_STMT)
-			return parse.Prune
+			if !inPreinitBlock {
+				c.addError(node, MISPLACED_PATTERN_DEF_STATEMENT_TOP_LEVEL_STMT)
+				return parse.Prune
+			}
 		}
 
 		patternName := node.Left.Name
@@ -1705,8 +1709,10 @@ switch_:
 		switch parent.(type) {
 		case *parse.Chunk, *parse.EmbeddedModule:
 		default:
-			c.addError(node, MISPLACED_PATTERN_NS_DEF_STATEMENT_TOP_LEVEL_STMT)
-			return parse.Prune
+			if !inPreinitBlock {
+				c.addError(node, MISPLACED_PATTERN_NS_DEF_STATEMENT_TOP_LEVEL_STMT)
+				return parse.Prune
+			}
 		}
 
 		namespaceName := node.Left.Name
