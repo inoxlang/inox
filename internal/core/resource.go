@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/inoxlang/inox/internal/afs"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
@@ -435,7 +436,7 @@ func (patt PathPattern) Includes(ctx *Context, v Value) bool {
 		if patt.IsPrefixPattern() {
 			return strings.HasPrefix(string(other), patt.Prefix())
 		}
-		ok, err := path.Match(string(patt), string(other))
+		ok, err := doublestar.Match(string(patt), string(other))
 		return err == nil && ok
 	case PathPattern:
 		if patt.IsPrefixPattern() {
