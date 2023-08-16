@@ -2118,7 +2118,7 @@ func (p *parser) parseIdentStartingExpression() Node {
 	}
 
 	name := string(p.s[start:p.i])
-	ident := &IdentifierLiteral{
+	firstIdent := &IdentifierLiteral{
 		NodeBase: NodeBase{
 			Span: NodeSpan{start, p.i},
 		},
@@ -2129,13 +2129,13 @@ func (p *parser) parseIdentStartingExpression() Node {
 	case "self":
 		return &SelfExpression{
 			NodeBase: NodeBase{
-				Span: ident.Span,
+				Span: firstIdent.Span,
 			},
 		}
 	case "supersys":
 		return &SupersysExpression{
 			NodeBase: NodeBase{
-				Span: ident.Span,
+				Span: firstIdent.Span,
 			},
 		}
 	}
@@ -2150,9 +2150,9 @@ func (p *parser) parseIdentStartingExpression() Node {
 
 		var memberExpr Node = &IdentifierMemberExpression{
 			NodeBase: NodeBase{
-				Span: NodeSpan{Start: ident.Span.Start},
+				Span: NodeSpan{Start: firstIdent.Span.Start},
 			},
-			Left:          ident,
+			Left:          firstIdent,
 			PropertyNames: nil,
 		}
 
@@ -2177,19 +2177,39 @@ func (p *parser) parseIdentStartingExpression() Node {
 				return memberExpr
 			}
 
-			if p.s[p.i] == '<' {
+			switch {
+			case p.s[p.i] == '<':
 				isDynamic = true
 				p.i++
 				nameStart = p.i
-			} else if p.s[p.i] == '(' {
+			case p.s[p.i] == '(':
 				isComputed = true
-			} else if isAlpha(p.s[p.i]) || p.s[p.i] == '_' {
+			case p.s[p.i] == '{':
+				object := memberExpr
+				identMemberExpr, ok := memberExpr.(*IdentifierMemberExpression)
+				//IdentifierMemberExpression is the only possible type of memberExpr that can be incomplete
+				if ok {
+					object.BasePtr().Span.End = p.i - 1
+					if len(identMemberExpr.PropertyNames) == 0 {
+						object = identMemberExpr.Left
+					}
+				}
+
+				p.i--
+				keyList := p.parseKeyList()
+
+				return &ExtractionExpression{
+					NodeBase: NodeBase{Span: NodeSpan{firstIdent.Span.Start, keyList.Span.End}},
+					Object:   object,
+					Keys:     keyList,
+				}
+			case isAlpha(p.s[p.i]) || p.s[p.i] == '_':
 				isDynamic = false
-			} else if isValidUnquotedStringChar(p.s, p.i) {
+			case isValidUnquotedStringChar(p.s, p.i):
 				return p.parseUnquotedStringLiteralAndEmailAddress(start)
 				//memberExpr.NodeBase.Err = &ParsingError{UnspecifiedParsingError, makePropNameShouldStartWithAletterNot(p.s[p.i])}
 				//return memberExpr
-			} else {
+			default:
 				base := memberExpr.BasePtr()
 				base.Span.End = p.i
 
@@ -2221,19 +2241,19 @@ func (p *parser) parseIdentStartingExpression() Node {
 
 				if ok && len32(identMemberExpr.PropertyNames) == 0 {
 					memberExpr = &DynamicMemberExpression{
-						NodeBase:     NodeBase{Span: NodeSpan{ident.Span.Start, p.i}},
-						Left:         ident,
+						NodeBase:     NodeBase{Span: NodeSpan{firstIdent.Span.Start, p.i}},
+						Left:         firstIdent,
 						PropertyName: propNameNode.(*IdentifierLiteral),
 						Optional:     isOptional,
 					}
 				} else {
 					left := memberExpr
 					if ok && len(identMemberExpr.PropertyNames) == 0 {
-						left = ident
+						left = firstIdent
 					}
 
 					memberExpr = &DynamicMemberExpression{
-						NodeBase:     NodeBase{Span: NodeSpan{ident.Span.Start, p.i}},
+						NodeBase:     NodeBase{Span: NodeSpan{firstIdent.Span.Start, p.i}},
 						Left:         left,
 						PropertyName: propNameNode.(*IdentifierLiteral),
 						Optional:     isOptional,
@@ -2250,19 +2270,19 @@ func (p *parser) parseIdentStartingExpression() Node {
 
 					left := memberExpr
 					if ok && len(identMemberExpr.PropertyNames) == 0 {
-						left = ident
+						left = firstIdent
 					}
 
 					if !isComputed {
 						memberExpr = &MemberExpression{
-							NodeBase:     NodeBase{Span: NodeSpan{ident.Span.Start, p.i}},
+							NodeBase:     NodeBase{Span: NodeSpan{firstIdent.Span.Start, p.i}},
 							Left:         left,
 							PropertyName: propNameNode.(*IdentifierLiteral),
 							Optional:     isOptional,
 						}
 					} else {
 						memberExpr = &ComputedMemberExpression{
-							NodeBase:     NodeBase{Span: NodeSpan{ident.Span.Start, p.i}},
+							NodeBase:     NodeBase{Span: NodeSpan{firstIdent.Span.Start, p.i}},
 							Left:         left,
 							PropertyName: propNameNode,
 							Optional:     isOptional,
@@ -2296,14 +2316,14 @@ func (p *parser) parseIdentStartingExpression() Node {
 	case "true", "false":
 		return &BooleanLiteral{
 			NodeBase: NodeBase{
-				Span: ident.Span,
+				Span: firstIdent.Span,
 			},
 			Value: name[0] == 't',
 		}
 	case "nil":
 		return &NilLiteral{
 			NodeBase: NodeBase{
-				Span: ident.Span,
+				Span: firstIdent.Span,
 			},
 		}
 	}
@@ -2312,7 +2332,7 @@ func (p *parser) parseIdentStartingExpression() Node {
 		if utils.SliceContains(SCHEMES, name) {
 			return p.parseURLLike(start)
 		}
-		base := ident.NodeBase
+		base := firstIdent.NodeBase
 		base.Err = &ParsingError{UnspecifiedParsingError, fmtInvalidURIUnsupportedProtocol(name)}
 
 		return &InvalidURL{
@@ -2321,7 +2341,7 @@ func (p *parser) parseIdentStartingExpression() Node {
 		}
 	}
 
-	return ident
+	return firstIdent
 }
 
 func (p *parser) parseKeyList() *KeyListExpression {

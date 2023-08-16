@@ -3234,33 +3234,194 @@ func testParse(
 
 	})
 
-	t.Run("extraction expression : object is a variable", func(t *testing.T) {
-		n := mustparseChunk(t, "$a.{name}")
-		assert.EqualValues(t, &Chunk{
-			NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
-			Statements: []Node{
-				&ExtractionExpression{
-					NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
-					Object: &Variable{
-						NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
-						Name:     "a",
-					},
-					Keys: &KeyListExpression{
-						NodeBase: NodeBase{
-							NodeSpan{2, 9},
-							nil,
-							[]Token{{Type: OPENING_KEYLIST_BRACKET, Span: NodeSpan{2, 4}}, {Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{8, 9}}},
+	t.Run("extraction expression", func(t *testing.T) {
+		t.Run("variable", func(t *testing.T) {
+			n := mustparseChunk(t, "$a.{name}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
+				Statements: []Node{
+					&ExtractionExpression{
+						NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
+						Object: &Variable{
+							NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+							Name:     "a",
 						},
-						Keys: []Node{
-							&IdentifierLiteral{
-								NodeBase: NodeBase{NodeSpan{4, 8}, nil, nil},
-								Name:     "name",
+						Keys: &KeyListExpression{
+							NodeBase: NodeBase{
+								NodeSpan{2, 9},
+								nil,
+								[]Token{{Type: OPENING_KEYLIST_BRACKET, Span: NodeSpan{2, 4}}, {Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{8, 9}}},
+							},
+							Keys: []Node{
+								&IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{4, 8}, nil, nil},
+									Name:     "name",
+								},
 							},
 						},
 					},
 				},
-			},
-		}, n)
+			}, n)
+		})
+
+		t.Run("identifier", func(t *testing.T) {
+			n := mustparseChunk(t, "a.{name}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
+				Statements: []Node{
+					&ExtractionExpression{
+						NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
+						Object: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+							Name:     "a",
+						},
+						Keys: &KeyListExpression{
+							NodeBase: NodeBase{
+								NodeSpan{1, 8},
+								nil,
+								[]Token{
+									{Type: OPENING_KEYLIST_BRACKET, Span: NodeSpan{1, 3}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{7, 8}},
+								},
+							},
+							Keys: []Node{
+								&IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{3, 7}, nil, nil},
+									Name:     "name",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("identifier member expression", func(t *testing.T) {
+			n := mustparseChunk(t, "a.b.{name}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
+				Statements: []Node{
+					&ExtractionExpression{
+						NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
+						Object: &IdentifierMemberExpression{
+							NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
+							Left: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+								Name:     "a",
+							},
+							PropertyNames: []*IdentifierLiteral{
+								{
+									NodeBase: NodeBase{NodeSpan{2, 3}, nil, nil},
+									Name:     "b",
+								},
+							},
+						},
+						Keys: &KeyListExpression{
+							NodeBase: NodeBase{
+								NodeSpan{3, 10},
+								nil,
+								[]Token{
+									{Type: OPENING_KEYLIST_BRACKET, Span: NodeSpan{3, 5}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
+								},
+							},
+							Keys: []Node{
+								&IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{5, 9}, nil, nil},
+									Name:     "name",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("computed member expression", func(t *testing.T) {
+			n := mustparseChunk(t, `a.("b").{name}`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 14}, nil, nil},
+				Statements: []Node{
+					&ExtractionExpression{
+						NodeBase: NodeBase{NodeSpan{0, 14}, nil, nil},
+						Object: &ComputedMemberExpression{
+							NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
+							Left: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+								Name:     "a",
+							},
+							PropertyName: &QuotedStringLiteral{
+								NodeBase: NodeBase{
+									NodeSpan{3, 6},
+									nil,
+									[]Token{
+										{Type: OPENING_PARENTHESIS, Span: NodeSpan{2, 3}},
+										{Type: CLOSING_PARENTHESIS, Span: NodeSpan{6, 7}},
+									},
+								},
+								Raw:   `"b"`,
+								Value: "b",
+							},
+						},
+						Keys: &KeyListExpression{
+							NodeBase: NodeBase{
+								NodeSpan{7, 14},
+								nil,
+								[]Token{
+									{Type: OPENING_KEYLIST_BRACKET, Span: NodeSpan{7, 9}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{13, 14}},
+								},
+							},
+							Keys: []Node{
+								&IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{9, 13}, nil, nil},
+									Name:     "name",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("dynamic member expression", func(t *testing.T) {
+			n := mustparseChunk(t, "a.<b.{name}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
+				Statements: []Node{
+					&ExtractionExpression{
+						NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
+						Object: &DynamicMemberExpression{
+							NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
+							Left: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+								Name:     "a",
+							},
+							PropertyName: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{3, 4}, nil, nil},
+								Name:     "b",
+							},
+						},
+						Keys: &KeyListExpression{
+							NodeBase: NodeBase{
+								NodeSpan{4, 11},
+								nil,
+								[]Token{
+									{Type: OPENING_KEYLIST_BRACKET, Span: NodeSpan{4, 6}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
+								},
+							},
+							Keys: []Node{
+								&IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{6, 10}, nil, nil},
+									Name:     "name",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("parenthesized expression", func(t *testing.T) {
