@@ -1076,6 +1076,7 @@ type Object struct {
 	exact                      bool
 
 	SerializableMixin
+	UrlHolderMixin
 }
 
 func NewAnyObject() *Object {
