@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/filekv"
 	"github.com/inoxlang/inox/internal/parse"
@@ -910,5 +911,218 @@ func TestInteractWithElementsOfLoadedSet(t *testing.T) {
 		}
 
 		assert.Equal(t, core.Int(1), loadedObj.Prop(ctx, "prop"))
+	})
+}
+
+func TestSetMigrate(t *testing.T) {
+
+	config := SetConfig{
+		Element:    core.SERIALIZABLE_PATTERN,
+		Uniqueness: containers_common.UniquenessConstraint{Type: containers_common.UniqueRepr},
+	}
+
+	t.Run("delete Set: / key", func(t *testing.T) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		set := NewSetWithConfig(ctx, nil, config)
+		val, err := set.Migrate(ctx, "/", &core.InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: core.MigrationOpHandlers{
+				Deletions: map[core.PathPattern]*core.MigrationOpHandler{
+					"/": nil,
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Nil(t, val)
+	})
+
+	t.Run("delete Set: /x key", func(t *testing.T) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		set := NewSetWithConfig(ctx, nil, config)
+		val, err := set.Migrate(ctx, "/x", &core.InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: core.MigrationOpHandlers{
+				Deletions: map[core.PathPattern]*core.MigrationOpHandler{
+					"/x": nil,
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Nil(t, val)
+	})
+
+	t.Run("delete element", func(t *testing.T) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		set := NewSetWithConfig(ctx, core.NewWrappedValueList(core.Int(0)), config)
+		val, err := set.Migrate(ctx, "/", &core.InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: core.MigrationOpHandlers{
+				Deletions: map[core.PathPattern]*core.MigrationOpHandler{
+					"/0": nil,
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Same(t, set, val)
+		assert.Equal(t, map[string]core.Serializable{}, set.elements)
+	})
+
+	t.Run("delete all elements", func(t *testing.T) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		set := NewSetWithConfig(ctx, core.NewWrappedValueList(core.Int(0), core.Int(1)), config)
+		val, err := set.Migrate(ctx, "/", &core.InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: core.MigrationOpHandlers{
+				Deletions: map[core.PathPattern]*core.MigrationOpHandler{
+					"/*": nil,
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Same(t, set, val)
+		assert.Equal(t, map[string]core.Serializable{}, set.elements)
+	})
+
+	t.Run("delete inexisting element", func(t *testing.T) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		set := NewSetWithConfig(ctx, core.NewWrappedValueList(core.Int(0)), config)
+		val, err := set.Migrate(ctx, "/", &core.InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: core.MigrationOpHandlers{
+				Deletions: map[core.PathPattern]*core.MigrationOpHandler{
+					"/1": nil,
+				},
+			},
+		})
+
+		if !assert.Equal(t, err, commonfmt.FmtValueAtPathDoesNotExist("/1")) {
+			return
+		}
+		assert.Nil(t, val)
+	})
+
+	t.Run("delete property of element", func(t *testing.T) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		elements := core.NewWrappedValueList(core.NewRecordFromMap(core.ValMap{"b": core.Int(0)}))
+		set := NewSetWithConfig(ctx, elements, config)
+		val, err := set.Migrate(ctx, "/", &core.InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: core.MigrationOpHandlers{
+				Deletions: map[core.PathPattern]*core.MigrationOpHandler{
+					"/#{\"b\":0}/b": nil,
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Same(t, set, val)
+		expectedElement := core.NewRecordFromMap(core.ValMap{})
+		assert.Equal(t, map[string]core.Serializable{"#{}": expectedElement}, set.elements)
+	})
+
+	t.Run("replace Set: / key", func(t *testing.T) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		set := NewSetWithConfig(ctx, core.NewWrappedValueList(), config)
+		replacement := core.NewWrappedValueList()
+
+		val, err := set.Migrate(ctx, "/", &core.InstanceMigrationArgs{
+			NextPattern: NewSetPattern(config, core.CallBasedPatternReprMixin{}),
+			MigrationHandlers: core.MigrationOpHandlers{
+				Replacements: map[core.PathPattern]*core.MigrationOpHandler{
+					"/": {InitialValue: replacement},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Equal(t, replacement, val) {
+			return
+		}
+		assert.NotSame(t, replacement, val)
+	})
+
+	t.Run("replace Set: /x key", func(t *testing.T) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		set := NewSetWithConfig(ctx, core.NewWrappedValueList(), config)
+		replacement := core.NewWrappedValueList()
+
+		val, err := set.Migrate(ctx, "/x", &core.InstanceMigrationArgs{
+			NextPattern: core.NewListPatternOf(core.ANYVAL_PATTERN),
+			MigrationHandlers: core.MigrationOpHandlers{
+				Replacements: map[core.PathPattern]*core.MigrationOpHandler{
+					"/x": {InitialValue: replacement},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Equal(t, replacement, val) {
+			return
+		}
+		assert.NotSame(t, replacement, val)
+	})
+
+	t.Run("replace property of immutable elements", func(t *testing.T) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		elements := core.NewWrappedValueList(
+			core.NewRecordFromMap(core.ValMap{"a": core.Int(1), "b": core.Int(1)}),
+			core.NewRecordFromMap(core.ValMap{"a": core.Int(2), "b": core.Int(2)}),
+		)
+
+		set := NewSetWithConfig(ctx, elements, config)
+		val, err := set.Migrate(ctx, "/", &core.InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: core.MigrationOpHandlers{
+				Replacements: map[core.PathPattern]*core.MigrationOpHandler{
+					`/*/b`: {InitialValue: core.Int(3)},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Same(t, set, val) {
+			return
+		}
+		assert.Equal(t, map[string]core.Serializable{
+			`#{"a":1,"b":3}`: core.NewRecordFromMap(core.ValMap{"a": core.Int(1), "b": core.Int(3)}),
+			`#{"a":2,"b":3}`: core.NewRecordFromMap(core.ValMap{"a": core.Int(2), "b": core.Int(3)}),
+		}, set.elements)
+	})
+
+	t.Run("element inclusion should panic", func(t *testing.T) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+
+		set := NewSetWithConfig(ctx, nil, config)
+
+		assert.PanicsWithError(t, core.ErrUnreachable.Error(), func() {
+			set.Migrate(ctx, "/", &core.InstanceMigrationArgs{
+				NextPattern: nil,
+				MigrationHandlers: core.MigrationOpHandlers{
+					Inclusions: map[core.PathPattern]*core.MigrationOpHandler{
+						"/0": {InitialValue: core.Int(1)},
+					},
+				},
+			})
+		})
 	})
 }

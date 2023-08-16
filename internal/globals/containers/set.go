@@ -7,6 +7,7 @@ import (
 	"io"
 	"path/filepath"
 	"reflect"
+	"strings"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
@@ -27,6 +28,7 @@ var (
 	_ core.MigrationAwarePattern = (*SetPattern)(nil)
 	_ core.PotentiallySharable   = (*Set)(nil)
 	_ core.SerializableIterable  = (*Set)(nil)
+	_ core.MigrationCapable      = (*Set)(nil)
 )
 
 func init() {
@@ -108,7 +110,7 @@ func loadSet(ctx *core.Context, args core.InstanceLoadArgs) (core.UrlHolder, err
 
 	var finalErr error
 
-	//TODO: lazy load
+	//TODO: lazy load if no migration
 	it := jsoniter.ParseString(jsoniter.ConfigCompatibleWithStandardLibrary, rootData)
 	it.ReadArrayCB(func(i *jsoniter.Iterator) (cont bool) {
 		val, err := core.ParseNextJSONRepresentation(ctx, it, setPattern.config.Element)
@@ -129,19 +131,42 @@ func loadSet(ctx *core.Context, args core.InstanceLoadArgs) (core.UrlHolder, err
 		}()
 		set.addNoPersist(ctx, val)
 		if val.IsMutable() {
-			watchable, ok := val.(core.Watchable)
+			_, ok := val.(core.Watchable)
 			if !ok {
 				finalErr = fmt.Errorf("element should either be immutable or watchable")
 				cont = false
 				return
 			}
-			watchable.OnMutation(ctx, set.makePersistOnMutationCallback(val), core.MutationWatchingConfiguration{Depth: core.DeepWatching})
+			//mutation handler is added later in the function
 		}
 		return true
 	})
 
 	if finalErr != nil {
 		return nil, finalErr
+	}
+
+	//we perform the migration before adding mutation handlers for obvious reasons
+	if args.Migration != nil {
+		_, err := set.Migrate(ctx, args.Key, args.Migration)
+		if err != nil {
+			return nil, fmt.Errorf("migration failed: %w", err)
+		}
+
+		if err := persistSet(ctx, set, set.path, set.storage); err != nil {
+			return nil, fmt.Errorf("failed to persist Set after migration: %w", err)
+		}
+	}
+
+	//add mutation handlers
+	for _, elem := range set.elements {
+		if elem.IsMutable() {
+			callbackFn := set.makePersistOnMutationCallback(elem)
+			_, err := elem.(core.Watchable).OnMutation(ctx, callbackFn, core.MutationWatchingConfiguration{Depth: core.DeepWatching})
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	return set, nil
@@ -204,6 +229,201 @@ func (set *Set) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stream, c
 
 	w.WriteArrayEnd()
 	return nil
+}
+
+func (s *Set) Migrate(ctx *core.Context, key core.Path, migration *core.InstanceMigrationArgs) (core.Value, error) {
+	if len(s.pendingInclusions) > 0 || len(s.pendingRemovals) > 0 {
+		panic(core.ErrUnreachable)
+	}
+
+	if ctx.GetTx() != nil {
+		panic(core.ErrUnreachable)
+	}
+
+	depth := len(core.GetPathSegments(string(key)))
+	migrationHanders := migration.MigrationHandlers
+	state := ctx.GetClosestState()
+
+	for pathPattern, handler := range migrationHanders.Deletions {
+		pathPatternSegments := core.GetPathSegments(string(pathPattern))
+		pathPatternDepth := len(pathPatternSegments)
+
+		lastSegment := ""
+		if pathPatternDepth == 0 {
+			if string(pathPattern) != string(key) {
+				panic(core.ErrUnreachable)
+			}
+		} else {
+			lastSegment = pathPatternSegments[pathPatternDepth-1]
+		}
+
+		switch {
+		case string(pathPattern) == string(key): //Set deletion
+			if handler == nil {
+				return nil, nil
+			}
+
+			if handler.Function != nil {
+				_, err := handler.Function.Call(state, nil, []core.Value{s}, nil)
+				return nil, err
+			} else {
+				panic(core.ErrUnreachable)
+			}
+		case pathPatternDepth == 1+depth: //element deletion
+			if lastSegment == "*" { //delete all elements
+				if handler != nil {
+					if handler.Function != nil {
+						_, err := handler.Function.Call(state, nil, []core.Value{s}, nil)
+						if err != nil {
+							return nil, err
+						}
+					} else {
+						panic(core.ErrUnreachable)
+					}
+				}
+
+				clear(s.elements)
+				return s, nil
+			} else {
+				elemToRemove, ok := s.elements[lastSegment]
+				if !ok {
+					return nil, commonfmt.FmtValueAtPathSegmentsDoesNotExist(pathPatternSegments)
+				}
+				if handler != nil {
+					if handler.Function != nil {
+						_, err := handler.Function.Call(state, nil, []core.Value{elemToRemove}, nil)
+						if err != nil {
+							return nil, err
+						}
+					} else {
+						panic(core.ErrUnreachable)
+					}
+				}
+				delete(s.elements, lastSegment)
+			}
+		case pathPatternDepth > 1+depth: //deletion inside element
+			elementPathPattern := pathPatternSegments[:depth+1]
+			key := elementPathPattern[len(elementPathPattern)-1]
+			element, ok := s.elements[key]
+			if !ok {
+				return nil, commonfmt.FmtValueAtPathSegmentsDoesNotExist(pathPatternSegments[:depth+1])
+			}
+			clear(s.elements)
+
+			migrationCapable, ok := element.(core.MigrationCapable)
+			if !ok {
+				return nil, commonfmt.FmtValueAtPathSegmentsIsNotMigrationCapable(pathPatternSegments[:depth+1])
+			}
+
+			propertyValuePath := "/" + core.Path(strings.Join(pathPatternSegments[:depth+1], ""))
+			nextElementValue, err := migrationCapable.Migrate(ctx, propertyValuePath, &core.InstanceMigrationArgs{
+				NextPattern:       nil,
+				MigrationHandlers: migrationHanders.FilterByPrefix(propertyValuePath),
+			})
+
+			if err != nil {
+				return nil, err
+			}
+			nextElementKey := containers_common.GetUniqueKey(ctx, nextElementValue.(core.Serializable), s.config.Uniqueness)
+			s.elements[nextElementKey] = nextElementValue.(core.Serializable)
+		}
+	}
+
+	handle := func(pathPattern core.PathPattern, handler *core.MigrationOpHandler, kind core.MigrationOpKind) (outerFunctionResult core.Value, outerFunctionError error) {
+		pathPatternSegments := core.GetPathSegments(string(pathPattern))
+		pathPatternDepth := len(pathPatternSegments)
+		lastSegment := ""
+		if pathPatternDepth == 0 {
+			if string(pathPattern) != string(key) {
+				panic(core.ErrUnreachable)
+			}
+		} else {
+			lastSegment = pathPatternSegments[pathPatternDepth-1]
+		}
+
+		switch {
+		case string(pathPattern) == string(key): //Set replacement
+			if kind != core.ReplacementMigrationOperation {
+				panic(core.ErrUnreachable)
+			}
+
+			if handler.Function != nil {
+				return handler.Function.Call(state, nil, []core.Value{s}, nil)
+			} else {
+				initialValue := handler.InitialValue
+
+				clone, err := core.RepresentationBasedClone(ctx, initialValue)
+				if err != nil {
+					return nil, commonfmt.FmtErrWhileCloningValueFor(pathPatternSegments, err)
+				}
+				return clone, nil
+			}
+		case pathPatternDepth == 1+depth: //element replacement|inclusion|init
+			_ = lastSegment
+			panic(core.ErrUnreachable)
+		case pathPatternDepth > 1+depth: //migration inside element
+			elementKey := pathPatternSegments[depth]
+
+			if elementKey == "*" {
+				for elemKey, elem := range s.elements {
+					elementPathPatternSegments := append(utils.CopySlice(pathPatternSegments[:depth]), elemKey)
+					delete(s.elements, elemKey)
+
+					migrationCapable, ok := elem.(core.MigrationCapable)
+					if !ok {
+						return nil, commonfmt.FmtValueAtPathSegmentsIsNotMigrationCapable(elementPathPatternSegments)
+					}
+
+					elementValuePath := core.Path("/" + strings.Join(elementPathPatternSegments, ""))
+					nextElementValue, err := migrationCapable.Migrate(ctx, elementValuePath, &core.InstanceMigrationArgs{
+						NextPattern:       nil,
+						MigrationHandlers: migrationHanders.FilterByPrefix(elementValuePath),
+					})
+					if err != nil {
+						return nil, err
+					}
+					nextElementKey := containers_common.GetUniqueKey(ctx, nextElementValue.(core.Serializable), s.config.Uniqueness)
+					s.elements[nextElementKey] = nextElementValue.(core.Serializable)
+				}
+			} else {
+				panic(core.ErrUnreachable)
+			}
+		}
+
+		return nil, nil
+	}
+
+	for pathPattern, handler := range migrationHanders.Replacements {
+		result, err := handle(pathPattern, handler, core.ReplacementMigrationOperation)
+		if err != nil {
+			return nil, err
+		}
+		if result != nil {
+			return result, nil
+		}
+	}
+
+	for pathPattern, handler := range migrationHanders.Inclusions {
+		result, err := handle(pathPattern, handler, core.InclusionMigrationOperation)
+		if err != nil {
+			return nil, err
+		}
+		if result != nil {
+			return result, nil
+		}
+	}
+
+	for pathPattern, handler := range migrationHanders.Initializations {
+		result, err := handle(pathPattern, handler, core.InitializationMigrationOperation)
+		if err != nil {
+			return nil, err
+		}
+		if result != nil {
+			return result, nil
+		}
+	}
+
+	return s, nil
 }
 
 type SetConfig struct {
