@@ -38,8 +38,6 @@ type MigrationCapable interface {
 	//Migrate recursively perfoms a migration, it calls the passed handlers,
 	//if a migration operation is a deletion of the MigrationCapable nil should be returned.
 	//This method should be called before any change to the MigrationCapable.
-	//If a property/element of the MigrationCapable is already present AND the kind is InclusionMigrationOperation
-	// or InitializationMigrationOperation the
 	Migrate(ctx *Context, key Path, migration *InstanceMigrationArgs) (Value, error)
 }
 
@@ -403,6 +401,15 @@ func migrateObjectOrRecord(
 			}
 		case pathPatternDepth == 1+depth: //property deletion
 			if lastSegment == "*" {
+				if handler != nil {
+					if handler.Function != nil {
+						_, err := handler.Function.Call(state, nil, []Value{o}, nil)
+						return nil, err
+					} else {
+						panic(ErrUnreachable)
+					}
+				}
+
 				if o, ok := o.(*Object); ok {
 					obj := NewObjectFromMap(nil, ctx)
 					obj.url = o.url
@@ -425,6 +432,16 @@ func migrateObjectOrRecord(
 
 				if propIndex < 0 {
 					return nil, commonfmt.FmtValueAtPathSegmentsDoesNotExist(pathPatternSegments[:pathPatternDepth])
+				}
+
+				propValueToRemove := (*propValues)[propIndex]
+				if handler != nil {
+					if handler.Function != nil {
+						_, err := handler.Function.Call(state, nil, []Value{propValueToRemove}, nil)
+						return nil, err
+					} else {
+						panic(ErrUnreachable)
+					}
 				}
 
 				if isObject {
@@ -744,6 +761,15 @@ func migrateListOrTuple(
 			}
 		case pathPatternDepth == 1+depth: //element deletion
 			if lastSegment == "*" {
+				if handler != nil {
+					if handler.Function != nil {
+						_, err := handler.Function.Call(state, nil, []Value{o}, nil)
+						return nil, err
+					} else {
+						panic(ErrUnreachable)
+					}
+				}
+
 				if o, ok := o.(*List); ok {
 					list := newValueList()
 					list.constraintId = o.ConstraintId()
@@ -757,6 +783,16 @@ func migrateListOrTuple(
 				index, err := getIndex(pathPatternSegments)
 				if err != nil {
 					return nil, err
+				}
+
+				elemToRemove := o.At(ctx, index)
+				if handler != nil {
+					if handler.Function != nil {
+						_, err := handler.Function.Call(state, nil, []Value{elemToRemove}, nil)
+						return nil, err
+					} else {
+						panic(ErrUnreachable)
+					}
 				}
 
 				if list, ok := o.(*List); ok {
