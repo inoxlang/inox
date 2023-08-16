@@ -1146,10 +1146,10 @@ func TestRecordMigrate(t *testing.T) {
 
 func TestListMigrate(t *testing.T) {
 
-	t.Run("delete tuple: / key", func(t *testing.T) {
+	t.Run("delete list: / key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
-		tuple := NewTuple(nil)
-		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
+		list := NewWrappedValueList(nil)
+		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Deletions: map[PathPattern]*MigrationOpHandler{
