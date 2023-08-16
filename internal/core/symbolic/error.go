@@ -18,15 +18,18 @@ const (
 	CANNOT_SPREAD_OBJ_PATTERN_THAT_MATCHES_ANY_OBJECT                             = "cannot spread an object pattern that matches any object"
 	CANNOT_SPREAD_REC_PATTERN_THAT_MATCHES_ANY_RECORD                             = "cannot spread an record pattern that matches any record"
 	CANNOT_SPREAD_OBJ_PATTERN_THAT_IS_INEXACT                                     = "cannot spread an object pattern that is inexact"
-	MISSING_RETURN_IN_FUNCTION                                                    = "missing return in function"
-	MISSING_UNCONDITIONAL_RETURN_IN_FUNCTION                                      = "missing unconditional return in function"
-	MISSING_RETURN_IN_FUNCTION_PATT                                               = "missing return in function pattern"
-	INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT                                    = "invalid assignment: left hand side is not an integer"
-	INVALID_ASSIGN_INT_OPER_ASSIGN_RHS_NOT_INT                                    = "invalid assignment: right hand side is not an integer"
-	INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE    = "invalid assignment: non-serializable values are not allowed as properties of serializable values"
-	INVALID_ASSIGN_MUTABLE_NON_WATCHABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_WATCHABLE  = "invalid assignment: mutable values that are not watchable are not allowed as properties of watchable values"
-	PROP_SPREAD_IN_REC_NOT_SUPP_YET                                               = "property spread not supported in record yet"
-	CONSTRAINTS_INIT_BLOCK_EXPLANATION                                            = "invalid statement or expression in constraints' initialization block"
+	SPREAD_ELEMENT_SHOULD_BE_A_LIST                                               = "spread element should be a list"
+	SPREAD_ELEMENT_SHOULD_BE_A_TUPLE                                              = "spread element should be a tuple"
+
+	MISSING_RETURN_IN_FUNCTION                                                   = "missing return in function"
+	MISSING_UNCONDITIONAL_RETURN_IN_FUNCTION                                     = "missing unconditional return in function"
+	MISSING_RETURN_IN_FUNCTION_PATT                                              = "missing return in function pattern"
+	INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT                                   = "invalid assignment: left hand side is not an integer"
+	INVALID_ASSIGN_INT_OPER_ASSIGN_RHS_NOT_INT                                   = "invalid assignment: right hand side is not an integer"
+	INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE   = "invalid assignment: non-serializable values are not allowed as properties of serializable values"
+	INVALID_ASSIGN_MUTABLE_NON_WATCHABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_WATCHABLE = "invalid assignment: mutable values that are not watchable are not allowed as properties of watchable values"
+	PROP_SPREAD_IN_REC_NOT_SUPP_YET                                              = "property spread not supported in record yet"
+	CONSTRAINTS_INIT_BLOCK_EXPLANATION                                           = "invalid statement or expression in constraints' initialization block"
 
 	NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE   = "non-serializable values are not allowed as initial values for properties of serializables"
 	MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_WATCHABLE = "mutable values that are not watchable are not allowed as initial values for properties of watchables"
@@ -53,7 +56,7 @@ const (
 	UNSUPPORTED_PARAM_TYPE_FOR_RUNTIME_TYPECHECK       = "unsupported parameter type for runtime typecheck"
 
 	CONCATENATION_SUPPORTED_TYPES_EXPLANATION = "only string, bytes & tuple concatenations are supported for now"
-	SPREAD_ELEMENT_IS_NOT_ITERABLE            = "spread element is not iterabe"
+	SPREAD_ELEMENT_SHOULD_BE_ITERABLE         = "spread element in concenation should be iterable"
 
 	NESTED_RECURSIVE_FUNCTION_DECLARATION = "nested recursive function declarations are not allowed"
 
@@ -183,7 +186,7 @@ func fmtUnexpectedPropertyDidYouMeanElse(name string, suggestion string) string 
 }
 
 func fmtUnexpectedElemInListAnnotated(e SymbolicValue, elemType Pattern) string {
-	return fmt.Sprintf("unexpected element of type %s in a list of %s (annotation)", Stringify(e), Stringify(elemType.SymbolicValue()))
+	return fmt.Sprintf("unexpected element of type %s in a list of %s (annotated)", Stringify(e), Stringify(elemType.SymbolicValue()))
 }
 
 func fmtUnexpectedElemInListofValues(e SymbolicValue, elemType SymbolicValue) string {
@@ -191,7 +194,7 @@ func fmtUnexpectedElemInListofValues(e SymbolicValue, elemType SymbolicValue) st
 }
 
 func fmtUnexpectedElemInTupleAnnotated(e SymbolicValue, elemType Pattern) string {
-	return fmt.Sprintf("unexpected element of type %s in a tuple of %s (annotation)", Stringify(e), Stringify(elemType.SymbolicValue()))
+	return fmt.Sprintf("unexpected element of type %s in a tuple of %s (annotated)", Stringify(e), Stringify(elemType.SymbolicValue()))
 }
 
 func FmtCannotAssignPropertyOf(v SymbolicValue) string {

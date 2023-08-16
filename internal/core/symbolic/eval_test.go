@@ -318,25 +318,74 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewList(ANY_INT, NewString("a")), res)
 		})
 
-		t.Run("type annotation and element of invalid type", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk("[]%int[true]")
+		t.Run("type annotation", func(t *testing.T) {
+
+			t.Run("element of invalid type", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk("[]%int[true]")
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				elemNode := parse.FindNode(n, (*parse.BooleanLiteral)(nil), nil)
+
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListAnnotated(TRUE, state.ctx.ResolveNamedPattern("int"))),
+				}, state.errors())
+				assert.Equal(t, NewListOf(ANY_INT), res)
+			})
+
+			t.Run("spread element should be a list", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk("[]%int[...true]")
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				elemNode := parse.FindNode(n, (*parse.BooleanLiteral)(nil), nil)
+
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(elemNode, state, SPREAD_ELEMENT_SHOULD_BE_A_LIST),
+				}, state.errors())
+				assert.Equal(t, NewListOf(ANY_INT), res)
+			})
+
+			t.Run("spread element of invalid type", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk("l = [true]; return []%int[...l]")
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				elemNode := parse.FindNode(n, (*parse.ElementSpreadElement)(nil), nil)
+
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListAnnotated(TRUE, state.ctx.ResolveNamedPattern("int"))),
+				}, state.errors())
+				assert.Equal(t, NewListOf(ANY_INT), res)
+			})
+
+			t.Run("element of valid type", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk("[]%int[1]")
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+				assert.Equal(t, NewListOf(ANY_INT), res)
+			})
+		})
+
+		t.Run("spread element should be a list", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk("[1, ...true, 2]")
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			elemNode := parse.FindNode(n, (*parse.BooleanLiteral)(nil), nil)
 
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListAnnotated(TRUE, state.ctx.ResolveNamedPattern("int"))),
+				makeSymbolicEvalError(elemNode, state, SPREAD_ELEMENT_SHOULD_BE_A_LIST),
 			}, state.errors())
-			assert.Equal(t, NewListOf(ANY_INT), res)
+			assert.Equal(t, NewList(NewInt(1), NewInt(2)), res)
 		})
 
-		t.Run("type annotation and element of valid type", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk("[]%int[1]")
+		t.Run("spread element", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk("l = [true]; return [1, ...l]")
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
+
 			assert.Empty(t, state.errors())
-			assert.Equal(t, NewListOf(ANY_INT), res)
+			assert.Equal(t, NewList(NewInt(1), TRUE), res)
 		})
+
 	})
 
 	t.Run("tuple literal", func(t *testing.T) {
@@ -345,7 +394,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Equal(t, &Tuple{generalElement: ANY_SERIALIZABLE}, res)
+			assert.Equal(t, &Tuple{elements: []Serializable{}}, res)
 		})
 
 		t.Run("singe element", func(t *testing.T) {
@@ -373,26 +422,51 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewTuple(ANY_SERIALIZABLE), res)
 		})
 
-		t.Run("type annotation and element of invalid type", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk("#[]%int[true]")
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			elemNode := parse.FindNode(n, (*parse.BooleanLiteral)(nil), nil)
+		t.Run("type annotation", func(t *testing.T) {
+			t.Run("type annotation and element of invalid type", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk("#[]%int[true]")
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				elemNode := parse.FindNode(n, (*parse.BooleanLiteral)(nil), nil)
 
-			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInTupleAnnotated(TRUE, state.ctx.ResolveNamedPattern("int"))),
-			}, state.errors())
-			assert.Equal(t, NewTupleOf(ANY_INT), res)
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInTupleAnnotated(TRUE, state.ctx.ResolveNamedPattern("int"))),
+				}, state.errors())
+				assert.Equal(t, NewTupleOf(ANY_INT), res)
+			})
+
+			t.Run("spread element should be a tuple", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk("#[]%int[...true]")
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				elemNode := parse.FindNode(n, (*parse.BooleanLiteral)(nil), nil)
+
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(elemNode, state, SPREAD_ELEMENT_SHOULD_BE_A_TUPLE),
+				}, state.errors())
+				assert.Equal(t, NewTupleOf(ANY_INT), res)
+			})
+
+			t.Run("spread element of invalid type", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk("l = #[true]; return #[]%int[...l]")
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				elemNode := parse.FindNode(n, (*parse.ElementSpreadElement)(nil), nil)
+
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInTupleAnnotated(TRUE, state.ctx.ResolveNamedPattern("int"))),
+				}, state.errors())
+				assert.Equal(t, NewTupleOf(ANY_INT), res)
+			})
+
+			t.Run("element of valid type", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk("#[]%int[1]")
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+				assert.Equal(t, NewTupleOf(ANY_INT), res)
+			})
 		})
-
-		t.Run("type annotation and element of valid type", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk("#[]%int[1]")
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-			assert.Equal(t, NewTupleOf(ANY_INT), res)
-		})
-
 	})
 
 	t.Run("dictionary literal", func(t *testing.T) {

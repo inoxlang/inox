@@ -27,6 +27,7 @@ var (
 	ANY_DICT      = NewAnyDictionary()
 	ANY_KEYLIST   = NewAnyKeyList()
 	EMPTY_LIST    = NewList()
+	EMPTY_TUPLE   = NewTuple()
 
 	_ = []Indexable{
 		(*String)(nil), (*Array)(nil), (*List)(nil), (*Tuple)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*Object)(nil), (*IntRange)(nil),

@@ -2014,19 +2014,39 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			}
 
 			generalElem := generalElemPattern.(Pattern).SymbolicValue().(Serializable)
+			resultList := NewListOf(generalElem)
 			deeperMismatch := false
 
 			for _, elemNode := range n.Elements {
-				e, err := _symbolicEval(elemNode, state, evalOptions{expectedValue: generalElem, actualValueMismatch: &deeperMismatch})
-				if err != nil {
-					return nil, err
+				var e SymbolicValue
+
+				spreadElemNode, ok := elemNode.(*parse.ElementSpreadElement)
+				if ok {
+					val, err := _symbolicEval(spreadElemNode.Expr, state, evalOptions{expectedValue: resultList, actualValueMismatch: &deeperMismatch})
+					if err != nil {
+						return nil, err
+					}
+
+					list, isList := val.(*List)
+					if isList {
+						e = list.element()
+					} else {
+						state.addError(makeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_LIST))
+						e = generalElem
+					}
+				} else {
+					e, err = _symbolicEval(elemNode, state, evalOptions{expectedValue: generalElem, actualValueMismatch: &deeperMismatch})
+					if err != nil {
+						return nil, err
+					}
 				}
+
 				if !generalElem.Test(e) && !deeperMismatch {
 					state.addError(makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListAnnotated(e, generalElemPattern.(Pattern))))
 				}
 
 				e = AsSerializable(e)
-				_, ok := e.(Serializable)
+				_, ok = e.(Serializable)
 				if !ok {
 					state.addError(makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
 					e = ANY_SERIALIZABLE
@@ -2035,7 +2055,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				}
 			}
 
-			return NewListOf(generalElem), nil
+			return resultList, nil
 		}
 
 		expectedList, ok := options.expectedValue.(*List)
@@ -2044,41 +2064,61 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			expectedElement = expectedList.element()
 		}
 
-		if !n.HasSpreadElements() {
-			for _, elemNode := range n.Elements {
-				deeperMismatch := false
-				e, err := _symbolicEval(elemNode, state, evalOptions{expectedValue: expectedElement, actualValueMismatch: &deeperMismatch})
+		if len(n.Elements) == 0 {
+			return EMPTY_LIST, nil
+		}
+
+		for _, elemNode := range n.Elements {
+			var e SymbolicValue
+			deeperMismatch := false
+
+			spreadElemNode, ok := elemNode.(*parse.ElementSpreadElement)
+			if ok {
+				val, err := _symbolicEval(spreadElemNode.Expr, state, evalOptions{expectedValue: expectedElement, actualValueMismatch: &deeperMismatch})
 				if err != nil {
 					return nil, err
 				}
-				if deeperMismatch {
-					options.setActualValueMismatchIfNotNil()
-				} else if expectedElement != nil && !expectedElement.Test(e) && !deeperMismatch {
-					options.setActualValueMismatchIfNotNil()
-					state.addError(makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListofValues(e, expectedElement)))
-				}
 
-				e = AsSerializable(e)
-				_, ok := e.(Serializable)
-				if !ok {
-					state.addError(makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
-					e = ANY_SERIALIZABLE
-				} else if _, ok := asWatchable(e).(Watchable); !ok && e.IsMutable() {
-					state.addError(makeSymbolicEvalError(elemNode, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
+				list, isList := val.(*List)
+				if isList {
+					e = list.element()
+				} else {
+					state.addError(makeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_LIST))
+					if expectedElement != nil {
+						e = expectedElement
+					} else {
+						continue
+					}
 				}
-
-				elements = append(elements, AsSerializable(e).(Serializable))
+			} else {
+				var err error
+				e, err = _symbolicEval(elemNode, state, evalOptions{expectedValue: expectedElement, actualValueMismatch: &deeperMismatch})
+				if err != nil {
+					return nil, err
+				}
 			}
-			return NewList(elements...), nil
-		}
 
-		return NewListOf(ANY_SERIALIZABLE), nil
+			if deeperMismatch {
+				options.setActualValueMismatchIfNotNil()
+			} else if expectedElement != nil && !expectedElement.Test(e) && !deeperMismatch {
+				options.setActualValueMismatchIfNotNil()
+				state.addError(makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListofValues(e, expectedElement)))
+			}
+
+			e = AsSerializable(e)
+			_, ok = e.(Serializable)
+			if !ok {
+				state.addError(makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+				e = ANY_SERIALIZABLE
+			} else if _, ok := asWatchable(e).(Watchable); !ok && e.IsMutable() {
+				state.addError(makeSymbolicEvalError(elemNode, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
+			}
+
+			elements = append(elements, AsSerializable(e).(Serializable))
+		}
+		return NewList(elements...), nil
 	case *parse.TupleLiteral:
 		elements := make([]Serializable, 0)
-
-		if n.HasSpreadElements() {
-			return nil, errors.New("spread elements not supported yet in tuple literals")
-		}
 
 		if n.TypeAnnotation != nil {
 			generalElemPattern, err := symbolicEval(n.TypeAnnotation, state)
@@ -2090,18 +2130,35 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			deeperMismatch := false
 
 			for _, elemNode := range n.Elements {
-				e, err := _symbolicEval(elemNode, state, evalOptions{expectedValue: generalElem, actualValueMismatch: &deeperMismatch})
-				if err != nil {
-					return nil, err
+				spreadElemNode, ok := elemNode.(*parse.ElementSpreadElement)
+				var e SymbolicValue
+				if ok {
+					val, err := _symbolicEval(spreadElemNode.Expr, state, evalOptions{expectedValue: result, actualValueMismatch: &deeperMismatch})
+					if err != nil {
+						return nil, err
+					}
+
+					tuple, isTuple := val.(*Tuple)
+					if isTuple {
+						e = tuple.element()
+					} else {
+						state.addError(makeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_TUPLE))
+						e = generalElem
+					}
+				} else {
+					e, err = _symbolicEval(elemNode, state, evalOptions{expectedValue: generalElem, actualValueMismatch: &deeperMismatch})
+					if err != nil {
+						return nil, err
+					}
 				}
 
 				if e.IsMutable() {
 					state.addError(makeSymbolicEvalError(elemNode, state, ELEMS_OF_TUPLE_SHOUD_BE_IMMUTABLE))
-					e = ANY
+					e = ANY_SERIALIZABLE
 				}
 
 				e = AsSerializable(e)
-				_, ok := e.(Serializable)
+				_, ok = e.(Serializable)
 				if !ok {
 					state.addError(makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
 					e = ANY_SERIALIZABLE
@@ -2115,45 +2172,68 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			return NewTupleOf(generalElem), nil
 		}
 
-		if len(n.Elements) > 0 {
-			expectedList, ok := options.expectedValue.(*Tuple)
-			var expectedElement SymbolicValue = nil
-			if ok {
-				expectedElement = expectedList.element()
-			}
+		expectedList, ok := options.expectedValue.(*Tuple)
+		var expectedElement SymbolicValue = nil
+		if ok {
+			expectedElement = expectedList.element()
+		}
 
-			for _, elemNode := range n.Elements {
-				deeperMismatch := false
-				e, err := _symbolicEval(elemNode, state, evalOptions{expectedValue: expectedElement, actualValueMismatch: &deeperMismatch})
+		if len(n.Elements) == 0 {
+			return EMPTY_TUPLE, nil
+		}
+
+		for _, elemNode := range n.Elements {
+			var e SymbolicValue
+			deeperMismatch := false
+
+			spreadElemNode, ok := elemNode.(*parse.ElementSpreadElement)
+			if ok {
+				val, err := _symbolicEval(spreadElemNode.Expr, state, evalOptions{expectedValue: expectedElement, actualValueMismatch: &deeperMismatch})
 				if err != nil {
 					return nil, err
 				}
 
-				if deeperMismatch {
-					options.setActualValueMismatchIfNotNil()
-				} else if expectedElement != nil && !expectedElement.Test(e) && !deeperMismatch {
-					options.setActualValueMismatchIfNotNil()
-					state.addError(makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListofValues(e, expectedElement)))
+				list, isList := val.(*List)
+				if isList {
+					e = list.element()
+				} else {
+					state.addError(makeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_LIST))
+					if expectedElement != nil {
+						e = expectedElement
+					} else {
+						continue
+					}
 				}
-
-				if e.IsMutable() {
-					state.addError(makeSymbolicEvalError(elemNode, state, ELEMS_OF_TUPLE_SHOUD_BE_IMMUTABLE))
-					e = ANY_SERIALIZABLE
+			} else {
+				var err error
+				e, err = _symbolicEval(elemNode, state, evalOptions{expectedValue: expectedElement, actualValueMismatch: &deeperMismatch})
+				if err != nil {
+					return nil, err
 				}
-
-				e = AsSerializable(e)
-				_, ok := e.(Serializable)
-				if !ok {
-					state.addError(makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
-					e = ANY_SERIALIZABLE
-				}
-
-				elements = append(elements, AsSerializable(e).(Serializable))
 			}
-			return NewTuple(elements...), nil
-		}
 
-		return NewTupleOf(ANY_SERIALIZABLE), nil
+			if deeperMismatch {
+				options.setActualValueMismatchIfNotNil()
+			} else if expectedElement != nil && !expectedElement.Test(e) && !deeperMismatch {
+				options.setActualValueMismatchIfNotNil()
+				state.addError(makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListofValues(e, expectedElement)))
+			}
+
+			if e.IsMutable() {
+				state.addError(makeSymbolicEvalError(elemNode, state, ELEMS_OF_TUPLE_SHOUD_BE_IMMUTABLE))
+				e = ANY_SERIALIZABLE
+			}
+
+			e = AsSerializable(e)
+			_, ok = e.(Serializable)
+			if !ok {
+				state.addError(makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+				e = ANY_SERIALIZABLE
+			}
+
+			elements = append(elements, AsSerializable(e).(Serializable))
+		}
+		return NewTuple(elements...), nil
 	case *parse.DictionaryLiteral:
 		entries := make(map[string]Serializable)
 		keys := make(map[string]Serializable)
@@ -3632,7 +3712,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 					state.addError(makeSymbolicEvalError(elemNode, state, CONCATENATION_SUPPORTED_TYPES_EXPLANATION))
 				}
 			} else {
-				state.addError(makeSymbolicEvalError(n, state, SPREAD_ELEMENT_IS_NOT_ITERABLE))
+				state.addError(makeSymbolicEvalError(n, state, SPREAD_ELEMENT_SHOULD_BE_ITERABLE))
 			}
 		}
 
