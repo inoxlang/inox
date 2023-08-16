@@ -2265,6 +2265,11 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			object := evaluatedElement.(*ObjectPattern)
 
 			for name, vpattern := range object.entryPatterns {
+				//priority to property pattern defined earlier
+				if _, alreadyPresent := pattern.entryPatterns[name]; alreadyPresent {
+					continue
+				}
+
 				pattern.entryPatterns[name] = vpattern
 				if _, ok := object.optionalEntries[name]; !ok {
 					continue
@@ -2307,6 +2312,10 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			object := evaluatedElement.(*RecordPattern)
 
 			for name, vpattern := range object.entryPatterns {
+				//priority to property pattern defined earlier
+				if _, alreadyPresent := pattern.entryPatterns[name]; alreadyPresent {
+					continue
+				}
 				pattern.entryPatterns[name] = vpattern
 				if _, ok := object.optionalEntries[name]; !ok {
 					continue

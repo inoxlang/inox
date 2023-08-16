@@ -920,6 +920,11 @@ func (v *VM) run() {
 			spreadObjectPatt := v.stack[v.sp-1].(*ObjectPattern)
 
 			for k, v := range spreadObjectPatt.entryPatterns {
+				//priority to property pattern defined earlier
+				if _, alreadyPresent := patt.entryPatterns[k]; alreadyPresent {
+					continue
+				}
+
 				patt.entryPatterns[k] = v
 				if _, ok := spreadObjectPatt.optionalEntries[k]; !ok {
 					continue
@@ -936,6 +941,11 @@ func (v *VM) run() {
 			spreadObjectPatt := v.stack[v.sp-1].(*RecordPattern)
 
 			for k, v := range spreadObjectPatt.entryPatterns {
+				//priority to property pattern defined earlier
+				if _, alreadyPresent := patt.entryPatterns[k]; alreadyPresent {
+					continue
+				}
+
 				patt.entryPatterns[k] = v
 				if _, ok := spreadObjectPatt.optionalEntries[k]; !ok {
 					continue

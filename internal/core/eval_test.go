@@ -5547,6 +5547,25 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}, res)
 			})
 
+			t.Run("single-property object pattern before same property with different type", func(t *testing.T) {
+				code := `
+					%s = "s"
+					%user = %{name: "foo"}
+					return %{...%user, name: "bar"}
+				`
+
+				state := NewGlobalState(NewDefaultTestContext())
+				res, err := Eval(code, state, false)
+
+				assert.NoError(t, err)
+				assert.Equal(t, &ObjectPattern{
+					inexact: true,
+					entryPatterns: map[string]Pattern{
+						"name": NewExactStringPattern(Str("bar")),
+					},
+				}, res)
+			})
+
 			t.Run("two-property object pattern before properties", func(t *testing.T) {
 				code := `
 					%s = "s"
@@ -5576,7 +5595,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			t.Run("complex", func(t *testing.T) {
 				code := `
-					%s = "s"
 					%user = %{name: "foo"}
 					return %{...%user, friends: %[]%user}
 				`
@@ -5682,6 +5700,25 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					entryPatterns: map[string]Pattern{
 						"s":    NewExactStringPattern(Str("s")),
 						"name": NewExactStringPattern(Str("foo")),
+					},
+				}, res)
+			})
+
+			t.Run("single-property record pattern before same property with different type", func(t *testing.T) {
+				code := `
+					%user = #{name: "foo"}
+					%p = #{...%user, name: "bar"}
+					return %p
+				`
+
+				state := NewGlobalState(NewDefaultTestContext())
+				res, err := Eval(code, state, false)
+
+				assert.NoError(t, err)
+				assert.Equal(t, &RecordPattern{
+					inexact: true,
+					entryPatterns: map[string]Pattern{
+						"name": NewExactStringPattern(Str("bar")),
 					},
 				}, res)
 			})
