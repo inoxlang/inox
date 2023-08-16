@@ -1763,7 +1763,7 @@ func TestCompileModule(t *testing.T) {
 		// 	),
 		// 	[]Value{Str("a"), Int(1)},
 		// )
-		expectBytecode(t, `%{a: 1, ...%{}}`,
+		expectBytecode(t, `%{...%{}, a: 1}`,
 			0,
 			instrs(
 				inst(OpPushConstant, 0),

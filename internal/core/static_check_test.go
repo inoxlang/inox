@@ -349,7 +349,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("duplicate keys", func(t *testing.T) {
-			n, src := parseCode(`%p = %{a: 1}; %{a:1, ...(%p).{a}}`)
+			n, src := parseCode(`%p = %{a: 1}; %{...(%p).{a}, a:1}`)
 
 			keyNodes := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), func(l *parse.IdentifierLiteral) bool {
 				return l.Name == "a"
@@ -403,7 +403,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("duplicate keys", func(t *testing.T) {
-			n, src := parseCode(`%p = %{a: 1}; %e = #{a:1, ...(%p).{a}}`)
+			n, src := parseCode(`%p = %{a: 1}; %e = #{...(%p).{a}, a:1}`)
 
 			keyNodes := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), func(l *parse.IdentifierLiteral) bool {
 				return l.Name == "a"

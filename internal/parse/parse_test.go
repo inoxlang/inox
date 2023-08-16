@@ -18224,7 +18224,8 @@ func testParse(
 		})
 
 		t.Run("{ prop, ...named-pattern } ", func(t *testing.T) {
-			n := mustparseChunk(t, "%{ name: %str,  ...%patt }")
+			n, err := parseChunk(t, "%{ name: %str,  ...%patt }", "")
+			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 26}, nil, nil},
 				Statements: []Node{
@@ -18260,7 +18261,7 @@ func testParse(
 							{
 								NodeBase: NodeBase{
 									NodeSpan{16, 24},
-									nil,
+									&ParsingError{UnspecifiedParsingError, SPREAD_SHOULD_BE_LOCATED_AT_THE_START},
 									[]Token{{Type: THREE_DOTS, Span: NodeSpan{16, 19}}},
 								},
 								Expr: &PatternIdentifierLiteral{
@@ -18275,7 +18276,8 @@ func testParse(
 		})
 
 		t.Run("{ prop with unprefixed named pattern, ...named-pattern } ", func(t *testing.T) {
-			n := mustparseChunk(t, "%{ name: str,  ...%patt }")
+			n, err := parseChunk(t, "%{ name: str,  ...%patt }", "")
+			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 25}, nil, nil},
 				Statements: []Node{
@@ -18312,7 +18314,7 @@ func testParse(
 							{
 								NodeBase: NodeBase{
 									NodeSpan{15, 23},
-									nil,
+									&ParsingError{UnspecifiedParsingError, SPREAD_SHOULD_BE_LOCATED_AT_THE_START},
 									[]Token{{Type: THREE_DOTS, Span: NodeSpan{15, 18}}},
 								},
 								Expr: &PatternIdentifierLiteral{

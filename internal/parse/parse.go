@@ -2911,10 +2911,16 @@ object_pattern_top_loop:
 
 			expr, _ := p.parseExpression()
 
+			var locationErr *ParsingError
+
+			if len(properties) > 0 {
+				locationErr = &ParsingError{UnspecifiedParsingError, SPREAD_SHOULD_BE_LOCATED_AT_THE_START}
+			}
+
 			spreadElements = append(spreadElements, &PatternPropertySpreadElement{
 				NodeBase: NodeBase{
 					NodeSpan{spreadStart, expr.Base().Span.End},
-					nil,
+					locationErr,
 					[]Token{
 						{Type: THREE_DOTS, Span: NodeSpan{dotStart, dotStart + 3}},
 					},

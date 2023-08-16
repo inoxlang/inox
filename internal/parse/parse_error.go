@@ -356,6 +356,7 @@ const (
 	IMPLICIT_KEY_PROPS_ARE_NOT_ALLOWED_IN_OBJECT_RECORD_PATTERNS = "implicit-key properties are not allowed in object/record patterns"
 	UNTERMINATED_OBJ_PATTERN_MISSING_CLOSING_BRACE               = "unterminated object pattern literal, missing closing brace '}'"
 	UNTERMINATED_REC_PATTERN_MISSING_CLOSING_BRACE               = "unterminated record pattern literal, missing closing brace '}'"
+	SPREAD_SHOULD_BE_LOCATED_AT_THE_START                        = "spread should be located at the start"
 
 	INVALID_DICT_LIT_ENTRY_SEPARATION                     = "invalid dictionary literal, each entry should be followed by '}', newline, or ','."
 	UNTERMINATED_IF_STMT_MISSING_BLOCK_AFTER_ELSE         = "unterminated if statement, missing block after 'else'"
