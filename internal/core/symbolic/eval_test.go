@@ -1921,23 +1921,42 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("extraction expression", func(t *testing.T) {
-		n, state := MakeTestStateAndChunk(`
-			v = {a: int, b: true, c: "a"}
-			return $v.{a, b}
-		`)
-		res, err := symbolicEval(n, state)
-		assert.NoError(t, err)
-		assert.Empty(t, state.errors())
-		assert.Equal(t, &Object{
-			entries: map[string]Serializable{
-				"a": ANY_INT,
-				"b": TRUE,
-			},
-			static: map[string]Pattern{
-				"a": &TypePattern{val: ANY_INT},
-				"b": &TypePattern{val: ANY_BOOL},
-			},
-		}, res)
+		t.Run("ok", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				v = {a: int, b: true, c: "a"}
+				return $v.{a, b}
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &Object{
+				entries: map[string]Serializable{
+					"a": ANY_INT,
+					"b": TRUE,
+				},
+				static: map[string]Pattern{
+					"a": &TypePattern{val: ANY_INT},
+					"b": &TypePattern{val: ANY_BOOL},
+				},
+			}, res)
+		})
+		t.Run("dynamic values are not supported", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				v = {a: {b: 1}}
+				return $v.<a.{b}
+			`)
+			dynamicMemberExpr := parse.FindNode(n, (*parse.DynamicMemberExpression)(nil), nil)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(dynamicMemberExpr, state, EXTRACTION_DOES_NOT_SUPPORT_DYNAMIC_VALUES),
+			}, state.errors())
+			assert.Equal(t, &Object{
+				entries: map[string]Serializable{"b": ANY_SERIALIZABLE},
+				static:  map[string]Pattern{"b": &TypePattern{val: ANY_SERIALIZABLE}},
+			}, res)
+		})
 	})
 
 	t.Run("binary expression", func(t *testing.T) {

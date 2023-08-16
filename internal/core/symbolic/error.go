@@ -39,6 +39,8 @@ const (
 	IMPOSSIBLE_TO_KNOW_UPDATED_ELEMENT            = "impossible to know updated element"
 	IMPOSSIBLE_TO_KNOW_UPDATED_ELEMENTS           = "impossible to know updated elements"
 
+	EXTRACTION_DOES_NOT_SUPPORT_DYNAMIC_VALUES = "extraction does not support dynamic values"
+
 	UPPER_BOUND_OF_QTY_RANGE_LIT_SHOULD_OF_SAME_TYPE_AS_LOWER_BOUND = "the upper bound of a quantity range literal should be of the same type as the lower bound"
 
 	INVALID_KEY_IN_COMPUTE_EXPRESSION_ONLY_SIMPLE_VALUE_ARE_SUPPORTED = "invalid key in compute expression: only simple values are supported"
@@ -365,6 +367,10 @@ func fmtCannotInitializedMetaProp(key string) string {
 
 func fmtCannotGetDynamicMemberOfValueWithNoProps(v SymbolicValue) string {
 	return fmt.Sprintf("cannot get dynamic member of value with no properties: %s", Stringify(v))
+}
+
+func fmtValueHasNoProperties(value SymbolicValue) string {
+	return fmt.Sprintf("value has no properties: %s", Stringify(value))
 }
 
 func FormatErrPropertyDoesNotExist(name string, v SymbolicValue) error {

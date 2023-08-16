@@ -3135,15 +3135,34 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		if err != nil {
 			return nil, err
 		}
+
 		result := &Object{
 			entries: make(map[string]Serializable),
 			static:  make(map[string]Pattern),
 		}
 
+		ignoreProps := false
+
+		switch asIprops(left).(type) {
+		case *DynamicValue:
+			state.addError(makeSymbolicEvalError(n.Object, state, EXTRACTION_DOES_NOT_SUPPORT_DYNAMIC_VALUES))
+			ignoreProps = true
+		case IProps:
+		default:
+			ignoreProps = true
+			state.addError(makeSymbolicEvalError(n.Object, state, fmtValueHasNoProperties(left)))
+		}
+
 		for _, key := range n.Keys.Keys {
 			name := key.(*parse.IdentifierLiteral).Name
-			result.entries[name] = symbolicMemb(left, name, false, n, state).(Serializable)
-			result.static[name] = getStatic(result.entries[name])
+
+			if ignoreProps {
+				result.entries[name] = ANY_SERIALIZABLE
+				result.static[name] = getStatic(ANY_SERIALIZABLE)
+			} else {
+				result.entries[name] = symbolicMemb(left, name, false, n, state).(Serializable)
+				result.static[name] = getStatic(result.entries[name])
+			}
 		}
 		return result, nil
 	case *parse.IndexExpression:
@@ -4042,6 +4061,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 }
 
 func symbolicMemb(value SymbolicValue, name string, optionalMembExpr bool, node parse.Node, state *State) (result SymbolicValue) {
+	//note: the property of a %serializable is not necessarily serializable (example: Go methods)
 
 	if _, ok := value.(*Any); ok {
 		return ANY
@@ -4049,7 +4069,7 @@ func symbolicMemb(value SymbolicValue, name string, optionalMembExpr bool, node 
 
 	iprops, ok := asIprops(value).(IProps)
 	if !ok {
-		state.addError(makeSymbolicEvalError(node, state, fmt.Sprintf("value has no properties: %s", Stringify(value))))
+		state.addError(makeSymbolicEvalError(node, state, fmtValueHasNoProperties(value)))
 		return ANY
 	}
 
