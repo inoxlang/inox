@@ -354,10 +354,18 @@ func (o *Object) Migrate(ctx *Context, key Path, migration *InstanceMigrationArg
 		panic(ErrNotImplementedYet)
 	}
 
+	if ctx.GetTx() != nil {
+		panic(ErrUnreachable)
+	}
+
 	return migrateObjectOrRecord(ctx, o, true, &o.keys, &o.values, key, migration)
 }
 
 func (o *Record) Migrate(ctx *Context, key Path, migration *InstanceMigrationArgs) (Value, error) {
+	if ctx.GetTx() != nil {
+		panic(ErrUnreachable)
+	}
+
 	return migrateObjectOrRecord(ctx, o, false, &o.keys, &o.values, key, migration)
 }
 
@@ -700,10 +708,18 @@ func (list *List) Migrate(ctx *Context, key Path, migration *InstanceMigrationAr
 		panic(ErrUnreachable)
 	}
 
+	if ctx.GetTx() != nil {
+		panic(ErrUnreachable)
+	}
+
 	return migrateListOrTuple(ctx, list, true, key, migration)
 }
 
 func (tuple *Tuple) Migrate(ctx *Context, key Path, migration *InstanceMigrationArgs) (Value, error) {
+	if ctx.GetTx() != nil {
+		panic(ErrUnreachable)
+	}
+
 	return migrateListOrTuple(ctx, tuple, false, key, migration)
 }
 
