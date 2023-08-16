@@ -4,8 +4,12 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
+
+	containers_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
 )
 
 func TestSetPattern(t *testing.T) {
@@ -183,4 +187,38 @@ func TestSetPattern(t *testing.T) {
 		})
 
 	})
+}
+
+func TestSymbolicSetPattern(t *testing.T) {
+	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+	symbolicCtx := symbolic.NewSymbolicContext(ctx)
+
+	t.Run("valid", func(t *testing.T) {
+		intPattern := utils.Must(core.INT_PATTERN.ToSymbolicValue(ctx, map[uintptr]symbolic.SymbolicValue{}))
+		patt, err := SET_PATTERN.SymbolicCallImpl(symbolicCtx,
+			[]symbolic.SymbolicValue{intPattern, symbolic.NewIdentifier("repr")})
+
+		if assert.NoError(t, err) {
+			uniqueness := containers_common.UniquenessConstraint{
+				Type: containers_common.UniqueRepr,
+			}
+
+			expectedPattern :=
+				containers_symbolic.NewSetPatternWithElementPatternAndUniqueness(intPattern.(symbolic.Pattern), &uniqueness)
+
+			assert.Equal(t, expectedPattern, patt)
+		}
+	})
+
+	t.Run("invalid", func(t *testing.T) {
+		mutableValuePattern := symbolic.NewInexactObjectPattern(map[string]symbolic.Pattern{}, nil)
+		patt, err := SET_PATTERN.SymbolicCallImpl(symbolicCtx,
+			[]symbolic.SymbolicValue{mutableValuePattern, containers_common.REPR_UNIQUENESS_SYMB_IDENT})
+
+		if !assert.Error(t, err) {
+			return
+		}
+		assert.Nil(t, patt)
+	})
+
 }

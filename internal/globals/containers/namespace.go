@@ -19,10 +19,10 @@ var (
 		Type:          reflect.TypeOf((*Set)(nil)),
 		SymbolicValue: coll_symbolic.ANY_SET,
 		CallImpl: func(typePattern *core.TypePattern, values []core.Serializable) (core.Pattern, error) {
-			if len(values) == 0 {
+			switch len(values) {
+			case 0:
 				return nil, commonfmt.FmtMissingArgument("element pattern")
-			}
-			if len(values) == 1 {
+			case 1:
 				return nil, commonfmt.FmtMissingArgument("uniqueness")
 			}
 
@@ -45,10 +45,10 @@ var (
 			}), nil
 		},
 		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error) {
-			if len(values) == 0 {
+			switch len(values) {
+			case 0:
 				return nil, commonfmt.FmtMissingArgument("element pattern")
-			}
-			if len(values) == 1 {
+			case 1:
 				return nil, commonfmt.FmtMissingArgument("uniqueness")
 			}
 
@@ -57,17 +57,11 @@ var (
 				return nil, commonfmt.FmtErrInvalidArgumentAtPos(0, "a pattern is expected")
 			}
 
-			var uniqueness containers_common.UniquenessConstraint
-			switch u := values[1].(type) {
-			case *symbolic.Identifier:
-				if u.HasConcreteName() && (u.Name() != "url" && u.Name() != "repr") {
-					return nil, commonfmt.FmtErrInvalidArgumentAtPos(1, "#url, #repr or a property name is expected")
-				}
-				uniqueness.Type = containers_common.UniqueURL
-			case *symbolic.PropertyName:
-			default:
-				return nil, commonfmt.FmtErrInvalidArgumentAtPos(1, "#url, #repr or a property name is expected")
+			uniqueness, err := containers_common.UniquenessConstraintFromSymbolicValue(values[1], elementPattern)
+			if err != nil {
+				return nil, commonfmt.FmtErrInvalidArgumentAtPos(1, err.Error())
 			}
+
 			return coll_symbolic.NewSetPatternWithElementPatternAndUniqueness(elementPattern, &uniqueness), nil
 		},
 	}

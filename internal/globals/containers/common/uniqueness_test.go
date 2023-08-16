@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -89,5 +90,41 @@ func TestUniquenessConstraint(t *testing.T) {
 				PropertyName: core.PropertyName("a"),
 			}),
 		)
+	})
+}
+
+func TestUniquenessConstraintFromSymbolicValue(t *testing.T) {
+	t.Run("property-based uniqueness requires values to have the property", func(t *testing.T) {
+		objectPattern := symbolic.NewInexactObjectPattern(map[string]symbolic.Pattern{}, nil)
+
+		propertyName := symbolic.NewPropertyName(".x")
+		uniqueness, err := UniquenessConstraintFromSymbolicValue(propertyName, objectPattern)
+		if !assert.ErrorIs(t, err, ErrPropertyBasedUniquenessRequireValuesToHaveTheProperty) {
+			return
+		}
+
+		assert.Zero(t, uniqueness)
+	})
+
+	t.Run("representation-based uniqueness requires values to be immutable", func(t *testing.T) {
+		mutableValuePattern := symbolic.NewInexactObjectPattern(map[string]symbolic.Pattern{}, nil)
+
+		uniqueness, err := UniquenessConstraintFromSymbolicValue(REPR_UNIQUENESS_SYMB_IDENT, mutableValuePattern)
+		if !assert.ErrorIs(t, err, ErrReprBasedUniquenessRequireValuesToBeImmutable) {
+			return
+		}
+
+		assert.Zero(t, uniqueness)
+	})
+
+	t.Run("URL-based uniqueness requires values to be URL holders", func(t *testing.T) {
+		nonUrlHolderPattern := symbolic.ANY_RECORD_PATTERN
+
+		uniqueness, err := UniquenessConstraintFromSymbolicValue(URL_UNIQUENESS_SYMB_IDENT, nonUrlHolderPattern)
+		if !assert.ErrorIs(t, err, ErrUrlBasedUniquenessRequireValuesToBeUrlHolders) {
+			return
+		}
+
+		assert.Zero(t, uniqueness)
 	})
 }

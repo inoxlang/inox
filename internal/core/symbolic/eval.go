@@ -3203,7 +3203,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		if err != nil {
 			return nil, err
 		}
-		iprops, ok := asIprops(left).(IProps)
+		iprops, ok := AsIprops(left).(IProps)
 		if !ok {
 			state.addError(makeSymbolicEvalError(node, state, fmtCannotGetDynamicMemberOfValueWithNoProps(left)))
 			return ANY, nil
@@ -3223,7 +3223,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 		ignoreProps := false
 
-		switch asIprops(left).(type) {
+		switch AsIprops(left).(type) {
 		case *DynamicValue:
 			state.addError(makeSymbolicEvalError(n.Object, state, EXTRACTION_DOES_NOT_SUPPORT_DYNAMIC_VALUES))
 			ignoreProps = true
@@ -4156,7 +4156,7 @@ func symbolicMemb(value SymbolicValue, name string, optionalMembExpr bool, node 
 		return ANY
 	}
 
-	iprops, ok := asIprops(value).(IProps)
+	iprops, ok := AsIprops(value).(IProps)
 	if !ok {
 		state.addError(makeSymbolicEvalError(node, state, fmtValueHasNoProperties(value)))
 		return ANY
@@ -4257,7 +4257,7 @@ func narrowPath(path parse.Node, action pathNarrowing, value SymbolicValue, stat
 					panic(err)
 				}
 				propName := node.PropertyNames[0].Name
-				iprops, ok := asIprops(left).(IProps)
+				iprops, ok := AsIprops(left).(IProps)
 
 				if !ok || !HasRequiredOrOptionalProperty(iprops, propName) {
 					break
@@ -4281,7 +4281,7 @@ func narrowPath(path parse.Node, action pathNarrowing, value SymbolicValue, stat
 
 				propName := node.PropertyNames[0].Name
 
-				iprops, ok := asIprops(left).(IProps)
+				iprops, ok := AsIprops(left).(IProps)
 				if !ok || !HasRequiredOrOptionalProperty(iprops, propName) {
 					break
 				}
@@ -4306,7 +4306,7 @@ func narrowPath(path parse.Node, action pathNarrowing, value SymbolicValue, stat
 			}
 
 			propName := node.PropertyName.Name
-			iprops, ok := asIprops(left).(IProps)
+			iprops, ok := AsIprops(left).(IProps)
 			if !ok || !HasRequiredOrOptionalProperty(iprops, propName) {
 				break
 			}
@@ -4324,7 +4324,7 @@ func narrowPath(path parse.Node, action pathNarrowing, value SymbolicValue, stat
 			}
 
 			propName := node.PropertyName.Name
-			iprops, ok := asIprops(left).(IProps)
+			iprops, ok := AsIprops(left).(IProps)
 
 			if !ok || !HasRequiredOrOptionalProperty(iprops, propName) {
 				break

@@ -15,14 +15,19 @@ const (
 )
 
 var (
-	ErrFailedGetUniqueKeyNoURL       = errors.New("failed to get unique key for value since it has no URL")
-	ErrFailedGetUniqueKeyNoProps     = errors.New("failed to get unique key for value since it has no properties")
-	ErrFailedGetUniqueKeyPropMissing = errors.New("failed to get unique key for value since the property is missing")
+	ErrFailedGetUniqueKeyNoURL                               = errors.New("failed to get unique key for value since it has no URL")
+	ErrFailedGetUniqueKeyNoProps                             = errors.New("failed to get unique key for value since it has no properties")
+	ErrFailedGetUniqueKeyPropMissing                         = errors.New("failed to get unique key for value since the property is missing")
+	ErrPropertyBasedUniquenessRequireValuesToHaveTheProperty = errors.New("property-based uniqueness requires values to have the property")
+	ErrReprBasedUniquenessRequireValuesToBeImmutable         = errors.New("representation-based uniqueness requires values to be immutable")
+	ErrUrlBasedUniquenessRequireValuesToBeUrlHolders         = errors.New("URL-based uniqueness requires values to be URL holders")
 
 	UniqueKeyReprConfig = &core.ReprConfig{AllVisible: true}
 
-	URL_UNIQUENESS_SYMB_IDENT  = symbolic.NewIdentifier("url")
-	REPR_UNIQUENESS_SYMB_IDENT = symbolic.NewIdentifier("repr")
+	URL_UNIQUENESS_SYMB_IDENT  = symbolic.NewIdentifier(URL_UNIQUENESS_IDENT.UnderlyingString())
+	REPR_UNIQUENESS_SYMB_IDENT = symbolic.NewIdentifier(REPR_UNIQUENESS_IDENT.UnderlyingString())
+
+	EXPECTED_SYMB_VALUE_FOR_UNIQUENESS = "#url, #repr or a property name is expected"
 )
 
 type UniquenessConstraint struct {
@@ -52,22 +57,44 @@ func UniquenessConstraintFromValue(val core.Value) (UniquenessConstraint, bool) 
 	return uniqueness, true
 }
 
-func UniquenessConstraintFromSymbolicValue(val symbolic.SymbolicValue) (UniquenessConstraint, bool) {
+func UniquenessConstraintFromSymbolicValue(val symbolic.SymbolicValue, elementPattern symbolic.Pattern) (UniquenessConstraint, error) {
+	elem := elementPattern.SymbolicValue()
 	switch val := val.(type) {
 	case *symbolic.PropertyName:
-		if val.Name() == "" {
-			return UniquenessConstraint{}, false
+		propertyName := val.Name()
+		if propertyName == "" {
+			return UniquenessConstraint{}, errors.New(EXPECTED_SYMB_VALUE_FOR_UNIQUENESS)
 		}
-		return UniquenessConstraint{Type: UniquePropertyValue, PropertyName: core.PropertyName(val.Name())}, true
+		iprops, ok := symbolic.AsIprops(elem).(symbolic.IProps)
+		if !ok || !symbolic.HasRequiredOrOptionalProperty(iprops, propertyName) || symbolic.IsPropertyOptional(iprops, propertyName) {
+			return UniquenessConstraint{}, ErrPropertyBasedUniquenessRequireValuesToHaveTheProperty
+		}
+
+		return UniquenessConstraint{
+			Type:         UniquePropertyValue,
+			PropertyName: core.PropertyName(propertyName),
+		}, nil
 	case *symbolic.Identifier:
+		if !val.HasConcreteName() || (val.Name() != "url" && val.Name() != "repr") {
+			return UniquenessConstraint{}, errors.New(EXPECTED_SYMB_VALUE_FOR_UNIQUENESS)
+		}
+
 		switch val.Name() {
-		case "url":
-			return UniquenessConstraint{Type: UniqueURL}, true
-		case "repr":
-			return UniquenessConstraint{Type: UniqueRepr}, true
+		case URL_UNIQUENESS_IDENT.UnderlyingString():
+			_, ok := elem.(symbolic.UrlHolder)
+			if !ok {
+				return UniquenessConstraint{}, ErrUrlBasedUniquenessRequireValuesToBeUrlHolders
+			}
+
+			return UniquenessConstraint{Type: UniqueURL}, nil
+		case REPR_UNIQUENESS_IDENT.UnderlyingString():
+			if elementPattern.SymbolicValue().IsMutable() {
+				return UniquenessConstraint{}, ErrReprBasedUniquenessRequireValuesToBeImmutable
+			}
+			return UniquenessConstraint{Type: UniqueRepr}, nil
 		}
 	}
-	return UniquenessConstraint{}, false
+	return UniquenessConstraint{}, errors.New(EXPECTED_SYMB_VALUE_FOR_UNIQUENESS)
 }
 
 func (c UniquenessConstraint) ToValue() core.Serializable {

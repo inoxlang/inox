@@ -38,40 +38,34 @@ type Set struct {
 
 func NewSet(ctx *symbolic.Context, elements symbolic.Iterable, config ...*symbolic.Object) *Set {
 	var patt symbolic.Pattern = symbolic.ANY_PATTERN
-	var uniqueness *containers_common.UniquenessConstraint
+	var uniqueness *containers_common.UniquenessConstraint = &containers_common.UniquenessConstraint{
+		Type: containers_common.UniqueRepr,
+	}
 
 	if len(config) > 0 {
 		configObject := config[0]
 
-		configObject.ForEachEntry(func(k string, propVal symbolic.SymbolicValue) error {
+		val, _, hasElemPattern := configObject.GetProperty(SET_CONFIG_ELEMENT_PATTERN_PROP_KEY)
 
-			switch k {
-			case SET_CONFIG_ELEMENT_PATTERN_PROP_KEY:
-				pattern, ok := propVal.(symbolic.Pattern)
-				if !ok {
-					err := commonfmt.FmtInvalidValueForPropXOfArgY(SET_CONFIG_ELEMENT_PATTERN_PROP_KEY, "configuration", "a pattern is expected")
-					ctx.AddSymbolicGoFunctionError(err.Error())
-				} else {
-					patt = pattern
-				}
-			case SET_CONFIG_UNIQUE_PROP_KEY:
-				u, ok := containers_common.UniquenessConstraintFromSymbolicValue(propVal)
-				if !ok {
-					err := commonfmt.FmtInvalidValueForPropXOfArgY(SET_CONFIG_UNIQUE_PROP_KEY, "configuration", "#url, #repr or a property name is expected")
-					ctx.AddSymbolicGoFunctionError(err.Error())
-				} else {
-					uniqueness = &u
-				}
+		if hasElemPattern {
+			pattern, ok := val.(symbolic.Pattern)
+			if !ok {
+				err := commonfmt.FmtInvalidValueForPropXOfArgY(SET_CONFIG_ELEMENT_PATTERN_PROP_KEY, "configuration", "a pattern is expected")
+				ctx.AddSymbolicGoFunctionError(err.Error())
+			} else {
+				patt = pattern
 			}
+		}
 
-			return nil
-		})
-	}
-
-	if uniqueness != nil && uniqueness.Type == containers_common.UniquePropertyValue {
-		if iprops, ok := patt.(symbolic.IProps); !ok || !symbolic.HasRequiredOrOptionalProperty(iprops, uniqueness.PropertyName.UnderlyingString()) {
-			err := commonfmt.FmtInvalidValueForPropXOfArgY(SET_CONFIG_UNIQUE_PROP_KEY, "configuration", "uniqueness is based on the value of a given property but elements do not have such property")
-			ctx.AddSymbolicGoFunctionError(err.Error())
+		val, _, hasUniquenessConstraint := configObject.GetProperty(SET_CONFIG_UNIQUE_PROP_KEY)
+		if hasUniquenessConstraint {
+			u, err := containers_common.UniquenessConstraintFromSymbolicValue(val, patt)
+			if err != nil {
+				err := commonfmt.FmtInvalidValueForPropXOfArgY(SET_CONFIG_UNIQUE_PROP_KEY, "configuration", err.Error())
+				ctx.AddSymbolicGoFunctionError(err.Error())
+			} else {
+				uniqueness = &u
+			}
 		}
 	}
 
@@ -164,10 +158,6 @@ type SetPattern struct {
 
 	symbolic.NotCallablePatternMixin
 	symbolic.SerializableMixin
-}
-
-func NewSetPatternWithElementPattern(elementPattern symbolic.Pattern) *SetPattern {
-	return &SetPattern{elementPattern: elementPattern}
 }
 
 func NewSetPatternWithElementPatternAndUniqueness(elementPattern symbolic.Pattern, uniqueness *containers_common.UniquenessConstraint) *SetPattern {
