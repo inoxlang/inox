@@ -904,8 +904,9 @@ func migrateListOrTuple(
 				return nil, err
 			}
 
-			//if o is a tuple a new tuple with the element replacement has to be created
-			if !isList {
+			if isList {
+				o.(*List).set(ctx, index, nextElementValue)
+			} else { //if o is a tuple a new tuple with the element replacement has to be created
 				if !nextTuple {
 					nextTuple = true
 					nextTupleElements = utils.CopySlice(o.(*Tuple).elements)

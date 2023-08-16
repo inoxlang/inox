@@ -1398,6 +1398,29 @@ func TestListMigrate(t *testing.T) {
 		assert.Equal(t, []Serializable{expectedInner}, list.GetOrBuildElements(ctx))
 	})
 
+	t.Run("replace property of immutable element", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		list := NewWrappedValueList(NewRecordFromMap(ValMap{"b": Int(0)}))
+		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Replacements: map[PathPattern]*MigrationOpHandler{
+					"/0/b": {InitialValue: Int(1)},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Same(t, list, val) {
+			return
+		}
+		expectedInner := NewRecordFromMap(ValMap{"b": Int(1)})
+		assert.Equal(t, []Serializable{expectedInner}, list.GetOrBuildElements(ctx))
+	})
+
 	t.Run("element inclusion should panic", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 
