@@ -170,16 +170,52 @@ func (handlers MigrationOpHandlers) FilterByPrefix(path Path) MigrationOpHandler
 
 	prefix := string(path)
 	prefixSlash := string(prefix)
+	prefixNoSlash := string(prefix)
+
 	if prefixSlash[len(prefixSlash)-1] != '/' {
 		prefixSlash += "/"
+	} else if prefixNoSlash != "/" {
+		prefixNoSlash = prefixNoSlash[:len(prefixNoSlash)-1]
+	}
+
+	// if prefix is /users:
+	// /users will match
+	// /users/x will match
+	// /users-x will not match
+	matchedBy := func(pattern PathPattern) bool {
+		if pattern.IsPrefixPattern() {
+			panic(ErrUnreachable)
+		}
+
+		patternString := string(pattern)
+
+		prefixPattern := patternString
+		//remove trailing slash
+		if prefixPattern != "/" && prefixPattern[len(prefixPattern)-1] == '/' {
+			prefixPattern = prefixPattern[:len(prefixPattern)-1]
+		}
+
+		slashCount := strings.Count(prefixNoSlash, "/")
+		patternSlashCount := strings.Count(prefixPattern, "/")
+
+		if patternSlashCount < slashCount {
+			return false
+		}
+
+		for i := 0; i < patternSlashCount-slashCount; i++ {
+			index := strings.LastIndex(prefixPattern, "/")
+			prefixPattern = prefixPattern[:index]
+		}
+
+		if prefixNoSlash == prefixPattern || strings.HasPrefix(prefixPattern, prefixSlash) {
+			return true
+		}
+		return PathPattern(prefixPattern).Test(nil, path)
 	}
 
 	for pattern, handler := range handlers.Deletions {
-		// if prefix is /users:
-		// /users will match
-		// /users/x will match
-		// /users-x will not match
-		if string(pattern) == prefix || strings.HasPrefix(string(pattern), prefixSlash) {
+
+		if matchedBy(pattern) {
 			if filtered.Deletions == nil {
 				filtered.Deletions = map[PathPattern]*MigrationOpHandler{}
 			}
@@ -188,7 +224,7 @@ func (handlers MigrationOpHandlers) FilterByPrefix(path Path) MigrationOpHandler
 	}
 
 	for pattern, handler := range handlers.Inclusions {
-		if string(pattern) == prefix || strings.HasPrefix(string(pattern), prefixSlash) {
+		if matchedBy(pattern) {
 			if filtered.Inclusions == nil {
 				filtered.Inclusions = map[PathPattern]*MigrationOpHandler{}
 			}
@@ -197,7 +233,7 @@ func (handlers MigrationOpHandlers) FilterByPrefix(path Path) MigrationOpHandler
 	}
 
 	for pattern, handler := range handlers.Replacements {
-		if string(pattern) == prefix || strings.HasPrefix(string(pattern), prefixSlash) {
+		if matchedBy(pattern) {
 			if filtered.Replacements == nil {
 				filtered.Replacements = map[PathPattern]*MigrationOpHandler{}
 			}
@@ -206,7 +242,7 @@ func (handlers MigrationOpHandlers) FilterByPrefix(path Path) MigrationOpHandler
 	}
 
 	for pattern, handler := range handlers.Initializations {
-		if string(pattern) == prefix || strings.HasPrefix(string(pattern), prefixSlash) {
+		if matchedBy(pattern) {
 			if filtered.Initializations == nil {
 				filtered.Initializations = map[PathPattern]*MigrationOpHandler{}
 			}

@@ -1760,6 +1760,9 @@ func TestMigrationOpHandlersFilterByPrefix(t *testing.T) {
 		handlers := MigrationOpHandlers{
 			Deletions: map[PathPattern]*MigrationOpHandler{
 				"/users/*": nil,
+				"/*/x":     nil,
+				"/*":       nil,
+				"/":        nil,
 			},
 		}
 
@@ -1767,6 +1770,9 @@ func TestMigrationOpHandlersFilterByPrefix(t *testing.T) {
 		assert.Equal(t, MigrationOpHandlers{
 			Deletions: map[PathPattern]*MigrationOpHandler{
 				"/users/*": nil,
+				"/*/x":     nil,
+				"/*":       nil,
+				"/":        nil,
 			},
 		}, filtered)
 	})
@@ -1775,7 +1781,11 @@ func TestMigrationOpHandlersFilterByPrefix(t *testing.T) {
 		handlers := MigrationOpHandlers{
 			Deletions: map[PathPattern]*MigrationOpHandler{
 				"/users/*":    nil,
+				"/users-x/*":  nil,
 				"/messages/*": nil,
+				"/*/x":        nil,
+				"/*":          nil,
+				"/":           nil,
 			},
 		}
 
@@ -1783,6 +1793,16 @@ func TestMigrationOpHandlersFilterByPrefix(t *testing.T) {
 		assert.Equal(t, MigrationOpHandlers{
 			Deletions: map[PathPattern]*MigrationOpHandler{
 				"/users/*": nil,
+				"/*/x":     nil,
+				"/*":       nil,
+			},
+		}, filtered)
+
+		filtered = handlers.FilterByPrefix("/*")
+		assert.Equal(t, MigrationOpHandlers{
+			Deletions: map[PathPattern]*MigrationOpHandler{
+				"/*":   nil,
+				"/*/x": nil,
 			},
 		}, filtered)
 	})
@@ -1791,15 +1811,20 @@ func TestMigrationOpHandlersFilterByPrefix(t *testing.T) {
 		handlers := MigrationOpHandlers{
 			Deletions: map[PathPattern]*MigrationOpHandler{
 				"/users/x":    nil,
+				"/users/x-x":    nil,
 				"/users/y":    nil,
+				"/users/*/b":  nil,
 				"/messages/*": nil,
+				"/*":          nil,
+				"/":           nil,
 			},
 		}
 
 		filtered := handlers.FilterByPrefix("/users/x")
 		assert.Equal(t, MigrationOpHandlers{
 			Deletions: map[PathPattern]*MigrationOpHandler{
-				"/users/x": nil,
+				"/users/x":   nil,
+				"/users/*/b": nil,
 			},
 		}, filtered)
 	})
