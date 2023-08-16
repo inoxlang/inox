@@ -855,6 +855,29 @@ func TestObjectMigrate(t *testing.T) {
 		assert.Equal(t, map[string]Serializable{"a": expectedInner}, object.EntryMap(ctx))
 	})
 
+	t.Run("replace property of immutable property", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+
+		object := NewObjectFromMap(ValMap{"a": NewRecordFromMap(ValMap{"b": Int(0)})}, ctx)
+		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
+			NextPattern: nil,
+			MigrationHandlers: MigrationOpHandlers{
+				Replacements: map[PathPattern]*MigrationOpHandler{
+					"/a/b": {InitialValue: Int(1)},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Same(t, object, val) {
+			return
+		}
+		expectedInner := NewRecordFromMap(ValMap{"b": Int(1)})
+		assert.Equal(t, map[string]Serializable{"a": expectedInner}, object.EntryMap(ctx))
+	})
+
 	t.Run("include property", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 

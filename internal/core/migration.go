@@ -625,8 +625,11 @@ func migrateObjectOrRecord(
 			if err != nil {
 				return nil, err
 			}
-			//if o is a record a new record with the updated property has to be created
-			if !isObject {
+
+			if isObject {
+				(*propValues)[propIndex] = nextPropValue.(Serializable)
+			} else { //if o is a record a new record with the updated property has to be created
+
 				if !nextRecord {
 					nextRecord = true
 					nextRecordKeys = utils.CopySlice(*propKeys)
