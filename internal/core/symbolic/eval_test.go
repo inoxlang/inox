@@ -6183,6 +6183,39 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
+		t.Run("spread properties should be unique among spread patterns", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return %{...%{name: %str}, ...%{name: %int}}
+			`)
+
+			secondSpread := parse.FindNode(n, (*parse.PatternPropertySpreadElement)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(secondSpread, state, fmtPropertyShouldNotBePresentInSeveralSpreadPatterns("name")),
+			}, state.errors())
+			assert.Equal(t, &ObjectPattern{
+				entries: map[string]Pattern{"name": state.ctx.ResolveNamedPattern("str")},
+				inexact: true,
+			}, res)
+		})
+
+		t.Run("visible properties should have higher priority that spread properties", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return %{...%{name: %str}, name: %int}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &ObjectPattern{
+				entries: map[string]Pattern{"name": state.ctx.ResolveNamedPattern("int")},
+				inexact: true,
+			}, res)
+		})
+
 		t.Run("pattern call", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return %{a: %int(0..1)}
@@ -6346,6 +6379,48 @@ func TestSymbolicEval(t *testing.T) {
 				entries: map[string]Pattern{"name": state.ctx.ResolveNamedPattern("str")},
 				inexact: true,
 			}, res.(*ObjectPattern).entries["x"])
+		})
+
+		t.Run("spread properties should be unique among spread patterns", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return %{x: #{...#{name: %str}, ...#{name: %int}}}
+			`)
+
+			secondSpread := parse.FindNode(n, (*parse.PatternPropertySpreadElement)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(secondSpread, state, fmtPropertyShouldNotBePresentInSeveralSpreadPatterns("name")),
+			}, state.errors())
+			assert.Equal(t, &ObjectPattern{
+				entries: map[string]Pattern{
+					"x": &RecordPattern{
+						entries: map[string]Pattern{"name": state.ctx.ResolveNamedPattern("str")},
+						inexact: true,
+					},
+				},
+				inexact: true,
+			}, res)
+		})
+
+		t.Run("visible properties should have higher priority that spread properties", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return %{x: #{...#{name: %str}, name: %int}}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &ObjectPattern{
+				entries: map[string]Pattern{
+					"x": &RecordPattern{
+						entries: map[string]Pattern{"name": state.ctx.ResolveNamedPattern("int")},
+						inexact: true,
+					},
+				},
+				inexact: true,
+			}, res)
 		})
 
 		t.Run("the entry patterns should match only immutable values", func(t *testing.T) {

@@ -341,6 +341,10 @@ func fmtPatternSpreadInRecordPatternShouldBeAnRecordPatternNot(v SymbolicValue) 
 	return fmt.Sprintf("a pattern that is a spread in an record pattern should be an record pattern not a(n) %s", Stringify(v))
 }
 
+func fmtPropertyShouldNotBePresentInSeveralSpreadPatterns(name string) string {
+	return fmt.Sprintf("property '%s' should not be present in several spread patterns", name)
+}
+
 func fmtCannotCreateHostAliasWithA(value SymbolicValue) string {
 	return fmt.Sprintf("cannot create a host alias with a value of type %s", Stringify(value))
 }

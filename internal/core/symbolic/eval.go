@@ -3395,6 +3395,34 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			entries: make(map[string]Pattern),
 			inexact: !n.Exact,
 		}
+
+		for _, el := range n.SpreadElements {
+			compiledElement, err := symbolicallyEvalPatternNode(el.Expr, state)
+			if err != nil {
+				return nil, err
+			}
+
+			if objPattern, ok := compiledElement.(*ObjectPattern); ok {
+				if objPattern.entries == nil {
+					state.addError(makeSymbolicEvalError(el, state, CANNOT_SPREAD_OBJ_PATTERN_THAT_MATCHES_ANY_OBJECT))
+				} else {
+					for name, vpattern := range objPattern.entries {
+						if _, alreadyPresent := pattern.entries[name]; alreadyPresent {
+							state.addError(makeSymbolicEvalError(el, state, fmtPropertyShouldNotBePresentInSeveralSpreadPatterns(name)))
+							continue
+						}
+						pattern.entries[name] = vpattern
+					}
+				}
+				// else if objPattern.Inexact {
+				// state.addError(makeSymbolicEvalError(el, state, CANNOT_SPREAD_OBJ_PATTERN_THAT_IS_INEXACT))
+				//
+
+			} else {
+				state.addError(makeSymbolicEvalError(el, state, fmtPatternSpreadInObjectPatternShouldBeAnObjectPatternNot(compiledElement)))
+			}
+		}
+
 		for _, p := range n.Properties {
 			name := p.Name()
 			var err error
@@ -3416,35 +3444,35 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			}
 		}
 
-		for _, el := range n.SpreadElements {
-			compiledElement, err := symbolicallyEvalPatternNode(el.Expr, state)
-			if err != nil {
-				return nil, err
-			}
-
-			if objPattern, ok := compiledElement.(*ObjectPattern); ok {
-				if objPattern.entries == nil {
-					state.addError(makeSymbolicEvalError(el, state, CANNOT_SPREAD_OBJ_PATTERN_THAT_MATCHES_ANY_OBJECT))
-				} else {
-					for name, vpattern := range objPattern.entries {
-						pattern.entries[name] = vpattern
-					}
-				}
-				// else if objPattern.Inexact {
-				// state.addError(makeSymbolicEvalError(el, state, CANNOT_SPREAD_OBJ_PATTERN_THAT_IS_INEXACT))
-				//
-
-			} else {
-				state.addError(makeSymbolicEvalError(el, state, fmtPatternSpreadInObjectPatternShouldBeAnObjectPatternNot(compiledElement)))
-			}
-		}
-
 		return pattern, nil
 	case *parse.RecordPatternLiteral:
 		pattern := &RecordPattern{
 			entries: make(map[string]Pattern),
 			inexact: !n.Exact,
 		}
+		for _, el := range n.SpreadElements {
+			compiledElement, err := symbolicallyEvalPatternNode(el.Expr, state)
+			if err != nil {
+				return nil, err
+			}
+
+			if recPattern, ok := compiledElement.(*RecordPattern); ok {
+				if recPattern.entries == nil {
+					state.addError(makeSymbolicEvalError(el, state, CANNOT_SPREAD_REC_PATTERN_THAT_MATCHES_ANY_RECORD))
+				} else {
+					for name, vpattern := range recPattern.entries {
+						if _, alreadyPresent := pattern.entries[name]; alreadyPresent {
+							state.addError(makeSymbolicEvalError(el, state, fmtPropertyShouldNotBePresentInSeveralSpreadPatterns(name)))
+							continue
+						}
+						pattern.entries[name] = vpattern
+					}
+				}
+			} else {
+				state.addError(makeSymbolicEvalError(el, state, fmtPatternSpreadInRecordPatternShouldBeAnRecordPatternNot(compiledElement)))
+			}
+		}
+
 		for _, p := range n.Properties {
 			name := p.Name()
 			var err error
@@ -3480,27 +3508,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				pattern.optionalEntries[name] = struct{}{}
 			}
 		}
-
-		for _, el := range n.SpreadElements {
-			compiledElement, err := symbolicallyEvalPatternNode(el.Expr, state)
-			if err != nil {
-				return nil, err
-			}
-
-			if recPattern, ok := compiledElement.(*RecordPattern); ok {
-				if recPattern.entries == nil {
-					state.addError(makeSymbolicEvalError(el, state, CANNOT_SPREAD_REC_PATTERN_THAT_MATCHES_ANY_RECORD))
-				} else {
-					for name, vpattern := range recPattern.entries {
-						pattern.entries[name] = vpattern
-					}
-				}
-			} else {
-				state.addError(makeSymbolicEvalError(el, state, fmtPatternSpreadInRecordPatternShouldBeAnRecordPatternNot(compiledElement)))
-			}
-		}
-
 		return pattern, nil
+
 	case *parse.ListPatternLiteral:
 		pattern := &ListPattern{}
 
