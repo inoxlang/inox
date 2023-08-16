@@ -108,7 +108,17 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 		return
 	}
 
-	if len(ops) > 0 {
+	if len(ops) == 0 {
+		if len(additionalArgs) > 0 {
+			expectedObject := &Object{
+				entries: map[string]Serializable{},
+				exact:   true,
+			}
+
+			ctx.SetSymbolicGoFunctionParameters(&[]SymbolicValue{ANY_OBJECT_PATTERN, expectedObject}, []string{"new-schema", "migrations"})
+			return
+		}
+	} else {
 		if len(additionalArgs) == 0 {
 			ctx.AddSymbolicGoFunctionError("migration logic argument is required")
 			return
