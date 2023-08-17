@@ -637,6 +637,12 @@ func (u URL) Path() Path {
 	return Path(url.Path)
 }
 
+func (u URL) GetLastPathSegment() string {
+	url, _ := url.Parse(string(u))
+
+	return GetLastPathSegment(url.Path)
+}
+
 func (u URL) RawQuery() Str {
 	url, _ := url.Parse(string(u))
 	return Str(url.RawQuery)
@@ -1083,4 +1089,9 @@ func GetPathSegments(pth string) []string {
 		}
 	}
 	return segments
+}
+
+func GetLastPathSegment(pth string) string {
+	segments := GetPathSegments(pth)
+	return segments[len(segments)-1]
 }

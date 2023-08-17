@@ -1,8 +1,10 @@
 package containers_common
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
@@ -169,7 +171,7 @@ const (
 	UniquePropertyValue
 )
 
-func GetUniqueKey(ctx *core.Context, v core.Serializable, config UniquenessConstraint) string {
+func GetUniqueKey(ctx *core.Context, v core.Serializable, config UniquenessConstraint, container core.Value) string {
 	var key string
 	switch config.Type {
 	case UniqueRepr:
@@ -183,7 +185,25 @@ func GetUniqueKey(ctx *core.Context, v core.Serializable, config UniquenessConst
 		if err != nil {
 			panic(ErrFailedGetUniqueKeyNoURL)
 		}
-		key = url.UnderlyingString()
+
+		containerURL, ok := container.(core.UrlHolder).URL()
+		if !ok {
+			panic(core.ErrUnreachable)
+		}
+
+		elementURL := url.UnderlyingString()
+		key, found := strings.CutPrefix(elementURL, string(containerURL))
+		if !found {
+			panic(core.ErrUnreachable)
+		}
+		if key[0] == '/' {
+			key = key[1:]
+		}
+		_, err = ulid.ParseStrict(key)
+		if err != nil {
+			panic(core.ErrUnreachable)
+		}
+		return key
 	case UniquePropertyValue:
 		iprops, ok := v.(core.IProps)
 		if !ok {
@@ -199,4 +219,12 @@ func GetUniqueKey(ctx *core.Context, v core.Serializable, config UniquenessConst
 		key = string(repr)
 	}
 	return key
+}
+
+func GetElementPathKeyFromKey(key string, uniqueness UniquenessConstraintType) core.ElementKey {
+	if uniqueness == UniqueURL {
+		return core.MustElementKeyFrom(key) //ULID
+	}
+	hash := sha256.Sum256(utils.StringAsBytes(key))
+	return core.MustElementKeyFrom(core.ElementKeyEncoding.EncodeToString(hash[:]))
 }

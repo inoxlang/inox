@@ -418,7 +418,7 @@ func (p *parser) parseCssSelectorElement(ignoreNextSpace bool) (node Node, isSpa
 		}
 
 		p.i++
-		for p.i < p.len && isIdentChar(p.s[p.i]) {
+		for p.i < p.len && IsIdentChar(p.s[p.i]) {
 			p.i++
 		}
 
@@ -443,7 +443,7 @@ func (p *parser) parseCssSelectorElement(ignoreNextSpace bool) (node Node, isSpa
 		}
 
 		p.i++
-		for p.i < p.len && isIdentChar(p.s[p.i]) {
+		for p.i < p.len && IsIdentChar(p.s[p.i]) {
 			p.i++
 		}
 
@@ -552,7 +552,7 @@ func (p *parser) parseCssSelectorElement(ignoreNextSpace bool) (node Node, isSpa
 			}
 
 			p.i++
-			for p.i < p.len && isIdentChar(p.s[p.i]) {
+			for p.i < p.len && IsIdentChar(p.s[p.i]) {
 				p.i++
 			}
 
@@ -584,7 +584,7 @@ func (p *parser) parseCssSelectorElement(ignoreNextSpace bool) (node Node, isSpa
 		nameStart := p.i
 
 		p.i++
-		for p.i < p.len && isIdentChar(p.s[p.i]) {
+		for p.i < p.len && IsIdentChar(p.s[p.i]) {
 			p.i++
 		}
 
@@ -627,7 +627,7 @@ func (p *parser) parseCssSelectorElement(ignoreNextSpace bool) (node Node, isSpa
 
 	if p.i < p.len && isAlpha(p.s[p.i]) {
 		p.i++
-		for p.i < p.len && isIdentChar(p.s[p.i]) {
+		for p.i < p.len && IsIdentChar(p.s[p.i]) {
 			p.i++
 		}
 
@@ -811,7 +811,7 @@ func (p *parser) parsePathExpressionSlices(start int32, exclEnd int32, tokens *[
 					i := int32(1)
 					ok := true
 					for i < int32(len(interpolation)) {
-						if !isIdentChar(rune(interpolation[i])) {
+						if !IsIdentChar(rune(interpolation[i])) {
 							slices = append(slices, &UnknownNode{
 								NodeBase: NodeBase{
 									NodeSpan{sliceStart, exclEnd},
@@ -1139,11 +1139,11 @@ func (p *parser) parseDotStartingExpression() Node {
 			return expr
 		default:
 			r := p.s[p.i+1]
-			if isIdentChar(r) && !isDecDigit(r) {
+			if IsIdentChar(r) && !isDecDigit(r) {
 				start := p.i
 
 				p.i++
-				for p.i < p.len && isIdentChar(p.s[p.i]) {
+				for p.i < p.len && IsIdentChar(p.s[p.i]) {
 					p.i++
 				}
 
@@ -1314,7 +1314,7 @@ func (p *parser) parseLazyAndHostAliasStuff() Node {
 		j := p.i
 		p.i--
 
-		for j < p.len && isIdentChar(p.s[j]) {
+		for j < p.len && IsIdentChar(p.s[j]) {
 			j++
 		}
 
@@ -2113,7 +2113,7 @@ func (p *parser) parseIdentStartingExpression() Node {
 
 	start := p.i
 	p.i++
-	for p.i < p.len && isIdentChar(p.s[p.i]) {
+	for p.i < p.len && IsIdentChar(p.s[p.i]) {
 		p.i++
 	}
 
@@ -2223,7 +2223,7 @@ func (p *parser) parseIdentStartingExpression() Node {
 				p.i++
 				propNameNode = p.parseUnaryBinaryAndParenthesizedExpression(p.i-1, -1)
 			} else {
-				for p.i < p.len && isIdentChar(p.s[p.i]) {
+				for p.i < p.len && IsIdentChar(p.s[p.i]) {
 					p.i++
 				}
 
@@ -2421,7 +2421,7 @@ func (p *parser) parsePercentAlphaStartingExpr() Node {
 	start := p.i
 	p.i++
 
-	for p.i < p.len && isIdentChar(p.s[p.i]) {
+	for p.i < p.len && IsIdentChar(p.s[p.i]) {
 		p.i++
 	}
 
@@ -2464,7 +2464,7 @@ func (p *parser) parsePercentAlphaStartingExpr() Node {
 			}
 		}
 
-		for p.i < p.len && isIdentChar(p.s[p.i]) {
+		for p.i < p.len && IsIdentChar(p.s[p.i]) {
 			p.i++
 		}
 
@@ -4336,13 +4336,13 @@ func (p *parser) parseStringTemplateLiteralOrMultilineStringLiteral(pattern Node
 			if interpParsingErr == nil {
 				if strings.TrimSpace(string(interpolation)) == "" {
 					interpParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_STRING_INTERPOLATION_SHOULD_NOT_BE_EMPTY}
-				} else if pattern != nil && !isIdentChar(interpolation[0]) {
+				} else if pattern != nil && !IsIdentChar(interpolation[0]) {
 					interpParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_STRING_INTERPOLATION_SHOULD_START_WITH_A_NAME}
 				} else {
 
 					if pattern != nil { //typed interpolation
 						i := int32(1)
-						for ; i < len32(interpolation) && (interpolation[i] == '.' || isIdentChar(interpolation[i])); i++ {
+						for ; i < len32(interpolation) && (interpolation[i] == '.' || IsIdentChar(interpolation[i])); i++ {
 						}
 
 						typ = string(interpolation[:i+1])
@@ -4702,10 +4702,10 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 			}
 
 		} else if isAlpha(p.s[j]) || p.s[j] == '_' {
-			for j < p.i && isIdentChar(p.s[j]) {
+			for j < p.i && IsIdentChar(p.s[j]) {
 				j++
 			}
-			for p.i < p.len && isIdentChar(p.s[p.i]) {
+			for p.i < p.len && IsIdentChar(p.s[p.i]) {
 				p.i++
 			}
 		}
@@ -4816,7 +4816,7 @@ _switch:
 	case 'a':
 		if p.len-p.i >= AND_LEN &&
 			string(p.s[p.i:p.i+AND_LEN]) == "and" &&
-			(p.len-p.i == AND_LEN || !isIdentChar(p.s[p.i+AND_LEN])) {
+			(p.len-p.i == AND_LEN || !IsIdentChar(p.s[p.i+AND_LEN])) {
 			operator = And
 			p.i += AND_LEN
 			operatorType = AND_KEYWORD
@@ -4836,7 +4836,7 @@ _switch:
 			p.i++
 		}
 
-		if p.i+1 >= p.len || !isIdentChar(p.s[p.i+1]) {
+		if p.i+1 >= p.len || !IsIdentChar(p.s[p.i+1]) {
 			switch string(p.s[operatorStart : p.i+1]) {
 			case "in":
 				operator = In
@@ -4863,7 +4863,7 @@ _switch:
 		KEYOF_LEN := int32(len("keyof"))
 		if p.len-p.i >= KEYOF_LEN &&
 			string(p.s[p.i:p.i+KEYOF_LEN]) == "keyof" &&
-			(p.len-p.i == KEYOF_LEN || !isIdentChar(p.s[p.i+KEYOF_LEN])) {
+			(p.len-p.i == KEYOF_LEN || !IsIdentChar(p.s[p.i+KEYOF_LEN])) {
 			operator = Keyof
 			operatorType = KEYOF
 			p.i += KEYOF_LEN
@@ -4876,7 +4876,7 @@ _switch:
 		NOTIN_LEN := int32(len("not-in"))
 		if p.len-p.i >= NOTIN_LEN &&
 			string(p.s[p.i:p.i+NOTIN_LEN]) == "not-in" &&
-			(p.len-p.i == NOTIN_LEN || !isIdentChar(p.s[p.i+NOTIN_LEN])) {
+			(p.len-p.i == NOTIN_LEN || !IsIdentChar(p.s[p.i+NOTIN_LEN])) {
 			operator = NotIn
 			operatorType = NOT_IN
 			p.i += NOTIN_LEN
@@ -4886,7 +4886,7 @@ _switch:
 		NOTMATCH_LEN := int32(len("not-match"))
 		if p.len-p.i >= NOTMATCH_LEN &&
 			string(p.s[p.i:p.i+NOTMATCH_LEN]) == "not-match" &&
-			(p.len-p.i == NOTMATCH_LEN || !isIdentChar(p.s[p.i+NOTMATCH_LEN])) {
+			(p.len-p.i == NOTMATCH_LEN || !IsIdentChar(p.s[p.i+NOTMATCH_LEN])) {
 			operator = NotMatch
 			operatorType = NOT_MATCH
 			p.i += NOTMATCH_LEN
@@ -4899,7 +4899,7 @@ _switch:
 		MATCH_LEN := int32(len("match"))
 		if p.len-p.i >= MATCH_LEN &&
 			string(p.s[p.i:p.i+MATCH_LEN]) == "match" &&
-			(p.len-p.i == MATCH_LEN || !isIdentChar(p.s[p.i+MATCH_LEN])) {
+			(p.len-p.i == MATCH_LEN || !IsIdentChar(p.s[p.i+MATCH_LEN])) {
 			operator = Match
 			p.i += MATCH_LEN
 			operatorType = MATCH_KEYWORD
@@ -4911,7 +4911,7 @@ _switch:
 	case 'o':
 		if p.len-p.i >= OR_LEN &&
 			string(p.s[p.i:p.i+OR_LEN]) == "or" &&
-			(p.len-p.i == OR_LEN || !isIdentChar(p.s[p.i+OR_LEN])) {
+			(p.len-p.i == OR_LEN || !IsIdentChar(p.s[p.i+OR_LEN])) {
 			operator = Or
 			operatorType = OR_KEYWORD
 			p.i += OR_LEN
@@ -4924,7 +4924,7 @@ _switch:
 		SUBSTROF_LEN := int32(len("substrof"))
 		if p.len-p.i >= SUBSTROF_LEN &&
 			string(p.s[p.i:p.i+SUBSTROF_LEN]) == "substrof" &&
-			(p.len-p.i == SUBSTROF_LEN || !isIdentChar(p.s[p.i+SUBSTROF_LEN])) {
+			(p.len-p.i == SUBSTROF_LEN || !IsIdentChar(p.s[p.i+SUBSTROF_LEN])) {
 			operator = Substrof
 			operatorType = SUBSTROF
 			p.i += SUBSTROF_LEN
@@ -4995,7 +4995,7 @@ _switch:
 		case 'a':
 			if p.len-p.i >= AND_LEN &&
 				string(p.s[p.i:p.i+AND_LEN]) == "and" &&
-				(p.len-p.i == AND_LEN || !isIdentChar(p.s[p.i+AND_LEN])) {
+				(p.len-p.i == AND_LEN || !IsIdentChar(p.s[p.i+AND_LEN])) {
 				continueParsing = true
 				andOrToken = Token{Type: AND_KEYWORD, Span: NodeSpan{p.i, p.i + AND_LEN}}
 				p.i += AND_LEN
@@ -5003,7 +5003,7 @@ _switch:
 		case 'o':
 			if p.len-p.i >= OR_LEN &&
 				string(p.s[p.i:p.i+OR_LEN]) == "or" &&
-				(p.len-p.i == OR_LEN || !isIdentChar(p.s[p.i+OR_LEN])) {
+				(p.len-p.i == OR_LEN || !IsIdentChar(p.s[p.i+OR_LEN])) {
 				andOrToken = Token{Type: OR_KEYWORD, Span: NodeSpan{p.i, p.i + OR_LEN}}
 				p.i += OR_LEN
 				continueParsing = true
@@ -6027,7 +6027,7 @@ loop:
 					}
 					rateUnit = string(p.s[rateUnitStart:p.i])
 
-					if p.i < p.len && isIdentChar(p.s[p.i]) {
+					if p.i < p.len && IsIdentChar(p.s[p.i]) {
 						parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_RATE_LIT}
 					}
 				}
@@ -6095,7 +6095,7 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 			p.i++
 		}
 
-		for p.i < p.len && isIdentChar(p.s[p.i]) {
+		for p.i < p.len && IsIdentChar(p.s[p.i]) {
 			p.i++
 		}
 
@@ -6331,7 +6331,7 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 		}
 		p.i++
 
-		for p.i < p.len && isIdentChar(p.s[p.i]) {
+		for p.i < p.len && IsIdentChar(p.s[p.i]) {
 			p.i++
 		}
 
@@ -6614,7 +6614,7 @@ loop:
 						return newMemberExpression(&ParsingError{UnspecifiedParsingError, fmtPropNameShouldStartWithAletterNot(p.s[p.i])}), false
 					}
 
-					for p.i < p.len && isIdentChar(p.s[p.i]) {
+					for p.i < p.len && IsIdentChar(p.s[p.i]) {
 						p.i++
 					}
 
@@ -7931,7 +7931,7 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 	{
 		start := p.i
 		p.i++
-		for p.i < p.len && isIdentChar(p.s[p.i]) {
+		for p.i < p.len && IsIdentChar(p.s[p.i]) {
 			p.i++
 		}
 
@@ -10610,7 +10610,7 @@ func isOctalDigit(r rune) bool {
 	return r >= '0' && r <= '7'
 }
 
-func isIdentChar(r rune) bool {
+func IsIdentChar(r rune) bool {
 	return isAlpha(r) || isDecDigit(r) || r == '-' || r == '_'
 }
 
@@ -10619,11 +10619,11 @@ func isFirstIdentChar(r rune) bool {
 }
 
 func isInterpolationAllowedChar(r rune) bool {
-	return isIdentChar(r) || isDecDigit(r) || r == '[' || r == ']' || r == '.' || r == '$' || r == ':'
+	return IsIdentChar(r) || isDecDigit(r) || r == '[' || r == ']' || r == '.' || r == '$' || r == ':'
 }
 
 func isUnquotedStringChar(r rune) bool {
-	return isIdentChar(r) || r == '+' || r == '~' || r == '/' || r == '^' || r == '@' || r == '.' || r == '%'
+	return IsIdentChar(r) || r == '+' || r == '~' || r == '/' || r == '^' || r == '@' || r == '.' || r == '%'
 }
 
 func isValidUnquotedStringChar(runes []rune, i int32) bool {

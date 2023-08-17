@@ -888,7 +888,7 @@ func TestInteractWithElementsOfLoadedSet(t *testing.T) {
 
 		assert.NotSame(t, set, loadedSet) //future-proofing the test
 
-		elem, _ := loadedSet.(*Set).Get(ctx, core.Str(url.UnderlyingString()))
+		elem, _ := loadedSet.(*Set).Get(ctx, core.Str(url.GetLastPathSegment()))
 		obj := elem.(*core.Object)
 		if !assert.NoError(t, obj.SetProp(ctx, "prop", core.Int(1))) {
 			return
@@ -903,7 +903,7 @@ func TestInteractWithElementsOfLoadedSet(t *testing.T) {
 			return
 		}
 
-		loadedElem, _ := loadedSet.(*Set).Get(ctx, core.Str(url.UnderlyingString()))
+		loadedElem, _ := loadedSet.(*Set).Get(ctx, core.Str(url.GetLastPathSegment()))
 		loadedObj := loadedElem.(*core.Object)
 
 		if !assert.Equal(t, []string{"prop"}, loadedObj.PropertyNames(ctx)) {
@@ -964,7 +964,7 @@ func TestSetMigrate(t *testing.T) {
 			NextPattern: nil,
 			MigrationHandlers: core.MigrationOpHandlers{
 				Deletions: map[core.PathPattern]*core.MigrationOpHandler{
-					"/0": nil,
+					"/" + core.PathPattern(containers_common.GetElementPathKeyFromKey("0", containers_common.UniqueRepr)): nil,
 				},
 			},
 		})
@@ -998,16 +998,19 @@ func TestSetMigrate(t *testing.T) {
 	t.Run("delete inexisting element", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		set := NewSetWithConfig(ctx, core.NewWrappedValueList(core.Int(0)), config)
+
+		pathPattern := "/" + core.PathPattern(containers_common.GetElementPathKeyFromKey("1", containers_common.UniqueRepr))
+
 		val, err := set.Migrate(ctx, "/", &core.InstanceMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: core.MigrationOpHandlers{
 				Deletions: map[core.PathPattern]*core.MigrationOpHandler{
-					"/1": nil,
+					pathPattern: nil,
 				},
 			},
 		})
 
-		if !assert.Equal(t, err, commonfmt.FmtValueAtPathDoesNotExist("/1")) {
+		if !assert.Equal(t, err, commonfmt.FmtValueAtPathDoesNotExist(string(pathPattern))) {
 			return
 		}
 		assert.Nil(t, val)
@@ -1017,11 +1020,14 @@ func TestSetMigrate(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		elements := core.NewWrappedValueList(core.NewRecordFromMap(core.ValMap{"b": core.Int(0)}))
 		set := NewSetWithConfig(ctx, elements, config)
+
+		pathPattern := "/" + core.PathPattern(containers_common.GetElementPathKeyFromKey("#{\"b\":0}", containers_common.UniqueRepr)) + "/b"
+
 		val, err := set.Migrate(ctx, "/", &core.InstanceMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: core.MigrationOpHandlers{
 				Deletions: map[core.PathPattern]*core.MigrationOpHandler{
-					"/#{\"b\":0}/b": nil,
+					pathPattern: nil,
 				},
 			},
 		})

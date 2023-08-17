@@ -36,6 +36,7 @@ func init() {
 
 type Set struct {
 	elements                       map[string]core.Serializable
+	pathKeyToKey                   map[core.ElementKey]string
 	pendingInclusions              map[*core.Transaction]map[string]core.Serializable
 	pendingRemovals                map[*core.Transaction]map[string]struct{}
 	transactionsWithSetEndCallback map[*core.Transaction]struct{}
@@ -284,7 +285,9 @@ func (s *Set) Migrate(ctx *core.Context, key core.Path, migration *core.Instance
 				clear(s.elements)
 				return s, nil
 			} else {
-				elemToRemove, ok := s.elements[lastSegment]
+				elementPathKey := core.MustElementKeyFrom(lastSegment)
+				elementKey := s.pathKeyToKey[elementPathKey]
+				elemToRemove, ok := s.elements[elementKey]
 				if !ok {
 					return nil, commonfmt.FmtValueAtPathSegmentsDoesNotExist(pathPatternSegments)
 				}
@@ -298,23 +301,25 @@ func (s *Set) Migrate(ctx *core.Context, key core.Path, migration *core.Instance
 						panic(core.ErrUnreachable)
 					}
 				}
-				delete(s.elements, lastSegment)
+				delete(s.elements, elementKey)
+				delete(s.pathKeyToKey, elementPathKey)
 			}
 		case pathPatternDepth > 1+depth: //deletion inside element
 			elementPathPattern := pathPatternSegments[:depth+1]
-			key := elementPathPattern[len(elementPathPattern)-1]
-			element, ok := s.elements[key]
+			elementPathKey := core.MustElementKeyFrom(elementPathPattern[len(elementPathPattern)-1])
+			elementKey := s.pathKeyToKey[elementPathKey]
+			element, ok := s.elements[elementKey]
 			if !ok {
-				return nil, commonfmt.FmtValueAtPathSegmentsDoesNotExist(pathPatternSegments[:depth+1])
+				return nil, commonfmt.FmtValueAtPathSegmentsDoesNotExist(elementPathPattern)
 			}
-			clear(s.elements)
+			delete(s.elements, elementKey)
 
 			migrationCapable, ok := element.(core.MigrationCapable)
 			if !ok {
-				return nil, commonfmt.FmtValueAtPathSegmentsIsNotMigrationCapable(pathPatternSegments[:depth+1])
+				return nil, commonfmt.FmtValueAtPathSegmentsIsNotMigrationCapable(elementPathPattern)
 			}
 
-			propertyValuePath := "/" + core.Path(strings.Join(pathPatternSegments[:depth+1], ""))
+			propertyValuePath := "/" + core.Path(strings.Join(elementPathPattern, ""))
 			nextElementValue, err := migrationCapable.Migrate(ctx, propertyValuePath, &core.InstanceMigrationArgs{
 				NextPattern:       nil,
 				MigrationHandlers: migrationHanders.FilterByPrefix(propertyValuePath),
@@ -323,7 +328,8 @@ func (s *Set) Migrate(ctx *core.Context, key core.Path, migration *core.Instance
 			if err != nil {
 				return nil, err
 			}
-			nextElementKey := containers_common.GetUniqueKey(ctx, nextElementValue.(core.Serializable), s.config.Uniqueness)
+			nextElementKey := containers_common.GetUniqueKey(ctx, nextElementValue.(core.Serializable), s.config.Uniqueness, s)
+			s.pathKeyToKey[s.GetElementPathKeyFromKey(nextElementKey)] = nextElementKey
 			s.elements[nextElementKey] = nextElementValue.(core.Serializable)
 		}
 	}
@@ -381,7 +387,7 @@ func (s *Set) Migrate(ctx *core.Context, key core.Path, migration *core.Instance
 					if err != nil {
 						return nil, err
 					}
-					nextElementKey := containers_common.GetUniqueKey(ctx, nextElementValue.(core.Serializable), s.config.Uniqueness)
+					nextElementKey := containers_common.GetUniqueKey(ctx, nextElementValue.(core.Serializable), s.config.Uniqueness, s)
 					s.elements[nextElementKey] = nextElementValue.(core.Serializable)
 				}
 			} else {
@@ -446,6 +452,7 @@ func (c SetConfig) Equal(ctx *core.Context, otherConfig SetConfig, alreadyCompar
 func NewSetWithConfig(ctx *core.Context, elements core.Iterable, config SetConfig) *Set {
 	set := &Set{
 		elements:                       make(map[string]core.Serializable),
+		pathKeyToKey:                   make(map[core.ElementKey]string),
 		pendingInclusions:              make(map[*core.Transaction]map[string]core.Serializable, 0),
 		pendingRemovals:                make(map[*core.Transaction]map[string]struct{}, 0),
 		transactionsWithSetEndCallback: make(map[*core.Transaction]struct{}, 0),
@@ -498,6 +505,10 @@ func (set *Set) URL() (core.URL, bool) {
 	return "", false
 }
 
+func (set *Set) GetElementPathKeyFromKey(key string) core.ElementKey {
+	return containers_common.GetElementPathKeyFromKey(key, set.config.Uniqueness.Type)
+}
+
 func (set *Set) SetURLOnce(ctx *core.Context, url core.URL) error {
 	return core.ErrValueDoesNotAcceptURL
 }
@@ -515,7 +526,7 @@ func (set *Set) hasNoLock(ctx *core.Context, elem core.Serializable) core.Bool {
 		panic(ErrValueDoesMatchElementPattern)
 	}
 
-	key := containers_common.GetUniqueKey(ctx, elem, set.config.Uniqueness)
+	key := containers_common.GetUniqueKey(ctx, elem, set.config.Uniqueness, set)
 
 	tx := ctx.GetTx()
 
@@ -592,10 +603,13 @@ func (set *Set) addNoPersist(ctx *core.Context, elem core.Serializable) {
 	elem = utils.Must(core.ShareOrClone(elem, closestState)).(core.Serializable)
 
 	set.config.Uniqueness.AddUrlIfNecessary(ctx, set, elem)
-	key := containers_common.GetUniqueKey(ctx, elem, set.config.Uniqueness)
+	key := containers_common.GetUniqueKey(ctx, elem, set.config.Uniqueness, set)
 
 	set.lock.Lock(closestState, set)
 	defer set.lock.Unlock(closestState, set)
+
+	set.pathKeyToKey[set.GetElementPathKeyFromKey(key)] = key
+	//TODO: from time to time .pathKeyToKey should be (safely !) cleaned up
 
 	tx := ctx.GetTx()
 
@@ -637,7 +651,7 @@ func (set *Set) addNoPersist(ctx *core.Context, elem core.Serializable) {
 }
 
 func (set *Set) Remove(ctx *core.Context, elem core.Serializable) {
-	key := containers_common.GetUniqueKey(ctx, elem, set.config.Uniqueness)
+	key := containers_common.GetUniqueKey(ctx, elem, set.config.Uniqueness, set)
 
 	closestState := ctx.GetClosestState()
 	set.lock.Lock(closestState, set)

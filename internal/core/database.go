@@ -1,6 +1,7 @@
 package core
 
 import (
+	"encoding/base32"
 	"errors"
 	"fmt"
 	"strings"
@@ -31,6 +32,8 @@ var (
 
 	DATABASE_PROPNAMES = []string{"update_schema", "close", "schema"}
 
+	ElementKeyEncoding = base32.StdEncoding.WithPadding(base32.NoPadding)
+
 	_ Value    = (*DatabaseIL)(nil)
 	_ Database = (*FailedToOpenDatabase)(nil)
 )
@@ -51,6 +54,36 @@ type DbOpenConfiguration struct {
 	Resource       SchemeHolder
 	ResolutionData Value
 	FullAccess     bool
+}
+
+// An element key is a a string that:
+// is at most 100-character long
+// is not empty
+// can only contain identifier chars (parse.IsIdentChar)
+type ElementKey string
+
+func ElementKeyFrom(key string) (ElementKey, error) {
+	fmtErr := func(msg string) error {
+		return fmt.Errorf("provided key %q is not a valid element key: %s", key, msg)
+	}
+	if len(key) == 0 {
+		return "", fmtErr("empty")
+	}
+
+	if len(key) > 100 {
+		return "", fmtErr("too long")
+	}
+
+	for _, r := range key {
+		if !parse.IsIdentChar(r) {
+			return "", fmtErr("invalid char found")
+		}
+	}
+	return ElementKey(key), nil
+}
+
+func MustElementKeyFrom(key string) ElementKey {
+	return utils.Must(ElementKeyFrom(key))
 }
 
 type OpenDBFn func(ctx *Context, config DbOpenConfiguration) (Database, error)
