@@ -752,6 +752,18 @@ func (p *ExactValuePattern) Test(v SymbolicValue) bool {
 	return p.value.Test(other.value)
 }
 
+func (p *ExactValuePattern) Concretize() any {
+	if !p.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+
+	return utils.Must(Concretize(p.value))
+}
+
+func (p *ExactValuePattern) IsConcretizable() bool {
+	return IsConcretizable(p.value)
+}
+
 func (p *ExactValuePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%exact-value-pattern(\n")))
 	indentCount := parentIndentCount + 1
