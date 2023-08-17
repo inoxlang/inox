@@ -390,6 +390,17 @@ func registerDebugMethodHandlers(
 			debugSession.programDoneChan = make(chan error, 1)
 			debugSession.programPreparedOrFailedToChan = make(chan error)
 
+			go func() {
+				select {
+				case <-session.Context().Done():
+					return
+				case err := <-debugSession.programDoneChan:
+					if err != nil {
+						notifyOutputEvent("program failed: "+err.Error(), "important", debugSession, session)
+					}
+				}
+			}()
+
 			go launchDebuggedProgram(programPath, session, debugSession, fls)
 
 			err = <-debugSession.programPreparedOrFailedToChan
@@ -1238,12 +1249,16 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 
 	defer func() {
 		e := recover()
+
+		var err error
 		switch val := e.(type) {
 		case nil:
 		case error:
-			debugSession.programDoneChan <- val
+			err = fmt.Errorf("%w: %s", val, string(debug.Stack()))
+			debugSession.programDoneChan <- err
 		default:
-			debugSession.programDoneChan <- fmt.Errorf("%#v: %s", val, string(debug.Stack()))
+			err = fmt.Errorf("%#v: %s", val, string(debug.Stack()))
+			debugSession.programDoneChan <- err
 		}
 
 		debugSession.finished.Store(true)
@@ -1269,56 +1284,14 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 
 	programOut := utils.FnWriter{
 		WriteFn: func(p []byte) (n int, err error) {
-			outputEvent := dap.OutputEvent{
-				Event: dap.Event{
-					ProtocolMessage: dap.ProtocolMessage{
-						Seq:  debugSession.NextSeq(),
-						Type: "event",
-					},
-					Event: "output",
-				},
-				Body: dap.OutputEventBody{
-					Output:   string(p),
-					Category: "stdout",
-				},
-			}
-
-			session.Notify(jsonrpc.NotificationMessage{
-				BaseMessage: jsonrpc.BaseMessage{
-					Jsonrpc: JSONRPC_VERSION,
-				},
-				Method: "debug/outputEvent",
-				Params: utils.Must(json.Marshal(outputEvent)),
-			})
-
+			notifyOutputEvent(string(p), "stdout", debugSession, session)
 			return len(p), nil
 		},
 	}
 
 	debuggerOut := utils.FnWriter{
 		WriteFn: func(p []byte) (n int, err error) {
-			outputEvent := dap.OutputEvent{
-				Event: dap.Event{
-					ProtocolMessage: dap.ProtocolMessage{
-						Seq:  debugSession.NextSeq(),
-						Type: "event",
-					},
-					Event: "output",
-				},
-				Body: dap.OutputEventBody{
-					Output:   string(p),
-					Category: "console",
-				},
-			}
-
-			session.Notify(jsonrpc.NotificationMessage{
-				BaseMessage: jsonrpc.BaseMessage{
-					Jsonrpc: JSONRPC_VERSION,
-				},
-				Method: "debug/outputEvent",
-				Params: utils.Must(json.Marshal(outputEvent)),
-			})
-
+			notifyOutputEvent(string(p), "console", debugSession, session)
 			return len(p), nil
 		},
 	}
@@ -1513,4 +1486,28 @@ func breakpointInfoToDebugAdapterProtocolBreakpoint(breakpoint core.BreakpointIn
 	}
 
 	return dapBreakpoint
+}
+
+func notifyOutputEvent(msg string, category string, debugSession *DebugSession, session *jsonrpc.Session) {
+	outputEvent := dap.OutputEvent{
+		Event: dap.Event{
+			ProtocolMessage: dap.ProtocolMessage{
+				Seq:  debugSession.NextSeq(),
+				Type: "event",
+			},
+			Event: "output",
+		},
+		Body: dap.OutputEventBody{
+			Output:   msg,
+			Category: category,
+		},
+	}
+
+	session.Notify(jsonrpc.NotificationMessage{
+		BaseMessage: jsonrpc.BaseMessage{
+			Jsonrpc: JSONRPC_VERSION,
+		},
+		Method: "debug/outputEvent",
+		Params: utils.Must(json.Marshal(outputEvent)),
+	})
 }
