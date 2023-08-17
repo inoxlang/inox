@@ -2,6 +2,12 @@ package symbolic
 
 import parse "github.com/inoxlang/inox/internal/parse"
 
+var (
+	_ = []MigrationInitialValueCapablePattern{
+		(*ObjectPattern)(nil),
+	}
+)
+
 type MigrationOp interface {
 	GetPseudoPath() string
 }

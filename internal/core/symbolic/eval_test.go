@@ -7279,9 +7279,9 @@ func TestSymbolicEval(t *testing.T) {
 			`)
 
 			lifetimeJobExpr := parse.FindNode(n, &parse.LifetimejobExpression{}, nil)
-			subjectPattern := newExactObjectPattern(map[string]Pattern{
+			subjectPattern := NewExactObjectPattern(map[string]Pattern{
 				"a": state.ctx.ResolveNamedPattern("int"),
-			})
+			}, nil)
 
 			_, err := symbolicEval(n, state)
 			assert.NoError(t, err)

@@ -16,6 +16,10 @@ func (any AnyPattern) IsMutable() bool {
 	return false
 }
 
+func (any AnySerializablePattern) IsMutable() bool {
+	return false
+}
+
 func (any AnyStringPattern) IsMutable() bool {
 	return false
 }

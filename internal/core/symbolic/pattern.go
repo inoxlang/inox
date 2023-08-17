@@ -28,13 +28,14 @@ var (
 		(*NamedSegmentPathPattern)(nil),
 	}
 
-	ANY_PATTERN       = &AnyPattern{}
-	ANY_PATH_PATTERN  = &PathPattern{}
-	ANY_URL_PATTERN   = &URLPattern{}
-	ANY_HOST_PATTERN  = &HostPattern{}
-	ANY_STR_PATTERN   = &AnyStringPattern{}
-	ANY_LIST_PATTERN  = &ListPattern{generalElement: ANY_PATTERN}
-	ANY_TUPLE_PATTERN = &TuplePattern{generalElement: ANY_PATTERN}
+	ANY_PATTERN              = &AnyPattern{}
+	ANY_SERIALIZABLE_PATTERN = &AnySerializablePattern{}
+	ANY_PATH_PATTERN         = &PathPattern{}
+	ANY_URL_PATTERN          = &URLPattern{}
+	ANY_HOST_PATTERN         = &HostPattern{}
+	ANY_STR_PATTERN          = &AnyStringPattern{}
+	ANY_LIST_PATTERN         = &ListPattern{generalElement: ANY_PATTERN}
+	ANY_TUPLE_PATTERN        = &TuplePattern{generalElement: ANY_PATTERN}
 
 	ANY_OBJECT_PATTERN = &ObjectPattern{}
 	ANY_RECORD_PATTERN = &RecordPattern{}
@@ -163,6 +164,55 @@ func (p *AnyPattern) IteratorElementValue() SymbolicValue {
 
 func (p *AnyPattern) WidestOfType() SymbolicValue {
 	return ANY_PATTERN
+}
+
+// An AnySerialiablePattern represents a symbolic Pattern we do not know the concrete type that represents patterns
+// of serializable values.
+type AnySerializablePattern struct {
+	NotCallablePatternMixin
+	SerializableMixin
+}
+
+func (p *AnySerializablePattern) Test(v SymbolicValue) bool {
+	patt, ok := v.(Pattern)
+	if ok {
+		return false
+	}
+
+	_, ok = AsSerializable(patt.SymbolicValue()).(Serializable)
+	return ok
+}
+
+func (p *AnySerializablePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%pattern")))
+}
+
+func (p *AnySerializablePattern) HasUnderylingPattern() bool {
+	return false
+}
+
+func (p *AnySerializablePattern) TestValue(SymbolicValue) bool {
+	return true
+}
+
+func (p *AnySerializablePattern) SymbolicValue() SymbolicValue {
+	return ANY_SERIALIZABLE
+}
+
+func (p *AnySerializablePattern) StringPattern() (StringPattern, bool) {
+	return nil, false
+}
+
+func (p *AnySerializablePattern) IteratorElementKey() SymbolicValue {
+	return ANY_INT
+}
+
+func (p *AnySerializablePattern) IteratorElementValue() SymbolicValue {
+	return ANY_SERIALIZABLE
+}
+
+func (p *AnySerializablePattern) WidestOfType() SymbolicValue {
+	return ANY_SERIALIZABLE_PATTERN
 }
 
 // A PathPattern represents a symbolic PathPattern.
@@ -871,12 +921,16 @@ func NewAnyObjectPattern() *ObjectPattern {
 	return &ObjectPattern{}
 }
 
-func newExactObjectPattern(entries map[string]Pattern) *ObjectPattern {
-	return &ObjectPattern{entries: entries}
-}
-
 func NewUnitializedObjectPattern() *ObjectPattern {
 	return &ObjectPattern{}
+}
+
+func NewExactObjectPattern(entries map[string]Pattern, optionalEntries map[string]struct{}) *ObjectPattern {
+	return &ObjectPattern{
+		inexact:         false,
+		entries:         entries,
+		optionalEntries: optionalEntries,
+	}
 }
 
 func NewInexactObjectPattern(entries map[string]Pattern, optionalEntries map[string]struct{}) *ObjectPattern {
@@ -1096,6 +1150,9 @@ func (p *ObjectPattern) TestValue(v SymbolicValue) bool {
 }
 
 func (p *ObjectPattern) SymbolicValue() SymbolicValue {
+	if p.entries == nil {
+		return ANY_OBJ
+	}
 	entries := map[string]Serializable{}
 	static := map[string]Pattern{}
 
@@ -1110,6 +1167,32 @@ func (p *ObjectPattern) SymbolicValue() SymbolicValue {
 		return NewInexactObject(entries, p.optionalEntries, static)
 	}
 	return NewExactObject(entries, p.optionalEntries, static)
+}
+
+func (p *ObjectPattern) MigrationInitialValue() (Serializable, bool) {
+	if p.entries == nil {
+		return ANY_OBJ, true
+	}
+	entries := map[string]Serializable{}
+	static := map[string]Pattern{}
+
+	for key, propPattern := range p.entries {
+		capable, ok := propPattern.(MigrationInitialValueCapablePattern)
+		if !ok {
+			return nil, false
+		}
+		propInitialValue, ok := capable.MigrationInitialValue()
+		if !ok {
+			return nil, false
+		}
+		entries[key] = AsSerializable(propInitialValue).(Serializable)
+		static[key] = propPattern
+	}
+
+	if p.inexact {
+		return NewInexactObject(entries, p.optionalEntries, static), true
+	}
+	return NewExactObject(entries, p.optionalEntries, static), true
 }
 
 func (p *ObjectPattern) ValuePropPattern(name string) (propPattern Pattern, isOptional bool, ok bool) {

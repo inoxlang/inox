@@ -336,11 +336,25 @@ func TestSymbolicObjectPattern(t *testing.T) {
 		}
 	})
 
-	t.Run("TestValue()", func(t *testing.T) {
+	t.Run("TestValue() & SymbolicValue()", func(t *testing.T) {
+		t.Run("empty exact", func(t *testing.T) {
+			patt := NewExactObjectPattern(map[string]Pattern{}, nil)
+
+			val := patt.SymbolicValue()
+			assert.Equal(t, NewExactObject(map[string]Serializable{}, nil, map[string]Pattern{}), val)
+		})
+
+		t.Run("empty inexact", func(t *testing.T) {
+			patt := NewInexactObjectPattern(map[string]Pattern{}, nil)
+
+			val := patt.SymbolicValue()
+			assert.Equal(t, NewInexactObject(map[string]Serializable{}, nil, map[string]Pattern{}), val)
+		})
+
 		cases := []struct {
-			pattern *ObjectPattern
-			value   SymbolicValue
-			ok      bool
+			pattern     *ObjectPattern
+			testedValue SymbolicValue
+			ok          bool
 		}{
 			{&ObjectPattern{entries: nil}, &ObjectPattern{entries: nil}, false},
 			{&ObjectPattern{entries: nil}, &ObjectPattern{entries: map[string]Pattern{}}, false},
@@ -394,7 +408,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			},
 			{
 				&ObjectPattern{
-					entries: map[string]Pattern{"a": ANY_PATTERN},
+					entries: map[string]Pattern{"a": ANY_SERIALIZABLE_PATTERN},
 				},
 				&Object{
 					entries: map[string]Serializable{"a": ANY_INT},
@@ -413,12 +427,63 @@ func TestSymbolicObjectPattern(t *testing.T) {
 		}
 
 		for _, testCase := range cases {
-			t.Run(t.Name()+"_"+fmt.Sprint(testCase.pattern, "_", testCase.value), func(t *testing.T) {
-				assert.Equal(t, testCase.ok, testCase.pattern.TestValue(testCase.value))
+			t.Run(t.Name()+"_"+Stringify(testCase.pattern)+"_"+Stringify(testCase.testedValue), func(t *testing.T) {
+				if !assert.Equal(t, testCase.ok, testCase.pattern.TestValue(testCase.testedValue)) {
+					return
+				}
+				val := testCase.pattern.SymbolicValue()
+				assert.Equal(t, testCase.ok, val.Test(testCase.testedValue))
 			})
 		}
 	})
 
+	t.Run("MigrationInitialValue()", func(t *testing.T) {
+		t.Run("empty exact", func(t *testing.T) {
+			patt := NewExactObjectPattern(map[string]Pattern{}, nil)
+
+			initialValue, ok := patt.MigrationInitialValue()
+			if assert.True(t, ok) {
+				return
+			}
+			assert.Equal(t, NewExactObject(map[string]Serializable{}, nil, nil), initialValue)
+		})
+
+		t.Run("empty inexact", func(t *testing.T) {
+			patt := NewInexactObjectPattern(map[string]Pattern{}, nil)
+
+			initialValue, ok := patt.MigrationInitialValue()
+			if assert.True(t, ok) {
+				return
+			}
+			assert.Equal(t, NewInexactObject(map[string]Serializable{}, nil, nil), initialValue)
+		})
+
+		t.Run("property pattern with initial value", func(t *testing.T) {
+			patt := NewInexactObjectPattern(map[string]Pattern{
+				"inner": NewInexactObjectPattern(map[string]Pattern{}, nil),
+			}, nil)
+
+			initialValue, ok := patt.MigrationInitialValue()
+			if assert.True(t, ok) {
+				return
+			}
+			assert.Equal(t, NewInexactObject(map[string]Serializable{
+				"inner": NewInexactObject(map[string]Serializable{}, nil, nil),
+			}, nil, nil), initialValue)
+		})
+
+		t.Run("property pattern without initial value", func(t *testing.T) {
+			patt := NewInexactObjectPattern(map[string]Pattern{
+				"inner": ANY_SERIALIZABLE_PATTERN,
+			}, nil)
+
+			initialValue, ok := patt.MigrationInitialValue()
+			if assert.False(t, ok) {
+				return
+			}
+			assert.Nil(t, initialValue)
+		})
+	})
 }
 
 func TestSymbolicRecordPattern(t *testing.T) {
