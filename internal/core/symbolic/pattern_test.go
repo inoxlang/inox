@@ -758,47 +758,47 @@ func TestSymbolicListPattern(t *testing.T) {
 		}
 	})
 
-	t.Run("TestValue()", func(t *testing.T) {
+	t.Run("TestValue() & SymbolicValue()", func(t *testing.T) {
 		cases := []struct {
-			pattern *ListPattern
-			value   SymbolicValue
-			ok      bool
+			pattern     *ListPattern
+			testedValue SymbolicValue
+			ok          bool
 		}{
 			//[]any
 			{
-				&ListPattern{generalElement: ANY_PATTERN},
+				&ListPattern{generalElement: ANY_SERIALIZABLE_PATTERN},
 				&List{elements: []Serializable{}}, //empty list
 				true,
 			},
 			{
-				&ListPattern{generalElement: ANY_PATTERN},
+				&ListPattern{generalElement: ANY_SERIALIZABLE_PATTERN},
 				&List{generalElement: ANY_INT}, //[]int
 				true,
 			},
 			{
-				&ListPattern{generalElement: ANY_PATTERN},
+				&ListPattern{generalElement: ANY_SERIALIZABLE_PATTERN},
 				&List{generalElement: ANY_SERIALIZABLE}, //[]any
 				true,
 			},
 			{
-				&ListPattern{generalElement: ANY_PATTERN},
+				&ListPattern{generalElement: ANY_SERIALIZABLE_PATTERN},
 				&List{elements: []Serializable{ANY_SERIALIZABLE}}, //[any]
 				true,
 			},
 
 			//[any]
 			{
-				&ListPattern{elements: []Pattern{ANY_PATTERN}},
+				&ListPattern{elements: []Pattern{ANY_SERIALIZABLE_PATTERN}},
 				&List{generalElement: ANY_SERIALIZABLE}, //[any]
 				false,
 			},
 			{
-				&ListPattern{elements: []Pattern{ANY_PATTERN}},
+				&ListPattern{elements: []Pattern{ANY_SERIALIZABLE_PATTERN}},
 				&List{elements: []Serializable{ANY_INT}}, //[string]
 				true,
 			},
 			{
-				&ListPattern{elements: []Pattern{ANY_PATTERN}},
+				&ListPattern{elements: []Pattern{ANY_SERIALIZABLE_PATTERN}},
 				&List{elements: []Serializable{}}, //empty list
 				false,
 			},
@@ -837,12 +837,69 @@ func TestSymbolicListPattern(t *testing.T) {
 		}
 
 		for _, testCase := range cases {
-			t.Run(t.Name()+"_"+fmt.Sprint(testCase.pattern, "_", testCase.value), func(t *testing.T) {
-				assert.Equal(t, testCase.ok, testCase.pattern.TestValue(testCase.value))
+			t.Run(t.Name()+"_"+Stringify(testCase.pattern)+"_"+Stringify(testCase.testedValue), func(t *testing.T) {
+				if !assert.Equal(t, testCase.ok, testCase.pattern.TestValue(testCase.testedValue)) {
+					return
+				}
+				val := testCase.pattern.SymbolicValue()
+				assert.Equal(t, testCase.ok, val.Test(testCase.testedValue))
+
+				assert.Equal(t, testCase.ok, testCase.pattern.TestValue(testCase.testedValue))
 			})
 		}
 	})
 
+	t.Run("MigrationInitialValue()", func(t *testing.T) {
+		t.Run("empty", func(t *testing.T) {
+			patt := NewListPattern([]Pattern{})
+
+			initialValue, ok := patt.MigrationInitialValue()
+			if assert.True(t, ok) {
+				return
+			}
+			assert.Equal(t, EMPTY_LIST, initialValue)
+		})
+
+		t.Run("general element pattern with initial value", func(t *testing.T) {
+			patt := NewListPatternOf(NewListPattern([]Pattern{}))
+
+			initialValue, ok := patt.MigrationInitialValue()
+			if assert.True(t, ok) {
+				return
+			}
+			assert.Equal(t, NewListOf(NewList()), initialValue)
+		})
+
+		t.Run("general element pattern without initial value", func(t *testing.T) {
+			patt := NewListPatternOf(ANY_SERIALIZABLE_PATTERN)
+
+			initialValue, ok := patt.MigrationInitialValue()
+			if assert.False(t, ok) {
+				return
+			}
+			assert.Nil(t, initialValue)
+		})
+
+		t.Run("single element pattern with initial value", func(t *testing.T) {
+			patt := NewListPattern([]Pattern{NewListPattern([]Pattern{})})
+
+			initialValue, ok := patt.MigrationInitialValue()
+			if assert.True(t, ok) {
+				return
+			}
+			assert.Equal(t, NewList(NewList()), initialValue)
+		})
+
+		t.Run("single element pattern without initial value", func(t *testing.T) {
+			patt := NewListPattern([]Pattern{ANY_SERIALIZABLE_PATTERN})
+
+			initialValue, ok := patt.MigrationInitialValue()
+			if assert.False(t, ok) {
+				return
+			}
+			assert.Nil(t, initialValue)
+		})
+	})
 }
 
 func TestSymbolicTuplePattern(t *testing.T) {
@@ -896,45 +953,45 @@ func TestSymbolicTuplePattern(t *testing.T) {
 
 	t.Run("TestValue()", func(t *testing.T) {
 		cases := []struct {
-			pattern *TuplePattern
-			value   Serializable
-			ok      bool
+			pattern     *TuplePattern
+			testedValue Serializable
+			ok          bool
 		}{
 			//[]any
 			{
-				&TuplePattern{generalElement: ANY_PATTERN},
+				&TuplePattern{generalElement: ANY_SERIALIZABLE_PATTERN},
 				&Tuple{elements: []Serializable{}}, //empty tuple
 				true,
 			},
 			{
-				&TuplePattern{generalElement: ANY_PATTERN},
+				&TuplePattern{generalElement: ANY_SERIALIZABLE_PATTERN},
 				&Tuple{generalElement: ANY_INT}, //[]int
 				true,
 			},
 			{
-				&TuplePattern{generalElement: ANY_PATTERN},
+				&TuplePattern{generalElement: ANY_SERIALIZABLE_PATTERN},
 				&Tuple{generalElement: ANY_SERIALIZABLE}, //[]any
 				true,
 			},
 			{
-				&TuplePattern{generalElement: ANY_PATTERN},
+				&TuplePattern{generalElement: ANY_SERIALIZABLE_PATTERN},
 				&Tuple{elements: []Serializable{ANY_SERIALIZABLE}}, //[any]
 				true,
 			},
 
 			//[any]
 			{
-				&TuplePattern{elements: []Pattern{ANY_PATTERN}},
+				&TuplePattern{elements: []Pattern{ANY_SERIALIZABLE_PATTERN}},
 				&Tuple{generalElement: ANY_SERIALIZABLE}, //[any]
 				false,
 			},
 			{
-				&TuplePattern{elements: []Pattern{ANY_PATTERN}},
+				&TuplePattern{elements: []Pattern{ANY_SERIALIZABLE_PATTERN}},
 				&Tuple{elements: []Serializable{ANY_INT}}, //[string]
 				true,
 			},
 			{
-				&TuplePattern{elements: []Pattern{ANY_PATTERN}},
+				&TuplePattern{elements: []Pattern{ANY_SERIALIZABLE_PATTERN}},
 				&Tuple{elements: []Serializable{}}, //empty tuple
 				false,
 			},
@@ -973,12 +1030,67 @@ func TestSymbolicTuplePattern(t *testing.T) {
 		}
 
 		for _, testCase := range cases {
-			t.Run(t.Name()+"_"+fmt.Sprint(testCase.pattern, "_", testCase.value), func(t *testing.T) {
-				assert.Equal(t, testCase.ok, testCase.pattern.TestValue(testCase.value))
+			t.Run(t.Name()+"_"+Stringify(testCase.pattern)+"_"+Stringify(testCase.testedValue), func(t *testing.T) {
+				if !assert.Equal(t, testCase.ok, testCase.pattern.TestValue(testCase.testedValue)) {
+					return
+				}
+				val := testCase.pattern.SymbolicValue()
+				assert.Equal(t, testCase.ok, val.Test(testCase.testedValue))
 			})
 		}
 	})
 
+	t.Run("MigrationInitialValue()", func(t *testing.T) {
+		t.Run("empty", func(t *testing.T) {
+			patt := NewTuplePattern([]Pattern{})
+
+			initialValue, ok := patt.MigrationInitialValue()
+			if assert.True(t, ok) {
+				return
+			}
+			assert.Equal(t, EMPTY_TUPLE, initialValue)
+		})
+
+		t.Run("general element pattern with initial value", func(t *testing.T) {
+			patt := NewTuplePatternOf(NewTuplePattern([]Pattern{}))
+
+			initialValue, ok := patt.MigrationInitialValue()
+			if assert.True(t, ok) {
+				return
+			}
+			assert.Equal(t, NewTupleOf(NewTuple()), initialValue)
+		})
+
+		t.Run("general element pattern without initial value", func(t *testing.T) {
+			patt := NewTuplePatternOf(ANY_SERIALIZABLE_PATTERN)
+
+			initialValue, ok := patt.MigrationInitialValue()
+			if assert.False(t, ok) {
+				return
+			}
+			assert.Nil(t, initialValue)
+		})
+
+		t.Run("single element pattern with initial value", func(t *testing.T) {
+			patt := NewTuplePattern([]Pattern{NewTuplePattern([]Pattern{})})
+
+			initialValue, ok := patt.MigrationInitialValue()
+			if assert.True(t, ok) {
+				return
+			}
+			assert.Equal(t, NewTuple(NewTuple()), initialValue)
+		})
+
+		t.Run("single element pattern without initial value", func(t *testing.T) {
+			patt := NewTuplePattern([]Pattern{ANY_SERIALIZABLE_PATTERN})
+
+			initialValue, ok := patt.MigrationInitialValue()
+			if assert.False(t, ok) {
+				return
+			}
+			assert.Nil(t, initialValue)
+		})
+	})
 }
 
 func TestSymbolicUnionPattern(t *testing.T) {

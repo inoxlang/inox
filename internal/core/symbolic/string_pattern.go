@@ -135,6 +135,10 @@ func (p *ExactStringPattern) SymbolicValue() SymbolicValue {
 	return p.value
 }
 
+func (p *ExactStringPattern) MigrationInitialValue() (Serializable, bool) {
+	return p.value, true
+}
+
 func (p *ExactStringPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }

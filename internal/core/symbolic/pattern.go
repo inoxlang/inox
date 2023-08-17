@@ -842,6 +842,10 @@ func (p *ExactValuePattern) SymbolicValue() SymbolicValue {
 	return p.value
 }
 
+func (p *ExactValuePattern) MigrationInitialValue() (Serializable, bool) {
+	return p.value, true
+}
+
 func (p *ExactValuePattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
@@ -1779,6 +1783,38 @@ func (p *ListPattern) SymbolicValue() SymbolicValue {
 	return list
 }
 
+func (p *ListPattern) MigrationInitialValue() (Serializable, bool) {
+	list := &List{}
+
+	if p.elements != nil {
+		list.elements = make([]Serializable, 0)
+
+		for _, e := range p.elements {
+			capable, ok := e.(MigrationInitialValueCapablePattern)
+			if !ok {
+				return nil, false
+			}
+			elemInitialValue, ok := capable.MigrationInitialValue()
+			if !ok {
+				return nil, false
+			}
+
+			list.elements = append(list.elements, elemInitialValue)
+		}
+	} else {
+		capable, ok := p.generalElement.(MigrationInitialValueCapablePattern)
+		if !ok {
+			return nil, false
+		}
+		elemInitialValue, ok := capable.MigrationInitialValue()
+		if !ok {
+			return nil, false
+		}
+		list.generalElement = elemInitialValue
+	}
+	return list, true
+}
+
 func (p *ListPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
@@ -1954,6 +1990,38 @@ func (p *TuplePattern) SymbolicValue() SymbolicValue {
 		tuple.generalElement = p.generalElement.SymbolicValue().(Serializable)
 	}
 	return tuple
+}
+
+func (p *TuplePattern) MigrationInitialValue() (Serializable, bool) {
+	tuple := &Tuple{}
+
+	if p.elements != nil {
+		tuple.elements = make([]Serializable, 0)
+
+		for _, e := range p.elements {
+			capable, ok := e.(MigrationInitialValueCapablePattern)
+			if !ok {
+				return nil, false
+			}
+			elemInitialValue, ok := capable.MigrationInitialValue()
+			if !ok {
+				return nil, false
+			}
+
+			tuple.elements = append(tuple.elements, elemInitialValue)
+		}
+	} else {
+		capable, ok := p.generalElement.(MigrationInitialValueCapablePattern)
+		if !ok {
+			return nil, false
+		}
+		elemInitialValue, ok := capable.MigrationInitialValue()
+		if !ok {
+			return nil, false
+		}
+		tuple.generalElement = elemInitialValue
+	}
+	return tuple, true
 }
 
 func (p *TuplePattern) StringPattern() (StringPattern, bool) {
