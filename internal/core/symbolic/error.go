@@ -59,6 +59,7 @@ const (
 	SPREAD_ELEMENT_SHOULD_BE_ITERABLE         = "spread element in concenation should be iterable"
 
 	NESTED_RECURSIVE_FUNCTION_DECLARATION = "nested recursive function declarations are not allowed"
+	THIS_EXPR_STMT_SYNTAX_IS_NOT_ALLOWED  = "this expression/statement/syntax element is not allowed in this function"
 
 	NAMESPACE_APPLIED_TO_XML_ELEMENT_SHOUD_BE_A_RECORD           = "namespace applied to xml element should be a record"
 	MISSING_FACTORY_IN_NAMESPACE_APPLIED_TO_XML_ELEMENT          = "namespace applied to xml has not a " + FROM_XML_FACTORY_NAME + " property"

@@ -2991,6 +2991,31 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			capturedLocals = nil
 		}
 
+		if expectedFunction, ok := options.expectedValue.(*InoxFunction); ok && expectedFunction.visitCheckNode != nil {
+			visitCheckNode := expectedFunction.visitCheckNode
+
+			parse.Walk(
+				n.Body,
+				func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
+					if _, isBody := node.(*parse.Block); isBody && node == n.Body {
+						return parse.Continue, nil
+					}
+
+					action, allowed, err := visitCheckNode(visitArgs{node, parent, scopeNode, ancestorChain, after}, expectedFunction.capturedLocals)
+					if err != nil {
+						return parse.StopTraversal, err
+					}
+					if !allowed {
+						state.addError(makeSymbolicEvalError(node, state, THIS_EXPR_STMT_SYNTAX_IS_NOT_ALLOWED))
+						options.setActualValueMismatchIfNotNil()
+						return parse.Prune, nil
+					}
+					return action, nil
+				},
+				nil,
+			)
+		}
+
 		return &InoxFunction{
 			node:           n,
 			parameters:     params,
