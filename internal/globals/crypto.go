@@ -30,10 +30,10 @@ var (
 	PEM_PRIVATE_KEY_PATTERN   = core.NewSecretPattern(core.NewPEMRegexPattern("(RSA )?PRIVATE KEY"), true)
 	KEY_PAIR_RECORD_PROPNAMES = []string{"public", "private"}
 
-	SYMB_KEY_PAIR_RECORD = symbolic.NewRecord(map[string]symbolic.Serializable{
+	SYMB_KEY_PAIR_RECORD = symbolic.NewInexactRecord(map[string]symbolic.Serializable{
 		"public":  symbolic.ANY_STR,
 		"private": symbolic.ANY_SECRET,
-	})
+	}, nil)
 
 	DEFAULT_ARGON2ID_PARAMS = argon2id.Params{
 		Memory:      argon2id.DefaultParams.Memory,

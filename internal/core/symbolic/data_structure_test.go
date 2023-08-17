@@ -139,17 +139,18 @@ func TestSymbolicRecord(t *testing.T) {
 		record2 *Record
 		ok      bool
 	}{
-		//an any object should match an any object
+		//an any record should match an any record
 		{&Record{entries: nil}, &Record{entries: nil}, true},
 
-		//an empty object should not match an any object
+		//an empty record should not match an any record
 		{&Record{entries: map[string]Serializable{}}, &Record{entries: nil}, false},
 
-		//an any object should match an empty object
+		//an any record should match an empty record
 		{&Record{entries: nil}, &Record{entries: map[string]Serializable{}}, true},
 
-		//an empty object should match an empty object
+		//an empty record should match an empty record
 		{&Record{entries: map[string]Serializable{}}, &Record{entries: map[string]Serializable{}}, true},
+
 		{
 			&Record{
 				entries: map[string]Serializable{"a": ANY_INT},
@@ -162,6 +163,16 @@ func TestSymbolicRecord(t *testing.T) {
 		{
 			&Record{
 				entries: map[string]Serializable{},
+			},
+			&Record{
+				entries: map[string]Serializable{"a": ANY_INT},
+			},
+			true,
+		},
+		{
+			&Record{
+				entries: map[string]Serializable{},
+				exact:   true,
 			},
 			&Record{
 				entries: map[string]Serializable{"a": ANY_INT},
@@ -190,6 +201,27 @@ func TestSymbolicRecord(t *testing.T) {
 		{
 			&Record{
 				entries: map[string]Serializable{"a": ANY_INT},
+				exact:   true,
+			},
+			&Record{
+				entries: map[string]Serializable{"a": ANY_INT},
+			},
+			true,
+		},
+		{
+			&Record{
+				entries: map[string]Serializable{"a": ANY_INT},
+			},
+			&Record{
+				entries:         map[string]Serializable{"a": ANY_INT},
+				optionalEntries: map[string]struct{}{"a": {}},
+			},
+			false,
+		},
+		{
+			&Record{
+				entries: map[string]Serializable{"a": ANY_INT},
+				exact:   true,
 			},
 			&Record{
 				entries:         map[string]Serializable{"a": ANY_INT},
@@ -218,7 +250,7 @@ func TestSymbolicRecord(t *testing.T) {
 	}
 
 	for _, testCase := range cases {
-		t.Run(t.Name()+"_"+fmt.Sprint(testCase.record1, "_", testCase.record2), func(t *testing.T) {
+		t.Run(t.Name()+"_"+Stringify(testCase.record1)+"_"+Stringify(testCase.record2), func(t *testing.T) {
 			assert.Equal(t, testCase.ok, testCase.record1.Test(testCase.record2))
 		})
 	}

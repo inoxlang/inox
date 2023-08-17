@@ -1252,6 +1252,22 @@ func InitializeRecordPattern(patt *RecordPattern, entries map[string]Pattern, op
 	patt.inexact = inexact
 }
 
+func NewExactRecordPattern(entries map[string]Pattern, optionalEntries map[string]struct{}) *RecordPattern {
+	return &RecordPattern{
+		inexact:         false,
+		entries:         entries,
+		optionalEntries: optionalEntries,
+	}
+}
+
+func NewInexactRecordPattern(entries map[string]Pattern, optionalEntries map[string]struct{}) *RecordPattern {
+	return &RecordPattern{
+		inexact:         true,
+		entries:         entries,
+		optionalEntries: optionalEntries,
+	}
+}
+
 func (p *RecordPattern) Test(v SymbolicValue) bool {
 	other, ok := v.(*RecordPattern)
 
@@ -1430,17 +1446,49 @@ func (p *RecordPattern) TestValue(v SymbolicValue) bool {
 }
 
 func (p *RecordPattern) SymbolicValue() SymbolicValue {
+	if p.entries == nil {
+		return ANY_REC
+	}
+
 	rec := &Record{
+		exact:           !p.inexact,
 		entries:         map[string]Serializable{},
 		optionalEntries: p.optionalEntries,
 	}
+
 	if p.entries != nil {
 		for key, valuePattern := range p.entries {
-			rec.entries[key] = valuePattern.SymbolicValue().(Serializable)
+			rec.entries[key] = AsSerializable(valuePattern.SymbolicValue()).(Serializable)
 		}
 	}
 
 	return rec
+}
+
+func (p *RecordPattern) MigrationInitialValue() (Serializable, bool) {
+	if p.entries == nil {
+		return ANY_OBJ, true
+	}
+	entries := map[string]Serializable{}
+	static := map[string]Pattern{}
+
+	for key, propPattern := range p.entries {
+		capable, ok := propPattern.(MigrationInitialValueCapablePattern)
+		if !ok {
+			return nil, false
+		}
+		propInitialValue, ok := capable.MigrationInitialValue()
+		if !ok {
+			return nil, false
+		}
+		entries[key] = AsSerializable(propInitialValue).(Serializable)
+		static[key] = propPattern
+	}
+
+	if p.inexact {
+		return NewInexactObject(entries, p.optionalEntries, static), true
+	}
+	return NewExactObject(entries, p.optionalEntries, static), true
 }
 
 func (p *RecordPattern) ValuePropPattern(name string) (propPattern Pattern, isOptional bool, ok bool) {
@@ -2284,6 +2332,13 @@ func (p *TypePattern) SymbolicValue() SymbolicValue {
 	return p.val
 }
 
+func (p *TypePattern) MigrationInitialValue() (Serializable, bool) {
+	if serializable, ok := p.val.(Serializable); ok && IsSimpleSymbolicInoxVal(serializable) {
+		return serializable, true
+	}
+	return nil, false
+}
+
 func (p *TypePattern) StringPattern() (StringPattern, bool) {
 	if p.stringPattern == nil {
 		return nil, false
@@ -2300,7 +2355,7 @@ func (p *TypePattern) IteratorElementValue() SymbolicValue {
 }
 
 func (p *TypePattern) WidestOfType() SymbolicValue {
-	return &TypePattern{}
+	return &TypePattern{val: ANY}
 }
 
 type DifferencePattern struct {

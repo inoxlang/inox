@@ -17,19 +17,19 @@ const (
 )
 
 var (
-	SYMB_PREPARATION_ERRORS_RECORD = symbolic.NewRecord(map[string]symbolic.Serializable{
+	SYMB_PREPARATION_ERRORS_RECORD = symbolic.NewInexactRecord(map[string]symbolic.Serializable{
 		"parsing_errors":        symbolic.NewTupleOf(symbolic.NewError(symbolic.SOURCE_POSITION_RECORD)),
 		"static_check_errors":   symbolic.NewTupleOf(symbolic.NewError(symbolic.SOURCE_POSITION_RECORD)),
 		"symbolic_check_errors": symbolic.NewTupleOf(symbolic.NewError(symbolic.SOURCE_POSITION_RECORD)),
 		"permission_error":      symbolic.AsSerializable(symbolic.NewMultivalue(symbolic.ANY_ERR, symbolic.Nil)).(symbolic.Serializable),
-	})
-	SYMB_RUN_ERRORS_RECORD = symbolic.NewRecord(map[string]symbolic.Serializable{
+	}, nil)
+	SYMB_RUN_ERRORS_RECORD = symbolic.NewInexactRecord(map[string]symbolic.Serializable{
 		"parsing_errors":        symbolic.NewTupleOf(symbolic.NewError(symbolic.SOURCE_POSITION_RECORD)),
 		"static_check_errors":   symbolic.NewTupleOf(symbolic.NewError(symbolic.SOURCE_POSITION_RECORD)),
 		"symbolic_check_errors": symbolic.NewTupleOf(symbolic.NewError(symbolic.SOURCE_POSITION_RECORD)),
 		"permission_error":      symbolic.AsSerializable(symbolic.NewMultivalue(symbolic.ANY_ERR, symbolic.Nil)).(symbolic.Serializable),
 		"runtime_error":         symbolic.AsSerializable(symbolic.NewMultivalue(symbolic.ANY_ERR, symbolic.Nil)).(symbolic.Serializable),
-	})
+	}, nil)
 )
 
 func init() {

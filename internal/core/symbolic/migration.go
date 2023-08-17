@@ -4,7 +4,7 @@ import parse "github.com/inoxlang/inox/internal/parse"
 
 var (
 	_ = []MigrationInitialValueCapablePattern{
-		(*ObjectPattern)(nil),
+		(*TypePattern)(nil), (*ObjectPattern)(nil), (*RecordPattern)(nil),
 	}
 )
 

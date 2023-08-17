@@ -3849,9 +3849,9 @@ func TestSymbolicEval(t *testing.T) {
 
 			argNode := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.CallExpression).Arguments[0]
 
-			param := NewRecord(map[string]Serializable{
+			param := NewInexactRecord(map[string]Serializable{
 				"prop": ANY_INT,
-			})
+			}, nil)
 
 			goFunc := &GoFunction{
 				fn: func(ctx *Context, arg SymbolicValue) *Int {

@@ -1535,6 +1535,7 @@ type Record struct {
 	entries         map[string]Serializable //if nil, matches any record
 	optionalEntries map[string]struct{}
 	valueOnly       SymbolicValue
+	exact           bool
 
 	SerializableMixin
 }
@@ -1547,8 +1548,20 @@ func NewEmptyRecord() *Record {
 	return &Record{entries: map[string]Serializable{}}
 }
 
-func NewRecord(entries map[string]Serializable) *Record {
-	return &Record{entries: entries}
+func NewInexactRecord(entries map[string]Serializable, optionalEntries map[string]struct{}) *Record {
+	return &Record{
+		entries:         entries,
+		optionalEntries: optionalEntries,
+		exact:           false,
+	}
+}
+
+func NewExactRecord(entries map[string]Serializable, optionalEntries map[string]struct{}) *Record {
+	return &Record{
+		entries:         entries,
+		optionalEntries: optionalEntries,
+		exact:           true,
+	}
 }
 
 func NewAnyKeyRecord(value SymbolicValue) *Record {
@@ -1559,16 +1572,25 @@ func NewBoundEntriesRecord(entries map[string]Serializable) *Record {
 	return &Record{entries: entries}
 }
 
+func (rec *Record) TestExact(v SymbolicValue) bool {
+	return rec.test(v, true)
+}
+
 func (rec *Record) Test(v SymbolicValue) bool {
+	return rec.test(v, rec.exact)
+}
+
+func (rec *Record) test(v SymbolicValue, exact bool) bool {
 	otherRec, ok := v.(*Record)
 	if !ok {
 		return false
 	}
 
 	if rec.entries == nil {
-		if rec.valueOnly == nil {
-			return true
-		}
+		return true
+	}
+
+	if rec.valueOnly != nil {
 		value := rec.valueOnly
 		if otherRec.valueOnly == nil {
 			return false
@@ -1576,7 +1598,7 @@ func (rec *Record) Test(v SymbolicValue) bool {
 		return value.Test(otherRec.valueOnly)
 	}
 
-	if (len(rec.optionalEntries) == 0 && len(rec.entries) != len(otherRec.entries)) || otherRec.entries == nil {
+	if (exact && len(rec.optionalEntries) == 0 && len(rec.entries) != len(otherRec.entries)) || otherRec.entries == nil {
 		return false
 	}
 
@@ -1598,6 +1620,15 @@ func (rec *Record) Test(v SymbolicValue) bool {
 		}
 		if !e.Test(other) {
 			return false
+		}
+	}
+
+	if exact {
+		for k := range otherRec.entries {
+			_, ok := rec.entries[k]
+			if !ok {
+				return false
+			}
 		}
 	}
 
