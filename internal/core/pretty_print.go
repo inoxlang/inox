@@ -1862,7 +1862,7 @@ func (c *TestCase) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth
 func (d *DynamicValue) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write([]byte{'d', 'y', 'n', '('}))
 
-	d.Resolve(config.Context).PrettyPrint(w, config, depth+1, parentIndentCount)
+	d.Resolve(config.Context).PrettyPrint(w, config, depth, 0)
 
 	utils.Must(w.Write([]byte{')'}))
 
