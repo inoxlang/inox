@@ -7,6 +7,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/oklog/ulid/v2"
 )
 
 const (
@@ -21,6 +22,7 @@ var (
 	ErrPropertyBasedUniquenessRequireValuesToHaveTheProperty = errors.New("property-based uniqueness requires values to have the property")
 	ErrReprBasedUniquenessRequireValuesToBeImmutable         = errors.New("representation-based uniqueness requires values to be immutable")
 	ErrUrlBasedUniquenessRequireValuesToBeUrlHolders         = errors.New("URL-based uniqueness requires values to be URL holders")
+	ErrContainerShouldHaveURL                                = errors.New("container should have a URL")
 
 	UniqueKeyReprConfig = &core.ReprConfig{AllVisible: true}
 
@@ -135,6 +137,28 @@ func (c UniquenessConstraint) Equal(otherConstraint UniquenessConstraint) bool {
 	}
 
 	return true
+}
+
+func (c UniquenessConstraint) AddUrlIfNecessary(ctx *core.Context, container core.UrlHolder, element core.Value) {
+	if c.Type == UniqueURL {
+		holder, ok := element.(core.UrlHolder)
+		if !ok {
+			panic(errors.New("elements should be URL holders"))
+		}
+
+		_, ok = holder.URL()
+		if ok { //element already has a URL
+
+			return
+		}
+		containerURL, ok := container.URL()
+		if !ok {
+			panic(ErrContainerShouldHaveURL)
+		}
+
+		url := containerURL.ToDirURL().AppendAbsolutePath(core.Path("/" + ulid.Make().String()))
+		utils.PanicIfErr(holder.SetURLOnce(ctx, url))
+	}
 }
 
 type UniquenessConstraintType int

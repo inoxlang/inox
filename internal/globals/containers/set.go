@@ -13,7 +13,6 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/utils"
 	jsoniter "github.com/json-iterator/go"
-	"github.com/oklog/ulid/v2"
 
 	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
@@ -592,26 +591,7 @@ func (set *Set) addNoPersist(ctx *core.Context, elem core.Serializable) {
 	closestState := ctx.GetClosestState()
 	elem = utils.Must(core.ShareOrClone(elem, closestState)).(core.Serializable)
 
-	if set.config.Uniqueness.Type == containers_common.UniqueURL {
-		holder, ok := elem.(core.UrlHolder)
-		if !ok {
-			panic(errors.New("elements should be URL holders"))
-		}
-
-		_, ok = holder.URL()
-		if !ok {
-			if set.storage == nil {
-				panic(containers_common.ErrFailedGetUniqueKeyNoURL)
-			}
-
-			//if the Set is persisted & the elements are unique by URL
-			//we set the url of the new element to set.url + '/' + random ID
-
-			url := set.url.ToDirURL().AppendAbsolutePath(core.Path("/" + ulid.Make().String()))
-			utils.PanicIfErr(holder.SetURLOnce(ctx, url))
-		}
-	}
-
+	set.config.Uniqueness.AddUrlIfNecessary(ctx, set, elem)
 	key := containers_common.GetUniqueKey(ctx, elem, set.config.Uniqueness)
 
 	set.lock.Lock(closestState, set)

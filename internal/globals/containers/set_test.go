@@ -99,7 +99,7 @@ func TestNewSet(t *testing.T) {
 
 		func() {
 			defer func() {
-				assert.ErrorContains(t, recover().(error), containers_common.ErrFailedGetUniqueKeyNoURL.Error())
+				assert.ErrorContains(t, recover().(error), containers_common.ErrContainerShouldHaveURL.Error())
 			}()
 			NewSet(ctx, core.NewWrappedValueList(core.NewObjectFromMap(nil, ctx)), config)
 		}()
