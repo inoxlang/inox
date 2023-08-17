@@ -244,3 +244,23 @@ func narrow(positive bool, n parse.Node, state *State, targetState *State) {
 		}
 	}
 }
+
+func findInMultivalue[T SymbolicValue](v SymbolicValue) (result T, found bool) {
+	if t, ok := v.(T); ok {
+		return t, true
+	}
+
+	mv, ok := v.(IMultivalue)
+	if !ok {
+		found = false
+		return
+	}
+	for _, val := range mv.OriginalMultivalue().getValues() {
+		if t, ok := val.(T); ok {
+			return t, true
+		}
+	}
+
+	found = false
+	return
+}

@@ -1815,7 +1815,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		}
 		state.setNextSelf(obj)
 
-		expectedObj, ok := options.expectedValue.(*Object)
+		expectedObj, ok := findInMultivalue[*Object](options.expectedValue)
 		if ok && expectedObj.entries != nil {
 			var properties []string
 			expectedObj.ForEachEntry(func(propName string, _ SymbolicValue) error {
@@ -1940,7 +1940,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			keys = append(keys, key)
 		}
 
-		expectedRecord, ok := options.expectedValue.(*Record)
+		expectedRecord, ok := findInMultivalue[*Record](options.expectedValue)
 		if ok && expectedRecord.entries != nil {
 			var properties []string
 			expectedRecord.ForEachEntry(func(propName string, _ SymbolicValue) error {
@@ -2058,7 +2058,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			return resultList, nil
 		}
 
-		expectedList, ok := options.expectedValue.(*List)
+		expectedList, ok := findInMultivalue[*List](options.expectedValue)
 		var expectedElement SymbolicValue = nil
 		if ok {
 			expectedElement = expectedList.element()
@@ -2172,10 +2172,10 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			return NewTupleOf(generalElem), nil
 		}
 
-		expectedList, ok := options.expectedValue.(*Tuple)
+		expectedTuple, ok := findInMultivalue[*Tuple](options.expectedValue)
 		var expectedElement SymbolicValue = nil
 		if ok {
-			expectedElement = expectedList.element()
+			expectedElement = expectedTuple.element()
 		}
 
 		if len(n.Elements) == 0 {
@@ -2238,7 +2238,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		entries := make(map[string]Serializable)
 		keys := make(map[string]Serializable)
 
-		expectedDictionary, ok := options.expectedValue.(*Dictionary)
+		expectedDictionary, ok := findInMultivalue[*Dictionary](options.expectedValue)
 		if ok && expectedDictionary.entries != nil {
 			var keys []string
 			expectedDictionary.ForEachEntry(func(keyRepr string, _ SymbolicValue) error {
@@ -2991,7 +2991,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			capturedLocals = nil
 		}
 
-		if expectedFunction, ok := options.expectedValue.(*InoxFunction); ok && expectedFunction.visitCheckNode != nil {
+		if expectedFunction, ok := findInMultivalue[*InoxFunction](options.expectedValue); ok && expectedFunction.visitCheckNode != nil {
 			visitCheckNode := expectedFunction.visitCheckNode
 
 			parse.Walk(
