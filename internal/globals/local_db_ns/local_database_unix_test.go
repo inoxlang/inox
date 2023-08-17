@@ -216,7 +216,7 @@ func TestOpenDatabase(t *testing.T) {
 
 			defer db.Close(ctx)
 
-			entities := db.TopLevelEntities(ctx)
+			entities := utils.Must(db.LoadTopLevelEntities(ctx))
 
 			if !assert.Contains(t, entities, "users") {
 				return
@@ -499,7 +499,7 @@ func TestUpdateSchema(t *testing.T) {
 
 		ldb.UpdateSchema(ctx, schema, core.MigrationOpHandlers{})
 
-		topLevelValues := ldb.TopLevelEntities(ctx)
+		topLevelValues := utils.Must(ldb.LoadTopLevelEntities(ctx))
 
 		if !assert.Contains(t, topLevelValues, "users") {
 			return
@@ -519,7 +519,7 @@ func TestUpdateSchema(t *testing.T) {
 		}
 		defer ldb.Close(ctx)
 
-		topLevelValues := ldb.TopLevelEntities(ctx)
+		topLevelValues := utils.Must(ldb.LoadTopLevelEntities(ctx))
 		assert.Empty(t, topLevelValues)
 
 		setPattern :=
@@ -634,7 +634,7 @@ func TestUpdateSchema(t *testing.T) {
 		})
 
 		assert.Same(t, nextSchema, ldb.schema)
-		topLevelValues := ldb.TopLevelEntities(ctx)
+		topLevelValues := utils.Must(ldb.LoadTopLevelEntities(ctx))
 		assert.NotContains(t, topLevelValues, "users")
 	})
 
@@ -686,7 +686,7 @@ func TestUpdateSchema(t *testing.T) {
 		})
 
 		assert.Same(t, nextSchema, ldb.schema)
-		topLevelValues := ldb.TopLevelEntities(ctx)
+		topLevelValues := utils.Must(ldb.LoadTopLevelEntities(ctx))
 		assert.Contains(t, topLevelValues, "users")
 	})
 

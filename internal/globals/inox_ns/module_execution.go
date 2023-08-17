@@ -193,10 +193,22 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			//TODO: use cached schema
 			db = core.NewFailedToOpenDatabase(config.Resource)
 		}
-		dbs[config.Name] = core.WrapDatabase(ctx, core.DatabaseWrappingArgs{
+
+		wrapped, err := core.WrapDatabase(ctx, core.DatabaseWrappingArgs{
 			Inner:                db,
 			ExpectedSchemaUpdate: config.ExpectedSchemaUpdate,
 		})
+		if err != nil {
+			err = fmt.Errorf("failed to load data of the '%s' database: %w", config.Name, err)
+			if !args.DevMode {
+				ctx.Cancel()
+				return nil, nil, nil, err
+			}
+			dbOpeningError = err
+			//TODO: use cached schema
+			db = core.NewFailedToOpenDatabase(config.Resource)
+		}
+		dbs[config.Name] = wrapped
 		ownedDatabases[config.Name] = struct{}{}
 	}
 

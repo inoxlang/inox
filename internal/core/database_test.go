@@ -31,10 +31,10 @@ func TestDatabaseIL(t *testing.T) {
 			}},
 		}
 
-		dbIL := WrapDatabase(ctx, DatabaseWrappingArgs{
+		dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
 			Inner:      db,
 			OwnerState: ctx.state,
-		})
+		}))
 
 		assert.Equal(t, map[string]Serializable{"a": &loadableTestValue{
 			value: 1,
@@ -50,11 +50,11 @@ func TestDatabaseIL(t *testing.T) {
 			}},
 		}
 
-		dbIL := WrapDatabase(ctx, DatabaseWrappingArgs{
+		dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
 			Inner:                db,
 			OwnerState:           ctx.state,
 			ExpectedSchemaUpdate: true,
-		})
+		}))
 
 		assert.Nil(t, dbIL.topLevelEntities)
 	})
@@ -66,11 +66,11 @@ func TestDatabaseIL(t *testing.T) {
 			topLevelEntities: map[string]Serializable{},
 		}
 
-		dbIL := WrapDatabase(ctx1, DatabaseWrappingArgs{
+		dbIL := utils.Must(WrapDatabase(ctx1, DatabaseWrappingArgs{
 			Inner:                db,
 			OwnerState:           ctx1.state,
 			ExpectedSchemaUpdate: true,
-		})
+		}))
 
 		ctx2 := NewContexWithEmptyState(ContextConfig{}, nil)
 
@@ -86,11 +86,11 @@ func TestDatabaseIL(t *testing.T) {
 			topLevelEntities: map[string]Serializable{},
 		}
 
-		dbIL := WrapDatabase(ctx, DatabaseWrappingArgs{
+		dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
 			Inner:                db,
 			OwnerState:           ctx.state,
 			ExpectedSchemaUpdate: false,
-		})
+		}))
 
 		assert.PanicsWithValue(t, ErrNoneDatabaseSchemaUpdateExpected, func() {
 			dbIL.UpdateSchema(ctx, NewInexactObjectPattern(map[string]Pattern{}))
@@ -104,11 +104,11 @@ func TestDatabaseIL(t *testing.T) {
 			topLevelEntities: map[string]Serializable{},
 		}
 
-		dbIL := WrapDatabase(ctx, DatabaseWrappingArgs{
+		dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
 			Inner:                db,
 			OwnerState:           ctx.state,
 			ExpectedSchemaUpdate: true,
-		})
+		}))
 
 		dbIL.UpdateSchema(ctx, NewInexactObjectPattern(map[string]Pattern{}))
 
@@ -128,11 +128,11 @@ func TestDatabaseIL(t *testing.T) {
 			}},
 		}
 
-		dbIL := WrapDatabase(ctx, DatabaseWrappingArgs{
+		dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
 			Inner:                db,
 			OwnerState:           ctx.state,
 			ExpectedSchemaUpdate: true,
-		})
+		}))
 
 		assert.PanicsWithValue(t, ErrInvalidAccessSchemaNotUpdatedYet, func() {
 			dbIL.Prop(ctx, "a")
@@ -146,11 +146,11 @@ func TestDatabaseIL(t *testing.T) {
 			topLevelEntities: map[string]Serializable{},
 		}
 
-		dbIL := WrapDatabase(ctx, DatabaseWrappingArgs{
+		dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
 			Inner:                db,
 			OwnerState:           ctx.state,
 			ExpectedSchemaUpdate: true,
-		})
+		}))
 
 		migrationHandlerReturnedVal := &loadableTestValue{value: 1}
 

@@ -100,7 +100,8 @@ type Database interface {
 	//The caller should always pass a schema whose ALL entry patterns have a loading function.
 	UpdateSchema(ctx *Context, schema *ObjectPattern, migrationHandlers MigrationOpHandlers)
 
-	TopLevelEntities(ctx *Context) map[string]Serializable
+	LoadTopLevelEntities(ctx *Context) (map[string]Serializable, error)
+
 	Close(ctx *Context) error
 }
 
@@ -110,7 +111,7 @@ type DatabaseWrappingArgs struct {
 	ExpectedSchemaUpdate bool
 }
 
-func WrapDatabase(ctx *Context, args DatabaseWrappingArgs) *DatabaseIL {
+func WrapDatabase(ctx *Context, args DatabaseWrappingArgs) (*DatabaseIL, error) {
 	schema := args.Inner.Schema()
 
 	propertyNames := utils.CopySlice(DATABASE_PROPNAMES)
@@ -131,10 +132,13 @@ func WrapDatabase(ctx *Context, args DatabaseWrappingArgs) *DatabaseIL {
 	}
 
 	if !args.ExpectedSchemaUpdate {
-		db.topLevelEntities = args.Inner.TopLevelEntities(ctx)
+		topLevelEntities, err := args.Inner.LoadTopLevelEntities(ctx)
+		if err != nil {
+			return nil, err
+		}
+		db.topLevelEntities = topLevelEntities
 	}
-
-	return db
+	return db, nil
 }
 
 func RegisterOpenDbFn(scheme Scheme, fn OpenDBFn) {
@@ -420,7 +424,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migr
 	}
 
 	db.inner.UpdateSchema(ctx, nextSchema, migrationHandlers)
-	db.topLevelEntities = db.inner.TopLevelEntities(ctx)
+	db.topLevelEntities = utils.Must(db.inner.LoadTopLevelEntities(ctx))
 }
 
 func (db *DatabaseIL) Close(ctx *Context) error {
@@ -497,8 +501,8 @@ func (db *FailedToOpenDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern
 	panic(ErrNotImplemented)
 }
 
-func (db *FailedToOpenDatabase) TopLevelEntities(_ *Context) map[string]Serializable {
-	return nil
+func (db *FailedToOpenDatabase) LoadTopLevelEntities(_ *Context) (map[string]Serializable, error) {
+	return nil, nil
 }
 
 func (db *FailedToOpenDatabase) Close(ctx *Context) error {
@@ -540,8 +544,8 @@ func (db *dummyDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handl
 	}
 }
 
-func (db *dummyDatabase) TopLevelEntities(_ *Context) map[string]Serializable {
-	return db.topLevelEntities
+func (db *dummyDatabase) LoadTopLevelEntities(_ *Context) (map[string]Serializable, error) {
+	return db.topLevelEntities, nil
 }
 
 func (db *dummyDatabase) Close(ctx *Context) error {

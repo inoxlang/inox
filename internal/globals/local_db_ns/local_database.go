@@ -189,17 +189,20 @@ func (ldb *LocalDatabase) BaseURL() core.URL {
 	return core.URL(ldb.host + "/")
 }
 
-func (ldb *LocalDatabase) TopLevelEntities(ctx *core.Context) map[string]core.Serializable {
+func (ldb *LocalDatabase) LoadTopLevelEntities(ctx *core.Context) (map[string]core.Serializable, error) {
 	ldb.topLevelValuesLock.Lock()
 	defer ldb.topLevelValuesLock.Unlock()
 
 	if ldb.topLevelValues != nil {
-		return ldb.topLevelValues
+		return ldb.topLevelValues, nil
 	}
 
-	ldb.load(ctx, nil, core.MigrationOpHandlers{})
+	err := ldb.load(ctx, nil, core.MigrationOpHandlers{})
+	if err != nil {
+		return nil, err
+	}
 
-	return ldb.topLevelValues
+	return ldb.topLevelValues, nil
 }
 
 func (ldb *LocalDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handlers core.MigrationOpHandlers) {
@@ -220,7 +223,7 @@ func (ldb *LocalDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, hand
 	ldb.schema = schema
 }
 
-func (ldb *LocalDatabase) load(ctx *Context, migrationNextPattern *ObjectPattern, handlers core.MigrationOpHandlers) {
+func (ldb *LocalDatabase) load(ctx *Context, migrationNextPattern *ObjectPattern, handlers core.MigrationOpHandlers) error {
 	ldb.topLevelValues = make(map[string]core.Serializable, ldb.schema.EntryCount())
 
 	err := ldb.schema.ForEachEntry(func(propName string, propPattern core.Pattern, isOptional bool) error {
@@ -243,7 +246,7 @@ func (ldb *LocalDatabase) load(ctx *Context, migrationNextPattern *ObjectPattern
 
 		value, err := core.LoadInstance(ctx, args)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to load %s: %w", path, err)
 		}
 
 		if !args.IsDeletion(ctx) {
@@ -253,7 +256,7 @@ func (ldb *LocalDatabase) load(ctx *Context, migrationNextPattern *ObjectPattern
 	})
 
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	if migrationNextPattern != nil {
@@ -273,17 +276,18 @@ func (ldb *LocalDatabase) load(ctx *Context, migrationNextPattern *ObjectPattern
 			}
 			value, err := core.LoadInstance(ctx, args)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to load %s: %w", path, err)
 			}
 			ldb.topLevelValues[propName] = value
 			return nil
 		})
 
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
 
+	return nil
 }
 
 func (ldb *LocalDatabase) Close(ctx *core.Context) error {
