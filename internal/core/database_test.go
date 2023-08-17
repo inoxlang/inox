@@ -281,7 +281,7 @@ type symbolicLoadableTestValue struct {
 func (*symbolicLoadableTestValue) IsConcretizable() bool {
 	return true
 }
-func (*symbolicLoadableTestValue) Concretize() any {
+func (*symbolicLoadableTestValue) Concretize(ctx symbolic.ConcreteContext) any {
 	return &loadableTestValue{}
 }
 
@@ -313,7 +313,7 @@ type symbolicLoadableTestValuePattern struct {
 func (*symbolicLoadableTestValuePattern) IsConcretizable() bool {
 	return true
 }
-func (*symbolicLoadableTestValuePattern) Concretize() any {
+func (*symbolicLoadableTestValuePattern) Concretize(ctx symbolic.ConcreteContext) any {
 	return &loadableTestValuePattern{}
 }
 

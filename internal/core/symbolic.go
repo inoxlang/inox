@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"runtime"
+	"slices"
 	"sync/atomic"
 	"time"
 
@@ -146,6 +147,138 @@ func init() {
 				return NewTuplePattern(utils.MapSlice(elementPatterns, func(e any) Pattern {
 					return e.(Pattern)
 				}))
+			},
+
+			CreateExactValuePattern: func(value any) any {
+				return NewExactValuePattern(value.(Serializable))
+			},
+
+			CreateExactStringPattern: func(value any) any {
+				return NewExactStringPattern(value.(Str))
+			},
+
+			CreateNil: func() any {
+				return Nil
+			},
+			CreateBool: func(b bool) any {
+				return Bool(b)
+			},
+
+			CreateFloat: func(f float64) any {
+				return Float(f)
+			},
+			CreateInt: func(i int64) any {
+				return Int(i)
+			},
+
+			CreateByteCount: func(c int64) any {
+				return ByteCount(c)
+			},
+			CreateLineCount: func(c int64) any {
+				return LineCount(c)
+			},
+			CreateRuneCount: func(c int64) any {
+				return RuneCount(c)
+			},
+			CreateSimpleRate: func(r int64) any {
+				return SimpleRate(r)
+			},
+			CreateByteRate: func(r int64) any {
+				return ByteRate(r)
+			},
+			CreateDuration: func(d time.Duration) any {
+				return Duration(d)
+			},
+			CreateDate: func(t time.Time) any {
+				return Date(t)
+			},
+			CreateByte: func(b byte) any {
+				return Byte(b)
+			},
+			CreateRune: func(r rune) any {
+				return Rune(r)
+			},
+			CreateString: func(s string) any {
+				return Str(s)
+			},
+			CreateStringConcatenation: func(elements []any) any {
+				return utils.Must(concatValues(nil, utils.MapSlice(elements, ToValueAsserted)))
+			},
+			CreatePath: func(s string) any {
+				return Path(s)
+			},
+			CreateURL: func(s string) any {
+				return URL(s)
+			},
+			CreateHost: func(s string) any {
+				return Host(s)
+			},
+			CreateScheme: func(s string) any {
+				return Scheme(s)
+			},
+
+			CreateIdentifier: func(s string) any {
+				return Identifier(s)
+			},
+			CreatePropertyName: func(s string) any {
+				return PropertyName(s)
+			},
+
+			CreateByteSlice: func(bytes []byte) any {
+				return NewByteSlice(utils.CopySlice(bytes), true, "")
+			},
+			CreateRuneSlice: func(runes []rune) any {
+				return NewRuneSlice(utils.CopySlice(runes))
+			},
+
+			CreateObject: func(concreteProperties map[string]any) any {
+				properties := map[string]Serializable{}
+				for k, v := range concreteProperties {
+					properties[k] = v.(Serializable)
+				}
+				return objFrom(properties)
+			},
+			CreateRecord: func(concreteProperties map[string]any) any {
+				properties := map[string]Serializable{}
+				for k, v := range concreteProperties {
+					properties[k] = v.(Serializable)
+				}
+				return NewRecordFromMap(properties)
+			},
+			CreateList: func(elements []any) any {
+				return NewWrappedValueList(utils.MapSlice(elements, ToSerializableAsserted)...)
+			},
+			CreateTuple: func(elements []any) any {
+				return NewTuple(utils.MapSlice(elements, ToSerializableAsserted))
+			},
+			CreateKeyList: func(names []string) any {
+				return KeyList(slices.Clone(names))
+			},
+			CreateDictionary: func(keys, values []any, ctx symbolic.ConcreteContext) any {
+				context := ctx.(*Context)
+
+				return NewDictionaryFromKeyValueLists(
+					utils.MapSlice(keys, ToSerializableAsserted),
+					utils.MapSlice(values, ToSerializableAsserted),
+					context,
+				)
+			},
+
+			CreatePathPattern: func(s string) any {
+				return PathPattern(s)
+			},
+			CreateURLPattern: func(s string) any {
+				return URLPattern(s)
+			},
+			CreateHostPattern: func(s string) any {
+				return HostPattern(s)
+			},
+
+			CreateOption: func(name string, value any) any {
+				return &Option{
+					Name:  name,
+					Value: value.(Value),
+				}
 			},
 		},
 	})

@@ -96,6 +96,18 @@ func (p *ExactStringPattern) Test(v SymbolicValue) bool {
 	return ok && (p.value == nil || (otherPattern.value != nil && p.value.value == otherPattern.value.value))
 }
 
+func (p *ExactStringPattern) Concretize(ctx ConcreteContext) any {
+	if !p.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+
+	return extData.ConcreteValueFactories.CreateExactStringPattern(utils.Must(Concretize(p.value, ctx)))
+}
+
+func (p *ExactStringPattern) IsConcretizable() bool {
+	return IsConcretizable(p.value)
+}
+
 func (p *ExactStringPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%exact-string-pattern")))
 

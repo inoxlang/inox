@@ -97,7 +97,7 @@ func (p *Path) IsConcretizable() bool {
 	return p.hasValue
 }
 
-func (p *Path) Concretize() any {
+func (p *Path) Concretize(ctx ConcreteContext) any {
 	if !p.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
@@ -241,7 +241,7 @@ func (u *URL) IsConcretizable() bool {
 	return u.hasValue
 }
 
-func (u *URL) Concretize() any {
+func (u *URL) Concretize(ctx ConcreteContext) any {
 	if !u.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
@@ -336,7 +336,7 @@ func (s *Scheme) IsConcretizable() bool {
 	return s.hasValue
 }
 
-func (s *Scheme) Concretize() any {
+func (s *Scheme) Concretize(ctx ConcreteContext) any {
 	if !s.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
@@ -411,7 +411,7 @@ func (h *Host) IsConcretizable() bool {
 	return h.hasValue
 }
 
-func (h *Host) Concretize() any {
+func (h *Host) Concretize(ctx ConcreteContext) any {
 	if !h.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}

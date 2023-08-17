@@ -157,7 +157,7 @@ func (fn *InoxFunction) IsConcretizable() bool {
 	return false
 }
 
-func (fn *InoxFunction) Concretize() any {
+func (fn *InoxFunction) Concretize(ctx ConcreteContext) any {
 	panic(ErrNotConcretizable)
 }
 

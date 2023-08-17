@@ -185,12 +185,12 @@ func (p *SetPattern) IsConcretizable() bool {
 	return ok && potentiallyConcretizable.IsConcretizable()
 }
 
-func (p *SetPattern) Concretize() any {
+func (p *SetPattern) Concretize(ctx symbolic.ConcreteContext) any {
 	if !p.IsConcretizable() {
 		panic(symbolic.ErrNotConcretizable)
 	}
 
-	concreteElementPattern := utils.Must(symbolic.Concretize(p.elementPattern))
+	concreteElementPattern := utils.Must(symbolic.Concretize(p.elementPattern, ctx))
 	return externalData.CreateConcreteSetPattern(*p.uniqueness, concreteElementPattern)
 }
 

@@ -99,8 +99,8 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 		return
 	}
 
-	currentConcreteSchema := db.schema.Concretize()
-	nextConcreteSchema := schema.Concretize()
+	currentConcreteSchema := db.schema.Concretize(ctx.startingConcreteContext)
+	nextConcreteSchema := schema.Concretize(ctx.startingConcreteContext)
 
 	ops, err := extData.GetMigrationOperations(ctx.startingConcreteContext, currentConcreteSchema, nextConcreteSchema, "/")
 	if err != nil {

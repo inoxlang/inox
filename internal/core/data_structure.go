@@ -884,6 +884,25 @@ func NewDictionary(entries ValMap) *Dictionary {
 	return dict
 }
 
+func NewDictionaryFromKeyValueLists(keys []Serializable, values []Serializable, ctx *Context) *Dictionary {
+	if len(keys) != len(values) {
+		panic(errors.New("the key list should have the same length as the value list"))
+	}
+
+	dict := &Dictionary{
+		entries: map[string]Serializable{},
+		keys:    map[string]Serializable{},
+	}
+
+	for i, key := range keys {
+		repr := string(utils.Must(GetRepresentationWithConfig(key, &ReprConfig{AllVisible: true}, ctx)))
+		dict.entries[repr] = values[i]
+		dict.keys[repr] = key
+	}
+
+	return dict
+}
+
 func (d *Dictionary) ForEachEntry(ctx *Context, fn func(keyRepr string, key Serializable, v Serializable) error) error {
 	for keyRepr, val := range d.entries {
 		key := d.keys[keyRepr]

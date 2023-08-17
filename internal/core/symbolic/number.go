@@ -48,7 +48,7 @@ func (f *Float) IsConcretizable() bool {
 	return f.hasValue
 }
 
-func (f *Float) Concretize() any {
+func (f *Float) Concretize(ctx ConcreteContext) any {
 	if !f.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
@@ -101,7 +101,7 @@ func (i *Int) IsConcretizable() bool {
 	return i.hasValue
 }
 
-func (i *Int) Concretize() any {
+func (i *Int) Concretize(ctx ConcreteContext) any {
 	if !i.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}

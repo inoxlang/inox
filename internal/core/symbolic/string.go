@@ -91,7 +91,7 @@ func (s *String) IsConcretizable() bool {
 	return s.hasValue
 }
 
-func (s *String) Concretize() any {
+func (s *String) Concretize(ctx ConcreteContext) any {
 	if !s.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
@@ -233,7 +233,7 @@ func (r *Rune) IsConcretizable() bool {
 	return r.hasValue
 }
 
-func (r *Rune) Concretize() any {
+func (r *Rune) Concretize(ctx ConcreteContext) any {
 	if !r.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
@@ -328,7 +328,7 @@ func (s *RuneSlice) IsConcretizable() bool {
 	return false
 }
 
-func (s *RuneSlice) Concretize() any {
+func (s *RuneSlice) Concretize(ctx ConcreteContext) any {
 	panic(ErrNotConcretizable)
 }
 
@@ -456,7 +456,7 @@ func (c *StringConcatenation) IsConcretizable() bool {
 	return false
 }
 
-func (c *StringConcatenation) Concretize() any {
+func (c *StringConcatenation) Concretize(ctx ConcreteContext) any {
 	panic(ErrNotConcretizable)
 }
 

@@ -292,14 +292,14 @@ func (list *List) IsConcretizable() bool {
 	return true
 }
 
-func (list *List) Concretize() any {
+func (list *List) Concretize(ctx ConcreteContext) any {
 	if !list.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
 
 	concreteElements := make([]any, len(list.elements))
 	for i, e := range list.elements {
-		concreteElements[i] = utils.Must(Concretize(e))
+		concreteElements[i] = utils.Must(Concretize(e, ctx))
 	}
 	return extData.ConcreteValueFactories.CreateList(concreteElements)
 }
@@ -606,14 +606,14 @@ func (t *Tuple) IsConcretizable() bool {
 	return true
 }
 
-func (t *Tuple) Concretize() any {
+func (t *Tuple) Concretize(ctx ConcreteContext) any {
 	if !t.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
 
 	concreteElements := make([]any, len(t.elements))
 	for i, e := range t.elements {
-		concreteElements[i] = utils.Must(Concretize(e))
+		concreteElements[i] = utils.Must(Concretize(e, ctx))
 	}
 	return extData.ConcreteValueFactories.CreateList(concreteElements)
 }
@@ -766,7 +766,7 @@ func (list *KeyList) IsConcretizable() bool {
 	return true
 }
 
-func (list *KeyList) Concretize() any {
+func (list *KeyList) Concretize(ctx ConcreteContext) any {
 	if !list.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
@@ -895,7 +895,7 @@ func (dict *Dictionary) IsConcretizable() bool {
 	return true
 }
 
-func (dict *Dictionary) Concretize() any {
+func (dict *Dictionary) Concretize(ctx ConcreteContext) any {
 	if !dict.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
@@ -905,13 +905,13 @@ func (dict *Dictionary) Concretize() any {
 
 	i := 0
 	for keyRepr, value := range dict.entries {
-		concreteValue := utils.Must(Concretize(value))
-		concreteKey := utils.Must(Concretize(dict.keys[keyRepr]))
+		concreteValue := utils.Must(Concretize(value, ctx))
+		concreteKey := utils.Must(Concretize(dict.keys[keyRepr], ctx))
 
 		concreteValues[i] = concreteValue
 		concreteKeys[i] = concreteKey
 	}
-	return extData.ConcreteValueFactories.CreateDictionary(concreteKeys, concreteValues)
+	return extData.ConcreteValueFactories.CreateDictionary(concreteKeys, concreteValues, ctx)
 }
 
 func (dict *Dictionary) Entries() map[string]Serializable {
@@ -1208,14 +1208,14 @@ func (o *Object) IsConcretizable() bool {
 	return true
 }
 
-func (o *Object) Concretize() any {
+func (o *Object) Concretize(ctx ConcreteContext) any {
 	if !o.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
 
 	concreteProperties := make(map[string]any, len(o.entries))
 	for k, v := range o.entries {
-		concreteProperties[k] = utils.Must(Concretize(v))
+		concreteProperties[k] = utils.Must(Concretize(v, ctx))
 	}
 	return extData.ConcreteValueFactories.CreateObject(concreteProperties)
 }
@@ -1651,14 +1651,14 @@ func (r *Record) IsConcretizable() bool {
 	return true
 }
 
-func (rec *Record) Concretize() any {
+func (rec *Record) Concretize(ctx ConcreteContext) any {
 	if !rec.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
 
 	concreteProperties := make(map[string]any, len(rec.entries))
 	for k, v := range rec.entries {
-		concreteProperties[k] = utils.Must(Concretize(v))
+		concreteProperties[k] = utils.Must(Concretize(v, ctx))
 	}
 	return extData.ConcreteValueFactories.CreateObject(concreteProperties)
 }

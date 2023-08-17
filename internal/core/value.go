@@ -164,6 +164,14 @@ func ValOf(v interface{}) Value {
 	}
 }
 
+func ToValueAsserted(v any) Value {
+	return v.(Value)
+}
+
+func ToSerializableAsserted(v any) Serializable {
+	return v.(Serializable)
+}
+
 func ToValueList[T Value](arg []T) []Value {
 	values := make([]Value, len(arg))
 	for i, val := range arg {

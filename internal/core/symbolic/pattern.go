@@ -802,12 +802,12 @@ func (p *ExactValuePattern) Test(v SymbolicValue) bool {
 	return p.value.Test(other.value)
 }
 
-func (p *ExactValuePattern) Concretize() any {
+func (p *ExactValuePattern) Concretize(ctx ConcreteContext) any {
 	if !p.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
 
-	return utils.Must(Concretize(p.value))
+	return extData.ConcreteValueFactories.CreateExactValuePattern(utils.Must(Concretize(p.value, ctx)))
 }
 
 func (p *ExactValuePattern) IsConcretizable() bool {
@@ -985,7 +985,7 @@ func (p *ObjectPattern) Test(v SymbolicValue) bool {
 	return true
 }
 
-func (p *ObjectPattern) Concretize() any {
+func (p *ObjectPattern) Concretize(ctx ConcreteContext) any {
 	if !p.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
@@ -993,7 +993,7 @@ func (p *ObjectPattern) Concretize() any {
 	concretePropertyPatterns := make(map[string]any, len(p.entries))
 
 	for k, v := range p.entries {
-		concretePropPattern := utils.Must(Concretize(v))
+		concretePropPattern := utils.Must(Concretize(v, ctx))
 		concretePropertyPatterns[k] = concretePropPattern
 	}
 
@@ -1307,7 +1307,7 @@ func (p *RecordPattern) IsConcretizable() bool {
 	return true
 }
 
-func (p *RecordPattern) Concretize() any {
+func (p *RecordPattern) Concretize(ctx ConcreteContext) any {
 	if !p.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
@@ -1315,7 +1315,7 @@ func (p *RecordPattern) Concretize() any {
 	concretePropertyPatterns := make(map[string]any, len(p.entries))
 
 	for k, v := range p.entries {
-		concretePropPattern := utils.Must(Concretize(v))
+		concretePropPattern := utils.Must(Concretize(v, ctx))
 		concretePropertyPatterns[k] = concretePropPattern
 	}
 
@@ -1606,20 +1606,20 @@ func (p *ListPattern) IsConcretizable() bool {
 	return true
 }
 
-func (p *ListPattern) Concretize() any {
+func (p *ListPattern) Concretize(ctx ConcreteContext) any {
 	if !p.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
 
 	if p.generalElement != nil {
-		concreteGeneralElement := utils.Must(Concretize(p.generalElement))
+		concreteGeneralElement := utils.Must(Concretize(p.generalElement, ctx))
 		return extData.ConcreteValueFactories.CreateListPattern(concreteGeneralElement, nil)
 	}
 
 	concreteElementPatterns := make([]any, len(p.elements))
 
 	for i, e := range p.elements {
-		concreteElemPattern := utils.Must(Concretize(e))
+		concreteElemPattern := utils.Must(Concretize(e, ctx))
 		concreteElementPatterns[i] = concreteElemPattern
 	}
 
@@ -1875,20 +1875,20 @@ func (p *TuplePattern) IsConcretizable() bool {
 	return true
 }
 
-func (p *TuplePattern) Concretize() any {
+func (p *TuplePattern) Concretize(ctx ConcreteContext) any {
 	if !p.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
 
 	if p.generalElement != nil {
-		concreteGeneralElement := utils.Must(Concretize(p.generalElement))
+		concreteGeneralElement := utils.Must(Concretize(p.generalElement, ctx))
 		return extData.ConcreteValueFactories.CreateListPattern(concreteGeneralElement, nil)
 	}
 
 	concreteElementPatterns := make([]any, len(p.elements))
 
 	for i, e := range p.elements {
-		concreteElemPattern := utils.Must(Concretize(e))
+		concreteElemPattern := utils.Must(Concretize(e, ctx))
 		concreteElementPatterns[i] = concreteElemPattern
 	}
 
@@ -2299,7 +2299,7 @@ func (patt *TypePattern) IsConcretizable() bool {
 	return patt.concreteTypePattern != nil
 }
 
-func (patt *TypePattern) Concretize() any {
+func (patt *TypePattern) Concretize(ctx ConcreteContext) any {
 	if !patt.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}

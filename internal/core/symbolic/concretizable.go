@@ -24,6 +24,8 @@ var (
 		(*ObjectPattern)(nil), (*RecordPattern)(nil), (*ListPattern)(nil), (*TuplePattern)(nil),
 		(*TypePattern)(nil),
 
+		(*ExactValuePattern)(nil), (*ExactStringPattern)(nil),
+
 		(*InoxFunction)(nil),
 
 		(*FileInfo)(nil),
@@ -41,17 +43,17 @@ type ConcreteValueFactories struct {
 	CreateFloat func(float64) any
 	CreateInt   func(int64) any
 
-	CreateByteCount          func(int64) any
-	CreateLineCount          func(int64) any
-	CreateRuneCount          func(int64) any
-	CreateSimpleRate         func(int64) any
-	CreateByteRate           func(int64) any
-	CreateDuration           func(time.Duration) any
-	CreateDate               func(time.Time) any
-	CreateByte               func(uint8) any
-	CreateRune               func(rune) any
-	CreateString             func(string) any
-	CreateStringConctenation func(elements []any) any
+	CreateByteCount           func(int64) any
+	CreateLineCount           func(int64) any
+	CreateRuneCount           func(int64) any
+	CreateSimpleRate          func(int64) any
+	CreateByteRate            func(int64) any
+	CreateDuration            func(time.Duration) any
+	CreateDate                func(time.Time) any
+	CreateByte                func(byte) any
+	CreateRune                func(rune) any
+	CreateString              func(string) any
+	CreateStringConcatenation func(elements []any) any
 
 	CreatePath   func(string) any
 	CreateURL    func(string) any
@@ -69,7 +71,7 @@ type ConcreteValueFactories struct {
 	CreateList       func(elements []any) any
 	CreateTuple      func(elements []any) any
 	CreateKeyList    func(names []string) any
-	CreateDictionary func(keys, values []any) Any
+	CreateDictionary func(keys, values []any, ctx ConcreteContext) any
 
 	CreatePathPattern func(string) any
 	CreateURLPattern  func(string) any
@@ -80,6 +82,9 @@ type ConcreteValueFactories struct {
 	CreateListPattern   func(generalElementPattern any, elementPatterns []any) any
 	CreateTuplePattern  func(generalElementPattern any, elementPatterns []any) any
 
+	CreateExactValuePattern  func(value any) any
+	CreateExactStringPattern func(value any) any
+
 	//CreateFileInfo func() any
 
 	CreateOption func(name string, value any) any
@@ -87,7 +92,7 @@ type ConcreteValueFactories struct {
 
 type PotentiallyConcretizable interface {
 	IsConcretizable() bool
-	Concretize() any
+	Concretize(ctx ConcreteContext) any
 }
 
 func IsConcretizable(v SymbolicValue) bool {
@@ -95,10 +100,10 @@ func IsConcretizable(v SymbolicValue) bool {
 	return ok && potentiallyConcretizable.IsConcretizable()
 }
 
-func Concretize(v SymbolicValue) (any, error) {
+func Concretize(v SymbolicValue, ctx ConcreteContext) (any, error) {
 	potentiallyConcretizable, ok := v.(PotentiallyConcretizable)
 	if !ok || !potentiallyConcretizable.IsConcretizable() {
 		return nil, ErrNotConcretizable
 	}
-	return potentiallyConcretizable.Concretize(), nil
+	return potentiallyConcretizable.Concretize(ctx), nil
 }

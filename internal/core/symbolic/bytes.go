@@ -54,7 +54,7 @@ func (s *ByteSlice) IsConcretizable() bool {
 	return false
 }
 
-func (s *ByteSlice) Concretize() any {
+func (s *ByteSlice) Concretize(ctx ConcreteContext) any {
 	panic(ErrNotConcretizable)
 }
 

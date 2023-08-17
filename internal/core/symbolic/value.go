@@ -153,7 +153,7 @@ func (*NilT) IsConcretizable() bool {
 	return true
 }
 
-func (*NilT) Concretize() any {
+func (*NilT) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreateNil()
 }
 
@@ -194,7 +194,7 @@ func (b *Bool) IsConcretizable() bool {
 	return b.hasValue
 }
 
-func (b *Bool) Concretize() any {
+func (b *Bool) Concretize(ctx ConcreteContext) any {
 	if !b.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
@@ -300,7 +300,7 @@ func (i *Identifier) IsConcretizable() bool {
 	return i.HasConcreteName()
 }
 
-func (i *Identifier) Concretize() any {
+func (i *Identifier) Concretize(ctx ConcreteContext) any {
 	if !i.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
@@ -361,7 +361,7 @@ func (n *PropertyName) IsConcretizable() bool {
 	return n.name != ""
 }
 
-func (p *PropertyName) Concretize() any {
+func (p *PropertyName) Concretize(ctx ConcreteContext) any {
 	if !p.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
@@ -475,12 +475,12 @@ func (o *Option) IsConcretizable() bool {
 	return ok && potentiallyConcretizable.IsConcretizable()
 }
 
-func (o *Option) Concretize() any {
+func (o *Option) Concretize(ctx ConcreteContext) any {
 	if !o.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
 
-	concreteValue := utils.Must(Concretize(o.value))
+	concreteValue := utils.Must(Concretize(o.value, ctx))
 	return extData.ConcreteValueFactories.CreateOption(o.name, concreteValue)
 }
 
@@ -527,7 +527,7 @@ func (d *Date) IsConcretizable() bool {
 	return d.hasValue
 }
 
-func (d *Date) Concretize() any {
+func (d *Date) Concretize(ctx ConcreteContext) any {
 	if !d.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
@@ -576,7 +576,7 @@ func (d *Duration) IsConcretizable() bool {
 	return d.hasValue
 }
 
-func (d *Duration) Concretize() any {
+func (d *Duration) Concretize(ctx ConcreteContext) any {
 	if !d.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
@@ -637,7 +637,7 @@ func (f *FileInfo) IsConcretizable() bool {
 	return false
 }
 
-func (f *FileInfo) Concretize() any {
+func (f *FileInfo) Concretize(ctx ConcreteContext) any {
 	panic(ErrNotConcretizable)
 }
 
@@ -1002,7 +1002,7 @@ func (c *ByteCount) IsConcretizable() bool {
 	return c.hasValue
 }
 
-func (c *ByteCount) Concretize() any {
+func (c *ByteCount) Concretize(ctx ConcreteContext) any {
 	if !c.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
@@ -1057,7 +1057,7 @@ func (r *ByteRate) IsConcretizable() bool {
 	return r.hasValue
 }
 
-func (r *ByteRate) Concretize() any {
+func (r *ByteRate) Concretize(ctx ConcreteContext) any {
 	if !r.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
@@ -1112,7 +1112,7 @@ func (c *LineCount) IsConcretizable() bool {
 	return c.hasValue
 }
 
-func (c *LineCount) Concretize() any {
+func (c *LineCount) Concretize(ctx ConcreteContext) any {
 	if !c.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
@@ -1215,7 +1215,7 @@ func (r *SimpleRate) IsConcretizable() bool {
 	return r.hasValue
 }
 
-func (r *SimpleRate) Concretize() any {
+func (r *SimpleRate) Concretize(ctx ConcreteContext) any {
 	if !r.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
