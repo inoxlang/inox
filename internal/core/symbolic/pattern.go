@@ -1471,7 +1471,7 @@ func (p *RecordPattern) SymbolicValue() SymbolicValue {
 
 func (p *RecordPattern) MigrationInitialValue() (Serializable, bool) {
 	if p.entries == nil {
-		return ANY_OBJ, true
+		return ANY_REC, true
 	}
 	entries := map[string]Serializable{}
 	static := map[string]Pattern{}
@@ -1490,9 +1490,9 @@ func (p *RecordPattern) MigrationInitialValue() (Serializable, bool) {
 	}
 
 	if p.inexact {
-		return NewInexactObject(entries, p.optionalEntries, static), true
+		return NewInexactRecord(entries, p.optionalEntries), true
 	}
-	return NewExactObject(entries, p.optionalEntries, static), true
+	return NewExactRecord(entries, p.optionalEntries), true
 }
 
 func (p *RecordPattern) ValuePropPattern(name string) (propPattern Pattern, isOptional bool, ok bool) {

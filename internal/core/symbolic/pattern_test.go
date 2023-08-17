@@ -442,20 +442,20 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			patt := NewExactObjectPattern(map[string]Pattern{}, nil)
 
 			initialValue, ok := patt.MigrationInitialValue()
-			if assert.True(t, ok) {
+			if !assert.True(t, ok) {
 				return
 			}
-			assert.Equal(t, NewExactObject(map[string]Serializable{}, nil, nil), initialValue)
+			assert.Equal(t, NewExactObject(map[string]Serializable{}, nil, map[string]Pattern{}), initialValue)
 		})
 
 		t.Run("empty inexact", func(t *testing.T) {
 			patt := NewInexactObjectPattern(map[string]Pattern{}, nil)
 
 			initialValue, ok := patt.MigrationInitialValue()
-			if assert.True(t, ok) {
+			if !assert.True(t, ok) {
 				return
 			}
-			assert.Equal(t, NewInexactObject(map[string]Serializable{}, nil, nil), initialValue)
+			assert.Equal(t, NewInexactObject(map[string]Serializable{}, nil, map[string]Pattern{}), initialValue)
 		})
 
 		t.Run("property pattern with initial value", func(t *testing.T) {
@@ -464,12 +464,14 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			}, nil)
 
 			initialValue, ok := patt.MigrationInitialValue()
-			if assert.True(t, ok) {
+			if !assert.True(t, ok) {
 				return
 			}
 			assert.Equal(t, NewInexactObject(map[string]Serializable{
-				"inner": NewInexactObject(map[string]Serializable{}, nil, nil),
-			}, nil, nil), initialValue)
+				"inner": NewInexactObject(map[string]Serializable{}, nil, map[string]Pattern{}),
+			}, nil, map[string]Pattern{
+				"inner": NewInexactObjectPattern(map[string]Pattern{}, nil),
+			}), initialValue)
 		})
 
 		t.Run("property pattern without initial value", func(t *testing.T) {
@@ -665,7 +667,7 @@ func TestSymbolicRecordPattern(t *testing.T) {
 			patt := NewExactRecordPattern(map[string]Pattern{}, nil)
 
 			initialValue, ok := patt.MigrationInitialValue()
-			if assert.True(t, ok) {
+			if !assert.True(t, ok) {
 				return
 			}
 			assert.Equal(t, NewExactRecord(map[string]Serializable{}, nil), initialValue)
@@ -675,7 +677,7 @@ func TestSymbolicRecordPattern(t *testing.T) {
 			patt := NewInexactRecordPattern(map[string]Pattern{}, nil)
 
 			initialValue, ok := patt.MigrationInitialValue()
-			if assert.True(t, ok) {
+			if !assert.True(t, ok) {
 				return
 			}
 			assert.Equal(t, NewInexactRecord(map[string]Serializable{}, nil), initialValue)
@@ -687,7 +689,7 @@ func TestSymbolicRecordPattern(t *testing.T) {
 			}, nil)
 
 			initialValue, ok := patt.MigrationInitialValue()
-			if assert.True(t, ok) {
+			if !assert.True(t, ok) {
 				return
 			}
 			assert.Equal(t, NewInexactRecord(map[string]Serializable{
@@ -854,7 +856,7 @@ func TestSymbolicListPattern(t *testing.T) {
 			patt := NewListPattern([]Pattern{})
 
 			initialValue, ok := patt.MigrationInitialValue()
-			if assert.True(t, ok) {
+			if !assert.True(t, ok) {
 				return
 			}
 			assert.Equal(t, EMPTY_LIST, initialValue)
@@ -864,7 +866,7 @@ func TestSymbolicListPattern(t *testing.T) {
 			patt := NewListPatternOf(NewListPattern([]Pattern{}))
 
 			initialValue, ok := patt.MigrationInitialValue()
-			if assert.True(t, ok) {
+			if !assert.True(t, ok) {
 				return
 			}
 			assert.Equal(t, NewListOf(NewList()), initialValue)
@@ -884,7 +886,7 @@ func TestSymbolicListPattern(t *testing.T) {
 			patt := NewListPattern([]Pattern{NewListPattern([]Pattern{})})
 
 			initialValue, ok := patt.MigrationInitialValue()
-			if assert.True(t, ok) {
+			if !assert.True(t, ok) {
 				return
 			}
 			assert.Equal(t, NewList(NewList()), initialValue)
@@ -1045,7 +1047,7 @@ func TestSymbolicTuplePattern(t *testing.T) {
 			patt := NewTuplePattern([]Pattern{})
 
 			initialValue, ok := patt.MigrationInitialValue()
-			if assert.True(t, ok) {
+			if !assert.True(t, ok) {
 				return
 			}
 			assert.Equal(t, EMPTY_TUPLE, initialValue)
@@ -1055,7 +1057,7 @@ func TestSymbolicTuplePattern(t *testing.T) {
 			patt := NewTuplePatternOf(NewTuplePattern([]Pattern{}))
 
 			initialValue, ok := patt.MigrationInitialValue()
-			if assert.True(t, ok) {
+			if !assert.True(t, ok) {
 				return
 			}
 			assert.Equal(t, NewTupleOf(NewTuple()), initialValue)
@@ -1075,7 +1077,7 @@ func TestSymbolicTuplePattern(t *testing.T) {
 			patt := NewTuplePattern([]Pattern{NewTuplePattern([]Pattern{})})
 
 			initialValue, ok := patt.MigrationInitialValue()
-			if assert.True(t, ok) {
+			if !assert.True(t, ok) {
 				return
 			}
 			assert.Equal(t, NewTuple(NewTuple()), initialValue)
