@@ -239,6 +239,19 @@ func TestParseJSONRepresentation(t *testing.T) {
 				assert.Equal(t, map[string]Value{"b": Int(1)}, entries["a"].(*Object).ValueEntryMap(nil))
 			}
 		}
+
+		//{a: []int} pattern ([]int has a default value)
+		pattern = NewInexactObjectPattern(map[string]Pattern{"a": NewListPatternOf(INT_PATTERN)})
+
+		obj, err = ParseJSONRepresentation(ctx, `{}`, pattern) //auto fix
+		if assert.NoError(t, err) {
+			assert.Equal(t, map[string]Value{"a": NewWrappedValueList()}, obj.(*Object).ValueEntryMap(nil))
+		}
+
+		obj, err = ParseJSONRepresentation(ctx, `{"a":["1"]}`, pattern)
+		if assert.NoError(t, err) {
+			assert.Equal(t, map[string]Value{"a": NewWrappedValueList(Int(1))}, obj.(*Object).ValueEntryMap(nil))
+		}
 	})
 
 	t.Run("record", func(t *testing.T) {
@@ -303,6 +316,19 @@ func TestParseJSONRepresentation(t *testing.T) {
 			if assert.Contains(t, entries, "a") {
 				assert.Equal(t, map[string]Value{"b": Int(1)}, entries["a"].(*Record).ValueEntryMap())
 			}
+		}
+
+		//{a: #[]int} pattern (#[]int has a default value)
+		pattern = NewInexactRecordPattern(map[string]Pattern{"a": NewTuplePatternOf(INT_PATTERN)})
+
+		rec, err = ParseJSONRepresentation(ctx, `{}`, pattern) //auto fix
+		if assert.NoError(t, err) {
+			assert.Equal(t, map[string]Value{"a": NewTuple(nil)}, rec.(*Record).ValueEntryMap())
+		}
+
+		rec, err = ParseJSONRepresentation(ctx, `{"a":["1"]}`, pattern)
+		if assert.NoError(t, err) {
+			assert.Equal(t, map[string]Value{"a": NewTuple([]Serializable{Int(1)})}, rec.(*Record).ValueEntryMap())
 		}
 	})
 

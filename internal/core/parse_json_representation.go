@@ -176,6 +176,20 @@ func parseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 
 	pattern.ForEachEntry(func(propName string, propPattern Pattern, isOptional bool) error {
 		if !isOptional && !slices.Contains(obj.keys, propName) {
+
+			//try auto fix
+			defaultValPattern, ok := propPattern.(DefaultValuePattern)
+			if ok {
+				defaultValue, err := defaultValPattern.DefaultValue(ctx)
+				if err != nil {
+					goto missing
+				}
+				obj.keys = append(obj.keys, propName)
+				obj.values = append(obj.values, defaultValue.(Serializable))
+				return nil
+			}
+
+		missing:
 			missingRequiredProperties = append(missingRequiredProperties, propName)
 		}
 		return nil
@@ -229,6 +243,20 @@ func parseRecordJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 
 	pattern.ForEachEntry(func(propName string, propPattern Pattern, isOptional bool) error {
 		if !isOptional && !slices.Contains(rec.keys, propName) {
+
+			//try auto fix
+			defaultValPattern, ok := propPattern.(DefaultValuePattern)
+			if ok {
+				defaultValue, err := defaultValPattern.DefaultValue(ctx)
+				if err != nil {
+					goto missing
+				}
+				rec.keys = append(rec.keys, propName)
+				rec.values = append(rec.values, defaultValue.(Serializable))
+				return nil
+			}
+
+		missing:
 			missingRequiredProperties = append(missingRequiredProperties, propName)
 		}
 		return nil
