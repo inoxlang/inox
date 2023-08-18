@@ -370,6 +370,11 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Equal(t, []Serializable{Int(1)}, list.(*List).GetOrBuildElements(ctx))
 		}
 
+		list, err = ParseJSONRepresentation(ctx, `["1","2"]`, pattern)
+		if assert.ErrorContains(t, err, "JSON array has too many elements, 1 elements were expected") {
+			assert.Nil(t, list)
+		}
+
 		//[int, int] pattern
 		pattern = NewListPattern([]Pattern{INT_PATTERN, INT_PATTERN})
 
@@ -464,6 +469,11 @@ func TestParseJSONRepresentation(t *testing.T) {
 		tuple, err = ParseJSONRepresentation(ctx, `["1"]`, pattern)
 		if assert.NoError(t, err) {
 			assert.Equal(t, []Serializable{Int(1)}, tuple.(*Tuple).GetOrBuildElements(ctx))
+		}
+
+		tuple, err = ParseJSONRepresentation(ctx, `["1","2"]`, pattern)
+		if assert.ErrorContains(t, err, "JSON array has too many elements, 1 elements were expected") {
+			assert.Nil(t, tuple)
 		}
 
 		//[int, int] pattern
