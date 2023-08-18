@@ -130,6 +130,7 @@ manifest {
         main: {
             resource: ldb://main  #ldb stands for Local Database
             resolution-data: /databases/main/
+            expected-schema-update: true
         }
     }
 }
@@ -154,6 +155,8 @@ dbs.main.users.add(new_user)
 # true
 dbs.main.users.has(new_user) 
 ```
+
+You can learn more [here](./docs/language-basics.md#databases).
 
 ### Serializability
 

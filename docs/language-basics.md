@@ -1053,6 +1053,40 @@ dbs.main.update_schema(%{
 })
 ```
 
+⚠️ calling **.update_schema** requires the following property in the db description: **expected-schema-update: true**
+
+## Migrations
+
+Updating the schema often requires data updates, when this is the case .updated_schema needs a 
+second argument that describes the updates.
+
+```
+%new_user = {
+    ...user
+    new-property: int
+}
+
+dbs.main.update_schema(%{
+    users: Set(new_user, #url)
+}, {
+   inclusions: :{
+        %/users/*/new-property: 0
+        # a handler can be passed instead of an initial value
+        # %/users/*/new-property: fn(prev_value) => 0
+    }
+})
+```
+
+| Type |  Reason  | Value, Handler Signature |
+| ----------- | -----------  | ----------- |
+| **deletions** | deletion of a property or element | **nil** OR **fn(deleted_value)** |
+| **replacements** | complete replacement of a property or element |**value** OR **fn(prev_user user) new_user** |
+| **inclusions** | new property or element |**value** OR **fn(prev_value) new_user** |
+| **initializations** | initialization of a previously optional property |**value** OR **fn(prev_value) new_user** |
+
+ℹ️ In application logic properties can be added to database objects even if they are not defined in the schema.\
+During a migration previous values are passed to the handlers.
+
 ## Serialization
 
 Most Inox types (objects, lists, Sets) are serializable so no translation layer is
