@@ -309,39 +309,69 @@ func (state *State) get(name string) (varSymbolicInfo, bool) {
 }
 
 func (state *State) updateLocal(name string, value SymbolicValue, node parse.Node) bool {
+	ok, _ := state.updateLocal2(name, node, func(expected SymbolicValue) (SymbolicValue, bool, error) {
+		return value, false, nil
+	})
+	return ok
+}
+
+func (state *State) updateLocal2(
+	name string,
+	node parse.Node,
+	getValue func(expected SymbolicValue) (value SymbolicValue, deeperMismatch bool, _ error),
+) (bool, error) {
 	state.assertHasLocals()
 	scope := state.scopeStack[len(state.scopeStack)-1]
 	if info, ok := scope.variables[name]; ok {
+		value, deeperMismatch, err := getValue(info.static.SymbolicValue())
+		if err != nil {
+			return false, err
+		}
 		info.value = value
 
 		if !isNever(value) {
-			if !info.static.TestValue(value) {
+			if !deeperMismatch && !info.static.TestValue(value) {
 				state.addError(makeSymbolicEvalError(node, state, fmtNotAssignableToVarOftype(value, info.static)))
-				return false
+				return false, nil
 			}
 		}
 		scope.variables[name] = info
-		return true
+		return true, nil
 	}
-	return false
+	return false, nil
 }
 
 func (state *State) updateGlobal(name string, value SymbolicValue, node parse.Node) bool {
+	ok, _ := state.updateGlobal2(name, node, func(expected SymbolicValue) (SymbolicValue, bool, error) {
+		return value, false, nil
+	})
+	return ok
+}
+
+func (state *State) updateGlobal2(
+	name string,
+	node parse.Node,
+	getValue func(expected SymbolicValue) (value SymbolicValue, deeperMismatch bool, _ error),
+) (bool, error) {
 	scope := state.scopeStack[0]
 	if info, ok := scope.variables[name]; ok {
+		value, deeperMismatch, err := getValue(info.static.SymbolicValue())
+		if err != nil {
+			return false, err
+		}
 		info.value = value
 
 		if !isNever(value) {
-			if !info.static.TestValue(value) {
+			if !deeperMismatch && !info.static.TestValue(value) {
 				state.addError(makeSymbolicEvalError(node, state, fmtNotAssignableToVarOftype(value, info.static)))
-				return false
+				return false, nil
 			}
 		}
 
 		scope.variables[name] = info
-		return true
+		return true, nil
 	}
-	return false
+	return false, nil
 }
 
 func (state *State) updateVar(name string, value SymbolicValue, node parse.Node) bool {

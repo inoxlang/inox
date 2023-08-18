@@ -1054,11 +1054,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(assignment, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE),
 			}, state.errors())
-			assert.Equal(t, &Object{
-				entries: map[string]Serializable{
-					"routine": ANY_SERIALIZABLE,
-				},
-			}, res)
+			assert.Equal(t, &Object{entries: map[string]Serializable{}}, res)
 		})
 
 		t.Run("set new property of an object with non-watchable mutable value: identifier member LHS", func(t *testing.T) {
@@ -4828,6 +4824,22 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("local variable LHS", func(t *testing.T) {
 
+			t.Run("value not assignable to type (deep mismatch: object property)", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					var a %{a: str} = {a: "x"}; 
+					$a = {a: 1}
+				`)
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+
+				objectProp := parse.FindNode(n.Statements[1], (*parse.ObjectProperty)(nil), nil)
+
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(objectProp.Value, state,
+						fmtNotAssignableToPropOfExpectedValue(NewInt(1), ANY_STR_LIKE)),
+				}, state.errors())
+			})
+
 			t.Run("+= assignment: invalid RHS", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					$a = 0
@@ -4859,6 +4871,22 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("global variable LHS", func(t *testing.T) {
+
+			t.Run("value not assignable to type (deep mismatch: object property)", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					$$a = {a: "x"}; 
+					$$a = {a: 1}
+				`)
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+
+				objectProp := parse.FindNode(n.Statements[1], (*parse.ObjectProperty)(nil), nil)
+
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(objectProp.Value, state,
+						fmtNotAssignableToPropOfExpectedValue(NewInt(1), ANY_STR)),
+				}, state.errors())
+			})
 
 			t.Run("+= assignment: invalid RHS", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
@@ -4892,6 +4920,22 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("variable LHS", func(t *testing.T) {
 
+			t.Run("value not assignable to type (deep mismatch: object property)", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					var a %{a: str} = {a: "x"}; 
+					a = {a: 1}
+				`)
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+
+				objectProp := parse.FindNode(n.Statements[1], (*parse.ObjectProperty)(nil), nil)
+
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(objectProp.Value, state,
+						fmtNotAssignableToPropOfExpectedValue(NewInt(1), ANY_STR_LIKE)),
+				}, state.errors())
+			})
+
 			t.Run("+= assignment: invalid RHS", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					a = 0
@@ -4922,8 +4966,43 @@ func TestSymbolicEval(t *testing.T) {
 			})
 		})
 
-		t.Run("index expression LHS with known index & element", func(t *testing.T) {
+		t.Run("member expression LHS", func(t *testing.T) {
+			t.Run("value not assignable to type (deep mismatch: object property)", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					var o %{a: {b: str}} = {a: {b: "x"}}; 
+					$o.a = {b: 1}
+				`)
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
 
+				objectProp := parse.FindNode(n.Statements[1], (*parse.ObjectProperty)(nil), nil)
+
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(objectProp.Value, state,
+						fmtNotAssignableToPropOfExpectedValue(NewInt(1), ANY_STR_LIKE)),
+				}, state.errors())
+			})
+		})
+
+		t.Run("identifier member expression LHS", func(t *testing.T) {
+			t.Run("value not assignable to type (deep mismatch: object property)", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					var o %{a: {b: str}} = {a: {b: "x"}}; 
+					o.a = {b: 1}
+				`)
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+
+				objectProp := parse.FindNode(n.Statements[1], (*parse.ObjectProperty)(nil), nil)
+
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(objectProp.Value, state,
+						fmtNotAssignableToPropOfExpectedValue(NewInt(1), ANY_STR_LIKE)),
+				}, state.errors())
+			})
+		})
+
+		t.Run("index expression LHS with known index & element", func(t *testing.T) {
 			t.Run("same type RHS", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					list = [0]
@@ -5032,6 +5111,23 @@ func TestSymbolicEval(t *testing.T) {
 					makeSymbolicEvalError(assignement.Right, state, fmtNotAssignableToElementOfValue(NewRune('a'), ANY_INT)),
 				}, state.errors())
 				assert.Equal(t, NewList(NewInt(0)), res)
+			})
+
+			t.Run("RHS of invalid type relative to element (deep mismatch: object property)", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					list = [{a: "x"}]
+					list[0] = {a: 1}
+					return list
+				`)
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+
+				objectProp := parse.FindNode(n.Statements[1], (*parse.ObjectProperty)(nil), nil)
+
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(objectProp.Value, state,
+						fmtNotAssignableToPropOfExpectedValue(NewInt(1), NewString("x"))),
+				}, state.errors())
 			})
 
 			t.Run("non-serializable RHS", func(t *testing.T) {
@@ -5228,6 +5324,23 @@ func TestSymbolicEval(t *testing.T) {
 				assert.Equal(t, NewList(NewInt(0), NewInt(1)), res)
 			})
 
+			t.Run("RHS of invalid type relative to element (deep mismatch: object property)", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					list = [{a: "x"}, {a: "x"}]
+					list[int] = {a: 1}
+					return list
+				`)
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+
+				objectProp := parse.FindNode(n.Statements[1], (*parse.ObjectProperty)(nil), nil)
+
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(objectProp.Value, state,
+						fmtNotAssignableToPropOfExpectedValue(NewInt(1), NewString("x"))),
+				}, state.errors())
+			})
+
 			t.Run("non-serializable RHS", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					var list = [serializable, serializable]
@@ -5300,6 +5413,23 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("slice expression LHS with known indexes", func(t *testing.T) {
+			t.Run("RHS should be a sequence", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					list = [0]
+					list[0:1] = {}
+					return list
+				`)
+				res, err := symbolicEval(n, state)
+				assignement := parse.FindNode(n.Statements[1], (*parse.Assignment)(nil), nil)
+
+				assert.NoError(t, err)
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(assignement.Right, state,
+						fmtSequenceExpectedButIs(NewEmptyObject())),
+				}, state.errors())
+				assert.Equal(t, NewList(NewInt(0)), res)
+			})
+
 			t.Run("super type RHS element", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					list = [0]
@@ -5329,11 +5459,12 @@ func TestSymbolicEval(t *testing.T) {
 			t.Run("RHS element of invalid type", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					list = [0]
-					list[0:1] = ['a']
+					slice = ['a'] # we define a variable in order to avoid mismatches inside the list literal
+					list[0:1] = slice
 					return list
 				`)
 				res, err := symbolicEval(n, state)
-				assignement := parse.FindNode(n.Statements[1], (*parse.Assignment)(nil), nil)
+				assignement := parse.FindNode(n.Statements[2], (*parse.Assignment)(nil), nil)
 
 				assert.NoError(t, err)
 				assert.Equal(t, []SymbolicEvaluationError{
@@ -5341,6 +5472,23 @@ func TestSymbolicEval(t *testing.T) {
 						fmtSeqOfXNotAssignableToSliceOfTheValue(NewRune('a'), NewListOf(ANY_INT))),
 				}, state.errors())
 				assert.Equal(t, NewList(NewInt(0)), res)
+			})
+
+			t.Run("RHS element of invalid type (deep mismatch: object property)", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					list = [{a: "x"}]
+					list[0:1] = [{a: 1}]
+					return list
+				`)
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+
+				objectProp := parse.FindNode(n.Statements[1], (*parse.ObjectProperty)(nil), nil)
+
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(objectProp.Value, state,
+						fmtNotAssignableToPropOfExpectedValue(NewInt(1), ANY_STR)),
+				}, state.errors())
 			})
 
 			t.Run("static type LHS with known length should conservatively make the assignment invalid", func(t *testing.T) {

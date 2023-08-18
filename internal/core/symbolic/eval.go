@@ -569,26 +569,53 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
 		return nil, nil
 	case *parse.Assignment:
-
-		right, err := symbolicEval(n.Right, state)
-		if err != nil {
-			return nil, err
-		}
-
 		badIntOperationRHS := false
-		rhs := right
+		var __rhs SymbolicValue
 
-		// if the operation requires integer operands we check that RHS is an integer
-		if n.Operator.Int() {
-			rhs = ANY_INT
-			if _, ok := right.(*Int); !ok {
-				badIntOperationRHS = true
-				state.addError(makeSymbolicEvalError(n.Right, state, INVALID_ASSIGN_INT_OPER_ASSIGN_RHS_NOT_INT))
+		getRHS := func(expected SymbolicValue) (value SymbolicValue, deeperMismatch bool, _ error) {
+			if __rhs != nil {
+				panic(errors.New("right node already evaluated"))
 			}
+
+			var result SymbolicValue
+			var err error
+			if expected == nil {
+				result, err = symbolicEval(n.Right, state)
+			} else {
+				result, err = _symbolicEval(n.Right, state, evalOptions{
+					expectedValue:       expected,
+					actualValueMismatch: &deeperMismatch,
+				})
+			}
+
+			if err != nil {
+				return nil, false, err
+			}
+
+			if n.Operator.Int() {
+				// if the operation requires integer operands we check that RHS is an integer
+				if _, ok := result.(*Int); !ok {
+					badIntOperationRHS = true
+					state.addError(makeSymbolicEvalError(n.Right, state, INVALID_ASSIGN_INT_OPER_ASSIGN_RHS_NOT_INT))
+				}
+				result = ANY_INT
+			}
+
+			value = result
+			__rhs = value
+			return
 		}
 
 		defer func() {
 			if finalErr == nil {
+				//if n.Right was not evaluated we dot it now
+				if __rhs == nil {
+					_, _, finalErr = getRHS(nil)
+					if finalErr != nil {
+						return
+					}
+				}
+
 				state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
 				state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
 			}
@@ -601,6 +628,10 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			if state.hasLocal(name) {
 				if n.Operator.Int() {
 					info, _ := state.getLocal(name)
+					rhs, _, err := getRHS(nil)
+					if err != nil {
+						return nil, err
+					}
 
 					if _, ok := info.value.(*Int); !ok {
 						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
@@ -608,13 +639,19 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 						state.updateLocal(name, rhs, node)
 					}
 				} else {
-					state.updateLocal(name, rhs, node)
+					if _, err := state.updateLocal2(name, node, getRHS); err != nil {
+						return nil, err
+					}
 				}
 
 			} else {
+				rhs, _, err := getRHS(nil)
+				if err != nil {
+					return nil, err
+				}
 				state.setLocal(name, rhs, nil, n.Left)
 			}
-			state.symbolicData.SetMostSpecificNodeValue(lhs, rhs)
+			state.symbolicData.SetMostSpecificNodeValue(lhs, __rhs)
 			state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
 		case *parse.IdentifierLiteral:
 			name := lhs.Name
@@ -622,19 +659,48 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			if state.hasLocal(name) {
 				if n.Operator.Int() {
 					info, _ := state.getLocal(name)
+					rhs, _, err := getRHS(nil)
+					if err != nil {
+						return nil, err
+					}
+
 					if _, ok := info.value.(*Int); !ok {
 						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
 					} else if !badIntOperationRHS {
 						state.updateLocal(name, rhs, node)
 					}
 				} else {
-					state.updateLocal(name, rhs, node)
+					if _, err := state.updateLocal2(name, node, getRHS); err != nil {
+						return nil, err
+					}
 				}
 
+			} else if state.hasGlobal(name) {
+				if n.Operator.Int() {
+					info, _ := state.getGlobal(name)
+					rhs, _, err := getRHS(nil)
+					if err != nil {
+						return nil, err
+					}
+
+					if _, ok := info.value.(*Int); !ok {
+						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
+					} else if !badIntOperationRHS {
+						state.updateGlobal(name, rhs, node)
+					}
+				} else {
+					if _, err := state.updateGlobal2(name, node, getRHS); err != nil {
+						return nil, err
+					}
+				}
 			} else {
+				rhs, _, err := getRHS(nil)
+				if err != nil {
+					return nil, err
+				}
 				state.setLocal(name, rhs, nil, n.Left)
 			}
-			state.symbolicData.SetMostSpecificNodeValue(lhs, rhs)
+			state.symbolicData.SetMostSpecificNodeValue(lhs, __rhs)
 			state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
 		case *parse.GlobalVariable:
 			name := lhs.Name
@@ -647,20 +713,31 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			if state.hasGlobal(name) {
 				if n.Operator.Int() {
 					info, _ := state.getGlobal(name)
+					rhs, _, err := getRHS(nil)
+					if err != nil {
+						return nil, err
+					}
+
 					if _, ok := info.value.(*Int); !ok {
 						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
 					} else if !badIntOperationRHS {
 						state.updateGlobal(name, rhs, node)
 					}
 				} else {
-					state.updateGlobal(name, rhs, node)
+					if _, err := state.updateGlobal2(name, node, getRHS); err != nil {
+						return nil, err
+					}
 				}
 
 			} else {
+				rhs, _, err := getRHS(nil)
+				if err != nil {
+					return nil, err
+				}
 				state.setGlobal(name, rhs, GlobalVar, n.Left)
 			}
 
-			state.symbolicData.SetMostSpecificNodeValue(lhs, rhs)
+			state.symbolicData.SetMostSpecificNodeValue(lhs, __rhs)
 			state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
 		case *parse.MemberExpression:
 			object, err := symbolicEval(lhs.Left, state)
@@ -673,6 +750,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			}
 
 			var iprops IProps
+			isAnySerializable := false
 			{
 				value := object
 				// if sharedVal, isSharedVal := object.(*SharedValue); isSharedVal {
@@ -684,10 +762,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				case *Any:
 					return nil, nil //no check
 				case *AnySerializable:
-					if _, ok := rhs.(Serializable); !ok {
-						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
-						return nil, nil
-					}
+					isAnySerializable = true
+					//checked later
+
 					//no check for watchable ?
 				case nil:
 					return nil, errors.New("nil value")
@@ -695,6 +772,25 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 					state.addError(makeSymbolicEvalError(node, state, FmtCannotAssignPropertyOf(val)))
 					iprops = &Object{}
 				}
+			}
+
+			var expectedValue SymbolicValue
+			static, ok := iprops.(IToStatic)
+			if ok {
+				expectedIprops, ok := AsIprops(static.Static().SymbolicValue()).(IProps)
+				if ok && HasRequiredOrOptionalProperty(expectedIprops, lhs.PropertyName.Name) {
+					expectedValue = expectedIprops.Prop(lhs.PropertyName.Name)
+				}
+			}
+
+			rhs, deeperMismatch, err := getRHS(expectedValue)
+			if err != nil {
+				return nil, err
+			}
+
+			if _, ok := rhs.(Serializable); !ok && isAnySerializable {
+				state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
+				return nil, nil
 			}
 
 			propName := lhs.PropertyName.Name
@@ -724,7 +820,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 				} else {
 					if newIprops, err := iprops.SetProp(propName, rhs); err != nil {
-						state.addError(makeSymbolicEvalError(node, state, err.Error()))
+						if !deeperMismatch {
+							state.addError(makeSymbolicEvalError(node, state, err.Error()))
+						}
 					} else {
 						narrowPath(lhs.Left, setExactValue, newIprops, state, 0)
 					}
@@ -747,7 +845,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				}
 
 				if newIprops, err := iprops.SetProp(propName, rhs); err != nil {
-					state.addError(makeSymbolicEvalError(node, state, err.Error()))
+					if !deeperMismatch {
+						state.addError(makeSymbolicEvalError(node, state, err.Error()))
+					}
 				} else {
 					narrowPath(lhs.Left, setExactValue, newIprops, state, 0)
 				}
@@ -764,6 +864,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			}
 
 			var iprops IProps
+			isAnySerializable := true
 			{
 				value := v
 				// if sharedVal, isSharedVal := v.(*SharedValue); isSharedVal {
@@ -775,10 +876,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				case *Any:
 					return nil, nil //no check
 				case *AnySerializable:
-					if _, ok := rhs.(Serializable); !ok {
-						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
-						return nil, nil
-					}
+					isAnySerializable = true
+					//checked later
+
 					//no check for watchable ?
 				case nil:
 					return nil, errors.New("nil value")
@@ -790,6 +890,25 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 			lastPropName := lhs.PropertyNames[len(lhs.PropertyNames)-1].Name
 			hasPrevValue := utils.SliceContains(iprops.PropertyNames(), lastPropName)
+
+			var expectedValue SymbolicValue
+			static, ok := iprops.(IToStatic)
+			if ok {
+				expectedIprops, ok := AsIprops(static.Static().SymbolicValue()).(IProps)
+				if ok && HasRequiredOrOptionalProperty(expectedIprops, lastPropName) {
+					expectedValue = expectedIprops.Prop(lastPropName)
+				}
+			}
+
+			rhs, deeperMismatch, err := getRHS(expectedValue)
+			if err != nil {
+				return nil, err
+			}
+
+			if _, ok := rhs.(Serializable); !ok && isAnySerializable {
+				state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
+				return nil, nil
+			}
 
 			if hasPrevValue {
 				if _, ok := iprops.(Serializable); ok {
@@ -811,7 +930,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 					state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
 				} else {
 					if newIprops, err := iprops.SetProp(lastPropName, rhs); err != nil {
-						state.addError(makeSymbolicEvalError(node, state, err.Error()))
+						if !deeperMismatch {
+							state.addError(makeSymbolicEvalError(node, state, err.Error()))
+						}
 					} else {
 						narrowPath(lhs, setExactValue, newIprops, state, 1)
 					}
@@ -833,7 +954,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				}
 
 				if newIprops, err := iprops.SetProp(lastPropName, rhs); err != nil {
-					state.addError(makeSymbolicEvalError(node, state, err.Error()))
+					if !deeperMismatch {
+						state.addError(makeSymbolicEvalError(node, state, err.Error()))
+					}
 				} else {
 					narrowPath(lhs, setExactValue, newIprops, state, 1)
 				}
@@ -854,20 +977,6 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				return nil, err
 			}
 
-			if _, ok := slice.(Serializable); ok {
-				if _, ok := right.(Serializable); !ok {
-					state.addError(makeSymbolicEvalError(node, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
-					break
-				}
-			}
-
-			if _, ok := asWatchable(slice).(Watchable); ok {
-				if _, ok := asWatchable(right).(Watchable); !ok && right.IsMutable() {
-					state.addError(makeSymbolicEvalError(node, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
-					break
-				}
-			}
-
 			seq, isMutableSeq := asIndexable(slice).(MutableSequence)
 			if isMutableSeq && (!seq.HasKnownLen() ||
 				intIndex == nil ||
@@ -877,6 +986,34 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				var seqElementAtIndex Serializable
 				if intIndex != nil && intIndex.hasValue {
 					seqElementAtIndex = seq.elementAt(int(intIndex.value)).(Serializable)
+				}
+
+				//evaluate right
+				var deeperMismatch bool
+				{
+					var expectedValue SymbolicValue = seqElementAtIndex
+					if expectedValue == nil {
+						expectedValue = seq.element()
+					}
+					_, deeperMismatch, err = getRHS(expectedValue)
+					if err != nil {
+						return nil, err
+					}
+				}
+
+				//-----------------------------------------
+				if _, ok := slice.(Serializable); ok {
+					if _, ok := __rhs.(Serializable); !ok {
+						state.addError(makeSymbolicEvalError(node, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+						break
+					}
+				}
+
+				if _, ok := asWatchable(slice).(Watchable); ok {
+					if _, ok := asWatchable(__rhs).(Watchable); !ok && __rhs.IsMutable() {
+						state.addError(makeSymbolicEvalError(node, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
+						break
+					}
 				}
 
 				ignoreNextAssignabilityError := false
@@ -895,7 +1032,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 					}
 				}
 
-				if seqElementAtIndex == nil || !seqElementAtIndex.Test(rhs) {
+				if seqElementAtIndex == nil || !seqElementAtIndex.Test(__rhs) {
 					assignable := false
 					var staticSeq MutableLengthSequence
 					var staticSeqElement SymbolicValue
@@ -936,7 +1073,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 							if intIndex != nil && intIndex.hasValue && staticSeq.KnownLen() > int(intIndex.value) {
 								//known index
 								staticSeqElement = staticSeq.elementAt(int(intIndex.value)).(Serializable)
-								if staticSeqElement.Test(rhs) {
+								if staticSeqElement.Test(__rhs) {
 									assignable = true
 									narrowPath(lhs.Indexed, setExactValue, staticSeq, state, 0)
 								}
@@ -947,7 +1084,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 							}
 						} else {
 							staticSeqElement = staticSeq.element()
-							if staticSeqElement.Test(widenToSameStaticTypeInMultivalue(rhs)) {
+							if staticSeqElement.Test(widenToSameStaticTypeInMultivalue(__rhs)) {
 								assignable = true
 								narrowPath(lhs.Indexed, setExactValue, staticSeq, state, 0)
 							}
@@ -955,11 +1092,11 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 					}
 
 				add_assignability_error:
-					if !assignable && !ignoreNextAssignabilityError {
+					if !assignable && !ignoreNextAssignabilityError && !deeperMismatch {
 						if staticSeq != nil {
-							state.addError(makeSymbolicEvalError(n.Right, state, fmtNotAssignableToElementOfValue(rhs, staticSeqElement)))
+							state.addError(makeSymbolicEvalError(n.Right, state, fmtNotAssignableToElementOfValue(__rhs, staticSeqElement)))
 						} else {
-							state.addError(makeSymbolicEvalError(n.Right, state, fmtNotAssignableToElementOfValue(rhs, seq.element())))
+							state.addError(makeSymbolicEvalError(n.Right, state, fmtNotAssignableToElementOfValue(__rhs, seq.element())))
 						}
 					}
 				}
@@ -1002,34 +1139,6 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				return nil, err
 			}
 
-			if _, ok := slice.(Serializable); ok {
-				if _, ok := rhs.(Serializable); !ok {
-					state.addError(makeSymbolicEvalError(node, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
-					break
-				}
-			}
-
-			if _, ok := asWatchable(slice).(Watchable); ok {
-				if _, ok := asWatchable(rhs).(Watchable); !ok && rhs.IsMutable() {
-					state.addError(makeSymbolicEvalError(node, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
-					break
-				}
-			}
-
-			rightSeq, ok := rhs.(Sequence)
-			if !ok {
-				state.addError(makeSymbolicEvalError(n.Right, state, fmtSequenceExpectedButIs(rhs)))
-			}
-
-			invalidRHSLength := false
-			if rightSeq.HasKnownLen() && startIntIndex != nil && endIntIndex != nil &&
-				startIntIndex.hasValue && endIntIndex.hasValue && startIntIndex.value >= 0 &&
-				endIntIndex.value >= startIntIndex.value && endIntIndex.value-startIntIndex.value != int64(rightSeq.KnownLen()) {
-				expectedLength := endIntIndex.value - startIntIndex.value
-				invalidRHSLength = true
-				state.addError(makeSymbolicEvalError(n.Right, state, fmtRHSSequenceShouldHaveLenOf(int(expectedLength))))
-			}
-
 			seq, isMutableSeq := slice.(MutableSequence)
 			if isMutableSeq && (!seq.HasKnownLen() ||
 				startIntIndex == nil ||
@@ -1064,39 +1173,84 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 					lhsInfo = &info
 				}
 
-				rightSeqElement := rightSeq.element()
 				assignable := false
 				ignoreNextAssignabilityError := false
-				var staticSeq MutableLengthSequence
+				invalidRHSLength := false
+				var staticSeq MutableSequence
+				var rightSeqElement SymbolicValue
+				var deeperMismatch bool
 
+				//get static
 				if lhsInfo != nil {
 					info := *lhsInfo
-					staticSeq, ok = info.static.SymbolicValue().(MutableLengthSequence)
-					var staticSeqElement SymbolicValue
-
+					staticSeq, ok = info.static.SymbolicValue().(MutableSequence)
 					if !ok {
 						goto add_slice_assignability_error
 					}
+				}
 
-					if staticSeq.HasKnownLen() {
-						if !invalidRHSLength && endIntIndex != nil && endIntIndex.hasValue && startIntIndex != nil && startIntIndex.hasValue &&
-							staticSeq.KnownLen() > int(startIntIndex.value) {
-							//conservatively assume not assignable
-						} else {
-							state.addError(makeSymbolicEvalError(n.Right, state, IMPOSSIBLE_TO_KNOW_UPDATED_ELEMENTS))
-							ignoreNextAssignabilityError = true
+				if staticSeq == nil {
+					staticSeq = seq
+				}
+
+				{
+					//evaluate right
+					var expectedValue SymbolicValue = NewAnySequenceOf(staticSeq.element())
+					_, deeperMismatch, err = getRHS(expectedValue)
+					if err != nil {
+						return nil, err
+					}
+
+					rightSeq, ok := __rhs.(Sequence)
+					if !ok {
+						state.addError(makeSymbolicEvalError(n.Right, state, fmtSequenceExpectedButIs(__rhs)))
+						break
+					}
+
+					//---------------------------
+					if _, ok := slice.(Serializable); ok {
+						if _, ok := __rhs.(Serializable); !ok {
+							state.addError(makeSymbolicEvalError(node, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+							break
 						}
+					}
+
+					if _, ok := asWatchable(slice).(Watchable); ok {
+						if _, ok := asWatchable(__rhs).(Watchable); !ok && __rhs.IsMutable() {
+							state.addError(makeSymbolicEvalError(node, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
+							break
+						}
+					}
+
+					if rightSeq.HasKnownLen() && startIntIndex != nil && endIntIndex != nil &&
+						startIntIndex.hasValue && endIntIndex.hasValue && startIntIndex.value >= 0 &&
+						endIntIndex.value >= startIntIndex.value && endIntIndex.value-startIntIndex.value != int64(rightSeq.KnownLen()) {
+						expectedLength := endIntIndex.value - startIntIndex.value
+						invalidRHSLength = true
+						state.addError(makeSymbolicEvalError(n.Right, state, fmtRHSSequenceShouldHaveLenOf(int(expectedLength))))
+					}
+
+					rightSeqElement = rightSeq.element()
+				}
+
+				if staticSeq.HasKnownLen() {
+					if !invalidRHSLength && endIntIndex != nil && endIntIndex.hasValue && startIntIndex != nil && startIntIndex.hasValue &&
+						staticSeq.KnownLen() > int(startIntIndex.value) {
+						//conservatively assume not assignable
 					} else {
-						staticSeqElement = staticSeq.element()
-						if staticSeqElement.Test(widenToSameStaticTypeInMultivalue(rightSeqElement)) {
-							assignable = true
-							narrowPath(lhs.Indexed, setExactValue, staticSeq, state, 0)
-						}
+						state.addError(makeSymbolicEvalError(n.Right, state, IMPOSSIBLE_TO_KNOW_UPDATED_ELEMENTS))
+						ignoreNextAssignabilityError = true
+					}
+				} else {
+					staticSeqElement := staticSeq.element()
+					if staticSeqElement.Test(widenToSameStaticTypeInMultivalue(rightSeqElement)) {
+						assignable = true
+						narrowPath(lhs.Indexed, setExactValue, staticSeq, state, 0)
 					}
 				}
 
 			add_slice_assignability_error:
-				if !assignable && !ignoreNextAssignabilityError {
+				if !assignable && !ignoreNextAssignabilityError && !deeperMismatch {
 					if staticSeq != nil {
 						state.addError(makeSymbolicEvalError(n.Right, state, fmtSeqOfXNotAssignableToSliceOfTheValue(rightSeqElement, staticSeq)))
 					} else {
@@ -2062,6 +2216,12 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		var expectedElement SymbolicValue = nil
 		if ok {
 			expectedElement = expectedList.element()
+		} else {
+			//we do not search for a Sequence because we could find a sequence that is not a list
+			expectedSeq, ok := findInMultivalue[*AnySequenceOf](options.expectedValue)
+			if ok {
+				expectedElement = expectedSeq.element()
+			}
 		}
 
 		if len(n.Elements) == 0 {
@@ -2176,6 +2336,12 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		var expectedElement SymbolicValue = nil
 		if ok {
 			expectedElement = expectedTuple.element()
+		} else {
+			//we do not search for a Sequence because we could find a sequence that is not a tuple
+			expectedSeq, ok := findInMultivalue[*AnySequenceOf](options.expectedValue)
+			if ok {
+				expectedElement = expectedSeq.element()
+			}
 		}
 
 		if len(n.Elements) == 0 {
