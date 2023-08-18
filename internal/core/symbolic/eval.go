@@ -3752,7 +3752,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			}
 			for i, elem := range values {
 				if _, ok := elem.(StringLike); !ok {
-					state.addError(makeSymbolicEvalError(n.Elements[nodeIndexes[i]], state, fmt.Sprintf("string concatenation: invalid element of type %T", elem)))
+					state.addError(makeSymbolicEvalError(n.Elements[nodeIndexes[i]], state, fmtStringConcatInvalidElementOfType(elem)))
 				}
 			}
 			return ANY_STR_CONCAT, nil

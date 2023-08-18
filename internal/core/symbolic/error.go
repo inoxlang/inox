@@ -420,3 +420,7 @@ func fmtValueNotStringifiableToQueryParamValue(val SymbolicValue) string {
 func fmtVal1Val2HaveNoOverlap(val1, val2 SymbolicValue) string {
 	return fmt.Sprintf("%s and %s have no overlap", Stringify(val1), Stringify(val2))
 }
+
+func fmtStringConcatInvalidElementOfType(v SymbolicValue) string {
+	return fmt.Sprintf("string concatenation: invalid element of type %s", Stringify(v))
+}
