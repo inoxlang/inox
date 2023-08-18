@@ -659,21 +659,22 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 	symbolicResultValues := make([]SymbolicValue, resultCount)
 
 	for i := 0; i < fnValType.NumOut(); i++ {
-		var err error
-
 		reflectVal := resultValues[i]
 
 		if reflectVal.IsZero() {
 			symbolicResultValues[i] = goFunc.results[i]
 		} else {
-			symbolicResultValues[i], err = converReflectValToSymbolicValue(reflectVal)
-			if err != nil {
+			symbolicVal, ok := reflectVal.Interface().(SymbolicValue)
+			if !ok {
 				return nil, false, enoughArgs, fmt.Errorf(
-					"cannot convert one of a Go function result %s.%s (function name: %s): %s",
+					"cannot convert one of a Go function result %s.%s (function name: %s): "+
+						"cannot convert value of following type to symbolic value : %T",
 					reflectVal.Type().PkgPath(), reflectVal.Type().Name(),
 					runtime.FuncForPC(fnVal.Pointer()).Name(),
-					err.Error())
+					reflectVal.Interface())
 			}
+
+			symbolicResultValues[i] = symbolicVal
 		}
 
 	}

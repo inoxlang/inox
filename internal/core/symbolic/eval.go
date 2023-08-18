@@ -46,7 +46,7 @@ var (
 	SYMBOLIC_VALUE_INTERFACE_TYPE        = reflect.TypeOf((*SymbolicValue)(nil)).Elem()
 	SERIALIZABLE_INTERFACE_TYPE          = reflect.TypeOf((*Serializable)(nil)).Elem()
 	ITERABLE_INTERFACE_TYPE              = reflect.TypeOf((*Iterable)(nil)).Elem()
-	SERIALIZABLE_ITERABLE_INTERFACE_TYPE = reflect.TypeOf((*Iterable)(nil)).Elem()
+	SERIALIZABLE_ITERABLE_INTERFACE_TYPE = reflect.TypeOf((*SerializableIterable)(nil)).Elem()
 	INDEXABLE_INTERFACE_TYPE             = reflect.TypeOf((*Indexable)(nil)).Elem()
 	SEQUENCE_INTERFACE_TYPE              = reflect.TypeOf((*Sequence)(nil)).Elem()
 	MUTABLE_SEQUENCE_INTERFACE_TYPE      = reflect.TypeOf((*MutableSequence)(nil)).Elem()
@@ -4437,31 +4437,7 @@ func makeSymbolicEvalWarning(node parse.Node, state *State, msg string) Symbolic
 	return SymbolicEvaluationWarning{msg, locatedMsg, location}
 }
 
-func converReflectValToSymbolicValue(r reflect.Value) (SymbolicValue, error) {
-	t := r.Type()
-	err := fmt.Errorf("cannot convert value of following type to symbolic value : %v", t)
-
-	if t.Kind() == reflect.Pointer && t.Elem().Kind() == reflect.Struct {
-		symbolicVal, ok := r.Interface().(SymbolicValue)
-		if !ok {
-			return nil, err
-		}
-		return symbolicVal, nil
-	}
-
-	switch t {
-	case SYMBOLIC_VALUE_INTERFACE_TYPE, ITERABLE_INTERFACE_TYPE, RESOURCE_NAME_INTERFACE_TYPE, READABLE_INTERFACE_TYPE,
-		STREAMABLE_INTERFACE_TYPE, WATCHABLE_INTERFACE_TYPE, VALUE_RECEIVER_INTERFACE_TYPE, PROTOCOL_CLIENT_INTERFACE_TYPE,
-		STR_PATTERN_ELEMENT_INTERFACE_TYPE, INTEGRAL_INTERFACE_TYPE, FORMAT_INTERFACE_TYPE, IN_MEM_SNAPSHOTABLE,
-		STRLIKE_INTERFACE_TYPE:
-		return r.Interface().(SymbolicValue), nil
-	}
-
-	return nil, err
-}
-
 func converTypeToSymbolicValue(t reflect.Type) (SymbolicValue, error) {
-
 	err := fmt.Errorf("cannot convert type to symbolic value : %v", t)
 
 	if t.Kind() == reflect.Pointer && t.Elem().Kind() == reflect.Struct {
