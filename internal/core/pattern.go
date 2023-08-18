@@ -14,7 +14,10 @@ var (
 	ErrPatternNotCallable = errors.New("pattern is not callable")
 	ErrNoDefaultValue     = errors.New("no default value")
 
-	_ = []GroupPattern{&NamedSegmentPathPattern{}}
+	_ = []GroupPattern{(*NamedSegmentPathPattern)(nil)}
+	_ = []DefaultValuePattern{
+		(*ListPattern)(nil), (*TuplePattern)(nil),
+	}
 )
 
 func RegisterDefaultPattern(s string, m Pattern) {
@@ -64,6 +67,7 @@ type GroupPattern interface {
 
 // DefaultValuePattern is implemented by patterns that in most cases can provide
 // a default value that matches them. ErrNoDefaultValue should be returned if it's not possible.
+// If the default value is mutable a new instance of the default value should be returned each time (no reuse).
 type DefaultValuePattern interface {
 	Pattern
 	DefaultValue(ctx *Context) (Value, error)
@@ -449,6 +453,14 @@ func (patt *ListPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
+func (patt *ListPattern) DefaultValue(ctx *Context) (Value, error) {
+	if patt.generalElementPattern != nil {
+		//TODO: add elem type
+		return NewWrappedValueList(), nil
+	}
+	return nil, ErrNoDefaultValue
+}
+
 func (patt *ListPattern) ElementPatternAt(i int) (Pattern, bool) {
 	if patt.elementPatterns != nil {
 		if i < 0 || i >= len(patt.elementPatterns) {
@@ -514,6 +526,13 @@ func (patt *TuplePattern) ElementPatternAt(i int) (Pattern, bool) {
 
 func (patt *TuplePattern) StringPattern() (StringPattern, bool) {
 	return nil, false
+}
+
+func (patt *TuplePattern) DefaultValue(ctx *Context) (Value, error) {
+	if patt.generalElementPattern != nil {
+		return NewTuple(nil), nil
+	}
+	return nil, ErrNoDefaultValue
 }
 
 type OptionPattern struct {
