@@ -874,7 +874,7 @@ func (p *RegexPattern) Test(v SymbolicValue) bool {
 }
 
 func (p *RegexPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%%regex-pattern")))
+	utils.Must(w.Write(utils.StringAsBytes("%regex-pattern")))
 }
 
 func (p *RegexPattern) HasUnderylingPattern() bool {
@@ -2726,7 +2726,7 @@ func (p *EventPattern) Test(v SymbolicValue) bool {
 }
 
 func (p *EventPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%%event(")))
+	utils.Must(w.Write(utils.StringAsBytes("%event-pattern(")))
 	p.ValuePattern.PrettyPrint(w, config, depth, 0)
 	utils.PanicIfErr(w.WriteByte(')'))
 }
@@ -2786,7 +2786,7 @@ func (p *MutationPattern) Test(v SymbolicValue) bool {
 }
 
 func (p *MutationPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%%mutation(?, ")))
+	utils.Must(w.Write(utils.StringAsBytes("%mutation(?, ")))
 	p.data0Pattern.PrettyPrint(w, config, depth, 0)
 	utils.PanicIfErr(w.WriteByte(')'))
 }
