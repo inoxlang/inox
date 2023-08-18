@@ -295,7 +295,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 	case *parse.NamedSegmentPathPatternLiteral:
 		return &NamedSegmentPathPattern{node: n}, nil
 	case *parse.RegularExpressionLiteral:
-		return &RegexPattern{}, nil
+		return NewRegexPattern(n.Value), nil
 	case *parse.PathSlice, *parse.PathPatternSlice:
 		return ANY_STR, nil
 	case *parse.URLQueryParameterValueSlice:

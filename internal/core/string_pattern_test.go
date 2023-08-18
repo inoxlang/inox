@@ -2,7 +2,6 @@ package core
 
 import (
 	"math"
-	"regexp/syntax"
 	"strconv"
 	"testing"
 
@@ -873,26 +872,5 @@ func TestRegexPattern(t *testing.T) {
 			})
 		}
 	})
-
-}
-
-func TestTurnCapturingGroupsIntoNonCapturing(t *testing.T) {
-	turn := func(s string) string {
-		regex := utils.Must(syntax.Parse(s, syntax.Perl))
-		return turnCapturingGroupsIntoNonCapturing(regex).String()
-	}
-
-	assert.Equal(t, "(?:)", turn("()"))
-	assert.Equal(t, "(?:)", turn("(?:)"))
-	assert.Equal(t, "a", turn("(?:a)"))
-	assert.Equal(t, "a", turn("(a)"))
-	assert.Equal(t, "\\Aa(?-m:$)", turn("^a$")) //equivalent, fix ?
-	assert.Equal(t, "\\(\\)", turn("\\(\\)"))
-	//assert.Equal(t, "", turn("\\\\(\\\\)"))
-	assert.Equal(t, "[\\(-\\)]", turn("[()]"))
-
-	assert.Equal(t, "[a-z]", turn("([a-z])"))
-	assert.Equal(t, "(?:[a-z]0*)?c", turn("([a-z]0*)?c"))
-	assert.Equal(t, "(?:[a-z]0*(?:ab)+)?c", turn("([a-z]0*(?:ab)+)?c"))
 
 }

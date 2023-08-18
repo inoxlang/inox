@@ -5,6 +5,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"regexp"
+	"regexp/syntax"
 	"sort"
 	"strconv"
 
@@ -13,6 +15,8 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/exp/maps"
 )
+
+const REGEX_SYNTAX = syntax.Perl
 
 var (
 	_ = []Pattern{
@@ -72,6 +76,8 @@ var (
 		absoluteness:  RelativePath,
 		dirConstraint: NonDirPath,
 	}
+
+	ANY_REGEX_PATTERN = &RegexPattern{}
 
 	ErrPatternNotCallable                        = errors.New("pattern is not callable")
 	ErrValueAlreadyInitialized                   = errors.New("value already initialized")
@@ -864,16 +870,36 @@ func (p *ExactValuePattern) WidestOfType() SymbolicValue {
 
 // A RegexPattern represents a symbolic RegexPattern.
 type RegexPattern struct {
+	regex  *regexp.Regexp //if nil any regex pattern is matched
+	syntax *syntax.Regexp
 	SerializableMixin
 	NotCallablePatternMixin
 }
 
+func NewRegexPattern(s string) *RegexPattern {
+	regexp := regexp.MustCompile(s) //compiles with syntax.Perl flag
+	syntaxRegexp := utils.Must(syntax.Parse(s, REGEX_SYNTAX))
+	syntaxRegexp = utils.TurnCapturingGroupsIntoNonCapturing(syntaxRegexp)
+
+	return &RegexPattern{
+		regex:  regexp,
+		syntax: syntaxRegexp,
+	}
+}
+
 func (p *RegexPattern) Test(v SymbolicValue) bool {
-	_, ok := v.(*RegexPattern)
-	return ok
+	otherPatt, ok := v.(*RegexPattern)
+	if !ok {
+		return false
+	}
+	return p.regex == nil || (otherPatt.regex != nil && p.syntax.Equal(otherPatt.syntax))
 }
 
 func (p *RegexPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	if p.regex != nil {
+		utils.Must(w.Write(utils.StringAsBytes("%`" + p.regex.String() + "`")))
+		return
+	}
 	utils.Must(w.Write(utils.StringAsBytes("%regex-pattern")))
 }
 
@@ -882,8 +908,16 @@ func (p *RegexPattern) HasUnderylingPattern() bool {
 }
 
 func (p *RegexPattern) TestValue(v SymbolicValue) bool {
-	_, ok := v.(StringLike)
-	return ok
+	s, ok := v.(StringLike)
+	if !ok {
+		return false
+	}
+	if p.regex == nil {
+		return true
+	}
+
+	str := s.GetOrBuildString()
+	return str.hasValue && p.regex.MatchString(str.value)
 }
 
 func (p *RegexPattern) HasRegex() bool {
@@ -891,7 +925,7 @@ func (p *RegexPattern) HasRegex() bool {
 }
 
 func (p *RegexPattern) SymbolicValue() SymbolicValue {
-	return ANY_STR
+	return NewStringMatchingPattern(p)
 }
 
 func (p *RegexPattern) StringPattern() (StringPattern, bool) {
@@ -903,11 +937,11 @@ func (p *RegexPattern) IteratorElementKey() SymbolicValue {
 }
 
 func (p *RegexPattern) IteratorElementValue() SymbolicValue {
-	return &String{}
+	return ANY_STR
 }
 
 func (p *RegexPattern) WidestOfType() SymbolicValue {
-	return &RegexPattern{}
+	return ANY_REGEX_PATTERN
 }
 
 // An ObjectPattern represents a symbolic ObjectPattern.

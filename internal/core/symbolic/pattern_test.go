@@ -251,14 +251,43 @@ func TestSymbolicRegexPattern(t *testing.T) {
 		assert.True(t, pattern.Test(&RegexPattern{}))
 		assert.False(t, pattern.Test(ANY_INT))
 		assert.False(t, pattern.Test(ANY_PATTERN))
+
+		patternWithRegex := NewRegexPattern("(a|b)")
+		assert.True(t, patternWithRegex.Test(patternWithRegex))
+		assert.True(t, patternWithRegex.Test(NewRegexPattern("(a|b)")))
+		assert.True(t, patternWithRegex.Test(NewRegexPattern("[ab]")))
+		assert.False(t, patternWithRegex.Test(&RegexPattern{}))
+		assert.False(t, patternWithRegex.Test(ANY_INT))
+		assert.False(t, patternWithRegex.Test(ANY_PATTERN))
 	})
 
-	t.Run("TestValue() should return true for any string", func(t *testing.T) {
+	t.Run("TestValue() & SymbolicValue()", func(t *testing.T) {
 		pattern := &RegexPattern{}
 
 		assert.True(t, pattern.TestValue(ANY_STR))
 		assert.False(t, pattern.TestValue(ANY_INT))
 		assert.False(t, pattern.TestValue(&RegexPattern{}))
+
+		patternWithRegex := NewRegexPattern("(a|b)")
+		val := patternWithRegex.SymbolicValue()
+
+		assert.True(t, patternWithRegex.TestValue(NewString("a")))
+		assert.True(t, val.Test(NewString("a")))
+
+		assert.True(t, patternWithRegex.TestValue(NewString("b")))
+		assert.True(t, val.Test(NewString("b")))
+
+		assert.False(t, patternWithRegex.TestValue(NewString("c")))
+		assert.False(t, val.Test(NewString("c")))
+
+		assert.False(t, patternWithRegex.TestValue(&RegexPattern{}))
+		assert.False(t, val.Test(&RegexPattern{}))
+
+		assert.False(t, patternWithRegex.TestValue(ANY_INT))
+		assert.False(t, val.Test(ANY_INT))
+
+		assert.False(t, patternWithRegex.TestValue(ANY_PATTERN))
+		assert.False(t, val.Test(ANY_PATTERN))
 	})
 
 }
@@ -1290,7 +1319,7 @@ func TestSymbolicAnyStringPatternElement(t *testing.T) {
 		assert.False(t, pattern.Test(ANY_STR))
 	})
 
-	t.Run("TestValue() should return true for any symbolic Host", func(t *testing.T) {
+	t.Run("TestValue()", func(t *testing.T) {
 		pattern := &AnyStringPattern{}
 
 		assert.True(t, pattern.TestValue(ANY_STR))
@@ -1324,7 +1353,7 @@ func TestTypePattern(t *testing.T) {
 
 	})
 
-	t.Run("TestValue() should return true for any symbolic Host", func(t *testing.T) {
+	t.Run("TestValue()", func(t *testing.T) {
 		_any := &TypePattern{val: ANY}
 		specific := &TypePattern{val: ANY_STR}
 

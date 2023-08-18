@@ -12,11 +12,10 @@ import (
 	"unicode/utf8"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
-
-const REGEX_SYNTAX = syntax.Perl
 
 var (
 	ErrStrGroupMatchingOnlySupportedForPatternWithRegex = errors.New("group matching is only supported by string patterns with a regex for now")
@@ -195,8 +194,8 @@ func NewSequenceStringPattern(node parse.Node, subpatterns []StringPattern, grou
 			if repeatedElement, ok := subpatt.(*RepeatedPatternElement); ok {
 				subpatternRegexBuff.WriteRune('(')
 
-				elementRegex := utils.Must(syntax.Parse(repeatedElement.element.Regex(), REGEX_SYNTAX))
-				elementRegex = turnCapturingGroupsIntoNonCapturing(elementRegex)
+				elementRegex := utils.Must(syntax.Parse(repeatedElement.element.Regex(), symbolic.REGEX_SYNTAX))
+				elementRegex = utils.TurnCapturingGroupsIntoNonCapturing(elementRegex)
 
 				subpatternRegexBuff.WriteString("(?:")
 				subpatternRegexBuff.WriteString(elementRegex.String())
@@ -218,8 +217,8 @@ func NewSequenceStringPattern(node parse.Node, subpatterns []StringPattern, grou
 
 				repeatedElement.regexp = regexp.MustCompile(subpatternRegexBuff.String())
 			} else {
-				subpattRegex := utils.Must(syntax.Parse(subpatt.Regex(), REGEX_SYNTAX))
-				subpattRegex = turnCapturingGroupsIntoNonCapturing(subpattRegex)
+				subpattRegex := utils.Must(syntax.Parse(subpatt.Regex(), symbolic.REGEX_SYNTAX))
+				subpattRegex = utils.TurnCapturingGroupsIntoNonCapturing(subpattRegex)
 
 				subpatternRegexBuff.WriteRune('(')
 				subpatternRegexBuff.WriteString(subpattRegex.String())
@@ -1219,8 +1218,8 @@ type RegexPattern struct {
 // NewRegexPattern creates a RegexPattern from the given string, the unicode flag is enabled.
 func NewRegexPattern(s string) *RegexPattern {
 	regexp := regexp.MustCompile(s) //compiles with syntax.Perl flag
-	syntaxRegexp := utils.Must(syntax.Parse(s, REGEX_SYNTAX))
-	syntaxRegexp = turnCapturingGroupsIntoNonCapturing(syntaxRegexp)
+	syntaxRegexp := utils.Must(syntax.Parse(s, symbolic.REGEX_SYNTAX))
+	syntaxRegexp = utils.TurnCapturingGroupsIntoNonCapturing(syntaxRegexp)
 
 	return &RegexPattern{
 		regexp:      regexp,
@@ -1599,54 +1598,6 @@ func checkMatchedStringLen(s StringLike, patt StringPattern) bool {
 	//slow check
 	runeCount := int64(s.RuneCount())
 	return runeCount >= lenRange.Start && runeCount <= lenRange.InclusiveEnd()
-}
-
-func turnCapturingGroupsIntoNonCapturing(regex *syntax.Regexp) *syntax.Regexp {
-	newRegex := new(syntax.Regexp)
-
-	if regex.Op != syntax.OpCapture {
-		newRegex.Op = regex.Op
-		newRegex.Flags = regex.Flags
-	}
-
-	switch regex.Op {
-	case syntax.OpConcat:
-		newRegex.Sub = make([]*syntax.Regexp, len(regex.Sub))
-		for i, sub := range regex.Sub {
-			newRegex.Sub[i] = turnCapturingGroupsIntoNonCapturing(sub)
-		}
-
-	case syntax.OpLiteral:
-		newRegex.Rune = regex.Rune
-
-	case syntax.OpCharClass:
-		newRegex.Rune = regex.Rune
-
-	case syntax.OpQuest, syntax.OpPlus, syntax.OpStar:
-		newRegex.Sub = []*syntax.Regexp{turnCapturingGroupsIntoNonCapturing(regex.Sub[0])}
-
-	case syntax.OpRepeat:
-		newRegex.Min = regex.Min
-		newRegex.Max = regex.Max
-		newRegex.Sub = []*syntax.Regexp{turnCapturingGroupsIntoNonCapturing(regex.Sub[0])}
-
-	case syntax.OpCapture:
-		return turnCapturingGroupsIntoNonCapturing(regex.Sub[0])
-
-	case syntax.OpAlternate:
-		newRegex.Sub = make([]*syntax.Regexp, len(regex.Sub))
-		for i, sub := range regex.Sub {
-			newRegex.Sub[i] = turnCapturingGroupsIntoNonCapturing(sub)
-		}
-
-	case syntax.OpAnyChar, syntax.OpAnyCharNotNL, syntax.OpEmptyMatch, syntax.OpNoWordBoundary, syntax.OpWordBoundary:
-	case syntax.OpEndText, syntax.OpBeginText:
-
-	default:
-		panic(fmt.Errorf("unknown syntax operator %s", regex.Op.String()))
-	}
-
-	return newRegex
 }
 
 func FindMatchesForStringPattern(ctx *Context, patt StringPattern, val Serializable, config MatchesFindConfig) (matches []Serializable, err error) {

@@ -6180,7 +6180,7 @@ func TestSymbolicEval(t *testing.T) {
 		res, err := symbolicEval(n, state)
 		assert.NoError(t, err)
 		assert.Empty(t, state.errors())
-		assert.Equal(t, &RegexPattern{}, res)
+		assert.Equal(t, NewRegexPattern("a"), res)
 	})
 
 	t.Run("object pattern literal", func(t *testing.T) {

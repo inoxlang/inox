@@ -926,7 +926,8 @@ func (patt *RegexPattern) Equal(ctx *Context, other Value, alreadyCompared map[u
 		return false
 	}
 
-	return patt.regexp.String() == otherPatt.regexp.String()
+	return patt.syntaxRegep.Equal(otherPatt.syntaxRegep)
+	//return patt.regexp.String() == otherPatt.regexp.String()
 }
 
 func (patt *UnionPattern) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {

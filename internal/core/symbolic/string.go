@@ -79,7 +79,10 @@ func (s *String) Test(v SymbolicValue) bool {
 		return false
 	}
 	if s.pattern != nil {
-		return otherString.pattern != nil && otherString.pattern.Test(s.pattern) && s.pattern.Test(otherString.pattern)
+		if otherString.pattern != nil {
+			return otherString.pattern.Test(s.pattern) && s.pattern.Test(otherString.pattern)
+		}
+		return otherString.hasValue && s.pattern.TestValue(otherString)
 	}
 	if !s.hasValue {
 		return true
