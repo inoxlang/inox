@@ -27,7 +27,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 			Globals: map[string]symbolic.ConcreteGlobalValue{
 				"var": {Value: Int(1), IsConstant: false},
 			},
-			Context: symbolic.NewSymbolicContext(nil),
+			Context: symbolic.NewSymbolicContext(nil, nil),
 		})
 
 		assert.NoError(t, err)
@@ -48,7 +48,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 			Globals: map[string]symbolic.ConcreteGlobalValue{
 				"var": {Value: Int(1), IsConstant: false},
 			},
-			Context: symbolic.NewSymbolicContext(nil),
+			Context: symbolic.NewSymbolicContext(nil, nil),
 		})
 
 		assert.NoError(t, err)
@@ -71,7 +71,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 			},
 			Context: symbolic.NewSymbolicContext(NewContext(ContextConfig{
 				Permissions: []Permission{RoutinePermission{Kind_: permkind.Create}},
-			})),
+			}), nil),
 		})
 
 		assert.NoError(t, err)
@@ -94,7 +94,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 			Globals: map[string]symbolic.ConcreteGlobalValue{
 				"global1": {Value: Int(1), IsConstant: true},
 			},
-			Context: symbolic.NewSymbolicContext(NewContext(ContextConfig{})),
+			Context: symbolic.NewSymbolicContext(NewContext(ContextConfig{}), nil),
 		})
 
 		assert.NoError(t, err)

@@ -949,7 +949,7 @@ func (ctx *Context) CancelIfShortLived() {
 }
 
 func (ctx *Context) ToSymbolicValue() (*symbolic.Context, error) {
-	symbolicCtx := symbolic.NewSymbolicContext(ctx)
+	symbolicCtx := symbolic.NewSymbolicContext(ctx, nil)
 
 	for k, v := range ctx.namedPatterns {
 		symbolicVal, err := ToSymbolicValue(ctx, v, false)

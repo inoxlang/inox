@@ -1,6 +1,7 @@
 package symbolic
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -8484,5 +8485,28 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.Equal(t, ANY, res)
 		})
+	})
+
+	t.Run("the evaluation should stop if the context context is done AND there is no remaining no-check fuel", func(t *testing.T) {
+		nodeCount := parse.CountNodes(parse.MustParseChunk("[]"))
+
+		n, state := MakeTestStateAndChunk("[" + strings.Repeat("1,", INITIAL_NO_CHECK_FUEL-nodeCount+1) + "]")
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+
+		state.ctx.startingConcreteContext = testConcreteContext{ctx}
+		_, err := symbolicEval(n, state)
+		assert.ErrorContains(t, err, "stopped symbolic evaluation because context is done")
+	})
+	t.Run("the evaluation should not stop if the context context is done but there is remaining no-check fuel", func(t *testing.T) {
+		nodeCount := parse.CountNodes(parse.MustParseChunk("[]"))
+
+		n, state := MakeTestStateAndChunk("[" + strings.Repeat("1,", INITIAL_NO_CHECK_FUEL-nodeCount) + "]")
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+
+		state.ctx.startingConcreteContext = testConcreteContext{ctx}
+		_, err := symbolicEval(n, state)
+		assert.NoError(t, err)
 	})
 }

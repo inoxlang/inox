@@ -13,7 +13,7 @@ func _makeStateAndChunk(code string, includedFiles map[string]string, globals ..
 		CodeString: code,
 	})
 
-	state := newSymbolicState(NewSymbolicContext(nil), chunk)
+	state := newSymbolicState(NewSymbolicContext(nil, nil), chunk)
 	state.symbolicData = NewSymbolicData()
 	state.setGlobal("int", ANY_INT, GlobalConst)
 

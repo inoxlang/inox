@@ -101,7 +101,7 @@ func TestParseNxxxx(t *testing.T) {
 
 	mustParseChunk := func(t *testing.T, str string) (result *Chunk) {
 		n := MustParseChunk(str)
-		nodeCount := countNodes(n)
+		nodeCount := CountNodes(n)
 
 		if nodeCount < MIN_CONTEXT_CHECK_TEST_NODE_COUNT { //ignore context check test.
 			return n
@@ -128,7 +128,7 @@ func TestParseNxxxx(t *testing.T) {
 
 	parseChunk := func(t *testing.T, str, name string) (result *Chunk, e error) {
 		n, err := ParseChunk(str, name)
-		nodeCount := countNodes(n)
+		nodeCount := CountNodes(n)
 
 		if nodeCount < MIN_CONTEXT_CHECK_TEST_NODE_COUNT { //ignore context check test.
 			return n, err

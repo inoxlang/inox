@@ -227,6 +227,17 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		}
 	}()
 
+	if state.ctx.noCheckFuel == 0 && state.ctx.startingConcreteContext != nil {
+		select {
+		case <-state.ctx.startingConcreteContext.Done():
+			return nil, fmt.Errorf("stopped symbolic evaluation because context is done: %w", state.ctx.startingConcreteContext.Err())
+		default:
+			state.ctx.noCheckFuel = INITIAL_NO_CHECK_FUEL
+		}
+	} else {
+		state.ctx.noCheckFuel--
+	}
+
 	if options.reEval {
 		//note: re-evaluation should aways be side-effect free, its main purpose
 		//is having better error locations & better completions.
@@ -1540,7 +1551,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		}
 
 		//TODO: use concrete context with permissions of imported module
-		importedModuleContext := NewSymbolicContext(state.ctx.startingConcreteContext)
+		importedModuleContext := NewSymbolicContext(state.ctx.startingConcreteContext, state.ctx)
 		for name, basePattern := range state.basePatterns {
 			importedModuleContext.AddNamedPattern(name, basePattern, false)
 		}
@@ -1683,7 +1694,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		}
 
 		//TODO: check the allow section to know the permissions
-		modCtx := NewSymbolicContext(state.ctx.startingConcreteContext)
+		modCtx := NewSymbolicContext(state.ctx.startingConcreteContext, state.ctx)
 		modState := newSymbolicState(modCtx, &parse.ParsedChunk{
 			Node:   embeddedModule,
 			Source: state.currentChunk().Source,
@@ -4017,7 +4028,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		embeddedModule := v.(*AstNode).Node.(*parse.Chunk)
 
 		//TODO: read the manifest to known the permissions
-		modCtx := NewSymbolicContext(state.ctx.startingConcreteContext)
+		modCtx := NewSymbolicContext(state.ctx.startingConcreteContext, state.ctx)
 		modState := newSymbolicState(modCtx, &parse.ParsedChunk{
 			Node:   embeddedModule,
 			Source: state.currentChunk().Source,
@@ -4051,7 +4062,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		embeddedModule := v.(*AstNode).Node.(*parse.Chunk)
 
 		//TODO: read the manifest to known the permissions
-		modCtx := NewSymbolicContext(state.ctx.startingConcreteContext)
+		modCtx := NewSymbolicContext(state.ctx.startingConcreteContext, state.ctx)
 		modState := newSymbolicState(modCtx, &parse.ParsedChunk{
 			Node:   embeddedModule,
 			Source: state.currentChunk().Source,
@@ -4105,7 +4116,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		embeddedModule := v.(*AstNode).Node.(*parse.Chunk)
 
 		//add patterns of parent state
-		modCtx := NewSymbolicContext(state.ctx.startingConcreteContext) //TODO: read the manifest to known the permissions
+		modCtx := NewSymbolicContext(state.ctx.startingConcreteContext, state.ctx) //TODO: read the manifest to known the permissions
 		state.ctx.ForEachPattern(func(name string, pattern Pattern) {
 			modCtx.AddNamedPattern(name, pattern, state.inPreinit, parse.SourcePositionRange{})
 		})

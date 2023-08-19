@@ -2706,7 +2706,7 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 	}
 }
 
-func countNodes(n Node) (count int) {
+func CountNodes(n Node) (count int) {
 	Walk(n, func(node, parent, scopeNode Node, ancestorChain []Node, after bool) (TraversalAction, error) {
 		count += 1
 		return Continue, nil

@@ -191,7 +191,7 @@ func TestSetPattern(t *testing.T) {
 
 func TestSymbolicSetPattern(t *testing.T) {
 	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-	symbolicCtx := symbolic.NewSymbolicContext(ctx)
+	symbolicCtx := symbolic.NewSymbolicContext(ctx, nil)
 
 	t.Run("valid", func(t *testing.T) {
 		intPattern := utils.Must(core.INT_PATTERN.ToSymbolicValue(ctx, map[uintptr]symbolic.SymbolicValue{}))

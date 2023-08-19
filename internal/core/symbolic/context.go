@@ -8,10 +8,15 @@ import (
 	"github.com/inoxlang/inox/internal/permkind"
 )
 
+const INITIAL_NO_CHECK_FUEL = 10
+
 type Context struct {
 	forkingParent           *Context
 	associatedState         *State
 	startingConcreteContext ConcreteContext
+
+	parent      *Context
+	noCheckFuel int
 
 	hostAliases                         map[string]SymbolicValue
 	namedPatterns                       map[string]Pattern
@@ -20,9 +25,11 @@ type Context struct {
 	patternNamespacePositionDefinitions map[string]parse.SourcePositionRange
 }
 
-func NewSymbolicContext(startingConcreteContext ConcreteContext) *Context {
+func NewSymbolicContext(startingConcreteContext ConcreteContext, parentContext *Context) *Context {
 	return &Context{
 		startingConcreteContext: startingConcreteContext,
+		parent:                  parentContext,
+		noCheckFuel:             INITIAL_NO_CHECK_FUEL,
 
 		hostAliases:                         make(map[string]SymbolicValue, 0),
 		namedPatterns:                       make(map[string]Pattern, 0),
@@ -176,7 +183,7 @@ func (ctx *Context) currentData() (data ContextData) {
 }
 
 func (ctx *Context) fork() *Context {
-	child := NewSymbolicContext(ctx.startingConcreteContext)
+	child := NewSymbolicContext(ctx.startingConcreteContext, ctx.parent)
 	child.forkingParent = ctx
 	return child
 }

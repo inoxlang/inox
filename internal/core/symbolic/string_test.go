@@ -92,7 +92,7 @@ func TestRuneSlice(t *testing.T) {
 
 	t.Run("insertSequence()", func(t *testing.T) {
 		t.Run("adding no elements", func(t *testing.T) {
-			ctx := NewSymbolicContext(testConcreteContext{context.Background()})
+			ctx := NewSymbolicContext(testConcreteContext{context.Background()}, nil)
 			state := newSymbolicState(ctx, nil)
 
 			slice := NewRuneSlice()
@@ -108,7 +108,7 @@ func TestRuneSlice(t *testing.T) {
 		})
 
 		t.Run("adding rune", func(t *testing.T) {
-			ctx := NewSymbolicContext(testConcreteContext{context.Background()})
+			ctx := NewSymbolicContext(testConcreteContext{context.Background()}, nil)
 			state := newSymbolicState(ctx, nil)
 
 			slice := NewRuneSlice()
@@ -123,7 +123,7 @@ func TestRuneSlice(t *testing.T) {
 		})
 
 		t.Run("adding non-rune value", func(t *testing.T) {
-			ctx := NewSymbolicContext(testConcreteContext{context.Background()})
+			ctx := NewSymbolicContext(testConcreteContext{context.Background()}, nil)
 			state := newSymbolicState(ctx, nil)
 
 			slice := NewRuneSlice()
@@ -145,7 +145,7 @@ func TestRuneSlice(t *testing.T) {
 
 	t.Run("appendSequence()", func(t *testing.T) {
 		t.Run("adding no elements", func(t *testing.T) {
-			ctx := NewSymbolicContext(testConcreteContext{context.Background()})
+			ctx := NewSymbolicContext(testConcreteContext{context.Background()}, nil)
 			state := newSymbolicState(ctx, nil)
 
 			slice := NewRuneSlice()
@@ -161,7 +161,7 @@ func TestRuneSlice(t *testing.T) {
 		})
 
 		t.Run("adding rune", func(t *testing.T) {
-			ctx := NewSymbolicContext(testConcreteContext{context.Background()})
+			ctx := NewSymbolicContext(testConcreteContext{context.Background()}, nil)
 			state := newSymbolicState(ctx, nil)
 
 			slice := NewRuneSlice()
@@ -176,7 +176,7 @@ func TestRuneSlice(t *testing.T) {
 		})
 
 		t.Run("adding non-byte value", func(t *testing.T) {
-			ctx := NewSymbolicContext(testConcreteContext{context.Background()})
+			ctx := NewSymbolicContext(testConcreteContext{context.Background()}, nil)
 			state := newSymbolicState(ctx, nil)
 
 			slice := NewRuneSlice()
