@@ -822,13 +822,12 @@ func (p *ExactValuePattern) IsConcretizable() bool {
 
 func (p *ExactValuePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%exact-value-pattern(\n")))
-	indentCount := parentIndentCount + 1
+	innerIndentCount := parentIndentCount + 2
+	innerIndent := bytes.Repeat(config.Indent, innerIndentCount)
+	parentIndent := innerIndent[:len(innerIndent)-2*len(config.Indent)]
 
-	indent := bytes.Repeat(config.Indent, indentCount)
-	parentIndent := indent[:len(indent)-len(config.Indent)]
-
-	utils.Must(w.Write(indent))
-	p.value.PrettyPrint(w, config, depth+1, indentCount)
+	utils.Must(w.Write(innerIndent))
+	p.value.PrettyPrint(w, config, depth+2, innerIndentCount)
 
 	utils.PanicIfErr(w.WriteByte('\n'))
 	utils.Must(w.Write(parentIndent))
@@ -2121,7 +2120,7 @@ func (p *UnionPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCo
 			utils.Must(w.Write(indent))
 			utils.Must(w.Write(utils.StringAsBytes("| ")))
 		}
-		case_.PrettyPrint(w, config, depth+1, parentIndentCount)
+		case_.PrettyPrint(w, config, depth+1, indentCount)
 	}
 	utils.Must(w.Write(utils.StringAsBytes(")")))
 }
@@ -2221,7 +2220,7 @@ func (p *IntersectionPattern) PrettyPrint(w *bufio.Writer, config *pprint.Pretty
 			utils.Must(w.Write(indent))
 			utils.Must(w.Write(utils.StringAsBytes("& ")))
 		}
-		case_.PrettyPrint(w, config, depth+1, parentIndentCount)
+		case_.PrettyPrint(w, config, depth+1, indentCount)
 	}
 	utils.Must(w.Write(utils.StringAsBytes(")")))
 }
