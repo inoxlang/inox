@@ -2794,6 +2794,38 @@ func TestCheck(t *testing.T) {
 		})
 	})
 
+	t.Run("readonly pattern", func(t *testing.T) {
+
+		t.Run("as type of function parameter", func(t *testing.T) {
+			n, src := parseCode(`fn f(arg readonly int){}`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				Node:     n,
+				Chunk:    src,
+				Patterns: map[string]Pattern{"int": INT_PATTERN},
+			}))
+		})
+
+		t.Run("as type of function pattern parameter", func(t *testing.T) {
+			n, src := parseCode(`%fn(arg readonly int){}`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				Node:     n,
+				Chunk:    src,
+				Patterns: map[string]Pattern{"int": INT_PATTERN},
+			}))
+		})
+
+		t.Run("should be the type of a function parameter", func(t *testing.T) {
+			n, src := parseCode(`%p = readonly {}`)
+
+			expr := parse.FindNode(n, (*parse.ReadonlyPatternExpression)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := combineErrors(
+				makeError(expr, src, MISPLACED_READONLY_PATTERN_EXPRESSION),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+	})
+
 	t.Run("quantity literal", func(t *testing.T) {
 
 		testCases := []struct {

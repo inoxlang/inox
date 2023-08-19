@@ -1226,6 +1226,17 @@ switch_:
 			variables[node.EntryIdent.Name] = localVarInfo{}
 		}
 
+	case *parse.ReadonlyPatternExpression:
+		ok := false
+		switch p := parent.(type) {
+		case *parse.FunctionParameter:
+			ok = p.Type == n
+		default:
+		}
+
+		if !ok {
+			c.addError(node, MISPLACED_READONLY_PATTERN_EXPRESSION)
+		}
 	case *parse.FunctionDeclaration:
 
 		switch parent.(type) {
