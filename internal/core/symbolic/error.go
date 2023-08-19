@@ -21,6 +21,8 @@ const (
 	SPREAD_ELEMENT_SHOULD_BE_A_LIST                                               = "spread element should be a list"
 	SPREAD_ELEMENT_SHOULD_BE_A_TUPLE                                              = "spread element should be a tuple"
 
+	CANNOT_ADD_NEW_PROPERTY_TO_AN_EXACT_OBJECT = "cannot add new property to an exact object"
+
 	MISSING_RETURN_IN_FUNCTION                                                   = "missing return in function"
 	MISSING_UNCONDITIONAL_RETURN_IN_FUNCTION                                     = "missing unconditional return in function"
 	MISSING_RETURN_IN_FUNCTION_PATT                                              = "missing return in function pattern"

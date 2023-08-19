@@ -1312,6 +1312,10 @@ func (obj *Object) SetProp(name string, value SymbolicValue) (IProps, error) {
 
 	//new property
 
+	if obj.exact {
+		return nil, errors.New(CANNOT_ADD_NEW_PROPERTY_TO_AN_EXACT_OBJECT)
+	}
+
 	modified := *obj
 	modified.entries = maps.Clone(obj.entries)
 	modified.entries[name] = value.(Serializable)
