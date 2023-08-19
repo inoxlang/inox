@@ -2370,6 +2370,10 @@ func shallowCheckObjectRecordProperties(
 
 		var isExplicit bool
 
+		if prop.Type != nil {
+			addError(prop.Type, "type annotation of properties is not allowed")
+		}
+
 		switch n := prop.Key.(type) {
 		case *parse.QuotedStringLiteral:
 			k = n.Value
