@@ -373,11 +373,31 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			assert.Equal(t, NewExactObject(map[string]Serializable{}, nil, map[string]Pattern{}), val)
 		})
 
+		t.Run("readonly empty exact", func(t *testing.T) {
+			patt := NewExactObjectPattern(map[string]Pattern{}, nil)
+			patt.readonly = true
+
+			val := patt.SymbolicValue()
+			expected := NewExactObject(map[string]Serializable{}, nil, map[string]Pattern{})
+			expected.readonly = true
+			assert.Equal(t, expected, val)
+		})
+
 		t.Run("empty inexact", func(t *testing.T) {
 			patt := NewInexactObjectPattern(map[string]Pattern{}, nil)
 
 			val := patt.SymbolicValue()
 			assert.Equal(t, NewInexactObject(map[string]Serializable{}, nil, map[string]Pattern{}), val)
+		})
+
+		t.Run("readonly empty inexact", func(t *testing.T) {
+			patt := NewInexactObjectPattern(map[string]Pattern{}, nil)
+			patt.readonly = true
+
+			val := patt.SymbolicValue()
+			expected := NewInexactObject(map[string]Serializable{}, nil, map[string]Pattern{})
+			expected.readonly = true
+			assert.Equal(t, expected, val)
 		})
 
 		cases := []struct {
@@ -513,6 +533,65 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				return
 			}
 			assert.Nil(t, initialValue)
+		})
+	})
+
+	t.Run("ToReadonlyPattern()", func(t *testing.T) {
+
+		t.Run("already readonly", func(t *testing.T) {
+			patt := NewInexactObjectPattern(map[string]Pattern{}, nil)
+			patt.readonly = true
+
+			result, err := patt.ToReadonlyPattern()
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Same(t, patt, result)
+		})
+
+		t.Run("empty", func(t *testing.T) {
+			patt := NewInexactObjectPattern(map[string]Pattern{}, nil)
+
+			result, err := patt.ToReadonlyPattern()
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedReadonly := NewInexactObjectPattern(map[string]Pattern{}, nil)
+			expectedReadonly.readonly = true
+
+			assert.Equal(t, expectedReadonly, result)
+		})
+
+		t.Run("immutable property", func(t *testing.T) {
+			patt := NewInexactObjectPattern(map[string]Pattern{
+				"x": ANY_RECORD_PATTERN,
+			}, nil)
+
+			result, err := patt.ToReadonlyPattern()
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedReadonly := NewInexactObjectPattern(map[string]Pattern{
+				"x": ANY_RECORD_PATTERN,
+			}, nil)
+			expectedReadonly.readonly = true
+
+			assert.Equal(t, expectedReadonly, result)
+		})
+
+		t.Run("an error should be returned if a property pattern is not convertible to readonly", func(t *testing.T) {
+			patt := NewInexactObjectPattern(map[string]Pattern{
+				"x": ANY_LIST_PATTERN,
+			}, nil)
+
+			result, err := patt.ToReadonlyPattern()
+			if !assert.ErrorIs(t, err, ErrNotConvertibleToReadonly) {
+				return
+			}
+
+			assert.Nil(t, result)
 		})
 	})
 }

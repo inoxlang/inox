@@ -2880,7 +2880,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY_INT, res)
 		})
 
-		t.Run("local variable defined outside of a function is not accessible from inside the function", func(t *testing.T) {
+		t.Run("local variable defined outside of a function should not be accessible from inside the function", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				a = ""
 				fn f(){
@@ -3998,6 +3998,57 @@ func TestSymbolicEval(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Empty(t, state.errors())
 		assert.Equal(t, &ExactValuePattern{value: ANY_INT}, res)
+	})
+
+	t.Run("readonly pattern", func(t *testing.T) {
+		t.Run("pattern convertible to readonly", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`%p = readonly {}; return %p`)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+
+			expectedObjectPattern := NewInexactObjectPattern(map[string]Pattern{}, nil)
+			expectedObjectPattern.readonly = true
+
+			assert.Equal(t, expectedObjectPattern, res)
+		})
+
+		t.Run("pattern of immutable value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`%p = readonly #{}; return %p`)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+
+			expectedRecordPattern := NewInexactRecordPattern(map[string]Pattern{}, nil)
+			assert.Equal(t, expectedRecordPattern, res)
+		})
+
+		t.Run("pattern not convertible to readonly", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`%p = readonly {x: not-convertible}; return %p`)
+			state.ctx.AddNamedPattern("not-convertible", ANY_SERIALIZABLE_PATTERN, true)
+
+			pattern := parse.FindNode(n, (*parse.ObjectPatternLiteral)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(pattern, state, FmtPropertyPatternError("x", ErrNotConvertibleToReadonly).Error()),
+			}, state.errors())
+
+			expectedObjectPattern := NewInexactObjectPattern(map[string]Pattern{
+				"x": ANY_SERIALIZABLE_PATTERN,
+			}, nil)
+			assert.Equal(t, expectedObjectPattern, res)
+		})
 	})
 
 	t.Run("pipe statement", func(t *testing.T) {

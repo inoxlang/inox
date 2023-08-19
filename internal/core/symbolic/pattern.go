@@ -38,8 +38,8 @@ var (
 	ANY_URL_PATTERN          = &URLPattern{}
 	ANY_HOST_PATTERN         = &HostPattern{}
 	ANY_STR_PATTERN          = &AnyStringPattern{}
-	ANY_LIST_PATTERN         = &ListPattern{generalElement: ANY_PATTERN}
-	ANY_TUPLE_PATTERN        = &TuplePattern{generalElement: ANY_PATTERN}
+	ANY_LIST_PATTERN         = &ListPattern{generalElement: ANY_SERIALIZABLE_PATTERN}
+	ANY_TUPLE_PATTERN        = &TuplePattern{generalElement: ANY_SERIALIZABLE_PATTERN}
 
 	ANY_OBJECT_PATTERN = &ObjectPattern{}
 	ANY_RECORD_PATTERN = &RecordPattern{}
@@ -948,6 +948,7 @@ type ObjectPattern struct {
 	entries                    map[string]Pattern //if nil any object is matched
 	optionalEntries            map[string]struct{}
 	inexact                    bool
+	readonly                   bool //should not be true if some property patterns are not readonly patterns
 	complexPropertyConstraints []*ComplexPropertyConstraint
 
 	NotCallablePatternMixin
@@ -962,20 +963,20 @@ func NewUnitializedObjectPattern() *ObjectPattern {
 	return &ObjectPattern{}
 }
 
-func NewExactObjectPattern(entries map[string]Pattern, optionalEntries map[string]struct{}) *ObjectPattern {
+func NewObjectPattern(exact bool, entries map[string]Pattern, optionalEntries map[string]struct{}) *ObjectPattern {
 	return &ObjectPattern{
-		inexact:         false,
+		inexact:         !exact,
 		entries:         entries,
 		optionalEntries: optionalEntries,
 	}
 }
 
+func NewExactObjectPattern(entries map[string]Pattern, optionalEntries map[string]struct{}) *ObjectPattern {
+	return NewObjectPattern(true, entries, optionalEntries)
+}
+
 func NewInexactObjectPattern(entries map[string]Pattern, optionalEntries map[string]struct{}) *ObjectPattern {
-	return &ObjectPattern{
-		inexact:         true,
-		entries:         entries,
-		optionalEntries: optionalEntries,
-	}
+	return NewObjectPattern(false, entries, optionalEntries)
 }
 
 func InitializeObjectPattern(patt *ObjectPattern, entries map[string]Pattern, optionalEntries map[string]struct{}, inexact bool) {
@@ -1051,6 +1052,42 @@ func (patt *ObjectPattern) IsConcretizable() bool {
 	return true
 }
 
+func (o *ObjectPattern) IsReadonlyPattern() bool {
+	return o.readonly
+}
+
+func (o *ObjectPattern) ToReadonlyPattern() (PotentiallyReadonlyPattern, error) {
+	if o.entries == nil {
+		return nil, ErrNotConvertibleToReadonly
+	}
+
+	if o.readonly {
+		return o, nil
+	}
+
+	properties := make(map[string]Pattern, len(o.entries))
+
+	for k, v := range o.entries {
+		if !v.SymbolicValue().IsMutable() {
+			properties[k] = v
+			continue
+		}
+		potentiallyReadonlyPattern, ok := v.(PotentiallyReadonlyPattern)
+		if !ok {
+			return nil, FmtPropertyPatternError(k, ErrNotConvertibleToReadonly)
+		}
+		readonly, err := potentiallyReadonlyPattern.ToReadonlyPattern()
+		if err != nil {
+			return nil, FmtPropertyPatternError(k, err)
+		}
+		properties[k] = readonly.(Pattern)
+	}
+
+	obj := NewObjectPattern(!o.inexact, properties, o.optionalEntries)
+	obj.readonly = true
+	return obj, nil
+}
+
 func (patt *ObjectPattern) ForEachEntry(fn func(propName string, propPattern Pattern, isOptional bool) error) error {
 	for propName, propPattern := range patt.entries {
 		_, isOptional := patt.optionalEntries[propName]
@@ -1062,6 +1099,9 @@ func (patt *ObjectPattern) ForEachEntry(fn func(propName string, propPattern Pat
 }
 
 func (p *ObjectPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	if p.readonly {
+		utils.Must(w.Write(utils.StringAsBytes("%readonly ")))
+	}
 	if p.entries != nil {
 		if depth > config.MaxDepth && len(p.entries) > 0 {
 			utils.Must(w.Write(utils.StringAsBytes("%{(...)}")))
@@ -1200,10 +1240,11 @@ func (p *ObjectPattern) SymbolicValue() SymbolicValue {
 		}
 	}
 
-	if p.inexact {
-		return NewInexactObject(entries, p.optionalEntries, static)
+	obj := NewObject(!p.inexact, entries, p.optionalEntries, static)
+	if p.readonly {
+		obj.readonly = true
 	}
-	return NewExactObject(entries, p.optionalEntries, static)
+	return obj
 }
 
 func (p *ObjectPattern) MigrationInitialValue() (Serializable, bool) {
@@ -2347,7 +2388,8 @@ func symbolicallyEvalPatternNode(n parse.Node, state *State) (Pattern, error) {
 		*parse.AbsolutePathPatternLiteral, *parse.RelativePathPatternLiteral,
 		*parse.NamedSegmentPathPatternLiteral,
 		*parse.URLPatternLiteral, *parse.HostPatternLiteral,
-		*parse.PathPatternExpression:
+		*parse.PathPatternExpression,
+		*parse.ReadonlyPatternExpression:
 		pattern, err := symbolicEval(node, state)
 		if err != nil {
 			return nil, err

@@ -1074,6 +1074,7 @@ type Object struct {
 	complexPropertyConstraints []*ComplexPropertyConstraint
 	shared                     bool
 	exact                      bool
+	readonly                   bool
 
 	SerializableMixin
 	UrlHolderMixin
@@ -1087,23 +1088,22 @@ func NewEmptyObject() *Object {
 	return &Object{entries: map[string]Serializable{}}
 }
 
-func NewInexactObject(entries map[string]Serializable, optionalEntries map[string]struct{}, static map[string]Pattern) *Object {
+func NewObject(exact bool, entries map[string]Serializable, optionalEntries map[string]struct{}, static map[string]Pattern) *Object {
 	obj := &Object{
 		entries:         entries,
 		optionalEntries: optionalEntries,
 		static:          static,
+		exact:           exact,
 	}
 	return obj
 }
 
+func NewInexactObject(entries map[string]Serializable, optionalEntries map[string]struct{}, static map[string]Pattern) *Object {
+	return NewObject(false, entries, optionalEntries, static)
+}
+
 func NewExactObject(entries map[string]Serializable, optionalEntries map[string]struct{}, static map[string]Pattern) *Object {
-	obj := &Object{
-		entries:         entries,
-		optionalEntries: optionalEntries,
-		static:          static,
-		exact:           true,
-	}
-	return obj
+	return NewObject(true, entries, optionalEntries, static)
 }
 
 func NewUnitializedObject() *Object {
@@ -1220,6 +1220,42 @@ func (o *Object) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreateObject(concreteProperties)
 }
 
+func (o *Object) IsReadonly() bool {
+	return o.readonly
+}
+
+func (o *Object) ToReadonly() (PotentiallyReadonly, error) {
+	if o.entries == nil {
+		return nil, ErrNotConvertibleToReadonly
+	}
+
+	if o.readonly {
+		return o, nil
+	}
+
+	properties := make(map[string]Serializable, len(o.entries))
+
+	for k, v := range o.entries {
+		if !v.IsMutable() {
+			properties[k] = v
+			continue
+		}
+		potentiallyReadonly, ok := v.(PotentiallyReadonly)
+		if !ok {
+			return nil, FmtPropertyError(k, ErrNotConvertibleToReadonly)
+		}
+		readonly, err := potentiallyReadonly.ToReadonly()
+		if err != nil {
+			return nil, FmtPropertyError(k, err)
+		}
+		properties[k] = readonly.(Serializable)
+	}
+
+	obj := NewObject(o.exact, properties, o.optionalEntries, o.static)
+	obj.readonly = true
+	return obj, nil
+}
+
 func (obj *Object) IsSharable() (bool, string) {
 	if obj.shared {
 		return true, ""
@@ -1288,6 +1324,10 @@ func (obj *Object) ValueEntryMap() map[string]SymbolicValue {
 }
 
 func (obj *Object) SetProp(name string, value SymbolicValue) (IProps, error) {
+	if obj.readonly {
+		return nil, ErrReadonlyValueCannotBeMutated
+	}
+
 	if obj.entries == nil {
 		return ANY_OBJ, nil
 	}
@@ -1323,6 +1363,13 @@ func (obj *Object) SetProp(name string, value SymbolicValue) (IProps, error) {
 }
 
 func (obj *Object) WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error) {
+	if obj.readonly {
+		return nil, ErrReadonlyValueCannotBeMutated
+	}
+	if obj.exact {
+		return nil, errors.New(CANNOT_ADD_NEW_PROPERTY_TO_AN_EXACT_OBJECT)
+	}
+
 	modified := *obj
 	modified.entries = maps.Clone(obj.entries)
 	modified.optionalEntries = maps.Clone(obj.optionalEntries)
@@ -1469,6 +1516,10 @@ func (obj *Object) Static() Pattern {
 }
 
 func (obj *Object) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	if obj.readonly {
+		utils.Must(w.Write(utils.StringAsBytes("%readonly ")))
+	}
+
 	if obj.entries != nil {
 		if depth > config.MaxDepth && len(obj.entries) > 0 {
 			utils.Must(w.Write(utils.StringAsBytes("{(...)}")))

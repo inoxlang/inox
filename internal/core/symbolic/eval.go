@@ -3222,6 +3222,27 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
 		}
 		return nil, err
+	case *parse.ReadonlyPatternExpression:
+		pattern, err := symbolicallyEvalPatternNode(n.Pattern, state)
+		if err != nil {
+			return nil, err
+		}
+
+		if !pattern.SymbolicValue().IsMutable() {
+			return pattern, nil
+		}
+
+		potentiallyReadonlyPattern, ok := pattern.(PotentiallyReadonlyPattern)
+		if !ok {
+			state.addError(makeSymbolicEvalError(n.Pattern, state, PATTERN_IS_NOT_CONVERTIBLE_TO_READONLY_VERSION))
+			return pattern, nil
+		}
+		readonly, err := potentiallyReadonlyPattern.ToReadonlyPattern()
+		if err != nil {
+			state.addError(makeSymbolicEvalError(n.Pattern, state, err.Error()))
+			return pattern, nil
+		}
+		return readonly, nil
 	case *parse.FunctionPatternExpression:
 		//KEEP IN SYNC WITH EVALUATION OF FUNCTION EXPRESSIONS
 

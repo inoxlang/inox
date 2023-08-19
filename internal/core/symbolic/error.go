@@ -71,7 +71,8 @@ const (
 
 	IMPORTED_MOD_PATH_MUST_END_WITH_IX = "imported module's path must end with '.ix'"
 
-	INVALID_MUTATION = "invalid mutation"
+	INVALID_MUTATION                               = "invalid mutation"
+	PATTERN_IS_NOT_CONVERTIBLE_TO_READONLY_VERSION = "pattern is not convertible to a readonly version"
 
 	//permissions
 	POSSIBLE_MISSING_PERM_TO_CREATE_A_COROUTINE = "missing permission to create a coroutine"
@@ -425,4 +426,12 @@ func fmtVal1Val2HaveNoOverlap(val1, val2 SymbolicValue) string {
 
 func fmtStringConcatInvalidElementOfType(v SymbolicValue) string {
 	return fmt.Sprintf("string concatenation: invalid element of type %s", Stringify(v))
+}
+
+func FmtPropertyPatternError(name string, err error) error {
+	return fmt.Errorf("property pattern .%s: %w", name, err)
+}
+
+func FmtPropertyError(name string, err error) error {
+	return fmt.Errorf("property .%s: %w", name, err)
 }

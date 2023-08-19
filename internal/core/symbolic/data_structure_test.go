@@ -142,6 +142,64 @@ func TestSymbolicObject(t *testing.T) {
 		})
 	})
 
+	t.Run("ToReadonly()", func(t *testing.T) {
+
+		t.Run("already readonly", func(t *testing.T) {
+			object := NewInexactObject(map[string]Serializable{}, nil, nil)
+			object.readonly = true
+
+			result, err := object.ToReadonly()
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Same(t, object, result)
+		})
+
+		t.Run("empty", func(t *testing.T) {
+			object := NewInexactObject(map[string]Serializable{}, nil, nil)
+
+			result, err := object.ToReadonly()
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedReadonly := NewInexactObject(map[string]Serializable{}, nil, nil)
+			expectedReadonly.readonly = true
+
+			assert.Equal(t, expectedReadonly, result)
+		})
+
+		t.Run("immutable property", func(t *testing.T) {
+			object := NewInexactObject(map[string]Serializable{
+				"x": ANY_TUPLE,
+			}, nil, nil)
+
+			result, err := object.ToReadonly()
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedReadonly := NewInexactObject(map[string]Serializable{
+				"x": ANY_TUPLE,
+			}, nil, nil)
+			expectedReadonly.readonly = true
+
+			assert.Equal(t, expectedReadonly, result)
+		})
+
+		t.Run("an error should be returned if a property is not convertible to readonly", func(t *testing.T) {
+			object := NewInexactObject(map[string]Serializable{
+				"x": NewListOf(ANY_SERIALIZABLE),
+			}, nil, nil)
+
+			result, err := object.ToReadonly()
+			if !assert.ErrorIs(t, err, ErrNotConvertibleToReadonly) {
+				return
+			}
+
+			assert.Nil(t, result)
+		})
+	})
 }
 
 func TestSymbolicRecord(t *testing.T) {
