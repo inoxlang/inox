@@ -70,7 +70,7 @@ var (
 	ANY_READABLE = &AnyReadable{}
 	ANY_READER   = &Reader{}
 
-	SUPPORTED_PARSING_ERRORS = []parse.ParsingErrorKind{parse.UnterminatedMemberExpr, parse.MissingBlock}
+	SUPPORTED_PARSING_ERRORS = []parse.ParsingErrorKind{parse.UnterminatedMemberExpr, parse.MissingBlock, parse.MissingFnBody}
 )
 
 type ConcreteGlobalValue struct {
@@ -3113,6 +3113,10 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			}
 		}
 
+		if len(capturedLocals) == 0 {
+			capturedLocals = nil
+		}
+
 		if n.IsVariadic {
 			index := n.NonVariadicParamCount()
 			variadicParam := n.VariadicParameter()
@@ -3137,6 +3141,10 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				return nil, err
 			}
 			signatureReturnType = pattern.SymbolicValue()
+		}
+
+		if n.Body == nil {
+			goto return_function
 		}
 
 		if n.IsBodyExpression {
@@ -3178,10 +3186,6 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			}
 		}
 
-		if len(capturedLocals) == 0 {
-			capturedLocals = nil
-		}
-
 		if expectedFunction, ok := findInMultivalue[*InoxFunction](options.expectedValue); ok && expectedFunction.visitCheckNode != nil {
 			visitCheckNode := expectedFunction.visitCheckNode
 
@@ -3207,6 +3211,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			)
 		}
 
+	return_function:
 		return &InoxFunction{
 			node:           n,
 			parameters:     params,

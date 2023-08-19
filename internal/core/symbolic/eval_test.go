@@ -2200,6 +2200,31 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("function declaration", func(t *testing.T) {
 
+		t.Run("missing body", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				fn f()
+				return f
+			`, nil)
+
+			fnExpr := n.Statements[0].(*parse.FunctionDeclaration).Function
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, &InoxFunction{node: fnExpr, result: nil}, res)
+
+			//check definition position data
+			idents, ancestorChains := parse.FindNodesAndChains(n, (*parse.IdentifierLiteral)(nil), nil)
+			definitionIdent := idents[0]
+			returnIdent := idents[1]
+			returnIdentAncestors := ancestorChains[1]
+
+			pos, ok := state.symbolicData.GetVariableDefinitionPosition(returnIdent, returnIdentAncestors)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			assert.Equal(t, definitionIdent.Span, pos.Span)
+		})
+
 		t.Run("empty", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(){
@@ -2449,6 +2474,31 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("function expression", func(t *testing.T) {
+		t.Run("missing body", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				f = fn()
+				return f
+			`, nil)
+
+			fnExpr := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, &InoxFunction{node: fnExpr, result: nil}, res)
+
+			//check definition position data
+			idents, ancestorChains := parse.FindNodesAndChains(n, (*parse.IdentifierLiteral)(nil), nil)
+			definitionIdent := idents[0]
+			returnIdent := idents[1]
+			returnIdentAncestors := ancestorChains[1]
+
+			pos, ok := state.symbolicData.GetVariableDefinitionPosition(returnIdent, returnIdentAncestors)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			assert.Equal(t, definitionIdent.Span, pos.Span)
+		})
+
 		t.Run("patterns should be accessible from the body of a function expression within a function declaration", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				%p = int
