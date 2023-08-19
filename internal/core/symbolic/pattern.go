@@ -1001,7 +1001,7 @@ func (p *ObjectPattern) ToRecordPattern() *RecordPattern {
 func (p *ObjectPattern) Test(v SymbolicValue) bool {
 	other, ok := v.(*ObjectPattern)
 
-	if !ok || len(p.complexPropertyConstraints) > 0 {
+	if !ok || len(p.complexPropertyConstraints) > 0 || p.readonly != other.readonly {
 		return false
 	}
 
@@ -1640,7 +1640,7 @@ func InitializeListPatternGeneralElement(patt *ListPattern, element Pattern) {
 func (p *ListPattern) Test(v SymbolicValue) bool {
 	other, ok := v.(*ListPattern)
 
-	if !ok {
+	if !ok || p.readonly != other.readonly {
 		return false
 	}
 

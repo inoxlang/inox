@@ -340,6 +340,26 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			},
 			{
 				&ObjectPattern{
+					entries:  map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+					readonly: true,
+				},
+				&ObjectPattern{
+					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+				},
+				false,
+			},
+			{
+				&ObjectPattern{
+					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+				},
+				&ObjectPattern{
+					entries:  map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+					readonly: true,
+				},
+				false,
+			},
+			{
+				&ObjectPattern{
 					entries: map[string]Pattern{"a": ANY_PATTERN},
 				},
 				&ObjectPattern{
@@ -840,6 +860,16 @@ func TestSymbolicListPattern(t *testing.T) {
 				true,
 			},
 			{
+				&ListPattern{generalElement: ANY_PATTERN, readonly: true},
+				&ListPattern{generalElement: ANY_PATTERN},
+				false,
+			},
+			{
+				&ListPattern{generalElement: ANY_PATTERN},
+				&ListPattern{generalElement: ANY_PATTERN, readonly: true},
+				false,
+			},
+			{
 				&ListPattern{generalElement: ANY_PATTERN},
 				&ListPattern{generalElement: &TypePattern{val: ANY_INT}},
 				true,
@@ -848,6 +878,16 @@ func TestSymbolicListPattern(t *testing.T) {
 				&ListPattern{generalElement: ANY_PATTERN},
 				&ListPattern{elements: []Pattern{}},
 				true,
+			},
+			{
+				&ListPattern{generalElement: ANY_PATTERN, readonly: true},
+				&ListPattern{elements: []Pattern{}},
+				false,
+			},
+			{
+				&ListPattern{generalElement: ANY_PATTERN},
+				&ListPattern{elements: []Pattern{}, readonly: true},
+				false,
 			},
 			{
 				&ListPattern{elements: []Pattern{}},

@@ -249,7 +249,7 @@ func NewListOf(generalElement Serializable) *List {
 
 func (list *List) Test(v SymbolicValue) bool {
 	otherList, ok := v.(*List)
-	if !ok {
+	if !ok || list.readonly != otherList.readonly {
 		return false
 	}
 
@@ -1193,7 +1193,7 @@ func (obj *Object) Test(v SymbolicValue) bool {
 
 func (obj *Object) test(v SymbolicValue, exact bool) bool {
 	otherObj, ok := v.(*Object)
-	if !ok {
+	if !ok || obj.readonly != otherObj.readonly {
 		return false
 	}
 

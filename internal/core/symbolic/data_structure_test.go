@@ -27,6 +27,12 @@ func TestSymbolicObject(t *testing.T) {
 		//an empty object should match an empty object
 		{&Object{entries: map[string]Serializable{}}, &Object{entries: map[string]Serializable{}}, true},
 
+		//a readonly empty object should not match an empty object
+		{&Object{entries: map[string]Serializable{}, readonly: true}, &Object{entries: map[string]Serializable{}}, false},
+
+		//an empty object should not match a readonly empty object
+		{&Object{entries: map[string]Serializable{}}, &Object{entries: map[string]Serializable{}, readonly: true}, false},
+
 		{
 			&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
@@ -341,6 +347,16 @@ func TestSymbolicList(t *testing.T) {
 			},
 			{
 				&List{elements: nil, generalElement: ANY_SERIALIZABLE},
+				&List{elements: nil, generalElement: ANY_SERIALIZABLE, readonly: true},
+				false,
+			},
+			{
+				&List{elements: nil, generalElement: ANY_SERIALIZABLE, readonly: true},
+				&List{elements: nil, generalElement: ANY_SERIALIZABLE},
+				false,
+			},
+			{
+				&List{elements: nil, generalElement: ANY_SERIALIZABLE},
 				&List{elements: nil, generalElement: ANY_INT},
 				true,
 			},
@@ -358,6 +374,16 @@ func TestSymbolicList(t *testing.T) {
 				&List{elements: nil, generalElement: ANY_INT},
 				&List{elements: []Serializable{ANY_INT}, generalElement: nil},
 				true,
+			},
+			{
+				&List{elements: nil, generalElement: ANY_INT, readonly: true},
+				&List{elements: []Serializable{ANY_INT}, generalElement: nil},
+				false,
+			},
+			{
+				&List{elements: nil, generalElement: ANY_INT},
+				&List{elements: []Serializable{ANY_INT}, generalElement: nil, readonly: true},
+				false,
 			},
 			{
 				&List{elements: nil, generalElement: ANY_INT},
