@@ -29,6 +29,11 @@ func IsReadonlyOrImmutable(v SymbolicValue) bool {
 	return ok && potentiallyReadonly.IsReadonly()
 }
 
+func IsReadonly(v SymbolicValue) bool {
+	potentiallyReadonly, ok := v.(PotentiallyReadonly)
+	return ok && potentiallyReadonly.IsReadonly()
+}
+
 type PotentiallyReadonlyPattern interface {
 	Pattern
 	IsReadonlyPattern() bool

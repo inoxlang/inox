@@ -1003,6 +1003,11 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 					seqElementAtIndex = seq.elementAt(int(intIndex.value)).(Serializable)
 				}
 
+				if IsReadonly(seq) {
+					state.addError(makeSymbolicEvalError(n.Left, state, ErrReadonlyValueCannotBeMutated.Error()))
+					break
+				}
+
 				//evaluate right
 				var deeperMismatch bool
 				{
@@ -1159,6 +1164,11 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				startIntIndex == nil ||
 				!startIntIndex.hasValue ||
 				(startIntIndex.value >= 0 && startIntIndex.value < int64(seq.KnownLen()))) {
+
+				if IsReadonly(seq) {
+					state.addError(makeSymbolicEvalError(n.Left, state, ErrReadonlyValueCannotBeMutated.Error()))
+					break
+				}
 
 				//in order to simplify the validation logic the assignment is considered valid
 				//if and only if the static type of LHS is a sequence of unknown length whose .element() matches the

@@ -5236,6 +5236,23 @@ func TestSymbolicEval(t *testing.T) {
 				}, state.errors())
 			})
 
+			t.Run("readonly LHS", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					fn f(list readonly [int]){
+						list[0] = 2
+					}
+					return f([1])
+				`)
+				assignement := parse.FindNode(n, (*parse.Assignment)(nil), nil)
+
+				_, err := symbolicEval(n, state)
+
+				assert.NoError(t, err)
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(assignement.Left, state, ErrReadonlyValueCannotBeMutated.Error()),
+				}, state.errors())
+			})
+
 			t.Run("non-serializable RHS", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					var list = [serializable]
@@ -5613,6 +5630,22 @@ func TestSymbolicEval(t *testing.T) {
 					makeSymbolicEvalError(assignement.Right, state, msg),
 				}, state.errors())
 				assert.Equal(t, NewList(NewInt(0), NewInt(1)), res)
+			})
+
+			t.Run("readonly LHS", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					fn f(list readonly [0, 1]){
+						list[0:1] = [0]
+					}
+				`)
+				state.setGlobal("int2", ANY_INT, GlobalConst)
+				_, err := symbolicEval(n, state)
+				assignement := parse.FindNode(n, (*parse.Assignment)(nil), nil)
+
+				assert.NoError(t, err)
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(assignement.Left, state, ErrReadonlyValueCannotBeMutated.Error()),
+				}, state.errors())
 			})
 
 			t.Run("non-serializable RHS element", func(t *testing.T) {
