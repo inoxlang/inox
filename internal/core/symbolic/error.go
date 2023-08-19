@@ -157,6 +157,10 @@ func fmtNotAssignableToVarOftype(a SymbolicValue, b Pattern) string {
 	return fmt.Sprintf("a(n) %s is not assignable to a variable of type %s", Stringify(a), Stringify(b.SymbolicValue()))
 }
 
+func fmtVarOfTypeCannotBeNarrowedToAn(variable SymbolicValue, val SymbolicValue) string {
+	return fmt.Sprintf("variable of type %s cannot be narrowed to a(n) %s", Stringify(variable), Stringify(val))
+}
+
 func fmtNotAssignableToPropOfType(a SymbolicValue, b Pattern) string {
 	return fmt.Sprintf("a(n) %s is not assignable to a property of type %s", Stringify(a), Stringify(b.SymbolicValue()))
 }

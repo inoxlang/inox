@@ -311,7 +311,14 @@ func (state *State) get(name string) (varSymbolicInfo, bool) {
 func (state *State) updateLocal(name string, value SymbolicValue, node parse.Node) bool {
 	ok, _ := state.updateLocal2(name, node, func(expected SymbolicValue) (SymbolicValue, bool, error) {
 		return value, false, nil
-	})
+	}, false)
+	return ok
+}
+
+func (state *State) narrowLocal(name string, value SymbolicValue, node parse.Node) bool {
+	ok, _ := state.updateLocal2(name, node, func(expected SymbolicValue) (SymbolicValue, bool, error) {
+		return value, false, nil
+	}, true)
 	return ok
 }
 
@@ -319,6 +326,7 @@ func (state *State) updateLocal2(
 	name string,
 	node parse.Node,
 	getValue func(expected SymbolicValue) (value SymbolicValue, deeperMismatch bool, _ error),
+	narrowing bool,
 ) (bool, error) {
 	state.assertHasLocals()
 	scope := state.scopeStack[len(state.scopeStack)-1]
@@ -331,7 +339,13 @@ func (state *State) updateLocal2(
 
 		if !isNever(value) {
 			if !deeperMismatch && !info.static.TestValue(value) {
-				state.addError(makeSymbolicEvalError(node, state, fmtNotAssignableToVarOftype(value, info.static)))
+				msg := ""
+				if narrowing {
+					msg = fmtVarOfTypeCannotBeNarrowedToAn(info.static.SymbolicValue(), value)
+				} else {
+					msg = fmtNotAssignableToVarOftype(value, info.static)
+				}
+				state.addError(makeSymbolicEvalError(node, state, msg))
 				return false, nil
 			}
 		}
@@ -344,7 +358,14 @@ func (state *State) updateLocal2(
 func (state *State) updateGlobal(name string, value SymbolicValue, node parse.Node) bool {
 	ok, _ := state.updateGlobal2(name, node, func(expected SymbolicValue) (SymbolicValue, bool, error) {
 		return value, false, nil
-	})
+	}, false)
+	return ok
+}
+
+func (state *State) narrowGlobal(name string, value SymbolicValue, node parse.Node) bool {
+	ok, _ := state.updateGlobal2(name, node, func(expected SymbolicValue) (SymbolicValue, bool, error) {
+		return value, false, nil
+	}, true)
 	return ok
 }
 
@@ -352,6 +373,7 @@ func (state *State) updateGlobal2(
 	name string,
 	node parse.Node,
 	getValue func(expected SymbolicValue) (value SymbolicValue, deeperMismatch bool, _ error),
+	narrowing bool,
 ) (bool, error) {
 	scope := state.scopeStack[0]
 	if info, ok := scope.variables[name]; ok {
@@ -363,7 +385,13 @@ func (state *State) updateGlobal2(
 
 		if !isNever(value) {
 			if !deeperMismatch && !info.static.TestValue(value) {
-				state.addError(makeSymbolicEvalError(node, state, fmtNotAssignableToVarOftype(value, info.static)))
+				msg := ""
+				if narrowing {
+					msg = fmtVarOfTypeCannotBeNarrowedToAn(info.static.SymbolicValue(), value)
+				} else {
+					msg = fmtNotAssignableToVarOftype(value, info.static)
+				}
+				state.addError(makeSymbolicEvalError(node, state, msg))
 				return false, nil
 			}
 		}
@@ -372,20 +400,6 @@ func (state *State) updateGlobal2(
 		return true, nil
 	}
 	return false, nil
-}
-
-func (state *State) updateVar(name string, value SymbolicValue, node parse.Node) bool {
-	if state.hasGlobal(name) {
-		return state.updateGlobal(name, value, node)
-	}
-	return state.updateLocal(name, value, node)
-}
-
-func (state *State) deleteLocal(name string) {
-	state.assertHasLocals()
-	scope := state.scopeStack[len(state.scopeStack)-1]
-
-	delete(scope.variables, name)
 }
 
 func (state *State) getStaticOfNode(partialNode parse.Node) (Pattern, bool) {

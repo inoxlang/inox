@@ -650,7 +650,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 						state.updateLocal(name, rhs, node)
 					}
 				} else {
-					if _, err := state.updateLocal2(name, node, getRHS); err != nil {
+					if _, err := state.updateLocal2(name, node, getRHS, false); err != nil {
 						return nil, err
 					}
 				}
@@ -681,7 +681,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 						state.updateLocal(name, rhs, node)
 					}
 				} else {
-					if _, err := state.updateLocal2(name, node, getRHS); err != nil {
+					if _, err := state.updateLocal2(name, node, getRHS, false); err != nil {
 						return nil, err
 					}
 				}
@@ -700,7 +700,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 						state.updateGlobal(name, rhs, node)
 					}
 				} else {
-					if _, err := state.updateGlobal2(name, node, getRHS); err != nil {
+					if _, err := state.updateGlobal2(name, node, getRHS, false); err != nil {
 						return nil, err
 					}
 				}
@@ -735,7 +735,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 						state.updateGlobal(name, rhs, node)
 					}
 				} else {
-					if _, err := state.updateGlobal2(name, node, getRHS); err != nil {
+					if _, err := state.updateGlobal2(name, node, getRHS, false); err != nil {
 						return nil, err
 					}
 				}
@@ -4448,38 +4448,38 @@ switch_:
 	case *parse.Variable:
 		switch action {
 		case setExactValue:
-			state.updateLocal(node.Name, value, path)
+			state.narrowLocal(node.Name, value, path)
 		case removePossibleValue:
 			prev, ok := state.getLocal(node.Name)
 			if ok {
-				state.updateLocal(node.Name, narrowOut(value, prev.value), path)
+				state.narrowLocal(node.Name, narrowOut(value, prev.value), path)
 			}
 		}
 	case *parse.GlobalVariable:
 		switch action {
 		case setExactValue:
-			state.updateGlobal(node.Name, value, path)
+			state.narrowGlobal(node.Name, value, path)
 		case removePossibleValue:
 			prev, ok := state.getGlobal(node.Name)
 			if ok {
-				state.updateGlobal(node.Name, narrowOut(value, prev.value), path)
+				state.narrowGlobal(node.Name, narrowOut(value, prev.value), path)
 			}
 		}
 	case *parse.IdentifierLiteral:
 		switch action {
 		case setExactValue:
 			if state.hasLocal(node.Name) {
-				state.updateLocal(node.Name, value, path)
+				state.narrowLocal(node.Name, value, path)
 			} else if state.hasGlobal(node.Name) {
-				state.updateGlobal(node.Name, value, path)
+				state.narrowGlobal(node.Name, value, path)
 			}
 		case removePossibleValue:
 			if state.hasLocal(node.Name) {
 				prev, _ := state.getLocal(node.Name)
-				state.updateLocal(node.Name, narrowOut(value, prev.value), path)
+				state.narrowLocal(node.Name, narrowOut(value, prev.value), path)
 			} else if state.hasGlobal(node.Name) {
 				prev, _ := state.getGlobal(node.Name)
-				state.updateGlobal(node.Name, narrowOut(value, prev.value), path)
+				state.narrowGlobal(node.Name, narrowOut(value, prev.value), path)
 			}
 		}
 	case *parse.IdentifierMemberExpression:
