@@ -131,7 +131,7 @@ func fmtRightOperandOfBinaryShouldBe(operator parse.BinaryOperator, expectedType
 }
 
 func fmtInvalidBinExprCannnotCheckNonObjectHasKey(v SymbolicValue) string {
-	return fmt.Sprintf("invalid binary expression: cannot check if non-object has a key: %T", v)
+	return fmt.Sprintf("invalid binary expression: cannot check if non-object has a key: %s", Stringify(v))
 }
 
 func fmtValuesOfRecordShouldBeImmutablePropHasMutable(k string) string {
@@ -143,7 +143,7 @@ func fmtEntriesOfRecordPatternShouldMatchOnlyImmutableValues(k string) string {
 }
 
 func fmtIfStmtTestNotBoolBut(test SymbolicValue) string {
-	return fmt.Sprintf("if statement test is not a boolean but a %T", test)
+	return fmt.Sprintf("if statement test is not a boolean but a(n) %s", Stringify(test))
 }
 
 func fmtIfExprTestNotBoolBut(test SymbolicValue) string {
@@ -255,7 +255,7 @@ func fmtXisNotASequence(v SymbolicValue) string {
 }
 
 func fmtXisNotAMutableSequence(v SymbolicValue) string {
-	return fmt.Sprintf("a(n) %s is not a mutable sequence", v)
+	return fmt.Sprintf("a(n) %s is not a mutable sequence", Stringify(v))
 }
 
 func fmtSequenceExpectedButIs(value SymbolicValue) string {
@@ -390,7 +390,7 @@ func fmtSynchronizedValueShouldBeASharableValueOrImmutableNot(v SymbolicValue) s
 }
 
 func fmtXisNotAGroupMatchingPattern(v SymbolicValue) string {
-	return fmt.Sprintf("a(n) %s is not a group matching pattern", v)
+	return fmt.Sprintf("a(n) %s is not a group matching pattern", Stringify(v))
 }
 
 func fmtSubjectOfLifetimeJobShouldBeObjectPatternNot(v SymbolicValue) string {

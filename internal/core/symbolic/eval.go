@@ -2469,7 +2469,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		}
 
 		if _, ok := test.(*Bool); !ok {
-			state.addError(makeSymbolicEvalError(node, state, fmtIfStmtTestNotBoolBut(test)))
+			state.addError(makeSymbolicEvalError(n.Test, state, fmtIfStmtTestNotBoolBut(test)))
 		}
 
 		if n.Consequent != nil {
@@ -2758,7 +2758,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 					groupPattern, ok := pattern.(GroupPattern)
 
 					if !ok {
-						state.addError(makeSymbolicEvalError(node, state, fmtXisNotAGroupMatchingPattern(pattern)))
+						state.addError(makeSymbolicEvalError(valNode, state, fmtXisNotAGroupMatchingPattern(pattern)))
 					} else {
 						ok, groups := groupPattern.MatchGroups(discriminant)
 						if ok {

@@ -4116,13 +4116,13 @@ func TestSymbolicEval(t *testing.T) {
 				}
 			`)
 
-			ifStmt := n.Statements[0]
+			ifStmt := n.Statements[0].(*parse.IfStatement)
 			idents := parse.FindNodes(ifStmt, &parse.IdentifierLiteral{}, nil)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(ifStmt, state, fmtIfStmtTestNotBoolBut(&Int{hasValue: true, value: 1})),
+				makeSymbolicEvalError(ifStmt.Test, state, fmtIfStmtTestNotBoolBut(ANY_INT)),
 				makeSymbolicEvalError(idents[1], state, fmtVarIsNotDeclared("a")),
 				makeSymbolicEvalError(idents[2], state, fmtVarIsNotDeclared("b")),
 			}, state.errors())
@@ -4134,12 +4134,12 @@ func TestSymbolicEval(t *testing.T) {
 				if int
 			`, nil)
 
-			ifStmt := n.Statements[0]
+			ifStmt := n.Statements[0].(*parse.IfStatement)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(ifStmt, state, fmtIfStmtTestNotBoolBut(ANY_INT)),
+				makeSymbolicEvalError(ifStmt.Test, state, fmtIfStmtTestNotBoolBut(ANY_INT)),
 			}, state.errors())
 			assert.Nil(t, res)
 		})
@@ -4151,12 +4151,12 @@ func TestSymbolicEval(t *testing.T) {
 				} else
 			`, nil)
 
-			ifStmt := n.Statements[0]
+			ifStmt := n.Statements[0].(*parse.IfStatement)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(ifStmt, state, fmtIfStmtTestNotBoolBut(ANY_INT)),
+				makeSymbolicEvalError(ifStmt.Test, state, fmtIfStmtTestNotBoolBut(ANY_INT)),
 			}, state.errors())
 			assert.Nil(t, res)
 		})
