@@ -797,6 +797,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			hasPrevValue := utils.SliceContains(iprops.PropertyNames(), propName)
 
 			if hasPrevValue {
+				prevValue := iprops.Prop(propName)
+				state.symbolicData.SetMostSpecificNodeValue(lhs.PropertyName, prevValue)
+
 				if _, ok := iprops.(Serializable); ok {
 					if _, ok := rhs.(Serializable); !ok {
 						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
@@ -809,8 +812,6 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_MUTABLE_NON_WATCHABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_WATCHABLE))
 					}
 				}
-
-				prevValue := iprops.Prop(propName)
 
 				if n.Operator.Int() {
 					if _, ok := prevValue.(*Int); !ok {
@@ -888,7 +889,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				}
 			}
 
-			lastPropName := lhs.PropertyNames[len(lhs.PropertyNames)-1].Name
+			lastPropNameNode := lhs.PropertyNames[len(lhs.PropertyNames)-1]
+			lastPropName := lastPropNameNode.Name
 			hasPrevValue := utils.SliceContains(iprops.PropertyNames(), lastPropName)
 
 			var expectedValue SymbolicValue
@@ -911,7 +913,11 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			}
 
 			if hasPrevValue {
+				prevValue := iprops.Prop(lastPropName)
+				state.symbolicData.SetMostSpecificNodeValue(lastPropNameNode, prevValue)
+
 				if _, ok := iprops.(Serializable); ok {
+
 					if _, ok := rhs.(Serializable); !ok {
 						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
 						return nil, nil
@@ -923,8 +929,6 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_MUTABLE_NON_WATCHABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_WATCHABLE))
 					}
 				}
-
-				prevValue := iprops.Prop(lastPropName)
 
 				if _, ok := prevValue.(*Int); !ok && n.Operator.Int() {
 					state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
