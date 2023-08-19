@@ -10,6 +10,7 @@ const (
 	UnspecifiedParsingError ParsingErrorKind = iota
 	UnterminatedMemberExpr
 	MissingBlock
+	MissingFnBody
 	InvalidNext
 	//TODO: add more kinds
 )

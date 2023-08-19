@@ -8625,6 +8625,7 @@ func (p *parser) parseFunction(start int32) Node {
 		}
 
 		if p.i >= p.len || p.s[p.i] == '\n' {
+			error.kind = MissingFnBody
 			parsingErr = error
 			end = p.i
 		} else {
@@ -8634,6 +8635,7 @@ func (p *parser) parseFunction(start int32) Node {
 				end = body.Base().Span.End
 			case '=':
 				if p.i >= p.len+1 || p.s[p.i+1] != '>' {
+					error.kind = MissingFnBody
 					parsingErr = error
 					end = p.i
 				} else {
