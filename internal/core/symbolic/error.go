@@ -439,3 +439,7 @@ func FmtPropertyError(name string, err error) error {
 func FmtElementError(index int, err error) error {
 	return fmt.Errorf("element at index %d: %w", index, err)
 }
+
+func FmtGeneralElementError(err error) error {
+	return fmt.Errorf("general element: %w", err)
+}

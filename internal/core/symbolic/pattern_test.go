@@ -1062,6 +1062,17 @@ func TestSymbolicListPattern(t *testing.T) {
 			assert.Equal(t, expectedReadonly, result)
 		})
 
+		t.Run("an error should be returned if the general element pattern is not convertible to readonly", func(t *testing.T) {
+			patt := NewListPatternOf(ANY_PATTERN)
+
+			result, err := patt.ToReadonlyPattern()
+			if !assert.ErrorIs(t, err, ErrNotConvertibleToReadonly) {
+				return
+			}
+
+			assert.Nil(t, result)
+		})
+
 		t.Run("immutable element", func(t *testing.T) {
 			patt := NewListPattern([]Pattern{ANY_RECORD_PATTERN})
 

@@ -1715,7 +1715,22 @@ func (p *ListPattern) ToReadonlyPattern() (PotentiallyReadonlyPattern, error) {
 	}
 
 	if p.generalElement != nil {
-		readonly := NewListPatternOf(p.generalElement)
+		var readonlyGeneralElementPattern Pattern
+		if !p.generalElement.SymbolicValue().IsMutable() {
+			readonlyGeneralElementPattern = p.generalElement
+		} else {
+			potentiallyReadonly, ok := p.generalElement.(PotentiallyReadonlyPattern)
+			if !ok {
+				return nil, FmtGeneralElementError(ErrNotConvertibleToReadonly)
+			}
+			readonly, err := potentiallyReadonly.ToReadonlyPattern()
+			if err != nil {
+				return nil, FmtGeneralElementError(err)
+			}
+			readonlyGeneralElementPattern = readonly
+		}
+
+		readonly := NewListPatternOf(readonlyGeneralElementPattern)
 		readonly.readonly = true
 		return readonly, nil
 	}
