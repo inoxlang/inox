@@ -583,7 +583,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 
 		t.Run("an error should be returned if a property pattern is not convertible to readonly", func(t *testing.T) {
 			patt := NewInexactObjectPattern(map[string]Pattern{
-				"x": ANY_LIST_PATTERN,
+				"x": ANY_SERIALIZABLE_PATTERN,
 			}, nil)
 
 			result, err := patt.ToReadonlyPattern()
@@ -869,6 +869,16 @@ func TestSymbolicListPattern(t *testing.T) {
 	})
 
 	t.Run("TestValue() & SymbolicValue()", func(t *testing.T) {
+		t.Run("readonly", func(t *testing.T) {
+			patt := NewListPatternOf(ANY_SERIALIZABLE_PATTERN)
+			patt.readonly = true
+
+			val := patt.SymbolicValue()
+			expected := NewListOf(ANY_SERIALIZABLE)
+			expected.readonly = true
+			assert.Equal(t, expected, val)
+		})
+
 		cases := []struct {
 			pattern     *ListPattern
 			testedValue SymbolicValue
@@ -1008,6 +1018,73 @@ func TestSymbolicListPattern(t *testing.T) {
 				return
 			}
 			assert.Nil(t, initialValue)
+		})
+	})
+
+	t.Run("ToReadonlyPattern()", func(t *testing.T) {
+
+		t.Run("already readonly", func(t *testing.T) {
+			patt := NewListPattern(nil)
+			patt.readonly = true
+
+			result, err := patt.ToReadonlyPattern()
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Same(t, patt, result)
+		})
+
+		t.Run("empty", func(t *testing.T) {
+			patt := NewListPattern(nil)
+
+			result, err := patt.ToReadonlyPattern()
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedReadonly := NewListPattern(nil)
+			expectedReadonly.readonly = true
+
+			assert.Equal(t, expectedReadonly, result)
+		})
+
+		t.Run("immutable general element", func(t *testing.T) {
+			patt := NewListPatternOf(ANY_RECORD_PATTERN)
+
+			result, err := patt.ToReadonlyPattern()
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedReadonly := NewListPatternOf(ANY_RECORD_PATTERN)
+			expectedReadonly.readonly = true
+
+			assert.Equal(t, expectedReadonly, result)
+		})
+
+		t.Run("immutable element", func(t *testing.T) {
+			patt := NewListPattern([]Pattern{ANY_RECORD_PATTERN})
+
+			result, err := patt.ToReadonlyPattern()
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedReadonly := NewListPattern([]Pattern{ANY_RECORD_PATTERN})
+			expectedReadonly.readonly = true
+
+			assert.Equal(t, expectedReadonly, result)
+		})
+
+		t.Run("an error should be returned if an element pattern is not convertible to readonly", func(t *testing.T) {
+			patt := NewListPattern([]Pattern{ANY_PATTERN})
+
+			result, err := patt.ToReadonlyPattern()
+			if !assert.ErrorIs(t, err, ErrNotConvertibleToReadonly) {
+				return
+			}
+
+			assert.Nil(t, result)
 		})
 	})
 }

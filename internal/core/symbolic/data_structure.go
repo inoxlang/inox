@@ -229,6 +229,7 @@ func (*Array) WidestOfType() SymbolicValue {
 type List struct {
 	elements       []Serializable
 	generalElement Serializable
+	readonly       bool
 
 	SerializableMixin
 	PseudoClonableMixin
@@ -304,6 +305,44 @@ func (list *List) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreateList(concreteElements)
 }
 
+func (list *List) IsReadonly() bool {
+	return list.readonly
+}
+
+func (list *List) ToReadonly() (PotentiallyReadonly, error) {
+	if list.readonly {
+		return list, nil
+	}
+
+	if list.generalElement != nil {
+		readonly := NewListOf(list.generalElement)
+		readonly.readonly = true
+		return readonly, nil
+	}
+
+	elements := make([]Serializable, len(list.elements))
+
+	for i, e := range list.elements {
+		if !e.IsMutable() {
+			elements[i] = e
+			continue
+		}
+		potentiallyReadonly, ok := e.(PotentiallyReadonly)
+		if !ok {
+			return nil, FmtElementError(i, ErrNotConvertibleToReadonly)
+		}
+		readonly, err := potentiallyReadonly.ToReadonly()
+		if err != nil {
+			return nil, FmtElementError(i, err)
+		}
+		elements[i] = readonly.(Serializable)
+	}
+
+	readonly := NewList(elements...)
+	readonly.readonly = true
+	return readonly, nil
+}
+
 func (list *List) Static() Pattern {
 	if list.generalElement != nil {
 		return NewListPatternOf(&TypePattern{val: list.generalElement})
@@ -336,6 +375,10 @@ func (list *List) PropertyNames() []string {
 }
 
 func (list *List) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	if list.readonly {
+		utils.Must(w.Write(utils.StringAsBytes("%readonly ")))
+	}
+
 	if list.elements != nil {
 		length := list.KnownLen()
 
@@ -490,6 +533,9 @@ func (l *List) removePosition(ctx *Context, i *Int) {
 }
 
 func (l *List) insertSequence(ctx *Context, seq Sequence, i *Int) {
+	if l.readonly {
+		ctx.AddSymbolicGoFunctionError(ErrReadonlyValueCannotBeMutated.Error())
+	}
 	if seq.HasKnownLen() && seq.KnownLen() == 0 {
 		return
 	}
@@ -511,6 +557,9 @@ func (l *List) insertSequence(ctx *Context, seq Sequence, i *Int) {
 }
 
 func (l *List) appendSequence(ctx *Context, seq Sequence) {
+	if l.readonly {
+		ctx.AddSymbolicGoFunctionError(ErrReadonlyValueCannotBeMutated.Error())
+	}
 	if seq.HasKnownLen() && seq.KnownLen() == 0 {
 		return
 	}

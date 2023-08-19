@@ -435,3 +435,7 @@ func FmtPropertyPatternError(name string, err error) error {
 func FmtPropertyError(name string, err error) error {
 	return fmt.Errorf("property .%s: %w", name, err)
 }
+
+func FmtElementError(index int, err error) error {
+	return fmt.Errorf("element at index %d: %w", index, err)
+}

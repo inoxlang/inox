@@ -7,11 +7,11 @@ var (
 	ErrNotConvertibleToReadonly     = errors.New("not convertible to readonly")
 
 	_ = []PotentiallyReadonly{
-		(*Object)(nil),
+		(*Object)(nil), (*List)(nil),
 	}
 
 	_ = []PotentiallyReadonlyPattern{
-		(*ObjectPattern)(nil),
+		(*ObjectPattern)(nil), (*ListPattern)(nil),
 	}
 )
 

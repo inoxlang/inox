@@ -1609,6 +1609,7 @@ type ComplexPropertyConstraint struct {
 type ListPattern struct {
 	elements       []Pattern
 	generalElement Pattern
+	readonly       bool
 
 	NotCallablePatternMixin
 	SerializableMixin
@@ -1704,6 +1705,47 @@ func (p *ListPattern) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreateListPattern(nil, concreteElementPatterns)
 }
 
+func (p *ListPattern) IsReadonlyPattern() bool {
+	return p.readonly
+}
+
+func (p *ListPattern) ToReadonlyPattern() (PotentiallyReadonlyPattern, error) {
+	if p.readonly {
+		return p, nil
+	}
+
+	if p.generalElement != nil {
+		readonly := NewListPatternOf(p.generalElement)
+		readonly.readonly = true
+		return readonly, nil
+	}
+
+	var elements []Pattern
+	if len(p.elements) > 0 {
+		elements = make([]Pattern, len(p.elements))
+	}
+
+	for i, e := range p.elements {
+		if !e.SymbolicValue().IsMutable() {
+			elements[i] = e
+			continue
+		}
+		potentiallyReadonly, ok := e.(PotentiallyReadonlyPattern)
+		if !ok {
+			return nil, FmtElementError(i, ErrNotConvertibleToReadonly)
+		}
+		readonly, err := potentiallyReadonly.ToReadonlyPattern()
+		if err != nil {
+			return nil, FmtElementError(i, err)
+		}
+		elements[i] = readonly
+	}
+
+	readonly := NewListPattern(elements)
+	readonly.readonly = true
+	return readonly, nil
+}
+
 func prettyPrintListPattern(
 	w *bufio.Writer, tuplePattern bool,
 	generalElementPattern Pattern, elementPatterns []Pattern,
@@ -1797,6 +1839,9 @@ func prettyPrintListPattern(
 }
 
 func (p *ListPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	if p.readonly {
+		utils.Must(w.Write(utils.StringAsBytes("%readonly ")))
+	}
 	if p.elements != nil {
 		prettyPrintListPattern(w, false, p.generalElement, p.elements, config, depth, parentIndentCount)
 		return
@@ -1844,7 +1889,7 @@ func (p *ListPattern) TestValue(v SymbolicValue) bool {
 }
 
 func (p *ListPattern) SymbolicValue() SymbolicValue {
-	list := &List{}
+	list := &List{readonly: p.readonly}
 
 	if p.elements != nil {
 		list.elements = make([]Serializable, 0)

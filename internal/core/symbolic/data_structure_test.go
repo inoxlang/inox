@@ -189,7 +189,7 @@ func TestSymbolicObject(t *testing.T) {
 
 		t.Run("an error should be returned if a property is not convertible to readonly", func(t *testing.T) {
 			object := NewInexactObject(map[string]Serializable{
-				"x": NewListOf(ANY_SERIALIZABLE),
+				"x": ANY_SERIALIZABLE,
 			}, nil, nil)
 
 			result, err := object.ToReadonly()
@@ -444,6 +444,59 @@ func TestSymbolicList(t *testing.T) {
 			}
 
 			assert.Equal(t, NewListOf(ANY_INT), updatedSelf)
+		})
+	})
+
+	t.Run("ToReadonly()", func(t *testing.T) {
+
+		t.Run("already readonly", func(t *testing.T) {
+			list := NewList()
+			list.readonly = true
+
+			result, err := list.ToReadonly()
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Same(t, list, result)
+		})
+
+		t.Run("empty", func(t *testing.T) {
+			list := NewList()
+
+			result, err := list.ToReadonly()
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedReadonly := NewList()
+			expectedReadonly.readonly = true
+
+			assert.Equal(t, expectedReadonly, result)
+		})
+
+		t.Run("immutable element", func(t *testing.T) {
+			list := NewList(ANY_TUPLE)
+
+			result, err := list.ToReadonly()
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedReadonly := NewList(ANY_TUPLE)
+			expectedReadonly.readonly = true
+
+			assert.Equal(t, expectedReadonly, result)
+		})
+
+		t.Run("an error should be returned if an element is not convertible to readonly", func(t *testing.T) {
+			object := NewList(ANY_SERIALIZABLE)
+
+			result, err := object.ToReadonly()
+			if !assert.ErrorIs(t, err, ErrNotConvertibleToReadonly) {
+				return
+			}
+
+			assert.Nil(t, result)
 		})
 	})
 }
