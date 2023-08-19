@@ -5052,6 +5052,60 @@ func TestSymbolicEval(t *testing.T) {
 						fmtNotAssignableToPropOfExpectedValue(NewInt(1), ANY_STR_LIKE)),
 				}, state.errors())
 			})
+
+			t.Run("1 property: value assignable to type", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					var o {a: int} = {a: 1}; 
+					o.a = 2
+					return o
+				`)
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+
+				if !assert.IsType(t, (*Object)(nil), res) {
+					return
+				}
+
+				obj := res.(*Object)
+				assert.Equal(t, NewInt(2), obj.Prop("a"))
+			})
+
+			t.Run("2 properties: value assignable to type", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					var o {a: {b: int}} = {a: {b: 1}}; 
+					o.a.b = 2
+					return o
+				`)
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+
+				if !assert.IsType(t, (*Object)(nil), res) {
+					return
+				}
+
+				obj := res.(*Object)
+				assert.Equal(t, NewInt(2), obj.Prop("a").(*Object).Prop("b"))
+			})
+
+			t.Run("3 properties: value assignable to type", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					var o {a: {b: {c: int}}} = {a: {b: {c: 1}}}; 
+					o.a.b.c = 2
+					return o
+				`)
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+
+				if !assert.IsType(t, (*Object)(nil), res) {
+					return
+				}
+
+				obj := res.(*Object)
+				assert.Equal(t, NewInt(2), obj.Prop("a").(*Object).Prop("b").(*Object).Prop("c"))
+			})
 		})
 
 		t.Run("index expression LHS with known index & element", func(t *testing.T) {

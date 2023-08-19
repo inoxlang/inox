@@ -4431,6 +4431,9 @@ const (
 )
 
 func narrowPath(path parse.Node, action pathNarrowing, value SymbolicValue, state *State, ignored int) {
+	//TODO: use reEval option in in symbolicEval calls ?
+
+switch_:
 	switch node := path.(type) {
 	case *parse.Variable:
 		switch action {
@@ -4470,26 +4473,63 @@ func narrowPath(path parse.Node, action pathNarrowing, value SymbolicValue, stat
 			}
 		}
 	case *parse.IdentifierMemberExpression:
-		if ignored > 1 || len(node.PropertyNames) > 1 {
+		if ignored > 1 {
 			panic(errors.New("not supported yet"))
 		}
 
 		switch action {
 		case setExactValue:
-			if ignored == 1 {
+			if ignored == 1 && len(node.PropertyNames) == 1 {
 				narrowPath(node.Left, setExactValue, value, state, 0)
+				return
+			}
+
+			left, err := symbolicEval(node.Left, state)
+			if err != nil {
+				panic(err)
+			}
+			propName := node.PropertyNames[0].Name
+			iprops, ok := AsIprops(left).(IProps)
+
+			if !ok || !HasRequiredOrOptionalProperty(iprops, propName) {
+				break
+			}
+
+			movingIprops := iprops
+			ipropsList := []IProps{iprops}
+
+			if len(node.PropertyNames) > 1 {
+				for _, _propName := range node.PropertyNames[:len(node.PropertyNames)-ignored-1] {
+					if !HasRequiredOrOptionalProperty(movingIprops, _propName.Name) {
+						break switch_
+					}
+
+					val := movingIprops.Prop(_propName.Name)
+
+					movingIprops, ok = AsIprops(val).(IProps)
+					if !ok {
+						break switch_
+					}
+					ipropsList = append(ipropsList, movingIprops)
+				}
+				var newValue SymbolicValue = value
+
+				//update iprops from right to left
+				for i := len(ipropsList) - 1; i >= 0; i-- {
+					currentIprops := ipropsList[i]
+					currentPropertyName := node.PropertyNames[i].Name
+					newValue, err = currentIprops.WithExistingPropReplaced(currentPropertyName, newValue)
+
+					if err == ErrUnassignablePropsMixin {
+						break switch_
+					}
+					if err != nil {
+						panic(err)
+					}
+				}
+
+				narrowPath(node.Left, setExactValue, newValue, state, 0)
 			} else {
-				left, err := symbolicEval(node.Left, state)
-				if err != nil {
-					panic(err)
-				}
-				propName := node.PropertyNames[0].Name
-				iprops, ok := AsIprops(left).(IProps)
-
-				if !ok || !HasRequiredOrOptionalProperty(iprops, propName) {
-					break
-				}
-
 				newPropValue, err := iprops.WithExistingPropReplaced(propName, value)
 				if err == nil {
 					narrowPath(node.Left, setExactValue, newPropValue, state, 0)
@@ -4497,7 +4537,11 @@ func narrowPath(path parse.Node, action pathNarrowing, value SymbolicValue, stat
 					panic(err)
 				}
 			}
+
 		case removePossibleValue:
+			if len(node.PropertyNames) > 1 {
+				panic(errors.New("not supported yet"))
+			}
 			if ignored == 1 {
 				narrowPath(node.Left, removePossibleValue, value, state, 0)
 			} else {
