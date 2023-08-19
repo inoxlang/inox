@@ -34,9 +34,6 @@ const (
 	_NO_LOCATION_DATE_LITERAL_PATTERN = NO_LOCATION_DATE_LITERAL_PATTERN + "$"
 	DATE_LITERAL_PATTERN              = NO_LOCATION_DATE_LITERAL_PATTERN + "(-[a-zA-Z_/]+[a-zA-Z_])$"
 	STRICT_EMAIL_ADDRESS_PATTERN      = "(?i)(^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,24}$)"
-
-	CONST_KEYWORD_STR = "const"
-	VAR_KEYWORD_STR   = "var"
 )
 
 var (
@@ -44,6 +41,8 @@ var (
 	PREINIT_KEYWORD_STR          = tokenStrings[PREINIT_KEYWORD]
 	MANIFEST_KEYWORD_STR         = tokenStrings[MANIFEST_KEYWORD]
 	INCLUDABLE_CHUNK_KEYWORD_STR = tokenStrings[INCLUDABLE_CHUNK_KEYWORD]
+	CONST_KEYWORD_STR            = tokenStrings[CONST_KEYWORD]
+	READONLY_KEYWORD_STR         = tokenStrings[READONLY_KEYWORD]
 	SCHEMES                      = []string{"http", "https", "ws", "wss", "ldb", "file", "mem", "s3"}
 
 	//regexes
@@ -6195,6 +6194,10 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 				return p.parseReceptionHandlerExpression(v), false
 			case "sendval":
 				return p.parseSendValueExpression(v), false
+			case "readonly":
+				if p.inPattern {
+					return p.parseReadonlyPatternExpression(v), false
+				}
 			}
 			if isKeyword(name) {
 				return v, false
@@ -7893,6 +7896,29 @@ func (p *parser) parseSendValueExpression(ident *IdentifierLiteral) *SendValueEx
 	}
 }
 
+func (p *parser) parseReadonlyPatternExpression(readonlyIdent *IdentifierLiteral) *ReadonlyPatternExpression {
+	p.panicIfContextDone()
+
+	tokens := []Token{{Type: READONLY_KEYWORD, Span: readonlyIdent.Span}}
+	p.eatSpace()
+
+	prev := p.inPattern
+	p.inPattern = true
+	defer func() {
+		p.inPattern = prev
+	}()
+
+	pattern, _ := p.parseExpression()
+
+	return &ReadonlyPatternExpression{
+		NodeBase: NodeBase{
+			Span:   NodeSpan{readonlyIdent.Span.Start, pattern.Base().Span.End},
+			Tokens: tokens,
+		},
+		Pattern: pattern,
+	}
+}
+
 func (p *parser) parseXMLExpression(namespaceIdent *IdentifierLiteral) *XMLExpression {
 	p.panicIfContextDone()
 
@@ -8740,7 +8766,6 @@ func (p *parser) parseFunctionPattern(start int32, percentPrefixed bool) Node {
 			})
 
 		} else {
-
 			switch varNode := varNode.(type) {
 			case *IdentifierLiteral:
 				p.eatSpace()

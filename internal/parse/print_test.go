@@ -248,6 +248,8 @@ func TestPrint(t *testing.T) {
 		"%fn(a int)",
 		"%fn(a int) int",
 		"%fn(a int) int {}",
+		"%fn(a readonly int) int {}",
+		"%fn(a readonly) int {}",
 		"%p =",
 		"%p = 1",
 		"%p = #{}",
@@ -330,6 +332,8 @@ func TestPrint(t *testing.T) {
 		"fn(){}",
 		"fn(arg){}",
 		"fn(arg %int){}",
+		"fn(arg readonly %int){}",
+		"fn(arg readonly){}",
 		//xml
 		"h<div></div>",
 		"h<div",

@@ -1649,6 +1649,11 @@ type FunctionParameter struct {
 	IsVariadic bool
 }
 
+type ReadonlyPatternExpression struct {
+	NodeBase
+	Pattern Node
+}
+
 type FunctionPatternExpression struct {
 	NodeBase
 	Value                  Node
@@ -2150,7 +2155,7 @@ func NodeIsPattern(node Node) bool {
 		*PatternUnion,
 		*PathPatternExpression, *AbsolutePathPatternLiteral, *RelativePathPatternLiteral,
 		*URLPatternLiteral, *HostPatternLiteral, *OptionalPatternExpression,
-		*OptionPatternLiteral, *FunctionPatternExpression, *NamedSegmentPathPatternLiteral:
+		*OptionPatternLiteral, *FunctionPatternExpression, *NamedSegmentPathPatternLiteral, *ReadonlyPatternExpression:
 		return true
 	}
 	return false
@@ -2358,6 +2363,8 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		for _, n := range n.AdditionalInvalidNodes {
 			walk(n, node, ancestorChain, fn, afterFn)
 		}
+	case *ReadonlyPatternExpression:
+		walk(n.Pattern, node, ancestorChain, fn, afterFn)
 	case *FunctionParameter:
 		walk(n.Var, node, ancestorChain, fn, afterFn)
 		walk(n.Type, node, ancestorChain, fn, afterFn)

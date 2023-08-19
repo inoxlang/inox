@@ -14305,6 +14305,57 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("single readonly typed parameter, empty body ", func(t *testing.T) {
+			n := mustparseChunk(t, "fn(x readonly %int){}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 21}, nil, nil},
+				Statements: []Node{
+					&FunctionExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 21},
+							nil,
+							[]Token{
+								{Type: FN_KEYWORD, Span: NodeSpan{0, 2}},
+								{Type: OPENING_PARENTHESIS, Span: NodeSpan{2, 3}},
+								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{18, 19}},
+							},
+						},
+						Parameters: []*FunctionParameter{
+							{
+								NodeBase: NodeBase{Span: NodeSpan{3, 18}},
+								Var: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{3, 4}, nil, nil},
+									Name:     "x",
+								},
+								Type: &ReadonlyPatternExpression{
+									NodeBase: NodeBase{
+										NodeSpan{5, 18},
+										nil,
+										[]Token{{Type: READONLY_KEYWORD, Span: NodeSpan{5, 13}}},
+									},
+									Pattern: &PatternIdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{14, 18}, nil, nil},
+										Name:     "int",
+									},
+								},
+							},
+						},
+						Body: &Block{
+							NodeBase: NodeBase{
+								NodeSpan{19, 21},
+								nil,
+								[]Token{
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{19, 20}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{20, 21}},
+								},
+							},
+							Statements: nil,
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("single unprefix typed parameter, empty body ", func(t *testing.T) {
 			n := mustparseChunk(t, "fn(x int){}")
 			assert.EqualValues(t, &Chunk{
@@ -14927,6 +14978,57 @@ func testParse(
 								[]Token{
 									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{11, 12}},
 									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{12, 13}},
+								},
+							},
+							Statements: nil,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single readonly typed parameter, empty body ", func(t *testing.T) {
+			n := mustparseChunk(t, "%fn(x readonly %int){}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 22}, nil, nil},
+				Statements: []Node{
+					&FunctionPatternExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 22},
+							nil,
+							[]Token{
+								{Type: PERCENT_FN, Span: NodeSpan{0, 3}},
+								{Type: OPENING_PARENTHESIS, Span: NodeSpan{3, 4}},
+								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{19, 20}},
+							},
+						},
+						Parameters: []*FunctionParameter{
+							{
+								NodeBase: NodeBase{Span: NodeSpan{4, 19}},
+								Var: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{4, 5}, nil, nil},
+									Name:     "x",
+								},
+								Type: &ReadonlyPatternExpression{
+									NodeBase: NodeBase{
+										NodeSpan{6, 19},
+										nil,
+										[]Token{{Type: READONLY_KEYWORD, Span: NodeSpan{6, 14}}},
+									},
+									Pattern: &PatternIdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{15, 19}, nil, nil},
+										Name:     "int",
+									},
+								},
+							},
+						},
+						Body: &Block{
+							NodeBase: NodeBase{
+								NodeSpan{20, 22},
+								nil,
+								[]Token{
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{20, 21}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{21, 22}},
 								},
 							},
 							Statements: nil,

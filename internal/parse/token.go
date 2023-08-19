@@ -51,6 +51,7 @@ const (
 	INCLUDABLE_CHUNK_KEYWORD
 	DROP_PERMS_KEYWORD
 	ASSIGN_KEYWORD
+	READONLY_KEYWORD
 	CONST_KEYWORD
 	VAR_KEYWORD
 	FOR_KEYWORD
@@ -259,6 +260,7 @@ var tokenStrings = [...]string{
 	INCLUDABLE_CHUNK_KEYWORD:       "includable-chunk",
 	DROP_PERMS_KEYWORD:             "drop-perms",
 	ASSIGN_KEYWORD:                 "assign",
+	READONLY_KEYWORD:               "readonly",
 	CONST_KEYWORD:                  "const",
 	VAR_KEYWORD:                    "var",
 	FOR_KEYWORD:                    "for",
@@ -414,6 +416,7 @@ var tokenTypenames = [...]string{
 	INCLUDABLE_CHUNK_KEYWORD:       "INCLUDABLE_CHUNK_KEYWORD",
 	DROP_PERMS_KEYWORD:             "DROP_PERMS_KEYWORD",
 	ASSIGN_KEYWORD:                 "ASSIGN_KEYWORD",
+	READONLY_KEYWORD:               "READONLY_KEYWORD",
 	CONST_KEYWORD:                  "CONST_KEYWORD",
 	VAR_KEYWORD:                    "VAR_KEYWORD",
 	FOR_KEYWORD:                    "FOR_KEYWORD",
