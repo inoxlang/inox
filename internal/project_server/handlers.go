@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"path/filepath"
 	"sync"
 	"time"
@@ -20,7 +19,6 @@ import (
 
 	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
 
-	"github.com/inoxlang/inox/internal/globals/inox_ns"
 	"github.com/inoxlang/inox/internal/utils"
 
 	"github.com/inoxlang/inox/internal/globals/compl"
@@ -544,24 +542,12 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 			Filesystem: fls,
 		})
 
-		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
-			Fpath:                     fpath,
-			ParsingCompilationContext: handlingCtx,
-			ParentContext:             nil,
-			Out:                       io.Discard,
-			DevMode:                   true,
-			AllowMissingEnvVars:       true,
-			ScriptContextFileSystem:   fls,
-			PreinitFilesystem:         fls,
-		})
+		state, _, chunk, ok := prepareSourceFile(fpath, handlingCtx, session, true)
 
-		if state == nil || state.SymbolicData == nil {
-			logs.Println("failed to prepare script", err)
+		if !ok || state == nil || state.SymbolicData == nil {
+			logs.Println("failed to prepare source file", err)
 			return nil, nil
 		}
-
-		//TODO: support definition when included chunk is being edited
-		chunk := mod.MainChunk
 
 		span := chunk.GetLineColumnSingeCharSpan(line, column)
 		foundNode, ancestors, ok := chunk.GetNodeAndChainAtSpan(span)
@@ -576,10 +562,9 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 
 		switch n := foundNode.(type) {
 		case *parse.Variable, *parse.GlobalVariable, *parse.IdentifierLiteral:
-			position, ok = state.SymbolicData.GetVariableDefinitionPosition(foundNode, ancestors)
-
+			position, positionSet = state.SymbolicData.GetVariableDefinitionPosition(foundNode, ancestors)
 		case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceIdentifierLiteral:
-			position, ok = state.SymbolicData.GetNamedPatternOrPatternNamespacePositionDefinition(foundNode, ancestors)
+			position, positionSet = state.SymbolicData.GetNamedPatternOrPatternNamespacePositionDefinition(foundNode, ancestors)
 		case *parse.RelativePathLiteral, *parse.AbsolutePathLiteral:
 
 			parent := ancestors[len(ancestors)-1]
