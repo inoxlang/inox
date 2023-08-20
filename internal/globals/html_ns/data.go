@@ -109,7 +109,6 @@ func GetTagSpecificAttributes(name string) ([]AttributeData, bool) {
 	return data.Attributes, true
 }
 
-// GetTagData returns the specific attributes of a tag and global attributes, the returned data should NOT be modified except the slice itself.
 func GetAllTagAttributes(name string) ([]AttributeData, bool) {
 	tagData, ok := GetTagData(name)
 	if !ok {

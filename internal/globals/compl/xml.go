@@ -10,6 +10,30 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+func findXmlTagNameCompletions(ident *parse.IdentifierLiteral, ancestors []parse.Node) (completions []Completion) {
+	tagName, namespace, ok := findTagNameAndNamespace(ancestors)
+	if !ok {
+		return
+	}
+
+	//TODO: use symbolic data in order to support aliases
+	switch namespace.Name {
+	case "html":
+		for _, tag := range html_ns.STANDARD_DATA.Tags {
+			if strings.HasPrefix(tag.Name, tagName) {
+				completions = append(completions, Completion{
+					ShownString: tag.Name,
+					Value:       tag.Name,
+					Kind:        defines.CompletionItemKindProperty,
+					Detail:      tag.DescriptionText(),
+				})
+			}
+		}
+	}
+
+	return
+}
+
 func findXmlAttributeNameCompletions(ident *parse.IdentifierLiteral, parent *parse.XMLAttribute, ancestors []parse.Node) (completions []Completion) {
 	tagName, namespace, ok := findTagNameAndNamespace(ancestors)
 	if !ok {
@@ -46,7 +70,10 @@ func findTagNameAndNamespace(ancestors []parse.Node) (string, *parse.IdentifierL
 		return "", nil, false
 	}
 
-	openingElem := ancestors[len(ancestors)-2].(*parse.XMLOpeningElement)
+	openingElem, ok := ancestors[len(ancestors)-1].(*parse.XMLOpeningElement)
+	if !ok {
+		openingElem = ancestors[len(ancestors)-2].(*parse.XMLOpeningElement)
+	}
 	tagIdent, ok := openingElem.Name.(*parse.IdentifierLiteral)
 	if !ok {
 		return "", nil, false

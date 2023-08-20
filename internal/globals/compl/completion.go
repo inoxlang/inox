@@ -534,14 +534,21 @@ after_subcommand_completions:
 		}
 	}
 
-	// in attribute
-	if attribute, ok := parent.(*parse.XMLAttribute); ok {
+	switch p := parent.(type) {
+	case *parse.XMLAttribute:
+		attribute := p
 		//if name
 		switch {
 		case ident == attribute.Name:
 			completions = findXmlAttributeNameCompletions(ident, attribute, ancestors)
 		}
-
+		return completions
+	case *parse.XMLOpeningElement:
+		//if tag name
+		switch {
+		case ident == p.Name:
+			completions = findXmlTagNameCompletions(ident, ancestors)
+		}
 		return completions
 	}
 
