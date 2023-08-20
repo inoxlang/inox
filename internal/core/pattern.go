@@ -556,6 +556,13 @@ type DifferencePattern struct {
 	removed Pattern
 }
 
+func NewDifferencePattern(base, removed Pattern) *DifferencePattern {
+	return &DifferencePattern{
+		base:    base,
+		removed: removed,
+	}
+}
+
 func (patt *DifferencePattern) Test(ctx *Context, v Value) bool {
 	return patt.base.Test(ctx, v) && !patt.removed.Test(ctx, v)
 }

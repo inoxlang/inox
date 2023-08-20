@@ -913,18 +913,47 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	t.Run("other binary binary expressions", func(t *testing.T) {
 		testCases := []struct {
 			code   string
-			result Bool
+			result Value
 			err    error
 		}{
+			{`(1 is 2)`, False, nil},
+			{`(1 is 1)`, True, nil},
+			{`({} is {})`, False, nil},
+			{`obj = {}; return (obj is obj)`, True, nil},
+
+			{`(1 is-not 2)`, True, nil},
+			{`(1 is-not 1)`, False, nil},
+			{`({} is-not {})`, True, nil},
+			{`obj = {}; return (obj is-not obj)`, False, nil},
+
+			{`(1 match %int)`, True, nil},
+			{`("1" match %int)`, False, nil},
+			{`({a: 1} match %{a: 1})`, True, nil},
+			{`({} match %{a: 1})`, False, nil},
+
+			{`("1" keyof {})`, False, nil},
+			{`("1" keyof {'a', 'b'})`, True, nil},
+			{`("1" keyof {"1" : 'a'})`, True, nil},
+			{`("11" keyof {"1" : 'a'})`, False, nil},
+
 			{`("1" substrof "")`, False, nil},
 			{`("1" substrof "1")`, True, nil},
 			{`("1" substrof "11")`, True, nil},
 			{`("11" substrof "1")`, False, nil},
+
+			{`(%int \ 1)`, NewDifferencePattern(INT_PATTERN, NewExactValuePattern(Int(1))), nil},
+
+			{`(1 ?? 2)`, Int(1), nil},
+			{`(nil ?? 1)`, Int(1), nil},
+			{`(nil ?? [])`, NewWrappedValueList(), nil},
 		}
 
 		for _, testCase := range testCases {
 			t.Run(testCase.code, func(t *testing.T) {
-				res, err := Eval(testCase.code, NewGlobalState(NewDefaultTestContext(), nil), false)
+				state := NewGlobalState(NewDefaultTestContext(), nil)
+				state.Ctx.AddNamedPattern("int", INT_PATTERN)
+
+				res, err := Eval(testCase.code, state, false)
 				if testCase.err == nil {
 					assert.NoError(t, err)
 					assert.Equal(t, testCase.result, res)
