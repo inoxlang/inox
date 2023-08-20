@@ -69,15 +69,14 @@ func (t *Tree) Get(ctx *symbolic.Context, k symbolic.SymbolicValue) symbolic.Sym
 
 func (t *Tree) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%tree")))
-	return
 }
 
 func (t *Tree) IteratorElementKey() symbolic.SymbolicValue {
-	return &symbolic.Any{}
+	return symbolic.ANY
 }
 
-func (r *Tree) IteratorElementValue() symbolic.SymbolicValue {
-	return &symbolic.Any{}
+func (t *Tree) IteratorElementValue() symbolic.SymbolicValue {
+	return t.treeNode
 }
 
 func (t *Tree) WalkerElement() symbolic.SymbolicValue {
