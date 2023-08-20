@@ -2536,7 +2536,7 @@ func (p *TypePattern) SymbolicValue() SymbolicValue {
 }
 
 func (p *TypePattern) MigrationInitialValue() (Serializable, bool) {
-	if serializable, ok := p.val.(Serializable); ok && IsSimpleSymbolicInoxVal(serializable) {
+	if serializable, ok := p.val.(Serializable); ok && (IsSimpleSymbolicInoxVal(serializable) || serializable == ANY_STR_LIKE) {
 		return serializable, true
 	}
 	return nil, false
