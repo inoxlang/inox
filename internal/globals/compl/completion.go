@@ -331,6 +331,8 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 		completions = handleMemberExpressionCompletions(n, state, mode)
 	case *parse.CallExpression: //if a call is the deepest node at cursor it means we are not in an argument
 		completions = handleNewCallArgumentCompletions(n, cursorIndex, state, chunk)
+	case *parse.QuotedStringLiteral:
+		completions = findStringCompletions(n, _parent, _ancestorChain, state, chunk)
 	case *parse.RelativePathLiteral:
 		completions = findPathCompletions(state.Global.Ctx, n.Raw)
 	case *parse.AbsolutePathLiteral:
@@ -1138,6 +1140,23 @@ func findDictionaryInteriorCompletions(
 				ReplacedRange: pos,
 			})
 		}
+	}
+
+	return
+}
+
+func findStringCompletions(
+	strLit *parse.QuotedStringLiteral, parent parse.Node,
+	ancestors []parse.Node, state *core.TreeWalkState, chunk *parse.ParsedChunk,
+) (completions []Completion) {
+	// in attribute
+	if attribute, ok := parent.(*parse.XMLAttribute); ok {
+		switch {
+		case strLit == attribute.Value:
+			completions = findXMLAttributeValueCompletions(strLit, attribute, ancestors)
+		}
+
+		return completions
 	}
 
 	return

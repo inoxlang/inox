@@ -50,11 +50,10 @@ func (d TagData) DescriptionContent() string {
 }
 
 type AttributeData struct {
-	Name        string               `json:"name"`
-	Description any                  `json:"description"` //string | MarkupContent
-	ValueSet    string               `json:"valueSet"`
-	Values      []AttributeValueData `json:"values"`
-	References  []DataReference      `json:"references"`
+	Name        string          `json:"name"`
+	Description any             `json:"description"` //string | MarkupContent
+	ValueSet    string          `json:"valueSet"`
+	References  []DataReference `json:"references"`
 }
 
 func (d AttributeData) DescriptionText() string {
@@ -124,6 +123,31 @@ func GetAllTagAttributes(name string) ([]AttributeData, bool) {
 	data = append(data, HTMX_DATA.GlobalAttributes...)
 
 	return data, true
+}
+
+func GetAttributeValueSet(name string, tagName string) (set AttributeValueSet, found bool) {
+	attributes, ok := GetTagSpecificAttributes(tagName)
+	if !ok {
+		return
+	}
+
+	for _, attr := range attributes {
+		if attr.Name == name {
+			set, found = getValueSet(attr.ValueSet)
+			return
+		}
+	}
+
+	return
+}
+
+func getValueSet(name string) (AttributeValueSet, bool) {
+	for _, set := range STANDARD_DATA.ValueSets {
+		if set.Name == name {
+			return set, true
+		}
+	}
+	return AttributeValueSet{}, false
 }
 
 func getDescriptionText(d any) string {
