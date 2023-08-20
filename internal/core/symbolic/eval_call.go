@@ -51,36 +51,39 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 	var extState *State
 	isSharedFunction := false
+	var nonGoParameters []SymbolicValue
+	var argMismatches []bool
 
 	if inoxFn, ok := callee.(*InoxFunction); ok {
 		isSharedFunction = inoxFn.IsShared()
 		if isSharedFunction {
 			extState = inoxFn.originState
 		}
+		nonGoParameters = inoxFn.parameters
 	} else if goFn, ok := callee.(*GoFunction); ok {
 		isSharedFunction = goFn.IsShared()
 		if isSharedFunction {
 			extState = goFn.originState
 		}
-	} else if _, ok := callee.(*Function); ok {
-		//ok
+	} else if function, ok := callee.(*Function); ok {
+		nonGoParameters = function.parameters
 	} else {
 		state.addError(makeSymbolicEvalError(calleeNode, state, fmtCannotCall(callee)))
 		return ANY, nil
 	}
 
-	//EVALUATION OF ARGUMENTS
+	//evaluation of arguments
 
 	args := make([]SymbolicValue, 0)
 	nonSpreadArgCount := 0
 	hasSpreadArg := false
 	var spreadArgNode parse.Node
 
-	for _, argn := range argNodes {
+	for argIndex, argNode := range argNodes {
 
-		if spreadArg, ok := argn.(*parse.SpreadArgument); ok {
+		if spreadArg, ok := argNode.(*parse.SpreadArgument); ok {
 			hasSpreadArg = true
-			spreadArgNode = argn
+			spreadArgNode = argNode
 			v, err := symbolicEval(spreadArg.Expr, state)
 			if err != nil {
 				return nil, err
@@ -105,7 +108,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 					if isSharedFunction {
 						shared, err := ShareOrClone(e, state)
 						if err != nil {
-							state.addError(makeSymbolicEvalError(argn, state, err.Error()))
+							state.addError(makeSymbolicEvalError(argNode, state, err.Error()))
 							shared = ANY
 						}
 						e = shared.(Serializable)
@@ -113,23 +116,34 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 					args = append(args, e)
 				}
 			} else {
-				state.addError(makeSymbolicEvalError(argn, state, fmtSpreadArgumentShouldBeIterable(v)))
+				state.addError(makeSymbolicEvalError(argNode, state, fmtSpreadArgumentShouldBeIterable(v)))
 			}
 
 		} else {
 			nonSpreadArgCount++
 
-			if ident, ok := argn.(*parse.IdentifierLiteral); ok && cmdLineSyntax {
+			if ident, ok := argNode.(*parse.IdentifierLiteral); ok && cmdLineSyntax {
 				args = append(args, &Identifier{name: ident.Name})
 			} else {
-				arg, err := symbolicEval(argn, state)
+				options := evalOptions{}
+				if len(nonGoParameters) > 0 && argIndex < len(nonGoParameters) {
+					options.expectedValue = nonGoParameters[argIndex]
+
+					argMismatches = append(argMismatches, false)
+					if len(argMismatches) != argIndex+1 {
+						panic(parse.ErrUnreachable)
+					}
+					options.actualValueMismatch = &argMismatches[argIndex]
+				}
+
+				arg, err := _symbolicEval(argNode, state, options)
 				if err != nil {
 					return nil, err
 				}
 				if isSharedFunction {
 					shared, err := ShareOrClone(arg, state)
 					if err != nil {
-						state.addError(makeSymbolicEvalError(argn, state, err.Error()))
+						state.addError(makeSymbolicEvalError(argNode, state, err.Error()))
 						shared = ANY
 					}
 					arg = shared
@@ -384,12 +398,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			continue
 		}
 
-		pattern, err := symbolicallyEvalPatternNode(paramTypeNode, state)
-		if err != nil {
-			return nil, err
-		}
-
-		paramType := pattern.SymbolicValue()
+		paramType := nonGoParameters[i]
 		params = append(params, paramType)
 
 		var argNode parse.Node
