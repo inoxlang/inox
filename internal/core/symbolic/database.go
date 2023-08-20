@@ -102,7 +102,12 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 	currentConcreteSchema := db.schema.Concretize(ctx.startingConcreteContext)
 	nextConcreteSchema := schema.Concretize(ctx.startingConcreteContext)
 
-	ops, err := extData.GetMigrationOperations(ctx.startingConcreteContext, currentConcreteSchema, nextConcreteSchema, "/")
+	if err := extData.CheckDatabaseSchema(nextConcreteSchema); err != nil {
+		ctx.AddSymbolicGoFunctionError(err.Error())
+		return
+	}
+
+	ops, err := extData.GetTopLevelEntitiesMigrationOperations(ctx.startingConcreteContext, currentConcreteSchema, nextConcreteSchema)
 	if err != nil {
 		ctx.AddSymbolicGoFunctionError(err.Error())
 		return

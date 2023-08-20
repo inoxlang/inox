@@ -20,15 +20,16 @@ var (
 	staticallyCheckDbResolutionDataFnRegistry     = map[Scheme]StaticallyCheckDbResolutionDataFn{}
 	staticallyCheckDbResolutionDataFnRegistryLock sync.Mutex
 
-	ErrNonUniqueDbOpenFnRegistration                = errors.New("non unique open DB function registration")
-	ErrOwnerStateAlreadySet                         = errors.New("owner state already set")
-	ErrOwnerStateNotSet                             = errors.New("owner state not set")
-	ErrNameCollisionWithInitialDatabasePropertyName = errors.New("name collision with initial database property name")
-	ErrTopLevelEntitiesAlreadyLoaded                = errors.New("top-level entities already loaded")
-	ErrDatabaseSchemaOnlyUpdatableByOwnerState      = errors.New("database schema can only be updated by owner state")
-	ErrNoDatabaseSchemaUpdateExpected               = errors.New("no database schema update is expected")
-	ErrDatabaseSchemaAlreadyUpdatedOrNotAllowed     = errors.New("database schema already updated or no longer allowed")
-	ErrInvalidAccessSchemaNotUpdatedYet             = errors.New("access to database is not allowed because schema is not updated yet")
+	ErrNonUniqueDbOpenFnRegistration                   = errors.New("non unique open DB function registration")
+	ErrOwnerStateAlreadySet                            = errors.New("owner state already set")
+	ErrOwnerStateNotSet                                = errors.New("owner state not set")
+	ErrNameCollisionWithInitialDatabasePropertyName    = errors.New("name collision with initial database property name")
+	ErrTopLevelEntityNamesShouldBeValidInoxIdentifiers = errors.New("top-level entity names should be valid Inox identifiers (e.g., users, client-names)")
+	ErrTopLevelEntitiesAlreadyLoaded                   = errors.New("top-level entities already loaded")
+	ErrDatabaseSchemaOnlyUpdatableByOwnerState         = errors.New("database schema can only be updated by owner state")
+	ErrNoDatabaseSchemaUpdateExpected                  = errors.New("no database schema update is expected")
+	ErrDatabaseSchemaAlreadyUpdatedOrNotAllowed        = errors.New("database schema already updated or no longer allowed")
+	ErrInvalidAccessSchemaNotUpdatedYet                = errors.New("access to database is not allowed because schema is not updated yet")
 
 	DATABASE_PROPNAMES = []string{"update_schema", "close", "schema"}
 
@@ -54,6 +55,21 @@ type DbOpenConfiguration struct {
 	Resource       SchemeHolder
 	ResolutionData Value
 	FullAccess     bool
+}
+
+func checkDatabaseSchema(pattern *ObjectPattern) error {
+	return pattern.ForEachEntry(func(propName string, propPattern Pattern, isOptional bool) error {
+		expr, ok := parse.ParseExpression(propName)
+		_, isIdent := expr.(*parse.IdentifierLiteral)
+		if !ok || !isIdent {
+			return fmt.Errorf("invalid top-level entity name: %q, %w", propName, ErrTopLevelEntityNamesShouldBeValidInoxIdentifiers)
+		}
+
+		if !hasTypeLoadingFunction(propPattern) {
+			return fmt.Errorf("invalid pattern for top level entity .%s: %w", propName, ErrNoLoadInstanceFnRegistered)
+		}
+		return nil
+	})
 }
 
 // An element key is a a string that:
@@ -315,6 +331,11 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migr
 
 	if ctx.GetClosestState() != db.ownerState {
 		panic(ErrDatabaseSchemaOnlyUpdatableByOwnerState)
+	}
+
+	//this check is also run during symbolic evaluation
+	if err := checkDatabaseSchema(nextSchema); err != nil {
+		panic(err)
 	}
 
 	db.schemaUpdateLock.Lock()

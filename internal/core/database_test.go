@@ -17,6 +17,105 @@ import (
 
 func TestDatabaseIL(t *testing.T) {
 
+	t.Run("the name of the top level entities should be a valid identifier", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		db := &dummyDatabase{
+			resource:         Host("ldb://main"),
+			topLevelEntities: map[string]Serializable{},
+		}
+
+		dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
+			Inner:                db,
+			OwnerState:           ctx.state,
+			ExpectedSchemaUpdate: true,
+		}))
+
+		migrationHandlerReturnedVal := &loadableTestValue{value: 1}
+
+		symbolicFn := symbolic.NewInoxFunction(nil, nil, &symbolicLoadableTestValue{})
+		handler := &InoxFunction{
+			Node: &parse.FunctionExpression{
+				IsBodyExpression: true,
+				Body: &parse.IdentifierLiteral{
+					Name: "val",
+				},
+			},
+			treeWalkCapturedLocals: map[string]Value{
+				"val": migrationHandlerReturnedVal,
+			},
+			symbolicValue: symbolicFn,
+			staticData:    &FunctionStaticData{},
+		}
+
+		func() {
+			defer func() {
+				v := recover()
+				if !assert.NotNil(t, v) {
+					return
+				}
+				assert.ErrorIs(t, v.(error), ErrTopLevelEntityNamesShouldBeValidInoxIdentifiers)
+			}()
+
+			dbIL.UpdateSchema(ctx, NewInexactObjectPattern(map[string]Pattern{
+				"a-": LOADABLE_TEST_VALUE_PATTERN,
+			}), NewObjectFromMap(ValMap{
+				symbolic.DB_MIGRATION__INCLUSIONS_PROP_NAME: NewDictionary(ValMap{
+					"%/a-": handler,
+				}),
+			}, ctx))
+		}()
+	})
+
+	t.Run("top-level entity patterns should have a loading function", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		db := &dummyDatabase{
+			resource:         Host("ldb://main"),
+			topLevelEntities: map[string]Serializable{},
+		}
+
+		dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
+			Inner:                db,
+			OwnerState:           ctx.state,
+			ExpectedSchemaUpdate: true,
+		}))
+
+		migrationHandlerReturnedVal := &loadableTestValue{value: 1}
+
+		symbolicFn := symbolic.NewInoxFunction(nil, nil, &symbolicLoadableTestValue{})
+		handler := &InoxFunction{
+			Node: &parse.FunctionExpression{
+				IsBodyExpression: true,
+				Body: &parse.IdentifierLiteral{
+					Name: "val",
+				},
+			},
+			treeWalkCapturedLocals: map[string]Value{
+				"val": migrationHandlerReturnedVal,
+			},
+			symbolicValue: symbolicFn,
+			staticData:    &FunctionStaticData{},
+		}
+
+		func() {
+			defer func() {
+				v := recover()
+				if !assert.NotNil(t, v) {
+					return
+				}
+				assert.ErrorContains(t, v.(error), "invalid pattern for top level entity .a")
+			}()
+
+			dbIL.UpdateSchema(ctx, NewInexactObjectPattern(map[string]Pattern{
+				"a": LOADABLE_TEST_VALUE_PATTERN,
+			}), NewObjectFromMap(ValMap{
+				symbolic.DB_MIGRATION__INCLUSIONS_PROP_NAME: NewDictionary(ValMap{
+					"%/a": handler,
+				}),
+			}, ctx))
+		}()
+	})
+
+	//note: the previous test requires the loading function to not be registered
 	RegisterLoadInstanceFn(reflect.TypeOf(LOADABLE_TEST_VALUE_PATTERN), func(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
 		assert.Fail(t, "should never be called")
 		return nil, nil
@@ -41,7 +140,7 @@ func TestDatabaseIL(t *testing.T) {
 		}}, dbIL.topLevelEntities)
 	})
 
-	t.Run("if a schema update is expected top level entiries should not be loaded", func(t *testing.T) {
+	t.Run("if a schema update is expected top level entities should not be loaded", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		db := &dummyDatabase{
 			resource: Host("ldb://main"),
@@ -180,6 +279,7 @@ func TestDatabaseIL(t *testing.T) {
 		val := dbIL.Prop(ctx, "a")
 		assert.Same(t, db.topLevelEntities["a"], val)
 	})
+
 }
 
 var (

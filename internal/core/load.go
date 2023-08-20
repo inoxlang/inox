@@ -93,3 +93,7 @@ func LoadInstance(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
 
 	return fn(ctx, args)
 }
+
+func loadObject(ctx *Context, args InstanceLoadArgs) {
+	//IsSimpleInoxVal()
+}

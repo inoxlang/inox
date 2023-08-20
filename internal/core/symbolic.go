@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -90,9 +91,12 @@ func init() {
 			return HostPattern(pattern).Test(nil, Host(host))
 		},
 		IsIndexKey: IsIndexKey,
-		GetMigrationOperations: func(concreteCtx any, current, next any, pseudoPath string) ([]symbolic.MigrationOp, error) {
+		CheckDatabaseSchema: func(objectPattern any) error {
+			return checkDatabaseSchema(objectPattern.(*ObjectPattern))
+		},
+		GetTopLevelEntitiesMigrationOperations: func(concreteCtx context.Context, current, next any) ([]symbolic.MigrationOp, error) {
 			ctx := concreteCtx.(*Context)
-			concreteMigrationOps, err := GetMigrationOperations(ctx, current.(Pattern), next.(Pattern), pseudoPath)
+			concreteMigrationOps, err := GetTopLevelEntitiesMigrationOperations(ctx, current.(*ObjectPattern), next.(*ObjectPattern))
 			if err != nil {
 				return nil, err
 			}

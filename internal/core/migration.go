@@ -313,6 +313,10 @@ func (patt *ListPattern) GetMigrationOperations(ctx *Context, next Pattern, pseu
 	return migrations, nil
 }
 
+func GetTopLevelEntitiesMigrationOperations(ctx *Context, current, next *ObjectPattern) ([]MigrationOp, error) {
+	return GetMigrationOperations(ctx, current, next, "/")
+}
+
 func GetMigrationOperations(ctx *Context, current, next Pattern, pseudoPath string) ([]MigrationOp, error) {
 	if pseudoPath != "/" && pseudoPath[len(pseudoPath)-1] == '/' {
 		return nil, ErrInvalidMigrationPseudoPath
