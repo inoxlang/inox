@@ -4394,10 +4394,6 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 func symbolicMemb(value SymbolicValue, name string, optionalMembExpr bool, node parse.Node, state *State) (result SymbolicValue) {
 	//note: the property of a %serializable is not necessarily serializable (example: Go methods)
 
-	if _, ok := value.(*Any); ok {
-		return ANY
-	}
-
 	iprops, ok := AsIprops(value).(IProps)
 	if !ok {
 		state.addError(makeSymbolicEvalError(node, state, fmtValueHasNoProperties(value)))
