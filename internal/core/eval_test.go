@@ -910,7 +910,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		}
 	})
 
-	t.Run("other binary binary expressions", func(t *testing.T) {
+	t.Run("other binary expressions", func(t *testing.T) {
 		testCases := []struct {
 			code   string
 			result Value

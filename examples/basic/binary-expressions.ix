@@ -1,6 +1,6 @@
 manifest {}
 
-# Binary expressions are always surrounded by parenthesis
+# Binary expressions are always surrounded by parentheses
 
 print "--- arithmetic and comparison operations on integers ---"
 print "1 + 2 :" (1 + 2) # 3

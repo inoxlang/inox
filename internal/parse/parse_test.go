@@ -1616,7 +1616,7 @@ func testParse(
 					&OptionPatternLiteral{
 						NodeBase: NodeBase{
 							NodeSpan{0, 7},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPION_PATTERN_A_VALUE_IS_EXPECTED},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPION_PATTERN_A_VALUE_IS_EXPECTED_AFTER_EQUAKL_SIGN},
 							nil,
 						},
 						Name:       "name",
@@ -5508,7 +5508,7 @@ func testParse(
 					&InvalidAliasRelatedNode{
 						NodeBase: NodeBase{
 							NodeSpan{0, 2},
-							&ParsingError{UnspecifiedParsingError, "unterminated AtHostLiteral | URLExpression | HostAliasDefinition"},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_ALIAS_RELATED_LITERAL},
 							nil,
 						},
 						Raw: "@a",
@@ -5535,7 +5535,7 @@ func testParse(
 							&InvalidAliasRelatedNode{
 								NodeBase: NodeBase{
 									NodeSpan{1, 3},
-									&ParsingError{UnspecifiedParsingError, "unterminated AtHostLiteral | URLExpression | HostAliasDefinition"},
+									&ParsingError{UnspecifiedParsingError, UNTERMINATED_ALIAS_RELATED_LITERAL},
 									nil,
 								},
 								Raw: "@a",
@@ -13057,7 +13057,7 @@ func testParse(
 					&BinaryExpression{
 						NodeBase: NodeBase{
 							NodeSpan{0, 26},
-							&ParsingError{UnspecifiedParsingError, ALL_BIN_EXPR_CHAIN_SHOULD_HAVE_THE_SAME_OPERATOR},
+							&ParsingError{UnspecifiedParsingError, BIN_EXPR_CHAIN_OPERATORS_SHOULD_BE_THE_SAME},
 							[]Token{
 								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
 								{Type: OR_KEYWORD, Span: NodeSpan{7, 9}},
@@ -13137,7 +13137,7 @@ func testParse(
 					&BinaryExpression{
 						NodeBase: NodeBase{
 							NodeSpan{0, 35},
-							&ParsingError{UnspecifiedParsingError, ALL_BIN_EXPR_CHAIN_SHOULD_HAVE_THE_SAME_OPERATOR},
+							&ParsingError{UnspecifiedParsingError, BIN_EXPR_CHAIN_OPERATORS_SHOULD_BE_THE_SAME},
 							[]Token{
 								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
 								{Type: OR_KEYWORD, Span: NodeSpan{7, 9}},

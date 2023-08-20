@@ -180,7 +180,7 @@ Binary operations are always parenthesized:
 - deep equality: `({a: 1} == {a: 1})`
 - logical operations: `(a or b)`, `(a and b)`
 
-ℹ️ Parenthesis can be omitted around operands of **or**/**and** chains:
+ℹ️ Parentheses can be omitted around operands of **or**/**and** chains:
 ```
 (a or b or c)       # ok
 (a < b or c < d)    # ok
@@ -665,7 +665,7 @@ fn g(arg){
 }
 ```
 
-You can call `f` with parenthesis or with a command-like syntax: 
+You can call `f` with parentheses or with a command-like syntax: 
 ```
 result = f(1, 2)
 

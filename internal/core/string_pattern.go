@@ -690,7 +690,7 @@ func (patt *RuneRangeStringPattern) StringPattern() (StringPattern, bool) {
 }
 
 // An IntRangeStringPattern matches a string (or substring) representing a decimal integer number in a given range.
-// Example: for the range (-99,99) the found match substrings in the following strings are surrounded  by parenthesis.
+// Example: for the range (-99,99) the found match substrings in the following strings are surrounded  by parentheses.
 // positive:
 // (12)
 // (12)-

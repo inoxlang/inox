@@ -13,7 +13,7 @@ func = fn(){
 
 # ------ Calling functions ------
 
-# functions can be called with parenthesis or with a command-like syntax
+# functions can be called with parentheses or with a command-like syntax
 func()
 hello("foo", "!")
 hello "bar" "!"

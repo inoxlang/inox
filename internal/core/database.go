@@ -26,7 +26,7 @@ var (
 	ErrNameCollisionWithInitialDatabasePropertyName = errors.New("name collision with initial database property name")
 	ErrTopLevelEntitiesAlreadyLoaded                = errors.New("top-level entities already loaded")
 	ErrDatabaseSchemaOnlyUpdatableByOwnerState      = errors.New("database schema can only be updated by owner state")
-	ErrNoneDatabaseSchemaUpdateExpected             = errors.New("none database schema update is expected")
+	ErrNoDatabaseSchemaUpdateExpected               = errors.New("no database schema update is expected")
 	ErrDatabaseSchemaAlreadyUpdatedOrNotAllowed     = errors.New("database schema already updated or no longer allowed")
 	ErrInvalidAccessSchemaNotUpdatedYet             = errors.New("access to database is not allowed because schema is not updated yet")
 
@@ -310,7 +310,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migr
 	}
 
 	if !db.schemaUpdateExpected {
-		panic(ErrNoneDatabaseSchemaUpdateExpected)
+		panic(ErrNoDatabaseSchemaUpdateExpected)
 	}
 
 	if ctx.GetClosestState() != db.ownerState {

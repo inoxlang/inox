@@ -72,7 +72,7 @@ var (
 
 	SUPPORTED_PARSING_ERRORS = []parse.ParsingErrorKind{
 		parse.UnterminatedMemberExpr, parse.MissingBlock, parse.MissingFnBody,
-		parse.MissingEqualSignInDeclaration,
+		parse.MissingEqualsSignInDeclaration,
 	}
 )
 

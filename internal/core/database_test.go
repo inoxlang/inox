@@ -92,7 +92,7 @@ func TestDatabaseIL(t *testing.T) {
 			ExpectedSchemaUpdate: false,
 		}))
 
-		assert.PanicsWithValue(t, ErrNoneDatabaseSchemaUpdateExpected, func() {
+		assert.PanicsWithValue(t, ErrNoDatabaseSchemaUpdateExpected, func() {
 			dbIL.UpdateSchema(ctx, NewInexactObjectPattern(map[string]Pattern{}))
 		})
 	})

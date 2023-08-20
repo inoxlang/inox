@@ -4198,7 +4198,7 @@ func (p *parser) parseOptionPatternLiteral(start int32, unprefixedOptionPatternN
 		return &OptionPatternLiteral{
 			NodeBase: NodeBase{
 				Span: NodeSpan{start, p.i},
-				Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_OPION_PATTERN_A_VALUE_IS_EXPECTED},
+				Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_OPION_PATTERN_A_VALUE_IS_EXPECTED_AFTER_EQUAKL_SIGN},
 			},
 			Name:       name,
 			SingleDash: singleDash,
@@ -5103,7 +5103,7 @@ _switch:
 				subLeft, isSubLeftBinExpr := rightBinExpr.Left.(*BinaryExpression)
 				subRight, isSubRightBinExpr := rightBinExpr.Right.(*BinaryExpression)
 
-				err := &ParsingError{UnspecifiedParsingError, ALL_BIN_EXPR_CHAIN_SHOULD_HAVE_THE_SAME_OPERATOR}
+				err := &ParsingError{UnspecifiedParsingError, BIN_EXPR_CHAIN_OPERATORS_SHOULD_BE_THE_SAME}
 
 				if isSubLeftBinExpr {
 					if (!subLeft.IsParenthesized() && (subLeft.Operator == newComplementOperator)) ||
@@ -6810,7 +6810,7 @@ func (p *parser) parseSingleGlobalConstDeclaration(declarations *[]*GlobalConsta
 
 	if p.i >= p.len || p.s[p.i] != '=' {
 		if globvar != nil {
-			declParsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidConstDeclMissingEqualSign(globvar.Name)}
+			declParsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidConstDeclMissingEqualsSign(globvar.Name)}
 		} else {
 			declParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_GLOBAL_CONST_DECL_MISSING_EQL_SIGN}
 		}
@@ -6942,7 +6942,7 @@ func (p *parser) parseSingleLocalVarDeclaration(declarations *[]*LocalVariableDe
 
 	if p.i >= p.len || (p.s[p.i] != '=' && !isAcceptedFirstTypeChar(p.s[p.i])) {
 		if ident != nil {
-			declParsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidLocalVarDeclMissingEqualSign(ident.Name)}
+			declParsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidLocalVarDeclMissingEqualsSign(ident.Name)}
 		}
 		if p.i < p.len {
 			p.i++
@@ -6972,7 +6972,7 @@ func (p *parser) parseSingleLocalVarDeclaration(declarations *[]*LocalVariableDe
 
 	//temporary
 	if p.i >= p.len || p.s[p.i] != '=' {
-		declParsingErr = &ParsingError{MissingEqualSignInDeclaration, MISSING_EQUAL_SIGN_AFTER_TYPE_ANNOTATION}
+		declParsingErr = &ParsingError{MissingEqualsSignInDeclaration, EQUAL_SIGN_MISSING_AFTER_TYPE_ANNOTATION}
 		if p.i < p.len {
 			p.i++
 		}
@@ -8481,7 +8481,7 @@ func (p *parser) parseFunction(start int32) Node {
 			return &FunctionDeclaration{
 				NodeBase: NodeBase{
 					Span:   NodeSpan{start, p.i},
-					Err:    &ParsingError{UnspecifiedParsingError, fmtFuncNameShouldBeAnIndentNot(identLike)},
+					Err:    &ParsingError{UnspecifiedParsingError, fmtFuncNameShouldBeAnIdentNot(identLike)},
 					Tokens: tokens,
 				},
 				Function: nil,
@@ -9476,7 +9476,7 @@ top_loop:
 					defaultCases = append(defaultCases, defaultCase)
 
 					if len(defaultCases) > 1 {
-						defaultCase.Err = &ParsingError{UnspecifiedParsingError, DEFAULT_CASE_SHOULD_BE_UNIQUE}
+						defaultCase.Err = &ParsingError{UnspecifiedParsingError, DEFAULT_CASE_MUST_BE_UNIQUE}
 					}
 
 					p.eatSpace()
