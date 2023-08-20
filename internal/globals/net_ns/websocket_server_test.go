@@ -269,7 +269,7 @@ type testWebsocketServerConfig struct {
 	doNotReadMessages bool
 }
 
-func createWebsocketServer(config testWebsocketServerConfig, ctx *Context) (closeChan chan struct{}) {
+func createWebsocketServer(config testWebsocketServerConfig, ctx *core.Context) (closeChan chan struct{}) {
 	if ctx == nil {
 		ctx = core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
@@ -289,7 +289,7 @@ func createWebsocketServer(config testWebsocketServerConfig, ctx *Context) (clos
 
 	go func() {
 		wsServer, _ := newWebsocketServer(ctx, config.messageTimeout)
-		handler := core.WrapGoFunction(func(ctx *Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
+		handler := core.WrapGoFunction(func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
 			conn, err := wsServer.Upgrade(rw, req)
 
 			if err != nil {
@@ -299,7 +299,7 @@ func createWebsocketServer(config testWebsocketServerConfig, ctx *Context) (clos
 
 			go func() {
 				// echo
-				var v Value
+				var v core.Value
 				var err error
 
 				if config.doNotReadMessages {

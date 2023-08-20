@@ -14,7 +14,7 @@ func TestTcpConn(t *testing.T) {
 	localhost, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	assert.NoError(t, err)
 
-	makeListener := func() (*net.TCPListener, chan (int), Host) {
+	makeListener := func() (*net.TCPListener, chan (int), core.Host) {
 		listener, err := net.ListenTCP("tcp", localhost)
 		assert.NoError(t, err)
 		stop := make(chan int)
@@ -29,18 +29,18 @@ func TestTcpConn(t *testing.T) {
 			conn.Close()
 		}()
 
-		return listener, stop, Host("://" + listener.Addr().String())
+		return listener, stop, core.Host("://" + listener.Addr().String())
 	}
 
 	t.Run("after a failed read due to a closed connection the total number of allowed TCP connections should increase", func(t *testing.T) {
 		_, stop, host := makeListener()
 
-		ctx := core.NewContext(ContextConfig{
-			Permissions: []Permission{
-				RawTcpPermission{Kind_: permkind.Read, Domain: host},
-				RawTcpPermission{Kind_: permkind.WriteStream, Domain: host},
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.RawTcpPermission{Kind_: permkind.Read, Domain: host},
+				core.RawTcpPermission{Kind_: permkind.WriteStream, Domain: host},
 			},
-			Limitations: []Limitation{{Name: TCP_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 1}},
+			Limitations: []core.Limitation{{Name: TCP_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 1}},
 		})
 
 		conn, err := tcpConnect(ctx, host)

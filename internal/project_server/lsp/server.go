@@ -12,7 +12,6 @@ import (
 	"github.com/inoxlang/inox/internal/project_server/logs"
 
 	"github.com/inoxlang/inox/internal/globals/http_ns"
-	_net "github.com/inoxlang/inox/internal/globals/net_ns"
 )
 
 type Server struct {
@@ -104,7 +103,7 @@ func (s *Server) startTcpServer(netType string, addr string) error {
 		addr = "127.0.0.1:7998"
 	}
 
-	if err := s.ctx.CheckHasPermission(_net.RawTcpPermission{
+	if err := s.ctx.CheckHasPermission(core.RawTcpPermission{
 		Kind_:  permkind.Provide,
 		Domain: core.Host("://" + addr),
 	}); err != nil {

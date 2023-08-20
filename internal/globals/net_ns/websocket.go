@@ -28,7 +28,7 @@ const (
 type WebsocketConnection struct {
 	conn               *websocket.Conn
 	remoteAddrWithPort http_ns.RemoteAddrWithPort
-	endpoint           URL //HTTP endpoint
+	endpoint           core.URL //HTTP endpoint
 
 	messageTimeout time.Duration
 
@@ -37,10 +37,10 @@ type WebsocketConnection struct {
 
 	server *WebsocketServer //nil on client side
 
-	serverContext *Context
+	serverContext *core.Context
 }
 
-func (conn *WebsocketConnection) GetGoMethod(name string) (*GoFunction, bool) {
+func (conn *WebsocketConnection) GetGoMethod(name string) (*core.GoFunction, bool) {
 	switch name {
 	case "sendJSON":
 		return core.WrapGoMethod(conn.sendJSON), true
@@ -52,7 +52,7 @@ func (conn *WebsocketConnection) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (conn *WebsocketConnection) Prop(ctx *core.Context, name string) Value {
+func (conn *WebsocketConnection) Prop(ctx *core.Context, name string) core.Value {
 	method, ok := conn.GetGoMethod(name)
 	if !ok {
 		panic(core.FormatErrPropertyDoesNotExist(name, conn))
@@ -64,11 +64,11 @@ func (*WebsocketConnection) SetProp(ctx *core.Context, name string, value core.V
 	return core.ErrCannotSetProp
 }
 
-func (*WebsocketConnection) PropertyNames(ctx *Context) []string {
+func (*WebsocketConnection) PropertyNames(ctx *core.Context) []string {
 	return []string{"sendJSON", "readJSON", "close"}
 }
 
-func (conn *WebsocketConnection) sendJSON(ctx *Context, msg Value) error {
+func (conn *WebsocketConnection) sendJSON(ctx *core.Context, msg core.Value) error {
 	if err := conn.checkWriteAndConfig(ctx); err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func (conn *WebsocketConnection) sendJSON(ctx *Context, msg Value) error {
 	return err
 }
 
-func (conn *WebsocketConnection) readJSON(ctx *Context) (Value, error) {
+func (conn *WebsocketConnection) readJSON(ctx *core.Context) (core.Value, error) {
 	if err := conn.checkReadAndConfig(ctx); err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (conn *WebsocketConnection) readJSON(ctx *Context) (Value, error) {
 	return core.ConvertJSONValToInoxVal(ctx, v, false), nil
 }
 
-func (conn *WebsocketConnection) ReadMessage(ctx *Context) (messageType WebsocketMessageType, p []byte, err error) {
+func (conn *WebsocketConnection) ReadMessage(ctx *core.Context) (messageType WebsocketMessageType, p []byte, err error) {
 	if err := conn.checkReadAndConfig(ctx); err != nil {
 		return 0, nil, err
 	}
@@ -110,7 +110,7 @@ func (conn *WebsocketConnection) ReadMessage(ctx *Context) (messageType Websocke
 	return WebsocketMessageType(msgType), p, err
 }
 
-func (conn *WebsocketConnection) WriteMessage(ctx *Context, messageType WebsocketMessageType, data []byte) error {
+func (conn *WebsocketConnection) WriteMessage(ctx *core.Context, messageType WebsocketMessageType, data []byte) error {
 	if err := conn.checkWriteAndConfig(ctx); err != nil {
 		return err
 	}
@@ -129,7 +129,7 @@ func (conn *WebsocketConnection) checkReadAndConfig(ctx *core.Context) error {
 
 	//if on client side
 	if conn.server == nil {
-		perm := WebsocketPermission{
+		perm := core.WebsocketPermission{
 			Kind_:    permkind.Read,
 			Endpoint: conn.endpoint,
 		}
@@ -150,7 +150,7 @@ func (conn *WebsocketConnection) checkWriteAndConfig(ctx *core.Context) error {
 
 	//if on client side
 	if conn.server == nil {
-		perm := WebsocketPermission{
+		perm := core.WebsocketPermission{
 			Kind_:    permkind.WriteStream,
 			Endpoint: conn.endpoint,
 		}

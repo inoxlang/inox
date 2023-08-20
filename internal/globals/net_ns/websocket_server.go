@@ -48,16 +48,16 @@ type WebsocketServer struct {
 	connectionsToClose        chan (*WebsocketConnection)
 	closeMainClosingGoroutine chan (struct{})
 
-	originalContext *Context
+	originalContext *core.Context
 }
 
-func NewWebsocketServer(ctx *Context) (*WebsocketServer, error) {
+func NewWebsocketServer(ctx *core.Context) (*WebsocketServer, error) {
 	return newWebsocketServer(ctx, DEFAULT_WS_MESSAGE_TIMEOUT)
 }
 
-func newWebsocketServer(ctx *Context, messageTimeout time.Duration) (*WebsocketServer, error) {
+func newWebsocketServer(ctx *core.Context, messageTimeout time.Duration) (*WebsocketServer, error) {
 
-	perm := WebsocketPermission{Kind_: permkind.Provide}
+	perm := core.WebsocketPermission{Kind_: permkind.Provide}
 
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return nil, err
@@ -100,7 +100,7 @@ func newWebsocketServer(ctx *Context, messageTimeout time.Duration) (*WebsocketS
 	return server, nil
 }
 
-func (s *WebsocketServer) GetGoMethod(name string) (*GoFunction, bool) {
+func (s *WebsocketServer) GetGoMethod(name string) (*core.GoFunction, bool) {
 	switch name {
 	case "upgrade":
 		return core.WrapGoMethod(s.Upgrade), true
@@ -110,7 +110,7 @@ func (s *WebsocketServer) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (s *WebsocketServer) Prop(ctx *core.Context, name string) Value {
+func (s *WebsocketServer) Prop(ctx *core.Context, name string) core.Value {
 	method, ok := s.GetGoMethod(name)
 	if !ok {
 		panic(core.FormatErrPropertyDoesNotExist(name, s))
@@ -122,7 +122,7 @@ func (*WebsocketServer) SetProp(ctx *core.Context, name string, value core.Value
 	return core.ErrCannotSetProp
 }
 
-func (*WebsocketServer) PropertyNames(ctx *Context) []string {
+func (*WebsocketServer) PropertyNames(ctx *core.Context) []string {
 	return []string{"upgrade", "close"}
 }
 
@@ -212,7 +212,7 @@ func (s *WebsocketServer) removeConnection(conn *WebsocketConnection) {
 	}
 }
 
-func (s *WebsocketServer) Close(ctx *Context) error {
+func (s *WebsocketServer) Close(ctx *core.Context) error {
 	if !s.closingOrClosed.CompareAndSwap(false, true) {
 		return ErrClosedWebsocketServer
 	}

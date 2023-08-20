@@ -11,13 +11,13 @@ import (
 )
 
 type TcpConn struct {
-	initialCtx *Context
-	host       Host
+	initialCtx *core.Context
+	host       core.Host
 	conn       *net.TCPConn
 	closed     int32 //prevent giving back tokens
 }
 
-func (conn *TcpConn) GetGoMethod(name string) (*GoFunction, bool) {
+func (conn *TcpConn) GetGoMethod(name string) (*core.GoFunction, bool) {
 	switch name {
 	case "read":
 		return core.WrapGoMethod(conn.read), true
@@ -29,7 +29,7 @@ func (conn *TcpConn) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (conn *TcpConn) Prop(ctx *core.Context, name string) Value {
+func (conn *TcpConn) Prop(ctx *core.Context, name string) core.Value {
 	method, ok := conn.GetGoMethod(name)
 	if !ok {
 		panic(core.FormatErrPropertyDoesNotExist(name, conn))
@@ -41,22 +41,22 @@ func (*TcpConn) SetProp(ctx *core.Context, name string, value core.Value) error 
 	return core.ErrCannotSetProp
 }
 
-func (*TcpConn) PropertyNames(ctx *Context) []string {
+func (*TcpConn) PropertyNames(ctx *core.Context) []string {
 	return []string{"read", "write", "close"}
 }
 
-func (conn *TcpConn) read(ctx *Context) (*ByteSlice, error) {
+func (conn *TcpConn) read(ctx *core.Context) (*core.ByteSlice, error) {
 	if atomic.LoadInt32(&conn.closed) != 0 {
-		return &ByteSlice{}, errors.New("closed")
+		return &core.ByteSlice{}, errors.New("closed")
 	}
 
-	perm := RawTcpPermission{
+	perm := core.RawTcpPermission{
 		Kind_:  permkind.Read,
 		Domain: conn.host,
 	}
 
 	if err := ctx.CheckHasPermission(perm); err != nil {
-		return &ByteSlice{}, err
+		return &core.ByteSlice{}, err
 	}
 
 	buff := make([]byte, 1<<16)
@@ -66,15 +66,15 @@ func (conn *TcpConn) read(ctx *Context) (*ByteSlice, error) {
 		conn.close(ctx)
 	}
 
-	return &ByteSlice{Bytes: buff[:n], IsDataMutable: true}, err
+	return &core.ByteSlice{Bytes: buff[:n], IsDataMutable: true}, err
 }
 
-func (conn *TcpConn) write(ctx *Context, data Readable) error {
+func (conn *TcpConn) write(ctx *core.Context, data core.Readable) error {
 	if atomic.LoadInt32(&conn.closed) != 0 {
 		return errors.New("closed")
 	}
 
-	perm := RawTcpPermission{
+	perm := core.RawTcpPermission{
 		Kind_:  permkind.WriteStream,
 		Domain: conn.host,
 	}
@@ -95,7 +95,7 @@ func (conn *TcpConn) write(ctx *Context, data Readable) error {
 	return err
 }
 
-func (conn *TcpConn) close(ctx *Context) {
+func (conn *TcpConn) close(ctx *core.Context) {
 	if atomic.LoadInt32(&conn.closed) != 0 {
 		return
 	}

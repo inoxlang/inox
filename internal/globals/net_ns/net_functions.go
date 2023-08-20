@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/websocket"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/miekg/dns"
 )
@@ -28,20 +29,20 @@ const (
 	OPTION_DOES_NOT_EXIST_FMT = "option '%s' does not exist"
 )
 
-func websocketConnect(ctx *Context, u URL, options ...Option) (*WebsocketConnection, error) {
+func websocketConnect(ctx *core.Context, u core.URL, options ...core.Option) (*WebsocketConnection, error) {
 	insecure := false
 
 	for _, opt := range options {
 		switch opt.Name {
 		case "insecure":
-			insecure = bool(opt.Value.(Bool))
+			insecure = bool(opt.Value.(core.Bool))
 		default:
 			return nil, commonfmt.FmtErrInvalidOptionName(opt.Name)
 		}
 	}
 
 	//check that a websocket read or write-stream permission is granted
-	perm := WebsocketPermission{
+	perm := core.WebsocketPermission{
 		Kind_:    permkind.WriteStream,
 		Endpoint: u,
 	}
@@ -75,7 +76,7 @@ func websocketConnect(ctx *Context, u URL, options ...Option) (*WebsocketConnect
 	}, nil
 }
 
-func dnsResolve(ctx *Context, domain Str, recordTypeName Str) ([]Str, error) {
+func dnsResolve(ctx *core.Context, domain core.Str, recordTypeName core.Str) ([]core.Str, error) {
 	defaultConfig, _ := dns.ClientConfigFromFile("/etc/resolv.conf")
 	client := new(dns.Client)
 	//TODO: reuse client ?
@@ -83,7 +84,7 @@ func dnsResolve(ctx *Context, domain Str, recordTypeName Str) ([]Str, error) {
 	msg := new(dns.Msg)
 	var recordType uint16
 
-	perm := DNSPermission{Kind_: permkind.Read, Domain: Host("://" + domain)}
+	perm := core.DNSPermission{Kind_: permkind.Read, Domain: core.Host("://" + domain)}
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return nil, err
 	}
@@ -112,17 +113,17 @@ func dnsResolve(ctx *Context, domain Str, recordTypeName Str) ([]Str, error) {
 		return nil, fmt.Errorf("dns: failure: response code is %d", r.Rcode)
 	}
 
-	records := []Str{}
+	records := []core.Str{}
 	for _, rr := range r.Answer {
-		records = append(records, Str(rr.String()))
+		records = append(records, core.Str(rr.String()))
 	}
 
 	return records, nil
 }
 
-func tcpConnect(ctx *Context, host Host) (*TcpConn, error) {
+func tcpConnect(ctx *core.Context, host core.Host) (*TcpConn, error) {
 
-	perm := RawTcpPermission{
+	perm := core.RawTcpPermission{
 		Kind_:  permkind.Read,
 		Domain: host,
 	}

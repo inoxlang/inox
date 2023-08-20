@@ -12,7 +12,7 @@ import (
 
 func TestWebsocketConnection(t *testing.T) {
 	const HTTPS_HOST = core.Host("https://localhost:8080")
-	const ENDPOINT = URL("wss://localhost:8080/")
+	const ENDPOINT = core.URL("wss://localhost:8080/")
 
 	t.Run("connection should be allowed even if the client's context has only a write permission", func(t *testing.T) {
 		closeChan := createWebsocketServer(testWebsocketServerConfig{
@@ -26,11 +26,11 @@ func TestWebsocketConnection(t *testing.T) {
 			}()
 		}()
 
-		clientCtx := core.NewContext(ContextConfig{
-			Permissions: []Permission{
-				WebsocketPermission{Kind_: permkind.Write, Endpoint: ENDPOINT},
+		clientCtx := core.NewContext(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.WebsocketPermission{Kind_: permkind.Write, Endpoint: ENDPOINT},
 			},
-			Limitations: []Limitation{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 1}},
+			Limitations: []core.Limitation{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 1}},
 			Filesystem:  fs_ns.GetOsFilesystem(),
 		})
 
@@ -75,11 +75,11 @@ func TestWebsocketConnection(t *testing.T) {
 			}()
 		}()
 
-		clientCtx := core.NewContext(ContextConfig{
-			Permissions: []Permission{
-				WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
+		clientCtx := core.NewContext(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
 			},
-			Limitations: []Limitation{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 1}},
+			Limitations: []core.Limitation{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 1}},
 			Filesystem:  fs_ns.GetOsFilesystem(),
 		})
 
@@ -125,11 +125,11 @@ func TestWebsocketConnection(t *testing.T) {
 			}()
 		}()
 
-		clientCtx := core.NewContext(ContextConfig{
-			Permissions: []Permission{
-				WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
+		clientCtx := core.NewContext(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
 			},
-			Limitations: []Limitation{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 1}},
+			Limitations: []core.Limitation{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 1}},
 			Filesystem:  fs_ns.GetOsFilesystem(),
 		})
 
@@ -173,12 +173,12 @@ func TestWebsocketConnection(t *testing.T) {
 			}()
 		}()
 
-		clientCtx := core.NewContext(ContextConfig{
-			Permissions: []Permission{
-				WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
-				WebsocketPermission{Kind_: permkind.Write, Endpoint: ENDPOINT},
+		clientCtx := core.NewContext(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
+				core.WebsocketPermission{Kind_: permkind.Write, Endpoint: ENDPOINT},
 			},
-			Limitations: []Limitation{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 1}},
+			Limitations: []core.Limitation{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 1}},
 			Filesystem:  fs_ns.GetOsFilesystem(),
 		})
 
