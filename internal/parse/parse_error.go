@@ -49,6 +49,7 @@ const (
 	PREINIT_KEYWORD_SHOULD_BE_FOLLOWED_BY_A_BLOCK            = "preinit keyword should be followed by a block"
 	INVALID_MANIFEST_DESC_VALUE                              = "invalid manifest description value, an object is expected"
 	UNTERMINATED_IDENTIFIER_LIT                              = "unterminated identifier literal"
+	IDENTIFIER_LITERAL_MUST_NO_END_WITH_A_HYPHEN             = "identifier literal must not end with '-'"
 	UNTERMINATED_REGEX_LIT                                   = "unterminated regex literal"
 	INVALID_REGEX_LIT                                        = "invalid regex literal"
 	INVALID_STRING_INTERPOLATION_SHOULD_NOT_BE_EMPTY         = "string interpolation should not be empty"

@@ -2139,6 +2139,10 @@ func (p *parser) parseIdentStartingExpression() Node {
 		}
 	}
 
+	if firstIdent.Name[len(firstIdent.Name)-1] == '-' {
+		firstIdent.Err = &ParsingError{UnspecifiedParsingError, IDENTIFIER_LITERAL_MUST_NO_END_WITH_A_HYPHEN}
+	}
+
 	isDynamic := false
 	lastDotIndex := int32(-1)
 

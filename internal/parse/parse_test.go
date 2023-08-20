@@ -1427,6 +1427,24 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("ending with a hyphen", func(t *testing.T) {
+			n, err := parseChunk(t, "a-", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+				Statements: []Node{
+					&IdentifierLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 2},
+							&ParsingError{UnspecifiedParsingError, IDENTIFIER_LITERAL_MUST_NO_END_WITH_A_HYPHEN},
+							nil,
+						},
+						Name: "a-",
+					},
+				},
+			}, n)
+		})
+
 		t.Run("followed by newline", func(t *testing.T) {
 			n := mustparseChunk(t, "a\n")
 			assert.EqualValues(t, &Chunk{
