@@ -1355,7 +1355,7 @@ func (obj *Object) MatchAnyObject() bool {
 	return obj.entries == nil
 }
 
-func (obj *Object) ForEachEntry(fn func(k string, v SymbolicValue) error) error {
+func (obj *Object) ForEachEntry(fn func(propName string, propValue SymbolicValue) error) error {
 	for k, v := range obj.entries {
 		if err := fn(k, v); err != nil {
 			return err

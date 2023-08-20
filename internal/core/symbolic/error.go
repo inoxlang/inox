@@ -77,7 +77,9 @@ const (
 	//permissions
 	POSSIBLE_MISSING_PERM_TO_CREATE_A_COROUTINE = "missing permission to create a coroutine"
 
-	META_VAL_OF_LIFETIMEJOB_SHOULD_BE_IMMUTABLE = "meta value of lifetime job should be immutable"
+	META_VAL_OF_LIFETIMEJOB_SHOULD_BE_IMMUTABLE                         = "meta value of lifetime job should be immutable"
+	LIFETIME_JOBS_NOT_ALLOWED_IN_READONLY_OBJECTS                       = "lifetime jobs are not allowed in readonly objects"
+	PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE = "property values of readonly objects should be readonly or immutable"
 )
 
 var (

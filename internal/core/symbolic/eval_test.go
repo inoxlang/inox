@@ -1401,6 +1401,80 @@ func TestSymbolicEval(t *testing.T) {
 				},
 			}, res)
 		})
+
+		t.Run("readonly objects should not have lifetime jobs", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(obj readonly {}){
+					return obj
+				}
+				return f({})
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &Object{
+				entries:  map[string]Serializable{},
+				readonly: true,
+			}, res)
+		})
+
+		t.Run("readonly objects should not have lifetime jobs", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(obj readonly {}){
+					return obj
+				}
+				return f({
+					lifetimejob #job {
+
+					}
+				})
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			lifetimeJobExpr := parse.FindNode(n, (*parse.LifetimejobExpression)(nil), nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(lifetimeJobExpr, state, LIFETIME_JOBS_NOT_ALLOWED_IN_READONLY_OBJECTS),
+			}, state.errors())
+
+			if !assert.IsType(t, (*Object)(nil), res) {
+				return
+			}
+
+			obj := res.(*Object)
+			assert.True(t, obj.readonly)
+		})
+
+		t.Run("readonly objects should not have non-readonly property values", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(obj readonly {}){
+					return obj
+				}
+				list = []
+				return f({
+					a: #{}
+					b: list # not readonly
+				})
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			prop := parse.FindNode(n, (*parse.ObjectProperty)(nil), func(n *parse.ObjectProperty, isUnique bool) bool {
+				return n.Name() == "b"
+			})
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(prop.Key, state, PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE),
+			}, state.errors())
+
+			if !assert.IsType(t, (*Object)(nil), res) {
+				return
+			}
+
+			obj := res.(*Object)
+			assert.True(t, obj.readonly)
+		})
 	})
 
 	t.Run("record", func(t *testing.T) {

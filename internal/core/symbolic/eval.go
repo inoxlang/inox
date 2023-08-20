@@ -1962,6 +1962,11 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			return depth_
 		}
 
+		expectedObj, ok := findInMultivalue[*Object](options.expectedValue)
+		if !ok {
+			expectedObj = &Object{}
+		}
+
 		sort.Slice(keys, func(i, j int) bool {
 			keyA := keys[i]
 			keyB := keys[j]
@@ -1982,6 +1987,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		})
 
 		obj := NewInexactObject(entries, nil, nil)
+		if expectedObj.readonly {
+			obj.readonly = true
+		}
 
 		if len(cycles) > 0 {
 			state.addError(makeSymbolicEvalError(node, state, fmtMethodCyclesDetected(cycles)))
@@ -1994,20 +2002,17 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		}
 		state.setNextSelf(obj)
 
-		expectedObj, ok := findInMultivalue[*Object](options.expectedValue)
-		if ok && expectedObj.entries != nil {
+		//add allowed missing properties
+		{
 			var properties []string
-			expectedObj.ForEachEntry(func(propName string, _ SymbolicValue) error {
+			expectedObj.ForEachEntry(func(propName string, propValue SymbolicValue) error {
 				if slices.Contains(keys, propName) {
 					return nil
 				}
 				properties = append(properties, propName)
 				return nil
 			})
-
 			state.symbolicData.SetAllowedNonPresentProperties(n, properties)
-		} else {
-			expectedObj = &Object{}
 		}
 
 		//evaluate properties
@@ -2061,6 +2066,15 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				serializable = ANY_SERIALIZABLE
 			} else if _, ok := asWatchable(propVal).(Watchable); !ok && propVal.IsMutable() {
 				state.addError(makeSymbolicEvalError(p, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_WATCHABLE))
+			}
+
+			//additional checks if expected object is readonly
+			if expectedObj.readonly {
+				if _, ok := propVal.(*LifetimeJob); ok {
+					state.addError(makeSymbolicEvalError(p, state, LIFETIME_JOBS_NOT_ALLOWED_IN_READONLY_OBJECTS))
+				} else if !IsReadonlyOrImmutable(propVal) {
+					state.addError(makeSymbolicEvalError(p.Key, state, PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE))
+				}
 			}
 
 			obj.initNewProp(key, serializable, static)
