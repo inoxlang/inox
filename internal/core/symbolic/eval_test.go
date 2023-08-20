@@ -607,6 +607,26 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY, res)
 		})
 
+		t.Run("missing value", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				var a 
+				return a
+			`, nil)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("missing value after annotation", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				var a int
+				return a
+			`, nil)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, ANY_INT, res)
+		})
+
 		t.Run("value not assignable to type (deep mismatch: object property)", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				var a %{a: str} = {a: 1}; 

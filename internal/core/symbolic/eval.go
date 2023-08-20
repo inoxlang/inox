@@ -70,7 +70,10 @@ var (
 	ANY_READABLE = &AnyReadable{}
 	ANY_READER   = &Reader{}
 
-	SUPPORTED_PARSING_ERRORS = []parse.ParsingErrorKind{parse.UnterminatedMemberExpr, parse.MissingBlock, parse.MissingFnBody}
+	SUPPORTED_PARSING_ERRORS = []parse.ParsingErrorKind{
+		parse.UnterminatedMemberExpr, parse.MissingBlock, parse.MissingFnBody,
+		parse.MissingEqualSignInDeclaration,
+	}
 )
 
 type ConcreteGlobalValue struct {
@@ -555,22 +558,35 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				staticMatching = static.SymbolicValue()
 			}
 
-			deeperMismatch := false
-			right, err := _symbolicEval(decl.Right, state, evalOptions{expectedValue: staticMatching, actualValueMismatch: &deeperMismatch})
-			if err != nil {
-				return nil, err
-			}
+			var (
+				right SymbolicValue
+				err   error
+			)
 
-			if static != nil {
-				if !static.TestValue(right) {
-					if !deeperMismatch {
-						state.addError(makeSymbolicEvalError(decl.Right, state, fmtNotAssignableToVarOftype(right, static)))
+			if decl.Right != nil {
+				deeperMismatch := false
+				right, err = _symbolicEval(decl.Right, state, evalOptions{expectedValue: staticMatching, actualValueMismatch: &deeperMismatch})
+				if err != nil {
+					return nil, err
+				}
+
+				if static != nil {
+					if !static.TestValue(right) {
+						if !deeperMismatch {
+							state.addError(makeSymbolicEvalError(decl.Right, state, fmtNotAssignableToVarOftype(right, static)))
+						}
+						right = ANY
+					} else {
+						if holder, ok := right.(StaticDataHolder); ok {
+							holder.AddStatic(static) //TODO: use path narowing, values should never be modified directly
+						}
 					}
+				}
+			} else {
+				if static == nil {
 					right = ANY
 				} else {
-					if holder, ok := right.(StaticDataHolder); ok {
-						holder.AddStatic(static) //TODO: use path narowing, values should never be modified directly
-					}
+					right = static.SymbolicValue()
 				}
 			}
 
