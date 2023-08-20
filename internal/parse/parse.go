@@ -6891,7 +6891,7 @@ func (p *parser) parseGlobalConstantDeclarations() *GlobalConstantDeclarations {
 				}
 
 				if p.i >= p.len {
-					parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_LOCAL_VAR_DECLS_MISSING_CLOSING_PAREN}
+					parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_LOCAL_VAR_DECLS_MISSING_CLOSING_PAREN}
 					break
 				}
 
@@ -6972,7 +6972,7 @@ func (p *parser) parseSingleLocalVarDeclaration(declarations *[]*LocalVariableDe
 
 	//temporary
 	if p.i >= p.len || p.s[p.i] != '=' {
-		declParsingErr = &ParsingError{UnspecifiedParsingError, "invalid local variable declaration, missing '=' after type annotation"}
+		declParsingErr = &ParsingError{MissingEqualSignInDeclaration, MISSING_EQUAL_SIGN_AFTER_TYPE_ANNOTATION}
 		if p.i < p.len {
 			p.i++
 		}
@@ -7047,7 +7047,7 @@ func (p *parser) parseLocalVariableDeclarations(varKeywordBase NodeBase) *LocalV
 			}
 
 			if p.i >= p.len {
-				parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_LOCAL_VAR_DECLS_MISSING_CLOSING_PAREN}
+				parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_LOCAL_VAR_DECLS_MISSING_CLOSING_PAREN}
 				break
 			}
 

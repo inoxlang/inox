@@ -11,6 +11,7 @@ const (
 	UnterminatedMemberExpr
 	MissingBlock
 	MissingFnBody
+	MissingEqualSignInDeclaration
 	InvalidNext
 	//TODO: add more kinds
 )
@@ -228,10 +229,11 @@ const (
 	UNTERMINATED_CONCAT_EXPR_ELEMS_EXPECTED = "unterminated concatenation expression: at least one element is expected after keyword 'concat'"
 
 	//local var declarations
-	UNTERMINATED_LOCAL_VAR_DECLS                   = "unterminated local variable declarations"
-	INVALID_LOCAL_VAR_DECLS_OPENING_PAREN_EXPECTED = "invalid local variable declarations, expected opening parenthesis after ''"
-	INVALID_LOCAL_VAR_DECLS_MISSING_CLOSING_PAREN  = "invalid local variable declarations, missing closing parenthesis"
-	INVALID_LOCAL_VAR_DECL_LHS_MUST_BE_AN_IDENT    = "invalid local variable declaration, left hand side must be an identifier"
+	UNTERMINATED_LOCAL_VAR_DECLS                       = "unterminated local variable declarations"
+	INVALID_LOCAL_VAR_DECLS_OPENING_PAREN_EXPECTED     = "invalid local variable declarations, expected opening parenthesis after ''"
+	UNTERMINATED_LOCAL_VAR_DECLS_MISSING_CLOSING_PAREN = "unterminated local variable declarations, missing closing parenthesis"
+	INVALID_LOCAL_VAR_DECL_LHS_MUST_BE_AN_IDENT        = "invalid local variable declaration, left hand side must be an identifier"
+	MISSING_EQUAL_SIGN_AFTER_TYPE_ANNOTATION           = "missing '=' after type annotation"
 
 	//spawn expression
 	UNTERMINATED_SPAWN_EXPRESSION_MISSING_EMBEDDED_MODULE_AFTER_GO_KEYWORD = "unterminated spawn expression: missing embedded module after 'go' keyword"
