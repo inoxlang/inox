@@ -910,6 +910,32 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		}
 	})
 
+	t.Run("other binary binary expressions", func(t *testing.T) {
+		testCases := []struct {
+			code   string
+			result Bool
+			err    error
+		}{
+			{`("1" substrof "")`, False, nil},
+			{`("1" substrof "1")`, True, nil},
+			{`("1" substrof "11")`, True, nil},
+			{`("11" substrof "1")`, False, nil},
+		}
+
+		for _, testCase := range testCases {
+			t.Run(testCase.code, func(t *testing.T) {
+				res, err := Eval(testCase.code, NewGlobalState(NewDefaultTestContext(), nil), false)
+				if testCase.err == nil {
+					assert.NoError(t, err)
+					assert.Equal(t, testCase.result, res)
+				} else {
+					assert.ErrorIs(t, err, testCase.err)
+					assert.Nil(t, res)
+				}
+			})
+		}
+	})
+
 	t.Run("integer unary expression", func(t *testing.T) {
 		t.Run("negating the smallest integer should throw an error", func(t *testing.T) {
 			res, err := Eval("(- -9223372036854775808)", NewGlobalState(NewDefaultTestContext(), nil), false)

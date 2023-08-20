@@ -591,7 +591,7 @@ func (v *VM) run() {
 			right := v.stack[v.sp-1]
 			v.sp -= 2
 
-			val := strings.Contains(left.(WrappedString).UnderlyingString(), right.(WrappedString).UnderlyingString())
+			val := strings.Contains(right.(WrappedString).UnderlyingString(), left.(WrappedString).UnderlyingString())
 
 			v.stack[v.sp] = Bool(val)
 			v.sp++

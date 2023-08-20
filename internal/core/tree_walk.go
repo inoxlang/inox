@@ -1919,7 +1919,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 			return Bool(ok), nil
 		case parse.Substrof:
-			return Bool(strings.Contains(left.(WrappedString).UnderlyingString(), right.(WrappedString).UnderlyingString())), nil
+			return Bool(strings.Contains(right.(WrappedString).UnderlyingString(), left.(WrappedString).UnderlyingString())), nil
 		case parse.SetDifference:
 			if _, ok := right.(Pattern); !ok {
 				right = NewExactValuePattern(right.(Serializable))
