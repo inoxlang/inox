@@ -2215,6 +2215,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		return rec, nil
 	case *parse.ListLiteral:
 		elements := make([]Serializable, 0)
+		expectedList, _ := findInMultivalue[*List](options.expectedValue)
 
 		if n.TypeAnnotation != nil {
 			generalElemPattern, err := symbolicEval(n.TypeAnnotation, state)
@@ -2267,9 +2268,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			return resultList, nil
 		}
 
-		expectedList, ok := findInMultivalue[*List](options.expectedValue)
 		var expectedElement SymbolicValue = nil
-		if ok {
+		if expectedList != nil {
 			expectedElement = expectedList.element()
 		} else {
 			//we do not search for a Sequence because we could find a sequence that is not a list
@@ -2280,6 +2280,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		}
 
 		if len(n.Elements) == 0 {
+			if expectedList != nil && expectedList.readonly {
+				return EMPTY_READONLY_LIST, nil
+			}
 			return EMPTY_LIST, nil
 		}
 
@@ -2331,7 +2334,12 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 			elements = append(elements, AsSerializable(e).(Serializable))
 		}
-		return NewList(elements...), nil
+
+		resultList := NewList(elements...)
+		if expectedList != nil && expectedList.readonly {
+			resultList.readonly = true
+		}
+		return resultList, nil
 	case *parse.TupleLiteral:
 		elements := make([]Serializable, 0)
 

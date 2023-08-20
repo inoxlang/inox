@@ -284,6 +284,46 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewList(ANY_INT), res)
 		})
 
+		t.Run("readonly", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(list readonly []int){
+					return list
+				}
+				return f([])
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, EMPTY_READONLY_LIST, res)
+		})
+
+		t.Run("readonly lists should not have non-readonly elements", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(list readonly []{}){
+					return list
+				}
+				obj = {}
+				return f([obj])
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			identLiteral := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral) bool {
+				return n.Name == "obj"
+			})[1]
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(identLiteral, state, fmtUnexpectedElemInListofValues(EMPTY_OBJECT, EMPTY_READONLY_OBJECT)),
+			}, state.errors())
+
+			if !assert.IsType(t, (*List)(nil), res) {
+				return
+			}
+
+			list := res.(*List)
+			assert.True(t, list.readonly)
+		})
+
 		t.Run("non-serializable element", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk("[go do {}]")
 			elemNode := parse.FindNode(n, (*parse.SpawnExpression)(nil), nil)
@@ -1422,7 +1462,7 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
-		t.Run("readonly objects should not have lifetime jobs", func(t *testing.T) {
+		t.Run("readonly", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(obj readonly {}){
 					return obj

@@ -26,8 +26,12 @@ var (
 	ANY_NAMESPACE = NewAnyNamespace()
 	ANY_DICT      = NewAnyDictionary()
 	ANY_KEYLIST   = NewAnyKeyList()
-	EMPTY_LIST    = NewList()
-	EMPTY_TUPLE   = NewTuple()
+
+	EMPTY_OBJECT          = NewEmptyObject()
+	EMPTY_READONLY_OBJECT = NewEmptyReadonlyObject()
+	EMPTY_LIST            = NewList()
+	EMPTY_READONLY_LIST   = NewReadonlyList()
+	EMPTY_TUPLE           = NewTuple()
 
 	_ = []Indexable{
 		(*String)(nil), (*Array)(nil), (*List)(nil), (*Tuple)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*Object)(nil), (*IntRange)(nil),
@@ -241,6 +245,12 @@ func NewList(elements ...Serializable) *List {
 		elements = []Serializable{}
 	}
 	return &List{elements: elements}
+}
+
+func NewReadonlyList(elements ...Serializable) *List {
+	list := NewList(elements...)
+	list.readonly = true
+	return list
 }
 
 func NewListOf(generalElement Serializable) *List {
@@ -1135,6 +1145,12 @@ func NewAnyObject() *Object {
 
 func NewEmptyObject() *Object {
 	return &Object{entries: map[string]Serializable{}}
+}
+
+func NewEmptyReadonlyObject() *Object {
+	obj := NewEmptyObject()
+	obj.readonly = true
+	return obj
 }
 
 func NewObject(exact bool, entries map[string]Serializable, optionalEntries map[string]struct{}, static map[string]Pattern) *Object {
