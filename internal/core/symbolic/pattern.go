@@ -1185,7 +1185,7 @@ func (p *ObjectPattern) HasUnderylingPattern() bool {
 
 func (p *ObjectPattern) TestValue(v SymbolicValue) bool {
 	obj, ok := v.(*Object)
-	if !ok {
+	if !ok || p.readonly != obj.readonly {
 		return false
 	}
 
@@ -1871,7 +1871,7 @@ func (p *ListPattern) HasUnderylingPattern() bool {
 
 func (p *ListPattern) TestValue(v SymbolicValue) bool {
 	list, ok := v.(*List)
-	if !ok {
+	if !ok || p.readonly != list.readonly {
 		return false
 	}
 

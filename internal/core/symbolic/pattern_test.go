@@ -931,6 +931,16 @@ func TestSymbolicListPattern(t *testing.T) {
 				true,
 			},
 			{
+				&ListPattern{generalElement: ANY_SERIALIZABLE_PATTERN, readonly: true},
+				&List{elements: []Serializable{}}, //empty list
+				false,
+			},
+			{
+				&ListPattern{generalElement: ANY_SERIALIZABLE_PATTERN},
+				&List{elements: []Serializable{}, readonly: true}, //empty list
+				false,
+			},
+			{
 				&ListPattern{generalElement: ANY_SERIALIZABLE_PATTERN},
 				&List{generalElement: ANY_INT}, //[]int
 				true,
@@ -956,6 +966,16 @@ func TestSymbolicListPattern(t *testing.T) {
 				&ListPattern{elements: []Pattern{ANY_SERIALIZABLE_PATTERN}},
 				&List{elements: []Serializable{ANY_INT}}, //[string]
 				true,
+			},
+			{
+				&ListPattern{elements: []Pattern{ANY_SERIALIZABLE_PATTERN}, readonly: true},
+				&List{elements: []Serializable{ANY_INT}}, //[string]
+				false,
+			},
+			{
+				&ListPattern{elements: []Pattern{ANY_SERIALIZABLE_PATTERN}},
+				&List{elements: []Serializable{ANY_INT}, readonly: true}, //[string]
+				false,
 			},
 			{
 				&ListPattern{elements: []Pattern{ANY_SERIALIZABLE_PATTERN}},
