@@ -591,6 +591,9 @@ func (l *List) appendSequence(ctx *Context, seq Sequence) {
 }
 
 func (l *List) Append(ctx *Context, elements ...Serializable) {
+	if l.generalElement != nil {
+		ctx.SetSymbolicGoFunctionParameters(&[]SymbolicValue{l.element()}, []string{"values"})
+	}
 	l.appendSequence(ctx, NewList(elements...))
 }
 
