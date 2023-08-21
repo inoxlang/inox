@@ -125,6 +125,9 @@ type DatabaseWrappingArgs struct {
 	Inner                Database
 	OwnerState           *GlobalState
 	ExpectedSchemaUpdate bool
+
+	//force the loading top level entities if there is not expected schema update
+	ForceLoadBeforeOwnerStateSet bool
 }
 
 func WrapDatabase(ctx *Context, args DatabaseWrappingArgs) (*DatabaseIL, error) {
@@ -147,7 +150,7 @@ func WrapDatabase(ctx *Context, args DatabaseWrappingArgs) (*DatabaseIL, error) 
 		ownerState:           args.OwnerState,
 	}
 
-	if !args.ExpectedSchemaUpdate {
+	if !args.ExpectedSchemaUpdate && args.ForceLoadBeforeOwnerStateSet {
 		topLevelEntities, err := args.Inner.LoadTopLevelEntities(ctx)
 		if err != nil {
 			return nil, err
@@ -200,11 +203,19 @@ func GetStaticallyCheckDbResolutionDataFn(scheme Scheme) (StaticallyCheckDbResol
 	return fn, ok
 }
 
-func (db *DatabaseIL) SetOwnerStateOnce(state *GlobalState) {
+func (db *DatabaseIL) SetOwnerStateOnceAndLoadIfNecessary(ctx *Context, state *GlobalState) error {
 	if db.ownerState != nil {
 		panic(ErrOwnerStateAlreadySet)
 	}
+	if db.topLevelEntities == nil {
+		topLevelEntities, err := db.inner.LoadTopLevelEntities(ctx)
+		if err != nil {
+			return err
+		}
+		db.topLevelEntities = topLevelEntities
+	}
 	db.ownerState = state
+	return nil
 }
 
 func (db *DatabaseIL) Resource() SchemeHolder {
@@ -216,6 +227,52 @@ type MigrationOpHandlers struct {
 	Inclusions      map[PathPattern]*MigrationOpHandler
 	Replacements    map[PathPattern]*MigrationOpHandler
 	Initializations map[PathPattern]*MigrationOpHandler
+}
+
+func (handlers MigrationOpHandlers) FilterTopLevel() MigrationOpHandlers {
+	filtered := MigrationOpHandlers{}
+
+	for pattern, handler := range handlers.Deletions {
+		if strings.Count(string(pattern), "/") > 1 {
+			continue
+		}
+		if filtered.Deletions == nil {
+			filtered.Deletions = map[PathPattern]*MigrationOpHandler{}
+		}
+		filtered.Deletions[pattern] = handler
+	}
+
+	for pattern, handler := range handlers.Inclusions {
+		if strings.Count(string(pattern), "/") > 1 {
+			continue
+		}
+		if filtered.Inclusions == nil {
+			filtered.Inclusions = map[PathPattern]*MigrationOpHandler{}
+		}
+		filtered.Inclusions[pattern] = handler
+	}
+
+	for pattern, handler := range handlers.Replacements {
+		if strings.Count(string(pattern), "/") > 1 {
+			continue
+		}
+		if filtered.Replacements == nil {
+			filtered.Replacements = map[PathPattern]*MigrationOpHandler{}
+		}
+		filtered.Replacements[pattern] = handler
+	}
+
+	for pattern, handler := range handlers.Initializations {
+		if strings.Count(string(pattern), "/") > 1 {
+			continue
+		}
+		if filtered.Initializations == nil {
+			filtered.Initializations = map[PathPattern]*MigrationOpHandler{}
+		}
+		filtered.Initializations[pattern] = handler
+	}
+
+	return filtered
 }
 
 func (handlers MigrationOpHandlers) FilterByPrefix(path Path) MigrationOpHandlers {

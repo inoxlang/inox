@@ -131,8 +131,9 @@ func TestDatabaseIL(t *testing.T) {
 		}
 
 		dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
-			Inner:      db,
-			OwnerState: ctx.state,
+			Inner:                        db,
+			OwnerState:                   ctx.state,
+			ForceLoadBeforeOwnerStateSet: true,
 		}))
 
 		assert.Equal(t, map[string]Serializable{"a": &loadableTestValue{

@@ -195,18 +195,17 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		}
 
 		wrapped, err := core.WrapDatabase(ctx, core.DatabaseWrappingArgs{
-			Inner:                db,
-			ExpectedSchemaUpdate: config.ExpectedSchemaUpdate,
+			Inner:                        db,
+			ExpectedSchemaUpdate:         config.ExpectedSchemaUpdate,
+			ForceLoadBeforeOwnerStateSet: false,
 		})
 		if err != nil {
-			err = fmt.Errorf("failed to load data of the '%s' database: %w", config.Name, err)
+			err = fmt.Errorf("failed to wrap '%s' database: %w", config.Name, err)
 			if !args.DevMode {
 				ctx.Cancel()
 				return nil, nil, nil, err
 			}
 			dbOpeningError = err
-			//TODO: use cached schema
-			db = core.NewFailedToOpenDatabase(config.Resource)
 		}
 		dbs[config.Name] = wrapped
 		ownedDatabases[config.Name] = struct{}{}
@@ -248,7 +247,14 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 
 	for dbName, db := range dbs {
 		if _, ok := ownedDatabases[dbName]; ok {
-			db.SetOwnerStateOnce(state)
+			if err := db.SetOwnerStateOnceAndLoadIfNecessary(ctx, state); err != nil {
+				err = fmt.Errorf("failed to load data of the '%s' database: %w", dbName, err)
+				if !args.DevMode {
+					ctx.Cancel()
+					return nil, nil, nil, err
+				}
+				dbOpeningError = err
+			}
 		}
 	}
 
