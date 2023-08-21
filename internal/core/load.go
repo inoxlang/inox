@@ -2,6 +2,7 @@ package core
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"sync"
 )
@@ -18,6 +19,10 @@ var (
 	ErrFailedToLoadNonExistingValue                   = errors.New("failed to load non-existing value")
 )
 
+func init() {
+	RegisterLoadInstanceFn(OBJECT_PATTERN_TYPE, loadObject)
+}
+
 type SerializedValueStorage interface {
 	BaseURL() URL
 	GetSerialized(ctx *Context, key Path) (string, bool)
@@ -30,7 +35,7 @@ type InstanceLoadArgs struct {
 	Key          Path
 	Storage      SerializedValueStorage
 	Pattern      Pattern
-	AllowMissing bool
+	AllowMissing bool //if true the loading function is allowed to return an empty/default value matching the pattern
 	Migration    *InstanceMigrationArgs
 }
 
@@ -94,6 +99,62 @@ func LoadInstance(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
 	return fn(ctx, args)
 }
 
-func loadObject(ctx *Context, args InstanceLoadArgs) {
-	//IsSimpleInoxVal()
+func loadObject(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
+	path := args.Key
+	pattern := args.Pattern
+	storage := args.Storage
+
+	objectPattern := pattern.(*ObjectPattern)
+	rootData, ok := storage.GetSerialized(ctx, path)
+	if !ok {
+		return nil, fmt.Errorf("%w: %s", ErrFailedToLoadNonExistingValue, path)
+	}
+
+	parsed, err := ParseJSONRepresentation(ctx, rootData, objectPattern)
+
+	if err != nil {
+		return nil, err
+	}
+
+	object, ok := parsed.(*Object)
+	if !ok {
+		return nil, fmt.Errorf("an object was expected")
+	}
+
+	_, hasURL := object.URL()
+	if !hasURL {
+		object.SetURLOnce(ctx, args.Storage.BaseURL().AppendAbsolutePath(path))
+	}
+
+	//we perform the migration before adding mutation handlers for obvious reasons
+	if args.Migration != nil {
+		next, err := object.Migrate(ctx, args.Key, args.Migration)
+		if err != nil {
+			return nil, fmt.Errorf("migration failed: %w", err)
+		}
+
+		object = next.(*Object)
+
+		if args.Migration.NextPattern == nil {
+			return nil, fmt.Errorf("missing next pattern for %s", path)
+		}
+		pattern = args.Migration.NextPattern
+
+		updatedRepr := GetJSONRepresentation(object, ctx, pattern)
+		storage.SetSerialized(ctx, path, updatedRepr)
+	}
+
+	//add mutation handlers
+	object.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
+		registerAgain = true
+		updatedRepr := GetJSONRepresentation(object, ctx, pattern)
+		storage.SetSerialized(ctx, path, updatedRepr)
+		return
+	}, MutationWatchingConfiguration{
+		Depth: DeepWatching,
+	})
+
+	object.Share(ctx.GetClosestState())
+
+	return object, nil
 }

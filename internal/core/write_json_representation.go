@@ -31,15 +31,14 @@ type JSONSerializationConfig struct {
 	Location string  //location of the current value being serialized
 }
 
-func GetJSONRepresentation(v Serializable, ctx *Context) string {
-	buff := bytes.NewBuffer(nil)
+func GetJSONRepresentation(v Serializable, ctx *Context, pattern Pattern) string {
 	stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, nil, 0)
 
-	err := v.WriteJSONRepresentation(ctx, stream, JSONSerializationConfig{}, 0)
+	err := v.WriteJSONRepresentation(ctx, stream, JSONSerializationConfig{Pattern: pattern}, 0)
 	if err != nil {
 		panic(fmt.Errorf("%s: %w", Stringify(v, ctx), err))
 	}
-	return buff.String()
+	return string(stream.Buffer())
 }
 
 func writeUntypedValueJSON(typeName string, fn func(w *jsoniter.Stream) error, w *jsoniter.Stream) error {

@@ -91,6 +91,7 @@ var (
 	SYSGRAPH_EDGE_TYPE      = reflect.TypeOf(SystemGraphEdge{})
 	SECRET_TYPE             = reflect.TypeOf((*Secret)(nil))
 	READER_INTERFACE_TYPE   = reflect.TypeOf((*Reader)(nil))
+	OBJECT_PATTERN_TYPE     = reflect.TypeOf((*ObjectPattern)(nil))
 )
 
 var IMPLICITLY_REMOVED_ROUTINE_PERMS = []Permission{
