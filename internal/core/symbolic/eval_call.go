@@ -230,6 +230,12 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			}
 
 			state.symbolicData.PushNodeValue(calleeNode, function)
+			switch c := calleeNode.(type) {
+			case *parse.IdentifierMemberExpression:
+				state.symbolicData.PushNodeValue(c.PropertyNames[len(c.PropertyNames)-1], function)
+			case *parse.MemberExpression:
+				state.symbolicData.PushNodeValue(c.PropertyName, function)
+			}
 
 			setAllowedNonPresentProperties(argNodes, nonSpreadArgCount, params, state)
 
