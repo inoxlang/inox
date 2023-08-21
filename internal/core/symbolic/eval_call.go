@@ -201,7 +201,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			static, _ := state.getStaticOfNode(selfPartialNode)
 
 			if (static != nil && !static.TestValue(updatedSelf)) ||
-				(static == nil && !callee.Test(updatedSelf)) {
+				(static == nil && !self.Test(updatedSelf)) {
 				state.addError(makeSymbolicEvalError(callNode, state, INVALID_MUTATION))
 			} else { //ok
 				narrowPath(selfPartialNode, setExactValue, updatedSelf, state, 0)

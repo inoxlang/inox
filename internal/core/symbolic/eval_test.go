@@ -4127,6 +4127,34 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 		})
 
+		t.Run("a Go method should be able to update its receiver to a compatible value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				l = [1]
+				l.append(2)
+				return l
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewListOf(ANY_INT), res)
+		})
+
+		t.Run("it should be an error for a Go method to its receiver to an incomptable value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var l [1] = [1]
+				l.append(2)
+				return l
+			`)
+			callNode := parse.FindNode(n, (*parse.CallExpression)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(callNode, state, INVALID_MUTATION),
+			}, state.errors())
+			assert.Equal(t, NewList(NewInt(1)), res)
+		})
 	})
 
 	t.Run("call abstract function", func(t *testing.T) {
