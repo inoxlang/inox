@@ -32,3 +32,7 @@ func FmtInvalidLastSegmentOfMigrationPathShouldbeAnInteger(pth []string) error {
 func FmtLastSegmentOfMigrationPathIsOutOfBounds(pth []string) error {
 	return fmt.Errorf("last segment of migration path %s is out of bounds", "/"+strings.Join(pth, "/"))
 }
+
+func FmtMissingNextPattern(pth []string) error {
+	return fmt.Errorf("missing next pattern for %s", "/"+strings.Join(pth, "/"))
+}

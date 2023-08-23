@@ -430,6 +430,56 @@ func TestPersistLoadSet(t *testing.T) {
 		assert.Nil(t, set)
 	})
 
+	t.Run("migration: replacement", func(t *testing.T) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		storage := &core.TestValueStorage{
+			BaseURL_: "ldb://main/",
+			Data:     map[core.Path]string{"/x": `[]`},
+		}
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: containers_common.UniquenessConstraint{
+				Type: containers_common.UniqueRepr,
+			},
+		}, core.CallBasedPatternReprMixin{})
+		nextPattern := core.NewInexactObjectPattern(map[string]core.Pattern{"a": core.INT_PATTERN})
+
+		val, err := loadSet(ctx, core.InstanceLoadArgs{
+			Key:          "/x",
+			Storage:      storage,
+			Pattern:      pattern,
+			AllowMissing: false,
+			Migration: &core.InstanceMigrationArgs{
+				NextPattern: nextPattern,
+				MigrationHandlers: core.MigrationOpHandlers{
+					Replacements: map[core.PathPattern]*core.MigrationOpHandler{
+						"/x": {
+							InitialValue: core.NewObjectFromMap(core.ValMap{"a": core.Int(1)}, ctx),
+						},
+					},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.NotNil(t, val) {
+			return
+		}
+		object := val.(*core.Object)
+
+		url, _ := object.URL()
+
+		if !assert.Equal(t, core.URL("ldb://main/x"), url) {
+			return
+		}
+
+		assert.True(t, object.IsShared())
+
+		//make sure the post-migration value is saved
+		assert.Equal(t, `{"_url_":"ldb://main/x","a":"1"}`, storage.Data["/x"])
+	})
 }
 
 func TestSetAddRemove(t *testing.T) {

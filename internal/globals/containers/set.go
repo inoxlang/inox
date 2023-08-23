@@ -91,70 +91,110 @@ func loadSet(ctx *core.Context, args core.InstanceLoadArgs) (core.UrlHolder, err
 	path := args.Key
 	pattern := args.Pattern
 	storage := args.Storage
-
 	setPattern := pattern.(*SetPattern)
-	rootData, ok := storage.GetSerialized(ctx, path)
-	if !ok {
-		if args.AllowMissing {
-			rootData = "[]"
-		} else {
-			return nil, fmt.Errorf("%w: %s", core.ErrFailedToLoadNonExistingValue, path)
+	initialValue := args.InitialValue
+
+	var (
+		set              *Set
+		ok               bool
+		serialized       string
+		hasSerializedSet bool
+	)
+
+	if initialValue != nil {
+		set, ok = initialValue.(*Set)
+		if !ok {
+			list, isList := initialValue.(*core.List)
+			if !isList || list.Len() != 0 {
+				return nil, fmt.Errorf("%w: a Set or an empty list is expected", core.ErrInvalidInitialValue)
+			}
+		}
+	} else {
+		serialized, hasSerializedSet = storage.GetSerialized(ctx, path)
+		if !hasSerializedSet {
+			if args.AllowMissing {
+				serialized = "[]"
+				hasSerializedSet = true
+			} else {
+				return nil, fmt.Errorf("%w: %s", core.ErrFailedToLoadNonExistingValue, path)
+			}
 		}
 	}
 
-	set := NewSetWithConfig(ctx, nil, setPattern.config)
-	set.pattern = setPattern
-	set.storage = storage
-	set.path = path
+	if set == nil { //true if there is no initial value or if the initial value is an empty list
+		set = NewSetWithConfig(ctx, nil, setPattern.config)
+		set.pattern = setPattern
+		set.storage = storage
+		set.path = path
+	}
+
+	if set.url != "" {
+		return nil, errors.New("initial Set should not have a URL")
+	}
 	set.url = storage.BaseURL().AppendAbsolutePath(path)
 
-	var finalErr error
+	if hasSerializedSet {
+		var finalErr error
 
-	//TODO: lazy load if no migration
-	it := jsoniter.ParseString(jsoniter.ConfigCompatibleWithStandardLibrary, rootData)
-	it.ReadArrayCB(func(i *jsoniter.Iterator) (cont bool) {
-		val, err := core.ParseNextJSONRepresentation(ctx, it, setPattern.config.Element)
-		if err != nil {
-			finalErr = fmt.Errorf("failed to parse representation of one of the Set's element: %w", err)
-			return false
-		}
-
-		defer func() {
-			e := recover()
-
-			if err, ok := e.(error); ok {
-				finalErr = err
-			} else if e != nil {
-				cont = false
-				finalErr = fmt.Errorf("%#v", e)
+		//TODO: lazy load if no migration
+		it := jsoniter.ParseString(jsoniter.ConfigCompatibleWithStandardLibrary, serialized)
+		it.ReadArrayCB(func(i *jsoniter.Iterator) (cont bool) {
+			val, err := core.ParseNextJSONRepresentation(ctx, it, setPattern.config.Element)
+			if err != nil {
+				finalErr = fmt.Errorf("failed to parse representation of one of the Set's element: %w", err)
+				return false
 			}
-		}()
-		set.addNoPersist(ctx, val)
-		if val.IsMutable() {
-			_, ok := val.(core.Watchable)
-			if !ok {
-				finalErr = fmt.Errorf("element should either be immutable or watchable")
-				cont = false
-				return
-			}
-			//mutation handler is added later in the function
-		}
-		return true
-	})
 
-	if finalErr != nil {
-		return nil, finalErr
+			defer func() {
+				e := recover()
+
+				if err, ok := e.(error); ok {
+					finalErr = err
+				} else if e != nil {
+					cont = false
+					finalErr = fmt.Errorf("%#v", e)
+				}
+			}()
+			set.addNoPersist(ctx, val)
+			if val.IsMutable() {
+				_, ok := val.(core.Watchable)
+				if !ok {
+					finalErr = fmt.Errorf("element should either be immutable or watchable")
+					cont = false
+					return
+				}
+				//mutation handler is added later in the function
+			}
+			return true
+		})
+
+		if finalErr != nil {
+			return nil, finalErr
+		}
 	}
 
 	//we perform the migration before adding mutation handlers for obvious reasons
 	if args.Migration != nil {
-		_, err := set.Migrate(ctx, args.Key, args.Migration)
+		next, err := set.Migrate(ctx, args.Key, args.Migration)
 		if err != nil {
 			return nil, fmt.Errorf("migration failed: %w", err)
 		}
 
-		if err := persistSet(ctx, set, set.path, set.storage); err != nil {
-			return nil, fmt.Errorf("failed to persist Set after migration: %w", err)
+		if args.IsDeletion(ctx) {
+			//TODO: recursively remove
+			return nil, nil
+		}
+
+		nextSet, ok := next.(*Set)
+		if !ok || set != nextSet {
+			return core.LoadInstance(ctx, core.InstanceLoadArgs{
+				Key:          args.Key,
+				Storage:      args.Storage,
+				Pattern:      args.Migration.NextPattern,
+				InitialValue: next.(core.Serializable),
+				AllowMissing: false,
+				Migration:    nil,
+			})
 		}
 	}
 

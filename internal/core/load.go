@@ -17,6 +17,8 @@ var (
 	ErrLoadingRequireTransaction                      = errors.New("loading a value requires a transaction")
 	ErrTransactionsNotSupportedYet                    = errors.New("transactions not supported yet")
 	ErrFailedToLoadNonExistingValue                   = errors.New("failed to load non-existing value")
+
+	ErrInvalidInitialValue = errors.New("invalid initial value")
 )
 
 func init() {
@@ -35,6 +37,7 @@ type InstanceLoadArgs struct {
 	Key          Path
 	Storage      SerializedValueStorage
 	Pattern      Pattern
+	InitialValue Serializable
 	AllowMissing bool //if true the loading function is allowed to return an empty/default value matching the pattern
 	Migration    *InstanceMigrationArgs
 }
@@ -59,6 +62,7 @@ type InstanceMigrationArgs struct {
 
 // LoadInstanceFn should load the associated value & call the corresponding migration handlers, in the case
 // of a deletion (nil, nil) should be returned.
+// If the value changes due to a migration this function should call LoadInstance with the new value passed in .InitialValue.
 type LoadInstanceFn func(ctx *Context, args InstanceLoadArgs) (UrlHolder, error)
 
 func RegisterLoadInstanceFn(patternType reflect.Type, fn LoadInstanceFn) {
@@ -105,25 +109,45 @@ func loadObject(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
 	storage := args.Storage
 
 	objectPattern := pattern.(*ObjectPattern)
-	rootData, ok := storage.GetSerialized(ctx, path)
-	if !ok {
-		return nil, fmt.Errorf("%w: %s", ErrFailedToLoadNonExistingValue, path)
+
+	object, ok := args.InitialValue.(*Object)
+	if !ok && args.InitialValue != nil {
+		return nil, fmt.Errorf("%w: an object is expected", ErrInvalidInitialValue)
 	}
 
-	parsed, err := ParseJSONRepresentation(ctx, rootData, objectPattern)
+	if object == nil {
+		serialized, ok := storage.GetSerialized(ctx, path)
+		if !ok {
+			return nil, fmt.Errorf("%w: %s", ErrFailedToLoadNonExistingValue, path)
+		}
 
-	if err != nil {
-		return nil, err
-	}
+		parsed, err := ParseJSONRepresentation(ctx, serialized, objectPattern)
 
-	object, ok := parsed.(*Object)
-	if !ok {
-		return nil, fmt.Errorf("an object was expected")
+		if err != nil {
+			return nil, err
+		}
+
+		object, ok = parsed.(*Object)
+		if !ok {
+			return nil, fmt.Errorf("an object was expected")
+		}
+	} else { //initial value
+		_, hasURL := object.URL()
+		if hasURL {
+			return nil, errors.New("initial object should not have a URL")
+		}
 	}
 
 	_, hasURL := object.URL()
 	if !hasURL {
 		object.SetURLOnce(ctx, args.Storage.BaseURL().AppendAbsolutePath(path))
+	}
+
+	if args.InitialValue != nil {
+		storage.SetSerialized(ctx, path, GetJSONRepresentation(object, ctx, pattern))
+		if args.Migration != nil {
+			panic(ErrUnreachable)
+		}
 	}
 
 	//we perform the migration before adding mutation handlers for obvious reasons
@@ -133,13 +157,26 @@ func loadObject(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
 			return nil, fmt.Errorf("migration failed: %w", err)
 		}
 
-		object = next.(*Object)
+		if args.IsDeletion(ctx) {
+			return nil, nil
+		}
+
+		nextObject, ok := next.(*Object)
+		if !ok || object != nextObject {
+			return LoadInstance(ctx, InstanceLoadArgs{
+				Key:          args.Key,
+				Storage:      args.Storage,
+				Pattern:      args.Migration.NextPattern,
+				InitialValue: next.(Serializable),
+				AllowMissing: false,
+				Migration:    nil,
+			})
+		}
 
 		if args.Migration.NextPattern == nil {
 			return nil, fmt.Errorf("missing next pattern for %s", path)
 		}
 		pattern = args.Migration.NextPattern
-
 		updatedRepr := GetJSONRepresentation(object, ctx, pattern)
 		storage.SetSerialized(ctx, path, updatedRepr)
 	}
@@ -157,4 +194,35 @@ func loadObject(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
 	object.Share(ctx.GetClosestState())
 
 	return object, nil
+}
+
+type TestValueStorage struct {
+	BaseURL_ URL
+	Data     map[Path]string
+}
+
+func (s *TestValueStorage) BaseURL() URL {
+	return s.BaseURL_
+}
+
+func (s *TestValueStorage) GetSerialized(ctx *Context, key Path) (string, bool) {
+	v, ok := s.Data[key]
+	return v, ok
+}
+
+func (s *TestValueStorage) Has(ctx *Context, key Path) bool {
+	_, ok := s.Data[key]
+	return ok
+}
+
+func (s *TestValueStorage) InsertSerialized(ctx *Context, key Path, serialized string) {
+	_, ok := s.Data[key]
+	if !ok {
+		panic(errors.New("already present"))
+	}
+	s.Data[key] = serialized
+}
+
+func (s *TestValueStorage) SetSerialized(ctx *Context, key Path, serialized string) {
+	s.Data[key] = serialized
 }
