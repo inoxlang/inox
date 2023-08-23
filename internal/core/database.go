@@ -45,10 +45,11 @@ type DatabaseIL struct {
 	schemaUpdateExpected bool
 	schemaUpdated        atomic.Bool
 	schemaUpdateLock     sync.Mutex
-	ownerState           *GlobalState //optional, can be set later using .SetOwnerStateOnce
+	ownerState           *GlobalState //optional, can be set later using .SetOwnerStateOnceAndLoadIfNecessary
 
-	propertyNames    []string
-	topLevelEntities map[string]Serializable
+	propertyNames          []string
+	topLevelEntitiesLoaded atomic.Bool
+	topLevelEntities       map[string]Serializable
 }
 
 type DbOpenConfiguration struct {
@@ -126,7 +127,7 @@ type Database interface {
 
 type DatabaseWrappingArgs struct {
 	Inner                Database
-	OwnerState           *GlobalState
+	OwnerState           *GlobalState //if nil the owner state should be set later by calling SetOwnerStateOnceAndLoadIfNecessary
 	ExpectedSchemaUpdate bool
 
 	//force the loading top level entities if there is not expected schema update
@@ -159,6 +160,7 @@ func WrapDatabase(ctx *Context, args DatabaseWrappingArgs) (*DatabaseIL, error) 
 			return nil, err
 		}
 		db.topLevelEntities = topLevelEntities
+		db.topLevelEntitiesLoaded.Store(true)
 	}
 	return db, nil
 }
@@ -206,16 +208,21 @@ func GetStaticallyCheckDbResolutionDataFn(scheme Scheme) (StaticallyCheckDbResol
 	return fn, ok
 }
 
+func (db *DatabaseIL) TopLevelEntitiesLoaded() bool {
+	return db.topLevelEntitiesLoaded.Load()
+}
+
 func (db *DatabaseIL) SetOwnerStateOnceAndLoadIfNecessary(ctx *Context, state *GlobalState) error {
 	if db.ownerState != nil {
 		panic(ErrOwnerStateAlreadySet)
 	}
-	if db.topLevelEntities == nil {
+	if db.topLevelEntities == nil && !db.schemaUpdateExpected {
 		topLevelEntities, err := db.inner.LoadTopLevelEntities(ctx)
 		if err != nil {
 			return err
 		}
 		db.topLevelEntities = topLevelEntities
+		db.topLevelEntitiesLoaded.Store(true)
 	}
 	db.ownerState = state
 	return nil
@@ -393,6 +400,14 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migr
 		panic(ErrDatabaseSchemaOnlyUpdatableByOwnerState)
 	}
 
+	if db.schemaUpdated.Load() {
+		panic(ErrDatabaseSchemaAlreadyUpdatedOrNotAllowed)
+	}
+
+	if db.topLevelEntitiesLoaded.Load() {
+		panic(ErrTopLevelEntitiesAlreadyLoaded)
+	}
+
 	//this check is also run during symbolic evaluation
 	if err := checkDatabaseSchema(nextSchema); err != nil {
 		panic(err)
@@ -400,10 +415,6 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migr
 
 	db.schemaUpdateLock.Lock()
 	defer db.schemaUpdateLock.Unlock()
-
-	if db.schemaUpdated.Load() {
-		panic(ErrDatabaseSchemaAlreadyUpdatedOrNotAllowed)
-	}
 
 	defer db.schemaUpdated.Store(true)
 
@@ -506,6 +517,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migr
 
 	db.inner.UpdateSchema(ctx, nextSchema, migrationHandlers)
 	db.topLevelEntities = utils.Must(db.inner.LoadTopLevelEntities(ctx))
+	db.topLevelEntitiesLoaded.Store(true)
 }
 
 func (db *DatabaseIL) Close(ctx *Context) error {

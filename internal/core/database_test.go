@@ -159,6 +159,25 @@ func TestDatabaseIL(t *testing.T) {
 		assert.Nil(t, dbIL.topLevelEntities)
 	})
 
+	t.Run("if a schema update is expected top level entities should not be loaded after call to SetOwnerStateOnceAndLoadIfNecessary", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		db := &dummyDatabase{
+			resource: Host("ldb://main"),
+			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
+				value: 1,
+			}},
+		}
+
+		dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
+			Inner:                db,
+			ExpectedSchemaUpdate: true,
+		}))
+
+		dbIL.SetOwnerStateOnceAndLoadIfNecessary(ctx, ctx.state)
+
+		assert.Nil(t, dbIL.topLevelEntities)
+	})
+
 	t.Run("only the owner state should be able to update the schema", func(t *testing.T) {
 		ctx1 := NewContexWithEmptyState(ContextConfig{}, nil)
 		db := &dummyDatabase{

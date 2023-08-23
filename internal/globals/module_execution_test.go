@@ -350,6 +350,86 @@ func TestPrepareLocalScript(t *testing.T) {
 		assert.Equal(t, core.Host("ldb://main"), state.Databases["local"].Resource())
 	})
 
+	t.Run("local database + expected schema update: the entities should not be loaded", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				permissions: {
+					read: %/...
+					write: %/...
+				}
+				databases: {
+					local: {
+						resource: ldb://main
+						resolution-data: /
+						expected-schema-update: true
+					}
+				}
+			}
+
+			dbs.local.update_schema(%{})
+		`), 0o600)
+
+		fs := fs_ns.NewMemFilesystem(1000)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(
+				core.GetDefaultGlobalVarPermissions(),
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+				core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
+			),
+			Filesystem: fs,
+		})
+		core.NewGlobalState(ctx)
+
+		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			PreinitFilesystem:       fs,
+			ScriptContextFileSystem: fs,
+			FullAccessToDatabases:   true,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.Empty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
+
+		//the state should contain the database.
+
+		if !assert.Contains(t, state.Databases, "local") {
+			return
+		}
+		db := state.Databases["local"]
+
+		assert.Equal(t, core.Host("ldb://main"), db.Resource())
+		assert.False(t, db.TopLevelEntitiesLoaded())
+	})
+
 	t.Run("local database set by main module and accessed by external module", func(t *testing.T) {
 		fls := fs_ns.NewMemFilesystem(10_000)
 
