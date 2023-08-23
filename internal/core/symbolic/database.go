@@ -18,17 +18,18 @@ const (
 var (
 	DATABASE_PROPNAMES = []string{"update_schema", "close", "schema"}
 
-	ANY_DATABASE = NewDatabaseIL(NewAnyObjectPattern())
+	ANY_DATABASE = NewDatabaseIL(NewAnyObjectPattern(), false)
 )
 
 // A DatabaseIL represents a symbolic DatabaseIL.
 type DatabaseIL struct {
 	UnassignablePropsMixin
-	schema        *ObjectPattern
-	propertyNames []string
+	schema               *ObjectPattern
+	schemaUpdateExpected bool //not used for comparison
+	propertyNames        []string
 }
 
-func NewDatabaseIL(schema *ObjectPattern) *DatabaseIL {
+func NewDatabaseIL(schema *ObjectPattern, schemaUpdateExpected bool) *DatabaseIL {
 	propertyNames := utils.CopySlice(DATABASE_PROPNAMES)
 	for propName := range schema.entries {
 		if utils.SliceContains(DATABASE_PROPNAMES, propName) {
@@ -38,8 +39,9 @@ func NewDatabaseIL(schema *ObjectPattern) *DatabaseIL {
 	}
 
 	return &DatabaseIL{
-		schema:        schema,
-		propertyNames: propertyNames,
+		schemaUpdateExpected: schemaUpdateExpected,
+		schema:               schema,
+		propertyNames:        propertyNames,
 	}
 }
 
@@ -89,6 +91,12 @@ func (db *DatabaseIL) PropertyNames() []string {
 }
 
 func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, additionalArgs ...*Object) {
+
+	if !db.schemaUpdateExpected {
+		ctx.AddSymbolicGoFunctionError("no schema update is expected for this database: did you forget to set the expected-schema-update property in the database description ?")
+		return
+	}
+
 	if !db.schema.IsConcretizable() {
 		ctx.AddSymbolicGoFunctionError("previous schema is not concretizable, it should only contain values/patterns that can be known at check time")
 		return

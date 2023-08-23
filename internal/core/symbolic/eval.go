@@ -100,6 +100,7 @@ type SymbolicEvalCheckInput struct {
 	SymbolicBaseGlobals           map[string]SymbolicValue
 	SymbolicBasePatterns          map[string]Pattern
 	SymbolicBasePatternNamespaces map[string]*PatternNamespace
+	
 
 	IsShellChunk   bool
 	ShellLocalVars map[string]any
