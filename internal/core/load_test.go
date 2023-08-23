@@ -91,6 +91,48 @@ func TestLoadObject(t *testing.T) {
 		assert.Equal(t, `{"_url_":"ldb://main/user","a":"2"}`, storage.Data["/user"])
 	})
 
+	t.Run("performing a deep mutation should cause a save", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		storage := &TestValueStorage{
+			BaseURL_: "ldb://main/",
+			Data:     map[Path]string{"/user": `{"inner":{"a": "1"}}`},
+		}
+		pattern := NewInexactObjectPattern(map[string]Pattern{"inner": NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})})
+
+		val, err := loadObject(ctx, InstanceLoadArgs{
+			Key:          "/user",
+			Storage:      storage,
+			Pattern:      pattern,
+			AllowMissing: false,
+			Migration:    nil,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.NotNil(t, val) {
+			return
+		}
+		object := val.(*Object)
+
+		url, _ := object.URL()
+
+		if !assert.Equal(t, URL("ldb://main/user"), url) {
+			return
+		}
+
+		assert.True(t, object.IsShared())
+
+		//any deep change to the object should cause a save
+		inner := object.Prop(ctx, "inner").(*Object)
+		if !assert.NoError(t, inner.SetProp(ctx, "a", Int(2))) {
+			return
+		}
+
+		assert.Equal(t, `{"_url_":"ldb://main/user","inner":{"a":"2"}}`, storage.Data["/user"])
+	})
+
 	t.Run("migration: deletion", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		storage := &TestValueStorage{
