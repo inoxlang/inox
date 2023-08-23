@@ -68,6 +68,9 @@ func checkDatabaseSchema(pattern *ObjectPattern) error {
 		if !hasTypeLoadingFunction(propPattern) {
 			return fmt.Errorf("invalid pattern for top level entity .%s: %w", propName, ErrNoLoadInstanceFnRegistered)
 		}
+		if isOptional {
+			return fmt.Errorf("unexpected optional property .%s in schema", propName)
+		}
 		return nil
 	})
 }
