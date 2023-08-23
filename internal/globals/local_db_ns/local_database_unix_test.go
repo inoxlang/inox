@@ -497,7 +497,13 @@ func TestUpdateSchema(t *testing.T) {
 			"users": setPattern,
 		})
 
-		ldb.UpdateSchema(ctx, schema, core.MigrationOpHandlers{})
+		ldb.UpdateSchema(ctx, schema, core.MigrationOpHandlers{
+			Inclusions: map[core.PathPattern]*core.MigrationOpHandler{
+				"/users": {
+					InitialValue: core.NewWrappedValueList(),
+				},
+			},
+		})
 
 		topLevelValues := utils.Must(ldb.LoadTopLevelEntities(ctx))
 
@@ -690,4 +696,103 @@ func TestUpdateSchema(t *testing.T) {
 		assert.Contains(t, topLevelValues, "users")
 	})
 
+	t.Run("top level entity replacement added during migration should be present", func(t *testing.T) {
+		tempdir := t.TempDir()
+		fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)
+
+		ldb, ctx, ok := openDB(tempdir, fls)
+		if !ok {
+			return
+		}
+
+		setPattern :=
+			utils.Must(containers.SET_PATTERN.CallImpl(
+				containers.SET_PATTERN,
+				[]core.Serializable{
+					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}),
+					containers_common.URL_UNIQUENESS_IDENT,
+				}),
+			)
+
+		initialSchema := core.NewInexactObjectPattern(map[string]core.Pattern{})
+
+		ldb.UpdateSchema(ctx, initialSchema, core.MigrationOpHandlers{})
+
+		err := ldb.Close(ctx)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		//re open with next schema (initial Set type)
+
+		ldb, ctx, ok = openDB(tempdir, fls)
+		if !ok {
+			return
+		}
+		defer ldb.Close(ctx)
+
+		nextSchema1 := core.NewInexactObjectPattern(map[string]core.Pattern{
+			"users": setPattern,
+		})
+
+		ldb.UpdateSchema(ctx, nextSchema1, core.MigrationOpHandlers{
+			Inclusions: map[core.PathPattern]*core.MigrationOpHandler{
+				"/users": {
+					InitialValue: core.NewWrappedValueList(),
+				},
+			},
+		})
+
+		assert.Same(t, nextSchema1, ldb.schema)
+		topLevelValues := utils.Must(ldb.LoadTopLevelEntities(ctx))
+		if !assert.Contains(t, topLevelValues, "users") {
+			return
+		}
+		users := topLevelValues["users"].(*containers.Set)
+		users.Add(ctx, core.NewObjectFromMap(core.ValMap{"name": core.Str("foo")}, ctx))
+
+		//make sure the updated Set has been saved
+		s, _ := ldb.GetSerialized(ctx, "/users")
+		if !assert.Contains(t, s, "foo") {
+			return
+		}
+
+		//re open with next schema (different Set type)
+
+		ldb, ctx, ok = openDB(tempdir, fls)
+		if !ok {
+			return
+		}
+		defer ldb.Close(ctx)
+
+		setPattern2 :=
+			utils.Must(containers.SET_PATTERN.CallImpl(
+				containers.SET_PATTERN,
+				[]core.Serializable{core.INT_PATTERN, containers_common.URL_UNIQUENESS_IDENT}),
+			)
+
+		nextSchema2 := core.NewInexactObjectPattern(map[string]core.Pattern{
+			"users": setPattern2,
+		})
+
+		ldb.UpdateSchema(ctx, nextSchema2, core.MigrationOpHandlers{
+			Replacements: map[core.PathPattern]*core.MigrationOpHandler{
+				"/users": {
+					InitialValue: core.NewWrappedValueList(),
+				},
+			},
+		})
+
+		assert.Same(t, nextSchema2, ldb.schema)
+		topLevelValues = utils.Must(ldb.LoadTopLevelEntities(ctx))
+		if !assert.Contains(t, topLevelValues, "users") {
+			return
+		}
+
+		//make sure the updated Set has been saved
+		s, _ = ldb.GetSerialized(ctx, "/users")
+		if assert.Contains(t, s, "foo") {
+			return
+		}
+	})
 }

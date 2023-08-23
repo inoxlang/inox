@@ -225,6 +225,7 @@ func (ldb *LocalDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, hand
 
 func (ldb *LocalDatabase) load(ctx *Context, migrationNextPattern *ObjectPattern, handlers core.MigrationOpHandlers) error {
 	ldb.topLevelValues = make(map[string]core.Serializable, ldb.schema.EntryCount())
+	state := ctx.GetClosestState()
 
 	err := ldb.schema.ForEachEntry(func(propName string, propPattern core.Pattern, isOptional bool) error {
 		path := core.PathFrom("/" + propName)
@@ -235,6 +236,7 @@ func (ldb *LocalDatabase) load(ctx *Context, migrationNextPattern *ObjectPattern
 			AllowMissing: true,
 		}
 
+		//replacement or migration of the top-level entity
 		if migrationNextPattern != nil {
 			args.Migration = &core.InstanceMigrationArgs{
 				MigrationHandlers: handlers.FilterByPrefix(path),
@@ -260,17 +262,36 @@ func (ldb *LocalDatabase) load(ctx *Context, migrationNextPattern *ObjectPattern
 	}
 
 	if migrationNextPattern != nil {
-		//load new top level entities
-		err := migrationNextPattern.ForEachEntry(func(propName string, propPattern core.Pattern, isOptional bool) error {
-			_, alreadyLoaded := ldb.topLevelValues[propName]
-			if alreadyLoaded {
-				return nil
+		_handlers := handlers.FilterTopLevel()
+
+		for pattern, handler := range _handlers.Inclusions {
+			path := core.Path(pattern)
+			propName := string(path[1:])
+
+			var initialValue core.Value
+			if handler.Function != nil {
+				prevValue, ok := ldb.topLevelValues[string(pattern)]
+				if !ok {
+					prevValue = core.Nil
+				}
+				replacement, err := handler.Function.Call(state, nil, []core.Value{prevValue}, nil)
+				if err != nil {
+					return fmt.Errorf("error during call of inclusion handler for %s: %w", pattern, err)
+				}
+				initialValue = replacement.(core.Serializable)
+			} else {
+				initialValue = handler.InitialValue
 			}
 
-			path := core.PathFrom("/" + propName)
+			pattern_, _, ok := migrationNextPattern.Entry(propName)
+			if !ok {
+				panic(core.ErrUnreachable)
+			}
+
 			args := core.InstanceLoadArgs{
-				Pattern:      propPattern,
+				Pattern:      pattern_,
 				Key:          path,
+				InitialValue: initialValue.(core.Serializable),
 				Storage:      ldb,
 				AllowMissing: true,
 			}
@@ -279,11 +300,6 @@ func (ldb *LocalDatabase) load(ctx *Context, migrationNextPattern *ObjectPattern
 				return fmt.Errorf("failed to load %s: %w", path, err)
 			}
 			ldb.topLevelValues[propName] = value
-			return nil
-		})
-
-		if err != nil {
-			return err
 		}
 	}
 
@@ -325,6 +341,10 @@ func (ldb *LocalDatabase) Insert(ctx *Context, key Path, value core.Serializable
 
 func (ldb *LocalDatabase) InsertSerialized(ctx *Context, key Path, serialized string) {
 	ldb.mainKV.InsertSerialized(ctx, key, serialized, ldb)
+}
+
+func (ldb *LocalDatabase) Remove(ctx *Context, key Path) {
+	ldb.mainKV.Delete(ctx, key, ldb)
 }
 
 func (ldb *LocalDatabase) Prop(ctx *core.Context, name string) Value {
