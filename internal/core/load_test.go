@@ -91,6 +91,35 @@ func TestLoadObject(t *testing.T) {
 		assert.Equal(t, `{"_url_":"ldb://main/user","a":"2"}`, storage.Data["/user"])
 	})
 
+	t.Run("migration: deletion", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		storage := &TestValueStorage{
+			BaseURL_: "ldb://main/",
+			Data:     map[Path]string{"/user": `{}`},
+		}
+		pattern := NewInexactObjectPattern(map[string]Pattern{})
+
+		val, err := loadObject(ctx, InstanceLoadArgs{
+			Key:          "/user",
+			Storage:      storage,
+			Pattern:      pattern,
+			AllowMissing: false,
+			Migration: &InstanceMigrationArgs{
+				MigrationHandlers: MigrationOpHandlers{
+					Deletions: map[PathPattern]*MigrationOpHandler{
+						"/user": nil,
+					},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Nil(t, val)
+	})
+
 	t.Run("migration: replacement", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		storage := &TestValueStorage{

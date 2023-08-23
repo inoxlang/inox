@@ -430,6 +430,39 @@ func TestPersistLoadSet(t *testing.T) {
 		assert.Nil(t, set)
 	})
 
+	t.Run("migration: deletion", func(t *testing.T) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		storage := &core.TestValueStorage{
+			BaseURL_: "ldb://main/",
+			Data:     map[core.Path]string{"/x": `[]`},
+		}
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: containers_common.UniquenessConstraint{
+				Type: containers_common.UniqueRepr,
+			},
+		}, core.CallBasedPatternReprMixin{})
+
+		val, err := loadSet(ctx, core.InstanceLoadArgs{
+			Key:          "/x",
+			Storage:      storage,
+			Pattern:      pattern,
+			AllowMissing: false,
+			Migration: &core.InstanceMigrationArgs{
+				MigrationHandlers: core.MigrationOpHandlers{
+					Deletions: map[core.PathPattern]*core.MigrationOpHandler{
+						"/x": nil,
+					},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Nil(t, val)
+	})
+
 	t.Run("migration: replacement", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		storage := &core.TestValueStorage{
