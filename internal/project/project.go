@@ -31,6 +31,14 @@ type Project struct {
 	devSideConfig     DevSideProjectConfig
 }
 
+func (p *Project) Id() ProjectID {
+	return p.id
+}
+
+func (p *Project) DevSideConfig() DevSideProjectConfig {
+	return p.devSideConfig
+}
+
 type ProjectID string
 
 func RandomProjectID(projectName string) ProjectID {
@@ -74,6 +82,7 @@ type OpenProjectParams struct {
 type DevSideProjectConfig struct {
 	Cloudflare *struct {
 		AdditionalTokensApiToken string `json:"additional-tokens-api-token"`
+		AccountID                string `json:"account-id"`
 	} `json:"cloudflare"`
 }
 
