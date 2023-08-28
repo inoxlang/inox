@@ -48,51 +48,57 @@ func GetTempCloudflareTokens(
 
 	//note: api.UserDetails().Account[0].ID is zero
 	accountId := devSideConfig.AccountID
+	_ = accountId
 
 	apiTokens, err := api.APITokens(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to retrieve API tokens: %w", err)
 	}
 
-	R2TokenID := GetR2TokenId(projectId)
-	r2Token := cloudflare.APIToken{
-		ID:   R2TokenID,
-		Name: R2TokenID,
-		Policies: []cloudflare.APITokenPolicies{
-			{
-				ID:     "",
-				Effect: "allow",
-				Resources: map[string]interface{}{
-					"com.cloudflare.api.account." + accountId: "*",
-				},
-				PermissionGroups: r2PermGroups,
-			},
-		},
-	}
+	R2TokenName := GetR2TokenName(projectId)
 
 	R2TokenAlreadyExists := false
 	R2TokenExpired := false
+	R2TokenId := ""
 
 	for _, token := range apiTokens {
-		if token.Name == R2TokenID { //already exists
+		if token.Name == R2TokenName { //already exists
+			if R2TokenAlreadyExists {
+				return "", errors.New("R2 API token with duplicate name")
+			}
 			if token.ExpiresOn != nil {
 				R2TokenExpired = token.ExpiresOn.Before(time.Now().Add(time.Hour))
 			}
+
 			R2TokenAlreadyExists = true
-			break
+			R2TokenId = token.ID
 		}
 	}
 
-	if R2TokenAlreadyExists && tempTokens.R2Token != "" {
+	if R2TokenAlreadyExists && tempTokens.R2Token != "" && !R2TokenExpired {
 		r2tokenValue = tempTokens.R2Token
 	} else {
-		//if the token does not exist or is not present on the developer machine we create/update the token
+		//if the token does not exist
+		//or is expired
+		//or is not present on the developer machine we create/update a token
 
 		//https://developers.cloudflare.com/fundamentals/api/how-to/create-via-api/
 		//https://developers.cloudflare.com/fundamentals/api/reference/permissions/
 
-		if R2TokenAlreadyExists && R2TokenExpired {
-			r2Token, err = api.UpdateAPIToken(ctx, R2TokenID, r2Token)
+		r2Token := cloudflare.APIToken{
+			Name: R2TokenName,
+			Policies: []cloudflare.APITokenPolicies{
+				{
+					Effect: "allow",
+					Resources: map[string]interface{}{
+						"com.cloudflare.api.account." + accountId: "*",
+					},
+					PermissionGroups: r2PermGroups,
+				},
+			},
+		}
+		if R2TokenAlreadyExists {
+			r2Token, err = api.UpdateAPIToken(ctx, R2TokenId, r2Token)
 		} else {
 			r2Token, err = api.CreateAPIToken(ctx, r2Token)
 		}
@@ -105,6 +111,6 @@ func GetTempCloudflareTokens(
 	return r2tokenValue, nil
 }
 
-func GetR2TokenId(projectId project.ProjectID) string {
+func GetR2TokenName(projectId project.ProjectID) string {
 	return "R2-" + string(projectId)
 }
