@@ -5,6 +5,7 @@ import (
 
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/infra"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/project_server/lsp"
@@ -22,6 +23,11 @@ type CreateProjectParams struct {
 type OpenProjectParams struct {
 	ProjectId     string                       `json:"projectId"`
 	DevSideConfig project.DevSideProjectConfig `json:"config"`
+	TempTokens    *project.TempProjectTokens   `json:"tempTokens,omitempty"`
+}
+
+type OpenProjectResponse struct {
+	project.TempProjectTokens `json:"tempTokens"`
 }
 
 func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerOptions) {
@@ -77,6 +83,7 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerOptions) {
 			project, err := projectRegistry.OpenProject(sessionCtx, project.OpenProjectParams{
 				Id:            project.ProjectID(params.ProjectId),
 				DevSideConfig: params.DevSideConfig,
+				TempTokens:    params.TempTokens,
 			})
 
 			if err != nil {
@@ -88,12 +95,21 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerOptions) {
 
 			sessionCtx.AddUserData(CURRENT_PROJECT_CTX_KEY, project)
 
+			tokens, err := infra.GetTempProjectTokens(ctx, project)
+			if err != nil {
+				return nil, jsonrpc.ResponseError{
+					Code:    jsonrpc.InternalError.Code,
+					Message: err.Error(),
+				}
+			}
+
 			lspFilesystem := NewFilesystem(project.Filesystem(), fs_ns.NewMemFilesystem(10_000_000))
 
 			sessionData := getLockedSessionData(session)
 			defer sessionData.lock.Unlock()
 			sessionData.filesystem = lspFilesystem
-			return nil, nil
+
+			return OpenProjectResponse{TempProjectTokens: tokens}, nil
 		},
 	})
 }
