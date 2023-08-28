@@ -6,8 +6,10 @@ require (
 	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/adrg/xdg v0.4.0
 	github.com/alecthomas/chroma/v2 v2.7.0
+	github.com/alexedwards/argon2id v0.0.0-20230305115115-4b3c3280a736
 	github.com/aohorodnyk/mimeheader v0.0.6
 	github.com/bits-and-blooms/bitset v1.8.0
+	github.com/bmatcuk/doublestar/v4 v4.6.0
 	github.com/buger/jsonparser v1.1.2-0.20220418200129-61b32cfdfa0f
 	github.com/caddyserver/certmagic v0.17.2
 	github.com/chromedp/chromedp v0.8.6
@@ -16,6 +18,8 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-git/go-billy/v5 v5.4.1
 	github.com/goccy/go-yaml v1.11.0
+	github.com/google/go-dap v0.9.1
+	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/johannesboyne/gofakes3 v0.0.0-20230506070712-04da935ef877
 	github.com/json-iterator/go v1.1.12
@@ -37,40 +41,34 @@ require (
 	github.com/tidwall/match v1.1.1
 	github.com/tidwall/rtred v0.1.2
 	go.uber.org/zap v1.24.0
-	golang.org/x/crypto v0.10.0
 	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df
-	golang.org/x/net v0.11.0
-	golang.org/x/term v0.9.0
+	golang.org/x/net v0.14.0
+	golang.org/x/term v0.11.0
 	gonum.org/v1/gonum v0.13.0
 	gopkg.in/cenkalti/backoff.v1 v1.1.0
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
-	git.sr.ht/~sbinet/gg v0.5.0 // indirect
-	github.com/ajstarks/svgo v0.0.0-20211024235047-1546f124cd8b // indirect
-	github.com/alexedwards/argon2id v0.0.0-20230305115115-4b3c3280a736 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/aws/aws-sdk-go v1.44.272 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
-	github.com/bmatcuk/doublestar/v4 v4.6.0 // indirect
-	github.com/campoy/embedmd v1.0.0 // indirect
 	github.com/chromedp/cdproto v0.0.0-20220924210414-0e3390be1777 // indirect
 	github.com/chromedp/sysutil v1.0.0 // indirect
+	github.com/cloudflare/cloudflare-go v0.75.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/fatih/color v1.10.0 // indirect
-	github.com/go-fonts/liberation v0.3.1 // indirect
-	github.com/go-latex/latex v0.0.0-20230307184459-12ec69307ad9 // indirect
-	github.com/go-pdf/fpdf v0.8.0 // indirect
+	github.com/fatih/color v1.13.0 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.1.0 // indirect
-	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
+	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/go-dap v0.9.1 // indirect
-	github.com/google/uuid v1.3.0 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.4 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/klauspost/compress v1.16.6 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
@@ -100,13 +98,12 @@ require (
 	github.com/tidwall/tinyqueue v0.1.1 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
-	golang.org/x/image v0.8.0 // indirect
+	golang.org/x/crypto v0.12.0 // indirect
 	golang.org/x/mod v0.11.0 // indirect
-	golang.org/x/sys v0.9.0 // indirect
-	golang.org/x/text v0.10.0 // indirect
+	golang.org/x/sys v0.11.0 // indirect
+	golang.org/x/text v0.12.0 // indirect
+	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.10.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
-	gonum.org/v1/plot v0.13.0 // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
