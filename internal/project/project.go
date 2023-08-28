@@ -29,6 +29,7 @@ type Project struct {
 	projectFilesystem afs.Filesystem
 	lock              core.SmartLock
 	devSideConfig     DevSideProjectConfig
+	tempTokens        *TempProjectTokens
 }
 
 func (p *Project) Id() ProjectID {
@@ -37,6 +38,13 @@ func (p *Project) Id() ProjectID {
 
 func (p *Project) DevSideConfig() DevSideProjectConfig {
 	return p.devSideConfig
+}
+
+func (p *Project) TempTokens() (TempProjectTokens, bool) {
+	if p.tempTokens != nil {
+		return *p.tempTokens, true
+	}
+	return TempProjectTokens{}, false
 }
 
 type ProjectID string
@@ -76,14 +84,25 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 
 type OpenProjectParams struct {
 	Id            ProjectID
-	DevSideConfig DevSideProjectConfig
+	DevSideConfig DevSideProjectConfig `json:"config"`
+	TempTokens    *TempProjectTokens   `json:"tempTokens,omitempty"`
 }
 
 type DevSideProjectConfig struct {
-	Cloudflare *struct {
-		AdditionalTokensApiToken string `json:"additional-tokens-api-token"`
-		AccountID                string `json:"account-id"`
-	} `json:"cloudflare"`
+	Cloudflare *DevSideCloudflareConfig `json:"cloudflare,omitempty"`
+}
+
+type DevSideCloudflareConfig struct {
+	AdditionalTokensApiToken string `json:"additional-tokens-api-token"`
+	AccountID                string `json:"account-id"`
+}
+
+type TempProjectTokens struct {
+	Cloudflare *TempCloudflareTokens `json:"cloudflare,omitempty"`
+}
+
+type TempCloudflareTokens struct {
+	R2Token string `json:"r2Token,omitempty"`
 }
 
 // OpenProject
@@ -112,6 +131,7 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 		id:                params.Id,
 		projectFilesystem: projectFS,
 		devSideConfig:     params.DevSideConfig,
+		tempTokens:        params.TempTokens,
 	}
 
 	return project, nil
