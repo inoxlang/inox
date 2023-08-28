@@ -28,6 +28,7 @@ type Project struct {
 	id                ProjectID
 	projectFilesystem afs.Filesystem
 	lock              core.SmartLock
+	devSideConfig     DevSideProjectConfig
 }
 
 type ProjectID string
@@ -66,7 +67,14 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 }
 
 type OpenProjectParams struct {
-	Id ProjectID
+	Id            ProjectID
+	DevSideConfig DevSideProjectConfig
+}
+
+type DevSideProjectConfig struct {
+	Cloudflare *struct {
+		AdditionalTokensApiToken string `json:"additional-tokens-api-token"`
+	} `json:"cloudflare"`
 }
 
 // OpenProject
@@ -94,6 +102,7 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 	project := &Project{
 		id:                params.Id,
 		projectFilesystem: projectFS,
+		devSideConfig:     params.DevSideConfig,
 	}
 
 	return project, nil

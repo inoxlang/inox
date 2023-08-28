@@ -20,7 +20,8 @@ type CreateProjectParams struct {
 }
 
 type OpenProjectParams struct {
-	ProjectId string `json:"projectId"`
+	ProjectId     string                       `json:"projectId"`
+	DevSideConfig project.DevSideProjectConfig `json:"config"`
 }
 
 func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerOptions) {
@@ -74,7 +75,8 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerOptions) {
 			}
 
 			project, err := projectRegistry.OpenProject(sessionCtx, project.OpenProjectParams{
-				Id: project.ProjectID(params.ProjectId),
+				Id:            project.ProjectID(params.ProjectId),
+				DevSideConfig: params.DevSideConfig,
 			})
 
 			if err != nil {
