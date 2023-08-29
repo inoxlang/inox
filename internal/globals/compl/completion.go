@@ -1048,8 +1048,16 @@ func findObjectInteriorCompletions(
 	}
 
 	switch parent := parent.(type) {
-	case *parse.Manifest: //suggest all sections of the manifest
+	case *parse.Manifest: //suggest sections of the manifest that are not present
+	sections_loop:
 		for _, sectionName := range core.MANIFEST_SECTION_NAMES {
+
+			for _, prop := range n.Properties {
+				if !prop.HasImplicitKey() && prop.Name() == sectionName {
+					continue sections_loop
+				}
+			}
+
 			completions = append(completions, Completion{
 				ShownString:   sectionName,
 				Value:         sectionName,

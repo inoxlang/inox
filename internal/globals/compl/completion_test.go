@@ -431,7 +431,7 @@ func TestFindCompletions(t *testing.T) {
 				}, completions)
 			})
 
-			t.Run("manifest section", func(t *testing.T) {
+			t.Run("manifest section in empty manifest", func(t *testing.T) {
 				state := newState()
 				chunk, _ := parseChunkSource("manifest{}", "")
 				doSymbolicCheck(chunk, state.Global)
@@ -442,6 +442,25 @@ func TestFindCompletions(t *testing.T) {
 					Value:         "env",
 					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 9, End: 9}},
 				})
+			})
+
+			t.Run("manifest section in non-empty manifest", func(t *testing.T) {
+				state := newState()
+				chunk, _ := parseChunkSource("manifest{\nparameters:{}}", "")
+				doSymbolicCheck(chunk, state.Global)
+
+				completions := findCompletions(state, chunk, 9)
+				assert.Contains(t, completions, Completion{
+					ShownString:   "env",
+					Value:         "env",
+					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 9, End: 9}},
+				})
+
+				for _, completion := range completions {
+					if completion.ShownString == "parameters" {
+						assert.Fail(t, "completion for 'parameters' should be present")
+					}
+				}
 			})
 
 			t.Run("permission kind", func(t *testing.T) {
