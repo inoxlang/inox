@@ -1,7 +1,6 @@
 package local_db
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -23,13 +22,6 @@ const (
 )
 
 var (
-	ErrInvalidDatabaseDirpath = errors.New("invalid database dir path")
-	ErrDatabaseAlreadyOpen    = errors.New("database is already open")
-	ErrCannotResolveDatabase  = errors.New("cannot resolve database")
-	ErrCannotFindDatabaseHost = errors.New("cannot find corresponding host of database")
-	ErrInvalidDatabaseHost    = errors.New("host of database is invalid")
-	ErrDatabaseNotSupported   = errors.New("database is not supported")
-
 	LOCAL_DB_PROPNAMES = []string{"update_schema", "close"}
 
 	_ core.Database = (*LocalDatabase)(nil)
@@ -78,11 +70,11 @@ func openDatabase(ctx *core.Context, r core.ResourceName, restrictedAccess bool)
 	switch resource := r.(type) {
 	case core.Host:
 		if resource.Scheme() != LDB_SCHEME {
-			return nil, ErrCannotResolveDatabase
+			return nil, core.ErrCannotResolveDatabase
 		}
 		data, ok := ctx.GetHostResolutionData(resource).(core.Path)
 		if !ok {
-			return nil, ErrCannotResolveDatabase
+			return nil, core.ErrCannotResolveDatabase
 		}
 		pth = data
 	case core.Path:
@@ -92,11 +84,11 @@ func openDatabase(ctx *core.Context, r core.ResourceName, restrictedAccess bool)
 			return nil, err
 		}
 	default:
-		return nil, ErrCannotResolveDatabase
+		return nil, core.ErrCannotResolveDatabase
 	}
 
 	if !pth.IsDirPath() {
-		return nil, ErrInvalidDatabaseDirpath
+		return nil, core.ErrInvalidDatabaseDirpath
 	}
 
 	patt := core.PathPattern(pth + "...")
@@ -110,11 +102,11 @@ func openDatabase(ctx *core.Context, r core.ResourceName, restrictedAccess bool)
 
 	host, ok := ctx.GetHostFromResolutionData(pth)
 	if !ok {
-		return nil, ErrCannotFindDatabaseHost
+		return nil, core.ErrCannotFindDatabaseHost
 	}
 
 	if host.Scheme() != LDB_SCHEME {
-		return nil, ErrInvalidDatabaseHost
+		return nil, core.ErrInvalidDatabaseHost
 	}
 
 	db, err := openLocalDatabaseWithConfig(ctx, LocalDatabaseConfig{

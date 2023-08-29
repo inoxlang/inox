@@ -30,6 +30,11 @@ var (
 	ErrNoDatabaseSchemaUpdateExpected                  = errors.New("no database schema update is expected")
 	ErrDatabaseSchemaAlreadyUpdatedOrNotAllowed        = errors.New("database schema already updated or no longer allowed")
 	ErrInvalidAccessSchemaNotUpdatedYet                = errors.New("access to database is not allowed because schema is not updated yet")
+	ErrInvalidDatabaseDirpath                          = errors.New("invalid database dir path")
+	ErrDatabaseAlreadyOpen                             = errors.New("database is already open")
+	ErrCannotResolveDatabase                           = errors.New("cannot resolve database")
+	ErrCannotFindDatabaseHost                          = errors.New("cannot find corresponding host of database")
+	ErrInvalidDatabaseHost                             = errors.New("host of database is invalid")
 
 	DATABASE_PROPNAMES = []string{"update_schema", "close", "schema"}
 
