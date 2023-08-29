@@ -131,6 +131,46 @@ func TestGetNodeAtSpan(t *testing.T) {
 
 }
 
+func TestGetLineColumnPosition(t *testing.T) {
+
+	t.Run("shallow", func(t *testing.T) {
+		chunk := utils.Must(ParseChunkSource(InMemorySource{
+			NameString: "test",
+			CodeString: "a = 1\na\nfn f(){}\n \n ",
+		}))
+
+		pos := chunk.GetLineColumnPosition(1, 1)
+		if !assert.Equal(t, int32(0), pos) {
+			return
+		}
+
+		pos = chunk.GetLineColumnPosition(2, 1)
+		if !assert.Equal(t, int32(6), pos) {
+			return
+		}
+
+		pos = chunk.GetLineColumnPosition(2, 2)
+		if !assert.Equal(t, int32(7), pos) {
+			return
+		}
+
+		pos = chunk.GetLineColumnPosition(3, 4)
+		if !assert.Equal(t, int32(11), pos) {
+			return
+		}
+
+		pos = chunk.GetLineColumnPosition(4, 1)
+		if !assert.Equal(t, int32(17), pos) {
+			return
+		}
+
+		pos = chunk.GetLineColumnPosition(4, 2)
+		if !assert.Equal(t, int32(18), pos) {
+			return
+		}
+	})
+}
+
 func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 	t.Run("empty chunk", func(t *testing.T) {
 		chunk := utils.Must(ParseChunkSource(InMemorySource{

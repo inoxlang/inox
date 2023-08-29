@@ -544,6 +544,67 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("manifest with multiline object literal", func(t *testing.T) {
+			n := mustparseChunk(t, "manifest {a:1\nb:2}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase:   NodeBase{NodeSpan{0, 18}, nil, nil},
+				Statements: nil,
+				Manifest: &Manifest{
+					NodeBase: NodeBase{
+						Span: NodeSpan{0, 18},
+						Tokens: []Token{
+							{Type: MANIFEST_KEYWORD, Span: NodeSpan{0, 8}},
+						},
+					},
+					Object: &ObjectLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{9, 18},
+							nil,
+							[]Token{
+								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
+								{Type: NEWLINE, Span: NodeSpan{13, 14}},
+								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{17, 18}},
+							},
+						},
+						Properties: []*ObjectProperty{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{10, 13},
+									nil,
+									[]Token{{Type: COLON, Span: NodeSpan{11, 12}}},
+								},
+								Key: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{10, 11}},
+									Name:     "a",
+								},
+								Value: &IntLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{12, 13}},
+									Value:    1,
+									Raw:      "1",
+								},
+							},
+							{
+								NodeBase: NodeBase{
+									NodeSpan{14, 17},
+									nil,
+									[]Token{{Type: COLON, Span: NodeSpan{15, 16}}},
+								},
+								Key: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{14, 15}},
+									Name:     "b",
+								},
+								Value: &IntLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{16, 17}},
+									Value:    2,
+									Raw:      "2",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("includable-chunk", func(t *testing.T) {
 			n := mustparseChunk(t, "includable-chunk")
 			assert.EqualValues(t, &Chunk{
@@ -558,7 +619,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("empty manifest after newline", func(t *testing.T) {
+		t.Run("includable-chunk after newline", func(t *testing.T) {
 			n := mustparseChunk(t, "\nincludable-chunk")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
@@ -8857,7 +8918,8 @@ func testParse(
 						},
 					},
 				},
-			}, {
+			},
+			{
 				input:    "{ a : 1 , b : 2 }",
 				hasError: false,
 				result: &Chunk{
@@ -9059,6 +9121,171 @@ func testParse(
 									},
 									Value: &IntLiteral{
 										NodeBase: NodeBase{NodeSpan{14, 15}, nil, nil},
+										Raw:      "2",
+										Value:    2,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    "{ a : 1 \n\n b : 2 }",
+				hasError: false,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 18}, nil, nil},
+					Statements: []Node{
+						&ObjectLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{0, 18},
+								nil,
+								[]Token{
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{0, 1}},
+									{Type: NEWLINE, Span: NodeSpan{8, 9}},
+									{Type: NEWLINE, Span: NodeSpan{9, 10}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{17, 18}},
+								},
+							},
+							Properties: []*ObjectProperty{
+								{
+									NodeBase: NodeBase{
+										NodeSpan{2, 7},
+										nil,
+										[]Token{{Type: COLON, Span: NodeSpan{4, 5}}},
+									},
+									Key: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{2, 3}, nil, nil},
+										Name:     "a",
+									},
+									Value: &IntLiteral{
+										NodeBase: NodeBase{NodeSpan{6, 7}, nil, nil},
+										Raw:      "1",
+										Value:    1,
+									},
+								},
+								{
+									NodeBase: NodeBase{
+										NodeSpan{11, 16},
+										nil,
+										[]Token{{Type: COLON, Span: NodeSpan{13, 14}}},
+									},
+									Key: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{11, 12}, nil, nil},
+										Name:     "b",
+									},
+									Value: &IntLiteral{
+										NodeBase: NodeBase{NodeSpan{15, 16}, nil, nil},
+										Raw:      "2",
+										Value:    2,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    "{ a : 1 \n \n b : 2 }",
+				hasError: false,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 19}, nil, nil},
+					Statements: []Node{
+						&ObjectLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{0, 19},
+								nil,
+								[]Token{
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{0, 1}},
+									{Type: NEWLINE, Span: NodeSpan{8, 9}},
+									{Type: NEWLINE, Span: NodeSpan{10, 11}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{18, 19}},
+								},
+							},
+							Properties: []*ObjectProperty{
+								{
+									NodeBase: NodeBase{
+										NodeSpan{2, 7},
+										nil,
+										[]Token{{Type: COLON, Span: NodeSpan{4, 5}}},
+									},
+									Key: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{2, 3}, nil, nil},
+										Name:     "a",
+									},
+									Value: &IntLiteral{
+										NodeBase: NodeBase{NodeSpan{6, 7}, nil, nil},
+										Raw:      "1",
+										Value:    1,
+									},
+								},
+								{
+									NodeBase: NodeBase{
+										NodeSpan{12, 17},
+										nil,
+										[]Token{{Type: COLON, Span: NodeSpan{14, 15}}},
+									},
+									Key: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{12, 13}, nil, nil},
+										Name:     "b",
+									},
+									Value: &IntLiteral{
+										NodeBase: NodeBase{NodeSpan{16, 17}, nil, nil},
+										Raw:      "2",
+										Value:    2,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    "{ a : 1 \n  \n b : 2 }",
+				hasError: false,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 20}, nil, nil},
+					Statements: []Node{
+						&ObjectLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{0, 20},
+								nil,
+								[]Token{
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{0, 1}},
+									{Type: NEWLINE, Span: NodeSpan{8, 9}},
+									{Type: NEWLINE, Span: NodeSpan{11, 12}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{19, 20}},
+								},
+							},
+							Properties: []*ObjectProperty{
+								{
+									NodeBase: NodeBase{
+										NodeSpan{2, 7},
+										nil,
+										[]Token{{Type: COLON, Span: NodeSpan{4, 5}}},
+									},
+									Key: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{2, 3}, nil, nil},
+										Name:     "a",
+									},
+									Value: &IntLiteral{
+										NodeBase: NodeBase{NodeSpan{6, 7}, nil, nil},
+										Raw:      "1",
+										Value:    1,
+									},
+								},
+								{
+									NodeBase: NodeBase{
+										NodeSpan{13, 18},
+										nil,
+										[]Token{{Type: COLON, Span: NodeSpan{15, 16}}},
+									},
+									Key: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{13, 14}, nil, nil},
+										Name:     "b",
+									},
+									Value: &IntLiteral{
+										NodeBase: NodeBase{NodeSpan{17, 18}, nil, nil},
 										Raw:      "2",
 										Value:    2,
 									},
