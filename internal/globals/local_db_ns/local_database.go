@@ -34,7 +34,7 @@ var (
 
 // A LocalDatabase is a database thats stores data on the filesystem.
 type LocalDatabase struct {
-	host     Host
+	host     core.Host
 	dirPath  core.Path
 	mainKV   *filekv.SingleFileKV
 	schemaKV *filekv.SingleFileKV
@@ -53,21 +53,21 @@ type LocalDatabaseConfig struct {
 }
 
 // openDatabase opens a local database, read, create & write permissions are required.
-func openDatabase(ctx *Context, r core.ResourceName, restrictedAccess bool) (*LocalDatabase, error) {
+func openDatabase(ctx *core.Context, r core.ResourceName, restrictedAccess bool) (*LocalDatabase, error) {
 
-	var pth Path
+	var pth core.Path
 
 	switch resource := r.(type) {
-	case Host:
+	case core.Host:
 		if resource.Scheme() != LDB_SCHEME {
 			return nil, ErrCannotResolveDatabase
 		}
-		data, ok := ctx.GetHostResolutionData(resource).(Path)
+		data, ok := ctx.GetHostResolutionData(resource).(core.Path)
 		if !ok {
 			return nil, ErrCannotResolveDatabase
 		}
 		pth = data
-	case Path:
+	case core.Path:
 		var err error
 		pth, err = resource.ToAbs(ctx.GetFileSystem())
 		if err != nil {
@@ -81,10 +81,10 @@ func openDatabase(ctx *Context, r core.ResourceName, restrictedAccess bool) (*Lo
 		return nil, ErrInvalidDatabaseDirpath
 	}
 
-	patt := PathPattern(pth + "...")
+	patt := core.PathPattern(pth + "...")
 
 	for _, kind := range []core.PermissionKind{permkind.Read, permkind.Create, permkind.WriteStream} {
-		perm := FilesystemPermission{Kind_: kind, Entity: patt}
+		perm := core.FilesystemPermission{Kind_: kind, Entity: patt}
 		if err := ctx.CheckHasPermission(perm); err != nil {
 			return nil, err
 		}
@@ -161,7 +161,7 @@ func openLocalDatabaseWithConfig(ctx *core.Context, config LocalDatabaseConfig) 
 		return nil, fmt.Errorf("failed to read schema: %w", err)
 	}
 	if ok {
-		patt, ok := schema.(*ObjectPattern)
+		patt, ok := schema.(*core.ObjectPattern)
 		if !ok {
 			err := localDB.Close(ctx)
 			if err != nil {
@@ -205,7 +205,7 @@ func (ldb *LocalDatabase) LoadTopLevelEntities(ctx *core.Context) (map[string]co
 	return ldb.topLevelValues, nil
 }
 
-func (ldb *LocalDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handlers core.MigrationOpHandlers) {
+func (ldb *LocalDatabase) UpdateSchema(ctx *core.Context, schema *core.ObjectPattern, handlers core.MigrationOpHandlers) {
 	ldb.topLevelValuesLock.Lock()
 	defer ldb.topLevelValuesLock.Unlock()
 
@@ -223,7 +223,7 @@ func (ldb *LocalDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, hand
 	ldb.schema = schema
 }
 
-func (ldb *LocalDatabase) load(ctx *Context, migrationNextPattern *ObjectPattern, handlers core.MigrationOpHandlers) error {
+func (ldb *LocalDatabase) load(ctx *core.Context, migrationNextPattern *core.ObjectPattern, handlers core.MigrationOpHandlers) error {
 	ldb.topLevelValues = make(map[string]core.Serializable, ldb.schema.EntryCount())
 	state := ctx.GetClosestState()
 
@@ -314,40 +314,40 @@ func (ldb *LocalDatabase) Close(ctx *core.Context) error {
 	return nil
 }
 
-func (ldb *LocalDatabase) Get(ctx *Context, key Path) (Value, Bool) {
+func (ldb *LocalDatabase) Get(ctx *core.Context, key core.Path) (core.Value, core.Bool) {
 	return utils.Must2(ldb.mainKV.Get(ctx, key, ldb))
 }
 
-func (ldb *LocalDatabase) GetSerialized(ctx *Context, key Path) (string, bool) {
+func (ldb *LocalDatabase) GetSerialized(ctx *core.Context, key core.Path) (string, bool) {
 	s, ok := utils.Must2(ldb.mainKV.GetSerialized(ctx, key, ldb))
 	return s, bool(ok)
 }
 
-func (ldb *LocalDatabase) Has(ctx *Context, key Path) bool {
+func (ldb *LocalDatabase) Has(ctx *core.Context, key core.Path) bool {
 	return bool(ldb.mainKV.Has(ctx, key, ldb))
 }
 
-func (ldb *LocalDatabase) Set(ctx *Context, key Path, value core.Serializable) {
+func (ldb *LocalDatabase) Set(ctx *core.Context, key core.Path, value core.Serializable) {
 	ldb.mainKV.Set(ctx, key, value, ldb)
 }
 
-func (ldb *LocalDatabase) SetSerialized(ctx *Context, key Path, serialized string) {
+func (ldb *LocalDatabase) SetSerialized(ctx *core.Context, key core.Path, serialized string) {
 	ldb.mainKV.SetSerialized(ctx, key, serialized, ldb)
 }
 
-func (ldb *LocalDatabase) Insert(ctx *Context, key Path, value core.Serializable) {
+func (ldb *LocalDatabase) Insert(ctx *core.Context, key core.Path, value core.Serializable) {
 	ldb.mainKV.Insert(ctx, key, value, ldb)
 }
 
-func (ldb *LocalDatabase) InsertSerialized(ctx *Context, key Path, serialized string) {
+func (ldb *LocalDatabase) InsertSerialized(ctx *core.Context, key core.Path, serialized string) {
 	ldb.mainKV.InsertSerialized(ctx, key, serialized, ldb)
 }
 
-func (ldb *LocalDatabase) Remove(ctx *Context, key Path) {
+func (ldb *LocalDatabase) Remove(ctx *core.Context, key core.Path) {
 	ldb.mainKV.Delete(ctx, key, ldb)
 }
 
-func (ldb *LocalDatabase) Prop(ctx *core.Context, name string) Value {
+func (ldb *LocalDatabase) Prop(ctx *core.Context, name string) core.Value {
 	method, ok := ldb.GetGoMethod(name)
 	if !ok {
 		panic(core.FormatErrPropertyDoesNotExist(name, ldb))
@@ -359,7 +359,7 @@ func (*LocalDatabase) SetProp(ctx *core.Context, name string, value core.Value) 
 	return core.ErrCannotSetProp
 }
 
-func (ldb *LocalDatabase) GetGoMethod(name string) (*GoFunction, bool) {
+func (ldb *LocalDatabase) GetGoMethod(name string) (*core.GoFunction, bool) {
 	switch name {
 	case "update_schema":
 		return core.WrapGoMethod(ldb.UpdateSchema), true
@@ -369,12 +369,12 @@ func (ldb *LocalDatabase) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (ldb *LocalDatabase) PropertyNames(ctx *Context) []string {
+func (ldb *LocalDatabase) PropertyNames(ctx *core.Context) []string {
 	return LOCAL_DB_PROPNAMES
 }
 
 type databaseRegistry struct {
 	lock          sync.Mutex
-	resolutions   map[Host]Path
-	openDatabases map[Path]*LocalDatabase
+	resolutions   map[core.Host]core.Path
+	openDatabases map[core.Path]*LocalDatabase
 }

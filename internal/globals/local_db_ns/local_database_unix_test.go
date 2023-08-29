@@ -240,7 +240,7 @@ func TestLocalDatabase(t *testing.T) {
 			name = "filesystem"
 		}
 
-		setup := func(ctxHasTransaction bool) (*LocalDatabase, *Context, *core.Transaction) {
+		setup := func(ctxHasTransaction bool) (*LocalDatabase, *core.Context, *core.Transaction) {
 			//core.ResetResourceMap()
 
 			config := LocalDatabaseConfig{
@@ -290,7 +290,7 @@ func TestLocalDatabase(t *testing.T) {
 					ldb, ctx, tx := setup(ctxHasTransactionFromTheSart)
 					defer ldb.Close(ctx)
 
-					v, ok := ldb.Get(ctx, Path("/a"))
+					v, ok := ldb.Get(ctx, core.Path("/a"))
 					assert.False(t, bool(ok))
 					assert.Equal(t, core.Nil, v)
 
@@ -301,16 +301,16 @@ func TestLocalDatabase(t *testing.T) {
 					ldb, ctx, tx := setup(ctxHasTransactionFromTheSart)
 					defer ldb.Close(ctx)
 
-					key := Path("/a")
+					key := core.Path("/a")
 					//r := ldb.GetFullResourceName(key)
-					ldb.Set(ctx, key, Int(1))
+					ldb.Set(ctx, key, core.Int(1))
 					// if !assert.False(t, core.TryAcquireConcreteResource(r)) {
 					// 	return
 					// }
 
 					v, ok := ldb.Get(ctx, key)
 					assert.True(t, bool(ok))
-					assert.Equal(t, Int(1), v)
+					assert.Equal(t, core.Int(1), v)
 					//assert.False(t, core.TryAcquireConcreteResource(r))
 
 					// //we check that the database transaction is not commited yet
@@ -332,23 +332,23 @@ func TestLocalDatabase(t *testing.T) {
 						return
 					}
 					assert.True(t, bool(ok))
-					assert.Equal(t, Int(1), v)
+					assert.Equal(t, core.Int(1), v)
 				})
 
 				t.Run("Set -> rollback", func(t *testing.T) {
 					ldb, ctx, tx := setup(ctxHasTransactionFromTheSart)
 					defer ldb.Close(ctx)
 
-					key := Path("/a")
+					key := core.Path("/a")
 					//r := ldb.GetFullResourceName(key)
-					ldb.Set(ctx, key, Int(1))
+					ldb.Set(ctx, key, core.Int(1))
 					// if !assert.False(t, core.TryAcquireConcreteResource(r)) {
 					// 	return
 					// }
 
 					v, ok := ldb.Get(ctx, key)
 					assert.True(t, bool(ok))
-					assert.Equal(t, Int(1), v)
+					assert.Equal(t, core.Int(1), v)
 
 					// //we check that the database transaction is not commited yet
 					// ldb.underlying.db.View(func(txn *Tx) error {
@@ -385,7 +385,7 @@ func TestLocalDatabase(t *testing.T) {
 					ldb, ctx, _ := setup(ctxHasTransactionFromTheSart)
 					defer ldb.Close(ctx)
 
-					v, ok := ldb.Get(ctx, Path("/a"))
+					v, ok := ldb.Get(ctx, core.Path("/a"))
 					assert.False(t, bool(ok))
 					assert.Equal(t, core.Nil, v)
 				})
@@ -394,12 +394,12 @@ func TestLocalDatabase(t *testing.T) {
 					ldb, ctx, _ := setup(ctxHasTransactionFromTheSart)
 					defer ldb.Close(ctx)
 
-					key := Path("/a")
-					ldb.Set(ctx, key, Int(1))
+					key := core.Path("/a")
+					ldb.Set(ctx, key, core.Int(1))
 
 					v, ok := ldb.Get(ctx, key)
 					assert.True(t, bool(ok))
-					assert.Equal(t, Int(1), v)
+					assert.Equal(t, core.Int(1), v)
 
 					//we check that the database transaction is commited
 					otherCtx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
@@ -410,7 +410,7 @@ func TestLocalDatabase(t *testing.T) {
 						return
 					}
 					assert.True(t, bool(ok))
-					assert.Equal(t, Int(1), v)
+					assert.Equal(t, core.Int(1), v)
 				})
 			})
 
@@ -422,18 +422,18 @@ func TestLocalDatabase(t *testing.T) {
 					defer ldb.Close(ctx)
 
 					//first call to Set
-					key := Path("/a")
-					ldb.Set(ctx, key, Int(1))
+					key := core.Path("/a")
+					ldb.Set(ctx, key, core.Int(1))
 
 					//attach transaction
 					core.StartNewTransaction(ctx)
 
 					//second call to Set
-					ldb.Set(ctx, key, Int(2))
+					ldb.Set(ctx, key, core.Int(2))
 
 					v, ok := ldb.Get(ctx, key)
 					assert.True(t, bool(ok))
-					assert.Equal(t, Int(2), v)
+					assert.Equal(t, core.Int(2), v)
 				})
 			})
 		})
@@ -443,7 +443,7 @@ func TestLocalDatabase(t *testing.T) {
 func TestUpdateSchema(t *testing.T) {
 	HOST := core.Host("ldb://main")
 
-	openDB := func(tempdir string, filesystem afs.Filesystem) (*LocalDatabase, *Context, bool) {
+	openDB := func(tempdir string, filesystem afs.Filesystem) (*LocalDatabase, *core.Context, bool) {
 		//core.ResetResourceMap()
 
 		config := LocalDatabaseConfig{}

@@ -31,7 +31,7 @@ func init() {
 	})
 }
 
-func NewLocalDbNamespace() *Record {
+func NewLocalDbNamespace() *core.Record {
 	return core.NewRecordFromMap(core.ValMap{
 		//
 		//"open": core.ValOf(openDatabase),

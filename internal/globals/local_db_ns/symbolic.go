@@ -17,7 +17,7 @@ type SymbolicLocalDatabase struct {
 	_ int
 }
 
-func (ldb *SymbolicLocalDatabase) Test(v SymbolicValue) bool {
+func (ldb *SymbolicLocalDatabase) Test(v symbolic.SymbolicValue) bool {
 	_, ok := v.(*SymbolicLocalDatabase)
 	return ok
 }
@@ -30,11 +30,11 @@ func (ldb *SymbolicLocalDatabase) Close() {
 
 }
 
-func (ldb *SymbolicLocalDatabase) GetFullResourceName(pth Path) symbolic.ResourceName {
+func (ldb *SymbolicLocalDatabase) GetFullResourceName(pth *symbolic.Path) symbolic.ResourceName {
 	return &symbolic.AnyResourceName{}
 }
 
-func (ldb *SymbolicLocalDatabase) Prop(name string) SymbolicValue {
+func (ldb *SymbolicLocalDatabase) Prop(name string) symbolic.SymbolicValue {
 	method, ok := ldb.GetGoMethod(name)
 	if !ok {
 		panic(symbolic.FormatErrPropertyDoesNotExist(name, ldb))
@@ -60,12 +60,12 @@ func (ldb *SymbolicLocalDatabase) PrettyPrint(w *bufio.Writer, config *pprint.Pr
 	utils.Must(w.Write(utils.StringAsBytes("%local-database")))
 }
 
-func (ldb *SymbolicLocalDatabase) WidestOfType() SymbolicValue {
+func (ldb *SymbolicLocalDatabase) WidestOfType() symbolic.SymbolicValue {
 	return &SymbolicLocalDatabase{}
 }
 
 ///
 
-func (ldb *LocalDatabase) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]SymbolicValue) (SymbolicValue, error) {
+func (ldb *LocalDatabase) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	return &SymbolicLocalDatabase{}, nil
 }
