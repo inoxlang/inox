@@ -1,12 +1,14 @@
-package local_db_ns
+package local_db
 
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/filekv"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
@@ -17,6 +19,7 @@ const (
 
 	MAIN_KV_FILE   = "main.kv"
 	SCHEMA_KV_FILE = "schema.kv"
+	LDB_SCHEME     = core.Scheme("ldb")
 )
 
 var (
@@ -31,6 +34,21 @@ var (
 
 	_ core.Database = (*LocalDatabase)(nil)
 )
+
+func init() {
+	core.RegisterOpenDbFn(LDB_SCHEME, func(ctx *core.Context, config core.DbOpenConfiguration) (core.Database, error) {
+		return openDatabase(ctx, config.Resource, !config.FullAccess)
+	})
+
+	core.RegisterStaticallyCheckDbResolutionDataFn(LDB_SCHEME, func(node parse.Node) string {
+		pathLit, ok := node.(*parse.AbsolutePathLiteral)
+		if !ok || !strings.HasSuffix(pathLit.Value, "/") {
+			return "the resolution data of a local database should be an absolute directory path (it should end with '/')"
+		}
+
+		return ""
+	})
+}
 
 // A LocalDatabase is a database thats stores data on the filesystem.
 type LocalDatabase struct {
@@ -345,32 +363,6 @@ func (ldb *LocalDatabase) InsertSerialized(ctx *core.Context, key core.Path, ser
 
 func (ldb *LocalDatabase) Remove(ctx *core.Context, key core.Path) {
 	ldb.mainKV.Delete(ctx, key, ldb)
-}
-
-func (ldb *LocalDatabase) Prop(ctx *core.Context, name string) core.Value {
-	method, ok := ldb.GetGoMethod(name)
-	if !ok {
-		panic(core.FormatErrPropertyDoesNotExist(name, ldb))
-	}
-	return method
-}
-
-func (*LocalDatabase) SetProp(ctx *core.Context, name string, value core.Value) error {
-	return core.ErrCannotSetProp
-}
-
-func (ldb *LocalDatabase) GetGoMethod(name string) (*core.GoFunction, bool) {
-	switch name {
-	case "update_schema":
-		return core.WrapGoMethod(ldb.UpdateSchema), true
-	case "close":
-		return core.WrapGoMethod(ldb.Close), true
-	}
-	return nil, false
-}
-
-func (ldb *LocalDatabase) PropertyNames(ctx *core.Context) []string {
-	return LOCAL_DB_PROPNAMES
 }
 
 type databaseRegistry struct {

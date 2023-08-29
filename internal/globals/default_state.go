@@ -23,9 +23,10 @@ import (
 
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
 	"github.com/inoxlang/inox/internal/globals/inoxsh_ns"
-	"github.com/inoxlang/inox/internal/globals/local_db_ns"
 	"github.com/inoxlang/inox/internal/globals/net_ns"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
+
+	_ "github.com/inoxlang/inox/internal/local_db"
 
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
@@ -120,7 +121,6 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 		"ws":       net_ns.NewWebsocketNamespace(),
 		"s3":       s3_ns.NewS3namespace(),
 		"chrome":   chrome_ns.NewChromeNamespace(),
-		"localdb":  local_db_ns.NewLocalDbNamespace(),
 		"env":      envNamespace,
 		"html":     html_ns.NewHTMLNamespace(),
 		"inox":     inox_ns.NewInoxNamespace(),

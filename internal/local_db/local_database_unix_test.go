@@ -1,6 +1,6 @@
 //go:build unix
 
-package local_db_ns
+package local_db
 
 import (
 	"path/filepath"
