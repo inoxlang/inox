@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
@@ -22,37 +23,47 @@ func GetTempCloudflareTokens(
 	projectId project.ProjectID,
 ) (r2tokenValue string, _ error) {
 	additionalTokensApiToken := devSideConfig.AdditionalTokensApiToken
+	//note: api.UserDetails().Account[0].ID is zero
+	accountId := devSideConfig.AccountID
 
 	api, err := cloudflare.NewWithAPIToken(additionalTokensApiToken)
 	if err != nil {
 		return "", err
 	}
 
-	permGroups, err := api.ListAPITokensPermissionGroups(ctx)
-
-	if err != nil {
-		return "", fmt.Errorf("failed to retrieve API token permission groups: %w", err)
-	}
-
 	var r2PermGroups []cloudflare.APITokenPermissionGroups
+	var permissionGroupRetrievalError error
+	wg := new(sync.WaitGroup)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		permGroups, err := api.ListAPITokensPermissionGroups(ctx)
 
-	for _, group := range permGroups {
-		if strings.Contains(group.Name, "R2") {
-			r2PermGroups = append(r2PermGroups, group)
+		if err != nil {
+			permissionGroupRetrievalError = fmt.Errorf("failed to retrieve API token permission groups: %w", err)
+			return
 		}
-	}
 
-	if len(r2PermGroups) < 4 {
-		return "", errors.New("failed to retrieve all R2 permission groups")
-	}
+		for _, group := range permGroups {
+			if strings.Contains(group.Name, "R2") {
+				r2PermGroups = append(r2PermGroups, group)
+			}
+		}
 
-	//note: api.UserDetails().Account[0].ID is zero
-	accountId := devSideConfig.AccountID
-	_ = accountId
+		if len(r2PermGroups) < 4 {
+			permissionGroupRetrievalError = errors.New("failed to retrieve all R2 permission groups")
+			return
+		}
+	}()
 
 	apiTokens, err := api.APITokens(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to retrieve API tokens: %w", err)
+	}
+
+	wg.Wait()
+	if permissionGroupRetrievalError != nil {
+		return "", permissionGroupRetrievalError
 	}
 
 	R2TokenName := GetR2TokenName(projectId)
@@ -98,14 +109,14 @@ func GetTempCloudflareTokens(
 			},
 		}
 		if R2TokenAlreadyExists {
-			r2Token, err = api.UpdateAPIToken(ctx, R2TokenId, r2Token)
+			r2tokenValue, err = api.RollAPIToken(ctx, R2TokenId)
 		} else {
 			r2Token, err = api.CreateAPIToken(ctx, r2Token)
+			r2tokenValue = r2Token.Value
 		}
 		if err != nil {
 			return "", fmt.Errorf("failed to create R2 API Token: %w", err)
 		}
-		r2tokenValue = r2Token.Value
 	}
 
 	return r2tokenValue, nil

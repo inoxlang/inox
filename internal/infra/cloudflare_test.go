@@ -93,6 +93,7 @@ func TestGetTempCloudflareTokens(t *testing.T) {
 	}
 
 	assert.NotEqual(t, prevR2Token, r2Token)
+	assert.NotEmpty(t, r2Token)
 
 	apiTokens, err = api.APITokens(ctx)
 	if err != nil {
