@@ -8,11 +8,13 @@ require (
 	github.com/alecthomas/chroma/v2 v2.7.0
 	github.com/alexedwards/argon2id v0.0.0-20230305115115-4b3c3280a736
 	github.com/aohorodnyk/mimeheader v0.0.6
+	github.com/aws/aws-sdk-go v1.44.272
 	github.com/bits-and-blooms/bitset v1.8.0
 	github.com/bmatcuk/doublestar/v4 v4.6.0
 	github.com/buger/jsonparser v1.1.2-0.20220418200129-61b32cfdfa0f
 	github.com/caddyserver/certmagic v0.17.2
 	github.com/chromedp/chromedp v0.8.6
+	github.com/cloudflare/cloudflare-go v0.75.0
 	github.com/djherbis/times v1.5.0
 	github.com/emirpasic/gods v1.18.1
 	github.com/fsnotify/fsnotify v1.6.0
@@ -40,6 +42,7 @@ require (
 	github.com/tidwall/lotsa v1.0.3
 	github.com/tidwall/match v1.1.1
 	github.com/tidwall/rtred v0.1.2
+	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df
 	golang.org/x/net v0.14.0
@@ -52,11 +55,9 @@ require (
 
 require (
 	github.com/andybalholm/cascadia v1.3.1 // indirect
-	github.com/aws/aws-sdk-go v1.44.272 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/chromedp/cdproto v0.0.0-20220924210414-0e3390be1777 // indirect
 	github.com/chromedp/sysutil v1.0.0 // indirect
-	github.com/cloudflare/cloudflare-go v0.75.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
@@ -69,6 +70,7 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.4 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/klauspost/compress v1.16.6 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
@@ -96,7 +98,6 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tidwall/tinyqueue v0.1.1 // indirect
-	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/crypto v0.12.0 // indirect
 	golang.org/x/mod v0.11.0 // indirect
