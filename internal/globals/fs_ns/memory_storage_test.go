@@ -54,6 +54,21 @@ func TestMemoryStorage(t *testing.T) {
 		assert.NoError(t, file.Close())
 	})
 
+	t.Run("truncating a file should update the modification time", func(t *testing.T) {
+		maxStorage := core.ByteCount(100)
+		storage := newInMemoryStorage(maxStorage)
+
+		now := time.Now()
+		file := utils.Must(storage.New("file", 0600, os.O_WRONLY))
+		err := file.Truncate(10)
+
+		info, _ := file.Stat()
+		assert.True(t, info.ModTime().After(now))
+
+		assert.NoError(t, err)
+		assert.NoError(t, file.Close())
+	})
+
 	t.Run("truncating a file to a large size should cause an error", func(t *testing.T) {
 		maxStorage := core.ByteCount(100)
 		storage := newInMemoryStorage(maxStorage)
@@ -64,6 +79,7 @@ func TestMemoryStorage(t *testing.T) {
 		assert.ErrorIs(t, err, ErrInMemoryStorageLimitExceededDuringWrite)
 		assert.NoError(t, file.Close())
 	})
+
 	t.Run("creating small regular files in parallel should be thread safe", func(t *testing.T) {
 		goroutineCount := 10
 		singleWriteData := []byte{'a'}

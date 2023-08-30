@@ -73,7 +73,7 @@ func newInMemoryStorageFromSnapshot(snapshot FilesystemSnapshot, maxStorageSize 
 		storage.files[path] = file
 		content, ok := snapshot.FileContents[path]
 
-		file.content = &inMemFileContent{
+		file.content = &InMemFileContent{
 			name:                     file.basename,
 			creationTime:             time.Time(metadata.CreationTime),
 			filesystemMaxStorageSize: storage.maxStorageSize,
@@ -155,7 +155,7 @@ func (s *inMemStorage) newNoLock(path string, mode os.FileMode, flag int) (*inMe
 		basename:     name,
 		originalPath: originalPath,
 		absPath:      core.PathFrom(path),
-		content: &inMemFileContent{
+		content: &InMemFileContent{
 			name:         name,
 			creationTime: now,
 		},
@@ -337,7 +337,7 @@ func NormalizeAsAbsolute(path string) string {
 	return path
 }
 
-type inMemFileContent struct {
+type InMemFileContent struct {
 	name                     string
 	bytes                    []byte
 	creationTime             time.Time
@@ -348,11 +348,25 @@ type inMemFileContent struct {
 	m sync.RWMutex
 }
 
-func (c *inMemFileContent) ModifTime() time.Time {
+func NewInMemFileContent(name string, creationTime time.Time, maxStorage int64, storageSize *atomic.Int64) *InMemFileContent {
+	return &InMemFileContent{
+		name:                     name,
+		creationTime:             creationTime,
+		filesystemMaxStorageSize: maxStorage,
+		filesystemStorageSize:    storageSize,
+	}
+}
+
+func (c *InMemFileContent) BytesToNotModify() []byte {
+	return c.bytes
+}
+
+func (c *InMemFileContent) ModifTime() time.Time {
 	return c.modificationTime.Load().(time.Time)
 }
 
-func (c *inMemFileContent) Truncate(size int64) error {
+func (c *InMemFileContent) Truncate(size int64) error {
+	c.modificationTime.Store(time.Now())
 
 	if size <= int64(len(c.bytes)) {
 		//TODO: re-use free space, otherwise the actual memory usage
@@ -379,11 +393,11 @@ func (c *inMemFileContent) Truncate(size int64) error {
 	return nil
 }
 
-func (c *inMemFileContent) Len() int {
+func (c *InMemFileContent) Len() int {
 	return len(c.bytes)
 }
 
-func (c *inMemFileContent) WriteAt(p []byte, off int64) (int, error) {
+func (c *InMemFileContent) WriteAt(p []byte, off int64) (int, error) {
 	if off < 0 {
 		return 0, &os.PathError{
 			Op:   "writeat",
@@ -422,7 +436,7 @@ func (c *inMemFileContent) WriteAt(p []byte, off int64) (int, error) {
 	return len(p), nil
 }
 
-func (c *inMemFileContent) ReadAt(b []byte, off int64) (n int, err error) {
+func (c *InMemFileContent) ReadAt(b []byte, off int64) (n int, err error) {
 	if off < 0 {
 		return 0, &os.PathError{
 			Op:   "readat",

@@ -13,7 +13,7 @@ type inMemfile struct {
 	basename     string
 	originalPath string
 	absPath      core.Path
-	content      *inMemFileContent
+	content      *InMemFileContent
 	position     int64
 	flag         int
 	mode         os.FileMode
