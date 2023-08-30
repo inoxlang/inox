@@ -2,23 +2,23 @@ package fs_ns
 
 import "os"
 
-func isCreate(flag int) bool {
+func IsCreate(flag int) bool {
 	return flag&os.O_CREATE != 0
 }
 
-func isExclusive(flag int) bool {
+func IsExclusive(flag int) bool {
 	return flag&os.O_EXCL != 0
 }
 
-func isAppend(flag int) bool {
+func IsAppend(flag int) bool {
 	return flag&os.O_APPEND != 0
 }
 
-func isTruncate(flag int) bool {
+func IsTruncate(flag int) bool {
 	return flag&os.O_TRUNC != 0
 }
 
-func isReadAndWrite(flag int) bool {
+func IsReadAndWrite(flag int) bool {
 	return flag&os.O_RDWR != 0
 }
 

@@ -64,7 +64,7 @@ func (fs *MemFilesystem) OpenFile(filename string, flag int, perm os.FileMode) (
 	f, has := fs.s.Get(filename)
 
 	if !has {
-		if !isCreate(flag) {
+		if !IsCreate(flag) {
 			return nil, os.ErrNotExist
 		}
 
@@ -74,7 +74,7 @@ func (fs *MemFilesystem) OpenFile(filename string, flag int, perm os.FileMode) (
 			return nil, err
 		}
 	} else {
-		if isExclusive(flag) {
+		if IsExclusive(flag) {
 			return nil, os.ErrExist
 		}
 

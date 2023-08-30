@@ -191,7 +191,7 @@ func (fls *MetaFilesystem) getFileMetadata(pth core.Path, usedTx *filekv.Databas
 		if fls.dir != nil {
 			*underlyingFilePath = core.PathFrom(fls.underlying.Join(*fls.dir, string(underylingFile)))
 		} else {
-			*underlyingFilePath = core.PathFrom(normalizeAsAbsolute(string(underylingFile)))
+			*underlyingFilePath = core.PathFrom(NormalizeAsAbsolute(string(underylingFile)))
 		}
 	}
 
@@ -287,7 +287,7 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 	defer fls.lock.Unlock()
 
 	originalPath := filename
-	filename = normalizeAsAbsolute(filename)
+	filename = NormalizeAsAbsolute(filename)
 
 	pth := core.PathFrom(filename)
 	metadata, exists, err := fls.getFileMetadata(pth, nil)
@@ -296,7 +296,7 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 	}
 
 	if !exists {
-		if !isCreate(flag) {
+		if !IsCreate(flag) {
 			return nil, os.ErrNotExist
 		}
 
@@ -330,7 +330,7 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 		if fls.dir != nil {
 			underlyingFilePath = core.Path(fls.underlying.Join(*fls.dir, ulid.Make().String()))
 		} else {
-			underlyingFilePath = core.Path(normalizeAsAbsolute(ulid.Make().String()))
+			underlyingFilePath = core.Path(NormalizeAsAbsolute(ulid.Make().String()))
 		}
 
 		creationTime := core.Date(time.Now())
@@ -356,7 +356,7 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 			return nil, errors.New("symlinks not supported")
 		}
 
-		if isExclusive(flag) {
+		if IsExclusive(flag) {
 			return nil, os.ErrExist
 		}
 	}
@@ -391,7 +391,7 @@ func (fls *MetaFilesystem) Stat(filename string) (os.FileInfo, error) {
 }
 
 func (fls *MetaFilesystem) statNoLock(filename string) (os.FileInfo, error) {
-	filename = normalizeAsAbsolute(filename)
+	filename = NormalizeAsAbsolute(filename)
 
 	metadata, exists, err := fls.getFileMetadata(core.PathFrom(filename), nil)
 
@@ -450,7 +450,7 @@ func (fls *MetaFilesystem) ReadDir(path string) ([]os.FileInfo, error) {
 	fls.lock.RLock()
 	defer fls.lock.RUnlock()
 
-	path = normalizeAsAbsolute(path)
+	path = NormalizeAsAbsolute(path)
 
 	metadata, exists, err := fls.getFileMetadata(core.PathFrom(path), nil)
 
@@ -496,7 +496,7 @@ func (fls *MetaFilesystem) MkdirAllNoLock_(path string, perm os.FileMode, tx *fi
 		return nil
 	}
 
-	path = normalizeAsAbsolute(path)
+	path = NormalizeAsAbsolute(path)
 	perm |= fs.ModeDir
 
 	pth := core.DirPathFrom(path)
@@ -567,8 +567,8 @@ func (fls *MetaFilesystem) Rename(from, to string) error {
 	fls.lock.Lock()
 	defer fls.lock.Unlock()
 
-	from = normalizeAsAbsolute(from)
-	to = normalizeAsAbsolute(to)
+	from = NormalizeAsAbsolute(from)
+	to = NormalizeAsAbsolute(to)
 
 	_, exists, err := fls.getFileMetadata(core.PathFrom(from), nil)
 
@@ -725,7 +725,7 @@ func (fls *MetaFilesystem) Remove(filename string) error {
 	fls.lock.Lock()
 	defer fls.lock.Unlock()
 
-	filename = normalizeAsAbsolute(filename)
+	filename = NormalizeAsAbsolute(filename)
 
 	pth := core.PathFrom(filename)
 	metadata, exists, err := fls.getFileMetadata(pth, nil)

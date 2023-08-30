@@ -41,7 +41,7 @@ func (f *inMemfile) ReadAt(b []byte, off int64) (int, error) {
 		return 0, os.ErrClosed
 	}
 
-	if !isReadAndWrite(f.flag) && !isReadOnly(f.flag) {
+	if !IsReadAndWrite(f.flag) && !isReadOnly(f.flag) {
 		return 0, errors.New("read not supported")
 	}
 
@@ -72,7 +72,7 @@ func (f *inMemfile) Write(p []byte) (int, error) {
 		return 0, os.ErrClosed
 	}
 
-	if !isReadAndWrite(f.flag) && !isWriteOnly(f.flag) {
+	if !IsReadAndWrite(f.flag) && !isWriteOnly(f.flag) {
 		return 0, errors.New("write not supported")
 	}
 
@@ -98,18 +98,18 @@ func (f *inMemfile) Truncate(size int64) error {
 func (f *inMemfile) Duplicate(originalPath string, mode os.FileMode, flag int) billy.File {
 	new := &inMemfile{
 		basename:     f.basename,
-		absPath:      core.PathFrom(normalizeAsAbsolute(originalPath)),
+		absPath:      core.PathFrom(NormalizeAsAbsolute(originalPath)),
 		originalPath: originalPath,
 		content:      f.content,
 		mode:         mode,
 		flag:         flag,
 	}
 
-	if isTruncate(flag) {
+	if IsTruncate(flag) {
 		new.content.Truncate(0)
 	}
 
-	if isAppend(flag) {
+	if IsAppend(flag) {
 		new.position = int64(new.content.Len())
 	}
 
