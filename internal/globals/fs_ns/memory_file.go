@@ -41,7 +41,7 @@ func (f *inMemfile) ReadAt(b []byte, off int64) (int, error) {
 		return 0, os.ErrClosed
 	}
 
-	if !IsReadAndWrite(f.flag) && !isReadOnly(f.flag) {
+	if !IsReadAndWrite(f.flag) && !IsReadOnly(f.flag) {
 		return 0, errors.New("read not supported")
 	}
 

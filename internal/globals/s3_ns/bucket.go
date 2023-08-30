@@ -30,9 +30,8 @@ type BucketMapItem = struct {
 type Bucket struct {
 	closed uint32
 
-	s3Host         core.Host
-	name           string
-	resolutionData core.Value
+	s3Host core.Host
+	name   string
 
 	client      *S3Client
 	fakeBackend gofakes3.Backend
@@ -70,9 +69,14 @@ func OpenBucket(ctx *core.Context, s3Host core.Host) (*Bucket, error) {
 		}
 		return nil, ErrCannotResolveBucket
 	case *core.Object:
+		bucket := d.Prop(ctx, "bucket")
+		if bucket == nil {
+			return nil, fmt.Errorf("%w: missing .bucket in resolution data", ErrCannotResolveBucket)
+		}
+
 		host := d.Prop(ctx, "host")
 		if host == nil {
-			return nil, fmt.Errorf("%w: missing .url in resolution data", ErrCannotResolveBucket)
+			return nil, fmt.Errorf("%w: missing .host in resolution data", ErrCannotResolveBucket)
 		}
 
 		accessKey := d.Prop(ctx, "access-key")
@@ -86,7 +90,13 @@ func OpenBucket(ctx *core.Context, s3Host core.Host) (*Bucket, error) {
 			return nil, fmt.Errorf("%w: missing .secret-key in resolution data", ErrCannotResolveBucket)
 		}
 
-		return openBucketWithCredentials(ctx, s3Host, host.(core.Host), string(accessKey.(core.Str)), string(secretKey.(core.Str)))
+		return openBucketWithCredentials(ctx, openBucketWithCredentialsInput{
+			s3Host:     s3Host,
+			httpsHost:  host.(core.Host),
+			bucketName: bucket.(core.Str).UnderlyingString(),
+			accessKey:  accessKey.(core.Str).UnderlyingString(),
+			secretKey:  secretKey.(core.Str).UnderlyingString(),
+		})
 	default:
 		return nil, ErrCannotResolveBucket
 	}
@@ -107,10 +117,9 @@ func openInMemoryBucket(ctx *core.Context, s3Host core.Host, memURL core.URL) (*
 	}
 
 	bucket := &Bucket{
-		s3Host:         s3Host,
-		name:           string(memURL.Host()),
-		resolutionData: memURL,
-		fakeBackend:    backend,
+		s3Host:      s3Host,
+		name:        string(memURL.Host()),
+		fakeBackend: backend,
 	}
 
 	openBucketMapLock.Lock()
@@ -142,10 +151,9 @@ func openPublicBucket(ctx *core.Context, s3Host core.Host, httpsHost core.Host) 
 	}
 
 	bucket := &Bucket{
-		s3Host:         s3Host,
-		name:           subdomain,
-		resolutionData: httpsHost,
-		client:         &S3Client{libClient: s3Client},
+		s3Host: s3Host,
+		name:   subdomain,
+		client: &S3Client{libClient: s3Client},
 	}
 
 	item.Public = bucket
@@ -156,8 +164,18 @@ func openPublicBucket(ctx *core.Context, s3Host core.Host, httpsHost core.Host) 
 	return bucket, nil
 }
 
-func openBucketWithCredentials(ctx *core.Context, s3Host core.Host, httpsHost core.Host, accesKey, secretKey string) (*Bucket, error) {
-	_host := string(httpsHost)
+type openBucketWithCredentialsInput struct {
+	s3Host core.Host
+
+	provider   string
+	httpsHost  core.Host
+	bucketName string
+
+	accessKey, secretKey string
+}
+
+func openBucketWithCredentials(ctx *core.Context, input openBucketWithCredentialsInput) (*Bucket, error) {
+	_host := string(input.httpsHost)
 	openBucketMapLock.RLock()
 	item, ok := openBucketMap[_host]
 	openBucketMapLock.RUnlock()
@@ -166,12 +184,28 @@ func openBucketWithCredentials(ctx *core.Context, s3Host core.Host, httpsHost co
 		return item.WithCredentials, nil
 	}
 
-	subdomain, endpoint, _ := strings.Cut(httpsHost.WithoutScheme(), ".")
+	var endpoint string
+	var region string
+	var lookup minio.BucketLookupType
+
+	if input.httpsHost.Scheme() != "https" {
+		return nil, fmt.Errorf("bucket endpoint should have a https:// scheme")
+	}
+
+	switch strings.ToLower(input.provider) {
+	case "cloudflare":
+		endpoint = input.httpsHost.WithoutScheme()
+		lookup = minio.BucketLookupPath
+		region = "auto"
+	default:
+		return nil, fmt.Errorf("S3 provider %q is not supported", input.provider)
+	}
 
 	s3Client, err := minio.New(endpoint, &minio.Options{
-		Region: "fr-par",
-		Creds:  credentials.NewStaticV4(accesKey, secretKey, ""),
-		Secure: true,
+		Region:       region,
+		Creds:        credentials.NewStaticV4(input.accessKey, input.secretKey, ""),
+		Secure:       true,
+		BucketLookup: lookup,
 	})
 
 	if err != nil {
@@ -179,10 +213,9 @@ func openBucketWithCredentials(ctx *core.Context, s3Host core.Host, httpsHost co
 	}
 
 	bucket := &Bucket{
-		s3Host:         s3Host,
-		name:           subdomain,
-		resolutionData: httpsHost,
-		client:         &S3Client{libClient: s3Client},
+		s3Host: input.s3Host,
+		name:   input.bucketName,
+		client: &S3Client{libClient: s3Client},
 	}
 
 	item.WithCredentials = bucket

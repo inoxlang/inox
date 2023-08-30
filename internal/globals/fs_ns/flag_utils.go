@@ -22,7 +22,7 @@ func IsReadAndWrite(flag int) bool {
 	return flag&os.O_RDWR != 0
 }
 
-func isReadOnly(flag int) bool {
+func IsReadOnly(flag int) bool {
 	return flag == os.O_RDONLY
 }
 

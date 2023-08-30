@@ -348,9 +348,15 @@ type InMemFileContent struct {
 	m sync.RWMutex
 }
 
-func NewInMemFileContent(name string, creationTime time.Time, maxStorage int64, storageSize *atomic.Int64) *InMemFileContent {
+func NewInMemFileContent(
+	name string,
+	content []byte,
+	creationTime time.Time,
+	maxStorage int64, storageSize *atomic.Int64,
+) *InMemFileContent {
 	return &InMemFileContent{
 		name:                     name,
+		bytes:                    content,
 		creationTime:             creationTime,
 		filesystemMaxStorageSize: maxStorage,
 		filesystemStorageSize:    storageSize,
