@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/minio/minio-go/v7"
@@ -25,6 +26,8 @@ var (
 	ErrCannotWriteToReadOnly   = errors.New("cannot write to read-only file")
 	ErrCannotTruncateReadOnly  = errors.New("cannot truncate a read-only file")
 	ErrCannotReadFromWriteOnly = errors.New("cannot read from write-only file")
+
+	_ afs.SyncCapable = (*s3WriteFile)(nil)
 )
 
 // s3ReadFile represents a file opened in read mode.
@@ -278,13 +281,17 @@ func (f *s3WriteFile) Truncate(size int64) error {
 	return f.content.Truncate(size)
 }
 
-func (f *s3WriteFile) Close() error {
-	if !f.closed.CompareAndSwap(false, true) {
+func (f *s3WriteFile) Sync() error {
+	if f.closed.Load() {
 		return os.ErrClosed
 	}
+	return f.sync()
+}
 
+func (f *s3WriteFile) sync() error {
 	p := f.content.BytesToNotModify()
 	body := bytes.NewReader(p)
+
 	key := toObjectKey(f.filename)
 
 	_, err := f.client.libClient.PutObject(f.ctx, f.bucket, key, body, int64(len(p)), minio.PutObjectOptions{
@@ -293,13 +300,20 @@ func (f *s3WriteFile) Close() error {
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("unable to perform GetObject operation: %w", err)
+		return fmt.Errorf("unable to perform PutObject operation: %w", err)
 	}
 	f.fs.pendingCreationsLock.Lock()
 	defer f.fs.pendingCreationsLock.Unlock()
 	delete(f.fs.pendingCreations, fs_ns.NormalizeAsAbsolute(f.filename))
-
 	return nil
+}
+
+func (f *s3WriteFile) Close() error {
+	if !f.closed.CompareAndSwap(false, true) {
+		return os.ErrClosed
+	}
+
+	return f.sync()
 }
 
 func (f *s3WriteFile) Lock() error {
