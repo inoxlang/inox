@@ -267,6 +267,7 @@ func TestParseRepr(t *testing.T) {
 		{`https://`, -1, Scheme("https")},
 		{`http://`, -1, Scheme("http")},
 		{`ldb://`, -1, Scheme("ldb")},
+		{`odb://`, -1, Scheme("odb")},
 		{`ws://`, -1, Scheme("ws")},
 		{`wss://`, -1, Scheme("wss")},
 		{`file://`, -1, Scheme("file")},

@@ -1421,6 +1421,10 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 							state = rstateSchemeColon
 							continue
 						}
+						if bytes.Equal(b[atomStartIndex:i], utils.StringAsBytes("odb")) {
+							state = rstateSchemeColon
+							continue
+						}
 					case 4:
 						if bytes.Equal(b[atomStartIndex:i], utils.StringAsBytes("http")) {
 							state = rstateSchemeColon

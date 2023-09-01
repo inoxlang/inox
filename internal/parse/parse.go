@@ -43,7 +43,7 @@ var (
 	INCLUDABLE_CHUNK_KEYWORD_STR = tokenStrings[INCLUDABLE_CHUNK_KEYWORD]
 	CONST_KEYWORD_STR            = tokenStrings[CONST_KEYWORD]
 	READONLY_KEYWORD_STR         = tokenStrings[READONLY_KEYWORD]
-	SCHEMES                      = []string{"http", "https", "ws", "wss", "ldb", "file", "mem", "s3"}
+	SCHEMES                      = []string{"http", "https", "ws", "wss", "ldb", "odb", "file", "mem", "s3"}
 
 	//regexes
 	URL_REGEX                      = regexp.MustCompile(URL_PATTERN)
