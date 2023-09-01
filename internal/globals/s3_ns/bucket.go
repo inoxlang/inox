@@ -79,6 +79,11 @@ func OpenBucket(ctx *core.Context, s3Host core.Host) (*Bucket, error) {
 			return nil, fmt.Errorf("%w: missing .host in resolution data", ErrCannotResolveBucket)
 		}
 
+		provider := d.Prop(ctx, "provider")
+		if bucket == nil {
+			return nil, fmt.Errorf("%w: missing .provider in resolution data", ErrCannotResolveBucket)
+		}
+
 		accessKey := d.Prop(ctx, "access-key")
 		if accessKey == nil {
 			return nil, fmt.Errorf("%w: missing .access-key in resolution data", ErrCannotResolveBucket)
@@ -93,9 +98,10 @@ func OpenBucket(ctx *core.Context, s3Host core.Host) (*Bucket, error) {
 		return openBucketWithCredentials(ctx, openBucketWithCredentialsInput{
 			s3Host:     s3Host,
 			httpsHost:  host.(core.Host),
-			bucketName: bucket.(core.Str).UnderlyingString(),
-			accessKey:  accessKey.(core.Str).UnderlyingString(),
-			secretKey:  secretKey.(core.Str).UnderlyingString(),
+			bucketName: bucket.(core.StringLike).GetOrBuildString(),
+			provider:   provider.(core.StringLike).GetOrBuildString(),
+			accessKey:  accessKey.(core.StringLike).GetOrBuildString(),
+			secretKey:  secretKey.(core.StringLike).GetOrBuildString(),
 		})
 	default:
 		return nil, ErrCannotResolveBucket
