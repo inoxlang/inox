@@ -133,6 +133,8 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 			return parseHostPatternJSONRepresentation(ctx, it)
 		case URLPATTERN_PATTERN:
 			return parseURLPatternJSONRepresentation(ctx, it)
+		default:
+			return nil, fmt.Errorf("%q type pattern is not a core pattern", p.Name)
 		}
 	}
 

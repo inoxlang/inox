@@ -1,6 +1,7 @@
 package s3_ns
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -40,6 +41,12 @@ type Bucket struct {
 func (b *Bucket) Close() {
 	if !atomic.CompareAndSwapUint32(&b.closed, 0, 1) {
 		return
+	}
+}
+
+func (b *Bucket) RemoveAllObjects(ctx context.Context) {
+	objectChan := b.client.libClient.ListObjects(ctx, b.name, minio.ListObjectsOptions{Recursive: true})
+	for range b.client.libClient.RemoveObjects(ctx, b.name, objectChan, minio.RemoveObjectsOptions{}) {
 	}
 }
 

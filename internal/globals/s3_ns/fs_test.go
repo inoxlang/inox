@@ -10,7 +10,6 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
-	"github.com/minio/minio-go/v7"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -53,11 +52,7 @@ func (s *S3FsTestSuite) SetUpTest(c *check.C) {
 }
 
 func (s *S3FsTestSuite) TearDownTest(c *check.C) {
-	//remove all objects
-
-	objectChan := s.bucket.client.libClient.ListObjects(s.ctx, "test", minio.ListObjectsOptions{Recursive: true})
-	for range s.bucket.client.libClient.RemoveObjects(s.ctx, "test", objectChan, minio.RemoveObjectsOptions{}) {
-	}
+	s.bucket.RemoveAllObjects(s.ctx)
 }
 
 func TestFilesystem(t *testing.T) {

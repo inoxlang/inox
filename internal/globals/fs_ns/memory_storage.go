@@ -354,13 +354,15 @@ func NewInMemFileContent(
 	creationTime time.Time,
 	maxStorage int64, storageSize *atomic.Int64,
 ) *InMemFileContent {
-	return &InMemFileContent{
+	c := &InMemFileContent{
 		name:                     name,
 		bytes:                    content,
 		creationTime:             creationTime,
 		filesystemMaxStorageSize: maxStorage,
 		filesystemStorageSize:    storageSize,
 	}
+	c.modificationTime.Store(creationTime)
+	return c
 }
 
 func (c *InMemFileContent) BytesToNotModify() []byte {
