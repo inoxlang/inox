@@ -1895,6 +1895,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 				}
 
 				switch n := node.(type) {
+				case *parse.ObjectLiteral, *parse.ObjectProperty:
 				case *parse.DictionaryEntry, parse.SimpleValueLiteral, *parse.GlobalVariable:
 				default:
 					onError(n, fmtForbiddenNodeInHostResolutionSection(n))

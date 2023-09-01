@@ -3125,6 +3125,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 			assert.Fail(t, msg)
 		})
 	})
+	
 	t.Run("database with missing resource property", func(t *testing.T) {
 		objLiteral := parseObject(`
 			{

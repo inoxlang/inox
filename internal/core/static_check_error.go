@@ -127,7 +127,7 @@ func fmtForbiddenNodeInDatabasesSection(n parse.Node) string {
 
 func fmtForbiddenNodeInHostResolutionSection(n parse.Node) string {
 	return fmt.Sprintf(
-		"invalid %s description: invalid node %T, only variables and simple literals are allowed",
+		"invalid %s description: invalid node %T, only object literals, variables and simple literals are allowed",
 		MANIFEST_HOST_RESOLUTION_SECTION_NAME, n)
 }
 

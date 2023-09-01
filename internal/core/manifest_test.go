@@ -61,6 +61,31 @@ func TestPreInit(t *testing.T) {
 			error:               false,
 		},
 		{
+			name: "host resolution with object data",
+			module: `
+				manifest {
+					host-resolution: :{
+						s3://database : {
+							bucket: "test"
+							provider: "cloudflare"
+							host: https://example.com
+							access-key: "x"
+							secret-key: "x"
+						}
+					}
+				}`,
+			expectedPermissions: []Permission{},
+			expectedLimitations: []Limitation{},
+			expectedResolutions: map[Host]Value{"s3://database": NewObjectFromMapNoInit(ValMap{
+				"bucket":     Str("test"),
+				"provider":   Str("cloudflare"),
+				"host":       Host("https://example.com"),
+				"access-key": Str("x"),
+				"secret-key": Str("x"),
+			})},
+			error: false,
+		},
+		{
 			name:                "empty manifest",
 			module:              `manifest {}`,
 			expectedPermissions: []Permission{},
