@@ -3,8 +3,10 @@ package internal
 import (
 	"fmt"
 	"io"
+	"math/rand"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -12,10 +14,27 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/permkind"
 
+	_ "github.com/inoxlang/inox/internal/obs_db"
+
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
 
 	"github.com/stretchr/testify/assert"
+)
+
+var (
+	OS_DB_TEST_ACCESS_KEY_ENV_VARNAME = "OS_DB_TEST_ACCESS_KEY"
+	OS_DB_TEST_ACCESS_KEY             = os.Getenv(OS_DB_TEST_ACCESS_KEY_ENV_VARNAME)
+	OS_DB_TEST_SECRET_KEY             = os.Getenv("OS_DB_TEST_SECRET_KEY")
+	OS_DB_TEST_ENDPOINT               = os.Getenv("OS_DB_TEST_ENDPOINT")
+
+	S3_HOST_RESOLUTION_DATA = core.NewObjectFromMapNoInit(core.ValMap{
+		"bucket":     core.Str("test"),
+		"host":       core.Host(OS_DB_TEST_ENDPOINT),
+		"access-key": core.Str(OS_DB_TEST_ACCESS_KEY),
+		"secret-key": core.Str(OS_DB_TEST_SECRET_KEY),
+		"provider":   core.Str("cloudflare"),
+	})
 )
 
 func TestPrepareLocalScript(t *testing.T) {
@@ -582,6 +601,183 @@ func TestPrepareLocalScript(t *testing.T) {
 
 		// symbolic check should not have been performed
 		assert.True(t, state.SymbolicData.IsEmpty())
+	})
+
+	t.Run("object storage database", func(t *testing.T) {
+		if OS_DB_TEST_ACCESS_KEY == "" {
+			t.SkipNow()
+			return
+		}
+
+		s3Host := randS3Host()
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				permissions: {}
+				host-resolution: :{
+					`+string(s3Host)+` : {
+						bucket: "test"
+						provider: "cloudflare"
+						host: `+OS_DB_TEST_ENDPOINT+`
+						access-key: "`+OS_DB_TEST_ACCESS_KEY+`"
+						secret-key: "`+OS_DB_TEST_SECRET_KEY+`"
+					}
+				}
+				databases: {
+					db: {
+						resource: odb://main
+						resolution-data: `+string(s3Host)+`
+					}
+				}
+			}
+		`), 0o600)
+
+		fs := fs_ns.NewMemFilesystem(1000)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(
+				core.GetDefaultGlobalVarPermissions(),
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+			),
+			Filesystem: fs,
+		})
+		core.NewGlobalState(ctx)
+
+		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			PreinitFilesystem:       fs,
+			ScriptContextFileSystem: fs,
+			FullAccessToDatabases:   true,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.Empty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
+
+		//the state should contain the database.
+
+		if !assert.Contains(t, state.Databases, "db") {
+			return
+		}
+
+		assert.Equal(t, core.Host("odb://main"), state.Databases["db"].Resource())
+	})
+
+	t.Run("object storage database + expected schema update: the entities should not be loaded", func(t *testing.T) {
+		if OS_DB_TEST_ACCESS_KEY == "" {
+			t.SkipNow()
+			return
+		}
+
+		s3Host := randS3Host()
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				permissions: {}
+				host-resolution: :{
+					`+string(s3Host)+` : {
+						bucket: "test"
+						provider: "cloudflare"
+						host: `+OS_DB_TEST_ENDPOINT+`
+						access-key: "`+OS_DB_TEST_ACCESS_KEY+`"
+						secret-key: "`+OS_DB_TEST_SECRET_KEY+`"
+					}
+				}
+				databases: {
+					db: {
+						resource: odb://main
+						resolution-data: `+string(s3Host)+`
+						expected-schema-update: true
+					}
+				}
+			}
+
+			dbs.db.update_schema(%{})
+		`), 0o600)
+
+		fs := fs_ns.NewMemFilesystem(1000)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(
+				core.GetDefaultGlobalVarPermissions(),
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+			),
+			Filesystem: fs,
+		})
+		core.NewGlobalState(ctx)
+
+		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			PreinitFilesystem:       fs,
+			ScriptContextFileSystem: fs,
+			FullAccessToDatabases:   true,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.Empty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
+
+		//the state should contain the database.
+
+		if !assert.Contains(t, state.Databases, "db") {
+			return
+		}
+		db := state.Databases["db"]
+
+		assert.Equal(t, core.Host("odb://main"), db.Resource())
+		assert.False(t, db.TopLevelEntitiesLoaded())
 	})
 
 	t.Run("manifest & symbolic eval should be ignored when there is a preinit check error: regular mode", func(t *testing.T) {
@@ -1443,4 +1639,8 @@ func createCompilationCtx(dir string) *core.Context {
 	})
 	core.NewGlobalState(compilationCtx)
 	return compilationCtx
+}
+
+func randS3Host() core.Host {
+	return core.Host("s3://bucket-" + strconv.Itoa(int(rand.Int31())))
 }
