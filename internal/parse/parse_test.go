@@ -3880,6 +3880,32 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("long sub domain", func(t *testing.T) {
+			n := mustparseChunk(t, `https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.example.com/`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 60}, nil, nil},
+				Statements: []Node{
+					&URLLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 60}, nil, nil},
+						Value:    "https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.example.com/",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("long domain", func(t *testing.T) {
+			n := mustparseChunk(t, `https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.com/`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 52}, nil, nil},
+				Statements: []Node{
+					&URLLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 52}, nil, nil},
+						Value:    "https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.com/",
+					},
+				},
+			}, n)
+		})
+
 		t.Run("subdomain", func(t *testing.T) {
 			n := mustparseChunk(t, `https://sub.example.com/`)
 			assert.EqualValues(t, &Chunk{

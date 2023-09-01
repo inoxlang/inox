@@ -26,10 +26,10 @@ const (
 	MAX_OBJECT_KEY_BYTE_LEN = 64
 	MAX_SCHEME_NAME_LEN     = 5
 
-	LOOSE_URL_EXPR_PATTERN            = "^(@[a-zA-Z0-9_-]+|https?:\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,32}\\.[a-zA-Z0-9]{1,6}\\b|\\{[$]{0,2}[-\\w]+\\}))([{?#/][-a-zA-Z0-9@:%_+.~#?&//=${}]*)$"
-	LOOSE_HOST_PATTERN_PATTERN        = "^([a-z0-9+]+)?:\\/\\/([-\\w]+|[*]+|(www\\.)?[-a-zA-Z0-9.*]{1,32}\\.[a-zA-Z0-9*]{1,6})(:[0-9]{1,5})?$"
-	LOOSE_HOST_PATTERN                = "^([a-z0-9+]+)?:\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9.]{1,32}\\.[a-zA-Z0-9]{1,6})(:[0-9]{1,5})?$"
-	URL_PATTERN                       = "^([a-z0-9+]+):\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,32}\\.[a-zA-Z0-9]{1,6})\\b([-a-zA-Z0-9@:%_+.~#?&//=]*)$"
+	LOOSE_URL_EXPR_PATTERN            = "^(@[a-zA-Z0-9_-]+|https?:\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,64}\\.[a-zA-Z0-9]{1,6}\\b|\\{[$]{0,2}[-\\w]+\\}))([{?#/][-a-zA-Z0-9@:%_+.~#?&//=${}]*)$"
+	LOOSE_HOST_PATTERN_PATTERN        = "^([a-z0-9+]+)?:\\/\\/([-\\w]+|[*]+|(www\\.)?[-a-zA-Z0-9.*]{1,64}\\.[a-zA-Z0-9*]{1,6})(:[0-9]{1,5})?$"
+	LOOSE_HOST_PATTERN                = "^([a-z0-9+]+)?:\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9.]{1,64}\\.[a-zA-Z0-9]{1,6})(:[0-9]{1,5})?$"
+	URL_PATTERN                       = "^([a-z0-9+]+):\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,64}\\.[a-zA-Z0-9]{1,6})\\b([-a-zA-Z0-9@:%_+.~#?&//=]*)$"
 	NO_LOCATION_DATE_LITERAL_PATTERN  = "^(\\d+y)(-\\d{1,2}mt)?(-\\d{1,2}d)?(-\\d{1,2}h)?(-\\d{1,2}m)?(-\\d{1,2}s)?(-\\d{1,3}ms)?(-\\d{1,3}us)?"
 	_NO_LOCATION_DATE_LITERAL_PATTERN = NO_LOCATION_DATE_LITERAL_PATTERN + "$"
 	DATE_LITERAL_PATTERN              = NO_LOCATION_DATE_LITERAL_PATTERN + "(-[a-zA-Z_/]+[a-zA-Z_])$"
