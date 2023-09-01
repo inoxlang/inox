@@ -154,7 +154,7 @@ type exctx struct {
 // openBuntDBNoPermCheck opens a database at the provided path.
 // If the file does not exist then it will be created automatically.
 func openBuntDBNoPermCheck(path string, fls billy.Basic, config ...buntDbConfig) (*buntDB, error) {
-	db := &buntDB{fls: fls}
+	db := &buntDB{fls: fls, path: path}
 	// initialize trees and indexes
 	db.keys = btreeNew(lessCtx(nil))
 	db.exps = btreeNew(lessCtx(&exctx{db}))
