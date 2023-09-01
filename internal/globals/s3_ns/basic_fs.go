@@ -132,6 +132,21 @@ func (fls *S3Filesystem) Stat(filename string) (os.FileInfo, error) {
 	filename = fs_ns.NormalizeAsAbsolute(filename)
 	key := toObjectKey(filename)
 
+	fls.pendingCreationsLock.Lock()
+	file, ok := fls.pendingCreations[filename]
+	fls.pendingCreationsLock.Unlock()
+
+	if ok {
+		return core.FileInfo{
+			BaseName_:       filepath.Base(filename),
+			AbsPath_:        core.Path(filename),
+			Size_:           core.ByteCount(file.content.Len()),
+			Mode_:           core.FileMode(file.perm),
+			ModTime_:        core.Date(file.content.ModifTime()),
+			HasCreationTime: false,
+		}, nil
+	}
+
 	client := fls.client().libClient
 
 	info, err := client.StatObject(fls.ctx, fls.bucketName(), key, minio.GetObjectOptions{})
@@ -161,8 +176,8 @@ func (fls *S3Filesystem) Stat(filename string) (os.FileInfo, error) {
 			}
 
 			return core.FileInfo{
-				BaseName_:       filepath.Base(key),
-				AbsPath_:        core.Path(key),
+				BaseName_:       filepath.Base(filename),
+				AbsPath_:        core.DirPathFrom(filename),
 				Size_:           core.ByteCount(0),
 				Mode_:           core.FileMode(DIR_FMODE),
 				ModTime_:        core.Date(mostRecentModifTime),
@@ -234,10 +249,14 @@ func (fls *S3Filesystem) Remove(filename string) error {
 	return nil
 }
 
-func (fs3 *S3Filesystem) Join(elem ...string) string {
+func (fls *S3Filesystem) Join(elem ...string) string {
 	j := path.Join(elem...)
 	c := path.Clean(j)
 	return c
+}
+
+func (fls *S3Filesystem) RemoveAllObjects() {
+	fls.bucket.RemoveAllObjects(fls.ctx)
 }
 
 func toObjectKey(filename string) string {
