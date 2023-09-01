@@ -8,7 +8,7 @@ const(
 )
 
 manifest {
-    host_resolution: :{
+    host-resolution: :{
         ldb://mydb : /tmp/mydb/
     }
     permissions: {

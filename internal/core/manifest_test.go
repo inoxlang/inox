@@ -51,7 +51,7 @@ func TestPreInit(t *testing.T) {
 			name: "host resolution",
 			module: `
 				manifest {
-					host_resolution: :{
+					host-resolution: :{
 						ldb://main : /mydb
 					}
 				}`,

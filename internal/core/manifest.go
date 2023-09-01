@@ -24,7 +24,7 @@ const (
 	MANIFEST_PARAMS_SECTION_NAME          = "parameters"
 	MANIFEST_PERMS_SECTION_NAME           = "permissions"
 	MANIFEST_LIMITS_SECTION_NAME          = "limits"
-	MANIFEST_HOST_RESOLUTION_SECTION_NAME = "host_resolution"
+	MANIFEST_HOST_RESOLUTION_SECTION_NAME = "host-resolution"
 
 	//preinit-files section
 	MANIFEST_PREINIT_FILES_SECTION_NAME      = "preinit-files"
@@ -923,17 +923,17 @@ func getHostResolutions(desc Value) (map[Host]Value, error) {
 
 	dict, ok := desc.(*Dictionary)
 	if !ok {
-		return nil, fmt.Errorf("invalid manifest, description of host_resolution should be an object")
+		return nil, fmt.Errorf("invalid manifest, description of %s should be an object", MANIFEST_HOST_RESOLUTION_SECTION_NAME)
 	}
 
 	for k, v := range dict.entries {
 		host, ok := dict.keys[k].(Host)
 		if !ok {
-			return nil, fmt.Errorf("invalid manifest, keys of of host_resolution should be hosts")
+			return nil, fmt.Errorf("invalid manifest, keys of of %s should be hosts", MANIFEST_HOST_RESOLUTION_SECTION_NAME)
 		}
 		// resource, ok := v.(ResourceName)
 		// if !ok {
-		// 	return nil, fmt.Errorf("invalid manifest, values of of host_resolution should be resource names")
+		// 	return nil, fmt.Errorf("invalid manifest, values of of %s should be resource names", MANIFEST_HOST_RESOLUTION_SECTION_NAME)
 		// }
 
 		resolutions[host] = v
