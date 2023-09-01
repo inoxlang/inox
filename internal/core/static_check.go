@@ -2121,7 +2121,7 @@ func checkDatabasesObject(obj *parse.ObjectLiteral, onError func(n parse.Node, m
 				resolutionDataFound = true
 
 				switch prop.Value.(type) {
-				case *parse.RelativePathLiteral, *parse.AbsolutePathLiteral, *parse.AbsolutePathExpression, *parse.RelativePathExpression:
+				case *parse.HostLiteral, *parse.RelativePathLiteral, *parse.AbsolutePathLiteral, *parse.AbsolutePathExpression, *parse.RelativePathExpression:
 					if scheme == "" {
 						break
 					}

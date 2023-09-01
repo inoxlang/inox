@@ -575,6 +575,32 @@ func TestPreInit(t *testing.T) {
 			expectedResolutions: nil,
 			error:               false,
 		},
+		{
+			name: "databases_host_value",
+			parentModule: `manifest { 
+				databases: {
+					main: {
+						resource: ldb://main
+						resolution-data: s3://database
+					}
+				}
+			}`,
+			parentModuleAbsPath: "/main.ix",
+			module: `manifest { 
+					databases: /main.ix
+				}`,
+			expectedPermissions: []Permission{},
+			expectedLimitations: []Limitation{},
+			expectedDatabaseConfigs: DatabaseConfigs{
+				{
+					Name:           "main",
+					Resource:       Host("ldb://main"),
+					ResolutionData: Host("s3://database"),
+				},
+			},
+			expectedResolutions: nil,
+			error:               false,
+		},
 
 		//TODO: improve tests.
 	}

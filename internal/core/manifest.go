@@ -118,7 +118,7 @@ type DatabaseConfigs []DatabaseConfig
 type DatabaseConfig struct {
 	Name                 string       //declared name, this is NOT the basename.
 	Resource             SchemeHolder //URL or Host
-	ResolutionData       Path
+	ResolutionData       ResourceName
 	ExpectedSchemaUpdate bool
 
 	Provided *DatabaseIL //optional (can be provided by parent state)
@@ -1282,6 +1282,8 @@ func getDatabaseConfigurations(v Value, parentState *GlobalState) (DatabaseConfi
 			case MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME:
 				switch val := propVal.(type) {
 				case Path:
+					config.ResolutionData = val
+				case Host:
 					config.ResolutionData = val
 				default:
 					return fmt.Errorf("invalid value found for the .%s of a database description", MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME)
