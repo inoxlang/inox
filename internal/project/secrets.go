@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
@@ -11,7 +12,12 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-func (p *Project) ListSecrets(ctx *core.Context) (names []string, _ error) {
+type ProjectSecretInfo struct {
+	Name          string `json:"name"`
+	LastModifDate string `json:"lastModificationDate"`
+}
+
+func (p *Project) ListSecrets(ctx *core.Context) (info []ProjectSecretInfo, _ error) {
 	bucket, err := p.getCreateSecretsBucket(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list secrets: %w", err)
@@ -21,8 +27,11 @@ func (p *Project) ListSecrets(ctx *core.Context) (names []string, _ error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list secrets: %w", err)
 	}
-	return utils.MapSlice(objects, func(o *s3_ns.ObjectInfo) string {
-		return o.Key
+	return utils.MapSlice(objects, func(o *s3_ns.ObjectInfo) ProjectSecretInfo {
+		return ProjectSecretInfo{
+			Name:          o.Key,
+			LastModifDate: o.LastModified.Format(time.RFC3339),
+		}
 	}), nil
 }
 
