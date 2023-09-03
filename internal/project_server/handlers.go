@@ -89,6 +89,7 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 	if projectMode {
 		registerFilesystemMethodHandlers(server)
 		registerProjectMethodHandlers(server, opts)
+		registerSecretsMethodHandlers(server, opts)
 		registerDebugMethodHandlers(server, opts)
 	}
 
