@@ -38,6 +38,10 @@ type Bucket struct {
 	fakeBackend gofakes3.Backend
 }
 
+func (b *Bucket) Name() string {
+	return b.name
+}
+
 func (b *Bucket) Close() {
 	if !atomic.CompareAndSwapUint32(&b.closed, 0, 1) {
 		return
@@ -46,6 +50,8 @@ func (b *Bucket) Close() {
 
 func (b *Bucket) RemoveAllObjects(ctx context.Context) {
 	objectChan := b.client.libClient.ListObjects(ctx, b.name, minio.ListObjectsOptions{Recursive: true})
+	//note: minio.Client.RemoveObjects does not check the .Error field of channel items
+
 	for range b.client.libClient.RemoveObjects(ctx, b.name, objectChan, minio.RemoveObjectsOptions{}) {
 	}
 }
@@ -220,6 +226,23 @@ func OpenBucketWithCredentials(ctx *core.Context, input OpenBucketWithCredential
 		Secure:       true,
 		BucketLookup: lookup,
 	})
+
+	// if input.CreateBucketIfNotExist {
+	// 	ok, err := s3Client.BucketExists(ctx, input.BucketName)
+	// 	401 unauthorized is returned when checking if a non-existing R2 bucket exists.
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("failed to check if bucket exists: %w", err)
+	// 	}
+	// 	if !ok {
+	// 		err := s3Client.MakeBucket(ctx, input.BucketName, minio.MakeBucketOptions{
+	// 			Region: "auto",
+	// 		})
+	// 		if err != nil {
+	// 			return nil, fmt.Errorf("failed to create bucket: %w", err)
+	// 		}
+	// 		time.Sleep(time.Second)
+	// 	}
+	// }
 
 	if err != nil {
 		return nil, err

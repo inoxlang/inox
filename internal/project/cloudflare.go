@@ -9,6 +9,11 @@ import (
 	"time"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
+	"github.com/inoxlang/inox/internal/globals/s3_ns"
+)
+
+var (
+	ErrNoR2Token = errors.New("No R2 token")
 )
 
 type Cloudflare struct {
@@ -44,13 +49,13 @@ func GetTempCloudflareTokens(
 		}
 
 		for _, group := range permGroups {
-			if strings.Contains(group.Name, "R2") {
+			if strings.Contains(group.Name, "R2") && !strings.Contains(group.Name, "Read") {
 				r2PermGroups = append(r2PermGroups, group)
 			}
 		}
 
-		if len(r2PermGroups) < 4 {
-			permissionGroupRetrievalError = errors.New("failed to retrieve all R2 permission groups")
+		if len(r2PermGroups) != 2 {
+			permissionGroupRetrievalError = errors.New("failed to retrieve R2 permissions")
 			return
 		}
 	}()
@@ -111,13 +116,18 @@ func GetTempCloudflareTokens(
 		if R2TokenAlreadyExists {
 			r2tokenValue, err = api.RollAPIToken(ctx, R2TokenId)
 		} else {
+			issueTime := time.Now().Add(-time.Second)
+			r2Token.IssuedOn = &issueTime
 			r2Token, err = api.CreateAPIToken(ctx, r2Token)
 			r2tokenValue = r2Token.Value
-			R2TokenId = r2Token.Value
+			R2TokenId = r2Token.ID
 		}
 		if err != nil {
 			return nil, fmt.Errorf("failed to create R2 API Token: %w", err)
 		}
+
+		//wait for the token to be valid
+		time.Sleep(time.Second)
 
 		r2token = &TempToken{
 			Id:    R2TokenId,
@@ -126,6 +136,43 @@ func GetTempCloudflareTokens(
 	}
 
 	return
+}
+
+func DeleteR2Bucket(ctx context.Context, bucketToDelete *s3_ns.Bucket, tokens TempCloudflareTokens, accountId string) error {
+	if tokens.R2Token == nil || tokens.R2Token.Value == "" {
+		return ErrNoR2Token
+	}
+	api, _ := cloudflare.NewWithAPIToken(tokens.R2Token.Value)
+	buckets, _ := api.ListR2Buckets(ctx, cloudflare.AccountIdentifier(accountId), cloudflare.ListR2BucketsParams{})
+
+	for _, bucket := range buckets {
+		if bucket.Name == bucketToDelete.Name() {
+			bucketToDelete.RemoveAllObjects(ctx)
+			time.Sleep(time.Second)
+			return api.DeleteR2Bucket(ctx, cloudflare.AccountIdentifier(accountId), bucketToDelete.Name())
+		}
+	}
+
+	return nil
+}
+
+func CreateR2BucketIfNotExist(ctx context.Context, bucketName string, tokens TempCloudflareTokens, accountId string) error {
+	if tokens.R2Token == nil || tokens.R2Token.Value == "" {
+		return ErrNoR2Token
+	}
+	api, _ := cloudflare.NewWithAPIToken(tokens.R2Token.Value)
+	buckets, _ := api.ListR2Buckets(ctx, cloudflare.AccountIdentifier(accountId), cloudflare.ListR2BucketsParams{})
+
+	for _, bucket := range buckets {
+		if bucket.Name == bucketName {
+			return nil
+		}
+	}
+
+	_, err := api.CreateR2Bucket(ctx, cloudflare.AccountIdentifier(accountId), cloudflare.CreateR2BucketParameters{
+		Name: bucketName,
+	})
+	return err
 }
 
 func GetR2TokenName(projectId ProjectID) string {

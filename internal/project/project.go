@@ -10,6 +10,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/globals/s3_ns"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -30,6 +31,7 @@ type Project struct {
 	lock              core.SmartLock
 	devSideConfig     DevSideProjectConfig
 	tempTokens        *TempProjectTokens
+	secretsBucket     *s3_ns.Bucket
 }
 
 func (p *Project) Id() ProjectID {

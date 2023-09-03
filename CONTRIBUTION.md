@@ -12,6 +12,7 @@ If you have Chrome installed you can set the env var RUN_BROWSER_AUTOMATION_EXAM
 
 If you have a S3 bucket with read & write access you can the set the env variables read in the following [file](internal/globals/s3_ns/fs_test.go).
 
+If you have a Cloudflare Account you can the set the env variables read in the following [file](internal/project/secrets_test.go).
 
 ## Vetting
 

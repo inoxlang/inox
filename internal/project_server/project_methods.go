@@ -94,7 +94,7 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerOptions) {
 
 			sessionCtx.AddUserData(CURRENT_PROJECT_CTX_KEY, project)
 
-			tokens, err := project.TempProjectTokens(ctx)
+			tokens, err := project.TempProjectTokens(sessionCtx)
 			if err != nil {
 				return nil, jsonrpc.ResponseError{
 					Code:    jsonrpc.InternalError.Code,
