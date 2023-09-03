@@ -102,7 +102,12 @@ type TempProjectTokens struct {
 }
 
 type TempCloudflareTokens struct {
-	R2Token string `json:"r2Token,omitempty"`
+	R2Token *TempToken `json:"r2Token,omitempty"`
+}
+
+type TempToken struct {
+	Id    string `json:"id"`
+	Value string `json:"value"`
 }
 
 // OpenProject

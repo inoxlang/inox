@@ -21,14 +21,14 @@ func GetTempCloudflareTokens(
 	devSideConfig project.DevSideCloudflareConfig,
 	tempTokens project.TempCloudflareTokens,
 	projectId project.ProjectID,
-) (r2tokenValue string, _ error) {
+) (r2token *project.TempToken, _ error) {
 	additionalTokensApiToken := devSideConfig.AdditionalTokensApiToken
 	//note: api.UserDetails().Account[0].ID is zero
 	accountId := devSideConfig.AccountID
 
 	api, err := cloudflare.NewWithAPIToken(additionalTokensApiToken)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	var r2PermGroups []cloudflare.APITokenPermissionGroups
@@ -58,12 +58,12 @@ func GetTempCloudflareTokens(
 
 	apiTokens, err := api.APITokens(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to retrieve API tokens: %w", err)
+		return nil, fmt.Errorf("failed to retrieve API tokens: %w", err)
 	}
 
 	wg.Wait()
 	if permissionGroupRetrievalError != nil {
-		return "", permissionGroupRetrievalError
+		return nil, permissionGroupRetrievalError
 	}
 
 	R2TokenName := GetR2TokenName(projectId)
@@ -75,7 +75,7 @@ func GetTempCloudflareTokens(
 	for _, token := range apiTokens {
 		if token.Name == R2TokenName { //already exists
 			if R2TokenAlreadyExists {
-				return "", errors.New("R2 API token with duplicate name")
+				return nil, errors.New("R2 API token with duplicate name")
 			}
 			if token.ExpiresOn != nil {
 				R2TokenExpired = token.ExpiresOn.Before(time.Now().Add(time.Hour))
@@ -86,8 +86,8 @@ func GetTempCloudflareTokens(
 		}
 	}
 
-	if R2TokenAlreadyExists && tempTokens.R2Token != "" && !R2TokenExpired {
-		r2tokenValue = tempTokens.R2Token
+	if R2TokenAlreadyExists && tempTokens.R2Token != nil && !R2TokenExpired {
+		r2token = tempTokens.R2Token
 	} else {
 		//if the token does not exist
 		//or is expired
@@ -108,18 +108,25 @@ func GetTempCloudflareTokens(
 				},
 			},
 		}
+		var r2tokenValue string
 		if R2TokenAlreadyExists {
 			r2tokenValue, err = api.RollAPIToken(ctx, R2TokenId)
 		} else {
 			r2Token, err = api.CreateAPIToken(ctx, r2Token)
 			r2tokenValue = r2Token.Value
+			R2TokenId = r2Token.Value
 		}
 		if err != nil {
-			return "", fmt.Errorf("failed to create R2 API Token: %w", err)
+			return nil, fmt.Errorf("failed to create R2 API Token: %w", err)
+		}
+
+		r2token = &project.TempToken{
+			Id:    R2TokenId,
+			Value: r2tokenValue,
 		}
 	}
 
-	return r2tokenValue, nil
+	return
 }
 
 func GetR2TokenName(projectId project.ProjectID) string {
