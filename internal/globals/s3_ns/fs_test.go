@@ -30,14 +30,14 @@ type S3FsTestSuite struct {
 func (s *S3FsTestSuite) SetUpTest(c *check.C) {
 	testId := strconv.Itoa(int(rand.Int31()))
 	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-	bucket, err := openBucketWithCredentials(ctx,
-		openBucketWithCredentialsInput{
-			provider:   "cloudflare",
-			bucketName: "test",
-			s3Host:     core.Host("s3://bucket-" + testId),
-			httpsHost:  core.Host(S3_FS_TEST_ENDPOINT),
-			accessKey:  S3_FS_TEST_ACCESS_KEY,
-			secretKey:  S3_FS_TEST_SECRET_KEY,
+	bucket, err := OpenBucketWithCredentials(ctx,
+		OpenBucketWithCredentialsInput{
+			Provider:   "cloudflare",
+			BucketName: "test",
+			S3Host:     core.Host("s3://bucket-" + testId),
+			HttpsHost:  core.Host(S3_FS_TEST_ENDPOINT),
+			AccessKey:  S3_FS_TEST_ACCESS_KEY,
+			SecretKey:  S3_FS_TEST_SECRET_KEY,
 		})
 	if err != nil {
 		c.Fatal(err)

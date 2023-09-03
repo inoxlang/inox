@@ -31,7 +31,7 @@ type BucketMapItem = struct {
 type Bucket struct {
 	closed uint32
 
-	s3Host core.Host
+	s3Host core.Host //optional
 	name   string
 
 	client      *S3Client
@@ -102,13 +102,13 @@ func OpenBucket(ctx *core.Context, s3Host core.Host) (*Bucket, error) {
 			return nil, fmt.Errorf("%w: missing .secret-key in resolution data", ErrCannotResolveBucket)
 		}
 
-		return openBucketWithCredentials(ctx, openBucketWithCredentialsInput{
-			s3Host:     s3Host,
-			httpsHost:  host.(core.Host),
-			bucketName: bucket.(core.StringLike).GetOrBuildString(),
-			provider:   provider.(core.StringLike).GetOrBuildString(),
-			accessKey:  accessKey.(core.StringLike).GetOrBuildString(),
-			secretKey:  secretKey.(core.StringLike).GetOrBuildString(),
+		return OpenBucketWithCredentials(ctx, OpenBucketWithCredentialsInput{
+			S3Host:     s3Host,
+			HttpsHost:  host.(core.Host),
+			BucketName: bucket.(core.StringLike).GetOrBuildString(),
+			Provider:   provider.(core.StringLike).GetOrBuildString(),
+			AccessKey:  accessKey.(core.StringLike).GetOrBuildString(),
+			SecretKey:  secretKey.(core.StringLike).GetOrBuildString(),
 		})
 	default:
 		return nil, ErrCannotResolveBucket
@@ -177,18 +177,18 @@ func openPublicBucket(ctx *core.Context, s3Host core.Host, httpsHost core.Host) 
 	return bucket, nil
 }
 
-type openBucketWithCredentialsInput struct {
-	s3Host core.Host
+type OpenBucketWithCredentialsInput struct {
+	S3Host core.Host //optional
 
-	provider   string
-	httpsHost  core.Host
-	bucketName string
+	Provider   string
+	HttpsHost  core.Host
+	BucketName string
 
-	accessKey, secretKey string
+	AccessKey, SecretKey string
 }
 
-func openBucketWithCredentials(ctx *core.Context, input openBucketWithCredentialsInput) (*Bucket, error) {
-	_host := string(input.httpsHost)
+func OpenBucketWithCredentials(ctx *core.Context, input OpenBucketWithCredentialsInput) (*Bucket, error) {
+	_host := string(input.HttpsHost)
 	openBucketMapLock.RLock()
 	item, ok := openBucketMap[_host]
 	openBucketMapLock.RUnlock()
@@ -201,22 +201,22 @@ func openBucketWithCredentials(ctx *core.Context, input openBucketWithCredential
 	var region string
 	var lookup minio.BucketLookupType
 
-	if input.httpsHost.Scheme() != "https" {
+	if input.HttpsHost.Scheme() != "https" {
 		return nil, fmt.Errorf("bucket endpoint should have a https:// scheme")
 	}
 
-	switch strings.ToLower(input.provider) {
+	switch strings.ToLower(input.Provider) {
 	case "cloudflare":
-		endpoint = input.httpsHost.WithoutScheme()
+		endpoint = input.HttpsHost.WithoutScheme()
 		lookup = minio.BucketLookupPath
 		region = "auto"
 	default:
-		return nil, fmt.Errorf("S3 provider %q is not supported", input.provider)
+		return nil, fmt.Errorf("S3 provider %q is not supported", input.Provider)
 	}
 
 	s3Client, err := minio.New(endpoint, &minio.Options{
 		Region:       region,
-		Creds:        credentials.NewStaticV4(input.accessKey, input.secretKey, ""),
+		Creds:        credentials.NewStaticV4(input.AccessKey, input.SecretKey, ""),
 		Secure:       true,
 		BucketLookup: lookup,
 	})
@@ -226,8 +226,8 @@ func openBucketWithCredentials(ctx *core.Context, input openBucketWithCredential
 	}
 
 	bucket := &Bucket{
-		s3Host: input.s3Host,
-		name:   input.bucketName,
+		s3Host: input.S3Host,
+		name:   input.BucketName,
 		client: &S3Client{libClient: s3Client},
 	}
 
