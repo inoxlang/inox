@@ -1,4 +1,4 @@
-package infra
+package project
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 	"time"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
-	"github.com/inoxlang/inox/internal/project"
 )
 
 type Cloudflare struct {
@@ -18,10 +17,10 @@ type Cloudflare struct {
 
 func GetTempCloudflareTokens(
 	ctx context.Context,
-	devSideConfig project.DevSideCloudflareConfig,
-	tempTokens project.TempCloudflareTokens,
-	projectId project.ProjectID,
-) (r2token *project.TempToken, _ error) {
+	devSideConfig DevSideCloudflareConfig,
+	tempTokens TempCloudflareTokens,
+	projectId ProjectID,
+) (r2token *TempToken, _ error) {
 	additionalTokensApiToken := devSideConfig.AdditionalTokensApiToken
 	//note: api.UserDetails().Account[0].ID is zero
 	accountId := devSideConfig.AccountID
@@ -120,7 +119,7 @@ func GetTempCloudflareTokens(
 			return nil, fmt.Errorf("failed to create R2 API Token: %w", err)
 		}
 
-		r2token = &project.TempToken{
+		r2token = &TempToken{
 			Id:    R2TokenId,
 			Value: r2tokenValue,
 		}
@@ -129,6 +128,6 @@ func GetTempCloudflareTokens(
 	return
 }
 
-func GetR2TokenName(projectId project.ProjectID) string {
+func GetR2TokenName(projectId ProjectID) string {
 	return "R2-" + string(projectId)
 }

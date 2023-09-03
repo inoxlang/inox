@@ -40,13 +40,6 @@ func (p *Project) DevSideConfig() DevSideProjectConfig {
 	return p.devSideConfig
 }
 
-func (p *Project) TempTokens() (TempProjectTokens, bool) {
-	if p.tempTokens != nil {
-		return *p.tempTokens, true
-	}
-	return TempProjectTokens{}, false
-}
-
 type ProjectID string
 
 func RandomProjectID(projectName string) ProjectID {
@@ -95,19 +88,6 @@ type DevSideProjectConfig struct {
 type DevSideCloudflareConfig struct {
 	AdditionalTokensApiToken string `json:"additional-tokens-api-token"`
 	AccountID                string `json:"account-id"`
-}
-
-type TempProjectTokens struct {
-	Cloudflare *TempCloudflareTokens `json:"cloudflare,omitempty"`
-}
-
-type TempCloudflareTokens struct {
-	R2Token *TempToken `json:"r2Token,omitempty"`
-}
-
-type TempToken struct {
-	Id    string `json:"id"`
-	Value string `json:"value"`
 }
 
 // OpenProject

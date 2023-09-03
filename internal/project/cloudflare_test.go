@@ -1,4 +1,4 @@
-package infra
+package project
 
 import (
 	"context"
@@ -6,13 +6,12 @@ import (
 	"testing"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
-	"github.com/inoxlang/inox/internal/project"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
-	projectId        = project.ProjectID("test-project")
-	cloudflareConfig = project.DevSideCloudflareConfig{
+	projectId        = ProjectID("test-project")
+	cloudflareConfig = DevSideCloudflareConfig{
 		AdditionalTokensApiToken: "",
 		AccountID:                "",
 	}
@@ -54,7 +53,7 @@ func TestGetTempCloudflareTokens(t *testing.T) {
 
 	tokenCountBeforeTest := len(apiTokens)
 
-	prevR2Token, err := GetTempCloudflareTokens(ctx, cloudflareConfig, project.TempCloudflareTokens{}, projectId)
+	prevR2Token, err := GetTempCloudflareTokens(ctx, cloudflareConfig, TempCloudflareTokens{}, projectId)
 
 	if !assert.NoError(t, err) {
 		return
@@ -65,7 +64,7 @@ func TestGetTempCloudflareTokens(t *testing.T) {
 	}
 
 	//if a R2 API token is passed no tokens should be created
-	r2Token, err := GetTempCloudflareTokens(ctx, cloudflareConfig, project.TempCloudflareTokens{
+	r2Token, err := GetTempCloudflareTokens(ctx, cloudflareConfig, TempCloudflareTokens{
 		R2Token: prevR2Token,
 	}, projectId)
 
@@ -86,7 +85,7 @@ func TestGetTempCloudflareTokens(t *testing.T) {
 	}
 
 	//if no R2 API token is passed and the token already exists it should be updated
-	r2Token, err = GetTempCloudflareTokens(ctx, cloudflareConfig, project.TempCloudflareTokens{}, projectId)
+	r2Token, err = GetTempCloudflareTokens(ctx, cloudflareConfig, TempCloudflareTokens{}, projectId)
 
 	if !assert.NoError(t, err) {
 		return

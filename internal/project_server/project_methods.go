@@ -5,7 +5,6 @@ import (
 
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
-	"github.com/inoxlang/inox/internal/infra"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/project_server/lsp"
@@ -95,7 +94,7 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerOptions) {
 
 			sessionCtx.AddUserData(CURRENT_PROJECT_CTX_KEY, project)
 
-			tokens, err := infra.GetTempProjectTokens(ctx, project)
+			tokens, err := project.TempProjectTokens(ctx)
 			if err != nil {
 				return nil, jsonrpc.ResponseError{
 					Code:    jsonrpc.InternalError.Code,
