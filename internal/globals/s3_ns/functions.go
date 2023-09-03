@@ -2,7 +2,9 @@ package s3_ns
 
 import (
 	"bytes"
+	"context"
 	"errors"
+	"io"
 	"strings"
 
 	core "github.com/inoxlang/inox/internal/core"
@@ -33,8 +35,14 @@ func S3Get(ctx *core.Context, u core.URL) (*GetObjectResponse, error) {
 
 	key := u.Path()
 
-	if bucket.fakeBackend != nil {
-		obj, err := bucket.fakeBackend.GetObject(bucket.name, string(key), nil)
+	return bucket.GetObject(ctx, string(key))
+}
+
+func (b *Bucket) GetObject(ctx context.Context, key string) (*GetObjectResponse, error) {
+	key = toObjectKey(key)
+
+	if b.fakeBackend != nil {
+		obj, err := b.fakeBackend.GetObject(b.name, key, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -44,7 +52,7 @@ func S3Get(ctx *core.Context, u core.URL) (*GetObjectResponse, error) {
 			fakeBackend: true,
 		}, nil
 	} else {
-		output, err := bucket.client.libClient.GetObject(ctx, bucket.name, string(key)[1:], minio.GetObjectOptions{})
+		output, err := b.client.libClient.GetObject(ctx, b.name, key, minio.GetObjectOptions{})
 
 		if err != nil {
 			return nil, err
@@ -55,7 +63,6 @@ func S3Get(ctx *core.Context, u core.URL) (*GetObjectResponse, error) {
 			fakeBackend: false,
 		}, nil
 	}
-
 }
 
 func S3List(ctx *core.Context, u core.URL) ([]*ObjectInfo, error) {
@@ -107,14 +114,19 @@ func S3put(ctx *core.Context, u core.URL, readable core.Readable) (*PutObjectRes
 	}
 
 	key := u.Path()
+	return bucket.PutObject(ctx, string(key), reader)
+}
+
+func (bucket *Bucket) PutObject(ctx context.Context, key string, body io.Reader) (*PutObjectResponse, error) {
+	key = toObjectKey(key)
 
 	if bucket.fakeBackend != nil {
-		content, err := reader.ReadAll()
+		content, err := io.ReadAll(body)
 		if err != nil {
 			return nil, err
 		}
-		reader := bytes.NewReader(content.Bytes)
-		obj, err := bucket.fakeBackend.PutObject(bucket.name, string(key), map[string]string{}, reader, int64(len(content.Bytes)))
+		reader := bytes.NewReader(content)
+		obj, err := bucket.fakeBackend.PutObject(bucket.name, string(key), map[string]string{}, reader, int64(len(content)))
 		if err != nil {
 			return nil, err
 		}
@@ -125,16 +137,16 @@ func S3put(ctx *core.Context, u core.URL, readable core.Readable) (*PutObjectRes
 		}, nil
 	} else {
 		//TODO: find way to get size without reading
-		content, err := reader.ReadAll()
+		content, err := io.ReadAll(body)
 		if err != nil {
 			return nil, err
 		}
-		reader := bytes.NewReader(content.Bytes)
+		reader := bytes.NewReader(content)
 
 		output, err := bucket.client.libClient.PutObject(
 			ctx,
-			bucket.name, string(key)[1:],
-			reader, int64(len(content.Bytes)),
+			bucket.name, string(key),
+			reader, int64(len(content)),
 			minio.PutObjectOptions{},
 		)
 
@@ -147,7 +159,6 @@ func S3put(ctx *core.Context, u core.URL, readable core.Readable) (*PutObjectRes
 			fakeBackend: false,
 		}, nil
 	}
-
 }
 
 func S3Delete(ctx *core.Context, u core.URL, readable core.Readable) error {
@@ -161,15 +172,19 @@ func S3Delete(ctx *core.Context, u core.URL, readable core.Readable) error {
 	}
 
 	key := u.Path()
+	return bucket.DeleteObject(ctx, string(key))
+}
+
+func (bucket *Bucket) DeleteObject(ctx context.Context, key string) error {
+	key = toObjectKey(key)
 
 	if bucket.fakeBackend != nil {
-		_, err := bucket.fakeBackend.DeleteObject(bucket.name, string(key))
+		_, err := bucket.fakeBackend.DeleteObject(bucket.name, key)
 		return err
 
 	} else {
-		return bucket.client.libClient.RemoveObject(ctx, bucket.name, string(key)[1:], minio.RemoveObjectOptions{})
+		return bucket.client.libClient.RemoveObject(ctx, bucket.name, key, minio.RemoveObjectOptions{})
 	}
-
 }
 
 func S3GetBucketPolicy(ctx *core.Context, u core.URL) (*GetBucketPolicyResponse, error) {
