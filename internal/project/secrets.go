@@ -8,9 +8,25 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
-func (p *Project) AddSecret(ctx *core.Context, name, value string) error {
+func (p *Project) ListSecrets(ctx *core.Context) (names []string, _ error) {
+	bucket, err := p.getCreateSecretsBucket(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list secrets: %w", err)
+	}
+
+	objects, err := bucket.ListObjects(ctx, "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to list secrets: %w", err)
+	}
+	return utils.MapSlice(objects, func(o *s3_ns.ObjectInfo) string {
+		return o.Key
+	}), nil
+}
+
+func (p *Project) UpsertSecret(ctx *core.Context, name, value string) error {
 	for _, r := range name {
 		if !parse.IsIdentChar(r) {
 			return fmt.Errorf("invalid char found in secret: '%c'", r)

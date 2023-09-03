@@ -17,8 +17,8 @@ var (
 	CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN = os.Getenv("CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN")
 )
 
-func TestAddSecret(t *testing.T) {
-	projectName := "test-add-secret"
+func TestUpsertListSecrets(t *testing.T) {
+	projectName := "test-upsert-secret"
 	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 
 	registry, err := OpenRegistry("/", fs_ns.NewMemFilesystem(100_000_000))
@@ -74,6 +74,14 @@ func TestAddSecret(t *testing.T) {
 		}
 	}()
 
-	err = project.AddSecret(ctx, "my-secret", "secret")
-	assert.NoError(t, err)
+	err = project.UpsertSecret(ctx, "my-secret", "secret")
+	if !assert.NoError(t, err) {
+		return
+	}
+
+	names, err := project.ListSecrets(ctx)
+	if !assert.NoError(t, err) {
+		return
+	}
+	assert.Equal(t, []string{"my-secret"}, names)
 }

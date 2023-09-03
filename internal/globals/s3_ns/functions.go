@@ -76,21 +76,26 @@ func S3List(ctx *core.Context, u core.URL) ([]*ObjectInfo, error) {
 	}
 
 	key := string(u.Path())
+	return bucket.ListObjects(ctx, key)
+}
 
-	if bucket.fakeBackend != nil {
+func (b *Bucket) ListObjects(ctx context.Context, key string) ([]*ObjectInfo, error) {
+	if key != "" {
+		key = toObjectKey(key)
+	}
+
+	if b.fakeBackend != nil {
 		return nil, errors.New("object listing not supported in s3 memory backend")
 	} else {
-		prefix := key[1:]
-		prefixSlashClount := strings.Count(prefix, "/")
+		prefixSlashClount := strings.Count(key, "/")
 
-		channel := bucket.client.libClient.ListObjects(ctx, bucket.name, minio.ListObjectsOptions{
-			Prefix:    prefix,
+		channel := b.client.libClient.ListObjects(ctx, b.name, minio.ListObjectsOptions{
+			Prefix:    key,
 			Recursive: false,
 		})
 
 		var objects []*ObjectInfo
 		for obj := range channel {
-
 			if strings.HasSuffix(obj.Key, "/") && strings.Count(obj.Key, "/") == prefixSlashClount {
 				continue
 			}
@@ -99,7 +104,6 @@ func S3List(ctx *core.Context, u core.URL) ([]*ObjectInfo, error) {
 
 		return objects, nil
 	}
-
 }
 
 func S3put(ctx *core.Context, u core.URL, readable core.Readable) (*PutObjectResponse, error) {
