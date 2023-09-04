@@ -20,6 +20,10 @@ type ListSecretsResponse struct {
 	Secrets []project.ProjectSecretInfo `json:"secrets"`
 }
 
+type DeleteSecretParams struct {
+	Name string
+}
+
 func registerSecretsMethodHandlers(server *lsp.Server, opts LSPServerOptions) {
 	server.OnCustom(jsonrpc.MethodInfo{
 		Name: "secrets/upsertSecret",
@@ -76,6 +80,35 @@ func registerSecretsMethodHandlers(server *lsp.Server, opts LSPServerOptions) {
 				}
 			}
 			return ListSecretsResponse{Secrets: secrets}, nil
+		},
+	})
+
+	server.OnCustom(jsonrpc.MethodInfo{
+		Name: "secrets/deleteSecret",
+		NewRequest: func() interface{} {
+			return &DeleteSecretParams{}
+		},
+		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+			session := jsonrpc.GetSession(ctx)
+			sessionCtx := session.Context()
+			params := req.(*DeleteSecretParams)
+
+			project, ok := getProject(session)
+			if !ok {
+				return nil, jsonrpc.ResponseError{
+					Code:    jsonrpc.InternalError.Code,
+					Message: "no project is open",
+				}
+			}
+
+			err := project.DeleteSecret(sessionCtx, params.Name)
+			if err != nil {
+				return nil, jsonrpc.ResponseError{
+					Code:    jsonrpc.InternalError.Code,
+					Message: err.Error(),
+				}
+			}
+			return nil, nil
 		},
 	})
 }
