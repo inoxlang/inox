@@ -87,4 +87,14 @@ func TestUpsertListSecrets(t *testing.T) {
 		return
 	}
 	assert.Equal(t, "my-secret", secrets[0].Name)
+
+	secrets2, err := project.ListSecrets2(ctx)
+	if !assert.NoError(t, err) {
+		return
+	}
+	if !assert.Len(t, secrets2, 1) {
+		return
+	}
+	assert.Equal(t, "my-secret", secrets2[0].Name)
+	assert.Equal(t, "secret", secrets2[0].Value.StringValue().GetOrBuildString())
 }

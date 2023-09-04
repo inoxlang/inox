@@ -12,6 +12,10 @@ import (
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
 )
 
+const (
+	R2_TOKEN_POST_CREATION_DELAY = 1500 * time.Millisecond
+)
+
 var (
 	ErrNoR2Token = errors.New("No R2 token")
 )
@@ -127,7 +131,7 @@ func GetTempCloudflareTokens(
 		}
 
 		//wait for the token to be valid
-		time.Sleep(time.Second)
+		time.Sleep(R2_TOKEN_POST_CREATION_DELAY)
 
 		r2token = &TempToken{
 			Id:    R2TokenId,

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
@@ -12,9 +13,15 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+type ProjectSecret struct {
+	Name          string
+	LastModifDate time.Time
+	Value         *core.Secret
+}
+
 type ProjectSecretInfo struct {
-	Name          string `json:"name"`
-	LastModifDate string `json:"lastModificationDate"`
+	Name          string    `json:"name"`
+	LastModifDate time.Time `json:"lastModificationDate"`
 }
 
 func (p *Project) ListSecrets(ctx *core.Context) (info []ProjectSecretInfo, _ error) {
@@ -30,9 +37,80 @@ func (p *Project) ListSecrets(ctx *core.Context) (info []ProjectSecretInfo, _ er
 	return utils.MapSlice(objects, func(o *s3_ns.ObjectInfo) ProjectSecretInfo {
 		return ProjectSecretInfo{
 			Name:          o.Key,
-			LastModifDate: o.LastModified.Format(time.RFC3339),
+			LastModifDate: o.LastModified,
 		}
 	}), nil
+}
+
+func (p *Project) ListSecrets2(ctx *core.Context) (secrets []ProjectSecret, _ error) {
+	bucket, err := p.getCreateSecretsBucket(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list secrets: %w", err)
+	}
+
+	objects, err := bucket.ListObjects(ctx, "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to list secrets: %w", err)
+	}
+
+	wg := new(sync.WaitGroup)
+	wg.Add(len(objects))
+
+	secrets = make([]ProjectSecret, len(objects))
+	errs := make([]error, len(objects))
+
+	var lock sync.Mutex
+
+	for i, obj := range objects {
+		go func(i int, info *s3_ns.ObjectInfo) {
+			defer wg.Done()
+			resp, err := bucket.GetObject(ctx, info.Key)
+			if err != nil {
+				lock.Lock()
+				errs[i] = err
+				lock.Unlock()
+				return
+			}
+			content, err := resp.ReadAll()
+			if err != nil {
+				lock.Lock()
+				errs[i] = err
+				lock.Unlock()
+				return
+			}
+
+			secretValue, err := core.SECRET_STRING_PATTERN.NewSecret(ctx, string(content))
+			if err != nil {
+				lock.Lock()
+				errs[i] = err
+				lock.Unlock()
+				return
+			}
+
+			secrets[i] = ProjectSecret{
+				Name:          info.Key,
+				Value:         secretValue,
+				LastModifDate: info.LastModified,
+			}
+		}(i, obj)
+	}
+
+	wg.Wait()
+
+	errString := ""
+	for _, err := range errs {
+		if err != nil {
+			if errString != "" {
+				errString += "\n"
+			}
+			errString += err.Error()
+		}
+	}
+
+	if errString != "" {
+		return nil, errors.New(errString)
+	}
+	return secrets, nil
 }
 
 func (p *Project) UpsertSecret(ctx *core.Context, name, value string) error {
