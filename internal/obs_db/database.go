@@ -35,7 +35,7 @@ func init() {
 	core.RegisterStaticallyCheckDbResolutionDataFn(ODB_SCHEME, func(node parse.Node) string {
 		hostLit, ok := node.(*parse.HostLiteral)
 		if !ok || !strings.HasPrefix(hostLit.Value, "s3://") {
-			return "the resolution data of an object storage database should be a host literal with an s3:// scheme"
+			return "the resolution data of an object storage database should be a host literal with a s3:// scheme"
 		}
 
 		return ""
@@ -77,7 +77,9 @@ func openDatabase(ctx *core.Context, r core.ResourceName, restrictedAccess bool)
 		return nil, core.ErrCannotResolveDatabase
 	}
 
-	bucket, err := s3_ns.OpenBucket(ctx, s3Host)
+	bucket, err := s3_ns.OpenBucket(ctx, s3Host, s3_ns.OpenBucketOptions{
+		AllowGettingCredentialsFromProject: true,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to open bucket: %w", err)
 	}

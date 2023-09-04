@@ -33,14 +33,6 @@ var (
 	OS_DB_TEST_ACCESS_KEY             = os.Getenv(OS_DB_TEST_ACCESS_KEY_ENV_VARNAME)
 	OS_DB_TEST_SECRET_KEY             = os.Getenv("OS_DB_TEST_SECRET_KEY")
 	OS_DB_TEST_ENDPOINT               = os.Getenv("OS_DB_TEST_ENDPOINT")
-
-	S3_HOST_RESOLUTION_DATA = core.NewObjectFromMapNoInit(core.ValMap{
-		"bucket":     core.Str("test"),
-		"host":       core.Host(OS_DB_TEST_ENDPOINT),
-		"access-key": core.Str(OS_DB_TEST_ACCESS_KEY),
-		"secret-key": core.Str(OS_DB_TEST_SECRET_KEY),
-		"provider":   core.Str("cloudflare"),
-	})
 )
 
 func TestPrepareLocalScript(t *testing.T) {
@@ -791,7 +783,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			t.Skip()
 			return
 		}
-		
+
 		//create project with a secret
 		var proj *project.Project
 		projectName := "test-mod-prep"

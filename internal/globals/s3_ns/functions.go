@@ -28,7 +28,7 @@ func S3Get(ctx *core.Context, u core.URL) (*GetObjectResponse, error) {
 		return nil, err
 	}
 
-	bucket, err := OpenBucket(ctx, u.Host())
+	bucket, err := OpenBucket(ctx, u.Host(), OpenBucketOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func S3List(ctx *core.Context, u core.URL) ([]*ObjectInfo, error) {
 		return nil, err
 	}
 
-	bucket, err := OpenBucket(ctx, u.Host())
+	bucket, err := OpenBucket(ctx, u.Host(), OpenBucketOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func S3put(ctx *core.Context, u core.URL, readable core.Readable) (*PutObjectRes
 	}
 	reader := readable.Reader()
 
-	bucket, err := OpenBucket(ctx, u.Host())
+	bucket, err := OpenBucket(ctx, u.Host(), OpenBucketOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +170,7 @@ func S3Delete(ctx *core.Context, u core.URL, readable core.Readable) error {
 		return err
 	}
 
-	bucket, err := OpenBucket(ctx, u.Host())
+	bucket, err := OpenBucket(ctx, u.Host(), OpenBucketOptions{})
 	if err != nil {
 		return err
 	}
@@ -196,7 +196,7 @@ func S3GetBucketPolicy(ctx *core.Context, u core.URL) (*GetBucketPolicyResponse,
 		return nil, err
 	}
 
-	bucket, err := OpenBucket(ctx, u.Host())
+	bucket, err := OpenBucket(ctx, u.Host(), OpenBucketOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -244,7 +244,7 @@ func S3SetBucketPolicy(ctx *core.Context, u core.URL, policy core.Value) error {
 		return errors.New("invalid policy description: empty")
 	}
 
-	bucket, err := OpenBucket(ctx, u.Host())
+	bucket, err := OpenBucket(ctx, u.Host(), OpenBucketOptions{})
 	if err != nil {
 		return err
 	}
@@ -261,7 +261,7 @@ func S3RemoveBucketPolicy(ctx *core.Context, u core.URL) error {
 		return err
 	}
 
-	bucket, err := OpenBucket(ctx, u.Host())
+	bucket, err := OpenBucket(ctx, u.Host(), OpenBucketOptions{})
 	if err != nil {
 		return err
 	}

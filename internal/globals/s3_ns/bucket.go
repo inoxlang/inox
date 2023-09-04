@@ -11,6 +11,7 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+	"golang.org/x/exp/slices"
 
 	"github.com/johannesboyne/gofakes3"
 	"github.com/johannesboyne/gofakes3/backend/s3mem"
@@ -58,7 +59,13 @@ func (b *Bucket) RemoveAllObjects(ctx context.Context) {
 	}
 }
 
-func OpenBucket(ctx *core.Context, s3Host core.Host) (*Bucket, error) {
+type OpenBucketOptions struct {
+	//if true and the host resolution data of s3Host is an object without the .access-key & .secret-key properties
+	//try to get the .Project of the main state & calls Project.GetS3Credentials.
+	AllowGettingCredentialsFromProject bool
+}
+
+func OpenBucket(ctx *core.Context, s3Host core.Host, opts OpenBucketOptions) (*Bucket, error) {
 
 	switch s3Host.Scheme() {
 	case "https":
@@ -84,39 +91,63 @@ func OpenBucket(ctx *core.Context, s3Host core.Host) (*Bucket, error) {
 		}
 		return nil, ErrCannotResolveBucket
 	case *core.Object:
-		bucket := d.Prop(ctx, "bucket")
-		if bucket == nil {
+		var proj core.Project
+		mainState := ctx.GetClosestState().MainState
+		if mainState != nil {
+			proj = mainState.Project
+		}
+		propNames := d.PropertyNames(ctx)
+		credentialsProvided := true
+
+		if !slices.Contains(propNames, "access-key") {
+			credentialsProvided = false
+			if slices.Contains(propNames, "secret-key") {
+				return nil, fmt.Errorf("%w: missing .access-key in resolution data", ErrCannotResolveBucket)
+			}
+			if !opts.AllowGettingCredentialsFromProject || proj == nil {
+				return nil, fmt.Errorf("%w: missing .access-key & .secret-key in resolution data", ErrCannotResolveBucket)
+			}
+		} else if !slices.Contains(propNames, "secret-key") {
+			return nil, fmt.Errorf("%w: missing .secret-key in resolution data", ErrCannotResolveBucket)
+		}
+
+		if !slices.Contains(propNames, "bucket") {
 			return nil, fmt.Errorf("%w: missing .bucket in resolution data", ErrCannotResolveBucket)
 		}
 
-		host := d.Prop(ctx, "host")
-		if host == nil {
+		if !slices.Contains(propNames, "host") {
 			return nil, fmt.Errorf("%w: missing .host in resolution data", ErrCannotResolveBucket)
 		}
 
-		provider := d.Prop(ctx, "provider")
-		if bucket == nil {
+		if !slices.Contains(propNames, "provider") {
 			return nil, fmt.Errorf("%w: missing .provider in resolution data", ErrCannotResolveBucket)
 		}
 
-		accessKey := d.Prop(ctx, "access-key")
-		if accessKey == nil {
-			return nil, fmt.Errorf("%w: missing .access-key in resolution data", ErrCannotResolveBucket)
-		}
+		bucket := d.Prop(ctx, "bucket").(core.StringLike).GetOrBuildString()
+		host := d.Prop(ctx, "host").(core.Host)
+		provider := d.Prop(ctx, "provider").(core.StringLike).GetOrBuildString()
 
-		secretKey := d.Prop(ctx, "secret-key")
+		var accessKey string
+		var secretKey string
+		if credentialsProvided {
+			accessKey = d.Prop(ctx, "access-key").(core.StringLike).GetOrBuildString()
+			secretKey = d.Prop(ctx, "secret-key").(*core.Secret).StringValue().GetOrBuildString()
+		} else {
+			var err error
+			accessKey, secretKey, err = proj.GetS3Credentials(ctx, bucket, provider)
 
-		if secretKey == nil {
-			return nil, fmt.Errorf("%w: missing .secret-key in resolution data", ErrCannotResolveBucket)
+			if err != nil {
+				return nil, fmt.Errorf("%w: failed to get S3 credentials from project: %w", ErrCannotResolveBucket, err)
+			}
 		}
 
 		return OpenBucketWithCredentials(ctx, OpenBucketWithCredentialsInput{
 			S3Host:     s3Host,
-			HttpsHost:  host.(core.Host),
-			BucketName: bucket.(core.StringLike).GetOrBuildString(),
-			Provider:   provider.(core.StringLike).GetOrBuildString(),
-			AccessKey:  accessKey.(core.StringLike).GetOrBuildString(),
-			SecretKey:  secretKey.(core.StringLike).GetOrBuildString(),
+			HttpsHost:  host,
+			BucketName: bucket,
+			Provider:   provider,
+			AccessKey:  accessKey,
+			SecretKey:  secretKey,
 		})
 	default:
 		return nil, ErrCannotResolveBucket

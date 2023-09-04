@@ -31,8 +31,11 @@ var (
 		"bucket":     core.Str("test"),
 		"host":       core.Host(OS_DB_TEST_ENDPOINT),
 		"access-key": core.Str(OS_DB_TEST_ACCESS_KEY),
-		"secret-key": core.Str(OS_DB_TEST_SECRET_KEY),
-		"provider":   core.Str("cloudflare"),
+		"secret-key": utils.Must(core.SECRET_STRING_PATTERN.NewSecret(
+			core.NewContexWithEmptyState(core.ContextConfig{}, nil),
+			OS_DB_TEST_SECRET_KEY,
+		)),
+		"provider": core.Str("cloudflare"),
 	})
 )
 
