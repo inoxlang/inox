@@ -271,6 +271,28 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 	baseGlobals := maps.Clone(constants)
 	constants[default_state.PREINIT_DATA_GLOBAL_NAME] = preinitData
 
+	if conf.Project != nil {
+		//ctx has no state yet so we create a child context with an empty state
+		childCtx := ctx.BoundChild()
+		core.NewGlobalState(childCtx)
+
+		secrets, err := conf.Project.ListSecrets2(childCtx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create default global state: %w", err)
+		}
+
+		secretNames := make([]string, len(secrets))
+		secretValues := make([]core.Serializable, len(secrets))
+
+		for i, secret := range secrets {
+			secretNames[i] = secret.Name
+			secretValues[i] = secret.Value
+		}
+
+		record := core.NewRecordFromKeyValLists(secretNames, secretValues)
+		constants[default_state.PROJECT_SECRETS_GLOBAL_NAME] = record
+	}
+
 	symbolicBaseGlobals := map[string]symbolic.SymbolicValue{}
 	{
 		encountered := map[uintptr]symbolic.SymbolicValue{}

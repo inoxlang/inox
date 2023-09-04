@@ -10,9 +10,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/cloudflare/cloudflare-go"
 	"github.com/go-git/go-billy/v5/util"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/default_state"
 	"github.com/inoxlang/inox/internal/permkind"
+	"github.com/inoxlang/inox/internal/project"
 
 	_ "github.com/inoxlang/inox/internal/obs_db"
 
@@ -23,6 +26,9 @@ import (
 )
 
 var (
+	CLOUDFLARE_ACCOUNT_ID                  = os.Getenv("CLOUDFLARE_ACCOUNT_ID")
+	CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN = os.Getenv("CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN")
+
 	OS_DB_TEST_ACCESS_KEY_ENV_VARNAME = "OS_DB_TEST_ACCESS_KEY"
 	OS_DB_TEST_ACCESS_KEY             = os.Getenv(OS_DB_TEST_ACCESS_KEY_ENV_VARNAME)
 	OS_DB_TEST_SECRET_KEY             = os.Getenv("OS_DB_TEST_SECRET_KEY")
@@ -778,6 +784,128 @@ func TestPrepareLocalScript(t *testing.T) {
 
 		assert.Equal(t, core.Host("odb://main"), db.Resource())
 		assert.False(t, db.TopLevelEntitiesLoaded())
+	})
+
+	t.Run("project", func(t *testing.T) {
+		//create project with a secret
+		var proj *project.Project
+		projectName := "test-mod-prep"
+		{
+			tempCtx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			registry, err := project.OpenRegistry("/", fs_ns.NewMemFilesystem(100_000_000))
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			id, err := registry.CreateProject(tempCtx, project.CreateProjectParams{
+				Name: projectName,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			p, err := registry.OpenProject(tempCtx, project.OpenProjectParams{
+				Id: id,
+				DevSideConfig: project.DevSideProjectConfig{
+					Cloudflare: &project.DevSideCloudflareConfig{
+						AdditionalTokensApiToken: CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN,
+						AccountID:                CLOUDFLARE_ACCOUNT_ID,
+					},
+				},
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			proj = p
+
+			err = p.UpsertSecret(tempCtx, "my-secret", "secret")
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			defer func() {
+				//delete tokens & bucket
+
+				err := proj.DeleteSecretsBucket(tempCtx)
+				assert.NoError(t, err)
+
+				api, err := cloudflare.NewWithAPIToken(CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN)
+				if err != nil {
+					return
+				}
+
+				apiTokens, err := api.APITokens(tempCtx)
+				if err != nil {
+					return
+				}
+
+				for _, token := range apiTokens {
+					if strings.Contains(token.Name, projectName) {
+						err := api.DeleteAPIToken(tempCtx, token.ID)
+						if err != nil {
+							t.Log(err)
+						}
+					}
+				}
+
+			}()
+		}
+
+		fs := fs_ns.NewMemFilesystem(10000)
+
+		util.WriteFile(fs, "/script.ix", []byte(`
+			manifest {
+				permissions: {}
+			}
+			return `+default_state.PROJECT_SECRETS_GLOBAL_NAME+`.my-secret
+		`), 0o600)
+
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs,
+		}, nil)
+
+		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+			Fpath:                     "/script.ix",
+			ParsingCompilationContext: ctx,
+			ParentContext:             ctx,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			Project: proj,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.Empty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
+
+		projectSecrets, ok := state.Globals.CheckedGet(default_state.PROJECT_SECRETS_GLOBAL_NAME)
+		if !assert.True(t, ok) {
+			return
+		}
+
+		assert.Equal(t, []string{"my-secret"}, projectSecrets.(*core.Record).Keys())
 	})
 
 	t.Run("manifest & symbolic eval should be ignored when there is a preinit check error: regular mode", func(t *testing.T) {

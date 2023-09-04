@@ -5,6 +5,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/project"
 
 	"io"
 )
@@ -12,6 +13,7 @@ import (
 const (
 	PREINIT_DATA_GLOBAL_NAME    = "preinit-data"
 	DATABASES_GLOBAL_NAME       = "dbs"
+	PROJECT_SECRETS_GLOBAL_NAME = "project-secrets"
 	MODULE_DIRPATH_GLOBAL_NAME  = "__mod-dir"
 	MODULE_FILEPATH_GLOBAL_NAME = "__mod-file"
 )
@@ -30,6 +32,7 @@ type DefaultGlobalStateConfig struct {
 	PreinitFiles        core.PreinitFiles
 	Databases           map[string]*core.DatabaseIL
 	AllowMissingEnvVars bool
+	Project             *project.Project
 
 	Out    io.Writer
 	LogOut io.Writer

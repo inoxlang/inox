@@ -14,6 +14,7 @@ import (
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/project"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/default_state"
@@ -46,6 +47,7 @@ type ScriptPreparationArgs struct {
 	DevMode                   bool
 	AllowMissingEnvVars       bool
 	FullAccessToDatabases     bool
+	Project                   *project.Project
 
 	Out    io.Writer //defaults to os.Stdout
 	LogOut io.Writer //defaults to Out
@@ -219,6 +221,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		EnvPattern:          manifest.EnvPattern,
 		PreinitFiles:        manifest.PreinitFiles,
 		Databases:           dbs,
+		Project:             args.Project,
 		AllowMissingEnvVars: args.AllowMissingEnvVars,
 		Out:                 out,
 		LogOut:              args.LogOut,
@@ -595,6 +598,7 @@ type RunScriptArgs struct {
 	PreinitFilesystem afs.Filesystem
 
 	FullAccessToDatabases bool
+	Project               *project.Project
 
 	UseBytecode      bool
 	OptimizeBytecode bool
@@ -640,6 +644,7 @@ func RunLocalScript(args RunScriptArgs) (
 		AllowMissingEnvVars:       args.AllowMissingEnvVars,
 		PreinitFilesystem:         args.PreinitFilesystem,
 		FullAccessToDatabases:     args.FullAccessToDatabases,
+		Project:                   args.Project,
 	})
 
 	if args.PreparedChan != nil {
