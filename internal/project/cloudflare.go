@@ -9,7 +9,9 @@ import (
 	"time"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
@@ -142,6 +144,12 @@ func GetTempCloudflareTokens(
 	return
 }
 
+func (p *Project) DeleteSecretsBucket(ctx *core.Context) error {
+	tokens := utils.Ret0(p.TempProjectTokens(ctx)).Cloudflare
+
+	return DeleteR2Bucket(ctx, p.secretsBucket, *tokens, p.devSideConfig.Cloudflare.AccountID)
+}
+
 func DeleteR2Bucket(ctx context.Context, bucketToDelete *s3_ns.Bucket, tokens TempCloudflareTokens, accountId string) error {
 	if tokens.R2Token == nil || tokens.R2Token.Value == "" {
 		return ErrNoR2Token
@@ -165,15 +173,18 @@ func CreateR2BucketIfNotExist(ctx context.Context, bucketName string, tokens Tem
 		return ErrNoR2Token
 	}
 	api, _ := cloudflare.NewWithAPIToken(tokens.R2Token.Value)
-	buckets, _ := api.ListR2Buckets(ctx, cloudflare.AccountIdentifier(accountId), cloudflare.ListR2BucketsParams{})
+	buckets, err := api.ListR2Buckets(ctx, cloudflare.AccountIdentifier(accountId), cloudflare.ListR2BucketsParams{})
 
+	if err != nil {
+		return fmt.Errorf("failed to check if bucket exists: %w", err)
+	}
 	for _, bucket := range buckets {
 		if bucket.Name == bucketName {
 			return nil
 		}
 	}
 
-	_, err := api.CreateR2Bucket(ctx, cloudflare.AccountIdentifier(accountId), cloudflare.CreateR2BucketParameters{
+	_, err = api.CreateR2Bucket(ctx, cloudflare.AccountIdentifier(accountId), cloudflare.CreateR2BucketParameters{
 		Name: bucketName,
 	})
 	return err

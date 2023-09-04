@@ -8,7 +8,6 @@ import (
 	cloudflare "github.com/cloudflare/cloudflare-go"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
-	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -50,8 +49,8 @@ func TestUpsertListSecrets(t *testing.T) {
 
 	defer func() {
 		//delete tokens & bucket
-		tokens := utils.Ret0(project.TempProjectTokens(ctx)).Cloudflare
-		err = DeleteR2Bucket(ctx, project.secretsBucket, *tokens, project.devSideConfig.Cloudflare.AccountID)
+
+		err := project.DeleteSecretsBucket(ctx)
 		assert.NoError(t, err)
 
 		api, err := cloudflare.NewWithAPIToken(CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN)
