@@ -11429,6 +11429,80 @@ func testParse(
 				},
 			},
 			{
+				input:    `:{ https://aa/: 1 }`,
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 19}, nil, nil},
+					Statements: []Node{
+						&DictionaryLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{0, 19},
+								nil,
+								[]Token{
+									{Type: OPENING_DICTIONARY_BRACKET, Span: NodeSpan{0, 2}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{18, 19}},
+								},
+							},
+							Entries: []*DictionaryEntry{
+								{
+									NodeBase: NodeBase{Span: NodeSpan{3, 17}},
+									Key: &URLLiteral{
+										NodeBase: NodeBase{
+											NodeSpan{3, 15},
+											&ParsingError{UnspecifiedParsingError, INVALID_DICT_ENTRY_MISSING_SPACE_BETWEEN_KEY_AND_COLON},
+											nil,
+										},
+										Value: "https://aa/:",
+									},
+									Value: &IntLiteral{
+										NodeBase: NodeBase{NodeSpan{16, 17}, nil, nil},
+										Raw:      "1",
+										Value:    1,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    `:{ https://aa: 1 }`,
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 18}, nil, nil},
+					Statements: []Node{
+						&DictionaryLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{0, 18},
+								nil,
+								[]Token{
+									{Type: OPENING_DICTIONARY_BRACKET, Span: NodeSpan{0, 2}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{17, 18}},
+								},
+							},
+							Entries: []*DictionaryEntry{
+								{
+									NodeBase: NodeBase{Span: NodeSpan{3, 16}},
+									Key: &InvalidURL{
+										NodeBase: NodeBase{
+											NodeSpan{3, 14},
+											&ParsingError{UnspecifiedParsingError, INVALID_DICT_ENTRY_MISSING_SPACE_BETWEEN_KEY_AND_COLON},
+											nil,
+										},
+										Value: "https://aa:",
+									},
+									Value: &IntLiteral{
+										NodeBase: NodeBase{NodeSpan{15, 16}, nil, nil},
+										Raw:      "1",
+										Value:    1,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
 				input:    `:{ "a" :   }`,
 				hasError: true,
 				result: &Chunk{

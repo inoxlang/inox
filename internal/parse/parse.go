@@ -3817,32 +3817,53 @@ dictionary_literal_top_loop:
 			continue
 		}
 
-		if key.Base().Err == nil && !NodeIsSimpleValueLiteral(key) && !NodeIs(key, &IdentifierLiteral{}) {
-			key.BasePtr().Err = &ParsingError{UnspecifiedParsingError, INVALID_DICT_KEY_ONLY_SIMPLE_VALUE_LITS}
-		}
+		colonInLiteral := false
 
-		p.eatSpace()
-
-		if p.i >= p.len || p.s[p.i] == '}' {
-			if entry.Err == nil {
-				entry.Err = &ParsingError{UnspecifiedParsingError, INVALID_DICT_ENTRY_MISSING_COLON_AFTER_KEY}
-				entry.Span.End = p.i
+		if key.Base().Err == nil || NodeIs(key, (*InvalidURL)(nil)) {
+			switch k := key.(type) {
+			case *InvalidURL:
+				if strings.HasSuffix(k.Value, ":") {
+					colonInLiteral = true
+				}
+			case *URLLiteral:
+				if strings.HasSuffix(k.Value, ":") {
+					colonInLiteral = true
+				}
+			default:
+				if !NodeIsSimpleValueLiteral(key) && !NodeIs(key, &IdentifierLiteral{}) {
+					key.BasePtr().Err = &ParsingError{UnspecifiedParsingError, INVALID_DICT_KEY_ONLY_SIMPLE_VALUE_LITS}
+				}
 			}
-			break
+
+			if colonInLiteral {
+				key.BasePtr().Err = &ParsingError{UnspecifiedParsingError, INVALID_DICT_ENTRY_MISSING_SPACE_BETWEEN_KEY_AND_COLON}
+			}
 		}
 
-		if p.s[p.i] != ':' {
-			if p.s[p.i] != ',' {
-				entry.Span.End = p.i
-				entry.Err = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInDictionary(p.s[p.i])}
-				entries = append(entries, entry)
+		if !colonInLiteral {
+			p.eatSpace()
+
+			if p.i >= p.len || p.s[p.i] == '}' {
+				if entry.Err == nil {
+					entry.Err = &ParsingError{UnspecifiedParsingError, INVALID_DICT_ENTRY_MISSING_COLON_AFTER_KEY}
+					entry.Span.End = p.i
+				}
+				break
+			}
+
+			if p.s[p.i] != ':' {
+				if p.s[p.i] != ',' {
+					entry.Span.End = p.i
+					entry.Err = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInDictionary(p.s[p.i])}
+					entries = append(entries, entry)
+					p.i++
+					p.eatSpaceNewlineCommaComment(&tokens)
+					continue
+				}
+			} else {
+				entry.Tokens = []Token{{Type: COLON, Span: NodeSpan{p.i, p.i + 1}}}
 				p.i++
-				p.eatSpaceNewlineCommaComment(&tokens)
-				continue
 			}
-		} else {
-			entry.Tokens = []Token{{Type: COLON, Span: NodeSpan{p.i, p.i + 1}}}
-			p.i++
 		}
 
 		p.eatSpace()

@@ -100,6 +100,7 @@ const (
 	UNTERMINATED_DICT_MISSING_CLOSING_BRACE                              = "unterminated dictionary literal, missing closing brace '}'"
 	INVALID_DICT_KEY_ONLY_SIMPLE_VALUE_LITS                              = "invalid key for dictionary literal, only simple value literals are allowed"
 	INVALID_DICT_ENTRY_MISSING_COLON_AFTER_KEY                           = "invalid dictionary entry: missing colon ':' after key"
+	INVALID_DICT_ENTRY_MISSING_SPACE_BETWEEN_KEY_AND_COLON               = "invalid dictionary entry: missing space between key and ':'"
 	UNTERMINATED_PATT_UNTERMINATED_EXACT_OCURRENCE_COUNT                 = "unterminated pattern: unterminated exact ocurrence count: missing count after '='"
 	UNTERMINATED_PAREN_PATTERN_MISSING_PAREN                             = "unterminated parenthesized pattern, missing closing parenthesis"
 	UNTERMINATED_PAREN_PATTERN                                           = "unterminated parenthesized pattern"
