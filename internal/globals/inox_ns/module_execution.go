@@ -246,6 +246,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		state.MainState = parentState
 	} else {
 		state.MainState = state
+		state.Project = args.Project
 	}
 
 	for dbName, db := range dbs {
