@@ -16,6 +16,7 @@ import (
 	"github.com/inoxlang/inox/internal/default_state"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/project"
+	"github.com/inoxlang/inox/internal/utils"
 
 	_ "github.com/inoxlang/inox/internal/obs_db"
 
@@ -620,8 +621,8 @@ func TestPrepareLocalScript(t *testing.T) {
 						bucket: "test"
 						provider: "cloudflare"
 						host: `+OS_DB_TEST_ENDPOINT+`
-						access-key: "`+OS_DB_TEST_ACCESS_KEY+`"
-						secret-key: "`+OS_DB_TEST_SECRET_KEY+`"
+						access-key: access-key
+						secret-key: secret-key
 					}
 				}
 				databases: {
@@ -654,6 +655,13 @@ func TestPrepareLocalScript(t *testing.T) {
 			PreinitFilesystem:       fs,
 			ScriptContextFileSystem: fs,
 			FullAccessToDatabases:   true,
+			AdditionalGlobalsTestOnly: map[string]core.Value{
+				"access-key": core.Str(OS_DB_TEST_ACCESS_KEY),
+				"secret-key": utils.Must(core.SECRET_STRING_PATTERN.NewSecret(
+					core.NewContexWithEmptyState(core.ContextConfig{}, nil),
+					OS_DB_TEST_SECRET_KEY,
+				)),
+			},
 		})
 
 		if !assert.NoError(t, err) {
@@ -706,8 +714,8 @@ func TestPrepareLocalScript(t *testing.T) {
 						bucket: "test"
 						provider: "cloudflare"
 						host: `+OS_DB_TEST_ENDPOINT+`
-						access-key: "`+OS_DB_TEST_ACCESS_KEY+`"
-						secret-key: "`+OS_DB_TEST_SECRET_KEY+`"
+						access-key: access-key
+						secret-key: secret-key
 					}
 				}
 				databases: {
@@ -743,6 +751,14 @@ func TestPrepareLocalScript(t *testing.T) {
 			PreinitFilesystem:       fs,
 			ScriptContextFileSystem: fs,
 			FullAccessToDatabases:   true,
+
+			AdditionalGlobalsTestOnly: map[string]core.Value{
+				"access-key": core.Str(OS_DB_TEST_ACCESS_KEY),
+				"secret-key": utils.Must(core.SECRET_STRING_PATTERN.NewSecret(
+					core.NewContexWithEmptyState(core.ContextConfig{}, nil),
+					OS_DB_TEST_SECRET_KEY,
+				)),
+			},
 		})
 
 		if !assert.NoError(t, err) {

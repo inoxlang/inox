@@ -179,6 +179,9 @@ type PreinitArgs struct {
 	HandleCustomType      CustomPermissionTypeHandler //optional
 	IgnoreUnknownSections bool
 	IgnoreConstDeclErrors bool
+
+	//used if .RunningState is nil
+	AdditionalGlobalsTestOnly map[string]Value
 }
 
 // PreInit performs the pre-initialization of the module:
@@ -413,6 +416,9 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 			}
 		}
 
+		for k, v := range preinitArgs.AdditionalGlobalsTestOnly {
+			state.SetGlobal(k, v, GlobalConst)
+		}
 	} else {
 		if preinitArgs.GlobalConsts != nil {
 			return nil, nil, nil, fmt.Errorf(".GlobalConstants argument should not have been passed")

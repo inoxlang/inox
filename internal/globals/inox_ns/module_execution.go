@@ -57,6 +57,8 @@ type ScriptPreparationArgs struct {
 
 	//used to create the context
 	ScriptContextFileSystem afs.Filesystem
+
+	AdditionalGlobalsTestOnly map[string]core.Value
 }
 
 // PrepareLocalScript parses & checks a script located in the filesystem and initializes its state.
@@ -114,6 +116,8 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			AddDefaultPermissions: true,
 			IgnoreUnknownSections: args.DevMode,
 			IgnoreConstDeclErrors: args.DevMode,
+
+			AdditionalGlobalsTestOnly: args.AdditionalGlobalsTestOnly,
 		})
 
 		if !args.DevMode && preinitErr != nil {
@@ -230,6 +234,10 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	if err != nil {
 		finalErr = fmt.Errorf("failed to create global state: %w", err)
 		return
+	}
+
+	for k, v := range args.AdditionalGlobalsTestOnly {
+		globalState.Globals.Set(k, v)
 	}
 
 	state = globalState
