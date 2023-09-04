@@ -43,7 +43,7 @@ type GlobalState struct {
 	Debugger                             atomic.Value                                                    //nil or (nillable) *Debugger
 
 	MainState            *GlobalState //never nil
-	Project              any          //can be nil
+	Project              Project          //can be nil
 	id                   StateId
 	descendantStates     map[ResourceName]*GlobalState
 	descendantStatesLock sync.Mutex

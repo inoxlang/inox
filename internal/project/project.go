@@ -124,6 +124,18 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 	return project, nil
 }
 
+func (p *Project) GetS3Credentials(ctx *core.Context, bucketName string, provider string) (accessKey, secretKey string, _ error) {
+	tokens, err := p.TempProjectTokens(ctx)
+	if err != nil {
+		return "", "", err
+	}
+	accessKey, secretKey, ok := tokens.Cloudflare.GetS3AccessKeySecretKey()
+	if !ok {
+		return "", "", ErrNoR2Token
+	}
+	return accessKey, secretKey, nil
+}
+
 func (p *Project) Filesystem() afs.Filesystem {
 	return p.projectFilesystem
 }
@@ -166,6 +178,7 @@ func (p *Project) IsShared() bool {
 func (p *Project) ForceLock() {
 	p.lock.ForceLock()
 }
+
 func (p *Project) ForceUnlock() {
 	p.lock.ForceUnlock()
 }
