@@ -17,6 +17,11 @@ var (
 )
 
 func TestUpsertListSecrets(t *testing.T) {
+	if CLOUDFLARE_ACCOUNT_ID == "" {
+		t.Skip()
+		return
+	}
+
 	projectName := "test-upsert-secret"
 	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 

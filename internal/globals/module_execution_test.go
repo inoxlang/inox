@@ -787,6 +787,11 @@ func TestPrepareLocalScript(t *testing.T) {
 	})
 
 	t.Run("project", func(t *testing.T) {
+		if CLOUDFLARE_ACCOUNT_ID == "" {
+			t.Skip()
+			return
+		}
+		
 		//create project with a secret
 		var proj *project.Project
 		projectName := "test-mod-prep"
