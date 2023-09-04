@@ -19,7 +19,9 @@ import (
 var (
 	ErrCannotResolveBucket = errors.New("cannot resolve bucket")
 
-	//ResourceName -> Bucket
+	//<mem URL> -> Bucket
+	//<https URL> -> Public Bucket
+	//<https URL> ':' <bucket name> -> Bucket
 	openBucketMap     = make(map[string]BucketMapItem)
 	openBucketMapLock sync.RWMutex
 )
@@ -194,9 +196,9 @@ type OpenBucketWithCredentialsInput struct {
 }
 
 func OpenBucketWithCredentials(ctx *core.Context, input OpenBucketWithCredentialsInput) (*Bucket, error) {
-	_host := string(input.HttpsHost)
+	mapKey := string(input.HttpsHost) + ":" + input.BucketName
 	openBucketMapLock.RLock()
-	item, ok := openBucketMap[_host]
+	item, ok := openBucketMap[mapKey]
 	openBucketMapLock.RUnlock()
 
 	if ok && item.WithCredentials != nil {
@@ -256,7 +258,7 @@ func OpenBucketWithCredentials(ctx *core.Context, input OpenBucketWithCredential
 
 	item.WithCredentials = bucket
 	openBucketMapLock.Lock()
-	openBucketMap[_host] = item
+	openBucketMap[mapKey] = item
 	openBucketMapLock.Unlock()
 
 	return bucket, nil

@@ -23,6 +23,10 @@ func (r *GetObjectResponse) body() io.ReadCloser {
 	}
 }
 
+func (r *GetObjectResponse) ReadAll() ([]byte, error) {
+	return io.ReadAll(r.body())
+}
+
 func (resp *GetObjectResponse) GetGoMethod(name string) (*core.GoFunction, bool) {
 	return nil, false
 }
