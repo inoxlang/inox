@@ -101,4 +101,23 @@ func TestUpsertListSecrets(t *testing.T) {
 	}
 	assert.Equal(t, "my-secret", secrets2[0].Name)
 	assert.Equal(t, "secret", secrets2[0].Value.StringValue().GetOrBuildString())
+
+	err = project.DeleteSecret(ctx, "my-secret")
+	if !assert.NoError(t, err) {
+		return
+	}
+
+	secrets, err = project.ListSecrets(ctx)
+	if !assert.NoError(t, err) {
+		return
+	}
+	if !assert.Empty(t, secrets, 0) {
+		return
+	}
+
+	secrets2, err = project.ListSecrets2(ctx)
+	if !assert.NoError(t, err) {
+		return
+	}
+	assert.Empty(t, secrets2, 0)
 }

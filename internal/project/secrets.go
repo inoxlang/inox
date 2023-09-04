@@ -116,7 +116,7 @@ func (p *Project) ListSecrets2(ctx *core.Context) (secrets []ProjectSecret, _ er
 func (p *Project) UpsertSecret(ctx *core.Context, name, value string) error {
 	for _, r := range name {
 		if !parse.IsIdentChar(r) {
-			return fmt.Errorf("invalid char found in secret: '%c'", r)
+			return fmt.Errorf("invalid char found in secret's name: '%c'", r)
 		}
 	}
 	bucket, err := p.getCreateSecretsBucket(ctx)
@@ -127,6 +127,24 @@ func (p *Project) UpsertSecret(ctx *core.Context, name, value string) error {
 	_, err = bucket.PutObject(ctx, name, strings.NewReader(value))
 	if err != nil {
 		return fmt.Errorf("failed to add secret %q: %w", name, err)
+	}
+	return nil
+}
+
+func (p *Project) DeleteSecret(ctx *core.Context, name string) error {
+	for _, r := range name {
+		if !parse.IsIdentChar(r) {
+			return fmt.Errorf("invalid char found in secret's name: '%c'", r)
+		}
+	}
+	bucket, err := p.getCreateSecretsBucket(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to delete secret %q: %w", name, err)
+	}
+
+	err = bucket.DeleteObject(ctx, name)
+	if err != nil {
+		return fmt.Errorf("failed to delete secret %q: %w", name, err)
 	}
 	return nil
 }
