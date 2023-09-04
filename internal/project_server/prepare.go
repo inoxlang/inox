@@ -15,6 +15,8 @@ import (
 // - if requiresState is true & state failed to be created ok is false
 // - if the file at fpath is an includable-chunk the returned module is a fake module
 func prepareSourceFile(fpath string, ctx *core.Context, session *jsonrpc.Session, requiresState bool) (*core.GlobalState, *core.Module, *parse.ParsedChunk, bool) {
+	project, _ := getProject(session)
+
 	fls, ok := getLspFilesystem(session)
 	if !ok {
 		logs.Println("failed to get LSP filesystem")
@@ -78,6 +80,8 @@ func prepareSourceFile(fpath string, ctx *core.Context, session *jsonrpc.Session
 			AllowMissingEnvVars:     true,
 			ScriptContextFileSystem: fls,
 			PreinitFilesystem:       fls,
+
+			Project: project,
 		})
 
 		if mod == nil {

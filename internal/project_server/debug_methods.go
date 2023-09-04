@@ -1282,6 +1282,8 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 		Filesystem: fls,
 	})
 
+	project, _ := getProject(session)
+
 	programOut := utils.FnWriter{
 		WriteFn: func(p []byte) (n int, err error) {
 			notifyOutputEvent(string(p), "stdout", debugSession, session)
@@ -1439,6 +1441,7 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 		AllowMissingEnvVars:       false,
 		IgnoreHighRiskScore:       true,
 		FullAccessToDatabases:     true,
+		Project:                   project,
 		Out:                       programOut,
 
 		Debugger:     debugSession.debugger,

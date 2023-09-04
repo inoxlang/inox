@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/project_server/logs"
 	"github.com/inoxlang/inox/internal/project_server/lsp"
@@ -51,6 +52,7 @@ type additionalSessionData struct {
 	clientCapabilities               defines.ClientCapabilities
 	serverCapabilities               defines.ServerCapabilities
 	projectMode                      bool
+	project                          *project.Project
 
 	//debug adapter protocol
 	debugSessions *DebugSessions
