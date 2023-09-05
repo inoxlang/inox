@@ -25,6 +25,14 @@ func TestPreInit(t *testing.T) {
 	LimRegistry.RegisterLimitation("a", TotalLimitation, 0)
 	LimRegistry.RegisterLimitation("b", ByteRateLimitation, 0)
 
+	RegisterStaticallyCheckHostResolutionDataFn("ldb", func(node parse.Node) (errorMsg string) {
+		return ""
+	})
+
+	RegisterStaticallyCheckHostResolutionDataFn("s3", func(node parse.Node) (errorMsg string) {
+		return ""
+	})
+
 	type testCase struct {
 		//input
 		name                string

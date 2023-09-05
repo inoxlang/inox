@@ -1889,6 +1889,8 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 				continue
 			}
 
+			hasErrors := false
+
 			parse.Walk(dict, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 				if node == dict {
 					return parse.Continue, nil
@@ -1898,12 +1900,38 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 				case *parse.ObjectLiteral, *parse.ObjectProperty:
 				case *parse.DictionaryEntry, parse.SimpleValueLiteral, *parse.GlobalVariable:
 				default:
+					hasErrors = true
 					onError(n, fmtForbiddenNodeInHostResolutionSection(n))
 				}
 
 				return parse.Continue, nil
 			}, nil)
 
+			if !hasErrors {
+				staticallyCheckHostResolutionDataFnRegistryLock.Lock()
+				defer staticallyCheckHostResolutionDataFnRegistryLock.Unlock()
+
+				for _, entry := range dict.Entries {
+					key := entry.Key
+
+					switch k := key.(type) {
+					case *parse.InvalidURL:
+					case *parse.HostLiteral:
+						host := utils.Must(evalSimpleValueLiteral(k, nil)).(Host)
+						fn, ok := staticallyCheckHostResolutionDataFnRegistry[host.Scheme()]
+						if ok {
+							errMsg := fn(entry.Value)
+							if errMsg != "" {
+								onError(entry.Value, errMsg)
+							}
+						} else {
+							onError(k, HOST_SCHEME_NOT_SUPPORTED)
+						}
+					default:
+						onError(k, HOST_RESOL_SECTION_SHOULD_BE_A_DICT)
+					}
+				}
+			}
 		case MANIFEST_LIMITS_SECTION_NAME:
 			obj, ok := p.Value.(*parse.ObjectLiteral)
 

@@ -34,7 +34,8 @@ const (
 
 	DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED = "paths are the only supported values for ." + MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME + " in a database description"
 
-	HOST_RESOL_SECTION_SHOULD_BE_A_DICT = "the '" + MANIFEST_HOST_RESOLUTION_SECTION_NAME + "' section of the manifest should be a dictionary"
+	HOST_RESOL_SECTION_SHOULD_BE_A_DICT = "the '" + MANIFEST_HOST_RESOLUTION_SECTION_NAME + "' section of the manifest should be a dictionary with host keys"
+	HOST_SCHEME_NOT_SUPPORTED           = "the host's scheme is not supported"
 
 	INVALID_RATE     = "invalid rate"
 	INVALID_QUANTITY = "invalid quantity"
