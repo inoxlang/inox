@@ -18,7 +18,7 @@ const (
 	IMPLICIT_KEY_PROPS_NOT_ALLOWED_IN_PERMS_SECTION = "implicit key properties are not allowed in the 'permissions' section"
 
 	LIMITS_SECTION_SHOULD_BE_AN_OBJECT      = "the '" + MANIFEST_LIMITS_SECTION_NAME + "' section of the manifest should be an object"
-	ENV_SECTION_SHOULD_BE_AN_OBJECT_PATTERN = "the '" + MANIFEST_ENV_SECTION_NAME + "env' section of the manifest should be an object pattern literal"
+	ENV_SECTION_SHOULD_BE_AN_OBJECT_PATTERN = "the '" + MANIFEST_ENV_SECTION_NAME + "' section of the manifest should be an object pattern literal"
 	PARAMS_SECTION_SHOULD_BE_AN_OBJECT      = "the '" + MANIFEST_PARAMS_SECTION_NAME + "' section of the manifest should be an object literal"
 
 	//preinit-files section
