@@ -136,6 +136,14 @@ func (p *Project) GetS3Credentials(ctx *core.Context, bucketName string, provide
 	return accessKey, secretKey, nil
 }
 
+func (p *Project) CanProvideS3Credentials(s3Provider string) (bool, error) {
+	switch s3Provider {
+	case "cloudflare":
+		return p.devSideConfig.Cloudflare != nil, nil
+	}
+	return false, nil
+}
+
 func (p *Project) Filesystem() afs.Filesystem {
 	return p.projectFilesystem
 }
