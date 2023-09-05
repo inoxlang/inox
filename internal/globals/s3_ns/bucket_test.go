@@ -117,3 +117,7 @@ type testProject struct {
 func (*testProject) GetS3Credentials(ctx *core.Context, bucketName string, provider string) (accessKey string, secretKey string, _ error) {
 	return S3_FS_TEST_ACCESS_KEY, S3_FS_TEST_SECRET_KEY, nil
 }
+
+func (*testProject) CanProvideS3Credentials(s3Provider string) (bool, error) {
+	return true, nil
+}

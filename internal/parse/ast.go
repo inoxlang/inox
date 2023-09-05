@@ -2139,6 +2139,16 @@ type XMLInterpolation struct {
 	Expr Node
 }
 
+//NodeIsStringLiteral returns true if and only if node is of one of the following types:
+// *QuotedStringLiteral, *UnquotedStringLiteral, *StringTemplateLiteral, *MultilineStringLiteral
+func NodeIsStringLiteral(node Node) bool {
+	switch node.(type) {
+	case *QuotedStringLiteral, *UnquotedStringLiteral, *StringTemplateLiteral, *MultilineStringLiteral:
+		return true
+	}
+	return false
+}
+
 func NodeIsSimpleValueLiteral(node Node) bool {
 	_, ok := node.(SimpleValueLiteral)
 	return ok

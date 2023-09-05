@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"golang.org/x/exp/slices"
@@ -26,6 +27,77 @@ var (
 	openBucketMap     = make(map[string]BucketMapItem)
 	openBucketMapLock sync.RWMutex
 )
+
+func init() {
+	core.RegisterStaticallyCheckHostResolutionDataFn("s3", func(project core.Project, node parse.Node) (errorMsg string) {
+		const MAIN_ERR_MSG = "invalid host resolution data: accepted values are: HTTPS hosts (public buckets), mem:// URLs and object literals"
+		switch n := node.(type) {
+		case *parse.HostLiteral:
+			if !strings.HasPrefix(n.Value, "https") {
+				return MAIN_ERR_MSG
+			}
+			return ""
+		case *parse.URLLiteral:
+			if !strings.HasPrefix(n.Value, "mem") {
+				return MAIN_ERR_MSG
+			}
+			return ""
+		case *parse.ObjectLiteral:
+			s3Provider := ""
+			if providerNode, hasProvider := n.PropValue("provider"); hasProvider {
+				if strLit, ok := providerNode.(*parse.QuotedStringLiteral); ok {
+					s3Provider = strLit.Value
+				} else {
+					return ".provider should be a quoted string literal"
+				}
+			} else {
+				return "missing .provider in resolution data"
+			}
+
+			if bucketNode, hasBucket := n.PropValue("bucket"); hasBucket {
+				if _, ok := bucketNode.(*parse.QuotedStringLiteral); !ok {
+					return ".bucket should be a quoted string literal"
+				}
+			} else {
+				return "missing .bucket in resolution data"
+			}
+
+			if _, hasHost := n.PropValue("host"); !hasHost {
+				return "missing .host in resolution data"
+			}
+
+			_, hasAccessKey := n.PropValue("access-key")
+			secretKeyNode, hasSecretKey := n.PropValue("secret-key")
+
+			if !hasAccessKey {
+				if hasSecretKey {
+					return "missing .access-key in resolution data"
+				}
+				if project == nil {
+					return "missing .access-key & .secret-key in resolution data"
+				}
+				ok, err := project.CanProvideS3Credentials(s3Provider)
+				if err != nil {
+					return fmt.Sprintf("failed to statically check resolution data: %s", err.Error())
+				}
+				if !ok {
+					return "missing .access-key & .secret-key in resolution data (project cannot provide S3 credentials as of now)"
+				}
+			} else if !hasSecretKey {
+				return "missing .secret-key in resolution data"
+			}
+
+			if hasSecretKey && parse.NodeIsStringLiteral(secretKeyNode) {
+				return ".secret-key should be a secret, not a string"
+			}
+
+			return "" //no error
+		default:
+			return MAIN_ERR_MSG
+		}
+
+	})
+}
 
 type BucketMapItem = struct {
 	WithCredentials, Public *Bucket
