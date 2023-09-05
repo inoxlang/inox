@@ -27,6 +27,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
 
 	_ "github.com/inoxlang/inox/internal/local_db"
+	_ "github.com/inoxlang/inox/internal/obs_db"
 
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
