@@ -927,9 +927,9 @@ func TestPrepareLocalScript(t *testing.T) {
 			return
 		}
 
-		//create project with a secret
+		//create project
 		var proj *project.Project
-		projectName := "test-mod-prep"
+		projectName := "test-mod-prep-creds-from-project"
 		{
 			tempCtx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 			registry, err := project.OpenRegistry("/", fs_ns.NewMemFilesystem(100_000_000))
@@ -961,17 +961,8 @@ func TestPrepareLocalScript(t *testing.T) {
 
 			proj = p
 
-			err = p.UpsertSecret(tempCtx, "my-secret", "secret")
-			if !assert.NoError(t, err) {
-				return
-			}
-
 			defer func() {
 				//delete tokens & bucket
-
-				err := proj.DeleteSecretsBucket(tempCtx)
-				assert.NoError(t, err)
-
 				api, err := cloudflare.NewWithAPIToken(CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN)
 				if err != nil {
 					return

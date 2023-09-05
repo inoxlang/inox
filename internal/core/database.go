@@ -61,6 +61,7 @@ type DbOpenConfiguration struct {
 	Resource       SchemeHolder
 	ResolutionData Value
 	FullAccess     bool
+	Project        Project
 }
 
 func checkDatabaseSchema(pattern *ObjectPattern) error {

@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 
 	"github.com/inoxlang/inox/internal/afs"
@@ -100,10 +101,15 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		preinitState             *core.TreeWalkState
 		preinitErr               error
 		preinitStaticCheckErrors []*core.StaticCheckError
+		project                  core.Project = args.Project
 	)
 
 	if parentContext != nil {
 		parentState = parentContext.GetClosestState()
+	}
+
+	if project == nil || reflect.ValueOf(project).IsNil() && args.UseParentStateAsMainState && parentState != nil {
+		project = parentState.Project
 	}
 
 	if mod != nil {
@@ -189,6 +195,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			Resource:       config.Resource,
 			ResolutionData: config.ResolutionData,
 			FullAccess:     args.FullAccessToDatabases,
+			Project:        project,
 		})
 		if err != nil {
 			err = fmt.Errorf("failed to open the '%s' database: %w", config.Name, err)

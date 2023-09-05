@@ -2,6 +2,7 @@ package obs_db
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"sync"
 
@@ -29,7 +30,7 @@ var (
 
 func init() {
 	core.RegisterOpenDbFn(ODB_SCHEME, func(ctx *core.Context, config core.DbOpenConfiguration) (core.Database, error) {
-		return openDatabase(ctx, config.Resource, !config.FullAccess)
+		return openDatabase(ctx, config.Resource, !config.FullAccess, config.Project)
 	})
 
 	core.RegisterStaticallyCheckDbResolutionDataFn(ODB_SCHEME, func(node parse.Node) string {
@@ -62,7 +63,7 @@ type ObjectStorageDatabaseConfig struct {
 }
 
 // openDatabase opens a database, read, create & write permissions are required.
-func openDatabase(ctx *core.Context, r core.ResourceName, restrictedAccess bool) (*ObjectStorageDatabase, error) {
+func openDatabase(ctx *core.Context, r core.ResourceName, restrictedAccess bool, optProject core.Project) (*ObjectStorageDatabase, error) {
 	var s3Host core.Host
 
 	h, ok := r.(core.Host)
@@ -77,8 +78,13 @@ func openDatabase(ctx *core.Context, r core.ResourceName, restrictedAccess bool)
 		return nil, core.ErrCannotResolveDatabase
 	}
 
+	if optProject != nil && reflect.ValueOf(optProject).IsNil() {
+		optProject = nil
+	}
+
 	bucket, err := s3_ns.OpenBucket(ctx, s3Host, s3_ns.OpenBucketOptions{
 		AllowGettingCredentialsFromProject: true,
+		Project:                            optProject,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to open bucket: %w", err)

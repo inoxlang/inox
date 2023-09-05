@@ -59,7 +59,7 @@ func TestOpenDatabase(t *testing.T) {
 
 		ctx1 := core.NewContexWithEmptyState(ctxConfig, nil)
 
-		_db, err := openDatabase(ctx1, DB_HOST, false)
+		_db, err := openDatabase(ctx1, DB_HOST, false, nil)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -68,7 +68,7 @@ func TestOpenDatabase(t *testing.T) {
 
 		ctx2 := core.NewContexWithEmptyState(ctxConfig, nil)
 
-		db, err := openDatabase(ctx2, DB_HOST, false)
+		db, err := openDatabase(ctx2, DB_HOST, false, nil)
 		if !assert.ErrorIs(t, err, core.ErrDatabaseAlreadyOpen) {
 			return
 		}
@@ -89,7 +89,7 @@ func TestOpenDatabase(t *testing.T) {
 
 		ctx1 := core.NewContexWithEmptyState(ctxConfig, nil)
 
-		_db, err := openDatabase(ctx1, DB_HOST, false)
+		_db, err := openDatabase(ctx1, DB_HOST, false, nil)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -97,7 +97,7 @@ func TestOpenDatabase(t *testing.T) {
 
 		ctx2 := core.NewContexWithEmptyState(ctxConfig, nil)
 
-		db, err := openDatabase(ctx2, DB_HOST, false)
+		db, err := openDatabase(ctx2, DB_HOST, false, nil)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -145,7 +145,7 @@ func TestOpenDatabase(t *testing.T) {
 			//open database in first context
 			ctx1 = core.NewContexWithEmptyState(ctxConfig, nil)
 
-			_db1, err := openDatabase(ctx1, DB_HOST, false)
+			_db1, err := openDatabase(ctx1, DB_HOST, false, nil)
 			if err != nil {
 				return
 			}
@@ -157,7 +157,7 @@ func TestOpenDatabase(t *testing.T) {
 			//open same database in second context
 			ctx2 = core.NewContexWithEmptyState(ctxConfig, nil)
 
-			_db2, err := openDatabase(ctx2, DB_HOST, false)
+			_db2, err := openDatabase(ctx2, DB_HOST, false, nil)
 			if err != nil {
 				return
 			}
@@ -186,7 +186,7 @@ func TestOpenDatabase(t *testing.T) {
 			ctx.AddNamedPattern("Set", containers.SET_PATTERN)
 			ctx.AddNamedPattern("str", containers.SET_PATTERN)
 
-			db, err := openDatabase(ctx, DB_HOST, false)
+			db, err := openDatabase(ctx, DB_HOST, false, nil)
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -212,7 +212,7 @@ func TestOpenDatabase(t *testing.T) {
 
 			//re-open
 
-			db, err = openDatabase(ctx, DB_HOST, false)
+			db, err = openDatabase(ctx, DB_HOST, false, nil)
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -257,7 +257,7 @@ func TestDatabase(t *testing.T) {
 			tx = core.StartNewTransaction(ctx)
 		}
 
-		odb, err := openDatabase(ctx, DB_HOST, false)
+		odb, err := openDatabase(ctx, DB_HOST, false, nil)
 		assert.NoError(t, err)
 
 		return odb, ctx, tx
@@ -466,7 +466,7 @@ func TestUpdateSchema(t *testing.T) {
 		ctx.AddNamedPattern("str", core.STR_PATTERN)
 		ctx.AddNamedPattern("Set", containers.SET_PATTERN)
 
-		odb, err := openDatabase(ctx, DB_HOST, false)
+		odb, err := openDatabase(ctx, DB_HOST, false, nil)
 		if !assert.NoError(t, err) {
 			return nil, nil, false
 		}
