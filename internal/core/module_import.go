@@ -121,6 +121,8 @@ func ImportModule(config ImportConfig) (*Routine, error) {
 		GlobalConsts:          importedMod.MainChunk.Node.GlobalConstantDeclarations,
 		PreinitStatement:      importedMod.MainChunk.Node.Preinit,
 		AddDefaultPermissions: true,
+
+		//TODO: should Project be set ?
 	})
 
 	if err != nil {

@@ -92,6 +92,8 @@ func (j *LifetimeJob) Instantiate(ctx *Context, self Value) (*LifetimeJobInstanc
 		RunningState:          NewTreeWalkStateWithGlobal(spawnerState),
 		ParentState:           spawnerState,
 		AddDefaultPermissions: true,
+
+		//TODO: should Project be set ?
 	})
 
 	if err != nil {
@@ -134,7 +136,7 @@ func (j *LifetimeJob) Instantiate(ctx *Context, self Value) (*LifetimeJobInstanc
 		RoutineCtx:   routineCtx,
 		Globals:      spawnerState.Globals,
 		Module:       j.module,
-		Manifest: manifest,
+		Manifest:     manifest,
 		UseBytecode:  j.module.Bytecode != nil,
 
 		StartPaused: true,

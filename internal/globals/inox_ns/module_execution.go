@@ -118,6 +118,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			IgnoreConstDeclErrors: args.DevMode,
 
 			AdditionalGlobalsTestOnly: args.AdditionalGlobalsTestOnly,
+			Project:                   args.Project,
 		})
 
 		if !args.DevMode && preinitErr != nil {

@@ -25,11 +25,11 @@ func TestPreInit(t *testing.T) {
 	LimRegistry.RegisterLimitation("a", TotalLimitation, 0)
 	LimRegistry.RegisterLimitation("b", ByteRateLimitation, 0)
 
-	RegisterStaticallyCheckHostResolutionDataFn("ldb", func(node parse.Node) (errorMsg string) {
+	RegisterStaticallyCheckHostResolutionDataFn("ldb", func(project Project, node parse.Node) (errorMsg string) {
 		return ""
 	})
 
-	RegisterStaticallyCheckHostResolutionDataFn("s3", func(node parse.Node) (errorMsg string) {
+	RegisterStaticallyCheckHostResolutionDataFn("s3", func(project Project, node parse.Node) (errorMsg string) {
 		return ""
 	})
 

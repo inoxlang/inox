@@ -69,6 +69,8 @@ func (s *TestSuite) Run(ctx *Context, options ...Option) (*Routine, error) {
 	manifest, _, _, err := s.module.PreInit(PreinitArgs{
 		RunningState: NewTreeWalkStateWithGlobal(spawnerState),
 		ParentState:  spawnerState,
+
+		//TODO: should Project be set ?
 	})
 
 	if err != nil {
@@ -232,6 +234,8 @@ func (s *TestCase) Run(ctx *Context, options ...Option) (*Routine, error) {
 	manifest, _, _, err := s.module.PreInit(PreinitArgs{
 		RunningState: NewTreeWalkStateWithGlobal(spawnerState),
 		ParentState:  spawnerState,
+
+		//TODO: should Project be set ?
 	})
 
 	if err != nil {

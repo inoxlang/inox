@@ -1837,6 +1837,7 @@ type manifestStaticCheckArguments struct {
 	objLit                *parse.ObjectLiteral
 	ignoreUnknownSections bool
 	onError               func(n parse.Node, msg string)
+	project               Project
 }
 
 func checkManifestObject(args manifestStaticCheckArguments) {
@@ -1920,7 +1921,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 						host := utils.Must(evalSimpleValueLiteral(k, nil)).(Host)
 						fn, ok := staticallyCheckHostResolutionDataFnRegistry[host.Scheme()]
 						if ok {
-							errMsg := fn(entry.Value)
+							errMsg := fn(args.project, entry.Value)
 							if errMsg != "" {
 								onError(entry.Value, errMsg)
 							}

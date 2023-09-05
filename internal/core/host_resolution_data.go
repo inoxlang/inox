@@ -11,7 +11,7 @@ var (
 	staticallyCheckHostResolutionDataFnRegistryLock sync.Mutex
 )
 
-type StaticallyCheckHostResolutionDataFn func(node parse.Node) (errorMsg string)
+type StaticallyCheckHostResolutionDataFn func(optionalProject Project, node parse.Node) (errorMsg string)
 
 func RegisterStaticallyCheckHostResolutionDataFn(scheme Scheme, fn StaticallyCheckHostResolutionDataFn) {
 	staticallyCheckHostResolutionDataFnRegistryLock.Lock()

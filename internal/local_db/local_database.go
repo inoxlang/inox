@@ -41,7 +41,9 @@ func init() {
 		return ""
 	}
 	core.RegisterStaticallyCheckDbResolutionDataFn(LDB_SCHEME, checkResolutionData)
-	core.RegisterStaticallyCheckHostResolutionDataFn(LDB_SCHEME, checkResolutionData)
+	core.RegisterStaticallyCheckHostResolutionDataFn(LDB_SCHEME, func(optionalProject core.Project, node parse.Node) (errorMsg string) {
+		return checkResolutionData(node)
+	})
 }
 
 // A LocalDatabase is a database thats stores data on the filesystem.

@@ -182,6 +182,8 @@ type PreinitArgs struct {
 
 	//used if .RunningState is nil
 	AdditionalGlobalsTestOnly map[string]Value
+
+	Project Project //optional
 }
 
 // PreInit performs the pre-initialization of the module:
@@ -242,6 +244,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 				checkErr := NewStaticCheckError(msg, parse.SourcePositionStack{location})
 				checkErrs = append(checkErrs, checkErr)
 			},
+			project: preinitArgs.Project,
 		})
 		if len(checkErrs) != 0 {
 			return nil, nil, checkErrs, fmt.Errorf("%s: error while checking manifest's object literal: %w", m.Name(), combineStaticCheckErrors(checkErrs...))
