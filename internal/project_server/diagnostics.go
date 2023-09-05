@@ -67,9 +67,7 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usi
 			})
 
 			diagnostics = append(diagnostics, staticCheckDiagnostics...)
-		}
-
-		if state.MainPreinitError != nil {
+		} else if state.MainPreinitError != nil {
 			var _range defines.Range
 			var msg string
 
