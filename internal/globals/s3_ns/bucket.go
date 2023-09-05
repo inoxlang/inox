@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -73,7 +74,7 @@ func init() {
 				if hasSecretKey {
 					return "missing .access-key in resolution data"
 				}
-				if project == nil {
+				if project == nil || reflect.ValueOf(project).IsNil() {
 					return "missing .access-key & .secret-key in resolution data"
 				}
 				ok, err := project.CanProvideS3Credentials(s3Provider)
@@ -176,7 +177,7 @@ func OpenBucket(ctx *core.Context, s3Host core.Host, opts OpenBucketOptions) (*B
 			if slices.Contains(propNames, "secret-key") {
 				return nil, fmt.Errorf("%w: missing .access-key in resolution data", ErrCannotResolveBucket)
 			}
-			if !opts.AllowGettingCredentialsFromProject || proj == nil {
+			if !opts.AllowGettingCredentialsFromProject || proj == nil || reflect.ValueOf(proj).IsNil() {
 				return nil, fmt.Errorf("%w: missing .access-key & .secret-key in resolution data", ErrCannotResolveBucket)
 			}
 		} else if !slices.Contains(propNames, "secret-key") {

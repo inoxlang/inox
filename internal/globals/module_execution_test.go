@@ -921,6 +921,151 @@ func TestPrepareLocalScript(t *testing.T) {
 		assert.Equal(t, []string{"my-secret"}, projectSecrets.(*core.Record).Keys())
 	})
 
+	t.Run("object storage database with credentials provided by the project", func(t *testing.T) {
+		if CLOUDFLARE_ACCOUNT_ID == "" {
+			t.Skip()
+			return
+		}
+
+		//create project with a secret
+		var proj *project.Project
+		projectName := "test-mod-prep"
+		{
+			tempCtx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			registry, err := project.OpenRegistry("/", fs_ns.NewMemFilesystem(100_000_000))
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			id, err := registry.CreateProject(tempCtx, project.CreateProjectParams{
+				Name: projectName,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			p, err := registry.OpenProject(tempCtx, project.OpenProjectParams{
+				Id: id,
+				DevSideConfig: project.DevSideProjectConfig{
+					Cloudflare: &project.DevSideCloudflareConfig{
+						AdditionalTokensApiToken: CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN,
+						AccountID:                CLOUDFLARE_ACCOUNT_ID,
+					},
+				},
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			proj = p
+
+			err = p.UpsertSecret(tempCtx, "my-secret", "secret")
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			defer func() {
+				//delete tokens & bucket
+
+				err := proj.DeleteSecretsBucket(tempCtx)
+				assert.NoError(t, err)
+
+				api, err := cloudflare.NewWithAPIToken(CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN)
+				if err != nil {
+					return
+				}
+
+				apiTokens, err := api.APITokens(tempCtx)
+				if err != nil {
+					return
+				}
+
+				for _, token := range apiTokens {
+					if strings.Contains(token.Name, projectName) {
+						err := api.DeleteAPIToken(tempCtx, token.ID)
+						if err != nil {
+							t.Log(err)
+						}
+					}
+				}
+
+			}()
+		}
+
+		fs := fs_ns.NewMemFilesystem(10000)
+		s3Host := randS3Host()
+
+		util.WriteFile(fs, "/script.ix", []byte(`
+			manifest {
+				permissions: {}
+				host-resolution: :{
+					`+string(s3Host)+` : {
+						bucket: "test"
+						provider: "cloudflare"
+						host: `+OS_DB_TEST_ENDPOINT+`
+					}
+				}
+				databases: {
+					db: {
+						resource: odb://main
+						resolution-data: `+string(s3Host)+`
+					}
+				}
+			}
+		`), 0o600)
+
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs,
+		}, nil)
+
+		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+			Fpath:                     "/script.ix",
+			ParsingCompilationContext: ctx,
+			ParentContext:             ctx,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			PreinitFilesystem:       fs,
+			ScriptContextFileSystem: fs,
+			FullAccessToDatabases:   true,
+
+			Project: proj,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.Empty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
+
+		//the state should contain the database.
+
+		if !assert.Contains(t, state.Databases, "db") {
+			return
+		}
+
+		assert.Equal(t, core.Host("odb://main"), state.Databases["db"].Resource())
+	})
+
 	t.Run("manifest & symbolic eval should be ignored when there is a preinit check error: regular mode", func(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
