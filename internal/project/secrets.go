@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	cloudflare "github.com/cloudflare/cloudflare-go"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
 	"github.com/inoxlang/inox/internal/parse"
@@ -25,9 +26,13 @@ type ProjectSecretInfo struct {
 }
 
 func (p *Project) ListSecrets(ctx *core.Context) (info []ProjectSecretInfo, _ error) {
-	bucket, err := p.getCreateSecretsBucket(ctx)
+	bucket, err := p.getCreateSecretsBucket(ctx, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list secrets: %w", err)
+	}
+
+	if bucket == nil {
+		return nil, nil
 	}
 
 	objects, err := bucket.ListObjects(ctx, "")
@@ -43,9 +48,13 @@ func (p *Project) ListSecrets(ctx *core.Context) (info []ProjectSecretInfo, _ er
 }
 
 func (p *Project) ListSecrets2(ctx *core.Context) (secrets []ProjectSecret, _ error) {
-	bucket, err := p.getCreateSecretsBucket(ctx)
+	bucket, err := p.getCreateSecretsBucket(ctx, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list secrets: %w", err)
+	}
+
+	if bucket == nil {
+		return nil, nil
 	}
 
 	objects, err := bucket.ListObjects(ctx, "")
@@ -119,7 +128,7 @@ func (p *Project) UpsertSecret(ctx *core.Context, name, value string) error {
 			return fmt.Errorf("invalid char found in secret's name: '%c'", r)
 		}
 	}
-	bucket, err := p.getCreateSecretsBucket(ctx)
+	bucket, err := p.getCreateSecretsBucket(ctx, true)
 	if err != nil {
 		return fmt.Errorf("failed to add secret %q: %w", name, err)
 	}
@@ -137,7 +146,7 @@ func (p *Project) DeleteSecret(ctx *core.Context, name string) error {
 			return fmt.Errorf("invalid char found in secret's name: '%c'", r)
 		}
 	}
-	bucket, err := p.getCreateSecretsBucket(ctx)
+	bucket, err := p.getCreateSecretsBucket(ctx, true)
 	if err != nil {
 		return fmt.Errorf("failed to delete secret %q: %w", name, err)
 	}
@@ -149,7 +158,14 @@ func (p *Project) DeleteSecret(ctx *core.Context, name string) error {
 	return nil
 }
 
-func (p *Project) getCreateSecretsBucket(ctx *core.Context) (*s3_ns.Bucket, error) {
+func (p *Project) getSecretsBucketName() string {
+	bucketName := "secrets-" + strings.ToLower(string(p.Id()))
+	return bucketName
+}
+
+// getCreateSecretsBucket returns the bucket storing project secrets, if it does not exists and
+// createIfDoesNotExist is true the bucket is created, otherwise a nil bucket is returned (no error).
+func (p *Project) getCreateSecretsBucket(ctx *core.Context, createIfDoesNotExist bool) (*s3_ns.Bucket, error) {
 	closestState := ctx.GetClosestState()
 	p.lock.Lock(closestState, p)
 	defer p.lock.Unlock(closestState, p)
@@ -168,15 +184,36 @@ func (p *Project) getCreateSecretsBucket(ctx *core.Context) (*s3_ns.Bucket, erro
 		return nil, err
 	}
 
-	bucketName := "secrets-" + strings.ToLower(string(p.Id()))
 	accessKey, secretKey, ok := tokens.Cloudflare.GetS3AccessKeySecretKey()
 	if !ok {
 		return nil, errors.New("missing Cloudflare R2 token")
 	}
 
-	err = CreateR2BucketIfNotExist(ctx, bucketName, *tokens.Cloudflare, accountId)
-	if err != nil {
-		return nil, err
+	bucketName := p.getSecretsBucketName()
+	{
+		cloudflareTokens := tokens.Cloudflare
+		if cloudflareTokens.R2Token == nil || cloudflareTokens.R2Token.Value == "" {
+			return nil, ErrNoR2Token
+		}
+		api, _ := cloudflare.NewWithAPIToken(cloudflareTokens.R2Token.Value)
+
+		exists, err := CheckBucketExists(ctx, bucketName, api, accountId)
+		if err != nil {
+			return nil, err
+		}
+
+		if !exists {
+			if createIfDoesNotExist {
+				_, err = api.CreateR2Bucket(ctx, cloudflare.AccountIdentifier(accountId), cloudflare.CreateR2BucketParameters{
+					Name: bucketName,
+				})
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				return nil, nil
+			}
+		}
 	}
 
 	bucket, err := s3_ns.OpenBucketWithCredentials(ctx, s3_ns.OpenBucketWithCredentialsInput{

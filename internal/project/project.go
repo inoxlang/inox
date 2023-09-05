@@ -23,6 +23,7 @@ var (
 
 	_ core.Value               = (*Project)(nil)
 	_ core.PotentiallySharable = (*Project)(nil)
+	_ core.Project             = (*Project)(nil)
 )
 
 type Project struct {
