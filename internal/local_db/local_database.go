@@ -32,14 +32,16 @@ func init() {
 		return openDatabase(ctx, config.Resource, !config.FullAccess)
 	})
 
-	core.RegisterStaticallyCheckDbResolutionDataFn(LDB_SCHEME, func(node parse.Node) string {
+	checkResolutionData := func(node parse.Node) (errMsg string) {
 		pathLit, ok := node.(*parse.AbsolutePathLiteral)
 		if !ok || !strings.HasSuffix(pathLit.Value, "/") {
 			return "the resolution data of a local database should be an absolute directory path (it should end with '/')"
 		}
 
 		return ""
-	})
+	}
+	core.RegisterStaticallyCheckDbResolutionDataFn(LDB_SCHEME, checkResolutionData)
+	core.RegisterStaticallyCheckHostResolutionDataFn(LDB_SCHEME, checkResolutionData)
 }
 
 // A LocalDatabase is a database thats stores data on the filesystem.
