@@ -150,6 +150,22 @@ func TestPreInit(t *testing.T) {
 			error:               false,
 		},
 		{
+			name: "invalid_permission_kind",
+			module: `
+				const (
+					URL = https://example.com/
+				)
+				manifest {
+					permissions: { Read: $$URL}
+				}`,
+			expectedPermissions: []Permission{},
+			expectedLimitations: []Limitation{},
+			expectedResolutions: nil,
+			error:               true,
+
+			expectedStaticCheckErrors: []string{fmtNotValidPermissionKindName("Read")},
+		},
+		{
 			name: "limitations",
 			module: `manifest {
 					limits: {

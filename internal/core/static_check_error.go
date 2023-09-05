@@ -17,22 +17,25 @@ const (
 	PERMS_SECTION_SHOULD_BE_AN_OBJECT               = "the '" + MANIFEST_PERMS_SECTION_NAME + "' section of the manifest should be an object"
 	IMPLICIT_KEY_PROPS_NOT_ALLOWED_IN_PERMS_SECTION = "implicit key properties are not allowed in the 'permissions' section"
 
-	LIMITS_SECTION_SHOULD_BE_AN_OBJECT      = "the '" + MANIFEST_LIMITS_SECTION_NAME + "' section of the manifest should be an object"
-	ENV_SECTION_SHOULD_BE_AN_OBJECT_PATTERN = "the '" + MANIFEST_ENV_SECTION_NAME + "' section of the manifest should be an object pattern literal"
-	PARAMS_SECTION_SHOULD_BE_AN_OBJECT      = "the '" + MANIFEST_PARAMS_SECTION_NAME + "' section of the manifest should be an object literal"
+	LIMITS_SECTION_SHOULD_BE_AN_OBJECT                        = "the '" + MANIFEST_LIMITS_SECTION_NAME + "' section of the manifest should be an object"
+	ENV_SECTION_SHOULD_BE_AN_OBJECT_PATTERN                   = "the '" + MANIFEST_ENV_SECTION_NAME + "' section of the manifest should be an object pattern literal"
+	ENV_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS    = "the '" + MANIFEST_ENV_SECTION_NAME + "' section is not available in embedded module manifests"
+	PARAMS_SECTION_SHOULD_BE_AN_OBJECT                        = "the '" + MANIFEST_PARAMS_SECTION_NAME + "' section of the manifest should be an object literal"
+	PARAMS_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS = "the '" + MANIFEST_PARAMS_SECTION_NAME + "' section is not available in embedded module manifests"
 
 	//preinit-files section
-	PREINIT_FILES_SECTION_SHOULD_BE_AN_OBJECT          = "the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section of the manifest should be an object literal"
-	PREINIT_FILES__FILE_CONFIG_SHOULD_BE_AN_OBJECT     = "the description of each file in the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section of the manifest should be an object literal"
-	PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_ABS_PATH = "the ." + MANIFEST_PREINIT_FILE__PATH_PROP_NAME + " of each file in the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section (manifest) should be an absolute path"
+	PREINIT_FILES_SECTION_SHOULD_BE_AN_OBJECT                        = "the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section of the manifest should be an object literal"
+	PREINIT_FILES__FILE_CONFIG_SHOULD_BE_AN_OBJECT                   = "the description of each file in the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section of the manifest should be an object literal"
+	PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_ABS_PATH               = "the ." + MANIFEST_PREINIT_FILE__PATH_PROP_NAME + " of each file in the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section (manifest) should be an absolute path"
+	PREINIT_FILES_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS = "the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section is not available in embedded module manifests"
 
 	//databases section
-	DATABASES_SECTION_SHOULD_BE_AN_OBJECT_OR_ABS_PATH       = "the '" + MANIFEST_DATABASES_SECTION_NAME + "' section of the manifest should be an object literal or an absolute path literal"
-	DATABASES__DB_CONFIG_SHOULD_BE_AN_OBJECT                = "the description of each database in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section of the manifest should be an object literal"
-	DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL            = "the ." + MANIFEST_DATABASE__RESOURCE_PROP_NAME + " of each database in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section (manifest) should be a Host or a URL"
-	DATABASES__DB_EXPECTED_SCHEMA_UPDATE_SHOULD_BE_BOOL_LIT = "the ." + MANIFEST_DATABASE__EXPECTED_SCHEMA_UPDATE_PROP_NAME + " of each database in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section (manifest) should be a boolean literal (the property is optional)"
-
-	DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED = "paths are the only supported values for ." + MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME + " in a database description"
+	DATABASES_SECTION_SHOULD_BE_AN_OBJECT_OR_ABS_PATH            = "the '" + MANIFEST_DATABASES_SECTION_NAME + "' section of the manifest should be an object literal or an absolute path literal"
+	DATABASES__DB_CONFIG_SHOULD_BE_AN_OBJECT                     = "the description of each database in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section of the manifest should be an object literal"
+	DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL                 = "the ." + MANIFEST_DATABASE__RESOURCE_PROP_NAME + " of each database in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section (manifest) should be a Host or a URL"
+	DATABASES__DB_EXPECTED_SCHEMA_UPDATE_SHOULD_BE_BOOL_LIT      = "the ." + MANIFEST_DATABASE__EXPECTED_SCHEMA_UPDATE_PROP_NAME + " of each database in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section (manifest) should be a boolean literal (the property is optional)"
+	DATABASES_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS = "the '" + MANIFEST_DATABASES_SECTION_NAME + "' section is not available in embedded module manifests"
+	DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED           = "paths are the only supported values for ." + MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME + " in a database description"
 
 	HOST_RESOL_SECTION_SHOULD_BE_A_DICT = "the '" + MANIFEST_HOST_RESOLUTION_SECTION_NAME + "' section of the manifest should be a dictionary with host keys"
 	HOST_SCHEME_NOT_SUPPORTED           = "the host's scheme is not supported"
@@ -55,6 +58,7 @@ const (
 	CANNOT_CHECK_OBJECT_PROP_WITHOUT_PARENT                        = "checking an ObjectProperty node requires the parent ObjectLiteral node"
 	CANNOT_CHECK_OBJECT_METAPROP_WITHOUT_PARENT                    = "checking an ObjectMetaProperty node requires the parent ObjectLiteral node"
 	OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS                          = "(object | object pattern | record) literals cannot have metaproperty keys, metaproperty keys have a starting & a trailing underscore '_'"
+	CANNOT_CHECK_MANIFEST_WITHOUT_PARENT                           = "checking a Manifest node requires the parent node"
 
 	MISPLACED_SENDVAL_EXPR                 = "sendval expressions are only usable within functions that are object properties, metaproperty initialization blocks and in lifetime jobs"
 	MISPLACED_SUPERSYS_EXPR                = "supersys expressions are only usable within functions that are object properties, metaproperty initialization blocks and in lifetime jobs"

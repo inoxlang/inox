@@ -1774,25 +1774,191 @@ func TestCheck(t *testing.T) {
 	})
 
 	t.Run("manifest", func(t *testing.T) {
-		t.Run("invalid permission kind in manifest", func(t *testing.T) {
+		t.Run("parameters section not allowed in embedded module manifest", func(t *testing.T) {
 			n, src := parseCode(`
 				manifest {
-					permissions: {
-						Read: %/...
+				}
+
+				go do {
+					manifest {
+						parameters: {}
 					}
 				}
 			`)
-			key := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, unique bool) bool {
-				return n.Name == "Read"
-			})
+			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := combineErrors(
-				makeError(key, src, fmtNotValidPermissionKindName("Read")),
-			)
-			assert.Equal(t, expectedErr, err)
+			n, src = parseCode(`
+				manifest {}
+
+				{
+					lifetimejob #job {
+						manifest {
+							parameters: {}
+						}
+					}
+				}
+			`)
+			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+
+			n, src = parseCode(`
+				manifest {}
+
+				lifetimejob #job for %{} {
+					manifest {
+						parameters: {}
+					}
+				}
+			`)
+			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+
+			n, src = parseCode(`
+				manifest {}
+
+				testsuite "" {
+					manifest {
+						parameters: {}
+					}
+				}
+			`)
+			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+
+			n, src = parseCode(`
+				manifest {}
+
+				testsuite "" {
+					testcase {
+						manifest {
+							parameters: {}
+						}
+					}
+				}
+			`)
+			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
+		t.Run("env section not allowed in embedded module manifest", func(t *testing.T) {
+			n, src := parseCode(`
+				manifest {
+				}
+
+				go do {
+					manifest {
+						env: %{}
+					}
+				}
+			`)
+			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+
+			n, src = parseCode(`
+				manifest {}
+
+				{
+					lifetimejob #job {
+						manifest {
+							env: %{}
+						}
+					}
+				}
+			`)
+			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+
+			n, src = parseCode(`
+				manifest {}
+
+				lifetimejob #job for %{} {
+					manifest {
+						env: %{}
+					}
+				}
+			`)
+			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+
+			n, src = parseCode(`
+				manifest {}
+
+				testsuite "" {
+					manifest {
+						env: %{}
+					}
+				}
+			`)
+			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+
+			n, src = parseCode(`
+				manifest {}
+
+				testsuite "" {
+					testcase {
+						manifest {
+							env: %{}
+						}
+					}
+				}
+			`)
+			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("databases section not allowed in embedded module manifest", func(t *testing.T) {
+			n, src := parseCode(`
+				manifest {
+				}
+
+				go do {
+					manifest {
+						databases: {}
+					}
+				}
+			`)
+			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+
+			n, src = parseCode(`
+				manifest {}
+
+				{
+					lifetimejob #job {
+						manifest {
+							databases: {}
+						}
+					}
+				}
+			`)
+			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+
+			n, src = parseCode(`
+				manifest {}
+
+				lifetimejob #job for %{} {
+					manifest {
+						databases: {}
+					}
+				}
+			`)
+			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+
+			n, src = parseCode(`
+				manifest {}
+
+				testsuite "" {
+					manifest {
+						databases: {}
+					}
+				}
+			`)
+			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+
+			n, src = parseCode(`
+				manifest {}
+
+				testsuite "" {
+					testcase {
+						manifest {
+							databases: {}
+						}
+					}
+				}
+			`)
+			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
 	})
 
 	t.Run("inclusion import statement", func(t *testing.T) {
@@ -3125,7 +3291,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 			assert.Fail(t, msg)
 		})
 	})
-	
+
 	t.Run("database with missing resource property", func(t *testing.T) {
 		objLiteral := parseObject(`
 			{

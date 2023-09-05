@@ -1784,26 +1784,23 @@ func (checker *checker) postCheckSingleNode(node, parent, scopeNode parse.Node, 
 	case *parse.ObjectLiteral:
 		//manifest
 
-		switch p := parent.(type) {
-		case *parse.Manifest:
-			checkManifestObject(manifestStaticCheckArguments{
-				objLit:                n,
-				ignoreUnknownSections: false,
-				onError: func(n parse.Node, msg string) {
-					checker.addError(n, msg)
-				},
-			})
-		case *parse.EmbeddedModule:
-			if p.Manifest == nil || p.Manifest.Object != node {
+		if parse.NodeIs(parent, (*parse.Manifest)(nil)) {
+			if len(ancestorChain) < 2 {
+				checker.addError(parent, CANNOT_CHECK_MANIFEST_WITHOUT_PARENT)
 				break
 			}
-			checkManifestObject(manifestStaticCheckArguments{
-				objLit:                n,
-				ignoreUnknownSections: false,
-				onError: func(n parse.Node, msg string) {
-					checker.addError(n, msg)
-				},
-			})
+
+			embeddedModule := !parse.NodeIs(ancestorChain[len(ancestorChain)-2], (*parse.Chunk)(nil))
+			if embeddedModule {
+				checkManifestObject(manifestStaticCheckArguments{
+					objLit:                n,
+					ignoreUnknownSections: true,
+					embeddedModule:        embeddedModule,
+					onError: func(n parse.Node, msg string) {
+						checker.addError(n, msg)
+					},
+				})
+			} //else: the manifest of regular modules is already checked during the pre-init phase
 		}
 	case *parse.ForStatement, *parse.WalkStatement:
 		varsBefore := checker.store[node].(map[string]localVarInfo)
@@ -1836,6 +1833,7 @@ func checkPreinitBlock(preinit *parse.PreinitStatement, onError func(n parse.Nod
 type manifestStaticCheckArguments struct {
 	objLit                *parse.ObjectLiteral
 	ignoreUnknownSections bool
+	embeddedModule        bool
 	onError               func(n parse.Node, msg string)
 	project               Project
 }
@@ -1956,6 +1954,12 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 				return parse.Continue, nil
 			}, nil)
 		case MANIFEST_ENV_SECTION_NAME:
+
+			if args.embeddedModule {
+				onError(p, ENV_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS)
+				continue
+			}
+
 			patt, ok := p.Value.(*parse.ObjectPatternLiteral)
 
 			if !ok {
@@ -1978,6 +1982,11 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 				return parse.Continue, nil
 			}, nil)
 		case MANIFEST_PREINIT_FILES_SECTION_NAME:
+			if args.embeddedModule {
+				onError(p, PREINIT_FILES_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS)
+				continue
+			}
+
 			obj, ok := p.Value.(*parse.ObjectLiteral)
 
 			if !ok {
@@ -1987,6 +1996,11 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 
 			checkPreinitFilesObject(obj, onError)
 		case MANIFEST_DATABASES_SECTION_NAME:
+			if args.embeddedModule {
+				onError(p, DATABASES_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS)
+				continue
+			}
+
 			switch propVal := p.Value.(type) {
 			case *parse.ObjectLiteral:
 				checkDatabasesObject(propVal, onError)
@@ -1995,6 +2009,11 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 				onError(p, DATABASES_SECTION_SHOULD_BE_AN_OBJECT_OR_ABS_PATH)
 			}
 		case MANIFEST_PARAMS_SECTION_NAME:
+			if args.embeddedModule {
+				onError(p, PARAMS_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS)
+				continue
+			}
+
 			obj, ok := p.Value.(*parse.ObjectLiteral)
 
 			if !ok {

@@ -1014,6 +1014,22 @@ func TestPrepareLocalScript(t *testing.T) {
 			return
 		}
 
+		if !assert.NotEmpty(t, state.PrenitStaticCheckErrors) {
+			return
+		}
+
+		//there should not be duplicate errors
+		{
+			msgs := map[string]struct{}{}
+			for _, err := range state.PrenitStaticCheckErrors {
+				if _, ok := msgs[err.Message]; ok {
+					assert.Fail(t, "there should not be duplicate errors: duplicate error found: %s", err.Message)
+					return
+				}
+				msgs[err.Message] = struct{}{}
+			}
+		}
+
 		// manifest should be empty
 		if !assert.False(t, state.Ctx.HasPermission(core.CreateHttpReadPerm(core.URL("https://localhost/")))) {
 			return
