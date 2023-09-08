@@ -2,6 +2,7 @@ package core
 
 import (
 	"reflect"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -9,7 +10,7 @@ import (
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/stretchr/testify/assert"
 )
-	
+
 func TestObjectOnMutation(t *testing.T) {
 	t.Run("callback microtask should be called after additional property is set", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
@@ -61,16 +62,18 @@ func TestObjectOnMutation(t *testing.T) {
 		assert.True(t, called.Load())
 	})
 
-	t.Run("callback microtask should be called after value of property has a shallow change", func(t *testing.T) {
+	t.Run("shared object: callback microtask should be called after value of property has a shallow change", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
-		NewGlobalState(ctx)
+		state := NewGlobalState(ctx)
 
 		innerObj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx)
 		obj := NewObjectFromMap(ValMap{"inner": innerObj}, ctx)
-		called := atomic.Bool{}
+		called := atomic.Int64{}
+
+		obj.Share(state)
 
 		_, err := obj.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
-			called.Store(true)
+			called.Add(1)
 
 			assert.Equal(t, NewUpdatePropMutation(ctx, "a", Int(2), IntermediateDepthWatching, "/inner/a"), mutation)
 			return true
@@ -80,11 +83,21 @@ func TestObjectOnMutation(t *testing.T) {
 			return
 		}
 
-		if !assert.NoError(t, innerObj.SetProp(ctx, "a", Int(2))) {
-			return
+		wg := new(sync.WaitGroup)
+		wg.Add(10)
+
+		for i := 0; i < 10; i++ {
+			go func() {
+				defer wg.Done()
+				if !assert.NoError(t, innerObj.SetProp(ctx, "a", Int(2))) {
+					return
+				}
+			}()
 		}
 
-		assert.True(t, called.Load())
+		wg.Wait()
+
+		assert.Equal(t, int64(10), called.Load())
 	})
 
 	t.Run("callback microtask should be called after value of property added after OnMutation call has a shallow change", func(t *testing.T) {
