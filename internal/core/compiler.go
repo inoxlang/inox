@@ -1512,17 +1512,27 @@ func (c *compiler) Compile(node parse.Node) error {
 			}
 
 			for _, p := range callee.PropertyNames[:len(callee.PropertyNames)-1] {
-				c.emit(callee, OpMemb, c.addConstant(Str(p.Name)))
+				c.emit(callee, OpMembNotStored, c.addConstant(Str(p.Name)))
 			}
 
 			c.emit(callee, OpCopyTop)
 			c.emit(callee, OpMemb, c.addConstant(Str(callee.PropertyNames[len(callee.PropertyNames)-1].Name)))
 		case *parse.MemberExpression:
-			if err := c.Compile(callee.Left); err != nil {
-				return err
+			innerMembExpr, ok := callee.Left.(*parse.MemberExpression)
+			if ok {
+				if err := c.Compile(innerMembExpr.Left); err != nil {
+					return err
+				}
+				c.emit(callee, OpMembNotStored, c.addConstant(Str(innerMembExpr.PropertyName.Name)))
+				c.emit(callee, OpCopyTop)
+				c.emit(callee, OpMemb, c.addConstant(Str(callee.PropertyName.Name)))
+			} else {
+				if err := c.Compile(callee.Left); err != nil {
+					return err
+				}
+				c.emit(callee, OpCopyTop)
+				c.emit(callee, OpMemb, c.addConstant(Str(callee.PropertyName.Name)))
 			}
-			c.emit(callee, OpCopyTop)
-			c.emit(callee, OpMemb, c.addConstant(Str(callee.PropertyName.Name)))
 		default:
 			c.emit(callee, OpPushNil) //no self
 			if err := c.Compile(callee); err != nil {

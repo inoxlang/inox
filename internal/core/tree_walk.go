@@ -454,7 +454,12 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				} else {
 					object = nil
 				}
-				v = v.(IProps).Prop(state.Global.Ctx, idents.Name)
+				ipropsNotStored, ok := v.(IPropsNotStored)
+				if ok {
+					v = ipropsNotStored.PropNotStored(state.Global.Ctx, idents.Name)
+				} else {
+					v = v.(IProps).Prop(state.Global.Ctx, idents.Name)
+				}
 			}
 			callee = v
 		case *parse.Variable:
@@ -463,9 +468,29 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				return nil, err
 			}
 		case *parse.MemberExpression:
-			left, err := TreeWalkEval(c.Left, state)
-			if err != nil {
-				return nil, err
+			var left Value
+
+			innerMembExpr, ok := c.Left.(*parse.MemberExpression)
+			if ok {
+				propName := innerMembExpr.PropertyName.Name
+				inner, err := TreeWalkEval(innerMembExpr.Left, state)
+				if err != nil {
+					return nil, err
+				}
+
+				iprops := inner.(IProps)
+
+				iPropsNotStored, ok := inner.(IPropsNotStored)
+				if ok {
+					left = iPropsNotStored.PropNotStored(state.Global.Ctx, propName)
+				} else {
+					left = iprops.Prop(state.Global.Ctx, propName)
+				}
+			} else {
+				left, err = TreeWalkEval(c.Left, state)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			if obj, ok := left.(*Object); ok {

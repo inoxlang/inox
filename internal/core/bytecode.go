@@ -233,6 +233,7 @@ const (
 	OpConcat
 	OpRange
 	OpMemb
+	OpMembNotStored
 	OpOptionalMemb
 	OpComputedMemb
 	OpDynMemb
@@ -357,6 +358,7 @@ var OpcodeNames = [...]string{
 	OpConcat:                       "CONCAT",
 	OpRange:                        "RANGE",
 	OpMemb:                         "MEMB",
+	OpMembNotStored:                "MEMB_NOT_STORED",
 	OpOptionalMemb:                 "OPT_MEMB",
 	OpComputedMemb:                 "COMPUTED_MEMB",
 	OpDynMemb:                      "DYN_MEMB",
@@ -480,6 +482,7 @@ var OpcodeOperands = [...][]int{
 	OpConcat:                       {1, 2},
 	OpRange:                        {1},
 	OpMemb:                         {2},
+	OpMembNotStored:                {2},
 	OpOptionalMemb:                 {2},
 	OpComputedMemb:                 {},
 	OpDynMemb:                      {2},
@@ -603,6 +606,7 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpConcat:                       {false, true},
 	OpRange:                        {false},
 	OpMemb:                         {true},
+	OpMembNotStored:                {true},
 	OpOptionalMemb:                 {true},
 	OpComputedMemb:                 {},
 	OpDynMemb:                      {true},

@@ -1513,6 +1513,21 @@ func (v *VM) run() {
 
 			memb := object.(IProps).Prop(v.global.Ctx, memberName)
 			v.stack[v.sp-1] = memb
+		case OpMembNotStored:
+			object := v.stack[v.sp-1]
+			v.ip += 2
+			memberNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			memberName := string(v.constants[memberNameIndex].(Str))
+
+			var memb Value
+			ipropsNotStored, ok := object.(IPropsNotStored)
+			if ok {
+				memb = ipropsNotStored.PropNotStored(v.global.Ctx, memberName)
+			} else {
+				memb = object.(IProps).Prop(v.global.Ctx, memberName)
+			}
+
+			v.stack[v.sp-1] = memb
 		case OpOptionalMemb:
 			object := v.stack[v.sp-1]
 			v.ip += 2
