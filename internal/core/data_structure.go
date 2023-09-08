@@ -18,6 +18,7 @@ import (
 var (
 	_ = []underylingList{&ValueList{}, &IntList{}}
 	_ = []IProps{(*Object)(nil), (*Record)(nil), (*Namespace)(nil), (*Dictionary)(nil), (*List)(nil)}
+	_ = []IPropsNotStored{(*Object)(nil)}
 
 	_ Sequence = (*Array)(nil)
 )
@@ -70,12 +71,6 @@ func NewObjectFromMap(valMap ValMap, ctx *Context) *Object {
 	obj.initPartList(ctx)
 	obj.addMessageHandlers(ctx) // add handlers before because jobs can mutate the object
 	obj.instantiateLifetimeJobs(ctx)
-	return obj
-}
-
-// helper function to create an object, lifetime jobs and system parts are not initialized.
-func NewObjectFromMapNoInit(valMap ValMap) *Object {
-	obj := objFrom(valMap)
 	return obj
 }
 
@@ -357,6 +352,14 @@ func (obj *Object) waitIfOtherTransaction(ctx *Context) error {
 }
 
 func (obj *Object) Prop(ctx *Context, name string) Value {
+	return obj.prop(ctx, name, true)
+}
+
+func (obj *Object) PropNotStored(ctx *Context, name string) Value {
+	return obj.prop(ctx, name, false)
+}
+
+func (obj *Object) prop(ctx *Context, name string, stored bool) Value {
 	if err := obj.waitIfOtherTransaction(ctx); err != nil {
 		panic(err)
 	}
@@ -369,7 +372,7 @@ func (obj *Object) Prop(ctx *Context, name string) Value {
 		if key == name {
 			v := obj.values[i]
 
-			if obj.IsShared() {
+			if obj.IsShared() && stored {
 				return utils.Must(CheckSharedOrClone(v, map[uintptr]Clonable{}, 0)).(Serializable)
 			}
 			return v
