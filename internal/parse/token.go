@@ -140,6 +140,7 @@ const (
 	PIPE
 	COMMA
 	COLON
+	DOUBLE_COLON
 	SEMICOLON
 	CSS_SELECTOR_PREFIX
 	DOT
@@ -330,6 +331,7 @@ var tokenStrings = [...]string{
 	PIPE:                           "|",
 	COMMA:                          ",",
 	COLON:                          ":",
+	DOUBLE_COLON:                   "::",
 	SEMICOLON:                      ";",
 	CSS_SELECTOR_PREFIX:            "s!",
 	TWO_DOTS:                       "..",
@@ -504,6 +506,7 @@ var tokenTypenames = [...]string{
 	PIPE:                           "PIPE",
 	COMMA:                          "COMMA",
 	COLON:                          "COLON",
+	DOUBLE_COLON:                   "DOUBLE_COLON",
 	SEMICOLON:                      "SEMICOLON",
 	CSS_SELECTOR_PREFIX:            "CSS_SELECTOR_PREFIX",
 	DOT:                            "DOT",

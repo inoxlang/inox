@@ -258,6 +258,16 @@ func (SliceExpression) Kind() NodeKind {
 	return Expr
 }
 
+type DoubleColonExpression struct {
+	NodeBase
+	Left    Node
+	Element *IdentifierLiteral
+}
+
+func (DoubleColonExpression) Kind() NodeKind {
+	return Expr
+}
+
 type KeyListExpression struct {
 	NodeBase
 	Keys []Node //slice of *IdentifierLiteral if ok
@@ -2139,7 +2149,7 @@ type XMLInterpolation struct {
 	Expr Node
 }
 
-//NodeIsStringLiteral returns true if and only if node is of one of the following types:
+// NodeIsStringLiteral returns true if and only if node is of one of the following types:
 // *QuotedStringLiteral, *UnquotedStringLiteral, *StringTemplateLiteral, *MultilineStringLiteral
 func NodeIsStringLiteral(node Node) bool {
 	switch node.(type) {
@@ -2476,6 +2486,9 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		walk(n.Indexed, node, ancestorChain, fn, afterFn)
 		walk(n.StartIndex, node, ancestorChain, fn, afterFn)
 		walk(n.EndIndex, node, ancestorChain, fn, afterFn)
+	case *DoubleColonExpression:
+		walk(n.Left, node, ancestorChain, fn, afterFn)
+		walk(n.Element, node, ancestorChain, fn, afterFn)
 	case *IdentifierMemberExpression:
 		walk(n.Left, node, ancestorChain, fn, afterFn)
 		for _, p := range n.PropertyNames {

@@ -101,6 +101,14 @@ func TestPrint(t *testing.T) {
 		"a.<b",
 		"a.<?b",
 		"a.<?",
+		//double-colon expression
+		"a::b",
+		"a::bc",
+		"a::",
+		"a::1",
+		"a::b::c",
+		"a::b::",
+		"a::b::1",
 		//object
 		"{}",
 		"{ }",

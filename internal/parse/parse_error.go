@@ -186,10 +186,11 @@ const (
 	UNTERMINATED_MEMB_OR_INDEX_EXPR                          = "unterminated member/index expression"
 	UNTERMINATED_IDENT_MEMB_EXPR                             = "unterminated identifier member expression"
 	UNTERMINATED_DYN_MEMB_OR_INDEX_EXPR                      = "unterminated dynamic member/index expression"
-	UNTERMINATED_INDEX_OR_SLICE_EXPR                         = "unterminated index/slice expression"
+	UNTERMINATED_INDEX_OR_SLICE_EXPR                         = "unterminated index/slice/double-colon expression"
 	INVALID_SLICE_EXPR_SINGLE_COLON                          = "invalid slice expression, a single colon should be present"
 	UNTERMINATED_SLICE_EXPR_MISSING_END_INDEX                = "unterminated slice expression, missing end index"
 	UNTERMINATED_INDEX_OR_SLICE_EXPR_MISSING_CLOSING_BRACKET = "unterminated index/slice expression, missing closing bracket ']'"
+	UNTERMINATED_DOUBLE_COLON_EXPR                           = "unterminated double-colon expression"
 	UNTERMINATED_CALL_MISSING_CLOSING_PAREN                  = "unterminated call, missing closing parenthesis ')'"
 	UNTERMINATED_GLOBAL_CONS_DECLS                           = "unterminated global const declarations"
 	INVALID_GLOBAL_CONST_DECLS_OPENING_PAREN_EXPECTED        = "invalid global const declarations: expected opening parenthesis after ''"
@@ -445,6 +446,10 @@ func fmtInvalidURIUnsupportedProtocol(protocol string) string {
 
 func fmtPropNameShouldStartWithAletterNot(r rune) string {
 	return fmt.Sprintf("property name should start with a letter, not '%s'", string(r))
+}
+
+func fmtDoubleColonExpressionelementShouldStartWithAletterNot(r rune) string {
+	return fmt.Sprintf("element of double-colon expression should start with a letter, not '%s'", string(r))
 }
 
 func fmtPatternNamespaceMemberShouldStartWithAletterNot(r rune) string {

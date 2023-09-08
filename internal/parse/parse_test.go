@@ -3714,7 +3714,7 @@ func testParse(
 	})
 
 	t.Run("slice expression", func(t *testing.T) {
-		t.Run("slice expression : variable '[' <integer literal> ':' ] ", func(t *testing.T) {
+		t.Run("variable '[' <integer literal> ':' ] ", func(t *testing.T) {
 			n := mustparseChunk(t, "$a[0:]")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
@@ -3735,7 +3735,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("slice expression : variable '['  ':' <integer literal> ] ", func(t *testing.T) {
+		t.Run("variable '['  ':' <integer literal> ] ", func(t *testing.T) {
 			n := mustparseChunk(t, "$a[:1]")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
@@ -3756,18 +3756,134 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("slice expression : variable '[' ':' ']' : invalid ", func(t *testing.T) {
+		t.Run("variable '[' ':' ']' : invalid ", func(t *testing.T) {
 			assert.Panics(t, func() {
 				mustparseChunk(t, "$a[:]")
 			})
 		})
 
-		t.Run("slice expression : variable '[' ':' <integer literal> ':' ']' : invalid ", func(t *testing.T) {
+		t.Run("variable '[' ':' <integer literal> ':' ']' : invalid ", func(t *testing.T) {
 			assert.Panics(t, func() {
 				mustparseChunk(t, "$a[:1:]")
 			})
 		})
 
+	})
+
+	t.Run("double-colon expression", func(t *testing.T) {
+		t.Run("single element", func(t *testing.T) {
+			n := mustparseChunk(t, "a::b")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
+				Statements: []Node{
+					&DoubleColonExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 4},
+							nil,
+							[]Token{{Type: DOUBLE_COLON, Span: NodeSpan{1, 3}}},
+						},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+							Name:     "a",
+						},
+						Element: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{3, 4}, nil, nil},
+							Name:     "b",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single element: unterminated", func(t *testing.T) {
+			n, err := parseChunk(t, "a::", "")
+			assert.Error(t, err)
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
+				Statements: []Node{
+					&DoubleColonExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 3},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_DOUBLE_COLON_EXPR},
+							[]Token{{Type: DOUBLE_COLON, Span: NodeSpan{1, 3}}},
+						},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+							Name:     "a",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("two elements", func(t *testing.T) {
+			n := mustparseChunk(t, "a::b::c")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
+				Statements: []Node{
+					&DoubleColonExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 7},
+							nil,
+							[]Token{{Type: DOUBLE_COLON, Span: NodeSpan{4, 6}}},
+						},
+						Left: &DoubleColonExpression{
+							NodeBase: NodeBase{
+								NodeSpan{0, 4},
+								nil,
+								[]Token{{Type: DOUBLE_COLON, Span: NodeSpan{1, 3}}},
+							},
+							Left: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+								Name:     "a",
+							},
+							Element: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{3, 4}, nil, nil},
+								Name:     "b",
+							},
+						},
+						Element: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{6, 7}, nil, nil},
+							Name:     "c",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("two elements: unterminated", func(t *testing.T) {
+			n, err := parseChunk(t, "a::b::", "")
+			assert.Error(t, err)
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
+				Statements: []Node{
+					&DoubleColonExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 6},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_DOUBLE_COLON_EXPR},
+							[]Token{{Type: DOUBLE_COLON, Span: NodeSpan{4, 6}}},
+						},
+						Left: &DoubleColonExpression{
+							NodeBase: NodeBase{
+								NodeSpan{0, 4},
+								nil,
+								[]Token{{Type: DOUBLE_COLON, Span: NodeSpan{1, 3}}},
+							},
+							Left: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+								Name:     "a",
+							},
+							Element: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{3, 4}, nil, nil},
+								Name:     "b",
+							},
+						},
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("key list expression", func(t *testing.T) {

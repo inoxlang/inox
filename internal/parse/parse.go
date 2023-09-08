@@ -6287,7 +6287,7 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 			return v, false
 		}
 
-		if p.i >= p.len || isUnpairedOrIsClosingDelim(p.s[p.i]) {
+		if p.i >= p.len || (isUnpairedOrIsClosingDelim(p.s[p.i]) && (p.i >= p.len-1 || p.s[p.i] != ':' || p.s[p.i+1] != ':')) {
 			return identStartingExpr, false
 		}
 
@@ -6322,7 +6322,6 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 		if p.inPattern {
 			return p.parsePatternUnion(p.i, false), false
 		}
-		break
 	case '\'':
 		return p.parseRuneRuneRange(), false
 	case '"':
@@ -6401,18 +6400,25 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 	first = lhs
 
 loop:
-	for lhs != nil && p.i < p.len && !isUnpairedOrIsClosingDelim(p.s[p.i]) {
+	for lhs != nil && p.i < p.len && (!isUnpairedOrIsClosingDelim(p.s[p.i]) || (p.i < p.len-1 && p.s[p.i] == ':' && p.s[p.i+1] == ':')) {
+		isDoubleColon := p.i < p.len-1 && p.s[p.i] == ':' && p.s[p.i+1] == ':'
 
 		switch {
-		//member expressions, index/slice expressions, extraction expression
-		case p.s[p.i] == '[' || p.s[p.i] == '.':
+		//member expressions, index/slice expressions, extraction expression & double-colon expressions
+		case p.s[p.i] == '[' || p.s[p.i] == '.' || isDoubleColon:
 			dot := p.s[p.i] == '.'
+			isBracket := p.s[p.i] == '['
+			tokenStart := p.i
+
+			if isDoubleColon {
+				p.i++
+			}
+
 			p.i++
 			start := p.i
 			isOptional := false
 
 			isDot := p.s[p.i-1] == '.'
-			isBracket := !isDot
 
 			if isDot && p.i < p.len && p.s[p.i] == '?' {
 				isOptional = true
@@ -6431,6 +6437,18 @@ loop:
 						},
 						Left:     lhs,
 						Optional: isOptional,
+					}, false
+				}
+				if isDoubleColon {
+					tokens := []Token{{Type: DOUBLE_COLON, Span: NodeSpan{tokenStart, tokenStart + 2}}}
+
+					return &DoubleColonExpression{
+						NodeBase: NodeBase{
+							NodeSpan{first.Base().Span.Start, p.i},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_DOUBLE_COLON_EXPR},
+							tokens,
+						},
+						Left: lhs,
 					}, false
 				}
 				return &InvalidMemberLike{
@@ -6559,6 +6577,47 @@ loop:
 					},
 					Indexed: lhs,
 					Index:   startIndex,
+				}
+			case isDoubleColon: //double-colon expression
+				tokens := []Token{{Type: DOUBLE_COLON, Span: NodeSpan{tokenStart, tokenStart + 2}}}
+
+				elementNameStart := p.i
+				var parsingErr *ParsingError
+				if !isAlpha(p.s[p.i]) && p.s[p.i] != '_' {
+					parsingErr = &ParsingError{UnspecifiedParsingError, fmtDoubleColonExpressionelementShouldStartWithAletterNot(p.s[p.i])}
+				}
+
+				for p.i < p.len && IsIdentChar(p.s[p.i]) {
+					p.i++
+				}
+
+				spanStart := lhs.Base().Span.Start
+				if lhs == first {
+					spanStart = __start
+				}
+
+				elementName := string(p.s[elementNameStart:p.i])
+				if lhs == first {
+					spanStart = __start
+				}
+
+				element := &IdentifierLiteral{
+					NodeBase: NodeBase{
+						NodeSpan{elementNameStart, p.i},
+						nil,
+						nil,
+					},
+					Name: elementName,
+				}
+
+				lhs = &DoubleColonExpression{
+					NodeBase: NodeBase{
+						Span:   NodeSpan{spanStart, p.i},
+						Err:    parsingErr,
+						Tokens: tokens,
+					},
+					Left:    lhs,
+					Element: element,
 				}
 			case p.s[p.i] == '{': //extraction expression (result is returned, the loop is not continued)
 				p.i--
