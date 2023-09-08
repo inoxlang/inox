@@ -268,5 +268,6 @@ func (db *DatabaseIL) Close(*Context) *Error {
 }
 
 func (db *DatabaseIL) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%database")))
+	utils.Must(w.Write(utils.StringAsBytes("%database ")))
+	db.schema.PrettyPrint(w, config, depth, 0)
 }
