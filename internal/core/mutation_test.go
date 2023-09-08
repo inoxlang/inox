@@ -9,7 +9,7 @@ import (
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/stretchr/testify/assert"
 )
-
+	
 func TestObjectOnMutation(t *testing.T) {
 	t.Run("callback microtask should be called after additional property is set", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})

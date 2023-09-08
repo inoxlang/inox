@@ -74,6 +74,12 @@ func NewObjectFromMap(valMap ValMap, ctx *Context) *Object {
 	return obj
 }
 
+// helper function to create an object, lifetime jobs and system parts are not initialized.
+func NewObjectFromMapNoInit(valMap ValMap) *Object {
+	obj := objFrom(valMap)
+	return obj
+}
+
 func newUnitializedObjectWithPropCount(count int) *Object {
 	return &Object{
 		keys:   make([]string, count),
