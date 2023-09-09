@@ -73,16 +73,16 @@ func (s *Session) Start() {
 func (s *Session) handle() {
 	req, err := s.readRequest()
 	if err != nil {
-		err := s.handlerResponse(nil, nil, err)
+		err := s.handlerResponse(nil, nil, err, false)
 		if err != nil {
 			s.handlerError(err)
 		}
 		return
 	}
-	logs.Printf("Request: [%v] [%s], content: [%v]\n", req.ID, req.Method, string(req.Params))
+
 	err = s.handlerRequest(req)
 	if err != nil {
-		err := s.handlerResponse(req.ID, nil, err)
+		err := s.handlerResponse(req.ID, nil, err, false)
 		if err != nil {
 			s.handlerError(err)
 		}
@@ -252,7 +252,7 @@ func (s *Session) execute(mtdInfo MethodInfo, req RequestMessage, args interface
 		if isNil(resp) && isNil(err) && isNil(req.ID) {
 			return
 		}
-		err = s.handlerResponse(req.ID, resp, err)
+		err = s.handlerResponse(req.ID, resp, err, mtdInfo.SensitiveData)
 		if err != nil {
 			s.handlerError(err)
 		}
@@ -264,8 +264,16 @@ func (s *Session) handlerRequest(req RequestMessage) error {
 	mtdInfo, ok := s.server.methods[mtd]
 
 	if !ok {
+		logs.Printf("Request: [%v] [%s], content: [%v]\n", req.ID, req.Method, string(req.Params))
 		return MethodNotFound
 	}
+
+	if mtdInfo.SensitiveData {
+		logs.Printf("Request: [%v] [%s], content: ...\n", req.ID, req.Method)
+	} else {
+		logs.Printf("Request: [%v] [%s], content: [%v]\n", req.ID, req.Method, string(req.Params))
+	}
+
 	reqArgs := mtdInfo.NewRequest()
 	if _, ok := reqArgs.(*defines.NoParams); !ok {
 		err := jsoniter.Unmarshal(req.Params, reqArgs)
@@ -278,7 +286,7 @@ func (s *Session) handlerRequest(req RequestMessage) error {
 	return nil
 }
 
-func (s *Session) write(resp ResponseMessage) error {
+func (s *Session) write(resp ResponseMessage, sensitiveMethod bool) error {
 	s.writeLock.Lock()
 	defer s.writeLock.Unlock()
 
@@ -287,7 +295,11 @@ func (s *Session) write(resp ResponseMessage) error {
 		return err
 	}
 
-	logs.Printf("Response: [%v] res: [%v]\n", resp.ID, string(res))
+	if sensitiveMethod {
+		logs.Printf("Response: [%v] res: ...\n", resp.ID)
+	} else {
+		logs.Printf("Response: [%v] res: [%v]\n", resp.ID, string(res))
+	}
 
 	if s.msgConn != nil {
 		return s.msgConn.WriteMessage(res)
@@ -356,7 +368,7 @@ func (s *Session) mustWrite(data []byte) error {
 	}
 	return nil
 }
-func (s *Session) handlerResponse(id interface{}, result interface{}, err error) error {
+func (s *Session) handlerResponse(id interface{}, result interface{}, err error, sensitiveDataMethod bool) error {
 	resp := ResponseMessage{ID: id}
 	if err != nil {
 		if errors.Is(err, io.EOF) {
@@ -369,7 +381,7 @@ func (s *Session) handlerResponse(id interface{}, result interface{}, err error)
 		}
 	}
 	resp.Result = result
-	return s.write(resp)
+	return s.write(resp, sensitiveDataMethod)
 }
 
 func (s *Session) handlerError(err error) {

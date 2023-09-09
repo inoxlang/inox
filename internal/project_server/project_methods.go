@@ -37,7 +37,8 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerOptions) {
 	}
 
 	server.OnCustom(jsonrpc.MethodInfo{
-		Name: "project/create",
+		Name:          "project/create",
+		SensitiveData: true,
 		NewRequest: func() interface{} {
 			return &CreateProjectParams{}
 		},
@@ -62,7 +63,8 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerOptions) {
 	})
 
 	server.OnCustom(jsonrpc.MethodInfo{
-		Name: "project/open",
+		Name:          "project/open",
+		SensitiveData: true,
 		NewRequest: func() interface{} {
 			return &OpenProjectParams{}
 		},

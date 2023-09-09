@@ -8,9 +8,10 @@ import (
 )
 
 type MethodInfo struct {
-	Name       string
-	NewRequest func() interface{}
-	Handler    func(ctx context.Context, req interface{}) (interface{}, error)
+	Name          string
+	NewRequest    func() interface{}
+	Handler       func(ctx context.Context, req interface{}) (interface{}, error)
+	SensitiveData bool
 }
 
 type Server struct {
