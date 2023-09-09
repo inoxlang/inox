@@ -1,6 +1,9 @@
 package config
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
 	"os"
 	"strings"
 
@@ -21,17 +24,37 @@ const (
 	STARTUP_SCRIPT_PERM       = 0o700
 
 	DEFAULT_TRUSTED_RISK_SCORE = core.MEDIUM_RISK_SCORE_LEVEL - 1
+
+	//
+	//	===== METRICS & PERF =====
+	//
+
+	METRICS_PERF_ENV_VAR_NAME = "METRICS_PERF_BUCKET"
 )
 
 var (
 	//go:embed default_startup.ix
 	DEFAULT_STARTUP_SCRIPT_CODE string
 	USER_HOME                   string
-	FORCE_COLOR                 bool
-	TRUECOLOR_COLORTERM         bool
-	TERM_256COLOR_CAPABLE       bool
-	NO_COLOR                    bool
-	SHOULD_COLORIZE             bool
+
+	//
+	//	===== METRICS & PERF =====
+	//
+
+	METRICS_PERF_BUCKET_NAME       string
+	METRICS_PERF_BUCKET_ACCESS_KEY string
+	METRICS_PERF_BUCKET_ENDPOINT   core.Host
+	METRICS_PERF_BUCKET_SECRET_KEY *core.Secret
+
+	//
+	//	===== OUTPUT =====
+	//
+
+	FORCE_COLOR           bool
+	TRUECOLOR_COLORTERM   bool
+	TERM_256COLOR_CAPABLE bool
+	NO_COLOR              bool
+	SHOULD_COLORIZE       bool
 
 	// set if SHOULD_COLORIZE
 	INITIAL_COLORS_SET bool
@@ -59,6 +82,12 @@ var (
 
 func init() {
 	targetSpecificInit()
+	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+	defer ctx.Cancel()
+
+	//
+	//	===== OUTPUT =====
+	//
 
 	DEFAULT_PRETTY_PRINT_CONFIG = &core.PrettyPrintConfig{
 		PrettyPrintConfig: pprint.PrettyPrintConfig{
@@ -74,6 +103,43 @@ func init() {
 		},
 	}
 
+	//
+	//	===== METRICS & PERF =====
+
+	bucketConfig, ok := os.LookupEnv(METRICS_PERF_ENV_VAR_NAME)
+	os.Unsetenv(METRICS_PERF_ENV_VAR_NAME)
+	if ok && bucketConfig != "" {
+		config := struct {
+			Name      string `json:"name"`
+			Endpoint  string `json:"endpoint"`
+			AccessKey string `json:"accessKey"`
+			SecretKey string `json:"secretKey"`
+		}{}
+		if err := json.Unmarshal([]byte(bucketConfig), &config); err != nil {
+			panic(fmt.Errorf("failed to unmarshal configuration of metrics-perf bucket: %w", err))
+		}
+
+		if config.Name == "" {
+			panic(errors.New("empty/missing name for metrics-perf bucket"))
+		}
+
+		if config.Endpoint == "" {
+			panic(errors.New("empty/missing endpoint for metrics-perf bucket"))
+		}
+
+		if config.AccessKey == "" {
+			panic(errors.New("empty/missing access key for metrics-perf bucket"))
+		}
+
+		if config.SecretKey == "" {
+			panic(errors.New("empty/missing secret key for metrics-perf bucket"))
+		}
+
+		METRICS_PERF_BUCKET_NAME = config.Name
+		METRICS_PERF_BUCKET_ENDPOINT = core.Host(config.Endpoint)
+		METRICS_PERF_BUCKET_ACCESS_KEY = config.AccessKey
+		METRICS_PERF_BUCKET_SECRET_KEY = utils.Must(core.SECRET_STRING_PATTERN.NewSecret(ctx, config.SecretKey))
+	}
 }
 
 // GetStartupScriptPath searches for the startup script, creates if if it does not exist and returns its path.
