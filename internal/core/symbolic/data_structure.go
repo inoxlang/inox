@@ -576,7 +576,17 @@ func (l *List) appendSequence(ctx *Context, seq Sequence) {
 	if l.HasKnownLen() && l.KnownLen() == 0 {
 		element := seq.element()
 		if serializable, ok := element.(Serializable); ok {
-			ctx.SetUpdatedSelf(NewList(serializable))
+			if seq.HasKnownLen() {
+				length := seq.KnownLen()
+				elements := make([]Serializable, length)
+
+				for i := 0; i < length; i++ {
+					elements[i] = seq.elementAt(i).(Serializable)
+				}
+				ctx.SetUpdatedSelf(NewList(elements...))
+			} else {
+				ctx.SetUpdatedSelf(NewListOf(serializable))
+			}
 		} else {
 			ctx.AddSymbolicGoFunctionError(NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE)
 		}
