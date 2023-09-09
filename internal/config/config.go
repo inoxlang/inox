@@ -45,6 +45,7 @@ var (
 	METRICS_PERF_BUCKET_ACCESS_KEY string
 	METRICS_PERF_BUCKET_ENDPOINT   core.Host
 	METRICS_PERF_BUCKET_SECRET_KEY *core.Secret
+	METRICS_PERF_BUCKET_PROVIDER   string
 
 	//
 	//	===== OUTPUT =====
@@ -114,6 +115,7 @@ func init() {
 			Endpoint  string `json:"endpoint"`
 			AccessKey string `json:"accessKey"`
 			SecretKey string `json:"secretKey"`
+			Provider  string `json:"provider"`
 		}{}
 		if err := json.Unmarshal([]byte(bucketConfig), &config); err != nil {
 			panic(fmt.Errorf("failed to unmarshal configuration of metrics-perf bucket: %w", err))
@@ -135,10 +137,15 @@ func init() {
 			panic(errors.New("empty/missing secret key for metrics-perf bucket"))
 		}
 
+		if config.Provider == "" {
+			panic(errors.New("empty/missing provider key for metrics-perf bucket"))
+		}
+
 		METRICS_PERF_BUCKET_NAME = config.Name
 		METRICS_PERF_BUCKET_ENDPOINT = core.Host(config.Endpoint)
 		METRICS_PERF_BUCKET_ACCESS_KEY = config.AccessKey
 		METRICS_PERF_BUCKET_SECRET_KEY = utils.Must(core.SECRET_STRING_PATTERN.NewSecret(ctx, config.SecretKey))
+		METRICS_PERF_BUCKET_PROVIDER = config.Provider
 	}
 }
 
