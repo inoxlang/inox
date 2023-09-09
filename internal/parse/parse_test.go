@@ -3574,6 +3574,38 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("<double-colon expression> '[' <integer literal> '] ", func(t *testing.T) {
+			n := mustparseChunk(t, "a::b[0]")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
+				Statements: []Node{
+					&IndexExpression{
+						NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
+						Indexed: &DoubleColonExpression{
+							NodeBase: NodeBase{
+								NodeSpan{0, 4},
+								nil,
+								[]Token{{Type: DOUBLE_COLON, Span: NodeSpan{1, 3}}},
+							},
+							Left: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+								Name:     "a",
+							},
+							Element: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{3, 4}, nil, nil},
+								Name:     "b",
+							},
+						},
+						Index: &IntLiteral{
+							NodeBase: NodeBase{NodeSpan{5, 6}, nil, nil},
+							Raw:      "0",
+							Value:    0,
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("unterminated : variable '[' ", func(t *testing.T) {
 			n, err := parseChunk(t, "$a[", "")
 			assert.Error(t, err)
