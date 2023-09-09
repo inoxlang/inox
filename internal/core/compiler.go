@@ -1097,6 +1097,12 @@ func (c *compiler) Compile(node parse.Node) error {
 		}
 
 		c.emit(node, op, c.addConstant(Str(node.PropertyName.Name)))
+	case *parse.DoubleColonExpression:
+		if err := c.Compile(node.Left); err != nil {
+			return err
+		}
+
+		c.emit(node, OpDoubleColonResolve, c.addConstant(Str(node.Element.Name)))
 	case *parse.ComputedMemberExpression:
 		if err := c.Compile(node.Left); err != nil {
 			return err
@@ -1512,27 +1518,23 @@ func (c *compiler) Compile(node parse.Node) error {
 			}
 
 			for _, p := range callee.PropertyNames[:len(callee.PropertyNames)-1] {
-				c.emit(callee, OpMembNotStored, c.addConstant(Str(p.Name)))
+				c.emit(callee, OpMemb, c.addConstant(Str(p.Name)))
 			}
 
 			c.emit(callee, OpCopyTop)
 			c.emit(callee, OpMemb, c.addConstant(Str(callee.PropertyNames[len(callee.PropertyNames)-1].Name)))
 		case *parse.MemberExpression:
-			innerMembExpr, ok := callee.Left.(*parse.MemberExpression)
-			if ok {
-				if err := c.Compile(innerMembExpr.Left); err != nil {
-					return err
-				}
-				c.emit(callee, OpMembNotStored, c.addConstant(Str(innerMembExpr.PropertyName.Name)))
-				c.emit(callee, OpCopyTop)
-				c.emit(callee, OpMemb, c.addConstant(Str(callee.PropertyName.Name)))
-			} else {
-				if err := c.Compile(callee.Left); err != nil {
-					return err
-				}
-				c.emit(callee, OpCopyTop)
-				c.emit(callee, OpMemb, c.addConstant(Str(callee.PropertyName.Name)))
+			if err := c.Compile(callee.Left); err != nil {
+				return err
 			}
+			c.emit(callee, OpCopyTop)
+			c.emit(callee, OpMemb, c.addConstant(Str(callee.PropertyName.Name)))
+		case *parse.DoubleColonExpression:
+			if err := c.Compile(callee.Left); err != nil {
+				return err
+			}
+			c.emit(callee, OpCopyTop)
+			c.emit(callee, OpDoubleColonResolve, c.addConstant(Str(callee.Element.Name)))
 		default:
 			c.emit(callee, OpPushNil) //no self
 			if err := c.Compile(callee); err != nil {

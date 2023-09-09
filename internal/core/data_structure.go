@@ -18,7 +18,6 @@ import (
 var (
 	_ = []underylingList{&ValueList{}, &IntList{}}
 	_ = []IProps{(*Object)(nil), (*Record)(nil), (*Namespace)(nil), (*Dictionary)(nil), (*List)(nil)}
-	_ = []IPropsNotStored{(*Object)(nil)}
 
 	_ Sequence = (*Array)(nil)
 )
@@ -321,12 +320,16 @@ func (obj *Object) System() (PotentialSystem, error) {
 	return obj.supersys, nil
 }
 
-func (obj *Object) waitIfOtherTransaction(ctx *Context) error {
+func (obj *Object) waitIfOtherTransaction(ctx *Context, requireRunningTransaction bool) error {
 	//TODO: wait when accessing methods implementing the System interface ?
 
 	obj.currentTransactionLock.Lock()
 
 	tx := ctx.GetTx()
+
+	if requireRunningTransaction && (tx == nil || tx.IsFinished()) {
+		panic(ErrRunningTransactionExpected)
+	}
 
 	if obj.currentTransaction != nil && obj.currentTransaction.IsFinished() {
 		obj.currentTransaction = nil
@@ -350,7 +353,7 @@ func (obj *Object) waitIfOtherTransaction(ctx *Context) error {
 		obj.currentTransaction = nil
 		obj.currentTransactionLock.Unlock()
 
-		return obj.waitIfOtherTransaction(ctx)
+		return obj.waitIfOtherTransaction(ctx, requireRunningTransaction)
 	}
 	obj.currentTransactionLock.Unlock()
 
@@ -366,7 +369,7 @@ func (obj *Object) PropNotStored(ctx *Context, name string) Value {
 }
 
 func (obj *Object) prop(ctx *Context, name string, stored bool) Value {
-	if err := obj.waitIfOtherTransaction(ctx); err != nil {
+	if err := obj.waitIfOtherTransaction(ctx, !stored); err != nil {
 		panic(err)
 	}
 
@@ -378,8 +381,10 @@ func (obj *Object) prop(ctx *Context, name string, stored bool) Value {
 		if key == name {
 			v := obj.values[i]
 
-			if obj.IsShared() && stored {
-				return utils.Must(CheckSharedOrClone(v, map[uintptr]Clonable{}, 0)).(Serializable)
+			if obj.IsShared() {
+				if stored {
+					return utils.Must(CheckSharedOrClone(v, map[uintptr]Clonable{}, 0)).(Serializable)
+				}
 			}
 			return v
 		}
@@ -394,7 +399,7 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 		return fmt.Errorf("value is not serializable")
 	}
 
-	if err := obj.waitIfOtherTransaction(ctx); err != nil {
+	if err := obj.waitIfOtherTransaction(ctx, false); err != nil {
 		return err
 	}
 
@@ -546,7 +551,7 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 }
 
 func (obj *Object) PropertyNames(ctx *Context) []string {
-	if err := obj.waitIfOtherTransaction(ctx); err != nil {
+	if err := obj.waitIfOtherTransaction(ctx, false); err != nil {
 		panic(err)
 	}
 
@@ -557,7 +562,7 @@ func (obj *Object) PropertyNames(ctx *Context) []string {
 }
 
 func (obj *Object) HasProp(ctx *Context, name string) bool {
-	if err := obj.waitIfOtherTransaction(ctx); err != nil {
+	if err := obj.waitIfOtherTransaction(ctx, false); err != nil {
 		panic(err)
 	}
 
@@ -573,7 +578,7 @@ func (obj *Object) HasProp(ctx *Context, name string) bool {
 }
 
 func (obj *Object) HasPropValue(ctx *Context, value Value) bool {
-	if err := obj.waitIfOtherTransaction(ctx); err != nil {
+	if err := obj.waitIfOtherTransaction(ctx, false); err != nil {
 		panic(err)
 	}
 
@@ -594,7 +599,7 @@ func (obj *Object) EntryMap(ctx *Context) map[string]Serializable {
 	}
 
 	if ctx != nil {
-		if err := obj.waitIfOtherTransaction(ctx); err != nil {
+		if err := obj.waitIfOtherTransaction(ctx, false); err != nil {
 			panic(err)
 		}
 
@@ -624,7 +629,7 @@ func (obj *Object) ValueEntryMap(ctx *Context) map[string]Value {
 	}
 
 	if ctx != nil {
-		if err := obj.waitIfOtherTransaction(ctx); err != nil {
+		if err := obj.waitIfOtherTransaction(ctx, false); err != nil {
 			panic(err)
 		}
 
@@ -712,7 +717,7 @@ func (obj *Object) At(ctx *Context, i int) Value {
 }
 
 func (obj *Object) Keys(ctx *Context) []string {
-	if err := obj.waitIfOtherTransaction(ctx); err != nil {
+	if err := obj.waitIfOtherTransaction(ctx, false); err != nil {
 		panic(err)
 	}
 

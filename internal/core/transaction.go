@@ -21,6 +21,7 @@ var (
 	ErrCtxAlreadyHasTransaction         = errors.New("context already has a transaction")
 	ErrFinishedTransaction              = errors.New("transaction is finished")
 	ErrAlreadySetTransactionEndCallback = errors.New("transaction end callback is already set")
+	ErrRunningTransactionExpected = errors.New("running transaction expected")
 )
 
 // A Transaction represents a series of effects that are applied atomically.

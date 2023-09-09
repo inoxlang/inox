@@ -3703,6 +3703,125 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 	})
 
+	t.Run("mutation of shared object", func(t *testing.T) {
+
+		t.Run("calling a mutating method of a shared object's property", func(t *testing.T) {
+			code := `
+				start_tx()
+				obj = {
+					list: []
+				}
+
+				# share the object
+				go {globals: {obj: obj}} do {
+
+				}
+
+				obj::list.append(1)
+				commit_tx()
+				return obj
+			`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.Globals.Set("start_tx", ValOf(StartNewTransaction))
+			state.Globals.Set("commit_tx", ValOf(func(ctx *Context) {
+				ctx.GetTx().Commit(ctx)
+			}))
+
+			res, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, NewWrappedValueList(Int(1)), res.(*Object).values[0])
+		})
+
+		t.Run("calling a mutating method of a shared object's property should be thread safe", func(t *testing.T) {
+			code := `
+				start_tx()
+				obj = {
+					list: []
+				}
+				group = RoutineGroup()
+	
+				for 1..5 {
+					go {globals: {obj: obj, start_tx: start_tx, commit_tx: commit_tx}, group: group} do {
+						start_tx()
+						obj::list.append(1)
+						commit_tx()
+					}
+				}
+	
+				group.wait_results!()
+				return obj
+			`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.Globals.Set("start_tx", ValOf(StartNewTransaction))
+			state.Globals.Set("commit_tx", ValOf(func(ctx *Context) {
+				ctx.GetTx().Commit(ctx)
+			}))
+			state.Globals.Set("RoutineGroup", ValOf(NewRoutineGroup))
+
+			res, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			var elements []Serializable
+			for i := 0; i < 5; i++ {
+				elements = append(elements, Int(1))
+			}
+
+			assert.Equal(t, NewWrappedValueList(elements...), res.(*Object).values[0])
+		})
+
+		t.Run("calling a mutating method of a shared object's property while getting the property in another goroutine should be thread safe", func(t *testing.T) {
+			code := `
+				start_tx()
+				obj = {
+					list: []
+				}
+				group = RoutineGroup()
+	
+				for 1..5 {
+					go {globals: {obj: obj, start_tx: start_tx, commit_tx: commit_tx}, group: group} do {
+						start_tx()
+						obj::list.append(1)
+						commit_tx()
+					}
+					go {globals: {obj: obj, start_tx: start_tx, commit_tx: commit_tx}, group: group} do {
+						start_tx()
+						list = obj.list
+						commit_tx()
+					}
+				}
+	
+				group.wait_results!()
+				return obj
+			`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.Globals.Set("RoutineGroup", ValOf(NewRoutineGroup))
+			state.Globals.Set("start_tx", ValOf(StartNewTransaction))
+			state.Globals.Set("commit_tx", ValOf(func(ctx *Context) {
+				ctx.GetTx().Commit(ctx)
+			}))
+
+			res, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			var elements []Serializable
+			for i := 0; i < 5; i++ {
+				elements = append(elements, Int(1))
+			}
+
+			assert.Equal(t, NewWrappedValueList(elements...), res.(*Object).values[0])
+		})
+	})
+
 	t.Run("pattern call", func(t *testing.T) {
 		code := `%mypattern(1..10)`
 

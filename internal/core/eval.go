@@ -119,11 +119,6 @@ type IProps interface {
 	SetProp(ctx *Context, name string, value Value) error
 }
 
-type IPropsNotStored interface {
-	IProps
-	PropNotStored(ctx *Context, name string) Value
-}
-
 type BytecodeEvaluationConfig struct {
 	Tracer               io.Writer
 	ShowCompilationTrace bool
