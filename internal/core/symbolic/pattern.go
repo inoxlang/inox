@@ -32,6 +32,10 @@ var (
 		(*NamedSegmentPathPattern)(nil),
 	}
 
+	_ = []IPropsPattern{
+		(*ObjectPattern)(nil),
+	}
+
 	ANY_PATTERN              = &AnyPattern{}
 	ANY_SERIALIZABLE_PATTERN = &AnySerializablePattern{}
 	ANY_PATH_PATTERN         = &PathPattern{}
@@ -1282,7 +1286,7 @@ func (p *ObjectPattern) ValuePropPattern(name string) (propPattern Pattern, isOp
 	return
 }
 
-func (p *ObjectPattern) ValuePropertyNames(name string) []string {
+func (p *ObjectPattern) ValuePropertyNames() []string {
 	return maps.Keys(p.entries)
 }
 
