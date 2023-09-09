@@ -1143,8 +1143,10 @@ func (l *List) insertSequence(ctx *Context, seq Sequence, i Int) {
 		seqLen := seq.Len()
 		l.elementMutationCallbacks = slices.Insert(l.elementMutationCallbacks, int(i), makeMutationCallbackHandles(seqLen)...)
 
-		for index := i; index < i+Int(seqLen); i++ {
-			l.addElementMutationCallbackNoLock(ctx, int(index), seq.At(ctx, int(index)))
+		seqIndex := 0
+		for index := i; index < i+Int(seqLen); index++ {
+			l.addElementMutationCallbackNoLock(ctx, int(index), seq.At(ctx, seqIndex))
+			seqIndex++
 		}
 	}
 
@@ -1170,7 +1172,7 @@ func (l *List) append(ctx *Context, elements ...Serializable) {
 		l.elementMutationCallbacks = slices.Insert(l.elementMutationCallbacks, index, makeMutationCallbackHandles(seqLen)...)
 
 		for i := index; i < index+len(elements); i++ {
-			l.addElementMutationCallbackNoLock(ctx, int(i), seq.At(ctx, int(index)))
+			l.addElementMutationCallbackNoLock(ctx, int(i), seq.At(ctx, int(i-index)))
 		}
 	}
 
