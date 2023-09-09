@@ -402,61 +402,79 @@ func (state *State) updateGlobal2(
 	return false, nil
 }
 
-func (state *State) getStaticOfNode(partialNode parse.Node) (Pattern, bool) {
+func (state *State) getInfoOfNode(partialNode parse.Node) (static Pattern, ofConstantVar bool, ok bool) {
 	//TODO: retrieve static from object
 
 	switch node := partialNode.(type) {
 	case *parse.Variable:
 		info, ok := state.getLocal(node.Name)
 		if !ok {
-			return nil, false
+			return nil, false, false
 		}
-		return info.static, true
+		return info.static, info.isConstant, true
 	case *parse.GlobalVariable:
 		info, ok := state.getGlobal(node.Name)
 		if !ok {
-			return nil, false
+			return nil, false, false
 		}
-		return info.static, true
+		return info.static, info.isConstant, true
 	case *parse.IdentifierLiteral:
 		info, ok := state.get(node.Name)
 		if !ok {
-			return nil, false
+			return nil, false, false
 		}
-		return info.static, true
+		return info.static, info.isConstant, true
 	case *parse.MemberExpression:
-		leftStatic, _ := state.getStaticOfNode(node.Left)
+		leftStatic, ofConstant, _ := state.getInfoOfNode(node.Left)
 		iprops, ok := leftStatic.(IPropsPattern)
 
 		if !ok {
-			return nil, false
+			return nil, false, false
 		}
 
 		propPattern, _, ok := iprops.ValuePropPattern(node.PropertyName.Name)
 		if !ok {
-			return nil, false
+			return nil, false, false
 		}
-		return propPattern, true
+		return propPattern, ofConstant, true
+	case *parse.DoubleColonExpression:
+		leftStatic, ofConstant, _ := state.getInfoOfNode(node.Left)
+		iprops, ok := leftStatic.(IPropsPattern)
+
+		if !ok {
+			return nil, false, false
+		}
+
+		propPattern, _, ok := iprops.ValuePropPattern(node.Element.Name)
+		if !ok {
+			return nil, false, false
+		}
+		return propPattern, ofConstant, true
 	case *parse.IdentifierMemberExpression:
-		static, _ := state.getStaticOfNode(node.Left)
+		static, ofConstant, _ := state.getInfoOfNode(node.Left)
 
 		for _, name := range node.PropertyNames {
 			iprops, ok := static.(IPropsPattern)
 			if !ok {
-				return nil, false
+				return nil, false, false
 			}
 
 			propPattern, _, ok := iprops.ValuePropPattern(name.Name)
 			if !ok {
-				return nil, false
+				return nil, false, false
 			}
 			static = propPattern
 		}
 
-		return static, static != nil
+		return static, ofConstant, static != nil
 	}
 
-	return nil, false
+	return nil, false, false
+}
+
+func (state *State) getStaticOfNode(partialNode parse.Node) (Pattern, bool) {
+	static, _, ok := state.getInfoOfNode(partialNode)
+	return static, ok
 }
 
 func (state *State) pushScope() {

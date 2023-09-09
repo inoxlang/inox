@@ -1881,6 +1881,177 @@ func TestSymbolicEval(t *testing.T) {
 		})
 	})
 
+	t.Run("double-colon expression", func(t *testing.T) {
+		t.Run("mutation of an object property", func(t *testing.T) {
+			t.Run("call of a property's method", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					obj = {
+						list: []
+					}
+					obj::list.append(1)
+					return obj
+				`)
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+				assert.Equal(t, NewInexactObject(map[string]Serializable{
+					"list": NewList(NewInt(1)),
+				}, nil, map[string]Pattern{
+					"list": NewListPatternOf(&TypePattern{val: ANY_SERIALIZABLE}),
+				}), res)
+			})
+
+			t.Run("assignment of an index expression", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					obj = {
+						list: [0]
+					}
+					obj::list[0] = 1
+					return obj
+				`)
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+				assert.Equal(t, NewInexactObject(map[string]Serializable{
+					"list": NewListOf(ANY_INT),
+				}, nil, map[string]Pattern{
+					"list": NewListPatternOf(&TypePattern{val: ANY_INT}),
+				}), res)
+			})
+
+			t.Run("assignment of the member of an index expression", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					obj = {
+						list: [{a: 0}]
+					}
+					obj::list[0].a = 1
+					return obj
+				`)
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+
+				_ = res
+				//TODO
+
+				// assert.Equal(t, NewInexactObject(map[string]Serializable{
+				// 	"list": NewList(NewInexactObject(map[string]Serializable{
+				// 		"a": NewInt(1),
+				// 	}, nil, map[string]Pattern{
+				// 		"a": &TypePattern{val: ANY_INT},
+				// 	})),
+				// }, nil, map[string]Pattern{
+				// 	"list": NewListPatternOf(NewInexactObjectPattern(map[string]Pattern{
+				// 		"a": &TypePattern{val: ANY_INT},
+				// 	}, nil)),
+				// }), res)
+			})
+			//TODO: support deeper accesses
+		})
+
+		t.Run("accessed object properties should never be stored", func(t *testing.T) {
+			testCases := []struct {
+				input string
+			}{
+				{
+					input: `
+						obj = {list: []}
+						obj::list
+					`,
+				},
+				{
+					input: `
+						obj = {list: []}
+						a = obj::list
+					`,
+				},
+				{
+					input: `
+						obj = {list: []}
+						return obj::list
+					`,
+				},
+				{
+					input: `
+						fn print(arg){}
+						obj = {list: []}
+						print(obj::list)
+					`,
+				},
+				//index expression
+				{
+					input: `
+						obj = {list: [0]}
+						obj::list[0]
+					`,
+				},
+				{
+					input: `
+						obj = {list: [0]}
+						a = obj::list[0]
+					`,
+				},
+				{
+					input: `
+						obj = {list: [0]}
+						return obj::list[0]
+					`,
+				},
+				{
+					input: `
+						fn print(arg){}
+						obj = {list: [0]}
+						print(obj::list[0])
+					`,
+				},
+				//slice expression
+				{
+					input: `
+						obj = {list: [0]}
+						obj::list[0:1]
+					`,
+				},
+				{
+					input: `
+						obj = {list: [0]}
+						a = obj::list[0:1]
+					`,
+				},
+				{
+					input: `
+						obj = {list: [0]}
+						return obj::list[0:1]
+					`,
+				},
+				{
+					input: `
+						fn print(arg){}
+						obj = {list: [0]}
+						print(obj::list[0:1])
+					`,
+				},
+			}
+
+			for _, testCase := range testCases {
+				n, state := MakeTestStateAndChunk(testCase.input)
+				_, err := symbolicEval(n, state)
+
+				if !assert.NoError(t, err) {
+					return
+				}
+
+				errs := state.errors()
+				if !assert.Len(t, errs, 1) {
+					return
+				}
+
+				evalErr := errs[0]
+				assert.ErrorContains(t, evalErr, MISPLACED_DOUBLE_COLON_EXPR)
+			}
+
+		})
+	})
+
 	t.Run("index expression", func(t *testing.T) {
 		t.Run("index is not an integer", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`

@@ -100,7 +100,6 @@ type SymbolicEvalCheckInput struct {
 	SymbolicBaseGlobals           map[string]SymbolicValue
 	SymbolicBasePatterns          map[string]Pattern
 	SymbolicBasePatternNamespaces map[string]*PatternNamespace
-	
 
 	IsShellChunk   bool
 	ShellLocalVars map[string]any
@@ -201,6 +200,9 @@ type evalOptions struct {
 	expectedValue       SymbolicValue
 	actualValueMismatch *bool
 	reEval              bool
+
+	//used for checking that double-colon expressions are not misplaced
+	doubleColonExprAncestorChain []parse.Node
 }
 
 func (opts evalOptions) setActualValueMismatchIfNotNil() {
@@ -768,7 +770,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			state.symbolicData.SetMostSpecificNodeValue(lhs, __rhs)
 			state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
 		case *parse.MemberExpression:
-			object, err := symbolicEval(lhs.Left, state)
+			object, err := _symbolicEval(lhs.Left, state, evalOptions{
+				doubleColonExprAncestorChain: []parse.Node{node},
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -883,7 +887,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			}
 
 		case *parse.IdentifierMemberExpression:
-			v, err := symbolicEval(lhs.Left, state)
+			v, err := _symbolicEval(lhs.Left, state, evalOptions{
+				doubleColonExprAncestorChain: []parse.Node{node},
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -1004,7 +1010,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				state.addError(makeSymbolicEvalError(node, state, fmtIndexIsNotAnIntButA(index)))
 			}
 
-			slice, err := symbolicEval(lhs.Indexed, state)
+			slice, err := _symbolicEval(lhs.Indexed, state, evalOptions{
+				doubleColonExprAncestorChain: []parse.Node{node, lhs},
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -1075,32 +1083,10 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 					var staticSeqElement SymbolicValue
 
 					//get static
-					var lhsInfo *varSymbolicInfo
+					static, ofConstant, ok := state.getInfoOfNode(lhs.Indexed)
 
-					switch indexed := lhs.Indexed.(type) {
-					case *parse.Variable:
-						info, ok := state.getLocal(indexed.Name)
-						if !ok {
-							break
-						}
-						lhsInfo = &info
-					case *parse.GlobalVariable:
-						info, ok := state.getGlobal(indexed.Name)
-						if !ok {
-							break
-						}
-						lhsInfo = &info
-					case *parse.IdentifierLiteral:
-						info, ok := state.get(indexed.Name)
-						if !ok {
-							break
-						}
-						lhsInfo = &info
-					}
-
-					if lhsInfo != nil && !lhsInfo.isConstant {
-						info := *lhsInfo
-						staticSeq, ok = info.static.SymbolicValue().(MutableLengthSequence)
+					if ok && !ofConstant {
+						staticSeq, ok = static.SymbolicValue().(MutableLengthSequence)
 
 						if !ok {
 							goto add_assignability_error
@@ -1171,7 +1157,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				state.addError(makeSymbolicEvalError(lhs.EndIndex, state, END_INDEX_SHOULD_BE_LESS_OR_EQUAL_START_INDEX))
 			}
 
-			slice, err := symbolicEval(lhs.Indexed, state)
+			slice, err := _symbolicEval(lhs.Indexed, state, evalOptions{
+				doubleColonExprAncestorChain: []parse.Node{node, lhs},
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -3420,7 +3408,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 	case *parse.LazyExpression:
 		return &AstNode{Node: n}, nil
 	case *parse.MemberExpression:
-		left, err := symbolicEval(n.Left, state)
+		left, err := _symbolicEval(n.Left, state, evalOptions{
+			doubleColonExprAncestorChain: append(slices.Clone(options.doubleColonExprAncestorChain), node),
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -3458,7 +3448,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 		return ANY, nil
 	case *parse.IdentifierMemberExpression:
-		v, err := symbolicEval(n.Left, state)
+		v, err := _symbolicEval(n.Left, state, evalOptions{
+			doubleColonExprAncestorChain: append(slices.Clone(options.doubleColonExprAncestorChain), node),
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -3526,8 +3518,63 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			}
 		}
 		return result, nil
+	case *parse.DoubleColonExpression:
+		left, err := symbolicEval(n.Left, state)
+		if err != nil {
+			return nil, err
+		}
+
+		obj, ok := left.(*Object)
+		if !ok {
+			state.addError(makeSymbolicEvalError(node, state, DOUBLE_COLON_EXPRS_ONLY_SUPPORT_OBJ_LHS_FOR_NOW))
+			return ANY, nil
+		}
+
+		memb := symbolicMemb(obj, n.Element.Name, false, n, state)
+
+		if IsAnyOrAnySerializable(memb) || utils.Ret0(IsSharable(memb)) {
+			state.addError(makeSymbolicEvalError(node, state, RHS_OF_DOUBLE_COLON_EXPRS_WITH_OBJ_LHS_SHOULD_BE_THE_NAME_OF_A_MUTABLE_NON_SHARABLE_VALUE_PROPERTY))
+		} else if len(options.doubleColonExprAncestorChain) == 0 {
+			state.addError(makeSymbolicEvalError(node, state, MISPLACED_DOUBLE_COLON_EXPR))
+		} else {
+			ancestors := options.doubleColonExprAncestorChain
+			rootAncestor := ancestors[0]
+			misplaced := true
+			switch rootAncestor.(type) {
+			case *parse.Assignment:
+				if len(ancestors) == 1 {
+					break
+				}
+				misplaced = false
+				for i, ancestor := range ancestors[1 : len(ancestors)-1] {
+					if !isAllowedAfterMutationDoubleColonExprAncestor(ancestor, ancestors[i+1]) {
+						misplaced = true
+						break
+					}
+				}
+			case *parse.CallExpression:
+				if len(ancestors) == 1 {
+					break
+				}
+				misplaced = false
+				for i, ancestor := range ancestors[1 : len(ancestors)-1] {
+					if !isAllowedAfterMutationDoubleColonExprAncestor(ancestor, ancestors[i+1]) {
+						misplaced = true
+						break
+					}
+				}
+			default:
+			}
+			if misplaced {
+				state.addError(makeSymbolicEvalError(node, state, MISPLACED_DOUBLE_COLON_EXPR))
+			}
+		}
+
+		return memb, nil
 	case *parse.IndexExpression:
-		val, err := symbolicEval(n.Indexed, state)
+		val, err := _symbolicEval(n.Indexed, state, evalOptions{
+			doubleColonExprAncestorChain: append(slices.Clone(options.doubleColonExprAncestorChain), node),
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -3553,7 +3600,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		state.addError(makeSymbolicEvalError(node, state, fmtXisNotIndexable(val)))
 		return ANY, nil
 	case *parse.SliceExpression:
-		slice, err := symbolicEval(n.Indexed, state)
+		slice, err := _symbolicEval(n.Indexed, state, evalOptions{
+			doubleColonExprAncestorChain: append(slices.Clone(options.doubleColonExprAncestorChain), node),
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -4661,7 +4710,51 @@ switch_:
 				panic(err)
 			}
 		}
+	case *parse.DoubleColonExpression:
+		//almost same logic as parse.MemberExpression
 
+		switch action {
+		case setExactValue:
+			left, err := symbolicEval(node.Left, state)
+			if err != nil {
+				panic(err)
+			}
+
+			propName := node.Element.Name
+			iprops, ok := AsIprops(left).(IProps)
+			if !ok || !HasRequiredOrOptionalProperty(iprops, propName) {
+				break
+			}
+
+			newPropValue, err := iprops.WithExistingPropReplaced(node.Element.Name, value)
+			if err == nil {
+				narrowPath(node.Left, setExactValue, newPropValue, state, 0)
+			} else if err != ErrUnassignablePropsMixin {
+				panic(err)
+			}
+		case removePossibleValue:
+			left, err := symbolicEval(node.Left, state)
+			if err != nil {
+				panic(err)
+			}
+
+			propName := node.Element.Name
+			iprops, ok := AsIprops(left).(IProps)
+
+			if !ok || !HasRequiredOrOptionalProperty(iprops, propName) {
+				break
+			}
+
+			prevPropValue := iprops.Prop(node.Element.Name)
+			newPropValue := narrowOut(value, prevPropValue)
+
+			newRecPrevPropValue, err := iprops.WithExistingPropReplaced(node.Element.Name, newPropValue)
+			if err == nil {
+				narrowPath(node.Left, setExactValue, newRecPrevPropValue, state, 0)
+			} else if err != ErrUnassignablePropsMixin {
+				panic(err)
+			}
+		}
 	}
 }
 
@@ -4787,4 +4880,26 @@ func converTypeToSymbolicValue(t reflect.Type) (SymbolicValue, error) {
 	}
 
 	return nil, err
+}
+
+func isAllowedAfterMutationDoubleColonExprAncestor(ancestor, deeper parse.Node) bool {
+	switch a := ancestor.(type) {
+	case *parse.MemberExpression:
+		if deeper == a.Left {
+			return true
+		}
+	case *parse.IdentifierMemberExpression:
+		if deeper == a.Left {
+			return true
+		}
+	case *parse.IndexExpression:
+		if deeper == a.Indexed {
+			return true
+		}
+	case *parse.SliceExpression:
+		if deeper == a.Indexed {
+			return true
+		}
+	}
+	return false
 }

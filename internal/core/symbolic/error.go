@@ -80,6 +80,12 @@ const (
 	META_VAL_OF_LIFETIMEJOB_SHOULD_BE_IMMUTABLE                         = "meta value of lifetime job should be immutable"
 	LIFETIME_JOBS_NOT_ALLOWED_IN_READONLY_OBJECTS                       = "lifetime jobs are not allowed in readonly objects"
 	PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE = "property values of readonly objects should be readonly or immutable"
+
+	DOUBLE_COLON_EXPRS_ONLY_SUPPORT_OBJ_LHS_FOR_NOW                                                    = "double-colon expressions only support object LHS for now"
+	RHS_OF_DOUBLE_COLON_EXPRS_WITH_OBJ_LHS_SHOULD_BE_THE_NAME_OF_A_MUTABLE_NON_SHARABLE_VALUE_PROPERTY = //
+	"the right hand side of double-colon expressions with object LHS should be the name of a property with a mutable, non-sharable value"
+
+	MISPLACED_DOUBLE_COLON_EXPR = "misplaced double-colon expression"
 )
 
 var (
