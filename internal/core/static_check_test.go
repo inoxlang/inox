@@ -697,7 +697,7 @@ func TestCheck(t *testing.T) {
 		})
 	})
 
-	t.Run("compued member expression", func(t *testing.T) {
+	t.Run("computed member expression", func(t *testing.T) {
 		t.Run("property name node is an undefined variable", func(t *testing.T) {
 			n, src := parseCode(`
 				a = {}
@@ -720,6 +720,13 @@ func TestCheck(t *testing.T) {
 				b = "a"
 				a.(b)
 			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+	})
+
+	t.Run("double-colon expression", func(t *testing.T) {
+		t.Run("", func(t *testing.T) {
+			n, src := parseCode(`a = 1; a::b`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 	})

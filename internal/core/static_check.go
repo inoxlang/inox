@@ -1527,6 +1527,10 @@ switch_:
 			}
 		case *parse.PatternNamespaceMemberExpression:
 			break switch_
+		case *parse.DoubleColonExpression:
+			if node == p.Element {
+				break switch_
+			}
 		case *parse.DynamicMappingEntry:
 			if node == p.KeyVar || node == p.GroupMatchingVariable {
 				break switch_
