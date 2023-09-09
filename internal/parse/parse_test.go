@@ -2739,6 +2739,38 @@ func testParse(
 				},
 			}, n)
 		})
+
+		t.Run("double-colon expression", func(t *testing.T) {
+			n := mustparseChunk(t, "a::b.c")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
+				Statements: []Node{
+					&MemberExpression{
+						NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
+						Left: &DoubleColonExpression{
+							NodeBase: NodeBase{
+								NodeSpan{0, 4},
+								nil,
+								[]Token{{Type: DOUBLE_COLON, Span: NodeSpan{1, 3}}},
+							},
+							Left: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+								Name:     "a",
+							},
+							Element: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{3, 4}, nil, nil},
+								Name:     "b",
+							},
+						},
+						PropertyName: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{5, 6}, nil, nil},
+							Name:     "c",
+						},
+					},
+				},
+			}, n)
+		})
+
 	})
 
 	t.Run("computed member expression", func(t *testing.T) {
@@ -3843,6 +3875,39 @@ func testParse(
 						Left: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
 							Name:     "a",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("element: identifier member expression", func(t *testing.T) {
+			n := mustparseChunk(t, "a.b::c")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
+				Statements: []Node{
+					&DoubleColonExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 6},
+							nil,
+							[]Token{{Type: DOUBLE_COLON, Span: NodeSpan{3, 5}}},
+						},
+						Left: &IdentifierMemberExpression{
+							NodeBase: NodeBase{Span: NodeSpan{0, 3}},
+							Left: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+								Name:     "a",
+							},
+							PropertyNames: []*IdentifierLiteral{
+								{
+									NodeBase: NodeBase{NodeSpan{2, 3}, nil, nil},
+									Name:     "b",
+								},
+							},
+						},
+						Element: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{5, 6}, nil, nil},
+							Name:     "c",
 						},
 					},
 				},
