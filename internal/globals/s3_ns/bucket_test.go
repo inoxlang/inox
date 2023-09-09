@@ -78,12 +78,16 @@ func TestOpenBucket(t *testing.T) {
 			},
 		})
 		state := core.NewGlobalState(ctx)
-		state.Project = &testProject{}
 		state.MainState = state
 
 		bucket, err := OpenBucket(ctx, "s3://bucket", OpenBucketOptions{
 			AllowGettingCredentialsFromProject: true,
+			Project:                            &testProject{},
 		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
 
 		bucket.Close()
 
