@@ -64,7 +64,5 @@ func TestStartPeriodicPerfProfilesCollection(t *testing.T) {
 		return
 	}
 
-	if !assert.NotEmpty(t, objects) {
-		return
-	}
+	assert.Len(t, objects, 2)
 }

@@ -39,11 +39,19 @@ func StartPeriodicPerfProfilesCollection(ctx *core.Context, conf PerfDataCollect
 
 	cpuProfiles := make(chan *bytes.Buffer, 10)
 	stopChan = make(chan struct{})
+	stopMemProfilingChan := make(chan struct{})
 	lastCpuProfileSaveAck := make(chan struct{}, 1)
+	lastMemProfileSaveAck := make(chan struct{}, 1)
 
-	//create a goroutine managing the CPU profiles & sending them to cpuProfiles
+	childCtx := ctx.BoundChild()
+	state := ctx.GetClosestState()
+	logger := state.Logger
+
+	//create the main profiling goroutine, it manages the CPU profiles & the memory profiling goroutine
 
 	go func() {
+		defer childCtx.Cancel()
+
 		buff := bytes.NewBuffer(nil)
 		pprof.StartCPUProfile(buff)
 
@@ -56,8 +64,10 @@ func StartPeriodicPerfProfilesCollection(ctx *core.Context, conf PerfDataCollect
 
 			select {
 			case <-stopChan:
+				stopMemProfilingChan <- struct{}{}
 				close(cpuProfiles)
 				<-lastCpuProfileSaveAck
+				<-lastMemProfileSaveAck
 				return
 			default:
 			}
@@ -67,14 +77,42 @@ func StartPeriodicPerfProfilesCollection(ctx *core.Context, conf PerfDataCollect
 		}
 	}()
 
-	childCtx := ctx.BoundChild()
-	state := ctx.GetClosestState()
-	logger := state.Logger
+	//create a goroutine saving a memory profile every conf.Period & saving the profiles to a S3 bucket
+
+	go func() {
+		defer close(lastMemProfileSaveAck)
+
+		ticker := time.NewTicker(period)
+		defer ticker.Stop()
+
+		for t := range ticker.C {
+			buff := bytes.NewBuffer(nil)
+			err := pprof.WriteHeapProfile(buff)
+			if err != nil {
+				logger.Err(err)
+			}
+
+			date := t.UTC().Format(time.RFC3339)
+			key := "mem-" + date + ".pprof"
+
+			_, err = s3Client.PutObject(childCtx, key, buff)
+			if err != nil {
+				logger.Err(err)
+				continue
+			}
+
+			select {
+			case <-stopMemProfilingChan:
+				<-lastMemProfileSaveAck
+				return
+			default:
+			}
+		}
+	}()
 
 	//create a goroutine saving the CPU profiles to a S3 bucket
 
 	go func() {
-		defer childCtx.Cancel()
 		defer close(lastCpuProfileSaveAck)
 
 		for profile := range cpuProfiles {
