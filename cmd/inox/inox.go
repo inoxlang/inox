@@ -12,9 +12,11 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
+	metricsperf "github.com/inoxlang/inox/internal/metrics-perf"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/rs/zerolog"
 
@@ -27,6 +29,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
 	"github.com/inoxlang/inox/internal/globals/inoxsh_ns"
+	"github.com/inoxlang/inox/internal/globals/s3_ns"
 	lsp "github.com/inoxlang/inox/internal/project_server"
 
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -53,6 +56,8 @@ const (
 	DEFAULT_ALLOWED_DEV_HOST    = core.Host("https://localhost:8080")
 	DEFAULT_PROJECT_SERVER_PORT = "8305"
 	DEFAULT_PROJECT_SERVER_HOST = core.Host("wss://localhost:" + DEFAULT_PROJECT_SERVER_PORT)
+
+	PERF_PROFILES_COLLECTION_SAVE_PERIOD = 30 * time.Second
 )
 
 func main() {
@@ -326,6 +331,27 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 				s.SetContextOnce(sessionCtx)
 				return nil
 			},
+		}
+
+		if config.METRICS_PERF_BUCKET_NAME == "" {
+			fmt.Fprintln(errW, "credentials of metrics-perf bucket are missing")
+			return
+		}
+
+		_, err = metricsperf.StartPeriodicPerfProfilesCollection(ctx, metricsperf.PerfDataCollectionConfig{
+			ProfileSavePeriod: PERF_PROFILES_COLLECTION_SAVE_PERIOD,
+			Bucket: s3_ns.OpenBucketWithCredentialsInput{
+				Provider:   config.METRICS_PERF_BUCKET_PROVIDER,
+				HttpsHost:  config.METRICS_PERF_BUCKET_ENDPOINT,
+				AccessKey:  config.METRICS_PERF_BUCKET_ACCESS_KEY,
+				SecretKey:  config.METRICS_PERF_BUCKET_SECRET_KEY.StringValue().GetOrBuildString(),
+				BucketName: config.METRICS_PERF_BUCKET_NAME,
+			},
+		})
+
+		if err != nil {
+			fmt.Fprintln(errW, "failed to start collection of perfomance profiles:", err)
+			return
 		}
 
 		if err := lsp.StartLSPServer(ctx, opts); err != nil {
