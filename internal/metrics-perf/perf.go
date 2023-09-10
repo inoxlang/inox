@@ -74,6 +74,9 @@ func StartPeriodicPerfProfilesCollection(ctx *core.Context, conf PerfDataCollect
 	//create a goroutine saving the CPU profiles to a S3 bucket
 
 	go func() {
+		defer childCtx.Cancel()
+		defer close(lastCpuProfileSaveAck)
+
 		for profile := range cpuProfiles {
 			date := time.Now().UTC().Format(time.RFC3339)
 			key := "cpu-" + period.String() + "-" + date + ".pprof"
