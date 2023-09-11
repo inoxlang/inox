@@ -52,6 +52,7 @@ var (
 	ErrModifyImmutable           = errors.New("cannot modify an immutable value")
 	ErrCannotSetProp             = errors.New("cannot set property")
 	ErrCannotLockUnsharableValue = errors.New("cannot lock unsharable value")
+	ErrAttemptToSetCaptureGlobal = errors.New("attempt to set a captured global")
 
 	ErrNotImplemented    = errors.New("not implemented and won't be implemented in the near future")
 	ErrNotImplementedYet = errors.New("not implemented yet")

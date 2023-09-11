@@ -43,7 +43,7 @@ type GlobalState struct {
 	Debugger                             atomic.Value                                                    //nil or (nillable) *Debugger
 
 	MainState            *GlobalState //never nil
-	Project              Project          //can be nil
+	Project              Project      //can be nil
 	id                   StateId
 	descendantStates     map[ResourceName]*GlobalState
 	descendantStatesLock sync.Mutex
@@ -235,7 +235,7 @@ func (g *GlobalVariables) Set(name string, value Value) {
 	if len(g.capturedGlobalsStack) != 0 {
 		for _, captured := range g.capturedGlobalsStack[len(g.capturedGlobalsStack)-1] {
 			if captured.name == name {
-				panic(errors.New("attempt to set a captured global"))
+				panic(ErrAttemptToSetCaptureGlobal)
 			}
 		}
 	}

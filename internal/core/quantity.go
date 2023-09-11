@@ -17,6 +17,10 @@ const (
 	BYTE_COUNT_UNIT = "B"
 )
 
+var (
+	ErrUnknownStartQtyRange = errors.New("quantity range has unknown start")
+)
+
 // ByteCount implements Value.
 type ByteCount int64
 
@@ -55,7 +59,7 @@ type QuantityRange struct {
 
 func (r QuantityRange) KnownStart() Serializable {
 	if r.unknownStart {
-		panic(errors.New("range has unknown start"))
+		panic(ErrUnknownStartQtyRange)
 	}
 	return r.start
 }

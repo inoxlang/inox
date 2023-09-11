@@ -6,6 +6,10 @@ import (
 	"sync/atomic"
 )
 
+var (
+	ValueNotShared = errors.New("value is not shared")
+)
+
 type SmartLock struct {
 	valueShared atomic.Bool
 	lock        sync.Mutex
@@ -17,7 +21,7 @@ func (lock *SmartLock) IsValueShared() bool {
 
 func (lock *SmartLock) AssertValueShared() {
 	if !lock.valueShared.Load() {
-		panic(errors.New("value is not shared"))
+		panic(ValueNotShared)
 	}
 }
 

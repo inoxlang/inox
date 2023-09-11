@@ -624,7 +624,7 @@ func (db *dummyDatabase) Schema() *ObjectPattern {
 
 func (db *dummyDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handlers MigrationOpHandlers) {
 	if db.schemaUpdated {
-		panic(errors.New("schema already updated"))
+		panic(ErrDatabaseSchemaAlreadyUpdatedOrNotAllowed)
 	}
 	db.schemaUpdated = true
 

@@ -8,9 +8,10 @@ import (
 )
 
 var (
-	ErrAttemptToMutateReadonlyByteSlice = errors.New("attempt to write a readonly byte slice")
-	_                                   = []WrappedBytes{&ByteSlice{}}
-	_                                   = []BytesLike{&ByteSlice{}, &BytesConcatenation{}}
+	ErrAttemptToMutateReadonlyByteSlice            = errors.New("attempt to write a readonly byte slice")
+	ErrAttemptToCreateMutableSpecificTypeByteSlice = errors.New("attempt to create a mutable byte slice with specific content type")
+	_                                              = []WrappedBytes{&ByteSlice{}}
+	_                                              = []BytesLike{&ByteSlice{}, &BytesConcatenation{}}
 )
 
 // A WrappedBytes represents a value that wraps a byte slice []byte.
@@ -43,7 +44,7 @@ type ByteSlice struct {
 func NewByteSlice(bytes []byte, mutable bool, contentType Mimetype) *ByteSlice {
 	//TODO: check content type
 	if contentType != "" && mutable {
-		panic(errors.New("attempt to create a mutable byte slice with specific content type"))
+		panic(ErrAttemptToCreateMutableSpecificTypeByteSlice)
 	}
 	return &ByteSlice{Bytes: bytes, IsDataMutable: mutable, contentType: contentType}
 }

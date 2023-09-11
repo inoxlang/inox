@@ -297,7 +297,7 @@ func (rw *HttpResponseWriter) writeStatus(status core.Int) {
 	rw.assertStatusNotSet()
 
 	if rw.status >= 0 {
-		panic(errors.New("status already written"))
+		panic(ErrStatusAlreadySet)
 	}
 	rw.status = int(status)
 	rw.rw.WriteHeader(int(status))

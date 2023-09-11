@@ -16,12 +16,13 @@ const (
 )
 
 var (
-	ErrTransactionAlreadyStarted        = errors.New("transaction has already started")
-	ErrCannotAddIrreversibleEffect      = errors.New("cannot add irreversible effect to transaction")
-	ErrCtxAlreadyHasTransaction         = errors.New("context already has a transaction")
-	ErrFinishedTransaction              = errors.New("transaction is finished")
-	ErrAlreadySetTransactionEndCallback = errors.New("transaction end callback is already set")
-	ErrRunningTransactionExpected = errors.New("running transaction expected")
+	ErrTransactionAlreadyStarted               = errors.New("transaction has already started")
+	ErrTransactionShouldBeStartedBySameContext = errors.New("a transaction should be started by the same context that created it")
+	ErrCannotAddIrreversibleEffect             = errors.New("cannot add irreversible effect to transaction")
+	ErrCtxAlreadyHasTransaction                = errors.New("context already has a transaction")
+	ErrFinishedTransaction                     = errors.New("transaction is finished")
+	ErrAlreadySetTransactionEndCallback        = errors.New("transaction end callback is already set")
+	ErrRunningTransactionExpected              = errors.New("running transaction expected")
 )
 
 // A Transaction represents a series of effects that are applied atomically.
@@ -33,7 +34,7 @@ type Transaction struct {
 	endTime        time.Time
 	effects        []Effect
 	values         map[any]any
-	endCallbackFns map[any]func(*Transaction, bool)
+	endCallbackFns map[any]TransactionEndCallbackFn
 	finished       atomic.Bool
 	timeout        Duration
 	isReadonly     bool
@@ -46,7 +47,7 @@ func newTransaction(ctx *Context, options ...Option) *Transaction {
 		ctx:            ctx,
 		ulid:           ulid.Make(),
 		values:         make(map[any]any),
-		endCallbackFns: make(map[any]func(*Transaction, bool)),
+		endCallbackFns: make(map[any]TransactionEndCallbackFn),
 		timeout:        DEFAULT_TRANSACTION_TIMEOUT,
 	}
 
@@ -77,7 +78,7 @@ func (tx *Transaction) Start(ctx *Context) error {
 	}
 
 	if ctx != tx.ctx {
-		panic(errors.New("a transaction should be started by the same context that created it"))
+		panic(ErrTransactionShouldBeStartedBySameContext)
 	}
 
 	tx.lock.Lock()

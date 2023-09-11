@@ -20,6 +20,8 @@ var (
 	_ = []IProps{(*Object)(nil), (*Record)(nil), (*Namespace)(nil), (*Dictionary)(nil), (*List)(nil)}
 
 	_ Sequence = (*Array)(nil)
+
+	ErrCannotSetValOfIndexKeyProp = errors.New("cannot set value of index key property")
 )
 
 func init() {
@@ -427,7 +429,7 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 	}
 
 	if IsIndexKey(name) {
-		panic(errors.New("cannot set value of index key property"))
+		panic(ErrCannotSetValOfIndexKeyProp)
 	}
 
 	for i, key := range obj.keys {

@@ -8,7 +8,10 @@ import (
 	yaml "github.com/goccy/go-yaml/ast"
 )
 
-var ErrUnsupportedYamlNodeType = errors.New("unsupported YAML node type")
+var (
+	ErrUnsupportedYamlNodeType = errors.New("unsupported YAML node type")
+	UnknownYamlNodeType        = errors.New("unknown YAML node type")
+)
 
 func ConvertYamlParsedFileToInoxVal(ctx *Context, f *yaml.File, immutable bool) Serializable {
 	values := make([]Serializable, len(f.Docs))
@@ -25,7 +28,7 @@ func ConvertYamlParsedFileToInoxVal(ctx *Context, f *yaml.File, immutable bool) 
 func ConvertYamlNodeToInoxVal(ctx *Context, n yaml.Node, immutable bool) Serializable {
 	switch n.Type() {
 	case yaml.UnknownNodeType:
-		panic(errors.New("unknown YAML node type"))
+		panic(UnknownYamlNodeType)
 	case yaml.DocumentType:
 		return ConvertYamlNodeToInoxVal(ctx, n.(*yaml.DocumentNode).Body, immutable)
 	case yaml.NullType:

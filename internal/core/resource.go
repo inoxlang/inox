@@ -29,6 +29,7 @@ var (
 	ErrResourceHasHardcodedUrlMetaProperty = errors.New("resource has hardcoded _url_ metaproperty")
 	ErrInvalidResourceContent              = errors.New("invalid resource's content")
 	ErrContentTypeParserNotFound           = errors.New("parser not found for content type")
+	ErrEmptyPath                           = errors.New("empty path")
 
 	PATH_PROPNAMES         = []string{"segments", "extension", "name", "dir", "ends_with_slash", "rel_equiv", "change_extension", "join"}
 	HOST_PROPNAMES         = []string{"scheme", "explicit_port", "without_port"}
@@ -103,7 +104,7 @@ func NewPath(slices []Value, isStaticPathSliceList []bool) (Value, error) {
 
 func PathFrom(pth string) Path {
 	if pth == "" {
-		panic(errors.New("empty path"))
+		panic(ErrEmptyPath)
 	}
 
 	pth = filepath.Clean(pth)

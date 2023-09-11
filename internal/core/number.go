@@ -7,6 +7,8 @@ import (
 )
 
 var (
+	ErrUnknownStartIntRange = errors.New("integer range has unknown start")
+
 	_ = []Integral{Int(0), Byte(0)}
 )
 
@@ -95,7 +97,7 @@ func NewIncludedEndIntRange(start, end int64) IntRange {
 
 func (r IntRange) Includes(ctx *Context, i Int) bool {
 	if r.unknownStart {
-		panic(errors.New("range has unknown start"))
+		panic(ErrUnknownStartIntRange)
 	}
 
 	return r.Start <= int64(i) && int64(i) <= r.InclusiveEnd()
@@ -110,7 +112,7 @@ func (r IntRange) At(ctx *Context, i int) Value {
 
 func (r IntRange) Len() int {
 	if r.unknownStart {
-		panic(errors.New("range has unknown start"))
+		panic(ErrUnknownStartIntRange)
 	}
 
 	return r.len(r.Start)
@@ -118,7 +120,7 @@ func (r IntRange) Len() int {
 
 func (r IntRange) KnownStart() int64 {
 	if r.unknownStart {
-		panic(errors.New("range has unknown start"))
+		panic(ErrUnknownStartIntRange)
 	}
 	return r.Start
 }
