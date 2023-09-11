@@ -3,6 +3,7 @@ package symbolic
 import (
 	"errors"
 
+	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -11,6 +12,8 @@ var (
 		(*Object)(nil), (*InoxFunction)(nil), (*GoFunction)(nil), (*RingBuffer)(nil),
 		(*Mapping)(nil), (*ValueHistory)(nil),
 	}
+
+	ErrMissingNodeValue = errors.New("missing node value")
 )
 
 type PotentiallySharable interface {
@@ -65,4 +68,142 @@ func IsShared(v SymbolicValue) bool {
 		return true
 	}
 	return false
+}
+
+// checkNotClonedObjectPropMutation recursively checks that the current mutation is not a deep mutation
+// of a shared object's cloned property.
+func checkNotClonedObjectPropMutation(path parse.Node, state *State) {
+	_checkNotClonedObjectPropDeepMutation(path, state, true)
+}
+
+func _checkNotClonedObjectPropDeepMutation(path parse.Node, state *State, first bool) {
+	isSharedObject := func(v SymbolicValue) bool {
+		obj, ok := v.(*Object)
+		return ok && obj.IsShared()
+	}
+
+	getNodeValue := func(n parse.Node) SymbolicValue {
+		val, ok := state.symbolicData.GetMostSpecificNodeValue(n)
+		if ok {
+			return val
+		}
+		switch node := n.(type) {
+		case *parse.Variable:
+			info, ok := state.getLocal(node.Name)
+			if ok {
+				return info.value
+			}
+		case *parse.GlobalVariable:
+			info, ok := state.getGlobal(node.Name)
+			if ok {
+				return info.value
+			}
+		case *parse.IdentifierLiteral:
+
+			if state.hasLocal(node.Name) {
+				info, _ := state.getLocal(node.Name)
+				return info.value
+			} else if state.hasGlobal(node.Name) {
+				info, _ := state.getGlobal(node.Name)
+				return info.value
+			}
+		}
+		panic(ErrMissingNodeValue)
+	}
+
+	switch node := path.(type) {
+	case *parse.Variable:
+		if first {
+			return
+		}
+		info, ok := state.getLocal(node.Name)
+		if ok && isSharedObject(info.value) {
+			state.addError(makeSymbolicEvalError(path, state, USELESS_MUTATION_IN_CLONED_PROP_VALUE))
+		}
+	case *parse.GlobalVariable:
+		if first {
+			return
+		}
+		info, ok := state.getGlobal(node.Name)
+		if ok && isSharedObject(info.value) {
+			state.addError(makeSymbolicEvalError(path, state, USELESS_MUTATION_IN_CLONED_PROP_VALUE))
+		}
+	case *parse.IdentifierLiteral:
+		if first {
+			return
+		}
+		if state.hasLocal(node.Name) {
+			info, _ := state.getLocal(node.Name)
+			if isSharedObject(info.value) {
+				state.addError(makeSymbolicEvalError(path, state, USELESS_MUTATION_IN_CLONED_PROP_VALUE))
+			}
+		} else if state.hasGlobal(node.Name) {
+			info, _ := state.getGlobal(node.Name)
+			if isSharedObject(info.value) {
+				state.addError(makeSymbolicEvalError(path, state, USELESS_MUTATION_IN_CLONED_PROP_VALUE))
+			}
+		}
+	case *parse.IdentifierMemberExpression:
+		left := getNodeValue(node.Left)
+
+		propName := node.PropertyNames[0].Name
+		iprops, ok := AsIprops(left).(IProps)
+
+		if !ok || !HasRequiredOrOptionalProperty(iprops, propName) {
+			break
+		}
+
+		movingIprops := iprops
+		ipropsList := []IProps{iprops}
+
+		if len(node.PropertyNames) > 1 {
+			for _, _propName := range node.PropertyNames[:len(node.PropertyNames)-1] {
+				if !HasRequiredOrOptionalProperty(movingIprops, _propName.Name) {
+					return
+				}
+
+				val := movingIprops.Prop(_propName.Name)
+
+				movingIprops, ok = AsIprops(val).(IProps)
+				if !ok {
+					return
+				}
+				ipropsList = append(ipropsList, movingIprops)
+			}
+
+			for i := len(ipropsList) - 1; i >= 0; i-- {
+				currentIprops := ipropsList[i]
+				currentPropertyName := node.PropertyNames[i]
+
+				if isSharedObject(currentIprops) {
+					state.addError(makeSymbolicEvalError(currentPropertyName, state, USELESS_MUTATION_IN_CLONED_PROP_VALUE))
+					return
+				} else if IsShared(currentIprops) {
+					return
+				}
+			}
+		} else { //single property name
+			if isSharedObject(left) {
+				state.addError(makeSymbolicEvalError(node.PropertyNames[0], state, USELESS_MUTATION_IN_CLONED_PROP_VALUE))
+				return
+			}
+		}
+	case *parse.MemberExpression:
+		left := getNodeValue(node.Left)
+
+		if isSharedObject(left) {
+			state.addError(makeSymbolicEvalError(node.PropertyName, state, USELESS_MUTATION_IN_CLONED_PROP_VALUE))
+			return
+		} else if IsShared(left) {
+			return
+		}
+
+		_checkNotClonedObjectPropDeepMutation(node.Left, state, false)
+	case *parse.IndexExpression:
+		_checkNotClonedObjectPropDeepMutation(node.Indexed, state, false)
+	case *parse.SliceExpression:
+		_checkNotClonedObjectPropDeepMutation(node.Indexed, state, false)
+	case *parse.DoubleColonExpression:
+		return
+	}
 }

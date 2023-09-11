@@ -4326,6 +4326,54 @@ func TestSymbolicEval(t *testing.T) {
 			}, state.errors())
 			assert.Equal(t, NewList(NewInt(1)), res)
 		})
+
+		t.Run("useless deep mutation of a shared object property's value should be an error - member expression", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				$$shared.list.append(1)
+			`)
+			sharedObject := NewInexactObject(map[string]Serializable{
+				"list": NewListOf(ANY_INT),
+			}, nil, map[string]Pattern{
+				"list": NewListPatternOf(&TypePattern{val: ANY_INT}),
+			})
+			sharedObject = sharedObject.Share(state).(*Object)
+
+			state.setGlobal("shared", sharedObject, GlobalConst)
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			propIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+				return n.Name == "list"
+			})
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(propIdent, state, USELESS_MUTATION_IN_CLONED_PROP_VALUE),
+			}, state.errors())
+		})
+
+		t.Run("useless deep mutation of a shared object property's value should be an error - ident memb expression", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				shared.list.append(1)
+			`)
+			sharedObject := NewInexactObject(map[string]Serializable{
+				"list": NewListOf(ANY_INT),
+			}, nil, map[string]Pattern{
+				"list": NewListPatternOf(&TypePattern{val: ANY_INT}),
+			})
+			sharedObject = sharedObject.Share(state).(*Object)
+
+			state.setGlobal("shared", sharedObject, GlobalConst)
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			propIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+				return n.Name == "list"
+			})
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(propIdent, state, USELESS_MUTATION_IN_CLONED_PROP_VALUE),
+			}, state.errors())
+		})
 	})
 
 	t.Run("call abstract function", func(t *testing.T) {
@@ -5417,6 +5465,35 @@ func TestSymbolicEval(t *testing.T) {
 						fmtNotAssignableToPropOfExpectedValue(NewInt(1), ANY_STR_LIKE)),
 				}, state.errors())
 			})
+
+			t.Run("useless deep mutation of a shared object property's value should be an error", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					$$shared.list[0].a = 1
+				`)
+				sharedObject := NewInexactObject(map[string]Serializable{
+					"list": NewListOf(NewInexactObject(map[string]Serializable{
+						"a": ANY_INT,
+					}, nil, map[string]Pattern{
+						"a": &TypePattern{val: ANY_INT},
+					})),
+				}, nil, map[string]Pattern{
+					"list": NewListPatternOf(&TypePattern{val: ANY_INT}),
+				})
+				sharedObject = sharedObject.Share(state).(*Object)
+
+				state.setGlobal("shared", sharedObject, GlobalConst)
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+
+				propIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+					return n.Name == "list"
+				})
+
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(propIdent, state, USELESS_MUTATION_IN_CLONED_PROP_VALUE),
+				}, state.errors())
+			})
+
 		})
 
 		t.Run("identifier member expression LHS", func(t *testing.T) {
@@ -5452,6 +5529,10 @@ func TestSymbolicEval(t *testing.T) {
 
 				obj := res.(*Object)
 				assert.Equal(t, NewInt(2), obj.Prop("a"))
+			})
+
+			t.Run("1 property: useless deep mutation of a shared object property's value should be an error", func(t *testing.T) {
+				//TODO
 			})
 
 			t.Run("2 properties: value assignable to type", func(t *testing.T) {
@@ -5738,6 +5819,53 @@ func TestSymbolicEval(t *testing.T) {
 				assert.Equal(t, NewList(NewInt(0)), res)
 			})
 
+			t.Run("useless deep mutation of a shared object property's value should be an error - same value", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					shared.list[0] = 0
+				`)
+				sharedObject := NewInexactObject(map[string]Serializable{
+					"list": NewList(ANY_INT),
+				}, nil, map[string]Pattern{
+					"list": NewListPatternOf(&TypePattern{val: ANY_INT}),
+				})
+				sharedObject = sharedObject.Share(state).(*Object)
+
+				state.setGlobal("shared", sharedObject, GlobalConst)
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+
+				propIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+					return n.Name == "list"
+				})
+
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(propIdent, state, USELESS_MUTATION_IN_CLONED_PROP_VALUE),
+				}, state.errors())
+			})
+
+			t.Run("useless deep mutation of a shared object property's value should be an error - diffrent value", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					shared.list[0] = 1
+				`)
+				sharedObject := NewInexactObject(map[string]Serializable{
+					"list": NewList(ANY_INT),
+				}, nil, map[string]Pattern{
+					"list": NewListPatternOf(&TypePattern{val: ANY_INT}),
+				})
+				sharedObject = sharedObject.Share(state).(*Object)
+
+				state.setGlobal("shared", sharedObject, GlobalConst)
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+
+				propIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+					return n.Name == "list"
+				})
+
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(propIdent, state, USELESS_MUTATION_IN_CLONED_PROP_VALUE),
+				}, state.errors())
+			})
 		})
 
 		t.Run("index expression LHS with unknown index & several elements", func(t *testing.T) {
@@ -5915,6 +6043,30 @@ func TestSymbolicEval(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Empty(t, state.errors())
 				assert.Equal(t, NewListOf(ANY_INT), res)
+			})
+
+			t.Run("useless deep mutation of a shared object property's value should be an error", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					shared.list[0:1] = [1]
+				`)
+				sharedObject := NewInexactObject(map[string]Serializable{
+					"list": NewListOf(ANY_INT),
+				}, nil, map[string]Pattern{
+					"list": NewListPatternOf(&TypePattern{val: ANY_INT}),
+				})
+				sharedObject = sharedObject.Share(state).(*Object)
+
+				state.setGlobal("shared", sharedObject, GlobalConst)
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+
+				propIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+					return n.Name == "list"
+				})
+
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(propIdent, state, USELESS_MUTATION_IN_CLONED_PROP_VALUE),
+				}, state.errors())
 			})
 		})
 

@@ -681,6 +681,10 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				}
 				state.setLocal(name, rhs, nil, n.Left)
 			}
+
+			checkNotClonedObjectPropMutation(lhs, state)
+
+			//TODO: set to previous value instead ?
 			state.symbolicData.SetMostSpecificNodeValue(lhs, __rhs)
 			state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
 		case *parse.IdentifierLiteral:
@@ -730,6 +734,10 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				}
 				state.setLocal(name, rhs, nil, n.Left)
 			}
+
+			checkNotClonedObjectPropMutation(lhs, state)
+
+			//TODO: set to previous value instead ?
 			state.symbolicData.SetMostSpecificNodeValue(lhs, __rhs)
 			state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
 		case *parse.GlobalVariable:
@@ -767,6 +775,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				state.setGlobal(name, rhs, GlobalVar, n.Left)
 			}
 
+			checkNotClonedObjectPropMutation(lhs, state)
+
+			//TODO: set to previous value instead ?
 			state.symbolicData.SetMostSpecificNodeValue(lhs, __rhs)
 			state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
 		case *parse.MemberExpression:
@@ -832,6 +843,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				prevValue := iprops.Prop(propName)
 				state.symbolicData.SetMostSpecificNodeValue(lhs.PropertyName, prevValue)
 
+				checkNotClonedObjectPropMutation(lhs, state)
+
 				if _, ok := iprops.(Serializable); ok {
 					if _, ok := rhs.(Serializable); !ok {
 						state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
@@ -862,6 +875,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				}
 
 			} else {
+				checkNotClonedObjectPropMutation(lhs, state)
+
 				nonSerializableErr := false
 				if _, ok := iprops.(Serializable); ok {
 					if _, ok := rhs.(Serializable); !ok {
@@ -894,8 +909,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				return nil, err
 			}
 
-			for _, idents := range lhs.PropertyNames[:len(lhs.PropertyNames)-1] {
-				v = symbolicMemb(v, idents.Name, false, lhs, state)
+			for _, ident := range lhs.PropertyNames[:len(lhs.PropertyNames)-1] {
+				v = symbolicMemb(v, ident.Name, false, lhs, state)
+				state.symbolicData.SetMostSpecificNodeValue(ident, v)
 			}
 
 			var iprops IProps
@@ -950,6 +966,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				prevValue := iprops.Prop(lastPropName)
 				state.symbolicData.SetMostSpecificNodeValue(lastPropNameNode, prevValue)
 
+				checkNotClonedObjectPropMutation(lhs, state)
+
 				if _, ok := iprops.(Serializable); ok {
 
 					if _, ok := rhs.(Serializable); !ok {
@@ -976,6 +994,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 					}
 				}
 			} else {
+				checkNotClonedObjectPropMutation(lhs, state)
+
 				nonSerializableErr := false
 				if _, ok := iprops.(Serializable); ok {
 					if _, ok := rhs.(Serializable); !ok {
@@ -1016,6 +1036,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			if err != nil {
 				return nil, err
 			}
+
+			checkNotClonedObjectPropMutation(lhs, state)
 
 			seq, isMutableSeq := asIndexable(slice).(MutableSequence)
 			if isMutableSeq && (!seq.HasKnownLen() ||
@@ -1163,6 +1185,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			if err != nil {
 				return nil, err
 			}
+
+			checkNotClonedObjectPropMutation(lhs, state)
 
 			seq, isMutableSeq := slice.(MutableSequence)
 			if isMutableSeq && (!seq.HasKnownLen() ||

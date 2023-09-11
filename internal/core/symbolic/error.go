@@ -85,7 +85,8 @@ const (
 	RHS_OF_DOUBLE_COLON_EXPRS_WITH_OBJ_LHS_SHOULD_BE_THE_NAME_OF_A_MUTABLE_NON_SHARABLE_VALUE_PROPERTY = //
 	"the right hand side of double-colon expressions with object LHS should be the name of a property with a mutable, non-sharable value"
 
-	MISPLACED_DOUBLE_COLON_EXPR = "misplaced double-colon expression"
+	USELESS_MUTATION_IN_CLONED_PROP_VALUE = "useless mutation in a cloned property's value, you should use a double-colon expression (<object>::<prop name>) to retrieve the actual property's value"
+	MISPLACED_DOUBLE_COLON_EXPR           = "misplaced double-colon expression"
 )
 
 var (
