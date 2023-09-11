@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -421,7 +420,7 @@ func TestSymbolicList(t *testing.T) {
 
 	t.Run("Append()", func(t *testing.T) {
 		t.Run("adding no elements to empty list", func(t *testing.T) {
-			ctx := NewSymbolicContext(testConcreteContext{context.Background()}, nil)
+			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil)
 			state := newSymbolicState(ctx, nil)
 
 			list := NewList()
@@ -432,7 +431,7 @@ func TestSymbolicList(t *testing.T) {
 		})
 
 		t.Run("adding element to empty list", func(t *testing.T) {
-			ctx := NewSymbolicContext(testConcreteContext{context.Background()}, nil)
+			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil)
 			state := newSymbolicState(ctx, nil)
 
 			list := NewList()
@@ -447,7 +446,7 @@ func TestSymbolicList(t *testing.T) {
 		})
 
 		t.Run("adding no element to list with single element", func(t *testing.T) {
-			ctx := NewSymbolicContext(testConcreteContext{context.Background()}, nil)
+			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil)
 			state := newSymbolicState(ctx, nil)
 
 			list := NewList(NewInt(1))
@@ -458,7 +457,7 @@ func TestSymbolicList(t *testing.T) {
 		})
 
 		t.Run("adding same type element to list with single element", func(t *testing.T) {
-			ctx := NewSymbolicContext(testConcreteContext{context.Background()}, nil)
+			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil)
 			state := newSymbolicState(ctx, nil)
 
 			list := NewList(NewInt(1))
@@ -727,15 +726,4 @@ func TestSymbolicDictionary(t *testing.T) {
 		})
 	}
 
-}
-
-type testConcreteContext struct {
-	context.Context
-}
-
-func (ctx testConcreteContext) HasPermissionUntyped(perm any) bool {
-	return false
-}
-func (ctx testConcreteContext) HasAPermissionWithKindAndType(kind permkind.PermissionKind, typename permkind.InternalPermissionTypename) bool {
-	return false
 }

@@ -193,3 +193,15 @@ type ConcreteContext interface {
 	HasPermissionUntyped(perm any) bool
 	HasAPermissionWithKindAndType(kind permkind.PermissionKind, typename permkind.InternalPermissionTypename) bool
 }
+
+
+type dummyConcreteContext struct {
+	context.Context
+}
+
+func (ctx dummyConcreteContext) HasPermissionUntyped(perm any) bool {
+	return false
+}
+func (ctx dummyConcreteContext) HasAPermissionWithKindAndType(kind permkind.PermissionKind, typename permkind.InternalPermissionTypename) bool {
+	return false
+}

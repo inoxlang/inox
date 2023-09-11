@@ -1479,7 +1479,7 @@ func (db *DatabaseIL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symb
 		return nil, fmt.Errorf("failed to convert schema to symbolic: %w", err)
 	}
 
-	return symbolic.NewDatabaseIL(db.ownerState.Ctx, pattern.(*symbolic.ObjectPattern), db.schemaUpdateExpected), nil
+	return symbolic.NewDatabaseIL(pattern.(*symbolic.ObjectPattern), db.schemaUpdateExpected), nil
 }
 
 func (api *ApiIL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {

@@ -2,6 +2,7 @@ package symbolic
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 
 	"github.com/inoxlang/inox/internal/parse"
@@ -19,7 +20,7 @@ const (
 var (
 	DATABASE_PROPNAMES = []string{"update_schema", "close", "schema"}
 
-	ANY_DATABASE = NewDatabaseIL(nil, NewAnyObjectPattern(), false)
+	ANY_DATABASE = NewDatabaseIL(NewAnyObjectPattern(), false)
 )
 
 // A DatabaseIL represents a symbolic DatabaseIL.
@@ -29,13 +30,13 @@ type DatabaseIL struct {
 	schemaUpdateExpected bool //not used for comparison
 	propertyNames        []string
 
-	//dummy state, nil for ANY_DATABASE
+	//dummy state
 	//We do not set it with the converted owner state of the concrete DatabaseIL in order to avoid issues (duplicate symbolic states, ...),
 	//however that could cause other issues because .ownerState has no information about the concrete owner state.
 	ownerState *State
 }
 
-func NewDatabaseIL(concreteOwnerStateContext ConcreteContext, schema *ObjectPattern, schemaUpdateExpected bool) *DatabaseIL {
+func NewDatabaseIL(schema *ObjectPattern, schemaUpdateExpected bool) *DatabaseIL {
 	propertyNames := utils.CopySlice(DATABASE_PROPNAMES)
 	for propName := range schema.entries {
 		if utils.SliceContains(DATABASE_PROPNAMES, propName) {
@@ -50,13 +51,11 @@ func NewDatabaseIL(concreteOwnerStateContext ConcreteContext, schema *ObjectPatt
 		propertyNames:        propertyNames,
 	}
 
-	if concreteOwnerStateContext != nil {
-		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
-			NameString: "pseudo-database-state-module",
-			CodeString: "manifest {}",
-		}))
-		db.ownerState = newSymbolicState(NewSymbolicContext(concreteOwnerStateContext, nil), chunk)
-	}
+	chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+		NameString: "pseudo-database-state-module",
+		CodeString: "manifest {}",
+	}))
+	db.ownerState = newSymbolicState(NewSymbolicContext(dummyConcreteContext{context.Background()}, nil), chunk)
 
 	return db
 }
