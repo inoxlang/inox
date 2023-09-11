@@ -2509,6 +2509,16 @@ func combineErrors(errs ...error) error {
 	return errors.New(strings.TrimRight(finalErrBuff.String(), "\n"))
 }
 
+// combineErrorsWithPrefixMessage combines errors into a single error with a multiline message.
+func combineErrorsWithPrefixMessage(prefixMsg string, errs ...error) error {
+
+	err := combineErrors(errs...)
+	if err == nil {
+		return nil
+	}
+	return fmt.Errorf("%s: %w", prefixMsg, err)
+}
+
 // CombineParsingErrorValues combines errors into a single error with a multiline message.
 func CombineParsingErrorValues(errs []Error, positions []parse.SourcePositionRange) error {
 

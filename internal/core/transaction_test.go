@@ -120,4 +120,74 @@ func TestTransaction(t *testing.T) {
 		time.Sleep(2 * time.Millisecond)
 		assert.ErrorIs(t, tx.Commit(ctx), ErrFinishedTransaction)
 	})
+
+	t.Run("during a commit a panic with an integer value in a callback function should not prevent other callbacks to be called", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+		tx := newTransaction(ctx)
+		tx.Start(ctx)
+
+		callCount := 0
+
+		tx.OnEnd(1, func(tx *Transaction, success bool) {
+			callCount++
+		})
+
+		tx.OnEnd(2, func(tx *Transaction, success bool) {
+			callCount++
+			panic(123)
+		})
+
+		tx.OnEnd(3, func(tx *Transaction, success bool) {
+			callCount++
+		})
+
+		time.Sleep(2 * time.Millisecond)
+		err := tx.Commit(ctx)
+
+		if !assert.Equal(t, 3, callCount) {
+			return
+		}
+
+		if !assert.ErrorContains(t, err, "callback errors") {
+			return
+		}
+
+		assert.ErrorContains(t, err, "123")
+	})
+
+	t.Run("during a rollback a panic with an integer value in a callback function should not prevent other callbacks to be called", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+		tx := newTransaction(ctx)
+		tx.Start(ctx)
+
+		callCount := 0
+
+		tx.OnEnd(1, func(tx *Transaction, success bool) {
+			callCount++
+		})
+
+		tx.OnEnd(2, func(tx *Transaction, success bool) {
+			callCount++
+			panic(123)
+		})
+
+		tx.OnEnd(3, func(tx *Transaction, success bool) {
+			callCount++
+		})
+
+		time.Sleep(2 * time.Millisecond)
+		err := tx.Rollback(ctx)
+
+		if !assert.Equal(t, 3, callCount) {
+			return
+		}
+
+		if !assert.ErrorContains(t, err, "callback errors") {
+			return
+		}
+
+		assert.ErrorContains(t, err, "123")
+	})
 }

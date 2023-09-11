@@ -3,10 +3,12 @@ package core
 import (
 	"errors"
 	"fmt"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -163,16 +165,27 @@ func (tx *Transaction) Commit(ctx *Context) error {
 	for _, effect := range tx.effects {
 		if err := effect.Apply(ctx); err != nil {
 			for _, fn := range tx.endCallbackFns {
-				fn(tx, false)
+				fn(tx, true)
 			}
 			return fmt.Errorf("error when applying effet %#v: %w", effect, err)
 		}
 	}
 
+	var callbackErrors []error
 	for _, fn := range tx.endCallbackFns {
-		fn(tx, true)
+		func() {
+			defer func() {
+				if e := recover(); e != nil {
+					defer recover()
+					err := fmt.Errorf("%w: %s", utils.ConvertPanicValueToError(e), string(debug.Stack()))
+					callbackErrors = append(callbackErrors, err)
+				}
+			}()
+			fn(tx, false)
+		}()
 	}
-	return nil
+
+	return combineErrorsWithPrefixMessage("callback errors", callbackErrors...)
 }
 
 func (tx *Transaction) Rollback(ctx *Context) error {
@@ -188,8 +201,18 @@ func (tx *Transaction) Rollback(ctx *Context) error {
 
 	tx.endTime = time.Now()
 
+	var callbackErrors []error
 	for _, fn := range tx.endCallbackFns {
-		fn(tx, false)
+		func() {
+			defer func() {
+				if e := recover(); e != nil {
+					defer recover()
+					err := fmt.Errorf("%w: %s", utils.ConvertPanicValueToError(e), string(debug.Stack()))
+					callbackErrors = append(callbackErrors, err)
+				}
+			}()
+			fn(tx, false)
+		}()
 	}
 
 	for _, effect := range tx.effects {
@@ -198,7 +221,7 @@ func (tx *Transaction) Rollback(ctx *Context) error {
 		}
 	}
 
-	return nil
+	return combineErrorsWithPrefixMessage("callback errors", callbackErrors...)
 }
 
 func (tx *Transaction) WaitFinished() <-chan struct{} {
