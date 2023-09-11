@@ -248,9 +248,21 @@ I am {{name}}`
 ### Checked Strings
 
 In Inox checked strings are strings that are validated against a pattern. When you dynamically
-create a checked string all the interpolations must be explicitly typed.
+create a checked string all the interpolations must be explicitly typed:
+```
+%integer = %`(0|[1-9]+[0-9]*)`
 
-<img src="./img/query-injection.png"></img>
+%math. = {
+    expr: %str( %integer (| "+" | "-") %integer)
+    int: %integer
+}
+
+one = "1"
+two = "2"
+
+checked_string = %math.expr`{{int:one}}+{{int:two}}`
+```
+
 
 ### URL Expressions
 
