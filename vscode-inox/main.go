@@ -126,6 +126,8 @@ func main() {
 					}
 
 					go func() {
+						defer recover()
+
 						for {
 							select {
 							case <-sessionCtx.Done():

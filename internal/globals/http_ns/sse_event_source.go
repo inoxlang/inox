@@ -129,6 +129,7 @@ func NewEventSource(ctx *core.Context, resourceNameOrPattern core.Value) (*Serve
 	}
 
 	go func() {
+		defer recover()
 		_ = backoff.RetryNotify(fn, evs.reconnectStrategy, nil)
 		//TODO: post mortem log (note: context is potentially already done)
 	}()

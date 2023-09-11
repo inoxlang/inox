@@ -17,6 +17,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/net_ns"
 	"github.com/inoxlang/inox/internal/project_server/logs"
 	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
+	"github.com/inoxlang/inox/internal/utils"
 	jsoniter "github.com/json-iterator/go"
 )
 
@@ -236,7 +237,8 @@ func (s *Session) execute(mtdInfo MethodInfo, req RequestMessage, args interface
 	go func() {
 		defer s.removeExecutor(exec)
 		defer func() {
-			if err, ok := recover().(error); ok {
+			if e := recover(); e != nil {
+				err := utils.ConvertPanicValueToError(e)
 				logs.Println(fmt.Errorf("%w: %s", err, string(debug.Stack())))
 			}
 		}()

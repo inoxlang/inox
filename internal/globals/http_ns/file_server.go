@@ -2,7 +2,6 @@ package http_ns
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"net/url"
 	"time"
@@ -67,8 +66,15 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 	endChan := make(chan struct{}, 1)
 
 	go func() {
-		log.Println(server.ListenAndServeTLS("", ""))
-		endChan <- struct{}{}
+		defer func() {
+			recover()
+			endChan <- struct{}{}
+		}()
+
+		err := server.ListenAndServeTLS("", "")
+		if err != nil {
+			ctx.Logger().Err(err).Send()
+		}
 	}()
 
 	time.Sleep(5 * time.Millisecond)

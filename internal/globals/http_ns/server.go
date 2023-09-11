@@ -232,17 +232,25 @@ func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*Http
 
 	//listen and serve in a goroutine
 	go func() {
+		defer func() {
+			recover()
+			endChan <- struct{}{}
+		}()
 		_server.serverLogger.Info().Msg("serve " + addr)
 
 		err := server.ListenAndServeTLS("", "")
 		if err != nil {
 			_server.serverLogger.Print(err)
 		}
-		endChan <- struct{}{}
 	}()
 
 	//ungracefully stop server after context is done
 	go func() {
+		defer func() {
+			recover()
+			endChan <- struct{}{}
+		}()
+
 		<-ctx.Done()
 		_server.ImmediatelyClose(ctx)
 	}()

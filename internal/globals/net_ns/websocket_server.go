@@ -81,6 +81,8 @@ func newWebsocketServer(ctx *core.Context, messageTimeout time.Duration) (*Webso
 
 	//spawn a goroutine to close connections.
 	go func() {
+		defer recover()
+
 	loop:
 		for {
 			select {

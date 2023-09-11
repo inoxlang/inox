@@ -484,6 +484,8 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 				//the response can be safely ignored because if the edit is applied a textDocument/didSave request
 				//will be sent by the client.
 				go func() {
+					defer recover()
+
 					session.SendRequest(jsonrpc.RequestMessage{
 						BaseMessage: jsonrpc.BaseMessage{
 							Jsonrpc: JSONRPC_VERSION,

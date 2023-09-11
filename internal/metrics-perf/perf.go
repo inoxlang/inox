@@ -50,6 +50,7 @@ func StartPeriodicPerfProfilesCollection(ctx *core.Context, conf PerfDataCollect
 	//create the main profiling goroutine, it manages the CPU profiles & the memory profiling goroutine
 
 	go func() {
+		defer recover()
 		defer childCtx.Cancel()
 
 		buff := bytes.NewBuffer(nil)
@@ -80,6 +81,7 @@ func StartPeriodicPerfProfilesCollection(ctx *core.Context, conf PerfDataCollect
 	//create a goroutine saving a memory profile every conf.Period & saving the profiles to a S3 bucket
 
 	go func() {
+		defer recover()
 		defer close(lastMemProfileSaveAck)
 
 		ticker := time.NewTicker(period)
@@ -113,6 +115,7 @@ func StartPeriodicPerfProfilesCollection(ctx *core.Context, conf PerfDataCollect
 	//create a goroutine saving the CPU profiles to a S3 bucket
 
 	go func() {
+		defer recover()
 		defer close(lastCpuProfileSaveAck)
 
 		for profile := range cpuProfiles {

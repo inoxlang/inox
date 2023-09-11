@@ -391,6 +391,13 @@ func registerDebugMethodHandlers(
 			debugSession.programPreparedOrFailedToChan = make(chan error)
 
 			go func() {
+				defer func() {
+					if e := recover(); e != nil {
+						err := utils.ConvertPanicValueToError(e)
+						logs.Println(fmt.Errorf("%w: %s", err, string(debug.Stack())))
+					}
+				}()
+
 				select {
 				case <-session.Context().Done():
 					return
@@ -1322,6 +1329,13 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 
 	//send a "stopped" event each time the program stops.
 	go func() {
+		defer func() {
+			if e := recover(); e != nil {
+				err := utils.ConvertPanicValueToError(e)
+				logs.Println(fmt.Errorf("%w: %s", err, string(debug.Stack())))
+			}
+		}()
+
 		stoppedChan := debugSession.debugger.StoppedChan()
 		for {
 			select {
@@ -1373,6 +1387,13 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 
 	//send secondary events
 	go func() {
+		defer func() {
+			if e := recover(); e != nil {
+				err := utils.ConvertPanicValueToError(e)
+				logs.Println(fmt.Errorf("%w: %s", err, string(debug.Stack())))
+			}
+		}()
+
 		secondaryEventChan := debugSession.debugger.SecondaryEvents()
 		for {
 			select {
