@@ -181,6 +181,8 @@ func loadObject(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
 		storage.SetSerialized(ctx, path, updatedRepr)
 	}
 
+	object.Share(ctx.GetClosestState())
+
 	//add mutation handlers
 	object.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
 		registerAgain = true
@@ -190,8 +192,6 @@ func loadObject(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
 	}, MutationWatchingConfiguration{
 		Depth: DeepWatching,
 	})
-
-	object.Share(ctx.GetClosestState())
 
 	return object, nil
 }

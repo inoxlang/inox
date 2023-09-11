@@ -91,7 +91,7 @@ func TestLoadObject(t *testing.T) {
 		assert.Equal(t, `{"_url_":"ldb://main/user","a":"2"}`, storage.Data["/user"])
 	})
 
-	t.Run("performing a deep mutation should cause a save", func(t *testing.T) {
+	t.Run("performing a mutation on a property with a sharable value should cause a save", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		storage := &TestValueStorage{
 			BaseURL_: "ldb://main/",
@@ -131,6 +131,50 @@ func TestLoadObject(t *testing.T) {
 		}
 
 		assert.Equal(t, `{"_url_":"ldb://main/user","inner":{"a":"2"}}`, storage.Data["/user"])
+	})
+
+	t.Run("performing a mutation on a property with a mutable non-sharable value should cause a save", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		StartNewTransaction(ctx)
+
+		storage := &TestValueStorage{
+			BaseURL_: "ldb://main/",
+			Data:     map[Path]string{"/user": `{"inner":[]}`},
+		}
+		pattern := NewInexactObjectPattern(map[string]Pattern{
+			"inner": NewListPatternOf(INT_PATTERN),
+		})
+
+		val, err := loadObject(ctx, InstanceLoadArgs{
+			Key:          "/user",
+			Storage:      storage,
+			Pattern:      pattern,
+			AllowMissing: false,
+			Migration:    nil,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.NotNil(t, val) {
+			return
+		}
+		object := val.(*Object)
+
+		url, _ := object.URL()
+
+		if !assert.Equal(t, URL("ldb://main/user"), url) {
+			return
+		}
+
+		assert.True(t, object.IsShared())
+
+		//any deep change to the object should cause a save
+		inner := object.PropNotStored(ctx, "inner").(*List)
+		inner.append(ctx, Int(1))
+
+		assert.Equal(t, `{"_url_":"ldb://main/user","inner":["1"]}`, storage.Data["/user"])
 	})
 
 	t.Run("migration: deletion", func(t *testing.T) {
