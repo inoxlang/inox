@@ -14,6 +14,7 @@ import (
 var (
 	_ = []symbolic.Iterable{(*Set)(nil)}
 	_ = []symbolic.Serializable{(*Set)(nil)}
+	_ = []symbolic.PotentiallySharable{(*Set)(nil)}
 	_ = []symbolic.PotentiallyConcretizable{(*SetPattern)(nil)}
 	_ = []symbolic.MigrationInitialValueCapablePattern{(*SetPattern)(nil)}
 
@@ -31,6 +32,7 @@ var (
 type Set struct {
 	elementPattern symbolic.Pattern
 	uniqueness     *containers_common.UniquenessConstraint
+	shared         bool
 
 	symbolic.UnassignablePropsMixin
 	symbolic.SerializableMixin
@@ -84,6 +86,22 @@ func (s *Set) Test(v symbolic.SymbolicValue) bool {
 
 	return s.uniqueness == nil || s.uniqueness == otherSet.uniqueness
 }
+
+func (s *Set) IsSharable() (bool, string) {
+	return true, ""
+}
+
+func (s *Set) Share(originState *symbolic.State) symbolic.PotentiallySharable {
+	shared := *s
+	shared.shared = true
+	return &shared
+}
+
+func (s *Set) IsShared() bool {
+	return s.shared
+}
+
+// it should NOT modify the value and should instead return a copy of the value but shared.
 
 func (s *Set) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
