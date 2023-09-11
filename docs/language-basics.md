@@ -42,6 +42,9 @@
     - [Module Imports](#module-imports)
 - [Static check](#static-check)
 - [Symbolic evaluation](#symbolic-evaluation)
+- [Concurrency](#concurrency)
+    - [Goroutines](#goroutines)
+    - [Data Sharing](#data-sharing)
 - [Databases](#databases)
     - [Schema](#database-schema)
     - [Serialization](#serialization)
@@ -1018,6 +1021,99 @@ how they work, just remember that:
 - the bytecode interpreter is the default when running a script with `inox run`
 - the REPL always use the tree walking interpreter
 - the tree walking intepreter is much slower (filesystem & network operations are not affected)
+
+
+# Concurrency
+
+## Goroutines
+
+Routines are mainly used for concurrent work and isolation. Each routine has its own Goroutine and state.
+
+**Embedded module:**
+
+````
+routine = go {globals: .{read}, allow: {read: %https://example.com/...}} do {
+    return read!(https://example.com/)
+}
+````
+
+Call syntax (all permissions are inherited):
+````
+routine = go do f()
+````
+
+Routines can optionally be part of a "routine group" that allows easier control of multiple routines.
+
+````
+req_group = RoutineGroup()
+
+for (1 .. 10) {
+    go {group: req_group} read!(https://jsonplaceholder.typicode.com/posts)
+}
+
+results = req_group.wait_results!()
+````
+
+## Data Sharing
+
+Execution contexts can share & pass values.
+Most **sharable** values are either **immutable** or **lock-protected**:
+
+```
+immutable = #[1, 2, 3]
+lock_protected = {a: 1}
+
+go {globals: {immutable: immutable, lock_protected: lock_protected}} do {
+    # assigning a property causes the underlying lock of the object to be acquired
+    # before the mutation and to be released afterwards.
+    lock_protected.a = 2
+}
+```
+
+The most common immutables values are floats, integral values (ints, bytes, ...), string-like values and records & tuples.
+The most common lock-protected values are objects.
+
+**Non-sharable** values that are **clonable** are cloned when passed to another execution context:
+
+```
+clonable = [1, 2, 3]
+
+go {globals: {clone: clonable}} do {
+    # modifying the clone does no change the original value
+    clone.append(4)
+}
+```
+
+### Functions
+
+Inox functions are generally sharable unless they assign a global variable.
+
+Go **functions** are sharable but Go **methods** are not:
+```
+# not sharable
+method = RoutineGroup().wait_results
+```
+
+### Objects
+
+Properties of **shared objects** are shared/cloned when accessed:
+```
+user = {friends: ["foo"]}
+
+friends_copy = user.friends
+
+# user.friends is not updated
+friends_copy.append("bar")
+```
+
+The mutation of a property is achieved by using a **double-colon** syntax:
+```
+user::friends.append("bar")
+```
+
+In Inox Web applications it is frequent for request execution contexts to access properties of the same object concurrently. 
+When an object is accessed by an execution context having an **associated transaction** all other access attempts
+from other execution contexts are paused until the transaction finishes.
 
 
 # Databases
