@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	ValueNotShared = errors.New("value is not shared")
+	ErrValueNotShared = errors.New("value is not shared")
 )
 
 type SmartLock struct {
@@ -21,7 +21,7 @@ func (lock *SmartLock) IsValueShared() bool {
 
 func (lock *SmartLock) AssertValueShared() {
 	if !lock.valueShared.Load() {
-		panic(ValueNotShared)
+		panic(ErrValueNotShared)
 	}
 }
 
@@ -32,6 +32,10 @@ func (lock *SmartLock) Share(originState *GlobalState, fn func()) {
 }
 
 func (lock *SmartLock) Lock(state *GlobalState, embedder PotentiallySharable) {
+	//IMPORTANT:
+	//Locking/unlocking of SmartLock should be cheap because there are potentially thousands of operations per second.
+	//No channel or goroutine should be created.
+
 	if !lock.valueShared.Load() {
 		return
 	}
@@ -48,6 +52,10 @@ func (lock *SmartLock) Lock(state *GlobalState, embedder PotentiallySharable) {
 }
 
 func (lock *SmartLock) Unlock(state *GlobalState, embedder PotentiallySharable) {
+	//IMPORTANT:
+	//Locking/unlocking of SmartLock should be cheap because there are potentially thousands of operations per second.
+	//No channel or goroutine should be created.
+	
 	if !lock.valueShared.Load() {
 		return
 	}
