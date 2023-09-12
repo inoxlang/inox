@@ -11,13 +11,17 @@
 //
 // Thanks to Stuart Colville for the Python version: https://pypi.python.org/pypi/titlecase.
 // And John Gruber for the original version in Perl: http://daringfireball.net/2008/05/title_case.
-//
 package titlecase
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
+)
+
+const (
+	MAX_INPUT_STRING_BYTE_LENGTH = 100_000
 )
 
 var (
@@ -40,6 +44,9 @@ var (
 )
 
 func Title(s string) string {
+	if len(s) > MAX_INPUT_STRING_BYTE_LENGTH {
+		panic(errors.New("input string is too large"))
+	}
 
 	lines := reLineBreak.Split(s, -1)
 	newLines := make([]string, 0, len(lines))

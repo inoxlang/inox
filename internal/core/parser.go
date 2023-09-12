@@ -41,10 +41,17 @@ type jsonParser struct {
 }
 
 func (p *jsonParser) Validate(ctx *Context, s string) bool {
+	if len(s) > DEFAULT_MAX_TESTED_STRING_BYTE_LENGTH {
+		panic(ErrTestedStringTooLarge)
+	}
 	return json.Valid(utils.StringAsBytes(s))
 
 }
 func (p *jsonParser) Parse(ctx *Context, s string) (Serializable, error) {
+	if len(s) > DEFAULT_MAX_TESTED_STRING_BYTE_LENGTH {
+		return nil, ErrTestedStringTooLarge
+	}
+
 	var jsonVal any
 	err := json.Unmarshal(utils.StringAsBytes(s), &jsonVal)
 	if err != nil {
@@ -57,11 +64,19 @@ type inoxReprParser struct {
 }
 
 func (p *inoxReprParser) Validate(ctx *Context, s string) bool {
+	if len(s) > DEFAULT_MAX_TESTED_STRING_BYTE_LENGTH {
+		panic(ErrTestedStringTooLarge)
+	}
+
 	_, err := ParseRepr(ctx, utils.StringAsBytes(s))
 	return err == nil
 
 }
 func (p *inoxReprParser) Parse(ctx *Context, s string) (Serializable, error) {
+	if len(s) > DEFAULT_MAX_TESTED_STRING_BYTE_LENGTH {
+		return nil, ErrTestedStringTooLarge
+	}
+
 	return ParseRepr(ctx, utils.StringAsBytes(s))
 }
 
@@ -69,12 +84,20 @@ type yamlParser struct {
 }
 
 func (p *yamlParser) Validate(ctx *Context, s string) bool {
+	if len(s) > DEFAULT_MAX_TESTED_STRING_BYTE_LENGTH {
+		panic(ErrTestedStringTooLarge)
+	}
+
 	tokens := yamlLex.Tokenize(s)
 	_, err := yamlParse.Parse(tokens, yamlParse.ParseComments)
 	return err == nil
 }
 
 func (p *yamlParser) Parse(ctx *Context, s string) (Serializable, error) {
+	if len(s) > DEFAULT_MAX_TESTED_STRING_BYTE_LENGTH {
+		return nil, ErrTestedStringTooLarge
+	}
+
 	tokens := yamlLex.Tokenize(s)
 	yml, err := yamlParse.Parse(tokens, 0)
 

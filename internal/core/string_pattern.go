@@ -17,10 +17,16 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+const (
+	//maximum length of strings tested against regex patterns, sequence string patterns and parser patterns.
+	DEFAULT_MAX_TESTED_STRING_BYTE_LENGTH = 10_000_000
+)
+
 var (
 	ErrStrGroupMatchingOnlySupportedForPatternWithRegex = errors.New("group matching is only supported by string patterns with a regex for now")
 	ErrCannotParse                                      = errors.New("cannot parse")
 	ErrInvalidInputString                               = errors.New("invalid input string")
+	ErrTestedStringTooLarge                             = errors.New("tested string is too large")
 	ErrFailedToConvertValueToMatchingString             = errors.New("failed to convert value to matching string")
 
 	//_ = []StringPattern{&ParserBasedPseudoPattern{}}
@@ -257,6 +263,10 @@ func (patt *SequenceStringPattern) Test(ctx *Context, v Value) bool {
 	}
 
 	str := _str.GetOrBuildString()
+	if len(str) > DEFAULT_MAX_TESTED_STRING_BYTE_LENGTH {
+		panic(ErrTestedStringTooLarge)
+	}
+
 	if patt.HasRegex() {
 		return patt.entireStringRegexp.MatchString(str)
 	} else {
@@ -293,7 +303,13 @@ func (patt *SequenceStringPattern) MatchGroups(ctx *Context, v Serializable) (ma
 		return nil, false, nil
 	}
 
-	submatches := patt.regexp.FindStringSubmatch(s.GetOrBuildString())
+	goString := s.GetOrBuildString()
+
+	if len(goString) > DEFAULT_MAX_TESTED_STRING_BYTE_LENGTH {
+		return nil, false, ErrTestedStringTooLarge
+	}
+
+	submatches := patt.regexp.FindStringSubmatch(goString)
 	if submatches == nil || !patt.Test(ctx, v) {
 		return nil, false, nil
 	}
@@ -315,9 +331,14 @@ func (patt *SequenceStringPattern) FindGroupMatches(ctx *Context, v Serializable
 		return nil, nil
 	}
 
+	goString := s.GetOrBuildString()
 	//TODO: prevent DoS
 
-	submatchesList, err := FindGroupMatchesForRegex(ctx, patt.regexp, s.GetOrBuildString(), config)
+	if len(goString) > DEFAULT_MAX_TESTED_STRING_BYTE_LENGTH {
+		return nil, ErrTestedStringTooLarge
+	}
+
+	submatchesList, err := FindGroupMatchesForRegex(ctx, patt.regexp, goString, config)
 	if err != nil {
 		return nil, err
 	}
@@ -1143,6 +1164,10 @@ func (patt *NamedSegmentPathPattern) MatchGroups(ctx *Context, v Serializable) (
 		return nil, false, nil
 	}
 
+	if len(pth) > MAX_TESTED_PATH_BYTE_LENGTH {
+		return nil, false, ErrTestedPathTooLarge
+	}
+
 	str := string(pth)
 	i := 0
 	groups := map[string]Serializable{"0": v}
@@ -1232,7 +1257,12 @@ func (pattern *RegexPattern) Test(ctx *Context, v Value) bool {
 	if !ok || !checkMatchedStringLen(str, pattern) {
 		return false
 	}
-	return pattern.regexp.MatchString(str.GetOrBuildString())
+	goString := str.GetOrBuildString()
+
+	if len(goString) > DEFAULT_MAX_TESTED_STRING_BYTE_LENGTH {
+		panic(ErrTestedStringTooLarge)
+	}
+	return pattern.regexp.MatchString(goString)
 }
 
 func (pattern *RegexPattern) Regex() string {
@@ -1410,7 +1440,7 @@ func NewStringPathPattern(pathPattern PathPattern) *PathStringPattern {
 	return &PathStringPattern{optionalPathPattern: pathPattern}
 }
 
-// AddValidPathPrefix adds the ./ prefix if necessary, AddValidPathPrefix does NOT check that its argument is valid path.
+// AddValidPathPrefix adds the ./ prefix if necessary, AddValidPathPrefix does NOT check that its argument is a valid path.
 func AddValidPathPrefix(s string) (string, error) {
 	if s != "" && s[0] == '/' {
 		return s, nil
@@ -1610,7 +1640,12 @@ func FindMatchesForStringPattern(ctx *Context, patt StringPattern, val Serializa
 		return nil, nil
 	}
 
-	matches, err = FindMatchesForRegex(ctx, patt.CompiledRegex(), s.GetOrBuildString(), config)
+	goString := s.GetOrBuildString()
+	if len(goString) > DEFAULT_MAX_TESTED_STRING_BYTE_LENGTH {
+		return nil, ErrTestedStringTooLarge
+	}
+
+	matches, err = FindMatchesForRegex(ctx, patt.CompiledRegex(), goString, config)
 	if err != nil {
 		return nil, err
 	}
@@ -1619,6 +1654,10 @@ func FindMatchesForStringPattern(ctx *Context, patt StringPattern, val Serializa
 }
 
 func FindMatchesForRegex(ctx *Context, regexp *regexp.Regexp, s string, config MatchesFindConfig) (matches []Serializable, err error) {
+	if len(s) > DEFAULT_MAX_TESTED_STRING_BYTE_LENGTH {
+		return nil, ErrTestedStringTooLarge
+	}
+
 	switch config.Kind {
 	case FindAllMatches:
 		matches := regexp.FindAllString(string(s), -1)
@@ -1634,10 +1673,13 @@ func FindMatchesForRegex(ctx *Context, regexp *regexp.Regexp, s string, config M
 	default:
 		panic(fmt.Errorf("matching: invalid config"))
 	}
-
 }
 
 func FindGroupMatchesForRegex(ctx *Context, regexp *regexp.Regexp, s string, config GroupMatchesFindConfig) (groups [][]string, err error) {
+	if len(s) > DEFAULT_MAX_TESTED_STRING_BYTE_LENGTH {
+		return nil, ErrTestedStringTooLarge
+	}
+
 	switch config.Kind {
 	case FindAllGroupMatches:
 		return regexp.FindAllStringSubmatch(string(s), -1), nil

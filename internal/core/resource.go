@@ -21,6 +21,12 @@ import (
 
 const (
 	ANY_HTTPS_HOST_PATTERN = HostPattern("https://**")
+	// PATH_MAX on linux
+	MAX_TESTED_PATH_BYTE_LENGTH = 4095
+	MAX_TESTED_URL_BYTE_LENGTH  = 8000
+
+	//TODO: change value
+	MAX_TESTED_HOST_PATTERN_BYTE_LENGTH = 100
 )
 
 var (
@@ -30,6 +36,9 @@ var (
 	ErrInvalidResourceContent              = errors.New("invalid resource's content")
 	ErrContentTypeParserNotFound           = errors.New("parser not found for content type")
 	ErrEmptyPath                           = errors.New("empty path")
+	ErrTestedPathTooLarge                  = errors.New("tested path is too large")
+	ErrTestedURLTooLarge                   = errors.New("tested URL is too large")
+	ErrTestedHostPatternTooLarge           = errors.New("tested host pattern is too large")
 
 	PATH_PROPNAMES         = []string{"segments", "extension", "name", "dir", "ends_with_slash", "rel_equiv", "change_extension", "join"}
 	HOST_PROPNAMES         = []string{"scheme", "explicit_port", "without_port"}
@@ -436,6 +445,9 @@ func (patt PathPattern) Includes(ctx *Context, v Value) bool {
 	case Path:
 		if patt.IsPrefixPattern() {
 			return strings.HasPrefix(string(other), patt.Prefix())
+		}
+		if len(other) > MAX_TESTED_PATH_BYTE_LENGTH {
+			panic(ErrTestedPathTooLarge)
 		}
 		ok, err := doublestar.Match(string(patt), string(other))
 		return err == nil && ok
@@ -999,6 +1011,9 @@ func (HostPattern) StringPattern() (StringPattern, bool) {
 }
 
 func (patt HostPattern) includesPattern(otherPattern HostPattern) bool {
+	if len(otherPattern) > MAX_TESTED_HOST_PATTERN_BYTE_LENGTH {
+		panic(ErrTestedHostPatternTooLarge)
+	}
 	if strings.Count(string(patt), "**") > 0 {
 		patt := "^" + strings.ReplaceAll(string(patt), "**", "[0-9a-zA-Z*.-]+") + "$"
 		regex := regexp.MustCompile(patt)
@@ -1015,6 +1030,9 @@ func (patt URLPattern) Test(ctx *Context, v Value) bool {
 		return false
 	}
 
+	if len(u) > MAX_TESTED_URL_BYTE_LENGTH {
+		panic(ErrTestedURLTooLarge)
+	}
 	return patt.Includes(ctx, u)
 }
 
