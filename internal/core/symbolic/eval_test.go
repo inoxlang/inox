@@ -1882,6 +1882,26 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("double-colon expression", func(t *testing.T) {
+
+		t.Run("unterminated", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				obj = {
+					list: []
+				}
+				obj::
+				return obj
+			`, nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewInexactObject(map[string]Serializable{
+				"list": NewList(),
+			}, nil, map[string]Pattern{
+				"list": NewListPatternOf(&TypePattern{val: ANY_SERIALIZABLE}),
+			}), res)
+		})
+
 		t.Run("mutation of an object property", func(t *testing.T) {
 			t.Run("call of a property's method", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`

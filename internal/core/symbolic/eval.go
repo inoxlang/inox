@@ -71,7 +71,8 @@ var (
 	ANY_READER   = &Reader{}
 
 	SUPPORTED_PARSING_ERRORS = []parse.ParsingErrorKind{
-		parse.UnterminatedMemberExpr, parse.MissingBlock, parse.MissingFnBody,
+		parse.UnterminatedMemberExpr, parse.UnterminatedDoubleColonExpr,
+		parse.MissingBlock, parse.MissingFnBody,
 		parse.MissingEqualsSignInDeclaration,
 	}
 )
@@ -3543,6 +3544,10 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		obj, ok := left.(*Object)
 		if !ok {
 			state.addError(makeSymbolicEvalError(node, state, DOUBLE_COLON_EXPRS_ONLY_SUPPORT_OBJ_LHS_FOR_NOW))
+			return ANY, nil
+		}
+
+		if n.Element == nil {
 			return ANY, nil
 		}
 
