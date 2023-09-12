@@ -9,6 +9,7 @@ import (
 const (
 	UnspecifiedParsingError ParsingErrorKind = iota
 	UnterminatedMemberExpr
+	UnterminatedDoubleColonExpr
 	MissingBlock
 	MissingFnBody
 	MissingEqualsSignInDeclaration

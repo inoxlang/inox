@@ -6445,7 +6445,7 @@ loop:
 					return &DoubleColonExpression{
 						NodeBase: NodeBase{
 							NodeSpan{first.Base().Span.Start, p.i},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_DOUBLE_COLON_EXPR},
+							&ParsingError{UnterminatedDoubleColonExpr, UNTERMINATED_DOUBLE_COLON_EXPR},
 							tokens,
 						},
 						Left: lhs,

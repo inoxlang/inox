@@ -3869,7 +3869,7 @@ func testParse(
 					&DoubleColonExpression{
 						NodeBase: NodeBase{
 							NodeSpan{0, 3},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_DOUBLE_COLON_EXPR},
+							&ParsingError{UnterminatedDoubleColonExpr, UNTERMINATED_DOUBLE_COLON_EXPR},
 							[]Token{{Type: DOUBLE_COLON, Span: NodeSpan{1, 3}}},
 						},
 						Left: &IdentifierLiteral{
@@ -3959,7 +3959,7 @@ func testParse(
 					&DoubleColonExpression{
 						NodeBase: NodeBase{
 							NodeSpan{0, 6},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_DOUBLE_COLON_EXPR},
+							&ParsingError{UnterminatedDoubleColonExpr, UNTERMINATED_DOUBLE_COLON_EXPR},
 							[]Token{{Type: DOUBLE_COLON, Span: NodeSpan{4, 6}}},
 						},
 						Left: &DoubleColonExpression{
