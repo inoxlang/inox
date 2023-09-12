@@ -1,7 +1,6 @@
 package compl
 
 import (
-	"bytes"
 	"strings"
 
 	core "github.com/inoxlang/inox/internal/core"
@@ -334,9 +333,9 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 	case *parse.IdentifierLiteral:
 		completions = handleIdentifierAndKeywordCompletions(mode, n, deepestCall, _ancestorChain, _parent, int32(cursorIndex), chunk, state)
 	case *parse.IdentifierMemberExpression:
-		completions = handleIdentifierMemberCompletions(n, state, mode)
+		completions = handleIdentifierMemberCompletions(n, state, chunk, mode)
 	case *parse.MemberExpression:
-		completions = handleMemberExpressionCompletions(n, state, mode)
+		completions = handleMemberExpressionCompletions(n, state, chunk, mode)
 	case *parse.DoubleColonExpression:
 		completions = handleDoubleColonExpressionCompletions(n, state, chunk, mode)
 	case *parse.CallExpression: //if a call is the deepest node at cursor it means we are not in an argument
@@ -690,9 +689,10 @@ after_subcommand_completions:
 	return completions
 }
 
-func handleIdentifierMemberCompletions(n *parse.IdentifierMemberExpression, state *core.TreeWalkState, mode CompletionMode) []Completion {
+func handleIdentifierMemberCompletions(
+	n *parse.IdentifierMemberExpression, state *core.TreeWalkState,
+	chunk *parse.ParsedChunk, mode CompletionMode) []Completion {
 
-	var buff *bytes.Buffer
 	var curr any
 	var ok bool
 
@@ -706,9 +706,20 @@ func handleIdentifierMemberCompletions(n *parse.IdentifierMemberExpression, stat
 		return nil
 	}
 
-	buff = bytes.NewBufferString(n.Left.Name)
-
 	isLastPropPresent := len(n.PropertyNames) > 0 && (n.Err == nil || n.Err.Kind() != parse.UnterminatedMemberExpr)
+
+	var replacedRange parse.SourcePositionRange
+	if isLastPropPresent {
+		replacedRange = chunk.GetSourcePosition(n.PropertyNames[len(n.PropertyNames)-1].Span)
+	} else {
+		replacedRange = chunk.GetSourcePosition(n.Span)
+		replacedRange.StartColumn = replacedRange.EndColumn
+		replacedRange.StartLine = replacedRange.EndLine
+		replacedRange.Span.Start = replacedRange.Span.End
+	}
+	// '.'
+	replacedRange.Span.Start -= 1
+	replacedRange.StartColumn -= 1
 
 	//we get the next property until we reach the last property's name
 	for i, propName := range n.PropertyNames {
@@ -736,8 +747,6 @@ func handleIdentifierMemberCompletions(n *parse.IdentifierMemberExpression, stat
 				if i == len(n.PropertyNames)-1 && (n.Err == nil || n.Err.Kind() != parse.UnterminatedMemberExpr) { //if last
 					return nil
 				}
-				buff.WriteRune('.')
-				buff.WriteString(propName.Name)
 
 				switch iprops := curr.(type) {
 				case core.IProps:
@@ -757,18 +766,32 @@ func handleIdentifierMemberCompletions(n *parse.IdentifierMemberExpression, stat
 		}
 	}
 
-	s := buff.String()
-
-	return suggestPropertyNames(s, curr, n.PropertyNames, isLastPropPresent, state.Global, mode)
+	return suggestPropertyNames(curr, n.PropertyNames, isLastPropPresent, replacedRange, state.Global, mode)
 }
 
-func handleMemberExpressionCompletions(n *parse.MemberExpression, state *core.TreeWalkState, mode CompletionMode) []Completion {
+func handleMemberExpressionCompletions(
+	n *parse.MemberExpression, state *core.TreeWalkState,
+	chunk *parse.ParsedChunk, mode CompletionMode) []Completion {
 	ok := true
-	buff := bytes.NewBufferString("")
 
 	var exprPropertyNames = []*parse.IdentifierLiteral{n.PropertyName}
 	left := n.Left
 	isLastPropPresent := n.PropertyName != nil
+
+	var replacedRange parse.SourcePositionRange
+	if isLastPropPresent {
+		replacedRange = chunk.GetSourcePosition(n.PropertyName.Span)
+	} else {
+		replacedRange = chunk.GetSourcePosition(n.Span)
+		replacedRange.StartColumn = replacedRange.EndColumn
+		replacedRange.StartLine = replacedRange.EndLine
+		replacedRange.Span.Start = replacedRange.Span.End
+	}
+	// '.'
+	replacedRange.Span.Start -= 1
+	replacedRange.StartColumn -= 1
+
+	var curr any
 
 loop:
 	for {
@@ -776,20 +799,23 @@ loop:
 		case *parse.MemberExpression:
 			left = l.Left
 			exprPropertyNames = append([]*parse.IdentifierLiteral{l.PropertyName}, exprPropertyNames...)
+		case *parse.DoubleColonExpression:
+			val, ok := state.Global.SymbolicData.GetMostSpecificNodeValue(l.Element)
+			if !ok {
+				return nil
+			}
+			curr = val
+			break loop
 		case *parse.GlobalVariable:
-			buff.WriteString(l.Str())
 			break loop
 		case *parse.Variable:
-			buff.WriteString(l.Str())
 			break loop
 		case *parse.SelfExpression:
-			buff.WriteString("self")
 			break loop
 		default:
 			return nil
 		}
 	}
-	var curr any
 
 	switch left := left.(type) {
 	case *parse.GlobalVariable:
@@ -821,6 +847,8 @@ loop:
 				return nil
 			}
 		}
+	case *parse.DoubleColonExpression:
+		//ok
 	default:
 		panic(core.ErrUnreachable)
 	}
@@ -853,9 +881,6 @@ loop:
 		//if we find it we add '.<property name>' to the buffer
 		for _, name := range propertyNames {
 			if name == propNameNode.Name {
-				buff.WriteRune('.')
-				buff.WriteString(propNameNode.Name)
-
 				switch iprops := curr.(type) {
 				case core.IProps:
 					curr = iprops.Prop(state.Global.Ctx, name)
@@ -874,7 +899,7 @@ loop:
 		}
 	}
 
-	return suggestPropertyNames(buff.String(), curr, exprPropertyNames, isLastPropPresent, state.Global, mode)
+	return suggestPropertyNames(curr, exprPropertyNames, isLastPropPresent, replacedRange, state.Global, mode)
 }
 
 func handleDoubleColonExpressionCompletions(n *parse.DoubleColonExpression, state *core.TreeWalkState, chunk *parse.ParsedChunk, mode CompletionMode) (completions []Completion) {
@@ -921,8 +946,8 @@ func handleDoubleColonExpressionCompletions(n *parse.DoubleColonExpression, stat
 }
 
 func suggestPropertyNames(
-	s string, curr interface{}, exprPropNames []*parse.IdentifierLiteral, isLastPropPresent bool,
-	state *core.GlobalState, mode CompletionMode,
+	curr interface{}, exprPropNames []*parse.IdentifierLiteral, isLastPropPresent bool,
+	replacedRange parse.SourcePositionRange, state *core.GlobalState, mode CompletionMode,
 ) []Completion {
 	var completions []Completion
 	var propNames []string
@@ -959,10 +984,11 @@ func suggestPropertyNames(
 			}
 
 			completions = append(completions, Completion{
-				ShownString: s + op + propName,
-				Value:       s + op + propName,
-				Kind:        defines.CompletionItemKindProperty,
-				Detail:      propDetails[i],
+				ShownString:   op + propName,
+				Value:         op + propName,
+				Kind:          defines.CompletionItemKindProperty,
+				Detail:        propDetails[i],
+				ReplacedRange: replacedRange,
 			})
 		}
 	} else {
@@ -982,10 +1008,11 @@ func suggestPropertyNames(
 			}
 
 			completions = append(completions, Completion{
-				ShownString: s + op + propName,
-				Value:       s + op + propName,
-				Kind:        defines.CompletionItemKindProperty,
-				Detail:      propDetails[i],
+				ShownString:   op + propName,
+				Value:         op + propName,
+				Kind:          defines.CompletionItemKindProperty,
+				Detail:        propDetails[i],
+				ReplacedRange: replacedRange,
 			})
 		}
 	}

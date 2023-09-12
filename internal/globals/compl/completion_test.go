@@ -245,7 +245,7 @@ func TestFindCompletions(t *testing.T) {
 					doSymbolicCheck(chunk, state.Global)
 					completions := findCompletions(state, chunk, 4)
 					assert.EqualValues(t, []Completion{
-						{ShownString: "obj.name", Value: "obj.name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 4}}},
+						{ShownString: ".name", Value: ".name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 3, End: 4}}},
 					}, completions)
 				})
 
@@ -258,7 +258,7 @@ func TestFindCompletions(t *testing.T) {
 					doSymbolicCheck(chunk, state.Global)
 					completions := findCompletions(state, chunk, 5)
 					assert.EqualValues(t, []Completion{
-						{ShownString: "obj.name", Value: "obj.name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 5}}},
+						{ShownString: ".name", Value: ".name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 3, End: 5}}},
 					}, completions)
 				})
 
@@ -272,7 +272,7 @@ func TestFindCompletions(t *testing.T) {
 					doSymbolicCheck(chunk, state.Global)
 					completions := findCompletions(state, chunk, 10)
 					assert.EqualValues(t, []Completion{
-						{ShownString: "obj.inner.name", Value: "obj.inner.name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 10}}},
+						{ShownString: ".name", Value: ".name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 9, End: 10}}},
 					}, completions)
 				})
 
@@ -286,13 +286,13 @@ func TestFindCompletions(t *testing.T) {
 					doSymbolicCheck(chunk, state.Global)
 					completions := findCompletions(state, chunk, 11)
 					assert.EqualValues(t, []Completion{
-						{ShownString: "obj.inner.name", Value: "obj.inner.name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 11}}},
+						{ShownString: ".name", Value: ".name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 9, End: 11}}},
 					}, completions)
 				})
 			})
 
 			t.Run("member expression", func(t *testing.T) {
-				t.Run("member expression: suggest object property: empty property name: object has single property", func(t *testing.T) {
+				t.Run("suggest object property: empty property name: object has single property", func(t *testing.T) {
 					state := newState()
 					obj := core.NewObjectFromMap(core.ValMap{"name": core.Str("foo")}, state.Global.Ctx)
 					state.SetGlobal("obj", obj, core.GlobalConst)
@@ -301,11 +301,11 @@ func TestFindCompletions(t *testing.T) {
 					doSymbolicCheck(chunk, state.Global)
 					completions := findCompletions(state, chunk, 6)
 					assert.EqualValues(t, []Completion{
-						{ShownString: "$$obj.name", Value: "$$obj.name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 6}}},
+						{ShownString: ".name", Value: ".name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 5, End: 6}}},
 					}, completions)
 				})
 
-				t.Run("member expression: suggest object property: start of property name: object has single property", func(t *testing.T) {
+				t.Run("suggest object property: start of property name: object has single property", func(t *testing.T) {
 					state := newState()
 					obj := core.NewObjectFromMap(core.ValMap{"name": core.Str("foo")}, state.Global.Ctx)
 					state.SetGlobal("obj", obj, core.GlobalConst)
@@ -314,11 +314,11 @@ func TestFindCompletions(t *testing.T) {
 					doSymbolicCheck(chunk, state.Global)
 					completions := findCompletions(state, chunk, 7)
 					assert.EqualValues(t, []Completion{
-						{ShownString: "$$obj.name", Value: "$$obj.name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 7}}},
+						{ShownString: ".name", Value: ".name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 5, End: 7}}},
 					}, completions)
 				})
 
-				t.Run("member expression: suggest object property: empty property name: object has single property", func(t *testing.T) {
+				t.Run("suggest object property: empty property name: object has single property", func(t *testing.T) {
 					state := newState()
 					obj := core.NewObjectFromMap(core.ValMap{
 						"object": core.NewObjectFromMap(core.ValMap{"name": core.Str("foo")}, state.Global.Ctx),
@@ -330,10 +330,30 @@ func TestFindCompletions(t *testing.T) {
 					doSymbolicCheck(chunk, state.Global)
 					completions := findCompletions(state, chunk, 13)
 					assert.EqualValues(t, []Completion{
-						{ShownString: "$$obj.object.name", Value: "$$obj.object.name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 13}}},
+						{ShownString: ".name", Value: ".name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 12, End: 13}}},
 					}, completions)
 				})
 
+				t.Run("suggest property of shared object's property", func(t *testing.T) {
+					if mode == ShellCompletions {
+						//TODO: support
+						t.Skip()
+						return
+					}
+
+					state := newState()
+					sharedObject := core.NewObjectFromMap(core.ValMap{"list": core.NewWrappedValueList()}, state.Global.Ctx)
+					sharedObject.Share(state.Global)
+					state.SetGlobal("obj", sharedObject, core.GlobalConst)
+
+					chunk, _ := parseChunkSource("obj::list.", "")
+
+					doSymbolicCheck(chunk, state.Global)
+					completions := findCompletions(state, chunk, 10)
+					assert.EqualValues(t, []Completion{
+						{ShownString: ".append", Value: ".append", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 9, End: 10}}},
+					}, completions)
+				})
 			})
 
 			t.Run("double-colon expression with shared object LHS", func(t *testing.T) {
