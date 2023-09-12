@@ -104,7 +104,7 @@ func (c ContextConfig) HasParentRequiredPermissions() (firstErr error, ok bool) 
 
 	for _, perm := range c.Permissions {
 		if err := c.ParentContext.CheckHasPermission(perm); err != nil {
-			return err, false
+			return fmt.Errorf("parent of context should at least have permissions of its child: %w", err), false
 		}
 	}
 	return nil, true
