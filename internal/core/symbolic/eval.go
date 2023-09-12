@@ -3552,6 +3552,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		}
 
 		memb := symbolicMemb(obj, n.Element.Name, false, n, state)
+		state.symbolicData.SetMostSpecificNodeValue(n.Element, memb)
 
 		if IsAnyOrAnySerializable(memb) || utils.Ret0(IsSharable(memb)) {
 			state.addError(makeSymbolicEvalError(node, state, RHS_OF_DOUBLE_COLON_EXPRS_WITH_OBJ_LHS_SHOULD_BE_THE_NAME_OF_A_MUTABLE_NON_SHARABLE_VALUE_PROPERTY))
