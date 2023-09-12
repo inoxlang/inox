@@ -99,7 +99,7 @@ func ImportModule(config ImportConfig) (*Routine, error) {
 	}
 	deadline := time.Now().Add(timeout)
 
-	grantedPerms, err := getPermissionsFromListing(config.GrantedPermListing, nil, nil, true)
+	grantedPerms, err := getPermissionsFromListing(parentState.Ctx, config.GrantedPermListing, nil, nil, true)
 	if err != nil {
 		return nil, err
 	}

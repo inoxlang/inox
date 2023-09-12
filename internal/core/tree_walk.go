@@ -972,7 +972,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return nil, err
 		}
 
-		perms, err := getPermissionsFromListing(permissionListing, nil, nil, false)
+		perms, err := getPermissionsFromListing(state.Global.Ctx, permissionListing, nil, nil, false)
 		if err != nil {
 			return nil, err
 		}
@@ -1135,7 +1135,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		var grantedPerms []Permission
 
 		if permListing != nil {
-			grantedPerms, err = getPermissionsFromListing(permListing, nil, nil, true)
+			grantedPerms, err = getPermissionsFromListing(state.Global.Ctx, permListing, nil, nil, true)
 			if err != nil {
 				return nil, err
 			}

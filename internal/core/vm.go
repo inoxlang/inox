@@ -1882,7 +1882,7 @@ func (v *VM) run() {
 
 			//TODO: check listing ?
 
-			perms, err := getPermissionsFromListing(permListing, nil, nil, false)
+			perms, err := getPermissionsFromListing(v.global.Ctx, permListing, nil, nil, false)
 			if err != nil {
 				v.err = err
 				return
@@ -1984,7 +1984,7 @@ func (v *VM) run() {
 
 			//create context
 			if permListing != nil {
-				perms, err := getPermissionsFromListing(permListing, nil, nil, true)
+				perms, err := getPermissionsFromListing(v.global.Ctx, permListing, nil, nil, true)
 				if err != nil {
 					v.err = fmt.Errorf("spawn expression: %w", err)
 					return

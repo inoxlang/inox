@@ -748,7 +748,7 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 		limits = append(limits, limit)
 	}
 
-	perms, err := getPermissionsFromListing(permListing, specifiedGlobalPermKinds, config.handleCustomType, config.addDefaultPermissions)
+	perms, err := getPermissionsFromListing(ctx, permListing, specifiedGlobalPermKinds, config.handleCustomType, config.addDefaultPermissions)
 	if err != nil {
 		return nil, fmt.Errorf("invalid manifest: %w", err)
 	}
@@ -796,7 +796,7 @@ func evaluateEnvSection(n *parse.ObjectPatternLiteral, state *TreeWalkState, m *
 }
 
 func getPermissionsFromListing(
-	permDescriptions *Object, specifiedGlobalPermKinds map[PermissionKind]bool,
+	ctx *Context, permDescriptions *Object, specifiedGlobalPermKinds map[PermissionKind]bool,
 	handleCustomType CustomPermissionTypeHandler, addDefaultPermissions bool,
 ) ([]Permission, error) {
 	perms := make([]Permission, 0)
@@ -809,7 +809,7 @@ func getPermissionsFromListing(
 		permKind, ok := permkind.PermissionKindFromString(propName)
 
 		if ok {
-			p, err := getSingleKindPermissions(permKind, propValue, specifiedGlobalPermKinds, handleCustomType)
+			p, err := getSingleKindPermissions(ctx, permKind, propValue, specifiedGlobalPermKinds, handleCustomType)
 			if err != nil {
 				return nil, err
 			}
@@ -943,7 +943,7 @@ func getHostResolutions(desc Value) (map[Host]Value, error) {
 }
 
 func getSingleKindPermissions(
-	permKind PermissionKind, desc Value, specifiedGlobalPermKinds map[PermissionKind]bool,
+	ctx *Context, permKind PermissionKind, desc Value, specifiedGlobalPermKinds map[PermissionKind]bool,
 	handleCustomType CustomPermissionTypeHandler,
 ) ([]Permission, error) {
 
@@ -1011,6 +1011,12 @@ func getSingleKindPermissions(
 						return nil, err
 					}
 					perms = append(perms, newPerms...)
+				case "databases":
+					object, ok := propVal.(*Object)
+					if !ok {
+						return nil, fmt.Errorf("invalid manifest: the description of database permissions of a given kind should be an object")
+					}
+					p, err = getDatabasePerms(ctx, permKind, object)
 				default:
 					if handleCustomType != nil {
 						customPerms, handled, err := handleCustomType(permKind, typeName, propVal)
@@ -1573,6 +1579,34 @@ func getVisibilityPerms(desc Value) ([]Permission, error) {
 		perms = append(perms, ValueVisibilityPermission{Pattern: patt})
 	}
 
+	return perms, nil
+}
+
+func getDatabasePerms(ctx *Context, permKind PermissionKind, desc *Object) ([]Permission, error) {
+	var perms []Permission
+
+	err := desc.ForEachEntry(func(k string, v Serializable) error {
+		list, ok := v.(*List)
+		var pathPatterns []PathPattern
+
+		if !ok || utils.Some(list.GetOrBuildElements(ctx), func(e Serializable) bool {
+			patt, ok := e.(PathPattern)
+			pathPatterns = append(pathPatterns, patt)
+			return !ok
+		}) {
+			return fmt.Errorf("invalid property value in database permission description: a list of patterns is expected")
+		}
+
+		perms = append(perms, DatabasePermission{
+			Kind_:        permKind,
+			DatabaseName: k,
+			Paths:        pathPatterns,
+		})
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
 	return perms, nil
 }
 
