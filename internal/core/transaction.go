@@ -181,7 +181,7 @@ func (tx *Transaction) Commit(ctx *Context) error {
 					callbackErrors = append(callbackErrors, err)
 				}
 			}()
-			fn(tx, false)
+			fn(tx, true)
 		}()
 	}
 

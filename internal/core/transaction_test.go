@@ -130,15 +130,18 @@ func TestTransaction(t *testing.T) {
 		callCount := 0
 
 		tx.OnEnd(1, func(tx *Transaction, success bool) {
+			assert.True(t, success)
 			callCount++
 		})
 
 		tx.OnEnd(2, func(tx *Transaction, success bool) {
+			assert.True(t, success)
 			callCount++
 			panic(123)
 		})
 
 		tx.OnEnd(3, func(tx *Transaction, success bool) {
+			assert.True(t, success)
 			callCount++
 		})
 
@@ -165,15 +168,18 @@ func TestTransaction(t *testing.T) {
 		callCount := 0
 
 		tx.OnEnd(1, func(tx *Transaction, success bool) {
+			assert.False(t, success)
 			callCount++
 		})
 
 		tx.OnEnd(2, func(tx *Transaction, success bool) {
+			assert.False(t, success)
 			callCount++
 			panic(123)
 		})
 
 		tx.OnEnd(3, func(tx *Transaction, success bool) {
+			assert.False(t, success)
 			callCount++
 		})
 
