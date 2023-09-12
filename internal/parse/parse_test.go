@@ -20434,7 +20434,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("pattern union", func(t *testing.T) {
+		t.Run("pattern union: 2 elements", func(t *testing.T) {
 			n := mustparseChunk(t, `%str( (| "a" | "b" ) )`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 22}, nil, nil},
@@ -20473,6 +20473,122 @@ func testParse(
 											NodeBase: NodeBase{NodeSpan{15, 18}, nil, nil},
 											Raw:      `"b"`,
 											Value:    "b",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("pattern union: 3 elements", func(t *testing.T) {
+			n := mustparseChunk(t, `%str( (| "a" | "b" | "c" ) )`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 28}, nil, nil},
+				Statements: []Node{
+					&ComplexStringPatternPiece{
+						NodeBase: NodeBase{
+							NodeSpan{0, 28},
+							nil,
+							[]Token{
+								{Type: PERCENT_STR, Span: NodeSpan{0, 4}},
+								{Type: OPENING_PARENTHESIS, Span: NodeSpan{4, 5}},
+								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{27, 28}},
+							},
+						},
+						Elements: []*PatternPieceElement{
+							{
+								NodeBase: NodeBase{NodeSpan{6, 26}, nil, nil},
+								Expr: &PatternUnion{
+									NodeBase: NodeBase{
+										NodeSpan{6, 26},
+										nil,
+										[]Token{
+											{Type: OPENING_PARENTHESIS, Span: NodeSpan{6, 7}},
+											{Type: PATTERN_UNION_PIPE, Span: NodeSpan{7, 8}},
+											{Type: PATTERN_UNION_PIPE, Span: NodeSpan{13, 14}},
+											{Type: PATTERN_UNION_PIPE, Span: NodeSpan{19, 20}},
+											{Type: CLOSING_PARENTHESIS, Span: NodeSpan{25, 26}},
+										},
+									},
+									Cases: []Node{
+										&QuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{9, 12}, nil, nil},
+											Raw:      `"a"`,
+											Value:    "a",
+										},
+										&QuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{15, 18}, nil, nil},
+											Raw:      `"b"`,
+											Value:    "b",
+										},
+										&QuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{21, 24}, nil, nil},
+											Raw:      `"c"`,
+											Value:    "c",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("pattern union: 3 elements but last element is missing", func(t *testing.T) {
+			n, err := parseChunk(t, `%str( (| "a" | "b" | ) )`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 24}, nil, nil},
+				Statements: []Node{
+					&ComplexStringPatternPiece{
+						NodeBase: NodeBase{
+							NodeSpan{0, 24},
+							nil,
+							[]Token{
+								{Type: PERCENT_STR, Span: NodeSpan{0, 4}},
+								{Type: OPENING_PARENTHESIS, Span: NodeSpan{4, 5}},
+								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{23, 24}},
+							},
+						},
+						Elements: []*PatternPieceElement{
+							{
+								NodeBase: NodeBase{NodeSpan{6, 22}, nil, nil},
+								Expr: &PatternUnion{
+									NodeBase: NodeBase{
+										NodeSpan{6, 22},
+										nil,
+										[]Token{
+											{Type: OPENING_PARENTHESIS, Span: NodeSpan{6, 7}},
+											{Type: PATTERN_UNION_PIPE, Span: NodeSpan{7, 8}},
+											{Type: PATTERN_UNION_PIPE, Span: NodeSpan{13, 14}},
+											{Type: PATTERN_UNION_PIPE, Span: NodeSpan{19, 20}},
+											{Type: CLOSING_PARENTHESIS, Span: NodeSpan{21, 22}},
+										},
+									},
+									Cases: []Node{
+										&QuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{9, 12}, nil, nil},
+											Raw:      `"a"`,
+											Value:    "a",
+										},
+										&QuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{15, 18}, nil, nil},
+											Raw:      `"b"`,
+											Value:    "b",
+										},
+										&InvalidComplexStringPatternElement{
+											NodeBase: NodeBase{
+												NodeSpan{21, 21},
+												&ParsingError{
+													UnspecifiedParsingError,
+													fmtAPatternWasExpectedHere([]rune(`%str( (| "a" | "b" | ) )`), 21),
+												},
+												nil,
+											},
 										},
 									},
 								},
