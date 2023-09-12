@@ -72,11 +72,11 @@ func IsShared(v SymbolicValue) bool {
 
 // checkNotClonedObjectPropMutation recursively checks that the current mutation is not a deep mutation
 // of a shared object's cloned property.
-func checkNotClonedObjectPropMutation(path parse.Node, state *State) {
-	_checkNotClonedObjectPropDeepMutation(path, state, true)
+func checkNotClonedObjectPropMutation(path parse.Node, state *State, propAssignment bool) {
+	_checkNotClonedObjectPropDeepMutation(path, state, true, propAssignment)
 }
 
-func _checkNotClonedObjectPropDeepMutation(path parse.Node, state *State, first bool) {
+func _checkNotClonedObjectPropDeepMutation(path parse.Node, state *State, first bool, propAssignment bool) {
 	isSharedObject := func(v SymbolicValue) bool {
 		obj, ok := v.(*Object)
 		return ok && obj.IsShared()
@@ -176,7 +176,9 @@ func _checkNotClonedObjectPropDeepMutation(path parse.Node, state *State, first 
 				currentPropertyName := node.PropertyNames[i]
 
 				if isSharedObject(currentIprops) {
-					state.addError(makeSymbolicEvalError(currentPropertyName, state, USELESS_MUTATION_IN_CLONED_PROP_VALUE))
+					if i < len(ipropsList)-1 || !propAssignment {
+						state.addError(makeSymbolicEvalError(currentPropertyName, state, USELESS_MUTATION_IN_CLONED_PROP_VALUE))
+					}
 					return
 				} else if IsShared(currentIprops) {
 					return
@@ -184,7 +186,9 @@ func _checkNotClonedObjectPropDeepMutation(path parse.Node, state *State, first 
 			}
 		} else { //single property name
 			if isSharedObject(left) {
-				state.addError(makeSymbolicEvalError(node.PropertyNames[0], state, USELESS_MUTATION_IN_CLONED_PROP_VALUE))
+				if !propAssignment {
+					state.addError(makeSymbolicEvalError(node.PropertyNames[0], state, USELESS_MUTATION_IN_CLONED_PROP_VALUE))
+				}
 				return
 			}
 		}
@@ -192,17 +196,19 @@ func _checkNotClonedObjectPropDeepMutation(path parse.Node, state *State, first 
 		left := getNodeValue(node.Left)
 
 		if isSharedObject(left) {
-			state.addError(makeSymbolicEvalError(node.PropertyName, state, USELESS_MUTATION_IN_CLONED_PROP_VALUE))
+			if !propAssignment {
+				state.addError(makeSymbolicEvalError(node.PropertyName, state, USELESS_MUTATION_IN_CLONED_PROP_VALUE))
+			}
 			return
 		} else if IsShared(left) {
 			return
 		}
 
-		_checkNotClonedObjectPropDeepMutation(node.Left, state, false)
+		_checkNotClonedObjectPropDeepMutation(node.Left, state, false, false)
 	case *parse.IndexExpression:
-		_checkNotClonedObjectPropDeepMutation(node.Indexed, state, false)
+		_checkNotClonedObjectPropDeepMutation(node.Indexed, state, false, false)
 	case *parse.SliceExpression:
-		_checkNotClonedObjectPropDeepMutation(node.Indexed, state, false)
+		_checkNotClonedObjectPropDeepMutation(node.Indexed, state, false, false)
 	case *parse.DoubleColonExpression:
 		return
 	}

@@ -682,8 +682,6 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				state.setLocal(name, rhs, nil, n.Left)
 			}
 
-			checkNotClonedObjectPropMutation(lhs, state)
-
 			//TODO: set to previous value instead ?
 			state.symbolicData.SetMostSpecificNodeValue(lhs, __rhs)
 			state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
@@ -735,8 +733,6 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				state.setLocal(name, rhs, nil, n.Left)
 			}
 
-			checkNotClonedObjectPropMutation(lhs, state)
-
 			//TODO: set to previous value instead ?
 			state.symbolicData.SetMostSpecificNodeValue(lhs, __rhs)
 			state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
@@ -774,8 +770,6 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				}
 				state.setGlobal(name, rhs, GlobalVar, n.Left)
 			}
-
-			checkNotClonedObjectPropMutation(lhs, state)
 
 			//TODO: set to previous value instead ?
 			state.symbolicData.SetMostSpecificNodeValue(lhs, __rhs)
@@ -843,7 +837,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				prevValue := iprops.Prop(propName)
 				state.symbolicData.SetMostSpecificNodeValue(lhs.PropertyName, prevValue)
 
-				checkNotClonedObjectPropMutation(lhs, state)
+				checkNotClonedObjectPropMutation(lhs, state, true)
 
 				if _, ok := iprops.(Serializable); ok {
 					if _, ok := rhs.(Serializable); !ok {
@@ -875,8 +869,6 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				}
 
 			} else {
-				checkNotClonedObjectPropMutation(lhs, state)
-
 				nonSerializableErr := false
 				if _, ok := iprops.(Serializable); ok {
 					if _, ok := rhs.(Serializable); !ok {
@@ -966,7 +958,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				prevValue := iprops.Prop(lastPropName)
 				state.symbolicData.SetMostSpecificNodeValue(lastPropNameNode, prevValue)
 
-				checkNotClonedObjectPropMutation(lhs, state)
+				checkNotClonedObjectPropMutation(lhs, state, true)
 
 				if _, ok := iprops.(Serializable); ok {
 
@@ -994,7 +986,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 					}
 				}
 			} else {
-				checkNotClonedObjectPropMutation(lhs, state)
+				checkNotClonedObjectPropMutation(lhs, state, true)
 
 				nonSerializableErr := false
 				if _, ok := iprops.(Serializable); ok {
@@ -1037,7 +1029,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				return nil, err
 			}
 
-			checkNotClonedObjectPropMutation(lhs, state)
+			checkNotClonedObjectPropMutation(lhs, state, false)
 
 			seq, isMutableSeq := asIndexable(slice).(MutableSequence)
 			if isMutableSeq && (!seq.HasKnownLen() ||
@@ -1186,7 +1178,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				return nil, err
 			}
 
-			checkNotClonedObjectPropMutation(lhs, state)
+			checkNotClonedObjectPropMutation(lhs, state, false)
 
 			seq, isMutableSeq := slice.(MutableSequence)
 			if isMutableSeq && (!seq.HasKnownLen() ||

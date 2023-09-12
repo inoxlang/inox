@@ -5466,6 +5466,23 @@ func TestSymbolicEval(t *testing.T) {
 				}, state.errors())
 			})
 
+			t.Run("property of shared objec", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					$$shared.a = 1
+				`)
+				sharedObject := NewInexactObject(map[string]Serializable{
+					"a": ANY_INT,
+				}, nil, map[string]Pattern{
+					"list": &TypePattern{val: ANY_INT},
+				})
+				sharedObject = sharedObject.Share(state).(*Object)
+
+				state.setGlobal("shared", sharedObject, GlobalConst)
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+			})
+
 			t.Run("useless deep mutation of a shared object property's value should be an error", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					$$shared.list[0].a = 1
@@ -5511,6 +5528,23 @@ func TestSymbolicEval(t *testing.T) {
 					makeSymbolicEvalError(objectProp.Value, state,
 						fmtNotAssignableToPropOfExpectedValue(NewInt(1), ANY_STR_LIKE)),
 				}, state.errors())
+			})
+
+			t.Run("property of shared objec", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					shared.a = 1
+				`)
+				sharedObject := NewInexactObject(map[string]Serializable{
+					"a": ANY_INT,
+				}, nil, map[string]Pattern{
+					"list": &TypePattern{val: ANY_INT},
+				})
+				sharedObject = sharedObject.Share(state).(*Object)
+
+				state.setGlobal("shared", sharedObject, GlobalConst)
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
 			})
 
 			t.Run("1 property: value assignable to type", func(t *testing.T) {
@@ -9167,7 +9201,7 @@ func TestSymbolicEval(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 
-		state.ctx.startingConcreteContext = testConcreteContext{ctx}
+		state.ctx.startingConcreteContext = dummyConcreteContext{ctx}
 		_, err := symbolicEval(n, state)
 		assert.ErrorContains(t, err, "stopped symbolic evaluation because context is done")
 	})
@@ -9178,7 +9212,7 @@ func TestSymbolicEval(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 
-		state.ctx.startingConcreteContext = testConcreteContext{ctx}
+		state.ctx.startingConcreteContext = dummyConcreteContext{ctx}
 		_, err := symbolicEval(n, state)
 		assert.NoError(t, err)
 	})

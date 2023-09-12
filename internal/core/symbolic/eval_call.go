@@ -210,7 +210,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 				state.addError(makeSymbolicEvalError(callNode, state, INVALID_MUTATION))
 			} else { //ok
 				narrowPath(selfPartialNode, setExactValue, updatedSelf, state, 0)
-				checkNotClonedObjectPropMutation(selfPartialNode, state)
+				checkNotClonedObjectPropMutation(selfPartialNode, state, false)
 				state.symbolicData.SetLocalScopeData(callNode, state.currentLocalScopeData())
 				state.symbolicData.SetGlobalScopeData(callNode, state.currentGlobalScopeData())
 			}

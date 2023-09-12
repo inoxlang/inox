@@ -20,7 +20,7 @@ func TestSymbolicByteSlice(t *testing.T) {
 
 	t.Run("insertSequence()", func(t *testing.T) {
 		t.Run("adding no elements", func(t *testing.T) {
-			ctx := NewSymbolicContext(testConcreteContext{context.Background()}, nil)
+			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil)
 			state := newSymbolicState(ctx, nil)
 
 			slice := NewByteSlice()
@@ -36,7 +36,7 @@ func TestSymbolicByteSlice(t *testing.T) {
 		})
 
 		t.Run("adding byte", func(t *testing.T) {
-			ctx := NewSymbolicContext(testConcreteContext{context.Background()}, nil)
+			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil)
 			state := newSymbolicState(ctx, nil)
 
 			slice := NewByteSlice()
@@ -51,7 +51,7 @@ func TestSymbolicByteSlice(t *testing.T) {
 		})
 
 		t.Run("adding non-byte value", func(t *testing.T) {
-			ctx := NewSymbolicContext(testConcreteContext{context.Background()}, nil)
+			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil)
 			state := newSymbolicState(ctx, nil)
 
 			slice := NewByteSlice()
@@ -73,7 +73,7 @@ func TestSymbolicByteSlice(t *testing.T) {
 
 	t.Run("appendSequence()", func(t *testing.T) {
 		t.Run("adding no elements", func(t *testing.T) {
-			ctx := NewSymbolicContext(testConcreteContext{context.Background()}, nil)
+			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil)
 			state := newSymbolicState(ctx, nil)
 
 			slice := NewByteSlice()
@@ -89,7 +89,7 @@ func TestSymbolicByteSlice(t *testing.T) {
 		})
 
 		t.Run("adding byte", func(t *testing.T) {
-			ctx := NewSymbolicContext(testConcreteContext{context.Background()}, nil)
+			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil)
 			state := newSymbolicState(ctx, nil)
 
 			slice := NewByteSlice()
@@ -104,7 +104,7 @@ func TestSymbolicByteSlice(t *testing.T) {
 		})
 
 		t.Run("adding non-byte value", func(t *testing.T) {
-			ctx := NewSymbolicContext(testConcreteContext{context.Background()}, nil)
+			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil)
 			state := newSymbolicState(ctx, nil)
 
 			slice := NewByteSlice()
