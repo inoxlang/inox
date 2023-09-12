@@ -328,11 +328,11 @@ drop-perms {
 
 ### DoS Mitigation
 
-#### **Limitations (WIP)**
+#### **Limits (WIP)**
 
-Limitations limit the **speed** at which some actions are performed, the minimum required values/rates are specified in the manifest.
+Limits limit the **speed** at which some actions are performed, the minimum required values/rates are specified in the manifest.
 This feature is still in development and will be fully implemented soon.\
-Limitations will for example allow the developer to **restrict** the share of disk/network bandwidth allocated to a http request handler.
+Limits will for example allow the developer to **restrict** the share of disk/network bandwidth allocated to a http request handler.
 
 ```
 manifest {

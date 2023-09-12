@@ -117,7 +117,7 @@ func (j *LifetimeJob) Instantiate(ctx *Context, self Value) (*LifetimeJobInstanc
 		Kind:            DefaultContext,
 		ParentContext:   ctx,
 		Permissions:     permissions,
-		Limitations:     manifest.Limitations,
+		Limits:          manifest.Limits,
 		HostResolutions: manifest.HostResolutions,
 	})
 

@@ -11,9 +11,9 @@ import (
 )
 
 func init() {
-	//register limitations
-	core.LimRegistry.RegisterLimitation(HTTP_REQUEST_RATE_LIMIT_NAME, core.SimpleRateLimitation, 0)
-	core.LimRegistry.RegisterLimitation(HTTP_UPLOAD_RATE_LIMIT_NAME, core.ByteRateLimitation, 0)
+	//register limits
+	core.LimRegistry.RegisterLimit(HTTP_REQUEST_RATE_LIMIT_NAME, core.SimpleRateLimit, 0)
+	core.LimRegistry.RegisterLimit(HTTP_UPLOAD_RATE_LIMIT_NAME, core.ByteRateLimit, 0)
 
 	//register patterns
 	core.RegisterDefaultPatternNamespace("http", &core.PatternNamespace{

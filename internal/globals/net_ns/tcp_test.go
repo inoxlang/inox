@@ -40,7 +40,7 @@ func TestTcpConn(t *testing.T) {
 				core.RawTcpPermission{Kind_: permkind.Read, Domain: host},
 				core.RawTcpPermission{Kind_: permkind.WriteStream, Domain: host},
 			},
-			Limitations: []core.Limitation{{Name: TCP_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 1}},
+			Limits: []core.Limits{{Name: TCP_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 1}},
 		})
 
 		conn, err := tcpConnect(ctx, host)

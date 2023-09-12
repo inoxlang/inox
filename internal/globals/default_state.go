@@ -34,16 +34,16 @@ import (
 )
 
 var (
-	DEFAULT_SCRIPT_LIMITATIONS = []core.Limitation{
-		{Name: fs_ns.FS_READ_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 100_000_000},
-		{Name: fs_ns.FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 100_000_000},
+	DEFAULT_SCRIPT_LIMITS = []core.Limits{
+		{Name: fs_ns.FS_READ_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 100_000_000},
+		{Name: fs_ns.FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 100_000_000},
 
-		{Name: fs_ns.FS_NEW_FILE_RATE_LIMIT_NAME, Kind: core.SimpleRateLimitation, Value: 100},
-		{Name: fs_ns.FS_TOTAL_NEW_FILE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 10_000},
+		{Name: fs_ns.FS_NEW_FILE_RATE_LIMIT_NAME, Kind: core.SimpleRateLimit, Value: 100},
+		{Name: fs_ns.FS_TOTAL_NEW_FILE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 10_000},
 
-		{Name: net_ns.HTTP_REQUEST_RATE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 100},
-		{Name: net_ns.WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 10},
-		{Name: net_ns.TCP_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 10},
+		{Name: net_ns.HTTP_REQUEST_RATE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 100},
+		{Name: net_ns.WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 10},
+		{Name: net_ns.TCP_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 10},
 	}
 
 	_ = []core.GoValue{
@@ -67,7 +67,7 @@ func init() {
 
 	default_state.SetNewDefaultGlobalStateFn(NewDefaultGlobalState)
 	default_state.SetNewDefaultContext(NewDefaultContext)
-	default_state.SetDefaultScriptLimitations(DEFAULT_SCRIPT_LIMITATIONS)
+	default_state.SetDefaultScriptLimits(DEFAULT_SCRIPT_LIMITS)
 }
 
 // NewDefaultGlobalState creates a new GlobalState with the default globals.
@@ -341,7 +341,7 @@ func NewDefaultContext(config default_state.DefaultContextConfig) (*core.Context
 	ctxConfig := core.ContextConfig{
 		Permissions:          config.Permissions,
 		ForbiddenPermissions: config.ForbiddenPermissions,
-		Limitations:          config.Limitations,
+		Limits:               config.Limits,
 		HostResolutions:      config.HostResolutions,
 		ParentContext:        config.ParentContext,
 		Filesystem:           config.Filesystem,

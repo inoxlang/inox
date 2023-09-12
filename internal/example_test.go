@@ -136,15 +136,15 @@ func testExample(t *testing.T, config exampleTestConfig) {
 				core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern("/...")},
 				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: core.PathPattern("/...")},
 			},
-			Limitations: []core.Limitation{
+			Limits: []core.Limits{
 				{
 					Name:  fs_ns.FS_READ_LIMIT_NAME,
-					Kind:  core.ByteRateLimitation,
+					Kind:  core.ByteRateLimit,
 					Value: 100_000_000,
 				},
 				{
 					Name:  fs_ns.FS_WRITE_LIMIT_NAME,
-					Kind:  core.ByteRateLimitation,
+					Kind:  core.ByteRateLimit,
 					Value: 100_000_000,
 				},
 			},

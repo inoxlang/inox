@@ -90,7 +90,7 @@ func (s *TestSuite) Run(ctx *Context, options ...Option) (*Routine, error) {
 		Kind:            TestingContext,
 		ParentContext:   ctx,
 		Permissions:     permissions,
-		Limitations:     manifest.Limitations,
+		Limits:          manifest.Limits,
 		HostResolutions: manifest.HostResolutions,
 	})
 
@@ -252,7 +252,7 @@ func (s *TestCase) Run(ctx *Context, options ...Option) (*Routine, error) {
 		Kind:            TestingContext,
 		ParentContext:   ctx,
 		Permissions:     manifest.RequiredPermissions,
-		Limitations:     manifest.Limitations,
+		Limits:          manifest.Limits,
 		HostResolutions: manifest.HostResolutions,
 	})
 

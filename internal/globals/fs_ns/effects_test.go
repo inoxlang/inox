@@ -24,8 +24,8 @@ func TestCreateFileEffect(t *testing.T) {
 				Permissions: []core.Permission{
 					core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern("/...")},
 				},
-				Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1000}},
-				Filesystem:  GetOsFilesystem(),
+				Limits:     []core.Limits{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 1000}},
+				Filesystem: GetOsFilesystem(),
 			})
 
 			assert.NoError(t, effect.Apply(ctx))
@@ -50,8 +50,8 @@ func TestCreateFileEffect(t *testing.T) {
 					core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern("/...")},
 					core.FilesystemPermission{Kind_: permkind.Delete, Entity: core.PathPattern("/...")},
 				},
-				Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1000}},
-				Filesystem:  GetOsFilesystem(),
+				Limits:     []core.Limits{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 1000}},
+				Filesystem: GetOsFilesystem(),
 			})
 
 			assert.NoError(t, effect.Apply(ctx))
@@ -87,8 +87,8 @@ func TestAppendBytesToFileEffect(t *testing.T) {
 				Permissions: []core.Permission{
 					core.FilesystemPermission{Kind_: permkind.Update, Entity: core.PathPattern("/...")},
 				},
-				Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1000}},
-				Filesystem:  GetOsFilesystem(),
+				Limits:     []core.Limits{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 1000}},
+				Filesystem: GetOsFilesystem(),
 			})
 
 			assert.NoError(t, effect.Apply(ctx))
@@ -119,8 +119,8 @@ func TestAppendBytesToFileEffect(t *testing.T) {
 				Permissions: []core.Permission{
 					core.FilesystemPermission{Kind_: permkind.Update, Entity: core.PathPattern("/...")},
 				},
-				Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1000}},
-				Filesystem:  GetOsFilesystem(),
+				Limits:     []core.Limits{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 1000}},
+				Filesystem: GetOsFilesystem(),
 			})
 
 			assert.NoError(t, effect.Apply(ctx))
@@ -148,8 +148,8 @@ func TestCreateDirEffect(t *testing.T) {
 				Permissions: []core.Permission{
 					core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern("/...")},
 				},
-				Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1000}},
-				Filesystem:  GetOsFilesystem(),
+				Limits:     []core.Limits{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 1000}},
+				Filesystem: GetOsFilesystem(),
 			})
 
 			assert.NoError(t, effect.Apply(ctx))
@@ -174,8 +174,8 @@ func TestCreateDirEffect(t *testing.T) {
 					core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern("/...")},
 					core.FilesystemPermission{Kind_: permkind.Delete, Entity: core.PathPattern("/...")},
 				},
-				Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1000}},
-				Filesystem:  GetOsFilesystem(),
+				Limits:     []core.Limits{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 1000}},
+				Filesystem: GetOsFilesystem(),
 			})
 
 			assert.NoError(t, effect.Apply(ctx))
@@ -202,8 +202,8 @@ func TestRemoveFileEffect(t *testing.T) {
 				Permissions: []core.Permission{
 					core.FilesystemPermission{Kind_: permkind.Delete, Entity: core.PathPattern("/...")},
 				},
-				Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1000}},
-				Filesystem:  GetOsFilesystem(),
+				Limits:     []core.Limits{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 1000}},
+				Filesystem: GetOsFilesystem(),
 			})
 
 			assert.NoError(t, effect.Apply(ctx))
@@ -229,8 +229,8 @@ func TestRemoveFileEffect(t *testing.T) {
 				Permissions: []core.Permission{
 					core.FilesystemPermission{Kind_: permkind.Delete, Entity: core.PathPattern("/...")},
 				},
-				Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1000}},
-				Filesystem:  GetOsFilesystem(),
+				Limits:     []core.Limits{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 1000}},
+				Filesystem: GetOsFilesystem(),
 			})
 
 			assert.NoError(t, effect.Apply(ctx))
@@ -249,8 +249,8 @@ func TestRemoveFileEffect(t *testing.T) {
 				Permissions: []core.Permission{
 					core.FilesystemPermission{Kind_: permkind.Delete, Entity: core.PathPattern("/...")},
 				},
-				Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1000}},
-				Filesystem:  GetOsFilesystem(),
+				Limits:     []core.Limits{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 1000}},
+				Filesystem: GetOsFilesystem(),
 			})
 
 			assert.NoError(t, effect.Apply(ctx))

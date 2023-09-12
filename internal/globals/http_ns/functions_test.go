@@ -40,7 +40,7 @@ func TestHttpClient(t *testing.T) {
 			Permissions: []core.Permission{
 				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
 			},
-			Limitations: []core.Limitation{},
+			Limits: []core.Limits{},
 		})
 		core.NewGlobalState(ctx)
 		defer server.Close()
@@ -64,7 +64,7 @@ func TestHttpClient(t *testing.T) {
 			Permissions: []core.Permission{
 				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
 			},
-			Limitations: []core.Limitation{},
+			Limits: []core.Limits{},
 		})
 		core.NewGlobalState(ctx)
 		defer server.Close()
@@ -88,7 +88,7 @@ func TestHttpClient(t *testing.T) {
 			Permissions: []core.Permission{
 				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
 			},
-			Limitations: []core.Limitation{},
+			Limits: []core.Limits{},
 		})
 		core.NewGlobalState(ctx)
 		defer server.Close()
@@ -133,7 +133,7 @@ func TestHttpGet(t *testing.T) {
 			Permissions: []core.Permission{
 				core.HttpPermission{Kind_: permkind.Delete, Entity: URL},
 			},
-			Limitations: []core.Limitation{},
+			Limits: []core.Limits{},
 		})
 		core.NewGlobalState(ctx)
 
@@ -210,7 +210,7 @@ func TestHttpPost(t *testing.T) {
 			Permissions: []core.Permission{
 				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
 			},
-			Limitations: []core.Limitation{},
+			Limits: []core.Limits{},
 		})
 		core.NewGlobalState(ctx)
 
@@ -248,7 +248,7 @@ func TestHttpDelete(t *testing.T) {
 			Permissions: []core.Permission{
 				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
 			},
-			Limitations: []core.Limitation{},
+			Limits: []core.Limits{},
 		})
 		core.NewGlobalState(ctx)
 

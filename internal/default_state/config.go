@@ -19,9 +19,9 @@ const (
 )
 
 var (
-	NewDefaultGlobalState    NewDefaultGlobalStateFn
-	NewDefaultContext        NewDefaultContextFn
-	defaultScriptLimitations []core.Limitation
+	NewDefaultGlobalState NewDefaultGlobalStateFn
+	NewDefaultContext     NewDefaultContextFn
+	defaultScriptLimits   []core.Limits
 )
 
 type DefaultGlobalStateConfig struct {
@@ -54,28 +54,28 @@ func SetNewDefaultContext(fn NewDefaultContextFn) {
 	NewDefaultContext = fn
 }
 
-func SetDefaultScriptLimitations(limitations []core.Limitation) {
-	if defaultScriptLimitations != nil {
-		panic(errors.New("default script limitations already set"))
+func SetDefaultScriptLimits(limits []core.Limits) {
+	if defaultScriptLimits != nil {
+		panic(errors.New("default script limits already set"))
 	}
-	defaultScriptLimitations = limitations
+	defaultScriptLimits = limits
 }
 
-func GetDefaultScriptLimitations() []core.Limitation {
-	if defaultScriptLimitations == nil {
-		panic(errors.New("default script limitations are not set"))
+func GetDefaultScriptLimits() []core.Limits {
+	if defaultScriptLimits == nil {
+		panic(errors.New("default script limits are not set"))
 	}
-	return defaultScriptLimitations
+	return defaultScriptLimits
 }
 
-func IsDefaultScriptLimitationsSet() bool {
-	return defaultScriptLimitations != nil
+func IsDefaultScriptLimitsSet() bool {
+	return defaultScriptLimits != nil
 }
 
 type DefaultContextConfig struct {
 	Permissions          []core.Permission
 	ForbiddenPermissions []core.Permission
-	Limitations          []core.Limitation
+	Limits               []core.Limits
 	HostResolutions      map[core.Host]core.Value
 	ParentContext        *core.Context  //optional
 	Filesystem           afs.Filesystem //if nil the OS filesystem is used

@@ -17,11 +17,11 @@ func init() {
 		},
 	})
 
-	//register limitations
-	core.LimRegistry.RegisterLimitation(FS_READ_LIMIT_NAME, core.ByteRateLimitation, FS_READ_MIN_CHUNK_SIZE)
-	core.LimRegistry.RegisterLimitation(FS_WRITE_LIMIT_NAME, core.ByteRateLimitation, FS_WRITE_MIN_CHUNK_SIZE)
-	core.LimRegistry.RegisterLimitation(FS_NEW_FILE_RATE_LIMIT_NAME, core.SimpleRateLimitation, 0)
-	core.LimRegistry.RegisterLimitation(FS_TOTAL_NEW_FILE_LIMIT_NAME, core.TotalLimitation, 0)
+	//register limits
+	core.LimRegistry.RegisterLimit(FS_READ_LIMIT_NAME, core.ByteRateLimit, FS_READ_MIN_CHUNK_SIZE)
+	core.LimRegistry.RegisterLimit(FS_WRITE_LIMIT_NAME, core.ByteRateLimit, FS_WRITE_MIN_CHUNK_SIZE)
+	core.LimRegistry.RegisterLimit(FS_NEW_FILE_RATE_LIMIT_NAME, core.SimpleRateLimit, 0)
+	core.LimRegistry.RegisterLimit(FS_TOTAL_NEW_FILE_LIMIT_NAME, core.TotalLimit, 0)
 
 	//register symbolic version of go functions
 	core.RegisterSymbolicGoFunctions([]any{

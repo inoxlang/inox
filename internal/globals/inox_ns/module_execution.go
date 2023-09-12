@@ -118,7 +118,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			ParentState:           parentState,
 			PreinitStatement:      mod.MainChunk.Node.Preinit,
 			PreinitFilesystem:     args.PreinitFilesystem,
-			DefaultLimitations:    default_state.GetDefaultScriptLimitations(),
+			DefaultLimits:         default_state.GetDefaultScriptLimits(),
 			AddDefaultPermissions: true,
 			IgnoreUnknownSections: args.DevMode,
 			IgnoreConstDeclErrors: args.DevMode,
@@ -145,7 +145,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 
 	ctx, ctxErr = default_state.NewDefaultContext(default_state.DefaultContextConfig{
 		Permissions:     manifest.RequiredPermissions,
-		Limitations:     manifest.Limitations,
+		Limits:          manifest.Limits,
 		HostResolutions: manifest.HostResolutions,
 		ParentContext:   parentContext,
 		Filesystem:      args.ScriptContextFileSystem,
@@ -497,7 +497,7 @@ func PrepareDevModeIncludableChunkfile(args IncludableChunkfilePreparationArgs) 
 
 	ctx, ctxErr := default_state.NewDefaultContext(default_state.DefaultContextConfig{
 		Permissions:     nil,
-		Limitations:     nil,
+		Limits:          nil,
 		HostResolutions: nil,
 		Filesystem:      args.IncludedChunkContextFileSystem,
 	})

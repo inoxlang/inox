@@ -174,7 +174,7 @@ type PreinitArgs struct {
 	//if RunningState is nil .PreinitFilesystem is used to create the temporary context.
 	PreinitFilesystem afs.Filesystem
 
-	DefaultLimitations    []Limitation
+	DefaultLimits         []Limits
 	AddDefaultPermissions bool
 	HandleCustomType      CustomPermissionTypeHandler //optional
 	IgnoreUnknownSections bool
@@ -446,7 +446,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 
 	manifest, err := m.createManifest(state.Global.Ctx, manifestObj, manifestObjectConfig{
 		parentState:           preinitArgs.ParentState,
-		defaultLimitations:    preinitArgs.DefaultLimitations,
+		defaultLimits:         preinitArgs.DefaultLimits,
 		handleCustomType:      preinitArgs.HandleCustomType,
 		addDefaultPermissions: preinitArgs.AddDefaultPermissions,
 		envPattern:            envPattern,
@@ -617,7 +617,7 @@ type ModuleParsingConfig struct {
 	RecoverFromNonExistingIncludedFiles bool
 	IgnoreBadlyConfiguredModuleImports  bool
 	InsecureModImports                  bool
-	//DefaultLimitations          []Limitation
+	//DefaultLimits          []Limit
 	//CustomPermissionTypeHandler CustomPermissionTypeHandler
 }
 

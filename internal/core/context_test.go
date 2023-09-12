@@ -10,28 +10,28 @@ import (
 
 func TestContextBuckets(t *testing.T) {
 
-	t.Run("buckets for limitations of kind 'total' do not fill over time", func(t *testing.T) {
-		const LIMITATION_NAME = "foo"
+	t.Run("buckets for lim of kind 'total' do not fill over time", func(t *testing.T) {
+		const LIMIT_NAME = "foo"
 		ctx := NewContext(ContextConfig{
-			Limitations: []Limitation{{Name: LIMITATION_NAME, Kind: TotalLimitation, Value: 1}},
+			Limits: []Limits{{Name: LIMIT_NAME, Kind: TotalLimit, Value: 1}},
 		})
 
-		ctx.Take(LIMITATION_NAME, 1)
+		ctx.Take(LIMIT_NAME, 1)
 
 		//we check that the total has decreased
-		total, err := ctx.GetTotal(LIMITATION_NAME)
+		total, err := ctx.GetTotal(LIMIT_NAME)
 		assert.NoError(t, err)
 		assert.Equal(t, int64(0), total)
 
 		//we check that the total has not increased after a wait
 		time.Sleep(2 * TOKEN_BUCKET_MANAGEMENT_TICK_INTERVAL)
-		total, err = ctx.GetTotal(LIMITATION_NAME)
+		total, err = ctx.GetTotal(LIMIT_NAME)
 		assert.NoError(t, err)
 		assert.Equal(t, int64(0), total)
 
 		//we check that the total has increased after we gave back tokens
-		ctx.GiveBack(LIMITATION_NAME, 1)
-		total, err = ctx.GetTotal(LIMITATION_NAME)
+		ctx.GiveBack(LIMIT_NAME, 1)
+		total, err = ctx.GetTotal(LIMIT_NAME)
 		assert.NoError(t, err)
 		assert.Equal(t, int64(1), total)
 	})
@@ -100,8 +100,8 @@ func TestContextLimiters(t *testing.T) {
 
 	t.Run("byte rate", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{
-			Limitations: []Limitation{
-				{Name: "fs/read", Kind: ByteRateLimitation, Value: 1_000},
+			Limits: []Limits{
+				{Name: "fs/read", Kind: ByteRateLimit, Value: 1_000},
 			},
 		})
 
@@ -122,8 +122,8 @@ func TestContextLimiters(t *testing.T) {
 
 	t.Run("simple rate", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{
-			Limitations: []Limitation{
-				{Name: "fs/read-file", Kind: SimpleRateLimitation, Value: 1},
+			Limits: []Limits{
+				{Name: "fs/read-file", Kind: SimpleRateLimit, Value: 1},
 			},
 		})
 
@@ -140,8 +140,8 @@ func TestContextLimiters(t *testing.T) {
 
 	t.Run("total", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{
-			Limitations: []Limitation{
-				{Name: "fs/total-read-file", Kind: TotalLimitation, Value: 1},
+			Limits: []Limits{
+				{Name: "fs/total-read-file", Kind: TotalLimit, Value: 1},
 			},
 		})
 
@@ -154,10 +154,10 @@ func TestContextLimiters(t *testing.T) {
 
 	t.Run("auto decrement", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{
-			Limitations: []Limitation{
+			Limits: []Limits{
 				{
 					Name:  "test",
-					Kind:  TotalLimitation,
+					Kind:  TotalLimit,
 					Value: int64(time.Second),
 					DecrementFn: func(lastDecrementTime time.Time) int64 {
 						return time.Since(lastDecrementTime).Nanoseconds()
@@ -182,7 +182,7 @@ func TestContextSetProtocolClientForURLForURL(t *testing.T) {
 	// 	Permissions: []core.Permission{
 	// 		permkind.Httpission{Kind_: permkind.Read, Entity: URL},
 	// 	},
-	// 	Limitations: []core.Limitation{},
+	// 	Limits: []core.Limit{},
 	// })
 
 	// assert.NoError(t, ctx.SetProtocolClientForURL(PROFILE_NAME, core.NewObject()))

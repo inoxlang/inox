@@ -49,8 +49,8 @@ var (
 
 func init() {
 	port.Store(8080)
-	if !default_state.IsDefaultScriptLimitationsSet() {
-		default_state.SetDefaultScriptLimitations([]core.Limitation{})
+	if !default_state.IsDefaultScriptLimitsSet() {
+		default_state.SetDefaultScriptLimits([]core.Limits{})
 	}
 
 	if default_state.NewDefaultContext == nil {

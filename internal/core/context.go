@@ -23,17 +23,17 @@ const (
 )
 
 var (
-	ErrNonExistingNamedPattern                      = errors.New("non existing named pattern")
-	ErrNotUniqueAliasDefinition                     = errors.New("cannot register a host alias more than once")
-	ErrNotUniquePatternDefinition                   = errors.New("cannot register a pattern more than once")
-	ErrNotUniquePatternNamespaceDefinition          = errors.New("cannot register a pattern namespace more than once")
-	ErrNotUniqueHostResolutionDefinition            = errors.New("cannot set host resolution data more than once")
-	ErrNotUniqueProtocolClient                      = errors.New("client already defined")
-	ErrCannotProvideLimitationTokensForChildContext = errors.New("limitation tokens cannot be set in new context's config if it is a child")
-	ErrNoAssociatedState                            = errors.New("context has no associated state")
-	ErrAlreadyAssociatedState                       = errors.New("context already has an associated state")
-	ErrNotSharableUserDataValue                     = errors.New("attempt to set a user data entry with a non sharable value ")
-	ErrDoubleUserDataDefinition                     = errors.New("cannot define a user data entry more than once")
+	ErrNonExistingNamedPattern                 = errors.New("non existing named pattern")
+	ErrNotUniqueAliasDefinition                = errors.New("cannot register a host alias more than once")
+	ErrNotUniquePatternDefinition              = errors.New("cannot register a pattern more than once")
+	ErrNotUniquePatternNamespaceDefinition     = errors.New("cannot register a pattern namespace more than once")
+	ErrNotUniqueHostResolutionDefinition       = errors.New("cannot set host resolution data more than once")
+	ErrNotUniqueProtocolClient                 = errors.New("client already defined")
+	ErrCannotProvideLimitTokensForChildContext = errors.New("limit tokens cannot be set in new context's config if it is a child")
+	ErrNoAssociatedState                       = errors.New("context has no associated state")
+	ErrAlreadyAssociatedState                  = errors.New("context already has an associated state")
+	ErrNotSharableUserDataValue                = errors.New("attempt to set a user data entry with a non sharable value ")
+	ErrDoubleUserDataDefinition                = errors.New("cannot define a user data entry more than once")
 )
 
 type Context struct {
@@ -53,10 +53,10 @@ type Context struct {
 	done      atomic.Bool
 	cancel    context.CancelFunc
 
-	//permissions & limitations
+	//permissions & limits
 	grantedPermissions   []Permission
 	forbiddenPermissions []Permission
-	limitations          []Limitation
+	limits               []Limits
 	limiters             map[string]*Limiter
 
 	//values
@@ -85,15 +85,16 @@ type ContextConfig struct {
 	Kind                 ContextKind
 	Permissions          []Permission
 	ForbiddenPermissions []Permission
-	Limitations          []Limitation
+	Limits               []Limits
 	HostResolutions      map[Host]Value
 	ParentContext        *Context
-	LimitationTokens     map[string]int64
+	LimitTokens          map[string]int64
 	Filesystem           afs.Filesystem
 	CreateFilesystem     func(ctx *Context) (afs.Filesystem, error)
 
 	WaitConfirmPrompt WaitConfirmPrompt
 }
+
 type WaitConfirmPrompt func(msg string, accepted []string) (bool, error)
 
 func (c ContextConfig) HasParentRequiredPermissions() (firstErr error, ok bool) {
@@ -148,7 +149,7 @@ func NewContext(config ContextConfig) *Context {
 	if config.ParentContext == nil {
 		limiters = make(map[string]*Limiter)
 
-		for _, l := range config.Limitations {
+		for _, l := range config.Limits {
 
 			_, alreadyExist := limiters[l.Name]
 			if alreadyExist {
@@ -159,26 +160,26 @@ func NewContext(config ContextConfig) *Context {
 			var fillRate int64 = 1
 
 			switch l.Kind {
-			case ByteRateLimitation, SimpleRateLimitation:
+			case ByteRateLimit, SimpleRateLimit:
 				fillRate = l.Value
-			case TotalLimitation:
-				fillRate = 0 //incrementation/decrementation is handled by the limitation's DecrementFn
+			case TotalLimit:
+				fillRate = 0 //incrementation/decrementation is handled by the limit's DecrementFn
 			}
 
 			var cap int64 = l.Value
-			initialAvail, ok := config.LimitationTokens[l.Name]
+			initialAvail, ok := config.LimitTokens[l.Name]
 			if !ok {
 				initialAvail = -1 //capacity
 			}
 
 			limiters[l.Name] = &Limiter{
-				limitation: l,
+				limit: l,
 				bucket: newBucket(tokenBucketConfig{
 					cap:                          cap,
 					initialAvail:                 initialAvail,
 					fillRate:                     fillRate,
 					decrementFn:                  l.DecrementFn,
-					cancelContextOnNegativeCount: l.Kind == TotalLimitation,
+					cancelContextOnNegativeCount: l.Kind == TotalLimit,
 				}),
 			}
 		}
@@ -190,8 +191,8 @@ func NewContext(config ContextConfig) *Context {
 			panic(fmt.Errorf("failed to create context, parent of context should at least have permissions of its child: %w", err))
 		}
 
-		if config.LimitationTokens != nil {
-			panic(ErrCannotProvideLimitationTokensForChildContext)
+		if config.LimitTokens != nil {
+			panic(ErrCannotProvideLimitTokensForChildContext)
 		}
 		limiters = config.ParentContext.limiters //limiters are shared with the parent context
 		stdlibCtx, cancel = context.WithCancel(config.ParentContext)
@@ -212,7 +213,7 @@ func NewContext(config ContextConfig) *Context {
 		executionStartTime:   time.Now(),
 		grantedPermissions:   utils.CopySlice(config.Permissions),
 		forbiddenPermissions: utils.CopySlice(config.ForbiddenPermissions),
-		limitations:          utils.CopySlice(config.Limitations),
+		limits:               utils.CopySlice(config.Limits),
 		limiters:             limiters,
 		hostAliases:          map[string]Host{},
 		namedPatterns:        map[string]Pattern{},
@@ -451,7 +452,7 @@ func (ctx *Context) boundChild(opts BoundChildContextOptions) *Context {
 	child := NewContext(ContextConfig{
 		Permissions:          ctx.grantedPermissions,
 		ForbiddenPermissions: ctx.forbiddenPermissions,
-		Limitations:          ctx.limitations,
+		Limits:               ctx.limits,
 		HostResolutions:      ctx.hostResolutionData,
 		ParentContext:        ctx,
 
@@ -496,26 +497,26 @@ top:
 	}), nil
 }
 
-// New creates a new context with the same permissions, limitations, host data, patterns, aliases & protocol clients,
+// New creates a new context with the same permissions, limits, host data, patterns, aliases & protocol clients,
 // if the context has no parent the token counts are copied, the new context does not "share" data with the older context.
 func (ctx *Context) New() *Context {
 	ctx.lock.RLock()
 	defer ctx.lock.RUnlock()
 
-	var limitationTokens map[string]int64
+	var limitTokens map[string]int64
 
 	if ctx.parentCtx == nil {
-		limitationTokens = make(map[string]int64, len(ctx.limiters))
+		limitTokens = make(map[string]int64, len(ctx.limiters))
 
-		for limitationName, limiter := range ctx.limiters {
-			limitationTokens[limitationName] = limiter.bucket.Available()
+		for limitName, limiter := range ctx.limiters {
+			limitTokens[limitName] = limiter.bucket.Available()
 		}
 	}
 
 	clone := NewContext(ContextConfig{
 		Permissions:          ctx.grantedPermissions,
 		ForbiddenPermissions: ctx.forbiddenPermissions,
-		Limitations:          ctx.limitations,
+		Limits:               ctx.limits,
 		HostResolutions:      ctx.hostResolutionData,
 		ParentContext:        ctx.parentCtx,
 		Filesystem:           ctx.fs,
@@ -534,7 +535,7 @@ func (ctx *Context) New() *Context {
 	return clone
 }
 
-// NewWith creates a new independent Context with the context's permissions, limitations + passed permissions.
+// NewWith creates a new independent Context with the context's permissions, limits + passed permissions.
 func (ctx *Context) NewWith(additionalPerms []Permission) (*Context, error) {
 	ctx.lock.RLock()
 	defer ctx.lock.RUnlock()
@@ -556,7 +557,7 @@ top:
 	newCtx := NewContext(ContextConfig{
 		Permissions:          perms,
 		ForbiddenPermissions: ctx.forbiddenPermissions,
-		Limitations:          ctx.limitations,
+		Limits:               ctx.limits,
 		Filesystem:           ctx.fs,
 
 		WaitConfirmPrompt: ctx.waitConfirmPrompt,
@@ -588,9 +589,9 @@ top:
 	ctx.forbiddenPermissions = append(ctx.forbiddenPermissions, droppedPermissions...)
 }
 
-// Take takes an amount of tokens from the bucket associated with a limitation.
+// Take takes an amount of tokens from the bucket associated with a limit.
 // The token count is scaled so the passed count is not the took amount.
-func (ctx *Context) Take(limitationName string, count int64) error {
+func (ctx *Context) Take(limitName string, count int64) error {
 	if ctx.done.Load() {
 		return ctx.makeDoneContextError()
 	}
@@ -598,11 +599,11 @@ func (ctx *Context) Take(limitationName string, count int64) error {
 	ctx.lock.Lock()
 	defer ctx.lock.Unlock()
 
-	limiter, ok := ctx.limiters[limitationName]
+	limiter, ok := ctx.limiters[limitName]
 	if ok {
 		available := limiter.bucket.Available()
-		if limiter.limitation.Kind == TotalLimitation && limiter.limitation.Value != 0 && available < count {
-			panic(fmt.Errorf("cannot take %v tokens from bucket (%s), only %v token(s) available", count, limitationName, available))
+		if limiter.limit.Kind == TotalLimit && limiter.limit.Value != 0 && available < count {
+			panic(fmt.Errorf("cannot take %v tokens from bucket (%s), only %v token(s) available", count, limitName, available))
 		}
 		limiter.bucket.Take(count)
 	}
@@ -610,9 +611,9 @@ func (ctx *Context) Take(limitationName string, count int64) error {
 	return nil
 }
 
-// GiveBack gives backs an amount of tokens from the bucket associated with a limitation.
+// GiveBack gives backs an amount of tokens from the bucket associated with a limit.
 // The token count is scaled so the passed count is not the given back amount.
-func (ctx *Context) GiveBack(limitationName string, count int64) error {
+func (ctx *Context) GiveBack(limitName string, count int64) error {
 	if ctx.done.Load() {
 		return ctx.makeDoneContextError()
 	}
@@ -622,14 +623,14 @@ func (ctx *Context) GiveBack(limitationName string, count int64) error {
 
 	scaledCount := TOKEN_BUCKET_CAPACITY_SCALE * count
 
-	limiter, ok := ctx.limiters[limitationName]
+	limiter, ok := ctx.limiters[limitName]
 	if ok {
 		limiter.bucket.GiveBack(scaledCount)
 	}
 	return nil
 }
 
-// GetByteRate returns the value (rate) of a byte rate limitation.
+// GetByteRate returns the value (rate) of a byte rate limit.
 func (ctx *Context) GetByteRate(name string) (ByteRate, error) {
 	if ctx.done.Load() {
 		return -1, ctx.makeDoneContextError()
@@ -642,13 +643,13 @@ func (ctx *Context) GetByteRate(name string) (ByteRate, error) {
 	if !ok {
 		return -1, fmt.Errorf("context: cannot get rate '%s': not present", name)
 	}
-	if limiter.limitation.Kind != ByteRateLimitation {
+	if limiter.limit.Kind != ByteRateLimit {
 		return -1, fmt.Errorf("context: '%s' is not a rate", name)
 	}
-	return ByteRate(limiter.limitation.Value), nil
+	return ByteRate(limiter.limit.Value), nil
 }
 
-// GetTotal returns the value of a limitation of kind total.
+// GetTotal returns the value of a limit of kind total.
 func (ctx *Context) GetTotal(name string) (int64, error) {
 	if ctx.done.Load() {
 		return -1, ctx.makeDoneContextError()
@@ -661,7 +662,7 @@ func (ctx *Context) GetTotal(name string) (int64, error) {
 	if !ok {
 		return -1, fmt.Errorf("context: cannot get total '%s': not present", name)
 	}
-	if limiter.limitation.Kind != TotalLimitation {
+	if limiter.limit.Kind != TotalLimit {
 		return -1, fmt.Errorf("context: '%s' is not a total", name)
 	}
 	return limiter.bucket.Available(), nil

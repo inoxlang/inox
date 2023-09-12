@@ -25,44 +25,44 @@ func TestCreateFile(t *testing.T) {
 
 	cases := []struct {
 		name             string
-		limitation       core.Limitation
+		limits           core.Limits
 		contentByteSize  int
 		expectedDuration time.Duration
 	}{
 		{
 			"<content's size> == <rate> == FS_WRITE_MIN_CHUNK_SIZE, should take ~ 1s",
-			core.Limitation{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: FS_WRITE_MIN_CHUNK_SIZE},
+			core.Limits{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: FS_WRITE_MIN_CHUNK_SIZE},
 			FS_WRITE_MIN_CHUNK_SIZE,
 			time.Second,
 		},
 		{
 			"<content's size> == half of (<rate> == FS_WRITE_MIN_CHUNK_SIZE), should take ~ 0.5s",
-			core.Limitation{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: FS_WRITE_MIN_CHUNK_SIZE},
+			core.Limits{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: FS_WRITE_MIN_CHUNK_SIZE},
 			FS_WRITE_MIN_CHUNK_SIZE / 2,
 			time.Second / 2,
 		},
 		{
 			"<content's size> == 2 * (<rate> == FS_WRITE_MIN_CHUNK_SIZE), should take ~ 2s",
-			core.Limitation{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: FS_WRITE_MIN_CHUNK_SIZE},
+			core.Limits{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: FS_WRITE_MIN_CHUNK_SIZE},
 			2 * FS_WRITE_MIN_CHUNK_SIZE,
 			2 * time.Second,
 		},
 
 		{
 			"<content's size> == <rate> == 2 * FS_WRITE_MIN_CHUNK_SIZE, should take ~ 1s",
-			core.Limitation{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 2 * FS_WRITE_MIN_CHUNK_SIZE},
+			core.Limits{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 2 * FS_WRITE_MIN_CHUNK_SIZE},
 			2 * FS_WRITE_MIN_CHUNK_SIZE,
 			time.Second,
 		},
 		{
 			"<content's size> == half of (<rate> == 2 * FS_WRITE_MIN_CHUNK_SIZE), should take ~ 0.5s",
-			core.Limitation{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 2 * FS_WRITE_MIN_CHUNK_SIZE},
+			core.Limits{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 2 * FS_WRITE_MIN_CHUNK_SIZE},
 			FS_WRITE_MIN_CHUNK_SIZE,
 			time.Second / 2,
 		},
 		{
 			"<content's size> == 2 * (<rate> == 2 * FS_WRITE_MIN_CHUNK_SIZE), should take ~ 2s",
-			core.Limitation{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 2 * FS_WRITE_MIN_CHUNK_SIZE},
+			core.Limits{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 2 * FS_WRITE_MIN_CHUNK_SIZE},
 			4 * FS_WRITE_MIN_CHUNK_SIZE,
 			2 * time.Second,
 		},
@@ -78,11 +78,11 @@ func TestCreateFile(t *testing.T) {
 				Permissions: []core.Permission{
 					core.FilesystemPermission{Kind_: permkind.Create, Entity: fpath},
 				},
-				Limitations: []core.Limitation{testCase.limitation},
-				Filesystem:  GetOsFilesystem(),
+				Limits:     []core.Limits{testCase.limits},
+				Filesystem: GetOsFilesystem(),
 			})
 
-			ctx.Take(testCase.limitation.Name, testCase.limitation.Value)
+			ctx.Take(testCase.limits.Name, testCase.limits.Value)
 
 			start := time.Now()
 			assert.NoError(t, __createFile(ctx, fpath, b, DEFAULT_FILE_FMODE))
@@ -102,49 +102,49 @@ func TestReadEntireFile(t *testing.T) {
 
 	cases := []struct {
 		name             string
-		limitation       core.Limitation
+		limits           core.Limits
 		contentByteSize  int
 		expectedDuration time.Duration
 	}{
 		{
 			"<content's size> == <rate> == FS_READ_MIN_CHUNK_SIZE, should take ~ 1s",
-			core.Limitation{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: FS_READ_MIN_CHUNK_SIZE},
+			core.Limits{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimit, Value: FS_READ_MIN_CHUNK_SIZE},
 			FS_READ_MIN_CHUNK_SIZE,
 			time.Second,
 		},
 		{
 			"<content's size> == half of (<rate> == FS_READ_MIN_CHUNK_SIZE), should take ~ 0.5s",
-			core.Limitation{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: FS_READ_MIN_CHUNK_SIZE},
+			core.Limits{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimit, Value: FS_READ_MIN_CHUNK_SIZE},
 			FS_READ_MIN_CHUNK_SIZE / 2,
 			time.Second / 2,
 		},
 		{
 			"<content's size> == 2 * (<rate> == FS_READ_MIN_CHUNK_SIZE), should take ~ 2s",
-			core.Limitation{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: FS_READ_MIN_CHUNK_SIZE},
+			core.Limits{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimit, Value: FS_READ_MIN_CHUNK_SIZE},
 			2 * FS_READ_MIN_CHUNK_SIZE,
 			2 * time.Second,
 		},
 		{
 			"<content's size> == <rate> == 2 * FS_READ_MIN_CHUNK_SIZE, should take ~ 1s",
-			core.Limitation{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 2 * FS_READ_MIN_CHUNK_SIZE},
+			core.Limits{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 2 * FS_READ_MIN_CHUNK_SIZE},
 			2 * FS_READ_MIN_CHUNK_SIZE,
 			time.Second,
 		},
 		{
 			"<content's size> == half of (<rate> == 2 * FS_READ_MIN_CHUNK_SIZE), should take ~ 0.5s",
-			core.Limitation{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 2 * FS_READ_MIN_CHUNK_SIZE},
+			core.Limits{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 2 * FS_READ_MIN_CHUNK_SIZE},
 			FS_READ_MIN_CHUNK_SIZE,
 			time.Second / 2,
 		},
 		{
 			"<content's size> == 2 * (<rate> == 2 * FS_READ_MIN_CHUNK_SIZE), should take ~ 2s",
-			core.Limitation{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 2 * FS_READ_MIN_CHUNK_SIZE},
+			core.Limits{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 2 * FS_READ_MIN_CHUNK_SIZE},
 			4 * FS_READ_MIN_CHUNK_SIZE,
 			2 * time.Second,
 		},
 		{
 			"<content's size> == FS_READ_MIN_CHUNK_SIZE == 2 * <rate>, should take ~ 2s",
-			core.Limitation{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: FS_READ_MIN_CHUNK_SIZE / 2},
+			core.Limits{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimit, Value: FS_READ_MIN_CHUNK_SIZE / 2},
 			FS_READ_MIN_CHUNK_SIZE,
 			2 * time.Second,
 		},
@@ -163,10 +163,10 @@ func TestReadEntireFile(t *testing.T) {
 				Permissions: []core.Permission{
 					core.FilesystemPermission{Kind_: permkind.Read, Entity: core.Path(fpath)},
 				},
-				Limitations: []core.Limitation{testCase.limitation},
-				Filesystem:  GetOsFilesystem(),
+				Limits:     []core.Limits{testCase.limits},
+				Filesystem: GetOsFilesystem(),
 			})
-			ctx.Take(testCase.limitation.Name, testCase.limitation.Value)
+			ctx.Take(testCase.limits.Name, testCase.limits.Value)
 
 			start := time.Now()
 			_, err = ReadEntireFile(ctx, fpath)
@@ -205,8 +205,8 @@ func TestFsMkfile(t *testing.T) {
 			Permissions: []core.Permission{
 				core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern(tmpDir + "/...")},
 			},
-			Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1_000}},
-			Filesystem:  GetOsFilesystem(),
+			Limits:     []core.Limits{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 1_000}},
+			Filesystem: GetOsFilesystem(),
 		})
 
 		pth := filepath.Join(tmpDir, "file")
@@ -254,8 +254,8 @@ func TestFsMkdir(t *testing.T) {
 			Permissions: []core.Permission{
 				core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern(tmpDir + "/...")},
 			},
-			Limitations: []core.Limitation{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1_000}},
-			Filesystem:  GetOsFilesystem(),
+			Limits:     []core.Limits{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 1_000}},
+			Filesystem: GetOsFilesystem(),
 		})
 
 		pth := filepath.Join(tmpDir, "dir") + "/"
@@ -302,10 +302,10 @@ func TestFsCopy(t *testing.T) {
 				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(tmpDir + "/...")},
 				core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern(tmpDir + "/...")},
 			},
-			Limitations: []core.Limitation{
-				{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1 << 32},
-				{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 1 << 32},
-				{Name: FS_NEW_FILE_RATE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: 100},
+			Limits: []core.Limits{
+				{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 1 << 32},
+				{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 1 << 32},
+				{Name: FS_NEW_FILE_RATE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 100},
 			},
 			Filesystem: GetOsFilesystem(),
 		})
@@ -479,8 +479,8 @@ func TestFile(t *testing.T) {
 				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(tmpDir + "/...")},
 				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: core.PathPattern(tmpDir + "/...")},
 			},
-			Limitations: []core.Limitation{
-				{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: rate},
+			Limits: []core.Limits{
+				{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: rate},
 			},
 			Filesystem: GetOsFilesystem(),
 		})
@@ -519,8 +519,8 @@ func TestFile(t *testing.T) {
 			Permissions: []core.Permission{
 				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(tmpDir + "/...")},
 			},
-			Limitations: []core.Limitation{
-				{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: rate},
+			Limits: []core.Limits{
+				{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimit, Value: rate},
 			},
 			Filesystem: GetOsFilesystem(),
 		})
@@ -574,8 +574,8 @@ func TestFind(t *testing.T) {
 			Permissions: []core.Permission{
 				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(tmpDir + "/...")},
 			},
-			Limitations: []core.Limitation{
-				{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimitation, Value: FS_READ_MIN_CHUNK_SIZE},
+			Limits: []core.Limits{
+				{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimit, Value: FS_READ_MIN_CHUNK_SIZE},
 			},
 			Filesystem: GetOsFilesystem(),
 		})

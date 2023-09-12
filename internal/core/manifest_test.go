@@ -22,8 +22,8 @@ func TestPreInit(t *testing.T) {
 		GlobalVarPermission{permkind.Use, "*"},
 		GlobalVarPermission{permkind.Create, "*"},
 	}
-	LimRegistry.RegisterLimitation("a", TotalLimitation, 0)
-	LimRegistry.RegisterLimitation("b", ByteRateLimitation, 0)
+	LimRegistry.RegisterLimit("a", TotalLimit, 0)
+	LimRegistry.RegisterLimit("b", ByteRateLimit, 0)
 
 	RegisterStaticallyCheckHostResolutionDataFn("ldb", func(project Project, node parse.Node) (errorMsg string) {
 		return ""
@@ -43,7 +43,7 @@ func TestPreInit(t *testing.T) {
 
 		//output
 		expectedPermissions        []Permission
-		expectedLimitations        []Limitation
+		expectedLimits             []Limits
 		expectedResolutions        map[Host]Value
 		expectedPreinitFileConfigs PreinitFiles
 		expectedDatabaseConfigs    DatabaseConfigs
@@ -64,7 +64,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimitations: []Limitation{},
+			expectedLimits:      []Limits{},
 			expectedResolutions: map[Host]Value{"ldb://main": Path("/mydb")},
 			error:               false,
 		},
@@ -83,7 +83,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimitations: []Limitation{},
+			expectedLimits:      []Limits{},
 			expectedResolutions: map[Host]Value{"s3://database": NewObjectFromMapNoInit(ValMap{
 				"bucket":     Str("test"),
 				"provider":   Str("cloudflare"),
@@ -97,7 +97,7 @@ func TestPreInit(t *testing.T) {
 			name:                "empty manifest",
 			module:              `manifest {}`,
 			expectedPermissions: []Permission{},
-			expectedLimitations: []Limitation{},
+			expectedLimits:      []Limits{},
 			expectedResolutions: nil,
 			error:               false,
 		},
@@ -107,7 +107,7 @@ func TestPreInit(t *testing.T) {
 					permissions: { read: {globals: "*"} }
 				}`,
 			expectedPermissions: []Permission{GlobalVarPermission{permkind.Read, "*"}},
-			expectedLimitations: []Limitation{},
+			expectedLimits:      []Limits{},
 			expectedResolutions: nil,
 			error:               false,
 		},
@@ -119,7 +119,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			expectedPermissions: []Permission{RoutinePermission{permkind.Create}},
-			expectedLimitations: []Limitation{},
+			expectedLimits:      []Limits{},
 			expectedResolutions: nil,
 			error:               false,
 		},
@@ -131,7 +131,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			expectedPermissions: []Permission{RoutinePermission{permkind.Create}},
-			expectedLimitations: []Limitation{},
+			expectedLimits:      []Limits{},
 			expectedResolutions: nil,
 			error:               false,
 		},
@@ -145,7 +145,7 @@ func TestPreInit(t *testing.T) {
 					permissions: { read: $$URL}
 				}`,
 			expectedPermissions: []Permission{HttpPermission{permkind.Read, URL("https://example.com/")}},
-			expectedLimitations: []Limitation{},
+			expectedLimits:      []Limits{},
 			expectedResolutions: nil,
 			error:               false,
 		},
@@ -159,22 +159,22 @@ func TestPreInit(t *testing.T) {
 					permissions: { Read: $$URL}
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimitations: []Limitation{},
+			expectedLimits:      []Limits{},
 			expectedResolutions: nil,
 			error:               true,
 
 			expectedStaticCheckErrors: []string{fmtNotValidPermissionKindName("Read")},
 		},
 		{
-			name: "limitations",
+			name: "limits",
 			module: `manifest {
 					limits: {
 						"a": 100ms
 					}
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimitations: []Limitation{
-				{Name: "a", Kind: TotalLimitation, Value: int64(100 * time.Millisecond)},
+			expectedLimits: []Limits{
+				{Name: "a", Kind: TotalLimit, Value: int64(100 * time.Millisecond)},
 			},
 			expectedResolutions: nil,
 			error:               false,
@@ -207,7 +207,7 @@ func TestPreInit(t *testing.T) {
 			expectedPermissions: []Permission{
 				DNSPermission{permkind.Read, HostPattern("://**.com")},
 			},
-			expectedLimitations: []Limitation{},
+			expectedLimits:      []Limits{},
 			expectedResolutions: nil,
 			error:               false,
 		},
@@ -276,7 +276,7 @@ func TestPreInit(t *testing.T) {
 					preinit-files: {}
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimitations: []Limitation{},
+			expectedLimits:      []Limits{},
 			expectedResolutions: nil,
 			error:               false,
 		},
@@ -294,7 +294,7 @@ func TestPreInit(t *testing.T) {
 				util.WriteFile(fls, "/file.txt", nil, 0o600)
 			},
 			expectedPermissions: []Permission{},
-			expectedLimitations: []Limitation{},
+			expectedLimits:      []Limits{},
 			expectedPreinitFileConfigs: PreinitFiles{
 				{
 					Name:               "F",
@@ -320,7 +320,7 @@ func TestPreInit(t *testing.T) {
 				util.WriteFile(fls, "/file.txt", []byte("a"), 0o600)
 			},
 			expectedPermissions: []Permission{},
-			expectedLimitations: []Limitation{},
+			expectedLimits:      []Limits{},
 			expectedPreinitFileConfigs: PreinitFiles{
 				{
 					Name:               "F",
@@ -344,7 +344,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimitations: []Limitation{},
+			expectedLimits:      []Limits{},
 			expectedPreinitFileConfigs: PreinitFiles{
 				{
 					Name:               "F",
@@ -376,7 +376,7 @@ func TestPreInit(t *testing.T) {
 				util.WriteFile(fls, "/file.txt", nil, 0o600)
 			},
 			expectedPermissions: []Permission{},
-			expectedLimitations: []Limitation{},
+			expectedLimits:      []Limits{},
 			expectedPreinitFileConfigs: PreinitFiles{
 				{
 					Name:               "F",
@@ -408,7 +408,7 @@ func TestPreInit(t *testing.T) {
 				util.WriteFile(fls, "/file2.txt", nil, 0o600)
 			},
 			expectedPermissions: []Permission{},
-			expectedLimitations: []Limitation{},
+			expectedLimits:      []Limits{},
 			expectedPreinitFileConfigs: PreinitFiles{
 				{
 					Name:               "F1",
@@ -440,7 +440,7 @@ func TestPreInit(t *testing.T) {
 					databases: {}
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimitations: []Limitation{},
+			expectedLimits:      []Limits{},
 			expectedResolutions: nil,
 			error:               false,
 		},
@@ -455,7 +455,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimitations: []Limitation{},
+			expectedLimits:      []Limits{},
 			expectedDatabaseConfigs: DatabaseConfigs{
 				{
 					Name:           "main",
@@ -478,7 +478,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimitations: []Limitation{},
+			expectedLimits:      []Limits{},
 			expectedDatabaseConfigs: DatabaseConfigs{
 				{
 					Name:                 "main",
@@ -588,7 +588,7 @@ func TestPreInit(t *testing.T) {
 					databases: /main.ix
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimitations: []Limitation{},
+			expectedLimits:      []Limits{},
 			expectedDatabaseConfigs: DatabaseConfigs{
 				{
 					Name:           "main",
@@ -614,7 +614,7 @@ func TestPreInit(t *testing.T) {
 					databases: /main.ix
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimitations: []Limitation{},
+			expectedLimits:      []Limits{},
 			expectedDatabaseConfigs: DatabaseConfigs{
 				{
 					Name:           "main",
@@ -736,7 +736,7 @@ func TestPreInit(t *testing.T) {
 
 			if manifest != nil {
 				assert.EqualValues(t, testCase.expectedPermissions, manifest.RequiredPermissions)
-				assert.EqualValues(t, testCase.expectedLimitations, manifest.Limitations)
+				assert.EqualValues(t, testCase.expectedLimits, manifest.Limits)
 				assert.EqualValues(t, testCase.expectedResolutions, manifest.HostResolutions)
 
 				if testCase.expectedPreinitFileErrors == nil {

@@ -30,8 +30,8 @@ func TestWebsocketConnection(t *testing.T) {
 			Permissions: []core.Permission{
 				core.WebsocketPermission{Kind_: permkind.Write, Endpoint: ENDPOINT},
 			},
-			Limitations: []core.Limitation{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 1}},
-			Filesystem:  fs_ns.GetOsFilesystem(),
+			Limits:     []core.Limits{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 1}},
+			Filesystem: fs_ns.GetOsFilesystem(),
 		})
 
 		conn, err := websocketConnect(clientCtx, ENDPOINT, core.Option{Name: "insecure", Value: core.True})
@@ -79,8 +79,8 @@ func TestWebsocketConnection(t *testing.T) {
 			Permissions: []core.Permission{
 				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
 			},
-			Limitations: []core.Limitation{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 1}},
-			Filesystem:  fs_ns.GetOsFilesystem(),
+			Limits:     []core.Limits{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 1}},
+			Filesystem: fs_ns.GetOsFilesystem(),
 		})
 
 		conn, err := websocketConnect(clientCtx, ENDPOINT, core.Option{Name: "insecure", Value: core.True})
@@ -129,8 +129,8 @@ func TestWebsocketConnection(t *testing.T) {
 			Permissions: []core.Permission{
 				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
 			},
-			Limitations: []core.Limitation{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 1}},
-			Filesystem:  fs_ns.GetOsFilesystem(),
+			Limits:     []core.Limits{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 1}},
+			Filesystem: fs_ns.GetOsFilesystem(),
 		})
 
 		conn, err := websocketConnect(clientCtx, ENDPOINT, core.Option{Name: "insecure", Value: core.True})
@@ -178,8 +178,8 @@ func TestWebsocketConnection(t *testing.T) {
 				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
 				core.WebsocketPermission{Kind_: permkind.Write, Endpoint: ENDPOINT},
 			},
-			Limitations: []core.Limitation{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimitation, Value: 1}},
-			Filesystem:  fs_ns.GetOsFilesystem(),
+			Limits:     []core.Limits{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 1}},
+			Filesystem: fs_ns.GetOsFilesystem(),
 		})
 
 		conn, err := websocketConnect(clientCtx, ENDPOINT, core.Option{Name: "insecure", Value: core.True})

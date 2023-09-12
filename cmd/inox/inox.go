@@ -508,7 +508,7 @@ func runStartupScript(startupScriptPath string, outW io.Writer) (*core.Object, *
 
 	ctx := utils.Must(default_state.NewDefaultContext(default_state.DefaultContextConfig{
 		Permissions:     startupManifest.RequiredPermissions,
-		Limitations:     startupManifest.Limitations,
+		Limits:          startupManifest.Limits,
 		HostResolutions: startupManifest.HostResolutions,
 	}))
 	state, err := default_state.NewDefaultGlobalState(ctx, default_state.DefaultGlobalStateConfig{

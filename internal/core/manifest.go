@@ -71,7 +71,7 @@ func SetInitialWorkingDir(getWd func() (string, error)) {
 type Manifest struct {
 	//note: permissions required for reading the preinit files are in .PreinitFiles.
 	RequiredPermissions []Permission
-	Limitations         []Limitation
+	Limits              []Limits
 
 	HostResolutions map[Host]Value
 	EnvPattern      *ObjectPattern
@@ -664,7 +664,7 @@ func EvaluatePermissionListingObjectNode(n *parse.ObjectLiteral, config PreinitA
 type CustomPermissionTypeHandler func(kind PermissionKind, name string, value Value) (perms []Permission, handled bool, err error)
 
 type manifestObjectConfig struct {
-	defaultLimitations    []Limitation
+	defaultLimits         []Limits
 	addDefaultPermissions bool
 	handleCustomType      CustomPermissionTypeHandler //optional
 	envPattern            *ObjectPattern              //pre-evaluated
@@ -673,7 +673,7 @@ type manifestObjectConfig struct {
 	parentState           *GlobalState //optional
 }
 
-// createManifest gets permissions and limitations by evaluating an object literal.
+// createManifest gets permissions and limits by evaluating an object literal.
 // Custom permissions are handled by config.HandleCustomType
 func (m *Module) createManifest(ctx *Context, object *Object, config manifestObjectConfig) (*Manifest, error) {
 	var (
@@ -685,19 +685,19 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 		dbConfigs DatabaseConfigs
 	)
 	permListing := NewObject()
-	limitations := make([]Limitation, 0)
+	limits := make([]Limits, 0)
 	hostResolutions := make(map[Host]Value, 0)
-	defaultLimitationsToNotSet := make(map[string]bool)
+	defaultLimitsToNotSet := make(map[string]bool)
 	specifiedGlobalPermKinds := map[PermissionKind]bool{}
 
 	for k, v := range object.EntryMap(nil) {
 		switch k {
 		case MANIFEST_LIMITS_SECTION_NAME:
-			l, err := getLimitations(v, defaultLimitationsToNotSet)
+			l, err := getLimits(v, defaultLimitsToNotSet)
 			if err != nil {
 				return nil, err
 			}
-			limitations = append(limitations, l...)
+			limits = append(limits, l...)
 		case MANIFEST_HOST_RESOLUTION_SECTION_NAME:
 			resolutions, err := getHostResolutions(v)
 			if err != nil {
@@ -740,12 +740,12 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 		}
 	}
 
-	//add default limitations
-	for _, limitation := range config.defaultLimitations {
-		if defaultLimitationsToNotSet[limitation.Name] {
+	//add default limits
+	for _, limit := range config.defaultLimits {
+		if defaultLimitsToNotSet[limit.Name] {
 			continue
 		}
-		limitations = append(limitations, limitation)
+		limits = append(limits, limit)
 	}
 
 	perms, err := getPermissionsFromListing(permListing, specifiedGlobalPermKinds, config.handleCustomType, config.addDefaultPermissions)
@@ -755,7 +755,7 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 
 	return &Manifest{
 		RequiredPermissions: perms,
-		Limitations:         limitations,
+		Limits:              limits,
 		HostResolutions:     hostResolutions,
 		EnvPattern:          envPattern,
 		Parameters:          moduleParams,
@@ -838,8 +838,8 @@ func GetDefaultGlobalVarPermissions() (perms []Permission) {
 	return
 }
 
-func getLimitations(desc Value, defaultLimitationsToNotSet map[string]bool) ([]Limitation, error) {
-	var limitations []Limitation
+func getLimits(desc Value, defaultLimitsToNotSet map[string]bool) ([]Limits, error) {
+	var limits []Limits
 	ctx := NewContext(ContextConfig{})
 
 	limitObj, isObj := desc.(*Object)
@@ -851,57 +851,57 @@ func getLimitations(desc Value, defaultLimitationsToNotSet map[string]bool) ([]L
 
 	for limitName, limitPropValue := range limitObj.EntryMap(nil) {
 
-		var limitation Limitation
-		defaultLimitationsToNotSet[limitName] = true
+		var limit Limits
+		defaultLimitsToNotSet[limitName] = true
 
 		switch v := limitPropValue.(type) {
 		case Rate:
-			limitation = Limitation{Name: limitName}
+			limit = Limits{Name: limitName}
 
 			switch r := v.(type) {
 			case ByteRate:
-				limitation.Kind = ByteRateLimitation
-				limitation.Value = int64(r)
+				limit.Kind = ByteRateLimit
+				limit.Value = int64(r)
 			case SimpleRate:
-				limitation.Kind = SimpleRateLimitation
-				limitation.Value = int64(r)
+				limit.Kind = SimpleRateLimit
+				limit.Value = int64(r)
 			default:
 				return nil, fmt.Errorf("not a valid rate type %T", r)
 			}
 
 		case Int:
-			limitation = Limitation{
+			limit = Limits{
 				Name:  limitName,
-				Kind:  TotalLimitation,
+				Kind:  TotalLimit,
 				Value: int64(v),
 			}
 		case Duration:
-			limitation = Limitation{
+			limit = Limits{
 				Name:  limitName,
-				Kind:  TotalLimitation,
+				Kind:  TotalLimit,
 				Value: int64(v),
 			}
 		default:
 			return nil, fmt.Errorf("invalid manifest, invalid value %s for a limit", GetRepresentation(v, ctx))
 		}
 
-		registeredKind, registeredMinimum, ok := LimRegistry.getLimitationInfo(limitName)
+		registeredKind, registeredMinimum, ok := LimRegistry.getLimitInfo(limitName)
 		if !ok {
-			return nil, fmt.Errorf("invalid manifest, limits: '%s' is not a registered limitation", limitName)
+			return nil, fmt.Errorf("invalid manifest, limits: '%s' is not a registered limit", limitName)
 		}
-		if limitation.Kind != registeredKind {
+		if limit.Kind != registeredKind {
 			return nil, fmt.Errorf("invalid manifest, limits: value of '%s' has not a valid type", limitName)
 		}
-		if registeredMinimum > 0 && limitation.Value < registeredMinimum {
-			return nil, fmt.Errorf("invalid manifest, limits: value for limitation '%s' is too low, minimum is %d", limitName, registeredMinimum)
+		if registeredMinimum > 0 && limit.Value < registeredMinimum {
+			return nil, fmt.Errorf("invalid manifest, limits: value for limit '%s' is too low, minimum is %d", limitName, registeredMinimum)
 		}
 
-		limitations = append(limitations, limitation)
+		limits = append(limits, limit)
 	}
 
 	//check & postprocess limits
 
-	for i, l := range limitations {
+	for i, l := range limits {
 		switch l.Name {
 		case EXECUTION_TOTAL_LIMIT_NAME:
 			if l.Value == 0 {
@@ -911,10 +911,10 @@ func getLimitations(desc Value, defaultLimitationsToNotSet map[string]bool) ([]L
 				return time.Since(lastDecrementTime).Nanoseconds()
 			}
 		}
-		limitations[i] = l
+		limits[i] = l
 	}
 
-	return limitations, nil
+	return limits, nil
 }
 
 func getHostResolutions(desc Value) (map[Host]Value, error) {
