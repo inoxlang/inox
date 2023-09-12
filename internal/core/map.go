@@ -30,7 +30,7 @@ func init() {
 					entries[key] = symbolic.ANY_SERIALIZABLE
 				}
 
-				symbolic.InitializeObject(obj, entries, nil)
+				symbolic.InitializeObject(obj, entries, nil, false)
 				return symbolic.NewListOf(obj)
 			case *symbolic.PropertyName:
 			case *symbolic.GoFunction:

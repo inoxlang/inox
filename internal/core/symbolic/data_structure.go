@@ -1188,12 +1188,13 @@ func NewUnitializedObject() *Object {
 	return &Object{}
 }
 
-func InitializeObject(obj *Object, entries map[string]Serializable, static map[string]Pattern) {
+func InitializeObject(obj *Object, entries map[string]Serializable, static map[string]Pattern, shared bool) {
 	if obj.entries != nil {
 		panic(errors.New("object is already initialized"))
 	}
 	obj.entries = entries
 	obj.static = static
+	obj.shared = shared
 }
 
 func (obj *Object) initNewProp(key string, value Serializable, static Pattern) {

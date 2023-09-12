@@ -526,7 +526,7 @@ func (obj *Object) ToSymbolicValue(ctx *Context, encountered map[uintptr]symboli
 		entries[k] = symbolicVal.(symbolic.Serializable)
 	}
 
-	symbolic.InitializeObject(symbolicObj, entries, nil)
+	symbolic.InitializeObject(symbolicObj, entries, nil, obj.IsShared())
 	return symbolicObj, nil
 }
 

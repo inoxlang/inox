@@ -336,6 +336,41 @@ func TestFindCompletions(t *testing.T) {
 
 			})
 
+			t.Run("double-colon expression with shared object LHS", func(t *testing.T) {
+
+				if mode == ShellCompletions {
+					t.Skip()
+				}
+
+				t.Run("suggest object property: empty property name: object has single property", func(t *testing.T) {
+					state := newState()
+					sharedObject := core.NewObjectFromMap(core.ValMap{"list": core.NewWrappedValueList()}, state.Global.Ctx)
+					sharedObject.Share(state.Global)
+					state.SetGlobal("obj", sharedObject, core.GlobalConst)
+					chunk, _ := parseChunkSource("obj::", "")
+
+					doSymbolicCheck(chunk, state.Global)
+					completions := findCompletions(state, chunk, 5)
+					assert.EqualValues(t, []Completion{
+						{ShownString: "list", Value: "list", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 5, End: 5}}},
+					}, completions)
+				})
+
+				t.Run("suggest object property: start of property name: object has single property", func(t *testing.T) {
+					state := newState()
+					sharedObject := core.NewObjectFromMap(core.ValMap{"list": core.NewWrappedValueList()}, state.Global.Ctx)
+					sharedObject.Share(state.Global)
+					state.SetGlobal("obj", sharedObject, core.GlobalConst)
+					chunk, _ := parseChunkSource("obj::l", "")
+
+					doSymbolicCheck(chunk, state.Global)
+					completions := findCompletions(state, chunk, 6)
+					assert.EqualValues(t, []Completion{
+						{ShownString: "list", Value: "list", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 5, End: 6}}},
+					}, completions)
+				})
+			})
+
 			t.Run("named patterns", func(t *testing.T) {
 				if mode == ShellCompletions {
 					t.Run("suggest pre-declared pattern from first letter", func(t *testing.T) {

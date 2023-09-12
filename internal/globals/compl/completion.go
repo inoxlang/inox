@@ -80,13 +80,21 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 		if nodeAtCursor == nil || node.Base().IncludedIn(nodeAtCursor) {
 			nodeAtCursor = node
 
-			switch parent.(type) {
+			switch p := parent.(type) {
 			case *parse.MemberExpression, *parse.IdentifierMemberExpression:
 				nodeAtCursor = parent
 				if len(ancestorChain) > 1 {
 					_parent = ancestorChain[len(ancestorChain)-2]
 				}
 				_ancestorChain = utils.CopySlice(ancestorChain[:len(ancestorChain)-1])
+			case *parse.DoubleColonExpression:
+				if nodeAtCursor == p.Element {
+					nodeAtCursor = parent
+					if len(ancestorChain) > 1 {
+						_parent = ancestorChain[len(ancestorChain)-2]
+					}
+					_ancestorChain = utils.CopySlice(ancestorChain[:len(ancestorChain)-1])
+				}
 			case *parse.PatternNamespaceMemberExpression:
 				nodeAtCursor = parent
 				if len(ancestorChain) > 1 {
@@ -329,6 +337,8 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 		completions = handleIdentifierMemberCompletions(n, state, mode)
 	case *parse.MemberExpression:
 		completions = handleMemberExpressionCompletions(n, state, mode)
+	case *parse.DoubleColonExpression:
+		completions = handleDoubleColonExpressionCompletions(n, state, chunk, mode)
 	case *parse.CallExpression: //if a call is the deepest node at cursor it means we are not in an argument
 		completions = handleNewCallArgumentCompletions(n, cursorIndex, state, chunk)
 	case *parse.QuotedStringLiteral:
@@ -827,7 +837,7 @@ loop:
 		} else {
 			// if the at one point in the member chain a value is any we have no completions to propose
 			// so we just return an empty list
-			if symbolic.IsAny(curr.(symbolic.SymbolicValue)) {
+			if symbolic.IsAnyOrAnySerializable(curr.(symbolic.SymbolicValue)) {
 				return nil
 			}
 			// if the at one point in the member chain a value has no properties we have no completions to propose
@@ -865,6 +875,49 @@ loop:
 	}
 
 	return suggestPropertyNames(buff.String(), curr, exprPropertyNames, isLastPropPresent, state.Global, mode)
+}
+
+func handleDoubleColonExpressionCompletions(n *parse.DoubleColonExpression, state *core.TreeWalkState, chunk *parse.ParsedChunk, mode CompletionMode) (completions []Completion) {
+	if mode == ShellCompletions {
+		//TODO: support ?
+		return
+	}
+
+	leftVal, ok := state.Global.SymbolicData.GetMostSpecificNodeValue(n.Left)
+	if !ok {
+		return nil
+	}
+
+	var replacedRange parse.SourcePositionRange
+	if n.Element == nil {
+		replacedRange = chunk.GetSourcePosition(n.Span)
+		replacedRange.StartColumn = replacedRange.EndColumn
+		replacedRange.StartLine = replacedRange.EndLine
+		replacedRange.Span.Start = replacedRange.Span.End
+	} else {
+		replacedRange = chunk.GetSourcePosition(n.Element.Span)
+	}
+
+	switch l := leftVal.(type) {
+	case *symbolic.Object:
+		l.ForEachEntry(func(propName string, propValue symbolic.SymbolicValue) error {
+			if symbolic.IsAnyOrAnySerializable(propValue) || utils.Ret0(symbolic.IsSharable(propValue)) {
+				return nil
+			}
+
+			propDetail := symbolic.Stringify(propValue)
+
+			completions = append(completions, Completion{
+				ShownString:   propName,
+				Value:         propName,
+				Kind:          defines.CompletionItemKindProperty,
+				Detail:        propDetail,
+				ReplacedRange: replacedRange,
+			})
+			return nil
+		})
+	}
+	return
 }
 
 func suggestPropertyNames(

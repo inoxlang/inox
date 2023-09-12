@@ -33,7 +33,7 @@ func TestSymbolicEval(t *testing.T) {
 				entries[key] = ANY_SERIALIZABLE
 			}
 
-			InitializeObject(obj, entries, nil)
+			InitializeObject(obj, entries, nil, false)
 			return NewListOf(obj)
 		case *PropertyName:
 		case *GoFunction:
