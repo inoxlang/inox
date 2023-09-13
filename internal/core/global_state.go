@@ -6,7 +6,6 @@ import (
 	"io"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
@@ -48,8 +47,6 @@ type GlobalState struct {
 	id                   StateId
 	descendantStates     map[ResourceName]*GlobalState
 	descendantStatesLock sync.Mutex
-	MainStateCPUTime     atomic.Int64
-	MainStateMaxCPUTime  time.Duration
 
 	//errors & check data
 	PrenitStaticCheckErrors   []*StaticCheckError
@@ -116,14 +113,6 @@ func (g *GlobalState) SetDescendantState(src ResourceName, state *GlobalState) {
 	if g.MainState != nil && g.MainState != g {
 		g.MainState.SetDescendantState(src, state)
 	}
-}
-
-func (g *GlobalState) AddSpentCPUTime() {
-	state := g.MainState
-	if state == nil {
-		panic(ErrUnreachable)
-	}
-
 }
 
 func (g *GlobalState) InitSystemGraph() {
