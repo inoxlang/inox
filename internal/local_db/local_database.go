@@ -231,7 +231,9 @@ func (ldb *LocalDatabase) UpdateSchema(ctx *core.Context, schema *core.ObjectPat
 		return
 	}
 
-	ldb.load(ctx, schema, handlers)
+	if err := ldb.load(ctx, schema, handlers); err != nil {
+		panic(err)
+	}
 
 	ldb.schemaKV.Set(ctx, "/", schema, ldb)
 	ldb.schema = schema
