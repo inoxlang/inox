@@ -10,19 +10,45 @@ import (
 )
 
 func TestURLPattern(t *testing.T) {
-	assert.False(t, URLPattern("https://localhost:443/ab/...").Test(nil, URL("https://localhost:443/ab")))
-	assert.True(t, URLPattern("https://localhost:443/ab/...").Test(nil, URL("https://localhost:443/ab/c")))
-	assert.True(t, URLPattern("https://localhost:443/ab/...").Test(nil, URL("https://localhost:443/ab/c?q=a")))
+	t.Run("Test", func(t *testing.T) {
+		assert.False(t, URLPattern("https://localhost:443/ab/...").Test(nil, URL("https://localhost:443/ab")))
+		assert.True(t, URLPattern("https://localhost:443/ab/...").Test(nil, URL("https://localhost:443/ab/c")))
+		assert.True(t, URLPattern("https://localhost:443/ab/...").Test(nil, URL("https://localhost:443/ab/c?q=a")))
 
-	assert.False(t, URLPattern("https://localhost:443/...").Test(nil, URL("wss://localhost:443/")))
-	assert.True(t, URLPattern("wss://localhost:443/...").Test(nil, URL("wss://localhost:443/")))
+		assert.False(t, URLPattern("https://localhost:443/...").Test(nil, URL("wss://localhost:443/")))
+		assert.True(t, URLPattern("wss://localhost:443/...").Test(nil, URL("wss://localhost:443/")))
+	})
+
+	t.Run("Includes", func(t *testing.T) {
+		//URL
+		assert.False(t, URLPattern("https://localhost:443/ab/...").Includes(nil, URL("https://localhost:443/ab")))
+		assert.True(t, URLPattern("https://localhost:443/ab/...").Includes(nil, URL("https://localhost:443/ab/c")))
+		assert.True(t, URLPattern("https://localhost:443/ab/...").Includes(nil, URL("https://localhost:443/ab/c?q=a")))
+
+		assert.False(t, URLPattern("https://localhost:443/...").Includes(nil, URL("wss://localhost:443/")))
+		assert.True(t, URLPattern("wss://localhost:443/...").Includes(nil, URL("wss://localhost:443/")))
+
+		//URL pattern
+		assert.False(t, URLPattern("https://localhost:443/ab/...").Includes(nil, URLPattern("https://localhost:443/ab")))
+		assert.True(t, URLPattern("https://localhost:443/ab/...").Includes(nil, URLPattern("https://localhost:443/ab/c")))
+		assert.True(t, URLPattern("https://localhost:443/ab/...").Includes(nil, URLPattern("https://localhost:443/ab/c?q=a")))
+
+		assert.False(t, URLPattern("https://localhost:443/...").Includes(nil, URLPattern("wss://localhost:443/")))
+		assert.True(t, URLPattern("wss://localhost:443/...").Includes(nil, URLPattern("wss://localhost:443/")))
+
+		assert.False(t, URLPattern("https://localhost:443/ab/...").Includes(nil, URLPattern("https://localhost:443/...")))
+		assert.True(t, URLPattern("https://localhost:443/ab/...").Includes(nil, URLPattern("https://localhost:443/ab/c/...")))
+	})
 }
 
-func TestPathPatternTest(t *testing.T) {
-	assert.True(t, PathPattern("/*").Test(nil, Path("/")))
-	assert.True(t, PathPattern("/*").Test(nil, Path("/e")))
-	assert.False(t, PathPattern("/*").Test(nil, Path("/e/")))
-	assert.False(t, PathPattern("/*").Test(nil, Path("/e/e")))
+func TestPathPattern(t *testing.T) {
+	t.Run("", func(t *testing.T) {
+		assert.True(t, PathPattern("/*").Test(nil, Path("/")))
+		assert.True(t, PathPattern("/*").Test(nil, Path("/e")))
+		assert.False(t, PathPattern("/*").Test(nil, Path("/e/")))
+		assert.False(t, PathPattern("/*").Test(nil, Path("/e/e")))
+	})
+
 }
 
 func TestHostPatternTest(t *testing.T) {

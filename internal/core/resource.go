@@ -902,6 +902,11 @@ func (patt URLPattern) UnderlyingString() string {
 	return string(patt)
 }
 
+func (u URLPattern) Scheme() Scheme {
+	url, _ := url.Parse(string(u))
+	return Scheme(url.Scheme)
+}
+
 func (patt URLPattern) IsPrefixPattern() bool {
 	return strings.HasSuffix(string(patt), "/...")
 }
@@ -1047,6 +1052,18 @@ func (patt URLPattern) Includes(ctx *Context, v Value) bool {
 		}
 
 		return strings.HasPrefix(string(other), patt.Prefix())
+	case URLPattern:
+		//TODO: support globbing URL patterns
+
+		if patt.IsPrefixPattern() {
+			prefix := patt.Prefix()
+
+			if other.IsPrefixPattern() {
+				return strings.HasPrefix(other.Prefix(), prefix)
+			}
+			return strings.HasPrefix(string(other), prefix)
+		}
+		return patt == other
 	default:
 		return false
 	}
