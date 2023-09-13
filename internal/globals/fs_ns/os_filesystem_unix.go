@@ -3,6 +3,7 @@
 package fs_ns
 
 import (
+	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -50,6 +51,9 @@ func (fs OsFilesystem) Absolute(path string) (string, error) {
 }
 
 func (fs *OsFilesystem) WithSecondaryContext(ctx *core.Context) any {
+	if ctx == nil {
+		panic(errors.New("nil context"))
+	}
 	if fs.ctx == ctx {
 		return fs
 	}
@@ -57,6 +61,10 @@ func (fs *OsFilesystem) WithSecondaryContext(ctx *core.Context) any {
 	*osWithCtx = *fs
 	osWithCtx.ctx = ctx
 	return osWithCtx
+}
+
+func (fs *OsFilesystem) WithoutSecondaryContext() any {
+	return osFs
 }
 
 func (fs *OsFilesystem) Create(filename string) (billy.File, error) {

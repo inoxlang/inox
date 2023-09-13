@@ -73,6 +73,6 @@ func TestNewDefaultContext(t *testing.T) {
 			return
 		}
 
-		assert.Same(t, fs_ns.GetOsFilesystem(), ctx.GetFileSystem())
+		assert.Same(t, fs_ns.GetOsFilesystem(), core.WithoutSecondaryContextIfPossible(ctx.GetFileSystem()))
 	})
 }

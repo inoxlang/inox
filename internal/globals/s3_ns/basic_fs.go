@@ -31,6 +31,7 @@ var (
 
 type S3Filesystem struct {
 	*s3Filesystem
+	original     *S3Filesystem
 	secondaryCtx *core.Context
 }
 
@@ -71,10 +72,24 @@ func (fls *S3Filesystem) bucketName() string {
 }
 
 func (fls *S3Filesystem) WithSecondaryContext(ctx *core.Context) any {
+	if ctx == nil {
+		panic(errors.New("nil context"))
+	}
+	if fls.secondaryCtx == ctx {
+		return fls
+	}
 	return &S3Filesystem{
 		secondaryCtx: ctx,
+		original:     fls.WithoutSecondaryContext().(*S3Filesystem),
 		s3Filesystem: fls.s3Filesystem,
 	}
+}
+
+func (fls *S3Filesystem) WithoutSecondaryContext() any {
+	if fls.original == nil {
+		return fls
+	}
+	return fls.original
 }
 
 func (fls *S3Filesystem) Create(filename string) (billy.File, error) {

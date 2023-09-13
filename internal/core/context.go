@@ -1074,12 +1074,22 @@ func (ctx *Context) ToSymbolicValue() (*symbolic.Context, error) {
 }
 
 type IWithSecondaryContext interface {
+	//context should not be nil
 	WithSecondaryContext(*Context) any
+
+	WithoutSecondaryContext() any
 }
 
 func WithSecondaryContextIfPossible[T any](ctx *Context, arg T) T {
 	if itf, ok := any(arg).(IWithSecondaryContext); ok {
 		return itf.WithSecondaryContext(ctx).(T)
+	}
+	return arg
+}
+
+func WithoutSecondaryContextIfPossible[T any](arg T) T {
+	if itf, ok := any(arg).(IWithSecondaryContext); ok {
+		return itf.WithoutSecondaryContext().(T)
 	}
 	return arg
 }
