@@ -23,7 +23,7 @@ func TestFileServer(t *testing.T) {
 			return
 		}
 
-		var notAllowedError core.NotAllowedError
+		var notAllowedError *core.NotAllowedError
 		if !assert.ErrorAs(t, err, &notAllowedError) {
 			return
 		}
@@ -44,7 +44,7 @@ func TestFileServer(t *testing.T) {
 			return
 		}
 
-		var notAllowedError core.NotAllowedError
+		var notAllowedError *core.NotAllowedError
 		if !assert.ErrorAs(t, err, &notAllowedError) {
 			return
 		}

@@ -191,11 +191,11 @@ func TestFsMkfile(t *testing.T) {
 		pth := filepath.Join(tmpDir, "file")
 
 		err := Mkfile(ctx, core.Path(pth))
-		assert.IsType(t, core.NotAllowedError{}, err)
+		assert.IsType(t, &core.NotAllowedError{}, err)
 		assert.Equal(t, core.FilesystemPermission{
 			Kind_:  permkind.Create,
 			Entity: core.Path(pth),
-		}, err.(core.NotAllowedError).Permission)
+		}, err.(*core.NotAllowedError).Permission)
 		assert.NoFileExists(t, pth)
 	})
 
@@ -238,11 +238,11 @@ func TestFsMkdir(t *testing.T) {
 		pth := filepath.Join(tmpDir, "dir") + "/"
 
 		err := Mkdir(ctx, core.Path(pth))
-		assert.IsType(t, core.NotAllowedError{}, err)
+		assert.IsType(t, &core.NotAllowedError{}, err)
 		assert.Equal(t, core.FilesystemPermission{
 			Kind_:  permkind.Create,
 			Entity: core.Path(pth),
-		}, err.(core.NotAllowedError).Permission)
+		}, err.(*core.NotAllowedError).Permission)
 
 		assert.NoFileExists(t, pth)
 		assert.NoDirExists(t, pth)
@@ -412,11 +412,11 @@ func TestFsOpenExisting(t *testing.T) {
 
 		f, err := OpenExisting(ctx, pth)
 
-		assert.IsType(t, core.NotAllowedError{}, err)
+		assert.IsType(t, &core.NotAllowedError{}, err)
 		assert.Equal(t, core.FilesystemPermission{
 			Kind_:  permkind.Read,
 			Entity: utils.Must(pth.ToAbs(ctx.GetFileSystem())),
-		}, err.(core.NotAllowedError).Permission)
+		}, err.(*core.NotAllowedError).Permission)
 		assert.Nil(t, f)
 	})
 
@@ -458,11 +458,11 @@ func TestFile(t *testing.T) {
 		defer f.close(ctx)
 
 		err := f.write(ctx, core.Str("hello"))
-		assert.IsType(t, core.NotAllowedError{}, err)
+		assert.IsType(t, &core.NotAllowedError{}, err)
 		assert.Equal(t, core.FilesystemPermission{
 			Kind_:  permkind.WriteStream,
 			Entity: utils.Must(pth.ToAbs(ctx.GetFileSystem())),
-		}, err.(core.NotAllowedError).Permission)
+		}, err.(*core.NotAllowedError).Permission)
 	})
 
 	t.Run("rate limited", func(t *testing.T) {

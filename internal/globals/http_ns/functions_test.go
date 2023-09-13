@@ -139,8 +139,8 @@ func TestHttpGet(t *testing.T) {
 
 		resp, err := HttpGet(ctx, URL)
 		assert.Error(t, err)
-		assert.IsType(t, core.NotAllowedError{}, err)
-		assert.Equal(t, core.HttpPermission{Kind_: permkind.Read, Entity: URL}, err.(core.NotAllowedError).Permission)
+		assert.IsType(t, &core.NotAllowedError{}, err)
+		assert.Equal(t, core.HttpPermission{Kind_: permkind.Read, Entity: URL}, err.(*core.NotAllowedError).Permission)
 		assert.Nil(t, resp)
 	})
 }
@@ -216,8 +216,8 @@ func TestHttpPost(t *testing.T) {
 
 		resp, err := HttpPost(ctx, URL)
 		assert.Error(t, err)
-		assert.IsType(t, core.NotAllowedError{}, err)
-		assert.Equal(t, core.HttpPermission{Kind_: permkind.Create, Entity: URL}, err.(core.NotAllowedError).Permission)
+		assert.IsType(t, &core.NotAllowedError{}, err)
+		assert.Equal(t, core.HttpPermission{Kind_: permkind.Create, Entity: URL}, err.(*core.NotAllowedError).Permission)
 		assert.Nil(t, resp)
 	})
 }
@@ -254,8 +254,8 @@ func TestHttpDelete(t *testing.T) {
 
 		resp, err := HttpDelete(ctx, URL)
 		assert.Error(t, err)
-		assert.IsType(t, core.NotAllowedError{}, err)
-		assert.Equal(t, core.HttpPermission{Kind_: permkind.Delete, Entity: URL}, err.(core.NotAllowedError).Permission)
+		assert.IsType(t, &core.NotAllowedError{}, err)
+		assert.Equal(t, core.HttpPermission{Kind_: permkind.Delete, Entity: URL}, err.(*core.NotAllowedError).Permission)
 		assert.Nil(t, resp)
 	})
 }
@@ -270,6 +270,6 @@ func TestServeFile(t *testing.T) {
 		req := &HttpRequest{}
 
 		err := serveFile(ctx, resp, req, core.Path("/x"))
-		assert.IsType(t, core.NotAllowedError{}, err)
+		assert.IsType(t, &core.NotAllowedError{}, err)
 	})
 }

@@ -38,7 +38,7 @@ func TestCreateFileEffect(t *testing.T) {
 
 			ctx := core.NewContext(core.ContextConfig{})
 
-			assert.IsType(t, core.NotAllowedError{}, effect.Apply(ctx))
+			assert.IsType(t, &core.NotAllowedError{}, effect.Apply(ctx))
 		})
 
 		t.Run("reverse", func(t *testing.T) {
@@ -107,7 +107,7 @@ func TestAppendBytesToFileEffect(t *testing.T) {
 
 			ctx := core.NewContext(core.ContextConfig{})
 
-			assert.IsType(t, core.NotAllowedError{}, effect.Apply(ctx))
+			assert.IsType(t, &core.NotAllowedError{}, effect.Apply(ctx))
 		})
 
 		t.Run("reverse", func(t *testing.T) {
@@ -162,7 +162,7 @@ func TestCreateDirEffect(t *testing.T) {
 
 			ctx := core.NewContext(core.ContextConfig{})
 
-			assert.IsType(t, core.NotAllowedError{}, effect.Apply(ctx))
+			assert.IsType(t, &core.NotAllowedError{}, effect.Apply(ctx))
 		})
 
 		t.Run("reverse", func(t *testing.T) {
@@ -217,7 +217,7 @@ func TestRemoveFileEffect(t *testing.T) {
 
 			ctx := core.NewContext(core.ContextConfig{})
 
-			assert.IsType(t, core.NotAllowedError{}, effect.Apply(ctx))
+			assert.IsType(t, &core.NotAllowedError{}, effect.Apply(ctx))
 		})
 
 		t.Run("reverse (reversible)", func(t *testing.T) {

@@ -119,8 +119,8 @@ func TestHttpServerMissingProvidePermission(t *testing.T) {
 	core.NewGlobalState(ctx)
 	server, err := NewHttpServer(ctx, host)
 
-	assert.IsType(t, core.NotAllowedError{}, err)
-	assert.Equal(t, core.HttpPermission{Kind_: permkind.Provide, Entity: host}, err.(core.NotAllowedError).Permission)
+	assert.IsType(t, &core.NotAllowedError{}, err)
+	assert.Equal(t, core.HttpPermission{Kind_: permkind.Provide, Entity: host}, err.(*core.NotAllowedError).Permission)
 	assert.Nil(t, server)
 }
 

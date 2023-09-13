@@ -2,12 +2,17 @@ package core
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
 
 	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
+)
+
+var (
+	ErrImpossibleToVerifyPermissionForUrlHolderMutation = errors.New("impossible to verify permission for mutation of URL holder")
 )
 
 type PermissionKind = permkind.PermissionKind
@@ -26,8 +31,8 @@ type NotAllowedError struct {
 	Message    string
 }
 
-func NewNotAllowedError(perm Permission) NotAllowedError {
-	return NotAllowedError{
+func NewNotAllowedError(perm Permission) *NotAllowedError {
+	return &NotAllowedError{
 		Permission: perm,
 		Message:    fmt.Sprintf("not allowed, missing permission: %s", perm.String()),
 	}
@@ -38,7 +43,7 @@ func (err NotAllowedError) Error() string {
 }
 
 func (err NotAllowedError) Is(target error) bool {
-	notAllowedErr, ok := target.(NotAllowedError)
+	notAllowedErr, ok := target.(*NotAllowedError)
 	if !ok {
 		return false
 	}

@@ -138,7 +138,7 @@ func _prepare_local_script(ctx *core.Context, src core.Path) (*core.Module, *cor
 
 	errorRecord["parsing_errors"] = mod.ParsingErrorTuple()
 
-	var permissionError core.NotAllowedError
+	var permissionError *core.NotAllowedError
 
 	if state != nil {
 		if state.StaticCheckData != nil {
@@ -197,7 +197,7 @@ func _run_local_script(ctx *core.Context, src core.Path, config *core.Object) (c
 
 	errorRecord["parsing_errors"] = mod.ParsingErrorTuple()
 
-	var permissionError core.NotAllowedError
+	var permissionError *core.NotAllowedError
 
 	if state != nil {
 		if state.StaticCheckData != nil {
