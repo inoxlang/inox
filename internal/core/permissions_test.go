@@ -265,3 +265,127 @@ func TestVisibilityPermission(t *testing.T) {
 	}
 
 }
+
+func TestDatabasePermission(t *testing.T) {
+
+	ENTITIES := []Value{
+		URL("ldb://main/"),
+		Host("ldb://main"),
+		HostPattern("ldb://**"),
+	}
+
+	for kind := permkind.Read; kind <= permkind.Provide; kind++ {
+		for _, entity := range ENTITIES {
+			t.Run(kind.String()+"_"+fmt.Sprint(entity)+"_includes_itself", func(t *testing.T) {
+				perm := DatabasePermission{Kind_: kind, Entity: entity.(WrappedString)}
+				assert.True(t, perm.Includes(perm))
+			})
+		}
+	}
+
+	for kind := permkind.Read; kind <= permkind.Provide; kind++ {
+		for i, entity := range ENTITIES {
+			for _, prevEntity := range ENTITIES[:i] {
+				t.Run(fmt.Sprintf("%s_%s_includes_%s", kind, entity, prevEntity), func(t *testing.T) {
+					perm := DatabasePermission{Kind_: kind, Entity: entity.(WrappedString)}
+					otherPerm := DatabasePermission{Kind_: kind, Entity: prevEntity.(WrappedString)}
+
+					assert.True(t, perm.Includes(otherPerm))
+				})
+			}
+		}
+	}
+
+	t.Run("a permission with a prefix pattern should include a permission with a longer prefix pattern", func(t *testing.T) {
+		perm := DatabasePermission{Kind_: permkind.Read, Entity: URLPattern("ldb://main:443/...")}
+		otherPerm := DatabasePermission{Kind_: permkind.Read, Entity: URL("ldb://main:443/abc/...")}
+		assert.True(t, perm.Includes(otherPerm))
+	})
+
+	t.Run("schemes should be equal", func(t *testing.T) {
+		ldbPerm := DatabasePermission{Kind_: permkind.Read, Entity: URLPattern("ldb://main:443/...")}
+		odbPerm := DatabasePermission{Kind_: permkind.Read, Entity: URL("odb://main:443/...")}
+		assert.False(t, ldbPerm.Includes(odbPerm))
+		assert.False(t, odbPerm.Includes(ldbPerm))
+	})
+
+	t.Run("write includes create & update", func(t *testing.T) {
+		patt := URLPattern("ldb://localhost:443/...")
+		writePerm := DatabasePermission{Kind_: permkind.Write, Entity: patt}
+		createPerm := DatabasePermission{Kind_: permkind.Create, Entity: patt}
+		updatePerm := DatabasePermission{Kind_: permkind.Update, Entity: patt}
+
+		assert.True(t, writePerm.Includes(createPerm))
+		assert.True(t, writePerm.Includes(updatePerm))
+
+		assert.False(t, createPerm.Includes(writePerm))
+		assert.False(t, updatePerm.Includes(writePerm))
+	})
+
+	createObjectWithURL := func(perms []Permission) (*Context, *Object) {
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: perms,
+			Filesystem:  newMemFilesystem(),
+		}, nil)
+		db, err := WrapDatabase(ctx, DatabaseWrappingArgs{
+			Inner: &dummyDatabase{
+				resource: Host("ldb://main"),
+			},
+			Name: "main",
+		})
+		if !assert.NoError(t, err) {
+			return nil, nil
+		}
+		err = db.SetOwnerStateOnceAndLoadIfNecessary(ctx, ctx.state)
+		ctx.state.Databases = map[string]*DatabaseIL{"main": db}
+
+		if !assert.NoError(t, err) {
+			return nil, nil
+		}
+		sharedObject := NewObjectFromMapNoInit(ValMap{
+			"a": Int(1),
+		})
+		err = sharedObject.SetURLOnce(ctx, "ldb://main/object")
+		if !assert.NoError(t, err) {
+			return nil, nil
+		}
+		return ctx, sharedObject
+	}
+
+	t.Run("missing permission to get object property", func(t *testing.T) {
+		ctx, sharedObject := createObjectWithURL(nil)
+		if sharedObject == nil {
+			return
+		}
+		func() {
+			defer func() {
+				e := recover()
+				if !assert.NotNil(t, e) {
+					return
+				}
+				err := e.(error)
+				assert.ErrorIs(t, err, NewNotAllowedError(DatabasePermission{
+					Kind_:  permkind.Read,
+					Entity: URL("ldb://main/object/a"),
+				}))
+			}()
+			sharedObject.Prop(ctx, "a")
+		}()
+
+	})
+
+	t.Run("missing permission to set object property", func(t *testing.T) {
+		ctx, sharedObject := createObjectWithURL(nil)
+		if sharedObject == nil {
+			return
+		}
+		func() {
+			err := sharedObject.SetProp(ctx, "a", Int(2))
+			assert.ErrorIs(t, err, NewNotAllowedError(DatabasePermission{
+				Kind_:  permkind.Write,
+				Entity: URL("ldb://main/object/a"),
+			}))
+		}()
+	})
+
+}

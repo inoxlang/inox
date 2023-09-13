@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	permkind "github.com/inoxlang/inox/internal/permkind"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -318,6 +317,66 @@ func (perm HttpPermission) String() string {
 	return fmt.Sprintf("[%s %s]", perm.Kind_, perm.Entity)
 }
 
+type DatabasePermission struct {
+	Kind_  PermissionKind
+	Entity WrappedString
+}
+
+func (perm DatabasePermission) Kind() PermissionKind {
+	return perm.Kind_
+}
+
+func (perm DatabasePermission) InternalPermTypename() permkind.InternalPermissionTypename {
+	return permkind.FS_PERM_TYPENAME
+}
+
+func (perm DatabasePermission) Includes(otherPerm Permission) bool {
+	otherDbPerm, ok := otherPerm.(DatabasePermission)
+	if !ok || !perm.Kind_.Includes(otherDbPerm.Kind_) {
+		return false
+	}
+
+	switch e := perm.Entity.(type) {
+	case URL:
+		otherURL, ok := otherDbPerm.Entity.(URL)
+		parsedURL, _ := url.Parse(string(e))
+
+		if parsedURL.RawQuery != "" || otherURL.RawQuery() != "" {
+			panic(ErrUnreachable)
+		}
+
+		return ok && e == otherURL
+	case URLPattern:
+		return e.Includes(nil, otherDbPerm.Entity)
+	case Host:
+		host := e.WithoutScheme()
+		switch other := otherDbPerm.Entity.(type) {
+		case URL:
+			otherURL, err := url.Parse(string(other))
+			if err != nil {
+				return false
+			}
+			return otherURL.Scheme == string(e.Scheme()) && otherURL.Host == host
+		case URLPattern:
+			otherURL, err := url.Parse(string(other))
+			if err != nil {
+				return false
+			}
+			return otherURL.Scheme == string(e.Scheme()) && otherURL.Host == host
+		case Host:
+			return e == other
+		}
+	case HostPattern:
+		return e.Includes(nil, otherDbPerm.Entity)
+	}
+
+	return false
+}
+
+func (perm DatabasePermission) String() string {
+	return fmt.Sprintf("[%s %s]", perm.Kind_, perm.Entity)
+}
+
 type WebsocketPermission struct {
 	Kind_    PermissionKind
 	Endpoint ResourceName //ignored for some permission kinds
@@ -487,42 +546,4 @@ func (perm SystemGraphAccessPermission) String() string {
 func (perm SystemGraphAccessPermission) Includes(otherPerm Permission) bool {
 	otherSysGraphPerm, ok := otherPerm.(SystemGraphAccessPermission)
 	return ok && perm.Kind_.Includes(otherSysGraphPerm.Kind_)
-}
-
-type DatabasePermission struct {
-	Kind_        PermissionKind
-	DatabaseName string
-	Paths        []PathPattern
-}
-
-func (perm DatabasePermission) Kind() PermissionKind {
-	return perm.Kind_
-}
-
-func (perm DatabasePermission) InternalPermTypename() permkind.InternalPermissionTypename {
-	return permkind.FS_PERM_TYPENAME
-}
-
-func (perm DatabasePermission) Includes(otherPerm Permission) bool {
-	otherDbPerm, ok := otherPerm.(DatabasePermission)
-	if !ok || !perm.Kind_.Includes(otherDbPerm.Kind_) || otherDbPerm.DatabaseName != perm.DatabaseName {
-		return false
-	}
-
-	for _, pathPattern := range otherDbPerm.Paths {
-		for _, allowedPathPattern := range perm.Paths {
-			if allowedPathPattern.Includes(nil, pathPattern) {
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
-func (perm DatabasePermission) String() string {
-	paths := utils.MapSlice(perm.Paths, func(p PathPattern) string {
-		return "%" + string(p)
-	})
-	return fmt.Sprintf("[%s database %s %s]", perm.Kind_, perm.DatabaseName, strings.Join(paths, " "))
 }

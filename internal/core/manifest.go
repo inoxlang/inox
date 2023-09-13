@@ -1011,12 +1011,6 @@ func getSingleKindPermissions(
 						return nil, err
 					}
 					perms = append(perms, newPerms...)
-				case "databases":
-					object, ok := propVal.(*Object)
-					if !ok {
-						return nil, fmt.Errorf("invalid manifest: the description of database permissions of a given kind should be an object")
-					}
-					p, err = getDatabasePerms(ctx, permKind, object)
 				default:
 					if handleCustomType != nil {
 						customPerms, handled, err := handleCustomType(permKind, typeName, propVal)
@@ -1057,15 +1051,28 @@ func getSingleKindPermissions(
 					Kind_:  permKind,
 					Entity: v,
 				})
+			case "ldb", "odb":
+				perms = append(perms, DatabasePermission{
+					Kind_:  permKind,
+					Entity: v,
+				})
 			default:
 				return nil, fmt.Errorf("invalid manifest, URL has a valid but unsupported scheme '%s'", v.Scheme())
 			}
 
 		case URLPattern:
-			perms = append(perms, HttpPermission{
-				Kind_:  permKind,
-				Entity: v,
-			})
+			switch v.Scheme() {
+			case "http", "https":
+				perms = append(perms, HttpPermission{
+					Kind_:  permKind,
+					Entity: v,
+				})
+			case "ldb", "odb":
+				perms = append(perms, DatabasePermission{
+					Kind_:  permKind,
+					Entity: v,
+				})
+			}
 		case Host:
 			switch v.Scheme() {
 			case "wss", "ws":
@@ -1075,6 +1082,11 @@ func getSingleKindPermissions(
 				})
 			case "http", "https":
 				perms = append(perms, HttpPermission{
+					Kind_:  permKind,
+					Entity: v,
+				})
+			case "ldb", "odb":
+				perms = append(perms, DatabasePermission{
 					Kind_:  permKind,
 					Entity: v,
 				})
@@ -1579,34 +1591,6 @@ func getVisibilityPerms(desc Value) ([]Permission, error) {
 		perms = append(perms, ValueVisibilityPermission{Pattern: patt})
 	}
 
-	return perms, nil
-}
-
-func getDatabasePerms(ctx *Context, permKind PermissionKind, desc *Object) ([]Permission, error) {
-	var perms []Permission
-
-	err := desc.ForEachEntry(func(k string, v Serializable) error {
-		list, ok := v.(*List)
-		var pathPatterns []PathPattern
-
-		if !ok || utils.Some(list.GetOrBuildElements(ctx), func(e Serializable) bool {
-			patt, ok := e.(PathPattern)
-			pathPatterns = append(pathPatterns, patt)
-			return !ok
-		}) {
-			return fmt.Errorf("invalid property value in database permission description: a list of patterns is expected")
-		}
-
-		perms = append(perms, DatabasePermission{
-			Kind_:        permKind,
-			DatabaseName: k,
-			Paths:        pathPatterns,
-		})
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
 	return perms, nil
 }
 

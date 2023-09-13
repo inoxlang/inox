@@ -227,44 +227,17 @@ func TestPreInit(t *testing.T) {
 			module: `manifest {
 					permissions: {
 						read: {
-							databases: {
-								main: [%/users]
-							}
+							%ldb://main/users
 						}
 					}
 				}`,
 			expectedPermissions: []Permission{
 				DatabasePermission{
 					permkind.Read,
-					"main",
-					[]PathPattern{"/users"},
+					URLPattern("ldb://main/users"),
 				},
 			},
 			expectedLimits: []Limits{},
-		},
-		{
-			name: "database_permission_with_decription_of_unexpected_type",
-			module: `manifest {
-					permissions: {
-						read: {
-							databases: []
-						}
-					}
-				}`,
-			error: true,
-		},
-		{
-			name: "database_permission_with_decription_of_unexpected_type_for_given_database",
-			module: `manifest {
-					permissions: {
-						read: {
-							databases: {
-								main: %/users
-							}
-						}
-					}
-				}`,
-			error: true,
 		},
 		// {
 		// 	name: "see email addresses",
