@@ -158,46 +158,57 @@ func NewContext(config ContextConfig) *Context {
 		filesystem = fs
 	}
 
-	if config.ParentContext == nil {
-		limiters = make(map[string]*Limiter)
+	//create limiters
+	limiters = make(map[string]*Limiter)
+	var parentContextLimiters map[string]*Limiter
 
-		for _, l := range config.Limits {
+	if config.ParentContext != nil {
+		parentContextLimiters = config.ParentContext.limiters
+	}
 
-			_, alreadyExist := limiters[l.Name]
-			if alreadyExist {
-				//TODO: use logger
-				panic(fmt.Errorf("context creation: duplicate limit '%s'\n", l.Name))
-			}
-
-			var fillRate int64 = 1
-
-			switch l.Kind {
-			case ByteRateLimit, SimpleRateLimit:
-				fillRate = l.Value
-			case TotalLimit:
-				fillRate = 0 //incrementation/decrementation is handled by the limit's DecrementFn
-			}
-
-			var cap int64 = l.Value
-			initialAvail, ok := config.LimitTokens[l.Name]
-			if !ok {
-				initialAvail = -1 //capacity
-			}
-
-			limiters[l.Name] = &Limiter{
-				limit: l,
-				bucket: newBucket(tokenBucketConfig{
-					cap:                          cap,
-					initialAvail:                 initialAvail,
-					fillRate:                     fillRate,
-					decrementFn:                  l.DecrementFn,
-					cancelContextOnNegativeCount: l.Kind == TotalLimit,
-				}),
-			}
+	for _, l := range config.Limits {
+		_, alreadyExist := limiters[l.Name]
+		if alreadyExist {
+			//TODO: use logger
+			panic(fmt.Errorf("context creation: duplicate limit '%s'", l.Name))
 		}
+
+		//limiters are inherited when possible
+		if limiter, ok := parentContextLimiters[l.Name]; ok {
+			limiters[l.Name] = limiter
+			continue
+		}
+
+		var fillRate int64 = 1
+
+		switch l.Kind {
+		case ByteRateLimit, SimpleRateLimit:
+			fillRate = l.Value
+		case TotalLimit:
+			fillRate = 0 //incrementation/decrementation is handled by the limit's DecrementFn
+		}
+
+		var cap int64 = l.Value
+		initialAvail, ok := config.LimitTokens[l.Name]
+		if !ok {
+			initialAvail = -1 //capacity
+		}
+
+		limiters[l.Name] = &Limiter{
+			limit: l,
+			bucket: newBucket(tokenBucketConfig{
+				cap:                          cap,
+				initialAvail:                 initialAvail,
+				fillRate:                     fillRate,
+				decrementFn:                  l.DecrementFn,
+				cancelContextOnNegativeCount: l.Kind == TotalLimit,
+			}),
+		}
+	}
+
+	if config.ParentContext == nil {
 		stdlibCtx, cancel = context.WithCancel(context.Background())
 	} else {
-
 		//if a parent context is passed we check that the parent has all the required permissions
 		if err, ok := config.HasParentRequiredPermissions(); !ok {
 			panic(fmt.Errorf("failed to create context, parent of context should at least have permissions of its child: %w", err))
@@ -206,7 +217,6 @@ func NewContext(config ContextConfig) *Context {
 		if config.LimitTokens != nil {
 			panic(ErrCannotProvideLimitTokensForChildContext)
 		}
-		limiters = config.ParentContext.limiters //limiters are shared with the parent context
 		stdlibCtx, cancel = context.WithCancel(config.ParentContext)
 
 		if filesystem == nil {

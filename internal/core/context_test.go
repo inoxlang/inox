@@ -173,6 +173,23 @@ func TestContextLimiters(t *testing.T) {
 		assert.InDelta(t, int64(0), ctx.limiters["test"].bucket.Available(), float64(capacity/20))
 	})
 
+	t.Run("child should share limiters of common limits with parent", func(t *testing.T) {
+		parentCtx := NewContext(ContextConfig{
+			Limits: []Limit{
+				{Name: "fs/read", Kind: ByteRateLimit, Value: 1_000},
+			},
+		})
+		ctx := NewContext(ContextConfig{
+			Limits: []Limit{
+				{Name: "fs/read", Kind: ByteRateLimit, Value: 1_000},
+				{Name: "fs/write", Kind: ByteRateLimit, Value: 1_000},
+			},
+			ParentContext: parentCtx,
+		})
+
+		assert.Same(t, parentCtx.limiters["fs/read"], ctx.limiters["fs/read"])
+		assert.NotSame(t, parentCtx.limiters["fs/write"], ctx.limiters["fs/write"])
+	})
 }
 
 func TestContextSetProtocolClientForURLForURL(t *testing.T) {
