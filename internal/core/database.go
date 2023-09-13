@@ -51,6 +51,7 @@ type DatabaseIL struct {
 	schemaUpdated        atomic.Bool
 	schemaUpdateLock     sync.Mutex
 	ownerState           *GlobalState //optional, can be set later using .SetOwnerStateOnceAndLoadIfNecessary
+	name                 string
 
 	propertyNames          []string
 	topLevelEntitiesLoaded atomic.Bool
@@ -135,6 +136,7 @@ type DatabaseWrappingArgs struct {
 	Inner                Database
 	OwnerState           *GlobalState //if nil the owner state should be set later by calling SetOwnerStateOnceAndLoadIfNecessary
 	ExpectedSchemaUpdate bool
+	Name                 string
 
 	//force the loading top level entities if there is not expected schema update
 	ForceLoadBeforeOwnerStateSet bool
@@ -158,6 +160,7 @@ func WrapDatabase(ctx *Context, args DatabaseWrappingArgs) (*DatabaseIL, error) 
 		propertyNames:        propertyNames,
 		schemaUpdateExpected: args.ExpectedSchemaUpdate,
 		ownerState:           args.OwnerState,
+		name:                 args.Name,
 	}
 
 	if !args.ExpectedSchemaUpdate && args.ForceLoadBeforeOwnerStateSet {

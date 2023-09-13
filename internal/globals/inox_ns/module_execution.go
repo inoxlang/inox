@@ -212,6 +212,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			Inner:                        db,
 			ExpectedSchemaUpdate:         config.ExpectedSchemaUpdate,
 			ForceLoadBeforeOwnerStateSet: false,
+			Name:                         config.Name,
 		})
 		if err != nil {
 			err = fmt.Errorf("failed to wrap '%s' database: %w", config.Name, err)

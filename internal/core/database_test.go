@@ -28,6 +28,7 @@ func TestDatabaseIL(t *testing.T) {
 			Inner:                db,
 			OwnerState:           ctx.state,
 			ExpectedSchemaUpdate: true,
+			Name:                 "main",
 		}))
 
 		migrationHandlerReturnedVal := &loadableTestValue{value: 1}
@@ -77,6 +78,7 @@ func TestDatabaseIL(t *testing.T) {
 			Inner:                db,
 			OwnerState:           ctx.state,
 			ExpectedSchemaUpdate: true,
+			Name:                 "main",
 		}))
 
 		migrationHandlerReturnedVal := &loadableTestValue{value: 1}
@@ -154,6 +156,7 @@ func TestDatabaseIL(t *testing.T) {
 			Inner:                db,
 			OwnerState:           ctx.state,
 			ExpectedSchemaUpdate: true,
+			Name:                 "main",
 		}))
 
 		assert.Nil(t, dbIL.topLevelEntities)
@@ -171,6 +174,7 @@ func TestDatabaseIL(t *testing.T) {
 		dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
 			Inner:                db,
 			ExpectedSchemaUpdate: true,
+			Name:                 "main",
 		}))
 
 		dbIL.SetOwnerStateOnceAndLoadIfNecessary(ctx, ctx.state)
@@ -189,6 +193,7 @@ func TestDatabaseIL(t *testing.T) {
 			Inner:                db,
 			OwnerState:           ctx1.state,
 			ExpectedSchemaUpdate: true,
+			Name:                 "main",
 		}))
 
 		ctx2 := NewContexWithEmptyState(ContextConfig{}, nil)
@@ -227,6 +232,7 @@ func TestDatabaseIL(t *testing.T) {
 			Inner:                db,
 			OwnerState:           ctx.state,
 			ExpectedSchemaUpdate: true,
+			Name:                 "main",
 		}))
 
 		dbIL.UpdateSchema(ctx, NewInexactObjectPattern(map[string]Pattern{}))
@@ -251,6 +257,7 @@ func TestDatabaseIL(t *testing.T) {
 			Inner:                db,
 			OwnerState:           ctx.state,
 			ExpectedSchemaUpdate: true,
+			Name:                 "main",
 		}))
 
 		assert.PanicsWithValue(t, ErrInvalidAccessSchemaNotUpdatedYet, func() {
@@ -269,6 +276,7 @@ func TestDatabaseIL(t *testing.T) {
 			Inner:                db,
 			OwnerState:           ctx.state,
 			ExpectedSchemaUpdate: true,
+			Name:                 "main",
 		}))
 
 		migrationHandlerReturnedVal := &loadableTestValue{value: 1}
