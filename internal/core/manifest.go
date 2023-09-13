@@ -71,7 +71,7 @@ func SetInitialWorkingDir(getWd func() (string, error)) {
 type Manifest struct {
 	//note: permissions required for reading the preinit files are in .PreinitFiles.
 	RequiredPermissions []Permission
-	Limits              []Limits
+	Limits              []Limit
 
 	HostResolutions map[Host]Value
 	EnvPattern      *ObjectPattern
@@ -678,7 +678,7 @@ func EvaluatePermissionListingObjectNode(n *parse.ObjectLiteral, config PreinitA
 type CustomPermissionTypeHandler func(kind PermissionKind, name string, value Value) (perms []Permission, handled bool, err error)
 
 type manifestObjectConfig struct {
-	defaultLimits         []Limits
+	defaultLimits         []Limit
 	addDefaultPermissions bool
 	handleCustomType      CustomPermissionTypeHandler //optional
 	envPattern            *ObjectPattern              //pre-evaluated
@@ -699,7 +699,7 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 		dbConfigs DatabaseConfigs
 	)
 	permListing := NewObject()
-	limits := make([]Limits, 0)
+	limits := make([]Limit, 0)
 	hostResolutions := make(map[Host]Value, 0)
 	defaultLimitsToNotSet := make(map[string]bool)
 	specifiedGlobalPermKinds := map[PermissionKind]bool{}
@@ -870,8 +870,8 @@ func GetDefaultGlobalVarPermissions() (perms []Permission) {
 	return
 }
 
-func getLimits(desc Value, defaultLimitsToNotSet map[string]bool) ([]Limits, error) {
-	var limits []Limits
+func getLimits(desc Value, defaultLimitsToNotSet map[string]bool) ([]Limit, error) {
+	var limits []Limit
 	ctx := NewContext(ContextConfig{})
 
 	limitObj, isObj := desc.(*Object)
@@ -883,12 +883,12 @@ func getLimits(desc Value, defaultLimitsToNotSet map[string]bool) ([]Limits, err
 
 	for limitName, limitPropValue := range limitObj.EntryMap(nil) {
 
-		var limit Limits
+		var limit Limit
 		defaultLimitsToNotSet[limitName] = true
 
 		switch v := limitPropValue.(type) {
 		case Rate:
-			limit = Limits{Name: limitName}
+			limit = Limit{Name: limitName}
 
 			switch r := v.(type) {
 			case ByteRate:
@@ -902,13 +902,13 @@ func getLimits(desc Value, defaultLimitsToNotSet map[string]bool) ([]Limits, err
 			}
 
 		case Int:
-			limit = Limits{
+			limit = Limit{
 				Name:  limitName,
 				Kind:  TotalLimit,
 				Value: int64(v),
 			}
 		case Duration:
-			limit = Limits{
+			limit = Limit{
 				Name:  limitName,
 				Kind:  TotalLimit,
 				Value: int64(v),

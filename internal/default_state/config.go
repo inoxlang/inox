@@ -21,7 +21,7 @@ const (
 var (
 	NewDefaultGlobalState NewDefaultGlobalStateFn
 	NewDefaultContext     NewDefaultContextFn
-	defaultScriptLimits   []core.Limits
+	defaultScriptLimits   []core.Limit
 )
 
 type DefaultGlobalStateConfig struct {
@@ -54,14 +54,14 @@ func SetNewDefaultContext(fn NewDefaultContextFn) {
 	NewDefaultContext = fn
 }
 
-func SetDefaultScriptLimits(limits []core.Limits) {
+func SetDefaultScriptLimits(limits []core.Limit) {
 	if defaultScriptLimits != nil {
 		panic(errors.New("default script limits already set"))
 	}
 	defaultScriptLimits = limits
 }
 
-func GetDefaultScriptLimits() []core.Limits {
+func GetDefaultScriptLimits() []core.Limit {
 	if defaultScriptLimits == nil {
 		panic(errors.New("default script limits are not set"))
 	}
@@ -75,7 +75,7 @@ func IsDefaultScriptLimitsSet() bool {
 type DefaultContextConfig struct {
 	Permissions          []core.Permission
 	ForbiddenPermissions []core.Permission
-	Limits               []core.Limits
+	Limits               []core.Limit
 	HostResolutions      map[core.Host]core.Value
 	OwnedDatabases       []core.DatabaseConfig
 	ParentContext        *core.Context  //optional

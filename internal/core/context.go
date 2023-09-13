@@ -56,7 +56,7 @@ type Context struct {
 	//permissions & limits
 	grantedPermissions   []Permission
 	forbiddenPermissions []Permission
-	limits               []Limits
+	limits               []Limit
 	limiters             map[string]*Limiter
 
 	//values
@@ -85,7 +85,7 @@ type ContextConfig struct {
 	Kind                 ContextKind
 	Permissions          []Permission
 	ForbiddenPermissions []Permission
-	Limits               []Limits
+	Limits               []Limit
 	HostResolutions      map[Host]Value
 	OwnedDatabases       []DatabaseConfig
 	ParentContext        *Context

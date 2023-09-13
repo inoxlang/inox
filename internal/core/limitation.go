@@ -14,9 +14,9 @@ func init() {
 	LimRegistry.RegisterLimit(EXECUTION_TOTAL_LIMIT_NAME, TotalLimit, 0)
 }
 
-// A Limits represents a limit for a running piece of code, for example: the maximum rate of http requests.
+// A Limit represents a limit for a running piece of code, for example: the maximum rate of http requests.
 // A Context stores one token bucket for each provided limit.
-type Limits struct {
+type Limit struct {
 	Name  string
 	Kind  LimitKind
 	Value int64
@@ -33,7 +33,7 @@ const (
 )
 
 type Limiter struct {
-	limit  Limits
+	limit  Limit
 	bucket *tokenBucket
 }
 

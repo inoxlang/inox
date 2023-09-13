@@ -13,7 +13,7 @@ func TestContextBuckets(t *testing.T) {
 	t.Run("buckets for lim of kind 'total' do not fill over time", func(t *testing.T) {
 		const LIMIT_NAME = "foo"
 		ctx := NewContext(ContextConfig{
-			Limits: []Limits{{Name: LIMIT_NAME, Kind: TotalLimit, Value: 1}},
+			Limits: []Limit{{Name: LIMIT_NAME, Kind: TotalLimit, Value: 1}},
 		})
 
 		ctx.Take(LIMIT_NAME, 1)
@@ -100,7 +100,7 @@ func TestContextLimiters(t *testing.T) {
 
 	t.Run("byte rate", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{
-			Limits: []Limits{
+			Limits: []Limit{
 				{Name: "fs/read", Kind: ByteRateLimit, Value: 1_000},
 			},
 		})
@@ -122,7 +122,7 @@ func TestContextLimiters(t *testing.T) {
 
 	t.Run("simple rate", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{
-			Limits: []Limits{
+			Limits: []Limit{
 				{Name: "fs/read-file", Kind: SimpleRateLimit, Value: 1},
 			},
 		})
@@ -140,7 +140,7 @@ func TestContextLimiters(t *testing.T) {
 
 	t.Run("total", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{
-			Limits: []Limits{
+			Limits: []Limit{
 				{Name: "fs/total-read-file", Kind: TotalLimit, Value: 1},
 			},
 		})
@@ -154,7 +154,7 @@ func TestContextLimiters(t *testing.T) {
 
 	t.Run("auto decrement", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{
-			Limits: []Limits{
+			Limits: []Limit{
 				{
 					Name:  "test",
 					Kind:  TotalLimit,

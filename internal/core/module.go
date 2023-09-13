@@ -174,7 +174,7 @@ type PreinitArgs struct {
 	//if RunningState is nil .PreinitFilesystem is used to create the temporary context.
 	PreinitFilesystem afs.Filesystem
 
-	DefaultLimits         []Limits
+	DefaultLimits         []Limit
 	AddDefaultPermissions bool
 	HandleCustomType      CustomPermissionTypeHandler //optional
 	IgnoreUnknownSections bool

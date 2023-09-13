@@ -50,7 +50,7 @@ var (
 func init() {
 	port.Store(8080)
 	if !default_state.IsDefaultScriptLimitsSet() {
-		default_state.SetDefaultScriptLimits([]core.Limits{})
+		default_state.SetDefaultScriptLimits([]core.Limit{})
 	}
 
 	if default_state.NewDefaultContext == nil {

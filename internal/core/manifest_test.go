@@ -43,7 +43,7 @@ func TestPreInit(t *testing.T) {
 
 		//output
 		expectedPermissions        []Permission
-		expectedLimits             []Limits
+		expectedLimits             []Limit
 		expectedResolutions        map[Host]Value
 		expectedPreinitFileConfigs PreinitFiles
 		expectedDatabaseConfigs    DatabaseConfigs
@@ -64,7 +64,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limits{},
+			expectedLimits:      []Limit{},
 			expectedResolutions: map[Host]Value{"ldb://main": Path("/mydb")},
 			error:               false,
 		},
@@ -83,7 +83,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limits{},
+			expectedLimits:      []Limit{},
 			expectedResolutions: map[Host]Value{"s3://database": NewObjectFromMapNoInit(ValMap{
 				"bucket":     Str("test"),
 				"provider":   Str("cloudflare"),
@@ -97,7 +97,7 @@ func TestPreInit(t *testing.T) {
 			name:                "empty manifest",
 			module:              `manifest {}`,
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limits{},
+			expectedLimits:      []Limit{},
 			expectedResolutions: nil,
 			error:               false,
 		},
@@ -107,7 +107,7 @@ func TestPreInit(t *testing.T) {
 					permissions: { read: {globals: "*"} }
 				}`,
 			expectedPermissions: []Permission{GlobalVarPermission{permkind.Read, "*"}},
-			expectedLimits:      []Limits{},
+			expectedLimits:      []Limit{},
 			expectedResolutions: nil,
 			error:               false,
 		},
@@ -119,7 +119,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			expectedPermissions: []Permission{LThreadPermission{permkind.Create}},
-			expectedLimits:      []Limits{},
+			expectedLimits:      []Limit{},
 			expectedResolutions: nil,
 			error:               false,
 		},
@@ -131,7 +131,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			expectedPermissions: []Permission{LThreadPermission{permkind.Create}},
-			expectedLimits:      []Limits{},
+			expectedLimits:      []Limit{},
 			expectedResolutions: nil,
 			error:               false,
 		},
@@ -145,7 +145,7 @@ func TestPreInit(t *testing.T) {
 					permissions: { read: $$URL}
 				}`,
 			expectedPermissions: []Permission{HttpPermission{permkind.Read, URL("https://example.com/")}},
-			expectedLimits:      []Limits{},
+			expectedLimits:      []Limit{},
 			expectedResolutions: nil,
 			error:               false,
 		},
@@ -159,7 +159,7 @@ func TestPreInit(t *testing.T) {
 					permissions: { Read: $$URL}
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limits{},
+			expectedLimits:      []Limit{},
 			expectedResolutions: nil,
 			error:               true,
 
@@ -173,7 +173,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimits: []Limits{
+			expectedLimits: []Limit{
 				{Name: "a", Kind: TotalLimit, Value: int64(100 * time.Millisecond)},
 			},
 			expectedResolutions: nil,
@@ -207,7 +207,7 @@ func TestPreInit(t *testing.T) {
 			expectedPermissions: []Permission{
 				DNSPermission{permkind.Read, HostPattern("://**.com")},
 			},
-			expectedLimits:      []Limits{},
+			expectedLimits:      []Limit{},
 			expectedResolutions: nil,
 			error:               false,
 		},
@@ -237,7 +237,7 @@ func TestPreInit(t *testing.T) {
 					URLPattern("ldb://main/users"),
 				},
 			},
-			expectedLimits: []Limits{},
+			expectedLimits: []Limit{},
 		},
 		// {
 		// 	name: "see email addresses",
@@ -293,7 +293,7 @@ func TestPreInit(t *testing.T) {
 					preinit-files: {}
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limits{},
+			expectedLimits:      []Limit{},
 			expectedResolutions: nil,
 			error:               false,
 		},
@@ -311,7 +311,7 @@ func TestPreInit(t *testing.T) {
 				util.WriteFile(fls, "/file.txt", nil, 0o600)
 			},
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limits{},
+			expectedLimits:      []Limit{},
 			expectedPreinitFileConfigs: PreinitFiles{
 				{
 					Name:               "F",
@@ -337,7 +337,7 @@ func TestPreInit(t *testing.T) {
 				util.WriteFile(fls, "/file.txt", []byte("a"), 0o600)
 			},
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limits{},
+			expectedLimits:      []Limit{},
 			expectedPreinitFileConfigs: PreinitFiles{
 				{
 					Name:               "F",
@@ -361,7 +361,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limits{},
+			expectedLimits:      []Limit{},
 			expectedPreinitFileConfigs: PreinitFiles{
 				{
 					Name:               "F",
@@ -393,7 +393,7 @@ func TestPreInit(t *testing.T) {
 				util.WriteFile(fls, "/file.txt", nil, 0o600)
 			},
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limits{},
+			expectedLimits:      []Limit{},
 			expectedPreinitFileConfigs: PreinitFiles{
 				{
 					Name:               "F",
@@ -425,7 +425,7 @@ func TestPreInit(t *testing.T) {
 				util.WriteFile(fls, "/file2.txt", nil, 0o600)
 			},
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limits{},
+			expectedLimits:      []Limit{},
 			expectedPreinitFileConfigs: PreinitFiles{
 				{
 					Name:               "F1",
@@ -457,7 +457,7 @@ func TestPreInit(t *testing.T) {
 					databases: {}
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limits{},
+			expectedLimits:      []Limit{},
 			expectedResolutions: nil,
 			error:               false,
 		},
@@ -481,7 +481,7 @@ func TestPreInit(t *testing.T) {
 					Host("ldb://main"),
 				},
 			},
-			expectedLimits: []Limits{},
+			expectedLimits: []Limit{},
 			expectedDatabaseConfigs: DatabaseConfigs{
 				{
 					Name:           "main",
@@ -514,7 +514,7 @@ func TestPreInit(t *testing.T) {
 					Host("ldb://main"),
 				},
 			},
-			expectedLimits: []Limits{},
+			expectedLimits: []Limit{},
 			expectedDatabaseConfigs: DatabaseConfigs{
 				{
 					Name:                 "main",
@@ -625,7 +625,7 @@ func TestPreInit(t *testing.T) {
 					databases: /main.ix
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limits{},
+			expectedLimits:      []Limit{},
 			expectedDatabaseConfigs: DatabaseConfigs{
 				{
 					Name:           "main",
@@ -651,7 +651,7 @@ func TestPreInit(t *testing.T) {
 					databases: /main.ix
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limits{},
+			expectedLimits:      []Limit{},
 			expectedDatabaseConfigs: DatabaseConfigs{
 				{
 					Name:           "main",

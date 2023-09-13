@@ -30,7 +30,7 @@ func TestWebsocketConnection(t *testing.T) {
 			Permissions: []core.Permission{
 				core.WebsocketPermission{Kind_: permkind.Write, Endpoint: ENDPOINT},
 			},
-			Limits:     []core.Limits{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 1}},
+			Limits:     []core.Limit{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 1}},
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})
 
@@ -79,7 +79,7 @@ func TestWebsocketConnection(t *testing.T) {
 			Permissions: []core.Permission{
 				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
 			},
-			Limits:     []core.Limits{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 1}},
+			Limits:     []core.Limit{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 1}},
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})
 
@@ -129,7 +129,7 @@ func TestWebsocketConnection(t *testing.T) {
 			Permissions: []core.Permission{
 				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
 			},
-			Limits:     []core.Limits{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 1}},
+			Limits:     []core.Limit{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 1}},
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})
 
@@ -178,7 +178,7 @@ func TestWebsocketConnection(t *testing.T) {
 				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
 				core.WebsocketPermission{Kind_: permkind.Write, Endpoint: ENDPOINT},
 			},
-			Limits:     []core.Limits{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 1}},
+			Limits:     []core.Limit{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 1}},
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})
 

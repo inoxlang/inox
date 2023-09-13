@@ -34,7 +34,7 @@ import (
 )
 
 var (
-	DEFAULT_SCRIPT_LIMITS = []core.Limits{
+	DEFAULT_SCRIPT_LIMITS = []core.Limit{
 		{Name: fs_ns.FS_READ_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 100_000_000},
 		{Name: fs_ns.FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 100_000_000},
 
