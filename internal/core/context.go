@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	afs "github.com/inoxlang/inox/internal/afs"
+	"github.com/inoxlang/inox/internal/afs"
 	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/rs/zerolog"
 
@@ -232,7 +232,7 @@ func NewContext(config ContextConfig) *Context {
 		Context:              stdlibCtx,
 		cancel:               cancel,
 		parentCtx:            config.ParentContext,
-		fs:                   filesystem,
+		fs:                   WithSecondaryContextIfPossible(ctx, filesystem),
 		executionStartTime:   time.Now(),
 		grantedPermissions:   utils.CopySlice(config.Permissions),
 		forbiddenPermissions: utils.CopySlice(config.ForbiddenPermissions),
@@ -1044,15 +1044,13 @@ func (ctx *Context) ToSymbolicValue() (*symbolic.Context, error) {
 	return symbolicCtx, nil
 }
 
-type IDoWithContext interface {
-	DoWithContext(*Context, func() error) error
+type IWithSecondaryContext interface {
+	WithSecondaryContext(*Context) any
 }
 
-func DoWithContextIfPossible(ctx *Context, arg any, fn func() error) error {
-	itf, ok := arg.(IDoWithContext)
-	if ok {
-		return itf.DoWithContext(ctx, fn)
-	} else {
-		return fn()
+func WithSecondaryContextIfPossible[T any](ctx *Context, arg T) T {
+	if itf, ok := any(arg).(IWithSecondaryContext); ok {
+		return itf.WithSecondaryContext(ctx).(T)
 	}
+	return arg
 }
