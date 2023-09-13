@@ -12,6 +12,7 @@ var LimRegistry = limitRegistry{
 
 func init() {
 	LimRegistry.RegisterLimit(EXECUTION_TOTAL_LIMIT_NAME, TotalLimit, 0)
+	LimRegistry.RegisterLimit(EXECUTION_CPU_TIME_LIMIT_NAME, TotalLimit, 0)
 }
 
 // A Limit represents a limit for a running piece of code, for example: the maximum rate of http requests.

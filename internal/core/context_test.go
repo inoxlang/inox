@@ -173,6 +173,32 @@ func TestContextLimiters(t *testing.T) {
 		assert.InDelta(t, int64(0), ctx.limiters["test"].bucket.Available(), float64(capacity/20))
 	})
 
+	t.Run("auto decrement: paused + resumed", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{
+			Limits: []Limit{
+				{
+					Name:  "test",
+					Kind:  TotalLimit,
+					Value: int64(time.Second),
+					DecrementFn: func(lastDecrementTime time.Time) int64 {
+						return time.Since(lastDecrementTime).Nanoseconds()
+					},
+				},
+			},
+		})
+
+		capacity := int64(time.Second)
+		assert.Equal(t, capacity, ctx.limiters["test"].bucket.Available())
+
+		ctx.limiters["test"].bucket.PauseDecrementation()
+		time.Sleep(time.Second)
+		assert.InDelta(t, capacity, ctx.limiters["test"].bucket.Available(), float64(capacity/100))
+
+		ctx.limiters["test"].bucket.ResumeDecrementation()
+		time.Sleep(time.Second)
+		assert.InDelta(t, int64(0), ctx.limiters["test"].bucket.Available(), float64(capacity/20))
+	})
+
 	t.Run("child should share limiters of common limits with parent", func(t *testing.T) {
 		parentCtx := NewContext(ContextConfig{
 			Limits: []Limit{

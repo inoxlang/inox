@@ -19,7 +19,8 @@ import (
 )
 
 const (
-	EXECUTION_TOTAL_LIMIT_NAME = "execution/total-time"
+	EXECUTION_TOTAL_LIMIT_NAME    = "execution/total-time"
+	EXECUTION_CPU_TIME_LIMIT_NAME = "execution/cpu-time"
 )
 
 var (
@@ -650,6 +651,30 @@ func (ctx *Context) GiveBack(limitName string, count int64) error {
 		limiter.bucket.GiveBack(scaledCount)
 	}
 	return nil
+}
+
+func (ctx *Context) PauseDecrementation(limitName string) error {
+	ctx.lock.RLock()
+	defer ctx.lock.RUnlock()
+
+	limiter, ok := ctx.limiters[limitName]
+	if ok {
+		limiter.bucket.PauseDecrementation()
+		return nil
+	}
+	return fmt.Errorf("context: non existing limit '%s'", limitName)
+}
+
+func (ctx *Context) ResumeDecrementation(limitName string) error {
+	ctx.lock.RLock()
+	defer ctx.lock.RUnlock()
+
+	limiter, ok := ctx.limiters[limitName]
+	if ok {
+		limiter.bucket.ResumeDecrementation()
+		return nil
+	}
+	return fmt.Errorf("context: non existing limit '%s'", limitName)
 }
 
 // GetByteRate returns the value (rate) of a byte rate limit.

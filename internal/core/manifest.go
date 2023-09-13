@@ -942,6 +942,13 @@ func getLimits(desc Value, defaultLimitsToNotSet map[string]bool) ([]Limit, erro
 			l.DecrementFn = func(lastDecrementTime time.Time) int64 {
 				return time.Since(lastDecrementTime).Nanoseconds()
 			}
+		case EXECUTION_CPU_TIME_LIMIT_NAME:
+			if l.Value == 0 {
+				log.Panicf("invalid manifest, limits: %s should have a total value\n", EXECUTION_CPU_TIME_LIMIT_NAME)
+			}
+			l.DecrementFn = func(lastDecrementTime time.Time) int64 {
+				return time.Since(lastDecrementTime).Nanoseconds()
+			}
 		}
 		limits[i] = l
 	}
