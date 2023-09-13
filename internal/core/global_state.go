@@ -42,7 +42,7 @@ type GlobalState struct {
 	Logger                               zerolog.Logger                                                  //zerolog.Logger(io.Discard) by default
 	Debugger                             atomic.Value                                                    //nil or (nillable) *Debugger
 
-	MainState            *GlobalState //never nil
+	MainState            *GlobalState //never nil (should be set by user of GlobalState)
 	Project              Project      //can be nil
 	id                   StateId
 	descendantStates     map[ResourceName]*GlobalState
@@ -70,7 +70,7 @@ func NewGlobalState(ctx *Context, constants ...map[string]Value) *GlobalState {
 		descendantStates: make(map[ResourceName]*GlobalState, 0),
 
 		Out:    io.Discard,
-		Logger: zerolog.New(io.Discard),
+		Logger: zerolog.Nop(),
 
 		GetBasePatternsForImportedModule: func() (map[string]Pattern, map[string]*PatternNamespace) {
 			return nil, nil
