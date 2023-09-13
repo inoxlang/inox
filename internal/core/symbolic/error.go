@@ -135,11 +135,11 @@ func fmtOperandOfNumberNegateShouldBeIntOrFloat(v SymbolicValue) string {
 }
 
 func fmtLeftOperandOfBinaryShouldBe(operator parse.BinaryOperator, expectedType string, actual string) string {
-	return fmt.Sprintf("left operand of binary %s should be a(n) %s but is %s", operator.String(), expectedType, actual)
+	return fmt.Sprintf("left operand of binary '%s' should be a(n) %s but is %s", operator.String(), expectedType, actual)
 }
 
 func fmtRightOperandOfBinaryShouldBe(operator parse.BinaryOperator, expectedType string, actual string) string {
-	return fmt.Sprintf("right operand of binary %s should be a(n) %s but is %s", operator.String(), expectedType, actual)
+	return fmt.Sprintf("right operand of binary '%s' should be a(n) %s but is %s", operator.String(), expectedType, actual)
 }
 
 func fmtInvalidBinExprCannnotCheckNonObjectHasKey(v SymbolicValue) string {
