@@ -5039,10 +5039,18 @@ _switch:
 				chainElementEnd = p.i
 			}
 		default:
-			if (operator == Or || operator == And) || (isNonIdentBinaryOperatorChar(p.s[p.i]) || isAlphaOrUndescore(p.s[p.i])) {
+			if operator == Or || operator == And || isAlphaOrUndescore(p.s[p.i]) {
 				continueParsing = true
 				moveRightOperand = true
 				andOrToken = operatorToken
+			} else if isNonIdentBinaryOperatorChar(p.s[p.i]) {
+				if hasPreviousOperator {
+					continueParsing = true
+					moveRightOperand = true
+					andOrToken = operatorToken
+				} else {
+					parsingErr = &ParsingError{UnspecifiedParsingError, MOST_BINARY_EXPRS_MUST_BE_PARENTHESIZED}
+				}
 			} else if !hasPreviousOperator {
 				parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_PAREN}
 			}

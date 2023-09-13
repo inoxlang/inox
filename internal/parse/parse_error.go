@@ -183,6 +183,7 @@ const (
 	UNTERMINATED_BIN_EXPR_MISSING_OPERAND                     = "unterminated binary expression: missing right operand"
 	UNTERMINATED_BIN_EXPR_MISSING_PAREN                       = "unterminated binary expression: missing closing parenthesis"
 	BIN_EXPR_CHAIN_OPERATORS_SHOULD_BE_THE_SAME               = "the operators of a binary expression chain should be all the same: either 'or' or 'and'"
+	MOST_BINARY_EXPRS_MUST_BE_PARENTHESIZED                   = "most binary expressions must be parenthesized, (e.g. '(1 + 2 + 3)' is not valid)"
 
 	UNTERMINATED_MEMB_OR_INDEX_EXPR                          = "unterminated member/index expression"
 	UNTERMINATED_IDENT_MEMB_EXPR                             = "unterminated identifier member expression"

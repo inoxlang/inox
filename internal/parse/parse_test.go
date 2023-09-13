@@ -14153,6 +14153,11 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("+ chain", func(t *testing.T) {
+			_, err := parseChunk(t, "(1 + 2 + 3)", "")
+			assert.ErrorContains(t, err, MOST_BINARY_EXPRS_MUST_BE_PARENTHESIZED)
+		})
+
 		t.Run("only opening parenthesis", func(t *testing.T) {
 			n, err := parseChunk(t, "(", "")
 			assert.Error(t, err)
