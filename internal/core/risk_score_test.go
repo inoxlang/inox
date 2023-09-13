@@ -92,12 +92,12 @@ func TestComputeProgramRiskScore(t *testing.T) {
 		assert.Equal(t, expectedScore, utils.Ret0(ComputeProgramRiskScore(mod, manifest)))
 	})
 
-	t.Run("create routines permission", func(t *testing.T) {
+	t.Run("create threads permission", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 
 		mod := utils.Must(ParseInMemoryModule(`
 			manifest {
-				permissions: {create: {routines: {}}}
+				permissions: {create: {threads: {}}}
 			}
 		`, InMemoryModuleParsingConfig{
 			Name:    "",
@@ -108,7 +108,7 @@ func TestComputeProgramRiskScore(t *testing.T) {
 			GlobalConsts: mod.MainChunk.Node.GlobalConstantDeclarations,
 		})
 
-		expected := RiskScore(ROUTINE_PERM_RISK_SCORE)
+		expected := RiskScore(LTHREAD_PERM_RISK_SCORE)
 		assert.Equal(t, expected, utils.Ret0(ComputeProgramRiskScore(mod, manifest)))
 	})
 

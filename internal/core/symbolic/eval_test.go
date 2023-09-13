@@ -1053,8 +1053,8 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("set new property of an object with non-serializable value", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				obj = {}
-				routine = go do {}
-				$obj.routine = routine
+				lthread = go do {}
+				$obj.lthread = lthread
 				return obj
 			`)
 			assignment := n.Statements[2]
@@ -1069,7 +1069,7 @@ func TestSymbolicEval(t *testing.T) {
 			}, state.errors())
 			assert.Equal(t, &Object{
 				entries: map[string]Serializable{
-					"routine": ANY_SERIALIZABLE,
+					"lthread": ANY_SERIALIZABLE,
 				},
 			}, res)
 		})
@@ -1101,8 +1101,8 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("set new property of an object with non-serializable value: identifier member LHS", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				obj = {}
-				routine = go do {}
-				obj.routine = routine
+				lthread = go do {}
+				obj.lthread = lthread
 				return obj
 			`)
 			assignment := n.Statements[2]
@@ -1121,7 +1121,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("set new property of an object with non-watchable mutable value: identifier member LHS", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				obj = {}
-				obj.routine = val
+				obj.lthread = val
 				return obj
 			`)
 			state.setGlobal("val", ANY_SERIALIZABLE, GlobalConst)
@@ -1137,7 +1137,7 @@ func TestSymbolicEval(t *testing.T) {
 			}, state.errors())
 			assert.Equal(t, &Object{
 				entries: map[string]Serializable{
-					"routine": ANY_SERIALIZABLE,
+					"lthread": ANY_SERIALIZABLE,
 				},
 			}, res)
 		})
@@ -1389,7 +1389,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("non-serializable values not allowed in initialization", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`{routine: go do {}}`)
+			n, state := MakeTestStateAndChunk(`{lthread: go do {}}`)
 			propNode := parse.FindNode(n, (*parse.ObjectProperty)(nil), nil)
 
 			res, err := symbolicEval(n, state)
@@ -1400,16 +1400,16 @@ func TestSymbolicEval(t *testing.T) {
 			}, state.errors())
 			assert.Equal(t, &Object{
 				entries: map[string]Serializable{
-					"routine": ANY_SERIALIZABLE,
+					"lthread": ANY_SERIALIZABLE,
 				},
 				static: map[string]Pattern{
-					"routine": getStatic(ANY_SERIALIZABLE),
+					"lthread": getStatic(ANY_SERIALIZABLE),
 				},
 			}, res)
 		})
 
 		t.Run("non-watchable mutable values not allowed in initialization", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`{routine: val}`)
+			n, state := MakeTestStateAndChunk(`{lthread: val}`)
 			state.setGlobal("val", ANY_SERIALIZABLE, GlobalConst)
 			propNode := parse.FindNode(n, (*parse.ObjectProperty)(nil), nil)
 
@@ -1421,10 +1421,10 @@ func TestSymbolicEval(t *testing.T) {
 			}, state.errors())
 			assert.Equal(t, &Object{
 				entries: map[string]Serializable{
-					"routine": ANY_SERIALIZABLE,
+					"lthread": ANY_SERIALIZABLE,
 				},
 				static: map[string]Pattern{
-					"routine": getStatic(ANY_SERIALIZABLE),
+					"lthread": getStatic(ANY_SERIALIZABLE),
 				},
 			}, res)
 		})
@@ -1651,7 +1651,7 @@ func TestSymbolicEval(t *testing.T) {
 			`)
 			memberExpr := n.Statements[0].(*parse.ReturnStatement).Expr
 
-			goVal := &Routine{}
+			goVal := &LThread{}
 			state.setGlobal("v", goVal, GlobalConst)
 
 			res, err := symbolicEval(n, state)
@@ -1667,7 +1667,7 @@ func TestSymbolicEval(t *testing.T) {
 				return v.cancel
 			`)
 
-			goVal := &Routine{}
+			goVal := &LThread{}
 			state.setGlobal("v", goVal, GlobalConst)
 
 			res, err := symbolicEval(n, state)
@@ -1681,7 +1681,7 @@ func TestSymbolicEval(t *testing.T) {
 				return v.XYZ
 			`)
 			memberExpr := n.Statements[0].(*parse.ReturnStatement).Expr
-			goVal := &Routine{}
+			goVal := &LThread{}
 			state.setGlobal("v", goVal, GlobalConst)
 
 			res, err := symbolicEval(n, state)
@@ -1789,7 +1789,7 @@ func TestSymbolicEval(t *testing.T) {
 			`)
 			memberExpr := n.Statements[0].(*parse.ReturnStatement).Expr
 
-			goVal := &Routine{}
+			goVal := &LThread{}
 			state.setGlobal("v", goVal, GlobalConst)
 
 			res, err := symbolicEval(n, state)
@@ -1805,7 +1805,7 @@ func TestSymbolicEval(t *testing.T) {
 				return v.<cancel
 			`)
 
-			goVal := &Routine{}
+			goVal := &LThread{}
 			state.setGlobal("v", goVal, GlobalConst)
 
 			res, err := symbolicEval(n, state)
@@ -1819,7 +1819,7 @@ func TestSymbolicEval(t *testing.T) {
 				return v.<XYZ
 			`)
 			memberExpr := n.Statements[0].(*parse.ReturnStatement).Expr
-			goVal := &Routine{}
+			goVal := &LThread{}
 			state.setGlobal("v", goVal, GlobalConst)
 
 			res, err := symbolicEval(n, state)
@@ -8220,7 +8220,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.IsType(t, &Routine{}, res)
+			assert.IsType(t, &LThread{}, res)
 		})
 
 		t.Run("single expression without meta", func(t *testing.T) {
@@ -8232,10 +8232,10 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.IsType(t, &Routine{}, res)
+			assert.IsType(t, &LThread{}, res)
 		})
 
-		t.Run("provided group is not a routine group", func(t *testing.T) {
+		t.Run("provided group is not a lthread group", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				group = int
 				return go {group: group, globals: .{}} do { }
@@ -8245,9 +8245,9 @@ func TestSymbolicEval(t *testing.T) {
 			obj := parse.FindNode(n, (*parse.ObjectLiteral)(nil), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(obj, state, fmtGroupPropertyNotRoutineGroup(ANY_INT)),
+				makeSymbolicEvalError(obj, state, fmtGroupPropertyNotLThreadGroup(ANY_INT)),
 			}, state.errors())
-			assert.IsType(t, &Routine{}, res)
+			assert.IsType(t, &LThread{}, res)
 		})
 
 		t.Run("error in embedded module", func(t *testing.T) {
@@ -8262,7 +8262,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(binExpr.Right, state, fmtRightOperandOfBinaryShouldBe(parse.Add, "int", "\"a\"")),
 			}, state.errors())
-			assert.IsType(t, &Routine{}, res)
+			assert.IsType(t, &LThread{}, res)
 		})
 
 		t.Run("call provided function", func(t *testing.T) {
@@ -8294,7 +8294,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 			assert.Contains(t,
 				state.warnings(),
-				makeSymbolicEvalWarning(metadataNode, state, fmtUnknownSectionInCoroutineMetadata("x")),
+				makeSymbolicEvalWarning(metadataNode, state, fmtUnknownSectionInLThreadMetadata("x")),
 			) //we use contains because there is also a warning about a missing permission
 		})
 
@@ -8314,7 +8314,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NotContains(t,
 				state.warnings(),
-				makeSymbolicEvalWarning(metadataNode, state, fmtUnknownSectionInCoroutineMetadata("allow")),
+				makeSymbolicEvalWarning(metadataNode, state, fmtUnknownSectionInLThreadMetadata("allow")),
 			) //we use contains because there is also a warning about a missing permission
 		})
 

@@ -36,8 +36,8 @@ type LifetimeJob struct {
 }
 
 type LifetimeJobInstance struct {
-	job     *LifetimeJob
-	routine *Routine
+	job    *LifetimeJob
+	thread *LThread
 }
 
 func NewLifetimeJob(meta Value, subjectPattern Pattern, mod *Module, parentState *GlobalState) (*LifetimeJob, error) {
@@ -82,9 +82,9 @@ func NewLifetimeJob(meta Value, subjectPattern Pattern, mod *Module, parentState
 func (j *LifetimeJob) Instantiate(ctx *Context, self Value) (*LifetimeJobInstance, error) {
 	spawnerState := ctx.GetClosestState()
 
-	createRoutinePerm := RoutinePermission{Kind_: permkind.Create}
+	createLThreadPerm := LThreadPermission{Kind_: permkind.Create}
 
-	if err := spawnerState.Ctx.CheckHasPermission(createRoutinePerm); err != nil {
+	if err := spawnerState.Ctx.CheckHasPermission(createLThreadPerm); err != nil {
 		return nil, fmt.Errorf("lifetime job: following permission is required for running the job: %w", err)
 	}
 
@@ -101,7 +101,7 @@ func (j *LifetimeJob) Instantiate(ctx *Context, self Value) (*LifetimeJobInstanc
 	}
 
 	permissions := utils.CopySlice(manifest.RequiredPermissions)
-	permissions = append(permissions, createRoutinePerm)
+	permissions = append(permissions, createLThreadPerm)
 
 	readGlobalPerm := GlobalVarPermission{Kind_: permkind.Read, Name: "*"}
 	useGlobalPerm := GlobalVarPermission{Kind_: permkind.Use, Name: "*"}
@@ -131,9 +131,9 @@ func (j *LifetimeJob) Instantiate(ctx *Context, self Value) (*LifetimeJobInstanc
 	// TODO: use tree walking interpreter for jobs not requiring performance ?
 	// creating many VMs consumes at lot of memory.
 
-	routine, err := SpawnRoutine(RoutineSpawnArgs{
+	lthread, err := SpawnLThread(LthreadSpawnArgs{
 		SpawnerState: spawnerState,
-		RoutineCtx:   routineCtx,
+		LthreadCtx:   routineCtx,
 		Globals:      spawnerState.Globals,
 		Module:       j.module,
 		Manifest:     manifest,
@@ -148,8 +148,8 @@ func (j *LifetimeJob) Instantiate(ctx *Context, self Value) (*LifetimeJobInstanc
 	}
 
 	return &LifetimeJobInstance{
-		routine: routine,
-		job:     j,
+		thread: lthread,
+		job:    j,
 	}, nil
 }
 
@@ -300,19 +300,19 @@ func spawnLifetimeJobScheduler() {
 				continue
 			}
 
-			if job.routine.IsDone() {
+			if job.thread.IsDone() {
 				//TODO: cleanup
 				continue
 			}
 
-			if !job.routine.IsPaused() {
+			if !job.thread.IsPaused() {
 				valueJobs.idleTimes[i] = now
 				//TODO: find a way to pause
 				continue
 			}
 
 			if !valueJobs.started || now.Sub(valueJobs.idleTimes[i]) > MAX_JOB_IDLE_DURATION {
-				job.routine.ResumeAsync()
+				job.thread.ResumeAsync()
 			}
 		}
 		valueJobs.started = true

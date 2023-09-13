@@ -7,12 +7,12 @@ manifest {
         read: IWD_PREFIX
         create: {
             $$IWD_PREFIX
-            routines: {}
+            threads: {}
         }
     }
 }
 
-routine = go {
+lthread = go {
     globals: .{create, FILEPATH}
     allow: {
         create: { 
@@ -23,7 +23,7 @@ routine = go {
     return create!(FILEPATH "hello")
 } 
 
-routine.cancel()
+lthread.cancel()
 sleep 500ms
 
 # there should be an error since we cancelled the creation of the file

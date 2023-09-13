@@ -1371,17 +1371,17 @@ func (i FileInfo) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]u
 		i.Size_ == otherInfo.Size_
 }
 
-func (r *Routine) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherRoutine, ok := other.(*Routine)
+func (r *LThread) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherLThread, ok := other.(*LThread)
 	if !ok {
 		return false
 	}
 
-	return r == otherRoutine
+	return r == otherLThread
 }
 
-func (g *RoutineGroup) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherGroup, ok := other.(*RoutineGroup)
+func (g *LThreadGroup) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherGroup, ok := other.(*LThreadGroup)
 	if !ok {
 		return false
 	}

@@ -6,19 +6,19 @@ manifest {
         }
         provide: https://localhost:8080
         create: {
-            routines: {}
+            threads: {}
         }
     }
 }
 
 
 #  # dynamic imports are relative to the module's file
-#  routine = dynimport!(./return_1.ix, {}, {})
-#  print "result of ./return_1.ix:" routine.wait_result!()
+#  lthread = dynimport!(./return_1.ix, {}, {})
+#  print "result of ./return_1.ix:" lthread.wait_result!()
 
 
 #  # URL import
 #  server = http.FileServer!(https://localhost:8080 ./examples/import/)
-#  routine = dynimport!(https://localhost:8080/return_1.ix, {}, {}, --insecure)
-#  print "result of https://localhost:8080/return_1.ix:" routine.wait_result!()
+#  lthread = dynimport!(https://localhost:8080/return_1.ix, {}, {}, --insecure)
+#  print "result of https://localhost:8080/return_1.ix:" lthread.wait_result!()
 #  server.close() 

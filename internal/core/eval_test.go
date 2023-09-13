@@ -1636,7 +1636,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 			jobInstance := obj.jobInstances()[0]
 			assert.Equal(t, obj.Prop(state.Ctx, "0"), jobInstance.job)
-			assert.Equal(t, bytecodeEval, jobInstance.routine.useBytecode)
+			assert.Equal(t, bytecodeEval, jobInstance.thread.useBytecode)
 		})
 
 		t.Run("lifetimejob with ungranted permissions", func(t *testing.T) {
@@ -1647,7 +1647,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}`
 
 			state := NewGlobalState(NewContext(ContextConfig{
-				Permissions: []Permission{RoutinePermission{Kind_: permkind.Create}},
+				Permissions: []Permission{LThreadPermission{Kind_: permkind.Create}},
 			}))
 			res, err := Eval(code, state, false)
 
@@ -1675,7 +1675,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			jobInstance := obj.jobInstances()[0]
 			assert.Equal(t, obj.Prop(state.Ctx, "0"), jobInstance.job)
-			assert.Equal(t, bytecodeEval, jobInstance.routine.useBytecode)
+			assert.Equal(t, bytecodeEval, jobInstance.thread.useBytecode)
 
 			time.Sleep(time.Millisecond)
 		})
@@ -3337,11 +3337,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			{
 				name: "external func returning an integer",
 				input: `
-					routine = go do {
+					lthread = go do {
 						return fn(){ return 1 }
 					}
 
-					f = routine.wait_result!()
+					f = lthread.wait_result!()
 					return f()
 				`,
 				isolatedCaseArguments: noargs,
@@ -3350,11 +3350,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			{
 				name: "external func returning an object",
 				input: `
-					routine = go do { 
+					lthread = go do { 
 						return fn(){ return {} } 
 					}
 
-					f = routine.wait_result!()
+					f = lthread.wait_result!()
 					return f()
 				`,
 				isShared:              true,
@@ -3366,11 +3366,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				input: `
 					shared_value = fn(){}
 
-					routine = go do { 
+					lthread = go do { 
 						return fn(arg){ return arg } 
 					}
 
-					f = routine.wait_result!()
+					f = lthread.wait_result!()
 					return f(shared_value)
 				`,
 				checkResult: func(t *testing.T, result Value, state *GlobalState) {
@@ -3382,11 +3382,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			{
 				name: "external func : many calls of a void function with no parameters",
 				input: strings.ReplaceAll(`
-					routine = go do { 
+					lthread = go do { 
 						return fn(){ } 
 					}
 
-					f = routine.wait_result!()
+					f = lthread.wait_result!()
 					many_calls			
 				`, "many_calls", strings.Repeat("f()\n", 10+VM_STACK_SIZE)),
 				result: Nil,
@@ -3742,7 +3742,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				obj = {
 					list: []
 				}
-				group = RoutineGroup()
+				group = LThreadGroup()
 	
 				for 1..5 {
 					go {globals: {obj: obj, start_tx: start_tx, commit_tx: commit_tx}, group: group} do {
@@ -3761,7 +3761,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state.Globals.Set("commit_tx", ValOf(func(ctx *Context) {
 				ctx.GetTx().Commit(ctx)
 			}))
-			state.Globals.Set("RoutineGroup", ValOf(NewRoutineGroup))
+			state.Globals.Set("LThreadGroup", ValOf(NewLThreadGroup))
 
 			res, err := Eval(code, state, false)
 			if !assert.NoError(t, err) {
@@ -3782,7 +3782,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				obj = {
 					list: []
 				}
-				group = RoutineGroup()
+				group = LThreadGroup()
 	
 				for 1..5 {
 					go {globals: {obj: obj, start_tx: start_tx, commit_tx: commit_tx}, group: group} do {
@@ -3802,7 +3802,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.Globals.Set("RoutineGroup", ValOf(NewRoutineGroup))
+			state.Globals.Set("LThreadGroup", ValOf(NewLThreadGroup))
 			state.Globals.Set("start_tx", ValOf(StartNewTransaction))
 			state.Globals.Set("commit_tx", ValOf(func(ctx *Context) {
 				ctx.GetTx().Commit(ctx)
@@ -4578,7 +4578,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				Permissions: append(
 					GetDefaultGlobalVarPermissions(),
 					FilesystemPermission{permkind.Read, PathPattern("/...")},
-					RoutinePermission{permkind.Create},
+					LThreadPermission{permkind.Create},
 				),
 				Filesystem: newOsFilesystem(),
 			})
@@ -4607,8 +4607,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				fn f(){
 					return 1
 				}
-				routine = go do f()
-				return routine.wait_result!()
+				lthread = go do f()
+				return lthread.wait_result!()
 			`
 			state := NewGlobalState(NewDefaultTestContext())
 			state.Logger = zerolog.New(state.Out)
@@ -4700,36 +4700,36 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("group (used once)", func(t *testing.T) {
 			code := `
-				group = RoutineGroup()
+				group = LThreadGroup()
 				go {group: group} do { }
 	
 				return group
 			`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"RoutineGroup": WrapGoFunction(NewRoutineGroup),
+				"LThreadGroup": WrapGoFunction(NewLThreadGroup),
 			})
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.IsType(t, &RoutineGroup{}, res)
-			assert.Len(t, res.(*RoutineGroup).routines, 1)
+			assert.IsType(t, &LThreadGroup{}, res)
+			assert.Len(t, res.(*LThreadGroup).threads, 1)
 		})
 
 		t.Run("group (used twice)", func(t *testing.T) {
 			code := `
-				group = RoutineGroup()
+				group = LThreadGroup()
 				go {group: group} do { }
 				go {group: group} do { }
 	
 				return group
 			`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"RoutineGroup": WrapGoFunction(NewRoutineGroup),
+				"LThreadGroup": WrapGoFunction(NewLThreadGroup),
 			})
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.IsType(t, &RoutineGroup{}, res.(GoValue))
+			assert.IsType(t, &LThreadGroup{}, res.(GoValue))
 
-			assert.Len(t, res.(*RoutineGroup).routines, 2)
+			assert.Len(t, res.(*LThreadGroup).threads, 2)
 		})
 
 		t.Run("call passed Inox function", func(t *testing.T) {
@@ -4818,7 +4818,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("call passed Go func", func(t *testing.T) {
 			called := false
 			code := `
-				group = RoutineGroup()
+				group = LThreadGroup()
 				rt = go {group: group} do gofunc()
 	
 				return rt.wait_result!()
@@ -4828,7 +4828,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					called = true
 					return 2
 				}),
-				"RoutineGroup": WrapGoFunction(NewRoutineGroup),
+				"LThreadGroup": WrapGoFunction(NewLThreadGroup),
 			})
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
@@ -4836,7 +4836,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, Int(2), res)
 		})
 
-		t.Run("spawner & routine access a shared value in a synchronized block", func(t *testing.T) {
+		t.Run("spawner & lthread access a shared value in a synchronized block", func(t *testing.T) {
 			goroutineIncCount := 5_000
 			if bytecodeEval {
 				goroutineIncCount = 50_000
@@ -4876,7 +4876,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, Int(2*goroutineIncCount), res)
 		})
 
-		t.Run("spawner & routine access a shared value without synchronization", func(t *testing.T) {
+		t.Run("spawner & lthread access a shared value without synchronization", func(t *testing.T) {
 			goroutineIncCount := 5_000
 			if bytecodeEval {
 				goroutineIncCount = 50_000
@@ -5229,7 +5229,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `
 				$$m = Mapping{ n 0 => n }
 
-				group = RoutineGroup()
+				group = LThreadGroup()
 
 				for 1..10_000 {
 					go {globals: .{m}, group: group} do {
@@ -5240,7 +5240,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return group.wait_results!()
 			`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"RoutineGroup": WrapGoFunction(NewRoutineGroup),
+				"LThreadGroup": WrapGoFunction(NewLThreadGroup),
 			})
 			state.Out = os.Stdout
 			state.Logger = zerolog.New(state.Out)
@@ -5263,7 +5263,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				$$a = 1
 				$$m = Mapping{ n 0 => a }
 
-				group = RoutineGroup()
+				group = LThreadGroup()
 
 				for 1..10_000 {
 					go {globals: .{m}, group: group} do {
@@ -5274,7 +5274,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return group.wait_results!()
 			`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"RoutineGroup": WrapGoFunction(NewRoutineGroup),
+				"LThreadGroup": WrapGoFunction(NewLThreadGroup),
 			})
 
 			state.Out = os.Stdout
@@ -5416,7 +5416,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 	})
 
-	t.Run("a value passed to a routine and then returned by it should not be wrapped", func(t *testing.T) {
+	t.Run("a value passed to a lthread and then returned by it should not be wrapped", func(t *testing.T) {
 		called := false
 
 		code := `
@@ -6382,7 +6382,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}`
 
 			state := NewGlobalState(NewContext(ContextConfig{
-				Permissions: []Permission{RoutinePermission{Kind_: permkind.Create}},
+				Permissions: []Permission{LThreadPermission{Kind_: permkind.Create}},
 			}))
 			res, err := Eval(code, state, false)
 
@@ -6430,7 +6430,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}`
 
 			state := NewGlobalState(NewContext(ContextConfig{
-				Permissions: []Permission{RoutinePermission{Kind_: permkind.Create}},
+				Permissions: []Permission{LThreadPermission{Kind_: permkind.Create}},
 			}))
 			res, err := Eval(code, state, false)
 
@@ -7150,9 +7150,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 }
 
-func TestSpawnRoutine(t *testing.T) {
+func TestSpawnLThread(t *testing.T) {
 
-	t.Run("spawning a routine without the required permission should fail", func(t *testing.T) {
+	t.Run("spawning a lthread without the required permission should fail", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{
 			Permissions: []Permission{
 				GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
@@ -7162,78 +7162,78 @@ func TestSpawnRoutine(t *testing.T) {
 		})
 		state := NewGlobalState(ctx)
 		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
-			NameString: "routine-test",
+			NameString: "lthread-test",
 			CodeString: "",
 		}))
 
-		routine, err := SpawnRoutine(RoutineSpawnArgs{
+		lthread, err := SpawnLThread(LthreadSpawnArgs{
 			SpawnerState: state,
 			Globals:      GlobalVariablesFromMap(map[string]Value{}, nil),
 			Module: &Module{
 				MainChunk:  chunk,
-				ModuleKind: UserRoutineModule,
+				ModuleKind: UserLThreadModule,
 			},
 		})
-		assert.Nil(t, routine)
+		assert.Nil(t, lthread)
 		assert.Error(t, err)
 	})
 
-	t.Run("a routine should have access to globals passed to it", func(t *testing.T) {
+	t.Run("a lthread should have access to globals passed to it", func(t *testing.T) {
 		state := NewGlobalState(NewContext(ContextConfig{
 			Permissions: []Permission{
 				GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
 				GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
 				GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
-				RoutinePermission{permkind.Create},
+				LThreadPermission{permkind.Create},
 			},
 		}))
 		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
-			NameString: "routine-test",
+			NameString: "lthread-test",
 			CodeString: "return $$x",
 		}))
 
-		routine, err := SpawnRoutine(RoutineSpawnArgs{
+		lthread, err := SpawnLThread(LthreadSpawnArgs{
 			SpawnerState: state,
 			Globals: GlobalVariablesFromMap(map[string]Value{
 				"x": Int(1),
 			}, nil),
 			Module: &Module{
 				MainChunk:  chunk,
-				ModuleKind: UserRoutineModule,
+				ModuleKind: UserLThreadModule,
 			},
 		})
 		assert.NoError(t, err)
 
-		res, err := routine.WaitResult(nil)
+		res, err := lthread.WaitResult(nil)
 		assert.NoError(t, err)
 		assert.Equal(t, Int(1), res)
 	})
 
-	t.Run("the result of a routine should be shared if it is sharable", func(t *testing.T) {
+	t.Run("the result of a lthread should be shared if it is sharable", func(t *testing.T) {
 		state := NewGlobalState(NewContext(ContextConfig{
 			Permissions: []Permission{
 				GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
 				GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
 				GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
-				RoutinePermission{permkind.Create},
+				LThreadPermission{permkind.Create},
 			},
 		}))
 		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
-			NameString: "routine-test",
+			NameString: "lthread-test",
 			CodeString: "return {a: 1}",
 		}))
 
-		routine, err := SpawnRoutine(RoutineSpawnArgs{
+		lthread, err := SpawnLThread(LthreadSpawnArgs{
 			SpawnerState: state,
 			Globals:      GlobalVariablesFromMap(map[string]Value{}, nil),
 			Module: &Module{
 				MainChunk:  chunk,
-				ModuleKind: UserRoutineModule,
+				ModuleKind: UserLThreadModule,
 			},
 		})
 		assert.NoError(t, err)
 
-		res, err := routine.WaitResult(nil)
+		res, err := lthread.WaitResult(nil)
 		assert.NoError(t, err)
 		if !assert.IsType(t, &Object{}, res) {
 			return
@@ -7284,7 +7284,7 @@ func NewDefaultTestContext() *Context {
 			GlobalVarPermission{permkind.Use, "*"},
 
 			HttpPermission{permkind.Read, HostPattern("https://**")},
-			RoutinePermission{permkind.Create},
+			LThreadPermission{permkind.Create},
 		},
 		Filesystem: newOsFilesystem(),
 	})

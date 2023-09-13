@@ -292,7 +292,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			core.HttpPermission{Kind_: permkind.Read, Entity: core.ANY_HTTPS_HOST_PATTERN},
 			core.HttpPermission{Kind_: permkind.Write, Entity: core.ANY_HTTPS_HOST_PATTERN},
 
-			core.RoutinePermission{Kind_: permkind.Create},
+			core.LThreadPermission{Kind_: permkind.Create},
 		}
 
 		perms = append(perms, core.GetDefaultGlobalVarPermissions()...)

@@ -566,7 +566,7 @@ func (sh *shell) runLoop() {
 		return utils.SliceContains(accepted, string(input)), nil
 	})
 
-	//This routine reads the input without interruption.
+	//This goroutine reads the input without interruption.
 	//While there is a child process the read bytes are written to the child process's input
 	go func() {
 		for {
@@ -598,7 +598,7 @@ func (sh *shell) runLoop() {
 		sh.stopCheckingInput <- struct{}{}
 	}()
 
-	//This routine checks the read input.
+	//This goroutine checks the read input.
 	go func() {
 		var lastInput string
 		for {

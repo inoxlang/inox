@@ -95,7 +95,7 @@ var (
 )
 
 var IMPLICITLY_REMOVED_ROUTINE_PERMS = []Permission{
-	RoutinePermission{permkind.Create},
+	LThreadPermission{permkind.Create},
 }
 
 func (change IterationChange) String() string {

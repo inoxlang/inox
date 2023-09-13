@@ -1620,8 +1620,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		var meta map[string]SymbolicValue
 		var globals any
 
-		if !state.ctx.HasAPermissionWithKindAndType(permkind.Create, permkind.ROUTINE_PERM_TYPENAME) {
-			state.addWarning(makeSymbolicEvalWarning(n, state, POSSIBLE_MISSING_PERM_TO_CREATE_A_COROUTINE))
+		if !state.ctx.HasAPermissionWithKindAndType(permkind.Create, permkind.LTHREAD_PERM_TYPENAME) {
+			state.addWarning(makeSymbolicEvalWarning(n, state, POSSIBLE_MISSING_PERM_TO_CREATE_A_LTHREAD))
 		}
 
 		if n.Meta != nil {
@@ -1673,13 +1673,13 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			case "globals":
 				globals = v
 			case "group":
-				_, ok := v.(*RoutineGroup)
+				_, ok := v.(*LThreadGroup)
 				if !ok {
-					state.addError(makeSymbolicEvalError(n.Meta, state, fmtGroupPropertyNotRoutineGroup(v)))
+					state.addError(makeSymbolicEvalError(n.Meta, state, fmtGroupPropertyNotLThreadGroup(v)))
 				}
 			case "allow":
 			default:
-				state.addWarning(makeSymbolicEvalWarning(n.Meta, state, fmtUnknownSectionInCoroutineMetadata(k)))
+				state.addWarning(makeSymbolicEvalWarning(n.Meta, state, fmtUnknownSectionInLThreadMetadata(k)))
 			}
 		}
 
@@ -1755,7 +1755,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			state.addError(err)
 		}
 
-		return &Routine{}, nil
+		return &LThread{}, nil
 	case *parse.MappingExpression:
 		mapping := &Mapping{}
 

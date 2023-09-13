@@ -22,8 +22,8 @@ func (s *TestSuite) Test(v SymbolicValue) bool {
 	}
 }
 
-func (s *TestSuite) Run(ctx *Context, options ...Option) (*Routine, *Error) {
-	return &Routine{}, nil
+func (s *TestSuite) Run(ctx *Context, options ...Option) (*LThread, *Error) {
+	return &LThread{}, nil
 }
 
 func (s *TestSuite) WidestOfType() SymbolicValue {

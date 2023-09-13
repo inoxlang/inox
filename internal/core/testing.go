@@ -43,7 +43,7 @@ func NewTestSuite(meta Value, embeddedModChunk *parse.Chunk, parentState *Global
 	}, nil
 }
 
-func (s *TestSuite) Run(ctx *Context, options ...Option) (*Routine, error) {
+func (s *TestSuite) Run(ctx *Context, options ...Option) (*LThread, error) {
 	var timeout time.Duration
 
 	for _, opt := range options {
@@ -60,9 +60,9 @@ func (s *TestSuite) Run(ctx *Context, options ...Option) (*Routine, error) {
 
 	spawnerState := ctx.GetClosestState()
 
-	createRoutinePerm := RoutinePermission{Kind_: permkind.Create}
+	createLthreadPerm := LThreadPermission{Kind_: permkind.Create}
 
-	if err := spawnerState.Ctx.CheckHasPermission(createRoutinePerm); err != nil {
+	if err := spawnerState.Ctx.CheckHasPermission(createLthreadPerm); err != nil {
 		return nil, fmt.Errorf("testing: following permission is required for running tests: %w", err)
 	}
 
@@ -84,7 +84,7 @@ func (s *TestSuite) Run(ctx *Context, options ...Option) (*Routine, error) {
 	}
 
 	permissions := utils.CopySlice(manifest.RequiredPermissions)
-	permissions = append(permissions, createRoutinePerm)
+	permissions = append(permissions, createLthreadPerm)
 
 	routineCtx := NewContext(ContextConfig{
 		Kind:            TestingContext,
@@ -94,9 +94,9 @@ func (s *TestSuite) Run(ctx *Context, options ...Option) (*Routine, error) {
 		HostResolutions: manifest.HostResolutions,
 	})
 
-	routine, err := SpawnRoutine(RoutineSpawnArgs{
+	lthread, err := SpawnLThread(LthreadSpawnArgs{
 		SpawnerState: spawnerState,
-		RoutineCtx:   routineCtx,
+		LthreadCtx:   routineCtx,
 		Globals:      spawnerState.Globals,
 		Module:       s.module,
 		Manifest:     manifest,
@@ -106,7 +106,7 @@ func (s *TestSuite) Run(ctx *Context, options ...Option) (*Routine, error) {
 	if err != nil {
 		return nil, fmt.Errorf("testing: %w", err)
 	}
-	return routine, nil
+	return lthread, nil
 }
 
 func (s *TestSuite) GetGoMethod(name string) (*GoFunction, bool) {
@@ -214,7 +214,7 @@ func NewTestCase(meta Value, modChunk *parse.Chunk, parentState *GlobalState) (*
 // 	return manifest, err
 // }
 
-func (s *TestCase) Run(ctx *Context, options ...Option) (*Routine, error) {
+func (s *TestCase) Run(ctx *Context, options ...Option) (*LThread, error) {
 	var timeout time.Duration
 
 	for _, opt := range options {
@@ -256,9 +256,9 @@ func (s *TestCase) Run(ctx *Context, options ...Option) (*Routine, error) {
 		HostResolutions: manifest.HostResolutions,
 	})
 
-	routine, err := SpawnRoutine(RoutineSpawnArgs{
+	lthread, err := SpawnLThread(LthreadSpawnArgs{
 		SpawnerState: spawnerState,
-		RoutineCtx:   routineCtx,
+		LthreadCtx:   routineCtx,
 		Globals:      spawnerState.Globals,
 		Module:       s.module,
 		Manifest:     manifest,
@@ -268,7 +268,7 @@ func (s *TestCase) Run(ctx *Context, options ...Option) (*Routine, error) {
 	if err != nil {
 		return nil, fmt.Errorf("testing: %w", err)
 	}
-	return routine, nil
+	return lthread, nil
 }
 
 func (s *TestCase) GetGoMethod(name string) (*GoFunction, bool) {

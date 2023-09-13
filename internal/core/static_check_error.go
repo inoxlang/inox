@@ -252,8 +252,8 @@ func fmtPatternNamespaceAlreadyDeclared(name string) string {
 	return fmt.Sprintf("pattern namespace %%%s is already declared", name)
 }
 
-func fmtCannotPassGlobalThatIsNotDeclaredToRoutine(name string) string {
-	return fmt.Sprintf("cannot pass global variable '%s' to routine, '%s' is not declared", name, name)
+func fmtCannotPassGlobalThatIsNotDeclaredToLThread(name string) string {
+	return fmt.Sprintf("cannot pass global variable '%s' to lthread, '%s' is not declared", name, name)
 }
 
 func fmtCannotPassGlobalToFunction(name string) string {

@@ -193,8 +193,8 @@ func init() {
 			return &symbolic.Reader{}
 		},
 
-		_dynimport, func(ctx *symbolic.Context, src symbolic.SymbolicValue, argObj *symbolic.Object, manifestObj *symbolic.Object, options ...symbolic.SymbolicValue) (*symbolic.Routine, *symbolic.Error) {
-			return &symbolic.Routine{}, nil
+		_dynimport, func(ctx *symbolic.Context, src symbolic.SymbolicValue, argObj *symbolic.Object, manifestObj *symbolic.Object, options ...symbolic.SymbolicValue) (*symbolic.LThread, *symbolic.Error) {
+			return &symbolic.LThread{}, nil
 		},
 		_run, func(ctx *symbolic.Context, src *symbolic.Path, args ...symbolic.SymbolicValue) *symbolic.Error {
 			return nil

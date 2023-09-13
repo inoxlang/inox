@@ -1007,12 +1007,12 @@ func getSingleKindPermissions(
 					p, err = getGlobalVarPerms(permKind, propVal, specifiedGlobalPermKinds)
 				case "env":
 					p, err = getEnvVarPermissions(permKind, propVal)
-				case "routines":
+				case "threads":
 					switch propVal.(type) {
 					case *Object:
-						perms = append(perms, RoutinePermission{permKind})
+						perms = append(perms, LThreadPermission{permKind})
 					default:
-						return nil, errors.New("invalid permission, 'routines' should be followed by an object literal")
+						return nil, errors.New("invalid permission, 'threads' should be followed by an object literal")
 					}
 				case "system-graph":
 					switch propVal.(type) {

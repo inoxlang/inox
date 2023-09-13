@@ -70,7 +70,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 				"global1": {Value: Int(1), IsConstant: true},
 			},
 			Context: symbolic.NewSymbolicContext(NewContext(ContextConfig{
-				Permissions: []Permission{RoutinePermission{Kind_: permkind.Create}},
+				Permissions: []Permission{LThreadPermission{Kind_: permkind.Create}},
 			}), nil),
 		})
 
@@ -103,7 +103,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 			return
 		}
 		warning := data.Warnings()[0]
-		assert.Contains(t, symbolic.POSSIBLE_MISSING_PERM_TO_CREATE_A_COROUTINE, warning.Message)
+		assert.Contains(t, symbolic.POSSIBLE_MISSING_PERM_TO_CREATE_A_LTHREAD, warning.Message)
 	})
 
 }

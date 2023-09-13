@@ -66,14 +66,14 @@ type ModuleKind int
 
 const (
 	UnspecifiedModuleKind ModuleKind = iota
-	UserRoutineModule
+	UserLThreadModule
 	TestSuiteModule
 	TestCaseModule
 	LifetimeJobModule
 )
 
 func (k ModuleKind) IsEmbedded() bool {
-	return k >= UserRoutineModule && k <= LifetimeJobModule
+	return k >= UserLThreadModule && k <= LifetimeJobModule
 }
 
 func (mod *Module) HasURLSource() bool {

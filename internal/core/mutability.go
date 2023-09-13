@@ -320,11 +320,11 @@ func (i FileInfo) IsMutable() bool {
 	return false
 }
 
-func (r *Routine) IsMutable() bool {
+func (r *LThread) IsMutable() bool {
 	return true
 }
 
-func (g *RoutineGroup) IsMutable() bool {
+func (g *LThreadGroup) IsMutable() bool {
 	return true
 }
 

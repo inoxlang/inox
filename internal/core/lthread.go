@@ -23,13 +23,13 @@ var (
 )
 
 func init() {
-	RegisterSymbolicGoFunction(NewRoutineGroup, func(xtx *symbolic.Context) *symbolic.RoutineGroup {
-		return &symbolic.RoutineGroup{}
+	RegisterSymbolicGoFunction(NewLThreadGroup, func(xtx *symbolic.Context) *symbolic.LThreadGroup {
+		return &symbolic.LThreadGroup{}
 	})
 }
 
-// A Routine is similar to a goroutine in Golang, it represents of the execution of a single module and can be cancelled at any time.
-type Routine struct {
+// A LThread is similar to a goroutine in Golang, it represents the execution of a single module and can be cancelled at any time.
+type LThread struct {
 	useBytecode bool
 	module      *Module
 	state       *GlobalState
@@ -38,7 +38,7 @@ type Routine struct {
 
 	//steps
 	executedSteps          []*ExecutedStep
-	executedStepCallbackFn func(step ExecutedStep, routine *Routine) (continueExec bool)
+	executedStepCallbackFn func(step ExecutedStep, lthread *LThread) (continueExec bool)
 	continueExecChan       chan struct{}
 	paused                 atomic.Bool
 
@@ -49,12 +49,12 @@ type Routine struct {
 	wait_result chan struct{}
 }
 
-type RoutineSpawnArgs struct {
+type LthreadSpawnArgs struct {
 	SpawnerState *GlobalState
 	Globals      GlobalVariables
 	Module       *Module
 	Manifest     *Manifest
-	RoutineCtx   *Context
+	LthreadCtx   *Context
 	PreinitState *GlobalState
 
 	//AbsScriptDir string
@@ -63,23 +63,23 @@ type RoutineSpawnArgs struct {
 	Self        Value
 	Timeout     time.Duration
 
-	IgnoreCreateRoutinePermCheck bool
+	IgnoreCreateLThreadPermCheck bool
 }
 
-// SpawnRoutines spawns a new routine, if .routineCtx is nil a minimal context is created for the routine.
+// SpawnLThread spawns a new lthread, if .LthreadCtx is nil a minimal context is created for the lthread.
 // The provided globals that are not thread safe are wrapped in a SharedValue.
-func SpawnRoutine(args RoutineSpawnArgs) (*Routine, error) {
+func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 
-	if !args.IgnoreCreateRoutinePermCheck {
-		perm := RoutinePermission{Kind_: permkind.Create}
+	if !args.IgnoreCreateLThreadPermCheck {
+		perm := LThreadPermission{Kind_: permkind.Create}
 
 		if err := args.SpawnerState.Ctx.CheckHasPermission(perm); err != nil {
-			return nil, fmt.Errorf("cannot spawn routine: %s", err.Error())
+			return nil, fmt.Errorf("cannot spawn lthread: %s", err.Error())
 		}
 	}
 
-	if args.RoutineCtx == nil {
-		args.RoutineCtx = NewContext(ContextConfig{
+	if args.LthreadCtx == nil {
+		args.LthreadCtx = NewContext(ContextConfig{
 			Permissions: []Permission{
 				GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
 				GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
@@ -95,15 +95,15 @@ func SpawnRoutine(args RoutineSpawnArgs) (*Routine, error) {
 		Module:            args.Module,
 		Chunk:             args.Module.MainChunk,
 		Globals:           args.Globals,
-		Patterns:          args.RoutineCtx.namedPatterns,
-		PatternNamespaces: args.RoutineCtx.patternNamespaces,
+		Patterns:          args.LthreadCtx.namedPatterns,
+		PatternNamespaces: args.LthreadCtx.patternNamespaces,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("cannot spawn routine: expression: module/expr checking failed: %w", err)
+		return nil, fmt.Errorf("cannot spawn lthread: expression: module/expr checking failed: %w", err)
 	}
 
 	//set global variables & constants
-	modState := NewGlobalState(args.RoutineCtx, args.Globals.Constants())
+	modState := NewGlobalState(args.LthreadCtx, args.Globals.Constants())
 	err = args.Globals.Foreach(func(name string, v Value, isConstant bool) error {
 		if isConstant {
 			return nil
@@ -130,19 +130,19 @@ func SpawnRoutine(args RoutineSpawnArgs) (*Routine, error) {
 	modState.GetBasePatternsForImportedModule = args.SpawnerState.GetBasePatternsForImportedModule
 	// TODO: set SymbolicData
 
-	routine := &Routine{
+	lthread := &LThread{
 		module:           args.Module,
 		state:            modState,
 		wait_result:      make(chan struct{}, 1),
 		continueExecChan: make(chan struct{}, 1),
 		bytecode:         args.Module.Bytecode,
 		useBytecode:      args.UseBytecode,
-		executedStepCallbackFn: func(step ExecutedStep, routine *Routine) (continueExec bool) {
+		executedStepCallbackFn: func(step ExecutedStep, lthread *LThread) (continueExec bool) {
 			return true
 		},
 	}
 
-	modState.Routine = routine
+	modState.LThread = lthread
 
 	if args.Timeout != 0 {
 		go func(d time.Duration) {
@@ -152,11 +152,11 @@ func SpawnRoutine(args RoutineSpawnArgs) (*Routine, error) {
 	}
 
 	if args.StartPaused {
-		routine.paused.Store(true)
+		lthread.paused.Store(true)
 	}
 
-	// goroutine in which the routine's module is evaluated
-	go func(modState *GlobalState, chunk parse.Node, routine *Routine, startPaused bool, self Value) {
+	// goroutine in which the lthread's module is evaluated
+	go func(modState *GlobalState, chunk parse.Node, lthread *LThread, startPaused bool, self Value) {
 		var res Value
 		var err error
 
@@ -166,36 +166,36 @@ func SpawnRoutine(args RoutineSpawnArgs) (*Routine, error) {
 				err = v
 			}
 
-			routine.lock.Lock()
-			defer routine.lock.Unlock()
+			lthread.lock.Lock()
+			defer lthread.lock.Unlock()
 
-			close(routine.continueExecChan)
-			routine.done.Store(true)
-			routine.paused.Store(false)
+			close(lthread.continueExecChan)
+			lthread.done.Store(true)
+			lthread.paused.Store(false)
 
 			if res == nil {
 				res = Nil
 			}
 
 			if err == nil {
-				res, err = ShareOrClone(res, routine.state)
+				res, err = ShareOrClone(res, lthread.state)
 			}
 
 			if err != nil {
-				modState.Logger.Print("a routine failed or was cancelled: " + utils.AddCarriageReturnAfterNewlines(err.Error()))
-				routine.result = Nil
-				routine.err = ValOf(err).(Error)
-				routine.wait_result <- struct{}{}
+				modState.Logger.Print("a lthread failed or was cancelled: " + utils.AddCarriageReturnAfterNewlines(err.Error()))
+				lthread.result = Nil
+				lthread.err = ValOf(err).(Error)
+				lthread.wait_result <- struct{}{}
 				return
 			}
 
-			routine.result = res
-			routine.wait_result <- struct{}{}
+			lthread.result = res
+			lthread.wait_result <- struct{}{}
 		}()
 
 		if startPaused {
 			select {
-			case <-routine.continueExecChan:
+			case <-lthread.continueExecChan:
 				//
 			case <-modState.Ctx.Done():
 				panic(context.Canceled)
@@ -203,7 +203,7 @@ func SpawnRoutine(args RoutineSpawnArgs) (*Routine, error) {
 		}
 
 		if args.UseBytecode {
-			res, err = EvalBytecode(routine.bytecode, modState, args.Self)
+			res, err = EvalBytecode(lthread.bytecode, modState, args.Self)
 		} else {
 			state := NewTreeWalkStateWithGlobal(modState)
 			state.self = args.Self
@@ -213,7 +213,7 @@ func SpawnRoutine(args RoutineSpawnArgs) (*Routine, error) {
 				debugger := parentDebugger.NewChild()
 
 				parentDebugger.ControlChan() <- DebugCommandInformAboutSecondaryEvent{
-					Event: RoutineSpawnedEvent{
+					Event: LThreadSpawnedEvent{
 						StateId: modState.id,
 					},
 				}
@@ -228,12 +228,12 @@ func SpawnRoutine(args RoutineSpawnArgs) (*Routine, error) {
 			res, err = TreeWalkEval(chunk, state)
 		}
 
-	}(modState, args.Module.MainChunk.Node, routine, args.StartPaused, args.Self)
+	}(modState, args.Module.MainChunk.Node, lthread, args.StartPaused, args.Self)
 
-	return routine, nil
+	return lthread, nil
 }
 
-func (r *Routine) GetGoMethod(name string) (*GoFunction, bool) {
+func (r *LThread) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
 	case "wait_result":
 		return WrapGoMethod(r.WaitResult), true
@@ -243,7 +243,7 @@ func (r *Routine) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (r *Routine) Prop(ctx *Context, name string) Value {
+func (r *LThread) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "steps":
 		r.lock.Lock()
@@ -262,38 +262,38 @@ func (r *Routine) Prop(ctx *Context, name string) Value {
 	return method
 }
 
-func (*Routine) SetProp(ctx *Context, name string, value Value) error {
+func (*LThread) SetProp(ctx *Context, name string, value Value) error {
 	return ErrCannotSetProp
 }
 
-func (*Routine) PropertyNames(ctx *Context) []string {
+func (*LThread) PropertyNames(ctx *Context) []string {
 	return ROUTINE_PROPNAMES
 }
 
-// Cancel stops the execution of the routine.
-func (routine *Routine) IsDone() bool {
-	return routine.done.Load()
+// Cancel stops the execution of the lthread.
+func (lthread *LThread) IsDone() bool {
+	return lthread.done.Load()
 }
 
 // yield creates a new ExecutedStep with the given result, if a the step callback function is set it is executed
 // to determinate if execution will be paused, if not set the execution is paused.
-func (routine *Routine) yield(ctx *Context, value Value) {
-	if routine.IsDone() {
-		panic(ErrRoutineIsDone)
+func (lthread *LThread) yield(ctx *Context, value Value) {
+	if lthread.IsDone() {
+		panic(ErrLThreadIsDone)
 	}
 
-	routine.lock.Lock()
-	defer routine.lock.Unlock()
+	lthread.lock.Lock()
+	defer lthread.lock.Unlock()
 
 	step := &ExecutedStep{
 		result:  value,
 		endTime: time.Now(),
 	}
 
-	routine.executedSteps = append(routine.executedSteps, step)
+	lthread.executedSteps = append(lthread.executedSteps, step)
 
-	if routine.executedStepCallbackFn != nil {
-		if continueExec := routine.executedStepCallbackFn(*step, routine); continueExec {
+	if lthread.executedStepCallbackFn != nil {
+		if continueExec := lthread.executedStepCallbackFn(*step, lthread); continueExec {
 			time.Sleep(ROUTINE_POST_YIELD_PAUSE)
 			return
 		}
@@ -301,72 +301,72 @@ func (routine *Routine) yield(ctx *Context, value Value) {
 
 	//TODO: handle closed channel
 
-	if routine.paused.CompareAndSwap(false, true) {
-		routine.lock.Unlock()
-		<-routine.continueExecChan
-		routine.paused.Store(false)
+	if lthread.paused.CompareAndSwap(false, true) {
+		lthread.lock.Unlock()
+		<-lthread.continueExecChan
+		lthread.paused.Store(false)
 	} else {
 		panic(errors.New(".paused should not be true"))
 	}
 }
 
-func (routine *Routine) IsPaused() bool {
-	return routine.paused.Load()
+func (lthread *LThread) IsPaused() bool {
+	return lthread.paused.Load()
 }
 
-func (routine *Routine) ResumeAsync() error {
-	if routine.IsDone() {
-		return ErrRoutineIsDone
+func (lthread *LThread) ResumeAsync() error {
+	if lthread.IsDone() {
+		return ErrLThreadIsDone
 	}
 
-	routine.lock.Lock()
-	defer routine.lock.Unlock()
+	lthread.lock.Lock()
+	defer lthread.lock.Unlock()
 
-	if !routine.paused.Load() {
+	if !lthread.paused.Load() {
 		return nil
 	}
 
-	if len(routine.continueExecChan) == 0 {
-		routine.continueExecChan <- struct{}{}
+	if len(lthread.continueExecChan) == 0 {
+		lthread.continueExecChan <- struct{}{}
 	}
 	return nil
 }
 
-// Cancel stops the execution of the routine.
-func (routine *Routine) Cancel(*Context) {
-	routine.state.Ctx.Cancel()
+// Cancel stops the execution of the lthread.
+func (lthread *LThread) Cancel(*Context) {
+	lthread.state.Ctx.Cancel()
 }
 
 // WaitResult waits for the end of the execution and returns the value returned by
-func (routine *Routine) WaitResult(ctx *Context) (Value, error) {
-	if routine.IsDone() {
-		routine.lock.Lock()
-		defer routine.lock.Unlock()
+func (lthread *LThread) WaitResult(ctx *Context) (Value, error) {
+	if lthread.IsDone() {
+		lthread.lock.Lock()
+		defer lthread.lock.Unlock()
 
-		if routine.err.goError != nil {
-			return nil, routine.err.goError
+		if lthread.err.goError != nil {
+			return nil, lthread.err.goError
 		}
-		return routine.result, nil
+		return lthread.result, nil
 	}
-	<-routine.wait_result
-	close(routine.wait_result)
+	<-lthread.wait_result
+	close(lthread.wait_result)
 
-	if routine.err.goError != nil {
-		return nil, routine.err.goError
+	if lthread.err.goError != nil {
+		return nil, lthread.err.goError
 	}
-	return routine.result, nil
+	return lthread.result, nil
 }
 
-// A RoutineGroup is a group of routines, it simplifies the interaction with the routines.
-type RoutineGroup struct {
-	routines []*Routine
+// A LThreadGroup is a group of lthreads, it simplifies the interaction with the lthreads.
+type LThreadGroup struct {
+	threads []*LThread
 }
 
-func NewRoutineGroup(ctx *Context) *RoutineGroup {
-	return &RoutineGroup{}
+func NewLThreadGroup(ctx *Context) *LThreadGroup {
+	return &LThreadGroup{}
 }
 
-func (g *RoutineGroup) GetGoMethod(name string) (*GoFunction, bool) {
+func (g *LThreadGroup) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
 	case "wait_results":
 		return &GoFunction{fn: g.WaitAllResults}, true
@@ -376,7 +376,7 @@ func (g *RoutineGroup) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (g *RoutineGroup) Prop(ctx *Context, name string) Value {
+func (g *LThreadGroup) Prop(ctx *Context, name string) Value {
 	method, ok := g.GetGoMethod(name)
 	if !ok {
 		panic(FormatErrPropertyDoesNotExist(name, g))
@@ -384,28 +384,28 @@ func (g *RoutineGroup) Prop(ctx *Context, name string) Value {
 	return method
 }
 
-func (*RoutineGroup) SetProp(ctx *Context, name string, value Value) error {
+func (*LThreadGroup) SetProp(ctx *Context, name string, value Value) error {
 	return ErrCannotSetProp
 }
 
-func (*RoutineGroup) PropertyNames(ctx *Context) []string {
+func (*LThreadGroup) PropertyNames(ctx *Context) []string {
 	return ROUTINE_GROUP_PROPNAMES
 }
 
-func (group *RoutineGroup) Add(newRt *Routine) {
-	for _, rt := range group.routines {
+func (group *LThreadGroup) Add(newRt *LThread) {
+	for _, rt := range group.threads {
 		if rt == newRt {
-			panic(errors.New("attempt to add a routine to a group more than once"))
+			panic(errors.New("attempt to add a lthread to a group more than once"))
 		}
 	}
-	group.routines = append(group.routines, newRt)
+	group.threads = append(group.threads, newRt)
 }
 
-// WaitAllResults waits for the results of all routines in the group and returns a list of results.
-func (group *RoutineGroup) WaitAllResults(ctx *Context) (*Array, error) {
+// WaitAllResults waits for the results of all threads in the group and returns a list of results.
+func (group *LThreadGroup) WaitAllResults(ctx *Context) (*Array, error) {
 	results := Array{}
 
-	for _, rt := range group.routines {
+	for _, rt := range group.threads {
 		rtRes, rtErr := rt.WaitResult(ctx)
 		if rtErr != nil {
 			return nil, rtErr
@@ -416,10 +416,10 @@ func (group *RoutineGroup) WaitAllResults(ctx *Context) (*Array, error) {
 	return &results, nil
 }
 
-// CancelAll stops the execution of all routines in the group.
-func (group *RoutineGroup) CancelAll(*Context) {
-	for _, routine := range group.routines {
-		routine.Cancel(nil)
+// CancelAll stops the execution of all threads in the group.
+func (group *LThreadGroup) CancelAll(*Context) {
+	for _, lthread := range group.threads {
+		lthread.Cancel(nil)
 	}
 }
 
@@ -463,12 +463,12 @@ func Sleep(ctx *Context, d Duration) {
 	}
 }
 
-func readRoutineMeta(meta map[string]Value, ctx *Context) (group *RoutineGroup, globalsDesc Value, permListing *Object, err error) {
+func readLThreadMeta(meta map[string]Value, ctx *Context) (group *LThreadGroup, globalsDesc Value, permListing *Object, err error) {
 	if val, ok := meta["group"]; ok {
-		if rtGroup, ok := val.(*RoutineGroup); ok {
+		if rtGroup, ok := val.(*LThreadGroup); ok {
 			group = rtGroup
 		} else {
-			return nil, nil, nil, errors.New("<meta>.group should be a routine group")
+			return nil, nil, nil, errors.New("<meta>.group should be a lthread group")
 		}
 	}
 	if val, ok := meta["globals"]; ok {

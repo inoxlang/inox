@@ -107,26 +107,26 @@ func (perm EnvVarPermission) String() string {
 
 //
 
-type RoutinePermission struct {
+type LThreadPermission struct {
 	Kind_ PermissionKind
 }
 
-func (perm RoutinePermission) Kind() PermissionKind {
+func (perm LThreadPermission) Kind() PermissionKind {
 	return perm.Kind_
 }
 
-func (perm RoutinePermission) InternalPermTypename() permkind.InternalPermissionTypename {
-	return permkind.ROUTINE_PERM_TYPENAME
+func (perm LThreadPermission) InternalPermTypename() permkind.InternalPermissionTypename {
+	return permkind.LTHREAD_PERM_TYPENAME
 }
 
-func (perm RoutinePermission) Includes(otherPerm Permission) bool {
-	otherRoutinePerm, ok := otherPerm.(RoutinePermission)
+func (perm LThreadPermission) Includes(otherPerm Permission) bool {
+	otherLThreadPerm, ok := otherPerm.(LThreadPermission)
 
-	return ok && perm.Kind_.Includes(otherRoutinePerm.Kind_)
+	return ok && perm.Kind_.Includes(otherLThreadPerm.Kind_)
 }
 
-func (perm RoutinePermission) String() string {
-	return fmt.Sprintf("[%s routine]", perm.Kind_)
+func (perm LThreadPermission) String() string {
+	return fmt.Sprintf("[%s threads]", perm.Kind_)
 }
 
 type FilesystemPermission struct {
@@ -173,7 +173,7 @@ type CommandPermission struct {
 }
 
 func (perm CommandPermission) InternalPermTypename() permkind.InternalPermissionTypename {
-	return permkind.ROUTINE_PERM_TYPENAME
+	return permkind.LTHREAD_PERM_TYPENAME
 }
 
 func (perm CommandPermission) Kind() PermissionKind {

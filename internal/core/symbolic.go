@@ -1124,12 +1124,12 @@ func (it *TupleIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]s
 
 //
 
-func (r *Routine) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.Routine{}, nil
+func (r *LThread) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	return &symbolic.LThread{}, nil
 }
 
-func (g *RoutineGroup) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.RoutineGroup{}, nil
+func (g *LThreadGroup) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	return &symbolic.LThreadGroup{}, nil
 }
 
 func (i FileInfo) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {

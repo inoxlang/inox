@@ -298,7 +298,7 @@ func _Reader(_ *core.Context, v core.Readable) *core.Reader {
 	return v.Reader()
 }
 
-func _dynimport(ctx *core.Context, src core.Value, argObj *core.Object, manifestObj *core.Object, options ...core.Value) (*core.Routine, error) {
+func _dynimport(ctx *core.Context, src core.Value, argObj *core.Object, manifestObj *core.Object, options ...core.Value) (*core.LThread, error) {
 	insecure := false
 	var timeout time.Duration
 

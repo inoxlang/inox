@@ -33,7 +33,7 @@ type StackFrameInfo struct {
 
 type ThreadInfo struct {
 	Name string
-	Id StateId
+	Id   StateId
 }
 
 // Primary Events
@@ -66,14 +66,14 @@ type SecondaryDebugEventType int
 
 const (
 	IncomingMessageReceivedEventType = iota + 1
-	RoutineSpawnedEventType
+	LThreadSpawnedEventType
 )
 
 func (t SecondaryDebugEventType) String() string {
 	switch t {
 	case IncomingMessageReceivedEventType:
 		return "incomingMessageReceived"
-	case RoutineSpawnedEventType:
+	case LThreadSpawnedEventType:
 		return "routineSpawnedEvent"
 	default:
 		panic(ErrUnreachable)
@@ -89,12 +89,12 @@ func (e IncomingMessageReceivedEvent) SecondaryDebugEventType() SecondaryDebugEv
 	return IncomingMessageReceivedEventType
 }
 
-type RoutineSpawnedEvent struct {
+type LThreadSpawnedEvent struct {
 	StateId StateId `json:"threadId,omitempty"`
 }
 
-func (e RoutineSpawnedEvent) SecondaryDebugEventType() SecondaryDebugEventType {
-	return RoutineSpawnedEventType
+func (e LThreadSpawnedEvent) SecondaryDebugEventType() SecondaryDebugEventType {
+	return LThreadSpawnedEventType
 }
 
 // Commands

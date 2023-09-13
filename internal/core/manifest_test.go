@@ -115,10 +115,10 @@ func TestPreInit(t *testing.T) {
 			name: "create_routine",
 			module: `manifest {
 					permissions: {
-						create: {routines: {}}
+						create: {threads: {}}
 					}
 				}`,
-			expectedPermissions: []Permission{RoutinePermission{permkind.Create}},
+			expectedPermissions: []Permission{LThreadPermission{permkind.Create}},
 			expectedLimits:      []Limits{},
 			expectedResolutions: nil,
 			error:               false,
@@ -127,10 +127,10 @@ func TestPreInit(t *testing.T) {
 			name: "create_routine",
 			module: `manifest {
 					permissions: {
-						create: {routines: {}}
+						create: {threads: {}}
 					}
 				}`,
-			expectedPermissions: []Permission{RoutinePermission{permkind.Create}},
+			expectedPermissions: []Permission{LThreadPermission{permkind.Create}},
 			expectedLimits:      []Limits{},
 			expectedResolutions: nil,
 			error:               false,

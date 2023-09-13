@@ -49,7 +49,8 @@ Security:
 
 Other:
 - [Concurrency](#concurrency)
-  - [Coroutines (Goroutines)](#coroutines-goroutines)
+  - [Lightweight Threads](#lighweight-threads)
+  - [LThread Groups](#lthread-groups)
   - [Lifetime jobs](#lifetime-jobs)
 - [Many Built-in Functions](#built-in-functions)
 - [Communication](#communication)
@@ -160,7 +161,7 @@ Most Inox types (objects, lists, Sets) are serializable so they cannot contain t
 ```
 object = {
   # error: non-serializable values are not allowed as initial values for properties of serializables
-  routine: go do {
+  lthread: go do {
     return 1
   }
 }
@@ -299,7 +300,7 @@ In imports the importing module specifies the permissions it **grants** to the i
 manifest {
   permissions: {
     read: %/...
-    create: {routines: {}}
+    create: {threads: {}}
   }
 }
 
@@ -385,31 +386,31 @@ TODO: explain
 
 ### Concurrency
 
-#### **Coroutines (Goroutines)**
+#### **Lighweight threads**
 
 ```
-coroutine = go {globals: .{print}} do {
+lthread = go {globals: .{print}} do {
   print("hello from goroutine !")
   return 1
 }
 
 # 1
-result = coroutine.wait_result!()
+result = lthread.wait_result!()
 ```
 
-#### **Coroutine Groups**
+#### **Lthread Groups**
 
 ```
-group = RoutineGroup()
-coroutine1 = go {group: group} do read!(https://jsonplaceholder.typicode.com/posts/1)
-coroutine2 = go {group: group} do read!(https://jsonplaceholder.typicode.com/posts/2)
+group = LThreadGroup()
+lthread1 = go {group: group} do read!(https://jsonplaceholder.typicode.com/posts/1)
+lthread2 = go {group: group} do read!(https://jsonplaceholder.typicode.com/posts/2)
 
 results = group.wait_results!()
 ```
 
 #### **Lifetime Jobs**
 
-Lifetime jobs are coroutines linked to an object.
+Lifetime jobs are lthreads linked to an object.
 
 ```
 object = {

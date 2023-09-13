@@ -93,7 +93,7 @@ func TestObject(t *testing.T) {
 	})
 
 	t.Run("lifetime jobs", func(t *testing.T) {
-		// the operation duration depends on the time required to pause a job, that depends on the routine's interpreter.
+		// the operation duration depends on the time required to pause a job, that depends on the lthread's interpreter.
 		MAX_OPERATION_DURATION := 500 * time.Microsecond
 
 		// setup creates a new object with as many jobs as job codes
@@ -101,7 +101,7 @@ func TestObject(t *testing.T) {
 
 			ctx := NewContext(ContextConfig{
 				Permissions: []Permission{
-					RoutinePermission{Kind_: permkind.Create},
+					LThreadPermission{Kind_: permkind.Create},
 					GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
 					GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
 				},
@@ -142,9 +142,9 @@ func TestObject(t *testing.T) {
 				if !assert.Len(t, jobs, 1) {
 					return
 				}
-				assert.True(t, jobs[0].routine.IsDone())
+				assert.True(t, jobs[0].thread.IsDone())
 
-				<-jobs[0].routine.wait_result
+				<-jobs[0].thread.wait_result
 			})
 
 			t.Run("two empty jobs should be done in a short time", func(t *testing.T) {
@@ -157,8 +157,8 @@ func TestObject(t *testing.T) {
 				if !assert.Len(t, jobs, 2) {
 					return
 				}
-				assert.True(t, jobs[0].routine.IsDone())
-				assert.True(t, jobs[1].routine.IsDone())
+				assert.True(t, jobs[0].thread.IsDone())
+				assert.True(t, jobs[1].thread.IsDone())
 			})
 
 			t.Run("job doing a simple operation should be done in a short time", func(t *testing.T) {
@@ -170,7 +170,7 @@ func TestObject(t *testing.T) {
 				if !assert.Len(t, jobs, 1) {
 					return
 				}
-				assert.True(t, jobs[0].routine.IsDone())
+				assert.True(t, jobs[0].thread.IsDone())
 			})
 
 			t.Run("accessing a prop should be fast", func(t *testing.T) {
@@ -187,7 +187,7 @@ func TestObject(t *testing.T) {
 				if !assert.Len(t, jobs, 1) {
 					return
 				}
-				assert.False(t, jobs[0].routine.IsDone())
+				assert.False(t, jobs[0].thread.IsDone())
 
 				start := time.Now()
 				obj.Prop(ctx, "a")
@@ -208,7 +208,7 @@ func TestObject(t *testing.T) {
 				if !assert.Len(t, jobs, 1) {
 					return
 				}
-				assert.False(t, jobs[0].routine.IsDone())
+				assert.False(t, jobs[0].thread.IsDone())
 
 				start := time.Now()
 				obj.SetProp(ctx, "a", Int(2))

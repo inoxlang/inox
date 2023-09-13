@@ -38,14 +38,14 @@ var (
 var moduleCache = map[string]string{}
 var moduleCacheLock sync.Mutex
 
-// ImportWaitModule imports a module and waits for its routine to return its result.
+// ImportWaitModule imports a module and waits for its lthread to return its result.
 func ImportWaitModule(config ImportConfig) (Value, error) {
-	routine, err := ImportModule(config)
+	lthread, err := ImportModule(config)
 	if err != nil {
 		return nil, err
 	}
 	//TODO: add timeout
-	result, err := routine.WaitResult(config.ParentState.Ctx)
+	result, err := lthread.WaitResult(config.ParentState.Ctx)
 	if err != nil {
 		return nil, fmt.Errorf("import: failed: %s", err.Error())
 	}
@@ -90,8 +90,8 @@ func buildImportConfig(obj *Object, importSource ResourceName, parentState *Glob
 	return config, nil
 }
 
-// ImportModule imports a module and returned a spawned routine running the module.
-func ImportModule(config ImportConfig) (*Routine, error) {
+// ImportModule imports a module and returned a spawned lthread running the module.
+func ImportModule(config ImportConfig) (*LThread, error) {
 	parentState := config.ParentState
 	timeout := config.Timeout
 	if timeout == 0 {
@@ -195,24 +195,24 @@ func ImportModule(config ImportConfig) (*Routine, error) {
 		globals.Set(MOD_ARGS_VARNAME, Nil)
 	}
 
-	routine, err := SpawnRoutine(RoutineSpawnArgs{
+	lthread, err := SpawnLThread(LthreadSpawnArgs{
 		SpawnerState: config.ParentState,
 		Globals:      globals,
 		Module:       importedMod,
 		Manifest:     manifest,
-		RoutineCtx:   routineCtx,
+		LthreadCtx:   routineCtx,
 		//AbsScriptDir: absScriptDir,
 		//bytecode: //TODO
 		Timeout:                      deadline.Sub(time.Now()),
-		IgnoreCreateRoutinePermCheck: true,
+		IgnoreCreateLThreadPermCheck: true,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("import: %s", err.Error())
 	}
 
-	config.ParentState.SetDescendantState(config.Src, routine.state)
+	config.ParentState.SetDescendantState(config.Src, lthread.state)
 
-	return routine, nil
+	return lthread, nil
 }
 
 type importedModulesFetchConfig struct {

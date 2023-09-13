@@ -48,7 +48,7 @@ func tryGetMissingPermissionAction(doc defines.TextDocumentIdentifier, diagnosti
 
 	switch *diagnostic.Severity {
 	case defines.DiagnosticSeverityWarning:
-		if strings.Contains(diagnostic.Message, symbolic.POSSIBLE_MISSING_PERM_TO_CREATE_A_COROUTINE) {
+		if strings.Contains(diagnostic.Message, symbolic.POSSIBLE_MISSING_PERM_TO_CREATE_A_LTHREAD) {
 
 			var textEdit defines.TextEdit
 
@@ -76,7 +76,7 @@ func tryGetMissingPermissionAction(doc defines.TextDocumentIdentifier, diagnosti
 							EndColumn:   endCol,
 							Span:        parse.NodeSpan{Start: objSpan.End - 1, End: objSpan.End},
 						})
-						textEdit.NewText = "\n" + indentUnit + indentUnit + "routines: {}" + indentUnit + "}\n" + indentUnit
+						textEdit.NewText = "\n" + indentUnit + indentUnit + "threads: {}" + indentUnit + "}\n" + indentUnit
 					} else {
 						return
 					}
@@ -96,12 +96,12 @@ func tryGetMissingPermissionAction(doc defines.TextDocumentIdentifier, diagnosti
 						EndColumn:   endCol,
 						Span:        parse.NodeSpan{Start: permsSpan.End - 1, End: permsSpan.End},
 					})
-					textEdit.NewText = indentUnit + "create: {routines: {}}\n" + indentUnit + "}"
+					textEdit.NewText = indentUnit + "create: {threads: {}}\n" + indentUnit + "}"
 				}
 
 			} else {
 				editSpanStart := int32(0)
-				textEdit.NewText = fmt.Sprintf("manifest {\n%spermissions: {\n%s%screate: {routines: {}}\n%s}\n}", indentUnit, indentUnit, indentUnit, indentUnit)
+				textEdit.NewText = fmt.Sprintf("manifest {\n%spermissions: {\n%s%screate: {threads: {}}\n%s}\n}", indentUnit, indentUnit, indentUnit, indentUnit)
 
 				newline := false
 				if chunk.Node.GlobalConstantDeclarations != nil {

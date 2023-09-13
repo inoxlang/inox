@@ -225,7 +225,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 		"sort":    core.WrapGoFunction(core.Sort),
 
 		// concurrency & execution
-		"RoutineGroup": core.ValOf(core.NewRoutineGroup),
+		"LThreadGroup": core.ValOf(core.NewLThreadGroup),
 		"run":          core.ValOf(_run),
 		"ex":           core.ValOf(_execute),
 		"cancel_exec":  core.ValOf(_cancel_exec),

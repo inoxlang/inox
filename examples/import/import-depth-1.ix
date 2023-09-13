@@ -2,7 +2,7 @@ manifest {
     permissions: {
         read: IWD_PREFIX
         create: {
-            routines: {}
+            threads: {}
         }
     }
 }

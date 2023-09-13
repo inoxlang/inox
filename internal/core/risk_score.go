@@ -57,7 +57,7 @@ const (
 	FS_READ_PERM_RISK_SCORE  = 10
 	FS_WRITE_PERM_RISK_SCORE = 20
 
-	ROUTINE_PERM_RISK_SCORE = 2 //the creation of coroutines is not risky, it's the number of goroutines that can be an issue
+	LTHREAD_PERM_RISK_SCORE = 2 //the creation of lthread is not risky, it's the number of goroutines that can be an issue
 
 	CMD_PERM_RISK_SCORE = 30
 )
@@ -66,7 +66,7 @@ var (
 	HTTP_PERM_TYPE    = reflect.TypeOf(HttpPermission{})
 	WS_PERM_TYPE      = reflect.TypeOf(WebsocketPermission{})
 	FS_PERM_TYPE      = reflect.TypeOf(FilesystemPermission{})
-	ROUTINE_PERM_TYPE = reflect.TypeOf(RoutinePermission{})
+	ROUTINE_PERM_TYPE = reflect.TypeOf(LThreadPermission{})
 	CMD_PERM_TYPE     = reflect.TypeOf(CommandPermission{})
 
 	DEFAULT_PERM_RISK_SCORES = map[reflect.Type][]BasePermissionRiskScore{
@@ -88,7 +88,7 @@ var (
 		},
 
 		ROUTINE_PERM_TYPE: {
-			{ROUTINE_PERM_TYPE, permkind.Create, ROUTINE_PERM_RISK_SCORE},
+			{ROUTINE_PERM_TYPE, permkind.Create, LTHREAD_PERM_RISK_SCORE},
 		},
 
 		CMD_PERM_TYPE: {

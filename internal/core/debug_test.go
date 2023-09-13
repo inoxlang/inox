@@ -2177,7 +2177,7 @@ func testDebugModeEval(
 		assert.False(t, notClosed)
 	})
 
-	t.Run("routine", func(t *testing.T) {
+	t.Run("lthread", func(t *testing.T) {
 		t.Run("successive breakpoints", func(t *testing.T) {
 			state, ctx, chunk, debugger := setup(`
 				r = go do {
@@ -2223,10 +2223,10 @@ func testDebugModeEval(
 
 				secondaryEvent := <-debugger.SecondaryEvents()
 
-				routineThreadId := secondaryEvent.(RoutineSpawnedEvent).StateId
-				routineDebugger := debugger.shared.getDebuggerOfThread(routineThreadId)
-				routineChunk.Store(routineDebugger.globalState.Module.MainChunk)
-				routineDebugger_.Store(routineDebugger)
+				threadId := secondaryEvent.(LThreadSpawnedEvent).StateId
+				lthreadDebugger := debugger.shared.getDebuggerOfThread(threadId)
+				routineChunk.Store(lthreadDebugger.globalState.Module.MainChunk)
+				routineDebugger_.Store(lthreadDebugger)
 				threads.Store(debugger.Threads())
 
 				//get scopes while stopped at 'a = 2'
@@ -2235,7 +2235,7 @@ func testDebugModeEval(
 						globalScopes = append(globalScopes, globalScope)
 						localScopes = append(localScopes, localScope)
 					},
-					ThreadId: routineThreadId,
+					ThreadId: threadId,
 				}
 
 				//get stack trace while stopped at 'a = 2'
@@ -2243,10 +2243,10 @@ func testDebugModeEval(
 					Get: func(trace []StackFrameInfo) {
 						stackTraces = append(stackTraces, trace)
 					},
-					ThreadId: routineThreadId,
+					ThreadId: threadId,
 				}
 
-				controlChan <- DebugCommandContinue{ThreadId: routineThreadId}
+				controlChan <- DebugCommandContinue{ThreadId: threadId}
 
 				event = <-stoppedChan
 				event.Breakpoint = nil //not checked yet
@@ -2259,7 +2259,7 @@ func testDebugModeEval(
 						globalScopes = append(globalScopes, globalScope)
 						localScopes = append(localScopes, localScope)
 					},
-					ThreadId: routineThreadId,
+					ThreadId: threadId,
 				}
 
 				//get stack trace while stopped at 'a = 3'
@@ -2267,10 +2267,10 @@ func testDebugModeEval(
 					Get: func(trace []StackFrameInfo) {
 						stackTraces = append(stackTraces, trace)
 					},
-					ThreadId: routineThreadId,
+					ThreadId: threadId,
 				}
 
-				controlChan <- DebugCommandContinue{ThreadId: routineThreadId}
+				controlChan <- DebugCommandContinue{ThreadId: threadId}
 			}()
 
 			result, err := eval(chunk.Node, state)
@@ -2331,7 +2331,7 @@ func testDebugModeEval(
 			}, stackTraces)
 		})
 
-		t.Run("successive breakpoints in & after routine", func(t *testing.T) {
+		t.Run("successive breakpoints in & after lthread", func(t *testing.T) {
 			state, ctx, chunk, debugger := setup(`
 				r = go do {
 					a = 1
@@ -2364,7 +2364,7 @@ func testDebugModeEval(
 			var stoppedEvents []ProgramStoppedEvent
 			var stackTraces [][]StackFrameInfo
 			var threads atomic.Value
-			var routineDebuggerClosed atomic.Bool
+			var lthreadDebuggerClosed atomic.Bool
 
 			go func() {
 				event := <-stoppedChan
@@ -2376,10 +2376,10 @@ func testDebugModeEval(
 
 				secondaryEvent := <-debugger.SecondaryEvents()
 
-				routineThreadId := secondaryEvent.(RoutineSpawnedEvent).StateId
-				routineDebugger := debugger.shared.getDebuggerOfThread(routineThreadId)
-				routineChunk.Store(routineDebugger.globalState.Module.MainChunk)
-				routineDebugger_.Store(routineDebugger)
+				routineThreadId := secondaryEvent.(LThreadSpawnedEvent).StateId
+				lthreadDebugger := debugger.shared.getDebuggerOfThread(routineThreadId)
+				routineChunk.Store(lthreadDebugger.globalState.Module.MainChunk)
+				routineDebugger_.Store(lthreadDebugger)
 				threadsList = append(threadsList, debugger.Threads())
 
 				//get stack trace while stopped at  'return a'
@@ -2399,10 +2399,10 @@ func testDebugModeEval(
 				stoppedEvents = append(stoppedEvents, event)
 
 				time.Sleep(time.Millisecond)
-				//routine debugger should be closed
+				//lthread debugger should be closed
 				threadsList = append(threadsList, debugger.Threads())
 				threads.Store(threadsList)
-				routineDebuggerClosed.Store(routineDebugger.Closed())
+				lthreadDebuggerClosed.Store(lthreadDebugger.Closed())
 
 				//get stack trace while stopped at  'return result'
 				controlChan <- DebugCommandGetStackTrace{
@@ -2436,7 +2436,7 @@ func testDebugModeEval(
 				},
 			}, threads.Load())
 
-			assert.True(t, routineDebuggerClosed.Load())
+			assert.True(t, lthreadDebuggerClosed.Load())
 
 			assert.Equal(t, []ProgramStoppedEvent{
 				{Reason: BreakpointStop, ThreadId: routineThreadId},
@@ -2514,7 +2514,7 @@ func testDebugModeEval(
 				stoppedEvents = append(stoppedEvents, event)
 
 				secondaryEvent := <-debugger.SecondaryEvents()
-				routineThreadId := secondaryEvent.(RoutineSpawnedEvent).StateId
+				routineThreadId := secondaryEvent.(LThreadSpawnedEvent).StateId
 				routineDebugger := debugger.shared.getDebuggerOfThread(routineThreadId)
 				routineChunk.Store(routineDebugger.globalState.Module.MainChunk)
 				routineDebugger_.Store(routineDebugger)
@@ -2630,10 +2630,10 @@ func testDebugModeEval(
 
 	})
 
-	t.Run("routine inside routine", func(t *testing.T) {
+	t.Run("lthread creation inside lthread", func(t *testing.T) {
 		t.Run("successive breakpoints", func(t *testing.T) {
 			state, ctx, chunk, debugger := setup(`
-				r1 = go {allow: {create: {routines: {}}}} do {
+				r1 = go {allow: {create: {threads: {}}}} do {
 					r2 = go do {
 						a = 1
 						a = 2
@@ -2652,11 +2652,11 @@ func testDebugModeEval(
 			defer ctx.Cancel()
 
 			var (
-				assignments            = parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
-				routineChunk           atomic.Value
-				parentRoutineThreadId_ atomic.Value
-				routineThreadId_       atomic.Value
-				threads                atomic.Value
+				assignments     = parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
+				routineChunk    atomic.Value
+				parentThreadId_ atomic.Value
+				threadId_       atomic.Value
+				threads         atomic.Value
 			)
 
 			controlChan <- DebugCommandSetBreakpoints{
@@ -2681,14 +2681,14 @@ func testDebugModeEval(
 				stoppedEvents = append(stoppedEvents, event)
 
 				secondaryEvent := <-debugger.SecondaryEvents()
-				parentRoutineThreadId := secondaryEvent.(RoutineSpawnedEvent).StateId
-				parentRoutineThreadId_.Store(parentRoutineThreadId)
+				parentThreadId := secondaryEvent.(LThreadSpawnedEvent).StateId
+				parentThreadId_.Store(parentThreadId)
 
 				secondaryEvent = <-debugger.SecondaryEvents()
-				routineThreadId := secondaryEvent.(RoutineSpawnedEvent).StateId
+				routineThreadId := secondaryEvent.(LThreadSpawnedEvent).StateId
 				routineDebugger := debugger.shared.getDebuggerOfThread(routineThreadId)
 				routineChunk.Store(routineDebugger.globalState.Module.MainChunk)
-				routineThreadId_.Store(routineThreadId)
+				threadId_.Store(routineThreadId)
 				threads.Store(debugger.Threads())
 
 				//get scopes while stopped at 'a = 2'
@@ -2743,11 +2743,11 @@ func testDebugModeEval(
 
 			assert.Equal(t, Int(3), result)
 
-			routineThreadId := routineThreadId_.Load().(StateId)
+			routineThreadId := threadId_.Load().(StateId)
 
 			assert.ElementsMatch(t, []ThreadInfo{
 				{Name: "core-test", Id: debugger.threadId()},
-				{Name: "core-test", Id: parentRoutineThreadId_.Load().(StateId)},
+				{Name: "core-test", Id: parentThreadId_.Load().(StateId)},
 				{Name: "core-test", Id: routineThreadId},
 			}, threads.Load())
 
@@ -2792,7 +2792,7 @@ func testDebugModeEval(
 
 		t.Run("breakpoint & two steps", func(t *testing.T) {
 			state, ctx, chunk, debugger := setup(`
-				r1 = go {allow: {create: {routines: {}}}} do {
+				r1 = go {allow: {create: {threads: {}}}} do {
 					r2 = go do {
 						a = 1
 						a = 2
@@ -2811,11 +2811,11 @@ func testDebugModeEval(
 			defer ctx.Cancel()
 
 			var (
-				assignments            = parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
-				routineChunk           atomic.Value
-				parentRoutineThreadId_ atomic.Value
-				routineThreadId_       atomic.Value
-				threads                atomic.Value
+				assignments     = parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
+				routineChunk    atomic.Value
+				parentThreadId_ atomic.Value
+				threadId_       atomic.Value
+				threads         atomic.Value
 			)
 
 			controlChan <- DebugCommandSetBreakpoints{
@@ -2839,14 +2839,14 @@ func testDebugModeEval(
 				stoppedEvents = append(stoppedEvents, event)
 
 				secondaryEvent := <-debugger.SecondaryEvents()
-				parentRoutineThreadId := secondaryEvent.(RoutineSpawnedEvent).StateId
-				parentRoutineThreadId_.Store(parentRoutineThreadId)
+				parentThreadId := secondaryEvent.(LThreadSpawnedEvent).StateId
+				parentThreadId_.Store(parentThreadId)
 
 				secondaryEvent = <-debugger.SecondaryEvents()
-				routineThreadId := secondaryEvent.(RoutineSpawnedEvent).StateId
+				routineThreadId := secondaryEvent.(LThreadSpawnedEvent).StateId
 				routineDebugger := debugger.shared.getDebuggerOfThread(routineThreadId)
 				routineChunk.Store(routineDebugger.globalState.Module.MainChunk)
-				routineThreadId_.Store(routineThreadId)
+				threadId_.Store(routineThreadId)
 				threads.Store(debugger.Threads())
 
 				controlChan <- DebugCommandNextStep{
@@ -2910,11 +2910,11 @@ func testDebugModeEval(
 
 			assert.Equal(t, Int(3), result)
 
-			routineThreadId := routineThreadId_.Load().(StateId)
+			routineThreadId := threadId_.Load().(StateId)
 
 			assert.ElementsMatch(t, []ThreadInfo{
 				{Name: "core-test", Id: debugger.threadId()},
-				{Name: "core-test", Id: parentRoutineThreadId_.Load().(StateId)},
+				{Name: "core-test", Id: parentThreadId_.Load().(StateId)},
 				{Name: "core-test", Id: routineThreadId},
 			}, threads.Load())
 

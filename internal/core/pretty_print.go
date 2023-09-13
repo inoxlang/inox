@@ -1636,11 +1636,11 @@ func (mt Mimetype) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth
 	InspectPrint(w, mt)
 }
 
-func (r *Routine) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (r *LThread) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, r)
 }
 
-func (g *RoutineGroup) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (g *LThreadGroup) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, g)
 }
 

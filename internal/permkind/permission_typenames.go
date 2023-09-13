@@ -3,7 +3,7 @@ package permkind
 type InternalPermissionTypename string
 
 const (
-	ROUTINE_PERM_TYPENAME          InternalPermissionTypename = "routine"
+	LTHREAD_PERM_TYPENAME          InternalPermissionTypename = "threads"
 	HTTP_PERM_TYPENAME             InternalPermissionTypename = "http"
 	WEBSOCKET_PERM_TYPENAME        InternalPermissionTypename = "websocket"
 	DNS_PERM_TYPENAME              InternalPermissionTypename = "dns"

@@ -1646,11 +1646,11 @@ func (v *VM) run() {
 				retVal = Nil
 			}
 
-			if v.global.Routine == nil {
-				v.err = errors.New("failed to yield: no associated routine")
+			if v.global.LThread == nil {
+				v.err = errors.New("failed to yield: no associated lthread")
 				return
 			}
-			v.global.Routine.yield(v.global.Ctx, retVal)
+			v.global.LThread.yield(v.global.Ctx, retVal)
 		case OpCallPattern:
 			numArgs := int(v.curInsts[v.ip+1])
 			v.ip += 1
@@ -1917,7 +1917,7 @@ func (v *VM) run() {
 
 			v.sp -= 2
 			v.global.Globals.Set(string(globalName), result)
-		case OpSpawnRoutine:
+		case OpSpawnLThread:
 			v.ip += 5
 			isSingleExpr := v.curInsts[v.ip-4]
 			calleeNameindex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
@@ -1930,7 +1930,7 @@ func (v *VM) run() {
 			singleExprCallee := v.stack[v.sp-1]
 
 			var (
-				group       *RoutineGroup
+				group       *LThreadGroup
 				globalsDesc Value
 				permListing *Object
 			)
@@ -1938,7 +1938,7 @@ func (v *VM) run() {
 			if meta != nil && meta != Nil {
 				metaMap := meta.(*Struct).ValueMap()
 
-				group, globalsDesc, permListing, v.err = readRoutineMeta(metaMap, v.global.Ctx)
+				group, globalsDesc, permListing, v.err = readLThreadMeta(metaMap, v.global.Ctx)
 				if v.err != nil {
 					return
 				}
@@ -2010,11 +2010,11 @@ func (v *VM) run() {
 				ctx = newCtx
 			}
 
-			routine, err := SpawnRoutine(RoutineSpawnArgs{
+			lthread, err := SpawnLThread(LthreadSpawnArgs{
 				SpawnerState: v.global,
 				Globals:      GlobalVariablesFromMap(actualGlobals, startConstants),
 				Module:       routineMod,
-				RoutineCtx:   ctx,
+				LthreadCtx:   ctx,
 				UseBytecode:  true,
 			})
 
@@ -2024,11 +2024,11 @@ func (v *VM) run() {
 			}
 
 			if group != nil {
-				group.Add(routine)
+				group.Add(lthread)
 			}
 
 			v.sp -= 1
-			v.stack[v.sp-1] = routine
+			v.stack[v.sp-1] = lthread
 			// isCall := v.curInsts[v.ip] == 1
 
 			// groupVal := v.stack[v.sp-4]

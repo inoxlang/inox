@@ -403,10 +403,10 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return nil, err
 		}
 
-		if state.Global.Routine == nil {
-			panic(errors.New("failed to yield: no associated routine"))
+		if state.Global.LThread == nil {
+			panic(errors.New("failed to yield: no associated lthread"))
 		}
-		state.Global.Routine.yield(state.Global.Ctx, value)
+		state.Global.LThread.yield(state.Global.Ctx, value)
 		return Nil, nil
 	case *parse.BreakStatement:
 		state.iterationChange = BreakIteration
@@ -1031,7 +1031,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		return Nil, nil
 	case *parse.SpawnExpression:
 		var (
-			group       *RoutineGroup
+			group       *LThreadGroup
 			globalsDesc Value
 			permListing *Object
 		)
@@ -1078,7 +1078,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				return nil, errors.New("meta should be an object")
 			}
 
-			group, globalsDesc, permListing, err = readRoutineMeta(meta, state.Global.Ctx)
+			group, globalsDesc, permListing, err = readLThreadMeta(meta, state.Global.Ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -1166,24 +1166,24 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		routineMod := &Module{
 			MainChunk:  parsedChunk,
-			ModuleKind: UserRoutineModule,
+			ModuleKind: UserLThreadModule,
 		}
 
-		routine, err := SpawnRoutine(RoutineSpawnArgs{
+		lthread, err := SpawnLThread(LthreadSpawnArgs{
 			SpawnerState: state.Global,
 			Globals:      GlobalVariablesFromMap(actualGlobals, startConstants),
 			Module:       routineMod,
-			RoutineCtx:   ctx,
+			LthreadCtx:   ctx,
 		})
 		if err != nil {
 			return nil, err
 		}
 
 		if group != nil {
-			group.Add(routine)
+			group.Add(lthread)
 		}
 
-		return routine, nil
+		return lthread, nil
 	case *parse.MappingExpression:
 		return NewMapping(n, state.Global)
 	case *parse.ComputeExpression:
@@ -2517,11 +2517,11 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		if n.IsStatement {
-			routine, err := suite.Run(state.Global.Ctx)
+			lthread, err := suite.Run(state.Global.Ctx)
 			if err != nil {
 				return nil, err
 			}
-			return routine.WaitResult(state.Global.Ctx)
+			return lthread.WaitResult(state.Global.Ctx)
 		} else {
 			return suite, nil
 		}
@@ -2548,11 +2548,11 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		if n.IsStatement {
-			routine, err := testCase.Run(state.Global.Ctx)
+			lthread, err := testCase.Run(state.Global.Ctx)
 			if err != nil {
 				return nil, err
 			}
-			return routine.WaitResult(state.Global.Ctx)
+			return lthread.WaitResult(state.Global.Ctx)
 		} else {
 			return testCase, nil
 		}

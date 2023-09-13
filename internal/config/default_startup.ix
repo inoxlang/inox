@@ -57,7 +57,7 @@ manifest {
             LOCALHOST_1200
             HOME
             %/tmp/mydb/...
-            routines: {}
+            threads: {}
         }
         write: {
             %/tmp/mydb/...

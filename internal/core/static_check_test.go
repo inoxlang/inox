@@ -883,7 +883,7 @@ func TestCheck(t *testing.T) {
 			keyList := parse.FindNode(n, (*parse.KeyListExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := combineErrors(
-				makeError(keyList, src, fmtCannotPassGlobalThatIsNotDeclaredToRoutine("global")),
+				makeError(keyList, src, fmtCannotPassGlobalThatIsNotDeclaredToLThread("global")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})

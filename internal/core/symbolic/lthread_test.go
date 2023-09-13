@@ -6,20 +6,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSymbolicRoutine(t *testing.T) {
+func TestSymbolicLThread(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
-		routine := &Routine{}
+		lthread := &LThread{}
 
-		assert.True(t, routine.Test(routine))
-		assert.False(t, routine.Test(&Int{}))
+		assert.True(t, lthread.Test(lthread))
+		assert.False(t, lthread.Test(&Int{}))
 	})
 }
 
-func TestSymbolicRoutineGroup(t *testing.T) {
+func TestSymbolicLThreadGroup(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
-		group := &RoutineGroup{}
+		group := &LThreadGroup{}
 
 		assert.True(t, group.Test(group))
 		assert.False(t, group.Test(&Int{}))

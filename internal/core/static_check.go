@@ -679,7 +679,7 @@ switch_:
 			for _, ident := range desc.Keys {
 				globVarName := ident.(*parse.IdentifierLiteral).Name
 				if !c.doGlobalVarExist(globVarName, closestModule) {
-					c.addError(globalDescNode, fmtCannotPassGlobalThatIsNotDeclaredToRoutine(globVarName))
+					c.addError(globalDescNode, fmtCannotPassGlobalThatIsNotDeclaredToLThread(globVarName))
 				}
 				globals[globVarName] = globalVarInfo{isConst: true}
 			}

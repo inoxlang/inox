@@ -177,7 +177,7 @@ func TestFindCompletions(t *testing.T) {
 					chunk, _ := parseChunkSource(`
 						manifest {
 							permissions: {
-								create: {routines: {}}
+								create: {threads: {}}
 							}
 						}
 						
@@ -206,7 +206,7 @@ func TestFindCompletions(t *testing.T) {
 					chunk, _ := parseChunkSource(`
 						manifest {
 							permissions: {
-								create: {routines: {}}
+								create: {threads: {}}
 							}
 						}
 						

@@ -1699,7 +1699,7 @@ func (c *compiler) Compile(node parse.Node) error {
 
 		routineMod := &Module{
 			MainChunk:  parse.NewParsedChunk(routineChunk, c.module.MainChunk.Source),
-			ModuleKind: UserRoutineModule,
+			ModuleKind: UserLThreadModule,
 		}
 
 		embeddedModCompiler := NewCompiler(routineMod, map[string]Value{}, c.symbolicData, c.staticCheckData, c.context, c.trace)
@@ -1749,7 +1749,7 @@ func (c *compiler) Compile(node parse.Node) error {
 			return err
 		}
 
-		c.emit(node, OpSpawnRoutine, isSingleExpr, c.addConstant(Str(calleeName)), c.addConstant(routineMod))
+		c.emit(node, OpSpawnLThread, isSingleExpr, c.addConstant(Str(calleeName)), c.addConstant(routineMod))
 	case *parse.LifetimejobExpression:
 		if err := c.Compile(node.Meta); err != nil {
 			return err

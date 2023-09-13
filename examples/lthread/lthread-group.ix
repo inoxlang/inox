@@ -6,12 +6,12 @@ manifest {
     permissions: {
         read: DOMAIN
         create: {
-            routines: {}
+            threads: {}
         }
     }
 }
 
-req_group = RoutineGroup()
+req_group = LThreadGroup()
 
 for (1 .. 2) {
     go {

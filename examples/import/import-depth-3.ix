@@ -2,7 +2,7 @@ manifest {
     permissions: {
         read: IWD_PREFIX
         create: {
-            routines: {}
+            threads: {}
         }
     }
 }
@@ -12,7 +12,7 @@ import result ./import-depth-2.ix {
     allow: {
         read: IWD_PREFIX
         create: {
-            routines: {}
+            threads: {}
         }
     }
 }

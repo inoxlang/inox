@@ -75,7 +75,7 @@ const (
 	PATTERN_IS_NOT_CONVERTIBLE_TO_READONLY_VERSION = "pattern is not convertible to a readonly version"
 
 	//permissions
-	POSSIBLE_MISSING_PERM_TO_CREATE_A_COROUTINE = "missing permission to create a coroutine"
+	POSSIBLE_MISSING_PERM_TO_CREATE_A_LTHREAD = "missing permission to create a lthread"
 
 	META_VAL_OF_LIFETIMEJOB_SHOULD_BE_IMMUTABLE                         = "meta value of lifetime job should be immutable"
 	LIFETIME_JOBS_NOT_ALLOWED_IN_READONLY_OBJECTS                       = "lifetime jobs are not allowed in readonly objects"
@@ -314,8 +314,8 @@ func fmtAssertedValueShouldBeBoolNot(v SymbolicValue) string {
 	return fmt.Sprintf("asserted value should be a boolean not a %s", Stringify(v))
 }
 
-func fmtGroupPropertyNotRoutineGroup(v SymbolicValue) string {
-	return fmt.Sprintf("value of .group should be a routine group, not a(n) %s", Stringify(v))
+func fmtGroupPropertyNotLThreadGroup(v SymbolicValue) string {
+	return fmt.Sprintf("value of .group should be a lthread group, not a(n) %s", Stringify(v))
 }
 
 func fmtValueOfVarShouldBeAModuleNode(name string) string {
@@ -425,8 +425,8 @@ func fmtComputedPropNameShouldBeAStringNotA(v SymbolicValue) string {
 	return fmt.Sprintf("computed property name should be a string, not a(n) %s", Stringify(v))
 }
 
-func fmtUnknownSectionInCoroutineMetadata(name string) string {
-	return fmt.Sprintf("unknown section '%s' in coroutine metadata", name)
+func fmtUnknownSectionInLThreadMetadata(name string) string {
+	return fmt.Sprintf("unknown section '%s' in lthread metadata", name)
 }
 
 func fmtValueNotStringifiableToQueryParamValue(val SymbolicValue) string {

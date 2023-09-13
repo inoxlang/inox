@@ -1414,7 +1414,7 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 
 				//handle some events separately
 				switch e := debugEvent.(type) {
-				case core.RoutineSpawnedEvent:
+				case core.LThreadSpawnedEvent:
 					session.Notify(jsonrpc.NotificationMessage{
 						BaseMessage: jsonrpc.BaseMessage{
 							Jsonrpc: JSONRPC_VERSION,

@@ -12,84 +12,84 @@ var (
 	ROUTINE_GROUP_PROPNAMES = []string{"wait_results", "cancel_all"}
 	EXECUTED_STEP_PROPNAMES = []string{"result", "end_time"}
 
-	ANY_ROUTINE       = &Routine{}
-	ANY_ROUTINE_GROUP = &RoutineGroup{}
+	ANY_ROUTINE       = &LThread{}
+	ANY_ROUTINE_GROUP = &LThreadGroup{}
 	ANY_EXECUTED_STEP = &ExecutedStep{}
 )
 
-// A Routine represents a symbolic Routine.
-type Routine struct {
+// A LThread represents a symbolic LThread.
+type LThread struct {
 	UnassignablePropsMixin
 	_ int
 }
 
-func (r *Routine) Test(v SymbolicValue) bool {
+func (t *LThread) Test(v SymbolicValue) bool {
 	switch v.(type) {
-	case *Routine:
+	case *LThread:
 		return true
 	default:
 		return false
 	}
 }
 
-func (r *Routine) WidestOfType() SymbolicValue {
+func (t *LThread) WidestOfType() SymbolicValue {
 	return ANY_ROUTINE
 }
 
-func (r *Routine) GetGoMethod(name string) (*GoFunction, bool) {
+func (t *LThread) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
 	case "wait_result":
-		return WrapGoMethod(r.WaitResult), true
+		return WrapGoMethod(t.WaitResult), true
 	case "cancel":
-		return WrapGoMethod(r.Cancel), true
+		return WrapGoMethod(t.Cancel), true
 	}
 	return nil, false
 }
 
-func (r *Routine) Prop(name string) SymbolicValue {
+func (t *LThread) Prop(name string) SymbolicValue {
 	switch name {
 	case "steps":
 		return NewArrayOf(&ExecutedStep{})
 	}
-	method, ok := r.GetGoMethod(name)
+	method, ok := t.GetGoMethod(name)
 	if !ok {
-		panic(FormatErrPropertyDoesNotExist(name, r))
+		panic(FormatErrPropertyDoesNotExist(name, t))
 	}
 	return method
 }
 
-func (*Routine) PropertyNames() []string {
+func (*LThread) PropertyNames() []string {
 	return ROUTINE_PROPNAMES
 }
 
-func (routine *Routine) WaitResult(ctx *Context) (SymbolicValue, *Error) {
+func (t *LThread) WaitResult(ctx *Context) (SymbolicValue, *Error) {
 	return ANY, nil
 }
 
-func (routine *Routine) Cancel(*Context) {
+func (t *LThread) Cancel(*Context) {
 
 }
 
-func (r *Routine) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%routine")))
+func (t *LThread) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%lthread")))
 }
 
-// A RoutineGroup represents a symbolic RoutineGroup.
-type RoutineGroup struct {
+// A LThreadGroup represents a symbolic LThreadGroup.
+type LThreadGroup struct {
 	UnassignablePropsMixin
 	_ int
 }
 
-func (g *RoutineGroup) Test(v SymbolicValue) bool {
+func (g *LThreadGroup) Test(v SymbolicValue) bool {
 	switch v.(type) {
-	case *RoutineGroup:
+	case *LThreadGroup:
 		return true
 	default:
 		return false
 	}
 }
 
-func (g *RoutineGroup) GetGoMethod(name string) (*GoFunction, bool) {
+func (g *LThreadGroup) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
 	case "wait_results":
 		return WrapGoMethod(g.WaitAllResults), true
@@ -99,7 +99,7 @@ func (g *RoutineGroup) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (g *RoutineGroup) Prop(name string) SymbolicValue {
+func (g *LThreadGroup) Prop(name string) SymbolicValue {
 	method, ok := g.GetGoMethod(name)
 	if !ok {
 		panic(FormatErrPropertyDoesNotExist(name, g))
@@ -107,27 +107,27 @@ func (g *RoutineGroup) Prop(name string) SymbolicValue {
 	return method
 }
 
-func (*RoutineGroup) PropertyNames() []string {
+func (*LThreadGroup) PropertyNames() []string {
 	return ROUTINE_GROUP_PROPNAMES
 }
 
-func (g *RoutineGroup) Add(newRt *Routine) {
+func (g *LThreadGroup) Add(newRt *LThread) {
 
 }
 
-func (g *RoutineGroup) WaitAllResults(ctx *Context) (*Array, *Error) {
+func (g *LThreadGroup) WaitAllResults(ctx *Context) (*Array, *Error) {
 	return NewAnyArray(), nil
 }
 
-func (g *RoutineGroup) CancelAll(*Context) {
+func (g *LThreadGroup) CancelAll(*Context) {
 
 }
 
-func (g *RoutineGroup) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%routine-group")))
+func (g *LThreadGroup) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%lthread-group")))
 }
 
-func (g *RoutineGroup) WidestOfType() SymbolicValue {
+func (g *LThreadGroup) WidestOfType() SymbolicValue {
 	return ANY_ROUTINE_GROUP
 }
 

@@ -30,7 +30,7 @@ type GlobalState struct {
 	Module       *Module //nil in some cases (shell, mapping entry's state), TODO: check for usage
 	Manifest     *Manifest
 	Globals      GlobalVariables        //global variables
-	Routine      *Routine               //not nil if running in a routine
+	LThread      *LThread               //not nil if running in a dedicated LThread
 	Databases    map[string]*DatabaseIL //the map should never change
 	SystemGraph  *SystemGraph
 	lockedValues []PotentiallySharable

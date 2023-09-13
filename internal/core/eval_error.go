@@ -60,7 +60,7 @@ var (
 	ErrInvalidNonDirPath = errors.New("invalid non-dir path")
 	ErrURLAlreadySet     = errors.New("url already set")
 
-	ErrRoutineIsDone                = errors.New("routine is done")
+	ErrLThreadIsDone                = errors.New("lthread is done")
 	ErrAlreadyAttachedToSupersystem = errors.New("value is already attached to a super system")
 	ErrNotAttachedToSupersystem     = errors.New("value is not attached to a super system")
 

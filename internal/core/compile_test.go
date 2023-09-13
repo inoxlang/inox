@@ -916,7 +916,7 @@ func TestCompileModule(t *testing.T) {
 				//
 				inst(OpPushNil),
 				inst(OpGetGlobal, 3),
-				inst(OpSpawnRoutine, 1, 4, 5),
+				inst(OpSpawnLThread, 1, 4, 5),
 				inst(OpPop),
 				inst(OpSuspendVM),
 			),

@@ -43,7 +43,7 @@
 - [Static check](#static-check)
 - [Symbolic evaluation](#symbolic-evaluation)
 - [Concurrency](#concurrency)
-    - [Goroutines](#goroutines)
+    - [LThreads](#lthreads)
     - [Data Sharing](#data-sharing)
 - [Databases](#databases)
     - [Schema](#database-schema)
@@ -1038,27 +1038,29 @@ how they work, just remember that:
 
 # Concurrency
 
-## Goroutines
+## LThreads
 
-Routines are mainly used for concurrent work and isolation. Each routine has its own Goroutine and state.
+LThreads (lightweight threads) are mainly used for concurrent work and isolation. Each lthread runs an Inox module in a dedicated Goroutine.
 
 **Embedded module:**
 
 ````
-routine = go {globals: .{read}, allow: {read: %https://example.com/...}} do {
+thread = go {globals: .{read}, allow: {read: %https://example.com/...}} do {
+    # embedded module
+
     return read!(https://example.com/)
 }
 ````
 
 Call syntax (all permissions are inherited):
 ````
-routine = go do f()
+thread = go do f()
 ````
 
-Routines can optionally be part of a "routine group" that allows easier control of multiple routines.
+LThreads can optionally be part of a "thread group" that allows easier control of multiple lthreads.
 
 ````
-req_group = RoutineGroup()
+req_group = LThreadGroup()
 
 for (1 .. 10) {
     go {group: req_group} read!(https://jsonplaceholder.typicode.com/posts)
@@ -1104,7 +1106,7 @@ Inox functions are generally sharable unless they assign a global variable.
 Go **functions** are sharable but Go **methods** are not:
 ```
 # not sharable
-method = RoutineGroup().wait_results
+method = LThreadGroup().wait_results
 ```
 
 ### Objects
@@ -1213,7 +1215,7 @@ Since most Inox types are serializable they cannot contain transient values.
 ```
 object = {
   # error: non-serializable values are not allowed as initial values for properties of serializables
-  routine: go do {
+  lthread: go do {
     return 1
   }
 }

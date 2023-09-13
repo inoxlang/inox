@@ -200,7 +200,7 @@ const (
 	OpYield
 	OpCallPattern
 	OpDropPerms
-	OpSpawnRoutine
+	OpSpawnLThread
 	OpImport
 	OpGetGlobal
 	OpSetGlobal
@@ -330,7 +330,7 @@ var OpcodeNames = [...]string{
 	OpYield:                        "YIELD",
 	OpCallPattern:                  "CALL_PATT",
 	OpDropPerms:                    "DROP_PERMS",
-	OpSpawnRoutine:                 "SPAWN_ROUT",
+	OpSpawnLThread:                 "SPAWN_LTHREAD",
 	OpImport:                       "IMPORT",
 	OpGetLocal:                     "GET_LOCAL",
 	OpSetLocal:                     "SET_LOCAL",
@@ -451,7 +451,7 @@ var OpcodeOperands = [...][]int{
 	OpYield:                        {1},
 	OpCallPattern:                  {1},
 	OpDropPerms:                    {},
-	OpSpawnRoutine:                 {1, 2, 2},
+	OpSpawnLThread:                 {1, 2, 2},
 	OpImport:                       {2},
 	OpGetLocal:                     {1},
 	OpSetLocal:                     {1},
@@ -575,7 +575,7 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpYield:                        {false},
 	OpCallPattern:                  {false},
 	OpDropPerms:                    {},
-	OpSpawnRoutine:                 {false, true, true},
+	OpSpawnLThread:                 {false, true, true},
 	OpImport:                       {true},
 	OpGetLocal:                     {false},
 	OpSetLocal:                     {false},

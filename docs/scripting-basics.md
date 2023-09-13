@@ -224,7 +224,7 @@ Let's start by creating a **script.ix** file with the following content:
 manifest {
     permissions: {
         read: %https://**
-        create: {routines: {}}
+        create: {threads: {}}
     }
 }
 ```
@@ -295,11 +295,11 @@ post_data = map(user1_posts, @({
 ### Parallel Data Retrieval
 
 Let's fetch the comments of each post by using the **/comments** endpoint.
-We will use **coroutines** to retrieve the comments in parallel:
+We will use **lthreads** to retrieve the comments in parallel:
 
 ```
-# we group the coroutines together
-request_group = RoutineGroup()
+# we group the lthreads together
+request_group = LThreadGroup()
 
 for post in post_data {
     id = post.id
@@ -312,7 +312,7 @@ comments_of_user1_posts = request_group.wait_results!()
 print(comments_of_user1_posts)
 ```
 
-ℹ️ **go \[...]** is a spawn expression that creates a coroutine attached to **request_group**.
+ℹ️ **go \[...]** is a spawn expression that creates a lthread attached to **request_group**.
 
 ### Complete Script
 
@@ -320,7 +320,7 @@ print(comments_of_user1_posts)
 manifest {
     permissions: {
         read: %https://**
-        create: {routines: {}}
+        create: {threads: {}}
     }
 }
 
@@ -331,8 +331,8 @@ assert (posts match %iterable)
 user1_posts = filter(posts, %{userId: 1.0})
 post_data = map(user1_posts, .{id, body, title})
 
-# we group the coroutines together
-request_group = RoutineGroup()
+# we group the lthreads together
+request_group = LThreadGroup()
 
 for post in post_data {
     id = post.id
