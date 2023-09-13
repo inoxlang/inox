@@ -36,8 +36,6 @@ const (
 
 var (
 	REQUIRED_METAFS_FILE_METADATA_PROPNAMES = []string{METAFS_FILE_MODE_PROPNAME, METAFS_CREATION_TIME_PROPNAME, METAFS_MODIF_TIME_PROPNAME}
-
-	_ = core.IDoWithContext((*MetaFilesystem)(nil))
 )
 
 // MetaFilesystem is a filesystem that works on top of another filesystem, it stores its metadata in a file and file contents

@@ -170,9 +170,7 @@ func (e *CreateDir) Apply(ctx *core.Context) error {
 		return err
 	}
 	e.applied = true
-	return core.DoWithContextIfPossible(ctx, fls, func() error {
-		return fls.MkdirAll(e.path.UnderlyingString(), fs.FileMode(e.fmode))
-	})
+	return fls.MkdirAll(e.path.UnderlyingString(), fs.FileMode(e.fmode))
 }
 
 func (e CreateDir) Reverse(ctx *core.Context) error {
