@@ -2,7 +2,6 @@ package s3_ns
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"io"
 	"strings"
@@ -38,7 +37,7 @@ func S3Get(ctx *core.Context, u core.URL) (*GetObjectResponse, error) {
 	return bucket.GetObject(ctx, string(key))
 }
 
-func (b *Bucket) GetObject(ctx context.Context, key string) (*GetObjectResponse, error) {
+func (b *Bucket) GetObject(ctx *core.Context, key string) (*GetObjectResponse, error) {
 	key = toObjectKey(key)
 
 	if b.fakeBackend != nil {
@@ -52,7 +51,9 @@ func (b *Bucket) GetObject(ctx context.Context, key string) (*GetObjectResponse,
 			fakeBackend: true,
 		}, nil
 	} else {
-		output, err := b.client.libClient.GetObject(ctx, b.name, key, minio.GetObjectOptions{})
+		output, err := core.DoIO2(ctx, func() (*minio.Object, error) {
+			return b.client.libClient.GetObject(ctx, b.name, key, minio.GetObjectOptions{})
+		})
 
 		if err != nil {
 			return nil, err
@@ -79,7 +80,7 @@ func S3List(ctx *core.Context, u core.URL) ([]*ObjectInfo, error) {
 	return bucket.ListObjects(ctx, key)
 }
 
-func (b *Bucket) ListObjects(ctx context.Context, key string) ([]*ObjectInfo, error) {
+func (b *Bucket) ListObjects(ctx *core.Context, key string) ([]*ObjectInfo, error) {
 	if key != "" {
 		key = toObjectKey(key)
 	}
@@ -88,6 +89,9 @@ func (b *Bucket) ListObjects(ctx context.Context, key string) ([]*ObjectInfo, er
 		return nil, errors.New("object listing not supported in s3 memory backend")
 	} else {
 		prefixSlashClount := strings.Count(key, "/")
+
+		ctx.PauseCPUTimeDecrementation()
+		defer ctx.ResumeCPUTimeDecrementation()
 
 		channel := b.client.libClient.ListObjects(ctx, b.name, minio.ListObjectsOptions{
 			Prefix:    key,
@@ -118,10 +122,12 @@ func S3put(ctx *core.Context, u core.URL, readable core.Readable) (*PutObjectRes
 	}
 
 	key := u.Path()
+	ctx.PauseCPUTimeDecrementation()
+	defer ctx.ResumeCPUTimeDecrementation()
 	return bucket.PutObject(ctx, string(key), reader)
 }
 
-func (bucket *Bucket) PutObject(ctx context.Context, key string, body io.Reader) (*PutObjectResponse, error) {
+func (bucket *Bucket) PutObject(ctx *core.Context, key string, body io.Reader) (*PutObjectResponse, error) {
 	key = toObjectKey(key)
 
 	if bucket.fakeBackend != nil {
@@ -146,6 +152,9 @@ func (bucket *Bucket) PutObject(ctx context.Context, key string, body io.Reader)
 			return nil, err
 		}
 		reader := bytes.NewReader(content)
+
+		ctx.PauseCPUTimeDecrementation()
+		defer ctx.ResumeCPUTimeDecrementation()
 
 		output, err := bucket.client.libClient.PutObject(
 			ctx,
@@ -179,7 +188,7 @@ func S3Delete(ctx *core.Context, u core.URL, readable core.Readable) error {
 	return bucket.DeleteObject(ctx, string(key))
 }
 
-func (bucket *Bucket) DeleteObject(ctx context.Context, key string) error {
+func (bucket *Bucket) DeleteObject(ctx *core.Context, key string) error {
 	key = toObjectKey(key)
 
 	if bucket.fakeBackend != nil {
@@ -187,6 +196,9 @@ func (bucket *Bucket) DeleteObject(ctx context.Context, key string) error {
 		return err
 
 	} else {
+		ctx.PauseCPUTimeDecrementation()
+		defer ctx.ResumeCPUTimeDecrementation()
+
 		return bucket.client.libClient.RemoveObject(ctx, bucket.name, key, minio.RemoveObjectOptions{})
 	}
 }
@@ -204,6 +216,9 @@ func S3GetBucketPolicy(ctx *core.Context, u core.URL) (*GetBucketPolicyResponse,
 	if bucket.fakeBackend != nil {
 		return nil, errors.New("bucket policy retrieval not supported in s3 memory backend")
 	} else {
+		ctx.PauseCPUTimeDecrementation()
+		defer ctx.ResumeCPUTimeDecrementation()
+
 		output, err := bucket.client.libClient.GetBucketPolicy(ctx, bucket.name)
 
 		if err != nil {
@@ -252,6 +267,9 @@ func S3SetBucketPolicy(ctx *core.Context, u core.URL, policy core.Value) error {
 	if bucket.fakeBackend != nil {
 		return errors.New("setting bucket policy is not supported in s3 memory backend")
 	} else {
+		ctx.PauseCPUTimeDecrementation()
+		defer ctx.ResumeCPUTimeDecrementation()
+
 		return bucket.client.libClient.SetBucketPolicy(ctx, bucket.name, policyString)
 	}
 }
@@ -269,6 +287,9 @@ func S3RemoveBucketPolicy(ctx *core.Context, u core.URL) error {
 	if bucket.fakeBackend != nil {
 		return errors.New("removing bucket policy is not supported in s3 memory backend")
 	} else {
+		ctx.PauseCPUTimeDecrementation()
+		defer ctx.ResumeCPUTimeDecrementation()
+
 		return bucket.client.libClient.SetBucketPolicy(ctx, bucket.name, "")
 	}
 }

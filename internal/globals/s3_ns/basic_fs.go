@@ -25,16 +25,41 @@ const (
 
 var (
 	ErrOpenFlagNotSupported = errors.New("open flag not supported by S3 filesystem")
+
+	_ = core.IWithSecondaryContext((*S3Filesystem)(nil))
 )
 
 type S3Filesystem struct {
+	*s3Filesystem
+	secondaryCtx *core.Context
+}
+
+type s3Filesystem struct {
 	bucket         *Bucket
-	ctx            *core.Context
+	creatorCtx     *core.Context
 	maxStorageSize int64
 	storageSize    atomic.Int64
 
 	pendingCreations     map[string]*s3WriteFile
 	pendingCreationsLock sync.Mutex
+}
+
+func NewS3Filesystem(ctx *core.Context, bucket *Bucket) *S3Filesystem {
+	return &S3Filesystem{
+		s3Filesystem: &s3Filesystem{
+			creatorCtx:       ctx,
+			bucket:           bucket,
+			maxStorageSize:   DEFAULT_MAX_STORAGE_SIZE,
+			pendingCreations: map[string]*s3WriteFile{},
+		},
+	}
+}
+
+func (fls *S3Filesystem) ctx() *core.Context {
+	if fls.secondaryCtx != nil {
+		return fls.secondaryCtx
+	}
+	return fls.creatorCtx
 }
 
 func (fls *S3Filesystem) client() *S3Client {
@@ -45,12 +70,10 @@ func (fls *S3Filesystem) bucketName() string {
 	return fls.bucket.name
 }
 
-func NewS3Filesystem(ctx *core.Context, bucket *Bucket) *S3Filesystem {
+func (fls *S3Filesystem) WithSecondaryContext(ctx *core.Context) any {
 	return &S3Filesystem{
-		ctx:              ctx,
-		bucket:           bucket,
-		maxStorageSize:   DEFAULT_MAX_STORAGE_SIZE,
-		pendingCreations: map[string]*s3WriteFile{},
+		secondaryCtx: ctx,
+		s3Filesystem: fls.s3Filesystem,
 	}
 }
 
@@ -67,11 +90,14 @@ func (fls *S3Filesystem) OpenFile(filename string, flag int, perm os.FileMode) (
 		return nil, ErrOpenFlagNotSupported
 	}
 
+	ctx := fls.ctx()
 	normalizedFilename := fs_ns.NormalizeAsAbsolute(filename)
 	pendingCreationsLocked := false
 
 	if fs_ns.IsExclusive(flag) {
-		info, _ := fls.client().libClient.GetObject(fls.ctx, fls.bucketName(), toObjectKey(filename), minio.GetObjectOptions{})
+		info, _ := core.DoIO2(fls.ctx(), func() (*minio.Object, error) {
+			return fls.client().libClient.GetObject(ctx, fls.bucketName(), toObjectKey(filename), minio.GetObjectOptions{})
+		})
 		if info != nil {
 			return nil, os.ErrExist
 		}
@@ -87,7 +113,7 @@ func (fls *S3Filesystem) OpenFile(filename string, flag int, perm os.FileMode) (
 	}
 
 	if fs_ns.IsReadOnly(flag) {
-		return newS3ReadFile(fls.ctx, fls.client(), fls.bucketName(), filename)
+		return newS3ReadFile(ctx, fls.client(), fls.bucketName(), filename)
 	} else {
 		if !pendingCreationsLocked {
 			fls.pendingCreationsLock.Lock()
@@ -99,7 +125,7 @@ func (fls *S3Filesystem) OpenFile(filename string, flag int, perm os.FileMode) (
 			return f, nil
 		}
 
-		file, err := newS3WriteFile(fls.ctx, newS3WriteFileInput{
+		file, err := newS3WriteFile(ctx, newS3WriteFileInput{
 			client:         fls.client(),
 			fs:             fls,
 			bucket:         fls.bucketName(),
@@ -131,6 +157,7 @@ func (fls *S3Filesystem) OpenFile(filename string, flag int, perm os.FileMode) (
 func (fls *S3Filesystem) Stat(filename string) (os.FileInfo, error) {
 	filename = fs_ns.NormalizeAsAbsolute(filename)
 	key := toObjectKey(filename)
+	ctx := fls.ctx()
 
 	fls.pendingCreationsLock.Lock()
 	file, ok := fls.pendingCreations[filename]
@@ -149,13 +176,13 @@ func (fls *S3Filesystem) Stat(filename string) (os.FileInfo, error) {
 
 	client := fls.client().libClient
 
-	info, err := client.StatObject(fls.ctx, fls.bucketName(), key, minio.GetObjectOptions{})
+	info, err := client.StatObject(ctx, fls.bucketName(), key, minio.GetObjectOptions{})
 	if err != nil {
 		if !isNoSuchKeyError(err) {
 			return nil, err
 		}
 		//check if dir by listing files
-		channel := client.ListObjects(fls.ctx, fls.bucketName(), minio.ListObjectsOptions{
+		channel := client.ListObjects(ctx, fls.bucketName(), minio.ListObjectsOptions{
 			Prefix:    core.AppendTrailingSlashIfNotPresent(key),
 			Recursive: true,
 		})
@@ -206,22 +233,29 @@ func (fls *S3Filesystem) Stat(filename string) (os.FileInfo, error) {
 func (fls *S3Filesystem) Rename(oldpath, newpath string) error {
 	src := fs_ns.NormalizeAsAbsolute(oldpath)
 	dst := fs_ns.NormalizeAsAbsolute(newpath)
+	ctx := fls.ctx()
+	client := fls.client()
 
 	//copy the file
-	_, err := fls.client().libClient.CopyObject(fls.ctx, minio.CopyDestOptions{
-		Bucket: fls.bucketName(),
-		Object: toObjectKey(dst),
-	}, minio.CopySrcOptions{
-		Bucket: fls.bucketName(),
-		Object: toObjectKey(src),
+	_, err := core.DoIO2(ctx, func() (minio.UploadInfo, error) {
+		return client.libClient.CopyObject(ctx, minio.CopyDestOptions{
+			Bucket: fls.bucketName(),
+			Object: toObjectKey(dst),
+		}, minio.CopySrcOptions{
+			Bucket: fls.bucketName(),
+			Object: toObjectKey(src),
+		})
 	})
+
 	if err != nil {
 		return fmt.Errorf("failed to rename file: %s", err)
 	}
 
 	//delete the old file
-	err = fls.client().libClient.RemoveObject(fls.ctx, fls.bucketName(), toObjectKey(src), minio.RemoveObjectOptions{
-		ForceDelete: false,
+	err = core.DoIO(ctx, func() error {
+		return client.libClient.RemoveObject(ctx, fls.bucketName(), toObjectKey(src), minio.RemoveObjectOptions{
+			ForceDelete: false,
+		})
 	})
 	if err != nil {
 		return fmt.Errorf("failed to remove file: %s", err)
@@ -235,14 +269,19 @@ func (fls *S3Filesystem) Remove(filename string) error {
 	key := toObjectKey(filename)
 
 	client := fls.client().libClient
+	ctx := fls.ctx()
 
-	_, err := client.StatObject(fls.ctx, fls.bucketName(), key, minio.GetObjectOptions{})
+	_, err := core.DoIO2(ctx, func() (minio.ObjectInfo, error) {
+		return client.StatObject(ctx, fls.bucketName(), key, minio.GetObjectOptions{})
+	})
 	if err != nil && isNoSuchKeyError(err) {
 		return os.ErrNotExist
 	}
 
 	//no error will be returned if the key does not exist
-	err = client.RemoveObject(fls.ctx, fls.bucketName(), key, minio.RemoveObjectOptions{})
+	err = core.DoIO(ctx, func() error {
+		return client.RemoveObject(ctx, fls.bucketName(), key, minio.RemoveObjectOptions{})
+	})
 	if err != nil {
 		return fmt.Errorf("failed to remove file: %s", err)
 	}
@@ -256,7 +295,12 @@ func (fls *S3Filesystem) Join(elem ...string) string {
 }
 
 func (fls *S3Filesystem) RemoveAllObjects() {
-	fls.bucket.RemoveAllObjects(fls.ctx)
+	ctx := fls.ctx()
+
+	ctx.DoIO(func() error {
+		fls.bucket.RemoveAllObjects(ctx)
+		return nil
+	})
 }
 
 func toObjectKey(filename string) string {

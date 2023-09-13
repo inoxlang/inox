@@ -677,9 +677,38 @@ func (ctx *Context) ResumeDecrementation(limitName string) error {
 	return fmt.Errorf("context: non existing limit '%s'", limitName)
 }
 
+func (ctx *Context) PauseCPUTimeDecrementation() error {
+	return ctx.PauseDecrementation(EXECUTION_CPU_TIME_LIMIT_NAME)
+}
+
+func (ctx *Context) ResumeCPUTimeDecrementation() error {
+	return ctx.ResumeDecrementation(EXECUTION_CPU_TIME_LIMIT_NAME)
+}
+
+func (ctx *Context) DoIO(fn func() error) error {
+	ctx.PauseCPUTimeDecrementation()
+	defer ctx.ResumeCPUTimeDecrementation()
+
+	return fn()
+}
+
+func DoIO[T any](ctx *Context, fn func() T) T {
+	ctx.PauseCPUTimeDecrementation()
+	defer ctx.ResumeCPUTimeDecrementation()
+
+	return fn()
+}
+
+func DoIO2[T any](ctx *Context, fn func() (T, error)) (T, error) {
+	ctx.PauseCPUTimeDecrementation()
+	defer ctx.ResumeCPUTimeDecrementation()
+
+	return fn()
+}
+
 func (ctx *Context) Sleep(duration time.Duration) {
-	ctx.PauseDecrementation(EXECUTION_CPU_TIME_LIMIT_NAME)
-	defer ctx.ResumeDecrementation(EXECUTION_CPU_TIME_LIMIT_NAME)
+	ctx.PauseCPUTimeDecrementation()
+	defer ctx.ResumeCPUTimeDecrementation()
 
 	timer := time.NewTimer(duration)
 	defer timer.Stop()

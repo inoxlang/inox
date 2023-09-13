@@ -125,6 +125,10 @@ func (b *Bucket) Close() {
 }
 
 func (b *Bucket) RemoveAllObjects(ctx context.Context) {
+	if coreCtx, ok := ctx.(*core.Context); ok {
+		coreCtx.PauseCPUTimeDecrementation()
+		defer coreCtx.ResumeCPUTimeDecrementation()
+	}
 	objectChan := b.client.libClient.ListObjects(ctx, b.name, minio.ListObjectsOptions{Recursive: true})
 	//note: minio.Client.RemoveObjects does not check the .Error field of channel items
 
