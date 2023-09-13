@@ -125,6 +125,13 @@ type DatabaseConfig struct {
 	Provided *DatabaseIL //optional (can be provided by parent state)
 }
 
+func (c DatabaseConfig) IsPermissionForThisDB(perm DatabasePermission) bool {
+	return (DatabasePermission{
+		Kind_:  perm.Kind_,
+		Entity: c.Resource,
+	}).Includes(perm)
+}
+
 func (p *ModuleParameters) PositionalParameters() []ModuleParameter {
 	return utils.CopySlice(p.positional)
 }
@@ -622,6 +629,12 @@ func (m *Manifest) Usage(ctx *Context) string {
 	}
 
 	return buf.String()
+}
+
+func (m *Manifest) OwnedDatabases() []DatabaseConfig {
+	return utils.FilterSlice(m.Databases, func(db DatabaseConfig) bool {
+		return db.Owned
+	})
 }
 
 // EvaluatePermissionListingObjectNode evaluates the object literal listing permissions in a permission drop statement.

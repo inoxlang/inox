@@ -345,6 +345,7 @@ func NewDefaultContext(config default_state.DefaultContextConfig) (*core.Context
 		HostResolutions:      config.HostResolutions,
 		ParentContext:        config.ParentContext,
 		Filesystem:           config.Filesystem,
+		OwnedDatabases:       config.OwnedDatabases,
 	}
 
 	if ctxConfig.Filesystem == nil && ctxConfig.ParentContext == nil {

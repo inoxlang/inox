@@ -87,6 +87,7 @@ type ContextConfig struct {
 	ForbiddenPermissions []Permission
 	Limits               []Limits
 	HostResolutions      map[Host]Value
+	OwnedDatabases       []DatabaseConfig
 	ParentContext        *Context
 	LimitTokens          map[string]int64
 	Filesystem           afs.Filesystem
@@ -102,7 +103,18 @@ func (c ContextConfig) HasParentRequiredPermissions() (firstErr error, ok bool) 
 		return nil, true
 	}
 
+top:
 	for _, perm := range c.Permissions {
+
+		dbPerm, ok := perm.(DatabasePermission)
+		if ok {
+			for _, dbConfig := range c.OwnedDatabases {
+				if dbConfig.IsPermissionForThisDB(dbPerm) {
+					continue top
+				}
+			}
+		}
+
 		if err := c.ParentContext.CheckHasPermission(perm); err != nil {
 			return fmt.Errorf("parent of context should at least have permissions of its child: %w", err), false
 		}

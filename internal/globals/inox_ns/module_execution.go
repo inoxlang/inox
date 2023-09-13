@@ -149,6 +149,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		HostResolutions: manifest.HostResolutions,
 		ParentContext:   parentContext,
 		Filesystem:      args.ScriptContextFileSystem,
+		OwnedDatabases:  manifest.OwnedDatabases(),
 	})
 
 	if ctxErr != nil {
@@ -178,6 +179,9 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		if config.Provided != nil {
 			dbs[config.Name] = config.Provided
 			continue
+		}
+		if !config.Owned {
+			panic(core.ErrUnreachable)
 		}
 
 		if host, ok := config.Resource.(core.Host); ok {

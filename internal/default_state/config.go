@@ -77,6 +77,7 @@ type DefaultContextConfig struct {
 	ForbiddenPermissions []core.Permission
 	Limits               []core.Limits
 	HostResolutions      map[core.Host]core.Value
+	OwnedDatabases       []core.DatabaseConfig
 	ParentContext        *core.Context  //optional
 	Filesystem           afs.Filesystem //if nil the OS filesystem is used
 }
