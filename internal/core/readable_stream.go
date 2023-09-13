@@ -328,6 +328,12 @@ func (s *ReadableByteStream) WaitNext(ctx *Context, filter Pattern, timeout time
 
 	start := time.Now()
 	deadline := start.Add(timeout)
+	var timeoutTimer *time.Timer
+	defer func() {
+		if timeoutTimer != nil {
+			timeoutTimer.Stop()
+		}
+	}()
 
 	for time.Since(start) < timeout {
 		select {
@@ -347,8 +353,12 @@ func (s *ReadableByteStream) WaitNext(ctx *Context, filter Pattern, timeout time
 			// wait
 			if s.rechargedSourceSignal != nil {
 				remainingTime := time.Until(deadline)
+				if timeoutTimer == nil {
+					timeoutTimer = time.NewTimer(remainingTime)
+				}
+
 				select {
-				case <-time.After(remainingTime):
+				case <-timeoutTimer.C:
 					return nil, ErrStreamElemWaitTimeout
 				case <-ctx.Done():
 					return nil, ctx.Err()
@@ -380,6 +390,12 @@ func (s *ReadableByteStream) WaitNextChunk(ctx *Context, filter Pattern, sizeRan
 
 	start := time.Now()
 	deadline := start.Add(timeout)
+	var timeoutTimer *time.Timer
+	defer func() {
+		if timeoutTimer != nil {
+			timeoutTimer.Stop()
+		}
+	}()
 
 	min := int(sizeRange.KnownStart())
 	max := int(sizeRange.InclusiveEnd())
@@ -421,8 +437,12 @@ func (s *ReadableByteStream) WaitNextChunk(ctx *Context, filter Pattern, sizeRan
 			//wait
 			if s.rechargedSourceSignal != nil {
 				remainingTime := time.Until(deadline)
+				if timeoutTimer == nil {
+					timeoutTimer = time.NewTimer(remainingTime)
+				}
+
 				select {
-				case <-time.After(remainingTime):
+				case <-timeoutTimer.C:
 					return nil, ErrStreamChunkWaitTimeout
 				case <-ctx.Done():
 					return nil, ctx.Err()
