@@ -20,8 +20,6 @@ An archive with a Linux binary and some examples is available in [release assets
 ### Editor Support
 
 - [VSCode](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox) : LSP, colorization, snippets
-- [Vim](https://github.com/inoxlang/inox-vim) : colorization
-- [Sublime Text](https://github.com/inoxlang/inox-sublime) : colorization
 
 ## Learning Inox
 
@@ -39,6 +37,7 @@ Web Application:
 - [HTTP Server - Filesystem Routing](#http-server---filesystem-routing)
 - [Built-in Database](#built-in-database)
 - [Project & Virtual Filesystem](#project--virtual-filesystem)
+- [Built-in Browser Automation](#built-in-browser-automation)
 
 Security:
 - [Injection Prevention](#injection-prevention-wip)
@@ -48,18 +47,15 @@ Security:
   - [Dropping permissions](#dropping-permissions)
 - [DoS Mitigation (WIP)](#dos-mitigation)
 
-Scripting:
-- [Easy declaration of CLI Parameters](#declaration-of-cli-parameters--environment-variables)
-- [Simplified resource manipulation](#simplified-resource-manipulation)
-- [Built-in Browser Automation](#built-in-browser-automation)
-- [Transactions & Effects (WIP)](#transactions--effects-wip)
-
 Other:
 - [Concurrency](#concurrency)
   - [Coroutines (Goroutines)](#coroutines-goroutines)
   - [Lifetime jobs](#lifetime-jobs)
 - [Many Built-in Functions](#built-in-functions)
 - [Communication](#communication)
+- [Easy declaration of CLI Parameters](#declaration-of-cli-parameters--environment-variables)
+- [Simplified resource manipulation](#simplified-resource-manipulation)
+- [Transactions & Effects (WIP)](#transactions--effects-wip)
 
 ### XML expressions
 
@@ -203,6 +199,21 @@ graph TD
  
 An Inox project lives in a **virtual filesystem** (container) for better security & reproducibility.
 Note that this virtual filesystem only exists in-process, there is no FUSE filesystem and Docker is not involved.
+
+
+### Built-in Browser Automation
+
+```
+h = chrome.Handle!()
+
+h.nav https://go.dev/
+node = h.html_node!(".Hero-blurb")
+h.close()
+```
+
+[Documentation](https://github.com/inoxlang/inox/blob/master/docs/builtin.md#browser-automation)
+
+[Examples](https://github.com/inoxlang/inox/tree/master/examples/chrome)
 
 ### Injection Prevention (WIP)
 
@@ -372,6 +383,81 @@ API_KEY = env.initial.API_KEY
 
 TODO: explain
 
+### Concurrency
+
+#### **Coroutines (Goroutines)**
+
+```
+coroutine = go {globals: .{print}} do {
+  print("hello from goroutine !")
+  return 1
+}
+
+# 1
+result = coroutine.wait_result!()
+```
+
+#### **Coroutine Groups**
+
+```
+group = RoutineGroup()
+coroutine1 = go {group: group} do read!(https://jsonplaceholder.typicode.com/posts/1)
+coroutine2 = go {group: group} do read!(https://jsonplaceholder.typicode.com/posts/2)
+
+results = group.wait_results!()
+```
+
+#### **Lifetime Jobs**
+
+Lifetime jobs are coroutines linked to an object.
+
+```
+object = {
+  lifetimejob #handle-messages {
+    for msg in watch_received_messages(self){
+      # handle messages
+    }
+  }
+}
+```
+
+
+### Built-in Functions
+
+Inox comes with many built-in functions for:
+- browser automation
+- file manipulation
+- HTTP resource manipulation 
+- data container constructors (Graph, Tree, ...)
+
+**[List of Built-in Functions](./docs/builtin.md)**
+
+### Communication
+
+In Inox objects can communicate in several different ways.
+
+#### **Message Sending**
+
+The `sendval` construct allows an object to send message to another object.
+
+```
+object = {
+  inner: {
+    method: fn(){
+      # supersys is a keyword that designates the parent object here 
+      sendval "hello" to supersys
+    }
+  }
+  
+  lifetimejob #handle-messages {
+    for msg in watch_received_messages(self){
+      print(msg) # "hello"
+    }
+   }
+}
+```
+
+TODO: explain
 
 ### Declaration of CLI Parameters & Environment Variables
 
@@ -469,19 +555,6 @@ create https://example.com/posts tojson({title: "hello"})
 
 Learn more [here](./docs/shell-basics.md#resource-manipulation)
 
-### Built-in Browser Automation
-
-```
-h = chrome.Handle!()
-
-h.nav https://go.dev/
-node = h.html_node!(".Hero-blurb")
-h.close()
-```
-
-[Documentation](https://github.com/inoxlang/inox/blob/master/docs/builtin.md#browser-automation)
-
-[Examples](https://github.com/inoxlang/inox/tree/master/examples/chrome)
 
 ### Transactions & Effects (WIP)
 
@@ -497,84 +570,6 @@ fs.mkfile ./file.txt
 # rollback transaction --> delete ./file.txt
 cancel_exec() 
 ```
-
-
-### Concurrency
-
-#### **Coroutines (Goroutines)**
-
-```
-coroutine = go {globals: .{print}} do {
-  print("hello from goroutine !")
-  return 1
-}
-
-# 1
-result = coroutine.wait_result!()
-```
-
-#### **Coroutine Groups**
-
-```
-group = RoutineGroup()
-coroutine1 = go {group: group} do read!(https://jsonplaceholder.typicode.com/posts/1)
-coroutine2 = go {group: group} do read!(https://jsonplaceholder.typicode.com/posts/2)
-
-results = group.wait_results!()
-```
-
-#### **Lifetime Jobs**
-
-Lifetime jobs are coroutines linked to an object.
-
-```
-object = {
-  lifetimejob #handle-messages {
-    for msg in watch_received_messages(self){
-      # handle messages
-    }
-  }
-}
-```
-
-
-### Built-in Functions
-
-Inox comes with many built-in functions for:
-- browser automation
-- file manipulation
-- HTTP resource manipulation 
-- data container constructors (Graph, Tree, ...)
-
-**[List of Built-in Functions](./docs/builtin.md)**
-
-### Communication
-
-In Inox objects can communicate in several different ways.
-
-#### **Message Sending**
-
-The `sendval` construct allows an object to send message to another object.
-
-```
-object = {
-  inner: {
-    method: fn(){
-      # supersys is a keyword that designates the parent object here 
-      sendval "hello" to supersys
-    }
-  }
-  
-  lifetimejob #handle-messages {
-    for msg in watch_received_messages(self){
-      print(msg) # "hello"
-    }
-   }
-}
-```
-
-TODO: explain
-
 
 ## Compile from Source
 
