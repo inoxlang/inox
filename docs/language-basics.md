@@ -48,6 +48,7 @@
 - [Databases](#databases)
     - [Schema](#database-schema)
     - [Serialization](#serialization)
+    - [Access From Other Modules](#access-from-other-modules)
 
 # Literals
 
@@ -1222,3 +1223,29 @@ list = [
   go do { return 1 }
 ]
 ```
+
+## Access From Other Modules
+
+If the `/main.ix` module defines a `ldb://main` database, imported modules can access the database with
+the following manifest:
+
+```
+manifest { 
+    databases: /main.ix
+    permissions: {
+        read: {
+            ldb://main
+        }
+        # you can also add the write permission if necessary
+    }
+}
+
+for user in dbs.main.users {
+    print(user)
+}
+```
+
+
+ℹ️ The module defining the databases is automatically granted access to the database.
+
+⚠️ Permissions still need to be granted in the import statement.

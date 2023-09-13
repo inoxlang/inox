@@ -471,11 +471,21 @@ func TestPreInit(t *testing.T) {
 						}
 					}
 				}`,
-			expectedPermissions: []Permission{},
-			expectedLimits:      []Limits{},
+			expectedPermissions: []Permission{
+				DatabasePermission{
+					permkind.Read,
+					Host("ldb://main"),
+				},
+				DatabasePermission{
+					permkind.Write,
+					Host("ldb://main"),
+				},
+			},
+			expectedLimits: []Limits{},
 			expectedDatabaseConfigs: DatabaseConfigs{
 				{
 					Name:           "main",
+					Owned:          true,
 					Resource:       Host("ldb://main"),
 					ResolutionData: Path("/tmp/mydb/"),
 				},
@@ -494,11 +504,21 @@ func TestPreInit(t *testing.T) {
 						}
 					}
 				}`,
-			expectedPermissions: []Permission{},
-			expectedLimits:      []Limits{},
+			expectedPermissions: []Permission{
+				DatabasePermission{
+					permkind.Read,
+					Host("ldb://main"),
+				},
+				DatabasePermission{
+					permkind.Write,
+					Host("ldb://main"),
+				},
+			},
+			expectedLimits: []Limits{},
 			expectedDatabaseConfigs: DatabaseConfigs{
 				{
 					Name:                 "main",
+					Owned:                true,
 					Resource:             Host("ldb://main"),
 					ResolutionData:       Path("/tmp/mydb/"),
 					ExpectedSchemaUpdate: true,

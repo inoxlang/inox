@@ -120,6 +120,7 @@ type DatabaseConfig struct {
 	Resource             SchemeHolder //URL or Host
 	ResolutionData       ResourceName
 	ExpectedSchemaUpdate bool
+	Owned                bool
 
 	Provided *DatabaseIL //optional (can be provided by parent state)
 }
@@ -748,10 +749,28 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 		limits = append(limits, limit)
 	}
 
+	var ownerDBPermissions []Permission
+	//add permissions for accessing owned databases
+	for _, db := range dbConfigs {
+		if db.Owned {
+			ownerDBPermissions = append(ownerDBPermissions,
+				DatabasePermission{
+					Kind_:  permkind.Read,
+					Entity: db.Resource,
+				},
+				DatabasePermission{
+					Kind_:  permkind.Write,
+					Entity: db.Resource,
+				})
+		}
+	}
+
 	perms, err := getPermissionsFromListing(ctx, permListing, specifiedGlobalPermKinds, config.handleCustomType, config.addDefaultPermissions)
 	if err != nil {
 		return nil, fmt.Errorf("invalid manifest: %w", err)
 	}
+
+	perms = append(ownerDBPermissions, perms...)
 
 	return &Manifest{
 		RequiredPermissions: perms,
@@ -1267,6 +1286,7 @@ func getDatabaseConfigurations(v Value, parentState *GlobalState) (DatabaseConfi
 
 		for _, dbConfig := range provider.Manifest.Databases {
 			dbConfig.Provided = provider.Databases[dbConfig.Name]
+			dbConfig.Owned = false
 			configs = append(configs, dbConfig)
 		}
 
@@ -1284,7 +1304,7 @@ func getDatabaseConfigurations(v Value, parentState *GlobalState) (DatabaseConfi
 			return errors.New("each database should be described with an object")
 		}
 
-		config := DatabaseConfig{Name: dbName}
+		config := DatabaseConfig{Name: dbName, Owned: true}
 
 		err := dbDesc.ForEachEntry(func(propName string, propVal Serializable) error {
 			switch propName {
