@@ -10,6 +10,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -42,6 +43,7 @@ var (
 
 	_ Value    = (*DatabaseIL)(nil)
 	_ Database = (*FailedToOpenDatabase)(nil)
+	_ Database = (*dummyDatabase)(nil)
 )
 
 type DatabaseIL struct {
@@ -53,9 +55,10 @@ type DatabaseIL struct {
 	ownerState           *GlobalState //optional, can be set later using .SetOwnerStateOnceAndLoadIfNecessary
 	name                 string
 
-	propertyNames          []string
-	topLevelEntitiesLoaded atomic.Bool
-	topLevelEntities       map[string]Serializable
+	propertyNames                     []string
+	topLevelEntitiesLoaded            atomic.Bool
+	topLevelEntities                  map[string]Serializable
+	topLevelEntitiesAccessPermissions map[string]DatabasePermission
 }
 
 type DbOpenConfiguration struct {
@@ -170,6 +173,7 @@ func WrapDatabase(ctx *Context, args DatabaseWrappingArgs) (*DatabaseIL, error) 
 		}
 		db.topLevelEntities = topLevelEntities
 		db.topLevelEntitiesLoaded.Store(true)
+		db.setDatabasePermissions()
 	}
 	return db, nil
 }
@@ -232,9 +236,36 @@ func (db *DatabaseIL) SetOwnerStateOnceAndLoadIfNecessary(ctx *Context, state *G
 		}
 		db.topLevelEntities = topLevelEntities
 		db.topLevelEntitiesLoaded.Store(true)
+		db.setDatabasePermissions()
 	}
 	db.ownerState = state
 	return nil
+}
+
+func (db *DatabaseIL) IsPermissionForThisDB(perm DatabasePermission) bool {
+	return (DatabasePermission{
+		Kind_:  perm.Kind_,
+		Entity: db.inner.Resource(),
+	}).Includes(perm)
+}
+
+func (db *DatabaseIL) setDatabasePermissions() {
+	if db.topLevelEntitiesAccessPermissions != nil {
+		panic(errors.New("access permissions already set"))
+	}
+	db.topLevelEntitiesAccessPermissions = map[string]DatabasePermission{}
+
+	host, ok := db.inner.Resource().(Host)
+	if !ok {
+		panic(errors.New("only hosts are supported for now"))
+	}
+
+	for name := range db.topLevelEntities {
+		db.topLevelEntitiesAccessPermissions[name] = DatabasePermission{
+			Kind_:  permkind.Read,
+			Entity: URL(string(host) + "/" + name),
+		}
+	}
 }
 
 func (db *DatabaseIL) Resource() SchemeHolder {
@@ -527,6 +558,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migr
 	db.inner.UpdateSchema(ctx, nextSchema, migrationHandlers)
 	db.topLevelEntities = utils.Must(db.inner.LoadTopLevelEntities(ctx))
 	db.topLevelEntitiesLoaded.Store(true)
+	db.setDatabasePermissions()
 }
 
 func (db *DatabaseIL) Close(ctx *Context) error {
@@ -564,6 +596,10 @@ func (db *DatabaseIL) Prop(ctx *Context, name string) Value {
 
 		val, ok := db.topLevelEntities[name]
 		if ok {
+			perm := db.topLevelEntitiesAccessPermissions[name]
+			if err := ctx.CheckHasPermission(perm); err != nil {
+				panic(err)
+			}
 			return val
 		}
 	}

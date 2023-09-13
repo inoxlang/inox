@@ -12,6 +12,7 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -379,6 +380,17 @@ func (obj *Object) prop(ctx *Context, name string, stored bool) Value {
 	obj.Lock(closestState)
 	defer obj.Unlock(closestState)
 
+	if obj.url != "" {
+		perm := DatabasePermission{
+			Kind_:  permkind.Read,
+			Entity: obj.url.ToDirURL().AppendRelativePath("./" + Path(name)),
+		}
+
+		if err := ctx.CheckHasPermission(perm); err != nil {
+			panic(err)
+		}
+	}
+
 	for i, key := range obj.keys {
 		if key == name {
 			v := obj.values[i]
@@ -430,6 +442,17 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 
 	if IsIndexKey(name) {
 		panic(ErrCannotSetValOfIndexKeyProp)
+	}
+
+	if obj.url != "" {
+		perm := DatabasePermission{
+			Kind_:  permkind.Write,
+			Entity: obj.url.ToDirURL().AppendRelativePath("./" + Path(name)),
+		}
+
+		if err := ctx.CheckHasPermission(perm); err != nil {
+			return err
+		}
 	}
 
 	for i, key := range obj.keys {

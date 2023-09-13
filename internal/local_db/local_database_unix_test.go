@@ -457,6 +457,9 @@ func TestUpdateSchema(t *testing.T) {
 				core.FilesystemPermission{Kind_: permkind.Read, Entity: pattern},
 				core.FilesystemPermission{Kind_: permkind.Create, Entity: pattern},
 				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
+
+				core.DatabasePermission{Kind_: permkind.Read, Entity: HOST},
+				core.DatabasePermission{Kind_: permkind.Write, Entity: HOST},
 			},
 			HostResolutions: map[core.Host]core.Value{
 				HOST: core.Path(dir),

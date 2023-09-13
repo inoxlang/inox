@@ -9,6 +9,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/filekv"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 
@@ -926,7 +927,18 @@ func TestSetAddRemove(t *testing.T) {
 
 func TestInteractWithElementsOfLoadedSet(t *testing.T) {
 	setup := func() (*core.Context, core.SerializedValueStorage) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.DatabasePermission{
+					Kind_:  permkind.Read,
+					Entity: core.Host("ldb://main"),
+				},
+				core.DatabasePermission{
+					Kind_:  permkind.Write,
+					Entity: core.Host("ldb://main"),
+				},
+			},
+		}, nil)
 		fls := fs_ns.NewMemFilesystem(MAX_MEM_FS_SIZE)
 		kv := utils.Must(filekv.OpenSingleFileKV(filekv.KvStoreConfig{
 			Filesystem: fls,

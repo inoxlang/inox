@@ -3,6 +3,7 @@ package core
 import (
 	"testing"
 
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,8 +13,21 @@ var (
 
 func TestLoadObject(t *testing.T) {
 
+	perms := []Permission{
+		DatabasePermission{
+			Kind_:  permkind.Read,
+			Entity: URLPattern("ldb://main/..."),
+		},
+		DatabasePermission{
+			Kind_:  permkind.Write,
+			Entity: URLPattern("ldb://main/..."),
+		},
+	}
+
 	t.Run("non existing", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: perms,
+		}, nil)
 		storage := &TestValueStorage{BaseURL_: "ldb://main"}
 		pattern := NewInexactObjectPattern(map[string]Pattern{})
 
@@ -32,7 +46,9 @@ func TestLoadObject(t *testing.T) {
 	})
 
 	t.Run("allow missing", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: perms,
+		}, nil)
 		storage := &TestValueStorage{BaseURL_: "ldb://main"}
 		pattern := NewInexactObjectPattern(map[string]Pattern{})
 
@@ -51,7 +67,9 @@ func TestLoadObject(t *testing.T) {
 	})
 
 	t.Run("existing", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: perms,
+		}, nil)
 		storage := &TestValueStorage{
 			BaseURL_: "ldb://main/",
 			Data:     map[Path]string{"/user": `{"a":"1"}`},
@@ -92,7 +110,9 @@ func TestLoadObject(t *testing.T) {
 	})
 
 	t.Run("performing a mutation on a property with a sharable value should cause a save", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: perms,
+		}, nil)
 		storage := &TestValueStorage{
 			BaseURL_: "ldb://main/",
 			Data:     map[Path]string{"/user": `{"inner":{"a": "1"}}`},
@@ -134,7 +154,9 @@ func TestLoadObject(t *testing.T) {
 	})
 
 	t.Run("performing a mutation on a property with a mutable non-sharable value should cause a save", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: perms,
+		}, nil)
 		StartNewTransaction(ctx)
 
 		storage := &TestValueStorage{
@@ -178,7 +200,9 @@ func TestLoadObject(t *testing.T) {
 	})
 
 	t.Run("migration: deletion", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: perms,
+		}, nil)
 		storage := &TestValueStorage{
 			BaseURL_: "ldb://main/",
 			Data:     map[Path]string{"/user": `{}`},
@@ -207,7 +231,9 @@ func TestLoadObject(t *testing.T) {
 	})
 
 	t.Run("migration: replacement", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: perms,
+		}, nil)
 		storage := &TestValueStorage{
 			BaseURL_: "ldb://main/",
 			Data:     map[Path]string{"/user": `{}`},
@@ -254,7 +280,9 @@ func TestLoadObject(t *testing.T) {
 	})
 
 	t.Run("migration: new property", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: perms,
+		}, nil)
 		storage := &TestValueStorage{
 			BaseURL_: "ldb://main/",
 			Data:     map[Path]string{"/user": `{"a":"1"}`},
@@ -301,7 +329,9 @@ func TestLoadObject(t *testing.T) {
 	})
 
 	t.Run("migration: new property + allow missing", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: perms,
+		}, nil)
 		storage := &TestValueStorage{
 			BaseURL_: "ldb://main/",
 			Data:     map[Path]string{},

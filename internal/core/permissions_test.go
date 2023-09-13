@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	permkind "github.com/inoxlang/inox/internal/permkind"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -371,7 +372,6 @@ func TestDatabasePermission(t *testing.T) {
 			}()
 			sharedObject.Prop(ctx, "a")
 		}()
-
 	})
 
 	t.Run("missing permission to set object property", func(t *testing.T) {
@@ -388,4 +388,61 @@ func TestDatabasePermission(t *testing.T) {
 		}()
 	})
 
+	t.Run("missing permission to get top-level entity of database", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		db := &dummyDatabase{
+			resource: Host("ldb://main"),
+			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
+				value: 1,
+			}},
+		}
+
+		dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
+			Inner:                        db,
+			OwnerState:                   ctx.state,
+			ForceLoadBeforeOwnerStateSet: true,
+		}))
+
+		func() {
+			defer func() {
+				e := recover()
+				if !assert.NotNil(t, e) {
+					return
+				}
+				err := e.(error)
+				assert.ErrorIs(t, err, NewNotAllowedError(DatabasePermission{
+					Kind_:  permkind.Read,
+					Entity: URL("ldb://main/a"),
+				}))
+			}()
+			dbIL.Prop(ctx, "a")
+		}()
+	})
+
+	t.Run("granted permission to get top-level entity of database", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{
+				DatabasePermission{
+					Kind_:  permkind.Read,
+					Entity: Host("ldb://main"),
+				},
+			},
+		}, nil)
+		db := &dummyDatabase{
+			resource: Host("ldb://main"),
+			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
+				value: 1,
+			}},
+		}
+
+		dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
+			Inner:                        db,
+			OwnerState:                   ctx.state,
+			ForceLoadBeforeOwnerStateSet: true,
+		}))
+
+		assert.NotPanics(t, func() {
+			dbIL.Prop(ctx, "a")
+		})
+	})
 }

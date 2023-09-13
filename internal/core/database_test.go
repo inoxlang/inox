@@ -9,6 +9,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
+	permkind "github.com/inoxlang/inox/internal/permkind"
 	internal "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
 	jsoniter "github.com/json-iterator/go"
@@ -18,7 +19,14 @@ import (
 func TestDatabaseIL(t *testing.T) {
 
 	t.Run("the name of the top level entities should be a valid identifier", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{
+				DatabasePermission{
+					Kind_:  permkind.Read,
+					Entity: Host("ldb://main"),
+				},
+			},
+		}, nil)
 		db := &dummyDatabase{
 			resource:         Host("ldb://main"),
 			topLevelEntities: map[string]Serializable{},
@@ -68,7 +76,14 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("top-level entity patterns should have a loading function", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{
+				DatabasePermission{
+					Kind_:  permkind.Read,
+					Entity: Host("ldb://main"),
+				},
+			},
+		}, nil)
 		db := &dummyDatabase{
 			resource:         Host("ldb://main"),
 			topLevelEntities: map[string]Serializable{},
@@ -124,7 +139,14 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{
+				DatabasePermission{
+					Kind_:  permkind.Read,
+					Entity: Host("ldb://main"),
+				},
+			},
+		}, nil)
 		db := &dummyDatabase{
 			resource: Host("ldb://main"),
 			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
@@ -144,7 +166,14 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("if a schema update is expected top level entities should not be loaded", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{
+				DatabasePermission{
+					Kind_:  permkind.Read,
+					Entity: Host("ldb://main"),
+				},
+			},
+		}, nil)
 		db := &dummyDatabase{
 			resource: Host("ldb://main"),
 			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
@@ -163,7 +192,14 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("if a schema update is expected top level entities should not be loaded after call to SetOwnerStateOnceAndLoadIfNecessary", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{
+				DatabasePermission{
+					Kind_:  permkind.Read,
+					Entity: Host("ldb://main"),
+				},
+			},
+		}, nil)
 		db := &dummyDatabase{
 			resource: Host("ldb://main"),
 			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
@@ -183,7 +219,14 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("only the owner state should be able to update the schema", func(t *testing.T) {
-		ctx1 := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx1 := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{
+				DatabasePermission{
+					Kind_:  permkind.Read,
+					Entity: Host("ldb://main"),
+				},
+			},
+		}, nil)
 		db := &dummyDatabase{
 			resource:         Host("ldb://main"),
 			topLevelEntities: map[string]Serializable{},
@@ -204,7 +247,14 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("updating the schema while it not expected should cause a panic", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{
+				DatabasePermission{
+					Kind_:  permkind.Read,
+					Entity: Host("ldb://main"),
+				},
+			},
+		}, nil)
 		db := &dummyDatabase{
 			resource:         Host("ldb://main"),
 			topLevelEntities: map[string]Serializable{},
@@ -222,7 +272,14 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("updating the schema twice should cause a panic", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{
+				DatabasePermission{
+					Kind_:  permkind.Read,
+					Entity: Host("ldb://main"),
+				},
+			},
+		}, nil)
 		db := &dummyDatabase{
 			resource:         Host("ldb://main"),
 			topLevelEntities: map[string]Serializable{},
@@ -245,7 +302,14 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("accessing the database while its schema is not yet updated should cause a panic", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{
+				DatabasePermission{
+					Kind_:  permkind.Read,
+					Entity: Host("ldb://main"),
+				},
+			},
+		}, nil)
 		db := &dummyDatabase{
 			resource: Host("ldb://main"),
 			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
@@ -266,7 +330,14 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("accessing the database after its schema is updated should work", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{
+				DatabasePermission{
+					Kind_:  permkind.Read,
+					Entity: Host("ldb://main"),
+				},
+			},
+		}, nil)
 		db := &dummyDatabase{
 			resource:         Host("ldb://main"),
 			topLevelEntities: map[string]Serializable{},
