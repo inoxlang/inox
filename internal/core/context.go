@@ -58,7 +58,7 @@ type Context struct {
 	grantedPermissions   []Permission
 	forbiddenPermissions []Permission
 	limits               []Limit
-	limiters             map[string]*Limiter
+	limiters             map[string]*Limiter //the map is not changed after context creation
 
 	//values
 	hostAliases         map[string]Host
@@ -654,9 +654,6 @@ func (ctx *Context) GiveBack(limitName string, count int64) error {
 }
 
 func (ctx *Context) PauseDecrementation(limitName string) error {
-	ctx.lock.RLock()
-	defer ctx.lock.RUnlock()
-
 	limiter, ok := ctx.limiters[limitName]
 	if ok {
 		limiter.bucket.PauseDecrementation()
@@ -666,9 +663,6 @@ func (ctx *Context) PauseDecrementation(limitName string) error {
 }
 
 func (ctx *Context) ResumeDecrementation(limitName string) error {
-	ctx.lock.RLock()
-	defer ctx.lock.RUnlock()
-
 	limiter, ok := ctx.limiters[limitName]
 	if ok {
 		limiter.bucket.ResumeDecrementation()
