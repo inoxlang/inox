@@ -356,7 +356,7 @@ func (s *ReadableByteStream) WaitNext(ctx *Context, filter Pattern, timeout time
 					break
 				}
 			} else {
-				time.Sleep(BYTE_STREAM_MINIMUM_MICRO_WAIT_DURATION)
+				ctx.Sleep(BYTE_STREAM_MINIMUM_MICRO_WAIT_DURATION)
 			}
 			continue
 		}
@@ -429,7 +429,7 @@ func (s *ReadableByteStream) WaitNextChunk(ctx *Context, filter Pattern, sizeRan
 				case <-s.rechargedSourceSignal:
 				}
 			} else {
-				time.Sleep(BYTE_STREAM_MINIMUM_MICRO_WAIT_DURATION)
+				ctx.Sleep(BYTE_STREAM_MINIMUM_MICRO_WAIT_DURATION)
 			}
 
 			continue

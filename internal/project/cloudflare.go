@@ -133,7 +133,11 @@ func GetTempCloudflareTokens(
 		}
 
 		//wait for the token to be valid
-		time.Sleep(R2_TOKEN_POST_CREATION_DELAY)
+		if coreCtx, ok := ctx.(*core.Context); ok {
+			coreCtx.Sleep(R2_TOKEN_POST_CREATION_DELAY)
+		} else {
+			time.Sleep(R2_TOKEN_POST_CREATION_DELAY)
+		}
 
 		r2token = &TempToken{
 			Id:    R2TokenId,
@@ -168,7 +172,13 @@ func DeleteR2Bucket(ctx context.Context, bucketToDelete *s3_ns.Bucket, tokens Te
 	for _, bucket := range buckets {
 		if bucket.Name == bucketToDelete.Name() {
 			bucketToDelete.RemoveAllObjects(ctx)
-			time.Sleep(time.Second)
+
+			if coreCtx, ok := ctx.(*core.Context); ok {
+				coreCtx.Sleep(time.Second)
+			} else {
+				time.Sleep(time.Second)
+			}
+
 			return api.DeleteR2Bucket(ctx, cloudflare.AccountIdentifier(accountId), bucketToDelete.Name())
 		}
 	}

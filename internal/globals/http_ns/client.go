@@ -231,6 +231,9 @@ func (c *HttpClient) MakeRequest(ctx *core.Context, method string, u core.URL, b
 }
 
 func (c *HttpClient) DoRequest(ctx *core.Context, req *HttpRequest) (*HttpResponse, error) {
+	ctx.PauseDecrementation(core.EXECUTION_CPU_TIME_LIMIT_NAME)
+	defer ctx.ResumeDecrementation(core.EXECUTION_CPU_TIME_LIMIT_NAME)
+
 	resp, err := c.client.Do(req.Request())
 	if resp == nil {
 		return nil, err

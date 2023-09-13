@@ -1,0 +1,8 @@
+manifest {
+    limits: {
+        "execution/cpu-time": 0.01s
+    }
+}
+
+sleep 1s
+print "no CPU time used !"

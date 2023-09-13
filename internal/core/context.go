@@ -677,6 +677,21 @@ func (ctx *Context) ResumeDecrementation(limitName string) error {
 	return fmt.Errorf("context: non existing limit '%s'", limitName)
 }
 
+func (ctx *Context) Sleep(duration time.Duration) {
+	ctx.PauseDecrementation(EXECUTION_CPU_TIME_LIMIT_NAME)
+	defer ctx.ResumeDecrementation(EXECUTION_CPU_TIME_LIMIT_NAME)
+
+	timer := time.NewTimer(duration)
+	defer timer.Stop()
+
+	select {
+	case <-ctx.Done():
+		return
+	case <-timer.C:
+		// add pause ?
+	}
+}
+
 // GetByteRate returns the value (rate) of a byte rate limit.
 func (ctx *Context) GetByteRate(name string) (ByteRate, error) {
 	if ctx.done.Load() {
@@ -1027,4 +1042,17 @@ func (ctx *Context) ToSymbolicValue() (*symbolic.Context, error) {
 	}
 
 	return symbolicCtx, nil
+}
+
+type IDoWithContext interface {
+	DoWithContext(*Context, func() error) error
+}
+
+func DoWithContextIfPossible(ctx *Context, arg any, fn func() error) error {
+	itf, ok := arg.(IDoWithContext)
+	if ok {
+		return itf.DoWithContext(ctx, fn)
+	} else {
+		return fn()
+	}
 }

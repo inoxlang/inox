@@ -30,13 +30,14 @@ const (
 	METAFS_UNDERLYING_UNDERLYING_FILE_PERM = 0600
 	METAFS_AUTO_CREATED_DIR_PERM           = fs.FileMode(0700)
 
-	METAFS_FILES_KEY = "/files"
-
+	METAFS_FILES_KEY   = "/files"
 	METAFS_KV_FILENAME = "metadata.kv"
 )
 
 var (
 	REQUIRED_METAFS_FILE_METADATA_PROPNAMES = []string{METAFS_FILE_MODE_PROPNAME, METAFS_CREATION_TIME_PROPNAME, METAFS_MODIF_TIME_PROPNAME}
+
+	_ = core.IDoWithContext((*MetaFilesystem)(nil))
 )
 
 // MetaFilesystem is a filesystem that works on top of another filesystem, it stores its metadata in a file and file contents
@@ -125,6 +126,11 @@ func (fls *MetaFilesystem) Chroot(path string) (billy.Filesystem, error) {
 
 func (fls *MetaFilesystem) Root() string {
 	panic(core.ErrNotImplemented)
+}
+
+// DoWithContext implements core.IDoWithContext.
+func (fls *MetaFilesystem) DoWithContext(ctx *core.Context, fn func() error) error {
+	return fn()
 }
 
 func (fls *MetaFilesystem) Absolute(path string) (string, error) {

@@ -455,12 +455,7 @@ func (*ExecutedStep) PropertyNames(ctx *Context) []string {
 }
 
 func Sleep(ctx *Context, d Duration) {
-	select {
-	case <-ctx.Done():
-		return
-	case <-time.After(time.Duration(d)):
-		// add pause ?
-	}
+	ctx.Sleep(time.Duration(d))
 }
 
 func readLThreadMeta(meta map[string]Value, ctx *Context) (group *LThreadGroup, globalsDesc Value, permListing *Object, err error) {
