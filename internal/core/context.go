@@ -267,10 +267,8 @@ func NewContext(config ContextConfig) *Context {
 		waitConfirmPrompt: config.WaitConfirmPrompt,
 	}
 
-	if config.ParentContext == nil {
-		for _, limiter := range limiters {
-			limiter.SetContext(ctx)
-		}
+	for _, limiter := range limiters {
+		limiter.SetContextIfNotChild(ctx)
 	}
 
 	//cleanup

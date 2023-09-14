@@ -314,7 +314,16 @@ func (lthread *LThread) yield(ctx *Context, value Value) {
 	if lthread.paused.CompareAndSwap(false, true) {
 		unlock = false
 		lthread.lock.Unlock()
-		<-lthread.continueExecChan
+
+		if ctx != lthread.state.Ctx {
+			panic(ErrUnreachable)
+		}
+
+		ctx.DoIO(func() error {
+			<-lthread.continueExecChan
+			return nil
+		})
+
 		lthread.paused.Store(false)
 	} else {
 		panic(errors.New(".paused should not be true"))

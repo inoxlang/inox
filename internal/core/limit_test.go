@@ -5,7 +5,9 @@ import (
 	"testing"
 	"time"
 
+	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/permkind"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -158,6 +160,66 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		}
 
 		assert.False(t, ctx.done.Load())
+	})
+
+	t.Run("time spent waiting to continue after yielding should not count as CPU time", func(t *testing.T) {
+		CPU_TIME := 50 * time.Millisecond
+		cpuLimit, err := getLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(CPU_TIME))
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		state := NewGlobalState(NewContext(ContextConfig{
+			Permissions: []Permission{
+				GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
+				GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
+				GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
+				LThreadPermission{permkind.Create},
+			},
+		}))
+		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+			NameString: "lthread-test",
+			CodeString: "yield 0; return 0",
+		}))
+
+		lthreadCtx := NewContext(ContextConfig{
+			Limits:        []Limit{cpuLimit},
+			ParentContext: state.Ctx,
+		})
+
+		lthread, err := SpawnLThread(LthreadSpawnArgs{
+			SpawnerState: state,
+			Globals:      GlobalVariablesFromMap(map[string]Value{}, nil),
+			Module: &Module{
+				MainChunk:  chunk,
+				ModuleKind: UserLThreadModule,
+			},
+			//prevent the lthread to continue after yielding
+			PauseAfterYield: true,
+			LthreadCtx:      lthreadCtx,
+		})
+		assert.NoError(t, err)
+
+		for !lthread.IsPaused() {
+			time.Sleep(10 * time.Millisecond)
+		}
+
+		time.Sleep(2 * CPU_TIME)
+
+		select {
+		case <-lthreadCtx.Done():
+			assert.FailNow(t, lthreadCtx.Err().Error())
+		case <-state.Ctx.Done():
+			assert.FailNow(t, state.Ctx.Err().Error())
+		default:
+		}
+
+		if !assert.NoError(t, lthread.ResumeAsync()) {
+			return
+		}
+
+		_, err = lthread.WaitResult(state.Ctx)
+		assert.NoError(t, err)
 	})
 
 	t.Run("context should be cancelled if all CPU time is spent by child thread that we do not wait for", func(t *testing.T) {

@@ -85,8 +85,10 @@ func (l *limiter) SetStateOnce(id StateId) {
 	}
 }
 
-func (l *limiter) SetContext(ctx *Context) {
-	l.bucket.SetContext(ctx)
+func (l *limiter) SetContextIfNotChild(ctx *Context) {
+	if l.parentLimiter == nil {
+		l.bucket.SetContext(ctx)
+	}
 }
 
 func (l *limiter) Child() *limiter {
