@@ -9,6 +9,59 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestExecutionTimeLimitIntegration(t *testing.T) {
+
+	t.Run("context should not be cancelled faster in the presence of child threads", func(t *testing.T) {
+		cpuLimit, err := getLimit(nil, EXECUTION_TOTAL_LIMIT_NAME, Duration(100*time.Millisecond))
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		start := time.Now()
+		eval := makeTreeWalkEvalFunc(t)
+
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{
+				LThreadPermission{
+					Kind_: permkind.Create,
+				},
+			},
+			Limits: []Limit{cpuLimit},
+		}, nil)
+
+		state := ctx.GetClosestState()
+
+		_, err = eval(`
+			lthread1 = go do {
+				a = 0
+				for i in 1..100_000_000 {
+					a += 1
+				}
+				return a
+			}
+			lthread2 = go do {
+				a = 0
+				for i in 1..100_000_000 {
+					a += 1
+				}
+				return a
+			}
+			a = 0
+			for i in 1..100_000_000 {
+				a += 1
+			}
+			return a
+		`, state, false)
+
+		if !assert.WithinDuration(t, start.Add(100*time.Millisecond), time.Now(), 10*time.Millisecond) {
+			return
+		}
+
+		assert.ErrorIs(t, err, context.Canceled)
+	})
+
+}
+
 func TestCPUTimeLimitIntegration(t *testing.T) {
 
 	t.Run("context should be cancelled if all CPU time is spent", func(t *testing.T) {

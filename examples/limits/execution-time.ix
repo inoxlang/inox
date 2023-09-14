@@ -4,6 +4,9 @@ manifest {
     }
 }
 
+# execution/total-time limits the execution time of the module, 
+# the presence of child threads has no impact.
+
 sleep 1s
 print "1"
 
