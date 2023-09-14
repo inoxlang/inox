@@ -230,9 +230,11 @@ func NewContext(config ContextConfig) *Context {
 			panic(ErrCannotProvideLimitTokensForChildContext)
 		}
 
-		if _, ok := limiters[EXECUTION_CPU_TIME_LIMIT_NAME]; !ok {
-			if parentLimiter, ok := config.ParentContext.limiters[EXECUTION_CPU_TIME_LIMIT_NAME]; ok {
-				limiters[EXECUTION_CPU_TIME_LIMIT_NAME] = parentLimiter.Child()
+		//inherit limits from parent
+		for _, parentLimiter := range config.ParentContext.limiters {
+			limitName := parentLimiter.limit.Name
+			if _, ok := limiters[limitName]; !ok {
+				limiters[limitName] = parentLimiter.Child()
 			}
 		}
 

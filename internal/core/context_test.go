@@ -8,6 +8,54 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNewContext(t *testing.T) {
+	t.Run("child context should inherit all limits of its paent", func(t *testing.T) {
+
+		ctx := NewContext(ContextConfig{
+			Limits: []Limit{
+				{
+					Name:  "my-total-limit",
+					Kind:  TotalLimit,
+					Value: 100,
+					DecrementFn: func(lastDecrementTime time.Time, decrementingStateCount int32) int64 {
+						return 1
+					},
+				},
+				{
+					Name:  "my-simple-rate-limit",
+					Kind:  SimpleRateLimit,
+					Value: 100,
+				},
+				{
+					Name:  "my-byterate-limit",
+					Kind:  ByteRateLimit,
+					Value: 100,
+				},
+			},
+		})
+
+		childCtx := NewContext(ContextConfig{
+			Limits: []Limit{
+				{
+					Name:  "my-simple-rate-limit-2",
+					Kind:  ByteRateLimit,
+					Value: 100,
+				},
+			},
+			ParentContext: ctx,
+		})
+
+		if !assert.Len(t, childCtx.limiters, 4) {
+			return
+		}
+		assert.Contains(t, childCtx.limiters, "my-total-limit")
+		assert.Contains(t, childCtx.limiters, "my-simple-rate-limit")
+		assert.Contains(t, childCtx.limiters, "my-byterate-limit")
+		assert.Contains(t, childCtx.limiters, "my-simple-rate-limit-2")
+
+	})
+}
+
 func TestContextBuckets(t *testing.T) {
 
 	t.Run("buckets for lim of kind 'total' do not fill over time", func(t *testing.T) {
