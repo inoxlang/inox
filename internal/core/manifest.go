@@ -886,46 +886,10 @@ func getLimits(desc Value, defaultLimitsToNotSet map[string]bool) ([]Limit, erro
 		var limit Limit
 		defaultLimitsToNotSet[limitName] = true
 
-		switch v := limitPropValue.(type) {
-		case Rate:
-			limit = Limit{Name: limitName}
+		limit, err := getLimit(ctx, limitName, limitPropValue)
 
-			switch r := v.(type) {
-			case ByteRate:
-				limit.Kind = ByteRateLimit
-				limit.Value = int64(r)
-			case SimpleRate:
-				limit.Kind = SimpleRateLimit
-				limit.Value = int64(r)
-			default:
-				return nil, fmt.Errorf("not a valid rate type %T", r)
-			}
-
-		case Int:
-			limit = Limit{
-				Name:  limitName,
-				Kind:  TotalLimit,
-				Value: int64(v),
-			}
-		case Duration:
-			limit = Limit{
-				Name:  limitName,
-				Kind:  TotalLimit,
-				Value: int64(v),
-			}
-		default:
-			return nil, fmt.Errorf("invalid manifest, invalid value %s for a limit", GetRepresentation(v, ctx))
-		}
-
-		registeredKind, registeredMinimum, ok := LimRegistry.getLimitInfo(limitName)
-		if !ok {
-			return nil, fmt.Errorf("invalid manifest, limits: '%s' is not a registered limit", limitName)
-		}
-		if limit.Kind != registeredKind {
-			return nil, fmt.Errorf("invalid manifest, limits: value of '%s' has not a valid type", limitName)
-		}
-		if registeredMinimum > 0 && limit.Value < registeredMinimum {
-			return nil, fmt.Errorf("invalid manifest, limits: value for limit '%s' is too low, minimum is %d", limitName, registeredMinimum)
+		if err != nil {
+			return nil, err
 		}
 
 		limits = append(limits, limit)
