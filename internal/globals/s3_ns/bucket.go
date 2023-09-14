@@ -1,7 +1,6 @@
 package s3_ns
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -124,15 +123,11 @@ func (b *Bucket) Close() {
 	}
 }
 
-func (b *Bucket) RemoveAllObjects(ctx context.Context) {
-	if coreCtx, ok := ctx.(*core.Context); ok {
-		coreCtx.PauseCPUTimeDecrementation()
-		defer coreCtx.ResumeCPUTimeDecrementation()
-	}
-	objectChan := b.client.libClient.ListObjects(ctx, b.name, minio.ListObjectsOptions{Recursive: true})
+func (b *Bucket) RemoveAllObjects(ctx *core.Context) {
+	objectChan := b.client.ListObjectsLive(ctx, b.name, minio.ListObjectsOptions{Recursive: true})
 	//note: minio.Client.RemoveObjects does not check the .Error field of channel items
 
-	for range b.client.libClient.RemoveObjects(ctx, b.name, objectChan, minio.RemoveObjectsOptions{}) {
+	for range b.client.RemoveObjects(ctx, b.name, objectChan, minio.RemoveObjectsOptions{}) {
 	}
 }
 

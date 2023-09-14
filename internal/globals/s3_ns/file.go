@@ -44,9 +44,7 @@ type s3ReadFile struct {
 
 func newS3ReadFile(ctx *core.Context, client *S3Client, bucket, filename string) (*s3ReadFile, error) {
 	key := toObjectKey(filename)
-	res, err := core.DoIO2(ctx, func() (*minio.Object, error) {
-		return client.libClient.GetObject(ctx, bucket, key, minio.GetObjectOptions{})
-	})
+	res, err := client.GetObject(ctx, bucket, key, minio.GetObjectOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("unable to perform GetObject operation: %w", err)
 	}
@@ -176,9 +174,7 @@ func newS3WriteFile(ctx *core.Context, input newS3WriteFileInput) (*s3WriteFile,
 	var content []byte
 	if input.tryReadContent {
 		//note: GetObject requests are lazy so after this call we don't know if the object exists yet
-		res, err := core.DoIO2(ctx, func() (*minio.Object, error) {
-			return input.client.libClient.GetObject(ctx, input.bucket, key, minio.GetObjectOptions{})
-		})
+		res, err := input.client.GetObject(ctx, input.bucket, key, minio.GetObjectOptions{})
 
 		if err != nil {
 			return nil, fmt.Errorf("unable to perform GetObject operation: %w", err)
@@ -298,12 +294,10 @@ func (f *s3WriteFile) sync() error {
 
 	key := toObjectKey(f.filename)
 
-	_, err := core.DoIO2(f.ctx, func() (info minio.UploadInfo, err error) {
-		return f.client.libClient.PutObject(f.ctx, f.bucket, key, body, int64(len(p)), minio.PutObjectOptions{
-			UserMetadata: map[string]string{
-				PERM_METADATA_KEY: strconv.FormatUint(uint64(f.perm), 8),
-			},
-		})
+	_, err := f.client.PutObject(f.ctx, f.bucket, key, body, int64(len(p)), minio.PutObjectOptions{
+		UserMetadata: map[string]string{
+			PERM_METADATA_KEY: strconv.FormatUint(uint64(f.perm), 8),
+		},
 	})
 
 	if err != nil {

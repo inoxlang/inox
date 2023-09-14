@@ -110,12 +110,11 @@ func (fls *S3Filesystem) OpenFile(filename string, flag int, perm os.FileMode) (
 	pendingCreationsLocked := false
 
 	if fs_ns.IsExclusive(flag) {
-		info, _ := core.DoIO2(fls.ctx(), func() (*minio.Object, error) {
-			return fls.client().libClient.GetObject(ctx, fls.bucketName(), toObjectKey(filename), minio.GetObjectOptions{})
-		})
+		info, _ := fls.client().GetObject(ctx, fls.bucketName(), toObjectKey(filename), minio.GetObjectOptions{})
 		if info != nil {
 			return nil, os.ErrExist
 		}
+
 		fls.pendingCreationsLock.Lock()
 		_, ok := fls.pendingCreations[normalizedFilename]
 
@@ -253,7 +252,7 @@ func (fls *S3Filesystem) Rename(oldpath, newpath string) error {
 
 	//copy the file
 	_, err := core.DoIO2(ctx, func() (minio.UploadInfo, error) {
-		return client.libClient.CopyObject(ctx, minio.CopyDestOptions{
+		return client.CopyObject(ctx, minio.CopyDestOptions{
 			Bucket: fls.bucketName(),
 			Object: toObjectKey(dst),
 		}, minio.CopySrcOptions{
@@ -268,7 +267,7 @@ func (fls *S3Filesystem) Rename(oldpath, newpath string) error {
 
 	//delete the old file
 	err = core.DoIO(ctx, func() error {
-		return client.libClient.RemoveObject(ctx, fls.bucketName(), toObjectKey(src), minio.RemoveObjectOptions{
+		return client.RemoveObject(ctx, fls.bucketName(), toObjectKey(src), minio.RemoveObjectOptions{
 			ForceDelete: false,
 		})
 	})

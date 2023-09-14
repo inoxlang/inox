@@ -44,12 +44,14 @@ var (
 		{Name: net_ns.HTTP_REQUEST_RATE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 100},
 		{Name: net_ns.WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 10},
 		{Name: net_ns.TCP_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 10},
+
+		{Name: s3_ns.OBJECT_STORAGE_REQUEST_RATE_LIMIT_NAME, Kind: core.SimpleRateLimit, Value: 50},
 	}
 
 	_ = []core.GoValue{
-		&html_ns.HTMLNode{}, &core.GoFunction{}, &http_ns.HttpServer{}, &net_ns.TcpConn{}, &net_ns.WebsocketConnection{},
-		&http_ns.HttpRequest{}, &http_ns.HttpResponseWriter{},
-		&fs_ns.File{},
+		(*html_ns.HTMLNode)(nil), (*core.GoFunction)(nil), (*http_ns.HttpServer)(nil), (*net_ns.TcpConn)(nil),
+		(*net_ns.WebsocketConnection)(nil), (*http_ns.HttpRequest)(nil), (*http_ns.HttpResponseWriter)(nil),
+		(*fs_ns.File)(nil),
 	}
 )
 

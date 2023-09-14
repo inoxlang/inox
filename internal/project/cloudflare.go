@@ -162,7 +162,7 @@ func (p *Project) DeleteSecretsBucket(ctx *core.Context) error {
 	return DeleteR2Bucket(ctx, bucket, *tokens, p.devSideConfig.Cloudflare.AccountID)
 }
 
-func DeleteR2Bucket(ctx context.Context, bucketToDelete *s3_ns.Bucket, tokens TempCloudflareTokens, accountId string) error {
+func DeleteR2Bucket(ctx *core.Context, bucketToDelete *s3_ns.Bucket, tokens TempCloudflareTokens, accountId string) error {
 	if tokens.R2Token == nil || tokens.R2Token.Value == "" {
 		return ErrNoR2Token
 	}
@@ -172,12 +172,7 @@ func DeleteR2Bucket(ctx context.Context, bucketToDelete *s3_ns.Bucket, tokens Te
 	for _, bucket := range buckets {
 		if bucket.Name == bucketToDelete.Name() {
 			bucketToDelete.RemoveAllObjects(ctx)
-
-			if coreCtx, ok := ctx.(*core.Context); ok {
-				coreCtx.Sleep(time.Second)
-			} else {
-				time.Sleep(time.Second)
-			}
+			ctx.Sleep(time.Second)
 
 			return api.DeleteR2Bucket(ctx, cloudflare.AccountIdentifier(accountId), bucketToDelete.Name())
 		}
