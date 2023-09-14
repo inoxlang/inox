@@ -10,34 +10,38 @@ import (
 func TestArrayPool(t *testing.T) {
 	elemSize := 4 //int32
 
+	resetToZero := func(i *int32) {
+		*i = 0
+	}
+
 	t.Run("invalid configurations", func(t *testing.T) {
-		_, err := NewArrayPool[int32](-1, 0)
+		_, err := NewArrayPool[int32](-1, 0, resetToZero)
+		if !assert.ErrorIs(t, err, ErrInvalidPoolConfig, resetToZero) {
+			return
+		}
+
+		_, err = NewArrayPool[int32](0, -1, resetToZero)
+		if !assert.ErrorIs(t, err, ErrInvalidPoolConfig, resetToZero) {
+			return
+		}
+
+		_, err = NewArrayPool[int32](0, 0, resetToZero)
 		if !assert.ErrorIs(t, err, ErrInvalidPoolConfig) {
 			return
 		}
 
-		_, err = NewArrayPool[int32](0, -1)
+		_, err = NewArrayPool[int32](4, 0, resetToZero)
 		if !assert.ErrorIs(t, err, ErrInvalidPoolConfig) {
 			return
 		}
 
-		_, err = NewArrayPool[int32](0, 0)
-		if !assert.ErrorIs(t, err, ErrInvalidPoolConfig) {
-			return
-		}
-
-		_, err = NewArrayPool[int32](4, 0)
-		if !assert.ErrorIs(t, err, ErrInvalidPoolConfig) {
-			return
-		}
-
-		_, err = NewArrayPool[int32](8, 0)
+		_, err = NewArrayPool[int32](8, 0, resetToZero)
 		if !assert.ErrorIs(t, err, ErrInvalidPoolConfig) {
 			return
 		}
 
 		// not enough elements to make an array of length 2
-		_, err = NewArrayPool[int32](4, 2)
+		_, err = NewArrayPool[int32](4, 2, resetToZero)
 		if !assert.ErrorIs(t, err, ErrInvalidPoolConfig) {
 			return
 		}
@@ -59,7 +63,7 @@ func TestArrayPool(t *testing.T) {
 		t.Run(fmt.Sprintf("byte count = %d, array length = %d", testCase.byteCount, testCase.arrayLen), func(t *testing.T) {
 
 			t.Run("get array", func(t *testing.T) {
-				pool, err := NewArrayPool[int32](testCase.byteCount, testCase.arrayLen)
+				pool, err := NewArrayPool[int32](testCase.byteCount, testCase.arrayLen, resetToZero)
 				if !assert.NoError(t, err) {
 					return
 				}
@@ -83,7 +87,7 @@ func TestArrayPool(t *testing.T) {
 			})
 
 			t.Run("get too many arrays", func(t *testing.T) {
-				pool, _ := NewArrayPool[int32](testCase.byteCount, testCase.arrayLen)
+				pool, _ := NewArrayPool[int32](testCase.byteCount, testCase.arrayLen, resetToZero)
 
 				totalArrayCount := pool.TotalArrayCount()
 
@@ -110,7 +114,7 @@ func TestArrayPool(t *testing.T) {
 			})
 
 			t.Run("get the maximum number of arrays and release them in same order", func(t *testing.T) {
-				pool, _ := NewArrayPool[int32](testCase.byteCount, testCase.arrayLen)
+				pool, _ := NewArrayPool[int32](testCase.byteCount, testCase.arrayLen, resetToZero)
 
 				totalArrayCount := pool.TotalArrayCount()
 				arrays := make([][]int32, totalArrayCount)
@@ -129,7 +133,7 @@ func TestArrayPool(t *testing.T) {
 			})
 
 			t.Run("get the maximum number of arrays and release them in reverse order", func(t *testing.T) {
-				pool, _ := NewArrayPool[int32](testCase.byteCount, testCase.arrayLen)
+				pool, _ := NewArrayPool[int32](testCase.byteCount, testCase.arrayLen, resetToZero)
 
 				totalArrayCount := pool.TotalArrayCount()
 				arrays := make([][]int32, totalArrayCount)
@@ -148,5 +152,24 @@ func TestArrayPool(t *testing.T) {
 			})
 		})
 	}
+
+	t.Run("elements of a released array should be released", func(t *testing.T) {
+		pool, err := NewArrayPool[int32](8, 2, resetToZero)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		array, err := pool.GetArray()
+		if !assert.NoError(t, err) {
+			return
+		}
+		array[0] = 1
+
+		if !assert.NoError(t, pool.ReleaseArray(array)) {
+			return
+		}
+
+		assert.Zero(t, array[0])
+	})
 
 }

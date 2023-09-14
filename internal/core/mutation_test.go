@@ -2,6 +2,7 @@ package core
 
 import (
 	"reflect"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -10,6 +11,107 @@ import (
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestMutationCallbacks(t *testing.T) {
+	resetMutationCallbackPool()
+
+	t.Run("creating & initializatiion of a MutationCallbacks", func(t *testing.T) {
+		defer runtime.GC()
+		assert.True(t, mutationCallbackPool.IsEmpty())
+		assert.False(t, mutationCallbackPool.IsFull())
+
+		callbacks := NewMutationCallbacks()
+		callbacks.init()
+		defer callbacks.tearDown()
+
+		//available array count should have been decreased by one
+		assert.False(t, mutationCallbackPool.IsEmpty())
+		assert.False(t, mutationCallbackPool.IsFull())
+		assert.Equal(t, mutationCallbackPool.TotalArrayCount()-1, mutationCallbackPool.AvailableArrayCount())
+	})
+
+	t.Run("NewMutationCallbacks should still work after pool is full", func(t *testing.T) {
+		defer runtime.GC()
+		assert.True(t, mutationCallbackPool.IsEmpty())
+		assert.False(t, mutationCallbackPool.IsFull())
+
+		var list []*MutationCallbacks
+
+		defer func() {
+			for _, callbacks := range list {
+				callbacks.tearDown()
+			}
+		}()
+
+		for {
+			if mutationCallbackPool.IsFull() {
+				//last creation
+				callbacks := NewMutationCallbacks()
+				callbacks.init()
+				list = append(list, callbacks)
+				break
+			} else {
+				callbacks := NewMutationCallbacks()
+				callbacks.init()
+				list = append(list, callbacks)
+			}
+		}
+
+		assert.False(t, mutationCallbackPool.IsEmpty())
+		assert.True(t, mutationCallbackPool.IsFull())
+		_ = list
+	})
+
+	t.Run("mutation callback pool should be empty after MutationCallbacks values are garbage collected", func(t *testing.T) {
+		defer runtime.GC()
+		assert.True(t, mutationCallbackPool.IsEmpty())
+		assert.False(t, mutationCallbackPool.IsFull())
+
+		doneWithoutError := make(chan bool)
+		go func() {
+			//create mutation callbacks until the pool is full
+			var list []*MutationCallbacks
+			i := 0
+			for {
+				if i > 10_000_000 {
+					//infinite loop
+					doneWithoutError <- false
+					break
+				}
+
+				if mutationCallbackPool.IsFull() {
+					//last
+					callbacks := NewMutationCallbacks()
+					callbacks.init()
+					list = append(list, callbacks)
+					break
+				}
+				callbacks := NewMutationCallbacks()
+				callbacks.init()
+				list = append(list, callbacks)
+				i++
+			}
+			_ = list
+			doneWithoutError <- true
+		}()
+
+		ok := <-doneWithoutError
+		if !ok {
+			assert.FailNow(t, "infinite loop")
+		}
+
+		runtime.GC()
+		assert.True(t, mutationCallbackPool.IsEmpty())
+
+		if testing.Verbose() {
+			available := mutationCallbackPool.AvailableArrayCount()
+			total := mutationCallbackPool.TotalArrayCount()
+
+			availablePercentage := float64(available) / float64(total)
+			t.Log("available: ", available, "total: ", total, "percentage available: ", availablePercentage)
+		}
+	})
+}
 
 func TestObjectOnMutation(t *testing.T) {
 	t.Run("callback microtask should be called after additional property is set", func(t *testing.T) {

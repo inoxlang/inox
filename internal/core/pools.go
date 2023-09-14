@@ -24,9 +24,16 @@ type ArrayPool[T any] struct {
 	arrayLen   int
 	arrayCount int
 	elemSize   int
+
+	releaseElem func(*T)
 }
 
-func NewArrayPool[T any](byteSize int, arrayLen int) (*ArrayPool[T], error) {
+func NewArrayPool[T any](
+	byteSize int,
+	arrayLen int,
+	//called on all elements of arrays released with ReleaseArray, note that the passed value can be zero
+	releaseElem func(*T),
+) (*ArrayPool[T], error) {
 	if arrayLen <= 0 || byteSize <= 0 {
 		return nil, ErrInvalidPoolConfig
 	}
@@ -45,6 +52,8 @@ func NewArrayPool[T any](byteSize int, arrayLen int) (*ArrayPool[T], error) {
 		arrayLen:   arrayLen,
 		arrayCount: arrayCount,
 		elemSize:   elemSize,
+
+		releaseElem: releaseElem,
 	}, nil
 }
 
@@ -57,6 +66,21 @@ func (p *ArrayPool[T]) AvailableArrayCount() int {
 	defer p.lock.Unlock()
 
 	return int(p.bitset.Len() - p.bitset.Count())
+}
+
+func (p *ArrayPool[T]) InUseArrayCount() int {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	return int(p.bitset.Count())
+}
+
+func (p *ArrayPool[T]) IsFull() bool {
+	return p.AvailableArrayCount() == 0
+}
+
+func (p *ArrayPool[T]) IsEmpty() bool {
+	return p.AvailableArrayCount() == p.arrayCount
 }
 
 // GetArray returns a slice that should not be modified (expect setting elements).
@@ -78,6 +102,10 @@ func (p *ArrayPool[T]) GetArray() ([]T, error) {
 func (p *ArrayPool[T]) ReleaseArray(s []T) error {
 	p.lock.Lock()
 	defer p.lock.Unlock()
+
+	for i := range s {
+		p.releaseElem(&s[i])
+	}
 
 	arrayDataPtr := uintptr(unsafe.Pointer(unsafe.SliceData(s)))
 	dataPtr := uintptr(unsafe.Pointer(unsafe.SliceData(p.data)))

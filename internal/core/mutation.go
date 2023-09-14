@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -36,10 +37,20 @@ var (
 	ErrEmptyMutationPrefixSymbol     = errors.New("empty mutation prefix symbol")
 	ErrInvalidMutationPrefixSymbol   = errors.New("invalid mutation prefix symbol")
 
-	mutationCallbackPool = utils.Must(NewArrayPool[mutationCallback](100_000, 10))
+	mutationCallbackPool *ArrayPool[mutationCallback]
 
 	_ = []Value{Mutation{}}
 )
+
+func init() {
+	resetMutationCallbackPool()
+}
+
+func resetMutationCallbackPool() {
+	mutationCallbackPool = utils.Must(NewArrayPool[mutationCallback](100_000, 10, func(mc *mutationCallback) {
+		*mc = mutationCallback{}
+	}))
+}
 
 // A Mutation stores the data (or part of the data) about the modification of a value, it is immutable and implements Value.
 type Mutation struct {
@@ -428,10 +439,12 @@ func (c Change) Date() Date {
 
 // MutationCallbacks is used by watchables that implement OnMutation.
 type MutationCallbacks struct {
-	ownedSlice  bool
-	nextIndex   int
-	nextHandle  CallbackHandle
-	callbacks   []mutationCallback
+	ownedSlice bool
+	nextIndex  int
+	nextHandle CallbackHandle
+
+	callbacks []mutationCallback
+
 	initialized bool
 	lock        sync.Mutex
 }
@@ -449,29 +462,54 @@ func NewMutationCallbacks() *MutationCallbacks {
 	}
 }
 
-func (t *MutationCallbacks) Functions() []mutationCallback {
-	return t.callbacks
+func (c *MutationCallbacks) Functions() []mutationCallback {
+	return c.callbacks
 }
 
-func (t *MutationCallbacks) init() {
-	t.callbacks = utils.Must(mutationCallbackPool.GetArray())
-	t.initialized = true
+func (c *MutationCallbacks) init() {
+	// TODO:
+	// Store 1 or 2 callbacks in MutationCallbacks to avoid some allocations,
+	// setting a finalizer to release an array with just a few items set makes no sense.
+
+	if mutationCallbackPool.IsFull() {
+		c.callbacks = make([]mutationCallback, mutationCallbackPool.arrayLen)
+	} else {
+		c.callbacks = utils.Must(mutationCallbackPool.GetArray())
+	}
+	c.initialized = true
+
+	runtime.SetFinalizer(c, func(callbacks *MutationCallbacks) {
+		if !callbacks.ownedSlice {
+			mutationCallbackPool.ReleaseArray(callbacks.callbacks)
+		}
+	})
 }
 
-func (t *MutationCallbacks) AddMicrotask(m MutationCallbackMicrotask, config MutationWatchingConfiguration) (handle CallbackHandle) {
+func (c *MutationCallbacks) tearDown() {
+	c.lock.Lock() // possible deadlock due to microtasks
+	defer c.lock.Unlock()
+
+	if !c.ownedSlice {
+		mutationCallbackPool.ReleaseArray(c.callbacks)
+	}
+	c.callbacks = nil
+	c.ownedSlice = false
+}
+
+func (c *MutationCallbacks) AddMicrotask(m MutationCallbackMicrotask, config MutationWatchingConfiguration) (handle CallbackHandle) {
 	if m == nil {
 		return
 	}
 
-	t.lock.Lock() // possible deadlock due to microtasks
-	defer t.lock.Unlock()
+	c.lock.Lock() // possible deadlock due to microtasks
+	defer c.lock.Unlock()
 
-	if !t.initialized {
-		t.init()
+	if !c.initialized {
+		c.init()
 	}
 
-	handle = t.nextHandle
-	t.nextHandle++
+	handle = c.nextHandle
+	c.nextHandle++
 
 	callback := mutationCallback{
 		fn:     m,
@@ -479,79 +517,79 @@ func (t *MutationCallbacks) AddMicrotask(m MutationCallbackMicrotask, config Mut
 		handle: handle,
 	}
 
-	if t.nextIndex >= len(t.callbacks) {
-		if t.nextIndex == 0 {
-			t.callbacks = utils.Must(mutationCallbackPool.GetArray())
-			t.callbacks[0] = callback
-		} else if t.ownedSlice {
-			t.callbacks = append(t.callbacks, callback)
+	if c.nextIndex >= len(c.callbacks) {
+		if c.nextIndex == 0 {
+			c.callbacks = utils.Must(mutationCallbackPool.GetArray())
+			c.callbacks[0] = callback
+		} else if c.ownedSlice {
+			c.callbacks = append(c.callbacks, callback)
 		} else {
-			callbacks := make([]mutationCallback, len(t.callbacks)+1)
-			copy(callbacks, t.callbacks)
-			mutationCallbackPool.ReleaseArray(t.callbacks)
-			t.callbacks = callbacks
-			t.ownedSlice = true
+			callbacks := make([]mutationCallback, len(c.callbacks)+1)
+			copy(callbacks, c.callbacks)
+			mutationCallbackPool.ReleaseArray(c.callbacks)
+			c.callbacks = callbacks
+			c.ownedSlice = true
 		}
 	} else {
-		t.callbacks[t.nextIndex] = callback
+		c.callbacks[c.nextIndex] = callback
 	}
-	t.updateNextIndex()
+	c.updateNextIndex()
 
 	return
 }
 
-func (t *MutationCallbacks) RemoveMicrotasks() {
-	if t == nil {
+func (c *MutationCallbacks) RemoveMicrotasks() {
+	if c == nil {
 		return
 	}
 
-	t.lock.Lock()
-	defer t.lock.Unlock()
+	c.lock.Lock()
+	defer c.lock.Unlock()
 
-	if !t.initialized {
+	if !c.initialized {
 		return
 	}
 
-	for i := range t.callbacks {
-		t.callbacks[i] = mutationCallback{}
+	for i := range c.callbacks {
+		c.callbacks[i] = mutationCallback{}
 	}
 
-	t.updateNextIndex()
+	c.updateNextIndex()
 }
 
-func (t *MutationCallbacks) RemoveMicrotask(handle CallbackHandle) {
-	if t == nil {
+func (c *MutationCallbacks) RemoveMicrotask(handle CallbackHandle) {
+	if c == nil {
 		return
 	}
 
-	t.lock.Lock()
-	defer t.lock.Unlock()
+	c.lock.Lock()
+	defer c.lock.Unlock()
 
-	if !t.initialized {
+	if !c.initialized {
 		return
 	}
 
-	for i := range t.callbacks {
-		if t.callbacks[i].handle == handle {
-			t.callbacks[i] = mutationCallback{}
+	for i := range c.callbacks {
+		if c.callbacks[i].handle == handle {
+			c.callbacks[i] = mutationCallback{}
 			break
 		}
 	}
 
-	t.updateNextIndex()
+	c.updateNextIndex()
 }
 
 // CallMicrotasks calls the registered tasks that have a configured depth greater or equal to the depth at which the mutation
 // happened (depth argument).
-func (t *MutationCallbacks) CallMicrotasks(ctx *Context, m Mutation) {
-	if t == nil {
+func (c *MutationCallbacks) CallMicrotasks(ctx *Context, m Mutation) {
+	if c == nil {
 		return
 	}
 
-	t.lock.Lock() // possible deadlock due to microtasks
-	defer t.lock.Unlock()
+	c.lock.Lock() // possible deadlock due to microtasks
+	defer c.lock.Unlock()
 
-	for i, callback := range t.callbacks {
+	for i, callback := range c.callbacks {
 		if callback.fn == nil || (m.Depth != UnspecifiedWatchingDepth && callback.config.Depth < m.Depth) {
 			continue
 		}
@@ -559,26 +597,26 @@ func (t *MutationCallbacks) CallMicrotasks(ctx *Context, m Mutation) {
 		func() {
 			defer func() {
 				if recover() != nil { //TODO: log errors
-					t.callbacks[i].fn = nil
+					c.callbacks[i].fn = nil
 				}
 			}()
 			if !callback.fn(ctx, m) {
-				t.callbacks[i].fn = nil
+				c.callbacks[i].fn = nil
 			}
 		}()
 	}
 
-	t.updateNextIndex()
+	c.updateNextIndex()
 }
 
-func (t *MutationCallbacks) updateNextIndex() {
-	for i, callback := range t.callbacks {
+func (c *MutationCallbacks) updateNextIndex() {
+	for i, callback := range c.callbacks {
 		if callback.fn == nil {
-			t.nextIndex = i
+			c.nextIndex = i
 			return
 		}
 	}
-	t.nextIndex = len(t.callbacks)
+	c.nextIndex = len(c.callbacks)
 }
 
 func (obj *Object) OnMutation(ctx *Context, microtask MutationCallbackMicrotask, config MutationWatchingConfiguration) (CallbackHandle, error) {
