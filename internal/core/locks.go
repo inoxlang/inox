@@ -48,6 +48,14 @@ func (lock *SmartLock) Lock(state *GlobalState, embedder PotentiallySharable) {
 			}
 		}
 	}
+
+	if lock.lock.TryLock() {
+		return
+	}
+	if state != nil {
+		state.Ctx.PauseCPUTimeDecrementation()
+		defer state.Ctx.ResumeCPUTimeDecrementation()
+	}
 	lock.lock.Lock()
 }
 
@@ -55,7 +63,7 @@ func (lock *SmartLock) Unlock(state *GlobalState, embedder PotentiallySharable) 
 	//IMPORTANT:
 	//Locking/unlocking of SmartLock should be cheap because there are potentially thousands of operations per second.
 	//No channel or goroutine should be created.
-	
+
 	if !lock.valueShared.Load() {
 		return
 	}
@@ -67,6 +75,7 @@ func (lock *SmartLock) Unlock(state *GlobalState, embedder PotentiallySharable) 
 			}
 		}
 	}
+	//there is no .TryLock method so for performance reasons we avoid pausing the CPU time decrementation
 	lock.lock.Unlock()
 }
 
