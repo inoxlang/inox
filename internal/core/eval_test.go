@@ -40,78 +40,7 @@ func init() {
 }
 
 func TestTreeWalkEval(t *testing.T) {
-
-	testEval(t, false, func(c any, s *GlobalState, doSymbolicCheck bool) (Value, error) {
-		var mod *Module
-
-		switch val := c.(type) {
-		case *Module:
-			mod = val
-			s.Module = mod
-		case string:
-			chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
-				NameString: "core-test",
-				CodeString: val,
-			}))
-
-			mod = &Module{MainChunk: chunk}
-
-			//if the test case provide a module we reuse the source
-			if s.Module != nil {
-				chunk.Source = s.Module.MainChunk.Source
-				s.Module.MainChunk = chunk
-				mod = s.Module
-			} else {
-				s.Module = mod
-			}
-		default:
-			t.Fatalf("%#v is not a valid code argument", c)
-		}
-
-		if doSymbolicCheck {
-			staticCheckData, err := StaticCheck(StaticCheckInput{
-				State:             s,
-				Node:              mod.MainChunk.Node,
-				Module:            mod,
-				Chunk:             mod.MainChunk,
-				Globals:           s.Globals,
-				Patterns:          s.Ctx.namedPatterns,
-				PatternNamespaces: s.Ctx.patternNamespaces,
-			})
-			if !assert.NoError(t, err) {
-				return nil, err
-			}
-
-			s.StaticCheckData = staticCheckData
-
-			globals := make(map[string]symbolic.ConcreteGlobalValue)
-			s.Globals.Foreach(func(name string, v Value, isConstant bool) error {
-				globals[name] = symbolic.ConcreteGlobalValue{Value: v, IsConstant: isConstant}
-				return nil
-			})
-
-			symbCtx, err := s.Ctx.ToSymbolicValue()
-			if !assert.NoError(t, err) {
-				return nil, err
-			}
-
-			symbData, err := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
-				Node:    mod.MainChunk.Node,
-				Module:  mod.ToSymbolic(),
-				Globals: globals,
-				Context: symbCtx,
-			})
-
-			if !assert.NoError(t, err) {
-				return nil, err
-			}
-			s.SymbolicData.AddData(symbData)
-		}
-
-		treeWalkState := NewTreeWalkStateWithGlobal(s)
-		return TreeWalkEval(mod.MainChunk.Node, treeWalkState)
-	})
-
+	testEval(t, false, makeTreeWalkEvalFunc(t))
 }
 
 func TestBytecodeEval(t *testing.T) {
@@ -7298,4 +7227,77 @@ func (e *irreversibleEffect) Apply(*Context) error {
 
 func (e *irreversibleEffect) Reverse(*Context) error {
 	return nil
+}
+
+func makeTreeWalkEvalFunc(t *testing.T) func(c any, s *GlobalState, doSymbolicCheck bool) (Value, error) {
+	return func(c any, s *GlobalState, doSymbolicCheck bool) (Value, error) {
+		var mod *Module
+
+		switch val := c.(type) {
+		case *Module:
+			mod = val
+			s.Module = mod
+		case string:
+			chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+				NameString: "core-test",
+				CodeString: val,
+			}))
+
+			mod = &Module{MainChunk: chunk}
+
+			//if the test case provide a module we reuse the source
+			if s.Module != nil {
+				chunk.Source = s.Module.MainChunk.Source
+				s.Module.MainChunk = chunk
+				mod = s.Module
+			} else {
+				s.Module = mod
+			}
+		default:
+			t.Fatalf("%#v is not a valid code argument", c)
+		}
+
+		if doSymbolicCheck {
+			staticCheckData, err := StaticCheck(StaticCheckInput{
+				State:             s,
+				Node:              mod.MainChunk.Node,
+				Module:            mod,
+				Chunk:             mod.MainChunk,
+				Globals:           s.Globals,
+				Patterns:          s.Ctx.namedPatterns,
+				PatternNamespaces: s.Ctx.patternNamespaces,
+			})
+			if !assert.NoError(t, err) {
+				return nil, err
+			}
+
+			s.StaticCheckData = staticCheckData
+
+			globals := make(map[string]symbolic.ConcreteGlobalValue)
+			s.Globals.Foreach(func(name string, v Value, isConstant bool) error {
+				globals[name] = symbolic.ConcreteGlobalValue{Value: v, IsConstant: isConstant}
+				return nil
+			})
+
+			symbCtx, err := s.Ctx.ToSymbolicValue()
+			if !assert.NoError(t, err) {
+				return nil, err
+			}
+
+			symbData, err := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
+				Node:    mod.MainChunk.Node,
+				Module:  mod.ToSymbolic(),
+				Globals: globals,
+				Context: symbCtx,
+			})
+
+			if !assert.NoError(t, err) {
+				return nil, err
+			}
+			s.SymbolicData.AddData(symbData)
+		}
+
+		treeWalkState := NewTreeWalkStateWithGlobal(s)
+		return TreeWalkEval(mod.MainChunk.Node, treeWalkState)
+	}
 }

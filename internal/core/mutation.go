@@ -11,6 +11,10 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+const (
+	DEFAULT_MICROTASK_ARRAY_SIZE = 4
+)
+
 var (
 	MUTATION_KIND_NAMES = [...]string{
 		UnspecifiedMutation:   "unspecified-mutation",
@@ -32,13 +36,9 @@ var (
 	ErrEmptyMutationPrefixSymbol     = errors.New("empty mutation prefix symbol")
 	ErrInvalidMutationPrefixSymbol   = errors.New("invalid mutation prefix symbol")
 
-	_ = []Value{Mutation{}}
-
 	mutationCallbackPool = utils.Must(NewArrayPool[mutationCallback](100_000, 10))
-)
 
-const (
-	DEFAULT_MICROTASK_ARRAY_SIZE = 4
+	_ = []Value{Mutation{}}
 )
 
 // A Mutation stores the data (or part of the data) about the modification of a value, it is immutable and implements Value.
@@ -442,7 +442,7 @@ type mutationCallback struct {
 	handle CallbackHandle
 }
 
-func NewMutationCallbackMicrotasks() *MutationCallbacks {
+func NewMutationCallbacks() *MutationCallbacks {
 	return &MutationCallbacks{
 		nextIndex:  0,
 		nextHandle: FIRST_VALID_CALLBACK_HANDLE,
@@ -607,7 +607,7 @@ func (obj *Object) OnMutation(ctx *Context, microtask MutationCallbackMicrotask,
 	}
 
 	if obj.mutationCallbacks == nil {
-		obj.mutationCallbacks = NewMutationCallbackMicrotasks()
+		obj.mutationCallbacks = NewMutationCallbacks()
 	}
 
 	handle := obj.mutationCallbacks.AddMicrotask(microtask, config)
@@ -708,7 +708,7 @@ func (d *Dictionary) OnMutation(ctx *Context, microtask MutationCallbackMicrotas
 	}
 
 	if d.mutationCallbacks == nil {
-		d.mutationCallbacks = NewMutationCallbackMicrotasks()
+		d.mutationCallbacks = NewMutationCallbacks()
 	}
 
 	handle := d.mutationCallbacks.AddMicrotask(microtask, config)
@@ -802,7 +802,7 @@ func (l *List) OnMutation(ctx *Context, microtask MutationCallbackMicrotask, con
 	}
 
 	if l.mutationCallbacks == nil {
-		l.mutationCallbacks = NewMutationCallbackMicrotasks()
+		l.mutationCallbacks = NewMutationCallbacks()
 	}
 
 	handle := l.mutationCallbacks.AddMicrotask(microtask, config)
@@ -884,7 +884,7 @@ func (s *RuneSlice) OnMutation(ctx *Context, microtask MutationCallbackMicrotask
 	}
 
 	if s.mutationCallbacks == nil {
-		s.mutationCallbacks = NewMutationCallbackMicrotasks()
+		s.mutationCallbacks = NewMutationCallbacks()
 	}
 
 	handle := s.mutationCallbacks.AddMicrotask(microtask, config)
@@ -923,7 +923,7 @@ func (s *ByteSlice) OnMutation(ctx *Context, microtask MutationCallbackMicrotask
 	}
 
 	if s.mutationCallbacks == nil {
-		s.mutationCallbacks = NewMutationCallbackMicrotasks()
+		s.mutationCallbacks = NewMutationCallbacks()
 	}
 
 	handle := s.mutationCallbacks.AddMicrotask(microtask, config)
@@ -958,7 +958,7 @@ func (dyn *DynamicValue) OnMutation(ctx *Context, microtask MutationCallbackMicr
 	}
 
 	if dyn.mutationCallbacks == nil {
-		dyn.mutationCallbacks = NewMutationCallbackMicrotasks()
+		dyn.mutationCallbacks = NewMutationCallbacks()
 	}
 
 	handle := dyn.mutationCallbacks.AddMicrotask(microtask, config)
@@ -993,7 +993,7 @@ func (g *SystemGraph) OnMutation(ctx *Context, microtask MutationCallbackMicrota
 	}
 
 	if g.mutationCallbacks == nil {
-		g.mutationCallbacks = NewMutationCallbackMicrotasks()
+		g.mutationCallbacks = NewMutationCallbacks()
 	}
 
 	handle := g.mutationCallbacks.AddMicrotask(microtask, config)
@@ -1149,7 +1149,7 @@ func (f *InoxFunction) OnMutation(ctx *Context, microtask MutationCallbackMicrot
 	}
 
 	if f.mutationCallbacks == nil {
-		f.mutationCallbacks = NewMutationCallbackMicrotasks()
+		f.mutationCallbacks = NewMutationCallbacks()
 	}
 
 	handle := f.mutationCallbacks.AddMicrotask(microtask, config)
@@ -1235,7 +1235,7 @@ func (h *SynchronousMessageHandler) OnMutation(ctx *Context, microtask MutationC
 	}
 
 	if h.mutationCallbacks == nil {
-		h.mutationCallbacks = NewMutationCallbackMicrotasks()
+		h.mutationCallbacks = NewMutationCallbacks()
 	}
 
 	handle := h.mutationCallbacks.AddMicrotask(microtask, config)

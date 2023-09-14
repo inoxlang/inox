@@ -38,7 +38,7 @@ func (n *HTMLNode) OnMutation(ctx *core.Context, microtask core.MutationCallback
 	}
 
 	if n.mutationCallbacks == nil {
-		n.mutationCallbacks = core.NewMutationCallbackMicrotasks()
+		n.mutationCallbacks = core.NewMutationCallbacks()
 	}
 
 	handle := n.mutationCallbacks.AddMicrotask(microtask, config)

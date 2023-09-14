@@ -107,7 +107,7 @@ func NewDynamicMemberValue(ctx *Context, object Value, memberName string) (*Dyna
 		innerDyn:          innerDyn,
 		opData0:           Str(memberName),
 		op:                dynMemb,
-		mutationCallbacks: NewMutationCallbackMicrotasks(),
+		mutationCallbacks: NewMutationCallbacks(),
 	}
 
 	if innerDyn != nil {
@@ -173,7 +173,7 @@ func NewDynamicMapInvocation(ctx *Context, iterable Iterable, mapper Value) (*Dy
 		innerDyn:          innerDyn,
 		opData0:           mapper,
 		op:                dynMapInvoc,
-		mutationCallbacks: NewMutationCallbackMicrotasks(),
+		mutationCallbacks: NewMutationCallbacks(),
 	}
 
 	if innerDyn != nil {
@@ -237,7 +237,7 @@ func NewDynamicIf(ctx *Context, condition *DynamicValue, consequent Value, alter
 		opData0:           consequent,
 		opData1:           alternate,
 		op:                dynIf,
-		mutationCallbacks: NewMutationCallbackMicrotasks(),
+		mutationCallbacks: NewMutationCallbacks(),
 	}
 
 	_, err := dyn.innerDyn.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
@@ -309,7 +309,7 @@ func NewDynamicCall(ctx *Context, callee Value, args ...Value) *DynamicValue {
 		value:             firstCallResult,
 		opData0:           NewWrappedValueList(ToSerializableSlice(args)...),
 		op:                dynCall,
-		mutationCallbacks: NewMutationCallbackMicrotasks(),
+		mutationCallbacks: NewMutationCallbacks(),
 	}
 
 	var watchables []Value
