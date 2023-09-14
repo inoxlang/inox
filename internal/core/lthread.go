@@ -64,6 +64,7 @@ type LthreadSpawnArgs struct {
 	Timeout     time.Duration
 
 	IgnoreCreateLThreadPermCheck bool
+	PauseAfterYield              bool
 }
 
 // SpawnLThread spawns a new lthread, if .LthreadCtx is nil a minimal context is created for the lthread.
@@ -138,7 +139,7 @@ func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 		bytecode:         args.Module.Bytecode,
 		useBytecode:      args.UseBytecode,
 		executedStepCallbackFn: func(step ExecutedStep, lthread *LThread) (continueExec bool) {
-			return true
+			return !args.PauseAfterYield
 		},
 	}
 
@@ -287,7 +288,12 @@ func (lthread *LThread) yield(ctx *Context, value Value) {
 	}
 
 	lthread.lock.Lock()
-	defer lthread.lock.Unlock()
+	unlock := true
+	defer func() {
+		if unlock {
+			lthread.lock.Unlock()
+		}
+	}()
 
 	step := &ExecutedStep{
 		result:  value,
@@ -306,6 +312,7 @@ func (lthread *LThread) yield(ctx *Context, value Value) {
 	//TODO: handle closed channel
 
 	if lthread.paused.CompareAndSwap(false, true) {
+		unlock = false
 		lthread.lock.Unlock()
 		<-lthread.continueExecChan
 		lthread.paused.Store(false)

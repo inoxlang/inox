@@ -4896,6 +4896,33 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			), res)
 		})
 
+		t.Run("embedded module yields three times and has no return statement", func(t *testing.T) {
+			code := `
+				rt = go do { 
+					yield 0
+
+					yield 1
+
+					yield 2
+				}
+	
+				result = rt.wait_result!()
+
+				step_results = []
+				for step in rt.steps {
+					step_results.append(step.result)
+				}
+				return [result, step_results]
+			`
+			state := NewGlobalState(NewDefaultTestContext())
+			res, err := Eval(code, state, false)
+			assert.NoError(t, err)
+			assert.Equal(t, NewWrappedValueList(
+				Nil,
+				NewWrappedValueList(Int(0), Int(1), Int(2)),
+			), res)
+		})
+
 		t.Run("embedded module yields once and has a return statement", func(t *testing.T) {
 			code := `
 				rt = go do { 
@@ -7100,6 +7127,50 @@ func TestSpawnLThread(t *testing.T) {
 			},
 		})
 		assert.NoError(t, err)
+
+		res, err := lthread.WaitResult(state.Ctx)
+		assert.NoError(t, err)
+		if !assert.IsType(t, &Object{}, res) {
+			return
+		}
+		obj := res.(*Object)
+		assert.True(t, obj.IsShared())
+		assert.Equal(t, map[string]Serializable{"a": Int(1)}, obj.EntryMap(nil))
+	})
+
+	t.Run("ResumeAsync should resume the lthread if it does not continue by default after yielding", func(t *testing.T) {
+		state := NewGlobalState(NewContext(ContextConfig{
+			Permissions: []Permission{
+				GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
+				GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
+				GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
+				LThreadPermission{permkind.Create},
+			},
+		}))
+		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+			NameString: "lthread-test",
+			CodeString: "yield 0; return {a: 1}",
+		}))
+
+		lthread, err := SpawnLThread(LthreadSpawnArgs{
+			SpawnerState: state,
+			Globals:      GlobalVariablesFromMap(map[string]Value{}, nil),
+			Module: &Module{
+				MainChunk:  chunk,
+				ModuleKind: UserLThreadModule,
+			},
+			//prevent the lthread to continue after yielding
+			PauseAfterYield: true,
+		})
+		assert.NoError(t, err)
+
+		for !lthread.IsPaused() {
+			time.Sleep(10 * time.Millisecond)
+		}
+
+		if !assert.NoError(t, lthread.ResumeAsync()) {
+			return
+		}
 
 		res, err := lthread.WaitResult(state.Ctx)
 		assert.NoError(t, err)
