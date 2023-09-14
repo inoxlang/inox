@@ -13,9 +13,11 @@ import (
 func TestObject(t *testing.T) {
 
 	t.Run("SetProp", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 
 		{
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			defer ctx.Cancel()
+
 			obj := NewObjectFromMap(ValMap{}, ctx)
 			obj.SetProp(ctx, "a", Int(1))
 			obj.SetProp(ctx, "b", Int(2))
@@ -24,6 +26,9 @@ func TestObject(t *testing.T) {
 		}
 
 		{
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			defer ctx.Cancel()
+
 			obj := NewObjectFromMap(ValMap{}, ctx)
 			obj.SetProp(ctx, "b", NewObjectFromMap(ValMap{}, ctx))
 
@@ -49,8 +54,11 @@ func TestObject(t *testing.T) {
 
 		t.Run("sould wait current transaction to be finished", func(t *testing.T) {
 			ctx1 := NewContexWithEmptyState(ContextConfig{}, nil)
+			defer ctx1.Cancel()
+
 			tx1 := StartNewTransaction(ctx1)
 			ctx2 := NewContexWithEmptyState(ContextConfig{}, nil)
+			defer ctx2.Cancel()
 
 			obj := NewObjectFromMap(ValMap{}, ctx1)
 
@@ -90,6 +98,30 @@ func TestObject(t *testing.T) {
 				return
 			}
 		})
+	})
+
+	t.Run("Prop", func(t *testing.T) {
+
+		t.Run("call after invalid PropNotStored call", func(t *testing.T) {
+			ctx1 := NewContexWithEmptyState(ContextConfig{}, nil)
+			defer ctx1.Cancel()
+
+			obj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx1)
+
+			// since context has no associated transaction a panic is expected
+			if !assert.Panics(t, func() {
+				obj.PropNotStored(ctx1, "a")
+			}) {
+				return
+			}
+
+			ctx2 := NewContexWithEmptyState(ContextConfig{}, nil)
+			defer ctx2.Cancel()
+
+			//the object properties should still be accessible from another execution context
+			assert.Equal(t, Int(1), obj.Prop(ctx2, "a"))
+		})
+
 	})
 
 	t.Run("lifetime jobs", func(t *testing.T) {

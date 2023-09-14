@@ -241,6 +241,12 @@ func (obj *Object) jobInstances() []*LifetimeJobInstance {
 
 func (obj *Object) waitIfOtherTransaction(ctx *Context, requireRunningTransaction bool) error {
 	obj.currentTransactionLock.Lock()
+	unlock := true
+	defer func() {
+		if unlock {
+			obj.currentTransactionLock.Unlock()
+		}
+	}()
 
 	tx := ctx.GetTx()
 
@@ -256,7 +262,6 @@ func (obj *Object) waitIfOtherTransaction(ctx *Context, requireRunningTransactio
 		if tx != nil && !tx.IsFinished() {
 			obj.currentTransaction = tx
 		}
-		obj.currentTransactionLock.Unlock()
 		return nil
 	}
 
@@ -268,11 +273,10 @@ func (obj *Object) waitIfOtherTransaction(ctx *Context, requireRunningTransactio
 		}
 
 		obj.currentTransaction = nil
+		unlock = false
 		obj.currentTransactionLock.Unlock()
-
 		return obj.waitIfOtherTransaction(ctx, requireRunningTransaction)
 	}
-	obj.currentTransactionLock.Unlock()
 
 	return nil
 }
