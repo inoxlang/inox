@@ -39,7 +39,7 @@ type GlobalState struct {
 	GetBasePatternsForImportedModule     func() (map[string]Pattern, map[string]*PatternNamespace)       // return nil maps by default
 	SymbolicBaseGlobalsForImportedModule map[string]symbolic.SymbolicValue                               // ok if nil, should not be modified
 	Out                                  io.Writer                                                       //io.Discard by default
-	Logger                               zerolog.Logger                                                  //zerolog.Logger(io.Discard) by default
+	Logger                               zerolog.Logger                                                  //zerolog.Nop() by default
 	Debugger                             atomic.Value                                                    //nil or (nillable) *Debugger
 
 	MainState            *GlobalState //never nil (should be set by user of GlobalState)

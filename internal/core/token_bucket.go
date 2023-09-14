@@ -22,15 +22,15 @@ func init() {
 type tokenBucket struct {
 	lastDecrementTime time.Time
 
-	tokenMutex           *sync.Mutex
+	tokenLock            *sync.Mutex
 	capacity             ScaledTokenCount
 	available            ScaledTokenCount
 	increment            ScaledTokenCount
 	pausedDecrementation atomic.Bool
-	decrementFn          func(time.Time) int64
+	decrementFn          func(lastDecrementTime time.Time) int64
 	context              *Context
 
-	chanListMutex   sync.Mutex
+	chanListLock    sync.Mutex
 	waitChans       []chan (struct{})
 	neededTokenList []ScaledTokenCount
 
@@ -54,7 +54,7 @@ type tokenBucketConfig struct {
 // newBucket returns a new token bucket with specified fillrate & capacity, the bucket is created full.
 func newBucket(config tokenBucketConfig) *tokenBucket {
 	if config.cap < 0 {
-		panic(fmt.Sprintf("token bucket: capacity %v should > 0", config.cap))
+		panic(fmt.Sprintf("token bucket: capacity %v should be > 0", config.cap))
 	}
 
 	avail := config.initialAvail
@@ -63,7 +63,7 @@ func newBucket(config tokenBucketConfig) *tokenBucket {
 	}
 
 	tb := &tokenBucket{
-		tokenMutex:                   &sync.Mutex{},
+		tokenLock:                    &sync.Mutex{},
 		capacity:                     ScaledTokenCount(config.cap * TOKEN_BUCKET_CAPACITY_SCALE),
 		available:                    ScaledTokenCount(avail * TOKEN_BUCKET_CAPACITY_SCALE),
 		increment:                    ScaledTokenCount(config.fillRate),
@@ -80,8 +80,8 @@ func newBucket(config tokenBucketConfig) *tokenBucket {
 }
 
 func (tb *tokenBucket) SetContext(ctx *Context) {
-	tb.tokenMutex.Lock()
-	defer tb.tokenMutex.Unlock()
+	tb.tokenLock.Lock()
+	defer tb.tokenLock.Unlock()
 
 	tb.context = ctx
 }
@@ -91,8 +91,8 @@ func (tb *tokenBucket) Capacity() int64 {
 }
 
 func (tb *tokenBucket) Available() int64 {
-	tb.tokenMutex.Lock()
-	defer tb.tokenMutex.Unlock()
+	tb.tokenLock.Lock()
+	defer tb.tokenLock.Unlock()
 
 	return tb.available.RealCount()
 }
@@ -112,8 +112,8 @@ func (tb *tokenBucket) Take(count int64) {
 }
 
 func (tb *tokenBucket) GiveBack(count int64) {
-	tb.tokenMutex.Lock()
-	defer tb.tokenMutex.Unlock()
+	tb.tokenLock.Lock()
+	defer tb.tokenLock.Unlock()
 
 	tb.available += ScaledTokenCount(count * TOKEN_BUCKET_CAPACITY_SCALE)
 	tb.available = min(tb.capacity, tb.available)
@@ -149,8 +149,8 @@ func (tb *tokenBucket) WaitMaxDuration(count int64, max time.Duration) bool {
 func (tb *tokenBucket) tryTake(need, use ScaledTokenCount) bool {
 	tb.checkCount(need)
 
-	tb.tokenMutex.Lock()
-	defer tb.tokenMutex.Unlock()
+	tb.tokenLock.Lock()
+	defer tb.tokenLock.Unlock()
 
 	if need <= tb.available {
 		tb.available -= use
@@ -168,10 +168,10 @@ func (tb *tokenBucket) addWaitChannel(need ScaledTokenCount) chan (struct{}) {
 	} else {
 		channel = <-waitChanPool
 	}
-	tb.chanListMutex.Lock()
+	tb.chanListLock.Lock()
 	tb.waitChans = append(tb.waitChans, channel)
 	tb.neededTokenList = append(tb.neededTokenList, need)
-	tb.chanListMutex.Unlock()
+	tb.chanListLock.Unlock()
 	return channel
 }
 
@@ -232,8 +232,8 @@ func startTokenBucketManagerGoroutine() {
 	}
 
 	updateTokenCount := func(tb *tokenBucket) {
-		tb.tokenMutex.Lock()
-		defer tb.tokenMutex.Unlock()
+		tb.tokenLock.Lock()
+		defer tb.tokenLock.Unlock()
 
 		if tb.decrementFn == nil {
 			if tb.available < tb.capacity {
@@ -253,8 +253,8 @@ func startTokenBucketManagerGoroutine() {
 		tb.lastDecrementTime = time.Now()
 
 		func() {
-			tb.chanListMutex.Lock()
-			defer tb.chanListMutex.Unlock()
+			tb.chanListLock.Lock()
+			defer tb.chanListLock.Unlock()
 
 			for len(tb.waitChans) >= 1 { // if at least one goroutine is waiting for the bucket to refill
 				waitChan := tb.waitChans[len(tb.waitChans)-1]
