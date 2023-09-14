@@ -7,7 +7,6 @@ import (
 	"log"
 	"strconv"
 	"strings"
-	"time"
 
 	"slices"
 
@@ -893,28 +892,6 @@ func getLimits(desc Value, defaultLimitsToNotSet map[string]bool) ([]Limit, erro
 		}
 
 		limits = append(limits, limit)
-	}
-
-	//check & postprocess limits
-
-	for i, l := range limits {
-		switch l.Name {
-		case EXECUTION_TOTAL_LIMIT_NAME:
-			if l.Value == 0 {
-				log.Panicf("invalid manifest, limits: %s should have a total value\n", EXECUTION_TOTAL_LIMIT_NAME)
-			}
-			l.DecrementFn = func(lastDecrementTime time.Time) int64 {
-				return time.Since(lastDecrementTime).Nanoseconds()
-			}
-		case EXECUTION_CPU_TIME_LIMIT_NAME:
-			if l.Value == 0 {
-				log.Panicf("invalid manifest, limits: %s should have a total value\n", EXECUTION_CPU_TIME_LIMIT_NAME)
-			}
-			l.DecrementFn = func(lastDecrementTime time.Time) int64 {
-				return time.Since(lastDecrementTime).Nanoseconds()
-			}
-		}
-		limits[i] = l
 	}
 
 	return limits, nil

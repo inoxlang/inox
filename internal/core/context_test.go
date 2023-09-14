@@ -159,12 +159,13 @@ func TestContextLimiters(t *testing.T) {
 					Name:  "test",
 					Kind:  TotalLimit,
 					Value: int64(time.Second),
-					DecrementFn: func(lastDecrementTime time.Time) int64 {
+					DecrementFn: func(lastDecrementTime time.Time, decrementingStateCount int32) int64 {
 						return time.Since(lastDecrementTime).Nanoseconds()
 					},
 				},
 			},
 		})
+		NewGlobalState(ctx) //start decrementation
 
 		capacity := int64(time.Second)
 
@@ -180,21 +181,22 @@ func TestContextLimiters(t *testing.T) {
 					Name:  "test",
 					Kind:  TotalLimit,
 					Value: int64(time.Second),
-					DecrementFn: func(lastDecrementTime time.Time) int64 {
+					DecrementFn: func(lastDecrementTime time.Time, decrementingStateCount int32) int64 {
 						return time.Since(lastDecrementTime).Nanoseconds()
 					},
 				},
 			},
 		})
+		NewGlobalState(ctx) //start decrementation
 
 		capacity := int64(time.Second)
 		assert.Equal(t, capacity, ctx.limiters["test"].bucket.Available())
 
-		ctx.limiters["test"].bucket.PauseDecrementation()
+		ctx.limiters["test"].bucket.PauseOneStateDecrementation()
 		time.Sleep(time.Second)
 		assert.InDelta(t, capacity, ctx.limiters["test"].bucket.Available(), float64(capacity/100))
 
-		ctx.limiters["test"].bucket.ResumeDecrementation()
+		ctx.limiters["test"].bucket.ResumeOneStateDecrementation()
 		time.Sleep(time.Second)
 		assert.InDelta(t, int64(0), ctx.limiters["test"].bucket.Available(), float64(capacity/20))
 	})
@@ -213,7 +215,7 @@ func TestContextLimiters(t *testing.T) {
 			ParentContext: parentCtx,
 		})
 
-		assert.Same(t, parentCtx.limiters["fs/read"], ctx.limiters["fs/read"])
+		assert.Same(t, parentCtx.limiters["fs/read"], ctx.limiters["fs/read"].parentLimiter)
 		assert.NotSame(t, parentCtx.limiters["fs/write"], ctx.limiters["fs/write"])
 	})
 }

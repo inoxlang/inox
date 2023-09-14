@@ -202,6 +202,10 @@ func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 			}
 		}
 
+		//TODO: defer cancellation of context ? -> that could stop important pending operations
+
+		defer modState.Ctx.PauseCPUDecrementationIfNotPaused()
+
 		if args.UseBytecode {
 			res, err = EvalBytecode(lthread.bytecode, modState, args.Self)
 		} else {
@@ -348,7 +352,10 @@ func (lthread *LThread) WaitResult(ctx *Context) (Value, error) {
 		}
 		return lthread.result, nil
 	}
-	<-lthread.wait_result
+	ctx.DoIO(func() error {
+		<-lthread.wait_result
+		return nil
+	})
 	close(lthread.wait_result)
 
 	if lthread.err.goError != nil {

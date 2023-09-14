@@ -1,15 +1,22 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"time"
 )
 
-var LimRegistry = limitRegistry{
-	kinds:         make(map[string]LimitKind),
-	minimumLimits: make(map[string]int64),
-}
+var (
+	LimRegistry = limitRegistry{
+		kinds:         make(map[string]LimitKind),
+		minimumLimits: make(map[string]int64),
+	}
+
+	ErrTokenDecrementationAlreadyPaused = errors.New("token decrementation already paused")
+	ErrTokenDecrementationNotPaused     = errors.New("token decrementation is not paused")
+	ErrStateIdNotSet                    = errors.New("state id not set")
+)
 
 func init() {
 	LimRegistry.RegisterLimit(EXECUTION_TOTAL_LIMIT_NAME, TotalLimit, 0)
@@ -23,7 +30,7 @@ type Limit struct {
 	Kind  LimitKind
 	Value int64
 
-	DecrementFn func(lastDecrementTime time.Time) int64 //optional. Called on each tick of the associated bucket's timer.
+	DecrementFn TokenDecrementationFn //optional. Called on each tick of the associated bucket's timer.
 }
 
 type LimitKind int
@@ -33,11 +40,6 @@ const (
 	ByteRateLimit
 	TotalLimit
 )
-
-type Limiter struct {
-	limit  Limit
-	bucket *tokenBucket
-}
 
 type limitRegistry struct {
 	kinds         map[string]LimitKind
@@ -64,6 +66,96 @@ func (r *limitRegistry) getLimitInfo(name string) (kind LimitKind, minimum int64
 		return -1, -1, false
 	}
 	return registeredKind, min, true
+}
+
+// limiter manages a limit for a single state, it is not thread safe.
+type limiter struct {
+	limit                Limit
+	bucket               *tokenBucket //shared with parent if is child limiter
+	parentLimiter        *limiter
+	stateId              StateId
+	pausedDecrementation bool
+}
+
+func (l *limiter) SetStateOnce(id StateId) {
+	l.stateId = id
+
+	if l.limit.DecrementFn != nil {
+		l.bucket.ResumeOneStateDecrementation()
+	}
+}
+
+func (l *limiter) SetContext(ctx *Context) {
+	l.bucket.SetContext(ctx)
+}
+
+func (l *limiter) Child() *limiter {
+	return &limiter{
+		limit:         l.limit,
+		bucket:        l.bucket,
+		parentLimiter: l,
+	}
+}
+
+func (l *limiter) Destroy() {
+	if l.parentLimiter == nil {
+		l.bucket.Destroy()
+	} else if !l.pausedDecrementation {
+		l.bucket.PauseOneStateDecrementation()
+	}
+}
+
+func (l *limiter) Available() int64 {
+	return l.bucket.Available()
+}
+
+func (l *limiter) Total() (int64, error) {
+	if l.limit.Kind != TotalLimit {
+		return -1, fmt.Errorf("context: '%s' is not a total limit", l.limit.Name)
+	}
+
+	return l.bucket.Available(), nil
+}
+
+func (l *limiter) Take(count int64) {
+	available := l.bucket.Available()
+	if l.limit.Kind == TotalLimit && l.limit.Value != 0 && available < count {
+		panic(fmt.Errorf("cannot take %v tokens from bucket (%s), only %v token(s) available", count, l.limit.Name, available))
+	}
+	l.bucket.Take(count)
+}
+
+func (l *limiter) GiveBack(count int64) {
+	l.bucket.GiveBack(count)
+}
+
+func (l *limiter) PauseDecrementation() {
+	if l.stateId == 0 {
+		panic(ErrStateIdNotSet)
+	}
+	if l.pausedDecrementation {
+		panic(ErrTokenDecrementationAlreadyPaused)
+	}
+	l.bucket.PauseOneStateDecrementation()
+	l.pausedDecrementation = true
+}
+
+func (l *limiter) PauseDecrementationIfNotPaused() {
+	if l.pausedDecrementation {
+		return
+	}
+	l.PauseDecrementation()
+}
+
+func (l *limiter) ResumeDecrementation() {
+	if l.stateId == 0 {
+		panic(ErrStateIdNotSet)
+	}
+	if !l.pausedDecrementation {
+		panic(ErrTokenDecrementationNotPaused)
+	}
+	l.bucket.ResumeOneStateDecrementation()
+	l.pausedDecrementation = false
 }
 
 func getLimit(ctx *Context, limitName string, limitValue Serializable) (_ Limit, resultErr error) {
@@ -123,15 +215,15 @@ func getLimit(ctx *Context, limitName string, limitValue Serializable) (_ Limit,
 		if limit.Value == 0 {
 			log.Panicf("invalid manifest, limits: %s should have a total value\n", EXECUTION_TOTAL_LIMIT_NAME)
 		}
-		limit.DecrementFn = func(lastDecrementTime time.Time) int64 {
+		limit.DecrementFn = func(lastDecrementTime time.Time, decrementingStateCount int32) int64 {
 			return time.Since(lastDecrementTime).Nanoseconds()
 		}
 	case EXECUTION_CPU_TIME_LIMIT_NAME:
 		if limit.Value == 0 {
 			log.Panicf("invalid manifest, limits: %s should have a total value\n", EXECUTION_CPU_TIME_LIMIT_NAME)
 		}
-		limit.DecrementFn = func(lastDecrementTime time.Time) int64 {
-			return time.Since(lastDecrementTime).Nanoseconds()
+		limit.DecrementFn = func(lastDecrementTime time.Time, decrementingStateCount int32) int64 {
+			return time.Since(lastDecrementTime).Nanoseconds() * int64(decrementingStateCount)
 		}
 	}
 

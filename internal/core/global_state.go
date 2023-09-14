@@ -76,7 +76,7 @@ func NewGlobalState(ctx *Context, constants ...map[string]Value) *GlobalState {
 			return nil, nil
 		},
 	}
-	ctx.state = state
+	ctx.SetClosestState(state)
 
 	globals := map[string]Value{}
 

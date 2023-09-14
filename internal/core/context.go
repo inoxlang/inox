@@ -66,7 +66,7 @@ type Context struct {
 	grantedPermissions   []Permission
 	forbiddenPermissions []Permission
 	limits               []Limit
-	limiters             map[string]*Limiter //the map is not changed after context creation
+	limiters             map[string]*limiter //the map is not changed after context creation
 
 	//values
 	hostAliases         map[string]Host
@@ -94,13 +94,17 @@ type ContextConfig struct {
 	Kind                 ContextKind
 	Permissions          []Permission
 	ForbiddenPermissions []Permission
-	Limits               []Limit
-	HostResolutions      map[Host]Value
-	OwnedDatabases       []DatabaseConfig
-	ParentContext        *Context
-	LimitTokens          map[string]int64
-	Filesystem           afs.Filesystem
-	CreateFilesystem     func(ctx *Context) (afs.Filesystem, error)
+
+	//if (cpu time limit is not present) AND (parent context has it) then the limit is inherited.
+	//The decrementation of total limit's tokens for the created context starts when the associated state is set.
+	Limits []Limit
+
+	HostResolutions  map[Host]Value
+	OwnedDatabases   []DatabaseConfig
+	ParentContext    *Context
+	LimitTokens      map[string]int64
+	Filesystem       afs.Filesystem
+	CreateFilesystem func(ctx *Context) (afs.Filesystem, error)
 
 	WaitConfirmPrompt WaitConfirmPrompt
 }
@@ -148,7 +152,7 @@ func NewContexWithEmptyState(config ContextConfig, out io.Writer) *Context {
 func NewContext(config ContextConfig) *Context {
 
 	var (
-		limiters   map[string]*Limiter
+		limiters   map[string]*limiter
 		stdlibCtx  context.Context
 		cancel     context.CancelFunc
 		filesystem afs.Filesystem = config.Filesystem
@@ -168,8 +172,8 @@ func NewContext(config ContextConfig) *Context {
 	}
 
 	//create limiters
-	limiters = make(map[string]*Limiter)
-	var parentContextLimiters map[string]*Limiter
+	limiters = make(map[string]*limiter)
+	var parentContextLimiters map[string]*limiter
 
 	if config.ParentContext != nil {
 		parentContextLimiters = config.ParentContext.limiters
@@ -182,9 +186,8 @@ func NewContext(config ContextConfig) *Context {
 			panic(fmt.Errorf("context creation: duplicate limit '%s'", l.Name))
 		}
 
-		//limiters are inherited when possible
 		if limiter, ok := parentContextLimiters[l.Name]; ok {
-			limiters[l.Name] = limiter
+			limiters[l.Name] = limiter.Child()
 			continue
 		}
 
@@ -203,7 +206,7 @@ func NewContext(config ContextConfig) *Context {
 			initialAvail = -1 //capacity
 		}
 
-		limiters[l.Name] = &Limiter{
+		limiters[l.Name] = &limiter{
 			limit: l,
 			bucket: newBucket(tokenBucketConfig{
 				cap:                          cap,
@@ -226,6 +229,13 @@ func NewContext(config ContextConfig) *Context {
 		if config.LimitTokens != nil {
 			panic(ErrCannotProvideLimitTokensForChildContext)
 		}
+
+		if _, ok := limiters[EXECUTION_CPU_TIME_LIMIT_NAME]; !ok {
+			if parentLimiter, ok := config.ParentContext.limiters[EXECUTION_CPU_TIME_LIMIT_NAME]; ok {
+				limiters[EXECUTION_CPU_TIME_LIMIT_NAME] = parentLimiter.Child()
+			}
+		}
+
 		stdlibCtx, cancel = context.WithCancel(config.ParentContext)
 
 		if filesystem == nil {
@@ -259,7 +269,7 @@ func NewContext(config ContextConfig) *Context {
 
 	if config.ParentContext == nil {
 		for _, limiter := range limiters {
-			limiter.bucket.SetContext(ctx)
+			limiter.SetContext(ctx)
 		}
 	}
 
@@ -272,11 +282,8 @@ func NewContext(config ContextConfig) *Context {
 
 		//ctx.finished = true
 
-		//stop token buckets if they are not shared with the parent context
-		if ctx.parentCtx == nil {
-			for _, limiter := range ctx.limiters {
-				limiter.bucket.Destroy()
-			}
+		for _, limiter := range ctx.limiters {
+			limiter.Destroy()
 		}
 
 		//release acquired resources
@@ -338,6 +345,9 @@ func (ctx *Context) SetClosestState(state *GlobalState) {
 	}
 
 	ctx.state = state
+	for _, limiter := range ctx.limiters {
+		limiter.SetStateOnce(state.id)
+	}
 }
 
 func (ctx *Context) HasCurrentTx() bool {
@@ -540,7 +550,7 @@ func (ctx *Context) New() *Context {
 		limitTokens = make(map[string]int64, len(ctx.limiters))
 
 		for limitName, limiter := range ctx.limiters {
-			limitTokens[limitName] = limiter.bucket.Available()
+			limitTokens[limitName] = limiter.Available()
 		}
 	}
 
@@ -632,11 +642,7 @@ func (ctx *Context) Take(limitName string, count int64) error {
 
 	limiter, ok := ctx.limiters[limitName]
 	if ok {
-		available := limiter.bucket.Available()
-		if limiter.limit.Kind == TotalLimit && limiter.limit.Value != 0 && available < count {
-			panic(fmt.Errorf("cannot take %v tokens from bucket (%s), only %v token(s) available", count, limitName, available))
-		}
-		limiter.bucket.Take(count)
+		limiter.Take(count)
 	}
 
 	return nil
@@ -656,7 +662,7 @@ func (ctx *Context) GiveBack(limitName string, count int64) error {
 
 	limiter, ok := ctx.limiters[limitName]
 	if ok {
-		limiter.bucket.GiveBack(scaledCount)
+		limiter.GiveBack(scaledCount)
 	}
 	return nil
 }
@@ -664,7 +670,17 @@ func (ctx *Context) GiveBack(limitName string, count int64) error {
 func (ctx *Context) PauseDecrementation(limitName string) error {
 	limiter, ok := ctx.limiters[limitName]
 	if ok {
-		limiter.bucket.PauseDecrementation()
+		limiter.PauseDecrementation()
+		return nil
+	}
+	return fmt.Errorf("context: non existing limit '%s'", limitName)
+}
+
+func (ctx *Context) PauseCPUDecrementationIfNotPaused() error {
+	limitName := EXECUTION_CPU_TIME_LIMIT_NAME
+	limiter, ok := ctx.limiters[limitName]
+	if ok {
+		limiter.PauseDecrementationIfNotPaused()
 		return nil
 	}
 	return fmt.Errorf("context: non existing limit '%s'", limitName)
@@ -673,13 +689,17 @@ func (ctx *Context) PauseDecrementation(limitName string) error {
 func (ctx *Context) ResumeDecrementation(limitName string) error {
 	limiter, ok := ctx.limiters[limitName]
 	if ok {
-		limiter.bucket.ResumeDecrementation()
+		limiter.ResumeDecrementation()
 		return nil
 	}
 	return fmt.Errorf("context: non existing limit '%s'", limitName)
 }
 
 func (ctx *Context) PauseCPUTimeDecrementation() error {
+	return ctx.PauseDecrementation(EXECUTION_CPU_TIME_LIMIT_NAME)
+}
+
+func (ctx *Context) TryPauseCPUTimeDecrementation() error {
 	return ctx.PauseDecrementation(EXECUTION_CPU_TIME_LIMIT_NAME)
 }
 
@@ -755,10 +775,8 @@ func (ctx *Context) GetTotal(name string) (int64, error) {
 	if !ok {
 		return -1, fmt.Errorf("context: cannot get total '%s': not present", name)
 	}
-	if limiter.limit.Kind != TotalLimit {
-		return -1, fmt.Errorf("context: '%s' is not a total", name)
-	}
-	return limiter.bucket.Available(), nil
+
+	return limiter.Total()
 }
 
 func (ctx *Context) GetGrantedPermissions() []Permission {

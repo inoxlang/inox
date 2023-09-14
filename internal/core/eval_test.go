@@ -7072,7 +7072,7 @@ func TestSpawnLThread(t *testing.T) {
 		})
 		assert.NoError(t, err)
 
-		res, err := lthread.WaitResult(nil)
+		res, err := lthread.WaitResult(state.Ctx)
 		assert.NoError(t, err)
 		assert.Equal(t, Int(1), res)
 	})
@@ -7101,7 +7101,7 @@ func TestSpawnLThread(t *testing.T) {
 		})
 		assert.NoError(t, err)
 
-		res, err := lthread.WaitResult(nil)
+		res, err := lthread.WaitResult(state.Ctx)
 		assert.NoError(t, err)
 		if !assert.IsType(t, &Object{}, res) {
 			return
