@@ -140,7 +140,7 @@ func init() {
 			switch arg.(type) {
 			case *symbolic.Float, *symbolic.Byte:
 			default:
-				ctx.AddFormattedSymbolicGoFunctionError("toint only accept floats & bytes, type is %s", symbolic.Stringify(arg))
+				ctx.AddFormattedSymbolicGoFunctionError("toint only accepts floats & bytes, type is %s", symbolic.Stringify(arg))
 			}
 			return symbolic.ANY_INT
 		},
