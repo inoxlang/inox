@@ -417,8 +417,6 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			return nil, errors.New("no self")
 		}
 		return v, nil
-	case *parse.SupersysExpression:
-		return ANY, nil
 	case *parse.Variable:
 		info, ok := state.getLocal(n.Name)
 		if !ok {

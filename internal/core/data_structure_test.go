@@ -218,43 +218,6 @@ func TestObject(t *testing.T) {
 
 	})
 
-	t.Run("system", func(t *testing.T) {
-
-		t.Run("initialization", func(t *testing.T) {
-			ctx := NewContext(ContextConfig{})
-			state := NewGlobalState(ctx)
-
-			part := NewObject()
-			system := NewObjectFromMap(ValMap{
-				"part": part,
-				"0":    createTestLifetimeJob(t, state, ""),
-			}, ctx)
-
-			assert.Equal(t, []SystemPart{part}, system.systemParts)
-			assert.Same(t, system, part.supersys)
-		})
-
-		t.Run("set property that is a part", func(t *testing.T) {
-			ctx := NewContext(ContextConfig{})
-			state := NewGlobalState(ctx)
-
-			part := NewObject()
-			system := NewObjectFromMap(ValMap{
-				"part": part,
-				"0":    createTestLifetimeJob(t, state, ""),
-			}, ctx)
-
-			newPart := NewObject()
-			assert.NoError(t, system.SetProp(ctx, "part", newPart))
-
-			assert.Equal(t, []SystemPart{newPart}, system.systemParts)
-			assert.Nil(t, part.supersys)
-			assert.Same(t, system, newPart.supersys)
-		})
-
-		//TODO: add more tests
-	})
-
 }
 
 func TestList(t *testing.T) {

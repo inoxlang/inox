@@ -8337,18 +8337,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("sendvalue expression", func(t *testing.T) {
-		t.Run("in method", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`{
-				f: fn(){ 
-					sendval int to supersys
-				}
-			}`)
 
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-			assert.IsType(t, &Object{}, res)
-		})
 	})
 
 	t.Run("mapping expression", func(t *testing.T) {

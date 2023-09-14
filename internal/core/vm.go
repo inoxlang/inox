@@ -778,7 +778,6 @@ func (v *VM) run() {
 					propIndex++
 				}
 				obj.sortProps()
-				obj.initPartList(v.global.Ctx)
 				// add handlers before because jobs can mutate the object
 				if err := obj.addMessageHandlers(v.global.Ctx); err != nil {
 					v.err = err
@@ -1688,17 +1687,6 @@ func (v *VM) run() {
 			v.sp++
 		case OpGetSelf:
 			v.stack[v.sp] = v.curFrame.self
-			v.sp++
-		case OpGetSupersys:
-			part, ok := v.curFrame.self.(SystemPart)
-			if !ok {
-				v.err = ErrNotAttachedToSupersystem
-				return
-			}
-			v.stack[v.sp], v.err = part.System()
-			if v.err != nil {
-				return
-			}
 			v.sp++
 		case OpIterInit:
 			v.ip++

@@ -544,19 +544,19 @@ func (obj *Object) ProposeSystemGraph(ctx *Context, g *SystemGraph, proposedName
 		g.AddChildNode(ctx, optionalParent, obj, proposedName)
 	}
 
-	for _, part := range obj.systemParts {
+	// for _, part := range obj.systemParts {
 
-		key := ""
-		for i, k := range obj.keys {
-			v := obj.values[i]
-			if Same(part, v) {
-				key = k
-				break
-			}
-		}
+	// 	key := ""
+	// 	for i, k := range obj.keys {
+	// 		v := obj.values[i]
+	// 		if Same(part, v) {
+	// 			key = k
+	// 			break
+	// 		}
+	// 	}
 
-		part.ProposeSystemGraph(ctx, g, key, obj)
-	}
+	// 	part.ProposeSystemGraph(ctx, g, key, obj)
+	// }
 }
 
 func (obj *Object) SystemGraph() *SystemGraph {

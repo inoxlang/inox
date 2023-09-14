@@ -202,7 +202,6 @@ func parseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 	}
 
 	obj.sortProps()
-	obj.initPartList(ctx)
 	// add handlers before because jobs can mutate the object
 	if err := obj.addMessageHandlers(ctx); err != nil {
 		return nil, err

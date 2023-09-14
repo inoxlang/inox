@@ -1285,7 +1285,6 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		finalObj.sortProps()
-		finalObj.initPartList(state.Global.Ctx)
 		// add handlers before because jobs can mutate the object
 		if err := finalObj.addMessageHandlers(state.Global.Ctx); err != nil {
 			return nil, err
@@ -2075,12 +2074,6 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}, nil
 	case *parse.SelfExpression:
 		return state.self, nil
-	case *parse.SupersysExpression:
-		part, ok := state.self.(SystemPart)
-		if !ok {
-			panic(ErrNotAttachedToSupersystem)
-		}
-		return part.System()
 	case *parse.MemberExpression:
 		left, err := TreeWalkEval(n.Left, state)
 		if err != nil {

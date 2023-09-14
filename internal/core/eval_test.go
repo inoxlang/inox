@@ -4006,7 +4006,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				result: NewObject(),
 				pre: func(expected, actual Value, state *GlobalState) {
 					expected = Share(expected.(PotentiallySharable), state)
-					actual.(SystemPart).DetachFromSystem()
 				},
 			},
 		}
@@ -6605,66 +6604,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 	t.Run("sendval expression", func(t *testing.T) {
 
-		t.Run("supersystem receiver", func(t *testing.T) {
-			code := `
-				system = {
-					part: {
-						lifetimejob #send-value {
-							sendval 1 to supersys
-						}
-					}
-
-					lifetimejob #send-value {}
-				}
-
-				return system
-			`
-
-			ctx := NewDefaultTestContext()
-			defer ctx.Cancel()
-			state := NewGlobalState(ctx)
-
-			res, err := Eval(code, state, true)
-			if !assert.NoError(t, err) {
-				return
-			}
-			w := WatchReceivedMessages(ctx, res.(*Object))
-			message, err := w.WaitNext(ctx, nil, time.Second)
-			if !assert.NoError(t, err) {
-				return
-			}
-
-			assert.IsType(t, Message{}, message)
-			assert.Equal(t, Int(1), message.(Message).data)
-		})
-
-		t.Run("supersystem does not exist", func(t *testing.T) {
-			code := `
-				system = {
-					part: {
-						lifetimejob #send-value {
-							sendval 1 to supersys
-						}
-					}
-				}
-
-				return system
-			`
-
-			ctx := NewDefaultTestContext()
-			defer ctx.Cancel()
-			state := NewGlobalState(ctx)
-
-			res, err := Eval(code, state, true)
-			if !assert.NoError(t, err) {
-				return
-			}
-			w := WatchReceivedMessages(ctx, res.(*Object))
-			_, err = w.WaitNext(ctx, nil, time.Second)
-			if !assert.ErrorIs(t, err, ErrWatchTimeout) {
-				return
-			}
-		})
 	})
 
 	t.Run("transaction", func(t *testing.T) {

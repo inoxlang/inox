@@ -2131,12 +2131,6 @@ func (p *parser) parseIdentStartingExpression() Node {
 				Span: firstIdent.Span,
 			},
 		}
-	case "supersys":
-		return &SupersysExpression{
-			NodeBase: NodeBase{
-				Span: firstIdent.Span,
-			},
-		}
 	}
 
 	if firstIdent.Name[len(firstIdent.Name)-1] == '-' {

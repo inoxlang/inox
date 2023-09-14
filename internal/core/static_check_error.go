@@ -61,7 +61,6 @@ const (
 	CANNOT_CHECK_MANIFEST_WITHOUT_PARENT                           = "checking a Manifest node requires the parent node"
 
 	MISPLACED_SENDVAL_EXPR                 = "sendval expressions are only usable within functions that are object properties, metaproperty initialization blocks and in lifetime jobs"
-	MISPLACED_SUPERSYS_EXPR                = "supersys expressions are only usable within functions that are object properties, metaproperty initialization blocks and in lifetime jobs"
 	MISPLACED_RECEPTION_HANDLER_EXPRESSION = "misplaced reception handler expression is misplaced, it should be an implicit key property of an object literal"
 
 	INVALID_MAPPING_ENTRY_KEY_ONLY_SIMPL_LITS_AND_PATT_IDENTS      = "invalid mapping entry key: only simple value literals and pattern identifiers are supported"

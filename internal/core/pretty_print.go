@@ -190,7 +190,7 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 				ColorSequence: colors.NumberLiteral,
 			})
 		case *parse.BooleanLiteral, *parse.NilLiteral, *parse.UnambiguousIdentifierLiteral, *parse.PropertyNameLiteral,
-			*parse.SelfExpression, *parse.SupersysExpression:
+			*parse.SelfExpression:
 			colorizations = append(colorizations, ColorizationInfo{
 				Span:          n.Base().Span,
 				ColorSequence: colors.Constant,

@@ -1171,7 +1171,6 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 
 				obj := compoundValueStack[stackIndex].(*Object)
 				obj.sortProps()
-				obj.initPartList(ctx)
 				// add handlers before because jobs can mutate the object
 				if err := obj.addMessageHandlers(ctx); err != nil {
 					return nil, i, nil

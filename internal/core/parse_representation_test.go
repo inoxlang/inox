@@ -1057,7 +1057,6 @@ func TestParseRepr(t *testing.T) {
 
 			Traverse(expected, func(v Value) (internal.TraversalAction, error) {
 				if obj, ok := v.(*Object); ok {
-					obj.initPartList(ctx)
 					obj.addMessageHandlers(ctx) // add handlers before because jobs can mutate the object
 					obj.instantiateLifetimeJobs(ctx)
 				}

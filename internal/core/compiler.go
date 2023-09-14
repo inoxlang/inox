@@ -1084,8 +1084,6 @@ func (c *compiler) Compile(node parse.Node) error {
 
 	case *parse.SelfExpression:
 		c.emit(node, OpGetSelf)
-	case *parse.SupersysExpression:
-		c.emit(node, OpGetSupersys)
 	case *parse.MemberExpression:
 		if err := c.Compile(node.Left); err != nil {
 			return err

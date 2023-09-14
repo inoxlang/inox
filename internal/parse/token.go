@@ -72,7 +72,6 @@ const (
 	PRUNE_KEYWORD
 	ASSERT_KEYWORD
 	SELF_KEYWORD
-	SUPERSYS_KEYWORD
 	MAPPING_KEYWORD
 	COMP_KEYWORD
 	UDATA_KEYWORD
@@ -439,7 +438,6 @@ var tokenTypenames = [...]string{
 	PRUNE_KEYWORD:                  "PRUNE_KEYWORD",
 	ASSERT_KEYWORD:                 "ASSERT_KEYWORD",
 	SELF_KEYWORD:                   "SELF_KEYWORD",
-	SUPERSYS_KEYWORD:               "SUPERSYS_KEYWORD",
 	MAPPING_KEYWORD:                "MAPPING_KEYWORD",
 	COMP_KEYWORD:                   "COMP_KEYWORD",
 	UDATA_KEYWORD:                  "UDATA_KEYWORD",
@@ -764,9 +762,6 @@ func GetTokens(node Node, addMeta bool) []Token {
 		case *SelfExpression:
 			tokenType = SELF_KEYWORD
 			raw = "self"
-		case *SupersysExpression:
-			tokenType = SUPERSYS_KEYWORD
-			raw = "supersys"
 		case *NilLiteral:
 			tokenType = NIL_LITERAL
 			raw = "nil"

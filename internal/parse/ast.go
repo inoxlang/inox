@@ -1084,14 +1084,6 @@ func (SelfExpression) Kind() NodeKind {
 	return Expr
 }
 
-type SupersysExpression struct {
-	NodeBase
-}
-
-func (SupersysExpression) Kind() NodeKind {
-	return Expr
-}
-
 type SendValueExpression struct {
 	NodeBase
 	Value    Node

@@ -1594,7 +1594,7 @@ switch_:
 			}
 		}
 
-	case *parse.SelfExpression, *parse.SendValueExpression, *parse.SupersysExpression:
+	case *parse.SelfExpression, *parse.SendValueExpression:
 
 		var objectLiteral *parse.ObjectLiteral
 
@@ -1602,8 +1602,6 @@ switch_:
 		switch node.(type) {
 		case *parse.SendValueExpression:
 			misplacementErr = MISPLACED_SENDVAL_EXPR
-		case *parse.SupersysExpression:
-			misplacementErr = MISPLACED_SUPERSYS_EXPR
 		}
 
 	loop:

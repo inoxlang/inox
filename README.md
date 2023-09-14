@@ -53,7 +53,6 @@ Other:
   - [LThread Groups](#lthread-groups)
   - [Lifetime jobs](#lifetime-jobs)
 - [Many Built-in Functions](#built-in-functions)
-- [Communication](#communication)
 - [Easy declaration of CLI Parameters](#declaration-of-cli-parameters--environment-variables)
 - [Simplified resource manipulation](#simplified-resource-manipulation)
 - [Transactions & Effects (WIP)](#transactions--effects-wip)
@@ -432,33 +431,6 @@ Inox comes with many built-in functions for:
 - data container constructors (Graph, Tree, ...)
 
 **[List of Built-in Functions](./docs/builtin.md)**
-
-### Communication
-
-In Inox objects can communicate in several different ways.
-
-#### **Message Sending**
-
-The `sendval` construct allows an object to send message to another object.
-
-```
-object = {
-  inner: {
-    method: fn(){
-      # supersys is a keyword that designates the parent object here 
-      sendval "hello" to supersys
-    }
-  }
-  
-  lifetimejob #handle-messages {
-    for msg in watch_received_messages(self){
-      print(msg) # "hello"
-    }
-   }
-}
-```
-
-TODO: explain
 
 ### Declaration of CLI Parameters & Environment Variables
 

@@ -40,12 +40,6 @@ type Object struct {
 
 	url URL //can be empty
 
-	// system
-	sysLock     sync.Mutex
-	isSystem    bool
-	supersys    PotentialSystem // can be nil
-	systemParts []SystemPart
-
 	watchers               *ValueWatchers
 	mutationCallbacks      *MutationCallbacks
 	messageHandlers        *SynchronousMessageHandlers
@@ -67,16 +61,15 @@ func NewObject() *Object {
 	return &Object{}
 }
 
-// helper function to create an object, lifetime jobs and system parts are initialized.
+// helper function to create an object, lifetime jobs are initialized.
 func NewObjectFromMap(valMap ValMap, ctx *Context) *Object {
 	obj := objFrom(valMap)
-	obj.initPartList(ctx)
 	obj.addMessageHandlers(ctx) // add handlers before because jobs can mutate the object
 	obj.instantiateLifetimeJobs(ctx)
 	return obj
 }
 
-// helper function to create an object, lifetime jobs and system parts are not initialized.
+// helper function to create an object, lifetime jobs are not initialized.
 func NewObjectFromMapNoInit(valMap ValMap) *Object {
 	obj := objFrom(valMap)
 	return obj
@@ -148,44 +141,6 @@ func (obj *Object) indexOfKey(k string) int {
 		}
 	}
 	panic(fmt.Errorf("unknown key %s", k))
-}
-
-// this function is called during object creation
-func (obj *Object) initPartList(ctx *Context) {
-	shared := obj.IsShared()
-	state := ctx.GetClosestState()
-
-	obj.sysLock.Lock()
-	defer obj.sysLock.Unlock()
-
-	hasLifetimeJobs := false
-
-	for _, val := range obj.values {
-		if job, ok := val.(*LifetimeJob); ok && job.subjectPattern == nil {
-			hasLifetimeJobs = true
-			break
-		}
-	}
-
-	// if the object has no lifetime jobs it is not considered a system
-	if !hasLifetimeJobs {
-		return
-	}
-	obj.isSystem = true
-
-	for _, val := range obj.values {
-		if part, ok := val.(SystemPart); ok {
-			if !shared {
-				obj.Share(state)
-				shared = true
-			}
-
-			obj.systemParts = append(obj.systemParts, part)
-			if err := part.AttachToSystem(obj); err != nil {
-				panic(err)
-			}
-		}
-	}
 }
 
 // this function is called during object creation
@@ -284,48 +239,7 @@ func (obj *Object) jobInstances() []*LifetimeJobInstance {
 	return obj.jobs.Instances()
 }
 
-func (obj *Object) SystemParts() []SystemPart {
-	obj.sysLock.Lock()
-	defer obj.sysLock.Unlock()
-	return obj.systemParts
-}
-
-func (obj *Object) AttachToSystem(superSystem PotentialSystem) error {
-	obj.sysLock.Lock()
-	defer obj.sysLock.Unlock()
-
-	if obj.supersys != nil {
-		return ErrAlreadyAttachedToSupersystem
-	}
-	//TODO: add more checks
-	obj.supersys = superSystem
-	return nil
-}
-
-func (obj *Object) DetachFromSystem() error {
-	obj.sysLock.Lock()
-	defer obj.sysLock.Unlock()
-
-	if obj.supersys == nil {
-		return ErrNotAttachedToSupersystem
-	}
-	obj.supersys = nil
-	return nil
-}
-
-func (obj *Object) System() (PotentialSystem, error) {
-	obj.sysLock.Lock()
-	defer obj.sysLock.Unlock()
-
-	if obj.supersys == nil {
-		return nil, ErrNotAttachedToSupersystem
-	}
-	return obj.supersys, nil
-}
-
 func (obj *Object) waitIfOtherTransaction(ctx *Context, requireRunningTransaction bool) error {
-	//TODO: wait when accessing methods implementing the System interface ?
-
 	obj.currentTransactionLock.Lock()
 
 	tx := ctx.GetTx()
@@ -458,39 +372,6 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 	for i, key := range obj.keys {
 		if key == name { // property is already present
 			prevValue := obj.values[i]
-
-			if obj.isSystem {
-				if prevPart, ok := prevValue.(SystemPart); ok {
-					if err := prevPart.DetachFromSystem(); err != nil {
-						return err
-					}
-
-					obj.sysLock.Lock()
-					for i, part := range obj.systemParts {
-						if part != prevPart {
-							continue
-						}
-
-						if newPart, ok := value.(SystemPart); ok {
-							obj.systemParts[i] = newPart
-						} else {
-							if i+1 != len(obj.systemParts) {
-								copy(obj.systemParts[i:], obj.systemParts[i+1:])
-							}
-							obj.systemParts = obj.systemParts[:len(obj.systemParts)-1]
-						}
-						break
-					}
-					obj.sysLock.Unlock()
-				}
-
-				if part, ok := value.(SystemPart); ok {
-					if err := part.AttachToSystem(obj); err != nil {
-						return err
-					}
-				}
-			}
-
 			obj.values[i] = serializableVal
 
 			// check constraints
@@ -542,15 +423,6 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 	}
 
 	obj.sortProps()
-
-	if obj.isSystem {
-		if part, ok := value.(SystemPart); ok { //add new part
-			obj.systemParts = append(obj.systemParts, part)
-			if err := part.AttachToSystem(obj); err != nil {
-				panic(err)
-			}
-		}
-	}
 
 	if obj.propMutationCallbacks != nil {
 		if err := obj.addPropMutationCallbackNoLock(ctx, len(obj.keys)-1, serializableVal); err != nil {

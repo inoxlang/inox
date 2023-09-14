@@ -207,7 +207,6 @@ const (
 	OpGetLocal
 	OpSetLocal
 	OpGetSelf
-	OpGetSupersys
 	OpResolveHost
 	OpAddHostAlias
 	OpResolvePattern
@@ -335,7 +334,6 @@ var OpcodeNames = [...]string{
 	OpGetLocal:                     "GET_LOCAL",
 	OpSetLocal:                     "SET_LOCAL",
 	OpGetSelf:                      "GET_SELF",
-	OpGetSupersys:                  "GET_SUPERSYS",
 	OpResolveHost:                  "RSLV_HOST",
 	OpAddHostAlias:                 "ADD_HALIAS",
 	OpResolvePattern:               "RSLV_PATT",
@@ -456,7 +454,6 @@ var OpcodeOperands = [...][]int{
 	OpGetLocal:                     {1},
 	OpSetLocal:                     {1},
 	OpGetSelf:                      {},
-	OpGetSupersys:                  {},
 	OpResolveHost:                  {2},
 	OpAddHostAlias:                 {2},
 	OpResolvePattern:               {2},
@@ -580,7 +577,6 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpGetLocal:                     {false},
 	OpSetLocal:                     {false},
 	OpGetSelf:                      {},
-	OpGetSupersys:                  {},
 	OpResolveHost:                  {true},
 	OpAddHostAlias:                 {true},
 	OpResolvePattern:               {true},
