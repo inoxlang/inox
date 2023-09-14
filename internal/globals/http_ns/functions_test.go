@@ -143,6 +143,40 @@ func TestHttpGet(t *testing.T) {
 		assert.Equal(t, core.HttpPermission{Kind_: permkind.Read, Entity: URL}, err.(*core.NotAllowedError).Permission)
 		assert.Nil(t, resp)
 	})
+
+	t.Run("the request rate limit should be met", func(t *testing.T) {
+		server := makeServer()
+		defer server.Close()
+
+		//create a context that allows up to one request per second
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
+			},
+			Limits: []core.Limit{
+				{
+					Name:  HTTP_REQUEST_RATE_LIMIT_NAME,
+					Kind:  core.SimpleRateLimit,
+					Value: 1,
+				},
+			},
+		})
+		core.NewGlobalState(ctx)
+
+		_, err := HttpGet(ctx, URL)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		start := time.Now()
+
+		_, err = HttpGet(ctx, URL)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.WithinDuration(t, start.Add(time.Second), time.Now(), 100*time.Millisecond)
+	})
 }
 
 func TestHttpPost(t *testing.T) {
