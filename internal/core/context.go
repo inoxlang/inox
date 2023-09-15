@@ -18,19 +18,6 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-const (
-	EXECUTION_TOTAL_LIMIT_NAME = "execution/total-time"
-
-	// Note:
-	// This limit represents a pseudo CPU time because it's not possible to accurately detect when
-	// the goroutine executing a module is waiting for IO.
-	//
-	// Implementation note:
-	// CPU time decrementation should not be paused during lockings that are both shorts & often successful on the first try
-	// because it would introduce overhead. Pausing the decrementation involves an atomic write.
-	EXECUTION_CPU_TIME_LIMIT_NAME = "execution/cpu-time"
-)
-
 var (
 	ErrNonExistingNamedPattern                 = errors.New("non existing named pattern")
 	ErrNotUniqueAliasDefinition                = errors.New("cannot register a host alias more than once")

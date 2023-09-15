@@ -4963,6 +4963,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.NotNil(t, state.Ctx.ResolveNamedPattern("p1"))
 			assert.Nil(t, state.Ctx.ResolveNamedPattern("p2"))
 		})
+
 	})
 
 	t.Run("mapping expression", func(t *testing.T) {

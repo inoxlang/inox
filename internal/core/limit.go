@@ -10,6 +10,18 @@ import (
 )
 
 const (
+	THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME = "threads/simul-instances"
+	EXECUTION_TOTAL_LIMIT_NAME                = "execution/total-time"
+
+	// Note:
+	// This limit represents a pseudo CPU time because it's not possible to accurately detect when
+	// the goroutine executing a module is waiting for IO.
+	//
+	// Implementation note:
+	// CPU time decrementation should not be paused during lockings that are both shorts & often successful on the first try
+	// because it would introduce overhead. Pausing the decrementation involves an atomic write.
+	EXECUTION_CPU_TIME_LIMIT_NAME = "execution/cpu-time"
+
 	MAX_LIMIT_VALUE = math.MaxInt64 / TOKEN_BUCKET_CAPACITY_SCALE
 )
 
@@ -30,6 +42,7 @@ func init() {
 
 func resetLimitRegistry() {
 	LimRegistry.Clear()
+	LimRegistry.RegisterLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, TotalLimit, 0)
 	LimRegistry.RegisterLimit(EXECUTION_TOTAL_LIMIT_NAME, TotalLimit, 0)
 	LimRegistry.RegisterLimit(EXECUTION_CPU_TIME_LIMIT_NAME, TotalLimit, 0)
 }

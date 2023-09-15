@@ -63,6 +63,7 @@ type LthreadSpawnArgs struct {
 	Self        Value
 	Timeout     time.Duration
 
+	// Even if true a token is taken for the threads/simul-instances limit
 	IgnoreCreateLThreadPermCheck bool
 	PauseAfterYield              bool
 }
@@ -156,6 +157,10 @@ func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 		lthread.paused.Store(true)
 	}
 
+	if err := args.SpawnerState.Ctx.Take(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 1); err != nil {
+		return nil, fmt.Errorf("cannot spawn lthread: %s", err.Error())
+	}
+
 	// goroutine in which the lthread's module is evaluated
 	go func(modState *GlobalState, chunk parse.Node, lthread *LThread, startPaused bool, self Value) {
 		var res Value
@@ -192,6 +197,10 @@ func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 
 			lthread.result = res
 			lthread.wait_result <- struct{}{}
+		}()
+
+		defer func() {
+			args.SpawnerState.Ctx.GiveBack(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 1)
 		}()
 
 		if startPaused {
