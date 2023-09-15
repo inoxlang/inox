@@ -649,9 +649,6 @@ func (ctx *Context) Take(limitName string, count int64) error {
 		return ctx.makeDoneContextError()
 	}
 
-	ctx.lock.Lock()
-	defer ctx.lock.Unlock()
-
 	limiter, ok := ctx.limiters[limitName]
 	if ok {
 		limiter.Take(count)
@@ -666,9 +663,6 @@ func (ctx *Context) GiveBack(limitName string, count int64) error {
 	if ctx.done.Load() {
 		return ctx.makeDoneContextError()
 	}
-
-	ctx.lock.RLock()
-	defer ctx.lock.RUnlock()
 
 	scaledCount := TOKEN_BUCKET_CAPACITY_SCALE * count
 

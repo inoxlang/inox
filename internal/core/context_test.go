@@ -93,7 +93,7 @@ func TestNewContext(t *testing.T) {
 
 func TestContextBuckets(t *testing.T) {
 
-	t.Run("buckets for lim of kind 'total' do not fill over time", func(t *testing.T) {
+	t.Run("buckets for limit of kind 'total' do not fill over time", func(t *testing.T) {
 		const LIMIT_NAME = "foo"
 		ctx := NewContext(ContextConfig{
 			Limits: []Limit{{Name: LIMIT_NAME, Kind: TotalLimit, Value: 1}},
@@ -203,6 +203,37 @@ func TestContextLimiters(t *testing.T) {
 		assert.WithinDuration(t, expectedTime, time.Now(), 200*time.Millisecond)
 	})
 
+	t.Run("byte rate: waiting for bucket to refill should not lock the context", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{
+			Limits: []Limit{
+				{Name: "fs/read", Kind: ByteRateLimit, Value: 1_000},
+			},
+		})
+
+		//BYTE RATE
+
+		//should not cause a wait
+		ctx.Take("fs/read", 1_000)
+
+		signal := make(chan struct{}, 1)
+
+		go func() {
+			signal <- struct{}{}
+			//should cause a wait
+			ctx.Take("fs/read", 1_000)
+		}()
+
+		<-signal
+
+		//context should no be locked
+		start := time.Now()
+		ctx.lock.Lock()
+		_ = 0
+		ctx.lock.Unlock()
+
+		assert.Less(t, time.Since(start), time.Millisecond)
+	})
+
 	t.Run("simple rate", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{
 			Limits: []Limit{
@@ -301,6 +332,7 @@ func TestContextLimiters(t *testing.T) {
 		assert.Same(t, parentCtx.limiters["fs/read"], ctx.limiters["fs/read"].parentLimiter)
 		assert.NotSame(t, parentCtx.limiters["fs/write"], ctx.limiters["fs/write"])
 	})
+
 }
 
 func TestContextSetProtocolClientForURLForURL(t *testing.T) {
