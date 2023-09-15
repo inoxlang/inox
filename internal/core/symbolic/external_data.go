@@ -65,7 +65,6 @@ type ExternalData struct {
 
 	DEFAULT_PATTERN_NAMESPACES map[string]*PatternNamespace
 
-	IMPLICIT_KEY_LEN_KEY                    string
 	CONSTRAINTS_KEY                         string
 	VISIBILITY_KEY                          string
 	MANIFEST_PARAMS_SECTION_NAME            string

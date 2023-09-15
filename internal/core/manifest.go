@@ -927,8 +927,6 @@ func getSingleKindPermissions(
 	handleCustomType CustomPermissionTypeHandler,
 ) ([]Permission, error) {
 
-	name := permKind.String()
-
 	var perms []Permission
 
 	var list []Serializable
@@ -940,74 +938,10 @@ func getSingleKindPermissions(
 
 			if _, err := strconv.Atoi(propKey); err == nil {
 				list = append(list, propVal)
-			} else if propKey != IMPLICIT_KEY_LEN_KEY {
-				typeName := propKey
-
-				var p []Permission
-				var err error
-
-				switch typeName {
-				case "dns":
-					p, err = getDnsPermissions(permKind, propVal)
-				case "tcp":
-					p, err = getRawTcpPermissions(permKind, propVal)
-				case "globals":
-					p, err = getGlobalVarPerms(permKind, propVal, specifiedGlobalPermKinds)
-				case "env":
-					p, err = getEnvVarPermissions(permKind, propVal)
-				case "threads":
-					switch propVal.(type) {
-					case *Object:
-						perms = append(perms, LThreadPermission{permKind})
-					default:
-						return nil, errors.New("invalid permission, 'threads' should be followed by an object literal")
-					}
-				case "system-graph":
-					switch propVal.(type) {
-					case *Object:
-						perms = append(perms, SystemGraphAccessPermission{permKind})
-					default:
-						return nil, errors.New("invalid permission, 'system-graph' should be followed by an object literal")
-					}
-				case "commands":
-					if permKind != permkind.Use {
-						return nil, errors.New("permission 'commands' should be required in the 'use' section of permission")
-					}
-
-					newPerms, err := getCommandPermissions(propVal)
-					if err != nil {
-						return nil, err
-					}
-					perms = append(perms, newPerms...)
-				case "values":
-					if permKind != permkind.See {
-						if permKind != permkind.Read {
-							return nil, fmt.Errorf("invalid manifest, invalid permissions: 'values' is only defined for 'see'")
-						}
-					}
-
-					newPerms, err := getVisibilityPerms(propVal)
-					if err != nil {
-						return nil, err
-					}
-					perms = append(perms, newPerms...)
-				default:
-					if handleCustomType != nil {
-						customPerms, handled, err := handleCustomType(permKind, typeName, propVal)
-						if handled {
-							if err != nil {
-								return nil, fmt.Errorf("invalid manifest, cannot infer '%s' permission '%s': %s", name, typeName, err.Error())
-							}
-							perms = append(perms, customPerms...)
-							break
-						}
-					}
-
-					return nil, fmt.Errorf("invalid manifest, cannot infer '%s' permission '%s'", name, typeName)
-				}
-
+			} else {
+				p, err := getSingleKindNamedPermPermissions(permKind, propKey, propVal, specifiedGlobalPermKinds, handleCustomType)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("invalid manifest: %w", err)
 				}
 				perms = append(perms, p...)
 			}
@@ -1017,94 +951,181 @@ func getSingleKindPermissions(
 	}
 
 	for _, e := range list {
-
-		switch v := e.(type) {
-		case URL:
-			switch v.Scheme() {
-			case "wss", "ws":
-				perms = append(perms, WebsocketPermission{
-					Kind_:    permKind,
-					Endpoint: v,
-				})
-			case "http", "https":
-				perms = append(perms, HttpPermission{
-					Kind_:  permKind,
-					Entity: v,
-				})
-			case "ldb", "odb":
-				perms = append(perms, DatabasePermission{
-					Kind_:  permKind,
-					Entity: v,
-				})
-			default:
-				return nil, fmt.Errorf("invalid manifest, URL has a valid but unsupported scheme '%s'", v.Scheme())
-			}
-
-		case URLPattern:
-			switch v.Scheme() {
-			case "http", "https":
-				perms = append(perms, HttpPermission{
-					Kind_:  permKind,
-					Entity: v,
-				})
-			case "ldb", "odb":
-				perms = append(perms, DatabasePermission{
-					Kind_:  permKind,
-					Entity: v,
-				})
-			}
-		case Host:
-			switch v.Scheme() {
-			case "wss", "ws":
-				perms = append(perms, WebsocketPermission{
-					Kind_:    permKind,
-					Endpoint: v,
-				})
-			case "http", "https":
-				perms = append(perms, HttpPermission{
-					Kind_:  permKind,
-					Entity: v,
-				})
-			case "ldb", "odb":
-				perms = append(perms, DatabasePermission{
-					Kind_:  permKind,
-					Entity: v,
-				})
-			default:
-				return nil, fmt.Errorf("invalid manifest, Host %s has a valid scheme '%s' that makes no sense here", v, v.Scheme())
-			}
-		case HostPattern:
-			switch v.Scheme() {
-			case "http", "https":
-				perms = append(perms, HttpPermission{
-					Kind_:  permKind,
-					Entity: v,
-				})
-			default:
-				return nil, fmt.Errorf("invalid manifest, HostPattern %s has a valid scheme '%s' that makes no sense here", v, v.Scheme())
-			}
-		case Path:
-			perms = append(perms, FilesystemPermission{
-				Kind_:  permKind,
-				Entity: v,
-			})
-			if !v.IsAbsolute() {
-				return nil, fmt.Errorf("invalid manifest, only absolute paths are accepted: %s", v)
-			}
-		case PathPattern:
-			perms = append(perms, FilesystemPermission{
-				Kind_:  permKind,
-				Entity: v,
-			})
-			if !v.IsAbsolute() {
-				return nil, fmt.Errorf("invalid manifest, only absolute path patterns are accepted: %s", v)
-			}
-		default:
-			return nil, fmt.Errorf("invalid manifest, cannot infer permission, value is a(n) %T", v)
+		perm, err := getPermissionFromSingleKindPermissionItem(e, permKind)
+		if err != nil {
+			return nil, fmt.Errorf("invalid manifest: %w", err)
 		}
+		perms = append(perms, perm)
 	}
 
 	return perms, nil
+}
+
+func getSingleKindNamedPermPermissions(
+	permKind PermissionKind,
+	propKey string,
+	propVal Value,
+	specifiedGlobalPermKinds map[PermissionKind]bool,
+	handleCustomType CustomPermissionTypeHandler,
+) ([]Permission, error) {
+	typeName := propKey
+
+	var p []Permission
+	var err error
+
+	switch typeName {
+	case "dns":
+		p, err = getDnsPermissions(permKind, propVal)
+	case "tcp":
+		p, err = getRawTcpPermissions(permKind, propVal)
+	case "globals":
+		p, err = getGlobalVarPerms(permKind, propVal, specifiedGlobalPermKinds)
+	case "env":
+		p, err = getEnvVarPermissions(permKind, propVal)
+	case "threads":
+		switch propVal.(type) {
+		case *Object:
+			p = []Permission{LThreadPermission{permKind}}
+		default:
+			return nil, errors.New("invalid permission, 'threads' should be followed by an object literal")
+		}
+	case "system-graph":
+		switch propVal.(type) {
+		case *Object:
+			p = []Permission{SystemGraphAccessPermission{permKind}}
+		default:
+			return nil, errors.New("invalid permission, 'system-graph' should be followed by an object literal")
+		}
+	case "commands":
+		if permKind != permkind.Use {
+			return nil, errors.New("permission 'commands' should be required in the 'use' section of permission")
+		}
+
+		newPerms, err := getCommandPermissions(propVal)
+		if err != nil {
+			return nil, err
+		}
+		p = newPerms
+	case "values":
+		if permKind != permkind.See {
+			if permKind != permkind.Read {
+				return nil, fmt.Errorf("invalid permissions: 'values' is only defined for 'see'")
+			}
+		}
+
+		newPerms, err := getVisibilityPerms(propVal)
+		if err != nil {
+			return nil, err
+		}
+		p = newPerms
+	default:
+		if handleCustomType != nil {
+			customPerms, handled, err := handleCustomType(permKind, typeName, propVal)
+			if handled {
+				if err != nil {
+					return nil, fmt.Errorf("cannot infer '%s' permission '%s': %s", permKind.String(), typeName, err.Error())
+				}
+				p = append(p, customPerms...)
+				break
+			}
+		}
+
+		return nil, fmt.Errorf("cannot infer '%s' permission '%s'", permKind.String(), typeName)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return p, nil
+}
+
+func getPermissionFromSingleKindPermissionItem(e Value, permKind PermissionKind) (Permission, error) {
+	switch v := e.(type) {
+	case URL:
+		switch v.Scheme() {
+		case "wss", "ws":
+			return WebsocketPermission{
+				Kind_:    permKind,
+				Endpoint: v,
+			}, nil
+		case "http", "https":
+			return HttpPermission{
+				Kind_:  permKind,
+				Entity: v,
+			}, nil
+		case "ldb", "odb":
+			return DatabasePermission{
+				Kind_:  permKind,
+				Entity: v,
+			}, nil
+		default:
+			return nil, fmt.Errorf("URL has a valid but unsupported scheme '%s'", v.Scheme())
+		}
+
+	case URLPattern:
+		switch v.Scheme() {
+		case "http", "https":
+			return HttpPermission{
+				Kind_:  permKind,
+				Entity: v,
+			}, nil
+		case "ldb", "odb":
+			return DatabasePermission{
+				Kind_:  permKind,
+				Entity: v,
+			}, nil
+		}
+	case Host:
+		switch v.Scheme() {
+		case "wss", "ws":
+			return WebsocketPermission{
+				Kind_:    permKind,
+				Endpoint: v,
+			}, nil
+		case "http", "https":
+			return HttpPermission{
+				Kind_:  permKind,
+				Entity: v,
+			}, nil
+		case "ldb", "odb":
+			return DatabasePermission{
+				Kind_:  permKind,
+				Entity: v,
+			}, nil
+		default:
+			return nil, fmt.Errorf("Host %s has a valid scheme '%s' that makes no sense here", v, v.Scheme())
+		}
+	case HostPattern:
+		switch v.Scheme() {
+		case "http", "https":
+			return HttpPermission{
+				Kind_:  permKind,
+				Entity: v,
+			}, nil
+		default:
+			return nil, fmt.Errorf("HostPattern %s has a valid scheme '%s' that makes no sense here", v, v.Scheme())
+		}
+	case Path:
+		if !v.IsAbsolute() {
+			return nil, fmt.Errorf("only absolute paths are accepted: %s", v)
+		}
+		return FilesystemPermission{
+			Kind_:  permKind,
+			Entity: v,
+		}, nil
+
+	case PathPattern:
+		if !v.IsAbsolute() {
+			return nil, fmt.Errorf("only absolute path patterns are accepted: %s", v)
+		}
+		return FilesystemPermission{
+			Kind_:  permKind,
+			Entity: v,
+		}, nil
+	default:
+	}
+	return nil, fmt.Errorf("cannot infer permission, value is a(n) %T", e)
 }
 
 func getModuleParameters(ctx *Context, v Value) (ModuleParameters, error) {

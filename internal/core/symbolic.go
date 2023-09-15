@@ -26,7 +26,6 @@ var (
 func init() {
 
 	symbolic.SetExternalData(symbolic.ExternalData{
-		IMPLICIT_KEY_LEN_KEY:                    IMPLICIT_KEY_LEN_KEY,
 		CONSTRAINTS_KEY:                         CONSTRAINTS_KEY,
 		VISIBILITY_KEY:                          VISIBILITY_KEY,
 		MANIFEST_POSITIONAL_PARAM_NAME_FIELD:    "name",
