@@ -322,6 +322,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 				sessionCtx := core.NewContext(core.ContextConfig{
 					Permissions:          rpcCtx.GetGrantedPermissions(),
 					ForbiddenPermissions: rpcCtx.GetForbiddenPermissions(),
+					Limits:               default_state.GetDefaultScriptLimits(),
 
 					ParentContext: rpcCtx,
 				})
