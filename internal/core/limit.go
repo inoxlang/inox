@@ -33,6 +33,16 @@ type Limit struct {
 	DecrementFn TokenDecrementationFn //optional. Called on each tick of the associated bucket's timer.
 }
 
+func (l Limit) LessRestrictiveThan(other Limit) bool {
+	if other.Name != l.Name {
+		panic(errors.New("different name"))
+	}
+	if other.Kind != l.Kind {
+		panic(errors.New("different kind"))
+	}
+	return l.Value >= other.Value
+}
+
 type LimitKind int
 
 const (

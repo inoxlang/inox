@@ -111,7 +111,7 @@ type ContextConfig struct {
 
 type WaitConfirmPrompt func(msg string, accepted []string) (bool, error)
 
-func (c ContextConfig) HasParentRequiredPermissions() (firstErr error, ok bool) {
+func (c ContextConfig) HasParentRequiredPermissionsAndLessRestrictiveLimits() (firstErr error, ok bool) {
 	if c.ParentContext == nil {
 		return nil, true
 	}
@@ -132,6 +132,13 @@ top:
 			return fmt.Errorf("parent of context should at least have permissions of its child: %w", err), false
 		}
 	}
+
+	for _, limit := range c.Limits {
+		if parentLimiter, ok := c.ParentContext.limiters[limit.Name]; ok && !parentLimiter.limit.LessRestrictiveThan(limit) {
+			return fmt.Errorf("parent of context should have less restrictive limits than its child: limit '%s'", limit.Name), false
+		}
+	}
+
 	return nil, true
 }
 
@@ -222,7 +229,7 @@ func NewContext(config ContextConfig) *Context {
 		stdlibCtx, cancel = context.WithCancel(context.Background())
 	} else {
 		//if a parent context is passed we check that the parent has all the required permissions
-		if err, ok := config.HasParentRequiredPermissions(); !ok {
+		if err, ok := config.HasParentRequiredPermissionsAndLessRestrictiveLimits(); !ok {
 			panic(fmt.Errorf("failed to create context, parent of context should at least have permissions of its child: %w", err))
 		}
 
@@ -245,6 +252,11 @@ func NewContext(config ContextConfig) *Context {
 		}
 	}
 
+	limits := make([]Limit, 0)
+	for _, limiter := range limiters {
+		limits = append(limits, limiter.limit)
+	}
+
 	hostResolutions := maps.Clone(config.HostResolutions)
 
 	*ctx = Context{
@@ -256,7 +268,7 @@ func NewContext(config ContextConfig) *Context {
 		executionStartTime:   time.Now(),
 		grantedPermissions:   utils.CopySlice(config.Permissions),
 		forbiddenPermissions: utils.CopySlice(config.ForbiddenPermissions),
-		limits:               utils.CopySlice(config.Limits),
+		limits:               limits,
 		limiters:             limiters,
 		hostAliases:          map[string]Host{},
 		namedPatterns:        map[string]Pattern{},

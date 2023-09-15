@@ -355,7 +355,7 @@ func NewDefaultContext(config default_state.DefaultContextConfig) (*core.Context
 	}
 
 	if ctxConfig.ParentContext != nil {
-		if err, _ := ctxConfig.HasParentRequiredPermissions(); err != nil {
+		if err, _ := ctxConfig.HasParentRequiredPermissionsAndLessRestrictiveLimits(); err != nil {
 			return nil, err
 		}
 	}

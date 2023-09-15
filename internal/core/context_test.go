@@ -9,7 +9,7 @@ import (
 )
 
 func TestNewContext(t *testing.T) {
-	t.Run("child context should inherit all limits of its paent", func(t *testing.T) {
+	t.Run("child context should inherit all limits of its parent", func(t *testing.T) {
 
 		ctx := NewContext(ContextConfig{
 			Limits: []Limit{
@@ -53,6 +53,41 @@ func TestNewContext(t *testing.T) {
 		assert.Contains(t, childCtx.limiters, "my-byterate-limit")
 		assert.Contains(t, childCtx.limiters, "my-simple-rate-limit-2")
 
+	})
+
+	t.Run("limits of child context should not be less restrictive than its parent's limits", func(t *testing.T) {
+
+		ctx := NewContext(ContextConfig{
+			Limits: []Limit{
+				{
+					Name:  "my-total-limit",
+					Kind:  TotalLimit,
+					Value: 100,
+				},
+			},
+		})
+
+		func() {
+
+			defer func() {
+				e := recover()
+				if !assert.NotNil(t, e) {
+					return
+				}
+				assert.ErrorContains(t, e.(error), "parent of context should have less restrictive limits than its child")
+			}()
+
+			NewContext(ContextConfig{
+				Limits: []Limit{
+					{
+						Name:  "my-total-limit",
+						Kind:  TotalLimit,
+						Value: 1000,
+					},
+				},
+				ParentContext: ctx,
+			})
+		}()
 	})
 }
 
