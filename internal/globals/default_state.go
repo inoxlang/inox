@@ -41,7 +41,7 @@ var (
 		{Name: fs_ns.FS_NEW_FILE_RATE_LIMIT_NAME, Kind: core.SimpleRateLimit, Value: 100},
 		{Name: fs_ns.FS_TOTAL_NEW_FILE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 10_000},
 
-		{Name: net_ns.HTTP_REQUEST_RATE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 100},
+		{Name: net_ns.HTTP_REQUEST_RATE_LIMIT_NAME, Kind: core.SimpleRateLimit, Value: 100},
 		{Name: net_ns.WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 10},
 		{Name: net_ns.TCP_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 10},
 
