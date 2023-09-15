@@ -127,7 +127,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			Project:                   args.Project,
 		})
 
-		if !args.DevMode && preinitErr != nil {
+		if (!args.DevMode && preinitErr != nil) || errors.Is(preinitErr, core.ErrParsingErrorInManifestOrPreinit) {
 			finalErr = preinitErr
 			return
 		}
