@@ -80,10 +80,6 @@ func NewArrayOf(generalElement SymbolicValue) *Array {
 	return &Array{generalElement: generalElement}
 }
 
-func NewAnyArray() *Array {
-	return &Array{}
-}
-
 func (a *Array) Test(v SymbolicValue) bool {
 	otherArray, ok := v.(*Array)
 	if !ok {

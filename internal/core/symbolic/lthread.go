@@ -116,7 +116,7 @@ func (g *LThreadGroup) Add(newRt *LThread) {
 }
 
 func (g *LThreadGroup) WaitAllResults(ctx *Context) (*Array, *Error) {
-	return NewAnyArray(), nil
+	return ANY_ARRAY, nil
 }
 
 func (g *LThreadGroup) CancelAll(*Context) {
