@@ -22,15 +22,15 @@ var (
 	}
 
 	_ = []Clonable{
-		(*Struct)(nil),
+		(*Struct)(nil), (*Array)(nil),
 	}
 )
 
 type PseudoClonable interface {
 	Serializable
 
-	//PseudoClone clones the value, properties/elements are cloned by calling ShareOrClone if both originState and sharableValues are nil,
-	//CheckSharedOrClone otherwise
+	//PseudoClone clones the value, properties/elements are cloned by calling CheckSharedOrClone if both originState and sharableValues are nil,
+	//ShareOrClone otherwise
 	PseudoClone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error)
 }
 
@@ -289,4 +289,35 @@ func (s *Struct) Clone(originState *GlobalState, sharableValues *[]PotentiallySh
 	}
 
 	return structClone, nil
+}
+
+func (a *Array) Clone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Value, error) {
+	if depth > MAX_CLONING_DEPTH {
+		return nil, ErrMaximumPseudoCloningDepthReached
+	}
+
+	ptr := reflect.ValueOf(a).Pointer()
+	clone, ok := clones[ptr]
+	if ok {
+		return clone, nil
+	}
+
+	arrayClone := make(Array, len(*a))
+
+	for i, e := range *a {
+		var elemClone Value
+		var err error
+
+		if originState != nil {
+			elemClone, err = ShareOrCloneDepth(e, originState, sharableValues, clones, depth+1)
+		} else {
+			elemClone, err = CheckSharedOrClone(e, clones, depth+1)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("failed to share/clone element at index %d: %w", i, err)
+		}
+		arrayClone[i] = elemClone
+	}
+
+	return &arrayClone, nil
 }
