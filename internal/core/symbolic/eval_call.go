@@ -200,6 +200,9 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		state.consumeSymbolicGoFunctionErrors(func(msg string) {
 			state.addError(makeSymbolicEvalError(callNode, state, msg))
 		})
+		state.consumeSymbolicGoFunctionWarnings(func(msg string) {
+			state.addWarning(makeSymbolicEvalWarning(callNode, state, msg))
+		})
 
 		updatedSelf, ok := state.consumeUpdatedSelf()
 		if ok && self != nil {

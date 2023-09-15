@@ -35,6 +35,7 @@ type State struct {
 	basePatternNamespaces map[string]*PatternNamespace
 
 	tempSymbolicGoFunctionErrors         []string
+	tempSymbolicGoFunctionWarnings       []string
 	tempSymbolicGoFunctionParameters     *[]SymbolicValue
 	tempSymbolicGoFunctionParameterNames []string
 	tempUpdatedSelf                      SymbolicValue
@@ -621,6 +622,18 @@ func (state *State) consumeSymbolicGoFunctionErrors(fn func(msg string)) {
 		fn(err)
 	}
 	state.tempSymbolicGoFunctionErrors = state.tempSymbolicGoFunctionErrors[:0]
+}
+
+func (state *State) addSymbolicGoFunctionWarning(msg string) {
+	state.tempSymbolicGoFunctionWarnings = append(state.tempSymbolicGoFunctionWarnings, msg)
+}
+
+func (state *State) consumeSymbolicGoFunctionWarnings(fn func(msg string)) {
+	warnings := state.tempSymbolicGoFunctionWarnings
+	for _, warning := range warnings {
+		fn(warning)
+	}
+	state.tempSymbolicGoFunctionWarnings = state.tempSymbolicGoFunctionWarnings[:0]
 }
 
 func (state *State) setSymbolicGoFunctionParameters(parameters *[]SymbolicValue, names []string) {

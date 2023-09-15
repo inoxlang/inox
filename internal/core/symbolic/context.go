@@ -133,6 +133,10 @@ func (ctx *Context) AddSymbolicGoFunctionError(msg string) {
 	ctx.associatedState.addSymbolicGoFunctionError(msg)
 }
 
+func (ctx *Context) AddSymbolicGoFunctionWarning(msg string) {
+	ctx.associatedState.addSymbolicGoFunctionWarning(msg)
+}
+
 func (ctx *Context) AddFormattedSymbolicGoFunctionError(format string, args ...any) {
 	ctx.associatedState.addSymbolicGoFunctionError(fmt.Sprintf(format, args...))
 }
@@ -193,7 +197,6 @@ type ConcreteContext interface {
 	HasPermissionUntyped(perm any) bool
 	HasAPermissionWithKindAndType(kind permkind.PermissionKind, typename permkind.InternalPermissionTypename) bool
 }
-
 
 type dummyConcreteContext struct {
 	context.Context

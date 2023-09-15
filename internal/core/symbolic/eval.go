@@ -510,6 +510,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			state.consumeSymbolicGoFunctionErrors(func(msg string) {
 				state.addError(makeSymbolicEvalError(n, state, msg))
 			})
+			state.consumeSymbolicGoFunctionWarnings(func(msg string) {
+				state.addWarning(makeSymbolicEvalWarning(n, state, msg))
+			})
 
 			if err != nil {
 				state.addError(makeSymbolicEvalError(n, state, err.Error()))
