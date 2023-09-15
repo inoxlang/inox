@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -178,6 +179,29 @@ func TestPreInit(t *testing.T) {
 			},
 			expectedResolutions: nil,
 			error:               false,
+		},
+		{
+			name: "max_limit_value",
+			module: `manifest {
+					limits: {
+						"a": ` + strconv.FormatInt(MAX_LIMIT_VALUE, 10) + `
+					}
+				}`,
+			expectedPermissions: []Permission{},
+			expectedLimits: []Limit{
+				{Name: "a", Kind: TotalLimit, Value: MAX_LIMIT_VALUE},
+			},
+			expectedResolutions: nil,
+			error:               false,
+		},
+		{
+			name: "limit_too_high",
+			module: `manifest {
+					limits: {
+						"a": ` + strconv.FormatInt(1+MAX_LIMIT_VALUE, 10) + `
+					}
+				}`,
+			error: true,
 		},
 		{
 			name: "host_with_unsupported_scheme",

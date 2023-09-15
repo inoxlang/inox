@@ -4,7 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"time"
+)
+
+const (
+	MAX_LIMIT_VALUE = math.MaxInt64 / TOKEN_BUCKET_CAPACITY_SCALE
 )
 
 var (
@@ -217,6 +222,10 @@ func getLimit(ctx *Context, limitName string, limitValue Serializable) (_ Limit,
 	}
 	if registeredMinimum > 0 && limit.Value < registeredMinimum {
 		resultErr = fmt.Errorf("invalid manifest, limits: value for limit '%s' is too low, minimum is %d", limitName, registeredMinimum)
+		return
+	}
+	if limit.Value > MAX_LIMIT_VALUE {
+		resultErr = fmt.Errorf("invalid manifest, limits: value for limit '%s' is too high, hard maximum is %d", limitName, MAX_LIMIT_VALUE)
 		return
 	}
 
