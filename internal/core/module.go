@@ -31,11 +31,13 @@ const (
 )
 
 var (
-	MODULE_PROP_NAMES            = []string{"parsing_errors", "main_chunk_node"}
-	SOURCE_POS_RECORD_PROPNAMES  = []string{"source", "line", "column", "start", "end"}
-	ErrFileToIncludeDoesNotExist = errors.New("file to include does not exist")
-	ErrFileToIncludeIsAFolder    = errors.New("file to include is a folder")
-	ErrMissingManifest           = errors.New("missing manifest")
+	MODULE_PROP_NAMES           = []string{"parsing_errors", "main_chunk_node"}
+	SOURCE_POS_RECORD_PROPNAMES = []string{"source", "line", "column", "start", "end"}
+
+	ErrFileToIncludeDoesNotExist       = errors.New("file to include does not exist")
+	ErrFileToIncludeIsAFolder          = errors.New("file to include is a folder")
+	ErrMissingManifest                 = errors.New("missing manifest")
+	ErrParsingErrorInManifestOrPreinit = errors.New("parsing error in manifest or preinit")
 )
 
 // A Module represents an Inox module, it does not hold any state and should NOT be modified. Module implements Value.
@@ -218,6 +220,11 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 	manifestObjLiteral, ok := m.ManifestTemplate.Object.(*parse.ObjectLiteral)
 	if !ok {
 		return &Manifest{}, nil, nil, nil
+	}
+
+	if parse.HasErrorAtAnyDepth(manifestObjLiteral) ||
+		(preinitArgs.PreinitStatement != nil && parse.HasErrorAtAnyDepth(preinitArgs.PreinitStatement)) {
+		return nil, nil, nil, ErrParsingErrorInManifestOrPreinit
 	}
 
 	//check preinit block

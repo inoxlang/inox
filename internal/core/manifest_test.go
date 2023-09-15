@@ -51,11 +51,27 @@ func TestPreInit(t *testing.T) {
 
 		//errors
 		error                     bool
+		expectedParsingError      bool
+		errorIs                   error //optional
 		expectedStaticCheckErrors []string
 		expectedPreinitFileErrors []string
 	}
 
 	var testCases = []testCase{
+		{
+			name: "parsing error in manifest",
+			module: `
+				manifest {
+					permissions: {
+						read: {
+							%ldb://main
+						}
+					}
+				}`,
+			error:   true,
+			expectedParsingError: true,
+			errorIs: ErrParsingErrorInManifestOrPreinit,
+		},
 		{
 			name: "host resolution",
 			module: `
@@ -744,7 +760,11 @@ func TestPreInit(t *testing.T) {
 				parentState.Manifest = manifest
 			}
 
-			chunk := parse.MustParseChunk(testCase.module)
+			chunk, err := parse.ParseChunk(testCase.module, "<chunk>")
+
+			if !testCase.expectedParsingError && !assert.NoError(t, err) {
+				return
+			}
 
 			mod := &Module{
 				MainChunk: parse.NewParsedChunk(chunk, parse.InMemorySource{
@@ -788,6 +808,11 @@ func TestPreInit(t *testing.T) {
 			if testCase.error {
 				if !assert.Error(t, err) {
 					return
+				}
+				if testCase.errorIs != nil {
+					if !assert.ErrorIs(t, err, testCase.errorIs) {
+						return
+					}
 				}
 			} else {
 				if !assert.NoError(t, err) {

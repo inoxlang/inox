@@ -2848,6 +2848,19 @@ func FindPreviousStatementAndChain(n Node, ancestorChain []Node, climbBlocks boo
 	return FindPreviousStatementAndChain(p, ancestorChain[:len(ancestorChain)-1], climbBlocks)
 }
 
+func HasErrorAtAnyDepth(n Node) bool {
+	err := false
+	Walk(n, func(node, parent, scopeNode Node, ancestorChain []Node, after bool) (TraversalAction, error) {
+		if node.Base().Err != nil {
+			err = true
+			return StopTraversal, nil
+		}
+		return Continue, nil
+	}, nil)
+
+	return err
+}
+
 func GetTreeView(n Node) string {
 	var buf = bytes.NewBuffer(nil)
 
