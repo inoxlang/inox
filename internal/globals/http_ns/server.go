@@ -628,6 +628,10 @@ func (serv *HttpServer) Close(ctx *core.Context) {
 }
 
 func newSymbolicHttpServer(ctx *symbolic.Context, host *symbolic.Host, args ...symbolic.SymbolicValue) (*http_ns_symb.HttpServer, *symbolic.Error) {
+	if !ctx.HasAPermissionWithKindAndType(permkind.Provide, permkind.HTTP_PERM_TYPENAME) {
+		ctx.AddSymbolicGoFunctionWarning(HTTP_PROVIDE_PERM_MIGHT_BE_MISSING)
+	}
+
 	server := &http_ns_symb.HttpServer{}
 
 	if len(args) == 0 {
