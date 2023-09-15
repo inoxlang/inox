@@ -222,6 +222,56 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("time spent waiting for limit token bucket to refill should not count as CPU time", func(t *testing.T) {
+		resetLimitRegistry()
+		defer resetLimitRegistry()
+		LimRegistry.RegisterLimit("my-limit", SimpleRateLimit, 0)
+
+		CPU_TIME := 50 * time.Millisecond
+		cpuLimit, err := getLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(CPU_TIME))
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		myLimit, err := getLimit(nil, "my-limit", SimpleRate(1))
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Limits: []Limit{cpuLimit, myLimit},
+		}, nil)
+
+		//empty the token bucket
+		{
+
+			start := time.Now()
+			err := ctx.Take("my-limit", 1)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Less(t, time.Since(start), time.Millisecond)
+		}
+
+		//wait for the token bucket to refill
+		{
+			start := time.Now()
+			err := ctx.Take("my-limit", 1)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Greater(t, time.Since(start), 2*CPU_TIME)
+		}
+
+		select {
+		case <-ctx.Done():
+			assert.Fail(t, ctx.Err().Error())
+		default:
+		}
+
+		assert.False(t, ctx.done.Load())
+	})
+
 	t.Run("context should be cancelled if all CPU time is spent by child thread that we do not wait for", func(t *testing.T) {
 		cpuLimit, err := getLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(100*time.Millisecond))
 		if !assert.NoError(t, err) {

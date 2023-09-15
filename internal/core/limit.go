@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"sync"
 	"time"
 )
 
@@ -24,6 +25,11 @@ var (
 )
 
 func init() {
+	resetLimitRegistry()
+}
+
+func resetLimitRegistry() {
+	LimRegistry.Clear()
 	LimRegistry.RegisterLimit(EXECUTION_TOTAL_LIMIT_NAME, TotalLimit, 0)
 	LimRegistry.RegisterLimit(EXECUTION_CPU_TIME_LIMIT_NAME, TotalLimit, 0)
 }
@@ -57,11 +63,15 @@ const (
 )
 
 type limitRegistry struct {
+	lock          sync.Mutex
 	kinds         map[string]LimitKind
 	minimumLimits map[string]int64
 }
 
 func (r *limitRegistry) RegisterLimit(name string, kind LimitKind, minimumLimit int64) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
 	registeredKind, ok := r.kinds[name]
 	if ok && (registeredKind != kind || minimumLimit != r.minimumLimits[name]) {
 		panic(fmt.Errorf("cannot register the limit '%s' with a different type or minimum", name))
@@ -74,6 +84,9 @@ func (r *limitRegistry) RegisterLimit(name string, kind LimitKind, minimumLimit 
 }
 
 func (r *limitRegistry) getLimitInfo(name string) (kind LimitKind, minimum int64, ok bool) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
 	registeredKind, ok := r.kinds[name]
 	min := r.minimumLimits[name]
 
@@ -81,6 +94,13 @@ func (r *limitRegistry) getLimitInfo(name string) (kind LimitKind, minimum int64
 		return -1, -1, false
 	}
 	return registeredKind, min, true
+}
+
+func (r *limitRegistry) Clear() {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	clear(r.kinds)
+	clear(r.minimumLimits)
 }
 
 // limiter manages a limit for a single state, it is not thread safe.

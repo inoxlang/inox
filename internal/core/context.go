@@ -651,7 +651,10 @@ func (ctx *Context) Take(limitName string, count int64) error {
 
 	limiter, ok := ctx.limiters[limitName]
 	if ok {
-		limiter.Take(count)
+		ctx.DoIO(func() error {
+			limiter.Take(count)
+			return nil
+		})
 	}
 
 	return nil
