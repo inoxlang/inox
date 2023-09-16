@@ -329,13 +329,6 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 	}
 	state.SymbolicBaseGlobalsForImportedModule = symbolicBaseGlobals
 
-	//add global containing databases
-	dbs := map[string]core.Value{}
-	for name, db := range conf.Databases {
-		dbs[name] = db
-	}
-	state.Globals.Set(default_state.DATABASES_GLOBAL_NAME, core.NewNamespace("dbs", dbs))
-
 	return state, nil
 }
 

@@ -30,7 +30,6 @@ type DefaultGlobalStateConfig struct {
 
 	EnvPattern          *core.ObjectPattern
 	PreinitFiles        core.PreinitFiles
-	Databases           map[string]*core.DatabaseIL
 	AllowMissingEnvVars bool
 	Project             *project.Project
 

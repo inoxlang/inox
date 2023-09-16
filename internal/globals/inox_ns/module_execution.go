@@ -168,6 +168,43 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		out = os.Stdout
 	}
 
+	// create the script's state
+
+	globalState, err := default_state.NewDefaultGlobalState(ctx, default_state.DefaultGlobalStateConfig{
+		AbsoluteModulePath: absPath,
+
+		EnvPattern:          manifest.EnvPattern,
+		PreinitFiles:        manifest.PreinitFiles,
+		Project:             args.Project,
+		AllowMissingEnvVars: args.AllowMissingEnvVars,
+		Out:                 out,
+		LogOut:              args.LogOut,
+	})
+
+	if err != nil {
+		finalErr = fmt.Errorf("failed to create global state: %w", err)
+		return
+	}
+
+	for k, v := range args.AdditionalGlobalsTestOnly {
+		globalState.Globals.Set(k, v)
+	}
+
+	state = globalState
+	state.Module = mod
+	state.Manifest = manifest
+	state.PrenitStaticCheckErrors = preinitStaticCheckErrors
+	state.MainPreinitError = preinitErr
+	if args.UseParentStateAsMainState {
+		if parentState == nil {
+			panic(core.ErrUnreachable)
+		}
+		state.MainState = parentState
+	} else {
+		state.MainState = state
+		state.Project = args.Project
+	}
+
 	//connect to databases
 	//TODO: disconnect if connection still not used after a few minutes
 
@@ -194,7 +231,6 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			return nil, nil, nil, ErrDatabaseOpenFunctionNotFound
 		}
 
-		//possible futures issues because there is no state in the context
 		db, err := openDB(ctx, core.DbOpenConfiguration{
 			Resource:       config.Resource,
 			ResolutionData: config.ResolutionData,
@@ -230,45 +266,15 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		ownedDatabases[config.Name] = struct{}{}
 	}
 
-	// create the script's state
-
-	globalState, err := default_state.NewDefaultGlobalState(ctx, default_state.DefaultGlobalStateConfig{
-		AbsoluteModulePath: absPath,
-
-		EnvPattern:          manifest.EnvPattern,
-		PreinitFiles:        manifest.PreinitFiles,
-		Databases:           dbs,
-		Project:             args.Project,
-		AllowMissingEnvVars: args.AllowMissingEnvVars,
-		Out:                 out,
-		LogOut:              args.LogOut,
-	})
-
-	if err != nil {
-		finalErr = fmt.Errorf("failed to create global state: %w", err)
-		return
-	}
-
-	for k, v := range args.AdditionalGlobalsTestOnly {
-		globalState.Globals.Set(k, v)
-	}
-
-	state = globalState
-	state.Module = mod
-	state.Manifest = manifest
-	state.PrenitStaticCheckErrors = preinitStaticCheckErrors
-	state.MainPreinitError = preinitErr
 	state.FirstDatabaseOpeningError = dbOpeningError
 	state.Databases = dbs
-	if args.UseParentStateAsMainState {
-		if parentState == nil {
-			panic(core.ErrUnreachable)
-		}
-		state.MainState = parentState
-	} else {
-		state.MainState = state
-		state.Project = args.Project
+
+	//add namespace 'dbs'
+	dbsNamespaceEntries := make(map[string]core.Value)
+	for dbName, db := range dbs {
+		dbsNamespaceEntries[dbName] = db
 	}
+	state.Globals.Set(default_state.DATABASES_GLOBAL_NAME, core.NewNamespace("dbs", dbsNamespaceEntries))
 
 	for dbName, db := range dbs {
 		if _, ok := ownedDatabases[dbName]; ok {
