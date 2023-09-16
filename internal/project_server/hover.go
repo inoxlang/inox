@@ -3,6 +3,7 @@ package project_server
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"strings"
 
 	core "github.com/inoxlang/inox/internal/core"
@@ -28,17 +29,28 @@ func getHoverContent(fpath string, line, column int32, handlingCtx *core.Context
 	}
 
 	span := chunk.GetLineColumnSingeCharSpan(line, column)
-	foundNode, ancestors, ok := chunk.GetNodeAndChainAtSpan(span)
+	hoveredNode, ancestors, ok := chunk.GetNodeAndChainAtSpan(span)
 
-	if !ok || foundNode == nil {
+	if !ok || hoveredNode == nil {
 		logs.Println("no data")
 		return &defines.Hover{}, nil
 	}
 
-	//help about tag or attribute
-	xmlElementInfo, hasXmlElementInfo := getXmlElementInfo(foundNode, ancestors)
+	//help about manifest sections & lthread meta sections
+	help, ok := getSectionHelp(hoveredNode, ancestors)
+	if ok {
+		return &defines.Hover{
+			Contents: defines.MarkupContent{
+				Kind:  defines.MarkupKindMarkdown,
+				Value: help,
+			},
+		}, nil
+	}
 
-	mostSpecificVal, ok := state.SymbolicData.GetMostSpecificNodeValue(foundNode)
+	//help about tag or attribute
+	xmlElementInfo, hasXmlElementInfo := getXmlElementInfo(hoveredNode, ancestors)
+
+	mostSpecificVal, ok := state.SymbolicData.GetMostSpecificNodeValue(hoveredNode)
 	var lessSpecificVal symbolic.SymbolicValue
 	if !ok {
 		if hasXmlElementInfo {
@@ -56,19 +68,20 @@ func getHoverContent(fpath string, line, column int32, handlingCtx *core.Context
 
 	buff := &bytes.Buffer{}
 	w := bufio.NewWriterSize(buff, 1000)
-	var stringified string
+	var stringifiedHoveredNodeValue string
+
+	//try getting the hovered node's value
 	{
 		utils.PanicIfErr(symbolic.PrettyPrint(mostSpecificVal, w, HOVER_PRETTY_PRINT_CONFIG, 0, 0))
 		var ok bool
-		lessSpecificVal, ok = state.SymbolicData.GetLessSpecificNodeValue(foundNode)
+		lessSpecificVal, ok = state.SymbolicData.GetLessSpecificNodeValue(hoveredNode)
 		if ok {
 			w.Write(utils.StringAsBytes("\n\n# less specific\n"))
 			utils.PanicIfErr(symbolic.PrettyPrint(lessSpecificVal, w, HOVER_PRETTY_PRINT_CONFIG, 0, 0))
 		}
 
 		w.Flush()
-		stringified = strings.ReplaceAll(buff.String(), "\n\r", "\n")
-		logs.Println(stringified)
+		stringifiedHoveredNodeValue = strings.ReplaceAll(buff.String(), "\n\r", "\n")
 	}
 
 	//help for most specific & less specific values
@@ -96,8 +109,8 @@ func getHoverContent(fpath string, line, column int32, handlingCtx *core.Context
 	}
 
 	codeBlock := ""
-	if stringified != "" {
-		codeBlock = "```inox\n" + stringified + "\n```"
+	if stringifiedHoveredNodeValue != "" {
+		codeBlock = "```inox\n" + stringifiedHoveredNodeValue + "\n```"
 	}
 
 	return &defines.Hover{
@@ -188,5 +201,46 @@ func getXmlElementInfo(node parse.Node, ancestors []parse.Node) (string, bool) {
 
 	}
 
+	return "", false
+}
+
+func getSectionHelp(n parse.Node, ancestors []parse.Node) (string, bool) {
+	if len(ancestors) < 4 {
+		return "", false
+	}
+
+	//check the hovered node is the key of an object property
+	objProp, ok := ancestors[len(ancestors)-1].(*parse.ObjectProperty)
+	if !ok || objProp.Key != n || !parse.NodeIs(ancestors[len(ancestors)-2], (*parse.ObjectLiteral)(nil)) {
+		return "", false
+	}
+
+	object := ancestors[len(ancestors)-2].(*parse.ObjectLiteral)
+	propName := objProp.Name()
+	grandparent := ancestors[len(ancestors)-3]
+
+	switch gp := grandparent.(type) {
+	case *parse.Manifest:
+		sectionName := propName
+		//hovered node is a manifest section's name
+		help, ok := help_ns.HelpFor(fmt.Sprintf("manifest/%s-section", sectionName), help_ns.HelpMessageConfig{
+			Format: help_ns.MarkdownFormat,
+		})
+
+		if ok {
+			return help, true
+		}
+	case *parse.SpawnExpression:
+		sectionName := propName
+		if object == gp.Meta {
+			//hovered node is a lthread meta section's name
+			help, ok := help_ns.HelpFor(fmt.Sprintf("lthreads/%s-section", sectionName), help_ns.HelpMessageConfig{
+				Format: help_ns.MarkdownFormat,
+			})
+			if ok {
+				return help, true
+			}
+		}
+	}
 	return "", false
 }
