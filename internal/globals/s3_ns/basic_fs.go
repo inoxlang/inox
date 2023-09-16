@@ -142,7 +142,6 @@ func (fls *S3Filesystem) OpenFile(filename string, flag int, perm os.FileMode) (
 		file, err := newS3WriteFile(ctx, newS3WriteFileInput{
 			client:         fls.client(),
 			fs:             fls,
-			bucket:         fls.bucketName(),
 			filename:       filename,
 			flag:           flag,
 			tryReadContent: !fs_ns.IsExclusive(flag),
@@ -161,6 +160,8 @@ func (fls *S3Filesystem) OpenFile(filename string, flag int, perm os.FileMode) (
 		}
 
 		if fs_ns.IsAppend(flag) {
+			file.positionLock.Lock()
+			defer file.positionLock.Unlock()
 			file.position = int64(file.content.Len())
 		}
 

@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -135,19 +136,18 @@ type s3WriteFile struct {
 	client   *S3Client
 	bucket   string
 	filename string
-	dirty    atomic.Bool
 	closed   atomic.Bool
 
-	flag     int
-	perm     fs.FileMode
-	content  *fs_ns.InMemFileContent
-	position int64
+	flag         int
+	perm         fs.FileMode
+	content      *fs_ns.InMemFileContent
+	position     int64
+	positionLock sync.RWMutex
 }
 
 type newS3WriteFileInput struct {
 	client         *S3Client
 	fs             *S3Filesystem
-	bucket         string
 	filename       string
 	flag           int
 	maxStorage     int64
@@ -166,7 +166,7 @@ func newS3WriteFile(ctx *core.Context, input newS3WriteFileInput) (*s3WriteFile,
 		ctx:      ctx,
 		fs:       input.fs,
 		client:   input.client,
-		bucket:   input.bucket,
+		bucket:   input.fs.bucket.name,
 		filename: input.filename,
 		perm:     input.perm, //will be changed if the object exists
 		flag:     input.flag,
@@ -175,7 +175,7 @@ func newS3WriteFile(ctx *core.Context, input newS3WriteFileInput) (*s3WriteFile,
 	var content []byte
 	if input.tryReadContent {
 		//note: GetObject requests are lazy so after this call we don't know if the object exists yet
-		res, err := input.client.GetObject(ctx, input.bucket, key, minio.GetObjectOptions{})
+		res, err := input.client.GetObject(ctx, file.bucket, key, minio.GetObjectOptions{})
 
 		if err != nil {
 			return nil, fmt.Errorf("unable to perform GetObject operation: %w", err)
@@ -218,8 +218,11 @@ func (f *s3WriteFile) Write(p []byte) (n int, err error) {
 		return 0, os.ErrClosed
 	}
 
-	f.dirty.Store(true)
-	return f.content.WriteAt(p, f.position)
+	f.positionLock.Lock()
+	defer f.positionLock.Unlock()
+	position := f.position
+
+	return f.content.WriteAt(p, position)
 }
 
 func (f *s3WriteFile) Read(b []byte) (int, error) {
@@ -230,7 +233,12 @@ func (f *s3WriteFile) Read(b []byte) (int, error) {
 	if !fs_ns.IsReadAndWrite(f.flag) {
 		return 0, ErrCannotReadFromWriteOnly
 	}
-	n, err := f.ReadAt(b, f.position)
+
+	f.positionLock.Lock()
+	defer f.positionLock.Unlock()
+	position := f.position
+
+	n, err := f.ReadAt(b, position)
 	f.position += int64(n)
 
 	if err == io.EOF && n != 0 {
@@ -264,6 +272,9 @@ func (f *s3WriteFile) Seek(offset int64, whence int) (int64, error) {
 		return 0, errors.New("read not supported")
 	}
 
+	f.positionLock.Lock()
+	defer f.positionLock.Unlock()
+
 	switch whence {
 	case io.SeekCurrent:
 		f.position += offset
@@ -280,7 +291,6 @@ func (f *s3WriteFile) Truncate(size int64) error {
 	if f.closed.Load() {
 		return os.ErrClosed
 	}
-	f.dirty.Store(true)
 	return f.content.Truncate(size)
 }
 
@@ -302,7 +312,7 @@ func (f *s3WriteFile) sync() error {
 		})
 
 		if err != nil {
-			return fmt.Errorf("unable to perform PutObject operation: %w", err)
+			return fmt.Errorf("unable to sync file %s: %w", f.filename, err)
 		}
 		return nil
 	})
