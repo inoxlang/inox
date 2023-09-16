@@ -79,9 +79,12 @@ module:
           API_KEY = env.initial.API_KEY
     - topic: manifest/databases-section
       text: >
-        The databases section defines the databases to connect to.
+        The databases section defines the databases to connect to, it is either an object or a path.
       examples:
       - code: |
+          # ℹ️ scroll to the example further below to learn how to connect 
+          # to databases defined by other modules.
+
           # example databases section to connect to a local database 
           # storing its data in the folder /databases/main/.
           # the database will be created if it does not exist.
@@ -95,6 +98,29 @@ module:
 
           # the database can then be accessed by the module:
           dbs.main
+
+          # ℹ️ The module defining the databases is automatically 
+          # granted access to the database.
+      - code: |
+          # -----------------------------------------------------------
+          # If the `/main.ix` module defines a `ldb://main` database, 
+          # imported modules can access the database with the 
+          # following manifest:
+
+          manifest {
+            permissions: {
+                read: {
+                    ldb://main
+                }
+                # you can also add the write permission if necessary
+            }
+            databases: /main.ix
+          }
+
+          # the databases can then be accessed by the module:
+          db = dbs.main
+
+          # ⚠️ Permissions still need to be granted in the import statement.
 concurrency:
   title: Concurrency
   elements:
