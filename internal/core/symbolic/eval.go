@@ -1633,7 +1633,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				for _, property := range objLit.Properties {
 					propertyName := property.Name() //okay since implicit-key properties are not allowed
 
-					if propertyName == "globals" {
+					if propertyName == LTHREAD_META_GLOBALS_SECTION {
 						globalsObjectLit, ok := property.Value.(*parse.ObjectLiteral)
 						//handle description separately if it's an object literal because non-serializable value are not accepted.
 						if ok {
@@ -1650,7 +1650,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 							}
 							continue
 						}
-					} else if propertyName == "allow" && parse.NodeIs(property.Value, (*parse.ObjectLiteral)(nil)) {
+					} else if propertyName == LTHREAD_META_ALLOW_SECTION && parse.NodeIs(property.Value, (*parse.ObjectLiteral)(nil)) {
 						permListingNode = property.Value.(*parse.ObjectLiteral)
 					}
 
@@ -1674,14 +1674,14 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 		for k, v := range meta {
 			switch k {
-			case "globals":
+			case LTHREAD_META_GLOBALS_SECTION:
 				globals = v
-			case "group":
+			case LTHREAD_META_GROUP_SECTION:
 				_, ok := v.(*LThreadGroup)
 				if !ok {
 					state.addError(makeSymbolicEvalError(n.Meta, state, fmtGroupPropertyNotLThreadGroup(v)))
 				}
-			case "allow":
+			case LTHREAD_META_ALLOW_SECTION:
 			default:
 				state.addWarning(makeSymbolicEvalWarning(n.Meta, state, fmtUnknownSectionInLThreadMetadata(k)))
 			}

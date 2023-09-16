@@ -8314,7 +8314,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NotContains(t,
 				state.warnings(),
-				makeSymbolicEvalWarning(metadataNode, state, fmtUnknownSectionInLThreadMetadata("allow")),
+				makeSymbolicEvalWarning(metadataNode, state, fmtUnknownSectionInLThreadMetadata(LTHREAD_META_ALLOW_SECTION)),
 			) //we use contains because there is also a warning about a missing permission
 		})
 	})

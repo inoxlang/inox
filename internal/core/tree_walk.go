@@ -1043,7 +1043,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				for _, property := range objLit.Properties {
 					propertyName := property.Name() //okay since implicit-key properties are not allowed
 
-					if propertyName == "globals" {
+					if propertyName == symbolic.LTHREAD_META_GLOBALS_SECTION {
 						globalsObjectLit, ok := property.Value.(*parse.ObjectLiteral)
 						//handle description separately if it's an object literal because non-serializable value are not accepted.
 						if ok {

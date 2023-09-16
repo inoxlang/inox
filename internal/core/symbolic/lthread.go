@@ -7,6 +7,12 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+const (
+	LTHREAD_META_GROUP_SECTION   = "group"
+	LTHREAD_META_ALLOW_SECTION   = "allow"
+	LTHREAD_META_GLOBALS_SECTION = "globals"
+)
+
 var (
 	ROUTINE_PROPNAMES       = []string{"wait_result", "cancel", "steps"}
 	ROUTINE_GROUP_PROPNAMES = []string{"wait_results", "cancel_all"}

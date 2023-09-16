@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
 	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
@@ -666,7 +667,7 @@ switch_:
 				}
 			}
 
-			val, ok := obj.PropValue("globals")
+			val, ok := obj.PropValue(symbolic.LTHREAD_META_GLOBALS_SECTION)
 			if ok {
 				globalDescNode = val
 			}

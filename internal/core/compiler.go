@@ -1658,7 +1658,7 @@ func (c *compiler) Compile(node parse.Node) error {
 				keys = append(keys, propertyName)
 				types = append(types, ANYVAL_PATTERN)
 
-				if propertyName != "globals" || !parse.NodeIs(property.Value, (*parse.ObjectLiteral)(nil)) {
+				if propertyName != symbolic.LTHREAD_META_GLOBALS_SECTION || !parse.NodeIs(property.Value, (*parse.ObjectLiteral)(nil)) {
 					if err := c.Compile(property.Value); err != nil {
 						return err
 					}
@@ -1725,7 +1725,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		var globalDescNode parse.Node
 
 		if obj, ok := node.Meta.(*parse.ObjectLiteral); ok {
-			val, ok := obj.PropValue("globals")
+			val, ok := obj.PropValue(symbolic.LTHREAD_META_GLOBALS_SECTION)
 			if ok {
 				globalDescNode = val
 			}

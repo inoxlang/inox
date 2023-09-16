@@ -14,7 +14,9 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-const ROUTINE_POST_YIELD_PAUSE = time.Microsecond
+const (
+	ROUTINE_POST_YIELD_PAUSE = time.Microsecond
+)
 
 var (
 	ROUTINE_PROPNAMES       = []string{"wait_result", "cancel", "steps"}
@@ -491,21 +493,21 @@ func Sleep(ctx *Context, d Duration) {
 }
 
 func readLThreadMeta(meta map[string]Value, ctx *Context) (group *LThreadGroup, globalsDesc Value, permListing *Object, err error) {
-	if val, ok := meta["group"]; ok {
+	if val, ok := meta[symbolic.LTHREAD_META_GROUP_SECTION]; ok {
 		if rtGroup, ok := val.(*LThreadGroup); ok {
 			group = rtGroup
 		} else {
-			return nil, nil, nil, errors.New("<meta>.group should be a lthread group")
+			return nil, nil, nil, fmt.Errorf("<meta>.%s should be a lthread group", symbolic.LTHREAD_META_GROUP_SECTION)
 		}
 	}
-	if val, ok := meta["globals"]; ok {
+	if val, ok := meta[symbolic.LTHREAD_META_GLOBALS_SECTION]; ok {
 		globalsDesc = val
 	}
-	if val, ok := meta["allow"]; ok {
+	if val, ok := meta[symbolic.LTHREAD_META_ALLOW_SECTION]; ok {
 		if obj, ok := val.(*Object); ok {
 			permListing = obj
 		} else {
-			return nil, nil, nil, errors.New("<meta>.allow should be an object")
+			return nil, nil, nil, fmt.Errorf("<meta>.%s should be an object", symbolic.LTHREAD_META_ALLOW_SECTION)
 		}
 	}
 
