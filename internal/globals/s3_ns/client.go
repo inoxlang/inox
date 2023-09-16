@@ -1,6 +1,7 @@
 package s3_ns
 
 import (
+	"context"
 	"io"
 	"strings"
 
@@ -25,10 +26,17 @@ func (c *S3Client) GetObject(ctx *core.Context, bucketName, objectName string, o
 
 func (c *S3Client) PutObject(ctx *core.Context, bucketName, objectName string, reader io.Reader, objectSize int64,
 	opts minio.PutObjectOptions) (minio.UploadInfo, error) {
+
 	return core.DoIO2(ctx, func() (minio.UploadInfo, error) {
 		ctx.Take(OBJECT_STORAGE_REQUEST_RATE_LIMIT_NAME, 1)
 		return c.libClient.PutObject(ctx, bucketName, objectName, reader, objectSize, opts)
 	})
+}
+
+func (c *S3Client) PutObjectNoCtx(bucketName, objectName string, reader io.Reader, objectSize int64,
+	opts minio.PutObjectOptions) (minio.UploadInfo, error) {
+
+	return c.libClient.PutObject(context.Background(), bucketName, objectName, reader, objectSize, opts)
 }
 
 func (c *S3Client) CopyObject(ctx *core.Context, dst minio.CopyDestOptions, src minio.CopySrcOptions) (minio.UploadInfo, error) {

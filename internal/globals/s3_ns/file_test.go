@@ -87,4 +87,19 @@ func TestS3WriteFileSeek(t *testing.T) {
 
 		stopGoroutineChan <- struct{}{}
 	})
+
+	t.Run("file should be persisted if dirty when context done", func(t *testing.T) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+
+		file, bucket := setup(ctx)
+		defer bucket.RemoveAllObjects(ctx)
+
+		file.Write([]byte("abcdef"))
+		assert.True(t, file.content.IsDirty())
+
+		ctx.Cancel()
+
+		time.Sleep(2 * time.Second)
+		assert.False(t, file.content.IsDirty())
+	})
 }

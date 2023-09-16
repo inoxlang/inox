@@ -375,6 +375,13 @@ func (c *InMemFileContent) IsDirty() bool {
 	return c.dirty
 }
 
+// ShouldBePersisted returns true if the content is dirty AND is not being persisted.
+func (c *InMemFileContent) ShouldBePersisted() bool {
+	c.m.RLock()
+	defer c.m.RUnlock()
+	return c.dirty && !c.beingPersisted
+}
+
 // If the file is not dirty Persist snapshots the content of the file & invokes persistFn,
 // if persistFn returns an error or panics an error is returned.
 func (c *InMemFileContent) Persist(persistFn func(p []byte) error) (finalErr error) {

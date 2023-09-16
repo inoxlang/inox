@@ -2,6 +2,7 @@ package s3_ns
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -205,8 +206,20 @@ func newS3WriteFile(ctx *core.Context, input newS3WriteFileInput) (*s3WriteFile,
 
 	file.content = fs_ns.NewInMemFileContent(input.filename, content, ignoredTime, input.maxStorage, input.storageSize)
 
-	return file, nil
+	file.ctx.OnDone(func(timeoutCtx context.Context) error {
+		file.closed.Store(true)
 
+		go func() {
+			defer recover()
+			if file.content.ShouldBePersisted() {
+				file.sync(true)
+			}
+		}()
+
+		return nil
+	})
+
+	return file, nil
 }
 
 func (f *s3WriteFile) Name() string {
@@ -298,18 +311,25 @@ func (f *s3WriteFile) Sync() error {
 	if f.closed.Load() {
 		return os.ErrClosed
 	}
-	return f.sync()
+	return f.sync(false)
 }
 
-func (f *s3WriteFile) sync() error {
+func (f *s3WriteFile) sync(contextDone bool) error {
 	err := f.content.Persist(func(p []byte) error {
 		key := toObjectKey(f.filename)
-
-		_, err := f.client.PutObject(f.ctx, f.bucket, key, bytes.NewReader(p), int64(len(p)), minio.PutObjectOptions{
+		opts := minio.PutObjectOptions{
 			UserMetadata: map[string]string{
 				PERM_METADATA_KEY: strconv.FormatUint(uint64(f.perm), 8),
 			},
-		})
+		}
+		reader := bytes.NewReader(p)
+
+		var err error
+		if contextDone {
+			_, err = f.client.PutObjectNoCtx(f.bucket, key, reader, int64(len(p)), opts)
+		} else {
+			_, err = f.client.PutObject(f.ctx, f.bucket, key, reader, int64(len(p)), opts)
+		}
 
 		if err != nil {
 			return fmt.Errorf("unable to sync file %s: %w", f.filename, err)
@@ -332,7 +352,7 @@ func (f *s3WriteFile) Close() error {
 		return os.ErrClosed
 	}
 
-	return f.sync()
+	return f.sync(false)
 }
 
 func (f *s3WriteFile) Lock() error {
