@@ -3,6 +3,8 @@ package compl
 import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/globals/help_ns"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
@@ -30,14 +32,16 @@ var (
 	}
 
 	LTHREAD_META_SECTION_DOC = map[string]string{
-		symbolic.LTHREAD_META_ALLOW_SECTION: "the permissions granted to the lthread's embedded module; " +
-			"make sure the module spawning the lthread has the granted permissions\n\n**examples**\n```inox\n{\n  read: {%https://**}\n}\n```",
-		symbolic.LTHREAD_META_GLOBALS_SECTION: "globals of embedded module, base globals such as " +
-			"**http**, **read**, **sleep** or always passed.\n\n**examples**\n```inox\n{a: 1, shared_object: {}}\n```",
+		symbolic.LTHREAD_META_ALLOW_SECTION:   utils.MustGet(help_ns.HelpFor("lthreads/allow-section", helpMessageConfig)),
+		symbolic.LTHREAD_META_GLOBALS_SECTION: utils.MustGet(help_ns.HelpFor("lthreads/globals-section", helpMessageConfig)),
 	}
 
 	LTHREAD_META_SECTION_DEFAULT_VALUE_COMPLETIONS = map[string]string{
 		symbolic.LTHREAD_META_ALLOW_SECTION:   "{}",
 		symbolic.LTHREAD_META_GLOBALS_SECTION: "{}",
+	}
+
+	helpMessageConfig = help_ns.HelpMessageConfig{
+		Format: help_ns.MarkdownFormat,
 	}
 )

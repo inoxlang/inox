@@ -1,0 +1,25 @@
+concurrency:
+  title: Concurrency
+  elements:
+  - topic: lthreads
+    text: Lightweight threads
+    subtopics:
+    - topic: lthreads/allow-section
+      text: |
+        The permissions granted to the lthread's embedded module.
+        Make sure the module spawning the lthread has the granted permissions
+      examples:
+      - code: |
+          {
+            read: {%https://**}
+          }
+
+    - topic: lthreads/globals-section
+      text: |
+        globals of embedded module, base globals such as **http**, **read**, **sleep** or always passed.
+      examples:
+      - code: |
+          {
+            a: 1, 
+            shared_object: {}
+          }

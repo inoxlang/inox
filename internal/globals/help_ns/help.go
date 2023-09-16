@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"maps"
 	"reflect"
 	"strings"
 
@@ -29,6 +30,9 @@ var (
 	topicGroups map[string]TopicGroup
 	//go:embed builtin.yaml
 	BUILTIN_HELP_YAML string
+
+	//go:embed language.yaml
+	LANGUAGE_HELP_YAML string
 )
 
 type TopicGroup struct {
@@ -44,6 +48,13 @@ func init() {
 	if err := yaml.Unmarshal(utils.StringAsBytes(BUILTIN_HELP_YAML), &topicGroups); err != nil {
 		log.Panicf("error while parsing builtin.yaml: %s", err)
 	}
+
+	var languageTopicGroups map[string]TopicGroup
+	if err := yaml.Unmarshal(utils.StringAsBytes(LANGUAGE_HELP_YAML), &languageTopicGroups); err != nil {
+		log.Panicf("error while parsing language.yaml: %s", err)
+	}
+
+	maps.Copy(topicGroups, languageTopicGroups)
 
 	var addTopic func(item TopicHelp, groupName string, group TopicGroup)
 
@@ -271,6 +282,12 @@ func Help(ctx *core.Context, args ...core.Value) {
 		if ok {
 			str = help.String(config)
 		}
+	} else if strLike, ok := arg.(core.StringLike); ok {
+		s := strLike.GetOrBuildString()
+		help, ok := helpByTopic[s]
+		if ok {
+			str = help.String(config)
+		}
 	} else {
 		id, ok := getValueId(arg)
 
@@ -312,4 +329,13 @@ func HelpForSymbolicGoFunc(fn *symbolic.GoFunction, config HelpMessageConfig) (s
 	}
 
 	return HelpForGoFunc(concreteFn.Interface(), config)
+}
+
+func HelpFor(s string, config HelpMessageConfig) (string, bool) {
+	help, ok := helpByTopic[s]
+	if ok {
+		return help.String(config), true
+	}
+
+	return "", false
 }

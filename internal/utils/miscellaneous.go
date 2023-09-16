@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"reflect"
 	"unsafe"
 )
@@ -17,6 +18,13 @@ func Must2[T any, U any](a T, b U, err error) (T, U) {
 		panic(err)
 	}
 	return a, b
+}
+
+func MustGet[T any](a T, found bool) T {
+	if !found {
+		panic(errors.New("not found"))
+	}
+	return a
 }
 
 func PanicIfErr(err error) {
