@@ -480,8 +480,8 @@ func TestFindCompletions(t *testing.T) {
 					completions := findCompletions(state, chunk, 10)
 					assert.EqualValues(t, []Completion{
 						{
-							ShownString:   "env",
-							Value:         "env",
+							ShownString:   "env: %{}",
+							Value:         "env: %{}",
 							ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 9, End: 10}},
 						},
 					}, completions)
@@ -494,8 +494,8 @@ func TestFindCompletions(t *testing.T) {
 
 					completions := findCompletions(state, chunk, 9)
 					assert.Contains(t, completions, Completion{
-						ShownString:   "env",
-						Value:         "env",
+						ShownString:   "env: %{}",
+						Value:         "env: %{}",
 						ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 9, End: 9}},
 					})
 				})
@@ -507,8 +507,8 @@ func TestFindCompletions(t *testing.T) {
 
 					completions := findCompletions(state, chunk, 9)
 					assert.Contains(t, completions, Completion{
-						ShownString:   "env",
-						Value:         "env",
+						ShownString:   "env: %{}",
+						Value:         "env: %{}",
 						ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 9, End: 9}},
 					})
 
@@ -530,8 +530,8 @@ func TestFindCompletions(t *testing.T) {
 					completions := findCompletions(state, chunk, 5)
 					assert.EqualValues(t, []Completion{
 						{
-							ShownString:   symbolic.LTHREAD_META_ALLOW_SECTION,
-							Value:         symbolic.LTHREAD_META_ALLOW_SECTION,
+							ShownString:   symbolic.LTHREAD_META_ALLOW_SECTION + ": {}",
+							Value:         symbolic.LTHREAD_META_ALLOW_SECTION + ": {}",
 							ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 4, End: 5}},
 						},
 					}, completions)
@@ -544,8 +544,8 @@ func TestFindCompletions(t *testing.T) {
 
 					completions := findCompletions(state, chunk, 4)
 					assert.Contains(t, completions, Completion{
-						ShownString:   symbolic.LTHREAD_META_ALLOW_SECTION,
-						Value:         symbolic.LTHREAD_META_ALLOW_SECTION,
+						ShownString:   symbolic.LTHREAD_META_ALLOW_SECTION + ": {}",
+						Value:         symbolic.LTHREAD_META_ALLOW_SECTION + ": {}",
 						ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 4, End: 4}},
 					})
 				})
@@ -557,8 +557,8 @@ func TestFindCompletions(t *testing.T) {
 
 					completions := findCompletions(state, chunk, 4)
 					assert.Contains(t, completions, Completion{
-						ShownString:   symbolic.LTHREAD_META_ALLOW_SECTION,
-						Value:         symbolic.LTHREAD_META_ALLOW_SECTION,
+						ShownString:   symbolic.LTHREAD_META_ALLOW_SECTION + ": {}",
+						Value:         symbolic.LTHREAD_META_ALLOW_SECTION + ": {}",
 						ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 4, End: 4}},
 					})
 

@@ -21,11 +21,6 @@ type Completion struct {
 	Detail        string
 }
 
-const (
-	MAJOR_PERM_KIND_TEXT = "major permission kind"
-	MINOR_PERM_KIND_TEXT = "minor permission kind"
-)
-
 var (
 	CONTEXT_INDEPENDENT_STMT_STARTING_KEYWORDS = []string{"if", "drop-perms", "for", "assign", "switch", "match", "return", "assert"}
 )
@@ -443,15 +438,26 @@ after_subcommand_completions:
 		parse.NodeIs(ancestors[len(ancestors)-1], (*parse.ObjectProperty)(nil)) &&
 		parse.NodeIs(ancestors[len(ancestors)-2], (*parse.ObjectLiteral)(nil)) {
 
+		prop := ancestors[len(ancestors)-1].(*parse.ObjectProperty)
 		objectLiteral := ancestors[len(ancestors)-2].(*parse.ObjectLiteral)
 
 		//suggest sections of manifest
 		if parse.NodeIs(ancestors[len(ancestors)-3], (*parse.Manifest)(nil)) {
 			for _, sectionName := range core.MANIFEST_SECTION_NAMES {
 				if hasPrefixCaseInsensitive(sectionName, ident.Name) {
+					suffix := ""
+					if prop.HasImplicitKey() {
+						suffix = ": "
+
+						valueCompletion, ok := MANIFEST_SECTION_DEFAULT_VALUE_COMPLETIONS[sectionName]
+						if ok {
+							suffix += valueCompletion
+						}
+					}
+
 					completions = append(completions, Completion{
-						ShownString: sectionName,
-						Value:       sectionName,
+						ShownString: sectionName + suffix,
+						Value:       sectionName + suffix,
 						Kind:        defines.CompletionItemKindVariable,
 					})
 				}
@@ -464,9 +470,21 @@ after_subcommand_completions:
 			objectLiteral == ancestors[len(ancestors)-3].(*parse.SpawnExpression).Meta {
 			for _, sectionName := range symbolic.LTHREAD_SECTION_NAMES {
 				if hasPrefixCaseInsensitive(sectionName, ident.Name) {
+
+					suffix := ""
+					if prop.HasImplicitKey() {
+						suffix = ": "
+
+						valueCompletion, ok := LTHREAD_META_SECTION_DEFAULT_VALUE_COMPLETIONS[sectionName]
+						if ok {
+							suffix += valueCompletion
+						}
+					}
+
 					completions = append(completions, Completion{
-						ShownString: sectionName,
-						Value:       sectionName,
+						ShownString: sectionName + suffix,
+						Value:       sectionName + suffix,
+						Detail:      LTHREAD_META_SECTION_HELP[sectionName],
 						Kind:        defines.CompletionItemKindVariable,
 					})
 				}
@@ -1144,9 +1162,15 @@ func findObjectInteriorCompletions(
 				}
 			}
 
+			suffix := ": "
+			valueCompletion, ok := MANIFEST_SECTION_DEFAULT_VALUE_COMPLETIONS[sectionName]
+			if ok {
+				suffix += valueCompletion
+			}
+
 			completions = append(completions, Completion{
-				ShownString:   sectionName,
-				Value:         sectionName,
+				ShownString:   sectionName + suffix,
+				Value:         sectionName + suffix,
 				Kind:          defines.CompletionItemKindVariable,
 				ReplacedRange: pos,
 			})
@@ -1164,9 +1188,16 @@ func findObjectInteriorCompletions(
 				}
 			}
 
+			suffix := ": "
+			valueCompletion, ok := LTHREAD_META_SECTION_DEFAULT_VALUE_COMPLETIONS[sectionName]
+			if ok {
+				suffix += valueCompletion
+			}
+
 			completions = append(completions, Completion{
-				ShownString:   sectionName,
-				Value:         sectionName,
+				ShownString:   sectionName + suffix,
+				Value:         sectionName + suffix,
+				Detail:        LTHREAD_META_SECTION_HELP[sectionName],
 				Kind:          defines.CompletionItemKindVariable,
 				ReplacedRange: pos,
 			})
