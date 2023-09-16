@@ -13,7 +13,7 @@ manifest {
 }
 
 lthread = go {
-    globals: .{create, FILEPATH}
+    globals: {FILEPATH: FILEPATH}
     allow: {
         create: { 
             $$IWD_PREFIX

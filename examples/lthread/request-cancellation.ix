@@ -32,7 +32,7 @@ server = http.Server!(HOST, handle )
 # -----------------------------------------
 
 lthread = go {
-    globals: .{read, URL}
+    globals: {URL: URL}
     allow: {
         read: URL
     }

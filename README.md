@@ -388,7 +388,7 @@ TODO: explain
 #### **Lighweight threads**
 
 ```
-lthread = go {globals: .{print}} do {
+lthread = go {} do {
   print("hello from goroutine !")
   return 1
 }

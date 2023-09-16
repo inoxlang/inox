@@ -16,7 +16,7 @@ req_group = LThreadGroup()
 for (1 .. 2) {
     go {
         group: req_group 
-        globals: .{read, DOMAIN}
+        globals: {DOMAIN: DOMAIN}
     } do {
         return read!(https://jsonplaceholder.typicode.com/posts/1)
     } 

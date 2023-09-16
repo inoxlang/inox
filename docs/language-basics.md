@@ -1045,7 +1045,7 @@ LThreads (lightweight threads) are mainly used for concurrent work and isolation
 **Embedded module:**
 
 ````
-thread = go {globals: .{read}, allow: {read: %https://example.com/...}} do {
+thread = go {allow: {read: %https://example.com/...}} do {
     # embedded module
 
     return read!(https://example.com/)
