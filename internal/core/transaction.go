@@ -172,6 +172,7 @@ func (tx *Transaction) Commit(ctx *Context) error {
 	}
 
 	var callbackErrors []error
+
 	for _, fn := range tx.endCallbackFns {
 		func() {
 			defer func() {
@@ -184,6 +185,8 @@ func (tx *Transaction) Commit(ctx *Context) error {
 			fn(tx, true)
 		}()
 	}
+
+	tx.endCallbackFns = nil
 
 	return combineErrorsWithPrefixMessage("callback errors", callbackErrors...)
 }
@@ -214,6 +217,8 @@ func (tx *Transaction) Rollback(ctx *Context) error {
 			fn(tx, false)
 		}()
 	}
+
+	tx.endCallbackFns = nil
 
 	for _, effect := range tx.effects {
 		if err := effect.Reverse(ctx); err != nil {
