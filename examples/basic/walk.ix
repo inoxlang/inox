@@ -22,7 +22,7 @@ walk ./tempdir/ entry {
     print $entry.path
 }
 
-# the prune statement stops the walk of the current subdirectory
+# the prune statement prevents the iteration of the current directory's children
 print "\nprune if dir is b:"
 walk ./tempdir/ entry {
     if (entry.name == "b") {

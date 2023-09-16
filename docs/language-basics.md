@@ -24,6 +24,7 @@
     - [Switch statement](#switch-statement)
     - [Match statement](#match-statement)
     - [For statement](#for-statement)
+    - [Walk statement](#walk-statement)
     - [Pipe statement](#pipe-statement)
 - [Functions](#functions)
     - [Definitions](#function-definitions)
@@ -610,6 +611,72 @@ output:
 1 2
 2 3
 ```
+
+
+## Walk Statement
+
+<details>
+    <summary>Click to expand</summary>
+
+**walk statements** iterate over a **walkable** value. Like in **for statements** 
+you can use the **break** & **continue** keywords.
+
+```
+fs.mkdir ./tempdir/ :{
+    ./a.txt: ""
+    ./b/: :{
+        ./c.txt: ""
+    }
+}
+
+walk ./tempdir/ entry {
+    print(entry.path)
+}
+
+output:
+./tempdir/
+./tempdir/a.txt
+./tempdir/b/
+./tempdir/b/c.txt
+
+
+# the prune statement prevents the iteration of the current directory's children
+walk ./tempdir/ entry {
+    if (entry.name == "b") {
+        prune
+    }
+    print $entry.path
+}
+
+output:
+./tempdir/
+./tempdir/a.txt
+./tempdir/b/
+```
+
+Walking over a [**udata**](#udata) value:
+
+```
+tree = udata "root" {
+    "child 1" {
+        "grandchild"
+    } 
+    "child 2"
+}
+
+walk tree entry {
+    print(entry)
+}
+
+output:
+"root"
+"child 1"
+"grandchild"
+"child 2"
+```
+
+</details>
+
 ## Pipe Statement
 
 Pipe statements are analogous to pipes in Unix but they act on the values returned by functions, not 
