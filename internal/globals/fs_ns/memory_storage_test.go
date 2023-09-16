@@ -1,6 +1,7 @@
 package fs_ns
 
 import (
+	"errors"
 	"math/rand"
 	"os"
 	"strconv"
@@ -182,4 +183,89 @@ func TestMemoryStorage(t *testing.T) {
 		wg.Wait()
 	})
 
+	t.Run("truncating the same file should be thread safe", func(t *testing.T) {
+		storage := newInMemoryStorage(1000)
+
+		file := utils.Must(storage.New("file", 0400, os.O_WRONLY))
+		file.Close()
+
+		wg := new(sync.WaitGroup)
+		goroutineCount := 100
+
+		wg.Add(goroutineCount)
+
+		for i := 0; i < goroutineCount; i++ {
+			go func() {
+				defer wg.Done()
+				time.Sleep(time.Microsecond)
+
+				for i := 0; i < 10; i++ {
+					file, _ := storage.Get("file")
+					file.Truncate(int64(i))
+					file.Close()
+				}
+			}()
+		}
+
+		//TODO: add assertions
+		wg.Wait()
+	})
+
+	t.Run("Persist should not call the callback function if file is not dirty", func(t *testing.T) {
+		storage := newInMemoryStorage(1000)
+
+		file := utils.Must(storage.New("file", 0400, os.O_WRONLY))
+		defer file.Close()
+
+		called := false
+		err := file.content.Persist(func(p []byte) error {
+			called = true
+			return nil
+		})
+
+		assert.NoError(t, err)
+		assert.False(t, called)
+		assert.False(t, file.content.IsDirty())
+	})
+
+	t.Run("Persist should call the callback function if file is dirty", func(t *testing.T) {
+		storage := newInMemoryStorage(1000)
+
+		file := utils.Must(storage.New("file", 0400, os.O_WRONLY))
+		defer file.Close()
+
+		file.Write([]byte{'a'})
+		assert.True(t, file.content.IsDirty())
+
+		called := false
+		err := file.content.Persist(func(p []byte) error {
+			assert.True(t, file.content.IsDirty())
+
+			called = true
+			assert.Equal(t, []byte{'a'}, p)
+			return nil
+		})
+
+		assert.NoError(t, err)
+		assert.True(t, called)
+		assert.False(t, file.content.IsDirty())
+	})
+
+	t.Run("Persist should recover if the persist callback function panics", func(t *testing.T) {
+		storage := newInMemoryStorage(1000)
+
+		file := utils.Must(storage.New("file", 0400, os.O_WRONLY))
+		defer file.Close()
+
+		file.Write([]byte{'a'})
+		assert.True(t, file.content.IsDirty())
+
+		panicErr := errors.New("!")
+		err := file.content.Persist(func(p []byte) error {
+			panic(panicErr)
+		})
+
+		assert.ErrorIs(t, err, panicErr)
+		assert.True(t, file.content.IsDirty())
+	})
 }

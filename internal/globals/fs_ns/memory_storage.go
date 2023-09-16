@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -338,12 +339,15 @@ func NormalizeAsAbsolute(path string) string {
 }
 
 type InMemFileContent struct {
-	name                     string
-	bytes                    []byte
-	creationTime             time.Time
-	modificationTime         atomic.Value //time.Time
-	filesystemMaxStorageSize int64
-	filesystemStorageSize    *atomic.Int64
+	name                      string
+	bytes                     []byte
+	creationTime              time.Time
+	modificationTime          atomic.Value //time.Time
+	filesystemMaxStorageSize  int64
+	filesystemStorageSize     *atomic.Int64
+	dirty                     bool
+	beingPersisted            bool
+	modifiedDuringPersistence bool
 
 	m sync.RWMutex
 }
@@ -365,8 +369,42 @@ func NewInMemFileContent(
 	return c
 }
 
-func (c *InMemFileContent) BytesToNotModify() []byte {
-	return c.bytes
+func (c *InMemFileContent) IsDirty() bool {
+	c.m.RLock()
+	defer c.m.RUnlock()
+	return c.dirty
+}
+
+// If the file is not dirty Persist snapshots the content of the file & invokes persistFn,
+// if persistFn returns an error or panics an error is returned.
+func (c *InMemFileContent) Persist(persistFn func(p []byte) error) (finalErr error) {
+	c.m.Lock()
+	if !c.dirty {
+		c.m.Unlock()
+		return
+	}
+	bytes := utils.CopySlice(c.bytes)
+	c.beingPersisted = true
+	c.m.Unlock()
+
+	defer func() {
+		e := recover()
+		if e != nil {
+			err := utils.ConvertPanicValueToError(e)
+			finalErr = fmt.Errorf("%w: %s", err, string(debug.Stack()))
+		}
+
+		c.m.Lock()
+		defer c.m.Unlock()
+
+		if finalErr == nil && !c.modifiedDuringPersistence {
+			c.dirty = false
+		}
+
+		c.modifiedDuringPersistence = false
+	}()
+
+	return persistFn(bytes)
 }
 
 func (c *InMemFileContent) ModifTime() time.Time {
@@ -374,6 +412,14 @@ func (c *InMemFileContent) ModifTime() time.Time {
 }
 
 func (c *InMemFileContent) Truncate(size int64) error {
+	c.m.Lock()
+	defer c.m.Unlock()
+	defer func() {
+		c.dirty = true
+		if c.beingPersisted {
+			c.modifiedDuringPersistence = true
+		}
+	}()
 	c.modificationTime.Store(time.Now())
 
 	if size <= int64(len(c.bytes)) {
@@ -415,6 +461,13 @@ func (c *InMemFileContent) WriteAt(p []byte, off int64) (int, error) {
 	}
 
 	c.m.Lock()
+	defer c.m.Unlock()
+	defer func() {
+		c.dirty = true
+		if c.beingPersisted {
+			c.modifiedDuringPersistence = true
+		}
+	}()
 	prev := len(c.bytes)
 
 	diff := int(off) - prev
@@ -439,7 +492,6 @@ func (c *InMemFileContent) WriteAt(p []byte, off int64) (int, error) {
 	if len(c.bytes) < prev {
 		c.bytes = c.bytes[:prev]
 	}
-	c.m.Unlock()
 
 	return len(p), nil
 }

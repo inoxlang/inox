@@ -135,6 +135,7 @@ type s3WriteFile struct {
 	client   *S3Client
 	bucket   string
 	filename string
+	dirty    atomic.Bool
 	closed   atomic.Bool
 
 	flag     int
@@ -217,6 +218,7 @@ func (f *s3WriteFile) Write(p []byte) (n int, err error) {
 		return 0, os.ErrClosed
 	}
 
+	f.dirty.Store(true)
 	return f.content.WriteAt(p, f.position)
 }
 
@@ -278,6 +280,7 @@ func (f *s3WriteFile) Truncate(size int64) error {
 	if f.closed.Load() {
 		return os.ErrClosed
 	}
+	f.dirty.Store(true)
 	return f.content.Truncate(size)
 }
 
@@ -289,20 +292,25 @@ func (f *s3WriteFile) Sync() error {
 }
 
 func (f *s3WriteFile) sync() error {
-	p := f.content.BytesToNotModify()
-	body := bytes.NewReader(p)
+	err := f.content.Persist(func(p []byte) error {
+		key := toObjectKey(f.filename)
 
-	key := toObjectKey(f.filename)
+		_, err := f.client.PutObject(f.ctx, f.bucket, key, bytes.NewReader(p), int64(len(p)), minio.PutObjectOptions{
+			UserMetadata: map[string]string{
+				PERM_METADATA_KEY: strconv.FormatUint(uint64(f.perm), 8),
+			},
+		})
 
-	_, err := f.client.PutObject(f.ctx, f.bucket, key, body, int64(len(p)), minio.PutObjectOptions{
-		UserMetadata: map[string]string{
-			PERM_METADATA_KEY: strconv.FormatUint(uint64(f.perm), 8),
-		},
+		if err != nil {
+			return fmt.Errorf("unable to perform PutObject operation: %w", err)
+		}
+		return nil
 	})
 
 	if err != nil {
-		return fmt.Errorf("unable to perform PutObject operation: %w", err)
+		return err
 	}
+
 	f.fs.pendingCreationsLock.Lock()
 	defer f.fs.pendingCreationsLock.Unlock()
 	delete(f.fs.pendingCreations, fs_ns.NormalizeAsAbsolute(f.filename))
