@@ -1708,6 +1708,10 @@ func (it *DirWalker) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, dep
 	InspectPrint(w, it)
 }
 
+func (it *UdataWalker) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	InspectPrint(w, it)
+}
+
 func (it *ValueListIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }

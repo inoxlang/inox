@@ -392,6 +392,10 @@ func (w *DirWalker) IsMutable() bool {
 	return true
 }
 
+func (w *UdataWalker) IsMutable() bool {
+	return true
+}
+
 func (it *ValueListIterator) IsMutable() bool {
 	return true
 }

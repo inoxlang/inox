@@ -1116,6 +1116,10 @@ func (it *DirWalker) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbo
 	return nil, symbolic.ErrNoSymbolicValue
 }
 
+func (it *UdataWalker) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	return nil, symbolic.ErrNoSymbolicValue
+}
+
 func (it *ValueListIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	return &symbolic.Iterator{}, nil
 }

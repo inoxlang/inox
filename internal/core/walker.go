@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	_                           = []Walkable{Path("")}
+	_                           = []Walkable{Path(""), (*UData)(nil)}
 	FS_TREE_DATA_ITEM_PROPNAMES = []string{"path", "path_rel_to_parent"}
 )
 
@@ -274,4 +274,123 @@ func (p Path) Walker(ctx *Context) (Walker, error) {
 	}
 
 	return NewDirWalker(ctx.GetFileSystem(), p), nil
+}
+
+type UdataWalker struct {
+	chain      []UDataHiearchyEntry
+	indexChain []int
+	nextIndex  int
+}
+
+func (d *UData) Walker(*Context) (Walker, error) {
+	rootPseudoEntry := UDataHiearchyEntry{
+		Value:    d.Root,
+		Children: d.HiearchyEntries,
+	}
+
+	return &UdataWalker{
+		chain:      []UDataHiearchyEntry{rootPseudoEntry},
+		indexChain: []int{0},
+	}, nil
+}
+
+func (it *UdataWalker) HasNext(ctx *Context) bool {
+	if it.nextIndex == 0 {
+		return true
+	}
+
+	currentEntry := it.chain[len(it.chain)-1]
+
+	indexChain := it.indexChain
+	chain := it.chain
+
+	if len(currentEntry.Children) == 0 {
+		chain = chain[:len(chain)-1]
+	} else {
+		return true
+	}
+
+	var childIndex int
+
+	for len(chain) > 0 {
+		parentEntry := chain[len(chain)-1]
+		childIndex = indexChain[len(indexChain)-1]
+
+		//last children
+		if childIndex == len(parentEntry.Children)-1 {
+			indexChain = indexChain[:len(indexChain)-1]
+			chain = chain[:len(chain)-1]
+
+			continue
+		}
+
+		return true
+	}
+
+	return false
+}
+
+func (it *UdataWalker) Next(ctx *Context) bool {
+	if !it.HasNext(ctx) {
+		return false
+	}
+
+	if it.nextIndex == 0 {
+		it.nextIndex++
+		return true
+	}
+
+	currentEntry := it.chain[len(it.chain)-1]
+
+	if len(currentEntry.Children) == 0 { //pop current entry
+		it.chain = it.chain[:len(it.chain)-1]
+	} else { //add first child
+		it.chain = append(it.chain, currentEntry.Children[0])
+		it.indexChain = append(it.indexChain, 0)
+		it.nextIndex++
+		return true
+	}
+
+	var childIndex int
+
+	for len(it.chain) > 0 {
+		parentEntry := it.chain[len(it.chain)-1]
+		childIndex = it.indexChain[len(it.indexChain)-1]
+
+		//last children
+		if childIndex == len(parentEntry.Children)-1 {
+			it.indexChain = it.indexChain[:len(it.indexChain)-1]
+			it.chain = it.chain[:len(it.chain)-1]
+
+			continue
+		}
+
+		childIndex++
+
+		it.indexChain[len(it.indexChain)-1] = childIndex
+		it.chain[len(it.chain)-1] = parentEntry.Children[childIndex]
+		it.nextIndex++
+		return true
+	}
+
+	return false
+}
+
+func (it *UdataWalker) Prune(ctx *Context) {
+
+}
+
+func (it *UdataWalker) Key(*Context) Value {
+	return Int(it.nextIndex - 1)
+}
+
+func (it *UdataWalker) Value(*Context) Value {
+	return it.chain[len(it.chain)-1].Value
+}
+
+func (it *UdataWalker) NodeMeta(*Context) WalkableNodeMeta {
+	if it.nextIndex == 1 {
+		return NewWalkableNodeMeta(nil, Nil)
+	}
+	return WalkableNodeMeta{}
 }

@@ -1318,6 +1318,14 @@ func (i *UData) Test(v SymbolicValue) bool {
 	return ok
 }
 
+func (*UData) WalkerElement() SymbolicValue {
+	return ANY
+}
+
+func (*UData) WalkerNodeMeta() SymbolicValue {
+	return Nil
+}
+
 func (i *UData) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%udata")))
 }

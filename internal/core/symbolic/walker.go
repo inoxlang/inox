@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	_ = []Walkable{(*Path)(nil)}
+	_ = []Walkable{(*Path)(nil), (*UData)(nil)}
 )
 
 // An Walkable represents a symbolic Walkable.

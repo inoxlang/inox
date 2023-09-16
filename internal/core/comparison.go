@@ -1532,6 +1532,14 @@ func (w *DirWalker) Equal(ctx *Context, other Value, alreadyCompared map[uintptr
 	return otherWalker == w
 }
 
+func (w *UdataWalker) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherWalker, ok := other.(*UdataWalker)
+	if !ok {
+		return false
+	}
+	return otherWalker == w
+}
+
 func (it *ValueListIterator) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	otherIt, ok := other.(*ValueListIterator)
 	if !ok {
