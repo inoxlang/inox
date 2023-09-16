@@ -121,6 +121,33 @@ module:
           db = dbs.main
 
           # ⚠️ Permissions still need to be granted in the import statement.
+           - topic: manifest/databases-section
+    - topic: manifest/permissions-section
+      text: >
+        The permissions section lists the permissions required by the module. 
+        Permissions represent a type of action a script is allowed (or forbidden) to do. 
+        Most IO operations (filesystem access, HTTP requests) and resource intensive operations 
+        (lthread creation) necessitate a permission.
+      examples:
+      - code: |
+          # example permission section allowing the module 
+          # to create an HTTP server & read any file
+          {
+            provide: https://localhost
+            read: %/...
+          }
+
+      - code: |
+          # example permission section allowing the module 
+          # to read & write the data of the database ldb://main
+          {
+            read: {
+              ldb://main
+            }
+            write: {
+              ldb://main
+            }
+          }
 concurrency:
   title: Concurrency
   elements:
