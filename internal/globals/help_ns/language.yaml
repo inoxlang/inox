@@ -64,6 +64,37 @@ module:
                 description: "if true delete <dir> if it already exists"
             } 
           }
+    - topic: manifest/env-section
+      text: >
+        The env section is an object pattern defining expected environment variables and their type.
+      examples:
+      - code: |
+          # example env section 
+          %{
+            API_KEY: %secret-string
+          }
+          ...
+
+          # environment variables can then be accessed:
+          API_KEY = env.initial.API_KEY
+    - topic: manifest/databases-section
+      text: >
+        The databases section defines the databases to connect to.
+      examples:
+      - code: |
+          # example databases section to connect to a local database 
+          # storing its data in the folder /databases/main/.
+          # the database will be created if it does not exist.
+          {
+            main:  {
+              resource: ldb://main
+              resolution-data: /databases/main/
+            }
+          }
+          ...
+
+          # the database can then be accessed by the module:
+          dbs.main
 concurrency:
   title: Concurrency
   elements:
