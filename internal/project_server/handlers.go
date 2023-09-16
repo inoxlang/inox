@@ -198,10 +198,18 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 			}()
 
 			var labelDetails *defines.CompletionItemLabelDetails
-			if completion.Detail != "" {
-				detail := "  " + completion.Detail
+			if completion.LabelDetail != "" {
+				detail := "  " + completion.LabelDetail
 				labelDetails = &defines.CompletionItemLabelDetails{
 					Detail: &detail,
+				}
+			}
+
+			var doc any
+			if completion.MarkdownDocumentation != "" {
+				doc = defines.MarkupContent{
+					Kind:  defines.MarkupKindMarkdown,
+					Value: completion.MarkdownDocumentation,
 				}
 			}
 
@@ -220,7 +228,8 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 					s += string(rune(index%10) + 'a')
 					return &s
 				}(),
-				LabelDetails: labelDetails,
+				LabelDetails:  labelDetails,
+				Documentation: doc,
 			}
 		})
 		return &lspCompletions, nil

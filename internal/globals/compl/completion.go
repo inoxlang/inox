@@ -14,11 +14,12 @@ import (
 )
 
 type Completion struct {
-	ShownString   string                    `json:"shownString"`
-	Value         string                    `json:"value"`
-	ReplacedRange parse.SourcePositionRange `json:"replacedRange"`
-	Kind          defines.CompletionItemKind
-	Detail        string
+	ShownString           string                    `json:"shownString"`
+	Value                 string                    `json:"value"`
+	ReplacedRange         parse.SourcePositionRange `json:"replacedRange"`
+	Kind                  defines.CompletionItemKind
+	LabelDetail           string
+	MarkdownDocumentation string
 }
 
 var (
@@ -135,7 +136,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 					ShownString: s,
 					Value:       s,
 					Kind:        defines.CompletionItemKindInterface,
-					Detail:      detail,
+					LabelDetail: detail,
 				})
 			}
 			for name, namespace := range state.Global.Ctx.GetPatternNamespaces() {
@@ -155,7 +156,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 					ShownString: s,
 					Value:       s,
 					Kind:        defines.CompletionItemKindInterface,
-					Detail:      detail,
+					LabelDetail: detail,
 				})
 			}
 		} else {
@@ -173,7 +174,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 					ShownString: s,
 					Value:       s,
 					Kind:        defines.CompletionItemKindInterface,
-					Detail:      symbolic.Stringify(patternData.Value),
+					LabelDetail: symbolic.Stringify(patternData.Value),
 				})
 			}
 			for _, namespaceData := range contextData.PatternNamespaces {
@@ -189,7 +190,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 					ShownString: s,
 					Value:       s,
 					Kind:        defines.CompletionItemKindInterface,
-					Detail:      symbolic.Stringify(namespaceData.Value),
+					LabelDetail: symbolic.Stringify(namespaceData.Value),
 				})
 			}
 		}
@@ -229,7 +230,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 					ShownString: s,
 					Value:       s,
 					Kind:        defines.CompletionItemKindInterface,
-					Detail:      detail,
+					LabelDetail: detail,
 				})
 			}
 		} else {
@@ -258,7 +259,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 					ShownString: s,
 					Value:       s,
 					Kind:        defines.CompletionItemKindInterface,
-					Detail:      symbolic.Stringify(patternValue),
+					LabelDetail: symbolic.Stringify(patternValue),
 				})
 
 				return nil
@@ -266,7 +267,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 		}
 	case *parse.Variable:
 		var names []string
-		var details []string
+		var labelDetails []string
 		if args.Mode == ShellCompletions {
 			for name, varVal := range state.CurrentLocalScope() {
 
@@ -274,7 +275,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 					names = append(names, name)
 
 					detail, _ := core.GetStringifiedSymbolicValue(ctx, varVal, false)
-					details = append(details, detail)
+					labelDetails = append(labelDetails, detail)
 				}
 			}
 		} else {
@@ -283,7 +284,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 				if hasPrefixCaseInsensitive(varData.Name, n.Name) {
 					names = append(names, varData.Name)
 
-					details = append(details, symbolic.Stringify(varData.Value))
+					labelDetails = append(labelDetails, symbolic.Stringify(varData.Value))
 				}
 			}
 		}
@@ -293,7 +294,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 				ShownString: name,
 				Value:       "$" + name,
 				Kind:        defines.CompletionItemKindVariable,
-				Detail:      details[i],
+				LabelDetail: labelDetails[i],
 			})
 		}
 	case *parse.GlobalVariable:
@@ -305,7 +306,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 						ShownString: name,
 						Value:       "$$" + name,
 						Kind:        defines.CompletionItemKindVariable,
-						Detail:      detail,
+						LabelDetail: detail,
 					})
 				}
 				return nil
@@ -319,7 +320,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 						ShownString: varData.Name,
 						Value:       "$$" + varData.Name,
 						Kind:        defines.CompletionItemKindVariable,
-						Detail:      symbolic.Stringify(varData.Value),
+						LabelDetail: symbolic.Stringify(varData.Value),
 					})
 				}
 			}
@@ -456,9 +457,10 @@ after_subcommand_completions:
 					}
 
 					completions = append(completions, Completion{
-						ShownString: sectionName + suffix,
-						Value:       sectionName + suffix,
-						Kind:        defines.CompletionItemKindVariable,
+						ShownString:           sectionName + suffix,
+						Value:                 sectionName + suffix,
+						MarkdownDocumentation: MANIFEST_SECTION_DOC[sectionName],
+						Kind:                  defines.CompletionItemKindVariable,
 					})
 				}
 			}
@@ -482,10 +484,11 @@ after_subcommand_completions:
 					}
 
 					completions = append(completions, Completion{
-						ShownString: sectionName + suffix,
-						Value:       sectionName + suffix,
-						Detail:      LTHREAD_META_SECTION_HELP[sectionName],
-						Kind:        defines.CompletionItemKindVariable,
+						ShownString:           sectionName + suffix,
+						Value:                 sectionName + suffix,
+						LabelDetail:           LTHREAD_META_SECTION_LABEL_DETAILS[sectionName],
+						MarkdownDocumentation: LTHREAD_META_SECTION_DOC[sectionName],
+						Kind:                  defines.CompletionItemKindVariable,
 					})
 				}
 			}
@@ -523,7 +526,7 @@ after_subcommand_completions:
 							ShownString: info.Name,
 							Value:       info.Name,
 							Kind:        defines.CompletionItemKindVariable,
-							Detail:      detail,
+							LabelDetail: detail,
 						})
 					}
 				}
@@ -597,7 +600,7 @@ after_subcommand_completions:
 					ShownString: name,
 					Value:       name,
 					Kind:        defines.CompletionItemKindVariable,
-					Detail:      detail,
+					LabelDetail: detail,
 				})
 			}
 		}
@@ -609,7 +612,7 @@ after_subcommand_completions:
 					ShownString: varData.Name,
 					Value:       varData.Name,
 					Kind:        defines.CompletionItemKindVariable,
-					Detail:      symbolic.Stringify(varData.Value),
+					LabelDetail: symbolic.Stringify(varData.Value),
 				})
 			}
 		}
@@ -627,7 +630,7 @@ after_subcommand_completions:
 					ShownString: name,
 					Value:       name,
 					Kind:        defines.CompletionItemKindVariable,
-					Detail:      detail,
+					LabelDetail: detail,
 				})
 			}
 			return nil
@@ -641,7 +644,7 @@ after_subcommand_completions:
 					ShownString: varData.Name,
 					Value:       varData.Name,
 					Kind:        defines.CompletionItemKindVariable,
-					Detail:      symbolic.Stringify(varData.Value),
+					LabelDetail: symbolic.Stringify(varData.Value),
 				})
 			}
 		}
@@ -961,7 +964,7 @@ func handleDoubleColonExpressionCompletions(n *parse.DoubleColonExpression, stat
 				ShownString:   propName,
 				Value:         propName,
 				Kind:          defines.CompletionItemKindProperty,
-				Detail:        propDetail,
+				LabelDetail:   propDetail,
 				ReplacedRange: replacedRange,
 			})
 			return nil
@@ -976,21 +979,21 @@ func suggestPropertyNames(
 ) []Completion {
 	var completions []Completion
 	var propNames []string
-	var propDetails []string
+	var propLabelDetails []string
 	var optionalProps []bool
 
 	//we get all property names
 	switch v := curr.(type) {
 	case core.IProps:
 		propNames = v.PropertyNames(state.Ctx)
-		propDetails = utils.MapSlice(propNames, func(name string) string {
+		propLabelDetails = utils.MapSlice(propNames, func(name string) string {
 			propVal := v.Prop(state.Ctx, name)
 			detail, _ := core.GetStringifiedSymbolicValue(state.Ctx, propVal, false)
 			return detail
 		})
 	case symbolic.IProps:
 		propNames = symbolic.GetAllPropertyNames(v)
-		propDetails = utils.MapSlice(propNames, func(name string) string {
+		propLabelDetails = utils.MapSlice(propNames, func(name string) string {
 			propVal := v.Prop(name)
 			return symbolic.Stringify(propVal)
 		})
@@ -1012,7 +1015,7 @@ func suggestPropertyNames(
 				ShownString:   op + propName,
 				Value:         op + propName,
 				Kind:          defines.CompletionItemKindProperty,
-				Detail:        propDetails[i],
+				LabelDetail:   propLabelDetails[i],
 				ReplacedRange: replacedRange,
 			})
 		}
@@ -1036,7 +1039,7 @@ func suggestPropertyNames(
 				ShownString:   op + propName,
 				Value:         op + propName,
 				Kind:          defines.CompletionItemKindProperty,
-				Detail:        propDetails[i],
+				LabelDetail:   propLabelDetails[i],
 				ReplacedRange: replacedRange,
 			})
 		}
@@ -1169,10 +1172,11 @@ func findObjectInteriorCompletions(
 			}
 
 			completions = append(completions, Completion{
-				ShownString:   sectionName + suffix,
-				Value:         sectionName + suffix,
-				Kind:          defines.CompletionItemKindVariable,
-				ReplacedRange: pos,
+				ShownString:           sectionName + suffix,
+				Value:                 sectionName + suffix,
+				MarkdownDocumentation: MANIFEST_SECTION_DOC[sectionName],
+				Kind:                  defines.CompletionItemKindVariable,
+				ReplacedRange:         pos,
 			})
 		}
 	case *parse.SpawnExpression:
@@ -1195,11 +1199,12 @@ func findObjectInteriorCompletions(
 			}
 
 			completions = append(completions, Completion{
-				ShownString:   sectionName + suffix,
-				Value:         sectionName + suffix,
-				Detail:        LTHREAD_META_SECTION_HELP[sectionName],
-				Kind:          defines.CompletionItemKindVariable,
-				ReplacedRange: pos,
+				ShownString:           sectionName + suffix,
+				Value:                 sectionName + suffix,
+				LabelDetail:           LTHREAD_META_SECTION_LABEL_DETAILS[sectionName],
+				MarkdownDocumentation: LTHREAD_META_SECTION_DOC[sectionName],
+				Kind:                  defines.CompletionItemKindVariable,
+				ReplacedRange:         pos,
 			})
 		}
 	case *parse.ObjectProperty:
@@ -1225,7 +1230,7 @@ func findObjectInteriorCompletions(
 						Value:         info.Name,
 						Kind:          defines.CompletionItemKindVariable,
 						ReplacedRange: pos,
-						Detail:        detail,
+						LabelDetail:   detail,
 					})
 				}
 			}

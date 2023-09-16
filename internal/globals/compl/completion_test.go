@@ -67,7 +67,7 @@ func TestFindCompletions(t *testing.T) {
 						Span:        compl.ReplacedRange.Span,
 					}
 					completions[i].Kind = 0
-					completions[i].Detail = ""
+					completions[i].LabelDetail = ""
 				}
 				return completions
 			}

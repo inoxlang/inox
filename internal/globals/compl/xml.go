@@ -25,7 +25,7 @@ func findXmlTagNameCompletions(ident *parse.IdentifierLiteral, ancestors []parse
 					ShownString: tag.Name,
 					Value:       tag.Name,
 					Kind:        defines.CompletionItemKindProperty,
-					Detail:      tag.DescriptionText(),
+					LabelDetail: tag.DescriptionText(),
 				})
 			}
 		}
@@ -106,7 +106,7 @@ func findHtmlAttributeNameCompletions(ident *parse.IdentifierLiteral, parent *pa
 			ShownString: attr.Name,
 			Value:       attr.Name,
 			Kind:        defines.CompletionItemKindProperty,
-			Detail:      attr.DescriptionText(),
+			LabelDetail: attr.DescriptionText(),
 		})
 	}
 
@@ -137,7 +137,7 @@ func findHtmlAttributeValueCompletions(str *parse.QuotedStringLiteral, parent *p
 			ShownString: s,
 			Value:       s,
 			Kind:        defines.CompletionItemKindProperty,
-			Detail:      attrValueData.DescriptionText(),
+			LabelDetail: attrValueData.DescriptionText(),
 		})
 	}
 

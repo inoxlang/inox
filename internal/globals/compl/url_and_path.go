@@ -50,7 +50,7 @@ func findPathCompletions(ctx *core.Context, pth string) []Completion {
 				ShownString: name,
 				Value:       pth,
 				Kind:        defines.CompletionItemKindConstant,
-				Detail:      "%" + core.PATH_PATTERN.Name,
+				LabelDetail: "%" + core.PATH_PATTERN.Name,
 			})
 		}
 	}
@@ -87,7 +87,7 @@ func findURLCompletions(ctx *core.Context, u core.URL, parent parse.Node) []Comp
 						ShownString: obj.Key,
 						Value:       val,
 						Kind:        defines.CompletionItemKindConstant,
-						Detail:      "%" + core.URL_PATTERN.Name,
+						LabelDetail: "%" + core.URL_PATTERN.Name,
 					})
 				}
 			}
@@ -109,7 +109,7 @@ func findHostCompletions(ctx *core.Context, prefix string, parent parse.Node) []
 				ShownString: hostStr,
 				Value:       hostStr,
 				Kind:        defines.CompletionItemKindConstant,
-				Detail:      "%" + core.HOST_PATTERN.Name,
+				LabelDetail: "%" + core.HOST_PATTERN.Name,
 			})
 		}
 	}
@@ -125,7 +125,7 @@ func findHostCompletions(ctx *core.Context, prefix string, parent parse.Node) []
 				ShownString: s,
 				Value:       s,
 				Kind:        defines.CompletionItemKindConstant,
-				Detail:      "%" + core.HOST_PATTERN.Name,
+				LabelDetail: "%" + core.HOST_PATTERN.Name,
 			})
 		}
 
@@ -144,7 +144,7 @@ func findHostAliasCompletions(ctx *core.Context, prefix string, parent parse.Nod
 				ShownString: str,
 				Value:       str,
 				Kind:        defines.CompletionItemKindConstant,
-				Detail:      "%" + core.HOST_PATTERN.Name + " (" + string(host) + ")",
+				LabelDetail: "%" + core.HOST_PATTERN.Name + " (" + string(host) + ")",
 			})
 		}
 	}
