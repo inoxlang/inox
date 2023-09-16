@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -16,6 +17,10 @@ import (
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
+)
+
+const (
+	CTX_DONE_MICROTASK_CALLS_TIMEOUT = 5 * time.Millisecond
 )
 
 var (
@@ -45,9 +50,11 @@ type Context struct {
 
 	currentTx *Transaction
 
-	longLived atomic.Bool
-	done      atomic.Bool
-	cancel    context.CancelFunc
+	longLived        atomic.Bool
+	done             atomic.Bool
+	tearedDown       atomic.Bool
+	cancel           context.CancelFunc
+	onDoneMicrotasks []ContextDoneMicrotaskFn
 
 	//permissions & limits
 	grantedPermissions   []Permission
@@ -76,6 +83,9 @@ const (
 	DefaultContext ContextKind = iota
 	TestingContext
 )
+
+// A ContextDoneMicrotaskFn should run for a short time (less than 1ms), the calling context should not be access because it is locked.
+type ContextDoneMicrotaskFn func(timeoutCtx context.Context) error
 
 type ContextConfig struct {
 	Kind                 ContextKind
@@ -275,9 +285,12 @@ func NewContext(config ContextConfig) *Context {
 	//cleanup
 	go func() {
 		<-ctx.Done()
+		defer ctx.tearedDown.Store(true)
 
 		ctx.lock.Lock()
 		defer ctx.lock.Unlock()
+
+		logger := ctx.getClosestStateNoLock().Logger
 
 		//ctx.finished = true
 
@@ -291,6 +304,37 @@ func NewContext(config ContextConfig) *Context {
 		//rollback transaction (the rollback will be ignored if the transaction is finished)
 		if ctx.currentTx != nil {
 			ctx.currentTx.Rollback(ctx)
+		}
+
+		//call microtasks
+		deadlineCtx, cancelTimeoutCtx := context.WithTimeout(context.Background(), CTX_DONE_MICROTASK_CALLS_TIMEOUT)
+		defer func() {
+			cancelTimeoutCtx()
+			ctx.onDoneMicrotasks = nil
+		}()
+
+	microtasks:
+		for _, microtaskFn := range ctx.onDoneMicrotasks {
+			func() {
+				defer func() {
+					if e := recover(); e != nil {
+						defer recover()
+						err := fmt.Errorf("%w: %s", utils.ConvertPanicValueToError(e), string(debug.Stack()))
+						logger.Err(err).Msg("error while calling a done contxt microtask")
+					}
+				}()
+
+				err := microtaskFn(deadlineCtx)
+				if err != nil {
+					logger.Err(err).Msg("error returned by a done context microtask")
+				}
+			}()
+
+			select {
+			case <-deadlineCtx.Done():
+				break microtasks
+			default:
+			}
 		}
 	}()
 
@@ -306,19 +350,39 @@ func (ctx *Context) assertNotDone() {
 		panic(ctx.makeDoneContextError())
 	}
 }
+
 func (ctx *Context) IsDone() bool {
 	return ctx.done.Load()
+}
+
+func (ctx *Context) OnDone(microtask ContextDoneMicrotaskFn) {
+	ctx.lock.Lock()
+	defer ctx.lock.Unlock()
+	ctx.onDoneMicrotasks = append(ctx.onDoneMicrotasks, microtask)
+}
+
+func (ctx *Context) IsTearedDown() bool {
+	return ctx.tearedDown.Load()
+}
+
+func (ctx *Context) InefficientlyWaitUntilTearedDown(timeout time.Duration) bool {
+	start := time.Now()
+	for !ctx.IsTearedDown() && time.Since(start) <= timeout {
+		time.Sleep(time.Millisecond)
+	}
+	return ctx.IsTearedDown()
 }
 
 func (ctx *Context) GetClosestState() *GlobalState {
 	ctx.lock.RLock()
 	defer ctx.lock.RUnlock()
+
+	ctx.assertNotDone()
+
 	return ctx.getClosestStateNoLock()
 }
 
 func (ctx *Context) getClosestStateNoLock() *GlobalState {
-	ctx.assertNotDone()
-
 	if ctx.state != nil {
 		return ctx.state
 	}

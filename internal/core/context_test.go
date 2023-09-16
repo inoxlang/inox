@@ -1,6 +1,8 @@
 package core
 
 import (
+	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -348,4 +350,82 @@ func TestContextSetProtocolClientForURLForURL(t *testing.T) {
 	// assert.NoError(t, ctx.SetProtocolClientForURL(PROFILE_NAME, core.NewObject()))
 	// profile, _ := ctx.GetProtolClient(PROFILE_NAME.UnderlyingString())
 	// assert.NotNil(t, profile)
+}
+
+func TestContextMicrotasks(t *testing.T) {
+
+	t.Run("callback functions should all be called", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		firstCall := false
+		secondCall := false
+
+		ctx.OnDone(func(timeoutCtx context.Context) error {
+			firstCall = true
+			return nil
+		})
+
+		ctx.OnDone(func(timeoutCtx context.Context) error {
+			secondCall = true
+			return nil
+		})
+
+		ctx.Cancel()
+		<-ctx.Done()
+
+		ctx.InefficientlyWaitUntilTearedDown(time.Second)
+
+		if !assert.True(t, firstCall) {
+			return
+		}
+		assert.True(t, secondCall)
+	})
+
+	t.Run("callback functions should all be called even if one function returns an error", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		firstCall := false
+		secondCall := false
+
+		ctx.OnDone(func(timeoutCtx context.Context) error {
+			firstCall = true
+			return errors.New("random error")
+		})
+
+		ctx.OnDone(func(timeoutCtx context.Context) error {
+			secondCall = true
+			return nil
+		})
+
+		ctx.Cancel()
+		ctx.InefficientlyWaitUntilTearedDown(100 * time.Millisecond)
+
+		if !assert.True(t, firstCall) {
+			return
+		}
+		assert.True(t, secondCall)
+	})
+
+	t.Run("callback functions should all be called even if one function panics", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		firstCall := false
+		secondCall := false
+
+		ctx.OnDone(func(timeoutCtx context.Context) error {
+			firstCall = true
+			panic(errors.New("random error"))
+		})
+
+		ctx.OnDone(func(timeoutCtx context.Context) error {
+			secondCall = true
+			return nil
+		})
+
+		ctx.Cancel()
+		ctx.InefficientlyWaitUntilTearedDown(100 * time.Millisecond)
+
+		if !assert.True(t, firstCall) {
+			return
+		}
+		assert.True(t, secondCall)
+	})
+
 }
