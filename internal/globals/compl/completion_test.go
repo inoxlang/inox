@@ -471,51 +471,104 @@ func TestFindCompletions(t *testing.T) {
 				})
 			})
 
-			t.Run("manifest section from prefix", func(t *testing.T) {
-				state := newState()
-				chunk, _ := parseChunkSource("manifest{e}", "")
-				doSymbolicCheck(chunk, state.Global)
+			t.Run("manifest section", func(t *testing.T) {
+				t.Run("from prefix", func(t *testing.T) {
+					state := newState()
+					chunk, _ := parseChunkSource("manifest{e}", "")
+					doSymbolicCheck(chunk, state.Global)
 
-				completions := findCompletions(state, chunk, 10)
-				assert.EqualValues(t, []Completion{
-					{
+					completions := findCompletions(state, chunk, 10)
+					assert.EqualValues(t, []Completion{
+						{
+							ShownString:   "env",
+							Value:         "env",
+							ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 9, End: 10}},
+						},
+					}, completions)
+				})
+
+				t.Run("in empty manifest", func(t *testing.T) {
+					state := newState()
+					chunk, _ := parseChunkSource("manifest{}", "")
+					doSymbolicCheck(chunk, state.Global)
+
+					completions := findCompletions(state, chunk, 9)
+					assert.Contains(t, completions, Completion{
 						ShownString:   "env",
 						Value:         "env",
-						ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 9, End: 10}},
-					},
-				}, completions)
-			})
-
-			t.Run("manifest section in empty manifest", func(t *testing.T) {
-				state := newState()
-				chunk, _ := parseChunkSource("manifest{}", "")
-				doSymbolicCheck(chunk, state.Global)
-
-				completions := findCompletions(state, chunk, 9)
-				assert.Contains(t, completions, Completion{
-					ShownString:   "env",
-					Value:         "env",
-					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 9, End: 9}},
-				})
-			})
-
-			t.Run("manifest section in non-empty manifest", func(t *testing.T) {
-				state := newState()
-				chunk, _ := parseChunkSource("manifest{\nparameters:{}}", "")
-				doSymbolicCheck(chunk, state.Global)
-
-				completions := findCompletions(state, chunk, 9)
-				assert.Contains(t, completions, Completion{
-					ShownString:   "env",
-					Value:         "env",
-					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 9, End: 9}},
+						ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 9, End: 9}},
+					})
 				})
 
-				for _, completion := range completions {
-					if completion.ShownString == "parameters" {
-						assert.Fail(t, "completion for 'parameters' should be present")
+				t.Run("in non-empty manifest", func(t *testing.T) {
+					state := newState()
+					chunk, _ := parseChunkSource("manifest{\nparameters:{}}", "")
+					doSymbolicCheck(chunk, state.Global)
+
+					completions := findCompletions(state, chunk, 9)
+					assert.Contains(t, completions, Completion{
+						ShownString:   "env",
+						Value:         "env",
+						ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 9, End: 9}},
+					})
+
+					for _, completion := range completions {
+						if completion.ShownString == "parameters" {
+							assert.Fail(t, "completion for 'parameters' should be present")
+						}
 					}
-				}
+				})
+
+			})
+
+			t.Run("lthread meta section", func(t *testing.T) {
+				t.Run("from prefix", func(t *testing.T) {
+					state := newState()
+					chunk, _ := parseChunkSource("go {a} do {}", "")
+					doSymbolicCheck(chunk, state.Global)
+
+					completions := findCompletions(state, chunk, 5)
+					assert.EqualValues(t, []Completion{
+						{
+							ShownString:   symbolic.LTHREAD_META_ALLOW_SECTION,
+							Value:         symbolic.LTHREAD_META_ALLOW_SECTION,
+							ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 4, End: 5}},
+						},
+					}, completions)
+				})
+
+				t.Run("in empty lthread meta", func(t *testing.T) {
+					state := newState()
+					chunk, _ := parseChunkSource("go {} do {}", "")
+					doSymbolicCheck(chunk, state.Global)
+
+					completions := findCompletions(state, chunk, 4)
+					assert.Contains(t, completions, Completion{
+						ShownString:   symbolic.LTHREAD_META_ALLOW_SECTION,
+						Value:         symbolic.LTHREAD_META_ALLOW_SECTION,
+						ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 4, End: 4}},
+					})
+				})
+
+				t.Run("in non-empty manifest", func(t *testing.T) {
+					state := newState()
+					chunk, _ := parseChunkSource("go {\nglobals: .{}} do {}", "")
+					doSymbolicCheck(chunk, state.Global)
+
+					completions := findCompletions(state, chunk, 4)
+					assert.Contains(t, completions, Completion{
+						ShownString:   symbolic.LTHREAD_META_ALLOW_SECTION,
+						Value:         symbolic.LTHREAD_META_ALLOW_SECTION,
+						ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 4, End: 4}},
+					})
+
+					for _, completion := range completions {
+						if completion.ShownString == "parameters" {
+							assert.Fail(t, "completion for 'parameters' should be present")
+						}
+					}
+				})
+
 			})
 
 			t.Run("permission kind", func(t *testing.T) {

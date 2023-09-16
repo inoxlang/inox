@@ -445,7 +445,7 @@ after_subcommand_completions:
 
 		objectLiteral := ancestors[len(ancestors)-2].(*parse.ObjectLiteral)
 
-		//suggest sections of the manifest
+		//suggest sections of manifest
 		if parse.NodeIs(ancestors[len(ancestors)-3], (*parse.Manifest)(nil)) {
 			for _, sectionName := range core.MANIFEST_SECTION_NAMES {
 				if hasPrefixCaseInsensitive(sectionName, ident.Name) {
@@ -459,15 +459,22 @@ after_subcommand_completions:
 			return completions
 		}
 
-		switch parent.(type) {
-		case *parse.Manifest: //suggest all sections of the manifest
-			for _, sectionName := range core.MANIFEST_SECTION_NAMES {
-				completions = append(completions, Completion{
-					ShownString: sectionName,
-					Value:       sectionName,
-					Kind:        defines.CompletionItemKindVariable,
-				})
+		//suggest sections of lthread meta
+		if len(ancestors) > 3 && parse.NodeIs(ancestors[len(ancestors)-3], (*parse.SpawnExpression)(nil)) &&
+			objectLiteral == ancestors[len(ancestors)-3].(*parse.SpawnExpression).Meta {
+			for _, sectionName := range symbolic.LTHREAD_SECTION_NAMES {
+				if hasPrefixCaseInsensitive(sectionName, ident.Name) {
+					completions = append(completions, Completion{
+						ShownString: sectionName,
+						Value:       sectionName,
+						Kind:        defines.CompletionItemKindVariable,
+					})
+				}
 			}
+			return completions
+		}
+
+		switch parent.(type) {
 		case *parse.ObjectProperty:
 
 			//case: the current property is in an object describing one of the section of the manifest
@@ -1129,12 +1136,31 @@ func findObjectInteriorCompletions(
 
 	switch parent := parent.(type) {
 	case *parse.Manifest: //suggest sections of the manifest that are not present
-	sections_loop:
+	manifest_sections_loop:
 		for _, sectionName := range core.MANIFEST_SECTION_NAMES {
-
 			for _, prop := range n.Properties {
 				if !prop.HasImplicitKey() && prop.Name() == sectionName {
-					continue sections_loop
+					continue manifest_sections_loop
+				}
+			}
+
+			completions = append(completions, Completion{
+				ShownString:   sectionName,
+				Value:         sectionName,
+				Kind:          defines.CompletionItemKindVariable,
+				ReplacedRange: pos,
+			})
+		}
+	case *parse.SpawnExpression:
+		if n != parent.Meta {
+			break
+		}
+		//suggest sections of the lthread meta object that are not present
+	lthread_meta_sections_loop:
+		for _, sectionName := range symbolic.LTHREAD_SECTION_NAMES {
+			for _, prop := range n.Properties {
+				if !prop.HasImplicitKey() && prop.Name() == sectionName {
+					continue lthread_meta_sections_loop
 				}
 			}
 

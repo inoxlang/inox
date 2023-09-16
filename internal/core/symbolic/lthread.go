@@ -17,6 +17,7 @@ var (
 	ROUTINE_PROPNAMES       = []string{"wait_result", "cancel", "steps"}
 	ROUTINE_GROUP_PROPNAMES = []string{"wait_results", "cancel_all"}
 	EXECUTED_STEP_PROPNAMES = []string{"result", "end_time"}
+	LTHREAD_SECTION_NAMES   = []string{LTHREAD_META_ALLOW_SECTION, LTHREAD_META_GLOBALS_SECTION, LTHREAD_META_GROUP_SECTION}
 
 	ANY_ROUTINE       = &LThread{}
 	ANY_ROUTINE_GROUP = &LThreadGroup{}
