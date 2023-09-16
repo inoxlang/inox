@@ -10,7 +10,7 @@ func TestSymbolicContext(t *testing.T) {
 
 	t.Run("forked", func(t *testing.T) {
 		t.Run("AddHostAlias()", func(t *testing.T) {
-			ctx := NewSymbolicContext(nil, nil)
+			ctx := NewSymbolicContext(nil, nil, nil)
 			fork := ctx.fork()
 
 			fork.AddHostAlias("site", &Host{}, false)
@@ -19,7 +19,7 @@ func TestSymbolicContext(t *testing.T) {
 		})
 
 		t.Run("AddNamedPattern()", func(t *testing.T) {
-			ctx := NewSymbolicContext(nil, nil)
+			ctx := NewSymbolicContext(nil, nil, nil)
 			fork := ctx.fork()
 
 			fork.AddNamedPattern("p", &AnyPattern{}, false)

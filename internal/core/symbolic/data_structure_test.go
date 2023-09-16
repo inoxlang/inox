@@ -420,7 +420,7 @@ func TestSymbolicList(t *testing.T) {
 
 	t.Run("Append()", func(t *testing.T) {
 		t.Run("adding no elements to empty list", func(t *testing.T) {
-			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil)
+			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil, nil)
 			state := newSymbolicState(ctx, nil)
 
 			list := NewList()
@@ -431,7 +431,7 @@ func TestSymbolicList(t *testing.T) {
 		})
 
 		t.Run("adding element to empty list", func(t *testing.T) {
-			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil)
+			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil, nil)
 			state := newSymbolicState(ctx, nil)
 
 			list := NewList()
@@ -446,7 +446,7 @@ func TestSymbolicList(t *testing.T) {
 		})
 
 		t.Run("adding no element to list with single element", func(t *testing.T) {
-			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil)
+			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil, nil)
 			state := newSymbolicState(ctx, nil)
 
 			list := NewList(NewInt(1))
@@ -457,7 +457,7 @@ func TestSymbolicList(t *testing.T) {
 		})
 
 		t.Run("adding same type element to list with single element", func(t *testing.T) {
-			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil)
+			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil, nil)
 			state := newSymbolicState(ctx, nil)
 
 			list := NewList(NewInt(1))

@@ -1639,7 +1639,7 @@ func TestFunctionPattern(t *testing.T) {
 			CodeString: "",
 		}))
 
-		state := newSymbolicState(NewSymbolicContext(nil, nil), emptyChunk)
+		state := newSymbolicState(NewSymbolicContext(nil, nil, nil), emptyChunk)
 		state.ctx.AddNamedPattern("int", &TypePattern{val: ANY_INT}, false)
 		state.ctx.AddNamedPattern("str", &TypePattern{val: ANY_STR}, false)
 		state.ctx.AddNamedPattern("obj", &TypePattern{val: NewAnyObject()}, false)

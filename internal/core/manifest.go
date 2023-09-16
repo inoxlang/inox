@@ -840,7 +840,7 @@ func getPermissionsFromListing(
 		permKind, ok := permkind.PermissionKindFromString(propName)
 
 		if ok {
-			p, err := getSingleKindPermissions(ctx, permKind, propValue, specifiedGlobalPermKinds, handleCustomType)
+			p, err := getSingleKindPermissions(permKind, propValue, specifiedGlobalPermKinds, handleCustomType)
 			if err != nil {
 				return nil, err
 			}
@@ -860,6 +860,76 @@ func getPermissionsFromListing(
 	}
 
 	return perms, nil
+}
+
+func estimatePermissionsFromListingNode(permDescriptions *parse.ObjectLiteral) ([]Permission, error) {
+	perms := make([]Permission, 0)
+
+	handleCustomType := func(kind PermissionKind, name string, value Value) (perms []Permission, handled bool, err error) {
+		handled = false
+		return
+	}
+
+	for _, propNode := range permDescriptions.Properties {
+		if propNode.HasImplicitKey() {
+			continue
+		}
+		propName := propNode.Name()
+		permKind, ok := permkind.PermissionKindFromString(propName)
+		if !ok {
+			continue
+		}
+
+		propValue, ok := estimatePartialPermissionNodeValue(propNode.Value)
+		if ok {
+			p, err := getSingleKindPermissions(permKind, propValue, map[permkind.PermissionKind]bool{}, handleCustomType)
+			if err != nil {
+				return nil, err
+			}
+			perms = append(perms, p...)
+		}
+	}
+
+	return perms, nil
+}
+
+func estimatePartialPermissionNodeValue(n parse.Node) (Serializable, bool) {
+	switch node := n.(type) {
+	case *parse.ObjectLiteral:
+		values := ValMap{}
+		i := 0
+		for _, propNode := range node.Properties {
+			var key string
+			if propNode.HasImplicitKey() {
+				key = strconv.Itoa(i)
+			} else {
+				key = propNode.Name()
+			}
+			val, ok := estimatePartialPermissionNodeValue(propNode.Value)
+			if ok {
+				values[key] = val
+			}
+		}
+		return NewObjectFromMapNoInit(values), true
+	case *parse.ListLiteral:
+		var elements []Serializable
+		for _, elemNode := range node.Elements {
+			elem, ok := estimatePartialPermissionNodeValue(elemNode)
+			if ok {
+				elements = append(elements, elem)
+			}
+		}
+		return NewWrappedValueList(elements...), true
+	case *parse.IdentifierLiteral:
+		return nil, false
+	case parse.SimpleValueLiteral:
+		result, err := evalSimpleValueLiteral(node, nil)
+		if err != nil {
+			return nil, false
+		}
+		return result, true
+	}
+	return nil, false
 }
 
 func GetDefaultGlobalVarPermissions() (perms []Permission) {
@@ -923,7 +993,7 @@ func getHostResolutions(desc Value) (map[Host]Value, error) {
 }
 
 func getSingleKindPermissions(
-	ctx *Context, permKind PermissionKind, desc Value, specifiedGlobalPermKinds map[PermissionKind]bool,
+	permKind PermissionKind, desc Value, specifiedGlobalPermKinds map[PermissionKind]bool,
 	handleCustomType CustomPermissionTypeHandler,
 ) ([]Permission, error) {
 

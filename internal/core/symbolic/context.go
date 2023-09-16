@@ -13,10 +13,11 @@ const INITIAL_NO_CHECK_FUEL = 10
 type Context struct {
 	forkingParent           *Context
 	associatedState         *State
-	startingConcreteContext ConcreteContext
+	isolatedConcreteContext ConcreteContext
 
-	parent      *Context
-	noCheckFuel int
+	parent                  *Context
+	noCheckFuel             int
+	startingConcreteContext ConcreteContext
 
 	hostAliases                         map[string]SymbolicValue
 	namedPatterns                       map[string]Pattern
@@ -25,11 +26,16 @@ type Context struct {
 	patternNamespacePositionDefinitions map[string]parse.SourcePositionRange
 }
 
-func NewSymbolicContext(startingConcreteContext ConcreteContext, parentContext *Context) *Context {
+func NewSymbolicContext(startingConcreteContext, concreteContext ConcreteContext, parentContext *Context) *Context {
+	if concreteContext == nil {
+		concreteContext = startingConcreteContext
+	}
 	return &Context{
 		startingConcreteContext: startingConcreteContext,
-		parent:                  parentContext,
-		noCheckFuel:             INITIAL_NO_CHECK_FUEL,
+		isolatedConcreteContext: concreteContext,
+
+		parent:      parentContext,
+		noCheckFuel: INITIAL_NO_CHECK_FUEL,
 
 		hostAliases:                         make(map[string]SymbolicValue, 0),
 		namedPatterns:                       make(map[string]Pattern, 0),
@@ -150,17 +156,17 @@ func (ctx *Context) SetUpdatedSelf(v SymbolicValue) {
 }
 
 func (ctx *Context) HasPermission(perm any) bool {
-	if ctx.startingConcreteContext == nil {
+	if ctx.isolatedConcreteContext == nil {
 		return false
 	}
-	return ctx.startingConcreteContext.HasPermissionUntyped(perm)
+	return ctx.isolatedConcreteContext.HasPermissionUntyped(perm)
 }
 
 func (ctx *Context) HasAPermissionWithKindAndType(kind permkind.PermissionKind, name permkind.InternalPermissionTypename) bool {
-	if ctx.startingConcreteContext == nil {
+	if ctx.isolatedConcreteContext == nil {
 		return false
 	}
-	return ctx.startingConcreteContext.HasAPermissionWithKindAndType(kind, name)
+	return ctx.isolatedConcreteContext.HasAPermissionWithKindAndType(kind, name)
 }
 
 func (ctx *Context) currentData() (data ContextData) {
@@ -187,7 +193,7 @@ func (ctx *Context) currentData() (data ContextData) {
 }
 
 func (ctx *Context) fork() *Context {
-	child := NewSymbolicContext(ctx.startingConcreteContext, ctx.parent)
+	child := NewSymbolicContext(ctx.startingConcreteContext, ctx.isolatedConcreteContext, ctx.parent)
 	child.forkingParent = ctx
 	return child
 }

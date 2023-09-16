@@ -27,7 +27,9 @@ type SymbolicData struct {
 
 	errorMessageSet map[string]bool
 	errors          []SymbolicEvaluationError
-	warnings        []SymbolicEvaluationWarning
+
+	warningMessageSet map[string]bool
+	warnings          []SymbolicEvaluationWarning
 }
 
 func NewSymbolicData() *SymbolicData {
@@ -41,7 +43,8 @@ func NewSymbolicData() *SymbolicData {
 		contextData:                 make(map[parse.Node]ContextData),
 		runtimeTypeCheckPatterns:    make(map[parse.Node]any, 0),
 
-		errorMessageSet: make(map[string]bool, 0),
+		errorMessageSet:   make(map[string]bool, 0),
+		warningMessageSet: make(map[string]bool, 0),
 	}
 }
 
@@ -59,6 +62,12 @@ func (data *SymbolicData) AddError(err SymbolicEvaluationError) {
 }
 
 func (data *SymbolicData) AddWarning(warning SymbolicEvaluationWarning) {
+	if warning.LocatedMessage != "" {
+		if data.warningMessageSet[warning.LocatedMessage] {
+			return
+		}
+		data.warningMessageSet[warning.LocatedMessage] = true
+	}
 	data.warnings = append(data.warnings, warning)
 }
 

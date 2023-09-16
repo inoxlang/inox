@@ -27,7 +27,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 			Globals: map[string]symbolic.ConcreteGlobalValue{
 				"var": {Value: Int(1), IsConstant: false},
 			},
-			Context: symbolic.NewSymbolicContext(nil, nil),
+			Context: symbolic.NewSymbolicContext(nil, nil, nil),
 		})
 
 		assert.NoError(t, err)
@@ -48,7 +48,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 			Globals: map[string]symbolic.ConcreteGlobalValue{
 				"var": {Value: Int(1), IsConstant: false},
 			},
-			Context: symbolic.NewSymbolicContext(nil, nil),
+			Context: symbolic.NewSymbolicContext(nil, nil, nil),
 		})
 
 		assert.NoError(t, err)
@@ -71,7 +71,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 			},
 			Context: symbolic.NewSymbolicContext(NewContext(ContextConfig{
 				Permissions: []Permission{LThreadPermission{Kind_: permkind.Create}},
-			}), nil),
+			}), nil, nil),
 		})
 
 		assert.NoError(t, err)
@@ -94,7 +94,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 			Globals: map[string]symbolic.ConcreteGlobalValue{
 				"global1": {Value: Int(1), IsConstant: true},
 			},
-			Context: symbolic.NewSymbolicContext(NewContext(ContextConfig{}), nil),
+			Context: symbolic.NewSymbolicContext(NewContext(ContextConfig{}), nil, nil),
 		})
 
 		assert.NoError(t, err)
@@ -106,6 +106,42 @@ func TestSymbolicEvalCheck(t *testing.T) {
 		assert.Contains(t, symbolic.POSSIBLE_MISSING_PERM_TO_CREATE_A_LTHREAD, warning.Message)
 	})
 
+	t.Run("spawn expression within embedded module (missing permission)", func(t *testing.T) {
+		code := `go {allow: {}} do { 
+			go do {}
+		}`
+
+		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+			NameString: "symbolic-core-test",
+			CodeString: code,
+		}))
+
+		innerSpanwExpr := parse.FindNode(chunk.Node, (*parse.SpawnExpression)(nil), func(e *parse.SpawnExpression, _ bool) bool {
+			return e.Meta == nil
+		})
+
+		innerSpanwExprPos := chunk.GetSourcePosition(innerSpanwExpr.Span)
+
+		mod := &Module{MainChunk: chunk}
+
+		data, err := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
+			Node:    chunk.Node,
+			Module:  mod.ToSymbolic(),
+			Globals: map[string]symbolic.ConcreteGlobalValue{},
+			Context: symbolic.NewSymbolicContext(NewContext(ContextConfig{
+				Permissions: []Permission{LThreadPermission{Kind_: permkind.Create}},
+			}), nil, nil),
+		})
+
+		assert.NoError(t, err)
+		assert.Empty(t, data.Errors())
+		if !assert.NotEmpty(t, data.Warnings()) {
+			return
+		}
+		warning := data.Warnings()[0]
+		assert.Contains(t, symbolic.POSSIBLE_MISSING_PERM_TO_CREATE_A_LTHREAD, warning.Message)
+		assert.Equal(t, innerSpanwExprPos, warning.Location[0])
+	})
 }
 
 func TestToSymbolicValue(t *testing.T) {

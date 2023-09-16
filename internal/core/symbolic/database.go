@@ -55,7 +55,7 @@ func NewDatabaseIL(schema *ObjectPattern, schemaUpdateExpected bool) *DatabaseIL
 		NameString: "pseudo-database-state-module",
 		CodeString: "manifest {}",
 	}))
-	db.ownerState = newSymbolicState(NewSymbolicContext(dummyConcreteContext{context.Background()}, nil), chunk)
+	db.ownerState = newSymbolicState(NewSymbolicContext(dummyConcreteContext{context.Background()}, nil, nil), chunk)
 
 	return db
 }

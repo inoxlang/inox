@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -60,6 +61,8 @@ type ExternalData struct {
 	HostMatch                              func(host, pattern string) bool
 	CheckDatabaseSchema                    func(objectPattern any) error
 	GetTopLevelEntitiesMigrationOperations func(concreteCtx context.Context, current, next any) ([]MigrationOp, error)
+	EstimatePermissionsFromListingNode     func(n *parse.ObjectLiteral) (any, error)
+	CreateConcreteContext                  func(permissions any) ConcreteContext
 
 	ConcreteValueFactories ConcreteValueFactories
 

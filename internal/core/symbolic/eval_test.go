@@ -8317,7 +8317,6 @@ func TestSymbolicEval(t *testing.T) {
 				makeSymbolicEvalWarning(metadataNode, state, fmtUnknownSectionInLThreadMetadata("allow")),
 			) //we use contains because there is also a warning about a missing permission
 		})
-
 	})
 
 	t.Run("reception handler expression", func(t *testing.T) {

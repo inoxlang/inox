@@ -1584,7 +1584,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		}
 
 		//TODO: use concrete context with permissions of imported module
-		importedModuleContext := NewSymbolicContext(state.ctx.startingConcreteContext, state.ctx)
+		importedModuleContext := NewSymbolicContext(state.ctx.startingConcreteContext, state.ctx.startingConcreteContext, state.ctx)
 		for name, basePattern := range state.basePatterns {
 			importedModuleContext.AddNamedPattern(name, basePattern, false)
 		}
@@ -1620,6 +1620,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 		var meta map[string]SymbolicValue
 		var globals any
+		var permListingNode *parse.ObjectLiteral
 
 		if !state.ctx.HasAPermissionWithKindAndType(permkind.Create, permkind.LTHREAD_PERM_TYPENAME) {
 			state.addWarning(makeSymbolicEvalWarning(n, state, POSSIBLE_MISSING_PERM_TO_CREATE_A_LTHREAD))
@@ -1649,6 +1650,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 							}
 							continue
 						}
+					} else if propertyName == "allow" && parse.NodeIs(property.Value, (*parse.ObjectLiteral)(nil)) {
+						permListingNode = property.Value.(*parse.ObjectLiteral)
 					}
 
 					propertyVal, err := symbolicEval(property.Value, state)
@@ -1726,8 +1729,19 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			state.addError(makeSymbolicEvalError(node, state, fmtValueOfVarShouldBeAModuleNode(varname)))
 		}
 
+		var concreteCtx ConcreteContext = state.ctx.startingConcreteContext
+		if permListingNode != nil && extData.EstimatePermissionsFromListingNode != nil {
+			perms, err := extData.EstimatePermissionsFromListingNode(permListingNode)
+			if err != nil {
+				return nil, fmt.Errorf("failed to estimate permission of spawned lthread: %w", err)
+			}
+			concreteCtx = extData.CreateConcreteContext(perms)
+		}
+
+		_ = permListingNode
+
 		//TODO: check the allow section to know the permissions
-		modCtx := NewSymbolicContext(state.ctx.startingConcreteContext, state.ctx)
+		modCtx := NewSymbolicContext(state.ctx.startingConcreteContext, concreteCtx, state.ctx)
 		modState := newSymbolicState(modCtx, &parse.ParsedChunk{
 			Node:   embeddedModule,
 			Source: state.currentChunk().Source,
@@ -1754,6 +1768,10 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 		for _, err := range modState.errors() {
 			state.addError(err)
+		}
+
+		for _, warning := range modState.warnings() {
+			state.addWarning(warning)
 		}
 
 		return &LThread{}, nil
@@ -4175,7 +4193,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		embeddedModule := v.(*AstNode).Node.(*parse.Chunk)
 
 		//TODO: read the manifest to known the permissions
-		modCtx := NewSymbolicContext(state.ctx.startingConcreteContext, state.ctx)
+		modCtx := NewSymbolicContext(state.ctx.startingConcreteContext, state.ctx.startingConcreteContext, state.ctx)
 		modState := newSymbolicState(modCtx, &parse.ParsedChunk{
 			Node:   embeddedModule,
 			Source: state.currentChunk().Source,
@@ -4190,6 +4208,10 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 		for _, err := range modState.errors() {
 			state.addError(err)
+		}
+
+		for _, warning := range modState.warnings() {
+			state.addWarning(warning)
 		}
 
 		return &TestSuite{}, nil
@@ -4209,7 +4231,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		embeddedModule := v.(*AstNode).Node.(*parse.Chunk)
 
 		//TODO: read the manifest to known the permissions
-		modCtx := NewSymbolicContext(state.ctx.startingConcreteContext, state.ctx)
+		modCtx := NewSymbolicContext(state.ctx.startingConcreteContext, state.ctx.startingConcreteContext, state.ctx)
 		modState := newSymbolicState(modCtx, &parse.ParsedChunk{
 			Node:   embeddedModule,
 			Source: state.currentChunk().Source,
@@ -4224,6 +4246,10 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 		for _, err := range modState.errors() {
 			state.addError(err)
+		}
+
+		for _, warning := range modState.warnings() {
+			state.addWarning(warning)
 		}
 
 		return &TestCase{}, nil
@@ -4263,7 +4289,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		embeddedModule := v.(*AstNode).Node.(*parse.Chunk)
 
 		//add patterns of parent state
-		modCtx := NewSymbolicContext(state.ctx.startingConcreteContext, state.ctx) //TODO: read the manifest to known the permissions
+
+		//TODO: read the manifest to known the permissions
+		modCtx := NewSymbolicContext(state.ctx.startingConcreteContext, state.ctx.startingConcreteContext, state.ctx)
 		state.ctx.ForEachPattern(func(name string, pattern Pattern) {
 			modCtx.AddNamedPattern(name, pattern, state.inPreinit, parse.SourcePositionRange{})
 		})

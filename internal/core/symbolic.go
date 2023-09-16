@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -93,6 +94,20 @@ func init() {
 		CheckDatabaseSchema: func(objectPattern any) error {
 			return checkDatabaseSchema(objectPattern.(*ObjectPattern))
 		},
+
+		EstimatePermissionsFromListingNode: func(n *parse.ObjectLiteral) (any, error) {
+			perms, err := estimatePermissionsFromListingNode(n)
+			return perms, err
+		},
+
+		CreateConcreteContext: func(permissions any) symbolic.ConcreteContext {
+			perms := permissions.([]Permission)
+
+			return NewContext(ContextConfig{
+				Permissions: perms,
+			})
+		},
+
 		GetTopLevelEntitiesMigrationOperations: func(concreteCtx context.Context, current, next any) ([]symbolic.MigrationOp, error) {
 			ctx := concreteCtx.(*Context)
 			concreteMigrationOps, err := GetTopLevelEntitiesMigrationOperations(ctx, current.(*ObjectPattern), next.(*ObjectPattern))
