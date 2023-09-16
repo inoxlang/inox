@@ -23,7 +23,12 @@ var (
 		core.MANIFEST_PREINIT_FILES_SECTION_NAME:   "{}",
 	}
 
-	MANIFEST_SECTION_DOC = map[string]string{}
+	MANIFEST_SECTION_DOC = map[string]string{
+		core.MANIFEST_PARAMS_SECTION_NAME:    utils.MustGet(help_ns.HelpFor("manifest/parameters-section", helpMessageConfig)),
+		core.MANIFEST_ENV_SECTION_NAME:       utils.MustGet(help_ns.HelpFor("manifest/env-section", helpMessageConfig)),
+		core.MANIFEST_PERMS_SECTION_NAME:     utils.MustGet(help_ns.HelpFor("manifest/permissions-section", helpMessageConfig)),
+		core.MANIFEST_DATABASES_SECTION_NAME: utils.MustGet(help_ns.HelpFor("manifest/databases-section", helpMessageConfig)),
+	}
 
 	LTHREAD_META_SECTION_LABEL_DETAILS = map[string]string{
 		symbolic.LTHREAD_META_ALLOW_SECTION:   "granted permissions",
