@@ -125,21 +125,25 @@ module:
     - topic: manifest/permissions-section
       text: >
         The permissions section lists the permissions required by the module. 
-        Permissions represent a type of action a script is allowed (or forbidden) to do. 
+        Permissions represent a type of action a module is allowed (or forbidden) to do. 
         Most IO operations (filesystem access, HTTP requests) and resource intensive operations 
-        (lthread creation) necessitate a permission.
+        (lthread creation) necessitate a permission. 
+        
+        To learn more about permissions see https://github.com/inoxlang/inox/blob/master/docs/language-reference.md#permissions.
       examples:
       - code: |
-          # example permission section allowing the module 
+          # permission section allowing the module 
           # to create an HTTP server & read any file
           {
             provide: https://localhost
-            read: %/...
+            read: {
+              %/...
+            }
           }
 
       - code: |
-          # example permission section allowing the module 
-          # to read & write the data of the database ldb://main
+          # permission section allowing the module 
+          # to read from & write to the database ldb://main
           {
             read: {
               ldb://main
@@ -147,6 +151,29 @@ module:
             write: {
               ldb://main
             }
+          }
+
+      - code: |
+          # permission section allowing the module 
+          # to send HTTP GET & POST requests to any HTTPS server
+          {
+            read: {
+              %https://**
+            }
+            write: {
+              %https://**
+            }
+          }
+
+      - code: |
+          # permission section allowing the module 
+          # to create lightweight threads
+          manifest {
+              permissions: {
+                  create: {
+                      threads: {}
+                  }
+              }
           }
 concurrency:
   title: Concurrency
