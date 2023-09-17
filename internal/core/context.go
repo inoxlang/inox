@@ -1205,6 +1205,10 @@ func (ctx *Context) gracefullyTearDown() {
 		}
 	}
 
+	defer func() {
+		ctx.onGracefulTearDownMicrotasks = nil
+	}()
+
 	for _, taskFn := range ctx.onGracefulTearDownMicrotasks {
 		func() {
 			defer func() {

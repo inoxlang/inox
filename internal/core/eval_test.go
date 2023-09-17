@@ -4839,7 +4839,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			// timeout
 			go func() {
 				<-time.After(10 * time.Second)
-				state.Ctx.Cancel()
+				state.Ctx.CancelGracefully()
 				timedOut.Store(true)
 			}()
 
