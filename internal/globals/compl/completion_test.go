@@ -68,6 +68,7 @@ func TestFindCompletions(t *testing.T) {
 					}
 					completions[i].Kind = 0
 					completions[i].LabelDetail = ""
+					completions[i].MarkdownDocumentation = ""
 				}
 				return completions
 			}
