@@ -58,11 +58,7 @@ func TestUpsertListSecrets(t *testing.T) {
 			err := project.DeleteSecretsBucket(ctx)
 			assert.NoError(t, err)
 
-			api, err := cloudflare.NewWithAPIToken(CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN)
-			if err != nil {
-				return
-			}
-
+			api := project.cloudflare.apiTokensApi
 			apiTokens, err := api.APITokens(ctx)
 			if err != nil {
 				return

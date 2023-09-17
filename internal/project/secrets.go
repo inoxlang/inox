@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	cloudflare "github.com/cloudflare/cloudflare-go"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
 	"github.com/inoxlang/inox/internal/parse"
@@ -174,39 +173,30 @@ func (p *Project) getCreateSecretsBucket(ctx *core.Context, createIfDoesNotExist
 		return p.secretsBucket, nil
 	}
 
-	if p.devSideConfig.Cloudflare == nil || p.devSideConfig.Cloudflare.AccountID == "" {
-		return nil, errors.New("missing Cloudflare account ID")
+	if p.cloudflare == nil {
+		return nil, ErrNoCloudflareProvider
 	}
-	accountId := p.devSideConfig.Cloudflare.AccountID
+	cf := p.cloudflare
 
-	tokens, err := p.TempProjectTokens(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	accessKey, secretKey, ok := tokens.Cloudflare.GetHighPermsS3Credentials()
+	accessKey, secretKey, ok := cf.GetHighPermsS3Credentials(ctx)
 	if !ok {
 		return nil, errors.New("missing Cloudflare R2 token")
 	}
 
 	bucketName := p.getSecretsBucketName()
 	{
-		cloudflareTokens := tokens.Cloudflare
-		if cloudflareTokens.HighPermsR2Token == nil || cloudflareTokens.HighPermsR2Token.Value == "" {
+		if cf.highPermsTokens.R2Token == nil {
 			return nil, ErrNoR2Token
 		}
-		api, _ := cloudflare.NewWithAPIToken(cloudflareTokens.HighPermsR2Token.Value)
 
-		exists, err := checkBucketExists(ctx, bucketName, api, accountId)
+		exists, err := cf.CheckBucketExists(ctx, bucketName)
 		if err != nil {
 			return nil, err
 		}
 
 		if !exists {
 			if createIfDoesNotExist {
-				_, err = api.CreateR2Bucket(ctx, cloudflare.AccountIdentifier(accountId), cloudflare.CreateR2BucketParameters{
-					Name: bucketName,
-				})
+				err = cf.CreateR2Bucket(ctx, bucketName)
 				if err != nil {
 					return nil, err
 				}
@@ -219,7 +209,7 @@ func (p *Project) getCreateSecretsBucket(ctx *core.Context, createIfDoesNotExist
 	bucket, err := s3_ns.OpenBucketWithCredentials(ctx, s3_ns.OpenBucketWithCredentialsInput{
 		Provider:   "cloudflare",
 		BucketName: bucketName,
-		HttpsHost:  core.Host("https://" + p.devSideConfig.Cloudflare.AccountID + ".r2.cloudflarestorage.com"),
+		HttpsHost:  cf.S3EndpointForR2(),
 		AccessKey:  accessKey,
 		SecretKey:  secretKey,
 	})

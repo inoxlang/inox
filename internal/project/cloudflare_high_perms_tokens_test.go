@@ -20,7 +20,7 @@ var (
 )
 
 func TestGetUpToDateTempCloudflareTokens(t *testing.T) {
-	projectId := ProjectID("test-temp-cr-tokens")
+	projectId := ProjectID("test-temp-cf-tokens")
 
 	if cloudflareConfig.AdditionalTokensApiToken == "" {
 		t.Skip()
@@ -29,16 +29,17 @@ func TestGetUpToDateTempCloudflareTokens(t *testing.T) {
 
 	ctx := context.Background()
 
-	api, err := cloudflare.NewWithAPIToken(cloudflareConfig.AdditionalTokensApiToken)
-	if err != nil {
-		assert.Fail(t, err.Error())
+	cf, err := newCloudflare(projectId, &cloudflareConfig)
+	if !assert.NoError(t, err) {
 		return
 	}
 
-	defer deleteTestRelatedTokens(t, ctx, api, projectId)
-	deleteTestRelatedTokens(t, ctx, api, projectId)
+	//cleanup
+	if !assert.NoError(t, cf.deleteHighPermsTokens(ctx)) {
+		return
+	}
 
-	apiTokens, err := api.APITokens(ctx)
+	apiTokens, err := cf.apiTokensApi.APITokens(ctx)
 	if err != nil {
 		assert.Fail(t, err.Error())
 		return
@@ -46,12 +47,15 @@ func TestGetUpToDateTempCloudflareTokens(t *testing.T) {
 
 	tokenCountBeforeTest := len(apiTokens)
 
-	prevTokens, err := getUpToDateTempCloudflareTokens(ctx, cloudflareConfig, &TempCloudflareTokens{}, projectId)
-	prevR2Token := prevTokens.HighPermsR2Token
+	prevTokens, err := cf.getUpToDateTempTokens(ctx)
 
 	if !assert.NoError(t, err) {
 		return
 	}
+
+	defer deleteTestRelatedTokens(t, ctx, cf.apiTokensApi, projectId)
+
+	prevR2Token := prevTokens.R2Token
 
 	if !assert.NotNil(t, prevR2Token) {
 		return
@@ -61,19 +65,17 @@ func TestGetUpToDateTempCloudflareTokens(t *testing.T) {
 		return
 	}
 
-	//if a R2 API token is passed no tokens should be created
-	upToToDateTokens, err := getUpToDateTempCloudflareTokens(ctx, cloudflareConfig, &TempCloudflareTokens{
-		HighPermsR2Token: prevR2Token,
-	}, projectId)
-	r2Token := upToToDateTokens.HighPermsR2Token
+	//if the R2 API token is already present no tokens should be created
+	upToToDateTokens, err := cf.getUpToDateTempTokens(ctx)
+	r2Token := upToToDateTokens.R2Token
 
 	if !assert.NoError(t, err) {
 		return
 	}
 
-	assert.Equal(t, prevTokens.HighPermsR2Token, r2Token)
+	assert.Same(t, prevTokens.R2Token, r2Token)
 
-	apiTokens, err = api.APITokens(ctx)
+	apiTokens, err = cf.apiTokensApi.APITokens(ctx)
 	if err != nil {
 		assert.Fail(t, err.Error())
 		return
@@ -83,9 +85,11 @@ func TestGetUpToDateTempCloudflareTokens(t *testing.T) {
 		return
 	}
 
-	//if no R2 API token is passed and the token already exists it should be updated
-	upToToDateTokens, err = getUpToDateTempCloudflareTokens(ctx, cloudflareConfig, &TempCloudflareTokens{}, projectId)
-	r2Token = upToToDateTokens.HighPermsR2Token
+	cf.forgetHighPermsTokens(ctx)
+
+	//if the R2 API token is not present but the token already exists it should be updated
+	upToToDateTokens, err = cf.getUpToDateTempTokens(ctx)
+	r2Token = upToToDateTokens.R2Token
 
 	if !assert.NoError(t, err) {
 		return
@@ -96,10 +100,11 @@ func TestGetUpToDateTempCloudflareTokens(t *testing.T) {
 	}
 
 	assert.NotEqual(t, prevR2Token, r2Token)
+	assert.Equal(t, prevR2Token.Id, r2Token.Id)
 	assert.NotEmpty(t, r2Token.Id)
 	assert.NotEmpty(t, r2Token.Value)
 
-	apiTokens, err = api.APITokens(ctx)
+	apiTokens, err = cf.apiTokensApi.APITokens(ctx)
 	if err != nil {
 		assert.Fail(t, err.Error())
 		return
@@ -121,22 +126,25 @@ func TestCreateS3CredentialsForSingleBucket(t *testing.T) {
 	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 	defer ctx.Cancel()
 
-	api, err := cloudflare.NewWithAPIToken(cloudflareConfig.AdditionalTokensApiToken)
-	if err != nil {
-		assert.Fail(t, err.Error())
-		return
-	}
-
-	defer deleteTestRelatedTokens(t, ctx, api, projectId)
-	deleteTestRelatedTokens(t, ctx, api, projectId)
-
-	tokens, err := getUpToDateTempCloudflareTokens(ctx, cloudflareConfig, &TempCloudflareTokens{}, projectId)
+	cf, err := newCloudflare(projectId, &cloudflareConfig)
 	if !assert.NoError(t, err) {
 		return
 	}
 
+	//cleanup
+	if !assert.NoError(t, cf.deleteHighPermsTokens(ctx)) {
+		return
+	}
+
+	tokens, err := cf.getUpToDateTempTokens(ctx)
+	if !assert.NoError(t, err) {
+		return
+	}
+
+	defer deleteTestRelatedTokens(t, ctx, cf.apiTokensApi, projectId)
+
 	deleteBucket := func() {
-		api, err := cloudflare.NewWithAPIToken(tokens.HighPermsR2Token.Value)
+		api, err := cloudflare.NewWithAPIToken(tokens.R2Token.Value)
 		if !assert.NoError(t, err) {
 			assert.Fail(t, err.Error())
 			return
@@ -148,7 +156,7 @@ func TestCreateS3CredentialsForSingleBucket(t *testing.T) {
 	//tear down
 	defer deleteBucket()
 
-	accessKey, secretKey, s3Endpoint, err := tokens.CreateS3CredentialsForSingleBucket(ctx, "temp", projectId, cloudflareConfig)
+	creds, err := cf.CreateS3CredentialsForSingleBucket(ctx, "temp", projectId)
 
 	if !assert.NoError(t, err) {
 		return
@@ -159,14 +167,18 @@ func TestCreateS3CredentialsForSingleBucket(t *testing.T) {
 		S3Host:     "s3://temp",
 		Provider:   "cloudflare",
 		BucketName: "temp",
-		HttpsHost:  s3Endpoint,
-		AccessKey:  accessKey,
-		SecretKey:  secretKey,
+		HttpsHost:  creds.s3Endpoint,
+		AccessKey:  creds.accessKey,
+		SecretKey:  creds.secretKey,
 	})
 
 	if !assert.NoError(t, err) {
 		return
 	}
+
+	defer func() {
+		bucket.RemoveAllObjects(ctx)
+	}()
 
 	_, err = bucket.PutObject(ctx, "x", strings.NewReader("content"))
 

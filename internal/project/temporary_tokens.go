@@ -13,14 +13,7 @@ type TempToken struct {
 }
 
 type TempProjectTokens struct {
-	Cloudflare *TempCloudflareTokens `json:"cloudflare,omitempty"`
-}
-
-func (p *Project) getTempTokens() (TempProjectTokens, bool) {
-	if p.tempTokens != nil {
-		return *p.tempTokens, true
-	}
-	return TempProjectTokens{}, false
+	Cloudflare *HighPermsCloudflareTokens `json:"cloudflare,omitempty"`
 }
 
 func (p *Project) TempProjectTokens(ctx *core.Context) (tokens TempProjectTokens, _ error) {
@@ -28,31 +21,24 @@ func (p *Project) TempProjectTokens(ctx *core.Context) (tokens TempProjectTokens
 	p.lock.Lock(closestState, p)
 	defer p.lock.Unlock(closestState, p)
 
-	cloudflareConfig := p.DevSideConfig().Cloudflare
-	if cloudflareConfig != nil {
-		var cloudflareTempTokens *TempCloudflareTokens
+	return p.TempProjectTokensNoLock(ctx)
+}
 
-		tempTokens, ok := p.getTempTokens()
-		if ok && tempTokens.Cloudflare != nil {
-			cloudflareTempTokens = tempTokens.Cloudflare
-		}
-
-		upToDateCloudflareTokens, err := getUpToDateTempCloudflareTokens(ctx,
-			*cloudflareConfig,
-			cloudflareTempTokens,
-			p.Id(),
-		)
+func (p *Project) TempProjectTokensNoLock(ctx *core.Context) (TempProjectTokens, error) {
+	if p.cloudflare != nil {
+		upToDateCloudflareTokens, err := p.cloudflare.getUpToDateTempTokens(ctx)
 		if err != nil {
 			return TempProjectTokens{}, err
 		}
-		tokens.Cloudflare = upToDateCloudflareTokens
+
 		if p.tempTokens == nil {
 			p.tempTokens = &TempProjectTokens{}
 		}
-		p.tempTokens.Cloudflare = tokens.Cloudflare
+		p.tempTokens.Cloudflare = &upToDateCloudflareTokens
+		return *p.tempTokens, nil
 	}
 
-	return
+	return TempProjectTokens{}, nil
 }
 
 func ConvertR2TokenToS3Credentials(tokenId string, tokenValue string) (accessKey, secretKey string) {

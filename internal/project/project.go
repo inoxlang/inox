@@ -19,7 +19,8 @@ const (
 )
 
 var (
-	ErrProjectNotFound = errors.New("project not found")
+	ErrProjectNotFound      = errors.New("project not found")
+	ErrNoCloudflareProvider = errors.New("cloudflare provider not present")
 
 	_ core.Value               = (*Project)(nil)
 	_ core.PotentiallySharable = (*Project)(nil)
@@ -30,17 +31,15 @@ type Project struct {
 	id                ProjectID
 	projectFilesystem afs.Filesystem
 	lock              core.SmartLock
-	devSideConfig     DevSideProjectConfig
 	tempTokens        *TempProjectTokens
 	secretsBucket     *s3_ns.Bucket
+
+	//providers
+	cloudflare *Cloudflare //can be nil
 }
 
 func (p *Project) Id() ProjectID {
 	return p.id
-}
-
-func (p *Project) DevSideConfig() DevSideProjectConfig {
-	return p.devSideConfig
 }
 
 type ProjectID string
@@ -118,11 +117,30 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 	project := &Project{
 		id:                params.Id,
 		projectFilesystem: projectFS,
-		devSideConfig:     params.DevSideConfig,
 		tempTokens:        params.TempTokens,
 	}
 
+	if params.DevSideConfig.Cloudflare != nil {
+		cf, err := newCloudflare(project.id, params.DevSideConfig.Cloudflare)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create clouflare helper: %w", err)
+		}
+		project.cloudflare = cf
+	}
+
 	return project, nil
+}
+
+func (p *Project) DeleteSecretsBucket(ctx *core.Context) error {
+	bucket, err := p.getCreateSecretsBucket(ctx, false)
+	if err != nil {
+		return err
+	}
+	if bucket == nil {
+		return nil
+	}
+
+	return p.cloudflare.DeleteR2Bucket(ctx, bucket)
 }
 
 func (p *Project) GetS3CredentialsForBucket(
@@ -130,21 +148,24 @@ func (p *Project) GetS3CredentialsForBucket(
 	bucketName string,
 	provider string,
 ) (accessKey, secretKey string, s3Endpoint core.Host, _ error) {
-	tokens, err := p.TempProjectTokens(ctx)
-	if err != nil {
-		return "", "", "", err
-	}
-	accessKey, secretKey, s3Endpoint, err = tokens.Cloudflare.CreateS3CredentialsForSingleBucket(ctx, bucketName, p.Id(), *p.devSideConfig.Cloudflare)
+	closestState := ctx.GetClosestState()
+	p.lock.Lock(closestState, p)
+	defer p.lock.Unlock(closestState, p)
+
+	creds, err := p.cloudflare.CreateS3CredentialsForSingleBucket(ctx, bucketName, p.Id())
 	if err != nil {
 		return "", "", "", fmt.Errorf("%w: %w", ErrNoR2Token, err)
 	}
+	accessKey = creds.accessKey
+	secretKey = creds.secretKey
+	s3Endpoint = creds.s3Endpoint
 	return
 }
 
 func (p *Project) CanProvideS3Credentials(s3Provider string) (bool, error) {
 	switch s3Provider {
 	case "cloudflare":
-		return p.devSideConfig.Cloudflare != nil, nil
+		return p.cloudflare != nil, nil
 	}
 	return false, nil
 }
