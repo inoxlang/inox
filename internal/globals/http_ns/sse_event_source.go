@@ -170,7 +170,7 @@ func (evs *ServerSentEventSource) Close() {
 	}
 
 	evs.isClosed = true
-	evs.context.Cancel()
+	evs.context.CancelGracefully()
 }
 
 func (evs *ServerSentEventSource) IsClosed() bool {

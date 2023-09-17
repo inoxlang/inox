@@ -33,7 +33,7 @@ func pushByteStream(byteStream core.ReadableStream, h handlingArguments) error {
 		defer func() {
 			defer recover()
 			sseStream.Stop()
-			ctx.Cancel()
+			ctx.CancelGracefully()
 		}()
 
 		for {

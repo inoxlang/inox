@@ -151,7 +151,7 @@ func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 	if args.Timeout != 0 {
 		go func(d time.Duration) {
 			<-time.After(d)
-			modState.Ctx.Cancel()
+			modState.Ctx.CancelGracefully()
 		}(args.Timeout)
 	}
 
@@ -365,7 +365,7 @@ func (lthread *LThread) ResumeAsync() error {
 
 // Cancel stops the execution of the lthread.
 func (lthread *LThread) Cancel(*Context) {
-	lthread.state.Ctx.Cancel()
+	lthread.state.Ctx.CancelGracefully()
 }
 
 // WaitResult waits for the end of the execution and returns the value returned by

@@ -84,7 +84,7 @@ var (
 func init() {
 	targetSpecificInit()
 	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-	defer ctx.Cancel()
+	defer ctx.CancelGracefully()
 
 	//
 	//	===== OUTPUT =====

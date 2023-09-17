@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"reflect"
 	"runtime/debug"
 	"sync"
 	"sync/atomic"
@@ -50,10 +51,14 @@ type Context struct {
 
 	currentTx *Transaction
 
-	longLived        atomic.Bool
-	done             atomic.Bool
-	tearedDown       atomic.Bool
-	cancel           context.CancelFunc
+	longLived atomic.Bool
+	done      atomic.Bool
+	cancel    context.CancelFunc
+
+	onGracefulTearDownMicrotasks []GracefulTearDownTaskFn
+	gracefulTearDownStatus       atomic.Int64 //see GracefulTeardownStatus
+
+	tearedDown       atomic.Bool //true when the context is done and the 'done' microtasks have been called.
 	onDoneMicrotasks []ContextDoneMicrotaskFn
 
 	//permissions & limits
@@ -84,7 +89,20 @@ const (
 	TestingContext
 )
 
-// A ContextDoneMicrotaskFn should run for a short time (less than 1ms), the calling context should not be access because it is locked.
+type GracefulTeardownStatus int32
+
+const (
+	NeverStartedGracefulTeardown GracefulTeardownStatus = iota
+	GracefullyTearingDown
+	GracefullyTearedDown
+)
+
+// A GracefulTearDownTaskFn should ideally run for a relative short time (less than 500ms),
+// the passed context is the context the microtask was registered to.
+type GracefulTearDownTaskFn func(ctx *Context) error
+
+// A ContextDoneMicrotaskFn should run for a short time (less than 1ms),
+// the calling context should not be access because it is locked.
 type ContextDoneMicrotaskFn func(timeoutCtx context.Context) error
 
 type ContextConfig struct {
@@ -282,6 +300,8 @@ func NewContext(config ContextConfig) *Context {
 		limiter.SetContextIfNotChild(ctx)
 	}
 
+	ctx.gracefulTearDownStatus.Store(int64(NeverStartedGracefulTeardown))
+
 	//tear down
 	go func() {
 		<-ctx.Done()
@@ -291,11 +311,17 @@ func NewContext(config ContextConfig) *Context {
 		ctx.lock.Lock()
 		defer ctx.lock.Unlock()
 
-		var logger *zerolog.Logger
-		if ctx.state != nil {
-			logger = &ctx.state.Logger
-		} else if ctx.parentCtx != nil {
-			logger = &ctx.getClosestStateNoDoneCheck().Logger
+		var logger zerolog.Logger
+		{
+			if ctx.state != nil {
+				logger = ctx.state.Logger
+			} else if ctx.parentCtx != nil {
+				logger = ctx.parentCtx.getClosestStateNoDoneCheck().Logger
+			}
+
+			if reflect.ValueOf(logger).IsZero() {
+				logger = zerolog.Nop()
+			}
 		}
 
 		//ctx.finished = true
@@ -326,13 +352,13 @@ func NewContext(config ContextConfig) *Context {
 					if e := recover(); e != nil {
 						defer recover()
 						err := fmt.Errorf("%w: %s", utils.ConvertPanicValueToError(e), string(debug.Stack()))
-						logger.Err(err).Msg("error while calling a done contxt microtask")
+						logger.Err(err).Msg("error while calling a context done microtask")
 					}
 				}()
 
 				err := microtaskFn(deadlineCtx)
 				if err != nil {
-					logger.Err(err).Msg("error returned by a done context microtask")
+					logger.Err(err).Msg("error returned by a context done microtask")
 				}
 			}()
 
@@ -367,6 +393,17 @@ func (ctx *Context) OnDone(microtask ContextDoneMicrotaskFn) {
 	ctx.onDoneMicrotasks = append(ctx.onDoneMicrotasks, microtask)
 }
 
+func (ctx *Context) OnGracefulTearDown(microtask GracefulTearDownTaskFn) {
+	ctx.lock.Lock()
+	defer ctx.lock.Unlock()
+	ctx.onGracefulTearDownMicrotasks = append(ctx.onGracefulTearDownMicrotasks, microtask)
+}
+
+func (ctx *Context) GracefulTearDownStatus() GracefulTeardownStatus {
+	return GracefulTeardownStatus(ctx.gracefulTearDownStatus.Load())
+}
+
+// IsTearedDown returns true if the context is done and the 'done' microtasks have been called.
 func (ctx *Context) IsTearedDown() bool {
 	return ctx.tearedDown.Load()
 }
@@ -1122,9 +1159,12 @@ func (ctx *Context) IsLongLived() bool {
 	return ctx.longLived.Load()
 }
 
-// Cancel cancels the Context.
+// CancelGracefully calls the graceful teardown tasks one by one synchronously,
+// then the context is truly cancelled.
 // TODO: add cancellation cause
-func (ctx *Context) Cancel() {
+func (ctx *Context) CancelGracefully() {
+	ctx.gracefullyTearDown()
+
 	if ctx.done.CompareAndSwap(false, true) {
 		ctx.lock.Lock()
 		defer ctx.lock.Unlock()
@@ -1137,7 +1177,49 @@ func (ctx *Context) Cancel() {
 
 func (ctx *Context) CancelIfShortLived() {
 	if !ctx.longLived.Load() {
-		ctx.Cancel()
+		ctx.CancelGracefully()
+	}
+}
+
+func (ctx *Context) gracefullyTearDown() {
+	if !ctx.gracefulTearDownStatus.CompareAndSwap(int64(NeverStartedGracefulTeardown), int64(GracefullyTearingDown)) {
+		return
+	}
+
+	defer ctx.gracefulTearDownStatus.Store(int64(GracefullyTearedDown))
+
+	var logger zerolog.Logger
+	{
+		ctx.lock.RLock()
+		state := ctx.state
+		ctx.lock.RUnlock()
+
+		if state != nil {
+			logger = state.Logger
+		} else if ctx.parentCtx != nil {
+			logger = ctx.parentCtx.getClosestStateNoDoneCheck().Logger
+		}
+
+		if reflect.ValueOf(logger).IsZero() {
+			logger = zerolog.Nop()
+		}
+	}
+
+	for _, taskFn := range ctx.onGracefulTearDownMicrotasks {
+		func() {
+			defer func() {
+				if e := recover(); e != nil {
+					defer recover()
+					err := fmt.Errorf("%w: %s", utils.ConvertPanicValueToError(e), string(debug.Stack()))
+					logger.Err(err).Msg("error while calling a context teardown task")
+				}
+			}()
+
+			err := taskFn(ctx)
+			if err != nil {
+				logger.Err(err).Msg("error returned by a context teardown task")
+			}
+		}()
 	}
 }
 

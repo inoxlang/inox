@@ -19,7 +19,7 @@ func TestCreateS3CredentialsForSingleBucket(t *testing.T) {
 	}
 
 	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-	defer ctx.Cancel()
+	defer ctx.CancelGracefully()
 
 	cf, err := newCloudflare(projectId, &cloudflareConfig)
 	if !assert.NoError(t, err) {

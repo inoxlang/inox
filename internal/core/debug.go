@@ -334,7 +334,7 @@ func (d *Debugger) startGoroutine() {
 
 			if cancelExecution {
 				d.logger.Info().Msg("cancel execution of debuggee")
-				go d.globalState.Ctx.Cancel()
+				go d.globalState.Ctx.CancelGracefully()
 			}
 			if done != nil {
 				done()

@@ -71,7 +71,7 @@ func testDebugModeEval(
 			controlChan := debugger.ControlChan()
 			stoppedChan := debugger.StoppedChan()
 
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			controlChan <- DebugCommandSetBreakpoints{
 				Chunk: chunk,
@@ -160,7 +160,7 @@ func testDebugModeEval(
 			controlChan := debugger.ControlChan()
 			stoppedChan := debugger.StoppedChan()
 
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			controlChan <- DebugCommandSetBreakpoints{
 				Chunk: chunk,
@@ -285,7 +285,7 @@ func testDebugModeEval(
 			controlChan := debugger.ControlChan()
 			stoppedChan := debugger.StoppedChan()
 
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			controlChan <- DebugCommandSetBreakpoints{
 				Chunk:             chunk,
@@ -407,7 +407,7 @@ func testDebugModeEval(
 			controlChan := debugger.ControlChan()
 			stoppedChan := debugger.StoppedChan()
 
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			equalChunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
 				NameString: "core-test",
@@ -532,7 +532,7 @@ func testDebugModeEval(
 
 			controlChan := debugger.ControlChan()
 
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			breakpointsChan := make(chan []BreakpointInfo)
 
@@ -574,7 +574,7 @@ func testDebugModeEval(
 			controlChan := debugger.ControlChan()
 			stoppedChan := debugger.StoppedChan()
 
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			var stoppedEvents []ProgramStoppedEvent
 			var globalScopes []map[string]Value
@@ -689,7 +689,7 @@ func testDebugModeEval(
 			controlChan := debugger.ControlChan()
 			stoppedChan := debugger.StoppedChan()
 
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			controlChan <- DebugCommandSetBreakpoints{
 				Chunk: chunk,
@@ -818,7 +818,7 @@ func testDebugModeEval(
 			controlChan := debugger.ControlChan()
 			stoppedChan := debugger.StoppedChan()
 
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			controlChan <- DebugCommandSetBreakpoints{
 				Chunk: chunk,
@@ -948,7 +948,7 @@ func testDebugModeEval(
 			controlChan := debugger.ControlChan()
 			stoppedChan := debugger.StoppedChan()
 
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			var breakpointId int32
 
@@ -1040,7 +1040,7 @@ func testDebugModeEval(
 			controlChan := debugger.ControlChan()
 			stoppedChan := debugger.StoppedChan()
 
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			var stoppedEvents []ProgramStoppedEvent
 			var globalScopes []map[string]Value
@@ -1123,7 +1123,7 @@ func testDebugModeEval(
 			controlChan := debugger.ControlChan()
 			stoppedChan := debugger.StoppedChan()
 
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			var stoppedEvents []ProgramStoppedEvent
 			var globalScopes []map[string]Value
@@ -1208,7 +1208,7 @@ func testDebugModeEval(
 			controlChan := debugger.ControlChan()
 			stoppedChan := debugger.StoppedChan()
 
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			controlChan <- DebugCommandSetBreakpoints{
 				Chunk: chunk,
@@ -1254,7 +1254,7 @@ func testDebugModeEval(
 			controlChan := debugger.ControlChan()
 			stoppedChan := debugger.StoppedChan()
 
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
 			returnStmts := parse.FindNodes(chunk.Node, (*parse.ReturnStatement)(nil), nil)
@@ -1397,7 +1397,7 @@ func testDebugModeEval(
 			controlChan := debugger.ControlChan()
 			stoppedChan := debugger.StoppedChan()
 
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			returnStmts := parse.FindNodes(chunk.Node, (*parse.ReturnStatement)(nil), nil)
 
@@ -1490,7 +1490,7 @@ func testDebugModeEval(
 			controlChan := debugger.ControlChan()
 			stoppedChan := debugger.StoppedChan()
 
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			controlChan <- DebugCommandSetBreakpoints{
 				Chunk: chunk,
@@ -1593,7 +1593,7 @@ func testDebugModeEval(
 			controlChan := debugger.ControlChan()
 			stoppedChan := debugger.StoppedChan()
 
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			returnStmts := parse.FindNodes(chunk.Node, (*parse.ReturnStatement)(nil), nil)
 
@@ -1744,7 +1744,7 @@ func testDebugModeEval(
 			controlChan := debugger.ControlChan()
 			stoppedChan := debugger.StoppedChan()
 
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
 
@@ -1863,7 +1863,7 @@ func testDebugModeEval(
 			controlChan := debugger.ControlChan()
 			stoppedChan := debugger.StoppedChan()
 
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
 			returnStmts := parse.FindNodes(chunk.Node, (*parse.ReturnStatement)(nil), nil)
@@ -2030,7 +2030,7 @@ func testDebugModeEval(
 			controlChan := debugger.ControlChan()
 			stoppedChan := debugger.StoppedChan()
 
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
 			returnStatements := parse.FindNodes(chunk.Node, (*parse.ReturnStatement)(nil), nil)
@@ -2152,7 +2152,7 @@ func testDebugModeEval(
 
 		<-goroutineStarted
 
-		defer ctx.Cancel()
+		defer ctx.CancelGracefully()
 
 		result, err := eval(chunk.Node, state)
 
@@ -2193,7 +2193,7 @@ func testDebugModeEval(
 			controlChan := debugger.ControlChan()
 			stoppedChan := debugger.StoppedChan()
 
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
 			var routineChunk atomic.Value
@@ -2345,7 +2345,7 @@ func testDebugModeEval(
 			controlChan := debugger.ControlChan()
 			stoppedChan := debugger.StoppedChan()
 
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			returnStmts := parse.FindNodes(chunk.Node, (*parse.ReturnStatement)(nil), nil)
 			var routineChunk atomic.Value
@@ -2486,7 +2486,7 @@ func testDebugModeEval(
 			controlChan := debugger.ControlChan()
 			stoppedChan := debugger.StoppedChan()
 
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
 			var routineChunk atomic.Value
@@ -2649,7 +2649,7 @@ func testDebugModeEval(
 			controlChan := debugger.ControlChan()
 			stoppedChan := debugger.StoppedChan()
 
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			var (
 				assignments     = parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
@@ -2808,7 +2808,7 @@ func testDebugModeEval(
 			controlChan := debugger.ControlChan()
 			stoppedChan := debugger.StoppedChan()
 
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			var (
 				assignments     = parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)

@@ -529,7 +529,7 @@ func TestFile(t *testing.T) {
 		defer f.close(ctx)
 
 		go func() {
-			ctx.Cancel()
+			ctx.CancelGracefully()
 		}()
 
 		timeout := time.After(time.Second)

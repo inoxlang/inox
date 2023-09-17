@@ -469,7 +469,7 @@ func TestThreadSimultaneousInstancesLimitIntegration(t *testing.T) {
 			}),
 			Limits: []Limit{threadCountLimit},
 		}, nil)
-		defer ctx.Cancel()
+		defer ctx.CancelGracefully()
 
 		state := ctx.GetClosestState()
 
@@ -529,7 +529,7 @@ func TestThreadSimultaneousInstancesLimitIntegration(t *testing.T) {
 			}),
 			Limits: []Limit{threadCountLimit},
 		}, nil)
-		defer ctx.Cancel()
+		defer ctx.CancelGracefully()
 
 		state := ctx.GetClosestState()
 
@@ -612,7 +612,7 @@ func TestThreadSimultaneousInstancesLimitIntegration(t *testing.T) {
 			Limits:     []Limit{threadCountLimit},
 			Filesystem: fls,
 		}, nil)
-		defer ctx.Cancel()
+		defer ctx.CancelGracefully()
 
 		mod, err := ParseLocalModule("/main.ix", ModuleParsingConfig{
 			Context: ctx,

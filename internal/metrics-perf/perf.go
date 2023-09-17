@@ -51,7 +51,7 @@ func StartPeriodicPerfProfilesCollection(ctx *core.Context, conf PerfDataCollect
 
 	go func() {
 		defer recover()
-		defer childCtx.Cancel()
+		defer childCtx.CancelGracefully()
 
 		buff := bytes.NewBuffer(nil)
 		pprof.StartCPUProfile(buff)

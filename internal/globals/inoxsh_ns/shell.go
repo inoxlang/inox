@@ -682,7 +682,7 @@ shell_loop:
 			if sh.foregroundTask != nil {
 				// we stop the foreground task and continue the shell loop
 				if action == Stop {
-					sh.state.Global.Ctx.Cancel()
+					sh.state.Global.Ctx.CancelGracefully()
 
 					clone := sh.state.Global.Ctx.New()
 					clone.SetClosestState(sh.state.Global)

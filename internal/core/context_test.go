@@ -338,21 +338,109 @@ func TestContextLimiters(t *testing.T) {
 }
 
 func TestContextSetProtocolClientForURLForURL(t *testing.T) {
-	// const PROFILE_NAME = core.Identifier("myprofile")
+	// const PROFILE_NAME = Identifier("myprofile")
 
-	// ctx := core.NewContext(core.ContextConfig{
-	// 	Permissions: []core.Permission{
+	// ctx := NewContext(ContextConfig{
+	// 	Permissions: []Permission{
 	// 		permkind.Httpission{Kind_: permkind.Read, Entity: URL},
 	// 	},
-	// 	Limits: []core.Limit{},
+	// 	Limits: []Limit{},
 	// })
 
-	// assert.NoError(t, ctx.SetProtocolClientForURL(PROFILE_NAME, core.NewObject()))
+	// assert.NoError(t, ctx.SetProtocolClientForURL(PROFILE_NAME, NewObject()))
 	// profile, _ := ctx.GetProtolClient(PROFILE_NAME.UnderlyingString())
 	// assert.NotNil(t, profile)
 }
 
-func TestContextMicrotasks(t *testing.T) {
+func TestContextGracefulTearDownTasks(t *testing.T) {
+
+	t.Run("callback functions should all be called", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		firstCall := false
+		secondCall := false
+
+		ctx.OnGracefulTearDown(func(ctx *Context) error {
+			assert.Equal(t, GracefullyTearingDown, ctx.GracefulTearDownStatus())
+			firstCall = true
+			return nil
+		})
+
+		ctx.OnGracefulTearDown(func(ctx *Context) error {
+			assert.Equal(t, GracefullyTearingDown, ctx.GracefulTearDownStatus())
+			secondCall = true
+			return nil
+		})
+
+		ctx.CancelGracefully()
+
+		if !assert.Equal(t, GracefullyTearedDown, ctx.GracefulTearDownStatus()) {
+			return
+		}
+
+		if !assert.True(t, firstCall) {
+			return
+		}
+		assert.True(t, secondCall)
+	})
+
+	t.Run("callback functions should all be called even if one function returns an error", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		firstCall := false
+		secondCall := false
+
+		ctx.OnGracefulTearDown(func(ctx *Context) error {
+			firstCall = true
+			return errors.New("random error")
+		})
+
+		ctx.OnGracefulTearDown(func(ctx *Context) error {
+			assert.Equal(t, GracefullyTearingDown, ctx.GracefulTearDownStatus())
+			secondCall = true
+			return nil
+		})
+
+		ctx.CancelGracefully()
+
+		if !assert.Equal(t, GracefullyTearedDown, ctx.GracefulTearDownStatus()) {
+			return
+		}
+
+		if !assert.True(t, firstCall) {
+			return
+		}
+		assert.True(t, secondCall)
+	})
+
+	t.Run("callback functions should all be called even if one function panics", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		firstCall := false
+		secondCall := false
+
+		ctx.OnGracefulTearDown(func(ctx *Context) error {
+			firstCall = true
+			panic(errors.New("random error"))
+		})
+
+		ctx.OnGracefulTearDown(func(ctx *Context) error {
+			assert.Equal(t, GracefullyTearingDown, ctx.GracefulTearDownStatus())
+			secondCall = true
+			return nil
+		})
+
+		ctx.CancelGracefully()
+
+		if !assert.Equal(t, GracefullyTearedDown, ctx.GracefulTearDownStatus()) {
+			return
+		}
+
+		if !assert.True(t, firstCall) {
+			return
+		}
+		assert.True(t, secondCall)
+	})
+}
+
+func TestContextDoneMicrotasks(t *testing.T) {
 
 	t.Run("callback functions should all be called", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
@@ -369,7 +457,7 @@ func TestContextMicrotasks(t *testing.T) {
 			return nil
 		})
 
-		ctx.Cancel()
+		ctx.CancelGracefully()
 		<-ctx.Done()
 
 		ctx.InefficientlyWaitUntilTearedDown(time.Second)
@@ -395,7 +483,7 @@ func TestContextMicrotasks(t *testing.T) {
 			return nil
 		})
 
-		ctx.Cancel()
+		ctx.CancelGracefully()
 		ctx.InefficientlyWaitUntilTearedDown(100 * time.Millisecond)
 
 		if !assert.True(t, firstCall) {
@@ -419,7 +507,7 @@ func TestContextMicrotasks(t *testing.T) {
 			return nil
 		})
 
-		ctx.Cancel()
+		ctx.CancelGracefully()
 		ctx.InefficientlyWaitUntilTearedDown(100 * time.Millisecond)
 
 		if !assert.True(t, firstCall) {

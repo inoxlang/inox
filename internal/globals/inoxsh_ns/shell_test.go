@@ -21,7 +21,7 @@ func TestShell(t *testing.T) {
 
 	t.Run("literal", func(t *testing.T) {
 		ctx, config, in, out := setup()
-		defer ctx.Cancel()
+		defer ctx.CancelGracefully()
 
 		go func() {
 			state := core.NewGlobalState(ctx)
@@ -44,7 +44,7 @@ func TestShell(t *testing.T) {
 
 	t.Run("pipe", func(t *testing.T) {
 		ctx, config, in, out := setup()
-		defer ctx.Cancel()
+		defer ctx.CancelGracefully()
 
 		go func() {
 			state := core.NewGlobalState(ctx)
@@ -67,7 +67,7 @@ func TestShell(t *testing.T) {
 
 	t.Run("ring buffers inputs & outputs", func(t *testing.T) {
 		ctx, config, in, out := setup()
-		defer ctx.Cancel()
+		defer ctx.CancelGracefully()
 
 		go func() {
 			state := core.NewGlobalState(ctx)

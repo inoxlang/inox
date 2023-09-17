@@ -159,7 +159,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 
 	defer func() {
 		if finalErr != nil {
-			ctx.Cancel()
+			ctx.CancelGracefully()
 		}
 	}()
 
@@ -227,7 +227,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 
 		openDB, ok := core.GetOpenDbFn(config.Resource.Scheme())
 		if !ok {
-			ctx.Cancel()
+			ctx.CancelGracefully()
 			return nil, nil, nil, ErrDatabaseOpenFunctionNotFound
 		}
 
@@ -240,7 +240,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		if err != nil {
 			err = fmt.Errorf("failed to open the '%s' database: %w", config.Name, err)
 			if !args.DevMode {
-				ctx.Cancel()
+				ctx.CancelGracefully()
 				return nil, nil, nil, err
 			}
 			dbOpeningError = err
@@ -257,7 +257,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		if err != nil {
 			err = fmt.Errorf("failed to wrap '%s' database: %w", config.Name, err)
 			if !args.DevMode {
-				ctx.Cancel()
+				ctx.CancelGracefully()
 				return nil, nil, nil, err
 			}
 			dbOpeningError = err
@@ -281,7 +281,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			if err := db.SetOwnerStateOnceAndLoadIfNecessary(ctx, state); err != nil {
 				err = fmt.Errorf("failed to load data of the '%s' database: %w", dbName, err)
 				if !args.DevMode {
-					ctx.Cancel()
+					ctx.CancelGracefully()
 					return nil, nil, nil, err
 				}
 				dbOpeningError = err
@@ -520,7 +520,7 @@ func PrepareDevModeIncludableChunkfile(args IncludableChunkfilePreparationArgs) 
 
 	defer func() {
 		if finalErr != nil {
-			ctx.Cancel()
+			ctx.CancelGracefully()
 		}
 	}()
 
@@ -771,7 +771,7 @@ func RunPreparedScript(args RunPreparedScriptArgs) (
 
 	state.InitSystemGraph()
 
-	defer state.Ctx.Cancel()
+	defer state.Ctx.CancelGracefully()
 
 	//execute the script
 

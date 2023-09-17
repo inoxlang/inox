@@ -55,7 +55,7 @@ func TestS3WriteFileSeek(t *testing.T) {
 		}
 
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-		defer ctx.Cancel()
+		defer ctx.CancelGracefully()
 
 		file, bucket := setup(ctx)
 		defer bucket.RemoveAllObjects(ctx)
@@ -102,7 +102,7 @@ func TestS3WriteFileSeek(t *testing.T) {
 		file.Write([]byte("abcdef"))
 		assert.True(t, file.content.IsDirty())
 
-		ctx.Cancel()
+		ctx.CancelGracefully()
 
 		time.Sleep(2 * time.Second)
 		assert.False(t, file.content.IsDirty())

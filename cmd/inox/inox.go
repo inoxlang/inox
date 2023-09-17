@@ -423,11 +423,11 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		signalChan := make(chan os.Signal, 1)
 		signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 
-		defer state.Ctx.Cancel()
+		defer state.Ctx.CancelGracefully()
 
 		go func() {
 			for range signalChan {
-				state.Ctx.Cancel()
+				state.Ctx.CancelGracefully()
 				return
 			}
 		}()

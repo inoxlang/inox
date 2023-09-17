@@ -531,11 +531,11 @@ func TestSetAddRemove(t *testing.T) {
 
 	t.Run("add different elements during separate transactions", func(t *testing.T) {
 		ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-		defer ctx1.Cancel()
+		defer ctx1.CancelGracefully()
 		core.StartNewTransaction(ctx1)
 
 		ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-		defer ctx2.Cancel()
+		defer ctx2.CancelGracefully()
 		core.StartNewTransaction(ctx2)
 
 		set := NewSetWithConfig(ctx1, nil, SetConfig{
@@ -563,11 +563,11 @@ func TestSetAddRemove(t *testing.T) {
 
 	t.Run("add then remove different elements during separate transactions", func(t *testing.T) {
 		ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-		defer ctx1.Cancel()
+		defer ctx1.CancelGracefully()
 		core.StartNewTransaction(ctx1)
 
 		ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-		defer ctx2.Cancel()
+		defer ctx2.CancelGracefully()
 		core.StartNewTransaction(ctx2)
 
 		set := NewSetWithConfig(ctx1, nil, SetConfig{
@@ -631,14 +631,14 @@ func TestSetAddRemove(t *testing.T) {
 
 	t.Run("remove different elements during separate transactions", func(t *testing.T) {
 		ctx0 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-		defer ctx0.Cancel()
+		defer ctx0.CancelGracefully()
 
 		ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-		defer ctx1.Cancel()
+		defer ctx1.CancelGracefully()
 		core.StartNewTransaction(ctx1)
 
 		ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-		defer ctx2.Cancel()
+		defer ctx2.CancelGracefully()
 		core.StartNewTransaction(ctx2)
 
 		set := NewSetWithConfig(ctx0, core.NewWrappedValueList(core.Int(1), core.Int(2)), SetConfig{
@@ -667,7 +667,7 @@ func TestSetAddRemove(t *testing.T) {
 
 	t.Run("Set should be persisted during call to .Add", func(t *testing.T) {
 		ctx, storage := setup()
-		defer ctx.Cancel()
+		defer ctx.CancelGracefully()
 
 		pattern := NewSetPattern(SetConfig{
 			Uniqueness: containers_common.UniquenessConstraint{

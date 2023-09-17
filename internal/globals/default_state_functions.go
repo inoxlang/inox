@@ -361,7 +361,7 @@ func _url_of(ctx *core.Context, v core.Value) core.URL {
 }
 
 func _cancel_exec(ctx *core.Context) {
-	ctx.Cancel()
+	ctx.CancelGracefully()
 }
 
 func _List(ctx *core.Context, args ...core.Value) *core.List {

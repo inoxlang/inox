@@ -31,7 +31,7 @@ const (
 // 	go func() {
 // 		defer func() {
 // 			sseStream.Stop()
-// 			ctx.Cancel()
+// 			ctx.CancelGracefully()
 // 		}()
 
 // 		w := view.Watcher(h.state.Ctx, core.WatcherConfiguration{Filter: core.MUTATION_PATTERN})

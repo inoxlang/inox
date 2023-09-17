@@ -430,7 +430,7 @@ func (s *Session) Context() *core.Context {
 }
 
 func (s *Session) Close() error {
-	defer s.ctx.Cancel()
+	defer s.ctx.CancelGracefully()
 
 	if s.conn != nil {
 		return s.conn.Close()

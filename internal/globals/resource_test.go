@@ -53,7 +53,7 @@ func TestReadResource(t *testing.T) {
 			ctx := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
 				rw.WriteStatus(ctx, http.StatusNotFound)
 			})
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			res, err := _readResource(ctx, resource, insecure)
 
@@ -66,7 +66,7 @@ func TestReadResource(t *testing.T) {
 			ctx := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
 				rw.WriteJSON(ctx, core.True)
 			})
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			res, err := _readResource(ctx, resource, insecure)
 
@@ -81,7 +81,7 @@ func TestReadResource(t *testing.T) {
 			ctx := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
 				rw.WriteJSON(ctx, core.True)
 			})
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			res, err := _readResource(ctx, resource, raw, insecure)
 
@@ -97,7 +97,7 @@ func TestReadResource(t *testing.T) {
 				rw.WriteContentType("custom/type")
 				rw.BodyWriter().Write([]byte("X;X"))
 			})
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			res, err := _readResource(ctx, resource, insecure)
 
@@ -110,7 +110,7 @@ func TestReadResource(t *testing.T) {
 				rw.WriteContentType("custom/type")
 				rw.BodyWriter().Write([]byte("X;X"))
 			})
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			res, err := _readResource(ctx, resource, raw, insecure)
 
@@ -132,7 +132,7 @@ func TestGetResource(t *testing.T) {
 		ctx := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
 			rw.WriteIXON(ctx, core.NewObjectFromMap(core.ValMap{"a": core.Int(1)}, ctx))
 		})
-		defer ctx.Cancel()
+		defer ctx.CancelGracefully()
 
 		resource := core.URL(string(RESOURCE_TEST_HOST) + "/resource")
 		res, err := _getResource(ctx, resource, insecure)

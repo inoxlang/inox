@@ -16,7 +16,7 @@ func TestObject(t *testing.T) {
 
 		{
 			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			obj := NewObjectFromMap(ValMap{}, ctx)
 			obj.SetProp(ctx, "a", Int(1))
@@ -27,7 +27,7 @@ func TestObject(t *testing.T) {
 
 		{
 			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
-			defer ctx.Cancel()
+			defer ctx.CancelGracefully()
 
 			obj := NewObjectFromMap(ValMap{}, ctx)
 			obj.SetProp(ctx, "b", NewObjectFromMap(ValMap{}, ctx))
@@ -54,11 +54,11 @@ func TestObject(t *testing.T) {
 
 		t.Run("sould wait current transaction to be finished", func(t *testing.T) {
 			ctx1 := NewContexWithEmptyState(ContextConfig{}, nil)
-			defer ctx1.Cancel()
+			defer ctx1.CancelGracefully()
 
 			tx1 := StartNewTransaction(ctx1)
 			ctx2 := NewContexWithEmptyState(ContextConfig{}, nil)
-			defer ctx2.Cancel()
+			defer ctx2.CancelGracefully()
 
 			obj := NewObjectFromMap(ValMap{}, ctx1)
 
@@ -104,7 +104,7 @@ func TestObject(t *testing.T) {
 
 		t.Run("call after invalid PropNotStored call", func(t *testing.T) {
 			ctx1 := NewContexWithEmptyState(ContextConfig{}, nil)
-			defer ctx1.Cancel()
+			defer ctx1.CancelGracefully()
 
 			obj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx1)
 
@@ -116,7 +116,7 @@ func TestObject(t *testing.T) {
 			}
 
 			ctx2 := NewContexWithEmptyState(ContextConfig{}, nil)
-			defer ctx2.Cancel()
+			defer ctx2.CancelGracefully()
 
 			//the object properties should still be accessible from another execution context
 			assert.Equal(t, Int(1), obj.Prop(ctx2, "a"))
@@ -167,7 +167,7 @@ func TestObject(t *testing.T) {
 
 			t.Run("empty job should be done in a short time", func(t *testing.T) {
 				ctx, obj := setup(t, "")
-				defer ctx.Cancel()
+				defer ctx.CancelGracefully()
 
 				time.Sleep(10 * time.Millisecond)
 				jobs := obj.jobInstances()
@@ -181,7 +181,7 @@ func TestObject(t *testing.T) {
 
 			t.Run("two empty jobs should be done in a short time", func(t *testing.T) {
 				ctx, obj := setup(t, "", "")
-				defer ctx.Cancel()
+				defer ctx.CancelGracefully()
 
 				time.Sleep(10 * time.Millisecond)
 
@@ -195,7 +195,7 @@ func TestObject(t *testing.T) {
 
 			t.Run("job doing a simple operation should be done in a short time", func(t *testing.T) {
 				ctx, obj := setup(t, "(1 + 1)")
-				defer ctx.Cancel()
+				defer ctx.CancelGracefully()
 
 				time.Sleep(10 * time.Millisecond)
 				jobs := obj.jobInstances()
@@ -212,7 +212,7 @@ func TestObject(t *testing.T) {
 						c += 1
 					}
 				`)
-				defer ctx.Cancel()
+				defer ctx.CancelGracefully()
 
 				time.Sleep(10 * time.Millisecond)
 				jobs := obj.jobInstances()
@@ -233,7 +233,7 @@ func TestObject(t *testing.T) {
 						c += 1
 					}
 				`)
-				defer ctx.Cancel()
+				defer ctx.CancelGracefully()
 
 				time.Sleep(10 * time.Millisecond)
 				jobs := obj.jobInstances()

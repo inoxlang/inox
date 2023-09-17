@@ -249,7 +249,7 @@ func startTokenBucketManagerGoroutine() {
 		}
 
 		if tb.available < 0 && tb.cancelContextOnNegativeCount && tb.context != nil {
-			tb.context.Cancel() // add reason
+			tb.context.CancelGracefully() // add reason
 			return
 		}
 
