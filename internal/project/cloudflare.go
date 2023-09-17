@@ -22,24 +22,16 @@ var (
 	ErrNoR2Token = errors.New("No R2 token")
 )
 
-type Cloudflare struct {
-	R2Token string
-}
-
-func GetTempCloudflareTokens(
+func getCreateR2Token(
 	ctx context.Context,
-	devSideConfig DevSideCloudflareConfig,
-	tempTokens TempCloudflareTokens,
+	tokenName string,
 	projectId ProjectID,
-) (r2token *TempToken, _ error) {
-	additionalTokensApiToken := devSideConfig.AdditionalTokensApiToken
-	//note: api.UserDetails().Account[0].ID is zero
-	accountId := devSideConfig.AccountID
-
-	api, err := cloudflare.NewWithAPIToken(additionalTokensApiToken)
-	if err != nil {
-		return nil, err
-	}
+	accountId string,
+	api *cloudflare.API,
+	//optional
+	existingTokenId string,
+	existingTokenValue string,
+) (_id, _value string, _ error) {
 
 	var r2PermGroups []cloudflare.APITokenPermissionGroups
 	var permissionGroupRetrievalError error
@@ -68,36 +60,34 @@ func GetTempCloudflareTokens(
 
 	apiTokens, err := api.APITokens(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve API tokens: %w", err)
+		return "", "", fmt.Errorf("failed to retrieve API tokens: %w", err)
 	}
 
 	wg.Wait()
 	if permissionGroupRetrievalError != nil {
-		return nil, permissionGroupRetrievalError
+		return "", "", permissionGroupRetrievalError
 	}
 
-	R2TokenName := GetR2TokenName(projectId)
-
-	R2TokenAlreadyExists := false
-	R2TokenExpired := false
-	R2TokenId := ""
+	tokenAlreadyExists := false
+	tokenExpired := false
+	tokenId := ""
 
 	for _, token := range apiTokens {
-		if token.Name == R2TokenName { //already exists
-			if R2TokenAlreadyExists {
-				return nil, errors.New("R2 API token with duplicate name")
+		if token.Name == tokenName { //already exists
+			if tokenAlreadyExists {
+				return "", "", errors.New("R2 API token with duplicate name")
 			}
 			if token.ExpiresOn != nil {
-				R2TokenExpired = token.ExpiresOn.Before(time.Now().Add(time.Hour))
+				tokenExpired = token.ExpiresOn.Before(time.Now().Add(time.Hour))
 			}
 
-			R2TokenAlreadyExists = true
-			R2TokenId = token.ID
+			tokenAlreadyExists = true
+			tokenId = token.ID
 		}
 	}
 
-	if R2TokenAlreadyExists && tempTokens.R2Token != nil && !R2TokenExpired {
-		r2token = tempTokens.R2Token
+	if existingTokenId != "" && existingTokenValue != "" && !tokenExpired {
+		return existingTokenId, existingTokenValue, nil
 	} else {
 		//if the token does not exist
 		//or is expired
@@ -107,7 +97,7 @@ func GetTempCloudflareTokens(
 		//https://developers.cloudflare.com/fundamentals/api/reference/permissions/
 
 		r2Token := cloudflare.APIToken{
-			Name: R2TokenName,
+			Name: tokenName,
 			Policies: []cloudflare.APITokenPolicies{
 				{
 					Effect: "allow",
@@ -118,18 +108,18 @@ func GetTempCloudflareTokens(
 				},
 			},
 		}
-		var r2tokenValue string
-		if R2TokenAlreadyExists {
-			r2tokenValue, err = api.RollAPIToken(ctx, R2TokenId)
+		var tokenValue string
+		if tokenAlreadyExists {
+			tokenValue, err = api.RollAPIToken(ctx, tokenId)
 		} else {
 			issueTime := time.Now().Add(-time.Second)
 			r2Token.IssuedOn = &issueTime
 			r2Token, err = api.CreateAPIToken(ctx, r2Token)
-			r2tokenValue = r2Token.Value
-			R2TokenId = r2Token.ID
+			tokenValue = r2Token.Value
+			tokenId = r2Token.ID
 		}
 		if err != nil {
-			return nil, fmt.Errorf("failed to create R2 API Token: %w", err)
+			return "", "", fmt.Errorf("failed to create R2 API Token: %w", err)
 		}
 
 		//wait for the token to be valid
@@ -139,13 +129,8 @@ func GetTempCloudflareTokens(
 			time.Sleep(R2_TOKEN_POST_CREATION_DELAY)
 		}
 
-		r2token = &TempToken{
-			Id:    R2TokenId,
-			Value: r2tokenValue,
-		}
+		return tokenId, tokenValue, nil
 	}
-
-	return
 }
 
 func (p *Project) DeleteSecretsBucket(ctx *core.Context) error {
@@ -163,10 +148,10 @@ func (p *Project) DeleteSecretsBucket(ctx *core.Context) error {
 }
 
 func DeleteR2Bucket(ctx *core.Context, bucketToDelete *s3_ns.Bucket, tokens TempCloudflareTokens, accountId string) error {
-	if tokens.R2Token == nil || tokens.R2Token.Value == "" {
+	if tokens.HighPermsR2Token == nil || tokens.HighPermsR2Token.Value == "" {
 		return ErrNoR2Token
 	}
-	api, _ := cloudflare.NewWithAPIToken(tokens.R2Token.Value)
+	api, _ := cloudflare.NewWithAPIToken(tokens.HighPermsR2Token.Value)
 	buckets, _ := api.ListR2Buckets(ctx, cloudflare.AccountIdentifier(accountId), cloudflare.ListR2BucketsParams{})
 
 	for _, bucket := range buckets {
@@ -181,7 +166,7 @@ func DeleteR2Bucket(ctx *core.Context, bucketToDelete *s3_ns.Bucket, tokens Temp
 	return nil
 }
 
-func CheckBucketExists(ctx *core.Context, bucketName string, api *cloudflare.API, accountId string) (bool, error) {
+func checkBucketExists(ctx *core.Context, bucketName string, api *cloudflare.API, accountId string) (bool, error) {
 	buckets, err := api.ListR2Buckets(ctx, cloudflare.AccountIdentifier(accountId), cloudflare.ListR2BucketsParams{})
 
 	if err != nil {
@@ -196,6 +181,14 @@ func CheckBucketExists(ctx *core.Context, bucketName string, api *cloudflare.API
 	return false, nil
 }
 
-func GetR2TokenName(projectId ProjectID) string {
+func getHighPermsR2TokenName(projectId ProjectID) string {
 	return "R2-" + string(projectId)
+}
+
+func getSingleBucketR2TokenName(bucketName string, projectId ProjectID) string {
+	return "R2-" + bucketName + "-" + string(projectId)
+}
+
+func getS3EndpointForR2(accountId string) core.Host {
+	return core.Host("https://" + accountId + ".r2.cloudflarestorage.com")
 }

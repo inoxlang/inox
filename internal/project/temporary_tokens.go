@@ -16,27 +16,6 @@ type TempProjectTokens struct {
 	Cloudflare *TempCloudflareTokens `json:"cloudflare,omitempty"`
 }
 
-type TempCloudflareTokens struct {
-	R2Token *TempToken `json:"r2Token,omitempty"`
-}
-
-func (t *TempCloudflareTokens) GetS3AccessKeySecretKey() (accessKey, secretKey string, resultOk bool) {
-	if t == nil {
-		return "", "", false
-	}
-	//https://github.com/cloudflare/cloudflare-go/issues/981#issuecomment-1484963748
-	if t.R2Token == nil || t.R2Token.Id == "" || t.R2Token.Value == "" {
-		return "", "", false
-	}
-	accessKey = t.R2Token.Id
-
-	secretKeyBytes := sha256.Sum256([]byte(t.R2Token.Value))
-	secretKey = hex.EncodeToString(secretKeyBytes[:])
-
-	resultOk = true
-	return
-}
-
 func (p *Project) getTempTokens() (TempProjectTokens, bool) {
 	if p.tempTokens != nil {
 		return *p.tempTokens, true
@@ -51,14 +30,14 @@ func (p *Project) TempProjectTokens(ctx *core.Context) (tokens TempProjectTokens
 
 	cloudflareConfig := p.DevSideConfig().Cloudflare
 	if cloudflareConfig != nil {
-		var cloudflareTempTokens TempCloudflareTokens
+		var cloudflareTempTokens *TempCloudflareTokens
 
 		tempTokens, ok := p.getTempTokens()
 		if ok && tempTokens.Cloudflare != nil {
-			cloudflareTempTokens = *tempTokens.Cloudflare
+			cloudflareTempTokens = tempTokens.Cloudflare
 		}
 
-		r2Token, err := GetTempCloudflareTokens(ctx,
+		upToDateCloudflareTokens, err := getUpToDateTempCloudflareTokens(ctx,
 			*cloudflareConfig,
 			cloudflareTempTokens,
 			p.Id(),
@@ -66,14 +45,21 @@ func (p *Project) TempProjectTokens(ctx *core.Context) (tokens TempProjectTokens
 		if err != nil {
 			return TempProjectTokens{}, err
 		}
-		tokens.Cloudflare = &TempCloudflareTokens{
-			R2Token: r2Token,
-		}
+		tokens.Cloudflare = upToDateCloudflareTokens
 		if p.tempTokens == nil {
 			p.tempTokens = &TempProjectTokens{}
 		}
 		p.tempTokens.Cloudflare = tokens.Cloudflare
 	}
+
+	return
+}
+
+func ConvertR2TokenToS3Credentials(tokenId string, tokenValue string) (accessKey, secretKey string) {
+	// https://github.com/cloudflare/cloudflare-go/issues/981#issuecomment-1484963748
+	accessKey = tokenId
+	secretKeyBytes := sha256.Sum256([]byte(tokenValue))
+	secretKey = hex.EncodeToString(secretKeyBytes[:])
 
 	return
 }

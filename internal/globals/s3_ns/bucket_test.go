@@ -118,8 +118,12 @@ func TestOpenBucket(t *testing.T) {
 type testProject struct {
 }
 
-func (*testProject) GetS3Credentials(ctx *core.Context, bucketName string, provider string) (accessKey string, secretKey string, _ error) {
-	return S3_FS_TEST_ACCESS_KEY, S3_FS_TEST_SECRET_KEY, nil
+func (*testProject) GetS3CredentialsForBucket(
+	ctx *core.Context,
+	bucketName string,
+	provider string,
+) (accessKey string, secretKey string, _ core.Host, _ error) {
+	return S3_FS_TEST_ACCESS_KEY, S3_FS_TEST_SECRET_KEY, core.Host(S3_FS_TEST_ENDPOINT), nil
 }
 
 func (*testProject) CanProvideS3Credentials(s3Provider string) (bool, error) {

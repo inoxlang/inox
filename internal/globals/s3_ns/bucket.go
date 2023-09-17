@@ -133,7 +133,7 @@ func (b *Bucket) RemoveAllObjects(ctx *core.Context) {
 
 type OpenBucketOptions struct {
 	//if true and the host resolution data of s3Host is an object without the .access-key & .secret-key properties
-	//calls .Project.GetS3Credentials.
+	//calls .Project.GetS3CredentialsForBucket.
 	// The project is not retrieved from the main state because the context might not have
 	// an associated state or the state could be temporary.
 	AllowGettingCredentialsFromProject bool
@@ -206,7 +206,7 @@ func OpenBucket(ctx *core.Context, s3Host core.Host, opts OpenBucketOptions) (*B
 			secretKey = d.Prop(ctx, "secret-key").(*core.Secret).StringValue().GetOrBuildString()
 		} else {
 			var err error
-			accessKey, secretKey, err = proj.GetS3Credentials(ctx, bucket, provider)
+			accessKey, secretKey, _, err = proj.GetS3CredentialsForBucket(ctx, bucket, provider)
 
 			if err != nil {
 				return nil, fmt.Errorf("%w: failed to get S3 credentials from project: %w", ErrCannotResolveBucket, err)

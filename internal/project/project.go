@@ -125,16 +125,20 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 	return project, nil
 }
 
-func (p *Project) GetS3Credentials(ctx *core.Context, bucketName string, provider string) (accessKey, secretKey string, _ error) {
+func (p *Project) GetS3CredentialsForBucket(
+	ctx *core.Context,
+	bucketName string,
+	provider string,
+) (accessKey, secretKey string, s3Endpoint core.Host, _ error) {
 	tokens, err := p.TempProjectTokens(ctx)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
-	accessKey, secretKey, ok := tokens.Cloudflare.GetS3AccessKeySecretKey()
-	if !ok {
-		return "", "", ErrNoR2Token
+	accessKey, secretKey, s3Endpoint, err = tokens.Cloudflare.CreateS3CredentialsForSingleBucket(ctx, bucketName, p.Id(), *p.devSideConfig.Cloudflare)
+	if err != nil {
+		return "", "", "", fmt.Errorf("%w: %w", ErrNoR2Token, err)
 	}
-	return accessKey, secretKey, nil
+	return
 }
 
 func (p *Project) CanProvideS3Credentials(s3Provider string) (bool, error) {

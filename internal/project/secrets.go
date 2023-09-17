@@ -184,7 +184,7 @@ func (p *Project) getCreateSecretsBucket(ctx *core.Context, createIfDoesNotExist
 		return nil, err
 	}
 
-	accessKey, secretKey, ok := tokens.Cloudflare.GetS3AccessKeySecretKey()
+	accessKey, secretKey, ok := tokens.Cloudflare.GetHighPermsS3Credentials()
 	if !ok {
 		return nil, errors.New("missing Cloudflare R2 token")
 	}
@@ -192,12 +192,12 @@ func (p *Project) getCreateSecretsBucket(ctx *core.Context, createIfDoesNotExist
 	bucketName := p.getSecretsBucketName()
 	{
 		cloudflareTokens := tokens.Cloudflare
-		if cloudflareTokens.R2Token == nil || cloudflareTokens.R2Token.Value == "" {
+		if cloudflareTokens.HighPermsR2Token == nil || cloudflareTokens.HighPermsR2Token.Value == "" {
 			return nil, ErrNoR2Token
 		}
-		api, _ := cloudflare.NewWithAPIToken(cloudflareTokens.R2Token.Value)
+		api, _ := cloudflare.NewWithAPIToken(cloudflareTokens.HighPermsR2Token.Value)
 
-		exists, err := CheckBucketExists(ctx, bucketName, api, accountId)
+		exists, err := checkBucketExists(ctx, bucketName, api, accountId)
 		if err != nil {
 			return nil, err
 		}
