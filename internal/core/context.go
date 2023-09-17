@@ -282,15 +282,21 @@ func NewContext(config ContextConfig) *Context {
 		limiter.SetContextIfNotChild(ctx)
 	}
 
-	//cleanup
+	//tear down
 	go func() {
 		<-ctx.Done()
+		ctx.done.Store(true)
 		defer ctx.tearedDown.Store(true)
 
 		ctx.lock.Lock()
 		defer ctx.lock.Unlock()
 
-		logger := ctx.getClosestStateNoLock().Logger
+		var logger *zerolog.Logger
+		if ctx.state != nil {
+			logger = &ctx.state.Logger
+		} else if ctx.parentCtx != nil {
+			logger = &ctx.getClosestStateNoDoneCheck().Logger
+		}
 
 		//ctx.finished = true
 
@@ -389,6 +395,21 @@ func (ctx *Context) getClosestStateNoLock() *GlobalState {
 
 	if ctx.parentCtx != nil {
 		return ctx.parentCtx.GetClosestState()
+	}
+
+	panic(ErrNoAssociatedState)
+}
+
+func (ctx *Context) getClosestStateNoDoneCheck() *GlobalState {
+	ctx.lock.RLock()
+	defer ctx.lock.RUnlock()
+
+	if ctx.state != nil {
+		return ctx.state
+	}
+
+	if ctx.parentCtx != nil {
+		return ctx.parentCtx.getClosestStateNoDoneCheck()
 	}
 
 	panic(ErrNoAssociatedState)
