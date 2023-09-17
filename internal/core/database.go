@@ -4,6 +4,7 @@ import (
 	"encoding/base32"
 	"errors"
 	"fmt"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -33,6 +34,7 @@ var (
 	ErrInvalidAccessSchemaNotUpdatedYet                = errors.New("access to database is not allowed because schema is not updated yet")
 	ErrInvalidDatabaseDirpath                          = errors.New("invalid database dir path")
 	ErrDatabaseAlreadyOpen                             = errors.New("database is already open")
+	ErrDatabaseClosed                                  = errors.New("database is closed")
 	ErrCannotResolveDatabase                           = errors.New("cannot resolve database")
 	ErrCannotFindDatabaseHost                          = errors.New("cannot find corresponding host of database")
 	ErrInvalidDatabaseHost                             = errors.New("host of database is invalid")
@@ -175,6 +177,11 @@ func WrapDatabase(ctx *Context, args DatabaseWrappingArgs) (*DatabaseIL, error) 
 		db.topLevelEntitiesLoaded.Store(true)
 		db.setDatabasePermissions()
 	}
+
+	if db.ownerState != nil {
+		db.AddOwnerStateTeardownCallback()
+	}
+
 	return db, nil
 }
 
@@ -231,10 +238,23 @@ func (db *DatabaseIL) TopLevelEntitiesLoaded() bool {
 	return db.topLevelEntitiesLoaded.Load()
 }
 
+func (db *DatabaseIL) AddOwnerStateTeardownCallback() {
+	db.ownerState.Ctx.OnGracefulTearDown(func(ctx *Context) (finalErr error) {
+		defer func() {
+			if e := recover(); e != nil {
+				finalErr = fmt.Errorf("%w: %s", utils.ConvertPanicValueToError(e), string(debug.Stack()))
+			}
+		}()
+
+		return db.inner.Close(ctx)
+	})
+}
+
 func (db *DatabaseIL) SetOwnerStateOnceAndLoadIfNecessary(ctx *Context, state *GlobalState) error {
 	if db.ownerState != nil {
 		panic(ErrOwnerStateAlreadySet)
 	}
+
 	if db.topLevelEntities == nil && !db.schemaUpdateExpected {
 		topLevelEntities, err := db.inner.LoadTopLevelEntities(ctx)
 		if err != nil {
@@ -245,6 +265,8 @@ func (db *DatabaseIL) SetOwnerStateOnceAndLoadIfNecessary(ctx *Context, state *G
 		db.setDatabasePermissions()
 	}
 	db.ownerState = state
+
+	db.AddOwnerStateTeardownCallback()
 	return nil
 }
 
@@ -657,6 +679,7 @@ type dummyDatabase struct {
 	resource         SchemeHolder
 	schemaUpdated    bool
 	topLevelEntities map[string]Serializable
+	closed           atomic.Bool
 }
 
 func (db *dummyDatabase) Resource() SchemeHolder {
@@ -664,12 +687,18 @@ func (db *dummyDatabase) Resource() SchemeHolder {
 }
 
 func (db *dummyDatabase) Schema() *ObjectPattern {
+	if db.closed.Load() {
+		panic(ErrDatabaseClosed)
+	}
 	return EMPTY_INEXACT_OBJECT_PATTERN
 }
 
 func (db *dummyDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handlers MigrationOpHandlers) {
 	if db.schemaUpdated {
 		panic(ErrDatabaseSchemaAlreadyUpdatedOrNotAllowed)
+	}
+	if db.closed.Load() {
+		panic(ErrDatabaseClosed)
 	}
 	db.schemaUpdated = true
 
@@ -689,9 +718,13 @@ func (db *dummyDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handl
 }
 
 func (db *dummyDatabase) LoadTopLevelEntities(_ *Context) (map[string]Serializable, error) {
+	if db.closed.Load() {
+		return nil, ErrDatabaseClosed
+	}
 	return db.topLevelEntities, nil
 }
 
 func (db *dummyDatabase) Close(ctx *Context) error {
-	return ErrNotImplemented
+	db.closed.Store(true)
+	return nil
 }

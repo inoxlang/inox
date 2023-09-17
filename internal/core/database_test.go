@@ -403,6 +403,62 @@ func TestDatabaseIL(t *testing.T) {
 		assert.Same(t, db.topLevelEntities["a"], val)
 	})
 
+	t.Run("gracefully cancelling the context should close the database", func(t *testing.T) {
+		t.Run("owner state set during WrapDatabase call", func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{
+					DatabasePermission{
+						Kind_:  permkind.Read,
+						Entity: Host("ldb://main"),
+					},
+				},
+			}, nil)
+
+			db := &dummyDatabase{
+				resource:         Host("ldb://main"),
+				topLevelEntities: map[string]Serializable{},
+			}
+
+			utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
+				Inner:                db,
+				OwnerState:           ctx.state,
+				ExpectedSchemaUpdate: true,
+				Name:                 "main",
+			}))
+
+			assert.False(t, db.closed.Load())
+			ctx.CancelGracefully()
+			assert.True(t, db.closed.Load())
+		})
+
+		t.Run("owner state set during WrapDatabase call", func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{
+					DatabasePermission{
+						Kind_:  permkind.Read,
+						Entity: Host("ldb://main"),
+					},
+				},
+			}, nil)
+
+			db := &dummyDatabase{
+				resource:         Host("ldb://main"),
+				topLevelEntities: map[string]Serializable{},
+			}
+
+			dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
+				Inner: db,
+				Name:  "main",
+			}))
+
+			dbIL.SetOwnerStateOnceAndLoadIfNecessary(ctx, ctx.GetClosestState())
+
+			assert.False(t, db.closed.Load())
+			ctx.CancelGracefully()
+			assert.True(t, db.closed.Load())
+		})
+	})
+
 }
 
 var (
