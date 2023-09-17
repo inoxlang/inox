@@ -32,7 +32,7 @@ func prepareSourceFileInDevMode(fpath string, ctx *core.Context, session *jsonrp
 	}
 
 	if chunk.Node.IncludableChunkDesc != nil {
-		state, mod, includedChunk, err := inox_ns.PrepareDevModeIncludableChunkfile(inox_ns.IncludableChunkfilePreparationArgs{
+		state, mod, includedChunk, err := inox_ns.PrepareExtractionModeIncludableChunkfile(inox_ns.IncludableChunkfilePreparationArgs{
 			Fpath:                          fpath,
 			ParsingContext:                 ctx,
 			Out:                            io.Discard,

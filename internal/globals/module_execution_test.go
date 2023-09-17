@@ -1688,7 +1688,7 @@ func TestPrepareDevModeIncludableChunkFile(t *testing.T) {
 			Filesystem:  fs,
 		}, nil)
 
-		state, _, _, err := inox_ns.PrepareDevModeIncludableChunkfile(inox_ns.IncludableChunkfilePreparationArgs{
+		state, _, _, err := inox_ns.PrepareExtractionModeIncludableChunkfile(inox_ns.IncludableChunkfilePreparationArgs{
 			Fpath:                          "/included.ix",
 			ParsingContext:                 ctx,
 			LogOut:                         io.Discard,
@@ -1734,7 +1734,7 @@ func TestPrepareDevModeIncludableChunkFile(t *testing.T) {
 			Filesystem:  fs,
 		}, nil)
 
-		state, _, _, err := inox_ns.PrepareDevModeIncludableChunkfile(inox_ns.IncludableChunkfilePreparationArgs{
+		state, _, _, err := inox_ns.PrepareExtractionModeIncludableChunkfile(inox_ns.IncludableChunkfilePreparationArgs{
 			Fpath:                          "/included.ix",
 			ParsingContext:                 ctx,
 			LogOut:                         io.Discard,
