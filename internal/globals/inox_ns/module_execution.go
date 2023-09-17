@@ -36,8 +36,11 @@ var (
 type ScriptPreparationArgs struct {
 	Fpath string //path of the script in the .ParsingCompilationContext's filesystem.
 
-	CliArgs []string
-	Args    *core.Struct
+	// enable data extraction mode, this mode allow some errors.
+	// this mode is intended to be use by the LSP server.
+	DataExtractionMode bool
+	CliArgs            []string
+	Args               *core.Struct
 	//if set the result of the function is used instead of .Args
 	GetArguments func(*core.Manifest) (*core.Struct, error)
 
@@ -45,10 +48,11 @@ type ScriptPreparationArgs struct {
 	ParentContext             *core.Context
 	ParentContextRequired     bool
 	UseParentStateAsMainState bool
-	DevMode                   bool
-	AllowMissingEnvVars       bool
-	FullAccessToDatabases     bool
-	Project                   *project.Project
+
+	AllowMissingEnvVars   bool
+	FullAccessToDatabases bool
+
+	Project *project.Project
 
 	Out    io.Writer //defaults to os.Stdout
 	LogOut io.Writer //defaults to Out
@@ -79,7 +83,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 
 	module, parsingErr := core.ParseLocalModule(args.Fpath, core.ModuleParsingConfig{
 		Context:                             args.ParsingCompilationContext,
-		RecoverFromNonExistingIncludedFiles: args.DevMode,
+		RecoverFromNonExistingIncludedFiles: args.DataExtractionMode,
 	})
 
 	mod = module
@@ -120,14 +124,14 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			PreinitFilesystem:     args.PreinitFilesystem,
 			DefaultLimits:         default_state.GetDefaultScriptLimits(),
 			AddDefaultPermissions: true,
-			IgnoreUnknownSections: args.DevMode,
-			IgnoreConstDeclErrors: args.DevMode,
+			IgnoreUnknownSections: args.DataExtractionMode,
+			IgnoreConstDeclErrors: args.DataExtractionMode,
 
 			AdditionalGlobalsTestOnly: args.AdditionalGlobalsTestOnly,
 			Project:                   args.Project,
 		})
 
-		if (!args.DevMode && preinitErr != nil) || errors.Is(preinitErr, core.ErrParsingErrorInManifestOrPreinit) {
+		if (!args.DataExtractionMode && preinitErr != nil) || errors.Is(preinitErr, core.ErrParsingErrorInManifestOrPreinit) {
 			finalErr = preinitErr
 			return
 		}
@@ -239,7 +243,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		})
 		if err != nil {
 			err = fmt.Errorf("failed to open the '%s' database: %w", config.Name, err)
-			if !args.DevMode {
+			if !args.DataExtractionMode {
 				ctx.CancelGracefully()
 				return nil, nil, nil, err
 			}
@@ -256,7 +260,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		})
 		if err != nil {
 			err = fmt.Errorf("failed to wrap '%s' database: %w", config.Name, err)
-			if !args.DevMode {
+			if !args.DataExtractionMode {
 				ctx.CancelGracefully()
 				return nil, nil, nil, err
 			}
@@ -280,7 +284,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		if _, ok := ownedDatabases[dbName]; ok {
 			if err := db.SetOwnerStateOnceAndLoadIfNecessary(ctx, state); err != nil {
 				err = fmt.Errorf("failed to load data of the '%s' database: %w", dbName, err)
-				if !args.DevMode {
+				if !args.DataExtractionMode {
 					ctx.CancelGracefully()
 					return nil, nil, nil, err
 				}
@@ -329,7 +333,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			modArgs = args
 		}
 	} else { // no arguments provided
-		if args.DevMode || manifest.Parameters.NoParameters() {
+		if args.DataExtractionMode || manifest.Parameters.NoParameters() {
 			modArgs = core.NewEmptyStruct()
 		} else {
 			modArgsError = errors.New("module arguments not provided")

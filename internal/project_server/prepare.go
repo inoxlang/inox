@@ -85,8 +85,7 @@ func prepareSourceFileInDevMode(fpath string, ctx *core.Context, session *jsonrp
 			ParentContextRequired: parentCtx != nil,
 
 			Out:                     io.Discard,
-			DevMode:                 true,
-			AllowMissingEnvVars:     true,
+			DataExtractionMode:      true,
 			ScriptContextFileSystem: fls,
 			PreinitFilesystem:       fls,
 

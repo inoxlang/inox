@@ -540,7 +540,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		assert.Equal(t, core.Host("ldb://main"), state.Databases["local"].Resource())
 	})
 
-	t.Run("manifest & symbolic eval should be ignored when there is a preinit check error: dev mode", func(t *testing.T) {
+	t.Run("manifest & symbolic eval should be ignored when there is a preinit check error: data extraction mode", func(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
@@ -571,7 +571,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			ParentContext:             ctx,
 			ParentContextRequired:     true,
 			Out:                       io.Discard,
-			DevMode:                   true,
+			DataExtractionMode:        true,
 		})
 
 		if !assert.Error(t, err) {
@@ -1087,7 +1087,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			ParentContext:             ctx,
 			ParentContextRequired:     true,
 			Out:                       io.Discard,
-			DevMode:                   false,
+			DataExtractionMode:        false,
 		})
 
 		if !assert.Error(t, err) {
@@ -1099,11 +1099,11 @@ func TestPrepareLocalScript(t *testing.T) {
 			return
 		}
 
-		// the state should not be present as we are not in dev mode
+		// the state should not be present as we are not in data extraction mode
 		assert.Nil(t, state)
 	})
 
-	t.Run("manifest & symbolic eval should be ignored when there is a manifest check error: dev mode", func(t *testing.T) {
+	t.Run("manifest & symbolic eval should be ignored when there is a manifest check error: data extraction mode", func(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
@@ -1132,7 +1132,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			ParentContext:             ctx,
 			ParentContextRequired:     true,
 			Out:                       io.Discard,
-			DevMode:                   true,
+			DataExtractionMode:        true,
 		})
 
 		if !assert.Error(t, err) {
@@ -1203,7 +1203,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			ParentContext:             ctx,
 			ParentContextRequired:     true,
 			Out:                       io.Discard,
-			DevMode:                   false,
+			DataExtractionMode:        false,
 		})
 
 		if !assert.Error(t, err) {
@@ -1215,7 +1215,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			return
 		}
 
-		// the state should not be present as we are not in dev mode
+		// the state should not be present as we are not in data extraction mode
 		assert.Nil(t, state)
 	})
 
