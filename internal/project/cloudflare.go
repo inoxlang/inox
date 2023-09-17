@@ -34,6 +34,9 @@ type Cloudflare struct {
 	//updated each time .tempTokens.HighPermsR2Token is changed, can be nil
 	highPermsR2API *cloudflare.API
 
+	singleR2BucketCredentials     map[string]singleR2BucketCredentials
+	singleR2BucketCredentialsLock sync.Mutex
+
 	//---- set once ----
 	_r2PermGroups       []cloudflare.APITokenPermissionGroups //R2PermGroups() should be used to get the groups
 	r2PermGroupsFetched atomic.Bool
@@ -57,10 +60,11 @@ func newCloudflare(projectId ProjectID, config *DevSideCloudflareConfig) (*Cloud
 	}
 
 	cf := &Cloudflare{
-		projectId:    projectId,
-		config:       config,
-		accountId:    cloudflare.AccountIdentifier(config.AccountID),
-		apiTokensApi: apiTokensApi,
+		projectId:                 projectId,
+		config:                    config,
+		accountId:                 cloudflare.AccountIdentifier(config.AccountID),
+		apiTokensApi:              apiTokensApi,
+		singleR2BucketCredentials: map[string]singleR2BucketCredentials{},
 	}
 
 	go cf.fetchR2PermGroups(1)
@@ -208,10 +212,17 @@ func (c *Cloudflare) DeleteR2Bucket(ctx *core.Context, bucketToDelete *s3_ns.Buc
 	if api == nil {
 		return ErrNoR2Token
 	}
+
+	bucketName := bucketToDelete.Name()
+
+	c.singleR2BucketCredentialsLock.Lock()
+	delete(c.singleR2BucketCredentials, bucketName)
+	c.singleR2BucketCredentialsLock.Unlock()
+
 	buckets, _ := api.ListR2Buckets(ctx, c.accountId, cloudflare.ListR2BucketsParams{})
 
 	for _, bucket := range buckets {
-		if bucket.Name == bucketToDelete.Name() {
+		if bucket.Name == bucketName {
 			bucketToDelete.RemoveAllObjects(ctx)
 			ctx.Sleep(time.Second)
 
@@ -273,27 +284,34 @@ type singleR2BucketCredentials struct {
 	accessKey, secretKey string
 }
 
-// CreateS3CredentialsForSingleBucket creates the bucket bucketName if it does not exist & returns credentials to access the
+// GetCreateS3CredentialsForSingleBucket creates the bucket bucketName if it does not exist & returns credentials to access the
 // bucket.
-func (c *Cloudflare) CreateS3CredentialsForSingleBucket(
+func (c *Cloudflare) GetCreateS3CredentialsForSingleBucket(
 	ctx *core.Context,
 	bucketName string,
 	projectId ProjectID,
 ) (_ singleR2BucketCredentials, finalErr error) {
 
+	c.singleR2BucketCredentialsLock.Lock()
+	creds, ok := c.singleR2BucketCredentials[bucketName]
+	c.singleR2BucketCredentialsLock.Unlock()
+
+	if ok {
+		return creds, nil
+	}
+
 	c.lock.Lock()
 	defer c.lock.Unlock()
+	api := c.highPermsR2API
 
-	if c.highPermsTokens.R2Token == nil || c.highPermsTokens.R2Token.Id == "" || c.highPermsTokens.R2Token.Value == "" {
-		finalErr = ErrMissingHighPermsR2Token
-		return
+	if api == nil {
+		return singleR2BucketCredentials{}, ErrMissingHighPermsR2Token
 	}
 
 	//create bucket if it does not exist
 	{
-		api := c.highPermsR2API
 
-		exists, err := c.CheckBucketExistsNoLock(ctx, bucketName, c.highPermsR2API)
+		exists, err := c.CheckBucketExistsNoLock(ctx, bucketName, api)
 		if err != nil {
 			finalErr = err
 			return
@@ -321,14 +339,20 @@ func (c *Cloudflare) CreateS3CredentialsForSingleBucket(
 
 	accessKey, secretKey := ConvertR2TokenToS3Credentials(tokenId, tokenValue)
 
-	return singleR2BucketCredentials{
+	creds = singleR2BucketCredentials{
 		bucket:       bucketName,
 		accessKey:    accessKey,
 		secretKey:    secretKey,
 		s3Endpoint:   c.S3EndpointForR2(),
 		r2TokenId:    tokenId,
 		r2TokenValue: tokenValue,
-	}, nil
+	}
+
+	c.singleR2BucketCredentialsLock.Lock()
+	c.singleR2BucketCredentials[bucketName] = creds
+	c.singleR2BucketCredentialsLock.Unlock()
+
+	return creds, nil
 }
 
 func getHighPermsR2TokenName(projectId ProjectID) string {

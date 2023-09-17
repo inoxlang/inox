@@ -152,7 +152,7 @@ func (p *Project) GetS3CredentialsForBucket(
 	p.lock.Lock(closestState, p)
 	defer p.lock.Unlock(closestState, p)
 
-	creds, err := p.cloudflare.CreateS3CredentialsForSingleBucket(ctx, bucketName, p.Id())
+	creds, err := p.cloudflare.GetCreateS3CredentialsForSingleBucket(ctx, bucketName, p.Id())
 	if err != nil {
 		return "", "", "", fmt.Errorf("%w: %w", ErrNoR2Token, err)
 	}

@@ -61,6 +61,9 @@ func (c *Cloudflare) getUpToDateTempTokensNoLock(ctx context.Context) (HighPerms
 }
 
 func (c *Cloudflare) forgetHighPermsTokens(ctx context.Context) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	c.highPermsTokens = HighPermsCloudflareTokens{}
 	c.highPermsR2API = nil
 }
