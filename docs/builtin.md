@@ -1,4 +1,5 @@
-[Install Inox](../README.md#installation) | [Language Basics](./language-basics.md) | [Project](./project.md) | [Web App Development](./web-app-development.md) | [Shell Basics](./shell-basics.md) | [Scripting Basics](./scripting-basics.md)
+
+[Install Inox](../README.md#installation) | [Language Basics](./language-basics.md) | [Shell Basics](./shell-basics.md) | [Scripting Basics](./scripting-basics.md)
 
 -----
 
@@ -162,7 +163,7 @@ Set([{name: "A"}, {name: "B"}], {uniqueness: .name})
 ```
 ### Map
 
-the Map function creates a map from flat list of entries.
+the Map function creates a map from a flat list of entries.
 
 **examples**
 
@@ -519,7 +520,7 @@ true
 ```
 ### sort
 
-the sort function creates a new list by sorting a list of strings or integers, the second argument is an identifier describing the order. For strings the available orderings are #lex (lexicographic) & #revlex (same but reversed). For integers the available orderings are #asc (ascending) & #desc (descending).
+the sort function creates a new list by sorting a list of strings or integers, the second argument is an identifier describing the order. For strings the available orderings are #lex (lexicographic) and #revlex (same but reversed). For integers the available orderings are #asc (ascending) and #desc (descending).
 
 **examples**
 
@@ -580,10 +581,10 @@ the html.h4 function creates a h4 HTML element.
 
 ### http
 
-the http namespace contains functions to read, modify & delete HTTP resources. Most functions accept the --insecure option to ignore certificate errors & the --client option to specify a HTTP client to use.
+the http namespace contains functions to read, modify & delete HTTP resources. Most functions accept the --insecure option to ignore certificate errors & the --client option to specify an HTTP client to use.
 ### http.get
 
-the http.get function takes a URL (or host) as first argument and returns a HTTP response. The --insecure options causes the function to ignore certificate errors.
+the http.get function takes a URL (or host) as first argument and returns an HTTP response. The --insecure options causes the function to ignore certificate errors.
 
 **examples**
 
@@ -622,13 +623,13 @@ http.post https://example.com/posts mime"json" '{"title":"hello"}'
 ```
 ### http.patch
 
-the http.patch function works like http.post but sends a HTTP PATCH request instead.
+the http.patch function works like http.post but sends an HTTP PATCH request instead.
 ### http.delete
 
-the http.delete function sends a HTTP DELETE request to the specified URL.
+the http.delete function sends an HTTP DELETE request to the specified URL.
 ### http.Client
 
-the http.Client function creates a HTTP client that can be used in most http.* functions with the --client flag.
+the http.Client function creates an HTTP client that can be used in most http.* functions with the --client flag.
 
 **examples**
 
@@ -654,6 +655,15 @@ the http.Server function creates a listening HTTP server with a given host & han
 
 **examples**
 
+```inox
+server = http.Server!(https://localhost:8080, {
+    routing: {
+        static: /static/
+        dynamic: /routes/
+    }
+})
+
+```
 ```inox
 fn handle(rw http.resp-writer, r http.req){
   rw.write_json({ a: 1 })
@@ -682,7 +692,7 @@ server = http.Server!(https://localhost:8080, handle)
 ```
 ### http.FileServer
 
-the http.FileServer creates a HTTP server that serves static file from a given directory.
+the http.FileServer creates an HTTP server that serves static file from a given directory.
 
 **examples**
 
@@ -738,7 +748,7 @@ rand(["a", "b"])
 
 ### read
 
-read is a general purpose function that reads the content of a file, a directory or a HTTP resource. The content is parsed by default, to disable parsing use --raw after the resource's name: a byte slice  will be returned instead. The type of content is determined by looking at the extension for files &  the Content-Type header for HTTP resources.
+read is a general purpose function that reads the content of a file, a directory or an HTTP resource. The content is parsed by default, to disable parsing use --raw after the resource's name: a byte slice  will be returned instead. The type of content is determined by looking at the extension for files &  the Content-Type header for HTTP resources.
 
 **examples**
 
@@ -774,7 +784,7 @@ read https://jsonplaceholder.typicode.com/posts/1
 ```
 ### create
 
-create is a general purpose function that can create a file, a directory or a HTTP resource.
+create is a general purpose function that can create a file, a directory or an HTTP resource.
 
 **examples**
 
