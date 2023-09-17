@@ -11,10 +11,10 @@ import (
 	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
 )
 
-// prepareSourceFile prepares a module or includable-chunk file:
+// prepareSourceFileInDevMode prepares a module or includable-chunk file:
 // - if requiresState is true & state failed to be created ok is false
 // - if the file at fpath is an includable-chunk the returned module is a fake module
-func prepareSourceFile(fpath string, ctx *core.Context, session *jsonrpc.Session, requiresState bool) (*core.GlobalState, *core.Module, *parse.ParsedChunk, bool) {
+func prepareSourceFileInDevMode(fpath string, ctx *core.Context, session *jsonrpc.Session, requiresState bool) (*core.GlobalState, *core.Module, *parse.ParsedChunk, bool) {
 	project, _ := getProject(session)
 
 	fls, ok := getLspFilesystem(session)
@@ -48,6 +48,15 @@ func prepareSourceFile(fpath string, ctx *core.Context, session *jsonrpc.Session
 
 		if requiresState && (state == nil || state.SymbolicData == nil) {
 			logs.Println("failed to prepare includable-chunk", err.Error())
+
+			if state != nil {
+				//teardown
+				go func() {
+					defer recover()
+					state.Ctx.CancelGracefully()
+				}()
+			}
+
 			return nil, nil, nil, false
 		}
 
@@ -59,7 +68,7 @@ func prepareSourceFile(fpath string, ctx *core.Context, session *jsonrpc.Session
 			if obj, ok := chunk.Node.Manifest.Object.(*parse.ObjectLiteral); ok {
 				node, _ := obj.PropValue(core.MANIFEST_DATABASES_SECTION_NAME)
 				if pathLiteral, ok := node.(*parse.AbsolutePathLiteral); ok {
-					state, _, _, ok := prepareSourceFile(pathLiteral.Value, ctx, session, true)
+					state, _, _, ok := prepareSourceFileInDevMode(pathLiteral.Value, ctx, session, true)
 					if ok {
 						parentCtx = state.Ctx
 					}
@@ -92,6 +101,15 @@ func prepareSourceFile(fpath string, ctx *core.Context, session *jsonrpc.Session
 
 		if requiresState && (state == nil || state.SymbolicData == nil) {
 			logs.Println("failed to prepare module", err.Error())
+
+			if state != nil {
+				//teardown
+				go func() {
+					defer recover()
+					state.Ctx.CancelGracefully()
+				}()
+			}
+
 			return nil, nil, nil, false
 		}
 

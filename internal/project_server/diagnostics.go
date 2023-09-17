@@ -26,7 +26,15 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usi
 	errSeverity := defines.DiagnosticSeverityError
 	warningSeverity := defines.DiagnosticSeverityWarning
 
-	state, mod, _, ok := prepareSourceFile(fpath, ctx, session, false)
+	state, mod, _, ok := prepareSourceFileInDevMode(fpath, ctx, session, false)
+
+	//teardown
+	defer func() {
+		go func() {
+			defer recover()
+			state.Ctx.CancelGracefully()
+		}()
+	}()
 
 	//we need the diagnostics list to be present in the notification so diagnostics should not be nil
 	diagnostics := make([]defines.Diagnostic, 0)

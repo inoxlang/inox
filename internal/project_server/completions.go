@@ -16,10 +16,18 @@ func getCompletions(fpath string, line, column int32, session *jsonrpc.Session) 
 		Filesystem: fls,
 	})
 
-	state, _, chunk, ok := prepareSourceFile(fpath, handlingCtx, session, true)
+	state, _, chunk, ok := prepareSourceFileInDevMode(fpath, handlingCtx, session, true)
 	if !ok {
 		return nil
 	}
+
+	//teardown
+	defer func() {
+		go func() {
+			defer recover()
+			state.Ctx.CancelGracefully()
+		}()
+	}()
 
 	pos := chunk.GetLineColumnPosition(line, column)
 

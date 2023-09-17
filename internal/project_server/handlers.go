@@ -556,12 +556,20 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 			Filesystem: fls,
 		})
 
-		state, _, chunk, ok := prepareSourceFile(fpath, handlingCtx, session, true)
+		state, _, chunk, ok := prepareSourceFileInDevMode(fpath, handlingCtx, session, true)
 
 		if !ok || state == nil || state.SymbolicData == nil {
 			logs.Println("failed to prepare source file", err)
 			return nil, nil
 		}
+
+		//teardown
+		defer func() {
+			go func() {
+				defer recover()
+				state.Ctx.CancelGracefully()
+			}()
+		}()
 
 		span := chunk.GetLineColumnSingeCharSpan(line, column)
 		foundNode, ancestors, ok := chunk.GetNodeAndChainAtSpan(span)
