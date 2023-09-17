@@ -24,3 +24,16 @@ On you development machine create a `<myproject>` folder for the project.
 Open the folder with Visual Studio Code, and execute the following command `Inox: Initialize new Project in Current Folder`.
 
 Open the generated .code-workspace file and click on **Open Workspace**.
+
+
+## Project Secrets
+
+Project Secrets are **persisted** secrets, they can be created, updated & deleted from the **Inox Project** tab in VScode.
+
+###  Retrieving project secrets
+
+The global variable `project-secrets` is a global variable containing the project, it is only available from the main module.\
+If you defined a secret named `MY_SECRET` you can retrieve it with the following code:
+```
+secret = project-secrets.MY_SECRET
+```

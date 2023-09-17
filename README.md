@@ -46,6 +46,9 @@ Security:
   - [Isolation of dependencies](#isolation-of-dependencies)
   - [Dropping permissions](#dropping-permissions)
 - [DoS Mitigation (WIP)](#dos-mitigation)
+- [Sensitive Data Protection](#sensitive-data-protection)
+  - [Secrets](#secrets)
+  - [Visibility](#visibility-wip)
 
 Other:
 - [Concurrency](#concurrency)
@@ -357,13 +360,14 @@ manifest {
 }
 ```
 
-### Sensitive Data Protection (WIP)
+### Sensitive Data Protection 
 
 #### **Secrets**
 
-Secrets are special Inox values, they can only be created by defining an **environment variable** with a pattern like %secret-string.
-- The content is **hidden** when printed or logged
-- Secrets are not serializable, so you **cannot** send them over the network
+Secrets are special Inox values, they can only be created by defining an **environment variable** with a pattern like %secret-string or 
+by storing a [project secret](./docs/project.md#project-secrets).
+- The content of the secret is **hidden** when printed or logged
+- The serialization of any secret returns "secret(...)", so you **cannot** send secrets in clear over the network
 - A comparison involving a secret always returns **false**
 
 ```
@@ -377,8 +381,6 @@ manifest {
 
 API_KEY = env.initial.API_KEY
 ```
-
-
 #### **Visibility (WIP)**
 
 TODO: explain
