@@ -189,13 +189,13 @@ func (fls *MetaFilesystem) getFileMetadata(pth core.Path, usedTx *filekv.Databas
 
 	var underlyingFilePath *core.Path
 	if record.HasProp(fls.ctx, METAFS_UNDERLYING_FILE_PROPNAME) {
-		underylingFile := record.Prop(fls.ctx, METAFS_UNDERLYING_FILE_PROPNAME).(core.Str)
+		underlyingFile := record.Prop(fls.ctx, METAFS_UNDERLYING_FILE_PROPNAME).(core.Str)
 
 		underlyingFilePath = new(core.Path)
 		if fls.dir != nil {
-			*underlyingFilePath = core.PathFrom(fls.underlying.Join(*fls.dir, string(underylingFile)))
+			*underlyingFilePath = core.PathFrom(fls.underlying.Join(*fls.dir, string(underlyingFile)))
 		} else {
-			*underlyingFilePath = core.PathFrom(NormalizeAsAbsolute(string(underylingFile)))
+			*underlyingFilePath = core.PathFrom(NormalizeAsAbsolute(string(underlyingFile)))
 		}
 	}
 

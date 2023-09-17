@@ -336,7 +336,7 @@ func (list *ValueList) Iterator(ctx *Context, config IteratorConfiguration) Iter
 }
 
 func (list *List) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
-	return list.underylingList.Iterator(ctx, config)
+	return list.underlyingList.Iterator(ctx, config)
 }
 
 type IntListIterator struct {
@@ -1379,7 +1379,7 @@ func newListPatternIterator(
 func (patt ListPattern) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
 	return newListPatternIterator(ctx, patt.generalElementPattern, patt.elementPatterns, config, func(iterators []Iterator) Value {
 		valueList := &ValueList{}
-		list := &List{underylingList: valueList}
+		list := &List{underlyingList: valueList}
 
 		for _, it := range iterators {
 			valueList.append(ctx, it.Value(ctx).(Serializable))

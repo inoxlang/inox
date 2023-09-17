@@ -177,7 +177,7 @@ func (p *Path) Prop(name string) SymbolicValue {
 	}
 }
 
-func (p *Path) underylingString() *String {
+func (p *Path) underlyingString() *String {
 	return ANY_STR
 }
 
@@ -273,7 +273,7 @@ func (u *URL) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, dep
 	}
 }
 
-func (u *URL) underylingString() *String {
+func (u *URL) underlyingString() *String {
 	return ANY_STR
 }
 
@@ -355,7 +355,7 @@ func (s *Scheme) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, 
 	}
 }
 
-func (s *Scheme) underylingString() *String {
+func (s *Scheme) underlyingString() *String {
 	return ANY_STR
 }
 
@@ -464,7 +464,7 @@ func (*Host) Prop(name string) SymbolicValue {
 	}
 }
 
-func (h *Host) underylingString() *String {
+func (h *Host) underlyingString() *String {
 	return ANY_STR
 }
 

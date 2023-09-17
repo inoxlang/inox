@@ -516,7 +516,7 @@ func (*symbolicLoadableTestValuePattern) Concretize(ctx symbolic.ConcreteContext
 	return &loadableTestValuePattern{}
 }
 
-func (*symbolicLoadableTestValuePattern) HasUnderylingPattern() bool {
+func (*symbolicLoadableTestValuePattern) HasUnderlyingPattern() bool {
 	return true
 }
 

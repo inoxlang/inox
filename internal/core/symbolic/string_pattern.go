@@ -38,7 +38,7 @@ func (p *AnyStringPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPri
 	utils.Must(w.Write(utils.StringAsBytes("%string-pattern")))
 }
 
-func (p *AnyStringPattern) HasUnderylingPattern() bool {
+func (p *AnyStringPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
@@ -118,7 +118,7 @@ func (p *ExactStringPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyP
 	}
 }
 
-func (p *ExactStringPattern) HasUnderylingPattern() bool {
+func (p *ExactStringPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
@@ -201,7 +201,7 @@ func (p *SequenceStringPattern) PrettyPrint(w *bufio.Writer, config *pprint.Pret
 	}
 }
 
-func (p *SequenceStringPattern) HasUnderylingPattern() bool {
+func (p *SequenceStringPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
@@ -260,7 +260,7 @@ func (p *ParserBasedPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyP
 	utils.Must(w.Write(utils.StringAsBytes("%parser-based-pattern")))
 }
 
-func (p *ParserBasedPattern) HasUnderylingPattern() bool {
+func (p *ParserBasedPattern) HasUnderlyingPattern() bool {
 	return true
 }
 

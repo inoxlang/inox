@@ -24,7 +24,7 @@ var (
 // An WrappedBytes represents a symbolic WrappedBytes.
 type WrappedBytes interface {
 	Iterable
-	underylingBytes() *ByteSlice //TODO: change return type ? --> it isn't equivalent to concrete version
+	underlyingBytes() *ByteSlice //TODO: change return type ? --> it isn't equivalent to concrete version
 }
 
 // A BytesLike represents a symbolic BytesLike.

@@ -45,7 +45,7 @@ var (
 	FILEINFO_PROPNAMES = []string{"name", "abs-path", "size", "mode", "mod-time", "is-dir"}
 )
 
-// A SymbolicValue represents a Value during symbolic evaluation, its underyling data should be immutable.
+// A SymbolicValue represents a Value during symbolic evaluation, its underlying data should be immutable.
 type SymbolicValue interface {
 	Test(v SymbolicValue) bool
 
@@ -327,7 +327,7 @@ func (i *Identifier) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConf
 	utils.Must(fmt.Fprintf(w, "#%s", i.name))
 }
 
-func (i *Identifier) underylingString() *String {
+func (i *Identifier) underlyingString() *String {
 	return &String{}
 }
 
@@ -381,7 +381,7 @@ func (p *PropertyName) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCo
 	utils.Must(fmt.Fprintf(w, "%%property-name(#%s)", p.name))
 }
 
-func (s *PropertyName) underylingString() *String {
+func (s *PropertyName) underlyingString() *String {
 	return &String{}
 }
 
@@ -1271,7 +1271,7 @@ func (r *AnyResourceName) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrin
 	utils.Must(w.Write(utils.StringAsBytes("%resource-name")))
 }
 
-func (r *AnyResourceName) underylingString() *String {
+func (r *AnyResourceName) underlyingString() *String {
 	return &String{}
 }
 

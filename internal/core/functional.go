@@ -59,7 +59,7 @@ func Filter(ctx *Context, iterable Iterable, condition Value) *List {
 		panic(fmt.Errorf("invalid filter : type is %T", fil))
 	}
 
-	return WrapUnderylingList(&result)
+	return WrapUnderlyingList(&result)
 }
 
 func Some(ctx *Context, iterable Iterable, condition Value) Bool {

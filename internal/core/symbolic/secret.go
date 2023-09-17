@@ -78,8 +78,8 @@ func (pattern *SecretPattern) SymbolicValue() SymbolicValue {
 	return utils.Must(NewSecret(pattern.stringPattern.SymbolicValue(), pattern))
 }
 
-func (pattern *SecretPattern) HasUnderylingPattern() bool {
-	return pattern.stringPattern.HasUnderylingPattern()
+func (pattern *SecretPattern) HasUnderlyingPattern() bool {
+	return pattern.stringPattern.HasUnderlyingPattern()
 }
 
 func (pattern *SecretPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

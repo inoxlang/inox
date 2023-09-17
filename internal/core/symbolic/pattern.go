@@ -93,7 +93,7 @@ type Pattern interface {
 	Serializable
 	Iterable
 
-	HasUnderylingPattern() bool
+	HasUnderlyingPattern() bool
 
 	//equivalent of Test() for concrete patterns
 	TestValue(v SymbolicValue) bool
@@ -148,7 +148,7 @@ func (p *AnyPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConf
 	utils.Must(w.Write(utils.StringAsBytes("%pattern")))
 }
 
-func (p *AnyPattern) HasUnderylingPattern() bool {
+func (p *AnyPattern) HasUnderlyingPattern() bool {
 	return false
 }
 
@@ -197,7 +197,7 @@ func (p *AnySerializablePattern) PrettyPrint(w *bufio.Writer, config *pprint.Pre
 	utils.Must(w.Write(utils.StringAsBytes("%pattern")))
 }
 
-func (p *AnySerializablePattern) HasUnderylingPattern() bool {
+func (p *AnySerializablePattern) HasUnderlyingPattern() bool {
 	return false
 }
 
@@ -376,7 +376,7 @@ func (p *PathPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 	utils.Must(w.Write(utils.StringAsBytes(s)))
 }
 
-func (p *PathPattern) HasUnderylingPattern() bool {
+func (p *PathPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
@@ -407,7 +407,7 @@ func (p *PathPattern) IteratorElementValue() SymbolicValue {
 	return p.SymbolicValue()
 }
 
-func (p *PathPattern) underylingString() *String {
+func (p *PathPattern) underlyingString() *String {
 	return ANY_STR
 }
 
@@ -488,7 +488,7 @@ func (p *URLPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConf
 	}
 }
 
-func (p *URLPattern) HasUnderylingPattern() bool {
+func (p *URLPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
@@ -543,7 +543,7 @@ func (p *URLPattern) IteratorElementValue() SymbolicValue {
 	return p.SymbolicValue()
 }
 
-func (p *URLPattern) underylingString() *String {
+func (p *URLPattern) underlyingString() *String {
 	return ANY_STR
 }
 
@@ -624,7 +624,7 @@ func (p *HostPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 	}
 }
 
-func (p *HostPattern) HasUnderylingPattern() bool {
+func (p *HostPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
@@ -679,7 +679,7 @@ func (p *HostPattern) IteratorElementValue() SymbolicValue {
 	return p.SymbolicValue()
 }
 
-func (p *HostPattern) underylingString() *String {
+func (p *HostPattern) underlyingString() *String {
 	return ANY_STR
 }
 
@@ -717,7 +717,7 @@ func (p *NamedSegmentPathPattern) PrettyPrint(w *bufio.Writer, config *pprint.Pr
 	utils.Must(fmt.Fprintf(w, "%%named-segment-path-pattern(%p)", p.node))
 }
 
-func (p NamedSegmentPathPattern) HasUnderylingPattern() bool {
+func (p NamedSegmentPathPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
@@ -839,7 +839,7 @@ func (p *ExactValuePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPr
 
 }
 
-func (p *ExactValuePattern) HasUnderylingPattern() bool {
+func (p *ExactValuePattern) HasUnderlyingPattern() bool {
 	return true
 }
 
@@ -906,7 +906,7 @@ func (p *RegexPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCo
 	utils.Must(w.Write(utils.StringAsBytes("%regex-pattern")))
 }
 
-func (p *RegexPattern) HasUnderylingPattern() bool {
+func (p *RegexPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
@@ -1183,7 +1183,7 @@ func (p *ObjectPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 	utils.Must(w.Write(utils.StringAsBytes("%object-pattern")))
 }
 
-func (p *ObjectPattern) HasUnderylingPattern() bool {
+func (p *ObjectPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
@@ -1480,7 +1480,7 @@ func (p *RecordPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 	utils.Must(w.Write(utils.StringAsBytes("%record-pattern")))
 }
 
-func (p *RecordPattern) HasUnderylingPattern() bool {
+func (p *RecordPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
@@ -1869,7 +1869,7 @@ func (p *ListPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 	p.generalElement.PrettyPrint(w, config, depth, parentIndentCount)
 }
 
-func (p *ListPattern) HasUnderylingPattern() bool {
+func (p *ListPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
@@ -2078,7 +2078,7 @@ func (p *TuplePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCo
 	p.generalElement.PrettyPrint(w, config, 0, parentIndentCount)
 }
 
-func (p *TuplePattern) HasUnderylingPattern() bool {
+func (p *TuplePattern) HasUnderlyingPattern() bool {
 	return true
 }
 
@@ -2230,7 +2230,7 @@ func (p *UnionPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCo
 	utils.Must(w.Write(utils.StringAsBytes(")")))
 }
 
-func (p *UnionPattern) HasUnderylingPattern() bool {
+func (p *UnionPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
@@ -2330,7 +2330,7 @@ func (p *IntersectionPattern) PrettyPrint(w *bufio.Writer, config *pprint.Pretty
 	utils.Must(w.Write(utils.StringAsBytes(")")))
 }
 
-func (p *IntersectionPattern) HasUnderylingPattern() bool {
+func (p *IntersectionPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
@@ -2399,7 +2399,7 @@ func (p *OptionPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 	utils.PanicIfErr(w.WriteByte(')'))
 }
 
-func (p *OptionPattern) HasUnderylingPattern() bool {
+func (p *OptionPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
@@ -2520,7 +2520,7 @@ func (p *TypePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 	utils.Must(w.Write(utils.StringAsBytes(")")))
 }
 
-func (p *TypePattern) HasUnderylingPattern() bool {
+func (p *TypePattern) HasUnderlyingPattern() bool {
 	return true
 }
 
@@ -2585,7 +2585,7 @@ func (p *DifferencePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPr
 	utils.Must(w.Write(utils.StringAsBytes(")")))
 }
 
-func (p *DifferencePattern) HasUnderylingPattern() bool {
+func (p *DifferencePattern) HasUnderlyingPattern() bool {
 	return true
 }
 
@@ -2636,7 +2636,7 @@ func (p *OptionalPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrin
 	utils.PanicIfErr(w.WriteByte('?'))
 }
 
-func (p *OptionalPattern) HasUnderylingPattern() bool {
+func (p *OptionalPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
@@ -2747,7 +2747,7 @@ func (pattern *FunctionPattern) TestValue(v SymbolicValue) bool {
 	}
 }
 
-func (fn *FunctionPattern) HasUnderylingPattern() bool {
+func (fn *FunctionPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
@@ -2797,7 +2797,7 @@ func (p *IntRangePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrin
 	return
 }
 
-func (p *IntRangePattern) HasUnderylingPattern() bool {
+func (p *IntRangePattern) HasUnderlyingPattern() bool {
 	return true
 }
 
@@ -2833,7 +2833,7 @@ func (p *IntRangePattern) IteratorElementValue() SymbolicValue {
 	return &URL{}
 }
 
-func (p *IntRangePattern) underylingString() *String {
+func (p *IntRangePattern) underlyingString() *String {
 	return &String{}
 }
 
@@ -2870,7 +2870,7 @@ func (p *EventPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCo
 	utils.PanicIfErr(w.WriteByte(')'))
 }
 
-func (p *EventPattern) HasUnderylingPattern() bool {
+func (p *EventPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
@@ -2930,7 +2930,7 @@ func (p *MutationPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrin
 	utils.PanicIfErr(w.WriteByte(')'))
 }
 
-func (p *MutationPattern) HasUnderylingPattern() bool {
+func (p *MutationPattern) HasUnderlyingPattern() bool {
 	return true
 }
 

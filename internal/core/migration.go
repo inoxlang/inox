@@ -793,7 +793,7 @@ func migrateListOrTuple(
 				if o, ok := o.(*List); ok {
 					list := newValueList()
 					list.constraintId = o.ConstraintId()
-					return WrapUnderylingList(list), nil
+					return WrapUnderlyingList(list), nil
 				}
 
 				tuple := NewTuple(nil)

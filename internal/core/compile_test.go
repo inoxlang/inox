@@ -1535,7 +1535,7 @@ func TestCompileModule(t *testing.T) {
 			[]Value{
 				Str("foo"),
 				Str("/home/"),
-				&List{underylingList: &ValueList{elements: []Serializable{True, False}}},
+				&List{underlyingList: &ValueList{elements: []Serializable{True, False}}},
 			},
 		)
 
@@ -1561,7 +1561,7 @@ func TestCompileModule(t *testing.T) {
 			[]Value{
 				Str("foo"),
 				Str("/home/"),
-				&List{underylingList: &ValueList{elements: []Serializable{True, False}}},
+				&List{underlyingList: &ValueList{elements: []Serializable{True, False}}},
 			},
 		)
 

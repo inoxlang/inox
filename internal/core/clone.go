@@ -97,13 +97,13 @@ func (list *List) PseudoClone(originState *GlobalState, sharableValues *[]Potent
 		return nil, ErrMaximumPseudoCloningDepthReached
 	}
 
-	underylingListClone, err := list.underylingList.PseudoClone(originState, sharableValues, clones, depth)
+	underlyingListClone, err := list.underlyingList.PseudoClone(originState, sharableValues, clones, depth)
 	if err != nil {
 		return nil, err
 	}
 
 	return &List{
-		underylingList: underylingListClone.(underylingList),
+		underlyingList: underlyingListClone.(underlyingList),
 		elemType:       list.elemType,
 	}, nil
 }

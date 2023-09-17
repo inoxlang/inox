@@ -729,7 +729,7 @@ func (v *VM) run() {
 			}
 			v.sp -= numElements
 
-			var arr Value = &List{underylingList: &ValueList{elements: elements}}
+			var arr Value = &List{underlyingList: &ValueList{elements: elements}}
 
 			v.stack[v.sp] = arr
 			v.sp++
@@ -2112,7 +2112,7 @@ func (v *VM) run() {
 			v.ip += 3
 			numElements := int(v.curInsts[v.ip-2])
 			spreadElemSetConstantIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			spreadElemSet := v.constants[spreadElemSetConstantIndex].(*List).underylingList.(*BoolList)
+			spreadElemSet := v.constants[spreadElemSetConstantIndex].(*List).underlyingList.(*BoolList)
 
 			values := make([]Value, numElements)
 			copy(values, v.stack[v.sp-numElements:v.sp])

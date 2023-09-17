@@ -341,7 +341,7 @@ func ConvertReturnValue(rval reflect.Value) Value {
 			return &ByteSlice{Bytes: v, IsDataMutable: true}
 		}
 
-		list := &List{underylingList: &ValueList{}}
+		list := &List{underlyingList: &ValueList{}}
 		for i := 0; i < rval.Len(); i++ {
 			list.append(nil, ValOf(rval.Index(i).Interface()).(Serializable))
 		}

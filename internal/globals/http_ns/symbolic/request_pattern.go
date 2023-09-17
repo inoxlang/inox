@@ -36,7 +36,7 @@ func (r *HttpRequestPattern) SymbolicValue() symbolic.SymbolicValue {
 	return ANY_HTTP_REQUEST
 }
 
-func (r *HttpRequestPattern) HasUnderylingPattern() bool {
+func (r *HttpRequestPattern) HasUnderlyingPattern() bool {
 	return true
 }
 

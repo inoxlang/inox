@@ -341,7 +341,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		if len(slices) > math.MaxUint8 {
 			return errors.New("too many slices")
 		}
-		isStaticPathSliceList := &List{underylingList: &ValueList{}}
+		isStaticPathSliceList := &List{underlyingList: &ValueList{}}
 
 		for _, node := range slices {
 			_, isStaticPathSlice := node.(*parse.PathSlice)
@@ -359,7 +359,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		if len(node.Slices) > math.MaxUint8 {
 			return errors.New("too many slices")
 		}
-		isStaticPathSliceList := &List{underylingList: &ValueList{}}
+		isStaticPathSliceList := &List{underlyingList: &ValueList{}}
 
 		for _, node := range node.Slices {
 			_, isStaticPathSlice := node.(*parse.PathPatternSlice)

@@ -75,7 +75,7 @@ func ConvertJSONValToInoxVal(ctx *Context, v any, immutable bool) Serializable {
 		if immutable {
 			return NewTuple(l)
 		}
-		return &List{underylingList: &ValueList{elements: l}}
+		return &List{underlyingList: &ValueList{elements: l}}
 	case int:
 		return Int(val)
 	case float64:

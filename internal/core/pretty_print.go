@@ -729,7 +729,7 @@ func (list KeyList) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, dept
 	utils.PanicIfErr(w.WriteByte(']'))
 }
 
-func PrettyPrintList(list underylingList, w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func PrettyPrintList(list underlyingList, w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	//TODO: prevent modification of the list while this function is running
 	length := list.Len()
 
@@ -790,7 +790,7 @@ func PrettyPrintList(list underylingList, w *bufio.Writer, config *PrettyPrintCo
 }
 
 func (list *List) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	list.underylingList.PrettyPrint(w, config, depth, parentIndentCount)
+	list.underlyingList.PrettyPrint(w, config, depth, parentIndentCount)
 }
 
 func (list *ValueList) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -810,7 +810,7 @@ func (list *StringList) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, 
 }
 
 func (tuple Tuple) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	lst := &List{underylingList: &ValueList{elements: tuple.elements}}
+	lst := &List{underlyingList: &ValueList{elements: tuple.elements}}
 	utils.Must(w.Write([]byte{'#'}))
 
 	lst.PrettyPrint(w, config, depth, parentIndentCount)

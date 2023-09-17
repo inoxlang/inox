@@ -153,5 +153,5 @@ func Map(ctx *Context, iterable Iterable, mapper Value) *List {
 		panic(fmt.Errorf("invalid mapper argument : type is %T", m))
 	}
 
-	return WrapUnderylingList(&result)
+	return WrapUnderlyingList(&result)
 }

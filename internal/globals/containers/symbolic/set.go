@@ -220,7 +220,7 @@ func (p *SetPattern) TestValue(v symbolic.SymbolicValue) bool {
 	//TODO: test nodes's value
 }
 
-func (p *SetPattern) HasUnderylingPattern() bool {
+func (p *SetPattern) HasUnderlyingPattern() bool {
 	return true
 }
 

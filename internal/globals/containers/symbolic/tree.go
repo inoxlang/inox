@@ -204,7 +204,7 @@ func (p *TreeNodePattern) TestValue(v symbolic.SymbolicValue) bool {
 	//TODO: test nodes's value
 }
 
-func (p *TreeNodePattern) HasUnderylingPattern() bool {
+func (p *TreeNodePattern) HasUnderlyingPattern() bool {
 	return true
 }
 

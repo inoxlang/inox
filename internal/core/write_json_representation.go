@@ -251,7 +251,7 @@ func (list *List) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, conf
 		return ErrMaximumJSONReprWritingDepthReached
 	}
 
-	return list.underylingList.WriteJSONRepresentation(ctx, w, config, depth)
+	return list.underlyingList.WriteJSONRepresentation(ctx, w, config, depth)
 }
 
 func (list *ValueList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {

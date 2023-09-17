@@ -28,7 +28,7 @@ func (l *List) Contains(ctx *Context, value Value) bool {
 		_, ok := urlHolder.URL()
 		if ok {
 			for i := 0; i < l.Len(); i++ {
-				e := l.underylingList.At(ctx, i)
+				e := l.underlyingList.At(ctx, i)
 				if Same(e, value) {
 					return true
 				}
@@ -38,7 +38,7 @@ func (l *List) Contains(ctx *Context, value Value) bool {
 	}
 
 	for i := 0; i < l.Len(); i++ {
-		e := l.underylingList.At(ctx, i)
+		e := l.underlyingList.At(ctx, i)
 		if value.Equal(ctx, e, map[uintptr]uintptr{}, 0) {
 			return true
 		}

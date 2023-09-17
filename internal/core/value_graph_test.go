@@ -116,7 +116,7 @@ func TestTraverse(t *testing.T) {
 	t.Run("list with a reference to itself", func(t *testing.T) {
 		callCount := 0
 
-		list := &List{underylingList: &ValueList{}}
+		list := &List{underlyingList: &ValueList{}}
 		list.append(nil, list)
 
 		err := Traverse(list, func(v Value) (parse.TraversalAction, error) {

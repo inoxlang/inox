@@ -227,7 +227,7 @@ func randListPattern(ctx *Context, tuple bool, generalElementPattern Pattern, el
 		if tuple {
 			return NewTuple(elements)
 		} else {
-			return WrapUnderylingList(&ValueList{elements: elements})
+			return WrapUnderlyingList(&ValueList{elements: elements})
 		}
 	} else {
 		elements := make([]Serializable, len(elementPatterns))
@@ -239,7 +239,7 @@ func randListPattern(ctx *Context, tuple bool, generalElementPattern Pattern, el
 		if tuple {
 			return NewTuple(elements)
 		} else {
-			return WrapUnderylingList(&ValueList{elements: elements})
+			return WrapUnderlyingList(&ValueList{elements: elements})
 		}
 	}
 }

@@ -36,7 +36,7 @@ func (p *AnyFormat) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfi
 	return
 }
 
-func (p *AnyFormat) HasUnderylingPattern() bool {
+func (p *AnyFormat) HasUnderlyingPattern() bool {
 	return false
 }
 

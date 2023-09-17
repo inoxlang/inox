@@ -6,7 +6,7 @@ import (
 	"github.com/bits-and-blooms/bitset"
 )
 
-type underylingList interface {
+type underlyingList interface {
 	PseudoClonable
 	MutableLengthSequence
 	Iterable
@@ -15,7 +15,7 @@ type underylingList interface {
 	ConstraintId() ConstraintId
 }
 
-// ValueList implements underylingList
+// ValueList implements underlyingList
 type ValueList struct {
 	elements     []Serializable
 	constraintId ConstraintId
@@ -68,7 +68,7 @@ func (list *ValueList) slice(start, end int) Sequence {
 	sliceCopy := make([]Serializable, end-start)
 	copy(sliceCopy, list.elements[start:end])
 
-	return &List{underylingList: &ValueList{elements: sliceCopy}}
+	return &List{underlyingList: &ValueList{elements: sliceCopy}}
 }
 
 func (list *ValueList) Len() int {
@@ -139,18 +139,18 @@ func (l *ValueList) appendSequence(ctx *Context, seq Sequence) {
 	l.insertSequence(ctx, seq, Int(l.Len()))
 }
 
-// IntList implements underylingList
+// IntList implements underlyingList
 type IntList struct {
 	elements     []Int
 	constraintId ConstraintId
 }
 
 func NewWrappedIntList(elements ...Int) *List {
-	return &List{underylingList: newIntList(elements...)}
+	return &List{underlyingList: newIntList(elements...)}
 }
 
 func NewWrappedIntListFrom(elements []Int) *List {
-	return &List{underylingList: &IntList{elements: elements}}
+	return &List{underlyingList: &IntList{elements: elements}}
 }
 
 func newIntList(elements ...Int) *IntList {
@@ -197,7 +197,7 @@ func (list *IntList) slice(start, end int) Sequence {
 	sliceCopy := make([]Int, end-start)
 	copy(sliceCopy, list.elements[start:end])
 
-	return &List{underylingList: &IntList{elements: sliceCopy}}
+	return &List{underlyingList: &IntList{elements: sliceCopy}}
 }
 
 func (list *IntList) Len() int {
@@ -270,18 +270,18 @@ func (l *IntList) appendSequence(ctx *Context, seq Sequence) {
 	l.insertSequence(ctx, seq, Int(l.Len()))
 }
 
-// StringList implements underylingList
+// StringList implements underlyingList
 type StringList struct {
 	elements     []StringLike
 	constraintId ConstraintId
 }
 
 func NewWrappedStringList(elements ...StringLike) *List {
-	return &List{underylingList: newStringList(elements...)}
+	return &List{underlyingList: newStringList(elements...)}
 }
 
 func NewWrappedStringListFrom(elements []StringLike) *List {
-	return &List{underylingList: &StringList{elements: elements}}
+	return &List{underlyingList: &StringList{elements: elements}}
 }
 
 func newStringList(elements ...StringLike) *StringList {
@@ -328,7 +328,7 @@ func (list *StringList) slice(start, end int) Sequence {
 	sliceCopy := make([]StringLike, end-start)
 	copy(sliceCopy, list.elements[start:end])
 
-	return &List{underylingList: &StringList{elements: sliceCopy}}
+	return &List{underlyingList: &StringList{elements: sliceCopy}}
 }
 
 func (list *StringList) Len() int {
@@ -401,14 +401,14 @@ func (l *StringList) appendSequence(ctx *Context, seq Sequence) {
 	l.insertSequence(ctx, seq, Int(l.Len()))
 }
 
-// BoolList implements underylingList
+// BoolList implements underlyingList
 type BoolList struct {
 	elements     *bitset.BitSet
 	constraintId ConstraintId
 }
 
 func NewWrappedBoolList(elements ...Bool) *List {
-	return &List{underylingList: newBoolList(elements...)}
+	return &List{underlyingList: newBoolList(elements...)}
 }
 
 func newBoolList(elements ...Bool) *BoolList {

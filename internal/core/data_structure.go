@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	_ = []underylingList{&ValueList{}, &IntList{}}
+	_ = []underlyingList{&ValueList{}, &IntList{}}
 	_ = []IProps{(*Object)(nil), (*Record)(nil), (*Namespace)(nil), (*Dictionary)(nil), (*List)(nil)}
 
 	_ Sequence = (*Array)(nil)
@@ -934,10 +934,10 @@ type Indexable interface {
 }
 
 // A List represents a sequence of elements, List implements Value.
-// The elements are stored in an underylingList that is suited for the number and kind of elements, for example
-// if the elements are all integers the underyling list will (ideally) be an *IntList.
+// The elements are stored in an underlyingList that is suited for the number and kind of elements, for example
+// if the elements are all integers the underlying list will (ideally) be an *IntList.
 type List struct {
-	underylingList
+	underlyingList
 	elemType Pattern
 
 	lock                     sync.Mutex // exclusive access for initializing .watchers & .mutationCallbacks
@@ -947,12 +947,12 @@ type List struct {
 	elementMutationCallbacks []CallbackHandle
 }
 
-func newList(underylingList underylingList) *List {
-	return &List{underylingList: underylingList}
+func newList(underlyingList underlyingList) *List {
+	return &List{underlyingList: underlyingList}
 }
 
-func WrapUnderylingList(l underylingList) *List {
-	return &List{underylingList: l}
+func WrapUnderlyingList(l underlyingList) *List {
+	return &List{underlyingList: l}
 }
 
 // the caller can modify the result.
@@ -984,8 +984,8 @@ func (*List) PropertyNames(ctx *Context) []string {
 }
 
 func (l *List) set(ctx *Context, i int, v Value) {
-	prevElement := l.underylingList.At(ctx, i)
-	l.underylingList.set(ctx, i, v)
+	prevElement := l.underlyingList.At(ctx, i)
+	l.underlyingList.set(ctx, i, v)
 
 	if l.elementMutationCallbacks != nil {
 		l.removeElementMutationCallbackNoLock(ctx, i, prevElement.(Serializable))
@@ -1002,16 +1002,16 @@ func (l *List) set(ctx *Context, i int, v Value) {
 func (l *List) SetSlice(ctx *Context, start, end int, seq Sequence) {
 	if l.elementMutationCallbacks != nil {
 		for i := start; i < end; i++ {
-			prevElement := l.underylingList.At(ctx, i)
+			prevElement := l.underlyingList.At(ctx, i)
 			l.removeElementMutationCallbackNoLock(ctx, i, prevElement.(Serializable))
 		}
 	}
 
-	l.underylingList.SetSlice(ctx, start, end, seq)
+	l.underlyingList.SetSlice(ctx, start, end, seq)
 
 	if l.elementMutationCallbacks != nil {
 		for i := start; i < end; i++ {
-			l.addElementMutationCallbackNoLock(ctx, i, l.underylingList.At(ctx, i))
+			l.addElementMutationCallbackNoLock(ctx, i, l.underlyingList.At(ctx, i))
 		}
 	}
 
@@ -1023,7 +1023,7 @@ func (l *List) SetSlice(ctx *Context, start, end int, seq Sequence) {
 }
 
 func (l *List) insertElement(ctx *Context, v Value, i Int) {
-	l.underylingList.insertElement(ctx, v, i)
+	l.underlyingList.insertElement(ctx, v, i)
 
 	if l.elementMutationCallbacks != nil {
 		l.elementMutationCallbacks = slices.Insert(l.elementMutationCallbacks, int(i), FIRST_VALID_CALLBACK_HANDLE-1)
@@ -1038,7 +1038,7 @@ func (l *List) insertElement(ctx *Context, v Value, i Int) {
 }
 
 func (l *List) insertSequence(ctx *Context, seq Sequence, i Int) {
-	l.underylingList.insertSequence(ctx, seq, i)
+	l.underlyingList.insertSequence(ctx, seq, i)
 
 	if l.elementMutationCallbacks != nil {
 		seqLen := seq.Len()
@@ -1064,7 +1064,7 @@ func (l *List) appendSequence(ctx *Context, seq Sequence) {
 
 func (l *List) append(ctx *Context, elements ...Serializable) {
 	index := l.Len()
-	l.underylingList.append(ctx, elements...)
+	l.underlyingList.append(ctx, elements...)
 
 	seq := NewWrappedValueList(elements...)
 
@@ -1085,10 +1085,10 @@ func (l *List) append(ctx *Context, elements ...Serializable) {
 }
 
 func (l *List) removePosition(ctx *Context, i Int) {
-	l.underylingList.removePosition(ctx, i)
+	l.underlyingList.removePosition(ctx, i)
 
 	if l.elementMutationCallbacks != nil {
-		l.removeElementMutationCallbackNoLock(ctx, int(i), l.underylingList.At(ctx, int(i)).(Serializable))
+		l.removeElementMutationCallbackNoLock(ctx, int(i), l.underlyingList.At(ctx, int(i)).(Serializable))
 		l.elementMutationCallbacks = slices.Replace(l.elementMutationCallbacks, int(i), int(i+1))
 	}
 
@@ -1100,11 +1100,11 @@ func (l *List) removePosition(ctx *Context, i Int) {
 }
 
 func (l *List) removePositionRange(ctx *Context, r IntRange) {
-	l.underylingList.removePositionRange(ctx, r)
+	l.underlyingList.removePositionRange(ctx, r)
 
 	if l.elementMutationCallbacks != nil {
 		for index := int(r.Start); index < int(r.End); index++ {
-			l.removeElementMutationCallbackNoLock(ctx, index, l.underylingList.At(ctx, index).(Serializable))
+			l.removeElementMutationCallbackNoLock(ctx, index, l.underlyingList.At(ctx, index).(Serializable))
 		}
 
 		l.elementMutationCallbacks = slices.Replace(l.elementMutationCallbacks, int(r.Start), int(r.End))

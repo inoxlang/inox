@@ -420,7 +420,7 @@ func (list *List) WriteRepresentation(ctx *Context, w io.Writer, config *ReprCon
 		return ErrMaximumReprWritingDepthReached
 	}
 
-	return list.underylingList.WriteRepresentation(ctx, w, config, depth)
+	return list.underlyingList.WriteRepresentation(ctx, w, config, depth)
 }
 
 func (list *ValueList) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {

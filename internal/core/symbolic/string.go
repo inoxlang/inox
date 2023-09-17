@@ -38,7 +38,7 @@ var (
 // An WrappedString represents a symbolic WrappedString.
 type WrappedString interface {
 	SymbolicValue
-	underylingString() *String
+	underlyingString() *String
 }
 
 // A StringLike represents a symbolic StringLike.
@@ -151,7 +151,7 @@ func (s *String) IteratorElementValue() SymbolicValue {
 	return ANY_BYTE
 }
 
-func (s *String) underylingString() *String {
+func (s *String) underlyingString() *String {
 	return ANY_STR
 }
 
@@ -305,7 +305,7 @@ func (s *CheckedString) Prop(name string) SymbolicValue {
 	}
 }
 
-func (s *CheckedString) underylingString() *String {
+func (s *CheckedString) underlyingString() *String {
 	return ANY_STR
 }
 

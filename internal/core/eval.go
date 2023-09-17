@@ -348,13 +348,13 @@ func createBestSuitedList(ctx *Context, values []Serializable, elemType Pattern)
 			for i, e := range values {
 				integers[i] = e.(Int)
 			}
-			return WrapUnderylingList(&IntList{elements: integers})
+			return WrapUnderlyingList(&IntList{elements: integers})
 		}
 	}
 
 	//TODO: set constraint
 
-	return WrapUnderylingList(&ValueList{elements: values})
+	return WrapUnderlyingList(&ValueList{elements: values})
 }
 
 func concatValues(ctx *Context, values []Value) (Value, error) {

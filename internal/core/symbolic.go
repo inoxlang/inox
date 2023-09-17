@@ -488,7 +488,7 @@ func (*Array) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Sym
 }
 
 func (l *List) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return l.underylingList.ToSymbolicValue(ctx, encountered)
+	return l.underlyingList.ToSymbolicValue(ctx, encountered)
 }
 
 func (l *ValueList) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {

@@ -280,7 +280,7 @@ func (a *Array) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uin
 }
 
 func (list *List) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	return list.underylingList.Equal(ctx, other, alreadyCompared, depth)
+	return list.underlyingList.Equal(ctx, other, alreadyCompared, depth)
 }
 
 func (list *ValueList) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
@@ -288,11 +288,11 @@ func (list *ValueList) Equal(ctx *Context, other Value, alreadyCompared map[uint
 		return false
 	}
 
-	var otherList underylingList
+	var otherList underlyingList
 	switch v := other.(type) {
 	case *List:
-		otherList = v.underylingList
-	case underylingList:
+		otherList = v.underlyingList
+	case underlyingList:
 		otherList = v
 	default:
 		return false
@@ -347,11 +347,11 @@ func (list *IntList) Equal(ctx *Context, other Value, alreadyCompared map[uintpt
 		return false
 	}
 
-	var otherList underylingList
+	var otherList underlyingList
 	switch v := other.(type) {
 	case *List:
-		otherList = v.underylingList
-	case underylingList:
+		otherList = v.underlyingList
+	case underlyingList:
 		otherList = v
 	default:
 		return false
@@ -406,11 +406,11 @@ func (list *BoolList) Equal(ctx *Context, other Value, alreadyCompared map[uintp
 		return false
 	}
 
-	var otherList underylingList
+	var otherList underlyingList
 	switch v := other.(type) {
 	case *List:
-		otherList = v.underylingList
-	case underylingList:
+		otherList = v.underlyingList
+	case underlyingList:
 		otherList = v
 	default:
 		return false
@@ -468,11 +468,11 @@ func (list *StringList) Equal(ctx *Context, other Value, alreadyCompared map[uin
 		return false
 	}
 
-	var otherList underylingList
+	var otherList underlyingList
 	switch v := other.(type) {
 	case *List:
-		otherList = v.underylingList
-	case underylingList:
+		otherList = v.underlyingList
+	case underlyingList:
 		otherList = v
 	default:
 		return false
