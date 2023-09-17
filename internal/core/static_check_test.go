@@ -3298,6 +3298,13 @@ func TestCheckDatabasesObject(t *testing.T) {
 	})
 
 	t.Run("database with incorrect value for the resolution-data property", func(t *testing.T) {
+		resetStaticallyCheckDbResolutionDataFnRegistry()
+		defer resetStaticallyCheckDbResolutionDataFnRegistry()
+
+		RegisterStaticallyCheckDbResolutionDataFn("ldb", func(node parse.Node) (errorMsg string) {
+			return "bad"
+		})
+
 		objLiteral := parseObject(`
 			{
 				main: {
@@ -3307,11 +3314,6 @@ func TestCheckDatabasesObject(t *testing.T) {
 			}
 		`)
 		pathNode := parse.FindNode(objLiteral, (*parse.AbsolutePathLiteral)(nil), nil)
-
-		delete(staticallyCheckDbResolutionDataFnRegistry, "ldb")
-		RegisterStaticallyCheckDbResolutionDataFn("ldb", func(node parse.Node) (errorMsg string) {
-			return "bad"
-		})
 
 		checkData, _ := GetStaticallyCheckDbResolutionDataFn("ldb")
 		errMsg := checkData(pathNode)

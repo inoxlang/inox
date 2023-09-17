@@ -200,6 +200,12 @@ func GetOpenDbFn(scheme Scheme) (OpenDBFn, bool) {
 	return fn, ok
 }
 
+func resetStaticallyCheckDbResolutionDataFnRegistry() {
+	staticallyCheckDbResolutionDataFnRegistryLock.Lock()
+	defer staticallyCheckDbResolutionDataFnRegistryLock.Unlock()
+	clear(staticallyCheckDbResolutionDataFnRegistry)
+}
+
 func RegisterStaticallyCheckDbResolutionDataFn(scheme Scheme, fn StaticallyCheckDbResolutionDataFn) {
 	staticallyCheckDbResolutionDataFnRegistryLock.Lock()
 	defer staticallyCheckDbResolutionDataFnRegistryLock.Unlock()

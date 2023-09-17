@@ -22,6 +22,14 @@ var (
 )
 
 func init() {
+	resetLoadInstanceFnRegistry()
+}
+
+func resetLoadInstanceFnRegistry() {
+	loadInstanceFnRegistryLock.Lock()
+	clear(loadInstanceFnregistry)
+	loadInstanceFnRegistryLock.Unlock()
+
 	RegisterLoadInstanceFn(OBJECT_PATTERN_TYPE, loadObject)
 }
 

@@ -19,6 +19,9 @@ import (
 func TestDatabaseIL(t *testing.T) {
 
 	t.Run("the name of the top level entities should be a valid identifier", func(t *testing.T) {
+		resetLoadInstanceFnRegistry()
+		defer resetLoadInstanceFnRegistry()
+
 		ctx := NewContexWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
@@ -76,6 +79,9 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("top-level entity patterns should have a loading function", func(t *testing.T) {
+		resetLoadInstanceFnRegistry()
+		defer resetLoadInstanceFnRegistry()
+
 		ctx := NewContexWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
@@ -132,13 +138,15 @@ func TestDatabaseIL(t *testing.T) {
 		}()
 	})
 
-	//note: the previous test requires the loading function to not be registered
-	RegisterLoadInstanceFn(reflect.TypeOf(LOADABLE_TEST_VALUE_PATTERN), func(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
-		assert.Fail(t, "should never be called")
-		return nil, nil
-	})
-
 	t.Run("", func(t *testing.T) {
+		resetLoadInstanceFnRegistry()
+		defer resetLoadInstanceFnRegistry()
+
+		RegisterLoadInstanceFn(reflect.TypeOf(LOADABLE_TEST_VALUE_PATTERN), func(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
+			assert.Fail(t, "should never be called")
+			return nil, nil
+		})
+
 		ctx := NewContexWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
@@ -192,6 +200,14 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("if a schema update is expected top level entities should not be loaded after call to SetOwnerStateOnceAndLoadIfNecessary", func(t *testing.T) {
+		resetLoadInstanceFnRegistry()
+		defer resetLoadInstanceFnRegistry()
+
+		RegisterLoadInstanceFn(reflect.TypeOf(LOADABLE_TEST_VALUE_PATTERN), func(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
+			assert.Fail(t, "should never be called")
+			return nil, nil
+		})
+
 		ctx := NewContexWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
@@ -330,6 +346,14 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("accessing the database after its schema is updated should work", func(t *testing.T) {
+		resetLoadInstanceFnRegistry()
+		defer resetLoadInstanceFnRegistry()
+
+		RegisterLoadInstanceFn(reflect.TypeOf(LOADABLE_TEST_VALUE_PATTERN), func(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
+			assert.Fail(t, "should never be called")
+			return nil, nil
+		})
+
 		ctx := NewContexWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{

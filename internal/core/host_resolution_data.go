@@ -13,6 +13,12 @@ var (
 
 type StaticallyCheckHostResolutionDataFn func(optionalProject Project, node parse.Node) (errorMsg string)
 
+func resetStaticallyCheckHostResolutionDataFnRegistry() {
+	staticallyCheckHostResolutionDataFnRegistryLock.Lock()
+	clear(staticallyCheckHostResolutionDataFnRegistry)
+	staticallyCheckHostResolutionDataFnRegistryLock.Unlock()
+}
+
 func RegisterStaticallyCheckHostResolutionDataFn(scheme Scheme, fn StaticallyCheckHostResolutionDataFn) {
 	staticallyCheckHostResolutionDataFnRegistryLock.Lock()
 	defer staticallyCheckHostResolutionDataFnRegistryLock.Unlock()

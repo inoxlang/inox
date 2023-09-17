@@ -23,16 +23,30 @@ func TestPreInit(t *testing.T) {
 		GlobalVarPermission{permkind.Use, "*"},
 		GlobalVarPermission{permkind.Create, "*"},
 	}
-	LimRegistry.RegisterLimit("a", TotalLimit, 0)
-	LimRegistry.RegisterLimit("b", ByteRateLimit, 0)
 
-	RegisterStaticallyCheckHostResolutionDataFn("ldb", func(project Project, node parse.Node) (errorMsg string) {
-		return ""
-	})
+	//register limits
+	{
+		resetLimitRegistry()
+		defer resetLimitRegistry()
 
-	RegisterStaticallyCheckHostResolutionDataFn("s3", func(project Project, node parse.Node) (errorMsg string) {
-		return ""
-	})
+		LimRegistry.RegisterLimit("a", TotalLimit, 0)
+		LimRegistry.RegisterLimit("b", ByteRateLimit, 0)
+
+	}
+
+	//register loading functions
+	{
+		resetStaticallyCheckHostResolutionDataFnRegistry()
+		defer resetStaticallyCheckHostResolutionDataFnRegistry()
+
+		RegisterStaticallyCheckHostResolutionDataFn("ldb", func(project Project, node parse.Node) (errorMsg string) {
+			return ""
+		})
+
+		RegisterStaticallyCheckHostResolutionDataFn("s3", func(project Project, node parse.Node) (errorMsg string) {
+			return ""
+		})
+	}
 
 	type testCase struct {
 		//input
@@ -68,9 +82,9 @@ func TestPreInit(t *testing.T) {
 						}
 					}
 				}`,
-			error:   true,
+			error:                true,
 			expectedParsingError: true,
-			errorIs: ErrParsingErrorInManifestOrPreinit,
+			errorIs:              ErrParsingErrorInManifestOrPreinit,
 		},
 		{
 			name: "host resolution",
