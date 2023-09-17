@@ -12,7 +12,6 @@ import (
 var (
 	S3_HOST_RESOLUTION_DATA_WITHOUT_CREDENTIALS = core.NewObjectFromMapNoInit(core.ValMap{
 		"bucket":   core.Str("test"),
-		"host":     core.Host(S3_FS_TEST_ENDPOINT),
 		"provider": core.Str("cloudflare"),
 	})
 

@@ -995,7 +995,6 @@ func TestPrepareLocalScript(t *testing.T) {
 					`+string(s3Host)+` : {
 						bucket: "test"
 						provider: "cloudflare"
-						host: `+OS_DB_TEST_ENDPOINT+`
 					}
 				}
 				databases: {

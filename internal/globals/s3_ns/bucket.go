@@ -51,7 +51,7 @@ func init() {
 					return ".provider should be a quoted string literal"
 				}
 			} else {
-				return "missing .provider in resolution data"
+				return MISSING_PROVIDER_IN_RESOL_DATA
 			}
 
 			if bucketNode, hasBucket := n.PropValue("bucket"); hasBucket {
@@ -59,32 +59,37 @@ func init() {
 					return ".bucket should be a quoted string literal"
 				}
 			} else {
-				return "missing .bucket in resolution data"
+				return MISSING_BUCKET_IN_RESOL_DATA
 			}
 
-			if _, hasHost := n.PropValue("host"); !hasHost {
-				return "missing .host in resolution data"
-			}
-
+			_, hasHost := n.PropValue("host")
 			_, hasAccessKey := n.PropValue("access-key")
 			secretKeyNode, hasSecretKey := n.PropValue("secret-key")
 
 			if !hasAccessKey {
 				if hasSecretKey {
-					return "missing .access-key in resolution data"
+					return MISSING_ACCESS_KEY_IN_RESOL_DATA
 				}
+
+				if hasHost {
+					return HOST_SHOULD_NOT_BE_IN_RESOL_DATA_SINCE_CREDS_NOT_PROVIDED
+				}
+
 				if project == nil || reflect.ValueOf(project).IsNil() {
-					return "missing .access-key & .secret-key in resolution data"
+					return MISSING_ACCESS_KEY_SECRET_KEY_HOST_IN_RESOL_DATA_NO_PROJ_FOUND
 				}
+
 				ok, err := project.CanProvideS3Credentials(s3Provider)
 				if err != nil {
 					return fmt.Sprintf("failed to statically check resolution data: %s", err.Error())
 				}
 				if !ok {
-					return "missing .access-key & .secret-key in resolution data (project cannot provide S3 credentials as of now)"
+					return MISSING_ACCESS_KEY_SECRET_KEY_HOST_IN_RESOL_DATA_PROJ_CANNOT_PROVIDE_CREDS
 				}
 			} else if !hasSecretKey {
-				return "missing .secret-key in resolution data"
+				return MISSING_SECRET_KEY_IN_RESOL_DATA
+			} else if !hasHost {
+				return MISSING_HOST_IN_RESOL_DATA
 			}
 
 			if hasSecretKey && parse.NodeIsStringLiteral(secretKeyNode) {
@@ -171,42 +176,48 @@ func OpenBucket(ctx *core.Context, s3Host core.Host, opts OpenBucketOptions) (*B
 		propNames := d.PropertyNames(ctx)
 		credentialsProvided := true
 
+		hasHost := slices.Contains(propNames, "host")
+
 		if !slices.Contains(propNames, "access-key") {
 			credentialsProvided = false
 			if slices.Contains(propNames, "secret-key") {
 				return nil, fmt.Errorf("%w: missing .access-key in resolution data", ErrCannotResolveBucket)
 			}
-			if !opts.AllowGettingCredentialsFromProject || proj == nil || reflect.ValueOf(proj).IsNil() {
-				return nil, fmt.Errorf("%w: missing .access-key & .secret-key in resolution data", ErrCannotResolveBucket)
+			if hasHost {
+				return nil, fmt.Errorf("%w: %s", ErrCannotResolveBucket, HOST_SHOULD_NOT_BE_IN_RESOL_DATA_SINCE_CREDS_NOT_PROVIDED)
 			}
+			if !opts.AllowGettingCredentialsFromProject || proj == nil || reflect.ValueOf(proj).IsNil() {
+				return nil, fmt.Errorf("%w: %s", ErrCannotResolveBucket, MISSING_ACCESS_KEY_SECRET_KEY_HOST_IN_RESOL_DATA_NO_PROJ_FOUND)
+			}
+
 		} else if !slices.Contains(propNames, "secret-key") {
 			return nil, fmt.Errorf("%w: missing .secret-key in resolution data", ErrCannotResolveBucket)
+		} else if !hasHost {
+			return nil, fmt.Errorf("%w: %s", ErrCannotResolveBucket, MISSING_HOST_IN_RESOL_DATA)
 		}
 
 		if !slices.Contains(propNames, "bucket") {
-			return nil, fmt.Errorf("%w: missing .bucket in resolution data", ErrCannotResolveBucket)
-		}
-
-		if !slices.Contains(propNames, "host") {
-			return nil, fmt.Errorf("%w: missing .host in resolution data", ErrCannotResolveBucket)
+			return nil, fmt.Errorf("%w: %s", ErrCannotResolveBucket, MISSING_BUCKET_IN_RESOL_DATA)
 		}
 
 		if !slices.Contains(propNames, "provider") {
-			return nil, fmt.Errorf("%w: missing .provider in resolution data", ErrCannotResolveBucket)
+			return nil, fmt.Errorf("%w: %s", ErrCannotResolveBucket, MISSING_PROVIDER_IN_RESOL_DATA)
 		}
 
 		bucket := d.Prop(ctx, "bucket").(core.StringLike).GetOrBuildString()
-		host := d.Prop(ctx, "host").(core.Host)
 		provider := d.Prop(ctx, "provider").(core.StringLike).GetOrBuildString()
 
 		var accessKey string
 		var secretKey string
+		var host core.Host
+
 		if credentialsProvided {
 			accessKey = d.Prop(ctx, "access-key").(core.StringLike).GetOrBuildString()
 			secretKey = d.Prop(ctx, "secret-key").(*core.Secret).StringValue().GetOrBuildString()
-		} else {
+			host = d.Prop(ctx, "host").(core.Host)
+		} else { //ask the project to provide the credentials
 			var err error
-			accessKey, secretKey, _, err = proj.GetS3CredentialsForBucket(ctx, bucket, provider)
+			accessKey, secretKey, host, err = proj.GetS3CredentialsForBucket(ctx, bucket, provider)
 
 			if err != nil {
 				return nil, fmt.Errorf("%w: failed to get S3 credentials from project: %w", ErrCannotResolveBucket, err)
