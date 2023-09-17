@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/project"
 )
 
 const (
@@ -19,6 +21,41 @@ var (
 	ErrUserRefusedExecution            = errors.New("user refused execution")
 	ErrNoProvidedConfirmExecPrompt     = errors.New("risk score too high and no provided way to show confirm prompt")
 )
+
+type RunScriptArgs struct {
+	Fpath                     string
+	PassedCLIArgs             []string
+	PassedArgs                *core.Struct
+	ParsingCompilationContext *core.Context
+	ParentContext             *core.Context
+	ParentContextRequired     bool
+	//used during the preinit
+	PreinitFilesystem afs.Filesystem
+
+	FullAccessToDatabases bool
+	Project               *project.Project
+
+	UseBytecode      bool
+	OptimizeBytecode bool
+	ShowBytecode     bool
+
+	AllowMissingEnvVars bool
+	IgnoreHighRiskScore bool
+
+	//if not nil AND UseBytecode is false the script is executed in debug mode with this debugger.
+	//Debugger.AttachAndStart is called before starting the evaluation.
+	//if nil the parent state's debugger is used if present.
+	Debugger *core.Debugger
+
+	//output for execution, if nil os.Stdout is used
+	Out io.Writer
+
+	LogOut io.Writer
+
+	//PreparedChan signals when the script is prepared (nil error) or failed to prepared (non-nil error),
+	//the channel should be buffered.
+	PreparedChan chan error
+}
 
 // RunLocalScript runs a script located in the filesystem.
 func RunLocalScript(args RunScriptArgs) (
