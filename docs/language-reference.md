@@ -2,7 +2,7 @@
 
 -----
 
-# Inox Basics
+# Inox Language Reference
 
 - [Literals](#Literals)
 - [Variables](#variables)
@@ -122,8 +122,27 @@ local2 = 2
 
 Local variable declarations can have a type annotation:
 ```
-var a %int = 0
+var i int = 0
 ```
+
+<details>
+
+**<summary>Learn more about type annotations</summary>**
+
+Type annotations are just [patterns](#patterns) with no leading `%` required.
+The following declarations are valid:
+```
+var i int = 0
+var i %int = 0
+
+var object %{} = {}
+var object {} = {}
+
+var object %{a: int} = {}
+var object {a: int} = {}
+```
+
+</details>
 
 ## Globals
 
@@ -721,6 +740,33 @@ fn add(a int, b int) int {
     return (a + b)
 }
 ```
+
+<details>
+
+**<summary>Learn more about type annotations</summary>**
+
+As for local variable declarations, type annotations are just [patterns](#patterns) with no leading `%` required.
+The following function declarations are valid:
+```
+fn add(a int, b int) int {
+    return (a + b)
+}
+# same as
+fn add(a %int, b %int) %int {
+    return (a + b)
+}
+
+fn add(a {a: int}, b {a: int}) ({a: int}) {
+    return (a + b)
+}
+# same as
+fn add(a %{a: int}, b %{a: int}) %{a: int} {
+    return (a + b)
+}
+```
+
+</details>
+
 
 Local variables are local to a function's scope or to the module's top local scope.
 Blocks might be introduced in the future.

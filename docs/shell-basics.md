@@ -1,4 +1,4 @@
-[Install Inox](../README.md#installation) | [Language Basics](./language-basics.md)| [Built-in Functions](./builtin.md) | [Project](./project.md) | [Web App Development](./web-app-development.md) | [Scripting Basics](./scripting-basics.md) 
+[Install Inox](../README.md#installation) | [Language Reference](./language-reference.md)| [Built-in Functions](./builtin.md) | [Project](./project.md) | [Web App Development](./web-app-development.md) | [Scripting Basics](./scripting-basics.md) 
 
 -----
 

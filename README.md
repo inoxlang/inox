@@ -23,7 +23,7 @@ An archive with a Linux binary and some examples is available in [release assets
 
 ## Learning Inox
 
-The basics of the language are explained [here](./docs/language-basics.md).\
+The basics of the language are explained [here](./docs/language-reference.md).\
 You can also explore the `examples/` folder and start with scripts in `examples/basic`.\
 To learn scripting specifically go [here](./docs/scripting-basics.md).\
 View [Shell Basics](./docs/shell-basics.md) to learn how to use Inox interactively.
@@ -152,7 +152,7 @@ dbs.main.users.add(new_user)
 dbs.main.users.has(new_user) 
 ```
 
-You can learn more [here](./docs/language-basics.md#databases).
+You can learn more [here](./docs/language-reference.md#databases).
 
 ### Serializability
 

@@ -1,4 +1,4 @@
-[Install Inox](../README.md#installation) | [Language Basics](./language-basics.md) |  [Built-in Functions](./builtin.md) | [Project](./project.md) | [Web App Development](./web-app-development.md) | [Shell Basics](./shell-basics.md)
+[Install Inox](../README.md#installation) | [Language Reference](./language-reference.md) |  [Built-in Functions](./builtin.md) | [Project](./project.md) | [Web App Development](./web-app-development.md) | [Shell Basics](./shell-basics.md)
 
 -----
 
@@ -114,7 +114,7 @@ if clean-existing {
 ```
 
 Now let's create a basic directory structure, we can use `fs.mkdir` with
-a [dictionary](./language-basics.md#dictionaries) literal (dictionary literals start with `:{`).
+a [dictionary](./language-reference.md#dictionaries) literal (dictionary literals start with `:{`).
 
 ```
 project_name = dir.name 
@@ -357,7 +357,7 @@ user1_posts = filter(posts, %{userId: 1.0})
 post_data = map(user1_posts, .{id, body, title})
 ```
 
-We can get rid of the **user1_posts** variable by using a [pipeline statement](./language-basics.md#pipe-statement):
+We can get rid of the **user1_posts** variable by using a [pipeline statement](./language-reference.md#pipe-statement):
 ```
 posts = read!(POSTS_URL)
 assert (posts match %iterable)
