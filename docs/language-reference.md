@@ -38,6 +38,7 @@
 - [XML Expressions](#xml-expressions)
 - [Modules](#modules)
     - [Module Parameters](#module-parameters)
+    - [Permissions](#permissions)
     - [Execution Phases](#execution-phases)
     - [Inclusion Imports](#inclusion-imports)
     - [Module Imports](#module-imports)
@@ -629,8 +630,50 @@ output:
 0 1
 1 2
 2 3
+
+
+for key, value in {a: 1, b: 2} {
+    print(key, value)
+}
+
+output:
+a 1
+b 2
 ```
 
+<details>
+<summary>Advanced use</summary>
+
+Values & keys can be filtered by putting a pattern in front of the **value** and **key** variables.
+
+**Value filtering:**
+
+```
+for %int(0..2) elem in ["a", 0, 1, 2, 3] {
+    print(elem)
+}
+
+output:
+0
+1
+2
+```
+
+**Key filtering:**
+
+```
+# filter out keys not matching the regex ^a+$.
+
+for %`^a+$` key, value in {a: 1, aa: 2, b: 3} {
+    print(key, value)
+}
+
+output:
+a 1
+aa 2
+```
+
+</details>
 
 ## Walk Statement
 
@@ -981,13 +1024,73 @@ Arguments should be added after the path when executing the program:
 inox run [...run options...] ./script.ix ./dir/ --verbose
 ```
 
+## Permissions
+
+The permissions section of the manifest lists the permissions required by the module. 
+Permissions represent a type of action a module is allowed (or forbidden) to do. 
+Most IO operations (filesystem access, HTTP requests) and resource intensive operations (lthread creation) necessitate a permission.
+
+**Examples:**
+
+```
+# reading any file in /home/user/ or below
+manifest {
+    permissions: {
+        read: {
+            %/home/user/...
+        }
+    }
+}
+
+# sending HTTP GET & POST requests to any HTTPS server
+manifest {
+    permissions: {
+        read: {
+            %https://**
+        }
+        write: {
+            %https://**
+        }
+    }
+}
+
+# creating an HTTPS server listening on localhost:8080
+manifest {
+    permissions: {
+        provide: https://localhost:808
+    }
+}
+
+# reading from & writing to the database ldb://main
+manifest {
+    permissions: {
+        read: {
+            ldb://main
+        }
+        write: {
+            ldb://main
+        }
+    }
+}
+
+# creating lightweight threads
+manifest {
+    permissions: {
+        create: {
+            threads: {}
+        }
+    }
+}
+```
+
+
 ## Execution Phases
 
 The execution of a module has several phases:
-- parsing
+- **Parsing**
 - [Static Check](#static-check)
 - [Symbolic Evaluation/Check](#symbolic-evaluation)
-- [Compilation](#compilation) (if using [bytecode interpreter](#evaluation))
+- [Compilation](#compilation) (if using the [bytecode interpreter](#evaluation))
 - [Evaluation](#evaluation)
 
 ## Result
@@ -1145,7 +1248,7 @@ TODO
 The evaluation is performed by either a **bytecode interpreter or** a **tree walking interpreter**. You don't really need to understand
 how they work, just remember that:
 - the bytecode interpreter is the default when running a script with `inox run`
-- the REPL always use the tree walking interpreter
+- the REPL always uses the tree walking interpreter
 - the tree walking intepreter is much slower (filesystem & network operations are not affected)
 
 
@@ -1184,7 +1287,7 @@ results = req_group.wait_results!()
 
 ## Data Sharing
 
-Execution contexts can share & pass values.
+Execution contexts can share & pass values with/to other execution contexts.
 Most **sharable** values are either **immutable** or **lock-protected**:
 
 ```
