@@ -120,7 +120,7 @@ func MustElementKeyFrom(key string) ElementKey {
 
 type OpenDBFn func(ctx *Context, config DbOpenConfiguration) (Database, error)
 
-type StaticallyCheckDbResolutionDataFn func(node parse.Node) (errorMsg string)
+type StaticallyCheckDbResolutionDataFn func(node parse.Node, optProject Project) (errorMsg string)
 
 type Database interface {
 	Resource() SchemeHolder

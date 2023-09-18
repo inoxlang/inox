@@ -12,6 +12,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/containers"
 	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -42,10 +43,9 @@ var (
 func TestOpenDatabase(t *testing.T) {
 	if OS_DB_TEST_ACCESS_KEY == "" {
 		t.SkipNow()
-		return
 	}
 
-	t.Run("opening the same database is forbidden", func(t *testing.T) {
+	t.Run("opening the same database (host) is forbidden", func(t *testing.T) {
 		s3Host := randS3Host()
 
 		ctxConfig := core.ContextConfig{
@@ -58,8 +58,9 @@ func TestOpenDatabase(t *testing.T) {
 		}
 
 		ctx1 := core.NewContexWithEmptyState(ctxConfig, nil)
+		project := &testProject{id: core.RandomProjectID("odb-test")}
 
-		_db, err := openDatabase(ctx1, DB_HOST, false, nil)
+		_db, err := openDatabase(ctx1, DB_HOST, false, project)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -68,11 +69,83 @@ func TestOpenDatabase(t *testing.T) {
 
 		ctx2 := core.NewContexWithEmptyState(ctxConfig, nil)
 
-		db, err := openDatabase(ctx2, DB_HOST, false, nil)
+		db, err := openDatabase(ctx2, DB_HOST, false, project)
 		if !assert.ErrorIs(t, err, core.ErrDatabaseAlreadyOpen) {
 			return
 		}
 		assert.Nil(t, db, _db)
+	})
+
+	t.Run("opening the same database (host) in different projects is allowed", func(t *testing.T) {
+		s3Host := randS3Host()
+
+		ctxConfig := core.ContextConfig{
+			Permissions: []core.Permission{},
+			HostResolutions: map[core.Host]core.Value{
+				DB_HOST: s3Host,
+				s3Host:  S3_HOST_RESOLUTION_DATA,
+			},
+			Filesystem: fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE),
+		}
+
+		ctx1 := core.NewContexWithEmptyState(ctxConfig, nil)
+		project1 := &testProject{id: core.RandomProjectID("odb-test-p1")}
+		project2 := &testProject{id: core.RandomProjectID("odb-test-p2")}
+
+		_db, err := openDatabase(ctx1, DB_HOST, false, project1)
+		if !assert.NoError(t, err) {
+			return
+		}
+		defer _db.RemoveAllObjects(ctx1)
+		defer _db.Close(ctx1)
+
+		ctx2 := core.NewContexWithEmptyState(ctxConfig, nil)
+
+		db, err := openDatabase(ctx2, DB_HOST, false, project2)
+		if !assert.NoError(t, err) {
+			return
+		}
+		defer db.RemoveAllObjects(ctx2)
+		defer db.Close(ctx2)
+		assert.NotSame(t, db, _db)
+	})
+
+	t.Run("opening a database with the same S3 host is forbidden", func(t *testing.T) {
+		const DB_HOST2 = core.Host("odb://other")
+
+		s3Host := randS3Host()
+
+		ctxConfig := core.ContextConfig{
+			Permissions: []core.Permission{},
+			HostResolutions: map[core.Host]core.Value{
+				DB_HOST:  s3Host,
+				DB_HOST2: s3Host,
+				s3Host:   S3_HOST_RESOLUTION_DATA,
+			},
+			Filesystem: fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE),
+		}
+
+		ctx1 := core.NewContexWithEmptyState(ctxConfig, nil)
+		project := &testProject{id: core.RandomProjectID("odb-test")}
+
+		_db, err := openDatabase(ctx1, DB_HOST, false, project)
+		if !assert.NoError(t, err) {
+			return
+		}
+		defer _db.RemoveAllObjects(ctx1)
+		defer _db.Close(ctx1)
+
+		ctx2 := core.NewContexWithEmptyState(ctxConfig, nil)
+
+		db, err := openDatabase(ctx2, DB_HOST2, false, project)
+		if !assert.ErrorIs(t, err, core.ErrDatabaseAlreadyOpen) {
+			return
+		}
+		assert.Nil(t, db, _db)
+	})
+
+	t.Run("opening a database with the same S3 host is forbidden", func(t *testing.T) {
+		//TODO
 	})
 
 	t.Run("open same database sequentially (in-between closing)", func(t *testing.T) {
@@ -86,10 +159,11 @@ func TestOpenDatabase(t *testing.T) {
 			},
 			Filesystem: fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE),
 		}
+		project := &testProject{id: core.RandomProjectID("odb-test")}
 
 		ctx1 := core.NewContexWithEmptyState(ctxConfig, nil)
 
-		_db, err := openDatabase(ctx1, DB_HOST, false, nil)
+		_db, err := openDatabase(ctx1, DB_HOST, false, project)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -97,7 +171,7 @@ func TestOpenDatabase(t *testing.T) {
 
 		ctx2 := core.NewContexWithEmptyState(ctxConfig, nil)
 
-		db, err := openDatabase(ctx2, DB_HOST, false, nil)
+		db, err := openDatabase(ctx2, DB_HOST, false, project)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -121,6 +195,7 @@ func TestOpenDatabase(t *testing.T) {
 			},
 			Filesystem: fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE),
 		}
+		project := &testProject{id: core.RandomProjectID("odb-test")}
 
 		wg := new(sync.WaitGroup)
 		wg.Add(2)
@@ -145,7 +220,7 @@ func TestOpenDatabase(t *testing.T) {
 			//open database in first context
 			ctx1 = core.NewContexWithEmptyState(ctxConfig, nil)
 
-			_db1, err := openDatabase(ctx1, DB_HOST, false, nil)
+			_db1, err := openDatabase(ctx1, DB_HOST, false, project)
 			if err != nil {
 				return
 			}
@@ -157,7 +232,7 @@ func TestOpenDatabase(t *testing.T) {
 			//open same database in second context
 			ctx2 = core.NewContexWithEmptyState(ctxConfig, nil)
 
-			_db2, err := openDatabase(ctx2, DB_HOST, false, nil)
+			_db2, err := openDatabase(ctx2, DB_HOST, false, project)
 			if err != nil {
 				return
 			}
@@ -181,12 +256,13 @@ func TestOpenDatabase(t *testing.T) {
 				},
 				Filesystem: fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE),
 			}
+			project := &testProject{id: core.RandomProjectID("odb-test")}
 
 			ctx := core.NewContexWithEmptyState(ctxConfig, nil)
 			ctx.AddNamedPattern("Set", containers.SET_PATTERN)
 			ctx.AddNamedPattern("str", containers.SET_PATTERN)
 
-			db, err := openDatabase(ctx, DB_HOST, false, nil)
+			db, err := openDatabase(ctx, DB_HOST, false, project)
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -212,7 +288,7 @@ func TestOpenDatabase(t *testing.T) {
 
 			//re-open
 
-			db, err = openDatabase(ctx, DB_HOST, false, nil)
+			db, err = openDatabase(ctx, DB_HOST, false, project)
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -236,7 +312,6 @@ func TestOpenDatabase(t *testing.T) {
 func TestDatabase(t *testing.T) {
 	if OS_DB_TEST_ACCESS_KEY == "" {
 		t.SkipNow()
-		return
 	}
 
 	setup := func(ctxHasTransaction bool) (*ObjectStorageDatabase, *core.Context, *core.Transaction) {
@@ -249,6 +324,7 @@ func TestDatabase(t *testing.T) {
 			},
 			Filesystem: fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE),
 		}
+		project := &testProject{id: core.RandomProjectID("odb-test")}
 
 		ctx := core.NewContexWithEmptyState(ctxConfig, nil)
 
@@ -257,7 +333,7 @@ func TestDatabase(t *testing.T) {
 			tx = core.StartNewTransaction(ctx)
 		}
 
-		odb, err := openDatabase(ctx, DB_HOST, false, nil)
+		odb, err := openDatabase(ctx, DB_HOST, false, project)
 		assert.NoError(t, err)
 
 		return odb, ctx, tx
@@ -445,7 +521,6 @@ func TestDatabase(t *testing.T) {
 func TestUpdateSchema(t *testing.T) {
 	if OS_DB_TEST_ACCESS_KEY == "" {
 		t.SkipNow()
-		return
 	}
 
 	openDB := func(tempdir string, filesystem afs.Filesystem) (*ObjectStorageDatabase, *core.Context, bool) {
@@ -453,20 +528,23 @@ func TestUpdateSchema(t *testing.T) {
 		s3Host := randS3Host()
 
 		ctxConfig := core.ContextConfig{
-			Permissions: []core.Permission{},
+			Permissions: []core.Permission{
+				core.DatabasePermission{Kind_: permkind.Read, Entity: DB_HOST},
+			},
 			HostResolutions: map[core.Host]core.Value{
 				DB_HOST: s3Host,
 				s3Host:  S3_HOST_RESOLUTION_DATA,
 			},
 			Filesystem: filesystem,
 		}
+		project := &testProject{id: core.RandomProjectID("odb-test")}
 
 		ctx := core.NewContexWithEmptyState(ctxConfig, nil)
 		ctx.AddNamedPattern("int", core.INT_PATTERN)
 		ctx.AddNamedPattern("str", core.STR_PATTERN)
 		ctx.AddNamedPattern("Set", containers.SET_PATTERN)
 
-		odb, err := openDatabase(ctx, DB_HOST, false, nil)
+		odb, err := openDatabase(ctx, DB_HOST, false, project)
 		if !assert.NoError(t, err) {
 			return nil, nil, false
 		}
@@ -801,4 +879,24 @@ func TestUpdateSchema(t *testing.T) {
 
 func randS3Host() core.Host {
 	return core.Host("s3://bucket-" + strconv.Itoa(int(rand.Int31())))
+}
+
+type testProject struct {
+	id core.ProjectID
+}
+
+func (p *testProject) Id() core.ProjectID {
+	return p.id
+}
+
+func (*testProject) GetS3CredentialsForBucket(
+	ctx *core.Context,
+	bucketName string,
+	provider string,
+) (accessKey string, secretKey string, _ core.Host, _ error) {
+	panic(core.ErrNotImplemented)
+}
+
+func (*testProject) CanProvideS3Credentials(s3Provider string) (bool, error) {
+	return false, nil
 }

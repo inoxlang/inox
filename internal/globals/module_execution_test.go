@@ -647,6 +647,7 @@ func TestPrepareLocalScript(t *testing.T) {
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
+			Project:                   project.NewDummyProject("test", fs),
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
 			ParentContextRequired:     true,
@@ -743,6 +744,7 @@ func TestPrepareLocalScript(t *testing.T) {
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
+			Project:                   project.NewDummyProject("test", fs),
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
 			ParentContextRequired:     true,

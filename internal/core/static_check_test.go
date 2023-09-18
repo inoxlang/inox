@@ -3208,7 +3208,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 
 		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			assert.Fail(t, msg)
-		})
+		}, nil)
 	})
 
 	t.Run("database with correct description", func(t *testing.T) {
@@ -3223,7 +3223,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 
 		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			assert.Fail(t, msg)
-		})
+		}, nil)
 	})
 
 	t.Run("database with missing resource property", func(t *testing.T) {
@@ -3240,7 +3240,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			err = true
 			assert.Equal(t, fmtMissingPropInDatabaseDescription(MANIFEST_DATABASE__RESOURCE_PROP_NAME, "main"), msg)
-		})
+		}, nil)
 
 		assert.True(t, err)
 	})
@@ -3259,7 +3259,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			err = true
 			assert.Equal(t, DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL, msg)
-		})
+		}, nil)
 		assert.True(t, err)
 	})
 
@@ -3275,7 +3275,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 
 		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			assert.Fail(t, msg)
-		})
+		}, nil)
 	})
 
 	t.Run("database with unsupported value for the resolution-data property", func(t *testing.T) {
@@ -3292,7 +3292,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			err = true
 			assert.Equal(t, DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED, msg)
-		})
+		}, nil)
 
 		assert.True(t, err)
 	})
@@ -3301,7 +3301,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 		resetStaticallyCheckDbResolutionDataFnRegistry()
 		defer resetStaticallyCheckDbResolutionDataFnRegistry()
 
-		RegisterStaticallyCheckDbResolutionDataFn("ldb", func(node parse.Node) (errorMsg string) {
+		RegisterStaticallyCheckDbResolutionDataFn("ldb", func(node parse.Node, _ Project) (errorMsg string) {
 			return "bad"
 		})
 
@@ -3316,14 +3316,48 @@ func TestCheckDatabasesObject(t *testing.T) {
 		pathNode := parse.FindNode(objLiteral, (*parse.AbsolutePathLiteral)(nil), nil)
 
 		checkData, _ := GetStaticallyCheckDbResolutionDataFn("ldb")
-		errMsg := checkData(pathNode)
+		errMsg := checkData(pathNode, nil)
 
 		err := false
 
 		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			err = true
 			assert.Equal(t, errMsg, msg)
+		}, nil)
+
+		assert.True(t, err)
+	})
+
+	t.Run("database with incorrect value for the resolution-data property: project passed", func(t *testing.T) {
+		resetStaticallyCheckDbResolutionDataFnRegistry()
+		defer resetStaticallyCheckDbResolutionDataFnRegistry()
+
+		project := &testProject{id: RandomProjectID("test")}
+
+		RegisterStaticallyCheckDbResolutionDataFn("ldb", func(node parse.Node, p Project) (errorMsg string) {
+			assert.Same(t, project, p)
+			return "bad"
 		})
+
+		objLiteral := parseObject(`
+			{
+				main: {
+					resource: ldb://main
+					resolution-data: /file
+				}
+			}
+		`)
+		pathNode := parse.FindNode(objLiteral, (*parse.AbsolutePathLiteral)(nil), nil)
+
+		checkData, _ := GetStaticallyCheckDbResolutionDataFn("ldb")
+		errMsg := checkData(pathNode, project)
+
+		err := false
+
+		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
+			err = true
+			assert.Equal(t, errMsg, msg)
+		}, project)
 
 		assert.True(t, err)
 	})
@@ -3412,4 +3446,22 @@ func (user testMutableGoValue) GetNameNoCtx() Str {
 
 func (user testMutableGoValue) Clone(clones map[uintptr]map[int]Value, depth int) (Value, error) {
 	return nil, ErrNotClonable
+}
+
+var _ = Project((*testProject)(nil))
+
+type testProject struct {
+	id ProjectID
+}
+
+func (*testProject) CanProvideS3Credentials(s3Provider string) (bool, error) {
+	panic("unimplemented")
+}
+
+func (*testProject) GetS3CredentialsForBucket(ctx *Context, bucketName string, provider string) (accessKey string, secretKey string, s3Endpoint Host, _ error) {
+	panic("unimplemented")
+}
+
+func (p *testProject) Id() ProjectID {
+	return p.id
 }

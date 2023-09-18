@@ -1,6 +1,7 @@
 package obs_db
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -22,10 +23,13 @@ const (
 )
 
 var (
-	_        core.Database = (*ObjectStorageDatabase)(nil)
-	registry               = openDatabasesRegistry{
-		databases: map[core.Host]*ObjectStorageDatabase{},
+	registry = openDatabasesRegistry{
+		databases: map[registryDatabaseId]*ObjectStorageDatabase{},
 	}
+
+	ErrDatabaseOnlyAvailableInProjects = errors.New("object storage databases are only available in projects")
+
+	_ core.Database = (*ObjectStorageDatabase)(nil)
 )
 
 func init() {
@@ -33,10 +37,14 @@ func init() {
 		return openDatabase(ctx, config.Resource, !config.FullAccess, config.Project)
 	})
 
-	core.RegisterStaticallyCheckDbResolutionDataFn(ODB_SCHEME, func(node parse.Node) string {
+	core.RegisterStaticallyCheckDbResolutionDataFn(ODB_SCHEME, func(node parse.Node, optProject core.Project) string {
 		hostLit, ok := node.(*parse.HostLiteral)
 		if !ok || !strings.HasPrefix(hostLit.Value, "s3://") {
 			return "the resolution data of an object storage database should be a host literal with a s3:// scheme"
+		}
+
+		if optProject == nil || reflect.ValueOf(optProject).IsNil() {
+			return ErrDatabaseOnlyAvailableInProjects.Error()
 		}
 
 		return ""
@@ -46,10 +54,12 @@ func init() {
 // An ObjectStorageDatabase is a database thats stores data in an object storage & has an optional on-disk cache.
 type ObjectStorageDatabase struct {
 	host, s3Host core.Host
-	filesystem   *s3_ns.S3Filesystem
-	mainKV       *filekv.SingleFileKV
-	schemaKV     *filekv.SingleFileKV
-	schema       *core.ObjectPattern
+	id           registryDatabaseId
+
+	filesystem *s3_ns.S3Filesystem
+	mainKV     *filekv.SingleFileKV
+	schemaKV   *filekv.SingleFileKV
+	schema     *core.ObjectPattern
 
 	topLevelValues     map[string]core.Serializable
 	topLevelValuesLock sync.Mutex
@@ -60,6 +70,13 @@ type ObjectStorageDatabaseConfig struct {
 	S3Host     core.Host
 	Restricted bool
 	Filesystem *s3_ns.S3Filesystem
+	Project    core.Project
+}
+
+type registryDatabaseId string
+
+func getRegistryDatabaseId(projectId core.ProjectID, s3Host core.Host) registryDatabaseId {
+	return registryDatabaseId(string(projectId) + "//" + string(s3Host))
 }
 
 // openDatabase opens a database, read, create & write permissions are required.
@@ -97,17 +114,27 @@ func openDatabase(ctx *core.Context, r core.ResourceName, restrictedAccess bool,
 		Host:       h,
 		Restricted: restrictedAccess,
 		Filesystem: s3fls,
+		Project:    optProject,
 	})
 
 	return db, err
 }
 
 func openDatabaseWithConfig(ctx *core.Context, config ObjectStorageDatabaseConfig) (*ObjectStorageDatabase, error) {
+	if config.Project == nil || reflect.ValueOf(config.Project).IsNil() {
+		return nil, ErrDatabaseOnlyAvailableInProjects
+	}
+
 	registry.lock.Lock()
-	_, alreadyOpen := registry.databases[config.S3Host]
-	defer registry.lock.Unlock()
-	if alreadyOpen {
-		return nil, core.ErrDatabaseAlreadyOpen
+
+	dbId := getRegistryDatabaseId(config.Project.Id(), config.S3Host)
+	//return an error if the database is already open in the same project
+	{
+		_, alreadyOpen := registry.databases[dbId]
+		defer registry.lock.Unlock()
+		if alreadyOpen {
+			return nil, core.ErrDatabaseAlreadyOpen
+		}
 	}
 
 	mainKVPath := core.Path("/" + MAIN_KV_FILE)
@@ -116,6 +143,7 @@ func openDatabaseWithConfig(ctx *core.Context, config ObjectStorageDatabaseConfi
 	odb := &ObjectStorageDatabase{
 		host:       config.Host,
 		s3Host:     config.S3Host,
+		id:         dbId,
 		filesystem: config.Filesystem,
 	}
 
@@ -165,7 +193,7 @@ func openDatabaseWithConfig(ctx *core.Context, config ObjectStorageDatabaseConfi
 		odb.schema = core.NewInexactObjectPattern(map[string]core.Pattern{})
 	}
 
-	registry.databases[config.S3Host] = odb
+	registry.databases[dbId] = odb
 
 	return odb, nil
 }
@@ -305,7 +333,7 @@ func (obsdb *ObjectStorageDatabase) Close(ctx *core.Context) error {
 	}
 	obsdb.schemaKV.Close(ctx)
 	registry.lock.Lock()
-	delete(registry.databases, obsdb.s3Host)
+	delete(registry.databases, obsdb.id)
 	registry.lock.Unlock()
 
 	return nil
@@ -350,5 +378,5 @@ func (obsdb *ObjectStorageDatabase) Remove(ctx *core.Context, key core.Path) {
 
 type openDatabasesRegistry struct {
 	lock      sync.Mutex
-	databases map[core.Host] /*S3 host*/ *ObjectStorageDatabase
+	databases map[registryDatabaseId]*ObjectStorageDatabase
 }

@@ -2006,7 +2006,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 
 			switch propVal := p.Value.(type) {
 			case *parse.ObjectLiteral:
-				checkDatabasesObject(propVal, onError)
+				checkDatabasesObject(propVal, onError, args.project)
 			case *parse.AbsolutePathLiteral:
 			default:
 				onError(p, DATABASES_SECTION_SHOULD_BE_AN_OBJECT_OR_ABS_PATH)
@@ -2112,7 +2112,7 @@ func checkPreinitFilesObject(obj *parse.ObjectLiteral, onError func(n parse.Node
 	}
 }
 
-func checkDatabasesObject(obj *parse.ObjectLiteral, onError func(n parse.Node, msg string)) {
+func checkDatabasesObject(obj *parse.ObjectLiteral, onError func(n parse.Node, msg string), project Project) {
 
 	parse.Walk(obj, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 		if node == obj {
@@ -2179,7 +2179,7 @@ func checkDatabasesObject(obj *parse.ObjectLiteral, onError func(n parse.Node, m
 					}
 					checkData, ok := GetStaticallyCheckDbResolutionDataFn(scheme)
 					if ok {
-						errMsg := checkData(prop.Value)
+						errMsg := checkData(prop.Value, project)
 						if errMsg != "" {
 							onError(prop.Value, errMsg)
 						}

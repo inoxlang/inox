@@ -32,7 +32,7 @@ func init() {
 		return openDatabase(ctx, config.Resource, !config.FullAccess)
 	})
 
-	checkResolutionData := func(node parse.Node) (errMsg string) {
+	checkResolutionData := func(node parse.Node, _ core.Project) (errMsg string) {
 		pathLit, ok := node.(*parse.AbsolutePathLiteral)
 		if !ok || !strings.HasSuffix(pathLit.Value, "/") {
 			return "the resolution data of a local database should be an absolute directory path (it should end with '/')"
@@ -42,7 +42,7 @@ func init() {
 	}
 	core.RegisterStaticallyCheckDbResolutionDataFn(LDB_SCHEME, checkResolutionData)
 	core.RegisterStaticallyCheckHostResolutionDataFn(LDB_SCHEME, func(optionalProject core.Project, node parse.Node) (errorMsg string) {
-		return checkResolutionData(node)
+		return checkResolutionData(node, nil)
 	})
 }
 
