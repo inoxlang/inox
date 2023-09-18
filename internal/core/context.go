@@ -258,7 +258,7 @@ func NewContext(config ContextConfig) *Context {
 	} else {
 		//if a parent context is passed we check that the parent has all the required permissions
 		if err, ok := config.Check(); !ok {
-			panic(fmt.Errorf("failed to create context, parent of context should at least have permissions of its child: %w", err))
+			panic(fmt.Errorf("failed to create context: invalid context configuration: %w", err))
 		}
 
 		if config.LimitTokens != nil {
