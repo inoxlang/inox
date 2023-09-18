@@ -143,6 +143,62 @@ func TestNewContext(t *testing.T) {
 	})
 }
 
+func TestBoundChild(t *testing.T) {
+	t.Run("child context should inherit all limits of its parent", func(t *testing.T) {
+
+		ctx := NewContext(ContextConfig{
+			Limits: []Limit{
+				{
+					Name:  "my-total-limit",
+					Kind:  TotalLimit,
+					Value: 100,
+					DecrementFn: func(lastDecrementTime time.Time, decrementingStateCount int32) int64 {
+						return 1
+					},
+				},
+				{
+					Name:  "my-simple-rate-limit",
+					Kind:  SimpleRateLimit,
+					Value: 100,
+				},
+				{
+					Name:  "my-byterate-limit",
+					Kind:  ByteRateLimit,
+					Value: 100,
+				},
+			},
+		})
+
+		childCtx := ctx.BoundChild()
+
+		if !assert.Len(t, childCtx.limiters, 3) {
+			return
+		}
+		assert.Contains(t, childCtx.limiters, "my-total-limit")
+		assert.Contains(t, childCtx.limiters, "my-simple-rate-limit")
+		assert.Contains(t, childCtx.limiters, "my-byterate-limit")
+
+	})
+
+	t.Run("child context should inherit all host resolutions of its parent", func(t *testing.T) {
+
+		ctx := NewContext(ContextConfig{
+			HostResolutions: map[Host]Value{
+				"ldb://db1": Path("/tmp/db1/"),
+			},
+		})
+
+		childCtx := ctx.BoundChild()
+
+		hostResolutions := childCtx.GetAllHostResolutionData()
+		if !assert.Len(t, hostResolutions, 1) {
+			return
+		}
+		assert.Contains(t, hostResolutions, Host("ldb://db1"))
+
+	})
+}
+
 func TestContextBuckets(t *testing.T) {
 
 	t.Run("buckets for limit of kind 'total' do not fill over time", func(t *testing.T) {

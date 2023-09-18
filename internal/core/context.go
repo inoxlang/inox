@@ -250,7 +250,8 @@ func NewContext(config ContextConfig) *Context {
 		}
 	}
 
-	hostResolutions := maps.Clone(config.HostResolutions)
+	hostResolutions := map[Host]Value{}
+	maps.Copy(hostResolutions, config.HostResolutions)
 	parentCtx := config.ParentContext
 
 	if parentCtx == nil {
@@ -635,7 +636,6 @@ func (ctx *Context) boundChild(opts BoundChildContextOptions) *Context {
 		Permissions:          ctx.grantedPermissions,
 		ForbiddenPermissions: ctx.forbiddenPermissions,
 		Limits:               ctx.limits,
-		HostResolutions:      ctx.hostResolutionData,
 		ParentContext:        ctx,
 
 		Filesystem: opts.Filesystem,
