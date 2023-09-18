@@ -6,6 +6,7 @@ import (
 	"log"
 	"math"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -123,6 +124,10 @@ type limiter struct {
 	parentLimiter        *limiter
 	stateId              StateId
 	pausedDecrementation bool
+
+	// prevent race condition when Destroy & DefinitelyStopDecrementation are called
+	// at the same time.
+	definitelyStopped atomic.Bool
 }
 
 func (l *limiter) SetStateOnce(id StateId) {
@@ -149,8 +154,9 @@ func (l *limiter) Child() *limiter {
 
 func (l *limiter) Destroy() {
 	if l.parentLimiter == nil {
+		l.definitelyStopped.Store(true)
 		l.bucket.Destroy()
-	} else if !l.pausedDecrementation {
+	} else if !l.definitelyStopped.CompareAndSwap(false, true) {
 		l.bucket.PauseOneStateDecrementation()
 	}
 }
@@ -195,6 +201,12 @@ func (l *limiter) PauseDecrementationIfNotPaused() {
 		return
 	}
 	l.PauseDecrementation()
+}
+
+func (l *limiter) DefinitelyStopDecrementation() {
+	if l.definitelyStopped.CompareAndSwap(false, true) {
+		l.bucket.PauseOneStateDecrementation()
+	}
 }
 
 func (l *limiter) ResumeDecrementation() {

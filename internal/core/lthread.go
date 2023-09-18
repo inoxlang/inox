@@ -216,7 +216,7 @@ func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 
 		//TODO: defer cancellation of context ? -> that could stop important pending operations
 
-		defer modState.Ctx.PauseCPUDecrementationIfNotPaused()
+		defer modState.Ctx.DefinitelyStopCPUDecrementation()
 
 		if args.UseBytecode {
 			res, err = EvalBytecode(lthread.bytecode, modState, args.Self)

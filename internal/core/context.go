@@ -824,6 +824,15 @@ func (ctx *Context) PauseCPUDecrementationIfNotPaused() error {
 	return fmt.Errorf("context: non existing limit '%s'", limitName)
 }
 
+func (ctx *Context) DefinitelyStopDecrementation(limitName string) error {
+	limiter, ok := ctx.limiters[limitName]
+	if ok {
+		limiter.DefinitelyStopDecrementation()
+		return nil
+	}
+	return fmt.Errorf("context: non existing limit '%s'", limitName)
+}
+
 func (ctx *Context) ResumeDecrementation(limitName string) error {
 	limiter, ok := ctx.limiters[limitName]
 	if ok {
@@ -837,12 +846,12 @@ func (ctx *Context) PauseCPUTimeDecrementation() error {
 	return ctx.PauseDecrementation(EXECUTION_CPU_TIME_LIMIT_NAME)
 }
 
-func (ctx *Context) TryPauseCPUTimeDecrementation() error {
-	return ctx.PauseDecrementation(EXECUTION_CPU_TIME_LIMIT_NAME)
-}
-
 func (ctx *Context) ResumeCPUTimeDecrementation() error {
 	return ctx.ResumeDecrementation(EXECUTION_CPU_TIME_LIMIT_NAME)
+}
+
+func (ctx *Context) DefinitelyStopCPUDecrementation() error {
+	return ctx.DefinitelyStopDecrementation(EXECUTION_CPU_TIME_LIMIT_NAME)
 }
 
 func (ctx *Context) DoIO(fn func() error) error {
