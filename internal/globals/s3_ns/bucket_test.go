@@ -40,7 +40,7 @@ func TestOpenBucket(t *testing.T) {
 			},
 		})
 		state := core.NewGlobalState(ctx)
-		state.Project = &testProject{}
+		state.Project = &testProject{id: core.RandomProjectID("test-open-bucket-no-options")}
 		state.MainState = state
 
 		bucket, err := OpenBucket(ctx, "s3://bucket", OpenBucketOptions{})
@@ -81,7 +81,7 @@ func TestOpenBucket(t *testing.T) {
 
 		bucket, err := OpenBucket(ctx, "s3://bucket", OpenBucketOptions{
 			AllowGettingCredentialsFromProject: true,
-			Project:                            &testProject{},
+			Project:                            &testProject{id: core.RandomProjectID("test-open-bucket-creds-from-project")},
 		})
 
 		if !assert.NoError(t, err) {
@@ -115,6 +115,11 @@ func TestOpenBucket(t *testing.T) {
 }
 
 type testProject struct {
+	id core.ProjectID
+}
+
+func (p *testProject) Id() core.ProjectID {
+	return p.id
 }
 
 func (*testProject) GetS3CredentialsForBucket(

@@ -146,23 +146,24 @@ type OpenBucketOptions struct {
 	Project core.Project
 }
 
-func OpenBucket(ctx *core.Context, s3Host core.Host, opts OpenBucketOptions) (*Bucket, error) {
+func OpenBucket(ctx *core.Context, host core.Host, opts OpenBucketOptions) (*Bucket, error) {
 
-	switch s3Host.Scheme() {
+	switch host.Scheme() {
 	case "https":
-		return openPublicBucket(ctx, s3Host, s3Host)
+		return openPublicBucket(ctx, host, "")
 	case "s3":
 	default:
 		return nil, ErrCannotResolveBucket
 	}
 
+	s3Host := host
 	data := ctx.GetHostResolutionData(s3Host)
 
 	switch d := data.(type) {
 	case core.Host:
 		switch d.Scheme() {
 		case "https":
-			return openPublicBucket(ctx, s3Host, d)
+			return openPublicBucket(ctx, d, s3Host)
 		}
 		return nil, ErrCannotResolveBucket
 	case core.URL:
@@ -264,7 +265,7 @@ func openInMemoryBucket(ctx *core.Context, s3Host core.Host, memURL core.URL) (*
 	return bucket, nil
 }
 
-func openPublicBucket(ctx *core.Context, s3Host core.Host, httpsHost core.Host) (*Bucket, error) {
+func openPublicBucket(ctx *core.Context, httpsHost core.Host, optionalS3Host core.Host) (*Bucket, error) {
 	_host := string(httpsHost)
 
 	openBucketMapLock.RLock()
@@ -286,7 +287,7 @@ func openPublicBucket(ctx *core.Context, s3Host core.Host, httpsHost core.Host) 
 	}
 
 	bucket := &Bucket{
-		s3Host: s3Host,
+		s3Host: optionalS3Host,
 		name:   subdomain,
 		client: &S3Client{libClient: s3Client},
 	}
