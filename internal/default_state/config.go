@@ -5,7 +5,6 @@ import (
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/project"
 
 	"io"
 )
@@ -31,7 +30,6 @@ type DefaultGlobalStateConfig struct {
 	EnvPattern          *core.ObjectPattern
 	PreinitFiles        core.PreinitFiles
 	AllowMissingEnvVars bool
-	Project             *project.Project
 
 	Out    io.Writer
 	LogOut io.Writer

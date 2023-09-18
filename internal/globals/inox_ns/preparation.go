@@ -170,7 +170,6 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 
 		EnvPattern:          manifest.EnvPattern,
 		PreinitFiles:        manifest.PreinitFiles,
-		Project:             args.Project,
 		AllowMissingEnvVars: args.AllowMissingEnvVars,
 		Out:                 out,
 		LogOut:              args.LogOut,
@@ -282,6 +281,26 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 				dbOpeningError = err
 			}
 		}
+	}
+
+	//add project-secrets global
+	if args.Project != nil {
+		secrets, err := args.Project.ListSecrets2(ctx)
+		if err != nil {
+			finalErr = fmt.Errorf("failed to create default global state: %w", err)
+			return
+		}
+
+		secretNames := make([]string, len(secrets))
+		secretValues := make([]core.Serializable, len(secrets))
+
+		for i, secret := range secrets {
+			secretNames[i] = secret.Name
+			secretValues[i] = secret.Value
+		}
+
+		record := core.NewRecordFromKeyValLists(secretNames, secretValues)
+		state.Globals.Set(default_state.PROJECT_SECRETS_GLOBAL_NAME, record)
 	}
 
 	//pass patterns & host aliases of the preinit state to the state
