@@ -16,6 +16,12 @@ type AssertNoMemoryLeakOptions struct {
 	// duration of sleep before collection of memory stats,
 	// defaults to defaultPreSleepDuration.
 	PreSleepDurationMillis uint8
+
+	// (optional) number of goroutines at the beginning,
+	// if set AssertNoMemoryLeak checks that the number of goroutines has not increased.
+	GoroutineCount int
+
+	MaxGoroutineCountDelta uint8
 }
 
 // AssertNoMemoryLeak checks that at most maxAllocDelta bytes have been allocated since the passed
@@ -39,6 +45,13 @@ func AssertNoMemoryLeak(t *testing.T, startStats *runtime.MemStats, maxAllocDelt
 
 	memStats := new(runtime.MemStats)
 	runtime.ReadMemStats(memStats)
+
+	if len(opts) > 0 && opts[0].GoroutineCount > 0 {
+		delta := runtime.NumGoroutine() - opts[0].GoroutineCount
+		if delta > int(opts[0].MaxGoroutineCountDelta) {
+			assert.FailNowf(t, "goroutine leaks", "%d goroutines leaking", delta)
+		}
+	}
 
 	if startStats.Alloc > memStats.Alloc {
 		return

@@ -112,6 +112,8 @@ func TestMutationCallbacks(t *testing.T) {
 		}
 
 		runtime.GC()
+		time.Sleep(100 * time.Millisecond)
+
 		assert.True(t, mutationCallbackPool.IsEmpty())
 
 		if testing.Verbose() {
