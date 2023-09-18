@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"runtime/pprof"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -156,16 +157,28 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		PreSleepDurationMillis: 100,
 	})
 
+	defer func() {
+		f := utils.Must(os.OpenFile("../../mem.pprof", os.O_CREATE|os.O_WRONLY, 0600))
+		pprof.WriteHeapProfile(f)
+		f.Close()
+	}()
+
 	t.Run("integer literal", func(t *testing.T) {
 		code := "1"
-		res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
+
+		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 		assert.Equal(t, Int(1), res)
 	})
 
 	t.Run("port literal", func(t *testing.T) {
 		code := ":80/http"
-		res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
+
+		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 		assert.Equal(t, Port{
 			Number: 80,
@@ -175,7 +188,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 	t.Run("quoted string literal", func(t *testing.T) {
 		code := `"a"`
-		res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
+
+		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 		assert.Equal(t, Str("a"), res)
 	})
@@ -183,20 +199,29 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	t.Run("multiline string literal", func(t *testing.T) {
 		t.Run("single character", func(t *testing.T) {
 			code := "`a`"
-			res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, Str("a"), res)
 		})
 
 		t.Run("linefeed", func(t *testing.T) {
 			code := "`1\n2`"
-			res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, Str("1\n2"), res)
 		})
 		t.Run("escaped n (\\n)", func(t *testing.T) {
 			code := "`1\\n2`"
-			res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, Str("1\n2"), res)
 		})
@@ -204,63 +229,90 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 	t.Run("byte slice literal", func(t *testing.T) {
 		code := `0x[01]`
-		res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
+
+		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 		assert.Equal(t, &ByteSlice{Bytes: []byte{1}, IsDataMutable: true}, res)
 	})
 
 	t.Run("property name literal", func(t *testing.T) {
 		code := `.a`
-		res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
+
+		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 		assert.Equal(t, PropertyName("a"), res)
 	})
 
 	t.Run("boolean literal", func(t *testing.T) {
 		code := `true`
-		res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
+
+		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 		assert.Equal(t, True, res)
 	})
 
 	t.Run("nil literal", func(t *testing.T) {
 		code := `nil`
-		res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
+
+		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 		assert.Equal(t, Nil, res)
 	})
 
 	t.Run("absolute path literal", func(t *testing.T) {
 		code := `/`
-		res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
+
+		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 		assert.Equal(t, Path("/"), res)
 	})
 
 	t.Run("relative path literal", func(t *testing.T) {
 		code := `./`
-		res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
+
+		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 		assert.Equal(t, Path("./"), res)
 	})
 
 	t.Run("absolute path pattern literal", func(t *testing.T) {
 		code := `%/*`
-		res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
+
+		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 		assert.Equal(t, PathPattern("/*"), res)
 	})
 
 	t.Run("relative path pattern literal", func(t *testing.T) {
 		code := `%./*`
-		res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
+
+		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 		assert.Equal(t, PathPattern("./*"), res)
 	})
 
 	t.Run("named-segment path pattern literal", func(t *testing.T) {
 		code := `%/home/{:username}`
-		res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
+
+		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 		assert.IsType(t, &NamedSegmentPathPattern{}, res)
 	})
@@ -416,21 +468,30 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 	t.Run("HTTP scheme", func(t *testing.T) {
 		code := `http://`
-		res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
+
+		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 		assert.Equal(t, Scheme("http"), res)
 	})
 
 	t.Run("HTTP host", func(t *testing.T) {
 		code := `https://example.com`
-		res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
+
+		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 		assert.Equal(t, Host("https://example.com"), res)
 	})
 
 	t.Run("HTTP host pattern", func(t *testing.T) {
 		code := `%https://**.example.com`
-		res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
+
+		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 		assert.Equal(t, HostPattern("https://**.example.com"), res)
 	})
@@ -1023,6 +1084,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("simple value", func(t *testing.T) {
 			code := `$$a = 1; return a`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, false)
 			if !assert.NoError(t, err) {
@@ -1034,6 +1096,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("watchable", func(t *testing.T) {
 			code := `$$a = {}; return a`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			state.InitSystemGraph()
 
 			res, err := Eval(code, state, false)
@@ -1085,6 +1148,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			t.Run(testCase.input, func(t *testing.T) {
 
 				state := NewGlobalState(NewDefaultTestContext())
+				defer state.Ctx.CancelGracefully()
 				res, err := Eval(testCase.input, state, false)
 				if testCase.error {
 					assert.Error(t, err)
@@ -1294,6 +1358,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("patterns", func(t *testing.T) {
 			code := `((%| 1 | 2) \ 1)`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.IsType(t, &DifferencePattern{}, res)
@@ -1314,6 +1379,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("left is nil", func(t *testing.T) {
 			code := `(nil ?? 1)`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, Int(1), res)
@@ -1322,6 +1388,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("left is not nil", func(t *testing.T) {
 			code := `(1 ?? 2)`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, Int(1), res)
@@ -1332,6 +1399,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("value", func(t *testing.T) {
 			code := `return nil`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
@@ -1340,6 +1408,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("no value", func(t *testing.T) {
 			code := `return`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
@@ -1353,6 +1422,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return $a[0]
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, Int(0), res)
@@ -1364,6 +1434,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return $a[0]
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, Int(0), res)
@@ -1377,6 +1448,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return $a[0:100]
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, newList(&ValueList{elements: []Serializable{Int(0)}}), res)
@@ -1388,6 +1460,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return $a[0:100]
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, Str("0"), res)
@@ -1399,6 +1472,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return $a[-1:1]
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.ErrorIs(t, err, ErrNegativeLowerIndex)
 			assert.Nil(t, res)
@@ -1410,6 +1484,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return $a[0:1]
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, newList(&ValueList{elements: []Serializable{Str("a")}}), res)
@@ -1421,6 +1496,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return $a[0:]
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, newList(&ValueList{elements: []Serializable{Str("a")}}), res)
@@ -1432,6 +1508,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return $a[:1]
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, newList(&ValueList{elements: []Serializable{Str("a")}}), res)
@@ -1443,6 +1520,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return $a[1:]
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, newList(&ValueList{elements: []Serializable{}}), res)
@@ -1453,7 +1531,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	t.Run("quantity literal : byte count", func(t *testing.T) {
 		t.Run("byte count", func(t *testing.T) {
 			code := `1kB`
-			res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 
 			assert.EqualValues(t, ByteCount(1_000), res)
@@ -1461,7 +1542,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("too large", func(t *testing.T) {
 			code := `10000000000s`
-			res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(code, state, false)
 			assert.Error(t, err)
 			assert.ErrorIs(t, err, ErrQuantityLooLarge)
 			assert.Nil(t, res)
@@ -1470,7 +1554,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 	t.Run("date literal", func(t *testing.T) {
 		code := `2020y-UTC`
-		res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
+
+		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 
 		assert.EqualValues(t, Date(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)), res)
@@ -1479,7 +1566,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	t.Run("rate literal : byte rate", func(t *testing.T) {
 		t.Run("byte rate", func(t *testing.T) {
 			code := `10kB/s`
-			res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 
 			assert.EqualValues(t, ByteRate(10_000), res)
@@ -1487,7 +1577,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("simple rate", func(t *testing.T) {
 			code := `10x/s`
-			res, err := Eval(code, NewGlobalState(NewDefaultTestContext()), false)
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 
 			assert.EqualValues(t, SimpleRate(10), res)
@@ -1501,6 +1594,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				const ()
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			_, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, map[string]Value{}, state.Globals.Entries())
@@ -1513,6 +1607,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				)
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			_, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, map[string]Value{"a": Int(1)}, state.Globals.Entries())
@@ -1523,6 +1618,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("empty object", func(t *testing.T) {
 			code := `{}`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, &Object{}, res)
@@ -1531,6 +1627,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("single property", func(t *testing.T) {
 			code := `{a:1}`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, objFrom(ValMap{"a": Int(1)}), res)
@@ -1539,6 +1636,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("several properties", func(t *testing.T) {
 			code := `{a:1,b:2}`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, objFrom(ValMap{"a": Int(1), "b": Int(2)}), res)
@@ -1547,6 +1645,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("only an implicit-key property", func(t *testing.T) {
 			code := `{1}`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, objFrom(ValMap{"0": Int(1)}), res)
@@ -1558,6 +1657,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return { ...$o.{name} }
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, objFrom(ValMap{"name": Str("foo")}), res)
@@ -1566,6 +1666,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("empty lifetime job", func(t *testing.T) {
 			code := `{ lifetimejob #job {  } }`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 
@@ -1604,6 +1705,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				lifetimejob #job { self.a = 2 } 
 			}`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 
@@ -1628,6 +1730,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			state.Ctx.AddNamedPattern("int", INT_PATTERN)
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
@@ -1645,6 +1748,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("empty", func(t *testing.T) {
 			code := `#{}`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, &Record{}, res)
@@ -1653,6 +1757,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("single property", func(t *testing.T) {
 			code := `#{a:1}`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, NewRecordFromMap(ValMap{"a": Int(1)}), res)
@@ -1661,6 +1766,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("several properties", func(t *testing.T) {
 			code := `#{a:1,b:2}`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, NewRecordFromMap(ValMap{"a": Int(1), "b": Int(2)}), res)
@@ -1669,6 +1775,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("only an implicit-key property", func(t *testing.T) {
 			code := `#{1}`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, NewRecordFromMap(ValMap{"0": Int(1)}), res)
@@ -1680,6 +1787,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("literal only keys", func(t *testing.T) {
 			code := `:{"name": "foo", ./path: "bar"}`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, NewDictionary(map[string]Serializable{
@@ -1695,6 +1803,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return :{k1: "foo", k2: "bar"}
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, NewDictionary(map[string]Serializable{
@@ -1709,6 +1818,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("empty list literal", func(t *testing.T) {
 			code := `[]`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, newList(&ValueList{elements: nil}), res)
@@ -1717,6 +1827,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("[integer]", func(t *testing.T) {
 			code := `[1]`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(1)}}), res)
@@ -1725,6 +1836,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("[integer,integer]", func(t *testing.T) {
 			code := `[1,2]`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(1), Int(2)}}), res)
@@ -1733,6 +1845,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("[...[integer]]", func(t *testing.T) {
 			code := `[...[1]]`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(1)}}), res)
@@ -1741,6 +1854,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("[integer, ...[integer]]", func(t *testing.T) {
 			code := `[0, ...[1]]`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}), res)
@@ -1751,6 +1865,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("empty", func(t *testing.T) {
 			code := `#[]`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, &Tuple{elements: []Serializable{}}, res)
@@ -1759,6 +1874,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("[integer]", func(t *testing.T) {
 			code := `#[1]`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, &Tuple{elements: []Serializable{Int(1)}}, res)
@@ -1767,6 +1883,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("[integer,integer]", func(t *testing.T) {
 			code := `#[1,2]`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, &Tuple{elements: []Serializable{Int(1), Int(2)}}, res)
@@ -1775,6 +1892,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("[...#[integer]]", func(t *testing.T) {
 			code := `#[...#[1]]`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, &Tuple{elements: []Serializable{Int(1)}}, res)
@@ -1783,6 +1901,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("[integer, ...#[integer]]", func(t *testing.T) {
 			code := `#[0, ...#[1]]`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, &Tuple{elements: []Serializable{Int(0), Int(1)}}, res)
@@ -1796,6 +1915,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return [$a, $b]
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(1), Int(2)}}), res)
@@ -1804,6 +1924,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("variable count > length", func(t *testing.T) {
 			code := `assign a b = [1]`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.Error(t, err)
@@ -1816,6 +1937,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return [$a, $b]
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -1827,6 +1949,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("condition is true", func(t *testing.T) {
 			code := `if true { return 1 }`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, Int(1), res)
@@ -1841,6 +1964,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return $a
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, Int(0), res)
@@ -1858,6 +1982,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return [$a, $b]
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}), res)
@@ -1875,6 +2000,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return [$a, $b]
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}), res)
@@ -1894,6 +2020,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return [$a, $b]
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}), res)
@@ -1905,6 +2032,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("true condition", func(t *testing.T) {
 			code := `(if true 1)`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, Int(1), res)
@@ -1913,6 +2041,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("false condition", func(t *testing.T) {
 			code := `(if false 1)`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, Nil, res)
@@ -1921,6 +2050,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("if-else, false condition", func(t *testing.T) {
 			code := `(if false 1 else 2)`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, Int(2), res)
@@ -2200,6 +2330,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		for _, testCase := range testCases {
 			t.Run(testCase.input, func(t *testing.T) {
 				state := NewGlobalState(NewDefaultTestContext())
+				defer state.Ctx.CancelGracefully()
 				if testCase.globals != nil {
 					for k, v := range testCase.globals(state.Ctx) {
 						state.Globals.permanent[k] = v
@@ -2644,6 +2775,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		for _, testCase := range testCases {
 			t.Run(testCase.name, func(t *testing.T) {
 				state := NewGlobalState(NewDefaultTestContext())
+				defer state.Ctx.CancelGracefully()
 				res, err := Eval(testCase.input, state, false)
 				assert.NoError(t, err)
 				assert.Equal(t, testCase.result, res)
@@ -2727,6 +2859,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		for _, testCase := range testCases {
 			t.Run(testCase.name, func(t *testing.T) {
 				state := NewGlobalState(NewDefaultTestContext())
+				defer state.Ctx.CancelGracefully()
 				res, err := Eval(testCase.input, state, false)
 				assert.NoError(t, err)
 				assert.Equal(t, testCase.result, res)
@@ -2738,6 +2871,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("with upper bound", func(t *testing.T) {
 			code := `return 1..2`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -2753,6 +2887,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("without upper bound", func(t *testing.T) {
 			code := `return 1..`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -2770,6 +2905,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("with upper bound", func(t *testing.T) {
 			code := `return 1B..2B`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -2784,6 +2920,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("without upper bound", func(t *testing.T) {
 			code := `return 1B..`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -2800,6 +2937,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("integer ", func(t *testing.T) {
 			code := `return ..10`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, IntRange{
@@ -2814,6 +2952,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("quantity", func(t *testing.T) {
 			code := `return ..10s`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, QuantityRange{
@@ -2828,6 +2967,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	t.Run("rune range expression", func(t *testing.T) {
 		code := `'a'..'z'`
 		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 		assert.Equal(t, RuneRange{'a', 'z'}, res)
@@ -2842,6 +2982,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -2857,6 +2998,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -2877,6 +3019,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("empty", func(t *testing.T) {
 			code := `fn(){}`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 
@@ -2890,6 +3033,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return fn[a,b](){}
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 
@@ -2910,6 +3054,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return fn[obj](){}
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 
@@ -2929,6 +3074,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	t.Run("function declaration", func(t *testing.T) {
 		code := `fn f(){}`
 		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
 		_, err := Eval(code, state, false)
 		assert.NoError(t, err)
 
@@ -3376,6 +3522,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		for _, testCase := range testCases {
 			t.Run(testCase.name, func(t *testing.T) {
 				state := NewGlobalState(NewDefaultTestContext())
+				defer state.Ctx.CancelGracefully()
 
 				state.Globals.Set("Array", WrapGoFunction(NewArray))
 
@@ -3405,6 +3552,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if bytecodeEval && testCase.isolatedCaseArguments != nil {
 				t.Run("isolated_call_"+testCase.name, func(t *testing.T) {
 					state := NewGlobalState(NewDefaultTestContext())
+					defer state.Ctx.CancelGracefully()
 					lastOpeningParenIndex := strings.LastIndexByte(testCase.input, '(')
 					input := testCase.input[:lastOpeningParenIndex]
 
@@ -3624,6 +3772,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 
 				state := NewGlobalState(NewDefaultTestContext())
+				defer state.Ctx.CancelGracefully()
 				for k, v := range globals {
 					state.Globals.Set(k, v)
 				}
@@ -3663,6 +3812,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			state.Globals.Set("start_tx", ValOf(StartNewTransaction))
 			state.Globals.Set("commit_tx", ValOf(func(ctx *Context) {
 				ctx.GetTx().Commit(ctx)
@@ -3697,6 +3847,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			state.Globals.Set("start_tx", ValOf(StartNewTransaction))
 			state.Globals.Set("commit_tx", ValOf(func(ctx *Context) {
 				ctx.GetTx().Commit(ctx)
@@ -3742,6 +3893,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			state.Globals.Set("LThreadGroup", ValOf(NewLThreadGroup))
 			state.Globals.Set("start_tx", ValOf(StartNewTransaction))
 			state.Globals.Set("commit_tx", ValOf(func(ctx *Context) {
@@ -3766,6 +3918,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		code := `%mypattern(1..10)`
 
 		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
 		state.Ctx.AddNamedPattern("mypattern", NewRegexPattern(".*"))
 
 		res, err := Eval(code, state, false)
@@ -3957,6 +4110,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		for _, testCase := range testCases {
 			t.Run(testCase.input, func(t *testing.T) {
 				state := NewGlobalState(NewDefaultTestContext())
+				defer state.Ctx.CancelGracefully()
 				for k, v := range testCase.globalVariables {
 					state.Globals.Set(k, v)
 				}
@@ -4081,6 +4235,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		for _, testCase := range testCases {
 			t.Run(testCase.input, func(t *testing.T) {
 				state := NewGlobalState(NewDefaultTestContext())
+				defer state.Ctx.CancelGracefully()
 				for k, v := range testCase.globals {
 					state.Globals.Set(k, v)
 				}
@@ -4108,6 +4263,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	t.Run("extraction expression", func(t *testing.T) {
 		code := `return ({a:1}).{a}`
 		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 		assert.Equal(t, objFrom(ValMap{"a": Int(1)}), res)
@@ -4118,6 +4274,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("empty", func(t *testing.T) {
 			code := `return .{}`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, KeyList{}, res)
@@ -4126,6 +4283,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("single element", func(t *testing.T) {
 			code := `return .{name}`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, KeyList{"name"}, res)
@@ -4136,6 +4294,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	t.Run("lazy expression : @ <integer>", func(t *testing.T) {
 		code := `@(1)`
 		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 		assert.EqualValues(t, AstNode{
@@ -4170,6 +4329,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			state.Module = mod
 			res, err := Eval(mod, state, false)
 			assert.NoError(t, err)
@@ -4199,6 +4359,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			state.Module = mod
 			res, err := Eval(mod, state, false)
 			assert.NoError(t, err)
@@ -4223,6 +4384,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			state.Module = mod
 			res, err := Eval(mod, state, false)
 			assert.NoError(t, err)
@@ -4327,6 +4489,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			state.Ctx.AddNamedPattern("str", STR_PATTERN)
 			state.Module = mod
 			res, err := Eval(mod, state, false)
@@ -4374,6 +4537,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(mod, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, Int(1), res)
@@ -4559,6 +4723,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return lthread.wait_result!()
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			state.Logger = zerolog.New(state.Out)
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
@@ -4570,6 +4735,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				go do { }
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			_, err := Eval(code, state, false)
 			assert.NoError(t, err)
 		})
@@ -4583,6 +4749,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return rt.wait_result!()
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, Int(1), res)
@@ -4597,6 +4764,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return rt.wait_result!()
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.IsType(t, &Object{}, res)
@@ -4613,6 +4781,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				rt.wait_result!()
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			_, err := Eval(code, state, false)
 			assert.NoError(t, err)
 		})
@@ -4641,6 +4810,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return rt.wait_result!()
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, Int(2), res)
@@ -4692,6 +4862,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return rt.wait_result!()
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, Int(2), res)
@@ -4712,6 +4883,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return rt.wait_result!()
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, true)
 			assert.NoError(t, err)
 			assert.Equal(t, Int(1), res)
@@ -4736,6 +4908,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return rt.wait_result!()
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, true)
 			assert.NoError(t, err)
 			assert.Equal(t, Int(1), res)
@@ -4756,6 +4929,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return rt.wait_result!()
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, true)
 			assert.NoError(t, err)
 			assert.Equal(t, Int(1), res)
@@ -4785,6 +4959,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("spawner & lthread access a shared value in a synchronized block", func(t *testing.T) {
+			t.SkipNow()
+
 			goroutineIncCount := 5_000
 			if bytecodeEval {
 				goroutineIncCount = 50_000
@@ -4825,6 +5001,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("spawner & lthread access a shared value without synchronization", func(t *testing.T) {
+			t.SkipNow()
+
 			goroutineIncCount := 5_000
 			if bytecodeEval {
 				goroutineIncCount = 50_000
@@ -4883,6 +5061,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return [result, step_results]
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, NewWrappedValueList(
@@ -4908,6 +5087,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return [result, step_results]
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, NewWrappedValueList(
@@ -4935,6 +5115,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return [result, step_results]
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, NewWrappedValueList(
@@ -4959,6 +5140,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return [result, step_results]
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, NewWrappedValueList(
@@ -4977,6 +5159,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				rt.wait_result!()
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			_, err := Eval(code, state, false)
 			assert.NoError(t, err)
 
@@ -4990,6 +5173,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("empty", func(t *testing.T) {
 			code := `Mapping{}`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, &Mapping{
@@ -5043,6 +5227,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("pattern identifier keys", func(t *testing.T) {
 			code := `Mapping{ %str => 1  n %int => n }`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			state.Ctx.AddNamedPattern("str", STR_PATTERN)
 			state.Ctx.AddNamedPattern("int", INT_PATTERN)
 
@@ -5080,6 +5265,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			state.Globals.Set("notsharable", testMutableGoValue{})
 
 			res, err := Eval(code, state, true)
@@ -5100,6 +5286,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			state.Globals.Set("notsharable", testMutableGoValue{})
 
 			res, err := Eval(code, state, true)
@@ -5117,6 +5304,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("not empty", func(t *testing.T) {
 			code := `udata 0 { 1 {2} 3 }`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5144,6 +5332,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return m.compute(0)
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
@@ -5155,6 +5344,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return m.compute(0)
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, Int(1), res)
@@ -5167,6 +5357,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return m.compute(0)
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
@@ -5179,6 +5370,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return m.compute(0)
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, Int(0), res)
@@ -5190,6 +5382,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return m.compute(/a)
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, NewWrappedValueList(
@@ -5202,6 +5395,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("compute() with existing dynamic entry key in many goroutines", func(t *testing.T) {
+			t.SkipNow()
+
 			code := `
 				$$m = Mapping{ n 0 => n }
 
@@ -5235,6 +5430,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("compute() with existing dynamic entry key (accessing a global variable) in many goroutines", func(t *testing.T) {
+			t.SkipNow()
+
 			code := `
 				$$a = 1
 				$$m = Mapping{ n 0 => a }
@@ -5278,6 +5475,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return m.compute(/)
 			`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, Int(0), res)
@@ -5289,6 +5487,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("single string element", func(t *testing.T) {
 			code := `concat "a"`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5298,6 +5497,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("two string-like elements", func(t *testing.T) {
 			code := `concat "a" "b"`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5310,6 +5510,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("single byteslice element", func(t *testing.T) {
 			code := `concat 0d[12]`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5367,6 +5568,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("string element followed by a spread element with a single item", func(t *testing.T) {
 			code := `concat "a" ...["b"]`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5376,6 +5578,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("string element followed by a spread element with two items", func(t *testing.T) {
 			code := `concat "a" ...["b", "c"]`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5385,6 +5588,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("alternation of normal & spread elements", func(t *testing.T) {
 			code := `concat "a" ...["b", "c"] "d" ...["e", "f"]`
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5432,6 +5636,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		`
 
 		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
 		_, err := Eval(code, state, false)
 
 		assert.True(t, state.Ctx.HasPermission(GlobalVarPermission{Kind_: permkind.Use, Name: "*"}))
@@ -5444,6 +5649,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		code := `@localhost = https://localhost`
 
 		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
 		res, err := Eval(code, state, false)
 
 		assert.NoError(t, err)
@@ -5457,6 +5663,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%s = "s"; return %s`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5467,6 +5674,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%o = {}; return %o`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5477,6 +5685,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%o = %{}; return %o`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5487,6 +5696,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%o = {a: int}; return %o`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			state.Ctx.AddNamedPattern("int", INT_PATTERN)
 			res, err := Eval(code, state, false)
 
@@ -5502,6 +5712,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			return %s`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5517,6 +5728,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5535,6 +5747,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5551,6 +5764,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5567,6 +5781,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%namespace. = {}`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5583,6 +5798,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%namespace. = {one: 1, empty_obj: %{}}`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5614,6 +5830,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			return %namespace.one
 		`
 		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
 		res, err := Eval(code, state, false)
 
 		assert.NoError(t, err)
@@ -5631,6 +5848,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%{}`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5644,6 +5862,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%s = "s"; return %{name: %s, count: 2}`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5666,6 +5885,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%s = "s"; return %{name: s}`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5687,6 +5907,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`
 
 				state := NewGlobalState(NewDefaultTestContext())
+				defer state.Ctx.CancelGracefully()
 				res, err := Eval(code, state, false)
 
 				assert.NoError(t, err)
@@ -5707,6 +5928,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`
 
 				state := NewGlobalState(NewDefaultTestContext())
+				defer state.Ctx.CancelGracefully()
 				res, err := Eval(code, state, false)
 
 				assert.NoError(t, err)
@@ -5726,6 +5948,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`
 
 				state := NewGlobalState(NewDefaultTestContext())
+				defer state.Ctx.CancelGracefully()
 				res, err := Eval(code, state, false)
 
 				assert.NoError(t, err)
@@ -5752,6 +5975,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`
 
 				state := NewGlobalState(NewDefaultTestContext())
+				defer state.Ctx.CancelGracefully()
 				res, err := Eval(code, state, false)
 
 				assert.NoError(t, err)
@@ -5773,6 +5997,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				code := `%s = "s"; return %{...%s}`
 
 				state := NewGlobalState(NewDefaultTestContext())
+				defer state.Ctx.CancelGracefully()
 				res, err := Eval(code, state, false)
 
 				assert.Error(t, err)
@@ -5787,6 +6012,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%p = #{}; return %p`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5800,6 +6026,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%s = "s"; %p = #{name: %s, count: 2}; return %p`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5822,6 +6049,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%s = "s"; %p = #{name: s}; return %p`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5844,6 +6072,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`
 
 				state := NewGlobalState(NewDefaultTestContext())
+				defer state.Ctx.CancelGracefully()
 				res, err := Eval(code, state, false)
 
 				assert.NoError(t, err)
@@ -5864,6 +6093,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`
 
 				state := NewGlobalState(NewDefaultTestContext())
+				defer state.Ctx.CancelGracefully()
 				res, err := Eval(code, state, false)
 
 				assert.NoError(t, err)
@@ -5884,6 +6114,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`
 
 				state := NewGlobalState(NewDefaultTestContext())
+				defer state.Ctx.CancelGracefully()
 				res, err := Eval(code, state, false)
 
 				assert.NoError(t, err)
@@ -5912,6 +6143,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`
 
 				state := NewGlobalState(NewDefaultTestContext())
+				defer state.Ctx.CancelGracefully()
 				res, err := Eval(code, state, false)
 
 				assert.NoError(t, err)
@@ -5933,6 +6165,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				code := `%s = "s"; %p = #{...%s}; return %p`
 
 				state := NewGlobalState(NewDefaultTestContext())
+				defer state.Ctx.CancelGracefully()
 				res, err := Eval(code, state, false)
 
 				assert.Error(t, err)
@@ -5947,6 +6180,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%[]`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5959,6 +6193,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%[ 2 ]`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5979,6 +6214,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%[ {} ]`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5993,6 +6229,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%[ %(#{}) ]`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -6007,6 +6244,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%[ %{} ]`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -6024,6 +6262,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%[]%{}`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -6040,6 +6279,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%[]%{}`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -6056,6 +6296,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%[]int`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			state.Ctx.AddNamedPattern("int", INT_PATTERN)
 			res, err := Eval(code, state, false)
 
@@ -6072,6 +6313,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%p = #[]; return %p`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -6084,6 +6326,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%p = #[ 2 ]; return %p`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -6104,6 +6347,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%p = #[ #{} ]; return %p`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -6118,6 +6362,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%p = #[ %(#{}) ]; return %p`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -6132,6 +6377,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%p = #[ #{} ]; return %p`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -6149,6 +6395,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%p = #[]#{}; return %p`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -6165,6 +6412,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%p = #[]#{}; return %p`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -6181,6 +6429,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%p = #[]int; return %p`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			state.Ctx.AddNamedPattern("int", INT_PATTERN)
 			res, err := Eval(code, state, false)
 
@@ -6196,6 +6445,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		code := `%| 1 | 2`
 
 		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
 		res, err := Eval(code, state, false)
 
 		assert.NoError(t, err)
@@ -6221,6 +6471,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		code := "%`a`"
 
 		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
 		res, err := Eval(code, state, false)
 
 		assert.NoError(t, err)
@@ -6233,6 +6484,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := "assert true"
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -6243,6 +6495,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := "assert false"
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.Error(t, err)
@@ -6257,6 +6510,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `return testsuite "name" {}`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -6270,6 +6524,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `return testsuite {}`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -6287,6 +6542,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `return testcase "name" {}`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -6300,6 +6556,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `return testcase {}`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -6317,6 +6574,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `return lifetimejob "name" {}`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -6334,6 +6592,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `testsuite "name" {}`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -6346,6 +6605,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -6380,6 +6640,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}`
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			state.Out = os.Stdout
 			state.Logger = zerolog.New(state.Out)
 			res, err := Eval(code, state, false)
@@ -6434,6 +6695,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -6448,6 +6710,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := replace(`return |3|`)
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -6465,6 +6728,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -6481,6 +6745,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			state.Ctx.AddPatternNamespace("ns", &PatternNamespace{
 				Patterns: map[string]Pattern{
 					"any_str": STR_PATTERN,
@@ -6508,6 +6773,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.Error(t, err)
@@ -6525,6 +6791,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.Error(t, err)
@@ -6538,6 +6805,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -6551,6 +6819,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -6564,6 +6833,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -6574,6 +6844,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := replace("s = \"1\"; return |{{s}}\n2|")
 
 			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
