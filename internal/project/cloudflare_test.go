@@ -11,7 +11,7 @@ import (
 )
 
 func TestCreateS3CredentialsForSingleBucket(t *testing.T) {
-	projectId := ProjectID("test-s3-creds-single-bucket")
+	projectId := core.ProjectID("test-s3-creds-single-bucket")
 
 	if cloudflareConfig.AdditionalTokensApiToken == "" {
 		t.Skip()

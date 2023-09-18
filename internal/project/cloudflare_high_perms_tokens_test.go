@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,7 +19,7 @@ var (
 )
 
 func TestGetUpToDateTempCloudflareTokens(t *testing.T) {
-	projectId := ProjectID("test-temp-cf-tokens")
+	projectId := core.ProjectID("test-temp-cf-tokens")
 
 	if cloudflareConfig.AdditionalTokensApiToken == "" {
 		t.Skip()
@@ -113,7 +114,7 @@ func TestGetUpToDateTempCloudflareTokens(t *testing.T) {
 	}
 }
 
-func deleteTestRelatedTokens(t *testing.T, ctx context.Context, api *cloudflare.API, projectId ProjectID) {
+func deleteTestRelatedTokens(t *testing.T, ctx context.Context, api *cloudflare.API, projectId core.ProjectID) {
 	apiTokens, err := api.APITokens(ctx)
 	if err != nil {
 		assert.Fail(t, err.Error())
