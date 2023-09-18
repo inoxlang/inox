@@ -1,6 +1,7 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -12,6 +13,10 @@ const (
 	TOKEN_BUCKET_CAPACITY_SCALE           = int64(time.Second / TOKEN_BUCKET_MANAGEMENT_TICK_INTERVAL)
 
 	MAX_WAIT_CHAN_COUNT = 1000
+)
+
+var (
+	ErrDestroyedTokenBucket = errors.New("token bucket is destroyed")
 )
 
 func init() {
@@ -35,6 +40,8 @@ type tokenBucket struct {
 	neededTokenList []ScaledTokenCount
 
 	cancelContextOnNegativeCount bool
+	shouldBeDestroyed            bool
+	destroyed                    bool
 }
 
 type ScaledTokenCount int64
@@ -99,6 +106,18 @@ func (tb *tokenBucket) Available() int64 {
 	return tb.available.RealCount()
 }
 
+func (tb *tokenBucket) assertNotDestroyed() {
+	tb.lock.Lock()
+	defer tb.lock.Unlock()
+
+	tb.assertNotDestroyedNoLock()
+}
+func (tb *tokenBucket) assertNotDestroyedNoLock() {
+	if tb.destroyed || tb.shouldBeDestroyed {
+		panic(fmt.Errorf("%w: ", ErrDestroyedTokenBucket))
+	}
+}
+
 // TryTake trys to task specified count tokens from the bucket. if there are
 // not enough tokens in the bucket, it will return false.
 func (tb *tokenBucket) TryTake(count int64) bool {
@@ -116,6 +135,8 @@ func (tb *tokenBucket) Take(count int64) {
 func (tb *tokenBucket) GiveBack(count int64) {
 	tb.lock.Lock()
 	defer tb.lock.Unlock()
+
+	tb.assertNotDestroyedNoLock()
 
 	tb.available += ScaledTokenCount(count * TOKEN_BUCKET_CAPACITY_SCALE)
 	tb.available = min(tb.capacity, tb.available)
@@ -154,6 +175,8 @@ func (tb *tokenBucket) tryTake(need, use ScaledTokenCount) bool {
 	tb.lock.Lock()
 	defer tb.lock.Unlock()
 
+	tb.assertNotDestroyedNoLock()
+
 	if need <= tb.available {
 		tb.available -= use
 
@@ -165,11 +188,14 @@ func (tb *tokenBucket) tryTake(need, use ScaledTokenCount) bool {
 
 func (tb *tokenBucket) addWaitChannel(need ScaledTokenCount) chan (struct{}) {
 	var channel chan (struct{})
-	if len(waitChanPool) == 0 {
+
+	select {
+	case chanFromPool := <-waitChanPool:
+		channel = chanFromPool
+	default:
 		channel = make(chan struct{}, 1)
-	} else {
-		channel = <-waitChanPool
 	}
+
 	tb.chanListLock.Lock()
 	tb.waitChans = append(tb.waitChans, channel)
 	tb.neededTokenList = append(tb.neededTokenList, need)
@@ -208,11 +234,9 @@ func (tb *tokenBucket) waitAndTakeMaxDuration(need, use int64, max time.Duration
 }
 
 func (tb *tokenBucket) Destroy() {
-	tokenBucketsLock.Lock()
-	defer tokenBucketsLock.Unlock()
-	delete(tokenBuckets, tb)
-
-	//TODO: make sure the token bucket is collected & recycle its waiting channels
+	tb.lock.Lock()
+	defer tb.lock.Unlock()
+	tb.shouldBeDestroyed = true
 }
 
 func (tb *tokenBucket) checkCount(count ScaledTokenCount) {
@@ -260,6 +284,29 @@ func startTokenBucketManagerGoroutine() {
 			tb.chanListLock.Lock()
 			defer tb.chanListLock.Unlock()
 
+			if tb.shouldBeDestroyed {
+				tb.shouldBeDestroyed = false
+				tb.destroyed = true
+				delete(tokenBuckets, tb)
+
+				// resume all waiting goroutines
+				// TODO: make sure this could not be used to bypass momentarily the limits.
+				for _, waitChan := range tb.waitChans {
+					select {
+					case waitChan <- struct{}{}:
+					default:
+					}
+
+					// put back the wait channel in the pool if possible
+					select {
+					case waitChanPool <- waitChan:
+					default:
+						close(waitChan)
+					}
+				}
+				return
+			}
+
 			for len(tb.waitChans) >= 1 { // if at least one goroutine is waiting for the bucket to refill
 				waitChan := tb.waitChans[len(tb.waitChans)-1]
 				neededCount := tb.neededTokenList[len(tb.waitChans)-1]
@@ -270,9 +317,18 @@ func startTokenBucketManagerGoroutine() {
 					tb.neededTokenList = tb.neededTokenList[:newLength]
 
 					tb.available -= neededCount
-					waitChan <- struct{}{} //resume the waiting goroutine
-					if len(waitChanPool) < cap(waitChanPool) {
-						waitChanPool <- waitChan
+
+					//resume the waiting goroutine
+					select {
+					case waitChan <- struct{}{}:
+					default:
+					}
+
+					// put back the wait channel in the pool if possible
+					select {
+					case waitChanPool <- waitChan:
+					default:
+						close(waitChan)
 					}
 				} else {
 					break

@@ -3,17 +3,32 @@ package core
 import (
 	"context"
 	"errors"
+	"runtime"
 	"testing"
 	"time"
 
 	permkind "github.com/inoxlang/inox/internal/permkind"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewContext(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 100, utils.AssertNoMemoryLeakOptions{
+			PreSleepDurationMillis: 100,
+			CheckGoroutines:        true,
+			GoroutineCount:         runtime.NumGoroutine(),
+			MaxGoroutineCountDelta: 0,
+		})
+	}
+
 	t.Run("child context should inherit all limits of its parent", func(t *testing.T) {
 
-		ctx := NewContext(ContextConfig{
+		ctx := NewContexWithEmptyState(ContextConfig{
 			Limits: []Limit{
 				{
 					Name:  "my-total-limit",
@@ -34,7 +49,8 @@ func TestNewContext(t *testing.T) {
 					Value: 100,
 				},
 			},
-		})
+		}, nil)
+		defer ctx.CancelGracefully()
 
 		childCtx := NewContext(ContextConfig{
 			Limits: []Limit{
@@ -59,7 +75,7 @@ func TestNewContext(t *testing.T) {
 
 	t.Run("limits of child context should not be less restrictive than its parent's limits", func(t *testing.T) {
 
-		ctx := NewContext(ContextConfig{
+		ctx := NewContexWithEmptyState(ContextConfig{
 			Limits: []Limit{
 				{
 					Name:  "my-total-limit",
@@ -67,7 +83,8 @@ func TestNewContext(t *testing.T) {
 					Value: 100,
 				},
 			},
-		})
+		}, nil)
+		defer ctx.CancelGracefully()
 
 		func() {
 
@@ -94,11 +111,12 @@ func TestNewContext(t *testing.T) {
 
 	t.Run("child context should inherit all host resolutions of its parent", func(t *testing.T) {
 
-		ctx := NewContext(ContextConfig{
+		ctx := NewContexWithEmptyState(ContextConfig{
 			HostResolutions: map[Host]Value{
 				"ldb://db1": Path("/tmp/db1/"),
 			},
-		})
+		}, nil)
+		defer ctx.CancelGracefully()
 
 		childCtx := NewContext(ContextConfig{
 			HostResolutions: map[Host]Value{
@@ -118,11 +136,12 @@ func TestNewContext(t *testing.T) {
 
 	t.Run("a panic is expected if the child context overrides one if its parent's hosts", func(t *testing.T) {
 
-		ctx := NewContext(ContextConfig{
+		ctx := NewContexWithEmptyState(ContextConfig{
 			HostResolutions: map[Host]Value{
 				"ldb://db1": Path("/tmp/db1/"),
 			},
-		})
+		}, nil)
+		defer ctx.CancelGracefully()
 
 		func() {
 			defer func() {
@@ -144,9 +163,22 @@ func TestNewContext(t *testing.T) {
 }
 
 func TestBoundChild(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 100, utils.AssertNoMemoryLeakOptions{
+			PreSleepDurationMillis: 100,
+			CheckGoroutines:        true,
+			GoroutineCount:         runtime.NumGoroutine(),
+			MaxGoroutineCountDelta: 0,
+		})
+	}
+
 	t.Run("child context should inherit all limits of its parent", func(t *testing.T) {
 
-		ctx := NewContext(ContextConfig{
+		ctx := NewContexWithEmptyState(ContextConfig{
 			Limits: []Limit{
 				{
 					Name:  "my-total-limit",
@@ -167,7 +199,8 @@ func TestBoundChild(t *testing.T) {
 					Value: 100,
 				},
 			},
-		})
+		}, nil)
+		defer ctx.CancelGracefully()
 
 		childCtx := ctx.BoundChild()
 
@@ -182,11 +215,12 @@ func TestBoundChild(t *testing.T) {
 
 	t.Run("child context should inherit all host resolutions of its parent", func(t *testing.T) {
 
-		ctx := NewContext(ContextConfig{
+		ctx := NewContexWithEmptyState(ContextConfig{
 			HostResolutions: map[Host]Value{
 				"ldb://db1": Path("/tmp/db1/"),
 			},
-		})
+		}, nil)
+		defer ctx.CancelGracefully()
 
 		childCtx := ctx.BoundChild()
 
@@ -200,12 +234,25 @@ func TestBoundChild(t *testing.T) {
 }
 
 func TestContextBuckets(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 100, utils.AssertNoMemoryLeakOptions{
+			PreSleepDurationMillis: 100,
+			CheckGoroutines:        true,
+			GoroutineCount:         runtime.NumGoroutine(),
+			MaxGoroutineCountDelta: 0,
+		})
+	}
 
 	t.Run("buckets for limit of kind 'total' do not fill over time", func(t *testing.T) {
 		const LIMIT_NAME = "foo"
-		ctx := NewContext(ContextConfig{
+		ctx := NewContexWithEmptyState(ContextConfig{
 			Limits: []Limit{{Name: LIMIT_NAME, Kind: TotalLimit, Value: 1}},
-		})
+		}, nil)
+		defer ctx.CancelGracefully()
 
 		ctx.Take(LIMIT_NAME, 1)
 
@@ -263,10 +310,11 @@ func TestContextForbiddenPermissions(t *testing.T) {
 	readGoFiles := FilesystemPermission{permkind.Read, PathPattern("./*.go")}
 	readFile := FilesystemPermission{permkind.Read, Path("./file.go")}
 
-	ctx := NewContext(ContextConfig{
+	ctx := NewContexWithEmptyState(ContextConfig{
 		Permissions:          []Permission{readGoFiles},
 		ForbiddenPermissions: []Permission{readFile},
-	})
+	}, nil)
+	defer ctx.CancelGracefully()
 
 	assert.True(t, ctx.HasPermission(readGoFiles))
 	assert.False(t, ctx.HasPermission(readFile))
@@ -276,10 +324,11 @@ func TestContextDropPermissions(t *testing.T) {
 	readGoFiles := FilesystemPermission{permkind.Read, PathPattern("./*.go")}
 	readFile := FilesystemPermission{permkind.Read, Path("./file.go")}
 
-	ctx := NewContext(ContextConfig{
+	ctx := NewContexWithEmptyState(ContextConfig{
 		Permissions:          []Permission{readGoFiles},
 		ForbiddenPermissions: []Permission{readFile},
-	})
+	}, nil)
+	defer ctx.CancelGracefully()
 
 	ctx.DropPermissions([]Permission{readGoFiles})
 
@@ -288,13 +337,26 @@ func TestContextDropPermissions(t *testing.T) {
 }
 
 func TestContextLimiters(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 100, utils.AssertNoMemoryLeakOptions{
+			PreSleepDurationMillis: 100,
+			CheckGoroutines:        true,
+			GoroutineCount:         runtime.NumGoroutine(),
+			MaxGoroutineCountDelta: 0,
+		})
+	}
 
 	t.Run("byte rate", func(t *testing.T) {
-		ctx := NewContext(ContextConfig{
+		ctx := NewContexWithEmptyState(ContextConfig{
 			Limits: []Limit{
 				{Name: "fs/read", Kind: ByteRateLimit, Value: 1_000},
 			},
-		})
+		}, nil)
+		defer ctx.CancelGracefully()
 
 		start := time.Now()
 
@@ -311,12 +373,13 @@ func TestContextLimiters(t *testing.T) {
 		assert.WithinDuration(t, expectedTime, time.Now(), 200*time.Millisecond)
 	})
 
-	t.Run("byte rate: waiting for bucket to refill should not lock the context", func(t *testing.T) {
-		ctx := NewContext(ContextConfig{
+	t.Run("waiting for bucket to refill should not lock the context", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{
 			Limits: []Limit{
 				{Name: "fs/read", Kind: ByteRateLimit, Value: 1_000},
 			},
-		})
+		}, nil)
+		defer ctx.CancelGracefully()
 
 		//BYTE RATE
 
@@ -324,11 +387,14 @@ func TestContextLimiters(t *testing.T) {
 		ctx.Take("fs/read", 1_000)
 
 		signal := make(chan struct{}, 1)
+		done := make(chan struct{}, 1)
 
 		go func() {
 			signal <- struct{}{}
 			//should cause a wait
 			ctx.Take("fs/read", 1_000)
+			//wait for bucket should stop when token buckets are destroyed
+			done <- struct{}{}
 		}()
 
 		<-signal
@@ -340,14 +406,24 @@ func TestContextLimiters(t *testing.T) {
 		ctx.lock.Unlock()
 
 		assert.Less(t, time.Since(start), time.Millisecond)
+
+		ctx.CancelGracefully()
+		//token buckets should be destroyed a litte afterwards by the done goroutine
+
+		select {
+		case <-done:
+		case <-time.After(100 * time.Millisecond):
+			assert.FailNow(t, "timeout")
+		}
 	})
 
 	t.Run("simple rate", func(t *testing.T) {
-		ctx := NewContext(ContextConfig{
+		ctx := NewContexWithEmptyState(ContextConfig{
 			Limits: []Limit{
 				{Name: "fs/read-file", Kind: SimpleRateLimit, Value: 1},
 			},
-		})
+		}, nil)
+		defer ctx.CancelGracefully()
 
 		start := time.Now()
 		expectedTime := start.Add(time.Second)
@@ -361,11 +437,12 @@ func TestContextLimiters(t *testing.T) {
 	})
 
 	t.Run("total", func(t *testing.T) {
-		ctx := NewContext(ContextConfig{
+		ctx := NewContexWithEmptyState(ContextConfig{
 			Limits: []Limit{
 				{Name: "fs/total-read-file", Kind: TotalLimit, Value: 1},
 			},
-		})
+		}, nil)
+		defer ctx.CancelGracefully()
 
 		ctx.Take("fs/total-read-file", 1)
 
@@ -387,6 +464,7 @@ func TestContextLimiters(t *testing.T) {
 				},
 			},
 		})
+		defer ctx.CancelGracefully()
 		NewGlobalState(ctx) //start decrementation
 
 		capacity := int64(time.Second)
@@ -409,6 +487,7 @@ func TestContextLimiters(t *testing.T) {
 				},
 			},
 		})
+		defer ctx.CancelGracefully()
 		NewGlobalState(ctx) //start decrementation
 
 		capacity := int64(time.Second)
@@ -424,11 +503,13 @@ func TestContextLimiters(t *testing.T) {
 	})
 
 	t.Run("child should share limiters of common limits with parent", func(t *testing.T) {
-		parentCtx := NewContext(ContextConfig{
+		parentCtx := NewContexWithEmptyState(ContextConfig{
 			Limits: []Limit{
 				{Name: "fs/read", Kind: ByteRateLimit, Value: 1_000},
 			},
-		})
+		}, nil)
+		defer parentCtx.CancelGracefully()
+
 		ctx := NewContext(ContextConfig{
 			Limits: []Limit{
 				{Name: "fs/read", Kind: ByteRateLimit, Value: 1_000},
@@ -459,6 +540,18 @@ func TestContextSetProtocolClientForURLForURL(t *testing.T) {
 }
 
 func TestContextGracefulTearDownTasks(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 100, utils.AssertNoMemoryLeakOptions{
+			PreSleepDurationMillis: 100,
+			CheckGoroutines:        true,
+			GoroutineCount:         runtime.NumGoroutine(),
+			MaxGoroutineCountDelta: 0,
+		})
+	}
 
 	t.Run("callback functions should all be called", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
@@ -547,6 +640,18 @@ func TestContextGracefulTearDownTasks(t *testing.T) {
 }
 
 func TestContextDoneMicrotasks(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 100, utils.AssertNoMemoryLeakOptions{
+			PreSleepDurationMillis: 100,
+			CheckGoroutines:        true,
+			GoroutineCount:         runtime.NumGoroutine(),
+			MaxGoroutineCountDelta: 0,
+		})
+	}
 
 	t.Run("callback functions should all be called", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
