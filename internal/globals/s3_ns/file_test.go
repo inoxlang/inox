@@ -12,6 +12,10 @@ import (
 )
 
 func TestS3WriteFileSeek(t *testing.T) {
+	if S3_FS_TEST_ACCESS_KEY == "" {
+		t.Skip("skip s3WriteFile tests because " + S3_FS_TEST_ACCESS_KEY_ENV_VARNAME + " environment variable is not set")
+		return
+	}
 
 	setup := func(ctx *core.Context) (*s3WriteFile, *Bucket) {
 		bucket, err := OpenBucketWithCredentials(ctx,
@@ -49,11 +53,6 @@ func TestS3WriteFileSeek(t *testing.T) {
 	}
 
 	t.Run("Seek should be thread safe", func(t *testing.T) {
-		if S3_FS_TEST_ACCESS_KEY == "" {
-			t.Skip("skip s3WriteFile tests because " + S3_FS_TEST_ACCESS_KEY_ENV_VARNAME + " environment variable is not set")
-			return
-		}
-
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
