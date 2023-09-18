@@ -13,6 +13,10 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+var (
+	ErrFailedToListSecrets = errors.New("failed to list secrets")
+)
+
 type ProjectSecret struct {
 	Name          string
 	LastModifDate time.Time
@@ -27,7 +31,7 @@ type ProjectSecretInfo struct {
 func (p *Project) ListSecrets(ctx *core.Context) (info []ProjectSecretInfo, _ error) {
 	bucket, err := p.getCreateSecretsBucket(ctx, false)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list secrets: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrFailedToListSecrets, err)
 	}
 
 	if bucket == nil {
@@ -36,7 +40,7 @@ func (p *Project) ListSecrets(ctx *core.Context) (info []ProjectSecretInfo, _ er
 
 	objects, err := bucket.ListObjects(ctx, "")
 	if err != nil {
-		return nil, fmt.Errorf("failed to list secrets: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrFailedToListSecrets, err)
 	}
 	return utils.MapSlice(objects, func(o *s3_ns.ObjectInfo) ProjectSecretInfo {
 		return ProjectSecretInfo{
@@ -49,7 +53,7 @@ func (p *Project) ListSecrets(ctx *core.Context) (info []ProjectSecretInfo, _ er
 func (p *Project) ListSecrets2(ctx *core.Context) (secrets []ProjectSecret, _ error) {
 	bucket, err := p.getCreateSecretsBucket(ctx, false)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list secrets: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrFailedToListSecrets, err)
 	}
 
 	if bucket == nil {
@@ -58,7 +62,7 @@ func (p *Project) ListSecrets2(ctx *core.Context) (secrets []ProjectSecret, _ er
 
 	objects, err := bucket.ListObjects(ctx, "")
 	if err != nil {
-		return nil, fmt.Errorf("failed to list secrets: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrFailedToListSecrets, err)
 	}
 
 	wg := new(sync.WaitGroup)
