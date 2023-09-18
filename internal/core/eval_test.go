@@ -4959,8 +4959,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("spawner & lthread access a shared value in a synchronized block", func(t *testing.T) {
-			t.SkipNow()
-
 			goroutineIncCount := 5_000
 			if bytecodeEval {
 				goroutineIncCount = 50_000
@@ -4987,7 +4985,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				rt.wait_result!()
 				return shared.a
 			`, "<count>", strconv.Itoa(goroutineIncCount))
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+
+			state := NewGlobalState(ctx, map[string]Value{
 				"sleep": ValOf(func(ctx *Context) {
 					time.Sleep(time.Millisecond)
 				}),
@@ -5001,8 +5003,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("spawner & lthread access a shared value without synchronization", func(t *testing.T) {
-			t.SkipNow()
-
 			goroutineIncCount := 5_000
 			if bytecodeEval {
 				goroutineIncCount = 50_000
@@ -5024,7 +5024,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 				rt.wait_result!()
 			`, "<count>", strconv.Itoa(goroutineIncCount))
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+
+			state := NewGlobalState(ctx, map[string]Value{
 				"sleep": ValOf(func(ctx *Context) {
 					time.Sleep(time.Millisecond)
 				}),
@@ -5116,6 +5120,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
+
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, NewWrappedValueList(
@@ -5141,6 +5146,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
+
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, NewWrappedValueList(
@@ -5174,6 +5180,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `Mapping{}`
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
+
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, &Mapping{
@@ -5198,6 +5205,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return -1
 				}),
 			})
+			defer state.Ctx.CancelGracefully()
+
 			res, err := Eval(code, state, false)
 			mod := parse.MustParseChunk(code)
 
@@ -5228,6 +5237,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `Mapping{ %str => 1  n %int => n }`
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
+
 			state.Ctx.AddNamedPattern("str", STR_PATTERN)
 			state.Ctx.AddNamedPattern("int", INT_PATTERN)
 
@@ -5333,6 +5343,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
+
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
@@ -5345,6 +5356,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
+
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, Int(1), res)
@@ -5371,6 +5383,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
+
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, Int(0), res)
@@ -5383,6 +5396,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
+
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, NewWrappedValueList(
@@ -5395,8 +5409,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("compute() with existing dynamic entry key in many goroutines", func(t *testing.T) {
-			t.SkipNow()
-
 			code := `
 				$$m = Mapping{ n 0 => n }
 
@@ -5430,8 +5442,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("compute() with existing dynamic entry key (accessing a global variable) in many goroutines", func(t *testing.T) {
-			t.SkipNow()
-
 			code := `
 				$$a = 1
 				$$m = Mapping{ n 0 => a }
@@ -5476,6 +5486,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
+
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, Int(0), res)
@@ -5488,6 +5499,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `concat "a"`
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
+
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5498,6 +5510,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `concat "a" "b"`
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
+
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5511,6 +5524,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `concat 0d[12]`
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
+
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5569,6 +5583,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `concat "a" ...["b"]`
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
+
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5579,6 +5594,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `concat "a" ...["b", "c"]`
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
+
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5589,6 +5605,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `concat "a" ...["b", "c"] "d" ...["e", "f"]`
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
+
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
