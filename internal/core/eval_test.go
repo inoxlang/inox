@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"runtime/pprof"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -156,12 +155,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	defer utils.AssertNoMemoryLeak(t, startMemStats, 100_000, utils.AssertNoMemoryLeakOptions{
 		PreSleepDurationMillis: 100,
 	})
-
-	defer func() {
-		f := utils.Must(os.OpenFile("../../mem.pprof", os.O_CREATE|os.O_WRONLY, 0600))
-		pprof.WriteHeapProfile(f)
-		f.Close()
-	}()
 
 	t.Run("integer literal", func(t *testing.T) {
 		code := "1"
@@ -4959,6 +4952,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("spawner & lthread access a shared value in a synchronized block", func(t *testing.T) {
+			{
+				runtime.GC()
+				startMemStats := new(runtime.MemStats)
+				runtime.ReadMemStats(startMemStats)
+
+				defer utils.AssertNoMemoryLeak(t, startMemStats, 100_000, utils.AssertNoMemoryLeakOptions{
+					PreSleepDurationMillis: 100,
+				})
+			}
+
 			goroutineIncCount := 5_000
 			if bytecodeEval {
 				goroutineIncCount = 50_000
@@ -5003,6 +5006,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("spawner & lthread access a shared value without synchronization", func(t *testing.T) {
+			{
+				runtime.GC()
+				startMemStats := new(runtime.MemStats)
+				runtime.ReadMemStats(startMemStats)
+
+				defer utils.AssertNoMemoryLeak(t, startMemStats, 100_000, utils.AssertNoMemoryLeakOptions{
+					PreSleepDurationMillis: 100,
+				})
+			}
+
 			goroutineIncCount := 5_000
 			if bytecodeEval {
 				goroutineIncCount = 50_000
@@ -5409,6 +5422,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("compute() with existing dynamic entry key in many goroutines", func(t *testing.T) {
+			runtime.GC()
+			startMemStats := new(runtime.MemStats)
+			runtime.ReadMemStats(startMemStats)
+
+			defer utils.AssertNoMemoryLeak(t, startMemStats, 100_000, utils.AssertNoMemoryLeakOptions{
+				PreSleepDurationMillis: 100,
+			})
+
 			code := `
 				$$m = Mapping{ n 0 => n }
 
@@ -5422,7 +5443,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 				return group.wait_results!()
 			`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+
+			state := NewGlobalState(ctx, map[string]Value{
 				"LThreadGroup": WrapGoFunction(NewLThreadGroup),
 			})
 			state.Out = os.Stdout
@@ -5442,6 +5466,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("compute() with existing dynamic entry key (accessing a global variable) in many goroutines", func(t *testing.T) {
+			runtime.GC()
+			startMemStats := new(runtime.MemStats)
+			runtime.ReadMemStats(startMemStats)
+
+			defer utils.AssertNoMemoryLeak(t, startMemStats, 100_000, utils.AssertNoMemoryLeakOptions{
+				PreSleepDurationMillis: 100,
+			})
+
 			code := `
 				$$a = 1
 				$$m = Mapping{ n 0 => a }
@@ -5456,7 +5488,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 				return group.wait_results!()
 			`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+
+			state := NewGlobalState(ctx, map[string]Value{
 				"LThreadGroup": WrapGoFunction(NewLThreadGroup),
 			})
 
