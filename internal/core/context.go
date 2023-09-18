@@ -651,34 +651,6 @@ func (ctx *Context) boundChild(opts BoundChildContextOptions) *Context {
 	return child
 }
 
-// ChildWithout creates a new Context with the permissions passed as argument removed.
-// The limiters are shared between the two contexts.
-func (ctx *Context) ChildWithout(removedPerms []Permission) (*Context, error) {
-	ctx.lock.RLock()
-	defer ctx.lock.RUnlock()
-	ctx.assertNotDone()
-
-	var perms []Permission
-	var forbiddenPerms []Permission
-
-top:
-	for _, perm := range ctx.grantedPermissions {
-		for _, removedPerm := range removedPerms {
-			if removedPerm.Includes(perm) {
-				continue top
-			}
-		}
-
-		perms = append(perms, perm)
-	}
-
-	return NewContext(ContextConfig{
-		Permissions:          perms,
-		ForbiddenPermissions: forbiddenPerms,
-		ParentContext:        ctx,
-	}), nil
-}
-
 // New creates a new context with the same permissions, limits, host data, patterns, aliases & protocol clients,
 // if the context has no parent the token counts are copied, the new context does not "share" data with the older context.
 func (ctx *Context) New() *Context {

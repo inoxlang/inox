@@ -547,3 +547,18 @@ func (perm SystemGraphAccessPermission) Includes(otherPerm Permission) bool {
 	otherSysGraphPerm, ok := otherPerm.(SystemGraphAccessPermission)
 	return ok && perm.Kind_.Includes(otherSysGraphPerm.Kind_)
 }
+
+func RemovePerms(grantedPerms, removedPerms []Permission) (remainingPerms []Permission) {
+top:
+	for _, perm := range grantedPerms {
+		for _, removedPerm := range removedPerms {
+			if removedPerm.Includes(perm) {
+				continue top
+			}
+		}
+
+		remainingPerms = append(remainingPerms, perm)
+	}
+
+	return
+}

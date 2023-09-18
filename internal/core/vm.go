@@ -1990,12 +1990,14 @@ func (v *VM) run() {
 					ParentContext:        v.global.Ctx,
 				})
 			} else {
-				newCtx, err := v.global.Ctx.ChildWithout(IMPLICITLY_REMOVED_ROUTINE_PERMS)
-				if err != nil {
-					v.err = fmt.Errorf("spawn expression: new context: %w", err)
-					return
-				}
-				ctx = newCtx
+				removedPerms := IMPLICITLY_REMOVED_ROUTINE_PERMS
+				remainingPerms := RemovePerms(v.global.Ctx.GetGrantedPermissions(), IMPLICITLY_REMOVED_ROUTINE_PERMS)
+
+				ctx = NewContext(ContextConfig{
+					ParentContext:        v.global.Ctx,
+					Permissions:          remainingPerms,
+					ForbiddenPermissions: removedPerms,
+				})
 			}
 
 			lthread, err := SpawnLThread(LthreadSpawnArgs{

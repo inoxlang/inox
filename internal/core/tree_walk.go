@@ -1152,11 +1152,14 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				ParentContext:        state.Global.Ctx,
 			})
 		} else {
-			newCtx, err := state.Global.Ctx.ChildWithout(IMPLICITLY_REMOVED_ROUTINE_PERMS)
-			if err != nil {
-				return nil, fmt.Errorf("spawn expression: new context: %s", err.Error())
-			}
-			ctx = newCtx
+			removedPerms := IMPLICITLY_REMOVED_ROUTINE_PERMS
+			remainingPerms := RemovePerms(state.Global.Ctx.GetGrantedPermissions(), IMPLICITLY_REMOVED_ROUTINE_PERMS)
+
+			ctx = NewContext(ContextConfig{
+				ParentContext:        state.Global.Ctx,
+				Permissions:          remainingPerms,
+				ForbiddenPermissions: removedPerms,
+			})
 		}
 
 		parsedChunk := &parse.ParsedChunk{
