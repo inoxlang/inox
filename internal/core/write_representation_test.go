@@ -13,39 +13,46 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TODO: move into tests
-var reprTestCtx = NewContext(ContextConfig{})
-var reptTestState = NewGlobalState(reprTestCtx)
-
 func TestNilRepresentation(t *testing.T) {
+	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
 
-	assert.Equal(t, "nil", getRepr(t, Nil, reprTestCtx))
+	assert.Equal(t, "nil", getRepr(t, Nil, ctx))
 	node := assertParseExpression(t, "nil")
 	assert.Equal(t, Nil, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
 }
 
 func TestBoolRepresentation(t *testing.T) {
+	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
 
-	assert.Equal(t, "true", getRepr(t, True, reprTestCtx))
+	assert.Equal(t, "true", getRepr(t, True, ctx))
 	node := assertParseExpression(t, "true")
 	assert.Equal(t, True, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
 }
 
 func TestRuneRepresentation(t *testing.T) {
+	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
 
-	assert.Equal(t, "'a'", getRepr(t, Rune('a'), reprTestCtx))
+	assert.Equal(t, "'a'", getRepr(t, Rune('a'), ctx))
 	node := assertParseExpression(t, "'a'")
 	assert.Equal(t, Rune('a'), utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
 }
 
 func TestIntRepresentation(t *testing.T) {
+	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
 
-	assert.Equal(t, "2", getRepr(t, Int(2), reprTestCtx))
+	assert.Equal(t, "2", getRepr(t, Int(2), ctx))
 	node := assertParseExpression(t, "2")
 	assert.Equal(t, Int(2), utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
 }
 
 func TestFloatRepresentation(t *testing.T) {
+	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
+
 	testCases := []struct {
 		value          Float
 		representation string
@@ -60,7 +67,7 @@ func TestFloatRepresentation(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
 
-			repr := getRepr(t, testCase.value, reprTestCtx)
+			repr := getRepr(t, testCase.value, ctx)
 			assert.Equal(t, testCase.representation, repr)
 
 			node := assertParseExpression(t, repr)
@@ -70,19 +77,25 @@ func TestFloatRepresentation(t *testing.T) {
 }
 
 func TestStrRepresentation(t *testing.T) {
+	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
+
 	s := Str("a\nb")
 
 	expectedRepr := `"a\nb"`
-	assert.Equal(t, expectedRepr, getRepr(t, s, reprTestCtx))
+	assert.Equal(t, expectedRepr, getRepr(t, s, ctx))
 	node := assertParseExpression(t, expectedRepr)
 	assert.Equal(t, s, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
 }
 
 func TestObjectRepresentation(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		obj := &Object{}
 
-		assert.Equal(t, `{}`, getRepr(t, obj, reprTestCtx))
+		assert.Equal(t, `{}`, getRepr(t, obj, ctx))
 		node := assertParseExpression(t, `{}`)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -90,10 +103,13 @@ func TestObjectRepresentation(t *testing.T) {
 	})
 
 	t.Run("single key", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		obj := objFrom(ValMap{"a\nb": Int(1)})
 
 		expectedRepr := `{"a\nb":1}`
-		assert.Equal(t, expectedRepr, getRepr(t, obj, reprTestCtx))
+		assert.Equal(t, expectedRepr, getRepr(t, obj, ctx))
 		node := assertParseExpression(t, expectedRepr)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -101,10 +117,13 @@ func TestObjectRepresentation(t *testing.T) {
 	})
 
 	t.Run("two keys", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		obj := objFrom(ValMap{"a\nb": Int(1), "c\nd": Int(2)})
 
 		expectedRepr := `{"a\nb":1,"c\nd":2}`
-		repr := getRepr(t, obj, reprTestCtx)
+		repr := getRepr(t, obj, ctx)
 		if repr[2] == 'c' {
 			expectedRepr = `{"c\nd":2,"a\nb":1}`
 		}
@@ -116,12 +135,15 @@ func TestObjectRepresentation(t *testing.T) {
 	})
 
 	t.Run("deep", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		obj := objFrom(ValMap{
 			"a": NewWrappedValueList(Int(1), objFrom(ValMap{"b": Int(2)})),
 		})
 
 		expectedRepr := `{"a":[1,{"b":2}]}`
-		assert.Equal(t, expectedRepr, getRepr(t, obj, reprTestCtx))
+		assert.Equal(t, expectedRepr, getRepr(t, obj, ctx))
 		node := assertParseExpression(t, expectedRepr)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -129,12 +151,17 @@ func TestObjectRepresentation(t *testing.T) {
 	})
 
 	t.Run("cycle", func(t *testing.T) {
-		obj := &Object{}
-		obj.SetProp(reprTestCtx, "self", obj)
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
+		obj := &Object{}
+		obj.SetProp(ctx, "self", obj)
 	})
 
 	t.Run("sensitive properties", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		obj := objFrom(ValMap{
 			"a":        Int(1),
 			"password": Str("mypassword"),
@@ -143,12 +170,15 @@ func TestObjectRepresentation(t *testing.T) {
 
 		expectedRepr := `{"a":1}`
 
-		assert.Equal(t, expectedRepr, getRepr(t, obj, reprTestCtx, &ReprConfig{
+		assert.Equal(t, expectedRepr, getRepr(t, obj, ctx, &ReprConfig{
 			AllVisible: false,
 		}))
 	})
 
 	t.Run("sensitive properties: config with .allVisible == true", func(t *testing.T) {
+		reprTestCtx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer reprTestCtx.CancelGracefully()
+
 		obj := objFrom(ValMap{
 			"a":        Int(1),
 			"password": Str("mypassword"),
@@ -163,6 +193,9 @@ func TestObjectRepresentation(t *testing.T) {
 	})
 
 	t.Run("sensitive properties: value visibility with all keys to public", func(t *testing.T) {
+		reprTestCtx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer reprTestCtx.CancelGracefully()
+
 		obj := objFrom(ValMap{
 			"a":        Int(1),
 			"password": Str("mypassword"),
@@ -182,10 +215,15 @@ func TestObjectRepresentation(t *testing.T) {
 
 	t.Run("id", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		obj := objFrom(ValMap{})
 
 		url := URL("https://example.com/objects/98484")
 		utils.PanicIfErr(obj.SetURLOnce(ctx, url))
+
+		reprTestCtx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer reprTestCtx.CancelGracefully()
 
 		expectedRepr := `{"_url_":` + string(url) + "}"
 		assert.Equal(t, expectedRepr, getRepr(t, obj, reprTestCtx))
@@ -197,9 +235,12 @@ func TestObjectRepresentation(t *testing.T) {
 
 func TestRecordRepresentation(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		rec := NewRecordFromMap(nil)
 
-		assert.Equal(t, `#{}`, getRepr(t, rec, reprTestCtx))
+		assert.Equal(t, `#{}`, getRepr(t, rec, ctx))
 		node := assertParseExpression(t, `#{}`)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -207,10 +248,16 @@ func TestRecordRepresentation(t *testing.T) {
 	})
 
 	t.Run("single key", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		rec := NewRecordFromMap(ValMap{"a\nb": Int(1)})
 
+		reprTestCtx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer reprTestCtx.CancelGracefully()
+
 		expectedRepr := `#{"a\nb":1}`
-		assert.Equal(t, expectedRepr, getRepr(t, rec, reprTestCtx))
+		assert.Equal(t, expectedRepr, getRepr(t, rec, ctx))
 		node := assertParseExpression(t, expectedRepr)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -220,8 +267,11 @@ func TestRecordRepresentation(t *testing.T) {
 	t.Run("two keys", func(t *testing.T) {
 		rec := NewRecordFromMap(ValMap{"a\nb": Int(1), "c\nd": Int(2)})
 
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		expectedRepr := `#{"a\nb":1,"c\nd":2}`
-		repr := getRepr(t, rec, reprTestCtx)
+		repr := getRepr(t, rec, ctx)
 		if repr[2] == 'c' {
 			expectedRepr = `#{"c\nd":2,"a\nb":1}`
 		}
@@ -239,8 +289,11 @@ func TestRecordRepresentation(t *testing.T) {
 			},
 		})
 
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		expectedRepr := `#{"a":#[1,#{"b":2}]}`
-		assert.Equal(t, expectedRepr, getRepr(t, rec, reprTestCtx))
+		assert.Equal(t, expectedRepr, getRepr(t, rec, ctx))
 		node := assertParseExpression(t, expectedRepr)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -248,6 +301,9 @@ func TestRecordRepresentation(t *testing.T) {
 	})
 
 	t.Run("sensitive properties", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		rec := NewRecordFromMap(ValMap{
 			"a":        Int(1),
 			"password": Str("mypassword"),
@@ -256,7 +312,7 @@ func TestRecordRepresentation(t *testing.T) {
 
 		expectedRepr := `#{"a":1}`
 
-		assert.Equal(t, expectedRepr, getRepr(t, rec, reprTestCtx, &ReprConfig{
+		assert.Equal(t, expectedRepr, getRepr(t, rec, ctx, &ReprConfig{
 			AllVisible: false,
 		}))
 	})
@@ -265,9 +321,12 @@ func TestRecordRepresentation(t *testing.T) {
 
 func TestDictRepresentation(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		dict := NewDictionary(nil)
 
-		assert.Equal(t, `:{}`, getRepr(t, dict, reprTestCtx))
+		assert.Equal(t, `:{}`, getRepr(t, dict, ctx))
 		node := assertParseExpression(t, ":{}")
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -275,10 +334,13 @@ func TestDictRepresentation(t *testing.T) {
 	})
 
 	t.Run("single string key", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		dict := NewDictionary(map[string]Serializable{"\"a\\nb\"": Int(1)})
 
 		expectedRepr := `:{"a\nb":1}`
-		assert.Equal(t, expectedRepr, getRepr(t, dict, reprTestCtx))
+		assert.Equal(t, expectedRepr, getRepr(t, dict, ctx))
 		node := assertParseExpression(t, expectedRepr)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -286,9 +348,12 @@ func TestDictRepresentation(t *testing.T) {
 	})
 
 	t.Run("two keys: one string & a path", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		dict := NewDictionary(map[string]Serializable{"\"a\\nb\"": Int(1), "./path": Int(2)})
 
-		repr := getRepr(t, dict, reprTestCtx)
+		repr := getRepr(t, dict, ctx)
 		var expectedRepr = `:{"a\nb":1,./path:2}`
 		if repr[2] == '.' {
 			expectedRepr = `:{./path:2,"a\nb":1}`
@@ -305,15 +370,17 @@ func TestDictRepresentation(t *testing.T) {
 		dict := NewDictionary(nil)
 		dict.entries["self"] = dict
 		dict.keys["self"] = Str("self")
-
 	})
 }
 
 func TestKeyListRepresentation(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		list := KeyList{}
 
-		assert.Equal(t, `.{}`, getRepr(t, list, reprTestCtx))
+		assert.Equal(t, `.{}`, getRepr(t, list, ctx))
 		node := assertParseExpression(t, `.{}`)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -321,10 +388,13 @@ func TestKeyListRepresentation(t *testing.T) {
 	})
 
 	t.Run("single key", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		list := KeyList{"a"}
 
 		expectedRepr := `.{a}`
-		assert.Equal(t, expectedRepr, getRepr(t, list, reprTestCtx))
+		assert.Equal(t, expectedRepr, getRepr(t, list, ctx))
 		node := assertParseExpression(t, expectedRepr)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -332,10 +402,13 @@ func TestKeyListRepresentation(t *testing.T) {
 	})
 
 	t.Run("two keys: one string & a path", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		list := KeyList{"a", "b"}
 
 		expectedRepr := `.{a,b}`
-		assert.Equal(t, expectedRepr, getRepr(t, list, reprTestCtx))
+		assert.Equal(t, expectedRepr, getRepr(t, list, ctx))
 		node := assertParseExpression(t, expectedRepr)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -346,10 +419,13 @@ func TestKeyListRepresentation(t *testing.T) {
 
 func TestListRepresentation(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		list := NewWrappedValueList()
 
 		expectedRepr := `[]`
-		assert.Equal(t, expectedRepr, getRepr(t, list, reprTestCtx))
+		assert.Equal(t, expectedRepr, getRepr(t, list, ctx))
 		node := assertParseExpression(t, expectedRepr)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -357,10 +433,13 @@ func TestListRepresentation(t *testing.T) {
 	})
 
 	t.Run("single element", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		list := NewWrappedValueList(Int(2))
 
 		expectedRepr := `[2]`
-		assert.Equal(t, expectedRepr, getRepr(t, list, reprTestCtx))
+		assert.Equal(t, expectedRepr, getRepr(t, list, ctx))
 		node := assertParseExpression(t, expectedRepr)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -368,6 +447,9 @@ func TestListRepresentation(t *testing.T) {
 	})
 
 	t.Run("two elements", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		list := NewWrappedValueList(Int(2), Path("./path"))
 
 		expectedRepr := `[2,./path]`
@@ -378,10 +460,13 @@ func TestListRepresentation(t *testing.T) {
 	})
 
 	t.Run("deep", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		list := NewWrappedValueList(NewWrappedValueList(Int(2), objFrom(ValMap{"a": Int(1)})))
 
 		expectedRepr := `[[2,{"a":1}]]`
-		assert.Equal(t, expectedRepr, getRepr(t, list, reprTestCtx))
+		assert.Equal(t, expectedRepr, getRepr(t, list, ctx))
 		node := assertParseExpression(t, expectedRepr)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -398,9 +483,12 @@ func TestListRepresentation(t *testing.T) {
 
 func TestObjectPatternRepresentation(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		patt := NewInexactObjectPattern(map[string]Pattern{})
 
-		assert.Equal(t, `%{}`, getRepr(t, patt, reprTestCtx))
+		assert.Equal(t, `%{}`, getRepr(t, patt, ctx))
 		node := assertParseExpression(t, `%{}`)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -408,12 +496,15 @@ func TestObjectPatternRepresentation(t *testing.T) {
 	})
 
 	t.Run("single key", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		patt := NewInexactObjectPattern(map[string]Pattern{
 			"a\nb": NewExactValuePattern(Int(1)),
 		})
 
 		expectedRepr := `%{"a\nb":%(1)}`
-		assert.Equal(t, expectedRepr, getRepr(t, patt, reprTestCtx))
+		assert.Equal(t, expectedRepr, getRepr(t, patt, ctx))
 		node := assertParseExpression(t, expectedRepr)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -421,13 +512,16 @@ func TestObjectPatternRepresentation(t *testing.T) {
 	})
 
 	t.Run("two keys", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		patt := NewInexactObjectPattern(map[string]Pattern{
 			"a\nb": NewExactValuePattern(Int(1)),
 			"c\nd": NewInexactObjectPattern(map[string]Pattern{}),
 		})
 
 		expectedRepr := `%{"a\nb":%(1),"c\nd":%{}}`
-		repr := getRepr(t, patt, reprTestCtx)
+		repr := getRepr(t, patt, ctx)
 		// if repr[2] == 'c' {
 		// 	expectedRepr = `{"c\nd":2,"a\nb":1}`
 		// }
@@ -443,6 +537,9 @@ func TestObjectPatternRepresentation(t *testing.T) {
 	})
 
 	t.Run("deep", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		patt := NewInexactObjectPattern(map[string]Pattern{
 			"a": NewListPattern([]Pattern{
 				NewExactValuePattern(Int(1)),
@@ -451,7 +548,7 @@ func TestObjectPatternRepresentation(t *testing.T) {
 		})
 
 		expectedRepr := `%{"a":%[%(1),%(#{"b":2})]}`
-		assert.Equal(t, expectedRepr, getRepr(t, patt, reprTestCtx))
+		assert.Equal(t, expectedRepr, getRepr(t, patt, ctx))
 		node := assertParseExpression(t, expectedRepr)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -462,10 +559,13 @@ func TestObjectPatternRepresentation(t *testing.T) {
 
 func TestListPatternRepresentation(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		pattern := NewListPattern(nil)
 
 		expectedRepr := `%[]`
-		assert.Equal(t, expectedRepr, getRepr(t, pattern, reprTestCtx))
+		assert.Equal(t, expectedRepr, getRepr(t, pattern, ctx))
 		node := assertParseExpression(t, expectedRepr)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -473,10 +573,13 @@ func TestListPatternRepresentation(t *testing.T) {
 	})
 
 	t.Run("single element", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		pattern := NewListPattern([]Pattern{NewExactValuePattern(Int(2))})
 
 		expectedRepr := `%[%(2)]`
-		assert.Equal(t, expectedRepr, getRepr(t, pattern, reprTestCtx))
+		assert.Equal(t, expectedRepr, getRepr(t, pattern, ctx))
 		node := assertParseExpression(t, expectedRepr)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -501,6 +604,9 @@ func TestListPatternRepresentation(t *testing.T) {
 	})
 
 	t.Run("deep", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		pattern := NewListPattern([]Pattern{
 			NewExactValuePattern(NewTuple([]Serializable{
 				Int(2),
@@ -509,7 +615,7 @@ func TestListPatternRepresentation(t *testing.T) {
 		})
 
 		expectedRepr := `%[%(#[2,#{"a":1}])]`
-		assert.Equal(t, expectedRepr, getRepr(t, pattern, reprTestCtx))
+		assert.Equal(t, expectedRepr, getRepr(t, pattern, ctx))
 		node := assertParseExpression(t, expectedRepr)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -519,18 +625,23 @@ func TestListPatternRepresentation(t *testing.T) {
 }
 
 func TestByteSliceRepresentation(t *testing.T) {
+	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
 
-	assert.Equal(t, "0x[]", getRepr(t, &ByteSlice{}, reprTestCtx))
+	assert.Equal(t, "0x[]", getRepr(t, &ByteSlice{}, ctx))
 
-	assert.Equal(t, "0x[12]", getRepr(t, &ByteSlice{Bytes: []byte{0x12}}, reprTestCtx))
+	assert.Equal(t, "0x[12]", getRepr(t, &ByteSlice{Bytes: []byte{0x12}}, ctx))
 }
 
 func TestOptionRepresentation(t *testing.T) {
 	t.Run("single letter name", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		opt := Option{Name: "v", Value: True}
 
 		expectedRepr := `-v`
-		assert.Equal(t, expectedRepr, getRepr(t, opt, reprTestCtx))
+		assert.Equal(t, expectedRepr, getRepr(t, opt, ctx))
 		node := assertParseExpression(t, expectedRepr)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -538,10 +649,13 @@ func TestOptionRepresentation(t *testing.T) {
 	})
 
 	t.Run("multi letter name", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		opt := Option{Name: "verbose", Value: True}
 
 		expectedRepr := `--verbose`
-		assert.Equal(t, expectedRepr, getRepr(t, opt, reprTestCtx))
+		assert.Equal(t, expectedRepr, getRepr(t, opt, ctx))
 		node := assertParseExpression(t, expectedRepr)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -564,9 +678,12 @@ func TestPathRepresentation(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.value, func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			defer ctx.CancelGracefully()
+
 			pth := Path(testCase.value)
 
-			assert.Equal(t, testCase.representation, getRepr(t, pth, reprTestCtx))
+			assert.Equal(t, testCase.representation, getRepr(t, pth, ctx))
 
 			node := assertParseExpression(t, testCase.representation)
 			assert.Equal(t, pth, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
@@ -589,9 +706,12 @@ func TestPathPatternRepresentation(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.value, func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			defer ctx.CancelGracefully()
+
 			patt := PathPattern(testCase.value)
 
-			assert.Equal(t, testCase.representation, getRepr(t, patt, reprTestCtx))
+			assert.Equal(t, testCase.representation, getRepr(t, patt, ctx))
 
 			node := assertParseExpression(t, testCase.representation)
 			assert.Equal(t, patt, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
@@ -601,10 +721,13 @@ func TestPathPatternRepresentation(t *testing.T) {
 }
 
 func TestURLRepresentation(t *testing.T) {
+	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
+
 	url := URL("https://example.com/")
 
 	expectedRepr := "https://example.com/"
-	assert.Equal(t, expectedRepr, getRepr(t, url, reprTestCtx))
+	assert.Equal(t, expectedRepr, getRepr(t, url, ctx))
 
 	node := assertParseExpression(t, expectedRepr)
 	assert.Equal(t, url, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
@@ -621,9 +744,12 @@ func TestURLPatternRepresentation(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.value, func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			defer ctx.CancelGracefully()
+
 			patt := URLPattern(testCase.value)
 
-			assert.Equal(t, testCase.representation, getRepr(t, patt, reprTestCtx))
+			assert.Equal(t, testCase.representation, getRepr(t, patt, ctx))
 
 			node := assertParseExpression(t, testCase.representation)
 			assert.Equal(t, patt, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
@@ -632,10 +758,13 @@ func TestURLPatternRepresentation(t *testing.T) {
 }
 
 func TestHostRepresentation(t *testing.T) {
+	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
+
 	host := Host("https://example.com")
 
 	expectedRepr := "https://example.com"
-	assert.Equal(t, expectedRepr, getRepr(t, host, reprTestCtx))
+	assert.Equal(t, expectedRepr, getRepr(t, host, ctx))
 
 	node := assertParseExpression(t, expectedRepr)
 	assert.Equal(t, host, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
@@ -652,9 +781,12 @@ func TestHostPatternRepresentation(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.value, func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			defer ctx.CancelGracefully()
+
 			patt := HostPattern(testCase.value)
 
-			assert.Equal(t, testCase.representation, getRepr(t, patt, reprTestCtx))
+			assert.Equal(t, testCase.representation, getRepr(t, patt, ctx))
 
 			node := assertParseExpression(t, testCase.representation)
 			assert.Equal(t, patt, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
@@ -668,10 +800,13 @@ func TestEmailAddressRepresentation(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase, func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			defer ctx.CancelGracefully()
+
 			addr := EmailAddress(testCase)
 
 			expectedRepr := testCase
-			assert.Equal(t, expectedRepr, getRepr(t, addr, reprTestCtx))
+			assert.Equal(t, expectedRepr, getRepr(t, addr, ctx))
 
 			node := assertParseExpression(t, expectedRepr)
 			assert.Equal(t, addr, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
@@ -681,16 +816,22 @@ func TestEmailAddressRepresentation(t *testing.T) {
 }
 
 func TestIdentifierRepresentation(t *testing.T) {
+	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
+
 	ident := Identifier("a")
 
 	expectedRepr := "#a"
 
-	assert.Equal(t, expectedRepr, getRepr(t, ident, reprTestCtx))
+	assert.Equal(t, expectedRepr, getRepr(t, ident, ctx))
 	node := assertParseExpression(t, expectedRepr)
 	assert.Equal(t, ident, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
 }
 
 func TestCheckedStringRepresentation(t *testing.T) {
+	reprTestCtx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer reprTestCtx.CancelGracefully()
+
 	pattern := &ExactValuePattern{value: Str("foo")}
 	str := CheckedString{str: "foo", matchingPatternName: "ident_name", matchingPattern: pattern}
 
@@ -725,13 +866,16 @@ var byteCountReprTestCases = []struct {
 }
 
 func TestByteCountRepresentation(t *testing.T) {
+	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
+
 	negative := ByteCount(-1)
-	assert.ErrorContains(t, negative.WriteRepresentation(reprTestCtx, nil, nil, 0), "invalid byte rate")
+	assert.ErrorContains(t, negative.WriteRepresentation(ctx, nil, nil, 0), "invalid byte rate")
 
 	for _, testCase := range byteCountReprTestCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
 
-			assert.Equal(t, testCase.representation, getRepr(t, testCase.value, reprTestCtx))
+			assert.Equal(t, testCase.representation, getRepr(t, testCase.value, ctx))
 
 			node := assertParseExpression(t, testCase.representation)
 			assert.Equal(t, testCase.value, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
@@ -740,10 +884,13 @@ func TestByteCountRepresentation(t *testing.T) {
 }
 
 func TestLineCountRepresentation(t *testing.T) {
+	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
+
 	n := LineCount(3)
 
 	expectedRepr := "3ln"
-	assert.Equal(t, expectedRepr, getRepr(t, n, reprTestCtx))
+	assert.Equal(t, expectedRepr, getRepr(t, n, ctx))
 
 	node := assertParseExpression(t, expectedRepr)
 	assert.Equal(t, n, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
@@ -768,13 +915,16 @@ var byteRateReprTestCases = []struct {
 }
 
 func TestByteRateRepresentation(t *testing.T) {
+	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
+
 	negative := ByteRate(-1)
-	assert.ErrorIs(t, negative.WriteRepresentation(reprTestCtx, nil, nil, 0), ErrNoRepresentation)
+	assert.ErrorIs(t, negative.WriteRepresentation(ctx, nil, nil, 0), ErrNoRepresentation)
 
 	for _, testCase := range byteRateReprTestCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
 
-			assert.Equal(t, testCase.representation, getRepr(t, testCase.value, reprTestCtx))
+			assert.Equal(t, testCase.representation, getRepr(t, testCase.value, ctx))
 
 			node := assertParseExpression(t, testCase.representation)
 			assert.Equal(t, testCase.value, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
@@ -800,13 +950,16 @@ var simpleRateReprTestCases = []struct {
 }
 
 func TestSimpleRateRepresentation(t *testing.T) {
+	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
+
 	negative := SimpleRate(-1)
-	assert.ErrorIs(t, negative.WriteRepresentation(reprTestCtx, nil, nil, 0), ErrNoRepresentation)
+	assert.ErrorIs(t, negative.WriteRepresentation(ctx, nil, nil, 0), ErrNoRepresentation)
 
 	for _, testCase := range simpleRateReprTestCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
 
-			assert.Equal(t, testCase.representation, getRepr(t, testCase.value, reprTestCtx))
+			assert.Equal(t, testCase.representation, getRepr(t, testCase.value, ctx))
 
 			node := assertParseExpression(t, testCase.representation)
 			assert.Equal(t, testCase.value, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
@@ -838,9 +991,12 @@ var durationReprTestCases = []struct {
 
 func TestDurationRepresentation(t *testing.T) {
 	for _, testCase := range durationReprTestCases {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
 
-			assert.Equal(t, testCase.representation, getRepr(t, testCase.value, reprTestCtx))
+			assert.Equal(t, testCase.representation, getRepr(t, testCase.value, ctx))
 
 			node := assertParseExpression(t, testCase.representation)
 			assert.Equal(t, testCase.value, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
@@ -849,10 +1005,13 @@ func TestDurationRepresentation(t *testing.T) {
 }
 
 func TestRuneRangeRepresentation(t *testing.T) {
+	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
+
 	runeRange := RuneRange{Start: 'a', End: 'z'}
 
 	expectedRepr := "'a'..'z'"
-	assert.Equal(t, expectedRepr, getRepr(t, runeRange, reprTestCtx))
+	assert.Equal(t, expectedRepr, getRepr(t, runeRange, ctx))
 
 	node := assertParseExpression(t, expectedRepr)
 	state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -860,11 +1019,14 @@ func TestRuneRangeRepresentation(t *testing.T) {
 }
 
 func TestQuantityRangeRepresentation(t *testing.T) {
+	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
+
 	t.Run("unknown start", func(t *testing.T) {
 		qtyRange := QuantityRange{start: nil, end: Duration(time.Hour), inclusiveEnd: true, unknownStart: true}
 
 		expectedRepr := "..1h"
-		assert.Equal(t, expectedRepr, getRepr(t, qtyRange, reprTestCtx))
+		assert.Equal(t, expectedRepr, getRepr(t, qtyRange, ctx))
 
 		node := assertParseExpression(t, expectedRepr)
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -879,10 +1041,13 @@ func TestQuantityRangeRepresentation(t *testing.T) {
 
 func TestIntRangeRepresentation(t *testing.T) {
 	t.Run("known start", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		intRange := IntRange{Start: 0, End: 100, inclusiveEnd: true, Step: 1}
 
 		expectedRepr := "0..100"
-		assert.Equal(t, expectedRepr, getRepr(t, intRange, reprTestCtx))
+		assert.Equal(t, expectedRepr, getRepr(t, intRange, ctx))
 
 		node := assertParseExpression(t, expectedRepr)
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -890,10 +1055,13 @@ func TestIntRangeRepresentation(t *testing.T) {
 	})
 
 	t.Run("unknown start", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		intRange := IntRange{Start: 0, End: 100, unknownStart: true, inclusiveEnd: true, Step: 1}
 
 		expectedRepr := "..100"
-		assert.Equal(t, expectedRepr, getRepr(t, intRange, reprTestCtx))
+		assert.Equal(t, expectedRepr, getRepr(t, intRange, ctx))
 
 		node := assertParseExpression(t, expectedRepr)
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -903,9 +1071,12 @@ func TestIntRangeRepresentation(t *testing.T) {
 
 func TestUdataRepresentation(t *testing.T) {
 	t.Run("only root", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		udata := &UData{Root: Int(1)}
 
-		assert.Equal(t, `udata 1{}`, getRepr(t, udata, reprTestCtx))
+		assert.Equal(t, `udata 1{}`, getRepr(t, udata, ctx))
 		node := assertParseExpression(t, `udata 1{}`)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -913,10 +1084,13 @@ func TestUdataRepresentation(t *testing.T) {
 	})
 
 	t.Run("single hiearchy entry with no children", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		udata := &UData{Root: Int(1), HiearchyEntries: []UDataHiearchyEntry{{Value: Int(2)}}}
 
 		expectedRepr := `udata 1{2}`
-		assert.Equal(t, expectedRepr, getRepr(t, udata, reprTestCtx))
+		assert.Equal(t, expectedRepr, getRepr(t, udata, ctx))
 		node := assertParseExpression(t, expectedRepr)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -924,6 +1098,9 @@ func TestUdataRepresentation(t *testing.T) {
 	})
 
 	t.Run("two hiearchy entries with no children", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		udata := &UData{
 			Root: Int(1),
 			HiearchyEntries: []UDataHiearchyEntry{
@@ -933,7 +1110,7 @@ func TestUdataRepresentation(t *testing.T) {
 		}
 
 		expectedRepr := `udata 1{2,3}`
-		repr := getRepr(t, udata, reprTestCtx)
+		repr := getRepr(t, udata, ctx)
 		assert.Equal(t, expectedRepr, repr)
 		node := assertParseExpression(t, expectedRepr)
 
@@ -942,6 +1119,9 @@ func TestUdataRepresentation(t *testing.T) {
 	})
 
 	t.Run("deep", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		udata := &UData{
 			Root: Int(1),
 			HiearchyEntries: []UDataHiearchyEntry{
@@ -956,7 +1136,7 @@ func TestUdataRepresentation(t *testing.T) {
 		}
 
 		expectedRepr := `udata 1{2,3{4}}`
-		assert.Equal(t, expectedRepr, getRepr(t, udata, reprTestCtx))
+		assert.Equal(t, expectedRepr, getRepr(t, udata, ctx))
 		node := assertParseExpression(t, expectedRepr)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -971,10 +1151,13 @@ func TestNamedSegmentPathPatternRepresentation(t *testing.T) {
 }
 
 func TestIntRangePatternRepresentation(t *testing.T) {
+	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
+
 	intRangePattern := NewIncludedEndIntRangePattern(1, 2)
 
 	expectedRepr := `%int(1..2)`
-	assert.Equal(t, expectedRepr, getRepr(t, intRangePattern, reprTestCtx))
+	assert.Equal(t, expectedRepr, getRepr(t, intRangePattern, ctx))
 	node := assertParseExpression(t, expectedRepr)
 
 	state := NewTreeWalkState(NewContext(ContextConfig{}))
@@ -984,10 +1167,13 @@ func TestIntRangePatternRepresentation(t *testing.T) {
 }
 
 func TestFileModeRepresentation(t *testing.T) {
+	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
+
 	fileMode := FileMode(os.ModeDir | 0o777)
 
 	expectedRepr := fmt.Sprintf("FileMode(%d)", fileMode)
-	assert.Equal(t, expectedRepr, getRepr(t, fileMode, reprTestCtx))
+	assert.Equal(t, expectedRepr, getRepr(t, fileMode, ctx))
 }
 
 func assertParseExpression(t *testing.T, s string) parse.Node {
