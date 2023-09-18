@@ -5688,6 +5688,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return Byte(i)
 				}),
 			})
+			defer state.Ctx.CancelGracefully()
+
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -5703,6 +5705,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("two tuples", func(t *testing.T) {
 			code := `concat #[1] #["a"]`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{})
+			defer state.Ctx.CancelGracefully()
+
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
@@ -7040,6 +7044,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`
 
 				state, tx := newState()
+				defer state.Ctx.CancelGracefully()
+
 				res, err := Eval(code, state, false)
 
 				assert.NoError(t, err)
@@ -7058,6 +7064,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`
 
 				state, tx := newState()
+				defer state.Ctx.CancelGracefully()
+
 				res, err := Eval(code, state, false)
 
 				assert.ErrorIs(t, err, ErrCannotAddIrreversibleEffect)
@@ -7076,6 +7084,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`
 
 				state, tx := newState()
+				defer state.Ctx.CancelGracefully()
+
 				res, err := Eval(code, state, false)
 
 				assert.NoError(t, err)
@@ -7102,6 +7112,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"map": WrapGoFunction(Map),
 			})
+			defer state.Ctx.CancelGracefully()
+
 			state.Ctx.AddNamedPattern("serializable-iterable", SERIALIZABLE_ITERABLE_PATTERN)
 
 			res, err := Eval(code, state, true)
@@ -7128,6 +7140,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"map": WrapGoFunction(Map),
 			})
+			defer state.Ctx.CancelGracefully()
+
 			state.Ctx.AddNamedPattern("serializable-iterable", SERIALIZABLE_ITERABLE_PATTERN)
 
 			val, err := Eval(code, state, true)
@@ -7165,6 +7179,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"map": WrapGoFunction(Map),
 			})
+			defer state.Ctx.CancelGracefully()
+
 			state.Ctx.AddNamedPattern("serializable-iterable", SERIALIZABLE_ITERABLE_PATTERN)
 
 			val, err := Eval(code, state, true)
@@ -7199,6 +7215,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"idt": createNamespace(),
 			})
+			defer state.Ctx.CancelGracefully()
 
 			val, err := Eval(code, state, false)
 			if !assert.NoError(t, err) {
@@ -7213,6 +7230,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"idt": createNamespace(),
 			})
+			defer state.Ctx.CancelGracefully()
 
 			val, err := Eval(code, state, false)
 			if !assert.NoError(t, err) {
@@ -7227,6 +7245,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"idt": createNamespace(),
 			})
+			defer state.Ctx.CancelGracefully()
 
 			val, err := Eval(code, state, false)
 			if !assert.NoError(t, err) {
@@ -7241,6 +7260,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"idt": createNamespace(),
 			})
+			defer state.Ctx.CancelGracefully()
 
 			val, err := Eval(code, state, false)
 			if !assert.NoError(t, err) {
@@ -7255,6 +7275,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"idt": createNamespace(),
 			})
+			defer state.Ctx.CancelGracefully()
 
 			val, err := Eval(code, state, false)
 			if !assert.NoError(t, err) {
@@ -7269,6 +7290,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"idt": createNamespace(),
 			})
+			defer state.Ctx.CancelGracefully()
 
 			val, err := Eval(code, state, false)
 			if !assert.NoError(t, err) {
@@ -7283,6 +7305,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"idt": createNamespace(),
 			})
+			defer state.Ctx.CancelGracefully()
 
 			val, err := Eval(code, state, false)
 			if !assert.NoError(t, err) {
@@ -7297,6 +7320,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"idt": createNamespace(),
 			})
+			defer state.Ctx.CancelGracefully()
 
 			val, err := Eval(code, state, false)
 			if !assert.NoError(t, err) {
@@ -7315,6 +7339,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"idt": createNamespace(),
 			})
+			defer state.Ctx.CancelGracefully()
 
 			val, err := Eval(code, state, false)
 			if !assert.NoError(t, err) {
@@ -7335,6 +7360,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"idt": createNamespace(),
 			})
+			defer state.Ctx.CancelGracefully()
 
 			val, err := Eval(code, state, false)
 			if !assert.NoError(t, err) {
@@ -7358,6 +7384,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"idt": createNamespace(),
 			})
+			defer state.Ctx.CancelGracefully()
 
 			val, err := Eval(code, state, false)
 			if !assert.NoError(t, err) {
@@ -7376,6 +7403,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"idt": createNamespace(),
 			})
+			defer state.Ctx.CancelGracefully()
 
 			val, err := Eval(code, state, false)
 			if !assert.NoError(t, err) {
@@ -7394,6 +7422,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"idt": createNamespace(),
 			})
+			defer state.Ctx.CancelGracefully()
 
 			val, err := Eval(code, state, false)
 			if !assert.NoError(t, err) {
@@ -7414,6 +7443,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"idt": createNamespace(),
 			})
+			defer state.Ctx.CancelGracefully()
 
 			val, err := Eval(code, state, false)
 			if !assert.NoError(t, err) {
@@ -7442,6 +7472,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"idt": createNamespace(),
 			})
+			defer state.Ctx.CancelGracefully()
 
 			_, err := Eval(code, state, false)
 			assert.NoError(t, err)
@@ -7452,6 +7483,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"idt": createNamespace(),
 			})
+			defer state.Ctx.CancelGracefully()
 
 			val, err := Eval(code, state, false)
 			if !assert.NoError(t, err) {
@@ -7470,6 +7502,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"idt": createNamespace(),
 			})
+			defer state.Ctx.CancelGracefully()
 
 			val, err := Eval(code, state, false)
 			if !assert.NoError(t, err) {
@@ -7525,6 +7558,8 @@ func TestSpawnLThread(t *testing.T) {
 				LThreadPermission{permkind.Create},
 			},
 		}))
+		defer state.Ctx.CancelGracefully()
+
 		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
 			NameString: "lthread-test",
 			CodeString: "return $$x",
@@ -7556,6 +7591,8 @@ func TestSpawnLThread(t *testing.T) {
 				LThreadPermission{permkind.Create},
 			},
 		}))
+		defer state.Ctx.CancelGracefully()
+
 		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
 			NameString: "lthread-test",
 			CodeString: "return {a: 1}",
@@ -7590,6 +7627,8 @@ func TestSpawnLThread(t *testing.T) {
 				LThreadPermission{permkind.Create},
 			},
 		}))
+		defer state.Ctx.CancelGracefully()
+
 		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
 			NameString: "lthread-test",
 			CodeString: "yield 0; return {a: 1}",
