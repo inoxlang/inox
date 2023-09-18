@@ -91,6 +91,56 @@ func TestNewContext(t *testing.T) {
 			})
 		}()
 	})
+
+	t.Run("child context should inherit all host resolutions of its parent", func(t *testing.T) {
+
+		ctx := NewContext(ContextConfig{
+			HostResolutions: map[Host]Value{
+				"ldb://db1": Path("/tmp/db1/"),
+			},
+		})
+
+		childCtx := NewContext(ContextConfig{
+			HostResolutions: map[Host]Value{
+				"ldb://db2": Path("/tmp/db2/"),
+			},
+			ParentContext: ctx,
+		})
+
+		hostResolutions := childCtx.GetAllHostResolutionData()
+		if !assert.Len(t, hostResolutions, 2) {
+			return
+		}
+		assert.Contains(t, hostResolutions, Host("ldb://db1"))
+		assert.Contains(t, hostResolutions, Host("ldb://db2"))
+
+	})
+
+	t.Run("a panic is expected if the child context overrides one if its parent's hosts", func(t *testing.T) {
+
+		ctx := NewContext(ContextConfig{
+			HostResolutions: map[Host]Value{
+				"ldb://db1": Path("/tmp/db1/"),
+			},
+		})
+
+		func() {
+			defer func() {
+				e := recover()
+				if !assert.NotNil(t, e) {
+					return
+				}
+				assert.ErrorContains(t, e.(error), "")
+			}()
+
+			NewContext(ContextConfig{
+				HostResolutions: map[Host]Value{
+					"ldb://db1": Path("/tmp/db1/"),
+				},
+				ParentContext: ctx,
+			})
+		}()
+	})
 }
 
 func TestContextBuckets(t *testing.T) {

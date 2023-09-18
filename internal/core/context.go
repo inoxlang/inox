@@ -126,7 +126,11 @@ type ContextConfig struct {
 
 type WaitConfirmPrompt func(msg string, accepted []string) (bool, error)
 
-func (c ContextConfig) HasParentRequiredPermissionsAndLessRestrictiveLimits() (firstErr error, ok bool) {
+// If .ParentContext is set Check verifies that:
+// - the parent have at least the permissions required by the child
+// - the parent have less restrictive limits than the child
+// - no host resolution of the parent is overriden
+func (c ContextConfig) Check() (firstErr error, ok bool) {
 	if c.ParentContext == nil {
 		return nil, true
 	}
@@ -151,6 +155,12 @@ top:
 	for _, limit := range c.Limits {
 		if parentLimiter, ok := c.ParentContext.limiters[limit.Name]; ok && !parentLimiter.limit.LessRestrictiveThan(limit) {
 			return fmt.Errorf("parent of context should have less restrictive limits than its child: limit '%s'", limit.Name), false
+		}
+	}
+
+	for host := range c.ParentContext.GetAllHostResolutionData() {
+		if _, ok := c.HostResolutions[host]; ok {
+			return fmt.Errorf("the host '%s' is predefined by child context but is already defined by the parent context", host), false
 		}
 	}
 
@@ -240,11 +250,14 @@ func NewContext(config ContextConfig) *Context {
 		}
 	}
 
-	if config.ParentContext == nil {
+	hostResolutions := maps.Clone(config.HostResolutions)
+	parentCtx := config.ParentContext
+
+	if parentCtx == nil {
 		stdlibCtx, cancel = context.WithCancel(context.Background())
 	} else {
 		//if a parent context is passed we check that the parent has all the required permissions
-		if err, ok := config.HasParentRequiredPermissionsAndLessRestrictiveLimits(); !ok {
+		if err, ok := config.Check(); !ok {
 			panic(fmt.Errorf("failed to create context, parent of context should at least have permissions of its child: %w", err))
 		}
 
@@ -253,17 +266,26 @@ func NewContext(config ContextConfig) *Context {
 		}
 
 		//inherit limits from parent
-		for _, parentLimiter := range config.ParentContext.limiters {
+		for _, parentLimiter := range parentCtx.limiters {
 			limitName := parentLimiter.limit.Name
 			if _, ok := limiters[limitName]; !ok {
 				limiters[limitName] = parentLimiter.Child()
 			}
 		}
 
-		stdlibCtx, cancel = context.WithCancel(config.ParentContext)
+		//inherit host resolutions from parent
+		parentHostResolutions := parentCtx.GetAllHostResolutionData()
+		for host, data := range parentHostResolutions {
+			if _, ok := hostResolutions[host]; ok {
+				panic(ErrUnreachable)
+			}
+			hostResolutions[host] = data
+		}
+
+		stdlibCtx, cancel = context.WithCancel(parentCtx)
 
 		if filesystem == nil {
-			filesystem = config.ParentContext.fs
+			filesystem = parentCtx.fs
 		}
 	}
 
@@ -272,13 +294,11 @@ func NewContext(config ContextConfig) *Context {
 		limits = append(limits, limiter.limit)
 	}
 
-	hostResolutions := maps.Clone(config.HostResolutions)
-
 	*ctx = Context{
 		kind:                 config.Kind,
 		Context:              stdlibCtx,
 		cancel:               cancel,
-		parentCtx:            config.ParentContext,
+		parentCtx:            parentCtx,
 		fs:                   WithSecondaryContextIfPossible(ctx, filesystem),
 		executionStartTime:   time.Now(),
 		grantedPermissions:   utils.CopySlice(config.Permissions),
