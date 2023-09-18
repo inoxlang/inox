@@ -34,6 +34,7 @@ func TestExecutionTimeLimitIntegration(t *testing.T) {
 			},
 			Limits: []Limit{execLimit},
 		}, nil)
+		defer ctx.CancelGracefully()
 
 		state := ctx.GetClosestState()
 
@@ -82,6 +83,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{
 			Limits: []Limit{cpuLimit},
 		}, nil)
+		defer ctx.CancelGracefully()
 
 		_, err = eval(`
 			a = 0
@@ -109,6 +111,8 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{
 			Limits: []Limit{cpuLimit},
 		}, nil)
+		defer ctx.CancelGracefully()
+
 		state := ctx.GetClosestState()
 		obj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx)
 
@@ -118,6 +122,11 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 
 		go func() {
 			otherCtx := NewContexWithEmptyState(ContextConfig{}, nil)
+			defer func() {
+				time.Sleep(time.Second)
+				ctx.CancelGracefully()
+			}()
+
 			obj.Lock(otherCtx.state)
 			locked <- struct{}{}
 			defer close(locked)
@@ -154,6 +163,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{
 			Limits: []Limit{cpuLimit},
 		}, nil)
+		defer ctx.CancelGracefully()
 
 		Sleep(ctx, Duration(100*time.Millisecond))
 
@@ -181,6 +191,8 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 				LThreadPermission{permkind.Create},
 			},
 		}))
+		defer state.Ctx.CancelGracefully()
+
 		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
 			NameString: "lthread-test",
 			CodeString: "yield 0; return 0",
@@ -190,6 +202,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 			Limits:        []Limit{cpuLimit},
 			ParentContext: state.Ctx,
 		})
+		defer lthreadCtx.CancelGracefully()
 
 		lthread, err := SpawnLThread(LthreadSpawnArgs{
 			SpawnerState: state,
@@ -245,6 +258,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{
 			Limits: []Limit{cpuLimit, myLimit},
 		}, nil)
+		defer ctx.CancelGracefully()
 
 		//empty the token bucket
 		{
@@ -293,6 +307,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 			},
 			Limits: []Limit{cpuLimit},
 		}, nil)
+		defer ctx.CancelGracefully()
 
 		state := ctx.GetClosestState()
 
@@ -352,6 +367,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 			},
 			Limits: []Limit{cpuLimit},
 		}, nil)
+		defer ctx.CancelGracefully()
 
 		state := ctx.GetClosestState()
 
@@ -390,6 +406,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 			},
 			Limits: []Limit{cpuLimit},
 		}, nil)
+		defer ctx.CancelGracefully()
 
 		state := ctx.GetClosestState()
 
@@ -432,6 +449,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 			},
 			Limits: []Limit{cpuLimit},
 		}, nil)
+		defer ctx.CancelGracefully()
 
 		state := ctx.GetClosestState()
 
