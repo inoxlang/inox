@@ -188,6 +188,7 @@ func (m *Mapping) Compute(ctx *Context, key Serializable) Value {
 		}
 
 		evalState := NewTreeWalkState(callingState.Ctx.BoundChild(), globalConstants)
+		defer evalState.Global.Ctx.CancelGracefully()
 
 		// set global variables
 		if shared {
