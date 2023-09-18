@@ -2,6 +2,7 @@ package core
 
 import (
 	"math"
+	"runtime"
 	"strconv"
 	"testing"
 
@@ -11,9 +12,18 @@ import (
 )
 
 func TestEvalStringPatternNode(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
 
 	t.Run("single element : string literal", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
 		state := NewTreeWalkState(ctx)
 
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
@@ -36,6 +46,8 @@ func TestEvalStringPatternNode(t *testing.T) {
 
 	t.Run("single element : rune range expression", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
 		state := NewTreeWalkState(ctx)
 
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
@@ -58,6 +70,8 @@ func TestEvalStringPatternNode(t *testing.T) {
 
 	t.Run("single element : string literal (ocurrence modifier i '*')", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
 		state := NewTreeWalkState(ctx)
 
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
@@ -79,6 +93,8 @@ func TestEvalStringPatternNode(t *testing.T) {
 
 	t.Run("single element : string literal (ocurrence modifier i '=' 2)", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
 		state := NewTreeWalkState(ctx)
 
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
@@ -100,6 +116,8 @@ func TestEvalStringPatternNode(t *testing.T) {
 
 	t.Run("two elements : one string literal + a pattern identifier (exact string pattern)", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
 		ctx.AddNamedPattern("b", NewExactStringPattern(Str("c")))
 		state := NewTreeWalkState(ctx)
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
@@ -124,6 +142,8 @@ func TestEvalStringPatternNode(t *testing.T) {
 
 	t.Run("union of two single-element cases", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
 		state := NewTreeWalkState(ctx)
 
 		patt, err := evalStringPatternNode(&parse.PatternUnion{
@@ -143,6 +163,8 @@ func TestEvalStringPatternNode(t *testing.T) {
 
 	t.Run("union of two multiple-element cases", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
 		state := NewTreeWalkState(ctx)
 
 		patt, err := evalStringPatternNode(&parse.PatternUnion{
@@ -184,6 +206,13 @@ func TestEvalStringPatternNode(t *testing.T) {
 }
 
 func TestComplexPatternParsing(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
 
 	lenRange := IntRange{
 		Start:        0,
@@ -194,6 +223,8 @@ func TestComplexPatternParsing(t *testing.T) {
 
 	t.Run("sequence with a singme non repeated element", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
 		ctx.AddNamedPattern("subpatt", NewExactStringPattern(Str("a")))
 
 		patt := &SequenceStringPattern{
@@ -209,6 +240,8 @@ func TestComplexPatternParsing(t *testing.T) {
 
 	t.Run("sequence with a single repeated element", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
 		ctx.AddNamedPattern("subpatt", NewExactStringPattern(Str("a")))
 
 		patt := &SequenceStringPattern{
@@ -231,6 +264,8 @@ func TestComplexPatternParsing(t *testing.T) {
 
 	t.Run("sequence with two elements", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
 		ctx.AddNamedPattern("subpatt", NewExactStringPattern(Str("a")))
 
 		patt := &SequenceStringPattern{
@@ -254,6 +289,8 @@ func TestComplexPatternParsing(t *testing.T) {
 
 	t.Run("recursion", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
 		valuePattern := &UnionStringPattern{
 			cases: []StringPattern{
 				&DynamicStringPatternElement{"bool", ctx},
@@ -304,6 +341,8 @@ func TestComplexPatternParsing(t *testing.T) {
 
 	t.Run("complex recursion", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
 		valuePattern := &UnionStringPattern{
 			cases: []StringPattern{
 				&DynamicStringPatternElement{"string", ctx},
@@ -387,6 +426,13 @@ func TestComplexPatternParsing(t *testing.T) {
 }
 
 func TestSequenceStringPattern(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
 
 	t.Run(".LengthRange()", func(t *testing.T) {
 
@@ -531,6 +577,13 @@ func TestSequenceStringPattern(t *testing.T) {
 }
 
 func TestRuneRangeStringPattern(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
 
 	t.Run(".LengthRange()", func(t *testing.T) {
 		patt := &RuneRangeStringPattern{
@@ -551,6 +604,14 @@ func TestRuneRangeStringPattern(t *testing.T) {
 }
 
 func TestIntRangeStringPattern(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 	max := int64(math.MaxInt64)
 	//min := int64(math.MinInt64)
@@ -761,6 +822,13 @@ func TestIntRangeStringPattern(t *testing.T) {
 }
 
 func TestUnionStringPattern(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
 
 	t.Run(".LengthRange()", func(t *testing.T) {
 		patt := &UnionStringPattern{
@@ -809,6 +877,13 @@ func TestUnionStringPattern(t *testing.T) {
 }
 
 func TestRegexPattern(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
 
 	t.Run(".LengthRange()", func(t *testing.T) {
 		testCases := map[string]IntRange{

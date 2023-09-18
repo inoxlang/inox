@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -18,6 +19,13 @@ import (
 )
 
 func TestCheck(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 100_000)
+	}
 
 	parseCode := func(code string) (*parse.Chunk, *parse.ParsedChunk) {
 		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
@@ -33,8 +41,11 @@ func TestCheck(t *testing.T) {
 	}
 
 	staticCheckNoData := func(input StaticCheckInput) error {
+		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
 		if input.State == nil {
-			input.State = NewGlobalState(NewContext(ContextConfig{}))
+			input.State = NewGlobalState(ctx)
 		}
 		_, err := StaticCheck(input)
 		return err
@@ -861,13 +872,16 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("static key entries have access to globals", func(t *testing.T) {
+			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
+
 			n, src := parseCode(`
 				$$g = 1
 				Mapping { %int => g }
 			`)
 
 			data, err := StaticCheck(StaticCheckInput{
-				State:    NewGlobalState(NewContext(ContextConfig{})),
+				State:    NewGlobalState(ctx),
 				Node:     n,
 				Chunk:    src,
 				Patterns: map[string]Pattern{"int": INT_PATTERN},
@@ -931,13 +945,16 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("dynamic key entries have access to globals", func(t *testing.T) {
+			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
+
 			n, src := parseCode(`
 				$$g = 1
 				Mapping { n %int => g }
 			`)
 
 			data, err := StaticCheck(StaticCheckInput{
-				State:    NewGlobalState(NewContext(ContextConfig{})),
+				State:    NewGlobalState(ctx),
 				Node:     n,
 				Chunk:    src,
 				Patterns: map[string]Pattern{"int": INT_PATTERN},
@@ -1017,6 +1034,9 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("globals captured by function should be listed", func(t *testing.T) {
+			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
+
 			n, src := parseCode(`
 				$$a = 1
 				fn(){ return a }
@@ -1024,7 +1044,7 @@ func TestCheck(t *testing.T) {
 
 			fnExpr := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
 			data, err := StaticCheck(StaticCheckInput{
-				State: NewGlobalState(NewContext(ContextConfig{})),
+				State: NewGlobalState(ctx),
 				Node:  n,
 				Chunk: src,
 			})
@@ -1037,6 +1057,9 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("globals referenced in lifetimejob expressions inside a function should be listed in the function's list", func(t *testing.T) {
+			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
+
 			n, src := parseCode(`
 				$$a = 1
 				fn(){ 
@@ -1050,7 +1073,7 @@ func TestCheck(t *testing.T) {
 
 			fnExpr := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
 			data, err := StaticCheck(StaticCheckInput{
-				State: NewGlobalState(NewContext(ContextConfig{})),
+				State: NewGlobalState(ctx),
 				Node:  n,
 				Chunk: src,
 			})
@@ -1063,6 +1086,9 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("a global captured by a global function B referenced by a function A should be listed in A's data", func(t *testing.T) {
+			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
+
 			n, src := parseCode(`
 				$$a = 1
 				fn f(){
@@ -1073,7 +1099,7 @@ func TestCheck(t *testing.T) {
 
 			fnExpr := parse.FindNodes(n, (*parse.FunctionExpression)(nil), nil)[1]
 			data, err := StaticCheck(StaticCheckInput{
-				State: NewGlobalState(NewContext(ContextConfig{})),
+				State: NewGlobalState(ctx),
 				Node:  n,
 				Chunk: src,
 			})
@@ -1086,6 +1112,9 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("a global captured by a global function C referenced by a function B referenced by a function A should be listed in A's data", func(t *testing.T) {
+			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
+
 			n, src := parseCode(`
 				$$a = 1
 				fn g(){
@@ -1099,7 +1128,7 @@ func TestCheck(t *testing.T) {
 
 			fnExpr := parse.FindNodes(n, (*parse.FunctionExpression)(nil), nil)[2]
 			data, err := StaticCheck(StaticCheckInput{
-				State: NewGlobalState(NewContext(ContextConfig{})),
+				State: NewGlobalState(ctx),
 				Node:  n,
 				Chunk: src,
 			})
@@ -1112,6 +1141,9 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("a global captured by a global function B referenced by a method A should be listed in A's data", func(t *testing.T) {
+			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
+
 			n, src := parseCode(`
 				$$a = 1
 				fn f(){
@@ -1124,7 +1156,7 @@ func TestCheck(t *testing.T) {
 
 			fnExpr := parse.FindNodes(n, (*parse.FunctionExpression)(nil), nil)[1]
 			data, err := StaticCheck(StaticCheckInput{
-				State: NewGlobalState(NewContext(ContextConfig{})),
+				State: NewGlobalState(ctx),
 				Node:  n,
 				Chunk: src,
 			})
@@ -1137,6 +1169,9 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("a global captured by a global function C referenced by a function B referenced by a method A should be listed in A's data", func(t *testing.T) {
+			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
+
 			n, src := parseCode(`
 				$$a = 1
 				fn g(){
@@ -1152,7 +1187,7 @@ func TestCheck(t *testing.T) {
 
 			fnExpr := parse.FindNodes(n, (*parse.FunctionExpression)(nil), nil)[2]
 			data, err := StaticCheck(StaticCheckInput{
-				State: NewGlobalState(NewContext(ContextConfig{})),
+				State: NewGlobalState(ctx),
 				Node:  n,
 				Chunk: src,
 			})
@@ -1165,6 +1200,9 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("functions assigning a global should be detected", func(t *testing.T) {
+			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
+
 			n, src := parseCode(`
 				$$a = 1
 				fn(){ $$a = 2 }
@@ -1172,7 +1210,7 @@ func TestCheck(t *testing.T) {
 
 			fnExpr := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
 			data, err := StaticCheck(StaticCheckInput{
-				State: NewGlobalState(NewContext(ContextConfig{})),
+				State: NewGlobalState(ctx),
 				Node:  n,
 				Chunk: src,
 			})
@@ -1185,6 +1223,9 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("globals captured by function defined in spawn expression should be listed", func(t *testing.T) {
+			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
+
 			n, src := parseCode(`
 				$$a = 1
 
@@ -1196,7 +1237,7 @@ func TestCheck(t *testing.T) {
 
 			fnExpr := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
 			data, err := StaticCheck(StaticCheckInput{
-				State: NewGlobalState(NewContext(ContextConfig{})),
+				State: NewGlobalState(ctx),
 				Node:  n,
 				Chunk: src,
 			})
@@ -1613,13 +1654,15 @@ func TestCheck(t *testing.T) {
 				return
 			}
 
-			state := NewGlobalState(NewContext(ContextConfig{
+			ctx := NewContext(ContextConfig{
 				Permissions: []Permission{
 					FilesystemPermission{Kind_: permkind.Read, Entity: PathPattern("/...")},
 				},
 				Filesystem: newOsFilesystem(),
-			}))
+			})
+			state := NewGlobalState(ctx)
 			state.Module = mod
+			defer ctx.CancelGracefully()
 
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				State:  state,
@@ -2148,8 +2191,11 @@ func TestCheck(t *testing.T) {
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			assert.NoError(t, err)
 
+			state := createState(mod)
+			defer state.Ctx.CancelGracefully()
+
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
-				State:  createState(mod),
+				State:  state,
 				Module: mod,
 				Node:   mod.MainChunk.Node,
 				Chunk:  mod.MainChunk,
@@ -2178,6 +2224,7 @@ func TestCheck(t *testing.T) {
 			state.GetBasePatternsForImportedModule = func() (map[string]Pattern, map[string]*PatternNamespace) {
 				return map[string]Pattern{"str": STR_PATTERN}, nil
 			}
+			defer state.Ctx.CancelGracefully()
 
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				State:  state,
@@ -2211,6 +2258,7 @@ func TestCheck(t *testing.T) {
 						"ix": DEFAULT_PATTERN_NAMESPACES["inox"],
 					}
 			}
+			defer state.Ctx.CancelGracefully()
 
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				State:  state,
@@ -2236,6 +2284,7 @@ func TestCheck(t *testing.T) {
 
 			state := createState(mod)
 			state.SymbolicBaseGlobalsForImportedModule = map[string]symbolic.SymbolicValue{"a": symbolic.NewInt(1)}
+			defer state.Ctx.CancelGracefully()
 
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				State:  state,
@@ -2263,9 +2312,15 @@ func TestCheck(t *testing.T) {
 			})
 
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
-			assert.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			state := createState(mod)
+			defer state.Ctx.CancelGracefully()
+
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
-				State:  createState(mod),
+				State:  state,
 				Module: mod,
 				Node:   mod.MainChunk.Node,
 				Chunk:  mod.MainChunk,
@@ -2281,10 +2336,15 @@ func TestCheck(t *testing.T) {
 			importedModulePath := filepath.Join(filepath.Dir(modpath), "dep.ix")
 
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
-			assert.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			state := createState(mod)
+			defer state.Ctx.CancelGracefully()
 
 			err = staticCheckNoData(StaticCheckInput{
-				State:  createState(mod),
+				State:  state,
 				Module: mod,
 				Node:   mod.MainChunk.Node,
 				Chunk:  mod.MainChunk,
@@ -2318,8 +2378,11 @@ func TestCheck(t *testing.T) {
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			assert.NoError(t, err)
 
+			state := createState(mod)
+			defer state.Ctx.CancelGracefully()
+
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
-				State:  createState(mod),
+				State:  state,
 				Module: mod,
 				Node:   mod.MainChunk.Node,
 				Chunk:  mod.MainChunk,
@@ -2343,9 +2406,15 @@ func TestCheck(t *testing.T) {
 			})
 
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
-			assert.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			state := createState(mod)
+			defer state.Ctx.CancelGracefully()
+
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
-				State:  createState(mod),
+				State:  state,
 				Module: mod,
 				Node:   mod.MainChunk.Node,
 				Chunk:  mod.MainChunk,
@@ -2373,8 +2442,11 @@ func TestCheck(t *testing.T) {
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			assert.NoError(t, err)
 
+			state := createState(mod)
+			defer state.Ctx.CancelGracefully()
+
 			err = staticCheckNoData(StaticCheckInput{
-				State:  createState(mod),
+				State:  state,
 				Module: mod,
 				Node:   mod.MainChunk.Node,
 				Chunk:  mod.MainChunk,
@@ -2418,9 +2490,15 @@ func TestCheck(t *testing.T) {
 			})
 
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
-			assert.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			state := createState(mod)
+			defer state.Ctx.CancelGracefully()
+
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
-				State:  createState(mod),
+				State:  state,
 				Module: mod,
 				Node:   mod.MainChunk.Node,
 				Chunk:  mod.MainChunk,

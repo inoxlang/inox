@@ -1,13 +1,24 @@
 package core
 
 import (
+	"runtime"
 	"testing"
 	"time"
 
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestTransaction(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10, utils.AssertNoMemoryLeakOptions{
+			PreSleepDurationMillis: 100,
+		})
+	}
 
 	// for _, method := range []string{"commit", "rollback"} {
 	// 	t.Run("after call to "+method+" all acquired resources should be released", func(t *testing.T) {
@@ -53,6 +64,8 @@ func TestTransaction(t *testing.T) {
 
 		t.Run("Start", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
+
 			tx := newTransaction(ctx)
 			tx.Start(ctx)
 			assert.NoError(t, tx.Commit(ctx))
@@ -62,6 +75,8 @@ func TestTransaction(t *testing.T) {
 
 		t.Run("Commit", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
+
 			tx := newTransaction(ctx)
 			tx.Start(ctx)
 			assert.NoError(t, tx.Commit(ctx))
@@ -71,6 +86,8 @@ func TestTransaction(t *testing.T) {
 
 		t.Run("Rollback", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
+
 			tx := newTransaction(ctx)
 			tx.Start(ctx)
 			assert.NoError(t, tx.Commit(ctx))
@@ -84,6 +101,8 @@ func TestTransaction(t *testing.T) {
 
 		t.Run("Start", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
+
 			tx := newTransaction(ctx)
 			tx.Start(ctx)
 			assert.NoError(t, tx.Rollback(ctx))
@@ -93,6 +112,8 @@ func TestTransaction(t *testing.T) {
 
 		t.Run("Commit", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
+
 			tx := newTransaction(ctx)
 			tx.Start(ctx)
 			assert.NoError(t, tx.Rollback(ctx))
@@ -102,6 +123,8 @@ func TestTransaction(t *testing.T) {
 
 		t.Run("Rollback", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
+
 			tx := newTransaction(ctx)
 			tx.Start(ctx)
 			assert.NoError(t, tx.Rollback(ctx))
@@ -113,6 +136,8 @@ func TestTransaction(t *testing.T) {
 
 	t.Run("transaction timeout", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
 		NewGlobalState(ctx)
 		tx := newTransaction(ctx, Option{TX_TIMEOUT_OPTION_NAME, Duration(time.Millisecond)})
 		tx.Start(ctx)
@@ -123,6 +148,8 @@ func TestTransaction(t *testing.T) {
 
 	t.Run("during a commit a panic with an integer value in a callback function should not prevent other callbacks to be called", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
 		NewGlobalState(ctx)
 		tx := newTransaction(ctx)
 		tx.Start(ctx)
@@ -161,6 +188,8 @@ func TestTransaction(t *testing.T) {
 
 	t.Run("during a rollback a panic with an integer value in a callback function should not prevent other callbacks to be called", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
 		NewGlobalState(ctx)
 		tx := newTransaction(ctx)
 		tx.Start(ctx)

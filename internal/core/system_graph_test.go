@@ -1,15 +1,26 @@
 package core
 
 import (
+	"runtime"
 	"testing"
 
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestObjectGraph(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
 
 	t.Run("object should add and event when it's mutated", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
 		NewGlobalState(ctx)
 
 		graph := NewSystemGraph()
@@ -29,6 +40,8 @@ func TestObjectGraph(t *testing.T) {
 		t.Skip()
 
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
 		state := NewGlobalState(ctx)
 
 		graph := NewSystemGraph()
@@ -52,6 +65,8 @@ func TestObjectGraph(t *testing.T) {
 
 	t.Run("AddSystemGraphEvent", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
 		NewGlobalState(ctx)
 
 		graph := NewSystemGraph()
@@ -72,6 +87,8 @@ func TestSystemGraph(t *testing.T) {
 
 		t.Run("additional edge kind", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
+
 			NewGlobalState(ctx)
 
 			val1 := NewObject()
@@ -96,6 +113,8 @@ func TestSystemGraph(t *testing.T) {
 
 	t.Run("AddWatchedNode", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
 		NewGlobalState(ctx)
 
 		val1 := NewObject()

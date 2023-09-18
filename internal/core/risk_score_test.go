@@ -1,6 +1,7 @@
 package core
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/inoxlang/inox/internal/utils"
@@ -8,9 +9,19 @@ import (
 )
 
 func TestComputeProgramRiskScore(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10, utils.AssertNoMemoryLeakOptions{
+			PreSleepDurationMillis: 100,
+		})
+	}
 
 	t.Run("empty manifest, empty code", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
 
 		mod := utils.Must(ParseInMemoryModule("manifest {}", InMemoryModuleParsingConfig{
 			Name:    "",
@@ -26,6 +37,7 @@ func TestComputeProgramRiskScore(t *testing.T) {
 
 	t.Run("read /home/user/**/* permission", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
 
 		mod := utils.Must(ParseInMemoryModule(`
 			manifest {
@@ -46,6 +58,7 @@ func TestComputeProgramRiskScore(t *testing.T) {
 
 	t.Run("read /home/user/**/* permission & read https://** permission", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
 
 		mod := utils.Must(ParseInMemoryModule(`
 			manifest {
@@ -71,6 +84,7 @@ func TestComputeProgramRiskScore(t *testing.T) {
 
 	t.Run("https://example.com/ permission for HTTP & Websocket", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
 
 		mod := utils.Must(ParseInMemoryModule(`
 			manifest {
@@ -94,6 +108,7 @@ func TestComputeProgramRiskScore(t *testing.T) {
 
 	t.Run("create threads permission", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
 
 		mod := utils.Must(ParseInMemoryModule(`
 			manifest {
@@ -114,6 +129,7 @@ func TestComputeProgramRiskScore(t *testing.T) {
 
 	t.Run("many permissions", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
 
 		mod := utils.Must(ParseInMemoryModule(`
 			manifest {

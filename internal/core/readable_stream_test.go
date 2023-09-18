@@ -1,18 +1,28 @@
 package core
 
 import (
+	"runtime"
 	"testing"
 	"time"
 
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestWrappedWatcherStream(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
 
 	t.Run("WaitNext", func(t *testing.T) {
 
 		t.Run("stream stopped after delay", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
 
 			watcher := NewGenericWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN})
 			stream := watcher.Stream(ctx, &ReadableStreamConfiguration{}).(*wrappedWatcherStream)
@@ -40,6 +50,7 @@ func TestWrappedWatcherStream(t *testing.T) {
 
 		t.Run("stream already stopped", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
 
 			watcher := NewGenericWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN})
 			stream := watcher.Stream(ctx, &ReadableStreamConfiguration{}).(*wrappedWatcherStream)
@@ -60,6 +71,7 @@ func TestWrappedWatcherStream(t *testing.T) {
 
 		t.Run("configured chunk size = 2..3, stream stopped after delay", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
 
 			watcher := NewGenericWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN})
 			stream := watcher.Stream(ctx, &ReadableStreamConfiguration{}).(*wrappedWatcherStream)
@@ -88,6 +100,7 @@ func TestWrappedWatcherStream(t *testing.T) {
 
 		t.Run("configured chunk size = 2..3, stream already stopped", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
 
 			watcher := NewGenericWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN})
 			stream := watcher.Stream(ctx, &ReadableStreamConfiguration{}).(*wrappedWatcherStream)
@@ -114,6 +127,7 @@ func TestElementsStream(t *testing.T) {
 	t.Run("WaitNextChunk", func(t *testing.T) {
 		t.Run("configured chunk size = 2..3, 1 element", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
 			stream := &ElementsStream{
 				filter:   ANYVAL_PATTERN,
 				elements: []Value{Int(1)},
@@ -136,6 +150,7 @@ func TestElementsStream(t *testing.T) {
 
 		t.Run("configured chunk size = 2..3, 2 elements", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
 			stream := &ElementsStream{
 				filter:   ANYVAL_PATTERN,
 				elements: []Value{Int(1), Int(2)},
@@ -158,6 +173,7 @@ func TestElementsStream(t *testing.T) {
 
 		t.Run("configured chunk size = 2..3, 3 elements", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
 			stream := &ElementsStream{
 				filter:   ANYVAL_PATTERN,
 				elements: []Value{Int(1), Int(2), Int(3)},
@@ -180,6 +196,7 @@ func TestElementsStream(t *testing.T) {
 
 		t.Run("configured chunk size = 2..3, 4 elements", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
 			stream := &ElementsStream{
 				filter:   ANYVAL_PATTERN,
 				elements: []Value{Int(1), Int(2), Int(3), Int(4)},
@@ -212,6 +229,7 @@ func TestByteStream(t *testing.T) {
 		t.Run("WaitNext", func(t *testing.T) {
 			t.Run("1 byte in buffer", func(t *testing.T) {
 				ctx := NewContext(ContextConfig{})
+				defer ctx.CancelGracefully()
 				buffer := NewRingBuffer(ctx, bufferSize)
 				buffer.Write([]byte("a"))
 				stream := buffer.Stream(ctx, nil).(*ReadableByteStream)
@@ -232,6 +250,7 @@ func TestByteStream(t *testing.T) {
 
 			t.Run("2 bytes in buffer", func(t *testing.T) {
 				ctx := NewContext(ContextConfig{})
+				defer ctx.CancelGracefully()
 				buffer := NewRingBuffer(ctx, bufferSize)
 				buffer.Write([]byte("ab"))
 				stream := buffer.Stream(ctx, nil).(*ReadableByteStream)
@@ -265,6 +284,7 @@ func TestByteStream(t *testing.T) {
 
 			t.Run("configured chunk size = 5..10, 4 bytes in buffer", func(t *testing.T) {
 				ctx := NewContext(ContextConfig{})
+				defer ctx.CancelGracefully()
 				buffer := NewRingBuffer(ctx, bufferSize)
 				buffer.Write([]byte("abcd"))
 				stream := buffer.Stream(ctx, nil).(*ReadableByteStream)
@@ -286,6 +306,7 @@ func TestByteStream(t *testing.T) {
 
 			t.Run("configured chunk size = 5..10, 5 bytes in buffer", func(t *testing.T) {
 				ctx := NewContext(ContextConfig{})
+				defer ctx.CancelGracefully()
 				buffer := NewRingBuffer(ctx, bufferSize)
 				buffer.Write([]byte("abcde"))
 				stream := buffer.Stream(ctx, nil).(*ReadableByteStream)
@@ -307,6 +328,7 @@ func TestByteStream(t *testing.T) {
 
 			t.Run("configured chunk size = 5..10, 10 bytes in buffer", func(t *testing.T) {
 				ctx := NewContext(ContextConfig{})
+				defer ctx.CancelGracefully()
 				buffer := NewRingBuffer(ctx, bufferSize)
 				buffer.Write([]byte("abcdefghij"))
 				stream := buffer.Stream(ctx, nil).(*ReadableByteStream)
@@ -328,6 +350,7 @@ func TestByteStream(t *testing.T) {
 
 			t.Run("configured chunk size = 5..10, 11 bytes in buffer", func(t *testing.T) {
 				ctx := NewContext(ContextConfig{})
+				defer ctx.CancelGracefully()
 				buffer := NewRingBuffer(ctx, bufferSize)
 				buffer.Write([]byte("abcdefghijk"))
 				stream := buffer.Stream(ctx, nil).(*ReadableByteStream)
@@ -361,6 +384,7 @@ func TestConfluenceStream(t *testing.T) {
 		t.Run("WaitNext", func(t *testing.T) {
 			t.Run("1 byte in first buffer", func(t *testing.T) {
 				ctx := NewContext(ContextConfig{})
+				defer ctx.CancelGracefully()
 
 				buffer1 := NewRingBuffer(ctx, bufferSize)
 				buffer1.Write([]byte("a"))
@@ -390,6 +414,7 @@ func TestConfluenceStream(t *testing.T) {
 
 			t.Run("2 bytes in first buffer", func(t *testing.T) {
 				ctx := NewContext(ContextConfig{})
+				defer ctx.CancelGracefully()
 
 				buffer1 := NewRingBuffer(ctx, bufferSize)
 				buffer1.Write([]byte("ab"))
@@ -425,6 +450,7 @@ func TestConfluenceStream(t *testing.T) {
 
 			t.Run("1 byte in both buffers", func(t *testing.T) {
 				ctx := NewContext(ContextConfig{})
+				defer ctx.CancelGracefully()
 
 				buffer1 := NewRingBuffer(ctx, bufferSize)
 				buffer1.Write([]byte("a"))
@@ -466,6 +492,7 @@ func TestConfluenceStream(t *testing.T) {
 
 			t.Run("configured chunk size = 5..10, 4 bytes in first buffer", func(t *testing.T) {
 				ctx := NewContext(ContextConfig{})
+				defer ctx.CancelGracefully()
 				buffer1 := NewRingBuffer(ctx, bufferSize)
 				buffer1.Write([]byte("abcd"))
 				stream1 := buffer1.Stream(ctx, nil).(*ReadableByteStream)
@@ -495,6 +522,7 @@ func TestConfluenceStream(t *testing.T) {
 
 			t.Run("configured chunk size = 5..10, 5 bytes in buffer", func(t *testing.T) {
 				ctx := NewContext(ContextConfig{})
+				defer ctx.CancelGracefully()
 				buffer1 := NewRingBuffer(ctx, bufferSize)
 				buffer1.Write([]byte("abcde"))
 				stream1 := buffer1.Stream(ctx, nil).(*ReadableByteStream)
@@ -524,6 +552,7 @@ func TestConfluenceStream(t *testing.T) {
 
 			t.Run("configured chunk size = 5..10, 10 bytes in first buffer", func(t *testing.T) {
 				ctx := NewContext(ContextConfig{})
+				defer ctx.CancelGracefully()
 				buffer1 := NewRingBuffer(ctx, bufferSize)
 				buffer1.Write([]byte("abcdefghij"))
 				stream1 := buffer1.Stream(ctx, nil).(*ReadableByteStream)
@@ -553,6 +582,7 @@ func TestConfluenceStream(t *testing.T) {
 
 			t.Run("configured chunk size = 5..10, 11 bytes in first buffer", func(t *testing.T) {
 				ctx := NewContext(ContextConfig{})
+				defer ctx.CancelGracefully()
 				buffer1 := NewRingBuffer(ctx, bufferSize)
 				buffer1.Write([]byte("abcdefghijk"))
 				stream1 := buffer1.Stream(ctx, nil).(*ReadableByteStream)

@@ -7,6 +7,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -125,6 +126,8 @@ func bytecodeTest(t *testing.T, optimize bool) {
 		}
 
 		compilationCtx := NewContext(ContextConfig{})
+		defer compilationCtx.CancelGracefully()
+
 		NewGlobalState(compilationCtx)
 
 		res, err := EvalVM(mod, s, BytecodeEvaluationConfig{
@@ -145,6 +148,13 @@ func bytecodeTest(t *testing.T, optimize bool) {
 // testEval executes the suite of evaluation tests with a given evaluation function
 // that can have any implementation (tree walk, bytecode, ...).
 func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
+	runtime.GC()
+	startMemStats := new(runtime.MemStats)
+	runtime.ReadMemStats(startMemStats)
+
+	defer utils.AssertNoMemoryLeak(t, startMemStats, 100_000, utils.AssertNoMemoryLeakOptions{
+		PreSleepDurationMillis: 100,
+	})
 
 	t.Run("integer literal", func(t *testing.T) {
 		code := "1"
@@ -2491,6 +2501,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					},
 					Filesystem: newOsFilesystem(),
 				})
+				defer ctx.CancelGracefully()
 
 				state := NewGlobalState(ctx, map[string]Value{
 					"dir": tempDirPath,
@@ -3779,6 +3790,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		`
 
 		ctx := NewDefaultTestContext()
+		defer ctx.CancelGracefully()
+
 		ctx.AddNamedPattern("int", DEFAULT_NAMED_PATTERNS["int"])
 		state := NewGlobalState(ctx)
 		res, err := Eval(code, state, true)
@@ -3797,6 +3810,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		`
 
 		ctx := NewDefaultTestContext()
+		defer ctx.CancelGracefully()
 		ctx.AddNamedPattern("int", DEFAULT_NAMED_PATTERNS["int"])
 		state := NewGlobalState(ctx)
 
@@ -3809,6 +3823,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	t.Run("pattern conversion expression,", func(t *testing.T) {
 		code := `%(1)`
 		ctx := NewDefaultTestContext()
+		defer ctx.CancelGracefully()
 		state := NewGlobalState(ctx)
 
 		res, err := Eval(code, state, true)
@@ -4379,6 +4394,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
 			ctx.AddNamedPattern("int", INT_PATTERN)
 
 			state := NewGlobalState(ctx)
@@ -4402,6 +4418,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
 			ctx.AddNamedPattern("int", INT_PATTERN)
 
 			state := NewGlobalState(ctx)
@@ -4427,6 +4444,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
 			ctx.AddNamedPattern("int", INT_PATTERN)
 
 			state := NewGlobalState(ctx)
@@ -4450,6 +4468,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
 			ctx.AddNamedPattern("int", INT_PATTERN)
 
 			state := NewGlobalState(ctx)
@@ -4473,6 +4492,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
 			ctx.AddNamedPattern("int", INT_PATTERN)
 
 			state := NewGlobalState(ctx)
@@ -5385,6 +5405,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		`
 
 		_ctx := NewDefaultTestContext()
+		defer _ctx.CancelGracefully()
+
 		state := NewGlobalState(_ctx, map[string]Value{
 			"gofunc": ValOf(func(ctx *Context) Int {
 				called = true
@@ -7056,6 +7078,8 @@ func TestSpawnLThread(t *testing.T) {
 				GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
 			},
 		})
+		defer ctx.CancelGracefully()
+
 		state := NewGlobalState(ctx)
 		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
 			NameString: "lthread-test",

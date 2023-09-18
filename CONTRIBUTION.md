@@ -14,6 +14,13 @@ If you have a S3 bucket with read & write access you can the set the env variabl
 
 If you have a Cloudflare Account you can the set the env variables read in the following [file](internal/project/secrets_test.go).
 
+
+# Save Memory Profile Of a Test
+
+```
+go test -p=1 -count=1 ./internal/core -short -race -timeout=100s -run=TestXXXX -memprofile mem.out
+```
+
 ## Vetting
 
 ```

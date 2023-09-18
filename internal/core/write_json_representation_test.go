@@ -1,6 +1,7 @@
 package core
 
 import (
+	"runtime"
 	"strconv"
 	"testing"
 
@@ -39,6 +40,14 @@ func TestIntJSONRepresentation(t *testing.T) {
 }
 
 func TestFloatJSONRepresentation(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	testCases := []struct {
 		value          Float
 		representation string
@@ -65,6 +74,14 @@ func TestFloatJSONRepresentation(t *testing.T) {
 }
 
 func TestStrJSONRepresentation(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	s := Str("a\nb")
 
 	expectedRepr := `"a\nb"`
@@ -78,6 +95,14 @@ func TestStrJSONRepresentation(t *testing.T) {
 }
 
 func TestObjectJSONRepresentation(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	t.Run("empty", func(t *testing.T) {
 		obj := &Object{}
 
@@ -201,6 +226,14 @@ func TestObjectJSONRepresentation(t *testing.T) {
 }
 
 func TestRecordJSONRepresentation(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	t.Run("empty", func(t *testing.T) {
 		rec := NewRecordFromMap(nil)
 
@@ -269,6 +302,13 @@ func TestRecordJSONRepresentation(t *testing.T) {
 }
 
 func TestDictJSONRepresentation(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
 
 	//TODO:
 	// 	t.Run("empty", func(t *testing.T) {
@@ -310,6 +350,14 @@ func TestDictJSONRepresentation(t *testing.T) {
 }
 
 func TestKeyListJSONRepresentation(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	//TODO
 	// t.Run("empty", func(t *testing.T) {
 	// 	list := KeyList{}
@@ -334,6 +382,14 @@ func TestKeyListJSONRepresentation(t *testing.T) {
 }
 
 func TestListJSONRepresentation(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	t.Run("empty", func(t *testing.T) {
 		list := NewWrappedValueList()
 
@@ -398,6 +454,13 @@ func TestOptionJSONRepresentation(t *testing.T) {
 }
 
 func TestPathJSONRepresentation(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
 
 	testCases := []struct {
 		value          string
@@ -423,6 +486,13 @@ func TestPathJSONRepresentation(t *testing.T) {
 
 }
 func TestPathPatternJSONRepresentation(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
 
 	testCases := []struct {
 		value          string
@@ -449,6 +519,14 @@ func TestPathPatternJSONRepresentation(t *testing.T) {
 }
 
 func TestURLRJSONepresentation(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	url := URL("https://example.com/")
 
 	assert.Equal(t, `{"url__value":"https://example.com/"}`, getJSONRepr(t, url, reprTestCtx))
@@ -458,6 +536,14 @@ func TestURLRJSONepresentation(t *testing.T) {
 }
 
 func TestURLPatternJSONRepresentation(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	testCases := []struct {
 		value          string
 		representation string
@@ -478,6 +564,14 @@ func TestURLPatternJSONRepresentation(t *testing.T) {
 }
 
 func TestHostJSONRepresentation(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	host := Host("https://example.com")
 
 	assert.Equal(t, `{"host__value":"https://example.com"}`, getJSONRepr(t, host, reprTestCtx))
@@ -487,6 +581,14 @@ func TestHostJSONRepresentation(t *testing.T) {
 }
 
 func TestHostPatternJSONRepresentation(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	testCases := []struct {
 		value          string
 		representation string
@@ -507,6 +609,13 @@ func TestHostPatternJSONRepresentation(t *testing.T) {
 }
 
 func TestEmailAddressJSONRepresentation(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
 
 	testCases := []string{"foo@example.com", "foo.e.9@example.com", "foo+e%9@example.com", "foo%e+9@example.com"}
 
@@ -524,6 +633,14 @@ func TestEmailAddressJSONRepresentation(t *testing.T) {
 }
 
 func TestIdentifierJSONRepresentation(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	ident := Identifier("a")
 
 	assert.Equal(t, `{"ident__value":"a"}`, getJSONRepr(t, ident, reprTestCtx))
@@ -537,6 +654,14 @@ func TestCheckedStringJSONRepresentation(t *testing.T) {
 }
 
 func TestByteCountJSONRepresentation(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	negative := ByteCount(-1)
 	assert.ErrorContains(t, negative.WriteRepresentation(reprTestCtx, nil, nil, 0), "invalid byte rate")
 
@@ -552,6 +677,14 @@ func TestByteCountJSONRepresentation(t *testing.T) {
 }
 
 func TestLineCountJSONRepresentation(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	n := LineCount(3)
 
 	assert.Equal(t, `{"line-count__value":"3ln"}`, getJSONRepr(t, n, reprTestCtx))
@@ -561,6 +694,14 @@ func TestLineCountJSONRepresentation(t *testing.T) {
 }
 
 func TestByteRateJSONRepresentation(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	negative := ByteRate(-1)
 	assert.ErrorIs(t, negative.WriteRepresentation(reprTestCtx, nil, nil, 0), ErrNoRepresentation)
 
@@ -576,6 +717,14 @@ func TestByteRateJSONRepresentation(t *testing.T) {
 }
 
 func TestSimpleRateJSONRepresentation(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	for _, testCase := range simpleRateReprTestCases {
 
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
@@ -590,6 +739,14 @@ func TestSimpleRateJSONRepresentation(t *testing.T) {
 }
 
 func TestDurationJSONRepresentation(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	for _, testCase := range durationReprTestCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
 
@@ -602,6 +759,14 @@ func TestDurationJSONRepresentation(t *testing.T) {
 }
 
 func TestRuneRangeJSONRepresentation(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	runeRange := RuneRange{Start: 'a', End: 'z'}
 
 	assert.Equal(t, `{"rune-range__value":{"start":"a","end":"z"}}`, getJSONRepr(t, runeRange, reprTestCtx))
@@ -615,6 +780,14 @@ func TestQuantityRangeJSONRepresentation(t *testing.T) {
 }
 
 func TestIntRangeJSONRepresentation(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	t.Run("known start", func(t *testing.T) {
 		intRange := IntRange{Start: 0, End: 100, inclusiveEnd: true, Step: 1}
 

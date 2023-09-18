@@ -1,6 +1,7 @@
 package core
 
 import (
+	"runtime"
 	"strings"
 	"testing"
 
@@ -10,6 +11,14 @@ import (
 )
 
 func TestURLPattern(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	t.Run("Test", func(t *testing.T) {
 		assert.False(t, URLPattern("https://localhost:443/ab/...").Test(nil, URL("https://localhost:443/ab")))
 		assert.True(t, URLPattern("https://localhost:443/ab/...").Test(nil, URL("https://localhost:443/ab/c")))
@@ -42,16 +51,31 @@ func TestURLPattern(t *testing.T) {
 }
 
 func TestPathPattern(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	t.Run("", func(t *testing.T) {
 		assert.True(t, PathPattern("/*").Test(nil, Path("/")))
 		assert.True(t, PathPattern("/*").Test(nil, Path("/e")))
 		assert.False(t, PathPattern("/*").Test(nil, Path("/e/")))
 		assert.False(t, PathPattern("/*").Test(nil, Path("/e/e")))
 	})
-
 }
 
 func TestHostPatternTest(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	assert.True(t, HostPattern("https://*.com").Test(nil, Host("https://a.com")))
 	assert.True(t, HostPattern("https://a*.com").Test(nil, Host("https://a.com")))
 	assert.True(t, HostPattern("https://a*.com").Test(nil, Host("https://ab.com")))
@@ -70,6 +94,13 @@ func TestHostPatternTest(t *testing.T) {
 }
 
 func TestNamedSegmentPathPatternTest(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
 
 	res := parseEval(t, `%/home/{:username}`)
 	patt := res.(*NamedSegmentPathPattern)
@@ -91,6 +122,14 @@ func TestNamedSegmentPathPatternTest(t *testing.T) {
 }
 
 func TestNamedSegmentPathPatternMatchGroups(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	res1 := parseEval(t, `%/home/{:username}`)
 	patt1 := res1.(*NamedSegmentPathPattern)
 
@@ -143,6 +182,13 @@ func TestNamedSegmentPathPatternMatchGroups(t *testing.T) {
 }
 
 func TestRepeatedPatternElementRandom(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
 
 	t.Run("2 ocurrences of constant string", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
@@ -210,6 +256,14 @@ func TestRepeatedPatternElementRandom(t *testing.T) {
 }
 
 func TestSequenceStringPatternRandom(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	ctx := NewContext(ContextConfig{})
 
 	patt1 := SequenceStringPattern{
@@ -225,6 +279,14 @@ func TestSequenceStringPatternRandom(t *testing.T) {
 }
 
 func TestUnionStringPatternRandom(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	ctx := NewContext(ContextConfig{})
 
 	patt1 := UnionStringPattern{

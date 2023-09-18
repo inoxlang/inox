@@ -1,16 +1,27 @@
 package core
 
 import (
+	"runtime"
 	"strings"
 	"testing"
 	"time"
 
 	internal "github.com/inoxlang/inox/internal/parse"
 	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestParseRepr(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10, utils.AssertNoMemoryLeakOptions{
+			PreSleepDurationMillis: 100,
+		})
+	}
 
 	//TODO: add tests: test all combinations of input (up to 10 characters) and use regular parser to know what inputs are valid.
 	//TODO: tests with non printable characters
@@ -1045,6 +1056,7 @@ func TestParseRepr(t *testing.T) {
 		name := strings.ReplaceAll(case_.input, "\n", "<nl>")
 		t.Run(name, func(t *testing.T) {
 			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			defer ctx.cancel()
 
 			for name, patt := range DEFAULT_NAMED_PATTERNS {
 				ctx.AddNamedPattern(name, patt)

@@ -1,18 +1,30 @@
 package core
 
 import (
+	"runtime"
 	"testing"
 	"time"
 
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestObjectWatcher(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10, utils.AssertNoMemoryLeakOptions{
+			PreSleepDurationMillis: 100,
+		})
+	}
 
 	t.Run("mutations", func(t *testing.T) {
 		t.Run("watcher should be informed about new property", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			NewGlobalState(ctx)
+			defer ctx.CancelGracefully()
 
 			obj := NewObject()
 			w := obj.Watcher(ctx, WatcherConfiguration{Filter: MUTATION_PATTERN}).(*GenericWatcher)
@@ -38,6 +50,7 @@ func TestObjectWatcher(t *testing.T) {
 		t.Run("watcher should be informed about an existing property being set", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			NewGlobalState(ctx)
+			defer ctx.CancelGracefully()
 
 			obj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx)
 			w := obj.Watcher(ctx, WatcherConfiguration{Filter: MUTATION_PATTERN}).(*GenericWatcher)
@@ -64,6 +77,7 @@ func TestObjectWatcher(t *testing.T) {
 			t.Skip()
 			ctx := NewContext(ContextConfig{})
 			NewGlobalState(ctx)
+			defer ctx.CancelGracefully()
 
 			innerObj := NewObjectFromMap(ValMap{"b": Int(1)}, ctx)
 			obj := NewObjectFromMap(ValMap{"a": innerObj}, ctx)
@@ -92,6 +106,7 @@ func TestObjectWatcher(t *testing.T) {
 
 			ctx := NewContext(ContextConfig{})
 			NewGlobalState(ctx)
+			defer ctx.CancelGracefully()
 
 			innerObj := NewObjectFromMap(ValMap{"b": Int(1)}, ctx)
 			obj := NewObjectFromMap(ValMap{"a": innerObj}, ctx)
@@ -112,6 +127,7 @@ func TestObjectWatcher(t *testing.T) {
 		t.Run("watcher should return a message after a message has been received", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			NewGlobalState(ctx)
+			defer ctx.CancelGracefully()
 
 			obj := NewObject()
 			w := obj.Watcher(ctx, WatcherConfiguration{Filter: MSG_PATTERN}).(*GenericWatcher)
@@ -137,6 +153,7 @@ func TestObjectWatcher(t *testing.T) {
 		t.Run("watcher should not return anything after the object has changed", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			NewGlobalState(ctx)
+			defer ctx.CancelGracefully()
 
 			obj := NewObject()
 			w := obj.Watcher(ctx, WatcherConfiguration{Filter: MSG_PATTERN}).(*GenericWatcher)
@@ -163,6 +180,7 @@ func TestDictionaryWatcher(t *testing.T) {
 		t.Run("watcher should be informed about new property", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			NewGlobalState(ctx)
+			defer ctx.CancelGracefully()
 
 			dict := NewDictionary(ValMap{})
 			w := dict.Watcher(ctx, WatcherConfiguration{Filter: MUTATION_PATTERN}).(*GenericWatcher)
@@ -188,6 +206,7 @@ func TestDictionaryWatcher(t *testing.T) {
 		t.Run("watcher should be informed about an existing property being set", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			NewGlobalState(ctx)
+			defer ctx.CancelGracefully()
 
 			dict := NewDictionary(ValMap{`"a"`: Int(1)})
 			w := dict.Watcher(ctx, WatcherConfiguration{Filter: MUTATION_PATTERN}).(*GenericWatcher)
@@ -217,6 +236,7 @@ func TestDynamicMemberWatcher(t *testing.T) {
 	t.Run("dynamic member of object should inform about mutation when member is set", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		obj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx)
 		dyn, _ := NewDynamicMemberValue(ctx, obj, "a")
@@ -248,6 +268,7 @@ func TestDynamicMemberWatcher(t *testing.T) {
 	t.Run("dynamic member of dynamic value should inform about mutation when member is set", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		innerObj := NewObjectFromMap(ValMap{"int": Int(1)}, ctx)
 		obj := NewObjectFromMap(ValMap{"innerObj": innerObj}, ctx)
@@ -282,6 +303,7 @@ func TestDynamicMemberWatcher(t *testing.T) {
 	t.Run("dynamic member of dynamic value should inform about mutation when dynamic value changes", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		innerObj := NewObjectFromMap(ValMap{"int": Int(1)}, ctx)
 		obj := NewObjectFromMap(ValMap{"innerObj": innerObj}, ctx)
@@ -316,6 +338,7 @@ func TestDynamicMemberWatcher(t *testing.T) {
 	t.Run("dynamic member of dynamic value should inform about mutation when dynamic value changes even if watching depth is shallow", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		innerObj := NewObjectFromMap(ValMap{"int": Int(1)}, ctx)
 		obj := NewObjectFromMap(ValMap{"innerObj": innerObj}, ctx)
@@ -365,6 +388,7 @@ func TestPeriodicWatcher(t *testing.T) {
 		t.Run("next value set once", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			NewGlobalState(ctx)
+			defer ctx.CancelGracefully()
 
 			w := NewPeriodicWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN}, PERIOD)
 			defer w.Stop()
@@ -385,6 +409,7 @@ func TestPeriodicWatcher(t *testing.T) {
 		t.Run("next value quickly set twice", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			NewGlobalState(ctx)
+			defer ctx.CancelGracefully()
 
 			w := NewPeriodicWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN}, PERIOD)
 			defer w.Stop()
@@ -406,6 +431,7 @@ func TestPeriodicWatcher(t *testing.T) {
 		t.Run("next value set once: not matching additional filter", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			NewGlobalState(ctx)
+			defer ctx.CancelGracefully()
 
 			w := NewPeriodicWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN}, PERIOD)
 			defer w.Stop()
@@ -422,6 +448,7 @@ func TestPeriodicWatcher(t *testing.T) {
 		t.Run("watcher stopped while it is waiting next value", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			NewGlobalState(ctx)
+			defer ctx.CancelGracefully()
 
 			w := NewPeriodicWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN}, PERIOD)
 			defer w.Stop()
@@ -438,6 +465,7 @@ func TestPeriodicWatcher(t *testing.T) {
 		t.Run("delay before watcher start waiting next value", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			NewGlobalState(ctx)
+			defer ctx.CancelGracefully()
 
 			w := NewPeriodicWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN}, PERIOD)
 			defer w.Stop()
@@ -457,6 +485,7 @@ func TestPeriodicWatcher(t *testing.T) {
 		t.Run("delay before 2 watchers start to wait next value", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			NewGlobalState(ctx)
+			defer ctx.CancelGracefully()
 
 			w1 := NewPeriodicWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN}, PERIOD)
 			defer w1.Stop()
@@ -486,6 +515,7 @@ func TestPeriodicWatcher(t *testing.T) {
 		t.Run("delay before watcher start to wait next value + IDLE watcher", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			NewGlobalState(ctx)
+			defer ctx.CancelGracefully()
 
 			idleWatcher := NewPeriodicWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN}, PERIOD)
 			defer idleWatcher.Stop()

@@ -9,10 +9,21 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMutationCallbacks(t *testing.T) {
+	{
+		//no runtime.GC() call on purpose
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10, utils.AssertNoMemoryLeakOptions{
+			PreSleepDurationMillis: 100,
+		})
+	}
+
 	resetMutationCallbackPool()
 
 	t.Run("creating & initializatiion of a MutationCallbacks", func(t *testing.T) {
@@ -117,6 +128,7 @@ func TestObjectOnMutation(t *testing.T) {
 	t.Run("callback microtask should be called after additional property is set", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		obj := NewObjectFromMap(ValMap{}, ctx)
 		called := atomic.Bool{}
@@ -142,6 +154,7 @@ func TestObjectOnMutation(t *testing.T) {
 	t.Run("callback microtask should be called when an existing property is set", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		obj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx)
 		called := atomic.Bool{}
@@ -167,6 +180,7 @@ func TestObjectOnMutation(t *testing.T) {
 	t.Run("shared object: callback microtask should be called after value of property has a shallow change", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		state := NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		innerObj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx)
 		obj := NewObjectFromMap(ValMap{"inner": innerObj}, ctx)
@@ -205,6 +219,7 @@ func TestObjectOnMutation(t *testing.T) {
 	t.Run("callback microtask should be called after value of property added after OnMutation call has a shallow change", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		innerObj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx)
 		obj := NewObjectFromMap(ValMap{}, ctx)
@@ -238,6 +253,7 @@ func TestObjectOnMutation(t *testing.T) {
 	t.Run("callback microtask should be called after value of property updated after OnMutation call has a shallow change", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		innerObj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx)
 		obj := NewObjectFromMap(ValMap{"inner": innerObj}, ctx)
@@ -272,6 +288,7 @@ func TestObjectOnMutation(t *testing.T) {
 	t.Run("callback microtask should NOT be called after previous value of property has a shallow change", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		innerObj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx)
 		obj := NewObjectFromMap(ValMap{"inner": innerObj}, ctx)
@@ -306,6 +323,7 @@ func TestObjectOnMutation(t *testing.T) {
 	t.Run("callback microtask should be NOT called after additional property is set if callback has been removed", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		obj := NewObjectFromMap(ValMap{}, ctx)
 		called := atomic.Bool{}
@@ -333,6 +351,7 @@ func TestDictionaryOnMutation(t *testing.T) {
 	t.Run("callback microtask should be called after additional property is set", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		dict := NewDictionary(ValMap{})
 		called := atomic.Bool{}
@@ -356,6 +375,7 @@ func TestDictionaryOnMutation(t *testing.T) {
 	t.Run("callback microtask should be called when an existing property is set", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		dict := NewDictionary(ValMap{`"a"`: Int(1)})
 		called := atomic.Bool{}
@@ -379,6 +399,7 @@ func TestDictionaryOnMutation(t *testing.T) {
 	t.Run("callback microtask should be called after value of entry added after OnMutation call has a shallow change", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		innerObj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx)
 		obj := NewObjectFromMap(ValMap{}, ctx)
@@ -412,6 +433,7 @@ func TestDictionaryOnMutation(t *testing.T) {
 	t.Run("callback microtask should be called after value of entry updated after OnMutation call has a shallow change", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		innerObj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx)
 		dict := NewDictionary(ValMap{`"inner"`: innerObj})
@@ -444,6 +466,7 @@ func TestDictionaryOnMutation(t *testing.T) {
 	t.Run("callback microtask should NOT be called after previous value of property has a shallow change", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		innerObj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx)
 		dict := NewDictionary(ValMap{`"inner"`: innerObj})
@@ -480,6 +503,7 @@ func TestListOnMutation(t *testing.T) {
 	t.Run("microtask should be called when an element is set", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList(Int(1))
 		called := atomic.Bool{}
@@ -510,6 +534,7 @@ func TestListOnMutation(t *testing.T) {
 	t.Run("microtask should NOT be called when a replaced element has a shallow change", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		obj := NewObjectFromMap(ValMap{}, ctx)
 		list := NewWrappedValueList(obj)
@@ -541,6 +566,7 @@ func TestListOnMutation(t *testing.T) {
 	t.Run("microtask should be called when a slice is set", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList(Int(1))
 		called := atomic.Bool{}
@@ -573,6 +599,7 @@ func TestListOnMutation(t *testing.T) {
 	t.Run("microtask should NOT be called when a element replaced by SetSlice has a shallow change", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		obj := NewObjectFromMap(ValMap{}, ctx)
 		list := NewWrappedValueList(obj)
@@ -606,6 +633,7 @@ func TestListOnMutation(t *testing.T) {
 	t.Run("microtask should be called when an element is inserted", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList()
 		called := atomic.Bool{}
@@ -636,6 +664,7 @@ func TestListOnMutation(t *testing.T) {
 	t.Run("microtask should be called when a watchable element is inserted", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		elem := NewObjectFromMapNoInit(ValMap{})
 		list := NewWrappedValueList()
@@ -667,6 +696,7 @@ func TestListOnMutation(t *testing.T) {
 	t.Run("dynamic map invocation: microtask should NOT be called when an element is inserted if callback has been removed", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList()
 		called := atomic.Bool{}
@@ -694,6 +724,7 @@ func TestListOnMutation(t *testing.T) {
 	t.Run("microtask should be called when a sequence is inserted", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList()
 		called := atomic.Bool{}
@@ -724,6 +755,7 @@ func TestListOnMutation(t *testing.T) {
 	t.Run("microtask should be called when a sequence is inserted - deep watching", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList()
 		called := atomic.Bool{}
@@ -756,6 +788,7 @@ func TestListOnMutation(t *testing.T) {
 	t.Run("microtask should be called when an element is added with append", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList()
 		called := atomic.Bool{}
@@ -786,6 +819,7 @@ func TestListOnMutation(t *testing.T) {
 	t.Run("microtask should be called when an watchable element is added with append - deep watching", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		elem := NewObjectFromMapNoInit(ValMap{})
 		list := NewWrappedValueList()
@@ -819,6 +853,7 @@ func TestListOnMutation(t *testing.T) {
 	t.Run("microtask should be called when an second watchable element is added with append - deep watching", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		elem1 := NewObjectFromMapNoInit(ValMap{})
 		elem2 := NewObjectFromMapNoInit(ValMap{})
@@ -858,6 +893,7 @@ func TestListOnMutation(t *testing.T) {
 	t.Run("microtask should NOT be called when a removed element has a shallow change", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		obj := NewObjectFromMap(ValMap{}, ctx)
 		list := NewWrappedValueList(obj)
@@ -889,6 +925,7 @@ func TestListOnMutation(t *testing.T) {
 	t.Run("microtask should NOT be called when a element removed by removePositionRange has a shallow change", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		obj := NewObjectFromMap(ValMap{}, ctx)
 		list := NewWrappedValueList(obj)
@@ -920,6 +957,7 @@ func TestListOnMutation(t *testing.T) {
 	t.Run("microtask should NOT be called when an element appended then removed by removePositionRange has a shallow change", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		obj := NewObjectFromMap(ValMap{}, ctx)
 		list := NewWrappedValueList()
@@ -956,6 +994,7 @@ func TestRuneSliceOnMutation(t *testing.T) {
 	t.Run("microtask should be called when an element is inserted", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		slice := NewRuneSlice(nil)
 		called := atomic.Bool{}
@@ -986,6 +1025,7 @@ func TestRuneSliceOnMutation(t *testing.T) {
 	t.Run("microtask should be called when a sequence is inserted", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		slice := NewRuneSlice(nil)
 		called := atomic.Bool{}
@@ -1018,6 +1058,7 @@ func TestRuneSliceOnMutation(t *testing.T) {
 	t.Run("microtask should be called when a slice is set", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		slice := NewRuneSlice([]rune{'a', 'b', 'c'})
 		called := atomic.Bool{}
@@ -1050,6 +1091,7 @@ func TestRuneSliceOnMutation(t *testing.T) {
 	t.Run("microtask should be called when an element is set", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		slice := NewRuneSlice([]rune("a"))
 		called := atomic.Bool{}
@@ -1080,6 +1122,7 @@ func TestRuneSliceOnMutation(t *testing.T) {
 	t.Run("dynamic map invocation: microtask should NOT be called when an element is inserted if callback has been removed", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		slice := NewWrappedValueList()
 		called := atomic.Bool{}
@@ -1110,6 +1153,7 @@ func TestByteSliceOnMutation(t *testing.T) {
 	t.Run("microtask should be called when an element is inserted", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		slice := NewByteSlice(nil, true, "")
 		called := atomic.Bool{}
@@ -1140,6 +1184,7 @@ func TestByteSliceOnMutation(t *testing.T) {
 	t.Run("microtask should be called when a sequence is inserted", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		slice := NewByteSlice(nil, true, "")
 		called := atomic.Bool{}
@@ -1172,6 +1217,7 @@ func TestByteSliceOnMutation(t *testing.T) {
 	t.Run("microtask should be called when a slice is set", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		slice := NewByteSlice([]byte("abc"), true, "")
 		called := atomic.Bool{}
@@ -1204,6 +1250,7 @@ func TestByteSliceOnMutation(t *testing.T) {
 	t.Run("microtask should be called when an element is set", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		slice := NewByteSlice([]byte("a"), true, "")
 		called := atomic.Bool{}
@@ -1234,6 +1281,7 @@ func TestByteSliceOnMutation(t *testing.T) {
 	t.Run("dynamic map invocation: microtask should NOT be called when an element is inserted if callback has been removed", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		slice := NewByteSlice(nil, true, "")
 		called := atomic.Bool{}
@@ -1264,6 +1312,7 @@ func TestDynamicMemberOnMutation(t *testing.T) {
 	t.Run("dynamic member of object: microtask should be called when member is set", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		obj := NewObjectFromMap(ValMap{"int": Int(1)}, ctx)
 		dyn, _ := NewDynamicMemberValue(ctx, obj, "int")
@@ -1298,6 +1347,7 @@ func TestDynamicMemberOnMutation(t *testing.T) {
 		"and dyn member should resolve to new value", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		innerObj := NewObjectFromMap(ValMap{"int": Int(1)}, ctx)
 		obj := NewObjectFromMap(ValMap{"innerObj": innerObj}, ctx)
@@ -1336,6 +1386,7 @@ func TestDynamicMemberOnMutation(t *testing.T) {
 		"and dyn member should resolve to member of new value", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		innerObj := NewObjectFromMap(ValMap{"int": Int(1)}, ctx)
 		obj := NewObjectFromMap(ValMap{"innerObj": innerObj}, ctx)
@@ -1374,6 +1425,7 @@ func TestDynamicMemberOnMutation(t *testing.T) {
 	t.Run("dynamic member of object: microtask should be NOT called when member is set if callback has been removed", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		obj := NewObjectFromMap(ValMap{"int": Int(1)}, ctx)
 		dyn, _ := NewDynamicMemberValue(ctx, obj, "int")
@@ -1402,6 +1454,7 @@ func TestDynamicMemberOnMutation(t *testing.T) {
 	t.Run("dynamic member of object: microtask should be NOT called when member is set if callback has been removed", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		obj := NewObjectFromMap(ValMap{"int": Int(1)}, ctx)
 		dyn, _ := NewDynamicMemberValue(ctx, obj, "int")
@@ -1433,6 +1486,7 @@ func TestDynamicMapInvocationOnMutation(t *testing.T) {
 	t.Run("dynamic map invocation: microtask should be called when an element is inserted", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList()
 		dyn, _ := NewDynamicMapInvocation(ctx, list, PropertyName("a"))
@@ -1467,6 +1521,7 @@ func TestDynamicMapInvocationOnMutation(t *testing.T) {
 	t.Run("dynamic map invocation: microtask should be called when an element is set", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList(objFrom(ValMap{"a": Int(1)}))
 		dyn, _ := NewDynamicMapInvocation(ctx, list, PropertyName("a"))
@@ -1501,6 +1556,7 @@ func TestDynamicMapInvocationOnMutation(t *testing.T) {
 	t.Run("dynamic map invocation: microtask should NOT be called when an element is inserted if callback has been removed", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList()
 		dyn, _ := NewDynamicMapInvocation(ctx, list, PropertyName("a"))
@@ -1532,6 +1588,7 @@ func TestDynamicIfnOnMutation(t *testing.T) {
 	t.Run("dynamic map invocation: microtask should be called when an element is inserted", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		obj := NewObjectFromMap(ValMap{"condition": False}, ctx)
 		cond, _ := NewDynamicMemberValue(ctx, obj, "condition")
@@ -1577,6 +1634,7 @@ func TestSystemGraphOnMutation(t *testing.T) {
 	t.Run("microtask should be called when a node is added", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		graph := NewSystemGraph()
 		obj := NewObject()
@@ -1607,6 +1665,7 @@ func TestSystemGraphOnMutation(t *testing.T) {
 	t.Run("microtask should be called when a child node is added", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		graph := NewSystemGraph()
 		obj := NewObject()
@@ -1642,6 +1701,7 @@ func TestSystemGraphOnMutation(t *testing.T) {
 	t.Run("microtask should be called when a child node is added with an additional edge kind", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		graph := NewSystemGraph()
 		obj := NewObject()
@@ -1680,6 +1740,7 @@ func TestSystemGraphOnMutation(t *testing.T) {
 	t.Run("microtask should be called when a watched node is added", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		graph := NewSystemGraph()
 		obj := NewObject()
@@ -1716,6 +1777,7 @@ func TestSystemGraphOnMutation(t *testing.T) {
 	t.Run("microtask should be called when an event is added", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		graph := NewSystemGraph()
 		obj := NewObject()
@@ -1751,6 +1813,7 @@ func TestInoxFunctionOnMutation(t *testing.T) {
 	t.Run("callback microtask should be called after captured local (tree walk) has shallow change", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		obj := NewObjectFromMap(ValMap{}, ctx)
 
@@ -1781,6 +1844,7 @@ func TestInoxFunctionOnMutation(t *testing.T) {
 	t.Run("callback microtask should be called after captured local has shallow change", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		obj := NewObjectFromMap(ValMap{}, ctx)
 
@@ -1812,6 +1876,7 @@ func TestInoxFunctionOnMutation(t *testing.T) {
 	t.Run("callback microtask should be called after captured global has shallow change", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		obj := NewObjectFromMap(ValMap{}, ctx)
 
@@ -1844,6 +1909,7 @@ func TestSynchronousMessageHandlerOnMutation(t *testing.T) {
 	t.Run("callback microtask should be called after function's captured local (tree walk) has shallow change", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		obj := NewObjectFromMap(ValMap{}, ctx)
 
@@ -1877,6 +1943,7 @@ func TestSynchronousMessageHandlerOnMutation(t *testing.T) {
 	t.Run("callback microtask should be called after function's captured local has shallow change", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		obj := NewObjectFromMap(ValMap{}, ctx)
 
@@ -1910,6 +1977,7 @@ func TestSynchronousMessageHandlerOnMutation(t *testing.T) {
 	t.Run("callback microtask should be called after function's captured global has shallow change", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		obj := NewObjectFromMap(ValMap{}, ctx)
 

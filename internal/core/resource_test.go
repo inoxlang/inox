@@ -1,12 +1,22 @@
 package core
 
 import (
+	"runtime"
 	"testing"
 
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestResourceGraph(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	t.Run("", func(t *testing.T) {
 		g := NewResourceGraph()
 
@@ -17,6 +27,13 @@ func TestResourceGraph(t *testing.T) {
 }
 
 func TestURL(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
 
 	t.Run("AppendRelativePath", func(t *testing.T) {
 		url := URL("https://example.com/")

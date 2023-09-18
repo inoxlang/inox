@@ -1,6 +1,7 @@
 package core
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/inoxlang/inox/internal/utils"
@@ -9,8 +10,17 @@ import (
 
 func TestSharable(t *testing.T) {
 
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	t.Run("object", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 		state := ctx.GetClosestState()
 
 		assert.True(t, utils.Ret0(NewObjectFromMap(ValMap{}, ctx).IsSharable(state)))

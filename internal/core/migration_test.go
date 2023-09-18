@@ -1,15 +1,25 @@
 package core
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestObjectPatternGetMigrationOperations(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
 
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
 
 	t.Run("same empty object", func(t *testing.T) {
 		empty1 := NewInexactObjectPattern(map[string]Pattern{})
@@ -228,7 +238,16 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 }
 
 func TestRecordPatternGetMigrationOperations(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
 
 	t.Run("same empty record", func(t *testing.T) {
 		empty1 := NewInexactRecordPattern(map[string]Pattern{})
@@ -447,8 +466,16 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 }
 
 func TestListPatternGetMigrationOperations(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
 
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
 
 	t.Run("same general element pattern", func(t *testing.T) {
 		intList := NewListPatternOf(INT_PATTERN)
@@ -639,9 +666,18 @@ func TestListPatternGetMigrationOperations(t *testing.T) {
 }
 
 func TestObjectMigrate(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
 
 	t.Run("delete object: / key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		object := NewObjectFromMap(nil, ctx)
 		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
 			NextPattern: nil,
@@ -660,6 +696,8 @@ func TestObjectMigrate(t *testing.T) {
 
 	t.Run("delete object: /x key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		object := NewObjectFromMap(nil, ctx)
 		val, err := object.Migrate(ctx, "/x", &InstanceMigrationArgs{
 			NextPattern: nil,
@@ -678,6 +716,8 @@ func TestObjectMigrate(t *testing.T) {
 
 	t.Run("delete property", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		object := NewObjectFromMap(ValMap{"x": Int(0)}, ctx)
 		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
 			NextPattern: nil,
@@ -697,6 +737,8 @@ func TestObjectMigrate(t *testing.T) {
 
 	t.Run("delete inexisting property", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		object := NewObjectFromMap(ValMap{}, ctx)
 		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
 			NextPattern: nil,
@@ -715,6 +757,8 @@ func TestObjectMigrate(t *testing.T) {
 
 	t.Run("delete property of property", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		object := NewObjectFromMap(ValMap{"a": NewObjectFromMap(ValMap{"b": Int(0)}, ctx)}, ctx)
 		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
 			NextPattern: nil,
@@ -900,9 +944,18 @@ func TestObjectMigrate(t *testing.T) {
 }
 
 func TestRecordMigrate(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
 
 	t.Run("delete record: / key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		record := NewRecordFromMap(nil)
 		val, err := record.Migrate(ctx, "/", &InstanceMigrationArgs{
 			NextPattern: nil,
@@ -921,6 +974,8 @@ func TestRecordMigrate(t *testing.T) {
 
 	t.Run("delete record: /x key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		record := NewEmptyRecord()
 		val, err := record.Migrate(ctx, "/x", &InstanceMigrationArgs{
 			NextPattern: nil,
@@ -939,6 +994,8 @@ func TestRecordMigrate(t *testing.T) {
 
 	t.Run("delete property", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		record := NewRecordFromMap(ValMap{"x": Int(0)})
 		val, err := record.Migrate(ctx, "/", &InstanceMigrationArgs{
 			NextPattern: nil,
@@ -960,6 +1017,8 @@ func TestRecordMigrate(t *testing.T) {
 
 	t.Run("delete inexisting property", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		record := NewRecordFromMap(ValMap{})
 		val, err := record.Migrate(ctx, "/", &InstanceMigrationArgs{
 			NextPattern: nil,
@@ -978,6 +1037,8 @@ func TestRecordMigrate(t *testing.T) {
 
 	t.Run("delete property of property", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		record := NewRecordFromMap(ValMap{"a": NewRecordFromMap(ValMap{"b": Int(0)})})
 		val, err := record.Migrate(ctx, "/", &InstanceMigrationArgs{
 			NextPattern: nil,
@@ -1000,6 +1061,8 @@ func TestRecordMigrate(t *testing.T) {
 
 	t.Run("replace record: / key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		record := NewEmptyRecord()
 		replacement := NewEmptyRecord()
 
@@ -1023,6 +1086,8 @@ func TestRecordMigrate(t *testing.T) {
 
 	t.Run("replace record: /x key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		record := NewEmptyRecord()
 
 		replacement := NewEmptyRecord()
@@ -1047,6 +1112,7 @@ func TestRecordMigrate(t *testing.T) {
 
 	t.Run("replace property", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		replacement := NewEmptyRecord()
 
@@ -1077,6 +1143,7 @@ func TestRecordMigrate(t *testing.T) {
 
 	t.Run("replace inexisting property", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		replacement := NewEmptyRecord()
 
@@ -1098,6 +1165,7 @@ func TestRecordMigrate(t *testing.T) {
 
 	t.Run("replace property of property", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		record := NewRecordFromMap(ValMap{"a": NewRecordFromMap(ValMap{"b": Int(0)})})
 		val, err := record.Migrate(ctx, "/", &InstanceMigrationArgs{
@@ -1123,6 +1191,7 @@ func TestRecordMigrate(t *testing.T) {
 
 	t.Run("include property", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		record := NewRecordFromMap(ValMap{})
 		val, err := record.Migrate(ctx, "/", &InstanceMigrationArgs{
@@ -1145,9 +1214,18 @@ func TestRecordMigrate(t *testing.T) {
 }
 
 func TestListMigrate(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
 
 	t.Run("delete list: / key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		list := NewWrappedValueList(nil)
 		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
 			NextPattern: nil,
@@ -1166,6 +1244,8 @@ func TestListMigrate(t *testing.T) {
 
 	t.Run("delete list: /x key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		list := NewWrappedValueList()
 		val, err := list.Migrate(ctx, "/x", &InstanceMigrationArgs{
 			NextPattern: nil,
@@ -1184,6 +1264,8 @@ func TestListMigrate(t *testing.T) {
 
 	t.Run("delete element", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		list := NewWrappedValueList(Int(0))
 		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
 			NextPattern: nil,
@@ -1203,6 +1285,8 @@ func TestListMigrate(t *testing.T) {
 
 	t.Run("delete inexisting element (index >= len)", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		list := NewWrappedValueList(Int(0))
 		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
 			NextPattern: nil,
@@ -1221,6 +1305,8 @@ func TestListMigrate(t *testing.T) {
 
 	t.Run("delete inexisting element (index < 0)", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		list := NewWrappedValueList(Int(0))
 		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
 			NextPattern: nil,
@@ -1239,6 +1325,8 @@ func TestListMigrate(t *testing.T) {
 
 	t.Run("delete property of element", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		list := NewWrappedValueList(NewObjectFromMap(ValMap{"b": Int(0)}, ctx))
 		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
 			NextPattern: nil,
@@ -1261,6 +1349,8 @@ func TestListMigrate(t *testing.T) {
 
 	t.Run("replace list: / key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		list := NewWrappedValueList()
 		replacement := NewWrappedValueList()
 
@@ -1284,6 +1374,8 @@ func TestListMigrate(t *testing.T) {
 
 	t.Run("replace list: /x key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		list := NewWrappedValueList()
 		replacement := NewWrappedValueList()
 
@@ -1307,6 +1399,7 @@ func TestListMigrate(t *testing.T) {
 
 	t.Run("replace element", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		replacement := NewObjectFromMap(nil, ctx)
 
@@ -1335,6 +1428,7 @@ func TestListMigrate(t *testing.T) {
 
 	t.Run("replace inexisting element (index >= len)", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		replacement := NewWrappedValueList()
 		list := NewWrappedValueList()
@@ -1356,6 +1450,7 @@ func TestListMigrate(t *testing.T) {
 
 	t.Run("replace inexisting element (index < 0)", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		replacement := NewWrappedValueList()
 		list := NewWrappedValueList()
@@ -1377,6 +1472,7 @@ func TestListMigrate(t *testing.T) {
 
 	t.Run("replace property of element", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList(NewObjectFromMap(ValMap{"b": Int(0)}, ctx))
 		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
@@ -1400,6 +1496,7 @@ func TestListMigrate(t *testing.T) {
 
 	t.Run("replace property of immutable element", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList(NewRecordFromMap(ValMap{"b": Int(0)}))
 		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
@@ -1423,6 +1520,7 @@ func TestListMigrate(t *testing.T) {
 
 	t.Run("element inclusion should panic", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList()
 
@@ -1440,9 +1538,18 @@ func TestListMigrate(t *testing.T) {
 }
 
 func TestTupleMigrate(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
 
 	t.Run("delete tuple: / key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		tuple := NewTuple(nil)
 		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
 			NextPattern: nil,
@@ -1461,6 +1568,8 @@ func TestTupleMigrate(t *testing.T) {
 
 	t.Run("delete tuple: /x key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		tuple := NewTuple(nil)
 		val, err := tuple.Migrate(ctx, "/x", &InstanceMigrationArgs{
 			NextPattern: nil,
@@ -1479,6 +1588,8 @@ func TestTupleMigrate(t *testing.T) {
 
 	t.Run("delete element", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		tuple := NewTuple([]Serializable{Int(0)})
 		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
 			NextPattern: nil,
@@ -1500,6 +1611,8 @@ func TestTupleMigrate(t *testing.T) {
 
 	t.Run("delete inexisting element (index >= len)", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		tuple := NewTuple([]Serializable{Int(0)})
 		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
 			NextPattern: nil,
@@ -1520,6 +1633,8 @@ func TestTupleMigrate(t *testing.T) {
 
 	t.Run("delete inexisting element (index < 0)", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		tuple := NewTuple([]Serializable{Int(0)})
 		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
 			NextPattern: nil,
@@ -1540,6 +1655,8 @@ func TestTupleMigrate(t *testing.T) {
 
 	t.Run("delete property of element", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		tuple := NewTuple([]Serializable{NewRecordFromMap(ValMap{"b": Int(0)})})
 		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
 			NextPattern: nil,
@@ -1562,6 +1679,8 @@ func TestTupleMigrate(t *testing.T) {
 
 	t.Run("replace tuple: / key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		tuple := NewTuple(nil)
 		replacement := NewTuple(nil)
 
@@ -1585,6 +1704,8 @@ func TestTupleMigrate(t *testing.T) {
 
 	t.Run("replace tuple: /x key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		tuple := NewTuple(nil)
 		replacement := NewTuple(nil)
 
@@ -1608,6 +1729,7 @@ func TestTupleMigrate(t *testing.T) {
 
 	t.Run("replace element", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		replacement := NewRecordFromMap(nil)
 
@@ -1639,6 +1761,7 @@ func TestTupleMigrate(t *testing.T) {
 
 	t.Run("replace inexisting element (index >= len)", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		replacement := NewWrappedValueList()
 		tuple := NewTuple(nil)
@@ -1660,6 +1783,7 @@ func TestTupleMigrate(t *testing.T) {
 
 	t.Run("replace inexisting element (index < 0)", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		replacement := NewTuple(nil)
 		tuple := NewTuple(nil)
@@ -1681,6 +1805,7 @@ func TestTupleMigrate(t *testing.T) {
 
 	t.Run("replace property of element", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		tuple := NewTuple([]Serializable{NewRecordFromMap(ValMap{"b": Int(0)})})
 		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
@@ -1706,6 +1831,7 @@ func TestTupleMigrate(t *testing.T) {
 
 	t.Run("element inclusion should panic", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		tuple := NewTuple(nil)
 
@@ -1723,7 +1849,16 @@ func TestTupleMigrate(t *testing.T) {
 }
 
 func TestGetMigrationOperations(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
 
 	intIntList := NewListPattern([]Pattern{SERIALIZABLE_PATTERN})
 	serializableList := NewListPatternOf(INT_PATTERN)
@@ -1811,7 +1946,7 @@ func TestMigrationOpHandlersFilterByPrefix(t *testing.T) {
 		handlers := MigrationOpHandlers{
 			Deletions: map[PathPattern]*MigrationOpHandler{
 				"/users/x":    nil,
-				"/users/x-x":    nil,
+				"/users/x-x":  nil,
 				"/users/y":    nil,
 				"/users/*/b":  nil,
 				"/messages/*": nil,

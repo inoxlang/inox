@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"io"
 	"reflect"
+	"runtime"
 	"strconv"
 	"testing"
 
@@ -17,6 +18,15 @@ import (
 )
 
 func TestDatabaseIL(t *testing.T) {
+	runtime.GC()
+	startMemStats := new(runtime.MemStats)
+	runtime.ReadMemStats(startMemStats)
+
+	defer func() {
+		utils.AssertNoMemoryLeak(t, startMemStats, 100, utils.AssertNoMemoryLeakOptions{
+			PreSleepDurationMillis: 100,
+		})
+	}()
 
 	t.Run("the name of the top level entities should be a valid identifier", func(t *testing.T) {
 		resetLoadInstanceFnRegistry()
@@ -30,6 +40,8 @@ func TestDatabaseIL(t *testing.T) {
 				},
 			},
 		}, nil)
+		defer ctx.CancelGracefully()
+
 		db := &dummyDatabase{
 			resource:         Host("ldb://main"),
 			topLevelEntities: map[string]Serializable{},
@@ -90,6 +102,8 @@ func TestDatabaseIL(t *testing.T) {
 				},
 			},
 		}, nil)
+		defer ctx.CancelGracefully()
+
 		db := &dummyDatabase{
 			resource:         Host("ldb://main"),
 			topLevelEntities: map[string]Serializable{},
@@ -155,6 +169,8 @@ func TestDatabaseIL(t *testing.T) {
 				},
 			},
 		}, nil)
+		defer ctx.CancelGracefully()
+
 		db := &dummyDatabase{
 			resource: Host("ldb://main"),
 			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
@@ -182,6 +198,8 @@ func TestDatabaseIL(t *testing.T) {
 				},
 			},
 		}, nil)
+		defer ctx.CancelGracefully()
+
 		db := &dummyDatabase{
 			resource: Host("ldb://main"),
 			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
@@ -216,6 +234,8 @@ func TestDatabaseIL(t *testing.T) {
 				},
 			},
 		}, nil)
+		defer ctx.CancelGracefully()
+
 		db := &dummyDatabase{
 			resource: Host("ldb://main"),
 			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
@@ -243,6 +263,8 @@ func TestDatabaseIL(t *testing.T) {
 				},
 			},
 		}, nil)
+		defer ctx1.CancelGracefully()
+
 		db := &dummyDatabase{
 			resource:         Host("ldb://main"),
 			topLevelEntities: map[string]Serializable{},
@@ -256,6 +278,7 @@ func TestDatabaseIL(t *testing.T) {
 		}))
 
 		ctx2 := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx2.CancelGracefully()
 
 		assert.PanicsWithValue(t, ErrDatabaseSchemaOnlyUpdatableByOwnerState, func() {
 			dbIL.UpdateSchema(ctx2, NewInexactObjectPattern(map[string]Pattern{}))
@@ -271,6 +294,8 @@ func TestDatabaseIL(t *testing.T) {
 				},
 			},
 		}, nil)
+		defer ctx.CancelGracefully()
+
 		db := &dummyDatabase{
 			resource:         Host("ldb://main"),
 			topLevelEntities: map[string]Serializable{},
@@ -296,6 +321,8 @@ func TestDatabaseIL(t *testing.T) {
 				},
 			},
 		}, nil)
+		defer ctx.CancelGracefully()
+
 		db := &dummyDatabase{
 			resource:         Host("ldb://main"),
 			topLevelEntities: map[string]Serializable{},
@@ -326,6 +353,8 @@ func TestDatabaseIL(t *testing.T) {
 				},
 			},
 		}, nil)
+		defer ctx.CancelGracefully()
+
 		db := &dummyDatabase{
 			resource: Host("ldb://main"),
 			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
@@ -362,6 +391,8 @@ func TestDatabaseIL(t *testing.T) {
 				},
 			},
 		}, nil)
+		defer ctx.CancelGracefully()
+
 		db := &dummyDatabase{
 			resource:         Host("ldb://main"),
 			topLevelEntities: map[string]Serializable{},
@@ -413,6 +444,7 @@ func TestDatabaseIL(t *testing.T) {
 					},
 				},
 			}, nil)
+			defer ctx.CancelGracefully()
 
 			db := &dummyDatabase{
 				resource:         Host("ldb://main"),
@@ -440,6 +472,7 @@ func TestDatabaseIL(t *testing.T) {
 					},
 				},
 			}, nil)
+			defer ctx.CancelGracefully()
 
 			db := &dummyDatabase{
 				resource:         Host("ldb://main"),

@@ -1,15 +1,25 @@
 package core
 
 import (
+	"runtime"
 	"testing"
 
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestParseJSONRepresentation(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
 
 	t.Run("simple values", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		//string
 		v, err := ParseJSONRepresentation(ctx, `{"str__value":"a"}`, nil)
@@ -168,6 +178,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 	t.Run("object", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		//no pattern
 		obj, err := ParseJSONRepresentation(ctx, `{"object__value":{}}`, nil)
@@ -256,6 +267,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 	t.Run("record", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		//no pattern
 		rec, err := ParseJSONRepresentation(ctx, `{"record__value":{}}`, nil)
@@ -334,6 +346,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 	t.Run("list", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		//no pattern
 		list, err := ParseJSONRepresentation(ctx, `{"list__value":[]}`, nil)
@@ -435,6 +448,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 	t.Run("tuple", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		//no pattern
 		tuple, err := ParseJSONRepresentation(ctx, `{"tuple__value":[]}`, nil)

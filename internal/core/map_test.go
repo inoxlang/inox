@@ -1,15 +1,26 @@
 package core
 
 import (
+	"runtime"
 	"testing"
 
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMap(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
 
 	t.Run("property name mapper", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
 		NewGlobalState(ctx)
 
 		// should work with any Iprops
@@ -26,6 +37,8 @@ func TestMap(t *testing.T) {
 
 	t.Run("key list mapper", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
 		NewGlobalState(ctx)
 
 		// should work with any Iprops
