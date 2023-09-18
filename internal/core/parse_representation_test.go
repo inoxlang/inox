@@ -1,28 +1,16 @@
 package core
 
 import (
-	"runtime"
 	"strings"
 	"testing"
 	"time"
 
 	internal "github.com/inoxlang/inox/internal/parse"
 	parse "github.com/inoxlang/inox/internal/parse"
-	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestParseRepr(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10, utils.AssertNoMemoryLeakOptions{
-			PreSleepDurationMillis: 100,
-		})
-	}
-
 	//TODO: add tests: test all combinations of input (up to 10 characters) and use regular parser to know what inputs are valid.
 	//TODO: tests with non printable characters
 
@@ -1082,12 +1070,16 @@ func TestParseRepr(t *testing.T) {
 
 	t.Run("undefined pattern", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		_, _, err := _parseRepr([]byte("%Set()"), ctx)
 		assert.ErrorContains(t, err, "named pattern Set is not defined")
 	})
 
 	t.Run("non-supported metaproperty", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		_, _, err := _parseRepr([]byte(`{"_x_": 1}`), ctx)
 		assert.ErrorIs(t, err, ErrNonSupportedMetaProperty)
 	})

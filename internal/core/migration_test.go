@@ -1,23 +1,13 @@
 package core
 
 import (
-	"runtime"
 	"testing"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
-	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestObjectPatternGetMigrationOperations(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
-	}
-
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
@@ -238,14 +228,6 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 }
 
 func TestRecordPatternGetMigrationOperations(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
-	}
-
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
@@ -466,14 +448,6 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 }
 
 func TestListPatternGetMigrationOperations(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
-	}
-
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
@@ -666,14 +640,6 @@ func TestListPatternGetMigrationOperations(t *testing.T) {
 }
 
 func TestObjectMigrate(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
-	}
-
 	t.Run("delete object: / key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
@@ -944,14 +910,6 @@ func TestObjectMigrate(t *testing.T) {
 }
 
 func TestRecordMigrate(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
-	}
-
 	t.Run("delete record: / key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
@@ -1214,14 +1172,6 @@ func TestRecordMigrate(t *testing.T) {
 }
 
 func TestListMigrate(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
-	}
-
 	t.Run("delete list: / key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
@@ -1538,14 +1488,6 @@ func TestListMigrate(t *testing.T) {
 }
 
 func TestTupleMigrate(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
-	}
-
 	t.Run("delete tuple: / key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
@@ -1849,14 +1791,6 @@ func TestTupleMigrate(t *testing.T) {
 }
 
 func TestGetMigrationOperations(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
-	}
-
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 

@@ -206,14 +206,6 @@ func TestEvalStringPatternNode(t *testing.T) {
 }
 
 func TestComplexPatternParsing(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
-	}
-
 	lenRange := IntRange{
 		Start:        0,
 		End:          math.MaxInt64,
@@ -577,14 +569,6 @@ func TestSequenceStringPattern(t *testing.T) {
 }
 
 func TestRuneRangeStringPattern(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
-	}
-
 	t.Run(".LengthRange()", func(t *testing.T) {
 		patt := &RuneRangeStringPattern{
 			runes: RuneRange{
@@ -604,14 +588,6 @@ func TestRuneRangeStringPattern(t *testing.T) {
 }
 
 func TestIntRangeStringPattern(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
-	}
-
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 	max := int64(math.MaxInt64)
 	//min := int64(math.MinInt64)
@@ -822,14 +798,6 @@ func TestIntRangeStringPattern(t *testing.T) {
 }
 
 func TestUnionStringPattern(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
-	}
-
 	t.Run(".LengthRange()", func(t *testing.T) {
 		patt := &UnionStringPattern{
 			cases: []StringPattern{
@@ -877,14 +845,6 @@ func TestUnionStringPattern(t *testing.T) {
 }
 
 func TestRegexPattern(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
-	}
-
 	t.Run(".LengthRange()", func(t *testing.T) {
 		testCases := map[string]IntRange{
 			``: {

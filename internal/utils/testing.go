@@ -19,7 +19,7 @@ type AssertNoMemoryLeakOptions struct {
 }
 
 // AssertNoMemoryLeak checks that at most maxAllocDelta bytes have been allocated since the passed
-// memory stats have been collected. This function should be called at the end of a test suite, NOT individual test cases.
+// memory stats have been collected. This function should be called at the end of a long test suite, NOT individual test cases.
 func AssertNoMemoryLeak(t *testing.T, startStats *runtime.MemStats, maxAllocDelta uint64, opts ...AssertNoMemoryLeakOptions) {
 	runtime.GC()
 

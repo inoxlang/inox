@@ -2,7 +2,6 @@ package core
 
 import (
 	"fmt"
-	"runtime"
 	"testing"
 
 	permkind "github.com/inoxlang/inox/internal/permkind"
@@ -11,14 +10,6 @@ import (
 )
 
 func TestHttpPermission(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
-	}
-
 	ENTITIES := []Value{
 		URL("https://localhost:443/?a=1"),
 		URL("https://localhost:443/"),
@@ -77,14 +68,6 @@ func TestHttpPermission(t *testing.T) {
 }
 
 func TestDNSPermission(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
-	}
-
 	testCases := []struct {
 		domain1        WrappedString
 		domain2        WrappedString
@@ -124,12 +107,6 @@ func TestDNSPermission(t *testing.T) {
 }
 
 func TestRawTcpPermission(t *testing.T) {
-	runtime.GC()
-	startMemStats := new(runtime.MemStats)
-	runtime.ReadMemStats(startMemStats)
-
-	defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
-
 	testCases := []struct {
 		domain1        WrappedString
 		domain2        WrappedString
@@ -169,14 +146,6 @@ func TestRawTcpPermission(t *testing.T) {
 }
 
 func TestCommandPermission(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
-	}
-
 	permNoSub := CommandPermission{CommandName: Str("mycmd")}
 	assert.True(t, permNoSub.Includes(permNoSub))
 
@@ -202,14 +171,6 @@ func TestCommandPermission(t *testing.T) {
 }
 
 func TestFilesystemPermission(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
-	}
-
 	ENTITIES := []Value{
 		Path("./"),
 		PathPattern("./..."),
@@ -275,14 +236,6 @@ func TestFilesystemPermission(t *testing.T) {
 }
 
 func TestVisibilityPermission(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
-	}
-
 	testCases := []struct {
 		pattern        Pattern
 		otherPattern   Pattern
@@ -314,14 +267,6 @@ func TestVisibilityPermission(t *testing.T) {
 }
 
 func TestDatabasePermission(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
-	}
-
 	ENTITIES := []Value{
 		URL("ldb://main/"),
 		Host("ldb://main"),
