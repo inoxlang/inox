@@ -265,8 +265,10 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 	//we create a temporary state to pre-evaluate some parts of the manifest
 	if preinitArgs.RunningState == nil {
 		ctx := NewContext(ContextConfig{
-			Permissions: []Permission{GlobalVarPermission{permkind.Read, "*"}},
-			Filesystem:  preinitArgs.PreinitFilesystem,
+			Permissions:               []Permission{GlobalVarPermission{permkind.Read, "*"}},
+			Filesystem:                preinitArgs.PreinitFilesystem,
+			DoNotSetFilesystemContext: true,
+			DoNotSpawnDoneGoroutine:   true,
 		})
 		defer ctx.CancelGracefully()
 
@@ -327,8 +329,6 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 		// pre evaluate the preinit-files section of the manifest
 		preinitFilesSection, ok := manifestObjLiteral.PropValue(MANIFEST_PREINIT_FILES_SECTION_NAME)
 		if ok {
-			fls := ctx.GetFileSystem()
-
 			v, err := TreeWalkEval(preinitFilesSection, state)
 			if err != nil {
 				if err != nil {
@@ -394,7 +394,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 			//read & parse preinit files
 			atLeastOneReadParseError := false
 			for _, file := range preinitFiles {
-				content, err := ReadFileInFS(fls, string(file.Path), MAX_PREINIT_FILE_SIZE)
+				content, err := ReadFileInFS(preinitArgs.PreinitFilesystem, string(file.Path), MAX_PREINIT_FILE_SIZE)
 				file.Content = content
 				file.ReadParseError = err
 

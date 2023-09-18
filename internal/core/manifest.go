@@ -941,7 +941,10 @@ func GetDefaultGlobalVarPermissions() (perms []Permission) {
 
 func getLimits(desc Value, defaultLimitsToNotSet map[string]bool) ([]Limit, error) {
 	var limits []Limit
-	ctx := NewContext(ContextConfig{})
+	ctx := NewContext(ContextConfig{
+		DoNotSpawnDoneGoroutine: true,
+	})
+	defer ctx.CancelGracefully()
 
 	limitObj, isObj := desc.(*Object)
 	if !isObj {

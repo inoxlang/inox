@@ -17,8 +17,10 @@ type AssertNoMemoryLeakOptions struct {
 	// defaults to defaultPreSleepDuration.
 	PreSleepDurationMillis uint8
 
-	// (optional) number of goroutines at the beginning,
-	// if set AssertNoMemoryLeak checks that the number of goroutines has not increased.
+	// if true AssertNoMemoryLeak checks that the number of goroutines has not increased.
+	CheckGoroutines bool
+
+	// number of goroutines at the beginning,
 	GoroutineCount int
 
 	MaxGoroutineCountDelta uint8
@@ -46,7 +48,7 @@ func AssertNoMemoryLeak(t *testing.T, startStats *runtime.MemStats, maxAllocDelt
 	memStats := new(runtime.MemStats)
 	runtime.ReadMemStats(memStats)
 
-	if len(opts) > 0 && opts[0].GoroutineCount > 0 {
+	if len(opts) > 0 && opts[0].CheckGoroutines {
 		delta := runtime.NumGoroutine() - opts[0].GoroutineCount
 		if delta > int(opts[0].MaxGoroutineCountDelta) {
 			assert.FailNowf(t, "goroutine leaks", "%d goroutines leaking", delta)

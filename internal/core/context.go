@@ -114,12 +114,20 @@ type ContextConfig struct {
 	//The decrementation of total limit's tokens for the created context starts when the associated state is set.
 	Limits []Limit
 
-	HostResolutions  map[Host]Value
-	OwnedDatabases   []DatabaseConfig
-	ParentContext    *Context
-	LimitTokens      map[string]int64
+	HostResolutions map[Host]Value
+	OwnedDatabases  []DatabaseConfig
+	ParentContext   *Context
+	LimitTokens     map[string]int64
+
 	Filesystem       afs.Filesystem
 	CreateFilesystem func(ctx *Context) (afs.Filesystem, error)
+	// if false the context's filesystem is the result of WithSecondaryContextIfPossible(ContextConfig.Filesystem),
+	// else the context's filesystem is ContextConfig.Filesystem.
+	DoNotSetFilesystemContext bool
+
+	// if false a goroutine is created to tear down the context after it is done.
+	// if true IsDone() will always return false until CancelGracefully is called.
+	DoNotSpawnDoneGoroutine bool
 
 	WaitConfirmPrompt WaitConfirmPrompt
 }
@@ -295,12 +303,17 @@ func NewContext(config ContextConfig) *Context {
 		limits = append(limits, limiter.limit)
 	}
 
+	actualFilesystem := filesystem
+	if !config.DoNotSetFilesystemContext {
+		actualFilesystem = WithSecondaryContextIfPossible(ctx, filesystem)
+	}
+
 	*ctx = Context{
 		kind:                 config.Kind,
 		Context:              stdlibCtx,
 		cancel:               cancel,
 		parentCtx:            parentCtx,
-		fs:                   WithSecondaryContextIfPossible(ctx, filesystem),
+		fs:                   actualFilesystem,
 		executionStartTime:   time.Now(),
 		grantedPermissions:   utils.CopySlice(config.Permissions),
 		forbiddenPermissions: utils.CopySlice(config.ForbiddenPermissions),
@@ -322,6 +335,10 @@ func NewContext(config ContextConfig) *Context {
 	}
 
 	ctx.gracefulTearDownStatus.Store(int64(NeverStartedGracefulTeardown))
+
+	if config.DoNotSpawnDoneGoroutine {
+		return ctx
+	}
 
 	//tear down
 	go func() {
@@ -390,6 +407,9 @@ func NewContext(config ContextConfig) *Context {
 			}
 		}
 	}()
+
+	// no additional code is expected here
+	// because this section is unreachable if DoNotSpawnDoneGoroutine is true.
 
 	return ctx
 }
@@ -691,8 +711,8 @@ func (ctx *Context) New() *Context {
 
 // DropPermissions removes all passed permissions from the context.
 func (ctx *Context) DropPermissions(droppedPermissions []Permission) {
-	ctx.lock.RLock()
-	defer ctx.lock.RUnlock()
+	ctx.lock.Lock()
+	defer ctx.lock.Unlock()
 	ctx.assertNotDone()
 
 	var grantedPerms []Permission

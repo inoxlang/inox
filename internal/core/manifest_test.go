@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -13,6 +14,7 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	parse "github.com/inoxlang/inox/internal/parse"
 	permkind "github.com/inoxlang/inox/internal/permkind"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -47,6 +49,17 @@ func TestPreInit(t *testing.T) {
 			return ""
 		})
 	}
+
+	runtime.GC()
+	startMemStats := new(runtime.MemStats)
+	runtime.ReadMemStats(startMemStats)
+
+	defer utils.AssertNoMemoryLeak(t, startMemStats, 100, utils.AssertNoMemoryLeakOptions{
+		PreSleepDurationMillis: 100,
+		CheckGoroutines:        true,
+		GoroutineCount:         runtime.NumGoroutine(),
+		MaxGoroutineCountDelta: 0,
+	})
 
 	type testCase struct {
 		//input
@@ -499,7 +512,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "preinit-files_section_should_be_an_object",
-			module: `manifest { 
+			module: `manifest {
 					preinit-files: 1
 				}`,
 			error:                     true,
@@ -507,7 +520,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "empty_databases",
-			module: `manifest { 
+			module: `manifest {
 					databases: {}
 				}`,
 			expectedPermissions: []Permission{},
@@ -517,7 +530,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "correct_database",
-			module: `manifest { 
+			module: `manifest {
 					databases: {
 						main: {
 							resource: ldb://main
@@ -549,7 +562,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "correct_database_with_expected_schema_update",
-			module: `manifest { 
+			module: `manifest {
 					databases: {
 						main: {
 							resource: ldb://main
@@ -583,7 +596,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "database_with_invalid_resource",
-			module: `manifest { 
+			module: `manifest {
 					databases: {
 						main: {
 							resource: 1
@@ -596,7 +609,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "database_with_invalid_resolution_data",
-			module: `manifest { 
+			module: `manifest {
 					databases: {
 						main: {
 							resource: ldb://main
@@ -609,7 +622,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "database_with_invalid_expected_schema_udapte_value",
-			module: `manifest { 
+			module: `manifest {
 					databases: {
 						main: {
 							resource: ldb://main
@@ -623,7 +636,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "database_with_missing_resource",
-			module: `manifest { 
+			module: `manifest {
 					databases: {
 						main: {
 							resolution-data: /db/
@@ -635,7 +648,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "database_with_missing_resolution_data",
-			module: `manifest { 
+			module: `manifest {
 					databases: {
 						main: {
 							resource: ldb://main
@@ -647,7 +660,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "database_description_should_be_an_object",
-			module: `manifest { 
+			module: `manifest {
 					databases: {
 						main: 1
 					}
@@ -657,7 +670,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "databases_section_should_be_an_object",
-			module: `manifest { 
+			module: `manifest {
 					databases: 1
 				}`,
 			error:                     true,
@@ -666,7 +679,7 @@ func TestPreInit(t *testing.T) {
 
 		{
 			name: "databases_path_value",
-			parentModule: `manifest { 
+			parentModule: `manifest {
 				databases: {
 					main: {
 						resource: ldb://main
@@ -675,7 +688,7 @@ func TestPreInit(t *testing.T) {
 				}
 			}`,
 			parentModuleAbsPath: "/main.ix",
-			module: `manifest { 
+			module: `manifest {
 					databases: /main.ix
 				}`,
 			expectedPermissions: []Permission{},
@@ -692,7 +705,7 @@ func TestPreInit(t *testing.T) {
 		},
 		{
 			name: "databases_host_value",
-			parentModule: `manifest { 
+			parentModule: `manifest {
 				databases: {
 					main: {
 						resource: ldb://main
@@ -701,7 +714,7 @@ func TestPreInit(t *testing.T) {
 				}
 			}`,
 			parentModuleAbsPath: "/main.ix",
-			module: `manifest { 
+			module: `manifest {
 					databases: /main.ix
 				}`,
 			expectedPermissions: []Permission{},
@@ -756,6 +769,7 @@ func TestPreInit(t *testing.T) {
 				}
 
 				parentState = NewGlobalState(NewContext(ContextConfig{}))
+				defer parentState.Ctx.CancelGracefully()
 				parentState.Module = mod
 				parentState.MainState = parentState
 
