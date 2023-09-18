@@ -42,14 +42,14 @@ type Cloudflare struct {
 	r2PermGroupsFetched atomic.Bool
 
 	//const
-	projectId ProjectID
+	projectId core.ProjectID
 	config    *DevSideCloudflareConfig
 	accountId *cloudflare.ResourceContainer
 
 	//note: cloudflare.API.UserDetails().Account[0].ID is zero
 }
 
-func newCloudflare(projectId ProjectID, config *DevSideCloudflareConfig) (*Cloudflare, error) {
+func newCloudflare(projectId core.ProjectID, config *DevSideCloudflareConfig) (*Cloudflare, error) {
 	if config == nil {
 		panic(errors.New("cloudflare config should not be nil"))
 	}
@@ -124,7 +124,7 @@ func (c *Cloudflare) R2PermGroups() []cloudflare.APITokenPermissionGroups {
 func (c *Cloudflare) getCreateR2TokenNoLock(
 	ctx context.Context,
 	tokenName string,
-	projectId ProjectID,
+	projectId core.ProjectID,
 
 	//optional
 	existingTokenId string,
@@ -289,7 +289,7 @@ type singleR2BucketCredentials struct {
 func (c *Cloudflare) GetCreateS3CredentialsForSingleBucket(
 	ctx *core.Context,
 	bucketName string,
-	projectId ProjectID,
+	projectId core.ProjectID,
 ) (_ singleR2BucketCredentials, finalErr error) {
 
 	c.singleR2BucketCredentialsLock.Lock()
@@ -355,10 +355,10 @@ func (c *Cloudflare) GetCreateS3CredentialsForSingleBucket(
 	return creds, nil
 }
 
-func getHighPermsR2TokenName(projectId ProjectID) string {
+func getHighPermsR2TokenName(projectId core.ProjectID) string {
 	return "R2-" + string(projectId)
 }
 
-func getSingleBucketR2TokenName(bucketName string, projectId ProjectID) string {
+func getSingleBucketR2TokenName(bucketName string, projectId core.ProjectID) string {
 	return "R2-" + bucketName + "-" + string(projectId)
 }

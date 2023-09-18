@@ -11,7 +11,6 @@ import (
 
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
-	"github.com/oklog/ulid/v2"
 )
 
 const (
@@ -28,7 +27,7 @@ var (
 )
 
 type Project struct {
-	id                ProjectID
+	id                core.ProjectID
 	projectFilesystem afs.Filesystem
 	lock              core.SmartLock
 	tempTokens        *TempProjectTokens
@@ -38,17 +37,11 @@ type Project struct {
 	cloudflare *Cloudflare //can be nil
 }
 
-func (p *Project) Id() ProjectID {
+func (p *Project) Id() core.ProjectID {
 	return p.id
 }
 
-type ProjectID string
-
-func RandomProjectID(projectName string) ProjectID {
-	return ProjectID(projectName + "-" + ulid.Make().String())
-}
-
-func (id ProjectID) KvKey() core.Path {
+func getProjectKvKey(id core.ProjectID) core.Path {
 	return core.PathFrom(PROJECTS_KV_PREFIX + "/" + string(id))
 }
 
@@ -57,15 +50,15 @@ type CreateProjectParams struct {
 }
 
 // CreateProject
-func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) (ProjectID, error) {
-	id := RandomProjectID(params.Name)
+func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) (core.ProjectID, error) {
+	id := core.RandomProjectID(params.Name)
 
 	err := r.filesystem.MkdirAll(r.projectsDir, fs_ns.DEFAULT_DIR_FMODE)
 	if err != nil {
 		return "", fmt.Errorf("failed to create directory to store projects: %w", err)
 	}
 
-	r.kv.Insert(ctx, id.KvKey(), core.Nil, r)
+	r.kv.Insert(ctx, getProjectKvKey(id), core.Nil, r)
 
 	projectDir := r.filesystem.Join(r.projectsDir, string(id))
 
@@ -78,7 +71,7 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 }
 
 type OpenProjectParams struct {
-	Id            ProjectID
+	Id            core.ProjectID
 	DevSideConfig DevSideProjectConfig `json:"config"`
 	TempTokens    *TempProjectTokens   `json:"tempTokens,omitempty"`
 }
@@ -94,7 +87,7 @@ type DevSideCloudflareConfig struct {
 
 // OpenProject
 func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Project, error) {
-	_, found, err := r.kv.Get(ctx, params.Id.KvKey(), r)
+	_, found, err := r.kv.Get(ctx, getProjectKvKey(params.Id), r)
 
 	if err != nil {
 		return nil, fmt.Errorf("error while reading KV: %w", err)
