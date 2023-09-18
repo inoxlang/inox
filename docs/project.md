@@ -32,7 +32,7 @@ Project Secrets are **persisted** secrets, they can be created, updated & delete
 
 ###  Retrieving project secrets
 
-The global variable `project-secrets` is a global variable containing the project, it is only available from the main module.\
+The global variable `project-secrets` is a global variable containing the secrets, it is only available from the main module.\
 If you defined a secret named `MY_SECRET` you can retrieve it with the following code:
 ```
 secret = project-secrets.MY_SECRET
