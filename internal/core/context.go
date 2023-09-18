@@ -717,36 +717,6 @@ func (ctx *Context) New() *Context {
 	return clone
 }
 
-// NewWith creates a new independent Context with the context's permissions, limits + passed permissions.
-func (ctx *Context) NewWith(additionalPerms []Permission) (*Context, error) {
-	ctx.lock.RLock()
-	defer ctx.lock.RUnlock()
-
-	var perms []Permission = make([]Permission, len(ctx.grantedPermissions))
-	copy(perms, ctx.grantedPermissions)
-
-top:
-	for _, additonalPerm := range additionalPerms {
-		for _, perm := range perms {
-			if perm.Includes(additonalPerm) {
-				continue top
-			}
-		}
-
-		perms = append(perms, additonalPerm)
-	}
-
-	newCtx := NewContext(ContextConfig{
-		Permissions:          perms,
-		ForbiddenPermissions: ctx.forbiddenPermissions,
-		Limits:               ctx.limits,
-		Filesystem:           ctx.fs,
-
-		WaitConfirmPrompt: ctx.waitConfirmPrompt,
-	})
-	return newCtx, nil
-}
-
 // DropPermissions removes all passed permissions from the context.
 func (ctx *Context) DropPermissions(droppedPermissions []Permission) {
 	ctx.lock.RLock()

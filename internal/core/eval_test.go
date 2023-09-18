@@ -614,8 +614,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("host alias", func(t *testing.T) {
 			code := `@api/index.html`
-			ctx, _ := NewDefaultTestContext().NewWith(nil)
+
+			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
 			ctx.AddHostAlias("api", Host("https://example.com"))
+
 			res, err := Eval(code, NewGlobalState(ctx), false)
 
 			assert.NoError(t, err)
