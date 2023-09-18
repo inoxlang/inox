@@ -268,6 +268,8 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 			Permissions: []Permission{GlobalVarPermission{permkind.Read, "*"}},
 			Filesystem:  preinitArgs.PreinitFilesystem,
 		})
+		defer ctx.CancelGracefully()
+
 		for k, v := range DEFAULT_NAMED_PATTERNS {
 			ctx.AddNamedPattern(k, v)
 		}
