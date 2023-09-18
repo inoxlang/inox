@@ -41,6 +41,10 @@ func (p *Project) Id() core.ProjectID {
 	return p.id
 }
 
+func (p *Project) HasProviders() bool {
+	return p.cloudflare != nil
+}
+
 func getProjectKvKey(id core.ProjectID) core.Path {
 	return core.PathFrom(PROJECTS_KV_PREFIX + "/" + string(id))
 }
@@ -83,6 +87,15 @@ type DevSideProjectConfig struct {
 type DevSideCloudflareConfig struct {
 	AdditionalTokensApiToken string `json:"additional-tokens-api-token"`
 	AccountID                string `json:"account-id"`
+}
+
+// NewDummyProject creates a project without any providers or tokens,
+// the returned project should only be used in test.
+func NewDummyProject(name string, fls afs.Filesystem) *Project {
+	return &Project{
+		id:                core.RandomProjectID(name),
+		projectFilesystem: fls,
+	}
 }
 
 // OpenProject

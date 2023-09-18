@@ -29,6 +29,10 @@ type ProjectSecretInfo struct {
 }
 
 func (p *Project) ListSecrets(ctx *core.Context) (info []ProjectSecretInfo, _ error) {
+	if !p.HasProviders() {
+		return nil, nil
+	}
+
 	bucket, err := p.getCreateSecretsBucket(ctx, false)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrFailedToListSecrets, err)
@@ -51,6 +55,10 @@ func (p *Project) ListSecrets(ctx *core.Context) (info []ProjectSecretInfo, _ er
 }
 
 func (p *Project) ListSecrets2(ctx *core.Context) (secrets []ProjectSecret, _ error) {
+	if !p.HasProviders() {
+		return nil, nil
+	}
+
 	bucket, err := p.getCreateSecretsBucket(ctx, false)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrFailedToListSecrets, err)
