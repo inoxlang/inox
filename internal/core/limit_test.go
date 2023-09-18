@@ -468,6 +468,50 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 
 		assert.ErrorIs(t, err, context.Canceled)
 	})
+
+	t.Run("context should not be cancelled faster if child thread is cancelled", func(t *testing.T) {
+		cpuLimit, err := getLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(100*time.Millisecond))
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		start := time.Now()
+		eval := makeTreeWalkEvalFunc(t)
+
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{
+				LThreadPermission{
+					Kind_: permkind.Create,
+				},
+			},
+			Limits: []Limit{cpuLimit},
+		}, nil)
+		defer ctx.CancelGracefully()
+
+		state := ctx.GetClosestState()
+
+		_, err = eval(`
+			lthread = go do {
+				a = 0
+				for i in 1..100_000_000 {
+					a += 1
+				}
+				return a
+			}
+			lthread.cancel()
+			a = 0
+			for i in 1..100_000_000 {
+				a += 1
+			}
+			return a
+		`, state, false)
+
+		if !assert.WithinDuration(t, start.Add(100*time.Millisecond), time.Now(), 10*time.Millisecond) {
+			return
+		}
+
+		assert.ErrorIs(t, err, context.Canceled)
+	})
 }
 
 func TestThreadSimultaneousInstancesLimitIntegration(t *testing.T) {

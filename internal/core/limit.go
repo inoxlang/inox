@@ -156,7 +156,7 @@ func (l *limiter) Destroy() {
 	if l.parentLimiter == nil {
 		l.definitelyStopped.Store(true)
 		l.bucket.Destroy()
-	} else if !l.definitelyStopped.CompareAndSwap(false, true) {
+	} else if l.definitelyStopped.CompareAndSwap(false, true) && !l.pausedDecrementation {
 		l.bucket.PauseOneStateDecrementation()
 	}
 }
@@ -204,7 +204,7 @@ func (l *limiter) PauseDecrementationIfNotPaused() {
 }
 
 func (l *limiter) DefinitelyStopDecrementation() {
-	if l.definitelyStopped.CompareAndSwap(false, true) {
+	if l.definitelyStopped.CompareAndSwap(false, true) && !l.pausedDecrementation {
 		l.bucket.PauseOneStateDecrementation()
 	}
 }
