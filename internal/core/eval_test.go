@@ -315,7 +315,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("absolute", func(t *testing.T) {
 			t.Run("interpolation value is a string", func(t *testing.T) {
 				code := `/home/{username}`
-				res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				ctx := NewDefaultTestContext()
+				defer ctx.CancelGracefully()
+
+				res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
 					"username": Str("foo"),
 				}), false)
 				assert.NoError(t, err)
@@ -324,7 +327,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			t.Run("interpolation value is a string containing '/'", func(t *testing.T) {
 				code := `/home/{username}`
-				res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				ctx := NewDefaultTestContext()
+				defer ctx.CancelGracefully()
+				res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
 					"username": Str("fo/o"),
 				}), false)
 				assert.NoError(t, err)
@@ -333,7 +338,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			t.Run("interpolation value is a path containing '?'", func(t *testing.T) {
 				code := `/home/{username}`
-				_, err := Eval(code, NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				ctx := NewDefaultTestContext()
+				defer ctx.CancelGracefully()
+
+				_, err := Eval(code, NewGlobalState(ctx, map[string]Value{
 					"username": Str("./a?x=1"),
 				}), false)
 				assert.Error(t, err)
@@ -341,7 +349,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			t.Run("interpolation value is an absolute path", func(t *testing.T) {
 				code := `/home/{path}`
-				res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				ctx := NewDefaultTestContext()
+				defer ctx.CancelGracefully()
+
+				res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
 					"path": Path("/foo"),
 				}), false)
 				assert.NoError(t, err)
@@ -350,7 +361,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			t.Run("interpolation value is a relative path", func(t *testing.T) {
 				code := `/home/{path}`
-				res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				ctx := NewDefaultTestContext()
+				defer ctx.CancelGracefully()
+
+				res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
 					"path": Path("./foo"),
 				}), false)
 				assert.NoError(t, err)
@@ -363,7 +377,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			t.Run("interpolation value is a string", func(t *testing.T) {
 				code := `./home/{username}`
-				res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				ctx := NewDefaultTestContext()
+				defer ctx.CancelGracefully()
+
+				res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
 					"username": Str("foo"),
 				}), false)
 				assert.NoError(t, err)
@@ -372,7 +389,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			t.Run("interpolation value is a string containing '/'", func(t *testing.T) {
 				code := `./home/{username}`
-				res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				ctx := NewDefaultTestContext()
+				defer ctx.CancelGracefully()
+
+				res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
 					"username": Str("fo/o"),
 				}), false)
 				assert.NoError(t, err)
@@ -381,7 +401,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			t.Run("interpolation value is a path containing '?'", func(t *testing.T) {
 				code := `./home/{username}`
-				_, err := Eval(code, NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				ctx := NewDefaultTestContext()
+				defer ctx.CancelGracefully()
+
+				_, err := Eval(code, NewGlobalState(ctx, map[string]Value{
 					"username": Str("./a?x=1"),
 				}), false)
 				assert.Error(t, err)
@@ -389,7 +412,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			t.Run("interpolation value is an absolute path", func(t *testing.T) {
 				code := `./home/{path}`
-				res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				ctx := NewDefaultTestContext()
+				defer ctx.CancelGracefully()
+
+				res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
 					"path": Path("/foo"),
 				}), false)
 				assert.NoError(t, err)
@@ -398,7 +424,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			t.Run("interpolation value is a relative path", func(t *testing.T) {
 				code := `./home/{path}`
-				res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				ctx := NewDefaultTestContext()
+				defer ctx.CancelGracefully()
+
+				res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
 					"path": Path("./foo"),
 				}), false)
 				assert.NoError(t, err)
@@ -430,7 +459,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		for _, testCase := range injectionCases {
 			t.Run(testCase.input, func(t *testing.T) {
-				res, err := Eval(testCase.input, NewGlobalState(NewDefaultTestContext(), nil), false)
+				ctx := NewDefaultTestContext()
+				defer ctx.CancelGracefully()
+
+				res, err := Eval(testCase.input, NewGlobalState(ctx, nil), false)
 				assert.ErrorContains(t, err, testCase.error)
 				assert.Nil(t, res)
 			})
@@ -441,7 +473,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	t.Run("path pattern expression", func(t *testing.T) {
 		t.Run("path pattern expression", func(t *testing.T) {
 			code := `%/home/{username}/...`
-			res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+
+			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
 				"username": Str("foo"),
 			}), false)
 			assert.NoError(t, err)
@@ -450,7 +485,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("globbing injection", func(t *testing.T) {
 			code := `%/home/{username}/...`
-			res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+
+			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
 				"username": Str("*"),
 			}), false)
 			assert.Error(t, err)
@@ -492,7 +530,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	t.Run("URL expression", func(t *testing.T) {
 		t.Run("host interpolation", func(t *testing.T) {
 			code := `https://{host}/`
-			res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+
+			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
 				"host": Str("localhost"),
 			}), false)
 			assert.NoError(t, err)
@@ -501,7 +542,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("single path interpolation : interpolation does not contain '/'", func(t *testing.T) {
 			code := `https://example.com/{path}`
-			res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+
+			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
 				"path": Str("index.html"),
 			}), false)
 			assert.NoError(t, err)
@@ -510,7 +554,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("single path interpolation : interpolation starts with '/'", func(t *testing.T) {
 			code := `https://example.com/{path}`
-			res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+
+			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
 				"path": Str("/index.html"),
 			}), false)
 			assert.NoError(t, err)
@@ -519,7 +566,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("single path interpolation, no '/' in path slice", func(t *testing.T) {
 			code := `https://example.com{path}`
-			res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+
+			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
 				"path": Str("index.html"),
 			}), false)
 			assert.NoError(t, err)
@@ -528,7 +578,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("path interpolation containg an encoded '?'", func(t *testing.T) {
 			code := `https://example.com{path}`
-			res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+
+			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
 				"path": Str("%3F"),
 			}), false)
 			assert.NoError(t, err)
@@ -537,7 +590,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("path interpolation containg an encoded '#'", func(t *testing.T) {
 			code := `https://example.com{path}`
-			res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+
+			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
 				"path": Str("%23"),
 			}), false)
 			assert.NoError(t, err)
@@ -546,7 +602,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("path interpolation starting with a '@'", func(t *testing.T) {
 			code := `https://example.com{path}`
-			res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+
+			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
 				"path": Str("@domain.zip"),
 			}), false)
 			assert.NoError(t, err)
@@ -565,7 +624,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("query with no interpolation", func(t *testing.T) {
 			code := `return https://example.com/?v=a`
-			res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), nil), false)
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+
+			res, err := Eval(code, NewGlobalState(ctx, nil), false)
 			assert.NoError(t, err)
 			assert.Equal(t, URL("https://example.com/?v=a"), res)
 		})
@@ -575,7 +637,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				x = "a"
 				return https://example.com/?v={$x}
 			`
-			res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), nil), false)
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+
+			res, err := Eval(code, NewGlobalState(ctx, nil), false)
 			assert.NoError(t, err)
 			assert.Equal(t, URL("https://example.com/?v=a"), res)
 		})
@@ -586,7 +651,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				y = "b"
 				return https://example.com/?v={$x}&w={$y}
 			`
-			res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), nil), false)
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+
+			res, err := Eval(code, NewGlobalState(ctx, nil), false)
 			assert.NoError(t, err)
 			assert.Equal(t, URL("https://example.com/?v=a&w=b"), res)
 		})
@@ -596,7 +664,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				x = "%23"
 				return https://example.com/?v={$x}
 			`
-			res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), nil), false)
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+
+			res, err := Eval(code, NewGlobalState(ctx, nil), false)
 			assert.NoError(t, err)
 			assert.Equal(t, URL("https://example.com/?v=%23"), res)
 		})
@@ -606,7 +677,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				x = 1
 				return https://example.com/?v={$x}
 			`
-			res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), nil), false)
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+
+			res, err := Eval(code, NewGlobalState(ctx, nil), false)
 			assert.NoError(t, err)
 			assert.Equal(t, URL("https://example.com/?v=1"), res)
 		})
@@ -616,7 +690,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				x = true
 				return https://example.com/?v={$x}
 			`
-			res, err := Eval(code, NewGlobalState(NewDefaultTestContext(), nil), false)
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+
+			res, err := Eval(code, NewGlobalState(ctx, nil), false)
 			assert.NoError(t, err)
 			assert.Equal(t, URL("https://example.com/?v=true"), res)
 		})
@@ -749,7 +826,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		for _, testCase := range injectionCases {
 			t.Run(testCase.input, func(t *testing.T) {
-				res, err := Eval(testCase.input, NewGlobalState(NewDefaultTestContext(), nil), false)
+				ctx := NewDefaultTestContext()
+				defer ctx.CancelGracefully()
+
+				res, err := Eval(testCase.input, NewGlobalState(ctx, nil), false)
 				assert.ErrorContains(t, err, testCase.error)
 				assert.Nil(t, res)
 			})
@@ -798,7 +878,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		for _, testCase := range testCases {
 			t.Run(testCase.code, func(t *testing.T) {
-				res, err := Eval(testCase.code, NewGlobalState(NewDefaultTestContext(), nil), false)
+				ctx := NewDefaultTestContext()
+				defer ctx.CancelGracefully()
+
+				res, err := Eval(testCase.code, NewGlobalState(ctx, nil), false)
 				if testCase.err == nil {
 					assert.NoError(t, err)
 					assert.Equal(t, testCase.result, res)
@@ -891,7 +974,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		for _, testCase := range testCases {
 			t.Run(testCase.code, func(t *testing.T) {
-				res, err := Eval(testCase.code, NewGlobalState(NewDefaultTestContext(), nil), false)
+				ctx := NewDefaultTestContext()
+				defer ctx.CancelGracefully()
+
+				res, err := Eval(testCase.code, NewGlobalState(ctx, nil), false)
 				if testCase.err == nil {
 					assert.NoError(t, err)
 					assert.Equal(t, testCase.result, res)
@@ -960,7 +1046,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 	t.Run("integer unary expression", func(t *testing.T) {
 		t.Run("negating the smallest integer should throw an error", func(t *testing.T) {
-			res, err := Eval("(- -9223372036854775808)", NewGlobalState(NewDefaultTestContext(), nil), false)
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+
+			res, err := Eval("(- -9223372036854775808)", NewGlobalState(ctx, nil), false)
 			assert.ErrorIs(t, err, ErrNegationWithOverflow)
 			assert.Nil(t, res)
 		})
@@ -981,7 +1070,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		for _, testCase := range testCases {
 			t.Run(testCase.code, func(t *testing.T) {
-				res, err := Eval(testCase.code, NewGlobalState(NewDefaultTestContext(), nil), false)
+				ctx := NewDefaultTestContext()
+				defer ctx.CancelGracefully()
+
+				res, err := Eval(testCase.code, NewGlobalState(ctx, nil), false)
 				if testCase.err == nil {
 					assert.NoError(t, err)
 					assert.Equal(t, testCase.result, res)
@@ -1065,7 +1157,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		for _, testCase := range testCases {
 			t.Run(testCase.code, func(t *testing.T) {
-				res, err := Eval(testCase.code, NewGlobalState(NewDefaultTestContext(), nil), false)
+				ctx := NewDefaultTestContext()
+				defer ctx.CancelGracefully()
+
+				res, err := Eval(testCase.code, NewGlobalState(ctx, nil), false)
 				assert.NoError(t, err)
 				assert.Equal(t, testCase.result, res)
 			})
