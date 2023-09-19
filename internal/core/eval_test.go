@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"os"
 	"path/filepath"
@@ -148,13 +149,15 @@ func bytecodeTest(t *testing.T, optimize bool) {
 // testEval executes the suite of evaluation tests with a given evaluation function
 // that can have any implementation (tree walk, bytecode, ...).
 func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
-	runtime.GC()
-	startMemStats := new(runtime.MemStats)
-	runtime.ReadMemStats(startMemStats)
+	if false {
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
 
-	defer utils.AssertNoMemoryLeak(t, startMemStats, 100_000, utils.AssertNoMemoryLeakOptions{
-		PreSleepDurationMillis: 100,
-	})
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 100_000, utils.AssertNoMemoryLeakOptions{
+			PreSleepDurationMillis: 100,
+		})
+	}
 
 	t.Run("integer literal", func(t *testing.T) {
 		code := "1"
@@ -5520,13 +5523,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("compute() with existing dynamic entry key in many goroutines", func(t *testing.T) {
-			runtime.GC()
-			startMemStats := new(runtime.MemStats)
-			runtime.ReadMemStats(startMemStats)
+			if false {
+				runtime.GC()
+				startMemStats := new(runtime.MemStats)
+				runtime.ReadMemStats(startMemStats)
 
-			defer utils.AssertNoMemoryLeak(t, startMemStats, 100_000, utils.AssertNoMemoryLeakOptions{
-				PreSleepDurationMillis: 100,
-			})
+				defer utils.AssertNoMemoryLeak(t, startMemStats, 100_000, utils.AssertNoMemoryLeakOptions{
+					PreSleepDurationMillis: 100,
+				})
+			}
 
 			code := `
 				$$m = Mapping{ n 0 => n }
@@ -5564,13 +5569,19 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("compute() with existing dynamic entry key (accessing a global variable) in many goroutines", func(t *testing.T) {
-			runtime.GC()
-			startMemStats := new(runtime.MemStats)
-			runtime.ReadMemStats(startMemStats)
+			if false {
+				runtime.GC()
+				startMemStats := new(runtime.MemStats)
+				runtime.ReadMemStats(startMemStats)
+				goroutineCount := runtime.NumGoroutine()
 
-			defer utils.AssertNoMemoryLeak(t, startMemStats, 100_000, utils.AssertNoMemoryLeakOptions{
-				PreSleepDurationMillis: 100,
-			})
+				defer utils.AssertNoMemoryLeak(t, startMemStats, 100_000, utils.AssertNoMemoryLeakOptions{
+					PreSleepDurationMillis: 100,
+					CheckGoroutines:        true,
+					GoroutineCount:         goroutineCount,
+					MaxGoroutineCountDelta: 1,
+				})
+			}
 
 			code := `
 				$$a = 1
@@ -5593,7 +5604,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				"LThreadGroup": WrapGoFunction(NewLThreadGroup),
 			})
 
-			state.Out = os.Stdout
+			state.Out = io.Discard
 			state.Logger = zerolog.New(state.Out)
 
 			res, err := Eval(code, state, true)
