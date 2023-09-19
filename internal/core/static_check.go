@@ -1,7 +1,6 @@
 package core
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"net/url"
@@ -2489,35 +2488,6 @@ func shallowCheckObjectRecordProperties(
 	return parse.Continue, keys
 }
 
-// combineErrors combines errors into a single error with a multiline message.
-func combineErrors(errs ...error) error {
-
-	if len(errs) == 0 {
-		return nil
-	}
-
-	finalErrBuff := bytes.NewBuffer(nil)
-
-	for _, err := range errs {
-		if err != nil {
-			finalErrBuff.WriteString(err.Error())
-			finalErrBuff.WriteRune('\n')
-		}
-	}
-
-	return errors.New(strings.TrimRight(finalErrBuff.String(), "\n"))
-}
-
-// combineErrorsWithPrefixMessage combines errors into a single error with a multiline message.
-func combineErrorsWithPrefixMessage(prefixMsg string, errs ...error) error {
-
-	err := combineErrors(errs...)
-	if err == nil {
-		return nil
-	}
-	return fmt.Errorf("%s: %w", prefixMsg, err)
-}
-
 // CombineParsingErrorValues combines errors into a single error with a multiline message.
 func CombineParsingErrorValues(errs []Error, positions []parse.SourcePositionRange) error {
 
@@ -2534,7 +2504,7 @@ func CombineParsingErrorValues(errs []Error, positions []parse.SourcePositionRan
 		}
 	}
 
-	return combineErrors(goErrors...)
+	return utils.CombineErrors(goErrors...)
 }
 
 // combineStaticCheckErrors combines static check errors into a single error with a multiline message.
@@ -2544,7 +2514,7 @@ func combineStaticCheckErrors(errs ...*StaticCheckError) error {
 	for i, e := range errs {
 		goErrors[i] = e
 	}
-	return combineErrors(goErrors...)
+	return utils.CombineErrors(goErrors...)
 }
 
 type StaticCheckInput struct {

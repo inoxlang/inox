@@ -647,7 +647,7 @@ func EvaluatePermissionListingObjectNode(n *parse.ObjectLiteral, config PreinitA
 			checkErr = append(checkErr, errors.New(msg))
 		})
 		if len(checkErr) != 0 {
-			return nil, combineErrors(checkErr...)
+			return nil, utils.CombineErrors(checkErr...)
 		}
 	}
 

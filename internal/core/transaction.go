@@ -188,7 +188,7 @@ func (tx *Transaction) Commit(ctx *Context) error {
 
 	tx.endCallbackFns = nil
 
-	return combineErrorsWithPrefixMessage("callback errors", callbackErrors...)
+	return utils.CombineErrorsWithPrefixMessage("callback errors", callbackErrors...)
 }
 
 func (tx *Transaction) Rollback(ctx *Context) error {
@@ -226,7 +226,7 @@ func (tx *Transaction) Rollback(ctx *Context) error {
 		}
 	}
 
-	return combineErrorsWithPrefixMessage("callback errors", callbackErrors...)
+	return utils.CombineErrorsWithPrefixMessage("callback errors", callbackErrors...)
 }
 
 func (tx *Transaction) WaitFinished() <-chan struct{} {

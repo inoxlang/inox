@@ -321,7 +321,7 @@ func fetchParseImportedModules(mod *Module, ctx *Context, fls afs.Filesystem, co
 	wg.Wait()
 
 	if len(unrecoverableErors) > 0 {
-		return combineErrors(unrecoverableErors...)
+		return utils.CombineErrors(unrecoverableErors...)
 	}
 
 	mod.DirectlyImportedModules = importedModules
