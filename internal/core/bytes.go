@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+
+	"github.com/inoxlang/inox/internal/mimeconsts"
 )
 
 var (
@@ -63,7 +65,7 @@ func (slice *ByteSlice) Mutable() bool {
 
 func (slice *ByteSlice) ContentType() Mimetype {
 	if slice.contentType == "" {
-		return APP_OCTET_STREAM_CTYPE
+		return mimeconsts.APP_OCTET_STREAM_CTYPE
 	}
 	return slice.contentType
 }

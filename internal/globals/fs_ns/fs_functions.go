@@ -842,7 +842,7 @@ func Read(ctx *core.Context, path core.Path, args ...core.Value) (result core.Va
 			return
 		}
 
-		t, ok := core.FILE_EXTENSION_TO_MIMETYPE[filepath.Ext(string(path))]
+		t, ok := core.GetMimeTypeFromExtension(filepath.Ext(string(path)))
 		if ok {
 			contentType = t
 		}

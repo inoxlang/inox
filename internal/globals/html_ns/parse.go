@@ -5,12 +5,13 @@ import (
 	"strings"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/mimeconsts"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 )
 
 func init() {
-	core.RegisterParser(core.HTML_CTYPE, &htmlDocParser{})
+	core.RegisterParser(mimeconsts.HTML_CTYPE, &htmlDocParser{})
 }
 
 var (

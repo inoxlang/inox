@@ -11,6 +11,7 @@ import (
 
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
+	"github.com/inoxlang/inox/internal/mimeconsts"
 )
 
 func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn {
@@ -164,7 +165,7 @@ func getHandlerModuleArguments(req *HttpRequest, manifest *core.Manifest, handle
 	if handlerModuleParams.bodyReader {
 		moduleArguments["_body"] = req.Body
 	} else if handlerModuleParams.jsonBodyPattern != nil {
-		if !req.ContentType.MatchText(core.JSON_CTYPE) {
+		if !req.ContentType.MatchText(mimeconsts.JSON_CTYPE) {
 			return nil, http.StatusBadRequest, errors.New("unsupported content type")
 		}
 		bytes, err := req.Body.ReadAll()

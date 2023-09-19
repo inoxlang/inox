@@ -9,6 +9,7 @@ import (
 
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/mimeconsts"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/rs/zerolog"
 )
@@ -148,7 +149,7 @@ func respondWithMappingResult(h handlingArguments) {
 	state := h.state
 	logger := h.logger
 	server := h.server
-	renderingConfig := core.RenderingInput{Mime: core.HTML_CTYPE}
+	renderingConfig := core.RenderingInput{Mime: mimeconsts.HTML_CTYPE}
 
 	switch v := value.(type) {
 	case *core.InoxFunction: // if inox handler we call it and return
@@ -181,7 +182,7 @@ func respondWithMappingResult(h handlingArguments) {
 	switch {
 	case req.AcceptAny():
 		break
-	case req.ParsedAcceptHeader.Match(core.IXON_CTYPE):
+	case req.ParsedAcceptHeader.Match(mimeconsts.IXON_CTYPE):
 		config := &core.ReprConfig{}
 
 		serializable, ok := value.(core.Serializable)
@@ -190,10 +191,10 @@ func respondWithMappingResult(h handlingArguments) {
 			return
 		}
 
-		rw.WriteContentType(core.IXON_CTYPE)
+		rw.WriteContentType(mimeconsts.IXON_CTYPE)
 		serializable.WriteRepresentation(state.Ctx, rw.BodyWriter(), config, 0)
 		return
-	case req.ParsedAcceptHeader.Match(core.JSON_CTYPE):
+	case req.ParsedAcceptHeader.Match(mimeconsts.JSON_CTYPE):
 		config := core.JSONSerializationConfig{
 			ReprConfig: &core.ReprConfig{},
 		}
@@ -204,7 +205,7 @@ func respondWithMappingResult(h handlingArguments) {
 			return
 		}
 
-		rw.WriteContentType(core.JSON_CTYPE)
+		rw.WriteContentType(mimeconsts.JSON_CTYPE)
 		stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, rw.BodyWriter(), 0)
 		serializable.WriteJSONRepresentation(state.Ctx, stream, config, 0)
 		stream.Flush()
@@ -216,7 +217,7 @@ func respondWithMappingResult(h handlingArguments) {
 		break
 	case "POST", "PATCH":
 		switch {
-		case req.ContentType.MatchText(core.APP_OCTET_STREAM_CTYPE):
+		case req.ContentType.MatchText(mimeconsts.APP_OCTET_STREAM_CTYPE):
 			getData := func() ([]byte, bool) {
 				b, err := req.Body.ReadAllBytes()
 
@@ -283,7 +284,7 @@ loop:
 			return
 
 		case core.StringLike:
-			if !req.ParsedAcceptHeader.Match(core.PLAIN_TEXT_CTYPE) {
+			if !req.ParsedAcceptHeader.Match(mimeconsts.PLAIN_TEXT_CTYPE) {
 				rw.writeStatus(http.StatusNotAcceptable)
 				return
 			}
@@ -300,7 +301,7 @@ loop:
 			}
 
 			//TODO: use matching instead of equality
-			if contentType == core.HTML_CTYPE {
+			if contentType == mimeconsts.HTML_CTYPE {
 				rw.AddHeader(state.Ctx, CSP_HEADER_NAME, core.Str(server.defaultCSP.String()))
 			}
 
@@ -322,7 +323,7 @@ loop:
 					break loop
 				}
 
-				if !req.ParsedAcceptHeader.Match(core.HTML_CTYPE) && !req.ParsedAcceptHeader.Match(core.EVENT_STREAM_CTYPE) {
+				if !req.ParsedAcceptHeader.Match(mimeconsts.HTML_CTYPE) && !req.ParsedAcceptHeader.Match(mimeconsts.EVENT_STREAM_CTYPE) {
 					rw.writeStatus(http.StatusNotAcceptable)
 					return
 				}
@@ -359,12 +360,12 @@ loop:
 					continue
 				}
 			} else {
-				if !req.ParsedAcceptHeader.Match(core.HTML_CTYPE) {
+				if !req.ParsedAcceptHeader.Match(mimeconsts.HTML_CTYPE) {
 					rw.writeStatus(http.StatusNotAcceptable)
 					return
 				}
 
-				rw.WriteContentType(core.HTML_CTYPE)
+				rw.WriteContentType(mimeconsts.HTML_CTYPE)
 				rw.AddHeader(state.Ctx, CSP_HEADER_NAME, core.Str(server.defaultCSP.String()))
 
 				_, err := core.Render(state.Ctx, rw.BodyWriter(), v, renderingConfig)
@@ -374,7 +375,7 @@ loop:
 			}
 		case core.StreamSource, core.ReadableStream:
 
-			if req.AcceptAny() || !req.ParsedAcceptHeader.Match(core.EVENT_STREAM_CTYPE) {
+			if req.AcceptAny() || !req.ParsedAcceptHeader.Match(mimeconsts.EVENT_STREAM_CTYPE) {
 				rw.writeStatus(http.StatusNotAcceptable)
 				return
 			}

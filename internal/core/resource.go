@@ -15,6 +15,7 @@ import (
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/inoxlang/inox/internal/afs"
+	"github.com/inoxlang/inox/internal/mimeconsts"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -1072,7 +1073,7 @@ func (patt URLPattern) Includes(ctx *Context, v Value) bool {
 func ParseOrValidateResourceContent(ctx *Context, resourceContent []byte, ctype Mimetype, doParse, validateRaw bool) (res Value, contentType Mimetype, err error) {
 	ct := ctype.WithoutParams()
 	switch ct {
-	case "", APP_OCTET_STREAM_CTYPE:
+	case "", mimeconsts.APP_OCTET_STREAM_CTYPE:
 		res = NewByteSlice(resourceContent, false, "")
 	default:
 		parser, ok := GetParser(ct)

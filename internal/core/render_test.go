@@ -3,6 +3,7 @@ package core
 import (
 	"testing"
 
+	"github.com/inoxlang/inox/internal/mimeconsts"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/stretchr/testify/assert"
 )
@@ -15,7 +16,7 @@ func TestNodeRender(t *testing.T) {
 	renderHTML := func(code string) string {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
-		return render(ctx, AstNode{Node: parse.MustParseChunk(code)}, HTML_CTYPE)
+		return render(ctx, AstNode{Node: parse.MustParseChunk(code)}, mimeconsts.HTML_CTYPE)
 	}
 
 	assert.Equal(t, "<div><span>1</span></div>", renderHTML("1"))

@@ -11,6 +11,7 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/publicsuffix"
@@ -28,7 +29,7 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 					}
 				}`,
 				requests: []requestTestInfo{
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`},
 				},
 			}, createClient)
 		})
@@ -42,7 +43,7 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 					}
 				}`,
 				requests: []requestTestInfo{
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`},
 				},
 			}, createClient)
 		})
@@ -62,8 +63,8 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 					}
 				}`,
 				requests: []requestTestInfo{
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, path: "/a", status: 404},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, path: "/b", result: `b`, status: 200},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, path: "/a", status: 404},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, path: "/b", result: `b`, status: 200},
 				},
 			}, createClient)
 		})
@@ -85,7 +86,7 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 					return fls
 				},
 				requests: []requestTestInfo{
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`},
 				},
 			}, createClient)
 		})
@@ -100,7 +101,7 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 				}
 			}`,
 			requests: []requestTestInfo{
-				{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
+				{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`},
 			},
 		}
 
@@ -153,16 +154,16 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 			runHandlingDescTestCase(t, serverTestCase{
 				input: HELLO,
 				requests: []requestTestInfo{
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true},
 				},
 				createClientFn: func() func() *http.Client {
 					client := &http.Client{
@@ -184,16 +185,16 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 			runHandlingDescTestCase(t, serverTestCase{
 				input: HELLO,
 				requests: []requestTestInfo{
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, pause: MINI_PAUSE},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, pause: MINI_PAUSE},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, pause: MINI_PAUSE},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, pause: MINI_PAUSE},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, pause: MINI_PAUSE},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true, pause: MINI_PAUSE},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true, pause: MINI_PAUSE},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true, pause: MINI_PAUSE},
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true, pause: MINI_PAUSE},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`, pause: MINI_PAUSE},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`, pause: MINI_PAUSE},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`, pause: MINI_PAUSE},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`, pause: MINI_PAUSE},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`, pause: MINI_PAUSE},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true, pause: MINI_PAUSE},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true, pause: MINI_PAUSE},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true, pause: MINI_PAUSE},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`, okayIf429: true, pause: MINI_PAUSE},
 				},
 				createClientFn: func() func() *http.Client {
 					client := &http.Client{

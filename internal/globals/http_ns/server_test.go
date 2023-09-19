@@ -24,6 +24,7 @@ import (
 	"github.com/inoxlang/inox/internal/default_state"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
+	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/rs/zerolog"
 	"golang.org/x/net/publicsuffix"
@@ -163,7 +164,7 @@ func TestHttpServerUserHandler(t *testing.T) {
 
 			//we send a request to the server
 			req, _ := http.NewRequest("GET", string(host)+"/x", nil)
-			req.Header.Add("Accept", core.JSON_CTYPE)
+			req.Header.Add("Accept", mimeconsts.JSON_CTYPE)
 
 			client := createClient()
 			resp, err := client.Do(req)
@@ -191,7 +192,7 @@ func TestHttpServerMapping(t *testing.T) {
 				requests: []requestTestInfo{
 					{
 						method:              "CUSTOMMETHOD",
-						acceptedContentType: core.PLAIN_TEXT_CTYPE,
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 						status:              http.StatusBadRequest,
 					},
 				},
@@ -208,7 +209,7 @@ func TestHttpServerMapping(t *testing.T) {
 						}
 						`,
 				requests: []requestTestInfo{
-					{acceptedContentType: core.PLAIN_TEXT_CTYPE, result: `hello`},
+					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`},
 				},
 			},
 			createClient,
@@ -224,7 +225,7 @@ func TestHttpServerMapping(t *testing.T) {
 				}
 				`,
 				requests: []requestTestInfo{
-					{acceptedContentType: core.ANY_CTYPE, result: `hello`},
+					{acceptedContentType: mimeconsts.ANY_CTYPE, result: `hello`},
 				},
 			},
 			createClient,
@@ -241,8 +242,8 @@ func TestHttpServerMapping(t *testing.T) {
 				requests: []requestTestInfo{
 					{
 						method:              "POST",
-						header:              http.Header{"Content-Type": []string{core.PLAIN_TEXT_CTYPE}},
-						acceptedContentType: core.PLAIN_TEXT_CTYPE,
+						header:              http.Header{"Content-Type": []string{mimeconsts.PLAIN_TEXT_CTYPE}},
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 						result:              `hello`,
 					},
 				},
@@ -259,7 +260,7 @@ func TestHttpServerMapping(t *testing.T) {
 					%/... => 0d[65] # 'A'
 				}
 				`,
-				requests: []requestTestInfo{{acceptedContentType: core.APP_OCTET_STREAM_CTYPE, result: `A`}},
+				requests: []requestTestInfo{{acceptedContentType: mimeconsts.APP_OCTET_STREAM_CTYPE, result: `A`}},
 			},
 			createClient,
 		)
@@ -273,7 +274,7 @@ func TestHttpServerMapping(t *testing.T) {
 					%/... => html.div{}
 				}`,
 				requests: []requestTestInfo{
-					{acceptedContentType: core.HTML_CTYPE, result: `<div></div>`},
+					{acceptedContentType: mimeconsts.HTML_CTYPE, result: `<div></div>`},
 				},
 			},
 			createClient,
@@ -288,7 +289,7 @@ func TestHttpServerMapping(t *testing.T) {
 					%/... => html.div{}
 				}`,
 				requests: []requestTestInfo{
-					{acceptedContentType: core.ANY_CTYPE, result: `<div></div>`},
+					{acceptedContentType: mimeconsts.ANY_CTYPE, result: `<div></div>`},
 				},
 			},
 			createClient,
@@ -305,8 +306,8 @@ func TestHttpServerMapping(t *testing.T) {
 				requests: []requestTestInfo{
 					{
 						method:              "POST",
-						header:              http.Header{"Content-Type": []string{core.PLAIN_TEXT_CTYPE}},
-						acceptedContentType: core.HTML_CTYPE,
+						header:              http.Header{"Content-Type": []string{mimeconsts.PLAIN_TEXT_CTYPE}},
+						acceptedContentType: mimeconsts.HTML_CTYPE,
 						result:              `<div></div>`,
 					},
 				},
@@ -328,7 +329,7 @@ func TestHttpServerMapping(t *testing.T) {
 					}
 				`,
 				requests: []requestTestInfo{
-					{acceptedContentType: core.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`},
+					{acceptedContentType: mimeconsts.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`},
 				},
 			},
 			createClient)
@@ -343,7 +344,7 @@ func TestHttpServerMapping(t *testing.T) {
 			}
 			`,
 				requests: []requestTestInfo{
-					{acceptedContentType: core.JSON_CTYPE, result: "null"},
+					{acceptedContentType: mimeconsts.JSON_CTYPE, result: "null"},
 				},
 			},
 			createClient,
@@ -358,7 +359,7 @@ func TestHttpServerMapping(t *testing.T) {
 			}
 			`,
 				requests: []requestTestInfo{
-					{acceptedContentType: core.ANY_CTYPE, status: 404},
+					{acceptedContentType: mimeconsts.ANY_CTYPE, status: 404},
 				},
 			},
 			createClient,
@@ -374,7 +375,7 @@ func TestHttpServerMapping(t *testing.T) {
 		}
 		`,
 				requests: []requestTestInfo{
-					{acceptedContentType: core.JSON_CTYPE, status: http.StatusNotFound},
+					{acceptedContentType: mimeconsts.JSON_CTYPE, status: http.StatusNotFound},
 				},
 			},
 			createClient,
@@ -390,7 +391,7 @@ func TestHttpServerMapping(t *testing.T) {
 		}
 		`,
 				requests: []requestTestInfo{
-					{acceptedContentType: core.ANY_CTYPE, status: http.StatusNotFound},
+					{acceptedContentType: mimeconsts.ANY_CTYPE, status: http.StatusNotFound},
 				},
 			},
 			createClient,
@@ -413,7 +414,7 @@ func TestHttpServerMapping(t *testing.T) {
 					}
 				`,
 				requests: []requestTestInfo{
-					{acceptedContentType: core.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`},
+					{acceptedContentType: mimeconsts.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`},
 				},
 			},
 			createClient,
@@ -430,7 +431,7 @@ func TestHttpServerMapping(t *testing.T) {
 					%/... => model
 				}`,
 				requests: []requestTestInfo{
-					{acceptedContentType: core.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`},
+					{acceptedContentType: mimeconsts.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`},
 				},
 			},
 			createClient,
@@ -452,7 +453,7 @@ func TestHttpServerMapping(t *testing.T) {
 					%/... => model
 				}`,
 				requests: []requestTestInfo{
-					{acceptedContentType: core.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`},
+					{acceptedContentType: mimeconsts.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`},
 				},
 			},
 			createClient,
@@ -480,7 +481,7 @@ func TestHttpServerMapping(t *testing.T) {
 				}`,
 				requests: []requestTestInfo{
 					{
-						acceptedContentType: core.JSON_CTYPE,
+						acceptedContentType: mimeconsts.JSON_CTYPE,
 						result:              `{"object__value":{"a":{"int__value":"1"},"e":{"emailaddr__value":"a@mail.com"},"password":"mypassword"}}`,
 					},
 				},
@@ -503,7 +504,7 @@ func TestHttpServerMapping(t *testing.T) {
 					%/... => model
 				}`,
 				requests: []requestTestInfo{
-					{acceptedContentType: core.IXON_CTYPE, result: `{"a":1}`},
+					{acceptedContentType: mimeconsts.IXON_CTYPE, result: `{"a":1}`},
 				},
 			},
 			createClient,
@@ -529,7 +530,7 @@ func TestHttpServerMapping(t *testing.T) {
 					%/... => model
 				}`,
 				requests: []requestTestInfo{
-					{acceptedContentType: core.IXON_CTYPE, result: `{"a":1,"e":a@mail.com,"password":"mypassword"}`},
+					{acceptedContentType: mimeconsts.IXON_CTYPE, result: `{"a":1,"e":a@mail.com,"password":"mypassword"}`},
 				},
 			},
 			createClient,
@@ -547,7 +548,7 @@ func TestHttpServerMapping(t *testing.T) {
 					}`, "<size>", strconv.Itoa(int(10*DEFAULT_PUSHED_BYTESTREAM_CHUNK_SIZE_RANGE.InclusiveEnd())), 1),
 				requests: []requestTestInfo{
 					{
-						acceptedContentType: core.EVENT_STREAM_CTYPE,
+						acceptedContentType: mimeconsts.EVENT_STREAM_CTYPE,
 						events: func() []*core.Event {
 							chunkMaxSize := DEFAULT_PUSHED_BYTESTREAM_CHUNK_SIZE_RANGE.InclusiveEnd()
 							size := int(10 * chunkMaxSize)
@@ -741,7 +742,7 @@ func runAdvancedServerTestCase(
 			url += info.path
 		}
 
-		if info.acceptedContentType != core.EVENT_STREAM_CTYPE {
+		if info.acceptedContentType != mimeconsts.EVENT_STREAM_CTYPE {
 			method := "GET"
 			if info.method != "" {
 				method = info.method
@@ -838,7 +839,7 @@ func runAdvancedServerTestCase(
 			return
 		}
 
-		if info.acceptedContentType != core.EVENT_STREAM_CTYPE { //normal request
+		if info.acceptedContentType != mimeconsts.EVENT_STREAM_CTYPE { //normal request
 			if info.err != nil {
 				if info.checkIdenticalParallelRequest {
 					for _, secondaryErr := range secondaryRequestResponseErrors[i] {

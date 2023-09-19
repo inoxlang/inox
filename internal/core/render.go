@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/inoxlang/inox/internal/mimeconsts"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -104,7 +105,7 @@ func (b Bool) IsRecursivelyRenderable(ctx *Context, input RenderingInput) bool {
 
 func (b Bool) Render(ctx *Context, w io.Writer, config RenderingInput) (int, error) {
 	switch config.Mime {
-	case HTML_CTYPE:
+	case mimeconsts.HTML_CTYPE:
 		if b {
 			return w.Write(S_TRUE)
 		} else {
@@ -120,7 +121,7 @@ func (s Str) IsRecursivelyRenderable(ctx *Context, input RenderingInput) bool {
 
 func (s Str) Render(ctx *Context, w io.Writer, config RenderingInput) (int, error) {
 	switch config.Mime {
-	case HTML_CTYPE:
+	case mimeconsts.HTML_CTYPE:
 		escaped := html.EscapeString(string(s))
 		return w.Write([]byte(escaped))
 	default:
@@ -134,7 +135,7 @@ func (s *RuneSlice) IsRecursivelyRenderable(ctx *Context, input RenderingInput) 
 
 func (s *RuneSlice) Render(ctx *Context, w io.Writer, config RenderingInput) (int, error) {
 	switch config.Mime {
-	case HTML_CTYPE:
+	case mimeconsts.HTML_CTYPE:
 		escaped := html.EscapeString(string(s.elements))
 		return w.Write([]byte("<span>" + escaped + "</span>"))
 	default:
@@ -148,7 +149,7 @@ func (n Int) IsRecursivelyRenderable(ctx *Context, input RenderingInput) bool {
 
 func (n Int) Render(ctx *Context, w io.Writer, config RenderingInput) (int, error) {
 	switch config.Mime {
-	case HTML_CTYPE:
+	case mimeconsts.HTML_CTYPE:
 		return w.Write([]byte(strconv.FormatInt(int64(n), 10)))
 	default:
 		return 0, formatErrUnsupportedRenderingMime(config.Mime)
@@ -171,7 +172,7 @@ func (d Date) Render(ctx *Context, w io.Writer, config RenderingInput) (int, err
 	}
 
 	switch config.Mime {
-	case HTML_CTYPE:
+	case mimeconsts.HTML_CTYPE:
 		totalN, err := w.Write(TIME_OPENING_TAG)
 		if err != nil {
 			return totalN, err
@@ -216,7 +217,7 @@ func (list *List) Render(ctx *Context, w io.Writer, config RenderingInput) (int,
 	length := list.Len()
 
 	switch config.Mime {
-	case HTML_CTYPE:
+	case mimeconsts.HTML_CTYPE:
 		totalN, err := w.Write(LIST_OPENING_TAG)
 		if err != nil {
 			return totalN, err
@@ -261,7 +262,7 @@ func (obj *Object) Render(ctx *Context, w io.Writer, config RenderingInput) (int
 	obj.Lock(closestState)
 	defer obj.Unlock(closestState)
 	switch config.Mime {
-	case HTML_CTYPE:
+	case mimeconsts.HTML_CTYPE:
 		totalN, err := w.Write(DIV_OPENING_TAG)
 		if err != nil {
 			return totalN, err
@@ -311,7 +312,7 @@ func (node AstNode) Render(ctx *Context, w io.Writer, config RenderingInput) (n 
 		return 0, ErrNotRenderable
 	}
 
-	if config.Mime != HTML_CTYPE {
+	if config.Mime != mimeconsts.HTML_CTYPE {
 		return 0, formatErrUnsupportedRenderingMime(config.Mime)
 	}
 

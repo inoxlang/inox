@@ -9,6 +9,7 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
+	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/rs/zerolog"
 
@@ -89,7 +90,7 @@ func TestReadResource(t *testing.T) {
 				return
 			}
 
-			assert.Equal(t, core.NewByteSlice([]byte("true"), false, core.JSON_CTYPE), res)
+			assert.Equal(t, core.NewByteSlice([]byte("true"), false, mimeconsts.JSON_CTYPE), res)
 		})
 
 		t.Run("an error should be returned if parsing required AND there is no parser for content type", func(t *testing.T) {

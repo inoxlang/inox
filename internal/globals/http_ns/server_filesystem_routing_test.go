@@ -6,8 +6,8 @@ import (
 
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
-	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/mimeconsts"
 )
 
 func TestFilesystemRouting(t *testing.T) {
@@ -32,7 +32,7 @@ func TestFilesystemRouting(t *testing.T) {
 				requests: []requestTestInfo{
 					{
 						path:                "/x",
-						acceptedContentType: core.PLAIN_TEXT_CTYPE,
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 						result:              `hello`,
 					},
 				},
@@ -61,7 +61,7 @@ func TestFilesystemRouting(t *testing.T) {
 				requests: []requestTestInfo{
 					{
 						path:                "/x",
-						acceptedContentType: core.PLAIN_TEXT_CTYPE,
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 						result:              `hello`,
 					},
 				},
@@ -95,7 +95,7 @@ func TestFilesystemRouting(t *testing.T) {
 				requests: []requestTestInfo{
 					{
 						method:              "GET",
-						acceptedContentType: core.PLAIN_TEXT_CTYPE,
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 						result:              `hello`,
 					},
 				},
@@ -129,7 +129,7 @@ func TestFilesystemRouting(t *testing.T) {
 				requests: []requestTestInfo{
 					{
 						method:              "GET",
-						acceptedContentType: core.PLAIN_TEXT_CTYPE,
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 						result:              `hello`,
 					},
 				},
@@ -159,24 +159,24 @@ func TestFilesystemRouting(t *testing.T) {
 				requests: []requestTestInfo{
 					{
 						method:              "GET",
-						acceptedContentType: core.PLAIN_TEXT_CTYPE,
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 						result:              "HELLO",
 					},
 					{
 						method:              "HEAD",
-						acceptedContentType: core.PLAIN_TEXT_CTYPE,
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 					},
 					{
 						method:      "POST",
 						requestBody: `body1`,
-						header:      http.Header{"Content-Type": []string{core.PLAIN_TEXT_CTYPE}},
+						header:      http.Header{"Content-Type": []string{mimeconsts.PLAIN_TEXT_CTYPE}},
 
-						acceptedContentType: core.PLAIN_TEXT_CTYPE,
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 						status:              http.StatusBadRequest,
 					},
 					{
 						method:              "DELETE",
-						acceptedContentType: core.PLAIN_TEXT_CTYPE,
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 						status:              http.StatusBadRequest,
 					},
 				},
@@ -208,23 +208,23 @@ func TestFilesystemRouting(t *testing.T) {
 				requests: []requestTestInfo{
 					{
 						method:              "GET",
-						acceptedContentType: core.APP_OCTET_STREAM_CTYPE,
+						acceptedContentType: mimeconsts.APP_OCTET_STREAM_CTYPE,
 						result:              ``,
 					},
 					{
 						method:      "POST",
 						requestBody: `body1`,
-						header:      http.Header{"Content-Type": []string{core.PLAIN_TEXT_CTYPE}},
+						header:      http.Header{"Content-Type": []string{mimeconsts.PLAIN_TEXT_CTYPE}},
 
-						acceptedContentType: core.APP_OCTET_STREAM_CTYPE,
+						acceptedContentType: mimeconsts.APP_OCTET_STREAM_CTYPE,
 						result:              `body1`,
 					},
 					{
 						method:      "PATCH",
 						requestBody: `body2`,
-						header:      http.Header{"Content-Type": []string{core.PLAIN_TEXT_CTYPE}},
+						header:      http.Header{"Content-Type": []string{mimeconsts.PLAIN_TEXT_CTYPE}},
 
-						acceptedContentType: core.APP_OCTET_STREAM_CTYPE,
+						acceptedContentType: mimeconsts.APP_OCTET_STREAM_CTYPE,
 						result:              `body2`,
 					},
 				},
@@ -257,9 +257,9 @@ func TestFilesystemRouting(t *testing.T) {
 					{
 						method:      "POST",
 						requestBody: `{"name": "foo"}`,
-						header:      http.Header{"Content-Type": []string{core.JSON_CTYPE}},
+						header:      http.Header{"Content-Type": []string{mimeconsts.JSON_CTYPE}},
 
-						acceptedContentType: core.PLAIN_TEXT_CTYPE,
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 						status:              http.StatusNotFound,
 					},
 				},
@@ -292,9 +292,9 @@ func TestFilesystemRouting(t *testing.T) {
 					{
 						method:      "POST",
 						requestBody: `{"name": "foo"}`,
-						header:      http.Header{"Content-Type": []string{core.JSON_CTYPE}},
+						header:      http.Header{"Content-Type": []string{mimeconsts.JSON_CTYPE}},
 
-						acceptedContentType: core.PLAIN_TEXT_CTYPE,
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 						result:              `name is foo`,
 					},
 				},
@@ -327,17 +327,17 @@ func TestFilesystemRouting(t *testing.T) {
 					{
 						method:      "POST",
 						requestBody: `{"name": "foo"}`,
-						header:      http.Header{"Content-Type": []string{core.JSON_CTYPE}},
+						header:      http.Header{"Content-Type": []string{mimeconsts.JSON_CTYPE}},
 
-						acceptedContentType: core.PLAIN_TEXT_CTYPE,
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 						result:              `hello`,
 					},
 					{
 						method:      "PATCH",
 						requestBody: `{"name": "foo"}`,
-						header:      http.Header{"Content-Type": []string{core.JSON_CTYPE}},
+						header:      http.Header{"Content-Type": []string{mimeconsts.JSON_CTYPE}},
 
-						acceptedContentType: core.PLAIN_TEXT_CTYPE,
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 						status:              http.StatusBadRequest,
 					},
 				},

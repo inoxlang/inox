@@ -5,6 +5,7 @@ import (
 	"io"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/mimeconsts"
 	"golang.org/x/net/html"
 )
 
@@ -34,7 +35,7 @@ func Render(ctx *core.Context, v core.Value) *core.ByteSlice {
 }
 
 func renderToWriter(ctx *core.Context, w io.Writer, v core.Value) {
-	_, err := v.(core.Renderable).Render(ctx, w, core.RenderingInput{Mime: core.HTML_CTYPE})
+	_, err := v.(core.Renderable).Render(ctx, w, core.RenderingInput{Mime: mimeconsts.HTML_CTYPE})
 	if err != nil {
 		panic(err)
 	}

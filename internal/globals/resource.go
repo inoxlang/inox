@@ -9,6 +9,7 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
+	"github.com/inoxlang/inox/internal/mimeconsts"
 )
 
 var (
@@ -190,7 +191,7 @@ func _updateResource(ctx *core.Context, resource core.ResourceName, args ...core
 			}
 
 			switch contentType {
-			case core.JSON_CTYPE, core.HTML_CTYPE, core.PLAIN_TEXT_CTYPE:
+			case mimeconsts.JSON_CTYPE, mimeconsts.HTML_CTYPE, mimeconsts.PLAIN_TEXT_CTYPE:
 				return core.Str(b), nil
 			}
 			return &core.ByteSlice{Bytes: b, IsDataMutable: true}, nil
@@ -245,7 +246,7 @@ func _deleteResource(ctx *core.Context, resource core.ResourceName, args ...core
 			}
 
 			switch contentType {
-			case core.JSON_CTYPE, core.HTML_CTYPE, core.PLAIN_TEXT_CTYPE:
+			case mimeconsts.JSON_CTYPE, mimeconsts.HTML_CTYPE, mimeconsts.PLAIN_TEXT_CTYPE:
 				//TODO: return checked strings ?
 				return core.Str(b), nil
 			}

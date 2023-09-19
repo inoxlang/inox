@@ -14,6 +14,7 @@ import (
 
 	core "github.com/inoxlang/inox/internal/core"
 	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
+	"github.com/inoxlang/inox/internal/mimeconsts"
 
 	"github.com/inoxlang/inox/internal/utils"
 	"gopkg.in/cenkalti/backoff.v1"
@@ -268,7 +269,7 @@ func (evs *ServerSentEventSource) sendRequest() (*http.Response, error) {
 
 	headers := req.Header
 	headers.Set("Cache-Control", "no-cache")
-	headers.Set("Accept", core.EVENT_STREAM_CTYPE)
+	headers.Set("Accept", mimeconsts.EVENT_STREAM_CTYPE)
 	headers.Set("Connection", "keep-alive")
 
 	if evs.lastEventId != "" {

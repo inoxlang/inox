@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/mimeconsts"
 	jsoniter "github.com/json-iterator/go"
 	"golang.org/x/net/html"
 
@@ -58,7 +59,7 @@ func (n *HTMLNode) PropertyNames(ctx *core.Context) []string {
 }
 
 func (n *HTMLNode) IsRecursivelyRenderable(ctx *core.Context, input core.RenderingInput) bool {
-	return input.Mime == core.HTML_CTYPE
+	return input.Mime == mimeconsts.HTML_CTYPE
 }
 
 //

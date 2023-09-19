@@ -15,6 +15,7 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/mimeconsts"
 
 	"slices"
 
@@ -169,7 +170,7 @@ func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*Http
 		handlerCtx := ctx.BoundChild()
 		defer handlerCtx.CancelIfShortLived()
 
-		if !req.AcceptAny() && !req.ParsedAcceptHeader.Match(core.EVENT_STREAM_CTYPE) {
+		if !req.AcceptAny() && !req.ParsedAcceptHeader.Match(mimeconsts.EVENT_STREAM_CTYPE) {
 			core.StartNewTransaction(handlerCtx, core.Option{
 				Name:  core.TX_TIMEOUT_OPTION_NAME,
 				Value: core.Duration(DEFAULT_HTTP_SERVER_TX_TIMEOUT),

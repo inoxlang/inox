@@ -8,6 +8,7 @@ import (
 
 	"github.com/aohorodnyk/mimeheader"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/mimeconsts"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -63,7 +64,7 @@ func TestHttpResponseWriter(t *testing.T) {
 				core.NewGlobalState(ctx)
 
 				recorder := httptest.NewRecorder()
-				resp := HttpResponseWriter{rw: recorder, acceptHeader: mimeheader.ParseAcceptHeader(core.JSON_CTYPE)}
+				resp := HttpResponseWriter{rw: recorder, acceptHeader: mimeheader.ParseAcceptHeader(mimeconsts.JSON_CTYPE)}
 
 				_, err := resp.WriteJSON(ctx, testCase.value)
 				result := recorder.Result()
@@ -71,7 +72,7 @@ func TestHttpResponseWriter(t *testing.T) {
 				if testCase.ok {
 					assert.NoError(t, err)
 					assert.Equal(t, testCase.outputJSON, recorder.Body.String())
-					assert.Equal(t, core.JSON_CTYPE, result.Header.Get("Content-Type"))
+					assert.Equal(t, mimeconsts.JSON_CTYPE, result.Header.Get("Content-Type"))
 				} else {
 					assert.Error(t, err)
 					assert.Empty(t, recorder.Body.Bytes())

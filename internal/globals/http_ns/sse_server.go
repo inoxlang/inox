@@ -8,6 +8,7 @@ import (
 	"time"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 )
@@ -109,7 +110,7 @@ func (s *SseServer) PushSubscriptionEvents(config eventPushConfig) {
 
 	headerMap := w.Header()
 	headerMap.Set("Connection", "keep-alive")
-	headerMap.Set("Content-Type", core.EVENT_STREAM_CTYPE)
+	headerMap.Set("Content-Type", mimeconsts.EVENT_STREAM_CTYPE)
 	headerMap.Set("Cache-Control", "no-cache")
 
 	//get last event id from headers & creates subscription

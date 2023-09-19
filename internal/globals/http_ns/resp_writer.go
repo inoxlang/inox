@@ -10,6 +10,7 @@ import (
 
 	"github.com/aohorodnyk/mimeheader"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/mimeconsts"
 
 	"github.com/rs/zerolog"
 
@@ -109,10 +110,10 @@ func (rw *HttpResponseWriter) PropertyNames(ctx *core.Context) []string {
 func (rw *HttpResponseWriter) WritePlainText(ctx *core.Context, bytes *core.ByteSlice) (core.Int, error) {
 	rw.assertIsNotFinished()
 
-	if !rw.acceptHeader.Match(core.PLAIN_TEXT_CTYPE) {
+	if !rw.acceptHeader.Match(mimeconsts.PLAIN_TEXT_CTYPE) {
 		return 0, fmt.Errorf("cannot write plain text: %w", ErrNotAcceptedContentType)
 	}
-	rw.WriteContentType(core.PLAIN_TEXT_CTYPE)
+	rw.WriteContentType(mimeconsts.PLAIN_TEXT_CTYPE)
 
 	n, err := rw.rw.Write(bytes.Bytes)
 	return core.Int(n), err
@@ -121,10 +122,10 @@ func (rw *HttpResponseWriter) WritePlainText(ctx *core.Context, bytes *core.Byte
 func (rw *HttpResponseWriter) WriteBinary(ctx *core.Context, bytes *core.ByteSlice) (core.Int, error) {
 	rw.assertIsNotFinished()
 
-	if !rw.acceptHeader.Match(core.APP_OCTET_STREAM_CTYPE) {
+	if !rw.acceptHeader.Match(mimeconsts.APP_OCTET_STREAM_CTYPE) {
 		return 0, fmt.Errorf("cannot write binary: %w", ErrNotAcceptedContentType)
 	}
-	rw.WriteContentType(core.APP_OCTET_STREAM_CTYPE)
+	rw.WriteContentType(mimeconsts.APP_OCTET_STREAM_CTYPE)
 
 	n, err := rw.rw.Write(bytes.Bytes)
 	return core.Int(n), err
@@ -133,7 +134,7 @@ func (rw *HttpResponseWriter) WriteBinary(ctx *core.Context, bytes *core.ByteSli
 func (rw *HttpResponseWriter) WriteHTML(ctx *core.Context, v core.Value) (core.Int, error) {
 	rw.assertIsNotFinished()
 
-	if !rw.acceptHeader.Match(core.HTML_CTYPE) {
+	if !rw.acceptHeader.Match(mimeconsts.HTML_CTYPE) {
 		return 0, fmt.Errorf("cannot write HTML: %w", ErrNotAcceptedContentType)
 	}
 
@@ -155,7 +156,7 @@ func (rw *HttpResponseWriter) WriteHTML(ctx *core.Context, v core.Value) (core.I
 
 	//TODO: check this is valid HTML
 
-	rw.rw.Header().Set("Content-Type", core.HTML_CTYPE)
+	rw.rw.Header().Set("Content-Type", mimeconsts.HTML_CTYPE)
 	n, err := rw.rw.Write(b)
 	return core.Int(n), err
 }
@@ -163,7 +164,7 @@ func (rw *HttpResponseWriter) WriteHTML(ctx *core.Context, v core.Value) (core.I
 func (rw *HttpResponseWriter) WriteJS(ctx *core.Context, v core.Value) (core.Int, error) {
 	rw.assertIsNotFinished()
 
-	if !rw.acceptHeader.Match(core.JS_CTYPE) {
+	if !rw.acceptHeader.Match(mimeconsts.JS_CTYPE) {
 		return 0, fmt.Errorf("cannot write JS: %w", ErrNotAcceptedContentType)
 	}
 
@@ -185,7 +186,7 @@ func (rw *HttpResponseWriter) WriteJS(ctx *core.Context, v core.Value) (core.Int
 
 	//TODO: check this is valid JS
 
-	rw.rw.Header().Set("Content-Type", core.JS_CTYPE)
+	rw.rw.Header().Set("Content-Type", mimeconsts.JS_CTYPE)
 	n, err := rw.rw.Write(b)
 	return core.Int(n), err
 }
@@ -193,7 +194,7 @@ func (rw *HttpResponseWriter) WriteJS(ctx *core.Context, v core.Value) (core.Int
 func (rw *HttpResponseWriter) WriteCSS(ctx *core.Context, v core.Value) (core.Int, error) {
 	rw.assertIsNotFinished()
 
-	if !rw.acceptHeader.Match(core.CSS_CTYPE) {
+	if !rw.acceptHeader.Match(mimeconsts.CSS_CTYPE) {
 		return 0, fmt.Errorf("cannot write CSS: %w", ErrNotAcceptedContentType)
 	}
 
@@ -215,7 +216,7 @@ func (rw *HttpResponseWriter) WriteCSS(ctx *core.Context, v core.Value) (core.In
 
 	//TODO: check this is valid CSS
 
-	rw.rw.Header().Set("Content-Type", core.CSS_CTYPE)
+	rw.rw.Header().Set("Content-Type", mimeconsts.CSS_CTYPE)
 	n, err := rw.rw.Write(b)
 	return core.Int(n), err
 }
@@ -223,7 +224,7 @@ func (rw *HttpResponseWriter) WriteCSS(ctx *core.Context, v core.Value) (core.In
 func (rw *HttpResponseWriter) WriteJSON(ctx *core.Context, v core.Serializable) (core.Int, error) {
 	rw.assertIsNotFinished()
 
-	if !rw.acceptHeader.Match(core.JSON_CTYPE) {
+	if !rw.acceptHeader.Match(mimeconsts.JSON_CTYPE) {
 		return 0, fmt.Errorf("cannot write JSON: %w", ErrNotAcceptedContentType)
 	}
 
@@ -250,7 +251,7 @@ func (rw *HttpResponseWriter) WriteJSON(ctx *core.Context, v core.Serializable) 
 	if !json.Valid(b) {
 		return 0, fmt.Errorf("not valid JSON : %s", string(b))
 	}
-	rw.rw.Header().Set("Content-Type", core.JSON_CTYPE)
+	rw.rw.Header().Set("Content-Type", mimeconsts.JSON_CTYPE)
 	n, err := rw.rw.Write(b)
 	return core.Int(n), err
 }
@@ -258,11 +259,11 @@ func (rw *HttpResponseWriter) WriteJSON(ctx *core.Context, v core.Serializable) 
 func (rw *HttpResponseWriter) WriteIXON(ctx *core.Context, v core.Serializable) error {
 	rw.assertIsNotFinished()
 
-	if !rw.acceptHeader.Match(core.IXON_CTYPE) {
+	if !rw.acceptHeader.Match(mimeconsts.IXON_CTYPE) {
 		return fmt.Errorf("cannot write IXON: %w", ErrNotAcceptedContentType)
 	}
 
-	rw.rw.Header().Set("Content-Type", core.IXON_CTYPE)
+	rw.rw.Header().Set("Content-Type", mimeconsts.IXON_CTYPE)
 
 	err := v.WriteRepresentation(ctx, rw.rw, &core.ReprConfig{}, 0)
 	return err

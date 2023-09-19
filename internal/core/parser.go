@@ -6,6 +6,7 @@ import (
 
 	yamlLex "github.com/goccy/go-yaml/lexer"
 	yamlParse "github.com/goccy/go-yaml/parser"
+	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -15,9 +16,9 @@ var (
 )
 
 func init() {
-	RegisterParser(JSON_CTYPE, &jsonParser{})
-	RegisterParser(IXON_CTYPE, &inoxReprParser{})
-	RegisterParser(APP_YAML_CTYPE, &yamlParser{})
+	RegisterParser(mimeconsts.JSON_CTYPE, &jsonParser{})
+	RegisterParser(mimeconsts.IXON_CTYPE, &inoxReprParser{})
+	RegisterParser(mimeconsts.APP_YAML_CTYPE, &yamlParser{})
 }
 
 type StatelessParser interface {
