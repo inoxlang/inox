@@ -1112,7 +1112,7 @@ func testDebugModeEval(
 		t.Run("pause", func(t *testing.T) {
 			state, ctx, chunk, debugger := setup(`
 				a = 1
-				sleep 1s
+				sleep 0.3s
 				a = 2
 				return a
 			`)
@@ -1131,7 +1131,7 @@ func testDebugModeEval(
 			var stackTraces [][]StackFrameInfo
 
 			go func() {
-				//wait to make sure the pause command will be sent during the sleep(1s) call
+				//wait to make sure the pause command will be sent during the sleep(0.3s) call
 				time.Sleep(10 * time.Millisecond)
 
 				controlChan <- DebugCommandPause{
@@ -2121,7 +2121,7 @@ func testDebugModeEval(
 
 			# add a delay in order for the debugger to receive the command while the program is running.
 			# otherwise it will receive the command after the call to eval().
-			sleep 500ms 
+			sleep 300ms 
 
 			return 1
 		`)

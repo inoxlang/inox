@@ -224,6 +224,7 @@ func TestByteStream(t *testing.T) {
 
 	//TODO: add more tests
 	t.Run("RingBuffer source", func(t *testing.T) {
+		const TIMEOUT = time.Second / 4
 		bufferSize := ByteCount(20)
 
 		t.Run("WaitNext", func(t *testing.T) {
@@ -234,13 +235,13 @@ func TestByteStream(t *testing.T) {
 				buffer.Write([]byte("a"))
 				stream := buffer.Stream(ctx, nil).(*ReadableByteStream)
 
-				byte, err := stream.WaitNext(ctx, nil, time.Second)
+				byte, err := stream.WaitNext(ctx, nil, TIMEOUT)
 				if !assert.NoError(t, err) {
 					return
 				}
 				assert.Equal(t, Byte('a'), byte)
 
-				byte, err = stream.WaitNext(ctx, nil, time.Second)
+				byte, err = stream.WaitNext(ctx, nil, TIMEOUT)
 				if !assert.ErrorIs(t, err, ErrStreamElemWaitTimeout) {
 					return
 				}
@@ -255,21 +256,21 @@ func TestByteStream(t *testing.T) {
 				buffer.Write([]byte("ab"))
 				stream := buffer.Stream(ctx, nil).(*ReadableByteStream)
 
-				byte, err := stream.WaitNext(ctx, nil, time.Second)
+				byte, err := stream.WaitNext(ctx, nil, TIMEOUT)
 				if !assert.NoError(t, err) {
 					return
 				}
 
 				assert.Equal(t, Byte('a'), byte)
 
-				byte, err = stream.WaitNext(ctx, nil, time.Second)
+				byte, err = stream.WaitNext(ctx, nil, TIMEOUT)
 				if !assert.NoError(t, err) {
 					return
 				}
 
 				assert.Equal(t, Byte('b'), byte)
 
-				byte, err = stream.WaitNext(ctx, nil, time.Second)
+				byte, err = stream.WaitNext(ctx, nil, TIMEOUT)
 				if !assert.ErrorIs(t, err, ErrStreamElemWaitTimeout) {
 					return
 				}
@@ -289,14 +290,14 @@ func TestByteStream(t *testing.T) {
 				buffer.Write([]byte("abcd"))
 				stream := buffer.Stream(ctx, nil).(*ReadableByteStream)
 
-				chunk1, err := stream.WaitNextChunk(ctx, nil, chunkSizeRange, time.Second)
+				chunk1, err := stream.WaitNextChunk(ctx, nil, chunkSizeRange, TIMEOUT)
 				if !assert.NoError(t, err) {
 					return
 				}
 
 				assert.Equal(t, NewByteSlice([]byte("abcd"), true, ""), chunk1.data)
 
-				chunk2, err := stream.WaitNextChunk(ctx, nil, chunkSizeRange, time.Second)
+				chunk2, err := stream.WaitNextChunk(ctx, nil, chunkSizeRange, TIMEOUT)
 				if !assert.ErrorIs(t, err, ErrStreamChunkWaitTimeout) {
 					return
 				}
@@ -311,14 +312,14 @@ func TestByteStream(t *testing.T) {
 				buffer.Write([]byte("abcde"))
 				stream := buffer.Stream(ctx, nil).(*ReadableByteStream)
 
-				chunk1, err := stream.WaitNextChunk(ctx, nil, chunkSizeRange, time.Second)
+				chunk1, err := stream.WaitNextChunk(ctx, nil, chunkSizeRange, TIMEOUT)
 				if !assert.NoError(t, err) {
 					return
 				}
 
 				assert.Equal(t, NewByteSlice([]byte("abcde"), true, ""), chunk1.data)
 
-				chunk2, err := stream.WaitNextChunk(ctx, nil, chunkSizeRange, time.Second)
+				chunk2, err := stream.WaitNextChunk(ctx, nil, chunkSizeRange, TIMEOUT)
 				if !assert.ErrorIs(t, err, ErrStreamChunkWaitTimeout) {
 					return
 				}
@@ -333,14 +334,14 @@ func TestByteStream(t *testing.T) {
 				buffer.Write([]byte("abcdefghij"))
 				stream := buffer.Stream(ctx, nil).(*ReadableByteStream)
 
-				chunk1, err := stream.WaitNextChunk(ctx, nil, chunkSizeRange, time.Second)
+				chunk1, err := stream.WaitNextChunk(ctx, nil, chunkSizeRange, TIMEOUT)
 				if !assert.NoError(t, err) {
 					return
 				}
 
 				assert.Equal(t, NewByteSlice([]byte("abcdefghij"), true, ""), chunk1.data)
 
-				chunk2, err := stream.WaitNextChunk(ctx, nil, chunkSizeRange, time.Second)
+				chunk2, err := stream.WaitNextChunk(ctx, nil, chunkSizeRange, TIMEOUT)
 				if !assert.ErrorIs(t, err, ErrStreamChunkWaitTimeout) {
 					return
 				}
@@ -355,14 +356,14 @@ func TestByteStream(t *testing.T) {
 				buffer.Write([]byte("abcdefghijk"))
 				stream := buffer.Stream(ctx, nil).(*ReadableByteStream)
 
-				chunk1, err := stream.WaitNextChunk(ctx, nil, chunkSizeRange, time.Second)
+				chunk1, err := stream.WaitNextChunk(ctx, nil, chunkSizeRange, TIMEOUT)
 				if !assert.NoError(t, err) {
 					return
 				}
 
 				assert.Equal(t, NewByteSlice([]byte("abcdefghij"), true, ""), chunk1.data)
 
-				chunk2, err := stream.WaitNextChunk(ctx, nil, chunkSizeRange, time.Second)
+				chunk2, err := stream.WaitNextChunk(ctx, nil, chunkSizeRange, TIMEOUT)
 				if !assert.NoError(t, err) {
 					return
 				}
@@ -375,6 +376,7 @@ func TestByteStream(t *testing.T) {
 }
 
 func TestConfluenceStream(t *testing.T) {
+	const TIMEOUT = time.Second / 4
 
 	//TODO: test more combinations
 
@@ -398,13 +400,13 @@ func TestConfluenceStream(t *testing.T) {
 					return
 				}
 
-				byte, err := confluenceStream.WaitNext(ctx, nil, time.Second)
+				byte, err := confluenceStream.WaitNext(ctx, nil, TIMEOUT)
 				if !assert.NoError(t, err) {
 					return
 				}
 				assert.Equal(t, Byte('a'), byte)
 
-				byte, err = confluenceStream.WaitNext(ctx, nil, time.Second)
+				byte, err = confluenceStream.WaitNext(ctx, nil, TIMEOUT)
 				if !assert.ErrorIs(t, err, ErrStreamElemWaitTimeout) {
 					return
 				}
@@ -428,19 +430,19 @@ func TestConfluenceStream(t *testing.T) {
 					return
 				}
 
-				byte, err := confluenceStream.WaitNext(ctx, nil, time.Second)
+				byte, err := confluenceStream.WaitNext(ctx, nil, TIMEOUT)
 				if !assert.NoError(t, err) {
 					return
 				}
 				assert.Equal(t, Byte('a'), byte)
 
-				byte, err = confluenceStream.WaitNext(ctx, nil, time.Second)
+				byte, err = confluenceStream.WaitNext(ctx, nil, TIMEOUT)
 				if !assert.NoError(t, err) {
 					return
 				}
 				assert.Equal(t, Byte('b'), byte)
 
-				byte, err = confluenceStream.WaitNext(ctx, nil, time.Second)
+				byte, err = confluenceStream.WaitNext(ctx, nil, TIMEOUT)
 				if !assert.ErrorIs(t, err, ErrStreamElemWaitTimeout) {
 					return
 				}
@@ -465,19 +467,19 @@ func TestConfluenceStream(t *testing.T) {
 					return
 				}
 
-				byte, err := confluenceStream.WaitNext(ctx, nil, time.Second)
+				byte, err := confluenceStream.WaitNext(ctx, nil, TIMEOUT)
 				if !assert.NoError(t, err) {
 					return
 				}
 				assert.Equal(t, Byte('a'), byte)
 
-				byte, err = confluenceStream.WaitNext(ctx, nil, time.Second)
+				byte, err = confluenceStream.WaitNext(ctx, nil, TIMEOUT)
 				if !assert.NoError(t, err) {
 					return
 				}
 				assert.Equal(t, Byte('b'), byte)
 
-				byte, err = confluenceStream.WaitNext(ctx, nil, time.Second)
+				byte, err = confluenceStream.WaitNext(ctx, nil, TIMEOUT)
 				if !assert.ErrorIs(t, err, ErrStreamElemWaitTimeout) {
 					return
 				}
@@ -505,14 +507,14 @@ func TestConfluenceStream(t *testing.T) {
 					return
 				}
 
-				chunk1, err := confluenceStream.WaitNextChunk(ctx, nil, chunkSizeRange, time.Second)
+				chunk1, err := confluenceStream.WaitNextChunk(ctx, nil, chunkSizeRange, TIMEOUT)
 				if !assert.NoError(t, err) {
 					return
 				}
 
 				assert.Equal(t, NewByteSlice([]byte("abcd"), true, ""), chunk1.data)
 
-				chunk2, err := confluenceStream.WaitNextChunk(ctx, nil, chunkSizeRange, time.Second)
+				chunk2, err := confluenceStream.WaitNextChunk(ctx, nil, chunkSizeRange, TIMEOUT)
 				if !assert.ErrorIs(t, err, ErrStreamChunkWaitTimeout) {
 					return
 				}
@@ -535,14 +537,14 @@ func TestConfluenceStream(t *testing.T) {
 					return
 				}
 
-				chunk1, err := confluenceStream.WaitNextChunk(ctx, nil, chunkSizeRange, time.Second)
+				chunk1, err := confluenceStream.WaitNextChunk(ctx, nil, chunkSizeRange, TIMEOUT)
 				if !assert.NoError(t, err) {
 					return
 				}
 
 				assert.Equal(t, NewByteSlice([]byte("abcde"), true, ""), chunk1.data)
 
-				chunk2, err := confluenceStream.WaitNextChunk(ctx, nil, chunkSizeRange, time.Second)
+				chunk2, err := confluenceStream.WaitNextChunk(ctx, nil, chunkSizeRange, TIMEOUT)
 				if !assert.ErrorIs(t, err, ErrStreamChunkWaitTimeout) {
 					return
 				}
@@ -565,14 +567,14 @@ func TestConfluenceStream(t *testing.T) {
 					return
 				}
 
-				chunk1, err := confluenceStream.WaitNextChunk(ctx, nil, chunkSizeRange, time.Second)
+				chunk1, err := confluenceStream.WaitNextChunk(ctx, nil, chunkSizeRange, TIMEOUT)
 				if !assert.NoError(t, err) {
 					return
 				}
 
 				assert.Equal(t, NewByteSlice([]byte("abcdefghij"), true, ""), chunk1.data)
 
-				chunk2, err := confluenceStream.WaitNextChunk(ctx, nil, chunkSizeRange, time.Second)
+				chunk2, err := confluenceStream.WaitNextChunk(ctx, nil, chunkSizeRange, TIMEOUT)
 				if !assert.ErrorIs(t, err, ErrStreamChunkWaitTimeout) {
 					return
 				}
@@ -595,14 +597,14 @@ func TestConfluenceStream(t *testing.T) {
 					return
 				}
 
-				chunk1, err := confluenceStream.WaitNextChunk(ctx, nil, chunkSizeRange, time.Second)
+				chunk1, err := confluenceStream.WaitNextChunk(ctx, nil, chunkSizeRange, TIMEOUT)
 				if !assert.NoError(t, err) {
 					return
 				}
 
 				assert.Equal(t, NewByteSlice([]byte("abcdefghij"), true, ""), chunk1.data)
 
-				chunk2, err := confluenceStream.WaitNextChunk(ctx, nil, chunkSizeRange, time.Second)
+				chunk2, err := confluenceStream.WaitNextChunk(ctx, nil, chunkSizeRange, TIMEOUT)
 				if !assert.NoError(t, err) {
 					return
 				}
