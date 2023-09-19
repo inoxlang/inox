@@ -198,6 +198,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		state.MainState = state
 		state.Project = args.Project
 	}
+	state.OutputFieldsInitialized.Store(true)
 
 	//connect to databases
 	//TODO: disconnect if connection still not used after a few minutes

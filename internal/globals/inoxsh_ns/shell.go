@@ -145,6 +145,7 @@ func StartShell(state *core.GlobalState, conf REPLConfiguration) {
 		w.FieldsExclude = []string{"src"}
 	})
 	state.Logger = zerolog.New(consoleLogger).Level(zerolog.DebugLevel)
+	state.OutputFieldsInitialized.Store(true)
 
 	shell := newShell(conf, state, os.Stdin, os.Stdout, preOut /*os.Stderr*/)
 	shell.runLoop()

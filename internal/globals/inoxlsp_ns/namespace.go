@@ -107,6 +107,8 @@ func StartLspServer(ctx *core.Context, config *core.Object) error {
 			tempState := core.NewGlobalState(sessionCtx)
 			tempState.Logger = state.Logger
 			tempState.Out = state.Out
+			tempState.OutputFieldsInitialized.Store(true)
+
 			s.SetContextOnce(sessionCtx)
 
 			lspSession := NewLspSession(s)

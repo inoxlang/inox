@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"runtime"
+	"sync"
 	"testing"
 	"time"
 
@@ -639,92 +640,117 @@ func TestContextGracefulTearDownTasks(t *testing.T) {
 	})
 }
 
-func TestContextDoneMicrotasks(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
+func TestContextDone(t *testing.T) {
+	t.Run("microtasks", func(t *testing.T) {
+		{
+			runtime.GC()
+			startMemStats := new(runtime.MemStats)
+			runtime.ReadMemStats(startMemStats)
 
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 100, utils.AssertNoMemoryLeakOptions{
-			PreSleepDurationMillis: 100,
-			CheckGoroutines:        true,
-			GoroutineCount:         runtime.NumGoroutine(),
-			MaxGoroutineCountDelta: 0,
-		})
-	}
-
-	t.Run("callback functions should all be called", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
-		firstCall := false
-		secondCall := false
-
-		ctx.OnDone(func(timeoutCtx context.Context) error {
-			firstCall = true
-			return nil
-		})
-
-		ctx.OnDone(func(timeoutCtx context.Context) error {
-			secondCall = true
-			return nil
-		})
-
-		ctx.CancelGracefully()
-		<-ctx.Done()
-
-		ctx.InefficientlyWaitUntilTearedDown(time.Second)
-
-		if !assert.True(t, firstCall) {
-			return
+			defer utils.AssertNoMemoryLeak(t, startMemStats, 100, utils.AssertNoMemoryLeakOptions{
+				PreSleepDurationMillis: 100,
+				CheckGoroutines:        true,
+				GoroutineCount:         runtime.NumGoroutine(),
+				MaxGoroutineCountDelta: 0,
+			})
 		}
-		assert.True(t, secondCall)
+
+		t.Run("callback functions should all be called", func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			firstCall := false
+			secondCall := false
+
+			ctx.OnDone(func(timeoutCtx context.Context) error {
+				firstCall = true
+				return nil
+			})
+
+			ctx.OnDone(func(timeoutCtx context.Context) error {
+				secondCall = true
+				return nil
+			})
+
+			ctx.CancelGracefully()
+			<-ctx.Done()
+
+			ctx.InefficientlyWaitUntilTearedDown(time.Second)
+
+			if !assert.True(t, firstCall) {
+				return
+			}
+			assert.True(t, secondCall)
+		})
+
+		t.Run("callback functions should all be called even if one function returns an error", func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			firstCall := false
+			secondCall := false
+
+			ctx.OnDone(func(timeoutCtx context.Context) error {
+				firstCall = true
+				return errors.New("random error")
+			})
+
+			ctx.OnDone(func(timeoutCtx context.Context) error {
+				secondCall = true
+				return nil
+			})
+
+			ctx.CancelGracefully()
+			ctx.InefficientlyWaitUntilTearedDown(100 * time.Millisecond)
+
+			if !assert.True(t, firstCall) {
+				return
+			}
+			assert.True(t, secondCall)
+		})
+
+		t.Run("callback functions should all be called even if one function panics", func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			firstCall := false
+			secondCall := false
+
+			ctx.OnDone(func(timeoutCtx context.Context) error {
+				firstCall = true
+				panic(errors.New("random error"))
+			})
+
+			ctx.OnDone(func(timeoutCtx context.Context) error {
+				secondCall = true
+				return nil
+			})
+
+			ctx.CancelGracefully()
+			ctx.InefficientlyWaitUntilTearedDown(100 * time.Millisecond)
+
+			if !assert.True(t, firstCall) {
+				return
+			}
+			assert.True(t, secondCall)
+		})
 	})
 
-	t.Run("callback functions should all be called even if one function returns an error", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
-		firstCall := false
-		secondCall := false
+	t.Run("setting the state's output fields while the context is being tear down should be thread safe", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+		//GlobalState.OutputFieldsInitialized not set to true on purpose
 
-		ctx.OnDone(func(timeoutCtx context.Context) error {
-			firstCall = true
-			return errors.New("random error")
-		})
+		wg := new(sync.WaitGroup)
+		wg.Add(1)
 
-		ctx.OnDone(func(timeoutCtx context.Context) error {
-			secondCall = true
-			return nil
-		})
+		go func() {
+			wg.Done()
+			defer wg.Done()
 
+			for i := 0; i < 10_000_000; i++ {
+				logger := ctx.state.Logger
+				ctx.state.Logger = logger
+			}
+		}()
+
+		wg.Wait()
+		wg.Add(1)
 		ctx.CancelGracefully()
-		ctx.InefficientlyWaitUntilTearedDown(100 * time.Millisecond)
-
-		if !assert.True(t, firstCall) {
-			return
-		}
-		assert.True(t, secondCall)
+		wg.Wait()
 	})
-
-	t.Run("callback functions should all be called even if one function panics", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
-		firstCall := false
-		secondCall := false
-
-		ctx.OnDone(func(timeoutCtx context.Context) error {
-			firstCall = true
-			panic(errors.New("random error"))
-		})
-
-		ctx.OnDone(func(timeoutCtx context.Context) error {
-			secondCall = true
-			return nil
-		})
-
-		ctx.CancelGracefully()
-		ctx.InefficientlyWaitUntilTearedDown(100 * time.Millisecond)
-
-		if !assert.True(t, firstCall) {
-			return
-		}
-		assert.True(t, secondCall)
-	})
-
 }

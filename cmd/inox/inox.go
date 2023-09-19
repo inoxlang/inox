@@ -252,6 +252,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		state := core.NewGlobalState(ctx)
 		state.Out = out
 		state.Logger = zerolog.New(out)
+		state.OutputFieldsInitialized.Store(true)
 
 		if err := lsp.StartLSPServer(ctx, opts); err != nil {
 			fmt.Fprintln(errW, "failed to start LSP server:", err)
@@ -307,6 +308,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		state := core.NewGlobalState(ctx)
 		state.Out = out
 		state.Logger = zerolog.New(out)
+		state.OutputFieldsInitialized.Store(true)
 
 		//configure server
 
@@ -327,8 +329,9 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 					ParentContext: rpcCtx,
 				})
 				tempState := core.NewGlobalState(sessionCtx)
-				tempState.Logger = state.Logger
-				tempState.Out = state.Out
+				tempState.Out = out
+				tempState.Logger = zerolog.New(out)
+				tempState.OutputFieldsInitialized.Store(true)
 				s.SetContextOnce(sessionCtx)
 				return nil
 			},

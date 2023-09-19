@@ -306,6 +306,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 		return maps.Clone(core.DEFAULT_NAMED_PATTERNS), maps.Clone(core.DEFAULT_PATTERN_NAMESPACES)
 	}
 	state.SymbolicBaseGlobalsForImportedModule = symbolicBaseGlobals
+	state.OutputFieldsInitialized.Store(true)
 
 	return state, nil
 }

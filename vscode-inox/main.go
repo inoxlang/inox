@@ -53,6 +53,7 @@ func main() {
 		},
 	}
 	state.Logger = zerolog.New(state.Out)
+	state.OutputFieldsInitialized.Store(true)
 
 	setupDoneChan := make(chan struct{}, 1)
 	inputMessageChannel := make(chan string, 10)
@@ -80,6 +81,7 @@ func main() {
 			},
 		}
 		serverState.Logger = zerolog.New(state.Out)
+		serverState.OutputFieldsInitialized.Store(true)
 	}
 
 	printDebug.Invoke(OUT_PREFIX, "start LSP server")
@@ -143,6 +145,7 @@ func main() {
 			tempState := core.NewGlobalState(sessionCtx)
 			tempState.Logger = state.Logger
 			tempState.Out = state.Out
+			tempState.OutputFieldsInitialized.Store(true)
 			s.SetContextOnce(sessionCtx)
 
 			printDebug.Invoke(OUT_PREFIX, "context of LSP session created")

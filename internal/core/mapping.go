@@ -160,6 +160,7 @@ func (m *Mapping) Compute(ctx *Context, key Serializable) Value {
 
 		evalState.Global.Out = callingState.Out
 		evalState.Global.Logger = callingState.Logger
+		evalState.Global.OutputFieldsInitialized.Store(true)
 
 		val, err := TreeWalkEval(entry.Value, evalState)
 		if err != nil {
@@ -206,6 +207,7 @@ func (m *Mapping) Compute(ctx *Context, key Serializable) Value {
 
 		evalState.Global.Out = callingState.Out
 		evalState.Global.Logger = callingState.Logger
+		evalState.Global.OutputFieldsInitialized.Store(true)
 
 		// state.entryComputeFn = func(k Value) (Value, error) {
 

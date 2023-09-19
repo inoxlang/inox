@@ -133,6 +133,7 @@ func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 	modState.GetBaseGlobalsForImportedModule = args.SpawnerState.GetBaseGlobalsForImportedModule
 	modState.GetBasePatternsForImportedModule = args.SpawnerState.GetBasePatternsForImportedModule
 	// TODO: set SymbolicData
+	modState.OutputFieldsInitialized.Store(true)
 
 	lthread := &LThread{
 		module:           args.Module,

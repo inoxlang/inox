@@ -18,14 +18,29 @@ const (
 )
 
 var (
-	ErrContextInUse = errors.New("cannot create a new global state with a context that already has an associated state")
+	ErrContextInUse           = errors.New("cannot create a new global state with a context that already has an associated state")
+	ErrOutAndLoggerAlreadySet = errors.New(".Out & .Logger are already definitely set")
 
 	GLOBAL_STATE_PROPNAMES = []string{"module"}
 	previousStateId        atomic.Int64
 )
 
-// A GlobalState represents the global state for the evaluation of a single module or the shell's loop.
+// A GlobalState represents the global state for the evaluation of a single module or the shell's loop,
+// most exported fields should be set once.
 type GlobalState struct {
+	//should be set to true by the state's creator, even if the default values are kept.
+	OutputFieldsInitialized atomic.Bool
+
+	//output fields
+	Out    io.Writer      //io.Discard by default
+	Logger zerolog.Logger //zerolog.Nop() by default
+
+	MainState *GlobalState //never nil (should be set by user of GlobalState)
+	Project   Project      //can be nil
+
+	Debugger atomic.Value //nil or (nillable) *Debugger
+	id       StateId
+
 	Ctx          *Context
 	Module       *Module //nil in some cases (shell, mapping entry's state), TODO: check for usage
 	Manifest     *Manifest
@@ -38,15 +53,6 @@ type GlobalState struct {
 	GetBaseGlobalsForImportedModule      func(ctx *Context, manifest *Manifest) (GlobalVariables, error) // ok if nil
 	GetBasePatternsForImportedModule     func() (map[string]Pattern, map[string]*PatternNamespace)       // return nil maps by default
 	SymbolicBaseGlobalsForImportedModule map[string]symbolic.SymbolicValue                               // ok if nil, should not be modified
-	Out                                  io.Writer                                                       //io.Discard by default
-	Logger                               zerolog.Logger                                                  //zerolog.Nop() by default
-	Debugger                             atomic.Value                                                    //nil or (nillable) *Debugger
-
-	MainState            *GlobalState //never nil (should be set by user of GlobalState)
-	Project              Project      //can be nil
-	id                   StateId
-	descendantStates     map[ResourceName]*GlobalState
-	descendantStatesLock sync.Mutex
 
 	//errors & check data
 	PrenitStaticCheckErrors   []*StaticCheckError
@@ -54,6 +60,9 @@ type GlobalState struct {
 	FirstDatabaseOpeningError error
 	StaticCheckData           *StaticCheckData
 	SymbolicData              *SymbolicData
+
+	descendantStates     map[ResourceName]*GlobalState
+	descendantStatesLock sync.Mutex
 }
 
 type StateId int64

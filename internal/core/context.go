@@ -22,6 +22,9 @@ import (
 
 const (
 	CTX_DONE_MICROTASK_CALLS_TIMEOUT = 5 * time.Millisecond
+
+	//maximum time the context will wait its associated state to have its output fields initialized.
+	CTX_STATE_OUTPUT_INIT_WAITING_TIMEOUT = 10 * time.Millisecond
 )
 
 var (
@@ -175,6 +178,9 @@ top:
 	return nil, true
 }
 
+// NewContexWithEmptyState creates a context & an empty state,
+// out is used as the state's output (or io.Discord if nil),
+// OutputFieldsInitialized is set to true.
 func NewContexWithEmptyState(config ContextConfig, out io.Writer) *Context {
 	ctx := NewContext(config)
 	state := NewGlobalState(ctx)
@@ -182,8 +188,10 @@ func NewContexWithEmptyState(config ContextConfig, out io.Writer) *Context {
 	if out == nil {
 		out = io.Discard
 	}
+
 	state.Out = out
 	state.Logger = zerolog.New(out)
+	state.OutputFieldsInitialized.Store(true)
 	return ctx
 }
 
@@ -352,7 +360,9 @@ func NewContext(config ContextConfig) *Context {
 		var logger zerolog.Logger
 		{
 			if ctx.state != nil {
-				logger = ctx.state.Logger
+				if utils.InefficientlyWaitUntilTrue(&ctx.state.OutputFieldsInitialized, CTX_STATE_OUTPUT_INIT_WAITING_TIMEOUT) {
+					logger = ctx.state.Logger
+				}
 			} else if ctx.parentCtx != nil {
 				logger = ctx.parentCtx.getClosestStateNoDoneCheck().Logger
 			}
@@ -450,10 +460,7 @@ func (ctx *Context) IsTearedDown() bool {
 }
 
 func (ctx *Context) InefficientlyWaitUntilTearedDown(timeout time.Duration) bool {
-	start := time.Now()
-	for !ctx.IsTearedDown() && time.Since(start) <= timeout {
-		time.Sleep(time.Millisecond)
-	}
+	utils.InefficientlyWaitUntilTrue(&ctx.tearedDown, timeout)
 	return ctx.IsTearedDown()
 }
 
@@ -1186,7 +1193,9 @@ func (ctx *Context) gracefullyTearDown() {
 		ctx.lock.RUnlock()
 
 		if state != nil {
-			logger = state.Logger
+			if utils.InefficientlyWaitUntilTrue(&ctx.state.OutputFieldsInitialized, CTX_STATE_OUTPUT_INIT_WAITING_TIMEOUT) {
+				logger = ctx.state.Logger
+			}
 		} else if ctx.parentCtx != nil {
 			logger = ctx.parentCtx.getClosestStateNoDoneCheck().Logger
 		}

@@ -75,6 +75,7 @@ func main() {
 		},
 	}
 	serverState.Logger = zerolog.New(serverState.Out)
+	serverState.OutputFieldsInitialized.Store(true)
 
 	go lsp.StartLSPServer(serverCtx, lsp.LSPServerOptions{
 		InternalStdio: &lsp.InternalStdio{
