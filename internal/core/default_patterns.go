@@ -3,6 +3,7 @@ package core
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
@@ -20,6 +21,12 @@ var (
 		Type:          SERIALIZABLE_TYPE,
 		Name:          "serializable",
 		SymbolicValue: symbolic.ANY_SERIALIZABLE,
+	}
+
+	NEVER_PATTERN = &TypePattern{
+		Type:          reflect.TypeOf(struct{ __never int }{}),
+		Name:          "never",
+		SymbolicValue: symbolic.NEVER,
 	}
 
 	//TODO: improve (using a type pattern can create issues)
@@ -692,6 +699,7 @@ var (
 	SECRET_PEM_STRING_PATTERN = NewSecretPattern(NewPEMRegexPattern(".*"), true)
 
 	DEFAULT_NAMED_PATTERNS = map[string]Pattern{
+		NEVER_PATTERN.Name:                 NEVER_PATTERN,
 		IDENT_PATTERN.Name:                 IDENT_PATTERN,
 		PROPNAME_PATTERN.Name:              PROPNAME_PATTERN,
 		RUNE_PATTERN.Name:                  RUNE_PATTERN,
