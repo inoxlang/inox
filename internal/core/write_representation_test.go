@@ -1188,7 +1188,7 @@ func TestIntRangePatternRepresentation(t *testing.T) {
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
-	intRangePattern := NewIncludedEndIntRangePattern(1, 2)
+	intRangePattern := NewIncludedEndIntRangePattern(1, 2, -1)
 
 	expectedRepr := `%int(1..2)`
 	assert.Equal(t, expectedRepr, getReprAllVisible(t, intRangePattern, ctx))
