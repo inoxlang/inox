@@ -53,6 +53,13 @@ var (
 			return recordPattern, nil
 		},
 	}
+
+	NIL_PATTERN = &TypePattern{
+		Type:          NIL_TYPE,
+		Name:          "nil",
+		SymbolicValue: symbolic.Nil,
+	}
+
 	STR_PATTERN_PATTERN = &TypePattern{
 		Name:          "string-pattern",
 		SymbolicValue: symbolic.NEVER,
@@ -700,6 +707,7 @@ var (
 
 	DEFAULT_NAMED_PATTERNS = map[string]Pattern{
 		NEVER_PATTERN.Name:                 NEVER_PATTERN,
+		NIL_PATTERN.Name:                   NIL_PATTERN,
 		IDENT_PATTERN.Name:                 IDENT_PATTERN,
 		PROPNAME_PATTERN.Name:              PROPNAME_PATTERN,
 		RUNE_PATTERN.Name:                  RUNE_PATTERN,
