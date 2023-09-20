@@ -420,6 +420,10 @@ switch_:
 		if upperBound, ok := node.UpperBound.(*parse.IntLiteral); ok && node.LowerBound.Value > upperBound.Value {
 			c.addError(n, LOWER_BOUND_OF_INT_RANGE_LIT_SHOULD_BE_SMALLER_THAN_UPPER_BOUND)
 		}
+	case *parse.FloatRangeLiteral:
+		if upperBound, ok := node.UpperBound.(*parse.FloatLiteral); ok && node.LowerBound.Value > upperBound.Value {
+			c.addError(n, LOWER_BOUND_OF_FLOAT_RANGE_LIT_SHOULD_BE_SMALLER_THAN_UPPER_BOUND)
+		}
 	case *parse.QuantityLiteral:
 
 		var prevMultiplier string

@@ -76,8 +76,9 @@ const (
 	MISPLACED_HOST_ALIAS_DEF_STATEMENT_TOP_LEVEL_STMT              = "misplaced host alias definition statement: it should be located at the top level"
 	MISPLACED_READONLY_PATTERN_EXPRESSION                          = "misplaced readonly pattern expression: they are only allowed as the type of function parameters"
 
-	INVALID_MEM_HOST_ONLY_VALID_VALUE                               = "invalid mem:// host, only valid value is " + MEM_HOSTNAME
-	LOWER_BOUND_OF_INT_RANGE_LIT_SHOULD_BE_SMALLER_THAN_UPPER_BOUND = "the lower bound of an integer range literal should be smaller than the upper bound"
+	INVALID_MEM_HOST_ONLY_VALID_VALUE                                 = "invalid mem:// host, only valid value is " + MEM_HOSTNAME
+	LOWER_BOUND_OF_INT_RANGE_LIT_SHOULD_BE_SMALLER_THAN_UPPER_BOUND   = "the lower bound of an integer range literal should be smaller than the upper bound"
+	LOWER_BOUND_OF_FLOAT_RANGE_LIT_SHOULD_BE_SMALLER_THAN_UPPER_BOUND = "the lower bound of a float range literal should be smaller than the upper bound"
 
 	//lifetime job
 	MISSING_LIFETIMEJOB_SUBJECT_PATTERN_NOT_AN_IMPLICIT_OBJ_PROP = "missing subject pattern of lifetime job: subject can only be ommitted for lifetime jobs that are implicit object properties"
