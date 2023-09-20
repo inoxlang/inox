@@ -873,6 +873,13 @@ func (patt UnionPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Strea
 	return ErrNotImplementedYet
 }
 
+func (patt IntersectionPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+	return ErrNotImplementedYet
+}
+
 func (patt SequenceStringPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if depth > MAX_JSON_REPR_WRITING_DEPTH {
 		return ErrMaximumJSONReprWritingDepthReached

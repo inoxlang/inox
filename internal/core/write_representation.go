@@ -999,6 +999,10 @@ func (patt UnionPattern) WriteRepresentation(ctx *Context, w io.Writer, config *
 	return ErrNotImplementedYet
 }
 
+func (patt IntersectionPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	return ErrNotImplementedYet
+}
+
 func (patt SequenceStringPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
