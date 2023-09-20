@@ -1346,6 +1346,16 @@ func (v *VM) run() {
 				Step:         1,
 			}
 			v.sp--
+		case OpCreateFloatRange:
+			lower := float64(v.stack[v.sp-2].(Float))
+			upper := float64(v.stack[v.sp-1].(Float))
+			v.stack[v.sp-2] = FloatRange{
+				unknownStart: false,
+				inclusiveEnd: true,
+				Start:        lower,
+				End:          upper,
+			}
+			v.sp--
 		case OpCreateUpperBoundRange:
 			upperBound := v.stack[v.sp-1]
 
@@ -1358,7 +1368,11 @@ func (v *VM) run() {
 					Step:         1,
 				}
 			case Float:
-				v.err = fmt.Errorf("floating point ranges not supported")
+				v.stack[v.sp-1] = FloatRange{
+					unknownStart: true,
+					inclusiveEnd: true,
+					End:          float64(val),
+				}
 			default:
 				v.stack[v.sp-1] = QuantityRange{
 					unknownStart: true,

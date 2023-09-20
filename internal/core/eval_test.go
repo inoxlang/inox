@@ -2997,6 +2997,38 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 	})
 
+	t.Run("float range literal ", func(t *testing.T) {
+		t.Run("with upper bound", func(t *testing.T) {
+			code := `return 1.0..2.0`
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, FloatRange{
+				unknownStart: false,
+				inclusiveEnd: true,
+				Start:        1,
+				End:          2,
+			}, res)
+		})
+
+		t.Run("without upper bound", func(t *testing.T) {
+			code := `return 1.0..`
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, FloatRange{
+				unknownStart: false,
+				inclusiveEnd: true,
+				Start:        1,
+				End:          math.MaxFloat64,
+			}, res)
+		})
+	})
+
 	t.Run("quantity range literal ", func(t *testing.T) {
 		t.Run("with upper bound", func(t *testing.T) {
 			code := `return 1B..2B`

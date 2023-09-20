@@ -219,6 +219,16 @@ func (c *compiler) Compile(node parse.Node) error {
 			return err
 		}
 		c.emit(node, OpCreateIntRange)
+	case *parse.FloatRangeLiteral:
+		if err := c.Compile(node.LowerBound); err != nil {
+			return err
+		}
+		if node.UpperBound == nil {
+			c.emit(node, OpPushConstant, c.addConstant(Float(math.MaxFloat64)))
+		} else if err := c.Compile(node.UpperBound); err != nil {
+			return err
+		}
+		c.emit(node, OpCreateFloatRange)
 	case *parse.QuantityRangeLiteral:
 		qtyRange := mustEvalQuantityRange(node)
 		c.emit(node, OpPushConstant, c.addConstant(qtyRange))

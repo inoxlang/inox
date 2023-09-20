@@ -1968,7 +1968,11 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				Step:         1,
 			}, nil
 		case Float:
-			return nil, fmt.Errorf("floating point ranges not supported")
+			return FloatRange{
+				unknownStart: true,
+				inclusiveEnd: true,
+				End:          float64(v),
+			}, nil
 		default:
 			return QuantityRange{
 				unknownStart: true,
@@ -1989,6 +1993,19 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			Start:        n.LowerBound.Value,
 			End:          upperBound,
 			Step:         1,
+		}, nil
+	case *parse.FloatRangeLiteral:
+		upperBound := float64(math.MaxFloat64)
+
+		if n.UpperBound != nil {
+			upperBound = n.UpperBound.(*parse.FloatLiteral).Value
+		}
+
+		return FloatRange{
+			unknownStart: false,
+			inclusiveEnd: true,
+			Start:        n.LowerBound.Value,
+			End:          upperBound,
 		}, nil
 	case *parse.QuantityRangeLiteral:
 		return mustEvalQuantityRange(n), nil

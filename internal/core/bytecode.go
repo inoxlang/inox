@@ -184,6 +184,7 @@ const (
 	OpCreateHost
 	OpCreateRuneRange
 	OpCreateIntRange
+	OpCreateFloatRange
 	OpCreateUpperBoundRange
 	OpCreateTestSuite
 	OpCreateTestCase
@@ -308,6 +309,7 @@ var OpcodeNames = [...]string{
 	OpCreateHost:                   "CRT_HST",
 	OpCreateRuneRange:              "CRT_RUNERG",
 	OpCreateIntRange:               "CRT_INTRG",
+	OpCreateFloatRange:             "CRT_FLOATRG",
 	OpCreateUpperBoundRange:        "CRT_UBRG",
 	OpCreateTestSuite:              "CRT_TSTS",
 	OpCreateTestCase:               "CRT_TSTC",
@@ -434,6 +436,7 @@ var OpcodeOperands = [...][]int{
 	OpCreateHost:                   {2},
 	OpCreateRuneRange:              {},
 	OpCreateIntRange:               {},
+	OpCreateFloatRange:             {},
 	OpCreateUpperBoundRange:        {},
 	OpCreateTestSuite:              {2},
 	OpCreateTestCase:               {2},
@@ -556,6 +559,7 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpCreateHost:                   {true},
 	OpCreateRuneRange:              {},
 	OpCreateIntRange:               {},
+	OpCreateFloatRange:             {},
 	OpCreateUpperBoundRange:        {},
 	OpCreateTestSuite:              {true},
 	OpCreateTestCase:               {true},
