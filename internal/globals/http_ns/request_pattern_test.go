@@ -166,10 +166,10 @@ func TestCreationOfSymbolicHttpRequestPattern(t *testing.T) {
 
 	t.Run("description with invalid union for .method", func(t *testing.T) {
 		description := symbolic.NewInexactObjectPattern(map[string]symbolic.Pattern{
-			"method": symbolic.NewUnionPattern([]symbolic.Pattern{
+			"method": utils.Must(symbolic.NewUnionPattern([]symbolic.Pattern{
 				utils.Must(symbolic.NewExactValuePattern(symbolic.NewString("GET"))),
 				utils.Must(symbolic.NewExactValuePattern(symbolic.NewString("POST_"))),
-			}),
+			}, false)),
 		}, nil)
 
 		pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.SymbolicCallImpl(ctx, []symbolic.SymbolicValue{description})
