@@ -13,6 +13,7 @@ const (
 	MissingBlock
 	MissingFnBody
 	MissingEqualsSignInDeclaration
+	ExtractionExpressionExpected
 	InvalidNext
 	//TODO: add more kinds
 )
@@ -627,7 +628,7 @@ func fmtUnexpectedCharInSynchronizedValueList(r rune) string {
 }
 
 func fmtInvalidSpreadElemExprShouldBeExtrExprNot(expr Node) string {
-	return fmt.Sprintf("invalid spread element in object literal: expression should be an extraction expression, not a(n) %T", expr)
+	return fmt.Sprintf("invalid spread element in object literal: expression should be an extraction expression, not a(n) %T. Example: {...obj.{a, b}}", expr)
 }
 
 func fmtInvalidAssignmentInvalidLHS(expr Node) string {

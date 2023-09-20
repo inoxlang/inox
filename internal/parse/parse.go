@@ -3358,7 +3358,7 @@ object_literal_top_loop:
 
 			_, ok := expr.(*ExtractionExpression)
 			if !ok {
-				propParsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidSpreadElemExprShouldBeExtrExprNot(expr)}
+				propParsingErr = &ParsingError{ExtractionExpressionExpected, fmtInvalidSpreadElemExprShouldBeExtrExprNot(expr)}
 			}
 
 			p.eatSpace()

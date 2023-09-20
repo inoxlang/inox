@@ -9644,7 +9644,7 @@ func testParse(
 								{
 									NodeBase: NodeBase{
 										NodeSpan{2, 8},
-										&ParsingError{UnspecifiedParsingError, fmtInvalidSpreadElemExprShouldBeExtrExprNot((*Variable)(nil))},
+										&ParsingError{ExtractionExpressionExpected, fmtInvalidSpreadElemExprShouldBeExtrExprNot((*Variable)(nil))},
 										[]Token{{Type: THREE_DOTS, Span: NodeSpan{2, 5}}},
 									},
 									Expr: &Variable{
@@ -10688,7 +10688,7 @@ func testParse(
 								{
 									NodeBase: NodeBase{
 										NodeSpan{3, 9},
-										&ParsingError{UnspecifiedParsingError, fmtInvalidSpreadElemExprShouldBeExtrExprNot((*Variable)(nil))},
+										&ParsingError{ExtractionExpressionExpected, fmtInvalidSpreadElemExprShouldBeExtrExprNot((*Variable)(nil))},
 										[]Token{{Type: THREE_DOTS, Span: NodeSpan{3, 6}}},
 									},
 									Expr: &Variable{
