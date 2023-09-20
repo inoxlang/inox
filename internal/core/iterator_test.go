@@ -440,8 +440,8 @@ func TestIntersectionPatternIteration(t *testing.T) {
 
 		it := (&IntersectionPattern{
 			cases: []Pattern{
-				NewIncludedEndIntRangePattern(1, 3),
-				NewIncludedEndIntRangePattern(2, 4),
+				NewIncludedEndIntRangePattern(1, 3, -1),
+				NewIncludedEndIntRangePattern(2, 4, -1),
 			},
 		}).Iterator(ctx, IteratorConfiguration{})
 
@@ -517,7 +517,7 @@ func TestKeyFilteredIterator(t *testing.T) {
 					&ExactValuePattern{value: Int(3)},
 				},
 			}.Iterator(ctx, IteratorConfiguration{}),
-			keyFilter: NewIncludedEndIntRangePattern(0, 1),
+			keyFilter: NewIncludedEndIntRangePattern(0, 1, -1),
 		}
 
 		//next
@@ -642,7 +642,7 @@ func TestValueFilteredIterator(t *testing.T) {
 					&ExactValuePattern{value: Int(3)},
 				},
 			}.Iterator(ctx, IteratorConfiguration{}),
-			valueFilter: NewIncludedEndIntRangePattern(2, 3),
+			valueFilter: NewIncludedEndIntRangePattern(2, 3, -1),
 		}
 
 		//next
@@ -805,8 +805,8 @@ func TestKeyValueFilteredIterator(t *testing.T) {
 					&ExactValuePattern{value: Int(3)},
 				},
 			}.Iterator(ctx, IteratorConfiguration{}),
-			keyFilter:   NewIncludedEndIntRangePattern(0, 1),
-			valueFilter: NewIncludedEndIntRangePattern(2, 3),
+			keyFilter:   NewIncludedEndIntRangePattern(0, 1, -1),
+			valueFilter: NewIncludedEndIntRangePattern(2, 3, -1),
 		}
 
 		//next
@@ -837,7 +837,7 @@ func TestKeyValueFilteredIterator(t *testing.T) {
 					&ExactValuePattern{value: Int(3)},
 				},
 			}.Iterator(ctx, IteratorConfiguration{}),
-			keyFilter:   NewIncludedEndIntRangePattern(0, 1),
+			keyFilter:   NewIncludedEndIntRangePattern(0, 1, -1),
 			valueFilter: NewSingleElementIntRangePattern(3),
 		}
 
@@ -864,7 +864,7 @@ func TestKeyValueFilteredIterator(t *testing.T) {
 				},
 			}.Iterator(ctx, IteratorConfiguration{}),
 			keyFilter:   NewSingleElementIntRangePattern(1),
-			valueFilter: NewIncludedEndIntRangePattern(2, 3),
+			valueFilter: NewIncludedEndIntRangePattern(2, 3, -1),
 		}
 
 		//next
@@ -889,7 +889,7 @@ func TestKeyValueFilteredIterator(t *testing.T) {
 					&ExactValuePattern{value: Int(3)},
 				},
 			}.Iterator(ctx, IteratorConfiguration{}),
-			keyFilter:   NewIncludedEndIntRangePattern(0, 1),
+			keyFilter:   NewIncludedEndIntRangePattern(0, 1, -1),
 			valueFilter: NewSingleElementIntRangePattern(2),
 		}
 
@@ -916,7 +916,7 @@ func TestKeyValueFilteredIterator(t *testing.T) {
 				},
 			}.Iterator(ctx, IteratorConfiguration{}),
 			keyFilter:   NewSingleElementIntRangePattern(0),
-			valueFilter: NewIncludedEndIntRangePattern(2, 3),
+			valueFilter: NewIncludedEndIntRangePattern(2, 3, -1),
 		}
 
 		//next
