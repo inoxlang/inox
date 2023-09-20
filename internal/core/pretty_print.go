@@ -1059,7 +1059,7 @@ func (addr EmailAddress) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig,
 		utils.Must(w.Write(config.Colors.PathLiteral))
 	}
 
-	utils.PanicIfErr(addr.WriteRepresentation(config.Context, w, &ReprConfig{AllVisible: true}, 0))
+	utils.PanicIfErr(addr.WriteRepresentation(config.Context, w, &ReprConfig{AllVisible: false}, 0))
 
 	if config.Colorize {
 		utils.Must(w.Write(ANSI_RESET_SEQUENCE))

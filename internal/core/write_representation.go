@@ -712,7 +712,21 @@ func (patt HostPattern) WriteRepresentation(ctx *Context, w io.Writer, config *R
 }
 
 func (addr EmailAddress) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
-	_, err := w.Write(utils.StringAsBytes(addr))
+	if config.AllVisible || len(addr) < 5 {
+		_, err := w.Write(utils.StringAsBytes(addr))
+		return err
+	}
+
+	addrS := string(addr)
+	atDomainIndex := strings.LastIndexByte(addrS, '@')
+	if atDomainIndex < 0 {
+		return fmt.Errorf("invalid email address")
+	}
+
+	name := addrS[:atDomainIndex]
+	atDomain := addrS[atDomainIndex:]
+
+	_, err := w.Write(utils.StringAsBytes(name[0:1] + strings.Repeat("*", len(name)-1) + atDomain))
 	return err
 }
 
