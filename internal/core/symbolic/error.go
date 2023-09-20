@@ -87,6 +87,8 @@ const (
 
 	USELESS_MUTATION_IN_CLONED_PROP_VALUE = "useless mutation in a cloned property's value, you should use a double-colon expression (<object>::<prop name>) to retrieve the actual property's value"
 	MISPLACED_DOUBLE_COLON_EXPR           = "misplaced double-colon expression"
+
+	OPERANDS_OF_BINARY_RANGE_EXPRS_SHOULD_BE_SERIALIZABLE = "operands of binary range expressions should be serializable"
 )
 
 var (
@@ -140,6 +142,10 @@ func fmtLeftOperandOfBinaryShouldBe(operator parse.BinaryOperator, expectedType 
 
 func fmtRightOperandOfBinaryShouldBe(operator parse.BinaryOperator, expectedType string, actual string) string {
 	return fmt.Sprintf("right operand of binary '%s' should be a(n) %s but is %s", operator.String(), expectedType, actual)
+}
+
+func fmtRightOperandOfBinaryShouldBeLikeLeftOperand(operator parse.BinaryOperator, expectedType string, actual string) string {
+	return fmt.Sprintf("right operand of binary '%s' should be a(n) %s like the left operand but is %s", operator.String(), expectedType, actual)
 }
 
 func fmtInvalidBinExprCannnotCheckNonObjectHasKey(v SymbolicValue) string {

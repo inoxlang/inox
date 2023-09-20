@@ -3016,7 +3016,32 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			}
 			return ANY_BOOL, nil
 		case parse.Range, parse.ExclEndRange:
-			return &IntRange{}, nil
+			switch left.(type) {
+			case *Int:
+				if !ANY_INT.Test(right) {
+					msg := fmtRightOperandOfBinaryShouldBeLikeLeftOperand(n.Operator, Stringify(left), Stringify(ANY_INT))
+					state.addError(makeSymbolicEvalError(n.Right, state, msg))
+				}
+				return ANY_INT_RANGE, nil
+			case *Float:
+				if !ANY_FLOAT.Test(right) {
+					msg := fmtRightOperandOfBinaryShouldBeLikeLeftOperand(n.Operator, Stringify(left), Stringify(ANY_FLOAT))
+					state.addError(makeSymbolicEvalError(n.Right, state, msg))
+				}
+				return ANY_FLOAT_RANGE, nil
+			default:
+				if _, ok := left.(Serializable); !ok {
+					state.addError(makeSymbolicEvalError(n.Right, state, OPERANDS_OF_BINARY_RANGE_EXPRS_SHOULD_BE_SERIALIZABLE))
+					return ANY_QUANTITY_RANGE, nil
+				}
+
+				if !left.WidestOfType().Test(right) {
+					msg := fmtRightOperandOfBinaryShouldBeLikeLeftOperand(n.Operator, Stringify(left.WidestOfType()), Stringify(right))
+					state.addError(makeSymbolicEvalError(n.Right, state, msg))
+				}
+
+				return &QuantityRange{element: left.WidestOfType().(Serializable)}, nil
+			}
 		case parse.And, parse.Or:
 			_, ok := left.(*Bool)
 
@@ -3078,12 +3103,14 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		case *Int:
 			return ANY_INT_RANGE, nil
 		case *Float:
-			return nil, fmt.Errorf("floating point ranges not supported")
+			return ANY_FLOAT_RANGE, nil
 		default:
 			return ANY_QUANTITY_RANGE, nil
 		}
 	case *parse.IntegerRangeLiteral:
 		return ANY_INT_RANGE, nil
+	case *parse.FloatRangeLiteral:
+		return ANY_FLOAT_RANGE, nil
 	case *parse.QuantityRangeLiteral:
 		lowerBound, err := symbolicEval(n.LowerBound, state)
 		if err != nil {

@@ -144,6 +144,14 @@ func TestSymbolicEval(t *testing.T) {
 		assert.Equal(t, ANY_INT_RANGE, res)
 	})
 
+	t.Run("float range literal", func(t *testing.T) {
+		n, state := MakeTestStateAndChunk("1.0..2.0")
+		res, err := symbolicEval(n, state)
+		assert.NoError(t, err)
+		assert.Empty(t, state.errors())
+		assert.Equal(t, ANY_FLOAT_RANGE, res)
+	})
+
 	t.Run("quantity range literal", func(t *testing.T) {
 		getQuantity := extData.GetQuantity
 		ToSymbolicValue := extData.ToSymbolicValue
@@ -2510,6 +2518,61 @@ func TestSymbolicEval(t *testing.T) {
 			})
 		})
 
+		t.Run("range expression", func(t *testing.T) {
+			getQuantity := extData.GetQuantity
+			ToSymbolicValue := extData.ToSymbolicValue
+
+			defer func() {
+				extData.GetQuantity = getQuantity
+				extData.ToSymbolicValue = ToSymbolicValue
+			}()
+			extData.GetQuantity = func(values []float64, units []string) (any, error) {
+				if units[0] == "B" {
+					return NewByteCount(int64(values[0])), nil
+				}
+				panic(ErrUnreachable)
+			}
+			extData.ToSymbolicValue = func(v any, wide bool) (SymbolicValue, error) {
+				return v.(SymbolicValue), nil
+			}
+
+			testCases := []struct {
+				code   string
+				result SymbolicValue
+				err    bool
+			}{
+				{"(1 .. 2)", ANY_INT_RANGE, false},
+				{"(1 ..< 2)", ANY_INT_RANGE, false},
+				{"(1.0 .. 2.0)", ANY_FLOAT_RANGE, false},
+				{"(1.0 ..< 2.0)", ANY_FLOAT_RANGE, false},
+				{"(1B .. 2B)", &QuantityRange{element: ANY_BYTECOUNT}, false},
+				{"(1B ..< 2B)", &QuantityRange{element: ANY_BYTECOUNT}, false},
+
+				//cases with error
+				{"(1 .. 2.0)", ANY_INT_RANGE, true},
+				{"(1.0 .. 2)", ANY_FLOAT_RANGE, true},
+				{"(1 .. 2B)", ANY_INT_RANGE, true},
+				{"(1B .. 2)", &QuantityRange{element: ANY_BYTECOUNT}, true},
+				{"((go do {}) .. 2)", ANY_QUANTITY_RANGE, true},
+			}
+
+			for _, testCase := range testCases {
+				t.Run(testCase.code, func(t *testing.T) {
+					n, state := MakeTestStateAndChunk(testCase.code)
+					res, err := symbolicEval(n, state)
+
+					if !assert.NoError(t, err) {
+						return
+					}
+
+					assert.Equal(t, testCase.result, res)
+
+					if testCase.err {
+						assert.Len(t, state.errors(), 1)
+					}
+				})
+			}
+		})
 	})
 
 	t.Run("unary expression: !: operand is a string", func(t *testing.T) {
