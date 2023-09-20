@@ -49,7 +49,7 @@ func ToJSONVal(ctx *Context, v Serializable) interface{} {
 	return jsonVal
 }
 
-func ConvertJSONValToInoxVal(ctx *Context, v any, immutable bool) Serializable {
+func ConvertJSONValToInoxVal(v any, immutable bool) Serializable {
 	switch val := v.(type) {
 	case nil:
 		return Nil
@@ -57,20 +57,20 @@ func ConvertJSONValToInoxVal(ctx *Context, v any, immutable bool) Serializable {
 		if immutable {
 			valMap := ValMap{}
 			for key, value := range val {
-				valMap[key] = ConvertJSONValToInoxVal(ctx, value, immutable)
+				valMap[key] = ConvertJSONValToInoxVal(value, immutable)
 			}
 			return NewRecordFromMap(valMap)
 		} else {
-			object := &Object{}
+			valMap := ValMap{}
 			for key, value := range val {
-				object.SetProp(ctx, key, ConvertJSONValToInoxVal(ctx, value, immutable))
+				valMap[key] = ConvertJSONValToInoxVal(value, immutable)
 			}
-			return object
+			return NewObjectFromMapNoInit(valMap)
 		}
 	case []any:
 		l := make([]Serializable, len(val))
 		for i, e := range val {
-			l[i] = ConvertJSONValToInoxVal(ctx, e, immutable)
+			l[i] = ConvertJSONValToInoxVal(e, immutable)
 		}
 		if immutable {
 			return NewTuple(l)
@@ -106,7 +106,7 @@ func parseJson(ctx *Context, v any) (any, error) {
 		return nil, err
 	}
 
-	return ConvertJSONValToInoxVal(ctx, result, false), nil
+	return ConvertJSONValToInoxVal(result, false), nil
 }
 
 //

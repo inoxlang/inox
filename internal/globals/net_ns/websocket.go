@@ -95,7 +95,7 @@ func (conn *WebsocketConnection) readJSON(ctx *core.Context) (core.Value, error)
 		return nil, err
 	}
 
-	return core.ConvertJSONValToInoxVal(ctx, v, false), nil
+	return core.ConvertJSONValToInoxVal(v, false), nil
 }
 
 func (conn *WebsocketConnection) ReadMessage(ctx *core.Context) (messageType WebsocketMessageType, p []byte, err error) {
