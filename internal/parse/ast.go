@@ -1559,6 +1559,16 @@ func (IntegerRangeLiteral) Kind() NodeKind {
 	return Expr
 }
 
+type FloatRangeLiteral struct {
+	NodeBase
+	LowerBound *FloatLiteral
+	UpperBound Node //can be nil
+}
+
+func (FloatRangeLiteral) Kind() NodeKind {
+	return Expr
+}
+
 type QuantityRangeLiteral struct {
 	NodeBase
 	LowerBound *QuantityLiteral
@@ -2580,6 +2590,9 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 	case *UpperBoundRangeExpression:
 		walk(n.UpperBound, node, ancestorChain, fn, afterFn)
 	case *IntegerRangeLiteral:
+		walk(n.LowerBound, node, ancestorChain, fn, afterFn)
+		walk(n.UpperBound, node, ancestorChain, fn, afterFn)
+	case *FloatRangeLiteral:
 		walk(n.LowerBound, node, ancestorChain, fn, afterFn)
 		walk(n.UpperBound, node, ancestorChain, fn, afterFn)
 	case *QuantityRangeLiteral:

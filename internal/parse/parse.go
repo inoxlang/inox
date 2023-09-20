@@ -5681,6 +5681,41 @@ func (p *parser) parseNumberAndNumberRange() Node {
 			Value: float,
 		}
 
+		if p.i < p.len-1 && p.s[p.i] == '.' && p.s[p.i+1] == '.' {
+			tokens := []Token{{Type: TWO_DOTS, Span: NodeSpan{p.i, p.i + 2}}}
+			p.i += 2
+
+			lowerFloatLiteral := literal.(*FloatLiteral)
+
+			upperBound, isMissingExpr := p.parseExpression()
+
+			if isMissingExpr {
+				return &FloatRangeLiteral{
+					NodeBase: NodeBase{
+						NodeSpan{start, p.i},
+						nil,
+						tokens,
+					},
+					LowerBound: lowerFloatLiteral,
+					UpperBound: nil,
+				}
+			}
+
+			var parsingError *ParsingError
+			if _, ok := upperBound.(*FloatLiteral); !ok {
+				parsingError = &ParsingError{UnspecifiedParsingError, UPPER_BOUND_OF_FLOAT_RANGE_LIT_SHOULD_BE_FLOAT_LIT}
+			}
+
+			return &FloatRangeLiteral{
+				NodeBase: NodeBase{
+					NodeSpan{lowerFloatLiteral.Base().Span.Start, upperBound.Base().Span.End},
+					parsingError,
+					tokens,
+				},
+				LowerBound: lowerFloatLiteral,
+				UpperBound: upperBound,
+			}
+		}
 	} else {
 		literal, _ = parseIntegerLiteral(raw, start, p.i, base)
 	}

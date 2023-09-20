@@ -329,9 +329,10 @@ const (
 	UNTERMINATED_CALL                                                             = "unterminated call"
 	A_NON_PAREN_CALL_EXPR_SHOULD_HAVE_ARGS_AND_CALLEE_SHOULD_BE_FOLLOWED_BY_SPACE = "a non-parenthesized call expression should have arguments and the callee (<name>$) should be followed by a space"
 
-	INVALID_INT_LIT                                = "invalid integer literal"
-	UNTERMINATED_INT_RANGE_LIT                     = "unterminated integer range literal"
-	UPPER_BOUND_OF_INT_RANGE_LIT_SHOULD_BE_INT_LIT = "upper bound of an integer range literal should be a integer literal"
+	INVALID_INT_LIT                                    = "invalid integer literal"
+	UNTERMINATED_INT_RANGE_LIT                         = "unterminated integer range literal"
+	UPPER_BOUND_OF_INT_RANGE_LIT_SHOULD_BE_INT_LIT     = "upper bound of an integer range literal should be a integer literal"
+	UPPER_BOUND_OF_FLOAT_RANGE_LIT_SHOULD_BE_FLOAT_LIT = "upper bound of a float range literal should be a float literal"
 
 	UNTERMINATED_QTY_RANGE_LIT                     = "unterminated quantity range literal"
 	UPPER_BOUND_OF_QTY_RANGE_LIT_SHOULD_BE_QTY_LIT = "upper bound of a quantity range literal should be a quantity literal"

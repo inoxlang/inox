@@ -14403,6 +14403,73 @@ func testParse(
 		})
 	})
 
+	t.Run("float range literal", func(t *testing.T) {
+		t.Run("ok", func(t *testing.T) {
+			n := mustparseChunk(t, "1.0..2.0")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 8}, nil, nil},
+				Statements: []Node{
+					&FloatRangeLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 8}, nil, []Token{{Type: TWO_DOTS, Span: NodeSpan{3, 5}}}},
+						LowerBound: &FloatLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
+							Raw:      "1.0",
+							Value:    1.0,
+						},
+						UpperBound: &FloatLiteral{
+							NodeBase: NodeBase{NodeSpan{5, 8}, nil, nil},
+							Raw:      "2.0",
+							Value:    2.0,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("no upper bound", func(t *testing.T) {
+			n := mustparseChunk(t, "1.0..")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
+				Statements: []Node{
+					&FloatRangeLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 5}, nil, []Token{{Type: TWO_DOTS, Span: NodeSpan{3, 5}}}},
+						LowerBound: &FloatLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
+							Raw:      "1.0",
+							Value:    1.0,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("invalid upper bound", func(t *testing.T) {
+			n, err := parseChunk(t, "1.0..$a", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
+				Statements: []Node{
+					&FloatRangeLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 7},
+							&ParsingError{UnspecifiedParsingError, UPPER_BOUND_OF_FLOAT_RANGE_LIT_SHOULD_BE_FLOAT_LIT},
+							[]Token{{Type: TWO_DOTS, Span: NodeSpan{3, 5}}},
+						},
+						LowerBound: &FloatLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
+							Raw:      "1.0",
+							Value:    1.0,
+						},
+						UpperBound: &Variable{
+							NodeBase: NodeBase{Span: NodeSpan{5, 7}},
+							Name:     "a",
+						},
+					},
+				},
+			}, n)
+		})
+	})
+
 	t.Run("quantity range literal", func(t *testing.T) {
 		t.Run("ok", func(t *testing.T) {
 			n := mustparseChunk(t, "1x..2x")
