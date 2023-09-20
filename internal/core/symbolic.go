@@ -623,15 +623,17 @@ func (p *UnionPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]sym
 	unionPattern := &symbolic.UnionPattern{}
 	encountered[ptr] = unionPattern
 
+	var cases []symbolic.Pattern
+
 	for _, case_ := range p.cases {
 		symbolicVal, err := _toSymbolicValue(ctx, case_, false, encountered)
 		if err != nil {
 			return nil, err
 		}
-		unionPattern.Cases = append(unionPattern.Cases, symbolicVal.(symbolic.Pattern))
+		cases = append(cases, symbolicVal.(symbolic.Pattern))
 	}
 
-	return unionPattern, nil
+	return symbolic.NewUnionPattern(cases, p.disjoint)
 }
 
 func (p *IntersectionPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {

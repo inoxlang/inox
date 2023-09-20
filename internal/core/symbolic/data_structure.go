@@ -18,14 +18,15 @@ var (
 	DICTIONARY_PROPNAMES = []string{"get", "set"}
 	LIST_PROPNAMES       = []string{"append"}
 
-	ANY_INDEXABLE = &AnyIndexable{}
-	ANY_ARRAY     = NewArrayOf(ANY_SERIALIZABLE)
-	ANY_TUPLE     = NewTupleOf(ANY_SERIALIZABLE)
-	ANY_OBJ       = &Object{}
-	ANY_REC       = &Record{}
-	ANY_NAMESPACE = NewAnyNamespace()
-	ANY_DICT      = NewAnyDictionary()
-	ANY_KEYLIST   = NewAnyKeyList()
+	ANY_INDEXABLE    = &AnyIndexable{}
+	ANY_ARRAY        = NewArrayOf(ANY_SERIALIZABLE)
+	ANY_TUPLE        = NewTupleOf(ANY_SERIALIZABLE)
+	ANY_OBJ          = &Object{}
+	ANY_READONLY_OBJ = &Object{readonly: true}
+	ANY_REC          = &Record{}
+	ANY_NAMESPACE    = NewAnyNamespace()
+	ANY_DICT         = NewAnyDictionary()
+	ANY_KEYLIST      = NewAnyKeyList()
 
 	EMPTY_OBJECT          = NewEmptyObject()
 	EMPTY_READONLY_OBJECT = NewEmptyReadonlyObject()
@@ -1225,6 +1226,10 @@ func (obj *Object) test(v SymbolicValue, exact bool) bool {
 
 	if obj.entries == nil {
 		return true
+	}
+
+	if obj.exact && otherObj.IsInexact() {
+		return false
 	}
 
 	if (exact && len(obj.optionalEntries) == 0 && len(obj.entries) != len(otherObj.entries)) || otherObj.entries == nil {

@@ -172,21 +172,39 @@ func (patt *TypePattern) StringPattern() (StringPattern, bool) {
 
 type UnionPattern struct {
 	NotCallablePatternMixin
-	node  parse.Node
-	cases []Pattern
+	node     parse.Node
+	cases    []Pattern
+	disjoint bool
 }
 
 func NewUnionPattern(cases []Pattern, node parse.Node) *UnionPattern {
 	return &UnionPattern{node: node, cases: cases}
 }
 
+func NewDisjointUnionPattern(cases []Pattern, node parse.Node) *UnionPattern {
+	return &UnionPattern{node: node, cases: cases, disjoint: true}
+}
+
 func (patt *UnionPattern) Test(ctx *Context, v Value) bool {
-	for _, case_ := range patt.cases {
-		if case_.Test(ctx, v) {
-			return true
+	if patt.disjoint {
+		matchingCases := 0
+		for _, case_ := range patt.cases {
+			if case_.Test(ctx, v) {
+				matchingCases++
+				if matchingCases > 1 {
+					return false
+				}
+			}
 		}
+		return matchingCases != 0
+	} else {
+		for _, case_ := range patt.cases {
+			if case_.Test(ctx, v) {
+				return true
+			}
+		}
+		return false
 	}
-	return false
 }
 
 // the result should not be modified.

@@ -802,7 +802,7 @@ func TestSymbolicEval(t *testing.T) {
 				},
 				static: map[string]Pattern{
 					"name": &UnionPattern{
-						Cases: []Pattern{
+						cases: []Pattern{
 							state.ctx.ResolveNamedPattern("str"),
 							state.ctx.ResolveNamedPattern("int"),
 						},
@@ -916,7 +916,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(assignement, state, fmtNotAssignableToVarOftype(TRUE, &UnionPattern{
-					Cases: []Pattern{
+					cases: []Pattern{
 						state.ctx.ResolveNamedPattern("int"),
 						state.ctx.ResolveNamedPattern("str"),
 					},
@@ -1227,7 +1227,7 @@ func TestSymbolicEval(t *testing.T) {
 				},
 				static: map[string]Pattern{
 					"name": &UnionPattern{
-						Cases: []Pattern{
+						cases: []Pattern{
 							state.ctx.ResolveNamedPattern("str"),
 							state.ctx.ResolveNamedPattern("int"),
 						},
@@ -1247,7 +1247,7 @@ func TestSymbolicEval(t *testing.T) {
 			assignment := n.Statements[1]
 
 			propType := &UnionPattern{
-				Cases: []Pattern{
+				cases: []Pattern{
 					state.ctx.ResolveNamedPattern("str"),
 					state.ctx.ResolveNamedPattern("int"),
 				},
@@ -1341,7 +1341,7 @@ func TestSymbolicEval(t *testing.T) {
 				},
 				static: map[string]Pattern{
 					"name": &UnionPattern{
-						Cases: []Pattern{
+						cases: []Pattern{
 							state.ctx.ResolveNamedPattern("str"),
 							state.ctx.ResolveNamedPattern("int"),
 						},
@@ -7567,7 +7567,7 @@ func TestSymbolicEval(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Empty(t, state.errors())
 		assert.Equal(t, &UnionPattern{
-			Cases: []Pattern{
+			cases: []Pattern{
 				&ExactValuePattern{value: &Int{hasValue: true, value: 1}},
 				&ExactValuePattern{value: NewString("1")},
 			},
@@ -7583,7 +7583,7 @@ func TestSymbolicEval(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Empty(t, state.errors())
 		assert.Equal(t, &UnionPattern{
-			Cases: []Pattern{
+			cases: []Pattern{
 				state.ctx.ResolveNamedPattern("int"),
 				state.ctx.ResolveNamedPattern("str"),
 			},

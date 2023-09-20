@@ -3837,7 +3837,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				return nil, fmt.Errorf("failed to symbolically compile a pattern element: %s", err.Error())
 			}
 
-			patt.Cases = append(patt.Cases, patternElement)
+			patt.cases = append(patt.cases, patternElement)
 		}
 
 		return patt, nil

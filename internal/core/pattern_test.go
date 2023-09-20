@@ -28,12 +28,33 @@ func TestExactStringPattern(t *testing.T) {
 }
 
 func TestUnionPattern(t *testing.T) {
+	ctx := NewContext(ContextConfig{})
+	NewGlobalState(ctx)
+	defer ctx.CancelGracefully()
 
+	patt := NewUnionPattern([]Pattern{
+		NewInexactObjectPattern(map[string]Pattern{"a": NewExactValuePattern(Int(1))}),
+		NewInexactObjectPattern(map[string]Pattern{"b": NewExactValuePattern(Int(2))}),
+	}, nil)
+
+	assert.True(t, patt.Test(ctx, NewObjectFromMapNoInit(ValMap{"a": Int(1)})))
+	assert.True(t, patt.Test(ctx, NewObjectFromMapNoInit(ValMap{"b": Int(2)})))
+	assert.True(t, patt.Test(ctx, NewObjectFromMapNoInit(ValMap{"a": Int(1), "b": Int(2)})))
+
+	disjointPatt := NewDisjointUnionPattern([]Pattern{
+		NewInexactObjectPattern(map[string]Pattern{"a": NewExactValuePattern(Int(1))}),
+		NewInexactObjectPattern(map[string]Pattern{"b": NewExactValuePattern(Int(2))}),
+	}, nil)
+
+	assert.True(t, disjointPatt.Test(ctx, NewObjectFromMapNoInit(ValMap{"a": Int(1)})))
+	assert.True(t, disjointPatt.Test(ctx, NewObjectFromMapNoInit(ValMap{"b": Int(2)})))
+	assert.False(t, disjointPatt.Test(ctx, NewObjectFromMapNoInit(ValMap{"a": Int(1), "b": Int(2)})))
 }
 
 func TestObjectPattern(t *testing.T) {
 	ctx := NewContext(ContextConfig{})
 	NewGlobalState(ctx)
+	defer ctx.CancelGracefully()
 
 	noProps := &ObjectPattern{entryPatterns: map[string]Pattern{}, inexact: false}
 	inexactNoProps := &ObjectPattern{entryPatterns: map[string]Pattern{}, inexact: true}
@@ -69,6 +90,7 @@ func TestObjectPattern(t *testing.T) {
 func TestRecordPattern(t *testing.T) {
 	ctx := NewContext(ContextConfig{})
 	NewGlobalState(ctx)
+	defer ctx.CancelGracefully()
 
 	noProps := &RecordPattern{entryPatterns: map[string]Pattern{}, inexact: false}
 	inexactNoProps := &RecordPattern{entryPatterns: map[string]Pattern{}, inexact: true}

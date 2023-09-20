@@ -1197,6 +1197,10 @@ func (p *ObjectPattern) TestValue(v SymbolicValue) bool {
 		return true
 	}
 
+	if !p.inexact && obj.IsInexact() {
+		return false
+	}
+
 	if p.inexact {
 		if obj.entries == nil {
 			return false
@@ -1232,6 +1236,9 @@ func (p *ObjectPattern) TestValue(v SymbolicValue) bool {
 
 func (p *ObjectPattern) SymbolicValue() SymbolicValue {
 	if p.entries == nil {
+		if p.readonly {
+			return ANY_READONLY_OBJ
+		}
 		return ANY_OBJ
 	}
 	entries := map[string]Serializable{}
@@ -2180,33 +2187,48 @@ func (p *TuplePattern) WidestOfType() SymbolicValue {
 
 // A UnionPattern represents a symbolic UnionPattern.
 type UnionPattern struct {
-	Cases []Pattern //if nil, any union pattern is matched
+	cases    []Pattern //if nil, any union pattern is matched
+	disjoint bool
 
 	NotCallablePatternMixin
 	SerializableMixin
 }
 
-func NewUnionPattern(cases []Pattern) *UnionPattern {
-	return &UnionPattern{Cases: cases}
+func NewUnionPattern(cases []Pattern, disjoint bool) (*UnionPattern, error) {
+	if disjoint {
+		for i, case1 := range cases {
+			for j, case2 := range cases {
+				if i != j && (case1.Test(case2) || case2.Test(case1)) {
+					return nil, errors.New("impossible to create symbolic disjoint union pattern: some cases intersect")
+				}
+			}
+		}
+	}
+
+	return &UnionPattern{cases: cases, disjoint: disjoint}, nil
+}
+
+func (p *UnionPattern) Cases() []Pattern {
+	return p.cases
 }
 
 func (p *UnionPattern) Test(v SymbolicValue) bool {
 	other, ok := v.(*UnionPattern)
 
-	if !ok {
+	if !ok || p.disjoint != other.disjoint {
 		return false
 	}
 
-	if p.Cases == nil {
+	if p.cases == nil {
 		return true
 	}
 
-	if len(p.Cases) != len(other.Cases) {
+	if len(p.cases) != len(other.cases) {
 		return false
 	}
 
-	for i, case_ := range p.Cases {
-		if !case_.Test(other.Cases[i]) {
+	for i, case_ := range p.cases {
+		if !case_.Test(other.cases[i]) {
 			return false
 		}
 	}
@@ -2216,10 +2238,15 @@ func (p *UnionPattern) Test(v SymbolicValue) bool {
 
 func (p *UnionPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("(%| ")))
+
+	if p.disjoint {
+		utils.Must(w.Write(utils.StringAsBytes("(disjoint) ")))
+	}
+
 	indentCount := parentIndentCount + 1
 	indent := bytes.Repeat(config.Indent, indentCount)
 
-	for i, case_ := range p.Cases {
+	for i, case_ := range p.cases {
 		if i > 0 {
 			utils.PanicIfErr(w.WriteByte('\n'))
 			utils.Must(w.Write(indent))
@@ -2242,16 +2269,33 @@ func (p *UnionPattern) TestValue(v SymbolicValue) bool {
 		values = []SymbolicValue{v}
 	}
 
-	for _, val := range values {
-		ok := false
-		for _, case_ := range p.Cases {
-			if case_.TestValue(val) {
-				ok = true
-				break
+	if p.disjoint {
+		for _, val := range values {
+			matchingCases := 0
+			for _, case_ := range p.cases {
+				if case_.TestValue(val) {
+					matchingCases++
+					if matchingCases > 1 {
+						return false
+					}
+				}
+			}
+			if matchingCases == 0 {
+				return false
 			}
 		}
-		if !ok {
-			return false
+	} else {
+		for _, val := range values {
+			ok := false
+			for _, case_ := range p.cases {
+				if case_.TestValue(val) {
+					ok = true
+					break
+				}
+			}
+			if !ok {
+				return false
+			}
 		}
 	}
 
@@ -2259,9 +2303,9 @@ func (p *UnionPattern) TestValue(v SymbolicValue) bool {
 }
 
 func (p *UnionPattern) SymbolicValue() SymbolicValue {
-	values := make([]SymbolicValue, len(p.Cases))
+	values := make([]SymbolicValue, len(p.cases))
 
-	for i, case_ := range p.Cases {
+	for i, case_ := range p.cases {
 		values[i] = case_.SymbolicValue()
 	}
 

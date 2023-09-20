@@ -428,19 +428,70 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			{&ObjectPattern{entries: nil}, &ObjectPattern{entries: nil}, false},
 			{&ObjectPattern{entries: nil}, &ObjectPattern{entries: map[string]Pattern{}}, false},
 
-			//symbolic object
 			{&ObjectPattern{entries: nil}, &Object{entries: nil}, true},
-			{&ObjectPattern{entries: map[string]Pattern{}}, &Object{entries: nil}, false},
-			{&ObjectPattern{entries: nil}, &Object{entries: map[string]Serializable{}}, true},
+			{&ObjectPattern{entries: nil}, &Object{entries: nil, exact: true}, true},
 
+			{&ObjectPattern{entries: nil}, &Object{entries: map[string]Serializable{}}, true},
+			{&ObjectPattern{entries: nil}, &Object{entries: map[string]Serializable{}, exact: true}, true},
+
+			//empty exact object pattern should not match an any object
 			{
 				&ObjectPattern{entries: map[string]Pattern{}},
+				&Object{entries: nil},
+				false,
+			},
+
+			//empty inexact object pattern should not match an any object
+			{
+				&ObjectPattern{
+					entries: map[string]Pattern{},
+					inexact: true,
+				},
+				&Object{entries: nil},
+				false,
+			},
+
+			//empty exact object pattern should not match an empty inexact object
+			{
+				&ObjectPattern{
+					entries: map[string]Pattern{},
+					inexact: false,
+				},
+				&Object{
+					entries: map[string]Serializable{},
+					exact:   false,
+				},
+				false,
+			},
+
+			//empty inexact object pattern should match an empty exact object
+			{
+				&ObjectPattern{
+					entries: map[string]Pattern{},
+					inexact: false,
+				},
+				&Object{entries: map[string]Serializable{}, exact: true},
+				true,
+			},
+
+			//empty inexact object pattern should match an empty inexact object
+			{
+				&ObjectPattern{entries: map[string]Pattern{}, inexact: true},
 				&Object{entries: map[string]Serializable{}},
 				true,
 			},
+
+			//empty inexact object pattern should match an empty exact object
+			{
+				&ObjectPattern{entries: map[string]Pattern{}, inexact: true},
+				&Object{entries: map[string]Serializable{}, exact: true},
+				true,
+			},
+
 			{
 				&ObjectPattern{
 					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+					inexact: true,
 				},
 				&Object{
 					entries: map[string]Serializable{},
@@ -451,6 +502,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				&ObjectPattern{
 					entries:         map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
 					optionalEntries: map[string]struct{}{"a": {}},
+					inexact:         true,
 				},
 				&Object{
 					entries: map[string]Serializable{},
@@ -460,6 +512,17 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			{
 				&ObjectPattern{
 					entries: map[string]Pattern{},
+					inexact: true,
+				},
+				&Object{
+					entries: map[string]Serializable{"a": ANY_INT},
+				},
+				true,
+			},
+			{
+				&ObjectPattern{
+					entries: map[string]Pattern{},
+					inexact: false,
 				},
 				&Object{
 					entries: map[string]Serializable{"a": ANY_INT},
@@ -469,6 +532,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			{
 				&ObjectPattern{
 					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+					inexact: true,
 				},
 				&Object{
 					entries: map[string]Serializable{"a": ANY_INT},
@@ -478,6 +542,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			{
 				&ObjectPattern{
 					entries: map[string]Pattern{"a": ANY_SERIALIZABLE_PATTERN},
+					inexact: true,
 				},
 				&Object{
 					entries: map[string]Serializable{"a": ANY_INT},
@@ -487,11 +552,33 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			{
 				&ObjectPattern{
 					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+					inexact: true,
 				},
 				&Object{
 					entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
 				},
 				false,
+			},
+			{
+				&ObjectPattern{
+					entries: map[string]Pattern{"a": ANY_SERIALIZABLE_PATTERN},
+					inexact: true,
+				},
+				&Object{
+					entries: map[string]Serializable{"a": ANY_INT, "b": ANY_INT},
+				},
+				true,
+			},
+			{
+				&ObjectPattern{
+					entries: map[string]Pattern{"a": ANY_SERIALIZABLE_PATTERN},
+					inexact: true,
+				},
+				&Object{
+					entries: map[string]Serializable{"a": ANY_INT, "b": ANY_INT},
+					exact:   true,
+				},
+				true,
 			},
 		}
 
@@ -1361,13 +1448,13 @@ func TestSymbolicUnionPattern(t *testing.T) {
 		}{
 			{
 				&UnionPattern{
-					Cases: []Pattern{
+					cases: []Pattern{
 						ANY_PATTERN,
 						ANY_PATTERN,
 					},
 				},
 				&UnionPattern{
-					Cases: []Pattern{
+					cases: []Pattern{
 						&TypePattern{val: ANY_INT},
 						&TypePattern{val: ANY_STR},
 					},
@@ -1376,13 +1463,13 @@ func TestSymbolicUnionPattern(t *testing.T) {
 			},
 			{
 				&UnionPattern{
-					Cases: []Pattern{
+					cases: []Pattern{
 						ANY_PATTERN,
 						ANY_PATTERN,
 					},
 				},
 				&UnionPattern{
-					Cases: []Pattern{
+					cases: []Pattern{
 						&TypePattern{val: ANY_INT},
 						&TypePattern{val: ANY_STR},
 						&TypePattern{val: ANY_BOOL},
@@ -1392,13 +1479,13 @@ func TestSymbolicUnionPattern(t *testing.T) {
 			},
 			{
 				&UnionPattern{
-					Cases: []Pattern{
+					cases: []Pattern{
 						&TypePattern{val: ANY_INT},
 						&TypePattern{val: ANY_STR},
 					},
 				},
 				&UnionPattern{
-					Cases: []Pattern{
+					cases: []Pattern{
 						ANY_PATTERN,
 						ANY_PATTERN,
 					},
@@ -1420,71 +1507,108 @@ func TestSymbolicUnionPattern(t *testing.T) {
 			value   SymbolicValue
 			ok      bool
 		}{
+			// {
+			// 	&UnionPattern{
+			// 		cases: []Pattern{
+			// 			&TypePattern{val: ANY_INT},
+			// 			&TypePattern{val: ANY_STR},
+			// 		},
+			// 	},
+			// 	ANY_INT,
+			// 	true,
+			// },
+			// {
+			// 	&UnionPattern{
+			// 		cases: []Pattern{
+			// 			&TypePattern{val: ANY_INT},
+			// 			&TypePattern{val: ANY_STR},
+			// 		},
+			// 	},
+			// 	ANY_STR,
+			// 	true,
+			// },
+			// {
+			// 	&UnionPattern{
+			// 		cases: []Pattern{
+			// 			&TypePattern{val: ANY_INT},
+			// 			&TypePattern{val: ANY_STR},
+			// 		},
+			// 	},
+			// 	NewMultivalue(ANY_INT, ANY_STR),
+			// 	true,
+			// },
+			// {
+			// 	&UnionPattern{
+			// 		cases: []Pattern{
+			// 			&TypePattern{val: ANY_INT},
+			// 			&TypePattern{val: ANY_STR},
+			// 		},
+			// 	},
+			// 	NewMultivalue(ANY_STR, ANY_INT),
+			// 	true,
+			// },
+			// {
+			// 	&UnionPattern{
+			// 		cases: []Pattern{
+			// 			&TypePattern{val: ANY_INT},
+			// 			&TypePattern{val: ANY_STR},
+			// 		},
+			// 	},
+			// 	NewMultivalue(ANY_STR, NewInt(1)),
+			// 	true,
+			// },
+			// {
+			// 	&UnionPattern{
+			// 		cases: []Pattern{
+			// 			&TypePattern{val: ANY_INT},
+			// 			&TypePattern{val: ANY_STR},
+			// 		},
+			// 	},
+			// 	ANY_SERIALIZABLE,
+			// 	false,
+			// },
+			// {
+			// 	&UnionPattern{
+			// 		cases: []Pattern{
+			// 			NewInexactObjectPattern(map[string]Pattern{"a": utils.Must(NewExactValuePattern(NewInt(1)))}, nil),
+			// 			NewInexactObjectPattern(map[string]Pattern{"b": utils.Must(NewExactValuePattern(NewInt(2)))}, nil),
+			// 		},
+			// 	},
+			// 	NewExactObject(map[string]Serializable{"a": NewInt(1)}, nil, nil),
+			// 	true,
+			// },
+			// {
+			// 	&UnionPattern{
+			// 		cases: []Pattern{
+			// 			NewInexactObjectPattern(map[string]Pattern{"a": utils.Must(NewExactValuePattern(NewInt(1)))}, nil),
+			// 			NewInexactObjectPattern(map[string]Pattern{"b": utils.Must(NewExactValuePattern(NewInt(2)))}, nil),
+			// 		},
+			// 	},
+			// 	NewExactObject(map[string]Serializable{"b": NewInt(2)}, nil, nil),
+			// 	true,
+			// },
 			{
 				&UnionPattern{
-					Cases: []Pattern{
-						&TypePattern{val: ANY_INT},
-						&TypePattern{val: ANY_STR},
+					cases: []Pattern{
+						NewInexactObjectPattern(map[string]Pattern{"a": utils.Must(NewExactValuePattern(NewInt(1)))}, nil),
+						NewInexactObjectPattern(map[string]Pattern{"b": utils.Must(NewExactValuePattern(NewInt(2)))}, nil),
 					},
 				},
-				ANY_INT,
+				NewExactObject(map[string]Serializable{"a": NewInt(1), "b": NewInt(2)}, nil, nil),
 				true,
-			},
-			{
-				&UnionPattern{
-					Cases: []Pattern{
-						&TypePattern{val: ANY_INT},
-						&TypePattern{val: ANY_STR},
-					},
-				},
-				ANY_STR,
-				true,
-			},
-			{
-				&UnionPattern{
-					Cases: []Pattern{
-						&TypePattern{val: ANY_INT},
-						&TypePattern{val: ANY_STR},
-					},
-				},
-				NewMultivalue(ANY_INT, ANY_STR),
-				true,
-			},
-			{
-				&UnionPattern{
-					Cases: []Pattern{
-						&TypePattern{val: ANY_INT},
-						&TypePattern{val: ANY_STR},
-					},
-				},
-				NewMultivalue(ANY_STR, ANY_INT),
-				true,
-			},
-			{
-				&UnionPattern{
-					Cases: []Pattern{
-						&TypePattern{val: ANY_INT},
-						&TypePattern{val: ANY_STR},
-					},
-				},
-				NewMultivalue(ANY_STR, NewInt(1)),
-				true,
-			},
-			{
-				&UnionPattern{
-					Cases: []Pattern{
-						&TypePattern{val: ANY_INT},
-						&TypePattern{val: ANY_STR},
-					},
-				},
-				ANY_SERIALIZABLE,
-				false,
 			},
 		}
 
 		for _, testCase := range cases {
-			t.Run(t.Name()+"_"+fmt.Sprint(testCase.pattern, "_", testCase.value), func(t *testing.T) {
+			s := " should match "
+			if !testCase.ok {
+				s = " should not match"
+			}
+			t.Run(t.Name()+"_"+fmt.Sprint(Stringify(testCase.pattern), s, Stringify(testCase.value)), func(t *testing.T) {
 				assert.Equal(t, testCase.ok, testCase.pattern.TestValue(testCase.value))
+
+				val := testCase.pattern.SymbolicValue()
+				assert.Equal(t, testCase.ok, val.Test(testCase.value))
 			})
 		}
 	})

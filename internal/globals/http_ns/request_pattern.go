@@ -92,7 +92,7 @@ var (
 							return commonfmt.FmtInvalidValueForPropXOfArgY(propName, OBJ_ARG_NAME, ERR_MSG)
 						}
 					case *symbolic.UnionPattern:
-						for _, case_ := range p.Cases {
+						for _, case_ := range p.Cases() {
 							exactValuePatt, ok := case_.(*symbolic.ExactValuePattern)
 							if !ok {
 								return commonfmt.FmtInvalidValueForPropXOfArgY(propName, OBJ_ARG_NAME, ERR_MSG)

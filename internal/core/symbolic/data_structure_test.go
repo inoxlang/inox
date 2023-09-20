@@ -87,7 +87,7 @@ func TestSymbolicObject(t *testing.T) {
 			&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
 			},
-			true,
+			false,
 		},
 		{
 			&Object{
