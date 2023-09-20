@@ -830,6 +830,34 @@ func (r IntRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, conf
 	return nil
 }
 
+func (r FloatRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	write := func(w *jsoniter.Stream) error {
+		w.WriteObjectStart()
+
+		if !r.unknownStart {
+			w.WriteObjectField("start")
+			w.WriteString(fmtFloat(float64(r.Start)))
+			w.WriteMore()
+		}
+
+		w.WriteObjectField("end")
+		w.WriteString(fmtFloat(float64(r.End)))
+
+		w.WriteObjectEnd()
+		return nil
+	}
+
+	if noPatternOrAny(config.Pattern) {
+		writeUntypedValueJSON(INT_RANGE_PATTERN.Name, func(w *jsoniter.Stream) error {
+			return write(w)
+		}, w)
+		return nil
+	}
+
+	write(w)
+	return nil
+}
+
 //patterns
 
 func (pattern ExactValuePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {

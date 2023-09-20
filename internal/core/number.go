@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	ErrUnknownStartIntRange = errors.New("integer range has unknown start")
+	ErrUnknownStartIntRange   = errors.New("integer range has unknown start")
+	ErrUnknownStartFloatRange = errors.New("float range has unknown start")
 
 	_ = []Integral{Int(0), Byte(0)}
 )
@@ -26,6 +27,42 @@ func (i Int) Int64() (n int64, signed bool) {
 
 // Float implements Value.
 type Float float64
+
+type FloatRange struct {
+	unknownStart bool //if true .Start depends on the context (not *Context)
+	inclusiveEnd bool
+	Start        float64
+	End          float64
+}
+
+func NewIncludedEndFloatRange(start, end float64) FloatRange {
+	if end < start {
+		panic(fmt.Errorf("failed to create float range, end < start"))
+	}
+	return FloatRange{inclusiveEnd: true, Start: start, End: end}
+}
+
+func (r FloatRange) Includes(ctx *Context, n Float) bool {
+	if r.unknownStart {
+		panic(ErrUnknownStartFloatRange)
+	}
+
+	return r.Start <= float64(n) && float64(n) <= r.InclusiveEnd()
+}
+
+func (r FloatRange) KnownStart() float64 {
+	if r.unknownStart {
+		panic(ErrUnknownStartFloatRange)
+	}
+	return r.Start
+}
+
+func (r FloatRange) InclusiveEnd() float64 {
+	if r.inclusiveEnd {
+		return r.End
+	}
+	return r.End - 1
+}
 
 func intAdd(l, r Int) (Value, error) {
 	if r > 0 {

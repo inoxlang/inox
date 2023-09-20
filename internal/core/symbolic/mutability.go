@@ -270,6 +270,10 @@ func (r IntRange) IsMutable() bool {
 	return false
 }
 
+func (r FloatRange) IsMutable() bool {
+	return false
+}
+
 //patterns
 
 func (pattern *ExactValuePattern) IsMutable() bool {

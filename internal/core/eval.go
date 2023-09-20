@@ -83,6 +83,8 @@ var (
 	MSG_TYPE                = reflect.TypeOf(Message{})
 	ERROR_TYPE              = reflect.TypeOf(Error{})
 	INT_RANGE_TYPE          = reflect.TypeOf(IntRange{})
+	FLOAT_RANGE_TYPE        = reflect.TypeOf(FloatRange{})
+	RUNE_RANGE_TYPE         = reflect.TypeOf(RuneRange{})
 	VALUE_HISTORY_TYPE      = reflect.TypeOf(&ValueHistory{})
 	SYSGRAPH_TYPE           = reflect.TypeOf(&SystemGraph{})
 	SYSGRAPH_NODE_TYPE      = reflect.TypeOf(&SystemGraphNode{})

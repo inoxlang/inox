@@ -181,8 +181,12 @@ func (i Int) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, 
 	return nil
 }
 
+func fmtFloat(f float64) string {
+	return strconv.FormatFloat(float64(f), 'f', -1, 64)
+}
+
 func (f Float) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
-	s := strconv.FormatFloat(float64(f), 'f', -1, 64)
+	s := fmtFloat(float64(f))
 	if _, err := w.Write(utils.StringAsBytes(s)); err != nil {
 		return err
 	}
@@ -964,6 +968,47 @@ func (r IntRange) write(w io.Writer) (int, error) {
 }
 
 func (r IntRange) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	_, err := r.write(w)
+	return err
+}
+
+func (r FloatRange) write(w io.Writer) (int, error) {
+	b := make([]byte, 0, 10)
+	if !r.unknownStart {
+		repr := fmtFloat(r.Start)
+		b = append(b, repr...)
+
+		hasPoint := false
+		for _, r := range repr {
+			if r == '.' {
+				hasPoint = true
+			}
+		}
+
+		if !hasPoint {
+			b = append(b, '.', '0')
+		}
+	}
+	b = append(b, '.', '.')
+
+	repr := fmtFloat(r.End)
+	b = append(b, repr...)
+
+	hasPoint := false
+	for _, r := range repr {
+		if r == '.' {
+			hasPoint = true
+		}
+	}
+
+	if !hasPoint {
+		b = append(b, '.', '0')
+	}
+
+	return w.Write(b)
+}
+
+func (r FloatRange) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	_, err := r.write(w)
 	return err
 }

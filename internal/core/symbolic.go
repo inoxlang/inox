@@ -1027,7 +1027,11 @@ func (r QuantityRange) ToSymbolicValue(ctx *Context, encountered map[uintptr]sym
 }
 
 func (r IntRange) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.IntRange{}, nil
+	return symbolic.ANY_INT_RANGE, nil
+}
+
+func (r FloatRange) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	return symbolic.ANY_FLOAT_RANGE, nil
 }
 
 func (r RuneRange) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {

@@ -26,6 +26,7 @@ var (
 	ANY_RES_NAME       = &AnyResourceName{}
 	ANY_OPTION         = &Option{name: "", value: ANY_SERIALIZABLE}
 	ANY_INT_RANGE      = &IntRange{}
+	ANY_FLOAT_RANGE    = &FloatRange{}
 	ANY_RUNE_RANGE     = &RuneRange{}
 	ANY_QUANTITY_RANGE = &QuantityRange{element: ANY_SERIALIZABLE}
 	ANY_FILEMODE       = &FileMode{}
@@ -927,6 +928,37 @@ func (r *IntRange) IteratorElementValue() SymbolicValue {
 
 func (r *IntRange) WidestOfType() SymbolicValue {
 	return ANY_INT_RANGE
+}
+
+// An FloatRange represents a symbolic FloatRange.
+type FloatRange struct {
+	_ int
+	SerializableMixin
+}
+
+func (r *FloatRange) Test(v SymbolicValue) bool {
+	_, ok := v.(*FloatRange)
+	return ok
+}
+
+func (r *FloatRange) Static() Pattern {
+	return &TypePattern{val: r.WidestOfType()}
+}
+
+func (r *FloatRange) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%float-range")))
+}
+
+func (r *FloatRange) Contains(value SymbolicValue) (bool, bool) {
+	if _, ok := value.(*Float); ok {
+		return false, true
+	}
+
+	return false, false
+}
+
+func (r *FloatRange) WidestOfType() SymbolicValue {
+	return ANY_FLOAT_RANGE
 }
 
 // A RuneRange represents a symbolic RuneRange.

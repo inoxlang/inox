@@ -1073,6 +1073,36 @@ func TestIntRangeRepresentation(t *testing.T) {
 	})
 }
 
+func TestFloatRangeRepresentation(t *testing.T) {
+	t.Run("known start", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		floatRange := FloatRange{Start: 0, End: 100, inclusiveEnd: true}
+
+		expectedRepr := "0.0..100.0"
+		assert.Equal(t, expectedRepr, getReprAllVisible(t, floatRange, ctx))
+
+		node := assertParseExpression(t, expectedRepr)
+		state := NewTreeWalkState(NewContext(ContextConfig{}))
+		assert.Equal(t, floatRange, utils.Must(TreeWalkEval(node, state)))
+	})
+
+	t.Run("unknown start", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		floatRange := FloatRange{Start: 0, End: 100, unknownStart: true, inclusiveEnd: true}
+
+		expectedRepr := "..100.0"
+		assert.Equal(t, expectedRepr, getReprAllVisible(t, floatRange, ctx))
+
+		node := assertParseExpression(t, expectedRepr)
+		state := NewTreeWalkState(NewContext(ContextConfig{}))
+		assert.Equal(t, floatRange, utils.Must(TreeWalkEval(node, state)))
+	})
+}
+
 func TestUdataRepresentation(t *testing.T) {
 	t.Run("only root", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)

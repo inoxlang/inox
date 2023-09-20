@@ -627,8 +627,13 @@ var (
 		Name:          "int-range",
 		SymbolicValue: symbolic.ANY_INT_RANGE,
 	}
+	FLOAT_RANGE_PATTERN = &TypePattern{
+		Type:          FLOAT_RANGE_TYPE,
+		Name:          "float-range",
+		SymbolicValue: symbolic.ANY_FLOAT_RANGE,
+	}
 	RUNE_RANGE_PATTERN = &TypePattern{
-		Type:          INT_RANGE_TYPE,
+		Type:          RUNE_RANGE_TYPE,
 		Name:          "rune-range",
 		SymbolicValue: symbolic.ANY_RUNE_RANGE,
 	}

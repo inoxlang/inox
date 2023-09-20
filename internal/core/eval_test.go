@@ -1070,6 +1070,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			//addition
 			{"(1 .. 2)", IntRange{Start: 1, End: 2, Step: 1, inclusiveEnd: true}, nil},
 			{"(1 ..< 2)", IntRange{Start: 1, End: 2, Step: 1, inclusiveEnd: false}, nil},
+			{"(1.0 .. 2.0)", FloatRange{Start: 1, End: 2, inclusiveEnd: true}, nil},
+			{"(1.0 ..< 2.0)", FloatRange{Start: 1, End: 2, inclusiveEnd: false}, nil},
 			{"(1B .. 2B)", QuantityRange{start: ByteCount(1), end: ByteCount(2), inclusiveEnd: true}, nil},
 			{"(1B ..< 2B)", QuantityRange{start: ByteCount(1), end: ByteCount(2), inclusiveEnd: false}, nil},
 		}

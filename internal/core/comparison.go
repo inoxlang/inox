@@ -862,6 +862,14 @@ func (r IntRange) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]u
 	return r == otherRange
 }
 
+func (r FloatRange) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherRange, ok := other.(FloatRange)
+	if !ok {
+		return false
+	}
+	return r == otherRange
+}
+
 //patterns
 
 func (pattern *ExactValuePattern) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {

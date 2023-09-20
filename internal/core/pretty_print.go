@@ -1250,6 +1250,18 @@ func (r IntRange) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth 
 	}
 }
 
+func (r FloatRange) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	if config.Colorize {
+		utils.Must(w.Write(config.Colors.NumberLiteral))
+	}
+
+	utils.Must(r.write(w))
+
+	if config.Colorize {
+		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+	}
+}
+
 //patterns
 
 func (pattern ExactValuePattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {

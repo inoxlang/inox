@@ -439,8 +439,11 @@ func (v *VM) run() {
 					Step:         1,
 				}
 			case Float:
-				v.err = fmt.Errorf("floating point ranges not supported")
-				return
+				res = FloatRange{
+					inclusiveEnd: !exclEnd,
+					Start:        float64(left.(Float)),
+					End:          float64(right.(Float)),
+				}
 			default:
 				res = QuantityRange{
 					inclusiveEnd: !exclEnd,
