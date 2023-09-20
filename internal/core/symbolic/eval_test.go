@@ -1396,6 +1396,27 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
+		t.Run("invalid spread element", func(t *testing.T) {
+			n, state, err := _makeStateAndChunk(`obj = {b: 2}; return {a: 1, ...obj, c: 3}`, nil)
+			if !assert.Error(t, err) {
+				return
+			}
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &Object{
+				entries: map[string]Serializable{
+					"a": NewInt(1),
+					"c": NewInt(3),
+				},
+				static: map[string]Pattern{
+					"a": ANY_INT.Static(),
+					"c": ANY_INT.Static(),
+				},
+			}, res)
+		})
+
 		t.Run("non-serializable values not allowed in initialization", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`{lthread: go do {}}`)
 			propNode := parse.FindNode(n, (*parse.ObjectProperty)(nil), nil)

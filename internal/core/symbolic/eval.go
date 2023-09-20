@@ -74,6 +74,7 @@ var (
 		parse.UnterminatedMemberExpr, parse.UnterminatedDoubleColonExpr,
 		parse.MissingBlock, parse.MissingFnBody,
 		parse.MissingEqualsSignInDeclaration,
+		parse.ExtractionExpressionExpected,
 	}
 )
 
@@ -1874,9 +1875,15 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		}
 
 		for _, el := range n.SpreadElements {
+			_, isExtractionExpr := el.Expr.(*parse.ExtractionExpression)
+
 			evaluatedElement, err := symbolicEval(el.Expr, state)
 			if err != nil {
 				return nil, err
+			}
+
+			if !isExtractionExpr {
+				continue
 			}
 
 			object := evaluatedElement.(*Object)
