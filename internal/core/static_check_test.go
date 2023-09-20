@@ -137,6 +137,23 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
+		t.Run("invalid spread element", func(t *testing.T) {
+			chunk, err := parse.ParseChunkSource(parse.InMemorySource{
+				NameString: "test",
+				CodeString: `
+					e = {a: 1}
+					{"a": 1, ... $e}
+				`,
+			})
+
+			if !assert.Error(t, err) {
+				return
+			}
+
+			err = staticCheckNoData(StaticCheckInput{Node: chunk.Node, Chunk: chunk})
+			assert.NoError(t, err)
+		})
+
 		t.Run("key is too long", func(t *testing.T) {
 			name := strings.Repeat("a", MAX_NAME_BYTE_LEN+1)
 			code := strings.Replace(`{"a":1}`, "a", name, 1)
@@ -316,6 +333,23 @@ func TestCheck(t *testing.T) {
 				makeError(keyNode, src, fmtDuplicateKey("a")),
 			)
 			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("invalid spread element", func(t *testing.T) {
+			chunk, err := parse.ParseChunkSource(parse.InMemorySource{
+				NameString: "test",
+				CodeString: `
+					e = #{a: 1}
+					#{"a": 1, ... $e}
+				`,
+			})
+
+			if !assert.Error(t, err) {
+				return
+			}
+
+			err = staticCheckNoData(StaticCheckInput{Node: chunk.Node, Chunk: chunk})
+			assert.NoError(t, err)
 		})
 
 		t.Run("key is too long", func(t *testing.T) {

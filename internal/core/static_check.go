@@ -2477,7 +2477,12 @@ func shallowCheckObjectRecordProperties(
 	// also look for duplicate keys
 	for _, element := range spreadElements {
 
-		for _, key := range element.Expr.(*parse.ExtractionExpression).Keys.Keys {
+		extractionExpr, isValid := element.Expr.(*parse.ExtractionExpression)
+		if !isValid {
+			continue
+		}
+
+		for _, key := range extractionExpr.Keys.Keys {
 			name := key.(*parse.IdentifierLiteral).Name
 
 			_, found := keys[name]
