@@ -42,3 +42,7 @@ func CountDigits(n int64) int {
 
 	return count
 }
+
+func IsWholeInt64(f float64) bool {
+	return f == float64(int64(f))
+}

@@ -31,8 +31,8 @@ type Float float64
 type FloatRange struct {
 	unknownStart bool //if true .Start depends on the context (not *Context)
 	inclusiveEnd bool
-	Start        float64
-	End          float64
+	Start        float64 //can be negative infinity
+	End          float64 //can be positive infinity
 }
 
 func NewIncludedEndFloatRange(start, end float64) FloatRange {
@@ -58,10 +58,10 @@ func (r FloatRange) KnownStart() float64 {
 }
 
 func (r FloatRange) InclusiveEnd() float64 {
-	if r.inclusiveEnd {
+	if r.inclusiveEnd || math.IsInf(r.End, 1) {
 		return r.End
 	}
-	return r.End - 1
+	return math.Nextafter(r.End, math.Inf(-1))
 }
 
 func intAdd(l, r Int) (Value, error) {

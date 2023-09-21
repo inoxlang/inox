@@ -671,6 +671,10 @@ func (p *IntRangePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]
 	return &symbolic.IntRangePattern{}, nil
 }
 
+func (p *FloatRangePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	return &symbolic.IntRangePattern{}, nil
+}
+
 func (p *UnionStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	return &symbolic.AnyStringPattern{}, nil
 }

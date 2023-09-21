@@ -300,9 +300,10 @@ var (
 		SymbolicValue: symbolic.ANY_BOOL,
 	}
 	INT_PATTERN = &TypePattern{
-		Type:       INT_TYPE,
-		Name:       "int",
-		RandomImpl: RandInt,
+		Type:          INT_TYPE,
+		Name:          "int",
+		RandomImpl:    RandInt,
+		SymbolicValue: symbolic.ANY_INT,
 		CallImpl: func(typePattern *TypePattern, values []Serializable) (Pattern, error) {
 			intRangeProvided := false
 			var intRange IntRange
@@ -339,7 +340,6 @@ var (
 		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error) {
 			return &symbolic.IntRangePattern{}, nil
 		},
-		SymbolicValue: &symbolic.Int{},
 
 		stringPattern: func() (StringPattern, bool) {
 			//TODO: use real range when int range string pattern supports any range
@@ -354,6 +354,52 @@ var (
 		Type:          FLOAT64_TYPE,
 		Name:          "float",
 		SymbolicValue: symbolic.ANY_FLOAT,
+		RandomImpl:    RandFloat,
+		CallImpl: func(typePattern *TypePattern, values []Serializable) (Pattern, error) {
+			floatRangeProvided := false
+			var floatRange FloatRange
+
+			for _, val := range values {
+				switch v := val.(type) {
+				case FloatRange:
+					if floatRangeProvided {
+						return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("range")
+					}
+					floatRange = v
+					floatRangeProvided = true
+
+					if floatRange.unknownStart {
+						return nil, fmt.Errorf("provided float range should not have an unknown start")
+					}
+				default:
+					return nil, FmtErrInvalidArgument(v)
+				}
+			}
+
+			if !floatRangeProvided {
+				return nil, commonfmt.FmtMissingArgument("range")
+			}
+
+			return &FloatRangePattern{
+				floatRange: floatRange,
+				CallBasedPatternReprMixin: CallBasedPatternReprMixin{
+					Callee: typePattern,
+					Params: []Serializable{floatRange},
+				},
+			}, nil
+		},
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error) {
+			return &symbolic.IntRangePattern{}, nil
+		},
+
+		stringPattern: func() (StringPattern, bool) {
+			//TODO: use real range when int range string pattern supports any range
+			return NewIntRangeStringPattern(-999999999999999999, 999999999999999999, nil), true
+		},
+		symbolicStringPattern: func() (symbolic.StringPattern, bool) {
+			//TODO
+			return symbolic.ANY_STR_PATTERN, true
+		},
 	}
 
 	PORT_PATTERN = &TypePattern{

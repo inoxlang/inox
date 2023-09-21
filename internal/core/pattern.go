@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"math"
 	"reflect"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
@@ -262,6 +263,10 @@ func NewInexactObjectPattern(entries map[string]Pattern) *ObjectPattern {
 
 func NewInexactObjectPatternWithOptionalProps(entries map[string]Pattern, optionalProperties map[string]struct{}) *ObjectPattern {
 	return &ObjectPattern{entryPatterns: entries, optionalEntries: optionalProperties, inexact: true}
+}
+
+func NewObjectPatternWithOptionalProps(inexact bool, entries map[string]Pattern, optionalProperties map[string]struct{}) *ObjectPattern {
+	return &ObjectPattern{entryPatterns: entries, optionalEntries: optionalProperties, inexact: inexact}
 }
 
 func (patt *ObjectPattern) Test(ctx *Context, v Value) bool {
@@ -680,12 +685,13 @@ func (patt *FunctionPattern) StringPattern() (StringPattern, bool) {
 // An IntRangePattern represents a pattern matching integers in a given range.
 type IntRangePattern struct {
 	intRange   IntRange
-	multipleOf Int //ignored if not greater than zero
+	multipleOf Int
 
 	CallBasedPatternReprMixin
 	NotCallablePatternMixin
 }
 
+// multipleOf is ignored if not greater than zero
 func NewIncludedEndIntRangePattern(start, end int64, multipleOf int64) *IntRangePattern {
 	if end < start {
 		panic(fmt.Errorf("failed to create int range pattern, end < start"))
@@ -702,6 +708,26 @@ func NewIncludedEndIntRangePattern(start, end int64, multipleOf int64) *IntRange
 		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
 			Callee: INT_PATTERN,
 			Params: []Serializable{range_},
+		},
+	}
+}
+
+// multipleOf is ignored if not greater than zero
+func NewIntRangePattern(intRange IntRange, multipleOf int64) *IntRangePattern {
+	if intRange.End < intRange.Start {
+		panic(fmt.Errorf("failed to create int range pattern, end < start"))
+	}
+
+	if multipleOf <= 0 {
+		multipleOf = 0
+	}
+
+	return &IntRangePattern{
+		intRange:   intRange,
+		multipleOf: Int(multipleOf),
+		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
+			Callee: INT_PATTERN,
+			Params: []Serializable{intRange},
 		},
 	}
 }
@@ -733,6 +759,61 @@ func (patt *IntRangePattern) StringPattern() (StringPattern, bool) {
 		return nil, false
 	}
 	return NewIntRangeStringPattern(patt.intRange.Start, patt.intRange.InclusiveEnd(), nil), true
+}
+
+// An FloatRangePattern represents a pattern matching floats in a given range.
+type FloatRangePattern struct {
+	floatRange FloatRange
+	multipleOf Float
+
+	CallBasedPatternReprMixin
+	NotCallablePatternMixin
+}
+
+// multipleOf is ignored if not greater than zero
+func NewFloatRangePattern(floatRange FloatRange, multipleOf float64) *FloatRangePattern {
+	if floatRange.End < floatRange.Start {
+		panic(fmt.Errorf("failed to create float range pattern, end < start"))
+	}
+
+	if multipleOf <= 0 {
+		multipleOf = 0
+	}
+
+	return &FloatRangePattern{
+		floatRange: floatRange,
+		multipleOf: Float(multipleOf),
+		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
+			Callee: FLOAT_PATTERN,
+			Params: []Serializable{floatRange},
+		},
+	}
+}
+
+func NewSingleElementFloatRangePattern(n float64) *FloatRangePattern {
+	range_ := FloatRange{inclusiveEnd: true, Start: n, End: n}
+	return &FloatRangePattern{
+		floatRange: range_,
+		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
+			Callee: FLOAT_PATTERN,
+			Params: []Serializable{range_},
+		},
+	}
+}
+
+func (patt *FloatRangePattern) Test(ctx *Context, v Value) bool {
+	n, ok := v.(Float)
+	if !ok {
+		return false
+	}
+
+	return n >= Float(patt.floatRange.Start) &&
+		n <= Float(patt.floatRange.InclusiveEnd()) &&
+		(patt.multipleOf <= 0 || math.Mod(float64(n), float64(patt.multipleOf)) == 0)
+}
+
+func (patt *FloatRangePattern) StringPattern() (StringPattern, bool) {
+	return nil, false
 }
 
 type EventPattern struct {

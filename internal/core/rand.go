@@ -3,6 +3,8 @@ package core
 import (
 	"bytes"
 	"crypto/rand"
+	pseudorand "math/rand"
+
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -11,6 +13,8 @@ import (
 	"math/big"
 	"regexp/syntax"
 	"strconv"
+
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
@@ -126,6 +130,14 @@ func RandInt(options ...Option) Value {
 	return Int(source.RandInt64Range(math.MinInt64, math.MaxInt64))
 }
 
+func RandFloat(options ...Option) Value {
+	var source = getRandomnessSource(options...)
+
+	pseudoRandSource := pseudorand.NewSource(source.Int64())
+	float := utils.NewFloatRand(pseudoRandSource).Float64()
+	return Float(float)
+}
+
 func GetRandomnessSource(default_ *RandomnessSource, options ...Option) *RandomnessSource {
 	for _, opt := range options {
 		if opt.Name == "source" {
@@ -158,6 +170,13 @@ func (r IntRange) Random(ctx *Context) Value {
 	}
 
 	return Int(DefaultRandSource.RandInt64Range(int64(start), int64(end)))
+}
+
+func (r FloatRange) Random(ctx *Context) Value {
+	if r.unknownStart {
+		panic("Random() not supported for float ranges with no start")
+	}
+	panic(ErrNotImplementedYet)
 }
 
 // ------------ patterns ------------
@@ -357,6 +376,10 @@ func (patt *RuneRangeStringPattern) Random(ctx *Context, options ...Option) Valu
 
 func (patt *IntRangePattern) Random(ctx *Context, options ...Option) Value {
 	return patt.intRange.Random(ctx).(Int)
+}
+
+func (patt *FloatRangePattern) Random(ctx *Context, options ...Option) Value {
+	return patt.floatRange.Random(ctx).(Float)
 }
 
 func (patt *EventPattern) Random(ctx *Context, options ...Option) Value {

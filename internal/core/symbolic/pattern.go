@@ -81,7 +81,9 @@ var (
 		dirConstraint: NonDirPath,
 	}
 
-	ANY_REGEX_PATTERN = &RegexPattern{}
+	ANY_REGEX_PATTERN       = &RegexPattern{}
+	ANY_INT_RANGE_PATTERN   = &IntRangePattern{}
+	ANY_FLOAT_RANGE_PATTERN = &FloatRangePattern{}
 
 	ErrPatternNotCallable                        = errors.New("pattern is not callable")
 	ErrValueAlreadyInitialized                   = errors.New("value already initialized")
@@ -2838,7 +2840,6 @@ func (p *IntRangePattern) Test(v SymbolicValue) bool {
 
 func (p *IntRangePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%int-range-pattern")))
-	return
 }
 
 func (p *IntRangePattern) HasUnderlyingPattern() bool {
@@ -2846,12 +2847,12 @@ func (p *IntRangePattern) HasUnderlyingPattern() bool {
 }
 
 func (p *IntRangePattern) TestValue(v SymbolicValue) bool {
-	_, ok := v.(*URL)
+	_, ok := v.(*Int)
 	return ok
 }
 
 func (p *IntRangePattern) SymbolicValue() SymbolicValue {
-	return &URL{}
+	return ANY_INT
 }
 
 func (p *IntRangePattern) StringPattern() (StringPattern, bool) {
@@ -2874,15 +2875,67 @@ func (p *IntRangePattern) IteratorElementKey() SymbolicValue {
 }
 
 func (p *IntRangePattern) IteratorElementValue() SymbolicValue {
-	return &URL{}
-}
-
-func (p *IntRangePattern) underlyingString() *String {
-	return &String{}
+	return ANY_INT
 }
 
 func (p *IntRangePattern) WidestOfType() SymbolicValue {
-	return &IntRangePattern{}
+	return ANY_INT_RANGE_PATTERN
+}
+
+// A FloatRangePattern represents a symbolic FloatRangePattern.
+type FloatRangePattern struct {
+	NotCallablePatternMixin
+	UnassignablePropsMixin
+	SerializableMixin
+}
+
+func (p *FloatRangePattern) Test(v SymbolicValue) bool {
+	_, ok := v.(*FloatRangePattern)
+	return ok
+}
+
+func (p *FloatRangePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("%float-range-pattern")))
+}
+
+func (p *FloatRangePattern) HasUnderlyingPattern() bool {
+	return true
+}
+
+func (p *FloatRangePattern) TestValue(v SymbolicValue) bool {
+	_, ok := v.(*Float)
+	return ok
+}
+
+func (p *FloatRangePattern) SymbolicValue() SymbolicValue {
+	return ANY_FLOAT
+}
+
+func (p *FloatRangePattern) StringPattern() (StringPattern, bool) {
+	return nil, false
+}
+
+func (p *FloatRangePattern) PropertyNames() []string {
+	return nil
+}
+
+func (*FloatRangePattern) Prop(name string) SymbolicValue {
+	switch name {
+	default:
+		return nil
+	}
+}
+
+func (p *FloatRangePattern) IteratorElementKey() SymbolicValue {
+	return ANY_INT
+}
+
+func (p *FloatRangePattern) IteratorElementValue() SymbolicValue {
+	return ANY_FLOAT
+}
+
+func (p *FloatRangePattern) WidestOfType() SymbolicValue {
+	return ANY_INT_RANGE_PATTERN
 }
 
 // An EventPattern represents a symbolic EventPattern.

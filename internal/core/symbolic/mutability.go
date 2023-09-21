@@ -324,6 +324,10 @@ func (patt *IntRangePattern) IsMutable() bool {
 	return false
 }
 
+func (patt *FloatRangePattern) IsMutable() bool {
+	return false
+}
+
 func (patt *NamedSegmentPathPattern) IsMutable() bool {
 	return false
 }

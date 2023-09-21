@@ -41,7 +41,7 @@ func TestFloat32(t *testing.T) {
 		t.SkipNow()
 	}
 
-	r := NewFloatRange(rand.NewSource(42))
+	r := NewFloatRand(rand.NewSource(42))
 	for i := 0; i < 1e8; i++ {
 		f := r.Float32()
 		if f < 0 || f >= 1 {
@@ -54,13 +54,13 @@ func TestFloat32Zero(t *testing.T) {
 	var r *FloatRand
 	var f float32
 
-	r = NewFloatRange(zeroSource{})
+	r = NewFloatRand(zeroSource{})
 	f = r.Float32()
 	if f != 0 {
 		t.Errorf("invalid range: %x", f)
 	}
 
-	r = NewFloatRange(zeroSource64{})
+	r = NewFloatRand(zeroSource64{})
 	f = r.Float32()
 	if f != 0 {
 		t.Errorf("invalid range: %x", f)
@@ -71,13 +71,13 @@ func TestFloat32One(t *testing.T) {
 	var r *FloatRand
 	var f float32
 
-	r = NewFloatRange(oneSource{})
+	r = NewFloatRand(oneSource{})
 	f = r.Float32()
 	if f != math.Nextafter32(1, 0) {
 		t.Errorf("invalid range: %x", f)
 	}
 
-	r = NewFloatRange(oneSource64{})
+	r = NewFloatRand(oneSource64{})
 	f = r.Float32()
 	if f != math.Nextafter32(1, 0) {
 		t.Errorf("invalid range: %x", f)
@@ -89,7 +89,7 @@ func TestFloat64(t *testing.T) {
 		t.SkipNow()
 	}
 
-	r := NewFloatRange(rand.NewSource(42))
+	r := NewFloatRand(rand.NewSource(42))
 	for i := 0; i < 1e8; i++ {
 		f := r.Float64()
 		if f < 0 || f >= 1 {
@@ -102,13 +102,13 @@ func TestFloat64Zero(t *testing.T) {
 	var r *FloatRand
 	var f float64
 
-	r = NewFloatRange(zeroSource{})
+	r = NewFloatRand(zeroSource{})
 	f = r.Float64()
 	if f != 0 {
 		t.Errorf("invalid range: %x", f)
 	}
 
-	r = NewFloatRange(zeroSource64{})
+	r = NewFloatRand(zeroSource64{})
 	f = r.Float64()
 	if f != 0 {
 		t.Errorf("invalid range: %x", f)
@@ -119,13 +119,13 @@ func TestFloat64One(t *testing.T) {
 	var r *FloatRand
 	var f float64
 
-	r = NewFloatRange(oneSource{})
+	r = NewFloatRand(oneSource{})
 	f = r.Float64()
 	if f != math.Nextafter(1, 0) {
 		t.Errorf("invalid range: %x", f)
 	}
 
-	r = NewFloatRange(oneSource64{})
+	r = NewFloatRand(oneSource64{})
 	f = r.Float64()
 	if f != math.Nextafter(1, 0) {
 		t.Errorf("invalid range: %x", f)
@@ -133,14 +133,14 @@ func TestFloat64One(t *testing.T) {
 }
 
 func BenchmarkFloat32(b *testing.B) {
-	r := NewFloatRange(rand.NewSource(42))
+	r := NewFloatRand(rand.NewSource(42))
 	for i := 0; i < b.N; i++ {
 		r.Float32()
 	}
 }
 
 func BenchmarkFloat64(b *testing.B) {
-	r := NewFloatRange(rand.NewSource(42))
+	r := NewFloatRand(rand.NewSource(42))
 	for i := 0; i < b.N; i++ {
 		r.Float64()
 	}

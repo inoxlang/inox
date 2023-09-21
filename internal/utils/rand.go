@@ -31,9 +31,9 @@ type FloatRand struct {
 	s64 rand.Source64 // non-nil if src is source64
 }
 
-// NewFloatRange returns a new Rand that uses random values from src
+// NewFloatRand returns a new Rand that uses random values from src
 // to generate other random values.
-func NewFloatRange(src rand.Source) *FloatRand {
+func NewFloatRand(src rand.Source) *FloatRand {
 	s64, _ := src.(rand.Source64)
 	return &FloatRand{src: src, s64: s64}
 }

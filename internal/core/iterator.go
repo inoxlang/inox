@@ -1084,6 +1084,10 @@ func (patt *IntRangePattern) Iterator(ctx *Context, config IteratorConfiguration
 	}
 }
 
+func (patt *FloatRangePattern) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
+	return NewEmptyPatternIterator()
+}
+
 func (patt DynamicStringPatternElement) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
 	return patt.resolve().Iterator(ctx, config)
 }

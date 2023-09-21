@@ -1325,6 +1325,10 @@ func (patt *IntRangePattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintCon
 	InspectPrint(w, patt)
 }
 
+func (patt *FloatRangePattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	InspectPrint(w, patt)
+}
+
 func (patt *DynamicStringPatternElement) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, patt)
 }
