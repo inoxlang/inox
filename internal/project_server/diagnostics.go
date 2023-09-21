@@ -30,10 +30,12 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usi
 
 	//teardown in separate goroutine to return quickly
 	defer func() {
-		go func() {
-			defer utils.Recover()
-			state.Ctx.CancelGracefully()
-		}()
+		if state != nil {
+			go func() {
+				defer utils.Recover()
+				state.Ctx.CancelGracefully()
+			}()
+		}
 	}()
 
 	//we need the diagnostics list to be present in the notification so diagnostics should not be nil
