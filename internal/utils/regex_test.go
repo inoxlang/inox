@@ -10,6 +10,9 @@ import (
 )
 
 func TestRegexForRange(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
 
 	t.Run("", func(t *testing.T) {
 		assert.Equal(t, "(?:1)", RegexForRange(1, 1))
