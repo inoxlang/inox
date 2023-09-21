@@ -6,14 +6,20 @@ import (
 	"maps"
 	"math"
 	"reflect"
+	"slices"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
 )
 
+const (
+	MAX_UNION_PATTERN_FLATTENING_DEPTH = 5
+)
+
 var (
-	ErrPatternNotCallable = errors.New("pattern is not callable")
-	ErrNoDefaultValue     = errors.New("no default value")
+	ErrPatternNotCallable            = errors.New("pattern is not callable")
+	ErrNoDefaultValue                = errors.New("no default value")
+	ErrTooDeepUnionPatternFlattening = errors.New("union pattern flattening is too deep")
 
 	_ = []GroupPattern{(*NamedSegmentPathPattern)(nil)}
 	_ = []DefaultValuePattern{
@@ -179,11 +185,40 @@ type UnionPattern struct {
 }
 
 func NewUnionPattern(cases []Pattern, node parse.Node) *UnionPattern {
+	cases = flattenUnionPatternCases(cases, false, 0)
 	return &UnionPattern{node: node, cases: cases}
 }
 
 func NewDisjointUnionPattern(cases []Pattern, node parse.Node) *UnionPattern {
+	cases = flattenUnionPatternCases(cases, true, 0)
 	return &UnionPattern{node: node, cases: cases, disjoint: true}
+}
+
+func flattenUnionPatternCases(cases []Pattern, disjoint bool, depth int) (results []Pattern) {
+	if depth > MAX_UNION_PATTERN_FLATTENING_DEPTH {
+		panic(ErrTooDeepUnionPatternFlattening)
+	}
+
+	if len(cases) == 0 {
+		panic(errors.New("cases should have at least one element"))
+	}
+
+	changes := false
+	results = cases
+
+	for i, case_ := range cases {
+		if union, ok := case_.(*UnionPattern); ok && union.disjoint == disjoint {
+			if !changes {
+				results = slices.Clone(cases[:i])
+			}
+			changes = true
+			results = append(results, flattenUnionPatternCases(union.cases, disjoint, depth+1)...)
+		} else if changes {
+			results = append(results, case_)
+		}
+	}
+
+	return
 }
 
 func (patt *UnionPattern) Test(ctx *Context, v Value) bool {

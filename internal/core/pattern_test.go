@@ -32,23 +32,108 @@ func TestUnionPattern(t *testing.T) {
 	NewGlobalState(ctx)
 	defer ctx.CancelGracefully()
 
-	patt := NewUnionPattern([]Pattern{
-		NewInexactObjectPattern(map[string]Pattern{"a": NewExactValuePattern(Int(1))}),
-		NewInexactObjectPattern(map[string]Pattern{"b": NewExactValuePattern(Int(2))}),
-	}, nil)
+	t.Run("NewUnionPattern", func(t *testing.T) {
+		patt := NewUnionPattern([]Pattern{INT_PATTERN, STR_PATTERN}, nil)
+		assert.Equal(t, []Pattern{INT_PATTERN, STR_PATTERN}, patt.Cases())
 
-	assert.True(t, patt.Test(ctx, NewObjectFromMapNoInit(ValMap{"a": Int(1)})))
-	assert.True(t, patt.Test(ctx, NewObjectFromMapNoInit(ValMap{"b": Int(2)})))
-	assert.True(t, patt.Test(ctx, NewObjectFromMapNoInit(ValMap{"a": Int(1), "b": Int(2)})))
+		t.Run("flattening", func(t *testing.T) {
+			patt = NewUnionPattern([]Pattern{
+				INT_PATTERN,
+				NewUnionPattern([]Pattern{STR_PATTERN, BOOL_PATTERN}, nil),
+			}, nil)
+			assert.Equal(t, []Pattern{INT_PATTERN, STR_PATTERN, BOOL_PATTERN}, patt.Cases())
 
-	disjointPatt := NewDisjointUnionPattern([]Pattern{
-		NewInexactObjectPattern(map[string]Pattern{"a": NewExactValuePattern(Int(1))}),
-		NewInexactObjectPattern(map[string]Pattern{"b": NewExactValuePattern(Int(2))}),
-	}, nil)
+			patt = NewUnionPattern([]Pattern{
+				INT_PATTERN,
+				NewDisjointUnionPattern([]Pattern{STR_PATTERN, BOOL_PATTERN}, nil),
+			}, nil)
+			assert.Equal(t, []Pattern{
+				INT_PATTERN,
+				NewDisjointUnionPattern([]Pattern{STR_PATTERN, BOOL_PATTERN}, nil),
+			}, patt.Cases())
 
-	assert.True(t, disjointPatt.Test(ctx, NewObjectFromMapNoInit(ValMap{"a": Int(1)})))
-	assert.True(t, disjointPatt.Test(ctx, NewObjectFromMapNoInit(ValMap{"b": Int(2)})))
-	assert.False(t, disjointPatt.Test(ctx, NewObjectFromMapNoInit(ValMap{"a": Int(1), "b": Int(2)})))
+			patt = NewUnionPattern([]Pattern{
+				INT_PATTERN,
+				NewUnionPattern([]Pattern{
+					STR_PATTERN,
+					NewUnionPattern([]Pattern{BOOL_PATTERN, FLOAT_PATTERN}, nil),
+				}, nil),
+			}, nil)
+			assert.Equal(t, []Pattern{INT_PATTERN, STR_PATTERN, BOOL_PATTERN, FLOAT_PATTERN}, patt.Cases())
+
+			patt = NewUnionPattern([]Pattern{
+				INT_PATTERN,
+				NewUnionPattern([]Pattern{
+					STR_PATTERN,
+					NewDisjointUnionPattern([]Pattern{BOOL_PATTERN, FLOAT_PATTERN}, nil),
+				}, nil),
+			}, nil)
+			assert.Equal(t, []Pattern{
+				INT_PATTERN,
+				STR_PATTERN,
+				NewDisjointUnionPattern([]Pattern{BOOL_PATTERN, FLOAT_PATTERN}, nil),
+			}, patt.Cases())
+		})
+
+		t.Run("flattening disjoint cases", func(t *testing.T) {
+			patt = NewDisjointUnionPattern([]Pattern{
+				INT_PATTERN,
+				NewDisjointUnionPattern([]Pattern{STR_PATTERN, BOOL_PATTERN}, nil),
+			}, nil)
+			assert.Equal(t, []Pattern{INT_PATTERN, STR_PATTERN, BOOL_PATTERN}, patt.Cases())
+
+			patt = NewDisjointUnionPattern([]Pattern{
+				INT_PATTERN,
+				NewUnionPattern([]Pattern{STR_PATTERN, BOOL_PATTERN}, nil),
+			}, nil)
+			assert.Equal(t, []Pattern{
+				INT_PATTERN,
+				NewUnionPattern([]Pattern{STR_PATTERN, BOOL_PATTERN}, nil),
+			}, patt.Cases())
+
+			patt = NewDisjointUnionPattern([]Pattern{
+				INT_PATTERN,
+				NewDisjointUnionPattern([]Pattern{
+					STR_PATTERN,
+					NewDisjointUnionPattern([]Pattern{BOOL_PATTERN, FLOAT_PATTERN}, nil),
+				}, nil),
+			}, nil)
+			assert.Equal(t, []Pattern{INT_PATTERN, STR_PATTERN, BOOL_PATTERN, FLOAT_PATTERN}, patt.Cases())
+
+			patt = NewDisjointUnionPattern([]Pattern{
+				INT_PATTERN,
+				NewDisjointUnionPattern([]Pattern{
+					STR_PATTERN,
+					NewUnionPattern([]Pattern{BOOL_PATTERN, FLOAT_PATTERN}, nil),
+				}, nil),
+			}, nil)
+			assert.Equal(t, []Pattern{
+				INT_PATTERN,
+				STR_PATTERN,
+				NewUnionPattern([]Pattern{BOOL_PATTERN, FLOAT_PATTERN}, nil),
+			}, patt.Cases())
+		})
+	})
+
+	t.Run("Test()", func(t *testing.T) {
+		patt := NewUnionPattern([]Pattern{
+			NewInexactObjectPattern(map[string]Pattern{"a": NewExactValuePattern(Int(1))}),
+			NewInexactObjectPattern(map[string]Pattern{"b": NewExactValuePattern(Int(2))}),
+		}, nil)
+
+		assert.True(t, patt.Test(ctx, NewObjectFromMapNoInit(ValMap{"a": Int(1)})))
+		assert.True(t, patt.Test(ctx, NewObjectFromMapNoInit(ValMap{"b": Int(2)})))
+		assert.True(t, patt.Test(ctx, NewObjectFromMapNoInit(ValMap{"a": Int(1), "b": Int(2)})))
+
+		disjointPatt := NewDisjointUnionPattern([]Pattern{
+			NewInexactObjectPattern(map[string]Pattern{"a": NewExactValuePattern(Int(1))}),
+			NewInexactObjectPattern(map[string]Pattern{"b": NewExactValuePattern(Int(2))}),
+		}, nil)
+
+		assert.True(t, disjointPatt.Test(ctx, NewObjectFromMapNoInit(ValMap{"a": Int(1)})))
+		assert.True(t, disjointPatt.Test(ctx, NewObjectFromMapNoInit(ValMap{"b": Int(2)})))
+		assert.False(t, disjointPatt.Test(ctx, NewObjectFromMapNoInit(ValMap{"a": Int(1), "b": Int(2)})))
+	})
 }
 
 func TestObjectPattern(t *testing.T) {
