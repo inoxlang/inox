@@ -25,7 +25,7 @@ func getHoverContent(fpath string, line, column int32, handlingCtx *core.Context
 
 	defer func() {
 		go func() {
-			defer recover()
+			defer utils.Recover()
 			state.Ctx.CancelGracefully()
 		}()
 	}()

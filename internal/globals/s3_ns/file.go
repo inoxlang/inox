@@ -16,6 +16,7 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/minio/minio-go/v7"
 )
 
@@ -210,7 +211,7 @@ func newS3WriteFile(ctx *core.Context, input newS3WriteFileInput) (*s3WriteFile,
 		file.closed.Store(true)
 
 		go func() {
-			defer recover()
+			defer utils.Recover()
 			if file.content.ShouldBePersisted() {
 				file.sync(true)
 			}

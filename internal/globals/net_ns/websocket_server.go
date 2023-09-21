@@ -81,14 +81,14 @@ func newWebsocketServer(ctx *core.Context, messageTimeout time.Duration) (*Webso
 
 	//spawn a goroutine to close connections.
 	go func() {
-		defer recover()
+		defer utils.Recover()
 
 	loop:
 		for {
 			select {
 			case conn := <-server.connectionsToClose:
 				func() {
-					defer recover()
+					defer utils.Recover()
 					conn.closeNoCheck()
 				}()
 
@@ -244,7 +244,7 @@ loop:
 		select {
 		case conn := <-s.connectionsToClose:
 			func() {
-				defer recover()
+				defer utils.Recover()
 				conn.closeNoCheck()
 			}()
 

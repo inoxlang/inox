@@ -9,6 +9,7 @@ import (
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/project_server/logs"
 	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 // prepareSourceFileInDevMode prepares a module or includable-chunk file:
@@ -52,7 +53,7 @@ func prepareSourceFileInDevMode(fpath string, ctx *core.Context, session *jsonrp
 			if state != nil {
 				//teardown
 				go func() {
-					defer recover()
+					defer utils.Recover()
 					state.Ctx.CancelGracefully()
 				}()
 			}
@@ -104,7 +105,7 @@ func prepareSourceFileInDevMode(fpath string, ctx *core.Context, session *jsonrp
 			if state != nil {
 				//teardown
 				go func() {
-					defer recover()
+					defer utils.Recover()
 					state.Ctx.CancelGracefully()
 				}()
 			}

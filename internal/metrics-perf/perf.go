@@ -8,6 +8,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
@@ -50,7 +51,7 @@ func StartPeriodicPerfProfilesCollection(ctx *core.Context, conf PerfDataCollect
 	//create the main profiling goroutine, it manages the CPU profiles & the memory profiling goroutine
 
 	go func() {
-		defer recover()
+		defer utils.Recover()
 		defer childCtx.CancelGracefully()
 
 		buff := bytes.NewBuffer(nil)
@@ -81,7 +82,7 @@ func StartPeriodicPerfProfilesCollection(ctx *core.Context, conf PerfDataCollect
 	//create a goroutine saving a memory profile every conf.Period & saving the profiles to a S3 bucket
 
 	go func() {
-		defer recover()
+		defer utils.Recover()
 		defer close(lastMemProfileSaveAck)
 
 		ticker := time.NewTicker(period)
@@ -115,7 +116,7 @@ func StartPeriodicPerfProfilesCollection(ctx *core.Context, conf PerfDataCollect
 	//create a goroutine saving the CPU profiles to a S3 bucket
 
 	go func() {
-		defer recover()
+		defer utils.Recover()
 		defer close(lastCpuProfileSaveAck)
 
 		for profile := range cpuProfiles {

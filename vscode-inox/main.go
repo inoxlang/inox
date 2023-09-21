@@ -128,7 +128,7 @@ func main() {
 					}
 
 					go func() {
-						defer recover()
+						defer utils.Recover()
 
 						for {
 							select {

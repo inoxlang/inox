@@ -28,10 +28,10 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usi
 
 	state, mod, _, ok := prepareSourceFileInDevMode(fpath, ctx, session, false)
 
-	//teardown
+	//teardown in separate goroutine to return quickly
 	defer func() {
 		go func() {
-			defer recover()
+			defer utils.Recover()
 			state.Ctx.CancelGracefully()
 		}()
 	}()

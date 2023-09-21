@@ -398,7 +398,7 @@ func NewContext(config ContextConfig) *Context {
 			func() {
 				defer func() {
 					if e := recover(); e != nil {
-						defer recover()
+						defer utils.Recover()
 						err := fmt.Errorf("%w: %s", utils.ConvertPanicValueToError(e), string(debug.Stack()))
 						logger.Err(err).Msg("error while calling a context done microtask")
 					}
@@ -1213,7 +1213,7 @@ func (ctx *Context) gracefullyTearDown() {
 		func() {
 			defer func() {
 				if e := recover(); e != nil {
-					defer recover()
+					defer utils.Recover()
 					err := fmt.Errorf("%w: %s", utils.ConvertPanicValueToError(e), string(debug.Stack()))
 					logger.Err(err).Msg("error while calling a context teardown task")
 				}

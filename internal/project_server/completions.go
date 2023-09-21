@@ -4,6 +4,7 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/compl"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 func getCompletions(fpath string, line, column int32, session *jsonrpc.Session) []compl.Completion {
@@ -24,7 +25,7 @@ func getCompletions(fpath string, line, column int32, session *jsonrpc.Session) 
 	//teardown
 	defer func() {
 		go func() {
-			defer recover()
+			defer utils.Recover()
 			state.Ctx.CancelGracefully()
 		}()
 	}()

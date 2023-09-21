@@ -6,6 +6,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
@@ -343,7 +345,7 @@ func startTokenBucketManagerGoroutine() {
 		for range ticks {
 			func() {
 				tokenBucketsLock.Lock()
-				defer recover()
+				defer utils.Recover()
 				defer tokenBucketsLock.Unlock()
 
 				for bucket := range tokenBuckets {

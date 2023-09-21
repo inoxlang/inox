@@ -77,13 +77,13 @@ func (kv *SingleFileKV) Close(ctx *core.Context) {
 
 	for tx, dbTx := range transactions {
 		func() {
-			defer recover()
+			defer utils.Recover()
 			//will be ignored if the transaction already finished.
 			tx.Rollback(ctx)
 		}()
 
 		func() {
-			defer recover()
+			defer utils.Recover()
 			if dbTx.db != nil { //still not finished.
 				dbTx.unlock()
 			}

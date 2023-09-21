@@ -177,7 +177,7 @@ func (tx *Transaction) Commit(ctx *Context) error {
 		func() {
 			defer func() {
 				if e := recover(); e != nil {
-					defer recover()
+					defer utils.Recover()
 					err := fmt.Errorf("%w: %s", utils.ConvertPanicValueToError(e), string(debug.Stack()))
 					callbackErrors = append(callbackErrors, err)
 				}
@@ -209,7 +209,7 @@ func (tx *Transaction) Rollback(ctx *Context) error {
 		func() {
 			defer func() {
 				if e := recover(); e != nil {
-					defer recover()
+					defer utils.Recover()
 					err := fmt.Errorf("%w: %s", utils.ConvertPanicValueToError(e), string(debug.Stack()))
 					callbackErrors = append(callbackErrors, err)
 				}

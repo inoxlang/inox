@@ -42,3 +42,12 @@ func CombineErrorsWithPrefixMessage(prefixMsg string, errs ...error) error {
 	}
 	return fmt.Errorf("%s: %w", prefixMsg, err)
 }
+
+// Recover only calls recover.
+// From recover()'s doc:
+//
+//	If recover is called outside the deferred function it will
+//	not stop a panicking sequence.
+func Recover() any {
+	return recover()
+}

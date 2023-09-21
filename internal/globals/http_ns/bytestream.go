@@ -7,6 +7,7 @@ import (
 	"time"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -31,7 +32,7 @@ func pushByteStream(byteStream core.ReadableStream, h handlingArguments) error {
 	go func() {
 
 		defer func() {
-			defer recover()
+			defer utils.Recover()
 			sseStream.Stop()
 			ctx.CancelGracefully()
 		}()
