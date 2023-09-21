@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"strconv"
 
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/utils"
@@ -13,6 +12,8 @@ import (
 const (
 	JSON_UNTYPED_VALUE_SUFFIX   = "__value"
 	MAX_JSON_REPR_WRITING_DEPTH = 20
+	JS_MIN_SAFE_INTEGER         = -9007199254740991
+	JS_MAX_SAFE_INTEGER         = 9007199254740991
 )
 
 var (
@@ -82,16 +83,24 @@ func (b Byte) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config J
 	return ErrNoRepresentation
 }
 
+func writeIntJsonRepr(n Int, w *jsoniter.Stream) {
+	if n < JS_MIN_SAFE_INTEGER || n > JS_MAX_SAFE_INTEGER {
+		fmt.Fprintf(w, `"%d"`, n)
+	} else {
+		fmt.Fprintf(w, `%d`, n)
+	}
+}
+
 func (i Int) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if noPatternOrAny(config.Pattern) {
 		writeUntypedValueJSON(INT_PATTERN.Name, func(w *jsoniter.Stream) error {
-			fmt.Fprintf(w, `"%d"`, i)
+			writeIntJsonRepr(i, w)
 			return nil
 		}, w)
 		return nil
 	}
 
-	fmt.Fprintf(w, `"%d"`, i)
+	writeIntJsonRepr(i, w)
 	return nil
 }
 
@@ -808,12 +817,16 @@ func (r IntRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, conf
 
 		if !r.unknownStart {
 			w.WriteObjectField("start")
-			w.WriteString(strconv.FormatInt(int64(r.Start), 10))
+			writeIntJsonRepr(Int(r.Start), w)
 			w.WriteMore()
 		}
 
-		w.WriteObjectField("end")
-		w.WriteString(strconv.FormatInt(int64(r.End), 10))
+		if !r.inclusiveEnd {
+			w.WriteObjectField("exclusiveEnd")
+		} else {
+			w.WriteObjectField("end")
+		}
+		writeIntJsonRepr(Int(r.End), w)
 
 		w.WriteObjectEnd()
 		return nil
@@ -836,19 +849,23 @@ func (r FloatRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, co
 
 		if !r.unknownStart {
 			w.WriteObjectField("start")
-			w.WriteString(fmtFloat(float64(r.Start)))
+			w.WriteFloat64(r.Start)
 			w.WriteMore()
 		}
 
-		w.WriteObjectField("end")
-		w.WriteString(fmtFloat(float64(r.End)))
+		if !r.inclusiveEnd {
+			w.WriteObjectField("exclusiveEnd")
+		} else {
+			w.WriteObjectField("end")
+		}
+		w.WriteFloat64(r.End)
 
 		w.WriteObjectEnd()
 		return nil
 	}
 
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(INT_RANGE_PATTERN.Name, func(w *jsoniter.Stream) error {
+		writeUntypedValueJSON(FLOAT_RANGE_PATTERN.Name, func(w *jsoniter.Stream) error {
 			return write(w)
 		}, w)
 		return nil

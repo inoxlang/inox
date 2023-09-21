@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"strconv"
 	"testing"
 
@@ -39,10 +40,35 @@ func TestIntJSONRepresentation(t *testing.T) {
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
-	assert.Equal(t, `{"int__value":"2"}`, getJSONRepr(t, Int(2), ctx))
-	assert.Equal(t, `"2"`, getJSONRepr(t, Int(2), ctx, JSONSerializationConfig{
+	assert.Equal(t, `{"int__value":2}`, getJSONRepr(t, Int(2), ctx))
+	assert.Equal(t, `2`, getJSONRepr(t, Int(2), ctx, JSONSerializationConfig{
 		Pattern: INT_PATTERN,
 	}))
+
+	//int == JS_MIN_SAFE_INTEGER
+	assert.Equal(t, fmt.Sprintf(`{"int__value":%d}`, JS_MIN_SAFE_INTEGER), getJSONRepr(t, Int(JS_MIN_SAFE_INTEGER), ctx))
+	assert.Equal(t, fmt.Sprintf(`%d`, JS_MIN_SAFE_INTEGER), getJSONRepr(t, Int(JS_MIN_SAFE_INTEGER), ctx, JSONSerializationConfig{
+		Pattern: INT_PATTERN,
+	}))
+
+	//int == JS_MIN_SAFE_INTEGER - 1
+	assert.Equal(t, fmt.Sprintf(`{"int__value":"%d"}`, JS_MIN_SAFE_INTEGER-1), getJSONRepr(t, Int(JS_MIN_SAFE_INTEGER-1), ctx))
+	assert.Equal(t, fmt.Sprintf(`"%d"`, JS_MIN_SAFE_INTEGER-1), getJSONRepr(t, Int(JS_MIN_SAFE_INTEGER-1), ctx, JSONSerializationConfig{
+		Pattern: INT_PATTERN,
+	}))
+
+	//int == JS_MAX_SAFE_INTEGER
+	assert.Equal(t, fmt.Sprintf(`{"int__value":%d}`, JS_MAX_SAFE_INTEGER), getJSONRepr(t, Int(JS_MAX_SAFE_INTEGER), ctx))
+	assert.Equal(t, fmt.Sprintf(`%d`, JS_MAX_SAFE_INTEGER), getJSONRepr(t, Int(JS_MAX_SAFE_INTEGER), ctx, JSONSerializationConfig{
+		Pattern: INT_PATTERN,
+	}))
+
+	//int == JS_MAX_SAFE_INTEGER + 1
+	assert.Equal(t, fmt.Sprintf(`{"int__value":"%d"}`, JS_MAX_SAFE_INTEGER+1), getJSONRepr(t, Int(JS_MAX_SAFE_INTEGER+1), ctx))
+	assert.Equal(t, fmt.Sprintf(`"%d"`, JS_MAX_SAFE_INTEGER+1), getJSONRepr(t, Int(JS_MAX_SAFE_INTEGER+1), ctx, JSONSerializationConfig{
+		Pattern: INT_PATTERN,
+	}))
+
 	//TODO: add more tests
 }
 
@@ -135,7 +161,7 @@ func TestObjectJSONRepresentation(t *testing.T) {
 
 		obj := objFrom(ValMap{"a\nb": Int(1), "c\nd": Int(2)})
 
-		assert.Equal(t, `{"a\nb":"1","c\nd":"2"}`, getJSONRepr(t, obj, ctx, JSONSerializationConfig{
+		assert.Equal(t, `{"a\nb":1,"c\nd":2}`, getJSONRepr(t, obj, ctx, JSONSerializationConfig{
 			Pattern: NewInexactObjectPattern(map[string]Pattern{
 				"a\nb": INT_PATTERN,
 				"c\nd": INT_PATTERN,
@@ -151,7 +177,7 @@ func TestObjectJSONRepresentation(t *testing.T) {
 			"a": NewWrappedValueList(Int(1), objFrom(ValMap{"b": Int(2)})),
 		})
 
-		assert.Equal(t, `{"a":["1",{"b":"2"}]}`, getJSONRepr(t, obj, ctx, JSONSerializationConfig{
+		assert.Equal(t, `{"a":[1,{"b":2}]}`, getJSONRepr(t, obj, ctx, JSONSerializationConfig{
 			Pattern: NewInexactObjectPattern(map[string]Pattern{
 				"a": NewListPattern([]Pattern{
 					INT_PATTERN,
@@ -182,7 +208,7 @@ func TestObjectJSONRepresentation(t *testing.T) {
 			"e":        EmailAddress("a@mail.com"),
 		})
 
-		assert.Equal(t, `{"object__value":{"a":{"int__value":"1"}}}`, getJSONRepr(t, obj, ctx, JSONSerializationConfig{
+		assert.Equal(t, `{"object__value":{"a":{"int__value":1}}}`, getJSONRepr(t, obj, ctx, JSONSerializationConfig{
 			ReprConfig: &ReprConfig{
 				AllVisible: false,
 			},
@@ -300,7 +326,7 @@ func TestRecordJSONRepresentation(t *testing.T) {
 			},
 		})
 
-		assert.Equal(t, `{"a":["1",{"b":"2"}]}`, getJSONRepr(t, rec, ctx, JSONSerializationConfig{
+		assert.Equal(t, `{"a":[1,{"b":2}]}`, getJSONRepr(t, rec, ctx, JSONSerializationConfig{
 			Pattern: NewInexactRecordPattern(map[string]Pattern{
 				"a": NewTuplePattern([]Pattern{
 					INT_PATTERN,
@@ -455,7 +481,7 @@ func TestListJSONRepresentation(t *testing.T) {
 
 		list := NewWrappedValueList(NewWrappedValueList(Int(2), objFrom(ValMap{"a": Int(1)})))
 
-		expectedRepr := `{"list__value":[{"list__value":[{"int__value":"2"},{"object__value":{"a":{"int__value":"1"}}}]}]}`
+		expectedRepr := `{"list__value":[{"list__value":[{"int__value":2},{"object__value":{"a":{"int__value":1}}}]}]}`
 		assert.Equal(t, expectedRepr, getJSONRepr(t, list, ctx))
 	})
 
@@ -779,8 +805,8 @@ func TestIntRangeJSONRepresentation(t *testing.T) {
 
 		intRange := IntRange{Start: 0, End: 100, inclusiveEnd: true, Step: 1}
 
-		assert.Equal(t, `{"int-range__value":{"start":"0","end":"100"}}`, getJSONRepr(t, intRange, ctx))
-		assert.Equal(t, `{"start":"0","end":"100"}`, getJSONRepr(t, intRange, ctx, JSONSerializationConfig{
+		assert.Equal(t, `{"int-range__value":{"start":0,"end":100}}`, getJSONRepr(t, intRange, ctx))
+		assert.Equal(t, `{"start":0,"end":100}`, getJSONRepr(t, intRange, ctx, JSONSerializationConfig{
 			Pattern: INT_RANGE_PATTERN,
 		}))
 	})
@@ -791,9 +817,62 @@ func TestIntRangeJSONRepresentation(t *testing.T) {
 
 		intRange := IntRange{Start: 0, End: 100, unknownStart: true, inclusiveEnd: true, Step: 1}
 
-		assert.Equal(t, `{"int-range__value":{"end":"100"}}`, getJSONRepr(t, intRange, ctx))
-		assert.Equal(t, `{"end":"100"}`, getJSONRepr(t, intRange, ctx, JSONSerializationConfig{
+		assert.Equal(t, `{"int-range__value":{"end":100}}`, getJSONRepr(t, intRange, ctx))
+		assert.Equal(t, `{"end":100}`, getJSONRepr(t, intRange, ctx, JSONSerializationConfig{
 			Pattern: INT_RANGE_PATTERN,
+		}))
+	})
+
+	t.Run("exclusive end", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		intRange := IntRange{Start: 0, End: 100, inclusiveEnd: false, Step: 1}
+
+		assert.Equal(t, `{"int-range__value":{"start":0,"exclusiveEnd":100}}`, getJSONRepr(t, intRange, ctx))
+		assert.Equal(t, `{"start":0,"exclusiveEnd":100}`, getJSONRepr(t, intRange, ctx, JSONSerializationConfig{
+			Pattern: INT_RANGE_PATTERN,
+		}))
+	})
+}
+
+func TestFloatRangeJSONRepresentation(t *testing.T) {
+	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
+
+	t.Run("known start", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		floatRange := FloatRange{Start: 0, End: 100, inclusiveEnd: true}
+
+		assert.Equal(t, `{"float-range__value":{"start":0,"end":100}}`, getJSONRepr(t, floatRange, ctx))
+		assert.Equal(t, `{"start":0,"end":100}`, getJSONRepr(t, floatRange, ctx, JSONSerializationConfig{
+			Pattern: FLOAT_RANGE_PATTERN,
+		}))
+	})
+
+	t.Run("unknown start", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		floatRange := FloatRange{Start: 0, End: 100, unknownStart: true, inclusiveEnd: true}
+
+		assert.Equal(t, `{"float-range__value":{"end":100}}`, getJSONRepr(t, floatRange, ctx))
+		assert.Equal(t, `{"end":100}`, getJSONRepr(t, floatRange, ctx, JSONSerializationConfig{
+			Pattern: FLOAT_RANGE_PATTERN,
+		}))
+	})
+
+	t.Run("exclusive end", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		floatRange := FloatRange{Start: 0, End: 100, inclusiveEnd: false}
+
+		assert.Equal(t, `{"float-range__value":{"start":0,"exclusiveEnd":100}}`, getJSONRepr(t, floatRange, ctx))
+		assert.Equal(t, `{"start":0,"exclusiveEnd":100}`, getJSONRepr(t, floatRange, ctx, JSONSerializationConfig{
+			Pattern: FLOAT_RANGE_PATTERN,
 		}))
 	})
 }

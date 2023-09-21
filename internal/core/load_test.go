@@ -72,7 +72,7 @@ func TestLoadObject(t *testing.T) {
 		}, nil)
 		storage := &TestValueStorage{
 			BaseURL_: "ldb://main/",
-			Data:     map[Path]string{"/user": `{"a":"1"}`},
+			Data:     map[Path]string{"/user": `{"a":1}`},
 		}
 		pattern := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
 
@@ -106,7 +106,7 @@ func TestLoadObject(t *testing.T) {
 			return
 		}
 
-		assert.Equal(t, `{"_url_":"ldb://main/user","a":"2"}`, storage.Data["/user"])
+		assert.Equal(t, `{"_url_":"ldb://main/user","a":2}`, storage.Data["/user"])
 	})
 
 	t.Run("performing a mutation on a property with a sharable value should cause a save", func(t *testing.T) {
@@ -115,7 +115,7 @@ func TestLoadObject(t *testing.T) {
 		}, nil)
 		storage := &TestValueStorage{
 			BaseURL_: "ldb://main/",
-			Data:     map[Path]string{"/user": `{"inner":{"a": "1"}}`},
+			Data:     map[Path]string{"/user": `{"inner":{"a": 1}}`},
 		}
 		pattern := NewInexactObjectPattern(map[string]Pattern{"inner": NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})})
 
@@ -150,7 +150,7 @@ func TestLoadObject(t *testing.T) {
 			return
 		}
 
-		assert.Equal(t, `{"_url_":"ldb://main/user","inner":{"a":"2"}}`, storage.Data["/user"])
+		assert.Equal(t, `{"_url_":"ldb://main/user","inner":{"a":2}}`, storage.Data["/user"])
 	})
 
 	t.Run("performing a mutation on a property with a mutable non-sharable value should cause a save", func(t *testing.T) {
@@ -196,7 +196,7 @@ func TestLoadObject(t *testing.T) {
 		inner := object.PropNotStored(ctx, "inner").(*List)
 		inner.append(ctx, Int(1))
 
-		assert.Equal(t, `{"_url_":"ldb://main/user","inner":["1"]}`, storage.Data["/user"])
+		assert.Equal(t, `{"_url_":"ldb://main/user","inner":[1]}`, storage.Data["/user"])
 	})
 
 	t.Run("migration: deletion", func(t *testing.T) {
@@ -276,7 +276,7 @@ func TestLoadObject(t *testing.T) {
 		assert.True(t, object.IsShared())
 
 		//make sure the post-migration value is saveds
-		assert.Equal(t, `{"_url_":"ldb://main/user","a":"1"}`, storage.Data["/user"])
+		assert.Equal(t, `{"_url_":"ldb://main/user","a":1}`, storage.Data["/user"])
 	})
 
 	t.Run("migration: new property", func(t *testing.T) {
@@ -285,7 +285,7 @@ func TestLoadObject(t *testing.T) {
 		}, nil)
 		storage := &TestValueStorage{
 			BaseURL_: "ldb://main/",
-			Data:     map[Path]string{"/user": `{"a":"1"}`},
+			Data:     map[Path]string{"/user": `{"a":1}`},
 		}
 		pattern := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
 		nextPattern := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN, "b": INT_PATTERN})
@@ -325,7 +325,7 @@ func TestLoadObject(t *testing.T) {
 		assert.True(t, object.IsShared())
 
 		//make sure the post-migration value is saveds
-		assert.Equal(t, `{"_url_":"ldb://main/user","a":"1","b":"2"}`, storage.Data["/user"])
+		assert.Equal(t, `{"_url_":"ldb://main/user","a":1,"b":2}`, storage.Data["/user"])
 	})
 
 	t.Run("migration: new property + allow missing", func(t *testing.T) {

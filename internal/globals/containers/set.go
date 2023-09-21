@@ -139,7 +139,7 @@ func loadSet(ctx *core.Context, args core.InstanceLoadArgs) (core.UrlHolder, err
 		//TODO: lazy load if no migration
 		it := jsoniter.ParseString(jsoniter.ConfigDefault, serialized)
 		it.ReadArrayCB(func(i *jsoniter.Iterator) (cont bool) {
-			val, err := core.ParseNextJSONRepresentation(ctx, it, setPattern.config.Element)
+			val, err := core.ParseNextJSONRepresentation(ctx, it, setPattern.config.Element, false)
 			if err != nil {
 				finalErr = fmt.Errorf("failed to parse representation of one of the Set's element: %w", err)
 				return false

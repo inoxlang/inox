@@ -76,8 +76,8 @@ type Iterator struct {
 	depth            int
 	captureStartedAt int
 	captured         []byte
-	Error            error
-	Attachment       interface{} // open for customized decoder
+
+	Error error
 }
 
 // NewIterator creates an empty Iterator instance
@@ -283,7 +283,6 @@ func (iter *Iterator) unreadByte() {
 		return
 	}
 	iter.head--
-	return
 }
 
 // limit maximum depth of nesting, as allowed by https://tools.ietf.org/html/rfc7159#section-9

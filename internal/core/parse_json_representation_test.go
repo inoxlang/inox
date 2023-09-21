@@ -17,11 +17,10 @@ func TestParseJSONRepresentation(t *testing.T) {
 		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
 	}
 
-	t.Run("simple values", func(t *testing.T) {
+	t.Run("strings", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		//string
 		v, err := ParseJSONRepresentation(ctx, `{"str__value":"a"}`, nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, Str("a"), v)
@@ -32,8 +31,14 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Equal(t, Str("a"), v)
 		}
 
+	})
+
+	t.Run("booleans", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		//boolean
-		v, err = ParseJSONRepresentation(ctx, `{"bool__value":true}`, nil)
+		v, err := ParseJSONRepresentation(ctx, `{"bool__value":true}`, nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, True, v)
 		}
@@ -43,18 +48,48 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Equal(t, True, v)
 		}
 
-		//float
-		v, err = ParseJSONRepresentation(ctx, `{"float__value":1}`, nil)
+		v, err = ParseJSONRepresentation(ctx, `false`, nil)
 		if assert.NoError(t, err) {
-			assert.Equal(t, Float(1), v)
+			assert.Equal(t, False, v)
+		}
+	})
+
+	t.Run("integers", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		v, err := ParseJSONRepresentation(ctx, `{"int__value":1}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, Int(1), v)
+		}
+
+		v, err = ParseJSONRepresentation(ctx, `1`, INT_PATTERN)
+		if assert.NoError(t, err) {
+			assert.Equal(t, Int(1), v)
 		}
 
 		v, err = ParseJSONRepresentation(ctx, `1`, nil)
 		if assert.NoError(t, err) {
-			assert.Equal(t, Float(1), v)
+			assert.Equal(t, Int(1), v)
 		}
 
-		//int
+		intPattern := NewIntRangePattern(IntRange{Start: 0, End: 2, inclusiveEnd: true, Step: 1}, -1)
+		v, err = ParseJSONRepresentation(ctx, `1`, intPattern)
+		if assert.NoError(t, err) {
+			assert.Equal(t, Int(1), v)
+		}
+
+		_, err = ParseJSONRepresentation(ctx, `-1`, intPattern)
+		if !assert.Error(t, err, ErrNotMatchingSchemaIntFound) {
+			return
+		}
+
+		_, err = ParseJSONRepresentation(ctx, `3`, intPattern)
+		if !assert.ErrorIs(t, err, ErrNotMatchingSchemaIntFound) {
+			return
+		}
+
+		//int (as string)
 		v, err = ParseJSONRepresentation(ctx, `{"int__value":"1"}`, nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, Int(1), v)
@@ -64,9 +99,44 @@ func TestParseJSONRepresentation(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, Int(1), v)
 		}
+	})
 
-		//line count
-		v, err = ParseJSONRepresentation(ctx, `{"line-count__value":"1ln"}`, nil)
+	t.Run("floats", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		v, err := ParseJSONRepresentation(ctx, `{"float__value":1}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, Float(1), v)
+		}
+
+		v, err = ParseJSONRepresentation(ctx, `1.0`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, Float(1), v)
+		}
+
+		floatPattern := NewFloatRangePattern(FloatRange{Start: 0, End: 2, inclusiveEnd: true}, -1)
+		v, err = ParseJSONRepresentation(ctx, `1`, floatPattern)
+		if assert.NoError(t, err) {
+			assert.Equal(t, Float(1), v)
+		}
+
+		_, err = ParseJSONRepresentation(ctx, `-1`, floatPattern)
+		if !assert.Error(t, err, ErrNotMatchingSchemaFloatFound) {
+			return
+		}
+
+		_, err = ParseJSONRepresentation(ctx, `3`, floatPattern)
+		if !assert.ErrorIs(t, err, ErrNotMatchingSchemaFloatFound) {
+			return
+		}
+	})
+
+	t.Run("line counts", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		v, err := ParseJSONRepresentation(ctx, `{"line-count__value":"1ln"}`, nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, LineCount(1), v)
 		}
@@ -75,9 +145,13 @@ func TestParseJSONRepresentation(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, LineCount(1), v)
 		}
+	})
 
-		//byte count
-		v, err = ParseJSONRepresentation(ctx, `{"byte-count__value":"1B"}`, nil)
+	t.Run("byte counts", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		v, err := ParseJSONRepresentation(ctx, `{"byte-count__value":"1B"}`, nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, ByteCount(1), v)
 		}
@@ -86,9 +160,13 @@ func TestParseJSONRepresentation(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, ByteCount(1), v)
 		}
+	})
 
-		//rune count
-		v, err = ParseJSONRepresentation(ctx, `{"rune-count__value":"1rn"}`, nil)
+	t.Run("rune counts", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		v, err := ParseJSONRepresentation(ctx, `{"rune-count__value":"1rn"}`, nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, RuneCount(1), v)
 		}
@@ -97,9 +175,13 @@ func TestParseJSONRepresentation(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, RuneCount(1), v)
 		}
+	})
 
-		//path
-		v, err = ParseJSONRepresentation(ctx, `{"path__value":"/"}`, nil)
+	t.Run("paths", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		v, err := ParseJSONRepresentation(ctx, `{"path__value":"/"}`, nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, Path("/"), v)
 		}
@@ -108,9 +190,14 @@ func TestParseJSONRepresentation(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, Path("/"), v)
 		}
+	})
+
+	t.Run("schemes", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		//scheme
-		v, err = ParseJSONRepresentation(ctx, `{"scheme__value":"https"}`, nil)
+		v, err := ParseJSONRepresentation(ctx, `{"scheme__value":"https"}`, nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, Scheme("https"), v)
 		}
@@ -119,9 +206,13 @@ func TestParseJSONRepresentation(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, Scheme("https"), v)
 		}
+	})
 
-		//host
-		v, err = ParseJSONRepresentation(ctx, `{"host__value":"https://example.com"}`, nil)
+	t.Run("hosts", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		v, err := ParseJSONRepresentation(ctx, `{"host__value":"https://example.com"}`, nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, Host("https://example.com"), v)
 		}
@@ -130,9 +221,13 @@ func TestParseJSONRepresentation(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, Host("https://example.com"), v)
 		}
+	})
 
-		//url
-		v, err = ParseJSONRepresentation(ctx, `{"url__value":"https://example.com/"}`, nil)
+	t.Run("urls", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		v, err := ParseJSONRepresentation(ctx, `{"url__value":"https://example.com/"}`, nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, URL("https://example.com/"), v)
 		}
@@ -141,9 +236,13 @@ func TestParseJSONRepresentation(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, URL("https://example.com/"), v)
 		}
+	})
 
-		//path pattern
-		v, err = ParseJSONRepresentation(ctx, `{"path-pattern__value":"/..."}`, nil)
+	t.Run("path patterns", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		v, err := ParseJSONRepresentation(ctx, `{"path-pattern__value":"/..."}`, nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, PathPattern("/..."), v)
 		}
@@ -152,9 +251,13 @@ func TestParseJSONRepresentation(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, PathPattern("/..."), v)
 		}
+	})
 
-		//host pattern
-		v, err = ParseJSONRepresentation(ctx, `{"host-pattern__value":"https://*.com"}`, nil)
+	t.Run("host patterns", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		v, err := ParseJSONRepresentation(ctx, `{"host-pattern__value":"https://*.com"}`, nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, HostPattern("https://*.com"), v)
 		}
@@ -163,9 +266,13 @@ func TestParseJSONRepresentation(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, HostPattern("https://*.com"), v)
 		}
+	})
 
-		//url pattern
-		v, err = ParseJSONRepresentation(ctx, `{"url-pattern__value":"https://example.com/..."}`, nil)
+	t.Run("url patterns", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		v, err := ParseJSONRepresentation(ctx, `{"url-pattern__value":"https://example.com/..."}`, nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, URLPattern("https://example.com/..."), v)
 		}
@@ -175,8 +282,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Equal(t, URLPattern("https://example.com/..."), v)
 		}
 	})
-
-	t.Run("object", func(t *testing.T) {
+	t.Run("objects", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
@@ -225,9 +331,14 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Nil(t, obj)
 		}
 
-		obj, err = ParseJSONRepresentation(ctx, `{"a":"1"}`, pattern)
+		obj, err = ParseJSONRepresentation(ctx, `{"a":1}`, pattern)
 		if assert.NoError(t, err) {
 			assert.Equal(t, map[string]Value{"a": Int(1)}, obj.(*Object).ValueEntryMap(nil))
+		}
+
+		obj, err = ParseJSONRepresentation(ctx, `{"a":1,"b":"c"}`, pattern)
+		if assert.NoError(t, err) {
+			assert.Equal(t, map[string]Value{"a": Int(1), "b": Str("c")}, obj.(*Object).ValueEntryMap(nil))
 		}
 
 		//{a: {b: int}} pattern
@@ -243,7 +354,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Nil(t, obj)
 		}
 
-		obj, err = ParseJSONRepresentation(ctx, `{"a":{"b": "1"}}`, pattern)
+		obj, err = ParseJSONRepresentation(ctx, `{"a":{"b": 1}}`, pattern)
 		if assert.NoError(t, err) {
 			entries := obj.(*Object).ValueEntryMap(nil)
 			if assert.Contains(t, entries, "a") {
@@ -259,13 +370,13 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Equal(t, map[string]Value{"a": NewWrappedValueList()}, obj.(*Object).ValueEntryMap(nil))
 		}
 
-		obj, err = ParseJSONRepresentation(ctx, `{"a":["1"]}`, pattern)
+		obj, err = ParseJSONRepresentation(ctx, `{"a":[1]}`, pattern)
 		if assert.NoError(t, err) {
-			assert.Equal(t, map[string]Value{"a": NewWrappedValueList(Int(1))}, obj.(*Object).ValueEntryMap(nil))
+			assert.Equal(t, map[string]Value{"a": NewWrappedIntList(Int(1))}, obj.(*Object).ValueEntryMap(nil))
 		}
 	})
 
-	t.Run("record", func(t *testing.T) {
+	t.Run("records", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
@@ -304,7 +415,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Nil(t, rec)
 		}
 
-		rec, err = ParseJSONRepresentation(ctx, `{"a":"1"}`, pattern)
+		rec, err = ParseJSONRepresentation(ctx, `{"a":1}`, pattern)
 		if assert.NoError(t, err) {
 			assert.Equal(t, map[string]Value{"a": Int(1)}, rec.(*Record).ValueEntryMap())
 		}
@@ -322,7 +433,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Nil(t, rec)
 		}
 
-		rec, err = ParseJSONRepresentation(ctx, `{"a":{"b": "1"}}`, pattern)
+		rec, err = ParseJSONRepresentation(ctx, `{"a":{"b": 1}}`, pattern)
 		if assert.NoError(t, err) {
 			entries := rec.(*Record).ValueEntryMap()
 			if assert.Contains(t, entries, "a") {
@@ -338,13 +449,13 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Equal(t, map[string]Value{"a": NewTuple(nil)}, rec.(*Record).ValueEntryMap())
 		}
 
-		rec, err = ParseJSONRepresentation(ctx, `{"a":["1"]}`, pattern)
+		rec, err = ParseJSONRepresentation(ctx, `{"a":[1]}`, pattern)
 		if assert.NoError(t, err) {
 			assert.Equal(t, map[string]Value{"a": NewTuple([]Serializable{Int(1)})}, rec.(*Record).ValueEntryMap())
 		}
 	})
 
-	t.Run("list", func(t *testing.T) {
+	t.Run("lists", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
@@ -360,7 +471,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		}
 
 		//%list patteren
-		list, err = ParseJSONRepresentation(ctx, `{}`, LIST_PATTERN)
+		list, err = ParseJSONRepresentation(ctx, `[]`, LIST_PATTERN)
 		if assert.NoError(t, err) {
 			assert.Equal(t, []Serializable{}, list.(*List).GetOrBuildElements(ctx))
 		}
@@ -376,11 +487,28 @@ func TestParseJSONRepresentation(t *testing.T) {
 		list, err = ParseJSONRepresentation(ctx, `[]`, pattern)
 		if assert.NoError(t, err) {
 			assert.Equal(t, []Serializable{}, list.(*List).GetOrBuildElements(ctx))
+			assert.IsType(t, (*IntList)(nil), list.(*List).underlyingList)
 		}
 
-		list, err = ParseJSONRepresentation(ctx, `["1"]`, pattern)
+		list, err = ParseJSONRepresentation(ctx, `[1]`, pattern)
 		if assert.NoError(t, err) {
 			assert.Equal(t, []Serializable{Int(1)}, list.(*List).GetOrBuildElements(ctx))
+			assert.IsType(t, (*IntList)(nil), list.(*List).underlyingList)
+		}
+
+		//[]bool pattern
+		pattern = NewListPatternOf(BOOL_PATTERN)
+
+		list, err = ParseJSONRepresentation(ctx, `[]`, pattern)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []Serializable{}, list.(*List).GetOrBuildElements(ctx))
+			assert.IsType(t, (*BoolList)(nil), list.(*List).underlyingList)
+		}
+
+		list, err = ParseJSONRepresentation(ctx, `[true]`, pattern)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []Serializable{True}, list.(*List).GetOrBuildElements(ctx))
+			assert.IsType(t, (*BoolList)(nil), list.(*List).underlyingList)
 		}
 
 		//[] pattern
@@ -404,12 +532,12 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Nil(t, list)
 		}
 
-		list, err = ParseJSONRepresentation(ctx, `["1"]`, pattern)
+		list, err = ParseJSONRepresentation(ctx, `[1]`, pattern)
 		if assert.NoError(t, err) {
 			assert.Equal(t, []Serializable{Int(1)}, list.(*List).GetOrBuildElements(ctx))
 		}
 
-		list, err = ParseJSONRepresentation(ctx, `["1","2"]`, pattern)
+		list, err = ParseJSONRepresentation(ctx, `[1,2]`, pattern)
 		if assert.ErrorContains(t, err, "JSON array has too many elements, 1 elements were expected") {
 			assert.Nil(t, list)
 		}
@@ -422,12 +550,12 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Nil(t, list)
 		}
 
-		list, err = ParseJSONRepresentation(ctx, `["1"]`, pattern)
+		list, err = ParseJSONRepresentation(ctx, `[1]`, pattern)
 		if assert.ErrorContains(t, err, "JSON array has not enough elements, 2 elements were expected") {
 			assert.Nil(t, list)
 		}
 
-		list, err = ParseJSONRepresentation(ctx, `["1", "2"]`, pattern)
+		list, err = ParseJSONRepresentation(ctx, `[1, 2]`, pattern)
 		if assert.NoError(t, err) {
 			assert.Equal(t, []Serializable{Int(1), Int(2)}, list.(*List).GetOrBuildElements(ctx))
 		}
@@ -440,13 +568,13 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Nil(t, list)
 		}
 
-		list, err = ParseJSONRepresentation(ctx, `[["1"]]`, pattern)
+		list, err = ParseJSONRepresentation(ctx, `[[1]]`, pattern)
 		if assert.NoError(t, err) {
 			assert.Equal(t, []Serializable{NewWrappedValueList(Int(1))}, list.(*List).GetOrBuildElements(ctx))
 		}
 	})
 
-	t.Run("tuple", func(t *testing.T) {
+	t.Run("tuples", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
@@ -462,7 +590,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		}
 
 		//%tuple patteren
-		tuple, err = ParseJSONRepresentation(ctx, `{}`, TUPLE_PATTERN)
+		tuple, err = ParseJSONRepresentation(ctx, `[]`, TUPLE_PATTERN)
 		if assert.NoError(t, err) {
 			assert.Equal(t, []Serializable{}, tuple.(*Tuple).GetOrBuildElements(ctx))
 		}
@@ -480,7 +608,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Equal(t, []Serializable{}, tuple.(*Tuple).GetOrBuildElements(ctx))
 		}
 
-		tuple, err = ParseJSONRepresentation(ctx, `["1"]`, pattern)
+		tuple, err = ParseJSONRepresentation(ctx, `[1]`, pattern)
 		if assert.NoError(t, err) {
 			assert.Equal(t, []Serializable{Int(1)}, tuple.(*Tuple).GetOrBuildElements(ctx))
 		}
@@ -493,7 +621,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Equal(t, []Serializable{}, tuple.(*Tuple).GetOrBuildElements(ctx))
 		}
 
-		tuple, err = ParseJSONRepresentation(ctx, `["1"]`, pattern)
+		tuple, err = ParseJSONRepresentation(ctx, `[1]`, pattern)
 		if assert.ErrorContains(t, err, "JSON array has too many elements, 0 elements were expected") {
 			assert.Nil(t, tuple)
 		}
@@ -506,12 +634,12 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Nil(t, tuple)
 		}
 
-		tuple, err = ParseJSONRepresentation(ctx, `["1"]`, pattern)
+		tuple, err = ParseJSONRepresentation(ctx, `[1]`, pattern)
 		if assert.NoError(t, err) {
 			assert.Equal(t, []Serializable{Int(1)}, tuple.(*Tuple).GetOrBuildElements(ctx))
 		}
 
-		tuple, err = ParseJSONRepresentation(ctx, `["1","2"]`, pattern)
+		tuple, err = ParseJSONRepresentation(ctx, `[1,2]`, pattern)
 		if assert.ErrorContains(t, err, "JSON array has too many elements, 1 elements were expected") {
 			assert.Nil(t, tuple)
 		}
@@ -524,12 +652,12 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Nil(t, tuple)
 		}
 
-		tuple, err = ParseJSONRepresentation(ctx, `["1"]`, pattern)
+		tuple, err = ParseJSONRepresentation(ctx, `[1]`, pattern)
 		if assert.ErrorContains(t, err, "JSON array has not enough elements, 2 elements were expected") {
 			assert.Nil(t, tuple)
 		}
 
-		tuple, err = ParseJSONRepresentation(ctx, `["1", "2"]`, pattern)
+		tuple, err = ParseJSONRepresentation(ctx, `[1, 2]`, pattern)
 		if assert.NoError(t, err) {
 			assert.Equal(t, []Serializable{Int(1), Int(2)}, tuple.(*Tuple).GetOrBuildElements(ctx))
 		}
@@ -542,10 +670,185 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Nil(t, tuple)
 		}
 
-		tuple, err = ParseJSONRepresentation(ctx, `[["1"]]`, pattern)
+		tuple, err = ParseJSONRepresentation(ctx, `[[1]]`, pattern)
 		if assert.NoError(t, err) {
 			assert.Equal(t, []Serializable{NewTuple([]Serializable{Int(1)})}, tuple.(*Tuple).GetOrBuildElements(ctx))
 		}
 	})
 
+	t.Run("unions", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		t.Run("integers & strings", func(t *testing.T) {
+			pattern := NewUnionPattern([]Pattern{INT_PATTERN, STRLIKE_PATTERN}, nil)
+
+			val, err := ParseJSONRepresentation(ctx, `1`, pattern)
+			if !assert.NoError(t, err) {
+				assert.Equal(t, Int(1), val)
+			}
+
+			//priority to first pattern
+			val, err = ParseJSONRepresentation(ctx, `"1"`, pattern)
+			if !assert.NoError(t, err) {
+				assert.Equal(t, Int(1), val)
+			}
+
+			val, err = ParseJSONRepresentation(ctx, `" 1"`, pattern)
+			if !assert.NoError(t, err) {
+				assert.Equal(t, Str(" 1"), val)
+			}
+		})
+
+		t.Run("integers", func(t *testing.T) {
+			range1 := IntRange{Start: 0, End: 2, inclusiveEnd: true, Step: 1}
+			range2 := IntRange{Start: 1, End: 3, inclusiveEnd: true, Step: 1}
+
+			pattern1 := NewUnionPattern([]Pattern{NewIntRangePattern(range1, -1), NewIntRangePattern(range2, -1)}, nil)
+
+			val, err := ParseJSONRepresentation(ctx, `1`, pattern1)
+			if !assert.NoError(t, err) {
+				assert.Equal(t, Int(1), val)
+			}
+
+			val, err = ParseJSONRepresentation(ctx, `3`, pattern1)
+			if !assert.NoError(t, err) {
+				assert.Equal(t, Int(3), val)
+			}
+
+			_, err = ParseJSONRepresentation(ctx, `2`, pattern1)
+			if !assert.NoError(t, err) {
+				assert.Equal(t, Int(2), val)
+			}
+		})
+
+		t.Run("objects", func(t *testing.T) {
+			pattern := NewUnionPattern([]Pattern{
+				NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN}),
+				NewInexactObjectPattern(map[string]Pattern{"b": INT_PATTERN}),
+			}, nil)
+
+			val, err := ParseJSONRepresentation(ctx, `{"a":1}`, pattern)
+			if !assert.NoError(t, err) {
+				assert.Equal(t, NewObjectFromMapNoInit(ValMap{"a": Int(1)}), val)
+			}
+
+			val, err = ParseJSONRepresentation(ctx, `{"b":1}`, pattern)
+			if !assert.NoError(t, err) {
+				assert.Equal(t, NewObjectFromMapNoInit(ValMap{"b": Int(1)}), val)
+			}
+
+			_, err = ParseJSONRepresentation(ctx, `{"a":1,"b":1}`, pattern)
+			if !assert.NoError(t, err) {
+				assert.Equal(t, NewObjectFromMapNoInit(ValMap{"a": Int(1), "b": Int(1)}), val)
+			}
+		})
+
+		t.Run("lists", func(t *testing.T) {
+			pattern := NewUnionPattern([]Pattern{
+				NewListPatternOf(INT_PATTERN),
+				NewListPatternOf(BOOL_PATTERN),
+			}, nil)
+
+			val, err := ParseJSONRepresentation(ctx, `[]`, pattern)
+			if !assert.NoError(t, err) {
+				assert.Equal(t, NewWrappedIntListFrom([]Int{}), val)
+			}
+
+			val, err = ParseJSONRepresentation(ctx, `[1]`, pattern)
+			if !assert.NoError(t, err) {
+				assert.Equal(t, NewWrappedIntList(1), val)
+			}
+
+			val, err = ParseJSONRepresentation(ctx, `[true]`, pattern)
+			if !assert.NoError(t, err) {
+				assert.Equal(t, NewWrappedBoolList(True), val)
+			}
+		})
+	})
+
+	t.Run("disjoint unions", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		t.Run("integers & strings", func(t *testing.T) {
+			pattern1 := NewUnionPattern([]Pattern{INT_PATTERN, STRLIKE_PATTERN}, nil)
+
+			val, err := ParseJSONRepresentation(ctx, `1`, pattern1)
+			if !assert.NoError(t, err) {
+				assert.Equal(t, Int(1), val)
+			}
+
+			//priority to first pattern
+			val, err = ParseJSONRepresentation(ctx, `"1"`, pattern1)
+			if !assert.NoError(t, err) {
+				assert.Equal(t, Int(1), val)
+			}
+
+			val, err = ParseJSONRepresentation(ctx, `" 1"`, pattern1)
+			if !assert.NoError(t, err) {
+				assert.Equal(t, Str(" 1"), val)
+			}
+		})
+
+		t.Run("integers", func(t *testing.T) {
+			range1 := IntRange{Start: 0, End: 2, inclusiveEnd: true, Step: 1}
+			range2 := IntRange{Start: 2, End: 3, inclusiveEnd: true, Step: 1}
+
+			pattern1 := NewDisjointUnionPattern([]Pattern{NewIntRangePattern(range1, -1), NewIntRangePattern(range2, -1)}, nil)
+
+			val, err := ParseJSONRepresentation(ctx, `1`, pattern1)
+			if !assert.NoError(t, err) {
+				assert.Equal(t, Int(1), val)
+			}
+
+			val, err = ParseJSONRepresentation(ctx, `3`, pattern1)
+			if !assert.NoError(t, err) {
+				assert.Equal(t, Int(3), val)
+			}
+
+			_, err = ParseJSONRepresentation(ctx, `2`, pattern1)
+			assert.ErrorIs(t, err, ErrJsonNotMatchingSchema)
+		})
+
+		t.Run("objects", func(t *testing.T) {
+			pattern := NewDisjointUnionPattern([]Pattern{
+				NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN}),
+				NewInexactObjectPattern(map[string]Pattern{"b": INT_PATTERN}),
+			}, nil)
+
+			val, err := ParseJSONRepresentation(ctx, `{"a":1}`, pattern)
+			if !assert.NoError(t, err) {
+				assert.Equal(t, NewObjectFromMapNoInit(ValMap{"a": Int(1)}), val)
+			}
+
+			val, err = ParseJSONRepresentation(ctx, `{"b":1}`, pattern)
+			if !assert.NoError(t, err) {
+				assert.Equal(t, NewObjectFromMapNoInit(ValMap{"b": Int(1)}), val)
+			}
+
+			_, err = ParseJSONRepresentation(ctx, `{"a":1,"b":1}`, pattern)
+			assert.ErrorIs(t, err, ErrJsonNotMatchingSchema)
+		})
+
+		t.Run("lists", func(t *testing.T) {
+			pattern := NewDisjointUnionPattern([]Pattern{
+				NewListPatternOf(INT_PATTERN),
+				NewListPatternOf(BOOL_PATTERN),
+			}, nil)
+
+			_, err := ParseJSONRepresentation(ctx, `[]`, pattern)
+			assert.ErrorIs(t, err, ErrJsonNotMatchingSchema)
+
+			val, err := ParseJSONRepresentation(ctx, `[1]`, pattern)
+			if !assert.NoError(t, err) {
+				assert.Equal(t, NewWrappedIntList(1), val)
+			}
+
+			val, err = ParseJSONRepresentation(ctx, `[true]`, pattern)
+			if !assert.NoError(t, err) {
+				assert.Equal(t, NewWrappedBoolList(True), val)
+			}
+		})
+	})
 }

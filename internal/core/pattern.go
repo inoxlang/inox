@@ -783,7 +783,10 @@ func (patt *IntRangePattern) Test(ctx *Context, v Value) bool {
 	if !ok {
 		return false
 	}
+	return patt.Includes(ctx, n)
+}
 
+func (patt *IntRangePattern) Includes(ctx *Context, n Int) bool {
 	return n >= Int(patt.intRange.Start) &&
 		n <= Int(patt.intRange.InclusiveEnd()) &&
 		(patt.multipleOf <= 0 || (n%patt.multipleOf) == 0)
