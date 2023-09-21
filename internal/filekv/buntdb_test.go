@@ -15,10 +15,10 @@ import (
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/memfs"
 	fsutil "github.com/go-git/go-billy/v5/util"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/tidwall/assert"
 	"github.com/tidwall/lotsa"
 )
 
@@ -2932,18 +2932,18 @@ func TestReloadNotInvalid(t *testing.T) {
 
 func TestEstSize(t *testing.T) {
 	t.Run("estIntSize", func(t *testing.T) {
-		assert.Assert(estIntSize(0) == 1)
-		assert.Assert(estIntSize(1) == 1)
-		assert.Assert(estIntSize(9) == 1)
-		assert.Assert(estIntSize(10) == 2)
-		assert.Assert(estIntSize(11) == 2)
-		assert.Assert(estIntSize(19) == 2)
-		assert.Assert(estIntSize(20) == 2)
-		assert.Assert(estIntSize(113) == 3)
-		assert.Assert(estIntSize(3822) == 4)
-		assert.Assert(estIntSize(-1) == 2)
-		assert.Assert(estIntSize(-12) == 3)
-		assert.Assert(estIntSize(-124) == 4)
+		assert.Equal(t, estIntSize(0), 1)
+		assert.Equal(t, estIntSize(1), 1)
+		assert.Equal(t, estIntSize(9), 1)
+		assert.Equal(t, estIntSize(10), 2)
+		assert.Equal(t, estIntSize(11), 2)
+		assert.Equal(t, estIntSize(19), 2)
+		assert.Equal(t, estIntSize(20), 2)
+		assert.Equal(t, estIntSize(113), 3)
+		assert.Equal(t, estIntSize(3822), 4)
+		assert.Equal(t, estIntSize(-1), 2)
+		assert.Equal(t, estIntSize(-12), 3)
+		assert.Equal(t, estIntSize(-124), 4)
 	})
 }
 

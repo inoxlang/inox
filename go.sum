@@ -246,8 +246,6 @@ github.com/texttheater/golang-levenshtein v1.0.2-0.20211007163542-3d00ed831923 h
 github.com/texttheater/golang-levenshtein v1.0.2-0.20211007163542-3d00ed831923/go.mod h1:PYAKrbF5sAiq9wd+H82hs7gNaen0CplQ9uvm6+enD/8=
 github.com/thomasjungblut/go-sstables v1.3.1 h1:kO6+DBmt1j1yuJF+PFrjpStRfGD2IpAUODfQf0Oyx+g=
 github.com/thomasjungblut/go-sstables v1.3.1/go.mod h1:GPvTd3BppjsyplqSLbp96D5kJZvV+VU7WdJ+bKgvAQU=
-github.com/tidwall/assert v0.1.0 h1:aWcKyRBUAdLoVebxo95N7+YZVTFF/ASTr7BN4sLP6XI=
-github.com/tidwall/assert v0.1.0/go.mod h1:QLYtGyeqse53vuELQheYl9dngGCJQ+mTtlxcktb+Kj8=
 github.com/tidwall/btree v1.6.0 h1:LDZfKfQIBHGHWSwckhXI0RPSXzlo+KYdjK7FWSqOzzg=
 github.com/tidwall/btree v1.6.0/go.mod h1:twD9XRA5jj9VUQGELzDO4HPQTNJsoWWfYEL+EUQ2cKY=
 github.com/tidwall/gjson v1.12.1/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
