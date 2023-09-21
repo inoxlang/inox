@@ -679,18 +679,26 @@ func (patt *FunctionPattern) StringPattern() (StringPattern, bool) {
 
 // An IntRangePattern represents a pattern matching integers in a given range.
 type IntRangePattern struct {
-	intRange IntRange
+	intRange   IntRange
+	multipleOf Int //ignored if not greater than zero
+
 	CallBasedPatternReprMixin
 	NotCallablePatternMixin
 }
 
-func NewIncludedEndIntRangePattern(start, end int64) *IntRangePattern {
+func NewIncludedEndIntRangePattern(start, end int64, multipleOf int64) *IntRangePattern {
 	if end < start {
 		panic(fmt.Errorf("failed to create int range pattern, end < start"))
 	}
+
+	if multipleOf <= 0 {
+		multipleOf = 0
+	}
+
 	range_ := NewIncludedEndIntRange(start, end)
 	return &IntRangePattern{
-		intRange: range_,
+		intRange:   range_,
+		multipleOf: Int(multipleOf),
 		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
 			Callee: INT_PATTERN,
 			Params: []Serializable{range_},
@@ -715,10 +723,15 @@ func (patt *IntRangePattern) Test(ctx *Context, v Value) bool {
 		return false
 	}
 
-	return n >= Int(patt.intRange.Start) && n <= Int(patt.intRange.InclusiveEnd())
+	return n >= Int(patt.intRange.Start) &&
+		n <= Int(patt.intRange.InclusiveEnd()) &&
+		(patt.multipleOf <= 0 || (n%patt.multipleOf) == 0)
 }
 
 func (patt *IntRangePattern) StringPattern() (StringPattern, bool) {
+	if patt.multipleOf >= 0 {
+		return nil, false
+	}
 	return NewIntRangeStringPattern(patt.intRange.Start, patt.intRange.InclusiveEnd(), nil), true
 }
 
