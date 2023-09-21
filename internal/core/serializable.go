@@ -4,7 +4,7 @@ import (
 	"io"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
+	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 )
 
 var (

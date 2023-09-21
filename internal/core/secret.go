@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"io"
 
+	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/utils"
-	jsoniter "github.com/json-iterator/go"
 )
 
 var (

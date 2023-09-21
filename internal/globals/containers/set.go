@@ -11,8 +11,8 @@ import (
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
+	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/utils"
-	jsoniter "github.com/json-iterator/go"
 
 	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
@@ -137,7 +137,7 @@ func loadSet(ctx *core.Context, args core.InstanceLoadArgs) (core.UrlHolder, err
 		var finalErr error
 
 		//TODO: lazy load if no migration
-		it := jsoniter.ParseString(jsoniter.ConfigCompatibleWithStandardLibrary, serialized)
+		it := jsoniter.ParseString(jsoniter.ConfigDefault, serialized)
 		it.ReadArrayCB(func(i *jsoniter.Iterator) (cont bool) {
 			val, err := core.ParseNextJSONRepresentation(ctx, it, setPattern.config.Element)
 			if err != nil {
@@ -213,7 +213,7 @@ func loadSet(ctx *core.Context, args core.InstanceLoadArgs) (core.UrlHolder, err
 }
 
 func persistSet(ctx *core.Context, set *Set, path core.Path, storage core.SerializedValueStorage) error {
-	stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, nil, 0)
+	stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
 	set.WriteJSONRepresentation(ctx, stream, core.JSONSerializationConfig{
 		ReprConfig: &core.ReprConfig{
 			AllVisible: true,

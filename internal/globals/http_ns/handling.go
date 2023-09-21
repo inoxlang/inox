@@ -9,8 +9,8 @@ import (
 
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/mimeconsts"
-	jsoniter "github.com/json-iterator/go"
 	"github.com/rs/zerolog"
 )
 
@@ -206,7 +206,7 @@ func respondWithMappingResult(h handlingArguments) {
 		}
 
 		rw.WriteContentType(mimeconsts.JSON_CTYPE)
-		stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, rw.BodyWriter(), 0)
+		stream := jsoniter.NewStream(jsoniter.ConfigDefault, rw.BodyWriter(), 0)
 		serializable.WriteJSONRepresentation(state.Ctx, stream, config, 0)
 		stream.Flush()
 		return

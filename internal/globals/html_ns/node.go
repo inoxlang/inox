@@ -6,8 +6,8 @@ import (
 	"sync"
 
 	core "github.com/inoxlang/inox/internal/core"
+	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/mimeconsts"
-	jsoniter "github.com/json-iterator/go"
 	"golang.org/x/net/html"
 
 	_html_symbolic "github.com/inoxlang/inox/internal/globals/html_ns/symbolic"

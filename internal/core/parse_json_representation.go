@@ -8,8 +8,8 @@ import (
 
 	"slices"
 
+	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	parse "github.com/inoxlang/inox/internal/parse"
-	jsoniter "github.com/json-iterator/go"
 )
 
 var (
@@ -19,7 +19,7 @@ var (
 func ParseJSONRepresentation(ctx *Context, s string, pattern Pattern) (Serializable, error) {
 	//TODO: add checks
 
-	it := jsoniter.ParseString(jsoniter.ConfigCompatibleWithStandardLibrary, s)
+	it := jsoniter.ParseString(jsoniter.ConfigDefault, s)
 	return ParseNextJSONRepresentation(ctx, it, pattern)
 }
 

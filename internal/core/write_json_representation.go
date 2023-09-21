@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strconv"
 
+	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/utils"
-	jsoniter "github.com/json-iterator/go"
 )
 
 const (
@@ -32,7 +32,7 @@ type JSONSerializationConfig struct {
 }
 
 func GetJSONRepresentation(v Serializable, ctx *Context, pattern Pattern) string {
-	stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, nil, 0)
+	stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
 
 	err := v.WriteJSONRepresentation(ctx, stream, JSONSerializationConfig{Pattern: pattern}, 0)
 	if err != nil {

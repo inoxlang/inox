@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/aohorodnyk/mimeheader"
-	jsoniter "github.com/json-iterator/go"
+	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/utils"

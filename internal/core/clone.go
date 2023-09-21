@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"reflect"
 
+	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/utils"
-	jsoniter "github.com/json-iterator/go"
 )
 
 const (
@@ -44,7 +44,7 @@ func RepresentationBasedClone(ctx *Context, val Serializable) (Serializable, err
 	if !val.IsMutable() {
 		return val, nil
 	}
-	stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, nil, 0)
+	stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
 	err := val.WriteJSONRepresentation(ctx, stream, JSONSerializationConfig{
 		ReprConfig: &ReprConfig{AllVisible: true},
 	}, 0)

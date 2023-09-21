@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"testing"
 
+	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/utils"
-	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -820,7 +820,7 @@ func getJSONRepr(t *testing.T, v Serializable, ctx *Context, reprConfig ...JSONS
 		})
 	}
 
-	stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, nil, 0)
+	stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
 	err := v.WriteJSONRepresentation(ctx, stream, reprConfig[0], 0)
 	if err != nil {
 		assert.FailNow(t, "failed to get representation: "+err.Error())

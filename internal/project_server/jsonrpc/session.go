@@ -2,6 +2,7 @@ package jsonrpc
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -18,7 +19,6 @@ import (
 	"github.com/inoxlang/inox/internal/project_server/logs"
 	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
-	jsoniter "github.com/json-iterator/go"
 )
 
 type sessionKeyType struct{}
@@ -185,7 +185,7 @@ func (s *Session) readRequest() (RequestMessage, error) {
 	}
 
 	req := RequestMessage{}
-	err := jsoniter.Unmarshal(contentBytes, &req)
+	err := json.Unmarshal(contentBytes, &req)
 	if err != nil {
 		e := ParseError
 		e.Data = err
@@ -278,7 +278,7 @@ func (s *Session) handlerRequest(req RequestMessage) error {
 
 	reqArgs := mtdInfo.NewRequest()
 	if _, ok := reqArgs.(*defines.NoParams); !ok {
-		err := jsoniter.Unmarshal(req.Params, reqArgs)
+		err := json.Unmarshal(req.Params, reqArgs)
 		if err != nil {
 			return ParseError
 		}
@@ -292,7 +292,7 @@ func (s *Session) write(resp ResponseMessage, sensitiveMethod bool) error {
 	s.writeLock.Lock()
 	defer s.writeLock.Unlock()
 
-	res, err := jsoniter.Marshal(resp)
+	res, err := json.Marshal(resp)
 	if err != nil {
 		return err
 	}
@@ -314,7 +314,7 @@ func (s *Session) Notify(notif NotificationMessage) error {
 	s.writeLock.Lock()
 	defer s.writeLock.Unlock()
 
-	notifBytes, err := jsoniter.Marshal(notif)
+	notifBytes, err := json.Marshal(notif)
 	if err != nil {
 		return err
 	}
@@ -331,7 +331,7 @@ func (s *Session) SendRequest(req RequestMessage) error {
 	s.writeLock.Lock()
 	defer s.writeLock.Unlock()
 
-	reqBytes, err := jsoniter.Marshal(req)
+	reqBytes, err := json.Marshal(req)
 	if err != nil {
 		return err
 	}

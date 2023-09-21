@@ -10,10 +10,10 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
-	jsoniter "github.com/json-iterator/go"
 
 	"github.com/stretchr/testify/assert"
 )

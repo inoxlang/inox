@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	core "github.com/inoxlang/inox/internal/core"
-	jsoniter "github.com/json-iterator/go"
+	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/minio/minio-go/v7"
 )
 
@@ -215,7 +215,7 @@ func S3SetBucketPolicy(ctx *core.Context, u core.URL, policy core.Value) error {
 	case core.Str:
 		policyString = string(p)
 	case *core.Object:
-		stream := jsoniter.NewStream(jsoniter.ConfigCompatibleWithStandardLibrary, nil, 0)
+		stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
 		config := core.JSONSerializationConfig{
 			ReprConfig: &core.ReprConfig{},
 		}

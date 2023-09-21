@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
+	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
-	jsoniter "github.com/json-iterator/go"
 	"golang.org/x/exp/maps"
 )
 
