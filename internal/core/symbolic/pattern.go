@@ -16,7 +16,9 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-const REGEX_SYNTAX = syntax.Perl
+const (
+	REGEX_SYNTAX = syntax.Perl
+)
 
 var (
 	_ = []Pattern{
@@ -24,7 +26,7 @@ var (
 		(*HostPattern)(nil), (*ListPattern)(nil), (*ObjectPattern)(nil), (*TuplePattern)(nil), (*RecordPattern)(nil),
 		(*OptionPattern)(nil), (*RegexPattern)(nil), (*TypePattern)(nil), (*AnyPattern)(nil), (*FunctionPattern)(nil),
 		(*ExactValuePattern)(nil), (*ExactStringPattern)(nil), (*ParserBasedPattern)(nil),
-		(*IntRangePattern)(nil), (*EventPattern)(nil), (*MutationPattern)(nil), (*OptionalPattern)(nil),
+		(*IntRangePattern)(nil), (*FloatRangePattern)(nil), (*EventPattern)(nil), (*MutationPattern)(nil), (*OptionalPattern)(nil),
 		(*FunctionPattern)(nil),
 		(*DifferencePattern)(nil),
 	}

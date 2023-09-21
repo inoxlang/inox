@@ -19,8 +19,8 @@ var (
 	EXECUTED_STEP_PROPNAMES = []string{"result", "end_time"}
 	LTHREAD_SECTION_NAMES   = []string{LTHREAD_META_ALLOW_SECTION, LTHREAD_META_GLOBALS_SECTION, LTHREAD_META_GROUP_SECTION}
 
-	ANY_ROUTINE       = &LThread{}
-	ANY_ROUTINE_GROUP = &LThreadGroup{}
+	ANY_LTHREAD       = &LThread{}
+	ANY_LTHREAD_GROUP = &LThreadGroup{}
 	ANY_EXECUTED_STEP = &ExecutedStep{}
 )
 
@@ -40,7 +40,7 @@ func (t *LThread) Test(v SymbolicValue) bool {
 }
 
 func (t *LThread) WidestOfType() SymbolicValue {
-	return ANY_ROUTINE
+	return ANY_LTHREAD
 }
 
 func (t *LThread) GetGoMethod(name string) (*GoFunction, bool) {
@@ -135,7 +135,7 @@ func (g *LThreadGroup) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCo
 }
 
 func (g *LThreadGroup) WidestOfType() SymbolicValue {
-	return ANY_ROUTINE_GROUP
+	return ANY_LTHREAD_GROUP
 }
 
 // An ExecutedStep represents a symbolic ExecutedStep.

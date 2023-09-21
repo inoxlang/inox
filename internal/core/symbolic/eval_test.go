@@ -11,7 +11,11 @@ import (
 )
 
 func TestSymbolicEval(t *testing.T) {
+	prev := enableMultivalueCaching
 	enableMultivalueCaching = false
+	defer func() {
+		enableMultivalueCaching = prev
+	}()
 
 	symbolicMap := func(ctx *Context, iterable Iterable, mapper SymbolicValue) *List {
 		var MAP_PARAM_NAMES = []string{"iterable", "mapper"}

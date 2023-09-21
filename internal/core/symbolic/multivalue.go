@@ -259,7 +259,7 @@ func (mv *indexableMultivalue) HasKnownLen() bool {
 }
 
 func (mv *indexableMultivalue) as(itf reflect.Type) SymbolicValue {
-	return mv.as(itf)
+	return mv.Multivalue.as(itf)
 }
 
 type iterableMultivalue struct {
@@ -285,7 +285,7 @@ func (mv *iterableMultivalue) IteratorElementValue() SymbolicValue {
 }
 
 func (mv *iterableMultivalue) as(itf reflect.Type) SymbolicValue {
-	return mv.as(itf)
+	return mv.Multivalue.as(itf)
 }
 
 type watchableMultivalue struct {
@@ -297,7 +297,7 @@ func (mv *watchableMultivalue) WatcherElement() SymbolicValue {
 }
 
 func (mv *watchableMultivalue) as(itf reflect.Type) SymbolicValue {
-	return mv.as(itf)
+	return mv.Multivalue.as(itf)
 }
 
 type ipropsMultivalue struct {
@@ -326,5 +326,5 @@ func (mv *ipropsMultivalue) PropertyNames() []string {
 }
 
 func (mv *ipropsMultivalue) as(itf reflect.Type) SymbolicValue {
-	return mv.as(itf)
+	return mv.Multivalue.as(itf)
 }

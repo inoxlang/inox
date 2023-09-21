@@ -2,6 +2,9 @@ package symbolic
 
 import "reflect"
 
+// asInterface should be implemented by complex values that conditionally implement interfaces
+// such as Indexable, Iterable, Serializable.
+// The primary implementation of asInterface is Multivalue.
 type asInterface interface {
 	SymbolicValue
 	as(itf reflect.Type) SymbolicValue
