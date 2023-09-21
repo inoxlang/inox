@@ -146,14 +146,15 @@ func TestIntRangePattern(t *testing.T) {
 
 	t.Run("0..100", func(t *testing.T) {
 		patt := NewIncludedEndIntRangePattern(0, 100, -1)
-
 		assert.True(t, patt.Test(ctx, Int(0)))
+		assert.True(t, patt.Test(ctx, Int(1)))
+		assert.True(t, patt.Test(ctx, Int(2)))
 		assert.True(t, patt.Test(ctx, Int(3)))
+		assert.True(t, patt.Test(ctx, Int(4)))
 		assert.True(t, patt.Test(ctx, Int(6)))
 		assert.True(t, patt.Test(ctx, Int(9)))
 		assert.True(t, patt.Test(ctx, Int(99)))
 
-		assert.False(t, patt.Test(ctx, Int(-1)))
 		assert.False(t, patt.Test(ctx, Int(102)))
 	})
 
@@ -166,6 +167,9 @@ func TestIntRangePattern(t *testing.T) {
 		assert.True(t, patt.Test(ctx, Int(99)))
 
 		assert.False(t, patt.Test(ctx, Int(-1)))
+		assert.False(t, patt.Test(ctx, Int(1)))
+		assert.False(t, patt.Test(ctx, Int(2)))
+		assert.False(t, patt.Test(ctx, Int(4)))
 		assert.False(t, patt.Test(ctx, Int(102)))
 	})
 }
