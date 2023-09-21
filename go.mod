@@ -22,7 +22,6 @@ require (
 	github.com/google/uuid v1.3.1
 	github.com/gorilla/websocket v1.5.0
 	github.com/johannesboyne/gofakes3 v0.0.0-20230506070712-04da935ef877
-	github.com/json-iterator/go v1.1.12
 	github.com/miekg/dns v1.1.56
 	github.com/minio/minio-go/v7 v7.0.58
 	github.com/muesli/cancelreader v0.2.2
@@ -69,6 +68,7 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.4 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.16.6 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
