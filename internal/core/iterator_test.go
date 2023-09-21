@@ -1131,6 +1131,89 @@ func TestRecordPatternIteration(t *testing.T) {
 	})
 }
 
+func TestBoolListIteration(t *testing.T) {
+
+	t.Run("no elements", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		it := (newBoolList()).Iterator(ctx, IteratorConfiguration{})
+
+		assert.False(t, it.HasNext(ctx))
+		assert.False(t, it.Next(ctx))
+	})
+
+	t.Run("single element", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		it := (newBoolList(True)).Iterator(ctx, IteratorConfiguration{})
+
+		//next
+		assert.True(t, it.HasNext(ctx))
+		assert.True(t, it.Next(ctx))
+		assert.Equal(t, Int(0), it.Key(ctx))
+		assert.Equal(t, True, it.Value(ctx))
+
+		//next
+		assert.False(t, it.HasNext(ctx))
+		assert.False(t, it.Next(ctx))
+	})
+
+	t.Run("two elements", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		it := (newBoolList(True, False)).Iterator(ctx, IteratorConfiguration{})
+
+		//next
+		assert.True(t, it.HasNext(ctx))
+		assert.True(t, it.Next(ctx))
+		assert.Equal(t, Int(0), it.Key(ctx))
+		assert.Equal(t, True, it.Value(ctx))
+
+		//next
+		assert.True(t, it.HasNext(ctx))
+		assert.True(t, it.Next(ctx))
+		assert.Equal(t, Int(1), it.Key(ctx))
+		assert.Equal(t, False, it.Value(ctx))
+
+		//next
+		assert.False(t, it.HasNext(ctx))
+		assert.False(t, it.Next(ctx))
+	})
+
+	t.Run("three elements", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		it := (newBoolList(True, False, True)).Iterator(ctx, IteratorConfiguration{})
+
+		//next
+		assert.True(t, it.HasNext(ctx))
+		assert.True(t, it.Next(ctx))
+		assert.Equal(t, Int(0), it.Key(ctx))
+		assert.Equal(t, True, it.Value(ctx))
+
+		//next
+		assert.True(t, it.HasNext(ctx))
+		assert.True(t, it.Next(ctx))
+		assert.Equal(t, Int(1), it.Key(ctx))
+		assert.Equal(t, False, it.Value(ctx))
+
+		//next
+		assert.True(t, it.HasNext(ctx))
+		assert.True(t, it.Next(ctx))
+		assert.Equal(t, Int(2), it.Key(ctx))
+		assert.Equal(t, True, it.Value(ctx))
+
+		//next
+		assert.False(t, it.HasNext(ctx))
+		assert.False(t, it.Next(ctx))
+	})
+
+}
+
 func TestListPatternIteration(t *testing.T) {
 
 	t.Run("no elements", func(t *testing.T) {

@@ -389,11 +389,11 @@ func (it *BitSetIterator) Next(ctx *Context) bool {
 }
 
 func (it *BitSetIterator) Key(ctx *Context) Value {
-	return Int(it.nextIndex)
+	return Int(it.nextIndex - 1)
 }
 
 func (it *BitSetIterator) Value(*Context) Value {
-	return Bool(it.set.Test(it.nextIndex))
+	return Bool(it.set.Test(it.nextIndex - 1))
 }
 
 func (list *BoolList) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
