@@ -34,7 +34,6 @@ var (
 
 	ErrCannotApplyIncompleteMutation = errors.New("cannot apply an incomplete mutation")
 	ErrNotSupportedSpecificMutation  = errors.New("not supported specific mutation")
-	ErrEmptyMutationPrefixSymbol     = errors.New("empty mutation prefix symbol")
 	ErrInvalidMutationPrefixSymbol   = errors.New("invalid mutation prefix symbol")
 
 	mutationCallbackPool *ArrayPool[mutationCallback]

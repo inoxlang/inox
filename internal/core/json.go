@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/buger/jsonparser"
 	"github.com/inoxlang/inox/internal/utils"
 	jsoniter "github.com/json-iterator/go"
 )
@@ -107,24 +106,4 @@ func parseJson(ctx *Context, v any) (any, error) {
 	}
 
 	return ConvertJSONValToInoxVal(result, false), nil
-}
-
-//
-
-func NewMutationFromJSON(data []byte) (Mutation, error) {
-	var mutation Mutation
-
-	err := jsonparser.ObjectEach(data, func(key, value []byte, dataType jsonparser.ValueType, offset int) error {
-		if len(key) == 0 {
-			return ErrEmptyMutationPrefixSymbol
-		}
-
-		panic("!")
-	})
-
-	if err != nil {
-		return Mutation{}, fmt.Errorf("failed to create mutation from json: %w", err)
-	}
-
-	return mutation, nil
 }

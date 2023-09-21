@@ -10,7 +10,6 @@ require (
 	github.com/aohorodnyk/mimeheader v0.0.6
 	github.com/bits-and-blooms/bitset v1.8.0
 	github.com/bmatcuk/doublestar/v4 v4.6.0
-	github.com/buger/jsonparser v1.1.2-0.20220418200129-61b32cfdfa0f
 	github.com/caddyserver/certmagic v0.17.2
 	github.com/chromedp/chromedp v0.8.6
 	github.com/cloudflare/cloudflare-go v0.75.0
