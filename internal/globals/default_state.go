@@ -232,7 +232,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 		// concurrency & execution
 		globalnames.LTHREADGROUP_FN: core.ValOf(core.NewLThreadGroup),
 		globalnames.RUN_FN:          core.ValOf(_run),
-		globalnames.EX_FN:           core.ValOf(_execute),
+		globalnames.EXEC_FN:         core.ValOf(_execute),
 		globalnames.CANCEL_EXEC_FN:  core.ValOf(_cancel_exec),
 
 		// integer
