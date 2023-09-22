@@ -9,7 +9,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 )
 
-type inMemfile struct {
+type InMemfile struct {
 	basename     string
 	originalPath string
 	absPath      core.Path
@@ -21,11 +21,11 @@ type inMemfile struct {
 	isClosed bool
 }
 
-func (f *inMemfile) Name() string {
+func (f *InMemfile) Name() string {
 	return f.originalPath
 }
 
-func (f *inMemfile) Read(b []byte) (int, error) {
+func (f *InMemfile) Read(b []byte) (int, error) {
 	n, err := f.ReadAt(b, f.position)
 	f.position += int64(n)
 
@@ -36,7 +36,7 @@ func (f *inMemfile) Read(b []byte) (int, error) {
 	return n, err
 }
 
-func (f *inMemfile) ReadAt(b []byte, off int64) (int, error) {
+func (f *InMemfile) ReadAt(b []byte, off int64) (int, error) {
 	if f.isClosed {
 		return 0, os.ErrClosed
 	}
@@ -50,7 +50,7 @@ func (f *inMemfile) ReadAt(b []byte, off int64) (int, error) {
 	return n, err
 }
 
-func (f *inMemfile) Seek(offset int64, whence int) (int64, error) {
+func (f *InMemfile) Seek(offset int64, whence int) (int64, error) {
 	if f.isClosed {
 		return 0, os.ErrClosed
 	}
@@ -67,7 +67,7 @@ func (f *inMemfile) Seek(offset int64, whence int) (int64, error) {
 	return f.position, nil
 }
 
-func (f *inMemfile) Write(p []byte) (int, error) {
+func (f *InMemfile) Write(p []byte) (int, error) {
 	if f.isClosed {
 		return 0, os.ErrClosed
 	}
@@ -82,7 +82,7 @@ func (f *inMemfile) Write(p []byte) (int, error) {
 	return n, err
 }
 
-func (f *inMemfile) Close() error {
+func (f *InMemfile) Close() error {
 	if f.isClosed {
 		return os.ErrClosed
 	}
@@ -91,12 +91,12 @@ func (f *inMemfile) Close() error {
 	return nil
 }
 
-func (f *inMemfile) Truncate(size int64) error {
+func (f *InMemfile) Truncate(size int64) error {
 	return f.content.Truncate(size)
 }
 
-func (f *inMemfile) Duplicate(originalPath string, mode os.FileMode, flag int) billy.File {
-	new := &inMemfile{
+func (f *InMemfile) Duplicate(originalPath string, mode os.FileMode, flag int) billy.File {
+	new := &InMemfile{
 		basename:     f.basename,
 		absPath:      core.PathFrom(NormalizeAsAbsolute(originalPath)),
 		originalPath: originalPath,
@@ -116,7 +116,7 @@ func (f *inMemfile) Duplicate(originalPath string, mode os.FileMode, flag int) b
 	return new
 }
 
-func (f *inMemfile) FileInfo() core.FileInfo {
+func (f *InMemfile) FileInfo() core.FileInfo {
 	return core.FileInfo{
 		BaseName_:       f.basename,
 		AbsPath_:        f.absPath,
@@ -128,16 +128,16 @@ func (f *inMemfile) FileInfo() core.FileInfo {
 	}
 }
 
-func (f *inMemfile) Stat() (os.FileInfo, error) {
+func (f *InMemfile) Stat() (os.FileInfo, error) {
 	return f.FileInfo(), nil
 }
 
 // Lock is a no-op in memfs.
-func (f *inMemfile) Lock() error {
+func (f *InMemfile) Lock() error {
 	return nil
 }
 
 // Unlock is a no-op in memfs.
-func (f *inMemfile) Unlock() error {
+func (f *InMemfile) Unlock() error {
 	return nil
 }

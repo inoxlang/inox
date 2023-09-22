@@ -29,8 +29,8 @@ var (
 
 type inMemStorage struct {
 	lock             sync.RWMutex
-	files            map[string]*inMemfile
-	children         map[string]map[string]*inMemfile
+	files            map[string]*InMemfile
+	children         map[string]map[string]*InMemfile
 	totalContentSize atomic.Int64
 	maxStorageSize   int64
 }
@@ -45,8 +45,8 @@ func newInMemoryStorage(maxStorageSize core.ByteCount) *inMemStorage {
 	}
 
 	storage := &inMemStorage{
-		files:          make(map[string]*inMemfile, 0),
-		children:       make(map[string]map[string]*inMemfile, 0),
+		files:          make(map[string]*InMemfile, 0),
+		children:       make(map[string]map[string]*InMemfile, 0),
 		maxStorageSize: int64(maxStorageSize),
 	}
 
@@ -64,7 +64,7 @@ func newInMemoryStorageFromSnapshot(snapshot FilesystemSnapshot, maxStorageSize 
 
 	//create all files & directories
 	for path, metadata := range snapshot.Metadata {
-		file := &inMemfile{
+		file := &InMemfile{
 			basename:     filepath.Base(path),
 			originalPath: path,
 			absPath:      metadata.AbsolutePath,
@@ -97,7 +97,7 @@ func newInMemoryStorageFromSnapshot(snapshot FilesystemSnapshot, maxStorageSize 
 
 	//create structure
 
-	children := map[string]*inMemfile{}
+	children := map[string]*InMemfile{}
 	storage.children["/"] = children
 
 	for path, metadata := range snapshot.Metadata {
@@ -107,7 +107,7 @@ func newInMemoryStorageFromSnapshot(snapshot FilesystemSnapshot, maxStorageSize 
 			continue
 		}
 
-		children := map[string]*inMemfile{}
+		children := map[string]*InMemfile{}
 		storage.children[path] = children
 
 		for _, child := range metadata.ChildNames {
@@ -131,13 +131,13 @@ func (s *inMemStorage) hasNoLock(path string) bool {
 	return ok
 }
 
-func (s *inMemStorage) New(path string, mode os.FileMode, flag int) (*inMemfile, error) {
+func (s *inMemStorage) New(path string, mode os.FileMode, flag int) (*InMemfile, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	return s.newNoLock(path, mode, flag)
 }
 
-func (s *inMemStorage) newNoLock(path string, mode os.FileMode, flag int) (*inMemfile, error) {
+func (s *inMemStorage) newNoLock(path string, mode os.FileMode, flag int) (*InMemfile, error) {
 	originalPath := path
 	path = NormalizeAsAbsolute(path)
 	if s.hasNoLock(path) {
@@ -152,7 +152,7 @@ func (s *inMemStorage) newNoLock(path string, mode os.FileMode, flag int) (*inMe
 	name := filepath.Base(path)
 	now := time.Now()
 
-	f := &inMemfile{
+	f := &InMemfile{
 		basename:     name,
 		originalPath: originalPath,
 		absPath:      core.PathFrom(path),
@@ -174,7 +174,7 @@ func (s *inMemStorage) newNoLock(path string, mode os.FileMode, flag int) (*inMe
 	return f, nil
 }
 
-func (s *inMemStorage) createParentNoLock(path string, mode os.FileMode, f *inMemfile) error {
+func (s *inMemStorage) createParentNoLock(path string, mode os.FileMode, f *InMemfile) error {
 	base := filepath.Dir(path)
 	if base == "." {
 		base = "/"
@@ -192,20 +192,20 @@ func (s *inMemStorage) createParentNoLock(path string, mode os.FileMode, f *inMe
 	}
 
 	if _, ok := s.children[base]; !ok {
-		s.children[base] = make(map[string]*inMemfile, 0)
+		s.children[base] = make(map[string]*InMemfile, 0)
 	}
 
 	s.children[base][f.basename] = f
 	return nil
 }
 
-func (s *inMemStorage) Children(path string) []*inMemfile {
+func (s *inMemStorage) Children(path string) []*InMemfile {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
 	path = NormalizeAsAbsolute(path)
 
-	l := make([]*inMemfile, 0)
+	l := make([]*InMemfile, 0)
 	for _, f := range s.children[path] {
 		l = append(l, f)
 	}
@@ -213,7 +213,7 @@ func (s *inMemStorage) Children(path string) []*inMemfile {
 	return l
 }
 
-func (s *inMemStorage) MustGet(path string) *inMemfile {
+func (s *inMemStorage) MustGet(path string) *InMemfile {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
@@ -225,14 +225,14 @@ func (s *inMemStorage) MustGet(path string) *inMemfile {
 	return f
 }
 
-func (s *inMemStorage) Get(path string) (*inMemfile, bool) {
+func (s *inMemStorage) Get(path string) (*InMemfile, bool) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
 	return s.getNoLock(path)
 }
 
-func (s *inMemStorage) mustGetNoLock(path string) *inMemfile {
+func (s *inMemStorage) mustGetNoLock(path string) *InMemfile {
 	f, ok := s.getNoLock(path)
 	if !ok {
 		panic(fmt.Errorf("couldn't find %q", path))
@@ -241,7 +241,7 @@ func (s *inMemStorage) mustGetNoLock(path string) *inMemfile {
 	return f
 }
 
-func (s *inMemStorage) getNoLock(path string) (*inMemfile, bool) {
+func (s *inMemStorage) getNoLock(path string) (*InMemfile, bool) {
 	path = NormalizeAsAbsolute(path)
 	if !s.hasNoLock(path) {
 		return nil, false

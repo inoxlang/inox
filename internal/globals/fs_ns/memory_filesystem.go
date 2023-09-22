@@ -90,7 +90,7 @@ func (fs *MemFilesystem) OpenFile(filename string, flag int, perm os.FileMode) (
 	return f.Duplicate(filename, perm, flag), nil
 }
 
-func (fs *MemFilesystem) resolveLink(fullpath string, f *inMemfile) (target string, isLink bool) {
+func (fs *MemFilesystem) resolveLink(fullpath string, f *InMemfile) (target string, isLink bool) {
 	if !isSymlink(f.mode) {
 		return fullpath, false
 	}

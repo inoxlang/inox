@@ -106,7 +106,7 @@ func TestMemoryFilesystemTakeFilesystemSnapshot(t *testing.T) {
 		assert.NoError(t, err)
 		f.Write([]byte("hello"))
 
-		info := f.(*inMemfile).FileInfo()
+		info := f.(*InMemfile).FileInfo()
 		creationTime := info.CreationTime_
 		modifTime := info.ModTime_
 		mode := info.Mode_
@@ -153,7 +153,7 @@ func TestMemoryFilesystemTakeFilesystemSnapshot(t *testing.T) {
 		assert.NoError(t, err)
 		f1.Write([]byte("hello1"))
 
-		info1 := f1.(*inMemfile).FileInfo()
+		info1 := f1.(*InMemfile).FileInfo()
 		creationTime1 := info1.CreationTime_
 		modifTime1 := info1.ModTime_
 		mode1 := info1.Mode_
@@ -162,7 +162,7 @@ func TestMemoryFilesystemTakeFilesystemSnapshot(t *testing.T) {
 		f2, err := fs.Create("/file2.txt")
 		assert.NoError(t, err)
 		f2.Write([]byte("hello2"))
-		info2 := f2.(*inMemfile).FileInfo()
+		info2 := f2.(*InMemfile).FileInfo()
 		creationTime2 := info2.CreationTime_
 		modifTime2 := info2.ModTime_
 		mode2 := info2.Mode_
@@ -277,7 +277,7 @@ func TestMemoryFilesystemTakeFilesystemSnapshot(t *testing.T) {
 		assert.NoError(t, err)
 		f.Write([]byte("hello"))
 
-		fileInfo := f.(*inMemfile).FileInfo()
+		fileInfo := f.(*InMemfile).FileInfo()
 		fileCreationTime := fileInfo.CreationTime_
 		fileModifTime := fileInfo.ModTime_
 		fileMode := fileInfo.Mode_
