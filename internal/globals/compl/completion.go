@@ -436,14 +436,14 @@ after_subcommand_completions:
 
 	//if in object
 	if len(ancestors) > 2 &&
-		parse.NodeIs(ancestors[len(ancestors)-1], (*parse.ObjectProperty)(nil)) &&
-		parse.NodeIs(ancestors[len(ancestors)-2], (*parse.ObjectLiteral)(nil)) {
+		utils.Implements[*parse.ObjectProperty](ancestors[len(ancestors)-1]) &&
+		utils.Implements[*parse.ObjectLiteral](ancestors[len(ancestors)-2]) {
 
 		prop := ancestors[len(ancestors)-1].(*parse.ObjectProperty)
 		objectLiteral := ancestors[len(ancestors)-2].(*parse.ObjectLiteral)
 
 		//suggest sections of manifest
-		if parse.NodeIs(ancestors[len(ancestors)-3], (*parse.Manifest)(nil)) {
+		if utils.Implements[*parse.Manifest](ancestors[len(ancestors)-3]) {
 			for _, sectionName := range core.MANIFEST_SECTION_NAMES {
 				if hasPrefixCaseInsensitive(sectionName, ident.Name) {
 					suffix := ""
@@ -468,7 +468,7 @@ after_subcommand_completions:
 		}
 
 		//suggest sections of lthread meta
-		if len(ancestors) > 3 && parse.NodeIs(ancestors[len(ancestors)-3], (*parse.SpawnExpression)(nil)) &&
+		if len(ancestors) > 3 && utils.Implements[*parse.SpawnExpression](ancestors[len(ancestors)-3]) &&
 			objectLiteral == ancestors[len(ancestors)-3].(*parse.SpawnExpression).Meta {
 			for _, sectionName := range symbolic.LTHREAD_SECTION_NAMES {
 				if hasPrefixCaseInsensitive(sectionName, ident.Name) {
@@ -499,9 +499,9 @@ after_subcommand_completions:
 		case *parse.ObjectProperty:
 
 			//case: the current property is in an object describing one of the section of the manifest
-			if len(ancestors) >= 6 && parse.NodeIs(ancestors[len(ancestors)-2], (*parse.ObjectLiteral)(nil)) &&
-				parse.NodeIs(ancestors[len(ancestors)-3], (*parse.ObjectProperty)(nil)) &&
-				parse.NodeIs(ancestors[len(ancestors)-5], (*parse.Manifest)(nil)) {
+			if len(ancestors) >= 6 && utils.Implements[*parse.ObjectLiteral](ancestors[len(ancestors)-2]) &&
+				utils.Implements[*parse.ObjectProperty](ancestors[len(ancestors)-3]) &&
+				utils.Implements[*parse.Manifest](ancestors[len(ancestors)-5]) {
 
 				manifestObjProp := ancestors[len(ancestors)-3].(*parse.ObjectProperty)
 
@@ -552,8 +552,8 @@ after_subcommand_completions:
 
 	//if in record
 	if len(ancestors) > 2 &&
-		parse.NodeIs(ancestors[len(ancestors)-1], (*parse.ObjectProperty)(nil)) &&
-		parse.NodeIs(ancestors[len(ancestors)-2], (*parse.RecordLiteral)(nil)) {
+		utils.Implements[*parse.ObjectProperty](ancestors[len(ancestors)-1]) &&
+		utils.Implements[*parse.RecordLiteral](ancestors[len(ancestors)-2]) {
 
 		recordLiteral := ancestors[len(ancestors)-2].(*parse.RecordLiteral)
 

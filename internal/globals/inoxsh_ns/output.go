@@ -120,7 +120,7 @@ func sprintPrompt(state *core.TreeWalkState, config REPLConfiguration) (prompt s
 			} else {
 				panic(fmt.Errorf("writePrompt: only some restricted call expressions can be evaluated"))
 			}
-			//!parse.NodeIsSimpleValueLiteral(p.Node) && !parse.NodeIs(p.Node, (*parse.URLExpression)(nil))
+			//!parse.NodeIsSimpleValueLiteral(p.Node) && !utils.Implements[*parse.URLExpression](p.Node)
 
 			v, err := core.TreeWalkEval(p.Node, state)
 			if err != nil {

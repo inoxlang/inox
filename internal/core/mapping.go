@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 
 	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 type Mapping struct {
@@ -58,7 +59,7 @@ func NewMapping(expr *parse.MappingExpression, state *GlobalState) (*Mapping, er
 			var key Value
 			var err error
 
-			if valueLit, ok := e.Key.(parse.SimpleValueLiteral); ok && !parse.NodeIs(valueLit, (*parse.IdentifierLiteral)(nil)) {
+			if valueLit, ok := e.Key.(parse.SimpleValueLiteral); ok && !utils.Implements[*parse.IdentifierLiteral](valueLit) {
 				key, err = evalSimpleValueLiteral(valueLit, state)
 			} else {
 				//TODO: check has representation
@@ -72,7 +73,7 @@ func NewMapping(expr *parse.MappingExpression, state *GlobalState) (*Mapping, er
 			repr := string(GetRepresentation(key.(Serializable), state.Ctx))
 			mapping.keys[repr] = key.(Serializable)
 
-			if valueLit, ok := e.Value.(parse.SimpleValueLiteral); ok && !parse.NodeIs(valueLit, (*parse.IdentifierLiteral)(nil)) {
+			if valueLit, ok := e.Value.(parse.SimpleValueLiteral); ok && !utils.Implements[*parse.IdentifierLiteral](valueLit) {
 				v, err := evalSimpleValueLiteral(valueLit, state)
 				if err != nil {
 					return nil, err

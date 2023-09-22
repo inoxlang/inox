@@ -1661,7 +1661,7 @@ switch_:
 				}
 				break loop
 			case *parse.EmbeddedModule: //ok if lifetime job
-				if i == 0 || !parse.NodeIs(ancestorChain[i-1], &parse.LifetimejobExpression{}) {
+				if i == 0 || !utils.Implements[*parse.LifetimejobExpression](ancestorChain[i-1]) {
 					c.addError(node, misplacementErr)
 				}
 				return parse.Continue
@@ -1790,13 +1790,13 @@ func (checker *checker) postCheckSingleNode(node, parent, scopeNode parse.Node, 
 	case *parse.ObjectLiteral:
 		//manifest
 
-		if parse.NodeIs(parent, (*parse.Manifest)(nil)) {
+		if utils.Implements[*parse.Manifest](parent) {
 			if len(ancestorChain) < 2 {
 				checker.addError(parent, CANNOT_CHECK_MANIFEST_WITHOUT_PARENT)
 				break
 			}
 
-			embeddedModule := !parse.NodeIs(ancestorChain[len(ancestorChain)-2], (*parse.Chunk)(nil))
+			embeddedModule := !utils.Implements[*parse.Chunk](ancestorChain[len(ancestorChain)-2])
 			if embeddedModule {
 				checkManifestObject(manifestStaticCheckArguments{
 					objLit:                n,
@@ -2366,7 +2366,7 @@ func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Nod
 }
 
 func checkVisibilityInitializationBlock(propInfo *propertyInfo, block *parse.InitializationBlock, onError func(n parse.Node, msg string)) {
-	if len(block.Statements) != 1 || !parse.NodeIs(block.Statements[0], &parse.ObjectLiteral{}) {
+	if len(block.Statements) != 1 || !utils.Implements[*parse.ObjectLiteral](block.Statements[0]) {
 		onError(block, INVALID_VISIB_INIT_BLOCK_SHOULD_CONT_OBJ)
 		return
 	}

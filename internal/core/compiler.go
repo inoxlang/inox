@@ -1056,7 +1056,7 @@ func (c *compiler) Compile(node parse.Node) error {
 	case *parse.DictionaryLiteral:
 		for _, entry := range node.Entries {
 
-			if lit, ok := entry.Key.(parse.SimpleValueLiteral); ok && !parse.NodeIs(lit, &parse.IdentifierLiteral{}) {
+			if lit, ok := entry.Key.(parse.SimpleValueLiteral); ok && !utils.Implements[*parse.IdentifierLiteral](lit) {
 				key := utils.Must(evalSimpleValueLiteral(lit, &GlobalState{}))
 				c.emit(node, OpPushConstant, c.addConstant(key))
 			} else {
@@ -1668,7 +1668,7 @@ func (c *compiler) Compile(node parse.Node) error {
 				keys = append(keys, propertyName)
 				types = append(types, ANYVAL_PATTERN)
 
-				if propertyName != symbolic.LTHREAD_META_GLOBALS_SECTION || !parse.NodeIs(property.Value, (*parse.ObjectLiteral)(nil)) {
+				if propertyName != symbolic.LTHREAD_META_GLOBALS_SECTION || !utils.Implements[*parse.ObjectLiteral](property.Value) {
 					if err := c.Compile(property.Value); err != nil {
 						return err
 					}

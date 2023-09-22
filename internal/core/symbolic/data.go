@@ -294,7 +294,7 @@ func (d *SymbolicData) getScopeData(n parse.Node, ancestorChain []parse.Node, gl
 			}
 
 			if global {
-				if parse.NodeIs(n, (*parse.EmbeddedModule)(nil)) {
+				if utils.Implements[*parse.EmbeddedModule](n) {
 					return ScopeData{}, false
 				}
 				lastIndex := len(ancestorChain) - 1
@@ -460,7 +460,7 @@ func (d *SymbolicData) GetContextData(n parse.Node, ancestorChain []parse.Node) 
 				return ContextData{}, false
 			}
 
-			if parse.NodeIs(n, (*parse.EmbeddedModule)(nil)) {
+			if utils.Implements[*parse.EmbeddedModule](n) {
 				return ContextData{}, false
 			}
 			lastIndex := len(ancestorChain) - 1

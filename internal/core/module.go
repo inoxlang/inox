@@ -300,7 +300,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 		if preinitArgs.GlobalConsts != nil {
 			for _, decl := range preinitArgs.GlobalConsts.Declarations {
 				//ignore declaration if incomplete
-				if preinitArgs.IgnoreConstDeclErrors && decl.Left == nil || decl.Right == nil || parse.NodeIs(decl.Right, (*parse.MissingExpression)(nil)) {
+				if preinitArgs.IgnoreConstDeclErrors && decl.Left == nil || decl.Right == nil || utils.Implements[*parse.MissingExpression](decl.Right) {
 					continue
 				}
 

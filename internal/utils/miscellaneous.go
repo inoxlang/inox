@@ -62,3 +62,8 @@ func Ret[V any](v V) func() V {
 		return v
 	}
 }
+
+func Implements[T any](v any) bool {
+	_, ok := v.(T)
+	return ok
+}

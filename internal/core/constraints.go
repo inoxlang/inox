@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 	cmap "github.com/orcaman/concurrent-map/v2"
 )
 
@@ -47,7 +48,7 @@ func initializeConstraintMetaproperty(v *Object, block *parse.InitializationBloc
 		var props []string
 
 		parse.Walk(stmt, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
-			if membExpr, ok := node.(*parse.MemberExpression); ok && parse.NodeIs(membExpr.Left, &parse.SelfExpression{}) {
+			if membExpr, ok := node.(*parse.MemberExpression); ok && utils.Implements[*parse.SelfExpression](membExpr.Left) {
 				props = append(props, membExpr.PropertyName.Name)
 			}
 			return parse.Continue, nil

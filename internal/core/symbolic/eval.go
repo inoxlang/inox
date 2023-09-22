@@ -1663,7 +1663,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 							}
 							continue
 						}
-					} else if propertyName == LTHREAD_META_ALLOW_SECTION && parse.NodeIs(property.Value, (*parse.ObjectLiteral)(nil)) {
+					} else if propertyName == LTHREAD_META_ALLOW_SECTION && utils.Implements[*parse.ObjectLiteral](property.Value) {
 						permListingNode = property.Value.(*parse.ObjectLiteral)
 					}
 
@@ -4890,7 +4890,7 @@ func handleConstraints(obj *Object, block *parse.InitializationBlock, state *Sta
 			}
 
 			parse.Walk(stmt, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
-				if parse.NodeIs(node, &parse.SelfExpression{}) && parse.NodeIs(parent, &parse.MemberExpression{}) {
+				if utils.Implements[*parse.SelfExpression](node) && utils.Implements[*parse.MemberExpression](parent) {
 					constraint.Properties = append(constraint.Properties, parent.(*parse.MemberExpression).PropertyName.Name)
 				}
 				return parse.Continue, nil

@@ -218,7 +218,7 @@ func getSectionHelp(n parse.Node, ancestors []parse.Node) (string, bool) {
 
 	//check the hovered node is the key of an object property
 	objProp, ok := ancestors[len(ancestors)-1].(*parse.ObjectProperty)
-	if !ok || objProp.Key != n || !parse.NodeIs(ancestors[len(ancestors)-2], (*parse.ObjectLiteral)(nil)) {
+	if !ok || objProp.Key != n || !utils.Implements[*parse.ObjectLiteral](ancestors[len(ancestors)-2]) {
 		return "", false
 	}
 
