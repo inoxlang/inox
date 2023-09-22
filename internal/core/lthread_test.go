@@ -109,6 +109,44 @@ func TestSpawnLThread(t *testing.T) {
 		assert.Equal(t, map[string]Serializable{"a": Int(1)}, obj.EntryMap(nil))
 	})
 
+	t.Run("the context of the lthread should be done when .WaitResult() returns", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{
+			Permissions: []Permission{
+				GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
+				GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
+				GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
+				LThreadPermission{permkind.Create},
+			},
+		})
+		defer ctx.CancelGracefully()
+
+		state := NewGlobalState(ctx)
+		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+			NameString: "lthread-test",
+			CodeString: "",
+		}))
+
+		lthread, err := SpawnLThread(LthreadSpawnArgs{
+			SpawnerState: state,
+			Globals:      GlobalVariablesFromMap(map[string]Value{}, nil),
+			Module: &Module{
+				MainChunk:  chunk,
+				ModuleKind: UserLThreadModule,
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		_, err = lthread.WaitResult(state.Ctx)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.True(t, lthread.state.Ctx.IsDone())
+	})
+
 	t.Run("ResumeAsync should resume the lthread if it does not continue by default after yielding", func(t *testing.T) {
 		state := NewGlobalState(NewContext(ContextConfig{
 			Permissions: []Permission{
