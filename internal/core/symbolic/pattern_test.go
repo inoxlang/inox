@@ -61,6 +61,15 @@ func TestSymbolicPathPattern(t *testing.T) {
 		assert.False(t, anyPathPattern.TestValue(ANY_INT))
 		assert.False(t, anyPathPattern.TestValue(ANY_PATH_PATTERN))
 
+		//same tests but with result of .SymbolicValue()
+		anyPathPattern_val := anyPathPattern.SymbolicValue()
+		assert.True(t, anyPathPattern_val.Test(&Path{}))
+		assert.True(t, anyPathPattern_val.Test(NewPath("/")))
+		assert.True(t, anyPathPattern_val.Test(NewPath("./")))
+		assert.True(t, anyPathPattern_val.Test(NewPathMatchingPattern(&PathPattern{node: &parse.PathPatternExpression{}})))
+		assert.False(t, anyPathPattern_val.Test(ANY_INT))
+		assert.False(t, anyPathPattern_val.Test(ANY_PATH_PATTERN))
+
 		pathPatternWithValue := NewPathPattern("/...")
 		assert.True(t, pathPatternWithValue.TestValue(NewPath("/")))
 		assert.True(t, pathPatternWithValue.TestValue(NewPath("/1")))
@@ -71,6 +80,17 @@ func TestSymbolicPathPattern(t *testing.T) {
 		assert.False(t, pathPatternWithValue.TestValue(ANY_INT))
 		assert.False(t, pathPatternWithValue.TestValue(ANY_PATH_PATTERN))
 
+		//same tests but with result of .SymbolicValue()
+		pathPatternWithValue_val := pathPatternWithValue.SymbolicValue()
+		assert.True(t, pathPatternWithValue_val.Test(NewPath("/")))
+		assert.True(t, pathPatternWithValue_val.Test(NewPath("/1")))
+		assert.True(t, pathPatternWithValue_val.Test(NewPath("/1/")))
+		assert.False(t, pathPatternWithValue_val.Test(NewPath("./")))
+		assert.False(t, pathPatternWithValue_val.Test(NewPathMatchingPattern(&PathPattern{node: &parse.PathPatternExpression{}})))
+		assert.False(t, pathPatternWithValue_val.Test(&Path{}))
+		assert.False(t, pathPatternWithValue_val.Test(ANY_INT))
+		assert.False(t, pathPatternWithValue_val.Test(ANY_PATH_PATTERN))
+
 		pathPatternWithNode := &PathPattern{node: &parse.PathPatternExpression{}}
 		assert.True(t, pathPatternWithNode.TestValue(NewPathMatchingPattern(pathPatternWithNode)))
 		assert.False(t, pathPatternWithNode.TestValue(NewPathMatchingPattern(&PathPattern{node: &parse.PathPatternExpression{}})))
@@ -79,6 +99,16 @@ func TestSymbolicPathPattern(t *testing.T) {
 		assert.False(t, pathPatternWithNode.TestValue(&Path{}))
 		assert.False(t, pathPatternWithNode.TestValue(ANY_INT))
 		assert.False(t, pathPatternWithNode.TestValue(ANY_PATH_PATTERN))
+
+		//same tests but with result of .SymbolicValue()
+		pathPatternWithNode_val := pathPatternWithNode.SymbolicValue()
+		assert.True(t, pathPatternWithNode_val.Test(NewPathMatchingPattern(pathPatternWithNode)))
+		assert.False(t, pathPatternWithNode_val.Test(NewPathMatchingPattern(&PathPattern{node: &parse.PathPatternExpression{}})))
+		assert.False(t, pathPatternWithNode_val.Test(NewPath("/")))
+		assert.False(t, pathPatternWithNode_val.Test(NewPath("./")))
+		assert.False(t, pathPatternWithNode_val.Test(&Path{}))
+		assert.False(t, pathPatternWithNode_val.Test(ANY_INT))
+		assert.False(t, pathPatternWithNode_val.Test(ANY_PATH_PATTERN))
 	})
 
 }
@@ -116,6 +146,14 @@ func TestSymbolicUrlPattern(t *testing.T) {
 		assert.False(t, anyUrlPattern.TestValue(ANY_INT))
 		assert.False(t, anyUrlPattern.TestValue(ANY_URL_PATTERN))
 
+		//same tests but with result of .SymbolicValue()
+		anyUrlPattern_val := anyUrlPattern.SymbolicValue()
+		assert.True(t, anyUrlPattern_val.Test(&URL{}))
+		assert.True(t, anyUrlPattern_val.Test(NewUrl("https://example.com/")))
+		assert.True(t, anyUrlPattern_val.Test(NewUrlMatchingPattern(NewUrlPatternFromNode(&parse.URLPatternLiteral{}))))
+		assert.False(t, anyUrlPattern_val.Test(ANY_INT))
+		assert.False(t, anyUrlPattern_val.Test(ANY_URL_PATTERN))
+
 		urlPatternWithValue := NewUrlPattern("https://example.com/...")
 		assert.True(t, urlPatternWithValue.TestValue(NewUrl("https://example.com/")))
 		assert.True(t, urlPatternWithValue.TestValue(NewUrl("https://example.com/1")))
@@ -126,6 +164,17 @@ func TestSymbolicUrlPattern(t *testing.T) {
 		assert.False(t, urlPatternWithValue.TestValue(ANY_INT))
 		assert.False(t, urlPatternWithValue.TestValue(ANY_URL_PATTERN))
 
+		//same tests but with result of .SymbolicValue()
+		urlPatternWithValue_val := urlPatternWithValue.SymbolicValue()
+		assert.True(t, urlPatternWithValue_val.Test(NewUrl("https://example.com/")))
+		assert.True(t, urlPatternWithValue_val.Test(NewUrl("https://example.com/1")))
+		assert.True(t, urlPatternWithValue_val.Test(NewUrl("https://example.com/1/")))
+		assert.False(t, urlPatternWithValue_val.Test(NewUrl("https://localhost/")))
+		assert.False(t, urlPatternWithValue_val.Test(NewUrlMatchingPattern(NewUrlPatternFromNode(&parse.URLPatternLiteral{}))))
+		assert.False(t, urlPatternWithValue_val.Test(&URL{}))
+		assert.False(t, urlPatternWithValue_val.Test(ANY_INT))
+		assert.False(t, urlPatternWithValue_val.Test(ANY_URL_PATTERN))
+
 		urlPatternWithNode := NewUrlPatternFromNode(&parse.URLPatternLiteral{}) //the node will never be a parse.URLPatternLiteral
 		assert.True(t, urlPatternWithNode.TestValue(NewUrlMatchingPattern(urlPatternWithNode)))
 		assert.False(t, urlPatternWithNode.TestValue(NewUrlMatchingPattern(NewUrlPatternFromNode(&parse.URLPatternLiteral{}))))
@@ -133,6 +182,15 @@ func TestSymbolicUrlPattern(t *testing.T) {
 		assert.False(t, urlPatternWithNode.TestValue(&URL{}))
 		assert.False(t, urlPatternWithNode.TestValue(ANY_INT))
 		assert.False(t, urlPatternWithNode.TestValue(ANY_URL_PATTERN))
+
+		//same tests but with result of .SymbolicValue()
+		urlPatternWithNode_val := urlPatternWithNode.SymbolicValue()
+		assert.True(t, urlPatternWithNode_val.Test(NewUrlMatchingPattern(urlPatternWithNode)))
+		assert.False(t, urlPatternWithNode_val.Test(NewUrlMatchingPattern(NewUrlPatternFromNode(&parse.URLPatternLiteral{}))))
+		assert.False(t, urlPatternWithNode_val.Test(NewUrl("https://example.com/")))
+		assert.False(t, urlPatternWithNode_val.Test(&URL{}))
+		assert.False(t, urlPatternWithNode_val.Test(ANY_INT))
+		assert.False(t, urlPatternWithNode_val.Test(ANY_URL_PATTERN))
 	})
 
 }
@@ -170,6 +228,14 @@ func TestSymbolicHostPattern(t *testing.T) {
 		assert.False(t, anyHostPattern.TestValue(ANY_INT))
 		assert.False(t, anyHostPattern.TestValue(ANY_HOST_PATTERN))
 
+		//same tests but with result of .SymbolicValue()
+		anyHostPattern_val := anyHostPattern.SymbolicValue()
+		assert.True(t, anyHostPattern_val.Test(&Host{}))
+		assert.True(t, anyHostPattern_val.Test(NewHost("https://example.com")))
+		assert.True(t, anyHostPattern_val.Test(NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{}))))
+		assert.False(t, anyHostPattern_val.Test(ANY_INT))
+		assert.False(t, anyHostPattern_val.Test(ANY_HOST_PATTERN))
+
 		hostPatternWithValue := NewHostPattern("https://example.com")
 		assert.True(t, hostPatternWithValue.TestValue(NewHost("https://example.com")))
 		assert.False(t, hostPatternWithValue.TestValue(NewHost("https://localhost")))
@@ -178,6 +244,15 @@ func TestSymbolicHostPattern(t *testing.T) {
 		assert.False(t, hostPatternWithValue.TestValue(ANY_INT))
 		assert.False(t, hostPatternWithValue.TestValue(ANY_HOST_PATTERN))
 
+		//same tests but with result of .SymbolicValue()
+		hostPatternWithValue_val := hostPatternWithValue.SymbolicValue()
+		assert.True(t, hostPatternWithValue_val.Test(NewHost("https://example.com")))
+		assert.False(t, hostPatternWithValue_val.Test(NewHost("https://localhost")))
+		assert.False(t, hostPatternWithValue_val.Test(NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{}))))
+		assert.False(t, hostPatternWithValue_val.Test(&Host{}))
+		assert.False(t, hostPatternWithValue_val.Test(ANY_INT))
+		assert.False(t, hostPatternWithValue_val.Test(ANY_HOST_PATTERN))
+
 		hostPatternWithNode := NewHostPatternFromNode(&parse.HostPatternLiteral{}) //the node will never be a parse.HostPatternLiteral
 		assert.True(t, hostPatternWithNode.TestValue(NewHostMatchingPattern(hostPatternWithNode)))
 		assert.False(t, hostPatternWithNode.TestValue(NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{}))))
@@ -185,6 +260,15 @@ func TestSymbolicHostPattern(t *testing.T) {
 		assert.False(t, hostPatternWithNode.TestValue(&Host{}))
 		assert.False(t, hostPatternWithNode.TestValue(ANY_INT))
 		assert.False(t, hostPatternWithNode.TestValue(ANY_HOST_PATTERN))
+
+		//same tests but with result of .SymbolicValue()
+		hostPatternWithNode_val := hostPatternWithNode.SymbolicValue()
+		assert.True(t, hostPatternWithNode_val.Test(NewHostMatchingPattern(hostPatternWithNode)))
+		assert.False(t, hostPatternWithNode_val.Test(NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{}))))
+		assert.False(t, hostPatternWithNode_val.Test(NewHost("https://example.com")))
+		assert.False(t, hostPatternWithNode_val.Test(&Host{}))
+		assert.False(t, hostPatternWithNode_val.Test(ANY_INT))
+		assert.False(t, hostPatternWithNode_val.Test(ANY_HOST_PATTERN))
 	})
 
 }
