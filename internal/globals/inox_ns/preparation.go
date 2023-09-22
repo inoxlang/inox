@@ -410,8 +410,8 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		core.MOD_ARGS_VARNAME: manifest.Parameters.GetSymbolicArguments(ctx),
 	}
 
-	symbolicCtx, err_ := state.Ctx.ToSymbolicValue()
-	if err_ != nil {
+	symbolicCtx, criticalSymbolicCheckError := state.Ctx.ToSymbolicValue()
+	if criticalSymbolicCheckError != nil {
 		finalErr = parsingErr
 		return
 	}
@@ -428,7 +428,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		symbolicBasePatternNamespaces[k] = utils.Must(v.ToSymbolicValue(ctx, encountered)).(*symbolic.PatternNamespace)
 	}
 
-	symbolicData, err_ := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
+	symbolicData, criticalSymbolicCheckError := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
 		Node:                           mod.MainChunk.Node,
 		Module:                         state.Module.ToSymbolic(),
 		Globals:                        globals,
@@ -449,10 +449,10 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		finalErr = parsingErr
 	} else if finalErr == nil {
 		switch {
+		case criticalSymbolicCheckError != nil:
+			return nil, nil, nil, criticalSymbolicCheckError
 		case preinitErr != nil:
 			finalErr = preinitErr
-		case err_ != nil:
-			finalErr = err_
 		case staticCheckErr != nil:
 			finalErr = staticCheckErr
 		case modArgsError != nil:
@@ -599,13 +599,13 @@ func PrepareExtractionModeIncludableChunkfile(args IncludableChunkfilePreparatio
 		return nil
 	})
 
-	symbolicCtx, err_ := state.Ctx.ToSymbolicValue()
-	if err_ != nil {
+	symbolicCtx, criticalSymbolicCheckError := state.Ctx.ToSymbolicValue()
+	if criticalSymbolicCheckError != nil {
 		finalErr = parsingErr
 		return
 	}
 
-	symbolicData, err_ := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
+	symbolicData, criticalSymbolicCheckError := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
 		Node:    mod.MainChunk.Node,
 		Module:  state.Module.ToSymbolic(),
 		Globals: globals,
@@ -620,8 +620,8 @@ func PrepareExtractionModeIncludableChunkfile(args IncludableChunkfilePreparatio
 		finalErr = parsingErr
 	} else if finalErr == nil {
 		switch {
-		case err_ != nil:
-			finalErr = err_
+		case criticalSymbolicCheckError != nil:
+			return nil, nil, nil, criticalSymbolicCheckError
 		case staticCheckErr != nil:
 			finalErr = staticCheckErr
 		}
