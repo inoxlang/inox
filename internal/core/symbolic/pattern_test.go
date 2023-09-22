@@ -1439,6 +1439,95 @@ func TestSymbolicTuplePattern(t *testing.T) {
 }
 
 func TestSymbolicUnionPattern(t *testing.T) {
+	INT_PATTERN := ANY_INT.Static()
+	FLOAT_PATTERN := ANY_FLOAT.Static()
+	STR_PATTERN := ANY_STR.Static()
+	BOOL_PATTERN := ANY_BOOL.Static()
+
+	newUnionPattern := func(cases ...Pattern) *UnionPattern {
+		return utils.Must(NewUnionPattern(cases, false))
+	}
+	newDisjointUnionPattern := func(cases ...Pattern) *UnionPattern {
+		return utils.Must(NewUnionPattern(cases, true))
+	}
+
+	t.Run("NewUnionPattern", func(t *testing.T) {
+
+		patt := newUnionPattern(INT_PATTERN, STR_PATTERN)
+		assert.Equal(t, []Pattern{INT_PATTERN, STR_PATTERN}, patt.Cases())
+
+		t.Run("flattening", func(t *testing.T) {
+			patt = newUnionPattern(INT_PATTERN, newUnionPattern(STR_PATTERN, BOOL_PATTERN))
+			assert.Equal(t, []Pattern{INT_PATTERN, STR_PATTERN, BOOL_PATTERN}, patt.Cases())
+
+			patt = newUnionPattern(INT_PATTERN, newDisjointUnionPattern(STR_PATTERN, BOOL_PATTERN))
+			assert.Equal(t, []Pattern{
+				INT_PATTERN,
+				newDisjointUnionPattern(STR_PATTERN, BOOL_PATTERN),
+			}, patt.Cases())
+
+			patt = newUnionPattern(
+				INT_PATTERN,
+				newUnionPattern(
+					STR_PATTERN,
+					newUnionPattern(BOOL_PATTERN, FLOAT_PATTERN),
+				),
+			)
+			assert.Equal(t, []Pattern{INT_PATTERN, STR_PATTERN, BOOL_PATTERN, FLOAT_PATTERN}, patt.Cases())
+
+			patt = newUnionPattern(
+				INT_PATTERN,
+				newUnionPattern(
+					STR_PATTERN,
+					newDisjointUnionPattern(BOOL_PATTERN, FLOAT_PATTERN),
+				),
+			)
+			assert.Equal(t, []Pattern{
+				INT_PATTERN,
+				STR_PATTERN,
+				newDisjointUnionPattern(BOOL_PATTERN, FLOAT_PATTERN),
+			}, patt.Cases())
+		})
+
+		t.Run("flattening disjoint cases", func(t *testing.T) {
+			patt = newDisjointUnionPattern(
+				INT_PATTERN,
+				newDisjointUnionPattern(STR_PATTERN, BOOL_PATTERN),
+			)
+			assert.Equal(t, []Pattern{INT_PATTERN, STR_PATTERN, BOOL_PATTERN}, patt.Cases())
+
+			patt = newDisjointUnionPattern(
+				INT_PATTERN,
+				newUnionPattern(STR_PATTERN, BOOL_PATTERN),
+			)
+			assert.Equal(t, []Pattern{
+				INT_PATTERN,
+				newUnionPattern(STR_PATTERN, BOOL_PATTERN),
+			}, patt.Cases())
+
+			patt = newDisjointUnionPattern(
+				INT_PATTERN,
+				newDisjointUnionPattern(
+					STR_PATTERN,
+					newDisjointUnionPattern(BOOL_PATTERN, FLOAT_PATTERN),
+				),
+			)
+			assert.Equal(t, []Pattern{INT_PATTERN, STR_PATTERN, BOOL_PATTERN, FLOAT_PATTERN}, patt.Cases())
+
+			patt = newDisjointUnionPattern(
+				INT_PATTERN,
+				newDisjointUnionPattern(
+					STR_PATTERN,
+					newUnionPattern(BOOL_PATTERN, FLOAT_PATTERN),
+				),
+			)
+			assert.Equal(t, []Pattern{
+				INT_PATTERN,
+				STR_PATTERN,
+				newUnionPattern(BOOL_PATTERN, FLOAT_PATTERN),
+			}, patt.Cases())
+		})
+	})
 
 	t.Run("Test()", func(t *testing.T) {
 		cases := []struct {

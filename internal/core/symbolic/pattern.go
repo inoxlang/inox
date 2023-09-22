@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"regexp"
 	"regexp/syntax"
+	"slices"
 	"sort"
 	"strconv"
 
@@ -17,7 +18,8 @@ import (
 )
 
 const (
-	REGEX_SYNTAX = syntax.Perl
+	REGEX_SYNTAX                       = syntax.Perl
+	MAX_UNION_PATTERN_FLATTENING_DEPTH = 5
 )
 
 var (
@@ -2209,7 +2211,43 @@ func NewUnionPattern(cases []Pattern, disjoint bool) (*UnionPattern, error) {
 		}
 	}
 
+	cases, err := flattenUnionPatternCases(cases, disjoint, 0)
+	if err != nil {
+		return nil, err
+	}
+
 	return &UnionPattern{cases: cases, disjoint: disjoint}, nil
+}
+
+func flattenUnionPatternCases(cases []Pattern, disjoint bool, depth int) (results []Pattern, _ error) {
+	if depth > MAX_UNION_PATTERN_FLATTENING_DEPTH {
+		return nil, errors.New("maximum flattening depth exceeded")
+	}
+
+	if len(cases) == 0 {
+		panic(errors.New("cases should have at least one element"))
+	}
+
+	changes := false
+	results = cases
+
+	for i, case_ := range cases {
+		if union, ok := case_.(*UnionPattern); ok && union.disjoint == disjoint {
+			if !changes {
+				results = slices.Clone(cases[:i])
+			}
+			changes = true
+			flattened, err := flattenUnionPatternCases(union.cases, disjoint, depth+1)
+			if err != nil {
+				return nil, err
+			}
+			results = append(results, flattened...)
+		} else if changes {
+			results = append(results, case_)
+		}
+	}
+
+	return
 }
 
 func (p *UnionPattern) Cases() []Pattern {
