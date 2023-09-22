@@ -246,7 +246,7 @@ func TestPersistLoadSet(t *testing.T) {
 			if !assert.True(t, ok) {
 				return
 			}
-			assert.Equal(t, `[{"int__value":"1"}]`, serialized)
+			assert.Equal(t, `[{"int__value":1}]`, serialized)
 		}
 
 		loadedSet, err := loadSet(ctx, core.InstanceLoadArgs{
@@ -280,7 +280,7 @@ func TestPersistLoadSet(t *testing.T) {
 			if !assert.True(t, ok) {
 				return
 			}
-			assert.Regexp(t, `(\[{"int__value":"1"},{"int__value":"2"}]|\[{"int__value":"2"},{"int__value":"1"}])`, serialized)
+			assert.Regexp(t, `(\[{"int__value":1},{"int__value":2}]|\[{"int__value":2},{"int__value":1}])`, serialized)
 		}
 
 		loadedSet, err := loadSet(ctx, core.InstanceLoadArgs{
@@ -512,7 +512,7 @@ func TestPersistLoadSet(t *testing.T) {
 		assert.True(t, object.IsShared())
 
 		//make sure the post-migration value is saved
-		assert.Equal(t, `{"_url_":"ldb://main/x","a":"1"}`, storage.Data["/x"])
+		assert.Equal(t, `{"_url_":"ldb://main/x","a":1}`, storage.Data["/x"])
 	})
 }
 
