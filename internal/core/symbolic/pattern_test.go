@@ -1090,6 +1090,24 @@ func TestSymbolicListPattern(t *testing.T) {
 			assert.Equal(t, expected, val)
 		})
 
+		t.Run("multivalue as general element", func(t *testing.T) {
+			patt := NewListPatternOf(&TypePattern{val: NewMultivalue(ANY_INT, ANY_STR)})
+
+			val := patt.SymbolicValue()
+			serializableMv := NewMultivalue(ANY_INT, ANY_STR).as(SERIALIZABLE_INTERFACE_TYPE).(Serializable)
+			expected := NewListOf(serializableMv)
+			assert.Equal(t, expected, val)
+		})
+
+		t.Run("multivalue as element", func(t *testing.T) {
+			patt := NewListPattern([]Pattern{&TypePattern{val: NewMultivalue(ANY_INT, ANY_STR)}})
+
+			val := patt.SymbolicValue()
+			serializableMv := NewMultivalue(ANY_INT, ANY_STR).as(SERIALIZABLE_INTERFACE_TYPE).(Serializable)
+			expected := NewList(serializableMv)
+			assert.Equal(t, expected, val)
+		})
+
 		cases := []struct {
 			pattern     *ListPattern
 			testedValue SymbolicValue
@@ -1380,7 +1398,25 @@ func TestSymbolicTuplePattern(t *testing.T) {
 		}
 	})
 
-	t.Run("TestValue()", func(t *testing.T) {
+	t.Run("TestValue() & SymbolicValue()", func(t *testing.T) {
+		t.Run("multivalue as general element", func(t *testing.T) {
+			patt := NewTuplePatternOf(&TypePattern{val: NewMultivalue(ANY_INT, ANY_STR)})
+
+			val := patt.SymbolicValue()
+			serializableMv := NewMultivalue(ANY_INT, ANY_STR).as(SERIALIZABLE_INTERFACE_TYPE).(Serializable)
+			expected := NewTupleOf(serializableMv)
+			assert.Equal(t, expected, val)
+		})
+
+		t.Run("multivalue as element", func(t *testing.T) {
+			patt := NewTuplePattern([]Pattern{&TypePattern{val: NewMultivalue(ANY_INT, ANY_STR)}})
+
+			val := patt.SymbolicValue()
+			serializableMv := NewMultivalue(ANY_INT, ANY_STR).as(SERIALIZABLE_INTERFACE_TYPE).(Serializable)
+			expected := NewTuple(serializableMv)
+			assert.Equal(t, expected, val)
+		})
+
 		cases := []struct {
 			pattern     *TuplePattern
 			testedValue Serializable

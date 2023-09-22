@@ -1926,10 +1926,11 @@ func (p *ListPattern) SymbolicValue() SymbolicValue {
 	if p.elements != nil {
 		list.elements = make([]Serializable, 0)
 		for _, e := range p.elements {
-			list.elements = append(list.elements, e.SymbolicValue().(Serializable))
+			element := AsSerializable(e.SymbolicValue()).(Serializable)
+			list.elements = append(list.elements, element)
 		}
 	} else {
-		list.generalElement = p.generalElement.SymbolicValue().(Serializable)
+		list.generalElement = AsSerializable(p.generalElement.SymbolicValue()).(Serializable)
 	}
 	return list
 }
@@ -2135,10 +2136,11 @@ func (p *TuplePattern) SymbolicValue() SymbolicValue {
 	if p.elements != nil {
 		tuple.elements = make([]Serializable, 0)
 		for _, e := range p.elements {
-			tuple.elements = append(tuple.elements, e.SymbolicValue().(Serializable))
+			element := AsSerializable(e.SymbolicValue()).(Serializable)
+			tuple.elements = append(tuple.elements, element)
 		}
 	} else {
-		tuple.generalElement = p.generalElement.SymbolicValue().(Serializable)
+		tuple.generalElement = AsSerializable(p.generalElement.SymbolicValue()).(Serializable)
 	}
 	return tuple
 }
