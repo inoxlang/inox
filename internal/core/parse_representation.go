@@ -11,6 +11,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/inoxlang/inox/internal/globalnames"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -2036,7 +2037,7 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 				var result Serializable
 
 				switch fn {
-				case FILEMODE_PRIMORDIAL_FUNCNAME:
+				case globalnames.FILEMODE_FN:
 					result = FileModeFrom(ctx, callArgs[0])
 				default:
 					panic(fmt.Errorf("unknown function in representation call: %s", fn))

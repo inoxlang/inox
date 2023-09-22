@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
+	"github.com/inoxlang/inox/internal/globalnames"
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
@@ -899,7 +900,7 @@ func (d Date) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig,
 }
 
 func (m FileMode) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
-	if _, err := w.Write(utils.StringAsBytes(FILEMODE_PRIMORDIAL_FUNCNAME)); err != nil {
+	if _, err := w.Write(utils.StringAsBytes(globalnames.FILEMODE_FN)); err != nil {
 		return err
 	}
 

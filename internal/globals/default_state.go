@@ -8,6 +8,7 @@ import (
 	"github.com/inoxlang/inox/internal/config"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/globalnames"
 	"golang.org/x/exp/maps"
 
 	"github.com/inoxlang/inox/internal/default_state"
@@ -119,149 +120,149 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 		core.INITIAL_WORKING_DIR_PREFIX_VARNAME: core.INITIAL_WORKING_DIR_PATH_PATTERN,
 
 		// namespaces
-		"fs":       fs_ns.NewFsNamespace(),
-		"http":     http_ns.NewHttpNamespace(),
-		"tcp":      net_ns.NewTcpNamespace(),
-		"dns":      net_ns.NewDNSnamespace(),
-		"ws":       net_ns.NewWebsocketNamespace(),
-		"s3":       s3_ns.NewS3namespace(),
-		"chrome":   chrome_ns.NewChromeNamespace(),
-		"env":      envNamespace,
-		"html":     html_ns.NewHTMLNamespace(),
-		"inox":     inox_ns.NewInoxNamespace(),
-		"inoxsh":   inoxsh_ns.NewInoxshNamespace(),
-		"inoxlsp":  inoxlsp_ns.NewInoxLspNamespace(),
-		"strmanip": strmanip_ns.NewStrManipNnamespace(),
-		"rsa":      newRSANamespace(),
+		globalnames.FS_NS:       fs_ns.NewFsNamespace(),
+		globalnames.HTTP_NS:     http_ns.NewHttpNamespace(),
+		globalnames.TCP_NS:      net_ns.NewTcpNamespace(),
+		globalnames.DNS_NS:      net_ns.NewDNSnamespace(),
+		globalnames.WS_NS:       net_ns.NewWebsocketNamespace(),
+		globalnames.S3_NS:       s3_ns.NewS3namespace(),
+		globalnames.CHROME_NS:   chrome_ns.NewChromeNamespace(),
+		globalnames.ENV_NS:      envNamespace,
+		globalnames.HTML_NS:     html_ns.NewHTMLNamespace(),
+		globalnames.INOX_NS:     inox_ns.NewInoxNamespace(),
+		globalnames.INOXSH_NS:   inoxsh_ns.NewInoxshNamespace(),
+		globalnames.INOXLSP_NS:  inoxlsp_ns.NewInoxLspNamespace(),
+		globalnames.STRMANIP_NS: strmanip_ns.NewStrManipNnamespace(),
+		globalnames.RSA_NS:      newRSANamespace(),
+		globalnames.INSECURE_NS: newInsecure(),
 
-		"ls": core.WrapGoFunction(fs_ns.ListFiles),
+		globalnames.LS_FN: core.WrapGoFunction(fs_ns.ListFiles),
 
 		// transaction
-		"get_current_tx": core.ValOf(_get_current_tx),
-		"start_tx":       core.ValOf(core.StartNewTransaction),
+		globalnames.GET_CURRENT_TX_FN: core.ValOf(_get_current_tx),
+		globalnames.START_TX_FN:       core.ValOf(core.StartNewTransaction),
 
-		"Error": core.ValOf(_Error),
+		globalnames.ERROR_FN: core.ValOf(_Error),
 
 		// resource
-		"read": core.ValOf(_readResource),
-		//"get":    core.ValOf(_getResource),
-		"create": core.ValOf(_createResource),
-		"update": core.ValOf(_updateResource),
-		"delete": core.ValOf(_deleteResource),
+		globalnames.READ_FN: core.ValOf(_readResource),
+		//globalnames.get:    core.ValOf(_getResource),
+		globalnames.CREATE_FN: core.ValOf(_createResource),
+		globalnames.UPDATE_FN: core.ValOf(_updateResource),
+		globalnames.DELETE_FN: core.ValOf(_deleteResource),
 
-		"serve": core.ValOf(_serve),
+		globalnames.SERVE_FN: core.ValOf(_serve),
 
 		// events
-		"Event":       core.ValOf(_Event),
-		"EventSource": core.ValOf(core.NewEventSource),
+		globalnames.EVENT_FN:     core.ValOf(_Event),
+		globalnames.EVENT_SRC_FN: core.ValOf(core.NewEventSource),
 
 		// watch
-		"watch_received_messages": core.ValOf(core.WatchReceivedMessages),
-		"ValueHistory":            core.WrapGoFunction(core.NewValueHistory),
-		"dynif":                   core.WrapGoFunction(core.NewDynamicIf),
-		"dyncall":                 core.WrapGoFunction(core.NewDynamicCall),
-		"get_system_graph":        core.WrapGoFunction(_get_system_graph),
+		globalnames.WATCH_RECEIVED_MESSAGES_FN: core.ValOf(core.WatchReceivedMessages),
+		globalnames.VALUE_HISTORY_FN:           core.WrapGoFunction(core.NewValueHistory),
+		globalnames.DYNIF_FN:                   core.WrapGoFunction(core.NewDynamicIf),
+		globalnames.DYNCALL_FN:                 core.WrapGoFunction(core.NewDynamicCall),
+		globalnames.GET_SYSTEM_GRAPH_FN:        core.WrapGoFunction(_get_system_graph),
 
 		// send & receive values
-		"sendval": core.ValOf(core.SendVal),
+		globalnames.SENDVAL_FN: core.ValOf(core.SendVal),
 
 		// crypto
-		"insecure":       newInsecure(),
-		"sha256":         core.ValOf(_sha256),
-		"sha384":         core.ValOf(_sha384),
-		"sha512":         core.ValOf(_sha512),
-		"hash_password":  core.ValOf(_hashPassword),
-		"check_password": core.ValOf(_checkPassword),
-		"rand":           core.ValOf(_rand),
+		globalnames.SHA256_FN:         core.ValOf(_sha256),
+		globalnames.SHA384_FN:         core.ValOf(_sha384),
+		globalnames.SHA512_FN:         core.ValOf(_sha512),
+		globalnames.HASH_PASSWORD_FN:  core.ValOf(_hashPassword),
+		globalnames.CHECK_PASSWORD_FN: core.ValOf(_checkPassword),
+		globalnames.RAND_FN:           core.ValOf(_rand),
 
 		//encodings
-		"b64":  core.ValOf(encodeBase64),
-		"db64": core.ValOf(decodeBase64),
+		globalnames.B64_FN:  core.ValOf(encodeBase64),
+		globalnames.DB64_FN: core.ValOf(decodeBase64),
 
-		"hex":   core.ValOf(encodeHex),
-		"unhex": core.ValOf(decodeHex),
+		globalnames.HEX_FN:   core.ValOf(encodeHex),
+		globalnames.UNHEX_FN: core.ValOf(decodeHex),
 
 		// conversion
-		"tostr":      core.ValOf(_tostr),
-		"torune":     core.ValOf(_torune),
-		"tobyte":     core.ValOf(_tobyte),
-		"tofloat":    core.ValOf(_tofloat),
-		"toint":      core.ValOf(_toint),
-		"torstream":  core.ValOf(_torstream),
-		"tojson":     core.ValOf(core.ToJSON),
-		"topjson":    core.ValOf(core.ToPrettyJSON),
-		"repr":       core.ValOf(_repr),
-		"parse_repr": core.ValOf(_parse_repr),
-		"parse":      core.ValOf(_parse),
-		"split":      core.ValOf(_split),
+		globalnames.TOSTR_FN:      core.ValOf(_tostr),
+		globalnames.TORUNE_FN:     core.ValOf(_torune),
+		globalnames.TOBYTE_FN:     core.ValOf(_tobyte),
+		globalnames.TOFLOAT_FN:    core.ValOf(_tofloat),
+		globalnames.TOINT_FN:      core.ValOf(_toint),
+		globalnames.TORSTREAM_FN:  core.ValOf(_torstream),
+		globalnames.TOJSON_FN:     core.ValOf(core.ToJSON),
+		globalnames.TOPJSON_FN:    core.ValOf(core.ToPrettyJSON),
+		globalnames.REPR_FN:       core.ValOf(_repr),
+		globalnames.PARSE_REPR_FN: core.ValOf(_parse_repr),
+		globalnames.PARSE_FN:      core.ValOf(_parse),
+		globalnames.SPLIT_FN:      core.ValOf(_split),
 
 		// time
-		"ago":   core.ValOf(_ago),
-		"now":   core.ValOf(_now),
-		"sleep": core.ValOf(core.Sleep),
+		globalnames.AGO_FN:   core.ValOf(_ago),
+		globalnames.NOW_FN:   core.ValOf(_now),
+		globalnames.SLEEP_FN: core.ValOf(core.Sleep),
 
 		// printing
-		"logvals":       core.ValOf(_logvals),
-		"log":           core.ValOf(_log),
-		"print":         core.ValOf(_print),
-		"printvals":     core.ValOf(_printvals),
-		"fprint":        core.ValOf(_fprint),
-		"stringify_ast": core.ValOf(_stringify_ast),
-		"fmt":           core.ValOf(core.Fmt),
+		globalnames.LOGVALS_FN:       core.ValOf(_logvals),
+		globalnames.LOG_FN:           core.ValOf(_log),
+		globalnames.PRINT_FN:         core.ValOf(_print),
+		globalnames.PRINTVALS_FN:     core.ValOf(_printvals),
+		globalnames.FPRINT_FN:        core.ValOf(_fprint),
+		globalnames.STRINGIFY_AST_FN: core.ValOf(_stringify_ast),
+		globalnames.FMT_FN:           core.ValOf(core.Fmt),
 
 		// bytes & string
-		"mkbytes":       core.ValOf(_mkbytes),
-		"Runes":         core.ValOf(_Runes),
-		"Bytes":         core.ValOf(_Bytes),
-		"is_rune_space": core.ValOf(_is_rune_space),
-		"Reader":        core.ValOf(_Reader),
-		"RingBuffer":    core.ValOf(core.NewRingBuffer),
+		globalnames.MKBYTES_FN:       core.ValOf(_mkbytes),
+		globalnames.RUNES_FN:         core.ValOf(_Runes),
+		globalnames.BYTES_FN:         core.ValOf(_Bytes),
+		globalnames.IS_RUNE_SPACE_FN: core.ValOf(_is_rune_space),
+		globalnames.READER_FN:        core.ValOf(_Reader),
+		globalnames.RINGBUFFER_FN:    core.ValOf(core.NewRingBuffer),
 
 		// functional
-		"idt":     core.WrapGoFunction(_idt),
-		"map":     core.WrapGoFunction(core.Map),
-		"filter":  core.WrapGoFunction(core.Filter),
-		"some":    core.WrapGoFunction(core.Some),
-		"all":     core.WrapGoFunction(core.All),
-		"none":    core.WrapGoFunction(core.None),
-		"replace": core.WrapGoFunction(_replace),
-		"find":    core.WrapGoFunction(_find),
-		"sort":    core.WrapGoFunction(core.Sort),
+		globalnames.IDENTITY_FN: core.WrapGoFunction(_idt),
+		globalnames.MAP_FN:      core.WrapGoFunction(core.Map),
+		globalnames.FILTER_FN:   core.WrapGoFunction(core.Filter),
+		globalnames.SOME_FN:     core.WrapGoFunction(core.Some),
+		globalnames.ALL_FN:      core.WrapGoFunction(core.All),
+		globalnames.NONE_FN:     core.WrapGoFunction(core.None),
+		globalnames.REPLACE_FN:  core.WrapGoFunction(_replace),
+		globalnames.FIND_FN:     core.WrapGoFunction(_find),
+		globalnames.SORT_FN:     core.WrapGoFunction(core.Sort),
 
 		// concurrency & execution
-		"LThreadGroup": core.ValOf(core.NewLThreadGroup),
-		"run":          core.ValOf(_run),
-		"ex":           core.ValOf(_execute),
-		"cancel_exec":  core.ValOf(_cancel_exec),
+		globalnames.LTHREADGROUP_FN: core.ValOf(core.NewLThreadGroup),
+		globalnames.RUN_FN:          core.ValOf(_run),
+		globalnames.EX_FN:           core.ValOf(_execute),
+		globalnames.CANCEL_EXEC_FN:  core.ValOf(_cancel_exec),
 
 		// integer
-		"is_even": core.ValOf(_is_even),
-		"is_odd":  core.ValOf(_is_odd),
+		globalnames.IS_EVEN_FN: core.ValOf(_is_even),
+		globalnames.IS_ODD_FN:  core.ValOf(_is_odd),
 
 		// protocol
-		"set_client_for_url":  core.ValOf(setClientForURL),
-		"set_client_for_host": core.ValOf(setClientForHost),
+		globalnames.SET_CLIENT_FOR_URL_FN:  core.ValOf(setClientForURL),
+		globalnames.SET_CLIENT_FOR_HOST_FN: core.ValOf(setClientForHost),
 
 		// other functions
-		"add_ctx_data": core.ValOf(_add_ctx_data),
-		"ctx_data":     core.ValOf(_ctx_data),
-		"propnames":    core.WrapGoFunction(_propnames),
+		globalnames.ADD_CTX_DATA_FN: core.ValOf(_add_ctx_data),
+		globalnames.CTX_DATA_FN:     core.ValOf(_ctx_data),
+		globalnames.PROPNAMES_FN:    core.WrapGoFunction(_propnames),
 
-		"Array": core.ValOf(core.NewArray),
-		"List":  core.ValOf(_List),
+		globalnames.ARRAY_FN: core.ValOf(core.NewArray),
+		globalnames.LIST_FN:  core.ValOf(_List),
 
-		"typeof":    core.ValOf(_typeof),
-		"url_of":    core.ValOf(_url_of),
-		"len":       core.ValOf(_len),
-		"len_range": core.ValOf(_len_range),
+		globalnames.TYPEOF_FN:    core.ValOf(_typeof),
+		globalnames.URL_OF_FN:    core.ValOf(_url_of),
+		globalnames.LEN_FN:       core.ValOf(_len),
+		globalnames.LEN_RANGE_FN: core.ValOf(_len_range),
 
-		"sum_options": core.ValOf(core.SumOptions),
-		"mime":        core.ValOf(http_ns.Mime_),
+		globalnames.SUM_OPTIONS_FN: core.ValOf(core.SumOptions),
+		globalnames.MIME_FN:        core.ValOf(http_ns.Mime_),
 
-		"Color":                           core.WrapGoFunction(_Color),
-		core.FILEMODE_PRIMORDIAL_FUNCNAME: core.WrapGoFunction(core.FileModeFrom),
+		globalnames.COLOR_FN:    core.WrapGoFunction(_Color),
+		globalnames.FILEMODE_FN: core.WrapGoFunction(core.FileModeFrom),
 
-		"help": core.ValOf(help_ns.Help),
+		globalnames.HELP_FN: core.ValOf(help_ns.Help),
 	}
 
 	for k, v := range containers.NewContainersNamespace() {
