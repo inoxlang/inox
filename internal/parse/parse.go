@@ -4991,7 +4991,16 @@ _switch:
 		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_OPERAND}
 	}
 
+	inPatternSave := p.inPattern
+
+	switch operator {
+	case Match, NotMatch:
+		p.inPattern = true
+	}
+
 	right, isMissingExpr := p.parseExpression()
+
+	p.inPattern = inPatternSave
 
 	p.eatSpace()
 	if isMissingExpr {

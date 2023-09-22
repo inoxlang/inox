@@ -43,6 +43,8 @@ print "1 .. 2 :"
 printvals (1 .. 2)
 %patt = %str("a"+)
 print "%patt = \"a\"+;  \"a\" match %patt :" ("a" match %patt)
+print "%patt = \"a\"+;  \"a\" match %patt :" ("a" match patt)
+
 
 
 

@@ -13885,7 +13885,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("binary expression", func(t *testing.T) {
+		t.Run("addition", func(t *testing.T) {
 			n := mustparseChunk(t, "($a + $b)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, nil},
@@ -13908,6 +13908,41 @@ func testParse(
 						Right: &Variable{
 							NodeBase: NodeBase{NodeSpan{6, 8}, nil, nil},
 							Name:     "b",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("match with unprefixed pattern", func(t *testing.T) {
+			n := mustparseChunk(t, "(o match {})")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, nil},
+				Statements: []Node{
+					&BinaryExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 12},
+							nil,
+							[]Token{
+								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
+								{Type: MATCH_KEYWORD, Span: NodeSpan{3, 8}},
+								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{11, 12}},
+							},
+						},
+						Operator: Match,
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{1, 2}, nil, nil},
+							Name:     "o",
+						},
+						Right: &ObjectPatternLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{9, 11},
+								nil,
+								[]Token{
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
+								},
+							},
 						},
 					},
 				},

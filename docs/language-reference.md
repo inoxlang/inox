@@ -30,11 +30,11 @@
     - [Definitions](#function-definitions)
     - [Call](#calling-a-function)
 - [Patterns](#patterns)
+    - [Named patterns](#named-patterns)
     - [Object patterns](#object-patterns)
     - [List patterns](#list-patterns)
-    - [Named patterns](#named-patterns)
-    - [Pattern namespaces](#pattern-namespaces)
     - [String patterns](#string-patterns)
+    - [Pattern namespaces](#pattern-namespaces)
 - [XML Expressions](#xml-expressions)
 - [Modules](#modules)
     - [Module Parameters](#module-parameters)
@@ -855,77 +855,16 @@ g"string" # equivalent to g("a")
 
 Besides the pattern [literals](#literals) there are other kinds of patterns in Inox.
 
-## Object Patterns
-
-```
-object_pattern = %{
-    name: str
-}
-
-# true
-({name: "John"} match object_pattern) 
-
-other_pattern = %{
-    name: str
-    account: {  # '%' not required here 
-        creation-date: date
-    }
-}
-```
-
-⚠️ By default object patterns are **inexact**: they accept additional properties.
-
-```
-# true
-({name: "John"} match %{}) 
-
-object_pattern = %{
-    name: str
-}
-
-# true
-({name: "John", additional_prop: 0} match object_pattern) 
-
-```
-
-## List Patterns
-
-The syntax for patterns that match a list with **elements of the same type** (only integers, only strings, etc.) is as follows:
-```
-pattern = %[]int
-([] match pattern) # true
-([1] match pattern) # true
-([1, "a"] match pattern) # false
-```
-
-You can also create list patterns that match a list of known length:
-
-```
-pair_pattern = %[int, str]
-
-# true
-([1, "a"] match pair_pattern)
-
-
-two_pair_pattern = %[ [int, str], [int, str] ]
-
-# true
-([ [1, "a"], [2, "b"] ] match two_pair_pattern)
-```
-
 ## Named Patterns
 
 Named patterns are equivalent to variables but for patterns, there are many built-in named patterns such as: `int, str, bool`.
 Pattern definitions allow you to declare a pattern.
 
 ```
-%int_list = %[]int
+%int_list = []int
 
 # true
-([1, 2, 3] match %int_list) 
-
-# the % symbol in front of the pattern can be omitted:
-%int_list = []int
+([1, 2, 3] match int_list) 
 
 %user = {
     name: str
@@ -940,23 +879,96 @@ Some named patterns are callable, for example if you want a pattern that matches
 pattern = %int(0..10)
 ```
 
-## Pattern Namespaces
+Creating a named pattern `%user` does not prevent you to name a variable `user`:
+```
+%user = {
+    name: str
+}
 
-Pattern namespaces are containers for storing a group of related patterns.
+user = {name: "foo"}
+
+# true
+(user match user)
+
+# alternative syntax
+(user match %user)
+
+# assign %user to a variable
+my_pattern = %user
+
+(user match $my_pattern)
+```
+
+## Object Patterns
 
 ```
-%ints. = #{
-    tiny_int: %int(0..10)
-    small_int: %int(0..50)
+# object pattern with a single property
+%{
+    name: str
+}
+
+# same pattern stored in a named pattern ('%' not required)
+%object_pattern = {
+    name: str
 }
 
 # true
-(1 match %ints.tiny_int) 
+({name: "John"} match object_pattern) 
+
+%other_pattern = {
+    name: str
+    account: {  # '%' not required here 
+        creation-date: date
+    }
+}
+```
+
+⚠️ By default object patterns are **inexact**: they accept additional properties.
+
+```
+# true
+({name: "John"} match {}) 
+
+%user = {
+    name: str
+}
 
 # true
-(20 match %ints.small_int) 
+({name: "John", additional_prop: 0} match user) 
+```
 
-namespace = %ints.
+## List Patterns
+
+The syntax for patterns that match a list with **elements of the same type** (only integers, only strings, etc.) is as follows:
+```
+%int_list = []int
+
+([] match pattern) # true
+([1] match pattern) # true
+([1, "a"] match pattern) # false
+```
+
+<details>
+
+**<summary>Alternative syntax with leading '%' symbol</summary>**
+```
+%int_list = %[]int
+```
+</details>
+
+You can also create list patterns that match a list of known length:
+
+```
+%pair = [int, str]
+
+# true
+([1, "a"] match pair)
+
+
+%two_pairs = [ [int, str], [int, str] ]
+
+# true
+([ [1, "a"], [2, "b"] ] match two_pairs)
 ```
 
 ## String Patterns
@@ -979,6 +991,27 @@ String patterns can be composed thanks to named patterns:
 %domain = "@mail.com"
 %email-address = (("user1" | "user2") %domain)
 ```
+
+## Pattern Namespaces
+
+Pattern namespaces are containers for storing a group of related patterns.
+
+```
+%ints. = {
+    tiny_int: %int(0..10)
+    small_int: %int(0..50)
+}
+
+# true
+(1 match ints.tiny_int) 
+
+# true
+(20 match ints.small_int) 
+
+# assign the namespace %ints to a variable
+namespace = %ints.
+```
+
 
 # XML Expressions
 

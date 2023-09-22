@@ -253,7 +253,7 @@ posts = read!(https://jsonplaceholder.typicode.com/posts)
 
 The posts have a **.userId** field, let's just keep the posts of the user of id **1**:
 ```
-assert (posts match %iterable)
+assert (posts match iterable)
 user1_posts = filter(posts, %{userId: 1.0})
 ```
 
@@ -303,7 +303,7 @@ request_group = LThreadGroup()
 
 for post in post_data {
     id = post.id
-    assert (id match %float)
+    assert (id match float)
 
     go {group: request_group, globals: {id: toint(id)}} do read!(https://jsonplaceholder.typicode.com/comments?postId={id})
 }
@@ -326,7 +326,7 @@ manifest {
 
 POSTS_URL = https://jsonplaceholder.typicode.com/posts
 posts = read!(POSTS_URL)
-assert (posts match %iterable)
+assert (posts match iterable)
 
 user1_posts = filter(posts, %{userId: 1.0})
 post_data = map(user1_posts, .{id, body, title})
@@ -336,7 +336,7 @@ request_group = LThreadGroup()
 
 for post in post_data {
     id = post.id
-    assert (id match %float)
+    assert (id match float)
 
     go {group: request_group, globals: {id: toint(id)}} do read!(https://jsonplaceholder.typicode.com/comments?postId={id})
 }
@@ -350,7 +350,7 @@ print(comments_of_user1_posts)
 Let's simplify the following code a bit:
 ```
 posts = read!(POSTS_URL)
-assert (posts match %iterable)
+assert (posts match iterable)
 
 user1_posts = filter(posts, %{userId: 1.0})
 
@@ -360,7 +360,7 @@ post_data = map(user1_posts, .{id, body, title})
 We can get rid of the **user1_posts** variable by using a [pipeline statement](./language-reference.md#pipe-statement):
 ```
 posts = read!(POSTS_URL)
-assert (posts match %iterable)
+assert (posts match iterable)
 
 post_data = | filter $posts %{userId: 1.0} | map $ .{id, body, title}
 ```
