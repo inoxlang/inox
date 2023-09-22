@@ -3,6 +3,7 @@ package symbolic
 import (
 	"fmt"
 
+	"github.com/inoxlang/inox/internal/globalnames"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -128,6 +129,16 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			nonSpreadArgCount++
 
 			if ident, ok := argNode.(*parse.IdentifierLiteral); ok && cmdLineSyntax {
+
+				//add warning if the identifier has the same name as a variable
+				if calleeIdent, ok := calleeNode.(*parse.IdentifierLiteral); (!ok ||
+					calleeIdent.Name != globalnames.EXEC_FN) &&
+					(state.hasLocal(ident.Name) || state.hasGlobal(ident.Name)) {
+
+					isGlobal := state.hasGlobal(ident.Name)
+					state.addWarning(makeSymbolicEvalWarning(argNode, state, fmtDidYouMeanDollarName(ident.Name, isGlobal)))
+				}
+
 				args = append(args, &Identifier{name: ident.Name})
 			} else {
 				options := evalOptions{}

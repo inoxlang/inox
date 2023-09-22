@@ -332,6 +332,21 @@ func fmtSpreadArgumentShouldBeIterable(v SymbolicValue) string {
 	return fmt.Sprintf("a spread argument should be iterable but is a(n) %s", Stringify(v))
 }
 
+func fmtDidYouMeanDollarName(name string, doubleDollar bool) string {
+	if doubleDollar {
+		name = "$$" + name
+	} else {
+		name = "$" + name
+	}
+
+	return fmt.Sprintf(
+		"did you mean `%s` ?"+
+			" In a call with the CLI syntax, identifiers such as `a` are evaluated to identifier values (#a)."+
+			" Local variables must be prefixed with a dollar: $mylocal. Global variables must be prefixed "+
+			"with two dollars: $$myglobal.",
+		name)
+}
+
 func fmtCannotInterpolatePatternNamespaceDoesNotExist(name string) string {
 	return fmt.Sprintf("cannot interpolate: pattern namespace '%s' does not exist", name)
 }
