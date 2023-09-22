@@ -14722,6 +14722,17 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("various accepted return types", func(t *testing.T) {
+			_, err := parseChunk(t, "fn() [int] {}", "")
+			assert.NoError(t, err)
+
+			_, err = parseChunk(t, "fn() #[int] {}", "")
+			assert.NoError(t, err)
+
+			_, err = parseChunk(t, "fn() #{a: int} {}", "")
+			assert.NoError(t, err)
+		})
+
 		t.Run("no parameters, empty capture list, empty body ", func(t *testing.T) {
 			n := mustparseChunk(t, "fn[](){}")
 			assert.EqualValues(t, &Chunk{
@@ -15566,6 +15577,17 @@ func testParse(
 					},
 				},
 			}, n)
+		})
+
+		t.Run("various accepted return types", func(t *testing.T) {
+			_, err := parseChunk(t, "%fn() [int] {}", "")
+			assert.NoError(t, err)
+
+			_, err = parseChunk(t, "%fn() #[int] {}", "")
+			assert.NoError(t, err)
+
+			_, err = parseChunk(t, "%fn() #{a: int} {}", "")
+			assert.NoError(t, err)
 		})
 
 		t.Run("single parameter, empty body ", func(t *testing.T) {

@@ -8738,7 +8738,7 @@ func (p *parser) parseFunction(start int32) Node {
 
 		p.eatSpace()
 
-		if p.i < p.len && isAcceptedFirstReturnTypeChar(p.s[p.i]) {
+		if p.i < p.len && isAcceptedReturnTypeStart(p.s, p.i) {
 			prev := p.inPattern
 			p.inPattern = true
 
@@ -8984,7 +8984,7 @@ func (p *parser) parseFunctionPattern(start int32, percentPrefixed bool) Node {
 
 		p.eatSpace()
 
-		if p.i < p.len && isAcceptedFirstReturnTypeChar(p.s[p.i]) {
+		if p.i < p.len && isAcceptedReturnTypeStart(p.s, p.i) {
 			prev := p.inPattern
 			p.inPattern = true
 
@@ -10929,8 +10929,15 @@ func isNonIdentBinaryOperatorChar(r rune) bool {
 	}
 }
 
-func isAcceptedFirstReturnTypeChar(r rune) bool {
-	return r == '%' || isFirstIdentChar(r) || r == '(' || r == '['
+func isAcceptedReturnTypeStart(runes []rune, i int32) bool {
+	switch runes[i] {
+	case '%', '(', '[':
+		return true
+	case '#':
+		return i < len32(runes)-1 && (runes[i+1] == '{' || runes[i+1] == '[')
+	default:
+		return isFirstIdentChar(runes[i])
+	}
 }
 
 func IsAnyVariableIdentifier(node Node) bool {
