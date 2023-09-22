@@ -295,7 +295,13 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 	case *parse.IdentifierLiteral:
 		info, ok := state.get(n.Name)
 		if !ok {
-			state.addError(makeSymbolicEvalError(node, state, fmtVarIsNotDeclared(n.Name)))
+			msg := fmtVarIsNotDeclared(n.Name)
+
+			if pattern := state.ctx.ResolveNamedPattern(n.Name); pattern != nil {
+				msg += fmt.Sprintf("; did you mean %%%s ? In this location patterns require a leading '%%'.", n.Name)
+			}
+
+			state.addError(makeSymbolicEvalError(node, state, msg))
 			return ANY, nil
 		}
 		return info.value, nil
@@ -421,7 +427,13 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 	case *parse.Variable:
 		info, ok := state.getLocal(n.Name)
 		if !ok {
-			state.addError(makeSymbolicEvalError(node, state, fmtLocalVarIsNotDeclared(n.Name)))
+			msg := fmtLocalVarIsNotDeclared(n.Name)
+
+			if pattern := state.ctx.ResolveNamedPattern(n.Name); pattern != nil {
+				msg += fmt.Sprintf("; did you mean %%%s instead of $%s ?", n.Name, n.Name)
+			}
+
+			state.addError(makeSymbolicEvalError(node, state, msg))
 			return ANY, nil
 		}
 		return info.value, nil
