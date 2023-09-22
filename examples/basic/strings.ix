@@ -11,5 +11,5 @@ for string in [
     -, 
     --,
 ] {
-    print $string
+    print(string)
 }

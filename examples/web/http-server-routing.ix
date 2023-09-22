@@ -16,9 +16,9 @@ server = http.Server!(https://localhost:8080, Mapping {
 })
 
 body = http.read!(https://localhost:8080/hello, --insecure)
-print $body
+print(body)
 
 body = http.read!(https://localhost:8080/, --insecure)
-print $body
+print(body)
 
 server.close()

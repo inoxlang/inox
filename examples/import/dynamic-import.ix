@@ -1,7 +1,7 @@
 manifest {
     permissions: {
         read: {
-            $$IWD_PREFIX
+            IWD_PREFIX
             %https://localhost:8080/...
         }
         provide: https://localhost:8080

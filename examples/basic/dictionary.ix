@@ -7,4 +7,4 @@ dict = :{
     ./file: "content"
 }
 
-print $dict
+print(dict)

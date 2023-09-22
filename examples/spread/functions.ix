@@ -2,7 +2,7 @@ manifest {}
 
 
 fn f(first, ...args){
-    print ...$args # $args is a List
+    print(...args) # args is an Array
 }
 
 f 1 2 3

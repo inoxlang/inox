@@ -11,15 +11,19 @@ manifest {
     }
 }
 
+# local variable assignment
 a = 1
-print $a
-$a = 2 # same 
+print(a)
+
+# same 
+$a = 2
 print $a
 
+# global variable assignment
 $$myglobal = 100
 print $$myglobal
-
+print(myglobal)
 
 b = 1
 b += 2
-print $b
+print(b)

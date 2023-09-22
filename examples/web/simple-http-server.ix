@@ -21,6 +21,6 @@ fn handle(rw http.resp-writer, r http.req){
 
 server = http.Server!(https://localhost:8080, handle)
 body = http.read!(https://localhost:8080/, --insecure)
-print $body
+print(body)
 
 server.close()

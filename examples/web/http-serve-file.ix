@@ -18,7 +18,7 @@ fn handle(rw http.resp-writer, r http.req){
         %/* {
             err = http.servefile(rw, r, ./examples/static/{path})
             if err? {
-                print $err
+                print(err)
                 rw.write_status(404)
             }
         }
@@ -28,6 +28,6 @@ fn handle(rw http.resp-writer, r http.req){
 server = http.Server!(HOST, handle)
 
 body = http.read!(@host/index.js, --insecure)
-print $body
+print(body)
 
 server.close()

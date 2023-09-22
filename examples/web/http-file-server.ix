@@ -12,6 +12,6 @@ server = http.FileServer!(https://localhost:8080, ./examples/static/)
 
 body = http.read!(https://localhost:8080/, --insecure)
 print "response :"
-print $body
+print(body)
 
 server.close() # you can replace this line with $server.WaitClosed() to keep the server running

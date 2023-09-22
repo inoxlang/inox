@@ -6,7 +6,7 @@ manifest {
     permissions: {
         read: IWD_PREFIX
         create: {
-            $$IWD_PREFIX
+            IWD_PREFIX
             threads: {}
         }
     }
@@ -16,7 +16,7 @@ lthread = go {
     globals: {FILEPATH: FILEPATH}
     allow: {
         create: { 
-            $$IWD_PREFIX
+            IWD_PREFIX
         }
     }
 } do {
@@ -30,7 +30,7 @@ sleep 500ms
 assign content err = fs.read(FILEPATH)
 
 if err? {
-    print "error:" $err
+    print("error:", err)
 } else {
     print "no error"
 }

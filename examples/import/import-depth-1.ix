@@ -9,7 +9,7 @@ manifest {
 
 
 import result ./return_1.ix {}
-print "result of imported module :" $$result
+print("result of imported module :", result)
 
 assert (result match %int)
 return (1 + result)

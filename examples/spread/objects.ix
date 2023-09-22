@@ -2,5 +2,5 @@ manifest {}
 
 object1 = {a: 1, b: 2}
 
-printvals {c: 3, ...$object1.{a}}
-# printvals {c: 3, ...$object1} # not allowed for now, an extraction expression is required
+print {c: 3, ...object1.{a}}
+# print {c: 3, ...object1} # not allowed for now, an extraction expression is required

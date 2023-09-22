@@ -9,5 +9,5 @@ manifest {
 # retrieves "A" records for github.com
 records = dns.resolve!("github.com" "A")
 for r in records {
-    print $r
+    print(r)
 }

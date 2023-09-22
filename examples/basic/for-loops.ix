@@ -1,11 +1,11 @@
 manifest {}
 
 for index, element in ["a", "b"] {
-    print $index $element
+    print(index, element)
 }
 
 for element in ["a", "b"] {
-    print $element
+    print(element)
 }
 
 # for <iterable> will iterate over <iterable>

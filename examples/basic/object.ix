@@ -14,7 +14,7 @@ object = {
 
 print(object)
 print(object.b)
-print($object.{a, b}) # extraction expression
+print(object.{a, b}) # extraction expression
 
 
 # implicit-key properties can be accessed with an index expression

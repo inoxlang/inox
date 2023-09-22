@@ -5,4 +5,4 @@ manifest {
 }
 
 res = http.delete!(https://jsonplaceholder.typicode.com/posts/1)
-print $res
+print(res)

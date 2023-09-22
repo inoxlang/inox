@@ -2,7 +2,7 @@ manifest {}
 
 # functions are declared in the global scope
 fn hello(name, end){
-    print "hello" $name $end
+    print("hello", name, end)
     return 0
 }
 
