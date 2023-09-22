@@ -1596,86 +1596,86 @@ func TestSymbolicUnionPattern(t *testing.T) {
 			value   SymbolicValue
 			ok      bool
 		}{
-			// {
-			// 	&UnionPattern{
-			// 		cases: []Pattern{
-			// 			&TypePattern{val: ANY_INT},
-			// 			&TypePattern{val: ANY_STR},
-			// 		},
-			// 	},
-			// 	ANY_INT,
-			// 	true,
-			// },
-			// {
-			// 	&UnionPattern{
-			// 		cases: []Pattern{
-			// 			&TypePattern{val: ANY_INT},
-			// 			&TypePattern{val: ANY_STR},
-			// 		},
-			// 	},
-			// 	ANY_STR,
-			// 	true,
-			// },
-			// {
-			// 	&UnionPattern{
-			// 		cases: []Pattern{
-			// 			&TypePattern{val: ANY_INT},
-			// 			&TypePattern{val: ANY_STR},
-			// 		},
-			// 	},
-			// 	NewMultivalue(ANY_INT, ANY_STR),
-			// 	true,
-			// },
-			// {
-			// 	&UnionPattern{
-			// 		cases: []Pattern{
-			// 			&TypePattern{val: ANY_INT},
-			// 			&TypePattern{val: ANY_STR},
-			// 		},
-			// 	},
-			// 	NewMultivalue(ANY_STR, ANY_INT),
-			// 	true,
-			// },
-			// {
-			// 	&UnionPattern{
-			// 		cases: []Pattern{
-			// 			&TypePattern{val: ANY_INT},
-			// 			&TypePattern{val: ANY_STR},
-			// 		},
-			// 	},
-			// 	NewMultivalue(ANY_STR, NewInt(1)),
-			// 	true,
-			// },
-			// {
-			// 	&UnionPattern{
-			// 		cases: []Pattern{
-			// 			&TypePattern{val: ANY_INT},
-			// 			&TypePattern{val: ANY_STR},
-			// 		},
-			// 	},
-			// 	ANY_SERIALIZABLE,
-			// 	false,
-			// },
-			// {
-			// 	&UnionPattern{
-			// 		cases: []Pattern{
-			// 			NewInexactObjectPattern(map[string]Pattern{"a": utils.Must(NewExactValuePattern(NewInt(1)))}, nil),
-			// 			NewInexactObjectPattern(map[string]Pattern{"b": utils.Must(NewExactValuePattern(NewInt(2)))}, nil),
-			// 		},
-			// 	},
-			// 	NewExactObject(map[string]Serializable{"a": NewInt(1)}, nil, nil),
-			// 	true,
-			// },
-			// {
-			// 	&UnionPattern{
-			// 		cases: []Pattern{
-			// 			NewInexactObjectPattern(map[string]Pattern{"a": utils.Must(NewExactValuePattern(NewInt(1)))}, nil),
-			// 			NewInexactObjectPattern(map[string]Pattern{"b": utils.Must(NewExactValuePattern(NewInt(2)))}, nil),
-			// 		},
-			// 	},
-			// 	NewExactObject(map[string]Serializable{"b": NewInt(2)}, nil, nil),
-			// 	true,
-			// },
+			{
+				&UnionPattern{
+					cases: []Pattern{
+						&TypePattern{val: ANY_INT},
+						&TypePattern{val: ANY_STR},
+					},
+				},
+				ANY_INT,
+				true,
+			},
+			{
+				&UnionPattern{
+					cases: []Pattern{
+						&TypePattern{val: ANY_INT},
+						&TypePattern{val: ANY_STR},
+					},
+				},
+				ANY_STR,
+				true,
+			},
+			{
+				&UnionPattern{
+					cases: []Pattern{
+						&TypePattern{val: ANY_INT},
+						&TypePattern{val: ANY_STR},
+					},
+				},
+				NewMultivalue(ANY_INT, ANY_STR),
+				true,
+			},
+			{
+				&UnionPattern{
+					cases: []Pattern{
+						&TypePattern{val: ANY_INT},
+						&TypePattern{val: ANY_STR},
+					},
+				},
+				NewMultivalue(ANY_STR, ANY_INT),
+				true,
+			},
+			{
+				&UnionPattern{
+					cases: []Pattern{
+						&TypePattern{val: ANY_INT},
+						&TypePattern{val: ANY_STR},
+					},
+				},
+				NewMultivalue(ANY_STR, NewInt(1)),
+				true,
+			},
+			{
+				&UnionPattern{
+					cases: []Pattern{
+						&TypePattern{val: ANY_INT},
+						&TypePattern{val: ANY_STR},
+					},
+				},
+				ANY_SERIALIZABLE,
+				false,
+			},
+			{
+				&UnionPattern{
+					cases: []Pattern{
+						NewInexactObjectPattern(map[string]Pattern{"a": utils.Must(NewExactValuePattern(NewInt(1)))}, nil),
+						NewInexactObjectPattern(map[string]Pattern{"b": utils.Must(NewExactValuePattern(NewInt(2)))}, nil),
+					},
+				},
+				NewExactObject(map[string]Serializable{"a": NewInt(1)}, nil, nil),
+				true,
+			},
+			{
+				&UnionPattern{
+					cases: []Pattern{
+						NewInexactObjectPattern(map[string]Pattern{"a": utils.Must(NewExactValuePattern(NewInt(1)))}, nil),
+						NewInexactObjectPattern(map[string]Pattern{"b": utils.Must(NewExactValuePattern(NewInt(2)))}, nil),
+					},
+				},
+				NewExactObject(map[string]Serializable{"b": NewInt(2)}, nil, nil),
+				true,
+			},
 			{
 				&UnionPattern{
 					cases: []Pattern{
