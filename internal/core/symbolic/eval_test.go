@@ -5164,7 +5164,8 @@ func TestSymbolicEval(t *testing.T) {
 				`)
 
 				object := NewInexactObject(map[string]Serializable{
-					"prop": AsSerializable(NewMultivalue(NewInt(1), TRUE)).(Serializable)}, nil, nil)
+					"prop": AsSerializableChecked(NewMultivalue(NewInt(1), TRUE)),
+				}, nil, nil)
 
 				state.setGlobal("a", object, GlobalConst)
 
@@ -5183,7 +5184,7 @@ func TestSymbolicEval(t *testing.T) {
 				`)
 
 				object := NewInexactObject(map[string]Serializable{
-					"prop": AsSerializable(NewMultivalue(NewInt(1), TRUE)).(Serializable)}, nil, nil)
+					"prop": AsSerializableChecked(NewMultivalue(NewInt(1), TRUE))}, nil, nil)
 
 				state.setGlobal("a", object, GlobalConst)
 
@@ -5202,7 +5203,7 @@ func TestSymbolicEval(t *testing.T) {
 				`)
 
 				object := NewInexactObject(map[string]Serializable{
-					"prop": AsSerializable(NewMultivalue(NewInt(1), TRUE)).(Serializable)}, nil, nil)
+					"prop": AsSerializableChecked(NewMultivalue(NewInt(1), TRUE))}, nil, nil)
 
 				state.setGlobal("a", object, GlobalConst)
 
@@ -5221,7 +5222,7 @@ func TestSymbolicEval(t *testing.T) {
 				`)
 
 				object := NewInexactObject(map[string]Serializable{
-					"prop": AsSerializable(NewMultivalue(NewInt(1), TRUE)).(Serializable)}, nil, nil)
+					"prop": AsSerializableChecked(NewMultivalue(NewInt(1), TRUE))}, nil, nil)
 
 				state.setGlobal("a", object, GlobalConst)
 
@@ -6507,8 +6508,8 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 			assert.Equal(t, NewList(
-				AsSerializable(NewMultivalue(ANY_INT, Nil)).(Serializable),
-				AsSerializable(NewMultivalue(ANY_INT, Nil)).(Serializable),
+				AsSerializableChecked(NewMultivalue(ANY_INT, Nil)),
+				AsSerializableChecked(NewMultivalue(ANY_INT, Nil)),
 			), res)
 		})
 
@@ -6631,7 +6632,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 
 			expectedResultFromForStmt := NewList(
-				ANY_INT, AsSerializable(NewMultivalue(NewList(NewString("a")), NewList(ANY_INT))).(Serializable),
+				ANY_INT, AsSerializableChecked(NewMultivalue(NewList(NewString("a")), NewList(ANY_INT))),
 			)
 
 			assert.Equal(t, NewMultivalue(expectedResultFromForStmt, Nil), res)
@@ -8557,7 +8558,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 			assert.Equal(t, NewList(
 				//we also check that elem has the right because the test case depends on that
-				AsSerializable(NewMultivalue(NewString("a"), ANY_STR_CONCAT)).(Serializable),
+				AsSerializableChecked(NewMultivalue(NewString("a"), ANY_STR_CONCAT)),
 				ANY_STR_CONCAT,
 			), res)
 		})
@@ -8579,7 +8580,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 			assert.Equal(t, NewList(
 				//we also check that elem has the right because the test case depends on that
-				AsSerializable(NewMultivalue(NewString("a"), ANY_STR_CONCAT)).(Serializable),
+				AsSerializableChecked(NewMultivalue(NewString("a"), ANY_STR_CONCAT)),
 				ANY_STR_CONCAT,
 			), res)
 		})
@@ -8629,7 +8630,7 @@ func TestSymbolicEval(t *testing.T) {
 				node:           fnExpr,
 				parameters:     []SymbolicValue{NewTupleOf(ANY_INT), NewTupleOf(&String{})},
 				parameterNames: []string{"a", "b"},
-				result:         NewTupleOf(AsSerializable(NewMultivalue(ANY_INT, ANY_STR)).(Serializable)),
+				result:         NewTupleOf(AsSerializableChecked(NewMultivalue(ANY_INT, ANY_STR))),
 			}
 			assert.Equal(t, expectedFn, res)
 		})
@@ -8834,7 +8835,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 			assert.Equal(t, NewList(
 				//we also check that elem has the right because the test case depends on that
-				AsSerializable(NewMultivalue(NewString("a"), ANY_STR_CONCAT)).(Serializable),
+				AsSerializableChecked(NewMultivalue(NewString("a"), ANY_STR_CONCAT)),
 				ANY_STR,
 			), res)
 		})

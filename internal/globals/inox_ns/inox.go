@@ -24,14 +24,14 @@ var (
 		"parsing_errors":        symbolic.NewTupleOf(symbolic.NewError(symbolic.SOURCE_POSITION_RECORD)),
 		"static_check_errors":   symbolic.NewTupleOf(symbolic.NewError(symbolic.SOURCE_POSITION_RECORD)),
 		"symbolic_check_errors": symbolic.NewTupleOf(symbolic.NewError(symbolic.SOURCE_POSITION_RECORD)),
-		"permission_error":      symbolic.AsSerializable(symbolic.NewMultivalue(symbolic.ANY_ERR, symbolic.Nil)).(symbolic.Serializable),
+		"permission_error":      symbolic.AsSerializableChecked(symbolic.NewMultivalue(symbolic.ANY_ERR, symbolic.Nil)),
 	}, nil)
 	SYMB_RUN_ERRORS_RECORD = symbolic.NewInexactRecord(map[string]symbolic.Serializable{
 		"parsing_errors":        symbolic.NewTupleOf(symbolic.NewError(symbolic.SOURCE_POSITION_RECORD)),
 		"static_check_errors":   symbolic.NewTupleOf(symbolic.NewError(symbolic.SOURCE_POSITION_RECORD)),
 		"symbolic_check_errors": symbolic.NewTupleOf(symbolic.NewError(symbolic.SOURCE_POSITION_RECORD)),
-		"permission_error":      symbolic.AsSerializable(symbolic.NewMultivalue(symbolic.ANY_ERR, symbolic.Nil)).(symbolic.Serializable),
-		"runtime_error":         symbolic.AsSerializable(symbolic.NewMultivalue(symbolic.ANY_ERR, symbolic.Nil)).(symbolic.Serializable),
+		"permission_error":      symbolic.AsSerializableChecked(symbolic.NewMultivalue(symbolic.ANY_ERR, symbolic.Nil)),
+		"runtime_error":         symbolic.AsSerializableChecked(symbolic.NewMultivalue(symbolic.ANY_ERR, symbolic.Nil)),
 	}, nil)
 )
 

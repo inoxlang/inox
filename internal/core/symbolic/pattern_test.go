@@ -1094,7 +1094,7 @@ func TestSymbolicListPattern(t *testing.T) {
 			patt := NewListPatternOf(&TypePattern{val: NewMultivalue(ANY_INT, ANY_STR)})
 
 			val := patt.SymbolicValue()
-			serializableMv := NewMultivalue(ANY_INT, ANY_STR).as(SERIALIZABLE_INTERFACE_TYPE).(Serializable)
+			serializableMv := AsSerializableChecked(NewMultivalue(ANY_INT, ANY_STR))
 			expected := NewListOf(serializableMv)
 			assert.Equal(t, expected, val)
 		})
@@ -1103,7 +1103,7 @@ func TestSymbolicListPattern(t *testing.T) {
 			patt := NewListPattern([]Pattern{&TypePattern{val: NewMultivalue(ANY_INT, ANY_STR)}})
 
 			val := patt.SymbolicValue()
-			serializableMv := NewMultivalue(ANY_INT, ANY_STR).as(SERIALIZABLE_INTERFACE_TYPE).(Serializable)
+			serializableMv := AsSerializableChecked(NewMultivalue(ANY_INT, ANY_STR))
 			expected := NewList(serializableMv)
 			assert.Equal(t, expected, val)
 		})
@@ -1403,7 +1403,7 @@ func TestSymbolicTuplePattern(t *testing.T) {
 			patt := NewTuplePatternOf(&TypePattern{val: NewMultivalue(ANY_INT, ANY_STR)})
 
 			val := patt.SymbolicValue()
-			serializableMv := NewMultivalue(ANY_INT, ANY_STR).as(SERIALIZABLE_INTERFACE_TYPE).(Serializable)
+			serializableMv := AsSerializableChecked(NewMultivalue(ANY_INT, ANY_STR))
 			expected := NewTupleOf(serializableMv)
 			assert.Equal(t, expected, val)
 		})
@@ -1412,7 +1412,7 @@ func TestSymbolicTuplePattern(t *testing.T) {
 			patt := NewTuplePattern([]Pattern{&TypePattern{val: NewMultivalue(ANY_INT, ANY_STR)}})
 
 			val := patt.SymbolicValue()
-			serializableMv := NewMultivalue(ANY_INT, ANY_STR).as(SERIALIZABLE_INTERFACE_TYPE).(Serializable)
+			serializableMv := AsSerializableChecked(NewMultivalue(ANY_INT, ANY_STR))
 			expected := NewTuple(serializableMv)
 			assert.Equal(t, expected, val)
 		})

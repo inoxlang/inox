@@ -1252,7 +1252,7 @@ func (p *ObjectPattern) SymbolicValue() SymbolicValue {
 
 	if p.entries != nil {
 		for key, valuePattern := range p.entries {
-			entries[key] = AsSerializable(valuePattern.SymbolicValue()).(Serializable)
+			entries[key] = AsSerializableChecked(valuePattern.SymbolicValue())
 			static[key] = valuePattern
 		}
 	}
@@ -1280,7 +1280,7 @@ func (p *ObjectPattern) MigrationInitialValue() (Serializable, bool) {
 		if !ok {
 			return nil, false
 		}
-		entries[key] = AsSerializable(propInitialValue).(Serializable)
+		entries[key] = AsSerializableChecked(propInitialValue)
 		static[key] = propPattern
 	}
 
@@ -1553,7 +1553,7 @@ func (p *RecordPattern) SymbolicValue() SymbolicValue {
 
 	if p.entries != nil {
 		for key, valuePattern := range p.entries {
-			rec.entries[key] = AsSerializable(valuePattern.SymbolicValue()).(Serializable)
+			rec.entries[key] = AsSerializableChecked(valuePattern.SymbolicValue())
 		}
 	}
 
@@ -1576,7 +1576,7 @@ func (p *RecordPattern) MigrationInitialValue() (Serializable, bool) {
 		if !ok {
 			return nil, false
 		}
-		entries[key] = AsSerializable(propInitialValue).(Serializable)
+		entries[key] = AsSerializableChecked(propInitialValue)
 		static[key] = propPattern
 	}
 
@@ -1926,11 +1926,11 @@ func (p *ListPattern) SymbolicValue() SymbolicValue {
 	if p.elements != nil {
 		list.elements = make([]Serializable, 0)
 		for _, e := range p.elements {
-			element := AsSerializable(e.SymbolicValue()).(Serializable)
+			element := AsSerializableChecked(e.SymbolicValue())
 			list.elements = append(list.elements, element)
 		}
 	} else {
-		list.generalElement = AsSerializable(p.generalElement.SymbolicValue()).(Serializable)
+		list.generalElement = AsSerializableChecked(p.generalElement.SymbolicValue())
 	}
 	return list
 }
@@ -2136,11 +2136,11 @@ func (p *TuplePattern) SymbolicValue() SymbolicValue {
 	if p.elements != nil {
 		tuple.elements = make([]Serializable, 0)
 		for _, e := range p.elements {
-			element := AsSerializable(e.SymbolicValue()).(Serializable)
+			element := AsSerializableChecked(e.SymbolicValue())
 			tuple.elements = append(tuple.elements, element)
 		}
 	} else {
-		tuple.generalElement = AsSerializable(p.generalElement.SymbolicValue()).(Serializable)
+		tuple.generalElement = AsSerializableChecked(p.generalElement.SymbolicValue())
 	}
 	return tuple
 }
@@ -2590,7 +2590,7 @@ func symbolicallyEvalPatternNode(n parse.Node, state *State) (Pattern, error) {
 			return p, nil
 		}
 
-		return &ExactValuePattern{value: AsSerializable(v).(Serializable)}, nil
+		return &ExactValuePattern{value: AsSerializableChecked(v)}, nil
 	}
 }
 

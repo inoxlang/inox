@@ -2376,7 +2376,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				state.addError(makeSymbolicEvalError(elemNode, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
 			}
 
-			elements = append(elements, AsSerializable(e).(Serializable))
+			elements = append(elements, AsSerializableChecked(e))
 		}
 
 		resultList := NewList(elements...)
@@ -2504,7 +2504,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				e = ANY_SERIALIZABLE
 			}
 
-			elements = append(elements, AsSerializable(e).(Serializable))
+			elements = append(elements, AsSerializableChecked(e))
 		}
 		return NewTuple(elements...), nil
 	case *parse.DictionaryLiteral:
@@ -4179,7 +4179,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			}
 
 			if elements == nil {
-				return NewTupleOf(AsSerializable(joinValues(generalElements)).(Serializable)), nil
+				return NewTupleOf(AsSerializableChecked(joinValues(generalElements))), nil
 			} else {
 				return NewTuple(elements...), nil
 			}

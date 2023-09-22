@@ -364,7 +364,7 @@ func (list *List) Static() Pattern {
 		return NewListPatternOf(&TypePattern{val: ANY_SERIALIZABLE})
 	}
 
-	elem := AsSerializable(joinValues(elements))
+	elem := AsSerializableChecked(joinValues(elements))
 	return NewListPatternOf(&TypePattern{val: elem})
 }
 
@@ -466,7 +466,7 @@ func (l *List) element() SymbolicValue {
 		if len(l.elements) == 0 {
 			return ANY_SERIALIZABLE
 		}
-		return AsSerializable(joinValues(SerializablesToValues(l.elements)))
+		return AsSerializableChecked(joinValues(SerializablesToValues(l.elements)))
 	}
 	return l.generalElement
 }
@@ -701,7 +701,7 @@ func (t *Tuple) Static() Pattern {
 		return NewListPatternOf(&TypePattern{val: ANY_SERIALIZABLE})
 	}
 
-	elem := AsSerializable(joinValues(elements))
+	elem := AsSerializableChecked(joinValues(elements))
 	return NewListPatternOf(&TypePattern{val: elem})
 }
 
@@ -721,7 +721,7 @@ func (t *Tuple) append(element SymbolicValue) {
 		t.elements = make([]Serializable, 0)
 	}
 
-	t.elements = append(t.elements, AsSerializable(element).(Serializable))
+	t.elements = append(t.elements, AsSerializableChecked(element))
 }
 
 func (t *Tuple) HasKnownLen() bool {
@@ -741,7 +741,7 @@ func (t *Tuple) element() SymbolicValue {
 		if len(t.elements) == 0 {
 			return ANY_SERIALIZABLE // return "never" ?
 		}
-		return AsSerializable(joinValues(SerializablesToValues(t.elements)))
+		return AsSerializableChecked(joinValues(SerializablesToValues(t.elements)))
 	}
 	return t.generalElement
 }
@@ -1024,7 +1024,7 @@ func (dict *Dictionary) key() SymbolicValue {
 		for _, k := range dict.keys {
 			keys = append(keys, k)
 		}
-		return AsSerializable(joinValues(keys))
+		return AsSerializableChecked(joinValues(keys))
 	}
 	return ANY
 }
@@ -1318,7 +1318,7 @@ func (o *Object) SpecificIntersection(v SymbolicValue, depth int) (SymbolicValue
 			propInResult = val
 		}
 
-		entries[propName] = AsSerializable(propInResult).(Serializable)
+		entries[propName] = AsSerializableChecked(propInResult)
 
 		// if the property is optional in both objects then it is optional
 		if existsInOther && o.IsExistingPropertyOptional(propName) && other.IsExistingPropertyOptional(propName) {

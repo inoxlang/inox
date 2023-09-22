@@ -38,10 +38,10 @@ func init() {
 		},
 	})
 
-	stringOrStringList := symbolic.AsSerializable(symbolic.NewMultivalue(
+	stringOrStringList := symbolic.AsSerializableChecked(symbolic.NewMultivalue(
 		symbolic.NewListOf(symbolic.ANY_STR_LIKE),
 		symbolic.ANY_STR_LIKE,
-	)).(symbolic.Serializable)
+	))
 
 	// register symbolic version of Go functions
 	core.RegisterSymbolicGoFunctions([]any{

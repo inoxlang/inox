@@ -61,12 +61,12 @@ var (
 	}, nil)
 
 	SYMBOLIC_HANDLING_DESC = symbolic.NewInexactObject(map[string]symbolic.Serializable{
-		HANDLING_DESC_ROUTING_PROPNAME: symbolic.AsSerializable(symbolic.NewMultivalue(
+		HANDLING_DESC_ROUTING_PROPNAME: symbolic.AsSerializableChecked(symbolic.NewMultivalue(
 			symbolic.ANY_INOX_FUNC,
 			symbolic.ANY_DIR_PATH,
 			symbolic.NewMapping(),
 			HTTP_ROUTING_SYMB_OBJ,
-		)).(symbolic.Serializable),
+		)),
 		HANDLING_DESC_MIDDLEWARES_PROPNAME: symbolic.ANY_SERIALIZABLE_ITERABLE,
 		HANDLING_DESC_DEFAULT_CSP_PROPNAME: http_ns_symb.ANY_CSP,
 		HANDLING_DESC_CERTIFICATE_PROPNAME: symbolic.ANY_STR_LIKE,

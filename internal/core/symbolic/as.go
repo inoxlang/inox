@@ -23,6 +23,10 @@ func AsSerializable(v SymbolicValue) SymbolicValue {
 	return as(v, SERIALIZABLE_INTERFACE_TYPE)
 }
 
+func AsSerializableChecked(v SymbolicValue) Serializable {
+	return AsSerializable(v).(Serializable)
+}
+
 func AsIprops(v SymbolicValue) SymbolicValue {
 	return as(v, IPROPS_INTERFACE_TYPE)
 }
