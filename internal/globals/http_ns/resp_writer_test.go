@@ -29,7 +29,7 @@ func TestHttpResponseWriter(t *testing.T) {
 		}{
 			{
 				value:      core.Int(1),
-				outputJSON: `{"int__value":"1"}`,
+				outputJSON: `{"int__value":1}`,
 				ok:         true,
 			},
 			{

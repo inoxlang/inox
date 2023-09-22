@@ -172,7 +172,7 @@ func TestHttpServerUserHandler(t *testing.T) {
 
 			body := string(utils.Must(io.ReadAll(resp.Body)))
 			//we check the response
-			assert.Equal(t, `{"int__value":"1"}`, body)
+			assert.Equal(t, `{"int__value":1}`, body)
 			assert.Equal(t, 200, resp.StatusCode)
 		})
 	}
@@ -329,7 +329,7 @@ func TestHttpServerMapping(t *testing.T) {
 					}
 				`,
 				requests: []requestTestInfo{
-					{acceptedContentType: mimeconsts.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`},
+					{acceptedContentType: mimeconsts.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":1}}}`},
 				},
 			},
 			createClient)
@@ -414,7 +414,7 @@ func TestHttpServerMapping(t *testing.T) {
 					}
 				`,
 				requests: []requestTestInfo{
-					{acceptedContentType: mimeconsts.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`},
+					{acceptedContentType: mimeconsts.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":1}}}`},
 				},
 			},
 			createClient,
@@ -431,7 +431,7 @@ func TestHttpServerMapping(t *testing.T) {
 					%/... => model
 				}`,
 				requests: []requestTestInfo{
-					{acceptedContentType: mimeconsts.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`},
+					{acceptedContentType: mimeconsts.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":1}}}`},
 				},
 			},
 			createClient,
@@ -453,7 +453,7 @@ func TestHttpServerMapping(t *testing.T) {
 					%/... => model
 				}`,
 				requests: []requestTestInfo{
-					{acceptedContentType: mimeconsts.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":"1"}}}`},
+					{acceptedContentType: mimeconsts.JSON_CTYPE, result: `{"object__value":{"a":{"int__value":1}}}`},
 				},
 			},
 			createClient,
@@ -482,7 +482,7 @@ func TestHttpServerMapping(t *testing.T) {
 				requests: []requestTestInfo{
 					{
 						acceptedContentType: mimeconsts.JSON_CTYPE,
-						result:              `{"object__value":{"a":{"int__value":"1"},"e":{"emailaddr__value":"a@mail.com"},"password":"mypassword"}}`,
+						result:              `{"object__value":{"a":{"int__value":1},"e":{"emailaddr__value":"a@mail.com"},"password":"mypassword"}}`,
 					},
 				},
 			},
