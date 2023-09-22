@@ -34,6 +34,7 @@
     - [Object patterns](#object-patterns)
     - [List patterns](#list-patterns)
     - [String patterns](#string-patterns)
+    - [Union Patterns](#union-patterns)
     - [Pattern namespaces](#pattern-namespaces)
 - [XML Expressions](#xml-expressions)
 - [Modules](#modules)
@@ -991,6 +992,20 @@ String patterns can be composed thanks to named patterns:
 %domain = "@mail.com"
 %email-address = (("user1" | "user2") %domain)
 ```
+
+## Union Patterns
+
+```
+%int_or_str = | int | str
+
+# true
+(1 match %int_or_str)
+
+# true
+("a" match %int_or_str)
+```
+
+ℹ️ A value is matched by an union pattern if it matches **at least one** of the union's cases.
 
 ## Pattern Namespaces
 
