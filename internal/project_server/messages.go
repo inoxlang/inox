@@ -10,9 +10,6 @@ import (
 
 func NewShowMessage(typ defines.MessageType, text string) jsonrpc.NotificationMessage {
 	return jsonrpc.NotificationMessage{
-		BaseMessage: jsonrpc.BaseMessage{
-			Jsonrpc: JSONRPC_VERSION,
-		},
 		Method: "window/showMessage",
 		Params: utils.Must(json.Marshal(defines.ShowMessageParams{
 			Type:    typ,

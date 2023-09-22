@@ -146,9 +146,6 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usi
 
 send_diagnostics:
 	session.Notify(jsonrpc.NotificationMessage{
-		BaseMessage: jsonrpc.BaseMessage{
-			Jsonrpc: JSONRPC_VERSION,
-		},
 		Method: "textDocument/publishDiagnostics",
 		Params: utils.Must(json.Marshal(defines.PublishDiagnosticsParams{
 			Uri:         docURI,

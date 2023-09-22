@@ -17,7 +17,6 @@ import (
 )
 
 const (
-	JSONRPC_VERSION = "2.0"
 	LSP_LOG_SRC     = "/lsp"
 )
 

@@ -313,11 +313,7 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 			sessionData.lock.Unlock()
 
 			session.SendRequest(jsonrpc.RequestMessage{
-				BaseMessage: jsonrpc.BaseMessage{
-					Jsonrpc: JSONRPC_VERSION,
-				},
 				Method: "client/registerCapability",
-				ID:     uuid.New(),
 				Params: utils.Must(json.Marshal(defines.RegistrationParams{
 					Registrations: []defines.Registration{
 						{
@@ -375,9 +371,6 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 				sessionData.lock.Unlock()
 
 				session.SendRequest(jsonrpc.RequestMessage{
-					BaseMessage: jsonrpc.BaseMessage{
-						Jsonrpc: JSONRPC_VERSION,
-					},
 					Method: "client/unregisterCapability",
 					ID:     uuid.New(),
 					Params: utils.Must(json.Marshal(defines.UnregistrationParams{
@@ -395,11 +388,7 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 				//we ask the client to not include the full text.
 
 				session.SendRequest(jsonrpc.RequestMessage{
-					BaseMessage: jsonrpc.BaseMessage{
-						Jsonrpc: JSONRPC_VERSION,
-					},
 					Method: "client/registerCapability",
-					ID:     uuid.New(),
 					Params: utils.Must(json.Marshal(defines.RegistrationParams{
 						Registrations: []defines.Registration{
 							{
@@ -496,11 +485,7 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 					defer utils.Recover()
 
 					session.SendRequest(jsonrpc.RequestMessage{
-						BaseMessage: jsonrpc.BaseMessage{
-							Jsonrpc: JSONRPC_VERSION,
-						},
 						Method: "workspace/applyEdit",
-						ID:     uuid.New(),
 						Params: utils.Must(json.Marshal(defines.ApplyWorkspaceEditParams{
 							Edit: defines.WorkspaceEdit{
 								Changes: &map[string][]defines.TextEdit{string(req.TextDocument.Uri): {textEdit}},
@@ -511,11 +496,7 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 					time.Sleep(100 * time.Millisecond)
 
 					session.SendRequest(jsonrpc.RequestMessage{
-						BaseMessage: jsonrpc.BaseMessage{
-							Jsonrpc: JSONRPC_VERSION,
-						},
 						Method: "cursor/setPosition",
-						ID:     uuid.New(),
 						Params: utils.Must(json.Marshal(defines.Range{
 							Start: textEdit.Range.Start,
 							End:   textEdit.Range.Start,

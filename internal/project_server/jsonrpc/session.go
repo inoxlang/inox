@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 
 	core "github.com/inoxlang/inox/internal/core"
@@ -19,6 +20,10 @@ import (
 	"github.com/inoxlang/inox/internal/project_server/logs"
 	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
+)
+
+const (
+	JSONRPC_VERSION = "2.0"
 )
 
 type sessionKeyType struct{}
@@ -310,7 +315,11 @@ func (s *Session) write(resp ResponseMessage, sensitiveMethod bool) error {
 	return s.mustWriteWithContentLengthHeader(res)
 }
 
+// SendRequest sends a notification to the client NotificationMessage.BaseMessage
+// is set by the callee.
 func (s *Session) Notify(notif NotificationMessage) error {
+	notif.BaseMessage = BaseMessage{Jsonrpc: JSONRPC_VERSION}
+
 	s.writeLock.Lock()
 	defer s.writeLock.Unlock()
 
@@ -327,7 +336,12 @@ func (s *Session) Notify(notif NotificationMessage) error {
 	return s.mustWriteWithContentLengthHeader(notifBytes)
 }
 
+// SendRequest sends a request to the client, RequestMessage.ID & RequestMessage.BaseMessage
+// are set by the callee.
 func (s *Session) SendRequest(req RequestMessage) error {
+	req.BaseMessage = BaseMessage{Jsonrpc: JSONRPC_VERSION}
+	req.ID = uuid.New()
+
 	s.writeLock.Lock()
 	defer s.writeLock.Unlock()
 

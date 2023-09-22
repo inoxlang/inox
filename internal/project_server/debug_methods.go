@@ -1271,16 +1271,10 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 		debugSession.finished.Store(true)
 
 		session.Notify(jsonrpc.NotificationMessage{
-			BaseMessage: jsonrpc.BaseMessage{
-				Jsonrpc: JSONRPC_VERSION,
-			},
 			Method: "debug/terminatedEvent",
 		})
 
 		session.Notify(jsonrpc.NotificationMessage{
-			BaseMessage: jsonrpc.BaseMessage{
-				Jsonrpc: JSONRPC_VERSION,
-			},
 			Method: "debug/exitedEvent",
 		})
 	}()
@@ -1371,9 +1365,6 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 				}
 
 				session.Notify(jsonrpc.NotificationMessage{
-					BaseMessage: jsonrpc.BaseMessage{
-						Jsonrpc: JSONRPC_VERSION,
-					},
 					Method: "debug/stoppedEvent",
 					Params: utils.Must(json.Marshal(stoppedEvent)),
 				})
@@ -1416,9 +1407,6 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 				switch e := debugEvent.(type) {
 				case core.LThreadSpawnedEvent:
 					session.Notify(jsonrpc.NotificationMessage{
-						BaseMessage: jsonrpc.BaseMessage{
-							Jsonrpc: JSONRPC_VERSION,
-						},
 						Method: "debug/threadEvent",
 						Params: utils.Must(json.Marshal(dap.ThreadEvent{
 							Event: commonEventData,
@@ -1439,9 +1427,6 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 				}
 
 				session.Notify(jsonrpc.NotificationMessage{
-					BaseMessage: jsonrpc.BaseMessage{
-						Jsonrpc: JSONRPC_VERSION,
-					},
 					Method: "debug/" + eventType + "Event",
 					Params: utils.Must(json.Marshal(dapEvent)),
 				})
@@ -1528,9 +1513,6 @@ func notifyOutputEvent(msg string, category string, debugSession *DebugSession, 
 	}
 
 	session.Notify(jsonrpc.NotificationMessage{
-		BaseMessage: jsonrpc.BaseMessage{
-			Jsonrpc: JSONRPC_VERSION,
-		},
 		Method: "debug/outputEvent",
 		Params: utils.Must(json.Marshal(outputEvent)),
 	})
