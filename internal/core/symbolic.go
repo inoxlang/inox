@@ -644,15 +644,16 @@ func (p *IntersectionPattern) ToSymbolicValue(ctx *Context, encountered map[uint
 	intersectionPattern := &symbolic.IntersectionPattern{}
 	encountered[ptr] = intersectionPattern
 
+	var cases []symbolic.Pattern
 	for _, case_ := range p.cases {
 		symbolicVal, err := _toSymbolicValue(ctx, case_, false, encountered)
 		if err != nil {
 			return nil, err
 		}
-		intersectionPattern.Cases = append(intersectionPattern.Cases, symbolicVal.(symbolic.Pattern))
+		cases = append(cases, symbolicVal.(symbolic.Pattern))
 	}
 
-	return intersectionPattern, nil
+	return symbolic.NewIntersectionPattern(cases)
 }
 
 func (p *RegexPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {

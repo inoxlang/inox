@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -203,6 +204,20 @@ func TestSymbolicObject(t *testing.T) {
 			}
 
 			assert.Nil(t, result)
+		})
+	})
+
+	t.Run("SpecificIntersection", func(t *testing.T) {
+		must := utils.Must[SymbolicValue]
+		t.Run("inexact", func(t *testing.T) {
+			emptyInexact := NewInexactObject(map[string]Serializable{}, nil, nil)
+			assert.Same(t, emptyInexact, must(emptyInexact.SpecificIntersection(emptyInexact, 0)))
+
+			singlePropInexact := NewInexactObject(map[string]Serializable{"a": ANY_INT}, nil, nil)
+			assert.Same(t, singlePropInexact, must(singlePropInexact.SpecificIntersection(singlePropInexact, 0)))
+
+			assert.Equal(t, singlePropInexact, must(emptyInexact.SpecificIntersection(singlePropInexact, 0)))
+			assert.Equal(t, singlePropInexact, must(singlePropInexact.SpecificIntersection(emptyInexact, 0)))
 		})
 	})
 }

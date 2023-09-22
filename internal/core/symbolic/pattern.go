@@ -2373,7 +2373,26 @@ func (p *UnionPattern) WidestOfType() SymbolicValue {
 // An IntersectionPattern represents a symbolic IntersectionPattern.
 type IntersectionPattern struct {
 	NotCallablePatternMixin
-	Cases []Pattern //if nil, any union pattern is matched
+	cases []Pattern //if nil, any union pattern is matched
+	value SymbolicValue
+}
+
+func NewIntersectionPattern(cases []Pattern) (*IntersectionPattern, error) {
+
+	var values []SymbolicValue
+	for _, c := range cases {
+		values = append(values, c.SymbolicValue())
+	}
+
+	value, err := getIntersection(0, values...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &IntersectionPattern{
+		cases: cases,
+		value: value,
+	}, nil
 }
 
 func (p *IntersectionPattern) Test(v SymbolicValue) bool {
@@ -2383,20 +2402,42 @@ func (p *IntersectionPattern) Test(v SymbolicValue) bool {
 		return false
 	}
 
-	if p.Cases == nil {
+	if p.cases == nil {
 		return true
 	}
 
-	if len(p.Cases) != len(other.Cases) {
+	if len(p.cases) > len(other.cases) {
 		return false
 	}
 
-	for i, case_ := range p.Cases {
-		if !case_.Test(other.Cases[i]) {
+	//check that at each case matches at least one case in the other intersection pattern
+	for _, case_ := range p.cases {
+		ok := false
+		for _, otherCase := range other.cases {
+			if case_.Test(otherCase) {
+				ok = true
+			}
+		}
+		if !ok {
 			return false
 		}
 	}
 
+	return true
+}
+
+func (p *IntersectionPattern) TestValue(v SymbolicValue) bool {
+	for _, case_ := range p.cases {
+		if mv, ok := v.(IMultivalue); ok {
+			for _, value := range mv.OriginalMultivalue().values {
+				if !case_.TestValue(value) {
+					return false
+				}
+			}
+		} else if !case_.TestValue(v) {
+			return false
+		}
+	}
 	return true
 }
 
@@ -2405,7 +2446,7 @@ func (p *IntersectionPattern) PrettyPrint(w *bufio.Writer, config *pprint.Pretty
 	indentCount := parentIndentCount + 1
 	indent := bytes.Repeat(config.Indent, indentCount)
 
-	for i, case_ := range p.Cases {
+	for i, case_ := range p.cases {
 		if i > 0 {
 			utils.PanicIfErr(w.WriteByte('\n'))
 			utils.Must(w.Write(indent))
@@ -2420,19 +2461,8 @@ func (p *IntersectionPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *IntersectionPattern) TestValue(v SymbolicValue) bool {
-	for _, case_ := range p.Cases {
-		if !case_.TestValue(v) {
-			return false
-		}
-	}
-	return true
-
-}
-
 func (p *IntersectionPattern) SymbolicValue() SymbolicValue {
-	//TODO: implement
-	return ANY
+	return p.value
 }
 
 func (p *IntersectionPattern) StringPattern() (StringPattern, bool) {

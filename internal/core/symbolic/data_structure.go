@@ -44,7 +44,7 @@ var (
 	}
 
 	_ = []IProps{(*Object)(nil), (*Record)(nil), (*Namespace)(nil), (*Dictionary)(nil), (*List)(nil)}
-	_ = []InexactCapable{(*Object)(nil)}
+	_ = []InexactCapable{(*Object)(nil), (*Record)(nil)}
 )
 
 // An Indexable represents a symbolic Indexable.
@@ -1177,6 +1177,10 @@ func NewInexactObject(entries map[string]Serializable, optionalEntries map[strin
 	return NewObject(false, entries, optionalEntries, static)
 }
 
+func NewInexactObject2(entries map[string]Serializable) *Object {
+	return NewObject(false, entries, nil, nil)
+}
+
 func NewExactObject(entries map[string]Serializable, optionalEntries map[string]struct{}, static map[string]Pattern) *Object {
 	return NewObject(true, entries, optionalEntries, static)
 }
@@ -1267,6 +1271,125 @@ func (obj *Object) test(v SymbolicValue, exact bool) bool {
 	}
 
 	return true
+}
+
+func (o *Object) SpecificIntersection(v SymbolicValue, depth int) (SymbolicValue, error) {
+	if depth > MAX_INTERSECTION_COMPUTATION_DEPTH {
+		return nil, ErrMaxIntersectionComputationDepthExceeded
+	}
+
+	other, ok := v.(*Object)
+
+	if !ok || o.readonly != other.readonly {
+		return NEVER, nil
+	}
+
+	if o.entries == nil {
+		return v, nil
+	}
+
+	if other.entries == nil || other == o {
+		return o, nil
+	}
+
+	// if at least one of the objects is inexact there are potentially properties we don't know of,
+	// so inexactness wins.
+	exact := o.exact && other.exact
+
+	entries := map[string]Serializable{}
+	var optionalEntries map[string]struct{}
+	var static map[string]Pattern
+
+	// add properties of self
+	for propName, prop := range o.entries {
+
+		var propInResult SymbolicValue = prop
+		propInOther, existsInOther := other.entries[propName]
+		if existsInOther {
+			val, err := getIntersection(depth+1, prop, propInOther)
+
+			if err != nil {
+				return nil, err
+			}
+			if val == NEVER {
+				return NEVER, nil
+			}
+
+			propInResult = val
+		}
+
+		entries[propName] = AsSerializable(propInResult).(Serializable)
+
+		// if the property is optional in both objects then it is optional
+		if existsInOther && o.IsExistingPropertyOptional(propName) && other.IsExistingPropertyOptional(propName) {
+			if optionalEntries == nil {
+				optionalEntries = map[string]struct{}{}
+			}
+			optionalEntries[propName] = struct{}{}
+		}
+
+		staticInSelf, haveStatic := o.static[propName]
+		staticInOther, haveStaticInOther := other.static[propName]
+
+		if haveStatic && haveStaticInOther {
+			if static == nil {
+				static = map[string]Pattern{}
+			}
+
+			//add narrowest
+			if staticInSelf.Test(staticInOther) {
+				static[propName] = staticInOther
+			} else if staticInOther.Test(staticInSelf) {
+				static[propName] = staticInSelf
+			} else {
+				return NEVER, nil
+			}
+		} else if haveStatic {
+			if !staticInSelf.TestValue(propInResult) {
+				return NEVER, nil
+			}
+			if static == nil {
+				static = map[string]Pattern{}
+			}
+			static[propName] = staticInSelf
+		} else if haveStaticInOther {
+			if !staticInOther.TestValue(propInResult) {
+				return NEVER, nil
+			}
+			if static == nil {
+				static = map[string]Pattern{}
+			}
+			static[propName] = staticInOther
+		}
+	}
+
+	// add properties of other
+	for propName, prop := range other.entries {
+		_, existsInSelf := o.entries[propName]
+		if existsInSelf {
+			continue
+		}
+
+		entries[propName] = prop
+
+		if other.IsExistingPropertyOptional(propName) {
+			if optionalEntries == nil {
+				optionalEntries = map[string]struct{}{}
+			}
+
+			optionalEntries[propName] = struct{}{}
+		}
+
+		staticInOther, ok := other.static[propName]
+		if ok {
+			if static == nil {
+				static = map[string]Pattern{}
+			}
+			static[propName] = staticInOther
+		}
+	}
+
+	return NewObject(exact, entries, optionalEntries, static), nil
 }
 
 func (o *Object) IsInexact() bool {
@@ -1457,6 +1580,12 @@ func (obj *Object) WithExistingPropReplaced(name string, value SymbolicValue) (I
 	delete(modified.optionalEntries, name)
 
 	return &modified, nil
+}
+
+// IsExistingPropertyOptional returns true if the property is part of the pattern and is optional
+func (obj *Object) IsExistingPropertyOptional(name string) bool {
+	_, ok := obj.optionalEntries[name]
+	return ok
 }
 
 func (obj *Object) PropertyNames() []string {

@@ -1705,7 +1705,131 @@ func TestSymbolicUnionPattern(t *testing.T) {
 }
 
 func TestSymbolicIntersectionPattern(t *testing.T) {
-	//TODO
+	t.Run("Test()", func(t *testing.T) {
+		cases := []struct {
+			name    string
+			pattern *IntersectionPattern
+			value   SymbolicValue
+			ok      bool
+		}{
+			{
+				"an intersection pattern should include itself",
+				&IntersectionPattern{
+					cases: []Pattern{
+						NewInexactObjectPattern(map[string]Pattern{"a": ANY_INT.Static()}, nil),
+						NewInexactObjectPattern(map[string]Pattern{"b": ANY_INT.Static()}, nil),
+					},
+				},
+				&IntersectionPattern{
+					cases: []Pattern{
+						NewInexactObjectPattern(map[string]Pattern{"a": ANY_INT.Static()}, nil),
+						NewInexactObjectPattern(map[string]Pattern{"b": ANY_INT.Static()}, nil),
+					},
+				},
+				true,
+			},
+			{
+				"a narrow intersection should not include a less narrow intersection",
+				&IntersectionPattern{
+					cases: []Pattern{
+						NewInexactObjectPattern(map[string]Pattern{"a": ANY_INT.Static()}, nil),
+						NewInexactObjectPattern(map[string]Pattern{"b": ANY_INT.Static()}, nil),
+						NewInexactObjectPattern(map[string]Pattern{"c": ANY_INT.Static()}, nil),
+					},
+				},
+				&IntersectionPattern{
+					cases: []Pattern{
+						NewInexactObjectPattern(map[string]Pattern{"a": ANY_INT.Static()}, nil),
+						NewInexactObjectPattern(map[string]Pattern{"b": ANY_INT.Static()}, nil),
+					},
+				},
+				false,
+			},
+			{
+				"an intersection should include a narrower intersection",
+				&IntersectionPattern{
+					cases: []Pattern{
+						NewInexactObjectPattern(map[string]Pattern{"a": ANY_INT.Static()}, nil),
+						NewInexactObjectPattern(map[string]Pattern{"b": ANY_INT.Static()}, nil),
+					},
+				},
+				&IntersectionPattern{
+					cases: []Pattern{
+						NewInexactObjectPattern(map[string]Pattern{"a": ANY_INT.Static()}, nil),
+						NewInexactObjectPattern(map[string]Pattern{"b": ANY_INT.Static()}, nil),
+						NewInexactObjectPattern(map[string]Pattern{"c": ANY_INT.Static()}, nil),
+					},
+				},
+				true,
+			},
+		}
+
+		for _, testCase := range cases {
+			t.Run(testCase.name, func(t *testing.T) {
+				assert.Equal(t, testCase.ok, testCase.pattern.Test(testCase.value))
+			})
+		}
+	})
+
+	t.Run("TestValue()", func(t *testing.T) {
+		cases := []struct {
+			name    string
+			pattern *IntersectionPattern
+			value   SymbolicValue
+			ok      bool
+		}{
+			{
+				"value matching all cases should match the pattern",
+				utils.Must(NewIntersectionPattern([]Pattern{
+					NewInexactObjectPattern(map[string]Pattern{"a": ANY_INT.Static()}, nil),
+					NewInexactObjectPattern(map[string]Pattern{"b": ANY_INT.Static()}, nil),
+				})),
+				NewInexactObject(map[string]Serializable{"a": NewInt(1), "b": NewInt(2)}, nil, nil),
+				true,
+			},
+			// {
+			// 	"multivalue matching all cases should match the pattern",
+			// 	utils.Must(NewIntersectionPattern([]Pattern{
+			// 		NewInexactObjectPattern(map[string]Pattern{"a": ANY_INT.Static()}, nil),
+			// 		NewInexactObjectPattern(map[string]Pattern{"b": ANY_INT.Static()}, nil),
+			// 	})),
+			// 	NewMultivalue(
+			// 		NewInexactObject(map[string]Serializable{"a": NewInt(1), "b": NewInt(2)}, nil, nil),
+			// 		NewInexactObject(map[string]Serializable{"a": NewInt(2), "b": NewInt(3)}, nil, nil),
+			// 	),
+			// 	true,
+			// },
+			{
+				"value matching the first case only should not match the pattern",
+				utils.Must(NewIntersectionPattern([]Pattern{
+					NewInexactObjectPattern(map[string]Pattern{"a": ANY_INT.Static()}, nil),
+					NewInexactObjectPattern(map[string]Pattern{"b": ANY_INT.Static()}, nil),
+				})),
+				NewInexactObject(map[string]Serializable{"a": NewInt(1)}, nil, nil),
+				false,
+			},
+			{
+				"value matching the second case only should not match the pattern",
+				utils.Must(NewIntersectionPattern([]Pattern{
+					NewInexactObjectPattern(map[string]Pattern{"a": ANY_INT.Static()}, nil),
+					NewInexactObjectPattern(map[string]Pattern{"b": ANY_INT.Static()}, nil),
+				})),
+				NewInexactObject(map[string]Serializable{"b": NewInt(1)}, nil, nil),
+				false,
+			},
+			//TODO: add more tests
+		}
+
+		for _, testCase := range cases {
+			t.Run(testCase.name, func(t *testing.T) {
+				assert.Equal(t, testCase.ok, testCase.pattern.TestValue(testCase.value))
+
+				val := testCase.pattern.SymbolicValue()
+				assert.Equal(t, testCase.ok, val.Test(testCase.value))
+			})
+		}
+	})
+
 }
 
 func TestSymbolicOptionPattern(t *testing.T) {
