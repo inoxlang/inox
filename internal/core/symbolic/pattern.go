@@ -2590,7 +2590,7 @@ func symbolicallyEvalPatternNode(n parse.Node, state *State) (Pattern, error) {
 			return p, nil
 		}
 
-		return &ExactValuePattern{value: v.(Serializable)}, nil
+		return &ExactValuePattern{value: AsSerializable(v).(Serializable)}, nil
 	}
 }
 

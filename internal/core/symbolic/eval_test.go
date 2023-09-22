@@ -7785,6 +7785,34 @@ func TestSymbolicEval(t *testing.T) {
 			})
 		})
 
+		t.Run("exact value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				%p = 1
+				return %p
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, utils.Must(NewExactValuePattern(NewInt(1))), res)
+		})
+
+		t.Run("exact value: multivalue", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				%p = $$val
+				return %p
+			`)
+			state.setGlobal("val", NewMultivalue(NewInt(1), NewInt(2)), GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+
+			expectedValue := NewMultivalue(NewInt(1), NewInt(2)).as(SERIALIZABLE_INTERFACE_TYPE).(Serializable)
+			expectedPattern := utils.Must(NewExactValuePattern(expectedValue))
+			assert.Equal(t, expectedPattern, res)
+		})
+
 		t.Run("in preinit block", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				preinit {
