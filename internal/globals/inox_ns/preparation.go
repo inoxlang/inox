@@ -410,8 +410,8 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		core.MOD_ARGS_VARNAME: manifest.Parameters.GetSymbolicArguments(ctx),
 	}
 
-	symbolicCtx, criticalSymbolicCheckError := state.Ctx.ToSymbolicValue()
-	if criticalSymbolicCheckError != nil {
+	symbolicCtx, symbolicCheckError := state.Ctx.ToSymbolicValue()
+	if symbolicCheckError != nil {
 		finalErr = parsingErr
 		return
 	}
@@ -428,7 +428,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		symbolicBasePatternNamespaces[k] = utils.Must(v.ToSymbolicValue(ctx, encountered)).(*symbolic.PatternNamespace)
 	}
 
-	symbolicData, criticalSymbolicCheckError := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
+	symbolicData, symbolicCheckError := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
 		Node:                           mod.MainChunk.Node,
 		Module:                         state.Module.ToSymbolic(),
 		Globals:                        globals,
@@ -441,6 +441,8 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		Context: symbolicCtx,
 	})
 
+	isCriticalSymbolicCheckError := symbolicCheckError != nil && symbolicData == nil
+
 	if symbolicData != nil {
 		state.SymbolicData.AddData(symbolicData)
 	}
@@ -449,8 +451,11 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		finalErr = parsingErr
 	} else if finalErr == nil {
 		switch {
-		case criticalSymbolicCheckError != nil:
-			return nil, nil, nil, criticalSymbolicCheckError
+		case symbolicCheckError != nil:
+			if isCriticalSymbolicCheckError {
+				return nil, nil, nil, symbolicCheckError
+			}
+			finalErr = symbolicCheckError
 		case preinitErr != nil:
 			finalErr = preinitErr
 		case staticCheckErr != nil:
@@ -599,18 +604,20 @@ func PrepareExtractionModeIncludableChunkfile(args IncludableChunkfilePreparatio
 		return nil
 	})
 
-	symbolicCtx, criticalSymbolicCheckError := state.Ctx.ToSymbolicValue()
-	if criticalSymbolicCheckError != nil {
+	symbolicCtx, symbolicCheckError := state.Ctx.ToSymbolicValue()
+	if symbolicCheckError != nil {
 		finalErr = parsingErr
 		return
 	}
 
-	symbolicData, criticalSymbolicCheckError := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
+	symbolicData, symbolicCheckError := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
 		Node:    mod.MainChunk.Node,
 		Module:  state.Module.ToSymbolic(),
 		Globals: globals,
 		Context: symbolicCtx,
 	})
+
+	isCriticalSymbolicCheckError := symbolicCheckError != nil && symbolicData == nil
 
 	if symbolicData != nil {
 		state.SymbolicData.AddData(symbolicData)
@@ -620,8 +627,11 @@ func PrepareExtractionModeIncludableChunkfile(args IncludableChunkfilePreparatio
 		finalErr = parsingErr
 	} else if finalErr == nil {
 		switch {
-		case criticalSymbolicCheckError != nil:
-			return nil, nil, nil, criticalSymbolicCheckError
+		case symbolicCheckError != nil:
+			if isCriticalSymbolicCheckError {
+				return nil, nil, nil, symbolicCheckError
+			}
+			finalErr = symbolicCheckError
 		case staticCheckErr != nil:
 			finalErr = staticCheckErr
 		}
