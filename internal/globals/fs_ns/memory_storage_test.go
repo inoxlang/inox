@@ -204,6 +204,66 @@ func TestMemoryStorage(t *testing.T) {
 		assert.Equal(t, 10*goroutineCount, file.content.Len())
 	})
 
+	t.Run("Stat() should be thread safe", func(t *testing.T) {
+		storage := newInMemoryStorage(1000)
+
+		file := utils.Must(storage.New("file", 0400, os.O_WRONLY))
+		file.Close()
+
+		wg := new(sync.WaitGroup)
+		goroutineCount := 1000
+
+		wg.Add(goroutineCount)
+
+		var panicErr atomic.Value
+
+		for i := 0; i < goroutineCount; i++ {
+			go func() {
+				defer wg.Done()
+				defer func() {
+					e := recover()
+					if e != nil {
+						panicErr.Store(e)
+					}
+				}()
+				time.Sleep(time.Microsecond)
+
+				for i := 0; i < 10; i++ {
+					file, _ := storage.Get("file")
+
+					info, _ := file.Stat()
+					size := info.Size()
+
+					_, err := file.Write([]byte{'a'})
+
+					for errors.Is(err, os.ErrClosed) {
+						file, _ = storage.Get("file")
+						_, err = file.Write([]byte{'a'})
+					}
+
+					newInfo, _ := file.Stat()
+					newSize := newInfo.Size()
+
+					if newSize <= size {
+						panicErr.Store(errors.New("size should have increased"))
+					}
+
+					file.Close()
+				}
+			}()
+		}
+
+		//TODO: add assertions
+		wg.Wait()
+
+		if v := panicErr.Load(); v != nil && v != error(nil) {
+			assert.FailNow(t, v.(error).Error())
+		}
+
+		file, _ = storage.Get("file")
+		assert.Equal(t, 10*goroutineCount, file.content.Len())
+	})
+
 	t.Run("truncating the same file should be thread safe", func(t *testing.T) {
 		storage := newInMemoryStorage(1000)
 

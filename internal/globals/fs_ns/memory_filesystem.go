@@ -235,8 +235,8 @@ func (fs *MemFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [
 	}
 
 	for normalizedPath, f := range storage.files {
-		f.content.m.RLock()
-		defer f.content.m.RUnlock()
+		f.content.lock.RLock()
+		defer f.content.lock.RUnlock()
 
 		info := f.FileInfo()
 

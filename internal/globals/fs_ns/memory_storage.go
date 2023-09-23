@@ -352,7 +352,7 @@ type InMemFileContent struct {
 	beingPersisted            bool
 	modifiedDuringPersistence bool
 
-	m sync.RWMutex
+	lock sync.RWMutex
 }
 
 func NewInMemFileContent(
@@ -373,29 +373,29 @@ func NewInMemFileContent(
 }
 
 func (c *InMemFileContent) IsDirty() bool {
-	c.m.RLock()
-	defer c.m.RUnlock()
+	c.lock.RLock()
+	defer c.lock.RUnlock()
 	return c.dirty
 }
 
 // ShouldBePersisted returns true if the content is dirty AND is not being persisted.
 func (c *InMemFileContent) ShouldBePersisted() bool {
-	c.m.RLock()
-	defer c.m.RUnlock()
+	c.lock.RLock()
+	defer c.lock.RUnlock()
 	return c.dirty && !c.beingPersisted
 }
 
 // If the file is not dirty Persist snapshots the content of the file & invokes persistFn,
 // if persistFn returns an error or panics an error is returned.
 func (c *InMemFileContent) Persist(persistFn func(p []byte) error) (finalErr error) {
-	c.m.Lock()
+	c.lock.Lock()
 	if !c.dirty {
-		c.m.Unlock()
+		c.lock.Unlock()
 		return
 	}
 	bytes := utils.CopySlice(c.bytes)
 	c.beingPersisted = true
-	c.m.Unlock()
+	c.lock.Unlock()
 
 	defer func() {
 		e := recover()
@@ -404,8 +404,8 @@ func (c *InMemFileContent) Persist(persistFn func(p []byte) error) (finalErr err
 			finalErr = fmt.Errorf("%w: %s", err, string(debug.Stack()))
 		}
 
-		c.m.Lock()
-		defer c.m.Unlock()
+		c.lock.Lock()
+		defer c.lock.Unlock()
 
 		if finalErr == nil && !c.modifiedDuringPersistence {
 			c.dirty = false
@@ -422,8 +422,8 @@ func (c *InMemFileContent) ModifTime() time.Time {
 }
 
 func (c *InMemFileContent) Truncate(size int64) error {
-	c.m.Lock()
-	defer c.m.Unlock()
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	defer func() {
 		c.dirty = true
 		if c.beingPersisted {
@@ -458,6 +458,8 @@ func (c *InMemFileContent) Truncate(size int64) error {
 }
 
 func (c *InMemFileContent) Len() int {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
 	return len(c.bytes)
 }
 
@@ -470,8 +472,8 @@ func (c *InMemFileContent) WriteAt(p []byte, off int64) (int, error) {
 		}
 	}
 
-	c.m.Lock()
-	defer c.m.Unlock()
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	defer func() {
 		c.dirty = true
 		if c.beingPersisted {
@@ -515,12 +517,14 @@ func (c *InMemFileContent) ReadAt(b []byte, off int64) (n int, err error) {
 		}
 	}
 
-	c.m.RLock()
+	c.lock.RLock()
 	size := int64(len(c.bytes))
 	if off >= size {
-		c.m.RUnlock()
+		c.lock.RUnlock()
 		return 0, io.EOF
 	}
+
+	defer c.lock.RUnlock()
 
 	l := int64(len(b))
 	if off+l > size {
@@ -533,7 +537,6 @@ func (c *InMemFileContent) ReadAt(b []byte, off int64) (n int, err error) {
 	if len(btr) < len(b) {
 		err = io.EOF
 	}
-	c.m.RUnlock()
 
 	return
 }
