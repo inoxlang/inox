@@ -83,6 +83,8 @@ func (p *Project) ListSecrets2(ctx *core.Context) (secrets []ProjectSecret, _ er
 
 	for i, obj := range objects {
 		go func(i int, info *s3_ns.ObjectInfo) {
+			defer utils.Recover()
+
 			defer wg.Done()
 			resp, err := bucket.GetObject(ctx, info.Key)
 			if err != nil {
