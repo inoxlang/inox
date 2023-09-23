@@ -462,6 +462,10 @@ func fmtStringConcatInvalidElementOfType(v SymbolicValue) string {
 	return fmt.Sprintf("string concatenation: invalid element of type %s", Stringify(v))
 }
 
+func fmtDidYouForgetLeadingPercent(path string) string {
+	return fmt.Sprintf("did you forget a leading `%%` symbol ? `%s` is a path, you probably meant the following path pattern: %%%s", path, path)
+}
+
 func FmtPropertyPatternError(name string, err error) error {
 	return fmt.Errorf("property pattern .%s: %w", name, err)
 }
